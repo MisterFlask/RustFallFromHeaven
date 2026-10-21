@@ -67,14 +67,13 @@ fn facts(g: &Game, c: CityId) -> CityFacts {
 /// more cities but lost more to the barbarians (measured twice, see docs/AI.md).
 pub fn settler_choice(ai: &Ai, g: &Game, c: CityId, p: PlayerId, threat: i32, defense: i32) -> SettlerPlan {
     use SettlerPlan::No;
+    // Any visible threat stops settler production, even one the garrison holds: training them
+    // under a threat held twice over founded 10% more cities by turn 100 and cost 7% of the techs
+    // by turn 300 (docs/AI_LOG.md, "Settlers under a threat the garrison holds").
+    let _ = defense;
     let ctx = facts(g, c);
     let pl = &g.players[p];
-    // A threat the garrison holds twice over (lair guards, a barbarian camped on a hill) does not
-    // stop the city from training the settler: the settler's own risk and escort rules decide
-    // when it leaves. Blocked on any threat, capitals at their happy cap sat for 30+ turns
-    // building warriors (16% of the capitals' choices before turn 150 in seeds 1-5).
-    let held = if crate::fix_on("settler") { threat * 2 <= defense } else { threat == 0 };
-    if !held || g.city_is_occupation(c) {
+    if threat > 0 || g.city_is_occupation(c) {
         return No;
     }
     let settlers = count_ai(g, p, UnitAIType::UNITAI_SETTLE);

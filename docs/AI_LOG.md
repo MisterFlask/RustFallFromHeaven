@@ -31,6 +31,35 @@ Each entry answers three questions, from the games themselves (counts with `ffh 
   `FFH_AI_TRACE` (a throwaway trace line is fine on a scratch branch; it must not change the
   checksum) and compare the snapshots per checkpoint (`civ_ab.py --load`, the snapshot fields).
 
+## Low-hanging fixes (2026-10-21)
+
+Six fixes for things a good player does differently, found by tracing seeds 1-18 (the kept ones are
+in docs/AI.md, "Measured together", round 6). Each was measured alone against the same binary
+with it off, seeds 1-48, 300 turns (6 civs, standard map).
+
+### Settlers under a threat the garrison holds (reverted)
+
+1. `expansion::settler_choice` trains no settler while any visible enemy is within 3 plots,
+   whatever the garrison (its `defense` argument is unused), while the rest of
+   `production::decide` lets a threat the garrison holds twice over pass. In seeds 1-5, 100 of the
+   619 capital decisions before turn 150 had such a held threat, the capital at or near its
+   happy cap at size 3+, and went to something else (39 Warriors, 21 Workers); seed 3's Sidar sat
+   at size 6 from turn 52 to 85 with 4 defenders against a threat of 293 and reached turn 100 with
+   one city and 14 military units; 19 of 94 civs had one city at turn 100.
+2. Training settlers under a held threat did found more cities early: +9.8% at turn 100 (t 4.3),
+   +5.3% at turn 200 (t 2.5). They were smaller (3.67 -> 3.46 population a city at turn 100), the
+   costs rose from 34% to 37% of the commerce at turn 200 (maintenance, civic upkeep and unit
+   support all up), the research slider fell (61 -> 55% at turn 200, t -3.6) and more cities fell
+   to the barbarians (80 -> 95 by turn 200, 121 -> 133 by turn 300). By turn 300 the cities were
+   back to the same number (-2.3%) and techs were -7.0% (t -2.3), legacy score -5.1% (t -1.9).
+3. The same result as the faster openings in docs/AI.md ("Settlers and escorts", "Tried and
+   dropped") and the sparse-world note: in this game, cities the economy and the garrisons
+   cannot carry yet are a cost, not a lead, and the barbarians (whose cities the rules create
+   in step with ours) take the extra ones. The idle capital is a symptom of the opening's real
+   bind -- the maintenance a second and third city brings before the techs that pay for it --
+   so the lever is the economy that supports cities (Code of Laws / City States timing,
+   Courthouses), not the settler gate.
+
 ## Unique units (2026-10-20)
 
 The kept version is in docs/AI.md, "Unique units". It is kept under the owner's rule (CLAUDE.md,

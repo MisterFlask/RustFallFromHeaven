@@ -86,8 +86,16 @@ counters, war success, war plans) that the diplomacy below reads.
    - **workers** (`workers.rs`), see below;
    - **garrisons** fill each city's quota;
    - **field armies** (`military.rs`), see below;
-   - **explorers** reveal the nearest unknown area and goody huts, then join the army;
-   - **great people** discover, join as specialists or start a golden age;
+   - **explorers** reveal the nearest unknown area and goody huts, one turn at a time to a plot
+     no enemy they see can reach (a multi-turn move gets no orders until it ends, and explorers
+     walked on into the animals their first steps revealed); with nothing safe in reach while a
+     fifth of the home landmass is unknown (before turn 150) they wait in a city, then join the
+     army (joining at once had production train another explorer);
+   - **great people** build a shrine they can construct in a holy city of ours (a gold a turn for
+     every city in the world with the religion, culture, a free mana: Great Prophets, and the
+     Bard's, Sage's and Merchant's shrines), Great Engineers rush a wonder one of our cities is
+     building when two thirds of the rush go into it; otherwise they discover, join as
+     specialists or start a golden age;
    - **missionaries** go to our cities without the state religion; **casters** go with the
      stack nearest an operation's target, to the units their blessings are for, the cities
      their city spells are for or the land they terraform (`magic::caster_target`), else to
@@ -200,7 +208,11 @@ single hook tagged `bankruptcy-guard`:
   (weakest relative to what we can train now): field units beyond 1 + cities/4, garrison
   units beyond one per city (two in the capital and near barbarians) where no threat is in
   sight, idle workers beyond twice the need. Disbanding more (from 5% of the commerce) lost
-  more cities to barbarians.
+  more cities to barbarians. A unit trained in the last 20 turns is never scrapped, by this rule
+  or the bankrupt ones (`finance::KEEP_YOUNG_TURNS`): both the build rules and the scrap rules
+  read the moment (a threat in sight, a barbarian within 4 plots), so a barbarian walking in
+  and out of sight had cities train defenders that the treasury scrapped 1-9 turns later, again
+  and again; a young unit is skipped, not replaced by a stronger one.
 - **Citizens**: the governor's commerce weight above.
 - `finance::city_affordable` (a new city's maintenance and upkeep against the gold left at
   the target share) is for the settler logic and not wired in. Wired into `settler_choice`
