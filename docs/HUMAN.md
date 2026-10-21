@@ -22,8 +22,8 @@ cargo build --release
 ./target/release/ffh-play serve            # then open http://127.0.0.1:8642/
 ```
 
-The page starts with the new-game screen (civilization and leader or random, opponents, world
-size, speed, difficulty, era, climate, sea level, seed, game options, victory conditions; "Load a
+The page starts with the new-game screen (civilization and leader or random, with the chosen
+leader's portrait, opponents, world size, speed, difficulty, era, climate, sea level, seed, game options, victory conditions; "Load a
 game…" lists the saves). Each game gets a directory in `./saves` (`--saves DIR` to change it).
 `serve` takes the GAME flags too (`--seed 3 --world WORLDSIZE_SMALL --new` starts a game at once,
 `--load saves/game-3/auto/T0040.ffhsave` resumes one). Use a current Chrome, Firefox or Safari;
@@ -205,9 +205,11 @@ revolution's anarchy and upkeep (computed by the rules), then "Revolution!". **R
 the religions, their holy cities as far as you know them, your cities with each, and "Convert"
 (with the anarchy). **Finances** (`F2`, or click the commerce split in the top bar): each
 commerce's share with `−`/`+` by Civ4's step (only the ones you may change).
-**Diplomacy** (`F4`): every player you met (war or peace, open borders, pacts, vassals, attitude,
-score, your deals with them) with "Trade…" and "Declare war" (it asks first). The trade screen
-lists what each side can give (refusals greyed with Civ4's reason); click items into the deal
+**Diplomacy** (`F4`): every player you met, by their leader's portrait (war or peace, open
+borders, pacts, vassals, attitude, score, your deals with them) with "Trade…" and "Declare war"
+(it asks first). Each playable leader has a portrait in the interface's pixel art
+(`tools/m7/leaders.py`), also shown at the top of the trade screen, on a deal offered to you and
+on the question to take over a civilization that appeared. The trade screen lists what each side can give (refusals greyed with Civ4's reason); click items into the deal
 (gold with an amount; peace, open borders and pacts go both ways, so they are greyed on both
 sides when either side refuses them), "Propose": the AI accepts or declines at once.
 

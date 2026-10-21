@@ -9,6 +9,7 @@ import { openModal } from "./modals.js";
 import { run } from "./commands.js";
 import { render as markup, plain } from "./markup.js";
 import { illuminate } from "./look.js";
+import { leaderPortrait, PORTRAIT } from "./portraits.js";
 
 // ---------------------------------------------------------------------------------------------
 // Research (the CHOOSETECH popup and the research button).
@@ -192,11 +193,19 @@ export function newGame({ dismissible = true } = {}) {
   const d = st.defaults;
   const civ = select("civ", st.civilizations, d.civ, { none: "Random" });
   const leader = h("select", { name: "leader", id: "ng-leader" });
+  // The chosen leader's portrait (a hooded stranger while it is random).
+  const face = h("div.ng-portrait");
+  const showFace = () => {
+    const name = leader.value ? leader.selectedOptions[0]?.textContent : "A random leader";
+    face.replaceChildren(leaderPortrait(leader.value || "LEADER_RANDOM", { size: PORTRAIT.large, title: name }) ?? "");
+  };
   const fillLeaders = () => {
     const c = st.civilizations.find((x) => x.type === civ.value);
     leader.replaceChildren(h("option", { value: "" }, "Random"), ...(c ? c.leaders.map((l) => h("option", { value: st.leaders[l].type }, st.leaders[l].name)) : []));
+    showFace();
   };
   civ.addEventListener("change", fillLeaders);
+  leader.addEventListener("change", showFace);
   fillLeaders();
   const seed = h("input", { type: "number", id: "ng-seed", min: 0, max: 4294967295, value: d.seed });
   const dice = h("button.small", { type: "button", title: "A random seed", onclick: () => (seed.value = String(Math.floor(Math.random() * 1e6))) }, "⚄");
@@ -222,18 +231,22 @@ export function newGame({ dismissible = true } = {}) {
   const form = h(
     "div.newgame",
     h(
-      "div.fields",
-      field("Civilization", civ),
-      field("Leader", leader),
-      field("Opponents", opponents),
-      field("World size", world),
-      field("Speed", speed),
-      field("Difficulty", handicap),
-      field("Era", era),
-      field("Climate", climate),
-      field("Sea level", sea),
-      field("Seed", h("div.inline", seed, dice)),
-      field("Game name", name),
+      "div.ng-top",
+      h(
+        "div.fields",
+        field("Civilization", civ),
+        field("Leader", leader),
+        field("Opponents", opponents),
+        field("World size", world),
+        field("Speed", speed),
+        field("Difficulty", handicap),
+        field("Era", era),
+        field("Climate", climate),
+        field("Sea level", sea),
+        field("Seed", h("div.inline", seed, dice)),
+        field("Game name", name),
+      ),
+      face,
     ),
     h("details", h("summary", "Game options"), options),
     h("details", h("summary", "Victory conditions"), victories),

@@ -4,6 +4,7 @@
 import { h, $ } from "./dom.js";
 import { render as markup } from "./markup.js";
 import { emit } from "./state.js";
+import { playerPortrait, PORTRAIT } from "./portraits.js";
 
 const stack = [];
 
@@ -172,9 +173,13 @@ export function showDecision(d, answer) {
       ),
     ),
   );
+  // A deal offered, a civilization to take over: that player's leader beside the text.
+  const other = d.context?.other_player;
+  const face = other !== null && other !== undefined ? playerPortrait(other, { size: PORTRAIT.medium }) : null;
+  const text = h("p.page-text", illuminate(markup(d.text)));
   m = openModal({
     title: d.title,
-    body: [h("p.page-text", illuminate(markup(d.text))), options, errorLine],
+    body: [face ? h("div.decision-head", face, text) : text, options, errorLine],
     buttons: [{ label: "AI default", title: "The advisor's pick", onClick: () => send(null) }],
     dismissible: false,
     tag: "decision",

@@ -265,6 +265,10 @@ html.iso .seals { gap: 4px; margin: 0; }
 html.iso .panel-head { border-bottom: 0; margin: 0 0 4px; }
 html.iso table.kv th { color: var(--iso-dim); font-weight: 400; }
 
+/* Leader portraits in the boxes' inset frame (portraits.js). */
+html.iso img.leader-portrait { border: var(--iso-inset-w, 6px) solid transparent; border-image: var(--iso-inset); background: rgba(1, 8, 30, 0.55); background-clip: padding-box; }
+html.iso img.leader-portrait[data-size="small"] { border-width: 2px; border-image: none; border-color: #8a6420; }
+
 /* --- the city panel ------------------------------------------------------------------------ */
 
 html.iso #iso-city {

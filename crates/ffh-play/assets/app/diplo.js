@@ -2,13 +2,15 @@
 // met (leader, civilization, war or peace, open borders, pacts, vassals, attitude, score), your
 // deals with them, declaring war (`declare_war`), and the trade screen: what each side can give
 // (the `trade` query, C++ `buildTradeTable`, refusals greyed), a deal put together from both
-// tables and offered (`propose_deal`), which the AI accepts or declines at once.
+// tables and offered (`propose_deal`), which the AI accepts or declines at once. Each leader shows
+// their portrait (portraits.js).
 
 import * as api from "./api.js";
 import { S, dname, tname, teamName, tradeItemLabel, tradeRefusal, DUAL_ITEMS } from "./state.js";
 import { h, toast } from "./dom.js";
 import { openModal, ask, closeTag } from "./modals.js";
 import { run } from "./commands.js";
+import { leaderPortrait, playerPortrait, PORTRAIT } from "./portraits.js";
 
 /** The players screen. */
 export async function openDiplomacy() {
@@ -29,7 +31,7 @@ export async function openDiplomacy() {
         return h(
           "tr",
           { class: p.alive ? "" : "dead", "data-player": p.id },
-          h("td", h("b", p.name), h("div.dim", `${dname("CivilizationType", p.civ)} · team ${p.team}`)),
+          h("td", h("div.leader-cell", leaderPortrait(p.leader, { size: PORTRAIT.medium }), h("div", h("b", p.name), h("div.dim", `${dname("CivilizationType", p.civ)} · team ${p.team}`)))),
           h("td", relation.flatMap((x, i) => (i ? [", ", x] : [x]))),
           h("td", p.attitude !== null ? dname("AttitudeType", p.attitude) : "-"),
           h("td.num", String(p.score)),
@@ -81,6 +83,15 @@ export async function openTrade(withPlayer, name = null) {
   const isDual = (it) => DUAL_ITEMS.includes(tname("TradeableItem", it.item));
   const isGold = (it) => ["TRADE_GOLD", "TRADE_GOLD_PER_TURN"].includes(tname("TradeableItem", it.item));
   const status = h("p.dim");
+  // Who you are dealing with: their leader's portrait, name, civilization and mood.
+  const pl = S.players.get(withPlayer);
+  const head = pl
+    ? h(
+        "div.trade-head",
+        playerPortrait(withPlayer, { size: PORTRAIT.large }),
+        h("div", h("h3", pl.name), h("div.dim", dname("CivilizationType", pl.civ)), pl.attitude !== null && pl.attitude !== undefined ? h("div", `Attitude: ${dname("AttitudeType", pl.attitude)}`) : null),
+      )
+    : null;
   const draw = () => {
     const side = (list, mapKey, other, title) =>
       h(
@@ -133,6 +144,7 @@ export async function openTrade(withPlayer, name = null) {
           : h("p.dim", "Nothing."),
       );
     m.setBody(
+      head,
       t.war ? h("p.warn", "You are at war: a deal makes peace, so it must hold the peace treaty (or a capitulation).") : null,
       h("div.trade", side(t.we_give, "give", t.they_give, "You give"), side(t.they_give, "get", t.we_give, "They give")),
       status,
