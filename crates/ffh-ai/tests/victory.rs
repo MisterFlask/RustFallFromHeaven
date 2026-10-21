@@ -180,7 +180,22 @@ fn tower_victory_makes_the_last_tower_tech_the_goal() {
 #[test]
 fn mana_nodes_are_planned_for_towers_without_mana() {
     let mut g = played(11, 80);
-    let p = biggest(&g);
+    // The civ with the most free plots to put raw mana on (the biggest one may have few: how much
+    // land a civ holds at turn 80 is the game's story, not what this test checks).
+    let free = |g: &Game, p: PlayerId| {
+        let mut n = 0;
+        for &c in &g.players[p].cities {
+            for i in 1..ffh_core::defs::NUM_CITY_PLOTS {
+                let Some(q) = g.city_index_plot(c, i) else { continue };
+                let plot = &g.map.plots[q];
+                if plot.owner == Some(p) && plot.bonus_type.is_none() && plot.improvement_type.is_none() && plot.feature_type.is_none() && !g.plot_is_water(q) && plot.plot_type != PlotType::PLOT_PEAK {
+                    n += 1;
+                }
+            }
+        }
+        n
+    };
+    let p = g.civ_player_ids().filter(|&p| g.players[p].alive && !g.player_is_barbarian(p)).max_by_key(|&p| (free(&g, p), std::cmp::Reverse(p))).unwrap();
     late(&mut g, 400);
     let d = g.d;
     // The techs for all five towers, no tower built, no mana of any kind.
