@@ -1132,8 +1132,8 @@ async function selectUnit(u) {
 const automated = (u) => `(() => { const S = window.ffh.S; const u = S.units.get(${u}); const g = u && S.groups.get(u.group); return !!g && g.automated !== null && g.automated !== undefined; })()`;
 
 /** P7, `stage automate`: the worker's Automation section; a click automates it and the AI gives
- *  it orders at once (it waits for none); the scout explores by the hotkey E; the unit panel
- *  marks automated units. */
+ *  it orders at once (it waits for none); the scout explores by its button (E zooms the map); the
+ *  unit panel marks automated units. */
 async function stagedAutomate(bin, saves) {
   const st = await loadStaged(bin, saves, "automate");
   await selectUnit(st.worker);
@@ -1144,13 +1144,14 @@ async function stagedAutomate(bin, saves) {
   await until2(automated(st.worker), "the worker automated");
   await until2(`(() => { const S = window.ffh.S; const u = S.units.get(${st.worker}); const g = u && S.groups.get(u.group); return !!g && (g.missions.length > 0 || !g.ready); })()`, "the automated worker's orders");
   await selectUnit(st.scout);
-  await until2(`!!document.querySelector('#unit-panel button.action[data-kind="automate"][data-type="AUTOMATE_EXPLORE"]')`, "the scout's explore button");
-  await b.key("e");
+  const explore = '#unit-panel button.action[data-kind="automate"][data-type="AUTOMATE_EXPLORE"]';
+  await until2(`!!document.querySelector(${q(explore)})`, "the scout's explore button");
+  await click(explore);
   await until2(automated(st.scout), "the scout exploring");
   await selectUnit(st.worker);
   await until2(`!!document.querySelector("#unit-panel .badge.auto")`, "the automated badge");
   await shot("automated");
-  steps.push("automate buttons (stage automate): a worker automated with a click, a scout exploring with E");
+  steps.push("automate buttons (stage automate): a worker and a scout (explore) automated with a click");
 }
 
 /** P7, `stage election`: the human secretary general's election popup (deferred, like events

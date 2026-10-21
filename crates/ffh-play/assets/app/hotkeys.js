@@ -11,9 +11,10 @@
 // range attack, R builds a road (a worker) or recons, Shift+P pillages, Alt+R routes to, G is
 // go-to, Space skips, Del deletes, Backspace cancels, L loads, U unloads.
 //
-// W A S D are ffh-play's map scroll keys (`scrollKey`), not Civ4's: the actions Civ4 binds to the
-// plain letters (W cycle, A automate, S sentry, sabotage and scrub fallout, D destroy) keep their
-// buttons, not the keys; shifted letters (Shift+W windmill, Shift+S the mana nodes) stay.
+// W A S D are ffh-play's map scroll keys (`scrollKey`) and Q E its zoom keys (`zoomKey`), not
+// Civ4's: the actions Civ4 binds to the plain letters (W cycle, A automate, S sentry, sabotage and
+// scrub fallout, D destroy, Q quarry, E explore) keep their buttons, not the keys; shifted letters
+// (Shift+W windmill, Shift+S the mana nodes) stay.
 
 /** The map's scroll keys, by their place on the keyboard (`KeyboardEvent.code`, any layout): held,
  *  they glide the view up, left, down, right (map.js `scrollHold`). */
@@ -26,6 +27,17 @@ export function scrollKey(ev, { anyMods = false } = {}) {
   if (!anyMods && (ev.shiftKey || ev.altKey || ev.ctrlKey || ev.metaKey)) return null;
   if (ev.code) return SCROLL_KEYS[ev.code] ?? null;
   return SCROLL_LETTERS[String(ev.key ?? "").toLowerCase()] ?? null;
+}
+
+/** The map's zoom keys, by their place on the keyboard: Q zooms out, E in (map.js `zoom`). */
+export const ZOOM_KEYS = { KeyQ: -1, KeyE: 1 };
+const ZOOM_LETTERS = { q: -1, e: 1 };
+
+/** The zoom step key event `ev` asks for: -1 for a plain Q, 1 for a plain E, else 0. */
+export function zoomKey(ev) {
+  if (ev.shiftKey || ev.altKey || ev.ctrlKey || ev.metaKey) return 0;
+  if (ev.code) return ZOOM_KEYS[ev.code] ?? 0;
+  return ZOOM_LETTERS[String(ev.key ?? "").toLowerCase()] ?? 0;
 }
 
 /** Civ4 key names (`KB_*`) to `KeyboardEvent.code` (layout independent, as Civ4's scan codes)
@@ -90,14 +102,16 @@ function entryOf(a, data) {
   return null;
 }
 
-/** Whether binding `b` is a plain scroll key (W A S D: the map's, not the action's). */
-function scrolls(b) {
-  return !b?.shift && !b?.alt && !b?.ctrl && Object.hasOwn(SCROLL_KEYS, kbCode(b?.key).code ?? "");
+/** Whether binding `b` is a plain map key (W A S D scroll, Q E zoom: the map's, not the
+ *  action's). */
+function mapKey(b) {
+  const code = kbCode(b?.key).code ?? "";
+  return !b?.shift && !b?.alt && !b?.ctrl && (Object.hasOwn(SCROLL_KEYS, code) || Object.hasOwn(ZOOM_KEYS, code));
 }
 
-/** The bindings of a `group` query action, without the map's scroll keys. */
+/** The bindings of a `group` query action, without the map's keys. */
 export function bindings(a, data) {
-  return (entryOf(a, data)?.keys ?? []).filter((b) => !scrolls(b));
+  return (entryOf(a, data)?.keys ?? []).filter((b) => !mapKey(b));
 }
 
 /** The action list's order (`iOrderPriority`, 0 when none). */

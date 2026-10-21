@@ -389,7 +389,8 @@ function stepCity(forward) {
  *  selection: CONTROL_ENDTURN_ALT); C centres on the selection; Home / End the next /
  *  previous city; F10 the capital's screen; F1-F4, F6, F7 the advisors; Ctrl+S, Ctrl+L. Then
  *  ffh-play's own: W A S D held scroll the map (`K.scrollKey`; Civ4's W cycle is Tab and Enter
- *  here), Tab / Shift+Tab cycle forward / back (Civ4's Tab is chat), Ctrl+1/2/3 the layers, `?`,
+ *  here), Q / E zoom out / in (`K.zoomKey`; Civ4's Q quarry and E explore are on their buttons),
+ *  Tab / Shift+Tab cycle forward / back (Civ4's Tab is chat), Ctrl+1/2/3 the layers, `?`,
  *  the arrows and `+`/`-`. Then the selection's action hotkeys from the XML (`units.hotkeyEvent`:
  *  F fortify or sleep, Space skip, B found, G go to, R road, Del delete, Backspace cancel, L load,
  *  U unload, Shift+P pillage, ...). */
@@ -413,6 +414,11 @@ function onKey(ev) {
   const dir = K.scrollKey(ev);
   if (dir) {
     if (!ev.repeat) mapView.scrollHold(dir, true);
+    return handled();
+  }
+  const zoom = K.zoomKey(ev);
+  if (zoom) {
+    mapView.zoom(zoom);
     return handled();
   }
   const human = S.status?.phase === "human";

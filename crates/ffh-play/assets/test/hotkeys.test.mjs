@@ -121,3 +121,18 @@ test("W A S D scroll the map, by their place on the keyboard; modified letters d
   assert.equal(K.scrollKey(key("KeyW", { shiftKey: true }), { anyMods: true }), "up", "released with Shift down");
   assert.equal(K.scrollKey(key("KeyQ")), null);
 });
+
+test("Q and E zoom the map out and in, by their place on the keyboard; modified letters do not", () => {
+  assert.equal(K.zoomKey(key("KeyQ")), -1);
+  assert.equal(K.zoomKey(key("KeyE")), 1);
+  assert.equal(K.zoomKey({ code: "KeyQ", key: "a" }), -1, "AZERTY's A is Q's place");
+  assert.equal(K.zoomKey({ key: "E" }), 1, "a script's event without a code");
+  assert.equal(K.zoomKey(key("KeyE", { ctrlKey: true })), 0);
+  assert.equal(K.zoomKey(key("KeyW")), 0);
+  // Civ4's plain Q (quarry) and E (explore) keep their buttons, not the keys.
+  const tables = { ...data.tables, BuildType: [{ type: "BUILD_QUARRY", keys: [b("KB_Q")] }], AutomateType: [{ type: "AUTOMATE_EXPLORE", keys: [b("KB_E")] }] };
+  const scout = [{ kind: "automate", automate: 0, enabled: true }, mission(3, true, { data1: 0 })];
+  assert.equal(K.actionForKey(scout, key("KeyE"), { ...data, tables }), null);
+  assert.equal(K.actionForKey(scout, key("KeyQ"), { ...data, tables }), null);
+  assert.deepEqual(K.bindings(scout[0], { ...data, tables }), [], "so the explore button shows no key");
+});

@@ -439,6 +439,7 @@ export function keysHelp() {
     ["Right click", "move or attack with the selection; with Shift held, add waypoints (sent when Shift is released)"],
     ["Drag, wheel, arrows, + −", "pan and zoom the map; the minimap centres"],
     ["W A S D (held)", "scroll the map smoothly (ffh-play's: Civ4's W, A, S and D orders are on their buttons)"],
+    ["Q / E", "zoom out / in (ffh-play's: Civ4's Q quarry and E explore are on their buttons)"],
     ["Turn and selection (Civ4's controls)", ""],
     ["Enter", "the next unit waiting for orders; when none waits (the End turn button glows), end the turn"],
     ["Shift+Enter", "end the turn whatever waits, without the checks"],

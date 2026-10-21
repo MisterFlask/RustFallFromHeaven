@@ -68,7 +68,7 @@ top left (top right in a city): bright for your stacks that can move or are sele
 others, with a vellum pip when it can move and a gilt one with a hero in the stack; the count
 hangs under the standard, a health bar shows when the head unit is hurt (or selected), and a
 mark at the top right says fortified, asleep, sentry, healing, automated or promotion ready.
-Units face east, and west after a move west. Zoom (`+` `-`, the wheel) goes by whole art pixels:
+Units face east, and west after a move west. Zoom (`+` `-`, `Q` `E`, the wheel) goes by whole art pixels:
 32, 64 (the default), 96 and 128 screen pixels a plot, and two chart steps, 16 and 8 (flat
 colours, owners' washes, city dots, units as small squares). Hovering a plot shows a tooltip
 (terrain, resource, improvement, owner, yields and defence while you see it, the city and units
@@ -124,6 +124,7 @@ XML (each button shows its key), and the global keys are Civ4's controls
 | right click | move or attack with the selection; with Shift held, each right click adds a waypoint (numbered on the map), and releasing Shift sends them (`Esc` drops them) |
 | drag, wheel, arrows, `+` `-` | pan and zoom; click or drag the minimap to jump |
 | `W` `A` `S` `D` (held) | ffh-play's own: scroll the map smoothly up, left, down, right (by the keys' place, so `Z` `Q` `S` `D` on AZERTY); Civ4's plain `W`, `A`, `S` and `D` orders (cycle, automate, sentry, destroy) are on their buttons and `Tab` / `Enter` |
+| `Q` / `E` | ffh-play's own: zoom out / in (by the keys' place, so `A` / `E` on AZERTY); Civ4's plain `Q` and `E` orders (quarry, explore) are on their buttons |
 | double click | open your city |
 | `Enter` | the next group waiting for orders, as `Tab`; when none waits (Civ4's "end of turn" state: the End turn button glows), end the turn |
 | `Shift+Enter` | end the turn whatever waits, without the checks |
