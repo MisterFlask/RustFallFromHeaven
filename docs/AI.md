@@ -460,7 +460,10 @@ chopping forests while a settler is built (C++ `bChop`; the workers now chop for
 measured flat, "Chops" under Workers). The fastest mix had 2.4-2.5 cities
 per civ at turn 100 (4th city at turn 131 instead of 150) but 0.8-1.4 fewer techs and fewer
 points at turn 300, the same number of cities by then, and more cities lost to barbarians,
-also on top of the finance and research changes. The rules couple barbarian cities to ours:
+also on top of the finance and research changes. Re-measured 2026-10-21 with a per-civilization
+switch, everyone and one civilization against the rest (held threats no longer stopping settler
+production, a settler per city, fewer capital defenders, no buildings while growing toward a
+settler): no gain either way; docs/AI_LOG.md, "Expansion: the expert opening". The rules couple barbarian cities to ours:
 `createBarbarianCities` starts once civs average two cities and its target grows with the
 number of civ cities, so faster expansion brings more barbarian cities sooner.
 
@@ -1848,10 +1851,12 @@ share score (docs/SCORE.md) averages 10000/N whatever the AI does.
   land; expansion is slow because settlers wait until no enemy is near their city. Letting
   them go out under a held threat founded more cities but lost many more to the barbarians
   (measured), so the gate stays.
-- Expansion is slow everywhere in the first 100 turns (about two cities; second city at
-  turn 70, third at 110): settlers cost 220 hammers on normal speed (120 + the new-city
-  production value) and cities wait for size 3-4 and for the barbarians to leave. Faster
-  openings were measured and cost research by turn 300 (see "Settlers and escorts").
+- Expansion is slow in the first 100 turns (about two cities; second city at turn 70, third at
+  105): a settler costs 120 food and hammers, 6-9 a turn from a size-3 capital, and cities wait
+  for size 3-4 and for the barbarians to leave. Faster openings cost research by turn 300, for
+  everyone and for one civilization against the rest (measured again 2026-10-21, an expert
+  opening in four parts: docs/AI_LOG.md, "Expansion: the expert opening"); the levers left are
+  commerce per new city and clearing the lairs that block expansion.
 - Economy: research at about two thirds of the commerce by turn 300 (145 beakers a turn, 29
   techs); maintenance and civic upkeep take a quarter of the commerce. The first 100 turns are
   slow whatever the research order (6-7 techs at turn 100 with two cities).

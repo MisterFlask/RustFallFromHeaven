@@ -31,6 +31,46 @@ Each entry answers three questions, from the games themselves (counts with `ffh 
   `FFH_AI_TRACE` (a throwaway trace line is fine on a scratch branch; it must not change the
   checksum) and compare the snapshots per checkpoint (`civ_ab.py --load`, the snapshot fields).
 
+## Expansion: the expert opening (2026-10-21)
+
+Reopened under the expert-play rule (docs/AI.md, "Settlers and escorts", had dropped faster
+openings in 2026-10 for costing research). Four parts, behind a per-civilization switch so they
+could be measured for everyone (seeds 1-48, 300 turns) and as one civilization with them against
+opponents without (`civ_ab.py --civ all`, seeds 1-8, 152 paired games):
+(a) a threat the garrison holds (a lair guard next door) no longer stops a city building
+settlers, the escort deciding when it leaves; (b) one settler in flight per city instead of one
+per two; (c) the capital's second defender only once barbarians are within 4 plots; (d) no
+buildings while a city grows toward its next settler.
+
+1. **Why it made sense.** The second city came at turn 70 and the third at 105 (seeds 1-8). By
+   turn 100 a civilization had spent 29% of its hammers on settlers, 30% on military (3.7
+   warriors), 23% on workers and 15% on buildings; its first settler started at a median turn
+   45; one capital (seed 1, the Grigori, a goblin fort two plots away) built none by turn 80
+   because the lair guard counted as a threat, though four warriors held it.
+2. **Why it did not pay.** All four, everyone: cities +0.6 at turn 150 (t 6.7), then -0.2 at
+   300; techs -3.6 at 300 (t -4.5), research -16%, legacy -110 (t -3.3); cities lost to the
+   barbarians +1.9 a game (t 3.2), barbarian cities +0.9. One civilization with them: wins 15.8%
+   -> 16.4%, share@300 -52 (t -0.7), legacy@300 -74 (t -1.6) -- no competitive gain either. Part
+   by part (everyone): (a) carries nearly all of it (cities lost to barbarians +1.8, t 3.0;
+   improvements -1.9 at 150, t -4.8; techs -2.4 at 300, t -3.5): the cities a held threat let
+   the city found were the ones next to lairs, and the settlers took the hammers the workers had
+   had. (b), (c) and (d) did not bring cities sooner (cities at turn 100 +0.00, at 150 +0.19)
+   and together cost techs for everyone (-1.8 at 300, t -2.7) while one civilization with them
+   gained noise (wins 15.8% -> 17.8%, 16 / 13 pairs, share@300 +54, t 0.9). Where the faster
+   opening's cities went: at turn 150 commerce +0.4 for +0.6 cities, while maintenance rose 1.6
+   gold (t 5.4) and the research slider fell 7.6 points -- a size-1 FfH city costs more than it
+   gives for dozens of turns.
+3. **What it implies.** The pace is bounded by what a settler costs (120 food and hammers at
+   6-9 a turn from a size-3 capital) and by FfH's early maintenance, not by the production
+   ladder: freeing slots and hammers does not bring settlers sooner, and settling past a lair
+   loses the city. The original AI expands slower still (4.4 cities at turn 200 against our 5.3,
+   head-to-head games) and is richer (research 78 against 46, markets in 68% of its cities). The
+   expert levers left are development, not pace: more commerce per new city (cottages, river and
+   coastal sites, markets) and clearing a lair that blocks expansion (the lair guard on a fort
+   beats warriors; it takes axemen or archers -- item 3, unit choices). A balance note: the rules
+   start barbarian cities once civilizations average two cities and size them by the number of
+   civ cities (`createBarbarianCities`), so any faster opening brings them sooner.
+
 ## Workers and citizens (2026-10-21)
 
 The kept version (docs/AI.md, "Citizens" and "Chops") came out of six variants measured on

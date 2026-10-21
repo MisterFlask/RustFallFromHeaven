@@ -6,6 +6,10 @@
 //! A settler leaves a city with an escort that covers the danger on its way and at the site,
 //! and the escort becomes the new city's first garrison: a city founded without a defender
 //! builds one at one or two hammers a turn while the barbarians walk in.
+//!
+//! A faster "expert opening" (settlers under a threat the garrison holds, one in flight per
+//! city, fewer capital defenders, no buildings while growing toward a settler) was measured and
+//! reverted: docs/AI_LOG.md, "Expansion: the expert opening".
 
 use ffh_core::defs::*;
 use ffh_core::game::Game;
