@@ -249,6 +249,9 @@ which forward to the C++ methods -- so port each Cy call to the corresponding po
   cities -- and take it, again and again, whether or not it raises their win rate. As with unique
   mechanics, the win-rate rule decides how well they do it, not whether (docs/AI.md, "Victory
   pursuit").
+- **The AI does not pursue the Tower of Mastery or the Altar of the Luonnotar** (the owner's
+  decision, 2026-10-21: boring solitaire victories, and the Tower needs a huge territory anyway).
+  It still stops a rival about to win one (docs/AI.md, "Victory pursuit").
 - **Every measured change that fails gets an entry in `docs/AI_LOG.md` before it is reverted**:
   (1) why it made sense, (2) why it did not move the win rate, from the games themselves (what
   happened when it fired: counts, checkpoints, `FFH_AI_TRACE` replays), (3) what that implies.

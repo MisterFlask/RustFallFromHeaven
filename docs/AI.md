@@ -1459,6 +1459,12 @@ turns each civ needs for each condition of `CvGame::testVictory` (`CIV4VictoryIn
   stages) stands, the final altar's research and hammers.
 - Religious, score (no target score) and time victories are not pursued.
 
+**Not pursued** (the owner's decision, 2026-10-21): the Tower of Mastery and the Altar of the
+Luonnotar are never our goal -- boring solitaire victories, and the Tower needs a huge territory
+anyway. Their estimates stay, so a rival about to win one is still a *rival* (below) and gets
+stopped. (Before the decision the planner never picked either in 48 full games against the C++
+AI, so play hardly changes.)
+
 **Plan** (`plan`, `plan_ours`): from turn 200 (scaled to the game's length; from 100 when the team
 holds 1.5x the next team's share of the world) the condition with the fewest turns that fits
 before the time limit; a cultural victory only for the front-runner (no other civ's estimate

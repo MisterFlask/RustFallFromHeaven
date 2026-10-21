@@ -97,8 +97,10 @@ fn best_city(g: &Game, p: PlayerId) -> CityId {
     g.players[p].cities.iter().copied().max_by_key(|&c| (g.city_yield_rate(c, YieldType::YIELD_PRODUCTION), std::cmp::Reverse(c))).unwrap()
 }
 
+/// The Tower of Mastery is never our goal (the owner's decision, 2026-10-21: a solitaire
+/// victory), even one turn away: its estimate stays (rivals are watched), the plan ignores it.
 #[test]
-fn tower_of_mastery_near_is_pursued() {
+fn tower_of_mastery_near_is_not_pursued() {
     let mut g = played(11, 80);
     let p = biggest(&g);
     late(&mut g, 400);
@@ -108,72 +110,34 @@ fn tower_of_mastery_near_is_pursued() {
     let mastery = tower_building(&g, p, "BUILDINGCLASS_TOWER_OF_MASTERY");
     assert_eq!(st.missing, vec![mastery], "only the Tower of Mastery is missing");
     assert!(st.techs.is_empty(), "no tech is missing: {:?}", st.techs);
-    assert!(victory::tower_eta(&g, p).unwrap() <= 5);
+    assert!(victory::tower_eta(&g, p).unwrap() <= 5, "the estimate is still computed");
     let plan = victory::plan(&g, p);
-    assert_eq!(plan.goal(), Some(Goal::Tower), "{}", victory::describe(&g, p, &plan));
-    assert!(plan.ours.unwrap().eta <= victory::turns_left(&g));
-
-    // Production: the best city builds the Tower of Mastery (the rules allow it now).
-    let best = best_city(&g, p);
-    assert!(g.city_can_construct(best, mastery, false, false, false));
-    assert_eq!(victory::production(&g, best, false), Some(Choice::Construct(mastery)));
-    // ... through the city's whole decision: the garrison, the first army, the workers, settlers
-    // and the buildings that unlock better units come first (each is completed at once here),
-    // all of them quick, then the Tower of Mastery.
-    let (x, y) = (g.cities[best].x, g.cities[best].y);
-    let mut chosen = Vec::new();
-    for _ in 0..16 {
-        g.city_clear_order_queue(best);
-        g.controller(p).choose_production(&mut g, best);
-        let order = g.cities[best].head_order().expect("an order");
-        let turns = g.city_production_turns_left(best);
-        if order.order_type == OrderType::ORDER_TRAIN {
-            let u = UnitType::from_usize(order.data1 as usize);
-            g.player_init_unit(p, u, x, y, Some(UnitAIType::from_usize(order.data2 as usize)), None);
-            chosen.push((g.d.units[u].base.type_.clone(), turns));
-        } else if order.order_type == OrderType::ORDER_CONSTRUCT && order.data1 != mastery.i() {
-            let b = BuildingType::from_usize(order.data1 as usize);
-            g.city_set_num_real_building(best, b, 1);
-            chosen.push((g.d.buildings[b].base.type_.clone(), turns));
-        } else {
-            break;
-        }
-        assert!(turns <= 25, "{} before the Tower of Mastery: {chosen:?}", g.cities[best].name);
-    }
-    assert_eq!(g.city_production_building(best), Some(mastery), "{} builds {:?} after {:?}", g.cities[best].name, g.cities[best].head_order(), chosen);
-    // Other cities do not compete for it (only one may build it).
+    assert_ne!(plan.goal(), Some(Goal::Tower), "{}", victory::describe(&g, p, &plan));
     for &c in &g.players[p].cities {
-        if c != best {
-            assert_ne!(victory::production(&g, c, false), Some(Choice::Construct(mastery)));
-        }
+        assert_ne!(victory::production(&g, c, false), Some(Choice::Construct(mastery)));
     }
-    // Owning all five is the rules' victory.
+    // Owning all five is still the rules' victory.
+    let best = best_city(&g, p);
     g.city_set_num_real_building(best, mastery, 1);
     let v = g.d.t::<VictoryType>("VICTORY_TOWER_OF_MASTERY");
     assert_eq!(g.test_victory_team(v, team), (true, false));
 }
 
+/// Nor is the last Tower tech a goal tech when the Tower is otherwise within reach.
 #[test]
-fn tower_victory_makes_the_last_tower_tech_the_goal() {
+fn the_last_tower_tech_is_not_a_goal() {
     let mut g = played(11, 80);
     let p = biggest(&g);
     late(&mut g, 400);
     near_tower(&mut g, p, Some("TECH_STRENGTH_OF_WILL"));
-    // Strength of Will 60 turns of research away (most of it done): within reach.
     let sow = g.d.t::<TechType>("TECH_STRENGTH_OF_WILL");
     let team = g.players[p].team;
     let rate = g.player_calculate_research_rate(p, None).max(1);
     let cost = g.team_get_research_cost(team, sow);
     g.teams[team].research_progress[sow] = (cost - rate * 60).max(0);
     let plan = victory::plan(&g, p);
-    assert_eq!(plan.goal(), Some(Goal::Tower), "{}", victory::describe(&g, p, &plan));
-    // The last Tower tech is the victory goal, so research (research.rs) gives it the goal-tech
-    // bonus. The exact tech chosen now balances that against the goal-directed economic plan
-    // (ai3b-beelines' goal_bonus): with both merged the AI wins MORE full games than victory
-    // pursuit alone (13/24 vs 10/24 cultural on seeds 601-624; docs/AI.md), reaching the more
-    // achievable cultural victory rather than beelining the rare Tower, so the final pick is
-    // judged by that measurement, not asserted here.
-    assert_eq!(victory::goal_techs(&g, p, &plan), vec![sow]);
+    assert_ne!(plan.goal(), Some(Goal::Tower), "{}", victory::describe(&g, p, &plan));
+    assert!(!victory::goal_techs(&g, p, &plan).contains(&sow));
     assert!(g.controller(p).choose_research(&g, p).is_some());
 }
 
