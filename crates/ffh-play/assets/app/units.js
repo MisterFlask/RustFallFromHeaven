@@ -835,11 +835,14 @@ function actionButton(a) {
 
 /** The isometric card's action: an icon tile (or, for spells, promotions and upgrades, a
  *  labelled button) whose description (name, key and help) the card's description box shows
- *  while it is pointed at or focused. */
+ *  while it is pointed at or focused. A labelled button's help (what the spell, the promotion, the
+ *  unit upgraded to does: many lines) is a rich tooltip instead: in the box, which is as large as
+ *  its largest description, it would push the labelled buttons out of the card. */
 function isoAction(a, key, extra) {
   const listed = LISTED.includes(a.kind);
   const label = actionLabel(a) + extra;
-  descs.set(a, description(a, label, key));
+  const help = helpOf(a);
+  descs.set(a, description(a, label, key, listed ? "" : help));
   const show = () => describe(a);
   return h(
     `button.action${listed ? ".listed" : ".tile"}`,
@@ -847,7 +850,8 @@ function isoAction(a, key, extra) {
       disabled: !a.enabled,
       "data-kind": a.kind,
       "data-type": actionType(a),
-      title: `${label}${key ? ` [${key}]` : ""}`,
+      title: listed && help ? null : `${label}${key ? ` [${key}]` : ""}`,
+      tip: listed && help ? [h("div.tip-title", label, key ? h("kbd", key) : null), h("div.tip-effects", markup(help))] : null,
       "aria-label": label,
       onclick: () => doAction(a),
       onmouseenter: show,
@@ -867,8 +871,7 @@ function isoAction(a, key, extra) {
  *  the card. `descs`: each action's description, made by `isoAction` as the card is built. */
 const descs = new Map();
 
-function description(a, label, key) {
-  const help = helpOf(a);
+function description(a, label, key, help) {
   return h(
     "div.iso-desc-one",
     h("div.iso-desc-title", label, key ? h("kbd", key) : null, a.enabled ? null : h("span.dim", " (not now)")),

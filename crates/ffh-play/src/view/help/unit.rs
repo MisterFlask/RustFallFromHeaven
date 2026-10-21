@@ -5,7 +5,10 @@
 //! C++ writes the type's help in two modes: the tooltip (`bCivilopediaText` false: the strength and
 //! moves line and the requirements) and the Civilopedia's (`bCivilopediaText` true: the speed-ups of
 //! leader traits and resources as their own lines, every invisible type it sees, the units that
-//! replace it). This is both, without what needs a city or a player (cost, turns, "N left").
+//! replace it). This is both, without what needs a city or a player (cost, turns, "N left"), and
+//! without the units that replace it: the other civilizations' units of its class say nothing of
+//! this unit to its player (the build list's, the upgrade's, the unit's tooltip), and each of them
+//! says what it replaces.
 //! Its order is C++'s, except that the strength and moves line comes first, with the unit combat
 //! of C++'s name line (the page shows this text in place of its own numbers), and the XML help comes
 //! last (C++ puts it before the requirements).
@@ -836,14 +839,6 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
             txt(d, "TXT_KEY_UNIT_BUILDS_FASTER", "Builds %d1_Change%% Faster with [LINK=literal]%s2_Bonus[\\LINK]", &[Arg::N(n), Arg::S(&display(d, bonus))])
         });
     }
-    // The Civilopedia's: the other civilizations' units of its class, when it is the class's default.
-    // C++ also names the graphical-only ones, which the Civilopedia hides (the barbarians' Scorpion
-    // Clan copies: "Archer" replaced by "Archer"): left out.
-    if default == Some(u) {
-        for x in d.units.keys().filter(|&x| x != u && d.units[x].unit_class_type == class && !d.units[x].base.graphical_only) {
-            add(d, &mut b, "TXT_KEY_REPLACED_BY_UNIT", "Replaced by [LINK=literal]%s1_default_unit[\\LINK]", &[Arg::S(&display(d, x))]);
-        }
-    }
     // The XML help (no FfH2 unit has one).
     let help = crate::names::text(d, &base.help);
     if !base.help.is_empty() && help != base.help && !help.trim().is_empty() {
@@ -874,17 +869,16 @@ mod tests {
     fn melee_units_say_their_strength_and_bonuses() {
         let w = help("UNIT_WARRIOR");
         assert!(w.starts_with("3[ICON_STRENGTH], 1[ICON_MOVES] (Melee Units)"), "{w}");
-        has(&w, &["[ICON_BULLET]+25% City Defense", "[ICON_BULLET]Unit can use Bronze weapons.", "Upgrades To: ", "Axeman", "Replaced by"]);
+        has(&w, &["[ICON_BULLET]+25% City Defense", "[ICON_BULLET]Unit can use Bronze weapons.", "Upgrades To: ", "Axeman"]);
+        assert!(!w.contains("Replaced by"), "{w}");
         let a = help("UNIT_AXEMAN");
         assert!(a.starts_with("4[ICON_STRENGTH], 1[ICON_MOVES] (Melee Units)"), "{a}");
         has(&a, &["[ICON_BULLET]+10% City Attack", "[ICON_BULLET]Unit can use Bronze, Iron and Mithril weapons.", "Requires Bronze Working", "Requires Training Yard"]);
         let c = help("UNIT_CHAMPION");
         has(&c, &["[ICON_BULLET]+25% vs. [LINK=literal]Melee Units[\\LINK]", "Requires Iron Working"]);
-        // FfH's defence strength; not "replaced by" its graphical-only barbarian copy.
+        // FfH's defence strength.
         let archer = help("UNIT_ARCHER");
         assert!(archer.starts_with("3/5[ICON_STRENGTH], 1[ICON_MOVES] (Archery Units)"), "{archer}");
-        has(&archer, &["Replaced by [LINK=literal]Dwarven Slinger[\\LINK]"]);
-        assert!(!archer.contains("Replaced by [LINK=literal]Archer[\\LINK]"), "{archer}");
         assert!(help("UNIT_MUD_GOLEM").starts_with("0/2[ICON_STRENGTH]"), "{}", help("UNIT_MUD_GOLEM"));
     }
 
@@ -899,8 +893,6 @@ mod tests {
                 "[ICON_BULLET]Can  Build a [LINK=CONCEPT_MOVEMENT]Road[\\LINK], Build a [LINK=IMPROVEMENT_FARM]Farm[\\LINK], ",
                 "[ICON_BULLET]Unit cannot pillage",
                 "[ICON_BULLET]Unit doesn't provide military happiness",
-                // The Luchuirp's worker.
-                "Replaced by [LINK=literal]Mud Golem[\\LINK]",
             ],
         );
         assert!(!w.contains("Can Improve Tiles"), "{w}");
