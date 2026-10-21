@@ -7,8 +7,8 @@ gaps live in the area docs, not in a session log. Out of scope for now (the owne
 scenarios. The C++ AI is ported only as a benchmark to measure ffh-ai against (`crates/ffh-cppai`,
 docs/CPPAI.md; kept on master by the owner's request, 2026-10-21), not as the game's AI.
 Performance and AI-improvement work ignores it (the owner's call, 2026-10-21: no mileage in it):
-don't optimize, tune, extend or mine it for ideas, and leave it out of sprint measurements; when an
-ffh-core change breaks its build, make the minimal mechanical fix. The owner runs it on demand.
+don't optimize, tune or extend it, and leave it out of sprint measurements unless the owner asks
+for a comparison; when an ffh-core change breaks its build, make the minimal mechanical fix.
 
 Port of the FFH2 0.41 Civ4 mod (base mod only), the base for a game of its own. The rules
 engine (DLL C++ + rules Python) was ported function by function; the AI is new. FFH2 0.41 is
@@ -242,6 +242,11 @@ which forward to the C++ methods -- so port each Cy call to the corresponding po
   civilization's own units, spells and abilities are part of how it plays, so its AI uses them
   whether or not they directly benefit it. The win-rate rule above does not decide whether a
   civilization uses its own mechanics; measure what they cost and improve how they are used.
+- **Conquest and domination are flavor goals** (the owner's decision, 2026-10-21): the Clan of
+  Embers, the Doviello, the Bannor, any other canonically warlike civilization, and every leader
+  with `TRAIT_AGGRESSIVE` pursue a conquest or domination victory as their grand strategy, to the
+  degree the AI can, whether or not it raises their win rate. As with unique mechanics, the
+  win-rate rule decides how well they pursue it, not whether (docs/AI.md, "Victory pursuit").
 - **Every measured change that fails gets an entry in `docs/AI_LOG.md` before it is reverted**:
   (1) why it made sense, (2) why it did not move the win rate, from the games themselves (what
   happened when it fired: counts, checkpoints, `FFH_AI_TRACE` replays), (3) what that implies.

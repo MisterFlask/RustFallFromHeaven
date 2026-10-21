@@ -8,8 +8,8 @@ game. It is not the game's AI: ffh-ai is (docs/AI.md). It exists to answer "how 
 compare with the one FFH2 shipped?".
 
 **Not a work target** (the owner's call, 2026-10-21): performance and AI-improvement sprints ignore
-it -- don't optimize, tune, extend or borrow from it, and leave it out of sprint measurements. Keep
-it compiling with minimal mechanical fixes when ffh-core changes; the owner runs it on demand.
+it -- don't optimize, tune or extend it, and leave it out of sprint measurements unless the owner
+asks for a comparison. Keep it compiling with minimal mechanical fixes when ffh-core changes.
 
 ## Layout
 
