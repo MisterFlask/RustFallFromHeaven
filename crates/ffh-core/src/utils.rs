@@ -1330,14 +1330,25 @@ impl Game {
     pub fn puf_is_enemy(&self, u: UnitId, data1: i32, data2: i32) -> bool {
         debug_assert!(data2 != -1, "Invalid data argument, should be >= 0");
         let other_team = self.players[puf_data_player(data1)].team;
-        let our_team = self.players[self.unit_get_combat_owner(u, Some(other_team), self.unit_plot_opt(u))].team;
 
+        // (C++ computes `eOurTeam` first; every test here is side-effect free.)
         if self.unit_can_coexist_with_enemy_unit(u, Some(other_team)) {
             return false;
         }
 
+        // C++ `GET_PLAYER(pUnit->getCombatOwner(eOtherTeam, pUnit->plot())).getTeam()`. The
+        // combat owner is the owner unless `isAlwaysHostile(plot())`, which implies
+        // `isAlwaysHostile(NULL)` (the plot only adds a city exception), so a unit that is not
+        // always hostile anywhere skips it.
+        let always_hostile = self.unit_is_always_hostile(u, None);
+        let our_team = if always_hostile {
+            self.players[self.unit_get_combat_owner(u, Some(other_team), self.unit_plot_opt(u))].team
+        } else {
+            self.unit_get_team(u)
+        };
+
         // FfH: Added by Kael 10/01/2007
-        if other_team != our_team && self.unit_is_always_hostile(u, None) {
+        if other_team != our_team && always_hostile {
             return true;
         }
         // FfH: End Add

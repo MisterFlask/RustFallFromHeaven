@@ -1425,6 +1425,10 @@ impl Game {
 
     /// C++ `CvUnit::isHiddenNationality` (CvUnit.cpp:15399-15409).
     pub fn unit_is_hidden_nationality(&self, u: UnitId) -> bool {
+        // (Both C++ exits are false without a hidden-nationality source: test that first.)
+        if self.units[u].hidden_nationality == 0 {
+            return false;
+        }
         // Cargo is only hidden if its transport is.
         if self.unit_is_cargo(u) {
             if let Some(transport) = self.units[u].transport_unit {

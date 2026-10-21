@@ -319,6 +319,10 @@ impl Game {
 
     /// C++ `CvPlot::isVisibleEnemyDefender`.
     pub fn plot_is_visible_enemy_defender(&self, p: PlotIdx, unit: UnitId) -> bool {
+        // (No unit to check: skip the side-effect-free `isAlwaysHostile` argument.)
+        if self.map.plots[p].units.is_empty() {
+            return false;
+        }
         let owner = self.units[unit].owner.i();
         let always_hostile = self.unit_is_always_hostile(unit, Some(p)) as i32;
         self.plot_plot_check(p, Game::puf_can_defend_enemy, owner, always_hostile, None, None, Some(Game::puf_is_visible), owner, -1)
@@ -337,6 +341,10 @@ impl Game {
 
     /// C++ `CvPlot::getNumVisibleEnemyDefenders`.
     pub fn plot_get_num_visible_enemy_defenders(&self, p: PlotIdx, unit: UnitId) -> i32 {
+        // (No unit to count: skip the side-effect-free `isAlwaysHostile` argument.)
+        if self.map.plots[p].units.is_empty() {
+            return 0;
+        }
         let owner = self.units[unit].owner.i();
         let always_hostile = self.unit_is_always_hostile(unit, Some(p)) as i32;
         self.plot_plot_count(p, Some(Game::puf_can_defend_enemy), owner, always_hostile, None, None, Some(Game::puf_is_visible), owner, -1)
@@ -344,6 +352,10 @@ impl Game {
 
     /// C++ `CvPlot::getNumVisiblePotentialEnemyDefenders`.
     pub fn plot_get_num_visible_potential_enemy_defenders(&self, p: PlotIdx, unit: UnitId) -> i32 {
+        // (No unit to count: skip the side-effect-free `isAlwaysHostile` argument.)
+        if self.map.plots[p].units.is_empty() {
+            return 0;
+        }
         let owner = self.units[unit].owner.i();
         let always_hostile = self.unit_is_always_hostile(unit, Some(p)) as i32;
         self.plot_plot_count(
@@ -367,6 +379,10 @@ impl Game {
 
     /// C++ `CvPlot::isVisibleEnemyUnit(const CvUnit*)`.
     pub fn plot_is_visible_enemy_unit_for_unit(&self, p: PlotIdx, unit: UnitId) -> bool {
+        // (No unit to check: skip the side-effect-free `isAlwaysHostile` argument.)
+        if self.map.plots[p].units.is_empty() {
+            return false;
+        }
         let owner = self.units[unit].owner.i();
         let always_hostile = self.unit_is_always_hostile(unit, Some(p)) as i32;
         self.plot_plot_check(p, Game::puf_is_enemy, owner, always_hostile, None, None, Some(Game::puf_is_visible), owner, -1).is_some()
