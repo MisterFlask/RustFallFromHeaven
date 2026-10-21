@@ -6,6 +6,7 @@
 //! ranges; all of them are ported. AI-only parts are omitted with `// AI:` notes; call sites
 //! whose callee signature does not fit the C++ are marked `// SIGNATURE:`.
 
+use crate::controller::AiHook;
 use crate::defs::*;
 use crate::game::Game;
 use crate::group::SelectionGroup;
@@ -691,7 +692,11 @@ impl Game {
         self.units[u].moves = 0;
 
         // AI: BETTER AI `AI_chooseGroupflag()` for non-human, non-barbarian units whose group flag
-        // is GROUPFLAG_NONE (AI bookkeeping; omitted).
+        // is GROUPFLAG_NONE (AI bookkeeping; the controller's).
+        let owner = self.units[u].owner;
+        if !self.players[owner].human && !self.unit_is_barbarian(u) && self.units[u].ai_groupflag == GROUPFLAG_NONE {
+            self.ai_hook(owner, AiHook::ChooseGroupflag(u));
+        }
     }
 
     /// C++ `CvUnit::isInGroup` (CvUnit.cpp:10724-10727).

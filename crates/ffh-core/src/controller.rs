@@ -202,6 +202,9 @@ pub enum AiHook {
     UpdateFoundValues(PlayerId),
     /// FfH Python `onBeginPlayerTurn`: `cf.warScript(iPlayer)` for non-human players.
     WarScript(PlayerId),
+    /// `CvUnit::doTurn`, BETTER AI: `AI_chooseGroupflag()` for a non-human, non-barbarian unit
+    /// whose group flag is GROUPFLAG_NONE.
+    ChooseGroupflag(UnitId),
 }
 
 /// The human's answer to BUTTONPOPUP_RAZECITY ([`Controller::conquered_city_choice`]).

@@ -1940,6 +1940,11 @@ impl Cai {
     /// C++ `bool CvUnitAI::AI_group(UnitAITypes eUnitAI, int iMaxGroup = -1, int iMaxOwnUnitAI = -1, int iMinUnitAI = -1, bool bIgnoreFaster = false, bool bIgnoreOwnUnitType = false, bool bStackOfDoom = false, int iMaxPath = MAX_INT, bool bAllowRegrouping = false)` (CvUnitAI.cpp:7924-8059)
     // Returns true if a group was joined or a mission was pushed...
     pub fn unit_ai_group(&self, g: &mut Game, u: UnitId, unit_ai: UnitAIType, max_group: i32, max_own_unit_ai: i32, min_unit_ai: i32, ignore_faster: bool, ignore_own_unit_type: bool, stack_of_doom: bool, max_path: i32, allow_regrouping: bool) -> bool {
+        if unit_ai == UnitAIType::UNITAI_SETTLE && trace_on(g.units[u].owner) {
+            let area = g.unit_area(u);
+            eprintln!("[cppai t{}] AI_group(SETTLE) enter u{} cargo {} n {} area_settlers {} cangroup {}", g.game_turn(), u.0, g.unit_is_cargo(u),
+                num_units(g, gr(g, u)), g.map.areas[area].num_ai_units[g.units[u].owner][unit_ai], self.unit_ai_can_group_with_ai_type(g, u, unit_ai));
+        }
         // if we are on a transport, then do not regroup
         if g.unit_is_cargo(u) {
             return false;
@@ -2037,6 +2042,14 @@ impl Cai {
             }
         }
 
+        if unit_ai == UnitAIType::UNITAI_SETTLE && trace_on(p) {
+            let cands: Vec<String> = g.players[p].units.iter().filter(|&&lu| g.units[lu].ai_type == Some(UnitAIType::UNITAI_SETTLE)).map(|&lu| {
+                let lg = g.units[lu].group.unwrap();
+                format!("u{} valid {} allow {} n {} tgt {}", lu.0, g.unit_plot_opt(lu).map_or(false, |lp| self.unit_ai_plot_valid(g, u, lp)),
+                    self.unit_ai_allow_group(g, u, lu, unit_ai), num_units(g, lg), self.player_ai_unit_target_mission_ais(g, p, lu, MissionAIType::MISSIONAI_GROUP, Some(grp)))
+            }).collect();
+            eprintln!("[cppai t{}] AI_group(SETTLE) by u{} max_group {} max_path {} -> {:?} cands {:?}", g.game_turn(), u.0, max_group, max_path, best_unit, cands);
+        }
         if let Some(best_unit) = best_unit {
             let best_plot = g.unit_plot(best_unit);
             if g.unit_at_plot(u, best_plot) {

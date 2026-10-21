@@ -203,6 +203,29 @@ impl Controller for Cai {
                 format!("{} ai{:?} u{}@({},{}) miss={:?} flag={} grp_n={} act={:?} moves={}", g.d.units[g.units[u].unit_type].base.type_, g.units[u].ai_type.map(|a| a.0), u.0, g.units[u].x, g.units[u].y, gr.map(|gr| g.groups[gr].ai_mission_ai_type), g.units[u].ai_groupflag, gr.map_or(0, |gr| g.groups[gr].units.len()), gr.map(|gr| g.groups[gr].activity_type), g.units[u].moves)
             }).collect();
             eprintln!("[cppai t{} p{}] groups {:?} cycle {:?}", g.game_turn(), p.0, g.players[p].groups, g.players[p].group_cycle);
+            if let Some(&u0) = g.players[p].units.first() {
+                let here = g.unit_plot(u0);
+                let (x, y) = g.map.xy(here);
+                let mut res = Vec::new();
+                for (dx, dy) in [(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (-1, -1), (2, 2), (-2, 2)] {
+                    if let Some(t) = g.map.plot_xy(x + dx, y + dy) {
+                        let mut turns = 0;
+                        let ok = g.unit_generate_path(u0, t, 0, false, Some(&mut turns));
+                        res.push((dx, dy, ok, turns, self.unit_ai_plot_valid(g, u0, t), g.map.plots[t].area.map(|a| a.0), g.plot_is_water(t), g.map.plots[t].plot_type));
+                    }
+                }
+                eprintln!("[cppai] u{} at ({},{}) area {:?} type {} moves {} maxmoves {}", u0.0, x, y, g.map.plots[here].area, g.d.units[g.units[u0].unit_type].base.type_, g.units[u0].moves, g.unit_max_moves(u0));
+                eprintln!("[cppai t{} p{}] path probe u{} {:?}", g.game_turn(), p.0, u0.0, res);
+            }
+            for c in g.players[p].cities.clone() {
+                let (bb, need, have) = {
+                    let mut st = self.s();
+                    let ca = st.city(c);
+                    (ca.best_build.iter().filter(|b| b.is_some()).count(), ca.workers_needed, ca.workers_have)
+                };
+                eprintln!("[cppai t{} p{}] city {} best_builds {} workers needed {} have {} danger {} threatened {}", g.game_turn(), p.0, c.0, bb, need, have,
+                    self.player_ai_get_plot_danger(g, p, g.city_plot(c), -1, true), self.player_ai_is_plot_threatened(g, p, g.city_plot(c), 3, true));
+            }
             eprintln!("[cppai t{} p{}] play_turn: cities {} sites {:?} settlers {:?} gold {} research {:?}", g.game_turn(), p.0,
                 g.players[p].cities.len(), sites, settlers, g.players[p].gold, g.player_get_current_research(p));
         }
@@ -309,7 +332,12 @@ impl Controller for Cai {
             AiHook::PlayerTurnPost(p) => self.player_ai_do_turn_post(g, p),
             AiHook::PlayerTurnUnitsPre(p) => self.player_ai_do_turn_units_pre(g, p),
             AiHook::PlayerTurnUnitsPost(p) => self.player_ai_do_turn_units_post(g, p),
-            AiHook::CityTurn(c) => self.city_ai_do_turn(g, c),
+            AiHook::CityTurn(c) => {
+                if trace_on(g.cities[c].owner) {
+                    eprintln!("[cppai t{}] city turn {}", g.game_turn(), c.0);
+                }
+                self.city_ai_do_turn(g, c)
+            }
             AiHook::TeamTurnPost(t) => self.team_ai_do_turn_post(g, t),
             AiHook::TeamAreaStrategies(t) => self.team_ai_update_area_stragies(g, t, true),
             AiHook::EndTurnSpells(p) => self.end_turn_spells(g, p),
@@ -323,6 +351,11 @@ impl Controller for Cai {
             AiHook::DoCommerce(p) => self.player_ai_do_commerce(g, p),
             AiHook::UpdateFoundValues(p) => self.player_ai_update_found_values(g, p, false),
             AiHook::WarScript(p) => self.py_war_script(g, p),
+            AiHook::ChooseGroupflag(u) => {
+                if g.units.contains(u) {
+                    self.unit_ai_choose_groupflag(g, u);
+                }
+            }
         }
     }
 
