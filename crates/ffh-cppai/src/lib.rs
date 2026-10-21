@@ -351,6 +351,11 @@ impl Controller for Cai {
             AiHook::DoCommerce(p) => self.player_ai_do_commerce(g, p),
             AiHook::UpdateFoundValues(p) => self.player_ai_update_found_values(g, p, false),
             AiHook::WarScript(p) => self.py_war_script(g, p),
+            AiHook::UnitBuilt(u) => {
+                if g.units.contains(u) {
+                    self.py_unit_built_unit_ai(g, u);
+                }
+            }
             AiHook::ChooseGroupflag(u) => {
                 if g.units.contains(u) {
                     self.unit_ai_choose_groupflag(g, u);

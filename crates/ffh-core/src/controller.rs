@@ -205,6 +205,9 @@ pub enum AiHook {
     /// `CvUnit::doTurn`, BETTER AI: `AI_chooseGroupflag()` for a non-human, non-barbarian unit
     /// whose group flag is GROUPFLAG_NONE.
     ChooseGroupflag(UnitId),
+    /// FfH Python `onUnitBuilt` (Sephi): the UnitAI of a new unit of a non-human, non-barbarian
+    /// player (adepts, devouts, priests of leaves).
+    UnitBuilt(UnitId),
 }
 
 /// The human's answer to BUTTONPOPUP_RAZECITY ([`Controller::conquered_city_choice`]).

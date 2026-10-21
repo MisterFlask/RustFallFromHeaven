@@ -1848,4 +1848,65 @@ impl Cai {
         }
         unitsneeded
     }
+
+    /// Python `CvEventManager.onUnitBuilt` (CvEventManager.py:1337-1374, Sephi): the UnitAI of
+    /// a unit built by a non-human, non-barbarian player (the caller checks the player).
+    pub fn py_unit_built_unit_ai(&self, g: &mut Game, u: UnitId) {
+        let d = g.d;
+        let p = g.units[u].owner;
+        let num_cities = g.players[p].cities.len() as i32;
+        let unit_type = g.units[u].unit_type;
+        let units = g.players[p].units.clone();
+        let ai_of = |g: &Game, x: UnitId| g.units[x].ai_type;
+
+        //UNITAI for AdeptUnits
+        if d.units[unit_type].unit_class_type == Some(d.t::<UnitClassType>("UNITCLASS_ADEPT")) {
+            let mut terraformers_needed = num_cities / 4;
+            if g.team_is_has_tech(g.players[p].team, Some(d.t::<TechType>("TECH_SORCERY"))) {
+                terraformers_needed += 2;
+            }
+            let mut number_terraformer = 0;
+            for &x in &units {
+                if ai_of(g, x) == Some(UnitAIType::UNITAI_TERRAFORMER) {
+                    number_terraformer += 1;
+                }
+                if ai_of(g, x) == Some(UnitAIType::UNITAI_MANA_UPGRADE) {
+                    number_terraformer += 1;
+                }
+            }
+            if number_terraformer < terraformers_needed {
+                g.unit_ai_set_unit_ai_type(u, UnitAIType::UNITAI_TERRAFORMER);
+            } else {
+                let plot = g.unit_plot(u);
+                if self.plot_ai_needed_perm_defense_reserve(g, plot, 2) > 0 {
+                    g.unit_ai_set_unit_ai_type(u, UnitAIType::UNITAI_MAGE);
+                } else {
+                    g.unit_ai_set_unit_ai_type(u, UnitAIType::UNITAI_WARWIZARD);
+                }
+            }
+        }
+
+        //UNITAI for Terraformers
+        if unit_type == d.t::<UnitType>("UNIT_DEVOUT") {
+            let number_terraformer =
+                units.iter().filter(|&&x| g.units[x].unit_type == unit_type && ai_of(g, x) == Some(UnitAIType::UNITAI_TERRAFORMER)).count() as i32;
+            if number_terraformer < (num_cities * g.global_counter) / 100 {
+                g.unit_ai_set_unit_ai_type(u, UnitAIType::UNITAI_TERRAFORMER);
+            } else if number_terraformer < 3 {
+                g.unit_ai_set_unit_ai_type(u, UnitAIType::UNITAI_TERRAFORMER);
+            }
+        }
+
+        if unit_type == d.t::<UnitType>("UNIT_PRIEST_OF_LEAVES") {
+            if g.player_get_state_religion(p) == Some(d.t::<ReligionType>("RELIGION_FELLOWSHIP_OF_LEAVES")) {
+                let number_terraformer =
+                    units.iter().filter(|&&x| g.units[x].unit_type == unit_type && ai_of(g, x) == Some(UnitAIType::UNITAI_TERRAFORMER)).count() as i32;
+                if number_terraformer * 3 < num_cities {
+                    g.unit_ai_set_unit_ai_type(u, UnitAIType::UNITAI_TERRAFORMER);
+                } else if number_terraformer < 4 {
+                    g.unit_ai_set_unit_ai_type(u, UnitAIType::UNITAI_TERRAFORMER);
+                }
+            }
+        }
+    }
 }

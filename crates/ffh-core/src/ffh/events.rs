@@ -670,6 +670,9 @@ impl Game {
         // (UNITAI_TERRAFORMER up to a quota from the city count and Sorcery, else UNITAI_MAGE
         // or UNITAI_WARWIZARD by `AI_neededPermDefenseReserve`), Devouts and Priests of Leaves
         // (UNITAI_TERRAFORMER quotas): AI unit roles, left to the new AI (docs/PORTING.md).
+        if !self.players[p].human && !self.player_is_barbarian(p) {
+            self.ai_hook(p, AiHook::UnitBuilt(u));
+        }
 
         let (x, y) = (self.cities[c].x, self.cities[c].y);
 
