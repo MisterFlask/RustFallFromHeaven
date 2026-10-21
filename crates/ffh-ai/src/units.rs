@@ -357,20 +357,38 @@ fn garrison_unit(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
             return;
         }
     }
-    // Go to the city that most needs a defender.
-    let reach = v.flood.run(g, u, 8, false);
-    let mut best: Option<(CityId, i32)> = None;
+    // Go to the city that most needs a defender. Only cities that need one are scored, so the
+    // flood (their travel times) runs only when there is one.
+    let mut needs: Vec<(CityId, PlotIdx, i32)> = Vec::new();
     for &c in &g.players[p].cities {
         let cp = g.city_plot(c);
-        let Some(r) = reach.iter().find(|r| r.plot == cp) else { continue };
         let have = v.garrison.get(&c).copied().unwrap_or(0) + garrison(g, p, cp).0 * i32::from(cp != here);
         let need = garrison_quota(g, v, c) - have;
-        if need <= 0 {
-            continue;
+        if need > 0 {
+            needs.push((c, cp, need));
         }
-        let score = need * 100 - r.turns * 10;
-        if best.map_or(true, |(_, s)| score > s) {
-            best = Some((c, score));
+    }
+    let mut best: Option<(CityId, i32)> = None;
+    if !needs.is_empty() {
+        // The flood stops once it has arrived at every such city (one city per plot; `find`
+        // below takes a plot's first arrival).
+        let mut seen = vec![false; needs.len()];
+        let mut left = needs.len();
+        let reach = v.flood.run_until(g, u, 8, false, |r| {
+            if let Some(i) = needs.iter().position(|n| n.1 == r.plot) {
+                if !seen[i] {
+                    seen[i] = true;
+                    left -= 1;
+                }
+            }
+            left == 0
+        });
+        for &(c, cp, need) in &needs {
+            let Some(r) = reach.iter().find(|r| r.plot == cp) else { continue };
+            let score = need * 100 - r.turns * 10;
+            if best.map_or(true, |(_, s)| score > s) {
+                best = Some((c, score));
+            }
         }
     }
     match best {
@@ -651,11 +669,12 @@ fn caster(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
     } else if let Some(target) = crate::military::war_target(g, v) {
         let tp = g.city_plot(target);
         let (tx, ty) = g.map.xy(tp);
-        let reach = v.flood.run(g, u, 15, false);
-        if let Some(r) = reach.iter().filter(|r| {
+        let next_to_ours = |r: &Reached| {
             let (rx, ry) = g.map.xy(r.plot);
             g.plot_distance(rx, ry, tx, ty) == 1 && g.map.plots[r.plot].units.iter().any(|&o| g.units[o].owner == p && attack_power(g, o) > 0)
-        }).min_by_key(|r| (r.turns, r.plot)) {
+        };
+        let reach = v.flood.run_nearest(g, u, 15, false, |r| next_to_ours(&r));
+        if let Some(r) = reach.iter().filter(|r| next_to_ours(r)).min_by_key(|r| (r.turns, r.plot)) {
             let plot = r.plot;
             if plot != here {
                 move_to(g, grp, plot, 0);
