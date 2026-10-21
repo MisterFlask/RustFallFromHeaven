@@ -674,7 +674,19 @@ gate, so it only re-ranks viable targets and never sends a civ at a rival it can
 reachable (inert where they are across the water), with captures and economy slightly up, not
 traded -- a secondary bias that does not cost the primary. The
 war plan starts as `WARPLAN_PREPARING_*` (production builds the army,
-stacks gather on the rally city) and is declared when the army is ready (or after 40 turns).
+stacks gather on the rally city) and is declared when the army is ready and two thirds of it
+stands within 3 plots of our city nearest to the target (or after 40 turns): an expert declares
+with the army at the border, so the war's first turns (and the ten before peace is possible) are
+spent fighting, not marching. Before (2026-10-21) the declaration came while the army was still
+at home: in 24 full games 22% of our declared wars saw no combat, and a war sold for tribute at
+turn 11 often had its army still on the road (traced: 19 plots, never arrived). Measured
+(`FFH_AI_WAR_STAGING_OFF=ALL` against on), full games: everyone, seeds 1-24, wars 448 -> 312,
+cities taken 423 -> 397 (a city per war 0.94 -> 1.27); fresh seeds 9701-9724, wars 409 -> 236
+(t -4.4), cities taken 358 -> 307 (0.88 -> 1.30 a war), games decided before the time limit 8 ->
+11 of 24, population +4.3 and research +9 at turn 450 (t 1.8, 1.2); one civilization against the
+rest, seeds 1-6 (114 pairs) wins 22.8% -> 22.8%, share@end +22, fresh seeds 9601-9612 (228
+pairs) wins 14.5% -> 14.0% (8 / 9), share@end +15 (t 0.4). Not selling a war for tribute before
+it has taken a city or lasted 30 turns cost wins (docs/AI_LOG.md, "Wars").
 Peace is sought when the war goes badly (war success and power), or drags on without gains;
 it is offered as a real peace-treaty deal the other AI must accept. Every 5 turns an AI swaps
 technologies one for one at similar cost (once `TECH_TRADE` allows it) and signs open borders
@@ -1331,6 +1343,18 @@ had none). Several almost never hold, so their spell is never cast: Arcane Lacun
 Worldbreak (about 3%, near the end), Raging Seas (5 of 40, around turn 590), March of the Trees and
 Sanctuary (16 and 15 of 40, late).
 
+**Expert moments** (`world_spells::expert_moment`, 2026-10-21; the owner's rule that
+civilizations use their own mechanics): three spells FfH's condition almost never let the AI
+cast. Arcane Lacuna (Amurites) at war with a civilization, instead of 7 typed mana nodes on the
+map (0 casts in 24 full games); Worldbreak (Sheaim) at war once the Armageddon counter is 20,
+instead of 50 (0 casts); Religious Fervor (Malakim) with the state religion in five cities, or
+in three that are two thirds of ours (a small Malakim empire never had five). Measured with the
+civilization forced, against the same binary with FfH's conditions (`FFH_AI_WS_TIMING_OFF=ALL`),
+full games: development seeds 1-24, casts Amurites 0 -> 14 games, Sheaim 0 -> 6, Malakim 16 ->
+14; fresh seeds 9601-9624, casts 0 -> 13, 0 -> 10, 13 -> 17, share@end +7, +24, +47 (every |t| <
+0.3), wins 1 / 1, 0 / 2, 0 / 1 pairs. Earlier For the Horde (a dozen orcs) and Ardor (the
+third great person) cost and were dropped (docs/AI_LOG.md).
+
 **Moments of their own** (an experiment, not merged: `world_spells::turn`, once a turn before units
 move, commit `0e4945b`, reachable from the `fanout/ws-*` job branches; measured with the
 civilization forced against the same binary with FfH's condition, `FFH_AI_WS_DEFAULT=SPELL_X`,
@@ -1749,6 +1773,13 @@ share score (docs/SCORE.md) averages 10000/N whatever the AI does.
   game's last value carried forward) with the paired t, survival, rank, world-spell use, the games
   that are identical on both sides and the per-type counts that differ; `--off-base` makes the
   base side the same binary with `FFH_AI_CIV_OFF` for that civilization (identical opponents).
+  Generic behaviours have switches of their own (`switches.rs`): `FFH_AI_<NAME>_OFF=X,..|ALL`
+  plays without it, `FFH_AI_<NAME>_ONLY=X,..` only for those civilizations. A contest between
+  civilizations (a land race, a war) is measured as one civilization with the behaviour against
+  opponents without it: `civ_ab.py --civ all --base-env FFH_AI_<NAME>_OFF=ALL --new-env
+  FFH_AI_<NAME>_ONLY={civ}` (the same binary on both sides; `{civ}` is the forced civilization).
+  Measuring only with every civilization on can mislead either way: a faster opening for everyone
+  cost research, and for one civilization against the rest it still gained nothing.
 - `crates/ffh-cli/scripts/victory_check.py --seeds 1-24 [--out games.json | --load games.json]
   [--compare base.json] [--min-share 0.5]` plays full games (to turn 690 or an earlier
   victory) and reports the share decided before the time limit, per victory type, the decision
@@ -1879,9 +1910,13 @@ share score (docs/SCORE.md) averages 10000/N whatever the AI does.
   net territory and eliminations flat. A broader variant (gate on any economy building, no finance
   condition) gave more research (+12%) but cut captures ~25% and shrank the top empire -- it
   dampened healthy conquerors, so the upkeep-strained condition was kept.
-- Sieges: one operation at a time; armies are small (at war the operation spends half its turns
-  gathering, typically 2-3 units against a need of 4-6), so a barbarian town of 5+ archers is
-  out of reach and is left alone; casters cast before the strike but do not attack
+- Sieges: one operation at a time. At the declaration the army is large (23 units against a
+  computed need of 10, 24 full games, 2026-10-21) and the committed stacks stay together (3-6
+  stacks, striking together, in the traced wars), but a war we declare takes a city 38% of the
+  time; about 40% of them end in our own peace for tribute at turn 11, which pays better than
+  fighting on (refusing it cost wins, docs/AI_LOG.md, "Wars"). The lever left is the operation's
+  own estimate: sell the war when the next city is out of reach, fight on when it is close. A
+  barbarian town of 5+ archers is out of reach and is left alone; casters cast before the strike but do not attack
   ("Spellcasting"); a city emptied of defenders is entered even when a counterattack will retake
   it. Tried and dropped (no measurable effect on seeds 1-48): raiding (pillaging) while a war
   operation gathers, a "can we hold it" check before the strike, every unit following the victor

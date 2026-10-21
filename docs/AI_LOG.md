@@ -31,6 +31,43 @@ Each entry answers three questions, from the games themselves (counts with `ffh 
   `FFH_AI_TRACE` (a throwaway trace line is fine on a scratch branch; it must not change the
   checksum) and compare the snapshots per checkpoint (`civ_ab.py --load`, the snapshot fields).
 
+## Wars: no peace sold before the war is decided (2026-10-21)
+
+Item 5 of the strong-player list. In 24 full games (seeds 1-24) our civilizations declared 325
+wars with armies of 23 units against a computed need of 10; 38% took a city, 22% saw no combat
+at all, and in seeds 1-8 about 40% of the wars we declared ended in our own "cash out": a
+winner's peace for tribute at turn 11, the first turn peace is allowed (traced, seed 2: the army
+marched 19 plots for 11 turns, never arrived, and the war was sold for one tribute item).
+
+- **No cash-out before a city or 30 turns.** 1: an expert does not sell a war of conquest
+  before its army has fought for its first city. A war we declared could be sold for tribute
+  only once it had taken a city from them or lasted 30 turns (losing wars still ended as before).
+  2: everyone, full games: wars 448 -> 383, captures 423 -> 423 (a city per war 0.94 -> 1.10),
+  every checkpoint flat; one civilization against the rest (114 pairs, seeds 1-6): wins 22.8%
+  -> 19.3% (0 / 4 pairs, p 0.125), legacy@300 -23 (t -2.0), share@end -25. 3: the tribute this AI
+  takes after ten turns (technologies, gold) is worth more than the extra turns of a war it wins
+  38% of the time; the expert's test is the city the operation will take soon against the
+  tribute on offer, which needs the operation's own estimate (its phase, the force near the
+  target), not a turn count. Kept instead: declaring only once the army stands near the target
+  (docs/AI.md, "Diplomacy"), which shortens the march the cash-out cut short.
+
+## World spells: For the Horde at a dozen orcs, Ardor after three great people (2026-10-21)
+
+Item 4. FfH's condition for the Clan of Embers' For the Horde (60 barbarian units of any kind)
+looked like it almost never held (1 cast in 10 unforced games), so the expert moment was a
+dozen barbarian orcs to turn, with the Clan's own rule (only with a war to fight) kept. 2: with
+the Clan forced into every game (seeds 1-24, full games) FfH's condition held in 14 of 24 games
+already -- the Clan is at peace with the barbarians, whose units pile up -- and the earlier cast
+(21 of 24) cost: wins 54.2% -> 41.7% (0 / 3), share@end -425 (t -2.0), legacy@end -450 (t -2.3).
+3: half of a dozen orcs is a few units the Clan pays upkeep for, cast before the barbarians have
+grown into the horde the spell is named for; FfH's condition is the expert moment here.
+
+Ardor (Grigori: the great-people count and threshold start over) after the third great person
+instead of FfH's fifth: development seeds flat (wins 16.7% -> 20.8%, share@end +21); fresh seeds
+9601-9624 share@end -221 (t -1.1), legacy@end -210 (t -1.0), casts 16 -> 21 games. FfH's
+condition already held in two games of three, and the spell is worth more the later it comes
+(it resets a higher threshold); if anything the expert waits longer, not less.
+
 ## Unit choices and an upgrade reserve (2026-10-21)
 
 Item 3 of the strong-player list: the head-to-head games had the original AI fielding 3.9 axemen

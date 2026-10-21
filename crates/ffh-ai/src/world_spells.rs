@@ -3,9 +3,11 @@
 //! requirements (`if pPlayer.isHuman() == False:` in `CvSpellInterface.py` `req*`); the port
 //! dropped them from the rules (docs/PORTING.md, "Changes from FFH2"), so a world spell has the
 //! same requirements for every player and the AI decides when. [`ready`] is FfH's condition, the
-//! AI's default timing: `casting::choose_spell` (the end-of-turn spell choice) and the
-//! civilizations' held casts (`civs/world_spell.rs`) cast a world spell only once it holds. A
-//! civilization can wait longer through its `spell_value` (`civs/`).
+//! AI's default timing, except for three spells that condition almost never let the AI cast
+//! ([`expert_moment`]; `FFH_AI_WS_TIMING_OFF` restores FfH's): `casting::choose_spell` (the
+//! end-of-turn spell choice) and the civilizations' held casts (`civs/world_spell.rs`) cast a
+//! world spell only once it holds. A civilization can wait longer through its `spell_value`
+//! (`civs/`).
 
 use ffh_core::game::Game;
 use ffh_core::ids::*;
@@ -94,6 +96,11 @@ pub fn ready(g: &Game, p: PlayerId, spell: SpellType) -> bool {
     let d = g.d;
     let pl = &g.players[p];
     let wars = || g.team_get_at_war_count(pl.team, true);
+    if crate::switches::WS_TIMING.on(g, p) {
+        if let Some(ready) = expert_moment(g, p, w) {
+            return ready;
+        }
+    }
     match w {
         World::ArcaneLacuna => MANA_TYPES.iter().map(|name| g.map.num_bonus[d.t::<BonusType>(name)]).sum::<i32>() >= 7,
         World::Ardor => pl.great_people_created >= 5,
@@ -110,6 +117,33 @@ pub fn ready(g: &Game, p: PlayerId, spell: SpellType) -> bool {
         World::WildHunt => wars() > 0 && pl.num_units() >= 20,
         World::Worldbreak => g.get_global_counter() >= 50,
     }
+}
+
+/// The moments an expert would pick for the world spells FfH's conditions almost never allowed
+/// (the owner's rule that civilizations use their own mechanics; docs/AI.md, "World spells"):
+/// `None` keeps FfH's condition.
+/// - Arcane Lacuna (no other player can cast for 20 turns, our adepts gain as much experience as
+///   the map has typed mana): at war with a civilization. FfH waited for 7 typed mana nodes on
+///   the map, which no measured game reached.
+/// - Worldbreak (every unit in a foreign city takes the Armageddon counter as damage, and cities
+///   burn): at war with a civilization once the counter is 20. FfH waited for 50, never reached.
+/// - Religious Fervor (a priest in every city of our state religion, with experience by their
+///   number): FfH's five cities of the religion, or three that are two thirds of ours (a small
+///   Malakim empire never had five).
+fn expert_moment(g: &Game, p: PlayerId, w: World) -> Option<bool> {
+    let pl = &g.players[p];
+    let team = pl.team;
+    let barb = g.barbarian_team();
+    let civ_war = || g.teams.keys().any(|t| t != team && t != barb && g.teams[t].alive_count > 0 && g.at_war(team, t));
+    Some(match w {
+        World::ArcaneLacuna => civ_war(),
+        World::Worldbreak => g.get_global_counter() >= 20 && civ_war(),
+        World::ReligiousFervor => g.player_get_state_religion(p).is_some_and(|r| {
+            let with = pl.cities.iter().filter(|&&c| g.cities[c].has_religion[r]).count();
+            with >= 5 || (with >= 3 && with * 3 >= pl.cities.len() * 2)
+        }),
+        _ => return None,
+    })
 }
 
 /// `reqRagingSeas`'s AI condition: a player we are at war with (the barbarians included) has a

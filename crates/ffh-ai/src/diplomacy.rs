@@ -106,6 +106,37 @@ pub fn army_size(g: &Game, p: PlayerId) -> i32 {
     n
 }
 
+/// Army units within 3 plots of our city nearest to `target`'s cities (on a shared landmass):
+/// the force staged for a war against it.
+fn staged_army(g: &Game, p: PlayerId, target: TeamId) -> i32 {
+    let mut best: Option<(i32, CityId)> = None;
+    for &c in &g.players[p].cities {
+        let area = g.map.plots[g.city_plot(c)].area;
+        for q in g.player_ids() {
+            if !g.players[q].alive || g.players[q].team != target {
+                continue;
+            }
+            for &o in &g.players[q].cities {
+                if g.map.plots[g.city_plot(o)].area != area {
+                    continue;
+                }
+                let d = g.plot_distance(g.cities[c].x, g.cities[c].y, g.cities[o].x, g.cities[o].y);
+                if best.map_or(true, |(b, bc)| (d, c) < (b, bc)) {
+                    best = Some((d, c));
+                }
+            }
+        }
+    }
+    let Some((_, rally)) = best else { return 0 };
+    let (rx, ry) = (g.cities[rally].x, g.cities[rally].y);
+    let army = [UnitAIType::UNITAI_ATTACK, UnitAIType::UNITAI_ATTACK_CITY, UnitAIType::UNITAI_COLLATERAL, UnitAIType::UNITAI_COUNTER];
+    g.players[p]
+        .units
+        .iter()
+        .filter(|&&u| g.units[u].ai_type.is_some_and(|a| army.contains(&a)) && g.plot_distance(g.units[u].x, g.units[u].y, rx, ry) <= 3)
+        .count() as i32
+}
+
 /// Army we want before declaring a prepared war.
 pub fn army_needed_for_war(g: &Game, p: PlayerId, target: TeamId) -> i32 {
     let their_cities = g.teams[target].num_cities;
@@ -247,9 +278,13 @@ pub fn manage(g: &mut Game, v: &View) {
         }
         let ready = army_size(g, p) >= army_needed_for_war(g, p, target);
         let waited = g.teams[team].ai_war_plan_state_counter[target];
-        if ready && waited >= 5 || waited >= 40 {
+        // An expert declares with the army already at the border: the war's first turns are
+        // spent fighting, not marching while the enemy mobilises (and the war's first ten turns,
+        // before peace can be made, are not spent on the road).
+        let staged = !crate::switches::WAR_STAGING.on(g, p) || staged_army(g, p, target) * 3 >= army_needed_for_war(g, p, target) * 2;
+        if ready && staged && waited >= 5 || waited >= 40 {
             crate::trace!(g, p, "declares war on team {:?} (army {}, prepared {} turns)", target, army_size(g, p), waited);
-            g.tel_war_reason(team, target, || format!("{} after {} turns: army {} of {}", if ready && waited >= 5 { "army ready" } else { "waited long" }, waited, army_size(g, p), army_needed_for_war(g, p, target)));
+            g.tel_war_reason(team, target, || format!("{} after {} turns: army {} of {}", if ready && staged && waited >= 5 { "army ready" } else { "waited long" }, waited, army_size(g, p), army_needed_for_war(g, p, target)));
             let plan = if g.teams[team].ai_war_plan[target] == Some(WarPlanType::WARPLAN_PREPARING_LIMITED) { WarPlanType::WARPLAN_LIMITED } else { WarPlanType::WARPLAN_TOTAL };
             g.team_declare_war(team, target, true, Some(plan));
         }
