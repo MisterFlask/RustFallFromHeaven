@@ -100,6 +100,23 @@ change also in full games, the allied-barbarian one with the Clan of Embers forc
    worth reducing, the lever is research timing (the techs that give the waiting workers work),
    not fewer workers.
 
+### Stuck workers take their next best job (reverted)
+
+1. A worker's build target is chosen by this AI's danger map, but the move there
+   (`MOVE_SAFE_TERRITORY`) can be refused by the rules' AI path finder (a non-combat group next
+   to danger, C++ `pathValid`), and the worker asked for the same job again next turn without
+   moving (docs/AI.md listed it as a known gap; 44-151 such worker-turns in 300-turn games).
+   On a refused move the worker took the next best job it could walk to (up to four tries).
+2. The repeats went (19 -> 0 and 6 -> 0 in two 200-turn games, seeds 2 and 5): they were rarer
+   than the first count suggested. The workers switched jobs far more often (build orders 560 ->
+   879 in seed 2), and the economy came out slightly worse (seeds 1-48): production -1.8% (t
+   -2.1) and research -1.9% (t -2.2) at turn 100, production -3.9% (t -1.6) and legacy -1.0% at
+   turn 300.
+3. A refused move is usually a passing danger; waiting a turn for the best job costs less than
+   walking to a worse one. A version worth trying would switch only after the same move has
+   been refused for several turns (the group's mission plot could carry the job), but the cost
+   it removes is small.
+
 ## Unique units (2026-10-20)
 
 The kept version is in docs/AI.md, "Unique units". It is kept under the owner's rule (CLAUDE.md,

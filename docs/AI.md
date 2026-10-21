@@ -1342,7 +1342,9 @@ earlier cast is the first thing to measure.
   danger map, but `MISSION_MOVE_TO` with `MOVE_SAFE_TERRITORY` is refused by the rules' AI path
   finder (`AI_getPlotDanger`) and the worker retries every turn (a Lanun work boat at (42,23),
   seed 7, turns 200-239). The flee code passes `MOVE_IGNORE_DANGER` for this reason; the build
-  move does not.
+  move does not. Taking the next best job on a refused move cost a little production and
+  research (docs/AI_LOG.md, "Stuck workers take their next best job"): the repeats are rare
+  (6-19 worker-turns in a 200-turn game) and usually a passing danger.
 - **Allied barbarians count as a threat**: the Clan of Embers and the Doviello's Charadon are at
   peace with the barbarians, but the garrison and research counts (`production::barbarians_near`)
   treat nearby barbarians as a threat all the same. Dropping them cost the Clan cities to its
