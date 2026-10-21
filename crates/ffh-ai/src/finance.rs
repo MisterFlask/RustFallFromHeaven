@@ -301,7 +301,7 @@ pub(crate) const KEEP_YOUNG_TURNS: i32 = 20;
 
 /// Was `u` trained too recently to scrap ([`KEEP_YOUNG_TURNS`])?
 pub(crate) fn young(g: &Game, u: UnitId) -> bool {
-    crate::fix_on("churn") && g.game_turn() - g.units[u].game_turn_created < KEEP_YOUNG_TURNS
+    g.game_turn() - g.units[u].game_turn_created < KEEP_YOUNG_TURNS
 }
 
 pub fn disband(g: &mut Game, p: PlayerId) -> bool {

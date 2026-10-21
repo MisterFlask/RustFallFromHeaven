@@ -33,8 +33,10 @@ Each entry answers three questions, from the games themselves (counts with `ffh 
 
 ## Low-hanging fixes (2026-10-21)
 
-Six fixes for things a good player does differently, found by tracing seeds 1-18 (the kept ones are
-in docs/AI.md, "Measured together", round 6). Each was measured alone against the same binary
+Six fixes for things a good player does differently, found by tracing seeds 1-18 (the three kept
+-- great people building shrines and rushing wonders, explorers moving one safe turn at a time,
+young units never scrapped -- are in docs/AI.md, "Measured together", round 6: neutral on fresh
+seeds, kept as plainly right play). Each was measured alone against the same binary
 with it off (a scratch switch), seeds 1-48, 300 turns (6 civs, standard map); the great-person
 change also in full games, the allied-barbarian one with the Clan of Embers forced.
 

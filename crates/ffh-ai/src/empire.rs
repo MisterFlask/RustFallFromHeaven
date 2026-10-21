@@ -151,11 +151,9 @@ fn disband_field_units(g: &mut Game, p: PlayerId, max: i32) {
         return;
     }
     units.sort_by_key(|&u| (crate::view::attack_power(g, u) + 50 * g.units[u].experience, u));
-    if crate::fix_on("churn") {
-        // Only the weakest surplus, and of it only units old enough (finance::KEEP_YOUNG_TURNS).
-        units.truncate(units.len() - keep as usize);
-        units.retain(|&u| !crate::finance::young(g, u));
-    }
+    // Only the weakest surplus, and of it only units old enough (finance::KEEP_YOUNG_TURNS).
+    units.truncate(units.len() - keep as usize);
+    units.retain(|&u| !crate::finance::young(g, u));
     let mut done = 0;
     for u in units {
         if done >= max || !g.units.contains(u) {

@@ -1402,6 +1402,45 @@ unless they strike this turn (`campaign::on_the_move` at war only). Seeds 331-37
 41-52: score (dead as 0) +15 (t 2.0), 16% fewer civ cities lost to barbarians; seeds 379-426:
 -7, 4% more lost; all 120 seeds: +6 (t 1.2), techs +0.2 (t 1.7), eliminations unchanged.
 
+### Round 6 (2026-10-21): great people, explorers, scrapping young units
+
+Six fixes for play a good player would not make, found by tracing seeds 1-18; three kept, three
+reverted (settlers under a held threat, allied barbarians, worker demand and stuck workers:
+docs/AI_LOG.md, "Low-hanging fixes"). Each was measured alone against the same binary with it
+off (seeds 1-48, 300 turns; the great people also in full games, seeds 1-24), then the three
+together on seeds no step used:
+
+- **Great people** (`units::great_person_build`): before, every great person that could
+  lightbulbed, and no AI ever built a shrine (0 in 16 games, 28 holy cities at turn 300; in three
+  games to turn 520, 10 of 13 Great Prophets were born to a civ holding 1-3 holy cities). Now 65
+  shrines in 24 full games; development: research +3% and culture +5% from turn 300, power +8%
+  at turn 500 (t 2.1), techs -0.6 to -1.3% (|t| < 1). Engineers rushed a wonder 3 times of 10 in
+  a traced game (the others found none in progress).
+- **Explorers** (`units::explore`, `safe_step`): 10-21 explorers a 300-turn game were trained
+  and nearly as many scouts killed, mostly by animals a few turns out; an explorer with nothing
+  in reach turned itself into an army unit and production trained another. Seeds 1-6, 150
+  turns: scouts trained 87 -> 65, killed 94 -> 82. Development: legacy +4.1% at turn 200 (t 1.8),
+  techs +5.0% (t 2.3), +2.7% at turn 300 (t 1.0).
+- **Young units are not scrapped** (`finance::KEEP_YOUNG_TURNS`, see Finance): traced, scrapped
+  defenders were 1-9 turns old in the civs that scrapped most (a Svartalfar bankruptcy scrapped
+  one a turn while its cities trained new ones). Development: cities lost to the barbarians
+  -24% (t -2.5), gold +8% (t 2.4), legacy +1.0% at turn 300 (t 0.8).
+
+Together, against the same binary with the three off:
+
+| | 300 turns, seeds 10001-10096 (96 games) | full games, seeds 10101-10148 (48) |
+|---|---|---|
+| legacy score | -0.7% at turn 200, -1.1% at turn 300 (t -0.5) | -3.7% at turn 200 (t -1.3), +0.2% at 300, +2.9% at 400, +8.1% at 500 (t 1.6) |
+| techs | -0.5%, -2.0% (t -0.8) | -2.1% at 200, +3.7% at 400, +12.1% at 500 (t 1.9) |
+| research / production | -4.3% / -2.6% at turn 200 (t -1.1 / -1.0); +0.6% / -0.2% at 300 | research +8.5% at turn 300 (t 1.6); production -5.7% at 400 (t -1.0) |
+| power | -0.3% at turn 300 | -7.1% at turn 200 (t -2.0), +7.2% at 400 (t 1.0) |
+| outcomes | | supremacy 22 -> 30, cultural 26 -> 18; decided 38 turns earlier (t -1.4); civ cities captured -23% (t -1.7) |
+
+Neutral: nothing falls or rises beyond noise on fresh seeds, and the development gains of the
+explorers and the scrapping rule did not repeat. Kept as play that is plainly right (a holy
+city's shrine, a scout that does not walk into the animals it has just seen, a defender not
+scrapped the week it was trained), not as a measured gain.
+
 ### Round 4 (2026-10-18): event choice, Conquest, settler, hammers, worker flee, transport
 
 Six changes from a diagnosis of the whole AI (one finder per dimension, each candidate re-checked

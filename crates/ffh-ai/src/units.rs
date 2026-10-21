@@ -467,23 +467,19 @@ fn explore(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
     match explore_target(g, v, u) {
         Some(plot) => {
             v.claimed.push(plot);
-            if crate::fix_on("explore") {
-                // One turn at a time, ending where no enemy we see can reach: a multi-turn move
-                // gets no orders until it ends, and explorers walked on into the animals the
-                // first steps revealed (nearly every scout died, most a few turns out).
-                let step = safe_step(g, v, u, plot);
-                move_to(g, grp, step, 0);
-                if alive(g, grp) && !g.groups[grp].mission_queue.is_empty() && !g.group_ready_to_move(grp, false) {
-                    g.group_clear_mission_queue(grp);
-                }
-            } else {
-                move_to(g, grp, plot, 0);
+            // One turn at a time, ending where no enemy we see can reach: a multi-turn move gets
+            // no orders until it ends, and explorers walked on into the animals the first steps
+            // revealed (nearly every scout died, most a few turns out).
+            let step = safe_step(g, v, u, plot);
+            move_to(g, grp, step, 0);
+            if alive(g, grp) && !g.groups[grp].mission_queue.is_empty() && !g.group_ready_to_move(grp, false) {
+                g.group_clear_mission_queue(grp);
             }
             if alive(g, grp) && g.group_ready_to_move(grp, false) {
                 skip(g, grp);
             }
         }
-        None if crate::fix_on("explore") && g.game_turn() < 150 && home_unexplored(g, v.p) => {
+        None if g.game_turn() < 150 && home_unexplored(g, v.p) => {
             // Nothing safe in reach today, but the land is not known yet: wait in a city
             // rather than become an army unit (production would only train another explorer).
             let here = g.unit_plot(u);
@@ -622,7 +618,7 @@ pub(crate) fn barbarian(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
 fn great_person(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
     let p = v.p;
     if crate::victory::great_work(g, v, grp, u) { return; } // victory-pursuit
-    if crate::fix_on("gp") && great_person_build(g, v, grp, u) {
+    if great_person_build(g, v, grp, u) {
         return;
     }
     let here = g.unit_plot(u);
