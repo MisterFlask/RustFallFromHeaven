@@ -25,33 +25,13 @@
 
 use ffh_data::*;
 
-use super::{changes_help, color, fill, finish, list_help, txt, Arg, COMMERCE_ICONS, NEWLINE, YIELD_ICONS};
+use super::{changes_help, color, finish, list_help, req, txt, Arg, COMMERCE_ICONS, NEWLINE, YIELD_ICONS};
 use crate::names::{self, display};
 
 /// A name in the highlight colour: requirements, and religions and corporations where C++ writes
 /// their icon (the page has no markup for those icons).
 fn highlight(name: &str) -> String {
     color("COLOR_HIGHLIGHT_TEXT", name)
-}
-
-/// A requirement: `txt` without the warning colour C++ wraps it in.
-fn req(d: &GameData, key: &str, fallback: &str, args: &[Arg]) -> String {
-    let t = names::text(d, key);
-    fill(unwarned(if t == key { fallback } else { t }), args)
-}
-
-/// `t` without its enclosing `[COLOR_WARNING_TEXT]..[COLOR_REVERT]`. The closing tag goes only
-/// when it closes the warning colour: "[COLOR_WARNING_TEXT]Requires[SPACE]" leaves the colour open
-/// for a list (C++ closes it after the list, `ENDCOLR`, which this port does not write).
-fn unwarned(t: &str) -> &str {
-    const REVERT: &str = "[COLOR_REVERT]";
-    let Some(rest) = t.strip_prefix("[COLOR_WARNING_TEXT]") else { return t };
-    let reverts = rest.matches(REVERT).count();
-    let opens = rest.matches("[COLOR_").count() - reverts;
-    match rest.strip_suffix(REVERT) {
-        Some(inner) if reverts > opens => inner,
-        _ => rest,
-    }
 }
 
 /// C++ writes a resource's icon (`getChar()`) in brackets after its name ("Provides 1 Mithril

@@ -135,6 +135,28 @@ pub(crate) fn txt(d: &GameData, key: &str, fallback: &str, args: &[Arg]) -> Stri
     fill(if t == key { fallback } else { t }, args)
 }
 
+/// A requirement: `txt` without the warning colour C++ gives it (`unwarned`).
+pub(crate) fn req(d: &GameData, key: &str, fallback: &str, args: &[Arg]) -> String {
+    let t = names::text(d, key);
+    fill(unwarned(if t == key { fallback } else { t }), args)
+}
+
+/// `t` without its enclosing `[COLOR_WARNING_TEXT]` or `[COLOR_RED]` .. `[COLOR_REVERT]`. C++'s
+/// tooltips list only the requirements the city, unit or player does not meet, in that colour; the
+/// static help lists every requirement, none known to be unmet, so it writes them uncoloured. The
+/// closing tag goes only when it closes that colour: "[COLOR_WARNING_TEXT]Requires[SPACE]" leaves
+/// it open for a list (C++ closes it after the list, `ENDCOLR`, which the static help leaves out).
+pub(crate) fn unwarned(t: &str) -> &str {
+    const REVERT: &str = "[COLOR_REVERT]";
+    let Some(rest) = t.strip_prefix("[COLOR_WARNING_TEXT]").or_else(|| t.strip_prefix("[COLOR_RED]")) else { return t };
+    let reverts = rest.matches(REVERT).count();
+    let opens = rest.matches("[COLOR_").count() - reverts;
+    match rest.strip_suffix(REVERT) {
+        Some(inner) if reverts > opens => inner,
+        _ => rest,
+    }
+}
+
 /// A help text on one line, for after a name: "[ICON_BULLET]A[NEWLINE][ICON_BULLET]B" -> "A; B".
 pub(crate) fn one_line(t: &str) -> String {
     t.split("[NEWLINE]").map(|l| l.replace("[ICON_BULLET]", "").trim().to_string()).filter(|l| !l.is_empty()).collect::<Vec<_>>().join("; ")

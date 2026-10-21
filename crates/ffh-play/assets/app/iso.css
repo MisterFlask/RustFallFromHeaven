@@ -333,6 +333,9 @@ html.iso #iso-corner canvas.minimap {
 /* --- the map's tooltip, toasts, dialogs ----------------------------------------------------- */
 
 html.iso .tooltip { padding: 4px 10px; font-size: 20px; line-height: 24px; color: var(--iso-ink); max-width: 440px; }
+/* The map's tooltip covers the whole window's map: above the panels laid over it (the unit card,
+   the corner), which would hide its lower lines; below the dialogs. */
+html.iso #mapwrap .tooltip { z-index: 8; }
 html.iso .tip-title { color: #fff8e4; }
 html.iso .tip-city { color: var(--iso-gold); }
 /* A unique improvement's block (what it does), between gilt rules; Herald stays at 20px (its

@@ -211,7 +211,8 @@ export async function openCivics() {
  *  does, its upkeep and the anarchy of switching to it alone. */
 function civicTip(x) {
   const e = info("CivicType", x.civic);
-  const does = e?.effects || e?.help;
+  // The row's help leaves out the requirements, which `requires` lists when one is not met.
+  const does = (x.help ?? e?.effects) || e?.help;
   return [
     h("div.tip-title", dname("CivicType", x.civic), x.current ? h("span.dim", " (current)") : null),
     (x.requires ?? []).length ? h("div.tip-requires", x.requires.map((r) => h("div", r))) : null,

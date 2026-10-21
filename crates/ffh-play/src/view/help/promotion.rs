@@ -6,13 +6,19 @@
 
 use ffh_data::*;
 
-use super::{color, finish, txt, Arg, NEWLINE};
+use super::{finish, req, txt, Arg, NEWLINE};
 use crate::names::{self, display};
 
 /// One line of the help: C++ `szBuffer.append(pcNewline); szBuffer.append(gDLL->getText(..))`.
 fn line(b: &mut String, d: &GameData, key: &str, fallback: &str, args: &[Arg]) {
     b.push_str(NEWLINE);
     b.push_str(&txt(d, key, fallback, args));
+}
+
+/// A requirement line: `line` without the warning colour (`super::unwarned`).
+fn line_req(b: &mut String, d: &GameData, key: &str, fallback: &str, args: &[Arg]) {
+    b.push_str(NEWLINE);
+    b.push_str(&req(d, key, fallback, args));
 }
 
 /// What promotion `p` does (Civ4 markup, lines joined by `[NEWLINE]`; empty when there is nothing to
@@ -533,28 +539,27 @@ pub fn effects(d: &GameData, p: PromotionType) -> String {
     }
     if !needs.is_empty() {
         b.push_str(NEWLINE);
-        b.push_str(&txt(d, "TXT_KEY_REQUIRES", "[COLOR_WARNING_TEXT]Requires[SPACE]", &[]));
+        b.push_str(&req(d, "TXT_KEY_REQUIRES", "[COLOR_WARNING_TEXT]Requires[SPACE]", &[]));
         b.push_str(&needs);
-        b.push_str("[COLOR_REVERT]");
     }
     const REQUIRES: &str = "[COLOR_WARNING_TEXT]Requires %s1_Text[COLOR_REVERT]";
     if let Some(t) = tech_prereq {
-        line(b, d, "TXT_KEY_UNIT_REQUIRES_STRING", REQUIRES, &[Arg::S(&display(d, *t))]);
+        line_req(b, d, "TXT_KEY_UNIT_REQUIRES_STRING", REQUIRES, &[Arg::S(&display(d, *t))]);
     }
     if let Some(r) = state_religion_prereq {
         b.push_str(NEWLINE);
-        b.push_str(&color("COLOR_WARNING_TEXT", &txt(d, "TXT_KEY_TECH_PREREQ_RELIGION", "Requires: %s1_religion state religion", &[Arg::S(&display(d, *r))])));
+        b.push_str(&txt(d, "TXT_KEY_TECH_PREREQ_RELIGION", "Requires: %s1_religion state religion", &[Arg::S(&display(d, *r))]));
     }
     // The player must have the resource (C++ `CvPlayer::hasBonus`).
     if let Some(bonus) = bonus_prereq {
-        line(b, d, "TXT_KEY_UNIT_REQUIRES_STRING", REQUIRES, &[Arg::S(&display(d, *bonus))]);
+        line_req(b, d, "TXT_KEY_UNIT_REQUIRES_STRING", REQUIRES, &[Arg::S(&display(d, *bonus))]);
     }
     if *min_level > 0 {
-        line(b, d, "TXT_KEY_BUILDING_REQUIRES_UNIT_LEVEL", "[COLOR_WARNING_TEXT]Requires a Unit of Level %d1_Num Experience[COLOR_REVERT]", &[Arg::N(*min_level)]);
+        line_req(b, d, "TXT_KEY_BUILDING_REQUIRES_UNIT_LEVEL", "[COLOR_WARNING_TEXT]Requires a Unit of Level %d1_Num Experience[COLOR_REVERT]", &[Arg::N(*min_level)]);
     }
     if *prereq_alive {
         b.push_str(NEWLINE);
-        b.push_str(&color("COLOR_WARNING_TEXT", "Requires a living unit"));
+        b.push_str("Requires a living unit");
     }
     let combats: Vec<String> = d.unit_combats.keys().filter(|&uc| unit_combat[uc]).map(|uc| display(d, uc).into_owned()).collect();
     if !combats.is_empty() {
@@ -589,7 +594,9 @@ mod tests {
 
         let shock = of("PROMOTION_SHOCK");
         assert!(shock.contains("[ICON_BULLET]+40% vs. [LINK=literal]Melee Units[\\LINK]"), "{shock}");
-        assert!(shock.contains("[COLOR_WARNING_TEXT]Requires Combat I[COLOR_REVERT]"), "{shock}");
+        assert!(shock.contains("Requires Combat I"), "{shock}");
+        // A requirement is not coloured as unmet: nothing is known of the unit.
+        assert!(!shock.contains("COLOR_WARNING_TEXT"), "{shock}");
 
         // Given, never chosen: no requirements.
         let hero = of("PROMOTION_HERO");
@@ -603,11 +610,11 @@ mod tests {
 
         // A sphere: its spells, its channeling, its mana.
         let fire1 = of("PROMOTION_FIRE1");
-        for part in ["Allows: Blaze (with Channeling I)", "Requires Channeling I[COLOR_REVERT]", "Requires Fire Mana[COLOR_REVERT]", "Available To: Arcane Units"] {
+        for part in ["Allows: Blaze (with Channeling I)", "Requires Channeling I[NEWLINE]", "Requires Fire Mana", "Available To: Arcane Units"] {
             assert!(fire1.contains(part), "{part}: {fire1}");
         }
         let fire2 = of("PROMOTION_FIRE2");
-        assert!(fire2.contains("Requires Fire I and Channeling II[COLOR_REVERT]"), "{fire2}");
+        assert!(fire2.contains("Requires Fire I and Channeling II"), "{fire2}");
         assert!(fire2.contains("Allows: Fireball"), "{fire2}");
 
         // A race.
@@ -622,14 +629,14 @@ mod tests {
 
         // "And" with a group of "or", the same healing everywhere, a state religion.
         let fear = of("PROMOTION_FEAR");
-        assert!(fear.contains("Requires Combat V and (Demon or Undead or Nightmare)[COLOR_REVERT]"), "{fear}");
+        assert!(fear.contains("Requires Combat V and (Demon or Undead or Nightmare)"), "{fear}");
         let march = of("PROMOTION_MARCH");
         assert!(march.contains("[ICON_BULLET]Heals Extra 10% Damage/Turn"), "{march}");
-        assert!(march.contains("Requires Combat III or Medic I[COLOR_REVERT]"), "{march}");
+        assert!(march.contains("Requires Combat III or Medic I"), "{march}");
         assert!(!march.contains("Enemy Lands"), "{march}");
         let command4 = of("PROMOTION_COMMAND4");
-        assert!(command4.contains("Requires Command III and Channeling III[COLOR_REVERT]"), "{command4}");
-        assert!(command4.contains("[COLOR_WARNING_TEXT]Requires: Order state religion[COLOR_REVERT]"), "{command4}");
+        assert!(command4.contains("Requires Command III and Channeling III"), "{command4}");
+        assert!(command4.contains("Requires: Order state religion"), "{command4}");
     }
 
     #[test]

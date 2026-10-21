@@ -233,7 +233,8 @@ function specialistsView(c, task) {
         "div.spec",
         { "data-specialist": s.specialist },
         typeIcon("specialist", s.specialist, 16),
-        h("span.spec-name", { tip: infoTip("SpecialistType", s.specialist, { extra: specialistYields(s.specialist) }) }, dname("SpecialistType", s.specialist), specialistYields(s.specialist)),
+        // Its help says its yields; without one, the yields say what it gives.
+        h("span.spec-name", { tip: infoTip("SpecialistType", s.specialist, { extra: info("SpecialistType", s.specialist)?.effects ? null : specialistYields(s.specialist) }) }, dname("SpecialistType", s.specialist), specialistYields(s.specialist)),
         h("span.dim", `${s.count}${s.forced ? ` (${s.forced} set)` : ""}${s.free ? `, ${s.free} free` : ""}${s.max ? ` / ${s.max}` : ""}`),
         h("button.small.minus", { disabled: !s.minus, title: "One less", onclick: () => task("TASK_CHANGE_SPECIALIST", s.specialist, -1) }, "−"),
         h("button.small.plus", { disabled: !s.plus, title: "One more", onclick: () => task("TASK_CHANGE_SPECIALIST", s.specialist, 1) }, "+"),

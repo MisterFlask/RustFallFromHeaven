@@ -22,7 +22,7 @@
 
 use ffh_data::*;
 
-use super::{color, finish, list_help, txt, Arg, NEWLINE};
+use super::{finish, list_help, req, txt, Arg, NEWLINE};
 use crate::names::display;
 
 /// A line of help: `NEWLINE` and the text of `key` (`fallback` when the key has no text).
@@ -38,20 +38,25 @@ fn list(b: &mut String, start: &str, items: &[String], sep: &str) {
     }
 }
 
-/// A "Requires X" line (C++ `TXT_KEY_UNIT_REQUIRES_STRING`).
-fn requires(d: &GameData, b: &mut String, what: &str) {
-    add(d, b, "TXT_KEY_UNIT_REQUIRES_STRING", "[COLOR_WARNING_TEXT]Requires %s1_Text[COLOR_REVERT]", &[Arg::S(what)]);
+/// A requirement line: `add` without the warning colour (`super::unwarned`).
+fn add_req(d: &GameData, b: &mut String, key: &str, fallback: &str, args: &[Arg]) {
+    b.push_str(NEWLINE);
+    b.push_str(&req(d, key, fallback, args));
 }
 
-/// "Requires A or B" / "Requires A and B" (C++ `TXT_KEY_REQUIRES` + `setListHelp` + `ENDCOLR`);
+/// A "Requires X" line (C++ `TXT_KEY_UNIT_REQUIRES_STRING`).
+fn requires(d: &GameData, b: &mut String, what: &str) {
+    add_req(d, b, "TXT_KEY_UNIT_REQUIRES_STRING", "[COLOR_WARNING_TEXT]Requires %s1_Text[COLOR_REVERT]", &[Arg::S(what)]);
+}
+
+/// "Requires A or B" / "Requires A and B" (C++ `TXT_KEY_REQUIRES` + `setListHelp`, uncoloured);
 /// nothing for an empty list.
 fn requires_list(d: &GameData, b: &mut String, items: &[String], sep_key: &str, sep_fallback: &str) {
     if items.is_empty() {
         return;
     }
-    let start = format!("{NEWLINE}{}", txt(d, "TXT_KEY_REQUIRES", "[COLOR_WARNING_TEXT]Requires[SPACE]", &[]));
+    let start = format!("{NEWLINE}{}", req(d, "TXT_KEY_REQUIRES", "[COLOR_WARNING_TEXT]Requires[SPACE]", &[]));
     list(b, &start, items, &txt(d, sep_key, sep_fallback, &[]));
-    b.push_str("[COLOR_REVERT]");
 }
 
 /// What unit `u` does (Civ4 markup, lines joined by `[NEWLINE]`): its strength and moves, what it
@@ -771,7 +776,7 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
     // ---- setUnitHelp: what it requires (without a city, all of it) ----
     if let Some(r) = holy_city {
         // `%F1` is the religion's font icon: its name stands in for it.
-        add(d, &mut b, "TXT_KEY_UNIT_REQUIRES_HOLY_CITY", "[COLOR_WARNING_TEXT]Requires %F1_RelIcon Holy City[COLOR_REVERT]", &[Arg::S(&display(d, *r))]);
+        add_req(d, &mut b, "TXT_KEY_UNIT_REQUIRES_HOLY_CITY", "[COLOR_WARNING_TEXT]Requires %F1_RelIcon Holy City[COLOR_REVERT]", &[Arg::S(&display(d, *r))]);
     }
     if let Some(su) = special_unit_type {
         let projects: Vec<String> = d.projects.keys().filter(|&p| d.projects[p].everyone_special_unit == Some(*su)).map(|p| display(d, p).into_owned()).collect();
@@ -790,13 +795,13 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
         requires(d, &mut b, &display(d, *bc));
     }
     if let Some(a) = prereq_alignment {
-        add(d, &mut b, "TXT_KEY_UNIT_PREREQ_ALIGNMENT", "[COLOR_WARNING_TEXT]Requires %s1 alignment[COLOR_REVERT]", &[Arg::S(&display(d, *a))]);
+        add_req(d, &mut b, "TXT_KEY_UNIT_PREREQ_ALIGNMENT", "[COLOR_WARNING_TEXT]Requires %s1 alignment[COLOR_REVERT]", &[Arg::S(&display(d, *a))]);
     }
     if let Some(c) = prereq_civic {
         requires(d, &mut b, &display(d, *c));
     }
     if *prereq_global_counter != 0 {
-        add(
+        add_req(
             d,
             &mut b,
             "TXT_KEY_UNIT_PREREQ_GLOBAL_COUNTER",
@@ -811,7 +816,7 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
     }
     if let Some(r) = state_religion {
         b.push_str(NEWLINE);
-        b.push_str(&color("COLOR_WARNING_TEXT", &txt(d, "TXT_KEY_TECH_PREREQ_RELIGION", "Requires: %s1_religion state religion", &[Arg::S(&display(d, *r))])));
+        b.push_str(&txt(d, "TXT_KEY_TECH_PREREQ_RELIGION", "Requires: %s1_religion state religion", &[Arg::S(&display(d, *r))]));
     }
     if let Some(t) = prereq_and_tech {
         requires(d, &mut b, &display(d, *t));

@@ -128,6 +128,9 @@ fn civics_screen(v: &Viewer) -> Json {
                 "available" => available,
                 // Why it cannot be adopted (the checks of C++ `canDoCivics`), as text.
                 "requires" => if available { Json::Arr(Vec::new()) } else { Json::Arr(civic_requires(g, h, c).into_iter().map(Json::from).collect()) },
+                // What it does, without the requirements `requires` says (the data's `effects`
+                // has them all).
+                "help" => crate::view::help::civic::effects_without_requirements(d, c),
                 "upkeep" => g.player_get_single_civic_upkeep(h, Some(c), false),
                 "anarchy" => if pl.civics[o] == Some(c) { 0 } else { g.player_get_civic_anarchy_length(h, &changed) },
             }
