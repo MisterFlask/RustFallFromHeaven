@@ -452,6 +452,7 @@ impl Cai {
                 if g.cities[c].population > 13 {
                     if let Some(spell) = spell_define(feast) {
                         if g.unit_can_cast(u, spell, false) {
+                            g.tel_cast_reason(u, "feastingmove", 0);
                             g.unit_cast(u, spell);
                         }
                     }
@@ -1539,6 +1540,7 @@ impl Cai {
         if teach != NO_SPELL {
             if let Some(spell) = spell_define(teach) {
                 if g.unit_can_cast(u, spell, false) {
+                    g.tel_cast_reason(u, "govannonmove", 0);
                     g.unit_cast(u, spell);
                 }
             }
@@ -1605,6 +1607,7 @@ impl Cai {
             if disrupt != NO_SPELL {
                 if let Some(spell) = spell_define(disrupt) {
                     if g.unit_can_cast(u, spell, false) {
+                        g.tel_cast_reason(u, "lokimove", 0);
                         g.unit_cast(u, spell);
                     }
                 }
@@ -1709,6 +1712,7 @@ impl Cai {
                 if is_city(g, g.unit_plot(u)) {
                     if let Some(spell) = spell_define(convert) {
                         if g.unit_can_cast(u, spell, false) {
+                            g.tel_cast_reason(u, "rantinemove", 0);
                             g.unit_cast(u, spell);
                         }
                     }
@@ -1806,6 +1810,7 @@ impl Cai {
             }
         }
         if let Some(spell) = best_spell {
+            g.tel_cast_reason(u, "mage_cast", 0);
             g.unit_cast(u, spell);
         }
     }
@@ -1882,6 +1887,7 @@ impl Cai {
             }
         }
         if let Some(spell) = best_spell {
+            g.tel_cast_reason(u, "summon_cast", 0);
             g.unit_cast(u, spell);
         }
     }
@@ -1957,6 +1963,7 @@ impl Cai {
             }
         }
         if let Some(spell) = best_spell {
+            g.tel_cast_reason(u, "direct_damage_cast", 0);
             g.unit_cast(u, spell);
         }
     }
@@ -1983,6 +1990,7 @@ impl Cai {
         if haste != NO_SPELL {
             if let Some(spell) = spell_define(haste) {
                 if g.unit_can_cast(u, spell, false) {
+                    g.tel_cast_reason(u, "movement_cast", 0);
                     g.unit_cast(u, spell);
                 }
             }
@@ -2034,6 +2042,7 @@ impl Cai {
             }
         }
         if let Some(spell) = best_spell {
+            g.tel_cast_reason(u, "buff_cast", 0);
             g.unit_cast(u, spell);
         }
     }
@@ -2542,6 +2551,7 @@ impl Cai {
                 push_move_to(g, u, bp, 0, Some(MissionAIType::MISSIONAI_BUILD), Some(bp));
             } else {
                 if g.unit_can_cast(u, cove_spell, false) {
+                    g.tel_cast_reason(u, "build_pirate_cove", 0);
                     g.unit_cast(u, cove_spell);
                 }
 

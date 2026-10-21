@@ -120,6 +120,9 @@ impl Controller for Ai {
             if trace_on(p) {
                 trace!(g, p, "{}", victory::describe(g, p, &victory::plan(g, p)));
             }
+            if g.telemetry.on() {
+                telemetry_intents(g, p);
+            }
             empire::manage(g, p);
             production::emergency(self, g, p);
             expansion::prepare_escorts(g, p); // early-expansion
@@ -164,4 +167,24 @@ impl Controller for Ai {
     fn choose_religion(&self, g: &Game, p: PlayerId) -> Option<ReligionType> {
         g.players[p].personality_type.and_then(|l| g.d.leader_heads[l].favorite_religion)
     }
+}
+
+/// The plans telemetry follows as they change (ffh_core::telemetry, docs/TELEMETRY.md): the victory
+/// goal, the finances, the war being prepared.
+fn telemetry_intents(g: &Game, p: PlayerId) {
+    let plan = victory::plan_ours(g, p);
+    g.tel_intent(p, "goal", || plan.goal().map_or_else(|| "none".to_string(), |goal| format!("{goal:?}")));
+    let f = finance::state(g, p);
+    let finance = if f.structural() {
+        "structural_deficit"
+    } else if f.support_heavy() {
+        "support_heavy"
+    } else if f.rate < 0 {
+        "losing_gold"
+    } else {
+        "ok"
+    };
+    g.tel_intent(p, "finance", || finance.to_string());
+    let team = g.players[p].team;
+    g.tel_intent(p, "war_prep", || diplomacy::preparing_target(g, team).map_or_else(|| "none".to_string(), |t| format!("team {}", t.0)));
 }

@@ -378,6 +378,9 @@ impl Game {
         let d = self.d;
 
         if self.team_is_has_tech(t, Some(tech)) != value {
+            if value && self.telemetry.on() {
+                self.tel_tech(t, tech);
+            }
             // C++ resolves NO_PLAYER to getLeaderID() before this test (a pure read) and uses
             // ePlayer unchecked from here on.
             let player = player.or_else(|| self.team_get_leader_id(t)).expect("CvTeam::setHasTech: team without a player");

@@ -22,6 +22,7 @@ pub fn cast(g: &mut Game, p: PlayerId, name: &str) -> bool {
         .min_by_key(|&u| (g.units[u].ai_type != Some(UnitAIType::UNITAI_CITY_DEFENSE), u));
     let Some(u) = caster else { return false };
     crate::trace!(g, p, "world spell {} by {}", name, g.d.units[g.units[u].unit_type].base.type_);
+    g.tel_cast_reason(u, "world_spell", 0);
     g.unit_cast(u, spell);
     true
 }

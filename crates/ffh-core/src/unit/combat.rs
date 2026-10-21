@@ -432,6 +432,15 @@ impl Game {
     /// C++ `bQuick` dropped: combat always resolves and finishes in the same call (the C++
     /// `bVisible == false` path); combat timers still count down if set.
     pub fn unit_update_combat(&mut self, u: UnitId) {
+        if !self.telemetry.on() {
+            return self.unit_update_combat_inner(u);
+        }
+        self.tel_ctx_push("combat");
+        self.unit_update_combat_inner(u);
+        self.tel_ctx_pop();
+    }
+
+    fn unit_update_combat_inner(&mut self, u: UnitId) {
         let d = self.d;
         let mut finish = false;
 
@@ -503,6 +512,10 @@ impl Game {
         }
         // FfH: End Add
 
+        // Telemetry: the attacker's odds when the battle began, and whether the defender could
+        // defend.
+        let mut tel_odds = None;
+
         // if not finished and not fighting yet, set up combat damage and mission
         if !finish {
             if !self.unit_is_fighting(u) {
@@ -528,10 +541,16 @@ impl Game {
             if !self.unit_can_defend(defender, None) {
                 // C++ `if (!bVisible) bFinish = true; else { ..surrender mission and timer.. }`
                 finish = true;
+                if self.telemetry.on() {
+                    tel_odds = Some((1000, true));
+                }
 
                 // Kill them!
                 self.unit_set_damage(defender, d.defines.max_hit_points, None);
             } else {
+                if self.telemetry.on() {
+                    tel_odds = Some((self.get_combat_odds(u, defender), false));
+                }
                 // UI: the CvBattleDefinition (start damages) for the animation.
                 self.unit_resolve_combat(u, defender, plot);
 
@@ -541,6 +560,9 @@ impl Game {
         }
 
         if finish {
+            if let Some((odds, undefended)) = tel_odds {
+                self.tel_combat(u, defender, odds, undefended, plot);
+            }
             // UI: release the locked camera, `RemoveUnitFromBattle`, `NotifyEntity`.
             self.unit_set_attack_plot(u, None, false);
             self.unit_set_combat_unit(u, None, false);

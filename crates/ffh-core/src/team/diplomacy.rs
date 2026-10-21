@@ -165,6 +165,9 @@ impl Game {
         debug_assert!(other != t, "eTeam is not expected to be equal with getID()");
 
         if !self.teams[t].at_war[other] {
+            if self.telemetry.on() {
+                self.tel_declare_war(t, other, war_plan);
+            }
             //FfH: Added by Kael 11/29/2007
             for p in self.player_ids() {
                 if self.players[p].team == t {
@@ -404,6 +407,9 @@ impl Game {
         debug_assert!(other != t, "eTeam is not expected to be equal with getID()");
 
         if self.teams[t].at_war[other] {
+            if self.telemetry.on() {
+                self.tel_make_peace(t, other);
+            }
             for p in self.player_ids() {
                 if self.players[p].team == t || self.players[p].team == other {
                     self.player_update_plunder(p, -1, false);
@@ -1214,6 +1220,9 @@ impl Game {
     pub fn team_ai_set_war_plan(&mut self, t: TeamId, other: TeamId, plan: Option<WarPlanType>, war: bool) {
         if self.teams[t].ai_war_plan[other] != plan {
             if war || !self.teams[t].at_war[other] {
+                if self.telemetry.on() {
+                    self.tel_war_plan(t, other, plan);
+                }
                 self.teams[t].ai_war_plan[other] = plan;
 
                 // AI_setWarPlanStateCounter(eIndex, 0)

@@ -765,6 +765,17 @@ impl Game {
     /// C++ `CvUnit::cast` (CvUnit.cpp:14503-14675).
     /// Runs the spell's `PyResult` through `crate::ffh` and the built-in effects below.
     pub fn unit_cast(&mut self, u: UnitId, spell: SpellType) {
+        if !self.telemetry.on() {
+            return self.unit_cast_inner(u, spell);
+        }
+        let snap = self.tel_cast_begin(u, spell);
+        self.tel_ctx_push("spell");
+        self.unit_cast_inner(u, spell);
+        self.tel_ctx_pop();
+        self.tel_cast_end(snap);
+    }
+
+    fn unit_cast_inner(&mut self, u: UnitId, spell: SpellType) {
         let d = self.d;
         let info = &d.spells[spell];
 

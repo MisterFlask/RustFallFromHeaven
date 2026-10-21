@@ -46,8 +46,12 @@ FFH_PLAYER_HANDICAP=<slot>:HANDICAP_X,...                       # per-slot handi
 FFH_CPPAI_TRACE=all|<p>                                          # trace its production and groups
 FFH_CPPAI_CITIZENS=1                                             # ffh-ai with the C++ citizen management
 python3 crates/ffh-cppai/scripts/h2h.py --bin $B/ffh --seeds 1-12 --turns 690 \
-    --at 100,200,300,400,500,600,690 --until-supremacy [--handicap-ffh HANDICAP_X]
+    --at 100,200,300,400,500,600,690 --until-supremacy [--handicap-ffh HANDICAP_X] [--telemetry]
 ```
+
+`--telemetry` adds what each side did and why (docs/TELEMETRY.md): the port reports its
+strategy flags, the unit AI role of each production choice, its research picks, the routine
+behind each cast and the `AI_doWar` branch behind each war plan.
 
 `h2h.py` plays each seed twice with the seats swapped (C++ AI on the even slots, then the odd
 ones; barbarians always ffh-ai), attributes players by the controller that played them (stats rows

@@ -142,6 +142,7 @@ impl Cai {
                 continue;
             }
             if let Some(spell) = self.unit_choose_spell(g, u) {
+                g.tel_cast_reason(u, "end_turn_spells", 0);
                 g.unit_cast(u, spell);
             }
             // break if casting a spell killed the unit
@@ -230,10 +231,37 @@ impl Controller for Cai {
                 g.players[p].cities.len(), sites, settlers, g.players[p].gold, g.player_get_current_research(p));
         }
         self.player_ai_unit_update(g, p);
+        if g.telemetry.on() {
+            // The strategy flags this turn's decisions used (the cached hash: computing it here
+            // could cache a value the AI would not have used).
+            let (hash, turn) = {
+                let mut s = self.s();
+                let pa = s.player(p);
+                (pa.strategy_hash, pa.strategy_hash_cache_turn)
+            };
+            if turn == g.game_turn() {
+                g.tel_intent(p, "strategy", || strategy_names(hash));
+            }
+        }
     }
 
     fn choose_production(&self, g: &mut Game, c: CityId) {
         self.city_ai_choose_production(g, c);
+        if g.telemetry.on() && g.cities.contains(c) {
+            if let Some(o) = g.cities[c].order_queue.first() {
+                let d = g.d;
+                let (what, why): (&str, &'static str) = match o.order_type {
+                    OrderType::ORDER_TRAIN => (
+                        d.units[UnitType(o.data1 as _)].base.type_.as_str(),
+                        UnitAIType::NAMES.get(o.data2 as usize).copied().unwrap_or("UNITAI_NONE"),
+                    ),
+                    OrderType::ORDER_CONSTRUCT => (d.buildings[BuildingType(o.data1 as _)].base.type_.as_str(), "building"),
+                    OrderType::ORDER_CREATE => (d.projects[ProjectType(o.data1 as _)].base.type_.as_str(), "project"),
+                    _ => (d.processes[ProcessType(o.data1 as _)].base.type_.as_str(), "process"),
+                };
+                g.tel_decision(g.cities[c].owner, "production", what, why, 0, String::new);
+            }
+        }
         if g.cities.contains(c) && trace_on(g.cities[c].owner) {
             let order = g.cities[c].order_queue.first().map(|o| match o.order_type {
                 OrderType::ORDER_TRAIN => format!("train {} ai {}", g.d.units[UnitType(o.data1 as _)].base.type_, o.data2),
@@ -246,11 +274,15 @@ impl Controller for Cai {
     }
 
     fn choose_research(&self, g: &Game, p: PlayerId) -> Option<TechType> {
-        self.player_ai_choose_research(g, p)
+        let t = self.player_ai_choose_research(g, p);
+        if let Some(t) = t {
+            g.tel_decision(p, "research", &g.d.techs[t].base.type_, "", 0, String::new);
+        }
+        t
     }
 
     fn ai_choose_research(&self, g: &Game, p: PlayerId) -> Option<TechType> {
-        self.player_ai_choose_research(g, p)
+        self.choose_research(g, p)
     }
 
     fn choose_free_tech(&self, g: &Game, p: PlayerId) -> Option<TechType> {
@@ -373,4 +405,37 @@ impl Controller for Cai {
 /// A C++ AI controller for one game.
 pub fn cppai_controller(seed: u32) -> ControllerRef {
     Arc::new(Cai::new(seed))
+}
+
+/// The names of the `AI_STRATEGY_*` flags set in `hash` (telemetry).
+fn strategy_names(hash: i32) -> String {
+    use crate::defs::*;
+    let flags = [
+        (AI_STRATEGY_DAGGER, "DAGGER"),
+        (AI_STRATEGY_SLEDGEHAMMER, "SLEDGEHAMMER"),
+        (AI_STRATEGY_CASTLE, "CASTLE"),
+        (AI_STRATEGY_FASTMOVERS, "FASTMOVERS"),
+        (AI_STRATEGY_SLOWMOVERS, "SLOWMOVERS"),
+        (AI_STRATEGY_CULTURE1, "CULTURE1"),
+        (AI_STRATEGY_CULTURE2, "CULTURE2"),
+        (AI_STRATEGY_CULTURE3, "CULTURE3"),
+        (AI_STRATEGY_CULTURE4, "CULTURE4"),
+        (AI_STRATEGY_MISSIONARY, "MISSIONARY"),
+        (AI_STRATEGY_CRUSH, "CRUSH"),
+        (AI_STRATEGY_PRODUCTION, "PRODUCTION"),
+        (AI_STRATEGY_PEACE, "PEACE"),
+        (AI_STRATEGY_GET_BETTER_UNITS, "GET_BETTER_UNITS"),
+        (AI_STRATEGY_LAND_BLITZ, "LAND_BLITZ"),
+        (AI_STRATEGY_AIR_BLITZ, "AIR_BLITZ"),
+        (AI_STRATEGY_LAST_STAND, "LAST_STAND"),
+        (AI_STRATEGY_FINAL_WAR, "FINAL_WAR"),
+        (AI_STRATEGY_OWABWNW, "OWABWNW"),
+        (AI_STRATEGY_BIG_ESPIONAGE, "BIG_ESPIONAGE"),
+    ];
+    let names: Vec<&str> = flags.iter().filter(|&&(f, _)| hash & f != 0).map(|&(_, n)| n).collect();
+    if names.is_empty() {
+        "DEFAULT".to_string()
+    } else {
+        names.join("+")
+    }
 }

@@ -420,6 +420,7 @@ impl Cai {
             if desertb || ctx.river_here {
                 if terrain == Some(ctx.desert) {
                     if g.unit_can_cast(u, spring, false) {
+                        g.tel_cast_reason(u, "ai_mage_turn", 0);
                         g.unit_cast(u, spring);
                         return 0;
                     }
@@ -427,6 +428,7 @@ impl Cai {
             } else if smokeb {
                 if g.map.plots[plot].improvement_type == Some(ctx.smoke) {
                     if g.unit_can_cast(u, spring, false) {
+                        g.tel_cast_reason(u, "ai_mage_turn", 0);
                         g.unit_cast(u, spring);
                         return 0;
                     }
@@ -435,6 +437,7 @@ impl Cai {
 
             if snowb && terrain == Some(ctx.snow) {
                 if g.unit_can_cast(u, scorch, false) {
+                    g.tel_cast_reason(u, "ai_mage_turn", 0);
                     g.unit_cast(u, scorch);
                     return 0;
                 }
@@ -442,6 +445,7 @@ impl Cai {
 
             if tundrab && terrain == Some(ctx.tundra) {
                 if g.unit_can_cast(u, scorch, false) {
+                    g.tel_cast_reason(u, "ai_mage_turn", 0);
                     g.unit_cast(u, scorch);
                     return 0;
                 }
@@ -449,6 +453,7 @@ impl Cai {
 
             if marshb && terrain == Some(ctx.marsh) {
                 if g.unit_can_cast(u, scorch, false) {
+                    g.tel_cast_reason(u, "ai_mage_turn", 0);
                     g.unit_cast(u, scorch);
                     return 0;
                 }
@@ -456,6 +461,7 @@ impl Cai {
 
             if grassb && terrain == Some(ctx.grass) {
                 if g.unit_can_cast(u, scorch, false) {
+                    g.tel_cast_reason(u, "ai_mage_turn", 0);
                     g.unit_cast(u, scorch);
                     return 0;
                 }
@@ -463,6 +469,7 @@ impl Cai {
 
             if hellterrb {
                 if g.unit_can_cast(u, sanctify, false) {
+                    g.tel_cast_reason(u, "ai_mage_turn", 0);
                     g.unit_cast(u, sanctify);
                     return 0;
                 }
@@ -471,6 +478,7 @@ impl Cai {
             if treesb {
                 if g.map.plots[plot].feature_type.is_none() {
                     if g.unit_can_cast(u, bloom, false) {
+                        g.tel_cast_reason(u, "ai_mage_turn", 0);
                         g.unit_cast(u, bloom);
                         return 0;
                     }
@@ -1176,6 +1184,7 @@ impl Cai {
                                     return 1;
                                 }
                                 if g.unit_can_cast(u, dispel_magic, false) {
+                                    g.tel_cast_reason(u, "ai_mage_upgrade_mana", 0);
                                     g.unit_cast(u, dispel_magic);
                                     return 1;
                                 }

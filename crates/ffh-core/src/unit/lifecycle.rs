@@ -350,6 +350,9 @@ impl Game {
         if self.dying.contains(&u) {
             return;
         }
+        if self.telemetry.on() {
+            self.tel_kill_mark(u, player);
+        }
 
         // C++ dereferences `plot()` (FAssert non-NULL).
         let plot = self.unit_plot(u);
@@ -395,9 +398,15 @@ impl Game {
         if self.unit_is_immortal(u) {
             if self.player_get_capital_city(owner).is_some() {
                 self.units[u].death_delay = false;
+                if self.telemetry.on() {
+                    self.tel_unit_reborn(u);
+                }
                 self.unit_do_immortal_rebirth(u);
                 return;
             }
+        }
+        if self.telemetry.on() {
+            self.tel_unit_died(u);
         }
         self.change_global_counter(-info.modify_global_counter);
         for promotion in d.promotions.keys() {
@@ -643,7 +652,9 @@ impl Game {
                 if self.unit_is_immortal(u) {
                     self.unit_change_immortal(u, -1);
                 }
+                self.tel_ctx_push("expired");
                 self.unit_kill(u, true, None);
+                self.tel_ctx_pop();
             }
         }
         if self.plot_is_city(plot, false, None) {

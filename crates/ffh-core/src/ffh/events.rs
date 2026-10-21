@@ -662,6 +662,9 @@ impl Game {
     /// Warrens) and the advisor feats.
     pub fn ev_unit_built(&mut self, c: CityId, u: UnitId) {
         let d = self.d;
+        if self.telemetry.on() {
+            self.tel_built_unit(u);
+        }
         // `pPlayer` is the unit's owner.
         let p = self.units[u].owner;
         let free_promotion_pick = self.units[u].free_promotion_pick;
@@ -914,6 +917,9 @@ impl Game {
     /// of the Hand, Grand Menagerie trophy) and the advisor feats.
     pub fn ev_building_built(&mut self, c: CityId, building: BuildingType) {
         let d = self.d;
+        if self.telemetry.on() {
+            self.tel_built_building(c, building);
+        }
         let player = self.cities[c].owner;
         let plot = self.city_plot(c);
         let is = |name: &str| building == d.t::<BuildingType>(name);
@@ -1039,6 +1045,9 @@ impl Game {
     /// Ascension, Pact of the Nilhorn).
     pub fn ev_project_built(&mut self, c: CityId, project: ProjectType) {
         let d = self.d;
+        if self.telemetry.on() {
+            self.tel_built_project(c, project);
+        }
         let p = self.cities[c].owner;
         let is = |name: &str| project == d.t::<ProjectType>(name);
         let (x, y) = (self.cities[c].x, self.cities[c].y);

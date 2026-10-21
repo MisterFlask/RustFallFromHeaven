@@ -76,7 +76,8 @@ pub fn enabled(g: &Game, p: PlayerId) -> bool {
 }
 
 /// Every AI cast goes through here: `FFH_AI_TRACE_CAST=1` prints one line per cast (turn,
-/// player, civilization, unit, spell, where, value) to stderr. It only prints.
+/// player, civilization, unit, spell, where, value) to stderr, and telemetry records `ctx` and
+/// `value` as the cast's reason. Neither changes play.
 pub fn cast(g: &mut Game, u: UnitId, spell: SpellType, ctx: &str, value: i32) {
     static ON: OnceLock<bool> = OnceLock::new();
     if *ON.get_or_init(|| std::env::var("FFH_AI_TRACE_CAST").is_ok()) {
@@ -93,6 +94,7 @@ pub fn cast(g: &mut Game, u: UnitId, spell: SpellType, ctx: &str, value: i32) {
             value
         );
     }
+    g.tel_cast_reason(u, ctx, value as i64);
     g.unit_cast(u, spell);
 }
 

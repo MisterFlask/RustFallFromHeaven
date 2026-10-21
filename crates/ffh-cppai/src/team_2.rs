@@ -839,6 +839,7 @@ impl Cai {
 
                     if let Some(best_team) = best_team {
                         let plan = if dagger_count > 0 { WarPlanType::WARPLAN_LIMITED } else { WarPlanType::WARPLAN_PREPARING_LIMITED };
+                        g.tel_war_reason(t, best_team, || format!("AI_doWar limited war (start value {best_value})"));
                         self.team_ai_set_war_plan(g, t, best_team, plan, true);
                     }
                 } else if (finances_pro_dogpile_war || !finances_oppose_war) && (self.rand(dogpile_war_rand, "AI Dogpile War") == 0) {
@@ -887,6 +888,7 @@ impl Cai {
                     }
 
                     if let Some(best_team) = best_team {
+                        g.tel_war_reason(t, best_team, || format!("AI_doWar dogpile (start value {best_value})"));
                         self.team_ai_set_war_plan(g, t, best_team, WarPlanType::WARPLAN_DOGPILE, true);
                     }
                 }
@@ -990,6 +992,7 @@ impl Cai {
             }
 
             if let Some(best_team) = best_team {
+                g.tel_war_reason(t, best_team, || format!("AI_doWar maximum war (start value {best_value})"));
                 self.team_ai_set_war_plan(g, t, best_team, war_plan, true);
                 break;
             }

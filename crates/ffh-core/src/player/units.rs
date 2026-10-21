@@ -225,7 +225,9 @@ impl Game {
 
             // FAssert(!(pBestUnit->isGoldenAge()))
 
+            self.tel_ctx_push("disbanded");
             self.unit_kill(best_unit, false, None);
+            self.tel_ctx_pop();
         }
     }
 

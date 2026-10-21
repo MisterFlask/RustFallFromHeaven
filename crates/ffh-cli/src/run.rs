@@ -236,6 +236,17 @@ pub fn new_game(cfg: &RunConfig) -> (Game, Arc<Timed>) {
         }
     }
     g.autorun = true;
+    // FFH_TELEMETRY=1: record what the players do and why (ffh_core::telemetry, docs/TELEMETRY.md;
+    // `ffh stats` adds the aggregates as "telemetry"). FFH_TELEMETRY_FILE=<path> also writes
+    // every event to that file, one JSON object per line.
+    let tel_file = std::env::var("FFH_TELEMETRY_FILE").ok();
+    if tel_file.is_some() || std::env::var_os("FFH_TELEMETRY").is_some() {
+        let events = tel_file.map(|f| {
+            let file = std::fs::File::create(&f).unwrap_or_else(|e| panic!("FFH_TELEMETRY_FILE {f}: {e}"));
+            Box::new(std::io::BufWriter::new(file)) as Box<dyn std::io::Write + Send>
+        });
+        g.telemetry = ffh_core::telemetry::Telemetry::new(events);
+    }
     // FFH_LOG=1 (all players) or FFH_LOG=<player id>: print the game log as it is written.
     if std::env::var("FFH_LOG").is_ok() {
         g.log.enabled = true;

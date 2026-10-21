@@ -1283,6 +1283,7 @@ impl Game {
             // (setInfoBarDirty: interface)
             if self.unit_get_immobile_timer(u) == 0 {
                 if let Some(spell) = self.units[u].delayed_spell {
+                    self.tel_cast_reason(u, "delayed", 0);
                     self.unit_cast(u, spell);
                 }
             }

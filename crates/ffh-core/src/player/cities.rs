@@ -217,6 +217,9 @@ impl Game {
         // nothing below changes them before the old city is killed).
         let old_owner = self.cities[old_city].owner;
         let original_owner = self.cities[old_city].original_owner;
+        if self.telemetry.on() {
+            self.tel_acquire(p, old_city, conquest, trade);
+        }
 
         // C++ copies the plot's unit list first (`oldUnits`).
         let old_units = self.map.plots[city_plot].units.clone();
@@ -702,6 +705,9 @@ impl Game {
         }
 
         let city = self.player_init_city(p, x, y, true, true);
+        if self.telemetry.on() {
+            self.tel_found(p, city);
+        }
 
         if self.player_is_barbarian(p) {
             // AI: C++ `pCity->AI_bestUnitAI(UNITAI_CITY_DEFENSE)`, else
@@ -792,6 +798,9 @@ impl Game {
         }
 
         debug_assert!(self.cities[city].owner == p);
+        if self.telemetry.on() {
+            self.tel_raze(p, city);
+        }
 
         let team = self.players[p].team;
 

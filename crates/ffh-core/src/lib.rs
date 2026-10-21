@@ -29,6 +29,7 @@ pub mod setup;
 pub mod slab;
 pub mod structs;
 pub mod team;
+pub mod telemetry;
 pub mod unit;
 pub mod utils;
 

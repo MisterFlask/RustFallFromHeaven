@@ -6,12 +6,14 @@ odd ones; barbarians stay on ffh-ai), so map and civilization luck cancel out pe
 
   python3 crates/ffh-cppai/scripts/h2h.py --bin $B/ffh --seeds 1-8 --turns 300 [--civs 6]
       [--size WORLDSIZE_STANDARD] [--at 100,200,300] [--jobs 4] [--out runs.json | --load runs.json]
-      [--handicap-cpp HANDICAP_X] [--handicap-ffh HANDICAP_Y] [--until-supremacy]
+      [--handicap-cpp HANDICAP_X] [--handicap-ffh HANDICAP_Y] [--until-supremacy] [--telemetry]
 
 Games go through tools/agents/cached-run.sh (run cache + CPU slots; FFH_* variables are part of
 the cache key). Reported per side, at each checkpoint: summed world share (score v2, basis points;
 10000 = the whole world), cities, population, techs, military strength, civs alive; per game, the
 side of the top-scoring civ at the end ("game won"), and an exact sign test over seed pairs.
+--telemetry plays with FFH_TELEMETRY=1 and adds the telemetry summary per side
+(crates/ffh-cli/scripts/telemetry.py, docs/TELEMETRY.md).
 """
 import argparse
 import json
@@ -49,6 +51,8 @@ def run_game(args, seed, cpp_parity):
         env['FFH_PLAYER_HANDICAP'] = ','.join(hcap)
     else:
         env.pop('FFH_PLAYER_HANDICAP', None)
+    if args.telemetry:
+        env['FFH_TELEMETRY'] = '1'
     cmd = [CACHED_RUN, args.bin, 'stats', '--seed', str(seed), '--turns', str(args.turns), '--civs', str(args.civs),
            '--size', args.size, '--at', args.at]
     for o in args.option:
@@ -181,6 +185,12 @@ def report(games, args):
         print('  %3d %4s t%-4d  %5.0f/%-5.0f  %4.0f/%-4.0f  %d/%d  %s' % (
             g['seed'], g['cpp'], s['final_turn'], e['cpp']['score'], e['ffh']['score'], e['cpp']['cities'], e['ffh']['cities'],
             e['cpp']['alive'], e['ffh']['alive'], s['winner']))
+    with_tel = [g['stats'] for g in ok if 'telemetry' in g['stats']]
+    if with_tel:
+        sys.path.insert(0, os.path.join(ROOT, 'crates', 'ffh-cli', 'scripts'))
+        import telemetry
+        print()
+        telemetry.summarize(with_tel, by='side')
 
 
 def main():
@@ -197,6 +207,7 @@ def main():
     ap.add_argument('--detail', action='store_true', help='per-player unit/building/project type counts (ffh stats)')
     ap.add_argument('--handicap-cpp', default=None, help='HANDICAP_X for the C++ AI slots')
     ap.add_argument('--handicap-ffh', default=None, help='HANDICAP_X for the ffh-ai slots')
+    ap.add_argument('--telemetry', action='store_true', help='FFH_TELEMETRY=1 and the telemetry summary per side')
     ap.add_argument('--out', default=None)
     ap.add_argument('--load', default=None)
     args = ap.parse_args()

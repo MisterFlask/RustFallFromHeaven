@@ -278,6 +278,9 @@ pub struct Game {
     /// Not in C++: the units whose `unit_kill` is running their `unitKilled` event; a kill of one
     /// of them meanwhile does nothing (see `unit_kill`). Empty between rules calls; not saved.
     pub dying: Vec<UnitId>,
+    /// Not in C++: what the players did and why, for analysis (`telemetry.rs`); off unless the
+    /// runner turns it on, never read by the rules, not saved.
+    pub telemetry: crate::telemetry::Telemetry,
     /// C++ `GC.getPathFinder()`.
     pub path_finder: RefCell<PathFinder>,
     /// C++ `GC.getStepFinder()`.
@@ -407,6 +410,7 @@ impl Game {
             trophies: BTreeMap::new(),
             map_script: default_map_script(),
             dying: Vec::new(),
+            telemetry: crate::telemetry::Telemetry::off(),
             path_finder: RefCell::new(PathFinder::new(FinderKind::Path)),
             step_finder: RefCell::new(PathFinder::new(FinderKind::Step)),
             route_finder: RefCell::new(PathFinder::new(FinderKind::Route)),

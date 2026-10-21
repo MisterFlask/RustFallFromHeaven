@@ -517,8 +517,12 @@ pub fn plan(g: &Game, v: &mut View) {
 fn build_op(g: &Game, v: &mut View) -> Option<Op> {
     let p = v.p;
     let team = v.team;
-    let (cand, need, _feasible) = choose_target(g, p)?;
+    let (cand, need, feasible) = choose_target(g, p)?;
     let tp = cand.plot;
+    g.tel_intent(p, "campaign", || {
+        let c = &g.cities[cand.city];
+        format!("{} (player {}){}", c.name, c.owner.0, if feasible { "" } else { ", building up" })
+    });
     let (tx, ty) = g.map.xy(tp);
     let area = g.map.plots[tp].area;
     let owner_team = g.players[g.cities[cand.city].owner].team;

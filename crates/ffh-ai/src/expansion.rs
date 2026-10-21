@@ -346,7 +346,7 @@ pub fn settler(ai: &Ai, g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
     if best.is_none() && !first_city && scored.is_empty() && crate::naval::settler_overseas(ai, g, v, grp, u) {
         return;
     }
-    let Some((site, _)) = best.or_else(|| {
+    let Some((site, site_score)) = best.or_else(|| {
         // No scored site: the first settler founds where it stands if it can.
         if first_city && g.unit_can_found(u, here, false) { Some((here, 0)) } else { None }
     }) else {
@@ -354,12 +354,14 @@ pub fn settler(ai: &Ai, g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
             // Sites, but none safe enough: wait in a city for an escort, or go back to one.
             if in_city {
                 crate::trace!(g, p, "settler {:?} waits for an escort (power {})", u, power);
+                g.tel_decision(p, "settler", "wait", "no_safe_site", power as i64, String::new);
                 v.escort_requests.push(here);
                 skip(g, grp);
                 return;
             }
             if let Some(c) = crate::units::nearest_city(g, p, here) {
                 crate::trace!(g, p, "settler {:?} falls back to {}", u, g.cities[c].name);
+                g.tel_decision(p, "settler", "fall_back", "no_safe_site", power as i64, String::new);
                 move_to(g, grp, g.city_plot(c), 0);
                 if alive(g, grp) && g.group_ready_to_move(grp, false) {
                     skip(g, grp);
@@ -368,10 +370,22 @@ pub fn settler(ai: &Ai, g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
             }
         }
         // Nowhere to go: wait in a city.
+        g.tel_decision(p, "settler", "hold", if scored.is_empty() { "no_site" } else { "no_safe_site" }, 0, String::new);
         hold(g, grp);
         return;
     };
     v.claimed.push(site);
+    if previous != Some(site) && g.telemetry.on() {
+        let xy = |q: PlotIdx| {
+            let (x, y) = g.map.xy(q);
+            format!("{x},{y}")
+        };
+        let mut top = scored.clone();
+        top.sort_by_key(|&(q, s, _)| (std::cmp::Reverse(s), q));
+        let names: Vec<(String, i64)> = top.iter().take(4).map(|&(q, s, _)| (xy(q), s)).collect();
+        let why = if site == here { "here" } else if first_city { "first_city" } else { "walk" };
+        g.tel_decision(p, "settle_target", &xy(site), why, site_score, || ffh_core::telemetry::tel_alts(names.iter().map(|(n, s)| (n.as_str(), *s))));
+    }
     crate::trace!(g, p, "settler {:?} at {:?} -> site {:?} (danger here {}, site {}, escort {})", u, g.map.xy(here), g.map.xy(site), v.danger_at(here), v.danger_at(site), power);
     if site == here {
         if can_start(g, grp, MissionType::MISSION_FOUND, -1, -1) {

@@ -1675,6 +1675,14 @@ share score (docs/SCORE.md) averages 10000/N whatever the AI does.
   `crates/ffh-cppai/scripts/h2h.py --bin $B/ffh --seeds S --turns 690 --until-supremacy
   [--handicap-ffh HANDICAP_X]` plays each seed with the seats swapped and reports both sides
   (snapshot rows carry `ctrl`, the controller that played the player).
+- **Telemetry** (docs/TELEMETRY.md): `FFH_TELEMETRY=1` adds to `ffh stats` what each player
+  did (missions, casts, hurries, upgrades, deals, wars, combats by odds, deaths by cause), which
+  spells its units knew, could cast, left idle and cast with what effect, and why the AI acted
+  (plans as they change, decisions with the rule that made them and the alternatives);
+  `FFH_TELEMETRY_FILE=f.jsonl` writes every event. `crates/ffh-cli/scripts/telemetry.py`
+  summarizes it per AI, civilization or player; `h2h.py --telemetry` adds it per side. The AI
+  side reports through `Game::tel_intent`, `tel_decision`, `tel_cast_reason` and
+  `tel_war_reason`; play is identical with telemetry on or off.
 - `ffh autoplay --report T` prints, per civ, costs, unit roles, improvements, civics and every
   city's yields, trade, happiness and production; `ffh inspect <player>` shows each city's
   plots (worked, yields, improvements).

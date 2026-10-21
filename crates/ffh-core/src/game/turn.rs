@@ -613,6 +613,9 @@ impl Game {
     /// C++ `CvGame::implementDeal(eWho, eOtherWho, pOurList, pTheirList, bForce)`.
     pub fn implement_deal(&mut self, who: PlayerId, other_who: PlayerId, our_list: &[TradeData], their_list: &[TradeData], force: bool) {
         debug_assert!(who != other_who, "eWho is not expected to be equal with eOtherWho");
+        if self.telemetry.on() {
+            self.tel_deal(who, other_who, our_list, their_list);
+        }
 
         // addDeal(), then pDeal->init(pDeal->getID(), eWho, eOtherWho)
         let deal = self.deals.insert_with(|id| Deal::new(id, who, other_who));

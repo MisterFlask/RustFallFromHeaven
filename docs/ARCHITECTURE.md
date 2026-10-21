@@ -122,7 +122,8 @@ options; slabs keep their ids and next id). Encoding details: `save/io.rs`.
 - Everything mutable is saved, rules caches included (`Player::ai_bonus_value`, city rank
   caches, the path finders' kept search trees), so a loaded game needs no recomputation.
 - Not saved: `d`, `controllers` (a loaded game has `NullController`s: the caller re-attaches
-  its controllers, as after `Game::new`) and `map_script` (only used by `game_init`).
+  its controllers, as after `Game::new`), `map_script` (only used by `game_init`) and
+  `telemetry` (observation only, docs/TELEMETRY.md; off in a loaded game).
 - Resume guarantee: a game saved at a turn boundary (`Game::at_turn_boundary()`: no player's
   turn active, so the next `update()` starts the next game turn) or right after `game_init`,
   loaded with fresh controllers and continued, plays out exactly like the uninterrupted game

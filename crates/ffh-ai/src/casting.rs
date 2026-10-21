@@ -37,7 +37,7 @@ pub fn end_turn(g: &mut Game, v: &View) {
             // see no difference (a cast rolls for a miscast and ends promotions casting removes).
         }
         if let Some(spell) = choose_spell(g, u) {
-            cast_and_act(g, v, u, spell, "turn", 0);
+            cast_and_act(g, v, u, spell, "turn_ffh", 0);
         }
         if !g.units.contains(u) || g.units[u].death_delay {
             continue;

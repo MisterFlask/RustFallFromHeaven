@@ -313,7 +313,9 @@ impl Game {
             if self.players[other].ever_alive {
                 for u in self.players[other].units.clone() {
                     if self.units.contains(u) && opt_to_i32(self.unit_get_special_unit_type(u)) == spell {
+                        self.tel_ctx_push("expired");
                         self.unit_kill(u, false, None);
+                        self.tel_ctx_pop();
                     }
                 }
             }
@@ -350,6 +352,11 @@ impl Game {
         // AI: AI_doTurnUnitsPost() (AI promotions, FfH auto-spellcasting of human units with an
         // auto-cast spell, BETTER AI regrouping and mage casting) -- left to the controller.
         self.ai_hook(p, AiHook::PlayerTurnUnitsPost(p));
+
+        // Telemetry: the spells its units know and can cast as its turn begins.
+        if self.telemetry.on() {
+            self.tel_spell_scan(p, false);
+        }
     }
 
     /// C++ `CvPlayer::updateTimers`: selection group timers and delayed deaths.
@@ -532,6 +539,10 @@ impl Game {
 
                 // !MPOPTION_SIMULTANEOUS_TURNS: always the case here.
                 if do_turn {
+                    // Telemetry: the spells left uncast as the turn ends.
+                    if self.telemetry.on() && self.players[p].alive {
+                        self.tel_spell_scan(p, true);
+                    }
                     if self.players[p].alive {
                         self.player_do_turn(p);
                     }

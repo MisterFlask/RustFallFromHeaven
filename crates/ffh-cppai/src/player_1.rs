@@ -216,6 +216,7 @@ impl Cai {
                 }
                 if let Some(spell) = g.units[u].auto_spell_cast {
                     if g.unit_can_cast(u, spell, false) {
+                        g.tel_cast_reason(u, "do_turn_units_post", 0);
                         g.unit_cast(u, spell);
                     }
                 }
