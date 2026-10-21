@@ -166,10 +166,11 @@ export function showDecision(d, answer) {
     d.options.map((o, i) =>
       h(
         "button.option",
-        { disabled: !o.enabled, title: o.help ?? "", "data-option": i, onclick: () => send(i) },
+        // A long help (a free tech's) shows its first line and the whole text as the tooltip.
+        { disabled: !o.enabled, tip: o.help?.includes("[NEWLINE]") ? [h("div.tip-title", o.label), h("div.tip-effects", markup(o.help))] : null, "data-option": i, onclick: () => send(i) },
         h("span", o.label),
         d.advisor === i ? h("span.badge", "advisor") : null,
-        o.help ? h("small", markup(o.help)) : null,
+        o.help ? h("small", markup(o.help.split("[NEWLINE]")[0])) : null,
       ),
     ),
   );

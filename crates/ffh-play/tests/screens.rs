@@ -7,7 +7,7 @@ mod common;
 
 use std::sync::Arc;
 
-use common::{apply_map, assert_same_map, bot_session, new_game};
+use common::{apply_map, assert_same_map, bot_session, new_game, peaceful_game};
 use ffh_core::ids::*;
 use ffh_data::*;
 use ffh_play::command::{CmdErr, CmdOk, Command};
@@ -333,4 +333,36 @@ fn the_advance_profile_splits_update_own_work_and_autosave() {
     assert_eq!((sum3, turn3), (sum, turn));
     let p = p.unwrap();
     assert!(p.autosave > std::time::Duration::ZERO, "three turn boundaries autosaved: {p:?}");
+}
+
+/// The city screen's happiness and health come with their parts (the `city` query's
+/// `happy_parts`, `unhappy_parts`, `good_parts`, `bad_parts`): in every city of a game, AI cities
+/// too, each list adds up to the total the rules compute.
+#[test]
+fn the_city_screen_parts_add_up_to_the_totals() {
+    use ffh_play::view::city::{bad_health_parts, good_health_parts, happy_parts, unhappy_parts};
+    // A peaceful game reaches the turn whatever the AI does (common::peaceful_game).
+    let (mut s, mut b) = bot_session(&peaceful_game(11), None);
+    let until = s.g.game_turn() + 120;
+    let mut checked = 0;
+    let mut nonzero = [0; 4];
+    let stop = bot::run(&mut s, &mut b, until, |s, _| {
+        if s.g.game_turn() % 10 != 0 {
+            return;
+        }
+        let g = &s.g;
+        let sum = |v: Vec<(String, i32)>| -> i32 { v.iter().map(|p| p.1).sum() };
+        for (c, city) in g.cities.iter() {
+            let at = format!("turn {}, city {} (size {})", g.game_turn(), c, city.population);
+            let totals = [g.city_happy_level(c), g.city_unhappy_level(c, 0), g.city_good_health(c), g.city_bad_health(c, false, 0)];
+            let sums = [sum(happy_parts(g, c)), sum(unhappy_parts(g, c)), sum(good_health_parts(g, c)), sum(bad_health_parts(g, c))];
+            assert_eq!(sums, totals, "{at}: happy, unhappy, healthy, unhealthy");
+            for i in 0..4 {
+                nonzero[i] += (totals[i] > 0) as i32;
+            }
+            checked += 1;
+        }
+    });
+    assert_eq!(stop, Stop::Human);
+    assert!(checked >= 50 && nonzero.iter().all(|&n| n > 0), "{checked} cities checked, {nonzero:?} with each total above 0");
 }

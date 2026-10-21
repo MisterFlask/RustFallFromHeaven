@@ -105,6 +105,20 @@ fn fields(d: &GameData, kind: &str, i: usize, j: &mut Json) {
             j.set("option", Json::opt_idx(c.civic_option_type));
             j.set("upkeep", Json::opt_idx(c.upkeep));
             j.set("anarchy", c.anarchy_length);
+            j.set("tech", Json::opt_idx(c.tech_prereq));
+        }
+        "ReligionType" => {
+            let r = &d.religions[ReligionType::from_usize(i)];
+            // The first to discover it founds the religion.
+            j.set("tech", Json::opt_idx(r.tech_prereq));
+            j.set("alignment", Json::opt_idx(r.alignment));
+        }
+        "SpecialistType" => {
+            let s = &d.specialists[SpecialistType::from_usize(i)];
+            j.set("yields", yields(&s.yield_change));
+            j.set("commerces", Json::from(s.commerce_change.to_vec()));
+            j.set("great_people", s.great_people_rate_change);
+            j.set("experience", s.experience);
         }
         "SpellType" => {
             let s = &d.spells[SpellType::from_usize(i)];

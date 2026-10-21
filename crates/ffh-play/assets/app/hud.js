@@ -2,7 +2,7 @@
 // counter, mana, anarchy, golden age, Stasis) with the phase and the progress line during the
 // AI turns, and the bottom panel: the turn report, the messages by turn, the game's files.
 
-import { S, dname, tname, turns, playerName, me, emit, endTurnMessage } from "./state.js";
+import { S, dname, tname, turns, playerName, me, emit, endTurnMessage, scoreText, fairShareText, goldBreakdown } from "./state.js";
 import { h, fill } from "./dom.js";
 import { render as markup } from "./markup.js";
 import { look, pix, pixable, iconEl, uiIcon, barEl } from "./look.js";
@@ -93,7 +93,7 @@ function paintTween(key, s) {
   const node = document.querySelector(`#empire [data-tween="${key}"]`);
   if (!node) return;
   if (s.kind === "num") {
-    const disp = String(Math.round(s.shown));
+    const disp = (s.fmt ?? String)(Math.round(s.shown));
     if (disp === s.lastPaint) return;
     s.lastPaint = disp;
     node.replaceChildren(pix(disp, { font: "vigil" }));
@@ -105,18 +105,18 @@ function paintTween(key, s) {
 }
 
 /** A big top-bar number (Vigil) that eases from its last value to `value`. */
-function tweenNum(key, value, cls = "") {
+function tweenNum(key, value, cls = "", fmt = String) {
   const node = h(`span.num${cls}`, { "data-tween": key });
   const s = tweens.get(key);
   if (!s || reduceMotion()) {
-    tweens.set(key, { value, shown: value, to: value, kind: "num" });
-    node.append(pix(String(value), { font: "vigil" }));
+    tweens.set(key, { value, shown: value, to: value, kind: "num", fmt });
+    node.append(pix(fmt(value), { font: "vigil" }));
   } else if (value !== s.value) {
-    Object.assign(s, { value, from: s.shown, to: value, t0: performance.now(), dur: TWEEN_MS, kind: "num" });
-    node.append(pix(String(Math.round(s.shown)), { font: "vigil" }));
+    Object.assign(s, { value, from: s.shown, to: value, t0: performance.now(), dur: TWEEN_MS, kind: "num", fmt });
+    node.append(pix(fmt(Math.round(s.shown)), { font: "vigil" }));
     ensureTweenLoop();
   } else {
-    node.append(pix(String(Math.round(s.shown)), { font: "vigil" }));
+    node.append(pix(fmt(Math.round(s.shown)), { font: "vigil" }));
   }
   return node;
 }
@@ -220,7 +220,7 @@ export function renderTop() {
   const iso = isoSkin();
   const rate = (n) => (iso ? `(${n >= 0 ? "+" : ""}${n})` : `${n >= 0 ? "+" : ""}${n}`);
   const items = [
-    h("span.stat.gold", { title: `Gold ${m.gold} (${m.gold_rate >= 0 ? "+" : ""}${m.gold_rate} a turn)` }, ic("icon16/gold", "¤", "Gold", ".gold"), tweenNum("gold", m.gold), small(rate(m.gold_rate), m.gold_rate < 0 ? ".warn" : ".dim")),
+    h("span.stat.gold", { tip: () => goldTip(m) }, ic("icon16/gold", "¤", "Gold", ".gold"), tweenNum("gold", m.gold), small(rate(m.gold_rate), m.gold_rate < 0 ? ".warn" : ".dim")),
     sep(),
     h(
       "button.stat.research",
@@ -260,8 +260,22 @@ export function renderTop() {
   if (stasis.length) items.push(sep(), h("span.stat.warn", ic("icon16/stasis", "", "Stasis"), small(`Stasis: ${stasis.map(([k, n]) => `${k} ${n}`).join(", ")}`)));
   const idle = v.pending?.ai_groups_idle?.length ?? 0;
   if (idle) items.push(sep(), h("span.stat.dim", { title: "Automated and FfH AI-controlled units: the AI moves them during your turn" }, ic("icon16/ai_idle", "", "Automated groups to move"), small(`${idle} automated group${idle > 1 ? "s" : ""} to move`)));
-  items.push(sep(), h("span.stat.dim.score", { title: "Score" }, iso ? iconEl("icon16/score", { title: "Score" }) ?? small("Score") : small("Score"), tweenNum("score", m.score)));
+  const scoreTip = [h("div.tip-title", `Score ${scoreText(m.score)}`), h("div", "Your share of the world: the average of your shares of all people, all land and all knowledge."), m.civs_alive ? h("div.tip-hint", `With ${m.civs_alive} civilizations alive, a fair share is ${fairShareText(m.civs_alive)}.`) : null];
+  items.push(sep(), h("span.stat.dim.score", { tip: scoreTip }, iso ? iconEl("icon16/score") ?? small("Score") : small("Score"), tweenNum("score", m.score, "", scoreText)));
   fill(info, items);
+}
+
+/** The top bar's gold tooltip: the treasury and where the gold rate comes from. */
+export function goldTip(m) {
+  const b = goldBreakdown(m.gold_parts);
+  const line = (sign, [what, n]) => h("div", `${sign}${n} ${what}`);
+  return [
+    h("div.tip-title", `Gold ${m.gold} (${m.gold_rate >= 0 ? "+" : ""}${m.gold_rate} a turn)`),
+    b ? b.income.map((x) => line("+", x)) : null,
+    b ? b.costs.map((x) => line("−", x)) : null,
+    b && m.gold_parts.research_fixed ? h("div.tip-hint", "Research cannot be adjusted: the gold rate is only what the treasury loses.") : null,
+    h("div.tip-hint", "The commerce sliders: click the shares beside it, or F2."),
+  ];
 }
 
 // ---------------------------------------------------------------------------------------------

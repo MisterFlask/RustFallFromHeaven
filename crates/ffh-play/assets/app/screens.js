@@ -3,13 +3,15 @@
 // the event and vote popups, the keys, and a raw request box for testers.
 
 import * as api from "./api.js";
-import { S, emit, dname, info, turns, voteChoiceLabel, teamName, me, saveNameOfPath } from "./state.js";
+import { S, emit, dname, turns, voteChoiceLabel, teamName, me, saveNameOfPath, scoreText } from "./state.js";
 import { h, toast } from "./dom.js";
+import { tip } from "./tips.js";
 import { openModal } from "./modals.js";
 import { run } from "./commands.js";
 import { render as markup, plain } from "./markup.js";
 import { illuminate } from "./look.js";
 import { leaderPortrait, teamPortrait, PORTRAIT } from "./portraits.js";
+import { techTip } from "./empire.js";
 
 // ---------------------------------------------------------------------------------------------
 // Research (the CHOOSETECH popup and the research button).
@@ -40,14 +42,12 @@ export async function openResearch({ popup = false } = {}) {
     const list = h(
       "div.build-grid",
       can.map((x) => {
-        const e = info("TechType", x.tech);
-        const help = [e?.help, e?.strategy].filter(Boolean).map((s) => plain(s)).join("\n");
         return h(
           "button.build",
           {
             "data-tech": x.tech,
             class: x.researching ? "current" : x.queued !== null ? "queued" : "",
-            title: help || dname("TechType", x.tech),
+            tip: techTip(x, "Click: research now. Shift-click: add to the queue."),
             onclick: async (ev) => {
               const reply = await run({ c: "research", tech: x.tech, shift: !!ev.shiftKey });
               if (!reply) return;
@@ -205,9 +205,26 @@ export function newGame({ dismissible = true } = {}) {
     leader.replaceChildren(h("option", { value: "" }, "Random"), ...(c ? c.leaders.map((l) => h("option", { value: st.leaders[l].type }, st.leaders[l].name)) : []));
     showFace();
   };
-  civ.addEventListener("change", fillLeaders);
-  leader.addEventListener("change", showFace);
+  // What the chosen civilization and leader bring (the server's C++ `parseCivInfos` and
+  // `parseLeaderTraits`), beside the fields.
+  const about = h("div.ng-about");
+  const showAbout = () => {
+    const c = st.civilizations.find((x) => x.type === civ.value);
+    const l = leader.value ? st.leaders.find((x) => x.type === leader.value) : null;
+    about.replaceChildren(
+      l?.help ? h("div.ng-leader", markup(l.help)) : h("div.dim", c ? "A random leader of this civilization." : "A random civilization and leader."),
+      c?.help ? h("div.ng-civ", markup(c.help)) : null,
+    );
+  };
+  civ.addEventListener("change", () => (fillLeaders(), showAbout()));
+  leader.addEventListener("change", () => (showFace(), showAbout()));
   fillLeaders();
+  showAbout();
+  // A list's selected entry's help, as the select's tooltip.
+  const helpTip = (list, el) => () => {
+    const e = list.find((x) => x.type === el.value);
+    return e ? [h("div.tip-title", e.name), e.help ? h("div.tip-effects", markup(e.help)) : h("div.dim", "No description.")] : null;
+  };
   const seed = h("input", { type: "number", id: "ng-seed", min: 0, max: 4294967295, value: d.seed });
   const dice = h("button.small", { type: "button", title: "A random seed", onclick: () => (seed.value = String(Math.floor(Math.random() * 1e6))) }, "⚄");
   const opponents = h("input", { type: "number", id: "ng-opponents", min: 1, max: st.max_opponents, value: d.opponents });
@@ -217,14 +234,15 @@ export function newGame({ dismissible = true } = {}) {
   const era = select("era", st.eras, d.era);
   const climate = select("climate", st.climates, d.climate);
   const sea = select("sea_level", st.sea_levels, d.sea_level);
+  for (const [el, list] of [[world, st.worlds], [speed, st.speeds], [handicap, st.handicaps], [era, st.eras], [climate, st.climates], [sea, st.sea_levels]]) tip(el, helpTip(list, el));
   const name = h("input", { type: "text", id: "ng-name", placeholder: "game-<seed>", pattern: "[A-Za-z0-9_.\\-]{1,64}", title: "The game's directory under the saves directory" });
   const options = h(
     "div.checks",
-    st.options.map((o) => h("label", { title: o.type }, h("input", { type: "checkbox", value: o.type, checked: d.options.includes(o.id) }), ` ${o.name}`)),
+    st.options.map((o) => h("label", { tip: [h("div.tip-title", o.name), o.help ? h("div.tip-effects", markup(o.help)) : h("div.dim", "No description.")] }, h("input", { type: "checkbox", value: o.type, checked: d.options.includes(o.id) }), ` ${o.name}`)),
   );
   const victories = h(
     "div.checks",
-    st.victories.map((v) => h("label", h("input", { type: "checkbox", value: v.type, checked: !d.disabled_victories.includes(v.id) }), ` ${v.name}`)),
+    st.victories.map((v) => h("label", { tip: v.help ? [h("div.tip-title", v.name), h("div.tip-effects", markup(v.help))] : null }, h("input", { type: "checkbox", value: v.type, checked: !d.disabled_victories.includes(v.id) }), ` ${v.name}`)),
   );
   const spectate = h("input", { type: "checkbox", id: "ng-spectate" });
   const err = h("p.error");
@@ -247,7 +265,7 @@ export function newGame({ dismissible = true } = {}) {
         field("Seed", h("div.inline", seed, dice)),
         field("Game name", name),
       ),
-      face,
+      h("div.ng-side", face, about),
     ),
     h("details", h("summary", "Game options"), options),
     h("details", h("summary", "Victory conditions"), victories),
@@ -388,7 +406,7 @@ export function gameOver(st) {
     wide: true,
     body: [
       h("p", over.winner_team !== null && over.winner_team !== undefined ? `Winner: ${teamName(over.winner_team)}` : "No winner.", over.victory !== null && over.victory !== undefined ? ` · ${dname("VictoryType", over.victory)} victory` : "", ` · turn ${st.turn}`),
-      h("table.scores", h("tr", h("th", "Player"), h("th", "Score")), rows.map((r) => h("tr", { class: r.alive ? "" : "dead" }, h("td", r.name), h("td", String(r.score))))),
+      h("table.scores", h("tr", h("th", "Player"), h("th", "Score")), rows.map((r) => h("tr", { class: r.alive ? "" : "dead" }, h("td", r.name), h("td", scoreText(r.score))))),
     ],
     buttons: [
       { label: "New game", primary: true, onClick: () => newGame() },

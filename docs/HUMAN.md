@@ -23,8 +23,10 @@ cargo build --release
 ```
 
 The page starts with the new-game screen (civilization and leader or random, with the chosen
-leader's portrait, opponents, world size, speed, difficulty, era, climate, sea level, seed, game options, victory conditions; "Load a
-game…" lists the saves). Each game gets a directory in `./saves` (`--saves DIR` to change it).
+leader's portrait and, beside it, what the leader and the civilization bring: alignment, hero, world
+spell, each trait's effects, starting techs, unique and blocked units and buildings, special
+abilities; opponents, world size, speed, difficulty, era, climate, sea level, seed, game options,
+victory conditions, each choice's description as its tooltip; "Load a game…" lists the saves). Each game gets a directory in `./saves` (`--saves DIR` to change it).
 `serve` takes the GAME flags too (`--seed 3 --world WORLDSIZE_SMALL --new` starts a game at once,
 `--load saves/game-3/auto/T0040.ffhsave` resumes one). Use a current Chrome, Firefox or Safari;
 nothing is fetched from the internet.
@@ -44,7 +46,10 @@ cannot load.
 happening (your turn; "Moving: …" with the players and the seconds while the AIs play); gold and
 rate, research (click it to choose) with its progress bar and turns, the commerce split by its
 icons (click it for the sliders), the Armageddon eclipse (its corona reddens at 50, 75 and 100)
-with the counter, mana by sphere, anarchy, golden age, Stasis, idle AI-controlled groups, score;
+with the counter, mana by sphere, anarchy, golden age, Stasis, idle AI-controlled groups, score
+(your share of the world, docs/SCORE.md, with the fair share in its tooltip); the gold's tooltip
+gives where the gold rate comes from (the cities' commerce, deals; units with the free ones, units
+outside the borders, city maintenance, civic upkeep, inflation);
 below them the menu (Research, Techs, Cities, Civics, Religion, Diplomacy, Tools, Save, Load,
 New, keys `?`, a raw request box `⌘` for testing) and End turn. The map fills the middle (minimap
 bottom right, zoom and the map layers bottom left), the selection panel is on the right, and the
@@ -72,7 +77,7 @@ Units face east, and west after a move west. Zoom (`+` `-`, `Q` `E`, the wheel) 
 32, 64 (the default), 96 and 128 screen pixels a plot, and two chart steps, 16 and 8 (flat
 colours, owners' washes, city dots, units as small squares). Hovering a plot shows a tooltip
 (terrain, resource, improvement, owner, yields and defence while you see it, the city and units
-there; with the art, the yields, defence and move cost by their icons; over a unique improvement
+there, each unit with its strength, level and promotions; with the art, the yields, defence and move cost by their icons; over a unique improvement
 such as Yggdrasil or the Maelstrom, what it does: its yields, defence, happiness and healing, the
 resource and spells it offers, what happens to units that enter or come near), and with units selected
 the path: dots from plot to plot that march, a roundel with the
@@ -170,27 +175,32 @@ transport asks which.
 gained or lost, growth, starvation, disorder, buildings, techs, contacts, wars and peace,
 enemies near your cities, the Armageddon counter, borders, and the messages), the first unit
 waiting for orders is selected, and the open questions come up one at a time in Civ4's order:
-events (each choice with its effects; greyed when not possible now), votes, research (click:
-research it; Shift-click: add it to the queue), then each city with nothing to build (click:
+events (each choice with its effects; greyed when not possible now), votes, research (each
+tech's tooltip says what it brings you; click: research it; Shift-click: add it to the queue),
+then each city with nothing to build (click:
 build it now; Shift-click: add to the queue; Ctrl-click: put it first). "Later" sets one aside
 for this turn. End turn (the button, or `Enter` once no group waits) asks first when an event, a vote or the research is
 open or units wait for orders: answer them, select a unit, or end the turn anyway (Civ4's
 consequences: open events are dropped, votes get one more turn and then abstain, empty research
 takes the automatic pick). A question the rules must have answered at once (keep or raze a
-captured city, a free tech, an election) appears as a dialog that cannot be closed, with the
-choices, the advisor's pick marked, and "AI default".
+captured city, with its buildings and holy cities; a free tech, each with its worth in research
+and what it brings; an election) appears as a dialog that cannot be closed, with the choices, the
+advisor's pick marked, and "AI default".
 
 **Cities.** Double-click your city, use the button in the selection panel when your units
 stand in it, or the Cities list (`F1`). The city screen: the plots of the city's radius with
 their yields (worked ones green, the city's own plot gold, plots another city works dashed;
 click a plot to work it or to stop working it, which turns the citizen into a specialist, as in
-Civ4, and stops the automatic citizens), the specialists with `−`/`+` (greyed when the rules
-would refuse), "Automate citizens", food and growth, production, commerce, happiness and health
-with their parts, culture, great people, maintenance, buildings, religions and the garrison;
+Civ4, and stops the automatic citizens), the specialists with what each yields and `−`/`+` (greyed
+when the rules would refuse), "Automate citizens", food and growth, production, commerce,
+happiness and health with their parts (each list adds up to its total: the difficulty, buildings,
+resources, ... against the population and the rest; a city short of health loses that much food),
+culture, great people, maintenance, buildings, religions and the garrison;
 hurry (gold or population, with the price), draft, the emphasis flags and "Automate
 production"; the queue (✕ removes an entry while there are several; the only one is replaced by
-choosing another) and everything it can build with turns and cost (click: build it; Shift:
-append; Ctrl: put it first). "‹ Previous city" and "Next city ›" go through your cities.
+choosing another) and everything it can build with turns and cost, each with its tooltip (a
+unit's strength, moves and class, what it does; click: build it; Shift: append; Ctrl: put it
+first). "‹ Previous city" and "Next city ›" go through your cities.
 With the isometric map the screen is Civ4's city view: the map glides to the city at the largest
 zoom that shows its radius, veils what lies outside it and draws the radius in gilt, each plot
 with its yields and the worked ones with a citizen; click a plot there to work it or stop. The
@@ -198,15 +208,18 @@ rest of the screen stands in panels at the sides, the interface steps aside, and
 back when the screen closes (docs/ISO.md, "The city screen").
 
 **Empire.** **Techs** (`F6`): the tech tree by prerequisite depth, what you know, research and
-can research now, with costs, turns and progress; click a tech to research it (with what it
-needs first), Shift-click to queue it. **Civics** (`F3`): each civic option with its civics (the
-current ones marked, the ones you cannot adopt greyed); pick civics and the screen shows the
+can research now, with costs, turns and progress, and each tech's tooltip; click a tech to research
+it (with what it needs first), Shift-click to queue it. **Civics** (`F3`): each civic option with its
+civics (the current ones marked, the ones you cannot adopt greyed, their tooltip saying why: the
+tech, a war, an alignment, a state religion); pick civics and the screen shows the
 revolution's anarchy and upkeep (computed by the rules), then "Revolution!". **Religion** (`F7`):
-the religions, their holy cities as far as you know them, your cities with each, and "Convert"
-(with the anarchy). **Finances** (`F2`, or click the commerce split in the top bar): each
-commerce's share with `−`/`+` by Civ4's step (only the ones you may change).
+the religions, the tech whose first discoverer founds each, their holy cities as far as you know
+them, your cities with each, and "Convert" (with the anarchy). **Finances** (`F2`, or click the
+commerce split in the top bar): each commerce's share with `−`/`+` by Civ4's step (only the ones
+you may change; gold takes the rest), and the gold per turn by its parts, as in the gold's tooltip.
 **Diplomacy** (`F4`): every player you met, by their leader's portrait (war or peace, open
-borders, pacts, vassals, attitude, score, your deals with them) with "Trade…" and "Declare war"
+borders, pacts, vassals, attitude with its reasons as its tooltip, alignment and state religion,
+score, your deals with them; your own alignment and state religion above the list) with "Trade…" and "Declare war"
 (it asks first). Each playable leader has a portrait in the interface's pixel art
 (`tools/m7/leaders.py`), also shown at the top of the trade screen, on a deal offered to you, on
 the question to take over a civilization that appeared and by each candidate of a vote. The trade screen lists what each side can give (refusals greyed with Civ4's reason); click items into the deal
@@ -220,6 +233,13 @@ player or team, and of anything under debug reveal, plots too; an info entry by 
 it runs the top bar counts the turns left and "Stop" ends it: you have control at your next turn);
 **Spectate** (below); **Take over…** (play another slot of an AI-only save); **Options** (Civ4's
 player options); the raw request box.
+
+**Help.** What a choice does is in its tooltip, as Civ4 shows it: one box that follows the pointer
+(or the keyboard focus), stays inside the window, and keeps the help's icons, colours and lines.
+The help texts are written by the server from the rules' tables (`src/view/help/`, ports of
+C++ `CvGameTextMgr`): what a tech brings you (`setTechHelp`, with your own units and buildings and
+only what you cannot do yet), what a civilization, a leader and a trait bring (`parseCivInfos`,
+`parseLeaderTraits`, `parseTraits`). Built from the data, they follow the rules as they change.
 
 **Spectating.** Tools → Spectate (or "Spectate" in the new-game screen) lets the AI play every
 civilization, yours too, one turn at a time with the whole map shown: the top bar has Pause,

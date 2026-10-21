@@ -343,6 +343,10 @@ html.iso .tip-unique {
 }
 html.iso .tip-unique-name { color: var(--iso-gold); }
 html.iso .tip-effects { font-size: 20px; line-height: 24px; color: var(--iso-ink); }
+html.iso .richtip { max-width: 520px; }
+html.iso .ng-about { font-size: 20px; line-height: 24px; max-height: 440px; }
+html.iso .tip-strategy, html.iso .tip-hint, html.iso .tip-parts { font-size: 20px; line-height: 24px; font-style: normal; }
+html.iso .tip-requires { color: #ff8a70; }
 html.iso .tip-combat { border-top: 0; background: linear-gradient(#f0b443 0 2px, #6a4410 2px 4px) no-repeat top / 100% 4px; padding-top: 8px; }
 html.iso .tip-combat .odds { font-size: 20px; }
 html.iso .tip-combat .mods { font-size: 20px; color: var(--iso-dim); }

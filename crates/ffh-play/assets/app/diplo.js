@@ -6,7 +6,7 @@
 // their portrait (portraits.js).
 
 import * as api from "./api.js";
-import { S, dname, tname, teamName, tradeItemLabel, tradeRefusal, DUAL_ITEMS } from "./state.js";
+import { S, dname, tname, teamName, tradeItemLabel, tradeRefusal, DUAL_ITEMS, me, scoreText, fairShareText } from "./state.js";
 import { h, toast } from "./dom.js";
 import { openModal, ask, closeTag } from "./modals.js";
 import { run } from "./commands.js";
@@ -33,8 +33,9 @@ export async function openDiplomacy() {
           { class: p.alive ? "" : "dead", "data-player": p.id },
           h("td", h("div.leader-cell", leaderPortrait(p.leader, { size: PORTRAIT.medium }), h("div", h("b", p.name), h("div.dim", `${dname("CivilizationType", p.civ)} · team ${p.team}`)))),
           h("td", relation.flatMap((x, i) => (i ? [", ", x] : [x]))),
-          h("td", p.attitude !== null ? dname("AttitudeType", p.attitude) : "-"),
-          h("td.num", String(p.score)),
+          h("td", { tip: p.attitude !== null ? () => attitudeTip(p) : null }, p.attitude !== null ? dname("AttitudeType", p.attitude) : "-"),
+          h("td", p.alignment !== null && p.alignment !== undefined ? dname("AlignmentType", p.alignment) : h("span.dim", "-"), h("div.dim", p.state_religion !== null && p.state_religion !== undefined ? dname("ReligionType", p.state_religion) : "no state religion")),
+          h("td.num", scoreText(p.score)),
           h(
             "td.actions",
             p.alive && p.contact ? h("button.small", { "data-trade": p.id, onclick: () => openTrade(p.id, p.name).then(load) }, "Trade…") : h("span.dim", p.alive ? "no contact" : "dead"),
@@ -43,14 +44,34 @@ export async function openDiplomacy() {
           deals.length ? h("td.dim", deals.map((d) => h("div", d))) : h("td"),
         );
       });
+    const my = me();
+    const you = my
+      ? h(
+          "p.dim",
+          `You: ${my.alignment !== null && my.alignment !== undefined ? dname("AlignmentType", my.alignment) : "no alignment"}, ${my.state_religion !== null && my.state_religion !== undefined ? `${dname("ReligionType", my.state_religion)} as state religion` : "no state religion"}; score ${scoreText(my.score)}${my.civs_alive ? ` (a fair share is ${fairShareText(my.civs_alive)})` : ""}. Point at an attitude to see its reasons.`,
+        )
+      : null;
     m.setBody(
+      you,
       rows.length
-        ? h("table.scores.diplo", h("tr", h("th", "Leader"), h("th", "Relations"), h("th", "Attitude"), h("th", "Score"), h("th", ""), h("th", "Deals")), rows)
+        ? h("table.scores.diplo", h("tr", h("th", "Leader"), h("th", "Relations"), h("th", "Attitude"), h("th", "Alignment"), h("th", "Score"), h("th", ""), h("th", "Deals")), rows)
         : h("p.dim", "You have not met anyone yet."),
     );
   };
   load();
   return m.done;
+}
+
+/** Why player `p` feels as it does about you (the `players` query's `attitude_parts`, which sum to
+ *  its `attitude_score`), and what the next better attitude takes. */
+function attitudeTip(p) {
+  const parts = p.attitude_parts ?? [];
+  const sign = (n) => (n > 0 ? `+${n}` : `${n}`);
+  return [
+    h("div.tip-title", `${p.name}: ${dname("AttitudeType", p.attitude)} towards you`),
+    parts.length ? parts.map(([why, n]) => h("div", n ? `${sign(n)} ${why}` : why)) : h("div.dim", "Nothing for or against you."),
+    p.attitude_score !== null && p.attitude_score !== undefined ? h("div.tip-hint", `Total ${sign(p.attitude_score)}${p.attitude_next !== null && p.attitude_next !== undefined ? `; at ${sign(p.attitude_next)} they would be ${dname("AttitudeType", p.attitude + 1)}` : ""}.`) : null,
+  ];
 }
 
 async function declareWar(p) {

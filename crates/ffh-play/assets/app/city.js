@@ -15,10 +15,11 @@ import { S, dname, orderName, info, turns, me, emit, tidx, ORDER_KINDS } from ".
 import { h, signed, setText } from "./dom.js";
 import { openModal } from "./modals.js";
 import { run } from "./commands.js";
-import { render as markup, plain } from "./markup.js";
+import { render as markup, plain, YIELD_ICONS, COMMERCE_ICONS } from "./markup.js";
 import { YIELD_COLORS } from "./tiles.js";
 import { look, uiIcon, typeIcon, barEl, pix } from "./look.js";
 import { focusOn, isoSkin, queueIcon, refreshCityPanel } from "./isoui.js";
+import { infoTip } from "./infotips.js";
 
 const GROUPS = [
   [0, "Units"],
@@ -211,6 +212,19 @@ function plotGrid(c, task) {
   return h("div.cgrid", { style: { gridTemplateColumns: `repeat(${2 * r + 1}, 1fr)` } }, rows);
 }
 
+/** What one specialist of type `s` adds: its yields, commerces, great people and experience,
+ *  as a small line (markup icons). */
+function specialistYields(s) {
+  const e = info("SpecialistType", s);
+  if (!e) return null;
+  const bits = [];
+  (e.yields ?? []).forEach((n, j) => n && bits.push(`${signed(n)}${YIELD_ICONS[j]}`));
+  (e.commerces ?? []).forEach((n, j) => n && bits.push(`${signed(n)}${COMMERCE_ICONS[j]}`));
+  if (e.great_people) bits.push(`${signed(e.great_people)}[ICON_GREATPEOPLE]`);
+  if (e.experience) bits.push(`${signed(e.experience)} XP to new units`);
+  return bits.length ? h("span.spec-yields", " ", markup(bits.join(" "))) : null;
+}
+
 function specialistsView(c, task) {
   const rows = c.specialists
     .filter((s) => s.count > 0 || s.plus || s.minus || s.free > 0)
@@ -219,7 +233,7 @@ function specialistsView(c, task) {
         "div.spec",
         { "data-specialist": s.specialist },
         typeIcon("specialist", s.specialist, 16),
-        h("span.spec-name", dname("SpecialistType", s.specialist)),
+        h("span.spec-name", { tip: infoTip("SpecialistType", s.specialist, { extra: specialistYields(s.specialist) }) }, dname("SpecialistType", s.specialist), specialistYields(s.specialist)),
         h("span.dim", `${s.count}${s.forced ? ` (${s.forced} set)` : ""}${s.free ? `, ${s.free} free` : ""}${s.max ? ` / ${s.max}` : ""}`),
         h("button.small.minus", { disabled: !s.minus, title: "One less", onclick: () => task("TASK_CHANGE_SPECIALIST", s.specialist, -1) }, "−"),
         h("button.small.plus", { disabled: !s.plus, title: "One more", onclick: () => task("TASK_CHANGE_SPECIALIST", s.specialist, 1) }, "+"),
@@ -242,12 +256,13 @@ function kv(rows) {
   return h("table.kv", rows.filter(([, v]) => v !== null && v !== undefined && v !== false).map(([k, v]) => h("tr", h("th", k), h("td", v instanceof Node ? v : String(v)))));
 }
 
-function parts(obj, labels) {
-  return labels
-    .map(([k, label]) => [label, obj[k]])
-    .filter(([, v]) => v)
-    .map(([label, v]) => `${label} ${signed(v)}`)
-    .join(", ");
+
+/** A city's happiness or health by its parts (the `city` query's `*_parts`: each list sums to its
+ *  total): "+4 difficulty, +1 buildings; unhappy: 3 population". */
+function partsLine(good, bad, badWord, notes = []) {
+  const list = (ps) => (ps ?? []).map(([label, n]) => `${n} ${label}`).join(", ");
+  const text = [good?.length ? list(good) : null, bad?.length ? `${badWord}: ${list(bad)}` : null, ...notes].filter(Boolean).join("; ");
+  return h("span.dim.tip-parts", text || "-");
 }
 
 function statsView(c) {
@@ -264,10 +279,10 @@ function statsView(c) {
       ["Food", `${f.stored}/${f.threshold} (${signed(f.difference)}; eats ${f.consumption}) ${f.difference > 0 ? `grows in ${turns(f.turns)}` : f.difference < 0 ? "starving" : "stagnant"}`],
       ["Production", `${y(1).rate} per turn${y(1).modifier ? ` (+${y(1).modifier}%)` : ""}`],
       ["Commerce", `${y(2).rate}: ${commerce || "-"}`],
-      ["Happy", `${hp.happy} happy, ${hp.unhappy} unhappy${hp.angry ? `, ${hp.angry} angry` : ""}`],
-      ["", h("span.dim", parts(hp, [["buildings", "buildings"], ["religions", "religions"], ["bonuses", "resources"], ["features", "features"], ["military", "military"], ["largest_city", "largest city"], ["commerce", "luxury"], ["extra", "other"]]) + (hp.buildings_bad || hp.religions_bad || hp.bonuses_bad ? `; against: ${parts(hp, [["buildings_bad", "buildings"], ["religions_bad", "religions"], ["bonuses_bad", "resources"], ["features_bad", "features"]])}` : "") + (hp.war_weariness_percent_anger ? `; war weariness ${hp.war_weariness_percent_anger}` : "") + (hp.hurry_anger_timer ? `; hurry anger ${hp.hurry_anger_timer}` : "") + (hp.conscript_anger_timer ? `; draft anger ${hp.conscript_anger_timer}` : ""))],
-      ["Health", `${he.good} healthy, ${he.bad} unhealthy${he.unhealthy_population ? ` (${he.unhealthy_population} sick)` : ""}`],
-      ["", h("span.dim", parts(he, [["fresh_water", "fresh water"], ["features", "features"], ["buildings", "buildings"], ["bonuses", "resources"], ["power", "power"], ["extra", "other"]]) + (he.buildings_bad || he.features_bad || he.bonuses_bad ? `; against: ${parts(he, [["buildings_bad", "buildings"], ["features_bad", "features"], ["bonuses_bad", "resources"], ["power_bad", "power"], ["fresh_water_bad", "water"]])}` : ""))],
+      ["Happy", `${hp.happy} happy, ${hp.unhappy} unhappy${hp.angry ? ` (${hp.angry} angry: they do not work)` : ""}`],
+      ["", partsLine(hp.happy_parts, hp.unhappy_parts, "unhappy", [hp.hurry_anger_timer ? `hurry anger for ${turns(hp.hurry_anger_timer)}` : null, hp.conscript_anger_timer ? `draft anger for ${turns(hp.conscript_anger_timer)}` : null])],
+      ["Health", `${he.good} healthy, ${he.bad} unhealthy${he.bad > he.good ? ` (${he.bad - he.good} short: −${he.bad - he.good} food a turn)` : ""}`],
+      ["", partsLine(he.good_parts, he.bad_parts, "unhealthy")],
       ["Culture", `${c.culture}/${c.culture_threshold}${c.culture_level !== null ? ` (${dname("CultureLevelType", c.culture_level)})` : ""}`],
       ["Great people", `${c.great_people.progress} (+${c.great_people.rate} per turn)`],
       ["Defence", `${c.defense}%${c.defense_damage ? ` (damaged ${c.defense_damage})` : ""}`],
@@ -280,7 +295,7 @@ function statsView(c) {
 }
 
 function buildingsView(c) {
-  const b = c.buildings.map((x) => h("span.chip", { title: plain(info("BuildingType", x.building)?.help ?? "") }, typeIcon("building", x.building, 8), dname("BuildingType", x.building), x.free && !x.real ? h("span.dim", " (free)") : null));
+  const b = c.buildings.map((x) => h("span.chip", { tip: infoTip("BuildingType", x.building) }, typeIcon("building", x.building, 8), dname("BuildingType", x.building), x.free && !x.real ? h("span.dim", " (free)") : null));
   const r = c.religions.map((x) => h("span.chip", typeIcon("religion", x.religion, 8), dname("ReligionType", x.religion), x.holy ? h("span.good", " ★ holy city") : null));
   const units = c.garrison.map((u) => h("span.chip", `${dname("UnitType", u.type)}${u.owner !== me()?.player ? ` (${u.owner})` : ""}`));
   return [
@@ -341,15 +356,13 @@ function productionView(c, choose, remove) {
         "div.build-grid",
         items.map((b) => {
           const kind = ORDER_KINDS[order];
-          const e = info(kind, b.type);
-          const help = e?.help ? markup(e.help).textContent : e?.strategy ? markup(e.strategy).textContent : "";
           return h(
             "button.build",
             {
               disabled: !b.enabled,
               "data-order": order,
               "data-type": b.type,
-              title: `${help}${help ? "\n" : ""}Click: build now. Shift: add to the queue. Ctrl: put first.`,
+              tip: infoTip(kind, b.type, { hint: b.enabled ? "Click: build now. Shift: add to the queue. Ctrl: put first." : "Not possible now." }),
               onclick: (ev) => choose(order, b.type, ev),
             },
             isoSkin() ? buildIcon(order, b.type) : null,

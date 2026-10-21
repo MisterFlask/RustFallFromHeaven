@@ -1,5 +1,7 @@
 // DOM helpers shared by the screens: an element builder, toasts, and the busy indicator.
 
+import { tip } from "./tips.js";
+
 /** How the short texts of buttons and headings are drawn: `null` (plain text), or a function
  *  `(tagName, text, el) => Node | string` that look.js sets once the art has loaded (the bitmap
  *  fonts of docs/ART.md 11.6; the text stays the element's `textContent`). */
@@ -32,9 +34,9 @@ export function setText(el, text) {
 
 /** `h("button.primary#end", {onclick, title}, "End turn", child...)`: an element with classes
  *  and id from the tag string, properties or attributes from `props` (`on*` are listeners,
- *  `data-*` and `aria-*` attributes, `style` an object), and text or node children (null and
- *  false are skipped, arrays flattened). The text children of buttons and headings go through
- *  the text hook (`setTextHook`). */
+ *  `data-*` and `aria-*` attributes, `style` an object, `tip` a rich tooltip: tips.js), and text
+ *  or node children (null and false are skipped, arrays flattened). The text children of buttons
+ *  and headings go through the text hook (`setTextHook`). */
 export function h(tag, props = {}, ...children) {
   const m = /^([a-z0-9]+)?((?:[.#][\w-]+)*)$/i.exec(tag);
   const el = document.createElement(m?.[1] || "div");
@@ -50,6 +52,7 @@ export function h(tag, props = {}, ...children) {
     if (v === undefined || v === null || v === false) continue;
     if (k.startsWith("on") && typeof v === "function") el.addEventListener(k.slice(2), v);
     else if (k === "style" && typeof v === "object") Object.assign(el.style, v);
+    else if (k === "tip") tip(el, v);
     else if (k === "class") el.className += ` ${v}`;
     else if (k.startsWith("data-") || k.startsWith("aria-") || k === "role" || k === "for") el.setAttribute(k, v === true ? "" : v);
     else el[k] = v;

@@ -585,7 +585,19 @@ function showTip() {
   if (city) lines.push(h("div.tip-city", `${city.capital ? "★ " : ""}${city.name}`, h("span.dim", ` (${playerName(city.owner)}${city.size !== null && city.size !== undefined ? `, size ${city.size}` : ""})`)));
   const units = unitsAt(x, y);
   if (units.length) {
-    const shown = units.slice(0, 8).map((u) => h("div.tip-unit", `${dname("UnitType", u.type)}`, h("span.dim", ` ${playerName(u.owner)}${u.hp < u.max_hp ? `, ${Math.round((100 * u.hp) / u.max_hp)}% health` : ""}`)));
+    // The plot query's units carry their strength, level and promotions (C++ plot help).
+    const known = new Map((p && p.x === x && p.y === y ? (p.units ?? []) : []).map((u) => [u.id, u]));
+    const shown = units.slice(0, 8).map((u0) => {
+      const u = { ...u0, ...(known.get(u0.id) ?? {}) };
+      const promos = (u.promotions ?? []).map((pr) => dname("PromotionType", pr));
+      return h(
+        "div.tip-unit",
+        `${dname("UnitType", u.type)}`,
+        u.strength !== undefined ? ` ${u.strength}${u.defense_strength !== undefined && u.defense_strength !== u.strength ? `/${u.defense_strength}` : ""}⚔` : "",
+        h("span.dim", ` ${playerName(u.owner)}${u.level > 1 ? `, level ${u.level}` : ""}${u.hp < u.max_hp ? `, ${Math.round((100 * u.hp) / u.max_hp)}% health` : ""}`),
+        promos.length ? h("div.dim.tip-promos", promos.join(", ")) : null,
+      );
+    });
     lines.push(...shown);
     if (units.length > 8) lines.push(h("div.dim", `and ${units.length - 8} more`));
   }
@@ -803,7 +815,9 @@ function actionButton(a) {
       disabled: !a.enabled,
       "data-kind": a.kind,
       "data-type": actionType(a),
-      title: [key ? `[${key}]` : "", help ? markup(help).textContent : ""].filter(Boolean).join(" "),
+      // The help as a rich tooltip (its bullets and colours kept), else the key as the title.
+      title: help ? null : key ? `[${key}]` : null,
+      tip: help ? [h("div.tip-title", actionLabel(a), key ? h("kbd", key) : null), h("div.tip-effects", markup(help))] : null,
       onclick: () => doAction(a),
     },
     a.kind === "promotion" ? promotionIcon(a.promotion, { u: 1 }) : null,

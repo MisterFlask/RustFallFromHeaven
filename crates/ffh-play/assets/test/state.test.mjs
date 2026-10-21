@@ -287,3 +287,17 @@ test("save names from paths", () => {
   assert.equal(St.saveNameOfPath(null), null);
   assert.equal(St.saveNameOfPath("auto/T1.ffhsave"), null);
 });
+
+test("the gold rate by its parts adds up; scores are shares", async () => {
+  const { goldBreakdown, scoreText, fairShareText } = await import("../app/state.js");
+  const gp = { income: 20, deals: -3, units: 4, units_count: 9, units_free: 5, military_count: 2, military_free: 1, supply: 1, supply_units: 2, maintenance: 6, civics: 2, inflation: 1, inflation_rate: 8, research_fixed: false };
+  const b = goldBreakdown(gp);
+  assert.equal(b.net, 20 - 3 - 4 - 1 - 6 - 2 - 1);
+  assert.deepEqual(b.income, [["from your cities' commerce", 20]]);
+  assert.equal(b.costs.find(([w]) => w === "deals")[1], 3);
+  assert.equal(goldBreakdown(null), null);
+  assert.equal(goldBreakdown({ ...gp, deals: 4, units: 0, supply: 0, inflation: 0 }).income.length, 2);
+  assert.equal(scoreText(1341), "13.4%");
+  assert.equal(scoreText(10000), "100.0%");
+  assert.equal(fairShareText(5), "20.0%");
+});

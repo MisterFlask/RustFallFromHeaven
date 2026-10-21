@@ -12,60 +12,7 @@
 use ffh_data::*;
 
 use crate::names;
-
-/// A `getText` argument.
-enum Arg<'a> {
-    N(i32),
-    S(&'a str),
-}
-
-/// Civ4 `getText` placeholders: `%d1` (a number), `%D1` (a number with its sign), `%s1` and
-/// `%F1` (text), each with an optional grammatical suffix (`%s1_unit`, `%d1_Num`), and `%%`.
-fn fill(t: &str, args: &[Arg]) -> String {
-    let mut out = String::with_capacity(t.len());
-    let mut rest = t;
-    while let Some(at) = rest.find('%') {
-        out.push_str(&rest[..at]);
-        let tail = &rest[at + 1..];
-        let b = tail.as_bytes();
-        if b.first() == Some(&b'%') {
-            out.push('%');
-            rest = &tail[1..];
-        } else if b.len() >= 2 && matches!(b[0], b'd' | b'D' | b's' | b'F') && (b'1'..=b'9').contains(&b[1]) {
-            match (b[0], args.get((b[1] - b'1') as usize)) {
-                (b'D', Some(Arg::N(n))) => out.push_str(&format!("{n:+}")),
-                (_, Some(Arg::N(n))) => out.push_str(&n.to_string()),
-                (_, Some(Arg::S(s))) => out.push_str(s),
-                (_, None) => {}
-            }
-            let mut len = 2;
-            if b.get(2) == Some(&b'_') {
-                let word = b[3..].iter().take_while(|c| c.is_ascii_alphabetic()).count();
-                if word > 0 {
-                    len += 1 + word;
-                }
-            }
-            rest = &tail[len..];
-        } else {
-            out.push('%');
-            rest = tail;
-        }
-    }
-    out.push_str(rest);
-    out
-}
-
-/// A text key filled with `args`; `fallback` when the key has no text (the keys FFH2 inherits
-/// from BtS are not vendored).
-fn txt(d: &GameData, key: &str, fallback: &str, args: &[Arg]) -> String {
-    let t = names::text(d, key);
-    fill(if t == key { fallback } else { t }, args)
-}
-
-/// A help text on one line, for after a name: "[ICON_BULLET]A[NEWLINE][ICON_BULLET]B" -> "A; B".
-fn one_line(t: &str) -> String {
-    t.split("[NEWLINE]").map(|l| l.replace("[ICON_BULLET]", "").trim().to_string()).filter(|l| !l.is_empty()).collect::<Vec<_>>().join("; ")
-}
+use crate::view::help::{one_line, txt, Arg};
 
 /// What a Python callback named by a unique improvement, or by a spell cast on one, does:
 /// `Some(line)`, `Some("")` when there is nothing to say (worldbuilder scenarios only), `None` for
@@ -197,16 +144,6 @@ mod tests {
     fn effects_of(name: &str) -> String {
         let d = data();
         effects(d, d.t::<ImprovementType>(name))
-    }
-
-    #[test]
-    fn placeholders_are_filled() {
-        assert_eq!(fill("[ICON_BULLET]%D1%% Tile Defense", &[Arg::N(25)]), "[ICON_BULLET]+25% Tile Defense");
-        assert_eq!(fill("%D1% heal rate", &[Arg::N(-10)]), "-10% heal rate");
-        assert_eq!(fill("+%d1%F2 in nearby cities", &[Arg::N(1), Arg::S("[ICON_HAPPY]")]), "+1[ICON_HAPPY] in nearby cities");
-        assert_eq!(fill("Must be level %d1_Num to enter", &[Arg::N(15)]), "Must be level 15 to enter");
-        assert_eq!(fill("Spawns %s1_unit barbarian units", &[Arg::S("Skeleton")]), "Spawns Skeleton barbarian units");
-        assert_eq!(fill("by 75%, then %s2", &[]), "by 75%, then ");
     }
 
     #[test]

@@ -332,6 +332,8 @@ pub fn plot(v: &Viewer, x: i32, y: i32) -> Result<Json, QueryErr> {
                 let mut uj = unit_json(v, u);
                 uj.set("strength", g.unit_base_combat_str(u));
                 uj.set("defense_strength", g.unit_base_combat_str_defense(u));
+                // C++ plot help lists a visible unit's promotions.
+                uj.set("promotions", Json::Arr(d.promotions.keys().filter(|&pr| g.units[u].has_promotion[pr]).map(Json::idx).collect()));
                 uj
             })
             .collect();
