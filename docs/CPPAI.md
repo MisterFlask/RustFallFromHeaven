@@ -44,6 +44,7 @@ turns; and civilizations created mid-game took the controller of their slot).
 FFH_CPPAI=all|even|odd|<p>,<p>,..|barb ffh stats --seed 1 ...    # players played by the C++ AI
 FFH_PLAYER_HANDICAP=<slot>:HANDICAP_X,...                       # per-slot handicaps
 FFH_CPPAI_TRACE=all|<p>                                          # trace its production and groups
+FFH_CPPAI_CITIZENS=1                                             # ffh-ai with the C++ citizen management
 python3 crates/ffh-cppai/scripts/h2h.py --bin $B/ffh --seeds 1-12 --turns 690 \
     --at 100,200,300,400,500,600,690 --until-supremacy [--handicap-ffh HANDICAP_X]
 ```

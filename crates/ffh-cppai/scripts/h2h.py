@@ -55,6 +55,8 @@ def run_game(args, seed, cpp_parity):
         cmd += ['--option', o]
     if args.until_supremacy:
         cmd += ['--until-supremacy']
+    if args.detail:
+        cmd += ['--detail']
     p = subprocess.run(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     if p.returncode != 0:
         tail = '\n'.join(p.stderr.strip().split('\n')[-15:])
@@ -192,6 +194,7 @@ def main():
     ap.add_argument('--jobs', type=int, default=4)
     ap.add_argument('--option', action='append', default=[])
     ap.add_argument('--until-supremacy', action='store_true', help='stop a game at clear supremacy (ffh stats)')
+    ap.add_argument('--detail', action='store_true', help='per-player unit/building/project type counts (ffh stats)')
     ap.add_argument('--handicap-cpp', default=None, help='HANDICAP_X for the C++ AI slots')
     ap.add_argument('--handicap-ffh', default=None, help='HANDICAP_X for the ffh-ai slots')
     ap.add_argument('--out', default=None)

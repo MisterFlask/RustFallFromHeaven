@@ -132,6 +132,55 @@ pub struct TurnStat {
     pub cities: usize,
 }
 
+/// ffh-ai with the citizen management of the C++ AI port (`FFH_CPPAI_CITIZENS=1`): every
+/// decision is ffh-ai's except `assign_working_plots`, which is `CvCityAI::AI_assignWorkingPlots`
+/// (ffh-cppai). An analysis switch (docs/CPPAI.md), not a game mode.
+struct CppCitizens {
+    inner: ControllerRef,
+    cai: ffh_cppai::Cai,
+}
+
+impl Controller for CppCitizens {
+    fn name(&self) -> &str {
+        self.inner.name()
+    }
+    fn play_turn(&self, g: &mut Game, p: PlayerId) {
+        self.inner.play_turn(g, p)
+    }
+    fn choose_production(&self, g: &mut Game, c: CityId) {
+        self.inner.choose_production(g, c)
+    }
+    fn choose_research(&self, g: &Game, p: PlayerId) -> Option<TechType> {
+        self.inner.choose_research(g, p)
+    }
+    fn raze_conquered_city(&self, g: &Game, p: PlayerId, c: CityId) -> bool {
+        self.inner.raze_conquered_city(g, p, c)
+    }
+    fn choose_event(&self, g: &Game, p: PlayerId, t: &EventTriggeredData, options: &[EventType]) -> Option<EventType> {
+        self.inner.choose_event(g, p, t, options)
+    }
+    fn consider_offer(&self, g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData], we_give: &[TradeData]) -> bool {
+        self.inner.consider_offer(g, p, from, they_give, we_give)
+    }
+    fn choose_religion(&self, g: &Game, p: PlayerId) -> Option<ReligionType> {
+        self.inner.choose_religion(g, p)
+    }
+    fn attitude(&self, g: &Game, p: PlayerId, towards: PlayerId) -> AttitudeType {
+        self.inner.attitude(g, p, towards)
+    }
+    fn update_automated_group(&self, g: &mut Game, grp: GroupId) -> bool {
+        self.inner.update_automated_group(g, grp)
+    }
+    fn assign_working_plots(&self, g: &mut Game, c: CityId) -> bool {
+        // Barbarian cities keep the rules' governor (the comparison is about the civs).
+        if g.player_is_barbarian(g.cities[c].owner) {
+            return false;
+        }
+        self.cai.city_ai_assign_working_plots(g, c);
+        true
+    }
+}
+
 /// A new game with the AI on every slot; the returned `Timed` measures AI time.
 pub fn new_game(cfg: &RunConfig) -> (Game, Arc<Timed>) {
     let d = ffh_data::global();
@@ -161,7 +210,10 @@ pub fn new_game(cfg: &RunConfig) -> (Game, Arc<Timed>) {
     g.handicap = o.handicap;
     g.map_script = Arc::new(FractalMapScript::default());
     let timed = Arc::new(Timed::new(ffh_ai::ai_controller()));
-    let ai: ControllerRef = timed.clone();
+    let mut ai: ControllerRef = timed.clone();
+    if std::env::var_os("FFH_CPPAI_CITIZENS").is_some() {
+        ai = Arc::new(CppCitizens { inner: ai, cai: ffh_cppai::Cai::new(cfg.seed) });
+    }
     for p in g.player_ids() {
         g.controllers[p] = ai.clone();
     }
