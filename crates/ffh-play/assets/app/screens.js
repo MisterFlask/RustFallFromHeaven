@@ -9,7 +9,7 @@ import { openModal } from "./modals.js";
 import { run } from "./commands.js";
 import { render as markup, plain } from "./markup.js";
 import { illuminate } from "./look.js";
-import { leaderPortrait, PORTRAIT } from "./portraits.js";
+import { leaderPortrait, teamPortrait, PORTRAIT } from "./portraits.js";
 
 // ---------------------------------------------------------------------------------------------
 // Research (the CHOOSETECH popup and the research button).
@@ -109,7 +109,8 @@ export async function openEvent(ev) {
   return result ?? v;
 }
 
-/** A vote popup (`pending.votes[]`). Resolves "chosen", "later" or null. */
+/** A vote popup (`pending.votes[]`): a candidate (a team) by its leader's portrait. Resolves
+ *  "chosen", "later" or null. */
 export async function openVote(v) {
   let result = null;
   const choices = h(
@@ -127,7 +128,7 @@ export async function openVote(v) {
             }
           },
         },
-        voteChoiceLabel(c),
+        c >= 0 ? h("span.vote-choice", teamPortrait(c, { size: PORTRAIT.small }), h("span", voteChoiceLabel(c))) : voteChoiceLabel(c),
       ),
     ),
   );

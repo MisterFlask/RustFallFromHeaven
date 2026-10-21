@@ -1,8 +1,8 @@
 // Leader portraits (tools/m7/leaders.py, docs/ISO.md "The interface"): a bust of each playable
 // leader, painted in the interface's pixel art, 80 art px a side drawn as 2 px blocks (160 CSS px),
 // exported with the isometric sprites as `iso/leader_<key>.png`. Shown in every renderer: the
-// foreign affairs screen, the trade screen, a deal offered to you, the take-control question and
-// the new-game screen. A leader without a portrait shows none.
+// foreign affairs screen, the trade screen, a deal offered to you, the take-control question, a
+// vote's candidates and the new-game screen. A leader without a portrait shows none.
 
 import { S, dname, tname, me } from "./state.js";
 import { h } from "./dom.js";
@@ -34,6 +34,12 @@ export function leaderPortrait(leader, { size = PORTRAIT.medium, title } = {}) {
     draggable: false,
     "data-size": size <= PORTRAIT.small ? "small" : size <= PORTRAIT.medium ? "medium" : "large",
   });
+}
+
+/** Team `t`'s leader's portrait (its first player you know of, you included), or null. */
+export function teamPortrait(t, opts) {
+  const pl = [...S.players.values()].find((p) => p.team === t) ?? (me()?.team === t ? me() : null);
+  return pl ? leaderPortrait(pl.leader, opts) : null;
 }
 
 /** Player `p`'s leader's portrait (a player you know of), or null. */

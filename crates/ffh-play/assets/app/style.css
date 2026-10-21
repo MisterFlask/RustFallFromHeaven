@@ -396,6 +396,7 @@ img.leader-portrait { display: block; flex: none; box-sizing: content-box; image
 img.leader-portrait[data-size="small"] { image-rendering: auto; }
 .leader-cell { display: flex; gap: 10px; align-items: center; }
 .leader-cell > div { white-space: nowrap; }
+.vote-choice { display: flex; gap: 8px; align-items: center; }
 .decision-head { display: flex; gap: 12px; align-items: flex-start; }
 .decision-head .page-text { flex: 1; min-width: 0; }
 .ng-top { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; }

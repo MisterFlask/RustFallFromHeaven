@@ -208,8 +208,8 @@ commerce's share with `−`/`+` by Civ4's step (only the ones you may change).
 **Diplomacy** (`F4`): every player you met, by their leader's portrait (war or peace, open
 borders, pacts, vassals, attitude, score, your deals with them) with "Trade…" and "Declare war"
 (it asks first). Each playable leader has a portrait in the interface's pixel art
-(`tools/m7/leaders.py`), also shown at the top of the trade screen, on a deal offered to you and
-on the question to take over a civilization that appeared. The trade screen lists what each side can give (refusals greyed with Civ4's reason); click items into the deal
+(`tools/m7/leaders.py`), also shown at the top of the trade screen, on a deal offered to you, on
+the question to take over a civilization that appeared and by each candidate of a vote. The trade screen lists what each side can give (refusals greyed with Civ4's reason); click items into the deal
 (gold with an amount; peace, open borders and pacts go both ways, so they are greyed on both
 sides when either side refuses them), "Propose": the AI accepts or declines at once.
 

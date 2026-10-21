@@ -234,7 +234,7 @@ fills the page and the interface floats over it.
   `tools/m7/prompts/leaders/` are written from each leader's Civilopedia entry), 80 art px in
   2 px blocks, exported as `leader_<key>`. They show in every renderer: 80 px by each player in
   Diplomacy, 160 px at the top of the trade screen and on the new-game screen, 80 px on a deal
-  offered to you and on the take-control question; in this skin in the boxes' inset frame.
+  offered to you and on the take-control question, 40 px by each candidate of a vote; in this skin in the boxes' inset frame.
 - **How it is wired**: the skin follows the renderer (`main.js` `syncSkin`, on every renderer
   change): it moves the advisor buttons to the rail and End turn, the layers, zoom and minimap
   to the bottom-right cluster, and puts them back when the renderer changes. look.js's helpers
