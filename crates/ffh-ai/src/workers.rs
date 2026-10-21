@@ -20,24 +20,86 @@ use crate::view::View;
 
 /// FfH `CvGameUtils.canBuild` for AI players: false = the AI must not use this build here.
 pub fn ai_build_allowed(g: &Game, p: PlayerId, plot: PlotIdx, build: BuildType) -> bool {
-    let d = g.d;
-    let name = d.builds[build].base.type_.as_str();
-    let pl = &g.players[p];
-    let civic = |opt: &str, civ: &str| -> bool {
-        match (d.ty::<CivicOptionType>(opt), d.ty::<CivicType>(civ)) {
-            (Some(o), Some(c)) => pl.civics[o] == Some(c),
-            _ => false,
+    BanState::new(g, p).rule(g.d, build).allows(g, plot)
+}
+
+/// What the bans of [`ai_build_allowed`] read of the player: its civics, traits and techs.
+struct BanState {
+    fallow: bool,
+    arete: bool,
+    guilds: bool,
+    aristocracy: bool,
+}
+
+/// [`ai_build_allowed`] for one build and player, before the plot is known.
+#[derive(Copy, Clone)]
+enum BanRule {
+    Banned,
+    Allowed,
+    /// Roads: not on water.
+    OnLand,
+}
+
+impl BanState {
+    fn new(g: &Game, p: PlayerId) -> BanState {
+        let d = g.d;
+        let pl = &g.players[p];
+        let civic = |opt: &str, civ: &str| -> bool {
+            match (d.ty::<CivicOptionType>(opt), d.ty::<CivicType>(civ)) {
+                (Some(o), Some(c)) => pl.civics[o] == Some(c),
+                _ => false,
+            }
+        };
+        BanState {
+            fallow: d.ty::<TraitType>("TRAIT_FALLOW").is_some_and(|t| pl.traits[t]),
+            arete: civic("CIVICOPTION_LABOR", "CIVIC_ARETE"),
+            guilds: d.ty::<TechType>("TECH_GUILDS").is_some_and(|t| g.team_is_has_tech(pl.team, Some(t))),
+            aristocracy: civic("CIVICOPTION_GOVERNMENT", "CIVIC_ARISTOCRACY"),
         }
-    };
-    let fallow = d.ty::<TraitType>("TRAIT_FALLOW").is_some_and(|t| pl.traits[t]);
-    match name {
-        "BUILD_FORT" => false,
-        "BUILD_WINDMILL" => !civic("CIVICOPTION_LABOR", "CIVIC_ARETE"),
-        "BUILD_WORKSHOP" => fallow || d.ty::<TechType>("TECH_GUILDS").is_some_and(|t| g.team_is_has_tech(pl.team, Some(t))),
-        "BUILD_COTTAGE" => !civic("CIVICOPTION_GOVERNMENT", "CIVIC_ARISTOCRACY"),
-        "BUILD_FARM" => !fallow,
-        "BUILD_ROAD" => !g.plot_is_water(plot),
-        _ => true,
+    }
+
+    fn rule(&self, d: &GameData, build: BuildType) -> BanRule {
+        let ok = match d.builds[build].base.type_.as_str() {
+            "BUILD_FORT" => false,
+            "BUILD_WINDMILL" => !self.arete,
+            "BUILD_WORKSHOP" => self.fallow || self.guilds,
+            "BUILD_COTTAGE" => !self.aristocracy,
+            "BUILD_FARM" => !self.fallow,
+            "BUILD_ROAD" => return BanRule::OnLand,
+            _ => true,
+        };
+        if ok {
+            BanRule::Allowed
+        } else {
+            BanRule::Banned
+        }
+    }
+}
+
+impl BanRule {
+    fn allows(self, g: &Game, plot: PlotIdx) -> bool {
+        match self {
+            BanRule::Banned => false,
+            BanRule::Allowed => true,
+            BanRule::OnLand => !g.plot_is_water(plot),
+        }
+    }
+}
+
+/// [`ai_build_allowed`] for every build of one player, resolved once (type names, civics,
+/// traits, techs) for the many plots of one worker's search, which changes nothing they read.
+struct BuildBans {
+    rules: Vec<BanRule>,
+}
+
+impl BuildBans {
+    fn new(g: &Game, p: PlayerId) -> BuildBans {
+        let state = BanState::new(g, p);
+        BuildBans { rules: g.d.builds.keys().map(|b| state.rule(g.d, b)).collect() }
+    }
+
+    fn allowed(&self, g: &Game, plot: PlotIdx, build: BuildType) -> bool {
+        self.rules[build.idx()].allows(g, plot)
     }
 }
 
@@ -136,8 +198,56 @@ pub fn road_plan(g: &Game, p: PlayerId) -> Vec<(PlotIdx, i32)> {
     out
 }
 
+/// What [`build_value`] reads that does not depend on the build: the commerce weight (the
+/// player's sliders), the food weight of each working city, and the yields of the current
+/// improvement of the plot being scored. Filled on first use during one worker's search, which
+/// changes nothing in the game.
+struct ValueCx {
+    commerce_w: i32,
+    food_w: Vec<(CityId, i32)>,
+    old: Option<(PlotIdx, [i32; YieldType::NUM])>,
+}
+
+impl ValueCx {
+    fn new(g: &Game, p: PlayerId) -> ValueCx {
+        // Commerce matters more to an empire that cannot afford its research.
+        let research = crate::economy::spend_pct(g, p);
+        let commerce_w = if research < 50 { 11 * (200 - 2 * research) / 100 } else { 11 };
+        ValueCx { commerce_w, food_w: Vec::new(), old: None }
+    }
+
+    /// What working city `c` needs: food while it can grow.
+    fn food_weight(&mut self, g: &Game, c: CityId) -> i32 {
+        if let Some(&(_, w)) = self.food_w.iter().find(|(o, _)| *o == c) {
+            return w;
+        }
+        let surplus = g.city_yield_rate(c, YieldType::YIELD_FOOD) - g.city_food_consumption(c, false, 0);
+        let happy_room = g.city_happy_level(c) - g.city_unhappy_level(c, 0);
+        let w = if surplus < 2 && happy_room > 0 { 30 } else if happy_room > 0 { 22 } else { 12 };
+        self.food_w.push((c, w));
+        w
+    }
+
+    /// The yields player `p` gets from the improvement on `plot` now (0 without one).
+    fn old_yields(&mut self, g: &Game, p: PlayerId, plot: PlotIdx) -> [i32; YieldType::NUM] {
+        if let Some((q, old)) = self.old {
+            if q == plot {
+                return old;
+            }
+        }
+        let mut old = [0; YieldType::NUM];
+        if let Some(o) = g.map.plots[plot].improvement_type {
+            for (y, slot) in old.iter_mut().enumerate() {
+                *slot = g.plot_calculate_improvement_yield_change(plot, o, YieldType::from_usize(y), Some(p), false, false);
+            }
+        }
+        self.old = Some((plot, old));
+        old
+    }
+}
+
 /// Value of performing `build` on `plot` for player `p` (0 = not worth it).
-fn build_value(g: &Game, v: &View, p: PlayerId, plot: PlotIdx, build: BuildType) -> i32 {
+fn build_value(g: &Game, v: &View, p: PlayerId, plot: PlotIdx, build: BuildType, cx: &mut ValueCx) -> i32 {
     let d = g.d;
     let info = &d.builds[build];
     let pl = &g.map.plots[plot];
@@ -148,12 +258,7 @@ fn build_value(g: &Game, v: &View, p: PlayerId, plot: PlotIdx, build: BuildType)
         // What the working city needs.
         let city = pl.working_city.filter(|&c| g.cities[c].owner == p);
         let (food_w, prod_w) = match city {
-            Some(c) => {
-                let surplus = g.city_yield_rate(c, YieldType::YIELD_FOOD) - g.city_food_consumption(c, false, 0);
-                let happy_room = g.city_happy_level(c) - g.city_unhappy_level(c, 0);
-                let food_w = if surplus < 2 && happy_room > 0 { 30 } else if happy_room > 0 { 22 } else { 12 };
-                (food_w, 18)
-            }
+            Some(c) => (cx.food_weight(g, c), 18),
             None => (20, 18),
         };
         // Improvements that grow (cottages) count their grown form for two thirds.
@@ -164,10 +269,8 @@ fn build_value(g: &Game, v: &View, p: PlayerId, plot: PlotIdx, build: BuildType)
                 _ => break,
             }
         }
-        // Commerce matters more to an empire that cannot afford its research.
-        let research = crate::economy::spend_pct(g, p);
-        let commerce_w = if research < 50 { 11 * (200 - 2 * research) / 100 } else { 11 };
-        let weights = [food_w, prod_w, commerce_w];
+        let weights = [food_w, prod_w, cx.commerce_w];
+        let old_yields = cx.old_yields(g, p, plot);
         let mut value = 0;
         let mut new_total = 0;
         for y in 0..YieldType::NUM {
@@ -177,7 +280,7 @@ fn build_value(g: &Game, v: &View, p: PlayerId, plot: PlotIdx, build: BuildType)
                 let grown = g.plot_calculate_improvement_yield_change(plot, last, yt, Some(p), false, false);
                 new = (new + 2 * grown) / 3;
             }
-            let old = pl.improvement_type.map_or(0, |o| g.plot_calculate_improvement_yield_change(plot, o, yt, Some(p), false, false));
+            let old = old_yields[y];
             value += (new - old) * weights[y];
             new_total += pl.yields[y] - old + new;
         }
@@ -274,7 +377,11 @@ pub fn worker_with(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, sea: boo
     let ut = g.units[u].unit_type;
     let work_rate = g.d.units[ut].work_rate.max(1);
     let reach = v.flood.run(g, u, 8, false);
-    let builds: Vec<BuildType> = g.d.builds.keys().filter(|&b| g.d.units[ut].builds[b]).collect();
+    // Only builds with an improvement or a route can have a value (`build_value` is 0 for the
+    // others, such as clearing a forest).
+    let builds: Vec<BuildType> = g.d.builds.keys().filter(|&b| g.d.units[ut].builds[b] && (g.d.builds[b].improvement.is_some() || g.d.builds[b].route.is_some())).collect();
+    let bans = BuildBans::new(g, p);
+    let mut cx = ValueCx::new(g, p);
     let mut best: Option<(PlotIdx, BuildType, i64)> = None;
     for r in &reach {
         let q = r.plot;
@@ -291,10 +398,25 @@ pub fn worker_with(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, sea: boo
             continue;
         }
         for &b in &builds {
-            if !ai_build_allowed(g, p, q, b) || !allow(g, q, b) || !g.unit_can_build(u, q, b, false) {
+            // `build_value`'s first zero cases, checked before the costlier tests (all of them
+            // pure, so the order does not matter): the improvement is already there; a route
+            // where there is one, or that the road plan does not ask for.
+            match g.d.builds[b].improvement {
+                Some(imp) => {
+                    if pl.improvement_type == Some(imp) {
+                        continue;
+                    }
+                }
+                None => {
+                    if pl.route_type.is_some() || !road {
+                        continue;
+                    }
+                }
+            }
+            if !bans.allowed(g, q, b) || !allow(g, q, b) || !g.unit_can_build(u, q, b, false) {
                 continue;
             }
-            let value = build_value(g, v, p, q, b);
+            let value = build_value(g, v, p, q, b, &mut cx);
             if value <= 0 {
                 continue;
             }
