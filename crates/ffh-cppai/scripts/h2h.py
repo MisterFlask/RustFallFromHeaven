@@ -67,6 +67,14 @@ def side_of(p, parity):
     return 'cpp' if (p % 2 == 0) == (parity == 'even') else 'ffh'
 
 
+def side_of_row(r, parity):
+    """The side that played this player: its controller when the stats name it (civilizations
+    created mid-game are played by their creator's controller), else the slot's parity."""
+    if 'ctrl' in r:
+        return 'cpp' if r['ctrl'] == 'cppai' else 'ffh'
+    return side_of(r['p'], parity)
+
+
 FIELDS = ['score', 'cities', 'pop', 'techs', 'mil_str', 'legacy_score', 'land']
 
 
@@ -79,7 +87,7 @@ def summarize_game(g):
         for r in rows:
             if r.get('barb'):
                 continue
-            s = side_of(r['p'], g['cpp'])
+            s = side_of_row(r, g['cpp'])
             agg[s]['n'] += 1
             if r.get('alive'):
                 agg[s]['alive'] += 1
@@ -89,12 +97,13 @@ def summarize_game(g):
     final_t = max(out)
     rows = [r for r in snaps[str(final_t)] if not r.get('barb')]
     top = max(rows, key=lambda r: (r.get('score') or 0, r.get('legacy_score') or 0))
-    winner = side_of(top['p'], g['cpp'])
+    winner = side_of_row(top, g['cpp'])
     oc = st['outcome']
     if oc.get('kind') in ('victory', 'last_standing', 'supremacy') and oc.get('team', -1) >= 0:
-        # teams are players here (one civ per team)
-        winner = side_of(oc['team'], g['cpp'])
-    return {'per_turn': out, 'final_turn': final_t, 'winner': winner, 'outcome': oc,
+        members = [r for r in rows if r.get('team') == oc['team']]
+        if members:
+            winner = side_of_row(max(members, key=lambda r: r.get('score') or 0), g['cpp'])
+    return {'per_turn': out, 'final_turn': final_t, 'winner': winner, 'outcome': oc, 'victory': oc.get('victory') or oc.get('kind'),
             'ms_per_turn': st.get('ms_per_turn'), 'elim': st.get('eliminated_at', {})}
 
 
@@ -157,9 +166,9 @@ def report(games, args):
         len(full), w, l, sign_test_p(w, l)))
     kinds = {}
     for g, s in sums:
-        k = s['outcome'].get('kind')
+        k = (s['victory'], s['winner'])
         kinds[k] = kinds.get(k, 0) + 1
-    print('outcomes:', kinds)
+    print('outcomes (how, winning side):', dict(sorted(kinds.items())))
     mst = [s['ms_per_turn'] for _, s in sums if s['ms_per_turn']]
     if mst:
         print('ms/turn: mean %.0f, max %.0f' % (sum(mst) / len(mst), max(mst)))

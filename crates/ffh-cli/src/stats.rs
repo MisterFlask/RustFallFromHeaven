@@ -330,6 +330,7 @@ fn snapshot(g: &Game, civ_events: &BTreeMap<PlayerId, CivEvents>, detail: bool) 
         let mut o = Obj::new();
         o.int("p", p.0)
             .str("civ", &civ)
+            .str("ctrl", g.controller(p).name())
             .boolean("barb", barbarian)
             .boolean("alive", pl.alive)
             .int("cities", pl.cities.len() as i64)

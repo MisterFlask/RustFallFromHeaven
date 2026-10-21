@@ -1052,6 +1052,8 @@ impl Game {
             }
 
             self.add_player(new_player, best_leader, best_civ);
+            // The new civilization is played by its creator's controller (one AI per side in head-to-head games; the same controller otherwise).
+            self.controllers[new_player] = self.controllers[p].clone();
             self.players[new_player].parent = Some(p);
             // GC.getInitCore().setLeaderName(eNewPlayer, leader text key): the setup stores
             // the resolved name (what CvInitCore::getLeaderName returns for the key).

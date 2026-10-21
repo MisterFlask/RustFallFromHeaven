@@ -1462,6 +1462,8 @@ impl Game {
         let hyborem = d.t::<LeaderHeadType>("LEADER_HYBOREM");
         let infernal = d.t::<CivilizationType>("CIVILIZATION_INFERNAL");
         self.add_player_advanced(infernal_player, None, hyborem, infernal);
+        // The new civilization is played by its creator's controller (one AI per side in head-to-head games; the same controller otherwise).
+        self.controllers[infernal_player] = self.controllers[p].clone();
         let founder_team = self.players[p].team;
         let infernal_team = self.players[infernal_player].team;
         for tech in d.techs.keys() {
@@ -1545,6 +1547,8 @@ impl Game {
         let basium = d.t::<LeaderHeadType>("LEADER_BASIUM");
         let mercurians = d.t::<CivilizationType>("CIVILIZATION_MERCURIANS");
         self.add_player_advanced(mercurian_player, Some(team), basium, mercurians);
+        // The new civilization is played by its creator's controller (one AI per side in head-to-head games; the same controller otherwise).
+        self.controllers[mercurian_player] = self.controllers[player].clone();
         let (x, y) = self.map.xy(plot);
         const UNITS: [&str; 10] = [
             "UNIT_BASIUM",
