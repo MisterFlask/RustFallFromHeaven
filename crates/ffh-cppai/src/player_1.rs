@@ -388,7 +388,7 @@ impl Cai {
                         contacted[their_team.idx()] = true;
                     }
                 } else {
-                    g.implement_deal(p, i, &our_list, &their_list, false);
+                    implement_ai_deal(g, p, i, &our_list, &their_list);
                 }
             }
 
@@ -564,8 +564,8 @@ impl Cai {
                                 }
                             } else {
                                 // C++: the other AI's agreement is the 3/5 value test above
-                                // (no AI_considerOffer).
-                                g.implement_deal(p, i, &our_list, &their_list, false);
+                                // (no AI_considerOffer); see implement_ai_deal.
+                                implement_ai_deal(g, p, i, &our_list, &their_list);
                             }
                         }
                     }
@@ -1362,4 +1362,15 @@ fn danger_count(g: &Game, p: PlayerId, plot: PlotIdx, range: i32, test_moves: bo
     }
 
     (count, border_danger)
+}
+
+/// C++ `GC.getGameINLINE().implementDeal(..)` of a deal with another AI player, which the C++
+/// signs at once (every AI player ran the same AI). PORT ADAPT: when the other player is played
+/// by a different controller (ffh-ai in head-to-head games), that controller must agree first.
+fn implement_ai_deal(g: &mut Game, p: PlayerId, other: PlayerId, our_list: &[TradeData], their_list: &[TradeData]) {
+    let c = g.controller(other);
+    if c.name() != "cppai" && !c.consider_offer(g, other, p, our_list, their_list) {
+        return;
+    }
+    g.implement_deal(p, other, our_list, their_list, false);
 }
