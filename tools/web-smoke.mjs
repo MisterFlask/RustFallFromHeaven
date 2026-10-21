@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // The headless-Chromium smoke test of the browser client (docs/PLAY_DESIGN.md §7 P5, F21):
 // starts `ffh-play serve`, loads the page in headless Chromium and plays through the UI with the
-// mouse and keyboard: the new-game screen (Start double-clicked), W over the waiting groups,
+// mouse and keyboard: the new-game screen (Start double-clicked), Tab over the waiting groups, W A S D,
 // hotkeys right after a selection change, founding a city, the research and production popups,
 // the city queue, selecting a unit, the path preview, moving with a right-click, ending turns
 // through the end-turn gate, the turn report, saving and loading; then staged saves (`ffh-play
@@ -91,6 +91,12 @@ async function playwrightBrowser(pw, problems) {
     dblclick: (x, y) => page.mouse.dblclick(x, y),
     move: (x, y) => page.mouse.move(x, y),
     key: (key, shift = false) => page.keyboard.press(shift ? `Shift+${key}` : key),
+    // A letter held for `ms` (W A S D scroll the map while held).
+    hold: async (key, ms) => {
+      await page.keyboard.down(key);
+      await new Promise((r) => setTimeout(r, ms));
+      await page.keyboard.up(key);
+    },
     // A held key (Shift): the mouse events meanwhile carry it.
     keyDown: (key) => page.keyboard.down(key),
     keyUp: (key) => page.keyboard.up(key),
@@ -213,6 +219,12 @@ async function cdpBrowser(exe, problems) {
       const [code, text] = KEYS[key] ?? [key.toUpperCase().charCodeAt(0), key];
       const base = { key, windowsVirtualKeyCode: code, modifiers: shift ? 8 : 0 };
       await send("Input.dispatchKeyEvent", { type: text ? "keyDown" : "rawKeyDown", text: text || undefined, ...base });
+      await send("Input.dispatchKeyEvent", { type: "keyUp", ...base });
+    },
+    hold: async (key, ms) => {
+      const base = { key, code: `Key${key.toUpperCase()}`, windowsVirtualKeyCode: key.toUpperCase().charCodeAt(0), modifiers: held };
+      await send("Input.dispatchKeyEvent", { type: "keyDown", text: key, ...base });
+      await new Promise((r) => setTimeout(r, ms));
       await send("Input.dispatchKeyEvent", { type: "keyUp", ...base });
     },
     keyDown: async (key) => {
@@ -459,6 +471,8 @@ async function rendererIso(url) {
   await b.eval(`window.ffh.setLayer("terrain")`);
   await b.eval("window.ffh.mapView.draw()");
   await shot("renderer-iso");
+  // The city screen over the isometric map: its plots worked by clicking them on the map.
+  await cityScreen();
   await b.eval(`window.ffh.setRenderer("art")`);
   await until2(`window.ffh.mapView.renderer() === "art"`, "the art renderer after the isometric one");
   steps.push(`?renderer=iso: a frame of ${colours} colours, ${clicked ? "a click on a unit's figure selects it, hover, " : ""}zoom ${zooms.join(" ")}, political layer, back to the art`);
@@ -563,20 +577,20 @@ async function recordPosts() {
 }
 const posted = () => b.eval(`window.__posts.filter((p) => p.k === "cmd")`);
 
-/** W (and Tab, "Next") reaches every group the cycle selects (`selectable`: C++
+/** Tab (Civ4's W; "Next") reaches every group the cycle selects (`selectable`: C++
  *  `readyToSelect()`), not just the two nearest each other (P5 review). */
 async function cycleAll() {
   const ready = await S("S.view.groups.filter((g) => g.selectable).map((g) => g.id)");
-  if (ready.length < 2) return steps.push(`W: ${ready.length} group waiting, nothing to cycle`);
+  if (ready.length < 2) return steps.push(`Tab: ${ready.length} group waiting, nothing to cycle`);
   const seen = new Set([await S("S.sel ? S.units.get(S.sel.units[0]).group : null")]);
   for (let k = 0; k < 2 * ready.length; k++) {
-    await b.key("w");
+    await b.key("Tab");
     await new Promise((r) => setTimeout(r, 120));
     seen.add(await S("S.sel ? S.units.get(S.sel.units[0]).group : null"));
   }
   const missed = ready.filter((g) => !seen.has(g));
-  if (missed.length) throw new Error(`W never selected groups ${missed} of ${ready}`);
-  steps.push(`W selected all ${ready.length} waiting groups`);
+  if (missed.length) throw new Error(`Tab never selected groups ${missed} of ${ready}`);
+  steps.push(`Tab selected all ${ready.length} waiting groups`);
 }
 
 /** A hotkey pressed right after the selection changed acts on the new selection, never with the
@@ -738,13 +752,15 @@ async function closeDialog(title) {
 }
 
 /** The city screen (P6): a worked plot clicked stops being worked (a specialist instead, the
- *  citizens' automation off), clicked again it is worked; the automation back on. */
+ *  citizens' automation off), clicked again it is worked; the automation back on. With the
+ *  isometric map the plots are clicked on the map, which frames the city (Civ4's city view). */
 async function cityScreen() {
   const city = await S("S.view.cities.find((c) => c.owner === S.view.me.player) || null");
   if (!city) return steps.push("no city for the city screen");
   const p = await plotPos(city.x, city.y);
   await b.dblclick(p.x, p.y);
   await dialog(city.name);
+  if (await b.eval("!!window.ffh.mapView.iso")) return cityOverlay(city);
   const screen = `${TOP} .modal.city-screen`;
   await until2(`!!document.querySelector(${q(`${screen} .cgrid .cplot.centre`)})`, "the city screen's plots");
   await shot("city-screen");
@@ -764,6 +780,33 @@ async function cityScreen() {
     steps.push(`city screen: plot ${worked} clicked off (a specialist) and on, the automation off and on`);
   }
   await closeDialog(city.name);
+}
+
+/** The city screen over the isometric map: the city's plots worked by clicking them on the map. */
+async function cityOverlay(city) {
+  const o = "window.ffh.mapView.overlay.city";
+  await until2(`!!${o} && ${o}.id === ${city.id} && !window.ffh.mapView.anim`, "the city's plots on the map");
+  await shot("city-screen");
+  const worked = await b.eval(`(() => { const q = ${o}.plots.find((p) => p.worked && p.i !== 0); return q ? { i: q.i, x: q.x, y: q.y } : null; })()`);
+  if (!worked) {
+    steps.push("city screen (map): no worked plot to click");
+  } else {
+    const at = () => b.eval(`(() => { const m = window.ffh.mapView; const p = m.screenOf(${worked.x}, ${worked.y}); const r = document.querySelector("canvas.map").getBoundingClientRect(); return { x: p.x + r.left, y: p.y + r.top }; })()`);
+    const isWorked = `(() => { const c = ${o}; return !!c && c.plots.find((p) => p.i === ${worked.i}).worked; })()`;
+    let q = await at();
+    await b.mouse(q.x, q.y);
+    await until2(`!${isWorked}`, "the plot no longer worked (clicked on the map)");
+    await until2(`!!document.querySelector(".modal.city-overlay .spec") && !document.querySelector("#city-auto-citizens").checked`, "a specialist and the automation off");
+    await shot("city-specialist");
+    q = await at();
+    await b.mouse(q.x, q.y);
+    await until2(isWorked, "the plot worked again");
+    await click("#city-auto-citizens");
+    await until2(`document.querySelector("#city-auto-citizens").checked`, "the automation back on");
+    steps.push(`city screen (map): plot ${worked.i} clicked off (a specialist) and on on the map, the automation off and on`);
+  }
+  await closeDialog(city.name);
+  await until2(`!${o}`, "the map back from the city");
 }
 
 /** The empire screens (P6) through their keys: the tech tree, civics, religion, the sliders,
@@ -850,7 +893,7 @@ async function keysAndLayers() {
   await b.key("?");
   await dialog("Keys");
   await closeDialog("Keys");
-  if (!(await S("!!S.sel"))) await b.key("w");
+  if (!(await S("!!S.sel"))) await b.key("Tab");
   if (await S("!!S.sel")) {
     await until2(`window.ffh.units.currentActions().length > 0`, "the selection's actions");
     if (await b.eval(`window.ffh.units.currentActions().some((a) => a.kind === "target" && a.mode === "INTERFACEMODE_GO_TO" && a.enabled)`)) {
@@ -861,6 +904,19 @@ async function keysAndLayers() {
       steps.push("G: the go-to mode, Esc leaves it");
     }
   }
+  // W A S D held scroll the map smoothly and leave the selection as it is (W no longer cycles).
+  const view = () => b.eval(`(() => { const v = window.ffh.mapView; const S = window.ffh.S; return { cx: v.cam.cx, w: v.map.w, sel: S.sel ? S.sel.units.join() : "" }; })()`);
+  // The east-west move, the short way round a wrapping map.
+  const east = (v0, v1) => ((((v1.cx - v0.cx) % v0.w) + v0.w * 1.5) % v0.w) - v0.w / 2;
+  for (const [k, sign] of [["d", 1], ["a", -1]]) {
+    const v0 = await view();
+    await b.hold(k, 350);
+    await new Promise((r) => setTimeout(r, 300));
+    const v1 = await view();
+    if (!(sign * east(v0, v1) > 0.3)) throw new Error(`${k.toUpperCase()} held did not scroll the map: ${JSON.stringify([v0, v1])}`);
+    if (v1.sel !== v0.sel) throw new Error(`${k.toUpperCase()} changed the selection: ${v0.sel} -> ${v1.sel}`);
+  }
+  steps.push("W A S D: the map scrolls while D and A are held, the selection stays");
   for (const layer of ["political", "yield", "terrain"]) {
     await click(`#mapwrap .layers button[data-layer="${layer}"]`);
     await until2(`window.ffh.mapView.layer === "${layer}" && document.querySelector('#mapwrap .layers button[data-layer="${layer}"]').classList.contains("active")`, `the ${layer} layer`);
@@ -1076,8 +1132,8 @@ async function selectUnit(u) {
 const automated = (u) => `(() => { const S = window.ffh.S; const u = S.units.get(${u}); const g = u && S.groups.get(u.group); return !!g && g.automated !== null && g.automated !== undefined; })()`;
 
 /** P7, `stage automate`: the worker's Automation section; a click automates it and the AI gives
- *  it orders at once (it waits for none); the scout explores by the hotkey E; the unit panel
- *  marks automated units. */
+ *  it orders at once (it waits for none); the scout explores by its button (E zooms the map); the
+ *  unit panel marks automated units. */
 async function stagedAutomate(bin, saves) {
   const st = await loadStaged(bin, saves, "automate");
   await selectUnit(st.worker);
@@ -1088,13 +1144,14 @@ async function stagedAutomate(bin, saves) {
   await until2(automated(st.worker), "the worker automated");
   await until2(`(() => { const S = window.ffh.S; const u = S.units.get(${st.worker}); const g = u && S.groups.get(u.group); return !!g && (g.missions.length > 0 || !g.ready); })()`, "the automated worker's orders");
   await selectUnit(st.scout);
-  await until2(`!!document.querySelector('#unit-panel button.action[data-kind="automate"][data-type="AUTOMATE_EXPLORE"]')`, "the scout's explore button");
-  await b.key("e");
+  const explore = '#unit-panel button.action[data-kind="automate"][data-type="AUTOMATE_EXPLORE"]';
+  await until2(`!!document.querySelector(${q(explore)})`, "the scout's explore button");
+  await click(explore);
   await until2(automated(st.scout), "the scout exploring");
   await selectUnit(st.worker);
   await until2(`!!document.querySelector("#unit-panel .badge.auto")`, "the automated badge");
   await shot("automated");
-  steps.push("automate buttons (stage automate): a worker automated with a click, a scout exploring with E");
+  steps.push("automate buttons (stage automate): a worker and a scout (explore) automated with a click");
 }
 
 /** P7, `stage election`: the human secretary general's election popup (deferred, like events

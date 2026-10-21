@@ -1580,7 +1580,7 @@ share score (docs/SCORE.md) averages 10000/N whatever the AI does.
   eliminations), the outcome and the turn each civ died. Snapshots only read the game (the sync
   checksum is the same with or without them). Fields of a snapshot row (one per ever-alive
   player, barbarians included; all computed from game state at the end of that turn):
-  - identity: `p` player id, `team`, `civ`, `leader`, `alignment`, `barb`, `alive`, `elim_turn`
+  - identity: `p` player id, `ctrl` (controller name: `ffh-ai`, `cppai`), `team`, `civ`, `leader`, `alignment`, `barb`, `alive`, `elim_turn`
     (turns played when found dead), `era`, `religion` (state religion), `vassal`;
   - size: `cities`, `pop`, `land` (plots owned), `land_scored`, `area_tiles`, `area_civs`
     (other civs on the capital's landmass), `overseas` cities;
@@ -1650,6 +1650,11 @@ share score (docs/SCORE.md) averages 10000/N whatever the AI does.
   turn, and the economy at turns 300-600; `--min-share` makes it a pass/fail check. A short
   version is the ignored test `run::tests::full_games_end_in_victories` (`cargo test --release
   -p ffh-cli -- --ignored`).
+- **Head to head against the FFH2 C++ AI** (docs/CPPAI.md): `FFH_CPPAI=even|odd|all|<p>,..`
+  makes those players play with the port of the original DLL AI (`crates/ffh-cppai`);
+  `crates/ffh-cppai/scripts/h2h.py --bin $B/ffh --seeds S --turns 690 --until-supremacy
+  [--handicap-ffh HANDICAP_X]` plays each seed with the seats swapped and reports both sides
+  (snapshot rows carry `ctrl`, the controller that played the player).
 - `ffh autoplay --report T` prints, per civ, costs, unit roles, improvements, civics and every
   city's yields, trade, happiness and production; `ffh inspect <player>` shows each city's
   plots (worked, yields, improvements).

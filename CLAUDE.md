@@ -4,7 +4,8 @@
 `docs/AI.md` + `docs/AI_LOG.md`, `docs/PLAY_DESIGN.md` + `docs/HUMAN.md`, `docs/ART.md`, `docs/R3D.md`,
 `docs/SCORE.md`). What is merged is what git says (`git log origin/master`); open work and known
 gaps live in the area docs, not in a session log. Out of scope for now (the owner's call):
-scenarios, and porting the C++ AI.
+scenarios. The C++ AI is ported only as a benchmark to measure ffh-ai against (`crates/ffh-cppai`,
+docs/CPPAI.md; kept on master by the owner's request, 2026-10-21), not as the game's AI.
 
 Port of the FFH2 0.41 Civ4 mod (base mod only), the base for a game of its own. The rules
 engine (DLL C++ + rules Python) was ported function by function; the AI is new. FFH2 0.41 is
@@ -212,6 +213,17 @@ which forward to the C++ methods -- so port each Cy call to the corresponding po
 - Tests that rely on a seed's story (`crates/ffh-play/tests/*`: a bot survives, a city is
   captured) break when the AI changes; make them robust to that (their comments say how, e.g.
   re-pick a seed with `ffh-play bot --seed S`) rather than asserting one game's outcome.
+- **Merging to master** (the owner's standing permission, 2026-10-21): once a change passes the
+  gate (`tools/agents/build-tree.sh --test`, `ffh data` with 0 warnings, `bash tools/web-check.sh`)
+  and the end-to-end tests (`node tools/web-smoke.mjs --bin <built>/ffh-play`; the static site's
+  smoke as well when the change reaches the site, below) all pass, merge it into master
+  (fast-forward when possible) and push, without asking. This holds even when the session was
+  told to develop on another branch: push that branch too. Master is deployed to the public site
+  by CI, so never push it with a failing or skipped check; say what failed instead.
+- **End the turn that pushes master** with the line `WORK ITEMS HAVE BEEN PUSHED TO MASTER`,
+  followed by a clickable link to the game in the browser (the owner's request, 2026-10-21):
+  `[Play in the browser](https://misterflask.github.io/RustFallFromHeaven/)` (CI deploys master
+  there a few minutes after the push).
 
 ## AI changes
 
@@ -274,4 +286,5 @@ A change to the transport, the web host or `crates/ffh-web` also runs the static
 before it goes to master (`tools/web-site.sh OUT`, then `node tools/web-site-smoke.mjs --site OUT`;
 docs/WEB.md): master is deployed to the public site by CI.
 
-When a batch passes the gate, fast-forward master and push it without asking.
+When a batch passes the gate and the end-to-end tests, merge it to master and push it without
+asking ("Merging to master" under Workflow).

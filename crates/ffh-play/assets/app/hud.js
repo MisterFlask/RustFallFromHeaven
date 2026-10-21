@@ -2,12 +2,13 @@
 // counter, mana, anarchy, golden age, Stasis) with the phase and the progress line during the
 // AI turns, and the bottom panel: the turn report, the messages by turn, the game's files.
 
-import { S, dname, tname, turns, playerName, me, emit, endTurnMessage } from "./state.js";
+import { S, dname, tname, turns, playerName, me, emit, endTurnMessage, scoreText, fairShareText, goldBreakdown } from "./state.js";
 import { h, fill } from "./dom.js";
 import { render as markup } from "./markup.js";
 import { look, pix, pixable, iconEl, uiIcon, barEl } from "./look.js";
 import { openCount } from "./commands.js";
 import { spectatorBar, autoplayBar } from "./tools.js";
+import { isoSkin } from "./isoui.js";
 
 /** Year for people: -4000 -> "4000 BC". */
 export function yearText(y) {
@@ -92,7 +93,7 @@ function paintTween(key, s) {
   const node = document.querySelector(`#empire [data-tween="${key}"]`);
   if (!node) return;
   if (s.kind === "num") {
-    const disp = String(Math.round(s.shown));
+    const disp = (s.fmt ?? String)(Math.round(s.shown));
     if (disp === s.lastPaint) return;
     s.lastPaint = disp;
     node.replaceChildren(pix(disp, { font: "vigil" }));
@@ -104,18 +105,18 @@ function paintTween(key, s) {
 }
 
 /** A big top-bar number (Vigil) that eases from its last value to `value`. */
-function tweenNum(key, value, cls = "") {
+function tweenNum(key, value, cls = "", fmt = String) {
   const node = h(`span.num${cls}`, { "data-tween": key });
   const s = tweens.get(key);
   if (!s || reduceMotion()) {
-    tweens.set(key, { value, shown: value, to: value, kind: "num" });
-    node.append(pix(String(value), { font: "vigil" }));
+    tweens.set(key, { value, shown: value, to: value, kind: "num", fmt });
+    node.append(pix(fmt(value), { font: "vigil" }));
   } else if (value !== s.value) {
-    Object.assign(s, { value, from: s.shown, to: value, t0: performance.now(), dur: TWEEN_MS, kind: "num" });
-    node.append(pix(String(Math.round(s.shown)), { font: "vigil" }));
+    Object.assign(s, { value, from: s.shown, to: value, t0: performance.now(), dur: TWEEN_MS, kind: "num", fmt });
+    node.append(pix(fmt(Math.round(s.shown)), { font: "vigil" }));
     ensureTweenLoop();
   } else {
-    node.append(pix(String(Math.round(s.shown)), { font: "vigil" }));
+    node.append(pix(fmt(Math.round(s.shown)), { font: "vigil" }));
   }
   return node;
 }
@@ -173,7 +174,7 @@ export function renderTop() {
   fill(
     phase,
     h("span.phase-dot", { "data-phase": st.phase ?? "" }),
-    look.art ? h("span.turn-crescent", ic(yours ? "icon16/turn" : "icon16/turn_wait", "", yours ? "Your turn" : line)) : null,
+    look.art && !isoSkin() ? h("span.turn-crescent", ic(yours ? "icon16/turn" : "icon16/turn_wait", "", yours ? "Your turn" : line)) : null,
     st.turn !== undefined ? h("b.turn", small("Turn", ".dim"), " ", big(st.turn)) : null,
     st.year !== undefined ? h("span.dim.year", " ", small(yearText(st.year)), " ") : null,
     h("span#phase-text", pixable(line) ? pix(line) : line),
@@ -197,9 +198,10 @@ export function renderTop() {
     end.disabled = st.phase !== "human";
     const n = openCount();
     const label = n ? `End turn (${n} open)` : "End turn";
-    if (end.dataset.label !== `${label}|${!!look.art}`) {
-      end.dataset.label = `${label}|${!!look.art}`;
-      fill(end, look.art ? iconEl("icon16/turn") : null, look.art ? pix(label, { font: "vigil", smallCaps: true }) : label);
+    const skinKey = `${label}|${!!look.art}|${isoSkin()}`;
+    if (end.dataset.label !== skinKey) {
+      end.dataset.label = skinKey;
+      fill(end, look.art || isoSkin() ? iconEl("icon16/turn") : null, look.art ? pix(label, { font: "vigil", smallCaps: true }) : label);
     }
     // Civ4's end-turn message: no group waits, so Enter (or Space) ends the turn; else Enter
     // selects the next group.
@@ -214,8 +216,11 @@ export function renderTop() {
   const r = m.research;
   const pct = r ? Math.min(1, r.progress / Math.max(1, r.cost)) : 0;
   const next = r ? Math.min(1, (r.progress + (r.rate ?? 0)) / Math.max(1, r.cost)) : null;
+  // The isometric interface writes rates as the reference's top bar does: "245 (+18)".
+  const iso = isoSkin();
+  const rate = (n) => (iso ? `(${n >= 0 ? "+" : ""}${n})` : `${n >= 0 ? "+" : ""}${n}`);
   const items = [
-    h("span.stat.gold", { title: `Gold ${m.gold} (${m.gold_rate >= 0 ? "+" : ""}${m.gold_rate} a turn)` }, ic("icon16/gold", "¤", "Gold", ".gold"), tweenNum("gold", m.gold), small(`${m.gold_rate >= 0 ? "+" : ""}${m.gold_rate}`, m.gold_rate < 0 ? ".warn" : ".dim")),
+    h("span.stat.gold", { tip: () => goldTip(m) }, ic("icon16/gold", "¤", "Gold", ".gold"), tweenNum("gold", m.gold), small(rate(m.gold_rate), m.gold_rate < 0 ? ".warn" : ".dim")),
     sep(),
     h(
       "button.stat.research",
@@ -223,7 +228,7 @@ export function renderTop() {
       ic(r ? "icon16/research" : "icon16/research_needed", "⚗", "Research"),
       r ? small(dname("TechType", r.tech)) : h("span.warn", pix("choose research")),
       r ? tweenBar("research", r.progress, r.cost, next, r.tech) : null,
-      r ? small(turns(r.turns), ".dim") : null,
+      r ? small(iso ? `(${r.turns ?? "–"})` : turns(r.turns), ".dim") : null,
     ),
     sep(),
     h(
@@ -232,17 +237,21 @@ export function renderTop() {
       m.commerce_percent
         .map((p, i) => [p, i])
         .filter(([p, i]) => p > 0 || m.flexible[i])
-        .map(([p, i]) => h("span.slider-item", look.art ? uiIcon("commerce", i, 8, { title: dname("CommerceType", i) }) : `${dname("CommerceType", i).slice(0, 3)} `, small(`${p}%`))),
+        .map(([p, i]) => h("span.slider-item", look.art || iso ? uiIcon("commerce", i, 8, { title: dname("CommerceType", i) }) : `${dname("CommerceType", i).slice(0, 3)} `, small(`${p}%`))),
     ),
     sep(),
-    h("span.stat.armageddon", { title: `Armageddon counter ${m.armageddon}` }, look.art ? uiIcon("armageddon", m.armageddon, 16) : h("span.icon", "☄"), big(m.armageddon)),
+    h("span.stat.armageddon", { title: `Armageddon counter ${m.armageddon}` }, look.art || iso ? uiIcon("armageddon", m.armageddon, 16) : h("span.icon", "☄"), big(m.armageddon)),
   ];
   const mana = m.mana.filter((x) => x.count > 0);
   if (mana.length) {
     const list = mana.map((x) => `${dname("BonusType", x.bonus).replace(/ Mana$/, "")} ${x.count}`).join(", ");
-    const spheres = look.art
-      ? mana.map((x) => h("span.sphere", uiIcon("mana", tname("BonusType", x.bonus) ?? "", 8, { title: dname("BonusType", x.bonus) }) ?? null, small(String(x.count))))
-      : [` ${mana.reduce((n, x) => n + x.count, 0)} mana`];
+    const total = mana.reduce((n, x) => n + x.count, 0);
+    // The isometric interface: one crystal and the total (the spheres in its tooltip).
+    const spheres = iso
+      ? [big(total)]
+      : look.art
+        ? mana.map((x) => h("span.sphere", uiIcon("mana", tname("BonusType", x.bonus) ?? "", 8, { title: dname("BonusType", x.bonus) }) ?? null, small(String(x.count))))
+        : [` ${total} mana`];
     items.push(h("span.stat.mana", { title: `Mana: ${list}` }, ic("icon16/mana", "✦", "Mana"), ...spheres));
   }
   if (m.anarchy > 0) items.push(sep(), h("span.stat.warn", { title: `Anarchy: ${m.anarchy} turns` }, ic("icon16/anarchy", "", "Anarchy"), small(`Anarchy ${m.anarchy}`)));
@@ -251,8 +260,22 @@ export function renderTop() {
   if (stasis.length) items.push(sep(), h("span.stat.warn", ic("icon16/stasis", "", "Stasis"), small(`Stasis: ${stasis.map(([k, n]) => `${k} ${n}`).join(", ")}`)));
   const idle = v.pending?.ai_groups_idle?.length ?? 0;
   if (idle) items.push(sep(), h("span.stat.dim", { title: "Automated and FfH AI-controlled units: the AI moves them during your turn" }, ic("icon16/ai_idle", "", "Automated groups to move"), small(`${idle} automated group${idle > 1 ? "s" : ""} to move`)));
-  items.push(sep(), h("span.stat.dim", { title: "Score" }, small("Score"), tweenNum("score", m.score)));
+  const scoreTip = [h("div.tip-title", `Score ${scoreText(m.score)}`), h("div", "Your share of the world: the average of your shares of all people, all land and all knowledge."), m.civs_alive ? h("div.tip-hint", `With ${m.civs_alive} civilizations alive, a fair share is ${fairShareText(m.civs_alive)}.`) : null];
+  items.push(sep(), h("span.stat.dim.score", { tip: scoreTip }, iso ? iconEl("icon16/score") ?? small("Score") : small("Score"), tweenNum("score", m.score, "", scoreText)));
   fill(info, items);
+}
+
+/** The top bar's gold tooltip: the treasury and where the gold rate comes from. */
+export function goldTip(m) {
+  const b = goldBreakdown(m.gold_parts);
+  const line = (sign, [what, n]) => h("div", `${sign}${n} ${what}`);
+  return [
+    h("div.tip-title", `Gold ${m.gold} (${m.gold_rate >= 0 ? "+" : ""}${m.gold_rate} a turn)`),
+    b ? b.income.map((x) => line("+", x)) : null,
+    b ? b.costs.map((x) => line("−", x)) : null,
+    b && m.gold_parts.research_fixed ? h("div.tip-hint", "Research cannot be adjusted: the gold rate is only what the treasury loses.") : null,
+    h("div.tip-hint", "The commerce sliders: click the shares beside it, or F2."),
+  ];
 }
 
 // ---------------------------------------------------------------------------------------------

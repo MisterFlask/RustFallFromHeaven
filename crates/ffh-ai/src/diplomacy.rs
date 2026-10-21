@@ -27,42 +27,48 @@ use crate::view::View;
 /// research (`research::siege_offense`), so both read the same notion of clear superiority.
 pub(crate) const TOTAL_WAR_RATIO: i64 = 140;
 
-/// Relation of player `p` towards `other`: < 0 hostile, > 0 friendly.
-pub fn relation(g: &Game, p: PlayerId, other: PlayerId) -> i32 {
+/// The terms of [`relation`] (what each is, and its value), in its order; they sum to it. The
+/// human's diplomacy screen shows them as the reasons of an attitude.
+pub fn relation_parts(g: &Game, p: PlayerId, other: PlayerId) -> Vec<(&'static str, i32)> {
     let a = &g.players[p];
     let b = &g.players[other];
-    let mut r = 0;
+    let mut out = Vec::new();
     match (a.alignment, b.alignment) {
-        (Some(x), Some(y)) if x != y => {
-            r -= (x.idx() as i32 - y.idx() as i32).abs() * 2;
-        }
-        (Some(_), Some(_)) => r += 1,
+        (Some(x), Some(y)) if x != y => out.push(("different alignment", -(x.idx() as i32 - y.idx() as i32).abs() * 2)),
+        (Some(_), Some(_)) => out.push(("same alignment", 1)),
         _ => {}
     }
     match (g.player_get_state_religion(p), g.player_get_state_religion(other)) {
-        (Some(x), Some(y)) if x == y => r += 2,
-        (Some(_), Some(_)) => r -= 1,
+        (Some(x), Some(y)) if x == y => out.push(("same state religion", 2)),
+        (Some(_), Some(_)) => out.push(("different state religion", -1)),
         _ => {}
     }
     let (ta, tb) = (a.team, b.team);
     if g.teams[ta].ai_at_war_counter[tb] > 0 {
-        r -= 1;
+        out.push(("war between us", -1));
     }
     if g.team_is_open_borders(ta, tb) {
-        r += 1;
+        out.push(("open borders", 1));
     }
-    r
+    out
 }
 
-/// Attitude from the relation score (C++ `AI_getAttitude` thresholds are not reproduced).
-pub fn attitude(g: &Game, p: PlayerId, towards: PlayerId) -> AttitudeType {
-    if p == towards {
-        return AttitudeType::ATTITUDE_FRIENDLY;
-    }
-    let mut r = relation(g, p, towards);
+/// Relation of player `p` towards `other`: < 0 hostile, > 0 friendly.
+pub fn relation(g: &Game, p: PlayerId, other: PlayerId) -> i32 {
+    relation_parts(g, p, other).iter().map(|t| t.1).sum()
+}
+
+/// The terms of [`attitude`]'s score: [`relation_parts`], and the war itself while at war.
+pub fn attitude_parts(g: &Game, p: PlayerId, towards: PlayerId) -> Vec<(&'static str, i32)> {
+    let mut out = relation_parts(g, p, towards);
     if g.at_war(g.players[p].team, g.players[towards].team) {
-        r -= 2;
+        out.push(("at war", -2));
     }
+    out
+}
+
+/// The attitude of a score (the sum of [`attitude_parts`]).
+pub fn attitude_of_score(r: i32) -> AttitudeType {
     match r {
         i32::MIN..=-4 => AttitudeType::ATTITUDE_FURIOUS,
         -3..=-1 => AttitudeType::ATTITUDE_ANNOYED,
@@ -70,6 +76,14 @@ pub fn attitude(g: &Game, p: PlayerId, towards: PlayerId) -> AttitudeType {
         1..=2 => AttitudeType::ATTITUDE_PLEASED,
         _ => AttitudeType::ATTITUDE_FRIENDLY,
     }
+}
+
+/// Attitude from the relation score (C++ `AI_getAttitude` thresholds are not reproduced).
+pub fn attitude(g: &Game, p: PlayerId, towards: PlayerId) -> AttitudeType {
+    if p == towards {
+        return AttitudeType::ATTITUDE_FRIENDLY;
+    }
+    attitude_of_score(attitude_parts(g, p, towards).iter().map(|t| t.1).sum())
 }
 
 pub(crate) fn is_team_leader(g: &Game, p: PlayerId) -> bool {

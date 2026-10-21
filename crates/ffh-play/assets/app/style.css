@@ -189,7 +189,21 @@ html.art #top .sep { display: block; }
 .tip-title { color: var(--c-vellum); }
 .tip-city { color: var(--c-sand); }
 .tip-path { color: var(--c-bone); margin-top: 3px; }
+.tip-unique { margin: 4px 0; padding: 4px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.tip-unique-name { color: var(--c-sand); }
+.tip-effects { font-size: 12px; line-height: 1.4; }
 .tip-combat { margin-top: 4px; padding-top: 4px; border-top: 1px solid var(--line); }
+/* The rich tooltips of the screens (tips.js): above the dialogs, at the pointer. */
+.richtip { position: fixed; z-index: 60; max-width: 420px; line-height: 1.4; }
+/* The new-game screen: the chosen civilization and leader beside the fields. */
+.ng-side { flex: 0 1 320px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.ng-about { max-height: 360px; overflow-y: auto; font-size: 12px; line-height: 1.4; padding-right: 4px; }
+.ng-about .ng-civ { margin-top: 8px; padding-top: 6px; border-top: 1px solid var(--line); }
+.richtip .tip-effects { margin-top: 3px; }
+.tip-requires { color: var(--c-scarlet); margin-top: 3px; }
+.tip-strategy { margin-top: 5px; padding-top: 4px; border-top: 1px solid var(--line); font-size: 12px; font-style: italic; color: var(--c-stone); }
+.tip-hint { margin-top: 5px; font-size: 12px; color: var(--c-ash); }
+.tip-parts { font-size: 12px; color: var(--c-stone); }
 .tip-combat .odds { font-size: 15px; color: var(--c-vellum); display: flex; align-items: center; gap: 6px; }
 .tip-combat .odds.bad { color: var(--c-scarlet); }
 .tip-combat .mods { font-size: 12px; color: var(--dim); }
@@ -384,6 +398,20 @@ table.scores.diplo td { vertical-align: top; }
 .trade-item.on { border-color: var(--c-bone); background: var(--c-coal); }
 .trade-item > button { width: 26px; padding: 0; }
 input.amount { width: 80px; }
+.trade-head { display: flex; gap: 14px; align-items: center; margin-bottom: 10px; }
+.trade-head h3 { margin: 0 0 4px; }
+
+/* Leader portraits (portraits.js): 80 art px drawn as 2 px blocks. The border sits outside the
+   content box, so the picture keeps its exact size and its pixels stay square. */
+img.leader-portrait { display: block; flex: none; box-sizing: content-box; image-rendering: pixelated; border: 2px solid var(--line); background: var(--panel-2); }
+img.leader-portrait[data-size="small"] { image-rendering: auto; }
+.leader-cell { display: flex; gap: 10px; align-items: center; }
+.leader-cell > div { white-space: nowrap; }
+.vote-choice { display: flex; gap: 8px; align-items: center; }
+.decision-head { display: flex; gap: 12px; align-items: flex-start; }
+.decision-head .page-text { flex: 1; min-width: 0; }
+.ng-top { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; }
+.ng-top .fields { flex: 1 1 480px; min-width: 0; }
 
 /* Tools, inspector. */
 .tools { display: flex; flex-direction: column; gap: 4px; }

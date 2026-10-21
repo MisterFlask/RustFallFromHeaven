@@ -15,9 +15,11 @@ import { S, dname, orderName, info, turns, me, emit, tidx, ORDER_KINDS } from ".
 import { h, signed, setText } from "./dom.js";
 import { openModal } from "./modals.js";
 import { run } from "./commands.js";
-import { render as markup, plain } from "./markup.js";
+import { render as markup, plain, YIELD_ICONS, COMMERCE_ICONS } from "./markup.js";
 import { YIELD_COLORS } from "./tiles.js";
 import { look, uiIcon, typeIcon, barEl, pix } from "./look.js";
+import { focusOn, isoSkin, queueIcon, refreshCityPanel } from "./isoui.js";
+import { infoTip } from "./infotips.js";
 
 const GROUPS = [
   [0, "Units"],
@@ -53,13 +55,18 @@ export function stepCityScreen(step, topTag) {
  *  §2.3) the dialog offers "Later" and closes once production is chosen. Resolves with "chosen",
  *  "later" or null (closed). */
 export async function openCity(id, { popup = false } = {}) {
+  focusOn(id);
   let cityId = id;
   let result = null;
   const title = () => {
     const city = S.cities.get(cityId);
     return popup ? `What should ${city?.name ?? "the city"} build?` : (city?.name ?? `City ${cityId}`);
   };
-  const m = openModal({ title: title(), body: [h("p.dim", "…")], tag: "city", wide: true, className: "city-screen", buttons: [] });
+  // With the isometric map's interface the screen is Civ4's: the map frames the city and its plots
+  // are worked by clicking them there (MapView.cityOverlay), the screen's parts in panels at the
+  // sides. A production popup stays a dialog.
+  const overlay = isoSkin() && !popup;
+  const m = openModal({ title: title(), body: [h("p.dim", "…")], tag: "city", wide: true, className: overlay ? "city-screen city-overlay" : "city-screen", buttons: [] });
   // A refused task changes nothing: the screen is read again either way (a toggle shows the
   // city's state, not the click).
   const task = async (t, data1 = -1, data2 = -1, option = false) => {
@@ -98,7 +105,12 @@ export async function openCity(id, { popup = false } = {}) {
     }
     if (m.closed || n !== loading) return;
     m.el.dataset.city = String(cityId);
-    m.setBody(screen(c, { task, choose, remove, go, popup }));
+    m.setBody(screen(c, { task, choose, remove, go, popup, overlay }));
+    if (overlay) {
+      const mine = me()?.player;
+      // A click works the plot of the city these plots are of (Previous / Next may have moved on).
+      emit("city-overlay", { id: c.id, x: c.x, y: c.y, owner: c.owner, plots: c.plots, onPlot: (p) => cityId === c.id && workable(p, mine) && task("TASK_CHANGE_WORKING_PLOT", p.i), tipOf: (p) => plotTip(p, mine) });
+    }
   };
   m.setButtons(
     popup
@@ -112,6 +124,8 @@ export async function openCity(id, { popup = false } = {}) {
   load();
   if (!popup) screenGo = go;
   const v = await m.done;
+  if (overlay) emit("city-overlay", null);
+  refreshCityPanel();
   if (screenGo === go) screenGo = null;
   return result ?? v;
 }
@@ -121,8 +135,32 @@ export async function openCity(id, { popup = false } = {}) {
 function yieldNumbers(y) {
   if (!y) return h("span.dim", "?");
   // With the art: each yield's 8 px icon and its number (docs/ART.md 11.5).
-  if (look.art) return h("span.yields", y.map((v, j) => (v > 0 ? h("span.yield-n", { title: dname("YieldType", j) }, uiIcon("yield", j, 8), pix(String(v))) : null)));
+  if (look.art || isoSkin()) return h("span.yields", y.map((v, j) => (v > 0 ? h("span.yield-n", { title: dname("YieldType", j) }, uiIcon("yield", j, 8), pix(String(v))) : null)));
   return h("span.yields", y.map((v, j) => (v > 0 ? h("span", { style: { color: YIELD_COLORS[j] } }, String(v)) : null)));
+}
+
+/** The isometric interface's icon of something to build (a unit's figure, a building's ...). */
+function buildIcon(order, type) {
+  const el = queueIcon({ order, type });
+  el.classList.add("build-icon");
+  return el;
+}
+
+/** Whether a click on city plot `p` does something: the centre (automates the citizens) or a
+ *  revealed plot of `mine`. */
+function workable(p, mine) {
+  return (p.i === 0 || p.owner === mine) && !!p.revealed;
+}
+
+/** What a click on city plot `p` does (the grid's tooltip; the map's in the overlay). */
+function plotTip(p, mine) {
+  const ours = p.owner === mine;
+  if (p.i === 0) return "The city's own plot (click: automate the citizens)";
+  if (!p.revealed) return "Unexplored";
+  if (p.worked) return "Worked: click to stop working it (the citizen becomes a specialist)";
+  if (p.worked_by !== null && p.worked_by !== undefined) return `Worked by ${S.cities.get(p.worked_by)?.name ?? "another city"}${ours ? ": click to take it" : ""}`;
+  if (!ours) return "Not your plot";
+  return p.can_work ? "Click: work this plot" : "Not workable now";
 }
 
 /** The city's plots as a grid north up, centred on the city. */
@@ -155,27 +193,14 @@ function plotGrid(c, task) {
       const centre = p.i === 0;
       const ours = p.owner === mine;
       const cls = [centre ? "centre" : "", p.worked ? "worked" : "", p.worked_by !== null && p.worked_by !== undefined ? "other" : "", !p.revealed ? "hidden" : "", ours ? "" : "foreign"].filter(Boolean).join(" ");
-      const tip = centre
-        ? "The city's own plot (click: automate the citizens)"
-        : !p.revealed
-          ? "Unexplored"
-          : p.worked
-            ? "Worked: click to stop working it (the citizen becomes a specialist)"
-            : p.worked_by !== null && p.worked_by !== undefined
-              ? `Worked by ${S.cities.get(p.worked_by)?.name ?? "another city"}${ours ? ": click to take it" : ""}`
-              : ours
-                ? p.can_work
-                  ? "Click: work this plot"
-                  : "Not workable now"
-                : "Not your plot";
       rows.push(
         h(
           "button.cplot",
           {
             class: cls,
-            title: tip,
+            title: plotTip(p, mine),
             "data-i": p.i,
-            disabled: !(centre || ours) || !p.revealed,
+            disabled: !workable(p, mine),
             onclick: () => task("TASK_CHANGE_WORKING_PLOT", p.i),
           },
           centre ? h("span.ccity", "★") : null,
@@ -187,6 +212,19 @@ function plotGrid(c, task) {
   return h("div.cgrid", { style: { gridTemplateColumns: `repeat(${2 * r + 1}, 1fr)` } }, rows);
 }
 
+/** What one specialist of type `s` adds: its yields, commerces, great people and experience,
+ *  as a small line (markup icons). */
+function specialistYields(s) {
+  const e = info("SpecialistType", s);
+  if (!e) return null;
+  const bits = [];
+  (e.yields ?? []).forEach((n, j) => n && bits.push(`${signed(n)}${YIELD_ICONS[j]}`));
+  (e.commerces ?? []).forEach((n, j) => n && bits.push(`${signed(n)}${COMMERCE_ICONS[j]}`));
+  if (e.great_people) bits.push(`${signed(e.great_people)}[ICON_GREATPEOPLE]`);
+  if (e.experience) bits.push(`${signed(e.experience)} XP to new units`);
+  return bits.length ? h("span.spec-yields", " ", markup(bits.join(" "))) : null;
+}
+
 function specialistsView(c, task) {
   const rows = c.specialists
     .filter((s) => s.count > 0 || s.plus || s.minus || s.free > 0)
@@ -195,7 +233,8 @@ function specialistsView(c, task) {
         "div.spec",
         { "data-specialist": s.specialist },
         typeIcon("specialist", s.specialist, 16),
-        h("span.spec-name", dname("SpecialistType", s.specialist)),
+        // Its help says its yields; without one, the yields say what it gives.
+        h("span.spec-name", { tip: infoTip("SpecialistType", s.specialist, { extra: info("SpecialistType", s.specialist)?.effects ? null : specialistYields(s.specialist) }) }, dname("SpecialistType", s.specialist), specialistYields(s.specialist)),
         h("span.dim", `${s.count}${s.forced ? ` (${s.forced} set)` : ""}${s.free ? `, ${s.free} free` : ""}${s.max ? ` / ${s.max}` : ""}`),
         h("button.small.minus", { disabled: !s.minus, title: "One less", onclick: () => task("TASK_CHANGE_SPECIALIST", s.specialist, -1) }, "−"),
         h("button.small.plus", { disabled: !s.plus, title: "One more", onclick: () => task("TASK_CHANGE_SPECIALIST", s.specialist, 1) }, "+"),
@@ -218,12 +257,13 @@ function kv(rows) {
   return h("table.kv", rows.filter(([, v]) => v !== null && v !== undefined && v !== false).map(([k, v]) => h("tr", h("th", k), h("td", v instanceof Node ? v : String(v)))));
 }
 
-function parts(obj, labels) {
-  return labels
-    .map(([k, label]) => [label, obj[k]])
-    .filter(([, v]) => v)
-    .map(([label, v]) => `${label} ${signed(v)}`)
-    .join(", ");
+
+/** A city's happiness or health by its parts (the `city` query's `*_parts`: each list sums to its
+ *  total): "+4 difficulty, +1 buildings; unhappy: 3 population". */
+function partsLine(good, bad, badWord, notes = []) {
+  const list = (ps) => (ps ?? []).map(([label, n]) => `${n} ${label}`).join(", ");
+  const text = [good?.length ? list(good) : null, bad?.length ? `${badWord}: ${list(bad)}` : null, ...notes].filter(Boolean).join("; ");
+  return h("span.dim.tip-parts", text || "-");
 }
 
 function statsView(c) {
@@ -240,10 +280,10 @@ function statsView(c) {
       ["Food", `${f.stored}/${f.threshold} (${signed(f.difference)}; eats ${f.consumption}) ${f.difference > 0 ? `grows in ${turns(f.turns)}` : f.difference < 0 ? "starving" : "stagnant"}`],
       ["Production", `${y(1).rate} per turn${y(1).modifier ? ` (+${y(1).modifier}%)` : ""}`],
       ["Commerce", `${y(2).rate}: ${commerce || "-"}`],
-      ["Happy", `${hp.happy} happy, ${hp.unhappy} unhappy${hp.angry ? `, ${hp.angry} angry` : ""}`],
-      ["", h("span.dim", parts(hp, [["buildings", "buildings"], ["religions", "religions"], ["bonuses", "resources"], ["features", "features"], ["military", "military"], ["largest_city", "largest city"], ["commerce", "luxury"], ["extra", "other"]]) + (hp.buildings_bad || hp.religions_bad || hp.bonuses_bad ? `; against: ${parts(hp, [["buildings_bad", "buildings"], ["religions_bad", "religions"], ["bonuses_bad", "resources"], ["features_bad", "features"]])}` : "") + (hp.war_weariness_percent_anger ? `; war weariness ${hp.war_weariness_percent_anger}` : "") + (hp.hurry_anger_timer ? `; hurry anger ${hp.hurry_anger_timer}` : "") + (hp.conscript_anger_timer ? `; draft anger ${hp.conscript_anger_timer}` : ""))],
-      ["Health", `${he.good} healthy, ${he.bad} unhealthy${he.unhealthy_population ? ` (${he.unhealthy_population} sick)` : ""}`],
-      ["", h("span.dim", parts(he, [["fresh_water", "fresh water"], ["features", "features"], ["buildings", "buildings"], ["bonuses", "resources"], ["power", "power"], ["extra", "other"]]) + (he.buildings_bad || he.features_bad || he.bonuses_bad ? `; against: ${parts(he, [["buildings_bad", "buildings"], ["features_bad", "features"], ["bonuses_bad", "resources"], ["power_bad", "power"], ["fresh_water_bad", "water"]])}` : ""))],
+      ["Happy", `${hp.happy} happy, ${hp.unhappy} unhappy${hp.angry ? ` (${hp.angry} angry: they do not work)` : ""}`],
+      ["", partsLine(hp.happy_parts, hp.unhappy_parts, "unhappy", [hp.hurry_anger_timer ? `hurry anger for ${turns(hp.hurry_anger_timer)}` : null, hp.conscript_anger_timer ? `draft anger for ${turns(hp.conscript_anger_timer)}` : null])],
+      ["Health", `${he.good} healthy, ${he.bad} unhealthy${he.bad > he.good ? ` (${he.bad - he.good} short: −${he.bad - he.good} food a turn)` : ""}`],
+      ["", partsLine(he.good_parts, he.bad_parts, "unhealthy")],
       ["Culture", `${c.culture}/${c.culture_threshold}${c.culture_level !== null ? ` (${dname("CultureLevelType", c.culture_level)})` : ""}`],
       ["Great people", `${c.great_people.progress} (+${c.great_people.rate} per turn)`],
       ["Defence", `${c.defense}%${c.defense_damage ? ` (damaged ${c.defense_damage})` : ""}`],
@@ -256,7 +296,7 @@ function statsView(c) {
 }
 
 function buildingsView(c) {
-  const b = c.buildings.map((x) => h("span.chip", { title: plain(info("BuildingType", x.building)?.help ?? "") }, typeIcon("building", x.building, 8), dname("BuildingType", x.building), x.free && !x.real ? h("span.dim", " (free)") : null));
+  const b = c.buildings.map((x) => h("span.chip", { tip: infoTip("BuildingType", x.building) }, typeIcon("building", x.building, 8), dname("BuildingType", x.building), x.free && !x.real ? h("span.dim", " (free)") : null));
   const r = c.religions.map((x) => h("span.chip", typeIcon("religion", x.religion, 8), dname("ReligionType", x.religion), x.holy ? h("span.good", " ★ holy city") : null));
   const units = c.garrison.map((u) => h("span.chip", `${dname("UnitType", u.type)}${u.owner !== me()?.player ? ` (${u.owner})` : ""}`));
   return [
@@ -317,17 +357,16 @@ function productionView(c, choose, remove) {
         "div.build-grid",
         items.map((b) => {
           const kind = ORDER_KINDS[order];
-          const e = info(kind, b.type);
-          const help = e?.help ? markup(e.help).textContent : e?.strategy ? markup(e.strategy).textContent : "";
           return h(
             "button.build",
             {
               disabled: !b.enabled,
               "data-order": order,
               "data-type": b.type,
-              title: `${help}${help ? "\n" : ""}Click: build now. Shift: add to the queue. Ctrl: put first.`,
+              tip: infoTip(kind, b.type, { hint: b.enabled ? "Click: build now. Shift: add to the queue. Ctrl: put first." : "Not possible now." }),
               onclick: (ev) => choose(order, b.type, ev),
             },
+            isoSkin() ? buildIcon(order, b.type) : null,
             h("span", dname(kind, b.type)),
             h("span.dim", b.turns !== null ? `${turns(b.turns)} · ${b.cost}` : ""),
           );
@@ -341,7 +380,7 @@ function productionView(c, choose, remove) {
       h("h4", "Production"),
       h(
         "div.prod-line",
-        prod.current && look.art ? uiIcon("yield", 1, 16) : null,
+        prod.current && (look.art || isoSkin()) ? uiIcon("yield", 1, 16) : null,
         prod.current ? `${prod.stored}/${prod.needed ?? "-"} (+${prod.rate} per turn)` : h("span.warn", "Nothing is being built."),
         prod.current && prod.needed ? barEl(prod.stored / prod.needed, "production", { w: 50, next: (prod.stored + prod.rate) / prod.needed }) : null,
       ),
@@ -351,7 +390,7 @@ function productionView(c, choose, remove) {
   ];
 }
 
-function screen(c, { task, choose, remove, popup }) {
+function screen(c, { task, choose, remove, popup, overlay }) {
   const f = c.food;
   const head = h(
     "div.city-summary",
@@ -360,9 +399,10 @@ function screen(c, { task, choose, remove, popup }) {
     c.disorder ? h("span.warn", " · in disorder") : "",
     c.occupation ? h("span.warn", ` · occupied ${c.occupation}`) : "",
     ` · food ${signed(c.food.difference)} · production ${c.production.rate}`,
-    look.art && f.threshold > 0 ? h("span.growth", uiIcon("yield", 0, 8), barEl(f.stored / f.threshold, "food", { w: 40, next: (f.stored + f.difference) / f.threshold, title: `${f.stored}/${f.threshold}` })) : null,
+    (look.art || isoSkin()) && f.threshold > 0 ? h("span.growth", uiIcon("yield", 0, 8), barEl(f.stored / f.threshold, "food", { w: 40, next: (f.stored + f.difference) / f.threshold, title: `${f.stored}/${f.threshold}` })) : null,
   );
-  const left = h("div.city-col", plotGrid(c, task), specialistsView(c, task), statsView(c), buildingsView(c));
+  const plots = overlay ? h("p.dim.city-hint", "Click the city's plots on the map to work them; its own plot hands the choice back to the governor.") : plotGrid(c, task);
+  const left = h("div.city-col", plots, specialistsView(c, task), statsView(c), buildingsView(c));
   const right = h("div.city-col", manageView(c, task), productionView(c, choose, remove));
   return [head, popup ? h("div.city-cols.popup", right, left) : h("div.city-cols", left, right)];
 }

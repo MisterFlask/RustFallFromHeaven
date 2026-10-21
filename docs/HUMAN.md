@@ -22,9 +22,11 @@ cargo build --release
 ./target/release/ffh-play serve            # then open http://127.0.0.1:8642/
 ```
 
-The page starts with the new-game screen (civilization and leader or random, opponents, world
-size, speed, difficulty, era, climate, sea level, seed, game options, victory conditions; "Load a
-game…" lists the saves). Each game gets a directory in `./saves` (`--saves DIR` to change it).
+The page starts with the new-game screen (civilization and leader or random, with the chosen
+leader's portrait and, beside it, what the leader and the civilization bring: alignment, hero, world
+spell, each trait's effects, starting techs, unique and blocked units and buildings, special
+abilities; opponents, world size, speed, difficulty, era, climate, sea level, seed, game options,
+victory conditions, each choice's description as its tooltip; "Load a game…" lists the saves). Each game gets a directory in `./saves` (`--saves DIR` to change it).
 `serve` takes the GAME flags too (`--seed 3 --world WORLDSIZE_SMALL --new` starts a game at once,
 `--load saves/game-3/auto/T0040.ffhsave` resumes one). Use a current Chrome, Firefox or Safari;
 nothing is fetched from the internet.
@@ -44,7 +46,10 @@ cannot load.
 happening (your turn; "Moving: …" with the players and the seconds while the AIs play); gold and
 rate, research (click it to choose) with its progress bar and turns, the commerce split by its
 icons (click it for the sliders), the Armageddon eclipse (its corona reddens at 50, 75 and 100)
-with the counter, mana by sphere, anarchy, golden age, Stasis, idle AI-controlled groups, score;
+with the counter, mana by sphere, anarchy, golden age, Stasis, idle AI-controlled groups, score
+(your share of the world, docs/SCORE.md, with the fair share in its tooltip); the gold's tooltip
+gives where the gold rate comes from (the cities' commerce, deals; units with the free ones, units
+outside the borders, city maintenance, civic upkeep, inflation);
 below them the menu (Research, Techs, Cities, Civics, Religion, Diplomacy, Tools, Save, Load,
 New, keys `?`, a raw request box `⌘` for testing) and End turn. The map fills the middle (minimap
 bottom right, zoom and the map layers bottom left), the selection panel is on the right, and the
@@ -68,11 +73,13 @@ top left (top right in a city): bright for your stacks that can move or are sele
 others, with a vellum pip when it can move and a gilt one with a hero in the stack; the count
 hangs under the standard, a health bar shows when the head unit is hurt (or selected), and a
 mark at the top right says fortified, asleep, sentry, healing, automated or promotion ready.
-Units face east, and west after a move west. Zoom (`+` `-`, the wheel) goes by whole art pixels:
+Units face east, and west after a move west. Zoom (`+` `-`, `Q` `E`, the wheel) goes by whole art pixels:
 32, 64 (the default), 96 and 128 screen pixels a plot, and two chart steps, 16 and 8 (flat
 colours, owners' washes, city dots, units as small squares). Hovering a plot shows a tooltip
 (terrain, resource, improvement, owner, yields and defence while you see it, the city and units
-there; with the art, the yields, defence and move cost by their icons), and with units selected
+there, each unit with its strength, level and promotions; with the art, the yields, defence and move cost by their icons; over a unique improvement
+such as Yggdrasil or the Maelstrom, what it does: its yields, defence, happiness and healing, the
+resource and spells it offers, what happens to units that enter or come near), and with units selected
 the path: dots from plot to plot that march, a roundel with the
 turn of arrival at each turn's end, the part beyond this turn's moves dimmer, ochre for a route
 to build; an attack ends in crimson brackets with the odds of winning on a chip, and the tooltip
@@ -93,7 +100,7 @@ map**: `?renderer=3d`, docs/R3D.md; it needs WebGL2). The choice is remembered b
 **Motion.** The interface moves quietly, in keeping with the manuscript look (docs/ART.md 4.5):
 
 - **The camera glides.** When the view jumps to a plot it is not already near — centring on the
-  selection (`C`), the next waiting group (`W`, `Enter`), a city (`Home` / `End`, `F10`, the cities
+  selection (`C`), the next waiting group (`Tab`, `Enter`), a city (`Home` / `End`, `F10`, the cities
   list), a message's "Show on the map" — it glides there across the page the short way round a
   wrapping map, rather than cutting. Dragging, zooming and the minimap stay immediate (you are
   moving the view yourself), and a new game opens on its start with no glide.
@@ -121,16 +128,17 @@ XML (each button shows its key), and the global keys are Civ4's controls
 | left click | select your units on a plot (again: the next group there; Shift: all of them), open your city, or show a plot |
 | right click | move or attack with the selection; with Shift held, each right click adds a waypoint (numbered on the map), and releasing Shift sends them (`Esc` drops them) |
 | drag, wheel, arrows, `+` `-` | pan and zoom; click or drag the minimap to jump |
+| `W` `A` `S` `D` (held) | ffh-play's own: scroll the map smoothly up, left, down, right (by the keys' place, so `Z` `Q` `S` `D` on AZERTY); Civ4's plain `W`, `A`, `S` and `D` orders (cycle, automate, sentry, destroy) are on their buttons and `Tab` / `Enter` |
+| `Q` / `E` | ffh-play's own: zoom out / in (by the keys' place, so `A` / `E` on AZERTY); Civ4's plain `Q` and `E` orders (quarry, explore) are on their buttons |
 | double click | open your city |
-| `Enter` | the next group waiting for orders, as `W`; when none waits (Civ4's "end of turn" state: the End turn button glows), end the turn |
+| `Enter` | the next group waiting for orders, as `Tab`; when none waits (Civ4's "end of turn" state: the End turn button glows), end the turn |
 | `Shift+Enter` | end the turn whatever waits, without the checks |
-| `W` | the next group waiting for orders, in Civ4's group cycle (a stack in which a unit has used its moves is skipped, as in Civ4); when it comes round, units with orders left move (Civ4's automatic moves) |
 | `Space` | with a unit selected: skip its turn; with none, end the turn when no group waits |
 | `C` | centre on the selection |
 | `Home` / `End` (`Num+` / `Num-`) | the next / previous of your cities (the first: the one nearest the centre of the map); in the city screen, its next / previous city |
 | `F10` | your capital's city screen |
-| `Tab` / `Shift+Tab` | ffh-play's own: the next / previous group waiting (in Civ4, `Tab` is chat) |
-| `F` / `S` / `H` | fortify (sleep for a unit that cannot fortify) / sentry / heal |
+| `Tab` / `Shift+Tab` | the next / previous group waiting for orders, in Civ4's group cycle (Civ4's `W`; in Civ4, `Tab` is chat): a stack in which a unit has used its moves is skipped, as in Civ4; when it comes round, units with orders left move (Civ4's automatic moves) |
+| `F` / `H` | fortify (sleep for a unit that cannot fortify) / heal; sentry is on its button (`S` scrolls) |
 | `B` | found a city (bombard or a ranged attack for units that cannot) |
 | `G` then click, `Alt+R` then click | go to a plot (Shift-clicks add waypoints, sent when Shift is released, as with right clicks) / build a route to it |
 | `R`, `I`, `M`, … | a worker's builds: road, farm, mine, … (`Shift+W` windmill, `Alt+C` chop) |
@@ -157,7 +165,7 @@ combat class, strength, health bar, moves and level, the lead unit's promotions 
 the list (and each promotion button carries its seal).
 When a group is done, the next one waiting for orders on the plot it left, then on its plot,
 then the next in Civ4's group cycle is selected, as in Civ4 (not with the player option "No
-unit cycling", Tools → Options). As in Civ4, the cycle (`W`, `Enter`, the next group after an
+unit cycling", Tools → Options). As in Civ4, the cycle (`Tab`, `Enter`, the next group after an
 order) selects only groups whose units can all still move: a stack in which one unit has used its
 moves still counts as waiting (the end-turn check counts it) but is not selected for you. Moving into a rival's land asks whether to declare war;
 deleting, world spells and spells that start a war ask first; loading with more than one
@@ -167,39 +175,54 @@ transport asks which.
 gained or lost, growth, starvation, disorder, buildings, techs, contacts, wars and peace,
 enemies near your cities, the Armageddon counter, borders, and the messages), the first unit
 waiting for orders is selected, and the open questions come up one at a time in Civ4's order:
-events (each choice with its effects; greyed when not possible now), votes, research (click:
-research it; Shift-click: add it to the queue), then each city with nothing to build (click:
+events (each choice with its effects; greyed when not possible now), votes, research (each
+tech's tooltip says what it brings you; click: research it; Shift-click: add it to the queue),
+then each city with nothing to build (click:
 build it now; Shift-click: add to the queue; Ctrl-click: put it first). "Later" sets one aside
 for this turn. End turn (the button, or `Enter` once no group waits) asks first when an event, a vote or the research is
 open or units wait for orders: answer them, select a unit, or end the turn anyway (Civ4's
 consequences: open events are dropped, votes get one more turn and then abstain, empty research
 takes the automatic pick). A question the rules must have answered at once (keep or raze a
-captured city, a free tech, an election) appears as a dialog that cannot be closed, with the
-choices, the advisor's pick marked, and "AI default".
+captured city, with its buildings and holy cities; a free tech, each with its worth in research
+and what it brings; an election) appears as a dialog that cannot be closed, with the choices, the
+advisor's pick marked, and "AI default".
 
 **Cities.** Double-click your city, use the button in the selection panel when your units
 stand in it, or the Cities list (`F1`). The city screen: the plots of the city's radius with
 their yields (worked ones green, the city's own plot gold, plots another city works dashed;
 click a plot to work it or to stop working it, which turns the citizen into a specialist, as in
-Civ4, and stops the automatic citizens), the specialists with `−`/`+` (greyed when the rules
-would refuse), "Automate citizens", food and growth, production, commerce, happiness and health
-with their parts, culture, great people, maintenance, buildings, religions and the garrison;
+Civ4, and stops the automatic citizens), the specialists with what each yields and `−`/`+` (greyed
+when the rules would refuse), "Automate citizens", food and growth, production, commerce,
+happiness and health with their parts (each list adds up to its total: the difficulty, buildings,
+resources, ... against the population and the rest; a city short of health loses that much food),
+culture, great people, maintenance, buildings, religions and the garrison;
 hurry (gold or population, with the price), draft, the emphasis flags and "Automate
 production"; the queue (✕ removes an entry while there are several; the only one is replaced by
-choosing another) and everything it can build with turns and cost (click: build it; Shift:
-append; Ctrl: put it first). "‹ Previous city" and "Next city ›" go through your cities.
+choosing another) and everything it can build with turns and cost, each with its tooltip (a
+unit's strength, moves and class, what it does; click: build it; Shift: append; Ctrl: put it
+first). "‹ Previous city" and "Next city ›" go through your cities.
+With the isometric map the screen is Civ4's city view: the map glides to the city at the largest
+zoom that shows its radius, veils what lies outside it and draws the radius in gilt, each plot
+with its yields and the worked ones with a citizen; click a plot there to work it or stop. The
+rest of the screen stands in panels at the sides, the interface steps aside, and the camera goes
+back when the screen closes (docs/ISO.md, "The city screen").
 
 **Empire.** **Techs** (`F6`): the tech tree by prerequisite depth, what you know, research and
-can research now, with costs, turns and progress; click a tech to research it (with what it
-needs first), Shift-click to queue it. **Civics** (`F3`): each civic option with its civics (the
-current ones marked, the ones you cannot adopt greyed); pick civics and the screen shows the
+can research now, with costs, turns and progress, and each tech's tooltip; click a tech to research
+it (with what it needs first), Shift-click to queue it. **Civics** (`F3`): each civic option with its
+civics (the current ones marked, the ones you cannot adopt greyed, their tooltip saying why: the
+tech, a war, an alignment, a state religion); pick civics and the screen shows the
 revolution's anarchy and upkeep (computed by the rules), then "Revolution!". **Religion** (`F7`):
-the religions, their holy cities as far as you know them, your cities with each, and "Convert"
-(with the anarchy). **Finances** (`F2`, or click the commerce split in the top bar): each
-commerce's share with `−`/`+` by Civ4's step (only the ones you may change).
-**Diplomacy** (`F4`): every player you met (war or peace, open borders, pacts, vassals, attitude,
-score, your deals with them) with "Trade…" and "Declare war" (it asks first). The trade screen
-lists what each side can give (refusals greyed with Civ4's reason); click items into the deal
+the religions, the tech whose first discoverer founds each, their holy cities as far as you know
+them, your cities with each, and "Convert" (with the anarchy). **Finances** (`F2`, or click the
+commerce split in the top bar): each commerce's share with `−`/`+` by Civ4's step (only the ones
+you may change; gold takes the rest), and the gold per turn by its parts, as in the gold's tooltip.
+**Diplomacy** (`F4`): every player you met, by their leader's portrait (war or peace, open
+borders, pacts, vassals, attitude with its reasons as its tooltip, alignment and state religion,
+score, your deals with them; your own alignment and state religion above the list) with "Trade…" and "Declare war"
+(it asks first). Each playable leader has a portrait in the interface's pixel art
+(`tools/m7/leaders.py`), also shown at the top of the trade screen, on a deal offered to you, on
+the question to take over a civilization that appeared and by each candidate of a vote. The trade screen lists what each side can give (refusals greyed with Civ4's reason); click items into the deal
 (gold with an amount; peace, open borders and pacts go both ways, so they are greyed on both
 sides when either side refuses them), "Propose": the AI accepts or declines at once.
 
@@ -210,6 +233,26 @@ player or team, and of anything under debug reveal, plots too; an info entry by 
 it runs the top bar counts the turns left and "Stop" ends it: you have control at your next turn);
 **Spectate** (below); **Take over…** (play another slot of an AI-only save); **Options** (Civ4's
 player options); the raw request box.
+
+**Help.** What a choice does is in its tooltip, as Civ4 shows it: one box that follows the pointer
+(or the keyboard focus), stays inside the window, and keeps the help's icons, colours and lines.
+The help texts are written by the server from the rules' tables (`src/view/help/`, ports of
+C++ `CvGameTextMgr`): what a tech brings you (`setTechHelp`, with your own units and buildings and
+only what you cannot do yet), what a civilization, a leader and a trait bring (`parseCivInfos`,
+`parseLeaderTraits`, `parseTraits`), and what every building, unit, promotion, spell, civic,
+religion, project, specialist, process and resource does and requires (`setBuildingHelp` with
+`buildBuildingRequiresString`, `setBasicUnitHelp` with `setUnitHelp`, `parsePromotionHelp`,
+`parseSpellHelp`, `parseCivicInfo`, `setReligionHelp`, `setProjectHelp`, `parseSpecialistHelp`,
+`setProcessHelp`, `setBonusHelp`). Those are static: what the type does anywhere, as the
+Civilopedia says it, not what it would add in a given city. Their requirements are written
+plainly, since nothing is known to be unmet (Civ4 colours only those a player lacks); a screen
+that knows the player says which it lacks (the civics screen, above the civic's help). Where
+FFH2's help says nothing of a rule the game checks (a building's religion or coast, a religion's
+alignment and what it unlocks, a resource's affinities), ffh-play adds the line. Every field of
+every table is either described or listed as not shown, so a new field cannot go unsaid. Built
+from the data, they follow the rules as they change. Each appears wherever its type does: the
+build list and the buildings of a city, the unit panel's actions, the promotions and spells
+dialogs, the civics and religion screens, the trade table, the map's resources.
 
 **Spectating.** Tools → Spectate (or "Spectate" in the new-game screen) lets the AI play every
 civilization, yours too, one turn at a time with the whole map shown: the top bar has Pause,
@@ -436,7 +479,7 @@ Errors: `invalid`, `not_owner`, `gone`, `busy`.
 | `pending` | open events (with each option's effects), votes, research needed, idle cities, promotions, ready groups, idle AI-controlled groups |
 | `view` | `me` (gold and rate, research, sliders, civics, score, Armageddon counter, mana, Stasis, the player options, AI autoplay), the players you met, the cities you revealed, the units you see, your groups (`ready`: some unit can move, as `pending.ready_groups`; `selectable`: every unit can, what Civ4's cycle selects), `group_cycle` (your groups in Civ4's cycle order) and `has_auto_unit`, `pending`, `log_next` |
 | `map` | flat arrays `y * w + x`: `vis` (0 unrevealed, 1 fogged, 2 visible), `plot_type`, `terrain`, `feature`, `bonus`, `improvement`, `route`, `owner`, `river` (bit 0 river on the south edge, bit 1 on the east edge, bits 2-4 north/south flow + 1, bits 5-7 west/east flow + 1), `city`, `yield` (`food \| production << 8 \| commerce << 16`, visible plots only), `map_rev`, and `epoch` and `rev`. `map {since: R, epoch: E}` answers only the tiles changed since revision `R` (`full: false`, `tiles` = their indices, each array the values of those tiles), or the full map (`full: true`) when `E` is not the current epoch, `R` is unknown or much of the map changed |
-| `plot {x,y}` | a plot as you know it; while visible also yields, defence, culture and the units |
+| `plot {x,y}` | a plot as you know it (`min_level` when units below a level cannot enter); while visible also yields, defence, culture and the units |
 | `group {units}` | the units in detail and the actions: `mission`, `target` (an interface mode, `mode`: go-to, route-to for workers, range attack, the air modes; needs a plot), `command`, `load`, `spell`, `promotion`, `upgrade`, each `enabled` or not, each with its `cmd` |
 | `path {units,x,y}` | the path preview: nodes with the turn of arrival and moves left, total turns, a war it would declare, whether it ends in an attack |
 | `combat {units,x,y}` | the attack preview: attacker, defender, odds of winning and of retreating (per mille), strengths, the modifiers of both sides |
@@ -625,7 +668,7 @@ node tools/web-smoke.mjs                 # headless Chromium plays through the p
 * `web-smoke.mjs [--turns 4] [--seed 5] [--out DIR] [--assets DIR] [--cdp] [--headed]` drives the
   page with the mouse and keyboard in headless Chromium (the `playwright` package if it resolves,
   else Chromium over the DevTools protocol; skipped without a browser): new game (Start
-  double-clicked: one game), `W` over every group the cycle selects, hotkeys pressed in the same tick as a
+  double-clicked: one game), `Tab` over every group the cycle selects, `D` and `A` held (the map scrolls, the selection stays), hotkeys pressed in the same tick as a
   selection change, found a city with `B`, the research and production popups, the city queue
   (Shift-click appends, ✕ removes), select a unit, the path preview, a right-click move, `Enter`
   while groups wait (it selects one and does not end the turn), end turns with the button through
@@ -682,9 +725,9 @@ window):
    else waits for orders); `G` then click goes there, `G` then Shift-clicks add waypoints the
    same way (the go-to mode stays on until Shift is released); `Esc` cancels. A move into a
    rival's land asks to declare war (try "Cancel").
-5. Group units on one plot (`All`, `Group`), split them, Ctrl-click rows; `W`, `Enter` and `Tab`
+5. Group units on one plot (`All`, `Group`), split them, Ctrl-click rows; `Tab` and `Enter`
    go through every waiting group before any comes up again (`Shift+Tab` backwards); move one unit
-   of a two-unit stack with different moves (a warrior and a scout grouped, one plot): `W` skips
+   of a two-unit stack with different moves (a warrior and a scout grouped, one plot): `Tab` skips
    the stack from then on, as Civ4 does; once nothing waits the End turn button glows and `Enter`
    (or `Space` with nothing selected) ends the turn; `Home`/`End` go through your cities, `F10`
    opens the capital; `Space`, `F`, `S`, `G`

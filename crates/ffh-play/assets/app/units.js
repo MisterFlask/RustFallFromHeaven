@@ -11,6 +11,8 @@ import { run, actionCommand, sending } from "./commands.js";
 import { plotDistance, plotIndex, humanize } from "./tiles.js";
 import { render as markup } from "./markup.js";
 import { look, iconEl, unitIcon, barEl, pix, typeIcon, promotionIcon, uiIcon } from "./look.js";
+import { isoSkin, isoIcon, actionIcon, portrait, isoBar, focusOn } from "./isoui.js";
+import { effectsOf, infoTip } from "./infotips.js";
 
 /** An 8 px icon of the ui set, or the glyph before the art loaded. */
 const icon8 = (name, glyph, title) => iconEl(`icon8/${name}`, { title }) ?? glyph;
@@ -545,16 +547,34 @@ function showTip() {
   if (m.feature[i] >= 0) parts.push(dname("FeatureType", m.feature[i]));
   lines.push(h("div.tip-title", parts.join(", "), h("span.dim", ` (${x}, ${y})${m.vis[i] === 1 ? " fogged" : ""}`)));
   const extra = [];
+  // A unique improvement gets a block of its own below, with what it does.
+  const imp = info("ImprovementType", m.improvement[i]);
+  const unique = imp?.unique ? imp : null;
   if (m.bonus[i] >= 0) extra.push(dname("BonusType", m.bonus[i]));
-  if (m.improvement[i] >= 0) extra.push(dname("ImprovementType", m.improvement[i]));
+  // What the resource gives (its help: yields, happiness or health, what improves it).
+  const bonusHelp = m.bonus[i] >= 0 ? effectsOf("BonusType", m.bonus[i]) : "";
+  if (m.improvement[i] >= 0 && !unique) extra.push(dname("ImprovementType", m.improvement[i]));
   if (m.route[i] >= 0) extra.push(dname("RouteType", m.route[i]));
   if (m.river[i] > 0 && (m.river[i] & 3)) extra.push("River");
   if (extra.length) lines.push(h("div", extra.join(" · ")));
+  if (bonusHelp) lines.push(h("div.tip-effects.tip-bonus", markup(bonusHelp)));
   if (m.owner[i] >= 0) lines.push(h("div.dim", `Owner: ${playerName(m.owner[i])}`));
   const p = preview.plot;
+  // C++ plot help's line (the Ring of Carcer's).
+  const minLevel = p && p.x === x && p.y === y && p.min_level > 0 ? h("div.warn", `Must be level ${p.min_level} to enter`) : null;
+  if (unique) {
+    lines.push(
+      h(
+        "div.tip-unique",
+        h("div.tip-unique-name", dname("ImprovementType", m.improvement[i])),
+        unique.effects ? h("div.tip-effects", markup(unique.effects)) : null,
+        minLevel,
+      ),
+    );
+  } else if (minLevel) lines.push(minLevel);
   if (p && p.x === x && p.y === y && p.yields) {
     lines.push(
-      look.art
+      look.art || isoSkin()
         ? h(
             "div.tip-yields",
             p.yields.map((v, j) => h("span.yield-n", { title: dname("YieldType", j) }, uiIcon("yield", j, 8), String(v))),
@@ -569,7 +589,19 @@ function showTip() {
   if (city) lines.push(h("div.tip-city", `${city.capital ? "★ " : ""}${city.name}`, h("span.dim", ` (${playerName(city.owner)}${city.size !== null && city.size !== undefined ? `, size ${city.size}` : ""})`)));
   const units = unitsAt(x, y);
   if (units.length) {
-    const shown = units.slice(0, 8).map((u) => h("div.tip-unit", `${dname("UnitType", u.type)}`, h("span.dim", ` ${playerName(u.owner)}${u.hp < u.max_hp ? `, ${Math.round((100 * u.hp) / u.max_hp)}% health` : ""}`)));
+    // The plot query's units carry their strength, level and promotions (C++ plot help).
+    const known = new Map((p && p.x === x && p.y === y ? (p.units ?? []) : []).map((u) => [u.id, u]));
+    const shown = units.slice(0, 8).map((u0) => {
+      const u = { ...u0, ...(known.get(u0.id) ?? {}) };
+      const promos = (u.promotions ?? []).map((pr) => dname("PromotionType", pr));
+      return h(
+        "div.tip-unit",
+        `${dname("UnitType", u.type)}`,
+        u.strength !== undefined ? ` ${u.strength}${u.defense_strength !== undefined && u.defense_strength !== u.strength ? `/${u.defense_strength}` : ""}⚔` : "",
+        h("span.dim", ` ${playerName(u.owner)}${u.level > 1 ? `, level ${u.level}` : ""}${u.hp < u.max_hp ? `, ${Math.round((100 * u.hp) / u.max_hp)}% health` : ""}`),
+        promos.length ? h("div.dim.tip-promos", promos.join(", ")) : null,
+      );
+    });
     lines.push(...shown);
     if (units.length > 8) lines.push(h("div.dim", `and ${units.length - 8} more`));
   }
@@ -759,17 +791,39 @@ const SECTIONS = [
   ["Upgrades", (a) => a.kind === "upgrade"],
 ];
 
+/** An action's help text (markup): a spell's, a promotion's, a build's or a mission's. */
+function helpOf(a) {
+  // A spell's, promotion's and upgrade's help: the data's `effects` (the server's help texts).
+  if (a.kind === "spell") return effectsOf("SpellType", a.spell) || a.help || "";
+  if (a.kind === "promotion") return effectsOf("PromotionType", a.promotion);
+  if (a.kind === "upgrade") return effectsOf("UnitType", a.unit);
+  if (a.kind === "mission" && tname("MissionType", a.mission) === "MISSION_BUILD") return info("BuildType", a.data1)?.help ?? "";
+  if (a.kind === "mission") return info("MissionType", a.mission)?.help ?? "";
+  if (a.kind === "command") return info("CommandType", a.command)?.help ?? "";
+  return "";
+}
+
+const actionType = (a) =>
+  a.kind === "mission" ? tname("MissionType", a.mission) : a.kind === "target" ? a.mode : a.kind === "command" || a.kind === "load" ? tname("CommandType", a.command) : a.kind === "automate" ? tname("AutomateType", a.automate) : a.kind === "spell" ? tname("SpellType", a.spell) : a.kind === "promotion" ? tname("PromotionType", a.promotion) : a.kind === "upgrade" ? tname("UnitType", a.unit) : "";
+
+/** The kinds the isometric card lists as labelled buttons rather than icon tiles (their icons
+ *  would all look alike). */
+const LISTED = ["spell", "promotion", "upgrade"];
+
 function actionButton(a) {
   const key = hotkeyOf(a);
-  const help = a.kind === "spell" && a.help ? a.help : a.kind === "promotion" ? (info("PromotionType", a.promotion)?.help ?? "") : "";
+  const help = a.kind === "spell" || a.kind === "promotion" || a.kind === "upgrade" ? helpOf(a) : "";
   const extra = a.turns !== undefined ? ` (${turns(a.turns)})` : "";
+  if (isoSkin()) return isoAction(a, key, extra);
   const btn = h(
     "button.action",
     {
       disabled: !a.enabled,
       "data-kind": a.kind,
-      "data-type": a.kind === "mission" ? tname("MissionType", a.mission) : a.kind === "target" ? a.mode : a.kind === "command" || a.kind === "load" ? tname("CommandType", a.command) : a.kind === "automate" ? tname("AutomateType", a.automate) : a.kind === "spell" ? tname("SpellType", a.spell) : a.kind === "promotion" ? tname("PromotionType", a.promotion) : a.kind === "upgrade" ? tname("UnitType", a.unit) : "",
-      title: [key ? `[${key}]` : "", help ? markup(help).textContent : ""].filter(Boolean).join(" "),
+      "data-type": actionType(a),
+      // The help as a rich tooltip (its bullets and colours kept), else the key as the title.
+      title: help ? null : key ? `[${key}]` : null,
+      tip: help ? [h("div.tip-title", actionLabel(a), key ? h("kbd", key) : null), h("div.tip-effects", markup(help))] : null,
       onclick: () => doAction(a),
     },
     a.kind === "promotion" ? promotionIcon(a.promotion, { u: 1 }) : null,
@@ -777,6 +831,60 @@ function actionButton(a) {
     key ? h("kbd", key) : null,
   );
   return btn;
+}
+
+/** The isometric card's action: an icon tile (or, for spells, promotions and upgrades, a
+ *  labelled button) whose description (name, key and help) the card's description box shows
+ *  while it is pointed at or focused. A labelled button's help (what the spell, the promotion, the
+ *  unit upgraded to does: many lines) is a rich tooltip instead: in the box, which is as large as
+ *  its largest description, it would push the labelled buttons out of the card. */
+function isoAction(a, key, extra) {
+  const listed = LISTED.includes(a.kind);
+  const label = actionLabel(a) + extra;
+  const help = helpOf(a);
+  descs.set(a, description(a, label, key, listed ? "" : help));
+  const show = () => describe(a);
+  return h(
+    `button.action${listed ? ".listed" : ".tile"}`,
+    {
+      disabled: !a.enabled,
+      "data-kind": a.kind,
+      "data-type": actionType(a),
+      title: listed && help ? null : `${label}${key ? ` [${key}]` : ""}`,
+      tip: listed && help ? [h("div.tip-title", label, key ? h("kbd", key) : null), h("div.tip-effects", markup(help))] : null,
+      "aria-label": label,
+      onclick: () => doAction(a),
+      onmouseenter: show,
+      onfocus: show,
+      onmouseleave: () => describe(null),
+      onblur: () => describe(null),
+    },
+    listed ? isoIcon(a.kind === "spell" ? "spell" : a.kind === "promotion" ? "promote" : "upgrade", { px: 16 }) : actionIcon(a, 40),
+    listed ? h("span", label) : null,
+    !listed && key ? h("kbd", key) : null,
+  );
+}
+
+/** The card's description box shows the action pointed at (its name, key, turns and help), else
+ *  the selection's state (its first child). It holds them all from the start, stacked in one
+ *  cell (iso.css), so it is as large as the largest and pointing at an order moves nothing in
+ *  the card. `descs`: each action's description, made by `isoAction` as the card is built. */
+const descs = new Map();
+
+function description(a, label, key, help) {
+  return h(
+    "div.iso-desc-one",
+    h("div.iso-desc-title", label, key ? h("kbd", key) : null, a.enabled ? null : h("span.dim", " (not now)")),
+    help ? h("div.iso-desc-text", markup(help)) : null,
+  );
+}
+
+/** Shows action `a`'s description in the card's box (null: the selection's state). */
+function describe(a) {
+  const box = panel?.querySelector(".iso-desc");
+  if (!box) return;
+  const shown = (a && descs.get(a)) || box.firstElementChild;
+  for (const c of box.children) c.classList.toggle("shown", c === shown);
 }
 
 /** "automated" (the AI moves the unit's group: Stop automation gives it back) or "AI control"
@@ -812,14 +920,14 @@ function unitRow(u, selected) {
     h(
       "span.unit-name",
       u.transport !== null && u.transport !== undefined ? h("span.dim", "↳ ") : null,
-      u.unit_combat !== undefined && u.unit_combat !== null ? typeIcon("unitcombat", u.unit_combat, 8, { title: dname("UnitCombatType", u.unit_combat) }) : null,
+      u.unit_combat !== undefined && u.unit_combat !== null && !isoSkin() ? typeIcon("unitcombat", u.unit_combat, 8, { title: dname("UnitCombatType", u.unit_combat) }) : null,
       u.name ?? dname("UnitType", u.type),
       u.promo_ready ? h("span.badge.promo", "promote") : null,
       automationBadge(u),
       u.summon_turns ? h("span.badge", { title: "A summoned unit: turns left" }, `${u.summon_turns}t`) : null,
       u.cargo?.length ? h("span.badge", { title: "Units on board" }, `${u.cargo.length} aboard`) : null,
     ),
-    look.art
+    look.art || isoSkin()
       ? h(
           "span.unit-stats",
           u.strength !== undefined ? h("span.stat-n", pix(String(u.strength)), icon8("strength", "⚔", "Strength")) : null,
@@ -844,7 +952,8 @@ function unitRow(u, selected) {
 export function renderPanel() {
   if (!panel) return;
   if (!S.sel) {
-    if (!panel.dataset.plot) fill(panel, h("p.dim", "Select a unit or a city. Right-click moves the selected units."));
+    // The isometric map's card shows only with a selection or a plot (the map stays clear).
+    if (!panel.dataset.plot) fill(panel, isoSkin() ? [] : h("p.dim", "Select a unit or a city. Right-click moves the selected units."));
     return;
   }
   delete panel.dataset.plot;
@@ -860,7 +969,7 @@ export function renderPanel() {
   const lead = S.units.get(S.sel.units[0]) ?? own[0];
   const head = h(
     "div.panel-head",
-    lead ? unitIcon(lead.type, ownerLook(lead.owner), { title: dname("UnitType", lead.type) }) : null,
+    lead ? h("span.unit-head", { tip: infoTip("UnitType", lead.type) }, unitIcon(lead.type, ownerLook(lead.owner))) : null,
     h("h3", own.length === 1 ? dname("UnitType", own[0].type) : `${S.sel.units.length} of ${own.length} units`),
     h("span.dim", ` (${x}, ${y})`),
   );
@@ -877,7 +986,7 @@ export function renderPanel() {
     h("button", { onclick: () => select(own.map((u) => u.id)), disabled: own.length < 2, title: "Select every unit here" }, "All"),
     h("button", { onclick: groupAll, disabled: own.length < 2, title: "Join the units here into one group" }, "Group"),
     h("button", { onclick: splitAll, disabled: S.sel.units.length < 2, title: "Each selected unit its own group" }, "Split"),
-    h("button", { onclick: () => selectNext(), title: "Next unit waiting for orders [W]" }, "Next ⟳"),
+    h("button", { onclick: () => selectNext(), title: "Next unit waiting for orders [Tab]" }, "Next ⟳"),
   );
   if (r?.actions?.some((a) => a.kind === "promotion" && a.enabled)) {
     tools.append(h("button.promote", { onclick: () => openPromotions(), title: "Choose a promotion" }, "Promote…"));
@@ -908,9 +1017,60 @@ export function renderPanel() {
   // The lead unit's promotions as their seals (docs/ART.md 11.5), with the level as pips.
   const leadDetails = details.get(S.sel.units[0]);
   const seals = look.art && leadDetails?.promotions?.length
-    ? h("div.seals", { title: leadDetails.promotions.map((p) => dname("PromotionType", p)).join(", ") }, leadDetails.promotions.map((p) => promotionIcon(p, { u: 1, title: dname("PromotionType", p) })))
+    ? h("div.seals", leadDetails.promotions.map((p) => h("span.seal", { tip: infoTip("PromotionType", p) }, promotionIcon(p, { u: isoSkin() ? 2 : 1 }))))
     : null;
+  if (isoSkin()) return renderCard({ own, r, details, lead, list, seals, tools, status, hint, way, others, x, y, foreign });
   fill(panel, head, hint, way, list, seals, tools, status, actions, others);
+}
+
+/** The selection as the isometric map's card (the reference's unit panel): the lead unit's
+ *  portrait; its name, its numbers and the stack; its orders as icon tiles over a description of
+ *  the one pointed at (spells, promotions and upgrades as labelled buttons under them). */
+function renderCard({ own, r, details, lead, list, seals, tools, status, hint, way, others, x, y }) {
+  const city = cityAt(x, y);
+  if (city && city.owner === me()?.player) focusOn(city.id);
+  const d = lead ? { ...lead, ...(details.get(lead.id) ?? {}) } : null;
+  const stat = (icon, label, value, title) => h("div.iso-statline", { title: title ?? null }, isoIcon(icon, { px: 32 }), h("span.label", label), value);
+  const plate = d
+    ? h(
+        "div.iso-plate",
+        d.strength !== undefined ? stat("strength", "Strength", h("span.value", String(d.strength))) : null,
+        d.moves !== undefined ? stat("moves", "Movement", h("span.value", `${moves(d.moves)}/${moves(d.max_moves)}`)) : null,
+        d.max_hp ? stat("hp", "Health", isoBar(d.hp / Math.max(1, d.max_hp), { w: 96, kind: d.hp * 4 < d.max_hp ? "low" : "hp" }), `${Math.round((100 * d.hp) / d.max_hp)}% health`) : null,
+        d.level !== undefined ? stat("xp", "Level", h("span.value", `${d.level}${d.xp !== undefined && d.xp_needed ? ` (${d.xp}/${d.xp_needed})` : ""}`)) : null,
+      )
+    : null;
+  const tiles = [];
+  const listed = [];
+  descs.clear();
+  if (r?.error) tiles.push(h("p.warn", r.error));
+  else if (!r?.actions) tiles.push(h("p.dim", "…"));
+  else {
+    for (const [title, test] of SECTIONS) {
+      const acts = K.sortActions(r.actions.filter(test), S.data);
+      if (!acts.length) continue;
+      const tl = acts.filter((a) => !LISTED.includes(a.kind));
+      const ls = acts.filter((a) => LISTED.includes(a.kind));
+      if (tl.length) tiles.push(h("div.iso-tiles", { "data-section": title, title: null }, tl.map(actionButton)));
+      if (ls.length) {
+        const more = title === "Spells" ? h("button.link.small", { onclick: () => openSpells(), title: "Every spell with its description" }, "details") : null;
+        listed.push(h("div.iso-listed", h("h4", title, more ? " " : null, more), h("div.actions", ls.map(actionButton))));
+      }
+    }
+  }
+  let state = [hint, way, ...[status].flat()].filter(Boolean);
+  if (!state.length) state = [h("div.iso-desc-text.dim", "Point at an order to read it. Right-click a plot to move there.")];
+  const desc = h("div.iso-desc", h("div.iso-desc-one.shown", state), [...descs.values()]);
+  const name = own.length === 1 ? dname("UnitType", own[0].type) : `${S.sel.units.length} of ${own.length} units`;
+  fill(
+    panel,
+    h(
+      "div.iso-card",
+      lead ? portrait(lead.type, lead.owner) : null,
+      h("div.iso-card-mid", h("h3.iso-name", name, h("span.dim.coords", ` (${x}, ${y})`)), plate, own.length > 1 ? list : null, others),
+      h("div.iso-card-right", h("div.iso-orders", tiles), desc, h("div.iso-tools", seals, tools), listed),
+    ),
+  );
 }
 
 /** The promotions the selection can take, with their descriptions: a click promotes (every
@@ -931,7 +1091,7 @@ export function openPromotions() {
                 "button.option",
                 { disabled: !a.enabled, "data-promotion": a.promotion, onclick: async () => (await doAction(a), m.close("promoted")) },
                 h("span", dname("PromotionType", a.promotion)),
-                info("PromotionType", a.promotion)?.help ? h("small", markup(info("PromotionType", a.promotion).help)) : null,
+                effectsOf("PromotionType", a.promotion) ? h("small", markup(effectsOf("PromotionType", a.promotion))) : null,
               ),
             ),
           )
@@ -961,7 +1121,7 @@ export function openSpells() {
             "button.option",
             { disabled: !a.enabled, "data-spell": a.spell, onclick: async () => (m.close("cast"), await doAction(a)) },
             h("span", dname("SpellType", a.spell), notes ? h("span.dim", ` (${notes})`) : null, a.enabled ? null : h("span.dim", " — not now")),
-            a.help || e?.help ? h("small", markup(a.help || e.help)) : null,
+            helpOf(a) ? h("small", markup(helpOf(a))) : null,
           );
         }),
       ),

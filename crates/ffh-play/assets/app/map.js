@@ -18,6 +18,17 @@ import { IsoMap, ISO_DEFAULT_ZOOM } from "./iso.js";
 import { artZooms, defaultArtZoom } from "./stacks.js";
 
 const ZOOMS = [12, 16, 24, 32, 48, 64];
+/** Keyboard scrolling (W A S D, `scrollHold`): the speed is SCROLL_VIEWS of the view's short side a
+ *  second, within [SCROLL_MIN, SCROLL_MAX] CSS px; the velocity eases with this time constant (s)
+ *  and the view is at rest below SCROLL_REST px a second. */
+const SCROLL_VIEWS = 0.8;
+const SCROLL_MIN = 480;
+const SCROLL_MAX = 1000;
+const SCROLL_EASE_S = 0.07;
+const SCROLL_REST = 8;
+/** The city screen's panels over the map (iso.css, `.city-overlay`): the CSS px they take at each
+ *  side, above and below; the city is framed in what is left (`frameCity`). */
+const CITY_FRAME = { side: 384, top: 150, bottom: 84 };
 /** The terrain cache's budget in device pixels (least recently used chunks go first). */
 const PIXEL_BUDGET = 32e6;
 /** Activities drawn as asleep (a grey pip): fortified (C++ sleeps them), sleeping, healing,
@@ -80,7 +91,12 @@ export class MapView {
     /** Overlays: `path` (path query reply), `targets` ([[x, y]] or "any"), `hover` ({x, y}),
      *  `sel` ({x, y}), `units` (selected unit ids), `waypoints` ([[x, y]] held while Shift is
      *  down). */
-    this.overlay = { path: null, targets: null, hover: null, sel: null, units: [], waypoints: null };
+    this.overlay = { path: null, targets: null, hover: null, sel: null, units: [], waypoints: null, city: null };
+    /** The camera before a city screen framed its city (`cityOverlay`), to come back to. */
+    this.cityCamera = null;
+    /** CSS px of the view that floating panels cover at each side (the isometric interface sets
+     *  them, isoui.js): `centerOn` puts a plot in the middle of the rest, `reveal` keeps it there. */
+    this.insets = { top: 0, right: 0, bottom: 0, left: 0 };
     /** The map's layer (design §5.1 "Layers"): "terrain", "political" (owners' colours) or
      *  "yield" (the visible plots' food, production and commerce). */
     this.layer = "terrain";
@@ -99,6 +115,9 @@ export class MapView {
      *  manipulation (drag, zoom, pan) cancels it; `prefers-reduced-motion` skips it. */
     this.anim = null;
     this.animRaf = 0;
+    /** Keyboard scrolling (`scrollHold`, W A S D held): the directions held and the view's
+     *  velocity in screen px a second, eased towards SCROLL_SPEED and back to rest. */
+    this.scroll = { held: new Set(), vx: 0, vy: 0, t: 0, raf: 0 };
     /** One-shot combat flashes (`flashTile`): `{ x, y, kind, t0, dur }`, drawn by both renderers
      *  and self-expiring. */
     this.flashes = [];
@@ -142,16 +161,19 @@ export class MapView {
       const d = down;
       down = null;
       if (!d || d.dragged || ev.button !== 0) return;
+      if (this.overlay.city) return this.cityClick(this.plotAt(ev, { ground: true }));
       const p = this.plotAt(ev);
       if (p) this.h.click?.(p.x, p.y, ev);
     });
     c.addEventListener("pointercancel", () => (down = null));
     c.addEventListener("contextmenu", (ev) => {
       ev.preventDefault();
+      if (this.overlay.city) return;
       const p = this.plotAt(ev);
       if (p) this.h.rightClick?.(p.x, p.y, ev);
     });
     c.addEventListener("dblclick", (ev) => {
+      if (this.overlay.city) return;
       const p = this.plotAt(ev);
       if (p) this.h.dblclick?.(p.x, p.y, ev);
     });
@@ -173,9 +195,12 @@ export class MapView {
     const miniMove = (ev) => {
       if (!this.map) return;
       this.cancelGlide();
+      // The canvas's content box (a frame may surround it).
       const r = this.mini.getBoundingClientRect();
-      const x = ((ev.clientX - r.left) / r.width) * this.map.w;
-      const y = this.map.h - ((ev.clientY - r.top) / r.height) * this.map.h;
+      const w = this.mini.clientWidth || r.width;
+      const hh = this.mini.clientHeight || r.height;
+      const x = ((ev.clientX - r.left - this.mini.clientLeft) / w) * this.map.w;
+      const y = this.map.h - ((ev.clientY - r.top - this.mini.clientTop) / hh) * this.map.h;
       this.cam = T.clampCamera({ ...this.cam, cx: x, cy: y }, this.map);
       this.request();
     };
@@ -189,18 +214,34 @@ export class MapView {
     this.mini.addEventListener("pointerup", () => (miniDown = false));
   }
 
-  plotAt(ev) {
+  /** The plot under pointer event `ev`: a figure drawn there, else the ground (`ground`: the
+   *  ground only). */
+  plotAt(ev, { ground = false } = {}) {
     if (!this.map) return null;
     const r = this.canvas.getBoundingClientRect();
-    if (this.iso) return this.iso.screenToMap(ev.clientX - r.left, ev.clientY - r.top);
+    if (this.iso) return this.iso.screenToMap(ev.clientX - r.left, ev.clientY - r.top, { ground });
     if (this.r3d) return this.r3d.screenToMap(ev.clientX - r.left, ev.clientY - r.top);
     return T.screenToMap(this.cam, this.map, this.vw, this.vh, ev.clientX - r.left, ev.clientY - r.top);
   }
 
   hoverAt(ev) {
-    const p = this.plotAt(ev);
+    const city = this.overlay.city;
+    const p = this.plotAt(ev, { ground: !!city });
     const r = this.wrap.getBoundingClientRect();
     this.tipAt = { x: ev.clientX - r.left, y: ev.clientY - r.top };
+    if (city) {
+      // The city screen: what a click on the plot does, nothing else (redrawn when the plot
+      // pointed at changes, not on every move).
+      const plot = this.cityPlot(p);
+      const mark = plot ? p : null;
+      if (mark?.x !== this.overlay.hover?.x || mark?.y !== this.overlay.hover?.y) {
+        this.overlay.hover = mark;
+        this.request();
+      }
+      if (plot) this.showTip(city.tipOf(plot));
+      else this.hideTip();
+      return;
+    }
     const old = this.overlay.hover;
     if (p?.x === old?.x && p?.y === old?.y) {
       this.placeTip();
@@ -209,6 +250,87 @@ export class MapView {
     this.overlay.hover = p;
     this.request();
     this.h.hover?.(p?.x ?? null, p?.y ?? null, ev);
+  }
+
+  // ------------------------------------------------------------------------------------------
+  // The city screen's work area (city.js, with the isometric map's interface)
+
+  /** Shows city screen overlay `o` ({ id, x, y, owner, plots, onPlot(plot), tipOf(plot) }: the
+   *  `city` query's plots, what a click on one does and says) over the map, or ends it (`null`).
+   *  A new city is framed (`frameCity`); the camera from before the screen comes back at the end. */
+  cityOverlay(o) {
+    if (!o) {
+      if (!this.overlay.city) return;
+      this.overlay.city = null;
+      this.overlay.hover = null;
+      this.hideTip();
+      const back = this.cityCamera;
+      this.cityCamera = null;
+      if (back && this.map) {
+        // The renderer may have changed meanwhile: its own zoom steps.
+        if (this.zooms().includes(back.ts)) this.cam = { ...this.cam, ts: back.ts };
+        this.glideTo(back.cx, back.cy);
+      }
+      this.request();
+      return;
+    }
+    const fresh = this.overlay.city?.id !== o.id;
+    this.overlay.city = o;
+    if (fresh) {
+      if (!this.cityCamera) this.cityCamera = { ...this.cam };
+      this.overlay.hover = null;
+      this.hideTip();
+      this.frameCity(o);
+    } else {
+      // The plot pointed at says what a click does now (a click just changed it).
+      const plot = this.cityPlot(this.overlay.hover);
+      if (plot && !this.tip.hidden) this.showTip(o.tipOf(plot));
+    }
+    this.request();
+  }
+
+  /** The city's plot at map plot `p` (x, y), or null. */
+  cityPlot(p) {
+    const o = this.overlay.city;
+    if (!o || !p) return null;
+    return o.plots.find((q) => q.x === p.x && q.y === p.y) ?? null;
+  }
+
+  cityClick(p) {
+    const plot = this.cityPlot(p);
+    if (plot) this.overlay.city.onPlot(plot);
+  }
+
+  /** Centres city overlay `o`'s city at the largest zoom step that shows all its plots in the room
+   *  the screen's panels leave (CITY_FRAME). */
+  frameCity(o) {
+    if (!this.map) return;
+    // The plots' extent on screen, in tiles: north up for the square renderers; for the isometric
+    // one a plot (dx, dy) from the city is (dx + dy) / 2 tiles right and (dx - dy) / 4 down.
+    const ext = { x0: 0, x1: 0, y0: 0, y1: 0 };
+    for (const p of o.plots) {
+      let dx = p.x - o.x;
+      if (this.map.wrap_x) dx = ((((dx + this.map.w / 2) % this.map.w) + this.map.w) % this.map.w) - this.map.w / 2;
+      const dy = p.y - o.y;
+      const sx = this.iso ? (dx + dy) / 2 : dx;
+      const sy = this.iso ? (dx - dy) / 4 : -dy;
+      ext.x0 = Math.min(ext.x0, sx);
+      ext.x1 = Math.max(ext.x1, sx);
+      ext.y0 = Math.min(ext.y0, sy);
+      ext.y1 = Math.max(ext.y1, sy);
+    }
+    const tw = ext.x1 - ext.x0 + 1;
+    const th = ext.y1 - ext.y0 + (this.iso ? 0.5 : 1);
+    const w = this.vw - 2 * CITY_FRAME.side;
+    const h = this.vh - CITY_FRAME.top - CITY_FRAME.bottom;
+    const fits = (ts) => tw * ts <= w && th * ts <= h;
+    const zs = this.zooms();
+    const ts = zs.filter(fits).at(-1) ?? zs[0];
+    if (ts !== this.cam.ts) {
+      this.cancelGlide();
+      this.cam = T.clampCamera({ ...this.cam, ts, cx: o.x + 0.5, cy: o.y + 0.5 }, this.map);
+      this.request();
+    } else this.glideTo(o.x + 0.5, o.y + 0.5);
   }
 
   // ------------------------------------------------------------------------------------------
@@ -229,10 +351,22 @@ export class MapView {
     this.canvas.height = Math.round(this.vh * this.dpr);
     this.canvas.style.width = `${this.vw}px`;
     this.canvas.style.height = `${this.vh}px`;
+    this.fitMini();
+    // The bitmap fills the canvas's content box (a frame may surround it).
     const mr = this.mini.getBoundingClientRect();
-    this.mini.width = Math.max(1, Math.round(mr.width * this.dpr));
-    this.mini.height = Math.max(1, Math.round(mr.height * this.dpr));
+    this.mini.width = Math.max(1, Math.round((this.mini.clientWidth || mr.width) * this.dpr));
+    this.mini.height = Math.max(1, Math.round((this.mini.clientHeight || mr.height) * this.dpr));
     this.request();
+  }
+
+  /** The minimap keeps the map's proportions: its height follows its width (its content box: a
+   *  frame may surround it), which the interface may change (isoui.js moves it). */
+  fitMini() {
+    const map = this.map;
+    if (!map || !this.mini.isConnected) return;
+    const w = this.mini.clientWidth || this.mini.getBoundingClientRect().width || 220;
+    const frame = Math.max(0, this.mini.offsetHeight - this.mini.clientHeight);
+    this.mini.style.height = `${Math.round((w * map.h) / map.w) + frame}px`;
   }
 
   /** The zoom steps (tile sizes in CSS px) of the renderer in use: the art's are whole numbers
@@ -265,6 +399,66 @@ export class MapView {
     this.cancelGlide();
     this.cam = T.clampCamera({ ...this.cam, cx: this.cam.cx + dx, cy: this.cam.cy + dy }, this.map);
     this.request();
+  }
+
+  /** Starts (`on`) or ends scrolling in `dir` ("up", "left", "down", "right"): while a direction
+   *  is held the view glides that way on screen, in any renderer (diagonals at the same speed),
+   *  easing in from rest and out to it after the last key is released. */
+  scrollHold(dir, on) {
+    const s = this.scroll;
+    if (on) {
+      s.held.add(dir);
+      this.cancelGlide();
+    } else s.held.delete(dir);
+    if (!s.raf && this.map && (s.held.size || s.vx || s.vy)) {
+      s.t = performance.now();
+      this.stepScroll();
+    }
+  }
+
+  /** Lets go of every scroll key (the page lost the keyboard): the view eases to rest. */
+  scrollRelease() {
+    for (const d of [...this.scroll.held]) this.scrollHold(d, false);
+  }
+
+  /** The keyboard scroll speed, CSS px a second: most of the view's short side a second. */
+  scrollSpeed() {
+    return Math.max(SCROLL_MIN, Math.min(SCROLL_MAX, SCROLL_VIEWS * Math.min(this.vw, this.vh)));
+  }
+
+  stepScroll() {
+    const s = this.scroll;
+    s.raf = requestAnimationFrame(() => {
+      s.raf = 0;
+      const now = performance.now();
+      const dt = Math.min(0.05, Math.max(0, (now - s.t) / 1000));
+      s.t = now;
+      let tx = (s.held.has("right") ? 1 : 0) - (s.held.has("left") ? 1 : 0);
+      let ty = (s.held.has("down") ? 1 : 0) - (s.held.has("up") ? 1 : 0);
+      const n = Math.hypot(tx, ty) || 1;
+      const v = this.scrollSpeed();
+      tx = (tx / n) * v;
+      ty = (ty / n) * v;
+      const k = this.reduceMotion() ? 1 : 1 - Math.exp(-dt / SCROLL_EASE_S);
+      s.vx += (tx - s.vx) * k;
+      s.vy += (ty - s.vy) * k;
+      if (!s.held.size && Math.hypot(s.vx, s.vy) < SCROLL_REST) {
+        s.vx = s.vy = 0;
+        return;
+      }
+      this.moveView(s.vx * dt, s.vy * dt);
+      this.stepScroll();
+    });
+  }
+
+  /** Moves the view (dx, dy) CSS px on screen, right and down, as a drag the other way would. */
+  moveView(dx, dy) {
+    if (!this.map) return;
+    const alt = this.iso ?? this.r3d;
+    const pan = alt ? alt.panDelta(this.cam.cx, this.cam.cy, -dx, -dy) : { cx: this.cam.cx + dx / this.cam.ts, cy: this.cam.cy - dy / this.cam.ts };
+    this.cam = T.clampCamera({ ...this.cam, ...pan }, this.map);
+    this.hideTip();
+    this.draw();
   }
 
   /** Whether the viewer asked for less motion; the glide then jumps instead. */
@@ -370,10 +564,29 @@ export class MapView {
    *  jumps (a new game's first look, where there is nothing to glide from). */
   centerOn(x, y, { animate = true } = {}) {
     if (!this.map) return;
-    if (animate) return this.glideTo(x + 0.5, y + 0.5);
+    const at = this.aimAt(x + 0.5, y + 0.5);
+    if (animate) return this.glideTo(at.cx, at.cy);
     this.cancelGlide();
-    this.cam = T.clampCamera({ ...this.cam, cx: x + 0.5, cy: y + 0.5 }, this.map);
+    this.cam = T.clampCamera({ ...this.cam, ...at }, this.map);
     this.request();
+  }
+
+  /** The part of the view no floating panel covers (`insets`), in CSS px; the whole view when
+   *  what is left would be too small to aim at. */
+  clearRect() {
+    const i = this.insets;
+    const r = { x0: i.left, y0: i.top, x1: this.vw - i.right, y1: this.vh - i.bottom };
+    return r.x1 - r.x0 < 160 || r.y1 - r.y0 < 120 ? { x0: 0, y0: 0, x1: this.vw, y1: this.vh } : r;
+  }
+
+  /** The camera centre that shows map point (px, py) in the middle of `clearRect`. */
+  aimAt(px, py) {
+    const r = this.clearRect();
+    const dx = (r.x0 + r.x1) / 2 - this.vw / 2;
+    const dy = (r.y0 + r.y1) / 2 - this.vh / 2;
+    if (!dx && !dy) return { cx: px, cy: py };
+    const alt = this.iso ?? this.r3d;
+    return alt ? alt.panDelta(px, py, dx, dy) : { cx: px - dx / this.cam.ts, cy: py + dy / this.cam.ts };
   }
 
   /** The plot at the centre of the view (C++ `getLookAtPlot`), or null without a map. */
@@ -382,11 +595,12 @@ export class MapView {
     return { x: T.wrapCoord(Math.floor(this.cam.cx), this.map.w, true), y: Math.min(this.map.h - 1, Math.max(0, Math.floor(this.cam.cy))) };
   }
 
-  /** Centres on (x, y) unless it is well inside the viewport. */
+  /** Centres on (x, y) unless it is well inside the viewport's clear part (`clearRect`). */
   reveal(x, y) {
     const s = this.screenOf(x, y);
-    const m = this.cam.ts * 2;
-    if (!s || s.x < m || s.y < m || s.x > this.vw - m || s.y > this.vh - m) this.centerOn(x, y);
+    const r = this.clearRect();
+    const m = this.cam.ts * (r.x0 || r.y0 || r.x1 < this.vw || r.y1 < this.vh ? 1 : 2);
+    if (!s || s.x < r.x0 + m || s.y < r.y0 + m || s.x > r.x1 - m || s.y > r.y1 - m) this.centerOn(x, y);
   }
 
   /** The centre of plot (x, y) on the canvas (CSS pixels), the copy nearest the centre. */
@@ -513,9 +727,6 @@ export class MapView {
     if (first) {
       this.flashes = [];
       this.cam = T.clampCamera(this.cam, map);
-      // The minimap keeps the map's proportions.
-      const w = this.mini.getBoundingClientRect().width || 220;
-      this.mini.style.height = `${Math.round((w * map.h) / map.w)}px`;
       this.resize();
     }
     this.request();
@@ -1109,11 +1320,14 @@ export class MapView {
     const r = this.wrap.getBoundingClientRect();
     const tw = this.tip.offsetWidth;
     const th = this.tip.offsetHeight;
+    // The city screen's panels cover the sides (CITY_FRAME): its tooltips stay between them.
+    const lo = this.overlay.city ? CITY_FRAME.side : 4;
+    const hi = this.overlay.city ? r.width - CITY_FRAME.side : r.width - 4;
     let x = this.tipAt.x + 16;
     let y = this.tipAt.y + 16;
-    if (x + tw > r.width - 4) x = this.tipAt.x - tw - 12;
+    if (x + tw > hi) x = this.tipAt.x - tw - 12;
     if (y + th > r.height - 4) y = Math.max(4, r.height - th - 4);
-    this.tip.style.left = `${Math.max(4, x)}px`;
+    this.tip.style.left = `${Math.max(lo, x)}px`;
     this.tip.style.top = `${Math.max(4, y)}px`;
   }
 

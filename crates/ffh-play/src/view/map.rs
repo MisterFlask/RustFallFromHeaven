@@ -300,6 +300,10 @@ pub fn plot(v: &Viewer, x: i32, y: i32) -> Result<Json, QueryErr> {
         "city" => pl.plot_city.filter(|&c| v.city_revealed(c)).map(|c| crate::jobj! { "id" => c, "name" => city_name(g, c), "owner" => g.cities[c].owner }),
         "move_cost" => base_move_cost(v, p),
     };
+    // C++ plot help: "Must be level N to enter" (the Ring of Carcer's 15; -1 once it is gone).
+    if pl.min_level > 0 {
+        j.set("min_level", pl.min_level);
+    }
     if visible {
         let owner_team = pl.owner.map(|o| g.players[o].team);
         j.set("yields", pl.yields.to_vec());
@@ -328,6 +332,8 @@ pub fn plot(v: &Viewer, x: i32, y: i32) -> Result<Json, QueryErr> {
                 let mut uj = unit_json(v, u);
                 uj.set("strength", g.unit_base_combat_str(u));
                 uj.set("defense_strength", g.unit_base_combat_str_defense(u));
+                // C++ plot help lists a visible unit's promotions.
+                uj.set("promotions", Json::Arr(d.promotions.keys().filter(|&pr| g.units[u].has_promotion[pr]).map(Json::idx).collect()));
                 uj
             })
             .collect();
