@@ -58,6 +58,13 @@ draws). Changes made here since the package arrived:
   `_b` tile is paired.
 - `budget.json` caps this folder's spend; `spend.jsonl` is committed, so the caps count every call
   made for the game so far.
+- **Interface art** (`ui.py`, docs/ISO.md section 9): icon sheets of sixteen in a 4 x 4 grid
+  (`ui.py sheet --name <list>`, the list in `prompts/ui/<list>.txt`, the style in
+  `prompts/style_ui_icons.txt`, anchored on `anchors/anchor_ui.png`, the reference's panels), cut
+  per cell to 24 and 16 blocks of 2 px (`ui.py cut`, a review sheet per round), accepted as
+  `roster/ui/ui_<key>.png` and `ui_<key>_s.png` (`ui.py accept`, `--only` / `--skip` to mix
+  variants); `ui.py backdrop` re-grids the painting behind the unit portrait. The budget tag is
+  `ui`.
 
 ## Setup
 

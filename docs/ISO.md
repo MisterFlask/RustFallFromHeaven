@@ -8,13 +8,15 @@ features and terrain are sprites drawn by an image model (OpenAI `gpt-image-2.5-
 brought to one contract by code: the **M7 art package** in `tools/m7/`. Everything around the
 sprites (placement, banners, shadows, borders, rivers, roads, plaques, paths) is drawn by
 `assets/app/iso.js`. It reads the same game state as the other renderers; no rule, save or protocol
-changed for it.
+changed for it. While it draws the map, the client's interface takes the reference's look too
+(section 9).
 
 This direction replaces the earlier "Songs of Conquest" proposal for the isometric map (its
 document and reference images were removed in the same change).
 
 Contents: 1 running it · 2 the art package · 3 the contract · 4 what the game maps to which
-sprite · 5 drawn by the engine · 6 adding art · 7 the sprites so far · 8 gaps and next steps.
+sprite · 5 drawn by the engine · 6 adding art · 7 the sprites so far · 8 gaps and next steps ·
+9 the interface.
 
 ---
 
@@ -125,9 +127,11 @@ the banner, a pip on the finial for your units (green while it can move), a heal
 the **path** preview with turn roundels (red to an attack, orange when it declares war), the
 waypoints, the target and hover outlines, the combat flashes, the **Political** and **Yields**
 layers, **fog** (remembered plots desaturated and darkened, keeping their hue), and **clouds** over
-the unexplored plots along the edge of the known world (unexplored plots are not drawn). Units face
-right and are mirrored after a move to the left of the screen; your own moves slide as in the 2D
-renderer.
+the unexplored plots along the edge of the known world (unexplored plots are not drawn: the world
+floats in a summer sky, the reference's). Units face right and are mirrored after a move to the left
+of the screen; your own moves slide as in the 2D renderer. The map's lettering (city plaques, stack
+counts, yields, path roundels) is the interface's Herald (section 9), at 1 or 2 CSS px a pixel by
+the zoom; a city's plaque is a navy plate in the interface's gilt frame.
 
 ## 6. Adding art
 
@@ -181,3 +185,70 @@ ask for solid nets; the cottage is deliberately small, padded to sit in the midd
   units (`unit_<civilization>_<type>`) are the next batches.
 - **Resources** by family; the exact resource shows on hover.
 - The minimap is MapView's top-down one.
+
+## 9. The interface
+
+While the isometric renderer draws the map, the client's chrome is redrawn after the reference
+screenshot's panels too (`assets/app/isoui.js`, `iso.css`, everything under `html.iso`): the map
+fills the page and the interface floats over it.
+
+- **Layout** (the reference's): a single top bar (the date and turn; the empire's numbers with
+  their icons, "245 (+18)"; the system buttons as icon tiles: options, save, load, new game,
+  keys, the raw request), wrapping onto a second row on narrow screens (the panels below follow
+  its height); a rail of advisor tiles at the left (research, techs, cities, civics, religion,
+  diplomacy); the turn report at the top left, folded to its tabs until one is clicked; the
+  selection's card at the bottom left (the lead unit's figure on a painted meadow, its strength,
+  movement, health and level, the stack, its orders as icon tiles over a description of the one
+  pointed at with its key and help, spells, promotions and upgrades as labelled buttons, the
+  seals and the stack buttons); a city panel at the right (your capital, or the city last
+  opened or selected: its picture in its owner's colour, population and growth, production,
+  yields, mood and health, the build queue, "Open city"); and at the bottom right End turn, the
+  map layer and zoom tiles and the minimap. The card shows only with a selection or a plot.
+- **Frames**: drawn by isoui.js as nine-slices on a 2 px grid (`--hu`): a gilt rule lit from the
+  upper left (outline, light gold, gold, shade, outline; every edge the same way, so it reads as
+  a bar), mitred corners, gilt nails reaching past the panels' corners (`border-image-outset`);
+  thinner rules for boxes, tiles and bars; the panels' navy carries a faint seeded grain.
+- **Lettering**: Herald (`isofont.js`), a pixel serif drawn for the game after the reference's
+  lettering: capitals and ascenders 7 px, x-height 5, descenders 2, 1 px strokes; its bold is the
+  pixel smear, drawn by hand for the letters whose counters the smear would close (m n w v k y M
+  N W); accented letters are composed. The glyphs are grids in the module, made into a TrueType
+  font when the page loads (`FontFace`), so every label, button and paragraph takes it through
+  CSS, wraps and selects as text. It is set at 20px (2 CSS px a pixel) with 24px lines, so every
+  baseline falls on a whole pixel; the tech tree's fixed boxes take it at 10px (1x). Other sizes
+  blur it: iso.css overrides style.css's 11-17px sizes.
+- **Icons**: the M7 package's interface icons (`ui_<name>`, 64 of them: yields, commerce, mood,
+  health, the top bar's, the menu's, the orders', the layers'), drawn by the image model on
+  `tools/m7/anchors/anchor_ui.png` (the reference's panels), four sheets of sixteen, and cut to
+  24 (`ui_<name>`, the order tiles) and 16 (`ui_<name>_s`) blocks of 2 px (`tools/m7/ui.py`,
+  about $0.03 a sheet; prompts in `tools/m7/prompts/ui/` and `prompts/assets/ui_*.txt`). A
+  worker's builds show the map's own improvement sprites (a farm, a mine, a cottage ...), a
+  clearing its feature with a cancel mark, an upgrade the target unit's figure. `ui_backdrop` (the
+  meadow behind the portrait and the city picture) is one painting, re-gridded. The 2D art's
+  icons that have no M7 counterpart (promotion seals, religions, civic categories) stay, at 2x.
+- **How it is wired**: the skin follows the renderer (`main.js` `syncSkin`, on every renderer
+  change): it moves the advisor buttons to the rail and End turn, the layers, zoom and minimap
+  to the bottom-right cluster, and puts them back when the renderer changes. look.js's helpers
+  (`pix`, `iconEl`, `uiIcon`, `barEl`) answer in the skin's look while it is on (plain text, the
+  M7 icons, its bars), so the screens built with them follow without changes of their own.
+
+### The city screen
+
+With the isometric map the city screen is Civ4's city view (`city.js` `overlay`,
+`MapView.cityOverlay`): the map glides to the city at the largest zoom step whose projected work
+area fits between the screen's panels (`CITY_FRAME`), veils the revealed plots outside the radius
+and edges the radius in gilt; each plot shows its yields on a plate (the worked ones brighter),
+each worked plot a citizen (half-seen when another city works it), plots not yours are tinted and
+the one pointed at is outlined, with what a click does as its tooltip. A click on a plot works it
+or stops working it (`TASK_CHANGE_WORKING_PLOT`, as the grid's buttons do); other clicks on the
+map do nothing meanwhile. The rest of the screen stands in panels at the sides (the citizens, the
+city's numbers and buildings at the left; its orders and production at the right), the title,
+summary and buttons as plaques; the rest of the interface steps aside, and when the screen closes
+the camera goes back to where it was. The production popup stays a dialog; the other renderers
+keep the grid.
+
+### W A S D
+
+Held, `W` `A` `S` `D` scroll the map smoothly in every renderer (`MapView.scrollHold`: a
+screen-space glide that eases in and out, at most of the view's short side a second), by the
+keys' place on the keyboard. Civ4's plain-letter orders on those keys keep their buttons (the
+group cycle is `Tab` and `Enter`).

@@ -95,7 +95,7 @@ map**: `?renderer=3d`, docs/R3D.md; it needs WebGL2). The choice is remembered b
 **Motion.** The interface moves quietly, in keeping with the manuscript look (docs/ART.md 4.5):
 
 - **The camera glides.** When the view jumps to a plot it is not already near — centring on the
-  selection (`C`), the next waiting group (`W`, `Enter`), a city (`Home` / `End`, `F10`, the cities
+  selection (`C`), the next waiting group (`Tab`, `Enter`), a city (`Home` / `End`, `F10`, the cities
   list), a message's "Show on the map" — it glides there across the page the short way round a
   wrapping map, rather than cutting. Dragging, zooming and the minimap stay immediate (you are
   moving the view yourself), and a new game opens on its start with no glide.
@@ -123,16 +123,16 @@ XML (each button shows its key), and the global keys are Civ4's controls
 | left click | select your units on a plot (again: the next group there; Shift: all of them), open your city, or show a plot |
 | right click | move or attack with the selection; with Shift held, each right click adds a waypoint (numbered on the map), and releasing Shift sends them (`Esc` drops them) |
 | drag, wheel, arrows, `+` `-` | pan and zoom; click or drag the minimap to jump |
+| `W` `A` `S` `D` (held) | ffh-play's own: scroll the map smoothly up, left, down, right (by the keys' place, so `Z` `Q` `S` `D` on AZERTY); Civ4's plain `W`, `A`, `S` and `D` orders (cycle, automate, sentry, destroy) are on their buttons and `Tab` / `Enter` |
 | double click | open your city |
-| `Enter` | the next group waiting for orders, as `W`; when none waits (Civ4's "end of turn" state: the End turn button glows), end the turn |
+| `Enter` | the next group waiting for orders, as `Tab`; when none waits (Civ4's "end of turn" state: the End turn button glows), end the turn |
 | `Shift+Enter` | end the turn whatever waits, without the checks |
-| `W` | the next group waiting for orders, in Civ4's group cycle (a stack in which a unit has used its moves is skipped, as in Civ4); when it comes round, units with orders left move (Civ4's automatic moves) |
 | `Space` | with a unit selected: skip its turn; with none, end the turn when no group waits |
 | `C` | centre on the selection |
 | `Home` / `End` (`Num+` / `Num-`) | the next / previous of your cities (the first: the one nearest the centre of the map); in the city screen, its next / previous city |
 | `F10` | your capital's city screen |
-| `Tab` / `Shift+Tab` | ffh-play's own: the next / previous group waiting (in Civ4, `Tab` is chat) |
-| `F` / `S` / `H` | fortify (sleep for a unit that cannot fortify) / sentry / heal |
+| `Tab` / `Shift+Tab` | the next / previous group waiting for orders, in Civ4's group cycle (Civ4's `W`; in Civ4, `Tab` is chat): a stack in which a unit has used its moves is skipped, as in Civ4; when it comes round, units with orders left move (Civ4's automatic moves) |
+| `F` / `H` | fortify (sleep for a unit that cannot fortify) / heal; sentry is on its button (`S` scrolls) |
 | `B` | found a city (bombard or a ranged attack for units that cannot) |
 | `G` then click, `Alt+R` then click | go to a plot (Shift-clicks add waypoints, sent when Shift is released, as with right clicks) / build a route to it |
 | `R`, `I`, `M`, … | a worker's builds: road, farm, mine, … (`Shift+W` windmill, `Alt+C` chop) |
@@ -159,7 +159,7 @@ combat class, strength, health bar, moves and level, the lead unit's promotions 
 the list (and each promotion button carries its seal).
 When a group is done, the next one waiting for orders on the plot it left, then on its plot,
 then the next in Civ4's group cycle is selected, as in Civ4 (not with the player option "No
-unit cycling", Tools → Options). As in Civ4, the cycle (`W`, `Enter`, the next group after an
+unit cycling", Tools → Options). As in Civ4, the cycle (`Tab`, `Enter`, the next group after an
 order) selects only groups whose units can all still move: a stack in which one unit has used its
 moves still counts as waiting (the end-turn check counts it) but is not selected for you. Moving into a rival's land asks whether to declare war;
 deleting, world spells and spells that start a war ask first; loading with more than one
@@ -190,6 +190,11 @@ hurry (gold or population, with the price), draft, the emphasis flags and "Autom
 production"; the queue (✕ removes an entry while there are several; the only one is replaced by
 choosing another) and everything it can build with turns and cost (click: build it; Shift:
 append; Ctrl: put it first). "‹ Previous city" and "Next city ›" go through your cities.
+With the isometric map the screen is Civ4's city view: the map glides to the city at the largest
+zoom that shows its radius, veils what lies outside it and draws the radius in gilt, each plot
+with its yields and the worked ones with a citizen; click a plot there to work it or stop. The
+rest of the screen stands in panels at the sides, the interface steps aside, and the camera goes
+back when the screen closes (docs/ISO.md, "The city screen").
 
 **Empire.** **Techs** (`F6`): the tech tree by prerequisite depth, what you know, research and
 can research now, with costs, turns and progress; click a tech to research it (with what it
@@ -627,7 +632,7 @@ node tools/web-smoke.mjs                 # headless Chromium plays through the p
 * `web-smoke.mjs [--turns 4] [--seed 5] [--out DIR] [--assets DIR] [--cdp] [--headed]` drives the
   page with the mouse and keyboard in headless Chromium (the `playwright` package if it resolves,
   else Chromium over the DevTools protocol; skipped without a browser): new game (Start
-  double-clicked: one game), `W` over every group the cycle selects, hotkeys pressed in the same tick as a
+  double-clicked: one game), `Tab` over every group the cycle selects, `D` and `A` held (the map scrolls, the selection stays), hotkeys pressed in the same tick as a
   selection change, found a city with `B`, the research and production popups, the city queue
   (Shift-click appends, ✕ removes), select a unit, the path preview, a right-click move, `Enter`
   while groups wait (it selects one and does not end the turn), end turns with the button through
@@ -684,9 +689,9 @@ window):
    else waits for orders); `G` then click goes there, `G` then Shift-clicks add waypoints the
    same way (the go-to mode stays on until Shift is released); `Esc` cancels. A move into a
    rival's land asks to declare war (try "Cancel").
-5. Group units on one plot (`All`, `Group`), split them, Ctrl-click rows; `W`, `Enter` and `Tab`
+5. Group units on one plot (`All`, `Group`), split them, Ctrl-click rows; `Tab` and `Enter`
    go through every waiting group before any comes up again (`Shift+Tab` backwards); move one unit
-   of a two-unit stack with different moves (a warrior and a scout grouped, one plot): `W` skips
+   of a two-unit stack with different moves (a warrior and a scout grouped, one plot): `Tab` skips
    the stack from then on, as Civ4 does; once nothing waits the End turn button glows and `Enter`
    (or `Space` with nothing selected) ends the turn; `Home`/`End` go through your cities, `F10`
    opens the capital; `Space`, `F`, `S`, `G`

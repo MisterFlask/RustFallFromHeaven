@@ -15,7 +15,7 @@
 // The skin follows the renderer (`setIsoSkin`, main.js): the same elements and the same screens,
 // rearranged and restyled while the isometric map is on, as they were when it goes.
 
-import { S, me, dname, tname, info, turns, orderName, emit, isBarbarian } from "./state.js";
+import { S, me, dname, tname, turns, orderName, emit, isBarbarian } from "./state.js";
 import * as T from "./tiles.js";
 import { h, fill } from "./dom.js";
 import { installIsoFont } from "./isofont.js";
@@ -360,6 +360,22 @@ function dress(el, icon, px) {
   if (im) el.prepend(im);
 }
 
+/** The panels' reach into the map (MapView.insets): the top bar, the rail, the right-hand
+ *  column, and the selection's card (at least its usual height, so a unit selected under where
+ *  the card is about to appear is brought clear of it). */
+function updateInsets() {
+  const v = skin.view;
+  if (!v) return;
+  if (!skin.on) {
+    v.insets = { top: 0, right: 0, bottom: 0, left: 0 };
+    return;
+  }
+  const side = document.getElementById("side");
+  const card = side && side.offsetParent !== null ? side.getBoundingClientRect().height : 0;
+  const top = document.getElementById("top")?.getBoundingClientRect().bottom ?? 0;
+  v.insets = { top: Math.ceil(top) + 8, left: 70, right: 332, bottom: Math.ceil(Math.max(card, 240)) + 20 };
+}
+
 function ensure(id, parent, tag = "div") {
   let el = document.getElementById(id);
   if (!el) {
@@ -380,6 +396,7 @@ export function setIsoSkin(on, view) {
   root.classList.toggle("iso", on);
   if (!on) {
     restore();
+    updateInsets();
     return true;
   }
   installIsoFont().then((ok) => ok && root.classList.add("iso-font"));
@@ -417,6 +434,15 @@ export function setIsoSkin(on, view) {
     });
     skin.topWatch.observe(top);
   }
+  // The map aims at the part of the view the panels leave clear (MapView.insets).
+  if (!skin.insetWatch && typeof ResizeObserver !== "undefined") {
+    skin.insetWatch = new ResizeObserver(() => updateInsets());
+    for (const id of ["top", "side", "iso-city"]) {
+      const el = document.getElementById(id);
+      if (el) skin.insetWatch.observe(el);
+    }
+  }
+  updateInsets();
   // The turn report floats at the top left, folded to its tabs until one is clicked.
   if (!skin.folded) {
     skin.folded = true;
@@ -569,16 +595,4 @@ function queueIcon(q) {
   const process = order === "ORDER_MAINTAIN" ? tname("ProcessType", q.type) ?? "" : "";
   const name = order === "ORDER_CREATE" ? "greatwork" : process ? (/RESEARCH/.test(process) ? "research" : /CULTURE/.test(process) ? "culture" : "gold") : "cities";
   return h("span.iso-qicon", isoIcon(name, { px: 32 }));
-}
-
-/** Forgets the panel's city (a new or loaded game). */
-export function resetCityPanel() {
-  focusCity = null;
-  cityKey = null;
-}
-
-/** A unit type's short numbers for the card: strength and moves. */
-export function unitTypeLine(type) {
-  const u = info("UnitType", type);
-  return u ? `${u.combat}/${u.combat_defense ?? u.combat} strength, ${u.moves} moves` : "";
 }

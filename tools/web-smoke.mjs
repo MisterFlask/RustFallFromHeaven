@@ -471,6 +471,8 @@ async function rendererIso(url) {
   await b.eval(`window.ffh.setLayer("terrain")`);
   await b.eval("window.ffh.mapView.draw()");
   await shot("renderer-iso");
+  // The city screen over the isometric map: its plots worked by clicking them on the map.
+  await cityScreen();
   await b.eval(`window.ffh.setRenderer("art")`);
   await until2(`window.ffh.mapView.renderer() === "art"`, "the art renderer after the isometric one");
   steps.push(`?renderer=iso: a frame of ${colours} colours, ${clicked ? "a click on a unit's figure selects it, hover, " : ""}zoom ${zooms.join(" ")}, political layer, back to the art`);
@@ -750,13 +752,15 @@ async function closeDialog(title) {
 }
 
 /** The city screen (P6): a worked plot clicked stops being worked (a specialist instead, the
- *  citizens' automation off), clicked again it is worked; the automation back on. */
+ *  citizens' automation off), clicked again it is worked; the automation back on. With the
+ *  isometric map the plots are clicked on the map, which frames the city (Civ4's city view). */
 async function cityScreen() {
   const city = await S("S.view.cities.find((c) => c.owner === S.view.me.player) || null");
   if (!city) return steps.push("no city for the city screen");
   const p = await plotPos(city.x, city.y);
   await b.dblclick(p.x, p.y);
   await dialog(city.name);
+  if (await b.eval("!!window.ffh.mapView.iso")) return cityOverlay(city);
   const screen = `${TOP} .modal.city-screen`;
   await until2(`!!document.querySelector(${q(`${screen} .cgrid .cplot.centre`)})`, "the city screen's plots");
   await shot("city-screen");
@@ -776,6 +780,33 @@ async function cityScreen() {
     steps.push(`city screen: plot ${worked} clicked off (a specialist) and on, the automation off and on`);
   }
   await closeDialog(city.name);
+}
+
+/** The city screen over the isometric map: the city's plots worked by clicking them on the map. */
+async function cityOverlay(city) {
+  const o = "window.ffh.mapView.overlay.city";
+  await until2(`!!${o} && ${o}.id === ${city.id} && !window.ffh.mapView.anim`, "the city's plots on the map");
+  await shot("city-screen");
+  const worked = await b.eval(`(() => { const q = ${o}.plots.find((p) => p.worked && p.i !== 0); return q ? { i: q.i, x: q.x, y: q.y } : null; })()`);
+  if (!worked) {
+    steps.push("city screen (map): no worked plot to click");
+  } else {
+    const at = () => b.eval(`(() => { const m = window.ffh.mapView; const p = m.screenOf(${worked.x}, ${worked.y}); const r = document.querySelector("canvas.map").getBoundingClientRect(); return { x: p.x + r.left, y: p.y + r.top }; })()`);
+    const isWorked = `(() => { const c = ${o}; return !!c && c.plots.find((p) => p.i === ${worked.i}).worked; })()`;
+    let q = await at();
+    await b.mouse(q.x, q.y);
+    await until2(`!${isWorked}`, "the plot no longer worked (clicked on the map)");
+    await until2(`!!document.querySelector(".modal.city-overlay .spec") && !document.querySelector("#city-auto-citizens").checked`, "a specialist and the automation off");
+    await shot("city-specialist");
+    q = await at();
+    await b.mouse(q.x, q.y);
+    await until2(isWorked, "the plot worked again");
+    await click("#city-auto-citizens");
+    await until2(`document.querySelector("#city-auto-citizens").checked`, "the automation back on");
+    steps.push(`city screen (map): plot ${worked.i} clicked off (a specialist) and on on the map, the automation off and on`);
+  }
+  await closeDialog(city.name);
+  await until2(`!${o}`, "the map back from the city");
 }
 
 /** The empire screens (P6) through their keys: the tech tree, civics, religion, the sliders,

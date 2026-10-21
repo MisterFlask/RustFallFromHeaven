@@ -61,7 +61,11 @@ export async function openCity(id, { popup = false } = {}) {
     const city = S.cities.get(cityId);
     return popup ? `What should ${city?.name ?? "the city"} build?` : (city?.name ?? `City ${cityId}`);
   };
-  const m = openModal({ title: title(), body: [h("p.dim", "…")], tag: "city", wide: true, className: "city-screen", buttons: [] });
+  // With the isometric map's interface the screen is Civ4's: the map frames the city and its plots
+  // are worked by clicking them there (MapView.cityOverlay), the screen's parts in panels at the
+  // sides. A production popup stays a dialog.
+  const overlay = isoSkin() && !popup;
+  const m = openModal({ title: title(), body: [h("p.dim", "…")], tag: "city", wide: true, className: overlay ? "city-screen city-overlay" : "city-screen", buttons: [] });
   // A refused task changes nothing: the screen is read again either way (a toggle shows the
   // city's state, not the click).
   const task = async (t, data1 = -1, data2 = -1, option = false) => {
@@ -100,7 +104,11 @@ export async function openCity(id, { popup = false } = {}) {
     }
     if (m.closed || n !== loading) return;
     m.el.dataset.city = String(cityId);
-    m.setBody(screen(c, { task, choose, remove, go, popup }));
+    m.setBody(screen(c, { task, choose, remove, go, popup, overlay }));
+    if (overlay) {
+      const mine = me()?.player;
+      emit("city-overlay", { id: c.id, x: c.x, y: c.y, owner: c.owner, plots: c.plots, onPlot: (p) => workable(p, mine) && task("TASK_CHANGE_WORKING_PLOT", p.i), tipOf: (p) => plotTip(p, mine) });
+    }
   };
   m.setButtons(
     popup
@@ -114,6 +122,7 @@ export async function openCity(id, { popup = false } = {}) {
   load();
   if (!popup) screenGo = go;
   const v = await m.done;
+  if (overlay) emit("city-overlay", null);
   if (screenGo === go) screenGo = null;
   return result ?? v;
 }
@@ -125,6 +134,23 @@ function yieldNumbers(y) {
   // With the art: each yield's 8 px icon and its number (docs/ART.md 11.5).
   if (look.art || isoSkin()) return h("span.yields", y.map((v, j) => (v > 0 ? h("span.yield-n", { title: dname("YieldType", j) }, uiIcon("yield", j, 8), pix(String(v))) : null)));
   return h("span.yields", y.map((v, j) => (v > 0 ? h("span", { style: { color: YIELD_COLORS[j] } }, String(v)) : null)));
+}
+
+/** Whether a click on city plot `p` does something: the centre (automates the citizens) or a
+ *  revealed plot of `mine`. */
+function workable(p, mine) {
+  return (p.i === 0 || p.owner === mine) && !!p.revealed;
+}
+
+/** What a click on city plot `p` does (the grid's tooltip; the map's in the overlay). */
+function plotTip(p, mine) {
+  const ours = p.owner === mine;
+  if (p.i === 0) return "The city's own plot (click: automate the citizens)";
+  if (!p.revealed) return "Unexplored";
+  if (p.worked) return "Worked: click to stop working it (the citizen becomes a specialist)";
+  if (p.worked_by !== null && p.worked_by !== undefined) return `Worked by ${S.cities.get(p.worked_by)?.name ?? "another city"}${ours ? ": click to take it" : ""}`;
+  if (!ours) return "Not your plot";
+  return p.can_work ? "Click: work this plot" : "Not workable now";
 }
 
 /** The city's plots as a grid north up, centred on the city. */
@@ -157,27 +183,14 @@ function plotGrid(c, task) {
       const centre = p.i === 0;
       const ours = p.owner === mine;
       const cls = [centre ? "centre" : "", p.worked ? "worked" : "", p.worked_by !== null && p.worked_by !== undefined ? "other" : "", !p.revealed ? "hidden" : "", ours ? "" : "foreign"].filter(Boolean).join(" ");
-      const tip = centre
-        ? "The city's own plot (click: automate the citizens)"
-        : !p.revealed
-          ? "Unexplored"
-          : p.worked
-            ? "Worked: click to stop working it (the citizen becomes a specialist)"
-            : p.worked_by !== null && p.worked_by !== undefined
-              ? `Worked by ${S.cities.get(p.worked_by)?.name ?? "another city"}${ours ? ": click to take it" : ""}`
-              : ours
-                ? p.can_work
-                  ? "Click: work this plot"
-                  : "Not workable now"
-                : "Not your plot";
       rows.push(
         h(
           "button.cplot",
           {
             class: cls,
-            title: tip,
+            title: plotTip(p, mine),
             "data-i": p.i,
-            disabled: !(centre || ours) || !p.revealed,
+            disabled: !workable(p, mine),
             onclick: () => task("TASK_CHANGE_WORKING_PLOT", p.i),
           },
           centre ? h("span.ccity", "★") : null,
@@ -353,7 +366,7 @@ function productionView(c, choose, remove) {
   ];
 }
 
-function screen(c, { task, choose, remove, popup }) {
+function screen(c, { task, choose, remove, popup, overlay }) {
   const f = c.food;
   const head = h(
     "div.city-summary",
@@ -364,7 +377,8 @@ function screen(c, { task, choose, remove, popup }) {
     ` · food ${signed(c.food.difference)} · production ${c.production.rate}`,
     (look.art || isoSkin()) && f.threshold > 0 ? h("span.growth", uiIcon("yield", 0, 8), barEl(f.stored / f.threshold, "food", { w: 40, next: (f.stored + f.difference) / f.threshold, title: `${f.stored}/${f.threshold}` })) : null,
   );
-  const left = h("div.city-col", plotGrid(c, task), specialistsView(c, task), statsView(c), buildingsView(c));
+  const plots = overlay ? h("p.dim.city-hint", "Click the city's plots on the map to work them; its own plot hands the choice back to the governor.") : plotGrid(c, task);
+  const left = h("div.city-col", plots, specialistsView(c, task), statsView(c), buildingsView(c));
   const right = h("div.city-col", manageView(c, task), productionView(c, choose, remove));
   return [head, popup ? h("div.city-cols.popup", right, left) : h("div.city-cols", left, right)];
 }

@@ -327,6 +327,14 @@ html.iso #iso-corner canvas.minimap {
 html.iso .tooltip { padding: 4px 10px; font-size: 20px; line-height: 24px; color: var(--iso-ink); max-width: 440px; }
 html.iso .tip-title { color: #fff8e4; font-weight: 700; }
 html.iso .tip-city { color: var(--iso-gold); }
+/* A unique improvement's block (what it does), between gilt rules; Herald stays at 20px (its
+   grid's 2x: other sizes blur it). */
+html.iso .tip-unique {
+  margin: 4px 0; padding: 8px 0 6px; border: 0;
+  background: linear-gradient(#f0b443 0 2px, #6a4410 2px 4px) no-repeat top / 100% 4px, linear-gradient(#f0b443 0 2px, #6a4410 2px 4px) no-repeat bottom / 100% 4px;
+}
+html.iso .tip-unique-name { color: var(--iso-gold); font-weight: 700; }
+html.iso .tip-effects { font-size: 20px; line-height: 24px; color: var(--iso-ink); }
 html.iso .tip-combat { border-top: 0; background: linear-gradient(#f0b443 0 2px, #6a4410 2px 4px) no-repeat top / 100% 4px; padding-top: 8px; }
 html.iso .tip-combat .odds { font-size: 20px; font-weight: 700; }
 html.iso .tip-combat .mods { font-size: 20px; color: var(--iso-dim); }
@@ -409,3 +417,38 @@ html.iso .civics { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
 html.iso .modal[data-tag="keys"] { width: min(900px, 100%); }
 html.iso button.build { flex-direction: column; align-items: flex-start; justify-content: center; gap: 0; }
 html.iso button.build > .dim { font-weight: 400; }
+html.iso .h1 { font-size: 20px; font-weight: 700; }
+html.iso .ccity { font-size: 20px; }
+
+/* --- the city screen over the map (Civ4's: city.js `overlay`, map.js `cityOverlay`) --------- */
+/* The dialog lets the map through: its title, summary and buttons are plaques at the top and
+   bottom centre, its two columns panels at the sides (map.js CITY_FRAME keeps the city framed in
+   the room between them); the plots are worked on the map. The rest of the interface steps aside. */
+
+html.iso #modals .backdrop:has(> .modal.city-overlay) { background: none; pointer-events: none; animation: none; padding: 0; display: block; }
+html.iso .modal.city-overlay {
+  position: fixed; inset: 0; width: auto; max-width: none; max-height: none; display: block;
+  border: 0; border-image: none; background: none; pointer-events: none; animation: none;
+}
+html.iso .modal.city-overlay .modal-head,
+html.iso .modal.city-overlay .city-summary,
+html.iso .modal.city-overlay .city-col,
+html.iso .modal.city-overlay .modal-buttons {
+  position: fixed; pointer-events: auto; z-index: 1;
+  border: var(--iso-panel-w, 10px) solid transparent; border-image: var(--iso-panel);
+  background: var(--iso-grain) 0 0 / var(--iso-grain-size), linear-gradient(180deg, var(--iso-navy-top), var(--iso-navy-bot));
+  background-clip: padding-box;
+}
+html.iso .modal.city-overlay .modal-head { top: calc(var(--iso-top1) + 10px); left: 50%; transform: translateX(-50%); min-width: 340px; padding: 4px 44px; margin: 0; }
+html.iso .modal.city-overlay .modal-body { display: contents; }
+html.iso .modal.city-overlay .city-summary {
+  top: calc(var(--iso-top1) + 70px); left: 50%; transform: translateX(-50%); white-space: nowrap; padding: 2px 12px; margin: 0;
+  display: flex; align-items: center; gap: 6px;
+}
+html.iso .modal.city-overlay .city-cols { display: contents; }
+html.iso .modal.city-overlay .city-col { top: calc(var(--iso-top1) + 10px); bottom: var(--iso-gap); width: 360px; overflow: auto; padding: 4px 12px 8px; gap: 6px; }
+html.iso .modal.city-overlay .city-col:first-child { left: var(--iso-gap); }
+html.iso .modal.city-overlay .city-col:last-child { right: var(--iso-gap); top: calc(var(--iso-top) + 10px); }
+html.iso .modal.city-overlay .modal-buttons { bottom: var(--iso-gap); left: 50%; transform: translateX(-50%); padding: 4px 10px; white-space: nowrap; flex-wrap: nowrap; }
+html.iso .modal.city-overlay .city-hint { margin: 2px 0 4px; }
+html.iso body:has(.modal.city-overlay) :is(#side, #iso-city, #iso-rail, #bottom, #iso-corner) { display: none; }

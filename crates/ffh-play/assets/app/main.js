@@ -571,6 +571,7 @@ function wire() {
   on("select-ready", () => units.selectNext());
   on("modals-closed", () => S.status?.phase === "human" && runPopups());
   on("open-city", (id) => openCity(id));
+  on("city-overlay", (o) => mapView.cityOverlay(o));
   on("center", (x, y) => mapView.centerOn(x, y));
   on("selection", () => {
     if (S.sel) citySel = null;
