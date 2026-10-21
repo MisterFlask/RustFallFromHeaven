@@ -320,7 +320,7 @@ pub fn worker_with(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, sea: boo
         }
         return;
     };
-    if crate::fix_on("workers") {
+    if crate::fix_on("stuck") {
         // Our flood and danger map chose the job; the rules' AI path finder may still refuse the
         // move (a non-combat group next to danger, C++ `pathValid`), and the worker then asked for
         // the same job every turn without moving (44-151 worker-turns a game). Take the next

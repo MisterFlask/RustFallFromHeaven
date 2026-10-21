@@ -1345,7 +1345,9 @@ earlier cast is the first thing to measure.
   move does not.
 - **Allied barbarians count as a threat**: the Clan of Embers and the Doviello's Charadon are at
   peace with the barbarians, but the garrison and research counts (`production::barbarians_near`)
-  treat nearby barbarians as a threat all the same.
+  treat nearby barbarians as a threat all the same. Dropping them cost the Clan cities to its
+  rivals and wins (docs/AI_LOG.md, "Allied barbarians no longer counted as a threat"): the term
+  stands in for a missing rival-civilization term in the garrison quota.
 - **AI-to-AI deals ignore `player_can_contact`** (`diplomacy::manage`, `implement_deal`), so a
   Crusading Bannor (`bNoDiplomacyWithEnemies`) still makes peace with its enemies; only
   `offers.rs` (deals with humans) checks it.

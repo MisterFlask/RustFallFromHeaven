@@ -35,7 +35,8 @@ Each entry answers three questions, from the games themselves (counts with `ffh 
 
 Six fixes for things a good player does differently, found by tracing seeds 1-18 (the kept ones are
 in docs/AI.md, "Measured together", round 6). Each was measured alone against the same binary
-with it off, seeds 1-48, 300 turns (6 civs, standard map).
+with it off (a scratch switch), seeds 1-48, 300 turns (6 civs, standard map); the great-person
+change also in full games, the allied-barbarian one with the Clan of Embers forced.
 
 ### Settlers under a threat the garrison holds (reverted)
 
@@ -59,6 +60,45 @@ with it off, seeds 1-48, 300 turns (6 civs, standard map).
    bind -- the maintenance a second and third city brings before the techs that pay for it --
    so the lever is the economy that supports cities (Code of Laws / City States timing,
    Courthouses), not the settler gate.
+
+### Allied barbarians no longer counted as a threat (reverted)
+
+1. The Clan of Embers and Charadon's Doviello are at peace with the barbarians, but
+   `production::barbarians_near` (an extra defender in the city's quota, the "second defender
+   first" rule, finance's garrison keep) and research's military pressure counted barbarian units
+   all the same (docs/AI.md listed it as a known gap). At turn 300 (seeds 1-8) the Clan had the
+   most military per city of any civilization (6.7, against 1.6-5.3), unit support at 25% of its
+   commerce and research at 40%.
+2. Across all civilizations (seeds 1-48, 23 games changed) it looked good: legacy +2.3%, cities
+   lost to the barbarians -31% (t -2.1). With the Clan forced into slot 0 (full games, seeds
+   1-24, `civ_ab.py`): its finances improved as intended (unit support 22 -> 15 gold and the
+   research slider 41 -> 54% at turn 300; Longbowmen 26 -> 17, Archers 11 -> 5 at the end), but
+   it lost twice as many cities to its rivals (0.95 -> 2.25 by turn 300, 1.9 -> 3.3 by turn
+   400), held fewer (11.7 -> 10.6 at turn 300, 14.5 -> 11.8 at turn 400), and won less: 58% ->
+   42% (won by one side only 4 / 8), share@end -498 (t -1.40). The other civilizations' gain was
+   the Clan's loss.
+3. The barbarian term is the only garrison term that grows with a frontier, and for the Clan it
+   was standing in for the missing one: the threat of neighbouring civilizations (the Clan, at
+   peace with the barbarians and strong, is attacked often). The right version is a garrison
+   quota that weighs rival civilizations' land power near the city (what a player watches
+   along a border); with that in place the barbarian term can drop for barbarian allies.
+
+### Worker demand only where a build is possible now (reverted)
+
+1. Workers had nothing to build in 8-45% of their turns before turn 100 (seeds 1-5; a Malakim
+   pair waited from turn 40 to 83 while Bronze Working was researched), and 27% of the hammers
+   before turn 100 went into workers. `production::worker_target` counts every worked plot
+   without an improvement as demand, including plots no known build can improve, so cities
+   trained a second worker for land the first could not touch yet.
+2. Counting only plots where a build is possible now cut the workers at turn 100 by 15% (2.11 ->
+   1.79 a civ) and with them the improvements: worked plots improved per citizen 0.71 -> 0.62 at
+   turn 100, 1.01 -> 0.94 at turn 200. Research fell at every checkpoint (-3.7%, -5.1%, -3.7%),
+   techs at turn 300 -3.7% (t -1.2), legacy -2.4% (t -0.9); nothing gained.
+3. The idle worker is the one standing ready when the tech arrives; its waiting turns are the
+   price of improving the land the turn it can be. Same conclusion as gating the first worker
+   (docs/AI.md, "Workers"): the early worker count is not where the waste is. If the waiting is
+   worth reducing, the lever is research timing (the techs that give the waiting workers work),
+   not fewer workers.
 
 ## Unique units (2026-10-20)
 

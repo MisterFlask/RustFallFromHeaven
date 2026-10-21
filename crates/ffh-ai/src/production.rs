@@ -237,10 +237,9 @@ pub fn local_threat(g: &Game, p: PlayerId, plot: PlotIdx, range: i32) -> i32 {
 pub fn barbarians_near(g: &Game, p: PlayerId, plot: PlotIdx, range: i32) -> bool {
     let team = g.players[p].team;
     let barb = g.barbarian_player();
-    // Barbarian allies (the Clan of Embers, Charadon's Doviello) have nothing to fear from them.
-    if crate::fix_on("allies") && !g.at_war(team, g.players[barb].team) {
-        return false;
-    }
+    // Barbarians we are at peace with (the Clan of Embers, Charadon's Doviello) count too: their
+    // garrison term holds the defenders that keep the Clan's cities from its rivals (docs/AI_LOG.md,
+    // "Allied barbarians no longer counted as a threat").
     let (x, y) = g.map.xy(plot);
     for dx in -range..=range {
         for dy in -range..=range {
@@ -304,9 +303,9 @@ pub fn sea_resources_unimproved(g: &Game, c: CityId) -> i32 {
     n
 }
 
-/// Plots worked by our cities that have no improvement and could get one now (a measure of
-/// worker demand). Plots no known build improves are not demand: counted, they had cities train
-/// a second worker that waited for the tech (early workers had nothing to do 8-45% of the time).
+/// Plots worked by our cities that have no improvement (a measure of worker demand). Plots no
+/// known build improves yet count too: the worker that waits for the tech is the one ready the
+/// turn it comes (docs/AI_LOG.md, "Worker demand only where a build is possible now").
 pub fn unimproved_worked_plots(g: &Game, p: PlayerId) -> i32 {
     let mut n = 0;
     for &c in &g.players[p].cities {
@@ -316,18 +315,13 @@ pub fn unimproved_worked_plots(g: &Game, p: PlayerId) -> i32 {
             }
             if let Some(q) = g.city_index_plot(c, i) {
                 let plot = &g.map.plots[q];
-                if plot.improvement_type.is_none() && plot.plot_type != PlotType::PLOT_OCEAN && (!crate::fix_on("workers") || improvable(g, p, q)) {
+                if plot.improvement_type.is_none() && plot.plot_type != PlotType::PLOT_OCEAN {
                     n += 1;
                 }
             }
         }
     }
     n
-}
-
-/// Can our workers build an improvement on `q` now?
-fn improvable(g: &Game, p: PlayerId, q: PlotIdx) -> bool {
-    g.d.builds.iter_enumerated().any(|(b, info)| info.improvement.is_some() && crate::workers::ai_build_allowed(g, p, q, b) && g.player_can_build(p, q, b, false, false))
 }
 
 /// Buildings the AI never builds by itself: a new palace (moves the capital), buildings with

@@ -192,8 +192,7 @@ fn make_ctx(g: &Game, p: PlayerId) -> Ctx {
     // Military pressure: barbarian (non-animal) and enemy units seen near our cities.
     let mut seen = 0i64;
     let barb = g.barbarian_player();
-    let barb_hostile = !crate::fix_on("allies") || g.at_war(team, g.players[barb].team);
-    for &u in g.players[barb].units.iter().filter(|_| barb_hostile) {
+    for &u in &g.players[barb].units {
         let unit = &g.units[u];
         if g.d.units[unit.unit_type].animal {
             continue;
