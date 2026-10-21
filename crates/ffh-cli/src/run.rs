@@ -148,6 +148,15 @@ pub fn new_game(cfg: &RunConfig) -> (Game, Arc<Timed>) {
         setup.players[slot].civ = Some(civ);
         setup.players[slot].leader = Some(leaders[cfg.seed as usize % leaders.len()]);
     }
+    // FFH_PLAYER_HANDICAP=<slot>:HANDICAP_X,...: per-slot handicap (`CvInitCore::getHandicap`),
+    // for head-to-head runs that give one side an easier difficulty.
+    if let Ok(v) = std::env::var("FFH_PLAYER_HANDICAP") {
+        for item in v.split(',').filter(|s| !s.is_empty()) {
+            let (slot, name) = item.split_once(':').expect("FFH_PLAYER_HANDICAP: <slot>:HANDICAP_X,...");
+            let slot: usize = slot.trim().parse().expect("FFH_PLAYER_HANDICAP: slot number");
+            setup.players[slot].handicap = Some(d.t::<HandicapType>(name.trim()));
+        }
+    }
     let mut g = Game::new(d, setup);
     g.handicap = o.handicap;
     g.map_script = Arc::new(FractalMapScript::default());
@@ -155,6 +164,24 @@ pub fn new_game(cfg: &RunConfig) -> (Game, Arc<Timed>) {
     let ai: ControllerRef = timed.clone();
     for p in g.player_ids() {
         g.controllers[p] = ai.clone();
+    }
+    // FFH_CPPAI=<player>,<player>,... | all | even | odd (barbarians: `barb`): those players are
+    // played by the port of the FFH2 C++ AI (ffh-cppai) instead of ffh-ai.
+    if let Ok(v) = std::env::var("FFH_CPPAI") {
+        let cppai = ffh_cppai::cppai_controller(cfg.seed);
+        let barb = g.barbarian_player();
+        for p in g.player_ids() {
+            let on = v.split(',').any(|s| match s.trim() {
+                "all" => p != barb,
+                "even" => p != barb && p.0 % 2 == 0,
+                "odd" => p != barb && p.0 % 2 == 1,
+                "barb" => p == barb,
+                n => n.parse::<u8>().ok() == Some(p.0),
+            });
+            if on {
+                g.controllers[p] = cppai.clone();
+            }
+        }
     }
     g.autorun = true;
     // FFH_LOG=1 (all players) or FFH_LOG=<player id>: print the game log as it is written.

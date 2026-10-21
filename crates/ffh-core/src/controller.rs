@@ -153,6 +153,55 @@ pub trait Controller: Send + Sync {
     fn update_automated_group(&self, _g: &mut Game, _grp: GroupId) -> bool {
         false
     }
+
+    /// The C++ AI entry points inside the rules' own turn processing (`// AI:` notes at each
+    /// site), for a controller that plays them where the C++ does (the C++ AI port, ffh-cppai).
+    /// Called on the controller of the player concerned (for a team, its leader). Default:
+    /// nothing; ffh-ai takes these decisions in `play_turn`.
+    fn hook(&self, _g: &mut Game, _h: AiHook) {}
+
+    /// C++ `CvCityAI::AI_assignWorkingPlots` for city `c` of this controller's player, called
+    /// first by `city_assign_working_plots`: true = done (the rules' governor is skipped).
+    /// Default: false (the governor assigns the citizens).
+    fn assign_working_plots(&self, _g: &mut Game, _c: CityId) -> bool {
+        false
+    }
+}
+
+/// Where the rules call into the C++ AI ([`Controller::hook`]).
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum AiHook {
+    /// `CvPlayer::doTurn`, BETTER AI block (non-human players): per-city
+    /// `AI_calculateNeeded*`, `AI_doFavoriteReligion`, `AI_doTowerMastery`.
+    PlayerTurnSephi(PlayerId),
+    /// `CvPlayer::doTurn`: `AI_doTurnPre()`.
+    PlayerTurnPre(PlayerId),
+    /// `CvPlayer::doTurn`: `AI_doTurnPost()`.
+    PlayerTurnPost(PlayerId),
+    /// `CvPlayer::doTurnUnits`: `AI_doTurnUnitsPre()`.
+    PlayerTurnUnitsPre(PlayerId),
+    /// `CvPlayer::doTurnUnits`: `AI_doTurnUnitsPost()`.
+    PlayerTurnUnitsPost(PlayerId),
+    /// `CvCity::doTurn`: `AI_doTurn()`.
+    CityTurn(CityId),
+    /// `CvTeam::doTurn`: the AI part of `AI_doTurnPost()` (area strategies, `AI_doWar`).
+    TeamTurnPost(TeamId),
+    /// `CvTeamAI::AI_updateAreaStragies()` called by rules code.
+    TeamAreaStrategies(TeamId),
+    /// `CvGame::updateMoves`, BETTER AI end-of-turn spellcasting (non-human players).
+    EndTurnSpells(PlayerId),
+    /// `CvSelectionGroup::groupAttack`, BETTER AI spells before an attack on an adjacent plot.
+    GroupAttackSpells(GroupId),
+    /// `pUnit->AI_update()` of a summon that acts at once (summon suicide mode).
+    UnitUpdate(UnitId),
+    /// `CvTeam::setHasTech`: `AI_nowHasTech(eTech)` for each member player.
+    NowHasTech(PlayerId, TechType),
+    /// `CvPlayer::changeGoldPerTurnByPlayer`: `AI_doCommerce()` (non-human).
+    DoCommerce(PlayerId),
+    /// `CvGame::setInitialItems`: `AI_updateFoundValues()`.
+    UpdateFoundValues(PlayerId),
+    /// FfH Python `onBeginPlayerTurn`: `cf.warScript(iPlayer)` for non-human players.
+    WarScript(PlayerId),
 }
 
 /// The human's answer to BUTTONPOPUP_RAZECITY ([`Controller::conquered_city_choice`]).
@@ -167,6 +216,19 @@ pub enum ConqueredCityChoice {
 }
 
 impl Game {
+    /// Calls [`Controller::hook`] on the controller of player `p`.
+    pub fn ai_hook(&mut self, p: PlayerId, h: AiHook) {
+        let c = self.controller(p);
+        c.hook(self, h);
+    }
+
+    /// [`Game::ai_hook`] for team `t` (its leader's controller; nothing for a team without one).
+    pub fn ai_hook_team(&mut self, t: TeamId, h: AiHook) {
+        if let Some(p) = self.team_get_leader_id(t) {
+            self.ai_hook(p, h);
+        }
+    }
+
     /// C++ `CvPlayerAI::AI_getAttitude(ePlayer, bForced)`: the `bForced` overrides are rules
     /// (a teammate, or the master of our non-capitulated vassal team, is FRIENDLY; anything
     /// involving the barbarians is FURIOUS); otherwise the controller's attitude.

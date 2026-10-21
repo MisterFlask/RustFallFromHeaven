@@ -13,6 +13,7 @@
 //! behaviour); the port stops using it there.
 
 use crate::defs::*;
+use crate::controller::AiHook;
 use crate::game::Game;
 use crate::ids::*;
 use ffh_data::*;
@@ -1262,6 +1263,7 @@ impl Game {
                     self.units[summon].ai_groupflag = GROUPFLAG_NONE;
                     self.units[summon].ai_suicide_summon = true;
                     // AI: `pUnit->AI_update()` (the summon acts at once).
+                    self.ai_hook(owner, AiHook::UnitUpdate(summon));
                 }
             } else if self.units[summon].unit_type.i() == d.defines.unit_fireball {
                 if self.unit_bombard(summon) {

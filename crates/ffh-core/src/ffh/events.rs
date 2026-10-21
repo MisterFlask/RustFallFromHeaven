@@ -37,6 +37,7 @@
 #![allow(unused_variables)]
 
 use crate::ffh::game_utils::py_div;
+use crate::controller::AiHook;
 use crate::game::Game;
 use crate::ids::*;
 use crate::utils::{is_national_unit_class, is_national_wonder_class, is_world_unit_class};
@@ -258,6 +259,9 @@ impl Game {
 
         // AI: `if not pPlayer.isHuman(): cf.warScript(iPlayer)` (not in scenarios) -- AI war
         // policy, replaced by the new AI (docs/PORTING.md).
+        if !self.players[p].human {
+            self.ai_hook(p, AiHook::WarScript(p));
+        }
 
         let cultural_values = d.t::<CivicOptionType>("CIVICOPTION_CULTURAL_VALUES");
         if self.players[p].civics[cultural_values] == Some(d.t::<CivicType>("CIVIC_CRUSADE")) {

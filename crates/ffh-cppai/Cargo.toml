@@ -1,0 +1,10 @@
+[package]
+name = "ffh-cppai"
+description = "The FFH2 0.41 C++ AI ported to Rust (for head-to-head comparison with ffh-ai)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+ffh-data = { path = "../ffh-data" }
+ffh-core = { path = "../ffh-core" }

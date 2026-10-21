@@ -12,6 +12,7 @@
 #![allow(unused_imports)]
 
 use super::set_turn_history;
+use crate::controller::AiHook;
 use crate::game::Game;
 use crate::ids::*;
 use crate::setup::SlotStatus;
@@ -181,6 +182,9 @@ impl Game {
         // AI: AI_doTowerMastery() -- the arcane tower victory flag, read only by the AI
         //     (`player_ai_do_tower_mastery`).
         // BETTER AI: END
+        if !self.players[p].human {
+            self.ai_hook(p, AiHook::PlayerTurnSephi(p));
+        }
 
         self.verify_deals();
         // C++ AI_doTurnPre(): of its steps only AI_updateBonusValue feeds rules (through
@@ -189,6 +193,7 @@ impl Game {
         // AI: rest of AI_doTurnPre() -- AI_doCounter (contact timers, memory decay; game RNG),
         // enemy unit data, and for AI players research/commerce/military/civics/religion
         // choices: the controller does this while the player's turn is active.
+        self.ai_hook(p, AiHook::PlayerTurnPre(p));
 
         if self.players[p].revolution_timer > 0 {
             self.players[p].revolution_timer -= 1;
@@ -289,6 +294,7 @@ impl Game {
 
         // expireMessages(), CityInfo dirty bit: UI.
         // AI: AI_doTurnPost() (AI diplomacy, AI_launch) -- left to the controller.
+        self.ai_hook(p, AiHook::PlayerTurnPost(p));
 
         let turn = self.game_turn();
         self.ev_end_player_turn(turn, p);
@@ -299,6 +305,7 @@ impl Game {
     pub fn player_do_turn_units(&mut self, p: PlayerId) {
         // AI: AI_doTurnUnitsPre() (found values, area targets; draws "AI Update Area Targets")
         // -- left to the controller.
+        self.ai_hook(p, AiHook::PlayerTurnUnitsPre(p));
 
         // FfH: Added By Kael 09/13/2007
         let spell = self.d.defines.specialunit_spell;
@@ -342,6 +349,7 @@ impl Game {
 
         // AI: AI_doTurnUnitsPost() (AI promotions, FfH auto-spellcasting of human units with an
         // auto-cast spell, BETTER AI regrouping and mage casting) -- left to the controller.
+        self.ai_hook(p, AiHook::PlayerTurnUnitsPost(p));
     }
 
     /// C++ `CvPlayer::updateTimers`: selection group timers and delayed deaths.

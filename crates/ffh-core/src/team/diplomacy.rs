@@ -6,6 +6,7 @@
 #![allow(unused_imports)]
 use super::{civ_team_ids, is_option};
 use crate::defs::*;
+use crate::controller::AiHook;
 use crate::game::Game;
 use crate::ids::*;
 use crate::structs::*;
@@ -1219,6 +1220,7 @@ impl Game {
                 self.teams[t].ai_war_plan_state_counter[other] = 0;
 
                 // AI: AI_updateAreaStragies() (area AI types, AI-only state).
+                self.ai_hook_team(t, AiHook::TeamAreaStrategies(t));
 
                 for p in self.player_ids() {
                     if self.players[p].alive {

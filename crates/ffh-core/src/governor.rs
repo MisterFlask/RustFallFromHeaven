@@ -400,6 +400,10 @@ impl Game {
             return;
         }
         let owner = self.cities[c].owner;
+        let controller = self.controller(owner);
+        if controller.assign_working_plots(self, c) {
+            return;
+        }
         let automated = !self.city_is_human(c) || self.cities[c].citizens_automated;
 
         if automated {

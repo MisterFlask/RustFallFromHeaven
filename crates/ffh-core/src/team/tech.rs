@@ -7,6 +7,7 @@
 #![allow(unused_imports)]
 use super::{civ_team_ids, is_option};
 use crate::defs::*;
+use crate::controller::AiHook;
 use crate::game::Game;
 use crate::ids::*;
 use crate::utils::get_tech_score;
@@ -133,6 +134,7 @@ impl Game {
         // AI: AI_updateAreaStragies(false) (area AI types, AI-only state).
         // AI: AI_doWar() for non-human, non-barbarian, non-minor teams: war decisions are the
         // controller's (taken in its `play_turn`).
+        self.ai_hook_team(t, AiHook::TeamTurnPost(t));
     }
 
     /// C++ `CvTeam::updateYield` (updates every alive member player).
@@ -539,6 +541,7 @@ impl Game {
 
                         // AI: AI_nowHasTech(eIndex) (non-human players re-choose production at most
                         // every 10 turns; production is the controller's decision).
+                        self.ai_hook(p, AiHook::NowHasTech(p, tech));
 
                         self.player_invalidate_yield_rank_cache(p, None);
                     }
