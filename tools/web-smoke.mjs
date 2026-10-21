@@ -317,6 +317,12 @@ async function newGame(url, saves) {
   if (games.length !== 1) throw new Error(`a double click on Start made ${games.length} games: ${games}`);
   steps.push(`new game (Start double-clicked: one game): turn ${await S("S.status.turn")}`);
   await shot("first-turn");
+  // The plain URL (fresh, no stored choice) opens the default renderer, now the isometric 2.5D
+  // map (docs/ISO.md, look.js). The checks below drive the art client; switch to it explicitly.
+  if ((await b.eval("window.ffh.mapView.renderer()")) !== "iso") throw new Error("the default renderer is not the isometric 2.5D map");
+  steps.push("the default renderer is the isometric 2.5D map");
+  await b.goto(`${url}/?renderer=art`);
+  await until2("window.ffh && window.ffh.ready", "the client to boot (art)");
 }
 
 /** The art client (docs/ART.md, look.js, artmap.js): the art loaded and draws the map (in its

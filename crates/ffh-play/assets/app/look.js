@@ -5,9 +5,9 @@
 // icons. Until the art has loaded, or when it fails, the helpers fall back to plain text, so
 // every screen works without it.
 //
-// The map renderer is chosen here too: the art renderer (`artmap.js`) unless the page was opened
-// with `?renderer=flat` or the Tools → Options choice says "flat" (the P5 renderer, kept for
-// debugging).
+// The map renderer is chosen here too: the isometric 2.5D renderer (`iso.js`, docs/ISO.md) by
+// default, unless the page was opened with `?renderer=art` / `?renderer=flat` or the Tools →
+// Options choice says otherwise ("art" is the 2D pixel art, "flat" the P5 debug renderer).
 
 import { loadArt } from "../art/art.js";
 import * as UI from "../art/ui/ui.js";
@@ -32,8 +32,8 @@ function known(r) {
   return r === "flat" || r === "art" || r === "iso" || (EXPERIMENTAL_3D && r === "3d");
 }
 
-/** The map renderer asked for: "flat" from `?renderer=flat` (or `?renderer=art`), else the
- *  remembered Tools → Options choice, else "art". */
+/** The map renderer asked for: an explicit `?renderer=art` / `?renderer=flat` / `?renderer=iso`,
+ *  else the remembered Tools → Options choice, else "iso" (the isometric 2.5D map, docs/ISO.md). */
 export function rendererChoice() {
   let q = null;
   try {
@@ -48,7 +48,7 @@ export function rendererChoice() {
   } catch {
     /* no storage */
   }
-  return "art";
+  return "iso";
 }
 
 /** Remembers the renderer (Tools → Options). */
