@@ -546,13 +546,28 @@ function showTip() {
   if (m.feature[i] >= 0) parts.push(dname("FeatureType", m.feature[i]));
   lines.push(h("div.tip-title", parts.join(", "), h("span.dim", ` (${x}, ${y})${m.vis[i] === 1 ? " fogged" : ""}`)));
   const extra = [];
+  // A unique improvement gets a block of its own below, with what it does.
+  const imp = info("ImprovementType", m.improvement[i]);
+  const unique = imp?.unique ? imp : null;
   if (m.bonus[i] >= 0) extra.push(dname("BonusType", m.bonus[i]));
-  if (m.improvement[i] >= 0) extra.push(dname("ImprovementType", m.improvement[i]));
+  if (m.improvement[i] >= 0 && !unique) extra.push(dname("ImprovementType", m.improvement[i]));
   if (m.route[i] >= 0) extra.push(dname("RouteType", m.route[i]));
   if (m.river[i] > 0 && (m.river[i] & 3)) extra.push("River");
   if (extra.length) lines.push(h("div", extra.join(" · ")));
   if (m.owner[i] >= 0) lines.push(h("div.dim", `Owner: ${playerName(m.owner[i])}`));
   const p = preview.plot;
+  // C++ plot help's line (the Ring of Carcer's).
+  const minLevel = p && p.x === x && p.y === y && p.min_level > 0 ? h("div.warn", `Must be level ${p.min_level} to enter`) : null;
+  if (unique) {
+    lines.push(
+      h(
+        "div.tip-unique",
+        h("div.tip-unique-name", dname("ImprovementType", m.improvement[i])),
+        unique.effects ? h("div.tip-effects", markup(unique.effects)) : null,
+        minLevel,
+      ),
+    );
+  } else if (minLevel) lines.push(minLevel);
   if (p && p.x === x && p.y === y && p.yields) {
     lines.push(
       look.art || isoSkin()
