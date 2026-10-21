@@ -1196,17 +1196,22 @@ impl Game {
             // only compute comparisions if we are the defender with a known attacker
             if !attacking_unknown_defender {
                 // FfH Promotions: Added by Kael 08/13/2007
-                for promotion in d.promotions.keys() {
+                // (C++ loops over every promotion; only those with `promotion_combat_mod > 0`
+                // change the modifier, and `d.combat_mod_promotions` lists exactly those, in
+                // the same order.)
+                let our_promotions = &self.units[u].has_promotion;
+                let their_promotions = &self.units[a].has_promotion;
+                for &promotion in &d.combat_mod_promotions {
                     let info = &d.promotions[promotion];
                     // (C++ reads `isHasPromotion(NO_PROMOTION)` out of bounds for a missing
                     // combat type; every promotion with a combat mod names one)
-                    if self.units[u].has_promotion[promotion] && info.promotion_combat_mod > 0 {
-                        if info.promotion_combat_type.is_some_and(|t| self.units[a].has_promotion[t]) {
+                    if our_promotions[promotion] && info.promotion_combat_mod > 0 {
+                        if info.promotion_combat_type.is_some_and(|t| their_promotions[t]) {
                             modifier += info.promotion_combat_mod;
                         }
                     }
-                    if self.units[a].has_promotion[promotion] && info.promotion_combat_mod > 0 {
-                        if info.promotion_combat_type.is_some_and(|t| self.units[u].has_promotion[t]) {
+                    if their_promotions[promotion] && info.promotion_combat_mod > 0 {
+                        if info.promotion_combat_type.is_some_and(|t| our_promotions[t]) {
                             modifier -= info.promotion_combat_mod;
                         }
                     }
@@ -1299,9 +1304,10 @@ impl Game {
         str_ *= 100;
         // C++ quirk: for an unknown defender `pAttacker` is this unit again, so its own
         // resistances reduce its damage-type strength.
+        let our_damage_type_combat = &self.units[u].damage_type_combat;
         for opponent in [attacker, defender].into_iter().flatten() {
             for damage_type in d.damages.keys() {
-                let damage_type_combat = self.units[u].damage_type_combat[damage_type];
+                let damage_type_combat = our_damage_type_combat[damage_type];
                 if damage_type_combat != 0 {
                     let resist = self.unit_get_damage_type_resist(opponent, damage_type);
                     if resist != 0 {

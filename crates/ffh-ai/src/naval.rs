@@ -47,8 +47,9 @@ pub fn is_coastal_city(g: &Game, c: CityId) -> bool {
 
 /// An overseas enemy (or barbarian) city we can ship an army to and take: it sits on a
 /// landmass where we have no city, is within sea-reach of one of our coastal cities, and its
-/// weakest defender our best trainable attacker can beat. A pure function of the game state
-/// (no cache, no RNG, deterministic ordering).
+/// weakest defender our best trainable attacker can beat. Deterministic (no RNG, fixed
+/// ordering); not free of side effects: a port's transport production turns read
+/// `city_unhappy_level`, which can fill the city's population-rank cache (saved state).
 #[derive(Clone, Debug)]
 pub struct Amph {
     /// The enemy city to take and its plot.

@@ -38,6 +38,10 @@ macro_rules! game_data {
             /// Non-fatal data problems found while loading (unknown types etc.).
             pub warnings: Vec<String>,
             $( pub $field: IdxVec<$id, $info>, )*
+            /// Derived at load (not XML): the promotions with `promotion_combat_mod > 0`, in id
+            /// order. `CvUnit::maxCombatStr` only reads those, so it scans this short list
+            /// instead of every promotion.
+            pub combat_mod_promotions: Vec<PromotionType>,
         }
 
         /// (xml file, registry class) for every info table, in load order.
@@ -60,7 +64,8 @@ macro_rules! game_data {
                     };
                 )*
                 let defines = Defines::from_map(&define_map);
-                GameData { reg, define_map, defines, text, warnings, $( $field, )* }
+                // (derived tables are filled by `GameData::derive`)
+                GameData { reg, define_map, defines, text, warnings, $( $field, )* combat_mod_promotions: Vec::new() }
             }
         }
     };
@@ -245,7 +250,14 @@ impl GameData {
             gd.warnings.push(format!("type {name} registered as both {a} and {b}"));
         }
         gd.check_enum_orders();
+        gd.derive();
         Ok(gd)
+    }
+
+    /// Fills the derived (non-XML) tables from the loaded ones.
+    fn derive(&mut self) {
+        self.combat_mod_promotions =
+            self.promotions.keys().filter(|&p| self.promotions[p].promotion_combat_mod > 0).collect();
     }
 
     /// Verifies that data-defined tables whose order is hard-coded in C++ enums match.

@@ -25,10 +25,14 @@ pub fn end_turn(g: &mut Game, v: &View) {
         if !g.units.contains(u) {
             continue;
         }
+        // What `u` can cast, asked once for the choices below until a cast changes the game (the
+        // choices themselves change nothing). `fresh`: nothing was cast since.
+        let castable = castable_spells(g, u);
+        let mut fresh = true;
         if magic {
             // C++ quirk: a unit another unit's spell has just killed (delayed death: Form Wolf
             // Pack's second wolf) still casts, as in FfH's loop below.
-            if let Some((spell, value)) = crate::magic::choose_turn_spell(g, v, u) {
+            if let Some((spell, value)) = crate::magic::choose_turn_spell_from(g, v, u, &castable) {
                 cast_and_act(g, v, u, spell, "turn", value);
                 continue;
             }
@@ -36,21 +40,50 @@ pub fn end_turn(g: &mut Game, v: &View) {
             // or a Dance of Blades that blesses no one) that keeps the game FfH's where the values
             // see no difference (a cast rolls for a miscast and ends promotions casting removes).
         }
-        if let Some(spell) = choose_spell(g, u) {
+        if let Some(spell) = choose_spell_from(g, u, &castable) {
             cast_and_act(g, v, u, spell, "turn_ffh", 0);
+            fresh = false;
         }
         if !g.units.contains(u) || g.units[u].death_delay {
             continue;
         }
-        if is_buffer(g, u) {
-            buff_cast(g, v, u);
+        let known = fresh.then_some(castable.as_slice());
+        let buffer = match known {
+            Some(list) => list.iter().any(|&s| is_buff_spell(g.d, s)),
+            None => is_buffer(g, u),
+        };
+        if buffer && buff_cast(g, v, u, known) {
+            fresh = false;
         }
         if !g.units.contains(u) || g.units[u].death_delay {
             continue;
         }
-        summon_cast(g, v, u);
+        summon_cast(g, v, u, fresh.then_some(castable.as_slice()));
     }
     g.players[p].sum_sui_mode = false;
+}
+
+/// The spells `u` can cast now (`unit_can_cast`), in spell order. The rules are not asked about
+/// spells whose fixed prerequisites `u` lacks -- a promotion, its unit type, class or combat
+/// type, its owner's civilization: `unit_can_cast` refuses those whatever else holds.
+pub fn castable_spells(g: &Game, u: UnitId) -> Vec<SpellType> {
+    let d = g.d;
+    let unit = &g.units[u];
+    let info = &d.units[unit.unit_type];
+    let civ = g.player_get_civilization_type(unit.owner);
+    d.spells
+        .iter_enumerated()
+        .filter(|(_, s)| {
+            s.promotion_prereq1.map_or(true, |pr| unit.has_promotion[pr])
+                && s.promotion_prereq2.map_or(true, |pr| unit.has_promotion[pr])
+                && s.unit_prereq.map_or(true, |t| t == unit.unit_type)
+                && s.unit_class_prereq.map_or(true, |c| info.unit_class_type.map_or(true, |own| own == c))
+                && s.unit_combat_prereq.map_or(true, |c| info.unit_combat_type == Some(c))
+                && s.civilization_prereq.map_or(true, |c| civ.map_or(true, |own| own == c))
+        })
+        .map(|(s, _)| s)
+        .filter(|&s| g.unit_can_cast(u, s, false))
+        .collect()
 }
 
 /// Cast (`value`: the cast's value, for `FFH_AI_TRACE_CAST`), then let the summons it made attack
@@ -178,11 +211,15 @@ fn summon_value(g: &Game, u: UnitId, spell: SpellType) -> i32 {
 
 /// Port of `CvUnit::chooseSpell` (with AI value estimates).
 pub fn choose_spell(g: &Game, u: UnitId) -> Option<SpellType> {
-    let d = g.d;
+    choose_spell_from(g, u, &castable_spells(g, u))
+}
+
+/// [`choose_spell`] among `castable`, the spells `u` can cast now ([`castable_spells`]).
+fn choose_spell_from(g: &Game, u: UnitId, castable: &[SpellType]) -> Option<SpellType> {
     let mut best: Option<SpellType> = None;
     let mut best_value = 0;
-    for spell in d.spells.keys() {
-        if !g.unit_can_cast(u, spell, false) || !crate::world_spells::ready(g, g.units[u].owner, spell) {
+    for &spell in castable {
+        if !crate::world_spells::ready(g, g.units[u].owner, spell) {
             continue;
         }
         // Civilization-specific values (civs/: e.g. Luchuirp units in our cities leave a Golden
@@ -318,16 +355,27 @@ pub fn ffh_misc_value(g: &Game, u: UnitId, spell: SpellType) -> i32 {
 
 /// C++ `CvUnitAI::isBuffer`: can cast a spell adding a beneficial promotion.
 fn is_buffer(g: &Game, u: UnitId) -> bool {
-    g.d.spells.keys().any(|s| {
-        let info = &g.d.spells[s];
-        info.add_promotion_type1.is_some_and(|p| g.d.promotions[p].ai_weight > 0) && g.unit_can_cast(u, s, false)
-    })
+    g.d.spells.keys().any(|s| is_buff_spell(g.d, s) && g.unit_can_cast(u, s, false))
 }
 
-/// C++ `CvUnitAI::AI_BuffCast`.
-fn buff_cast(g: &mut Game, v: &View, u: UnitId) {
+/// A spell adding a beneficial promotion (see [`is_buffer`]).
+fn is_buff_spell(d: &GameData, s: SpellType) -> bool {
+    d.spells[s].add_promotion_type1.is_some_and(|p| d.promotions[p].ai_weight > 0)
+}
+
+/// Can `u` cast `s` now: `known` holds what it can cast when that is known
+/// ([`castable_spells`]), else the rules are asked.
+fn can_cast(g: &Game, u: UnitId, s: SpellType, known: Option<&[SpellType]>) -> bool {
+    match known {
+        Some(list) => list.contains(&s),
+        None => g.unit_can_cast(u, s, false),
+    }
+}
+
+/// C++ `CvUnitAI::AI_BuffCast` (`known`: see [`can_cast`]). True when it cast.
+fn buff_cast(g: &mut Game, v: &View, u: UnitId, known: Option<&[SpellType]>) -> bool {
     if g.units[u].has_casted {
-        return;
+        return false;
     }
     let d = g.d;
     let mut best: Option<SpellType> = None;
@@ -335,7 +383,7 @@ fn buff_cast(g: &mut Game, v: &View, u: UnitId) {
     for s in d.spells.keys() {
         let info = &d.spells[s];
         let Some(p1) = info.add_promotion_type1 else { continue };
-        if !g.unit_can_cast(u, s, false) {
+        if !can_cast(g, u, s, known) {
             continue;
         }
         let mut value = d.promotions[p1].ai_weight;
@@ -353,17 +401,19 @@ fn buff_cast(g: &mut Game, v: &View, u: UnitId) {
     if let Some(s) = best {
         cast_and_act(g, v, u, s, "buff", 0);
     }
+    best.is_some()
 }
 
-/// C++ `CvUnitAI::AI_SummonCast` (only when enemies are within the summon's reach).
-fn summon_cast(g: &mut Game, v: &View, u: UnitId) {
+/// C++ `CvUnitAI::AI_SummonCast` (only when enemies are within the summon's reach; `known`:
+/// see [`can_cast`]).
+fn summon_cast(g: &mut Game, v: &View, u: UnitId, known: Option<&[SpellType]>) {
     if g.units[u].has_casted {
         return;
     }
     let mut best: Option<SpellType> = None;
     let mut best_value = 0;
     for s in g.d.spells.keys() {
-        if g.d.spells[s].create_unit_type.is_none() || !g.unit_can_cast(u, s, false) {
+        if g.d.spells[s].create_unit_type.is_none() || !can_cast(g, u, s, known) {
             continue;
         }
         let value = summon_value(g, u, s);

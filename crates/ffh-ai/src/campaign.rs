@@ -820,13 +820,15 @@ fn approach(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, op: &Op, ring: 
     let preferred = if ring == 1 { op.staging } else { op.assembly };
     let (tx, ty) = g.map.xy(op.plot);
     let team = v.team;
-    let reach = v.flood.run(g, u, 12, false);
+    let on_ring = |r: &crate::reach::Reached| {
+        let (rx, ry) = g.map.xy(r.plot);
+        g.plot_distance(rx, ry, tx, ty) == ring && g.map.plots[r.plot].plot_city.is_none()
+    };
+    // The flood stops past the turn it first arrives on the ring (the choice is the fewest turns).
+    let reach = v.flood.run_nearest(g, u, 12, false, |r| on_ring(&r));
     let best = reach
         .iter()
-        .filter(|r| {
-            let (rx, ry) = g.map.xy(r.plot);
-            g.plot_distance(rx, ry, tx, ty) == ring && g.map.plots[r.plot].plot_city.is_none()
-        })
+        .filter(|r| on_ring(r))
         .min_by_key(|r| (r.turns, Some(r.plot) != preferred, std::cmp::Reverse(g.plot_defense_modifier(r.plot, Some(team), true)), r.plot))
         .copied();
     crate::trace!(g, v.p, "  approach {:?} at {:?} -> ring {} of {:?}: {:?} (reach {}, preferred {:?})", grp, g.map.xy(here), ring, (tx, ty), best.map(|r| (g.map.xy(r.plot), r.turns)), reach.len(), preferred.map(|q| g.map.xy(q)));
