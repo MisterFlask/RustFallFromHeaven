@@ -15,11 +15,11 @@ html.iso {
   --iso-dim: #b3c0dc;
   --iso-gold: #f6c650;
   --iso-gold-lt: #ffe58c;
-  --iso-navy-top: #082866;
-  --iso-navy-bot: #031542;
+  --iso-navy-top: #031a48;
+  --iso-navy-bot: #01123a;
   --iso-deep: #020c28;
-  --iso-tile-top: #1f4ea6;
-  --iso-tile-bot: #0c2866;
+  --iso-tile-top: #173e8a;
+  --iso-tile-bot: #0a2258;
   --iso-tile-lit: #2f6bd0;
   --iso-good: #96e676;
   --iso-bad: #ff8d6e;
@@ -62,17 +62,17 @@ html.iso .inline-icon { vertical-align: -3px; }
 /* --- type -------------------------------------------------------------------------------- */
 
 html.iso h2, html.iso h3 { font: 700 20px/24px var(--iso-font); letter-spacing: 0; color: #fff8e4; }
-html.iso h4 { font: 700 20px/24px var(--iso-font); letter-spacing: 0; text-transform: none; color: var(--iso-gold); margin: 8px 0 4px; }
+html.iso h4 { font: 400 20px/24px var(--iso-font); letter-spacing: 0; text-transform: none; color: var(--iso-gold); margin: 8px 0 4px; }
 html.iso b, html.iso strong, html.iso th { font-weight: 700; }
 html.iso .dim { color: var(--iso-dim); }
 html.iso .warn { color: var(--iso-bad); }
 html.iso .good { color: var(--iso-good); }
-html.iso kbd { font: 700 20px/24px var(--iso-font); color: var(--iso-gold); border: 0; padding: 0; margin-left: 8px; }
+html.iso kbd { font: 400 20px/24px var(--iso-font); color: var(--iso-gold); border: 0; padding: 0; margin-left: 8px; }
 html.iso code, html.iso pre, html.iso textarea.raw { font-family: var(--mono); font-size: 13px; line-height: 1.4; }
-html.iso .badge { font: 700 20px/24px var(--iso-font); background: var(--iso-deep); border: 2px solid #8a6420; color: var(--iso-gold); padding: 0 6px; }
+html.iso .badge { font: 400 20px/24px var(--iso-font); background: var(--iso-deep); border: 2px solid #8a6420; color: var(--iso-gold); padding: 0 6px; }
 html.iso .badge.reveal { background: #6a1a14; border-color: var(--iso-bad); color: #fff; }
 html.iso .badge.auto { color: var(--iso-good); border-color: var(--iso-good); }
-html.iso .num { color: #fff8e4; font-weight: 700; }
+html.iso .num { color: #fff8e4; font-weight: 400; }
 
 /* --- panels ------------------------------------------------------------------------------ */
 
@@ -124,7 +124,7 @@ html.iso button {
   background: linear-gradient(180deg, var(--iso-tile-top), var(--iso-tile-bot));
   background-clip: padding-box;
   color: var(--iso-ink);
-  font: 700 20px/24px var(--iso-font);
+  font: 400 20px/24px var(--iso-font);
   padding: 2px 10px;
   min-height: 0;
   border-radius: 0;
@@ -174,15 +174,15 @@ html.iso #top > .group { height: var(--iso-top-h); display: flex; align-items: c
 html.iso #top > .group:empty { display: none; }
 html.iso #phase { flex: none; max-width: 100%; margin-right: -4px; padding: 0 12px; }
 html.iso #phase .phase-dot, html.iso #phase .turn-crescent { display: none; }
-html.iso #phase .year { order: -1; color: #fff8e4; font-weight: 700; }
-html.iso #phase .turn { color: #fff8e4; font-weight: 700; gap: 8px; }
+html.iso #phase .year { order: -1; color: #fff8e4; }
+html.iso #phase .turn { color: #fff8e4; font-weight: 400; gap: 8px; }
 html.iso #phase .turn .dim { color: #fff8e4; }
 html.iso #phase-text { color: var(--iso-dim); overflow: hidden; text-overflow: ellipsis; min-width: 0; max-width: 360px; }
 html.iso body[data-phase="human"] #phase-text { display: none; }
 html.iso #empire { flex: 0 1 auto; flex-wrap: nowrap; gap: 14px; padding: 0 12px; }
 html.iso #empire .stat { gap: 8px; }
 html.iso #empire .stat > span:not(.num) + .num { margin-left: 0; }
-html.iso #empire .stat .dim { color: #fff8e4; font-weight: 700; }
+html.iso #empire .stat .dim { color: #fff8e4; }
 html.iso #empire .stat.research { padding: 4px 6px; border: 0; }
 html.iso #empire .slider-item + .slider-item { margin-left: 8px; }
 html.iso #empire .stat.sliders { gap: 0; }
@@ -202,7 +202,7 @@ html.iso #bottom {
 }
 html.iso #bottom-tabs { border: 0; padding: 0; gap: 2px; flex-wrap: nowrap; }
 html.iso body.bottom-closed #bottom { width: auto; }
-html.iso #bottom-tabs button { border: 0; border-image: none; background: none; color: var(--iso-dim); padding: 2px 6px; font-weight: 700; white-space: nowrap; }
+html.iso #bottom-tabs button { border: 0; border-image: none; background: none; color: var(--iso-dim); padding: 2px 6px; white-space: nowrap; }
 html.iso #bottom-tabs button .iso-icon { margin-right: 4px; }
 html.iso #bottom-tabs button.active { color: #fff8e4; box-shadow: inset 0 -2px 0 var(--iso-gold); }
 html.iso #bottom-tabs button:hover:not([disabled]) { background: none; color: #fff; }
@@ -231,8 +231,8 @@ html.iso .iso-name { margin: 0; white-space: nowrap; overflow: hidden; text-over
 html.iso .iso-name .coords { font-weight: 400; }
 html.iso .iso-plate { display: flex; flex-direction: column; gap: 0; padding: 2px 8px; }
 html.iso .iso-statline { display: flex; align-items: center; gap: 8px; min-height: 34px; }
-html.iso .iso-statline .label { flex: 1; font-weight: 700; }
-html.iso .iso-statline .value { font-weight: 700; color: #fff8e4; }
+html.iso .iso-statline .label { flex: 1; }
+html.iso .iso-statline .value { color: #fff8e4; }
 html.iso .iso-card .unit-list { max-height: 120px; }
 html.iso .unit-row { padding: 0 4px; }
 html.iso .unit-row:hover, html.iso .unit-row.selected { background: rgba(60, 110, 220, 0.3); }
@@ -256,16 +256,16 @@ html.iso .iso-desc-text { color: var(--iso-ink); }
 html.iso .iso-desc .mode-hint { background: none; border: 0; padding: 0; color: var(--iso-gold-lt); margin: 0; }
 html.iso .iso-listed h4 { margin: 0 0 4px; }
 html.iso .iso-listed .actions { gap: 6px; }
-html.iso button.action.listed { padding: 0 8px; font-weight: 700; }
+html.iso button.action.listed { padding: 0 8px; }
 html.iso .seals { gap: 4px; margin: 0; }
 html.iso .panel-head { border-bottom: 0; margin: 0 0 4px; }
-html.iso table.kv th { color: var(--iso-dim); font-weight: 700; }
+html.iso table.kv th { color: var(--iso-dim); font-weight: 400; }
 
 /* --- the city panel ------------------------------------------------------------------------ */
 
 html.iso #iso-city {
   position: absolute; z-index: 3; right: var(--iso-gap); top: calc(var(--iso-top) + 12px);
-  width: 312px; max-height: calc(100% - var(--iso-top) - 12px - 340px); overflow: auto;
+  width: 312px; max-height: calc(100% - var(--iso-top) - 22px - var(--iso-corner-h, 330px)); overflow: auto;
   padding: 4px 10px 8px; display: flex; flex-direction: column; gap: 6px;
 }
 html.iso #iso-city[hidden] { display: none; }
@@ -279,14 +279,14 @@ html.iso .iso-picture .iso-figure { image-rendering: auto; margin-bottom: 2px; }
 html.iso .iso-stat { display: flex; align-items: center; gap: 8px; }
 html.iso .iso-stat > .num { min-width: 22px; text-align: center; }
 html.iso .iso-stack { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-html.iso .iso-stack .label { font-weight: 700; }
+html.iso .iso-stack .label { }
 html.iso .iso-stack .sub { color: var(--iso-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 230px; }
 html.iso .iso-yields { display: flex; flex-direction: column; }
 html.iso .iso-yield, html.iso .iso-qrow { display: flex; align-items: center; gap: 8px; min-height: 32px; }
 html.iso .iso-mood { display: flex; gap: 12px; }
 html.iso .iso-mood .iso-yield { flex: 1; }
-html.iso .iso-yield .label, html.iso .iso-qrow .label { flex: 1; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-html.iso .iso-yield .value, html.iso .iso-qrow .value { font-weight: 700; color: #fff8e4; }
+html.iso .iso-yield .label, html.iso .iso-qrow .label { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html.iso .iso-yield .value, html.iso .iso-qrow .value { color: #fff8e4; }
 html.iso .iso-queue h4 { margin: 4px 0 2px; color: #fff8e4; }
 html.iso .iso-qicon { width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; flex: none; }
 html.iso button.iso-open { margin-top: 2px; }
@@ -325,7 +325,7 @@ html.iso #iso-corner canvas.minimap {
 /* --- the map's tooltip, toasts, dialogs ----------------------------------------------------- */
 
 html.iso .tooltip { padding: 4px 10px; font-size: 20px; line-height: 24px; color: var(--iso-ink); max-width: 440px; }
-html.iso .tip-title { color: #fff8e4; font-weight: 700; }
+html.iso .tip-title { color: #fff8e4; }
 html.iso .tip-city { color: var(--iso-gold); }
 /* A unique improvement's block (what it does), between gilt rules; Herald stays at 20px (its
    grid's 2x: other sizes blur it). */
@@ -333,10 +333,10 @@ html.iso .tip-unique {
   margin: 4px 0; padding: 8px 0 6px; border: 0;
   background: linear-gradient(#f0b443 0 2px, #6a4410 2px 4px) no-repeat top / 100% 4px, linear-gradient(#f0b443 0 2px, #6a4410 2px 4px) no-repeat bottom / 100% 4px;
 }
-html.iso .tip-unique-name { color: var(--iso-gold); font-weight: 700; }
+html.iso .tip-unique-name { color: var(--iso-gold); }
 html.iso .tip-effects { font-size: 20px; line-height: 24px; color: var(--iso-ink); }
 html.iso .tip-combat { border-top: 0; background: linear-gradient(#f0b443 0 2px, #6a4410 2px 4px) no-repeat top / 100% 4px; padding-top: 8px; }
-html.iso .tip-combat .odds { font-size: 20px; font-weight: 700; }
+html.iso .tip-combat .odds { font-size: 20px; }
 html.iso .tip-combat .mods { font-size: 20px; color: var(--iso-dim); }
 html.iso .tip-yields { gap: 12px; }
 
@@ -370,7 +370,7 @@ html.iso .mode-hint { background: rgba(60, 40, 130, 0.5); border: 2px solid #a27
 html.iso label.field > span { font-size: 20px; color: var(--iso-dim); }
 html.iso .tree-scroll { background: #020a20; border: 2px solid #8a6420; }
 /* The techs keep their measured boxes: Herald at 1x, the grid's smallest size. */
-html.iso button.tech { border-width: 2px; border-style: solid; border-image: none; border-color: #8a6420; background: #0c2058; font: 700 10px/12px var(--iso-font); }
+html.iso button.tech { border-width: 2px; border-style: solid; border-image: none; border-color: #8a6420; background: #0c2058; font: 400 10px/12px var(--iso-font); }
 html.iso button.tech .tech-sub { font-size: 10px; }
 html.iso button.tech.has { background: #24461c; border-color: var(--iso-good); }
 html.iso button.tech.researching { background: #1f4ea6; border-color: var(--iso-gold-lt); }
@@ -387,8 +387,6 @@ html.iso .cplot:hover:not([disabled]) { border-image: none; }
   html.iso #iso-rail button .iso-icon { width: 24px; height: 24px; }
   html.iso #iso-rail { gap: 4px; }
   html.iso #bottom { left: calc(var(--iso-gap) + 54px); }
-  html.iso #iso-corner canvas.minimap { height: 148px; }
-  html.iso #iso-city { max-height: calc(100% - var(--iso-top) - 12px - 290px); }
   html.iso .iso-picture { height: 96px; }
 }
 @media (max-width: 900px) {
@@ -407,7 +405,7 @@ html.iso .iso-mood .label { display: none; }
 html.iso table.kv th { white-space: normal; width: 38%; }
 html.iso table.kv td { word-break: normal; overflow-wrap: anywhere; }
 html.iso .cgrid { max-width: 560px; }
-html.iso .cplot { font: 700 20px/22px var(--iso-font); }
+html.iso .cplot { font: 400 20px/22px var(--iso-font); }
 html.iso .cplot .yields { flex-direction: column; align-items: flex-start; gap: 0; }
 html.iso .cplot .ccity { position: absolute; top: 0; left: 4px; }
 html.iso .city-cols { grid-template-columns: minmax(0, 560px) minmax(0, 1fr); }
@@ -415,9 +413,12 @@ html.iso button.civic { display: flex; flex-direction: column; align-items: flex
 html.iso button.civic > :not(:first-child) { color: var(--iso-dim); font-weight: 400; }
 html.iso .civics { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
 html.iso .modal[data-tag="keys"] { width: min(900px, 100%); }
-html.iso button.build { flex-direction: column; align-items: flex-start; justify-content: center; gap: 0; }
+html.iso button.build { display: grid; grid-template-columns: auto 1fr; column-gap: 8px; align-items: center; justify-items: start; text-align: left; }
+html.iso button.build > .build-icon { grid-row: span 2; }
+html.iso button.build > span:not(.build-icon):not(.dim) { grid-column: 2; }
+html.iso button.build > .dim { grid-column: 2; }
 html.iso button.build > .dim { font-weight: 400; }
-html.iso .h1 { font-size: 20px; font-weight: 700; }
+html.iso .h1 { font-size: 20px; }
 html.iso .ccity { font-size: 20px; }
 
 /* --- the city screen over the map (Civ4's: city.js `overlay`, map.js `cityOverlay`) --------- */
@@ -452,3 +453,7 @@ html.iso .modal.city-overlay .city-col:last-child { right: var(--iso-gap); top: 
 html.iso .modal.city-overlay .modal-buttons { bottom: var(--iso-gap); left: 50%; transform: translateX(-50%); padding: 4px 10px; white-space: nowrap; flex-wrap: nowrap; }
 html.iso .modal.city-overlay .city-hint { margin: 2px 0 4px; }
 html.iso body:has(.modal.city-overlay) :is(#side, #iso-city, #iso-rail, #bottom, #iso-corner) { display: none; }
+
+/* Titles in the bold, rows and values in the regular weight (the reference's). */
+html.iso .iso-title, html.iso .iso-name, html.iso .iso-desc-title, html.iso .modal-head h2, html.iso #iso-corner #end-turn { font-weight: 700; }
+html.iso .iso-name .coords { font-weight: 400; }

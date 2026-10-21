@@ -154,7 +154,13 @@ export function actionIcon(a, px = 40) {
       name = b.icon;
     } else name = MISSION_ICONS[m] ?? "goto";
   } else if (a.kind === "target") name = MODE_ICONS[a.mode] ?? "goto";
-  else if (a.kind === "command" || a.kind === "load") name = COMMAND_ICONS[tname("CommandType", a.command)] ?? (a.kind === "load" ? "board" : "cancel");
+  else if (a.kind === "command" || a.kind === "load") {
+    const c = tname("CommandType", a.command);
+    // Cancelling every order and stopping the automation each carry the cancel mark on another icon.
+    if (c === "COMMAND_CANCEL_ALL") return h("span.iso-build", isoIcon("goto", { px: 32 }), isoIcon("cancel", { px: 16, cls: "badge" }));
+    if (c === "COMMAND_STOP_AUTOMATION") return h("span.iso-build", isoIcon("automate", { px: 32 }), isoIcon("cancel", { px: 16, cls: "badge" }));
+    name = COMMAND_ICONS[c] ?? (a.kind === "load" ? "board" : "cancel");
+  }
   else if (a.kind === "automate") name = AUTOMATE_ICONS[tname("AutomateType", a.automate)] ?? "automate";
   else if (a.kind === "spell") name = "spell";
   else if (a.kind === "promotion") name = "promote";
@@ -206,8 +212,27 @@ const NAIL = [
   ".kkkkkkk.",
 ];
 const STUD = [".kkk.", "kLLGk", "kLYDk", "kGDDk", ".kkk."];
+/** The panels' corner: the reference's gilt knot (cut from its city panel's corner on the 2 px grid
+ *  and cleaned), anchored at the rule's outer corner and mirrored at the others. ' ' cuts the
+ *  rule away (the corner is open), '.' keeps it, the rest are colour keys. */
+const KNOT = [
+  "     kDDkk....",
+  "    DGLLGD....",
+  "   kDLGGD.....",
+  "  kkDLGDkk....",
+  " kkDGLGkkk....",
+  "kGLLGGGGGkGLGk",
+  "kGLGGDkLLDkDkk",
+  "kGLGkDDGLDk...",
+  "kGLDkGLLDkk...",
+  "kDGDkDDDkk....",
+  "kDDDkDkkk.....",
+  ".....LDk......",
+  ".....GD.......",
+  "..............",
+];
 const FRAMES = {
-  panel: { band: "kLGDk", nail: NAIL, out: 2, in: 2 },
+  panel: { band: "kLGDk", knot: KNOT, out: 0, in: 9 },
   inset: { band: "kDk", nail: null, out: 0, in: 0 },
   tile: { band: "kGDk", nail: null, out: 0, in: 0 },
   "tile-hover": { band: "kLGk", nail: null, out: 0, in: 0 },
@@ -263,6 +288,18 @@ function drawFrame(f, k) {
       nail.forEach((row, dy) => [...row].forEach((key, dx) => px(x0 + dx, y0 + dy, key)));
     }
   }
+  if (f.knot) {
+    for (const [right, bottom] of [[false, false], [true, false], [false, true], [true, true]]) {
+      f.knot.forEach((row, dy) =>
+        [...row].forEach((key, dx) => {
+          const x = right ? hi + n - 1 - dx : lo + dx;
+          const y = bottom ? hi + n - 1 - dy : lo + dy;
+          if (key === " ") g.clearRect(x * k, y * k, k, k);
+          else px(x, y, key);
+        }),
+      );
+    }
+  }
   return { canvas: c, slice, band: n };
 }
 
@@ -280,7 +317,7 @@ function grain(k) {
     for (let x = 0; x < n; x += 2) {
       const r = rnd();
       if (r < 0.62) continue;
-      g.fillStyle = r < 0.8 ? "rgba(90,140,255,0.05)" : r < 0.93 ? "rgba(0,0,10,0.16)" : "rgba(140,180,255,0.08)";
+      g.fillStyle = r < 0.8 ? "rgba(90,140,255,0.025)" : r < 0.93 ? "rgba(0,0,10,0.08)" : "rgba(140,180,255,0.035)";
       g.fillRect(x * k, y * k, 2 * k, 2 * k);
     }
   }
@@ -371,9 +408,13 @@ function updateInsets() {
     return;
   }
   const side = document.getElementById("side");
-  const card = side && side.offsetParent !== null ? side.getBoundingClientRect().height : 0;
+  // getClientRects: a fixed element has no offsetParent even when shown.
+  const card = side && side.getClientRects().length ? side.getBoundingClientRect().height : 0;
   const top = document.getElementById("top")?.getBoundingClientRect().bottom ?? 0;
   v.insets = { top: Math.ceil(top) + 8, left: 70, right: 332, bottom: Math.ceil(Math.max(card, 240)) + 20 };
+  // The city panel ends above the bottom-right cluster (its minimap keeps the map's proportions).
+  const corner = document.getElementById("iso-corner");
+  if (corner) document.documentElement.style.setProperty("--iso-corner-h", `${Math.ceil(corner.getBoundingClientRect().height)}px`);
 }
 
 function ensure(id, parent, tag = "div") {
@@ -396,6 +437,16 @@ export function setIsoSkin(on, view) {
   root.classList.toggle("iso", on);
   if (!on) {
     restore();
+    // Take back what the skin added: the static buttons' icons (the 2D art letters a button with
+    // one text child only), the folded report, the city panel.
+    for (const im of document.querySelectorAll("button > img.iso-only")) im.remove();
+    document.body.classList.toggle("bottom-closed", !!skin.bottomWasClosed);
+    const city = document.getElementById("iso-city");
+    if (city) {
+      city.hidden = true;
+      city.replaceChildren();
+    }
+    cityKey = null;
     updateInsets();
     return true;
   }
@@ -437,16 +488,18 @@ export function setIsoSkin(on, view) {
   // The map aims at the part of the view the panels leave clear (MapView.insets).
   if (!skin.insetWatch && typeof ResizeObserver !== "undefined") {
     skin.insetWatch = new ResizeObserver(() => updateInsets());
-    for (const id of ["top", "side", "iso-city"]) {
+    for (const id of ["top", "side", "iso-city", "iso-corner"]) {
       const el = document.getElementById(id);
       if (el) skin.insetWatch.observe(el);
     }
   }
   updateInsets();
-  // The turn report floats at the top left, folded to its tabs until one is clicked.
+  // The turn report floats at the top left, folded to its tabs until one is clicked (as it was is
+  // put back when the skin goes).
+  skin.bottomWasClosed = document.body.classList.contains("bottom-closed");
+  document.body.classList.add("bottom-closed");
   if (!skin.folded) {
     skin.folded = true;
-    document.body.classList.add("bottom-closed");
     for (const b of document.querySelectorAll("#bottom-tabs button[data-tab]")) {
       b.addEventListener("click", () => skin.on && document.body.classList.remove("bottom-closed"));
     }
@@ -465,6 +518,12 @@ let cityKey = null;
 export function focusOn(id) {
   if (id === focusCity) return;
   focusCity = id;
+  renderCityPanel();
+}
+
+/** Reads the panel's city again (its screen changed it: worked plots, specialists, the queue). */
+export function refreshCityPanel() {
+  cityKey = null;
   renderCityPanel();
 }
 
@@ -515,7 +574,8 @@ export async function renderCityPanel() {
     fill(el);
     return;
   }
-  const key = `${city.id}|${S.view.view_version ?? S.view.turn}|${city.size}|${city.production?.type}|${city.production?.turns}`;
+  // Not every command's view (the server counts each): the turn and what the view says of the city.
+  const key = `${city.id}|${S.view.turn}|${city.size}|${city.production?.order}|${city.production?.type}|${city.production?.turns}|${city.food_turns}|${city.disorder}`;
   if (key === cityKey && el.childElementCount) return;
   cityKey = key;
   const n = ++cityToken;
@@ -584,8 +644,8 @@ export async function renderCityPanel() {
   );
 }
 
-/** A queued item's icon: a unit's figure, a building's or project's icon. */
-function queueIcon(q) {
+/** A queued item's icon (`q`: { order, type }): a unit's figure, a building's or project's icon. */
+export function queueIcon(q) {
   const order = tname("OrderType", q.order);
   if (order === "ORDER_TRAIN") {
     const key = skin.view?.iso?.unitKey(q.type, me()?.player);

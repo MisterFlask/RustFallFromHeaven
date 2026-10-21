@@ -28,7 +28,7 @@ import { endTurn, sending } from "./commands.js";
 import { h, $, toast } from "./dom.js";
 import { dname, turns, me } from "./state.js";
 import { look, loadLook, setLookData, rendererChoice, decorate, undecorate } from "./look.js";
-import { setIsoSkin, renderCityPanel } from "./isoui.js";
+import { setIsoSkin, isoSkin, renderCityPanel } from "./isoui.js";
 
 let mapView = null;
 let syncing = false;
@@ -544,6 +544,8 @@ function wire() {
     if (ev.key === "Shift") units.shiftReleased();
     const dir = K.scrollKey(ev, { anyMods: true });
     if (dir) mapView.scrollHold(dir, false);
+    // macOS sends no keyup for a letter released while Cmd is held: Cmd's own lets go of them all.
+    if (ev.key === "Meta") mapView.scrollRelease();
   });
   window.addEventListener("blur", () => {
     units.shiftReleased();
@@ -654,6 +656,8 @@ function setRenderer(r) {
  *  art's (or the plain one). Redraws what the two draw differently. */
 function syncSkin() {
   const on = !!mapView.iso;
+  // A city screen opened in one interface is not the other's (over the map or with its grid).
+  if (on !== isoSkin() && openTags().includes("city")) closeTag("city");
   if (!setIsoSkin(on, mapView)) return;
   document.documentElement.classList.toggle("art", !on && !!look.art);
   if (on) undecorate(document.body);

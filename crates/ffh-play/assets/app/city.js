@@ -18,7 +18,7 @@ import { run } from "./commands.js";
 import { render as markup, plain } from "./markup.js";
 import { YIELD_COLORS } from "./tiles.js";
 import { look, uiIcon, typeIcon, barEl, pix } from "./look.js";
-import { focusOn, isoSkin } from "./isoui.js";
+import { focusOn, isoSkin, queueIcon, refreshCityPanel } from "./isoui.js";
 
 const GROUPS = [
   [0, "Units"],
@@ -107,7 +107,8 @@ export async function openCity(id, { popup = false } = {}) {
     m.setBody(screen(c, { task, choose, remove, go, popup, overlay }));
     if (overlay) {
       const mine = me()?.player;
-      emit("city-overlay", { id: c.id, x: c.x, y: c.y, owner: c.owner, plots: c.plots, onPlot: (p) => workable(p, mine) && task("TASK_CHANGE_WORKING_PLOT", p.i), tipOf: (p) => plotTip(p, mine) });
+      // A click works the plot of the city these plots are of (Previous / Next may have moved on).
+      emit("city-overlay", { id: c.id, x: c.x, y: c.y, owner: c.owner, plots: c.plots, onPlot: (p) => cityId === c.id && workable(p, mine) && task("TASK_CHANGE_WORKING_PLOT", p.i), tipOf: (p) => plotTip(p, mine) });
     }
   };
   m.setButtons(
@@ -123,6 +124,7 @@ export async function openCity(id, { popup = false } = {}) {
   if (!popup) screenGo = go;
   const v = await m.done;
   if (overlay) emit("city-overlay", null);
+  refreshCityPanel();
   if (screenGo === go) screenGo = null;
   return result ?? v;
 }
@@ -134,6 +136,13 @@ function yieldNumbers(y) {
   // With the art: each yield's 8 px icon and its number (docs/ART.md 11.5).
   if (look.art || isoSkin()) return h("span.yields", y.map((v, j) => (v > 0 ? h("span.yield-n", { title: dname("YieldType", j) }, uiIcon("yield", j, 8), pix(String(v))) : null)));
   return h("span.yields", y.map((v, j) => (v > 0 ? h("span", { style: { color: YIELD_COLORS[j] } }, String(v)) : null)));
+}
+
+/** The isometric interface's icon of something to build (a unit's figure, a building's ...). */
+function buildIcon(order, type) {
+  const el = queueIcon({ order, type });
+  el.classList.add("build-icon");
+  return el;
 }
 
 /** Whether a click on city plot `p` does something: the centre (automates the citizens) or a
@@ -343,6 +352,7 @@ function productionView(c, choose, remove) {
               title: `${help}${help ? "\n" : ""}Click: build now. Shift: add to the queue. Ctrl: put first.`,
               onclick: (ev) => choose(order, b.type, ev),
             },
+            isoSkin() ? buildIcon(order, b.type) : null,
             h("span", dname(kind, b.type)),
             h("span.dim", b.turns !== null ? `${turns(b.turns)} · ${b.cost}` : ""),
           );

@@ -230,10 +230,12 @@ export class MapView {
     const r = this.wrap.getBoundingClientRect();
     this.tipAt = { x: ev.clientX - r.left, y: ev.clientY - r.top };
     if (city) {
-      // The city screen: what a click on the plot does, nothing else.
+      // The city screen: what a click on the plot does, nothing else (redrawn when the plot
+      // pointed at changes, not on every move).
       const plot = this.cityPlot(p);
-      if (p?.x !== this.overlay.hover?.x || p?.y !== this.overlay.hover?.y) {
-        this.overlay.hover = plot ? p : null;
+      const mark = plot ? p : null;
+      if (mark?.x !== this.overlay.hover?.x || mark?.y !== this.overlay.hover?.y) {
+        this.overlay.hover = mark;
         this.request();
       }
       if (plot) this.showTip(city.tipOf(plot));
@@ -265,7 +267,8 @@ export class MapView {
       const back = this.cityCamera;
       this.cityCamera = null;
       if (back && this.map) {
-        this.cam = { ...this.cam, ts: back.ts };
+        // The renderer may have changed meanwhile: its own zoom steps.
+        if (this.zooms().includes(back.ts)) this.cam = { ...this.cam, ts: back.ts };
         this.glideTo(back.cx, back.cy);
       }
       this.request();
@@ -348,11 +351,22 @@ export class MapView {
     this.canvas.height = Math.round(this.vh * this.dpr);
     this.canvas.style.width = `${this.vw}px`;
     this.canvas.style.height = `${this.vh}px`;
+    this.fitMini();
     // The bitmap fills the canvas's content box (a frame may surround it).
     const mr = this.mini.getBoundingClientRect();
     this.mini.width = Math.max(1, Math.round((this.mini.clientWidth || mr.width) * this.dpr));
     this.mini.height = Math.max(1, Math.round((this.mini.clientHeight || mr.height) * this.dpr));
     this.request();
+  }
+
+  /** The minimap keeps the map's proportions: its height follows its width (its content box: a
+   *  frame may surround it), which the interface may change (isoui.js moves it). */
+  fitMini() {
+    const map = this.map;
+    if (!map || !this.mini.isConnected) return;
+    const w = this.mini.clientWidth || this.mini.getBoundingClientRect().width || 220;
+    const frame = Math.max(0, this.mini.offsetHeight - this.mini.clientHeight);
+    this.mini.style.height = `${Math.round((w * map.h) / map.w) + frame}px`;
   }
 
   /** The zoom steps (tile sizes in CSS px) of the renderer in use: the art's are whole numbers
@@ -713,9 +727,6 @@ export class MapView {
     if (first) {
       this.flashes = [];
       this.cam = T.clampCamera(this.cam, map);
-      // The minimap keeps the map's proportions.
-      const w = this.mini.getBoundingClientRect().width || 220;
-      this.mini.style.height = `${Math.round((w * map.h) / map.w)}px`;
       this.resize();
     }
     this.request();

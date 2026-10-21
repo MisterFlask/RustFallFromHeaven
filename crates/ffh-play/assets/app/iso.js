@@ -1458,9 +1458,16 @@ export class IsoMap {
       if (!p || !p.revealed) continue;
       const sy = c.sy + c.drop;
       if (p.worked && p.i !== 0) {
-        this.diamond(g, c.sx, sy, f.TW, 2 * f.s);
-        g.fillStyle = "rgba(255,218,120,0.26)";
+        // A worked plot: lit, in a gilt ring.
+        this.diamond(g, c.sx, sy, f.TW, 3 * f.s);
+        g.fillStyle = "rgba(255,218,120,0.42)";
         g.fill();
+        g.strokeStyle = "#0c0703";
+        g.lineWidth = 4;
+        g.stroke();
+        g.strokeStyle = "#f0b443";
+        g.lineWidth = 2;
+        g.stroke();
       } else if (p.owner !== mine && p.i !== 0) {
         this.diamond(g, c.sx, sy, f.TW, 2 * f.s);
         g.fillStyle = "rgba(190,50,36,0.24)";
@@ -1534,11 +1541,13 @@ export class IsoMap {
       const h = Math.max(isz, 7 * u) + 6;
       const x0 = Math.round(c.sx - w / 2);
       const y0 = Math.round(c.sy + c.drop + f.TH * 0.08);
+      // A worked plot's plate is gilt-framed; the others' are muted, unframed.
+      g.globalAlpha = p.worked ? 1 : 0.62;
       g.fillStyle = "#0c0703";
       g.fillRect(x0 - 1, y0 - 1, w + 2, h + 2);
-      g.fillStyle = p.worked ? "#f0b443" : "#8a6a30";
+      g.fillStyle = p.worked ? "#f0b443" : "#0c0703";
       g.fillRect(x0, y0, w, h);
-      g.fillStyle = p.worked ? "#0a2a6c" : "#06163e";
+      g.fillStyle = p.worked ? "#0a2a6c" : "#04102e";
       g.fillRect(x0 + 1, y0 + 1, w - 2, h - 2);
       let x = x0 + 4;
       const base = y0 + Math.round((h - 7 * u) / 2) + 7 * u;
@@ -1548,6 +1557,7 @@ export class IsoMap {
         g.fillText(String(v), x + isz + 2, base);
         x += widths[n] + 4;
       });
+      g.globalAlpha = 1;
     }
     g.imageSmoothingEnabled = true;
   }

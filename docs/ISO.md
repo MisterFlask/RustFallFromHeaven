@@ -206,12 +206,15 @@ fills the page and the interface floats over it.
   map layer and zoom tiles and the minimap. The card shows only with a selection or a plot.
 - **Frames**: drawn by isoui.js as nine-slices on a 2 px grid (`--hu`): a gilt rule lit from the
   upper left (outline, light gold, gold, shade, outline; every edge the same way, so it reads as
-  a bar), mitred corners, gilt nails reaching past the panels' corners (`border-image-outset`);
-  thinner rules for boxes, tiles and bars; the panels' navy carries a faint seeded grain.
+  a bar), mitred corners and, at the panels' corners, the reference's gilt knot (cut from its city
+  panel's corner on the grid and cleaned, mirrored at each corner, reaching into the panel);
+  thinner rules for boxes, tiles and bars; the panels' deep navy (the reference's) carries a
+  faint seeded grain.
 - **Lettering**: Herald (`isofont.js`), a pixel serif drawn for the game after the reference's
   lettering: capitals and ascenders 7 px, x-height 5, descenders 2, 1 px strokes; its bold is the
   pixel smear, drawn by hand for the letters whose counters the smear would close (m n w v k y M
-  N W); accented letters are composed. The glyphs are grids in the module, made into a TrueType
+  N W); accented letters are composed. As in the reference, rows, values and buttons are in the
+  regular weight and titles in the bold. The glyphs are grids in the module, made into a TrueType
   font when the page loads (`FontFace`), so every label, button and paragraph takes it through
   CSS, wraps and selects as text. It is set at 20px (2 CSS px a pixel) with 24px lines, so every
   baseline falls on a whole pixel; the tech tree's fixed boxes take it at 10px (1x). Other sizes
@@ -236,8 +239,9 @@ fills the page and the interface floats over it.
 With the isometric map the city screen is Civ4's city view (`city.js` `overlay`,
 `MapView.cityOverlay`): the map glides to the city at the largest zoom step whose projected work
 area fits between the screen's panels (`CITY_FRAME`), veils the revealed plots outside the radius
-and edges the radius in gilt; each plot shows its yields on a plate (the worked ones brighter),
-each worked plot a citizen (half-seen when another city works it), plots not yours are tinted and
+and edges the radius in gilt; each plot shows its yields on a plate (a worked plot's gilt-framed
+and the plot lit in a gilt ring, the others' muted), each worked plot a citizen (half-seen when
+another city works it), plots not yours are tinted and
 the one pointed at is outlined, with what a click does as its tooltip. A click on a plot works it
 or stops working it (`TASK_CHANGE_WORKING_PLOT`, as the grid's buttons do); other clicks on the
 map do nothing meanwhile. The rest of the screen stands in panels at the sides (the citizens, the
