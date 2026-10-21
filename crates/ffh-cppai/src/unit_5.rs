@@ -92,20 +92,9 @@ fn transport_of(g: &Game, u: UnitId) -> Option<UnitId> {
     g.units[u].transport_unit.filter(|&t| g.units.contains(t))
 }
 
-/// C++ `CvUnitAI::AI_potentialEnemy(eTeam, pPlot)` with an `eTeam` that may be NO_TEAM.
-/// PORT ADAPT: `Cai::unit_ai_potential_enemy` takes a `TeamId`; NO_TEAM is ported inline here.
+/// C++ `CvUnitAI::AI_potentialEnemy(eTeam, pPlot)` (eTeam may be NO_TEAM).
 fn potential_enemy_opt(cai: &Cai, g: &Game, u: UnitId, team: Option<TeamId>, plot: Option<PlotIdx>) -> bool {
-    match team {
-        Some(t) => cai.unit_ai_potential_enemy(g, u, t, plot),
-        None => {
-            let grp = grp_of(g, u);
-            if cai.group_ai_is_declare_war(g, grp, plot) {
-                g.unit_is_potential_enemy(u, None, plot)
-            } else {
-                g.unit_is_enemy(u, None, plot)
-            }
-        }
-    }
+    cai.unit_ai_potential_enemy(g, u, team, plot)
 }
 
 /// C++ `CvPlot::AI_sumStrength(eOwner, eAttackingPlayer, eDomainType, bDefensiveBonuses,
@@ -601,7 +590,7 @@ impl Cai {
 
         if let Some(target_city) = g.area_get_target_city(area, owner) {
             let tplot = g.city_plot(target_city);
-            if self.unit_ai_potential_enemy(g, u, g.city_team(target_city), Some(tplot)) {
+            if self.unit_ai_potential_enemy(g, u, Some(g.city_team(target_city)), Some(tplot)) {
                 if !g.unit_at_plot(u, tplot) && g.unit_generate_path(u, tplot, flags, true, None) {
                     best_city = Some(target_city);
                 }
@@ -617,7 +606,7 @@ impl Cai {
                         let cplot = g.city_plot(c);
                         // BBAI efficiency: check area for land units before generating path
                         if self.unit_ai_plot_valid(g, u, cplot) && g.city_area(c) == area {
-                            if self.unit_ai_potential_enemy(g, u, pl_team, Some(cplot)) {
+                            if self.unit_ai_potential_enemy(g, u, Some(pl_team), Some(cplot)) {
                                 if !g.unit_at_plot(u, cplot) {
                                     if let Some(mut turns) = path_turns(g, u, cplot, flags) {
                                         let mut value = if ai_type == Some(UnitAIType::UNITAI_ATTACK_CITY) {
