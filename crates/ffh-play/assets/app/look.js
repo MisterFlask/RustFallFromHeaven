@@ -3,7 +3,8 @@
 // ui set's stylesheet (palette properties, nine-slice frames, buttons, cursors), and gives the
 // screens bitmap text (Vigil for titles, Vigil Book for short labels, Tally for numbers) and
 // icons. Until the art has loaded, or when it fails, the helpers fall back to plain text, so
-// every screen works without it.
+// every screen works without it. While the isometric map's interface is on (isoui.js), the same
+// helpers answer in its look: plain text (in Herald, by CSS), the M7 interface icons, its bars.
 //
 // The map renderer is chosen here too: the isometric 2.5D renderer (`iso.js`, docs/ISO.md) by
 // default, unless the page was opened with `?renderer=art` / `?renderer=flat` or the Tools →
@@ -15,6 +16,7 @@ import { assignHeraldry } from "./stacks.js";
 import { setTextHook, setTypeIconHook } from "./dom.js";
 import { setIconHook } from "./markup.js";
 import { setIlluminate } from "./modals.js";
+import { isoSkin, isoIconFor, isoBar } from "./isoui.js";
 
 export { UI };
 
@@ -102,8 +104,10 @@ export function loadLook() {
       setIconHook(markupIcon);
       setTypeIconHook(hookTypeIcon);
       setIlluminate(illuminate);
-      decorate(document.body);
-      document.documentElement.classList.add("art");
+      if (!isoSkin()) {
+        decorate(document.body);
+        document.documentElement.classList.add("art");
+      }
       look.ms = Math.round(performance.now() - t0);
       return art;
     } catch (e) {
@@ -182,6 +186,7 @@ export function pixable(text, font = "book", smallCaps = false) {
 /** The text hook of dom.js: buttons in Vigil Book (the primary one, End turn, in Vigil small
  *  capitals), headings in Vigil (section headings in small capitals), hotkeys in Vigil Book. */
 function hookText(tag, text, el) {
+  if (isoSkin()) return text;
   let font = "book";
   let smallCaps = false;
   if (tag === "H2" || tag === "H3") font = "vigil";
@@ -194,10 +199,19 @@ function hookText(tag, text, el) {
 /** Converts the text of the page's static buttons and headings (index.html) as `h` converts
  *  the ones built later. */
 export function decorate(root) {
+  if (isoSkin()) return;
   for (const el of root.querySelectorAll("button, h2, h3, h4, kbd")) {
     if (el.childNodes.length !== 1 || el.firstChild.nodeType !== 3) continue;
     const n = hookText(el.tagName, el.firstChild.textContent, el);
     if (n instanceof Node) el.replaceChildren(n);
+  }
+}
+
+/** Undoes `decorate`: the bitmap text of the page's buttons and headings back to plain text (the
+ *  isometric interface letters them in Herald). */
+export function undecorate(root) {
+  for (const sp of root.querySelectorAll("button > .ui-ptext, h2 > .ui-ptext, h3 > .ui-ptext, h4 > .ui-ptext, kbd > .ui-ptext")) {
+    sp.replaceWith(document.createTextNode(sp.textContent));
   }
 }
 
@@ -207,7 +221,7 @@ export function decorate(root) {
  *  the text does not start with a letter, the text as it is. */
 export function illuminate(frag) {
   const art = look.art;
-  if (!art || typeof document === "undefined") return frag;
+  if (!art || isoSkin() || typeof document === "undefined") return frag;
   const walker = document.createTreeWalker(frag, NodeFilter.SHOW_TEXT);
   let node = walker.nextNode();
   while (node && !node.textContent.trim()) node = walker.nextNode();
@@ -262,7 +276,7 @@ function markupIcon(name) {
  *  "vigil" (titles: capitals and small capitals), "tally" (digits). */
 export function pix(text, { font = "book", smallCaps = false, cls } = {}) {
   const t = String(text ?? "");
-  if (!look.art || t === "") return document.createTextNode(t);
+  if (!look.art || isoSkin() || t === "") return document.createTextNode(t);
   const f = font === "book" ? UI.BOOK : font;
   return UI.textSpan(look.art, t, { font: f, smallCaps, u: look.u, dpr: look.dpr, cls });
 }
@@ -270,6 +284,8 @@ export function pix(text, { font = "book", smallCaps = false, cls } = {}) {
 /** An icon sprite (`icon16/food`, `icon8/gold`, ...) as a canvas sized in CSS px, or null
  *  before the art loaded or when there is no such sprite. */
 export function iconEl(name, { title, cls, remap, u = look.u } = {}) {
+  const iso = isoSkin() ? isoIconFor(name, { title, cls }) : null;
+  if (iso) return iso;
   if (!look.art || !name || !look.art.hasSprite(name)) return null;
   return UI.iconEl(look.art, name, { u, dpr: look.dpr, remap, title, cls });
 }
@@ -309,6 +325,7 @@ export function uiIcon(kind, key, size = 16, opts = {}) {
  *  art loaded. kind: food production research culture gp xp hp hp_low doom. */
 export function barEl(frac, kind = "research", { w = 30, next = null, title } = {}) {
   const f = Math.max(0, Math.min(1, Number(frac) || 0));
+  if (isoSkin()) return isoBar(f, { w: w * 2, next, kind, title });
   if (!look.art) {
     const el = document.createElement("span");
     el.className = "bar";

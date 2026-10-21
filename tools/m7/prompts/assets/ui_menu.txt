@@ -1,0 +1,17 @@
+The attached image is cut from a screenshot of my fantasy strategy game's interface. Draw a sheet of 16 NEW interface icons in exactly the same art style as the small icons in its panels (the gold coin, the wheat sheaf, the hammer, the blue flask, the purple music note, the boot, the open book, the trophy, the gear, the helmet, the castle): bright saturated HD pixel art, crisp chunky square pixels (each icon is built from roughly 20 x 20 big pixel blocks), a dark coloured outline (deep brown or navy, not thin black lines), simple shading with strong light from the upper-left, a cheerful 16-bit SNES-era look, a bold readable silhouette that still reads when shrunk to 24 pixels. Arrange them in a 4 x 4 grid: four rows of four icons, each icon centred in its own equal square cell, every icon the same size and filling about 65% of its cell, with wide empty space between neighbours so no two icons touch. No frames, no buttons or plates behind the icons, no text, no letters or numbers unless an icon below asks for them, no labels, no grid lines. Background: flat solid pure magenta #FF00FF filling the whole image, with no gradient. The icons, row by row, left to right:
+1. an open brown leather book, like the screenshot's book icon
+2. a steel cogwheel, like the screenshot's gear icon
+3. a rolled parchment scroll tied with a ribbon and a blue wax seal
+4. a small white stone castle with blue pointed roofs, like the screenshot's castle icon
+5. a steel knight's helmet with a visor, like the screenshot's helmet icon
+6. a folded parchment map, like the screenshot's scroll icon
+7. a golden royal crown with red jewels
+8. a small white marble temple with columns and a golden dome
+9. two hands clasped in a handshake, one in a blue sleeve and one in a red sleeve
+10. a golden balance scale with two pans
+11. a white feather quill pen standing in a dark ink pot
+12. an open wooden treasure chest full of rolled parchment scrolls
+13. a world globe on a brass stand
+14. a large golden question mark
+15. a golden hourglass with blue sand running down
+16. a folded letter sealed with a red wax seal

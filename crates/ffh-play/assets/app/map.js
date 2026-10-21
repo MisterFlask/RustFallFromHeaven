@@ -18,6 +18,14 @@ import { IsoMap, ISO_DEFAULT_ZOOM } from "./iso.js";
 import { artZooms, defaultArtZoom } from "./stacks.js";
 
 const ZOOMS = [12, 16, 24, 32, 48, 64];
+/** Keyboard scrolling (W A S D, `scrollHold`): the speed is SCROLL_VIEWS of the view's short side a
+ *  second, within [SCROLL_MIN, SCROLL_MAX] CSS px; the velocity eases with this time constant (s)
+ *  and the view is at rest below SCROLL_REST px a second. */
+const SCROLL_VIEWS = 0.8;
+const SCROLL_MIN = 480;
+const SCROLL_MAX = 1000;
+const SCROLL_EASE_S = 0.07;
+const SCROLL_REST = 8;
 /** The terrain cache's budget in device pixels (least recently used chunks go first). */
 const PIXEL_BUDGET = 32e6;
 /** Activities drawn as asleep (a grey pip): fortified (C++ sleeps them), sleeping, healing,
@@ -99,6 +107,9 @@ export class MapView {
      *  manipulation (drag, zoom, pan) cancels it; `prefers-reduced-motion` skips it. */
     this.anim = null;
     this.animRaf = 0;
+    /** Keyboard scrolling (`scrollHold`, W A S D held): the directions held and the view's
+     *  velocity in screen px a second, eased towards SCROLL_SPEED and back to rest. */
+    this.scroll = { held: new Set(), vx: 0, vy: 0, t: 0, raf: 0 };
     /** One-shot combat flashes (`flashTile`): `{ x, y, kind, t0, dur }`, drawn by both renderers
      *  and self-expiring. */
     this.flashes = [];
@@ -173,9 +184,12 @@ export class MapView {
     const miniMove = (ev) => {
       if (!this.map) return;
       this.cancelGlide();
+      // The canvas's content box (a frame may surround it).
       const r = this.mini.getBoundingClientRect();
-      const x = ((ev.clientX - r.left) / r.width) * this.map.w;
-      const y = this.map.h - ((ev.clientY - r.top) / r.height) * this.map.h;
+      const w = this.mini.clientWidth || r.width;
+      const hh = this.mini.clientHeight || r.height;
+      const x = ((ev.clientX - r.left - this.mini.clientLeft) / w) * this.map.w;
+      const y = this.map.h - ((ev.clientY - r.top - this.mini.clientTop) / hh) * this.map.h;
       this.cam = T.clampCamera({ ...this.cam, cx: x, cy: y }, this.map);
       this.request();
     };
@@ -229,9 +243,10 @@ export class MapView {
     this.canvas.height = Math.round(this.vh * this.dpr);
     this.canvas.style.width = `${this.vw}px`;
     this.canvas.style.height = `${this.vh}px`;
+    // The bitmap fills the canvas's content box (a frame may surround it).
     const mr = this.mini.getBoundingClientRect();
-    this.mini.width = Math.max(1, Math.round(mr.width * this.dpr));
-    this.mini.height = Math.max(1, Math.round(mr.height * this.dpr));
+    this.mini.width = Math.max(1, Math.round((this.mini.clientWidth || mr.width) * this.dpr));
+    this.mini.height = Math.max(1, Math.round((this.mini.clientHeight || mr.height) * this.dpr));
     this.request();
   }
 
@@ -265,6 +280,66 @@ export class MapView {
     this.cancelGlide();
     this.cam = T.clampCamera({ ...this.cam, cx: this.cam.cx + dx, cy: this.cam.cy + dy }, this.map);
     this.request();
+  }
+
+  /** Starts (`on`) or ends scrolling in `dir` ("up", "left", "down", "right"): while a direction
+   *  is held the view glides that way on screen, in any renderer (diagonals at the same speed),
+   *  easing in from rest and out to it after the last key is released. */
+  scrollHold(dir, on) {
+    const s = this.scroll;
+    if (on) {
+      s.held.add(dir);
+      this.cancelGlide();
+    } else s.held.delete(dir);
+    if (!s.raf && this.map && (s.held.size || s.vx || s.vy)) {
+      s.t = performance.now();
+      this.stepScroll();
+    }
+  }
+
+  /** Lets go of every scroll key (the page lost the keyboard): the view eases to rest. */
+  scrollRelease() {
+    for (const d of [...this.scroll.held]) this.scrollHold(d, false);
+  }
+
+  /** The keyboard scroll speed, CSS px a second: most of the view's short side a second. */
+  scrollSpeed() {
+    return Math.max(SCROLL_MIN, Math.min(SCROLL_MAX, SCROLL_VIEWS * Math.min(this.vw, this.vh)));
+  }
+
+  stepScroll() {
+    const s = this.scroll;
+    s.raf = requestAnimationFrame(() => {
+      s.raf = 0;
+      const now = performance.now();
+      const dt = Math.min(0.05, Math.max(0, (now - s.t) / 1000));
+      s.t = now;
+      let tx = (s.held.has("right") ? 1 : 0) - (s.held.has("left") ? 1 : 0);
+      let ty = (s.held.has("down") ? 1 : 0) - (s.held.has("up") ? 1 : 0);
+      const n = Math.hypot(tx, ty) || 1;
+      const v = this.scrollSpeed();
+      tx = (tx / n) * v;
+      ty = (ty / n) * v;
+      const k = this.reduceMotion() ? 1 : 1 - Math.exp(-dt / SCROLL_EASE_S);
+      s.vx += (tx - s.vx) * k;
+      s.vy += (ty - s.vy) * k;
+      if (!s.held.size && Math.hypot(s.vx, s.vy) < SCROLL_REST) {
+        s.vx = s.vy = 0;
+        return;
+      }
+      this.moveView(s.vx * dt, s.vy * dt);
+      this.stepScroll();
+    });
+  }
+
+  /** Moves the view (dx, dy) CSS px on screen, right and down, as a drag the other way would. */
+  moveView(dx, dy) {
+    if (!this.map) return;
+    const alt = this.iso ?? this.r3d;
+    const pan = alt ? alt.panDelta(this.cam.cx, this.cam.cy, -dx, -dy) : { cx: this.cam.cx + dx / this.cam.ts, cy: this.cam.cy - dy / this.cam.ts };
+    this.cam = T.clampCamera({ ...this.cam, ...pan }, this.map);
+    this.hideTip();
+    this.draw();
   }
 
   /** Whether the viewer asked for less motion; the glide then jumps instead. */

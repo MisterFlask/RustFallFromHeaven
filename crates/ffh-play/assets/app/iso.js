@@ -38,6 +38,12 @@ const UNIT_DY = 6;
 const GATE_DX = 40;
 const GATE_DY = 26;
 
+/** The map's lettering: Herald, the interface's pixel serif (isofont.js), at whole multiples of its
+ *  grid so it stays crisp (Georgia until it has loaded). */
+const HERALD = "Herald, Georgia, serif";
+/** Herald's size at tile width `tw`: 2 CSS px a pixel from the default zoom up, else 1. */
+const heraldScale = (tw) => (tw >= 96 ? 2 : 1);
+
 /** The move slide (as artmap.js, docs/ART.md 4.5): about 8 tiles a second, capped; a longer move
  *  jumps. */
 const SLIDE_MS_PER_TILE = 125;
@@ -705,7 +711,14 @@ export class IsoMap {
     const g = v.ctx;
     const map = v.map;
     g.setTransform(1, 0, 0, 1, 0, 0);
-    g.fillStyle = "#0b1220";
+    // The world floats in a summer sky (the reference's), the unexplored edge in its clouds.
+    if (this.skyH !== v.canvas.height) {
+      this.skyH = v.canvas.height;
+      this.sky = g.createLinearGradient(0, 0, 0, v.canvas.height);
+      this.sky.addColorStop(0, "#5aa7e4");
+      this.sky.addColorStop(1, "#a9d5f4");
+    }
+    g.fillStyle = this.sky;
     g.fillRect(0, 0, v.canvas.width, v.canvas.height);
     this.hits = [];
     if (!map) return;
@@ -1219,7 +1232,7 @@ export class IsoMap {
       g.fill();
     }
     if (f.TW < 48) return; // too small for legible numbers
-    g.font = `bold ${Math.max(10, Math.round(f.TW * 0.16))}px system-ui, sans-serif`;
+    g.font = `700 ${10 * heraldScale(f.TW)}px ${HERALD}`;
     g.textAlign = "center";
     g.textBaseline = "middle";
     for (const c of cells) {
@@ -1290,10 +1303,10 @@ export class IsoMap {
     g.arc(x, y, r, 0, Math.PI * 2);
     g.fill();
     g.fillStyle = "#111";
-    g.font = `bold ${Math.round(r * 1.1)}px system-ui, sans-serif`;
+    g.font = `700 ${10 * heraldScale(this.view.cam.ts)}px ${HERALD}`;
     g.textAlign = "center";
     g.textBaseline = "middle";
-    g.fillText(text, x, y + 0.5);
+    g.fillText(text, Math.round(x), Math.round(y));
   }
 
   /** The planned path of the selection (overlay.path): a line from plot to plot, unwrapped from
@@ -1363,48 +1376,55 @@ export class IsoMap {
    *  for the player's own cities the turns left on what it builds; a gold star over a capital. */
   drawCityLabels(g, f, cities) {
     const mine = me()?.player;
+    // A plaque in the interface's look: a navy plate in a gilt frame on the 2 px grid (1 px when
+    // zoomed out), the size on the owner's colour at its left, the name (and, for your own, the
+    // turns left on its build) in Herald.
+    const u = heraldScale(f.TW);
+    const fs = 10 * u;
+    g.font = `700 ${fs}px ${HERALD}`;
+    g.textAlign = "left";
+    g.textBaseline = "alphabetic";
     for (const { city, c } of cities) {
       const col = ownerColor(city.owner);
-      const fs = Math.max(10, Math.round(f.TW * 0.12));
-      const y = c.sy + f.TH / 4;
       const size = city.size === null || city.size === undefined ? "?" : String(city.size);
       const turns = city.owner === mine ? city.production?.turns : null;
       const label = f.TW >= 64 ? `${city.name ?? ""}${turns !== null && turns !== undefined ? `  ${turns}` : ""}` : "";
-      g.font = `600 ${fs}px Georgia, "Times New Roman", serif`;
-      const tw = label ? g.measureText(label).width : 0;
-      const r = fs * 0.75;
-      const h = fs + 8;
-      const w = tw + (label ? fs * 1.2 : 0) + r * 2 + 6;
-      const x0 = c.sx - w / 2;
-      g.fillStyle = "rgba(17,27,52,0.9)";
-      roundRect(g, x0, y, w, h, 4);
-      g.fill();
-      g.strokeStyle = "#d4a845";
-      g.lineWidth = 1.5;
-      g.stroke();
-      g.beginPath();
-      g.arc(x0 + 3 + r, y + h / 2, r, 0, Math.PI * 2);
+      const tw = label ? Math.ceil(g.measureText(label).width) : 0;
+      const sw = Math.ceil(g.measureText(size).width);
+      const h = 15 * u;
+      const chip = Math.max(sw + 6 * u, h - 4 * u);
+      const w = 4 * u + chip + (label ? 4 * u + tw + 4 * u : 0);
+      const x0 = Math.round(c.sx - w / 2);
+      const y0 = Math.round(c.sy + f.TH / 4);
+      g.fillStyle = "#0c0703";
+      g.fillRect(x0 - u, y0 - u, w + 2 * u, h + 2 * u);
+      g.fillStyle = "#f0b443";
+      g.fillRect(x0, y0, w, h);
+      g.fillStyle = "#ffe58c";
+      g.fillRect(x0, y0, w, u);
+      g.fillRect(x0, y0, u, h);
+      g.fillStyle = "#a86d1c";
+      g.fillRect(x0, y0 + h - u, w, u);
+      g.fillStyle = "#0c0703";
+      g.fillRect(x0 + u, y0 + u, w - 2 * u, h - 2 * u);
+      g.fillStyle = "#06205a";
+      g.fillRect(x0 + 2 * u, y0 + 2 * u, w - 4 * u, h - 4 * u);
       g.fillStyle = col;
-      g.fill();
-      g.strokeStyle = "rgba(0,0,0,0.6)";
-      g.lineWidth = 1;
-      g.stroke();
-      g.fillStyle = "#fff";
-      g.font = `bold ${Math.round(fs * 0.9)}px system-ui, sans-serif`;
-      g.textAlign = "center";
-      g.textBaseline = "middle";
-      g.fillText(size, x0 + 3 + r, y + h / 2 + 0.5);
+      g.fillRect(x0 + 2 * u, y0 + 2 * u, chip, h - 4 * u);
+      const base = y0 + 2 * u + Math.round((h - 4 * u - 7 * u) / 2) + 7 * u;
+      g.fillStyle = "#0c0703";
+      g.fillText(size, x0 + 2 * u + Math.round((chip - sw) / 2) + u, base + u);
+      g.fillStyle = "#ffffff";
+      g.fillText(size, x0 + 2 * u + Math.round((chip - sw) / 2), base);
       if (label) {
-        g.font = `600 ${fs}px Georgia, "Times New Roman", serif`;
-        g.textAlign = "left";
         g.fillStyle = city.owner === mine ? "#ffe9a8" : "#f2ecdc";
-        g.fillText(label, x0 + 6 + r * 2 + fs * 0.4, y + h / 2 + 0.5);
+        g.fillText(label, x0 + 6 * u + chip, base);
       }
       if (city.capital) {
         g.fillStyle = "#ffdd55";
-        g.strokeStyle = "rgba(10,10,12,0.7)";
+        g.strokeStyle = "rgba(10,10,12,0.8)";
         g.lineWidth = 1;
-        star(g, x0 - 2, y + 1, 5, Math.max(4, fs * 0.55), Math.max(2, fs * 0.24));
+        star(g, x0 - 2, y0 + 1, 5, Math.max(4, 6 * u), Math.max(2, 2.6 * u));
         g.fill();
         g.stroke();
       }
@@ -1423,12 +1443,11 @@ export class IsoMap {
       const fx = flag.x0;
       const fy = flag.y0;
       if (units.length > 1 || !figure) {
-        const fs = Math.max(9, Math.round(20 * f.s));
-        g.font = `bold ${fs}px system-ui, sans-serif`;
+        g.font = `700 ${10 * heraldScale(f.TW)}px ${HERALD}`;
         g.textAlign = "center";
         g.textBaseline = "middle";
-        const cx = fx + 22 * f.s;
-        const cy = fy + 30 * f.s;
+        const cx = Math.round(fx + 22 * f.s);
+        const cy = Math.round(fy + 30 * f.s);
         g.lineWidth = 3;
         g.strokeStyle = "rgba(0,0,0,0.75)";
         g.strokeText(String(units.length), cx, cy);
@@ -1467,16 +1486,6 @@ export class IsoMap {
 function union(a, b) {
   if (!a || !b) return a || b ? { ...(a ?? b), parts: [(a ?? b).part] } : null;
   return { x0: Math.min(a.x0, b.x0), y0: Math.min(a.y0, b.y0), x1: Math.max(a.x1, b.x1), y1: Math.max(a.y1, b.y1), parts: [a.part, b.part] };
-}
-
-function roundRect(g, x, y, w, h, r) {
-  g.beginPath();
-  g.moveTo(x + r, y);
-  g.arcTo(x + w, y, x + w, y + h, r);
-  g.arcTo(x + w, y + h, x, y + h, r);
-  g.arcTo(x, y + h, x, y, r);
-  g.arcTo(x, y, x + w, y, r);
-  g.closePath();
 }
 
 /** A well-mixed 32-bit hash of an integer: stable per-plot choices (tile variants). */

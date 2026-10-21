@@ -36,7 +36,7 @@ export function openModal({ title, body = [], buttons = [], dismissible = true, 
   const bodyEl = h("div.modal-body");
   const btnRow = h("div.modal-buttons");
   const head = h("div.modal-head", h("h2", title ?? ""), dismissible ? h("button.close", { title: "Close (Esc)", "aria-label": "Close", onclick: () => m.close(null) }, "×") : null);
-  const box = h(`div.modal${wide ? ".wide" : ""}`, { role: "dialog", "aria-modal": "true", "aria-label": title ?? "", class: className }, head, bodyEl, btnRow);
+  const box = h(`div.modal${wide ? ".wide" : ""}`, { role: "dialog", "aria-modal": "true", "aria-label": title ?? "", class: className, "data-tag": tag }, head, bodyEl, btnRow);
   const backdrop = h("div.backdrop", box);
   const m = {
     el: box,

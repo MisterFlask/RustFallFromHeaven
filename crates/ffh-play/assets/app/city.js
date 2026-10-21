@@ -18,6 +18,7 @@ import { run } from "./commands.js";
 import { render as markup, plain } from "./markup.js";
 import { YIELD_COLORS } from "./tiles.js";
 import { look, uiIcon, typeIcon, barEl, pix } from "./look.js";
+import { focusOn, isoSkin } from "./isoui.js";
 
 const GROUPS = [
   [0, "Units"],
@@ -53,6 +54,7 @@ export function stepCityScreen(step, topTag) {
  *  §2.3) the dialog offers "Later" and closes once production is chosen. Resolves with "chosen",
  *  "later" or null (closed). */
 export async function openCity(id, { popup = false } = {}) {
+  focusOn(id);
   let cityId = id;
   let result = null;
   const title = () => {
@@ -121,7 +123,7 @@ export async function openCity(id, { popup = false } = {}) {
 function yieldNumbers(y) {
   if (!y) return h("span.dim", "?");
   // With the art: each yield's 8 px icon and its number (docs/ART.md 11.5).
-  if (look.art) return h("span.yields", y.map((v, j) => (v > 0 ? h("span.yield-n", { title: dname("YieldType", j) }, uiIcon("yield", j, 8), pix(String(v))) : null)));
+  if (look.art || isoSkin()) return h("span.yields", y.map((v, j) => (v > 0 ? h("span.yield-n", { title: dname("YieldType", j) }, uiIcon("yield", j, 8), pix(String(v))) : null)));
   return h("span.yields", y.map((v, j) => (v > 0 ? h("span", { style: { color: YIELD_COLORS[j] } }, String(v)) : null)));
 }
 
@@ -341,7 +343,7 @@ function productionView(c, choose, remove) {
       h("h4", "Production"),
       h(
         "div.prod-line",
-        prod.current && look.art ? uiIcon("yield", 1, 16) : null,
+        prod.current && (look.art || isoSkin()) ? uiIcon("yield", 1, 16) : null,
         prod.current ? `${prod.stored}/${prod.needed ?? "-"} (+${prod.rate} per turn)` : h("span.warn", "Nothing is being built."),
         prod.current && prod.needed ? barEl(prod.stored / prod.needed, "production", { w: 50, next: (prod.stored + prod.rate) / prod.needed }) : null,
       ),
@@ -360,7 +362,7 @@ function screen(c, { task, choose, remove, popup }) {
     c.disorder ? h("span.warn", " · in disorder") : "",
     c.occupation ? h("span.warn", ` · occupied ${c.occupation}`) : "",
     ` · food ${signed(c.food.difference)} · production ${c.production.rate}`,
-    look.art && f.threshold > 0 ? h("span.growth", uiIcon("yield", 0, 8), barEl(f.stored / f.threshold, "food", { w: 40, next: (f.stored + f.difference) / f.threshold, title: `${f.stored}/${f.threshold}` })) : null,
+    (look.art || isoSkin()) && f.threshold > 0 ? h("span.growth", uiIcon("yield", 0, 8), barEl(f.stored / f.threshold, "food", { w: 40, next: (f.stored + f.difference) / f.threshold, title: `${f.stored}/${f.threshold}` })) : null,
   );
   const left = h("div.city-col", plotGrid(c, task), specialistsView(c, task), statsView(c), buildingsView(c));
   const right = h("div.city-col", manageView(c, task), productionView(c, choose, remove));

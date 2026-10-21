@@ -54,6 +54,7 @@ const PNG: &str = "image/png";
 pub const ASSETS: &[(&str, &str, &str)] = &[
     ("index.html", HTML, include_str!("../../assets/index.html")),
     ("app/style.css", CSS, include_str!("../../assets/app/style.css")),
+    ("app/iso.css", CSS, include_str!("../../assets/app/iso.css")),
     ("app/main.js", JS, include_str!("../../assets/app/main.js")),
     ("app/api.js", JS, include_str!("../../assets/app/api.js")),
     ("app/state.js", JS, include_str!("../../assets/app/state.js")),
@@ -65,6 +66,8 @@ pub const ASSETS: &[(&str, &str, &str)] = &[
     ("app/map.js", JS, include_str!("../../assets/app/map.js")),
     ("app/iso.js", JS, include_str!("../../assets/app/iso.js")),
     ("app/iso/sprites.js", JS, include_str!("../../assets/app/iso/sprites.js")),
+    ("app/isoui.js", JS, include_str!("../../assets/app/isoui.js")),
+    ("app/isofont.js", JS, include_str!("../../assets/app/isofont.js")),
     ("app/units.js", JS, include_str!("../../assets/app/units.js")),
     ("app/city.js", JS, include_str!("../../assets/app/city.js")),
     ("app/screens.js", JS, include_str!("../../assets/app/screens.js")),

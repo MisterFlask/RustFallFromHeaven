@@ -27,7 +27,8 @@ import { renderTop, renderBottom, setTab, currentTab } from "./hud.js";
 import { endTurn, sending } from "./commands.js";
 import { h, $, toast } from "./dom.js";
 import { dname, turns, me } from "./state.js";
-import { look, loadLook, setLookData, rendererChoice } from "./look.js";
+import { look, loadLook, setLookData, rendererChoice, decorate, undecorate } from "./look.js";
+import { setIsoSkin, renderCityPanel } from "./isoui.js";
 
 let mapView = null;
 let syncing = false;
@@ -156,6 +157,7 @@ function clearGame() {
   renderTop();
   renderBottom();
   units.renderPanel();
+  renderCityPanel();
 }
 
 /** The dialogs that belong to one game (closed when another game arrives); the load, options,
@@ -219,6 +221,7 @@ async function refreshView(st) {
   empire.viewChanged();
   renderTop();
   renderBottom();
+  renderCityPanel();
   mapView.request();
 }
 
@@ -383,12 +386,13 @@ function stepCity(forward) {
  *  ends the turn when the end-turn message is up (no group waits) and otherwise cycles to the
  *  next group (CONTROL_ENDTURN, priority 1, before CONTROL_CYCLEUNIT); Shift+Enter ends it
  *  whatever waits; Space ends it like Enter when the selection's actions do not take it (no
- *  selection: CONTROL_ENDTURN_ALT); W cycles; C centres on the selection; Home / End the next /
+ *  selection: CONTROL_ENDTURN_ALT); C centres on the selection; Home / End the next /
  *  previous city; F10 the capital's screen; F1-F4, F6, F7 the advisors; Ctrl+S, Ctrl+L. Then
- *  ffh-play's own: Tab / Shift+Tab cycle forward / back (Civ4's Tab is chat), Ctrl+1/2/3 the
- *  layers, `?`, the arrows and `+`/`-`. Then the selection's action hotkeys from the XML
- *  (`units.hotkeyEvent`: F fortify or sleep, S sentry, Space skip, B found, G go to, R road, Del
- *  delete, Backspace cancel, L load, U unload, Shift+P pillage, ...). */
+ *  ffh-play's own: W A S D held scroll the map (`K.scrollKey`; Civ4's W cycle is Tab and Enter
+ *  here), Tab / Shift+Tab cycle forward / back (Civ4's Tab is chat), Ctrl+1/2/3 the layers, `?`,
+ *  the arrows and `+`/`-`. Then the selection's action hotkeys from the XML (`units.hotkeyEvent`:
+ *  F fortify or sleep, Space skip, B found, G go to, R road, Del delete, Backspace cancel, L load,
+ *  U unload, Shift+P pillage, ...). */
 function onKey(ev) {
   const t = ev.target;
   const typing = t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement;
@@ -406,6 +410,11 @@ function onKey(ev) {
   const cityStep = { Home: 1, End: -1 }[k] ?? (ev.code === "NumpadAdd" ? 1 : ev.code === "NumpadSubtract" ? -1 : 0);
   if (cityStep && plain && !typing && stepCityScreen(cityStep, openTags().at(-1))) return handled();
   if (typing || modalOpen()) return;
+  const dir = K.scrollKey(ev);
+  if (dir) {
+    if (!ev.repeat) mapView.scrollHold(dir, true);
+    return handled();
+  }
   const human = S.status?.phase === "human";
   if (ctrl && !ev.altKey) {
     const lower = k.toLowerCase();
@@ -436,13 +445,6 @@ function onKey(ev) {
     case "Tab":
       if (!ctrl && !ev.altKey) {
         units.selectNext({ forward: !ev.shiftKey });
-        return handled();
-      }
-      break;
-    case "w":
-    case "W":
-      if (plain) {
-        units.selectNext();
         return handled();
       }
       break;
@@ -538,8 +540,15 @@ function wire() {
   document.addEventListener("ffh-research", () => S.view && screens.openResearch());
   document.addEventListener("keydown", onKey);
   // Shift-right-click waypoints are sent when Shift is released (or the page loses the keys).
-  document.addEventListener("keyup", (ev) => ev.key === "Shift" && units.shiftReleased());
-  window.addEventListener("blur", () => units.shiftReleased());
+  document.addEventListener("keyup", (ev) => {
+    if (ev.key === "Shift") units.shiftReleased();
+    const dir = K.scrollKey(ev, { anyMods: true });
+    if (dir) mapView.scrollHold(dir, false);
+  });
+  window.addEventListener("blur", () => {
+    units.shiftReleased();
+    mapView.scrollRelease();
+  });
   on("applied", () => refreshStatus());
   on("refused", () => refreshStatus());
   on("kick", () => refreshStatus());
@@ -590,6 +599,7 @@ async function boot() {
   // It owns its own projection, so the art/flat switches leave it be.
   // Chosen with `?renderer=iso` or the remembered Tools → Options choice.
   if (rendererChoice() === "iso") mapView.useIso(true);
+  syncSkin();
   // The experimental 3D renderer (docs/R3D.md): loaded on demand; without WebGL2 it falls back.
   if (rendererChoice() === "3d") use3d();
   // The art loads beside the data; the page works meanwhile (and without it). lookLoaded() builds
@@ -615,6 +625,7 @@ async function boot() {
  *  interface redraws with its type and icons. */
 function lookLoaded() {
   if (!mapView.iso && rendererChoice() === "art") mapView.useArt(true);
+  syncSkin();
   renderTop();
   renderBottom();
   units.renderPanel();
@@ -630,15 +641,34 @@ function setRenderer(r) {
   if (mapView.r3d) mapView.useR3d(false);
   if (r === "iso") {
     mapView.useIso(true);
+    syncSkin();
     return;
   }
   if (mapView.iso) mapView.useIso(false);
   mapView.useArt(r === "art" && !!look.art);
+  syncSkin();
+}
+
+/** The interface follows the map: the isometric map's own (isoui.js) while it draws, else the 2D
+ *  art's (or the plain one). Redraws what the two draw differently. */
+function syncSkin() {
+  const on = !!mapView.iso;
+  if (!setIsoSkin(on, mapView)) return;
+  document.documentElement.classList.toggle("art", !on && !!look.art);
+  if (on) undecorate(document.body);
+  else decorate(document.body);
+  mapView.resize();
+  renderTop();
+  renderBottom();
+  units.renderPanel();
+  renderCityPanel();
 }
 
 /** Turns the 3D renderer on; when it cannot run, says so and draws with the art (or flat). */
 async function use3d() {
-  if (await mapView.useR3d(true)) return;
+  const ok = await mapView.useR3d(true);
+  syncSkin();
+  if (ok) return;
   if (mapView.r3dError?.code === "software-webgl") {
     toast(`${mapView.r3dError.message} Enable hardware acceleration in your browser (or add ?force3d=1 to try anyway); using the 2D map.`, "error", 15000);
   } else {
@@ -652,6 +682,7 @@ window.addEventListener("ffh:r3d-lost", () => {
   if (!mapView.r3d) return;
   mapView.useR3d(false);
   if (look.art) mapView.useArt(true);
+  syncSkin();
   toast("The 3D renderer lost its graphics context; using the 2D map until the page is reloaded.", "error");
 });
 

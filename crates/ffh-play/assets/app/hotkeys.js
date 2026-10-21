@@ -10,6 +10,23 @@
 // F; a unit offers one of them), S is sentry, B founds a city (priority 1) before bombard or a
 // range attack, R builds a road (a worker) or recons, Shift+P pillages, Alt+R routes to, G is
 // go-to, Space skips, Del deletes, Backspace cancels, L loads, U unloads.
+//
+// W A S D are ffh-play's map scroll keys (`scrollKey`), not Civ4's: the actions Civ4 binds to the
+// plain letters (W cycle, A automate, S sentry, sabotage and scrub fallout, D destroy) keep their
+// buttons, not the keys; shifted letters (Shift+W windmill, Shift+S the mana nodes) stay.
+
+/** The map's scroll keys, by their place on the keyboard (`KeyboardEvent.code`, any layout): held,
+ *  they glide the view up, left, down, right (map.js `scrollHold`). */
+export const SCROLL_KEYS = { KeyW: "up", KeyA: "left", KeyS: "down", KeyD: "right" };
+const SCROLL_LETTERS = { w: "up", a: "left", s: "down", d: "right" };
+
+/** The direction key event `ev` scrolls the map: a plain W, A, S or D (`anyMods`: whatever the
+ *  modifiers, for the key's release); else null. */
+export function scrollKey(ev, { anyMods = false } = {}) {
+  if (!anyMods && (ev.shiftKey || ev.altKey || ev.ctrlKey || ev.metaKey)) return null;
+  if (ev.code) return SCROLL_KEYS[ev.code] ?? null;
+  return SCROLL_LETTERS[String(ev.key ?? "").toLowerCase()] ?? null;
+}
 
 /** Civ4 key names (`KB_*`) to `KeyboardEvent.code` (layout independent, as Civ4's scan codes)
  *  and the `KeyboardEvent.key` used when an event has no code (synthetic events). */
@@ -73,9 +90,14 @@ function entryOf(a, data) {
   return null;
 }
 
-/** The bindings of a `group` query action. */
+/** Whether binding `b` is a plain scroll key (W A S D: the map's, not the action's). */
+function scrolls(b) {
+  return !b?.shift && !b?.alt && !b?.ctrl && Object.hasOwn(SCROLL_KEYS, kbCode(b?.key).code ?? "");
+}
+
+/** The bindings of a `group` query action, without the map's scroll keys. */
 export function bindings(a, data) {
-  return entryOf(a, data)?.keys ?? [];
+  return (entryOf(a, data)?.keys ?? []).filter((b) => !scrolls(b));
 }
 
 /** The action list's order (`iOrderPriority`, 0 when none). */

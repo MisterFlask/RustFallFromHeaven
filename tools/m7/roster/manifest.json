@@ -4293,5 +4293,2196 @@
   "tile": "tile_oasis",
   "note": "post-fix after accept: isolated magenta-fringe pixels (r>g+40 and b>g+40; 12 px) recoloured to the median of their opaque neighbours in both the overlay and the tile (work/_look/defringe.py); the inset path runs no fringe clean-up",
   "gen_size": "1536x1024"
+ },
+ "ui_gold": {
+  "kind": "ui_icon",
+  "file": "ui/ui_gold.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "stats",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_stats.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_gold_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_gold_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "stats",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_stats.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_food": {
+  "kind": "ui_icon",
+  "file": "ui/ui_food.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "stats",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_stats.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_food_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_food_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "stats",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_stats.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_production": {
+  "kind": "ui_icon",
+  "file": "ui/ui_production.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "stats",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_stats.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_production_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_production_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "stats",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_stats.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_research": {
+  "kind": "ui_icon",
+  "file": "ui/ui_research.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "stats",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_stats.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_research_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_research_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "stats",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_stats.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_culture": {
+  "kind": "ui_icon",
+  "file": "ui/ui_culture.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "stats",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_stats.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_culture_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_culture_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "stats",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_stats.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_commerce": {
+  "kind": "ui_icon",
+  "file": "ui/ui_commerce.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "stats",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_stats.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_commerce_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_commerce_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "stats",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_stats.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_happy": {
+  "kind": "ui_icon",
+  "file": "ui/ui_happy.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "stats",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_stats.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_happy_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_happy_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "stats",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_stats.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_unhappy": {
+  "kind": "ui_icon",
+  "file": "ui/ui_unhappy.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "stats",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_stats.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_unhappy_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_unhappy_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "stats",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_stats.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_health": {
+  "kind": "ui_icon",
+  "file": "ui/ui_health.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "stats",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_stats.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_health_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_health_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "stats",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_stats.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_unhealthy": {
+  "kind": "ui_icon",
+  "file": "ui/ui_unhealthy.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "stats",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_stats.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_unhealthy_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_unhealthy_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "stats",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_stats.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_population": {
+  "kind": "ui_icon",
+  "file": "ui/ui_population.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "stats",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_stats.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_population_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_population_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "stats",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_stats.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_score": {
+  "kind": "ui_icon",
+  "file": "ui/ui_score.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "stats",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_stats.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_score_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_score_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "stats",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_stats.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_mana": {
+  "kind": "ui_icon",
+  "file": "ui/ui_mana.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "stats",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_stats.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_mana_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_mana_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "stats",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_stats.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_armageddon": {
+  "kind": "ui_icon",
+  "file": "ui/ui_armageddon.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "stats",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_stats.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_armageddon_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_armageddon_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "stats",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_stats.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_greatpeople": {
+  "kind": "ui_icon",
+  "file": "ui/ui_greatpeople.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "stats",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_stats.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_greatpeople_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_greatpeople_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "stats",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_stats.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_strength": {
+  "kind": "ui_icon",
+  "file": "ui/ui_strength.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "stats",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_stats.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_strength_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_strength_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "stats",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_stats.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_pedia": {
+  "kind": "ui_icon",
+  "file": "ui/ui_pedia.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "menu",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_menu.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_pedia_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_pedia_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "menu",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_menu.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_settings": {
+  "kind": "ui_icon",
+  "file": "ui/ui_settings.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "menu",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_menu.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_settings_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_settings_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "menu",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_menu.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_techs": {
+  "kind": "ui_icon",
+  "file": "ui/ui_techs.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "menu",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_menu.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_techs_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_techs_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "menu",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_menu.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_cities": {
+  "kind": "ui_icon",
+  "file": "ui/ui_cities.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "menu",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_menu.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_cities_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_cities_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "menu",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_menu.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_units": {
+  "kind": "ui_icon",
+  "file": "ui/ui_units.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "menu",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_menu.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_units_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_units_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "menu",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_menu.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_map": {
+  "kind": "ui_icon",
+  "file": "ui/ui_map.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "menu",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_menu.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_map_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_map_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "menu",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_menu.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_civics": {
+  "kind": "ui_icon",
+  "file": "ui/ui_civics.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "menu",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_menu.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_civics_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_civics_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "menu",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_menu.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_religion": {
+  "kind": "ui_icon",
+  "file": "ui/ui_religion.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "menu",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_menu.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_religion_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_religion_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "menu",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_menu.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_finance": {
+  "kind": "ui_icon",
+  "file": "ui/ui_finance.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "menu",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_menu.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_finance_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_finance_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "menu",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_menu.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_save": {
+  "kind": "ui_icon",
+  "file": "ui/ui_save.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "menu",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_menu.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_save_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_save_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "menu",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_menu.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_load": {
+  "kind": "ui_icon",
+  "file": "ui/ui_load.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "menu",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_menu.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_load_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_load_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "menu",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_menu.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_newgame": {
+  "kind": "ui_icon",
+  "file": "ui/ui_newgame.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "menu",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_menu.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_newgame_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_newgame_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "menu",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_menu.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_help": {
+  "kind": "ui_icon",
+  "file": "ui/ui_help.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "menu",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_menu.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_help_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_help_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "menu",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_menu.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_endturn": {
+  "kind": "ui_icon",
+  "file": "ui/ui_endturn.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "menu",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_menu.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_endturn_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_endturn_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "menu",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_menu.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_messages": {
+  "kind": "ui_icon",
+  "file": "ui/ui_messages.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "menu",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_menu.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_messages_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_messages_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "menu",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_menu.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_diplomacy": {
+  "kind": "ui_icon",
+  "file": "ui/ui_diplomacy.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "menu",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_menu.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_diplomacy_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_diplomacy_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "menu",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_menu.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_sleep": {
+  "kind": "ui_icon",
+  "file": "ui/ui_sleep.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "orders",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_orders.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_sleep_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_sleep_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "orders",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_orders.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_fortify": {
+  "kind": "ui_icon",
+  "file": "ui/ui_fortify.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "orders",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_orders.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_fortify_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_fortify_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "orders",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_orders.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_sentry": {
+  "kind": "ui_icon",
+  "file": "ui/ui_sentry.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "orders",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_orders.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_sentry_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_sentry_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "orders",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_orders.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_skip": {
+  "kind": "ui_icon",
+  "file": "ui/ui_skip.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "orders",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_orders.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_skip_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_skip_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "orders",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_orders.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_goto": {
+  "kind": "ui_icon",
+  "file": "ui/ui_goto.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "orders",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_orders.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_goto_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_goto_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "orders",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_orders.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_disband": {
+  "kind": "ui_icon",
+  "file": "ui/ui_disband.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "orders",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_orders.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_disband_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_disband_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "orders",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_orders.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_heal": {
+  "kind": "ui_icon",
+  "file": "ui/ui_heal.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "orders",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_orders.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_heal_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_heal_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "orders",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_orders.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_pillage": {
+  "kind": "ui_icon",
+  "file": "ui/ui_pillage.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "orders",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_orders.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_pillage_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_pillage_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "orders",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_orders.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_found": {
+  "kind": "ui_icon",
+  "file": "ui/ui_found.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "orders",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_orders.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_found_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_found_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "orders",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_orders.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_explore": {
+  "kind": "ui_icon",
+  "file": "ui/ui_explore.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "orders",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_orders.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_explore_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_explore_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "orders",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_orders.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_automate": {
+  "kind": "ui_icon",
+  "file": "ui/ui_automate.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "orders",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_orders.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_automate_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_automate_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "orders",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_orders.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_promote": {
+  "kind": "ui_icon",
+  "file": "ui/ui_promote.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "orders",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_orders.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_promote_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_promote_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "orders",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_orders.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_upgrade": {
+  "kind": "ui_icon",
+  "file": "ui/ui_upgrade.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "orders",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_orders.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_upgrade_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_upgrade_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "orders",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_orders.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_spell": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "orders",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_orders.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_spell_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spell_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "orders",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_orders.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_board": {
+  "kind": "ui_icon",
+  "file": "ui/ui_board.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "orders",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_orders.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_board_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_board_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "orders",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_orders.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_attack": {
+  "kind": "ui_icon",
+  "file": "ui/ui_attack.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "orders",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_orders.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_attack_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_attack_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "orders",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_orders.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_moves": {
+  "kind": "ui_icon",
+  "file": "ui/ui_moves.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "misc",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_misc.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_moves_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_moves_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "misc",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_misc.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_defense": {
+  "kind": "ui_icon",
+  "file": "ui/ui_defense.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "misc",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_misc.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_defense_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_defense_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "misc",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_misc.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_hp": {
+  "kind": "ui_icon",
+  "file": "ui/ui_hp.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "misc",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_misc.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_hp_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_hp_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "misc",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_misc.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_xp": {
+  "kind": "ui_icon",
+  "file": "ui/ui_xp.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "misc",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_misc.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_xp_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_xp_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "misc",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_misc.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_cancel": {
+  "kind": "ui_icon",
+  "file": "ui/ui_cancel.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "misc",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_misc.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_cancel_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_cancel_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "misc",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_misc.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_road": {
+  "kind": "ui_icon",
+  "file": "ui/ui_road.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "misc",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_misc.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_road_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_road_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "misc",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_misc.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_rangeattack": {
+  "kind": "ui_icon",
+  "file": "ui/ui_rangeattack.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "misc",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_misc.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_rangeattack_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_rangeattack_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "misc",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_misc.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_bombard": {
+  "kind": "ui_icon",
+  "file": "ui/ui_bombard.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "misc",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_misc.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_bombard_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_bombard_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "misc",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_misc.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_spread": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spread.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "misc",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_misc.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_spread_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_spread_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "misc",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_misc.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_goldenage": {
+  "kind": "ui_icon",
+  "file": "ui/ui_goldenage.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "misc",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_misc.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_goldenage_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_goldenage_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "misc",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_misc.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_terrain": {
+  "kind": "ui_icon",
+  "file": "ui/ui_terrain.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "misc",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_misc.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_terrain_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_terrain_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "misc",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_misc.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_political": {
+  "kind": "ui_icon",
+  "file": "ui/ui_political.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "misc",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_misc.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_political_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_political_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "misc",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_misc.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_yields": {
+  "kind": "ui_icon",
+  "file": "ui/ui_yields.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "misc",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_misc.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_yields_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_yields_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "misc",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_misc.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_zoomin": {
+  "kind": "ui_icon",
+  "file": "ui/ui_zoomin.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "misc",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_misc.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_zoomin_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_zoomin_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "misc",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_misc.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_zoomout": {
+  "kind": "ui_icon",
+  "file": "ui/ui_zoomout.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "misc",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_misc.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_zoomout_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_zoomout_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "misc",
+  "round": "r1",
+  "variant": "1",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_misc.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_greatwork": {
+  "kind": "ui_icon",
+  "file": "ui/ui_greatwork.png",
+  "size": [
+   48,
+   48
+  ],
+  "sheet": "misc",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 2,
+  "fit": 44,
+  "prompt": "prompts/assets/ui_misc.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_greatwork_s": {
+  "kind": "ui_icon",
+  "file": "ui/ui_greatwork_s.png",
+  "size": [
+   32,
+   32
+  ],
+  "sheet": "misc",
+  "round": "r1",
+  "variant": "2",
+  "pixel": 2,
+  "fit": 30,
+  "prompt": "prompts/assets/ui_misc.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
+ },
+ "ui_backdrop": {
+  "kind": "ui_backdrop",
+  "file": "ui/ui_backdrop.png",
+  "size": [
+   384,
+   256
+  ],
+  "pixel": 2,
+  "raw": "r1_2.png",
+  "gen_size": "1536x1024",
+  "prompt": "prompts/assets/ui_backdrop.txt",
+  "anchors": [
+   "anchors/anchor_ui.png"
+  ]
  }
 }
