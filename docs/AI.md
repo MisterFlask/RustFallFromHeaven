@@ -1462,8 +1462,9 @@ turns each civ needs for each condition of `CvGame::testVictory` (`CIV4VictoryIn
 **Not pursued** (the owner's decision, 2026-10-21): the Tower of Mastery and the Altar of the
 Luonnotar are never our goal -- boring solitaire victories, and the Tower needs a huge territory
 anyway. Their estimates stay, so a rival about to win one is still a *rival* (below) and gets
-stopped. (Before the decision the planner never picked either in 48 full games against the C++
-AI, so play hardly changes.)
+stopped. Play is unchanged: 24 of 24 full games (seeds 1-24, 6 civs, standard map,
+`--until-supremacy`) identical to the build before it (same checksums), and the planner never
+picked either in 48 full games against the C++ AI.
 
 **Plan** (`plan`, `plan_ours`): from turn 200 (scaled to the game's length; from 100 when the team
 holds 1.5x the next team's share of the world) the condition with the fewest turns that fits
