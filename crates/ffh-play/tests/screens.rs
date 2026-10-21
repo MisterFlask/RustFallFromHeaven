@@ -55,7 +55,13 @@ fn map_deltas_keep_a_client_up_to_date() {
     });
     assert_eq!(stop, Stop::Human);
     assert!(deltas >= 15, "{deltas} deltas, {fulls} full maps");
+    // `bot::run` returns without a last callback: the bot's last turn and the AIs' after it may
+    // have changed the map since (whether they do is the game's story, not the protocol's), so
+    // the client catches up once before the revision checks.
     let c = client.unwrap();
+    let reply = map_query(&s, Some(c.req::<i64>("rev").unwrap()), Some(c.req_str("epoch").unwrap()));
+    let c = apply_map(&c, &reply);
+    assert_same_map(&c, &map_query(&s, None, None), "after the run");
     // Out of range, another epoch, none: the full map.
     let rev = c.req::<i64>("rev").unwrap();
     let epoch = c.req_str("epoch").unwrap();

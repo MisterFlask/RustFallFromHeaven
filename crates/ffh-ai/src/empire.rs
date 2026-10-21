@@ -112,11 +112,14 @@ fn disband(g: &mut Game, p: PlayerId) {
         }
         garrison.sort_by_key(|&u| (crate::view::defense_power(g, u), u));
         let u = garrison[0];
+        if crate::finance::young(g, u) {
+            continue;
+        }
         let betrays = g.d.promotions.keys().any(|pr| g.units[u].has_promotion[pr] && g.d.promotions[pr].betrayal_chance != 0);
         if betrays || !g.unit_can_scrap(u) {
             continue;
         }
-        crate::trace!(g, p, "bankrupt: disbanding {} in {}", g.d.units[g.units[u].unit_type].base.type_, g.cities[c].name);
+        crate::trace!(g, p, "bankrupt: disbanding {} in {} age {}", g.d.units[g.units[u].unit_type].base.type_, g.cities[c].name, g.game_turn() - g.units[u].game_turn_created);
         g.unit_scrap(u);
         done += 1;
     }
@@ -148,6 +151,11 @@ fn disband_field_units(g: &mut Game, p: PlayerId, max: i32) {
         return;
     }
     units.sort_by_key(|&u| (crate::view::attack_power(g, u) + 50 * g.units[u].experience, u));
+    if crate::fix_on("churn") {
+        // Only the weakest surplus, and of it only units old enough (finance::KEEP_YOUNG_TURNS).
+        units.truncate(units.len() - keep as usize);
+        units.retain(|&u| !crate::finance::young(g, u));
+    }
     let mut done = 0;
     for u in units {
         if done >= max || !g.units.contains(u) {
@@ -163,7 +171,7 @@ fn disband_field_units(g: &mut Game, p: PlayerId, max: i32) {
         if hero || betrays || g.units[u].duration > 0 || !g.unit_can_scrap(u) {
             continue;
         }
-        crate::trace!(g, p, "cannot pay: disbanding field unit {}", info.base.type_);
+        crate::trace!(g, p, "cannot pay: disbanding field unit {} age {}", info.base.type_, g.game_turn() - g.units[u].game_turn_created);
         g.unit_scrap(u);
         done += 1;
     }

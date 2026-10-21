@@ -276,6 +276,7 @@ pub fn worker_with(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, sea: boo
     let reach = v.flood.run(g, u, 8, false);
     let builds: Vec<BuildType> = g.d.builds.keys().filter(|&b| g.d.units[ut].builds[b]).collect();
     let mut best: Option<(PlotIdx, BuildType, i64)> = None;
+    let mut cands: Vec<(i64, PlotIdx, BuildType)> = Vec::new();
     for r in &reach {
         let q = r.plot;
         let pl = &g.map.plots[q];
@@ -303,6 +304,7 @@ pub fn worker_with(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, sea: boo
             if best.map_or(true, |(_, _, s)| score > s) {
                 best = Some((q, b, score));
             }
+            cands.push((score, q, b));
         }
     }
     let Some((plot, build, _)) = best else {
@@ -318,6 +320,37 @@ pub fn worker_with(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, sea: boo
         }
         return;
     };
+    if crate::fix_on("workers") {
+        // Our flood and danger map chose the job; the rules' AI path finder may still refuse the
+        // move (a non-combat group next to danger, C++ `pathValid`), and the worker then asked for
+        // the same job every turn without moving (44-151 worker-turns a game). Take the next
+        // best job the rules let it walk to (or the best one here), at most four tries.
+        cands.sort_by(|a, b| b.0.cmp(&a.0).then(a.1.cmp(&b.1)).then(a.2.cmp(&b.2)));
+        for &(_, q, b) in cands.iter().take(4) {
+            if q == here {
+                v.claimed.push(q);
+                crate::trace!(g, p, "worker {:?} at {:?}: {} at {:?}", u, g.map.xy(here), g.d.builds[b].base.type_, g.map.xy(q));
+                push(g, grp, MissionType::MISSION_BUILD, b.i(), -1, 0, false);
+                break;
+            }
+            move_to(g, grp, q, MOVE_SAFE_TERRITORY);
+            if !alive(g, grp) {
+                return;
+            }
+            if g.unit_plot(u) == here && g.group_ready_to_move(grp, true) {
+                g.group_clear_mission_queue(grp);
+                continue;
+            }
+            v.claimed.push(q);
+            crate::trace!(g, p, "worker {:?} at {:?}: {} at {:?}", u, g.map.xy(here), g.d.builds[b].base.type_, g.map.xy(q));
+            push(g, grp, MissionType::MISSION_BUILD, b.i(), -1, 0, true);
+            break;
+        }
+        if alive(g, grp) && g.group_ready_to_move(grp, true) {
+            hold(g, grp);
+        }
+        return;
+    }
     v.claimed.push(plot);
     crate::trace!(g, p, "worker {:?} at {:?}: {} at {:?}", u, g.map.xy(here), g.d.builds[build].base.type_, g.map.xy(plot));
     if plot != here {
