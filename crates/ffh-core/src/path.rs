@@ -1432,7 +1432,12 @@ impl Game {
         let old_plot = self.map.plot_soren(parent.x, parent.y).expect("plotGroupValid: OldPlot");
         let new_plot = self.map.plot_soren(node.x, node.y).expect("plotGroupValid: NewPlot");
 
-        let player = finder_player(finder);
+        self.plot_group_valid_step(old_plot, new_plot, finder_player(finder))
+    }
+
+    /// [`Game::plot_group_valid`] for the step `old_plot` -> `new_plot` of `player`'s plot group
+    /// finder (the plots the nodes stand for).
+    pub fn plot_group_valid_step(&self, old_plot: PlotIdx, new_plot: PlotIdx, player: PlayerId) -> bool {
         let team = self.players[player].team;
 
         if self.plot_get_plot_group(old_plot, player) == self.plot_get_plot_group(new_plot, player) {
