@@ -33,7 +33,8 @@ export function infoTip(kind, i, { hint = null, extra = null, title = null } = {
     const does = effectsOf(kind, i);
     return [
       h("div.tip-title", title ?? dname(kind, i)),
-      kind === "UnitType" ? h("div.tip-stats", markup(unitStats(e))) : null,
+      // A unit's help starts with its combat line (C++ setBasicUnitHelp); without it, the numbers.
+      kind === "UnitType" && !e.effects ? h("div.tip-stats", markup(unitStats(e))) : null,
       does ? h("div.tip-effects", markup(does)) : null,
       extra,
       e.strategy ? h("div.tip-strategy", markup(e.strategy)) : null,

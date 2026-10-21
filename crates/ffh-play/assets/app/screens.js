@@ -214,6 +214,7 @@ export function newGame({ dismissible = true } = {}) {
     about.replaceChildren(
       l?.help ? h("div.ng-leader", markup(l.help)) : h("div.dim", c ? "A random leader of this civilization." : "A random civilization and leader."),
       c?.help ? h("div.ng-civ", markup(c.help)) : null,
+      c?.pedia ? h("details.ng-pedia", h("summary", "From the Civilopedia"), h("div", markup(c.pedia))) : null,
     );
   };
   civ.addEventListener("change", () => (fillLeaders(), showAbout()));

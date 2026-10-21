@@ -211,6 +211,27 @@ mod tests {
         assert_eq!(fill("%s1_Name_ and", &[Arg::S("X")]), "X_ and");
     }
 
+    /// Every help text of every table reads as text: no unfilled placeholder (`%s1`, `%D2`, ...), no
+    /// text key, no plural form left, no leading line break.
+    #[test]
+    fn every_help_text_is_filled() {
+        let d = ffh_data::global();
+        let mut n = 0;
+        for k in crate::names::KINDS {
+            for i in 0..(k.count)(d) {
+                let Some(t) = effects_of(d, k.kind, i) else { continue };
+                let at = format!("{} {}: {t}", k.kind, (k.name)(d, i));
+                let placeholder = t.as_bytes().windows(3).any(|w| w[0] == b'%' && matches!(w[1], b's' | b'd' | b'D' | b'F') && w[2].is_ascii_digit());
+                assert!(!placeholder, "an unfilled placeholder in {at}");
+                assert!(!t.contains("TXT_KEY_"), "a text key in {at}");
+                assert!(!t.contains("[NUM"), "a plural form in {at}");
+                assert!(!t.starts_with(NEWLINE), "a leading line break in {at}");
+                n += 1;
+            }
+        }
+        assert!(n > 0);
+    }
+
     #[test]
     fn plural_forms_follow_the_number() {
         let t = "[ICON_BULLET]%D1_Change Trade [NUM1:Route:Routes] per City";

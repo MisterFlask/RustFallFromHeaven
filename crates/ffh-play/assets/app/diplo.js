@@ -9,6 +9,8 @@ import * as api from "./api.js";
 import { S, dname, tname, teamName, tradeItemLabel, tradeRefusal, DUAL_ITEMS, me, scoreText, fairShareText } from "./state.js";
 import { h, toast } from "./dom.js";
 import { openModal, ask, closeTag } from "./modals.js";
+import { infoTip } from "./infotips.js";
+import { render as markup } from "./markup.js";
 import { run } from "./commands.js";
 import { leaderPortrait, playerPortrait, PORTRAIT } from "./portraits.js";
 
@@ -31,7 +33,7 @@ export async function openDiplomacy() {
         return h(
           "tr",
           { class: p.alive ? "" : "dead", "data-player": p.id },
-          h("td", h("div.leader-cell", leaderPortrait(p.leader, { size: PORTRAIT.medium }), h("div", h("b", p.name), h("div.dim", `${dname("CivilizationType", p.civ)} · team ${p.team}`)))),
+          h("td", { tip: infoTip("LeaderHeadType", p.leader, { title: p.name }) }, h("div.leader-cell", leaderPortrait(p.leader, { size: PORTRAIT.medium }), h("div", h("b", p.name), h("div.dim", `${dname("CivilizationType", p.civ)} · team ${p.team}`)))),
           h("td", relation.flatMap((x, i) => (i ? [", ", x] : [x]))),
           h("td", { tip: p.attitude !== null ? () => attitudeTip(p) : null }, p.attitude !== null ? dname("AttitudeType", p.attitude) : "-"),
           h("td", p.alignment !== null && p.alignment !== undefined ? dname("AlignmentType", p.alignment) : h("span.dim", "-"), h("div.dim", p.state_religion !== null && p.state_religion !== undefined ? dname("ReligionType", p.state_religion) : "no state religion")),
@@ -74,6 +76,19 @@ function attitudeTip(p) {
   ];
 }
 
+/** The tooltip of a trade item: what a tech brings you, what a resource, civic or religion
+ *  does; null for the others. */
+function itemTip(it, techHelp) {
+  const type = tname("TradeableItem", it.item);
+  const head = h("div.tip-title", tradeItemLabel(it));
+  if (type === "TRADE_TECHNOLOGIES") {
+    const help = techHelp.get(it.data);
+    return help ? [head, h("div.tip-effects", markup(help))] : null;
+  }
+  const kind = { TRADE_RESOURCES: "BonusType", TRADE_CIVIC: "CivicType", TRADE_RELIGION: "ReligionType" }[type];
+  return kind ? infoTip(kind, it.data) : null;
+}
+
 async function declareWar(p) {
   const v = await ask("Declare war?", `Declare war on ${teamName(p.team)}? Their allies may join them.`, [
     { label: "Declare war", value: true, primary: true },
@@ -97,6 +112,13 @@ export async function openTrade(withPlayer, name = null) {
   if (!t.contact) {
     m.setBody(h("p.warn", t.why_not ?? "No contact."));
     return m.done;
+  }
+  // What a tech brings you (the techs query's help, in your context) for the techs on offer.
+  let techHelp = new Map();
+  try {
+    techHelp = new Map((await api.query("techs")).techs.map((x) => [x.tech, x.help]));
+  } catch {
+    /* the tips go without */
   }
   // The deal: per side, the chosen items by key (gold: the amount typed).
   const deal = { give: new Map(), get: new Map() };
@@ -129,7 +151,7 @@ export async function openTrade(withPlayer, name = null) {
               const label = isGold(it) ? `${tradeItemLabel({ ...it, data: 0 })} (up to ${it.max})` : tradeItemLabel(it);
               const row = h(
                 "div.trade-item",
-                { class: on ? "on" : "", "data-item": tname("TradeableItem", it.item), "data-data": it.data },
+                { class: on ? "on" : "", "data-item": tname("TradeableItem", it.item), "data-data": it.data, tip: itemTip(it, techHelp) },
                 h(
                   "button.small",
                   {

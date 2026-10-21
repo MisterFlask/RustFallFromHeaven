@@ -12,6 +12,7 @@ import { plotDistance, plotIndex, humanize } from "./tiles.js";
 import { render as markup } from "./markup.js";
 import { look, iconEl, unitIcon, barEl, pix, typeIcon, promotionIcon, uiIcon } from "./look.js";
 import { isoSkin, isoIcon, actionIcon, portrait, isoBar, focusOn } from "./isoui.js";
+import { effectsOf, infoTip } from "./infotips.js";
 
 /** An 8 px icon of the ui set, or the glyph before the art loaded. */
 const icon8 = (name, glyph, title) => iconEl(`icon8/${name}`, { title }) ?? glyph;
@@ -550,10 +551,13 @@ function showTip() {
   const imp = info("ImprovementType", m.improvement[i]);
   const unique = imp?.unique ? imp : null;
   if (m.bonus[i] >= 0) extra.push(dname("BonusType", m.bonus[i]));
+  // What the resource gives (its help: yields, happiness or health, what improves it).
+  const bonusHelp = m.bonus[i] >= 0 ? effectsOf("BonusType", m.bonus[i]) : "";
   if (m.improvement[i] >= 0 && !unique) extra.push(dname("ImprovementType", m.improvement[i]));
   if (m.route[i] >= 0) extra.push(dname("RouteType", m.route[i]));
   if (m.river[i] > 0 && (m.river[i] & 3)) extra.push("River");
   if (extra.length) lines.push(h("div", extra.join(" · ")));
+  if (bonusHelp) lines.push(h("div.tip-effects.tip-bonus", markup(bonusHelp)));
   if (m.owner[i] >= 0) lines.push(h("div.dim", `Owner: ${playerName(m.owner[i])}`));
   const p = preview.plot;
   // C++ plot help's line (the Ring of Carcer's).
@@ -789,8 +793,10 @@ const SECTIONS = [
 
 /** An action's help text (markup): a spell's, a promotion's, a build's or a mission's. */
 function helpOf(a) {
-  if (a.kind === "spell" && a.help) return a.help;
-  if (a.kind === "promotion") return info("PromotionType", a.promotion)?.help ?? "";
+  // A spell's, promotion's and upgrade's help: the data's `effects` (the server's help texts).
+  if (a.kind === "spell") return effectsOf("SpellType", a.spell) || a.help || "";
+  if (a.kind === "promotion") return effectsOf("PromotionType", a.promotion);
+  if (a.kind === "upgrade") return effectsOf("UnitType", a.unit);
   if (a.kind === "mission" && tname("MissionType", a.mission) === "MISSION_BUILD") return info("BuildType", a.data1)?.help ?? "";
   if (a.kind === "mission") return info("MissionType", a.mission)?.help ?? "";
   if (a.kind === "command") return info("CommandType", a.command)?.help ?? "";
@@ -806,7 +812,7 @@ const LISTED = ["spell", "promotion", "upgrade"];
 
 function actionButton(a) {
   const key = hotkeyOf(a);
-  const help = a.kind === "spell" || a.kind === "promotion" ? helpOf(a) : "";
+  const help = a.kind === "spell" || a.kind === "promotion" || a.kind === "upgrade" ? helpOf(a) : "";
   const extra = a.turns !== undefined ? ` (${turns(a.turns)})` : "";
   if (isoSkin()) return isoAction(a, key, extra);
   const btn = h(
@@ -960,7 +966,7 @@ export function renderPanel() {
   const lead = S.units.get(S.sel.units[0]) ?? own[0];
   const head = h(
     "div.panel-head",
-    lead ? unitIcon(lead.type, ownerLook(lead.owner), { title: dname("UnitType", lead.type) }) : null,
+    lead ? h("span.unit-head", { tip: infoTip("UnitType", lead.type) }, unitIcon(lead.type, ownerLook(lead.owner))) : null,
     h("h3", own.length === 1 ? dname("UnitType", own[0].type) : `${S.sel.units.length} of ${own.length} units`),
     h("span.dim", ` (${x}, ${y})`),
   );
@@ -1008,7 +1014,7 @@ export function renderPanel() {
   // The lead unit's promotions as their seals (docs/ART.md 11.5), with the level as pips.
   const leadDetails = details.get(S.sel.units[0]);
   const seals = look.art && leadDetails?.promotions?.length
-    ? h("div.seals", { title: leadDetails.promotions.map((p) => dname("PromotionType", p)).join(", ") }, leadDetails.promotions.map((p) => promotionIcon(p, { u: isoSkin() ? 2 : 1, title: dname("PromotionType", p) })))
+    ? h("div.seals", leadDetails.promotions.map((p) => h("span.seal", { tip: infoTip("PromotionType", p) }, promotionIcon(p, { u: isoSkin() ? 2 : 1 }))))
     : null;
   if (isoSkin()) return renderCard({ own, r, details, lead, list, seals, tools, status, hint, way, others, x, y, foreign });
   fill(panel, head, hint, way, list, seals, tools, status, actions, others);
@@ -1082,7 +1088,7 @@ export function openPromotions() {
                 "button.option",
                 { disabled: !a.enabled, "data-promotion": a.promotion, onclick: async () => (await doAction(a), m.close("promoted")) },
                 h("span", dname("PromotionType", a.promotion)),
-                info("PromotionType", a.promotion)?.help ? h("small", markup(info("PromotionType", a.promotion).help)) : null,
+                effectsOf("PromotionType", a.promotion) ? h("small", markup(effectsOf("PromotionType", a.promotion))) : null,
               ),
             ),
           )
@@ -1112,7 +1118,7 @@ export function openSpells() {
             "button.option",
             { disabled: !a.enabled, "data-spell": a.spell, onclick: async () => (m.close("cast"), await doAction(a)) },
             h("span", dname("SpellType", a.spell), notes ? h("span.dim", ` (${notes})`) : null, a.enabled ? null : h("span.dim", " — not now")),
-            a.help || e?.help ? h("small", markup(a.help || e.help)) : null,
+            helpOf(a) ? h("small", markup(helpOf(a))) : null,
           );
         }),
       ),

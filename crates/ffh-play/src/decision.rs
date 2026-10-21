@@ -371,7 +371,15 @@ pub fn religion(g: &Game, p: PlayerId, religions: &[ReligionType], advisor: Opti
         kind: DecisionKind::Religion,
         title: "Found a religion".into(),
         text: "Choose the religion to found.".into(),
-        options: religions.iter().map(|&r| DecisionOption::new(names::name(d, r), names::display(d, r))).collect(),
+        options: religions
+            .iter()
+            .map(|&r| {
+                let mut o = DecisionOption::new(names::name(d, r), names::display(d, r));
+                // What it brings (its help: alignment, what it unlocks, its holy city's commerce).
+                o.help = crate::view::help::religion::effects(d, r);
+                o
+            })
+            .collect(),
         advisor: advisor.and_then(|a| religions.iter().position(|&r| r == a)),
         context: DecisionContext::default(),
     }

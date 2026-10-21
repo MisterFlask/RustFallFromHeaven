@@ -22,6 +22,7 @@ import { installIsoFont } from "./isofont.js";
 import { SPRITES } from "./iso/sprites.js";
 import { ISO_TABLES } from "./iso.js";
 import * as api from "./api.js";
+import { infoTip } from "./infotips.js";
 
 /** Whether the skin is on, and the MapView it dresses. */
 export const skin = { on: false, view: null };
@@ -177,7 +178,7 @@ export function actionIcon(a, px = 40) {
 export function portrait(type, owner) {
   const key = skin.view?.iso?.unitKey(type, owner);
   const fig = key ? spriteIcon(key, 96, { cls: "figure" }) : null;
-  return h("div.iso-portrait", { title: dname("UnitType", type) }, fig);
+  return h("div.iso-portrait", { tip: infoTip("UnitType", type) }, fig);
 }
 
 // ---------------------------------------------------------------------------------------------
