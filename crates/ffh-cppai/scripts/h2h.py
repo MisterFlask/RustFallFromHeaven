@@ -6,7 +6,7 @@ odd ones; barbarians stay on ffh-ai), so map and civilization luck cancel out pe
 
   python3 crates/ffh-cppai/scripts/h2h.py --bin $B/ffh --seeds 1-8 --turns 300 [--civs 6]
       [--size WORLDSIZE_STANDARD] [--at 100,200,300] [--jobs 4] [--out runs.json | --load runs.json]
-      [--handicap-cpp HANDICAP_X] [--handicap-ffh HANDICAP_Y]
+      [--handicap-cpp HANDICAP_X] [--handicap-ffh HANDICAP_Y] [--until-supremacy]
 
 Games go through tools/agents/cached-run.sh (run cache + CPU slots; FFH_* variables are part of
 the cache key). Reported per side, at each checkpoint: summed world share (score v2, basis points;
@@ -53,6 +53,8 @@ def run_game(args, seed, cpp_parity):
            '--size', args.size, '--at', args.at]
     for o in args.option:
         cmd += ['--option', o]
+    if args.until_supremacy:
+        cmd += ['--until-supremacy']
     p = subprocess.run(cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     if p.returncode != 0:
         tail = '\n'.join(p.stderr.strip().split('\n')[-15:])
@@ -180,6 +182,7 @@ def main():
     ap.add_argument('--at', default='100,200,300')
     ap.add_argument('--jobs', type=int, default=4)
     ap.add_argument('--option', action='append', default=[])
+    ap.add_argument('--until-supremacy', action='store_true', help='stop a game at clear supremacy (ffh stats)')
     ap.add_argument('--handicap-cpp', default=None, help='HANDICAP_X for the C++ AI slots')
     ap.add_argument('--handicap-ffh', default=None, help='HANDICAP_X for the ffh-ai slots')
     ap.add_argument('--out', default=None)
