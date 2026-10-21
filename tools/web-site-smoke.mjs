@@ -444,6 +444,12 @@ async function main() {
     await until2("!!window.ffhWeb.build", "web/version.txt", 10000);
 
     await newGame();
+    // The plain URL opens the default renderer, now the isometric 2.5D map (docs/ISO.md, look.js).
+    // Switch to the art client in-page (the in-browser engine keeps the game) for the art check.
+    if ((await ev("window.ffh.mapView.renderer()")) !== "iso") throw new Error("the default renderer is not the isometric 2.5D map");
+    steps.push("the default renderer is the isometric 2.5D map");
+    await ev(`window.ffh.setRenderer("art")`);
+    await until2(`window.ffh.mapView.renderer() === "art"`, "the art renderer (switched from the default)");
     await artMap();
     await endTurns(TURNS);
     const turn = await save();
