@@ -1,19 +1,9 @@
 //! Port of CvUnitAI.cpp:41-2953 (FFH2 0.41 C++ AI).
-//!
-//! SIGNATURE NOTES (for the integrator):
-//! - `unit_ai_improve_local_plot(.., ignore_city: CityId)` and
-//!   `unit_ai_next_city_to_improve(.., city: CityId)` (unit_6.rs): C++ passes NULL
-//!   (`AI_improveLocalPlot(3, NULL)`, and `pCity` may be NULL in `AI_workerMove`), and
-//!   `AI_improveLocalPlot` tests `NULL == pIgnoreCity`. Both should take `Option<CityId>`
-//!   (only this file calls them). Until then this file passes [`NULL_CITY`] (an id no city
-//!   has) for NULL: drop the `.unwrap_or(NULL_CITY)` at the call sites once they take an Option.
+
 
 #![allow(unused_variables, unused_mut, unused_imports, clippy::all)]
 
 use crate::prelude::*;
-
-/// Stand-in for a NULL `CvCity*` where a callee takes a plain `CityId` (see SIGNATURE NOTES).
-const NULL_CITY: CityId = CityId(u32::MAX);
 
 /// C++ `getGroup()` of a unit (always set for a live unit).
 fn grp(g: &Game, u: UnitId) -> GroupId {
@@ -1407,7 +1397,7 @@ impl Cai {
             }
         }
 
-        act!(self.unit_ai_improve_local_plot(g, u, 2, city.unwrap_or(NULL_CITY)));
+        act!(self.unit_ai_improve_local_plot(g, u, 2, city));
 
         //FfH: Modified by Kael 11/11/2007 (fort building commented out)
 
@@ -1423,19 +1413,19 @@ impl Cai {
             }
         };
         if needs_next {
-            if let (Some(bp), Some(bb)) = (best_bonus_plot, best_bonus_build) {
+            if let Some(bp) = best_bonus_plot {
                 if best_bonus_value >= 15 {
-                    act!(self.unit_ai_improve_plot(g, u, bp, bb));
+                    act!(self.unit_ai_improve_plot_opt(g, u, bp, best_bonus_build));
                 }
             }
 
-            act!(self.unit_ai_next_city_to_improve(g, u, city.unwrap_or(NULL_CITY)));
+            act!(self.unit_ai_next_city_to_improve(g, u, city));
 
             next_city = true;
         }
 
-        if let (Some(bp), Some(bb)) = (best_bonus_plot, best_bonus_build) {
-            act!(self.unit_ai_improve_plot(g, u, bp, bb));
+        if let Some(bp) = best_bonus_plot {
+            act!(self.unit_ai_improve_plot_opt(g, u, bp, best_bonus_build));
         }
 
         if let Some(c) = city.filter(|&c| g.cities.contains(c)) {
@@ -1443,7 +1433,7 @@ impl Cai {
         }
 
         if !next_city {
-            act!(self.unit_ai_next_city_to_improve(g, u, city.unwrap_or(NULL_CITY)));
+            act!(self.unit_ai_next_city_to_improve(g, u, city));
         }
 
         if can_route {
@@ -1470,7 +1460,7 @@ impl Cai {
             // TEMPFIX Sephi: AI_load(UNITAI_SETTLER_SEA, ..) commented out.
         }
 
-        act!(self.unit_ai_improve_local_plot(g, u, 3, NULL_CITY));
+        act!(self.unit_ai_improve_local_plot(g, u, 3, None));
 
         // BETTER AI (stop AI from deleting workers) Sephi: the scrap block is commented out.
 
