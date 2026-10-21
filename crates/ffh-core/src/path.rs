@@ -56,6 +56,7 @@
 //! Efficiency: node storage is allocated once per map (`initialize`); a search only resets the
 //! nodes the previous search touched; the open list is a binary heap with lazy deletion.
 
+use std::cell::Cell;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 
@@ -336,7 +337,8 @@ impl PathFinder {
             FinderKind::Path => {
                 // C++ dereferences the SetData pointer in every callback.
                 let group = self.group.expect("FAStar path finder: SetData (selection group) not set");
-                self.search(&PathCallbacks { g, group }, start_x, start_y, dest_x, dest_y, cardinal_only, info, reuse, Some(group))
+                let sea = g.group_get_domain_type(group) == Some(DomainType::DOMAIN_SEA);
+                self.search(&PathCallbacks { g, group, sea, from_memo: Cell::new(None) }, start_x, start_y, dest_x, dest_y, cardinal_only, info, reuse, Some(group))
             }
             FinderKind::Step => self.search(&StepCallbacks { g }, start_x, start_y, dest_x, dest_y, cardinal_only, info, reuse, None),
             FinderKind::Route => self.search(&RouteCallbacks { g }, start_x, start_y, dest_x, dest_y, cardinal_only, info, reuse, None),
@@ -699,6 +701,19 @@ fn parent_and_child(nodes: &mut [PathNode], p: usize, c: usize) -> (&PathNode, &
 struct PathCallbacks<'a> {
     g: &'a Game,
     group: GroupId,
+    /// The last [`Game::path_valid_from`] result, keyed by the parent's (x, y, data1, data2).
+    /// `expand` asks `Valid(parent, child)` for the up to 8 children of one parent in a row, and
+    /// that part of pathValid reads only the parent's plot, `data1` and `data2` (which change
+    /// when a node is re-parented: hence the key), the group, the finder info and the game. The
+    /// group and the info are fixed for one `generate_path`, and the game cannot change during
+    /// it: `path_valid_from` reaches none of the state a `&Game` call can write (the path
+    /// finders, `Player::ai_bonus_value`, the city rank caches; a change that lets it must drop
+    /// this memo). A new `PathCallbacks` is built for every `generate_path`, so nothing is kept
+    /// across searches.
+    from_memo: Cell<Option<((i32, i32, i32, i32), bool)>>,
+    /// `group_get_domain_type(group) == DOMAIN_SEA` (fixed during one search): only sea groups
+    /// have a step test ([`Game::path_valid_step`] is true for the others).
+    sea: bool,
 }
 
 impl FinderCallbacks for PathCallbacks<'_> {
@@ -715,7 +730,22 @@ impl FinderCallbacks for PathCallbacks<'_> {
     }
 
     fn valid(&self, ctx: &FinderCtx, parent: Option<&PathNode>, node: &PathNode) -> bool {
-        self.g.path_valid(parent, node, 0, self.group, ctx)
+        // `Game::path_valid`, with its parent-only part memoized (see `from_memo`).
+        let Some(parent) = parent else {
+            return true;
+        };
+        if self.sea && !self.g.path_valid_step(parent, node, self.group) {
+            return false;
+        }
+        let key = (parent.x, parent.y, parent.data1, parent.data2);
+        if let Some((k, v)) = self.from_memo.get() {
+            if k == key {
+                return v;
+            }
+        }
+        let v = self.g.path_valid_from(parent, self.group, ctx);
+        self.from_memo.set(Some((key, v)));
+        v
     }
 
     fn notify_child(&self, ctx: &FinderCtx, parent: Option<&PathNode>, node: &mut PathNode, data: i32) {
@@ -1092,11 +1122,18 @@ impl Game {
     }
 
     /// C++ `pathValid(parent, node, data, pointer = group, finder)` (`parent` NULL = start node).
+    /// Split in two pure halves: [`Self::path_valid_step`] (the only test that reads `node`) and
+    /// [`Self::path_valid_from`] (everything else, a function of the parent alone), so the path
+    /// finder can evaluate the second once per expanded parent.
     pub fn path_valid(&self, parent: Option<&PathNode>, node: &PathNode, _data: i32, group: GroupId, finder: &FinderCtx) -> bool {
         let Some(parent) = parent else {
             return true;
         };
+        self.path_valid_step(parent, node, group) && self.path_valid_from(parent, group, finder)
+    }
 
+    /// The step test of C++ `pathValid`: sea groups cannot cut a diagonal between two land plots.
+    pub fn path_valid_step(&self, parent: &PathNode, node: &PathNode, group: GroupId) -> bool {
         let from_plot = self.map.plot_soren(parent.x, parent.y).expect("pathValid: FromPlot");
         let to_plot = self.map.plot_soren(node.x, node.y).expect("pathValid: ToPlot");
 
@@ -1110,6 +1147,13 @@ impl Game {
                 }
             }
         }
+        true
+    }
+
+    /// The rest of C++ `pathValid` (after the step test): leaving the parent's plot (danger,
+    /// territory flags, moving through it). Reads only `parent` (plot, `data1`, `data2`).
+    pub fn path_valid_from(&self, parent: &PathNode, group: GroupId, finder: &FinderCtx) -> bool {
+        let from_plot = self.map.plot_soren(parent.x, parent.y).expect("pathValid: FromPlot");
 
         if self.group_at_plot(group, Some(from_plot)) {
             return true;
