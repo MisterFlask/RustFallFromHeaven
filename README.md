@@ -5,7 +5,7 @@ the rules engine is ported function by function from the mod's C++ DLL and rules
 the AI is new. Base mod only; no UI (headless runner).
 
 Play in the browser, nothing to install: https://misterflask.github.io/RustFallFromHeaven/
-(the browser client with the engine compiled to WebAssembly, rebuilt from master; `docs/WEB.md`).
+(the browser client with the engine compiled to WebAssembly, rebuilt from master by GitHub Actions; `docs/WEB.md`).
 
 ## Why
 
