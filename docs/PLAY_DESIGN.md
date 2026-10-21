@@ -709,7 +709,7 @@ Size is about 1–1.5 MB, cached by ETag.
   * vassal and capitulation flows;
   * colony split;
   * cancelling deals (`deal_kill`; nice to have).
-* **Full help texts** (`CvGameTextMgr` is not ported). The MVP shows XML Help, Strategy and Pedia text plus raw stats and the inspector.
+* **Help texts in a city's or a unit's context.** The static help of every table is ported (`src/view/help/`, docs/HUMAN.md "Help."), and the tech help reads the player; a building's or project's numbers in a given city (`setBuildingHelp` with `pCity`) and a given unit's help (`setUnitHelp` with a unit) are not ported (the unit panel shows a unit's own numbers).
 * **Advanced start; less common interface modes:** range attack, air strike, recon, paradrop, airlift, nuke. Also espionage (locked off), scenarios, worldbuilder, hot seat, network play.
 * **Presentation:** watching AI moves (never through SHOW_*), sounds, art, graphs, replays, the victory progress screen beyond scores, and localization.
 * **Spectator mode** (an AI-only game with a god view and pause/step) is phase 6 optional.
@@ -1140,7 +1140,7 @@ All run with `cargo test --release -p ffh-play`. None needs node or the network.
 | **Automation and FfH AI-controlled units idle** (F15). | Automation is hidden; an "AI-controlled units idle" warning is shown; phase-7 request to ffh-ai (also the fallback "improve the AI" task). |
 | **No AI-initiated diplomacy**: a human at war must propose peace. | `propose_deal` with a peace treaty; the `consider_offer` modal is already wired. |
 | **About 4.6k lines of hand-written JS**, checked by agents only headless (F21). | The engine computes everything (legal actions, odds, turns, fog), so the client is a renderer. ES modules with one concern each; node syntax and pure-module tests; a node smoke client; a headless-Chromium smoke test with screenshots (console errors fail it); the JSONL agent exposes the same capabilities for headless verification; `--assets` live-edit mode for the human tester. |
-| **Thin messages and help** (F14; `CvGameTextMgr` not ported). | Diff-based turn report; event effect summaries; XML help and pedia texts; inspector. Add `log.msg` sites upstream incrementally (no rules effect). |
+| **Thin messages** (F14). | Diff-based turn report; event effect summaries; the help texts (`src/view/help/`, ports of `CvGameTextMgr`'s static help); inspector. Add `log.msg` sites upstream incrementally (no rules effect). |
 | **Settle or auto-moves spinning on a stuck group.** | `settle` capped at 10k slices; AutoMoves at most once per control episode; the 200k-slice watchdog with ffh-cli-style diagnostics. |
 | **Fog leaks** (global log lines; views built mid-rules). | A single `fog.rs`; the log filter applies each untagged message's C++ recipient condition and holds back the unrecognized ones (§4.4); T8; debug-reveal is explicit and visibly marked. |
 | **Security of a local server.** | Binds 127.0.0.1 by default; `X-FFH` header against cross-site POSTs; sanitized save names; `Content-Length` bodies only. |

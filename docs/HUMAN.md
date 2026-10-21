@@ -239,7 +239,18 @@ player options); the raw request box.
 The help texts are written by the server from the rules' tables (`src/view/help/`, ports of
 C++ `CvGameTextMgr`): what a tech brings you (`setTechHelp`, with your own units and buildings and
 only what you cannot do yet), what a civilization, a leader and a trait bring (`parseCivInfos`,
-`parseLeaderTraits`, `parseTraits`). Built from the data, they follow the rules as they change.
+`parseLeaderTraits`, `parseTraits`), and what every building, unit, promotion, spell, civic,
+religion, project, specialist, process and resource does and requires (`setBuildingHelp` with
+`buildBuildingRequiresString`, `setBasicUnitHelp` with `setUnitHelp`, `parsePromotionHelp`,
+`parseSpellHelp`, `parseCivicInfo`, `setReligionHelp`, `setProjectHelp`, `parseSpecialistHelp`,
+`setProcessHelp`, `setBonusHelp`). Those are static: what the type does anywhere, as the
+Civilopedia says it, not what it would add in a given city. Where FFH2's help says nothing
+of a rule the game checks (a building's religion or coast, a religion's alignment and what it
+unlocks, a resource's affinities), ffh-play adds the line. Every field of every table is either
+described or listed as not shown, so a new field cannot go unsaid. Built from the data, they
+follow the rules as they change. Each appears wherever its type does: the build list and the
+buildings of a city, the unit panel's actions, the promotions and spells dialogs, the civics and
+religion screens, the trade table, the map's resources.
 
 **Spectating.** Tools → Spectate (or "Spectate" in the new-game screen) lets the AI play every
 civilization, yours too, one turn at a time with the whole map shown: the top bar has Pause,
