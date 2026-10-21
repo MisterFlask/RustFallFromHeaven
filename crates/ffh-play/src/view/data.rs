@@ -2,8 +2,9 @@
 //! GlobalTypes list and hard-coded C++ enum of [`crate::names::KINDS`]), indexed like the
 //! protocol's type indices. Each entry is `{type, name}`; info-table entries add the help,
 //! strategy and pedia texts (Civ4 markup kept, `null` when the text is missing) and the
-//! gameplay fields the renderer and the screens need for the main tables (unique improvements add
-//! their `effects`, [`crate::view::improvement_help`]). Built once.
+//! gameplay fields the renderer and the screens need for the main tables, and `effects`: what an
+//! entry does, as Civ4 markup ([`crate::view::help::effects_of`]; unique improvements:
+//! [`crate::view::improvement_help`]). Built once.
 
 use std::sync::OnceLock;
 
@@ -158,6 +159,10 @@ fn build(d: &GameData) -> Json {
                 j.set("pedia", text(d, &base.civilopedia));
             }
             fields(d, k.kind, i, &mut j);
+            // What it does (the help texts, `view::help`); the unique improvements set theirs above.
+            if let Some(e) = crate::view::help::effects_of(d, k.kind, i) {
+                j.set("effects", e);
+            }
             if let Some((_, a)) = keys.iter().find(|(t, _)| t == name) {
                 j.set("keys", Json::Arr(a.bindings.iter().map(crate::view::hotkeys::Binding::to_json).collect()));
                 j.set("order", a.order);

@@ -11,9 +11,22 @@
 //!   context: its own units and buildings, only what it cannot do yet).
 //! * [`civ`]: what a civilization, a leader and a trait bring (C++ `parseCivInfos`,
 //!   `parseLeaderTraits`, `parseTraits`; the new-game screen).
+//! * The static help of the info tables, sent as `effects` with the data ([`effects_of`]):
+//!   [`building`], [`unit`], [`promotion`], [`spell`], [`civic`], [`religion`], [`project`],
+//!   [`specialist`], [`process`], [`bonus`], and [`civ`]'s traits, leaders and civilizations.
 
+pub mod bonus;
+pub mod building;
 pub mod civ;
+pub mod civic;
+pub mod process;
+pub mod project;
+pub mod promotion;
+pub mod religion;
+pub mod specialist;
+pub mod spell;
 pub mod tech;
+pub mod unit;
 
 use ffh_data::*;
 
@@ -23,6 +36,31 @@ use crate::names;
 pub(crate) enum Arg<'a> {
     N(i32),
     S(&'a str),
+}
+
+/// The static help of entry `i` of table `kind` (a `names::KINDS` kind, `BuildingType`, ...): what
+/// it does, as Civ4 markup; None for a kind without help or an entry with nothing to say.
+pub fn effects_of(d: &GameData, kind: &str, i: usize) -> Option<String> {
+    let t = match kind {
+        "BuildingType" => building::effects(d, BuildingType::from_usize(i)),
+        "UnitType" => unit::effects(d, UnitType::from_usize(i)),
+        "PromotionType" => promotion::effects(d, PromotionType::from_usize(i)),
+        "SpellType" => spell::effects(d, SpellType::from_usize(i)),
+        "CivicType" => civic::effects(d, CivicType::from_usize(i)),
+        "ReligionType" => religion::effects(d, ReligionType::from_usize(i)),
+        "ProjectType" => project::effects(d, ProjectType::from_usize(i)),
+        "SpecialistType" => specialist::effects(d, SpecialistType::from_usize(i)),
+        "ProcessType" => process::effects(d, ProcessType::from_usize(i)),
+        "BonusType" => bonus::effects(d, BonusType::from_usize(i)),
+        "TraitType" => civ::trait_help(d, TraitType::from_usize(i), None),
+        "CivilizationType" => civ::civ_help(d, CivilizationType::from_usize(i)),
+        "LeaderHeadType" => {
+            let l = LeaderHeadType::from_usize(i);
+            civ::leader_help(d, l, d.civilizations.keys().find(|&c| d.civilizations[c].leaders[l]))
+        }
+        _ => return None,
+    };
+    (!t.is_empty()).then_some(t)
 }
 
 /// Civ4 `getText` placeholders: `%d1` (a number), `%D1` (a number with its sign), `%s1` and
