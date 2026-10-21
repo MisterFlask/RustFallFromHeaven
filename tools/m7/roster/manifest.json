@@ -6484,5 +6484,689 @@
   "anchors": [
    "anchors/anchor_ui.png"
   ]
+ },
+ "leader_sabathiel": {
+  "kind": "leader_portrait",
+  "file": "leaders/leader_sabathiel.png",
+  "size": [
+   160,
+   160
+  ],
+  "pixel": 2,
+  "art": 80,
+  "round": "r1",
+  "variant": "1",
+  "gen_size": "1024x1024",
+  "prompt": "prompts/assets/leader_sabathiel.txt",
+  "anchors": [
+   "anchors/anchor_ui.png",
+   "anchors/anchor_portrait.png"
+  ]
+ },
+ "leader_capria": {
+  "kind": "leader_portrait",
+  "file": "leaders/leader_capria.png",
+  "size": [
+   160,
+   160
+  ],
+  "pixel": 2,
+  "art": 80,
+  "round": "r1",
+  "variant": "2",
+  "gen_size": "1024x1024",
+  "prompt": "prompts/assets/leader_capria.txt",
+  "anchors": [
+   "anchors/anchor_ui.png",
+   "anchors/anchor_portrait.png"
+  ]
+ },
+ "leader_decius": {
+  "kind": "leader_portrait",
+  "file": "leaders/leader_decius.png",
+  "size": [
+   160,
+   160
+  ],
+  "pixel": 2,
+  "art": 80,
+  "round": "r1",
+  "variant": "2",
+  "gen_size": "1024x1024",
+  "prompt": "prompts/assets/leader_decius.txt",
+  "anchors": [
+   "anchors/anchor_ui.png",
+   "anchors/anchor_portrait.png"
+  ]
+ },
+ "leader_varn": {
+  "kind": "leader_portrait",
+  "file": "leaders/leader_varn.png",
+  "size": [
+   160,
+   160
+  ],
+  "pixel": 2,
+  "art": 80,
+  "round": "r1",
+  "variant": "1",
+  "gen_size": "1024x1024",
+  "prompt": "prompts/assets/leader_varn.txt",
+  "anchors": [
+   "anchors/anchor_ui.png",
+   "anchors/anchor_portrait.png"
+  ]
+ },
+ "leader_ethne": {
+  "kind": "leader_portrait",
+  "file": "leaders/leader_ethne.png",
+  "size": [
+   160,
+   160
+  ],
+  "pixel": 2,
+  "art": 80,
+  "round": "r1",
+  "variant": "1",
+  "gen_size": "1024x1024",
+  "prompt": "prompts/assets/leader_ethne.txt",
+  "anchors": [
+   "anchors/anchor_ui.png",
+   "anchors/anchor_portrait.png"
+  ]
+ },
+ "leader_basium": {
+  "kind": "leader_portrait",
+  "file": "leaders/leader_basium.png",
+  "size": [
+   160,
+   160
+  ],
+  "pixel": 2,
+  "art": 80,
+  "round": "r1",
+  "variant": "1",
+  "gen_size": "1024x1024",
+  "prompt": "prompts/assets/leader_basium.txt",
+  "anchors": [
+   "anchors/anchor_ui.png",
+   "anchors/anchor_portrait.png"
+  ]
+ },
+ "leader_amelanchier": {
+  "kind": "leader_portrait",
+  "file": "leaders/leader_amelanchier.png",
+  "size": [
+   160,
+   160
+  ],
+  "pixel": 2,
+  "art": 80,
+  "round": "r1",
+  "variant": "1",
+  "gen_size": "1024x1024",
+  "prompt": "prompts/assets/leader_amelanchier.txt",
+  "anchors": [
+   "anchors/anchor_ui.png",
+   "anchors/anchor_portrait.png"
+  ]
+ },
+ "leader_keelyn": {
+  "kind": "leader_portrait",
+  "file": "leaders/leader_keelyn.png",
+  "size": [
+   160,
+   160
+  ],
+  "pixel": 2,
+  "art": 80,
+  "round": "r1",
+  "variant": "1",
+  "gen_size": "1024x1024",
+  "prompt": "prompts/assets/leader_keelyn.txt",
+  "anchors": [
+   "anchors/anchor_ui.png",
+   "anchors/anchor_portrait.png"
+  ]
+ },
+ "leader_perpentach": {
+  "kind": "leader_portrait",
+  "file": "leaders/leader_perpentach.png",
+  "size": [
+   160,
+   160
+  ],
+  "pixel": 2,
+  "art": 80,
+  "round": "r1",
+  "variant": "1",
+  "gen_size": "1024x1024",
+  "prompt": "prompts/assets/leader_perpentach.txt",
+  "anchors": [
+   "anchors/anchor_ui.png",
+   "anchors/anchor_portrait.png"
+  ]
+ },
+ "leader_jonas": {
+  "kind": "leader_portrait",
+  "file": "leaders/leader_jonas.png",
+  "size": [
+   160,
+   160
+  ],
+  "pixel": 2,
+  "art": 80,
+  "round": "r1",
+  "variant": "2",
+  "gen_size": "1024x1024",
+  "prompt": "prompts/assets/leader_jonas.txt",
+  "anchors": [
+   "anchors/anchor_ui.png",
+   "anchors/anchor_portrait.png"
+  ]
+ },
+ "leader_sheelba": {
+  "kind": "leader_portrait",
+  "file": "leaders/leader_sheelba.png",
+  "size": [
+   160,
+   160
+  ],
+  "pixel": 2,
+  "art": 80,
+  "round": "r1",
+  "variant": "1",
+  "gen_size": "1024x1024",
+  "prompt": "prompts/assets/leader_sheelba.txt",
+  "anchors": [
+   "anchors/anchor_ui.png",
+   "anchors/anchor_portrait.png"
+  ]
+ },
+ "leader_flauros": {
+  "kind": "leader_portrait",
+  "file": "leaders/leader_flauros.png",
+  "size": [
+   160,
+   160
+  ],
+  "pixel": 2,
+  "art": 80,
+  "round": "r1",
+  "variant": "1",
+  "gen_size": "1024x1024",
+  "prompt": "prompts/assets/leader_flauros.txt",
+  "anchors": [
+   "anchors/anchor_ui.png",
+   "anchors/anchor_portrait.png"
+  ]
+ },
+ "leader_arturus": {
+  "kind": "leader_portrait",
+  "file": "leaders/leader_arturus.png",
+  "size": [
+   160,
+   160
+  ],
+  "pixel": 2,
+  "art": 80,
+  "round": "r1",
+  "variant": "1",
+  "gen_size": "1024x1024",
+  "prompt": "prompts/assets/leader_arturus.txt",
+  "anchors": [
+   "anchors/anchor_ui.png",
+   "anchors/anchor_portrait.png"
+  ]
+ },
+ "leader_sandalphon": {
+  "kind": "leader_portrait",
+  "file": "leaders/leader_sandalphon.png",
+  "size": [
+   160,
+   160
+  ],
+  "pixel": 2,
+  "art": 80,
+  "round": "r1",
+  "variant": "1",
+  "gen_size": "1024x1024",
+  "prompt": "prompts/assets/leader_sandalphon.txt",
+  "anchors": [
+   "anchors/anchor_ui.png",
+   "anchors/anchor_portrait.png"
+  ]
+ },
+ "leader_arendel": {
+  "kind": "leader_portrait",
+  "file": "leaders/leader_arendel.png",
+  "size": [
+   160,
+   160
+  ],
+  "pixel": 2,
+  "art": 80,
+  "round": "r1",
+  "variant": "1",
+  "gen_size": "1024x1024",
+  "prompt": "prompts/assets/leader_arendel.txt",
+  "anchors": [
+   "anchors/anchor_ui.png",
+   "anchors/anchor_portrait.png"
+  ]
+ },
+ "leader_auric": {
+  "kind": "leader_portrait",
+  "file": "leaders/leader_auric.png",
+  "size": [
+   160,
+   160
+  ],
+  "pixel": 2,
+  "art": 80,
+  "round": "r1",
+  "variant": "1",
+  "gen_size": "1024x1024",
+  "prompt": "prompts/assets/leader_auric.txt",
+  "anchors": [
+   "anchors/anchor_ui.png",
+   "anchors/anchor_portrait.png"
+  ]
+ },
+ "leader_barbarian": {
+  "kind": "leader_portrait",
+  "file": "leaders/leader_barbarian.png",
+  "size": [
+   160,
+   160
+  ],
+  "pixel": 2,
+  "art": 80,
+  "round": "r1",
+  "variant": "1",
+  "gen_size": "1024x1024",
+  "prompt": "prompts/assets/leader_barbarian.txt",
+  "anchors": [
+   "anchors/anchor_ui.png",
+   "anchors/anchor_portrait.png"
+  ]
+ },
+ "leader_beeri": {
+  "kind": "leader_portrait",
+  "file": "leaders/leader_beeri.png",
+  "size": [
+   160,
+   160
+  ],
+  "pixel": 2,
+  "art": 80,
+  "round": "r1",
+  "variant": "1",
+  "gen_size": "1024x1024",
+  "prompt": "prompts/assets/leader_beeri.txt",
+  "anchors": [
+   "anchors/anchor_ui.png",
+   "anchors/anchor_portrait.png"
+  ]
+ },
+ "leader_cassiel": {
+  "kind": "leader_portrait",
+  "file": "leaders/leader_cassiel.png",
+  "size": [
+   160,
+   160
+  ],
+  "pixel": 2,
+  "art": 80,
+  "round": "r1",
+  "variant": "1",
+  "gen_size": "1024x1024",
+  "prompt": "prompts/assets/leader_cassiel.txt",
+  "anchors": [
+   "anchors/anchor_ui.png",
+   "anchors/anchor_portrait.png"
+  ]
+ },
+ "leader_falamar": {
+  "kind": "leader_portrait",
+  "file": "leaders/leader_falamar.png",
+  "size": [
+   160,
+   160
+  ],
+  "pixel": 2,
+  "art": 80,
+  "round": "r1",
+  "variant": "1",
+  "gen_size": "1024x1024",
+  "prompt": "prompts/assets/leader_falamar.txt",
+  "anchors": [
+   "anchors/anchor_ui.png",
+   "anchors/anchor_portrait.png"
+  ]
+ },
+ "leader_os_gabella": {
+  "kind": "leader_portrait",
+  "file": "leaders/leader_os_gabella.png",
+  "size": [
+   160,
+   160
+  ],
+  "pixel": 2,
+  "art": 80,
+  "round": "r1",
+  "variant": "1",
+  "gen_size": "1024x1024",
+  "prompt": "prompts/assets/leader_os_gabella.txt",
+  "anchors": [
+   "anchors/anchor_ui.png",
+   "anchors/anchor_portrait.png"
+  ]
+ },
+ "leader_tebryn": {
+  "kind": "leader_portrait",
+  "file": "leaders/leader_tebryn.png",
+  "size": [
+   160,
+   160
+  ],
+  "pixel": 2,
+  "art": 80,
+  "round": "r1",
+  "variant": "1",
+  "gen_size": "1024x1024",
+  "prompt": "prompts/assets/leader_tebryn.txt",
+  "anchors": [
+   "anchors/anchor_ui.png",
+   "anchors/anchor_portrait.png"
+  ]
+ },
+ "leader_hyborem": {
+  "kind": "leader_portrait",
+  "file": "leaders/leader_hyborem.png",
+  "size": [
+   160,
+   160
+  ],
+  "pixel": 2,
+  "art": 80,
+  "round": "r1",
+  "variant": "1",
+  "gen_size": "1024x1024",
+  "prompt": "prompts/assets/leader_hyborem.txt",
+  "anchors": [
+   "anchors/anchor_ui.png",
+   "anchors/anchor_portrait.png"
+  ]
+ },
+ "leader_rhoanna": {
+  "kind": "leader_portrait",
+  "file": "leaders/leader_rhoanna.png",
+  "size": [
+   160,
+   160
+  ],
+  "pixel": 2,
+  "art": 80,
+  "round": "r1",
+  "variant": "2",
+  "gen_size": "1024x1024",
+  "prompt": "prompts/assets/leader_rhoanna.txt",
+  "anchors": [
+   "anchors/anchor_ui.png",
+   "anchors/anchor_portrait.png"
+  ]
+ },
+ "leader_tasunke": {
+  "kind": "leader_portrait",
+  "file": "leaders/leader_tasunke.png",
+  "size": [
+   160,
+   160
+  ],
+  "pixel": 2,
+  "art": 80,
+  "round": "r1",
+  "variant": "2",
+  "gen_size": "1024x1024",
+  "prompt": "prompts/assets/leader_tasunke.txt",
+  "anchors": [
+   "anchors/anchor_ui.png",
+   "anchors/anchor_portrait.png"
+  ]
+ },
+ "leader_random": {
+  "kind": "leader_portrait",
+  "file": "leaders/leader_random.png",
+  "size": [
+   160,
+   160
+  ],
+  "pixel": 2,
+  "art": 80,
+  "round": "r1",
+  "variant": "1",
+  "gen_size": "1024x1024",
+  "prompt": "prompts/assets/leader_random.txt",
+  "anchors": [
+   "anchors/anchor_ui.png",
+   "anchors/anchor_portrait.png"
+  ]
+ },
+ "leader_hannah": {
+  "kind": "leader_portrait",
+  "file": "leaders/leader_hannah.png",
+  "size": [
+   160,
+   160
+  ],
+  "pixel": 2,
+  "art": 80,
+  "round": "r1",
+  "variant": "3",
+  "gen_size": "1024x1024",
+  "prompt": "prompts/assets/leader_hannah.txt",
+  "anchors": [
+   "anchors/anchor_ui.png",
+   "anchors/anchor_portrait.png"
+  ]
+ },
+ "leader_valledia": {
+  "kind": "leader_portrait",
+  "file": "leaders/leader_valledia.png",
+  "size": [
+   160,
+   160
+  ],
+  "pixel": 2,
+  "art": 80,
+  "round": "r1",
+  "variant": "3",
+  "gen_size": "1024x1024",
+  "prompt": "prompts/assets/leader_valledia.txt",
+  "anchors": [
+   "anchors/anchor_ui.png",
+   "anchors/anchor_portrait.png"
+  ]
+ },
+ "leader_dain": {
+  "kind": "leader_portrait",
+  "file": "leaders/leader_dain.png",
+  "size": [
+   160,
+   160
+  ],
+  "pixel": 2,
+  "art": 80,
+  "round": "r1",
+  "variant": "1",
+  "gen_size": "1024x1024",
+  "prompt": "prompts/assets/leader_dain.txt",
+  "anchors": [
+   "anchors/anchor_ui.png",
+   "anchors/anchor_portrait.png"
+  ]
+ },
+ "leader_charadon": {
+  "kind": "leader_portrait",
+  "file": "leaders/leader_charadon.png",
+  "size": [
+   160,
+   160
+  ],
+  "pixel": 2,
+  "art": 80,
+  "round": "r1",
+  "variant": "1",
+  "gen_size": "1024x1024",
+  "prompt": "prompts/assets/leader_charadon.txt",
+  "anchors": [
+   "anchors/anchor_ui.png",
+   "anchors/anchor_portrait.png"
+  ]
+ },
+ "leader_mahala": {
+  "kind": "leader_portrait",
+  "file": "leaders/leader_mahala.png",
+  "size": [
+   160,
+   160
+  ],
+  "pixel": 2,
+  "art": 80,
+  "round": "r1",
+  "variant": "1",
+  "gen_size": "1024x1024",
+  "prompt": "prompts/assets/leader_mahala.txt",
+  "anchors": [
+   "anchors/anchor_ui.png",
+   "anchors/anchor_portrait.png"
+  ]
+ },
+ "leader_alexis": {
+  "kind": "leader_portrait",
+  "file": "leaders/leader_alexis.png",
+  "size": [
+   160,
+   160
+  ],
+  "pixel": 2,
+  "art": 80,
+  "round": "r2",
+  "variant": "1",
+  "gen_size": "1024x1024",
+  "prompt": "prompts/assets/leader_alexis.txt",
+  "anchors": [
+   "anchors/anchor_ui.png",
+   "anchors/anchor_portrait.png"
+  ]
+ },
+ "leader_cardith": {
+  "kind": "leader_portrait",
+  "file": "leaders/leader_cardith.png",
+  "size": [
+   160,
+   160
+  ],
+  "pixel": 2,
+  "art": 80,
+  "round": "r1",
+  "variant": "1",
+  "gen_size": "1024x1024",
+  "prompt": "prompts/assets/leader_cardith.txt",
+  "anchors": [
+   "anchors/anchor_ui.png",
+   "anchors/anchor_portrait.png"
+  ]
+ },
+ "leader_einion": {
+  "kind": "leader_portrait",
+  "file": "leaders/leader_einion.png",
+  "size": [
+   160,
+   160
+  ],
+  "pixel": 2,
+  "art": 80,
+  "round": "r1",
+  "variant": "1",
+  "gen_size": "1024x1024",
+  "prompt": "prompts/assets/leader_einion.txt",
+  "anchors": [
+   "anchors/anchor_ui.png",
+   "anchors/anchor_portrait.png"
+  ]
+ },
+ "leader_faeryl": {
+  "kind": "leader_portrait",
+  "file": "leaders/leader_faeryl.png",
+  "size": [
+   160,
+   160
+  ],
+  "pixel": 2,
+  "art": 80,
+  "round": "r1",
+  "variant": "3",
+  "gen_size": "1024x1024",
+  "prompt": "prompts/assets/leader_faeryl.txt",
+  "anchors": [
+   "anchors/anchor_ui.png",
+   "anchors/anchor_portrait.png"
+  ]
+ },
+ "leader_garrim": {
+  "kind": "leader_portrait",
+  "file": "leaders/leader_garrim.png",
+  "size": [
+   160,
+   160
+  ],
+  "pixel": 2,
+  "art": 80,
+  "round": "r1",
+  "variant": "2",
+  "gen_size": "1024x1024",
+  "prompt": "prompts/assets/leader_garrim.txt",
+  "anchors": [
+   "anchors/anchor_ui.png",
+   "anchors/anchor_portrait.png"
+  ]
+ },
+ "leader_kandros": {
+  "kind": "leader_portrait",
+  "file": "leaders/leader_kandros.png",
+  "size": [
+   160,
+   160
+  ],
+  "pixel": 2,
+  "art": 80,
+  "round": "r1",
+  "variant": "1",
+  "gen_size": "1024x1024",
+  "prompt": "prompts/assets/leader_kandros.txt",
+  "anchors": [
+   "anchors/anchor_ui.png",
+   "anchors/anchor_portrait.png"
+  ]
+ },
+ "leader_thessa": {
+  "kind": "leader_portrait",
+  "file": "leaders/leader_thessa.png",
+  "size": [
+   160,
+   160
+  ],
+  "pixel": 2,
+  "art": 80,
+  "round": "r1",
+  "variant": "2",
+  "gen_size": "1024x1024",
+  "prompt": "prompts/assets/leader_thessa.txt",
+  "anchors": [
+   "anchors/anchor_ui.png",
+   "anchors/anchor_portrait.png"
+  ]
  }
 }
