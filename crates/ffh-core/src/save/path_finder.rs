@@ -83,6 +83,9 @@ impl Persist for PathFinder {
             stack,
             search_key,
             unexpanded,
+            // Per-call scratch of the path finder's callbacks (a later call ignores what an
+            // earlier one stored): not saved.
+            defense_memo: _,
         } = self;
         kind.write(w);
         geom.write(w);
@@ -166,6 +169,7 @@ impl Persist for PathFinder {
             stack: Persist::read(r)?,
             search_key: Persist::read(r)?,
             unexpanded: Persist::read(r)?,
+            defense_memo: DefenseMemo::default(),
         })
     }
 }
