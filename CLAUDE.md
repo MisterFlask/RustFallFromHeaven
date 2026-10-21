@@ -6,6 +6,9 @@
 gaps live in the area docs, not in a session log. Out of scope for now (the owner's call):
 scenarios. The C++ AI is ported only as a benchmark to measure ffh-ai against (`crates/ffh-cppai`,
 docs/CPPAI.md; kept on master by the owner's request, 2026-10-21), not as the game's AI.
+Performance and AI-improvement work ignores it (the owner's call, 2026-10-21: no mileage in it):
+don't optimize, tune, extend or mine it for ideas, and leave it out of sprint measurements; when an
+ffh-core change breaks its build, make the minimal mechanical fix. The owner runs it on demand.
 
 Port of the FFH2 0.41 Civ4 mod (base mod only), the base for a game of its own. The rules
 engine (DLL C++ + rules Python) was ported function by function; the AI is new. FFH2 0.41 is
