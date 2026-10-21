@@ -218,7 +218,10 @@ which forward to the C++ methods -- so port each Cy call to the corresponding po
   (fast-forward when possible) and push, without asking. This holds even when the session was
   told to develop on another branch: push that branch too. Master is deployed to the public site
   by CI, so never push it with a failing or skipped check; say what failed instead.
-- **End the turn that pushes master** with the line `WORK ITEMS HAVE BEEN PUSHED TO MASTER`.
+- **End the turn that pushes master** with the line `WORK ITEMS HAVE BEEN PUSHED TO MASTER`,
+  followed by a clickable link to the game in the browser (the owner's request, 2026-10-21):
+  `[Play in the browser](https://misterflask.github.io/RustFallFromHeaven/)` (CI deploys master
+  there a few minutes after the push).
 
 ## AI changes
 
