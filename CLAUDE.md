@@ -242,11 +242,13 @@ which forward to the C++ methods -- so port each Cy call to the corresponding po
   civilization's own units, spells and abilities are part of how it plays, so its AI uses them
   whether or not they directly benefit it. The win-rate rule above does not decide whether a
   civilization uses its own mechanics; measure what they cost and improve how they are used.
-- **Conquest and domination are flavor goals** (the owner's decision, 2026-10-21): the Clan of
+- **Conquest and domination are a flavor drive** (the owner's decision, 2026-10-21): the Clan of
   Embers, the Doviello, the Bannor, any other canonically warlike civilization, and every leader
-  with `TRAIT_AGGRESSIVE` pursue a conquest or domination victory as their grand strategy, to the
-  degree the AI can, whether or not it raises their win rate. As with unique mechanics, the
-  win-rate rule decides how well they pursue it, not whether (docs/AI.md, "Victory pursuit").
+  with `TRAIT_AGGRESSIVE` play with an expansion drive, not a victory goal pursued once in reach:
+  they keep looking for the easiest way to grow -- a settler site or a weaker nearby civ's
+  cities -- and take it, again and again, whether or not it raises their win rate. As with unique
+  mechanics, the win-rate rule decides how well they do it, not whether (docs/AI.md, "Victory
+  pursuit").
 - **Every measured change that fails gets an entry in `docs/AI_LOG.md` before it is reverted**:
   (1) why it made sense, (2) why it did not move the win rate, from the games themselves (what
   happened when it fired: counts, checkpoints, `FFH_AI_TRACE` replays), (3) what that implies.

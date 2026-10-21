@@ -1489,16 +1489,18 @@ another civ whose own best estimate is within 60 turns and shorter than ours.
   rival's victory cities (those nearest legendary, those with towers) are worth 3000 more to the
   siege campaign; these wars end only when lost (or after 80 turns).
 
-**Flavor goals (the owner's decision, 2026-10-21; not implemented yet).** Conquest and domination
-are the grand strategy of the warlike: the Clan of Embers, the Doviello, the Bannor, any other
-canonically warlike civilization, and every leader with `TRAIT_AGGRESSIVE` (in the data: Charadon
-of the Doviello, Sheelba of the Clan, Tasunke of the Hippus, Alexis of the Calabim, Kandros of the
-Khazad, Basium of the Mercurians, and the minor leaders Duin, Weevil, Hafgan, Volanna, Mahon,
-Averax, Ouzza). They pursue it to the degree the AI can whether or not it raises their win rate:
-the win-rate rule decides how they pursue it, not whether. Today the planner is civ-agnostic and
-in practice picks culture or nothing (conquest needs twice all rivals' power, domination 66% of
-the land: neither qualifies before it is nearly won), so this needs a conquest/domination mode that
-starts mid-game from the power balance with the neighbours, not only a bias on the estimates.
+**Flavor drive (the owner's decision, 2026-10-21; not implemented yet).** Conquest and domination
+are a *drive* of the warlike, not a victory goal pursued once in reach: the Clan of Embers, the
+Doviello, the Bannor, any other canonically warlike civilization, and every leader with
+`TRAIT_AGGRESSIVE` (in the data: Charadon of the Doviello, Sheelba of the Clan, Tasunke of the
+Hippus, Alexis of the Calabim, Kandros of the Khazad, Basium of the Mercurians, and the minor
+leaders Duin, Weevil, Hafgan, Volanna, Mahon, Averax, Ouzza) keep asking what the easiest next
+growth is -- a settler site, or the cities of a weaker civ nearby -- and take it, over and over,
+whether or not it raises their win rate (the win-rate rule decides how well they do it, not
+whether). Today the planner is civ-agnostic and in practice picks culture or nothing (conquest
+needs twice all rivals' power, domination 66% of the land: neither qualifies before it is nearly
+won), so this is an ongoing comparison of settling against conquering a weaker neighbour, from
+the early game on, not a bias on the victory estimates.
 
 Measured on full games (seeds 1-24, 6 civs, standard map, normal speed, to the rules' end;
 `victory_check.py`); economy per alive civ, at turns 400 / 500 (one game was over by 500):
