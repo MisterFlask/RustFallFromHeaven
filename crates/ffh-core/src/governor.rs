@@ -10,9 +10,10 @@
 //! commerce about 7 (split by the owner's sliders, research weighted up), a great-people
 //! point 3. Food is valued by the city's food *surplus*, as a concave function: food that
 //! avoids starvation is worth 60 per point; while the city wants to grow (it has happy
-//! faces to spare and good tiles to work) food up to a growth target (6 at size 1, falling
-//! to 2 at size 5) is worth 23-38 depending on how much room there is, food past the target
-//! a third of that; a city avoiding growth values extra food at 2, a city at its happy cap
+//! faces to spare and good tiles or specialist jobs for the new citizens) food up to a growth
+//! target (6 at size 1, falling to 2-3 at size 5, and at least the food that grows the city in
+//! 12 turns: 3 at size 5, 4 at size 8) is worth 23-38 depending on how much room there is, food
+//! past the target a third of that; a city avoiding growth values extra food at 2, a city at its happy cap
 //! at -3 (growing would only add an angry citizen). While the city builds a food-production unit (settlers,
 //! workers) its surplus becomes hammers, so food is valued like production.
 //!
@@ -388,6 +389,9 @@ use crate::defs::{CITY_HOME_PLOT, MAX_INT, NUM_CITY_PLOTS};
 use crate::game::Game;
 use crate::ids::*;
 
+/// Turns a growing city aims to take per citizen (see `governor_food_context`).
+const GROWTH_TURNS: i32 = 12;
+
 impl Game {
     /// Replaces C++ `CvCityAI::AI_assignWorkingPlots`. The rules-visible steps keep the C++
     /// order (clear assignments of automated cities, `verifyWorkingPlots`, forced specialists,
@@ -584,12 +588,23 @@ impl Game {
                 good_tiles += 1;
             }
         }
-        let tile_room = (good_tiles - placing + 1).max(1);
+        // Specialist jobs worth a citizen (3 or more in yields and commerce) are room to grow
+        // too: a new citizen there pays for its food.
+        let good_specialists: i32 = self
+            .governor_specialists(c)
+            .iter()
+            .filter(|s| s.yields.iter().sum::<i32>() + s.commerce.iter().sum::<i32>() >= 3)
+            .map(|s| s.max_more.min(3))
+            .sum();
+        let tile_room = (good_tiles + good_specialists - placing + 1).max(1);
         let growth_room = happy_room.min(tile_room);
         let avoid_growth = self.city_ai_is_emphasize_avoid_growth(c)
             || self.city_is_disorder(c)
             || (self.city_ai_is_emphasize_avoid_angry_citizens(c) && happy_room <= 0)
             || (self.city_ai_is_emphasize_avoid_unhealthy_citizens(c) && health_room <= 0);
+        // A city with room grows about every GROWTH_TURNS turns: the food a growth needs rises
+        // with size, so a fixed target left big cities nearly stalled at +1.
+        let pace = (self.city_growth_threshold(c) + GROWTH_TURNS - 1) / GROWTH_TURNS;
         FoodContext {
             population,
             growth_room,
@@ -597,7 +612,7 @@ impl Game {
             food_is_production: self.city_is_food_production(c),
             avoid_growth,
             ignore_food: self.players[owner].ignore_food,
-            growth_target: 2 + (5 - population).max(0) + i32::from(growth_room >= 4 && population >= 5),
+            growth_target: (2 + (5 - population).max(0) + i32::from(growth_room >= 4 && population >= 5)).max(pace),
             production_floor: if self.city_is_production_process(c) { 0 } else { 2 + population / 2 },
         }
     }

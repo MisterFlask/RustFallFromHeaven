@@ -31,6 +31,27 @@ Each entry answers three questions, from the games themselves (counts with `ffh 
   `FFH_AI_TRACE` (a throwaway trace line is fine on a scratch branch; it must not change the
   checksum) and compare the snapshots per checkpoint (`civ_ab.py --load`, the snapshot fields).
 
+## Workers and citizens (2026-10-21)
+
+The kept version (docs/AI.md, "Citizens" and "Chops") came out of six variants measured on
+seeds 1-24 (300 turns) and validated on 401-472; the governor change was in all of them.
+
+- **Every clearing counted** (workers v1-v3, v5): a farm or mine on a forest or jungle valued
+  with the feature's lost yields on a worked plot and the hammers of the clearing (half again to
+  a city rushing a settler, a worker or a world wonder, 20 turns' worth otherwise), the kept
+  features (Ancient Forest, happy and healthy features, a city's last three forests) refusing
+  the improvement as well as the chop, and in v1-v2 chops for any city. 1: the C++ AI and an
+  expert both weigh what a forest gives against what replaces it; our workers ignored both the
+  hammers and the loss. 2: research at turn 300 -15 to -18 (t -1.9 to -2.5), techs -1.4 to
+  -1.8, population flat; workers alone (v1 without the governor change) population -3.5,
+  research -11. The forests kept around cities blocked mines and farms on the plots the cities
+  worked, and chops for buildings took worker turns from farms. 3: for this AI an improvement's
+  yield gain matters more than the feature it replaces; chops pay only when they bring a city
+  sooner. The kept v6 (chops only for settlers, workers, world wonders; improvements valued as
+  before) measured +10 research on seeds 1-24 but flat on 72 fresh seeds: the spread between
+  variants (research -18 to +10) is about what choosing among six variants on 24 seeds
+  produces. Separating effects this small takes 48+ development seeds.
+
 ## Unique units (2026-10-20)
 
 The kept version is in docs/AI.md, "Unique units". It is kept under the owner's rule (CLAUDE.md,

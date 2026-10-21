@@ -178,6 +178,15 @@ less than 60% for research (3 points of weight per point of shortfall in percent
 commerce; merchants and scientists gain with it over poor tiles); a culture-starved new city
 values culture.
 
+The growth target is at least the food that grows the city in 12 turns (3 at size 5, 4 at size
+8), and specialist jobs worth a citizen (3+ yields and commerce) count as room to grow. Before,
+the target fell to 2 at size 5 whatever the size, and a big city with happy room sat at +1 food:
+on the same city states (ffh-ai games at turns 120, 200 and 300, every city assigned by both
+governors) the C++ AI's `AI_assignWorkingPlots` kept cities of size 8+ at +2-3 food where ours
+kept +1. Measured (300 turns): seeds 1-24 population +3.6 a civ (t 2.4), research flat; fresh
+seeds 425-472 population +0.3, techs +0.4, legacy +12, every |t| < 1. Kept as the growth an
+expert keeps going while there is room, not for a measured gain.
+
 ## Finance (`finance.rs`)
 
 The zero-research death spiral: an empire whose costs (city maintenance, civic upkeep, unit
@@ -447,7 +456,8 @@ techs at turn 300 19.6 -> 19.8; each part matters (without the forced wait captu
 Tried and dropped (same seeds): two settlers at a time for one or two cities, sites within 5
 plots of our cities, the capital giving up its second defender as an escort, settlers at size
 2 or before the first worker, deferring buildings while a city grows toward a settler, and
-chopping forests while a settler is built (C++ `bChop`). The fastest mix had 2.4-2.5 cities
+chopping forests while a settler is built (C++ `bChop`; the workers now chop for settlers,
+measured flat, "Chops" under Workers). The fastest mix had 2.4-2.5 cities
 per civ at turn 100 (4th city at turn 131 instead of 150) but 0.8-1.4 fewer techs and fewer
 points at turn 300, the same number of cities by then, and more cities lost to barbarians,
 also on top of the finance and research changes. The rules couple barbarian cities to ours:
@@ -481,6 +491,19 @@ best four) added nothing on top of it (300 turns legacy +1.5% for both together)
 Training workers only once an improvement is buildable (no early idle workers: -68% idle
 worker-turns) measured flat to negative on the same seeds (legacy -1.0%, full games power -10.6%
 at turn 300) and was not kept.
+
+**Chops.** A plain Remove Forest or Remove Jungle is valued only when its hammers go to a city
+building a settler, a worker or a world wonder (a chop's 20 hammers count as 10 turns of
+production on the plot), less the feature's yields on a worked plot. Kept: the Ancient Forest, a
+feature a civic of ours makes happy (the elves' forests are maintained anyway), a healthy feature
+in a city with at most one health to spare, and a city's last three forests. A worker with
+nothing to build within 8 turns looks up to 25 turns away (the newer cities) before it waits:
+from turn 200 most idle workers had improved everything within 8 turns. Seeds 1-4 at 300 turns:
+113 chops (4.7 a civ), 29 more lumber mills, 73 fewer farms. Measured with the governor change
+above: seeds 1-24 research +10 (t 1.3), but fresh seeds 401-472 flat (population +0.4,
+research +3.6, legacy -5, every |t| < 1; workers alone also flat). Kept as an expert's use of
+the forests, not for a measured gain. Valuing every improvement on a feature by the clearing
+(the feature's lost yields, its hammers) cost research (docs/AI_LOG.md, "Workers and citizens").
 
 ## Field armies (`military.rs`, `campaign.rs`)
 
@@ -1894,9 +1917,9 @@ share score (docs/SCORE.md) averages 10000/N whatever the AI does.
   hit. Reverted; the `FFH_AI_EXPOSURE` counter is kept as observation tooling. A fix that helped
   would have to avoid *creating* the exposure -- danger-aware movement that ends each turn on a
   safe plot -- without making stacks passive, which is a pathfinding change, not a retreat rule.
-- No hurrying beyond the civic-gated gold/population hurries, no wonder racing, no vassals or
-  defensive pacts; the vote sources (Overcouncil / Undercouncil) use the defaults: every AI
-  abstains and an AI secretary never picks a resolution, so both councils are inert.
+- No hurrying beyond the civic-gated gold/population hurries and chops for settlers, workers and
+  world wonders, no wonder racing; the vote sources (Overcouncil / Undercouncil) use the defaults:
+  every AI abstains and an AI secretary never picks a resolution, so both councils are inert.
 - Speed: path finding is about 30% of late-game time.
 - Measured on branches never merged (built on the master of 2026-10-15, not re-measured on fresh
   seeds; expect conflicts): `origin/handoff/ai3b-siege-estimate` (exact strike odds over the
@@ -1906,8 +1929,8 @@ share score (docs/SCORE.md) averages 10000/N whatever the AI does.
   (Kuriotates settlements without the research collapse: +54 legacy score, t 2.3, over 80 games;
   possibly superseded by `civs/kuriotates.rs`).
 - Victories: nearly every decided game is a cultural victory. The Tower of Mastery needs 16
-  manas and the AI neither trades resources nor conquers for mana, so the estimate is out of
-  reach in every measured game; Great Prophets lightbulb instead of building the six altar
+  manas, which the AI neither seeks in trades nor conquers for (and it does not pursue the Tower
+  any more, the owner's decision); Great Prophets lightbulb instead of building the six altar
   stages; domination needs two thirds of the land and the siege operations take about one city
   per war; the religious victory (80% of the world's people) is not pursued.
 - Casters ("Spellcasting"): the AI casts with the casters it has but trains almost none (no AI
