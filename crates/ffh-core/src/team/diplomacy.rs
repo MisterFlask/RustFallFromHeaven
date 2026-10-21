@@ -999,6 +999,9 @@ impl Game {
 
             change_master_outside_units(self, master, -1);
 
+            if self.telemetry.on() {
+                self.tel_vassal(t, master, value, capitulated);
+            }
             self.teams[t].vassal[master] = value;
             // Score v2 moves half of a vassal's people and land to its master (docs/SCORE.md).
             self.score_dirty = true;

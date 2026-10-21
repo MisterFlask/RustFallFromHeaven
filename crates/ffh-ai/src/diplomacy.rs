@@ -189,6 +189,11 @@ pub fn manage(g: &mut Game, v: &View) {
         }
     }
 
+    // Hopelessly behind, or crushed in a war that peace did not end: become a vassal.
+    if crate::vassals::seek(g, p) {
+        return;
+    }
+
     // Trade with friendly neighbours every few turns (staggered): technologies swapped one for
     // one at similar cost, open borders.
     if (turn + p.0 as i32) % 5 == 0 {
@@ -688,7 +693,7 @@ pub(crate) const PRESS_CONQUEST_RATIO: i64 = 200;
 /// first legal turn before war success accrues, so only the immediate power ratio is reliable. Both
 /// the offer path (`manage`) and the acceptance path (`consider_offer`) consult this so a winner
 /// neither offers nor accepts a peace that abandons a conquest it is winning.
-fn press_conquest(g: &Game, team: TeamId, enemy: TeamId) -> bool {
+pub(crate) fn press_conquest(g: &Game, team: TeamId, enemy: TeamId) -> bool {
     let ours = g.team_get_power(team, true).max(1) as i64;
     let theirs = g.team_get_defensive_power(enemy).max(1) as i64;
     ours * 100 >= theirs * PRESS_CONQUEST_RATIO
@@ -861,6 +866,14 @@ pub(crate) fn want_peace(g: &Game, team: TeamId, enemy: TeamId, plan: &crate::vi
 /// C++ `AI_considerOffer` equivalent: accept peace when the war is not going our way or has
 /// lasted long, open borders with friends, and gifts.
 pub fn consider_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData], we_give: &[TradeData]) -> bool {
+    // Vassal states come with strings attached (vassals.rs): asked to become `from`'s vassal, or
+    // offered `from` as ours.
+    if let Some(yes) = crate::vassals::agree(g, p, from, we_give) {
+        return yes;
+    }
+    if let Some(yes) = crate::vassals::accept_master(g, p, from, they_give, we_give) {
+        return yes;
+    }
     if we_give.is_empty() {
         return true;
     }

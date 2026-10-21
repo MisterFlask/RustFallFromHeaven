@@ -41,6 +41,7 @@ pub mod tech_plan;
 pub mod trade;
 pub mod units;
 pub mod values;
+pub mod vassals;
 pub mod victory;
 pub mod view;
 pub mod workers;

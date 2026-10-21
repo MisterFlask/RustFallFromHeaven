@@ -351,6 +351,8 @@ fn trade_item_text(g: &Game, t: &TradeData) -> String {
         TradeableItem::TRADE_DEFENSIVE_PACT => "a defensive pact".into(),
         TradeableItem::TRADE_PERMANENT_ALLIANCE => "a permanent alliance".into(),
         TradeableItem::TRADE_MAPS => "the world map".into(),
+        TradeableItem::TRADE_VASSAL => "vassal status".into(),
+        TradeableItem::TRADE_SURRENDER => "capitulation (vassal status)".into(),
         _ => {
             let name = TradeableItem::NAMES.get(t.item_type.0 as usize).copied().unwrap_or("TRADE_?");
             format!("{} {}", name.trim_start_matches("TRADE_").to_lowercase().replace('_', " "), t.data)

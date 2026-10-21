@@ -230,14 +230,28 @@ which forward to the C++ methods -- so port each Cy call to the corresponding po
 
 ## AI changes
 
+- **The AI plays the way an expert human would** (the owner's decision, 2026-10-21). In broad
+  strokes its strategy and tactics are the ones a strong player would conceptualize and could
+  explain: settle good land while it is free, defend what it holds, fight when it has the edge and
+  make peace when it does not, use every tool its civilization has, give up independence when
+  hopelessly behind. Flavor and fun override this where a rule below says so. Design a behaviour
+  from that picture (what the expert sees, wants and does), not by searching for whatever scores
+  best. Hill climbing on win rate tunes such behaviours at the margin (thresholds, weights,
+  timing) and catches implementations that misfire; it does not decide whether a sound behaviour
+  exists. When a sound behaviour costs win rate, find out why in the games: usually it is the
+  implementation, sometimes the game's balance, which is worth reporting.
 - **Start from `docs/AI_LOG.md`**, the log of AI changes that did not move the win rate, for the
   area you are about to change: each entry says why the idea made sense, why it failed in the
   games, and what that implies about the right version (or about the game's balance) -- both a
   warning and a source of better ideas.
-- Measure on development seeds, then validate on seeds never used to choose anything, the change
-  on against the same binary with it off (`civ_ab.py --off-base` / `FFH_AI_CIV_OFF` for a
-  civilization's logic; docs/AI.md, "Tools"). Keep a change only if neither the win rate nor the
-  share at the end falls; development-seed gains alone are not results.
+- Measure every change on development seeds, then validate it on seeds never used to choose
+  anything, the change on against the same binary with it off (`civ_ab.py --off-base` /
+  `FFH_AI_CIV_OFF` for a civilization's logic; docs/AI.md, "Tools"). Telemetry
+  (docs/TELEMETRY.md) shows whether a behaviour fires when and as it should. For tuning (a
+  threshold, a weight, a heuristic competing with others), keep a change only if neither the win
+  rate nor the share at the end falls; development-seed gains alone are not results. A behaviour
+  the expert-play rule calls for stays, and what it costs is worked on, as for the flavor rules
+  below.
 - **Civilizations use their unique mechanics** (the owner's decision, 2026-10-20): a
   civilization's own units, spells and abilities are part of how it plays, so its AI uses them
   whether or not they directly benefit it. The win-rate rule above does not decide whether a
@@ -249,6 +263,12 @@ which forward to the C++ methods -- so port each Cy call to the corresponding po
   cities -- and take it, again and again, whether or not it raises their win rate. As with unique
   mechanics, the win-rate rule decides how well they do it, not whether (docs/AI.md, "Victory
   pursuit").
+- **Hopeless civilizations become vassals** (the owner's decision, 2026-10-21). A civilization
+  that has fallen hopelessly behind offers to become the vassal of a much stronger neighbour it is
+  at least decently aligned with, and agrees when asked. "Hopelessly behind" means in technology,
+  power and its share of the world. "Decently aligned" means no good/evil opposition, and an
+  attitude its leader's pride accepts. One being crushed in a war capitulates to the conqueror,
+  whatever it thinks of it (docs/AI.md, "Vassal states").
 - **The AI does not pursue the Tower of Mastery or the Altar of the Luonnotar** (the owner's
   decision, 2026-10-21: boring solitaire victories, and the Tower needs a huge territory anyway).
   It still stops a rival about to win one (docs/AI.md, "Victory pursuit").

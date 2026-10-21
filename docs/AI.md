@@ -3,6 +3,13 @@
 Before changing the AI, read `docs/AI_LOG.md`: the changes that did not move the win rate, why,
 and what that implies (CLAUDE.md, "AI changes").
 
+**It plays the way an expert human would** (the owner's decision, 2026-10-21; CLAUDE.md, "AI
+changes"). Each behaviour starts from what a strong player would see, want and do in that
+position, and should read as sound strategy or tactics to one, unless flavor or fun dictates
+otherwise. Win-rate A/Bs tune the thresholds, weights and timing of such behaviours and catch
+implementations that misfire. They do not decide whether a sound behaviour exists: when one
+costs win rate, the games say why.
+
 The C++ AI (CvPlayerAI/CvCityAI/CvUnitAI/CvTeamAI, ~60k lines, plus the Python AI hooks
 in CvGameUtils.py such as `AI_chooseTech`/`AI_chooseProduction`) is not ported. It is the
 main cause of FFH2's late-game turn times (per-unit re-evaluation of every plot, repeated A*
@@ -667,6 +674,58 @@ limit 12 -> 13; eliminations in the changed games 42 -> 42. Mechanically working
 but not yet a measurable protection: the gating (late Honor, peace with everyone) keeps most
 threatened civs from signing. Levers if it should bite: research Honor when threatened, or a
 rules change to the trading prerequisite.
+
+**Vassal states (`vassals.rs`).** The owner's decision, 2026-10-21 (CLAUDE.md, "AI changes"):
+what an expert does once the game has gone against it. The rules (Feudalism for the master; a
+vassal joins its master's wars and the master its vassal's, a capitulation makes peace) were
+ported; the judgement is here. Only what a human could see is read.
+
+- **Hopelessly behind** a neighbour (cities within 14 plots): the neighbour has 3x our power, knows
+  6 more technologies and 40% more than we do, and our share of the world is under half an
+  average civilization's. Then we offer to become its vassal, if the two are at least decently
+  aligned: no good/evil opposition, and an attitude at or above the leader's
+  `iVassalRefuseAttitudeThreshold`. That threshold is one step more willing than FfH's AI, which
+  refuses at it, so pride still varies by leader. We never pick a neighbour whose wars would set
+  us against a stronger civ next door. Checked every 5 turns; the strongest such neighbour is
+  asked first.
+- **Crushed in a war:** at war for 10 turns, the enemy has twice our power, and its war success
+  exceeds ours by three captured cities' worth (two when we have three cities or fewer left).
+  Then we capitulate to the enemy doing the most damage, whatever we think of it. This comes
+  after the peace offer that turn failed.
+- **Asked** to become someone's vassal (by a human or an AI): we agree when the same tests hold.
+- **As the master:** a vassal is taken unless its wars would drag us into one against a stronger
+  civ, a friend or a treaty partner. A capitulation is taken unless the loser has two cities or
+  fewer and we can press the conquest; then we take the cities instead.
+- **Humans:** asked on the leader's contact cadence. A human can't be an AI's vassal (rules).
+
+Measured with `FFH_AI_VASSAL_OFF` (the switch), full games of ffh-ai only.
+
+| | Development seeds 1-12 | | Fresh seeds 201-224 | |
+|---|---|---|---|---|
+| | off | on | off | on |
+| Vassalages (capitulations / peaceful) | – | 15 / 3 | – | 22 / 3 |
+| Civs eliminated | 18 | 11 | 38 | 30 |
+| Supremacy | 8 | 7 | 12 | 16 |
+| Cultural victory | 3 | 1 | 10 | 5 |
+| Conquest victory | 0 | 1 | 0 | 2 |
+| Time limit | 1 | 3 | 2 | 1 |
+| Average decision turn | 519 | 492 | 496 | 455 |
+
+Capitulations fall between turns 290 and 625. On the fresh seeds, 260 capitulation offers from
+civs with two cities or fewer were refused (the conqueror took them).
+
+Fewer civilizations die. Games are decided sooner and more often by supremacy or conquest, less
+often by culture. The mechanism: score v2 credits a master with half its vassals' people and land
+(docs/SCORE.md), and conquest counts vassals as conquered. So a leader with vassals reaches clear
+supremacy before the culture race ends, as Civ4's vassal empires snowball. This is a sound
+behaviour, kept under the expert-play rule; the shift in outcomes is the game's balance, worth
+the owner's eye.
+
+Peaceful vassalage stays rare. About one civ per game meets the three "hopeless" tests against
+the strongest civ after turn 300 (12 development games: 13 of 219 civ-snapshots), and the
+technology gap is the binding test. A vassal never leaves its master on its own initiative, even
+after it recovers. One vassal was released in the 24 fresh games; telemetry records releases as
+`vassal.freed`.
 
 **Resources and gold (`trade.rs`).** The AI also trades resources (bonuses) and gold -- a port of
 the base game's `CvPlayerAI` trade valuation (`AI_bonusTradeVal`, `AI_bonusTrade`, `AI_dealVal`,
@@ -1692,6 +1751,10 @@ share score (docs/SCORE.md) averages 10000/N whatever the AI does.
   example `GAMEOPTION_ADVANCED_START`).
 
 ## Known gaps (future work)
+
+- **Vassals never leave.** A vassal that has recovered stays one. FfH's AI cancels the agreement
+  when `AI_vassalTrade` would now refuse it. Masters do nothing for their vassals beyond the war
+  joining the rules impose (Diplomacy, "Vassal states").
 
 - Naval: amphibious invasions now ship an army across water to take an overseas enemy city
   (see Naval), but there is no naval combat, no escorts and no blockades (the transport sails

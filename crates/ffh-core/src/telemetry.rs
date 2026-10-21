@@ -464,6 +464,40 @@ impl Game {
         });
     }
 
+    /// Team `t` becomes (`value`) or stops being `master`'s vassal.
+    pub(crate) fn tel_vassal(&self, t: TeamId, master: TeamId, value: bool, capitulated: bool) {
+        let turn = self.game_turn();
+        let how = match (value, capitulated) {
+            (true, true) => "capitulated",
+            (true, false) => "became",
+            (false, _) => "freed",
+        };
+        let members: Vec<PlayerId> = self.player_ids().filter(|&p| self.players[p].team == t && self.players[p].alive).collect();
+        let leader = self.team_get_leader_id(master);
+        let (cities, power) = (self.teams[t].num_cities, self.team_get_power(t, false));
+        let master_power = self.team_get_power(master, false);
+        for &p in &members {
+            self.tel_intent(p, "vassal_of", || if value { format!("team {}", master.0) } else { "free".to_string() });
+        }
+        self.telemetry.with(|tl| {
+            for &p in &members {
+                tl.count(p, "vassal", how, 0);
+                tl.event(|| {
+                    ev(turn, "vassal", p)
+                        .s("how", how)
+                        .i("master", master.0 as i64)
+                        .i("cities", cities as i64)
+                        .i("power", power as i64)
+                        .i("master_power", master_power as i64)
+                        .end()
+                });
+            }
+            if let Some(l) = leader {
+                tl.count(l, "vassal_master", if value { "gained" } else { "lost" }, 0);
+            }
+        });
+    }
+
     pub(crate) fn tel_found(&self, p: PlayerId, c: CityId) {
         let turn = self.game_turn();
         let (x, y) = self.map.xy(self.city_plot(c));

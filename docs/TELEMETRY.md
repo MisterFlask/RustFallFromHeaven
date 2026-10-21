@@ -63,6 +63,7 @@ A 300-turn mixed game writes about 0.5 MB of events.
 | `died` | cause | – |
 | `casters` | `unit_turns`, `idle_castable` | – |
 | `intent_changes` | intent kind | – |
+| `vassal` / `vassal_master` | `became`, `capitulated`, `freed` / `gained`, `lost` | – |
 
 The `died` causes are:
 
@@ -122,6 +123,7 @@ and **whys** (`whys.<kind>.<rule> = count`) record which rule made it.
 - `found`, `acquire` and `raze`;
 - `hurry` and `upgrade`;
 - `tech`, `civics`, `religion` and `project`;
+- `vassal`;
 - `intent` and `decision`.
 
 Missions, promotions, improvements and builds are only counted.
@@ -135,6 +137,7 @@ Missions, promotions, improvements and builds are only counted.
 | `research` | Why is `value`, `victory_goal` or `escape_costs` (finance's cost-cutting tech); the top four scores are recorded as alternatives. | The choice only (`AI_doResearch` and the rules' requests). |
 | `settle_target` | The site: `here`, `walk` or `first_city`, with the top four sites and their scores. | – |
 | `settler` | A settler that `hold`s, `wait`s for an escort or `fall_back`s, with why (`no_site`, `no_safe_site`). | – |
+| `vassal_offer` / `vassal_asked` / `vassal_taken` | Offers to become a vassal (`vassal`, `capitulate` or `refused`; why `hopeless` or `crushed`), answers when asked (`agreed`, `refused`), and answers as the master (`accepted`, `refused`; why `take`, `their_wars`, `conquer_instead`). The value is the other team. | – |
 | `war_prep` / `peace` | `territory` (with every target that passed the gates and its score) or `victory_plan`; peace as `want_peace` or `cash_out`. | – |
 | Cast reasons | The context given to `magic::cast`: `attack` (before an attack), `turn` (the value-based end-of-turn choice), `turn_ffh` (FfH's own fallback choice), `buff`, `summon`, `civ`. The civilization modules add `pirate_cove`, `loki_disrupt`, `rantine_convert` and `world_spell`. | The routine that cast: `end_turn_spells`, `mage_cast`, `summon_cast`, `buff_cast`, `direct_damage_cast`, `movement_cast`, `ai_mage_turn`, `feastingmove`, `lokimove`, `rantinemove`, `govannonmove`, `build_pirate_cove`, `do_turn_units_post`. |
 | War reasons | `territory (power ratio R, needed N)` or `victory plan (why)`, then at the declaration `army ready after N turns: army A of B` (or `waited long`). | `AI_doWar maximum war`, `limited war` or `dogpile`, each with its start value. |
