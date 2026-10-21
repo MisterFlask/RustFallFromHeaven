@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // The smoke test of the static site (docs/WEB.md; what tools/web-site.sh builds): serves the site
-// with a tiny static server below a path, as GitHub Pages does (`/misterflask-workshop-1/`), opens
+// with a tiny static server below a path, as GitHub Pages does (`/RustFallFromHeaven/`), opens
 // it in headless Chromium (Playwright) and plays: the engine loads (WebAssembly in a worker; by
 // default the server sends no isolation headers, so the service worker coi-sw.js has to make the
 // page cross-origin isolated, with one reload), a new game starts from the new-game screen (tiny
@@ -15,7 +15,7 @@
 //
 //   --site DIR    the site (tools/web-site.sh DIR)
 //   --port N      the static server's port (default: a free one)
-//   --base PATH   the path the site is served below (default /misterflask-workshop-1/)
+//   --base PATH   the path the site is served below (default /RustFallFromHeaven/)
 //   --isolated    the server sends COOP/COEP itself (the page is isolated without the service worker)
 //   --no-sw       a browser without service workers (navigator.serviceWorker removed): the page
 //                 runs without isolation (the fallback: the advisor answers every blocking
@@ -44,7 +44,7 @@ try {
   process.exit(2);
 }
 const SITE = path.resolve(args.site);
-const BASE = args.base ?? "/misterflask-workshop-1/";
+const BASE = args.base ?? "/RustFallFromHeaven/";
 const PORT = Number(args.port ?? 0);
 const TURNS = Number(args.turns ?? 3);
 const SEED = Number(args.seed ?? 5);

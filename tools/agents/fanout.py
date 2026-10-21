@@ -32,7 +32,7 @@ sys.path.insert(0, os.path.join(HERE, '..', '..', 'crates', 'ffh-cli', 'scripts'
 import ai_metrics  # noqa: E402
 
 JOB_DIR = os.path.join(ffh_agents.ROOT, 'fanout')
-WORKER_REL = 'projects/ffh2-rs/tools/agents/fanout-worker.sh'
+WORKER_REL = 'tools/agents/fanout-worker.sh'
 
 
 def sh(*args, cwd=None, check=True):

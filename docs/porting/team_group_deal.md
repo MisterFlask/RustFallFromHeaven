@@ -8,7 +8,7 @@ in `/home/user/ref/ffh2/CvGameCoreDLL/`) and line count.
 **Status: ported and audited.** Every function is ported (no `todo!` left), and each file was
 compared line by line with the C++ in the audit wave.
 
-Read `projects/ffh2-rs/CLAUDE.md` ("Rules engine conventions") first; this page only adds
+Read `CLAUDE.md` ("Rules engine conventions") first; this page only adds
 what is specific to these three classes.
 
 ## Summary

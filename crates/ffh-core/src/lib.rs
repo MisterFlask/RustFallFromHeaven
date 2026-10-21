@@ -2,7 +2,7 @@
 //! (CvGame, CvPlayer, CvTeam, CvCity, CvUnit, CvPlot, CvSelectionGroup, CvMap, ...)
 //! and the rules parts of its Python (spells, events, custom functions).
 //!
-//! See `projects/ffh2-rs/CLAUDE.md` for porting conventions.
+//! See `CLAUDE.md` for porting conventions.
 
 pub mod area;
 pub mod city;

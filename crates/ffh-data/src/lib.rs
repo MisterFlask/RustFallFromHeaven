@@ -307,7 +307,7 @@ impl GameData {
     }
 }
 
-/// Default data directory: `<repo>/projects/ffh2-rs/data`.
+/// Default data directory: `<repo>/data`.
 pub fn default_data_dir() -> PathBuf {
     if let Ok(d) = std::env::var("FFH_DATA_DIR") {
         return PathBuf::from(d);

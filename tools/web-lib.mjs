@@ -8,7 +8,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-/** projects/ffh2-rs. */
+/** The ffh2-rs repo root. */
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 /** `--name value` and `--flag` arguments: `{name: value | true}`. */

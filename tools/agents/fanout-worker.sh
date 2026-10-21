@@ -12,7 +12,7 @@
 set -euo pipefail
 
 here=$(cd "$(dirname "$0")" && pwd)
-proj=$(cd "$here/../.." && pwd)                 # projects/ffh2-rs
+proj=$(cd "$here/../.." && pwd)                 # repo root (the project)
 cd "$proj"
 
 job= worker= branch= seeds=

@@ -11,9 +11,9 @@ and limits its own disk use.
 | every worktree builds the workspace from scratch into its own `target/` (cargo keys builds by absolute path, so nothing is shared) | `build-rev.sh` / `build-tree.sh` build in a few shared workspaces, incrementally, and keep the outputs by source content |
 | an A/B test replays the base side's games that other agents already played | `ai_metrics.py` goes through a run cache: same binary + data + arguments = stored result |
 | each agent runs as many games as it likes; with 3-6 agents the load reaches 10-16 on 4 cores | every game holds one of `nproc` machine-wide CPU slots |
-| a worktree is a full 200 MB checkout (170 MB of it `projects/ffh-simplified`) | new agent worktrees are sparse: ~30 MB |
+| a worktree is a full ~160 MB checkout (~100 MB of it `anim-sprint/`) | new agent worktrees are sparse: ~60 MB |
 
-Run the commands from your worktree (paths below are relative to `projects/ffh2-rs`).
+Run the commands from your worktree (paths below are relative to the repository root).
 
 ## Build
 
@@ -31,7 +31,7 @@ tools/agents/build-rev.sh <rev> --profile checked     # release + debug assertio
   runs the same `cargo build --release && cargo test --release` the commit rule asks for, on
   those files; once they passed for an exact set of files they are not rerun (`--force-test`).
   Arguments after `--` go to `cargo test` (e.g. `-- -p ffh-ai`).
-- An output is keyed by the content of `projects/ffh2-rs` (+ profile, toolchain): asking again for
+- An output is keyed by the content of the project (the repo minus `anim-sprint/`; + profile, toolchain): asking again for
   the same content, from any rev or worktree, returns at once. Outputs are immutable, so a batch
   can keep using one while you rebuild. The 12 most recently used per profile are kept (one used
   in the last 30 minutes or currently running is never deleted).
@@ -107,12 +107,12 @@ load the machine: `--exclusive` makes a benchmark quieter, not quiet.
 
 - `tools/agents/install-hooks.sh` (done once per repository; `--check`, `--uninstall`) installs a
   post-checkout hook: a worktree created under `.claude/worktrees/` becomes a sparse checkout of
-  the root files, `.claude/` and `projects/ffh2-rs/` (~30 MB instead of ~200 MB). The main
+  everything except `anim-sprint/` (~60 MB instead of ~160 MB). The main
   checkout and worktrees elsewhere are never touched; status, commits, merges and cherry-picks
   work as usual (changes outside the sparse set are applied without being checked out). To get
-  the other projects: `git sparse-checkout disable`. To create a full worktree:
+  anim-sprint too: `git sparse-checkout disable` (or `git sparse-checkout add anim-sprint`). To create a full worktree:
   `FFH2_FULL_CHECKOUT=1 git worktree add ...`.
-- When you finish: `rm -rf projects/ffh2-rs/target` if you built there.
+- When you finish: `rm -rf target` if you built there.
 - `tools/agents/prune-worktrees.sh [--dry-run] [--idle-minutes 90]` removes worktrees under
   `.claude/worktrees/` that are clean (`git status` empty), idle (no file, HEAD or reflog change
   for 90 minutes; `target/` ignored), whose HEAD is on a branch (the branch stays), not locked

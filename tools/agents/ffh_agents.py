@@ -4,7 +4,7 @@
 All state lives outside the repository, in $FFH2_CACHE (default /home/user/.cache/ffh2-rs):
 
   locks/build.lock        one build at a time, machine-wide (flock)
-  ws/<i>/src              build workspaces: synced copies of projects/ffh2-rs ...
+  ws/<i>/src              build workspaces: synced copies of the project (repo minus anim-sprint/) ...
   ws/<i>/target/<prof>    ... each with a persistent cargo target dir per profile, so a build is
   ws/<i>/state.json           incremental against whatever that workspace built last
   build/                  the workspace being built, renamed here for the build: every build runs
@@ -40,7 +40,12 @@ import time
 ROOT = os.path.abspath(os.environ.get('FFH2_CACHE') or '/home/user/.cache/ffh2-rs')
 PROFILES = ('release', 'checked')
 BINS = ('ffh', 'ffh-stress', 'ffh-play')
-PROJECT = 'projects/ffh2-rs'
+PROJECT = '.'           # the Rust project is the whole repo root (was 'projects/ffh2-rs')
+NON_PROJECT = ('anim-sprint',)   # sibling projects in the repo, kept out of the build tree
+# Pathspec for the project's files (repo root minus NON_PROJECT) and the prefix their paths
+# carry in `git archive` / `git ls-files` output ('' when the project is the repo root).
+PROJECT_PATHSPEC = [PROJECT] + [':(exclude)%s' % p for p in NON_PROJECT]
+PROJECT_PREFIX = '' if PROJECT in ('.', '') else PROJECT + '/'
 BUILD_RECIPE = 1        # bump when the way outputs are built changes (new output keys)
 RUN_CACHE_VERSION = 1   # bump to invalidate every cached run
 WRAPPER_MARK = 'ffh2-rs agents build output'
@@ -203,10 +208,10 @@ def flocked(path, wait_msg=None):
 
 
 # ---------------------------------------------------------------------------------------------
-# source trees (the files of projects/ffh2-rs at a commit or in a worktree)
+# source trees (the project's files at a commit or in a worktree)
 
 class Tree:
-    """relpath (under projects/ffh2-rs) -> (kind 'f'|'x'|'l', git blob id, size), plus contents."""
+    """relpath (under the repo root) -> (kind 'f'|'x'|'l', git blob id, size), plus contents."""
 
     def __init__(self, label):
         self.label = label
@@ -239,9 +244,9 @@ class Tree:
 
 
 def tree_from_rev(repo, commit):
-    tar = git(repo, 'archive', '--format=tar', commit, '--', PROJECT, binary=True)
+    tar = git(repo, 'archive', '--format=tar', commit, '--', *PROJECT_PATHSPEC, binary=True)
     t = Tree('rev ' + commit)
-    prefix = PROJECT + '/'
+    prefix = PROJECT_PREFIX
     with tarfile.open(fileobj=io.BytesIO(tar)) as tf:
         for m in tf:
             if not m.name.startswith(prefix) or m.isdir():
@@ -252,17 +257,17 @@ def tree_from_rev(repo, commit):
             elif m.isfile():
                 t.add(rel, 'x' if m.mode & 0o111 else 'f', tf.extractfile(m).read())
     if 'Cargo.toml' not in t.files:
-        raise Fail('%s has no %s/Cargo.toml' % (commit, PROJECT))
+        raise Fail('%s has no Cargo.toml at the repo root' % commit)
     return t
 
 
 def tree_from_worktree(top):
     """The files git would see in the worktree: tracked (as on disk) + untracked, not ignored."""
-    out = git(top, 'ls-files', '-z', '--cached', '--others', '--exclude-standard', '--', PROJECT, binary=True)
+    out = git(top, 'ls-files', '-z', '--cached', '--others', '--exclude-standard', '--', *PROJECT_PATHSPEC, binary=True)
     t = Tree('tree ' + top)
-    prefix = PROJECT + '/'
+    prefix = PROJECT_PREFIX
     for name in sorted(set(out.decode('utf-8', 'surrogateescape').split('\0'))):
-        if not name.startswith(prefix):
+        if not name or not name.startswith(prefix):
             continue
         path = os.path.join(top, name)
         rel = name[len(prefix):]
@@ -276,7 +281,7 @@ def tree_from_worktree(top):
             with open(path, 'rb') as f:
                 t.add(rel, 'x' if st.st_mode & 0o111 else 'f', f.read())
     if 'Cargo.toml' not in t.files:
-        raise Fail('%s has no %s/Cargo.toml' % (top, PROJECT))
+        raise Fail('%s has no Cargo.toml at the repo root' % top)
     return t
 
 

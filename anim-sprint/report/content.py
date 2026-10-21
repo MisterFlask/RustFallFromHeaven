@@ -402,7 +402,7 @@ def render(ctx):
 <section class="block wrap" id="how"><h2>How the sprint ran</h2>{HOW}</section>
 <section class="block wrap" id="next"><h2>Not tested yet</h2>{NEXT}</section>
 </main>
-<footer class="wrap"><p>Everything is in <code>projects/ffh-anim-sprint/</code> on branch <code>ccr-4acd4727-7uk22m</code>:
+<footer class="wrap"><p>Everything is in <code>anim-sprint/</code> on branch <code>ccr-4acd4727-7uk22m</code>:
 <code>spec.md</code>, <code>beats.md</code>, <code>poses.json</code>; <code>lib/</code> (harness and <code>recipe.py</code>);
 <code>arms/&lt;method&gt;/</code> with frames, manifests, sheets, notes, timings and <code>sequence_*.{{gif,mp4}}</code>;
 <code>final/</code> and <code>final_hyborem_v1/</code> for the recipe; <code>judging/</code> with every judge's JSON, the keys and
@@ -425,7 +425,7 @@ RECIPE = """
     The engine reads <code>sheet_&lt;anim&gt;.png</code> plus <code>manifest.json</code> (per-frame ms, the hit event), anchors
     canvas point (80, 126) on the tile centre and places the banner from the idle frame-0 box.</li>
 </ol>
-<pre><code>cd projects/ffh-anim-sprint
+<pre><code>cd anim-sprint
 python3 lib/recipe.py --unit units/swordsman_judged.json --out final --rebuild --pick strike=2   # re-cut, no API calls
 python3 lib/preview.py --arm final --root final                               # strips, sequence_*.gif/mp4, vignette
 python3 lib/recipe.py --unit units/hyborem_v1.json --out final_hyborem_v1 --rebuild   # another unit, re-cut</code></pre>

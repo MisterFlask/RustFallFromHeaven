@@ -770,13 +770,13 @@ tools/web-lib.mjs          (P5) shared by the smoke tests: the binary, `serve --
 Totals: about **7.5k lines** of Rust library and binary code, **1.6k** of Rust tests, and **4.6k** of JS/CSS/HTML.
 
 **Shared files edited by this workstream** (small):
-* **Root `projects/ffh2-rs/Cargo.toml`:** add `"crates/ffh-play"` to `members`. This is the only manifest edit.
+* **Root `Cargo.toml`:** add `"crates/ffh-play"` to `members`. This is the only manifest edit.
 * **Docs:**
   * new `docs/HUMAN.md`: how to play, protocol, decision policy, journal and replay, known gaps;
   * a "Human play" section in `docs/ARCHITECTURE.md`;
-  * a crate row in `README.md` and in the `projects/ffh2-rs/CLAUDE.md` layout;
+  * a crate row in `README.md` and in the `CLAUDE.md` layout;
   * `docs/PORTING.md` "Changes from FFH2": UI-level human timing, Kuriotates still unanswered, no gift button.
-* **`.gitignore` (repo root):** add `projects/ffh2-rs/saves/`. The default `--saves` directory is `./saves`.
+* **`.gitignore` (repo root):** add `saves/`. The default `--saves` directory is `./saves`.
 
 **Not edited in the MVP:**
 * `crates/ffh-core`, `crates/ffh-ai`, `crates/ffh-cli`, `crates/ffh-stress`, `controller.rs`.

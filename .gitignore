@@ -1,2 +1,9 @@
 target/
 *.profraw
+# ffh-play's default --saves directory (docs/HUMAN.md)
+saves/
+# sparse agent worktrees (tools/agents/install-hooks.sh, docs/AGENTS.md)
+.claude/worktrees/
+# tool caches (node for the web smoke tests, python for tools/ and anim-sprint/)
+node_modules/
+__pycache__/

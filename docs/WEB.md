@@ -1,18 +1,18 @@
 # ffh-play in the browser: the static site
 
-**Play: https://misterflask.github.io/misterflask-workshop-1/**
+**Play: https://misterflask.github.io/RustFallFromHeaven/**
 
 The browser client of `ffh-play` (docs/HUMAN.md) with the whole game engine compiled to
 WebAssembly, served as plain files from GitHub Pages: nothing to download or install, no server.
 The page is the same client `ffh-play serve` serves; the game runs in a Web Worker in the page.
-CI rebuilds and redeploys the site on every push to `master` that touches `projects/ffh2-rs`
+CI rebuilds and redeploys the site on every push to `master` (except pushes that touch only `anim-sprint/`)
 (below), so the site follows master.
 
 ## How it works
 
 | Piece | Where | What it does |
 |---|---|---|
-| The client | `crates/ffh-play/assets`, the art from `crates/ffh-play/web/art` | unchanged; its own files are loaded by relative URLs (`app/main.js`, `../art/art.bundle.txt`), so it works below a path such as `/misterflask-workshop-1/`; it still talks HTTP (`fetch("/api/...")`) |
+| The client | `crates/ffh-play/assets`, the art from `crates/ffh-play/web/art` | unchanged; its own files are loaded by relative URLs (`app/main.js`, `../art/art.bundle.txt`), so it works below a path such as `/RustFallFromHeaven/`; it still talks HTTP (`fetch("/api/...")`) |
 | The engine | `crates/ffh-web` (wasm glue) around `crates/ffh-play/src/transport/web.rs` (the web host) | what `ffh-play serve`'s game thread does, synchronously: `ffh_request` takes one HTTP request and answers it exactly as `http::route` answers `/api` (status, view, map deltas, data, setup, the `POST /api` envelope), running the AI turns inside it. Built for `wasm32-wasip1` (a WASI reactor) with a 16 MiB stack, like the server's game thread |
 | The page side | `crates/ffh-web/site/boot.js` (loaded before `app/main.js`) | replaces `fetch`: requests whose path is `/api` or `/api/...` go to the engine and come back as real `Response`s; it answers `GET /api/status` and the long-poll `GET /api/wait` itself from the last status the engine published; shows the loading progress; restarts a crashed engine |
 | The worker | `crates/ffh-web/site/engine.js`, `wasi.js` | downloads `web/ffh.wasm.gz` and `web/data.pak.gz` (decompressed in the browser), runs the engine on a WASI shim with an in-memory file system: the game data at `/data`, the saves at `/saves` |
@@ -71,7 +71,7 @@ smoke test needs node and the `playwright` package with its Chromium.
 tools/web-site.sh /tmp/ffh-site                          # builds ffh-play and the engine, writes the site
 node tools/web-site-smoke.mjs --site /tmp/ffh-site        # headless Chromium plays it (below)
 node tools/web-site-smoke.mjs --site /tmp/ffh-site --serve --port 8000
-                                                          # just serve it: http://127.0.0.1:8000/misterflask-workshop-1/
+                                                          # just serve it: http://127.0.0.1:8000/RustFallFromHeaven/
 ```
 
 - `web-site.sh` works from any directory and honours `CARGO_TARGET_DIR`. `--bin PATH` uses a
@@ -81,7 +81,7 @@ node tools/web-site-smoke.mjs --site /tmp/ffh-site --serve --port 8000
 - Any static server works (`python3 -m http.server -d /tmp/ffh-site 8000`, then
   `http://localhost:8000/`): open it as `localhost`/`127.0.0.1` or over HTTPS, since service
   workers (isolation) need a secure context.
-- `web-site-smoke.mjs` serves the site below `/misterflask-workshop-1/` as Pages does, with no
+- `web-site-smoke.mjs` serves the site below `/RustFallFromHeaven/` as Pages does, with no
   isolation headers, so the service worker has to make the page isolated; then it waits for the
   engine, starts a new game on a tiny map (seed 5), checks the art draws the map, ends 3 turns
   (popups answered), saves, reloads with `?renderer=iso` (a fresh engine: the save must come
@@ -98,7 +98,7 @@ node tools/web-site-smoke.mjs --site /tmp/ffh-site --serve --port 8000
 ## Deployment (CI)
 
 `.github/workflows/ffh-pages.yml` (repository root), on a push to `master` that touches
-`projects/ffh2-rs/**` or the workflow, and by hand (Actions -> "ffh2-rs web" -> Run workflow):
+anything outside `anim-sprint/`, or the workflow, and by hand (Actions -> "ffh2-rs web" -> Run workflow):
 
 1. **build**: checkout, Rust stable with `wasm32-wasip1`, `tools/web-site.sh _site`, node 22 and
    Playwright's Chromium, the smoke test twice (service-worker isolation; `--no-sw`, the

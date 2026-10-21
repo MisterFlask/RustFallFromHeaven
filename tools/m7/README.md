@@ -36,7 +36,7 @@ work/<name>/         scratch, created per asset: raw/, cut/, review_<round>.png,
 
 ## In the ffh2-rs repository
 
-This folder lives at `projects/ffh2-rs/tools/m7`; the game's isometric renderer uses its roster
+This folder lives at `tools/m7`; the game's isometric renderer uses its roster
 (`docs/ISO.md` has the renderer's side: what game object maps to which key, what the engine
 draws). Changes made here since the package arrived:
 

@@ -26,7 +26,16 @@ crates/ffh-web   the engine as WebAssembly and the page side of the static site 
 tools/           fetch-reference.sh, vendor_xml.py, gen_enums.py, gen_defines.py,
                  agents/ (shared builds, run cache, CPU slots: docs/AGENTS.md)
 docs/            ARCHITECTURE.md, DATA.md, PORTING.md (status), AGENTS.md (parallel agents)
+anim-sprint/     animations for M7 unit sprites (its own project; anim-sprint/ANIMATING_UNITS.md)
 ```
+
+## Unit animations
+
+To make idle, strike, flinch or death animations for an M7 unit sprite, follow
+`anim-sprint/ANIMATING_UNITS.md`. It describes the method that won the October 2026 animation
+sprint (`lib/recipe.py` in that folder); do not start from an ad-hoc approach. Its first rule:
+the strike always goes in the direction the sprite is looking. Agent build worktrees are sparse
+and leave that folder out; run `git sparse-checkout add anim-sprint` first.
 
 ## Parallel agents
 

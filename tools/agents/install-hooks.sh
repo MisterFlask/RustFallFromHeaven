@@ -1,6 +1,6 @@
 #!/bin/bash
 # install-hooks.sh [--uninstall | --check]: install (or remove) the post-checkout hook that makes new
-# agent worktrees under .claude/worktrees/ sparse (root files, .claude/, projects/ffh2-rs/).
+# agent worktrees under .claude/worktrees/ sparse (everything except anim-sprint/).
 # See hooks/post-checkout and docs/AGENTS.md. Idempotent; run from any checkout of the repository.
 #
 # Installing copies the hook into the repository's hooks dir (shared by all worktrees) and sets

@@ -7,8 +7,8 @@ sets predate rule 1 below. The recipe as it stands now (rule 1, a second pose se
 only with its own earlier sets (evidence at the end). Follow it as written. If you change it, re-test it the same way
 (see "Changing the method").
 
-Everything below runs from `projects/ffh-anim-sprint/`. In a sparse agent worktree (see the root `CLAUDE.md`) run
-`git sparse-checkout add projects/ffh-anim-sprint` first.
+Everything below runs from `anim-sprint/`. In a sparse agent worktree (see the root `CLAUDE.md`) run
+`git sparse-checkout add anim-sprint` first.
 
 ## Quick start
 
@@ -88,7 +88,7 @@ its last section is the near set (the swordsman as he really is).
 ## Before you start
 
 ```bash
-cd projects/ffh-anim-sprint
+cd anim-sprint
 pip install pillow numpy scipy requests      # and ffmpeg on PATH, for the preview MP4s
 ```
 
@@ -101,7 +101,7 @@ pip install pillow numpy scipy requests      # and ffmpeg on PATH, for the previ
 - **The sprite.** An M7 unit PNG at most 128 px wide and 128 px tall, feet at or near the bottom (M7 leaves 2 px; the
   recipe stands the redrawn frames on the sprite's own feet row, so a few more empty rows, like Hyborem's 4, are fine),
   looking lower-left or lower-right, holding one weapon. Do not mirror it: step 1b records which way it looks. Paths in
-  unit files and on the command line are relative to `projects/ffh-anim-sprint/`.
+  unit files and on the command line are relative to `anim-sprint/`.
 
 ## Step 1: describe the unit
 
@@ -131,7 +131,7 @@ the source poses unchanged (`same_as_source`), which only fits the swordsman.
 | Key | What to put |
 |---|---|
 | `name` | the unit key, e.g. `"ogre"`; it goes into the manifests |
-| `sprite` | path relative to `projects/ffh-anim-sprint/`, e.g. `"m7/roster/units/unit_ogre_embers.png"` |
+| `sprite` | path relative to `anim-sprint/`, e.g. `"m7/roster/units/unit_ogre_embers.png"` |
 | `facing` | `"lower-left"` or `"lower-right"` (step 1b) |
 | `tag` | `"anim/units"` (check it: a copied file may carry another tag) |
 | `description` | one line the model must keep: body, colours, armour, the weapon and **which hand** (`"... a spiked club in his RIGHT hand"`). Name the FfH unit, then describe what it looks like. |

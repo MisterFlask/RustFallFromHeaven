@@ -6,7 +6,7 @@ each trying a different method on the same beats. A blind judge panel compares t
 best result **your method** can produce, honestly reported. Do not switch to another arm's method if yours
 struggles; write up why it struggles instead.
 
-Work from the project root `projects/ffh-anim-sprint/` and run Python from there (`python3 ...`).
+Work from the project root `anim-sprint/` and run Python from there (`python3 ...`).
 
 ## Read first (in this order)
 

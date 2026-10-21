@@ -11,7 +11,7 @@ strategy game (think SNES tactics games): a chibi **swordsman** facing the lower
 shield on his left arm (screen-right), short sword in his right hand (screen-left). Each method is shown only as
 a letter. You do not know how any letter was made, and you should not guess. Judge only what you see.
 
-Project root: `/home/user/misterflask-workshop-1/projects/ffh-anim-sprint`. Your packets are in
+Project root: `anim-sprint/` (in the RustFallFromHeaven repo). Your packets are in
 `judging/packets/<anim>/`. Read `beats.md` for what each animation is meant to show, frame by frame, and its
 timing (it is the brief every method was given). Frames are 160×128 at 1×; the game shows them at 1× on
 192×96 isometric tiles, so readability at **1×** matters most. In the strips, frame 0 of idle and strike is the
