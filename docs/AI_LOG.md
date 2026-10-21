@@ -31,6 +31,42 @@ Each entry answers three questions, from the games themselves (counts with `ffh 
   `FFH_AI_TRACE` (a throwaway trace line is fine on a scratch branch; it must not change the
   checksum) and compare the snapshots per checkpoint (`civ_ab.py --load`, the snapshot fields).
 
+## Unit choices and an upgrade reserve (2026-10-21)
+
+Item 3 of the strong-player list: the head-to-head games had the original AI fielding 3.9 axemen
+and 2.4 swordsmen a civilization at turn 200 against our 0.8 and 0.4, and banking 438 gold
+against our 62 (it keeps the gold to upgrade its units). By turn 300 our civilizations had built
+12.2 warriors each, 122 of those in turns 200-300 as peacetime army fill (seeds 1-8). Three
+behaviours, each behind a per-civilization switch, measured for everyone (seeds 1-48, 300
+turns) and as one civilization against opponents without it (`civ_ab.py --civ all`, seeds 1-6,
+450 turns, 114 pairs):
+
+- **Upkeep in a unit's price.** 1: FfH units beyond the free ones cost gold every turn (unit
+  support was 35-48% of the costs at turn 300), so an expert buys strength per total cost:
+  `best_unit` scored strength squared per (build turns + 4 + 40 turns of upkeep as hammers).
+  2: warriors 12.2 -> 10.5 a civilization, archers 4.4 -> 3.1, more champions; everyone: flat
+  (cities lost to barbarians -0.6 a game, t -2.0); one civilization: wins 23.7% -> 17.5% (2 / 9
+  pairs, p 0.065), share@end -70 (t -1.0), the Clan of Embers worst (share@end -676, t -2.2: its
+  Warrens copy every unit, so fewer, dearer units lose it copies). 3: the quotas count units
+  (defenders a city, attackers an army), so dearer units at the same count put more hammers into
+  the army, not fewer units; "fewer, better units" needs quotas in strength, not in heads.
+- **Gold kept for upgrades at war** (C++ `AI_goldTarget` counts the cost of upgrading every
+  unit): while at war or preparing one, the research slider (never below 30%) saved toward the
+  price of upgrading every military unit that had a better unit to become. 2: upgrades 9.5 ->
+  10.2 a civilization by turn 300; everyone: flat; one civilization: wins 23.7% -> 19.3% (6 / 11,
+  p 0.33), share@end +4, legacy@300 -17 (t -1.4). 3: an upgrade costs 3 gold a hammer plus 20,
+  about what hurrying costs; it pays for veterans and emergencies, not as the way to field an
+  army, and the research it takes during war preparation is not won back.
+- **The peacetime army from the cities that train good units**: a city whose best attacker was
+  under 75% (then 90%) of the best any of our cities trains (a Training Yard's axeman against a
+  warrior) built no peacetime army units. 2: at 75% it never fired (a warrior is exactly 75% of
+  an axeman); at 90% warriors 12.2 -> 10.9 and buildings +0.8 a civilization by turn 300;
+  everyone: flat; one civilization: wins 23.7% -> 19.3% (5 / 10, p 0.30), share@300 +33 (t 1.7),
+  share@end -7. 3: the warriors persist where no city has the enabling building: tier-2 units
+  need a Training Yard or Archery Range in the training city, and `enabler_building` builds one
+  in at most half the cities; the lever, if any, is which cities get them (military cities),
+  not refusing to train.
+
 ## Expansion: the expert opening (2026-10-21)
 
 Reopened under the expert-play rule (docs/AI.md, "Settlers and escorts", had dropped faster

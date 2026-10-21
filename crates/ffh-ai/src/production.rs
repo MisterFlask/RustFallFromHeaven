@@ -900,7 +900,9 @@ pub(crate) fn type_city_defense(info: &UnitInfo) -> i64 {
     v
 }
 
-/// Best unit this city can train for `role`, by power per production turn.
+/// Best unit this city can train for `role`, by power per production turn. Upkeep in the price
+/// and a peacetime army only from the cities that train good units were measured and reverted
+/// (docs/AI_LOG.md, "Unit choices and an upgrade reserve").
 pub fn best_unit(g: &Game, c: CityId, role: Role) -> Option<UnitType> {
     let d = g.d;
     let mut best: Option<(UnitType, i64)> = None;

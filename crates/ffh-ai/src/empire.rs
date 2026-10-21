@@ -319,7 +319,8 @@ fn religion(g: &mut Game, p: PlayerId) {
 
 /// Highest research rate that keeps the treasury from running dry. A cultural victory first
 /// sets the culture slider (`victory::culture_slider`), lowered in steps when even no research
-/// leaves the treasury short.
+/// leaves the treasury short. Saving gold to upgrade the army at war was measured and reverted
+/// (docs/AI_LOG.md, "Unit choices and an upgrade reserve").
 fn sliders(g: &mut Game, p: PlayerId) {
     if !g.player_is_commerce_flexible(p, CommerceType::COMMERCE_RESEARCH) {
         return;
