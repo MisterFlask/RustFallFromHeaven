@@ -1541,6 +1541,13 @@ impl Cai {
     /// C++ `bool CvSelectionGroupAI::AI_update()` (CvSelectionGroupAI.cpp:125-281)
     // Returns true if the group has become busy...
     pub fn group_ai_update(&self, g: &mut Game, grp: GroupId) -> bool {
+        if trace_on(g.groups[grp].owner) {
+            let head = g.group_get_head_unit(grp);
+            eprintln!("[cppai t{} p{}] group_ai_update grp {} head {:?} ctrl {} aictl {} ready {} n {} busy {} queue {} act {:?}", g.game_turn(), g.groups[grp].owner.0, grp.0,
+                head.map(|u| (g.d.units[g.units[u].unit_type].base.type_.clone(), g.units[u].ai_type, g.units[u].ai_groupflag)),
+                self.group_ai_is_controlled(g, grp), g.group_is_ai_control(grp), g.group_ready_to_move(grp, false), g.groups[grp].units.len(),
+                g.group_is_busy(grp), g.groups[grp].mission_queue.len(), g.groups[grp].activity_type);
+        }
         //FfH: Modified by Kael 12/28/2008
         if !self.group_ai_is_controlled(g, grp) && !g.group_is_ai_control(grp) {
             return false;
@@ -1601,7 +1608,17 @@ impl Cai {
 
                 g.group_reset_path(grp);
 
-                if self.unit_ai_update(g, head_unit) {
+                let r = self.unit_ai_update(g, head_unit);
+                if trace_on(g.units.get(head_unit).map_or(PlayerId(255), |x| x.owner)) {
+                    if g.units.contains(head_unit) && g.groups.contains(grp) {
+                        eprintln!("[cppai] unit_ai_update {} -> {} ; after: ready {} act {:?} queue {} moves {} canmove {} busy {}", head_unit.0, r,
+                            g.group_ready_to_move(grp, false), g.groups[grp].activity_type, g.groups[grp].mission_queue.len(), g.units[head_unit].moves,
+                            g.group_can_all_move(grp), g.group_is_busy(grp));
+                    } else {
+                        eprintln!("[cppai] unit_ai_update {} -> {} (gone)", head_unit.0, r);
+                    }
+                }
+                if r {
                     // AI_update returns true when we should abort the loop and wait until next slice
                     break;
                 }

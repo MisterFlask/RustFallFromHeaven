@@ -50,11 +50,23 @@ pub mod unit_6;
 pub mod unit_7;
 pub mod unit_8;
 
+/// Debug tracing: `FFH_CPPAI_TRACE=all` or `=<player id>` prints C++ AI decisions to stderr
+/// (read once; it only prints).
+pub fn trace_on(p: PlayerId) -> bool {
+    static TRACE: std::sync::OnceLock<Option<i32>> = std::sync::OnceLock::new();
+    let t = TRACE.get_or_init(|| match std::env::var("FFH_CPPAI_TRACE") {
+        Ok(v) if v == "all" => Some(-1),
+        Ok(v) => v.parse().ok(),
+        Err(_) => None,
+    });
+    matches!(*t, Some(-1)) || *t == Some(p.0 as i32)
+}
+
 /// Everything the ported files need, imported with `use crate::prelude::*`.
 pub mod prelude {
     pub use crate::defs::*;
     pub use crate::state::*;
-    pub use crate::Cai;
+    pub use crate::{trace_on, Cai};
     pub use ffh_core::controller::{AiHook, Controller};
     pub use ffh_core::defs::*;
     pub use ffh_core::game::Game;
@@ -181,11 +193,33 @@ impl Controller for Cai {
 
     fn play_turn(&self, g: &mut Game, p: PlayerId) {
         self.ensure_player_init(g, p);
+        if trace_on(p) {
+            let sites: Vec<(i32, i32, i32)> = self.s().player(p).ai_city_sites.clone().into_iter().map(|pl| {
+                let (x, y) = g.map.xy(pl);
+                (x, y, g.map.plots[pl].found_value[p])
+            }).collect();
+            let settlers: Vec<String> = g.players[p].units.iter().filter(|&&u| std::env::var("FFH_CPPAI_TRACE_UNITS").is_ok() || g.units[u].ai_type == Some(UnitAIType::UNITAI_SETTLE)).map(|&u| {
+                let gr = g.units[u].group;
+                format!("{} ai{:?} u{}@({},{}) miss={:?} flag={} grp_n={} act={:?} moves={}", g.d.units[g.units[u].unit_type].base.type_, g.units[u].ai_type.map(|a| a.0), u.0, g.units[u].x, g.units[u].y, gr.map(|gr| g.groups[gr].ai_mission_ai_type), g.units[u].ai_groupflag, gr.map_or(0, |gr| g.groups[gr].units.len()), gr.map(|gr| g.groups[gr].activity_type), g.units[u].moves)
+            }).collect();
+            eprintln!("[cppai t{} p{}] groups {:?} cycle {:?}", g.game_turn(), p.0, g.players[p].groups, g.players[p].group_cycle);
+            eprintln!("[cppai t{} p{}] play_turn: cities {} sites {:?} settlers {:?} gold {} research {:?}", g.game_turn(), p.0,
+                g.players[p].cities.len(), sites, settlers, g.players[p].gold, g.player_get_current_research(p));
+        }
         self.player_ai_unit_update(g, p);
     }
 
     fn choose_production(&self, g: &mut Game, c: CityId) {
         self.city_ai_choose_production(g, c);
+        if g.cities.contains(c) && trace_on(g.cities[c].owner) {
+            let order = g.cities[c].order_queue.first().map(|o| match o.order_type {
+                OrderType::ORDER_TRAIN => format!("train {} ai {}", g.d.units[UnitType(o.data1 as _)].base.type_, o.data2),
+                OrderType::ORDER_CONSTRUCT => format!("build {}", g.d.buildings[BuildingType(o.data1 as _)].base.type_),
+                OrderType::ORDER_CREATE => format!("create {}", o.data1),
+                _ => format!("maintain {}", o.data1),
+            });
+            eprintln!("[cppai t{} p{}] city {} pop {} chooses {:?}", g.game_turn(), g.cities[c].owner.0, c.0, g.cities[c].population, order);
+        }
     }
 
     fn choose_research(&self, g: &Game, p: PlayerId) -> Option<TechType> {
