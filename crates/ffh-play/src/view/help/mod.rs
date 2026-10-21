@@ -128,8 +128,8 @@ pub(crate) fn fill(t: &str, args: &[Arg]) -> String {
     out
 }
 
-/// A text key filled with `args`; `fallback` when the key has no text (the keys FFH2 inherits
-/// from BtS are not vendored).
+/// A text key filled with `args`; `fallback` when the key has no text (a key the vendored text,
+/// FFH2's and the stock BtS/Civ4 files it inherits, lacks).
 pub(crate) fn txt(d: &GameData, key: &str, fallback: &str, args: &[Arg]) -> String {
     let t = names::text(d, key);
     fill(if t == key { fallback } else { t }, args)

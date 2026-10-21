@@ -15,7 +15,7 @@ import { S, dname, orderName, info, turns, me, emit, tidx, ORDER_KINDS } from ".
 import { h, signed, setText } from "./dom.js";
 import { openModal } from "./modals.js";
 import { run } from "./commands.js";
-import { render as markup, plain, YIELD_ICONS, COMMERCE_ICONS } from "./markup.js";
+import { render as markup, YIELD_ICONS, COMMERCE_ICONS } from "./markup.js";
 import { YIELD_COLORS } from "./tiles.js";
 import { look, uiIcon, typeIcon, barEl, pix } from "./look.js";
 import { focusOn, isoSkin, queueIcon, refreshCityPanel } from "./isoui.js";
@@ -315,7 +315,7 @@ function manageView(c, task) {
     ),
   );
   const emphasize = c.emphasize.map((on, e) =>
-    h("label.toggle", { title: plain(info("EmphasizeType", e)?.help ?? "") }, h("input", { type: "checkbox", checked: on, "data-emphasize": e, onchange: (ev) => task("TASK_SET_EMPHASIZE", e, -1, ev.target.checked) }), ` ${dname("EmphasizeType", e)}`),
+    h("label.toggle", { title: `${on ? "Turn off" : "Turn on"} ${dname("EmphasizeType", e)}` }, h("input", { type: "checkbox", checked: on, "data-emphasize": e, onchange: (ev) => task("TASK_SET_EMPHASIZE", e, -1, ev.target.checked) }), ` ${dname("EmphasizeType", e)}`),
   );
   return h(
     "div.section",

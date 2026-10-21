@@ -13,7 +13,8 @@ use ffh_data::*;
 use crate::json::Json;
 use crate::names::{self, KINDS};
 
-/// Text of a key, or `null` when the key is empty or has no text.
+/// Text of a key as `gDLL->getText(key)` gives it (`%%` is a percent sign: "a 5% defensive
+/// bonus"), or `null` when the key is empty or has no text.
 fn text(d: &GameData, key: &str) -> Json {
     if key.is_empty() {
         return Json::Null;
@@ -22,7 +23,7 @@ fn text(d: &GameData, key: &str) -> Json {
     if t == key {
         Json::Null
     } else {
-        Json::from(t)
+        Json::from(crate::view::help::fill(t, &[]))
     }
 }
 
