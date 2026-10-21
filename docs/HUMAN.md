@@ -244,13 +244,15 @@ religion, project, specialist, process and resource does and requires (`setBuild
 `buildBuildingRequiresString`, `setBasicUnitHelp` with `setUnitHelp`, `parsePromotionHelp`,
 `parseSpellHelp`, `parseCivicInfo`, `setReligionHelp`, `setProjectHelp`, `parseSpecialistHelp`,
 `setProcessHelp`, `setBonusHelp`). Those are static: what the type does anywhere, as the
-Civilopedia says it, not what it would add in a given city. Where FFH2's help says nothing
-of a rule the game checks (a building's religion or coast, a religion's alignment and what it
-unlocks, a resource's affinities), ffh-play adds the line. Every field of every table is either
-described or listed as not shown, so a new field cannot go unsaid. Built from the data, they
-follow the rules as they change. Each appears wherever its type does: the build list and the
-buildings of a city, the unit panel's actions, the promotions and spells dialogs, the civics and
-religion screens, the trade table, the map's resources.
+Civilopedia says it, not what it would add in a given city. Their requirements are written
+plainly, since nothing is known to be unmet (Civ4 colours only those a player lacks); a screen
+that knows the player says which it lacks (the civics screen, above the civic's help). Where
+FFH2's help says nothing of a rule the game checks (a building's religion or coast, a religion's
+alignment and what it unlocks, a resource's affinities), ffh-play adds the line. Every field of
+every table is either described or listed as not shown, so a new field cannot go unsaid. Built
+from the data, they follow the rules as they change. Each appears wherever its type does: the
+build list and the buildings of a city, the unit panel's actions, the promotions and spells
+dialogs, the civics and religion screens, the trade table, the map's resources.
 
 **Spectating.** Tools → Spectate (or "Spectate" in the new-game screen) lets the AI play every
 civilization, yours too, one turn at a time with the whole map shown: the top bar has Pause,

@@ -82,7 +82,9 @@ each time a unit drops it in a city; found by the `ffh-play soak` human games).
 - C++ AI (CvUnitAI, CvCityAI, CvPlayerAI, CvTeamAI, CvSelectionGroupAI, CvGameAI) and
   the Python AI hooks (`AI_chooseTech`, `AI_chooseProduction`, `AI_MageTurn`,
   `CustomFunctions.warScript`, ...): replaced by the new AI in `ffh-ai`.
-- UI, graphics, sound, networking, Python screens, worldbuilder, replays.
+- UI, graphics, sound, networking, Python screens, worldbuilder, replays. The help texts of
+  `CvGameTextMgr` are ported for the human client, in ffh-play (`src/view/help/`, docs/HUMAN.md
+  "Help.").
 
 ## Changes from FFH2
 
