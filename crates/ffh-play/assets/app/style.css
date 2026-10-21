@@ -189,6 +189,9 @@ html.art #top .sep { display: block; }
 .tip-title { color: var(--c-vellum); }
 .tip-city { color: var(--c-sand); }
 .tip-path { color: var(--c-bone); margin-top: 3px; }
+.tip-unique { margin: 4px 0; padding: 4px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.tip-unique-name { color: var(--c-sand); }
+.tip-effects { font-size: 12px; line-height: 1.4; }
 .tip-combat { margin-top: 4px; padding-top: 4px; border-top: 1px solid var(--line); }
 .tip-combat .odds { font-size: 15px; color: var(--c-vellum); display: flex; align-items: center; gap: 6px; }
 .tip-combat .odds.bad { color: var(--c-scarlet); }

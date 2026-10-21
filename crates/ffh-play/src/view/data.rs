@@ -2,7 +2,8 @@
 //! GlobalTypes list and hard-coded C++ enum of [`crate::names::KINDS`]), indexed like the
 //! protocol's type indices. Each entry is `{type, name}`; info-table entries add the help,
 //! strategy and pedia texts (Civ4 markup kept, `null` when the text is missing) and the
-//! gameplay fields the renderer and the screens need for the main tables. Built once.
+//! gameplay fields the renderer and the screens need for the main tables (unique improvements add
+//! their `effects`, [`crate::view::improvement_help`]). Built once.
 
 use std::sync::OnceLock;
 
@@ -62,6 +63,9 @@ fn fields(d: &GameData, kind: &str, i: usize, j: &mut Json) {
             j.set("upgrade_time", m.upgrade_time);
             j.set("permanent", m.permanent);
             j.set("unique", m.unique);
+            if m.unique {
+                j.set("effects", crate::view::improvement_help::effects(d, ImprovementType::from_usize(i)));
+            }
         }
         "RouteType" => {
             let r = &d.routes[RouteType::from_usize(i)];

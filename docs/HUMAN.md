@@ -72,7 +72,9 @@ Units face east, and west after a move west. Zoom (`+` `-`, the wheel) goes by w
 32, 64 (the default), 96 and 128 screen pixels a plot, and two chart steps, 16 and 8 (flat
 colours, owners' washes, city dots, units as small squares). Hovering a plot shows a tooltip
 (terrain, resource, improvement, owner, yields and defence while you see it, the city and units
-there; with the art, the yields, defence and move cost by their icons), and with units selected
+there; with the art, the yields, defence and move cost by their icons; over a unique improvement
+such as Yggdrasil or the Maelstrom, what it does: its yields, defence, happiness and healing, the
+resource and spells it offers, what happens to units that enter or come near), and with units selected
 the path: dots from plot to plot that march, a roundel with the
 turn of arrival at each turn's end, the part beyond this turn's moves dimmer, ochre for a route
 to build; an attack ends in crimson brackets with the odds of winning on a chip, and the tooltip
@@ -436,7 +438,7 @@ Errors: `invalid`, `not_owner`, `gone`, `busy`.
 | `pending` | open events (with each option's effects), votes, research needed, idle cities, promotions, ready groups, idle AI-controlled groups |
 | `view` | `me` (gold and rate, research, sliders, civics, score, Armageddon counter, mana, Stasis, the player options, AI autoplay), the players you met, the cities you revealed, the units you see, your groups (`ready`: some unit can move, as `pending.ready_groups`; `selectable`: every unit can, what Civ4's cycle selects), `group_cycle` (your groups in Civ4's cycle order) and `has_auto_unit`, `pending`, `log_next` |
 | `map` | flat arrays `y * w + x`: `vis` (0 unrevealed, 1 fogged, 2 visible), `plot_type`, `terrain`, `feature`, `bonus`, `improvement`, `route`, `owner`, `river` (bit 0 river on the south edge, bit 1 on the east edge, bits 2-4 north/south flow + 1, bits 5-7 west/east flow + 1), `city`, `yield` (`food \| production << 8 \| commerce << 16`, visible plots only), `map_rev`, and `epoch` and `rev`. `map {since: R, epoch: E}` answers only the tiles changed since revision `R` (`full: false`, `tiles` = their indices, each array the values of those tiles), or the full map (`full: true`) when `E` is not the current epoch, `R` is unknown or much of the map changed |
-| `plot {x,y}` | a plot as you know it; while visible also yields, defence, culture and the units |
+| `plot {x,y}` | a plot as you know it (`min_level` when units below a level cannot enter); while visible also yields, defence, culture and the units |
 | `group {units}` | the units in detail and the actions: `mission`, `target` (an interface mode, `mode`: go-to, route-to for workers, range attack, the air modes; needs a plot), `command`, `load`, `spell`, `promotion`, `upgrade`, each `enabled` or not, each with its `cmd` |
 | `path {units,x,y}` | the path preview: nodes with the turn of arrival and moves left, total turns, a war it would declare, whether it ends in an attack |
 | `combat {units,x,y}` | the attack preview: attacker, defender, odds of winning and of retreating (per mille), strengths, the modifiers of both sides |

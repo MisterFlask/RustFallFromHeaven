@@ -8,13 +8,15 @@
 //! * [`view`] and [`status`] here; [`map`] (map arrays, `plot`), [`units`] (`group` with its
 //!   actions, `path`, `combat`), [`city`] (the city screen), [`player`] (`techs`, `civics`,
 //!   `religions`, `players`), [`diplo`] (`trade` and the deal checks of `propose_deal`),
-//!   [`data`] (the static tables), [`text`] (`text`, `ascii`, `inspect`).
+//!   [`data`] (the static tables, with [`improvement_help`]), [`text`] (`text`, `ascii`,
+//!   `inspect`).
 
 pub mod city;
 pub mod data;
 pub mod diplo;
 pub mod fog;
 pub mod hotkeys;
+pub mod improvement_help;
 pub mod map;
 pub mod player;
 pub mod text;
