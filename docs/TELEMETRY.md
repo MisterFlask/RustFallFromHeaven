@@ -93,12 +93,14 @@ combats.
 | `reasons` | Casts by the reason the controller gave (`untagged` when it gave none, `nested` for a cast inside another spell, `delayed` for a delayed spell going off, `command` for a human's order). |
 | `value` | Sum of the values the AI gave. |
 | `at_war`, `in_city`, `enemies` | Context: the caster's team was at war; the caster stood in a city; units of teams at war with it within reach (summed). |
-| `kills`, `damage`, `cursed`, `converted` | Effect on others' units within reach: max(spell range, 2) plots, or the whole map for world spells. `cursed` means they gained promotions; `converted` means they changed to the caster's side. |
+| `kills`, `damage`, `cursed`, `converted`, `others_buffed` | Effect on others' units within reach: max(spell range, 2) plots, or the whole map for world spells. `cursed`: enemy units that gained promotions. That is a curse's effect, or a blessing that reached enemies too; the rules' blessings reach every unit in range. `converted`: units that changed to the caster's side. `others_buffed`: non-enemy units that gained promotions. |
 | `summons`, `summon_kills` | Units the caster's owner gained during the cast, and the combats those summons won later. |
 | `buffs`, `healed`, `own_lost` | Effect on our own units: promotions gained, hit points healed, units lost. |
 | `world` | A world spell. |
 
 A caster (`casters.unit_turns`) is a unit that knows a spell granted by a promotion.
+`casters.idle_castable` counts the casters that ended a turn without casting while one of their
+own spells (not a civilization spell) was still castable.
 
 **Wars** (`wars`) are one record per war between two teams, from the declaration to the peace:
 - `start`, `end`, `turns`;
@@ -130,7 +132,7 @@ Missions, promotions, improvements and builds are only counted.
 |---|---|---|
 | Intents | `goal`: the victory planner's goal. `finance`: `ok`, `losing_gold`, `support_heavy` or `structural_deficit`. `war_prep`: the team being prepared against. `campaign`: the city its operation targets. | `strategy`: the `AI_STRATEGY_*` flags this turn's decisions used. |
 | `production` | The step of `production::decide` that chose it as why (`garrison`, `settler`, `unit_enabler`, `building_interleave`, `caster`, ... or `fallback`). | Why is the unit AI role, `building`, `project` or `process`. |
-| `research` | Why is `value` or `victory_goal`; the top four scores are recorded as alternatives. | The choice only. |
+| `research` | Why is `value`, `victory_goal` or `escape_costs` (finance's cost-cutting tech); the top four scores are recorded as alternatives. | The choice only (`AI_doResearch` and the rules' requests). |
 | `settle_target` | The site: `here`, `walk` or `first_city`, with the top four sites and their scores. | – |
 | `settler` | A settler that `hold`s, `wait`s for an escort or `fall_back`s, with why (`no_site`, `no_safe_site`). | – |
 | `war_prep` / `peace` | `territory` (with every target that passed the gates and its score) or `victory_plan`; peace as `want_peace` or `cash_out`. | – |

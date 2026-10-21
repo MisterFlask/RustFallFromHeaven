@@ -1638,6 +1638,7 @@ impl Cai {
             if g.players[p].disable_research <= 0 {
                 g.player_clear_research_queue(p);
                 if let Some(tech) = self.player_ai_choose_research(g, p) {
+                    g.tel_decision(p, "research", &g.d.techs[tech].base.type_, "", 0, String::new);
                     g.player_push_research(p, tech, false);
                 }
             }

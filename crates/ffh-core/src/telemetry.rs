@@ -95,11 +95,14 @@ struct SpellStat {
     in_city: i64,
     /// Enemy units (of teams at war with the caster's) within reach, summed over casts.
     enemies: i64,
-    /// Effects on the units within reach (the whole map for world spells).
+    /// Effects on others' units within reach (the whole map for world spells): units gone, hit
+    /// points taken, enemies that gained promotions (a curse's effect -- or a blessing that
+    /// reached them too), units that changed to our side, non-enemies that gained promotions.
     kills: i64,
     damage: i64,
     cursed: i64,
     converted: i64,
+    others_buffed: i64,
     summons: i64,
     /// Combats won by the units the spell summoned.
     summon_kills: i64,
@@ -281,8 +284,8 @@ const ODDS_BUCKETS: [&str; 10] = ["00", "10", "20", "30", "40", "50", "60", "70"
 pub(crate) struct CastSnap {
     owner: PlayerId,
     spell: SpellType,
-    /// Units within reach: id, owner, damage, promotions held.
-    units: Vec<(UnitId, PlayerId, i32, u32)>,
+    /// Units within reach: id, owner, damage, promotions held, enemy of the caster's team.
+    units: Vec<(UnitId, PlayerId, i32, u32, bool)>,
     next_unit: UnitId,
     nested: bool,
 }
@@ -734,10 +737,9 @@ impl Game {
                 for &v in &self.map.plots[pl].units {
                     let unit = &self.units[v];
                     let promos = unit.has_promotion.iter().filter(|&&h| h).count() as u32;
-                    snap.units.push((v, unit.owner, unit.damage, promos));
-                    if self.at_war(team, self.players[unit.owner].team) {
-                        enemies += 1;
-                    }
+                    let enemy = self.at_war(team, self.players[unit.owner].team);
+                    snap.units.push((v, unit.owner, unit.damage, promos, enemy));
+                    enemies += enemy as i64;
                 }
             }
         }
@@ -782,10 +784,11 @@ impl Game {
     /// After `unit_cast` ran: what it did to the units it reached.
     pub(crate) fn tel_cast_end(&self, snap: CastSnap) {
         let max_hp = self.d.defines.max_hit_points;
-        let mut out = [0i64; 8]; // kills, damage, cursed, converted, summons, buffs, healed, own_lost
+        // kills, damage, cursed, converted, summons, buffs, healed, own_lost, others_buffed
+        let mut out = [0i64; 9];
         let mut summoned = Vec::new();
         if !snap.nested {
-            for &(v, owner, damage, promos) in &snap.units {
+            for &(v, owner, damage, promos, enemy) in &snap.units {
                 let own = owner == snap.owner;
                 match self.units.get(v) {
                     None => out[if own { 7 } else { 0 }] += 1,
@@ -806,7 +809,7 @@ impl Game {
                                 out[1] += dd as i64;
                             }
                             if now_promos > promos {
-                                out[2] += 1;
+                                out[if enemy { 2 } else { 8 }] += 1;
                             }
                         }
                     }
@@ -838,6 +841,7 @@ impl Game {
             s.buffs += out[5];
             s.healed += out[6];
             s.own_lost += out[7];
+            s.others_buffed += out[8];
             if out.iter().any(|&v| v != 0) {
                 t.event(|| {
                     ev(turn, "cast_result", snap.owner)
@@ -850,6 +854,7 @@ impl Game {
                         .i("buffs", out[5])
                         .i("healed", out[6])
                         .i("own_lost", out[7])
+                        .i("others_buffed", out[8])
                         .end()
                 });
             }
@@ -918,11 +923,14 @@ impl Game {
         // spell -> [knowers, casters]
         let mut seen: BTreeMap<SpellType, [i64; 2]> = BTreeMap::new();
         let mut casters = 0i64;
+        // At the end: casters that cast nothing and could still cast a spell of their own.
+        let mut idle_casters = 0i64;
         for &u in &self.players[p].units {
             if self.unit_plot_opt(u).is_none() || (end && self.units[u].has_casted) {
                 continue;
             }
             let mut caster = false;
+            let mut castable_own = false;
             for &(s, civ_only) in &cand[self.units[u].unit_type.idx()] {
                 if !self.tel_knows(u, s, human) {
                     continue;
@@ -938,19 +946,19 @@ impl Game {
                     e[0] += 1;
                     if self.unit_can_cast(u, s, false) {
                         e[1] += 1;
+                        castable_own = true;
                     }
                 }
             }
             casters += caster as i64;
+            idle_casters += (caster && castable_own) as i64;
         }
         self.telemetry.with(|t| {
             t.cand = cand;
             if end {
-                let mut idle_casters = 0;
                 for (s, [_, c]) in seen {
                     if c > 0 {
                         t.spells.entry((p, s)).or_default().idle += c;
-                        idle_casters += c;
                     }
                 }
                 if idle_casters > 0 {
@@ -1093,6 +1101,7 @@ impl Game {
                     .i("damage", st.damage)
                     .i("cursed", st.cursed)
                     .i("converted", st.converted)
+                    .i("others_buffed", st.others_buffed)
                     .i("summons", st.summons)
                     .i("summon_kills", st.summon_kills)
                     .i("buffs", st.buffs)

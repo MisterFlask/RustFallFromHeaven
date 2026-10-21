@@ -206,7 +206,7 @@ def section_deaths(groups, top):
 
 def section_spells(groups, top):
     print('\n== Spells (per civ and game). known, castable: unit-turns at the start of the owner\'s turn;')
-    print('   idle: unit-turns ending with the spell castable and nothing cast; outcome summed over casts')
+    print('   idle: unit-turns ending with the spell castable and nothing cast; outcome: per civ and game, summed over casts')
     for n, g in groups.items():
         rows = []
         for sp, st in g.spells.items():
@@ -220,8 +220,9 @@ def section_spells(groups, top):
         for sp, st in rows[:top * 2]:
             fk = median(g.spell_firsts[sp]['first_known'])
             fc = median(g.spell_firsts[sp]['first_cast'])
-            reasons = ','.join('%s:%d' % (r, k) for r, k in sorted(g.spell_reasons[sp].items(), key=lambda x: -x[1])[:3])
-            out = ' '.join('%s %d' % (k, st[k]) for k in ('kills', 'damage', 'cursed', 'converted', 'summons', 'summon_kills', 'buffs', 'healed', 'own_lost') if st[k])
+            tot = sum(g.spell_reasons[sp].values()) or 1
+            reasons = ','.join('%s %d%%' % (r, 100 * k // tot) for r, k in sorted(g.spell_reasons[sp].items(), key=lambda x: -x[1])[:3])
+            out = ' '.join('%s %.1f' % (k, per(g, st[k])) for k in ('kills', 'damage', 'cursed', 'converted', 'others_buffed', 'summons', 'summon_kills', 'buffs', 'healed', 'own_lost') if st.get(k))
             print('  %-26s %8.1f %8.1f %7.1f %7.1f %7s %7s  %-28s %s' % (
                 short(sp)[:26] + ('*' if g.spell_world.get(sp) else ''), per(g, st['known']), per(g, st['castable']), per(g, st['idle']), per(g, st['casts']),
                 fk if fk is not None else '-', fc if fc is not None else '-', reasons[:28], out))
