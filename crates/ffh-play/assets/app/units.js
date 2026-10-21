@@ -67,9 +67,16 @@ export function initUnits(view, panelEl) {
   panel = panelEl;
   on("applied", (c) => {
     if (c?.units && S.sel && c.units.some((u) => S.sel.units.includes(u))) advance = { x: S.sel.x, y: S.sel.y };
-    // Combat carries no result, so snapshot an attack now (S.units is still pre-combat) and infer
-    // the outcome from the diff in viewChanged. An attack is a move onto a tile with a foreign
-    // unit (the same gate the combat-odds preview uses).
+    if (pendingCombat) pendingCombat.applied = true;
+  });
+  on("refused", () => {
+    pendingCombat = null;
+  });
+  on("sending", (c) => {
+    // Combat carries no result, so snapshot an attack before it is sent (S.units is pre-combat)
+    // and infer the outcome from the diff in viewChanged. The new view can arrive before the
+    // command's reply, so the snapshot is taken here, not on "applied". An attack is a move onto
+    // a tile with a foreign unit (the same gate the combat-odds preview uses).
     pendingCombat = null;
     if (c?.c === "move" && typeof c.x === "number" && typeof c.y === "number") {
       const mep = me()?.player;
@@ -82,6 +89,7 @@ export function initUnits(view, panelEl) {
           ay: S.sel?.y,
           defenders: defenders.map((u) => ({ id: u.id, hp: u.hp })),
           attackers: (c.units ?? []).map((id) => S.units.get(id)).filter(Boolean).map((u) => ({ id: u.id, hp: u.hp })),
+          applied: false,
         };
       }
     }
@@ -89,12 +97,15 @@ export function initUnits(view, panelEl) {
 }
 
 /** Flashes the struck tile when a snapshotted attack (`pendingCombat`) resolved: a defender lost
- *  (death) or was hurt (hit), else the attacker if it took the loss. Best-effort; a stale or
+ *  (death) or was hurt (hit), else the attacker if it took the loss. Best-effort: a view that
+ *  shows no change yet keeps the snapshot until the command's reply has come; after that, an
  *  unmatched snapshot just clears. */
 function flashCombat() {
   const pc = pendingCombat;
-  pendingCombat = null;
-  if (!pc || !mapView) return;
+  if (!pc || !mapView) {
+    pendingCombat = null;
+    return;
+  }
   try {
     const gone = (id) => !S.units.has(id);
     const hpNow = (id) => S.units.get(id)?.hp;
@@ -106,9 +117,11 @@ function flashCombat() {
     else if (defHit) mapView.flashTile(pc.tx, pc.ty, "hit");
     else if (atkDied && pc.ax != null) mapView.flashTile(pc.ax, pc.ay, "death");
     else if (atkHit && pc.ax != null) mapView.flashTile(pc.ax, pc.ay, "hit");
+    else if (!pc.applied) return; // not resolved in this view yet
   } catch {
     /* a flash is never worth a thrown handler */
   }
+  pendingCombat = null;
 }
 
 // ---------------------------------------------------------------------------------------------
