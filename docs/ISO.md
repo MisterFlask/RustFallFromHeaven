@@ -30,7 +30,7 @@ cargo build --release
 It is the default renderer, so the plain URL shows it; `?renderer=art` switches back to the 2D
 pixel art for one page, and **Tools → Options → "Isometric 2.5D"** / "2D pixel art" is remembered by
 the browser.
-Zoom (`+` `-`, the wheel): 48, 64, 96 (the default), 128, 192 (the art's own size, 1x) and 384 CSS px
+Zoom (`+` `-`, `Q` `E`, the wheel): 48, 64, 96 (the default), 128, 192 (the art's own size, 1x) and 384 CSS px
 a tile. `--assets crates/ffh-play/assets` serves the client and its sprites from disk, so a new
 export (section 6) shows on reload without a rebuild.
 
@@ -199,7 +199,8 @@ fills the page and the interface floats over it.
   diplomacy); the turn report at the top left, folded to its tabs until one is clicked; the
   selection's card at the bottom left (the lead unit's figure on a painted meadow, its strength,
   movement, health and level, the stack, its orders as icon tiles over a description of the one
-  pointed at with its key and help, spells, promotions and upgrades as labelled buttons, the
+  pointed at with its key and help (a box as large as the largest of them, so pointing moves
+  nothing), spells, promotions and upgrades as labelled buttons, the
   seals and the stack buttons); a city panel at the right (your capital, or the city last
   opened or selected: its picture in its owner's colour, population and growth, production,
   yields, mood and health, the build queue, "Open city"); and at the bottom right End turn, the

@@ -814,12 +814,13 @@ function actionButton(a) {
 }
 
 /** The isometric card's action: an icon tile (or, for spells, promotions and upgrades, a
- *  labelled button) that writes its name, key and help into the card's description box while it
- *  is pointed at or focused. */
+ *  labelled button) whose description (name, key and help) the card's description box shows
+ *  while it is pointed at or focused. */
 function isoAction(a, key, extra) {
   const listed = LISTED.includes(a.kind);
   const label = actionLabel(a) + extra;
-  const show = () => describe(a, label, key);
+  descs.set(a, description(a, label, key));
+  const show = () => describe(a);
   return h(
     `button.action${listed ? ".listed" : ".tile"}`,
     {
@@ -840,22 +841,27 @@ function isoAction(a, key, extra) {
   );
 }
 
-/** The card's description box: the action pointed at (its name, key, turns and help), else the
- *  selection's state (`descDefault`). */
-let descDefault = null;
-function describe(a, label, key) {
-  const box = panel?.querySelector(".iso-desc");
-  if (!box) return;
-  if (!a) {
-    fill(box, descDefault ?? []);
-    return;
-  }
+/** The card's description box shows the action pointed at (its name, key, turns and help), else
+ *  the selection's state (its first child). It holds them all from the start, stacked in one
+ *  cell (iso.css), so it is as large as the largest and pointing at an order moves nothing in
+ *  the card. `descs`: each action's description, made by `isoAction` as the card is built. */
+const descs = new Map();
+
+function description(a, label, key) {
   const help = helpOf(a);
-  fill(
-    box,
+  return h(
+    "div.iso-desc-one",
     h("div.iso-desc-title", label, key ? h("kbd", key) : null, a.enabled ? null : h("span.dim", " (not now)")),
     help ? h("div.iso-desc-text", markup(help)) : null,
   );
+}
+
+/** Shows action `a`'s description in the card's box (null: the selection's state). */
+function describe(a) {
+  const box = panel?.querySelector(".iso-desc");
+  if (!box) return;
+  const shown = (a && descs.get(a)) || box.firstElementChild;
+  for (const c of box.children) c.classList.toggle("shown", c === shown);
 }
 
 /** "automated" (the AI moves the unit's group: Stop automation gives it back) or "AI control"
@@ -1013,6 +1019,7 @@ function renderCard({ own, r, details, lead, list, seals, tools, status, hint, w
     : null;
   const tiles = [];
   const listed = [];
+  descs.clear();
   if (r?.error) tiles.push(h("p.warn", r.error));
   else if (!r?.actions) tiles.push(h("p.dim", "…"));
   else {
@@ -1028,8 +1035,9 @@ function renderCard({ own, r, details, lead, list, seals, tools, status, hint, w
       }
     }
   }
-  descDefault = [hint, way, ...[status].flat()].filter(Boolean);
-  if (!descDefault.length) descDefault = [h("div.iso-desc-text.dim", "Point at an order to read it. Right-click a plot to move there.")];
+  let state = [hint, way, ...[status].flat()].filter(Boolean);
+  if (!state.length) state = [h("div.iso-desc-text.dim", "Point at an order to read it. Right-click a plot to move there.")];
+  const desc = h("div.iso-desc", h("div.iso-desc-one.shown", state), [...descs.values()]);
   const name = own.length === 1 ? dname("UnitType", own[0].type) : `${S.sel.units.length} of ${own.length} units`;
   fill(
     panel,
@@ -1037,7 +1045,7 @@ function renderCard({ own, r, details, lead, list, seals, tools, status, hint, w
       "div.iso-card",
       lead ? portrait(lead.type, lead.owner) : null,
       h("div.iso-card-mid", h("h3.iso-name", name, h("span.dim.coords", ` (${x}, ${y})`)), plate, own.length > 1 ? list : null, others),
-      h("div.iso-card-right", h("div.iso-orders", tiles), h("div.iso-desc", descDefault), h("div.iso-tools", seals, tools), listed),
+      h("div.iso-card-right", h("div.iso-orders", tiles), desc, h("div.iso-tools", seals, tools), listed),
     ),
   );
 }

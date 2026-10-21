@@ -249,7 +249,11 @@ html.iso button.action.tile { position: relative; width: 60px; height: 60px; pad
 html.iso button.action.tile kbd { display: none; }
 html.iso .iso-build { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; }
 html.iso .iso-build .badge, html.iso .iso-build .iso-icon.badge { position: absolute; right: -4px; bottom: -4px; border: 0; padding: 0; background: none; }
-html.iso .iso-desc { min-height: 72px; padding: 4px 10px; }
+/* Every description the card can show, in one cell: the box is the size of the largest from the
+   start, so showing another (an order pointed at) moves nothing (units.js describe). */
+html.iso .iso-desc { display: grid; min-height: 72px; padding: 4px 10px; }
+html.iso .iso-desc-one { grid-area: 1 / 1; visibility: hidden; }
+html.iso .iso-desc-one.shown { visibility: visible; }
 html.iso .iso-desc-title { font-weight: 700; color: #fff8e4; }
 html.iso .iso-desc-title kbd { margin-left: 10px; }
 html.iso .iso-desc-text { color: var(--iso-ink); }
