@@ -36,7 +36,7 @@ Each entry answers three questions, from the games themselves (counts with `ffh 
 Six fixes for things a good player does differently, found by tracing seeds 1-18 (the two kept --
 great people building shrines and rushing wonders, explorers moving one safe turn at a time --
 are in docs/AI.md, "Measured together", round 6: neutral on fresh seeds, kept as plainly right
-play), and a garrison quota tried after review. Each was measured alone against the same binary
+play), and two garrison quotas tried after review. Each was measured alone against the same binary
 with it off (a scratch switch), seeds 1-48, 300 turns (6 civs, standard map); the great-person
 change also in full games, the allied-barbarian one with the Clan of Embers forced.
 
@@ -77,6 +77,39 @@ change also in full games, the allied-barbarian one with the Clan of Embers forc
    alone does not: a per-city record of the threats seen (a field on `City`, saved with the game:
    the turn and strength of the last threat, or a decaying average), read by both the build and
    the scrap rules.
+
+### Garrison quota from a record of threats seen (reverted)
+
+1. The entry above implied it: "in expectation" needs an estimate of how often raiders come by
+   each city. `City::ai_threat_record` (saved) was the owner's AI record of the threats seen:
+   once a turn it kept (D-1)/D of itself and gained 100 when an enemy (not an animal) was in
+   sight within 3 plots. One quota for production, finance, the bankrupt rule and the defenders'
+   placement (`units::garrison_quota` never below it): one, two in the capital, one more near a
+   lair or barbarian town, one more once the record reached a first bar and two at a second, war,
+   a defensive leader, the victory guard; trained whatever it cost, never scrapped below it
+   (keeping at half the training bar, so a defender trained for raids outlasted the lull).
+2. Every variant lost against master's quota (seeds 1-48, 300 turns; legacy / research at turn
+   300, t in brackets; cities lost to the barbarians per game, master 1.75):
+
+   | record (D, first bar, second bar) | legacy | research | lost to barbarians |
+   |---|---|---|---|
+   | 20, 150, 400 | -4.2% (-1.5) | -10.0% (-2.2) | 1.79 |
+   | 20, 100, 300 (one sighting trains) | -6.4% (-2.4) | -9.7% (-1.9) | 2.50 |
+   | 40, 150, 400 (longer memory) | -7.2% (-3.1) | -12.4% (-3.1) | 1.96 |
+   | 20, 150, 400, master's affordability cap kept | -5.1% (-2.0) | -10.3% (-2.5) | 1.62 |
+   | the same without the placement floor | -3.6% (-1.4) | -3.9% (-0.9; -7.5% at turn 200, t -2.1) | 2.04 |
+
+   The longer and the more firmly defenders were held, the worse; none lost fewer cities to the
+   barbarians. Keeping master's affordability cap changed nothing (the cap rarely binds); the
+   placement floor (a defender never leaving a city below its need) cost a third of the loss --
+   spare defenders no longer walked to the city under attack -- and the rest is the upkeep of
+   the defenders held between raids.
+3. In this game a defender is cheaper to rebuild than to keep: a Warrior is 25 hammers, its
+   upkeep is paid every turn it stands. Training one when raiders are in sight and scrapping it
+   when the upkeep bites is a reasonable rent-or-buy choice, not a bug, and holding garrisons
+   by an estimate of the expected threat does not save the cities that would pay for them. If
+   the build-and-scrap pattern is attacked again, the lever is the cost of the reaction (train
+   the cheapest adequate defender, or move one from a city with a spare), not holding units.
 
 ### Settlers under a threat the garrison holds (reverted)
 

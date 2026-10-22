@@ -112,8 +112,7 @@ pub fn emergency(ai: &Ai, g: &mut Game, p: PlayerId) {
         if threat == 0 {
             // A long build in a city that should have a second defender by now (decide puts
             // the defender first).
-            let raids = if crate::fix_on("record") { raided(g, c) } else { barbarians_near(g, p, plot, 4) };
-            let exposed = g.game_turn() > 30 && defenders < 2 && (g.city_is_capital(c) || raids);
+            let exposed = g.game_turn() > 30 && defenders < 2 && (g.city_is_capital(c) || barbarians_near(g, p, plot, 4));
             if exposed && !building_fighter && g.city_production_turns_left(c) > 3 && !g.player_is_barbarian(p) && best_unit(g, c, Role::Defense).is_some() {
                 crate::trace!(g, p, "{}: second defender first", g.cities[c].name);
                 g.city_clear_order_queue(c);
@@ -241,8 +240,9 @@ pub fn barbarians_near(g: &Game, p: PlayerId, plot: PlotIdx, range: i32) -> bool
     // Barbarians we are at peace with (the Clan of Embers, Charadon's Doviello) count too: their
     // garrison term holds the defenders that keep the Clan's cities from its rivals (docs/AI_LOG.md,
     // "Allied barbarians no longer counted as a threat"). Raiders in sight count, not only lairs:
-    // a quota from lairs and towns alone lost cities to the barbarians (docs/AI_LOG.md, "Garrison
-    // quota from lasting threats only").
+    // a quota from lairs and towns alone lost cities to the barbarians, and one from a per-city
+    // record of the raiders seen cost research for no city saved (docs/AI_LOG.md, "Garrison
+    // quota from lasting threats only", "Garrison quota from a record of threats seen").
     let (x, y) = g.map.xy(plot);
     for dx in -range..=range {
         for dy in -range..=range {
@@ -260,109 +260,6 @@ pub fn barbarians_near(g: &Game, p: PlayerId, plot: PlotIdx, range: i32) -> bool
         }
     }
     false
-}
-
-/// A barbarian lair (an improvement that spawns non-animal units) or a barbarian city we have
-/// seen within `range` plots: it keeps sending raiders.
-pub fn barbarian_base_near(g: &Game, p: PlayerId, plot: PlotIdx, range: i32) -> bool {
-    let team = g.players[p].team;
-    let barb = g.barbarian_player();
-    let (x, y) = g.map.xy(plot);
-    for dx in -range..=range {
-        for dy in -range..=range {
-            let Some(q) = g.plot_xy(x, y, dx, dy) else { continue };
-            let pl = &g.map.plots[q];
-            if !pl.revealed[team] {
-                continue;
-            }
-            if pl.improvement_type.is_some_and(|i| g.d.improvements[i].spawn_unit_type.is_some_and(|u| !g.d.units[u].animal)) {
-                return true;
-            }
-            if pl.plot_city.is_some_and(|c| g.cities[c].owner == barb) {
-                return true;
-            }
-        }
-    }
-    false
-}
-
-/// SCRATCH (development only): `FFH_AI_THREAT=decay,build,build2` for the record's parameters.
-fn record_params() -> (i32, i32, i32) {
-    static P: OnceLock<(i32, i32, i32)> = OnceLock::new();
-    *P.get_or_init(|| {
-        let v: Vec<i32> = std::env::var("FFH_AI_THREAT").map(|s| s.split(',').filter_map(|x| x.trim().parse().ok()).collect()).unwrap_or_default();
-        if v.len() == 3 { (v[0], v[1], v[2]) } else { (20, 150, 400) }
-    })
-}
-
-/// Once a turn, each city's record of the threats seen near it (`City::ai_threat_record`): it
-/// keeps (D-1)/D of itself and gains 100 when an enemy (not an animal) is in sight within 3
-/// plots. A raider in sight every turn holds it near 100 x D; one raider passing adds 100 that
-/// fades.
-pub fn observe_threats(g: &mut Game, p: PlayerId) {
-    let (decay, _, _) = record_params();
-    let turn = g.game_turn();
-    for c in g.players[p].cities.clone() {
-        if g.cities[c].ai_threat_record_turn == turn {
-            continue;
-        }
-        let seen = local_threat(g, p, g.city_plot(c), 3) > 0;
-        let city = &mut g.cities[c];
-        city.ai_threat_record = city.ai_threat_record * (decay - 1) / decay + if seen { 100 } else { 0 };
-        city.ai_threat_record_turn = turn;
-    }
-}
-
-/// Extra defenders a city's record of raids asks for: one once raiders have been seen often
-/// enough lately, two when they keep coming. A city that has them keeps them until the record
-/// falls to half of what trained them (`keep`), so a defender trained for raids outlasts the
-/// lull between two.
-fn raid_defenders(g: &Game, c: CityId, keep: bool) -> i32 {
-    let (_, build, build2) = record_params();
-    let r = g.cities[c].ai_threat_record * if keep { 2 } else { 1 };
-    i32::from(r >= build) + i32::from(r >= build2)
-}
-
-/// The defenders city `c` needs in expectation: one; two in the capital (once it has company or
-/// after turn 30); one more within 4 plots of a barbarian lair or town; one or two more as its
-/// record of raids asks (`raid_defenders`); one more at war or while preparing one; one more for
-/// a defensive leader with 4+ cities; the victory planner's guard for a city that carries our
-/// victory. Production trains up to it whatever they cost (research pays), and finance and the
-/// bankrupt rule never scrap below it (`keep`: the record's lower bar). A raider seen once moves
-/// neither: with this turn's sightings in both the build and the scrap rules, a barbarian walking
-/// in and out of range had cities train defenders the treasury scrapped a few turns later.
-/// Beyond it, only a visible threat the garrison cannot hold trains more (`decide`, step 1).
-pub fn garrison_need(g: &Game, c: CityId, keep: bool) -> i32 {
-    garrison_base(g, c, keep) + crate::victory::guard(g, c) // victory-pursuit
-}
-
-/// [`garrison_need`] with our victory plan already computed.
-pub fn garrison_need_with(g: &Game, c: CityId, keep: bool, plan: &crate::victory::Plan) -> i32 {
-    garrison_base(g, c, keep) + crate::victory::guard_with(g, c, plan) // victory-pursuit
-}
-
-/// [`garrison_need`] without the victory guard.
-fn garrison_base(g: &Game, c: CityId, keep: bool) -> i32 {
-    let p = g.cities[c].owner;
-    let pl = &g.players[p];
-    let n_cities = pl.cities.len() as i32;
-    let mut need = 1 + i32::from(g.city_is_capital(c) && (n_cities > 1 || g.game_turn() > 30));
-    if barbarian_base_near(g, p, g.city_plot(c), 4) {
-        need += 1;
-    }
-    need += raid_defenders(g, c, keep);
-    if civ_enemies_at_war(g, p) || crate::diplomacy::preparing_target(g, pl.team).is_some() {
-        need += 1;
-    }
-    if pl.personality_type.is_some_and(|l| g.d.leader_heads[l].ai_value_defense > 100) && n_cities > 3 {
-        need += 1;
-    }
-    need
-}
-
-/// Does city `c` see raiders (a lair or town near, or a record of raids)?
-fn raided(g: &Game, c: CityId) -> bool {
-    barbarian_base_near(g, g.cities[c].owner, g.city_plot(c), 4) || raid_defenders(g, c, false) > 0
 }
 
 pub fn count_ai(g: &Game, p: PlayerId, unit_ai: UnitAIType) -> i32 {
@@ -515,21 +412,18 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
     };
     let mil_flavor = flavor("FLAVOR_MILITARY");
 
-    // Garrison quota: what the city needs in expectation (`garrison_need`; the victory guard is
-    // added at step 4).
-    let record_on = crate::fix_on("record");
-    let mut needed = if record_on { garrison_base(g, c, false) } else { 1 + i32::from(ctx.capital && (ctx.n_cities > 1 || g.game_turn() > 30)) + i32::from(ctx.threat > 0) };
-    if !record_on {
-        if barbarians_near(g, p, plot, 3) {
+    // Garrison quota: one, the capital and threatened cities more, cities near barbarian lairs
+    // or barbarians more.
+    let mut needed = 1 + i32::from(ctx.capital && (ctx.n_cities > 1 || g.game_turn() > 30)) + i32::from(ctx.threat > 0);
+    if barbarians_near(g, p, plot, 3) {
+        needed += 1;
+    }
+    if ctx.at_war {
+        needed += 1;
+    }
+    if let Some(l) = leader {
+        if l.ai_value_defense > 100 && ctx.n_cities > 3 {
             needed += 1;
-        }
-        if ctx.at_war {
-            needed += 1;
-        }
-        if let Some(l) = leader {
-            if l.ai_value_defense > 100 && ctx.n_cities > 3 {
-                needed += 1;
-            }
         }
     }
 
@@ -558,8 +452,7 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
     }
 
     // A second defender before more settlers once the barbarians are about.
-    let raids = if record_on { raided(g, c) } else { barbarians_near(g, p, plot, 4) };
-    if g.game_turn() > 30 && ctx.defenders < 2 && (ctx.capital || raids) {
+    if g.game_turn() > 30 && ctx.defenders < 2 && (ctx.capital || barbarians_near(g, p, plot, 4)) {
         if let Some(u) = best_unit(g, c, Role::Defense) {
             return Some(Choice::Train(u, UnitAIType::UNITAI_CITY_DEFENSE));
         }
@@ -640,12 +533,11 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
         }
     }
 
-    // 4. Defenders up to the quota (what a city needs is trained whatever it costs).
-    let cap = !record_on || std::env::var("FFH_AI_RECORD_CAP").is_ok(); // SCRATCH
-    if cap && ctx.broke && ctx.threat == 0 {
+    // 4. Extra defenders up to the quota (a broke empire keeps one per city unless threatened).
+    if ctx.broke && ctx.threat == 0 {
         needed = needed.min(1 + i32::from(ctx.capital));
     }
-    if cap && !ctx.afford && ctx.threat == 0 {
+    if !ctx.afford && ctx.threat == 0 {
         needed = needed.min(1 + i32::from(ctx.capital));
     }
     needed += crate::victory::guard(g, c); // victory-pursuit

@@ -185,7 +185,7 @@ persist_struct!(City {
     commerce_rank_valid, ai_assign_work_dirty, ai_choose_production_dirty, ai_emphasize,
     ai_emphasize_avoid_growth_count, ai_emphasize_great_people_count, ai_emphasize_yield_count,
     ai_emphasize_commerce_count, ai_emphasize_avoid_angry_citizens_count,
-    ai_emphasize_avoid_unhealthy_citizens_count, ai_threat_record, ai_threat_record_turn,
+    ai_emphasize_avoid_unhealthy_citizens_count,
 });
 
 persist_struct!(Player {

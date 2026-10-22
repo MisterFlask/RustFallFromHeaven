@@ -341,12 +341,7 @@ pub(crate) fn garrison_quota(g: &Game, v: &View, c: CityId) -> i32 {
     if v.danger_at(plot) > 0 {
         q += 1 + v.danger_at(plot) / 1000;
     }
-    // Never below what the city needs to keep: a defender that walked off to a city with danger
-    // this turn was trained again where it left, and scrapped as a surplus where it went.
-    if std::env::var("FFH_AI_RECORD_NOFLOOR").is_ok() { // SCRATCH
-        return q.min(5);
-    }
-    q.min(5).max(v.need.get(&c).copied().unwrap_or(0))
+    q.min(5)
 }
 
 fn garrison_unit(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {

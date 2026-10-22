@@ -58,14 +58,6 @@ pub fn trace_on(p: PlayerId) -> bool {
     matches!(*t, Some(-1)) || *t == Some(p.0 as i32)
 }
 
-/// SCRATCH measurement switch (development only, removed before merge):
-/// `FFH_AI_FIX_OFF=name,..|all` turns the named changes off. Read once; it changes no state.
-pub(crate) fn fix_on(name: &str) -> bool {
-    static OFF: std::sync::OnceLock<Vec<String>> = std::sync::OnceLock::new();
-    let off = OFF.get_or_init(|| std::env::var("FFH_AI_FIX_OFF").map(|v| v.split(',').map(|s| s.trim().to_string()).collect()).unwrap_or_default());
-    !off.iter().any(|o| o == name || o == "all")
-}
-
 #[macro_export]
 macro_rules! trace {
     ($g:expr, $p:expr, $($arg:tt)*) => {
@@ -127,9 +119,6 @@ impl Controller for Ai {
         if !v.barbarian {
             if trace_on(p) {
                 trace!(g, p, "{}", victory::describe(g, p, &victory::plan(g, p)));
-            }
-            if fix_on("record") {
-                production::observe_threats(g, p);
             }
             empire::manage(g, p);
             production::emergency(self, g, p);

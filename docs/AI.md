@@ -210,9 +210,11 @@ single hook tagged `bankruptcy-guard`:
   sight, idle workers beyond twice the need. Disbanding more (from 5% of the commerce) lost
   more cities to barbarians. Both these rules and the build rules read the moment (a threat
   in sight, a barbarian within 4 plots), so a raider walking in and out of range has cities
-  train defenders the treasury scraps a few turns later; a 20-turn age limit and a quota from
-  lasting threats only were tried (docs/AI_LOG.md, "Young units never scrapped", "Garrison quota
-  from lasting threats only"): the fix needs a per-city record of the threats seen.
+  train defenders the treasury scraps a few turns later. That is cheaper than holding them:
+  a 20-turn age limit, a quota from lasting threats only and a quota from a per-city record of
+  the raiders seen were tried (docs/AI_LOG.md, "Young units never scrapped", "Garrison quota
+  from lasting threats only", "Garrison quota from a record of threats seen"); every version
+  that holds defenders between raids cost research and saved no city.
 - **Citizens**: the governor's commerce weight above.
 - `finance::city_affordable` (a new city's maintenance and upkeep against the gold left at
   the target share) is for the settler logic and not wired in. Wired into `settler_choice`
@@ -1406,7 +1408,8 @@ unless they strike this turn (`campaign::on_the_move` at war only). Seeds 331-37
 
 Six fixes for play a good player would not make, found by tracing seeds 1-18; two kept, the rest
 reverted (settlers under a held threat, allied barbarians, worker demand and stuck workers, and
-after review the 20-turn scrapping rule and a garrison quota from lasting threats:
+after review the 20-turn scrapping rule and garrison quotas from lasting threats and from a
+per-city record of the threats seen:
 docs/AI_LOG.md, "Low-hanging fixes"). Each was measured alone against the same binary with it
 off (seeds 1-48, 300 turns; the great people also in full games, seeds 1-24):
 
