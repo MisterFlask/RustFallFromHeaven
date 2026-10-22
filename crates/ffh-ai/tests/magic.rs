@@ -1,7 +1,9 @@
 //! Spellcasting (`magic.rs`): constructed, deterministic scenarios on a small hand-made map --
 //! a mage next to an enemy city casts Fireball before our stack attacks it, an adept that knows
 //! Enchanted Blade and Haste blesses its stack rather than hasting it at the end of a quiet turn,
-//! a fresh summon attacks only a fight it has a chance in, and Donal recruits once in a big city.
+//! a fresh summon attacks only a fight it has a chance in unless it is about to expire and covers
+//! no one, Donal recruits once in a big city, a caster builds a mana node on our raw mana and
+//! Govannon teaches his spheres.
 //! They fix no unit's stats, only what the spells are for.
 
 use std::sync::Arc;
@@ -224,12 +226,19 @@ fn a_summon_is_worth_only_the_fights_it_would_take() {
     assert!(g.unit_can_cast(mage, spectre, false));
     let weight = d.spells[spectre].ai_weight;
     let v = View::new(&g, us);
-    assert_eq!(magic::turn_value(&g, &v, mage, spectre), Some(weight), "a Spectre that would not attack is worth nothing");
+    let at_city = magic::turn_value(&g, &v, mage, spectre).expect("a summon is valued");
+    if ffh_ai::switches::SUMMON_SPEND.on(&g, us) {
+        // Gone before it could act again, the Spectre spends itself on the city: worth the few hit
+        // points it takes there (SUMMON_SPEND).
+        assert!(at_city > weight && at_city < weight + 30, "a Spectre at bad odds is worth a few hit points ({at_city})");
+    } else {
+        assert_eq!(at_city, weight, "a Spectre that would not attack is worth nothing");
+    }
     // A wounded Warrior two plots away: the Spectre walks up and takes it on.
     let warrior = g.player_init_unit(them, d.t::<UnitType>("UNIT_WARRIOR"), 9, 5, Some(UnitAIType::UNITAI_ATTACK), None);
     g.units[warrior].damage = 60;
     let v = View::new(&g, us);
-    assert!(magic::turn_value(&g, &v, mage, spectre).is_some_and(|value| value > weight), "the Warrior in reach is worth a Spectre");
+    assert!(magic::turn_value(&g, &v, mage, spectre).is_some_and(|value| value > at_city), "the Warrior in reach is worth a Spectre");
 }
 
 #[test]
@@ -262,4 +271,116 @@ fn donal_recruits_once_in_a_big_city() {
     assert_eq!(g.players[us].units.len(), before + 4, "four recruits");
     g.units[home].has_casted = false;
     assert!(!g.unit_can_cast(home, recruit, false), "the Recruiter promotion is spent");
+}
+
+/// A temporary summon on its last turn (`SUMMON_SPEND`) throws itself at a fight it cannot win,
+/// unless it is its stack's cover: an enemy can strike the plot next turn and the units it stands
+/// with defend worse than it does.
+#[test]
+fn a_summon_on_its_last_turn_spends_itself_unless_it_is_cover() {
+    let d = ffh_data::global();
+    let mut g = one_landmass_game(16);
+    let (us, them) = (PlayerId(0), PlayerId(1));
+    if !magic::enabled(&g, us) || !ffh_ai::switches::SUMMON_SPEND.on(&g, us) {
+        return;
+    }
+    g.player_found(us, 3, 5);
+    g.player_found(them, 16, 5);
+    let (ut, tt) = (g.players[us].team, g.players[them].team);
+    g.team_declare_war(ut, tt, true, None);
+    let champion = g.player_init_unit(them, d.t::<UnitType>("UNIT_CHAMPION"), 8, 5, Some(UnitAIType::UNITAI_ATTACK), None);
+    let summon = |g: &mut Game, x: i32| {
+        let n = g.player_init_unit(us, d.t::<UnitType>("UNIT_PUPPET"), x, 5, Some(UnitAIType::UNITAI_ATTACK), None);
+        g.units[n].ai_suicide_summon = true;
+        g.units[n].duration = 1;
+        n
+    };
+    // Next to the Champion with a Worker to shield: it stays and defends.
+    let newest = g.players[us].units.iter().copied().max();
+    let guard = summon(&mut g, 7);
+    g.player_init_unit(us, d.t::<UnitType>("UNIT_WORKER"), 7, 5, Some(UnitAIType::UNITAI_WORKER), None);
+    let v = View::new(&g, us);
+    ffh_ai::casting::summons_attack(&mut g, &v, newest);
+    assert!(g.units.contains(guard) && !g.units[guard].made_attack, "the Puppet covers the Worker");
+    // Alone on the other side of the Champion: it attacks whatever the odds.
+    let newest = g.players[us].units.iter().copied().max();
+    let alone = summon(&mut g, 9);
+    let v = View::new(&g, us);
+    ffh_ai::casting::summons_attack(&mut g, &v, newest);
+    let fought = !g.units.contains(alone) || g.units[alone].made_attack || g.units[alone].damage > 0 || g.units[champion].damage > 0;
+    assert!(fought, "the Puppet spends itself on the Champion");
+}
+
+/// Mana nodes (`MANA_NODES`): raw mana in our city's radius is a job for a caster, which goes to
+/// build the node type worth most.
+#[test]
+fn a_caster_builds_a_mana_node_on_our_raw_mana() {
+    let d = ffh_data::global();
+    let mut g = one_landmass_game(17);
+    let us = PlayerId(0);
+    if !ffh_ai::switches::MANA_NODES.on(&g, us) {
+        return;
+    }
+    g.player_found(us, 5, 5);
+    let team = g.players[us].team;
+    for name in ["TECH_MYSTICISM", "TECH_KNOWLEDGE_OF_THE_ETHER", "TECH_DIVINATION"] {
+        let t = d.t::<TechType>(name);
+        g.team_set_has_tech(team, t, true, Some(us), false, false);
+    }
+    let raw = g.map.plot_xy(6, 6).unwrap();
+    g.plot_set_bonus_type(raw, Some(d.t::<BonusType>("BONUS_MANA")));
+    assert_eq!(g.map.plots[raw].owner, Some(us));
+    let jobs = ffh_ai::mana::jobs(&g, us);
+    assert_eq!(jobs.len(), 1, "one raw node");
+    assert_eq!(jobs[0].0, raw);
+    assert!(d.builds[jobs[0].1].base.type_.starts_with("BUILD_MANA_"));
+    assert!(jobs[0].2 > 0, "worth something");
+    let adept = g.player_init_unit(us, d.t::<UnitType>("UNIT_ADEPT"), 5, 5, Some(UnitAIType::UNITAI_MANA_UPGRADE), None);
+    let grp = g.units[adept].group.unwrap();
+    let mut v = View::new(&g, us);
+    assert!(ffh_ai::mana::build_node(&mut g, &mut v, grp, adept), "the adept goes to build it");
+    let build = g.groups[grp].mission_queue.iter().find(|m| m.mission_type == MissionType::MISSION_BUILD).map(|m| m.data1);
+    assert_eq!(build, Some(jobs[0].1.i()), "the node's build is queued");
+}
+
+/// Govannon (`TEACH_SPELLS`) teaches his first-level spheres to the units he stands with.
+#[test]
+fn govannon_teaches_his_spheres_to_the_garrison() {
+    let d = ffh_data::global();
+    let mut g = one_landmass_game(18);
+    let us = PlayerId(0);
+    if !ffh_ai::switches::TEACH_SPELLS.on(&g, us) {
+        return;
+    }
+    g.player_found(us, 5, 5);
+    let warriors: Vec<UnitId> = (0..3).map(|_| g.player_init_unit(us, d.t::<UnitType>("UNIT_WARRIOR"), 5, 5, Some(UnitAIType::UNITAI_CITY_DEFENSE), None)).collect();
+    let gov = g.player_init_unit(us, d.t::<UnitType>("UNIT_GOVANNON"), 5, 5, Some(UnitAIType::UNITAI_HERO), None);
+    give(&mut g, gov, &["PROMOTION_ENCHANTMENT1"]);
+    let here = g.unit_plot(gov);
+    assert!(magic::teach_value(&g, gov, here) >= 3 * 40, "Enchanted Blade for three warriors");
+    let grp = g.units[gov].group.unwrap();
+    let mut v = View::new(&g, us);
+    assert!(ffh_ai::casters::govannon(&mut g, &mut v, grp, gov));
+    let ench = d.t::<PromotionType>("PROMOTION_ENCHANTMENT1");
+    assert!(warriors.iter().all(|&w| g.units[w].has_promotion[ench]), "every warrior learned Enchantment I");
+    assert_eq!(magic::teach_value(&g, gov, here), 0, "nothing left to teach here");
+}
+
+/// Sanctuary and March of the Trees wait for a war we are losing (`WS_LOSING_WAR`).
+#[test]
+fn defensive_world_spells_wait_for_a_losing_war() {
+    let mut g = one_landmass_game(19);
+    let (us, them) = (PlayerId(0), PlayerId(1));
+    g.player_found(us, 3, 5);
+    g.player_found(them, 16, 5);
+    g.players[us].power = 100;
+    g.players[them].power = 200;
+    assert!(!ffh_ai::world_spells::losing_war(&g, us), "at peace");
+    let (ut, tt) = (g.players[us].team, g.players[them].team);
+    g.team_declare_war(ut, tt, true, None);
+    g.players[us].power = 100;
+    g.players[them].power = 200;
+    assert!(ffh_ai::world_spells::losing_war(&g, us), "their power is twice ours");
+    g.players[them].power = 140;
+    assert!(!ffh_ai::world_spells::losing_war(&g, us), "1.4 times ours is a war we can hold");
 }

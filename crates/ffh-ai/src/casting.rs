@@ -106,7 +106,6 @@ fn cast_and_act(g: &mut Game, v: &View, u: UnitId, spell: SpellType, ctx: &str, 
 /// 5% or better; Loki's puppets, cast every turn, fought more and the Balseraphs lost.
 pub fn summons_attack(g: &mut Game, v: &View, newest: Option<UnitId>) {
     let p = v.p;
-    let barbarian = g.player_is_barbarian(p);
     let summons: Vec<UnitId> = g.players[p]
         .units
         .iter()
@@ -114,32 +113,100 @@ pub fn summons_attack(g: &mut Game, v: &View, newest: Option<UnitId>) {
         .filter(|&n| newest.map_or(true, |m| n > m) && g.units[n].ai_suicide_summon)
         .collect();
     for n in summons {
-        // Attack while alive with moves left (blitzing summons may attack more than once).
-        for _ in 0..4 {
-            if !g.units.contains(n) || g.unit_moves_left(n) <= 0 {
+        summon_attacks(g, v, n);
+    }
+}
+
+/// Summon `n` attacks while alive with moves left (blitzing summons may attack more than once).
+fn summon_attacks(g: &mut Game, v: &View, n: UnitId) {
+    let barbarian = g.player_is_barbarian(v.p);
+    for _ in 0..4 {
+        if !g.units.contains(n) || g.unit_moves_left(n) <= 0 {
+            break;
+        }
+        let Some(grp) = g.units[n].group else { break };
+        if barbarian {
+            if !crate::units::attack_adjacent(g, v, grp, n, 50) {
                 break;
             }
-            let Some(grp) = g.units[n].group else { break };
-            if barbarian {
-                if !crate::units::attack_adjacent(g, v, grp, n, 50) {
-                    break;
-                }
-                continue;
-            }
-            if attack_power(g, n) == 0 || !g.unit_can_attack(n) {
-                break;
-            }
-            let Some(q) = summon_target(g, n) else { break };
-            let (x, y) = (g.units[n].x, g.units[n].y);
-            let (qx, qy) = g.map.xy(q);
-            let flags = if g.plot_distance(x, y, qx, qy) == 1 { MOVE_DIRECT_ATTACK } else { 0 };
-            let moves = g.unit_moves_left(n);
-            crate::units::move_to(g, grp, q, flags);
-            if g.units.contains(n) && g.unit_moves_left(n) == moves {
-                break;
-            }
+            continue;
+        }
+        if attack_power(g, n) == 0 || !g.unit_can_attack(n) {
+            break;
+        }
+        let Some(q) = summon_target(g, v, n) else { break };
+        let (x, y) = (g.units[n].x, g.units[n].y);
+        let (qx, qy) = g.map.xy(q);
+        let flags = if g.plot_distance(x, y, qx, qy) == 1 { MOVE_DIRECT_ATTACK } else { 0 };
+        let moves = g.unit_moves_left(n);
+        crate::units::move_to(g, grp, q, flags);
+        if g.units.contains(n) && g.unit_moves_left(n) == moves {
+            break;
         }
     }
+}
+
+/// Temporary summons on their last turn (`duration` 1: gone at the start of our next turn) that
+/// outlived the turn they were cast in (a Summoner's summons last a turn longer) attack as fresh
+/// ones do, before the other units move (`SUMMON_SPEND`; without it they moved as army units and
+/// mostly expired unspent).
+pub fn spend_expiring(g: &mut Game, v: &View) {
+    let p = v.p;
+    if v.barbarian || !crate::switches::SUMMON_SPEND.on(g, p) {
+        return;
+    }
+    let expiring: Vec<UnitId> =
+        g.players[p].units.iter().copied().filter(|&n| g.units[n].duration == 1 && !g.unit_is_cargo(n) && attack_power(g, n) > 0).collect();
+    for n in expiring {
+        if !g.units.contains(n) {
+            continue;
+        }
+        // Out of its group (it joined its caster's), so the attack moves it alone.
+        if g.units[n].group.is_some_and(|grp| g.groups[grp].units.len() > 1) {
+            g.unit_join_group(n, None, true);
+        }
+        summon_attacks(g, v, n);
+    }
+}
+
+/// The least a summon spent at bad odds must take from the defender, in hit points (by
+/// `magic::summon_fight`'s estimate): below it the attack only throws the summon away.
+pub const SPEND_MIN_HP: i32 = 5;
+
+/// How a summon ranks a target: at 5% odds or better by its odds (a city 10% more), as FfH's
+/// `AI_anyAttack(.., 5)`; below, only when it may spend itself, by the hit points the fight takes
+/// (`hp`, 0 when it may not), at least [`SPEND_MIN_HP`]: at such odds the summon's chance hardly
+/// differs, the damage it does does. `None`: not a target.
+pub fn summon_score(odds: i32, city: bool, hp: impl FnOnce() -> i32) -> Option<i64> {
+    if odds >= 50 {
+        return Some(1_000_000 + odds as i64 + if city { 100 } else { 0 });
+    }
+    let hp = hp();
+    (hp >= SPEND_MIN_HP).then_some(hp as i64 + if city { 10 } else { 0 })
+}
+
+/// May temporary summon `n` attack at any odds ([`summon_target`], `SUMMON_SPEND`)? Only when it
+/// will be gone before it could act again (`duration` 1 or less: More Naval AI's
+/// `AI_summonAttackMove`, `AI_anyAttack(.., 0)`) and it is not its stack's cover: a summon on a
+/// plot an enemy can strike next turn, stronger in defense than every lasting unit of ours there,
+/// is what that enemy would meet (the Balseraphs' Loki lost his health to a Spectre his puppet
+/// had left him alone with, docs/AI_LOG.md, "Spellcasting").
+fn may_spend(g: &Game, v: &View, n: UnitId) -> bool {
+    let unit = &g.units[n];
+    if !crate::switches::SUMMON_SPEND.on(g, v.p) || unit.duration == 0 || unit.duration > 1 {
+        return false;
+    }
+    !is_cover(g, v, g.unit_plot(n), crate::view::defense_power(g, n), Some(n))
+}
+
+/// Would a unit of defense power `def` on `plot` be our cover there: an enemy can strike the plot
+/// next turn, and lasting units of ours stand on it (`except` aside), none of which defends as well?
+pub fn is_cover(g: &Game, v: &View, plot: PlotIdx, def: i32, except: Option<UnitId>) -> bool {
+    if v.danger_at(plot) == 0 {
+        return false;
+    }
+    let mut ours = g.map.plots[plot].units.iter().filter(|&&o| Some(o) != except && g.units[o].owner == v.p && g.units[o].duration == 0).peekable();
+    ours.peek().is_some() && ours.all(|&o| crate::view::defense_power(g, o) < def)
 }
 
 /// The plot fresh summon `n` attacks (C++ `AI_summonAttackMove`: `AI_anyAttack(baseMoves(), 5)`):
@@ -148,11 +215,15 @@ pub fn summons_attack(g: &mut Game, v: &View, newest: Option<UnitId>) {
 /// `units::attack_adjacent`). A plot holding only temporary summons is left alone, as in FfH:
 /// they are gone before they could act again. FfH also walks toward targets up to `baseMoves()`
 /// turns away; a summon gone at the start of our next turn only attacks what it reaches now.
-fn summon_target(g: &Game, n: UnitId) -> Option<PlotIdx> {
+/// A summon that [`may_spend`] itself also takes worse odds, where the fight still takes
+/// [`SPEND_MIN_HP`] (a 5% target first).
+fn summon_target(g: &Game, v: &View, n: UnitId) -> Option<PlotIdx> {
     let owner = g.units[n].owner;
+    let ut = g.units[n].unit_type;
+    let spend = may_spend(g, v, n);
     let reach = crate::reach::Flood::default().run(g, n, 0, false);
     let mut seen: Vec<PlotIdx> = Vec::new();
-    let mut best: Option<(PlotIdx, i32)> = None;
+    let mut best: Option<(PlotIdx, i64, i32)> = None;
     for r in reach.iter().filter(|r| r.turns == 0) {
         let (x, y) = g.map.xy(r.plot);
         for dir in 0..DirectionType::NUM {
@@ -169,13 +240,18 @@ fn summon_target(g: &Game, n: UnitId) -> Option<PlotIdx> {
             }
             let Some(def) = g.plot_get_best_defender(q, None, Some(owner), Some(n), false, false, false) else { continue };
             let odds = g.get_combat_odds(n, def);
-            let score = odds + if g.map.plots[q].plot_city.is_some() { 100 } else { 0 };
-            if odds >= 50 && best.map_or(true, |(_, s)| score > s) {
-                best = Some((q, score));
+            let city = g.map.plots[q].plot_city.is_some();
+            let hp = || if spend { crate::magic::summon_fight(g, owner, ut, q).map_or(0, |(_, hp)| hp) } else { 0 };
+            let Some(score) = summon_score(odds, city, hp) else { continue };
+            if best.map_or(true, |(_, s, _)| score > s) {
+                best = Some((q, score, odds));
             }
         }
     }
-    best.map(|(q, _)| q)
+    if let Some((q, _, odds)) = best.filter(|&(_, _, odds)| odds < 50) {
+        crate::trace!(g, owner, "summon {} spent at {} per mille on {:?}", g.d.units[ut].base.type_, odds, g.map.xy(q));
+    }
+    best.map(|(q, _, _)| q)
 }
 
 fn unit_value(d: &GameData, ut: UnitType) -> i32 {

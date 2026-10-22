@@ -506,12 +506,21 @@ fn goal_bonus(g: &Game, p: PlayerId, ctx: &Ctx, trace: bool) -> Vec<(TechType, i
     out
 }
 
-/// Improvements unlocked by `t`: value of building them on our land.
+/// Improvements unlocked by `t`: value of building them on our land. Mana nodes are valued by the
+/// node types our raw mana would become (`mana::tech_value`, `MANA_NODES`); without it, as any
+/// improvement that connects a resource.
 fn builds_value(g: &Game, p: PlayerId, t: TechType, ctx: &Ctx) -> i32 {
     let d = g.d;
     let mut total = 0;
+    let nodes = crate::switches::MANA_NODES.on(g, p);
+    if nodes {
+        total += crate::mana::tech_value(g, p, t);
+    }
     for (b, binfo) in d.builds.iter_enumerated() {
         if binfo.tech_prereq != Some(t) {
+            continue;
+        }
+        if nodes && binfo.improvement.is_some_and(|i| d.improvements[i].bonus_convert.is_some()) {
             continue;
         }
         let _ = b;

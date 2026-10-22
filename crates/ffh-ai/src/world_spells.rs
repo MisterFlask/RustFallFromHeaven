@@ -96,6 +96,9 @@ pub fn ready(g: &Game, p: PlayerId, spell: SpellType) -> bool {
     let d = g.d;
     let pl = &g.players[p];
     let wars = || g.team_get_at_war_count(pl.team, true);
+    if matches!(w, World::Sanctuary | World::MarchOfTheTrees) && crate::switches::WS_LOSING_WAR.on(g, p) {
+        return losing_war(g, p);
+    }
     if crate::switches::WS_TIMING.on(g, p) {
         if let Some(ready) = expert_moment(g, p, w) {
             return ready;
@@ -130,6 +133,9 @@ pub fn ready(g: &Game, p: PlayerId, spell: SpellType) -> bool {
 /// - Religious Fervor (a priest in every city of our state religion, with experience by their
 ///   number): FfH's five cities of the religion, or three that are two thirds of ours (a small
 ///   Malakim empire never had five).
+///
+/// Sanctuary and March of the Trees wait for a war we are losing ([`losing_war`],
+/// `FFH_AI_WS_LOSING_WAR_OFF` restores FfH's two wars), checked in [`ready`].
 fn expert_moment(g: &Game, p: PlayerId, w: World) -> Option<bool> {
     let pl = &g.players[p];
     let team = pl.team;
@@ -144,6 +150,28 @@ fn expert_moment(g: &Game, p: PlayerId, w: World) -> Option<bool> {
         }),
         _ => return None,
     })
+}
+
+/// A war we are losing, the moment for the defensive world spells (Sanctuary: no foreign unit
+/// may enter our land for 30 turns; March of the Trees: a Treant on every forest of ours, the
+/// forests' age spent): the civilizations at war with us have at least 1.5 times our power (More
+/// Naval AI's `reqSanctuary` / `reqMarchOfTheTrees`). FfH's own condition, two wars at once,
+/// fired late and during our own winning offensives as often as in a losing defence, where the
+/// lockout and the Treants delay an attacker we would have held anyway and March of the Trees
+/// spends the elves' Ancient Forests for nothing (docs/AI_LOG.md, "World spells at moments of
+/// their own").
+pub fn losing_war(g: &Game, p: PlayerId) -> bool {
+    let team = g.players[p].team;
+    let ours = g.players[p].power.max(1) as i64;
+    let theirs: i64 = g
+        .player_ids()
+        .filter(|&o| {
+            let other = &g.players[o];
+            other.alive && !g.player_is_barbarian(o) && other.team != team && g.at_war(team, other.team)
+        })
+        .map(|o| g.players[o].power as i64)
+        .sum();
+    theirs * 100 >= ours * 150
 }
 
 /// `reqRagingSeas`'s AI condition: a player we are at war with (the barbarians included) has a

@@ -674,7 +674,7 @@ fn summon_strike(g: &Game, p: PlayerId, ut: UnitType, tp: PlotIdx) -> i32 {
 
 /// [`summon_strike`] with the summon's odds of winning (of 1000) by the same estimate; `None`
 /// when it cannot fight there.
-fn summon_fight(g: &Game, p: PlayerId, ut: UnitType, tp: PlotIdx) -> Option<(i32, i32)> {
+pub(crate) fn summon_fight(g: &Game, p: PlayerId, ut: UnitType, tp: PlotIdx) -> Option<(i32, i32)> {
     let d = g.d;
     let info = &d.units[ut];
     let a = (info.combat + info.damage_type_combat.iter().sum::<i32>()) * 100;
@@ -778,11 +778,17 @@ fn summon_value(g: &Game, caster: UnitId, spell: SpellType, ctx: Ctx) -> i32 {
             }
             // It attacks what `casting::summons_attack` picks: of the plots with enemies next to a
             // plot it reaches with moves left (its own moves, the caster's way of moving), the one
-            // where its odds are best, at 5% or better; nothing when none is.
+            // where its odds are best, at 5% or better; nothing when none is. A summon gone before
+            // it could act again that is not the stack's cover takes worse odds too
+            // (`SUMMON_SPEND`, `casting::summon_target`).
             let moves = (uinfo.moves + g.unit_get_extra_spell_move(caster)) * d.defines.move_denominator;
+            let last_turn = uinfo.special_unit_type.map_or(-1, |s| s.i()) == d.defines.specialunit_spell || g.players[p].summon_duration <= 0;
+            let spend = crate::switches::SUMMON_SPEND.on(g, p)
+                && last_turn
+                && !crate::casting::is_cover(g, v, here, crate::view::type_defense_power(d, ut), None);
             let reach = crate::reach::Flood::default().run_moves(g, caster, moves, 0, 0, false);
             let mut seen: Vec<PlotIdx> = Vec::new();
-            let mut best: Option<(i32, i32)> = None;
+            let mut best: Option<(i64, i32)> = None;
             for r in reach.iter().filter(|r| r.turns == 0) {
                 let (rx, ry) = g.map.xy(r.plot);
                 for dir in 0..DirectionType::NUM {
@@ -799,8 +805,8 @@ fn summon_value(g: &Game, caster: UnitId, spell: SpellType, ctx: Ctx) -> i32 {
                         continue;
                     }
                     let Some((odds, value)) = summon_fight(g, p, ut, q) else { continue };
-                    let score = odds + if g.map.plots[q].plot_city.is_some() { 100 } else { 0 };
-                    if odds >= 50 && best.map_or(true, |(s, _)| score > s) {
+                    let Some(score) = crate::casting::summon_score(odds, g.map.plots[q].plot_city.is_some(), || if spend { value } else { 0 }) else { continue };
+                    if best.map_or(true, |(s, _)| score > s) {
                         best = Some((score, value));
                     }
                 }
@@ -1040,7 +1046,12 @@ fn known(g: &Game, u: UnitId) -> Vec<SpellType> {
 /// them) or its city spells (a building the city lacks) are worth most for the turns it takes to
 /// get there, within 8 turns. `None`: nothing to do there (it guards the most threatened city).
 pub fn caster_target(g: &Game, v: &mut View, u: UnitId) -> Option<(PlotIdx, &'static str)> {
-    let d = g.d;
+    strike_target(g, v, u).or_else(|| support_target(g, v, u))
+}
+
+/// The strike part of [`caster_target`]: with the stack of our operation nearest its target (in
+/// the rally city while the force for a war gathers), for a caster that knows a spell for a fight.
+pub fn strike_target(g: &Game, v: &View, u: UnitId) -> Option<(PlotIdx, &'static str)> {
     let p = v.p;
     if combat_caster(g, u) {
         for op in &v.campaign.ops {
@@ -1071,6 +1082,14 @@ pub fn caster_target(g: &Game, v: &mut View, u: UnitId) -> Option<(PlotIdx, &'st
             }
         }
     }
+    None
+}
+
+/// The rest of [`caster_target`]: where the caster's lasting blessings, city spells or
+/// terraforming are worth most for the turns it takes.
+pub fn support_target(g: &Game, v: &mut View, u: UnitId) -> Option<(PlotIdx, &'static str)> {
+    let d = g.d;
+    let p = v.p;
     let spells: Vec<SpellType> = known(g, u)
         .into_iter()
         .filter(|&s| {
@@ -1142,6 +1161,13 @@ pub fn caster_target(g: &Game, v: &mut View, u: UnitId) -> Option<(PlotIdx, &'st
         v.claimed.push(q);
     }
     best.map(|(_, q, why)| (q, why))
+}
+
+/// Does caster `u` alone keep a building in our city it stands in ([`upkeep_value`])? It stays.
+pub fn keeps_building(g: &Game, u: UnitId) -> bool {
+    let d = g.d;
+    let spells: Vec<SpellType> = known(g, u).into_iter().filter(|&s| d.spells[s].create_building_type.is_some()).collect();
+    !spells.is_empty() && upkeep_value(g, u, &spells) > 0
 }
 
 /// What the buildings `u` alone keeps in our city it stands in are worth: those that need a
@@ -1328,6 +1354,127 @@ pub fn combat_caster(g: &Game, u: UnitId) -> bool {
             && [i.promotion_prereq1, i.promotion_prereq2].into_iter().flatten().all(|q| unit.has_promotion[q])
             && could_cast(g, u, s)
     })
+}
+
+/// What sphere promotion `pr` would be worth to a fresh caster of player `p` (Channeling I and no
+/// other sphere: an adept just trained), on [`promotion_value`]'s scale: the best spell it opens,
+/// and a quarter of the best a next promotion of the line opens (an adept becomes a mage only
+/// through an upgrade). For the mana a node would bring (`mana.rs`) and a caster worth training
+/// (`casters.rs`).
+pub fn sphere_value(g: &Game, p: PlayerId, pr: PromotionType) -> i32 {
+    let d = g.d;
+    let Some(ch1) = d.ty::<PromotionType>("PROMOTION_CHANNELING1") else { return 0 };
+    let ch2 = d.ty::<PromotionType>("PROMOTION_CHANNELING2");
+    let civ = g.player_get_civilization_type(p);
+    let adept = d.ty::<UnitCombatType>("UNITCOMBAT_ADEPT");
+    let castable = |s: SpellType, has: &dyn Fn(PromotionType) -> bool| {
+        let i = &d.spells[s];
+        i.allow_ai
+            && i.unit_prereq.is_none()
+            && i.unit_class_prereq.is_none()
+            && i.religion_prereq.is_none()
+            && i.unit_combat_prereq.map_or(true, |c| Some(c) == adept)
+            && i.civilization_prereq.map_or(true, |c| Some(c) == civ)
+            && [i.promotion_prereq1, i.promotion_prereq2].into_iter().flatten().all(|q| has(q))
+    };
+    let best = |has: &dyn Fn(PromotionType) -> bool, need: PromotionType| {
+        d.spells
+            .keys()
+            .filter(|&s| [d.spells[s].promotion_prereq1, d.spells[s].promotion_prereq2].contains(&Some(need)) && castable(s, has))
+            .map(|s| spell_worth(d, s))
+            .max()
+            .unwrap_or(0)
+    };
+    let now = best(&|q| q == pr || q == ch1, pr);
+    let mut later = 0;
+    for next in d.promotions.keys().filter(|&n| d.promotions[n].prereq_promotion == Some(pr)) {
+        later = later.max(best(&|q| q == next || q == pr || q == ch1 || Some(q) == ch2, next) / 4);
+    }
+    now + later
+}
+
+/// What Teach Spellcasting (Govannon: every unit of ours on his plot, but animals and birds, gains
+/// his first-level spheres it lacks, and Channeling I) is worth on plot `q`, on
+/// [`promotion_value`]'s scale: for each unit, each sphere it would gain by the spells that
+/// opens for it.
+pub fn teach_value(g: &Game, caster: UnitId, q: PlotIdx) -> i32 {
+    let d = g.d;
+    let Some(ch1) = d.ty::<PromotionType>("PROMOTION_CHANNELING1") else { return 0 };
+    let p = g.units[caster].owner;
+    let animal = d.ty::<UnitCombatType>("UNITCOMBAT_ANIMAL");
+    let bird = d.ty::<SpecialUnitType>("SPECIALUNIT_BIRD");
+    let spheres: Vec<PromotionType> = d
+        .promotions
+        .keys()
+        .filter(|&pr| g.units[caster].has_promotion[pr] && d.promotions[pr].bonus_prereq.is_some_and(|b| crate::mana::is_mana(d, b)))
+        .collect();
+    if spheres.is_empty() {
+        return 0;
+    }
+    let mut v = 0;
+    for &t in &g.map.plots[q].units {
+        if t == caster || g.units[t].owner != p || !g.unit_is_alive(t) || g.unit_get_unit_combat_type(t) == animal || g.unit_get_special_unit_type(t) == bird {
+            continue;
+        }
+        let unit = &g.units[t];
+        for &pr in &spheres {
+            if unit.has_promotion[pr] {
+                continue;
+            }
+            let has = |o: PromotionType| o == pr || o == ch1 || unit.has_promotion[o];
+            v += opens(g, t, pr, &has);
+        }
+    }
+    v
+}
+
+/// Our plots where caster `u` could terraform with a spell it knows, and the best value there
+/// (`terraform_value`): a terraformer's work (`casters.rs`).
+pub fn terraform_work(g: &Game, p: PlayerId, u: UnitId) -> Vec<(PlotIdx, i32)> {
+    let d = g.d;
+    let spells: Vec<SpellType> = known(g, u).into_iter().filter(|&s| matches!(py_kind(d, s), Py::Spring | Py::Scorch | Py::Vitalize)).collect();
+    if spells.is_empty() {
+        return Vec::new();
+    }
+    let mut out = Vec::new();
+    for &c in &g.players[p].cities {
+        for i in 0..ffh_core::defs::NUM_CITY_PLOTS {
+            let Some(q) = g.city_index_plot(c, i) else { continue };
+            if out.iter().any(|&(o, _)| o == q) {
+                continue;
+            }
+            let best = spells.iter().map(|&s| terraform_value(g, p, s, q)).max().unwrap_or(0);
+            if best >= 15 {
+                out.push((q, best));
+            }
+        }
+    }
+    out
+}
+
+/// Where terraformer `u` goes: the plot of [`terraform_work`] worth most for the turns it takes
+/// (within 8), no one else heading there.
+pub fn terraform_target(g: &Game, v: &mut View, u: UnitId) -> Option<PlotIdx> {
+    let work = terraform_work(g, v.p, u);
+    if work.is_empty() {
+        return None;
+    }
+    let here = g.unit_plot(u);
+    let reach = v.flood.run(g, u, 8, false);
+    let mut best: Option<(i32, PlotIdx)> = None;
+    for (q, value) in work {
+        if v.is_claimed(q) || v.danger_at(q) > 0 {
+            continue;
+        }
+        let Some(turns) = (if q == here { Some(0) } else { reach.iter().find(|r| r.plot == q).map(|r| r.turns) }) else { continue };
+        let score = value * 10 / (turns + 2);
+        if best.map_or(true, |(b, bq)| score > b || score == b && q < bq) {
+            best = Some((score, q));
+        }
+    }
+    let q = best?.1;
+    v.claimed.push(q);
+    Some(q)
 }
 
 #[cfg(test)]

@@ -24,6 +24,20 @@ pub struct Switch {
 pub static WS_TIMING: Switch = Switch::new("WS_TIMING");
 /// A prepared war is declared once the army stands near the target (`diplomacy::manage`).
 pub static WAR_STAGING: Switch = Switch::new("WAR_STAGING");
+/// Mana nodes as an economy: casters convert our raw mana into the node type worth most, a
+/// caster is trained for it, research values the node techs (`mana.rs`).
+pub static MANA_NODES: Switch = Switch::new("MANA_NODES");
+/// A small caster corps by role -- terraformer, city mages, war wizards -- and its training
+/// (`casters.rs`).
+pub static CASTER_ROLES: Switch = Switch::new("CASTER_ROLES");
+/// A temporary summon on its last turn attacks at any odds when it is not its stack's cover
+/// (`casting::summon_target`).
+pub static SUMMON_SPEND: Switch = Switch::new("SUMMON_SPEND");
+/// Govannon walks to our largest stack and casts Teach Spellcasting (`casters::govannon`).
+pub static TEACH_SPELLS: Switch = Switch::new("TEACH_SPELLS");
+/// Sanctuary and March of the Trees when the enemies' power at war is 1.5x ours
+/// (`world_spells::expert_moment`).
+pub static WS_LOSING_WAR: Switch = Switch::new("WS_LOSING_WAR");
 
 fn civ_list(var: &str) -> Option<Vec<String>> {
     let v = std::env::var(var).ok()?;
