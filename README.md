@@ -71,6 +71,10 @@ human slot through the human-play session (`docs/HUMAN.md`):
 ./target/release/ffh-play soak run --seed 2 --size tiny --civ kuriotates --options challenges
 ```
 
+To watch the AI play (and flag its bad play for a bug report with a replayable repro), tick
+"Spectate" in the new-game screen: an observed game is the `ffh autoplay` game of its settings
+(docs/HUMAN.md, "Watching the AI"; `ffh-play observe` replays a flag headless).
+
 To play a game yourself, run `ffh-play serve` and open `http://127.0.0.1:8642/` in a browser; a
 script or an LLM can play through `ffh-play agent`, which speaks the same protocol as JSON lines
 over stdin/stdout (`docs/HUMAN.md`):

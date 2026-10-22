@@ -3,7 +3,7 @@
 // modes (go-to, route-to, range attack: pick a plot), grouping, and cycling over the ready groups.
 
 import * as api from "./api.js";
-import { S, emit, on, dname, tname, tidx, me, unitsAt, ownUnitsAt, cityAt, playerName, readyGroups, selectableGroups, nextSelectableGroup, cycleGroups, selectableGroupsOnPlot, option, moves, turns, info } from "./state.js";
+import { S, emit, on, dname, tname, tidx, me, unitsAt, ownUnitsAt, cityAt, playerName, readyGroups, selectableGroups, nextSelectableGroup, cycleGroups, selectableGroupsOnPlot, option, moves, turns, info, observing, eventKind } from "./state.js";
 import * as K from "./hotkeys.js";
 import { h, fill, toast, coarse } from "./dom.js";
 import { openModal } from "./modals.js";
@@ -282,6 +282,14 @@ export function click(x, y, ev) {
     if (touch) mapView.clearHover();
     return;
   }
+  // An observed game has no units of yours: a click shows the plot (its stack, its events).
+  if (observing()) {
+    S.sel = null;
+    syncOverlay();
+    emit("selection");
+    renderPlotInfo(x, y);
+    return;
+  }
   const own = ownUnitsAt(x, y);
   if (touch && S.sel && !own.length) {
     const key = `${unitsKey(S.sel.units)}@${x},${y}`;
@@ -324,7 +332,7 @@ export function rightClick(x, y, ev) {
     setMode(null);
     return;
   }
-  if (!S.sel) return;
+  if (!S.sel || observing()) return;
   if (ev?.shiftKey) addWaypoint(x, y);
   else moveTo(x, y);
 }
@@ -520,6 +528,11 @@ function clearPreview() {
 }
 
 /** The mouse is over (x, y) (null: left the map). */
+/** The plot under the mouse, or null. */
+export function hoveredPlot() {
+  return hover;
+}
+
 export function hoverAt(x, y) {
   hover = x === null ? null : { x, y };
   // The preview is gone (the finger panned, tapped elsewhere): so is the move it offered.
@@ -644,6 +657,10 @@ function showTip() {
     lines.push(...shown);
     if (units.length > 8) lines.push(h("div.dim", `and ${units.length - 8} more`));
   }
+  // The located messages of the latest turn here (combats, cities taken): what happened on
+  // this plot while the AIs moved.
+  const recent = (S.messages ?? []).filter((m) => Array.isArray(m.at) && m.at[0] === x && m.at[1] === y && m.t >= latestEventTurn());
+  for (const m of recent.slice(-4)) lines.push(h(`div.tip-event.ev-${eventKind(m.text)}`, `${m.player !== null && m.player !== undefined ? `${playerName(m.player)}: ` : ""}${m.text}`));
   const c = preview.combat;
   if (c?.valid) lines.push(combatLines(c));
   const path = preview.path;
@@ -658,6 +675,13 @@ function showTip() {
     }
   }
   mapView.showTip(lines);
+}
+
+/** The first turn whose located messages are this turn's events: observed, the turn that just
+ *  ended (the status's); in a human game, also the previous turn (the others moved then). */
+export function latestEventTurn() {
+  const t = S.status?.turn ?? 0;
+  return observing() ? t : t - 1;
 }
 
 /** Labels of CombatDetails members (C++ `setCombatPlotHelp`). */
@@ -1003,8 +1027,14 @@ export function renderPanel() {
   if (!panel) return;
   if (!S.sel) {
     // The isometric map's card shows only with a selection or a plot (the map stays clear).
-    const hint = touchy() ? "Tap a unit or a city. With units selected, tap a plot to see the way there; tap it again to go." : "Select a unit or a city. Right-click moves the selected units.";
-    if (!panel.dataset.plot) fill(panel, isoSkin() ? [] : h("p.dim", hint));
+    if (!panel.dataset.plot) {
+      const hint = observing()
+        ? `${touchy() ? "Tap" : "Click"} a plot to see its stack (the AI's role and orders of each unit) and this turn's fights there; ⚑ flags it for a bug report.`
+        : touchy()
+          ? "Tap a unit or a city. With units selected, tap a plot to see the way there; tap it again to go."
+          : "Select a unit or a city. Right-click moves the selected units.";
+      fill(panel, isoSkin() ? [] : h("p.dim", hint));
+    }
     return;
   }
   delete panel.dataset.plot;
@@ -1209,11 +1239,42 @@ async function renderPlotInfo(x, y) {
     ["Defence", p.defense !== undefined ? `${p.defense}%` : null],
     ["Move cost", p.move_cost],
   ].filter(([, v]) => v !== null && v !== undefined);
-  const units = (p.units ?? []).map((u) => h("div", `${dname("UnitType", u.type)} (${playerName(u.owner)}) ⚔${u.strength} ${Math.round((100 * u.hp) / u.max_hp)}%`));
+  const list = p.units ?? [];
+  const role = (u) => (u.ai_type ? humanize(u.ai_type.replace(/^UNITAI_/, "")) : null);
+  const orders = (u) => (u.missions?.length ? u.missions.map((m) => humanize(m.replace(/^MISSION_/, ""))).join(" › ") : null);
+  const units = list.map((u) =>
+    h(
+      "div.plot-unit",
+      `${dname("UnitType", u.type)} (${playerName(u.owner)}) ⚔${u.strength} ${Math.round((100 * u.hp) / u.max_hp)}%`,
+      u.level > 1 ? h("span.dim", ` L${u.level}`) : null,
+      role(u) || orders(u) ? h("div.dim.small", [role(u) ? `AI: ${role(u)}` : null, orders(u) ? `orders: ${orders(u)}` : null].filter(Boolean).join(" · "), ` · #${u.id}${u.group !== undefined && u.group !== null ? ` g${u.group}` : ""}`) : null,
+    ),
+  );
+  // The stack at a glance: how many, how many can fight, by owner.
+  const fighters = list.filter((u) => (u.strength ?? 0) > 0);
+  const owners = [...new Set(list.map((u) => u.owner))];
+  const strongest = fighters.reduce((b, u) => (!b || u.strength > b.strength ? u : b), null);
+  const summary = list.length
+    ? h(
+        "p.stack-summary",
+        `${list.length} unit${list.length > 1 ? "s" : ""}`,
+        fighters.length !== list.length ? `, ${fighters.length} can fight` : "",
+        strongest ? ` · strongest ${dname("UnitType", strongest.type)} ⚔${strongest.strength}` : "",
+        owners.length > 1 ? ` · ${owners.map((o) => `${playerName(o)} ${list.filter((u) => u.owner === o).length}`).join(", ")}` : "",
+      )
+    : null;
+  const recent = (S.messages ?? []).filter((m) => Array.isArray(m.at) && m.at[0] === x && m.at[1] === y && m.t >= latestEventTurn());
+  const events = recent.length
+    ? h("div.section", h("h4", "This turn here"), recent.map((m) => h(`div.small.ev-${eventKind(m.text)}`, `${m.player !== null && m.player !== undefined ? `${playerName(m.player)}: ` : ""}${m.text}`)))
+    : null;
+  const flag = S.spectating || observing() ? h("button#flag-plot", { onclick: () => emit("flag-plot", x, y), title: "Record this plot for a bug report: the turn, the units, the game's settings and the replay commands [F]" }, "⚑ Flag this plot…") : null;
   fill(
     panel,
     h("div.panel-head", h("h3", `Plot (${x}, ${y})`), p.vis === 1 ? h("span.dim", " fogged") : null),
     h("table.kv", rows.map(([k, v]) => h("tr", h("th", k), h("td", String(v))))),
+    summary,
     units.length ? h("div.section", h("h4", "Units"), units) : null,
+    events,
+    flag,
   );
 }

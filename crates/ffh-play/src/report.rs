@@ -84,7 +84,13 @@ impl MessageStore {
     /// first entry returned, later than `since` when older messages were dropped).
     pub fn since_json(&self, since: usize) -> Json {
         let from = since.max(self.first()).min(self.total);
-        let entries = self.since(since).iter().enumerate().map(|(k, e)| crate::jobj! { "i" => from + k, "t" => e.turn, "text" => e.text.as_str() });
+        let entries = self.since(since).iter().enumerate().map(|(k, e)| {
+            let j = crate::jobj! { "i" => from + k, "t" => e.turn, "text" => e.text.as_str(), "player" => e.player };
+            match e.at {
+                Some((x, y)) => j.with("at", crate::jarr![x, y]),
+                None => j,
+            }
+        });
         crate::jobj! { "from" => from, "next" => self.total, "entries" => Json::Arr(entries.collect()) }
     }
 }
@@ -581,7 +587,7 @@ impl Report {
             .req_arr("messages")
             .ok()?
             .iter()
-            .map(|m| Some(LogEntry { turn: m.req("t").ok()?, player: m.opt("player").ok()?, text: m.req("text").ok()? }))
+            .map(|m| Some(LogEntry::new(m.req("t").ok()?, m.opt("player").ok()?, m.req("text").ok()?)))
             .collect::<Option<Vec<_>>>()?;
         let items = Json::Obj(j.as_obj()?.iter().filter(|(k, _)| !matches!(k.as_str(), "from_turn" | "turn" | "lines" | "messages")).cloned().collect());
         Some(Report { from_turn: j.req("from_turn").ok()?, turn: j.req("turn").ok()?, items, lines: j.req("lines").ok()?, messages })
@@ -599,7 +605,7 @@ mod tests {
 
     #[test]
     fn message_store_indices() {
-        let e = |i: i32| LogEntry { turn: i, player: None, text: format!("m{i}") };
+        let e = |i: i32| LogEntry::new(i, None, format!("m{i}"));
         let mut m = MessageStore::default();
         for i in 0..5 {
             m.push(e(i));

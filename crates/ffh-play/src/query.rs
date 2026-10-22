@@ -285,6 +285,8 @@ pub struct Ctx<'a> {
     /// The game's saves directory.
     pub saves_dir: Option<&'a Path>,
     pub ui: &'a Mutex<UiState>,
+    /// An observed session: `Some(turns left to play)` (`Session::observe_state`).
+    pub observe: Option<i32>,
 }
 
 /// Answers `q` from `g` for `ctx.h` (under a `QueryGuard`).
@@ -296,6 +298,7 @@ pub fn run(g: &Game, ctx: &Ctx, q: &Query) -> Result<Json, QueryErr> {
     let finders = || if guard.finders_busy() { Err(QueryErr::Busy("a rules call holds the path finders".into())) } else { Ok(()) };
     let out = match q {
         Query::Status => view::status(&v, ctx),
+        Query::Pending if ctx.observe.is_some() => crate::decision::Pending::default().to_json(),
         Query::Pending => crate::decision::pending(v.g, ctx.h, ctx.events).to_json(),
         Query::View => view::view(&v, ctx),
         Query::Map { since, epoch } => {

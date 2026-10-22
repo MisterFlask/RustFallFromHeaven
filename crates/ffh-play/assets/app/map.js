@@ -11,7 +11,7 @@
 // path preview and the interface-mode targets are drawn over them each frame. A minimap shows
 // the whole map and the viewport.
 
-import { S, tname, dname, info, me, isBarbarian, ORDER_KINDS } from "./state.js";
+import { S, tname, dname, info, me, isBarbarian, ORDER_KINDS, observing } from "./state.js";
 import * as T from "./tiles.js";
 import { ArtMap } from "./artmap.js";
 import { IsoMap, ISO_DEFAULT_ZOOM } from "./iso.js";
@@ -91,7 +91,7 @@ export class MapView {
     /** Overlays: `path` (path query reply), `targets` ([[x, y]] or "any"), `hover` ({x, y}),
      *  `sel` ({x, y}), `units` (selected unit ids), `waypoints` ([[x, y]] held while Shift is
      *  down). */
-    this.overlay = { path: null, targets: null, hover: null, sel: null, units: [], waypoints: null, city: null };
+    this.overlay = { path: null, targets: null, hover: null, sel: null, units: [], waypoints: null, city: null, events: [], flags: [] };
     /** The camera before a city screen framed its city (`cityOverlay`), to come back to. */
     this.cityCamera = null;
     /** CSS px of the view that floating panels cover at each side (the isometric interface sets
@@ -852,6 +852,7 @@ export class MapView {
       } catch (e) {
         console.error("3d map:", e);
       }
+      this.drawMarkers();
       this.drawMini();
       return;
     }
@@ -861,6 +862,7 @@ export class MapView {
       } catch (e) {
         console.error("iso map:", e);
       }
+      this.drawMarkers();
       this.drawMini();
       return;
     }
@@ -870,6 +872,7 @@ export class MapView {
       } catch (e) {
         console.error("art map:", e);
       }
+      this.drawMarkers();
       this.drawMini();
       return;
     }
@@ -886,6 +889,7 @@ export class MapView {
     this.drawUnits(g);
     this.drawOverlays(g);
     this.drawFlashes(g);
+    this.drawMarkers();
     this.drawMini();
   }
 
@@ -1335,6 +1339,77 @@ export class MapView {
     }
   }
 
+  /** The markers of the spectator mode over any renderer (CSS px, at `screenOf`): where this
+   *  turn's combats and captures happened (`overlay.events`: crimson for a unit lost or killed,
+   *  amber for a retreat, gold for a city taken or razed) and the flags of this game
+   *  (`overlay.flags`, pennants with their number). */
+  drawMarkers() {
+    const o = this.overlay;
+    if (!this.map || (!o.events?.length && !o.flags?.length)) return;
+    const g = this.ctx;
+    g.save();
+    g.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    const COLORS = { loss: "#e0453a", kill: "#e0453a", retreat: "#f0a830", city: "#ffd34d", event: "#d8d8d8" };
+    for (const e of o.events ?? []) {
+      const s = this.screenOf(e.x, e.y);
+      if (!s || s.x < -40 || s.y < -40 || s.x > this.vw + 40 || s.y > this.vh + 40) continue;
+      const r = Math.max(5, Math.min(16, s.ts * 0.22));
+      const col = COLORS[e.kind] ?? COLORS.event;
+      g.lineWidth = 4;
+      g.strokeStyle = "rgba(0,0,0,0.6)";
+      g.beginPath();
+      if (e.kind === "city") g.rect(s.x - r, s.y - r, 2 * r, 2 * r);
+      else g.arc(s.x, s.y, r, 0, Math.PI * 2);
+      g.stroke();
+      g.lineWidth = 2;
+      g.strokeStyle = col;
+      if (e.kind === "retreat") g.setLineDash([3, 3]);
+      g.stroke();
+      g.setLineDash([]);
+      if (e.kind === "loss" || e.kind === "kill") {
+        const k = r * 0.45;
+        g.beginPath();
+        g.moveTo(s.x - k, s.y - k);
+        g.lineTo(s.x + k, s.y + k);
+        g.moveTo(s.x + k, s.y - k);
+        g.lineTo(s.x - k, s.y + k);
+        g.stroke();
+      }
+    }
+    for (const f of o.flags ?? []) {
+      const s = this.screenOf(f.x, f.y);
+      if (!s || s.x < -40 || s.y < -40 || s.x > this.vw + 40 || s.y > this.vh + 40) continue;
+      const k = Math.max(7, Math.min(14, s.ts * 0.16));
+      const x = s.x - s.ts * 0.28;
+      const y = s.y - k * 1.6;
+      g.lineWidth = 2;
+      g.strokeStyle = "#111";
+      g.beginPath();
+      g.moveTo(x, y);
+      g.lineTo(x, y + 2 * k);
+      g.stroke();
+      g.beginPath();
+      g.moveTo(x, y);
+      g.lineTo(x + 1.4 * k, y + 0.45 * k);
+      g.lineTo(x, y + 0.9 * k);
+      g.closePath();
+      g.fillStyle = "#fff6d8";
+      g.fill();
+      g.lineWidth = 1;
+      g.stroke();
+      if (s.ts >= 40) {
+        g.font = `bold ${Math.round(k * 0.9)}px system-ui, sans-serif`;
+        g.textBaseline = "middle";
+        g.lineWidth = 3;
+        g.strokeStyle = "rgba(0,0,0,0.75)";
+        g.strokeText(String(f.n), x + 1.6 * k, y + 0.45 * k);
+        g.fillStyle = "#fff6d8";
+        g.fillText(String(f.n), x + 1.6 * k, y + 0.45 * k);
+      }
+    }
+    g.restore();
+  }
+
   drawMini() {
     const c = this.mini;
     const g = c.getContext("2d");
@@ -1382,6 +1457,28 @@ export class MapView {
     // The viewport.
     const sx = c.width / map.w;
     const sy = c.height / map.h;
+    // While watching the AI, the armies: every stack of 2 or more units, a dot in its owner's
+    // colour sized by the stack (2-4, 5-9, 10 or more units), the flags as white ticks.
+    if (S.spectating || observing()) {
+      const unit = Math.max(1, Math.min(sx, sy));
+      for (const us of S.unitsAt.values()) {
+        if (us.length < 2) continue;
+        const u0 = us[0];
+        const r = unit * (us.length >= 10 ? 1.6 : us.length >= 5 ? 1.15 : 0.8) + 0.5;
+        const cx = (u0.x + 0.5) * sx;
+        const cy = (map.h - 1 - u0.y + 0.5) * sy;
+        g.beginPath();
+        g.arc(cx, cy, r + 0.8, 0, Math.PI * 2);
+        g.fillStyle = "#000";
+        g.fill();
+        g.beginPath();
+        g.arc(cx, cy, r, 0, Math.PI * 2);
+        g.fillStyle = ownerColor(u0.owner);
+        g.fill();
+      }
+      g.fillStyle = "#fff";
+      for (const f of this.overlay.flags ?? []) g.fillRect((f.x + 0.5) * sx - 1, (map.h - 1 - f.y) * sy - 2, 2, Math.max(4, sy * 1.5));
+    }
     const ts = this.cam.ts;
     const w = (this.vw / ts) * sx;
     const hh = (this.vh / ts) * sy;

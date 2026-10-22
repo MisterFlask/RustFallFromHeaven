@@ -104,6 +104,21 @@ pub struct RunConfig {
     pub force_civs: Vec<String>,
     /// `ffh stats`: also record per-player counts of unit, building and project types.
     pub detail: bool,
+    /// The other custom-game settings (type names; `None`: the standard game's), so that every
+    /// game `ffh-play` builds for an observer can be played here (a spectator's flag quotes the
+    /// command): game speed, the game handicap (the AIs' bonuses), era, climate, sea level.
+    pub speed: Option<String>,
+    pub handicap: Option<String>,
+    pub era: Option<String>,
+    pub climate: Option<String>,
+    pub sea_level: Option<String>,
+    /// `CvInitCore::m_iMaxTurns` (0 = from the game speed).
+    pub max_turns: i32,
+    /// Victory conditions (`VICTORY_*`) turned off.
+    pub disabled_victories: Vec<String>,
+    /// The leader of the first civ slot (`LEADER_*`): with a forced civilization, one of its
+    /// leaders; alone, it forces its civilization too (as `ffh-play`'s new game does).
+    pub leader: Option<String>,
 }
 
 impl Default for RunConfig {
@@ -119,6 +134,14 @@ impl Default for RunConfig {
             until_supremacy: false,
             force_civs: Vec::new(),
             detail: false,
+            speed: None,
+            handicap: None,
+            era: None,
+            climate: None,
+            sea_level: None,
+            max_turns: 0,
+            disabled_victories: Vec::new(),
+            leader: None,
         }
     }
 }
@@ -186,6 +209,23 @@ pub fn new_game(cfg: &RunConfig) -> (Game, Arc<Timed>) {
     let d = ffh_data::global();
     let mut o = ffh_core::setup::SetupOptions::new(d, cfg.civs, &cfg.world, cfg.seed);
     o.options = cfg.options.iter().map(|name| d.t::<GameOptionType>(name)).collect();
+    if let Some(n) = &cfg.speed {
+        o.game_speed = d.t(n);
+    }
+    if let Some(n) = &cfg.handicap {
+        o.handicap = d.t(n);
+    }
+    if let Some(n) = &cfg.era {
+        o.era = d.t(n);
+    }
+    if let Some(n) = &cfg.climate {
+        o.climate = d.t(n);
+    }
+    if let Some(n) = &cfg.sea_level {
+        o.sea_level = d.t(n);
+    }
+    o.max_turns = cfg.max_turns;
+    o.disabled_victories = cfg.disabled_victories.iter().map(|name| d.t::<VictoryType>(name)).collect();
     let mut setup = ffh_core::setup::GameSetup::from_options(d, &o);
     assert!(cfg.force_civs.len() <= cfg.civs, "more forced civilizations than civ slots");
     for (slot, name) in cfg.force_civs.iter().enumerate() {
@@ -205,6 +245,17 @@ pub fn new_game(cfg: &RunConfig) -> (Game, Arc<Timed>) {
             let slot: usize = slot.trim().parse().expect("FFH_PLAYER_HANDICAP: slot number");
             setup.players[slot].handicap = Some(d.t::<HandicapType>(name.trim()));
         }
+    }
+    if let Some(name) = &cfg.leader {
+        let leader = d.t::<LeaderHeadType>(name);
+        let playable = |c: CivilizationType| d.civilizations[c].playable && !d.civilizations[c].base.graphical_only;
+        let civ = match cfg.force_civs.first() {
+            Some(c) => d.t::<CivilizationType>(c),
+            None => d.civilizations.keys().find(|&c| playable(c) && d.civilizations[c].leaders[leader]).unwrap_or_else(|| panic!("{name} leads no playable civilization")),
+        };
+        assert!(d.civilizations[civ].leaders[leader], "{name} does not lead {}", d.type_name(civ));
+        setup.players[0].civ = Some(civ);
+        setup.players[0].leader = Some(leader);
     }
     let mut g = Game::new(d, setup);
     g.handicap = o.handicap;
@@ -639,6 +690,55 @@ mod tests {
         assert_eq!(sa.len(), sb.len());
         for (x, y) in sa.iter().zip(sb.iter()) {
             assert_eq!((x.turn, x.checksum), (y.turn, y.checksum), "games diverged at turn {}", x.turn);
+        }
+    }
+
+    /// The checksum at each turn boundary of game `g` until turn `turns` ends.
+    fn boundary_checksums(g: &mut Game, turns: i32) -> Vec<(i32, i32)> {
+        let mut out = Vec::new();
+        while g.game_state == GameStateType::GAMESTATE_ON && out.len() < turns as usize {
+            g.update();
+            if g.at_turn_boundary() {
+                out.push((g.game_turn(), g.calculate_sync_checksum()));
+            }
+        }
+        out
+    }
+
+    /// A game `ffh-play` builds for an observer (a spectator watching the AI) is the game `ffh
+    /// autoplay` plays with the arguments a spectator's flag quotes for it
+    /// (`ffh_play::flag::ffh_args`): the same checksum at every turn boundary, also with every
+    /// custom-game setting away from its default.
+    #[test]
+    fn observed_games_are_the_autoplay_games_flags_quote() {
+        let d = ffh_data::global();
+        let setups = [
+            r#"{"seed": 3, "opponents": 3, "world": "WORLDSIZE_TINY"}"#,
+            r#"{"seed": 5, "opponents": 2, "world": "WORLDSIZE_DUEL", "civ": "CIVILIZATION_SHEAIM", "speed": "GAMESPEED_QUICK",
+                "handicap": "HANDICAP_MONARCH", "climate": "CLIMATE_ARID", "sea_level": "SEALEVEL_HIGH",
+                "options": ["GAMEOPTION_RAGING_BARBARIANS"], "disabled_victories": ["VICTORY_CULTURAL"], "max_turns": 300}"#,
+            r#"{"seed": 7, "opponents": 2, "world": "WORLDSIZE_DUEL", "leader": "LEADER_SABATHIEL", "era": "ERA_CLASSICAL"}"#,
+        ];
+        for setup in setups {
+            let mut ng = ffh_play::NewGame::from_json(d, &ffh_play::Json::parse(setup).unwrap()).unwrap();
+            ng.observe = true;
+            let args: Vec<String> = ffh_play::flag::ffh_args(d, &ng).split_whitespace().map(String::from).collect();
+            let cfg = crate::parse_run_config(&args);
+            let (mut a, _) = new_game(&cfg);
+            let want = boundary_checksums(&mut a, 25);
+            assert_eq!(want.len(), 25, "{setup}: the game ended early");
+
+            let opts = ffh_play::SessionOptions { journal: false, ..ffh_play::SessionOptions::default() };
+            let mut s = ffh_play::Session::new_game(&ng, Arc::new(ffh_play::human::AdvisorAnswerer), opts).unwrap();
+            let mut got = Vec::new();
+            assert_eq!(s.advance(&mut |_| {}), ffh_play::Stop::Human, "{setup}: stops at the start");
+            while got.len() < want.len() {
+                s.execute(&ffh_play::Command::AutoPlay { turns: 1 }).unwrap();
+                assert_eq!(s.advance(&mut |_| {}), ffh_play::Stop::Human, "{setup}");
+                assert!(s.g.at_turn_boundary(), "{setup}: an observed game stops at turn boundaries");
+                got.push((s.g.game_turn(), s.g.calculate_sync_checksum()));
+            }
+            assert_eq!(got, want, "{setup}: `ffh {}`", args.join(" "));
         }
     }
 

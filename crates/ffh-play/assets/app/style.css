@@ -342,6 +342,20 @@ textarea.raw { width: 100%; font: 12px var(--mono); }
 #mapwrap .layers button.active { border-color: var(--c-bone); color: var(--c-vellum); }
 .spectate { display: inline-flex; align-items: center; gap: 4px; margin-left: 10px; padding: 1px 6px; border: 1px solid var(--c-frost); }
 .spectate b { color: var(--c-rime); font-weight: normal; margin-right: 2px; }
+/* Watching the AI (tools.js, units.js, hud.js): the bar's selects, the stack line, the turn's
+   events (crimson: a unit lost, amber: a retreat, gold: a city taken), the flags list. */
+.spectate select.small { font-size: 12px; padding: 0 2px; max-width: 13em; }
+.stack-summary { margin: 4px 0; color: var(--c-rime); }
+#unit-panel div.small, label.check.small { font-size: 12px; }
+.tip-event, .ev-event { color: var(--c-bone); }
+.ev-loss, .ev-kill { color: #ff8a7a; }
+.ev-retreat { color: #f0b860; }
+.ev-city { color: #ffd34d; }
+#flag-plot { margin-top: 8px; }
+.flag-list { list-style: none; padding: 0; margin: 4px 0; }
+.flag-list li { margin: 2px 0; }
+.msg-who { font-weight: normal; }
+#flag-note { width: 100%; box-sizing: border-box; }
 button.stat.sliders { background: none; border: 1px dashed var(--line); padding: 0 6px; }
 th.group { text-align: left; padding-top: 8px; color: var(--c-sand); font-weight: normal; }
 

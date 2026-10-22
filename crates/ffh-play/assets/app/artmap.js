@@ -22,7 +22,7 @@ import * as T from "./tiles.js";
 import { look, UI, heraldry, KIND_TABLES } from "./look.js";
 import { renderMap, makePlots, fromApiMap } from "../art/compose.js";
 import { TILE } from "../art/art.js";
-import { CHUNK, artScale, rowOf, rowChunksOfTiles, changedTiles, stackState, citySignature, updateFacing, unitMoves, OwnerStyles } from "./stacks.js";
+import { CHUNK, artScale, rowOf, rowChunksOfTiles, changedTiles, stackState, citySignature, updateFacing, unitMoves, OwnerStyles, chartStackSize } from "./stacks.js";
 import { drawChunkLayers } from "./chunks.js";
 
 /** The terrain cache's budget, in art pixels (least recently used chunks go first). */
@@ -905,8 +905,10 @@ export class ArtMap {
   drawChartUnits(g, f) {
     const art = this.art;
     const sel = this.v.overlay.units ?? [];
-    const k = Math.max(2, Math.round(f.tp * 0.4));
     for (const st of this.stacksInView(f)) {
+      // The square grows with the stack (chartStackSize: 1, 2-4, 5-9, 10 or more units), so an
+      // army reads apart from a lone scout when the map is zoomed out.
+      const k = Math.max(2, Math.round(f.tp * chartStackSize(st.state.count)));
       const X = f.ox + st.ux * f.tp + Math.round((f.tp - k) / 2);
       const Y = f.oy + st.row * f.tp + Math.round((f.tp - k) / 2);
       const o = this.owners.get(st.head.owner);

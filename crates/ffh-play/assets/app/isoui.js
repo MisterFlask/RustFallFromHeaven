@@ -507,13 +507,21 @@ export function setIsoSkin(on, view) {
   // The panels under the top bar follow its height (it wraps onto a second row when narrow).
   if (!skin.topWatch && typeof ResizeObserver !== "undefined") {
     const top = document.getElementById("top");
-    // --iso-top: the bar's bottom (the right column, under the system buttons); --iso-top1: its
-    // first row's (the left column, beside a wrapped second row).
+    // --iso-top: the bar's bottom (the right column, under the system buttons); --iso-top1: the
+    // bottom of the parts that start at its left edge (the left column, beside a wrapped second
+    // row): the first row's, or the second's when a wide first row (the phase with the spectator
+    // bar) puts the empire's numbers under it.
     const phase = document.getElementById("phase");
     skin.topWatch = new ResizeObserver(() => {
       if (!skin.on) return;
+      const left = top.getBoundingClientRect().left;
+      let first = phase.getBoundingClientRect().bottom;
+      for (const el of top.children) {
+        const r = el.getBoundingClientRect();
+        if (r.height > 0 && r.left < left + 80) first = Math.max(first, r.bottom);
+      }
       root.style.setProperty("--iso-top", `${Math.ceil(top.getBoundingClientRect().bottom)}px`);
-      root.style.setProperty("--iso-top1", `${Math.ceil(phase.getBoundingClientRect().bottom)}px`);
+      root.style.setProperty("--iso-top1", `${Math.ceil(first)}px`);
     });
     skin.topWatch.observe(top);
   }

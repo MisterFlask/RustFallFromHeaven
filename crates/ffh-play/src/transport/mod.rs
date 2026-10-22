@@ -99,6 +99,12 @@ pub enum SessionOp {
     TakeOver { player: PlayerId, name: String },
     /// Debug reveal on or off.
     Debug { reveal: bool },
+    /// An observed game: the view follows `player`.
+    Follow { player: PlayerId },
+    /// Flags plot `(x, y)` with a note (`crate::flag`): the record.
+    Flag { x: i32, y: i32, note: String },
+    /// The current game's flags (its `flags.jsonl`).
+    Flags,
     Quit,
     /// Every game directory of the saves root with its saves.
     Saves,
@@ -169,8 +175,10 @@ impl Request {
                     "load" | "save" => &["op", "name"],
                     "take_over" => &["op", "player", "name"],
                     "debug" => &["op", "reveal"],
-                    "quit" | "saves" => &["op"],
-                    other => return Err(ProtoErr::invalid(format!("unknown session op {other:?} (new, load, save, take_over, debug, quit, saves)"))),
+                    "follow" => &["op", "player"],
+                    "flag" => &["op", "x", "y", "note"],
+                    "quit" | "saves" | "flags" => &["op"],
+                    other => return Err(ProtoErr::invalid(format!("unknown session op {other:?} (new, load, save, take_over, debug, follow, flag, flags, quit, saves)"))),
                 };
                 only(fields)?;
                 Request::Session(match op {
@@ -186,6 +194,9 @@ impl Request {
                     "save" => SessionOp::Save { name: j.req("name")? },
                     "take_over" => SessionOp::TakeOver { player: j.req("player")?, name: j.req("name")? },
                     "debug" => SessionOp::Debug { reveal: j.req("reveal")? },
+                    "follow" => SessionOp::Follow { player: j.req("player")? },
+                    "flag" => SessionOp::Flag { x: j.req("x")?, y: j.req("y")?, note: j.get_or("note", String::new())? },
+                    "flags" => SessionOp::Flags,
                     "quit" => SessionOp::Quit,
                     _ => SessionOp::Saves,
                 })
@@ -259,9 +270,9 @@ pub fn running_reply(s: &Session, dir: Option<&Path>, id: Json, req: Result<Requ
         }
         Ok(Request::Cmd(j)) => match Command::from_json(s.g.d, &j) {
             Err(e) => err_reply(id, &e.into()),
-            Ok(Command::AutoPlay { turns: 0 }) if s.g.ai_auto_play > 0 => {
+            Ok(Command::AutoPlay { turns: 0 }) if s.autoplay_left() > 0 => {
                 s.shared.request_stop_autoplay();
-                ok_reply(id, crate::jobj! { "stopping" => true, "turns_left" => s.g.ai_auto_play })
+                ok_reply(id, crate::jobj! { "stopping" => true, "turns_left" => s.autoplay_left() })
             }
             Ok(_) => err_reply(id, &ProtoErr::from(crate::command::CmdErr::NotYourTurn)),
         },
@@ -680,6 +691,19 @@ impl Host {
                 s.set_reveal(reveal);
                 Ok((crate::jobj! { "reveal" => reveal }, After::Nothing))
             }
+            SessionOp::Follow { player } => {
+                let s = self.session.as_mut().ok_or_else(ProtoErr::no_game)?;
+                s.set_viewer(player).map_err(play_err)?;
+                Ok((crate::jobj! { "following" => player }, After::Nothing))
+            }
+            SessionOp::Flag { x, y, note } => {
+                let s = self.session.as_ref().ok_or_else(ProtoErr::no_game)?;
+                Ok((s.flag(x, y, &note).map_err(play_err)?, After::Nothing))
+            }
+            SessionOp::Flags => {
+                self.session.as_ref().ok_or_else(ProtoErr::no_game)?;
+                Ok((crate::jobj! { "flags" => Json::Arr(crate::flag::list(self.game_dir.as_deref())) }, After::Nothing))
+            }
             SessionOp::Quit => Ok((crate::jobj! { "quit" => true }, After::Quit)),
             SessionOp::Saves => Ok((self.saves_json()?, After::Nothing)),
         }
@@ -723,10 +747,10 @@ impl Host {
         let current = || self.game_dir.clone().ok_or_else(|| ProtoErr::invalid(format!("save name {name:?}: no current game; use GAME/NAME")));
         let (dir, sub, file) = match parts.as_slice() {
             [file] => (current()?, None, *file),
-            ["auto", file] => (current()?, Some("auto"), *file),
+            [sub @ ("auto" | "flags"), file] => (current()?, Some(*sub), *file),
             [game, file] => (root.join(game), None, *file),
-            [game, "auto", file] => (root.join(game), Some("auto"), *file),
-            _ => return Err(ProtoErr::invalid(format!("save name {name:?}: use NAME, auto/NAME, GAME/NAME or GAME/auto/NAME"))),
+            [game, sub @ ("auto" | "flags"), file] => (root.join(game), Some(*sub), *file),
+            _ => return Err(ProtoErr::invalid(format!("save name {name:?}: use NAME, auto/NAME, flags/NAME, GAME/NAME, GAME/auto/NAME or GAME/flags/NAME"))),
         };
         let path = match sub {
             Some(s) => dir.join(s).join(format!("{file}.ffhsave")),
@@ -778,11 +802,12 @@ fn read_save(path: &Path) -> Result<(Vec<u8>, Option<save::Sidecar>), ProtoErr> 
 /// The autosaves' subdirectory of a game directory (and the save-name prefix that names them).
 const AUTO: &str = "auto";
 
-/// The game directory of a save: its directory, or the one above for an autosave in `auto/`.
+/// The game directory of a save: its directory, or the one above for an autosave in `auto/` or a
+/// flag's save in `flags/`.
 pub fn game_dir_of(save: &Path) -> PathBuf {
     let dir = save.parent().map_or_else(|| PathBuf::from("."), Path::to_path_buf);
     let dir = if dir.as_os_str().is_empty() { PathBuf::from(".") } else { dir };
-    if dir.file_name().is_some_and(|n| n == "auto") {
+    if dir.file_name().is_some_and(|n| n == "auto" || n == crate::flag::FLAGS_DIR) {
         dir.parent().map_or(dir.clone(), Path::to_path_buf)
     } else {
         dir
