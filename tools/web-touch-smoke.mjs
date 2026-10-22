@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // The phone smoke test of the browser client (docs/HUMAN.md, "Phones and touch screens"): starts
 // `ffh-play serve` with a new game and plays it on an emulated phone (touch only, a coarse
-// pointer, device-pixel ratio 2) with the isometric map and its interface (the default), upright
-// (390x844) and on its side (844x390), and with the 2D art map upright: the page fits the
+// pointer, device-pixel ratio 2) with the isometric map and its interface (the default, and the
+// one look phones must support), upright (390x844) and on its side (844x390): the page fits the
 // screen (no sideways scroll, End turn and the map in view, the bottom panel folded), the menu
 // button opens the screens and a tap on the map only closes it, a tap selects a unit, a first tap
 // on a plot previews the move (the tooltip says "tap again") and a second tap moves there, a
@@ -39,9 +39,8 @@ const OUT = path.resolve(args.out ?? path.join(ROOT, "target", "web-touch-smoke"
 const SEED = Number(args.seed ?? 3);
 const ASSETS = args.assets ? ["--assets", path.resolve(args.assets)] : [];
 const PHONES = [
-  { name: "iso-upright", width: 390, height: 844, query: "" },
-  { name: "iso-side", width: 844, height: 390, query: "" },
-  { name: "art-upright", width: 390, height: 844, query: "?renderer=art" },
+  { name: "upright", width: 390, height: 844 },
+  { name: "side", width: 844, height: 390 },
 ];
 
 async function loadPlaywright() {
@@ -83,9 +82,8 @@ async function run(pw, bin, phone) {
       if (!ok) throw new Error(what);
     };
 
-    await page.goto(server.url + phone.query);
-    const iso = !phone.query;
-    await wait((iso) => window.ffh?.ready && window.ffh.S.view && (iso ? window.ffh.mapView.iso : window.ffh.mapView.art), iso, "the game and its map", 30000);
+    await page.goto(server.url);
+    await wait(() => window.ffh?.ready && window.ffh.S.view && window.ffh.mapView.iso, null, "the game and the isometric map", 30000);
     await page.waitForTimeout(800);
 
     // The page fits the phone.

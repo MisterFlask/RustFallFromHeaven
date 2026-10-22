@@ -155,13 +155,14 @@ the screen's size: up to 760 px wide, or up to 520 px high). In both looks the m
 ☰ button at the top left, which drops it down as a sheet of labelled buttons (a pick, or a touch
 anywhere else, folds it again; a touch on the map that folds it does nothing else), the turn
 report starts folded (a dot on "Turn report" says a new one waits), dialogs take the whole screen,
-and the city screen is the dialog with its plot grid. With the isometric map (the default), the
+and the city screen is the dialog with its plot grid. The isometric map (the default) is the look
+phones must support (the 3D map is not meant for them); there the
 top bar is one row (☰, the turn, the empire's numbers scrolling sideways), the advisors join the
 menu's sheet instead of the rail, a bottom bar holds the layers and End turn, the selection's card
 sits on it (upright; a column at the right on its side) and folds with ▾, and the minimap is
-small at a corner (docs/ISO.md, "Phones"). With the 2D map, the top bar keeps the turn and End
-turn (upright: the empire's numbers on a second row), the selection panel is under the map
-(upright, folding with ▾) or a narrower column, and the minimap is at the map's top right. With a
+small at a corner (docs/ISO.md, "Phones"). The 2D map has a small-screen layout too (untested:
+the top bar keeps the turn and End turn, the selection panel is under the map or a narrower
+column, the minimap is at the map's top right). With a
 finger as the main pointer (`pointer: coarse`), buttons are at least 40 px high, the buttons' key
 labels are hidden, the card's orders are labelled buttons (a finger cannot point at a tile to read
 it), the zoom buttons give way to the pinch, and text fields do not make the phone zoom. Touch
@@ -697,8 +698,8 @@ node tools/web-touch-smoke.mjs           # the same on an emulated phone, with t
   turn (`autoplay`). A refusal of anything the server offered fails it.
 * `web-touch-smoke.mjs [--seed 3] [--out DIR] [--assets DIR] [--headed]` plays on an emulated
   phone (Playwright's Chromium, touch only, a coarse pointer; skipped without the `playwright`
-  package), with the isometric map upright (390x844) and on its side (844x390) and with the 2D
-  map upright, each against its own `ffh-play serve --new`: the page fits (no sideways scroll,
+  package), with the isometric map (the look phones must support) upright (390x844) and on its
+  side (844x390), each against its own `ffh-play serve --new`: the page fits (no sideways scroll,
   End turn on screen, the map's clear part at least 30% of the height, the report folded), the ☰
   menu (every button on screen; a tap on the map only closes it), a tap selects a unit, a first
   tap on a free plot previews the move ("tap again to go") without moving and a second tap
