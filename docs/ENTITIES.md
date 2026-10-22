@@ -218,12 +218,17 @@ players, plus the AI-only conditions some `req*` functions keep (docs/AI_ONLY_RU
   what a spell does to the units it reaches, for the spells it models (`magic::understood`: not a
   world spell, not an ability, and with damage, a summon, a promotion added or removed,
   immobility, a dispel, a created building, or one of the Python spells it models: Crush, Pillar
-  of Fire, Destroy Undead, Domination, Heal, Earthquake, Spring, Scorch, Vitalize, Recruit). Other
-  spells keep FfH's terms. It casts before attacks (`magic::before_attack`, from
-  `campaign::strike` and `military::assault`: every caster within two plots of the target casts
-  what weakens the defenders, then summons, then blessings on the attackers) and at the end of the
-  turn (damage and curses on enemies that can reach us, summons that attack, lasting blessings,
-  short ones by the defense they add, healing, terraforming, city spells).
+  of Fire, Destroy Undead, Domination, Heal, Earthquake, Spring, Scorch, Vitalize, Recruit). At the
+  end of the turn the other spells keep FfH's terms (damage and curses on enemies that can reach us,
+  summons that attack, lasting blessings, short ones by the defense they add, healing,
+  terraforming, city spells for the modelled ones). Before attacks (`magic::before_attack`, from
+  `campaign::strike` and `military::assault`) every caster within two plots of the target is
+  offered every castable spell but the world spells, abilities included, valued by what it does
+  to the units there (`magic::attack_value`): what weakens the defenders, then summons, then
+  blessings on the attackers. A caster casts there only what is worth more than its best
+  end-of-turn value (`cast_phases`' reserve); when that best is a spell `magic.rs` does not model,
+  the reserve is FfH's value, on a larger scale than hit points, so such a caster rarely casts
+  before an attack (a dragon's Breathe Fire holds about 600 next to an enemy).
 - **World spells** (`bGlobal`, once a game): cast by the same choices once `world_spells::ready`
   allows (FfH's AI-only timing, moved out of the rules, with three expert moments: Arcane Lacuna,
   Worldbreak, Religious Fervor); the Sidar hold Into the Mist for a war (`civs/sidar.rs`).
