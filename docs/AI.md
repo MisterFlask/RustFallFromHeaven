@@ -1411,13 +1411,15 @@ earlier cast is the first thing to measure.
   (`casting::end_turn`: the best spell, then a buff, then a summon); FfH's casting before a stack
   attacks was omitted, so damage spells and summons rarely fell in a fight and casters filled their
   turns with buffs (docs/AI_LOG.md).
-- **`PrereqBuilding` units**: specific buildings that open units -- the Siege Workshop
-  (Trebuchet, Dwarven Cannon, War Tortoise, War Machine), the Stable (Hornguard, Bison Rider),
-  the Sculptor's Studio (golems, Gargoyle) -- are never built by the generic production
-  (`enabler_building` and `campaign::siege_building` read only `PrereqBuildingClass`), and
-  `research::unit_available` skips such units, so research never values Warhorses for the
-  Hornguard or Engineering for the Gargoyle. The Mage Guild (all adepts) is the
-  `PrereqBuildingClass` case with a value of 0.
+- **`PrereqBuilding` units** (fixed by `b6faa0a`): specific buildings that open units -- the
+  Siege Workshop (Trebuchet, Dwarven Cannon, War Tortoise, War Machine), the Stable (Hornguard,
+  Bison Rider), the Sculptor's Studio (golems, Gargoyle) -- were never built by the generic
+  production (`enabler_building` and `campaign::siege_building` read only `PrereqBuildingClass`),
+  and `research::unit_available` skipped such units. Now `production::unit_building` gives both
+  the unit's `PrereqBuilding` or its civilization's building of the `PrereqBuildingClass`, and
+  `unit_available` counts such units unless the building needs a religion. Still open: the Mage
+  Guild (all adepts) has a value of 0 and `enabler_building` takes only defenders and attackers,
+  so only `civs::unique_casters` builds one (docs/ENTITIES.md).
 - **Foreign units through `UpgradeCiv`** (fixed; the owner's decision: a bug, closed in the
   rules). FfH's `canTrain` checks a unit with `UpgradeCiv` (Kuriotates Centaurs, the Clan's Ogres,
   Goblins and Wolf Riders, Calabim Vampires and Brujah, the Infernal Balor) only against that
