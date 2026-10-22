@@ -58,6 +58,14 @@ pub fn trace_on(p: PlayerId) -> bool {
     matches!(*t, Some(-1)) || *t == Some(p.0 as i32)
 }
 
+/// SCRATCH measurement switch (development only, removed before merge):
+/// `FFH_AI_FIX_ON=name,..` turns the named changes on. Read once; it changes no state.
+pub(crate) fn fix_opt_in(name: &str) -> bool {
+    static ON: std::sync::OnceLock<Vec<String>> = std::sync::OnceLock::new();
+    let on = ON.get_or_init(|| std::env::var("FFH_AI_FIX_ON").map(|v| v.split(',').map(|s| s.trim().to_string()).collect()).unwrap_or_default());
+    on.iter().any(|o| o == name)
+}
+
 #[macro_export]
 macro_rules! trace {
     ($g:expr, $p:expr, $($arg:tt)*) => {

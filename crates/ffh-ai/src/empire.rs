@@ -71,6 +71,13 @@ fn disband(g: &mut Game, p: PlayerId) {
     if !g.player_is_commerce_flexible(p, CommerceType::COMMERCE_RESEARCH) || g.player_calculate_unit_cost(p) == 0 {
         return;
     }
+    if crate::fix_opt_in("mnai") {
+        // SCRATCH: More Naval AI's rule replaces ours for military units (finance::disband_mnai);
+        // idle workers still go by ours.
+        crate::finance::disband(g, p);
+        crate::finance::disband_mnai(g, p);
+        return;
+    }
     if crate::finance::disband(g, p) { return; } // bankruptcy-guard
     let pct = crate::economy::spend_pct(g, p);
     // Field units go first, as soon as research has dropped to a fifth.

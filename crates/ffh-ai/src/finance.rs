@@ -325,7 +325,9 @@ pub fn disband(g: &mut Game, p: PlayerId) -> bool {
             && g.d.units[unit.unit_type].combat > 0
             && g.unit_get_domain_type(u) == DomainType::DOMAIN_LAND
     };
-    let mut fields: Vec<UnitId> = g.players[p].units.iter().copied().filter(|&u| field(g, u) && !no_scrap(g, u)).collect();
+    // SCRATCH: with More Naval AI's rule on, military units go only through it (`disband_mnai`).
+    let military = !crate::fix_opt_in("mnai");
+    let mut fields: Vec<UnitId> = g.players[p].units.iter().copied().filter(|&u| military && field(g, u) && !no_scrap(g, u)).collect();
     let keep_field = 1 + g.players[p].cities.len() as i32 / 4;
     fields.sort_by_key(|&u| (relative_power(g, u, best_def, best_att, false) + 10 * g.units[u].experience as i64, u));
     let surplus_field = (fields.len() as i32 - keep_field).max(0) as usize;
@@ -333,7 +335,7 @@ pub fn disband(g: &mut Game, p: PlayerId) -> bool {
         cands.push((relative_power(g, u, best_def, best_att, false), u));
     }
     // Garrison units beyond the quota production keeps when it cannot afford more.
-    for &c in &g.players[p].cities {
+    for &c in g.players[p].cities.iter().filter(|_| military) {
         let plot = g.city_plot(c);
         if crate::production::local_threat(g, p, plot, 3) > 0 {
             continue;
@@ -391,6 +393,110 @@ pub fn disband(g: &mut Game, p: PlayerId) -> bool {
         done += 1;
     }
     done > 0
+}
+
+/// More Naval AI's measure of financial trouble (C++ `CvPlayerAI::AI_getFundedPercent`): the
+/// percent of the commerce left once every cost is paid. `getGoldPerTurn` is the gold from deals.
+pub fn funded_percent(g: &Game, p: PlayerId) -> i32 {
+    let deals = g.players[p].gold_per_turn;
+    let net_commerce = 1 + g.player_get_commerce_rate(p, CommerceType::COMMERCE_GOLD) + g.player_get_commerce_rate(p, CommerceType::COMMERCE_RESEARCH) + deals.max(0);
+    let net_expenses = g.player_calculate_inflated_costs(p) + (-deals).max(0);
+    100 * (net_commerce - net_expenses) / net_commerce.max(1)
+}
+
+/// SCRATCH (measurement, `FFH_AI_FIX_ON=mnai` turns it on): More Naval AI's disbanding (C++
+/// `CvPlayerAI::AI_doMilitary`). At peace, while costs take more than 60% of the commerce
+/// (`AI_isFinancialTrouble`: funded below 40%) and units cost gold, disband the military unit of
+/// least value ([`mnai_pick`]). Nothing else disbands military units; it reads no threat.
+pub fn disband_mnai(g: &mut Game, p: PlayerId) {
+    if g.player_is_barbarian(p) || at_war(g, p) {
+        return;
+    }
+    for _ in 0..g.players[p].units.len() {
+        if funded_percent(g, p) >= 40 || g.player_calculate_unit_cost(p) <= 0 {
+            break;
+        }
+        let Some(u) = mnai_pick(g, p) else { break };
+        crate::trace!(g, p, "finance: funded {}%, disbanding {} (xp {})", funded_percent(g, p), g.d.units[g.units[u].unit_type].base.type_, g.units[u].experience);
+        // C++ `kill(false)`: gone at once, so the next pass sees the lower cost (a scrap dies
+        // with delay and would still be paid for).
+        g.unit_kill(u, false, None);
+        if g.units.contains(u) {
+            break;
+        }
+    }
+}
+
+/// C++ `CvPlayerAI::AI_disbandUnit(1, false)`: among the military-support units that can fight
+/// with at most 1 experience (not great people, not carrying cargo, not free), the one of least
+/// value: dearer, more experienced and higher-level units are worth more, units in our
+/// territory three times as much (six when defending a city), city defenders six times and
+/// field units twice as much as an untyped unit; extra upkeep makes a unit go first. The random
+/// term of the C++ is dropped (ties: the first unit in our list). Kept from our own rule: never
+/// a hero, a unit that would defect, a summon or one the rules will not scrap.
+fn mnai_pick(g: &Game, p: PlayerId) -> Option<UnitId> {
+    let team = g.players[p].team;
+    let turn = g.game_turn();
+    let mut best: Option<(i64, UnitId)> = None;
+    for &u in &g.players[p].units {
+        let unit = &g.units[u];
+        let info = &g.d.units[unit.unit_type];
+        if g.unit_has_cargo(u) || !info.military_support || g.unit_is_golden_age(u) || info.production_cost <= 0 {
+            continue;
+        }
+        if !g.unit_can_fight(u) || unit.experience > 1 {
+            continue;
+        }
+        let plot = g.unit_plot(u);
+        let in_city = g.map.plots[plot].plot_city.is_some();
+        if g.unit_is_military_happiness(u) && in_city && g.map.plots[plot].units.iter().filter(|&&o| g.units[o].owner == p && g.unit_is_military_happiness(o)).count() <= 2 {
+            continue;
+        }
+        let hero = info.default_unit_ai_type == Some(UnitAIType::UNITAI_HERO)
+            || info.unit_class_type.is_some_and(|c| g.d.unit_classes[c].max_global_instances > 0 || g.d.unit_classes[c].max_player_instances > 0);
+        let betrays = g.d.promotions.keys().any(|pr| unit.has_promotion[pr] && g.d.promotions[pr].betrayal_chance != 0);
+        if hero || betrays || unit.duration > 0 || !g.unit_can_scrap(u) {
+            continue;
+        }
+        let mut v: i64 = 10000;
+        v = v * (100 + info.production_cost as i64 * 3) / 100;
+        v = v * (100 + unit.experience as i64 * 10) / 100;
+        v = v * (100 + unit.level as i64 * 25) / 100;
+        let home = g.plot_get_team(plot) == Some(team);
+        if home {
+            v *= 3;
+            if in_city && g.unit_can_defend(u, Some(plot)) {
+                v *= 2;
+            }
+        }
+        let young_or_away = turn - unit.game_turn_created < 10 || !home;
+        v *= match unit.ai_type {
+            Some(UnitAIType::UNITAI_SETTLE) => 20,
+            Some(UnitAIType::UNITAI_ATTACK) | Some(UnitAIType::UNITAI_ATTACK_CITY) | Some(UnitAIType::UNITAI_COLLATERAL) | Some(UnitAIType::UNITAI_PILLAGE) | Some(UnitAIType::UNITAI_RESERVE) | Some(UnitAIType::UNITAI_COUNTER) => 2,
+            Some(UnitAIType::UNITAI_CITY_DEFENSE) | Some(UnitAIType::UNITAI_CITY_COUNTER) | Some(UnitAIType::UNITAI_CITY_SPECIAL) | Some(UnitAIType::UNITAI_PARADROP) => 6,
+            Some(UnitAIType::UNITAI_EXPLORE) => if young_or_away { 15 } else { 2 },
+            Some(UnitAIType::UNITAI_MISSIONARY) => if young_or_away { 8 } else { 1 },
+            Some(UnitAIType::UNITAI_PROPHET) | Some(UnitAIType::UNITAI_ARTIST) | Some(UnitAIType::UNITAI_SCIENTIST) | Some(UnitAIType::UNITAI_GENERAL) | Some(UnitAIType::UNITAI_MERCHANT) | Some(UnitAIType::UNITAI_ENGINEER) => 20,
+            Some(UnitAIType::UNITAI_SPY) => 12,
+            Some(UnitAIType::UNITAI_ICBM) => 4,
+            Some(UnitAIType::UNITAI_WORKER_SEA) => 18,
+            Some(UnitAIType::UNITAI_EXPLORE_SEA) => if young_or_away { 12 } else { 1 },
+            // C++ quirk: the sea cases fall through (6 * 4 * 2, 4 * 2, 2 at peace).
+            Some(UnitAIType::UNITAI_SETTLER_SEA) => 48,
+            Some(UnitAIType::UNITAI_MISSIONARY_SEA) | Some(UnitAIType::UNITAI_SPY_SEA) => 8,
+            Some(UnitAIType::UNITAI_ASSAULT_SEA) | Some(UnitAIType::UNITAI_CARRIER_SEA) | Some(UnitAIType::UNITAI_MISSILE_CARRIER_SEA) => 2,
+            Some(UnitAIType::UNITAI_PIRATE_SEA) => 5,
+            Some(UnitAIType::UNITAI_DEFENSE_AIR) | Some(UnitAIType::UNITAI_CARRIER_AIR) | Some(UnitAIType::UNITAI_MISSILE_AIR) => 3,
+            _ => 1,
+        };
+        if info.extra_cost > 0 {
+            v /= info.extra_cost as i64 + 1;
+        }
+        if best.map_or(true, |(b, _)| v < b) {
+            best = Some((v, u));
+        }
+    }
+    best.map(|(_, u)| u)
 }
 
 // ---------------------------------------------------------------------------------------------
