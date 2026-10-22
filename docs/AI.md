@@ -1874,6 +1874,57 @@ share score (docs/SCORE.md) averages 10000/N whatever the AI does.
 - `--option GAMEOPTION_X` (repeatable) turns game options on for any of these commands (for
   example `GAMEOPTION_ADVANCED_START`).
 
+## More Naval AI compared (2026-10-22)
+
+More Naval AI (Tholal's FfH2 AI: FfH 0.41's C++ AI plus Better BTS AI, parts of K-Mod and
+Tholal's own changes; source at sourceforge.net/p/tholalsffhaimod/code, r1832) was read area by
+area against this AI. Its disband rule was adopted (Finance, "Unit support"; round 7) and
+fog-busting, which it does not do, failed here (docs/AI_LOG.md, "Fog-busting posts").
+
+Where this AI is ahead, with measurements: victory planning (MNAI's culture victory is switched
+off, "the AI doesnt know how to pursue a culture victory"; its conquest stages are weighted dice),
+research (goals and lookahead against MNAI's depth-3 value plus a random 500), production
+allocation and finance (MNAI's treasury floor sets research to 0 below about 100 gold, the spiral
+our finance module prevents), the one-operation war campaign, war staging and reparations,
+spellcasting and the civilization mechanics (MNAI special-cases a handful of heroes and spells),
+exploration. Not to borrow (tried here and lost, or worse here): caster quotas, summons attacking
+at any odds, a unit-spending cap, gold reserves for upgrades, two escorts per settler, random war
+rolls, the Tower and Altar pursuit (the owner's decision).
+
+Where MNAI does something this AI does not, ranked by expected worth (each untried unless noted):
+1. **Mana nodes as an economy.** One adept per civ builds nodes on our raw mana
+   (`CvUnitAI::AI_upgrademanaMove`), the type chosen by the bonus's effects and the spells its
+   sphere opens; research values node techs by the raw mana we own. Here only the Tower goal
+   builds nodes (`victory::mana_node`), and it is never ours, so no civ builds one; per-node
+   bonuses (Mind +3% research, Law -5% maintenance, ...) are left on the map.
+2. **Defense weighed by rival civilizations.** `CvCityAI::AI_cityThreat` scores each rival's
+   closeness to the city times war/war plan/attitude times its power over ours, and spreads a
+   pool of floating defenders by it; sorties need 175% of the enemy's local strength
+   (`AI_leaveAttack`). Here the quotas read units in sight only; ffh-ai lost 12 cities a game to
+   civs against the C++ AI's 7 (docs/CPPAI.md), and AI_LOG's Clan entry names this term. Measure
+   one civ against the rest (`civ_ab.py`); the garrison entries in AI_LOG warn about the cost.
+3. **Peace terms that weigh our forces** (`CvTeamAI::AI_endWarVal`: the value of peace divided
+   by our attackers en route against theirs, down to a third; a war with nothing moving ends).
+   AI_LOG "Wars" names this lever: sell the war when the next city is out of reach.
+4. **Healing.** MNAI's `AI_heal` stops a stack in the field only when over half of it is hurt,
+   and only where healing is above 10% (not in enemy or neutral land); wounded units in our
+   cities split off. Here one unit over 35% damage halts the whole stack where it stands
+   (`military::army`), committed stacks included, next to defenders that heal faster.
+5. **Heroes and wonders in the best cities.** MNAI builds world wonders and heroes only in the
+   top third of cities by production. Here any city takes a hero once we have 3 cities, and the
+   rules let one city at a time build it, so the first empty queue locks it in.
+6. **Council votes.** MNAI votes and proposes (`AI_diploVote`, `AI_chooseElection`); this AI
+   abstains on every vote and never proposes (the `Controller` defaults), so the Overcouncil and
+   Undercouncil are inert. The FfH 0.41 versions are ported in ffh-cppai. A balance question too.
+7. Smaller: dogpile wars on a civ already at war (`AI_doWar`); no tech trades with the victory
+   rival, no military techs while preparing a war, keep monopolies (`AI_techTrade`); missionaries
+   abroad once the shrine stands; a stack next to an empty or weak enemy city outside the plan
+   takes it (`AI_stackAttackCity`); a second operation for a clear surplus (MNAI caps the units
+   per target); assault fleets wait for the landing force and sail escorted
+   (`AI_assaultSeaMove`); Govannon's Teach Spellcasting; heroes attack only at 85% + level
+   (`AI_getBestGroupAttacker`); Sanctuary and March of the Trees when the enemy's power at war is
+   1.5x ours; re-deciding production when the empire enters financial trouble.
+
 ## Known gaps (future work)
 
 - **Vassals never leave.** A vassal that has recovered stays one. FfH's AI cancels the agreement
