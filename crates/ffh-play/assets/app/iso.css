@@ -472,3 +472,109 @@ html.iso body:has(.modal.city-overlay) :is(#side, #iso-city, #iso-rail, #bottom,
 /* Titles in the bold, rows and values in the regular weight (the reference's). */
 html.iso .iso-title, html.iso .iso-name, html.iso .iso-desc-title, html.iso .modal-head h2, html.iso #iso-corner #end-turn { font-weight: 700; }
 html.iso .iso-name .coords { font-weight: 400; }
+
+/* --- phones (dom.js `compactScreen`: up to 760 px wide, or up to 520 px high) -------------- */
+/* The map takes the screen; the interface keeps to its edges. The top bar is one row: the menu
+   button (the advisors and the system buttons drop down from it as a labelled sheet: isoui.js
+   puts the advisors there instead of on a rail), the turn and the empire's numbers, which scroll
+   sideways. The turn report folds to its open tab under the bar at the left, the minimap is small
+   at the right. The bottom bar holds the layers (and zoom with a mouse: fingers pinch) and End
+   turn; the selection's card sits on it, its orders as labelled buttons on a touch screen
+   (units.js). The city screen is the whole-screen dialog (city.js), not panels around the city. */
+@media (max-width: 760px), (max-height: 520px) {
+  html.iso { --iso-gap: 4px; --iso-top-h: 48px; --iso-bar-h: 56px; }
+  html.iso #top { top: 4px; left: 4px; right: 4px; flex-wrap: nowrap; gap: 4px; }
+  html.iso #btn-menu { display: inline-flex; flex: none; width: 48px; height: var(--iso-top-h); padding: 0; font: 400 24px/24px var(--iso-font); justify-content: center; }
+  html.iso #phase { flex: none; padding: 0 8px; margin-right: 0; }
+  html.iso #phase .year { display: none; }
+  html.iso #phase-text { max-width: 30vw; }
+  html.iso #empire { flex: 1 1 auto; min-width: 0; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; gap: 12px; padding: 0 8px; }
+  html.iso #empire::-webkit-scrollbar { display: none; }
+  html.iso #menu { display: none; }
+  html.iso body.menu-open #menu {
+    display: grid; position: fixed; z-index: 7; top: calc(var(--iso-top) + 4px); left: 4px; right: 4px; margin: 0;
+    grid-template-columns: repeat(auto-fill, minmax(156px, 1fr)); gap: 6px; padding: 8px;
+    max-height: calc(100vh - var(--iso-top) - 12px); max-height: calc(100dvh - var(--iso-top) - 12px); overflow: auto;
+    border: var(--iso-panel-w, 10px) solid transparent; border-image: var(--iso-panel);
+    background: var(--iso-grain) 0 0 / var(--iso-grain-size), linear-gradient(180deg, var(--iso-navy-top), var(--iso-navy-bot)); background-clip: padding-box;
+  }
+  /* In the sheet the buttons say what they are (a finger cannot hover for the tooltip). */
+  html.iso body.menu-open #menu button { width: auto; height: 48px; padding: 0 10px; font-size: 20px; line-height: 24px; justify-content: flex-start; gap: 8px; }
+  html.iso body.menu-open #menu button .iso-icon { width: 32px; height: 32px; }
+  html.iso body.menu-open #btn-keys::after { content: "Controls"; }
+  html.iso body.menu-open #btn-raw::after { content: "Raw request"; }
+  html.iso #iso-rail, html.iso #iso-city { display: none; }
+
+  html.iso #bottom { left: 4px; top: calc(var(--iso-top) + 4px); width: auto; max-width: calc(100vw - 8px); }
+  html.iso body:not(.bottom-closed) #bottom { right: 4px; max-height: 50vh; max-height: 50dvh; }
+  html.iso body.bottom-closed #bottom-tabs button[data-tab]:not(.active) { display: none; }
+
+  html.iso #iso-corner {
+    position: fixed; left: 4px; right: 4px; bottom: 4px; width: auto; height: var(--iso-bar-h);
+    display: flex; align-items: center; gap: 4px; pointer-events: none;
+  }
+  html.iso #iso-corner > * { pointer-events: auto; }
+  html.iso #iso-corner .layers button, html.iso #iso-corner .zoom button { width: 44px; height: 44px; }
+  html.iso #iso-corner #end-turn { margin-left: auto; width: auto; height: var(--iso-bar-h); padding: 0 14px; flex: none; }
+  html.iso #iso-corner canvas.minimap { position: fixed; top: calc(var(--iso-top) + 4px); right: 4px; width: 136px; height: 92px; border-width: 6px; }
+
+  html.iso #side {
+    left: 4px; right: 4px; bottom: calc(var(--iso-bar-h) + 8px); width: auto; max-width: none;
+    max-height: 40vh; max-height: 40dvh; padding: 2px 6px;
+  }
+  html.iso body.side-folded #side { max-height: 64px; overflow: hidden; }
+  html.iso #side-toggle { width: 40px; height: 40px; padding: 0; }
+  html.iso .iso-portrait { display: none; }
+  html.iso .iso-card { flex-wrap: wrap; gap: 4px 12px; }
+  html.iso .iso-card-mid { flex: 1 1 100%; width: auto; min-width: 0; gap: 4px; }
+  html.iso .iso-card-right { flex: 1 1 100%; min-width: 0; max-width: none; gap: 6px; }
+  html.iso .iso-name { display: flex; align-items: center; gap: 6px; }
+  html.iso .iso-name .deselect { margin-left: auto; }
+  /* The numbers on one line, by their icons. */
+  html.iso .iso-plate { flex-direction: row; flex-wrap: wrap; gap: 0 14px; padding: 0 6px; }
+  html.iso .iso-statline { min-height: 32px; gap: 4px; }
+  html.iso .iso-statline .label { display: none; }
+  html.iso .iso-statline .iso-icon { width: 24px; height: 24px; }
+  html.iso .iso-desc { min-height: 0; }
+  html.iso .iso-listed .actions { gap: 4px; }
+
+  html.iso .tooltip { max-width: min(440px, calc(100vw - 12px)); }
+  html.iso #toasts { left: 8px; right: 8px; transform: none; }
+  html.iso .city-cols { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* A phone on its side: the card is a column at the right, above End turn; the minimap goes to the
+   bottom left, above the layers. */
+@media (max-height: 520px) and (min-width: 761px) {
+  html.iso #side { left: auto; right: 4px; top: calc(var(--iso-top) + 4px); bottom: calc(var(--iso-bar-h) + 8px); width: 340px; max-height: none; }
+  html.iso #iso-corner canvas.minimap { top: auto; bottom: calc(var(--iso-bar-h) + 8px); left: 4px; right: auto; width: 128px; height: 84px; }
+}
+
+/* Fingers pinch to zoom: the zoom buttons give their room to End turn. */
+@media (pointer: coarse) and (max-width: 760px), (pointer: coarse) and (max-height: 520px) {
+  html.iso #iso-corner .zoom { display: none; }
+}
+@media (max-width: 760px), (max-height: 520px) {
+  /* The orders first (labelled on a touch screen), then the state and the stack's buttons. */
+  html.iso .iso-card-right > .iso-listed { order: -1; }
+}
+@media (max-width: 760px), (max-height: 520px) {
+  /* Labelled orders two by two; a long label wraps inside its button. */
+  html.iso .iso-listed .actions { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 4px; }
+  html.iso button.action.listed { justify-content: flex-start; text-align: left; white-space: normal; line-height: 20px; padding: 2px 6px; gap: 6px; min-height: 44px; }
+  html.iso button.action.listed > .iso-icon, html.iso button.action.listed > .iso-build { width: 28px; height: 28px; flex: none; }
+  html.iso button.action.listed > .iso-build .iso-sprite { max-width: 28px; max-height: 28px; }
+}
+@media (max-width: 760px) {
+  /* The fold button in the card's top right corner (floated, it would narrow the card). */
+  html.iso #side-toggle { position: absolute; top: 4px; right: 4px; float: none; margin: 0; }
+  html.iso .iso-name { padding-right: 46px; }
+}
+@media (max-width: 760px), (max-height: 520px) {
+  /* The open report's tabs wrap rather than push the fold button off the screen. */
+  html.iso #bottom-tabs { flex-wrap: wrap; }
+}
+@media (max-width: 760px), (max-height: 520px) {
+  /* A radius-3 city's 7x7 plots across a phone: the lettering at 1x (the grid's smallest size). */
+  html.iso .cplot { font: 400 10px/12px var(--iso-font); }
+}

@@ -4,7 +4,7 @@ A Rust port of **Fall from Heaven 2** (0.41), the Civilization IV: Beyond the Sw
 the rules engine is ported function by function from the mod's C++ DLL and rules Python;
 the AI is new. Base mod only; no UI (headless runner).
 
-Play in the browser, nothing to install: https://misterflask.github.io/RustFallFromHeaven/
+Play in the browser, nothing to install (on a phone too): https://misterflask.github.io/RustFallFromHeaven/
 (the browser client with the engine compiled to WebAssembly, rebuilt from master by GitHub Actions; `docs/WEB.md`).
 
 ## Why

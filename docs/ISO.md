@@ -257,6 +257,22 @@ summary and buttons as plaques; the rest of the interface steps aside, and when 
 the camera goes back to where it was. The production popup stays a dialog; the other renderers
 keep the grid.
 
+### Phones
+
+On a small screen (dom.js `compactScreen`: up to 760 px wide, or up to 520 px high; iso.css's
+last blocks) the interface keeps to the edges so the map has the screen. The top bar is one row:
+☰, the turn, the empire's numbers (scrolling sideways). ☰ drops the menu down as a sheet of
+labelled tiles, the advisors first (`isoui.js` `placeRail` puts them there instead of on the rail,
+and back when the screen grows). The turn report folds to its open tab under the bar at the left;
+the minimap is small at the top right (upright) or the bottom left (on its side). A bottom bar
+holds the layer tiles (zoom too with a mouse: fingers pinch) and End turn. The card sits on the
+bar across the width (upright, folding with ▾ to its name) or stands in a column at the right
+(on its side); it drops the portrait, puts the numbers on one line by their icons and, on a touch
+screen, lists the orders as labelled buttons two by two with no description box (`units.js`
+`listedAction`: hovering is what the tiles' descriptions need). The city screen is the
+whole-screen dialog with its plot grid (`city.js`), its plots' lettering at 1x so a radius-3 city
+fits across a phone. The map aims at the part the bars and the card leave (`updateInsets`).
+
 ### W A S D
 
 Held, `W` `A` `S` `D` scroll the map smoothly in every renderer (`MapView.scrollHold`: a

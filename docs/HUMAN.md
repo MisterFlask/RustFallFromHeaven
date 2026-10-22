@@ -150,6 +150,35 @@ XML (each button shows its key), and the global keys are Civ4's controls
 | `Ctrl+1` `Ctrl+2` `Ctrl+3`, `?` | ffh-play's own: the terrain, political and yield layers; the keys list |
 | `Esc` | leave a plot pick, close a dialog, clear the selection |
 
+**Phones and touch screens.** The page fits a phone, upright or on its side (the layout follows
+the screen's size: up to 760 px wide, or up to 520 px high). In both looks the menu folds into a
+☰ button at the top left, which drops it down as a sheet of labelled buttons (a pick, or a touch
+anywhere else, folds it again; a touch on the map that folds it does nothing else), the turn
+report starts folded (a dot on "Turn report" says a new one waits), dialogs take the whole screen,
+and the city screen is the dialog with its plot grid. With the isometric map (the default), the
+top bar is one row (☰, the turn, the empire's numbers scrolling sideways), the advisors join the
+menu's sheet instead of the rail, a bottom bar holds the layers and End turn, the selection's card
+sits on it (upright; a column at the right on its side) and folds with ▾, and the minimap is
+small at a corner (docs/ISO.md, "Phones"). With the 2D map, the top bar keeps the turn and End
+turn (upright: the empire's numbers on a second row), the selection panel is under the map
+(upright, folding with ▾) or a narrower column, and the minimap is at the map's top right. With a
+finger as the main pointer (`pointer: coarse`), buttons are at least 40 px high, the buttons' key
+labels are hidden, the card's orders are labelled buttons (a finger cannot point at a tile to read
+it), the zoom buttons give way to the pinch, and text fields do not make the phone zoom. Touch
+replaces the mouse:
+
+| | |
+|---|---|
+| tap | as a left click: select your units (again: the next group there), open your city, show a plot (with the plot's tooltip, above the finger) |
+| tap a plot, tap it again | with units selected, on a plot without units of yours: the first tap shows the way there (the path, its turns, the attack odds: the right click's preview, which a finger cannot hover), a second tap on the same plot moves or attacks. Panning, or a tap anywhere else, drops the preview and the move it offered. To move onto your own units (a stack, a garrisoned city), use Go to |
+| drag, pinch | pan; zoom through the renderer's steps about the fingers (two fingers also pan) |
+| ×, Cancel | deselect (the panel's head); leave a plot pick (its hint) |
+| "A tap:" | in the city screen, the research chooser and the tech tree: what a tap on a build or a tech does (build now, add to the queue, put first; research now, add to the queue): Shift- and Ctrl-click with a mouse |
+
+A long press and a double tap do nothing on the map. What touch does not have: Shift waypoints
+(use Go to for one destination), Ctrl-click on a unit row (Split, then a row), and the keys
+(the panel's buttons, the menu and the Cities list cover them; `?` in the menu lists the controls).
+
 **Units.** The selection panel lists your units on the plot (click a row: its group;
 Ctrl-click: add or remove that unit), "All", "Group" (one group), "Split" (each unit its own
 group), "Next", the group's orders, and the actions the server says the selection can take now
@@ -646,9 +675,10 @@ file is embedded and every module import resolves):
 
 ```
 tools/web-check.sh                       # node --check of every module, node --test of the pure modules
-tools/web-check.sh --smoke --browser     # also the two smoke tests below
+tools/web-check.sh --smoke --browser     # also the smoke tests below
 node tools/web-api-smoke.mjs             # 20 turns through the client's api.js against `ffh-play serve`
 node tools/web-smoke.mjs                 # headless Chromium plays through the page; screenshots in target/web-smoke
+node tools/web-touch-smoke.mjs           # the same on an emulated phone, with touch only; target/web-touch-smoke
 ```
 
 * `web-check.sh` needs node (it is skipped without it); the pure modules (map maths and map
@@ -665,6 +695,18 @@ node tools/web-smoke.mjs                 # headless Chromium plays through the p
   screens' requests (a specialist's `+` and `−`, a civics proposal and its revolution, the
   research slider down and back, the trade tables, the inspector) and lets the AI play one
   turn (`autoplay`). A refusal of anything the server offered fails it.
+* `web-touch-smoke.mjs [--seed 3] [--out DIR] [--assets DIR] [--headed]` plays on an emulated
+  phone (Playwright's Chromium, touch only, a coarse pointer; skipped without the `playwright`
+  package), with the isometric map upright (390x844) and on its side (844x390) and with the 2D
+  map upright, each against its own `ffh-play serve --new`: the page fits (no sideways scroll,
+  End turn on screen, the map's clear part at least 30% of the height, the report folded), the ☰
+  menu (every button on screen; a tap on the map only closes it), a tap selects a unit, a first
+  tap on a free plot previews the move ("tap again to go") without moving and a second tap
+  moves, a two-finger pinch zooms in and out, the settler's Found button, the research popup's
+  tap modes, "Add to queue" in the production popup (the queue grows, the popup stays), the city
+  screen from the Cities list (the whole-screen dialog with its plot grid, within the screen),
+  the tech tree from the menu, a tab opens the report, and End turn through the gate to the next
+  turn. Any console error, page error, failed request or HTTP error fails it.
 * `web-smoke.mjs [--turns 4] [--seed 5] [--out DIR] [--assets DIR] [--cdp] [--headed]` drives the
   page with the mouse and keyboard in headless Chromium (the `playwright` package if it resolves,
   else Chromium over the DevTools protocol; skipped without a browser): new game (Start
@@ -703,7 +745,7 @@ node tools/web-smoke.mjs                 # headless Chromium plays through the p
   250 ms for the first ones, which fill the sprite atlas).
 
 **Manual checklist** (a human tester, `ffh-play serve` and a real browser; also try a narrow
-window):
+window, and a phone: `ffh-play serve --bind 0.0.0.0` on the same network, or the site):
 
 1. New game: change the civilization (the leader list follows), world size, difficulty, a game
    option and a victory condition; start. The map centres on your units; the top bar shows the

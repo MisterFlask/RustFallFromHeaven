@@ -122,6 +122,8 @@ export class MapView {
      *  and self-expiring. */
     this.flashes = [];
     this.flashRaf = 0;
+    /** Whether the last pointer on the map was a finger (taps instead of hover and right-click). */
+    this.touch = false;
     this.listen();
     new ResizeObserver(() => this.resize()).observe(wrap);
     this.resize();
@@ -130,59 +132,120 @@ export class MapView {
   // ------------------------------------------------------------------------------------------
   // Input
 
+  /** Mouse and pen: drag pans, a click selects, a right-click moves, the wheel zooms, hovering
+   *  previews. Touch (no hover, no right button): one finger drags to pan; two pinch to zoom
+   *  (through the renderer's steps) and pan; a tap shows the plot's preview (tooltip, path, odds)
+   *  where the mouse would hover, then goes to the click handler with the pointer event, whose
+   *  `pointerType` the handler reads (units.js: a second tap on a plot moves there). A long press
+   *  (the browser's contextmenu) and the double tap do nothing on touch. `this.touch` says whether
+   *  the last pointer was a finger. */
   listen() {
     const c = this.canvas;
     let down = null;
+    /** The fingers on the map (pointer id -> client position), and the pinch while two are. */
+    const fingers = new Map();
+    let pinch = null;
+    const two = () => [...fingers.values()].slice(0, 2);
+    const span = ([a, b]) => Math.hypot(a.x - b.x, a.y - b.y);
+    const mid = ([a, b]) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
     c.addEventListener("pointerdown", (ev) => {
+      this.touch = ev.pointerType === "touch";
+      if (this.touch) {
+        fingers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+        c.setPointerCapture(ev.pointerId);
+        if (fingers.size >= 2) {
+          // A second finger: a pinch, not a drag or a tap.
+          down = null;
+          if (!pinch) {
+            const f = two();
+            this.cancelGlide();
+            this.clearHover();
+            pinch = { d0: Math.max(1, span(f)), ts0: this.cam.ts, ...mid(f) };
+          }
+          return;
+        }
+      }
       if (ev.button !== 0 && ev.button !== 1) return;
       down = { x: ev.clientX, y: ev.clientY, cx: this.cam.cx, cy: this.cam.cy, dragged: false, button: ev.button, id: ev.pointerId };
       c.setPointerCapture(ev.pointerId);
     });
     c.addEventListener("pointermove", (ev) => {
-      if (down) {
+      if (fingers.has(ev.pointerId)) fingers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+      if (pinch) {
+        if (fingers.size < 2) return;
+        const f = two();
+        const m = mid(f);
+        this.cam = T.clampCamera({ ...this.cam, ...this.panDelta(this.cam.cx, this.cam.cy, m.x - pinch.x, m.y - pinch.y) }, this.map ?? { w: 1, h: 1 });
+        pinch.x = m.x;
+        pinch.y = m.y;
+        const ts = T.pinchStep(this.zooms(), pinch.ts0, span(f) / pinch.d0, this.cam.ts);
+        const r = c.getBoundingClientRect();
+        if (ts !== this.cam.ts) this.zoomTo(ts, m.x - r.left, m.y - r.top);
+        this.request();
+        return;
+      }
+      if (ev.pointerType !== "touch") this.touch = false;
+      if (down && ev.pointerId === down.id) {
         const dx = ev.clientX - down.x;
         const dy = ev.clientY - down.y;
-        if (!down.dragged && Math.hypot(dx, dy) > 5) down.dragged = true;
+        // A finger wobbles more than a mouse: a tap may move a little. A finger's pan drops the
+        // tap's preview (and the move it offered).
+        if (!down.dragged && Math.hypot(dx, dy) > (ev.pointerType === "touch" ? 10 : 5)) {
+          down.dragged = true;
+          if (ev.pointerType === "touch") this.clearHover();
+        }
         if (down.dragged) {
           this.cancelGlide();
-          const alt = this.iso ?? this.r3d;
-          const pan = alt
-            ? alt.panDelta(down.cx, down.cy, dx, dy)
-            : { cx: down.cx - dx / this.cam.ts, cy: down.cy + dy / this.cam.ts };
-          this.cam = T.clampCamera({ ...this.cam, ...pan }, this.map ?? { w: 1, h: 1 });
+          this.cam = T.clampCamera({ ...this.cam, ...this.panDelta(down.cx, down.cy, dx, dy) }, this.map ?? { w: 1, h: 1 });
           this.hideTip();
           this.request();
           return;
         }
       }
-      this.hoverAt(ev);
+      if (ev.pointerType !== "touch") this.hoverAt(ev);
     });
+    /** A finger left the map: the pinch ends with fewer than two, and the finger left drags on
+     *  (its release is not a tap). */
+    const lift = (ev) => {
+      if (!fingers.delete(ev.pointerId) || !pinch || fingers.size >= 2) return;
+      pinch = null;
+      const [id, f] = [...fingers.entries()][0] ?? [];
+      down = f ? { x: f.x, y: f.y, cx: this.cam.cx, cy: this.cam.cy, dragged: true, button: 0, id } : null;
+    };
     c.addEventListener("pointerup", (ev) => {
+      lift(ev);
       const d = down;
+      if (d?.id !== ev.pointerId) return;
       down = null;
-      if (!d || d.dragged || ev.button !== 0) return;
+      if (d.dragged || ev.button !== 0) return;
       if (this.overlay.city) return this.cityClick(this.plotAt(ev, { ground: true }));
       const p = this.plotAt(ev);
-      if (p) this.h.click?.(p.x, p.y, ev);
+      if (!p) return;
+      if (ev.pointerType === "touch") this.hoverAt(ev);
+      this.h.click?.(p.x, p.y, ev);
     });
-    c.addEventListener("pointercancel", () => (down = null));
+    c.addEventListener("pointercancel", (ev) => {
+      lift(ev);
+      if (down?.id === ev.pointerId) down = null;
+    });
     c.addEventListener("contextmenu", (ev) => {
       ev.preventDefault();
-      if (this.overlay.city) return;
+      if (this.overlay.city || this.touch) return;
       const p = this.plotAt(ev);
       if (p) this.h.rightClick?.(p.x, p.y, ev);
     });
     c.addEventListener("dblclick", (ev) => {
-      if (this.overlay.city) return;
+      if (this.overlay.city || this.touch) return;
       const p = this.plotAt(ev);
       if (p) this.h.dblclick?.(p.x, p.y, ev);
     });
-    c.addEventListener("mouseleave", () => {
-      this.overlay.hover = null;
-      this.hideTip();
-      this.h.hover?.(null, null, null);
-      this.request();
-    });
+    // Safari's own pinch (its gesture events) would zoom the page instead of the map.
+    c.addEventListener("gesturestart", (ev) => ev.preventDefault());
+    // After a tap the browser sends the mouse's compatibility events, a leave among them: the
+    // tap's preview stays (a finger has no hover to leave).
+    c.addEventListener("mouseleave", () => this.touch || this.clearHover());
+    // A tap outside the map (a button, a panel) is done with the tap's preview on it.
+    document.addEventListener("pointerdown", (ev) => this.touch && ev.pointerType === "touch" && !this.wrap.contains(ev.target) && this.clearHover(), { capture: true });
     c.addEventListener(
       "wheel",
       (ev) => {
@@ -222,6 +285,15 @@ export class MapView {
     if (this.iso) return this.iso.screenToMap(ev.clientX - r.left, ev.clientY - r.top, { ground });
     if (this.r3d) return this.r3d.screenToMap(ev.clientX - r.left, ev.clientY - r.top);
     return T.screenToMap(this.cam, this.map, this.vw, this.vh, ev.clientX - r.left, ev.clientY - r.top);
+  }
+
+  /** The pointer left the map (or a tap's preview is done with): no hover outline, tooltip or
+   *  preview. */
+  clearHover() {
+    this.overlay.hover = null;
+    this.hideTip();
+    this.h.hover?.(null, null, null);
+    this.request();
   }
 
   hoverAt(ev) {
@@ -380,18 +452,34 @@ export class MapView {
   zoom(step, sx = this.vw / 2, sy = this.vh / 2) {
     const zs = this.zooms();
     const i = zs.findIndex((z) => Math.abs(z - this.cam.ts) < 0.01);
-    const next = zs[Math.min(zs.length - 1, Math.max(0, (i < 0 ? 3 : i) + step))];
-    if (next === this.cam.ts) return;
+    this.zoomTo(zs[Math.min(zs.length - 1, Math.max(0, (i < 0 ? 3 : i) + step))], sx, sy);
+  }
+
+  /** Zooms to tile size `ts`, keeping the map point under screen point (sx, sy) in place; the 3D
+   *  renderer's perspective zooms about the centre. */
+  zoomTo(ts, sx = this.vw / 2, sy = this.vh / 2) {
+    if (ts === this.cam.ts) return;
     this.cancelGlide();
-    if (this.iso || this.r3d) {
-      this.cam = { ...this.cam, ts: next };
-      this.hideTip();
-      this.request();
-      return;
+    if (this.r3d) {
+      this.cam = { ...this.cam, ts };
+    } else if (this.iso) {
+      // The isometric projection is linear about the centre: the point's offset from it, in map
+      // units (minus the pan that drags the point to the centre), shrinks by the zoom's ratio.
+      const off = this.iso.panDelta(0, 0, sx - this.vw / 2, sy - this.vh / 2);
+      const k = 1 - this.cam.ts / ts;
+      this.cam = T.clampCamera({ ...this.cam, cx: this.cam.cx - off.cx * k, cy: this.cam.cy - off.cy * k, ts }, this.map ?? { w: 1, h: 1 });
+    } else {
+      this.cam = T.clampCamera(T.zoomAt(this.cam, this.vw, this.vh, ts, sx, sy), this.map ?? { w: 1, h: 1 });
     }
-    this.cam = T.clampCamera(T.zoomAt(this.cam, this.vw, this.vh, next, sx, sy), this.map ?? { w: 1, h: 1 });
     this.hideTip();
     this.request();
+  }
+
+  /** The camera centre after a drag of (dx, dy) screen pixels from (cx, cy), in the renderer's
+   *  projection. */
+  panDelta(cx, cy, dx, dy) {
+    const alt = this.iso ?? this.r3d;
+    return alt ? alt.panDelta(cx, cy, dx, dy) : { cx: cx - dx / this.cam.ts, cy: cy + dy / this.cam.ts };
   }
 
   pan(dx, dy) {
@@ -1325,6 +1413,12 @@ export class MapView {
     const hi = this.overlay.city ? r.width - CITY_FRAME.side : r.width - 4;
     let x = this.tipAt.x + 16;
     let y = this.tipAt.y + 16;
+    if (this.touch) {
+      // Above the finger, which would hide it below; under it when there is no room above.
+      x = Math.min(this.tipAt.x - tw / 2, hi - tw);
+      y = this.tipAt.y - th - 28;
+      if (y < 4) y = Math.min(this.tipAt.y + 36, Math.max(4, r.height - th - 4));
+    }
     if (x + tw > hi) x = this.tipAt.x - tw - 12;
     if (y + th > r.height - 4) y = Math.max(4, r.height - th - 4);
     this.tip.style.left = `${Math.max(lo, x)}px`;

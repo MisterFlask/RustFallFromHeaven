@@ -5,7 +5,7 @@
 import * as api from "./api.js";
 import { S, emit, on, dname, tname, tidx, me, unitsAt, ownUnitsAt, cityAt, playerName, readyGroups, selectableGroups, nextSelectableGroup, cycleGroups, selectableGroupsOnPlot, option, moves, turns, info } from "./state.js";
 import * as K from "./hotkeys.js";
-import { h, fill, toast } from "./dom.js";
+import { h, fill, toast, coarse } from "./dom.js";
 import { openModal } from "./modals.js";
 import { run, actionCommand, sending } from "./commands.js";
 import { plotDistance, plotIndex, humanize } from "./tiles.js";
@@ -47,6 +47,9 @@ let pendingCombat = null;
  *  the session runs the AutoMoves rule right after a command that leaves nothing ready, so the
  *  client holds them instead (P5 review). */
 let waypoints = null;
+/** Touch: the plot a first tap previewed a move to, as `units@x,y` (a second tap there sends
+ *  the move: a finger has neither hover nor a right button), else null. */
+let armed = null;
 /** Hover previews: the plot, and the replies. */
 let hover = null;
 let hoverTimer = null;
@@ -141,6 +144,9 @@ export function select(ids, { center = false } = {}) {
   }
   setMode(null);
   advance = null;
+  armed = null;
+  // Another selection's panel starts at its top (a phone's card scrolls).
+  panel?.parentElement?.scrollTo?.({ top: 0 });
   clearPreview();
   syncOverlay();
   refreshGroup();
@@ -265,14 +271,32 @@ export function viewChanged() {
 }
 
 /** A click on plot (x, y): picks the plot in an interface mode, else selects the units there
- *  (again on the same plot: the next group there), else opens the city or shows the plot. */
+ *  (again on the same plot: the next group there), else opens the city or shows the plot. A tap
+ *  (`ev.pointerType` "touch", after the map showed the plot's preview) with units selected on a
+ *  plot without units of ours is the right-click's move, in two taps: the first shows the way
+ *  (path, turns, attack odds: the tooltip), a second tap on the same plot goes. */
 export function click(x, y, ev) {
+  const touch = ev?.pointerType === "touch";
   if (mode) {
     pickPlot(x, y, ev);
+    if (touch) mapView.clearHover();
     return;
   }
   const own = ownUnitsAt(x, y);
+  if (touch && S.sel && !own.length) {
+    const key = `${unitsKey(S.sel.units)}@${x},${y}`;
+    if (armed !== key) {
+      armed = key;
+      return;
+    }
+    armed = null;
+    mapView.clearHover();
+    moveTo(x, y);
+    return;
+  }
+  armed = null;
   if (own.length) {
+    if (touch) mapView.clearHover();
     const groups = [...new Set(own.map((u) => u.group))];
     let g = groups.find((gr) => readyGroups().includes(gr)) ?? groups[0];
     if (S.sel && S.sel.x === x && S.sel.y === y && groups.length > 1) {
@@ -498,6 +522,8 @@ function clearPreview() {
 /** The mouse is over (x, y) (null: left the map). */
 export function hoverAt(x, y) {
   hover = x === null ? null : { x, y };
+  // The preview is gone (the finger panned, tapped elsewhere): so is the move it offered.
+  if (x === null) armed = null;
   clearTimeout(hoverTimer);
   preview = { path: null, combat: null, plot: null };
   mapView.setOverlay({ path: null, odds: null });
@@ -628,7 +654,7 @@ function showTip() {
       if (path.attack) bits.push("attack");
       if (path.declare_war_team !== null) bits.push("declares war");
       if (path.approximate) bits.push("approximate");
-      lines.push(h("div.tip-path", `Move: ${bits.join(", ")} · right-click to go`));
+      lines.push(h("div.tip-path", `Move: ${bits.join(", ")} · ${mapView.touch ? "tap again" : "right-click"} to go`));
     }
   }
   mapView.showTip(lines);
@@ -823,6 +849,10 @@ const actionType = (a) =>
  *  would all look alike). */
 const LISTED = ["spell", "promotion", "upgrade"];
 
+/** Whether the card lists action `a` as a labelled button: spells, promotions and upgrades, and on
+ *  a touch screen every order (a finger cannot point at a tile to read what it does). */
+const listedAction = (a) => LISTED.includes(a.kind) || coarse();
+
 function actionButton(a) {
   const key = hotkeyOf(a);
   const help = a.kind === "spell" || a.kind === "promotion" || a.kind === "upgrade" ? helpOf(a) : "";
@@ -852,10 +882,11 @@ function actionButton(a) {
  *  unit upgraded to does: many lines) is a rich tooltip instead: in the box, which is as large as
  *  its largest description, it would push the labelled buttons out of the card. */
 function isoAction(a, key, extra) {
-  const listed = LISTED.includes(a.kind);
+  const listed = listedAction(a);
   const label = actionLabel(a) + extra;
   const help = helpOf(a);
-  descs.set(a, description(a, label, key, listed ? "" : help));
+  // A finger cannot point at an order to read it: on a touch screen the orders say what they are.
+  if (!coarse()) descs.set(a, description(a, label, key, listed ? "" : help));
   const show = () => describe(a);
   return h(
     `button.action${listed ? ".listed" : ".tile"}`,
@@ -872,7 +903,7 @@ function isoAction(a, key, extra) {
       onmouseleave: () => describe(null),
       onblur: () => describe(null),
     },
-    listed ? isoIcon(a.kind === "spell" ? "spell" : a.kind === "promotion" ? "promote" : "upgrade", { px: 16 }) : actionIcon(a, 40),
+    !listed ? actionIcon(a, 40) : LISTED.includes(a.kind) ? isoIcon(a.kind === "spell" ? "spell" : a.kind === "promotion" ? "promote" : "upgrade", { px: 16 }) : actionIcon(a, 32),
     listed ? h("span", label) : null,
     !listed && key ? h("kbd", key) : null,
   );
@@ -961,12 +992,19 @@ function unitRow(u, selected) {
   return row;
 }
 
+/** Whether the hints speak of taps: the last pointer on the map was a finger, or the device's
+ *  main pointer is one. */
+function touchy() {
+  return !!mapView?.touch || coarse();
+}
+
 /** The side panel for the selection. */
 export function renderPanel() {
   if (!panel) return;
   if (!S.sel) {
     // The isometric map's card shows only with a selection or a plot (the map stays clear).
-    if (!panel.dataset.plot) fill(panel, isoSkin() ? [] : h("p.dim", "Select a unit or a city. Right-click moves the selected units."));
+    const hint = touchy() ? "Tap a unit or a city. With units selected, tap a plot to see the way there; tap it again to go." : "Select a unit or a city. Right-click moves the selected units.";
+    if (!panel.dataset.plot) fill(panel, isoSkin() ? [] : h("p.dim", hint));
     return;
   }
   delete panel.dataset.plot;
@@ -985,6 +1023,7 @@ export function renderPanel() {
     lead ? h("span.unit-head", { tip: infoTip("UnitType", lead.type) }, unitIcon(lead.type, ownerLook(lead.owner))) : null,
     h("h3", own.length === 1 ? dname("UnitType", own[0].type) : `${S.sel.units.length} of ${own.length} units`),
     h("span.dim", ` (${x}, ${y})`),
+    h("button.close.deselect", { title: "Deselect [Esc]", "aria-label": "Deselect", onclick: () => clearSelection() }, "×"),
   );
   // Transports with their cargo under them (the units in a transport are listed after it).
   const ids = new Set(own.map((u) => u.id));
@@ -1023,7 +1062,8 @@ export function renderPanel() {
     }
   }
   const others = foreign.length ? h("div.section", h("h4", "Others here"), foreign.map((u) => h("div.dim", `${dname("UnitType", u.type)} (${playerName(u.owner)})`))) : null;
-  const hint = mode ? h("p.mode-hint", isGoTo(mode.action) ? "Click a plot to go there (Shift: add waypoints; Esc cancels)." : `Pick a plot: ${actionLabel(mode.action)} (Esc cancels).`) : null;
+  const pick = touchy() ? (isGoTo(mode?.action) ? "Tap a plot to go there." : `Tap a plot: ${mode && actionLabel(mode.action)}.`) : isGoTo(mode?.action) ? "Click a plot to go there (Shift: add waypoints; Esc cancels)." : `Pick a plot: ${mode && actionLabel(mode.action)} (Esc cancels).`;
+  const hint = mode ? h("div.mode-hint", h("span", pick), h("button.small", { onclick: () => setMode(null), title: "Leave the plot pick [Esc]" }, "Cancel")) : null;
   const way = waypoints && unitsKey(waypoints.units) === unitsKey(S.sel.units)
     ? h("p.mode-hint", `${waypoints.points.length === 1 ? "1 waypoint" : `${waypoints.points.length} waypoints`}: release Shift to send (Esc drops them).`)
     : null;
@@ -1062,8 +1102,8 @@ function renderCard({ own, r, details, lead, list, seals, tools, status, hint, w
     for (const [title, test] of SECTIONS) {
       const acts = K.sortActions(r.actions.filter(test), S.data);
       if (!acts.length) continue;
-      const tl = acts.filter((a) => !LISTED.includes(a.kind));
-      const ls = acts.filter((a) => LISTED.includes(a.kind));
+      const tl = acts.filter((a) => !listedAction(a));
+      const ls = acts.filter((a) => listedAction(a));
       if (tl.length) tiles.push(h("div.iso-tiles", { "data-section": title, title: null }, tl.map(actionButton)));
       if (ls.length) {
         const more = title === "Spells" ? h("button.link.small", { onclick: () => openSpells(), title: "Every spell with its description" }, "details") : null;
@@ -1072,15 +1112,17 @@ function renderCard({ own, r, details, lead, list, seals, tools, status, hint, w
     }
   }
   let state = [hint, way, ...[status].flat()].filter(Boolean);
-  if (!state.length) state = [h("div.iso-desc-text.dim", "Point at an order to read it. Right-click a plot to move there.")];
-  const desc = h("div.iso-desc", h("div.iso-desc-one.shown", state), [...descs.values()]);
+  // On a touch screen the box holds only the selection's state (a plot pick, done for the turn).
+  const touch = coarse();
+  if (!state.length && !touch) state = [h("div.iso-desc-text.dim", "Point at an order to read it. Right-click a plot to move there.")];
+  const desc = state.length ? h("div.iso-desc", h("div.iso-desc-one.shown", state), [...descs.values()]) : null;
   const name = own.length === 1 ? dname("UnitType", own[0].type) : `${S.sel.units.length} of ${own.length} units`;
   fill(
     panel,
     h(
       "div.iso-card",
       lead ? portrait(lead.type, lead.owner) : null,
-      h("div.iso-card-mid", h("h3.iso-name", name, h("span.dim.coords", ` (${x}, ${y})`)), plate, own.length > 1 ? list : null, others),
+      h("div.iso-card-mid", h("h3.iso-name", name, h("span.dim.coords", ` (${x}, ${y})`), h("button.close.deselect", { title: "Deselect [Esc]", "aria-label": "Deselect", onclick: () => clearSelection() }, "×")), plate, own.length > 1 ? list : null, others),
       h("div.iso-card-right", h("div.iso-orders", tiles), desc, h("div.iso-tools", seals, tools), listed),
     ),
   );

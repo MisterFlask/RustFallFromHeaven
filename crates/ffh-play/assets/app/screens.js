@@ -4,7 +4,7 @@
 
 import * as api from "./api.js";
 import { S, emit, dname, turns, voteChoiceLabel, teamName, me, saveNameOfPath, scoreText } from "./state.js";
-import { h, toast } from "./dom.js";
+import { h, toast, tapModes, coarse } from "./dom.js";
 import { tip } from "./tips.js";
 import { openModal } from "./modals.js";
 import { run } from "./commands.js";
@@ -22,6 +22,8 @@ import { techTip } from "./empire.js";
 export async function openResearch({ popup = false } = {}) {
   const m = openModal({ title: popup ? "Choose research" : "Research", body: [h("p.dim", "…")], tag: "research", wide: true, buttons: popup ? [{ label: "Later", value: "later" }] : [{ label: "Close", value: null }] });
   let result = null;
+  /** What a tap does on a touch screen (for want of Shift): "now" or "queue". */
+  let tapMode = "now";
   const load = async () => {
     let t;
     try {
@@ -38,6 +40,7 @@ export async function openResearch({ popup = false } = {}) {
       cur ? h("div", "Researching ", h("b", dname("TechType", t.current)), ` (${cur.progress}/${cur.cost}, ${turns(cur.turns)})`) : h("div.warn", "Nothing is being researched."),
       t.queue.length > 1 ? h("div.dim", `Queue: ${t.queue.map((q) => dname("TechType", q)).join(" → ")}`) : null,
       h("div.dim", `${t.rate} research per turn. Click: research now. Shift-click: add to the queue.`),
+      tapModes(tapMode, [["now", "Research now", "A tap researches it now"], ["queue", "Add to queue", "A tap adds it to the research queue (Shift-click)"]], (v) => ((tapMode = v), load())),
     );
     const list = h(
       "div.build-grid",
@@ -49,9 +52,10 @@ export async function openResearch({ popup = false } = {}) {
             class: x.researching ? "current" : x.queued !== null ? "queued" : "",
             tip: techTip(x, "Click: research now. Shift-click: add to the queue."),
             onclick: async (ev) => {
-              const reply = await run({ c: "research", tech: x.tech, shift: !!ev.shiftKey });
+              const shift = !!ev.shiftKey || tapMode === "queue";
+              const reply = await run({ c: "research", tech: x.tech, shift });
               if (!reply) return;
-              if (popup && !ev.shiftKey) {
+              if (popup && !shift) {
                 result = "chosen";
                 m.close("chosen");
               } else load();
@@ -466,7 +470,16 @@ export function stuckScreen(st) {
 
 /** The keys: Civ4's (the action hotkeys come from the game's XML, as each button's tooltip shows). */
 export function keysHelp() {
+  const touch = [
+    ["Touch", ""],
+    ["Tap", "select units (again: the next group there), open your city, show a plot"],
+    ["Tap a plot, tap it again", "with units selected: the first tap shows the way there (turns, attack odds), the second goes"],
+    ["Drag, pinch", "pan and zoom the map; the minimap centres"],
+    ["☰, ▾, ×", "the screens and files; fold the unit panel; deselect"],
+    ["A tap: …", "in the city, research and tech screens: what a tap does (now, add to the queue, put first), where a keyboard holds Shift or Ctrl"],
+  ];
   const keys = [
+    ...(coarse() ? touch : []),
     ["Mouse", ""],
     ["Left click", "select units (again: the next group there), open your city, show a plot"],
     ["Right click", "move or attack with the selection; with Shift held, add waypoints (sent when Shift is released)"],
@@ -500,7 +513,7 @@ export function keysHelp() {
     ["?", "this list (ffh-play's)"],
   ];
   return openModal({
-    title: "Keys",
+    title: coarse() ? "Controls" : "Keys",
     tag: "keys",
     body: [h("table.kv", keys.map(([k, v]) => (v ? h("tr", h("th", k), h("td", v)) : h("tr", h("th.group", { colspan: 2 }, k)))))],
     buttons: [{ label: "Close", value: null }],

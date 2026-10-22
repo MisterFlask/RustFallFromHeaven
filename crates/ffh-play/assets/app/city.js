@@ -12,7 +12,7 @@
 
 import * as api from "./api.js";
 import { S, dname, orderName, info, turns, me, emit, tidx, ORDER_KINDS } from "./state.js";
-import { h, signed, setText } from "./dom.js";
+import { h, signed, setText, tapModes, compactScreen } from "./dom.js";
 import { openModal } from "./modals.js";
 import { run } from "./commands.js";
 import { render as markup, YIELD_ICONS, COMMERCE_ICONS } from "./markup.js";
@@ -65,7 +65,8 @@ export async function openCity(id, { popup = false } = {}) {
   // With the isometric map's interface the screen is Civ4's: the map frames the city and its plots
   // are worked by clicking them there (MapView.cityOverlay), the screen's parts in panels at the
   // sides. A production popup stays a dialog.
-  const overlay = isoSkin() && !popup;
+  // A phone has no room for the screen's panels around the city: it gets the whole-screen dialog.
+  const overlay = isoSkin() && !popup && !compactScreen();
   const m = openModal({ title: title(), body: [h("p.dim", "…")], tag: "city", wide: true, className: overlay ? "city-screen city-overlay" : "city-screen", buttons: [] });
   // A refused task changes nothing: the screen is read again either way (a toggle shows the
   // city's state, not the click).
@@ -73,10 +74,19 @@ export async function openCity(id, { popup = false } = {}) {
     await run({ c: "do_task", city: cityId, task: tidx("TaskType", t), data1, data2, option, alt: false, shift: false, ctrl: false });
     load();
   };
+  /** What a tap on a build does on a touch screen, for want of Shift and Ctrl: "now" (a click),
+   *  "queue" (Shift: append) or "first" (Ctrl: insert first). Kept while the screen is open. */
+  let tapMode = "now";
+  const setTapMode = (v) => {
+    tapMode = v;
+    load();
+  };
   const choose = async (order, type, ev) => {
-    const reply = await run({ c: "push_order", city: cityId, order, data: type, alt: false, shift: !!ev.shiftKey, ctrl: !!(ev.ctrlKey || ev.metaKey) });
+    const shift = !!ev.shiftKey || tapMode === "queue";
+    const ctrl = !!(ev.ctrlKey || ev.metaKey) || tapMode === "first";
+    const reply = await run({ c: "push_order", city: cityId, order, data: type, alt: false, shift, ctrl });
     if (!reply) return;
-    if (popup && !ev.shiftKey) {
+    if (popup && !shift) {
       result = "chosen";
       m.close("chosen");
     } else load();
@@ -105,7 +115,7 @@ export async function openCity(id, { popup = false } = {}) {
     }
     if (m.closed || n !== loading) return;
     m.el.dataset.city = String(cityId);
-    m.setBody(screen(c, { task, choose, remove, go, popup, overlay }));
+    m.setBody(screen(c, { task, choose, remove, go, popup, overlay, tap: [tapMode, setTapMode] }));
     if (overlay) {
       const mine = me()?.player;
       // A click works the plot of the city these plots are of (Previous / Next may have moved on).
@@ -330,7 +340,7 @@ function manageView(c, task) {
   );
 }
 
-function productionView(c, choose, remove) {
+function productionView(c, choose, remove, [tapMode, setTapMode]) {
   const prod = c.production;
   const queue = h(
     "ol.queue",
@@ -385,12 +395,13 @@ function productionView(c, choose, remove) {
         prod.current && prod.needed ? barEl(prod.stored / prod.needed, "production", { w: 50, next: (prod.stored + prod.rate) / prod.needed }) : null,
       ),
       queue,
+      tapModes(tapMode, [["now", "Build now", "A tap replaces what is being built"], ["queue", "Add to queue", "A tap adds to the end of the queue (Shift-click)"], ["first", "Put first", "A tap puts it first in the queue (Ctrl-click)"]], setTapMode),
     ),
     ...lists,
   ];
 }
 
-function screen(c, { task, choose, remove, popup, overlay }) {
+function screen(c, { task, choose, remove, popup, overlay, tap }) {
   const f = c.food;
   const head = h(
     "div.city-summary",
@@ -403,6 +414,6 @@ function screen(c, { task, choose, remove, popup, overlay }) {
   );
   const plots = overlay ? h("p.dim.city-hint", "Click the city's plots on the map to work them; its own plot hands the choice back to the governor.") : plotGrid(c, task);
   const left = h("div.city-col", plots, specialistsView(c, task), statsView(c), buildingsView(c));
-  const right = h("div.city-col", manageView(c, task), productionView(c, choose, remove));
+  const right = h("div.city-col", manageView(c, task), productionView(c, choose, remove, tap));
   return [head, popup ? h("div.city-cols.popup", right, left) : h("div.city-cols", left, right)];
 }

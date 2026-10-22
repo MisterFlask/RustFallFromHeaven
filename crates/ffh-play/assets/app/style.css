@@ -45,15 +45,25 @@
 
 * { box-sizing: border-box; }
 html, body { height: 100%; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 body {
   margin: 0;
   background: var(--bg);
   color: var(--fg);
   font: 14px/1.4 var(--font);
   display: grid;
+  /* One column, the viewport's width: a bar's content never widens the page. */
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr) auto;
   overflow: hidden;
+  /* Taps on the chrome act at once (no double-tap zoom waiting). */
+  touch-action: manipulation;
 }
+/* The page is the visible viewport: a phone's browser bars come and go (100% would be the tallest). */
+@supports (height: 100dvh) { body { height: 100dvh; } }
+/* A long press on the map or the bars selects no text and offers no image menu. */
+#top, #mapwrap, #bottom-tabs, #side-toggle { -webkit-user-select: none; user-select: none; }
+#mapwrap canvas { -webkit-touch-callout: none; }
 body.busy { cursor: progress; }
 body.picking #mapwrap canvas.map { cursor: crosshair; }
 ::selection { background: var(--c-dusk); color: var(--c-vellum); }
@@ -175,7 +185,7 @@ html.art #top .sep { display: block; }
 #mapwrap canvas.minimap {
   position: absolute; right: 10px; bottom: 10px; width: 220px; height: 136px;
   border: 1px solid var(--c-ash); background: var(--c-void); cursor: pointer; image-rendering: pixelated;
-  box-shadow: 0 0 0 2px var(--c-soot), 0 0 0 3px var(--c-iron);
+  box-shadow: 0 0 0 2px var(--c-soot), 0 0 0 3px var(--c-iron); touch-action: none;
 }
 #mapwrap .zoom { position: absolute; left: 10px; bottom: 10px; display: flex; flex-direction: column; gap: 4px; }
 #mapwrap .zoom button { width: 28px; height: 28px; padding: 0; }
@@ -211,7 +221,10 @@ html.art #top .sep { display: block; }
 #side { background: var(--panel); border-left: 1px solid var(--c-ash); box-shadow: inset 2px 0 0 var(--c-soot), inset 3px 0 0 var(--c-iron); overflow: auto; padding: 10px 12px; }
 .panel-head { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid var(--c-ash); }
 .panel-head .unit-figure { margin: -4px 0; }
-.mode-hint { background: var(--c-bruise); border: 1px solid var(--c-lilac); padding: 4px 8px; color: var(--c-vellum); }
+.mode-hint { background: var(--c-bruise); border: 1px solid var(--c-lilac); padding: 4px 8px; color: var(--c-vellum); margin: 6px 0; }
+div.mode-hint { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.panel-head .deselect { margin-left: auto; background: none; border: none; color: var(--dim); font-size: 20px; line-height: 1; padding: 0 4px; box-shadow: none; }
+.panel-head .deselect:hover { color: var(--c-vellum); }
 .unit-list { display: flex; flex-direction: column; gap: 1px; max-height: 240px; overflow: auto; }
 .unit-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 2px 6px; border: 1px solid transparent; cursor: pointer; }
 .unit-row:hover { background: var(--c-coal); }
@@ -234,6 +247,9 @@ body.bottom-closed #bottom-body { display: none; }
 #bottom-tabs button:hover:not([disabled]) { color: var(--c-vellum); border-color: var(--c-ash); }
 #bottom-tabs button.active { color: var(--c-vellum); border-bottom: 1px solid var(--c-vellum); }
 #bottom-toggle { margin-left: auto; }
+body.bottom-closed #bottom-toggle { transform: rotate(180deg); }
+/* A tab with news the folded panel hides (the turn report). */
+#bottom-tabs button.unread::after { content: ""; width: 6px; height: 6px; margin-left: 5px; background: var(--c-amber); flex: none; }
 #bottom-body { overflow: auto; padding: 6px 12px; flex: 1; }
 #bottom-body ul { margin: 2px 0; padding-left: 18px; }
 .turn-group h4 { margin-top: 4px; }
@@ -248,7 +264,7 @@ body.bottom-closed #bottom-body { display: none; }
 .modal {
   background: var(--c-soot); border: 1px solid var(--c-ash); width: min(540px, 100%);
   box-shadow: inset 0 0 0 2px var(--c-soot), inset 0 0 0 3px var(--c-iron);
-  max-height: calc(100vh - 32px); display: flex; flex-direction: column;
+  max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px); display: flex; flex-direction: column;
 }
 .modal.wide { width: min(880px, 100%); }
 .modal.decision { border-color: var(--c-bone); }
@@ -360,7 +376,7 @@ td.num { text-align: right; font-variant-numeric: lining-nums tabular-nums; }
 
 /* The tech tree. */
 .modal { min-width: 0; }
-.modal.techtree { width: min(1400px, 100%); height: calc(100vh - 32px); }
+.modal.techtree { width: min(1400px, 100%); height: calc(100vh - 32px); height: calc(100dvh - 32px); }
 .techtree .modal-body { display: flex; flex-direction: column; gap: 6px; min-height: 0; flex: 1; }
 .tree-scroll { overflow: auto; flex: 1; min-height: 240px; border: 1px solid var(--line); background: var(--c-void); }
 .tree { position: relative; }
@@ -517,11 +533,100 @@ button.action canvas.ui-px { margin-right: 2px; }
 .page-text { display: flow-root; font-size: 15px; }
 .page-text canvas.initial { float: left; margin: 2px calc(var(--u) * 4) 2px 0; }
 
-/* Narrow screens: the side panel goes under the map. */
-@media (max-width: 760px) {
-  #main { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) 40%; }
-  #side { border-left: none; border-top: 1px solid var(--line); }
-  #mapwrap canvas.minimap { width: 120px; height: 75px; }
-  #bottom { height: 120px; }
+/* What a tap does where a mouse would hold Shift or Ctrl (dom.js `tapModes`): touch screens only. */
+.tap-mode { display: none; align-items: center; gap: 4px; flex-wrap: wrap; margin: 4px 0 6px; }
+.tap-mode button.on { border-color: var(--c-bone); color: var(--c-vellum); background: var(--c-navy); }
+html.art .tap-mode button.on:not(.link):not(.close):not(.cplot):not(.tech):not(.stat) {
+  border-image: var(--nine-frame-card-selected); border-width: var(--nine-frame-card-selected-w); background: var(--c-navy); color: var(--c-vellum);
+}
+
+/* The menu button and the side panel's fold: small screens only (below). */
+#btn-menu, #side-toggle { display: none; }
+
+/* ------------------------------------------------------------------------------------------
+   Small screens: a phone upright (narrow) or on its side (short). The map gets the room: one bar
+   on top (the menu folds into a button that drops it down as a sheet), the bottom panel starts
+   folded to its tabs (main.js), the minimap moves to the top corner, dialogs take the screen. */
+@media (max-width: 760px), (max-height: 520px) {
+  #top { flex-wrap: nowrap; gap: calc(var(--u) * 2); padding: calc(var(--u) * 1) calc(var(--u) * 2); min-height: 0; z-index: 6; }
+  #top .break { display: none; }
+  #btn-menu { display: inline-flex; flex: none; font-size: 18px; }
+  /* The turn always shows; a long phase line ("Moving: ...") is cut, and the empire's numbers
+     scroll sideways in what room is left. */
+  #phase { flex: none; max-width: 50vw; overflow: hidden; }
+  #phase > * { flex: none; }
+  #phase > #phase-text { flex: 0 1 auto; min-width: 0; overflow: hidden; white-space: nowrap; }
+  #phase .year, body[data-phase="human"] #phase-text { display: none; }
+  #empire { flex: 1 1 auto; min-width: 0; flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; }
+  #empire::-webkit-scrollbar { display: none; }
+  #end-turn { flex: none; margin-left: auto; }
+  #menu { display: none; }
+  body.menu-open #menu {
+    display: grid; position: absolute; top: 100%; left: 0; right: 0; z-index: 1;
+    grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: calc(var(--u) * 3);
+    padding: calc(var(--u) * 4); background: var(--c-soot); border-bottom: 1px solid var(--c-ash);
+    box-shadow: 0 8px 18px rgba(5, 8, 11, 0.65); max-height: 70vh; overflow: auto;
+  }
+  body.menu-open #btn-menu { color: var(--c-vellum); }
+  /* In the sheet, the two glyph buttons say what they are. */
+  body.menu-open #btn-keys::after { content: "Controls"; }
+  body.menu-open #btn-raw::after { content: "Raw request"; }
+  /* The map takes what the bars and panels leave (a floor would push it over the bottom panel). */
+  #mapwrap { min-height: 0; }
+  #mapwrap canvas.minimap { top: 8px; right: 8px; bottom: auto; width: 128px; height: 80px; }
+  #mapwrap .zoom { left: 8px; bottom: 8px; }
+  #mapwrap .layers { left: 50px; bottom: 8px; }
+  .tooltip { max-width: min(380px, calc(100% - 8px)); }
+  #toasts { left: 12px; right: 12px; bottom: 64px; }
+  .toast { max-width: 100%; }
+  #modals .backdrop { padding: 0; }
+  .modal { max-height: 100vh; max-height: 100dvh; }
+  .modal.wide, .modal.city-screen, .modal.techtree { width: 100%; }
+  .modal.techtree { height: 100vh; height: 100dvh; }
+  .modal-head, .modal-body, .modal-buttons { padding-left: 10px; padding-right: 10px; }
   .city-cols, .trade { grid-template-columns: minmax(0, 1fr); }
+  .build-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+  .newgame .fields { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .checks { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+}
+
+/* A phone upright: two bars on top (the turn, the menu and End turn; then the empire's numbers,
+   which scroll sideways), the side panel under the map (it folds to its heading). */
+@media (max-width: 760px) {
+  #top { flex-wrap: wrap; row-gap: calc(var(--u) * 1); }
+  #empire { order: 5; flex-basis: 100%; }
+  #main { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
+  #side { border-left: none; border-top: 1px solid var(--line); max-height: 38vh; max-height: 38dvh; }
+  html.art #side { border-left-width: 0; border-right-width: 0; }
+  #side-toggle { display: inline-flex; position: sticky; top: 0; float: right; z-index: 1; margin: 0 0 4px 8px; }
+  body.side-folded #side { max-height: 56px; overflow: hidden; }
+  body.side-folded #side-toggle { transform: rotate(180deg); }
+  #bottom { height: 28vh; height: 28dvh; }
+}
+
+/* A phone on its side: one bar on top, a narrower side panel. */
+@media (max-height: 520px) and (min-width: 761px) {
+  #main { grid-template-columns: minmax(0, 1fr) 300px; }
+  #bottom { height: 40vh; height: 40dvh; }
+}
+
+/* Fingers: targets big enough to hit (about 40 CSS px), text fields that a phone does not zoom
+   into (16 px), and the tap-mode rows. */
+@media (pointer: coarse) {
+  button:not(.link):not(.close):not(.cplot):not(.tech):not(.stat),
+  html.art button:not(.link):not(.close):not(.cplot):not(.tech):not(.stat) { min-height: 40px; }
+  button.small, html.art button.small { min-height: 36px; min-width: 36px; }
+  .close, .panel-head .deselect { min-width: 40px; min-height: 40px; }
+  #mapwrap .zoom { gap: 8px; }
+  #mapwrap .zoom button, html.art #mapwrap .zoom button { width: 40px; height: 40px; }
+  #mapwrap .layers { left: 56px; }
+  .unit-row { padding: 8px 6px; }
+  #bottom-tabs button, html.art #bottom-tabs button:not(.link) { padding: 6px 12px 8px; }
+  input[type="checkbox"], input[type="radio"] { width: 20px; height: 20px; }
+  label.toggle, label.check { min-height: 32px; }
+  input, select, textarea { font-size: 16px; }
+  tr.clickable td { padding-top: 9px; padding-bottom: 9px; }
+  .tap-mode { display: flex; }
+  /* The buttons' key labels are for keyboards; on a phone they only cost width. */
+  button kbd { display: none; }
 }

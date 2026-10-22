@@ -76,6 +76,33 @@ function append(el, children) {
 
 export const $ = (sel, root = document) => root.querySelector(sel);
 
+/** Whether the device's main pointer is a finger (`pointer: coarse`): the screens then offer
+ *  on-screen choices for what Shift and Ctrl do with a mouse. */
+export function coarse() {
+  return globalThis.matchMedia?.("(pointer: coarse)").matches ?? false;
+}
+
+/** The small-screen layout's media query (style.css, iso.css): a phone upright (narrow) or on
+ *  its side (short). */
+export const COMPACT = "(max-width: 760px), (max-height: 520px)";
+
+/** Whether the page has the small-screen layout (a phone). */
+export function compactScreen() {
+  return globalThis.matchMedia?.(COMPACT).matches ?? false;
+}
+
+/** A row of toggle buttons choosing what a tap does, for touch screens (shown only there, by
+ *  style.css: `.tap-mode`): `options` are `[value, label, title]`; `set(value)` is called with the
+ *  one picked. */
+export function tapModes(current, options, set) {
+  return h(
+    "div.tap-mode",
+    { role: "group", "aria-label": "What a tap does" },
+    h("span.dim", "A tap:"),
+    options.map(([v, label, title]) => h("button.small", { class: v === current ? "on" : "", "aria-pressed": String(v === current), "data-tap": v, title, onclick: () => set(v) }, label)),
+  );
+}
+
 /** Replaces an element's children. */
 export function fill(el, ...children) {
   el.replaceChildren();
