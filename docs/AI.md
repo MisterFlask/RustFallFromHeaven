@@ -70,11 +70,11 @@ counters, war success, war plans) that the diplomacy below reads.
    civics every 10 turns when the summed gain in civic value exceeds a flat 100 (the anarchy's
    length is not weighed; sooner under a structural deficit);
    state religion; the culture slider a cultural victory wants, then the highest research
-   slider that keeps the treasury from running dry; units it cannot pay for go by More Naval
-   AI's rule (see Finance): at peace, while costs take more than 60% of the commerce, the
-   military unit of least value (field units outside our borders first, city defenders last,
-   never one with experience); idle workers beyond the need while support holds research below
-   its target.
+   slider that keeps the treasury from running dry; unit support that holds research below its
+   target is cut first (see Finance); a bankrupt empire (slider at the bottom, still losing
+   gold) scraps surplus garrison units, never below what production wants in that city; an
+   empire paying unit support with research at a fifth or less disbands its weakest field
+   units (never heroes) down to a mobile force of 1 + cities/4 while at peace.
 2. **Emergency production** (`production::emergency`): a city whose visible threat exceeds
    its garrison switches to a defender (the rules keep the hammers); a capital or a city near
    barbarians that has only one defender after turn 30 puts a second one first.
@@ -160,7 +160,7 @@ counters, war success, war plans) that the diplomacy below reads.
 
 Nothing left to build: workers, then field units (never garrisons a broke treasury would
 scrap); when no more units are affordable, the strongest one whatever it costs (support is
-the same for any unit and the cheapest are disbanded first, so idle hammers buy quality).
+the same for any unit and the weakest are disbanded first, so idle hammers buy quality).
 Units are chosen by power squared per production turn, so stronger units win unless much
 dearer.
 
@@ -219,21 +219,18 @@ single hook tagged `bankruptcy-guard`:
   the cities' actual distance and number-of-cities parts; Aristocracy is charged for the
   cottages FfH's AI-only `canBuild` bans under it once Education is near; a structural
   deficit re-checks civics outside the 10-turn cadence when a cheaper civic would win.
-- **Unit support** (`empire::disband`, `finance::disband_military`): More Naval AI's rule
-  (C++ `CvPlayerAI::AI_doMilitary` / `AI_disbandUnit`). At peace, while costs take more than
-  60% of the commerce (its "funded percent" below 40) and units cost gold, the military unit of
-  least value goes, one at a time until that clears: only combat units with at most 1
-  experience; value by cost, experience and level, three times in our territory, six times
-  defending a city, city defenders six times and field units twice an untyped unit. Nothing
-  reads the threats in sight: what was trained is kept and research pays for it. Idle workers
-  beyond twice the need go while support keeps research below its target
-  (`finance::disband_workers`). The rule it replaced scrapped from 10% of the commerce, field
-  units beyond 1 + cities/4 and garrisons beyond one per city where no threat was in sight, so a
-  raider walking in and out of range had cities train defenders the treasury scrapped a few turns
-  later (61 military units scrapped in four 200-turn games, against 6 now; round 7). Holding
-  defenders by a quota instead lost (docs/AI_LOG.md, "Young units never scrapped", "Garrison
-  quota from lasting threats only", "Garrison quota from a record of threats seen"): keeping
-  what was built costs less than training more to keep.
+- **Unit support** (`empire::disband`): while support takes a tenth of the commerce and keeps
+  research below its target (at peace), up to two units a turn go, obsolete ones first
+  (weakest relative to what we can train now): field units beyond 1 + cities/4, garrison
+  units beyond one per city (two in the capital and near barbarians) where no threat is in
+  sight, idle workers beyond twice the need. Disbanding more (from 5% of the commerce) lost
+  more cities to barbarians. Both these rules and the build rules read the moment (a threat
+  in sight, a barbarian within 4 plots), so a raider walking in and out of range has cities
+  train defenders the treasury scraps a few turns later. That is cheaper than holding them:
+  a 20-turn age limit, a quota from lasting threats only and a quota from a per-city record of
+  the raiders seen were tried (docs/AI_LOG.md, "Young units never scrapped", "Garrison quota
+  from lasting threats only", "Garrison quota from a record of threats seen"); every version
+  that holds defenders between raids cost research and saved no city.
 - **Citizens**: the governor's commerce weight above.
 - `finance::city_affordable` (a new city's maintenance and upkeep against the gold left at
   the target share) is for the settler logic and not wired in. Wired into `settler_choice`
@@ -1878,8 +1875,8 @@ share score (docs/SCORE.md) averages 10000/N whatever the AI does.
 
 More Naval AI (Tholal's FfH2 AI: FfH 0.41's C++ AI plus Better BTS AI, parts of K-Mod and
 Tholal's own changes; source at sourceforge.net/p/tholalsffhaimod/code, r1832) was read area by
-area against this AI. Its disband rule was adopted (Finance, "Unit support"; round 7) and
-fog-busting, which it does not do, failed here (docs/AI_LOG.md, "Fog-busting posts").
+area against this AI. Its disband rule was tried and reverted (docs/AI_LOG.md, "More Naval AI's
+disband rule"), and fog-busting, which it does not do, failed here ("Fog-busting posts").
 
 Where this AI is ahead, with measurements: victory planning (MNAI's culture victory is switched
 off, "the AI doesnt know how to pursue a culture victory"; its conquest stages are weighted dice),

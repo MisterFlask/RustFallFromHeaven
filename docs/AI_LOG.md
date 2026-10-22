@@ -225,6 +225,34 @@ change also in full games, the allied-barbarian one with the Clan of Embers forc
    saved state: this version made the quick bench's bare loop and session play different games
    (`the_quick_bench_plays_the_same_game_three_ways`; not diagnosed).
 
+### More Naval AI's disband rule (2026-10-22, reverted)
+
+1. The owner's principle (keep what the empire needs and let research pay, rather than react to
+   a raider in sight), in the form More Naval AI uses (C++ `CvPlayerAI::AI_doMilitary` /
+   `AI_disbandUnit`): at peace, while costs take more than 60% of the commerce ("funded" below
+   40%), disband the military unit of least value -- combat units with at most 1 experience, field
+   units outside our borders first, city defenders last -- reading no threat. It replaced
+   `finance::disband`'s military part and `empire::disband`'s bankrupt path (scrapping from 10% of
+   the commerce, garrisons beyond one per city where no threat was in sight), which made cities
+   train defenders the treasury scrapped a few turns later. It did end the churn: military units
+   scrapped 61 -> 6 in seeds 1, 2, 4, 6 to turn 200, units trained unchanged (608 -> 611).
+2. On the base before merging master's late-October AI work it looked neutral: seeds 1-48 (300
+   turns) legacy -0.9% at turn 300; seeds 12001-12096 -1.6% (t -2.0), cities -2.6% (t -3.0); full
+   games 1-24 +1.5% / +5.9% at turns 300 / 400, 12101-12148 +4.0% (t 2.2) / +2.5% / +3.4% at
+   300 / 400 / 500. On the merged code (war staging, vassals, chopping) it was not: seeds 1-48
+   legacy -3.4% at turn 300 (t -2.1), techs -4.8% (t -2.6); full games 1-24 -1.0% / -2.7% / -4.0%
+   / -0.9% at 200-500; seeds 13001-13192 -1.0% (t -1.1), techs -1.4%; full games 13201-13296
+   0.0% / -1.4% / +1.1% / -1.4%, research -5.7% at turn 200 (t -3.05). Every set kept 4-8% more
+   military (t 2.4-5.5), and the units bought nothing: cities lost to the barbarians +18% (t 1.7)
+   in one fresh set, -10% (t -0.8) in the other, civ cities taken unchanged.
+3. In this game a unit kept at peace is upkeep for nothing: the garrison entries above found the
+   same for held defenders, and this finds it for every unit the old rule would have scrapped.
+   The reactive build-and-scrap, churn included, is the cheaper policy. A version worth trying
+   would attack the churn's cost at the build end (do not train against a raider the garrison
+   already holds; production.rs's +1 for a threat in sight), not keep the units. MNAI pairs this
+   rule with a cap on unit spending at training time; ours already gates optional units on
+   affording them at 60% research, and a 12% spending cap was tried with no gain.
+
 ## Wars: no peace sold before the war is decided (2026-10-21)
 
 Item 5 of the strong-player list. In 24 full games (seeds 1-24) our civilizations declared 325
