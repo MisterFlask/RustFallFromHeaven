@@ -398,6 +398,8 @@ pub fn army(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
     }
 
     // Gather: join the nearest other stack within a few turns, else hold in the nearest city.
+    // (Posting lone units here to block barbarian spawns near our cities was tried and reverted:
+    // the units held in cities fight for them. docs/AI_LOG.md, "Fog-busting posts".)
     if g.groups[grp].units.len() < MAX_STACK {
         let reach = v.flood.run(g, u, 3, false);
         let mut best: Option<(PlotIdx, i32)> = None;

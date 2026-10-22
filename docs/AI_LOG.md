@@ -190,6 +190,41 @@ change also in full games, the allied-barbarian one with the Clan of Embers forc
    been refused for several turns (the group's mission plot could carry the job), but the cost
    it removes is small.
 
+### Fog-busting posts (2026-10-22, reverted)
+
+1. Barbarians and animals appear only on land no civilization sees, at least two plots from any
+   unit (`create_barbarian_units`, `create_animals`: `RANDPLOT_NOT_VISIBLE_TO_CIV`,
+   `MIN_BARBARIAN_STARTING_DISTANCE`), so they appear just past the ring our borders light, a
+   turn or two from our cities; players keep that ring lit with a warrior on a hill. A lone army
+   unit with nothing to do (the step before Gather in `military::army`) went to the plot within 5
+   turns, out of sight of every enemy, that blocked the most unseen land within 6 plots of our
+   cities (weighted by closeness, good ground preferred), and stayed there under a mission AI
+   tag the gathering stacks left alone.
+2. It lost on every measure (seeds 1-48, 300 turns, against the same binary with it off): cities
+   -6.1% (t -3.1), workers -7.7% and improvements -9.0% at turn 100; research -14.7% (t -3.5) at
+   turn 200; legacy -2.2%, -7.0% (t -3.4), -8.2% (t -3.0) at turns 100/200/300; cities lost to
+   the barbarians 1.75 -> 2.40 a game, civs eliminated 0.33 -> 0.56 (both t 1.7). A probe over
+   seeds 1-12 to turn 150 counted what it did. Posts were few (0.6 a civ on average, mostly
+   Warriors) and blocked little: new barbarian units appearing 4-6 plots from a civ city went 455
+   -> 415 (-9%), beyond 6 plots 508 -> 530, within 3 plots 185 -> 247 (lairs and towns spawn
+   there; not traced further). Barbarian units within 3 plots of a civ city, summed over turns,
+   rose 5% (16962 -> 17858). Barbarian attacks that destroyed a unit rose 20% (486 -> 585); 111
+   posted units were lost. The posts were taken from units that had been holding in a city:
+   idle units sent to the nearest city fell from 949 to 174 decisions in seeds 1-4 to turn 120.
+   The garrison count does not include those units, but they fight for the city.
+3. The premise is weak in this game. A landmass's barbarian count is fixed (its unowned plots /
+   50, minus the barbarians already there), so blocking moves spawns, and the barbarians
+   walk to cities from wherever they appear. Only the 4-6 plot band (40% of new barbarians,
+   about 6 a civ in 150 turns) is within a post's reach. With every civ posting, spawns only
+   move between neighbours, so an all-AI A/B shows the cost alone. A one-civ test (the change
+   for player 0 only, as `civ_ab.py` does for civilizations) would measure the relative gain
+   a player gets by pushing spawns onto neighbours, but those counts bound it to a few
+   barbarians a game. The real cost was taking idle units out of cities, which, as the garrison
+   entries above found, hold more of the AI's thin city defense than the garrison count shows. A
+   retry should post only units a city can spare. The posts must also be a function of the
+   saved state: this version made the quick bench's bare loop and session play different games
+   (`the_quick_bench_plays_the_same_game_three_ways`; not diagnosed).
+
 ## Unique units (2026-10-20)
 
 The kept version is in docs/AI.md, "Unique units". It is kept under the owner's rule (CLAUDE.md,
