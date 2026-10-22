@@ -1,0 +1,246 @@
+//! City defense weighed by the rival civilizations near each city (switch `RIVAL_DEFENSE`).
+//!
+//! What a player watches along a border: whose cities stand how close, whether we are at war
+//! with them (or about to be), what they think of us, and whether their army outweighs ours. A
+//! border city facing a stronger or hostile neighbour holds more defenders; an interior city
+//! fewer. The idea is More Naval AI's (`CvCityAI::AI_cityThreat`: each rival's closeness to the
+//! city, times war 3 / war plan 1.8 / attitude 0.2-1.8, times their power over ours when they are
+//! stronger; `AI_updateNeededFloatingDefenders` shares a pool of floating defenders out by it):
+//!
+//! - **closeness** of a rival to our city: its cities on the same landmass within 8 plots (12 at
+//!   war), each `(20 + both populations) x (9 - distance) / 9` (13 at war), the nearest counting
+//!   fully and the rest a quarter (C++ `AI_playerCloseness`, by plot distance rather than path
+//!   distance);
+//! - **hostility**: at war 3, our war in preparation 1.8, a vassal or master 0.3, else their
+//!   attitude towards us (furious 1.8, annoyed 1.3, cautious 1, pleased 0.5, friendly 0.2);
+//! - **power**: their power over our defensive power (pacts and vassals included) when they are
+//!   the stronger, up to 3.
+//!
+//! **At war** (or preparing one) the flat defender every city added before is a pool of one per
+//! city, shared out by each city's share of the war threat: the front holds two or three, the
+//! interior none, at the same cost. **In peacetime** a city adds one defender for a threat of 40
+//! and two for 100 (a cautious neighbour of our strength, a size-6 city 4 plots away, is about 22;
+//! a furious one of our strength about 40). Production (`production::decide`), the defenders'
+//! placement (`units::garrison_quota`, so spare defenders walk from the interior to the border)
+//! and the upkeep scrapping (`finance::disband`) read the same number.
+//!
+//! **Sorties** (More Naval AI's `AI_leaveAttack(1, 70, 175)`): a defender beyond its city's quota
+//! attacks out only while our strength in the city is at least 175% of the enemy strength within
+//! two plots.
+//!
+//! Only what a human could see is read (cities, power, wars, attitudes); no state, no RNG.
+
+use std::collections::BTreeMap;
+
+use ffh_core::game::Game;
+use ffh_core::ids::*;
+use ffh_data::*;
+
+use crate::view::{attack_power, defense_power};
+
+/// Plots within which a rival city counts in peacetime (More Naval AI's `DEFAULT_PLAYER_CLOSENESS`
+/// is 7 path steps; plot distance runs a little shorter), and at war (armies march further than a
+/// raid).
+const CLOSE: i32 = 8;
+const CLOSE_WAR: i32 = 12;
+/// Peacetime threat for one more defender, and for two.
+const ONE_MORE: i64 = 40;
+const TWO_MORE: i64 = 100;
+/// Most extra defenders a city holds for its rivals.
+const MAX_EXTRA: i32 = 3;
+/// Strength in the city against the enemy's within two plots, percent.
+const SORTIE_EDGE: i64 = 175;
+
+/// A rival civilization and its weight (hostility x power, x10000).
+#[derive(Copy, Clone, Debug)]
+pub struct Rival {
+    pub player: PlayerId,
+    pub weight: i64,
+    /// At war with us, or the target of the war we prepare: weighs on the war pool.
+    pub war: bool,
+}
+
+/// The rivals of `p` that weigh on its cities (met, alive, with cities, not our team, not the
+/// barbarians), with their weights.
+pub fn rivals(g: &Game, p: PlayerId) -> Vec<Rival> {
+    let team = g.players[p].team;
+    let ours = g.team_get_defensive_power(team).max(1) as i64;
+    let preparing = crate::diplomacy::preparing_target(g, team);
+    let mut out = Vec::new();
+    let mut power: BTreeMap<TeamId, i64> = BTreeMap::new();
+    for r in g.player_ids() {
+        let pl = &g.players[r];
+        let t = pl.team;
+        if r == p || !pl.alive || pl.cities.is_empty() || t == team || g.player_is_barbarian(r) || !g.teams[team].has_met[t] {
+            continue;
+        }
+        let at_war = g.at_war(team, t);
+        let hostility: i64 = if at_war {
+            300
+        } else if preparing == Some(t) {
+            180
+        } else if g.teams[t].vassal[team] || g.teams[team].vassal[t] {
+            30
+        } else {
+            match crate::diplomacy::attitude(g, r, p) {
+                AttitudeType::ATTITUDE_FURIOUS => 180,
+                AttitudeType::ATTITUDE_ANNOYED => 130,
+                AttitudeType::ATTITUDE_CAUTIOUS => 100,
+                AttitudeType::ATTITUDE_PLEASED => 50,
+                _ => 20,
+            }
+        };
+        // Their power over ours counts only when they are the stronger (as in C++).
+        let theirs = *power.entry(t).or_insert_with(|| g.team_get_power(t, true) as i64);
+        let factor = (theirs * 100 / ours).clamp(100, 300);
+        out.push(Rival { player: r, weight: hostility * factor, war: at_war || preparing == Some(t) });
+    }
+    out
+}
+
+/// The threat to our city `c` from the rivals at war with us (`war`) or the others (see the module
+/// doc).
+pub fn city_threat(g: &Game, c: CityId, rivals: &[Rival], war: bool) -> i64 {
+    let city = &g.cities[c];
+    let area = g.map.plots[g.city_plot(c)].area;
+    let close = if war { CLOSE_WAR } else { CLOSE };
+    let mut threat = 0i64;
+    for r in rivals.iter().filter(|r| r.war == war) {
+        let mut best = 0i64;
+        let mut sum = 0i64;
+        for &o in &g.players[r.player].cities {
+            let other = &g.cities[o];
+            let d = g.plot_distance(city.x, city.y, other.x, other.y);
+            if d > close || g.map.plots[g.city_plot(o)].area != area {
+                continue;
+            }
+            let v = (20 + other.population as i64 + city.population as i64) * (close + 1 - d) as i64 / (close + 1) as i64;
+            best = best.max(v);
+            sum += v;
+        }
+        let closeness = best + sum / 4;
+        threat += closeness * r.weight / 10000;
+    }
+    threat
+}
+
+/// Extra defenders a city wants for a peacetime rival threat.
+pub fn extra(threat: i64) -> i32 {
+    if threat >= TWO_MORE {
+        2
+    } else if threat >= ONE_MORE {
+        1
+    } else {
+        0
+    }
+}
+
+/// Extra defenders our city `c` wants for the rivals near it (0 with the switch off).
+pub fn rival_defenders(g: &Game, c: CityId) -> i32 {
+    let p = g.cities[c].owner;
+    all_rival_defenders(g, p).get(&c).copied().unwrap_or(0)
+}
+
+/// The extra defenders of every city of `p` (cities that want none are absent). At war (or while
+/// preparing one) a pool of one defender per city -- what the flat war defender every city held
+/// added up to -- is shared out by each city's share of the war threat (largest remainders; at
+/// most [`MAX_EXTRA`] a city), so the front holds two or three and the interior none. The
+/// peacetime rivals add one or two where their threat reaches [`ONE_MORE`] / [`TWO_MORE`].
+pub fn all_rival_defenders(g: &Game, p: PlayerId) -> BTreeMap<CityId, i32> {
+    let mut out = BTreeMap::new();
+    if !crate::switches::RIVAL_DEFENSE.on(g, p) || g.player_is_barbarian(p) {
+        return out;
+    }
+    let rivals = rivals(g, p);
+    if rivals.is_empty() {
+        return out;
+    }
+    let cities = g.players[p].cities.clone();
+    let war: Vec<i64> = cities.iter().map(|&c| if rivals.iter().any(|r| r.war) { city_threat(g, c, &rivals, true) } else { 0 }).collect();
+    let total: i64 = war.iter().sum();
+    let mut share = vec![0i32; cities.len()];
+    if total > 0 {
+        let pool = cities.len() as i64;
+        let mut rest: Vec<(i64, CityId, usize)> = Vec::new();
+        let mut left = pool;
+        for (i, &c) in cities.iter().enumerate() {
+            let exact = pool * war[i] * 1000 / total;
+            share[i] = ((exact / 1000) as i32).min(MAX_EXTRA);
+            left -= share[i] as i64;
+            if share[i] < MAX_EXTRA {
+                rest.push((exact % 1000, c, i));
+            }
+        }
+        rest.sort_by_key(|&(r, c, _)| (std::cmp::Reverse(r), c));
+        for &(r, _, i) in rest.iter() {
+            if left <= 0 || r == 0 {
+                break;
+            }
+            share[i] += 1;
+            left -= 1;
+        }
+    }
+    for (i, &c) in cities.iter().enumerate() {
+        let peace = city_threat(g, c, &rivals, false);
+        let n = (share[i] + extra(peace)).min(MAX_EXTRA);
+        if n > 0 {
+            out.insert(c, n);
+        }
+        if war[i] > 0 || peace > 0 {
+            crate::trace!(g, p, "{}: rival threat war {} peace {} -> {} more defenders", g.cities[c].name, war[i], peace, n);
+        }
+    }
+    out
+}
+
+/// May defender `u` of our city on `plot` attack out of it? Our units' defense power there must
+/// be at least [`SORTIE_EDGE`] percent of the attack power of the enemy units we see within two
+/// plots. Always true with the switch off.
+pub fn sortie_ok(g: &Game, p: PlayerId, plot: PlotIdx, u: UnitId) -> bool {
+    if !crate::switches::RIVAL_DEFENSE.on(g, p) {
+        return true;
+    }
+    let team = g.players[p].team;
+    let (x, y) = g.map.xy(plot);
+    // Nothing next to the city to attack: nothing to hold back.
+    if !(0..DirectionType::NUM).filter_map(|dir| g.plot_direction(x, y, DirectionType::from_usize(dir))).any(|q| g.plot_is_visible_enemy_unit_for_unit(q, u)) {
+        return true;
+    }
+    // (As in C++, the sortie unit counts: the strength in the city as it stands. The defenders
+    // the city's quota wants stay whatever happens.)
+    let ours: i64 = g.map.plots[plot].units.iter().filter(|&&o| g.units[o].owner == p).map(|&o| defense_power(g, o) as i64).sum();
+    let mut theirs = 0i64;
+    for dx in -2..=2 {
+        for dy in -2..=2 {
+            let Some(q) = g.plot_xy(x, y, dx, dy) else { continue };
+            if !g.plot_is_visible(q, team) {
+                continue;
+            }
+            for &e in &g.map.plots[q].units {
+                let et = g.unit_get_team(e);
+                if et != team && g.at_war(team, et) && !g.unit_is_invisible(e, team, false) {
+                    theirs += attack_power(g, e) as i64;
+                }
+            }
+        }
+    }
+    let ok = ours * 100 >= theirs * SORTIE_EDGE;
+    if !ok {
+        crate::trace!(g, p, "sortie held at {:?}: ours {} against {}", g.map.xy(plot), ours, theirs);
+        g.tel_decision(p, "military", "sortie_held", "rival_defense", 1, String::new);
+    }
+    ok
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn extra_defenders_by_threat() {
+        assert_eq!(extra(0), 0);
+        assert_eq!(extra(ONE_MORE - 1), 0);
+        assert_eq!(extra(ONE_MORE), 1);
+        assert_eq!(extra(TWO_MORE), 2);
+    }
+}

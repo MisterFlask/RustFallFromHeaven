@@ -38,6 +38,9 @@ pub struct View {
     pub escort_requests: Vec<PlotIdx>,
     /// Our units committed to each city's garrison this turn.
     pub garrison: BTreeMap<CityId, i32>,
+    /// Extra defenders our cities want for the rival civilizations near them (`defense.rs`;
+    /// cities that want none are absent).
+    pub rival_def: BTreeMap<CityId, i32>,
     /// Reusable flood buffers.
     pub flood: Flood,
 }
@@ -108,6 +111,7 @@ impl View {
             campaign: Default::default(),
             amphibious: None,
             garrison: BTreeMap::new(),
+            rival_def: BTreeMap::new(),
             flood: Flood::default(),
         };
         v.build_danger(g);
@@ -115,6 +119,7 @@ impl View {
             v.targets = crate::military::find_targets(g, &v);
             v.amphibious = crate::naval::amphibious_target(g, p);
             v.roads = crate::workers::road_plan(g, p);
+            v.rival_def = crate::defense::all_rival_defenders(g, p);
             for &c in &g.players[p].cities {
                 let cp = g.city_plot(c);
                 let threat = crate::production::local_threat(g, p, cp, 3);

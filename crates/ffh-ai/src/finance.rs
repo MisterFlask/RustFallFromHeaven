@@ -335,12 +335,15 @@ pub fn disband(g: &mut Game, p: PlayerId) -> bool {
         cands.push((relative_power(g, u, best_def, best_att, false), u));
     }
     // Garrison units beyond the quota production keeps when it cannot afford more.
+    let rival = crate::defense::all_rival_defenders(g, p);
     for &c in &g.players[p].cities {
         let plot = g.city_plot(c);
         if crate::production::local_threat(g, p, plot, 3) > 0 {
             continue;
         }
-        let keep = if g.city_is_capital(c) || crate::production::barbarians_near(g, p, plot, 4) { 2 } else { 1 };
+        // (Plus what the rivals near the city call for: defense.rs, the same number production
+        // trains to.)
+        let keep = if g.city_is_capital(c) || crate::production::barbarians_near(g, p, plot, 4) { 2 } else { 1 } + rival.get(&c).copied().unwrap_or(0);
         let mut garrison: Vec<UnitId> = g.map.plots[plot]
             .units
             .iter()

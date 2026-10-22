@@ -278,7 +278,7 @@ fn margin(n: usize) -> usize {
 
 /// Does `units` take city `c` (plot `tp`, defenders `defs`) with `spare` attackers to spare?
 /// With `spare`, a [`margin`] of attackers must be left over (only units able to attack count).
-fn covers(g: &Game, c: CityId, tp: PlotIdx, defs: &[UnitId], units: &[UnitId], spare: bool, siege: bool) -> bool {
+pub(crate) fn covers(g: &Game, c: CityId, tp: PlotIdx, defs: &[UnitId], units: &[UnitId], spare: bool, siege: bool) -> bool {
     let n_att = units.iter().filter(|&&u| attack_power(g, u) > 0 && g.unit_can_attack(u)).count();
     if n_att == 0 {
         return false;
@@ -509,25 +509,40 @@ pub fn plan(g: &Game, v: &mut View) {
     if v.barbarian || g.players[v.p].cities.is_empty() {
         return;
     }
-    if let Some(op) = build_op(g, v) {
-        v.campaign.ops.push(op);
-    }
-}
-
-fn build_op(g: &Game, v: &mut View) -> Option<Op> {
     let p = v.p;
-    let team = v.team;
-    let (cand, need, feasible) = choose_target(g, p)?;
-    let tp = cand.plot;
+    let Some((cand, need, feasible)) = choose_target(g, p) else { return };
     g.tel_intent(p, "campaign", || {
         let c = &g.cities[cand.city];
         format!("{} (player {}){}", c.name, c.owner.0, if feasible { "" } else { ", building up" })
     });
+    let groups = op_groups(g, p, &cand);
+    if groups.is_empty() {
+        return;
+    }
+    if cand.civ && crate::switches::SECOND_OP.on(g, p) {
+        if let Some(s) = split(g, p, &cand, need, &groups) {
+            crate::trace!(g, p, "second operation: {} keeps {} units (need {}), {} takes {} (need {})", g.cities[cand.city].name, units_in(g, &s.keep), need, g.cities[s.second.city].name, units_in(g, &s.surplus), s.need);
+            g.tel_decision(p, "military", "second_op", "surplus", units_in(g, &s.surplus) as i64, String::new);
+            if let Some(op) = build_op(g, v, cand, need, s.keep) {
+                v.campaign.ops.push(op);
+            }
+            if let Some(op) = build_op(g, v, s.second, s.need, s.surplus) {
+                v.campaign.ops.push(op);
+            }
+            return;
+        }
+    }
+    if let Some(op) = build_op(g, v, cand, need, groups) {
+        v.campaign.ops.push(op);
+    }
+}
+
+/// Our stacks on the landmass of target `cand` within reach of it, nearest first (plot
+/// distance, group).
+fn op_groups(g: &Game, p: PlayerId, cand: &Cand) -> Vec<(i32, GroupId)> {
+    let tp = cand.plot;
     let (tx, ty) = g.map.xy(tp);
     let area = g.map.plots[tp].area;
-    let owner_team = g.players[g.cities[cand.city].owner].team;
-    let at_war = g.at_war(team, owner_team);
-    // Our stacks on the target's landmass, nearest first.
     let mut groups: Vec<(i32, GroupId)> = Vec::new();
     for &grp in &g.players[p].groups {
         if !army_group(g, grp) {
@@ -546,6 +561,129 @@ fn build_op(g: &Game, v: &mut View) -> Option<Op> {
         groups.push((d, grp));
     }
     groups.sort();
+    groups
+}
+
+fn units_in(g: &Game, groups: &[(i32, GroupId)]) -> i32 {
+    groups.iter().map(|&(_, grp)| g.groups[grp].units.len() as i32).sum()
+}
+
+/// A war force split in two (see [`split`]).
+struct Split {
+    /// The stacks that stay on the first target.
+    keep: Vec<(i32, GroupId)>,
+    /// The second target, the units it needs, and the stacks that go for it (distance to it).
+    second: Cand,
+    need: i32,
+    surplus: Vec<(i32, GroupId)>,
+}
+
+/// A second operation for a clear surplus (switch `SECOND_OP`; More Naval AI caps the units sent
+/// at one city, `AI_pickTargetCity`: a city already targeted by more than max(6, 3 x its
+/// defenders) is passed over for the next). When the stacks committed at war hold more than twice
+/// what the first target (seen: its need is real) needs, the first target keeps the stacks already
+/// ordered against it and the nearest others up to twice its need (at least six units), and the
+/// rest go for a second enemy city on the landmass that they cover on their own with the march
+/// reserve, the best value for its cost. An expert does not walk thirty units to a city twelve
+/// take. Assignments stick: a stack ordered against the second city stays with it while the second
+/// force still takes it (without the reserve) and the first keeps what it needs; otherwise
+/// everyone goes back to the first. None when there is no second operation.
+fn split(g: &Game, p: PlayerId, cand: &Cand, need: i32, groups: &[(i32, GroupId)]) -> Option<Split> {
+    let team = g.players[p].team;
+    let at_war = |c: &Cand| g.at_war(team, g.players[g.cities[c.city].owner].team);
+    if !at_war(cand) {
+        return None;
+    }
+    let area = g.map.plots[cand.plot].area;
+    let (cands, _) = candidates(g, p);
+    let others: Vec<Cand> = cands.into_iter().filter(|c| c.civ && c.city != cand.city && g.map.plots[c.plot].area == area && at_war(c)).collect();
+    if others.is_empty() {
+        return None;
+    }
+    let size = |grp: GroupId| g.groups[grp].units.len() as i32;
+    let cap = (2 * need).max(6);
+    let tagged_to = |c: &Cand| -> i32 { groups.iter().filter(|&&(_, grp)| tagged(g, grp) == Some(c.plot)).map(|&(_, grp)| size(grp)).sum() };
+    // The second operation under way (the other city the most of our stacks are ordered against).
+    let running = (0..others.len()).filter(|&i| tagged_to(&others[i]) > 0).max_by_key(|&i| (tagged_to(&others[i]), std::cmp::Reverse(others[i].city)));
+    if running.is_none() && (!cand.visible || units_in(g, groups) < 2 * need + 2) {
+        return None;
+    }
+    // Who goes where, given the second target `t2` (index in `others`).
+    let assign = |t2: usize| -> (Vec<(i32, GroupId)>, Vec<(i32, GroupId)>) {
+        let c2 = &others[t2];
+        let (tx, ty) = g.map.xy(c2.plot);
+        let d2 = |grp: GroupId| {
+            g.group_get_head_unit(grp).map_or(i32::MAX, |h| {
+                let (x, y) = g.map.xy(g.unit_plot(h));
+                g.plot_distance(x, y, tx, ty)
+            })
+        };
+        let mut order: Vec<(i32, GroupId)> = groups.iter().copied().filter(|&(_, grp)| tagged(g, grp) != Some(c2.plot)).collect();
+        order.sort_by_key(|&(d, grp)| (tagged(g, grp) != Some(cand.plot), d, grp));
+        let mut keep: Vec<(i32, GroupId)> = Vec::new();
+        let mut second: Vec<(i32, GroupId)> = groups.iter().filter(|&&(_, grp)| tagged(g, grp) == Some(c2.plot)).map(|&(_, grp)| (d2(grp), grp)).collect();
+        let mut n = 0;
+        for (d, grp) in order {
+            if n < cap || d2(grp) > 24 {
+                n += size(grp);
+                keep.push((d, grp));
+            } else {
+                second.push((d2(grp), grp));
+            }
+        }
+        keep.sort();
+        second.sort();
+        (keep, second)
+    };
+    // The force against `t2` takes it (with the march reserve, or at acceptable odds once under
+    // way), and the units it needs.
+    let takes = |t2: usize, second: &[(i32, GroupId)], reserve: bool| -> Option<i32> {
+        let c2 = &others[t2];
+        let all: Vec<UnitId> = second.iter().flat_map(|&(_, grp)| g.groups[grp].units.iter().copied()).collect();
+        let mut force: Vec<UnitId> = all.iter().copied().filter(|&u| attack_power(g, u) > 0 && g.unit_can_attack(u)).collect();
+        force.sort_by_key(|&u| (std::cmp::Reverse(attack_power(g, u)), u));
+        let need2 = need_for(g, team, c2, &force);
+        if force.is_empty() || need2 > force.len() as i32 || c2.visible && !covers(g, c2.city, c2.plot, &visible_defenders(g, team, c2.plot), &all, reserve, true) {
+            return None;
+        }
+        Some(need2)
+    };
+    let chosen = match running {
+        Some(t2) => {
+            let (keep, second) = assign(t2);
+            takes(t2, &second, false).filter(|_| units_in(g, &keep) >= need).map(|need2| (t2, need2, keep, second))
+        }
+        None => {
+            let mut best: Option<(i64, usize, i32, Vec<(i32, GroupId)>, Vec<(i32, GroupId)>)> = None;
+            for t2 in 0..others.len() {
+                let (keep, second) = assign(t2);
+                if second.is_empty() || units_in(g, &keep) < cap {
+                    continue;
+                }
+                let Some(need2) = takes(t2, &second, true) else { continue };
+                let c2 = &others[t2];
+                let score = c2.value as i64 * 1000 / (need2 as i64 * 100 + c2.dist as i64 * 25 + 200);
+                if best.as_ref().map_or(true, |b| score > b.0) {
+                    best = Some((score, t2, need2, keep, second));
+                }
+            }
+            best.map(|(_, t2, need2, keep, second)| (t2, need2, keep, second))
+        }
+    };
+    let (t2, need2, keep, surplus) = chosen?;
+    Some(Split { keep, second: others[t2], need: need2, surplus })
+}
+
+/// The operation against `cand` (needing `need` units) with our stacks `groups` (distance to
+/// it, group; nearest first).
+fn build_op(g: &Game, v: &mut View, cand: Cand, need: i32, groups: Vec<(i32, GroupId)>) -> Option<Op> {
+    let p = v.p;
+    let team = v.team;
+    let tp = cand.plot;
+    let (tx, ty) = g.map.xy(tp);
+    let area = g.map.plots[tp].area;
+    let owner_team = g.players[g.cities[cand.city].owner].team;
+    let at_war = g.at_war(team, owner_team);
     if groups.is_empty() {
         return None;
     }
@@ -574,6 +712,17 @@ fn build_op(g: &Game, v: &mut View) -> Option<Op> {
     let all = units_of(&|_, _| true);
     let near = units_of(&|d, _| d <= 2);
     let adj: Vec<UnitId> = units_of(&|d, _| d <= 1).into_iter().filter(|&u| g.unit_moves_left(u) > 0).collect();
+    // Heroes and veterans that would not attack at their odds (switch `PRECIOUS`) are not part of
+    // the force that takes the city: the strike would leave them out and stall next to it.
+    let (all, near, adj) = if crate::switches::PRECIOUS.on(g, p) && cand.visible {
+        let fights = |u: &UnitId| {
+            let bar = precious_bar(g, *u);
+            bar == 0 || g.plot_get_best_defender(tp, None, Some(p), Some(*u), false, false, false).map_or(1000, |d| g.get_combat_odds(*u, d)) >= bar
+        };
+        (all.into_iter().filter(fights).collect::<Vec<_>>(), near.into_iter().filter(fights).collect::<Vec<_>>(), adj.into_iter().filter(fights).collect::<Vec<_>>())
+    } else {
+        (all, near, adj)
+    };
     let defs = visible_defenders(g, team, tp);
     // We commit to marching only with a confident force (a reserve to spare: `spare = true`), so
     // stacks do not advance understrength; but once a committed force is positioned next to or
@@ -969,6 +1118,26 @@ pub fn act(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, early: bool) -> 
     true
 }
 
+/// The odds (per mille) below which a precious unit does not attack in a strike (0: any odds).
+/// More Naval AI's `AI_getBestGroupAttacker` (Sephi's block): a hero at 85% plus its level, a unit
+/// above level 4 at 70% plus 3% a level (at most 95%). A hero is a unique unit years of play went
+/// into; a high-level veteran is worth several new units. Neither is spent on a fight it may well
+/// lose, nor sacrificed to wear defenders down.
+pub(crate) fn precious_bar(g: &Game, u: UnitId) -> i32 {
+    static HERO: std::sync::OnceLock<Option<PromotionType>> = std::sync::OnceLock::new();
+    let unit = &g.units[u];
+    let hero_promotion = *HERO.get_or_init(|| g.d.ty::<PromotionType>("PROMOTION_HERO"));
+    let hero = unit.ai_type == Some(UnitAIType::UNITAI_HERO) || hero_promotion.is_some_and(|h| unit.has_promotion[h]);
+    let level = unit.level.max(0);
+    if hero {
+        (850 + 10 * level).min(990)
+    } else if level > 4 {
+        (700 + 30 * level).min(950)
+    } else {
+        0
+    }
+}
+
 /// The strike: the units of every committed stack next to the target attack this turn, one by
 /// one, while the force left still covers the defenders left. Siege engines bombard first;
 /// then collateral attackers while several defenders stand; then units summoned for good
@@ -1002,6 +1171,15 @@ fn strike(g: &mut Game, v: &mut View, op: &Op) {
     crate::magic::soften(g, v, tp, &ready);
     let mut done: Vec<UnitId> = Vec::new();
     let mut fights = 0;
+    let precious = crate::switches::PRECIOUS.on(g, p);
+    let mut held_steps = 0;
+    if precious && (crate::trace_on(p) || g.telemetry.on()) {
+        let n = pool.iter().filter(|&&u| next_to(g, u) && precious_bar(g, u) > 0).count();
+        if n > 0 {
+            crate::trace!(g, p, "  {} heroes or veterans in the strike on {} attack only at their odds", n, name);
+            g.tel_decision(p, "military", "precious_in_strike", "precious", n as i64, String::new);
+        }
+    }
     for _ in 0..48 {
         if !g.cities.contains(op.city) || g.cities[op.city].owner == p {
             break;
@@ -1012,12 +1190,25 @@ fn strike(g: &mut Game, v: &mut View, op: &Op) {
         }
         // Siege engines with walls left to batter wait (their attack would only bombard).
         let walls = g.city_defense_modifier(op.city, false) > 0;
-        let units: Vec<UnitId> = pool
+        let odds = |g: &Game, u: UnitId| g.plot_get_best_defender(tp, None, Some(p), Some(u), false, false, false).map_or(1000, |d| g.get_combat_odds(u, d));
+        let able: Vec<UnitId> = pool
             .iter()
             .copied()
             .filter(|&u| next_to(g, u) && !done.contains(&u) && g.unit_moves_left(u) > 0 && !g.units[u].made_attack && attack_power(g, u) > 0 && g.unit_can_attack(u))
             .filter(|&u| !(walls && g.unit_bombard_rate(u) > 0))
             .collect();
+        // Heroes and veterans fight only at their odds (switch `PRECIOUS`, [`precious_bar`]).
+        let units: Vec<UnitId> = able
+            .iter()
+            .copied()
+            .filter(|&u| {
+                let bar = if precious { precious_bar(g, u) } else { 0 };
+                bar == 0 || odds(g, u) >= bar
+            })
+            .collect();
+        if units.len() < able.len() {
+            held_steps += 1;
+        }
         // Start with a margin; once started, go on while the rest still takes the city, or
         // while the defenders are worn down to half their health and we outnumber them (they
         // heal if we stop).
@@ -1040,7 +1231,6 @@ fn strike(g: &mut Game, v: &mut View, op: &Op) {
             crate::magic::bless(g, v, tp, &units);
         }
         // The next attacker.
-        let odds = |g: &Game, u: UnitId| g.plot_get_best_defender(tp, None, Some(p), Some(u), false, false, false).map_or(1000, |d| g.get_combat_odds(u, d));
         let with_odds: Vec<(UnitId, i32)> = units.iter().map(|&u| (u, odds(g, u))).collect();
         let best_odds = with_odds.iter().map(|&(_, o)| o).max().unwrap_or(0);
         let collateral = defs.len() >= 2 && with_odds.iter().any(|&(u, _)| g.unit_collateral_damage(u) > 0);
@@ -1113,6 +1303,9 @@ fn strike(g: &mut Game, v: &mut View, op: &Op) {
         }
     }
     crate::trace!(g, p, "strike on {}: {} stacks, {} attacks, {}", name, groups.len(), fights, if taken(g) { "taken" } else { "holds" });
+    if held_steps > 0 {
+        g.tel_decision(p, "military", "precious_held", "precious", held_steps, String::new);
+    }
     // End the turn of every stack involved (including the units taken out of them).
     for u in pool {
         if let Some(grp) = g.units.contains(u).then(|| g.units[u].group).flatten() {

@@ -308,6 +308,11 @@ fn finish(g: &mut Game, grp: GroupId) {
 /// the staging landmass, nearest the staging port first, are committed up to the force the
 /// target wants (so the whole army is not shipped off for one small city). Deterministic.
 fn committed(g: &Game, p: PlayerId, amph: &Amph, grp: GroupId) -> bool {
+    committed_groups(g, p, amph).contains(&grp)
+}
+
+/// The army groups committed to the amphibious assault (see [`committed`]).
+fn committed_groups(g: &Game, p: PlayerId, amph: &Amph) -> Vec<GroupId> {
     let staging_area = g.map.plots[amph.staging_plot].area;
     let (sx, sy) = g.map.xy(amph.staging_plot);
     // Army groups on the staging landmass, not already aboard a ship.
@@ -325,15 +330,97 @@ fn committed(g: &Game, p: PlayerId, amph: &Amph, grp: GroupId) -> bool {
         groups.push((g.plot_distance(hx, hy, sx, sy), gr, g.groups[gr].units.len() as i32));
     }
     groups.sort_by_key(|&(d, gr, _)| (d, gr));
+    let mut out = Vec::new();
     let mut n = 0;
     for &(_, gr, count) in &groups {
         if n >= amph.need {
             break;
         }
-        if gr == grp {
+        out.push(gr);
+        n += count;
+    }
+    out
+}
+
+/// Army units aboard transport `t`.
+fn army_aboard(g: &Game, t: UnitId) -> i32 {
+    g.unit_get_cargo_units(t)
+        .iter()
+        .filter(|&&c| {
+            let info = &g.d.units[g.units[c].unit_type];
+            !info.found && info.combat > 0 && g.unit_get_domain_type(c) == DomainType::DOMAIN_LAND
+        })
+        .count() as i32
+}
+
+/// The assault fleet in port (switch `FLEET`; C++ `AI_assaultSeaMove`: a loaded transport waits
+/// in port until its cargo reaches the invasion size, and sails with the force, escorted). A
+/// transport with an army aboard, in one of our cities, waits while what the transports in port
+/// carry, with what has already landed next to the target, falls short of the force the target
+/// needs (at most four against a garrison we have not seen) and more can still come (committed
+/// units on their way with room for them, or the port training for the assault: production builds
+/// the transports and the attackers, `assault_production`); with nothing more to come, half the
+/// force sails. Then the loaded transports in port and our idle warships there sail as one stack. Before, each
+/// transport sailed as soon as one fighter was aboard (a Trireme carries one), alone, and the army
+/// landed one unit at a time next to a defended city. True if the fleet waits this turn.
+fn fleet_waits(g: &mut Game, v: &View, grp: GroupId, u: UnitId, amph: &Amph) -> bool {
+    let p = v.p;
+    let here = g.unit_plot(u);
+    if !g.map.plots[here].plot_city.is_some_and(|c| g.cities[c].owner == p) {
+        return false;
+    }
+    let ships: Vec<UnitId> = g.map.plots[here]
+        .units
+        .iter()
+        .copied()
+        .filter(|&t| g.units[t].owner == p && is_transport_type(&g.d.units[g.units[t].unit_type]) && !g.unit_get_cargo_units(t).iter().any(|&c| g.d.units[g.units[c].unit_type].found))
+        .collect();
+    let aboard: i32 = ships.iter().map(|&t| army_aboard(g, t)).sum();
+    // What has landed next to the target already counts: the trips after the first reinforce it.
+    // An unseen garrison is a guess: a scouting-sized force goes to look (as on land, campaign.rs).
+    let required = if g.plot_is_visible(amph.plot, v.team) { amph.need } else { amph.need.min(4) };
+    let have = aboard + amph.landed;
+    if have < required {
+        // More can still come: committed units walking to the port or in it, with room for them in
+        // port or in transports on their way or in training; or the port training for the assault.
+        let room: i32 = ships.iter().map(|&t| (g.d.units[g.units[t].unit_type].cargo_space - g.unit_get_cargo_units(t).len() as i32).max(0)).sum();
+        let ships_coming = g.players[p].ai_num_train_ai_units[UnitAIType::UNITAI_ASSAULT_SEA]
+            + g.players[p].units.iter().filter(|&&t| is_transport_type(&g.d.units[g.units[t].unit_type]) && g.units[t].ai_type == Some(UnitAIType::UNITAI_ASSAULT_SEA) && g.unit_plot(t) != here && g.unit_get_cargo_units(t).is_empty()).count() as i32;
+        let walking: i32 = committed_groups(g, p, amph).iter().map(|&gr| g.groups[gr].units.iter().filter(|&&o| !g.unit_is_cargo(o)).count() as i32).sum();
+        let training = g.map.plots[here].plot_city.is_some_and(|c| g.city_production_unit(c).is_some_and(|ut| g.d.units[ut].combat > 0 && g.d.units[ut].domain_type == Some(DomainType::DOMAIN_LAND)));
+        let more = (walking > 0 || training) && (room > 0 || ships_coming > 0);
+        // Nothing more is coming: half the force sails (a quarter of an army landing beside a city
+        // only feeds it experience).
+        if more || have * 2 < required {
+            crate::trace!(g, p, "assault fleet at {:?} waits: {} aboard and {} landed of {} needed (room {}, {} ships, {} units walking, training {})", g.map.xy(here), aboard, amph.landed, required, room, ships_coming, walking, training);
+            g.tel_decision(p, "military", "fleet_wait", "fleet", aboard as i64, String::new);
+            skip(g, grp);
             return true;
         }
-        n += count;
+    }
+    // Sail as one stack: the other loaded transports here, and our idle warships as escorts.
+    let mut joined = 0;
+    let mut escorts = 0;
+    for &o in &g.map.plots[here].units.clone() {
+        if g.units[o].owner != p || g.units[o].group == Some(grp) || g.unit_get_domain_type(o) != DomainType::DOMAIN_SEA || g.unit_is_cargo(o) {
+            continue;
+        }
+        let info = &g.d.units[g.units[o].unit_type];
+        let loaded = ships.contains(&o) && army_aboard(g, o) > 0;
+        let warship = !is_transport_type(info) && info.combat > 0 && g.units[o].ai_type != Some(UnitAIType::UNITAI_EXPLORE_SEA) && g.unit_moves_left(o) == g.unit_max_moves(o);
+        if !(loaded || warship) || !g.unit_can_join_group(o, here, grp) {
+            continue;
+        }
+        g.unit_join_group(o, Some(grp), true);
+        if g.units[o].group == Some(grp) {
+            joined += i32::from(loaded);
+            escorts += i32::from(warship);
+        }
+    }
+    crate::trace!(g, p, "assault fleet at {:?} sails: {} aboard of {} needed, {} more transports, {} escorts", g.map.xy(here), aboard, amph.need, joined, escorts);
+    g.tel_decision(p, "military", "fleet_sail", "fleet", aboard as i64, String::new);
+    if escorts > 0 {
+        g.tel_decision(p, "military", "fleet_escorted", "fleet", escorts as i64, String::new);
     }
     false
 }
@@ -506,7 +593,17 @@ pub fn assault_production(g: &Game, c: CityId) -> Option<Choice> {
 pub fn transport(ai: &Ai, g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
     let p = v.p;
     let here = g.unit_plot(u);
-    let cargo = g.unit_get_cargo_units(u);
+    let fleet = crate::switches::FLEET.on(g, p);
+    if fleet && g.groups[grp].units.len() > 1 && g.map.plots[here].plot_city.is_some_and(|c| g.cities[c].owner == p) && g.groups[grp].units.iter().all(|&t| g.unit_get_cargo_units(t).is_empty()) {
+        // An assault fleet back in port, empty: each ship on its own again.
+        for o in g.groups[grp].units.clone() {
+            if o != u {
+                g.unit_join_group(o, None, true);
+            }
+        }
+    }
+    // (A fleet's cargo is what all its transports carry.)
+    let cargo = if fleet { g.groups[grp].units.iter().flat_map(|&t| g.unit_get_cargo_units(t)).collect() } else { g.unit_get_cargo_units(u) };
     let carries_settler = cargo.iter().any(|&c| g.d.units[g.units[c].unit_type].found);
     // A land fighter aboard (not a settler): an assault to land on an enemy coast.
     let carries_army = !carries_settler
@@ -517,6 +614,11 @@ pub fn transport(ai: &Ai, g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
     crate::trace!(g, p, "transport {:?} at {:?}: cargo {} (settler {}, army {}), moves {}", u, g.map.xy(here), cargo.len(), carries_settler, carries_army, g.unit_moves_left(u));
     if carries_army {
         if let Some(amph) = v.amphibious.clone() {
+            if fleet && fleet_waits(g, v, grp, u, &amph) {
+                return;
+            }
+            // (A fleet that sails now has gathered more ships: their cargo lands too.)
+            let cargo = if fleet { g.groups[grp].units.iter().flat_map(|&t| g.unit_get_cargo_units(t)).collect() } else { cargo };
             transport_assault(g, v, grp, u, &amph, &cargo);
             return;
         }
@@ -582,7 +684,15 @@ pub fn transport(ai: &Ai, g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
     if !cargo.is_empty() && !carries_settler {
         // Cargo we have no plan for: back to port, unload there.
         if g.map.plots[here].plot_city.is_some_and(|c| g.cities[c].owner == p) {
-            g.unit_unload_all(u);
+            if fleet {
+                for t in g.groups[grp].units.clone() {
+                    if g.units.contains(t) && !g.unit_get_cargo_units(t).is_empty() {
+                        g.unit_unload_all(t);
+                    }
+                }
+            } else {
+                g.unit_unload_all(u);
+            }
             hold(g, grp);
             return;
         }

@@ -431,7 +431,13 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static str)> {
     if barbarians_near(g, p, plot, 3) {
         needed += 1;
     }
-    if ctx.at_war {
+    let mut rival = 0;
+    if crate::switches::RIVAL_DEFENSE.on(g, p) {
+        // The rival civilizations near this city (war, hostility, power; defense.rs): at war the
+        // front holds more and the interior fewer than the flat one more below.
+        rival = crate::defense::rival_defenders(g, c);
+        needed += rival;
+    } else if ctx.at_war {
         needed += 1;
     }
     if let Some(l) = leader {
@@ -556,7 +562,8 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static str)> {
     needed += crate::victory::guard(g, c); // victory-pursuit
     if ctx.defenders < needed {
         if let Some(u) = best_unit(g, c, Role::Defense) {
-            return Some((Choice::Train(u, UnitAIType::UNITAI_CITY_DEFENSE), "defender_quota"));
+            let why = if ctx.defenders >= needed - rival { "rival_defender" } else { "defender_quota" };
+            return Some((Choice::Train(u, UnitAIType::UNITAI_CITY_DEFENSE), why));
         }
     }
 

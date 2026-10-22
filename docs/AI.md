@@ -91,7 +91,9 @@ counters, war success, war plans) that the diplomacy below reads.
      unless a clearly better site is reachable this turn; with no site left on its landmass a
      settler goes overseas (see Naval);
    - **workers** (`workers.rs`), see below;
-   - **garrisons** fill each city's quota;
+   - **garrisons** fill each city's quota (the rival civilizations near the city included, see
+     "City defense against rival civilizations"); one beyond it attacks out of its city only while
+     our strength there is 175% of the enemy's within two plots;
    - **field armies** (`military.rs`), see below;
    - **explorers** reveal the nearest unknown area and goody huts, one turn at a time to a plot
      no enemy they see can reach (a multi-turn move gets no orders until it ends, and explorers
@@ -140,7 +142,8 @@ counters, war success, war plans) that the diplomacy below reads.
 6. FfH tier-2 units need a building in the training city (Archery Range for archers,
    Training Yard for axemen, ...): when one would open a defender or attacker a third
    stronger, about half the cities build it;
-7. extra defenders up to the quota (capital, threat, nearby barbarians, war, leader);
+7. extra defenders up to the quota (capital, threat, nearby barbarians, the rival civilizations
+   near the city, leader);
 8. a small mobile force (1 + cities/2) for barbarians and animals; more workers as worked
    plots need improving; the victory goal's items (`victory::production`: towers, culture in
    the cities nearest legendary; before expansion, item 4, when the goal is 30 turns away);
@@ -163,6 +166,24 @@ scrap); when no more units are affordable, the strongest one whatever it costs (
 the same for any unit and the weakest are disbanded first, so idle hammers buy quality).
 Units are chosen by power squared per production turn, so stronger units win unless much
 dearer.
+
+**City defense against rival civilizations** (`defense.rs`, switch `RIVAL_DEFENSE`): what a
+player watches along a border -- whose cities stand how close, whether we are at war with them or
+about to be, what they think of us, whether their army outweighs ours. Each rival's threat to a
+city is More Naval AI's (`CvCityAI::AI_cityThreat`): its closeness (its cities on the landmass
+within 8 plots, 12 at war, `(20 + both populations) x (9 - distance) / 9`, the nearest in full and
+the rest a quarter) times its hostility (at war 3, our war in preparation 1.8, a vassal or master
+0.3, else its attitude: furious 1.8 to friendly 0.2) times its power over our defensive power
+when it is the stronger (up to 3). At war (or preparing one) the flat defender every city used to
+add is a pool of one per city shared out by each city's share of the war threat (More Naval AI's
+floating defenders, `AI_updateNeededFloatingDefenders`): the front holds two or three, the
+interior none, at the old cost. In peacetime a city adds one defender for a threat of 40 and two
+for 100 (a cautious neighbour of our strength with a size-6 city 4 plots away is about 22, a
+furious one about 40). Production, the defenders' placement (`units::garrison_quota`: spare
+defenders walk from the interior to the border) and the upkeep scrapping (`finance::disband`)
+read the same number. Sorties (`defense::sortie_ok`, More Naval AI's `AI_leaveAttack(1, 70,
+175)`): a defender beyond its city's quota attacks out at 80% odds only while our strength in the
+city is 175% of the enemy's within two plots.
 
 **Unit support** (`economy.rs`): FfH units beyond the free ones (handicap, civics,
 population) cost gold every turn. Every optional unit (extra defenders beyond one per city
@@ -529,16 +550,25 @@ Each army group is a stack; per decision, in order:
 1. follow through a group attack the rules queued (`ai_group_attack`);
 2. become the garrison of an undefended city of ours it stands in;
 3. merge the army units on its plot (up to 8; only units with full moves);
-4. attack an adjacent target worth it (never a civ city outside a war plan, nor the target of
+4. take an enemy city at war, plan or not, that it reaches this turn and finds empty, or that is
+   next to it and that it clearly takes: the siege estimate with the march reserve and odds the
+   assault goes on with (`opportune`, switch `CAPTURE`; More Naval AI's `AI_stackAttackCity(1,
+   160)`; the targets of our operations are left to their strikes);
+5. attack an adjacent target worth it (never a civ city outside a war plan, nor the target of
    our siege operation, which is left to its strike);
-5. heal when hurt and safe (not a stack about to strike);
-6. defend a city of ours in peril within 5 turns (not a stack marching on a siege);
-7. escort a settler that asks for one (single units);
-8. its siege operation (below), if the stack is committed to one: at war (or while preparing
+6. heal (`heal`, switch `HEAL`; More Naval AI's `AI_heal`, fitted to our small stacks): in one of
+   our cities the wounded (over 30% damage) split off and heal while the rest go on; in the field
+   a stack committed to a siege stops only when more than half of it is hurt (20%+ damage), a
+   loose stack also for one unit over 35%; it heals only where healing is better than 10% a turn
+   (our land or a city, not neutral or enemy land), else it walks into a city of ours within two
+   turns or onto our land within one, else it carries on; never a stack about to strike;
+7. defend a city of ours in peril within 5 turns (not a stack marching on a siege);
+8. escort a settler that asks for one (single units);
+9. its siege operation (below), if the stack is committed to one: at war (or while preparing
    one) always; against a barbarian city once the force is gathered, or to step back from it;
-9. hunt the best barbarian/animal/lair target within 6 turns it can take (entering an empty
-   lair destroys it);
-10. join a bigger stack within 3 turns, else hold in the nearest city.
+10. hunt the best barbarian/animal/lair target within 6 turns it can take (entering an empty
+   lair destroys it; an empty enemy city at war within 2 turns is walked into, `CAPTURE`);
+11. join a bigger stack within 3 turns, else hold in the nearest city.
 
 **Siege operations** (`campaign.rs`): one per player, rebuilt from the game state on the first
 army decision of each `play_turn` call (nothing outside `Game` is remembered).
@@ -584,7 +614,22 @@ army decision of each `play_turn` call (nothing outside `Game` is remembered).
   the best odds when 68%+, else the unit cheapest to lose for its strength (C++
   `AI_getBestGroupSacrifice`) -- while the attackers left still cover the
   defenders left (or the defenders are down to half their health and outnumbered). Up to three
-  units follow the victor into the city.
+  units follow the victor into the city. Heroes and veterans (switch `PRECIOUS`; More Naval AI's
+  `AI_getBestGroupAttacker`) attack only at their odds -- a hero at 85% plus 1% a level, a unit
+  above level 4 at 70% plus 3% a level (at most 95%) -- and are never sacrificed; the phases
+  leave them out of the force that takes the city (else the stacks stalled next to it, the strike
+  leaving them out), and a group assault (`military::assault`) stops when the rules would send
+  one below its odds.
+- *A second operation* (switch `SECOND_OP`; More Naval AI's `AI_pickTargetCity` passes over a
+  city already targeted by more than max(6, 3 x its defenders) units): when the stacks committed
+  at war hold more than twice what the first target (seen) needs, it keeps the stacks already
+  ordered against it and the nearest others up to twice its need (six units at least), and the
+  rest go for a second enemy city on the landmass that they cover on their own with the march
+  reserve, the best value for its cost (`campaign::split`). The assignment sticks through the
+  stacks' mission AI: a stack ordered against the second city stays with it while the second
+  force still takes it at acceptable odds and the first keeps its need; otherwise everyone goes
+  back to the first. (A first version rebuilt the split each turn from distances; the targets
+  swapped every turn as cities fell or needs moved, and stacks walked between them.)
 - Campaign moves go one turn at a time (the rest of the path is dropped once the moves are
   spent): an AI group on a multi-turn mission gets no orders until it ends, and stacks walked on
   to plots chosen for an earlier phase.
@@ -662,6 +707,15 @@ plot falls or the odds turn bad, and moves in.
   strike, instead of scattering across the city's approaches and never massing. One transport trip
   still carries only the ship's cargo capacity, so with early, small transports the force builds up
   over several trips; bigger invasions wait for better ships.
+- **The assault fleet** (`naval::fleet_waits`, switch `FLEET`; More Naval AI's
+  `AI_assaultSeaMove`, which waits in port until the cargo reaches the invasion size and sails
+  escorted): a transport with an army aboard waits in port while what the transports there carry,
+  with what has already landed next to the target, falls short of the force the target needs;
+  then the loaded transports in port and our idle warships there sail as one stack and land
+  together (the escorts sail with them; back in port, empty, the ships part again). Before, each
+  transport sailed as soon as one fighter was aboard -- a Trireme or a Caravel carries one -- and
+  the army landed a unit at a time next to a defended city, where the landed units assaulted it
+  piecemeal.
 
 ## Diplomacy (`diplomacy.rs`)
 
@@ -1900,6 +1954,7 @@ Where MNAI does something this AI does not, ranked by expected worth (each untri
    (`AI_leaveAttack`). Here the quotas read units in sight only; ffh-ai lost 12 cities a game to
    civs against the C++ AI's 7 (docs/CPPAI.md), and AI_LOG's Clan entry names this term. Measure
    one civ against the rest (`civ_ab.py`); the garrison entries in AI_LOG warn about the cost.
+   *Done in round 7b* ("City defense against rival civilizations"; Round 7b below).
 3. **Peace terms that weigh our forces** (`CvTeamAI::AI_endWarVal`: the value of peace divided
    by our attackers en route against theirs, down to a third; a war with nothing moving ends).
    AI_LOG "Wars" names this lever: sell the war when the next city is out of reach.
@@ -1907,6 +1962,7 @@ Where MNAI does something this AI does not, ranked by expected worth (each untri
    and only where healing is above 10% (not in enemy or neutral land); wounded units in our
    cities split off. Here one unit over 35% damage halts the whole stack where it stands
    (`military::army`), committed stacks included, next to defenders that heal faster.
+   *Done in round 7b*, fitted to our small stacks (Field armies, step 6).
 5. **Heroes and wonders in the best cities.** MNAI builds world wonders and heroes only in the
    top third of cities by production. Here any city takes a hero once we have 3 cities, and the
    rules let one city at a time build it, so the first empty queue locks it in.
@@ -1915,12 +1971,12 @@ Where MNAI does something this AI does not, ranked by expected worth (each untri
    Undercouncil are inert. The FfH 0.41 versions are ported in ffh-cppai. A balance question too.
 7. Smaller: dogpile wars on a civ already at war (`AI_doWar`); no tech trades with the victory
    rival, no military techs while preparing a war, keep monopolies (`AI_techTrade`); missionaries
-   abroad once the shrine stands; a stack next to an empty or weak enemy city outside the plan
-   takes it (`AI_stackAttackCity`); a second operation for a clear surplus (MNAI caps the units
-   per target); assault fleets wait for the landing force and sail escorted
-   (`AI_assaultSeaMove`); Govannon's Teach Spellcasting; heroes attack only at 85% + level
-   (`AI_getBestGroupAttacker`); Sanctuary and March of the Trees when the enemy's power at war is
-   1.5x ours; re-deciding production when the empire enters financial trouble.
+   abroad once the shrine stands; Govannon's Teach Spellcasting; Sanctuary and March of the Trees
+   when the enemy's power at war is 1.5x ours; re-deciding production when the empire enters
+   financial trouble. (Done in round 7b: a stack next to an empty or weak enemy city outside the
+   plan takes it, `AI_stackAttackCity`; a second operation for a clear surplus; assault fleets
+   wait for the landing force and sail escorted, `AI_assaultSeaMove`; heroes and veterans attack
+   only at their odds, `AI_getBestGroupAttacker`.)
 
 ## Known gaps (future work)
 
@@ -1929,9 +1985,10 @@ Where MNAI does something this AI does not, ranked by expected worth (each untri
   joining the rules impose (Diplomacy, "Vassal states").
 
 - Naval: amphibious invasions now ship an army across water to take an overseas enemy city
-  (see Naval), but there is no naval combat, no escorts and no blockades (the transport sails
-  undefended), and one trip lands only the ship's cargo capacity, so invasions are small until
-  good transports arrive late in the tech tree. Overseas settling still sends one settler at a time.
+  (see Naval), but there is no naval combat and no blockade, escorts are only the idle warships
+  that happen to be in the port (none are built for the fleet), and early transports carry one
+  unit each, so the fleet waits in port until enough of them are built and invasions are slow
+  until good transports arrive late in the tech tree. Overseas settling still sends one settler at a time.
   The trickle no longer scatters and no longer under-ships: each trip lands on the reachable plot
   already holding the most of our army (they pile onto one plot and strike), and the staging port
   builds a fleet big enough to carry the force in one wave. Traced water-isolated civs that used to

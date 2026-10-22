@@ -22,6 +22,7 @@ pub mod automation;
 pub mod campaign;
 pub mod casting;
 pub mod civs;
+pub mod defense;
 pub mod diplomacy;
 pub mod economy;
 pub mod empire;

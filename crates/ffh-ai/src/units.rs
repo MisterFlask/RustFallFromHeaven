@@ -341,6 +341,8 @@ pub(crate) fn garrison_quota(g: &Game, v: &View, c: CityId) -> i32 {
     if v.danger_at(plot) > 0 {
         q += 1 + v.danger_at(plot) / 1000;
     }
+    // The rival civilizations near the city (defense.rs): spare defenders walk to the border.
+    q += v.rival_def.get(&c).copied().unwrap_or(0);
     q.min(5)
 }
 
@@ -349,7 +351,7 @@ fn garrison_unit(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
     let here = g.unit_plot(u);
     if let Some(c) = g.map.plots[here].plot_city.filter(|&c| g.cities[c].owner == p) {
         let have = v.garrison.get(&c).copied().unwrap_or(0);
-        if have < garrison_quota(g, v, c) || attack_adjacent(g, v, grp, u, 800) {
+        if have < garrison_quota(g, v, c) || crate::defense::sortie_ok(g, p, here, u) && attack_adjacent(g, v, grp, u, 800) {
             *v.garrison.entry(c).or_insert(0) += 1;
             if alive(g, grp) && g.group_ready_to_move(grp, false) {
                 hold(g, grp);

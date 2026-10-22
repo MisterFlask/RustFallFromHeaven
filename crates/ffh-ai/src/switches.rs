@@ -24,6 +24,23 @@ pub struct Switch {
 pub static WS_TIMING: Switch = Switch::new("WS_TIMING");
 /// A prepared war is declared once the army stands near the target (`diplomacy::manage`).
 pub static WAR_STAGING: Switch = Switch::new("WAR_STAGING");
+/// City defenders weighed by the rival civilizations near each city, and sorties only with a
+/// strength edge (`defense.rs`).
+pub static RIVAL_DEFENSE: Switch = Switch::new("RIVAL_DEFENSE");
+/// Field stacks heal as More Naval AI's do: only when most of the stack is hurt and where healing
+/// is good, the wounded splitting off in our cities (`military::heal`).
+pub static HEAL: Switch = Switch::new("HEAL");
+/// A stack next to an enemy city at war takes it when it is empty or the stack clearly covers it,
+/// even outside the operation (`military::opportune`).
+pub static CAPTURE: Switch = Switch::new("CAPTURE");
+/// A second siege operation for a committed force twice the first target's need
+/// (`campaign::plan`).
+pub static SECOND_OP: Switch = Switch::new("SECOND_OP");
+/// Heroes and veterans attack only at good odds in a strike (`campaign::strike`).
+pub static PRECIOUS: Switch = Switch::new("PRECIOUS");
+/// Assault transports wait in port for the landing force and sail together, escorted
+/// (`naval::transport`).
+pub static FLEET: Switch = Switch::new("FLEET");
 
 fn civ_list(var: &str) -> Option<Vec<String>> {
     let v = std::env::var(var).ok()?;
