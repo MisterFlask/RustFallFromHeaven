@@ -24,6 +24,8 @@ pub struct Sidecar {
     pub human: PlayerId,
     /// An observed game (an AI-only game watched by an observer; absent: false).
     pub observe: bool,
+    /// Observed: the turns still to play when it was saved (a multi-turn autoplay; absent: 0).
+    pub to_play: i32,
     /// The game's settings (`NewGame`, type names; absent: unknown), quoted by flags.
     pub setup: Option<Json>,
     /// Deferred event popups, in order (`[player, triggered id, launched]`; a version 1 pair
@@ -69,6 +71,7 @@ impl Sidecar {
             "v" => SIDECAR_VERSION,
             "human" => self.human,
             "observe" => self.observe,
+            "to_play" => self.to_play,
             "setup" => self.setup.clone(),
             "pending_events" => Json::Arr(self.pending_events.iter().map(|e| crate::jarr![e.player, e.triggered, e.launched]).collect()),
             "journal" => self.journal.as_deref(),
@@ -104,6 +107,7 @@ impl Sidecar {
         Ok(Sidecar {
             human: j.req("human").map_err(e)?,
             observe: j.get_or("observe", false).map_err(e)?,
+            to_play: j.get_or("to_play", 0i32).map_err(e)?,
             setup: j.opt_value("setup").map_err(e)?.filter(|v| !v.is_null()).cloned(),
             pending_events,
             journal: j.opt("journal").map_err(e)?,
@@ -230,6 +234,7 @@ mod tests {
         let s = Sidecar {
             human: PlayerId(0),
             observe: false,
+            to_play: 0,
             setup: None,
             pending_events: vec![DeferredEvent { player: PlayerId(0), triggered: TriggeredId(7), launched: true }],
             journal: Some("saves/journal.jsonl".into()),

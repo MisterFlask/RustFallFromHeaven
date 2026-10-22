@@ -301,8 +301,11 @@ side panel say what), and the minimap shows every stack of 2 or more units as a 
 owner's colour, larger for 5 and for 10 units or more (on the 2D art map's two smallest zoom
 steps the stacks' squares grow the same way). Messages has every civilization's messages with
 their sender (a box narrows them to the followed one); combat messages give the attacker's odds,
-and ⌖ shows the plot on the map. An autosave of an observed game loads paused, as observed; so
-does any other AI-only save (Take over… plays one of its slots instead).
+and ⌖ shows the plot on the map. The game is over when it is decided (a victory or the turn
+limit: where `ffh autoplay` stops too). Tools → AI autoplay… plays many turns at once (the top
+bar's Stop, or Pause, ends them after the turn under way). An autosave of an observed game loads
+paused, as observed (one taken during such an autoplay goes on with it); so does any other
+AI-only save (Take over… plays one of its slots instead).
 
 Tools → Spectate in a game of your own still lets the AI play your civilization too, one turn at
 a time with debug reveal on (Stop gives you control back). That game has a human player, so it
@@ -329,7 +332,8 @@ turn, which the flag copies to `flags/flag-N` (the autosaves keep only the last 
 of watching at the Fast pace); both print each turn's checksum (the last is the flag's) and the
 units at the plot. The third is the same game in `ffh` (docs/AI.md, "Tools"). The trace lines of
 that turn are tagged `[t58 p3]`. A flag in a game with a human player quotes `ffh-play replay
-JOURNAL --from flags/flag-N.ffhsave --to-turn T` instead. The Flags tab of the bottom panel lists
+JOURNAL --from flags/flag-N.ffhsave --to-turn T` instead (pinned only when that autosave is
+this session's: after a load, an earlier session's autosaves do not replay with its journal). The Flags tab of the bottom panel lists
 the game's flags (⌖ shows the plot, "record" the text, "copy" copies it) and the map marks them
 with numbered pennants; Load lists the pinned saves as `flags/flag-N`. On the static site the
 files stay in the browser: the copied text is the report (its settings replay the game).

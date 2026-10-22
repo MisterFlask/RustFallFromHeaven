@@ -205,8 +205,12 @@ fn cmd_replay(args: &[String]) {
     let from = bundle.as_ref().map(|(save, sidecar)| ReplayFrom { save, sidecar: sidecar.as_ref() });
     let n = lines.len();
     let s = ffh_play::session::replay_to(lines, from, SessionOptions::default(), to_turn).unwrap_or_else(|e| fail(e));
+    let what = match to_turn {
+        Some(t) => format!("replayed the journal ({n} lines) to the end of turn {t}"),
+        None => format!("replayed {n} journal lines"),
+    };
     println!(
-        "replayed {n} journal lines: turn {} slice {}, checksum {:08x}",
+        "{what}: turn {} slice {}, checksum {:08x}",
         s.g.game_turn(),
         s.g.turn_slice,
         s.g.calculate_sync_checksum() as u32
@@ -255,10 +259,12 @@ fn cmd_observe(args: &[String]) {
         }
         (None, Some(path)) => {
             let (bytes, sidecar) = ffh_play::save::read_bundle(&path).unwrap_or_else(|e| fail(e));
-            let s = Session::load(&bytes, sidecar.as_ref(), answerer, opts).unwrap_or_else(|e| fail(e.to_string()));
+            let mut s = Session::load(&bytes, sidecar.as_ref(), answerer, opts).unwrap_or_else(|e| fail(e.to_string()));
             if s.observe_state().is_none() {
                 fail(format!("{}: a human game's save (replay its journal instead)", path.display()));
             }
+            // Turn by turn from the save, whatever autoplay was under way when it was taken.
+            s.halt();
             s
         }
         _ => usage(),

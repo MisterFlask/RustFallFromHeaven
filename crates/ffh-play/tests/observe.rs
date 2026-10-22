@@ -200,3 +200,61 @@ fn flags_of_a_human_game_quote_its_journal() {
     let repro: Vec<&str> = rec.get("repro").and_then(Json::as_arr).unwrap().iter().filter_map(Json::as_str).collect();
     assert!(repro.iter().any(|r| r.contains("ffh-play replay") && r.contains("--to-turn")), "{repro:?}");
 }
+
+#[test]
+fn an_observed_game_is_over_when_it_is_decided() {
+    // The turn limit decides it (a time victory): autorun leaves the game EXTENDED, as `ffh
+    // autoplay`'s games, and the observer's game is over there.
+    let mut ng = observed(8);
+    ng.max_turns = 6;
+    let mut s = session(&ng, None);
+    assert_eq!(s.advance(&mut |_| {}), Stop::Human);
+    assert!(s.execute(&Command::AutoPlay { turns: 50 }).is_ok());
+    assert_eq!(s.advance(&mut |_| {}), Stop::Over, "the game ends at its turn limit");
+    assert_eq!(s.phase(), Phase::Over);
+    assert!(s.g.game_turn() < 40, "ended by the limit, before the 50 turns asked: turn {}", s.g.game_turn());
+    let st = s.query_json(&ffh_play::jobj! { "q" => "status" }).unwrap();
+    assert_eq!(st.get("phase").and_then(Json::as_str), Some("over"));
+    assert!(!st.get("over").unwrap().is_null(), "the status says who won");
+    // Still flagged after the end.
+    let rec = s.flag(0, 0, "").unwrap();
+    assert_eq!(rec.get("flag").and_then(Json::as_i64), Some(1));
+}
+
+#[test]
+fn an_autosave_taken_during_a_long_autoplay_replays_and_resumes_it() {
+    let dir = TempDir::new("observe-autoplay-save");
+    let mut s = session(&observed(9), Some(dir.0.clone()));
+    assert_eq!(s.advance(&mut |_| {}), Stop::Human);
+    play(&mut s, 2);
+    let t = s.g.game_turn();
+    assert!(s.execute(&Command::AutoPlay { turns: 6 }).is_ok());
+    assert_eq!(s.advance(&mut |_| {}), Stop::Human);
+    assert_eq!(s.g.game_turn(), t + 6);
+    // The autosave two turns into the autoplay has 4 turns still to play.
+    let mid = dir.0.join("auto").join(format!("T{:04}.ffhsave", t + 2));
+    let (bytes, sidecar) = read_bundle(&mid).unwrap();
+    let sidecar = sidecar.expect("a sidecar");
+    assert_eq!(sidecar.to_play, 4);
+    // A replay of the journal from it goes on as the session did.
+    let lines = journal::read_file(&s.journal_path().unwrap()).unwrap();
+    let r = replay(lines, Some(ffh_play::session::ReplayFrom { save: &bytes, sidecar: Some(&sidecar) }), SessionOptions::default()).expect("replay from the mid-autoplay autosave");
+    assert_eq!(checksum_hex(&r), checksum_hex(&s));
+    // Loaded, it resumes the autoplay; halted, it stops at once (`ffh-play observe --load`).
+    let mut l = Session::load(&bytes, Some(&sidecar), Arc::new(AdvisorAnswerer), SessionOptions { journal: false, ..SessionOptions::default() }).unwrap();
+    assert_eq!(l.observe_state(), Some(4));
+    l.halt();
+    assert_eq!(l.advance(&mut |_| {}), Stop::Human);
+    assert_eq!(l.g.game_turn(), t + 2);
+}
+
+#[test]
+fn games_cannot_be_named_after_the_save_subdirectories() {
+    use ffh_play::transport::{Host, HostOptions, Request, SessionOp};
+    let dir = TempDir::new("observe-names");
+    let mut host = Host::new(HostOptions { saves: Some(dir.0.clone()), ..HostOptions::default() }, Arc::new(AdvisorAnswerer));
+    for name in ["flags", "auto", "Flags"] {
+        let (reply, _) = host.handle(Json::Null, Request::Session(SessionOp::New { setup: ffh_play::jobj! { "observe" => true }, name: Some(name.into()) }));
+        assert_eq!(reply.get("ok").and_then(Json::as_bool), Some(false), "{name}: {reply}");
+    }
+}

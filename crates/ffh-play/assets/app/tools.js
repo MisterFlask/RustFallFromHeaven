@@ -195,6 +195,9 @@ export async function startSpectating({ playing = true, newGame = false } = {}) 
 export function pauseSpectating() {
   if (!spect) return;
   spect.playing = false;
+  // An observed game playing several turns at once (Tools → AI autoplay): stop it at the end of
+  // the turn under way (`autoplay {turns: 0}`, answered while the game runs).
+  if (observing() && S.status?.phase === "running" && (S.status?.ai_auto_play ?? 0) > 1) api.cmd("autoplay", { turns: 0 }).catch(() => {});
   spectateChanged();
 }
 
@@ -525,7 +528,8 @@ export function openOptions() {
  *  its next turn slice and you have control at your next turn, or at once during yours). */
 export function autoplayBar() {
   const st = S.status ?? {};
-  if (spect || st.phase !== "running" || !(st.ai_auto_play > 0)) return null;
+  // Observed, the spectator mode plays one turn at a time; this bar is for longer runs.
+  if ((spect && !observing()) || st.phase !== "running" || !(st.ai_auto_play > (observing() ? 1 : 0))) return null;
   const left = st.ai_auto_play;
   return h(
     "span.spectate",

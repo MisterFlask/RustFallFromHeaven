@@ -255,6 +255,9 @@ impl Session {
         s.journal(&Line::Load { fnv: journal::fnv_hex(save), human });
         if let Some(sc) = sidecar {
             s.setup = sc.setup.as_ref().and_then(|j| NewGame::from_json(s.g.d, j).ok());
+            if observe {
+                s.to_play = sc.to_play.max(0);
+            }
             *s.shared.pending_events.lock().unwrap() = sc.pending_events.clone();
             s.messages = MessageStore::from_tail(sc.messages_tail.clone());
             s.auto_moves_tried = sc.auto_moves_tried;
@@ -321,6 +324,14 @@ impl Session {
             self.to_play
         } else {
             self.g.ai_auto_play
+        }
+    }
+
+    /// Observed: stops at the next stop whatever turns were left to play (a save taken during a
+    /// multi-turn autoplay loads with them; `ffh-play observe --load` replays from the save).
+    pub fn halt(&mut self) {
+        if self.observing {
+            self.to_play = 0;
         }
     }
 
@@ -424,7 +435,9 @@ impl Session {
         let mut slices: u64 = 0;
         self.shared.stop_autoplay.store(false, std::sync::atomic::Ordering::SeqCst);
         loop {
-            if self.g.game_state == GameStateType::GAMESTATE_OVER {
+            // A victory under autorun leaves the game EXTENDED ("just one more turn"), as in
+            // `ffh autoplay`, whose games end there too: the observed game is over.
+            if self.g.game_state != GameStateType::GAMESTATE_ON {
                 self.drain_log();
                 return Stop::Over;
             }
@@ -443,8 +456,10 @@ impl Session {
             }
             self.g.update();
             if self.g.at_turn_boundary() {
-                self.boundary();
+                // Before the autosave, so that its sidecar has the turns still to play (a replay
+                // from it goes on as the uninterrupted session did).
                 self.to_play -= 1;
+                self.boundary();
                 slices = 0;
             }
             on_slice(self);
@@ -808,6 +823,7 @@ impl Session {
         Sidecar {
             human: self.human,
             observe: self.observing,
+            to_play: self.to_play,
             setup: self.setup.as_ref().map(|ng| ng.to_json_names(self.g.d)),
             pending_events: self.shared.pending_events.lock().unwrap().clone(),
             journal: journal.path().map(|p| p.display().to_string()),
@@ -911,9 +927,10 @@ pub fn phase(g: &Game, h: PlayerId) -> Phase {
 }
 
 /// The phase of an observed session (viewer `h`, `to_play` turns to play): `Human(h)` while it is
-/// stopped, else `Running`.
+/// stopped, else `Running`; `Over` once the game is decided (a victory leaves an autorun game
+/// EXTENDED, not OVER).
 pub fn observed_phase(g: &Game, h: PlayerId, to_play: i32) -> Phase {
-    if g.game_state == GameStateType::GAMESTATE_OVER {
+    if g.game_state != GameStateType::GAMESTATE_ON {
         Phase::Over
     } else if to_play <= 0 {
         Phase::Human(h)

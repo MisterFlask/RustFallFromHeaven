@@ -718,7 +718,9 @@ impl Host {
         let base = match name {
             // `auto/NAME` names the current game's autosaves: a game called `auto` could not be
             // loaded from by name.
-            Some(n) if n.eq_ignore_ascii_case(AUTO) => return Err(ProtoErr::invalid(format!("game name {n:?}: reserved (auto/NAME names the autosaves)"))),
+            Some(n) if n.eq_ignore_ascii_case(AUTO) || n.eq_ignore_ascii_case(crate::flag::FLAGS_DIR) => {
+                return Err(ProtoErr::invalid(format!("game name {n:?}: reserved (auto/NAME and flags/NAME name a game's autosaves and flags' saves)")))
+            }
             Some(n) => save::sanitize_name(n).map_err(ProtoErr::invalid)?.to_string(),
             None => format!("game-{}", ng.seed),
         };
@@ -768,8 +770,9 @@ impl Host {
             dirs.sort();
             for dir in dirs {
                 let name = dir.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
-                // A directory `auto` cannot be named as a game (`auto/NAME` is an autosave).
-                if save::sanitize_name(&name).is_err() || name.eq_ignore_ascii_case(AUTO) {
+                // A directory `auto` or `flags` cannot be named as a game (`auto/NAME` is an
+                // autosave, `flags/NAME` a flag's save).
+                if save::sanitize_name(&name).is_err() || name.eq_ignore_ascii_case(AUTO) || name.eq_ignore_ascii_case(crate::flag::FLAGS_DIR) {
                     continue;
                 }
                 let list = save::list_json(Some(&dir));

@@ -104,7 +104,9 @@ pub fn phase_name(g: &Game, h: PlayerId, decision: bool, observe: Option<i32>) -
 /// `status` (design §4.3; the transport adds `version`, `ms_in_phase` and the crash report).
 pub fn status(v: &Viewer, ctx: &Ctx) -> Json {
     let g = v.g;
-    let over = (g.game_state == GameStateType::GAMESTATE_OVER).then(|| crate::jobj! { "winner_team" => g.winner, "victory" => Json::opt_idx(g.victory) });
+    // Observed (autorun), a victory leaves the game EXTENDED: it is over for the observer.
+    let decided = g.game_state == GameStateType::GAMESTATE_OVER || (ctx.observe.is_some() && g.game_state != GameStateType::GAMESTATE_ON);
+    let over = decided.then(|| crate::jobj! { "winner_team" => g.winner, "victory" => Json::opt_idx(g.victory) });
     crate::jobj! {
         "phase" => phase_name(g, v.h, ctx.decision.is_some(), ctx.observe),
         "turn" => g.game_turn(),

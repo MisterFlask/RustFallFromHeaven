@@ -188,10 +188,17 @@ pub fn record(input: &FlagInput) -> Result<Json, String> {
     let near = |e: &LogEntry| e.at.is_some_and(|(ex, ey)| g.plot_distance(ex, ey, x, y) <= 1);
     let events: Vec<&LogEntry> = input.messages.iter().filter(|e| moved.is_some_and(|m| e.turn >= m) && near(e)).collect();
 
-    // Pin the start save (the autosave ring keeps only the last turns).
+    // Pin the start save (the autosave ring keeps only the last turns). In a human game it must
+    // be one this session's journal has a checkpoint for: an autosave left in the directory by an
+    // earlier session (before a load) does not replay with this journal.
+    let journal_str = input.journal.as_ref().map(|p| p.display().to_string());
+    let ours = |src: &Path| {
+        input.observed
+            || crate::save::read_bundle(src).ok().and_then(|(_, sc)| sc).and_then(|sc| sc.journal).is_some_and(|j| Some(&j) == journal_str.as_ref())
+    };
     let mut pinned = None;
     if let (Some(dir), Some(m)) = (input.dir, moved) {
-        if let Some(src) = start_save(dir, g, m) {
+        if let Some(src) = start_save(dir, g, m).filter(|src| ours(src)) {
             let to = dir.join(FLAGS_DIR);
             fs::create_dir_all(&to).map_err(|e| format!("{}: {e}", to.display()))?;
             let save = to.join(format!("flag-{n}.ffhsave"));
@@ -220,9 +227,13 @@ pub fn record(input: &FlagInput) -> Result<Json, String> {
                 repro.push(format!("FFH_AI_TRACE={trace} ./target/release/ffh autoplay {} --turns {}", ffh_args(d, ng), m + 1 - g.start_turn));
             }
         } else if let Some(j) = &input.journal {
+            // Without a pinned save, the journal replays from its header: only a new game's does
+            // (a loaded session's starts from the save it was loaded from).
+            let new_game = fs::read_to_string(j).ok().and_then(|t| t.lines().next().map(|l| l.contains("\"k\":\"new\""))).unwrap_or(false);
             match &pinned {
                 Some(p) => repro.push(format!("FFH_AI_TRACE={trace} ./target/release/ffh-play replay {} --from {} --to-turn {m}", j.display(), p.display())),
-                None => repro.push(format!("FFH_AI_TRACE={trace} ./target/release/ffh-play replay {} --to-turn {m}", j.display())),
+                None if new_game => repro.push(format!("FFH_AI_TRACE={trace} ./target/release/ffh-play replay {} --to-turn {m}", j.display())),
+                None => {}
             }
         }
     }

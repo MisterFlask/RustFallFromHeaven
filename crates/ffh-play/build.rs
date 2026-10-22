@@ -72,7 +72,11 @@ fn build_commit(manifest: &Path) {
     };
     let mut watch = Vec::new();
     if let Some(dir) = git(&["rev-parse", "--git-dir"]) {
-        watch.push(abs(dir).join("HEAD"));
+        let dir = abs(dir);
+        // HEAD's reflog moves with every commit, checkout and pull, also when the branch's ref
+        // is packed (no loose ref file to watch).
+        watch.push(dir.join("logs").join("HEAD"));
+        watch.push(dir.join("HEAD"));
     }
     if let (Some(common), Some(branch)) = (git(&["rev-parse", "--git-common-dir"]), git(&["symbolic-ref", "-q", "HEAD"])) {
         let common = abs(common);
