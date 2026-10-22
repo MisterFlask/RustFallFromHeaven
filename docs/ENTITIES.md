@@ -69,7 +69,7 @@ same code by area, with the measurements behind each choice.
 
 `production::decide` is a priority list, run when a city's queue empties (docs/AI.md, "Cities"):
 a defender when the city has none or is outmatched; the first worker; a second defender after
-turn 30 (capital, cities near barbarians); a victory item when the goal is 30 turns away; an
+turn 30 (capital, cities near barbarians); a victory item (culture) when the goal is 30 turns away; an
 explorer from the capital while a fifth of the home landmass is unknown; settlers
 (`expansion::settler_choice`); the civilization's own items (`civs::production`); an amphibious
 assault fleet; a transport for a settler waiting in port; a sea explorer; work boats; a
@@ -133,7 +133,7 @@ from the unit's AI type, set by production when it trains the unit, or its defau
 | Explorer | `EXPLORE` | reveal the land and goody huts one safe turn at a time, then join the army |
 | Great person | `PROPHET`, `ARTIST`, `SCIENTIST`, `GENERAL`, `MERCHANT`, `ENGINEER` | a great work for a culture victory; a shrine in a holy city of ours; an Engineer rushes a wonder; else lightbulb (`MISSION_DISCOVER`), join as a specialist, start a golden age |
 | Missionary | `MISSIONARY` | spreads its religion in our cities that lack it (never abroad) |
-| Caster | `MAGE`, `WARWIZARD`, `TERRAFORMER`, `MANA_UPGRADE`, `MEDIC`; heroes that cannot attack | `magic::caster_target`: with the stack nearest the operation's target, to the units its lasting blessings are for, to the cities its city spells are for, to land to terraform; else the most threatened city; Tower goal: mana nodes (`victory::mana_node`) |
+| Caster | `MAGE`, `WARWIZARD`, `TERRAFORMER`, `MANA_UPGRADE`, `MEDIC`; heroes that cannot attack | `magic::caster_target`: with the stack nearest the operation's target, to the units its lasting blessings are for, to the cities its city spells are for, to land to terraform; else the most threatened city (`victory::mana_node`, mana nodes for the Tower goal, never runs: that goal is never the AI's) |
 | Animal | `ANIMAL` | attacks what it can beat, else roams (barbarian and animal players) |
 | Transport, sea explorer | ships | `naval::transport` (settlers overseas, amphibious assaults), `naval::sea_explore` |
 | Naval, other | other ships, air units, units with nothing to do | hold (there is no naval or air combat logic) |
@@ -177,11 +177,13 @@ A building is built through these paths:
    builds the quickest building the city can construct, whatever its value).
 2. **Unit-gating buildings**: `production::enabler_building`, `campaign::siege_building`,
    `civs::unique_casters`, the Grigori's Infirmary (see Units: production).
-3. **Victory pursuit** (`victory::production`): the five towers for a Tower of Mastery victory
-   (the Tower of Mastery itself in the best city), culture buildings and wonders in the cities
-   nearest legendary for a cultural victory (by `building_culture`: flat culture and culture %
-   only), the final Altar of the Luonnotar (its stages are built only by Great Prophets, which the
-   AI does not do).
+3. **Victory pursuit** (`victory::production`): for a cultural victory, culture buildings and
+   wonders in the cities nearest legendary (by `building_culture`: flat culture and culture %
+   only), else the culture process. The code also has branches for the Tower of Mastery (the five
+   towers, mana nodes) and the Altar of the Luonnotar (the final altar), but neither is ever the
+   AI's own goal: `victory::plan_ours` drops them (`3041631`, the owner's decision, 2026-10-21:
+   solitaire victories); a rival close to one is still a war target (`victory::plan`,
+   `rival_city_bonus`). So no AI builds the towers or the altar.
 4. **Civilization hooks** (`civs::building_value`): the Clan of Embers' Warrens is the only
    building valued by name.
 5. **Great people** (`units::great_person_build`): a Great Prophet (or Bard, Sage, Merchant) builds
@@ -238,8 +240,8 @@ players, plus the AI-only conditions some `req*` functions keep (docs/AI_ONLY_RU
   Manes (Add to City), Sidar Into the Mist.
 - **Casters**: promoted toward the spheres whose spells they can cast (`magic::promotion_value`,
   `magic::spell_worth`); moved by `magic::caster_target`. The AI trains casters only through the
-  caster step of production, the victory Tower goal and `civs::unique_casters`; no AI builds a Mage
-  Guild for its own sake (its value is 0).
+  caster step of production and `civs::unique_casters`; no AI builds a Mage Guild for its own sake
+  (its value is 0), and no AI builds a mana node (only the Tower goal did).
 
 ### Projects
 
