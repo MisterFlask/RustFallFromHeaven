@@ -24,6 +24,22 @@ pub struct Switch {
 pub static WS_TIMING: Switch = Switch::new("WS_TIMING");
 /// A prepared war is declared once the army stands near the target (`diplomacy::manage`).
 pub static WAR_STAGING: Switch = Switch::new("WAR_STAGING");
+/// Peace weighs the forces at the front: our army near their next city against theirs near ours
+/// (`diplomacy::forces_pct`).
+pub static PEACE_FORCES: Switch = Switch::new("PEACE_FORCES");
+/// A war where nothing happens ends (`diplomacy::quiet_war`).
+pub static QUIET_PEACE: Switch = Switch::new("QUIET_PEACE");
+/// At peace, the power of a target's current enemies counts toward our edge (`diplomacy::dogpile_power`).
+pub static DOGPILE: Switch = Switch::new("DOGPILE");
+/// Tech-trade discipline (`diplomacy::tech_denial`): no swaps with the victory rival or a clear
+/// world leader, no military techs while we prepare or fight a war, keep monopolies.
+pub static TECH_DISCIPLINE: Switch = Switch::new("TECH_DISCIPLINE");
+/// A prepared war is re-checked against the selection gate before it is declared (`diplomacy::manage`).
+pub static WAR_RECHECK: Switch = Switch::new("WAR_RECHECK");
+/// Council votes and the secretary's resolutions (`council.rs`); off = abstain, propose nothing.
+pub static COUNCIL: Switch = Switch::new("COUNCIL");
+/// Missionaries spread the state religion abroad once its shrine stands (`units::missionary`).
+pub static MISSIONARY_ABROAD: Switch = Switch::new("MISSIONARY_ABROAD");
 
 fn civ_list(var: &str) -> Option<Vec<String>> {
     let v = std::env::var(var).ok()?;
