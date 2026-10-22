@@ -641,10 +641,11 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
     }
 
     // 4. Defenders up to the quota (what a city needs is trained whatever it costs).
-    if !record_on && ctx.broke && ctx.threat == 0 {
+    let cap = !record_on || std::env::var("FFH_AI_RECORD_CAP").is_ok(); // SCRATCH
+    if cap && ctx.broke && ctx.threat == 0 {
         needed = needed.min(1 + i32::from(ctx.capital));
     }
-    if !record_on && !ctx.afford && ctx.threat == 0 {
+    if cap && !ctx.afford && ctx.threat == 0 {
         needed = needed.min(1 + i32::from(ctx.capital));
     }
     needed += crate::victory::guard(g, c); // victory-pursuit
