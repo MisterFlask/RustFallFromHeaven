@@ -763,8 +763,13 @@ pub fn culture_slider(g: &Game, p: PlayerId) -> i32 {
 /// civs to come for it (within [`threat_horizon`] plus 30 turns), two in the cities that carry
 /// it -- those nearest legendary culture, those with or building a tower.
 pub fn guard(g: &Game, c: CityId) -> i32 {
+    guard_with(g, c, &plan_ours(g, g.cities[c].owner))
+}
+
+/// [`guard`] with our plan already computed (`plan_ours`).
+pub fn guard_with(g: &Game, c: CityId, plan: &Plan) -> i32 {
     let p = g.cities[c].owner;
-    let Some(race) = plan_ours(g, p).ours else { return 0 };
+    let Some(race) = plan.ours else { return 0 };
     if race.eta > threat_horizon(g) + 30 {
         return 0;
     }

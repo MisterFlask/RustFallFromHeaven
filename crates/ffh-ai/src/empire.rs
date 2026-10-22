@@ -95,7 +95,7 @@ fn disband(g: &mut Game, p: PlayerId) {
             continue;
         }
         // As many as production wants there (see production::decide).
-        let keep = if g.city_is_capital(c) || crate::production::barbarians_near(g, p, plot, 4) { 2 } else { 1 };
+        let keep = if crate::fix_on("record") { crate::production::garrison_need(g, c, true) } else if g.city_is_capital(c) || crate::production::barbarians_near(g, p, plot, 4) { 2 } else { 1 };
         let mut garrison: Vec<UnitId> = g.map.plots[plot]
             .units
             .iter()

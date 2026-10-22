@@ -38,6 +38,8 @@ pub struct View {
     pub escort_requests: Vec<PlotIdx>,
     /// Our units committed to each city's garrison this turn.
     pub garrison: BTreeMap<CityId, i32>,
+    /// What each of our cities needs to keep (`production::garrison_need`, the keep bar).
+    pub need: BTreeMap<CityId, i32>,
     /// Reusable flood buffers.
     pub flood: Flood,
 }
@@ -108,6 +110,7 @@ impl View {
             campaign: Default::default(),
             amphibious: None,
             garrison: BTreeMap::new(),
+            need: BTreeMap::new(),
             flood: Flood::default(),
         };
         v.build_danger(g);
@@ -115,6 +118,12 @@ impl View {
             v.targets = crate::military::find_targets(g, &v);
             v.amphibious = crate::naval::amphibious_target(g, p);
             v.roads = crate::workers::road_plan(g, p);
+            if crate::fix_on("record") {
+                let plan = crate::victory::plan_ours(g, p);
+                for &c in &g.players[p].cities {
+                    v.need.insert(c, crate::production::garrison_need_with(g, c, true, &plan));
+                }
+            }
             for &c in &g.players[p].cities {
                 let cp = g.city_plot(c);
                 let threat = crate::production::local_threat(g, p, cp, 3);

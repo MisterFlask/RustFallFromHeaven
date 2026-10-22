@@ -275,6 +275,15 @@ pub struct City {
     pub ai_emphasize_avoid_angry_citizens_count: i32,
     /// FFH2 GrowthControl (`m_iEmphasizeAvoidUnhealthyCitizensCount`).
     pub ai_emphasize_avoid_unhealthy_citizens_count: i32,
+
+    // ---- AI bookkeeping of this port (no C++ counterpart) ----
+    /// How often enemies have been seen near the city lately, kept by the owner's AI (ffh-ai
+    /// `production::observe_threats`): once a turn it decays by a fixed share and gains a fixed
+    /// amount if an enemy is in sight. The AI sizes the garrison by it, so a city raided every few
+    /// turns keeps its extra defender and one raider passing by does not train one.
+    pub ai_threat_record: i32,
+    /// Game turn `ai_threat_record` was last updated (-1: never): it is updated once a turn.
+    pub ai_threat_record_turn: i32,
 }
 
 impl City {
@@ -489,6 +498,8 @@ impl City {
             ai_emphasize_commerce_count: [0; CommerceType::NUM],
             ai_emphasize_avoid_angry_citizens_count: 0,
             ai_emphasize_avoid_unhealthy_citizens_count: 0,
+            ai_threat_record: 0,
+            ai_threat_record_turn: -1,
         }
     }
 
@@ -564,6 +575,8 @@ fn ai_reset(city: &mut City) {
     city.ai_emphasize_avoid_angry_citizens_count = 0;
     city.ai_emphasize_avoid_unhealthy_citizens_count = 0;
     city.ai_emphasize.fill(false);
+    city.ai_threat_record = 0;
+    city.ai_threat_record_turn = -1;
 }
 
 /// A C++ `mutable int` cache slot, written from `&self` methods (`Cell`-like). Backed by a

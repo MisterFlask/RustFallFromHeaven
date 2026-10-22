@@ -58,7 +58,8 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 /// - 1: first layout.
 /// - 2: score v2 (docs/SCORE.md): `player_score`, `team_score` and `Player::score_history` hold
 ///   shares of the world in basis points instead of FFH2's `calculateScore` (no new fields).
-pub const FORMAT_VERSION: u32 = 2;
+/// - 3: `City::ai_threat_record`, `City::ai_threat_record_turn` (the AI's record of threats seen).
+pub const FORMAT_VERSION: u32 = 3;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]
