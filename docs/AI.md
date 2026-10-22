@@ -1433,7 +1433,19 @@ with them off:
 | power | -0.3% at turn 300 | -7.1% at turn 200 (t -2.0), +7.2% at 400 (t 1.0) |
 | outcomes | | supremacy 22 -> 30, cultural 26 -> 18; decided 38 turns earlier (t -1.4); civ cities captured -23% (t -1.7) |
 
-The two alone are being re-validated against master on fresh seeds 11001-11148.
+The two alone against master, on fresh seeds again:
+
+| | 300 turns, seeds 11001-11096 (96 games) | full games, seeds 11101-11148 (48) |
+|---|---|---|
+| legacy score | -1.2%, -1.3%, -1.8% at turns 100/200/300 (\|t\| < 1.5) | +3.4%, +5.5%, +6.8% at turns 200/300/400 (t 1.3-2.0); -4.1% at 500 (t -1.3, 18 games) |
+| techs / research | -1.9% / -1.7% at turn 200, -1.2% / -2.5% at 300 | research +13.8% at turn 200 (t 2.2); techs +9.6% at 400 (t 2.4); research -12.4% at 500 (t -2.1) |
+| power / military | -2.6% / -3.1% at turn 300 (t -0.9 / -1.2) | power +15.1% at turn 400 (t 2.9), military +11% at 300-400 (t 2.1-2.5) |
+| outcomes | | supremacy 26 -> 21, cultural 22 -> 27; decided 15 turns later (t 0.6) |
+
+Neutral: the 300-turn games are flat, the full games lean positive to turn 400 and negative at
+turn 500 (only the 18 games still undecided), and the two sets disagree at turns 200-300 within
+noise. Kept as play that is plainly right (a holy city's shrine, an engineer's hammers in a
+wonder, a scout that does not walk into the animals it has just seen), not as a measured gain.
 
 ### Round 4 (2026-10-18): event choice, Conquest, settler, hammers, worker flee, transport
 
