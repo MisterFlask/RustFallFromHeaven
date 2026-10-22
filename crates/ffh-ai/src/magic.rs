@@ -779,8 +779,8 @@ fn summon_value(g: &Game, caster: UnitId, spell: SpellType, ctx: Ctx) -> i32 {
             // It attacks what `casting::summons_attack` picks: of the plots with enemies next to a
             // plot it reaches with moves left (its own moves, the caster's way of moving), the one
             // where its odds are best, at 5% or better; nothing when none is. A summon gone before
-            // it could act again that is not the stack's cover takes worse odds too
-            // (`SUMMON_SPEND`, `casting::summon_target`).
+            // it could act again that is not the stack's cover takes worse odds too, but not on a
+            // city, whose defenders heal before we strike (`SUMMON_SPEND`, `casting::summon_target`).
             let moves = (uinfo.moves + g.unit_get_extra_spell_move(caster)) * d.defines.move_denominator;
             let last_turn = uinfo.special_unit_type.map_or(-1, |s| s.i()) == d.defines.specialunit_spell || g.players[p].summon_duration <= 0;
             let spend = crate::switches::SUMMON_SPEND.on(g, p)
@@ -805,7 +805,8 @@ fn summon_value(g: &Game, caster: UnitId, spell: SpellType, ctx: Ctx) -> i32 {
                         continue;
                     }
                     let Some((odds, value)) = summon_fight(g, p, ut, q) else { continue };
-                    let Some(score) = crate::casting::summon_score(odds, g.map.plots[q].plot_city.is_some(), || if spend { value } else { 0 }) else { continue };
+                    let city = g.map.plots[q].plot_city.is_some();
+                    let Some(score) = crate::casting::summon_score(odds, city, || if spend && !city { value } else { 0 }) else { continue };
                     if best.map_or(true, |(s, _)| score > s) {
                         best = Some((score, value));
                     }

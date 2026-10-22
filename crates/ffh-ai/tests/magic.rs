@@ -226,14 +226,10 @@ fn a_summon_is_worth_only_the_fights_it_would_take() {
     assert!(g.unit_can_cast(mage, spectre, false));
     let weight = d.spells[spectre].ai_weight;
     let v = View::new(&g, us);
+    // (Even one that spends itself at bad odds, `SUMMON_SPEND`, leaves a city alone at the end of
+    // the turn: its defenders heal before we strike.)
     let at_city = magic::turn_value(&g, &v, mage, spectre).expect("a summon is valued");
-    if ffh_ai::switches::SUMMON_SPEND.on(&g, us) {
-        // Gone before it could act again, the Spectre spends itself on the city: worth the few hit
-        // points it takes there (SUMMON_SPEND).
-        assert!(at_city > weight && at_city < weight + 30, "a Spectre at bad odds is worth a few hit points ({at_city})");
-    } else {
-        assert_eq!(at_city, weight, "a Spectre that would not attack is worth nothing");
-    }
+    assert_eq!(at_city, weight, "a Spectre that would not attack is worth nothing");
     // A wounded Warrior two plots away: the Spectre walks up and takes it on.
     let warrior = g.player_init_unit(them, d.t::<UnitType>("UNIT_WARRIOR"), 9, 5, Some(UnitAIType::UNITAI_ATTACK), None);
     g.units[warrior].damage = 60;

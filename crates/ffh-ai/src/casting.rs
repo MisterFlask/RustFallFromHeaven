@@ -113,12 +113,14 @@ pub fn summons_attack(g: &mut Game, v: &View, newest: Option<UnitId>) {
         .filter(|&n| newest.map_or(true, |m| n > m) && g.units[n].ai_suicide_summon)
         .collect();
     for n in summons {
-        summon_attacks(g, v, n);
+        summon_attacks(g, v, n, false);
     }
 }
 
 /// Summon `n` attacks while alive with moves left (blitzing summons may attack more than once).
-fn summon_attacks(g: &mut Game, v: &View, n: UnitId) {
+/// `strike`: our units move after it this turn (a city's defenders it weakens are still weak when
+/// our stacks strike; at the end of the turn they heal first).
+fn summon_attacks(g: &mut Game, v: &View, n: UnitId, strike: bool) {
     let barbarian = g.player_is_barbarian(v.p);
     for _ in 0..4 {
         if !g.units.contains(n) || g.unit_moves_left(n) <= 0 {
@@ -134,7 +136,7 @@ fn summon_attacks(g: &mut Game, v: &View, n: UnitId) {
         if attack_power(g, n) == 0 || !g.unit_can_attack(n) {
             break;
         }
-        let Some(q) = summon_target(g, v, n) else { break };
+        let Some(q) = summon_target(g, v, n, strike) else { break };
         let (x, y) = (g.units[n].x, g.units[n].y);
         let (qx, qy) = g.map.xy(q);
         let flags = if g.plot_distance(x, y, qx, qy) == 1 { MOVE_DIRECT_ATTACK } else { 0 };
@@ -165,7 +167,7 @@ pub fn spend_expiring(g: &mut Game, v: &View) {
         if g.units[n].group.is_some_and(|grp| g.groups[grp].units.len() > 1) {
             g.unit_join_group(n, None, true);
         }
-        summon_attacks(g, v, n);
+        summon_attacks(g, v, n, true);
     }
 }
 
@@ -216,8 +218,10 @@ pub fn is_cover(g: &Game, v: &View, plot: PlotIdx, def: i32, except: Option<Unit
 /// they are gone before they could act again. FfH also walks toward targets up to `baseMoves()`
 /// turns away; a summon gone at the start of our next turn only attacks what it reaches now.
 /// A summon that [`may_spend`] itself also takes worse odds, where the fight still takes
-/// [`SPEND_MIN_HP`] (a 5% target first).
-fn summon_target(g: &Game, v: &View, n: UnitId) -> Option<PlotIdx> {
+/// [`SPEND_MIN_HP`] (a 5% target first) -- on a city only when our stacks strike after it
+/// (`strike`): at the end of our turn a city's defenders heal before anything of ours could use
+/// the damage, while units in the open that come for us fight hurt.
+fn summon_target(g: &Game, v: &View, n: UnitId, strike: bool) -> Option<PlotIdx> {
     let owner = g.units[n].owner;
     let ut = g.units[n].unit_type;
     let spend = may_spend(g, v, n);
@@ -241,7 +245,7 @@ fn summon_target(g: &Game, v: &View, n: UnitId) -> Option<PlotIdx> {
             let Some(def) = g.plot_get_best_defender(q, None, Some(owner), Some(n), false, false, false) else { continue };
             let odds = g.get_combat_odds(n, def);
             let city = g.map.plots[q].plot_city.is_some();
-            let hp = || if spend { crate::magic::summon_fight(g, owner, ut, q).map_or(0, |(_, hp)| hp) } else { 0 };
+            let hp = || if spend && (strike || !city) { crate::magic::summon_fight(g, owner, ut, q).map_or(0, |(_, hp)| hp) } else { 0 };
             let Some(score) = summon_score(odds, city, hp) else { continue };
             if best.map_or(true, |(_, s, _)| score > s) {
                 best = Some((q, score, odds));

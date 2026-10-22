@@ -97,7 +97,7 @@ pub fn ready(g: &Game, p: PlayerId, spell: SpellType) -> bool {
     let pl = &g.players[p];
     let wars = || g.team_get_at_war_count(pl.team, true);
     if matches!(w, World::Sanctuary | World::MarchOfTheTrees) && crate::switches::WS_LOSING_WAR.on(g, p) {
-        return losing_war(g, p);
+        return losing_war(g, p) && city_in_peril(g, p);
     }
     if crate::switches::WS_TIMING.on(g, p) {
         if let Some(ready) = expert_moment(g, p, w) {
@@ -134,8 +134,9 @@ pub fn ready(g: &Game, p: PlayerId, spell: SpellType) -> bool {
 ///   number): FfH's five cities of the religion, or three that are two thirds of ours (a small
 ///   Malakim empire never had five).
 ///
-/// Sanctuary and March of the Trees wait for a war we are losing ([`losing_war`],
-/// `FFH_AI_WS_LOSING_WAR_OFF` restores FfH's two wars), checked in [`ready`].
+/// Sanctuary and March of the Trees wait for a war we are losing with a city in peril
+/// ([`losing_war`], [`city_in_peril`]; `FFH_AI_WS_LOSING_WAR_OFF` restores FfH's two wars),
+/// checked in [`ready`].
 fn expert_moment(g: &Game, p: PlayerId, w: World) -> Option<bool> {
     let pl = &g.players[p];
     let team = pl.team;
@@ -154,12 +155,13 @@ fn expert_moment(g: &Game, p: PlayerId, w: World) -> Option<bool> {
 
 /// A war we are losing, the moment for the defensive world spells (Sanctuary: no foreign unit
 /// may enter our land for 30 turns; March of the Trees: a Treant on every forest of ours, the
-/// forests' age spent): the civilizations at war with us have at least 1.5 times our power (More
-/// Naval AI's `reqSanctuary` / `reqMarchOfTheTrees`). FfH's own condition, two wars at once,
-/// fired late and during our own winning offensives as often as in a losing defence, where the
-/// lockout and the Treants delay an attacker we would have held anyway and March of the Trees
-/// spends the elves' Ancient Forests for nothing (docs/AI_LOG.md, "World spells at moments of
-/// their own").
+/// forests' age spent) once the invasion reaches a city ([`city_in_peril`]): the civilizations at
+/// war with us have at least 1.5 times our power (More Naval AI's `reqSanctuary` /
+/// `reqMarchOfTheTrees`). FfH's own condition, two wars at once, fired late and during our own
+/// winning offensives as often as in a losing defence, where the lockout and the Treants delay an
+/// attacker we would have held anyway and March of the Trees spends the elves' Ancient Forests for
+/// nothing (docs/AI_LOG.md, "World spells at moments of their own"). The power ratio alone cast
+/// Sanctuary at the declaration of a war whose invasion came after it had worn off.
 pub fn losing_war(g: &Game, p: PlayerId) -> bool {
     let team = g.players[p].team;
     let ours = g.players[p].power.max(1) as i64;
@@ -172,6 +174,15 @@ pub fn losing_war(g: &Game, p: PlayerId) -> bool {
         .map(|o| g.players[o].power as i64)
         .sum();
     theirs * 100 >= ours * 150
+}
+
+/// A city of ours whose visible threat exceeds its garrison (fortified defenders at 1.5 times
+/// their power), as `View::peril`: the invasion is at the gates.
+pub fn city_in_peril(g: &Game, p: PlayerId) -> bool {
+    g.players[p].cities.iter().any(|&c| {
+        let cp = g.city_plot(c);
+        crate::production::local_threat(g, p, cp, 3) > crate::production::garrison(g, p, cp).1 * 3 / 2
+    })
 }
 
 /// `reqRagingSeas`'s AI condition: a player we are at war with (the barbarians included) has a
