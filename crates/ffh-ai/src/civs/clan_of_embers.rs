@@ -73,6 +73,7 @@ fn rantine(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
     let Some(spell) = g.d.ty::<SpellType>("SPELL_CONVERT_CITY_RANTINE") else { return false };
     if g.unit_can_cast(u, spell, false) {
         crate::trace!(g, p, "rantine: convert city at {:?}", g.map.xy(g.unit_plot(u)));
+        g.tel_cast_reason(u, "rantine_convert", 0);
         g.unit_cast(u, spell);
         if alive(g, grp) && g.group_ready_to_move(grp, true) {
             hold(g, grp);
@@ -98,6 +99,7 @@ fn rantine(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
     move_to(g, grp, r.plot, 0);
     if alive(g, grp) && g.units.contains(u) && g.unit_plot(u) == r.plot && g.unit_can_cast(u, spell, false) {
         crate::trace!(g, p, "rantine: convert city at {:?}", g.map.xy(r.plot));
+        g.tel_cast_reason(u, "rantine_convert", 0);
         g.unit_cast(u, spell);
     }
     if alive(g, grp) && g.group_ready_to_move(grp, true) {

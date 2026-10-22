@@ -6,6 +6,7 @@
 //! ranges; all of them are ported. AI-only parts are omitted with `// AI:` notes; call sites
 //! whose callee signature does not fit the C++ are marked `// SIGNATURE:`.
 
+use crate::controller::AiHook;
 use crate::defs::*;
 use crate::game::Game;
 use crate::group::SelectionGroup;
@@ -349,6 +350,9 @@ impl Game {
         if self.dying.contains(&u) {
             return;
         }
+        if self.telemetry.on() {
+            self.tel_kill_mark(u, player);
+        }
 
         // C++ dereferences `plot()` (FAssert non-NULL).
         let plot = self.unit_plot(u);
@@ -394,9 +398,15 @@ impl Game {
         if self.unit_is_immortal(u) {
             if self.player_get_capital_city(owner).is_some() {
                 self.units[u].death_delay = false;
+                if self.telemetry.on() {
+                    self.tel_unit_reborn(u);
+                }
                 self.unit_do_immortal_rebirth(u);
                 return;
             }
+        }
+        if self.telemetry.on() {
+            self.tel_unit_died(u);
         }
         self.change_global_counter(-info.modify_global_counter);
         for promotion in d.promotions.keys() {
@@ -642,7 +652,9 @@ impl Game {
                 if self.unit_is_immortal(u) {
                     self.unit_change_immortal(u, -1);
                 }
+                self.tel_ctx_push("expired");
                 self.unit_kill(u, true, None);
+                self.tel_ctx_pop();
             }
         }
         if self.plot_is_city(plot, false, None) {
@@ -691,7 +703,11 @@ impl Game {
         self.units[u].moves = 0;
 
         // AI: BETTER AI `AI_chooseGroupflag()` for non-human, non-barbarian units whose group flag
-        // is GROUPFLAG_NONE (AI bookkeeping; omitted).
+        // is GROUPFLAG_NONE (AI bookkeeping; the controller's).
+        let owner = self.units[u].owner;
+        if !self.players[owner].human && !self.unit_is_barbarian(u) && self.units[u].ai_groupflag == GROUPFLAG_NONE {
+            self.ai_hook(owner, AiHook::ChooseGroupflag(u));
+        }
     }
 
     /// C++ `CvUnit::isInGroup` (CvUnit.cpp:10724-10727).

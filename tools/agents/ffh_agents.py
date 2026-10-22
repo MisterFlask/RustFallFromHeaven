@@ -830,7 +830,8 @@ def slot_summary():
 # run cache
 
 def cache_enabled():
-    return os.path.isdir(ROOT) and not os.environ.get('FFH2_NO_CACHE')
+    # FFH_TELEMETRY_FILE: the run writes a file, which a replayed stdout would not.
+    return os.path.isdir(ROOT) and not os.environ.get('FFH2_NO_CACHE') and not os.environ.get('FFH_TELEMETRY_FILE')
 
 
 PATH_BYTES = set(b'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-+@~/')

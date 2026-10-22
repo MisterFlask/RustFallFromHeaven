@@ -9,6 +9,14 @@
 //! plots that would link an improved resource to its city. FfH's AI-only build bans
 //! (`CvGameUtils.canBuild`) are respected: no forts, no farms for Fallow civs, no workshops
 //! before Guilds (unless Fallow), no cottages under Aristocracy, no windmills under Arete.
+//!
+//! Chops ([`clearing_value`]): a plain feature removal (Remove Forest, Remove Jungle) is worth its
+//! hammers only to a city building a settler, a worker or a world wonder, as an expert chops to
+//! rush expansion, less the feature's yields on a worked plot. Some features are never chopped:
+//! the Ancient Forest, a feature a civic of ours makes happy, a healthy feature of a city with no
+//! health to spare, and a city's last three forests (lumber mills, health). Improvements on a
+//! feature are valued as before, without counting the clearing. A worker with nothing to do
+//! within 8 turns looks up to 25 turns away (newer cities) before it waits.
 
 use ffh_core::defs::*;
 use ffh_core::game::Game;
@@ -20,24 +28,86 @@ use crate::view::View;
 
 /// FfH `CvGameUtils.canBuild` for AI players: false = the AI must not use this build here.
 pub fn ai_build_allowed(g: &Game, p: PlayerId, plot: PlotIdx, build: BuildType) -> bool {
-    let d = g.d;
-    let name = d.builds[build].base.type_.as_str();
-    let pl = &g.players[p];
-    let civic = |opt: &str, civ: &str| -> bool {
-        match (d.ty::<CivicOptionType>(opt), d.ty::<CivicType>(civ)) {
-            (Some(o), Some(c)) => pl.civics[o] == Some(c),
-            _ => false,
+    BanState::new(g, p).rule(g.d, build).allows(g, plot)
+}
+
+/// What the bans of [`ai_build_allowed`] read of the player: its civics, traits and techs.
+struct BanState {
+    fallow: bool,
+    arete: bool,
+    guilds: bool,
+    aristocracy: bool,
+}
+
+/// [`ai_build_allowed`] for one build and player, before the plot is known.
+#[derive(Copy, Clone)]
+enum BanRule {
+    Banned,
+    Allowed,
+    /// Roads: not on water.
+    OnLand,
+}
+
+impl BanState {
+    fn new(g: &Game, p: PlayerId) -> BanState {
+        let d = g.d;
+        let pl = &g.players[p];
+        let civic = |opt: &str, civ: &str| -> bool {
+            match (d.ty::<CivicOptionType>(opt), d.ty::<CivicType>(civ)) {
+                (Some(o), Some(c)) => pl.civics[o] == Some(c),
+                _ => false,
+            }
+        };
+        BanState {
+            fallow: d.ty::<TraitType>("TRAIT_FALLOW").is_some_and(|t| pl.traits[t]),
+            arete: civic("CIVICOPTION_LABOR", "CIVIC_ARETE"),
+            guilds: d.ty::<TechType>("TECH_GUILDS").is_some_and(|t| g.team_is_has_tech(pl.team, Some(t))),
+            aristocracy: civic("CIVICOPTION_GOVERNMENT", "CIVIC_ARISTOCRACY"),
         }
-    };
-    let fallow = d.ty::<TraitType>("TRAIT_FALLOW").is_some_and(|t| pl.traits[t]);
-    match name {
-        "BUILD_FORT" => false,
-        "BUILD_WINDMILL" => !civic("CIVICOPTION_LABOR", "CIVIC_ARETE"),
-        "BUILD_WORKSHOP" => fallow || d.ty::<TechType>("TECH_GUILDS").is_some_and(|t| g.team_is_has_tech(pl.team, Some(t))),
-        "BUILD_COTTAGE" => !civic("CIVICOPTION_GOVERNMENT", "CIVIC_ARISTOCRACY"),
-        "BUILD_FARM" => !fallow,
-        "BUILD_ROAD" => !g.plot_is_water(plot),
-        _ => true,
+    }
+
+    fn rule(&self, d: &GameData, build: BuildType) -> BanRule {
+        let ok = match d.builds[build].base.type_.as_str() {
+            "BUILD_FORT" => false,
+            "BUILD_WINDMILL" => !self.arete,
+            "BUILD_WORKSHOP" => self.fallow || self.guilds,
+            "BUILD_COTTAGE" => !self.aristocracy,
+            "BUILD_FARM" => !self.fallow,
+            "BUILD_ROAD" => return BanRule::OnLand,
+            _ => true,
+        };
+        if ok {
+            BanRule::Allowed
+        } else {
+            BanRule::Banned
+        }
+    }
+}
+
+impl BanRule {
+    fn allows(self, g: &Game, plot: PlotIdx) -> bool {
+        match self {
+            BanRule::Banned => false,
+            BanRule::Allowed => true,
+            BanRule::OnLand => !g.plot_is_water(plot),
+        }
+    }
+}
+
+/// [`ai_build_allowed`] for every build of one player, resolved once (type names, civics,
+/// traits, techs) for the many plots of one worker's search, which changes nothing they read.
+struct BuildBans {
+    rules: Vec<BanRule>,
+}
+
+impl BuildBans {
+    fn new(g: &Game, p: PlayerId) -> BuildBans {
+        let state = BanState::new(g, p);
+        BuildBans { rules: g.d.builds.keys().map(|b| state.rule(g.d, b)).collect() }
+    }
+
+    fn allowed(&self, g: &Game, plot: PlotIdx, build: BuildType) -> bool {
+        self.rules[build.idx()].allows(g, plot)
     }
 }
 
@@ -136,11 +206,125 @@ pub fn road_plan(g: &Game, p: PlayerId) -> Vec<(PlotIdx, i32)> {
     out
 }
 
+/// What [`build_value`] reads that does not depend on the build: the commerce weight (the
+/// player's sliders), the food weight of each working city, and the yields of the current
+/// improvement of the plot being scored. Filled on first use during one worker's search, which
+/// changes nothing in the game.
+struct ValueCx {
+    commerce_w: i32,
+    food_w: Vec<(CityId, i32)>,
+    old: Option<(PlotIdx, [i32; YieldType::NUM])>,
+}
+
+impl ValueCx {
+    fn new(g: &Game, p: PlayerId) -> ValueCx {
+        // Commerce matters more to an empire that cannot afford its research.
+        let research = crate::economy::spend_pct(g, p);
+        let commerce_w = if research < 50 { 11 * (200 - 2 * research) / 100 } else { 11 };
+        ValueCx { commerce_w, food_w: Vec::new(), old: None }
+    }
+
+    /// What working city `c` needs: food while it can grow.
+    fn food_weight(&mut self, g: &Game, c: CityId) -> i32 {
+        if let Some(&(_, w)) = self.food_w.iter().find(|(o, _)| *o == c) {
+            return w;
+        }
+        let surplus = g.city_yield_rate(c, YieldType::YIELD_FOOD) - g.city_food_consumption(c, false, 0);
+        let happy_room = g.city_happy_level(c) - g.city_unhappy_level(c, 0);
+        let w = if surplus < 2 && happy_room > 0 { 30 } else if happy_room > 0 { 22 } else { 12 };
+        self.food_w.push((c, w));
+        w
+    }
+
+    /// The yields player `p` gets from the improvement on `plot` now (0 without one).
+    fn old_yields(&mut self, g: &Game, p: PlayerId, plot: PlotIdx) -> [i32; YieldType::NUM] {
+        if let Some((q, old)) = self.old {
+            if q == plot {
+                return old;
+            }
+        }
+        let mut old = [0; YieldType::NUM];
+        if let Some(o) = g.map.plots[plot].improvement_type {
+            for (y, slot) in old.iter_mut().enumerate() {
+                *slot = g.plot_calculate_improvement_yield_change(plot, o, YieldType::from_usize(y), Some(p), false, false);
+            }
+        }
+        self.old = Some((plot, old));
+        old
+    }
+}
+
+/// Forests a city keeps around it whatever a chop would give (lumber mills, health).
+const KEEP_FORESTS: i32 = 3;
+/// A chop's hammers count as this many turns of production on the plot when they rush a
+/// settler, a worker or a world wonder.
+const CHOP_TURNS: i32 = 10;
+
+/// The feature `build` clears from `plot` for `p`: none when the build keeps it, or the
+/// civilization maintains it (the elves' forests stay under their improvements).
+fn cleared_feature(g: &Game, p: PlayerId, plot: PlotIdx, build: BuildType) -> Option<FeatureType> {
+    let f = g.map.plots[plot].feature_type?;
+    if !g.d.builds[build].feature_remove[f] {
+        return None;
+    }
+    let civ = g.player_get_civilization_type(p)?;
+    (!g.d.civilizations[civ].maintain_features[f]).then_some(f)
+}
+
+/// What clearing feature `f` from `plot` with `build` is worth (see the module docs); `None`
+/// when the feature is kept. A plain chop (no improvement) is worth its hammers only to a city
+/// rushing a settler, a worker or a world wonder.
+fn clearing_value(g: &Game, p: PlayerId, plot: PlotIdx, build: BuildType, f: FeatureType, cx: &mut ValueCx) -> Option<i32> {
+    let d = g.d;
+    if d.ty::<FeatureType>("FEATURE_FOREST_ANCIENT") == Some(f) {
+        return None;
+    }
+    let pl = &g.players[p];
+    if d.civic_options.keys().filter_map(|o| pl.civics[o]).any(|c| d.civics[c].feature_happiness_changes[f] > 0) {
+        return None;
+    }
+    let city = g.map.plots[plot].working_city.filter(|&c| g.cities[c].owner == p)?;
+    if d.features[f].health_percent > 0 && g.city_good_health(city) - g.city_bad_health(city, false, 0) <= 1 {
+        return None;
+    }
+    let same = (0..g.city_num_city_plots(city).max(0) as usize)
+        .filter_map(|i| g.city_index_plot(city, i))
+        .filter(|&q| g.map.plots[q].feature_type == Some(f) && g.map.plots[q].owner == Some(p))
+        .count() as i32;
+    if same <= KEEP_FORESTS && d.features[f].health_percent >= 0 && d.ty::<FeatureType>("FEATURE_FOREST") == Some(f) {
+        return None;
+    }
+    // The feature's own yields, lost on a worked plot.
+    let team = g.players[p].team;
+    let mut value = 0;
+    if g.plot_is_being_worked(plot) {
+        let weights = [cx.food_weight(g, city), 18, cx.commerce_w];
+        for (y, w) in weights.iter().enumerate() {
+            let yt = YieldType::from_usize(y);
+            let lost = g.plot_calculate_nature_yield(plot, yt, Some(team), false) - g.plot_calculate_nature_yield(plot, yt, Some(team), true);
+            value -= lost * w;
+        }
+    }
+    // The hammers, to the city that receives them.
+    let (hammers, to) = g.plot_get_feature_production(plot, build, team);
+    if let Some(c) = to.filter(|&c| g.cities[c].owner == p && !g.city_is_production_process(c)) {
+        let wonder = g.city_production_building(c).is_some_and(|b| d.buildings[b].building_class_type.is_some_and(|k| ffh_core::utils::is_world_wonder_class(d, k)));
+        let rush = g.city_is_food_production(c) || wonder;
+        value += if rush { hammers * 18 / CHOP_TURNS } else { 0 };
+    }
+    Some(value)
+}
+
 /// Value of performing `build` on `plot` for player `p` (0 = not worth it).
-fn build_value(g: &Game, v: &View, p: PlayerId, plot: PlotIdx, build: BuildType) -> i32 {
+fn build_value(g: &Game, v: &View, p: PlayerId, plot: PlotIdx, build: BuildType, cx: &mut ValueCx) -> i32 {
     let d = g.d;
     let info = &d.builds[build];
     let pl = &g.map.plots[plot];
+    if info.improvement.is_none() && info.route.is_none() {
+        // A plain chop (Remove Forest): worth its hammers to a city rushing a settler, a worker
+        // or a world wonder, unless the feature is kept.
+        return cleared_feature(g, p, plot, build).and_then(|f| clearing_value(g, p, plot, build, f, cx)).map_or(0, |v| v.max(0));
+    }
     if let Some(imp) = info.improvement {
         if pl.improvement_type == Some(imp) {
             return 0;
@@ -148,12 +332,7 @@ fn build_value(g: &Game, v: &View, p: PlayerId, plot: PlotIdx, build: BuildType)
         // What the working city needs.
         let city = pl.working_city.filter(|&c| g.cities[c].owner == p);
         let (food_w, prod_w) = match city {
-            Some(c) => {
-                let surplus = g.city_yield_rate(c, YieldType::YIELD_FOOD) - g.city_food_consumption(c, false, 0);
-                let happy_room = g.city_happy_level(c) - g.city_unhappy_level(c, 0);
-                let food_w = if surplus < 2 && happy_room > 0 { 30 } else if happy_room > 0 { 22 } else { 12 };
-                (food_w, 18)
-            }
+            Some(c) => (cx.food_weight(g, c), 18),
             None => (20, 18),
         };
         // Improvements that grow (cottages) count their grown form for two thirds.
@@ -164,10 +343,8 @@ fn build_value(g: &Game, v: &View, p: PlayerId, plot: PlotIdx, build: BuildType)
                 _ => break,
             }
         }
-        // Commerce matters more to an empire that cannot afford its research.
-        let research = crate::economy::spend_pct(g, p);
-        let commerce_w = if research < 50 { 11 * (200 - 2 * research) / 100 } else { 11 };
-        let weights = [food_w, prod_w, commerce_w];
+        let weights = [food_w, prod_w, cx.commerce_w];
+        let old_yields = cx.old_yields(g, p, plot);
         let mut value = 0;
         let mut new_total = 0;
         for y in 0..YieldType::NUM {
@@ -177,7 +354,7 @@ fn build_value(g: &Game, v: &View, p: PlayerId, plot: PlotIdx, build: BuildType)
                 let grown = g.plot_calculate_improvement_yield_change(plot, last, yt, Some(p), false, false);
                 new = (new + 2 * grown) / 3;
             }
-            let old = pl.improvement_type.map_or(0, |o| g.plot_calculate_improvement_yield_change(plot, o, yt, Some(p), false, false));
+            let old = old_yields[y];
             value += (new - old) * weights[y];
             new_total += pl.yields[y] - old + new;
         }
@@ -245,6 +422,77 @@ fn refuge(g: &Game, v: &mut View, u: UnitId) -> Option<PlotIdx> {
         })
 }
 
+/// The best (plot, build, score) for worker `u` among the plots it reaches.
+#[allow(clippy::too_many_arguments)]
+fn best_build(
+    g: &Game,
+    v: &View,
+    u: UnitId,
+    sea: bool,
+    reach: &[crate::reach::Reached],
+    builds: &[BuildType],
+    bans: &BuildBans,
+    cx: &mut ValueCx,
+    allow: &dyn Fn(&Game, PlotIdx, BuildType) -> bool,
+) -> Option<(PlotIdx, BuildType, i64)> {
+    let p = v.p;
+    let work_rate = g.d.units[g.units[u].unit_type].work_rate.max(1);
+    let mut best: Option<(PlotIdx, BuildType, i64)> = None;
+    for r in reach {
+        let q = r.plot;
+        let pl = &g.map.plots[q];
+        if pl.owner != Some(p) || v.danger_at(q) > 0 || v.is_claimed(q) {
+            continue;
+        }
+        if sea != g.plot_is_water(q) {
+            continue;
+        }
+        let in_radius = pl.working_city.is_some_and(|c| g.cities[c].owner == p);
+        let road = v.roads.iter().any(|(rq, _)| *rq == q);
+        if !in_radius && !road {
+            continue;
+        }
+        for &b in builds {
+            // `build_value`'s first zero cases, checked before the costlier tests (all of them
+            // pure, so the order does not matter): the improvement is already there; a route
+            // where there is one, or that the road plan does not ask for; a chop outside our
+            // cities' plots or where there is nothing to clear.
+            let info = &g.d.builds[b];
+            match (info.improvement, info.route) {
+                (Some(imp), _) => {
+                    if pl.improvement_type == Some(imp) {
+                        continue;
+                    }
+                }
+                (None, Some(_)) => {
+                    if pl.route_type.is_some() || !road {
+                        continue;
+                    }
+                }
+                (None, None) => {
+                    if !in_radius || cleared_feature(g, p, q, b).is_none() {
+                        continue;
+                    }
+                }
+            }
+            if !bans.allowed(g, q, b) || !allow(g, q, b) || !g.unit_can_build(u, q, b, false) {
+                continue;
+            }
+            let value = build_value(g, v, p, q, b, cx);
+            if value <= 0 {
+                continue;
+            }
+            // The build's time on this plot (a feature to clear first takes longer).
+            let time = g.plot_get_build_time(q, b).max(1) / work_rate;
+            let score = value as i64 * 100 / (r.turns as i64 * 2 + time as i64 + 3);
+            if best.map_or(true, |(_, _, s)| score > s) {
+                best = Some((q, b, score));
+            }
+        }
+    }
+    best
+}
+
 pub fn worker(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, sea: bool) {
     worker_with(g, v, grp, u, sea, &|_, _, _| true);
 }
@@ -272,41 +520,31 @@ pub fn worker_with(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, sea: boo
     }
     if sea && crate::civs::sea_worker(g, v, grp, u) { return; } // civ-mechanics
     let ut = g.units[u].unit_type;
-    let work_rate = g.d.units[ut].work_rate.max(1);
-    let reach = v.flood.run(g, u, 8, false);
-    let builds: Vec<BuildType> = g.d.builds.keys().filter(|&b| g.d.units[ut].builds[b]).collect();
-    let mut best: Option<(PlotIdx, BuildType, i64)> = None;
-    for r in &reach {
-        let q = r.plot;
-        let pl = &g.map.plots[q];
-        if pl.owner != Some(p) || v.danger_at(q) > 0 || v.is_claimed(q) {
-            continue;
-        }
-        if sea != g.plot_is_water(q) {
-            continue;
-        }
-        let in_radius = pl.working_city.is_some_and(|c| g.cities[c].owner == p);
-        let road = v.roads.iter().any(|(rq, _)| *rq == q);
-        if !in_radius && !road {
-            continue;
-        }
-        for &b in &builds {
-            if !ai_build_allowed(g, p, q, b) || !allow(g, q, b) || !g.unit_can_build(u, q, b, false) {
-                continue;
-            }
-            let value = build_value(g, v, p, q, b);
-            if value <= 0 {
-                continue;
-            }
-            let time = g.d.builds[b].time.max(1) / work_rate;
-            let score = value as i64 * 100 / (r.turns as i64 * 2 + time as i64 + 3);
-            if best.map_or(true, |(_, _, s)| score > s) {
-                best = Some((q, b, score));
-            }
+    // Builds with an improvement, a route, or hammers from a cleared feature (a chop).
+    let builds: Vec<BuildType> = g
+        .d
+        .builds
+        .keys()
+        .filter(|&b| {
+            let info = &g.d.builds[b];
+            g.d.units[ut].builds[b] && (info.improvement.is_some() || info.route.is_some() || info.feature_production.iter().any(|&h| h > 0))
+        })
+        .collect();
+    let bans = BuildBans::new(g, p);
+    let mut cx = ValueCx::new(g, p);
+    // Work within 8 turns; with none, the newer cities further away (up to 25 turns).
+    let mut best = None;
+    let mut reach_len = 0;
+    for range in [8, 25] {
+        let reach = v.flood.run(g, u, range, false);
+        reach_len = reach.len();
+        best = best_build(g, v, u, sea, &reach, &builds, &bans, &mut cx, allow);
+        if best.is_some() {
+            break;
         }
     }
     let Some((plot, build, _)) = best else {
-        crate::trace!(g, p, "worker {:?} at {:?}: nothing to build ({} plots in reach)", u, g.map.xy(here), reach.len());
+        crate::trace!(g, p, "worker {:?} at {:?}: nothing to build ({} plots in reach)", u, g.map.xy(here), reach_len);
         // Nothing to do: wait in a city.
         if g.map.plots[here].plot_city.is_none() {
             if let Some(c) = nearest_city(g, p, here) {

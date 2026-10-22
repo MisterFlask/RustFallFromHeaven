@@ -27,42 +27,48 @@ use crate::view::View;
 /// research (`research::siege_offense`), so both read the same notion of clear superiority.
 pub(crate) const TOTAL_WAR_RATIO: i64 = 140;
 
-/// Relation of player `p` towards `other`: < 0 hostile, > 0 friendly.
-pub fn relation(g: &Game, p: PlayerId, other: PlayerId) -> i32 {
+/// The terms of [`relation`] (what each is, and its value), in its order; they sum to it. The
+/// human's diplomacy screen shows them as the reasons of an attitude.
+pub fn relation_parts(g: &Game, p: PlayerId, other: PlayerId) -> Vec<(&'static str, i32)> {
     let a = &g.players[p];
     let b = &g.players[other];
-    let mut r = 0;
+    let mut out = Vec::new();
     match (a.alignment, b.alignment) {
-        (Some(x), Some(y)) if x != y => {
-            r -= (x.idx() as i32 - y.idx() as i32).abs() * 2;
-        }
-        (Some(_), Some(_)) => r += 1,
+        (Some(x), Some(y)) if x != y => out.push(("different alignment", -(x.idx() as i32 - y.idx() as i32).abs() * 2)),
+        (Some(_), Some(_)) => out.push(("same alignment", 1)),
         _ => {}
     }
     match (g.player_get_state_religion(p), g.player_get_state_religion(other)) {
-        (Some(x), Some(y)) if x == y => r += 2,
-        (Some(_), Some(_)) => r -= 1,
+        (Some(x), Some(y)) if x == y => out.push(("same state religion", 2)),
+        (Some(_), Some(_)) => out.push(("different state religion", -1)),
         _ => {}
     }
     let (ta, tb) = (a.team, b.team);
     if g.teams[ta].ai_at_war_counter[tb] > 0 {
-        r -= 1;
+        out.push(("war between us", -1));
     }
     if g.team_is_open_borders(ta, tb) {
-        r += 1;
+        out.push(("open borders", 1));
     }
-    r
+    out
 }
 
-/// Attitude from the relation score (C++ `AI_getAttitude` thresholds are not reproduced).
-pub fn attitude(g: &Game, p: PlayerId, towards: PlayerId) -> AttitudeType {
-    if p == towards {
-        return AttitudeType::ATTITUDE_FRIENDLY;
-    }
-    let mut r = relation(g, p, towards);
+/// Relation of player `p` towards `other`: < 0 hostile, > 0 friendly.
+pub fn relation(g: &Game, p: PlayerId, other: PlayerId) -> i32 {
+    relation_parts(g, p, other).iter().map(|t| t.1).sum()
+}
+
+/// The terms of [`attitude`]'s score: [`relation_parts`], and the war itself while at war.
+pub fn attitude_parts(g: &Game, p: PlayerId, towards: PlayerId) -> Vec<(&'static str, i32)> {
+    let mut out = relation_parts(g, p, towards);
     if g.at_war(g.players[p].team, g.players[towards].team) {
-        r -= 2;
+        out.push(("at war", -2));
     }
+    out
+}
+
+/// The attitude of a score (the sum of [`attitude_parts`]).
+pub fn attitude_of_score(r: i32) -> AttitudeType {
     match r {
         i32::MIN..=-4 => AttitudeType::ATTITUDE_FURIOUS,
         -3..=-1 => AttitudeType::ATTITUDE_ANNOYED,
@@ -70,6 +76,14 @@ pub fn attitude(g: &Game, p: PlayerId, towards: PlayerId) -> AttitudeType {
         1..=2 => AttitudeType::ATTITUDE_PLEASED,
         _ => AttitudeType::ATTITUDE_FRIENDLY,
     }
+}
+
+/// Attitude from the relation score (C++ `AI_getAttitude` thresholds are not reproduced).
+pub fn attitude(g: &Game, p: PlayerId, towards: PlayerId) -> AttitudeType {
+    if p == towards {
+        return AttitudeType::ATTITUDE_FRIENDLY;
+    }
+    attitude_of_score(attitude_parts(g, p, towards).iter().map(|t| t.1).sum())
 }
 
 pub(crate) fn is_team_leader(g: &Game, p: PlayerId) -> bool {
@@ -90,6 +104,37 @@ pub fn army_size(g: &Game, p: PlayerId) -> i32 {
         n += pl.ai_num_ai_units[a];
     }
     n
+}
+
+/// Army units within 3 plots of our city nearest to `target`'s cities (on a shared landmass):
+/// the force staged for a war against it.
+fn staged_army(g: &Game, p: PlayerId, target: TeamId) -> i32 {
+    let mut best: Option<(i32, CityId)> = None;
+    for &c in &g.players[p].cities {
+        let area = g.map.plots[g.city_plot(c)].area;
+        for q in g.player_ids() {
+            if !g.players[q].alive || g.players[q].team != target {
+                continue;
+            }
+            for &o in &g.players[q].cities {
+                if g.map.plots[g.city_plot(o)].area != area {
+                    continue;
+                }
+                let d = g.plot_distance(g.cities[c].x, g.cities[c].y, g.cities[o].x, g.cities[o].y);
+                if best.map_or(true, |(b, bc)| (d, c) < (b, bc)) {
+                    best = Some((d, c));
+                }
+            }
+        }
+    }
+    let Some((_, rally)) = best else { return 0 };
+    let (rx, ry) = (g.cities[rally].x, g.cities[rally].y);
+    let army = [UnitAIType::UNITAI_ATTACK, UnitAIType::UNITAI_ATTACK_CITY, UnitAIType::UNITAI_COLLATERAL, UnitAIType::UNITAI_COUNTER];
+    g.players[p]
+        .units
+        .iter()
+        .filter(|&&u| g.units[u].ai_type.is_some_and(|a| army.contains(&a)) && g.plot_distance(g.units[u].x, g.units[u].y, rx, ry) <= 3)
+        .count() as i32
 }
 
 /// Army we want before declaring a prepared war.
@@ -170,8 +215,14 @@ pub fn manage(g: &mut Game, v: &View) {
         let accept = g.controller(other).consider_offer(g, other, p, &ours_list, &theirs_list);
         if accept {
             crate::trace!(g, p, "peace with team {:?} after {} turns (we take {}, we give {})", enemy, g.teams[team].ai_at_war_counter[enemy], theirs_list.len() - 1, ours_list.len() - 1);
+            g.tel_decision(p, "peace", &format!("team {}", enemy.0), if winner_initiated { "cash_out" } else { "want_peace" }, (their_want - our_want) as i64, String::new);
             g.implement_deal(p, other, &ours_list, &theirs_list, false);
         }
+    }
+
+    // Hopelessly behind, or crushed in a war that peace did not end: become a vassal.
+    if crate::vassals::seek(g, p) {
+        return;
     }
 
     // Trade with friendly neighbours every few turns (staggered): technologies swapped one for
@@ -227,8 +278,13 @@ pub fn manage(g: &mut Game, v: &View) {
         }
         let ready = army_size(g, p) >= army_needed_for_war(g, p, target);
         let waited = g.teams[team].ai_war_plan_state_counter[target];
-        if ready && waited >= 5 || waited >= 40 {
+        // An expert declares with the army already at the border: the war's first turns are
+        // spent fighting, not marching while the enemy mobilises (and the war's first ten turns,
+        // before peace can be made, are not spent on the road).
+        let staged = !crate::switches::WAR_STAGING.on(g, p) || staged_army(g, p, target) * 3 >= army_needed_for_war(g, p, target) * 2;
+        if ready && staged && waited >= 5 || waited >= 40 {
             crate::trace!(g, p, "declares war on team {:?} (army {}, prepared {} turns)", target, army_size(g, p), waited);
+            g.tel_war_reason(team, target, || format!("{} after {} turns: army {} of {}", if ready && staged && waited >= 5 { "army ready" } else { "waited long" }, waited, army_size(g, p), army_needed_for_war(g, p, target)));
             let plan = if g.teams[team].ai_war_plan[target] == Some(WarPlanType::WARPLAN_PREPARING_LIMITED) { WarPlanType::WARPLAN_LIMITED } else { WarPlanType::WARPLAN_TOTAL };
             g.team_declare_war(team, target, true, Some(plan));
         }
@@ -243,6 +299,8 @@ pub fn manage(g: &mut Game, v: &View) {
     // or conquest) needs no roll and no grudge.
     if let Some((target, why)) = victory_war(g, p, &plan) {
         crate::trace!(g, p, "prepares war on team {:?} for the victory plan ({})", target, why);
+        g.tel_war_reason(team, target, || format!("victory plan ({why})"));
+        g.tel_decision(p, "war_prep", &format!("team {}", target.0), "victory_plan", 0, String::new);
         g.team_ai_set_war_plan(team, target, Some(WarPlanType::WARPLAN_PREPARING_TOTAL), false);
         return;
     }
@@ -267,6 +325,8 @@ pub fn manage(g: &mut Game, v: &View) {
     let spare_friends = war_rand > 80;
     let ours = g.team_get_power(team, true).max(1) as i64;
     let mut best: Option<(TeamId, i64, bool)> = None;
+    // Telemetry: every target that passed the gates, with its score.
+    let mut scored: Vec<(TeamId, i64)> = Vec::new();
     for other in g.player_ids() {
         let op = &g.players[other];
         if !op.alive || op.team == team || g.player_is_barbarian(other) || op.cities.is_empty() {
@@ -316,6 +376,7 @@ pub fn manage(g: &mut Game, v: &View) {
         // flavor nudge toward alignment-opposites.
         let score = ratio - dist as i64 * 6 - rel as i64 * 15 + op.cities.len() as i64 * 10 + flavor;
         let total = ratio >= TOTAL_WAR_RATIO;
+        scored.push((ot, score));
         if best.map_or(true, |(_, s, _)| score > s) {
             best = Some((ot, score, total));
         }
@@ -323,6 +384,13 @@ pub fn manage(g: &mut Game, v: &View) {
     if let Some((target, _, total)) = best {
         let plan = if total { WarPlanType::WARPLAN_PREPARING_TOTAL } else { WarPlanType::WARPLAN_PREPARING_LIMITED };
         crate::trace!(g, p, "prepares war on team {:?} to take territory ({:?}, power ratio {})", target, plan, ours * 100 / g.team_get_defensive_power(target).max(1) as i64);
+        if g.telemetry.on() {
+            let ratio = ours * 100 / g.team_get_defensive_power(target).max(1) as i64;
+            g.tel_war_reason(team, target, || format!("territory (power ratio {ratio}, needed {need_ratio})"));
+            let names: Vec<(String, i64)> = scored.iter().map(|&(t, s)| (format!("team {}", t.0), s)).collect();
+            let score = scored.iter().find(|s| s.0 == target).map_or(0, |s| s.1);
+            g.tel_decision(p, "war_prep", &format!("team {}", target.0), "territory", score, || ffh_core::telemetry::tel_alts(names.iter().map(|(n, s)| (n.as_str(), *s))));
+        }
         g.team_ai_set_war_plan(team, target, Some(plan), false);
     }
 }
@@ -660,7 +728,7 @@ pub(crate) const PRESS_CONQUEST_RATIO: i64 = 200;
 /// first legal turn before war success accrues, so only the immediate power ratio is reliable. Both
 /// the offer path (`manage`) and the acceptance path (`consider_offer`) consult this so a winner
 /// neither offers nor accepts a peace that abandons a conquest it is winning.
-fn press_conquest(g: &Game, team: TeamId, enemy: TeamId) -> bool {
+pub(crate) fn press_conquest(g: &Game, team: TeamId, enemy: TeamId) -> bool {
     let ours = g.team_get_power(team, true).max(1) as i64;
     let theirs = g.team_get_defensive_power(enemy).max(1) as i64;
     ours * 100 >= theirs * PRESS_CONQUEST_RATIO
@@ -833,6 +901,14 @@ pub(crate) fn want_peace(g: &Game, team: TeamId, enemy: TeamId, plan: &crate::vi
 /// C++ `AI_considerOffer` equivalent: accept peace when the war is not going our way or has
 /// lasted long, open borders with friends, and gifts.
 pub fn consider_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData], we_give: &[TradeData]) -> bool {
+    // Vassal states come with strings attached (vassals.rs): asked to become `from`'s vassal, or
+    // offered `from` as ours.
+    if let Some(yes) = crate::vassals::agree(g, p, from, we_give) {
+        return yes;
+    }
+    if let Some(yes) = crate::vassals::accept_master(g, p, from, they_give, we_give) {
+        return yes;
+    }
     if we_give.is_empty() {
         return true;
     }

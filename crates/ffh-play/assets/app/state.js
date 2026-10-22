@@ -445,6 +445,35 @@ export function turns(n) {
   return n === 1 ? "1 turn" : `${n} turns`;
 }
 
+/** A score for people: the score is a share of the world in basis points (docs/SCORE.md), shown
+ *  as a percentage: 1341 -> "13.4%". */
+export function scoreText(bp) {
+  if (bp === null || bp === undefined) return "-";
+  return `${(bp / 100).toFixed(1)}%`;
+}
+
+/** The fair share of `n` alive civilizations as a percentage ("20.0%"). */
+export function fairShareText(n) {
+  return n > 0 ? `${(100 / n).toFixed(1)}%` : "-";
+}
+
+/** The gold rate by its parts (`me.gold_parts`): income `[[what, gold]]`, costs `[[what, gold]]`
+ *  and the net they make (the gold rate while research is flexible). Null without parts. */
+export function goldBreakdown(gp) {
+  if (!gp) return null;
+  const income = [["from your cities' commerce", gp.income]];
+  if (gp.deals > 0) income.push(["from deals", gp.deals]);
+  const costs = [];
+  if (gp.units) costs.push([`units (${gp.units_count}, ${gp.units_free} of them free${gp.military_count ? `; ${gp.military_count} military, ${gp.military_free} free` : ""})`, gp.units]);
+  if (gp.supply) costs.push([`supply of ${gp.supply_units} unit${gp.supply_units === 1 ? "" : "s"} outside your borders`, gp.supply]);
+  if (gp.maintenance) costs.push(["city maintenance", gp.maintenance]);
+  if (gp.civics) costs.push(["civic upkeep", gp.civics]);
+  if (gp.deals < 0) costs.push(["deals", -gp.deals]);
+  if (gp.inflation) costs.push([`inflation (+${gp.inflation_rate}% on the costs)`, gp.inflation]);
+  const sum = (l) => l.reduce((n, [, g]) => n + g, 0);
+  return { income, costs, net: sum(income) - sum(costs) };
+}
+
 /** Moves for people: C++ counts 60 per move (`MOVE_DENOMINATOR`). */
 export function moves(m) {
   const whole = Math.floor(m / 60);

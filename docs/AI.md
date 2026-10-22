@@ -3,6 +3,13 @@
 Before changing the AI, read `docs/AI_LOG.md`: the changes that did not move the win rate, why,
 and what that implies (CLAUDE.md, "AI changes").
 
+**It plays the way an expert human would** (the owner's decision, 2026-10-21; CLAUDE.md, "AI
+changes"). Each behaviour starts from what a strong player would see, want and do in that
+position, and should read as sound strategy or tactics to one, unless flavor or fun dictates
+otherwise. Win-rate A/Bs tune the thresholds, weights and timing of such behaviours and catch
+implementations that misfire. They do not decide whether a sound behaviour exists: when one
+costs win rate, the games say why.
+
 The C++ AI (CvPlayerAI/CvCityAI/CvUnitAI/CvTeamAI, ~60k lines, plus the Python AI hooks
 in CvGameUtils.py such as `AI_chooseTech`/`AI_chooseProduction`) is not ported. It is the
 main cause of FFH2's late-game turn times (per-unit re-evaluation of every plot, repeated A*
@@ -178,6 +185,15 @@ been pushed down to pay the bills, or when the costs measured from the rules wou
 less than 60% for research (3 points of weight per point of shortfall in percent of the
 commerce; merchants and scientists gain with it over poor tiles); a culture-starved new city
 values culture.
+
+The growth target is at least the food that grows the city in 12 turns (3 at size 5, 4 at size
+8), and specialist jobs worth a citizen (3+ yields and commerce) count as room to grow. Before,
+the target fell to 2 at size 5 whatever the size, and a big city with happy room sat at +1 food:
+on the same city states (ffh-ai games at turns 120, 200 and 300, every city assigned by both
+governors) the C++ AI's `AI_assignWorkingPlots` kept cities of size 8+ at +2-3 food where ours
+kept +1. Measured (300 turns): seeds 1-24 population +3.6 a civ (t 2.4), research flat; fresh
+seeds 425-472 population +0.3, techs +0.4, legacy +12, every |t| < 1. Kept as the growth an
+expert keeps going while there is room, not for a measured gain.
 
 ## Finance (`finance.rs`)
 
@@ -454,10 +470,14 @@ techs at turn 300 19.6 -> 19.8; each part matters (without the forced wait captu
 Tried and dropped (same seeds): two settlers at a time for one or two cities, sites within 5
 plots of our cities, the capital giving up its second defender as an escort, settlers at size
 2 or before the first worker, deferring buildings while a city grows toward a settler, and
-chopping forests while a settler is built (C++ `bChop`). The fastest mix had 2.4-2.5 cities
+chopping forests while a settler is built (C++ `bChop`; the workers now chop for settlers,
+measured flat, "Chops" under Workers). The fastest mix had 2.4-2.5 cities
 per civ at turn 100 (4th city at turn 131 instead of 150) but 0.8-1.4 fewer techs and fewer
 points at turn 300, the same number of cities by then, and more cities lost to barbarians,
-also on top of the finance and research changes. The rules couple barbarian cities to ours:
+also on top of the finance and research changes. Re-measured 2026-10-21 with a per-civilization
+switch, everyone and one civilization against the rest (held threats no longer stopping settler
+production, a settler per city, fewer capital defenders, no buildings while growing toward a
+settler): no gain either way; docs/AI_LOG.md, "Expansion: the expert opening". The rules couple barbarian cities to ours:
 `createBarbarianCities` starts once civs average two cities and its target grows with the
 number of civ cities, so faster expansion brings more barbarian cities sooner.
 
@@ -488,6 +508,19 @@ best four) added nothing on top of it (300 turns legacy +1.5% for both together)
 Training workers only once an improvement is buildable (no early idle workers: -68% idle
 worker-turns) measured flat to negative on the same seeds (legacy -1.0%, full games power -10.6%
 at turn 300) and was not kept.
+
+**Chops.** A plain Remove Forest or Remove Jungle is valued only when its hammers go to a city
+building a settler, a worker or a world wonder (a chop's 20 hammers count as 10 turns of
+production on the plot), less the feature's yields on a worked plot. Kept: the Ancient Forest, a
+feature a civic of ours makes happy (the elves' forests are maintained anyway), a healthy feature
+in a city with at most one health to spare, and a city's last three forests. A worker with
+nothing to build within 8 turns looks up to 25 turns away (the newer cities) before it waits:
+from turn 200 most idle workers had improved everything within 8 turns. Seeds 1-4 at 300 turns:
+113 chops (4.7 a civ), 29 more lumber mills, 73 fewer farms. Measured with the governor change
+above: seeds 1-24 research +10 (t 1.3), but fresh seeds 401-472 flat (population +0.4,
+research +3.6, legacy -5, every |t| < 1; workers alone also flat). Kept as an expert's use of
+the forests, not for a measured gain. Valuing every improvement on a feature by the clearing
+(the feature's lost yields, its hammers) cost research (docs/AI_LOG.md, "Workers and citizens").
 
 ## Field armies (`military.rs`, `campaign.rs`)
 
@@ -655,7 +688,19 @@ gate, so it only re-ranks viable targets and never sends a civ at a rival it can
 reachable (inert where they are across the water), with captures and economy slightly up, not
 traded -- a secondary bias that does not cost the primary. The
 war plan starts as `WARPLAN_PREPARING_*` (production builds the army,
-stacks gather on the rally city) and is declared when the army is ready (or after 40 turns).
+stacks gather on the rally city) and is declared when the army is ready and two thirds of it
+stands within 3 plots of our city nearest to the target (or after 40 turns): an expert declares
+with the army at the border, so the war's first turns (and the ten before peace is possible) are
+spent fighting, not marching. Before (2026-10-21) the declaration came while the army was still
+at home: in 24 full games 22% of our declared wars saw no combat, and a war sold for tribute at
+turn 11 often had its army still on the road (traced: 19 plots, never arrived). Measured
+(`FFH_AI_WAR_STAGING_OFF=ALL` against on), full games: everyone, seeds 1-24, wars 448 -> 312,
+cities taken 423 -> 397 (a city per war 0.94 -> 1.27); fresh seeds 9701-9724, wars 409 -> 236
+(t -4.4), cities taken 358 -> 307 (0.88 -> 1.30 a war), games decided before the time limit 8 ->
+11 of 24, population +4.3 and research +9 at turn 450 (t 1.8, 1.2); one civilization against the
+rest, seeds 1-6 (114 pairs) wins 22.8% -> 22.8%, share@end +22, fresh seeds 9601-9612 (228
+pairs) wins 14.5% -> 14.0% (8 / 9), share@end +15 (t 0.4). Not selling a war for tribute before
+it has taken a city or lasted 30 turns cost wins (docs/AI_LOG.md, "Wars").
 Peace is sought when the war goes badly (war success and power), or drags on without gains;
 it is offered as a real peace-treaty deal the other AI must accept. Every 5 turns an AI swaps
 technologies one for one at similar cost (once `TECH_TRADE` allows it) and signs open borders
@@ -681,6 +726,58 @@ limit 12 -> 13; eliminations in the changed games 42 -> 42. Mechanically working
 but not yet a measurable protection: the gating (late Honor, peace with everyone) keeps most
 threatened civs from signing. Levers if it should bite: research Honor when threatened, or a
 rules change to the trading prerequisite.
+
+**Vassal states (`vassals.rs`).** The owner's decision, 2026-10-21 (CLAUDE.md, "AI changes"):
+what an expert does once the game has gone against it. The rules (Feudalism for the master; a
+vassal joins its master's wars and the master its vassal's, a capitulation makes peace) were
+ported; the judgement is here. Only what a human could see is read.
+
+- **Hopelessly behind** a neighbour (cities within 14 plots): the neighbour has 3x our power, knows
+  6 more technologies and 40% more than we do, and our share of the world is under half an
+  average civilization's. Then we offer to become its vassal, if the two are at least decently
+  aligned: no good/evil opposition, and an attitude at or above the leader's
+  `iVassalRefuseAttitudeThreshold`. That threshold is one step more willing than FfH's AI, which
+  refuses at it, so pride still varies by leader. We never pick a neighbour whose wars would set
+  us against a stronger civ next door. Checked every 5 turns; the strongest such neighbour is
+  asked first.
+- **Crushed in a war:** at war for 10 turns, the enemy has twice our power, and its war success
+  exceeds ours by three captured cities' worth (two when we have three cities or fewer left).
+  Then we capitulate to the enemy doing the most damage, whatever we think of it. This comes
+  after the peace offer that turn failed.
+- **Asked** to become someone's vassal (by a human or an AI): we agree when the same tests hold.
+- **As the master:** a vassal is taken unless its wars would drag us into one against a stronger
+  civ, a friend or a treaty partner. A capitulation is taken unless the loser has two cities or
+  fewer and we can press the conquest; then we take the cities instead.
+- **Humans:** asked on the leader's contact cadence. A human can't be an AI's vassal (rules).
+
+Measured with `FFH_AI_VASSAL_OFF` (the switch), full games of ffh-ai only.
+
+| | Development seeds 1-12 | | Fresh seeds 201-224 | |
+|---|---|---|---|---|
+| | off | on | off | on |
+| Vassalages (capitulations / peaceful) | – | 15 / 3 | – | 22 / 3 |
+| Civs eliminated | 18 | 11 | 38 | 30 |
+| Supremacy | 8 | 7 | 12 | 16 |
+| Cultural victory | 3 | 1 | 10 | 5 |
+| Conquest victory | 0 | 1 | 0 | 2 |
+| Time limit | 1 | 3 | 2 | 1 |
+| Average decision turn | 519 | 492 | 496 | 455 |
+
+Capitulations fall between turns 290 and 625. On the fresh seeds, 260 capitulation offers from
+civs with two cities or fewer were refused (the conqueror took them).
+
+Fewer civilizations die. Games are decided sooner and more often by supremacy or conquest, less
+often by culture. The mechanism: score v2 credits a master with half its vassals' people and land
+(docs/SCORE.md), and conquest counts vassals as conquered. So a leader with vassals reaches clear
+supremacy before the culture race ends, as Civ4's vassal empires snowball. This is a sound
+behaviour, kept under the expert-play rule; the shift in outcomes is the game's balance, worth
+the owner's eye.
+
+Peaceful vassalage stays rare. About one civ per game meets the three "hopeless" tests against
+the strongest civ after turn 300 (12 development games: 13 of 219 civ-snapshots), and the
+technology gap is the binding test. A vassal never leaves its master on its own initiative, even
+after it recovers. One vassal was released in the 24 fresh games; telemetry records releases as
+`vassal.freed`.
 
 **Resources and gold (`trade.rs`).** The AI also trades resources (bonuses) and gold -- a port of
 the base game's `CvPlayerAI` trade valuation (`AI_bonusTradeVal`, `AI_bonusTrade`, `AI_dealVal`,
@@ -1260,6 +1357,18 @@ had none). Several almost never hold, so their spell is never cast: Arcane Lacun
 Worldbreak (about 3%, near the end), Raging Seas (5 of 40, around turn 590), March of the Trees and
 Sanctuary (16 and 15 of 40, late).
 
+**Expert moments** (`world_spells::expert_moment`, 2026-10-21; the owner's rule that
+civilizations use their own mechanics): three spells FfH's condition almost never let the AI
+cast. Arcane Lacuna (Amurites) at war with a civilization, instead of 7 typed mana nodes on the
+map (0 casts in 24 full games); Worldbreak (Sheaim) at war once the Armageddon counter is 20,
+instead of 50 (0 casts); Religious Fervor (Malakim) with the state religion in five cities, or
+in three that are two thirds of ours (a small Malakim empire never had five). Measured with the
+civilization forced, against the same binary with FfH's conditions (`FFH_AI_WS_TIMING_OFF=ALL`),
+full games: development seeds 1-24, casts Amurites 0 -> 14 games, Sheaim 0 -> 6, Malakim 16 ->
+14; fresh seeds 9601-9624, casts 0 -> 13, 0 -> 10, 13 -> 17, share@end +7, +24, +47 (every |t| <
+0.3), wins 1 / 1, 0 / 2, 0 / 1 pairs. Earlier For the Horde (a dozen orcs) and Ardor (the
+third great person) cost and were dropped (docs/AI_LOG.md).
+
 **Moments of their own** (an experiment, not merged: `world_spells::turn`, once a turn before units
 move, commit `0e4945b`, reachable from the `fanout/ws-*` job branches; measured with the
 civilization forced against the same binary with FfH's condition, `FFH_AI_WS_DEFAULT=SPELL_X`,
@@ -1523,6 +1632,13 @@ turns each civ needs for each condition of `CvGame::testVictory` (`CIV4VictoryIn
   stages) stands, the final altar's research and hammers.
 - Religious, score (no target score) and time victories are not pursued.
 
+**Not pursued** (the owner's decision, 2026-10-21): the Tower of Mastery and the Altar of the
+Luonnotar are never our goal -- boring solitaire victories, and the Tower needs a huge territory
+anyway. Their estimates stay, so a rival about to win one is still a *rival* (below) and gets
+stopped. Play is unchanged: 24 of 24 full games (seeds 1-24, 6 civs, standard map,
+`--until-supremacy`) identical to the build before it (same checksums), and the planner never
+picked either in 48 full games against the C++ AI.
+
 **Plan** (`plan`, `plan_ours`): from turn 200 (scaled to the game's length; from 100 when the team
 holds 1.5x the next team's share of the world) the condition with the fewest turns that fits
 before the time limit; a cultural victory only for the front-runner (no other civ's estimate
@@ -1552,6 +1668,19 @@ another civ whose own best estimate is within 60 turns and shorter than ours.
   goal against the weakest civ we can reach, prepared without the leader's roll or grudge; the
   rival's victory cities (those nearest legendary, those with towers) are worth 3000 more to the
   siege campaign; these wars end only when lost (or after 80 turns).
+
+**Flavor drive (the owner's decision, 2026-10-21; not implemented yet).** Conquest and domination
+are a *drive* of the warlike, not a victory goal pursued once in reach: the Clan of Embers, the
+Doviello, the Bannor, any other canonically warlike civilization, and every leader with
+`TRAIT_AGGRESSIVE` (in the data: Charadon of the Doviello, Sheelba of the Clan, Tasunke of the
+Hippus, Alexis of the Calabim, Kandros of the Khazad, Basium of the Mercurians, and the minor
+leaders Duin, Weevil, Hafgan, Volanna, Mahon, Averax, Ouzza) keep asking what the easiest next
+growth is -- a settler site, or the cities of a weaker civ nearby -- and take it, over and over,
+whether or not it raises their win rate (the win-rate rule decides how well they do it, not
+whether). Today the planner is civ-agnostic and in practice picks culture or nothing (conquest
+needs twice all rivals' power, domination 66% of the land: neither qualifies before it is nearly
+won), so this is an ongoing comparison of settling against conquering a weaker neighbour, from
+the early game on, not a bias on the victory estimates.
 
 Measured on full games (seeds 1-24, 6 civs, standard map, normal speed, to the rules' end;
 `victory_check.py`); economy per alive civ, at turns 400 / 500 (one game was over by 500):
@@ -1644,7 +1773,7 @@ share score (docs/SCORE.md) averages 10000/N whatever the AI does.
   eliminations), the outcome and the turn each civ died. Snapshots only read the game (the sync
   checksum is the same with or without them). Fields of a snapshot row (one per ever-alive
   player, barbarians included; all computed from game state at the end of that turn):
-  - identity: `p` player id, `team`, `civ`, `leader`, `alignment`, `barb`, `alive`, `elim_turn`
+  - identity: `p` player id, `ctrl` (controller name: `ffh-ai`, `cppai`), `team`, `civ`, `leader`, `alignment`, `barb`, `alive`, `elim_turn`
     (turns played when found dead), `era`, `religion` (state religion), `vassal`;
   - size: `cities`, `pop`, `land` (plots owned), `land_scored`, `area_tiles`, `area_civs`
     (other civs on the capital's landmass), `overseas` cities;
@@ -1708,12 +1837,32 @@ share score (docs/SCORE.md) averages 10000/N whatever the AI does.
   game's last value carried forward) with the paired t, survival, rank, world-spell use, the games
   that are identical on both sides and the per-type counts that differ; `--off-base` makes the
   base side the same binary with `FFH_AI_CIV_OFF` for that civilization (identical opponents).
+  Generic behaviours have switches of their own (`switches.rs`): `FFH_AI_<NAME>_OFF=X,..|ALL`
+  plays without it, `FFH_AI_<NAME>_ONLY=X,..` only for those civilizations. A contest between
+  civilizations (a land race, a war) is measured as one civilization with the behaviour against
+  opponents without it: `civ_ab.py --civ all --base-env FFH_AI_<NAME>_OFF=ALL --new-env
+  FFH_AI_<NAME>_ONLY={civ}` (the same binary on both sides; `{civ}` is the forced civilization).
+  Measuring only with every civilization on can mislead either way: a faster opening for everyone
+  cost research, and for one civilization against the rest it still gained nothing.
 - `crates/ffh-cli/scripts/victory_check.py --seeds 1-24 [--out games.json | --load games.json]
   [--compare base.json] [--min-share 0.5]` plays full games (to turn 690 or an earlier
   victory) and reports the share decided before the time limit, per victory type, the decision
   turn, and the economy at turns 300-600; `--min-share` makes it a pass/fail check. A short
   version is the ignored test `run::tests::full_games_end_in_victories` (`cargo test --release
   -p ffh-cli -- --ignored`).
+- **Head to head against the FFH2 C++ AI** (docs/CPPAI.md): `FFH_CPPAI=even|odd|all|<p>,..`
+  makes those players play with the port of the original DLL AI (`crates/ffh-cppai`);
+  `crates/ffh-cppai/scripts/h2h.py --bin $B/ffh --seeds S --turns 690 --until-supremacy
+  [--handicap-ffh HANDICAP_X]` plays each seed with the seats swapped and reports both sides
+  (snapshot rows carry `ctrl`, the controller that played the player).
+- **Telemetry** (docs/TELEMETRY.md): `FFH_TELEMETRY=1` adds to `ffh stats` what each player
+  did (missions, casts, hurries, upgrades, deals, wars, combats by odds, deaths by cause), which
+  spells its units knew, could cast, left idle and cast with what effect, and why the AI acted
+  (plans as they change, decisions with the rule that made them and the alternatives);
+  `FFH_TELEMETRY_FILE=f.jsonl` writes every event. `crates/ffh-cli/scripts/telemetry.py`
+  summarizes it per AI, civilization or player; `h2h.py --telemetry` adds it per side. The AI
+  side reports through `Game::tel_intent`, `tel_decision`, `tel_cast_reason` and
+  `tel_war_reason`; play is identical with telemetry on or off.
 - `ffh autoplay --report T` prints, per civ, costs, unit roles, improvements, civics and every
   city's yields, trade, happiness and production; `ffh inspect <player>` shows each city's
   plots (worked, yields, improvements).
@@ -1723,6 +1872,10 @@ share score (docs/SCORE.md) averages 10000/N whatever the AI does.
   example `GAMEOPTION_ADVANCED_START`).
 
 ## Known gaps (future work)
+
+- **Vassals never leave.** A vassal that has recovered stays one. FfH's AI cancels the agreement
+  when `AI_vassalTrade` would now refuse it. Masters do nothing for their vassals beyond the war
+  joining the rules impose (Diplomacy, "Vassal states").
 
 - Naval: amphibious invasions now ship an army across water to take an overseas enemy city
   (see Naval), but there is no naval combat, no escorts and no blockades (the transport sails
@@ -1793,10 +1946,12 @@ share score (docs/SCORE.md) averages 10000/N whatever the AI does.
   land; expansion is slow because settlers wait until no enemy is near their city. Letting
   them go out under a held threat founded more cities but lost many more to the barbarians
   (measured), so the gate stays.
-- Expansion is slow everywhere in the first 100 turns (about two cities; second city at
-  turn 70, third at 110): settlers cost 220 hammers on normal speed (120 + the new-city
-  production value) and cities wait for size 3-4 and for the barbarians to leave. Faster
-  openings were measured and cost research by turn 300 (see "Settlers and escorts").
+- Expansion is slow in the first 100 turns (about two cities; second city at turn 70, third at
+  105): a settler costs 120 food and hammers, 6-9 a turn from a size-3 capital, and cities wait
+  for size 3-4 and for the barbarians to leave. Faster openings cost research by turn 300, for
+  everyone and for one civilization against the rest (measured again 2026-10-21, an expert
+  opening in four parts: docs/AI_LOG.md, "Expansion: the expert opening"); the levers left are
+  commerce per new city and clearing the lairs that block expansion.
 - Economy: research at about two thirds of the commerce by turn 300 (145 beakers a turn, 29
   techs); maintenance and civic upkeep take a quarter of the commerce. The first 100 turns are
   slow whatever the research order (6-7 techs at turn 100 with two cities).
@@ -1819,9 +1974,13 @@ share score (docs/SCORE.md) averages 10000/N whatever the AI does.
   net territory and eliminations flat. A broader variant (gate on any economy building, no finance
   condition) gave more research (+12%) but cut captures ~25% and shrank the top empire -- it
   dampened healthy conquerors, so the upkeep-strained condition was kept.
-- Sieges: one operation at a time; armies are small (at war the operation spends half its turns
-  gathering, typically 2-3 units against a need of 4-6), so a barbarian town of 5+ archers is
-  out of reach and is left alone; casters cast before the strike but do not attack
+- Sieges: one operation at a time. At the declaration the army is large (23 units against a
+  computed need of 10, 24 full games, 2026-10-21) and the committed stacks stay together (3-6
+  stacks, striking together, in the traced wars), but a war we declare takes a city 38% of the
+  time; about 40% of them end in our own peace for tribute at turn 11, which pays better than
+  fighting on (refusing it cost wins, docs/AI_LOG.md, "Wars"). The lever left is the operation's
+  own estimate: sell the war when the next city is out of reach, fight on when it is close. A
+  barbarian town of 5+ archers is out of reach and is left alone; casters cast before the strike but do not attack
   ("Spellcasting"); a city emptied of defenders is entered even when a counterattack will retake
   it. Tried and dropped (no measurable effect on seeds 1-48): raiding (pillaging) while a war
   operation gathers, a "can we hold it" check before the strike, every unit following the victor
@@ -1862,9 +2021,9 @@ share score (docs/SCORE.md) averages 10000/N whatever the AI does.
   hit. Reverted; the `FFH_AI_EXPOSURE` counter is kept as observation tooling. A fix that helped
   would have to avoid *creating* the exposure -- danger-aware movement that ends each turn on a
   safe plot -- without making stacks passive, which is a pathfinding change, not a retreat rule.
-- No hurrying beyond the civic-gated gold/population hurries, no wonder racing, no vassals or
-  defensive pacts; the vote sources (Overcouncil / Undercouncil) use the defaults: every AI
-  abstains and an AI secretary never picks a resolution, so both councils are inert.
+- No hurrying beyond the civic-gated gold/population hurries and chops for settlers, workers and
+  world wonders, no wonder racing; the vote sources (Overcouncil / Undercouncil) use the defaults:
+  every AI abstains and an AI secretary never picks a resolution, so both councils are inert.
 - Speed: path finding is about 30% of late-game time.
 - Measured on branches never merged (built on the master of 2026-10-15, not re-measured on fresh
   seeds; expect conflicts): `origin/handoff/ai3b-siege-estimate` (exact strike odds over the
@@ -1874,8 +2033,8 @@ share score (docs/SCORE.md) averages 10000/N whatever the AI does.
   (Kuriotates settlements without the research collapse: +54 legacy score, t 2.3, over 80 games;
   possibly superseded by `civs/kuriotates.rs`).
 - Victories: nearly every decided game is a cultural victory. The Tower of Mastery needs 16
-  manas and the AI neither trades resources nor conquers for mana, so the estimate is out of
-  reach in every measured game; Great Prophets lightbulb instead of building the six altar
+  manas, which the AI neither seeks in trades nor conquers for (and it does not pursue the Tower
+  any more, the owner's decision); Great Prophets lightbulb instead of building the six altar
   stages; domination needs two thirds of the land and the siege operations take about one city
   per war; the religious victory (80% of the world's people) is not pursued.
 - Casters ("Spellcasting"): the AI casts with the casters it has but trains almost none (no AI

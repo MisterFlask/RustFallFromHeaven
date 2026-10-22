@@ -6,6 +6,7 @@
 #![allow(unused_imports)]
 use super::{civ_team_ids, is_option};
 use crate::defs::*;
+use crate::controller::AiHook;
 use crate::game::Game;
 use crate::ids::*;
 use crate::structs::*;
@@ -164,6 +165,9 @@ impl Game {
         debug_assert!(other != t, "eTeam is not expected to be equal with getID()");
 
         if !self.teams[t].at_war[other] {
+            if self.telemetry.on() {
+                self.tel_declare_war(t, other, war_plan);
+            }
             //FfH: Added by Kael 11/29/2007
             for p in self.player_ids() {
                 if self.players[p].team == t {
@@ -403,6 +407,9 @@ impl Game {
         debug_assert!(other != t, "eTeam is not expected to be equal with getID()");
 
         if self.teams[t].at_war[other] {
+            if self.telemetry.on() {
+                self.tel_make_peace(t, other);
+            }
             for p in self.player_ids() {
                 if self.players[p].team == t || self.players[p].team == other {
                     self.player_update_plunder(p, -1, false);
@@ -992,6 +999,9 @@ impl Game {
 
             change_master_outside_units(self, master, -1);
 
+            if self.telemetry.on() {
+                self.tel_vassal(t, master, value, capitulated);
+            }
             self.teams[t].vassal[master] = value;
             // Score v2 moves half of a vassal's people and land to its master (docs/SCORE.md).
             self.score_dirty = true;
@@ -1213,12 +1223,16 @@ impl Game {
     pub fn team_ai_set_war_plan(&mut self, t: TeamId, other: TeamId, plan: Option<WarPlanType>, war: bool) {
         if self.teams[t].ai_war_plan[other] != plan {
             if war || !self.teams[t].at_war[other] {
+                if self.telemetry.on() {
+                    self.tel_war_plan(t, other, plan);
+                }
                 self.teams[t].ai_war_plan[other] = plan;
 
                 // AI_setWarPlanStateCounter(eIndex, 0)
                 self.teams[t].ai_war_plan_state_counter[other] = 0;
 
                 // AI: AI_updateAreaStragies() (area AI types, AI-only state).
+                self.ai_hook_team(t, AiHook::TeamAreaStrategies(t));
 
                 for p in self.player_ids() {
                     if self.players[p].alive {

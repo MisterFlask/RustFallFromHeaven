@@ -69,6 +69,24 @@ python3 crates/ffh-cli/scripts/ai_metrics.py --bin $BASE/ffh --seeds 1-12 --out 
 python3 crates/ffh-cli/scripts/ai_metrics.py --bin $NEW/ffh --seeds 1-12 --compare base.json
 ```
 
+## Performance A/B (behaviour-identical changes)
+
+```
+tools/agents/perf-ab.sh same --set dev --soak     # bit-identical games against the base?
+tools/agents/perf-ab.sh same --set val            # then on configs not used while working
+tools/agents/perf-ab.sh time --rounds 3           # interleaved CPU timing (seed 1, 8 civs, standard, 400 turns)
+tools/agents/perf-ab.sh time --config H1          # the 18-civ huge map
+```
+
+`perf-ab.sh` (`perf_ab.py`) takes `--base` and `--new` like `ab.sh` (a revision, a worktree or a
+build output dir; default: the merge-base with master, and this worktree). `same` plays each
+config of a set with both builds through the run cache and the CPU slots and compares every
+turn's sync checksum, units and cities and the final summary; `--soak` adds 3 human-slot games
+(`ffh-play soak run`) compared by checksum and final save hash. `time` holds every CPU slot and
+the build lock and alternates the two builds; whole runs drift by 5-20% between sessions on this
+shared host, so only the per-round ratios of one session mean something. docs/PERF.md has the
+rules for performance changes and `tools/perf-stacks.py` for reading profiles.
+
 ## Run games
 
 - `ai_metrics.py` (when the cache dir exists) looks each game up in the run cache and takes a CPU

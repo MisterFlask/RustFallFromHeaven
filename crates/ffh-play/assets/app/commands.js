@@ -41,6 +41,7 @@ async function loop(c, quiet) {
   let next = c;
   for (let round = 0; round < 4 && next; round++) {
     let reply;
+    emit("sending", next);
     try {
       reply = await api.cmd(next.c, strip(next));
     } catch (e) {

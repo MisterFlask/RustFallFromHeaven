@@ -107,6 +107,9 @@ impl Game {
         if !self.unit_can_promote(u, promotion, leader_unit) {
             return;
         }
+        if let (true, Some(promotion)) = (self.telemetry.on(), promotion) {
+            self.tel_promote(u, promotion);
+        }
 
         if let Some(leader_id) = leader_unit {
             if let Some(warlord) = owner_unit(self, u, leader_id) {
@@ -672,6 +675,15 @@ impl Game {
 
     /// C++ `CvUnit::upgrade` (CvUnit.cpp:8430-8470).
     pub fn unit_upgrade(&mut self, u: UnitId, unit_type: Option<UnitType>) {
+        if !self.telemetry.on() {
+            return self.unit_upgrade_inner(u, unit_type);
+        }
+        self.tel_ctx_push("upgraded");
+        self.unit_upgrade_inner(u, unit_type);
+        self.tel_ctx_pop();
+    }
+
+    fn unit_upgrade_inner(&mut self, u: UnitId, unit_type: Option<UnitType>) {
         if !self.unit_can_upgrade(u, unit_type, false) {
             return;
         }
@@ -682,6 +694,9 @@ impl Game {
 
         let owner = self.units[u].owner;
         let price = self.unit_upgrade_price(u, unit_type);
+        if self.telemetry.on() {
+            self.tel_upgrade(u, unit_type, price);
+        }
         // `changeGold(-(upgradePrice(eUnit)))` (the rest of setGold is interface updates).
         self.players[owner].gold += -price;
 

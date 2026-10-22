@@ -66,6 +66,8 @@ pub const POLICIES: &[(&str, Policy)] = &[
     ("attitude", Policy::Advisor),
     ("take_control", Policy::Blocking),
     ("update_automated_group", Policy::Advisor),
+    ("hook", Policy::Advisor),
+    ("assign_working_plots", Policy::Advisor),
 ];
 
 /// An answer to a blocking decision.
@@ -481,5 +483,13 @@ impl Controller for HumanController {
 
     fn update_automated_group(&self, g: &mut Game, grp: GroupId) -> bool {
         self.advisor.update_automated_group(g, grp)
+    }
+
+    fn hook(&self, g: &mut Game, h: ffh_core::controller::AiHook) {
+        self.advisor.hook(g, h)
+    }
+
+    fn assign_working_plots(&self, g: &mut Game, c: CityId) -> bool {
+        self.advisor.assign_working_plots(g, c)
     }
 }

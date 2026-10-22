@@ -219,15 +219,30 @@ pub fn set_human_options(g: &mut Game, human: PlayerId) {
 /// speeds, handicaps, eras, climates, sea levels, visible game options, victories, and the
 /// defaults (`NewGame::new`).
 pub fn setup_lists(d: &GameData) -> Json {
-    fn list<T: names::Named>(d: &GameData, keep: impl Fn(T) -> bool) -> Json {
+    /// The entries kept, each with its `help` (Civ4 markup; omitted when empty).
+    fn list_help<T: names::Named>(d: &GameData, keep: impl Fn(T) -> bool, help: impl Fn(T) -> String) -> Json {
         Json::Arr(
             (0..T::count(d))
                 .map(T::from_usize)
                 .filter(|&t| keep(t))
-                .map(|t| crate::jobj! { "id" => Json::idx(t), "type" => names::name(d, t), "name" => names::display(d, t).into_owned() })
+                .map(|t| {
+                    let mut j = crate::jobj! { "id" => Json::idx(t), "type" => names::name(d, t), "name" => names::display(d, t).into_owned() };
+                    let h = help(t);
+                    if !h.is_empty() {
+                        j.set("help", h);
+                    }
+                    j
+                })
                 .collect(),
         )
     }
+    // An XML help text (empty when it has none).
+    let xml = |key: &str| {
+        let t = names::text(d, key);
+        if key.is_empty() || t == key { String::new() } else { t.to_string() }
+    };
+    // A leader's civilization (the first that has it), for its hero, world spell and unique units.
+    let civ_of = |l: LeaderHeadType| d.civilizations.keys().find(|&c| d.civilizations[c].leaders[l]);
     let civs = Json::Arr(
         d.civilizations
             .keys()
@@ -239,21 +254,25 @@ pub fn setup_lists(d: &GameData) -> Json {
                     "type" => names::name(d, c),
                     "name" => names::display(d, c).into_owned(),
                     "leaders" => Json::Arr(leaders),
+                    // What it brings (C++ `parseCivInfos`) and its pedia text.
+                    "help" => crate::view::help::civ::civ_help(d, c),
+                    "pedia" => xml(&d.civilizations[c].base.civilopedia),
                 }
             })
             .collect(),
     );
     crate::jobj! {
         "civilizations" => civs,
-        "leaders" => list::<LeaderHeadType>(d, |_| true),
-        "worlds" => list::<WorldSizeType>(d, |_| true),
-        "speeds" => list::<GameSpeedType>(d, |_| true),
-        "handicaps" => list::<HandicapType>(d, |_| true),
-        "eras" => list::<EraType>(d, |_| true),
-        "climates" => list::<ClimateType>(d, |_| true),
-        "sea_levels" => list::<SeaLevelType>(d, |_| true),
-        "options" => list::<GameOptionType>(d, |o| d.game_options[o].visible && o != GameOptionType::GAMEOPTION_ADVANCED_START),
-        "victories" => list::<VictoryType>(d, |_| true),
+        // Each leader's alignment, hero, world spell and traits (C++ `parseLeaderTraits`).
+        "leaders" => list_help::<LeaderHeadType>(d, |_| true, |l| crate::view::help::civ::leader_help(d, l, civ_of(l))),
+        "worlds" => list_help::<WorldSizeType>(d, |_| true, |w| xml(&d.worlds[w].base.help)),
+        "speeds" => list_help::<GameSpeedType>(d, |_| true, |s| xml(&d.game_speeds[s].base.help)),
+        "handicaps" => list_help::<HandicapType>(d, |_| true, |h| xml(&d.handicaps[h].base.help)),
+        "eras" => list_help::<EraType>(d, |_| true, |e| xml(&d.eras[e].base.help)),
+        "climates" => list_help::<ClimateType>(d, |_| true, |c| xml(&d.climates[c].base.help)),
+        "sea_levels" => list_help::<SeaLevelType>(d, |_| true, |s| xml(&d.sea_levels[s].base.help)),
+        "options" => list_help::<GameOptionType>(d, |o| d.game_options[o].visible && o != GameOptionType::GAMEOPTION_ADVANCED_START, |o| xml(&d.game_options[o].base.help)),
+        "victories" => list_help::<VictoryType>(d, |_| true, |v| xml(&d.victories[v].base.help)),
         "max_opponents" => MAX_CIV_PLAYERS - 1,
         "defaults" => NewGame::new(d, 1).to_json(),
     }

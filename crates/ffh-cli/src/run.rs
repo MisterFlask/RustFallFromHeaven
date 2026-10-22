@@ -132,6 +132,55 @@ pub struct TurnStat {
     pub cities: usize,
 }
 
+/// ffh-ai with the citizen management of the C++ AI port (`FFH_CPPAI_CITIZENS=1`): every
+/// decision is ffh-ai's except `assign_working_plots`, which is `CvCityAI::AI_assignWorkingPlots`
+/// (ffh-cppai). An analysis switch (docs/CPPAI.md), not a game mode.
+struct CppCitizens {
+    inner: ControllerRef,
+    cai: ffh_cppai::Cai,
+}
+
+impl Controller for CppCitizens {
+    fn name(&self) -> &str {
+        self.inner.name()
+    }
+    fn play_turn(&self, g: &mut Game, p: PlayerId) {
+        self.inner.play_turn(g, p)
+    }
+    fn choose_production(&self, g: &mut Game, c: CityId) {
+        self.inner.choose_production(g, c)
+    }
+    fn choose_research(&self, g: &Game, p: PlayerId) -> Option<TechType> {
+        self.inner.choose_research(g, p)
+    }
+    fn raze_conquered_city(&self, g: &Game, p: PlayerId, c: CityId) -> bool {
+        self.inner.raze_conquered_city(g, p, c)
+    }
+    fn choose_event(&self, g: &Game, p: PlayerId, t: &EventTriggeredData, options: &[EventType]) -> Option<EventType> {
+        self.inner.choose_event(g, p, t, options)
+    }
+    fn consider_offer(&self, g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData], we_give: &[TradeData]) -> bool {
+        self.inner.consider_offer(g, p, from, they_give, we_give)
+    }
+    fn choose_religion(&self, g: &Game, p: PlayerId) -> Option<ReligionType> {
+        self.inner.choose_religion(g, p)
+    }
+    fn attitude(&self, g: &Game, p: PlayerId, towards: PlayerId) -> AttitudeType {
+        self.inner.attitude(g, p, towards)
+    }
+    fn update_automated_group(&self, g: &mut Game, grp: GroupId) -> bool {
+        self.inner.update_automated_group(g, grp)
+    }
+    fn assign_working_plots(&self, g: &mut Game, c: CityId) -> bool {
+        // Barbarian cities keep the rules' governor (the comparison is about the civs).
+        if g.player_is_barbarian(g.cities[c].owner) {
+            return false;
+        }
+        self.cai.city_ai_assign_working_plots(g, c);
+        true
+    }
+}
+
 /// A new game with the AI on every slot; the returned `Timed` measures AI time.
 pub fn new_game(cfg: &RunConfig) -> (Game, Arc<Timed>) {
     let d = ffh_data::global();
@@ -148,15 +197,56 @@ pub fn new_game(cfg: &RunConfig) -> (Game, Arc<Timed>) {
         setup.players[slot].civ = Some(civ);
         setup.players[slot].leader = Some(leaders[cfg.seed as usize % leaders.len()]);
     }
+    // FFH_PLAYER_HANDICAP=<slot>:HANDICAP_X,...: per-slot handicap (`CvInitCore::getHandicap`),
+    // for head-to-head runs that give one side an easier difficulty.
+    if let Ok(v) = std::env::var("FFH_PLAYER_HANDICAP") {
+        for item in v.split(',').filter(|s| !s.is_empty()) {
+            let (slot, name) = item.split_once(':').expect("FFH_PLAYER_HANDICAP: <slot>:HANDICAP_X,...");
+            let slot: usize = slot.trim().parse().expect("FFH_PLAYER_HANDICAP: slot number");
+            setup.players[slot].handicap = Some(d.t::<HandicapType>(name.trim()));
+        }
+    }
     let mut g = Game::new(d, setup);
     g.handicap = o.handicap;
     g.map_script = Arc::new(FractalMapScript::default());
     let timed = Arc::new(Timed::new(ffh_ai::ai_controller()));
-    let ai: ControllerRef = timed.clone();
+    let mut ai: ControllerRef = timed.clone();
+    if std::env::var_os("FFH_CPPAI_CITIZENS").is_some() {
+        ai = Arc::new(CppCitizens { inner: ai, cai: ffh_cppai::Cai::new(cfg.seed) });
+    }
     for p in g.player_ids() {
         g.controllers[p] = ai.clone();
     }
+    // FFH_CPPAI=<player>,<player>,... | all | even | odd (barbarians: `barb`): those players are
+    // played by the port of the FFH2 C++ AI (ffh-cppai) instead of ffh-ai.
+    if let Ok(v) = std::env::var("FFH_CPPAI") {
+        let cppai = ffh_cppai::cppai_controller(cfg.seed);
+        let barb = g.barbarian_player();
+        for p in g.player_ids() {
+            let on = v.split(',').any(|s| match s.trim() {
+                "all" => p != barb,
+                "even" => p != barb && p.0 % 2 == 0,
+                "odd" => p != barb && p.0 % 2 == 1,
+                "barb" => p == barb,
+                n => n.parse::<u8>().ok() == Some(p.0),
+            });
+            if on {
+                g.controllers[p] = cppai.clone();
+            }
+        }
+    }
     g.autorun = true;
+    // FFH_TELEMETRY=1: record what the players do and why (ffh_core::telemetry, docs/TELEMETRY.md;
+    // `ffh stats` adds the aggregates as "telemetry"). FFH_TELEMETRY_FILE=<path> also writes
+    // every event to that file, one JSON object per line.
+    let tel_file = std::env::var("FFH_TELEMETRY_FILE").ok();
+    if tel_file.is_some() || std::env::var_os("FFH_TELEMETRY").is_some() {
+        let events = tel_file.map(|f| {
+            let file = std::fs::File::create(&f).unwrap_or_else(|e| panic!("FFH_TELEMETRY_FILE {f}: {e}"));
+            Box::new(std::io::BufWriter::new(file)) as Box<dyn std::io::Write + Send>
+        });
+        g.telemetry = ffh_core::telemetry::Telemetry::new(events);
+    }
     // FFH_LOG=1 (all players) or FFH_LOG=<player id>: print the game log as it is written.
     if std::env::var("FFH_LOG").is_ok() {
         g.log.enabled = true;

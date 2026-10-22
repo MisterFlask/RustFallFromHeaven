@@ -29,10 +29,11 @@ pub mod setup;
 pub mod slab;
 pub mod structs;
 pub mod team;
+pub mod telemetry;
 pub mod unit;
 pub mod utils;
 
-pub use controller::{Controller, ControllerRef, NullController};
+pub use controller::{AiHook, Controller, ControllerRef, NullController};
 pub use game::Game;
 pub use ids::*;
 pub use setup::{GameSetup, PlayerSetup, SlotStatus};

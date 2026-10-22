@@ -1,10 +1,14 @@
 # ffh2-rs: Fall from Heaven 2 (0.41) ported to Rust
 
 **New session?** Read this file, `README.md` and the doc for the area you touch (`docs/PORTING.md`,
-`docs/AI.md` + `docs/AI_LOG.md`, `docs/PLAY_DESIGN.md` + `docs/HUMAN.md`, `docs/ART.md`, `docs/R3D.md`,
-`docs/SCORE.md`). What is merged is what git says (`git log origin/master`); open work and known
-gaps live in the area docs, not in a session log. Out of scope for now (the owner's call):
-scenarios, and porting the C++ AI.
+`docs/AI.md` + `docs/AI_LOG.md` + `docs/TELEMETRY.md`, `docs/PLAY_DESIGN.md` + `docs/HUMAN.md`, `docs/ART.md`,
+`docs/R3D.md`, `docs/SCORE.md`, `docs/PERF.md`). What is merged is what git says (`git log origin/master`);
+open work and known gaps live in the area docs, not in a session log. Out of scope for now (the owner's
+call): scenarios. The C++ AI is ported only as a benchmark to measure ffh-ai against (`crates/ffh-cppai`,
+docs/CPPAI.md; kept on master by the owner's request, 2026-10-21), not as the game's AI.
+Performance and AI-improvement work ignores it (the owner's call, 2026-10-21: no mileage in it):
+don't optimize, tune or extend it, and leave it out of sprint measurements unless the owner asks
+for a comparison; when an ffh-core change breaks its build, make the minimal mechanical fix.
 
 Port of the FFH2 0.41 Civ4 mod (base mod only), the base for a game of its own. The rules
 engine (DLL C++ + rules Python) was ported function by function; the AI is new. FFH2 0.41 is
@@ -19,6 +23,7 @@ data/text/en.tsv English text (TXT_KEY -> string)
 crates/ffh-data  XML -> typed info tables (port of CvInfos.cpp / CvXMLLoadUtility)
 crates/ffh-core  rules engine (port of CvGame/CvPlayer/CvTeam/CvCity/CvUnit/CvPlot/... + rules Python)
 crates/ffh-ai    AI players (new design)
+crates/ffh-cppai the FFH2 C++ AI ported as a second controller, for head-to-head comparison (docs/CPPAI.md)
 crates/ffh-cli   `ffh` binary: autoplay, benchmarks, inspection
 crates/ffh-stress `ffh-stress` binary: AI games over a settings matrix, crashes caught per game
 crates/ffh-play  `ffh-play`: human play (docs/PLAY_DESIGN.md, docs/HUMAN.md)
@@ -211,21 +216,62 @@ which forward to the C++ methods -- so port each Cy call to the corresponding po
 - Tests that rely on a seed's story (`crates/ffh-play/tests/*`: a bot survives, a city is
   captured) break when the AI changes; make them robust to that (their comments say how, e.g.
   re-pick a seed with `ffh-play bot --seed S`) rather than asserting one game's outcome.
+- **Merging to master** (the owner's standing permission, 2026-10-21): once a change passes the
+  gate (`tools/agents/build-tree.sh --test`, `ffh data` with 0 warnings, `bash tools/web-check.sh`)
+  and the end-to-end tests (`node tools/web-smoke.mjs --bin <built>/ffh-play`; the static site's
+  smoke as well when the change reaches the site, below) all pass, merge it into master
+  (fast-forward when possible) and push, without asking. This holds even when the session was
+  told to develop on another branch: push that branch too. Master is deployed to the public site
+  by CI, so never push it with a failing or skipped check; say what failed instead.
+- **End the turn that pushes master** with the line `WORK ITEMS HAVE BEEN PUSHED TO MASTER`,
+  followed by a clickable link to the game in the browser (the owner's request, 2026-10-21):
+  `[Play in the browser](https://misterflask.github.io/RustFallFromHeaven/)` (CI deploys master
+  there a few minutes after the push).
 
 ## AI changes
 
+- **The AI plays the way an expert human would** (the owner's decision, 2026-10-21). In broad
+  strokes its strategy and tactics are the ones a strong player would conceptualize and could
+  explain: settle good land while it is free, defend what it holds, fight when it has the edge and
+  make peace when it does not, use every tool its civilization has, give up independence when
+  hopelessly behind. Flavor and fun override this where a rule below says so. Design a behaviour
+  from that picture (what the expert sees, wants and does), not by searching for whatever scores
+  best. Hill climbing on win rate tunes such behaviours at the margin (thresholds, weights,
+  timing) and catches implementations that misfire; it does not decide whether a sound behaviour
+  exists. When a sound behaviour costs win rate, find out why in the games: usually it is the
+  implementation, sometimes the game's balance, which is worth reporting.
 - **Start from `docs/AI_LOG.md`**, the log of AI changes that did not move the win rate, for the
   area you are about to change: each entry says why the idea made sense, why it failed in the
   games, and what that implies about the right version (or about the game's balance) -- both a
   warning and a source of better ideas.
-- Measure on development seeds, then validate on seeds never used to choose anything, the change
-  on against the same binary with it off (`civ_ab.py --off-base` / `FFH_AI_CIV_OFF` for a
-  civilization's logic; docs/AI.md, "Tools"). Keep a change only if neither the win rate nor the
-  share at the end falls; development-seed gains alone are not results.
+- Measure every change on development seeds, then validate it on seeds never used to choose
+  anything, the change on against the same binary with it off (`civ_ab.py --off-base` /
+  `FFH_AI_CIV_OFF` for a civilization's logic; docs/AI.md, "Tools"). Telemetry
+  (docs/TELEMETRY.md) shows whether a behaviour fires when and as it should. For tuning (a
+  threshold, a weight, a heuristic competing with others), keep a change only if neither the win
+  rate nor the share at the end falls; development-seed gains alone are not results. A behaviour
+  the expert-play rule calls for stays, and what it costs is worked on, as for the flavor rules
+  below.
 - **Civilizations use their unique mechanics** (the owner's decision, 2026-10-20): a
   civilization's own units, spells and abilities are part of how it plays, so its AI uses them
   whether or not they directly benefit it. The win-rate rule above does not decide whether a
   civilization uses its own mechanics; measure what they cost and improve how they are used.
+- **Conquest and domination are a flavor drive** (the owner's decision, 2026-10-21): the Clan of
+  Embers, the Doviello, the Bannor, any other canonically warlike civilization, and every leader
+  with `TRAIT_AGGRESSIVE` play with an expansion drive, not a victory goal pursued once in reach:
+  they keep looking for the easiest way to grow -- a settler site or a weaker nearby civ's
+  cities -- and take it, again and again, whether or not it raises their win rate. As with unique
+  mechanics, the win-rate rule decides how well they do it, not whether (docs/AI.md, "Victory
+  pursuit").
+- **Hopeless civilizations become vassals** (the owner's decision, 2026-10-21). A civilization
+  that has fallen hopelessly behind offers to become the vassal of a much stronger neighbour it is
+  at least decently aligned with, and agrees when asked. "Hopelessly behind" means in technology,
+  power and its share of the world. "Decently aligned" means no good/evil opposition, and an
+  attitude its leader's pride accepts. One being crushed in a war capitulates to the conqueror,
+  whatever it thinks of it (docs/AI.md, "Vassal states").
+- **The AI does not pursue the Tower of Mastery or the Altar of the Luonnotar** (the owner's
+  decision, 2026-10-21: boring solitaire victories, and the Tower needs a huge territory anyway).
+  It still stops a rival about to win one (docs/AI.md, "Victory pursuit").
 - **Every measured change that fails gets an entry in `docs/AI_LOG.md` before it is reverted**:
   (1) why it made sense, (2) why it did not move the win rate, from the games themselves (what
   happened when it fired: counts, checkpoints, `FFH_AI_TRACE` replays), (3) what that implies.
@@ -273,4 +319,5 @@ A change to the transport, the web host or `crates/ffh-web` also runs the static
 before it goes to master (`tools/web-site.sh OUT`, then `node tools/web-site-smoke.mjs --site OUT`;
 docs/WEB.md): master is deployed to the public site by CI.
 
-When a batch passes the gate, fast-forward master and push it without asking.
+When a batch passes the gate and the end-to-end tests, merge it to master and push it without
+asking ("Merging to master" under Workflow).

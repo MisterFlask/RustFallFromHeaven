@@ -54,16 +54,29 @@ pub fn choose(ai: &Ai, g: &mut Game, c: CityId) {
             g.unit_ai_set_unit_ai_type(u, UnitAIType::UNITAI_CITY_DEFENSE);
         }
     }
-    if let Some(choice) = decide(ai, g, c) {
+    if let Some((choice, why)) = decide(ai, g, c) {
         crate::trace!(g, p, "{} size {} builds {}", g.cities[c].name, g.cities[c].population, choice_name(g, choice));
+        g.tel_decision(p, "production", type_name(g, choice), why, 0, String::new);
         push(g, c, choice);
     }
     if g.cities[c].order_queue.is_empty() {
         // Never leave a city idle: anything it can make.
         if let Some(choice) = fallback(g, c) {
             crate::trace!(g, p, "{} size {} falls back to {}", g.cities[c].name, g.cities[c].population, choice_name(g, choice));
+            g.tel_decision(p, "production", type_name(g, choice), "fallback", 0, String::new);
             push(g, c, choice);
         }
+    }
+}
+
+/// The type name of what a choice makes (telemetry).
+fn type_name(g: &Game, choice: Choice) -> &'static str {
+    let d = g.d;
+    match choice {
+        Choice::Train(u, _) => d.units[u].base.type_.as_str(),
+        Choice::Construct(b) => d.buildings[b].base.type_.as_str(),
+        Choice::Create(pr) => d.projects[pr].base.type_.as_str(),
+        Choice::Maintain(pr) => d.processes[pr].base.type_.as_str(),
     }
 }
 
@@ -367,7 +380,7 @@ struct Ctx {
     afford: bool,
 }
 
-fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
+fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static str)> {
     let d = g.d;
     let city = &g.cities[c];
     let p = city.owner;
@@ -431,11 +444,11 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
     // Fortified defenders in a city fight at about 1.5x their strength.
     if ctx.defenders == 0 || (ctx.threat > 0 && ctx.defense * 3 / 2 < ctx.threat && ctx.defenders < needed + 2) {
         if let Some(u) = best_unit(g, c, Role::Defense) {
-            return Some(Choice::Train(u, UnitAIType::UNITAI_CITY_DEFENSE));
+            return Some((Choice::Train(u, UnitAIType::UNITAI_CITY_DEFENSE), "garrison"));
         }
     }
     if barbarian {
-        return best_unit(g, c, Role::Attack).map(|u| Choice::Train(u, UnitAIType::UNITAI_ATTACK));
+        return best_unit(g, c, Role::Attack).map(|u| (Choice::Train(u, UnitAIType::UNITAI_ATTACK), "barbarian"));
     }
 
     let workers = count_ai(g, p, UnitAIType::UNITAI_WORKER);
@@ -447,20 +460,20 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
     // 2. The first worker, once workers have something to do.
     if workers == 0 && can_improve && safe && (ctx.pop >= 2 || ctx.food_surplus <= 1) {
         if let Some(u) = best_unit(g, c, Role::Worker) {
-            return Some(Choice::Train(u, UnitAIType::UNITAI_WORKER));
+            return Some((Choice::Train(u, UnitAIType::UNITAI_WORKER), "first_worker"));
         }
     }
 
     // A second defender before more settlers once the barbarians are about.
     if g.game_turn() > 30 && ctx.defenders < 2 && (ctx.capital || barbarians_near(g, p, plot, 4)) {
         if let Some(u) = best_unit(g, c, Role::Defense) {
-            return Some(Choice::Train(u, UnitAIType::UNITAI_CITY_DEFENSE));
+            return Some((Choice::Train(u, UnitAIType::UNITAI_CITY_DEFENSE), "second_defender"));
         }
     }
 
     // A victory a few turns away comes before expansion (victory.rs).
     if safe {
-        if let Some(choice) = crate::victory::production(g, c, true) { return Some(choice); } // victory-pursuit
+        if let Some(choice) = crate::victory::production(g, c, true) { return Some((choice, "victory_soon")); } // victory-pursuit
     }
 
     // An explorer while much of our landmass is unknown (sites, goody huts, contact with
@@ -472,7 +485,7 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
             if unknown * 5 > g.map.areas[a].num_tiles && unknown > 20 {
                 if let Some(u) = best_unit(g, c, Role::Explore).or_else(|| best_unit(g, c, Role::Attack)) {
                     if g.city_production_turns_left_unit(c, u, 0) <= 10 {
-                        return Some(Choice::Train(u, UnitAIType::UNITAI_EXPLORE));
+                        return Some((Choice::Train(u, UnitAIType::UNITAI_EXPLORE), "explorer"));
                     }
                 }
             }
@@ -482,13 +495,13 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
     // 3. Settlers while good sites remain in reach.
     let settler = crate::expansion::settler_choice(ai, g, c, ctx.p, ctx.threat, ctx.defense); // early-expansion
     if let SettlerPlan::Now(choice) = settler {
-        return Some(choice);
+        return Some((choice, "settler"));
     }
-    if let Some(choice) = crate::civs::production(ai, g, c, ctx.threat) { return Some(choice); } // civ-mechanics
+    if let Some(choice) = crate::civs::production(ai, g, c, ctx.threat) { return Some((choice, "civ_mechanics")); } // civ-mechanics
     // An assault fleet (transport + attackers) for an overseas enemy city we can take.
     if safe && crate::naval::is_coastal_city(g, c) {
         if let Some(choice) = crate::naval::assault_production(g, c) {
-            return Some(choice);
+            return Some((choice, "assault_fleet"));
         }
     }
     // A ship for a settler waiting in port; a sea explorer while our land is full and
@@ -496,7 +509,7 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
     if safe && crate::naval::is_coastal_city(g, c) {
         if crate::naval::settler_waiting(g, p).is_some() && crate::naval::num_transports(g, p) == 0 {
             if let Some(u) = best_unit(g, c, Role::Transport) {
-                return Some(Choice::Train(u, UnitAIType::UNITAI_SETTLER_SEA));
+                return Some((Choice::Train(u, UnitAIType::UNITAI_SETTLER_SEA), "settler_ship"));
             }
         }
         if count_ai(g, p, UnitAIType::UNITAI_EXPLORE_SEA) == 0
@@ -508,7 +521,7 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
             let unknown = g.map.num_plots() as i32 - g.map.areas.iter().map(|(_, a)| a.num_revealed_tiles[pl.team]).sum::<i32>();
             if unknown * 5 > g.map.num_plots() as i32 {
                 if let Some(u) = best_unit(g, c, Role::SeaExplore) {
-                    return Some(Choice::Train(u, UnitAIType::UNITAI_EXPLORE_SEA));
+                    return Some((Choice::Train(u, UnitAIType::UNITAI_EXPLORE_SEA), "sea_explorer"));
                 }
             }
         }
@@ -518,7 +531,7 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
         let need: i32 = pl.cities.iter().map(|&o| sea_resources_unimproved(g, o)).sum();
         if count_ai(g, p, UnitAIType::UNITAI_WORKER_SEA) < need.min(ctx.n_cities) {
             if let Some(u) = best_unit(g, c, Role::SeaWorker) {
-                return Some(Choice::Train(u, UnitAIType::UNITAI_WORKER_SEA));
+                return Some((Choice::Train(u, UnitAIType::UNITAI_WORKER_SEA), "work_boat"));
             }
         }
     }
@@ -529,7 +542,7 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
     // Training Yard for axemen, ...): build it when it opens a clearly better unit.
     if safe && ctx.pop >= 2 {
         if let Some(b) = enabler_building(g, c, ctx.threat) {
-            return Some(Choice::Construct(b));
+            return Some((Choice::Construct(b), "unit_enabler"));
         }
     }
 
@@ -543,7 +556,7 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
     needed += crate::victory::guard(g, c); // victory-pursuit
     if ctx.defenders < needed {
         if let Some(u) = best_unit(g, c, Role::Defense) {
-            return Some(Choice::Train(u, UnitAIType::UNITAI_CITY_DEFENSE));
+            return Some((Choice::Train(u, UnitAIType::UNITAI_CITY_DEFENSE), "defender_quota"));
         }
     }
 
@@ -552,7 +565,7 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
     let min_army = if ctx.broke { 1 + ctx.n_cities / 4 } else { 1 + ctx.n_cities / 2 };
     if attackers < min_army && (ctx.production >= 3 || settler == SettlerPlan::Soon) && (ctx.afford || attackers == 0) {
         if let Some(u) = best_unit(g, c, Role::Attack) {
-            return Some(Choice::Train(u, UnitAIType::UNITAI_ATTACK));
+            return Some((Choice::Train(u, UnitAIType::UNITAI_ATTACK), "barbarian_force"));
         }
     }
 
@@ -561,7 +574,7 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
         let target = worker_target(g, p);
         if workers < target && ctx.pop >= 2 {
             if let Some(u) = best_unit(g, c, Role::Worker) {
-                return Some(Choice::Train(u, UnitAIType::UNITAI_WORKER));
+                return Some((Choice::Train(u, UnitAIType::UNITAI_WORKER), "workers"));
             }
         }
     }
@@ -569,19 +582,19 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
     // Victory pursuit (victory.rs): the towers in our best cities, culture in the cities
     // nearest legendary -- after the garrison, the first army and the workers.
     if safe {
-        if let Some(choice) = crate::victory::production(g, c, false) { return Some(choice); } // victory-pursuit
+        if let Some(choice) = crate::victory::production(g, c, false) { return Some((choice, "victory")); } // victory-pursuit
     }
 
     // 7. Heroes are unique and strong (but not at the cost of the first expansion); a coastal city
     // trains a hero ship (the Lanun's Black Wind, which serves as a transport).
     if let Some(u) = best_unit(g, c, Role::Hero) {
         if g.city_production_turns_left_unit(c, u, 0) <= max_turns.min(25) || ctx.n_cities >= 3 {
-            return Some(Choice::Train(u, UnitAIType::UNITAI_HERO));
+            return Some((Choice::Train(u, UnitAIType::UNITAI_HERO), "hero"));
         }
     }
     if let Some(u) = best_unit(g, c, Role::SeaHero) {
         if g.city_production_turns_left_unit(c, u, 0) <= max_turns.min(25) || ctx.n_cities >= 3 {
-            return Some(Choice::Train(u, d.units[u].default_unit_ai_type.unwrap_or(UnitAIType::UNITAI_ATTACK_SEA)));
+            return Some((Choice::Train(u, d.units[u].default_unit_ai_type.unwrap_or(UnitAIType::UNITAI_ATTACK_SEA)), "hero_ship"));
         }
     }
 
@@ -599,10 +612,10 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
     // At war (or preparing): a third of the army in siege engines. A stack camped next to a
     // city it cannot take (a barbarian town, say) asks for a couple as well.
     let siege = count_ai(g, p, UnitAIType::UNITAI_ATTACK_CITY) + count_ai(g, p, UnitAIType::UNITAI_COLLATERAL);
-    if let Some(choice) = crate::campaign::army_choice(g, c, attackers - siege, siege, ctx.afford) { return Some(choice); } // siege-campaigns
+    if let Some(choice) = crate::campaign::army_choice(g, c, attackers - siege, siege, ctx.afford) { return Some((choice, "campaign_army")); } // siege-campaigns
     if (ctx.at_war && army_short && siege * 3 < attackers + 1) || (siege < 2 && besieging(g, p) && ctx.afford) {
         if let Some(u) = best_unit(g, c, Role::Siege) {
-            return Some(Choice::Train(u, UnitAIType::UNITAI_ATTACK_CITY));
+            return Some((Choice::Train(u, UnitAIType::UNITAI_ATTACK_CITY), "siege"));
         }
     }
     // 9. Buildings by marginal value per turn of production. Computed BEFORE the surplus-army
@@ -648,7 +661,7 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
             if score >= ECON_BUILD_BAR {
                 let f = crate::finance::state(g, p);
                 if f.support_heavy() || f.structural() {
-                    return Some(Choice::Construct(b));
+                    return Some((Choice::Construct(b), "economy_building_strained"));
                 }
             }
         }
@@ -657,18 +670,18 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
     // Interleave army and buildings in peacetime (deterministic: no RNG draw from the AI).
     if army_short && (ctx.at_war || (g.game_turn() + c.0 as i32) % 3 == 0) {
         if let Some(u) = best_unit(g, c, if ctx.at_war { Role::CityAttack } else { Role::Attack }) {
-            return Some(Choice::Train(u, UnitAIType::UNITAI_ATTACK));
+            return Some((Choice::Train(u, UnitAIType::UNITAI_ATTACK), "army_interleave"));
         }
     }
     if let Some((b, score)) = best_building {
         if score >= ECON_BUILD_BAR || !army_short {
-            return Some(Choice::Construct(b));
+            return Some((Choice::Construct(b), "building_interleave"));
         }
     }
     if settler == SettlerPlan::Soon && ctx.afford {
         // Cheap units while the city grows: they explore, escort and hunt.
         if let Some(u) = best_unit(g, c, Role::Attack) {
-            return Some(Choice::Train(u, UnitAIType::UNITAI_ATTACK));
+            return Some((Choice::Train(u, UnitAIType::UNITAI_ATTACK), "army"));
         }
     }
 
@@ -677,28 +690,28 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
     let mage_target = (ctx.n_cities + 2) / 4 + leader.map_or(0, |l| i32::from(l.ai_value_mage > 100));
     if mages < mage_target && ctx.afford {
         if let Some(u) = best_unit(g, c, Role::Mage) {
-            return Some(Choice::Train(u, UnitAIType::UNITAI_MAGE));
+            return Some((Choice::Train(u, UnitAIType::UNITAI_MAGE), "caster"));
         }
     }
     if let Some(r) = g.player_get_state_religion(p) {
         let missing = pl.cities.iter().filter(|&&cc| !g.cities[cc].has_religion[r]).count() as i32;
         if missing > 0 && count_ai(g, p, UnitAIType::UNITAI_MISSIONARY) == 0 {
             if let Some(u) = best_missionary(g, c, r) {
-                return Some(Choice::Train(u, UnitAIType::UNITAI_MISSIONARY));
+                return Some((Choice::Train(u, UnitAIType::UNITAI_MISSIONARY), "missionary"));
             }
         }
     }
 
     if army_short {
         if let Some(u) = best_unit(g, c, Role::Attack) {
-            return Some(Choice::Train(u, UnitAIType::UNITAI_ATTACK));
+            return Some((Choice::Train(u, UnitAIType::UNITAI_ATTACK), "attacker"));
         }
     }
     if let Some((b, _)) = best_building {
-        return Some(Choice::Construct(b));
+        return Some((Choice::Construct(b), "building"));
     }
     if let Some(pr) = best_project(g, c) {
-        return Some(Choice::Create(pr));
+        return Some((Choice::Create(pr), "project"));
     }
     // 11. Convert production to research (else gold).
     let mut best_process: Option<(ProcessType, i32)> = None;
@@ -712,7 +725,7 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
             best_process = Some((pr, v));
         }
     }
-    best_process.map(|(pr, _)| Choice::Maintain(pr))
+    best_process.map(|(pr, _)| (Choice::Maintain(pr), "process"))
 }
 
 /// Projects worth building by default (positive AI weight, not a world-ending or self-harming
@@ -895,7 +908,9 @@ pub(crate) fn type_city_defense(info: &UnitInfo) -> i64 {
     v
 }
 
-/// Best unit this city can train for `role`, by power per production turn.
+/// Best unit this city can train for `role`, by power per production turn. Upkeep in the price
+/// and a peacetime army only from the cities that train good units were measured and reverted
+/// (docs/AI_LOG.md, "Unit choices and an upgrade reserve").
 pub fn best_unit(g: &Game, c: CityId, role: Role) -> Option<UnitType> {
     let d = g.d;
     let mut best: Option<(UnitType, i64)> = None;

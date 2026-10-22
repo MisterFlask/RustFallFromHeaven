@@ -579,6 +579,7 @@ pub fn escape_research(g: &mut Game, p: PlayerId) -> bool {
     }
     let f = state(g, p);
     crate::trace!(g, p, "finance: research {} to cut costs (deficit {}, costs {}% of commerce, {} turns of reserve)", g.d.techs[t].base.type_, f.deficit(), f.cost_share(), f.reserve_turns());
+    g.tel_decision(p, "research", &g.d.techs[t].base.type_, "escape_costs", f.deficit() as i64, String::new);
     g.player_push_research(p, t, true)
 }
 

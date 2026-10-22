@@ -432,6 +432,15 @@ impl Game {
     /// C++ `bQuick` dropped: combat always resolves and finishes in the same call (the C++
     /// `bVisible == false` path); combat timers still count down if set.
     pub fn unit_update_combat(&mut self, u: UnitId) {
+        if !self.telemetry.on() {
+            return self.unit_update_combat_inner(u);
+        }
+        self.tel_ctx_push("combat");
+        self.unit_update_combat_inner(u);
+        self.tel_ctx_pop();
+    }
+
+    fn unit_update_combat_inner(&mut self, u: UnitId) {
         let d = self.d;
         let mut finish = false;
 
@@ -503,6 +512,10 @@ impl Game {
         }
         // FfH: End Add
 
+        // Telemetry: the attacker's odds when the battle began, and whether the defender could
+        // defend.
+        let mut tel_odds = None;
+
         // if not finished and not fighting yet, set up combat damage and mission
         if !finish {
             if !self.unit_is_fighting(u) {
@@ -528,10 +541,16 @@ impl Game {
             if !self.unit_can_defend(defender, None) {
                 // C++ `if (!bVisible) bFinish = true; else { ..surrender mission and timer.. }`
                 finish = true;
+                if self.telemetry.on() {
+                    tel_odds = Some((1000, true));
+                }
 
                 // Kill them!
                 self.unit_set_damage(defender, d.defines.max_hit_points, None);
             } else {
+                if self.telemetry.on() {
+                    tel_odds = Some((self.get_combat_odds(u, defender), false));
+                }
                 // UI: the CvBattleDefinition (start damages) for the animation.
                 self.unit_resolve_combat(u, defender, plot);
 
@@ -541,6 +560,9 @@ impl Game {
         }
 
         if finish {
+            if let Some((odds, undefended)) = tel_odds {
+                self.tel_combat(u, defender, odds, undefended, plot);
+            }
             // UI: release the locked camera, `RemoveUnitFromBattle`, `NotifyEntity`.
             self.unit_set_attack_plot(u, None, false);
             self.unit_set_combat_unit(u, None, false);
@@ -1174,17 +1196,22 @@ impl Game {
             // only compute comparisions if we are the defender with a known attacker
             if !attacking_unknown_defender {
                 // FfH Promotions: Added by Kael 08/13/2007
-                for promotion in d.promotions.keys() {
+                // (C++ loops over every promotion; only those with `promotion_combat_mod > 0`
+                // change the modifier, and `d.combat_mod_promotions` lists exactly those, in
+                // the same order.)
+                let our_promotions = &self.units[u].has_promotion;
+                let their_promotions = &self.units[a].has_promotion;
+                for &promotion in &d.combat_mod_promotions {
                     let info = &d.promotions[promotion];
                     // (C++ reads `isHasPromotion(NO_PROMOTION)` out of bounds for a missing
                     // combat type; every promotion with a combat mod names one)
-                    if self.units[u].has_promotion[promotion] && info.promotion_combat_mod > 0 {
-                        if info.promotion_combat_type.is_some_and(|t| self.units[a].has_promotion[t]) {
+                    if our_promotions[promotion] && info.promotion_combat_mod > 0 {
+                        if info.promotion_combat_type.is_some_and(|t| their_promotions[t]) {
                             modifier += info.promotion_combat_mod;
                         }
                     }
-                    if self.units[a].has_promotion[promotion] && info.promotion_combat_mod > 0 {
-                        if info.promotion_combat_type.is_some_and(|t| self.units[u].has_promotion[t]) {
+                    if their_promotions[promotion] && info.promotion_combat_mod > 0 {
+                        if info.promotion_combat_type.is_some_and(|t| our_promotions[t]) {
                             modifier -= info.promotion_combat_mod;
                         }
                     }
@@ -1277,9 +1304,10 @@ impl Game {
         str_ *= 100;
         // C++ quirk: for an unknown defender `pAttacker` is this unit again, so its own
         // resistances reduce its damage-type strength.
+        let our_damage_type_combat = &self.units[u].damage_type_combat;
         for opponent in [attacker, defender].into_iter().flatten() {
             for damage_type in d.damages.keys() {
-                let damage_type_combat = self.units[u].damage_type_combat[damage_type];
+                let damage_type_combat = our_damage_type_combat[damage_type];
                 if damage_type_combat != 0 {
                     let resist = self.unit_get_damage_type_resist(opponent, damage_type);
                     if resist != 0 {

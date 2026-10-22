@@ -38,6 +38,12 @@ const UNIT_DY = 6;
 const GATE_DX = 40;
 const GATE_DY = 26;
 
+/** The map's lettering: Herald, the interface's pixel serif (isofont.js), at whole multiples of its
+ *  grid so it stays crisp (Georgia until it has loaded). */
+const HERALD = "Herald, Georgia, serif";
+/** Herald's size at tile width `tw`: 2 CSS px a pixel from the default zoom up, else 1. */
+const heraldScale = (tw) => (tw >= 96 ? 2 : 1);
+
 /** The move slide (as artmap.js, docs/ART.md 4.5): about 8 tiles a second, capped; a longer move
  *  jumps. */
 const SLIDE_MS_PER_TILE = 125;
@@ -512,11 +518,11 @@ export class IsoMap {
   }
 
   /** The plot under screen point (sx, sy): a unit or city drawn there (front-most first), else the
-   *  ground; null off the map. */
-  screenToMap(sx, sy) {
+   *  ground (`ground`: the ground only); null off the map. */
+  screenToMap(sx, sy, { ground = false } = {}) {
     const { cam, vw, vh, map } = this.view;
     if (!map) return null;
-    for (let i = this.hits.length - 1; i >= 0; i--) {
+    for (let i = ground ? -1 : this.hits.length - 1; i >= 0; i--) {
       const h = this.hits[i];
       if (sx < h.x0 || sx >= h.x1 || sy < h.y0 || sy >= h.y1) continue;
       for (const p of h.parts) {
@@ -705,7 +711,14 @@ export class IsoMap {
     const g = v.ctx;
     const map = v.map;
     g.setTransform(1, 0, 0, 1, 0, 0);
-    g.fillStyle = "#0b1220";
+    // The world floats in a summer sky (the reference's), the unexplored edge in its clouds.
+    if (this.skyH !== v.canvas.height) {
+      this.skyH = v.canvas.height;
+      this.sky = g.createLinearGradient(0, 0, 0, v.canvas.height);
+      this.sky.addColorStop(0, "#5aa7e4");
+      this.sky.addColorStop(1, "#a9d5f4");
+    }
+    g.fillStyle = this.sky;
     g.fillRect(0, 0, v.canvas.width, v.canvas.height);
     this.hits = [];
     if (!map) return;
@@ -748,7 +761,9 @@ export class IsoMap {
       this.drawRoutes(g, f, cells);
       this.drawBorders(g, f, cells, false);
     }
-    this.drawGroundMarks(g, f);
+    // The city screen shows its work area instead of the selection's marks (drawCityArea).
+    const city = v.overlay.city;
+    if (!city) this.drawGroundMarks(g, f);
 
     const byPlot = new Map();
     for (const c of cells) byPlot.set(c.k, [...(byPlot.get(c.k) ?? []), c]);
@@ -772,10 +787,13 @@ export class IsoMap {
     // Borders again over what stands up, faintly, so who owns a forest still shows.
     if (layer === "terrain") this.drawBorders(g, f, cells, false, true);
     this.drawClouds(g, f, cells);
+    if (city) this.drawCityArea(g, f, cells, city);
 
-    this.drawCityLabels(g, f, cities);
+    // The screen's own city is named by its title; its plaque would cover its plots' yields.
+    this.drawCityLabels(g, f, city ? cities.filter((x) => x.city.id !== city.id) : cities);
     this.drawUnitBadges(g, f, items.filter((it) => it.stack));
-    this.drawPath(g, f);
+    if (city) this.drawCityYields(g, f, cells, city);
+    else this.drawPath(g, f);
     this.drawFlashes(g, f);
     if (this.slides.size) {
       const now = performance.now();
@@ -1219,7 +1237,7 @@ export class IsoMap {
       g.fill();
     }
     if (f.TW < 48) return; // too small for legible numbers
-    g.font = `bold ${Math.max(10, Math.round(f.TW * 0.16))}px system-ui, sans-serif`;
+    g.font = `700 ${10 * heraldScale(f.TW)}px ${HERALD}`;
     g.textAlign = "center";
     g.textBaseline = "middle";
     for (const c of cells) {
@@ -1290,10 +1308,10 @@ export class IsoMap {
     g.arc(x, y, r, 0, Math.PI * 2);
     g.fill();
     g.fillStyle = "#111";
-    g.font = `bold ${Math.round(r * 1.1)}px system-ui, sans-serif`;
+    g.font = `700 ${10 * heraldScale(this.view.cam.ts)}px ${HERALD}`;
     g.textAlign = "center";
     g.textBaseline = "middle";
-    g.fillText(text, x, y + 0.5);
+    g.fillText(text, Math.round(x), Math.round(y));
   }
 
   /** The planned path of the selection (overlay.path): a line from plot to plot, unwrapped from
@@ -1363,52 +1381,185 @@ export class IsoMap {
    *  for the player's own cities the turns left on what it builds; a gold star over a capital. */
   drawCityLabels(g, f, cities) {
     const mine = me()?.player;
+    // A plaque in the interface's look: a navy plate in a gilt frame on the 2 px grid (1 px when
+    // zoomed out), the size on the owner's colour at its left, the name (and, for your own, the
+    // turns left on its build) in Herald.
+    const u = heraldScale(f.TW);
+    const fs = 10 * u;
+    g.font = `700 ${fs}px ${HERALD}`;
+    g.textAlign = "left";
+    g.textBaseline = "alphabetic";
     for (const { city, c } of cities) {
       const col = ownerColor(city.owner);
-      const fs = Math.max(10, Math.round(f.TW * 0.12));
-      const y = c.sy + f.TH / 4;
       const size = city.size === null || city.size === undefined ? "?" : String(city.size);
       const turns = city.owner === mine ? city.production?.turns : null;
       const label = f.TW >= 64 ? `${city.name ?? ""}${turns !== null && turns !== undefined ? `  ${turns}` : ""}` : "";
-      g.font = `600 ${fs}px Georgia, "Times New Roman", serif`;
-      const tw = label ? g.measureText(label).width : 0;
-      const r = fs * 0.75;
-      const h = fs + 8;
-      const w = tw + (label ? fs * 1.2 : 0) + r * 2 + 6;
-      const x0 = c.sx - w / 2;
-      g.fillStyle = "rgba(17,27,52,0.9)";
-      roundRect(g, x0, y, w, h, 4);
-      g.fill();
-      g.strokeStyle = "#d4a845";
-      g.lineWidth = 1.5;
-      g.stroke();
-      g.beginPath();
-      g.arc(x0 + 3 + r, y + h / 2, r, 0, Math.PI * 2);
+      const tw = label ? Math.ceil(g.measureText(label).width) : 0;
+      const sw = Math.ceil(g.measureText(size).width);
+      const h = 15 * u;
+      const chip = Math.max(sw + 6 * u, h - 4 * u);
+      const w = 4 * u + chip + (label ? 4 * u + tw + 4 * u : 0);
+      const x0 = Math.round(c.sx - w / 2);
+      const y0 = Math.round(c.sy + f.TH / 4);
+      g.fillStyle = "#0c0703";
+      g.fillRect(x0 - u, y0 - u, w + 2 * u, h + 2 * u);
+      g.fillStyle = "#f0b443";
+      g.fillRect(x0, y0, w, h);
+      g.fillStyle = "#ffe58c";
+      g.fillRect(x0, y0, w, u);
+      g.fillRect(x0, y0, u, h);
+      g.fillStyle = "#a86d1c";
+      g.fillRect(x0, y0 + h - u, w, u);
+      g.fillStyle = "#0c0703";
+      g.fillRect(x0 + u, y0 + u, w - 2 * u, h - 2 * u);
+      g.fillStyle = "#06205a";
+      g.fillRect(x0 + 2 * u, y0 + 2 * u, w - 4 * u, h - 4 * u);
       g.fillStyle = col;
-      g.fill();
-      g.strokeStyle = "rgba(0,0,0,0.6)";
-      g.lineWidth = 1;
-      g.stroke();
-      g.fillStyle = "#fff";
-      g.font = `bold ${Math.round(fs * 0.9)}px system-ui, sans-serif`;
-      g.textAlign = "center";
-      g.textBaseline = "middle";
-      g.fillText(size, x0 + 3 + r, y + h / 2 + 0.5);
+      g.fillRect(x0 + 2 * u, y0 + 2 * u, chip, h - 4 * u);
+      const base = y0 + 2 * u + Math.round((h - 4 * u - 7 * u) / 2) + 7 * u;
+      g.fillStyle = "#0c0703";
+      g.fillText(size, x0 + 2 * u + Math.round((chip - sw) / 2) + u, base + u);
+      g.fillStyle = "#ffffff";
+      g.fillText(size, x0 + 2 * u + Math.round((chip - sw) / 2), base);
       if (label) {
-        g.font = `600 ${fs}px Georgia, "Times New Roman", serif`;
-        g.textAlign = "left";
         g.fillStyle = city.owner === mine ? "#ffe9a8" : "#f2ecdc";
-        g.fillText(label, x0 + 6 + r * 2 + fs * 0.4, y + h / 2 + 0.5);
+        g.fillText(label, x0 + 6 * u + chip, base);
       }
       if (city.capital) {
         g.fillStyle = "#ffdd55";
-        g.strokeStyle = "rgba(10,10,12,0.7)";
+        g.strokeStyle = "rgba(10,10,12,0.8)";
         g.lineWidth = 1;
-        star(g, x0 - 2, y + 1, 5, Math.max(4, fs * 0.55), Math.max(2, fs * 0.24));
+        star(g, x0 - 2, y0 + 1, 5, Math.max(4, 6 * u), Math.max(2, 2.6 * u));
         g.fill();
         g.stroke();
       }
     }
+  }
+
+  /** The city screen's work area (map.js `cityOverlay`, Civ4's city view): the revealed plots
+   *  outside the city's radius under a veil, the radius edged in gilt, its worked plots lit with a
+   *  citizen (dimmed when another city works the plot), the plots that are not the player's tinted,
+   *  the one pointed at outlined. */
+  drawCityArea(g, f, cells, city) {
+    const map = this.view.map;
+    const plots = new Map(city.plots.map((p) => [T.plotIndex(map, p.x, p.y), p]));
+    const mine = me()?.player;
+    g.fillStyle = "rgba(3,10,32,0.62)";
+    for (const c of cells) {
+      if (map.vis[c.k] === 0 || plots.get(c.k)?.revealed) continue;
+      this.diamond(g, c.sx, c.sy + c.drop, f.TW);
+      g.fill();
+    }
+    const inside = (c, dx, dy) => plots.has(T.plotIndex(map, c.x + dx, c.y + dy));
+    const hover = this.view.overlay.hover;
+    const edges = [];
+    for (const c of cells) {
+      const p = plots.get(c.k);
+      if (!p || !p.revealed) continue;
+      const sy = c.sy + c.drop;
+      if (p.worked && p.i !== 0) {
+        // A worked plot: lit, in a gilt ring.
+        this.diamond(g, c.sx, sy, f.TW, 3 * f.s);
+        g.fillStyle = "rgba(255,218,120,0.42)";
+        g.fill();
+        g.strokeStyle = "#0c0703";
+        g.lineWidth = 4;
+        g.stroke();
+        g.strokeStyle = "#f0b443";
+        g.lineWidth = 2;
+        g.stroke();
+      } else if (p.owner !== mine && p.i !== 0) {
+        this.diamond(g, c.sx, sy, f.TW, 2 * f.s);
+        g.fillStyle = "rgba(190,50,36,0.24)";
+        g.fill();
+      }
+      // The radius's edge: the sides facing a plot outside it (north is up-right, east down-right).
+      const T0 = [c.sx, sy - f.TH / 2];
+      const R = [c.sx + f.TW / 2, sy];
+      const B = [c.sx, sy + f.TH / 2];
+      const L = [c.sx - f.TW / 2, sy];
+      if (!inside(c, 0, 1)) edges.push([T0, R]);
+      if (!inside(c, 1, 0)) edges.push([R, B]);
+      if (!inside(c, 0, -1)) edges.push([B, L]);
+      if (!inside(c, -1, 0)) edges.push([L, T0]);
+      if (hover && hover.x === p.x && hover.y === p.y) {
+        this.diamond(g, c.sx, sy, f.TW, 2 * f.s);
+        g.strokeStyle = "#fff4c2";
+        g.lineWidth = 2;
+        g.stroke();
+      }
+    }
+    for (const [w, col] of [[5, "#0c0703"], [3, "#f0b443"], [1, "#ffe58c"]]) {
+      g.beginPath();
+      for (const [a, b] of edges) {
+        g.moveTo(a[0], a[1]);
+        g.lineTo(b[0], b[1]);
+      }
+      g.strokeStyle = col;
+      g.lineWidth = w;
+      g.stroke();
+    }
+    // The citizens: the interface's figure on each worked plot (half-seen when another city's).
+    const icon = this.sprites.source("ui_population_s");
+    if (!icon) return;
+    const size = f.TW >= 96 ? 32 : 16;
+    g.imageSmoothingEnabled = false;
+    for (const c of cells) {
+      const p = plots.get(c.k);
+      if (!p?.revealed || p.i === 0) continue;
+      const other = p.worked_by !== null && p.worked_by !== undefined;
+      if (!p.worked && !other) continue;
+      g.globalAlpha = p.worked ? 1 : 0.45;
+      g.drawImage(icon, Math.round(c.sx - size / 2), Math.round(c.sy + c.drop - f.TH * 0.42 - size / 2), size, size);
+    }
+    g.globalAlpha = 1;
+    g.imageSmoothingEnabled = true;
+  }
+
+  /** The city's plots' yields, over everything: a navy plate in a gilt rule on each revealed plot
+   *  with the interface's food, production and commerce icons and the amounts in Herald. */
+  drawCityYields(g, f, cells, city) {
+    const map = this.view.map;
+    const plots = new Map(city.plots.map((p) => [T.plotIndex(map, p.x, p.y), p]));
+    const icons = ["ui_food_s", "ui_production_s", "ui_commerce_s"].map((k) => this.sprites.source(k));
+    if (icons.some((im) => !im)) return;
+    // The plates of plots side by side are a tile apart: Herald at 2x only from 128 px tiles.
+    const u = f.TW >= 128 ? 2 : 1;
+    const fs = 10 * u;
+    const isz = 16;
+    g.font = `700 ${fs}px ${HERALD}`;
+    g.textAlign = "left";
+    g.textBaseline = "alphabetic";
+    g.imageSmoothingEnabled = false;
+    for (const c of cells) {
+      const p = plots.get(c.k);
+      if (!p?.revealed || !p.yields) continue;
+      const parts = p.yields.map((v, j) => [v, j]).filter(([v]) => v > 0);
+      if (!parts.length) continue;
+      const widths = parts.map(([v]) => isz + 2 + Math.ceil(g.measureText(String(v)).width));
+      const w = widths.reduce((a, b) => a + b, 0) + 4 * (parts.length - 1) + 8;
+      const h = Math.max(isz, 7 * u) + 6;
+      const x0 = Math.round(c.sx - w / 2);
+      const y0 = Math.round(c.sy + c.drop + f.TH * 0.08);
+      // A worked plot's plate is gilt-framed; the others' are muted, unframed.
+      g.globalAlpha = p.worked ? 1 : 0.62;
+      g.fillStyle = "#0c0703";
+      g.fillRect(x0 - 1, y0 - 1, w + 2, h + 2);
+      g.fillStyle = p.worked ? "#f0b443" : "#0c0703";
+      g.fillRect(x0, y0, w, h);
+      g.fillStyle = p.worked ? "#0a2a6c" : "#04102e";
+      g.fillRect(x0 + 1, y0 + 1, w - 2, h - 2);
+      let x = x0 + 4;
+      const base = y0 + Math.round((h - 7 * u) / 2) + 7 * u;
+      parts.forEach(([v, j], n) => {
+        g.drawImage(icons[j], x, Math.round(y0 + (h - isz) / 2), isz, isz);
+        g.fillStyle = p.worked ? "#ffffff" : "#c9d2e8";
+        g.fillText(String(v), x + isz + 2, base);
+        x += widths[n] + 4;
+      });
+      g.globalAlpha = 1;
+    }
+    g.imageSmoothingEnabled = true;
   }
 
   /** Each stack's count (on its flag; a hidden garrison's on its city's, even when alone), its
@@ -1423,12 +1574,11 @@ export class IsoMap {
       const fx = flag.x0;
       const fy = flag.y0;
       if (units.length > 1 || !figure) {
-        const fs = Math.max(9, Math.round(20 * f.s));
-        g.font = `bold ${fs}px system-ui, sans-serif`;
+        g.font = `700 ${10 * heraldScale(f.TW)}px ${HERALD}`;
         g.textAlign = "center";
         g.textBaseline = "middle";
-        const cx = fx + 22 * f.s;
-        const cy = fy + 30 * f.s;
+        const cx = Math.round(fx + 22 * f.s);
+        const cy = Math.round(fy + 30 * f.s);
         g.lineWidth = 3;
         g.strokeStyle = "rgba(0,0,0,0.75)";
         g.strokeText(String(units.length), cx, cy);
@@ -1467,16 +1617,6 @@ export class IsoMap {
 function union(a, b) {
   if (!a || !b) return a || b ? { ...(a ?? b), parts: [(a ?? b).part] } : null;
   return { x0: Math.min(a.x0, b.x0), y0: Math.min(a.y0, b.y0), x1: Math.max(a.x1, b.x1), y1: Math.max(a.y1, b.y1), parts: [a.part, b.part] };
-}
-
-function roundRect(g, x, y, w, h, r) {
-  g.beginPath();
-  g.moveTo(x + r, y);
-  g.arcTo(x + w, y, x + w, y + h, r);
-  g.arcTo(x + w, y + h, x, y + h, r);
-  g.arcTo(x, y + h, x, y, r);
-  g.arcTo(x, y, x + w, y, r);
-  g.closePath();
 }
 
 /** A well-mixed 32-bit hash of an integer: stable per-plot choices (tile variants). */

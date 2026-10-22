@@ -165,9 +165,30 @@ pub fn free_tech(g: &Game, p: PlayerId, techs: &[TechType], advisor: Option<Tech
         kind: DecisionKind::FreeTech,
         title: "Free technology".into(),
         text: "Choose a technology to receive for free.".into(),
-        options: techs.iter().map(|&t| DecisionOption::new(names::name(d, t), names::display(d, t))).collect(),
+        options: techs
+            .iter()
+            .map(|&t| {
+                let mut o = DecisionOption::new(names::name(d, t), names::display(d, t));
+                o.help = free_tech_help(g, p, t);
+                o
+            })
+            .collect(),
         advisor: advisor.and_then(|a| techs.iter().position(|&t| t == a)),
         context: DecisionContext::default(),
+    }
+}
+
+/// What a free tech is worth (its cost and the turns it would take to research) and what it
+/// brings (the research screens' help, [`crate::view::help::tech`]).
+fn free_tech_help(g: &Game, p: PlayerId, t: TechType) -> String {
+    let team = g.players[p].team;
+    let cost = g.team_get_research_cost(team, t) - g.teams[team].research_progress[t];
+    let worth = format!("[ICON_BULLET]Worth {cost}[ICON_RESEARCH] ({} turns of research)", g.player_get_research_turns_left(p, t, true));
+    let help = crate::view::help::tech::tech_help(g, p, t);
+    if help.is_empty() {
+        worth
+    } else {
+        format!("{worth}[NEWLINE]{help}")
     }
 }
 
@@ -202,11 +223,31 @@ pub fn keep_city(g: &Game, p: PlayerId, c: CityId, can_raze: bool, gift_to: Opti
         player: p,
         kind: DecisionKind::KeepCity { city: c, can_raze, gift_to },
         title: if can_raze { "Raze or keep?".into() } else { "Keep the city?".into() },
-        text: format!("You have captured {} (size {}).", city.name, city.population),
+        text: format!("You have captured {} (size {}).{}", city.name, city.population, city_contents(g, c)),
         advisor: options.iter().position(|o| o.key == key),
         options,
         context: city_context(g, c, city.previous_owner),
     }
+}
+
+/// What a captured or joining city holds, for the keep/raze question: its buildings (wonders
+/// first) and the religions it is the holy city of (`[NEWLINE]`-led; empty when it has none).
+fn city_contents(g: &Game, c: CityId) -> String {
+    let d = g.d;
+    let city = &g.cities[c];
+    let wonder = |b: BuildingType| d.buildings[b].building_class_type.is_some_and(|k| d.building_classes[k].max_global_instances > 0 || d.building_classes[k].max_player_instances > 0);
+    let mut built: Vec<BuildingType> = d.buildings.keys().filter(|&b| city.num_real_building[b] > 0).collect();
+    built.sort_by_key(|&b| !wonder(b));
+    let mut out = String::new();
+    if !built.is_empty() {
+        let names: Vec<String> = built.iter().map(|&b| if wonder(b) { format!("[COLOR_HIGHLIGHT_TEXT]{}[COLOR_REVERT]", names::display(d, b)) } else { names::display(d, b).into_owned() }).collect();
+        out.push_str(&format!("[NEWLINE]Buildings: {}.", names.join(", ")));
+    }
+    let holy: Vec<String> = d.religions.keys().filter(|&r| g.city_is_holy_city(c, r)).map(|r| names::display(d, r).into_owned()).collect();
+    if !holy.is_empty() {
+        out.push_str(&format!("[NEWLINE]The holy city of {}.", holy.join(" and ")));
+    }
+    out
 }
 
 /// The popup button chosen in a [`keep_city`] decision.
@@ -228,7 +269,7 @@ pub fn disband_city(g: &Game, p: PlayerId, c: CityId, advisor_disbands: bool) ->
         player: p,
         kind: DecisionKind::DisbandCity { city: c },
         title: "Keep the city?".into(),
-        text: format!("{} (size {}) has joined your civilization. Keep it or disband it?", city.name, city.population),
+        text: format!("{} (size {}) has joined your civilization. Keep it or disband it?{}", city.name, city.population, city_contents(g, c)),
         options: vec![DecisionOption::new("keep", "Keep"), disband],
         advisor: Some(advisor_disbands as usize),
         context: city_context(g, c, city.previous_owner),
@@ -310,6 +351,8 @@ fn trade_item_text(g: &Game, t: &TradeData) -> String {
         TradeableItem::TRADE_DEFENSIVE_PACT => "a defensive pact".into(),
         TradeableItem::TRADE_PERMANENT_ALLIANCE => "a permanent alliance".into(),
         TradeableItem::TRADE_MAPS => "the world map".into(),
+        TradeableItem::TRADE_VASSAL => "vassal status".into(),
+        TradeableItem::TRADE_SURRENDER => "capitulation (vassal status)".into(),
         _ => {
             let name = TradeableItem::NAMES.get(t.item_type.0 as usize).copied().unwrap_or("TRADE_?");
             format!("{} {}", name.trim_start_matches("TRADE_").to_lowercase().replace('_', " "), t.data)
@@ -330,7 +373,15 @@ pub fn religion(g: &Game, p: PlayerId, religions: &[ReligionType], advisor: Opti
         kind: DecisionKind::Religion,
         title: "Found a religion".into(),
         text: "Choose the religion to found.".into(),
-        options: religions.iter().map(|&r| DecisionOption::new(names::name(d, r), names::display(d, r))).collect(),
+        options: religions
+            .iter()
+            .map(|&r| {
+                let mut o = DecisionOption::new(names::name(d, r), names::display(d, r));
+                // What it brings (its help: alignment, what it unlocks, its holy city's commerce).
+                o.help = crate::view::help::religion::effects(d, r);
+                o
+            })
+            .collect(),
         advisor: advisor.and_then(|a| religions.iter().position(|&r| r == a)),
         context: DecisionContext::default(),
     }

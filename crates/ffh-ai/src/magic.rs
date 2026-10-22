@@ -76,7 +76,8 @@ pub fn enabled(g: &Game, p: PlayerId) -> bool {
 }
 
 /// Every AI cast goes through here: `FFH_AI_TRACE_CAST=1` prints one line per cast (turn,
-/// player, civilization, unit, spell, where, value) to stderr. It only prints.
+/// player, civilization, unit, spell, where, value) to stderr, and telemetry records `ctx` and
+/// `value` as the cast's reason. Neither changes play.
 pub fn cast(g: &mut Game, u: UnitId, spell: SpellType, ctx: &str, value: i32) {
     static ON: OnceLock<bool> = OnceLock::new();
     if *ON.get_or_init(|| std::env::var("FFH_AI_TRACE_CAST").is_ok()) {
@@ -93,6 +94,7 @@ pub fn cast(g: &mut Game, u: UnitId, spell: SpellType, ctx: &str, value: i32) {
             value
         );
     }
+    g.tel_cast_reason(u, ctx, value as i64);
     g.unit_cast(u, spell);
 }
 
@@ -846,10 +848,15 @@ pub fn turn_value(g: &Game, v: &View, u: UnitId, spell: SpellType) -> Option<i32
 /// The spell `u` casts at the end of the turn: the best by [`turn_value`] (FfH's terms for the
 /// spells it leaves alone), after the world spells' timing and the civilization's say.
 pub fn choose_turn_spell(g: &Game, v: &View, u: UnitId) -> Option<(SpellType, i32)> {
-    let d = g.d;
+    choose_turn_spell_from(g, v, u, &crate::casting::castable_spells(g, u))
+}
+
+/// [`choose_turn_spell`] among `castable`, the spells `u` can cast now
+/// (`casting::castable_spells`).
+pub fn choose_turn_spell_from(g: &Game, v: &View, u: UnitId, castable: &[SpellType]) -> Option<(SpellType, i32)> {
     let mut best: Option<(SpellType, i32)> = None;
-    for s in d.spells.keys() {
-        if !g.unit_can_cast(u, s, false) || !crate::world_spells::ready(g, g.units[u].owner, s) {
+    for &s in castable {
+        if !crate::world_spells::ready(g, g.units[u].owner, s) {
             continue;
         }
         let value = turn_value(g, v, u, s).unwrap_or_else(|| crate::casting::ffh_value(g, u, s));
@@ -933,11 +940,14 @@ fn cast_phases(g: &mut Game, v: &View, tp: PlotIdx, attackers: &[UnitId], phases
     let mut book: Vec<(UnitId, Vec<SpellType>, i32)> = casters
         .into_iter()
         .filter(|&u| !g.units[u].has_casted && !g.units[u].death_delay && !g.unit_is_cargo(u))
-        .map(|u| (u, d.spells.keys().filter(|&s| d.spells[s].allow_ai && !d.spells[s].global && g.unit_can_cast(u, s, false)).collect::<Vec<_>>()))
-        .filter(|(_, ss)| !ss.is_empty())
-        .map(|(u, ss)| {
-            let reserve = choose_turn_spell(g, v, u).map_or(0, |(_, val)| val);
-            (u, ss, reserve)
+        .filter_map(|u| {
+            let castable = crate::casting::castable_spells(g, u);
+            let ss: Vec<SpellType> = castable.iter().copied().filter(|&s| d.spells[s].allow_ai && !d.spells[s].global).collect();
+            if ss.is_empty() {
+                return None;
+            }
+            let reserve = choose_turn_spell_from(g, v, u, &castable).map_or(0, |(_, val)| val);
+            Some((u, ss, reserve))
         })
         .collect();
     if book.is_empty() {

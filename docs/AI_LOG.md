@@ -225,6 +225,140 @@ change also in full games, the allied-barbarian one with the Clan of Embers forc
    saved state: this version made the quick bench's bare loop and session play different games
    (`the_quick_bench_plays_the_same_game_three_ways`; not diagnosed).
 
+## Wars: no peace sold before the war is decided (2026-10-21)
+
+Item 5 of the strong-player list. In 24 full games (seeds 1-24) our civilizations declared 325
+wars with armies of 23 units against a computed need of 10; 38% took a city, 22% saw no combat
+at all, and in seeds 1-8 about 40% of the wars we declared ended in our own "cash out": a
+winner's peace for tribute at turn 11, the first turn peace is allowed (traced, seed 2: the army
+marched 19 plots for 11 turns, never arrived, and the war was sold for one tribute item).
+
+- **No cash-out before a city or 30 turns.** 1: an expert does not sell a war of conquest
+  before its army has fought for its first city. A war we declared could be sold for tribute
+  only once it had taken a city from them or lasted 30 turns (losing wars still ended as before).
+  2: everyone, full games: wars 448 -> 383, captures 423 -> 423 (a city per war 0.94 -> 1.10),
+  every checkpoint flat; one civilization against the rest (114 pairs, seeds 1-6): wins 22.8%
+  -> 19.3% (0 / 4 pairs, p 0.125), legacy@300 -23 (t -2.0), share@end -25. 3: the tribute this AI
+  takes after ten turns (technologies, gold) is worth more than the extra turns of a war it wins
+  38% of the time; the expert's test is the city the operation will take soon against the
+  tribute on offer, which needs the operation's own estimate (its phase, the force near the
+  target), not a turn count. Kept instead: declaring only once the army stands near the target
+  (docs/AI.md, "Diplomacy"), which shortens the march the cash-out cut short.
+
+## World spells: For the Horde at a dozen orcs, Ardor after three great people (2026-10-21)
+
+Item 4. FfH's condition for the Clan of Embers' For the Horde (60 barbarian units of any kind)
+looked like it almost never held (1 cast in 10 unforced games), so the expert moment was a
+dozen barbarian orcs to turn, with the Clan's own rule (only with a war to fight) kept. 2: with
+the Clan forced into every game (seeds 1-24, full games) FfH's condition held in 14 of 24 games
+already -- the Clan is at peace with the barbarians, whose units pile up -- and the earlier cast
+(21 of 24) cost: wins 54.2% -> 41.7% (0 / 3), share@end -425 (t -2.0), legacy@end -450 (t -2.3).
+3: half of a dozen orcs is a few units the Clan pays upkeep for, cast before the barbarians have
+grown into the horde the spell is named for; FfH's condition is the expert moment here.
+
+Ardor (Grigori: the great-people count and threshold start over) after the third great person
+instead of FfH's fifth: development seeds flat (wins 16.7% -> 20.8%, share@end +21); fresh seeds
+9601-9624 share@end -221 (t -1.1), legacy@end -210 (t -1.0), casts 16 -> 21 games. FfH's
+condition already held in two games of three, and the spell is worth more the later it comes
+(it resets a higher threshold); if anything the expert waits longer, not less.
+
+## Unit choices and an upgrade reserve (2026-10-21)
+
+Item 3 of the strong-player list: the head-to-head games had the original AI fielding 3.9 axemen
+and 2.4 swordsmen a civilization at turn 200 against our 0.8 and 0.4, and banking 438 gold
+against our 62 (it keeps the gold to upgrade its units). By turn 300 our civilizations had built
+12.2 warriors each, 122 of those in turns 200-300 as peacetime army fill (seeds 1-8). Three
+behaviours, each behind a per-civilization switch, measured for everyone (seeds 1-48, 300
+turns) and as one civilization against opponents without it (`civ_ab.py --civ all`, seeds 1-6,
+450 turns, 114 pairs):
+
+- **Upkeep in a unit's price.** 1: FfH units beyond the free ones cost gold every turn (unit
+  support was 35-48% of the costs at turn 300), so an expert buys strength per total cost:
+  `best_unit` scored strength squared per (build turns + 4 + 40 turns of upkeep as hammers).
+  2: warriors 12.2 -> 10.5 a civilization, archers 4.4 -> 3.1, more champions; everyone: flat
+  (cities lost to barbarians -0.6 a game, t -2.0); one civilization: wins 23.7% -> 17.5% (2 / 9
+  pairs, p 0.065), share@end -70 (t -1.0), the Clan of Embers worst (share@end -676, t -2.2: its
+  Warrens copy every unit, so fewer, dearer units lose it copies). 3: the quotas count units
+  (defenders a city, attackers an army), so dearer units at the same count put more hammers into
+  the army, not fewer units; "fewer, better units" needs quotas in strength, not in heads.
+- **Gold kept for upgrades at war** (C++ `AI_goldTarget` counts the cost of upgrading every
+  unit): while at war or preparing one, the research slider (never below 30%) saved toward the
+  price of upgrading every military unit that had a better unit to become. 2: upgrades 9.5 ->
+  10.2 a civilization by turn 300; everyone: flat; one civilization: wins 23.7% -> 19.3% (6 / 11,
+  p 0.33), share@end +4, legacy@300 -17 (t -1.4). 3: an upgrade costs 3 gold a hammer plus 20,
+  about what hurrying costs; it pays for veterans and emergencies, not as the way to field an
+  army, and the research it takes during war preparation is not won back.
+- **The peacetime army from the cities that train good units**: a city whose best attacker was
+  under 75% (then 90%) of the best any of our cities trains (a Training Yard's axeman against a
+  warrior) built no peacetime army units. 2: at 75% it never fired (a warrior is exactly 75% of
+  an axeman); at 90% warriors 12.2 -> 10.9 and buildings +0.8 a civilization by turn 300;
+  everyone: flat; one civilization: wins 23.7% -> 19.3% (5 / 10, p 0.30), share@300 +33 (t 1.7),
+  share@end -7. 3: the warriors persist where no city has the enabling building: tier-2 units
+  need a Training Yard or Archery Range in the training city, and `enabler_building` builds one
+  in at most half the cities; the lever, if any, is which cities get them (military cities),
+  not refusing to train.
+
+## Expansion: the expert opening (2026-10-21)
+
+Reopened under the expert-play rule (docs/AI.md, "Settlers and escorts", had dropped faster
+openings in 2026-10 for costing research). Four parts, behind a per-civilization switch so they
+could be measured for everyone (seeds 1-48, 300 turns) and as one civilization with them against
+opponents without (`civ_ab.py --civ all`, seeds 1-8, 152 paired games):
+(a) a threat the garrison holds (a lair guard next door) no longer stops a city building
+settlers, the escort deciding when it leaves; (b) one settler in flight per city instead of one
+per two; (c) the capital's second defender only once barbarians are within 4 plots; (d) no
+buildings while a city grows toward its next settler.
+
+1. **Why it made sense.** The second city came at turn 70 and the third at 105 (seeds 1-8). By
+   turn 100 a civilization had spent 29% of its hammers on settlers, 30% on military (3.7
+   warriors), 23% on workers and 15% on buildings; its first settler started at a median turn
+   45; one capital (seed 1, the Grigori, a goblin fort two plots away) built none by turn 80
+   because the lair guard counted as a threat, though four warriors held it.
+2. **Why it did not pay.** All four, everyone: cities +0.6 at turn 150 (t 6.7), then -0.2 at
+   300; techs -3.6 at 300 (t -4.5), research -16%, legacy -110 (t -3.3); cities lost to the
+   barbarians +1.9 a game (t 3.2), barbarian cities +0.9. One civilization with them: wins 15.8%
+   -> 16.4%, share@300 -52 (t -0.7), legacy@300 -74 (t -1.6) -- no competitive gain either. Part
+   by part (everyone): (a) carries nearly all of it (cities lost to barbarians +1.8, t 3.0;
+   improvements -1.9 at 150, t -4.8; techs -2.4 at 300, t -3.5): the cities a held threat let
+   the city found were the ones next to lairs, and the settlers took the hammers the workers had
+   had. (b), (c) and (d) did not bring cities sooner (cities at turn 100 +0.00, at 150 +0.19)
+   and together cost techs for everyone (-1.8 at 300, t -2.7) while one civilization with them
+   gained noise (wins 15.8% -> 17.8%, 16 / 13 pairs, share@300 +54, t 0.9). Where the faster
+   opening's cities went: at turn 150 commerce +0.4 for +0.6 cities, while maintenance rose 1.6
+   gold (t 5.4) and the research slider fell 7.6 points -- a size-1 FfH city costs more than it
+   gives for dozens of turns.
+3. **What it implies.** The pace is bounded by what a settler costs (120 food and hammers at
+   6-9 a turn from a size-3 capital) and by FfH's early maintenance, not by the production
+   ladder: freeing slots and hammers does not bring settlers sooner, and settling past a lair
+   loses the city. The original AI expands slower still (4.4 cities at turn 200 against our 5.3,
+   head-to-head games) and is richer (research 78 against 46, markets in 68% of its cities). The
+   expert levers left are development, not pace: more commerce per new city (cottages, river and
+   coastal sites, markets) and clearing a lair that blocks expansion (the lair guard on a fort
+   beats warriors; it takes axemen or archers -- item 3, unit choices). A balance note: the rules
+   start barbarian cities once civilizations average two cities and size them by the number of
+   civ cities (`createBarbarianCities`), so any faster opening brings them sooner.
+
+## Workers and citizens (2026-10-21)
+
+The kept version (docs/AI.md, "Citizens" and "Chops") came out of six variants measured on
+seeds 1-24 (300 turns) and validated on 401-472; the governor change was in all of them.
+
+- **Every clearing counted** (workers v1-v3, v5): a farm or mine on a forest or jungle valued
+  with the feature's lost yields on a worked plot and the hammers of the clearing (half again to
+  a city rushing a settler, a worker or a world wonder, 20 turns' worth otherwise), the kept
+  features (Ancient Forest, happy and healthy features, a city's last three forests) refusing
+  the improvement as well as the chop, and in v1-v2 chops for any city. 1: the C++ AI and an
+  expert both weigh what a forest gives against what replaces it; our workers ignored both the
+  hammers and the loss. 2: research at turn 300 -15 to -18 (t -1.9 to -2.5), techs -1.4 to
+  -1.8, population flat; workers alone (v1 without the governor change) population -3.5,
+  research -11. The forests kept around cities blocked mines and farms on the plots the cities
+  worked, and chops for buildings took worker turns from farms. 3: for this AI an improvement's
+  yield gain matters more than the feature it replaces; chops pay only when they bring a city
+  sooner. The kept v6 (chops only for settlers, workers, world wonders; improvements valued as
+  before) measured +10 research on seeds 1-24 but flat on 72 fresh seeds: the spread between
+  variants (research -18 to +10) is about what choosing among six variants on 24 seeds
+  produces. Separating effects this small takes 48+ development seeds.
+
 ## Unique units (2026-10-20)
 
 The kept version is in docs/AI.md, "Unique units". It is kept under the owner's rule (CLAUDE.md,

@@ -20,7 +20,8 @@
 //!     (`g.controllers[p] = ..`), exactly as after `Game::new`;
 //!   * `map_script`: only used while generating the map (`game_init`); a loaded game gets the
 //!     default script;
-//!   * `dying`: empty outside `unit_kill`.
+//!   * `dying`: empty outside `unit_kill`;
+//!   * `telemetry`: observation only; a loaded game has it off.
 //!
 //!   Rules caches are saved as they are (`Player::ai_bonus_value`, the city rank caches, the
 //!   path finders' kept search trees), so nothing has to be recomputed after loading.
@@ -288,6 +289,7 @@ fn write_game(g: &Game, w: &mut Writer) {
         trophies,
         map_script: _,
         dying: _,
+        telemetry: _,
         path_finder,
         step_finder,
         route_finder,
@@ -509,6 +511,7 @@ fn read_game(d: &'static GameData, r: &mut Reader<'_>) -> Result<Game, LoadError
         trophies: Persist::read(r)?,
         map_script: default_map_script(),
         dying: Vec::new(),
+        telemetry: crate::telemetry::Telemetry::off(),
         path_finder: Persist::read(r)?,
         step_finder: Persist::read(r)?,
         route_finder: Persist::read(r)?,

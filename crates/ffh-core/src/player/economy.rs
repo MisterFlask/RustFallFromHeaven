@@ -11,6 +11,7 @@
 
 #![allow(unused_imports)]
 
+use crate::controller::AiHook;
 use crate::game::Game;
 use crate::ids::*;
 use crate::structs::*;
@@ -627,6 +628,7 @@ impl Game {
 
             if !pl.human {
                 // AI: AI_doCommerce() (re-balances the commerce sliders)
+                self.ai_hook(p, AiHook::DoCommerce(p));
             }
         }
     }

@@ -807,8 +807,11 @@ MOD_TXT_KEY_CITY_WIGTON	Wigton
 MOD_TXT_KEY_CITY_YORK	York
 MOD_TXT_KEY_CIVIC_PRIMITIVISM	Primitivism
 SYSTEM_END_TURN	Press &lt;ENTER> to end turn...
+SYSTEM_GAME_PAUSED	Game Paused by %s1
+SYSTEM_PLAYER_JOINING	%s1 (Player %d2) is joining the game.  Please wait...
 SYSTEM_RETURN	Press &lt;ESC> to return...
 SYSTEM_WAITING	Waiting for other Civilizations...
+SYSTEM_WAITING_FOR_PLAYER	Waiting to hear from %s1 (Player %d2)
 SYSTEM_WAITING_FOR_YOU	Waiting for YOU to finish turn...
 TXT_BUDDY_LIST_PLAYING_LOC	Playing Game: "%s1_GameName"
 TXT_BUDDY_LIST_STAGING_LOC	In Staging Room: "%s1_GameName"
@@ -867,9 +870,13 @@ TXT_KEY_ACTION_CYCLE_UNITS_ALT	Cycle Units (Alt)
 TXT_KEY_ACTION_CYCLE_WORKERS	Cycle Workers
 TXT_KEY_ACTION_DEFENSE_MODIFIER	[ICON_BULLET]%D1%% Tile Defense
 TXT_KEY_ACTION_DELETE	Delete the Unit
+TXT_KEY_ACTION_DESTROY_IMP	[ICON_BULLET]Destroys [COLOR_HIGHLIGHT_TEXT]%s1_ImpName[COLOR_REVERT]
 TXT_KEY_ACTION_ENDTURN	End of Turn
 TXT_KEY_ACTION_ENDTURN_ALT	End of Turn (Alt)
 TXT_KEY_ACTION_ESPIONAGE_MISSION	Unit can perform Espionage Missions when in a valid location and if the player has sufficient Espionage Points to execute them.
+TXT_KEY_ACTION_EXTRA_CONSTRUCTION	%D1_Change[ICON_PRODUCTION] for Construction of [COLOR_BUILDING_TEXT]%s2_BuildName[COLOR_REVERT].
+TXT_KEY_ACTION_EXTRA_RESEARCH	%D1_NumResearch[ICON_RESEARCH] for Research of [COLOR_TECH_TEXT]%s2_TechName[COLOR_REVERT].
+TXT_KEY_ACTION_FINISH_CONSTRUCTION	Finish Construction of [COLOR_BUILDING_TEXT]%s1_BuildName[COLOR_REVERT].
 TXT_KEY_ACTION_FLAT_MOVEMENT_COST	[ICON_BULLET]All Units Can Move %d1 Tiles/Turn
 TXT_KEY_ACTION_FLYING_CAMERA	Toggle Flying Camera
 TXT_KEY_ACTION_FORCE_DELETE	Delete the Unit
@@ -895,6 +902,7 @@ TXT_KEY_ACTION_NEXT_CITY	Next City
 TXT_KEY_ACTION_NEXT_UNIT	Next Unit
 TXT_KEY_ACTION_NUKE	NUKE
 TXT_KEY_ACTION_NUM_TURNS	[COLOR_HIGHLIGHT_TEXT]%d1_Num[COLOR_REVERT] [NUM1:Turn:Turns]
+TXT_KEY_ACTION_ONLY_HOLY_CONSTRUCT	[COLOR_WARNING_TEXT]Can only be Constructed in the %F1_RelIcon Holy City.[COLOR_REVERT]
 TXT_KEY_ACTION_OPTIONS_SCREEN	Options Screen
 TXT_KEY_ACTION_ORTHO_CAMERA	Orthographic Camera
 TXT_KEY_ACTION_PING	Ping
@@ -904,6 +912,7 @@ TXT_KEY_ACTION_PREVIOUS_CITY	Previous City
 TXT_KEY_ACTION_PREVIOUS_UNIT	Previous Unit
 TXT_KEY_ACTION_PROBABILITY	Probability of Success: %d1_Prob%%
 TXT_KEY_ACTION_PROBABILITY_RANGE	Probability of Success: %d1_Prob - %d2_Prob%%
+TXT_KEY_ACTION_PROVIDES_BONUS	[ICON_BULLET]Provides [COLOR_HIGHLIGHT_TEXT]%s1_BonusName[COLOR_REVERT]
 TXT_KEY_ACTION_QUICK_LOAD	Quick Load Game
 TXT_KEY_ACTION_QUICK_SAVE	Quick Save Game
 TXT_KEY_ACTION_REMOVE_FEATURE	[COLOR_WARNING_TEXT]Will remove the %s1_FeatName[COLOR_REVERT]
@@ -990,6 +999,7 @@ TXT_KEY_ANGER_BIG_CITY	+%d1_Change[ICON_UNHAPPY]: "We long for the open country!
 TXT_KEY_ANGER_BONUS	+%d1_Change[ICON_UNHAPPY]: "Some goods are making us unhappy!"
 TXT_KEY_ANGER_BUILDINGS	+%d1_Change[ICON_UNHAPPY]: "Some buildings are upsetting us!"
 TXT_KEY_ANGER_DEFY_RESOLUTION	+%d1_Change[ICON_UNHAPPY]: "The world considers you a villain!"
+TXT_KEY_ANGER_DEMAND_CIVIC	+%d1_Change[ICON_UNHAPPY]: "We demand %s2_Name!"
 TXT_KEY_ANGER_DRAFT	+%d1_Change[ICON_UNHAPPY]: "Hell NO, we won't GO!"
 TXT_KEY_ANGER_ESPIONAGE	+%d1_Change[ICON_UNHAPPY]: "People are telling us of your villainy!"
 TXT_KEY_ANGER_FEATURES	+%d1_Change[ICON_UNHAPPY]: "All this tree-hugging drives me crazy!"
@@ -1386,7 +1396,6 @@ TXT_KEY_BUILDING_CORPORATION_7_STRATEGY	Build the [COLOR_BUILDING_TEXT]Civilized
 TXT_KEY_BUILDING_COURTHOUSE	Courthouse
 TXT_KEY_BUILDING_COURTHOUSE_PEDIA	[TAB]Curse those cards! He'd been so close to winning his passage on the earlier ship, when he was dealt the Curse of Arawn-particularly sickening as it had followed a Seven of Towers which surely would have won him the pot. His luck had been horrendous since then, he'd lost most of his winnings on that game, and then spent a lot more drowning his sorrows. He'd then been woken with a pail of water, finding himself press-ganged into service on a galley heading for the unknown lands. After five torturous days of seasickness, Lanun pirates struck, the galley was sunk and here he was now-after being washed ashore-in a Svartalfar courtroom charged with spying.[PARAGRAPH:1]What did he know about these elves? Civil war was it? Something about Seelie and Unseelie Court. Growing up on a farmstead had left him a little vague on world politics. His eyes looked around this strange court-pretty grandiose décor, with a sense of opulence, certainly not the functional style of his Hippus homeland. His eyes fell on a statuette. There was something not quite right about it... ah... yes... the scales, tipped with coins. So... Mammon has a part to play in this courtroom does he? There were still some coins in his hidden pouch. Once he signaled to the bailiff, things began to gather momentum, indeed Mammon had obviously provided a slick fast-tracking system as he found himself ushered away from the courtroom-at the cost of a few coins-to a private room.[PARAGRAPH:1]"It seems you have been a little down on your luck, and would like to... aha... speed the courtroom process up, so to speak?"[PARAGRAPH:1]"Yes, your honor."[PARAGRAPH:1]"...and you can pay the fine of five coins?"[PARAGRAPH:1]"Yes."[PARAGRAPH:1]"Okay... that seems in order. No need for paper work, I think we can come to a satisfactory conclusion here and now: Guilty as charged, you hang tomorrow. In Esus we Trust."[PARAGRAPH:1]"...but ...but the statuette to Mammon?!"[PARAGRAPH:1]"Yes, a pretty little thing isn't it? ...and worth its weight in gold I must say."[PARAGRAPH:2]-When entering a courtroom, effort should be made to check the patron Angel before constructing your defense.
 TXT_KEY_BUILDING_COURTHOUSE_STRATEGY	[COLOR_BUILDING_TEXT]Courthouses[COLOR_REVERT] lower city maintenance costs, provide you with a bonus to espionage and are required to build the [COLOR_BUILDING_TEXT]Forbidden Palace[COLOR_REVERT] national wonder. [COLOR_BUILDING_TEXT]Courthouses[COLOR_REVERT] help manage the cost of controlling large empires. 
-TXT_KEY_BUILDING_CRAFT_FAIR	Artisan Fair
 TXT_KEY_BUILDING_CRIME	[ICON_BULLET]%D1 to the crime rate
 TXT_KEY_BUILDING_CRISTO_REDENTOR	Cristo Redentor
 TXT_KEY_BUILDING_CRISTO_REDENTOR_STRATEGY	The [COLOR_BUILDING_TEXT]Cristo Redentor[COLOR_REVERT] allows its builder to switch [COLOR_HIGHLIGHT_TEXT]Religions[COLOR_REVERT] or [COLOR_HIGHLIGHT_TEXT]Civics[COLOR_REVERT] instantly once per turn, with no anarchy. It also increases the chances of a [COLOR_UNIT_TEXT]Great Engineer[COLOR_REVERT] appearing.
@@ -1431,6 +1440,7 @@ TXT_KEY_BUILDING_ELDER_COUNCIL_PEDIA	[TAB]During the Age of Ice, it was uncommon
 TXT_KEY_BUILDING_ELECTION_ELIGIBILITY	[ICON_BULLET]Guarantees Eligibility for Diplomatic Votes
 TXT_KEY_BUILDING_ELF_CAGE	Elf Cage
 TXT_KEY_BUILDING_ELF_CAGE_PEDIA	[TAB]The Elf Cage can only be created by the Balseraph civilization in a city with a Freak Show. An Elven Slave must be sacrificed to create one.
+TXT_KEY_BUILDING_ENABLES_CIVICS	[ICON_BULLET]Enables all [COLOR_HIGHLIGHT_TEXT]%s1_Name[COLOR_REVERT] Civics
 TXT_KEY_BUILDING_ENEMY_WAR_WEAR	[ICON_BULLET]Enemies suffer %D1_percent%% War Weariness
 TXT_KEY_BUILDING_ENGLISH_BANK	English Stock Exchange
 TXT_KEY_BUILDING_ENGLISH_STOCK_EXCHANGE	Stock Exchange
@@ -1449,7 +1459,9 @@ TXT_KEY_BUILDING_FORGE	Forge
 TXT_KEY_BUILDING_FORGE_STRATEGY	Boosts production in the city and removes the [LINK=PROMOTION_RUST]rust[/LINK] promotion from units in the city.
 TXT_KEY_BUILDING_FORM_OF_THE_TITAN	Form of the Titan
 TXT_KEY_BUILDING_FREAK_SHOW	Freak Show
+TXT_KEY_BUILDING_FREE_IN_CITY	[ICON_BULLET]Free [COLOR_BUILDING_TEXT][LINK=literal]%s1_Name[\LINK][COLOR_REVERT] in Every City
 TXT_KEY_BUILDING_FREE_JOURNALISM	Free Journalism
+TXT_KEY_BUILDING_FREE_PROMOTION	[ICON_BULLET]Free [COLOR_HIGHLIGHT_TEXT][LINK=literal]%s1_Name[\LINK][COLOR_REVERT] Promotion for Units Built in this City
 TXT_KEY_BUILDING_FREE_PROMOTION_PICK	[ICON_BULLET]Units start with a %D1 free promotion(s)
 TXT_KEY_BUILDING_FREE_SPECIALIST	[ICON_BULLET]%D1_Change Free [COLOR_HIGHLIGHT_TEXT][LINK=literal]%s2_SpclstName[\LINK][COLOR_REVERT]
 TXT_KEY_BUILDING_FREE_SPECIALISTS	[ICON_BULLET]%D1_Change Free Specialists
@@ -1466,6 +1478,7 @@ TXT_KEY_BUILDING_FRENCH_SALON	Salon
 TXT_KEY_BUILDING_FRENCH_SALON_PEDIA	In the sixteenth and seventeenth centuries, the French nobility used to gather the local "intelligentsia" to discuss the literary or artistic works of the day. The word "salon" refers to the reception room where these parties were held. The salons were almost always organized by the most beautiful, intelligent and rich women in the French nobility. During the seventeenth centuries the two most important literary salons were run by Madame de Rambouillet and her rival, Madeleine de Scudery. Virtually every important French author, poet, artist and scientist attended one or the other of these gatherings, making them the very centers of French intellectual thought.
 TXT_KEY_BUILDING_FRENCH_SALON_STRATEGY	The [COLOR_BUILDING_TEXT]Salon[COLOR_REVERT], the French replacement for the [COLOR_BUILDING_TEXT]Observatory[COLOR_REVERT], increases a city's scientific research and increases the city's chances of generating a [COLOR_HIGHLIGHT_TEXT]Great Artist[COLOR_REVERT].
 TXT_KEY_BUILDING_FROM_ALL_REL_BUILDINGS	[SPACE]from All %F1_RelIcon Buildings
+TXT_KEY_BUILDING_FROM_IN_ALL_CITIES	[SPACE]from [COLOR_UNIT_TEXT][LINK=literal]%s1_SpclstName[\LINK][COLOR_REVERT] in All Cities
 TXT_KEY_BUILDING_GAMBLING_HOUSE	Gambling House
 TXT_KEY_BUILDING_GAMBLING_HOUSE_PEDIA	[TAB]Gambling houses are full of assorted dice, card and board games. Some even host pits for animal fights or darker pleasures. The Khazad are known to host rat races while Sheaim adepts summon minor creatures to battle against each other.[PARAGRAPH:1]But one thing is similar across all of them, their most popular game, Somnium. Played on cards among the Balseraphs, on tiles by the Elohim and on crude patches of dried leather by the Clan of Embers the game has permeated all layers of Erebus. Thats not to say that house rules dont exist, Overlord faithful often offer extra points for Cups cards, followers of Kilmorph often make Tower cards immune to stealing. But regardless of the specific rules the game remains a fascination for kings and peasants and nearly every gambling house hosts a few men praying desperately to avoid death and turn over the 7 of the suit they are missing.
 TXT_KEY_BUILDING_GAMBLING_HOUSE_STRATEGY	A Gambling House grants some happiness per 10% of the gold rate. It does tend to draw crime and increases the maintenance cost of the city. Countries that have come to depend on the happiness boost from Gambling Houses should be wary of reducing their Gold rate; doing so may start riots in their cities.
@@ -1643,6 +1656,7 @@ TXT_KEY_BUILDING_MARKET_STRATEGY	[COLOR_BUILDING_TEXT]Markets[COLOR_REVERT] incr
 TXT_KEY_BUILDING_MARTIAL_LAW	Martial Law
 TXT_KEY_BUILDING_MAUSOLEUM_OF_MAUSSOLLOS	Mausoleum of Maussollos
 TXT_KEY_BUILDING_MAUSOLEUM_OF_MAUSSOLLOS_STRATEGY	The [COLOR_BUILDING_TEXT]Mausoleum of Maussollos[COLOR_REVERT] increases its builder's Golden Ages by fifty percent. It also increases the chances of a [COLOR_UNIT_TEXT]Great Artist[COLOR_REVERT] appearing.
+TXT_KEY_BUILDING_MAX_START_ERA	[ICON_BULLET]Can only be Built on %s1_Name and Earlier Starts
 TXT_KEY_BUILDING_MAYA_BALL_COURT	Ball Court
 TXT_KEY_BUILDING_MAYA_BALL_COURT_STRATEGY	Build the [COLOR_BUILDING_TEXT]Ball Court[COLOR_REVERT], the Mayan replacement for the [COLOR_BUILDING_TEXT]Colosseum[COLOR_REVERT], to provide cities with three happiness instead of one.
 TXT_KEY_BUILDING_MERCURIAN_GATE	Mercurian Gate
@@ -1802,8 +1816,12 @@ TXT_KEY_BUILDING_REQUIRES_CASTER	[ICON_BULLET]Removed if the caster leaves the c
 TXT_KEY_BUILDING_REQUIRES_HOLY_CITY	[COLOR_WARNING_TEXT]Requires %F1_RelIcon Holy City[COLOR_REVERT]
 TXT_KEY_BUILDING_REQUIRES_LIST	[COLOR_WARNING_TEXT]Requires[SPACE][COLOR_REVERT]
 TXT_KEY_BUILDING_REQUIRES_NUM_CITIES	[COLOR_WARNING_TEXT]Requires at least %d1_Num Cities[COLOR_REVERT]
+TXT_KEY_BUILDING_REQUIRES_NUM_SPECIAL_BUILDINGS	[COLOR_WARNING_TEXT]Requires %s1_Name (%d2_NumCurr/%d3_NumTotal Total)[COLOR_REVERT]
+TXT_KEY_BUILDING_REQUIRES_NUM_SPECIAL_BUILDINGS_NO_CITY	[COLOR_WARNING_TEXT]Requires %s1_Name (%d2_NumTotal Total)[COLOR_REVERT]
 TXT_KEY_BUILDING_REQUIRES_NUM_TEAMS	[ICON_BULLET]Requires at least %d1_Num Teams
+TXT_KEY_BUILDING_REQUIRES_STRING	[COLOR_WARNING_TEXT]Requires [LINK=literal]%s1_Name[\LINK][COLOR_REVERT]
 TXT_KEY_BUILDING_REQUIRES_UNIT_LEVEL	[COLOR_WARNING_TEXT]Requires a Unit of Level %d1_Num Experience[COLOR_REVERT]
+TXT_KEY_BUILDING_REQUIRES_VICTORY	[ICON_BULLET]%s1_Name Victory must be Enabled
 TXT_KEY_BUILDING_RESIST_MAGIC	[ICON_BULLET]Units in the city are %D1% resistant to magic
 TXT_KEY_BUILDING_RIDE_OF_THE_NINE_KINGS	Ride of the Nine Kings
 TXT_KEY_BUILDING_RIVER_PLOTS	River Tiles
@@ -1990,7 +2008,6 @@ TXT_KEY_BUILDING_WORKER_MOD	[ICON_BULLET]Workers Build Improvements %D1_Mod%% Fa
 TXT_KEY_BUILDING_WORLD_WONDERS_PER_CITY	[COLOR_WARNING_TEXT]Can only Construct %d1_Num World Wonders per City[COLOR_REVERT]
 TXT_KEY_BUILDING_WORLD_WONDER_ALLOWED	[ICON_BULLET]World Wonder (%d1_Num Allowed)
 TXT_KEY_BUILDING_WORLD_WONDER_LEFT	[SPACE](World Wonder: %d1_Num Left)
-TXT_KEY_BUILDING_ZEN_GARDEN	Zen Garden
 TXT_KEY_BUILDING_ZULU_BARRACKS	Zulu Barracks
 TXT_KEY_BUILDING_ZULU_IKHANDA	Ikhanda
 TXT_KEY_BUILDING_ZULU_IKHANDA_PEDIA	Upon ascending to power, the great Zulu leader Shaka implemented a number of important civil and military reforms to his growing civilization. In addition to his important innovations to Zulu warfare - he is often credited with the invention of the famous Zulu "buffalo horns" formation, as well as the introduction of the "iklwa," a short stabbing spear that proved enormously successful in combat - Shaka also reorganized Zulu society to better support his military ambitions.[NEWLINE][NEWLINE]At the age of six, young boys joined Shaka's military as apprentice warriors. (This is a surprising parallel to the way that Spartan boys were raised - though it's unlikely that Shaka every heard of the Spartans.) The young warriors were trained in "ikhanda" (special military camps). During their training the Zulu boys were imbued with military fervor, put through rigorous physical exercise, and of course instructed in the use of the Zulu's powerful weapons. In battle they carried supplies and extra weapons for the warriors, and it is believed that they occasionally went out on hit-and-run raids against less dangerous enemy tribes. When the boys reached the appropriate age, they became full-fledged warriors. As a result the Zulu warriors were among the bravest and best-trained soldiers in the world.
@@ -4325,6 +4342,9 @@ TXT_KEY_CITY_SVARTALFAR_9	Drax Tallen
 TXT_KEY_CITY_WARNING_ANSWER1	Very well, do so at the next opportunity.
 TXT_KEY_CITY_WARNING_ANSWER2	Bah! Let them suffer!
 TXT_KEY_CITY_WARNING_ANSWER3	Wait, let me examine the city first...
+TXT_KEY_CITY_WARNING_HAPPY	Sire, the people %s1 are an unruly lot. Some are even refusing to work! They demand construction of a %s2
+TXT_KEY_CITY_WARNING_HEALTH	Sire, %s1 has become an unhealthy cesspool of filth and vermin! The citizens demand construction of a %s2
+TXT_KEY_CITY_WARNING_TITLE	Trouble in %s1
 TXT_KEY_CIVICOPTION_CULTURAL_VALUES	Cultural Values
 TXT_KEY_CIVICOPTION_ECONOMY	Economy
 TXT_KEY_CIVICOPTION_GOVERNMENT	Government
@@ -5008,7 +5028,6 @@ TXT_KEY_CORPORATION_HEADQUARTERS	Headquarters
 TXT_KEY_CORPORATION_PER_RESOURCE	per resource consumed
 TXT_KEY_CORPORATION_SCREEN_HEADQUARTERS	Headquarters:
 TXT_KEY_CORPORATION_SCREEN_TITLE	Guilds
-TXT_KEY_CRAFT_FAIR	Artisan Fair
 TXT_KEY_CROSSROADS_INI	Carve your fortune from the Crossroads of the World!
 TXT_KEY_CROSSROADS_WB_DESC	The year is 1300. European traders have caught the sweet waft of spices from the East, and the craving for the goods of the Orient has become an epidemic. China, for the first time in their history, has sent out trading vessels to establish contact with the West. Indian storehouses spill over with finery. It is a trader's age and you stand at the Crossroads of the World.[NEWLINE][NEWLINE]Features:[NEWLINE]Commerce Victory[NEWLINE]This new victory requires players to accumulate wealth through any means necessary. Taxes, pillaging, conquest or trade - the means matter not, only that in the end, you have the deepest coffers. Ten new Corporations are among the many features that will let players engage in unprecedented economic warfare.[NEWLINE][NEWLINE]Raiders[NEWLINE]These lightning-quick cavalry bear no markings of nationality, allowing players to pillage the lands of friends and foes alike. 
 TXT_KEY_CS_5_1_3	Bravado and luck, buddy.  Bravado and luck.
@@ -5062,6 +5081,7 @@ TXT_KEY_DAWN_OF_MAN_LANUN	[NEWLINE][NEWLINE]Strategy: The Lanun are a sea people
 TXT_KEY_DAWN_OF_MAN_LJOSALFAR	[NEWLINE][NEWLINE]Strategy: The Ljosalfar are a defensive civilization-after all, they can't build any siege weapons. Instead, the Light Elves are capable of effectively mounting a war of attrition, using their forested infrastructure to overwhelm the opponent with units and pillage his lands until he's as good as dead. There are alternative methods as well-getting the Baron from the Feral Bond tech and unleashing a horde of Werewolves is an effective way of taking down enemy cities, and mages always exist. With their ability to build things in forests, the Elves have a good synergy with the Fellowship of the Leaves' forest bonuses-but a Fellowship strategy isn't strictly necessary, and following an aggressive religion like the Octopus Overlords will give good early attack units in the form of the Drown.
 TXT_KEY_DAWN_OF_MAN_LUCHUIRP	[NEWLINE][NEWLINE]Strategy: Golems gain no experience, but a combination of the different golem-boosting buildings and Barnaxus will make them pretty mean anyway. Combine this with the fact that they're slightly more powerful than the units they replace, and you'll get a tough army, equally useful for defense and offense. Should you lose Barnaxus, you still have a chance of rebuilding him if you can kill the unit that destroyed him.
 TXT_KEY_DAWN_OF_MAN_MALAKIM	[NEWLINE][NEWLINE]Strategy: Varn Gosam starts with the Creative and Financial traits, a powerful combination in vanilla Civ, and useful here as well. Quick expansion yields good results, as monuments aren't necessary for Malakim cities to expand. Cottage-spammers will enjoy this Civ, but other strategies are viable as well. Malakim units also start with the nomad promotion, allowing them to ignore the negative effect of deserts. The Malakim's World Spell will help them reach powerful priest units quickly if they spread it well and build temples beforehand.
+TXT_KEY_DAWN_OF_MAN_SCREEN_TITLE	The Dawn of Man
 TXT_KEY_DAWN_OF_MAN_SHEAIM	[NEWLINE][NEWLINE]Strategy: Masters of summoning, the Sheaim's Eater of Dreams are a powerful unit made even more powerful by allowing their summoned units to last for three turns instead of the normal one. They also have access to the Pyre Zombie units, which explode when killed and do damage to the one killing them. Their most important difference from other civs concerns their method for acquiring units. Later melee units are not buildable, but by building a planar gate building, cities will acquire units freely over time, more so as the Armageddon Counter rises. This allows the Sheaim to focus research on the magic line without neglecting other units types.
 TXT_KEY_DAWN_OF_MAN_TEXT	The Age of Ice is ended and fertile lands are newly exposed by retreating sheets of ice. The glory of the Age of Magic is long past and the %s2_civ people set forth to build a civilization to recapture that lost knowledge. %s3_leader, your people have vested absolute power in you, trusting you to lead them into the next age, the Age of Rebirth.
 TXT_KEY_DECLARE_WAR_NO	No, let's reconsider...
@@ -5136,12 +5156,22 @@ TXT_KEY_DOMAIN_SEA	Water Units
 TXT_KEY_DOMESTIC_ADVISOR_APPLY	Apply Changes
 TXT_KEY_DOMESTIC_ADVISOR_APPLY_HELP	Click to change all selected cities governor settings to the options chosen.
 TXT_KEY_DOMESTIC_ADVISOR_AUTOMATION	Automation
+TXT_KEY_DOMESTIC_ADVISOR_COMMERCE	%s1 is generating %d2 commerce per turn.
+TXT_KEY_DOMESTIC_ADVISOR_CULTURE	%s1 has %s2 culture.
+TXT_KEY_DOMESTIC_ADVISOR_DATE_FOUNDED	%s1 was founded in %s2.
 TXT_KEY_DOMESTIC_ADVISOR_EMPHASIZE	When active, this will cause the selected cities to emphasize
+TXT_KEY_DOMESTIC_ADVISOR_FOOD	%s1 is generating %d2 food per turn.
 TXT_KEY_DOMESTIC_ADVISOR_FOUNDED	Founded
 TXT_KEY_DOMESTIC_ADVISOR_GREATPEOPLE	great people production.
 TXT_KEY_DOMESTIC_ADVISOR_GROWTH	growth.
+TXT_KEY_DOMESTIC_ADVISOR_HAPPY	%s1 has %d2 unhappy [NUM2:citizen:citizens] and %d3 happy [NUM3:citizen:citizens], for a net happiness of %d4 [NUM4:citizen:citizens].
+TXT_KEY_DOMESTIC_ADVISOR_HEALTH	%s1 has %d2 good health and %d3 bad health], for a total health of %d4.
+TXT_KEY_DOMESTIC_ADVISOR_MOUSEOVER_CITY	%s1 (Click to select city, double click to view city).
+TXT_KEY_DOMESTIC_ADVISOR_MOUSEOVER_PROD_CANCHANGE	%s1 is currently producing %s2.  Open drop down to change production in this city.
+TXT_KEY_DOMESTIC_ADVISOR_MOUSEOVER_PROD_NOCHANGE	%s1 is currently producing %s2.  You are currently unable to change production in this city.
 TXT_KEY_DOMESTIC_ADVISOR_NAME	Name
 TXT_KEY_DOMESTIC_ADVISOR_PRODUCING	Producing
+TXT_KEY_DOMESTIC_ADVISOR_PRODUCTION	%s1 is generating %d2 production per turn.
 TXT_KEY_DOMESTIC_ADVISOR_REDRAW	Redraw
 TXT_KEY_DOMESTIC_ADVISOR_SELECT_ALL	Select All Cities
 TXT_KEY_DOMESTIC_ADVISOR_TITLE	Domestic Advisor
@@ -6945,6 +6975,7 @@ TXT_KEY_EXTENDED_GAME_TITLE	The End of History...
 TXT_KEY_EXTENDED_GAME_YES	Wait! Just... one... more... turn...
 TXT_KEY_FATAL_ERROR	Fatal Error
 TXT_KEY_FEATURE_ADDS_FRESH_WATER	[NEWLINE][ICON_BULLET]Acts as a source of fresh water
+TXT_KEY_FEATURE_BAD_HEALTH	[NEWLINE][ICON_BULLET]+%s1[ICON_UNHEALTHY] in nearby cities
 TXT_KEY_FEATURE_BLIZZARD	Blizzard
 TXT_KEY_FEATURE_DOOR	Door
 TXT_KEY_FEATURE_EVERGREEN	Evergreen
@@ -6956,6 +6987,7 @@ TXT_KEY_FEATURE_FOREST_ANCIENT	Ancient Forest
 TXT_KEY_FEATURE_FOREST_BURNT	Burnt Forest
 TXT_KEY_FEATURE_FOREST_BURNT_PEDIA	[ICON_BULLET]Has a chance per turn of regrowing into a new forest.
 TXT_KEY_FEATURE_FOREST_NEW	New Forest
+TXT_KEY_FEATURE_GOOD_HEALTH	[NEWLINE][ICON_BULLET]+%s1[ICON_HEALTHY] in nearby cities
 TXT_KEY_FEATURE_ICE	Ice
 TXT_KEY_FEATURE_JUNGLE	Jungle
 TXT_KEY_FEATURE_MOVEMENT_COST	[NEWLINE][ICON_BULLET]Added movement Cost: %d1
@@ -7109,6 +7141,7 @@ TXT_KEY_GAMESPY_ERROR_EMAIL_ADDRESS_REQUIRED	An email address is required to cre
 TXT_KEY_GAMESPY_ERROR_NOT_CONNECTED_TO_INTERNET	Could not resolve connection manager host name.
 TXT_KEY_GAMESPY_ERROR_PASSWORD_NEEDED	A password must be provided
 TXT_KEY_GAMESPY_ERROR_UNIQUE_NICKNAME_NEEDED	A unique nickname must be provided.
+TXT_KEY_GAMESPY_LOGIN	Login
 TXT_KEY_GAMESPY_LOGIN_BUTTON	LOGIN
 TXT_KEY_GAMESPY_LOGIN_DESC	Enter your existing GameSpy ID and password to login.
 TXT_KEY_GAMESPY_LOGIN_NAME	GameSpy ID
@@ -8993,8 +9026,12 @@ TXT_KEY_MISC_CULTURE	Culture: %d1_Curr/%d2_Need [ICON_CULTURE]
 TXT_KEY_MISC_CULTURE_FLOAT	Culture: %s1_Curr/%d2_Need [ICON_CULTURE]
 TXT_KEY_MISC_CULTURE_LEVEL	%s1_CityName has achieved %s2_LevelName Culture!
 TXT_KEY_MISC_CULTURE_LEVEL_UNKNOWN	An unknown city has achieved %s1_LevelName Culture!
+TXT_KEY_MISC_DEAL	%s1 gives %s2 to %s3 for %s4
 TXT_KEY_MISC_DEAL_NO_CANCEL	This deal can be canceled in %d1 [NUM1:turn:turns]
 TXT_KEY_MISC_DEAL_NO_CANCEL_EVER	This deal cannot be canceled
+TXT_KEY_MISC_DEAL_ONESIDED	%s1 gives %s2 to %s3
+TXT_KEY_MISC_DEAL_ONESIDED_OURS	%s1 to %s2
+TXT_KEY_MISC_DEAL_ONESIDED_THEIRS	%s1 from %s2
 TXT_KEY_MISC_DECLARED_WAR_ON_YOU	%s1_PlyrName has declared war on you!
 TXT_KEY_MISC_DECREASE_RATE	Decrease %s1_CmrcType Rate by %d2_Mod%%
 TXT_KEY_MISC_DEFEAT	You have been defeated!!!
@@ -9157,6 +9194,7 @@ TXT_KEY_MISC_ON_CITIZEN_AUTO	Turn On Citizen Automation
 TXT_KEY_MISC_ON_HILLS	[SPACE]on Hills
 TXT_KEY_MISC_ON_PROD_AUTO	Turn On Production Automation
 TXT_KEY_MISC_OPEN_BORDERS	Open Borders
+TXT_KEY_MISC_OUR_DEAL	%s1 to %s2 for %s3
 TXT_KEY_MISC_OUT_OF_SYNC	***** OUT OF SYNC! MY SYNC SEED = %d1_Sync : MY OPTIONS SEED = %d2_Options *****[NEWLINE]
 TXT_KEY_MISC_PEACE_TREATY	Peace Treaty (%d1_Num Turns)
 TXT_KEY_MISC_PEDIA_BACK	Back
@@ -9658,12 +9696,15 @@ TXT_KEY_PEDIA_GREAT_PEOPLE	Great People: %D1
 TXT_KEY_PEDIA_HAPPY	Happy: %D1
 TXT_KEY_PEDIA_HEALTHY	Healthy: %D1
 TXT_KEY_PEDIA_HELP	Short Description
+TXT_KEY_PEDIA_HILLS_YIELD	%s1: %D2%F3 (on Hills)
+TXT_KEY_PEDIA_IRRIGATED_YIELD	%s1: %D2%F3 (with [LINK=CONCEPT_IRRIGATION]Irrigation[\LINK])
 TXT_KEY_PEDIA_LEADS_TO	Leads To
 TXT_KEY_PEDIA_MOVEMENT	Movement: %d1_Num
 TXT_KEY_PEDIA_NATIONAL_WONDER	National Wonder
 TXT_KEY_PEDIA_PROMOTION_UNITS	Available To
 TXT_KEY_PEDIA_RANGE	Range: %d1_Num
 TXT_KEY_PEDIA_REQUIRES	Requires
+TXT_KEY_PEDIA_RIVER_YIELD	%s1: %D2%F3 (next to River)
 TXT_KEY_PEDIA_ROUTE_YIELD	%s1: %D2%F3 (with [LINK=CONCEPT_MOVEMENT]%s4[\LINK])
 TXT_KEY_PEDIA_SCREEN_BACK	Back
 TXT_KEY_PEDIA_SCREEN_EXIT	Exit
@@ -9676,6 +9717,7 @@ TXT_KEY_PEDIA_STRENGTH	Strength: %d1_Num
 TXT_KEY_PEDIA_STRENGTH_DEFENSE	Strength: %d1_Num / %d2_Num
 TXT_KEY_PEDIA_TEAM_PROJECT	Team Project
 TXT_KEY_PEDIA_TEAM_WONDER	Team Wonder
+TXT_KEY_PEDIA_TECH_YIELD	%s1: %D2%F3 (with [LINK=literal]%s4[\LINK])
 TXT_KEY_PEDIA_TRAITS	Traits
 TXT_KEY_PEDIA_UNHAPPY	Unhappy: %D1
 TXT_KEY_PEDIA_UNHEALTHY	Unhealthy: %D1
@@ -9737,6 +9779,7 @@ TXT_KEY_PITBOSS_HOST_ERROR	Host Error
 TXT_KEY_PITBOSS_HUMAN	Human
 TXT_KEY_PITBOSS_INTERNET	Internet
 TXT_KEY_PITBOSS_KICK	Kick
+TXT_KEY_PITBOSS_KICK_VERIFY	Are you sure you want to kick %s1 out of the game?
 TXT_KEY_PITBOSS_KICK_VERIFY_TITLE	Double checking...
 TXT_KEY_PITBOSS_LAN	LAN
 TXT_KEY_PITBOSS_LEADER	Leader
@@ -9788,6 +9831,7 @@ TXT_KEY_PITBOSS_SAVE_AS_TEXT	Civ Save files
 TXT_KEY_PITBOSS_SAVE_ERROR	Save Error
 TXT_KEY_PITBOSS_SAVE_FILES	Civ Save files %s1
 TXT_KEY_PITBOSS_SAVE_GAME	Save Game
+TXT_KEY_PITBOSS_SAVE_SUCCESS	'%s1' successfully saved"
 TXT_KEY_PITBOSS_SAVE_TEXT	Save the Game
 TXT_KEY_PITBOSS_SCENARIO	New Scenario
 TXT_KEY_PITBOSS_SCENARIO_ERROR	Initialization Error
@@ -10084,6 +10128,7 @@ TXT_KEY_PROJECT_DOUBLE_SPEED_WITH	Double Production Speed with [LINK=literal]%s1
 TXT_KEY_PROJECT_ELEGY_OF_THE_SHEAIM	Elegy of the Sheaim
 TXT_KEY_PROJECT_ELEGY_OF_THE_SHEAIM_STRATEGY	Increases the Armageddon counter by a small amount.
 TXT_KEY_PROJECT_ENABLES_NUKES	[ICON_BULLET]Enables Nuclear Attacks (For all Players)
+TXT_KEY_PROJECT_ENABLES_SPECIAL	[ICON_BULLET]Enables %s1_Name (For all Players)
 TXT_KEY_PROJECT_GENESIS	Genesis
 TXT_KEY_PROJECT_GENESIS_STRATEGY	[TAB]Upgrades the terrain in the building empire.
 TXT_KEY_PROJECT_GLORY_EVERLASTING	Glory Everlasting
@@ -10102,9 +10147,14 @@ TXT_KEY_PROJECT_PACT_OF_THE_NILHORN_STRATEGY	Three allied Hill Giants will appea
 TXT_KEY_PROJECT_PURGE_THE_UNFAITHFUL	Purge the Unfaithful
 TXT_KEY_PROJECT_PURGE_THE_UNFAITHFUL_STRATEGY	Removes all non-state religions and non-state religions' buildings from all of the player's cities. It can cause rioting in the player's affected cities.
 TXT_KEY_PROJECT_REQUIRED_FOR_VICTORY	[ICON_BULLET]%s1 Required for %s2_victory Victory
+TXT_KEY_PROJECT_REQUIRED_STRING	[COLOR_WARNING_TEXT]Required for %s1_Name Victory (%d2_Num Total)[COLOR_REVERT]
 TXT_KEY_PROJECT_REQUIRED_TO_CREATE	Required to Create[SPACE]
 TXT_KEY_PROJECT_REQUIRED_TO_CREATE_ANYONE	Required for Anyone to Create[SPACE]
+TXT_KEY_PROJECT_REQUIRED_TYPE_VICTORY	[COLOR_WARNING_TEXT]Required for %s1_Name Victory (%d2_NumCurr/%d3_NumTotal Total)[COLOR_REVERT]
+TXT_KEY_PROJECT_REQUIRES	[COLOR_WARNING_TEXT]Requires [LINK=literal]%s1[\LINK] (%d2/%d3)[COLOR_REVERT]
 TXT_KEY_PROJECT_REQUIRES_ANYONE	[COLOR_WARNING_TEXT]Requires Someone to Create [LINK=literal]%s1_Name[\LINK][COLOR_REVERT]
+TXT_KEY_PROJECT_REQUIRES_NO_CITY	[COLOR_WARNING_TEXT]Requires [LINK=literal]%s1[\LINK] (%d2)[COLOR_REVERT]
+TXT_KEY_PROJECT_REQUIRES_STRING_VICTORY	[ICON_BULLET]%s1_Name Victory must be Enabled
 TXT_KEY_PROJECT_RITES_OF_OGHMA	Rites of Oghma
 TXT_KEY_PROJECT_RITES_OF_OGHMA_STRATEGY	Creates new raw mana nodes in the world.
 TXT_KEY_PROJECT_SAMHAIN	Samhain
@@ -10134,6 +10184,7 @@ TXT_KEY_PROJECT_THE_WHITE_HAND	The White Hand
 TXT_KEY_PROJECT_THE_WHITE_HAND_STRATEGY	Completing this ritual will spawn three [LINK=literal]Priest of Winter[\LINK] in the player's city.
 TXT_KEY_PROJECT_WORLD_NUM_ALLOWED	[ICON_BULLET]World Project (%d1_Num Allowed)
 TXT_KEY_PROJECT_WORLD_NUM_LEFT	[SPACE](World Project: %d1_Num Left)
+TXT_KEY_PROMOTION	%s1 promotion awarded!
 TXT_KEY_PROMOTION_ACCURACY	Accuracy
 TXT_KEY_PROMOTION_ACE	Ace
 TXT_KEY_PROMOTION_AERONS_CHOSEN	Aeron's Chosen
@@ -11540,6 +11591,8 @@ TXT_KEY_TECH_NEVER	Never
 TXT_KEY_TECH_NEVER_PEDIA	This tech is not available for research. It is used to block any action that players cannot build or perform on their own such as objects that are only given in special situations.
 TXT_KEY_TECH_NEVER_QUOTE	There is a rescue waiting for you. A god who may be willing to accept you back in his ara. Will you trade the ideology of three ages for a chance to retain your immortal soul? Are you willing to admit that you exist only to serve the gods?-Auric Ulvin
 TXT_KEY_TECH_NUM_TURNS	[ICON_BULLET][COLOR_HIGHLIGHT_TEXT]%d1_Num Turns[COLOR_REVERT]
+TXT_KEY_TECH_OBSOLETES	[COLOR_WARNING_TEXT]Obsoletes [LINK=literal]%s1_Name[\LINK][COLOR_REVERT]
+TXT_KEY_TECH_OBSOLETES_NO_LINK	[COLOR_WARNING_TEXT]Obsoletes %s1_Name[COLOR_REVERT]
 TXT_KEY_TECH_OMNISCIENCE	Omniscience
 TXT_KEY_TECH_OMNISCIENCE_PEDIA	Do not tell me anything! Needing to know is a sign of weakness, and to reveal ignorance is to expose oneself. If I truly knew everything, I would have no weaknesses, and all would tremble before me.-Arean Sethrail, Mage Elder
 TXT_KEY_TECH_OPTICS	Optics
@@ -11891,6 +11944,7 @@ TXT_KEY_TRAIT_HEALTH	[NEWLINE][SPACE][SPACE][ICON_BULLET]%D1[ICON_HEALTHY]/City
 TXT_KEY_TRAIT_HORSELORD	Horselord
 TXT_KEY_TRAIT_HORSELORD_SHORT	Hor
 TXT_KEY_TRAIT_IDEALIST	Idealist
+TXT_KEY_TRAIT_IDEALIST_SHORT	Ide
 TXT_KEY_TRAIT_IGNORE_FOOD_HELP	[NEWLINE][SPACE][SPACE][ICON_BULLET]Cities won't change population due to food
 TXT_KEY_TRAIT_IMPERIALIST	Imperialistic
 TXT_KEY_TRAIT_IMPERIALIST_SHORT	Imp
@@ -11901,7 +11955,10 @@ TXT_KEY_TRAIT_INGENUITY_SHORT	Ing
 TXT_KEY_TRAIT_INSANE	Insane
 TXT_KEY_TRAIT_INSANE_HELP	[NEWLINE][SPACE][SPACE][ICON_BULLET]Three traits are generated randomly and switch randomly during the game
 TXT_KEY_TRAIT_INSANE_SHORT	Insane
+TXT_KEY_TRAIT_INVENTIVE	Inventive
+TXT_KEY_TRAIT_INVENTIVE_SHORT	Inv
 TXT_KEY_TRAIT_ISOLATIONIST	Isolationist
+TXT_KEY_TRAIT_ISOLATIONIST_SHORT	Iso
 TXT_KEY_TRAIT_MAGIC_RESISTANT	Magic Resistant
 TXT_KEY_TRAIT_MAGIC_RESISTANT_SHORT	Mag
 TXT_KEY_TRAIT_MAX_ANARCHY	[NEWLINE][SPACE][SPACE][ICON_BULLET]Max %d1 [NUM1:Turn:Turns] of Anarchy
@@ -11922,11 +11979,16 @@ TXT_KEY_TRAIT_PLAYER_UNKNOWN	Unknown
 TXT_KEY_TRAIT_PRODUCTION_MODIFIER	[NEWLINE][SPACE][SPACE][ICON_BULLET]%d1%% Faster Production of[SPACE]
 TXT_KEY_TRAIT_PRODUCTIVE	Productive
 TXT_KEY_TRAIT_PRODUCTIVE_SHORT	Prod
+TXT_KEY_TRAIT_PROTECTIVE	Scientific
+TXT_KEY_TRAIT_PROTECTIVE_SHORT	Sci
 TXT_KEY_TRAIT_RAIDERS	Raiders
 TXT_KEY_TRAIT_RAIDERS_SHORT	Rai
 TXT_KEY_TRAIT_REALIST	Realist
+TXT_KEY_TRAIT_REALIST_SHORT	Rea
 TXT_KEY_TRAIT_RELIGIOUS	Religious
+TXT_KEY_TRAIT_RELIGIOUS_SHORT	Rel
 TXT_KEY_TRAIT_SCHOLAR	Scholar
+TXT_KEY_TRAIT_SCHOLAR_SHORT	Sco
 TXT_KEY_TRAIT_SINISTER	Sinister
 TXT_KEY_TRAIT_SINISTER_SHORT	Sin
 TXT_KEY_TRAIT_SPIRITUAL	Spiritual
@@ -11944,6 +12006,8 @@ TXT_KEY_TRAIT_TEAM_WONDER_PRODUCTION_MODIFIER	[NEWLINE][SPACE][SPACE][ICON_BULLE
 TXT_KEY_TRAIT_TOLERANT	Tolerant
 TXT_KEY_TRAIT_TOLERANT_SHORT	Tol
 TXT_KEY_TRAIT_TRADE_YIELD_MODIFIERS	[NEWLINE][SPACE][SPACE][ICON_BULLET]%D1%F2_yield from [ICON_TRADE]
+TXT_KEY_TRAIT_TYRANT	Tyrannical
+TXT_KEY_TRAIT_TYRANT_SHORT	Tyr
 TXT_KEY_TRAIT_UPGRADE_COST_MODIFIER_HELP	[NEWLINE][SPACE][SPACE][ICON_BULLET]%D1% to upgrade costs
 TXT_KEY_TRAIT_WEAK	Weak
 TXT_KEY_TRAIT_WEAK_SHORT	Weak
@@ -12137,6 +12201,7 @@ TXT_KEY_UNIT_ASSASSIN	Assassin
 TXT_KEY_UNIT_ASSASSIN_PEDIA	When a Hunter chooses to forgo her life in the woods and begin hunting the most elusive of animals, an Assassin is created. Although weak at attacking and defending cities, an Assassin's ability to attack the weakest unit in a stack makes it perfect for picking off spellcasters.
 TXT_KEY_UNIT_ASSASSIN_STRATEGY	Assassins attack the weakest unit in the defending stack, making them perfect for picking off enemy mages even in the best defended cities and stacks.
 TXT_KEY_UNIT_ATTACK	[ICON_BULLET]%D1_Change%% %s2_TerrOrFeat Attack
+TXT_KEY_UNIT_ATTACK_MOD_VS_CLASS	[ICON_BULLET]%D1_Change%% Attack vs. [LINK=literal]%s2_Class[\LINK]
 TXT_KEY_UNIT_ATTACK_SUBMARINE	Attack Submarine
 TXT_KEY_UNIT_ATTACK_SUBMARINE_STRATEGY	The [COLOR_UNIT_TEXT]Attack Submarine[COLOR_REVERT] is the ultimate defense against [COLOR_UNIT_TEXT]Submarines[COLOR_REVERT]. While unable to carry missiles, it does receive a significant bonus against enemy [COLOR_UNIT_TEXT]Submarines[COLOR_REVERT].
 TXT_KEY_UNIT_AT_INFANTRY	Anti-Tank
@@ -12340,6 +12405,7 @@ TXT_KEY_UNIT_DEATH_KNIGHT_PEDIA	Death Knights are a grotesque mockery of their l
 TXT_KEY_UNIT_DEATH_KNIGHT_STRATEGY	The Death Knight combines the strength and mobility of a typical knight with the ability to cast Death Spells.
 TXT_KEY_UNIT_DEFENDS_UNIT_FIRST	[ICON_BULLET]Defends first against %s1_unit_list
 TXT_KEY_UNIT_DEFENSE	[ICON_BULLET]%D1_Change%% %s2_TerrOrFeat Defense
+TXT_KEY_UNIT_DEFENSE_MOD_VS_CLASS	[ICON_BULLET]%D1_Change%% Defense vs. [LINK=literal]%s2_Type[\LINK]
 TXT_KEY_UNIT_DEMAGOG	Demagog
 TXT_KEY_UNIT_DEMAGOG_PEDIA	The Demagog can only be built during a Crusade (religion civic option). The unit is nearly as powerful as a Champion with only half the cost. Demagogs abandon their empire when the Crusade is ended.
 TXT_KEY_UNIT_DEMAGOG_STRATEGY	The Demagog is designed for fast mobilization, costing half as much as a champion. But they will abandon you when the crusade is over.
@@ -12823,6 +12889,8 @@ TXT_KEY_UNIT_MOBIUS_WITCH	Mobius Witch
 TXT_KEY_UNIT_MOBIUS_WITCH_STRATEGY	Mobius Witches have a chance of appearing in Sheaim cities with a Planar Gate and Mage Guild buildings. They have a chance of starting with a few spells.
 TXT_KEY_UNIT_MODERN_ARMOR	Modern Armor
 TXT_KEY_UNIT_MODERN_ARMOR_STRATEGY	[COLOR_UNIT_TEXT]Modern Armor[COLOR_REVERT] units are extremely powerful offensive weapons. Warlike leaders should build them early and often.
+TXT_KEY_UNIT_MOD_VS_TYPE	[ICON_BULLET]%D1_Change%% vs. [LINK=literal]%s2_Type[\LINK]
+TXT_KEY_UNIT_MOD_VS_TYPE_NO_LINK	[ICON_BULLET]%D1_Change%% vs. %s2_Type
 TXT_KEY_UNIT_MOKKA	Mokka
 TXT_KEY_UNIT_MOKKA_PEDIA	[TAB]Mokka sat playing in the snow. In one hand, he held a stickman and in the other a beast made out of packed snow. He made growls and weapon noises as he pretended they were fighting.[PARAGRAPH:1]"What have we here, a frostling out by himself?" [PARAGRAPH:1]Two scouts approached, weapons drawn. Mokka's staff lay on the ground beside him, but he was unwilling to give up his play to grab it. Instead he held the stickman up to the closest scout. Unimpressed the scout raised his axe. Mokka snapped the stickman in two; as it broke so did the scout, bending backwards until his head slammed into his heels with a thud. [PARAGRAPH:1]The second scout stepped away, terrified. [PARAGRAPH:1]Mokka held the snow beast out towards him, shaking it gently in the air. The scout heard the snow rising up behind him. Mokka had lost his stickman, he would need new toys to entertain him, and these new toys made their own sounds.
 TXT_KEY_UNIT_MOKKA_STRATEGY	Mokka can only be created by the Illian Samhain ritual.
@@ -12982,6 +13050,7 @@ TXT_KEY_UNIT_REPENTANT_ANGEL	Repentant Angel
 TXT_KEY_UNIT_REPENTANT_ANGEL_PEDIA	Repentant Angels are powerful, but they lose 1 point of strength every time they kill a living creature.
 TXT_KEY_UNIT_REQUIRED_TO_BUILD	[ICON_BULLET]Can be built by[SPACE]
 TXT_KEY_UNIT_REQUIRES_HOLY_CITY	[COLOR_WARNING_TEXT]Requires %F1_RelIcon Holy City[COLOR_REVERT]
+TXT_KEY_UNIT_REQUIRES_STRING	[COLOR_WARNING_TEXT]Requires %s1_Text[COLOR_REVERT]
 TXT_KEY_UNIT_REVELERS	Revelers
 TXT_KEY_UNIT_REVELERS_PEDIA	Everything they needed was provided. There was no disease, no weakness and a world of gifts to fascinate and learn from. They were overjoyed at what they had, until they saw someone with an even more amazing gift. This was the first pain they experienced.[PARAGRAPH:1]This pain consumed them, they lost an appreciation for the value of anything they possessed and were ruled by desire for what others had.[PARAGRAPH:1]A society without those willing to sacrifice made it impossible to wage real wars, so instead they cheated and stole from each other. A small group tried to protect themselves from their own envy by binding their eyes. Unable to see what others had they became content. These were the only ones who survived. [PARAGRAPH:1]Even without their sight the Revelers, as those from other worlds came to call them, remain true to their nature. They still have a fondness for gambling and stealing, and will come through a Planar Gate if the city contains a Gambling House. Their eyes remain bound but it does not hinder them, and they are even able to detect shadows and other hidden units.
 TXT_KEY_UNIT_REVELERS_STRATEGY	Revelers are automatically created in Sheaim cities that contain a Planar Gate and a Gambling House. Use them as scouts and despite the caecus cloth that cover their eyes, they can see very well, even detecting invisible units around them.
@@ -13249,6 +13318,9 @@ TXT_KEY_VICTORY_RELIGIOUS	Religious
 TXT_KEY_VICTORY_RESET	[COLOR_HIGHLIGHT_TEXT]Mission Failed! All progress of %s1_player towards a %s2_victory has been lost![COLOR_REVERT]
 TXT_KEY_VICTORY_SCORE	Score
 TXT_KEY_VICTORY_SCREEN_BUILDING	Build %s1 %s2
+TXT_KEY_VICTORY_SCREEN_BUILT	Built by %s1
+TXT_KEY_VICTORY_SCREEN_CITY_CULTURE	%d1 cities with %s2 Culture
+TXT_KEY_VICTORY_SCREEN_ELECTION	Election triggered by %s1
 TXT_KEY_VICTORY_SCREEN_ELIMINATE_ALL	Eliminate all rivals
 TXT_KEY_VICTORY_SCREEN_HIGHEST_SCORE	Highest score at %s1
 TXT_KEY_VICTORY_SCREEN_NOT_BUILT	Not yet built
@@ -13732,6 +13804,7 @@ TXT_KEY_WITH_SPACE	[SPACE]with[SPACE]
 TXT_KEY_WONDERS_SCREEN_BEING_BUILT_BY	Being built by %s1_CivShortDesc
 TXT_KEY_WONDERS_SCREEN_TOP_CITIES_TEXT	Top 5 Cities / Wonders
 TXT_KEY_WONDERS_SCREEN_WONDERS_TEXT	Wonders of the World
+TXT_KEY_WONDER_SCREEN_TEXT	You have completed %s1
 TXT_KEY_WONDER_SCREEN_TITLE	Wonder Acquired
 TXT_KEY_WORLDSIZE_DUEL_HELP	A very tiny map with only one opponent.  This is tougher than it sounds because you will have to work extra hard at research without the benefit of multiple trading partners.
 TXT_KEY_WORLDSIZE_HUGE_HELP	If you are looking for a truly epic experience, this map size is for you.  It has room for you and 10 opponents.
@@ -13756,7 +13829,6 @@ TXT_KEY_WWI_CITY_NOVGOROD	Novgorod
 TXT_KEY_YIELD_COMMERCE	Commerce
 TXT_KEY_YIELD_FOOD	Food
 TXT_KEY_YIELD_PRODUCTION	Production
-TXT_KEY_ZEN_GARDEN	Zen Garden
 TXT_KEY_ZOOM_CITY_HELP	Enter the city screen for this City
 TXT_KEY_ZOOM_TO_CITY_DOMESTIC	Zoom
 TXT_LEGAL_LINE_1	&#169;2007 Take-Two Interactive Software and its subsidiaries. Developed by Firaxis Games. Sid Meier's Civilization IV: Warlords, Civ, Civilization, 2K Games, the 2K logo, Firaxis Games, the Firaxis Games logo and Take-Two Interactive Software are all trademarks and/or registered trademarks of Take-Two Interactive Software, Inc. in the USA and/or foreign countries.  GameSpy and the "Powered by GameSpy" design are trademarks of GameSpy Industries, Inc. All other marks and trademarks are the property of their respective owners. Uses Bink Video (Copyright &#169;1997-2007 by RAD Game Tools, Inc.). Uses Miles Sound System &#169;1991-2007 by RAD Game Tools, Inc.). Portions of this software are included under license from Numerical Design, Ltd. (&#169;2007) and Scaleform Corporation (&#169;2007). Unauthorized copying,reverse engineering, transmission, public performance, rental, pay for play, or circumvention of copy protection is strictly prohibited. All rights reserved. 

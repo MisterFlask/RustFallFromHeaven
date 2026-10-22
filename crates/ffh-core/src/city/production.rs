@@ -1052,6 +1052,9 @@ impl Game {
         let hurry_gold = self.city_hurry_gold(c, hurry);
         let hurry_population = self.city_hurry_population(c, hurry);
         let hurry_anger_length = self.city_hurry_anger_length(c, hurry);
+        if self.telemetry.on() {
+            self.tel_hurry(c, hurry, hurry_gold, hurry_population);
+        }
 
         let production = self.city_hurry_production(c, hurry);
         self.city_change_production(c, production);
