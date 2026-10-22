@@ -158,7 +158,7 @@ A building is built through these paths:
    | XML | Weight |
    |---|---|
    | `YieldChanges`, `YieldModifiers`, `GlobalYieldModifiers` | food 20, production 15, commerce 7 a point (modifiers on the city's rate; global ones x cities up to 8 / 2) |
-   | `CommerceChanges` + `ObsoleteSafeCommerceChanges`, `CommerceModifiers`, `GlobalCommerceModifiers` | gold 8, research 9, culture 4, espionage 1 a point; flat culture again (x150, up to 3) in a city at culture level 1 or less for a building up to 120 hammers |
+   | `CommerceChanges` + `ObsoleteSafeCommerceChanges`, `CommerceModifiers`, `GlobalCommerceModifiers` | gold 8, research 9, culture 4, espionage 1 a point. A bonus for flat culture in a new city (x150, up to 3, culture level 1 or less, up to 120 hammers) reads `CommerceChanges` only, and every buildable building keeps its culture in `ObsoleteSafeCommerceChanges` (only the unbuildable Freak Show has culture in `CommerceChanges`), so it never applies: a Monument is worth 80, not 380 |
    | `iHappiness`, `iAreaHappiness`, `iGlobalHappiness`, `iStateReligionHappiness` (with a `StateReligion`), `BonusHappinessChanges` (resources the city has) | 180 a face at the cap, 100 one below, 35 otherwise; area and global ones also x30 / x50 per other city |
    | `iHealth`, `iAreaHealth`, `iGlobalHealth`, `BonusHealthChanges` | 120 at the cap, 60 within 2, 20 otherwise |
    | `SpecialistCounts`, `iFreeSpecialist`, `iGreatPeopleRateChange`, `iGreatPeopleRateModifier` | slots x15 x (population - 4, 0-8); free specialist 120; great people points 40 |
