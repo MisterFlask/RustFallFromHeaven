@@ -95,7 +95,7 @@ fn disband(g: &mut Game, p: PlayerId) {
             continue;
         }
         // As many as production wants there (see production::decide).
-        let keep = if crate::fix_on("need") { crate::production::garrison_need(g, c) } else if g.city_is_capital(c) || crate::production::barbarians_near(g, p, plot, 4) { 2 } else { 1 };
+        let keep = if g.city_is_capital(c) || crate::production::barbarians_near(g, p, plot, 4) { 2 } else { 1 };
         let mut garrison: Vec<UnitId> = g.map.plots[plot]
             .units
             .iter()
@@ -116,7 +116,7 @@ fn disband(g: &mut Game, p: PlayerId) {
         if betrays || !g.unit_can_scrap(u) {
             continue;
         }
-        crate::trace!(g, p, "bankrupt: disbanding {} in {} age {}", g.d.units[g.units[u].unit_type].base.type_, g.cities[c].name, g.game_turn() - g.units[u].game_turn_created);
+        crate::trace!(g, p, "bankrupt: disbanding {} in {}", g.d.units[g.units[u].unit_type].base.type_, g.cities[c].name);
         g.unit_scrap(u);
         done += 1;
     }
@@ -163,7 +163,7 @@ fn disband_field_units(g: &mut Game, p: PlayerId, max: i32) {
         if hero || betrays || g.units[u].duration > 0 || !g.unit_can_scrap(u) {
             continue;
         }
-        crate::trace!(g, p, "cannot pay: disbanding field unit {} age {}", info.base.type_, g.game_turn() - g.units[u].game_turn_created);
+        crate::trace!(g, p, "cannot pay: disbanding field unit {}", info.base.type_);
         g.unit_scrap(u);
         done += 1;
     }

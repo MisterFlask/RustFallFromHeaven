@@ -33,12 +33,50 @@ Each entry answers three questions, from the games themselves (counts with `ffh 
 
 ## Low-hanging fixes (2026-10-21)
 
-Six fixes for things a good player does differently, found by tracing seeds 1-18 (the three kept
--- great people building shrines and rushing wonders, explorers moving one safe turn at a time,
-young units never scrapped -- are in docs/AI.md, "Measured together", round 6: neutral on fresh
-seeds, kept as plainly right play). Each was measured alone against the same binary
+Six fixes for things a good player does differently, found by tracing seeds 1-18 (the two kept --
+great people building shrines and rushing wonders, explorers moving one safe turn at a time --
+are in docs/AI.md, "Measured together", round 6: neutral on fresh seeds, kept as plainly right
+play), and a garrison quota tried after review. Each was measured alone against the same binary
 with it off (a scratch switch), seeds 1-48, 300 turns (6 civs, standard map); the great-person
 change also in full games, the allied-barbarian one with the Clan of Embers forced.
+
+### Young units never scrapped (removed on review)
+
+1. Traced build-then-scrap churn: in the civs that scrapped most (seeds 3 and 5), 30-60 units a
+   civ were trained in the windows they scrapped 8-34, and scrapped defenders were often 1-9 turns
+   old (a Svartalfar bankruptcy scrapped one a turn while its cities trained new ones). The build
+   rules (`production::decide`: a visible threat within 3 plots, a barbarian unit within 3-4) and
+   the scrap rules (`finance::disband`, `empire::disband`: no threat in sight, a barbarian within
+   4) both read the moment, so a raider walking in and out of range flipped both.
+2. A unit trained in the last 20 turns was never scrapped for upkeep. Development (seeds 1-48):
+   cities lost to the barbarians -24% (t -2.5), gold +8% (t 2.4), legacy +1.0% (t 0.8); validated
+   only inside a combination with the great-person and explorer changes, which was neutral on
+   fresh seeds (docs/AI.md, round 6).
+3. Removed on the owner's review: the 20 turns is an arbitrary time constant on the scrap side,
+   and the build and scrap rules still disagree. The right version is one notion of what a city
+   needs that both sides read -- see the next entry for why that notion cannot be built from
+   lasting map features alone.
+
+### Garrison quota from lasting threats only (reverted)
+
+1. The owner's rule: a city's defenders follow what it needs in expectation, not a barbarian
+   wandering into range; what is needed is built and kept whatever it costs (research pays),
+   what is not is not built. One quota for production, finance and the bankrupt rule: one, two
+   in the capital, one more within 4 plots of a barbarian lair or town, at war, for a defensive
+   leader, the victory guard; no affordability cap; nothing seen this turn (no +1 for a threat in
+   sight, no barbarian unit counted). Above it only step 1's overwhelmed garrison trained more.
+2. The churn went (seed 3: defenders trained 183 -> 78, units scrapped 110 -> 42, scrapped under
+   10 turns old 30 -> 3) and the cities fell (seeds 1-48, 300 turns): military -18% at turn 100,
+   -22% at turn 200 (t -11); cities -6.6% at turn 100 (t -3.9), -5.1% at turn 300 (t -2.4); cities
+   lost to the barbarians +73% (t 2.5), razed +112% (t 3.7); civs eliminated 0.33 -> 0.58 a game
+   (t 1.9); legacy -2.8%, -4.1%, -3.0%.
+3. The raiders in sight are not noise: barbarians spawn in the unowned land around our frontier
+   and roam, and lairs and towns account for few of them, so a quota from lasting map features
+   undercounts the expected threat badly. The principle holds, but "in expectation" needs an
+   estimate of how often raiders come by each city, which the moment cannot give and the map
+   alone does not: a per-city record of the threats seen (a field on `City`, saved with the game:
+   the turn and strength of the last threat, or a decaying average), read by both the build and
+   the scrap rules.
 
 ### Settlers under a threat the garrison holds (reverted)
 

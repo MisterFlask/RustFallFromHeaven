@@ -338,7 +338,7 @@ pub fn disband(g: &mut Game, p: PlayerId) -> bool {
         if crate::production::local_threat(g, p, plot, 3) > 0 {
             continue;
         }
-        let keep = if crate::fix_on("need") { crate::production::garrison_need(g, c) } else if g.city_is_capital(c) || crate::production::barbarians_near(g, p, plot, 4) { 2 } else { 1 };
+        let keep = if g.city_is_capital(c) || crate::production::barbarians_near(g, p, plot, 4) { 2 } else { 1 };
         let mut garrison: Vec<UnitId> = g.map.plots[plot]
             .units
             .iter()
@@ -386,7 +386,7 @@ pub fn disband(g: &mut Game, p: PlayerId) -> bool {
         if done >= max || !g.units.contains(u) {
             break;
         }
-        crate::trace!(g, p, "finance: support {}% of commerce, disbanding {} ({}% of our best) age {} ai {:?} research {} target {}", f.unit_share(), d.units[g.units[u].unit_type].base.type_, key, g.game_turn() - g.units[u].game_turn_created, g.units[u].ai_type, f.research_pct, f.target);
+        crate::trace!(g, p, "finance: support {}% of commerce, disbanding {} ({}% of our best)", f.unit_share(), d.units[g.units[u].unit_type].base.type_, key);
         g.unit_scrap(u);
         done += 1;
     }
