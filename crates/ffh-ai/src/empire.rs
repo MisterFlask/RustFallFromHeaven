@@ -95,7 +95,7 @@ fn disband(g: &mut Game, p: PlayerId) {
             continue;
         }
         // As many as production wants there (see production::decide).
-        let keep = if g.city_is_capital(c) || crate::production::barbarians_near(g, p, plot, 4) { 2 } else { 1 };
+        let keep = if crate::fix_on("need") { crate::production::garrison_need(g, c) } else if g.city_is_capital(c) || crate::production::barbarians_near(g, p, plot, 4) { 2 } else { 1 };
         let mut garrison: Vec<UnitId> = g.map.plots[plot]
             .units
             .iter()
@@ -112,9 +112,6 @@ fn disband(g: &mut Game, p: PlayerId) {
         }
         garrison.sort_by_key(|&u| (crate::view::defense_power(g, u), u));
         let u = garrison[0];
-        if crate::finance::young(g, u) {
-            continue;
-        }
         let betrays = g.d.promotions.keys().any(|pr| g.units[u].has_promotion[pr] && g.d.promotions[pr].betrayal_chance != 0);
         if betrays || !g.unit_can_scrap(u) {
             continue;
@@ -151,9 +148,6 @@ fn disband_field_units(g: &mut Game, p: PlayerId, max: i32) {
         return;
     }
     units.sort_by_key(|&u| (crate::view::attack_power(g, u) + 50 * g.units[u].experience, u));
-    // Only the weakest surplus, and of it only units old enough (finance::KEEP_YOUNG_TURNS).
-    units.truncate(units.len() - keep as usize);
-    units.retain(|&u| !crate::finance::young(g, u));
     let mut done = 0;
     for u in units {
         if done >= max || !g.units.contains(u) {

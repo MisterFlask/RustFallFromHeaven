@@ -291,19 +291,6 @@ fn relative_power(g: &Game, u: UnitId, best_def: i64, best_att: i64, garrison: b
 /// sight, then idle workers beyond twice what the worked plots need. Never heroes, units that
 /// would defect, summons, a city's last defender. Returns whether it disbanded anything
 /// (`empire::disband` then stops).
-/// A unit trained in the last this many turns is never scrapped for its upkeep. The scrap rules
-/// look at the moment (no threat in sight, no barbarian within 4 plots) and the build rules too,
-/// so a barbarian walking in and out of sight had cities train a defender and the treasury scrap
-/// it a few turns later, again and again (scrapped units aged 1-9 turns, every turn of a civ's
-/// bankruptcy). A unit that was worth training is kept long enough to outlast that flicker; the
-/// weakest older surplus still goes, and a young one is not replaced by a stronger one.
-pub(crate) const KEEP_YOUNG_TURNS: i32 = 20;
-
-/// Was `u` trained too recently to scrap ([`KEEP_YOUNG_TURNS`])?
-pub(crate) fn young(g: &Game, u: UnitId) -> bool {
-    g.game_turn() - g.units[u].game_turn_created < KEEP_YOUNG_TURNS
-}
-
 pub fn disband(g: &mut Game, p: PlayerId) -> bool {
     let f = state(g, p);
     if !f.support_heavy() || f.at_war || g.player_calculate_unit_cost(p) == 0 {
@@ -342,7 +329,7 @@ pub fn disband(g: &mut Game, p: PlayerId) -> bool {
     let keep_field = 1 + g.players[p].cities.len() as i32 / 4;
     fields.sort_by_key(|&u| (relative_power(g, u, best_def, best_att, false) + 10 * g.units[u].experience as i64, u));
     let surplus_field = (fields.len() as i32 - keep_field).max(0) as usize;
-    for &u in fields.iter().take(surplus_field).filter(|&&u| !young(g, u)) {
+    for &u in fields.iter().take(surplus_field) {
         cands.push((relative_power(g, u, best_def, best_att, false), u));
     }
     // Garrison units beyond the quota production keeps when it cannot afford more.
@@ -351,7 +338,7 @@ pub fn disband(g: &mut Game, p: PlayerId) -> bool {
         if crate::production::local_threat(g, p, plot, 3) > 0 {
             continue;
         }
-        let keep = if g.city_is_capital(c) || crate::production::barbarians_near(g, p, plot, 4) { 2 } else { 1 };
+        let keep = if crate::fix_on("need") { crate::production::garrison_need(g, c) } else if g.city_is_capital(c) || crate::production::barbarians_near(g, p, plot, 4) { 2 } else { 1 };
         let mut garrison: Vec<UnitId> = g.map.plots[plot]
             .units
             .iter()
@@ -367,7 +354,7 @@ pub fn disband(g: &mut Game, p: PlayerId) -> bool {
         garrison.sort_by_key(|&u| (crate::view::defense_power(g, u), u));
         let surplus = garrison.len() - keep as usize;
         for &u in garrison.iter().take(surplus) {
-            if !no_scrap(g, u) && !young(g, u) {
+            if !no_scrap(g, u) {
                 cands.push((relative_power(g, u, best_def, best_att, true), u));
             }
         }
@@ -384,7 +371,7 @@ pub fn disband(g: &mut Game, p: PlayerId) -> bool {
         .filter(|&u| g.units[u].ai_type == Some(UnitAIType::UNITAI_WORKER) && g.unit_get_domain_type(u) == DomainType::DOMAIN_LAND)
         .collect();
     if workers.len() as i32 > need {
-        let idle = workers.iter().copied().filter(|&u| !no_scrap(g, u) && !young(g, u) && g.units[u].group.is_some_and(|grp| g.groups[grp].mission_queue.is_empty()));
+        let idle = workers.iter().copied().filter(|&u| !no_scrap(g, u) && g.units[u].group.is_some_and(|grp| g.groups[grp].mission_queue.is_empty()));
         for u in idle.take((workers.len() as i32 - need) as usize) {
             cands.push((150, u));
         }
