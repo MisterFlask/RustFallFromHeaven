@@ -162,6 +162,8 @@ export function spectating() {
  *  this one), and the top bar redraws (`spectate`). */
 function spectateChanged() {
   S.spectating = spect !== null;
+  // The phone layout gives the spectator bar its own row (iso.css).
+  document.body?.classList.toggle("spectating", S.spectating);
   emit("spectate");
 }
 
@@ -594,16 +596,16 @@ export function spectatorBar() {
   }
   return h(
     "span.spectate",
-    h("b", observed ? "Observing" : "Spectating"),
+    h("b.sp-label", observed ? "Observing" : "Spectating"),
     spect.playing
-      ? h("button.small", { id: "spectate-pause", onclick: pauseSpectating, title: "Pause after this turn" }, "⏸ Pause")
-      : h("button.small", { id: "spectate-play", onclick: resumeSpectating, title: "Play turn after turn" }, "▶ Play"),
-    h("button.small", { id: "spectate-step", onclick: stepSpectating, disabled: spect.playing, title: "One turn" }, "⏭ Step"),
+      ? h("button.small", { id: "spectate-pause", onclick: pauseSpectating, title: "Pause after this turn" }, "⏸", h("span.sp-label", " Pause"))
+      : h("button.small", { id: "spectate-play", onclick: resumeSpectating, title: "Play turn after turn" }, "▶", h("span.sp-label", " Play")),
+    h("button.small", { id: "spectate-step", onclick: stepSpectating, disabled: spect.playing, title: "One turn" }, "⏭", h("span.sp-label", " Step")),
     pace,
-    followSel ? h("span.dim", " Follow ") : null,
+    followSel ? h("span.dim.sp-label", " Follow ") : null,
     followSel,
-    h("button.small", { id: "spectate-flag", onclick: () => flagPrompt(), title: "Flag play that looks wrong: pick the plot [F over it]" }, "⚑ Flag"),
-    observed ? null : h("button.small", { id: "spectate-stop", onclick: stopSpectating, title: "Stop spectating (debug reveal goes back off)" }, "■ Stop"),
+    h("button.small", { id: "spectate-flag", onclick: () => flagPrompt(), title: "Flag play that looks wrong: pick the plot [F over it]" }, "⚑", h("span.sp-label", " Flag")),
+    observed ? null : h("button.small", { id: "spectate-stop", onclick: stopSpectating, title: "Stop spectating (debug reveal goes back off)" }, "■", h("span.sp-label", " Stop")),
     h("span.dim#spectate-running", st.phase === "running" ? " playing…" : ""),
   );
 }

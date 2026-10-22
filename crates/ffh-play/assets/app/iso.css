@@ -540,6 +540,17 @@ html.iso .iso-name .coords { font-weight: 400; }
 
   html.iso .tooltip { max-width: min(440px, calc(100vw - 12px)); }
   html.iso #toasts { left: 8px; right: 8px; transform: none; }
+  /* Watching the AI (tools.js): the spectator bar is too wide for the top bar; it gets its own row
+     above the bottom bar, without its labels, and the selection's card moves up over it. */
+  html.iso body.spectating #phase .spectate {
+    position: fixed; z-index: 5; left: 4px; right: 4px; bottom: calc(var(--iso-bar-h) + 8px); height: 48px;
+    margin: 0; padding: 0 4px; gap: 4px; justify-content: space-between; overflow-x: auto; scrollbar-width: none;
+    border: 6px solid transparent; border-image: var(--iso-panel);
+    background: var(--iso-grain) 0 0 / var(--iso-grain-size), linear-gradient(180deg, var(--iso-navy-top), var(--iso-navy-bot)); background-clip: padding-box;
+  }
+  html.iso body.spectating #phase .spectate .sp-label, html.iso body.spectating #spectate-running { display: none; }
+  html.iso body.spectating #phase .spectate select { max-width: 7.5em; }
+  html.iso body.spectating #side { bottom: calc(var(--iso-bar-h) + 8px + 56px); max-height: 34vh; max-height: 34dvh; }
   html.iso .city-cols { grid-template-columns: minmax(0, 1fr); }
 }
 

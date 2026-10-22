@@ -291,7 +291,8 @@ with the same settings, move for move (`ffh-cli`'s tests check it at every turn 
 what you see can be replayed by the AI's developers. The top bar has ▶ Play / ⏸ Pause, ⏭ Step
 (one turn), the pace (Fast, Normal, Slow, Very slow: the pause between two turns, remembered by
 this browser), **Follow** (the civilization whose gold, research and score the top bar shows; its
-stacks are drawn as yours) and **⚑ Flag**. Nothing can be ordered: a click on the map shows the
+stacks are drawn as yours) and **⚑ Flag** (on a phone, a row of their own above the bottom
+bar). Nothing can be ordered: a click on the map shows the
 plot in the side panel (each unit with its strength, health and level, the AI's role for it and
 its group's orders, and a line for the stack: how many units, how many can fight, the strongest,
 the owners), commands are refused, and Next turn (Enter) plays one turn. After each turn the map
