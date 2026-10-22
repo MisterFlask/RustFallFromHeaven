@@ -1,7 +1,8 @@
 # AI design (ffh-ai)
 
 Before changing the AI, read `docs/AI_LOG.md`: the changes that did not move the win rate, why,
-and what that implies (CLAUDE.md, "AI changes").
+and what that implies (CLAUDE.md, "AI changes"). `docs/ENTITIES.md` inventories, entity by entity,
+how far this AI uses every unit, building and spell, and the gaps that recur.
 
 **It plays the way an expert human would** (the owner's decision, 2026-10-21; CLAUDE.md, "AI
 changes"). Each behaviour starts from what a strong player would see, want and do in that

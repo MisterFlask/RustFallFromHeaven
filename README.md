@@ -27,7 +27,7 @@ Play in the browser, nothing to install (on a phone too): https://misterflask.gi
 | `crates/ffh-cli` | `ffh` binary: data checks, AI-only autoplay, benchmarks |
 | `crates/ffh-stress` | `ffh-stress` binary: AI games over a matrix of game settings (speed, handicap, era, world size, civs, climate, sea level, options, teams, victories), crashes caught per game |
 | `crates/ffh-play` | `ffh-play` binary and library: human play (session core, JSONL agent, HTTP server with the browser client; see `docs/HUMAN.md`) |
-| `docs/` | `PORTING.md` (status, changes from FFH2), `AI.md`, `ARCHITECTURE.md`, `DATA.md`, `AGENTS.md` (parallel agents), `porting/*.md` (C++ function maps) |
+| `docs/` | `PORTING.md` (status, changes from FFH2), `AI.md`, `ENTITIES.md` (every unit, building and spell: what it does, how to play it, how far the AI uses it), `ARCHITECTURE.md`, `DATA.md`, `AGENTS.md` (parallel agents), `porting/*.md` (C++ function maps) |
 | `tools/` | reference fetch, XML vendoring, enum/define generators, C++ parity harness; `tools/agents/`: infrastructure for parallel agents (shared incremental builds per revision or worktree, a run cache for deterministic games, machine-wide CPU slots, sparse agent worktrees; `docs/AGENTS.md`) |
 
 ## Build and run

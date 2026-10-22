@@ -32,11 +32,167 @@ new commit and diff them: the entities whose sheet changed are the entries to re
 An AI change that names an entity, or changes a valuation below, should update its entries and the
 summary.
 
+## Summary
+
+| File | Entries | Directed | Valued | Partial | Incidental | Unused | Not an AI choice |
+|---|---|---|---|---|---|---|---|
+| [units](entities/units.md) | 325 | 26 | 105 | 62 | 35 | 20 | 77 |
+| [buildings and projects](entities/buildings.md) | 187 | 13 | 49 | 37 | 18 | 40 | 30 |
+| [spells](entities/spells.md) | 267 | 30 | 60 | 57 | 38 | 82 | 0 |
+| all | 779 | 69 | 214 | 156 | 91 | 142 | 107 |
+
+Each file opens with the same table by section. Read the grades as how much of an entity the code
+can use, not as how often it shows up in games: a Valued unit behind a tech the AI rarely
+researches is still rare, and several Directed world spells have AI timings that seldom open (each
+entry says so). Units and spells that only the barbarians have are graded by how the barbarian AI
+uses them.
+
+## What the inventory shows
+
+The patterns that recur across many entries (each entry gives its own case):
+
+**Most civilizations never get arcane casters.** Adepts need a Mage Guild in the training city.
+The guild has no field the building value reads (value 0), `production::enabler_building` takes
+only defenders and attackers, and the generic caster step comes after every building worth
+building, so only `civs::unique_casters` builds one (Amurites, Svartalfar); the Doviello and Clan
+Shamans need none and every Infernal city gets a free guild. Every other civilization has Adepts,
+Mages and Archmages only in a captured city that kept its guild (the Catacomb Libralus, which
+gives guilds everywhere, itself needs one). Casters that do exist are used well (`magic.rs`), and
+casters also come from heroes, priests and unique units; but most of the 72 sphere spells, Valued
+in themselves, have no AI caster in most games. (Training casters by what their spells are worth
+was tried and lost wins: docs/AI_LOG.md, "Casters through a Mage Guild".)
+
+**Valuations blind to the main effect.**
+- The generic building value reads yields, commerce, happiness, health, specialists, experience
+  and a few more fields. What it does not read decides many buildings: free buildings in every city
+  (the Guild of Hammers' Forges, the Catacomb Libralus' guilds, The Nexus, the Tower of Eyes, the
+  Grand Menagerie: valued at their token culture), free resources (palaces' mana, the Mines of
+  Gal-Dur's iron, the Brewing House's ale), free promotions, golden ages, free techs, global
+  experience, sea yields and sea experience (the Shipyard is worth 0), and every effect in Python
+  (on a unit built: the golem workshops, the Asylum, the Chancel of Guardians). Only 5 of the 30
+  world wonders have their main effect read.
+- Its new-city culture term never applies (it reads `CommerceChanges`; buildings keep their
+  culture in `ObsoleteSafeCommerceChanges`), so a Monument is worth 80 instead of 380.
+- City-spell buildings are valued as if the city were not threatened (`building_value(g, c, b, 0)`
+  in `magic.rs`): Wall of Stone is worth 3 and never draws a caster to a besieged city.
+- Summons are valued by their type's base strength: mana affinity (10 of the 24 summons), the Tower
+  of the Elements' Strong and copied promotions are not seen; the Djinn (strength 1 plus one per
+  mana) looks worthless.
+- `magic::promo_pct` reads `iCombatPercentDefense` for defense, a field the rules never apply (they
+  apply `iCombatPercent` to attack and defense): Shield of Faith, Withered, Enraged and Puppet are
+  misvalued.
+- Unit power counts strength, damage types, moves, first strikes, withdrawal, collateral and city
+  bonuses, never free promotions, abilities or immortality, and the Defense role ignores
+  `bNoDefensiveBonus` (the War Tortoise outranks the Crossbowman as a garrison). Units reached by
+  upgrade at a minimum level (Immortal, Ogre Warchief, Vampire Lord, the high priests) come only
+  when a stronger target is blocked: `units::upkeep` takes the upgrade with the most raw power.
+
+**FfH's spell terms, where `magic.rs` does not reach.** Abilities, world spells and Python-only
+spells keep `casting::ffh_value`, which often reduces to the spell's `iAIWeight`:
+- flat weights decide whatever the situation: Create Puppet's 1000 (Loki's Entertain never fires),
+  Wonder's 300 every turn, every Take X (promotion) at 50, Call Blizzard turning our own land to
+  tundra, Steal (which can start a war), Hastur's Razor;
+- costs that happen in Python are not counted: Form Wolf Pack kills two wolves for a flat 100 and is
+  always cast, while Add to Wolf Pack, which sets `bSacrificeCaster`, is worth -200 and never cast;
+- `units::promotion_value` never returns less than 1, so a removed promotion always costs at least
+  1: Rebuild Barnaxus, Release from Cage and the Potion of Restoration are worth -1 and never cast,
+  and every allowed Take X (unit) pick-up is always cast;
+- Declare Nationality is worth 49, so units with hidden nationality give it up at their first end of
+  turn: Veil of Night is undone within a turn, and the Nightwatch, Shadowriders, Alazkan (who keeps
+  it only while Mirror is worth more) and the Black Wind lose theirs;
+- before an attack, the caster's reserve is its best end-of-turn value (`magic::cast_phases`); when
+  that is FfH's value it is on a larger scale than the hit points strike values are in, so dragons
+  never breathe fire before a strike, and Wonder, Domination and Resurrection casters sit strikes
+  out. 27 of the 61 spells `magic.rs` models are worth 0 before a strike (Haste, Blur, Courage,
+  Regeneration, city spells, terraforming, permanent summons).
+
+**Rules that refuse the AI.** 57 of the 267 spells have `bAllowAI` 0 and are never cast by an AI:
+every Explore Lair (the AI's units destroy the lairs they can and never explore one, so it gets
+almost no items or lair rewards), the Found Temple spells, the Scorpion Clan hires, Arena Battle,
+Buy a Slave, Sing, Taunt, Sprint, Hide, Split Commander, Promote Settlement, Open Chest, the Take X
+(building) spells, the crews and Flesh Golem growth.
+
+**Missions the AI never issues.** The only construct order is a great person's shrine: the Academy
+(Great Sage), the Command Post, the six Altar of the Luonnotar stages before the final one, the
+animal cages and pens (so the Grand Menagerie) and the Freak Show are never built. No trade
+missions, no hurrying but a Great Engineer's wonder rush, no pillage, no great works but the Great
+Bard's for a cultural victory, no missionaries abroad, no voting (no Council resolution ever passes
+among AIs: the Smugglers' Port and the Gambling Ring never come).
+
+**Units the AI owns but does not command.** Units keep the AI type they were created with:
+summons are created on `UNITAI_ATTACK` (army units; at sea Naval, which holds: a summoned Kraken
+never moves); captured animals, Wild Hunt wolves, Hunter-event animals and the Pact of the
+Nilhorn's giants keep `UNITAI_ANIMAL` and roam like barbarian animals (an AI's captured Bear or
+Lion Pride alone on unowned land casts Create Den and becomes a barbarian with a new lair);
+`units::role_of` ignores damage-type strength, so a Lightning Elemental (0 base strength) holds.
+Barbarian sea units hold too (Sea Serpent, Giant Tortoise, Leviathan, the Sailor's Dirge): there is
+no naval combat logic for anyone. Production trains 15 of the 23 recon units only as attackers
+(their default `UNITAI_EXPLORE` bars the Defense role and their `UnitAIs` lack `EXPLORE`), and the
+six tier-3 priests only as garrisons.
+
+**Victory goals the AI no longer pursues.** The Tower of Mastery and the Altar of the Luonnotar are
+never the AI's own goal (`victory::plan_ours`, `3041631`, the owner's decision): the five towers
+and the altar stages are Unused, and nothing builds mana nodes any more (only the Tower goal did),
+which also keeps the AI out of mana-gated wonders and spheres unless the land or a palace gives
+the mana.
+
+**Unique content.** Under the owner's rule that civilizations use their own mechanics, the gaps
+that remain are mostly unique buildings and rituals: of 22 unique city buildings only the Warrens
+is valued by name, 5 are never built (the three Luchuirp golem workshops, the Cave of Ancestors,
+the Planar Gate) and 10 are built without their distinctive effect being seen; of the Illians' six
+rituals two are built on purpose; heroes are trained reliably but play as army units (only Loki
+and Corlindale move as casters, and caster heroes with strength fight in the stacks).
+
+## Worth a follow-up
+
+The AI gaps the writers ranked highest, in a rough order of value for the cost (each entry named has
+the details; none of these was measured here, and docs/AI_LOG.md lists related attempts):
+
+1. **The new-city culture term**: read `obsolete_safe_commerce_change` (Monument and early culture
+   buildings; one line).
+2. **Hidden nationality**: value Declare Nationality at 0 unless a reason holds (Veil of Night,
+   Nightwatch, Shadowrider, the Black Wind), then use the deniable raids.
+3. **Units the AI owns**: put owned animals and sea summons on an army AI type (and stop owned
+   animals casting Create Den); count damage-type strength in `units::role_of`.
+4. **`FreeBuilding` and one-shot effects** in the building value (Guild of Hammers, Catacomb
+   Libralus, The Nexus, Tower of Eyes; golden ages, free techs, global experience).
+5. **Casters for every civilization**: a Mage Guild where casters are wanted (the earlier attempt
+   lost wins; its log entry says why).
+6. **The pre-strike reserve**: compare strike values with a reserve on the same scale (dragons,
+   Wonder, Domination, Resurrection), and value Wonder by the enemies around.
+7. **Summon strength** as the rules will make it (affinity, Strong).
+8. **Lairs**: an explore decision (a rules decision first: Explore Lair is `bAllowAI` 0).
+9. **Equipment**: give items to the unit they suit and fetch them; Rebuild Barnaxus (worth -1).
+10. **Unique buildings and rituals** valued by their effect (golem workshops, Cave of Ancestors,
+    Samhain, The Deepening).
+11. **City spells under threat** (Wall of Stone), **Earthquake** next to the target only,
+    **`promo_pct`'s defense field**, **Dispel Magic** that can undo our own mana node.
+12. **Great people**: the Academy, trade missions, lightbulbing where they stand.
+13. **Naval combat**, then the Shipyard and its ships.
+14. **Votes** (`choose_election`, `diplo_vote` keep the controller defaults).
+
+## Stale or wrong text found
+
+Found while writing; the entries follow the code:
+- docs/AI.md, "Generic gaps": said the generic production never builds `PrereqBuilding` buildings
+  (fixed by `b6faa0a`; corrected in this sprint).
+- `crates/ffh-ai/src/civs/amurites.rs`: says Arcane Lacuna is never cast (an expert moment times it
+  now); `world_spells::expert_moment`'s comment repeats the help's Religious Fervor (the port puts a
+  priest in every city).
+- docs/AI_LOG.md, "Manes added to cities": FfH's value of Add to City is now -400 at level 1, not
+  -250 (same conclusion).
+- Help and strategy texts that disagree with the rules' Python: Sacrifice at the Pyre (summons Fire
+  Elementals, no research), Bane Divine (kills disciples), Glory Everlasting (also undead), The
+  Deepening (temporary terrain), Citadel of Light (fire damage, no Fireball), Herald's Call,
+  Feed, Call of the Grave, Religious Fervor, Aquae Sucellus (cures only Diseased), Tower of
+  Necromancy, Tower of the Elements.
+- `data/text/en.tsv:11226`: a U+0092 character for the apostrophe in "Syliven's".
+
 ## How to read an entry
 
 ```
 ### Axeman (`UNIT_AXEMAN`)
-*Melee, tier 2 · 60 hammers · 5/5, 1 move · Bronze Working, a Training Yard · every civilization but ...*
+*Melee, tier 2 · 60 hammers · 4/4, 1 move · Bronze Working, a Training Yard · every civilization but ...*
 
 **What it does.** The rules: strength, abilities, what is special, effects that live in Python.
 
@@ -74,7 +230,7 @@ explorer from the capital while a fifth of the home landmass is unknown; settler
 (`expansion::settler_choice`); the civilization's own items (`civs::production`); an amphibious
 assault fleet; a transport for a settler waiting in port; a sea explorer; work boats; a
 unit-enabling building; defenders up to the garrison quota; a small mobile force; more workers;
-the victory goal's items; **heroes**; hero ships; the siege operation's force
+the victory goal's items (culture); **heroes**; hero ships; the siege operation's force
 (`campaign::army_choice`) and siege engines; buildings by value (below); the army interleave;
 **casters** (`(cities + 2) / 4`, one more for a leader with `iAIValueMage` > 100, only while a unit
 is affordable); **missionaries** (one at a time, for the state religion, while a city of ours
@@ -105,15 +261,16 @@ moves, first strikes, withdrawal, collateral, bombard and city bonuses do). Unit
 `GAMEOPTION_AI_NO_MINIMUM_LEVEL`, and never at min level 1); they come by upgrade. Optional units
 are trained only while one more is affordable (`economy::can_afford_unit`). A unit that passes no
 role is never trained by the generic steps; only a civilization step that names it
-(`civs/*.rs`) or a victory step can train it.
+(`civs/*.rs`) can train it.
 
 Buildings that gate units (`PrereqBuilding`, `PrereqBuildingClass`) are built for them by three
 paths only: `production::enabler_building` (a defender or attacker at least a third better, or a
 third better per hammer, than the city's best, in at most half the cities, within 20 turns);
 `campaign::siege_building` (the Siege Workshop in the most productive city when the siege
 operation wants engines and no city can train one); and `civs::unique_casters` (the Amurites,
-Clan of Embers, Doviello and Svartalfar: the Adept's building in the most productive city, then
-casters up to `(cities + 2) / 2`). Otherwise a gating building comes only from its own value.
+Clan of Embers, Doviello and Svartalfar: casters up to `(cities + 2) / 2` from the most productive
+city, which first builds the Mage Guild for the Amurites' and Svartalfar's Adepts; the Shamans
+need none). Otherwise a gating building comes only from its own value.
 
 Research toward units: `research::tech_value` counts a better defender or attacker against the
 military pressure it sees, the first arcane unit, the first transport; `civs::tech_value` adds
@@ -129,14 +286,20 @@ from the unit's AI type, set by production when it trains the unit, or its defau
 | Settler | `SETTLE`, or `bFound` | `expansion::settler`: to the best reachable site with an escort, overseas by transport |
 | Worker | `WORKER`, or anything that can build | `workers::worker`: best (plot, build) by yield and need; flees danger; chops for settlers, workers and world wonders |
 | Garrison | `CITY_DEFENSE`, `CITY_COUNTER`, `CITY_SPECIAL` | fills the city that most needs a defender, fortifies |
-| Army | any other unit with strength (the `_` branch: `ATTACK`, `ATTACK_CITY`, `COLLATERAL`, `COUNTER`, `RESERVE`, `PILLAGE`, `FEASTING`, ...) | `military::army`: merge into stacks, attack what it can beat, heal, defend cities in peril, escort settlers, the siege operation (`campaign.rs`: gather, march, strike), hunt barbarians and animals |
+| Army | any other unit with base strength or defense above 0 (the `_` branch: `ATTACK`, `ATTACK_CITY`, `COLLATERAL`, `COUNTER`, `RESERVE`, `PILLAGE`, `FEASTING`, ...); a unit whose strength is all damage types (Lightning Elemental) falls to Other | `military::army`: merge into stacks, attack what it can beat, heal, defend cities in peril, escort settlers, the siege operation (`campaign.rs`: gather, march, strike), hunt barbarians and animals |
 | Explorer | `EXPLORE` | reveal the land and goody huts one safe turn at a time, then join the army |
 | Great person | `PROPHET`, `ARTIST`, `SCIENTIST`, `GENERAL`, `MERCHANT`, `ENGINEER` | a great work for a culture victory; a shrine in a holy city of ours; an Engineer rushes a wonder; else lightbulb (`MISSION_DISCOVER`), join as a specialist, start a golden age |
 | Missionary | `MISSIONARY` | spreads its religion in our cities that lack it (never abroad) |
 | Caster | `MAGE`, `WARWIZARD`, `TERRAFORMER`, `MANA_UPGRADE`, `MEDIC`; heroes that cannot attack | `magic::caster_target`: with the stack nearest the operation's target, to the units its lasting blessings are for, to the cities its city spells are for, to land to terraform; else the most threatened city (`victory::mana_node`, mana nodes for the Tower goal, never runs: that goal is never the AI's) |
 | Animal | `ANIMAL` | attacks what it can beat, else roams (barbarian and animal players) |
 | Transport, sea explorer | ships | `naval::transport` (settlers overseas, amphibious assaults), `naval::sea_explore` |
-| Naval, other | other ships, air units, units with nothing to do | hold (there is no naval or air combat logic) |
+| Naval, other | other ships (barbarian ones and sea summons included), units with nothing to do | hold (there is no naval combat logic) |
+
+The role comes from the unit's AI type: production sets it to the step's (Defense trains a
+`CITY_DEFENSE` garrison, Attack and Siege an `ATTACK`/`ATTACK_CITY` army unit, Explore an explorer,
+Mage a caster), upgrades keep it, summons are created on `UNITAI_ATTACK` (`unit_cast_create_unit`),
+and units the rules create otherwise (captures, events, rituals, gifts) take their default AI: a
+captured animal stays `UNITAI_ANIMAL` and roams like a barbarian one.
 
 Missions the AI never issues: pillage, espionage, trade missions (Great Merchants lightbulb, join
 or start golden ages instead), air missions, blockades, ranged attacks. Every unit of the AI is
@@ -215,15 +378,17 @@ players, plus the AI-only conditions some `req*` functions keep (docs/AI_ONLY_RU
   building value), feature or improvement +10, dispel, population x50, gold cost -4 a gold,
   immobility, the caster's sacrifice (minus level x power), halved when resistable, + `iAIWeight`.
   A spell none of whose terms apply and whose `iAIWeight` is 0 is worth 0 and is never cast by
-  this choice. `iAIWeightCity` and `iAIWeightWar` are not read.
+  this choice. `iAIWeightCity` and `iAIWeightWar` are not read. `units::promotion_value` never
+  returns less than 1, so a removed promotion always counts at least -1 (a cure of a curse too),
+  and an added one at least +1.
 - **`magic.rs`** (every civilization but the barbarians, `magic::enabled`) values in hit points
   what a spell does to the units it reaches, for the spells it models (`magic::understood`: not a
   world spell, not an ability, and with damage, a summon, a promotion added or removed,
   immobility, a dispel, a created building, or one of the Python spells it models: Crush, Pillar
   of Fire, Destroy Undead, Domination, Heal, Earthquake, Spring, Scorch, Vitalize, Recruit). At the
-  end of the turn the other spells keep FfH's terms (damage and curses on enemies that can reach us,
-  summons that attack, lasting blessings, short ones by the defense they add, healing,
-  terraforming, city spells for the modelled ones). Before attacks (`magic::before_attack`, from
+  end of the turn it values damage and curses on the enemies that can reach us, summons that
+  attack, lasting blessings, short ones by the defense they add, healing, terraforming and city
+  spells; the spells it does not model keep FfH's terms there. Before attacks (`magic::before_attack`, from
   `campaign::strike` and `military::assault`) every caster within two plots of the target is
   offered every castable spell but the world spells, abilities included, valued by what it does
   to the units there (`magic::attack_value`): what weakens the defenders, then summons, then
@@ -241,7 +406,8 @@ players, plus the AI-only conditions some `req*` functions keep (docs/AI_ONLY_RU
 - **Casters**: promoted toward the spheres whose spells they can cast (`magic::promotion_value`,
   `magic::spell_worth`); moved by `magic::caster_target`. The AI trains casters only through the
   caster step of production and `civs::unique_casters`; no AI builds a Mage Guild for its own sake
-  (its value is 0), and no AI builds a mana node (only the Tower goal did).
+  (its value is 0; the Infernals get one free in every city), and no AI builds a mana node (only
+  the Tower goal did).
 
 ### Projects
 
