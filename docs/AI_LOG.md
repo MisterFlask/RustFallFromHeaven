@@ -350,6 +350,20 @@ change also in full games, the allied-barbarian one with the Clan of Embers forc
    list), is where to work on it, not the disband threshold (disbanding from 50% of the commerce
    instead of 60% changed nothing at turn 300).
 
+### Healing only when most of the stack is hurt (2026-10-22, replaced)
+
+1. Our field stacks stopped to heal wherever they stood as soon as one unit passed 35% damage,
+   committed stacks next to their target included, where they heal at 5-10% a turn beside
+   defenders that heal faster. More Naval AI's `CvUnitAI::AI_heal` stops a stack in the field only
+   when more than half of it is hurt, and only where healing is good.
+2. Applied to every stack it lost units and cities (seeds 1-48, 300 turns): civ cities lost +41%
+   (t 2.7), military -6.4% (t -2.1). Our loose stacks are two to four units hunting raiders; one
+   badly hurt unit is a large share of such a stack, and it marched on into the next fight.
+3. The rule fits More Naval AI's big stacks, not ours. The kept version (`military::heal`, switch
+   `HEAL`; docs/AI.md, Field armies step 6) applies "most of the stack" only to a stack committed
+   to a siege, keeps the one-unit rule for loose stacks, splits the wounded off in our cities and
+   heals only where healing is good (walking into a city or onto our land when it is not).
+
 ## Wars: no peace sold before the war is decided (2026-10-21)
 
 Item 5 of the strong-player list. In 24 full games (seeds 1-24) our civilizations declared 325

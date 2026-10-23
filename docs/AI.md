@@ -1826,6 +1826,38 @@ and March of the Trees 4 casts (FfH's condition).
   and walks to others in peace; not done. Kept (the Amurites use their hero).
 - **A losing war**: off by default (above, "World spells: AI timing"; docs/AI_LOG.md).
 
+### Round 7b (2026-10-22): military
+
+Six behaviours from the More Naval AI comparison, each behind its own switch and described where
+its area is ("City defense against rival civilizations", "Field armies", "Siege operations",
+"The assault fleet"): defense weighed by rival civilizations (`RIVAL_DEFENSE`), healing
+(`HEAL`), opportunistic captures (`CAPTURE`), a second operation (`SECOND_OP`), heroes and
+veterans at good odds (`PRECIOUS`), the assault fleet (`FLEET`). Each was measured alone on
+development seeds 1-48 (300 turns), the same binary with its switch off against everything on;
+the numbers below come from the builds before the last refinements, and the full-game and fresh
+runs of this round were cut short (fresh numbers for the round are those of the four rounds
+together, below).
+
+**What fired** (seeds 1-12, 300 turns, telemetry): 158 defenders trained for the rival term (445
+for the rest of the quota), 349 sorties held back by the strength check; 157 wounded split off to
+heal in our cities, 239 stack heals, 199 stacks walked back to heal, 337 times the old rule would
+have stopped the whole stack; 12 opportunistic assault turns taking 3 cities (no enemy city was
+ever found empty); 54 turns with a second operation (traced: two cities taken the same turn, seed
+13); 16 strikes with a hero or veteran present, 30 of them held back; 23 fleet waits.
+
+| behaviour | development, 300 turns (48), at turn 300 |
+|---|---|
+| rival defense | first version (thresholds in place of the war +1): legacy -2.6% (t -1.5), power -5.6% (t -2.4), civ cities lost +23% (t 1.7); kept (a pool of one defender per city at war, shared by war threat): legacy +0.2%, military +1.9%, civ cities lost +3% (t 0.25) |
+| healing | More Naval AI's rule as is: civ cities lost +41% (t 2.7), military -6.4% (t -2.1) (docs/AI_LOG.md, "Healing only when most of the stack is hurt"); kept version: legacy -3.7% (t -1.1), research -9.7% (t -2.1), cities -5.2% (t -1.7), no single part of it the cause |
+| captures | legacy +1.3% (t 2.3), cities +1.0% (t 2.5), pop +1.4% (t 2.8) |
+| second operation | legacy +0.4%, civ cities lost -16% (t -1.8), civ cities captured 4.38 -> 3.92 a game (t -2.2) |
+| heroes and veterans | legacy +2.5% (t 1.9), pop +3.2% (t 1.95), civ cities lost -25% (t -2.2), civ cities captured -18% (t -1.9) |
+| assault fleet | 44 of 48 games identical, no effect at 300 turns; a full game traced (seed 6): futile landed assaults 23 -> 2 |
+
+Integrating the four rounds exposed a deadlock in the fleet: with no room aboard and no transport
+coming it still waited for half the force, so a port whose only transport carries one unit never
+sailed. It now waits only while waiting can grow the load and otherwise ferries what it carries.
+
 ### Round 7c (2026-10-22): wars, diplomacy, councils, missionaries
 
 Seven behaviours read from More Naval AI (Diplomacy above: peace by the forces at the front,
