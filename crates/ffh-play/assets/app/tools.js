@@ -5,8 +5,8 @@
 // AIAutoPlay one turn at a time) with the whole map shown, paused or stepped at will.
 
 import * as api from "./api.js";
-import { S, emit, dname, tidx, me } from "./state.js";
-import { h, toast } from "./dom.js";
+import { S, emit, dname, tidx, me, observing, unitsAt, playerName } from "./state.js";
+import { h, fill, toast } from "./dom.js";
 import { openModal, closeTag } from "./modals.js";
 import { run, sending } from "./commands.js";
 import { rawRequest, loadScreen } from "./screens.js";
@@ -128,14 +128,43 @@ export function openAutoplay() {
   });
 }
 
-/** The spectator mode: `{playing, delay, reveal}` while on (the reveal setting to restore). */
+/** The spectator mode: `{playing, delay, reveal, busy}` while on (the reveal setting to restore
+ *  in a human game; an observed game keeps its reveal). */
 let spect = null;
 
 /** The phases where the game does not go on (the spectator mode pauses). */
 const TERMINAL = ["over", "crashed", "no_game", "stuck"];
 
+/** The paces of the spectator mode: the pause between two turns (ms), remembered by this
+ *  browser. */
+export const PACES = [
+  ["fast", 0, "Fast: turn after turn"],
+  ["normal", 400, "Normal: a short pause between turns"],
+  ["slow", 1500, "Slow: 1.5 s between turns"],
+  ["crawl", 4000, "Very slow: 4 s between turns"],
+];
+const PACE_KEY = "ffh.spectate.pace";
+
+function savedPace() {
+  try {
+    const v = localStorage.getItem(PACE_KEY);
+    return PACES.find(([k]) => k === v)?.[1] ?? 400;
+  } catch {
+    return 400;
+  }
+}
+
 export function spectating() {
   return spect !== null;
+}
+
+/** The spectator mode changed: `S.spectating` follows it (read by modules that do not import
+ *  this one), and the top bar redraws (`spectate`). */
+function spectateChanged() {
+  S.spectating = spect !== null;
+  // The phone layout gives the spectator bar its own row (iso.css).
+  document.body?.classList.toggle("spectating", S.spectating);
+  emit("spectate");
 }
 
 /** Whether the spectator mode is playing (not paused). */
@@ -148,30 +177,36 @@ export function spectatorBusy() {
   return !!spect?.busy || looping;
 }
 
-/** Starts the spectator mode: debug reveal on, the AI plays every civilization one turn at a
- *  time (`autoplay {turns: 1}` at each of your turns) until paused or stopped. For a new game
- *  (`newGame`) the reveal is off to start with (the status may still be the old game's). */
+/** Starts the spectator mode: the AI plays one turn at a time (`autoplay {turns: 1}` at each
+ *  stop) until paused or stopped, the whole map shown. In an observed game (`observe`: the AI
+ *  plays every slot) the server already shows the whole map; in a human game debug reveal is
+ *  switched on and the AI plays your slot too. For a new game (`newGame`) the reveal is off to
+ *  start with (the status may still be the old game's). */
 export async function startSpectating({ playing = true, newGame = false } = {}) {
   if (spect && !newGame) return;
   const wasOn = !newGame && !!S.status?.reveal;
-  spect = { playing, delay: 400, reveal: wasOn, busy: false };
-  if (!wasOn) await setReveal(true);
+  spect = { playing, delay: savedPace(), reveal: wasOn, busy: false };
   // The old game's status may still be over (or no game): wait for the new one.
   for (let i = 0; newGame && i < 100 && TERMINAL.includes(S.status?.phase); i++) await new Promise((r) => setTimeout(r, 50));
-  emit("spectate");
+  if (!spect) return;
+  if (!observing() && !wasOn) await setReveal(true);
+  spectateChanged();
   if (playing) stepLoop();
 }
 
 export function pauseSpectating() {
   if (!spect) return;
   spect.playing = false;
-  emit("spectate");
+  // An observed game playing several turns at once (Tools → AI autoplay): stop it at the end of
+  // the turn under way (`autoplay {turns: 0}`, answered while the game runs).
+  if (observing() && S.status?.phase === "running" && (S.status?.ai_auto_play ?? 0) > 1) api.cmd("autoplay", { turns: 0 }).catch(() => {});
+  spectateChanged();
 }
 
 export function resumeSpectating() {
   if (!spect) return;
   spect.playing = true;
-  emit("spectate");
+  spectateChanged();
   stepLoop();
 }
 
@@ -189,12 +224,30 @@ export async function stepSpectating() {
   }
 }
 
+/** Leaves the spectator mode (a human game: you have control again, debug reveal as it was). */
 export async function stopSpectating() {
   if (!spect) return;
   const restore = spect.reveal;
   spect = null;
-  emit("spectate");
-  if (!restore && S.status?.reveal) await setReveal(false);
+  spectateChanged();
+  if (!observing() && !restore && S.status?.reveal) await setReveal(false);
+}
+
+/** Forgets the spectator mode without touching the game (another game was started). */
+export function dropSpectating() {
+  spect = null;
+  spectateChanged();
+}
+
+export function setPace(ms) {
+  if (!spect) return;
+  spect.delay = ms;
+  try {
+    localStorage.setItem(PACE_KEY, PACES.find(([, v]) => v === ms)?.[0] ?? "normal");
+  } catch {
+    /* not remembered */
+  }
+  spectateChanged();
 }
 
 /** The playing loop (one at a time: resuming or a new game while it runs keeps it). */
@@ -224,6 +277,150 @@ async function waitHuman() {
     if (st && !["running", "decision"].includes(st.phase) && !sending()) return;
     await new Promise((r) => setTimeout(r, 50));
   }
+}
+
+/** Waits until the spectator mode has no turn under way and the game is stopped. */
+async function waitStopped() {
+  for (let i = 0; i < 1200 && spect?.busy; i++) await new Promise((r) => setTimeout(r, 50));
+  await waitHuman();
+}
+
+/** Observed: the view follows player `p` (its empire in the top bar). */
+export async function follow(p) {
+  try {
+    await api.session("follow", { player: p });
+  } catch (e) {
+    toast(e.detail ?? e.message, "error");
+  }
+  emit("kick");
+}
+
+// ---------------------------------------------------------------------------------------------
+// Flags: a spectator's record of play that looks wrong (`session flag`, ffh-play `flag.rs`).
+
+/** This game's flags (`session flags`), oldest first. */
+export async function loadFlags() {
+  try {
+    S.flags = (await api.session("flags")).r?.flags ?? [];
+  } catch {
+    S.flags = [];
+  }
+  emit("flags");
+}
+
+/** Copies `text` to the clipboard (with a toast either way). */
+export function copyText(text) {
+  const done = navigator.clipboard?.writeText(text);
+  if (!done) return toast("Select the text to copy it.", "error");
+  done.then(() => toast("Copied.")).catch(() => toast("Select the text to copy it.", "error"));
+}
+
+/** The units on a plot, in one line ("3 units: Axeman (Sheaim), ..."). */
+function plotUnitsLine(x, y) {
+  const us = unitsAt(x, y);
+  if (!us.length) return "No units.";
+  const names = us.slice(0, 6).map((u) => `${dname("UnitType", u.type)} (${playerName(u.owner)})`);
+  return `${us.length} unit${us.length > 1 ? "s" : ""}: ${names.join(", ")}${us.length > 6 ? ", …" : ""}`;
+}
+
+/** Flags plot (x, y): the spectator pauses first (a flag is taken while the game is stopped),
+ *  a note is asked, then the record is saved (the game's `flags.jsonl`, its replay's start save
+ *  pinned) and its text, ready for a bug report, copied. */
+export async function openFlag(x, y) {
+  if (!S.map) return;
+  if (spect?.playing) pauseSpectating();
+  const note = h("textarea#flag-note", { rows: 3, placeholder: "What looks wrong? (e.g. the stack walks past an undefended city)" });
+  const err = h("p.error");
+  const waiting = h("p.dim", spect ? "Pausing after this turn…" : "");
+  const m = openModal({
+    title: `Flag plot (${x}, ${y})`,
+    tag: "flag",
+    body: [
+      h("p", "Records this plot at this turn: the units and events here, the build, the game's settings and the commands that replay the turn with the AI's trace on."),
+      h("p.dim", plotUnitsLine(x, y)),
+      h("label.field", h("span", "Note"), note),
+      waiting,
+      err,
+    ],
+    buttons: [
+      {
+        label: "Flag",
+        primary: true,
+        onClick: async (mm) => {
+          err.textContent = "";
+          await waitStopped();
+          try {
+            const rec = (await api.session("flag", { x, y, note: note.value.trim() })).r;
+            mm.close("flagged");
+            S.flags = [...(S.flags ?? []), rec];
+            emit("flags");
+            showFlag(rec, { fresh: true });
+          } catch (e) {
+            err.textContent = e.detail ?? e.message;
+          }
+        },
+      },
+      { label: "Cancel", value: null },
+    ],
+  });
+  waitStopped().then(() => (waiting.textContent = ""));
+  setTimeout(() => note.focus(), 0);
+  return m;
+}
+
+/** Shows a flag's record (its text to copy, the map spot); a new one is copied at once. */
+export function showFlag(rec, { fresh = false } = {}) {
+  const text = rec.text ?? JSON.stringify(rec, null, 2);
+  if (fresh) copyText(text);
+  const [x, y] = rec.plot ?? [0, 0];
+  return openModal({
+    title: `Flag ${rec.flag}${rec.note ? `: ${rec.note}` : ""}`,
+    tag: "flag-record",
+    wide: true,
+    body: [
+      fresh ? h("p", "Saved in the game's ", h("code", "flags.jsonl"), " and copied to the clipboard: paste it into the bug report.") : null,
+      h("pre.report", text),
+    ],
+    buttons: [
+      { label: "Copy", onClick: () => copyText(text) },
+      { label: "Copy as JSON", onClick: () => copyText(JSON.stringify(rec)) },
+      { label: "Show on the map", onClick: (mm) => (mm.close("show"), emit("center", x, y)) },
+      { label: "Close", value: null, primary: true },
+    ],
+  });
+}
+
+/** The flags tab of the bottom panel: this game's flags, newest first. */
+export function flagsView() {
+  const flags = S.flags ?? [];
+  const intro = h(
+    "p.dim",
+    spectating() || observing()
+      ? "Flag play that looks wrong: click the plot, then “⚑ Flag this plot” (or press F over it). Each flag records what a developer needs to replay that turn."
+      : "Flags record play that looks wrong while you watch the AI (Spectate, or a new game with “Spectate” ticked).",
+  );
+  if (!flags.length) return h("div.flags", intro);
+  return h(
+    "div.flags",
+    intro,
+    h(
+      "ul.flag-list",
+      [...flags].reverse().map((f) =>
+        h(
+          "li",
+          h("b", `⚑ ${f.flag}`),
+          ` turn ${f.moved_turn ?? f.turn} · (${f.plot?.[0]}, ${f.plot?.[1]})`,
+          f.note ? h("span", ` · ${f.note}`) : null,
+          " ",
+          h("button.link.small", { onclick: () => emit("center", f.plot?.[0] ?? 0, f.plot?.[1] ?? 0), title: "Centre the map on it" }, "⌖"),
+          " ",
+          h("button.link.small", { onclick: () => showFlag(f), title: "The record" }, "record"),
+          " ",
+          h("button.link.small", { onclick: () => copyText(f.text ?? JSON.stringify(f)), title: "Copy the record's text" }, "copy"),
+        ),
+      ),
+    ),
+  );
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -333,7 +530,8 @@ export function openOptions() {
  *  its next turn slice and you have control at your next turn, or at once during yours). */
 export function autoplayBar() {
   const st = S.status ?? {};
-  if (spect || st.phase !== "running" || !(st.ai_auto_play > 0)) return null;
+  // Observed, the spectator mode plays one turn at a time; this bar is for longer runs.
+  if ((spect && !observing()) || st.phase !== "running" || !(st.ai_auto_play > (observing() ? 1 : 0))) return null;
   const left = st.ai_auto_play;
   return h(
     "span.spectate",
@@ -359,17 +557,84 @@ export function autoplayBar() {
   );
 }
 
+/** The spectator bar's state when it was last drawn (`renderSpectatorBar`). */
+let barKey = null;
+
+/** Draws the spectator bar into `slot` when its state changed (the buttons stay the same
+ *  elements between status updates, so clicks on them are not lost), and the "playing…" mark. */
+export function renderSpectatorBar(slot) {
+  if (!slot) return;
+  const me = S.view?.me;
+  const civs = [...S.players.values()].map((p) => `${p.id}:${p.alive}`).join(",");
+  const key = spect ? JSON.stringify([observing(), spect.playing, spect.delay, me?.player, me?.name, civs]) : "";
+  if (key !== barKey || !slot.firstChild === !!spect) {
+    barKey = key;
+    fill(slot, spectatorBar());
+  }
+  const running = slot.querySelector("#spectate-running");
+  if (running) running.textContent = S.status?.phase === "running" ? " playing…" : "";
+}
+
 export function spectatorBar() {
   if (!spect) return null;
   const st = S.status ?? {};
+  const observed = observing();
+  const pace = h(
+    "select.small#spectate-pace",
+    { title: "The pause between two turns", onchange: (ev) => setPace(Number(ev.target.value)) },
+    PACES.map(([, ms, label]) => h("option", { value: ms, selected: ms === spect.delay, title: label }, label.split(":")[0])),
+  );
+  let followSel = null;
+  if (observed && S.view?.me) {
+    const civs = [{ id: S.view.me.player, name: S.view.me.name }, ...[...S.players.values()].filter((p) => !p.barbarian).map((p) => ({ id: p.id, name: p.name, alive: p.alive }))];
+    civs.sort((a, b) => a.id - b.id);
+    followSel = h(
+      "select.small#spectate-follow",
+      { title: "The civilization the top bar shows (the game is not changed)", onchange: (ev) => follow(Number(ev.target.value)) },
+      civs.map((c) => h("option", { value: c.id, selected: c.id === S.view.me.player }, `${c.name}${c.alive === false ? " †" : ""}`)),
+    );
+  }
   return h(
     "span.spectate",
-    h("b", "Spectating"),
+    h("b.sp-label", observed ? "Observing" : "Spectating"),
     spect.playing
-      ? h("button.small", { id: "spectate-pause", onclick: pauseSpectating, title: "Pause after this turn" }, "⏸ Pause")
-      : h("button.small", { id: "spectate-play", onclick: resumeSpectating, title: "Play turn after turn" }, "▶ Play"),
-    h("button.small", { id: "spectate-step", onclick: stepSpectating, disabled: spect.playing, title: "One turn" }, "⏭ Step"),
-    h("button.small", { id: "spectate-stop", onclick: stopSpectating, title: "Stop spectating (debug reveal goes back off)" }, "■ Stop"),
-    st.phase === "running" ? h("span.dim", " playing…") : null,
+      ? h("button.small", { id: "spectate-pause", onclick: pauseSpectating, title: "Pause after this turn" }, "⏸", h("span.sp-label", " Pause"))
+      : h("button.small", { id: "spectate-play", onclick: resumeSpectating, title: "Play turn after turn" }, "▶", h("span.sp-label", " Play")),
+    h("button.small", { id: "spectate-step", onclick: stepSpectating, disabled: spect.playing, title: "One turn" }, "⏭", h("span.sp-label", " Step")),
+    pace,
+    followSel ? h("span.dim.sp-label", " Follow ") : null,
+    followSel,
+    h("button.small", { id: "spectate-flag", onclick: () => flagPrompt(), title: "Flag play that looks wrong: pick the plot [F over it]" }, "⚑", h("span.sp-label", " Flag")),
+    observed ? null : h("button.small", { id: "spectate-stop", onclick: stopSpectating, title: "Stop spectating (debug reveal goes back off)" }, "■", h("span.sp-label", " Stop")),
+    h("span.dim#spectate-running", st.phase === "running" ? " playing…" : ""),
   );
+}
+
+/** "⚑ Flag": the plot shown in the side panel, else the next plot clicked on the map. */
+export function flagPrompt() {
+  const shown = document.getElementById("unit-panel")?.dataset.plot;
+  if (shown) {
+    const [x, y] = shown.split(",").map(Number);
+    return openFlag(x, y);
+  }
+  if (spect?.playing) pauseSpectating();
+  pickingFlag = true;
+  toast("Click the plot to flag (Esc cancels).");
+}
+
+/** A flag waits for its plot (the next map click). */
+let pickingFlag = false;
+
+/** The map click that picks a flag's plot (true when it did). */
+export function flagClick(x, y) {
+  if (!pickingFlag) return false;
+  pickingFlag = false;
+  openFlag(x, y);
+  return true;
+}
+
+export function cancelFlagPick() {
+  const was = pickingFlag;
+  pickingFlag = false;
+  return was;
 }

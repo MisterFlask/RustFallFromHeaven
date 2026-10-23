@@ -77,6 +77,11 @@ fn unit_type_name(d: &GameData, unit_type: UnitType) -> String {
     d.text.name(&d.units[unit_type].base.description).to_string()
 }
 
+/// The attacker's odds (per mille) as the combat log shows them: " (12.3% to win)", or nothing.
+fn odds_suffix(odds: Option<i32>) -> String {
+    odds.map_or(String::new(), |o| format!(" ({}.{}% to win)", o / 10, o % 10))
+}
+
 impl Game {
     /// C++ `CvUnit::updateAirStrike` (CvUnit.cpp:1272-1329).
     /// C++ `bQuick` dropped: the port never shows combat animations (`isCombatVisible` is false),
@@ -487,6 +492,9 @@ impl Game {
         // C++ `bVisible = isCombatVisible(pDefender)` (when !bQuick): never true headless.
 
         let turn = self.game_turn();
+        // The combat's plot and the attacker's odds (per mille), for the log's messages.
+        let at = self.map.xy(plot);
+        let mut log_odds: Option<i32> = None;
 
         // FfH: Added by Kael 07/30/2007
         if !self.unit_is_immune_to_defensive_strike(u) {
@@ -505,7 +513,7 @@ impl Game {
                     let cost = attack_move_cost(self, u, plot);
                     self.unit_change_moves(u, cost);
                     let unit_type = self.units[u].unit_type;
-                    self.log.msg(turn, Some(owner), || format!("{} is afraid to attack", unit_type_name(d, unit_type)));
+                    self.log.msg_at(turn, Some(owner), at, || format!("{} is afraid to attack", unit_type_name(d, unit_type)));
                     finish = true;
                 }
             }
@@ -548,8 +556,16 @@ impl Game {
                 // Kill them!
                 self.unit_set_damage(defender, d.defines.max_hit_points, None);
             } else {
-                if self.telemetry.on() {
-                    tel_odds = Some((self.get_combat_odds(u, defender), false));
+                // The attacker's odds (`getCombatOdds`, as the exe's combat help shows them before
+                // the fight), for the telemetry and the log: read-only, and only while one is on.
+                if self.telemetry.on() || self.log.enabled {
+                    let o = self.get_combat_odds(u, defender);
+                    if self.telemetry.on() {
+                        tel_odds = Some((o, false));
+                    }
+                    if self.log.enabled {
+                        log_odds = Some(o);
+                    }
                 }
                 // UI: the CvBattleDefinition (start damages) for the animation.
                 self.unit_resolve_combat(u, defender, plot);
@@ -591,8 +607,8 @@ impl Game {
                     self.teams[defender_team].ai_war_success[team] += d.defines.war_success_defending;
                 }
 
-                self.log.msg(turn, Some(owner), || {
-                    format!("{} died attacking {}", unit_type_name(d, unit_type), unit_type_name(d, defender_type))
+                self.log.msg_at(turn, Some(owner), at, || {
+                    format!("{} died attacking {}{}", unit_type_name(d, unit_type), unit_type_name(d, defender_type), odds_suffix(log_odds))
                 });
 
                 // FfH: Added by Kael 07/30/2007
@@ -620,8 +636,8 @@ impl Game {
                     self.teams[team].ai_war_success[defender_team] += d.defines.war_success_attacking;
                 }
 
-                self.log.msg(turn, Some(owner), || {
-                    format!("{} destroyed {}", unit_type_name(d, unit_type), unit_type_name(d, defender_type))
+                self.log.msg_at(turn, Some(owner), at, || {
+                    format!("{} destroyed {}{}", unit_type_name(d, unit_type), unit_type_name(d, defender_type), odds_suffix(log_odds))
                 });
 
                 // FfH: Added by Kael 05/15/2007
@@ -721,15 +737,15 @@ impl Game {
 
                     let group = group_of(self, u);
                     self.group_clear_mission_queue(group);
-                    self.log.msg(turn, Some(owner), || {
-                        format!("{} fled from {}", unit_type_name(d, defender_type), unit_type_name(d, unit_type))
+                    self.log.msg_at(turn, Some(owner), at, || {
+                        format!("{} fled from {}{}", unit_type_name(d, defender_type), unit_type_name(d, unit_type), odds_suffix(log_odds))
                     });
                 }
                 if self.units[u].flee_withdrawl {
                     self.unit_join_group(u, None, true);
                     self.units[u].flee_withdrawl = false;
-                    self.log.msg(turn, Some(owner), || {
-                        format!("{} withdrew from {}", unit_type_name(d, unit_type), unit_type_name(d, defender_type))
+                    self.log.msg_at(turn, Some(owner), at, || {
+                        format!("{} withdrew from {}{}", unit_type_name(d, unit_type), unit_type_name(d, defender_type), odds_suffix(log_odds))
                     });
                     let cost = attack_move_cost(self, u, plot);
                     self.unit_change_moves(u, cost);

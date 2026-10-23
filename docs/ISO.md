@@ -194,8 +194,8 @@ fills the page and the interface floats over it.
 
 - **Layout** (the reference's): a single top bar (the date and turn; the empire's numbers with
   their icons, "245 (+18)"; the system buttons as icon tiles: options, save, load, new game,
-  keys, the raw request), wrapping onto a second row on narrow screens (the panels below follow
-  its height); a rail of advisor tiles at the left (research, techs, cities, civics, religion,
+  keys, the raw request), wrapping onto a second row on narrow screens or when watching the AI
+  (the spectator bar widens the first row; the panels below follow its height); a rail of advisor tiles at the left (research, techs, cities, civics, religion,
   diplomacy); the turn report at the top left, folded to its tabs until one is clicked; the
   selection's card at the bottom left (the lead unit's figure on a painted meadow, its strength,
   movement, health and level, the stack, its orders as icon tiles over a description of the one

@@ -31,6 +31,10 @@ tools/agents/build-rev.sh <rev> --profile checked     # release + debug assertio
   runs the same `cargo build --release && cargo test --release` the commit rule asks for, on
   those files; once they passed for an exact set of files they are not rerun (`--force-test`).
   Arguments after `--` go to `cargo test` (e.g. `-- -p ffh-ai`).
+- The binaries report the commit they were built from (`ffh-play`'s status `build`, quoted by
+  spectators' flags): the rev's for `build-rev.sh`, the worktree's HEAD with `+worktree` for
+  `build-tree.sh` (`FFH_BUILD_COMMIT`). An output reused for identical content keeps the commit of
+  the build that made it.
 - An output is keyed by the content of the project (the repo minus `anim-sprint/`; + profile, toolchain): asking again for
   the same content, from any rev or worktree, returns at once. Outputs are immutable, so a batch
   can keep using one while you rebuild. The 12 most recently used per profile are kept (one used

@@ -126,6 +126,7 @@ impl DecisionReader<'_> {
             in_decision: true,
             saves_dir: None,
             ui: self.ui,
+            observe: None,
         };
         std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| crate::query::run(self.g, &ctx, q)))
             .unwrap_or_else(|_| Err(QueryErr::Busy(format!("the {} query failed during the decision (see the panic message)", q.name()))))

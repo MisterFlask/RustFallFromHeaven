@@ -194,6 +194,13 @@ export function stackState(units, ctx) {
   return { head, state };
 }
 
+/** The side of a stack's square on the chart (the two smallest zoom steps), as a share of the
+ *  tile: a lone unit 0.3, 2-4 units 0.42, 5-9 0.56, 10 or more 0.72, so an army reads apart
+ *  from a scout at a glance. */
+export function chartStackSize(count) {
+  return count >= 10 ? 0.72 : count >= 5 ? 0.56 : count >= 2 ? 0.42 : 0.3;
+}
+
 /** A city's size tier (docs/ART.md 9.1). */
 export function tierOf(size) {
   return size <= 3 ? 1 : size <= 7 ? 2 : size <= 12 ? 3 : size <= 19 ? 4 : 5;

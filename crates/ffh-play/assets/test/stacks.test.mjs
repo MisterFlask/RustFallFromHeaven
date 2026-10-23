@@ -160,3 +160,13 @@ test("owner styles from heraldry specs, the lozenge for unknown players", () => 
   assert.equal(o.get(null), undefined);
   assert.deepEqual(calls, [["CIVILIZATION_BANNOR", "pale", false], ["CIVILIZATION_BARBARIAN", null, true], ["CIVILIZATION_UNKNOWN", null, false]]);
 });
+
+test("on the chart a stack's square grows with its units", () => {
+  assert.equal(St.chartStackSize(1), 0.3);
+  assert.equal(St.chartStackSize(2), 0.42);
+  assert.equal(St.chartStackSize(4), 0.42);
+  assert.equal(St.chartStackSize(5), 0.56);
+  assert.equal(St.chartStackSize(9), 0.56);
+  assert.equal(St.chartStackSize(10), 0.72);
+  assert.equal(St.chartStackSize(40), 0.72);
+});

@@ -276,7 +276,7 @@ export function newGame({ dismissible = true } = {}) {
     h("details", h("summary", "Victory conditions"), victories),
     h(
       "label.check",
-      { title: "The AI plays every civilization (yours too), one turn at a time, with the whole map shown; pause, step or stop it from the top bar" },
+      { title: "An AI-only game watched with the whole map shown (the AI plays every civilization; the one chosen above is followed first): play, pause, step, follow a civilization, and flag bad play for a bug report from the top bar. It is the `ffh autoplay` game of these settings." },
       spectate,
       " Spectate: watch the AI play",
     ),
@@ -299,6 +299,7 @@ export function newGame({ dismissible = true } = {}) {
     if (leader.value) setup.leader = leader.value;
     err.textContent = "";
     try {
+      if (spectate.checked) setup.observe = true;
       await api.session("new", name.value ? { setup, name: name.value } : { setup });
       m.close("started");
       emit("game-started", { spectate: spectate.checked });
@@ -496,6 +497,8 @@ export function keysHelp() {
     ["Esc", "cancel a plot pick, close a dialog, deselect"],
     ["ffh-play's own", ""],
     ["Tab / Shift+Tab", "the next / previous unit waiting (Civ4's W; in Civ4, Tab is chat): a stack whose units cannot all move is skipped; when it wraps, the automated units move"],
+    ["F (watching the AI)", "flag the plot under the mouse: record it for a bug report (the turn, the units, the replay commands)"],
+    ["Enter (an observed game)", "play the next turn"],
     ["Orders (Civ4's hotkeys)", ""],
     ["Space", "skip the turn"],
     ["F / H", "fortify (sleep for units that cannot) / heal; sentry is on its button (S scrolls)"],

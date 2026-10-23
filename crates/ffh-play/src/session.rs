@@ -2,6 +2,11 @@
 //! human player. `advance` runs `update()` until the human has control (or the game ends);
 //! `execute` applies one command between `update()` calls, then lets the game settle. Inputs
 //! are journaled, the log is drained at deterministic points, turn boundaries are autosaved.
+//!
+//! An observed session (`NewGame::observe`, or a loaded AI-only save) has no human: the AI plays
+//! every slot (`ffh autoplay`'s game), and the session stops at turn boundaries instead of at a
+//! human's control points; `end_turn` / `autoplay {turns}` play one or more turns, nothing else is
+//! accepted, and `human` is only the player the view follows (`Session::set_viewer`).
 
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
@@ -111,10 +116,19 @@ pub struct AdvanceProfile {
     pub slices: u64,
 }
 
-/// A game played by one human (design §3).
+/// A game played by one human (design §3), or watched by an observer.
 pub struct Session {
     pub g: Game,
+    /// The human player; in an observed session, the player the view follows.
     pub human: PlayerId,
+    /// An AI-only game watched by an observer (see the module docs).
+    observing: bool,
+    /// Observed: the turns to play before the session stops again (0: stopped at a turn boundary,
+    /// or at the start of a new game).
+    to_play: i32,
+    /// The game's settings, when known (a new game; a save whose sidecar has them): flags quote
+    /// them, so that a spectator's bug report replays from the seed.
+    setup: Option<NewGame>,
     pub shared: Arc<SessionShared>,
     /// The client state queries use (debug reveal, the interface path finder), shared with the
     /// human's controller for the queries answered during decisions (and with transports).
@@ -139,18 +153,32 @@ pub struct Session {
 }
 
 impl Session {
-    /// Attaches controllers and the human-play flags to `g`; `journal` gets everything.
-    fn assemble(mut g: Game, human: PlayerId, answerer: Arc<dyn Answerer>, opts: SessionOptions, journal: Journal) -> Session {
+    /// Attaches controllers and the human-play flags to `g` (`observe`: the AI on every slot and
+    /// the observer's flags, `human` being the player the view follows, with debug reveal on);
+    /// `journal` gets everything.
+    fn assemble(mut g: Game, human: PlayerId, answerer: Arc<dyn Answerer>, opts: SessionOptions, journal: Journal, observe: bool) -> Session {
         let advisor = Arc::new(Ai::new());
         let shared = Arc::new(SessionShared::new(journal));
         let ui: Arc<Mutex<UiState>> = Arc::default();
-        let controller: ControllerRef = Arc::new(HumanController::with_ui(advisor.clone(), answerer, shared.clone(), ui.clone()));
-        setup::attach_controllers(&mut g, human, ffh_ai::ai_controller(), controller);
-        setup::configure_human(&mut g, human);
+        if observe {
+            let ai = ffh_ai::ai_controller();
+            for p in g.player_ids() {
+                g.controllers[p] = ai.clone();
+            }
+            setup::configure_observer(&mut g);
+            UiState::lock(&ui).reveal = true;
+        } else {
+            let controller: ControllerRef = Arc::new(HumanController::with_ui(advisor.clone(), answerer, shared.clone(), ui.clone()));
+            setup::attach_controllers(&mut g, human, ffh_ai::ai_controller(), controller);
+            setup::configure_human(&mut g, human);
+        }
         let fog = LogFog::new(&g, human);
         Session {
             g,
             human,
+            observing: observe,
+            to_play: 0,
+            setup: None,
             shared,
             ui,
             advisor,
@@ -181,11 +209,15 @@ impl Session {
     }
 
     fn new_game_with(ng: &NewGame, answerer: Arc<dyn Answerer>, opts: SessionOptions, journal: Journal) -> Result<Session, PlayError> {
-        let g = setup::build_game(ffh_data::global(), ng).map_err(PlayError::Setup)?;
-        let mut s = Session::assemble(g, HUMAN_SLOT, answerer, opts, journal);
+        let d = ffh_data::global();
+        let g = if ng.observe { setup::build_observed_game(d, ng) } else { setup::build_game(d, ng) }.map_err(PlayError::Setup)?;
+        let mut s = Session::assemble(g, HUMAN_SLOT, answerer, opts, journal, ng.observe);
+        s.setup = Some(ng.clone());
         s.journal(&Line::New { setup: ng.to_json() });
         s.g.game_init();
-        setup::set_human_options(&mut s.g, HUMAN_SLOT);
+        if !ng.observe {
+            setup::set_human_options(&mut s.g, HUMAN_SLOT);
+        }
         s.start_pending = true;
         Ok(s)
     }
@@ -199,19 +231,33 @@ impl Session {
 
     fn load_with(save: &[u8], sidecar: Option<&Sidecar>, answerer: Arc<dyn Answerer>, opts: SessionOptions, journal: Journal) -> Result<Session, PlayError> {
         let g = Game::load(ffh_data::global(), save).map_err(|e| PlayError::Load(e.to_string()))?;
+        // An AI-only save (an observed game's, ...) is observed; take over plays one of its slots
+        // instead.
+        let observe = sidecar.is_some_and(|sc| sc.observe) || g.num_human_players() == 0;
+        if observe && g.num_human_players() > 0 {
+            return Err(PlayError::Load("the save has a human player but its sidecar says observed".into()));
+        }
+        if observe && !g.at_turn_boundary() && sidecar.is_none() {
+            return Err(PlayError::Load("an AI-only save is observed from a turn boundary (an autosave)".into()));
+        }
         let human = match sidecar {
             Some(sc) => sc.human,
+            None if observe => g.civ_player_ids().find(|&p| g.players[p].alive).unwrap_or(PlayerId(0)),
             None => g
                 .civ_player_ids()
                 .find(|&p| g.setup.players[p.idx()].human)
                 .ok_or_else(|| PlayError::Load("the save has no human player (use take over)".into()))?,
         };
-        if human.idx() >= g.num_civ_players() || !g.setup.players[human.idx()].human {
+        if human.idx() >= g.num_civ_players() || (!observe && !g.setup.players[human.idx()].human) {
             return Err(PlayError::Load(format!("player {} is not a human player of this save", human.0)));
         }
-        let mut s = Session::assemble(g, human, answerer, opts, journal);
+        let mut s = Session::assemble(g, human, answerer, opts, journal, observe);
         s.journal(&Line::Load { fnv: journal::fnv_hex(save), human });
         if let Some(sc) = sidecar {
+            s.setup = sc.setup.as_ref().and_then(|j| NewGame::from_json(s.g.d, j).ok());
+            if observe {
+                s.to_play = sc.to_play.max(0);
+            }
             *s.shared.pending_events.lock().unwrap() = sc.pending_events.clone();
             s.messages = MessageStore::from_tail(sc.messages_tail.clone());
             s.auto_moves_tried = sc.auto_moves_tried;
@@ -247,7 +293,7 @@ impl Session {
         g.setup.players[p.idx()].human = true;
         g.setup.players[p.idx()].slot_status = ffh_core::setup::SlotStatus::Taken;
         g.player_update_human(p);
-        let mut s = Session::assemble(g, p, answerer, opts, journal);
+        let mut s = Session::assemble(g, p, answerer, opts, journal, false);
         setup::set_human_options(&mut s.g, p);
         s.journal(&Line::TakeOver { fnv: journal::fnv_hex(save), human: p });
         Ok(s)
@@ -259,9 +305,49 @@ impl Session {
 
     // ---- phase, advance, execute --------------------------------------------------------------
 
-    /// The phase predicate (pure, design §2.2).
+    /// The phase predicate (pure, design §2.2). Observed: `Human(viewer)` while stopped.
     pub fn phase(&self) -> Phase {
-        phase(&self.g, self.human)
+        match self.observe_state() {
+            Some(to_play) => observed_phase(&self.g, self.human, to_play),
+            None => phase(&self.g, self.human),
+        }
+    }
+
+    /// `Some(turns left to play)` in an observed session.
+    pub fn observe_state(&self) -> Option<i32> {
+        self.observing.then_some(self.to_play)
+    }
+
+    /// The AI autoplay's turns left (`ai_auto_play`), or an observed session's turns to play.
+    pub fn autoplay_left(&self) -> i32 {
+        if self.observing {
+            self.to_play
+        } else {
+            self.g.ai_auto_play
+        }
+    }
+
+    /// Observed: stops at the next stop whatever turns were left to play (a save taken during a
+    /// multi-turn autoplay loads with them; `ffh-play observe --load` replays from the save).
+    pub fn halt(&mut self) {
+        if self.observing {
+            self.to_play = 0;
+        }
+    }
+
+    /// Observed: the view follows player `p` (its empire in the top bar, its messages first);
+    /// the game is not changed.
+    pub fn set_viewer(&mut self, p: PlayerId) -> Result<(), PlayError> {
+        if !self.observing {
+            return Err(PlayError::Refused("only an observed game follows another player".into()));
+        }
+        if p.idx() >= self.g.num_civ_players() || !self.g.players[p].ever_alive {
+            return Err(PlayError::Refused(format!("player {} is not a civilization of this game", p.0)));
+        }
+        self.human = p;
+        self.fog = LogFog::new(&self.g, p);
+        UiState::lock(&self.ui).view_version += 1;
+        Ok(())
     }
 
     /// Runs the game until the human has control or the game ends (design §2.2). `on_slice` is
@@ -269,6 +355,9 @@ impl Session {
     /// publishes status there and answers the queries queued meanwhile: `Session::query` reads
     /// under a `QueryGuard`; plain fields of `s.g` may be read directly).
     pub fn advance(&mut self, on_slice: &mut dyn FnMut(&Session)) -> Stop {
+        if self.observing {
+            return self.advance_observed(on_slice);
+        }
         let mut slices: u64 = 0;
         // A stop of the AI autoplay is asked while this `advance` runs (`on_slice`).
         self.shared.stop_autoplay.store(false, std::sync::atomic::Ordering::SeqCst);
@@ -338,13 +427,56 @@ impl Session {
         }
     }
 
+    /// [`Session::advance`] of an observed session: plays `to_play` turns (to the turn boundary
+    /// after the last), then stops; a new game stops first at its start. A stop asked while it
+    /// runs (`autoplay {turns: 0}`) ends the turn under way (journaled where it takes effect, so
+    /// a replay stops at the same boundary).
+    fn advance_observed(&mut self, on_slice: &mut dyn FnMut(&Session)) -> Stop {
+        let mut slices: u64 = 0;
+        self.shared.stop_autoplay.store(false, std::sync::atomic::Ordering::SeqCst);
+        loop {
+            // A victory under autorun leaves the game EXTENDED ("just one more turn"), as in
+            // `ffh autoplay`, whose games end there too: the observed game is over.
+            if self.g.game_state != GameStateType::GAMESTATE_ON {
+                self.drain_log();
+                return Stop::Over;
+            }
+            if self.to_play <= 0 {
+                self.drain_log();
+                if std::mem::take(&mut self.start_pending) {
+                    self.checkpoint(Some("start"));
+                }
+                UiState::lock(&self.ui).view_version += 1;
+                return Stop::Human;
+            }
+            if self.stop_autoplay_due() {
+                self.journal(&Line::Cmd { stamp: Stamp::of(&self.g), cmd: Command::AutoPlay { turns: 0 }.to_json() });
+                self.to_play = if self.g.at_turn_boundary() { 0 } else { 1 };
+                continue;
+            }
+            self.g.update();
+            if self.g.at_turn_boundary() {
+                // Before the autosave, so that its sidecar has the turns still to play (a replay
+                // from it goes on as the uninterrupted session did).
+                self.to_play -= 1;
+                self.boundary();
+                slices = 0;
+            }
+            on_slice(self);
+            slices += 1;
+            if slices > WATCHDOG_SLICES {
+                return Stop::Stuck(diagnose(&self.g));
+            }
+        }
+    }
+
     /// Before a turn slice: whether the AI autoplay stops now. Live, a transport asked for it
     /// while the game ran (`SessionShared::request_stop_autoplay`; dropped when the autoplay
     /// already ended); replaying, the journal has the stop at this slice's stamp.
     fn stop_autoplay_due(&mut self) -> bool {
         let asked = self.shared.stop_autoplay.swap(false, std::sync::atomic::Ordering::SeqCst);
         let replayed = self.shared.journal.lock().unwrap().take_running_cmd(Stamp::of(&self.g)).is_some();
-        (asked || replayed) && self.g.ai_auto_play > 0
+        (asked || replayed) && self.autoplay_left() > 0
     }
 
     /// The AutoMoves rule of `updateTestEndTurn` for human `h` at a control point: nothing is
@@ -360,6 +492,9 @@ impl Session {
     /// that sends commands without calling `advance` after each one (the transports) calls
     /// `advance` when this holds; `advance` applies the rule.
     pub fn auto_moves_due(&self) -> bool {
+        if self.observing {
+            return false;
+        }
         match self.phase() {
             Phase::Human(h) => !self.shared.decision_open() && self.auto_moves_rule(h),
             _ => false,
@@ -369,6 +504,9 @@ impl Session {
     /// Applies `cmd` at a control point (design §2.2): validate (pure), journal, the C++ port,
     /// then settle. Confirmations and errors change nothing.
     pub fn execute(&mut self, cmd: &Command) -> Result<CmdOk, CmdErr> {
+        if self.observing {
+            return self.execute_observed(cmd);
+        }
         if self.shared.decision_open() {
             return Err(CmdErr::DecisionPending);
         }
@@ -395,6 +533,22 @@ impl Session {
                 Ok(ok)
             }
         }
+    }
+
+    /// [`Session::execute`] of an observed session: while stopped, `end_turn` plays one turn and
+    /// `autoplay {turns: N}` plays N; nothing else changes an AI-only game.
+    fn execute_observed(&mut self, cmd: &Command) -> Result<CmdOk, CmdErr> {
+        let Phase::Human(_) = self.phase() else { return Err(CmdErr::NotYourTurn) };
+        let turns = match cmd {
+            Command::EndTurn { .. } => 1,
+            Command::AutoPlay { turns } if (1..=10_000).contains(turns) => *turns,
+            Command::AutoPlay { .. } => return Err(CmdErr::Invalid("autoplay: 1 to 10000 turns".into())),
+            _ => return Err(CmdErr::Cannot(format!("observing an AI-only game: the AI plays every civilization (`{}` is not available; end_turn and autoplay play turns)", cmd.name()))),
+        };
+        self.journal(&Line::Cmd { stamp: Stamp::of(&self.g), cmd: cmd.to_json() });
+        self.to_play = turns;
+        UiState::lock(&self.ui).view_version += 1;
+        Ok(CmdOk::Applied { log: Vec::new(), accepted: None })
     }
 
     fn apply_journaled(&mut self, h: PlayerId, cmd: &Command, action: &Action) -> CmdOk {
@@ -465,7 +619,7 @@ impl Session {
     /// reach nobody (the active player has moved). Without a log marker at the move (P7), the
     /// session splits them by the rules call that moved the human (`at`).
     fn follow_human(&mut self, at: MovedIn) {
-        if self.g.players[self.human].human {
+        if self.observing || self.g.players[self.human].human {
             return;
         }
         let Some(new) = self.g.civ_player_ids().find(|&p| self.g.players[p].human) else { return };
@@ -529,6 +683,13 @@ impl Session {
             }
             e
         };
+        if self.observing {
+            // The observer sees every player's messages (each tagged with its player).
+            for e in entries {
+                self.messages.push(resolve(e));
+            }
+            return;
+        }
         if entries.iter().any(|e| e.player.is_none()) {
             let g = QueryGuard::new(&self.g);
             for e in entries.into_iter().filter_map(|e| self.fog.filter(&g, h, e)) {
@@ -570,6 +731,9 @@ impl Session {
 
     /// What waits for the human.
     pub fn pending(&self) -> Pending {
+        if self.observing {
+            return Pending::default();
+        }
         let events = self.shared.open_events_of(self.human);
         self.read(|g| decision::pending(g, self.human, &events))
     }
@@ -612,6 +776,7 @@ impl Session {
             in_decision: false,
             saves_dir: self.opts.saves_dir.as_deref(),
             ui: &self.ui,
+            observe: self.observe_state(),
         };
         query::run(&self.g, &ctx, q)
     }
@@ -657,6 +822,9 @@ impl Session {
         });
         Sidecar {
             human: self.human,
+            observe: self.observing,
+            to_play: self.to_play,
+            setup: self.setup.as_ref().map(|ng| ng.to_json_names(self.g.d)),
             pending_events: self.shared.pending_events.lock().unwrap().clone(),
             journal: journal.path().map(|p| p.display().to_string()),
             journal_line: journal.count(),
@@ -677,6 +845,32 @@ impl Session {
             return Err(PlayError::Refused("saving is possible at a control point or a turn boundary".into()));
         }
         Ok((self.g.save(), self.sidecar()))
+    }
+
+    /// Flags plot `(x, y)` with `note` (`crate::flag`): the record, appended to the game
+    /// directory's `flags.jsonl` (with the replay's start save pinned) when there is one. Taken
+    /// while the game is stopped (a control point, an observed stop, the game over).
+    pub fn flag(&self, x: i32, y: i32, note: &str) -> Result<Json, PlayError> {
+        if !matches!(self.phase(), Phase::Human(_) | Phase::Over) || self.shared.decision_open() {
+            return Err(PlayError::Refused("flags are taken while the game is stopped".into()));
+        }
+        let input = crate::flag::FlagInput {
+            g: &self.g,
+            observed: self.observing,
+            x,
+            y,
+            note,
+            setup: self.setup.as_ref(),
+            dir: self.opts.saves_dir.as_deref(),
+            journal: self.journal_path(),
+            messages: self.messages.entries(),
+        };
+        guard::read(&self.g, |_| crate::flag::record(&input)).map_err(PlayError::Refused)
+    }
+
+    /// The game's settings, when known.
+    pub fn setup(&self) -> Option<&NewGame> {
+        self.setup.as_ref()
     }
 
     /// Saves `<saves_dir>/<name>.ffhsave` + `.ffhsess`.
@@ -732,6 +926,19 @@ pub fn phase(g: &Game, h: PlayerId) -> Phase {
     Phase::Running
 }
 
+/// The phase of an observed session (viewer `h`, `to_play` turns to play): `Human(h)` while it is
+/// stopped, else `Running`; `Over` once the game is decided (a victory leaves an autorun game
+/// EXTENDED, not OVER).
+pub fn observed_phase(g: &Game, h: PlayerId, to_play: i32) -> Phase {
+    if g.game_state != GameStateType::GAMESTATE_ON {
+        Phase::Over
+    } else if to_play <= 0 {
+        Phase::Human(h)
+    } else {
+        Phase::Running
+    }
+}
+
 /// Why a turn does not finish: the active players' ready or busy groups (as ffh-cli's run loop).
 pub fn diagnose(g: &Game) -> String {
     let mut out = format!("turn {} did not finish after {WATCHDOG_SLICES} slices;", g.game_turn());
@@ -783,6 +990,13 @@ enum ReplayStart {
 /// the journal; checkpoints are compared. Ends at the control point after the last input (or
 /// game over), returning the session; an error names the first divergence.
 pub fn replay(lines: Vec<Line>, from: Option<ReplayFrom>, opts: SessionOptions) -> Result<Session, String> {
+    replay_to(lines, from, opts, None)
+}
+
+/// [`replay`], stopping early at the first stop (a control point, an observed stop) after the
+/// moves of game turn `to_turn` (`ffh-play replay --to-turn`, a flag's repro: with
+/// `FFH_AI_TRACE` on, the trace ends with that turn).
+pub fn replay_to(lines: Vec<Line>, from: Option<ReplayFrom>, opts: SessionOptions, to_turn: Option<i32>) -> Result<Session, String> {
     let d = ffh_data::global();
     let opts = SessionOptions { saves_dir: None, autosave_keep: 0, auto_moves_when_idle: false, journal: false, ..opts };
     let (pos, start) = match (&from, lines.first()) {
@@ -827,6 +1041,9 @@ pub fn replay(lines: Vec<Line>, from: Option<ReplayFrom>, opts: SessionOptions) 
         let stop = s.advance(&mut |_| {});
         if let Some(e) = desync(&cursor) {
             return Err(e);
+        }
+        if to_turn.is_some_and(|t| s.g.game_turn() > t || (s.g.at_turn_boundary() && s.g.game_turn() >= t)) {
+            return Ok(s);
         }
         let (next, pos) = {
             let c = cursor.lock().unwrap();

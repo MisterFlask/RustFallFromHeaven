@@ -1871,6 +1871,20 @@ share score (docs/SCORE.md) averages 10000/N whatever the AI does.
   plots (worked, yields, improvements).
 - `FFH_AI_TRACE=all|<player>` traces AI decisions to stderr; `FFH_LOG=all|<player>` prints the
   game log.
+- **Spectators' flags.** Someone watching the AI in the browser (an observed game: docs/HUMAN.md,
+  "Watching the AI") flags play that looks wrong; the flag's text has the build, the turn, the
+  plot, the units there (ids, the AI's role, orders) and three ways to replay that turn with the
+  trace on: `ffh-play observe --setup '<settings>' --to-turn T --plot X,Y` (from the settings),
+  `ffh-play observe --load <pinned save> --to-turn T` (from the start of turn T: one turn of
+  work), and the same game in `ffh autoplay ... --turns T+1`. Check out the flag's build first:
+  the same seed plays another game once the AI changes. The trace lines of that turn are tagged
+  `[tT pP]`; `observe` prints the checksum of each turn (the flag's is the last) and the units at
+  the plot, so a fix can be checked on the same situation from the pinned save.
+- `--speed GAMESPEED_X`, `--handicap HANDICAP_X` (the game handicap: the AIs' bonuses),
+  `--era ERA_X`, `--climate CLIMATE_X`, `--sea-level SEALEVEL_X`, `--max-turns N`,
+  `--no-victory VICTORY_X` (repeatable) and `--leader LEADER_X` (the first slot's leader) give
+  `ffh autoplay` / `stats` / `bench` the rest of a custom game's settings, so every game a
+  spectator watches plays here too.
 - `--option GAMEOPTION_X` (repeatable) turns game options on for any of these commands (for
   example `GAMEOPTION_ADVANCED_START`).
 

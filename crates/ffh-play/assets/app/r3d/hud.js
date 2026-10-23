@@ -39,6 +39,13 @@ function hexLum(hex) {
 }
 
 export function drawHud(r3d, cam) {
+  drawHudParts(r3d, cam);
+  // The spectator mode's markers (this turn's fights, the flags) over the HUD, which clears the
+  // 2D canvas (MapView.drawMarkers).
+  r3d.view.drawMarkers?.();
+}
+
+function drawHudParts(r3d, cam) {
   const v = r3d.view;
   const g = v.ctx;
   g.setTransform(v.dpr, 0, 0, v.dpr, 0, 0);

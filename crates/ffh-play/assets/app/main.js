@@ -12,7 +12,7 @@
 // map) the client draws as before. `window.ffh` exposes the state for the headless smoke test.
 
 import * as api from "./api.js";
-import { S, setData, setView, setMap, on, emit, resetDismissed, clearDismissed, popupQueue, endTurnMessage, cycleCity } from "./state.js";
+import { S, setData, setView, setMap, on, emit, resetDismissed, clearDismissed, popupQueue, endTurnMessage, cycleCity, observing, eventMarkers } from "./state.js";
 import { MapView } from "./map.js";
 import * as units from "./units.js";
 import { openCity, ownCities, stepCityScreen } from "./city.js";
@@ -115,6 +115,8 @@ async function syncOnce() {
     }
     return;
   }
+  // An observed game is watched: the spectator bar is up (paused after a load or a reload).
+  if (observing(st) && !tools.spectating() && !["over", "crashed", "no_game", "stuck"].includes(phase)) tools.startSpectating({ playing: false });
   if (phase === "running") return;
   await refreshView(st);
   if (S.status !== st && S.status.phase !== phase) return; // a newer status is being handled
@@ -216,7 +218,9 @@ async function refreshView(st) {
   }
   gameKey = gk;
   viewKey = vk;
+  if (newGame) tools.loadFlags();
   await refreshLog();
+  updateMarkers();
   units.viewChanged();
   empire.viewChanged();
   renderTop();
@@ -241,6 +245,16 @@ async function refreshLog() {
   } catch {
     /* busy inside a decision */
   }
+}
+
+/** The map's markers while watching the AI: where this turn's combats and captures happened
+ *  (from the located messages) and this game's flags. */
+function updateMarkers() {
+  if (!mapView) return;
+  const watching = tools.spectating() || observing();
+  const events = watching ? eventMarkers(S.messages, units.latestEventTurn()) : [];
+  const flags = (S.flags ?? []).filter((f) => Array.isArray(f.plot)).map((f) => ({ x: f.plot[0], y: f.plot[1], n: f.flag }));
+  mapView.setOverlay({ events, flags });
 }
 
 function centerOnStart() {
@@ -402,6 +416,7 @@ function onKey(ev) {
   const typing = t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement;
   if (ev.key === "Escape") {
     if (document.body.classList.contains("menu-open")) setMenu(false);
+    else if (tools.cancelFlagPick()) toast("No flag.");
     else if (units.currentMode()) units.setMode(null);
     else if (units.clearWaypoints()) return;
     else if (!onEscape() && !modalOpen()) units.clearSelection();
@@ -439,6 +454,13 @@ function onKey(ev) {
   }
   if (cityStep && plain) {
     stepCity(cityStep > 0);
+    return handled();
+  }
+  // F while watching the AI: flag the plot under the mouse (else pick one).
+  if ((k === "f" || k === "F") && plain && (tools.spectating() || observing())) {
+    const p = units.hoveredPlot();
+    if (p) tools.openFlag(p.x, p.y);
+    else tools.flagPrompt();
     return handled();
   }
   switch (k) {
@@ -607,7 +629,7 @@ function wire() {
   on("spectate", () => renderTop());
   on("game-started", (opts) => {
     if (opts?.spectate) tools.startSpectating({ newGame: true });
-    else if (tools.spectating()) tools.stopSpectating();
+    else if (tools.spectating()) tools.dropSpectating();
     closeAll();
     units.clearWaypoints();
     S.sel = null;
@@ -630,13 +652,20 @@ function wire() {
     renderTop();
   });
   on("mode", () => units.renderPanel());
+  on("flag-plot", (x, y) => tools.openFlag(x, y));
+  on("flash", (x, y) => mapView.flashTile(x, y, "hit"));
+  on("flags", () => {
+    updateMarkers();
+    renderBottom();
+  });
+  on("spectate", () => updateMarkers());
   on("renderer", (r) => setRenderer(r));
 }
 
 async function boot() {
   wire();
   mapView = new MapView($("#mapwrap"), {
-    click: (x, y, ev) => units.click(x, y, ev),
+    click: (x, y, ev) => tools.flagClick(x, y) || units.click(x, y, ev),
     rightClick: (x, y, ev) => units.rightClick(x, y, ev),
     hover: (x, y) => units.hoverAt(x, y),
     dblclick: (x, y) => {
