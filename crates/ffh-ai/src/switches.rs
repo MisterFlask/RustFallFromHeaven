@@ -30,19 +30,23 @@ pub static WS_TIMING: Switch = Switch::new("WS_TIMING");
 /// A prepared war is declared once the army stands near the target (`diplomacy::manage`).
 pub static WAR_STAGING: Switch = Switch::new("WAR_STAGING");
 /// City defenders weighed by the rival civilizations near each city, and sorties only with a
-/// strength edge (`defense.rs`).
-pub static RIVAL_DEFENSE: Switch = Switch::new("RIVAL_DEFENSE");
+/// strength edge (`defense.rs`). Off by default (`FFH_AI_RIVAL_DEFENSE_ONLY=ALL` turns it on):
+/// on fresh seeds it cost legacy -3.2% and research -7.2% at turn 300 (docs/AI.md, Known gaps).
+pub static RIVAL_DEFENSE: Switch = Switch::off_by_default("RIVAL_DEFENSE");
 /// Field stacks heal as More Naval AI's do: only when most of the stack is hurt and where healing
-/// is good, the wounded splitting off in our cities (`military::heal`).
-pub static HEAL: Switch = Switch::new("HEAL");
+/// is good, the wounded splitting off in our cities (`military::heal`). Off by default
+/// (`FFH_AI_HEAL_ONLY=ALL`): it cost legacy -1 to -2% on every fresh set (docs/AI.md, Known gaps).
+pub static HEAL: Switch = Switch::off_by_default("HEAL");
 /// A stack next to an enemy city at war takes it when it is empty or the stack clearly covers it,
 /// even outside the operation (`military::opportune`).
 pub static CAPTURE: Switch = Switch::new("CAPTURE");
 /// A second siege operation for a committed force twice the first target's need
 /// (`campaign::plan`).
 pub static SECOND_OP: Switch = Switch::new("SECOND_OP");
-/// Heroes and veterans attack only at good odds in a strike (`campaign::strike`).
-pub static PRECIOUS: Switch = Switch::new("PRECIOUS");
+/// Heroes and veterans attack only at good odds in a strike (`campaign::strike`). Off by default
+/// (`FFH_AI_PRECIOUS_ONLY=ALL`): on fresh seeds it cost legacy -2.0% and research -5.1% at turn
+/// 300 (docs/AI.md, Known gaps).
+pub static PRECIOUS: Switch = Switch::off_by_default("PRECIOUS");
 /// Assault transports wait in port for the landing force and sail together, escorted
 /// (`naval::transport`).
 pub static FLEET: Switch = Switch::new("FLEET");

@@ -183,7 +183,8 @@ the same for any unit and the cheapest are disbanded first, so idle hammers buy 
 Units are chosen by power squared per production turn, so stronger units win unless much
 dearer.
 
-**City defense against rival civilizations** (`defense.rs`, switch `RIVAL_DEFENSE`): what a
+**City defense against rival civilizations** (`defense.rs`, switch `RIVAL_DEFENSE`, off by
+default: it cost legacy and research on fresh seeds, Known gaps): what a
 player watches along a border -- whose cities stand how close, whether we are at war with them or
 about to be, what they think of us, whether their army outweighs ours. Each rival's threat to a
 city is More Naval AI's (`CvCityAI::AI_cityThreat`): its closeness (its cities on the landmass
@@ -603,7 +604,9 @@ Each army group is a stack; per decision, in order:
    160)`; the targets of our operations are left to their strikes);
 5. attack an adjacent target worth it (never a civ city outside a war plan, nor the target of
    our siege operation, which is left to its strike);
-6. heal (`heal`, switch `HEAL`; More Naval AI's `AI_heal`, fitted to our small stacks): in one of
+6. heal (`heal`; switch `HEAL`, off by default, Known gaps: otherwise a stack heals where it
+   stands when one unit is over 35% damage and it is safe; More Naval AI's `AI_heal`, fitted to
+   our small stacks): in one of
    our cities the wounded (over 30% damage) split off and heal while the rest go on; in the field
    a stack committed to a siege stops only when more than half of it is hurt (20%+ damage), and
    only where healing is better than 10% a turn (our land or a city, not neutral or enemy land),
@@ -662,7 +665,8 @@ army decision of each `play_turn` call (nothing outside `Game` is remembered).
   the best odds when 68%+, else the unit cheapest to lose for its strength (C++
   `AI_getBestGroupSacrifice`) -- while the attackers left still cover the
   defenders left (or the defenders are down to half their health and outnumbered). Up to three
-  units follow the victor into the city. Heroes and veterans (switch `PRECIOUS`; More Naval AI's
+  units follow the victor into the city. Heroes and veterans (switch `PRECIOUS`, off by default,
+  Known gaps; More Naval AI's
   `AI_getBestGroupAttacker`) attack only at their odds -- a hero at 85% plus 1% a level, a unit
   above level 4 at 70% plus 3% a level (at most 95%) -- and are never sacrificed; the phases
   leave them out of the force that takes the city (else the stacks stalled next to it, the strike
@@ -2482,11 +2486,17 @@ Where MNAI does something this AI does not, ranked by expected worth (each untri
 
 ## Known gaps (future work)
 
-- **Healing costs a little (round 7b).** `HEAL` (wounded split off in our cities, siege stacks
-  stop only when most of them are hurt and not in enemy or neutral land) is expert play, and it
-  takes more cities in sieges, but every measured set leans 1-3% of legacy below it switched off,
-  never significantly (Round 7 together). Not traced: where the stacks it keeps marching lose
-  more than they take, or whether the walk back to heal costs the tempo.
+- **Three military behaviours off by default (round 7b).** Implemented, switched, and costing
+  legacy on fresh seeds (26001-26192, 300 turns, each switched off inside the merged build):
+  defense weighed by rival civilizations (`RIVAL_DEFENSE`: legacy -3.2%, t -3.8; research
+  -7.2%, t -4.1; population -3.5%), heroes and veterans only at good odds (`PRECIOUS`: legacy
+  -2.0%, t -2.6; research -5.1%, t -2.7), and healing (`HEAL`: legacy -2.1%, t -2.1, and 1-3%
+  below on every set measured). Each is expert play in principle; the cost is the implementation
+  and is not traced yet. Likely levers: for `RIVAL_DEFENSE`, the peacetime defenders it holds
+  (the garrison entries in docs/AI_LOG.md found held defenders cost research and save no city);
+  for `PRECIOUS`, strikes that wait for odds the heroes never get, so sieges drag (count the
+  held-back strikes and the turns a siege lasts with it on and off); for `HEAL`, siege stacks
+  that march on wounded and lose units. `FFH_AI_<NAME>_ONLY=ALL` turns one on for measuring.
 
 - **Councils gang up (round 7c).** With `council.rs` the councils meet in about half the games
   and pass nearly every proposal; a head councilor at war has the council declare war on its
