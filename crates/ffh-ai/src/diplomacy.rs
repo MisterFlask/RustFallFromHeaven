@@ -485,7 +485,7 @@ fn territory_check(g: &Game, p: PlayerId, bar: &WarBar, other: PlayerId, recheck
 }
 
 /// Does team `target` still pass a gate that would choose it now (`WAR_RECHECK`): the victory
-/// plan's (a rival about to win; our domination or conquest) or the war of expansion's, with slack.
+/// plan's (a rival about to win; our domination or conquest) or the war of expansion's, with slack (a first version kept takeability's 120% margin and dropped half the wars: docs/AI_LOG.md, "Round 7c").
 /// `Err` names the test the war of expansion's gate fails (for traces and telemetry).
 fn still_a_target(g: &Game, p: PlayerId, target: TeamId, plan: &crate::victory::Plan) -> Result<(), &'static str> {
     let bar = war_bar(g, p);
@@ -729,7 +729,7 @@ fn racing_with(g: &Game, team: TeamId, tech: TechType) -> bool {
 /// or `None`: `to` is our victory rival; a military technology while we prepare or fight a war
 /// (any recipient could pass it on); and, to anyone we are not friendly with, a monopoly worth
 /// keeping -- the technology of a world wonder, world unit or project we are building, or a
-/// military technology a land neighbour we may fight would gain while most civs we know lack it.
+/// military technology a land neighbour we may fight would gain while most civs we know lack it. (A first version, keeping every valuable technology and refusing the leader outright, cost the civ using it: docs/AI_LOG.md, "Round 7c".)
 pub(crate) fn tech_denial(g: &Game, p: PlayerId, to: PlayerId, tech: TechType, ctx: &TechCtx) -> Option<&'static str> {
     if !ctx.on {
         return None;

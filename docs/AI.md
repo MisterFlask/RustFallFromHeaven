@@ -47,7 +47,8 @@ and determinism -- and a standing cost preference:
 | `CvPlayerAI::AI_considerOffer` | `consider_offer` | `diplomacy.rs` |
 | `CvPlayerAI::AI_doAdvancedStart` (from `CvPlayer::setTurnActive`) | `play_turn` while start points remain | `advanced_start.rs` |
 | `CvPlayerAI::AI_chooseEvent` | `choose_event` | `events.rs` |
-| elections, votes, captured/gifted units | defaults in `controller.rs` | -- |
+| `CvTeamAI::AI_chooseElection` / `CvPlayerAI::AI_diploVote` | `choose_election` / `diplo_vote` | `council.rs` |
+| captured/gifted units | defaults in `controller.rs` | -- |
 | `CvCityAI::AI_assignWorkingPlots` (citizens) | `Game::city_assign_working_plots` | `ffh-core/src/governor.rs` |
 
 `CvPlayerAI::AI_foundValue` (and its bonus valuation) is ported faithfully into the rules
@@ -103,7 +104,9 @@ counters, war success, war plans) that the diplomacy below reads.
      Bard's, Sage's and Merchant's shrines), Great Engineers rush a wonder one of our cities is
      building when two thirds of the rush go into it; otherwise they discover, join as
      specialists or start a golden age;
-   - **missionaries** go to our cities without the state religion; **casters** go with the
+   - **missionaries** go to our cities without the state religion, and, once the shrine of our
+     state religion stands, to foreign cities whose borders are open to us (cities without a
+     religion first; see Diplomacy, "Missionaries abroad"); **casters** go with the
      stack nearest an operation's target, to the units their blessings are for, the cities
      their city spells are for or the land they terraform (`magic::caster_target`), else to
      the most threatened city; barbarians and animals attack what they can beat,
@@ -705,7 +708,10 @@ Peace is sought when the war goes badly (war success and power), or drags on wit
 it is offered as a real peace-treaty deal the other AI must accept. Every 5 turns an AI swaps
 technologies one for one at similar cost (once `TECH_TRADE` allows it) and signs open borders
 with civs it likes; `consider_offer` accepts tech swaps worth at least 80% of what it gives,
-never with the civ it prepares a war against.
+never with the civ it prepares a war against, and both obey the tech-trade discipline below.
+Peace weighs the forces at the front, quiet wars end, a target's other wars count toward our
+edge, and a prepared war is re-checked before it is declared (the paragraphs after "Hire a war
+ally").
 
 **Defensive pacts (`pacts.rs`).** A weaker civ's check against a stronger, warlike neighbour.
 A civ is threatened when a team within 16 plots by land has at least 120% of its defensive power
@@ -885,6 +891,92 @@ when the payment is worth over three quarters of the price) -- in practice the b
 *winners*, converting gold into a decisive second front (seed 5: the dogpile cuts the target from 13
 cities to 2 and the briber-side winner closes out by domination 64 turns early). No new saved state;
 no RNG.
+
+**Peace by the forces at the front (`end_war_val_seen`, `front_forces`; switch `PEACE_FORCES`).**
+More Naval AI divides the value of peace by our attackers en route against theirs in our land
+(`CvTeamAI::AI_endWarVal`, x200 / range(ratio, 200, 600)). Here the same scale applies to
+`end_war_val` wherever this AI weighs peace (its own offers, `consider_offer`, the offers to
+humans, its council votes): our units able to attack within 2 plots of their city where we have
+the most (their next city) against theirs within 2 plots of ours that we can see, at least 2.
+Nothing at the front: x1; four times their number: x1/2; six times or more: x1/3. A winner's
+cash-out (peace for tribute) then goes ahead only when the tribute pays for what the army at
+their gates is worth to us (the drop in our want for peace; nothing when no army is near), and a
+bare peace offer is refused while our army stands there with three times theirs. That is the
+expert's test the 30-turn rule lacked (docs/AI_LOG.md, "Wars"): sell the war when the next city
+is out of reach, fight on when it is close.
+
+**Quiet wars end (`quiet_war`; switch `QUIET_PEACE`).** More Naval AI makes peace in a war of
+10+ turns where nothing happens and no stack is moving (`AI_doWar`). Here: past 15 turns, less
+than two attacks' worth of war success on both sides, no army of ours near their cities nor of
+theirs (that we see) near ours, and no stack of ours marching on them (the campaign's
+`MISSIONAI_ASSAULT` tag) -- we offer peace, with tribute either way as the war values say.
+
+**Dogpiles (`dogpile_power`; switch `DOGPILE`).** In the war-of-expansion gate the power of a
+target's current enemies counts with ours (More Naval AI's `AI_doWar` dogpile power; an enemy that
+shares no landmass with it counts half): a civ busy on another front is a weaker target than its
+defensive power says, and the runaway leader, at war with a neighbour, becomes reachable for the
+civs around it. The rest of the gate (reachable, takeable, the leader's bar) is unchanged, and the
+declaration's re-check (below) drops the war if the other front has closed since.
+
+**Re-check before declaring (`still_a_target`; switch `WAR_RECHECK`).** More Naval AI's "last
+chance to change our mind" (`AI_doWar`): when a prepared war is about to be declared (the army
+staged, or the 40-turn fallback), the target must still pass a gate that would choose it now --
+the victory plan's, or the war of expansion's with 10% slack on the power bar and per-unit parity
+for takeability (the army is massed at the border; the 120% margin selects wars, it does not
+re-judge them). A target with new pacts behind it, a friend since, or cities our best attacker no
+longer matches is dropped, the army kept for the next choice (`war_drop` decisions: power,
+not_takeable, unreachable).
+
+**Tech-trade discipline (`tech_denial`, `TechCtx`; switch `TECH_DISCIPLINE`).** More Naval AI's
+`CvTeamAI::AI_techTrade`, in the form an expert would keep: no technology to our victory rival; a
+swap with the world's clear leader (a share 1.5x the runner-up's) only when we get at least 125% of
+what we give (by research cost; 80% for anyone else, as before); no military technology (one
+opening a unit of the recipient's civilization at 60% of the world's best land unit) to anyone
+while we prepare or fight a war (it can be passed on); and, to anyone we are not friendly with,
+no monopoly worth keeping: the technology of a world wonder, world unit or world project one of
+our cities is building (More Naval AI's DENIAL_MYSTERY), or a military technology a land
+neighbour (within 16 plots) would gain while most civs we have met lack it. `trade()` asks only for
+a technology the partner's own discipline lets go (the trade screen shows a refusal) and offers
+the closest-in-cost one ours lets go; `consider_offer` and the offers to humans apply the same
+rules. A first version kept every technology worth More Naval AI's monopoly value of 50 (an
+unbuilt wonder, strong units) while most civs lacked it, and refused the clear leader outright:
+1,000 swaps withheld in 24 full games, the world 4.5% behind in technologies at turn 300, and one
+civilization with it against the rest won 18.4% of its games against 21.1% (seeds 1-4, 76 pairs):
+a civ that refuses a swap forgoes the technology it would have received while the others trade
+on.
+
+**Councils (`council.rs`; switch `COUNCIL`).** The Overcouncil (the Overcouncil civic, good and
+neutral civs) and Undercouncil (evil and neutral) meet every 10 and 15 turns once two civs run
+their civic; members elect a head councilor, who proposes one resolution a session, and half the
+population-weighted votes pass it. Before, every AI abstained and never proposed, so both were
+inert. Now a member votes by what the resolution does to it (`council::value`): a war declared on
+our enemy, or on a civ our own gate would attack, is welcome, one on us or a neighbour we would
+not choose is not; a forced peace is judged like the peace it makes (`want_peace`, the war
+values), stopping a winning front-runner and sparing a losing friend; an embargo against an
+enemy or a disliked civ; a mana ban hurts those who hold the mana and helps against the
+enemies who do; a forced civic against our own civic values; trade routes (More Naval AI: a
+large empire gains little), free trade, free units we can pay for, open borders and pacts by who
+they bind us to; Fund Dissidents against the Overcouncil members we fight or dislike; crime
+counts against. Positive: yes; negative: no; nothing at stake: abstain. A resolution worth -300
+or less (war on us, one of our cities given away) is defied (the rules' veto: unrest, and the
+loyal membership lost). For head councilor we vote for ourselves when we stand, else our master,
+else the candidate we like best that is neither our victory rival nor the clear leader. The head
+councilor proposes the resolution that gains it most among those its model of the members' votes
+(our AI's members by the same values, humans and other AIs abstaining) says will pass -- or, for
+one in force that hurts it, will fail and so be repealed; nothing when none does. Deterministic:
+none of the C++ AI's defiance or proposal dice. Telemetry counts the results (`vote_passed`,
+`vote_failed`) and the AI's `vote` and `election` decisions.
+
+**Missionaries abroad (`units::missionary`, `production.rs`; switch `MISSIONARY_ABROAD`).** More
+Naval AI's missionary strategy: once the holy city of our state religion is ours and has its
+shrine (a gold a turn for every city in the world with the religion), a missionary with no city of
+ours to convert goes to a foreign city it may enter -- a civ at peace whose borders are open to us,
+whose civics let the religion in -- cities without a religion first (the spread is then almost
+sure), within 15 turns. Production weighs one such missionary like a building worth the shrine's
+gold (`MISSIONARY_ABROAD_VALUE`, 60 of `building_value`'s 80 a gold, for the odds of failing on
+the way) against the best building, while such a city lies within 15 plots on the landmass. It
+almost never fires: the shrine comes late (after turn 300, a Great Prophet's work), open borders
+are rare by then, and a building nearly always outscores a gold a turn.
 
 ## Random events (`events.rs`)
 
@@ -1513,6 +1605,73 @@ unless they strike this turn (`campaign::on_the_move` at war only). Seeds 331-37
 41-52: score (dead as 0) +15 (t 2.0), 16% fewer civ cities lost to barbarians; seeds 379-426:
 -7, 4% more lost; all 120 seeds: +6 (t 1.2), techs +0.2 (t 1.7), eliminations unchanged.
 
+### Round 7c (2026-10-22): wars, diplomacy, councils, missionaries
+
+Seven behaviours read from More Naval AI (Diplomacy above: peace by the forces at the front,
+quiet wars end, dogpiles, the re-check before declaring, tech-trade discipline, councils,
+missionaries abroad), each behind its switch and measured alone: the same binary with
+`FFH_AI_<NAME>_OFF=ALL` against all on. Development: seeds 1-24 full games and 1-48 at 300 turns;
+validation: fresh seeds 22201-22296 (full games, `--until-supremacy`) and 22001-22192 (300 turns;
+22001-22096 for the dogpile, the discipline, the peace terms and all seven), never used to choose
+anything. The development measurements ran on the build before the kept tech-trade discipline
+(the same binary on both sides of each comparison). The dogpile and the tech-trade discipline are relative edges and
+were also measured as one civilization with the behaviour against the rest without it
+(`civ_ab.py --civ all`, seeds 1-4 and 22201-22204, 76 pairs each). Two first versions were
+replaced (docs/AI_LOG.md, "Round 7c"). Legacy score and techs are per-civ means, t the paired t.
+
+How often they fired, 96 fresh full games (telemetry): 280 of 1,160 war preparations were
+dogpiles (the target's other enemies counted; 160 dogpile wars declared); 147 prepared wars
+were dropped at the re-check (82 no longer takeable at parity, 63 on the power bar); 170
+cash-outs were refused while our army stood at their next city and 120 quiet wars ended in peace
+(against 307 cash-outs and 250 peaces wanted); tech swaps were withheld or refused for the
+leader's 125% (3,010 checks, nearly all of the leader's swaps), the victory rival (814), a
+wonder we were building (545), military technology at war (396) and military monopolies to
+neighbours (83); one missionary went abroad.
+
+Councils, same 96 games: the Overcouncil met in 51 games, the Undercouncil in 42; 1,362 yes
+votes, 180 no, 35 abstentions, no defiance; every proposal but two passed (the head councilor
+proposes only what its model of the votes says will pass), two were repeals. Resolutions passed:
+forced war 91 (Overcouncil) and 39 (Undercouncil) in 30 and 23 games -- the head councilor
+recruiting the council into the war it fights (the average gain of a forced-war proposal is
+180: a war we are in counts 200) -- embargoes 48, forced peace 17, defensive pacts between all
+members 25, open borders 11, the three mana bans 111 (Death 40, Entropy 35, Shadow 36), Liberty
+42, Single Currency 46, Free Trade 46, Develop Secret Codes 35, Enlist the Nightwatch 25, Fund
+Dissidents 30, Smuggling Ring 27, Gambling Ring 17; the head councilor seat 164 and 87 times.
+With councils active, wars rise (below) and supremacy is rarer: a balance question for the owner,
+since the councils now gang up on whoever they fight.
+
+| switch (off -> on) | development, full games 1-24 | fresh full games 22201-22296 | fresh 300 turns 22001-22192 |
+|---|---|---|---|
+| all seven | legacy -4.0%/-4.8%/-4.6% at 300/400/500 (t -3.0/-2.9/-2.0), techs -4.4% at 300; wars +37% (t 3.6), captures +23% (with the first tech-trade discipline) | legacy +0.9%/+2.3%/+1.3% at 300/400/500 (t 1.2/2.0/1.0), techs +3.9% at 500 (t 2.1); wars +15% (t 2.2), captures -2%; supremacy 50 -> 52, cultural 35 -> 36, conquest 4 -> 2, domination 2 -> 1, time 5 -> 5 | 96 games: legacy +0.1%/+0.2% at 200/300 (\|t\| < 0.5); wars -13% (t -3.3), captures -3% |
+| `PEACE_FORCES` | legacy -0.5%/-1.9%/-1.3% (t -1.8/-1.9/-1.1); wars -8%, captures +3% | legacy +0.4%/+1.0%/-0.6% (t 1.5/1.1/-0.6), techs +0.5% at 300 (t 2.5); wars -4%, captures -4% (t -1.3); supremacy 58 -> 52, cultural 29 -> 36 | 96 games: legacy -0.5% at 300 (t -1.9); wars -5% (t -2.1), captures +1% |
+| `QUIET_PEACE` | legacy -0.1%/-1.1%/-3.2% (t -1.4/-1.3/-2.2); wars +4%, captures +5% | legacy +0.4%/-0.1%/-1.2% (t 1.8/-0.3/-1.6), techs -1.5% at 500 (t -1.5); wars +3%, captures -2% | (not run: 45 of 48 development games identical at turn 300) |
+| `DOGPILE` | legacy -0.6%/-1.0%/+0.4% (\|t\| < 1), techs +3.2% at 500 (t 1.8); wars +20% (t 1.8), captures +3% | legacy -0.3%/+0.2%/-0.8% (\|t\| < 1); wars +13% (t 2.3), captures +4% (t 1.1); decided 13 turns later (t 2.2), supremacy 57 -> 52 | 96 games (81 identical): legacy -0.1% (t -0.2); wars +6% (t 2.3), captures +2% |
+| `TECH_DISCIPLINE` | first version: legacy -3.7% at 300 (t -2.7), techs -4.5% (t -3.0) (AI_LOG) | legacy -0.1%/-0.4%/-0.4% (\|t\| < 1), techs -1.4% at 400 (t -2.3), +1.0% at 500; wars +10% (t 1.8); decided 11 turns later (t 1.8) | 96 games: legacy -0.1%/-0.3% at 200/300 (t -1.6/-1.6), techs -0.4% at 300 (t -2.0) |
+| `WAR_RECHECK` | legacy -0.7%/+3.4%/+1.0% (t -0.5/1.5/0.4), techs +5.7% at 400 (t 1.6); wars +3% | legacy +0.5%/+0.8%/+0.7% (t 1.3/1.1/1.2), techs +2.0% at 500 (t 1.6); wars -19% (t -3.2), captures -11% (t -2.9; a city per war 1.11 -> 1.21); decided 15 turns sooner (t -1.7), time limit 8 -> 5 | 192 games: legacy +0.5% at 300 (t 1.2); wars -15% (t -5.5), captures -6% (t -2.2) |
+| `COUNCIL` | legacy -0.9% at 400 (t -1.6), +0.1% at 500; wars +31% (t 3.6); supremacy 15 -> 10 of 24 | legacy +0.0%/+0.1%/+0.9% (\|t\| <= 1); wars +14% (t 3.3), captures -1%; supremacy 58 -> 52, cultural 31 -> 36 | (inert before turn 300) |
+| `MISSIONARY_ABROAD` | 23 of 24 games identical | 1 missionary abroad in 96 games | -- |
+
+One civilization with the behaviour against the rest without it (76 pairs each):
+
+| | seeds 1-4 | fresh seeds 22201-22204 |
+|---|---|---|
+| `DOGPILE` | wins 15.8% -> 17.1% (1 / 0), share@end +22 (t 0.6) | wins 11.8% -> 11.8% (0 / 0), share@end -2 (t -0.1); 68 of 76 games identical |
+| `TECH_DISCIPLINE` (kept version) | wins 18.4% -> 15.8% (0 / 2), share@end -77 (t -1.2) | wins 11.8% -> 10.5% (0 / 1), share@end -2 (t -0.1), legacy@end -30 (t -0.9) |
+
+What the round shows. The bundle is neutral to slightly positive for the world on fresh seeds
+(legacy +2.3% at turn 400, techs +3.9% at turn 500) and makes the full game more warlike (wars
++15%; before turn 300, when the councils have not met, 13% fewer): the councils' forced wars and
+the dogpiles add wars, the re-check removes the ones that would not take a city. The first tech-trade discipline cost the whole world 4-5% of its technologies by
+turn 300 and the civ using it its games; the kept version is flat for the world, and for the
+civ using it 3 discordant games went to the base (p 0.25 over both sets), share at the end flat
+on fresh seeds: a small, unproven cost of not feeding the runaway leader. Quiet wars ending costs a
+little late (legacy at turn 500 -3.2%, t -2.2, development; -1.2%, t -1.6, fresh; Known gaps).
+The re-check makes wars fewer and more decisive (a city per war 1.11 -> 1.21) and games end sooner. The peace terms
+weigh the front without a measurable effect on the economy; they shift outcomes from supremacy
+toward culture (58 -> 52 supremacy). Missionaries abroad almost never fire (shrines come late,
+open borders are rare by then, a building outscores a gold a turn); the councils, inert before,
+now meet in about half the games and pass nearly everything their head councilor proposes.
+
 ### Round 6 (2026-10-21): great people, explorers
 
 Six fixes for play a good player would not make, found by tracing seeds 1-18; two kept, the rest
@@ -1902,7 +2061,8 @@ Where MNAI does something this AI does not, ranked by expected worth (each untri
    one civ against the rest (`civ_ab.py`); the garrison entries in AI_LOG warn about the cost.
 3. **Peace terms that weigh our forces** (`CvTeamAI::AI_endWarVal`: the value of peace divided
    by our attackers en route against theirs, down to a third; a war with nothing moving ends).
-   AI_LOG "Wars" names this lever: sell the war when the next city is out of reach.
+   AI_LOG "Wars" names this lever: sell the war when the next city is out of reach. Done in round
+   7c (Diplomacy, "Peace by the forces at the front", "Quiet wars end").
 4. **Healing.** MNAI's `AI_heal` stops a stack in the field only when over half of it is hurt,
    and only where healing is above 10% (not in enemy or neutral land); wounded units in our
    cities split off. Here one unit over 35% damage halts the whole stack where it stands
@@ -1911,11 +2071,11 @@ Where MNAI does something this AI does not, ranked by expected worth (each untri
    top third of cities by production. Here any city takes a hero once we have 3 cities, and the
    rules let one city at a time build it, so the first empty queue locks it in.
 6. **Council votes.** MNAI votes and proposes (`AI_diploVote`, `AI_chooseElection`); this AI
-   abstains on every vote and never proposes (the `Controller` defaults), so the Overcouncil and
-   Undercouncil are inert. The FfH 0.41 versions are ported in ffh-cppai. A balance question too.
-7. Smaller: dogpile wars on a civ already at war (`AI_doWar`); no tech trades with the victory
-   rival, no military techs while preparing a war, keep monopolies (`AI_techTrade`); missionaries
-   abroad once the shrine stands; a stack next to an empty or weak enemy city outside the plan
+   abstained on every vote and never proposed, so the Overcouncil and Undercouncil were inert.
+   Done in round 7c (`council.rs`; Diplomacy, "Councils"); a balance question too.
+7. Smaller: (done in round 7c: dogpile wars on a civ already at war, `AI_doWar`; no tech trades
+   with the victory rival, no military techs while preparing a war, keep monopolies,
+   `AI_techTrade`; missionaries abroad once the shrine stands) a stack next to an empty or weak enemy city outside the plan
    takes it (`AI_stackAttackCity`); a second operation for a clear surplus (MNAI caps the units
    per target); assault fleets wait for the landing force and sail escorted
    (`AI_assaultSeaMove`); Govannon's Teach Spellcasting; heroes attack only at 85% + level
@@ -1924,6 +2084,18 @@ Where MNAI does something this AI does not, ranked by expected worth (each untri
 
 ## Known gaps (future work)
 
+- **Councils gang up (round 7c).** With `council.rs` the councils meet in about half the games
+  and pass nearly every proposal; a head councilor at war has the council declare war on its
+  enemy (in 96 full games, 91 forced-war resolutions passed in 30 games of the Overcouncil, 39
+  in 23 of the Undercouncil), and supremacy is rarer (58 -> 52 of 96
+  against councils off). The AI plays the rules as they are; whether forced wars should be this
+  cheap to pass is the owner's balance question. Not done: a member that would be dragged into a
+  war it cannot fight leaving the council (changing its membership civic) before the vote.
+- **Quiet wars end, then a new one is prepared (round 7c).** `QUIET_PEACE` ends wars where
+  nothing happens; late in full games the economy is a little lower with it (legacy at turn 500
+  -3.2%, t -2.2, on development seeds; -1.2%, t -1.6, on fresh ones). Untested hypothesis: the
+  peace frees the one-war-at-a-time gate, and the civ prepares (builds an army for) another war
+  where the phony one cost it nothing.
 - **Vassals never leave.** A vassal that has recovered stays one. FfH's AI cancels the agreement
   when `AI_vassalTrade` would now refuse it. Masters do nothing for their vassals beyond the war
   joining the rules impose (Diplomacy, "Vassal states").
@@ -2029,8 +2201,9 @@ Where MNAI does something this AI does not, ranked by expected worth (each untri
   computed need of 10, 24 full games, 2026-10-21) and the committed stacks stay together (3-6
   stacks, striking together, in the traced wars), but a war we declare takes a city 38% of the
   time; about 40% of them end in our own peace for tribute at turn 11, which pays better than
-  fighting on (refusing it cost wins, docs/AI_LOG.md, "Wars"). The lever left is the operation's
-  own estimate: sell the war when the next city is out of reach, fight on when it is close. A
+  fighting on (refusing it cost wins, docs/AI_LOG.md, "Wars"). The lever left was the operation's
+  own estimate: sell the war when the next city is out of reach, fight on when it is close (round
+  7c weighs the army at their next city, Diplomacy, "Peace by the forces at the front"). A
   barbarian town of 5+ archers is out of reach and is left alone; casters cast before the strike but do not attack
   ("Spellcasting"); a city emptied of defenders is entered even when a counterattack will retake
   it. Tried and dropped (no measurable effect on seeds 1-48): raiding (pillaging) while a war
@@ -2073,8 +2246,7 @@ Where MNAI does something this AI does not, ranked by expected worth (each untri
   would have to avoid *creating* the exposure -- danger-aware movement that ends each turn on a
   safe plot -- without making stacks passive, which is a pathfinding change, not a retreat rule.
 - No hurrying beyond the civic-gated gold/population hurries and chops for settlers, workers and
-  world wonders, no wonder racing; the vote sources (Overcouncil / Undercouncil) use the defaults:
-  every AI abstains and an AI secretary never picks a resolution, so both councils are inert.
+  world wonders, no wonder racing.
 - Speed: path finding is about 30% of late-game time.
 - Measured on branches never merged (built on the master of 2026-10-15, not re-measured on fresh
   seeds; expect conflicts): `origin/handoff/ai3b-siege-estimate` (exact strike odds over the

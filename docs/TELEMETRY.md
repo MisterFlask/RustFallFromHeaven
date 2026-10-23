@@ -64,6 +64,7 @@ A 300-turn mixed game writes about 0.5 MB of events.
 | `casters` | `unit_turns`, `idle_castable` | – |
 | `intent_changes` | intent kind | – |
 | `vassal` / `vassal_master` | `became`, `capitulated`, `freed` / `gained`, `lost` | – |
+| `vote_passed` / `vote_failed` | council resolution (vote type), counted once, on the head councilor's leader (else the first voting member) | – |
 
 The `died` causes are:
 
@@ -123,7 +124,7 @@ and **whys** (`whys.<kind>.<rule> = count`) record which rule made it.
 - `found`, `acquire` and `raze`;
 - `hurry` and `upgrade`;
 - `tech`, `civics`, `religion` and `project`;
-- `vassal`;
+- `vassal` and `vote` (a council result: the vote type, its text and whether it passed);
 - `intent` and `decision`.
 
 Missions, promotions, improvements and builds are only counted.
@@ -138,7 +139,11 @@ Missions, promotions, improvements and builds are only counted.
 | `settle_target` | The site: `here`, `walk` or `first_city`, with the top four sites and their scores. | – |
 | `settler` | A settler that `hold`s, `wait`s for an escort or `fall_back`s, with why (`no_site`, `no_safe_site`). | – |
 | `vassal_offer` / `vassal_asked` / `vassal_taken` | Offers to become a vassal (`vassal`, `capitulate` or `refused`; why `hopeless` or `crushed`), answers when asked (`agreed`, `refused`), and answers as the master (`accepted`, `refused`; why `take`, `their_wars`, `conquer_instead`). The value is the other team. | – |
-| `war_prep` / `peace` | `territory` (with every target that passed the gates and its score) or `victory_plan`; peace as `want_peace` or `cash_out`. | – |
+| `war_prep` / `peace` | `territory` (with every target that passed the gates and its score), `dogpile` (the target's other enemies counted) or `victory_plan`; peace as `want_peace`, `cash_out` or `quiet_war`, and `fight_on` for a cash-out refused while our army is at their next city. | – |
+| `war_drop` | A prepared war dropped at the declaration's re-check, by the test it failed (`power`, `not_takeable`, `unreachable`, `friend`, ...). | – |
+| `tech_trade` | `withheld` (a swap we did not offer), `refused` (one we were offered) and `partner_blocked`, with why: `rival`, `leader`, `military`, `wonder`, `monopoly`. | – |
+| `vote` / `election` | Each council vote (`<VOTE>:yes`, `:no`, `:abstain` or `:defy`; `secretary` with `self`, `other` or `abstain`), and the head councilor's proposal (`pass` or `repeal`, the value its gain). | – |
+| `missionary` | `abroad`: a unit-turn a missionary heads for a foreign city (`no_religion` or `other_religion`). | – |
 | Cast reasons | The context given to `magic::cast`: `attack` (before an attack), `turn` (the value-based end-of-turn choice), `turn_ffh` (FfH's own fallback choice), `buff`, `summon`, `civ`. The civilization modules add `pirate_cove`, `loki_disrupt`, `rantine_convert` and `world_spell`. | The routine that cast: `end_turn_spells`, `mage_cast`, `summon_cast`, `buff_cast`, `direct_damage_cast`, `movement_cast`, `ai_mage_turn`, `feastingmove`, `lokimove`, `rantinemove`, `govannonmove`, `build_pirate_cove`, `do_turn_units_post`. |
 | War reasons | `territory (power ratio R, needed N)` or `victory plan (why)`, then at the declaration `army ready after N turns: army A of B` (or `waited long`). | `AI_doWar maximum war`, `limited war` or `dogpile`, each with its start value. |
 
