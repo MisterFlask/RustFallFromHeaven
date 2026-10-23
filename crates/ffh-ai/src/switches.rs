@@ -24,6 +24,20 @@ pub struct Switch {
 pub static WS_TIMING: Switch = Switch::new("WS_TIMING");
 /// A prepared war is declared once the army stands near the target (`diplomacy::manage`).
 pub static WAR_STAGING: Switch = Switch::new("WAR_STAGING");
+/// Built units are kept: More Naval AI's disband rule (`finance::disband_military`) instead of
+/// scrapping surplus garrisons and field units for their upkeep, and no extra defender against
+/// barbarians an interior city's garrison holds once units cost gold
+/// (`production::garrison_holds`; docs/AI.md, "Finance").
+pub static KEEP_UNITS: Switch = Switch::new("KEEP_UNITS");
+/// Heroes only in the top third of our cities by production, world wonders outside it only when
+/// quick (`production::top_production_city`).
+pub static TOP_CITIES: Switch = Switch::new("TOP_CITIES");
+/// A wonder slot in the top production cities at peace, and a production emphasis while a city
+/// builds a world wonder (`production::wonder_slot`, `production::wonder_emphasis`).
+pub static WONDER_SLOT: Switch = Switch::new("WONDER_SLOT");
+/// Production re-decided when the empire is in financial trouble: a long build gives way to the
+/// economy building the city now needs (`production::trouble_rebuild`).
+pub static TROUBLE_REBUILD: Switch = Switch::new("TROUBLE_REBUILD");
 
 fn civ_list(var: &str) -> Option<Vec<String>> {
     let v = std::env::var(var).ok()?;

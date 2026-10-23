@@ -127,6 +127,8 @@ impl Controller for Ai {
             }
             empire::manage(g, p);
             production::emergency(self, g, p);
+            production::trouble_rebuild(self, g, p);
+            production::wonder_emphasis(g, p);
             expansion::prepare_escorts(g, p); // early-expansion
             diplomacy::manage(g, &v);
             offers::to_humans(g, &v); // ai-offers: deals offered to human players
