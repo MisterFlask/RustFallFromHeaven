@@ -38,8 +38,8 @@ summary.
 |---|---|---|---|---|---|---|---|
 | [units](entities/units.md) | 325 | 26 | 105 | 62 | 35 | 20 | 77 |
 | [buildings and projects](entities/buildings.md) | 187 | 13 | 49 | 37 | 18 | 40 | 30 |
-| [spells](entities/spells.md) | 267 | 30 | 60 | 57 | 38 | 82 | 0 |
-| all | 779 | 69 | 214 | 156 | 91 | 142 | 107 |
+| [spells](entities/spells.md) | 267 | 30 | 61 | 57 | 37 | 82 | 0 |
+| all | 779 | 69 | 215 | 156 | 90 | 142 | 107 |
 
 Each file opens with the same table by section. Read the grades as how much of an entity the code
 can use, not as how often it shows up in games: a Valued unit behind a tech the AI rarely

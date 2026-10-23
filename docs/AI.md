@@ -666,7 +666,10 @@ plot falls or the odds turn bad, and moves in.
 
 ## Diplomacy (`diplomacy.rs`)
 
-Relations come from alignment, state religion, war history and open borders. One war at a
+Relations come from alignment, state religion, war history, open borders and the Trust spell
+(+2 towards a player who has cast it: the spell only sets a feat, and FfH's C++ AI read it as
++4 attitude, `AI_getTrustAttitude`; before 2026-10-23 nothing read it, so Trust did nothing in
+this game, docs/ENTITIES.md). One war at a
 time; war is **greedy expansion**, not a dice roll: when free to start one (checked every 5
 turns from turn 50, with 2+ cities), a civ prepares war on the met, land-reachable (within 16
 plots) rival whose weakest known city its best trainable attacker can take (siege engines

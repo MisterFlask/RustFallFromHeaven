@@ -4,7 +4,7 @@ Part of the entity inventory: what each entry does, how to play it, and how far 
 
 | Section | Entries | Directed | Valued | Partial | Incidental | Unused | Not an AI choice |
 |---|---|---|---|---|---|---|---|
-| [Sphere spells (arcane)](#sphere-spells-arcane) | 72 |  | 41 | 17 | 9 | 5 |  |
+| [Sphere spells (arcane)](#sphere-spells-arcane) | 72 |  | 42 | 17 | 8 | 5 |  |
 | [World spells](#world-spells) | 21 | 19 |  | 2 |  |  |  |
 | [Unit, hero, religion and civilization spells](#unit-hero-religion-and-civilization-spells) | 47 | 4 | 9 | 7 | 5 | 22 |  |
 | [Abilities](#abilities) | 127 | 7 | 10 | 31 | 24 | 55 |  |
@@ -1090,19 +1090,25 @@ Nature caster in a forest casts it whenever nothing scores more than 10, enemy n
 nothing leads stacks into forests for it. `spell_worth` 0.
 
 ### Trust (`SPELL_TRUST`)
-*Sphere spell, Spirit III · once a game · archmages with Spirit III*
+*Sphere spell, Spirit III · once a game · archmages with Spirit III · +2 attitude from every AI leader towards you*
 
 **What it does.** Python (`spellTrust`): sets the player's Trust feat; it can be cast once a game
-and never by the barbarians. In FFH2 the C++ AI read the feat as +4 attitude toward the caster's
-owner. In this game no rule and no ffh-ai code reads it (ffh-ai's attitude is its own
-alignment, religion, borders and war score, `diplomacy::relation_parts`; only the ffh-cppai port
-reads it), so against this game's AI it does nothing.
+and never by the barbarians. The feat raises every other leader's attitude towards the caster's
+owner: ffh-ai adds +2 to its relation score (`diplomacy::relation_parts`, shown as "the Trust
+spell" among the reasons on the diplomacy screen), one attitude step (Cautious to Pleased, Pleased
+to Friendly), as FfH's C++ AI added +4 on its own scale (`AI_getTrustAttitude`). Until
+2026-10-23 nothing in this game read the feat, so the spell did nothing.
 
-**Playing it well.** Against the game's own AI, skip it and take Spirit III for something else; in
-FFH2 it bought goodwill for trades and peace with the AIs.
+**Playing it well.** Cast it as soon as an archmage has Spirit III: it is permanent and covers
+every leader at once, so it eases trades, open borders and peace with the AIs, and a cautious
+leader does not pick a civilization it likes this much as a war target (the AI's war targets and
+deal acceptance read the same relation). Worth most to
+a civilization whose alignment or religion makes its neighbours wary.
 
-**AI: Incidental.** Not modelled by `magic.rs`; FfH's terms are its `iAIWeight` 300, so a Spirit III
-caster casts it at its first end of turn, which changes nothing. `spell_worth` 0.
+**AI: Valued.** Not modelled by `magic.rs`; FfH's terms are its `iAIWeight` 300, so a Spirit III
+caster casts it at its first end of turn, which is the right call for a permanent once-a-game
+effect (that turn its 300 also blocks the caster's casts before a strike). `spell_worth` 0, so
+Spirit III is not taken for it.
 
 ### Tsunami (`SPELL_TSUNAMI`)
 *Sphere spell (divine), Channeling II and Divine, caster of the Octopus Overlords · range 2 · 30 cold damage to 75% near water, wrecks improvements · next to water · `bAllowAI` 0 · Cultist*
