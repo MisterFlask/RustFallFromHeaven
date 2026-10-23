@@ -482,11 +482,11 @@ const ALONE_PCT: i32 = 35;
 
 /// Healing as More Naval AI's stacks do (`CvUnitAI::AI_heal`), fitted to our small stacks: in one
 /// of our cities the wounded split off and heal while the rest go on; in the field a stack
-/// committed to a siege stops only when more than half of it is hurt, a loose stack (a few units
-/// hunting raiders) also for one badly hurt unit; it stops only where healing is better than 10% a
-/// turn (our land, a city: not enemy or neutral land, where it heals at 5-10% beside defenders
-/// that heal faster), else it walks into a city of ours within two turns or onto our land within
-/// one, else it carries on. A stack about to strike never stops. (Before: one unit over 35% damage
+/// committed to a siege stops only when more than half of it is hurt, and only where healing is
+/// better than 10% a turn (our land, a city: not enemy or neutral land, where it heals at 5-10%
+/// beside defenders that heal faster), else it walks into a city of ours within two turns or onto
+/// our land within one, else it carries on; a loose stack (a few units hunting raiders) heals where
+/// it stands for one badly hurt unit, as before. A stack about to strike never stops. (Before: one unit over 35% damage
 /// halted the whole stack wherever it stood, committed stacks next to their target included. More
 /// Naval AI's rule for every stack -- stop only when most of it is hurt -- lost units and cities
 /// here: our loose stacks are two to four units, and a badly hurt one is a large part of them.)
@@ -542,12 +542,21 @@ fn heal(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> Healed {
     let n = units.len();
     let badly = units.iter().any(|&o| pct(g, o) > ALONE_PCT);
     let most = units.iter().filter(|&&o| pct(g, o) >= HURT_PCT).count() * 2 > n;
-    // A stack committed to a siege past gathering stops only when most of it is hurt (C++);
-    // a loose stack (a few units hunting raiders) also for one badly hurt unit, a large part of
-    // its strength.
+    // A loose stack (a few units hunting raiders near home) heals where it stands as soon as one
+    // unit is badly hurt, as before this rule: making it walk home, or wait for most of it to be
+    // hurt, let raiders run and lost cities to the barbarians (+29-43% on fresh seeds).
     let marching = crate::campaign::on_the_move(v, grp);
-    let wants = if marching { most } else { badly || most };
-    if !wants {
+    if !marching {
+        if badly && safe(g, v) && can_heal(g, grp) {
+            crate::trace!(g, p, "stack {:?} ({} units) heals at {:?}", grp, n, g.map.xy(here));
+            g.tel_decision(p, "military", "heal_stack", "heal", n as i64, String::new);
+            crate::units::push(g, grp, MissionType::MISSION_HEAL, -1, -1, 0, false);
+            return Healed::Done;
+        }
+        return Healed::Continue(grp, u);
+    }
+    // A stack committed to a siege past gathering stops only when most of it is hurt (C++).
+    if !most {
         if badly && safe(g, v) {
             crate::trace!(g, p, "stack {:?} ({} units) marches on with its wounded at {:?}", grp, n, g.map.xy(here));
             g.tel_decision(p, "military", "heal_skipped", "few_hurt", 1, String::new);

@@ -604,10 +604,11 @@ Each army group is a stack; per decision, in order:
    our siege operation, which is left to its strike);
 6. heal (`heal`, switch `HEAL`; More Naval AI's `AI_heal`, fitted to our small stacks): in one of
    our cities the wounded (over 30% damage) split off and heal while the rest go on; in the field
-   a stack committed to a siege stops only when more than half of it is hurt (20%+ damage), a
-   loose stack also for one unit over 35%; it heals only where healing is better than 10% a turn
-   (our land or a city, not neutral or enemy land), else it walks into a city of ours within two
-   turns or onto our land within one, else it carries on; never a stack about to strike;
+   a stack committed to a siege stops only when more than half of it is hurt (20%+ damage), and
+   only where healing is better than 10% a turn (our land or a city, not neutral or enemy land),
+   else it walks into a city of ours within two turns or onto our land within one, else it
+   carries on; a loose stack heals where it stands for one unit over 35%, as before (walking it
+   home let raiders run: Round 7b); never a stack about to strike;
 7. defend a city of ours in peril within 5 turns (not a stack marching on a siege);
 8. escort a settler that asks for one (single units);
 9. its siege operation (below), if the stack is committed to one: at war (or while preparing
