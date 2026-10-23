@@ -4,7 +4,7 @@
 // command resent with the answer.
 
 import * as api from "./api.js";
-import { S, emit, dname, teamName, gateLines, loadUnitCommand } from "./state.js";
+import { S, emit, dname, teamName, gateLines, loadUnitCommand, observing, OBSERVER_COMMANDS } from "./state.js";
 import { ask } from "./modals.js";
 import { toast, busy } from "./dom.js";
 
@@ -24,6 +24,11 @@ export function sending() {
  *  sends when it comes round) waits for it rather than being dropped; a second click while the
  *  player's own command is on its way is still dropped (one request per click). */
 export async function run(c, { quiet = false } = {}) {
+  // An observed game is the AI's: only turns are played (the server refuses the rest too).
+  if (observing() && !OBSERVER_COMMANDS.includes(c.c)) {
+    if (!quiet) toast("Observing: the AI plays every civilization (nothing can be ordered).", "error");
+    return null;
+  }
   if (inFlight && automatic && !quiet) await automatic.catch(() => {});
   if (inFlight) return null;
   inFlight = true;

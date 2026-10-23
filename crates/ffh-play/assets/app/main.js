@@ -12,7 +12,7 @@
 // map) the client draws as before. `window.ffh` exposes the state for the headless smoke test.
 
 import * as api from "./api.js";
-import { S, setData, setView, setMap, on, emit, resetDismissed, clearDismissed, popupQueue, endTurnMessage, cycleCity } from "./state.js";
+import { S, setData, setView, setMap, on, emit, resetDismissed, clearDismissed, popupQueue, endTurnMessage, cycleCity, observing, eventMarkers } from "./state.js";
 import { MapView } from "./map.js";
 import * as units from "./units.js";
 import { openCity, ownCities, stepCityScreen } from "./city.js";
@@ -25,7 +25,7 @@ import * as screens from "./screens.js";
 import { showDecision, modalOpen, closeTag, closeAll, onEscape, openTags, openModal } from "./modals.js";
 import { renderTop, renderBottom, setTab, currentTab } from "./hud.js";
 import { endTurn, sending } from "./commands.js";
-import { h, $, toast } from "./dom.js";
+import { h, $, toast, compactScreen } from "./dom.js";
 import { dname, turns, me } from "./state.js";
 import { look, loadLook, setLookData, rendererChoice, decorate, undecorate } from "./look.js";
 import { setIsoSkin, isoSkin, renderCityPanel } from "./isoui.js";
@@ -115,6 +115,8 @@ async function syncOnce() {
     }
     return;
   }
+  // An observed game is watched: the spectator bar is up (paused after a load or a reload).
+  if (observing(st) && !tools.spectating() && !["over", "crashed", "no_game", "stuck"].includes(phase)) tools.startSpectating({ playing: false });
   if (phase === "running") return;
   await refreshView(st);
   if (S.status !== st && S.status.phase !== phase) return; // a newer status is being handled
@@ -216,7 +218,9 @@ async function refreshView(st) {
   }
   gameKey = gk;
   viewKey = vk;
+  if (newGame) tools.loadFlags();
   await refreshLog();
+  updateMarkers();
   units.viewChanged();
   empire.viewChanged();
   renderTop();
@@ -243,6 +247,16 @@ async function refreshLog() {
   }
 }
 
+/** The map's markers while watching the AI: where this turn's combats and captures happened
+ *  (from the located messages) and this game's flags. */
+function updateMarkers() {
+  if (!mapView) return;
+  const watching = tools.spectating() || observing();
+  const events = watching ? eventMarkers(S.messages, units.latestEventTurn()) : [];
+  const flags = (S.flags ?? []).filter((f) => Array.isArray(f.plot)).map((f) => ({ x: f.plot[0], y: f.plot[1], n: f.flag }));
+  mapView.setOverlay({ events, flags });
+}
+
 function centerOnStart() {
   const m = me();
   const cap = [...S.cities.values()].find((c) => c.owner === m?.player && c.capital);
@@ -263,8 +277,11 @@ async function onControl(st) {
     } catch {
       S.report = null;
     }
-    if (S.report && ((S.report.lines?.length ?? 0) > 0 || (S.report.messages?.length ?? 0) > 0)) setTab("report");
-    else renderBottom();
+    if (S.report && ((S.report.lines?.length ?? 0) > 0 || (S.report.messages?.length ?? 0) > 0)) {
+      setTab("report");
+      // A folded panel (phones fold it): its tab says there is news.
+      if (document.body.classList.contains("bottom-closed")) document.querySelector('#bottom-tabs button[data-tab="report"]')?.classList.add("unread");
+    } else renderBottom();
     // Civ4 starts a turn on the first unit waiting for orders (not while spectating).
     const g = S.sel ? S.units.get(S.sel.units[0])?.group : null;
     if (!tools.spectating() && (!S.sel || !S.view.pending.ready_groups.includes(g))) units.selectNext();
@@ -398,7 +415,9 @@ function onKey(ev) {
   const t = ev.target;
   const typing = t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement;
   if (ev.key === "Escape") {
-    if (units.currentMode()) units.setMode(null);
+    if (document.body.classList.contains("menu-open")) setMenu(false);
+    else if (tools.cancelFlagPick()) toast("No flag.");
+    else if (units.currentMode()) units.setMode(null);
     else if (units.clearWaypoints()) return;
     else if (!onEscape() && !modalOpen()) units.clearSelection();
     return;
@@ -435,6 +454,13 @@ function onKey(ev) {
   }
   if (cityStep && plain) {
     stepCity(cityStep > 0);
+    return handled();
+  }
+  // F while watching the AI: flag the plot under the mouse (else pick one).
+  if ((k === "f" || k === "F") && plain && (tools.spectating() || observing())) {
+    const p = units.hoveredPlot();
+    if (p) tools.openFlag(p.x, p.y);
+    else tools.flagPrompt();
     return handled();
   }
   switch (k) {
@@ -521,6 +547,20 @@ function onKey(ev) {
 }
 
 // ---------------------------------------------------------------------------------------------
+// Small screens (dom.js `compactScreen`: a phone upright or on its side): the menu folds into one
+// button, the bottom panel starts folded and the side panel can fold.
+
+function setMenu(open) {
+  document.body.classList.toggle("menu-open", open);
+  $("#btn-menu")?.setAttribute("aria-expanded", String(open));
+}
+
+function setBottomOpen(open) {
+  document.body.classList.toggle("bottom-closed", !open);
+  if (open) for (const b of document.querySelectorAll("#bottom-tabs button.unread")) b.classList.remove("unread");
+}
+
+// ---------------------------------------------------------------------------------------------
 // Boot
 
 function wire() {
@@ -541,8 +581,33 @@ function wire() {
   click("zoom-in", () => mapView.zoom(1));
   click("zoom-out", () => mapView.zoom(-1));
   for (const b of document.querySelectorAll("#mapwrap .layers button")) b.addEventListener("click", () => setLayer(b.dataset.layer));
-  for (const b of document.querySelectorAll("#bottom-tabs button")) b.addEventListener("click", () => setTab(b.dataset.tab));
-  click("bottom-toggle", () => document.body.classList.toggle("bottom-closed"));
+  for (const b of document.querySelectorAll("#bottom-tabs button[data-tab]")) {
+    b.addEventListener("click", () => {
+      setTab(b.dataset.tab);
+      setBottomOpen(true);
+    });
+  }
+  click("bottom-toggle", () => setBottomOpen(document.body.classList.contains("bottom-closed")));
+  click("btn-menu", () => setMenu(!document.body.classList.contains("menu-open")));
+  // A pick in the folded menu closes it; so does a touch anywhere else (on the map, that touch
+  // only closes it: it does not also select or move).
+  $("#menu")?.addEventListener("click", (ev) => ev.target.closest?.("button") && setMenu(false));
+  document.addEventListener(
+    "pointerdown",
+    (ev) => {
+      if (!document.body.classList.contains("menu-open") || ev.target.closest?.("#menu, #btn-menu")) return;
+      setMenu(false);
+      if (ev.target.closest?.("#mapwrap")) ev.stopPropagation();
+    },
+    { capture: true },
+  );
+  click("side-toggle", () => {
+    const folded = document.body.classList.toggle("side-folded");
+    const b = $("#side-toggle");
+    b.setAttribute("aria-expanded", String(!folded));
+    b.setAttribute("aria-label", folded ? "Unfold the panel" : "Fold the panel");
+  });
+  if (compactScreen()) setBottomOpen(false);
   document.addEventListener("ffh-research", () => S.view && screens.openResearch());
   document.addEventListener("keydown", onKey);
   // Shift-right-click waypoints are sent when Shift is released (or the page loses the keys).
@@ -564,7 +629,7 @@ function wire() {
   on("spectate", () => renderTop());
   on("game-started", (opts) => {
     if (opts?.spectate) tools.startSpectating({ newGame: true });
-    else if (tools.spectating()) tools.stopSpectating();
+    else if (tools.spectating()) tools.dropSpectating();
     closeAll();
     units.clearWaypoints();
     S.sel = null;
@@ -587,13 +652,20 @@ function wire() {
     renderTop();
   });
   on("mode", () => units.renderPanel());
+  on("flag-plot", (x, y) => tools.openFlag(x, y));
+  on("flash", (x, y) => mapView.flashTile(x, y, "hit"));
+  on("flags", () => {
+    updateMarkers();
+    renderBottom();
+  });
+  on("spectate", () => updateMarkers());
   on("renderer", (r) => setRenderer(r));
 }
 
 async function boot() {
   wire();
   mapView = new MapView($("#mapwrap"), {
-    click: (x, y, ev) => units.click(x, y, ev),
+    click: (x, y, ev) => tools.flagClick(x, y) || units.click(x, y, ev),
     rightClick: (x, y, ev) => units.rightClick(x, y, ev),
     hover: (x, y) => units.hoverAt(x, y),
     dblclick: (x, y) => {

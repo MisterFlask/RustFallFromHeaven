@@ -32,6 +32,7 @@ pub mod bench;
 pub mod bot;
 pub mod command;
 pub mod decision;
+pub mod flag;
 pub mod guard;
 pub mod human;
 pub mod journal;
@@ -48,6 +49,11 @@ pub mod soak;
 pub mod stage;
 pub mod transport;
 pub mod view;
+
+/// The commit this binary was built from (`git rev-parse --short=12 HEAD` at build time, or the
+/// `FFH_BUILD_COMMIT` environment variable; "unknown" without either): the status's `build`
+/// and the flag records quote it, since the same seed plays another game once the AI changes.
+pub const BUILD_COMMIT: &str = env!("FFH_BUILD_COMMIT");
 
 pub use command::{CmdErr, CmdOk, Command, Confirm};
 pub use decision::{Decision, DecisionKind, Pending};

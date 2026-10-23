@@ -107,7 +107,19 @@ persist_struct!(GameSetup {
     target_score, max_city_elimination, num_advanced_start_points, sync_rand_seed, map_rand_seed,
     map_script, players,
 });
-persist_struct!(LogEntry { turn, player, text });
+// `LogEntry::at` is presentation only and not saved (the format is unchanged: it reads back as
+// `None`), so it is written by hand rather than with `persist_struct!`.
+impl Persist for LogEntry {
+    fn write(&self, w: &mut Writer) {
+        let LogEntry { turn, player, text, at: _ } = self;
+        turn.write(w);
+        player.write(w);
+        text.write(w);
+    }
+    fn read(r: &mut Reader<'_>) -> Result<Self, LoadError> {
+        Ok(LogEntry { turn: Persist::read(r)?, player: Persist::read(r)?, text: Persist::read(r)?, at: None })
+    }
+}
 persist_struct!(GameLog { enabled, entries, cap });
 
 // ---- game objects ----

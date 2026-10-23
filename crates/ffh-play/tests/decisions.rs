@@ -345,7 +345,7 @@ fn the_log_keeps_the_fog() {
 
     // The filter itself, on the formats of the ffh-core log sites.
     let fog = LogFog::new(&s.g, h);
-    let untagged = |text: String| LogEntry { turn: 1, player: None, text };
+    let untagged = |text: String| LogEntry::new(1, None, text);
     let shown = |text: String| fog.filter(&s.g, h, untagged(text)).map(|e| e.text);
     let (c, city) = s.g.cities.iter().find(|(_, c)| c.owner != h).map(|(c, city)| (c, d.text.name(&city.name).to_string())).unwrap();
     let revealed = s.g.cities[c].revealed[my];
@@ -376,8 +376,8 @@ fn the_log_keeps_the_fog() {
     // Untagged text nobody recognizes (event world news) is held back; tagged entries go to
     // their player only.
     assert_eq!(shown("The Elves have discovered a strange artifact".into()), None);
-    assert!(fog.filter(&s.g, h, LogEntry { turn: 1, player: Some(h.0), text: "mine".into() }).is_some());
-    assert!(fog.filter(&s.g, h, LogEntry { turn: 1, player: Some(h.0 + 1), text: "theirs".into() }).is_none());
+    assert!(fog.filter(&s.g, h, LogEntry::new(1, Some(h.0), "mine".into())).is_some());
+    assert!(fog.filter(&s.g, h, LogEntry::new(1, Some(h.0 + 1), "theirs".into())).is_none());
 }
 
 /// Votes: unanswered, the vote gets C++'s extra turn and is then counted as abstain; answered,

@@ -5,7 +5,7 @@
 
 import * as api from "./api.js";
 import { S, dname, info, turns, me, goldBreakdown } from "./state.js";
-import { h, toast, typeIconOf } from "./dom.js";
+import { h, toast, typeIconOf, tapModes } from "./dom.js";
 import { openModal } from "./modals.js";
 import { run } from "./commands.js";
 import { render as markup } from "./markup.js";
@@ -58,6 +58,8 @@ export async function openTechTree() {
   const H = 38;
   const GX = 36;
   const GY = 8;
+  /** What a tap does on a touch screen (for want of Shift): "now" or "queue". */
+  let tapMode = "now";
   const load = async () => {
     let t;
     try {
@@ -109,7 +111,7 @@ export async function openTechTree() {
           tip: techTip(x, x.has ? null : "Click: research it (with its missing prerequisites). Shift-click: add it to the queue."),
           disabled: x.has,
           onclick: async (ev) => {
-            if (await run({ c: "research", tech: x.tech, shift: !!ev.shiftKey })) load();
+            if (await run({ c: "research", tech: x.tech, shift: !!ev.shiftKey || tapMode === "queue" })) load();
           },
         },
         h("span.tech-name", dname("TechType", x.tech)),
@@ -124,6 +126,7 @@ export async function openTechTree() {
         cur ? h("div", "Researching ", h("b", cur)) : h("div.warn", "Nothing is being researched."),
         t.queue.length > 1 ? h("div.dim", `Queue: ${t.queue.map((q) => dname("TechType", q)).join(" → ")}`) : null,
         h("div.dim", `${t.rate} research per turn. Click a technology to research it (with what it needs); Shift-click to queue it.`),
+        tapModes(tapMode, [["now", "Research now", "A tap researches it now"], ["queue", "Add to queue", "A tap adds it to the research queue (Shift-click)"]], (v) => ((tapMode = v), load())),
       ),
       h("div.tree-scroll", h("div.tree", { style: { width: `${width}px`, height: `${height}px` } }, svg, boxes)),
     );

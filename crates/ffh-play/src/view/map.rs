@@ -334,6 +334,17 @@ pub fn plot(v: &Viewer, x: i32, y: i32) -> Result<Json, QueryErr> {
                 uj.set("defense_strength", g.unit_base_combat_str_defense(u));
                 // C++ plot help lists a visible unit's promotions.
                 uj.set("promotions", Json::Arr(d.promotions.keys().filter(|&pr| g.units[u].has_promotion[pr]).map(Json::idx).collect()));
+                // Under debug reveal (an observer's view): what the AI has the unit do.
+                if v.reveal {
+                    let unit = &g.units[u];
+                    uj.set("ai_type", unit.ai_type.map(|a| d.type_name(a).to_string()));
+                    let missions: Vec<Json> = unit
+                        .group
+                        .and_then(|grp| g.groups.get(grp))
+                        .map(|grp| grp.mission_queue.iter().map(|m| Json::from(d.type_name(m.mission_type))).collect())
+                        .unwrap_or_default();
+                    uj.set("missions", Json::Arr(missions));
+                }
                 uj
             })
             .collect();

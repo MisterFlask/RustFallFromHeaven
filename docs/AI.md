@@ -1,7 +1,8 @@
 # AI design (ffh-ai)
 
 Before changing the AI, read `docs/AI_LOG.md`: the changes that did not move the win rate, why,
-and what that implies (CLAUDE.md, "AI changes").
+and what that implies (CLAUDE.md, "AI changes"). `docs/ENTITIES.md` inventories, entity by entity,
+how far this AI uses every unit, building and spell, and the gaps that recur.
 
 **It plays the way an expert human would** (the owner's decision, 2026-10-21; CLAUDE.md, "AI
 changes"). Each behaviour starts from what a strong player would see, want and do in that
@@ -766,7 +767,10 @@ plot falls or the odds turn bad, and moves in.
 
 ## Diplomacy (`diplomacy.rs`)
 
-Relations come from alignment, state religion, war history and open borders. One war at a
+Relations come from alignment, state religion, war history, open borders and the Trust spell
+(+2 towards a player who has cast it: the spell only sets a feat, and FfH's C++ AI read it as
++4 attitude, `AI_getTrustAttitude`; before 2026-10-23 nothing read it, so Trust did nothing in
+this game, docs/ENTITIES.md). One war at a
 time; war is **greedy expansion**, not a dice roll: when free to start one (checked every 5
 turns from turn 50, with 2+ cities), a civ prepares war on the met, land-reachable (within 16
 plots) rival whose weakest known city its best trainable attacker can take (siege engines
@@ -1667,13 +1671,15 @@ earlier cast is the first thing to measure.
   (`casting::end_turn`: the best spell, then a buff, then a summon); FfH's casting before a stack
   attacks was omitted, so damage spells and summons rarely fell in a fight and casters filled their
   turns with buffs (docs/AI_LOG.md).
-- **`PrereqBuilding` units**: specific buildings that open units -- the Siege Workshop
-  (Trebuchet, Dwarven Cannon, War Tortoise, War Machine), the Stable (Hornguard, Bison Rider),
-  the Sculptor's Studio (golems, Gargoyle) -- are never built by the generic production
-  (`enabler_building` and `campaign::siege_building` read only `PrereqBuildingClass`), and
-  `research::unit_available` skips such units, so research never values Warhorses for the
-  Hornguard or Engineering for the Gargoyle. The Mage Guild (all adepts) is the
-  `PrereqBuildingClass` case with a value of 0.
+- **`PrereqBuilding` units** (fixed by `b6faa0a`): specific buildings that open units -- the
+  Siege Workshop (Trebuchet, Dwarven Cannon, War Tortoise, War Machine), the Stable (Hornguard,
+  Bison Rider), the Sculptor's Studio (golems, Gargoyle) -- were never built by the generic
+  production (`enabler_building` and `campaign::siege_building` read only `PrereqBuildingClass`),
+  and `research::unit_available` skipped such units. Now `production::unit_building` gives both
+  the unit's `PrereqBuilding` or its civilization's building of the `PrereqBuildingClass`, and
+  `unit_available` counts such units unless the building needs a religion. Still open: the Mage
+  Guild (all adepts) has a value of 0 and `enabler_building` takes only defenders and attackers,
+  so only `civs::unique_casters` builds one (docs/ENTITIES.md).
 - **Foreign units through `UpgradeCiv`** (fixed; the owner's decision: a bug, closed in the
   rules). FfH's `canTrain` checks a unit with `UpgradeCiv` (Kuriotates Centaurs, the Clan's Ogres,
   Goblins and Wolf Riders, Calabim Vampires and Brujah, the Infernal Balor) only against that
@@ -2400,6 +2406,20 @@ share score (docs/SCORE.md) averages 10000/N whatever the AI does.
   plots (worked, yields, improvements).
 - `FFH_AI_TRACE=all|<player>` traces AI decisions to stderr; `FFH_LOG=all|<player>` prints the
   game log.
+- **Spectators' flags.** Someone watching the AI in the browser (an observed game: docs/HUMAN.md,
+  "Watching the AI") flags play that looks wrong; the flag's text has the build, the turn, the
+  plot, the units there (ids, the AI's role, orders) and three ways to replay that turn with the
+  trace on: `ffh-play observe --setup '<settings>' --to-turn T --plot X,Y` (from the settings),
+  `ffh-play observe --load <pinned save> --to-turn T` (from the start of turn T: one turn of
+  work), and the same game in `ffh autoplay ... --turns T+1`. Check out the flag's build first:
+  the same seed plays another game once the AI changes. The trace lines of that turn are tagged
+  `[tT pP]`; `observe` prints the checksum of each turn (the flag's is the last) and the units at
+  the plot, so a fix can be checked on the same situation from the pinned save.
+- `--speed GAMESPEED_X`, `--handicap HANDICAP_X` (the game handicap: the AIs' bonuses),
+  `--era ERA_X`, `--climate CLIMATE_X`, `--sea-level SEALEVEL_X`, `--max-turns N`,
+  `--no-victory VICTORY_X` (repeatable) and `--leader LEADER_X` (the first slot's leader) give
+  `ffh autoplay` / `stats` / `bench` the rest of a custom game's settings, so every game a
+  spectator watches plays here too.
 - `--option GAMEOPTION_X` (repeatable) turns game options on for any of these commands (for
   example `GAMEOPTION_ADVANCED_START`).
 

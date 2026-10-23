@@ -11,8 +11,8 @@
 //! - Peace: when the war goes badly (war success and power against us), or drags on without
 //!   gains, a peace treaty is offered through a real deal the other side's controller judges.
 //!
-//! Relations are a small explicit score (alignment, religion, shared borders, war history)
-//! instead of the C++ attitude machinery.
+//! Relations are a small explicit score (alignment, religion, shared borders, war history, the
+//! Trust spell) instead of the C++ attitude machinery.
 
 use ffh_core::game::Game;
 use ffh_core::ids::*;
@@ -49,6 +49,13 @@ pub fn relation_parts(g: &Game, p: PlayerId, other: PlayerId) -> Vec<(&'static s
     }
     if g.team_is_open_borders(ta, tb) {
         out.push(("open borders", 1));
+    }
+    // The Trust spell (Spirit III, once a game: "Raises other leaders' attitudes towards you")
+    // only sets the feat; its effect is the AI's attitude, as in FfH (C++
+    // `CvPlayerAI::AI_getTrustAttitude`: +4, about one attitude step on that scale). Here 2 is a
+    // step: Cautious to Pleased, Pleased to Friendly.
+    if b.feat_accomplished[FeatType::FEAT_TRUST] {
+        out.push(("the Trust spell", 2));
     }
     out
 }
@@ -1463,4 +1470,21 @@ pub fn raze_conquered_city(g: &Game, p: PlayerId, c: CityId) -> bool {
     let nearest = g.players[p].cities.iter().filter(|&&o| o != c).map(|&o| g.plot_distance(x, y, g.cities[o].x, g.cities[o].y)).min().unwrap_or(i32::MAX);
     let holy = g.d.religions.keys().any(|r| g.get_holy_city(r) == Some(c));
     nearest > 10 && !holy && city.num_world_wonders == 0
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::campaign::tests::one_landmass_game;
+
+    #[test]
+    fn the_trust_spell_raises_attitudes() {
+        let mut g = one_landmass_game(19);
+        let (us, them) = (PlayerId(0), PlayerId(1));
+        let (before, theirs) = (relation(&g, us, them), relation(&g, them, us));
+        g.players[them].feat_accomplished[FeatType::FEAT_TRUST] = true;
+        assert_eq!(relation(&g, us, them), before + 2, "Trust adds one attitude step towards its caster");
+        assert!(attitude_parts(&g, us, them).contains(&("the Trust spell", 2)), "and the reason shows");
+        assert_eq!(relation(&g, them, us), theirs, "the caster's own attitude is unchanged");
+    }
 }

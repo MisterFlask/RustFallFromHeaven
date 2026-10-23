@@ -4,7 +4,7 @@
 
 import * as api from "./api.js";
 import { S, emit, dname, turns, voteChoiceLabel, teamName, me, saveNameOfPath, scoreText } from "./state.js";
-import { h, toast } from "./dom.js";
+import { h, toast, tapModes, coarse } from "./dom.js";
 import { tip } from "./tips.js";
 import { openModal } from "./modals.js";
 import { run } from "./commands.js";
@@ -22,6 +22,8 @@ import { techTip } from "./empire.js";
 export async function openResearch({ popup = false } = {}) {
   const m = openModal({ title: popup ? "Choose research" : "Research", body: [h("p.dim", "…")], tag: "research", wide: true, buttons: popup ? [{ label: "Later", value: "later" }] : [{ label: "Close", value: null }] });
   let result = null;
+  /** What a tap does on a touch screen (for want of Shift): "now" or "queue". */
+  let tapMode = "now";
   const load = async () => {
     let t;
     try {
@@ -38,6 +40,7 @@ export async function openResearch({ popup = false } = {}) {
       cur ? h("div", "Researching ", h("b", dname("TechType", t.current)), ` (${cur.progress}/${cur.cost}, ${turns(cur.turns)})`) : h("div.warn", "Nothing is being researched."),
       t.queue.length > 1 ? h("div.dim", `Queue: ${t.queue.map((q) => dname("TechType", q)).join(" → ")}`) : null,
       h("div.dim", `${t.rate} research per turn. Click: research now. Shift-click: add to the queue.`),
+      tapModes(tapMode, [["now", "Research now", "A tap researches it now"], ["queue", "Add to queue", "A tap adds it to the research queue (Shift-click)"]], (v) => ((tapMode = v), load())),
     );
     const list = h(
       "div.build-grid",
@@ -49,9 +52,10 @@ export async function openResearch({ popup = false } = {}) {
             class: x.researching ? "current" : x.queued !== null ? "queued" : "",
             tip: techTip(x, "Click: research now. Shift-click: add to the queue."),
             onclick: async (ev) => {
-              const reply = await run({ c: "research", tech: x.tech, shift: !!ev.shiftKey });
+              const shift = !!ev.shiftKey || tapMode === "queue";
+              const reply = await run({ c: "research", tech: x.tech, shift });
               if (!reply) return;
-              if (popup && !ev.shiftKey) {
+              if (popup && !shift) {
                 result = "chosen";
                 m.close("chosen");
               } else load();
@@ -272,7 +276,7 @@ export function newGame({ dismissible = true } = {}) {
     h("details", h("summary", "Victory conditions"), victories),
     h(
       "label.check",
-      { title: "The AI plays every civilization (yours too), one turn at a time, with the whole map shown; pause, step or stop it from the top bar" },
+      { title: "An AI-only game watched with the whole map shown (the AI plays every civilization; the one chosen above is followed first): play, pause, step, follow a civilization, and flag bad play for a bug report from the top bar. It is the `ffh autoplay` game of these settings." },
       spectate,
       " Spectate: watch the AI play",
     ),
@@ -295,6 +299,7 @@ export function newGame({ dismissible = true } = {}) {
     if (leader.value) setup.leader = leader.value;
     err.textContent = "";
     try {
+      if (spectate.checked) setup.observe = true;
       await api.session("new", name.value ? { setup, name: name.value } : { setup });
       m.close("started");
       emit("game-started", { spectate: spectate.checked });
@@ -466,7 +471,16 @@ export function stuckScreen(st) {
 
 /** The keys: Civ4's (the action hotkeys come from the game's XML, as each button's tooltip shows). */
 export function keysHelp() {
+  const touch = [
+    ["Touch", ""],
+    ["Tap", "select units (again: the next group there), open your city, show a plot"],
+    ["Tap a plot, tap it again", "with units selected: the first tap shows the way there (turns, attack odds), the second goes"],
+    ["Drag, pinch", "pan and zoom the map; the minimap centres"],
+    ["☰, ▾, ×", "the screens and files; fold the unit panel; deselect"],
+    ["A tap: …", "in the city, research and tech screens: what a tap does (now, add to the queue, put first), where a keyboard holds Shift or Ctrl"],
+  ];
   const keys = [
+    ...(coarse() ? touch : []),
     ["Mouse", ""],
     ["Left click", "select units (again: the next group there), open your city, show a plot"],
     ["Right click", "move or attack with the selection; with Shift held, add waypoints (sent when Shift is released)"],
@@ -483,6 +497,8 @@ export function keysHelp() {
     ["Esc", "cancel a plot pick, close a dialog, deselect"],
     ["ffh-play's own", ""],
     ["Tab / Shift+Tab", "the next / previous unit waiting (Civ4's W; in Civ4, Tab is chat): a stack whose units cannot all move is skipped; when it wraps, the automated units move"],
+    ["F (watching the AI)", "flag the plot under the mouse: record it for a bug report (the turn, the units, the replay commands)"],
+    ["Enter (an observed game)", "play the next turn"],
     ["Orders (Civ4's hotkeys)", ""],
     ["Space", "skip the turn"],
     ["F / H", "fortify (sleep for units that cannot) / heal; sentry is on its button (S scrolls)"],
@@ -500,7 +516,7 @@ export function keysHelp() {
     ["?", "this list (ffh-play's)"],
   ];
   return openModal({
-    title: "Keys",
+    title: coarse() ? "Controls" : "Keys",
     tag: "keys",
     body: [h("table.kv", keys.map(([k, v]) => (v ? h("tr", h("th", k), h("td", v)) : h("tr", h("th.group", { colspan: 2 }, k)))))],
     buttons: [{ label: "Close", value: null }],

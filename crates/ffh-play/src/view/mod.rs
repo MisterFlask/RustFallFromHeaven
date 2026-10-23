@@ -86,11 +86,15 @@ pub const MANA: [&str; 18] = [
 ];
 
 /// The phase word of `status` (`decision` while a blocking decision is open).
-pub fn phase_name(g: &Game, h: PlayerId, decision: bool) -> &'static str {
+pub fn phase_name(g: &Game, h: PlayerId, decision: bool, observe: Option<i32>) -> &'static str {
     if decision {
         return "decision";
     }
-    match phase(g, h) {
+    let phase = match observe {
+        Some(to_play) => crate::session::observed_phase(g, h, to_play),
+        None => phase(g, h),
+    };
+    match phase {
         Phase::Human(_) => "human",
         Phase::Running => "running",
         Phase::Over => "over",
@@ -100,9 +104,11 @@ pub fn phase_name(g: &Game, h: PlayerId, decision: bool) -> &'static str {
 /// `status` (design §4.3; the transport adds `version`, `ms_in_phase` and the crash report).
 pub fn status(v: &Viewer, ctx: &Ctx) -> Json {
     let g = v.g;
-    let over = (g.game_state == GameStateType::GAMESTATE_OVER).then(|| crate::jobj! { "winner_team" => g.winner, "victory" => Json::opt_idx(g.victory) });
+    // Observed (autorun), a victory leaves the game EXTENDED: it is over for the observer.
+    let decided = g.game_state == GameStateType::GAMESTATE_OVER || (ctx.observe.is_some() && g.game_state != GameStateType::GAMESTATE_ON);
+    let over = decided.then(|| crate::jobj! { "winner_team" => g.winner, "victory" => Json::opt_idx(g.victory) });
     crate::jobj! {
-        "phase" => phase_name(g, v.h, ctx.decision.is_some()),
+        "phase" => phase_name(g, v.h, ctx.decision.is_some(), ctx.observe),
         "turn" => g.game_turn(),
         "year" => g.game_turn_year(),
         "human" => v.h,
@@ -111,8 +117,12 @@ pub fn status(v: &Viewer, ctx: &Ctx) -> Json {
         "decision" => ctx.decision.map(|d| d.to_json()),
         "over" => over,
         "reveal" => v.reveal,
-        // The AI autoplay's turns left (`autoplay`; the client offers to stop it while it runs).
-        "ai_auto_play" => g.ai_auto_play,
+        // The AI autoplay's turns left (`autoplay`; the client offers to stop it while it runs);
+        // observed, the turns left to play.
+        "ai_auto_play" => ctx.observe.unwrap_or(g.ai_auto_play),
+        // An AI-only game watched by an observer (`human` is the player the view follows).
+        "observe" => ctx.observe.is_some(),
+        "build" => crate::BUILD_COMMIT,
     }
 }
 
@@ -390,7 +400,8 @@ pub fn view(v: &Viewer, ctx: &Ctx) -> Json {
         // (`hasAutoUnit`: the cycle's wrap then sends AutoMoves).
         "group_cycle" => g.players[v.h].group_cycle.iter().filter(|&&grp| g.groups.contains(grp)).copied().collect::<Vec<_>>(),
         "has_auto_unit" => g.player_has_auto_unit(v.h),
-        "pending" => crate::decision::pending(g, v.h, ctx.events).to_json(),
+        // Observed, nothing waits: the AI answers its own players.
+        "pending" => if ctx.observe.is_some() { crate::decision::Pending::default() } else { crate::decision::pending(g, v.h, ctx.events) }.to_json(),
         "log_next" => ctx.messages.map(|m| m.total()),
     }
 }

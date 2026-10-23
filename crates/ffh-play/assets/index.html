@@ -14,6 +14,7 @@
      server (`ffh-play serve`): /api/status (long-poll), /api/view, /api/map (tile deltas),
      /api/data and the POST /api envelope. -->
 <header id="top">
+  <button id="btn-menu" title="The screens, files and tools" aria-label="Menu" aria-expanded="false" aria-controls="menu">☰</button>
   <div id="phase" class="group" aria-live="polite">connecting…</div>
   <div id="empire" class="group"></div>
   <div class="break" aria-hidden="true"></div>
@@ -49,6 +50,7 @@
     <div class="tooltip" hidden></div>
   </div>
   <aside id="side">
+    <button id="side-toggle" title="Fold or unfold this panel" aria-label="Fold the panel" aria-expanded="true">▾</button>
     <section id="unit-panel" aria-label="Selection"></section>
   </aside>
 </main>
@@ -56,6 +58,7 @@
   <div id="bottom-tabs" role="tablist">
     <button data-tab="report" class="active">Turn report</button>
     <button data-tab="messages">Messages</button>
+    <button data-tab="flags" title="Flags: play that looked wrong while you watched the AI, ready for a bug report">Flags</button>
     <button data-tab="game">Game files</button>
     <button id="bottom-toggle" title="Show or hide this panel" aria-label="Toggle the panel">▾</button>
   </div>

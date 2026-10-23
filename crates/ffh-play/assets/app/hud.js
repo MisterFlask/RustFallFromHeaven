@@ -2,13 +2,26 @@
 // counter, mana, anarchy, golden age, Stasis) with the phase and the progress line during the
 // AI turns, and the bottom panel: the turn report, the messages by turn, the game's files.
 
-import { S, dname, tname, turns, playerName, me, emit, endTurnMessage, scoreText, fairShareText, goldBreakdown } from "./state.js";
+import { S, dname, tname, turns, playerName, me, emit, endTurnMessage, scoreText, fairShareText, goldBreakdown, observing, isBarbarian } from "./state.js";
+import { playerColor } from "./tiles.js";
 import { h, fill } from "./dom.js";
 import { render as markup } from "./markup.js";
 import { look, pix, pixable, iconEl, uiIcon, barEl } from "./look.js";
 import { openCount } from "./commands.js";
-import { spectatorBar, autoplayBar } from "./tools.js";
+import { renderSpectatorBar, autoplayBar, flagsView } from "./tools.js";
 import { isoSkin } from "./isoui.js";
+
+/** The parts of `#phase`: the phase line (redrawn each render), the spectator bar and the
+ *  autoplay bar (each its own slot; `display: contents`, so #phase lays out their children). */
+function phaseSlots(phase) {
+  let main = phase.querySelector(":scope > #phase-main");
+  if (!main) {
+    const slot = (id) => h(`span#${id}`, { style: { display: "contents" } });
+    main = slot("phase-main");
+    phase.replaceChildren(main, slot("spectate-slot"), slot("autoplay-slot"));
+  }
+  return { main, spectate: phase.querySelector(":scope > #spectate-slot"), autoplay: phase.querySelector(":scope > #autoplay-slot") };
+}
 
 /** Year for people: -4000 -> "4000 BC". */
 export function yearText(y) {
@@ -164,6 +177,8 @@ export function renderTop() {
   const info = document.getElementById("empire");
   const phase = document.getElementById("phase");
   let line = PHASES[st.phase] ?? st.phase ?? "connecting…";
+  // Observed, the game stops between turns (nobody's turn is waiting).
+  if (observing(st) && st.phase === "human") line = "Between turns";
   if (st.phase === "running") {
     const active = (st.active_players ?? []).filter((p) => p !== st.human).map((p) => playerName(p));
     if (active.length) line = `Moving: ${active.join(", ")}`;
@@ -171,17 +186,22 @@ export function renderTop() {
   }
   // The crescent is amber on your turn (the active-turn mark), else the waiting moon.
   const yours = st.phase === "human";
-  fill(
-    phase,
-    h("span.phase-dot", { "data-phase": st.phase ?? "" }),
-    look.art && !isoSkin() ? h("span.turn-crescent", ic(yours ? "icon16/turn" : "icon16/turn_wait", "", yours ? "Your turn" : line)) : null,
-    st.turn !== undefined ? h("b.turn", small("Turn", ".dim"), " ", big(st.turn)) : null,
-    st.year !== undefined ? h("span.dim.year", " ", small(yearText(st.year)), " ") : null,
-    h("span#phase-text", pixable(line) ? pix(line) : line),
-    st.reveal ? h("span.badge.reveal", "DEBUG REVEAL") : null,
-    spectatorBar(),
-    autoplayBar(),
-  );
+  if (phase) {
+    fill(
+      phaseSlots(phase).main,
+      h("span.phase-dot", { "data-phase": st.phase ?? "" }),
+      look.art && !isoSkin() ? h("span.turn-crescent", ic(yours ? "icon16/turn" : "icon16/turn_wait", "", yours && !observing(st) ? "Your turn" : line)) : null,
+      st.turn !== undefined ? h("b.turn", small("Turn", ".dim"), " ", big(st.turn)) : null,
+      st.year !== undefined ? h("span.dim.year", " ", small(yearText(st.year)), " ") : null,
+      h("span#phase-text", pixable(line) ? pix(line) : line),
+      st.reveal && !observing(st) ? h("span.badge.reveal", "DEBUG REVEAL") : null,
+    );
+    // The spectator bar keeps its buttons between renders (it redraws only when its state
+    // changes), so a click on Pause lands while the AIs move and the status changes many times
+    // a second.
+    renderSpectatorBar(phaseSlots(phase).spectate);
+    fill(phaseSlots(phase).autoplay, autoplayBar());
+  }
   document.body.dataset.phase = st.phase ?? "";
   // A quiet one-shot flare on the crescent when control returns to the player (running -> human);
   // the breathe while the AIs move is pure CSS on the stable #phase (style.css). Added to #phase,
@@ -196,8 +216,8 @@ export function renderTop() {
   const end = document.getElementById("end-turn");
   if (end) {
     end.disabled = st.phase !== "human";
-    const n = openCount();
-    const label = n ? `End turn (${n} open)` : "End turn";
+    const n = observing() ? 0 : openCount();
+    const label = observing() ? "Next turn" : n ? `End turn (${n} open)` : "End turn";
     const skinKey = `${label}|${!!look.art}|${isoSkin()}`;
     if (end.dataset.label !== skinKey) {
       end.dataset.label = skinKey;
@@ -299,10 +319,12 @@ export function renderBottom() {
   if (!box) return;
   if (tab === "report") fill(box, reportView());
   else if (tab === "messages") fill(box, messagesView());
+  else if (tab === "flags") fill(box, flagsView());
   else fill(box, gameView());
 }
 
 function reportView() {
+  if (observing()) return h("p.dim", "Observing an AI-only game: every civilization's messages are under Messages (newest turn first); the map marks where this turn's fights and captures happened.");
   const r = S.report;
   if (!r) return h("p.dim", "The turn report appears at the start of each turn.");
   const lines = r.lines ?? [];
@@ -315,17 +337,46 @@ function reportView() {
   );
 }
 
+/** Messages from players other than the one followed are shown while observing: "only the
+ *  followed civilization" narrows them (remembered while the page is open). */
+let followedOnly = false;
+
+function messageLine(m) {
+  const watching = observing() || S.spectating;
+  const who = watching && m.player !== null && m.player !== undefined ? h("b.msg-who", { style: { color: playerColor(m.player, isBarbarian(m.player)) } }, `${playerName(m.player)}: `) : null;
+  const at = Array.isArray(m.at) ? m.at : null;
+  return h(
+    "li",
+    who,
+    markup(m.text),
+    at ? " " : null,
+    at ? h("button.link.small", { title: `Show (${at[0]}, ${at[1]}) on the map`, onclick: () => (emit("center", at[0], at[1]), emit("flash", at[0], at[1])) }, "⌖") : null,
+    at && watching ? h("button.link.small", { title: "Flag this plot for a bug report", onclick: () => emit("flag-plot", at[0], at[1]) }, "⚑") : null,
+  );
+}
+
 function messagesView() {
   if (!S.messages.length) return h("p.dim", "No messages yet.");
+  const observed = observing();
+  const mine = me()?.player;
+  const shown = observed && followedOnly ? S.messages.filter((m) => m.player === null || m.player === undefined || m.player === mine) : S.messages;
+  const filter = observed
+    ? h(
+        "label.check.small",
+        h("input", { type: "checkbox", checked: followedOnly, onchange: (ev) => ((followedOnly = ev.target.checked), renderBottom()) }),
+        " only the followed civilization (and world news)",
+      )
+    : null;
   const byTurn = new Map();
-  for (const m of S.messages) {
+  for (const m of shown) {
     if (!byTurn.has(m.t)) byTurn.set(m.t, []);
     byTurn.get(m.t).push(m);
   }
   const turnsDesc = [...byTurn.keys()].sort((a, b) => b - a);
   return h(
     "div.messages",
-    turnsDesc.map((t) => h("div.turn-group", h("h4", `Turn ${t}`), h("ul", byTurn.get(t).map((m) => h("li", markup(m.text)))))),
+    filter,
+    turnsDesc.map((t) => h("div.turn-group", h("h4", `Turn ${t}`), h("ul", byTurn.get(t).map(messageLine)))),
   );
 }
 
@@ -335,6 +386,8 @@ function gameView() {
     ["Game directory", g?.dir],
     ["Journal", g?.journal],
     ["Last autosave", g?.autosave],
+    ["Mode", observing() ? "observed: an AI-only game (the AI plays every civilization)" : null],
+    ["Build", S.status?.build],
     ["Map", S.map ? `${S.map.w} x ${S.map.h}${S.map.wrap_x ? ", wraps east-west" : ""}` : null],
     ["You", me() ? `${playerName(me().player)} (player ${me().player}, ${dname("CivilizationType", me().civ)})` : null],
     ["Leader", me() ? tname("LeaderHeadType", me().leader) : null],

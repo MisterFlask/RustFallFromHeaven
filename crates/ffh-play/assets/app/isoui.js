@@ -17,7 +17,7 @@
 
 import { S, me, dname, tname, turns, orderName, emit, isBarbarian } from "./state.js";
 import * as T from "./tiles.js";
-import { h, fill } from "./dom.js";
+import { h, fill, COMPACT, compactScreen } from "./dom.js";
 import { installIsoFont } from "./isofont.js";
 import { SPRITES } from "./iso/sprites.js";
 import { ISO_TABLES } from "./iso.js";
@@ -410,9 +410,23 @@ function updateInsets() {
   }
   const side = document.getElementById("side");
   // getClientRects: a fixed element has no offsetParent even when shown.
-  const card = side && side.getClientRects().length ? side.getBoundingClientRect().height : 0;
+  const shown = (el) => (el && el.getClientRects().length ? el.getBoundingClientRect() : null);
+  const card = shown(side)?.height ?? 0;
   const top = document.getElementById("top")?.getBoundingClientRect().bottom ?? 0;
-  v.insets = { top: Math.ceil(top) + 8, left: 70, right: 332, bottom: Math.ceil(Math.max(card, 240)) + 20 };
+  if (compactScreen()) {
+    // A phone (iso.css): the bars span the width; the card sits on the bottom bar (upright) or is
+    // a column at the right (on its side). As on a desktop, the card counts with at least the room
+    // it usually takes, so a unit selected where it is about to appear is brought clear of it.
+    const vh = window.innerHeight;
+    const below = Math.max(top, shown(document.getElementById("bottom"))?.bottom ?? 0);
+    const bar = vh - (shown(document.getElementById("iso-corner"))?.top ?? vh);
+    const upright = globalThis.matchMedia?.("(max-width: 760px)").matches ?? true;
+    v.insets = upright
+      ? { top: Math.ceil(below) + 4, left: 0, right: 0, bottom: Math.ceil(bar + Math.max(card, Math.min(0.4 * vh, 320))) + 8 }
+      : { top: Math.ceil(below) + 4, left: 0, right: 352, bottom: Math.ceil(bar) + 8 };
+  } else {
+    v.insets = { top: Math.ceil(top) + 8, left: 70, right: 332, bottom: Math.ceil(Math.max(card, 240)) + 20 };
+  }
   // The city panel ends above the bottom-right cluster (its minimap keeps the map's proportions).
   const corner = document.getElementById("iso-corner");
   if (corner) document.documentElement.style.setProperty("--iso-corner-h", `${Math.ceil(corner.getBoundingClientRect().height)}px`);
@@ -426,6 +440,17 @@ function ensure(id, parent, tag = "div") {
     parent.append(el);
   }
   return el;
+}
+
+/** The advisors' buttons: on the rail at the left, or on a phone (dom.js `compactScreen`) first
+ *  in the menu, which folds into its ☰ button there (iso.css), so no rail covers the map. */
+function placeRail() {
+  const rail = document.getElementById("iso-rail");
+  const menu = document.getElementById("menu");
+  const buttons = RAIL.map(([id]) => document.getElementById(id)).filter(Boolean);
+  // Their homes in order (`restore` puts them back last first, each before the next).
+  for (const b of buttons) if (!homes.has(b)) homes.set(b, { parent: b.parentElement, next: b.nextSibling });
+  (compactScreen() ? menu : rail)?.prepend(...buttons);
 }
 
 /** Turns the skin on or off for MapView `view` (main.js, on every renderer change). */
@@ -458,10 +483,16 @@ export function setIsoSkin(on, view) {
   rail.setAttribute("aria-label", "Advisors");
   const corner = ensure("iso-corner", mapwrap);
   ensure("iso-city", mapwrap, "section").setAttribute("aria-label", "City");
-  for (const [id, icon] of RAIL) {
-    const b = document.getElementById(id);
-    dress(b, icon, 32);
-    moveTo(b, rail);
+  for (const [id, icon] of RAIL) dress(document.getElementById(id), icon, 32);
+  placeRail();
+  // A phone turned (or a window resized) across the small-screen layout's edge.
+  if (!skin.compactWatch && globalThis.matchMedia) {
+    skin.compactWatch = globalThis.matchMedia(COMPACT);
+    skin.compactWatch.addEventListener?.("change", () => {
+      if (!skin.on) return;
+      placeRail();
+      updateInsets();
+    });
   }
   for (const [id, icon] of SYSTEM) dress(document.getElementById(id), icon, 32);
   const end = document.getElementById("end-turn");
@@ -476,13 +507,21 @@ export function setIsoSkin(on, view) {
   // The panels under the top bar follow its height (it wraps onto a second row when narrow).
   if (!skin.topWatch && typeof ResizeObserver !== "undefined") {
     const top = document.getElementById("top");
-    // --iso-top: the bar's bottom (the right column, under the system buttons); --iso-top1: its
-    // first row's (the left column, beside a wrapped second row).
+    // --iso-top: the bar's bottom (the right column, under the system buttons); --iso-top1: the
+    // bottom of the parts that start at its left edge (the left column, beside a wrapped second
+    // row): the first row's, or the second's when a wide first row (the phase with the spectator
+    // bar) puts the empire's numbers under it.
     const phase = document.getElementById("phase");
     skin.topWatch = new ResizeObserver(() => {
       if (!skin.on) return;
+      const left = top.getBoundingClientRect().left;
+      let first = phase.getBoundingClientRect().bottom;
+      for (const el of top.children) {
+        const r = el.getBoundingClientRect();
+        if (r.height > 0 && r.left < left + 80) first = Math.max(first, r.bottom);
+      }
       root.style.setProperty("--iso-top", `${Math.ceil(top.getBoundingClientRect().bottom)}px`);
-      root.style.setProperty("--iso-top1", `${Math.ceil(phase.getBoundingClientRect().bottom)}px`);
+      root.style.setProperty("--iso-top1", `${Math.ceil(first)}px`);
     });
     skin.topWatch.observe(top);
   }

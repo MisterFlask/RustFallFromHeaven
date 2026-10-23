@@ -32,6 +32,10 @@ pub struct NewGame {
     pub max_turns: i32,
     pub civ: Option<CivilizationType>,
     pub leader: Option<LeaderHeadType>,
+    /// An AI-only game watched by an observer ([`build_observed_game`]): no human player; slot 0
+    /// gets `civ` / `leader` (the civilization the view follows first) and an AI's difficulty,
+    /// and `handicap` is the game handicap (the AIs' bonuses), as in `ffh autoplay`.
+    pub observe: bool,
 }
 
 impl NewGame {
@@ -53,12 +57,13 @@ impl NewGame {
             max_turns: 0,
             civ: None,
             leader: None,
+            observe: false,
         }
     }
 
     /// The members of a `setup` object.
     pub const FIELDS: &'static [&'static str] =
-        &["seed", "opponents", "world", "speed", "handicap", "era", "climate", "sea_level", "options", "disabled_victories", "max_turns", "civ", "leader"];
+        &["seed", "opponents", "world", "speed", "handicap", "era", "climate", "sea_level", "options", "disabled_victories", "max_turns", "civ", "leader", "observe"];
 
     /// Decodes a `setup` object (every member optional; types by name or index; an unknown
     /// member is an error, so a typo cannot start a game with a default instead).
@@ -93,6 +98,7 @@ impl NewGame {
         ng.max_turns = j.get_or("max_turns", 0i32)?;
         ng.civ = names::opt_field(d, j, "civ")?;
         ng.leader = names::opt_field(d, j, "leader")?;
+        ng.observe = j.get_or("observe", false)?;
         Ok(ng)
     }
 
@@ -112,6 +118,28 @@ impl NewGame {
             "max_turns" => self.max_turns,
             "civ" => Json::opt_idx(self.civ),
             "leader" => Json::opt_idx(self.leader),
+            "observe" => self.observe,
+        }
+    }
+
+    /// [`NewGame::to_json`] with type names instead of indices (what a bug report quotes: it
+    /// reads the same with another build's data order, and `from_json` takes it back).
+    pub fn to_json_names(&self, d: &GameData) -> Json {
+        crate::jobj! {
+            "seed" => self.seed,
+            "opponents" => self.opponents,
+            "world" => d.type_name(self.world),
+            "speed" => d.type_name(self.speed),
+            "handicap" => d.type_name(self.handicap),
+            "era" => d.type_name(self.era),
+            "climate" => d.type_name(self.climate),
+            "sea_level" => d.type_name(self.sea_level),
+            "options" => Json::Arr(self.options.iter().map(|&o| Json::from(d.type_name(o))).collect()),
+            "disabled_victories" => Json::Arr(self.disabled_victories.iter().map(|&v| Json::from(d.type_name(v))).collect()),
+            "max_turns" => self.max_turns,
+            "civ" => self.civ.map(|c| d.type_name(c).to_string()),
+            "leader" => self.leader.map(|l| d.type_name(l).to_string()),
+            "observe" => self.observe,
         }
     }
 
@@ -164,16 +192,7 @@ pub const HUMAN_SLOT: PlayerId = PlayerId(0);
 pub fn build_game(d: &'static GameData, ng: &NewGame) -> Result<Game, String> {
     ng.validate(d)?;
     let (civ, leader) = ng.resolve_civ(d)?;
-    let mut o = SetupOptions::new(d, ng.opponents + 1, "WORLDSIZE_SMALL", ng.seed);
-    o.world_size = ng.world;
-    o.game_speed = ng.speed;
-    o.handicap = ng.handicap;
-    o.era = ng.era;
-    o.climate = ng.climate;
-    o.sea_level = ng.sea_level;
-    o.options = ng.options.clone();
-    o.disabled_victories = ng.disabled_victories.clone();
-    o.max_turns = ng.max_turns;
+    let o = setup_options(d, ng);
     let mut setup = GameSetup::from_options(d, &o);
     let slot = &mut setup.players[HUMAN_SLOT.idx()];
     slot.human = true;
@@ -186,6 +205,52 @@ pub fn build_game(d: &'static GameData, ng: &NewGame) -> Result<Game, String> {
     g.handicap = Game::setup_handicap(d, &g.setup);
     g.map_script = std::sync::Arc::new(FractalMapScript::default());
     Ok(g)
+}
+
+/// The settings of [`build_game`] as `ffh_core`'s custom-game options (slot 0 not yet set up).
+fn setup_options(d: &'static GameData, ng: &NewGame) -> SetupOptions {
+    let mut o = SetupOptions::new(d, ng.opponents + 1, "WORLDSIZE_SMALL", ng.seed);
+    o.world_size = ng.world;
+    o.game_speed = ng.speed;
+    o.handicap = ng.handicap;
+    o.era = ng.era;
+    o.climate = ng.climate;
+    o.sea_level = ng.sea_level;
+    o.options = ng.options.clone();
+    o.disabled_victories = ng.disabled_victories.clone();
+    o.max_turns = ng.max_turns;
+    o
+}
+
+/// `Game::new` for an observed game (`ng.observe`): every slot is the AI's, as `ffh autoplay`
+/// builds its games (`SetupOptions`, the game handicap `ng.handicap`, AI slots at
+/// `STANDARD_HANDICAP`); `ng.civ` / `ng.leader` go to slot 0 as `ffh autoplay --civ` forces
+/// them (a civilization alone gets the leader the seed picks, the same one). Not yet
+/// `game_init`ed.
+pub fn build_observed_game(d: &'static GameData, ng: &NewGame) -> Result<Game, String> {
+    ng.validate(d)?;
+    let (civ, leader) = ng.resolve_civ(d)?;
+    let o = setup_options(d, ng);
+    let mut setup = GameSetup::from_options(d, &o);
+    if civ.is_some() {
+        let slot = &mut setup.players[0];
+        slot.civ = civ;
+        slot.leader = leader;
+    }
+    let mut g = Game::new(d, setup);
+    g.handicap = o.handicap;
+    g.map_script = std::sync::Arc::new(FractalMapScript::default());
+    Ok(g)
+}
+
+/// The flags of an observed game: the AI plays every slot, nobody is the active player, and the
+/// game goes on without humans (`autorun`, as in `ffh autoplay`); the log is on and unbounded
+/// (the session drains it).
+pub fn configure_observer(g: &mut Game) {
+    g.autorun = true;
+    g.active_player = None;
+    g.log.enabled = true;
+    g.log.cap = 0;
 }
 
 /// Controllers: every slot but `human` gets the one shared AI controller, as in ffh-cli (no

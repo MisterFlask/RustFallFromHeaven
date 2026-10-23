@@ -150,6 +150,36 @@ XML (each button shows its key), and the global keys are Civ4's controls
 | `Ctrl+1` `Ctrl+2` `Ctrl+3`, `?` | ffh-play's own: the terrain, political and yield layers; the keys list |
 | `Esc` | leave a plot pick, close a dialog, clear the selection |
 
+**Phones and touch screens.** The page fits a phone, upright or on its side (the layout follows
+the screen's size: up to 760 px wide, or up to 520 px high). In both looks the menu folds into a
+☰ button at the top left, which drops it down as a sheet of labelled buttons (a pick, or a touch
+anywhere else, folds it again; a touch on the map that folds it does nothing else), the turn
+report starts folded (a dot on "Turn report" says a new one waits), dialogs take the whole screen,
+and the city screen is the dialog with its plot grid. The isometric map (the default) is the look
+phones must support (the 3D map is not meant for them); there the
+top bar is one row (☰, the turn, the empire's numbers scrolling sideways), the advisors join the
+menu's sheet instead of the rail, a bottom bar holds the layers and End turn, the selection's card
+sits on it (upright; a column at the right on its side) and folds with ▾, and the minimap is
+small at a corner (docs/ISO.md, "Phones"). The 2D map has a small-screen layout too (untested:
+the top bar keeps the turn and End turn, the selection panel is under the map or a narrower
+column, the minimap is at the map's top right). With a
+finger as the main pointer (`pointer: coarse`), buttons are at least 40 px high, the buttons' key
+labels are hidden, the card's orders are labelled buttons (a finger cannot point at a tile to read
+it), the zoom buttons give way to the pinch, and text fields do not make the phone zoom. Touch
+replaces the mouse:
+
+| | |
+|---|---|
+| tap | as a left click: select your units (again: the next group there), open your city, show a plot (with the plot's tooltip, above the finger) |
+| tap a plot, tap it again | with units selected, on a plot without units of yours: the first tap shows the way there (the path, its turns, the attack odds: the right click's preview, which a finger cannot hover), a second tap on the same plot moves or attacks. Panning, or a tap anywhere else, drops the preview and the move it offered. To move onto your own units (a stack, a garrisoned city), use Go to |
+| drag, pinch | pan; zoom through the renderer's steps about the fingers (two fingers also pan) |
+| ×, Cancel | deselect (the panel's head); leave a plot pick (its hint) |
+| "A tap:" | in the city screen, the research chooser and the tech tree: what a tap on a build or a tech does (build now, add to the queue, put first; research now, add to the queue): Shift- and Ctrl-click with a mouse |
+
+A long press and a double tap do nothing on the map. What touch does not have: Shift waypoints
+(use Go to for one destination), Ctrl-click on a unit row (Split, then a row), and the keys
+(the panel's buttons, the menu and the Cities list cover them; `?` in the menu lists the controls).
+
 **Units.** The selection panel lists your units on the plot (click a row: its group;
 Ctrl-click: add or remove that unit), "All", "Group" (one group), "Split" (each unit its own
 group), "Next", the group's orders, and the actions the server says the selection can take now
@@ -254,10 +284,60 @@ from the data, they follow the rules as they change. Each appears wherever its t
 build list and the buildings of a city, the unit panel's actions, the promotions and spells
 dialogs, the civics and religion screens, the trade table, the map's resources.
 
-**Spectating.** Tools → Spectate (or "Spectate" in the new-game screen) lets the AI play every
-civilization, yours too, one turn at a time with the whole map shown: the top bar has Pause,
-Step (one turn while paused) and Stop (debug reveal goes back off and you have control). No
-popup asks you anything meanwhile; the AI answers them.
+**Watching the AI.** Tick "Spectate: watch the AI play" in the new-game screen for an **observed
+game**: an AI-only game (the AI plays every civilization, also the one you pick, which is the one
+the view follows first) watched with the whole map shown. It is the game `ffh autoplay` plays
+with the same settings, move for move (`ffh-cli`'s tests check it at every turn boundary), so
+what you see can be replayed by the AI's developers. The top bar has ▶ Play / ⏸ Pause, ⏭ Step
+(one turn), the pace (Fast, Normal, Slow, Very slow: the pause between two turns, remembered by
+this browser), **Follow** (the civilization whose gold, research and score the top bar shows; its
+stacks are drawn as yours) and **⚑ Flag** (on a phone, a row of their own above the bottom
+bar). Nothing can be ordered: a click on the map shows the
+plot in the side panel (each unit with its strength, health and level, the AI's role for it and
+its group's orders, and a line for the stack: how many units, how many can fight, the strongest,
+the owners), commands are refused, and Next turn (Enter) plays one turn. After each turn the map
+marks where that turn's fights and captures happened (a crimson ring with a cross: a unit died; a
+dashed amber ring: a retreat; a gold square: a city captured or razed; the hover tooltip and the
+side panel say what), and the minimap shows every stack of 2 or more units as a dot in its
+owner's colour, larger for 5 and for 10 units or more (on the 2D art map's two smallest zoom
+steps the stacks' squares grow the same way). Messages has every civilization's messages with
+their sender (a box narrows them to the followed one); combat messages give the attacker's odds,
+and ⌖ shows the plot on the map. The game is over when it is decided (a victory or the turn
+limit: where `ffh autoplay` stops too). Tools → AI autoplay… plays many turns at once (the top
+bar's Stop, or Pause, ends them after the turn under way). An autosave of an observed game loads
+paused, as observed (one taken during such an autoplay goes on with it); so does any other
+AI-only save (Take over… plays one of its slots instead).
+
+Tools → Spectate in a game of your own still lets the AI play your civilization too, one turn at
+a time with debug reveal on (Stop gives you control back). That game has a human player, so it
+is not an `ffh autoplay` game: its flags quote its journal instead of its settings.
+
+**Flags.** When play looks wrong, flag it: F with the mouse over the plot, ⚑ Flag in the top bar
+(the plot in the side panel, else the next one clicked), "⚑ Flag this plot…" in the side panel,
+or ⚑ beside a message. Watching pauses after the turn under way, you add a note, and the flag is
+saved as a line of the game's `flags.jsonl` and copied to the clipboard as text for a bug report:
+the plot, the turn whose moves are on screen (observed, the turn that just ended; at your own
+turn, the previous one), the units on the plot and next to it (ids, owners, groups, the AI's
+role, orders, hit points), the plot's combat and capture messages, the build (the commit; also
+under Game files), the game's settings, its checksum, and the commands that replay that turn with
+the AI's trace on for the player involved:
+
+```
+FFH_AI_TRACE=3 ./target/release/ffh-play observe --setup '{"seed":3,..,"observe":true}' --to-turn 58 --plot 12,34
+FFH_AI_TRACE=3 ./target/release/ffh-play observe --load saves/game-3/flags/flag-1.ffhsave --to-turn 58 --plot 12,34
+FFH_AI_TRACE=3 ./target/release/ffh autoplay --seed 3 --civs 4 --size WORLDSIZE_SMALL --turns 59
+```
+
+The first replays the game from its settings, the second from the save at the start of that
+turn, which the flag copies to `flags/flag-N` (the autosaves keep only the last 20 turns, seconds
+of watching at the Fast pace); both print each turn's checksum (the last is the flag's) and the
+units at the plot. The third is the same game in `ffh` (docs/AI.md, "Tools"). The trace lines of
+that turn are tagged `[t58 p3]`. A flag in a game with a human player quotes `ffh-play replay
+JOURNAL --from flags/flag-N.ffhsave --to-turn T` instead (pinned only when that autosave is
+this session's: after a load, an earlier session's autosaves do not replay with its journal). The Flags tab of the bottom panel lists
+the game's flags (⌖ shows the plot, "record" the text, "copy" copies it) and the map marks them
+with numbered pennants; Load lists the pinned saves as `flags/flag-N`. On the static site the
+files stay in the browser: the copied text is the report (its settings replay the game).
 
 **Saving.** Save asks for a name and writes it to the game's directory; the game also autosaves
 at every turn boundary (`auto/T0057` is the end of turn 57; the last 20 are kept). Load lists
@@ -293,7 +373,8 @@ cargo build --release
 ./target/release/ffh-play lookup UNIT_WARRIOR UnitType:3 ORDER_TRAIN
 ./target/release/ffh-play bot --seed 3 --turns 150 [--opponents 3] [--world WORLDSIZE_SMALL]
                               [--saves DIR] [--quiet] [--verbose]
-./target/release/ffh-play replay DIR/journal.jsonl [--from DIR/auto/T0110.ffhsave]
+./target/release/ffh-play replay DIR/journal.jsonl [--from DIR/auto/T0110.ffhsave] [--to-turn T]
+./target/release/ffh-play observe (--setup JSON | --load SAVE) [--to-turn T | --turns N] [--plot X,Y] [--saves DIR]
 ./target/release/ffh-play journal print DIR/journal.jsonl
 ./target/release/ffh-play soak run --seed 2 --size tiny --civ kuriotates [--options raging] [--turns 300]
                               [--speed quick] [--handicap deity] [--saves DIR] [--resume DIR/auto/T0123.ffhsave]
@@ -322,6 +403,11 @@ cargo build --release
   loaded from (its sidecar next to it) or taken over from. It stops with exit code 1 at the first
   difference (a stamp, a checkpoint checksum, a decision of another kind). Use it to reproduce a
   bug: send the journal and the last autosave (or the save the session was loaded from).
+  `--to-turn T` stops at the first control point after the moves of turn T (a flag's repro).
+* `observe` plays an observed (AI-only) game headless: from new-game settings (`observe`
+  implied; the `--setup` of a flag) or from an observed or AI-only save, to the end of turn T
+  (`--to-turn`) or N turns; it prints each turn boundary's checksum and, with `--plot`, the units
+  on and next to that plot. With `FFH_AI_TRACE=<player>` it is a flag's repro (Flags, above).
 * `journal print` shows a journal with type names.
 * `soak run` lets the AI play the human slot through the session for one game (design §7 P2):
   production, research, event popups and votes are answered with the AI's choice through the
@@ -475,18 +561,18 @@ Errors: `invalid`, `not_owner`, `gone`, `busy`.
 
 | `q` | Reply |
 |---|---|
-| `status` | phase (`human`, `running`, `decision`, `over`; over the transports also `stuck`, `no_game`, `crashed` with the report), turn, year, you, the active players, the open decision, the winner, `view_version` (changes whenever the view does: a command, a decision opening or closing, debug reveal), `ai_auto_play` (the AI autoplay's turns left, 0 when off), and over the transports `game {dir, journal, autosave}` |
+| `status` | phase (`human`, `running`, `decision`, `over`; over the transports also `stuck`, `no_game`, `crashed` with the report), turn, year, you, the active players, the open decision, the winner, `view_version` (changes whenever the view does: a command, a decision opening or closing, debug reveal), `ai_auto_play` (the AI autoplay's turns left, 0 when off; observed, the turns left to play), `observe` (an observed game: `human` is the player the view follows, phase `human` means stopped at a turn boundary), `build` (the commit the binary was built from), and over the transports `game {dir, journal, autosave}` |
 | `pending` | open events (with each option's effects), votes, research needed, idle cities, promotions, ready groups, idle AI-controlled groups |
 | `view` | `me` (gold and rate, research, sliders, civics, score, Armageddon counter, mana, Stasis, the player options, AI autoplay), the players you met, the cities you revealed, the units you see, your groups (`ready`: some unit can move, as `pending.ready_groups`; `selectable`: every unit can, what Civ4's cycle selects), `group_cycle` (your groups in Civ4's cycle order) and `has_auto_unit`, `pending`, `log_next` |
 | `map` | flat arrays `y * w + x`: `vis` (0 unrevealed, 1 fogged, 2 visible), `plot_type`, `terrain`, `feature`, `bonus`, `improvement`, `route`, `owner`, `river` (bit 0 river on the south edge, bit 1 on the east edge, bits 2-4 north/south flow + 1, bits 5-7 west/east flow + 1), `city`, `yield` (`food \| production << 8 \| commerce << 16`, visible plots only), `map_rev`, and `epoch` and `rev`. `map {since: R, epoch: E}` answers only the tiles changed since revision `R` (`full: false`, `tiles` = their indices, each array the values of those tiles), or the full map (`full: true`) when `E` is not the current epoch, `R` is unknown or much of the map changed |
-| `plot {x,y}` | a plot as you know it (`min_level` when units below a level cannot enter); while visible also yields, defence, culture and the units |
+| `plot {x,y}` | a plot as you know it (`min_level` when units below a level cannot enter); while visible also yields, defence, culture and the units (under debug reveal each with `ai_type`, the AI's role, and `missions`, its group's orders) |
 | `group {units}` | the units in detail and the actions: `mission`, `target` (an interface mode, `mode`: go-to, route-to for workers, range attack, the air modes; needs a plot), `command`, `load`, `spell`, `promotion`, `upgrade`, each `enabled` or not, each with its `cmd` |
 | `path {units,x,y}` | the path preview: nodes with the turn of arrival and moves left, total turns, a war it would declare, whether it ends in an attack |
 | `combat {units,x,y}` | the attack preview: attacker, defender, odds of winning and of retreating (per mille), strengths, the modifiers of both sides |
 | `city {city}` | the city screen of one of your cities: plots (with `can_work`), specialists (with `plus` and `minus`: what `do_task TASK_CHANGE_SPECIALIST` accepts now), yields, happiness, health, buildings, hurry, emphasis, queue, the buildable list with cost and turns |
 | `techs`, `civics`, `religions`, `players` | the tech tree (prerequisites, depth, turns), civics (availability, upkeep, anarchy; `civics {with: [civic, ..]}` adds `proposed`: the set a revolution to those civics makes, whether `update_civics` would be applied, its anarchy and upkeep), religions, the players you met with your deals |
 | `trade {with}` | the trade tables both ways (see Deals) |
-| `log {since}` | your messages from index `since` (`view.log_next` is the next one) |
+| `log {since}` | your messages from index `since` (`view.log_next` is the next one): `{i, t, text, player, at?}`, `at` the plot `[x, y]` a combat or a city captured or razed happened on; observed, every player's messages |
 | `report` | the turn report: what changed between your end of turn and now, or the end of the game (units lost and gained, cities founded, lost, grown, starving, buildings, techs, civilizations met, wars and peace between those you had met, enemies near your cities, the Armageddon counter, borders), with the messages |
 | `text` | a plain-text summary for agents |
 | `ascii {x,y,w,h,layer}` | an ASCII map, 2 characters per plot, north up, `::` unrevealed; layers `terrain`, `political`, `yield`, `units`; a legend |
@@ -551,10 +637,13 @@ Session operations (`op`):
 | `op` | |
 |---|---|
 | `new {setup, name?}` | a new game (`setup` as `--setup`; `name`: its directory, default `game-<seed>`; not `auto`, which names autosaves) |
-| `load {name}` | a save by name: `NAME` or `auto/NAME` in the current game's directory, `GAME/NAME` or `GAME/auto/NAME` in another game's (as the `saves` query and operation list them); nothing outside the saves directory |
+| `load {name}` | a save by name: `NAME`, `auto/NAME` or `flags/NAME` in the current game's directory, `GAME/NAME`, `GAME/auto/NAME` or `GAME/flags/NAME` in another game's (as the `saves` query and operation list them); nothing outside the saves directory. An AI-only save is observed |
 | `take_over {player, name}` | take over slot `player` of an AI-only save (debugging) |
 | `save {name}` | save the game in its directory (`[A-Za-z0-9_.-]`, 1-64, not starting with a dot) |
 | `debug {reveal}` | debug reveal on or off |
+| `follow {player}` | an observed game: the view follows `player` (the game is not changed) |
+| `flag {x, y, note?}` | flag a plot while the game is stopped: the record (above, "Flags"), appended to the game's `flags.jsonl`, its replay's start save pinned in `flags/` |
+| `flags` | the current game's flags |
 | `saves` | every game directory with its saves |
 | `quit` | end the agent / stop the server |
 
@@ -646,9 +735,10 @@ file is embedded and every module import resolves):
 
 ```
 tools/web-check.sh                       # node --check of every module, node --test of the pure modules
-tools/web-check.sh --smoke --browser     # also the two smoke tests below
+tools/web-check.sh --smoke --browser     # also the smoke tests below
 node tools/web-api-smoke.mjs             # 20 turns through the client's api.js against `ffh-play serve`
 node tools/web-smoke.mjs                 # headless Chromium plays through the page; screenshots in target/web-smoke
+node tools/web-touch-smoke.mjs           # the same on an emulated phone, with touch only; target/web-touch-smoke
 ```
 
 * `web-check.sh` needs node (it is skipped without it); the pure modules (map maths and map
@@ -665,6 +755,18 @@ node tools/web-smoke.mjs                 # headless Chromium plays through the p
   screens' requests (a specialist's `+` and `−`, a civics proposal and its revolution, the
   research slider down and back, the trade tables, the inspector) and lets the AI play one
   turn (`autoplay`). A refusal of anything the server offered fails it.
+* `web-touch-smoke.mjs [--seed 3] [--out DIR] [--assets DIR] [--headed]` plays on an emulated
+  phone (Playwright's Chromium, touch only, a coarse pointer; skipped without the `playwright`
+  package), with the isometric map (the look phones must support) upright (390x844) and on its
+  side (844x390), each against its own `ffh-play serve --new`: the page fits (no sideways scroll,
+  End turn on screen, the map's clear part at least 30% of the height, the report folded), the ☰
+  menu (every button on screen; a tap on the map only closes it), a tap selects a unit, a first
+  tap on a free plot previews the move ("tap again to go") without moving and a second tap
+  moves, a two-finger pinch zooms in and out, the settler's Found button, the research popup's
+  tap modes, "Add to queue" in the production popup (the queue grows, the popup stays), the city
+  screen from the Cities list (the whole-screen dialog with its plot grid, within the screen),
+  the tech tree from the menu, a tab opens the report, and End turn through the gate to the next
+  turn. Any console error, page error, failed request or HTTP error fails it.
 * `web-smoke.mjs [--turns 4] [--seed 5] [--out DIR] [--assets DIR] [--cdp] [--headed]` drives the
   page with the mouse and keyboard in headless Chromium (the `playwright` package if it resolves,
   else Chromium over the DevTools protocol; skipped without a browser): new game (Start
@@ -703,7 +805,7 @@ node tools/web-smoke.mjs                 # headless Chromium plays through the p
   250 ms for the first ones, which fill the sprite atlas).
 
 **Manual checklist** (a human tester, `ffh-play serve` and a real browser; also try a narrow
-window):
+window, and a phone: `ffh-play serve --bind 0.0.0.0` on the same network, or the site):
 
 1. New game: change the civilization (the leader list follows), world size, difficulty, a game
    option and a victory condition; start. The map centres on your units; the top bar shows the
@@ -759,7 +861,15 @@ window):
 11. Crash: `ffh-play serve --new --panic-at 3`, end turns until it crashes: the crash screen shows
     the replay command and loads the autosave.
 12. Tools: debug reveal on and off, the inspector on your unit, city and player, AI autoplay for
-    3 turns, Spectate (pause, step, stop), and a new game with "Spectate" ticked.
+    3 turns, Spectate (pause, step, stop).
+13. Watching the AI: a new game with "Spectate" ticked (and "Raging barbarians" for early
+    fights): it opens paused, Observing in the top bar; play at the Fast pace, pause, step; a
+    move or a city screen change is refused; Follow another civilization (the top bar changes,
+    the game does not); after a turn with fights, the map marks them and the tooltip and the
+    side panel say what happened; click a stack (its line, each unit's AI role and orders); F
+    over it, a note, Flag: the text is copied; the Flags tab lists it, the map has its pennant;
+    run the flag's `ffh-play observe --load ...` line: its last checksum is the flag's. Reload
+    the page: it comes back paused, observing.
 
 Report a bug with the save or autosave, the journal (`Game files` tab), a screenshot and what you
 did.
@@ -776,10 +886,15 @@ did.
   the cached terrain.
 * Shift-right-click waypoints are sent when Shift is released, not one by one as Civ4 does (it
   holds the automatic moves while Shift is down instead): the end result is the same.
-* The spectator mode is the AI autoplay of one turn at a time (FfH's "AI autoplay" for your slot,
-  then your turn starts and the next step begins), not an observer slot: between two steps your
-  turn starts and ends without you, and the events and votes of your civilization are answered by
-  the AI.
+* Tools → Spectate in a game of your own is the AI autoplay of one turn at a time (FfH's "AI
+  autoplay" for your slot, then your turn starts and the next step begins), not an observer slot:
+  between two steps your turn starts and ends without you, and the events and votes of your
+  civilization are answered by the AI. An observed game (the new-game screen's "Spectate") has no
+  such slot: it is an AI-only game.
+* An observed game shows the units' moves turn by turn: what moved during a turn shows at its
+  end, with the turn's fights and captures marked on the map (not each move as it happens).
+* Located messages: only combat (killed, died attacking, fled, withdrew) and cities captured or
+  razed carry their plot; the other messages are listed without one.
 * The keys of the interface modes (go to, route to, the targeted missions) are written into
   ffh-play from Civ4's `CIV4InterfaceModeInfos.xml` (not vendored); the other orders' keys are read
   from the vendored XML.

@@ -21,8 +21,13 @@ export const S = {
   unitsAt: new Map(),
   /** The selection: own units on one plot, `{units: [ids], x, y}` or null. */
   sel: null,
-  /** Messages `{i, t, text}` read with the `log` query, and the next index. */
+  /** Messages `{i, t, text, player, at?}` read with the `log` query (`at`: the plot it is
+   *  about), and the next index. */
   messages: [],
+  /** This game's flags (`session flags`; tools.js). */
+  flags: [],
+  /** The spectator mode is on (tools.js). */
+  spectating: false,
   logNext: 0,
   /** The turn report of the current turn (`report` query). */
   report: null,
@@ -125,9 +130,49 @@ export function setMap(map) {
   S.map = map;
 }
 
-/** The human's player id and team. */
+/** The human's player id and team (observing: the player the view follows). */
 export function me() {
   return S.view?.me ?? null;
+}
+
+/** An observed game (an AI-only game watched by a spectator; `status.observe`): nothing is
+ *  ordered, only turns are played, and `me()` is the civilization the view follows. */
+export function observing(status = S.status) {
+  return !!status?.observe;
+}
+
+/** The commands an observed game takes: they play turns. */
+export const OBSERVER_COMMANDS = ["autoplay", "end_turn"];
+
+/** The kind of a located log entry for its map marker: "loss" (an attacker died), "kill" (a
+ *  defender died), "retreat" (fled or withdrew), "city" (a city captured or razed), else
+ *  "event". */
+export function eventKind(text) {
+  const t = text ?? "";
+  if (/ was captured by | was razed by |^You have (captured|destroyed) /.test(t)) return "city";
+  if (/ died attacking /.test(t)) return "loss";
+  if (/ destroyed | killed /.test(t)) return "kill";
+  if (/ fled from | withdrew from /.test(t)) return "retreat";
+  return "event";
+}
+
+/** The map markers of the latest located messages: one per plot (the strongest kind there),
+ *  `{x, y, kind, texts}`, for the messages of turn `from` on. */
+export function eventMarkers(messages, from) {
+  const rank = { city: 4, loss: 3, kill: 2, retreat: 1, event: 0 };
+  const byPlot = new Map();
+  for (const m of messages) {
+    if (!Array.isArray(m.at) || m.t < from) continue;
+    const key = `${m.at[0]},${m.at[1]}`;
+    const kind = eventKind(m.text);
+    const cur = byPlot.get(key);
+    if (!cur) byPlot.set(key, { x: m.at[0], y: m.at[1], kind, texts: [m.text] });
+    else {
+      cur.texts.push(m.text);
+      if (rank[kind] > rank[cur.kind]) cur.kind = kind;
+    }
+  }
+  return [...byPlot.values()];
 }
 
 /** The units the viewer sees on a plot. */

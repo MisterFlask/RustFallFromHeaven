@@ -286,8 +286,9 @@ impl Game {
                 let name = city_name(self, old_city).to_string();
                 let old_owner_name = self.player_get_name(old_owner);
                 let civ = self.player_get_civilization_description(p);
-                self.log.msg(turn, Some(p), || format!("You have captured {name}!"));
-                self.log.msg(turn, None, || format!("{name} ({old_owner_name}) was captured by the {civ}"));
+                let at = (self.cities[old_city].x, self.cities[old_city].y);
+                self.log.msg_at(turn, Some(p), at, || format!("You have captured {name}!"));
+                self.log.msg_at(turn, None, at, || format!("{name} ({old_owner_name}) was captured by the {civ}"));
             }
         }
 
@@ -828,8 +829,9 @@ impl Game {
             let turn = self.game_turn();
             let name = city_name(self, city).to_string();
             let civ = self.player_get_civilization_description(p);
-            self.log.msg(turn, Some(p), || format!("You have destroyed {name}!"));
-            self.log.msg(turn, None, || format!("{name} was razed by the {civ}"));
+            let at = (self.cities[city].x, self.cities[city].y);
+            self.log.msg_at(turn, Some(p), at, || format!("You have destroyed {name}!"));
+            self.log.msg_at(turn, None, at, || format!("{name} was razed by the {civ}"));
         }
 
         //FfH Global Counter: Added by Kael 08/11/2007
