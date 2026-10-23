@@ -1797,6 +1797,18 @@ to loose stacks healing where they stand again (Field armies, step 6). Refined, 
 go on instead of stopping beside the target), and -1.6% / -3.2% / +1.0% at turns 300 / 400 / 500
 in full games (|t| < 1.2): a small cost left (Known gaps).
 
+Merged again with master (2026-10-23) and measured against it on seeds 26001-26192 (300 turns),
+the package lost: legacy -3.1% at turn 300 (t -2.6), techs -4.9% (t -3.5). Switching each round
+off inside the merged build put the whole cost on round 7b, and switching its behaviours off one
+at a time on three: `RIVAL_DEFENSE` (legacy -3.2%, t -3.8; research -7.2%), `PRECIOUS` (-2.0%, t
+-2.6; research -5.1%) and `HEAL` (-2.1%, t -2.1); `CAPTURE`, `SECOND_OP` and `FLEET` were neutral.
+Those three are off by default until their cost is found (Known gaps). The final configuration
+against master on fresh seeds 27001-27192 (300 turns) and 27201-27296 (full games): legacy -0.5%
+at turn 300 (t -0.5), research +3.6% (t 1.9), military +3.5% (t 2.3); in full games legacy +1.5% /
++0.4% / -1.1% / +3.4% at turns 200 / 300 / 400 / 500 (|t| < 1.8), research +28.3% at turn 500
+(t 5.3), techs +6.2% (t 1.75); cities -4.8% at turn 400 (t -3.0), civs eliminated 1.23 -> 1.02 a
+game.
+
 ### Round 7a (2026-10-22): magic, casters, summons
 
 Five behaviours borrowed from More Naval AI's magic ("More Naval AI compared" below) in the form an
