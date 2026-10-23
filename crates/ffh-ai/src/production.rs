@@ -989,7 +989,9 @@ pub fn trouble_rebuild(ai: &Ai, g: &mut Game, p: PlayerId) {
         }
         let current = g.city_production_unit(c).map(|u| d.units[u].base.type_.as_str()).or_else(|| g.city_production_building(c).map(|b| d.buildings[b].base.type_.as_str())).unwrap_or("?");
         crate::trace!(g, p, "{}: financial trouble (deficit {}, costs {}%): {} with {} turns left gives way to {}", g.cities[c].name, f.deficit(), f.cost_share(), current, g.city_production_turns_left(c), d.buildings[b].base.type_);
-        g.tel_decision(p, "production", &d.buildings[b].base.type_, "trouble_rebuild", 0, || why.to_string());
+        // Alternatives: what it replaces (turns left), and the ladder step that chose the building.
+        let left = g.city_production_turns_left(c) as i64;
+        g.tel_decision(p, "production", &d.buildings[b].base.type_, "trouble_rebuild", f.deficit() as i64, || ffh_core::telemetry::tel_alts([(current, left), (why, 0)]));
         g.city_clear_order_queue(c);
         push(g, c, Choice::Construct(b));
     }
