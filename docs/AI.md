@@ -71,14 +71,17 @@ counters, war success, war plans) that the diplomacy below reads.
    civics every 10 turns when the summed gain in civic value exceeds a flat 100 (the anarchy's
    length is not weighed; sooner under a structural deficit);
    state religion; the culture slider a cultural victory wants, then the highest research
-   slider that keeps the treasury from running dry; unit support that holds research below its
-   target is cut first (see Finance); a bankrupt empire (slider at the bottom, still losing
-   gold) scraps surplus garrison units, never below what production wants in that city; an
-   empire paying unit support with research at a fifth or less disbands its weakest field
-   units (never heroes) down to a mobile force of 1 + cities/4 while at peace.
+   slider that keeps the treasury from running dry; units it cannot pay for go by More Naval
+   AI's rule (see Finance, "Unit support"): at peace, while costs take more than 60% of the
+   commerce, the military unit of least value (field units outside our borders first, city
+   defenders last, never one with experience); idle workers beyond the need while support holds
+   research below its target.
 2. **Emergency production** (`production::emergency`): a city whose visible threat exceeds
    its garrison switches to a defender (the rules keep the hammers); a capital or a city near
-   barbarians that has only one defender after turn 30 puts a second one first.
+   barbarians that has only one defender after turn 30 puts a second one first. Then, while the
+   empire cannot research at its target share, cities re-decide long builds for the economy
+   building they need (`production::trouble_rebuild`, see Finance), and a top city finishing a
+   world wonder at peace emphasizes production (`production::wonder_emphasis`, see Citizens).
 3. **Diplomacy** (`diplomacy.rs`), see below.
 4. **View** (`view.rs`): enemies, a *danger map* (each visible enemy unit's attack power
    added to the plots it can reach next turn; animals only on unowned plots since they cannot
@@ -146,11 +149,18 @@ counters, war success, war plans) that the diplomacy below reads.
    Training Yard for axemen, ...): when one would open a defender or attacker a third
    stronger, about half the cities build it;
 7. extra defenders up to the quota (capital, threat, nearby barbarians, the rival civilizations
-   near the city, leader);
+   near the city, leader; with `KEEP_UNITS`, barbarians an interior city's garrison holds add
+   none once units cost gold, see Finance, "Unit support");
 8. a small mobile force (1 + cities/2) for barbarians and animals; more workers as worked
    plots need improving; the victory goal's items (`victory::production`: towers, culture in
    the cities nearest legendary; before expansion, item 4, when the goal is 30 turns away);
-   heroes (not at the cost of the first expansion);
+   at peace, a **wonder slot** in the top third of our cities by production (More Naval AI's
+   quick wonder, `production::wonder_slot`, switch `WONDER_SLOT`): the world wonder of most
+   value per turn that the city finishes within 2 x cities + 1 turns (four times that in a
+   city of size 6+ making more than three hammers a citizen), not while growing toward a
+   settler; heroes (not at the cost of the first expansion), only in the top third of the
+   cities by production that can train them (switch `TOP_CITIES`: the rules let one city at
+   a time build a hero, so the first empty queue used to lock it in);
 9. the siege operation's force (`campaign::army_choice`, from `needed_force`: about two
    attackers per defender of its target, siege engines -- or the Siege Workshop that trains
    them -- for walls or 3+ defenders; city attackers only if they have at least half the
@@ -162,11 +172,13 @@ counters, war success, war plans) that the diplomacy below reads.
    buildings alternate;
 10. buildings by marginal value per production turn (yields, commerce, culture for a new
     city, happiness and health when capped, maintenance savings, specialists, experience,
-    ...); casters; missionaries; projects that do not need dedicated logic; a process.
+    ...; a world wonder outside the top third of our cities by production only if it is done
+    within the wonder slot's 2 x cities + 1 turns, `TOP_CITIES`); casters; missionaries;
+    projects that do not need dedicated logic; a process.
 
 Nothing left to build: workers, then field units (never garrisons a broke treasury would
 scrap); when no more units are affordable, the strongest one whatever it costs (support is
-the same for any unit and the weakest are disbanded first, so idle hammers buy quality).
+the same for any unit and the cheapest are disbanded first, so idle hammers buy quality).
 Units are chosen by power squared per production turn, so stronger units win unless much
 dearer.
 
@@ -208,7 +220,13 @@ commerce follows the sliders and is worth up to twice as much when the research 
 been pushed down to pay the bills, or when the costs measured from the rules would leave
 less than 60% for research (3 points of weight per point of shortfall in percent of the
 commerce; merchants and scientists gain with it over poor tiles); a culture-starved new city
-values culture.
+values culture. While a city in the top third of ours by production pushes a world wonder home at
+peace (done within the wonder slot's horizon, Production item 8), the AI sets the player's
+`EMPHASIZE_PRODUCTION` on it (`production::wonder_emphasis`, switch `WONDER_SLOT`; the governor
+weighs hammers 1.5x under it, as More Naval AI's special yield multiplier does while building a
+wonder) and clears it when the wonder is done, switched or at war; no change to the governor. On
+every wonder for the whole build, as More Naval AI does, it cost growth and commerce for few
+hammers (round 7d).
 
 The growth target is at least the food that grows the city in 12 turns (3 at size 5, 4 at size
 8), and specialist jobs worth a citizen (3+ yields and commerce) count as room to grow. Before,
@@ -243,18 +261,43 @@ single hook tagged `bankruptcy-guard`:
   the cities' actual distance and number-of-cities parts; Aristocracy is charged for the
   cottages FfH's AI-only `canBuild` bans under it once Education is near; a structural
   deficit re-checks civics outside the 10-turn cadence when a cheaper civic would win.
-- **Unit support** (`empire::disband`): while support takes a tenth of the commerce and keeps
-  research below its target (at peace), up to two units a turn go, obsolete ones first
-  (weakest relative to what we can train now): field units beyond 1 + cities/4, garrison
-  units beyond one per city (two in the capital and near barbarians) where no threat is in
-  sight, idle workers beyond twice the need. Disbanding more (from 5% of the commerce) lost
-  more cities to barbarians. Both these rules and the build rules read the moment (a threat
-  in sight, a barbarian within 4 plots), so a raider walking in and out of range has cities
-  train defenders the treasury scraps a few turns later. That is cheaper than holding them:
-  a 20-turn age limit, a quota from lasting threats only and a quota from a per-city record of
-  the raiders seen were tried (docs/AI_LOG.md, "Young units never scrapped", "Garrison quota
-  from lasting threats only", "Garrison quota from a record of threats seen"); every version
-  that holds defenders between raids cost research and saved no city.
+- **Unit support** (`empire::disband`, `finance::disband_military`, switch `KEEP_UNITS`): built
+  units are kept, by More Naval AI's rule (C++ `CvPlayerAI::AI_doMilitary` /
+  `AI_disbandUnit`), brought back by the owner's decision. At peace, while costs take more than
+  60% of the commerce (its "funded percent" below 40) and units cost gold, the military unit of
+  least value goes, one at a time until that clears: only combat units with at most 1
+  experience; value by cost, experience and level, three times in our territory, six times
+  defending a city, city defenders six times and field units twice an untyped unit; never a
+  city's last two units that keep it content, a hero, a unit that would defect, a summon.
+  Nothing reads the threats in sight: what was trained is kept and research pays for it. Idle
+  workers beyond twice the need go while support keeps research below its target
+  (`finance::disband_workers`). Kept alone it cost research around turn 200 (more units paid
+  for), and the build side was changed to match (`production::garrison_holds`): an interior city
+  (no other civilization's city within 8 plots, no enemy civilization's unit in sight) whose
+  garrison holds the barbarians it sees (their weighted attack no more than its defense) trains
+  no extra defender for them once units cost gold, since that defender would be kept for good;
+  border cities still do, because the defenders trained against raiders are also the ones that
+  hold them when a neighbour attacks (round 7d; docs/AI_LOG.md, "More Naval AI's disband rule").
+  With the switch off, the previous rule: while support takes a tenth of the commerce and keeps
+  research below its target (at peace), up to two units a turn go, obsolete ones first (weakest
+  relative to what we can train now): field units beyond 1 + cities/4, garrison units beyond one
+  per city (two in the capital and near barbarians) where no threat is in sight, idle workers
+  beyond twice the need; a bankrupt empire scraps surplus garrisons and field units. That rule and
+  the build rules both read the moment, so a raider walking in and out of range had cities train
+  defenders the treasury scrapped a few turns later; holding defenders by a quota instead lost
+  (docs/AI_LOG.md, "Young units never scrapped", "Garrison quota from lasting threats only",
+  "Garrison quota from a record of threats seen").
+- **Production re-decided** (`production::trouble_rebuild`, switch `TROUBLE_REBUILD`): More
+  Naval AI clears every city's production when the empire runs into financial trouble
+  (`CvPlayerAI::AI_doCheckFinancialTrouble`), keeping items within 3 turns of done, wonders,
+  world projects and heroes (`CvCityAI::AI_chooseProduction`). Here, while the empire cannot
+  research at its target share (`Finance::deficit`), a city in the middle of a longer build
+  re-runs the production ladder every fifth turn and switches only when the ladder now picks an
+  economy building -- one whose value is mostly commerce, research, specialists, trade or
+  maintenance savings (Market, Library, Elder Council, Courthouse): the building it needs now.
+  Kept: items within 3 turns of done, world and national wonders, projects, heroes, units
+  without combat (settlers, workers, great people), a fighter for a city without defenders or
+  under threat, every fighter at war, an economy building already under way.
 - **Citizens**: the governor's commerce weight above.
 - `finance::city_affordable` (a new city's maintenance and upkeep against the gold left at
   the target share) is for the settler logic and not wired in. Wired into `settler_choice`
@@ -1850,6 +1893,107 @@ toward culture (58 -> 52 supremacy). Missionaries abroad almost never fire (shri
 open borders are rare by then, a building outscores a gold a turn); the councils, inert before,
 now meet in about half the games and pass nearly everything their head councilor proposes.
 
+### Round 7d (2026-10-22): production and finance
+
+Four behaviours from the More Naval AI comparison, each behind its own switch
+(`crates/ffh-ai/src/switches.rs`; `FFH_AI_<NAME>_OFF=ALL` turns one off) and measured alone: the
+same binary with all four on against it with that one off, development seeds 1-48 at 300 turns
+(KEEP_UNITS on 1-96) and 1-24 full games (`--until-supremacy`), then fresh seeds used for nothing
+else: 300 turns from 23001 (192 games for KEEP_UNITS, 96 for the others) and full games from
+23201 (96 games, 48 for TOP_CITIES). Percentages are the change from switching the behaviour on;
+t is the paired t over seeds (shown for the larger ones).
+
+- **KEEP_UNITS** (Finance, "Unit support"): More Naval AI's disband rule, brought back by the
+  owner's decision after it was reverted the same day, and an interior city that holds the
+  barbarians it sees no longer trains another defender for them once units cost gold. The rule
+  alone kept 5% more military at turn 200 and cost 3.9% of the research there; the build-side
+  variants tried for that cost, and why the others were dropped, are in docs/AI_LOG.md ("More
+  Naval AI's disband rule", point 4).
+- **TOP_CITIES** (Cities, items 8 and 10): heroes only from the top third of our cities by
+  production, a world wonder outside it only when quick.
+- **WONDER_SLOT** (Cities, item 8; Citizens): the quick-wonder slot and the production emphasis
+  on a top city's final push.
+- **TROUBLE_REBUILD** (Finance): long builds give way to the economy building a city needs while
+  the empire cannot research at its target share.
+
+How often they fired (seeds 1-16, 300 turns, `FFH_TELEMETRY`, all four on against all four off):
+military units disbanded 859 -> 258 (and 22 idle workers), defenders trained for the quota
+1249 -> 1006 and second defenders 826 -> 552, while defenders trained for an overwhelmed garrison
+rose 309 -> 467; player-turns with unit support above a tenth of the commerce and research below
+target 849 -> 1504; 71 wonder-slot picks and world wonders built 51 -> 71; hero picks 47 -> 39;
+344 long builds switched to an economy building in financial trouble (seed 3: Markets, Elder
+Councils and Courthouses in place of Archery Ranges, Warrens, Granaries and army units).
+
+Development seeds (KEEP_UNITS on 1-96; the others 1-48; full games 1-24). These were measured with
+the production emphasis on every wonder; the emphasis was then cut to a top city's final push
+(below), and the fresh seeds measure the final code.
+
+| at turn 200 / 300 | KEEP_UNITS | TOP_CITIES | WONDER_SLOT | TROUBLE_REBUILD |
+|---|---|---|---|---|
+| legacy score | -0.9% (t -1.2) / -1.1% | -0.8% / +0.2% | -0.6% (t -2.6) / +1.1% | +0.5% / +0.4% |
+| techs | -0.9% / -1.4% | -0.9% / -0.3% | -0.3% / +0.2% | +0.2% / +0.1% |
+| research | +0.7% / -1.7% | -1.2% / -2.7% | -0.7% / -4.3% (t -1.5) | +0.3% / -2.2% |
+| world wonders | | +3.3% / -2.0% | +14.8% / +45.1% (t 5.0) | |
+| military / unit support | -1.0% / +1.6%; -1.0% / +0.9% | | -2.1% / -1.7% | -0.4% / 0.0% |
+| full games, turn 300 / 400 | legacy -0.6% / -1.8%, research -4.3% / -5.2% | heroes -11% / -12%, culture -10% / -17% (\|t\| < 1.5) | wonders +37% / +26% (t 2.8 / 4.7), research -9.4% (t -2.5) / -5.2% | legacy +1.1% / +0.8%, techs +1.9% / +2.8% |
+| full games, outcomes | cultural 10 -> 8, supremacy 12 -> 14 of 24; decided 9 turns earlier | cultural 5 -> 8; decided 42 turns later (t 1.7) | cultural 10 -> 8 | cultural 12 -> 8; decided 15 turns earlier |
+
+On the code before KEEP_UNITS' build side (round 7d's first binary, seeds 1-48),
+TROUBLE_REBUILD had measured research +4.1% (t 1.6), slider +5.4% (t 2.3), gold +11% (t 2.3) at
+turn 300; on the final base the slider was -4.2% (t -1.7). The two disagree within noise.
+
+**The production emphasis.** As More Naval AI does it, on every world wonder for the whole build,
+it cost growth and commerce (seeds 1-48: population -1.3% (t -2.6) and commerce -1.3% (t -2.4) at
+turn 200, research -4.3% at turn 300) for few hammers: the slot without the emphasis built as
+many wonders (+43%) for population -0.1%, commerce -0.2%, research -1.4%. Only for a top city's
+final push (the wonder done within the slot's horizon) it built the most (+46% at turn 300; full
+games +48% at turn 300, t 3.9) with research -3.9% / -3.6% at turn 300 (300-turn / full games),
+against -9.4% for the emphasis on every wonder in full games. The research the slot still costs
+is the hammers that went into wonders instead of libraries (buildings -1.0% to -1.7%).
+
+Fresh seeds, the final code:
+
+| 300-turn games, at turn 200 / 300 | KEEP_UNITS | TOP_CITIES | WONDER_SLOT | TROUBLE_REBUILD |
+|---|---|---|---|---|
+| legacy score | -0.5% / +0.4% | +0.7% (t 1.9) / +1.1% | +0.4% (t 1.7) / +0.8% | +0.1% / +1.0% |
+| techs | -0.4% / +0.7% | +1.0% (t 1.9) / +0.6% | +0.2% / +0.5% | +0.2% / +1.0% |
+| research | +0.6% / +1.8% | +2.9% (t 1.7) / -0.4% | -0.2% / +1.3% | +0.1% / +3.0% (t 1.5) |
+| world wonders | | -15.4% (t -2.1) / -3.8% | +10.0% / +47.8% (t 8.9) | -0.3% / -0.1% |
+| military | +0.4% / +0.2% | +0.7% / +3.8% (t 2.1) | -0.5% / +1.4% | +0.8% / +2.6% (t 1.7) |
+| cities | -0.7% / -0.2% | -0.4% / +1.1% | +0.2% / +1.1% | -0.1% / +1.7% (t 2.1) |
+
+| full games, at turn 200 / 300 / 400 | KEEP_UNITS | TOP_CITIES | WONDER_SLOT | TROUBLE_REBUILD |
+|---|---|---|---|---|
+| legacy score | +0.3% / +0.7% / +1.9% | -0.7% / -0.4% / -0.2% | -0.3% / -0.3% / -0.6% | -0.5% / +0.2% / +1.3% |
+| techs | +0.6% / +1.3% / +1.4% | -0.5% / -2.3% / -1.7% | -0.2% / +0.1% / +3.0% (t 1.8) | -0.9% (t -1.9) / +1.1% / +0.4% |
+| research | +4.1% (t 1.7) / +2.4% / -1.2% | -1.3% / +0.9% / -3.8% | -1.7% (t -2.2) / -1.8% / -4.2% | -0.8% / -0.6% / +4.0% |
+| world wonders | | -39% (t -3.4) / +8% / -5% | +4% / +36% (t 6.2) / +24% (t 6.8) | |
+| other | military -1.4% / +0.5% / +6.9% (t 1.9) | heroes 0 / +0.5% / +12.6% | buildings -1.3% / -2.3% (t -2.1) / -7.3% (t -4.4); cities -4.2% at turn 400 (t -3.2) | gold +2% / +7% (t 1.7) / +8% |
+| outcomes (off -> on) | cultural 34 -> 31, supremacy 54 -> 53, time limit 6 -> 10; decided 8 turns later | cultural 15 -> 15, supremacy 29 -> 29; decided 23 turns later | cultural 27 -> 31, supremacy 58 -> 53; decided 25 turns later (t 2.1) | cultural 26 -> 31, supremacy 55 -> 53, conquest 5 -> 2; decided 24 turns later (t 1.6) |
+
+What the four cost, from the games:
+
+- **KEEP_UNITS** no longer costs research where the rule alone did (turn 200: +4.1% in full games
+  instead of -3.9%). Its cost is late: research -5.7% at turn 500 (t -1.3, the 40 games still
+  running), slider -7.8% (t -1.8), following the wars the kept armies start (civs at war at turn
+  400 +50%, t 2.1; military +6.9%, unit support +8.6%); more civ cities change hands (+11%) and
+  more fall to the barbarians (+20%), and 4 more games reach the time limit. docs/AI_LOG.md ("More
+  Naval AI's disband rule", point 4) has the variants tried and where the lever is (the war gate,
+  peace terms, a garrison term for rival civilizations).
+- **WONDER_SLOT**'s research cost in the development full games (-9.4% at turn 300, t -2.5) was the
+  emphasis on every wonder, now cut to a top city's final push; on fresh seeds research is -1.8% at
+  turn 300 and -4.2% at turn 400 (\|t\| < 1.3) for a third more wonders, the hammers going into
+  wonders instead of buildings (-7.3% at turn 400, t -4.4) and, late, cities (-4.2% at turn 400,
+  t -3.2; not traced). Cultural victories 27 -> 31 of 96.
+- **TOP_CITIES** moves wonders from slow cities to fast ones: fewer early (-15% at turn 200 in
+  300-turn games, -39% in full games) as the slow cities stop starting them, as many by turn 300;
+  heroes were not fewer on fresh seeds (development full games: -8% to -12%, \|t\| < 1.5).
+- **TROUBLE_REBUILD** is cheap and mildly positive at turn 300 (research +3.0%, cities +1.7%);
+  in full games gold +7-8% and five more cultural victories, flat otherwise.
+
+All four delay the decision by 8-25 turns (supremacy to culture). Not measured together against
+the AI before them.
+
 ### Round 6 (2026-10-21): great people, explorers
 
 Six fixes for play a good player would not make, found by tracing seeds 1-18; two kept, the rest
@@ -2212,8 +2356,9 @@ share score (docs/SCORE.md) averages 10000/N whatever the AI does.
 
 More Naval AI (Tholal's FfH2 AI: FfH 0.41's C++ AI plus Better BTS AI, parts of K-Mod and
 Tholal's own changes; source at sourceforge.net/p/tholalsffhaimod/code, r1832) was read area by
-area against this AI. Its disband rule was tried and reverted (docs/AI_LOG.md, "More Naval AI's
-disband rule"), and fog-busting, which it does not do, failed here ("Fog-busting posts").
+area against this AI. Its disband rule was tried and reverted, then brought back by the owner's
+decision with a build side to match (round 7d; docs/AI_LOG.md, "More Naval AI's disband rule"),
+and fog-busting, which it does not do, failed here ("Fog-busting posts").
 
 Where this AI is ahead, with measurements: victory planning (MNAI's culture victory is switched
 off, "the AI doesnt know how to pursue a culture victory"; its conquest stages are weighted dice),
@@ -2249,20 +2394,20 @@ Where MNAI does something this AI does not, ranked by expected worth (each untri
    (`military::army`), committed stacks included, next to defenders that heal faster.
    *Done in round 7b*, fitted to our small stacks (Field armies, step 6).
 5. **Heroes and wonders in the best cities.** MNAI builds world wonders and heroes only in the
-   top third of cities by production. Here any city takes a hero once we have 3 cities, and the
-   rules let one city at a time build it, so the first empty queue locks it in.
+   top third of cities by production. Done (round 7d): heroes there only, world wonders outside
+   them only when quick, and MNAI's quick-wonder slot ("Cities", items 8 and 10).
 6. **Council votes.** MNAI votes and proposes (`AI_diploVote`, `AI_chooseElection`); this AI
    abstained on every vote and never proposed, so the Overcouncil and Undercouncil were inert.
    Done in round 7c (`council.rs`; Diplomacy, "Councils"); a balance question too.
-7. Smaller: re-deciding production when the empire enters financial trouble. (Done in round 7c:
-   dogpile wars on a civ already at war, `AI_doWar`; no tech trades with the victory rival, no
-   military techs while preparing a war, keep monopolies, `AI_techTrade`; missionaries abroad
-   once the shrine stands. Done in round 7b: a stack next to an empty or weak enemy city outside
+7. Smaller, all done: re-deciding production when the empire enters financial trouble (round 7d,
+   Finance); dogpile wars on a civ already at war, `AI_doWar`; no tech trades with the victory
+   rival, no military techs while preparing a war, keep monopolies, `AI_techTrade`; missionaries
+   abroad once the shrine stands (round 7c); a stack next to an empty or weak enemy city outside
    the plan takes it, `AI_stackAttackCity`; a second operation for a clear surplus; assault
    fleets wait for the landing force and sail escorted, `AI_assaultSeaMove`; heroes and veterans
-   attack only at their odds, `AI_getBestGroupAttacker`. Done in round 7a: Govannon's Teach
-   Spellcasting. Sanctuary and March of the Trees at 1.5x the enemy's power: tried, off by
-   default.)
+   attack only at their odds, `AI_getBestGroupAttacker` (round 7b); Govannon's Teach
+   Spellcasting (round 7a). Sanctuary and March of the Trees at 1.5x the enemy's power: tried,
+   off by default (round 7a).
 
 ## Known gaps (future work)
 
