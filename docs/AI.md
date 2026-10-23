@@ -1769,6 +1769,24 @@ unless they strike this turn (`campaign::on_the_move` at war only). Seeds 331-37
 41-52: score (dead as 0) +15 (t 2.0), 16% fewer civ cities lost to barbarians; seeds 379-426:
 -7, 4% more lost; all 120 seeds: +6 (t 1.2), techs +0.2 (t 1.7), eliminations unchanged.
 
+### Round 7 (2026-10-22): More Naval AI's ideas, the four rounds together
+
+The behaviours of rounds 7a-7d, each measured alone in its round, were merged and validated
+together against master (before round 7) on fresh seeds 24001-24192 (300 turns) and 24201-24296
+(full games). Neutral to positive, nothing falling: at turn 300 (192 games) legacy +0.7% (t 0.5),
+research +7.5% (t 3.3), population +2.6% (t 1.6), military +4.2% (t 2.1); in full games legacy
++0.2% / -0.2% / -0.4% / +1.8% at turns 200 / 300 / 400 / 500 (all |t| < 0.6), research +27.9% and
+military +13.5% at turn 500 (31 games, t 3.6 and 2.6), victories 38 -> 43 and supremacies 58 ->
+53 of 96, civ cities taken -10% and cities lost to the barbarians +29% (|t| < 1.3). Inside the
+merged build, two behaviours were checked again alone (seeds 24001-24096 and 24201-24248):
+`KEEP_UNITS` gained early (legacy +2.0% and research +6.2% at turn 300, t 1.4 and 2.5) and cost
+late (research -7.5% at turn 400, t -1.6; legacy -2.0% at 500); `HEAL` cost late (legacy -2.3% /
+-5.6% at turns 400 / 500, t -0.7 / -1.95) and lost 29-43% more cities to the barbarians, which led
+to loose stacks healing where they stand again (Field armies, step 6). Refined, on new fresh seeds
+25001-25096 / 25201-25248: legacy -1.2% at turn 300 (t -1.1), civ cities taken +20% (t 1.9; sieges
+go on instead of stopping beside the target), and -1.6% / -3.2% / +1.0% at turns 300 / 400 / 500
+in full games (|t| < 1.2): a small cost left (Known gaps).
+
 ### Round 7a (2026-10-22): magic, casters, summons
 
 Five behaviours borrowed from More Naval AI's magic ("More Naval AI compared" below) in the form an
@@ -2443,6 +2461,12 @@ Where MNAI does something this AI does not, ranked by expected worth (each untri
    off by default (round 7a).
 
 ## Known gaps (future work)
+
+- **Healing costs a little (round 7b).** `HEAL` (wounded split off in our cities, siege stacks
+  stop only when most of them are hurt and not in enemy or neutral land) is expert play, and it
+  takes more cities in sieges, but every measured set leans 1-3% of legacy below it switched off,
+  never significantly (Round 7 together). Not traced: where the stacks it keeps marching lose
+  more than they take, or whether the walk back to heal costs the tempo.
 
 - **Councils gang up (round 7c).** With `council.rs` the councils meet in about half the games
   and pass nearly every proposal; a head councilor at war has the council declare war on its
