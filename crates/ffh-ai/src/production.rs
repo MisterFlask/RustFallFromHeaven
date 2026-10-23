@@ -691,6 +691,19 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static str)> {
             return Some((Choice::Train(u, UnitAIType::UNITAI_ATTACK), "army_interleave"));
         }
     }
+    // A missionary for a foreign city while our shrine pays a gold a turn for every city with the
+    // religion (MISSIONARY_ABROAD): weighed like a building worth that gold (`building_value`'s
+    // 80 a gold, less the odds of failing on the way), against the best building.
+    if let Some(r) = crate::units::abroad_religion(g, p).filter(|&r| g.player_get_state_religion(p) == Some(r)) {
+        if count_ai(g, p, UnitAIType::UNITAI_MISSIONARY) == 0 && abroad_targets(g, p, c, r) {
+            if let Some(u) = best_missionary(g, c, r) {
+                let score = MISSIONARY_ABROAD_VALUE * 100 / (g.city_production_turns_left_unit(c, u, 0).max(1) + 3);
+                if best_building.map_or(true, |(_, s)| score > s) && (score >= ECON_BUILD_BAR || !army_short) {
+                    return Some((Choice::Train(u, UnitAIType::UNITAI_MISSIONARY), "missionary_abroad"));
+                }
+            }
+        }
+    }
     if let Some((b, score)) = best_building {
         if score >= ECON_BUILD_BAR || !army_short {
             return Some((Choice::Construct(b), "building_interleave"));
@@ -992,6 +1005,25 @@ fn strongest_unit(g: &Game, c: CityId, role: Role) -> Option<UnitType> {
         .max_by_key(|&u| (type_attack_power(d, u), d.units[u].production_cost, std::cmp::Reverse(u)))
 }
 
+/// Is there a foreign city a missionary of `r` from city `c` could convert: one we may visit
+/// (`units::abroad_city`), revealed to us, on `c`'s landmass within 15 plots.
+fn abroad_targets(g: &Game, p: PlayerId, c: CityId, r: ReligionType) -> bool {
+    let team = g.players[p].team;
+    let (x, y) = (g.cities[c].x, g.cities[c].y);
+    let area = g.map.plots[g.city_plot(c)].area;
+    g.civ_player_ids().any(|q| {
+        q != p
+            && g.players[q].alive
+            && g.players[q].cities.iter().any(|&oc| {
+                let op = g.city_plot(oc);
+                g.map.plots[op].area == area
+                    && g.map.plots[op].revealed[team]
+                    && g.plot_distance(x, y, g.cities[oc].x, g.cities[oc].y) <= 15
+                    && crate::units::abroad_city(g, p, oc, r)
+            })
+    })
+}
+
 fn best_missionary(g: &Game, c: CityId, r: ReligionType) -> Option<UnitType> {
     g.d.units.keys().filter(|&u| {
         let info = &g.d.units[u];
@@ -1005,6 +1037,11 @@ fn best_missionary(g: &Game, c: CityId, r: ReligionType) -> Option<UnitType> {
 /// while the army is short -- the ladder's existing army-short bar, shared by the economy gate and
 /// step 9 (lifted from a literal so the two stay identical).
 const ECON_BUILD_BAR: i32 = 40;
+
+/// What a missionary sent abroad is worth in [`building_value`] points: the shrine's gold a turn
+/// for the city it converts (80), at the odds of reaching it and spreading (a city without a
+/// religion takes it almost surely; one with another religion about four times in five).
+const MISSIONARY_ABROAD_VALUE: i32 = 60;
 
 /// The economy portion of [`building_value`] -- its gold/research commerce terms plus specialists,
 /// great people and trade routes -- using the identical weights. A literal subset of

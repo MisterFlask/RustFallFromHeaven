@@ -359,8 +359,8 @@ fn army_aboard(g: &Game, t: UnitId) -> i32 {
 /// carry, with what has already landed next to the target, falls short of the force the target
 /// needs (at most four against a garrison we have not seen) and more can still come (committed
 /// units on their way with room for them, or the port training for the assault: production builds
-/// the transports and the attackers, `assault_production`); with nothing more to come, half the
-/// force sails. Then the loaded transports in port and our idle warships there sail as one stack. Before, each
+/// the transports and the attackers, `assault_production`); with nothing more able to board, it
+/// ferries what it carries. Then the loaded transports in port and our idle warships there sail as one stack. Before, each
 /// transport sailed as soon as one fighter was aboard (a Trireme carries one), alone, and the army
 /// landed one unit at a time next to a defended city. True if the fleet waits this turn.
 fn fleet_waits(g: &mut Game, v: &View, grp: GroupId, u: UnitId, amph: &Amph) -> bool {
@@ -389,9 +389,11 @@ fn fleet_waits(g: &mut Game, v: &View, grp: GroupId, u: UnitId, amph: &Amph) -> 
         let walking: i32 = committed_groups(g, p, amph).iter().map(|&gr| g.groups[gr].units.iter().filter(|&&o| !g.unit_is_cargo(o)).count() as i32).sum();
         let training = g.map.plots[here].plot_city.is_some_and(|c| g.city_production_unit(c).is_some_and(|ut| g.d.units[ut].combat > 0 && g.d.units[ut].domain_type == Some(DomainType::DOMAIN_LAND)));
         let more = (walking > 0 || training) && (room > 0 || ships_coming > 0);
-        // Nothing more is coming: half the force sails (a quarter of an army landing beside a city
-        // only feeds it experience).
-        if more || have * 2 < required {
+        // Nothing more can board (no room, no ship coming): waiting cannot grow the load, so the
+        // transports ferry what they carry and the landings pile up beside the target
+        // (`transport_assault`). (Waiting there for half the force deadlocked a port whose only
+        // transport carries one unit.)
+        if more {
             crate::trace!(g, p, "assault fleet at {:?} waits: {} aboard and {} landed of {} needed (room {}, {} ships, {} units walking, training {})", g.map.xy(here), aboard, amph.landed, required, room, ships_coming, walking, training);
             g.tel_decision(p, "military", "fleet_wait", "fleet", aboard as i64, String::new);
             skip(g, grp);

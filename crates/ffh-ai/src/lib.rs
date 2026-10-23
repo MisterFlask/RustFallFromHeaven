@@ -23,6 +23,7 @@ pub mod campaign;
 pub mod casters;
 pub mod casting;
 pub mod civs;
+pub mod council;
 pub mod defense;
 pub mod diplomacy;
 pub mod economy;
@@ -167,6 +168,14 @@ impl Controller for Ai {
 
     fn choose_event(&self, g: &Game, p: PlayerId, t: &EventTriggeredData, options: &[EventType]) -> Option<EventType> {
         events::choose(g, p, t, options)
+    }
+
+    fn choose_election(&self, g: &Game, p: PlayerId, vs: &VoteSelectionData) -> Option<usize> {
+        council::choose_election(g, p, vs)
+    }
+
+    fn diplo_vote(&self, g: &Game, p: PlayerId, vote: &VoteSelectionSubData, source: VoteSourceType) -> PlayerVote {
+        council::diplo_vote(g, p, vote, source)
     }
 
     fn choose_religion(&self, g: &Game, p: PlayerId) -> Option<ReligionType> {

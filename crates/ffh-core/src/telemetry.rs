@@ -27,7 +27,7 @@ use ffh_data::*;
 
 use crate::game::Game;
 use crate::ids::*;
-use crate::structs::TradeData;
+use crate::structs::{TradeData, VoteSelectionSubData};
 
 /// The telemetry sink of a game (`Game::telemetry`); [`Telemetry::off`] by default.
 #[derive(Default)]
@@ -712,6 +712,22 @@ impl Game {
                 t.count(p, "civic", c, 0);
             }
             t.event(|| ev(turn, "civics", p).raw("to", &tel_alts(changed.iter().map(|&c| (c, 0)))).i("anarchy", anarchy as i64).end());
+        });
+    }
+
+    /// A council vote counted (`do_vote_results`): recorded once, on the secretary general's
+    /// leader (else the first voting member), as `vote_passed` / `vote_failed` by vote type.
+    pub(crate) fn tel_vote_result(&self, vote_source: VoteSourceType, data: &VoteSelectionSubData, passed: bool) {
+        let turn = self.game_turn();
+        let name = self.d.votes[data.vote].base.type_.as_str();
+        let holder = self
+            .secretary_general(vote_source)
+            .and_then(|t| self.team_get_leader_id(t))
+            .or_else(|| self.civ_player_ids().find(|&p| self.player_is_voting_member(p, vote_source)));
+        let Some(p) = holder else { return };
+        self.telemetry.with(|t| {
+            t.count(p, if passed { "vote_passed" } else { "vote_failed" }, name, 0);
+            t.event(|| ev(turn, "vote", p).s("vote", name).s("text", &data.text).i("passed", passed as i64).end());
         });
     }
 

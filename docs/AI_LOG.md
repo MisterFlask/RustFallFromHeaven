@@ -31,6 +31,49 @@ Each entry answers three questions, from the games themselves (counts with `ffh 
   `FFH_AI_TRACE` (a throwaway trace line is fine on a scratch branch; it must not change the
   checksum) and compare the snapshots per checkpoint (`civ_ab.py --load`, the snapshot fields).
 
+## Round 7c: wars, diplomacy, councils (2026-10-22)
+
+Two first versions of round 7c's behaviours (docs/AI.md, "Diplomacy" and "Round 7c") were
+measured, traced and replaced by the versions kept.
+
+### Tech-trade discipline by monopoly value, the leader refused outright (replaced)
+
+1. More Naval AI's `CvTeamAI::AI_techTrade` keeps a technology while few civs know it, the more so
+   the more it is worth (`AI_getTechMonopolyValue`: unbuilt wonders, world units, strong units),
+   and an expert does not feed the runaway leader. The first version refused the clear leader
+   (a share 1.5x the runner-up's) and the victory rival every technology, any military technology
+   while we prepared or fought a war, and to a non-friend any technology of monopoly value 50+ that
+   most civs we had met lacked.
+2. In 24 full games (seeds 1-24, everyone with it against everyone without) it withheld 1,000
+   swaps as monopolies, blocked 353 with the leader or rival and 64 military ones; the world fell
+   4.5% behind in technologies at turn 300 (t -3.0), legacy -3.7% (t -2.7), power -5.5%, and games
+   were decided 29 turns later. One civilization with it against the rest (`civ_ab.py`, seeds 1-4,
+   76 pairs) won 18.4% of its games against 21.1% (5 seeds won by the base only, 3 by the new
+   side), share at the end -143 (t -1.5), legacy at turn 200 -1.9 (t -2.4), rank 3.5 -> 3.7.
+3. The swaps here are one for one at similar cost, so each side gains a technology against every
+   other civ; refusing one costs the refuser the technology it would have received, while the
+   others trade on. Keeping a monopoly pays only when the technology itself is a race -- the wonder
+   one of our cities is building (More Naval AI's DENIAL_MYSTERY) -- or a weapon against a
+   neighbour we may fight; and the leader's swaps are worth taking when they favour us. The kept
+   version does exactly that (125% from the leader, the victory rival still refused).
+
+### Re-check before declaring at the selection's 120% margin (replaced)
+
+1. More Naval AI checks a prepared war once more before declaring it ("last chance to change our
+   mind", `AI_doWar`): the target must still pass the gate that chose it. The first version used
+   the gate unchanged but for 10% slack on the power bar, so takeability kept its 120% margin:
+   our best trainable attacker against the best defender of their weakest city, fortified.
+2. Seeds 1-48, 300 turns, against the same binary with it off (in seeds 1-24, 39 prepared wars
+   dropped, 35 as no longer takeable): wars declared 3.04 -> 1.67 a game (t -6.3), civ cities captured -24%
+   (t -2.8), legacy +0.8% (t 1.0). The test takes the weakest of their revealed cities, and
+   revealing more cities can only lower it, so a target that passed at the selection and fails at
+   the declaration has better defenders after the 30-40 turns of preparation (telemetry reason
+   `not_takeable`; not traced city by city), while our massed army is the same.
+3. The 120% margin selects wars (docs/AI.md, "War conversion vs. decisive wars"); at the
+   declaration the army is massed at the border and the question is whether its units still match
+   the defenders. The kept version asks for parity there: full games, wars +4%, legacy +3.7% at
+   turn 400 (t 1.7).
+
 ## Low-hanging fixes (2026-10-21)
 
 Six fixes for things a good player does differently, found by tracing seeds 1-18 (the two kept --

@@ -737,32 +737,80 @@ fn great_person_build(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bo
     true
 }
 
+/// The religion player `p` spreads abroad (`MISSIONARY_ABROAD`): its state religion, once the
+/// religion's holy city is ours and has its shrine (a gold a turn for every city in the world with
+/// the religion; MNAI's missionary strategy also wants the holy city).
+pub(crate) fn abroad_religion(g: &Game, p: PlayerId) -> Option<ReligionType> {
+    if !crate::switches::MISSIONARY_ABROAD.on(g, p) {
+        return None;
+    }
+    let r = g.player_get_state_religion(p)?;
+    g.team_has_shrine(g.players[p].team, Some(r)).then_some(r)
+}
+
+/// A foreign city our missionaries may visit: a civ at peace with us whose borders are open to
+/// us, whose rules let our religion in.
+pub(crate) fn abroad_city(g: &Game, p: PlayerId, c: CityId, r: ReligionType) -> bool {
+    let owner = g.cities[c].owner;
+    let (team, ot) = (g.players[p].team, g.players[owner].team);
+    if ot == team || g.player_is_barbarian(owner) || g.cities[c].has_religion[r] || g.at_war(team, ot) || !g.team_is_open_borders(team, ot) {
+        return false;
+    }
+    !g.player_is_no_non_state_religion_spread(owner) || g.player_get_state_religion(owner) == Some(r)
+}
+
 pub(crate) fn missionary(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
     let p = v.p;
     let ut = g.units[u].unit_type;
     let religions: Vec<ReligionType> = g.d.units[ut].religion_spreads.iter_enumerated().filter(|(_, &n)| n > 0).map(|(r, _)| r).collect();
-    let reach = v.flood.run(g, u, 10, false);
-    let mut best: Option<(PlotIdx, ReligionType, i32)> = None;
+    let abroad = abroad_religion(g, p).filter(|r| religions.contains(r));
+    let reach = v.flood.run(g, u, if abroad.is_some() { 15 } else { 10 }, false);
+    // Our own cities first (score 1000+), then foreign cities without a religion (an almost sure
+    // spread: the chance rises with every religion a city lacks), then the rest.
+    let mut best: Option<(PlotIdx, ReligionType, i32, bool)> = None;
     for &c in &g.players[p].cities {
         let cp = g.city_plot(c);
-        let Some(r) = reach.iter().find(|r| r.plot == cp) else { continue };
+        let Some(r) = reach.iter().find(|r| r.plot == cp && r.turns <= 10) else { continue };
         for &rel in &religions {
             if g.cities[c].has_religion[rel] || v.is_claimed(cp) {
                 continue;
             }
-            let score = g.cities[c].population * 10 - r.turns * 5;
-            if best.map_or(true, |(_, _, s)| score > s) {
-                best = Some((cp, rel, score));
+            let score = 1000 + g.cities[c].population * 10 - r.turns * 5;
+            if best.map_or(true, |(_, _, s, _)| score > s) {
+                best = Some((cp, rel, score, false));
             }
         }
     }
-    let Some((plot, rel, _)) = best else {
+    if let Some(rel) = abroad.filter(|_| best.is_none()) {
+        for q in g.civ_player_ids() {
+            if q == p || !g.players[q].alive {
+                continue;
+            }
+            for &c in &g.players[q].cities {
+                let cp = g.city_plot(c);
+                if v.is_claimed(cp) || !abroad_city(g, p, c, rel) || !g.unit_can_spread(u, cp, Some(rel), false) {
+                    continue;
+                }
+                let Some(r) = reach.iter().find(|r| r.plot == cp) else { continue };
+                let none = g.city_religion_count(c) == 0;
+                let score = if none { 500 } else { 0 } + g.cities[c].population * 10 - r.turns * 5;
+                if best.map_or(true, |(_, _, s, _)| score > s) {
+                    best = Some((cp, rel, score, true));
+                }
+            }
+        }
+    }
+    let Some((plot, rel, _, foreign)) = best else {
         hold(g, grp);
         return;
     };
+    if foreign {
+        crate::trace!(g, p, "missionary abroad to {:?} ({})", g.map.xy(plot), g.d.religions[rel].base.type_);
+        g.tel_decision(p, "missionary", "abroad", if g.map.plots[plot].plot_city.is_some_and(|c| g.city_religion_count(c) == 0) { "no_religion" } else { "other_religion" }, 0, String::new);
+    }
     v.claimed.push(plot);
     if plot != g.unit_plot(u) {
-        move_to(g, grp, plot, MOVE_SAFE_TERRITORY);
+        move_to(g, grp, plot, if foreign { MOVE_NO_ENEMY_TERRITORY } else { MOVE_SAFE_TERRITORY });
         if !alive(g, grp) {
             return;
         }
