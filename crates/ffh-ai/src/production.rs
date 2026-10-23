@@ -880,9 +880,7 @@ fn wonder_slot(g: &Game, c: CityId, at_war: bool) -> Option<BuildingType> {
         return None;
     }
     let d = g.d;
-    let pop = g.cities[c].population;
-    let super_city = pop > 5 && g.city_yield_rate(c, YieldType::YIELD_PRODUCTION) > pop * 3;
-    let horizon = (2 * g.players[p].cities.len() as i32 + 1) * if super_city { 4 } else { 1 };
+    let horizon = wonder_horizon(g, c);
     let mut best: Option<(BuildingType, i32)> = None;
     for b in d.buildings.keys() {
         if !is_world_wonder(d, b) || !g.city_can_construct(c, b, false, false, false) {
@@ -904,11 +902,25 @@ fn wonder_slot(g: &Game, c: CityId, at_war: bool) -> Option<BuildingType> {
     best.map(|(b, _)| b)
 }
 
-/// With `WONDER_SLOT`, once a turn: a city building a world wonder at peace emphasizes production
-/// (More Naval AI's special yield multiplier, `CvCityAI::AI_updateSpecialYieldMultiplier`:
-/// production +50% while building a wonder; here the player's `EMPHASIZE_PRODUCTION`, which the
-/// governor weighs the same), and drops it once the wonder is done, switched or at war. The AI
-/// sets this emphasis for nothing else.
+/// The wonder slot's horizon in city `c`: 2 x cities + 1 turns, four times that in a city of size
+/// 6+ making more than three hammers a citizen (More Naval AI's `iWonderTime`, "SuperCity").
+fn wonder_horizon(g: &Game, c: CityId) -> i32 {
+    let p = g.cities[c].owner;
+    let pop = g.cities[c].population;
+    let super_city = pop > 5 && g.city_yield_rate(c, YieldType::YIELD_PRODUCTION) > pop * 3;
+    (2 * g.players[p].cities.len() as i32 + 1) * if super_city { 4 } else { 1 }
+}
+
+/// With `WONDER_SLOT`, once a turn: a city in the top third of ours by production pushing a
+/// world wonder home at peace -- done within the wonder slot's horizon ([`wonder_horizon`]) --
+/// emphasizes production (More Naval AI's special yield multiplier,
+/// `CvCityAI::AI_updateSpecialYieldMultiplier`: production +50% while building a wonder; here
+/// the player's `EMPHASIZE_PRODUCTION`, which the governor weighs the same), and drops it once
+/// the wonder is done, switched or at war. On every world wonder for the whole build, as More
+/// Naval AI does, it cost growth and commerce for few hammers (seeds 1-48, 300 turns: population
+/// -1.3% and commerce -1.3% at turn 200, research -4.3% at turn 300, against -0.1%, -0.2% and
+/// -1.4% for the slot without it, about the same wonders). The AI sets this emphasis for nothing
+/// else.
 pub fn wonder_emphasis(g: &mut Game, p: PlayerId) {
     static EMPHASIZE: OnceLock<Option<EmphasizeType>> = OnceLock::new();
     let Some(e) = *EMPHASIZE.get_or_init(|| g.d.ty::<EmphasizeType>("EMPHASIZE_PRODUCTION")) else { return };
@@ -917,7 +929,10 @@ pub fn wonder_emphasis(g: &mut Game, p: PlayerId) {
     }
     let peace = !civ_enemies_at_war(g, p) && crate::diplomacy::preparing_target(g, g.players[p].team).is_none();
     for c in g.players[p].cities.clone() {
-        let want = peace && g.city_production_building(c).is_some_and(|b| is_world_wonder(g.d, b));
+        let want = peace
+            && g.city_production_building(c).is_some_and(|b| is_world_wonder(g.d, b))
+            && g.city_production_turns_left(c) <= wonder_horizon(g, c)
+            && top_production_city(g, c, |_| true);
         if g.cities[c].ai_emphasize[e] != want {
             crate::trace!(g, p, "{}: production emphasis {}", g.cities[c].name, if want { "on (wonder)" } else { "off" });
             g.city_ai_set_emphasize(c, e, want);
