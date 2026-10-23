@@ -1003,7 +1003,8 @@ turn, to move casters and to promote them:
   can reach us (summons attack as FfH's do, `casting::summons_attack`: of the enemies next to the
   plots they reach with moves left this turn, the one where their odds are best, at 5% or better,
   never a stack of temporary summons; a summon is worth the fight it would take, nothing when it
-  would take none); lasting blessings on our units that lack them; short ones by what
+  would take none; one about to expire also takes worse odds, below); lasting blessings on our
+  units that lack them; short ones by what
   they add to our defense in the enemies' turn, before they wear off (in full where an enemy we see
   can strike, a quarter elsewhere: Dance of Blades' first strike; Haste's move adds nothing);
   healing; terraforming; city spells. World spells, abilities (equipment, crews, cages) and
@@ -1019,14 +1020,64 @@ turn, to move casters and to promote them:
   spells or terraforming are worth most for the turns it takes. A city spell's building goes when no
   unit in the city can cast it (`bRequiresCaster`, C++ `CvCity::doTurn`): the caster that keeps one
   stays unless twice as much waits elsewhere (without this rule casters recast Inspiration a hundred
-  times a game).
+  times a game). Adepts and better move by their role in the corps (below): the node builder,
+  the terraformer and the city mages to their work, the war wizards as above.
 - **Promotions** (`units::promotion_value`): a sphere is worth the spells it opens, plus half of
   those the next promotion of the sphere opens (a quarter for an adept, which gets Channeling II only
   as a mage): Fire I for Fireball, Enchantment I for Enchanted Blade.
-- **No caster production**: casters come from FfH's own sources (heroes, priests and other units
-  with spells, the Catacomb Libralus' guilds and production's caster step, the Tower of Mastery's
-  mana nodes). Training adepts and building the Mage Guild for them by what their spells are worth
-  in a fight was tried and lost wins (docs/AI_LOG.md, "Spellcasting").
+- **Summons spent** (`casting::summon_target`, `SUMMON_SPEND`; More Naval AI's
+  `AI_summonAttackMove`, which attacks at any odds): a temporary summon that will be gone before it
+  could act again (duration 1: every summon but a Summoner's on the turn it is cast, a Summoner's
+  on its second turn, which now attacks before our other units move instead of wandering as an army
+  unit) attacks below 5% odds too, ranked by the hit points the fight takes (5 or more, by
+  `magic::summon_fight`), a 5% target still first. Two exceptions an expert sees: it stays when it
+  is its stack's cover (an enemy can strike the plot next turn and the lasting units it stands with
+  defend worse: the Balseraphs' Loki lost his health to a Spectre his puppet had left him alone
+  with, docs/AI_LOG.md, "Spellcasting"), and at the end of our turn it leaves cities alone, whose
+  defenders heal before anything of ours could use the damage (a Summoner's summon at the start of
+  our turn may weaken a city our stacks then strike). Permanent summons are never spent. The
+  end-of-turn value of a summon spell counts the same fights.
+- **Govannon** (the Amurites' hero; `casters::govannon`, `TEACH_SPELLS`; More Naval AI's
+  `AI_Govannonmove`): Teach Spellcasting gives every unit of ours on his plot (not animals or
+  birds) his first-level spheres and Channeling I; its value is the spells those spheres open for
+  each unit
+  (`magic::teach_value`, `promotion_value`'s scale), so he casts it where he stands when that is
+  worth 40, else walks alone to the stack or city of ours worth most for the turns it takes (within
+  10, on our land, no enemy in sight there). FfH's own value for the spell is 0 (its effect is all
+  Python), and no AI ever cast it.
+- **Mana nodes** (`mana.rs`, `MANA_NODES`; More Naval AI's `AI_upgrademanaMove` and its mana
+  valuation): raw mana in our cities' radius is worth nothing until a caster builds a node on it,
+  and a node is for good (it cannot become another type). A node type is worth, on
+  `building_value`'s scale for the whole empire, the bonus's own effects in every city, read from
+  the bonus data (Mind +3% research, Law -5% maintenance, Spirit +5% great people, Enchantment +1
+  happiness and Life +1 health -- again for every node, `bModifierPerBonus` --, Body healing, Earth
+  discoveries), plus, for the first node of a type, three times the spells its sphere opens: half
+  its first promotion's worth to each caster of ours that lacks it, in full to one we could train
+  (`magic::sphere_value`), plus the affinities of our units. A caster with no strike to join and
+  no city spell to keep goes to build the node worth most for the turns it takes (within 12, on a
+  plot no enemy can reach next turn); production trains one caster for nodes when none of ours can
+  build them and the jobs are worth 300 (the Mage Guild first, in a city with half our best city's
+  production or more, when no city of ours can train an adept); research values the techs that
+  open node types by the gain over the types we can already build, for each raw node of ours
+  (`research::builds_value`). Before, only the Tower of Mastery goal built nodes, and it is never
+  ours: no civilization converted its raw mana. In 24 full games the nodes built were two thirds
+  Enchantment (a happy face in every city per node), then Entropy and Mind (round 7a).
+- **The caster corps** (`casters.rs`, `CASTER_ROLES`; More Naval AI's adept roles): each caster
+  (an adept or better, not a hero) has a role kept in its unit AI type, so it is saved with the
+  unit: the node builder (`UNITAI_MANA_UPGRADE`, one while there are node jobs), the terraformer
+  (`UNITAI_TERRAFORMER`, one while a caster knows Spring, Scorch or Vitalize and our worked land
+  has plots it would improve), city mages (`UNITAI_MAGE`, one for every four cities, each in a city
+  of its own, the most threatened first, then the capital, then the largest, where they keep their
+  city spells and bless and defend the garrison at the end of the turn) and war wizards
+  (`UNITAI_WARWIZARD`, the rest, with the stacks as above). Production keeps the corps -- the city
+  mages, and at war or preparing one a war wizard and one more for every ten attackers, five in
+  all at most -- while our mana gives a fresh adept a first-level sphere worth 60 or more
+  (`magic::sphere_value`: Enchanted Blade, Rust, Slow, Bless, Raise Skeleton with Spectre, Wall
+  of Stone with Stoneskin, Inspiration with Charm), after the workers and before heroes, the army
+  and buildings, in a safe city that can afford it; the Mage Guild where no city trains adepts.
+  More Naval AI keeps a mage in every city and more; an expert's corps is smaller and pays in the
+  economy first. Three earlier attempts at training casters for their fight spells alone lost
+  wins (docs/AI_LOG.md, "Spellcasting", "Casters through a Mage Guild").
 
 `FFH_AI_MAGIC_OFF=CIVILIZATION_X,..|X|all` makes those civilizations cast by FfH's terms
 (`casting.rs`; their summons attack as everyone's do: the measurement switch); `FFH_AI_TRACE_CAST=1`
@@ -1331,7 +1382,8 @@ built a Mage Guild: 29 adepts in 3408 civ positions at turn 300).
   barbarians, the other civilizations 0.3-2.2 workers; Moroi garrisons upgraded to Brujahs
   (strength 11, defense 5) and Vampires stay garrisons (57% and 49% of their turns); research
   never plans a path to a late unique unit (Warhorses: Hornguard, Herne, Magnadine); Govannon
-  never casts Teach Spellcasting; the Bannor train a Flagbearer in 18% of the games they could
+  never cast Teach Spellcasting (he does since round 7a); the Bannor train a Flagbearer in 18% of
+  the games they could
   (56%), though one in a stack casts Morale every turn.
 
 ### Measured over the games they join (Infernals, Mercurians)
@@ -1422,6 +1474,20 @@ full games: development seeds 1-24, casts Amurites 0 -> 14 games, Sheaim 0 -> 6,
 14; fresh seeds 9601-9624, casts 0 -> 13, 0 -> 10, 13 -> 17, share@end +7, +24, +47 (every |t| <
 0.3), wins 1 / 1, 0 / 2, 0 / 1 pairs. Earlier For the Horde (a dozen orcs) and Ardor (the
 third great person) cost and were dropped (docs/AI_LOG.md).
+
+**A losing war** (`world_spells::losing_war`, `city_in_peril`; off by default, the switch
+`WS_LOSING_WAR` with `FFH_AI_WS_LOSING_WAR_ONLY=ALL` turns it on, 2026-10-22): Sanctuary
+(Elohim) and March of the Trees (Ljosalfar) would wait, instead of FfH's two wars at once, for
+More Naval AI's gate -- the civilizations at war with us have 1.5 times our power -- and an
+invasion at the gates: the capital or two cities, each with four or more units of a civilization
+at war with us within three plots whose attack exceeds the city's garrison at 1.5 times its
+defense (barbarians do not count). Every version measured (the ratio alone, with one city
+threatened, with four units there, with two cities or the capital) cost the Elohim share at the
+end on development seeds (-127 to -162, t -1.1 to -1.7; the Ljosalfar -34, t -0.3): the one-shot
+spell went on the first raid of a stronger neighbour, which the city held anyway (seed 21, turn
+141; the invasion that took nine cities came seventy turns later, where FfH's condition had cast
+it), or after cities had already fallen (seed 7). FfH's condition stays the default
+(docs/AI_LOG.md, "Sanctuary and March of the Trees at a losing war").
 
 **Moments of their own** (an experiment, not merged: `world_spells::turn`, once a turn before units
 move, commit `0e4945b`, reachable from the `fanout/ws-*` job branches; measured with the
@@ -1566,6 +1632,64 @@ Tried and not kept: stacks committed to a barbarian town turn back for our citie
 unless they strike this turn (`campaign::on_the_move` at war only). Seeds 331-378 and 1-12,
 41-52: score (dead as 0) +15 (t 2.0), 16% fewer civ cities lost to barbarians; seeds 379-426:
 -7, 4% more lost; all 120 seeds: +6 (t 1.2), techs +0.2 (t 1.7), eliminations unchanged.
+
+### Round 7a (2026-10-22): magic, casters, summons
+
+Five behaviours borrowed from More Naval AI's magic ("More Naval AI compared" below) in the form an
+expert would play them, each behind its own switch (`switches.rs`) and described where its area
+is ("Spellcasting", "World spells: AI timing"): mana nodes (`MANA_NODES`), the caster corps
+(`CASTER_ROLES`), summons spent before they expire (`SUMMON_SPEND`), Govannon's Teach
+Spellcasting (`TEACH_SPELLS`) and Sanctuary and March of the Trees at a losing war
+(`WS_LOSING_WAR`, off by default). Each was measured alone: the same binary with its switch off
+(`FFH_AI_<NAME>_OFF=ALL`) against everything on, 6 civilizations on a standard map, development
+seeds 1-48 (300 turns) and 1-24 (full games, `--until-supremacy`), then fresh seeds 20001-20192
+(300 turns) and 20201-20296 (full games), never used to choose anything. Percentages are the change
+of the per-civilization mean (dead civilizations as 0), t the paired t over seeds; a checkpoint
+counts the games still running. The development runs used the build before the last world-spell
+change (`WS_LOSING_WAR` then on, which changes only games with the Elohim or the Ljosalfar); the
+fresh runs, the final build.
+
+**What fired** (24 development full games, final build, `FFH_TELEMETRY=1`; four of them traced):
+182 mana nodes built (Enchantment 122, Entropy 31, Mind 11, Life 5, Fire 5, Earth 3, Law 2, Death,
+Metamagic, Water), the raw mana left unconverted in our lands falling from 0.76 a civilization at
+turn 300 to 0.14 at turn 500 on fresh seeds (mana types 3.3 -> 4.1); 678 adepts and 62 Shamans
+trained (on fresh seeds about two adepts a civilization at turn 400, two and a half at 500), 143
+Mage Guilds; role assignments
+(changes) node builder 146, terraformer 53, city mage 225, war wizard 275; Teach Spellcasting cast
+89 times by 6 Govannons (in 4 games; he walks to stacks worth 800-2000 on `promotion_value`'s
+scale, Enchanted Blade for a stack); summons spent at worse than 5% 5-45 times a game (four traced
+games: Loki's puppets 26, Pit Beasts 13, Einherjar 10, Fireballs 9; half below 1%); Sanctuary 1
+and March of the Trees 4 casts (FfH's condition).
+
+| behaviour | development, 300 turns (48) | development, full games (24) | fresh, 300 turns (192) | fresh, full games (96) |
+|---|---|---|---|---|
+| mana nodes | legacy +0.3% (t 0.6), pop +1.3% (t 1.9), prod +1.8% (t 1.3) at 300 | at 300: legacy +1.0% (t 1.8), pop +2.1% (t 2.8), prod +3.7% (t 2.6); research +10.9% at 400 (t 2.0); power +9.9% at 500 (t 2.3) | at 300: legacy +0.5% (t 1.7), research +2.3% (t 2.4), pop +1.1% (t 2.7), prod +0.9% (t 1.4) | at 300: research +2.6% (t 1.9), pop +1.8% (t 2.6), power +1.9% (t 2.2); at 400: legacy +1.5% (t 1.5), pop +4.1% (t 2.2); at 500: legacy +2.3% (t 2.6), techs +2.4% (t 1.6), research +6.9% (t 1.8); civ cities taken 16.5 -> 15.3 a game (t -1.7) |
+| caster corps | at 300: legacy -0.2% (t -0.5), techs -0.7% (t -1.2), prod +2.4% (t 2.7) | techs -1.5% at 300 (t -1.6), prod +2.6% (t 2.2); research +10.4% (t 1.7) and pop +5.7% (t 1.9) at 400; power +4.9% at 500 (t 1.3) | at 300: legacy +0.1% (t 0.4), techs +0.6% (t 1.3), research -0.5% (t -0.4), power +2.4% (t 3.1) | legacy +0.6% / +1.6% / +1.8% at 300 / 400 / 500 (t 1.3, 1.3, 1.2), research +2.4% at 300 (t 1.2), techs +3.0% at 500 (t 1.7); production -4.5% and power -3.4% at 500 (t -1.1); civ cities taken 16.8 -> 15.3 (t -1.8) |
+| summons spent | flat (every \|t\| < 1.1 at 300); barbarian towns taken 3.21 -> 2.79 (t -2.0) | flat to 400; power -5.0% at 500 (t -1.5) | at 300: legacy +0.7% (t 1.4), techs +0.9% (t 1.3), research +1.5% (t 1.2), pop +0.6% (t 1.3); 78 of 192 games unchanged | at 300: legacy +1.7% (t 2.6), techs +2.0% (t 2.3), pop +2.2% (t 2.3), prod +2.4% (t 2.1); at 500 legacy +2.9% (t 2.0); victories 35 -> 43, supremacy 61 -> 53 of 96 |
+| Teach Spellcasting | (no Govannon before turn 300) | 4 of 24 games changed; every \|t\| < 1.7 | -- | 10 of 96 games changed (each one with the Amurites' Govannon); every \|t\| < 1.5; those Amurites' share at the end 1842 -> 1944 (9 games) |
+
+- **Mana nodes** pay from turn 300 in every set: an Enchantment node is a happy face in every
+  city, and the cities grow (population +1-4%), research following. Fewer civilization cities
+  change hands in fresh full games (-7%, t -1.7). Kept.
+- **The caster corps** loses nothing on either fresh set and leans positive in full games, without
+  the costs the three earlier caster attempts measured (a fifth of the Luchuirp's research, the
+  Amurites' -22 beakers, docs/AI_LOG.md): it is trained only while our mana gives an adept a sphere
+  worth having, and pays in nodes, terraforming and city spells first. The cost to watch: by turn
+  500 production -4.5% and power -3.4% (t -1.1), and civilization cities taken 9% fewer (t -1.8):
+  late in the game the war wizards and city mages take hammers from the army. Kept; the next lever
+  is the number of war wizards against what their spells add to a strike.
+- **Summons spent**: flat in development, positive on both fresh sets (legacy +0.7% at turn 300,
+  t 1.4, and +1.7% in full games, t 2.6). Most games diverge after the first spent summon, so part
+  of this is chance; neither set
+  shows the loss of the earlier any-odds attempt, which the cover rule and the cities left alone
+  at the end of the turn were for (in four traced games 26 of 64 spent summons were Loki's
+  puppets). Kept.
+- **Teach Spellcasting**: Govannon is the Amurites' hero and comes late (Arcane Lore), in 4 of 24
+  and 10 of 96 games: too few to measure. One development game shows a cost: in seed 22 Govannon
+  left the Amurites' war to teach elsewhere, and they took 2 cities instead of 4 between turns 400
+  and 500 (share at the end 3871 -> 1978). An expert teaches the stack he fights with while at war
+  and walks to others in peace; not done. Kept (the Amurites use their hero).
+- **A losing war**: off by default (above, "World spells: AI timing"; docs/AI_LOG.md).
 
 ### Round 6 (2026-10-21): great people, explorers
 
@@ -1938,16 +2062,17 @@ research (goals and lookahead against MNAI's depth-3 value plus a random 500), p
 allocation and finance (MNAI's treasury floor sets research to 0 below about 100 gold, the spiral
 our finance module prevents), the one-operation war campaign, war staging and reparations,
 spellcasting and the civilization mechanics (MNAI special-cases a handful of heroes and spells),
-exploration. Not to borrow (tried here and lost, or worse here): caster quotas, summons attacking
-at any odds, a unit-spending cap, gold reserves for upgrades, two escorts per settler, random war
-rolls, the Tower and Altar pursuit (the owner's decision).
+exploration. Not to borrow (tried here and lost, or worse here): a unit-spending cap, gold
+reserves for upgrades, two escorts per settler, random war rolls, the Tower and Altar pursuit (the
+owner's decision), the power ratio alone for Sanctuary and March of the Trees (round 7a). Its
+caster roles, summons spent at any odds, mana nodes and Govannon's teaching were borrowed in
+round 7a, each in the form an expert would play (a smaller corps, summons that keep covering and
+leave cities' defenders that heal before we strike).
 
 Where MNAI does something this AI does not, ranked by expected worth (each untried unless noted):
-1. **Mana nodes as an economy.** One adept per civ builds nodes on our raw mana
-   (`CvUnitAI::AI_upgrademanaMove`), the type chosen by the bonus's effects and the spells its
-   sphere opens; research values node techs by the raw mana we own. Here only the Tower goal
-   builds nodes (`victory::mana_node`), and it is never ours, so no civ builds one; per-node
-   bonuses (Mind +3% research, Law -5% maintenance, ...) are left on the map.
+1. **Mana nodes as an economy** (done, round 7a: `mana.rs`). One adept per civ builds nodes on
+   our raw mana (`CvUnitAI::AI_upgrademanaMove`), the type chosen by the bonus's effects and the
+   spells its sphere opens; research values node techs by the raw mana we own.
 2. **Defense weighed by rival civilizations.** `CvCityAI::AI_cityThreat` scores each rival's
    closeness to the city times war/war plan/attitude times its power over ours, and spreads a
    pool of floating defenders by it; sorties need 175% of the enemy's local strength
@@ -1971,12 +2096,12 @@ Where MNAI does something this AI does not, ranked by expected worth (each untri
    Undercouncil are inert. The FfH 0.41 versions are ported in ffh-cppai. A balance question too.
 7. Smaller: dogpile wars on a civ already at war (`AI_doWar`); no tech trades with the victory
    rival, no military techs while preparing a war, keep monopolies (`AI_techTrade`); missionaries
-   abroad once the shrine stands; Govannon's Teach Spellcasting; Sanctuary and March of the Trees
-   when the enemy's power at war is 1.5x ours; re-deciding production when the empire enters
-   financial trouble. (Done in round 7b: a stack next to an empty or weak enemy city outside the
-   plan takes it, `AI_stackAttackCity`; a second operation for a clear surplus; assault fleets
-   wait for the landing force and sail escorted, `AI_assaultSeaMove`; heroes and veterans attack
-   only at their odds, `AI_getBestGroupAttacker`.)
+   abroad once the shrine stands; re-deciding production when the empire enters financial
+   trouble. (Done in round 7b: a stack next to an empty or weak enemy city outside the plan takes
+   it, `AI_stackAttackCity`; a second operation for a clear surplus; assault fleets wait for the
+   landing force and sail escorted, `AI_assaultSeaMove`; heroes and veterans attack only at their
+   odds, `AI_getBestGroupAttacker`. Done in round 7a: Govannon's Teach Spellcasting. Sanctuary and
+   March of the Trees at 1.5x the enemy's power: tried, off by default.)
 
 ## Known gaps (future work)
 
@@ -2145,14 +2270,15 @@ Where MNAI does something this AI does not, ranked by expected worth (each untri
   any more, the owner's decision); Great Prophets lightbulb instead of building the six altar
   stages; domination needs two thirds of the land and the siege operations take about one city
   per war; the religious victory (80% of the world's people) is not pursued.
-- Casters ("Spellcasting"): the AI casts with the casters it has but trains almost none (no AI
-  builds a Mage Guild unless the Catacomb Libralus gives it one); training them for their fight
-  spells cost wins in three attempts (docs/AI_LOG.md). Not tried: casters for a lasting summon (the
-  Sheaim's Raise Skeleton, an army unit a turn while at war), and magic earlier in the game
-  (research values the first caster unit with a flat bonus, not by the spells our mana would give
-  it, and Knowledge of the Ether comes around turn 230). Nothing goes after the mana a sphere needs
-  (no trade for mana, mana nodes only for the Tower of Mastery). Summons attack only next to the
-  caster; a lasting summon is an army unit with no plan of its own; world spells keep their own
-  timing (`world_spells.rs`). Civilization mechanics handled and tried: "Civilization-specific"
+- Casters ("Spellcasting"): a small corps by role and mana nodes on our raw mana (round 7a).
+  Not tried: casters for a lasting summon (the Sheaim's Raise Skeleton, an army unit a turn while
+  at war), magic earlier in the game (research values the first caster unit with a flat bonus and
+  the node techs by our raw mana, not Knowledge of the Ether by the spells our mana would give a
+  caster; it comes around turn 230), a caster's sphere chosen for its role (a terraformer is a
+  caster that happens to know Spring or Scorch), and trading for the mana a sphere needs. A
+  lasting summon is an army unit with no plan of its own; world spells keep their own timing
+  (`world_spells.rs`), and the defensive ones (Sanctuary, March of the Trees) wait for FfH's two
+  wars: a losing war was the wrong moment without an estimate of the invasion coming
+  (docs/AI_LOG.md). Civilization mechanics handled and tried: "Civilization-specific"
   and docs/AI_LOG.md (Sheaim planar gates, Infernal and Mercurian projects, Khazad vaults and
   Armageddon rituals have no logic).

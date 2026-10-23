@@ -137,6 +137,8 @@ pub(crate) fn fighters_off_worker_ai(g: &mut Game, p: PlayerId) {
 pub fn play(ai: &Ai, g: &mut Game, v: &mut View) {
     let p = v.p;
     fighters_off_worker_ai(g, p);
+    // Summons on their last turn attack before anything else moves (SUMMON_SPEND).
+    crate::casting::spend_expiring(g, v);
     // Promotions and upgrades for units that will not get orders this turn (fortified
     // garrisons, sentries); the others get theirs before acting.
     if !v.barbarian {
@@ -203,6 +205,10 @@ pub fn play(ai: &Ai, g: &mut Game, v: &mut View) {
             continue;
         }
         if !v.barbarian && crate::civs::unit(ai, g, v, grp, head) { continue; } // civ-mechanics
+        // Govannon teaches (TEACH_SPELLS).
+        if !v.barbarian && crate::casters::govannon(g, v, grp, head) {
+            continue;
+        }
         match role {
             Role::Settler => crate::expansion::settler(ai, g, v, grp, head),
             Role::Worker => crate::workers::worker(g, v, grp, head, false),
@@ -777,6 +783,10 @@ fn caster(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
     let p = v.p;
     let here = g.unit_plot(u);
     if crate::victory::mana_node(g, v, grp, u) { return; } // victory-pursuit
+    // Caster roles (CASTER_ROLES) and mana nodes (MANA_NODES).
+    if crate::casters::play(g, v, grp, u) {
+        return;
+    }
     if crate::magic::enabled(g, p) {
         crate::campaign::plan(g, v);
         if let Some((q, why)) = crate::magic::caster_target(g, v, u) {

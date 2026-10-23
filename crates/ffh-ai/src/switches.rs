@@ -6,8 +6,10 @@
 //!
 //! `FFH_AI_<NAME>_OFF` lists civilizations (`CIVILIZATION_KHAZAD` or `KHAZAD`, comma-separated,
 //! or `ALL`) that play without the behaviour; `FFH_AI_<NAME>_ONLY` lists the only ones that play
-//! with it. Like `FFH_AI_CIV_OFF`, the table is read once and never changes during a game, so play
-//! stays deterministic, and the run cache keys runs by every `FFH_*` variable.
+//! with it. A switch made with [`Switch::off_by_default`] is off unless `FFH_AI_<NAME>_ONLY` lists
+//! the civilization (`ALL` for every one). Like `FFH_AI_CIV_OFF`, the table is read once and never
+//! changes during a game, so play stays deterministic, and the run cache keys runs by every
+//! `FFH_*` variable.
 
 use std::sync::OnceLock;
 
@@ -17,6 +19,9 @@ use ffh_data::{GameData, Idx};
 
 pub struct Switch {
     name: &'static str,
+    /// On unless listed in `FFH_AI_<NAME>_OFF`; when false, off unless listed in
+    /// `FFH_AI_<NAME>_ONLY` (a behaviour kept for measurement whose cost is not worked out).
+    default_on: bool,
     table: OnceLock<Vec<bool>>,
 }
 
@@ -41,6 +46,22 @@ pub static PRECIOUS: Switch = Switch::new("PRECIOUS");
 /// Assault transports wait in port for the landing force and sail together, escorted
 /// (`naval::transport`).
 pub static FLEET: Switch = Switch::new("FLEET");
+/// Mana nodes as an economy: casters convert our raw mana into the node type worth most, a
+/// caster is trained for it, research values the node techs (`mana.rs`).
+pub static MANA_NODES: Switch = Switch::new("MANA_NODES");
+/// A small caster corps by role -- terraformer, city mages, war wizards -- and its training
+/// (`casters.rs`).
+pub static CASTER_ROLES: Switch = Switch::new("CASTER_ROLES");
+/// A temporary summon on its last turn attacks at any odds when it is not its stack's cover
+/// (`casting::summon_target`).
+pub static SUMMON_SPEND: Switch = Switch::new("SUMMON_SPEND");
+/// Govannon walks to our largest stack and casts Teach Spellcasting (`casters::govannon`).
+pub static TEACH_SPELLS: Switch = Switch::new("TEACH_SPELLS");
+/// Sanctuary and March of the Trees when the enemies' power at war is 1.5x ours and an invasion
+/// is at the gates (`world_spells::losing_war`). Off by default (`FFH_AI_WS_LOSING_WAR_ONLY=ALL`
+/// turns it on): it cost the Elohim in development (docs/AI_LOG.md, "Sanctuary and March of the
+/// Trees at a losing war").
+pub static WS_LOSING_WAR: Switch = Switch::off_by_default("WS_LOSING_WAR");
 
 fn civ_list(var: &str) -> Option<Vec<String>> {
     let v = std::env::var(var).ok()?;
@@ -49,7 +70,12 @@ fn civ_list(var: &str) -> Option<Vec<String>> {
 
 impl Switch {
     pub const fn new(name: &'static str) -> Self {
-        Switch { name, table: OnceLock::new() }
+        Switch { name, default_on: true, table: OnceLock::new() }
+    }
+
+    /// A switch that is off unless `FFH_AI_<NAME>_ONLY` lists the civilization (or `ALL`).
+    pub const fn off_by_default(name: &'static str) -> Self {
+        Switch { name, default_on: false, table: OnceLock::new() }
     }
 
     fn table(&self, d: &GameData) -> &[bool] {
@@ -61,7 +87,7 @@ impl Switch {
                 .map(|c| {
                     let name = d.civilizations[c].base.type_.trim_start_matches("CIVILIZATION_");
                     let listed = |l: &[String]| l.iter().any(|o| o == "ALL" || o == name);
-                    !listed(&off) && only.as_deref().map_or(true, listed)
+                    !listed(&off) && only.as_deref().map_or(self.default_on, listed)
                 })
                 .collect()
         })
@@ -69,6 +95,6 @@ impl Switch {
 
     /// Does player `p` play with the behaviour? (Players without a civilization: yes.)
     pub fn on(&self, g: &Game, p: PlayerId) -> bool {
-        g.player_get_civilization_type(p).map_or(true, |c| self.table(g.d)[c.idx()])
+        g.player_get_civilization_type(p).map_or(self.default_on, |c| self.table(g.d)[c.idx()])
     }
 }

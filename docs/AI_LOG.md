@@ -290,6 +290,41 @@ instead of FfH's fifth: development seeds flat (wins 16.7% -> 20.8%, share@end +
 condition already held in two games of three, and the spell is worth more the later it comes
 (it resets a higher threshold); if anything the expert waits longer, not less.
 
+## Sanctuary and March of the Trees at a losing war (2026-10-22, off by default)
+
+1. More Naval AI casts both defensive world spells only when the civilizations at war with it
+   have 1.5 times its power (`reqSanctuary`, `reqMarchOfTheTrees`), and the round-5 entry below
+   ("World spells at moments of their own") names a losing war as the right trigger: a 30-turn
+   lockout (Sanctuary) or a Treant on every forest at the price of the Ancient Forests (March of
+   the Trees) are last stands. FfH's own condition is two wars at once, which says nothing about
+   who is winning. Kept behind `WS_LOSING_WAR` (`world_spells::losing_war`, `city_in_peril`),
+   off by default.
+2. Measured with the civilization forced, development seeds 1-24, full games, the switch on
+   against the same binary with it off; four versions, each traced where it lost:
+   - the power ratio alone: Elohim win 12.5% -> 12.5%, share@end -162 (t -1.69), legacy@end -176
+     (t -1.55); Sanctuary in 17 games instead of 14, first seen at turn ~358 instead of ~441;
+   - with a city whose threat exceeds its garrison: share@end -127 (t -1.12), legacy@end -196
+     (t -1.84), alive -0.1 (t -1.81);
+   - with four or more units of a civilization at war at that city: share@end -153 (t -1.74),
+     legacy@end -189 (t -1.97);
+   - with the capital or two cities so threatened (the last version): Elohim win 16.7% ->
+     16.7%, share@end -146 (t -1.42), legacy@end -175 (t -1.42), alive t -1.81; Ljosalfar win
+     33.3% -> 29.2% (1 / 2), share@end -34 (t -0.31), legacy@400 +48 (t 1.27).
+   Every version moved the one-shot spell and lost it where it mattered. Seed 21: the Luchuirp,
+   stronger, sent a raid of three or four units at turn 138-145 and every version cast Sanctuary
+   then (the city held without it in the game without the change, its warriors killed the
+   raiders); their invasion of turns 210-300 took nine Elohim cities, where FfH's condition had
+   cast it (turn 272) and lost two. Seed 7: the last version waited for the second city in peril
+   and cast at turn 396, ten turns after FfH's two wars (turn 386), when two cities had already
+   fallen; the Elohim were eliminated by turn 500 instead of surviving with 19% of the world.
+3. "We are losing" is right, but the moment needs what the invasion will take: a raid on a city
+   the garrison holds is not it, and a city that has already fallen is too late. The expert reads
+   the size of the force coming against what we can put in its way -- the enemy stacks heading for
+   our land against our army there -- which this AI does not estimate yet (the defense gap of
+   docs/AI.md, "More Naval AI compared", item 2: threat weighed by rival civilizations). Until it
+   does, FfH's two wars, a proxy for "the whole neighbourhood is at us", did better on these
+   seeds. The rule and its test stay (`FFH_AI_WS_LOSING_WAR_ONLY=ALL` turns it on).
+
 ## Unit choices and an upgrade reserve (2026-10-21)
 
 Item 3 of the strong-player list: the head-to-head games had the original AI fielding 3.9 axemen

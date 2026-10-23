@@ -592,6 +592,17 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static str)> {
         if let Some(choice) = crate::victory::production(g, c, false) { return Some((choice, "victory")); } // victory-pursuit
     }
 
+    // Mana nodes (MANA_NODES) and the caster corps (CASTER_ROLES): a caster to convert our raw mana
+    // when none of ours can, and the corps' casters (mana.rs, casters.rs).
+    if safe && ctx.afford && !ctx.broke {
+        if let Some(choice) = crate::mana::production(g, c) {
+            return Some((choice, "mana_builder"));
+        }
+        if let Some(choice) = crate::casters::production(g, c, ctx.at_war, attackers) {
+            return Some((choice, "caster_corps"));
+        }
+    }
+
     // 7. Heroes are unique and strong (but not at the cost of the first expansion); a coastal city
     // trains a hero ship (the Lanun's Black Wind, which serves as a transport).
     if let Some(u) = best_unit(g, c, Role::Hero) {
