@@ -646,30 +646,41 @@ pub(crate) fn clear_leader(g: &Game) -> Option<TeamId> {
 /// What player `p` reads before giving away technologies (`TECH_DISCIPLINE`), once per round.
 pub(crate) struct TechCtx {
     on: bool,
-    /// Teams that get no technology from us: our victory rival, a clear world leader.
-    blocked: Vec<TeamId>,
+    /// Our victory rival: it gets no technology from us.
+    rival: Option<TeamId>,
+    /// The world's clear leader (not us): it gets a swap only when we come out ahead.
+    leader: Option<TeamId>,
     /// We prepare or fight a war with a civ: no military technology leaves us.
     war: bool,
 }
 
 pub(crate) fn tech_ctx(g: &Game, p: PlayerId) -> TechCtx {
     if !crate::switches::TECH_DISCIPLINE.on(g, p) {
-        return TechCtx { on: false, blocked: Vec::new(), war: false };
+        return TechCtx { on: false, rival: None, leader: None, war: false };
     }
     let team = g.players[p].team;
     let plan = crate::victory::plan(g, p);
-    let mut blocked: Vec<TeamId> = crate::victory::rival_team(g, &plan).into_iter().collect();
-    if let Some(t) = clear_leader(g).filter(|&t| t != team && !blocked.contains(&t)) {
-        blocked.push(t);
-    }
+    let rival = crate::victory::rival_team(g, &plan);
+    let leader = clear_leader(g).filter(|&t| t != team);
     let war = preparing_target(g, team).is_some() || g.team_ids().into_iter().any(|t| t != team && g.team_is_alive(t) && !g.team_is_barbarian(t) && g.at_war(team, t));
-    TechCtx { on: true, blocked, war }
+    TechCtx { on: true, rival, leader, war }
 }
 
 impl TechCtx {
-    /// Do we trade technologies with `to` at all?
+    /// Do we trade technologies with `to` at all (not with our victory rival)?
     pub(crate) fn partner_ok(&self, g: &Game, to: PlayerId) -> bool {
-        !self.on || !self.blocked.contains(&g.players[to].team)
+        !self.on || self.rival != Some(g.players[to].team)
+    }
+
+    /// The least we take in a swap with `to`, in percent of what we give (by research cost):
+    /// four fifths, as `consider_offer` always did, but five fourths from the world's clear leader
+    /// -- we trade with the runaway only when we gain more than it does.
+    pub(crate) fn min_return_pct(&self, g: &Game, to: PlayerId) -> i64 {
+        if self.on && self.leader == Some(g.players[to].team) {
+            125
+        } else {
+            80
+        }
     }
 }
 
@@ -689,92 +700,64 @@ fn is_military_tech(g: &Game, to: PlayerId, tech: TechType) -> bool {
     })
 }
 
-/// MNAI `CvTeamAI::AI_getTechMonopolyValue` (without the naval and espionage terms): what holding
-/// `tech` alone is worth -- strong units, buildings, wonders and projects not yet built out.
-fn monopoly_value(g: &Game, tech: TechType, war: bool) -> i64 {
+/// Is a city of team `team` building a world wonder, a world unit or a world project that needs
+/// `tech` (MNAI `AI_techTrade`'s DENIAL_MYSTERY: the race we are running)?
+fn racing_with(g: &Game, team: TeamId, tech: TechType) -> bool {
     let d = g.d;
-    let mut v: i64 = 0;
-    let best = g.best_land_unit_combat().max(1) as i64;
-    for uc in d.unit_classes.keys() {
-        let Some(u) = d.unit_classes[uc].default_unit_index else { continue };
-        let info = &d.units[u];
-        if info.prereq_and_tech != Some(tech) && !info.prereq_and_techs.contains(&tech) {
-            continue;
-        }
-        if ffh_core::utils::is_world_unit_class(d, uc) {
-            v += 50;
-        }
-        if info.prereq_and_tech == Some(tech) {
-            let ratio = info.combat as i64 * 100 / best;
-            if ratio > 50 {
-                v += if war { 100 } else { 50 } * (ratio - 40) / 50;
+    let needs = |and: Option<TechType>, ands: &[TechType]| and == Some(tech) || ands.contains(&tech);
+    g.player_ids().into_iter().filter(|&q| g.players[q].alive && g.players[q].team == team).any(|q| {
+        g.players[q].cities.iter().any(|&c| {
+            if let Some(b) = g.city_production_building(c) {
+                let info = &d.buildings[b];
+                let ands: Vec<TechType> = info.prereq_and_techs.iter().flatten().copied().collect();
+                if info.building_class_type.is_some_and(|bc| ffh_core::utils::is_world_wonder_class(d, bc)) && needs(info.prereq_and_tech, &ands) {
+                    return true;
+                }
             }
-            match info.default_unit_ai_type {
-                Some(UnitAIType::UNITAI_ATTACK) | Some(UnitAIType::UNITAI_ATTACK_CITY) | Some(UnitAIType::UNITAI_COLLATERAL) => v += if war { 50 } else { 20 },
-                Some(UnitAIType::UNITAI_PILLAGE)
-                | Some(UnitAIType::UNITAI_RESERVE)
-                | Some(UnitAIType::UNITAI_COUNTER)
-                | Some(UnitAIType::UNITAI_CITY_DEFENSE)
-                | Some(UnitAIType::UNITAI_CITY_COUNTER)
-                | Some(UnitAIType::UNITAI_CITY_SPECIAL) => v += if war { 40 } else { 15 },
-                _ => {}
+            if let Some(u) = g.city_production_unit(c) {
+                let info = &d.units[u];
+                if info.unit_class_type.is_some_and(|uc| ffh_core::utils::is_world_unit_class(d, uc)) && needs(info.prereq_and_tech, &info.prereq_and_techs) {
+                    return true;
+                }
             }
-        }
-    }
-    for b in d.buildings.keys() {
-        let info = &d.buildings[b];
-        if info.prereq_and_tech != Some(tech) && !info.prereq_and_techs.contains(&Some(tech)) {
-            continue;
-        }
-        if info.religion_type.is_none() {
-            v += 30;
-        }
-        if let Some(bc) = info.building_class_type {
-            if ffh_core::utils::is_world_wonder_class(d, bc) && !g.is_building_class_maxed_out(bc, 0) {
-                v += 50;
-            }
-        }
-    }
-    for pj in d.projects.keys() {
-        if d.projects[pj].tech_prereq == Some(tech) {
-            v += if !ffh_core::utils::is_world_project(d, pj) { 50 } else if !g.is_project_maxed_out(pj, 0) { 100 } else { 0 };
-        }
-    }
-    v
+            g.city_production_project(c).is_some_and(|pj| d.projects[pj].tech_prereq == Some(tech) && ffh_core::utils::is_world_project(d, pj))
+        })
+    })
 }
 
 /// Why player `p` would not give `tech` to `to` (`TECH_DISCIPLINE`; MNAI `CvTeamAI::AI_techTrade`),
-/// or `None`: `to` is our victory rival or the clear world leader; a military technology while we
-/// prepare or fight a war (any recipient could pass it on); a technology worth a monopoly that most
-/// civs we have met lack, to anyone we are not friendly with.
+/// or `None`: `to` is our victory rival; a military technology while we prepare or fight a war
+/// (any recipient could pass it on); and, to anyone we are not friendly with, a monopoly worth
+/// keeping -- the technology of a world wonder, world unit or project we are building, or a
+/// military technology a land neighbour we may fight would gain while most civs we know lack it.
 pub(crate) fn tech_denial(g: &Game, p: PlayerId, to: PlayerId, tech: TechType, ctx: &TechCtx) -> Option<&'static str> {
     if !ctx.on {
         return None;
     }
     let (team, ot) = (g.players[p].team, g.players[to].team);
-    if ctx.blocked.contains(&ot) {
+    if ctx.rival == Some(ot) {
         return Some("rival");
     }
     if ctx.war && is_military_tech(g, to, tech) {
         return Some("military");
     }
     if attitude(g, p, to).i() < AttitudeType::ATTITUDE_FRIENDLY.i() {
-        let (mut known, mut possible) = (0i64, 0i64);
-        for t in g.team_ids() {
-            if t == team || t == ot || !g.team_is_alive(t) || g.team_is_barbarian(t) || !g.teams[team].has_met[t] {
-                continue;
-            }
-            possible += 1;
-            known += i64::from(g.team_is_has_tech(t, Some(tech)));
+        if racing_with(g, team, tech) {
+            return Some("wonder");
         }
-        // With no third civ met there is no edge to keep: a swap with the only civ we know is an
-        // exchange between equals (MNAI denies every valuable tech then).
-        // A technology worth keeping (MNAI's monopoly value: a wonder or world unit not yet built,
-        // strong units; at least 50) stays ours while most civs we know lack it; one that opens a
-        // building or two is traded freely (MNAI's own bar, 25% x value, kept even those).
-        let worth = monopoly_value(g, tech, ctx.war);
-        if possible > 0 && worth >= 50 && known * 100 / possible < 50 {
-            return Some("monopoly");
+        if reach_distance(g, team, ot).is_some_and(|d| d <= 16) && is_military_tech(g, to, tech) {
+            let (mut known, mut possible) = (0i64, 0i64);
+            for t in g.team_ids() {
+                if t == team || t == ot || !g.team_is_alive(t) || g.team_is_barbarian(t) || !g.teams[team].has_met[t] {
+                    continue;
+                }
+                possible += 1;
+                known += i64::from(g.team_is_has_tech(t, Some(tech)));
+            }
+            // With no third civ met there is no edge to keep over the others.
+            if possible > 0 && known * 2 < possible {
+                return Some("monopoly");
+            }
         }
     }
     None
@@ -857,6 +840,11 @@ fn trade(g: &mut Game, p: PlayerId) {
             }
         }
         let Some((give, _)) = give else { continue };
+        // With the world's clear leader only a swap that favours us (TECH_DISCIPLINE).
+        if (cost(give) as i64) * tech_rules.min_return_pct(g, other) > get_cost as i64 * 100 {
+            g.tel_decision(p, "tech_trade", "withheld", "leader", 0, String::new);
+            continue;
+        }
         let ours = vec![tech_item(give)];
         let theirs = vec![tech_item(get)];
         if g.controller(other).consider_offer(g, other, p, &ours, &theirs) {
@@ -1403,10 +1391,11 @@ pub fn consider_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeD
         let ours = crate::trade::deal_val(g, from, p, we_give, false, 1);
         return theirs >= ours;
     }
-    // Tech-trade discipline (TECH_DISCIPLINE): no technology to our victory rival or a clear world
-    // leader, no military technology while we prepare or fight a war, no monopoly to a non-friend.
-    if we_give.iter().any(|t| t.item_type == TradeableItem::TRADE_TECHNOLOGIES) {
-        let rules = tech_ctx(g, p);
+    // Tech-trade discipline (TECH_DISCIPLINE): no technology to our victory rival, no military
+    // technology while we prepare or fight a war, no monopoly worth keeping to a non-friend.
+    let gives_tech = we_give.iter().any(|t| t.item_type == TradeableItem::TRADE_TECHNOLOGIES);
+    let rules = if gives_tech { tech_ctx(g, p) } else { TechCtx { on: false, rival: None, leader: None, war: false } };
+    if gives_tech {
         let denied = we_give
             .iter()
             .filter(|t| t.item_type == TradeableItem::TRADE_TECHNOLOGIES)
@@ -1428,8 +1417,9 @@ pub fn consider_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeD
         if g.at_war(team, their_team) || relation(g, p, from) < 0 || preparing_target(g, team) == Some(their_team) {
             return false;
         }
-        let value = |items: &[TradeData]| items.iter().map(|t| g.team_get_research_cost(team, TechType::from_usize(t.data as usize))).sum::<i32>();
-        return value(they_give) * 5 >= value(we_give) * 4;
+        // (From the world's clear leader we want more than we give: `TechCtx::min_return_pct`.)
+        let value = |items: &[TradeData]| items.iter().map(|t| g.team_get_research_cost(team, TechType::from_usize(t.data as usize)) as i64).sum::<i64>();
+        return value(they_give) * 100 >= value(we_give) * rules.min_return_pct(g, from);
     }
     // Resources and gold (and any mixed deal): value both sides in gold-equivalent (C++
     // `AI_dealVal`) and accept when what we receive is worth at least what we give away. A friendly
