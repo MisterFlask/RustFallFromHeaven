@@ -213,7 +213,7 @@ it both count, and the weaker of the two decides):
 | **Partial** | The AI gets or uses it, but its valuation misses a main part of what it does (a building whose effect is a free promotion or lives in Python; a unit trained for its strength whose abilities go unused; a spell cast for a flat weight whatever the situation). |
 | **Incidental** | The AI has it only as a by-product: an upgrade, an early fallback build, a flat AI weight with no reason behind it, a unit the rules hand it. Nothing in the AI decides to get it for its effect. |
 | **Unused** | A player could use it; the AI never does: the rules refuse AI casts (`bAllowAI` 0), its value is always 0, no production role takes it, it is excluded on purpose, or it needs something the AI never does. |
-| **Not an AI choice** | The rules create, control or consume it (equipment dropped on death, event and lair units, barbarian and animal units, units only a ritual or event spawns); the entry says how the AI handles the unit once it has one. |
+| **Not an AI choice** | There is no decision for the AI to make about getting it: the rules give it, place it or swap it themselves (palaces in the first city, the Dwarven Vault stages by the treasury, items dropped when their holder dies, animals and barbarian units, heroes and units an event, ritual or other civilization's arrival creates). Unlike Unused, nothing is being left on the table; the entry says how the AI handles the unit or building once it has one. |
 
 ## How the AI gets and uses entities
 
