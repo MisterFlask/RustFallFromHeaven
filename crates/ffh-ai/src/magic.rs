@@ -25,7 +25,8 @@
 //!   spells it opens, and half of those the next promotion of the sphere opens (Fire I for
 //!   Fire II's Fireball).
 //!
-//! It trains no casters: they come from FfH's own sources (see "Casters to train" below).
+//! Casters are trained by role (`casters.rs`, the caster corps) and to build mana nodes
+//! (`mana.rs`); see "Casters to train" below.
 //!
 //! Values are hit points: those a spell takes from enemy units (a change of strength counts as
 //! that share of the unit's health), less those it costs ours. FfH's own terms stay for what is
@@ -1332,12 +1333,12 @@ fn channeling_below(d: &GameData, and: PromotionType) -> Option<PromotionType> {
 // Casters to train
 // ----------------------------------------------------------------------------
 //
-// Tried, not kept (docs/AI_LOG.md, "Spellcasting"): training casters by what their spells are
-// worth in a fight -- one per five field units when an adept could cast such a spell with our
-// mana (Enchanted Blade, Rust), and the Mage Guild that opens them in our most productive safe
-// city. The Enchantment civilizations that trained them lost wins (3 against 9 over 80 games)
-// for no share: casters keep coming from FfH's own sources (heroes, priests, unique units, the
-// Catacomb Libralus' guilds, `production` step 10, the Tower of Mastery's mana nodes).
+// The corps by role is `casters.rs` (`CASTER_ROLES`), the node builder `mana.rs` (`MANA_NODES`).
+// Tried before, not kept (docs/AI_LOG.md, "Spellcasting"): training casters by what their spells
+// are worth in a fight alone -- one per five field units when an adept could cast such a spell
+// with our mana (Enchanted Blade, Rust), and the Mage Guild that opens them in our most productive
+// safe city. The Enchantment civilizations that trained them lost wins (3 against 9 over 80
+// games) for no share.
 
 /// Does `u` know a spell that helps in a fight (a summon that attacks, damage, a curse, a
 /// blessing for a stack)? Such casters march with the army.

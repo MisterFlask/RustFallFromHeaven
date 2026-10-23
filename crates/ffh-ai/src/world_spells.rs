@@ -176,14 +176,59 @@ pub fn losing_war(g: &Game, p: PlayerId) -> bool {
     theirs * 100 >= ours * 150
 }
 
-/// A city of ours whose visible threat exceeds its garrison (fortified defenders at 1.5 times
-/// their power), as `View::peril`: the invasion is at the gates.
+/// An invasion at the gates: two cities of ours, or the capital, each with at least
+/// [`INVASION_UNITS`] units of a civilization at war with us within three plots whose attack
+/// exceeds the city's garrison (fortified defenders at 1.5 times their power, as `View::peril`).
+/// Barbarians and a raid on one city do not count: the spell is cast once a game, and the
+/// Elohim's Sanctuary spent on a raid of four units at one city (seed 21, turn 141; the city held
+/// without it) was gone when the real invasion came seventy turns later. docs/AI_LOG.md ("World
+/// spells at moments of their own") names this moment: when cities would fall, several in peril
+/// or the capital.
 pub fn city_in_peril(g: &Game, p: PlayerId) -> bool {
-    g.players[p].cities.iter().any(|&c| {
-        let cp = g.city_plot(c);
-        crate::production::local_threat(g, p, cp, 3) > crate::production::garrison(g, p, cp).1 * 3 / 2
-    })
+    let team = g.players[p].team;
+    let barb = g.barbarian_team();
+    let capital = g.player_get_capital_city(p);
+    let in_peril = |c: CityId| {
+        let (x, y) = (g.cities[c].x, g.cities[c].y);
+        let (mut n, mut threat) = (0, 0);
+        for dx in -3..=3 {
+            for dy in -3..=3 {
+                let Some(q) = g.plot_xy(x, y, dx, dy) else { continue };
+                if !g.plot_is_visible(q, team) {
+                    continue;
+                }
+                for &u in &g.map.plots[q].units {
+                    let other = g.players[g.units[u].owner].team;
+                    if other == team || other == barb || !g.at_war(team, other) {
+                        continue;
+                    }
+                    let power = crate::view::attack_power(g, u);
+                    if power > 0 {
+                        n += 1;
+                        threat += power;
+                    }
+                }
+            }
+        }
+        n >= INVASION_UNITS && threat > crate::production::garrison(g, p, g.city_plot(c)).1 * 3 / 2
+    };
+    let mut perils = 0;
+    for &c in &g.players[p].cities {
+        if in_peril(c) {
+            if Some(c) == capital {
+                return true;
+            }
+            perils += 1;
+            if perils >= 2 {
+                return true;
+            }
+        }
+    }
+    false
 }
+
+/// Units an invasion has at least ([`city_in_peril`]).
+const INVASION_UNITS: i32 = 4;
 
 /// `reqRagingSeas`'s AI condition: a player we are at war with (the barbarians included) has a
 /// fleet worth more than 10 (frigates and galleons 2, men-o'-war and queens of the line 3, other

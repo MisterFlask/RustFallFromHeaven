@@ -362,7 +362,8 @@ fn govannon_teaches_his_spheres_to_the_garrison() {
     assert_eq!(magic::teach_value(&g, gov, here), 0, "nothing left to teach here");
 }
 
-/// Sanctuary and March of the Trees wait for a war we are losing (`WS_LOSING_WAR`).
+/// Sanctuary and March of the Trees wait for a war we are losing (`WS_LOSING_WAR`, off by
+/// default; the rule itself is tested here).
 #[test]
 fn defensive_world_spells_wait_for_a_losing_war() {
     let mut g = one_landmass_game(19);
