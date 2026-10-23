@@ -79,8 +79,8 @@ counters, war success, war plans) that the diplomacy below reads.
    its garrison switches to a defender (the rules keep the hammers); a capital or a city near
    barbarians that has only one defender after turn 30 puts a second one first. Then, while the
    empire cannot research at its target share, cities re-decide long builds for the economy
-   building they need (`production::trouble_rebuild`, see Finance), and a city building a world
-   wonder at peace emphasizes production (`production::wonder_emphasis`, see Citizens).
+   building they need (`production::trouble_rebuild`, see Finance), and a top city finishing a
+   world wonder at peace emphasizes production (`production::wonder_emphasis`, see Citizens).
 3. **Diplomacy** (`diplomacy.rs`), see below.
 4. **View** (`view.rs`): enemies, a *danger map* (each visible enemy unit's attack power
    added to the plots it can reach next turn; animals only on unowned plots since they cannot
@@ -197,10 +197,13 @@ commerce follows the sliders and is worth up to twice as much when the research 
 been pushed down to pay the bills, or when the costs measured from the rules would leave
 less than 60% for research (3 points of weight per point of shortfall in percent of the
 commerce; merchants and scientists gain with it over poor tiles); a culture-starved new city
-values culture. While a city builds a world wonder at peace, the AI sets the player's
+values culture. While a city in the top third of ours by production pushes a world wonder home at
+peace (done within the wonder slot's horizon, Production item 8), the AI sets the player's
 `EMPHASIZE_PRODUCTION` on it (`production::wonder_emphasis`, switch `WONDER_SLOT`; the governor
 weighs hammers 1.5x under it, as More Naval AI's special yield multiplier does while building a
-wonder) and clears it when the wonder is done, switched or at war; no change to the governor.
+wonder) and clears it when the wonder is done, switched or at war; no change to the governor. On
+every wonder for the whole build, as More Naval AI does, it cost growth and commerce for few
+hammers (round 7d).
 
 The growth target is at least the food that grows the city in 12 turns (3 at size 5, 4 at size
 8), and specialist jobs worth a citizen (3+ yields and commerce) count as room to grow. Before,
@@ -1553,6 +1556,107 @@ Tried and not kept: stacks committed to a barbarian town turn back for our citie
 unless they strike this turn (`campaign::on_the_move` at war only). Seeds 331-378 and 1-12,
 41-52: score (dead as 0) +15 (t 2.0), 16% fewer civ cities lost to barbarians; seeds 379-426:
 -7, 4% more lost; all 120 seeds: +6 (t 1.2), techs +0.2 (t 1.7), eliminations unchanged.
+
+### Round 7d (2026-10-22): production and finance
+
+Four behaviours from the More Naval AI comparison, each behind its own switch
+(`crates/ffh-ai/src/switches.rs`; `FFH_AI_<NAME>_OFF=ALL` turns one off) and measured alone: the
+same binary with all four on against it with that one off, development seeds 1-48 at 300 turns
+(KEEP_UNITS on 1-96) and 1-24 full games (`--until-supremacy`), then fresh seeds used for nothing
+else: 300 turns from 23001 (192 games for KEEP_UNITS, 96 for the others) and full games from
+23201 (96 games, 48 for TOP_CITIES). Percentages are the change from switching the behaviour on;
+t is the paired t over seeds (shown for the larger ones).
+
+- **KEEP_UNITS** (Finance, "Unit support"): More Naval AI's disband rule, brought back by the
+  owner's decision after it was reverted the same day, and an interior city that holds the
+  barbarians it sees no longer trains another defender for them once units cost gold. The rule
+  alone kept 5% more military at turn 200 and cost 3.9% of the research there; the build-side
+  variants tried for that cost, and why the others were dropped, are in docs/AI_LOG.md ("More
+  Naval AI's disband rule", point 4).
+- **TOP_CITIES** (Cities, items 8 and 10): heroes only from the top third of our cities by
+  production, a world wonder outside it only when quick.
+- **WONDER_SLOT** (Cities, item 8; Citizens): the quick-wonder slot and the production emphasis
+  on a top city's final push.
+- **TROUBLE_REBUILD** (Finance): long builds give way to the economy building a city needs while
+  the empire cannot research at its target share.
+
+How often they fired (seeds 1-16, 300 turns, `FFH_TELEMETRY`, all four on against all four off):
+military units disbanded 859 -> 258 (and 22 idle workers), defenders trained for the quota
+1249 -> 1006 and second defenders 826 -> 552, while defenders trained for an overwhelmed garrison
+rose 309 -> 467; player-turns with unit support above a tenth of the commerce and research below
+target 849 -> 1504; 71 wonder-slot picks and world wonders built 51 -> 71; hero picks 47 -> 39;
+344 long builds switched to an economy building in financial trouble (seed 3: Markets, Elder
+Councils and Courthouses in place of Archery Ranges, Warrens, Granaries and army units).
+
+Development seeds (KEEP_UNITS on 1-96; the others 1-48; full games 1-24). These were measured with
+the production emphasis on every wonder; the emphasis was then cut to a top city's final push
+(below), and the fresh seeds measure the final code.
+
+| at turn 200 / 300 | KEEP_UNITS | TOP_CITIES | WONDER_SLOT | TROUBLE_REBUILD |
+|---|---|---|---|---|
+| legacy score | -0.9% (t -1.2) / -1.1% | -0.8% / +0.2% | -0.6% (t -2.6) / +1.1% | +0.5% / +0.4% |
+| techs | -0.9% / -1.4% | -0.9% / -0.3% | -0.3% / +0.2% | +0.2% / +0.1% |
+| research | +0.7% / -1.7% | -1.2% / -2.7% | -0.7% / -4.3% (t -1.5) | +0.3% / -2.2% |
+| world wonders | | +3.3% / -2.0% | +14.8% / +45.1% (t 5.0) | |
+| military / unit support | -1.0% / +1.6%; -1.0% / +0.9% | | -2.1% / -1.7% | -0.4% / 0.0% |
+| full games, turn 300 / 400 | legacy -0.6% / -1.8%, research -4.3% / -5.2% | heroes -11% / -12%, culture -10% / -17% (\|t\| < 1.5) | wonders +37% / +26% (t 2.8 / 4.7), research -9.4% (t -2.5) / -5.2% | legacy +1.1% / +0.8%, techs +1.9% / +2.8% |
+| full games, outcomes | cultural 10 -> 8, supremacy 12 -> 14 of 24; decided 9 turns earlier | cultural 5 -> 8; decided 42 turns later (t 1.7) | cultural 10 -> 8 | cultural 12 -> 8; decided 15 turns earlier |
+
+On the code before KEEP_UNITS' build side (round 7d's first binary, seeds 1-48),
+TROUBLE_REBUILD had measured research +4.1% (t 1.6), slider +5.4% (t 2.3), gold +11% (t 2.3) at
+turn 300; on the final base the slider was -4.2% (t -1.7). The two disagree within noise.
+
+**The production emphasis.** As More Naval AI does it, on every world wonder for the whole build,
+it cost growth and commerce (seeds 1-48: population -1.3% (t -2.6) and commerce -1.3% (t -2.4) at
+turn 200, research -4.3% at turn 300) for few hammers: the slot without the emphasis built as
+many wonders (+43%) for population -0.1%, commerce -0.2%, research -1.4%. Only for a top city's
+final push (the wonder done within the slot's horizon) it built the most (+46% at turn 300; full
+games +48% at turn 300, t 3.9) with research -3.9% / -3.6% at turn 300 (300-turn / full games),
+against -9.4% for the emphasis on every wonder in full games. The research the slot still costs
+is the hammers that went into wonders instead of libraries (buildings -1.0% to -1.7%).
+
+Fresh seeds, the final code:
+
+| 300-turn games, at turn 200 / 300 | KEEP_UNITS | TOP_CITIES | WONDER_SLOT | TROUBLE_REBUILD |
+|---|---|---|---|---|
+| legacy score | -0.5% / +0.4% | +0.7% (t 1.9) / +1.1% | +0.4% (t 1.7) / +0.8% | +0.1% / +1.0% |
+| techs | -0.4% / +0.7% | +1.0% (t 1.9) / +0.6% | +0.2% / +0.5% | +0.2% / +1.0% |
+| research | +0.6% / +1.8% | +2.9% (t 1.7) / -0.4% | -0.2% / +1.3% | +0.1% / +3.0% (t 1.5) |
+| world wonders | | -15.4% (t -2.1) / -3.8% | +10.0% / +47.8% (t 8.9) | -0.3% / -0.1% |
+| military | +0.4% / +0.2% | +0.7% / +3.8% (t 2.1) | -0.5% / +1.4% | +0.8% / +2.6% (t 1.7) |
+| cities | -0.7% / -0.2% | -0.4% / +1.1% | +0.2% / +1.1% | -0.1% / +1.7% (t 2.1) |
+
+| full games, at turn 200 / 300 / 400 | KEEP_UNITS | TOP_CITIES | WONDER_SLOT | TROUBLE_REBUILD |
+|---|---|---|---|---|
+| legacy score | +0.3% / +0.7% / +1.9% | -0.7% / -0.4% / -0.2% | -0.3% / -0.3% / -0.6% | -0.5% / +0.2% / +1.3% |
+| techs | +0.6% / +1.3% / +1.4% | -0.5% / -2.3% / -1.7% | -0.2% / +0.1% / +3.0% (t 1.8) | -0.9% (t -1.9) / +1.1% / +0.4% |
+| research | +4.1% (t 1.7) / +2.4% / -1.2% | -1.3% / +0.9% / -3.8% | -1.7% (t -2.2) / -1.8% / -4.2% | -0.8% / -0.6% / +4.0% |
+| world wonders | | -39% (t -3.4) / +8% / -5% | +4% / +36% (t 6.2) / +24% (t 6.8) | |
+| other | military -1.4% / +0.5% / +6.9% (t 1.9) | heroes 0 / +0.5% / +12.6% | buildings -1.3% / -2.3% (t -2.1) / -7.3% (t -4.4); cities -4.2% at turn 400 (t -3.2) | gold +2% / +7% (t 1.7) / +8% |
+| outcomes (off -> on) | cultural 34 -> 31, supremacy 54 -> 53, time limit 6 -> 10; decided 8 turns later | cultural 15 -> 15, supremacy 29 -> 29; decided 23 turns later | cultural 27 -> 31, supremacy 58 -> 53; decided 25 turns later (t 2.1) | cultural 26 -> 31, supremacy 55 -> 53, conquest 5 -> 2; decided 24 turns later (t 1.6) |
+
+What the four cost, from the games:
+
+- **KEEP_UNITS** no longer costs research where the rule alone did (turn 200: +4.1% in full games
+  instead of -3.9%). Its cost is late: research -5.7% at turn 500 (t -1.3, the 40 games still
+  running), slider -7.8% (t -1.8), following the wars the kept armies start (civs at war at turn
+  400 +50%, t 2.1; military +6.9%, unit support +8.6%); more civ cities change hands (+11%) and
+  more fall to the barbarians (+20%), and 4 more games reach the time limit. docs/AI_LOG.md ("More
+  Naval AI's disband rule", point 4) has the variants tried and where the lever is (the war gate,
+  peace terms, a garrison term for rival civilizations).
+- **WONDER_SLOT**'s research cost in the development full games (-9.4% at turn 300, t -2.5) was the
+  emphasis on every wonder, now cut to a top city's final push; on fresh seeds research is -1.8% at
+  turn 300 and -4.2% at turn 400 (\|t\| < 1.3) for a third more wonders, the hammers going into
+  wonders instead of buildings (-7.3% at turn 400, t -4.4) and, late, cities (-4.2% at turn 400,
+  t -3.2; not traced). Cultural victories 27 -> 31 of 96.
+- **TOP_CITIES** moves wonders from slow cities to fast ones: fewer early (-15% at turn 200 in
+  300-turn games, -39% in full games) as the slow cities stop starting them, as many by turn 300;
+  heroes were not fewer on fresh seeds (development full games: -8% to -12%, \|t\| < 1.5).
+- **TROUBLE_REBUILD** is cheap and mildly positive at turn 300 (research +3.0%, cities +1.7%);
+  in full games gold +7-8% and five more cultural victories, flat otherwise.
+
+All four delay the decision by 8-25 turns (supremacy to culture). Not measured together against
+the AI before them.
 
 ### Round 6 (2026-10-21): great people, explorers
 

@@ -225,7 +225,7 @@ change also in full games, the allied-barbarian one with the Clan of Embers forc
    saved state: this version made the quick bench's bare loop and session play different games
    (`the_quick_bench_plays_the_same_game_three_ways`; not diagnosed).
 
-### More Naval AI's disband rule (2026-10-22, reverted)
+### More Naval AI's disband rule (2026-10-22, reverted; brought back the same day)
 
 1. The owner's principle (keep what the empire needs and let research pay, rather than react to
    a raider in sight), in the form More Naval AI uses (C++ `CvPlayerAI::AI_doMilitary` /
@@ -252,6 +252,60 @@ change also in full games, the allied-barbarian one with the Clan of Embers forc
    already holds; production.rs's +1 for a threat in sight), not keep the units. MNAI pairs this
    rule with a cap on unit spending at training time; ours already gates optional units on
    affording them at 60% research, and a 12% spending cap was tried with no gain.
+4. **Brought back by the owner's decision** (round 7d, docs/AI.md; switch `KEEP_UNITS`, on by
+   default), and its cost worked on at the build end. Measured against the same binary with the
+   switch off (development seeds 1-96, 300 turns; t in brackets; fresh seeds in docs/AI.md,
+   round 7d). The rule alone, restored as it was: research -3.9% at turn 200 (t -1.9), military
+   +4.9% (t 3.7), unit support +12.6% (t 3.0), legacy -1.0% at turn 300. With the kept build
+   side (below), in 16 games with telemetry (seeds 1-16, 300 turns): military units disbanded
+   859 -> 258, two thirds of them Warriors, in bursts when costs pass 60% of the commerce; the
+   player-turns with support above a tenth of the commerce and research below its target 849 ->
+   1504. What was tried on the build side:
+   - **No defender against a raider the garrison holds** (the +1 a threat in sight and a
+     barbarian unit within 3-4 plots add to the quota), the visible threat no more than the
+     garrison's defense. In every city and against any threat (seeds 1-48): military -17% at turn
+     100 (t -8), cities -6.8% at turn 300 (t -2.8), cities razed 0.38 -> 1.23 a game (t 4.3); the
+     free early units are the ones the raiders meet. Only once units cost gold: research +3.0%
+     at turn 200, but civ cities captured +31% (t 2.0) and razed +117% (t 2.6); a civ threat in
+     sight counted as held. Only against barbarians (no enemy civ unit within 3 plots), seeds
+     1-96: research +5.5% at turn 200 (t 2.6), military -4.3%, unit support -11.8%, but cities
+     lost to civs 391 -> 472 and civs eliminated 39 -> 51 over 96 games, techs -2.3% at turn
+     300. The defenders trained against raiders are also the ones that hold a border city when a
+     neighbour attacks (the same finding as the Clan of Embers' garrison term above).
+   - Kept: the same only in interior cities (no other civilization's city within 8 plots):
+     research +0.7% / -1.7% at turns 200 / 300, military -1.0% / +1.6%, unit support -1.0% /
+     +0.9%, legacy -0.9% (t -1.2) / -1.1% (t -0.8), civs eliminated 39 -> 41; it removes the
+     extra military the rule kept at turn 200 and most of its research cost, little else (most
+     raiders show up at the frontier, where the border cities are).
+   - **More Naval AI's cap on unit spending** at training time (peace: 20 + 4/3 of the leader's
+     `iBuildUnitProb` + 6 per mil of the commerce, `AI_maxUnitCostPerMil`) on every optional
+     unit: research -1.3% at turn 200 instead of -3.9%, but cities -2.5% (t -2.8) and -2.4% (t
+     -2.2) at turns 200 / 300 -- it blocked the cheap units that escort settlers and halved the
+     peacetime campaign force against barbarian towns (431 -> 218 trained in 16 games); with the
+     campaign exempt the cities still fell (-2.0%). Dropped, as the 12% cap was before. Flat caps
+     of 8% and 12%, a war-time extra defender only within 10 plots of an enemy city, a worker
+     instead of a unit when the fallback cannot afford one, and disbanding from 50% instead of
+     60% of the commerce were all within noise (seeds 1-48, legacy -1.1% to -2.6% at turn 300).
+   Under every variant the AI took more barbarian towns and lost more cities to the barbarians
+   (taken 297 -> 318-338, lost 233 -> 258-279 over 96 games): kept armies take towns they cannot
+   hold, the siege operations' known pattern (docs/AI.md, "Measured together").
+   On fresh seeds (the kept version against it off): 300 turns, 23001-23192, legacy -0.5% /
+   +0.4% and research +0.6% / +1.8% at turns 200 / 300, military +0.4% / +0.2%; full games,
+   23201-23296, research +4.1% (t 1.7) and +2.4% at turns 200 and 300, legacy +0.3% to +1.9%
+   through turn 400. The cost left is late: research -1.2% at turn 400 and -5.7% at turn 500 (t
+   -1.3, the 40 games still running), research slider -7.8% (t -1.8). It follows the wars the kept
+   armies start: civs at war at turn 400 +50% (t 2.1), military +6.9% (t 1.9), unit support +8.6%;
+   civ cities captured +11% and cities lost to the barbarians +20% over the games, time-limit games
+   6 -> 10 of 96, cultural victories 34 -> 31.
+   What it implies: the reactive build-and-scrap was cheap partly because the reactive
+   defenders were the AI's only standing defense against its neighbours. Keeping units costs
+   little once interior cities stop buying defenders against raiders they hold; the lever left
+   is a garrison term for rival civilizations (docs/AI.md, "More Naval AI compared", item 2), with
+   which the border cities could stop reacting to raiders too. The late cost is the war gate's:
+   a kept army passes the power-ratio test more often, and the wars it starts run the slider at
+   the war target. Weighing the army's upkeep in the gate, or the peace terms (item 3 of the same
+   list), is where to work on it, not the disband threshold (disbanding from 50% of the commerce
+   instead of 60% changed nothing at turn 300).
 
 ## Wars: no peace sold before the war is decided (2026-10-21)
 
