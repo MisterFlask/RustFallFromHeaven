@@ -35,6 +35,36 @@ and determinism -- and a standing cost preference:
   rules call again within a turn only while some unit is moving, i.e. has spent moves). So a
   game saved and resumed with a new controller plays on exactly (`tests/save_resume.rs`).
 
+## Fog of war
+
+The owner's decision (2026-10-24): the AI **sees through fog of war for its own defense, never
+through stealth, and chooses what to attack from what it sees.** Honest inference about unseen
+units would need a memory of what was last seen (saved per-team state, decay, scouting to
+refresh it); the C++ AI never had one either -- `CvPlayerAI::AI_getPlotDanger`,
+`CvPlot::getNumVisibleEnemyDefenders` and `AI_findTargetCity` read through fog and skip only
+units whose invisibility type hides them (`CvUnit::isInvisible`).
+
+- **Threats to us: fog included** (`view::known_threat`, switch `FOG_SIGHT`): the danger map
+  (`View::danger`: settler and escort risk, workers fleeing, healing, explorers, casters,
+  assembly plots), a city's local threat (`production::local_threat`: cities in peril,
+  emergency defenders, the garrison quota, settlers held at home, units kept from disbanding),
+  barbarians and civ enemies near a city (`production::barbarians_near`, `civ_enemy_near`),
+  sorties (`defense::sortie_ok`), the peril that times defensive world spells
+  (`world_spells::city_in_peril`) and the enemy's forces near our cities when weighing peace
+  (`diplomacy::front_forces`). FfH's hidden units (the Hidden and Invisible promotions,
+  assassins, shadows, hidden nationality) stay hidden: stealth is how those units and
+  civilizations play.
+- **What we attack: what we see.** A city's garrison is read only while its plot is visible
+  (`campaign::visible_defenders`; the war gate's `diplomacy::city_best_defense`, switch
+  `FOG_HONEST`); in the fog the siege and amphibious planners assume a defender count (2 +
+  population/5 for a civ city, 1 + age/25 for a barbarian town) and the war gate assumes the
+  best defender the owner can train (`best_trainable_defense`, limited classes such as heroes
+  left out). Before, the war gate read the live garrison of any city revealed once. Hunting
+  targets (`military::find_targets`), opportune captures (`military::opportune`) and the pathing
+  checks (`plot_is_visible_enemy_unit_for_unit`) use what is visible.
+
+Map knowledge is unchanged: city sites, paths and exploration use revealed plots only.
+
 ## Where the rules call the AI
 
 `Ai` implements `ffh_core::Controller`; the rules call it where the C++ calls the AI:

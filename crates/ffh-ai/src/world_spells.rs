@@ -194,12 +194,10 @@ pub fn city_in_peril(g: &Game, p: PlayerId) -> bool {
         for dx in -3..=3 {
             for dy in -3..=3 {
                 let Some(q) = g.plot_xy(x, y, dx, dy) else { continue };
-                if !g.plot_is_visible(q, team) {
-                    continue;
-                }
                 for &u in &g.map.plots[q].units {
                     let other = g.players[g.units[u].owner].team;
-                    if other == team || other == barb || !g.at_war(team, other) {
+                    // Fog included (`view::known_threat`).
+                    if other == team || other == barb || !g.at_war(team, other) || !crate::view::known_threat(g, p, u) {
                         continue;
                     }
                     let power = crate::view::attack_power(g, u);

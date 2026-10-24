@@ -17,7 +17,8 @@ pub struct View {
     pub enemies: Vec<TeamId>,
     /// Enemies other than the barbarian team.
     pub civ_enemies: Vec<TeamId>,
-    /// Per plot: summed attack power of visible enemy units that can reach it next turn.
+    /// Per plot: summed attack power of the enemy units that can reach it next turn, fog
+    /// included (see [`known_threat`]).
     pub danger: Vec<i32>,
     /// Plots our units already target this turn (city sites, builds), to spread them out.
     pub claimed: Vec<PlotIdx>,
@@ -30,7 +31,7 @@ pub struct View {
     /// This turn's amphibious invasion target, if any (an overseas enemy city we can take by
     /// shipping an army across water; `naval::amphibious_target`).
     pub amphibious: Option<crate::naval::Amph>,
-    /// Our cities whose visible threat exceeds their garrison (city plot, shortfall).
+    /// Our cities whose threat exceeds their garrison (city plot, shortfall).
     pub peril: Vec<(PlotIdx, i32)>,
     /// Roads to build this turn (see `workers::road_plan`).
     pub roads: Vec<(PlotIdx, i32)>,
@@ -43,6 +44,18 @@ pub struct View {
     pub rival_def: BTreeMap<CityId, i32>,
     /// Reusable flood buffers.
     pub flood: Flood,
+}
+
+/// Does enemy unit `u` count when player `p` weighs the threats to itself (the danger map, a
+/// city's local threat, barbarians or enemies near a city, sorties, peril, the front)? Every
+/// unit its invisibility type does not hide from us, in the fog or not: the AI sees through
+/// fog of war for its own defense, as the C++ AI did (`CvPlayerAI::AI_getPlotDanger` skips only
+/// `isInvisible` units), but not through stealth, which is part of how FfH's hidden units and
+/// civilizations play. What it attacks is still chosen from what it sees (docs/AI.md, "Fog of
+/// war"). Switch `FOG_SIGHT` off: only units on plots we see.
+pub fn known_threat(g: &Game, p: PlayerId, u: UnitId) -> bool {
+    let team = g.players[p].team;
+    !g.unit_is_invisible(u, team, false) && (crate::switches::FOG_SIGHT.on(g, p) || g.plot_is_visible(g.unit_plot(u), team))
 }
 
 /// Rough attack power of a unit: strength x health x experience. 0 for non-combatants.
@@ -146,7 +159,7 @@ impl View {
                     Some(p) => p,
                     None => continue,
                 };
-                if !g.plot_is_visible(plot, self.team) {
+                if !known_threat(g, self.p, u) {
                     continue;
                 }
                 let power = attack_power(g, u);
