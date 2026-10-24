@@ -3,7 +3,7 @@
 # step in judging an AI change (CLAUDE.md, "AI changes"; docs/AI.md, "Tools").
 #
 #   tools/ai-branch.sh --bin DIR --seed S --turn T --switch NAME [--turns N] [--trace P]
-#                      [--out DIR] [run options: --civs N --size WORLDSIZE_X ...] -- WATCH...
+#                      [--out DIR] [--save FILE] [run options: --civs N --size WORLDSIZE_X ...] -- WATCH...
 #
 # Plays seed S (as `ffh stats` does, run options included) to the start of turn T with the
 # behaviour on, saves it, then resumes the save twice for N turns (default 10): the behaviour on
@@ -12,9 +12,11 @@
 # turn by turn for both, marking the lines that differ; with --trace P, also writes player P's
 # decision trace (FFH_AI_TRACE) of each branch to the output directory. DIR is a build output
 # (`tools/agents/build-tree.sh --bins ffh`). Find the firings first: the behaviour's trace lines
-# (FFH_AI_TRACE=all) or telemetry name the turn, the player and the place.
+# (FFH_AI_TRACE=all) or telemetry name the turn, the player and the place. --save FILE resumes an
+# existing save (an earlier fork's fork.ffhsave) instead of playing to turn T: after fixing the
+# behaviour, replay the same position with the new binary (--seed and --turn then only name it).
 set -e
-BIN= SEED= TURN= SWITCH= TURNS=10 TRACE= OUT=
+BIN= SEED= TURN= SWITCH= TURNS=10 TRACE= OUT= FROM=
 RUN="--civs 6 --size WORLDSIZE_STANDARD"
 EXTRA=
 while [ $# -gt 0 ]; do
@@ -26,11 +28,12 @@ while [ $# -gt 0 ]; do
     --turns) TURNS=$2; shift 2 ;;
     --trace) TRACE=$2; shift 2 ;;
     --out) OUT=$2; shift 2 ;;
+    --save) FROM=$2; shift 2 ;;
     --) shift; break ;;
     *) EXTRA="$EXTRA $1"; shift ;;
   esac
 done
-[ -n "$BIN" ] && [ -n "$SEED" ] && [ -n "$TURN" ] && [ -n "$SWITCH" ] || { sed -n '2,20p' "$0"; exit 2; }
+[ -n "$BIN" ] && [ -n "$SEED" ] && [ -n "$TURN" ] && [ -n "$SWITCH" ] || { sed -n '2,17p' "$0"; exit 2; }
 [ -n "$EXTRA" ] && RUN=$EXTRA
 OUT=${OUT:-${TMPDIR:-/tmp}/ffh-branch/s$SEED-t$TURN-$SWITCH}
 mkdir -p "$OUT"
@@ -41,7 +44,11 @@ WATCH=
 for w in "$@"; do WATCH="$WATCH --watch $w"; done
 
 SAVE="$OUT/fork.ffhsave"
-env "$ON" "$SLOT" "$BIN/ffh" save "$SAVE" --to-turn "$TURN" --seed "$SEED" $RUN >/dev/null
+if [ -n "$FROM" ]; then
+  [ "$FROM" -ef "$SAVE" ] || cp "$FROM" "$SAVE"
+else
+  env "$ON" "$SLOT" "$BIN/ffh" save "$SAVE" --to-turn "$TURN" --seed "$SEED" $RUN >/dev/null
+fi
 for side in on off; do
   if [ $side = on ]; then E=$ON; else E=$OFF; fi
   if [ -n "$TRACE" ]; then

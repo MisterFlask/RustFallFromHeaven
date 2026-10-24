@@ -34,19 +34,19 @@ pub static WAR_STAGING: Switch = Switch::new("WAR_STAGING");
 /// only with a strength edge (`defense.rs`).
 pub static RIVAL_DEFENSE: Switch = Switch::new("RIVAL_DEFENSE");
 /// Field stacks heal as More Naval AI's do: only when most of the stack is hurt and where healing
-/// is good, the wounded splitting off in our cities (`military::heal`). Off by default
-/// (`FFH_AI_HEAL_ONLY=ALL`): it cost legacy -1 to -2% on every fresh set (docs/AI.md, Known gaps).
-pub static HEAL: Switch = Switch::off_by_default("HEAL");
+/// is good, the wounded splitting off in our cities (`military::heal`). On since round 7f, once a
+/// city/field threshold mismatch was fixed (docs/AI.md).
+pub static HEAL: Switch = Switch::new("HEAL");
 /// A stack next to an enemy city at war takes it when it is empty or the stack clearly covers it,
 /// even outside the operation (`military::opportune`).
 pub static CAPTURE: Switch = Switch::new("CAPTURE");
 /// A second siege operation for a committed force twice the first target's need
 /// (`campaign::plan`).
 pub static SECOND_OP: Switch = Switch::new("SECOND_OP");
-/// Heroes and veterans attack only at good odds in a strike (`campaign::strike`). Off by default
-/// (`FFH_AI_PRECIOUS_ONLY=ALL`): on fresh seeds it cost legacy -2.0% and research -5.1% at turn
-/// 300 (docs/AI.md, Known gaps).
-pub static PRECIOUS: Switch = Switch::off_by_default("PRECIOUS");
+/// Heroes and veterans below good odds attack last in a strike and do not lead an assault
+/// (`campaign::strike`, `military::assault`). On since round 7f, once they counted in the force and
+/// finished strikes instead of sitting them out (docs/AI.md).
+pub static PRECIOUS: Switch = Switch::new("PRECIOUS");
 /// Assault transports wait in port for the landing force and sail together, escorted
 /// (`naval::transport`).
 pub static FLEET: Switch = Switch::new("FLEET");
@@ -56,6 +56,13 @@ pub static MANA_NODES: Switch = Switch::new("MANA_NODES");
 /// A small caster corps by role -- terraformer, city mages, war wizards -- and its training
 /// (`casters.rs`).
 pub static CASTER_ROLES: Switch = Switch::new("CASTER_ROLES");
+/// The damage a lost fight is expected to deal counts first strikes, in the strike's simulation
+/// and its sacrifices; a sacrifice (no attacker at 68%+) is the unit whose expected damage, not
+/// strength, is cheapest for what it costs, and none is sent that would leave the defender almost
+/// unhurt (`campaign::fight`, `campaign::strike`): Bloodpets and Moroi went at Acheron's city at
+/// odds 0, turn after turn, and left him at full health (a fork of seed 26002, turn 274: docs/AI.md,
+/// round 7f).
+pub static STRIKE_DAMAGE: Switch = Switch::new("STRIKE_DAMAGE");
 /// A temporary summon on its last turn attacks at any odds when it is not its stack's cover
 /// (`casting::summon_target`).
 pub static SUMMON_SPEND: Switch = Switch::new("SUMMON_SPEND");

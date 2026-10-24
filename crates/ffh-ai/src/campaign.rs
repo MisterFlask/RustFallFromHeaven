@@ -178,10 +178,25 @@ fn fight(g: &Game, a: UnitId, d: UnitId, dp: PlotIdx, hp: i32, wall_cut: i32) ->
     let sf = (a_fp + d_fp + 1) / 2;
     let to_att = (defs.combat_damage * (d_fp + sf) / (a_fp + sf)).max(1);
     let to_def = (defs.combat_damage * (a_fp + sf) / (d_fp + sf)).max(1);
-    let losses = (a_hp + to_att - 1) / to_att;
     let q = a_str as i64 * 1000 / (a_str + d_str) as i64; // per mille a round goes our way
-    let won = losses as i64 * q / (1000 - q).max(50);
-    let mut wound = (won * to_def as i64).min(hp as i64) as i32;
+    // First strikes (switch `STRIKE_DAMAGE`; `CvUnit::resolveCombat`): while a side has first
+    // strikes left it cannot be hurt, and both count down each round, so the side with more has
+    // that many rounds in which only the other is hurt (a chance first strike counts half). Left
+    // out, a Moroi at strength 7 against Acheron (19, four first strikes) was expected to take
+    // 12 hit points off him, and dealt none: it dies in the rounds he cannot be hurt.
+    let (mut a_hp_left, mut free_wound) = (a_hp as i64, 0i64);
+    if crate::switches::STRIKE_DAMAGE.on(g, g.units[a].owner) {
+        let fs = |u: UnitId, other: UnitId| if g.unit_immune_to_first_strikes(other) { 0 } else { g.unit_first_strikes(u) as i64 * 2 + g.unit_chance_first_strikes(u) as i64 };
+        let net2 = fs(d, a) - fs(a, d); // twice the defender's free rounds (negative: ours)
+        if net2 > 0 {
+            a_hp_left -= net2 * (1000 - q) * to_att as i64 / 2000;
+        } else {
+            free_wound = -net2 * q * to_def as i64 / 2000;
+        }
+    }
+    let losses = if a_hp_left > 0 { (a_hp_left + to_att as i64 - 1) / to_att as i64 } else { 0 };
+    let won = losses * q / (1000 - q).max(50);
+    let mut wound = (won * to_def as i64 + free_wound).min(hp as i64) as i32;
     // Combat limit (siege engines stop at a share of the defender's health).
     let limit = g.units[a].combat_limit;
     if limit < max_hp {
@@ -713,17 +728,7 @@ fn build_op(g: &Game, v: &mut View, cand: Cand, need: i32, groups: Vec<(i32, Gro
     let all = units_of(&|_, _| true);
     let near = units_of(&|d, _| d <= 2);
     let adj: Vec<UnitId> = units_of(&|d, _| d <= 1).into_iter().filter(|&u| g.unit_moves_left(u) > 0).collect();
-    // Heroes and veterans that would not attack at their odds (switch `PRECIOUS`) are not part of
-    // the force that takes the city: the strike would leave them out and stall next to it.
-    let (all, near, adj) = if crate::switches::PRECIOUS.on(g, p) && cand.visible {
-        let fights = |u: &UnitId| {
-            let bar = precious_bar(g, *u);
-            bar == 0 || g.plot_get_best_defender(tp, None, Some(p), Some(*u), false, false, false).map_or(1000, |d| g.get_combat_odds(*u, d)) >= bar
-        };
-        (all.into_iter().filter(fights).collect::<Vec<_>>(), near.into_iter().filter(fights).collect::<Vec<_>>(), adj.into_iter().filter(fights).collect::<Vec<_>>())
-    } else {
-        (all, near, adj)
-    };
+    // (Heroes and veterans count: below their odds they attack last in the strike, but they do.)
     let defs = visible_defenders(g, team, tp);
     // We commit to marching only with a confident force (a reserve to spare: `spare = true`), so
     // stacks do not advance understrength; but once a committed force is positioned next to or
@@ -1119,11 +1124,12 @@ pub fn act(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, early: bool) -> 
     true
 }
 
-/// The odds (per mille) below which a precious unit does not attack in a strike (0: any odds).
-/// More Naval AI's `AI_getBestGroupAttacker` (Sephi's block): a hero at 85% plus its level, a unit
-/// above level 4 at 70% plus 3% a level (at most 95%). A hero is a unique unit years of play went
-/// into; a high-level veteran is worth several new units. Neither is spent on a fight it may well
-/// lose, nor sacrificed to wear defenders down.
+/// The odds (per mille) below which a precious unit attacks only last in a strike, and a stack it
+/// would lead into an assault holds (0: any odds). More Naval AI's `AI_getBestGroupAttacker`
+/// (Sephi's block): a hero at 85% plus its level, a unit above level 4 at 70% plus 3% a level (at
+/// most 95%). A hero is a unique unit years of play went into; a high-level veteran is worth
+/// several new units. Neither leads an attack it may well lose, nor is sacrificed to wear defenders
+/// down; in a strike that takes the city, they finish what the others began.
 pub(crate) fn precious_bar(g: &Game, u: UnitId) -> i32 {
     static HERO: std::sync::OnceLock<Option<PromotionType>> = std::sync::OnceLock::new();
     let unit = &g.units[u];
@@ -1173,11 +1179,12 @@ fn strike(g: &mut Game, v: &mut View, op: &Op) {
     let mut done: Vec<UnitId> = Vec::new();
     let mut fights = 0;
     let precious = crate::switches::PRECIOUS.on(g, p);
+    let dent_sacrifice = crate::switches::STRIKE_DAMAGE.on(g, p);
     let mut held_steps = 0;
     if precious && (crate::trace_on(p) || g.telemetry.on()) {
         let n = pool.iter().filter(|&&u| next_to(g, u) && precious_bar(g, u) > 0).count();
         if n > 0 {
-            crate::trace!(g, p, "  {} heroes or veterans in the strike on {} attack only at their odds", n, name);
+            crate::trace!(g, p, "  {} heroes or veterans in the strike on {} attack last below their odds", n, name);
             g.tel_decision(p, "military", "precious_in_strike", "precious", n as i64, String::new);
         }
     }
@@ -1198,8 +1205,12 @@ fn strike(g: &mut Game, v: &mut View, op: &Op) {
             .filter(|&u| next_to(g, u) && !done.contains(&u) && g.unit_moves_left(u) > 0 && !g.units[u].made_attack && attack_power(g, u) > 0 && g.unit_can_attack(u))
             .filter(|&u| !(walls && g.unit_bombard_rate(u) > 0))
             .collect();
-        // Heroes and veterans fight only at their odds (switch `PRECIOUS`, [`precious_bar`]).
-        let units: Vec<UnitId> = able
+        // Heroes and veterans below their odds (switch `PRECIOUS`, [`precious_bar`]) fight last:
+        // while another unit can attack, and never to wear the defenders down, only in a strike
+        // that takes the city. (Held out of the strike altogether, they turned captures into
+        // stalls: a fork of seed 26001 at turn 246 lost three units and the city where the
+        // heroes' last attacks took it -- docs/AI.md, "Forks of the hero gate".)
+        let line: Vec<UnitId> = able
             .iter()
             .copied()
             .filter(|&u| {
@@ -1207,19 +1218,19 @@ fn strike(g: &mut Game, v: &mut View, op: &Op) {
                 bar == 0 || odds(g, u) >= bar
             })
             .collect();
-        if units.len() < able.len() {
-            held_steps += 1;
-        }
         // Start with a margin; once started, go on while the rest still takes the city, or
         // while the defenders are worn down to half their health and we outnumber them (they
         // heal if we stop).
-        let go = if fights == 0 {
-            covers(g, op.city, tp, &defs, &units, true, false)
-        } else {
+        let takes = covers(g, op.city, tp, &defs, &able, fights == 0, false);
+        let go = takes || fights > 0 && {
             let hp: i32 = defs.iter().map(|&d| g.unit_curr_hit_points(d)).sum();
             let max: i32 = defs.iter().map(|&d| g.unit_max_hit_points(d)).sum();
-            covers(g, op.city, tp, &defs, &units, false, false) || hp * 2 <= max && units.len() >= defs.len()
+            hp * 2 <= max && line.len() >= defs.len()
         };
+        let units = if takes && line.is_empty() { able.clone() } else { line };
+        if units.len() < able.len() {
+            held_steps += 1;
+        }
         if crate::trace_on(p) {
             let s = simulate(g, tp, &defs, &units, 0);
             let hp: Vec<i32> = defs.iter().map(|&d| g.unit_curr_hit_points(d)).collect();
@@ -1235,9 +1246,12 @@ fn strike(g: &mut Game, v: &mut View, op: &Op) {
         let with_odds: Vec<(UnitId, i32)> = units.iter().map(|&u| (u, odds(g, u))).collect();
         let best_odds = with_odds.iter().map(|&(_, o)| o).max().unwrap_or(0);
         let collateral = defs.len() >= 2 && with_odds.iter().any(|&(u, _)| g.unit_collateral_damage(u) > 0);
+        // The damage `u` is expected to deal the defender it meets when it loses.
+        let dent = |u: UnitId| g.plot_get_best_defender(tp, None, Some(p), Some(u), false, false, false).map_or(0, |d| fight(g, u, d, tp, g.unit_curr_hit_points(d), 0).1);
         let sacrifice = |u: UnitId| {
             let cost = g.d.units[g.units[u].unit_type].production_cost.max(1) as i64;
-            attack_power(g, u) as i64 * (100 + g.unit_withdrawal_probability(u) as i64) * 100 / (cost * (10 + g.units[u].experience.max(0) as i64))
+            let strength = if dent_sacrifice { dent(u) as i64 * 100 } else { attack_power(g, u) as i64 };
+            strength * (100 + g.unit_withdrawal_probability(u) as i64) * 100 / (cost * (10 + g.units[u].experience.max(0) as i64))
         };
         let raised = |u: UnitId| crate::magic::raised(g.d, g.units[u].unit_type);
         let pick = if collateral {
@@ -1252,7 +1266,12 @@ fn strike(g: &mut Game, v: &mut View, op: &Op) {
             with_odds.iter().max_by_key(|&&(u, _)| (sacrifice(u), std::cmp::Reverse(u))).map(|&(u, _)| u)
         };
         let Some(u) = pick else { break };
-        crate::trace!(g, p, "  attacker {} (odds {})", g.d.units[g.units[u].unit_type].base.type_, with_odds.iter().find(|&&(x, _)| x == u).map_or(0, |&(_, o)| o));
+        // A sacrifice that would not dent the defenders is no sacrifice (switch `STRIKE_DAMAGE`).
+        if dent_sacrifice && best_odds < 680 && !collateral && !raised(u) && dent(u) * 10 < g.d.defines.max_hit_points {
+            crate::trace!(g, p, "  no attacker would dent the defenders (best {} damage {})", g.d.units[g.units[u].unit_type].base.type_, dent(u));
+            break;
+        }
+        crate::trace!(g, p, "  attacker {} (odds {}, damage if lost {})", g.d.units[g.units[u].unit_type].base.type_, with_odds.iter().find(|&&(x, _)| x == u).map_or(0, |&(_, o)| o), dent(u));
         // Out of its stack (a stack with spent units cannot start a move).
         if g.units[u].group.is_some_and(|grp| g.groups[grp].units.len() > 1) {
             g.unit_join_group(u, None, true);

@@ -110,6 +110,26 @@ pub fn attack_ok(a: &Assessment, city: bool) -> bool {
     a.effective >= need && (a.best >= 300 || a.n_att >= a.n_def + 2)
 }
 
+/// The attacker the rules would send from `grp` into `q` (`AI_getBestGroupAttacker`, which already
+/// puts heroes and veterans last) is a hero or a veteran below its odds (switch `PRECIOUS`,
+/// `campaign::precious_bar`): `(unit, odds, bar)`. The others are worse still, so the stack does
+/// not attack there -- and does not pick the target either: a Balseraph stack whose best attacker
+/// was a level-5 Warrior at 35% stood next to the same raider for 12 turns (docs/AI.md, "Forks of
+/// the hero gate").
+fn precious_holds(g: &Game, grp: GroupId, q: PlotIdx) -> Option<(UnitId, i32, i32)> {
+    let p = g.units[g.group_get_head_unit(grp)?].owner;
+    if !crate::switches::PRECIOUS.on(g, p) {
+        return None;
+    }
+    let b = g.group_ai_get_best_group_attacker(grp, q, false, false, false).0?;
+    let bar = crate::campaign::precious_bar(g, b);
+    if bar == 0 {
+        return None;
+    }
+    let odds = g.plot_get_best_defender(q, None, Some(p), Some(b), false, false, false).map_or(1000, |d| g.get_combat_odds(b, d));
+    (odds < bar).then_some((b, odds, bar))
+}
+
 /// Attack plot `q` with the group until it falls or the odds turn bad. True if we fought.
 pub fn assault(g: &mut Game, v: &View, grp: GroupId, q: PlotIdx) -> bool {
     let mut fought = false;
@@ -138,18 +158,12 @@ pub fn assault(g: &mut Game, v: &View, grp: GroupId, q: PlotIdx) -> bool {
         if !attack_ok(&a, city) {
             break;
         }
-        // The attacker the rules would send is a hero or a veteran below its odds (switch
-        // `PRECIOUS`, `campaign::precious_bar`): the stack stops here.
-        if crate::switches::PRECIOUS.on(g, v.p) {
-            if let (Some(b), _) = g.group_ai_get_best_group_attacker(grp, q, false, false, false) {
-                let bar = crate::campaign::precious_bar(g, b);
-                let odds = g.plot_get_best_defender(q, None, Some(v.p), Some(b), false, false, false).map_or(1000, |d| g.get_combat_odds(b, d));
-                if bar > 0 && odds < bar {
-                    crate::trace!(g, v.p, "stack {:?} holds: its next attacker {} has odds {} (wants {})", grp, g.d.units[g.units[b].unit_type].base.type_, odds, bar);
-                    g.tel_decision(v.p, "military", "precious_held", "assault", 1, String::new);
-                    break;
-                }
-            }
+        // The attacker the rules would send is a hero or a veteran below its odds: the stack stops
+        // here.
+        if let Some((b, odds, bar)) = precious_holds(g, grp, q) {
+            crate::trace!(g, v.p, "stack {:?} holds: its next attacker {} has odds {} (wants {})", grp, g.d.units[g.units[b].unit_type].base.type_, odds, bar);
+            g.tel_decision(v.p, "military", "precious_held", "assault", 1, String::new);
+            break;
         }
         g.groups[grp].ai_group_attack = false;
         let before = g.groups[grp].units.len();
@@ -473,10 +487,13 @@ enum Healed {
     Continue(GroupId, UnitId),
 }
 
-/// A unit counts as hurt in a field stack from this much damage (percent).
+/// A unit counts as hurt from this much damage (percent): in a field stack (most of it hurt sends
+/// the stack to heal) and in one of our cities (it splits off and heals there). One threshold for
+/// both, so a stack leaves a city only in a state the field rule accepts: with More Naval AI's 30%
+/// in cities (`AI_heal(30, 1)`), units healed to 21-30% walked out and the next turn's field rule
+/// sent them back, turn after turn (a fork of seed 26006, turn 239: docs/AI.md, "Forks of the
+/// healing rule").
 const HURT_PCT: i32 = 20;
-/// A unit in one of our cities splits off to heal from this much damage (C++ `AI_heal(30, 1)`).
-const SPLIT_PCT: i32 = 30;
 /// A lone unit stops to heal from this much damage (the old rule for every stack).
 const ALONE_PCT: i32 = 35;
 
@@ -504,7 +521,7 @@ fn heal(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> Healed {
     let our_city = g.map.plots[here].plot_city.is_some_and(|c| g.cities[c].owner == p);
     if our_city {
         // The wounded (that can still heal this turn: they have not moved) split off and heal.
-        let wounded: Vec<UnitId> = units.iter().copied().filter(|&o| pct(g, o) > SPLIT_PCT && !g.unit_has_moved(o)).collect();
+        let wounded: Vec<UnitId> = units.iter().copied().filter(|&o| pct(g, o) >= HURT_PCT && !g.unit_has_moved(o)).collect();
         if wounded.is_empty() {
             return Healed::Continue(grp, u);
         }
@@ -681,7 +698,7 @@ fn best_adjacent(g: &Game, grp: GroupId, here: PlotIdx, hurt: bool, skip: Option
         }
         let Some(a) = assess(g, grp, q) else { continue };
         let ok = if hurt { a.best >= 750 } else { attack_ok(&a, city.is_some()) };
-        if !ok {
+        if !ok || precious_holds(g, grp, q).is_some() {
             continue;
         }
         let score = a.best + if city.is_some() { 300 } else { 0 };
@@ -735,6 +752,9 @@ fn hunt(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
             match assess(g, grp, t.plot) {
                 Some(a) if attack_ok(&a, t.city) || a.best >= 300 && a.n_att >= 2 => {}
                 _ => continue,
+            }
+            if precious_holds(g, grp, t.plot).is_some() {
+                continue;
             }
         }
         v.target_claims.push((t.plot, grp));

@@ -673,10 +673,12 @@ Each army group is a stack; per decision, in order:
    160)`; the targets of our operations are left to their strikes);
 5. attack an adjacent target worth it (never a civ city outside a war plan, nor the target of
    our siege operation, which is left to its strike);
-6. heal (`heal`; switch `HEAL`, off by default, Known gaps: otherwise a stack heals where it
-   stands when one unit is over 35% damage and it is safe; More Naval AI's `AI_heal`, fitted to
-   our small stacks): in one of
-   our cities the wounded (over 30% damage) split off and heal while the rest go on; in the field
+6. heal (`heal`; switch `HEAL`, on since round 7f -- off, a stack heals where it stands when one
+   unit is over 35% damage and it is safe; More Naval AI's `AI_heal`, fitted to our small
+   stacks): in one of
+   our cities the wounded (20%+ damage, the field rule's threshold, so a stack leaves a city only
+   in a state the field rule accepts: with More Naval AI's 30% it walked out and back each turn,
+   "Forks of the healing rule" below) split off and heal while the rest go on; in the field
    a stack committed to a siege stops only when more than half of it is hurt (20%+ damage), and
    only where healing is better than 10% a turn (our land or a city, not neutral or enemy land),
    else it walks into a city of ours within two turns or onto our land within one, else it
@@ -731,16 +733,20 @@ army decision of each `play_turn` call (nothing outside `Game` is remembered).
   attacks in the same turn -- siege engines bombard, collateral attackers first while several
   defenders stand, then units summoned for good (skeletons and the like, `magic::raised`: free
   to replace, they wear the defenders down as siege fodder; the owner's call, 2026-10-20), then
-  the best odds when 68%+, else the unit cheapest to lose for its strength (C++
-  `AI_getBestGroupSacrifice`) -- while the attackers left still cover the
+  the best odds when 68%+, else the unit cheapest to lose for the damage it is expected to deal
+  (C++ `AI_getBestGroupSacrifice` weighs strength; switch `STRIKE_DAMAGE`), never one that would
+  deal under a tenth of a defender's hit points -- while the attackers left still cover the
   defenders left (or the defenders are down to half their health and outnumbered). Up to three
-  units follow the victor into the city. Heroes and veterans (switch `PRECIOUS`, off by default,
-  Known gaps; More Naval AI's
-  `AI_getBestGroupAttacker`) attack only at their odds -- a hero at 85% plus 1% a level, a unit
-  above level 4 at 70% plus 3% a level (at most 95%) -- and are never sacrificed; the phases
-  leave them out of the force that takes the city (else the stacks stalled next to it, the strike
-  leaving them out), and a group assault (`military::assault`) stops when the rules would send
-  one below its odds.
+  units follow the victor into the city. The expected damage of a lost fight, in the strike's
+  simulation and its sacrifices, counts first strikes (`fight`, `STRIKE_DAMAGE`): in the rounds a
+  side has first strikes left it cannot be hurt. Heroes and veterans (switch `PRECIOUS`; More
+  Naval AI's `AI_getBestGroupAttacker`) below their odds -- a hero's 85% plus 1%
+  a level, a unit above level 4 at 70% plus 3% a level (at most 95%) -- attack last in a strike:
+  while another unit can attack, and only in a strike expected to take the city, never to wear
+  the defenders down; they count in the force that takes it. (Held out of strikes altogether,
+  they turned captures into stalls: "Forks of the hero gate" below.) A group assault
+  (`military::assault`) stops when the rules would send one below its odds, and a stack does not
+  pick such a target, adjacent or hunted.
 - *A second operation* (switch `SECOND_OP`; More Naval AI's `AI_pickTargetCity` passes over a
   city already targeted by more than max(6, 3 x its defenders) units): when the stacks committed
   at war hold more than twice what the first target (seen) needs, it keeps the stacks already
@@ -1848,6 +1854,90 @@ unless they strike this turn (`campaign::on_the_move` at war only). Seeds 331-37
 41-52: score (dead as 0) +15 (t 2.0), 16% fewer civ cities lost to barbarians; seeds 379-426:
 -7, 4% more lost; all 120 seeds: +6 (t 1.2), techs +0.2 (t 1.7), eliminations unchanged.
 
+### Round 7f (2026-10-24): healing and the hero gate at their firings
+
+The first use of forks (Tools, "Forks first") on the two military behaviours then off by default
+(round 7): each forked at a few of its firings (seeds 26001-26006), the switch on against off
+from the same save. Both proved locally helpful where they fired as meant, and each had a misfire
+the win rate could not have named; both misfires are fixed, and a third flaw the forks turned up
+(the strike's damage estimate) with them. All three are on.
+
+**Forks of the healing rule** (`HEAL`). What it should change: a committed stack with one badly
+wounded unit no longer stops whole; it reaches its target sooner and strikes earlier.
+- Seed 26006, turn 282 (Elohim, 8-unit stack 558, "marches on with its wounded"): on, it reached
+  the barbarian-founded city at (63,33) and took it at t285 in 10 attacks; off, it healed in
+  place two turns, and its strike at t287 held after 11 attacks, the city falling at t288 after 4
+  more. Ten turns on: one city more, army 31 against 28, power 314 against 291.
+- Seed 26001, turn 266 (Hippus, 7 Horsemen, stack 771): on, the stack was next to its target
+  (52,29) at t271, three turns before off (where it healed in place t267-271); the strike held
+  for lack of margin (the simulation needed all 8 attackers), a fifth defender came, then peace.
+  Neither took the city; nothing was lost by marching.
+- Seed 26006, turn 239 (Luchuirp, stack 696, the misfire): the stack walked into a city to heal,
+  walked out, and was sent back the next turn, five times in twelve turns. In our cities a unit
+  split off to heal only over 30% damage (More Naval AI's `AI_heal(30, 1)`), while the field rule
+  sends a stack back when most of it is 20%+ hurt: units healed to 21-30% left, and the field rule
+  returned them. The city threshold is now the field rule's (20%); replayed from the same save
+  (`ai-branch.sh --save`), the stack healed in the city through t247 and then marched one plot a
+  turn to its target.
+
+**Forks of the hero gate** (`PRECIOUS`). What it should change: a hero or high-level veteran does
+not attack at odds it may well lose; captures should not suffer.
+- Seed 26001, turn 246 (Elohim strike on a Sheaim city, the misfire): on, the two veterans were
+  held out of the strike, the other seven units attacked three times, the simulation without the
+  veterans no longer covered, and the strike stopped: three units lost, the city untaken, the
+  siege back to gathering. Off, the city fell in six attacks and the war ended. The gate had also
+  kept them out of the operation's force count. Now precious units attack last below their odds
+  (while another unit can attack, and only in a strike expected to take the city, never to wear
+  defenders down) and count in the force; replayed from the same save, the city fell in seven
+  attacks, the veterans unhurt, two more Archers spent than off.
+- Seed 26003, turn 127 (Balseraphs, a three-unit stack whose best attacker was a level-5 Warrior
+  at 35%): on, it kept the Warrior (off threw it in and lost it, then a second unit), but stood
+  next to the same raider for twelve turns, the hold repeated each turn. Now a stack does not pick
+  a target the gate would hold (adjacent or hunted); replayed, it hunted elsewhere and ended
+  army 18 against 16.
+- Seed 26004, turn 239 (Hippus strike on a barbarian city with two veterans present): the same in
+  both branches -- two Horsemen at 81% took it, the veterans never needed.
+
+**Forks of the strike's damage estimate** (`STRIKE_DAMAGE`). Seed 26002, turn 274 (Calabim)
+showed a strike flaw of its own, with the gate on or off: Moroi and Bloodpets went at a barbarian
+city at odds 0, turn after turn, and left all five defenders at full health. The defender was
+Acheron (strength 19 in the city, four first strikes, against a Moroi's 7). While a side has first
+strikes left it cannot be hurt, so a Moroi died in rounds where it could not land a blow; the
+expected damage of a lost fight (`campaign::fight`) ignored first strikes and credited each Moroi
+with 12 of Acheron's hit points, and the strike's simulation, built on the same figure, expected
+twelve attackers to take the city. Now first strikes count (the side with more has that many
+rounds in which only the other is hurt; a chance first strike counts half), a sacrifice is the
+unit whose expected damage, not strength, is cheapest for its cost, and none is sent that would
+deal under a tenth of a defender's hit points.
+- Seed 26002, turn 274 replayed: the Calabim left Acheron's city alone and took another barbarian
+  city at t279 in five attacks (off: their first city at t284, after the failed strikes); army 54
+  against 46 at t288.
+- Seed 26005, saved at turn 191 from the game with the switch off (Lanun, eight Warriors next to
+  a barbarian city of three Archers, one first strike each): off, they struck at 2-6% odds, lost
+  six, the city held, and fell at t202 to a second force; on, the estimate said the force was
+  short, they waited three turns for eleven units and took it at t195 in one strike (army 34
+  against 30 at t204).
+- Seed 26005, turn 105: the force needed for an Archer-held barbarian city rose from 4 to 5 units;
+  nothing else changed in 25 turns.
+
+**Measured** (fresh seeds, the same build, each switch forced on against all three off). Over every
+AI (`FFH_AI_<NAME>_ONLY=ALL`, 30001-30192, 300 turns): healing legacy -1.2% (t -1.3; +1.2% on the
+first 96 seeds, -3.6% on the next), captures of civ cities +12%, power -2.6%; the hero gate -0.3%,
+cities +1.6% (t 2.3); the damage estimate -0.3%, civ cities captured +8%, cities destroyed +18%
+(t 2.7); all three -1.1% (t -1.0), civs eliminated +26%. Full games, all three (31001-31096):
+legacy -1.1% / -2.0% / -2.1% / -2.2% at turns 200 / 300 / 400 / 500 (|t| < 1.5), civs eliminated
+0.95 -> 1.20 a game (t 2.05), victories before the turn limit 14 -> 19 of 96. The per-seed loss
+followed the eliminations (correlation -0.57 for healing), not weaker play: every AI got better at
+taking cities, and a dead civilization counts 0 in the mean (Tools, "A behaviour every AI gets is
+not a player's win rate"). Given to one player against opponents without it (`civ_ab.py --civ all
+--new-env FFH_AI_<NAME>_ONLY={civ}`, 32001-32016, 304 paired games, 300 turns):
+
+| switch | win rate | share at 300 | legacy at 300 |
+|---|---|---|---|
+| healing (`HEAL`) | 13.5% -> 15.8% (13 seeds won only with it, 6 only without; p 0.17) | +3.4% (t 1.67) | +2.7% (t 1.44) |
+| hero gate (`PRECIOUS`) | 13.5% -> 14.5% (10 / 7) | +3.3% (t 2.04) | +3.0% (t 1.90) |
+| damage estimate (`STRIKE_DAMAGE`) | 13.5% -> 15.1% (7 / 2; p 0.18) | +1.2% (t 1.29) | +0.5% |
+
 ### Round 7e (2026-10-24): the standing army by deterrence
 
 `RIVAL_DEFENSE` turned on by default (the owner's request), its peacetime defenders sized by
@@ -1894,7 +1984,8 @@ the package lost: legacy -3.1% at turn 300 (t -2.6), techs -4.9% (t -3.5). Switc
 off inside the merged build put the whole cost on round 7b, and switching its behaviours off one
 at a time on three: `RIVAL_DEFENSE` (legacy -3.2%, t -3.8; research -7.2%), `PRECIOUS` (-2.0%, t
 -2.6; research -5.1%) and `HEAL` (-2.1%, t -2.1); `CAPTURE`, `SECOND_OP` and `FLEET` were neutral.
-Those three are off by default until their cost is found (Known gaps). The final configuration
+Those three were turned off by default (`RIVAL_DEFENSE` came back on in round 7e, `HEAL` and
+`PRECIOUS` in round 7f, each once its cost was found). The final configuration
 against master on fresh seeds 27001-27192 (300 turns) and 27201-27296 (full games): legacy -0.5%
 at turn 300 (t -0.5), research +3.6% (t 1.9), military +3.5% (t 2.3); in full games legacy +1.5% /
 +0.4% / -1.1% / +3.4% at turns 200 / 300 / 400 / 500 (|t| < 1.8), research +28.3% at turn 500
@@ -2413,6 +2504,15 @@ Each of these gained on seeds 1-96 and was re-measured on reserved seeds (801-94
 For A/B tests compare `legacy_score`, techs, cities, research and the like, not `score`: the
 share score (docs/SCORE.md) averages 10000/N whatever the AI does.
 
+**A behaviour every AI gets is not a player's win rate.** `ai_metrics.py` with a switch on for all
+(`FFH_AI_<NAME>_ONLY=ALL`) averages legacy over every civilization, the dead ones as 0; a change
+that makes every AI a better conqueror kills more civilizations and lowers that mean even when each
+civilization plays better (round 7f: the fixed healing read -1.2% on 192 seeds, and its per-seed
+change correlated -0.57 with the change in eliminations; the 35 seeds with more eliminations
+averaged -139). Read eliminations and captures beside it, and measure a general behaviour as one
+player's edge too: `civ_ab.py --civ all --new-env FFH_AI_<NAME>_ONLY={civ}` gives it to player 0
+only, against opponents without it, and reports that player's wins and share.
+
 **Forks first** (CLAUDE.md, "AI changes"): a behaviour is judged first at its firings.
 - `tools/ai-branch.sh --bin $B --seed S --turn T --switch NAME [--turns N] [--trace P] -- WATCH..`
   plays seed S (as `ffh stats` does; run options after the script's own) to the start of turn T
@@ -2426,6 +2526,9 @@ share score (docs/SCORE.md) averages 10000/N whatever the AI does.
   behaviour should change (the stack's area, the city it besieges, the hero's id), N the
   behaviour's horizon. Combat is random and the dice part ways at the fork, so one fork can be
   luck: look at a few firings, and read the traces for why each branch went as it did.
+- After a fix, `--save DIR/fork.ffhsave` (an earlier fork's save) replays the same position with
+  the new binary, instead of playing to turn T again (the game before the fork changes with the
+  fix when the behaviour fired earlier in it).
 - Underneath: `ffh save FILE --to-turn T [run options]` and `ffh resume FILE --turns N
   [--watch SPEC]..` (`crates/ffh-cli/src/branch.rs`); a resumed save plays on exactly as the
   game it was saved from (same checksums).
@@ -2606,17 +2709,6 @@ Where MNAI does something this AI does not, ranked by expected worth (each untri
    off by default (round 7a).
 
 ## Known gaps (future work)
-
-- **Two military behaviours off by default (round 7b).** Implemented, switched, and costing
-  legacy on fresh seeds (26001-26192, 300 turns, each switched off inside the merged build with
-  the others on): heroes and veterans only at good odds (`PRECIOUS`: legacy -2.0%, t -2.6;
-  research -5.1%, t -2.7) and healing (`HEAL`: legacy -2.1%, t -2.1, and 1-3% below on every set
-  measured). Each is expert play in principle; the cost is the implementation and is not traced
-  yet. Likely levers: for `PRECIOUS`, strikes that wait for odds the heroes never get, so sieges
-  drag (count the held-back strikes and the turns a siege lasts with it on and off); for `HEAL`,
-  siege stacks that march on wounded and lose units. Measured together with them, the third,
-  `RIVAL_DEFENSE`, also cost (-3.2%); with them off it was neutral, and it is on (Round 7e).
-  `FFH_AI_<NAME>_ONLY=ALL` turns one on for measuring.
 
 - **Councils gang up (round 7c).** With `council.rs` the councils meet in about half the games
   and pass nearly every proposal; a head councilor at war has the council declare war on its
