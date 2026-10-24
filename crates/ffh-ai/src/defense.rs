@@ -43,9 +43,14 @@ use crate::view::{attack_power, defense_power};
 /// raid).
 const CLOSE: i32 = 8;
 const CLOSE_WAR: i32 = 12;
-/// Peacetime threat for one more defender, and for two.
+/// Peacetime threat for one more defender, and for two (the rule before deterrence, kept for
+/// measurement: `FFH_AI_RD_PARTS=oldpeace`).
 const ONE_MORE: i64 = 40;
 const TWO_MORE: i64 = 100;
+/// Defensive power wanted over what a rival's bar asks, percent.
+const DETER_MARGIN: i64 = 110;
+/// A rival's cities within this many plots of ours: its army can reach us (the war gate's 16).
+const REACH: i32 = 16;
 /// Most extra defenders a city holds for its rivals.
 const MAX_EXTRA: i32 = 3;
 /// Strength in the city against the enemy's within two plots, percent.
@@ -131,6 +136,95 @@ pub fn city_threat(g: &Game, c: CityId, rivals: &[Rival], war: bool) -> i64 {
     threat
 }
 
+/// A neighbour that would see us as an easy target, and how much defensive power we lack to
+/// deter it.
+#[derive(Copy, Clone, Debug)]
+pub struct Deterrence {
+    pub rival: PlayerId,
+    pub shortfall: i64,
+}
+
+/// The peacetime standing army an expert keeps: enough that no neighbour who can reach us and
+/// would fight us sees an easy target. Every AI here starts a war of expansion through the same
+/// gate (`diplomacy::territory_check`): its power, with the power of the civs already at war with
+/// the target, at least its leader's need ratio (85-180% by temperament, more when broke) of the
+/// target's defensive power; the target's cities within 16 plots; the target's weakest city
+/// takeable by its best attacker; and a leader who spares friends does not attack a civ it likes.
+/// For each neighbour that passes the other tests, the defensive power that keeps its ratio under
+/// its bar with a margin ([`DETER_MARGIN`]); the largest shortfall against what we hold is the one
+/// to close. None when no neighbour sees an easy target (or at war with it: the war pool decides).
+pub fn deterrence(g: &Game, p: PlayerId) -> Option<Deterrence> {
+    let team = g.players[p].team;
+    let ours = g.team_get_defensive_power(team).max(1) as i64;
+    let mut best: Option<Deterrence> = None;
+    for r in g.player_ids() {
+        let pl = &g.players[r];
+        let rt = pl.team;
+        if r == p || !pl.alive || pl.cities.is_empty() || rt == team || g.player_is_barbarian(r) || !g.teams[team].has_met[rt] {
+            continue;
+        }
+        // One player per team (its leader), vassals and masters, enemies already at war: not here.
+        if crate::diplomacy::team_leader(g, rt) != Some(r) || g.team_is_a_vassal(rt) || g.teams[team].vassal[rt] || g.at_war(team, rt) {
+            continue;
+        }
+        if crate::diplomacy::reach_distance(g, rt, team).map_or(true, |d| d > REACH) {
+            continue;
+        }
+        let bar = crate::diplomacy::war_bar(g, r);
+        if bar.spare_friends && crate::diplomacy::relation(g, r, p) > 1 {
+            continue;
+        }
+        if !crate::diplomacy::can_take_cities_at(g, r, p, 120) {
+            continue;
+        }
+        let theirs = g.team_get_power(rt, true) as i64 + crate::diplomacy::dogpile_power(g, rt, team);
+        let wanted = theirs * DETER_MARGIN / bar.need_ratio.max(1);
+        let shortfall = wanted - ours;
+        if shortfall > 0 && best.map_or(true, |b| shortfall > b.shortfall) {
+            best = Some(Deterrence { rival: r, shortfall });
+        }
+    }
+    best
+}
+
+/// The defenders that close the shortfall of [`deterrence`]: its power in our best defender,
+/// placed in the cities facing that neighbour (on its landmass, its cities within [`REACH`]),
+/// nearest first, one a city per round, at most [`MAX_EXTRA`] a city.
+fn deterrence_defenders(g: &Game, p: PlayerId) -> BTreeMap<CityId, i32> {
+    let mut out = BTreeMap::new();
+    let Some(det) = deterrence(g, p) else { return out };
+    let cities = &g.players[p].cities;
+    let Some(capital) = g.players[p].capital_city.filter(|&c| g.cities.contains(c)).or_else(|| cities.first().copied()) else { return out };
+    let power = crate::production::best_unit(g, capital, crate::production::Role::Defense).map_or(1, |u| g.d.units[u].power_value.max(1)) as i64;
+    let mut n = (det.shortfall + power - 1) / power;
+    // The cities facing the neighbour, nearest first.
+    let mut front: Vec<(i32, CityId)> = Vec::new();
+    for &c in cities {
+        let area = g.map.plots[g.city_plot(c)].area;
+        let near = g.players[det.rival]
+            .cities
+            .iter()
+            .filter(|&&o| g.map.plots[g.city_plot(o)].area == area)
+            .map(|&o| g.plot_distance(g.cities[c].x, g.cities[c].y, g.cities[o].x, g.cities[o].y))
+            .min();
+        if let Some(d) = near.filter(|&d| d <= REACH) {
+            front.push((d, c));
+        }
+    }
+    front.sort();
+    'rounds: for _ in 0..MAX_EXTRA {
+        for &(_, c) in &front {
+            if n <= 0 {
+                break 'rounds;
+            }
+            *out.entry(c).or_insert(0) += 1;
+            n -= 1;
+        }
+    }
+    crate::trace!(g, p, "deterrence: {} would see an easy target (short {} power) -> {} defenders on {} front cities", g.player_get_civilization_type(det.rival).map_or("?", |c| g.d.civilizations[c].base.type_.as_str()), det.shortfall, out.values().sum::<i32>(), front.len());
+    out
+}
+
 /// Extra defenders a city wants for a peacetime rival threat.
 pub fn extra(threat: i64) -> i32 {
     if threat >= TWO_MORE {
@@ -187,9 +281,12 @@ pub fn all_rival_defenders(g: &Game, p: PlayerId) -> BTreeMap<CityId, i32> {
             left -= 1;
         }
     }
+    // Peacetime: what deters the neighbour that would see us as an easy target (deterrence).
+    let deter = if part_off("oldpeace") || part_off("nopeace") { BTreeMap::new() } else { deterrence_defenders(g, p) };
     for (i, &c) in cities.iter().enumerate() {
         let peace = city_threat(g, c, &rivals, false);
-        let n = (share[i] + if part_off("nopeace") { 0 } else { extra(peace) }).min(MAX_EXTRA);
+        let peace_extra = if part_off("nopeace") { 0 } else if part_off("oldpeace") { extra(peace) } else { deter.get(&c).copied().unwrap_or(0) };
+        let n = (share[i] + peace_extra).min(MAX_EXTRA);
         if n > 0 {
             out.insert(c, n);
         }

@@ -386,7 +386,7 @@ pub fn manage(g: &mut Game, v: &View) {
 /// empire wants a bigger edge (a captured city has to pay for itself in plunder and land).
 pub(crate) struct WarBar {
     pub need_ratio: i64,
-    spare_friends: bool,
+    pub spare_friends: bool,
     ours: i64,
 }
 
@@ -938,7 +938,7 @@ fn can_take_cities(g: &Game, p: PlayerId, other: PlayerId) -> bool {
 }
 
 /// [`can_take_cities`] with `margin`% instead of the fortification's 120% (without siege engines).
-fn can_take_cities_at(g: &Game, p: PlayerId, other: PlayerId, margin: i32) -> bool {
+pub(crate) fn can_take_cities_at(g: &Game, p: PlayerId, other: PlayerId, margin: i32) -> bool {
     let Some((best_attack, siege)) = best_trainable_attack(g, p) else { return false };
     // Their weakest city (the one we would attack first): its best defender.
     let mut weakest: Option<i32> = None;
