@@ -1865,7 +1865,11 @@ Validated on fresh seeds, the final build with the switch on against off. At tur
 300 / 400 / 500 (t 0.3-1.4), techs +2.5% at turn 300 (t 1.9), military +4.6% / +6.3% at 300 / 400
 (t 2.7 / 2.1); civs eliminated 1.31 -> 1.01 a game (t -2.6), civ cities taken -14.5% (t -1.7),
 cities lost to the barbarians -19.5% (t -1.5); supremacy 58 -> 62, other victories 38 -> 34 of 96.
-Fewer civilizations die and fewer cities change hands, at no cost to the score.
+Fewer civilizations die and fewer cities change hands, at no cost to the score. After merging
+master's fog of war for the AI, a check on 96 more seeds (29001-29096, 300 turns) read legacy
+-2.1% (t -1.8), techs -2.4% (t -1.7): the three 300-turn sets lean slightly negative (pooled
+about -0.8%, none significant) while the full games lean positive. Worth a full-game check under
+fog of war.
 
 ### Round 7 (2026-10-22): More Naval AI's ideas, the four rounds together
 
