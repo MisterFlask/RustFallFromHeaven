@@ -51,6 +51,13 @@ const MAX_EXTRA: i32 = 3;
 /// Strength in the city against the enemy's within two plots, percent.
 const SORTIE_EDGE: i64 = 175;
 
+/// SCRATCH (measurement only, removed before merge): `FFH_AI_RD_PARTS=nopeace,nowar,nosortie`
+/// switches parts of the rule off. Read once; it changes no state.
+pub(crate) fn part_off(name: &str) -> bool {
+    static OFF: std::sync::OnceLock<Vec<String>> = std::sync::OnceLock::new();
+    OFF.get_or_init(|| std::env::var("FFH_AI_RD_PARTS").map(|v| v.split(',').map(|s| s.trim().to_string()).collect()).unwrap_or_default()).iter().any(|o| o == name)
+}
+
 /// A rival civilization and its weight (hostility x power, x10000).
 #[derive(Copy, Clone, Debug)]
 pub struct Rival {
@@ -159,7 +166,7 @@ pub fn all_rival_defenders(g: &Game, p: PlayerId) -> BTreeMap<CityId, i32> {
     let war: Vec<i64> = cities.iter().map(|&c| if rivals.iter().any(|r| r.war) { city_threat(g, c, &rivals, true) } else { 0 }).collect();
     let total: i64 = war.iter().sum();
     let mut share = vec![0i32; cities.len()];
-    if total > 0 {
+    if total > 0 && !part_off("nowar") {
         let pool = cities.len() as i64;
         let mut rest: Vec<(i64, CityId, usize)> = Vec::new();
         let mut left = pool;
@@ -182,7 +189,7 @@ pub fn all_rival_defenders(g: &Game, p: PlayerId) -> BTreeMap<CityId, i32> {
     }
     for (i, &c) in cities.iter().enumerate() {
         let peace = city_threat(g, c, &rivals, false);
-        let n = (share[i] + extra(peace)).min(MAX_EXTRA);
+        let n = (share[i] + if part_off("nopeace") { 0 } else { extra(peace) }).min(MAX_EXTRA);
         if n > 0 {
             out.insert(c, n);
         }
@@ -197,7 +204,7 @@ pub fn all_rival_defenders(g: &Game, p: PlayerId) -> BTreeMap<CityId, i32> {
 /// be at least [`SORTIE_EDGE`] percent of the attack power of the enemy units we see within two
 /// plots. Always true with the switch off.
 pub fn sortie_ok(g: &Game, p: PlayerId, plot: PlotIdx, u: UnitId) -> bool {
-    if !crate::switches::RIVAL_DEFENSE.on(g, p) {
+    if !crate::switches::RIVAL_DEFENSE.on(g, p) || part_off("nosortie") {
         return true;
     }
     let team = g.players[p].team;

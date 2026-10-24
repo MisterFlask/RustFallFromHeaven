@@ -556,6 +556,9 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static str)> {
         // front holds more and the interior fewer than the flat one more below.
         rival = crate::defense::rival_defenders(g, c);
         needed += rival;
+        if crate::defense::part_off("nowar") && ctx.at_war {
+            needed += 1;
+        }
     } else if ctx.at_war {
         needed += 1;
     }
