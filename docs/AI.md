@@ -65,6 +65,28 @@ units whose invisibility type hides them (`CvUnit::isInvisible`).
 
 Map knowledge is unchanged: city sites, paths and exploration use revealed plots only.
 
+Measured (6 civs, standard map, 300 turns). Development seeds 1-24 against master `77495f2`:
+legacy +4.8%, research +7.7%, land +4.7% (|t| <= 1.5), wars declared -55% (t -4.4),
+eliminations -54% (t -2.1). Fresh seeds 6101-6148, one binary, each against both switches off
+(paired t):
+
+| | `FOG_SIGHT` only | `FOG_HONEST` only | both (kept) |
+|---|---|---|---|
+| legacy score | +3.3% (1.4) | +4.0% (2.7) | +7.3% (3.3) |
+| research | +5.5% (1.4) | +9.7% (3.0) | +12.1% (2.9) |
+| techs | +1.1% (0.4) | +3.3% (2.2) | +5.7% (2.3) |
+| cities / land | +2.9% / +2.5% | +0.1% / +2.8% | +4.8% / +4.6% (2.0) |
+| power | +7.9% (1.8) | +0.9% (0.2) | +6.6% (1.7) |
+| civ cities captured | +28% (2.1) | -21% (-1.6) | -11% (-0.7) |
+| wars declared | +15% (1.5) | -52% (-6.1) | -48% (-4.6) |
+
+Seeing threats in the fog makes civs safer and their wars more effective; the honest war gate
+halves the wars (the fogged estimate, the best defender the owner can train, is pessimistic:
+real garrisons lag the tech) while captures fall far less, and the economy gains. Open: an
+estimate nearer a real garrison (a generation behind the best, or scouting the target before
+declaring) would bring back wars the honest gate now skips -- a lever for the conquest flavor
+drive (CLAUDE.md, "AI changes").
+
 ## Where the rules call the AI
 
 `Ai` implements `ffh_core::Controller`; the rules call it where the C++ calls the AI:
