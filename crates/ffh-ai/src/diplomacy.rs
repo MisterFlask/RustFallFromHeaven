@@ -927,11 +927,11 @@ fn best_trainable_defense(g: &Game, owner: PlayerId) -> i32 {
 }
 
 /// The strength (x100) of city `c`'s best defender as we see it (fortified city bonuses), or
-/// `None` when the city plot is not revealed to our team. The garrison is read only while the
-/// city plot is visible to us; in the fog we assume the best defender its owner can train
-/// (`fog`: [`best_trainable_defense`], computed on first use by the caller's loop). Offence is
-/// chosen from what we see (docs/AI.md, "Fog of war"): before, a city seen once gave up its
-/// live garrison for the rest of the game, as it still does with switch `FOG_HONEST` off.
+/// `None` when the city plot is not revealed to our team. The garrison (stealthed units left out)
+/// is read where [`crate::view::sees_units`]: through fog with switch `FOG_ATTACK`, the owner's
+/// call (docs/AI.md, "Fog of war"); with it off, only while the city is visible, the fog
+/// assuming the best defender its owner can train (`fog`: [`best_trainable_defense`], computed
+/// on first use by the caller's loop).
 fn city_best_defense(g: &Game, p: PlayerId, c: CityId, fog: &mut Option<i32>) -> Option<i32> {
     let team = g.players[p].team;
     let cp = g.city_plot(c);
@@ -939,13 +939,12 @@ fn city_best_defense(g: &Game, p: PlayerId, c: CityId, fog: &mut Option<i32>) ->
         return None;
     }
     let other = g.cities[c].owner;
-    let honest = crate::switches::FOG_HONEST.on(g, p);
-    if honest && !g.plot_is_visible(cp, team) {
+    if !crate::view::sees_units(g, team, cp) {
         return Some(*fog.get_or_insert_with(|| best_trainable_defense(g, other)));
     }
     let mut best = 0;
     for &e in &g.map.plots[cp].units {
-        if g.units[e].owner != other || honest && g.unit_is_invisible(e, team, false) {
+        if g.units[e].owner != other || g.unit_is_invisible(e, team, false) {
             continue;
         }
         let info = &g.d.units[g.units[e].unit_type];

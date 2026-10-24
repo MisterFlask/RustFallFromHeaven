@@ -51,11 +51,21 @@ pub struct View {
 /// unit its invisibility type does not hide from us, in the fog or not: the AI sees through
 /// fog of war for its own defense, as the C++ AI did (`CvPlayerAI::AI_getPlotDanger` skips only
 /// `isInvisible` units), but not through stealth, which is part of how FfH's hidden units and
-/// civilizations play. What it attacks is still chosen from what it sees (docs/AI.md, "Fog of
-/// war"). Switch `FOG_SIGHT` off: only units on plots we see.
+/// civilizations play. Attacks see through fog the same way ([`sees_units`], docs/AI.md, "Fog
+/// of war"). Switch `FOG_SIGHT` off: only units on plots we see.
 pub fn known_threat(g: &Game, p: PlayerId, u: UnitId) -> bool {
     let team = g.players[p].team;
     !g.unit_is_invisible(u, team, false) && (crate::switches::FOG_SIGHT.on(g, p) || g.plot_is_visible(g.unit_plot(u), team))
+}
+
+/// Does `team` know which units stand on plot `q` when it plans an attack (a city's garrison,
+/// a target to hunt or to walk into)? Visible plots always; with switch `FOG_ATTACK` (the
+/// owner's call, 2026-10-24: conflict makes the game) every plot we have revealed, fog
+/// included -- the units themselves still pass [`known_threat`]'s stealth test where they are
+/// read (`unit_is_invisible`). Unrevealed land stays unknown (docs/AI.md, "Fog of war").
+pub fn sees_units(g: &Game, team: TeamId, q: PlotIdx) -> bool {
+    g.plot_is_visible(q, team)
+        || g.map.plots[q].revealed[team] && g.team_get_leader_id(team).is_some_and(|l| crate::switches::FOG_ATTACK.on(g, l))
 }
 
 /// Rough attack power of a unit: strength x health x experience. 0 for non-combatants.

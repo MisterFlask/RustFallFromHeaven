@@ -37,8 +37,9 @@ and determinism -- and a standing cost preference:
 
 ## Fog of war
 
-The owner's decision (2026-10-24): the AI **sees through fog of war for its own defense, never
-through stealth, and chooses what to attack from what it sees.** Honest inference about unseen
+The owner's decisions (2026-10-24): the AI **sees units through fog of war, for its defense and
+for its attacks, never through stealth** (attacks too: conflict is much of what makes the game
+fun). Unrevealed land stays unknown. Honest inference about unseen
 units would need a memory of what was last seen (saved per-team state, decay, scouting to
 refresh it); the C++ AI never had one either -- `CvPlayerAI::AI_getPlotDanger`,
 `CvPlot::getNumVisibleEnemyDefenders` and `AI_findTargetCity` read through fog and skip only
@@ -54,14 +55,14 @@ units whose invisibility type hides them (`CvUnit::isInvisible`).
   (`diplomacy::front_forces`). FfH's hidden units (the Hidden and Invisible promotions,
   assassins, shadows, hidden nationality) stay hidden: stealth is how those units and
   civilizations play.
-- **What we attack: what we see.** A city's garrison is read only while its plot is visible
-  (`campaign::visible_defenders`; the war gate's `diplomacy::city_best_defense`, switch
-  `FOG_HONEST`); in the fog the siege and amphibious planners assume a defender count (2 +
-  population/5 for a civ city, 1 + age/25 for a barbarian town) and the war gate assumes the
-  best defender the owner can train (`best_trainable_defense`, limited classes such as heroes
-  left out). Before, the war gate read the live garrison of any city revealed once. Hunting
-  targets (`military::find_targets`), opportune captures (`military::opportune`) and the pathing
-  checks (`plot_is_visible_enemy_unit_for_unit`) use what is visible.
+- **What we attack: fog included** (`view::sees_units`, switch `FOG_ATTACK`): a city's garrison
+  on any revealed plot (`campaign::visible_defenders`, the siege and amphibious planners, the
+  war gate's `diplomacy::city_best_defense`), hunting targets (`military::find_targets`),
+  opportune and empty-city captures (`military::opportune`, `CAPTURE`); stealthed units left
+  out. With the switch off, only what is visible: in the fog the siege and amphibious planners
+  assume a defender count (2 + population/5 for a civ city, 1 + age/25 for a barbarian town)
+  and the war gate assumes the best defender the owner can train (`best_trainable_defense`).
+  The pathing checks (`plot_is_visible_enemy_unit_for_unit`) are the rules' and unchanged.
 
 Map knowledge is unchanged: city sites, paths and exploration use revealed plots only.
 
@@ -70,7 +71,7 @@ legacy +4.8%, research +7.7%, land +4.7% (|t| <= 1.5), wars declared -55% (t -4.
 eliminations -54% (t -2.1). Fresh seeds 6101-6148, one binary, each against both switches off
 (paired t):
 
-| | `FOG_SIGHT` only | `FOG_HONEST` only | both (kept) |
+| | `FOG_SIGHT` only | honest attacks only | both |
 |---|---|---|---|
 | legacy score | +3.3% (1.4) | +4.0% (2.7) | +7.3% (3.3) |
 | research | +5.5% (1.4) | +9.7% (3.0) | +12.1% (2.9) |
@@ -82,10 +83,15 @@ eliminations -54% (t -2.1). Fresh seeds 6101-6148, one binary, each against both
 
 Seeing threats in the fog makes civs safer and their wars more effective; the honest war gate
 halves the wars (the fogged estimate, the best defender the owner can train, is pessimistic:
-real garrisons lag the tech) while captures fall far less, and the economy gains. Open: an
-estimate nearer a real garrison (a generation behind the best, or scouting the target before
-declaring) would bring back wars the honest gate now skips -- a lever for the conquest flavor
-drive (CLAUDE.md, "AI changes").
+real garrisons lag the tech) while captures fall far less, and the economy gains. That table
+measured the first version, where attacks used only what was visible (then switch
+`FOG_HONEST`); the owner chose attacks through fog instead, for the conflict.
+
+`FOG_ATTACK` (fresh seeds 6201-6248, one binary, on against off, paired t): wars declared +105%
+(5.1), civ cities captured +84% (3.2) -- the extra wars take cities --, civ cities lost to
+barbarians -26% (-1.4), military +5% (1.4); legacy -2.8% (-1.4), research -5.3% (-1.4), techs
+-3.3% (-1.6): war costs some economy. Against master before any fog change (`77495f2`, seeds
+1-24), both switches on: legacy +0.5%, research +2.9%, captures +13%, wars -13% (all |t| < 1.3).
 
 ## Where the rules call the AI
 

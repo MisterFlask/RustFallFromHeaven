@@ -109,10 +109,11 @@ impl Plan {
 // Fight estimates
 // ----------------------------------------------------------------------------
 
-/// Visible enemy units able to defend city plot `tp` (what we can see of the garrison; the
-/// city owner's units count before the war is declared too).
+/// Enemy units able to defend city plot `tp` that we know of (the garrison where
+/// [`crate::view::sees_units`]: fog included with `FOG_ATTACK`, never stealthed units; the city
+/// owner's units count before the war is declared too).
 pub(crate) fn visible_defenders(g: &Game, team: TeamId, tp: PlotIdx) -> Vec<UnitId> {
-    if !g.plot_is_visible(tp, team) {
+    if !crate::view::sees_units(g, team, tp) {
         return Vec::new();
     }
     let owner = g.map.plots[tp].plot_city.map(|c| g.players[g.cities[c].owner].team);
@@ -372,7 +373,7 @@ fn candidates(g: &Game, p: PlayerId) -> (Vec<Cand>, bool) {
             if dist > if civ { 20 } else { 14 } {
                 continue;
             }
-            let visible = g.plot_is_visible(cp, team);
+            let visible = crate::view::sees_units(g, team, cp);
             // Unseen: what such a city usually holds. Barbarian towns arm over time (measured:
             // 0-1 defenders in their first 20 turns, 2 by turn 30, 3 by 60, 5 by 100).
             let n_def = if visible {

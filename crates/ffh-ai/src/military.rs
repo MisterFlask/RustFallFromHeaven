@@ -614,7 +614,7 @@ fn opportune(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
             let Some(q) = g.plot_xy(x, y, dx, dy) else { continue };
             let Some(c) = g.map.plots[q].plot_city else { continue };
             let owner_team = g.players[g.cities[c].owner].team;
-            if owner_team == team || !g.at_war(team, owner_team) || !g.plot_is_visible(q, team) || v.campaign.ops.iter().any(|o| o.plot == q) {
+            if owner_team == team || !g.at_war(team, owner_team) || !crate::view::sees_units(g, team, q) || v.campaign.ops.iter().any(|o| o.plot == q) {
                 continue;
             }
             let (qx, qy) = g.map.xy(q);
@@ -789,7 +789,7 @@ pub fn find_targets(g: &Game, v: &View) -> Vec<Target> {
         for &e in &opl.units {
             let unit = &g.units[e];
             let Some(q) = g.map.plot_xy(unit.x, unit.y) else { continue };
-            if !g.plot_is_visible(q, v.team) || g.plot_is_water(q) {
+            if !crate::view::sees_units(g, v.team, q) || g.unit_is_invisible(e, v.team, false) || g.plot_is_water(q) {
                 continue;
             }
             if out.iter().any(|t| t.plot == q) {
@@ -827,7 +827,7 @@ pub fn find_targets(g: &Game, v: &View) -> Vec<Target> {
             for &c in &opl.cities {
                 let q = g.city_plot(c);
                 let (x, y) = (g.cities[c].x, g.cities[c].y);
-                if !g.plot_is_visible(q, v.team) || out.iter().any(|t| t.plot == q) || !near(x, y, 10) {
+                if !crate::view::sees_units(g, v.team, q) || out.iter().any(|t| t.plot == q) || !near(x, y, 10) {
                     continue;
                 }
                 if !crate::campaign::visible_defenders(g, v.team, q).is_empty() {
