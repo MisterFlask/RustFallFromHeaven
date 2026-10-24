@@ -1790,6 +1790,25 @@ unless they strike this turn (`campaign::on_the_move` at war only). Seeds 331-37
 41-52: score (dead as 0) +15 (t 2.0), 16% fewer civ cities lost to barbarians; seeds 379-426:
 -7, 4% more lost; all 120 seeds: +6 (t 1.2), techs +0.2 (t 1.7), eliminations unchanged.
 
+### Round 7e (2026-10-24): the standing army by deterrence
+
+`RIVAL_DEFENSE` turned on by default (the owner's request), its peacetime defenders sized by
+deterrence instead of a threat threshold ("The standing army against rival civilizations"; the
+old rule and why it went: docs/AI_LOG.md, "Peacetime defenders by a rival-threat threshold").
+Re-measured on seeds 26001-26192 (300 turns) once `HEAL` and `PRECIOUS` were off, the old rule
+was neutral against the switch off (legacy -0.4%, t -0.55), as was each of its parts; its round-7
+cost (-3.2%) came with the other two on. Deterrence against off, same seeds: legacy -0.3% (t
+-0.4), research -2.4% (t -1.3), military +4.0% (t 2.8), wars declared +9% (t 2.0: our own power
+counts in our war bar too), civs eliminated -11% (t -1.3).
+
+Validated on fresh seeds, the final build with the switch on against off. At turn 300 (28001-28192,
+192 games): legacy -0.6% (t -0.7), research -2.3% (t -1.4), military +1.6%, civ cities taken
+-12% (t -2.1). Full games (28201-28296, 96): legacy +0.2% / +1.8% / +1.8% / +0.6% at turns 200 /
+300 / 400 / 500 (t 0.3-1.4), techs +2.5% at turn 300 (t 1.9), military +4.6% / +6.3% at 300 / 400
+(t 2.7 / 2.1); civs eliminated 1.31 -> 1.01 a game (t -2.6), civ cities taken -14.5% (t -1.7),
+cities lost to the barbarians -19.5% (t -1.5); supremacy 58 -> 62, other victories 38 -> 34 of 96.
+Fewer civilizations die and fewer cities change hands, at no cost to the score.
+
 ### Round 7 (2026-10-22): More Naval AI's ideas, the four rounds together
 
 The behaviours of rounds 7a-7d, each measured alone in its round, were merged and validated
