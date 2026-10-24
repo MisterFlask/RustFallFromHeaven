@@ -93,6 +93,13 @@ pub static TOP_CITIES: Switch = Switch::new("TOP_CITIES");
 /// A wonder slot in the top production cities at peace, and a production emphasis while a city
 /// builds a world wonder (`production::wonder_slot`, `production::wonder_emphasis`).
 pub static WONDER_SLOT: Switch = Switch::new("WONDER_SLOT");
+/// Threats to us seen through fog of war, never through stealth (`view::known_threat`: the danger
+/// map, a city's local threat, sorties, peril, the front; docs/AI.md, "Fog of war").
+pub static FOG_SIGHT: Switch = Switch::new("FOG_SIGHT");
+/// Attacks planned through fog of war, never through stealth (`view::sees_units`: the war gate,
+/// siege and amphibious garrisons, hunting targets, captures; docs/AI.md, "Fog of war"). Off:
+/// only what is visible, the fog estimated (the war gate: the best defender the owner can train).
+pub static FOG_ATTACK: Switch = Switch::new("FOG_ATTACK");
 /// Production re-decided when the empire is in financial trouble: a long build gives way to the
 /// economy building the city now needs (`production::trouble_rebuild`).
 pub static TROUBLE_REBUILD: Switch = Switch::new("TROUBLE_REBUILD");

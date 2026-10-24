@@ -66,8 +66,8 @@ fn facts(g: &Game, c: CityId) -> CityFacts {
 
 /// Settlers: while sites remain in this city's area, a bounded number at a time, from cities
 /// big enough to pay for them (food goes into settler production, so growth stops).
-/// `threat`/`defense`: the visible threat around city `c` (of player `p`) and its garrison's
-/// defense. Any visible threat stops settlers: letting them go under a held threat founded
+/// `threat`/`defense`: the threat around city `c` (of player `p`) and its garrison's
+/// defense. Any threat stops settlers: letting them go under a held threat founded
 /// more cities but lost more to the barbarians (measured twice, see docs/AI.md).
 pub fn settler_choice(ai: &Ai, g: &Game, c: CityId, p: PlayerId, threat: i32, defense: i32) -> SettlerPlan {
     use SettlerPlan::No;
@@ -217,7 +217,7 @@ fn escorted(g: &Game, grp: GroupId) -> bool {
 
 /// A fighter on `plot` that can leave with a settler: a field unit, or a garrison unit the
 /// city can spare (two defenders stay in the capital, one elsewhere, and they still hold the
-/// visible threat). Field units first; of the garrison, the weakest that will do.
+/// threat). Field units first; of the garrison, the weakest that will do.
 fn escort_on_plot(g: &Game, p: PlayerId, plot: PlotIdx, grp: Option<GroupId>) -> Option<UnitId> {
     let city = g.map.plots[plot].plot_city.filter(|&c| g.cities[c].owner == p);
     let (garrison_n, garrison_def) = if city.is_some() { garrison(g, p, plot) } else { (0, 0) };

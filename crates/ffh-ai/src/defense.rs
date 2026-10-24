@@ -276,8 +276,8 @@ pub fn all_rival_defenders(g: &Game, p: PlayerId) -> BTreeMap<CityId, i32> {
 }
 
 /// May defender `u` of our city on `plot` attack out of it? Our units' defense power there must
-/// be at least [`SORTIE_EDGE`] percent of the attack power of the enemy units we see within two
-/// plots. Always true with the switch off.
+/// be at least [`SORTIE_EDGE`] percent of the attack power of the enemy units within two plots,
+/// fog included ([`crate::view::known_threat`]). Always true with the switch off.
 pub fn sortie_ok(g: &Game, p: PlayerId, plot: PlotIdx, u: UnitId) -> bool {
     if !crate::switches::RIVAL_DEFENSE.on(g, p) {
         return true;
@@ -295,12 +295,9 @@ pub fn sortie_ok(g: &Game, p: PlayerId, plot: PlotIdx, u: UnitId) -> bool {
     for dx in -2..=2 {
         for dy in -2..=2 {
             let Some(q) = g.plot_xy(x, y, dx, dy) else { continue };
-            if !g.plot_is_visible(q, team) {
-                continue;
-            }
             for &e in &g.map.plots[q].units {
                 let et = g.unit_get_team(e);
-                if et != team && g.at_war(team, et) && !g.unit_is_invisible(e, team, false) {
+                if et != team && g.at_war(team, et) && crate::view::known_threat(g, p, e) {
                     theirs += attack_power(g, e) as i64;
                 }
             }

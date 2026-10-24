@@ -895,26 +895,63 @@ pub(crate) fn best_trainable_attack(g: &Game, p: PlayerId) -> Option<(i32, bool)
     Some((best_attack, siege))
 }
 
+/// A unit type's strength (x100) as a city defender: its defense strength with its city
+/// defense bonus.
+fn defender_strength(info: &UnitInfo) -> i32 {
+    let def = if info.combat_defense > 0 { info.combat_defense } else { info.combat } + info.damage_type_combat.iter().sum::<i32>();
+    def * (100 + info.city_defense_modifier.max(0))
+}
+
+/// The strongest city defender (x100, [`defender_strength`]) player `owner` can train: what we
+/// assume holds a city of theirs we cannot see. Units of a limited class (heroes, world units)
+/// are left out: a city cannot count on one of those.
+fn best_trainable_defense(g: &Game, owner: PlayerId) -> i32 {
+    let d = g.d;
+    let mut best = 0;
+    for u in d.units.keys() {
+        let info = &d.units[u];
+        if info.domain_type != Some(DomainType::DOMAIN_LAND) || info.combat <= 0 {
+            continue;
+        }
+        if info.unit_class_type.is_some_and(|cl| {
+            let ci = &d.unit_classes[cl];
+            ci.max_global_instances > 0 || ci.max_team_instances > 0 || ci.max_player_instances > 0
+        }) {
+            continue;
+        }
+        if g.player_can_train(owner, u, false, false, false) {
+            best = best.max(defender_strength(info));
+        }
+    }
+    best
+}
+
 /// The strength (x100) of city `c`'s best defender as we see it (fortified city bonuses), or
-/// `None` when the city plot is not revealed to our team.
-fn city_best_defense(g: &Game, p: PlayerId, c: CityId) -> Option<i32> {
+/// `None` when the city plot is not revealed to our team. The garrison (stealthed units left out)
+/// is read where [`crate::view::sees_units`]: through fog with switch `FOG_ATTACK`, the owner's
+/// call (docs/AI.md, "Fog of war"); with it off, only while the city is visible, the fog
+/// assuming the best defender its owner can train (`fog`: [`best_trainable_defense`], computed
+/// on first use by the caller's loop).
+fn city_best_defense(g: &Game, p: PlayerId, c: CityId, fog: &mut Option<i32>) -> Option<i32> {
     let team = g.players[p].team;
     let cp = g.city_plot(c);
     if !g.map.plots[cp].revealed[team] {
         return None;
     }
     let other = g.cities[c].owner;
+    if !crate::view::sees_units(g, team, cp) {
+        return Some(*fog.get_or_insert_with(|| best_trainable_defense(g, other)));
+    }
     let mut best = 0;
     for &e in &g.map.plots[cp].units {
-        if g.units[e].owner != other {
+        if g.units[e].owner != other || g.unit_is_invisible(e, team, false) {
             continue;
         }
         let info = &g.d.units[g.units[e].unit_type];
         if info.combat <= 0 {
             continue;
         }
-        let def = if info.combat_defense > 0 { info.combat_defense } else { info.combat } + info.damage_type_combat.iter().sum::<i32>();
-        best = best.max(def * (100 + info.city_defense_modifier.max(0)));
+        best = best.max(defender_strength(info));
     }
     Some(best)
 }
@@ -924,7 +961,7 @@ fn city_best_defense(g: &Game, p: PlayerId, c: CityId) -> Option<i32> {
 /// attacker or the city plot is not revealed.
 pub(crate) fn can_take_city(g: &Game, p: PlayerId, c: CityId) -> bool {
     let Some((best_attack, siege)) = best_trainable_attack(g, p) else { return false };
-    let Some(best_defense) = city_best_defense(g, p, c) else { return false };
+    let Some(best_defense) = city_best_defense(g, p, c, &mut None) else { return false };
     // Fortified in a city: roughly +50%; siege engines take most of that away.
     let needed = best_defense * if siege { 85 } else { 120 } / 100;
     best_attack >= needed
@@ -942,8 +979,9 @@ pub(crate) fn can_take_cities_at(g: &Game, p: PlayerId, other: PlayerId, margin:
     let Some((best_attack, siege)) = best_trainable_attack(g, p) else { return false };
     // Their weakest city (the one we would attack first): its best defender.
     let mut weakest: Option<i32> = None;
+    let mut fog = None;
     for &oc in &g.players[other].cities {
-        if let Some(best) = city_best_defense(g, p, oc) {
+        if let Some(best) = city_best_defense(g, p, oc, &mut fog) {
             weakest = Some(weakest.map_or(best, |w: i32| w.min(best)));
         }
     }
@@ -1183,7 +1221,8 @@ fn front_unit(g: &Game, u: UnitId) -> bool {
 /// The forces at the front of the war between `team` and `enemy` (MNAI `CvTeamAI::AI_endWarVal`'s
 /// attackers en route against the enemy's in our land): our units able to attack within 2 plots of
 /// their city where we have the most of them (their next city), and their units able to attack
-/// within 2 plots of one of our cities that we can see. What a human sees at the front.
+/// within 2 plots of one of our cities, fog included (`view::known_threat`: threats to us are
+/// seen through fog, docs/AI.md "Fog of war").
 pub(crate) fn front_forces(g: &Game, team: TeamId, enemy: TeamId) -> (i32, i32) {
     let cities_of = |t: TeamId| -> Vec<(i32, i32)> {
         let mut v = Vec::new();
@@ -1195,6 +1234,8 @@ pub(crate) fn front_forces(g: &Game, team: TeamId, enemy: TeamId) -> (i32, i32) 
         v
     };
     let (theirs_c, ours_c) = (cities_of(enemy), cities_of(team));
+    // Whose eyes judge the enemy's units near our cities (`view::known_threat`).
+    let leader = g.team_get_leader_id(team);
     let mut per_city = vec![0; theirs_c.len()];
     let mut theirs = 0;
     for q in g.player_ids() {
@@ -1213,7 +1254,7 @@ pub(crate) fn front_forces(g: &Game, team: TeamId, enemy: TeamId) -> (i32, i32) 
                         per_city[i] += 1;
                     }
                 }
-            } else if g.plot_is_visible(g.unit_plot(u), team) && ours_c.iter().any(|&(cx, cy)| g.plot_distance(x, y, cx, cy) <= 2) {
+            } else if leader.is_some_and(|l| crate::view::known_threat(g, l, u)) && ours_c.iter().any(|&(cx, cy)| g.plot_distance(x, y, cx, cy) <= 2) {
                 theirs += 1;
             }
         }
@@ -1249,7 +1290,7 @@ pub(crate) fn end_war_val_seen(g: &Game, p: PlayerId, team: TeamId, enemy: TeamI
 
 /// A war where nothing happens (MNAI `CvTeamAI::AI_doWar`, "making peace due to time and no
 /// fighting"): past 15 turns, fewer than two attacks' worth of war success on both sides, no army
-/// of ours near their cities nor of theirs (that we see) near ours, and no stack of ours marching
+/// of ours near their cities nor of theirs near ours, and no stack of ours marching
 /// on them.
 pub(crate) fn quiet_war(g: &Game, team: TeamId, enemy: TeamId) -> bool {
     if g.teams[team].ai_at_war_counter[enemy] < 15 {

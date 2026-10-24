@@ -217,7 +217,8 @@ pub fn garrison(g: &Game, p: PlayerId, plot: PlotIdx) -> (i32, i32) {
     (n, power)
 }
 
-/// Summed attack power of visible enemy units within `range` plots.
+/// Summed attack power of enemy units within `range` plots, fog included
+/// ([`crate::view::known_threat`]).
 pub fn local_threat(g: &Game, p: PlayerId, plot: PlotIdx, range: i32) -> i32 {
     let team = g.players[p].team;
     let (x, y) = g.map.xy(plot);
@@ -225,10 +226,10 @@ pub fn local_threat(g: &Game, p: PlayerId, plot: PlotIdx, range: i32) -> i32 {
     for dx in -range..=range {
         for dy in -range..=range {
             let Some(q) = g.plot_xy(x, y, dx, dy) else { continue };
-            if !g.plot_is_visible(q, team) {
-                continue;
-            }
             for &u in &g.map.plots[q].units {
+                if !crate::view::known_threat(g, p, u) {
+                    continue;
+                }
                 let ut = g.units[u].owner;
                 let their_team = g.players[ut].team;
                 // Animals cannot enter owned land: no threat to a city.
@@ -246,7 +247,7 @@ pub fn local_threat(g: &Game, p: PlayerId, plot: PlotIdx, range: i32) -> i32 {
     threat
 }
 
-/// A barbarian lair or a (non-animal) barbarian unit within `range` plots.
+/// A revealed barbarian lair or a (non-animal) barbarian unit within `range` plots.
 pub fn barbarians_near(g: &Game, p: PlayerId, plot: PlotIdx, range: i32) -> bool {
     let team = g.players[p].team;
     let barb = g.barbarian_player();
@@ -261,13 +262,11 @@ pub fn barbarians_near(g: &Game, p: PlayerId, plot: PlotIdx, range: i32) -> bool
         for dy in -range..=range {
             let Some(q) = g.plot_xy(x, y, dx, dy) else { continue };
             let pl = &g.map.plots[q];
-            if !pl.revealed[team] {
-                continue;
-            }
-            if pl.improvement_type.is_some_and(|i| g.d.improvements[i].spawn_unit_type.is_some_and(|u| !g.d.units[u].animal)) {
+            if pl.revealed[team] && pl.improvement_type.is_some_and(|i| g.d.improvements[i].spawn_unit_type.is_some_and(|u| !g.d.units[u].animal)) {
                 return true;
             }
-            if g.plot_is_visible(q, team) && pl.units.iter().any(|&u| g.units[u].owner == barb && !g.d.units[g.units[u].unit_type].animal) {
+            // Units: fog included (`view::known_threat`).
+            if pl.units.iter().any(|&u| g.units[u].owner == barb && !g.d.units[g.units[u].unit_type].animal && crate::view::known_threat(g, p, u)) {
                 return true;
             }
         }
@@ -314,7 +313,8 @@ pub(crate) fn garrison_holds(g: &Game, p: PlayerId, plot: PlotIdx, threat: i32, 
         && !rival_city_near(g, p, plot, 8)
 }
 
-/// A visible unit of a civilization we are at war with within `range` plots.
+/// A unit of a civilization we are at war with within `range` plots, fog included
+/// ([`crate::view::known_threat`]).
 fn civ_enemy_near(g: &Game, p: PlayerId, plot: PlotIdx, range: i32) -> bool {
     let team = g.players[p].team;
     let barb = g.barbarian_team();
@@ -322,12 +322,9 @@ fn civ_enemy_near(g: &Game, p: PlayerId, plot: PlotIdx, range: i32) -> bool {
     for dx in -range..=range {
         for dy in -range..=range {
             let Some(q) = g.plot_xy(x, y, dx, dy) else { continue };
-            if !g.plot_is_visible(q, team) {
-                continue;
-            }
             if g.map.plots[q].units.iter().any(|&u| {
                 let t = g.players[g.units[u].owner].team;
-                t != team && t != barb && g.at_war(team, t)
+                t != team && t != barb && g.at_war(team, t) && crate::view::known_threat(g, p, u)
             }) {
                 return true;
             }

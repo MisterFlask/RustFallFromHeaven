@@ -17,6 +17,7 @@ use ffh_core::ids::*;
 use ffh_core::rng::Rng;
 use ffh_play::command::{CmdErr, CmdOk, Command, COMMAND_NAMES};
 use ffh_play::query::{Query, QUERY_NAMES};
+use ffh_play::bot::Bot;
 use ffh_play::{bot, jarr, jobj, Json, Session, Stop};
 
 /// The slowest a command may take (a refused one is validated only; an applied one settles).
@@ -313,13 +314,32 @@ impl Fuzz {
 #[test]
 fn t7_fuzzed_commands_are_refused_cleanly() {
     let ng = new_game(7);
-    let (mut s, mut b) = bot_session(&ng, None);
-    // The fuzz kills the human in about half of its games (deleted units, random wars); 7011
-    // plays all 100 turns (7007 did before the P3 review changed the action lists).
-    let mut f = Fuzz { rng: Rng::new(7011), t: Tally::default() };
-    let until = s.g.game_turn() + 100;
+    // The fuzz kills the human in about half of its games (deleted units, random wars), and
+    // which fuzz seeds survive changes with the AI: a game that ends before the 100 turns are
+    // played is replayed with the next fuzz seed (every attempt still checks each command and
+    // query it sends).
+    for fuzz_seed in 7011..7031 {
+        let (mut s, mut b) = bot_session(&ng, None);
+        let mut f = Fuzz { rng: Rng::new(fuzz_seed), t: Tally::default() };
+        let until = s.g.game_turn() + 100;
+        let stop = fuzz_run(&mut s, &mut b, &mut f, until);
+        assert!(matches!(stop, Stop::Human | Stop::Over), "{stop:?}");
+        eprintln!("fuzz {fuzz_seed}: {:?}, {stop:?} at turn {}", f.t, s.g.game_turn());
+        if matches!(stop, Stop::Over) && s.g.game_turn() < until {
+            continue;
+        }
+        let t = &f.t;
+        assert!(t.applied > 50 && t.from_actions > 200, "{t:?}");
+        assert!(t.refused.iter().all(|&n| n > 10) && t.decode_errors > 50, "every refusal kind should occur: {t:?}");
+        assert!(t.queries > 300 && t.query_errors > 10, "{t:?}");
+        return;
+    }
+    panic!("no fuzz seed in 7011..7031 played 100 turns");
+}
+
+fn fuzz_run(s: &mut Session, b: &mut Bot, f: &mut Fuzz, until: i32) -> Stop {
     let mut last_checked = -1;
-    let stop = bot::run(&mut s, &mut b, until, |s, _| {
+    bot::run(s, b, until, |s, _| {
         for _ in 0..12 {
             if !matches!(s.phase(), ffh_play::Phase::Human(_)) {
                 break;
@@ -338,11 +358,5 @@ fn t7_fuzzed_commands_are_refused_cleanly() {
             last_checked = turn;
             s.read(check::check);
         }
-    });
-    assert!(matches!(stop, Stop::Human | Stop::Over), "{stop:?}");
-    eprintln!("fuzz: {:?}, {stop:?} at turn {}", f.t, s.g.game_turn());
-    let t = &f.t;
-    assert!(t.applied > 50 && t.from_actions > 200, "{t:?}");
-    assert!(t.refused.iter().all(|&n| n > 10) && t.decode_errors > 50, "every refusal kind should occur: {t:?}");
-    assert!(t.queries > 300 && t.query_errors > 10, "{t:?}");
+    })
 }

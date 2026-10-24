@@ -106,7 +106,7 @@ fn amph_value(g: &Game, c: CityId) -> i64 {
 fn amph_need(g: &Game, p: PlayerId, c: CityId) -> i32 {
     let team = g.players[p].team;
     let cp = g.city_plot(c);
-    let n_def = if g.plot_is_visible(cp, team) {
+    let n_def = if crate::view::sees_units(g, team, cp) {
         crate::campaign::visible_defenders(g, team, cp).len() as i32
     } else if g.player_is_barbarian(g.cities[c].owner) {
         (1 + (g.game_turn() - g.cities[c].game_turn_acquired) / 25).clamp(1, 6)
@@ -378,7 +378,7 @@ fn fleet_waits(g: &mut Game, v: &View, grp: GroupId, u: UnitId, amph: &Amph) -> 
     let aboard: i32 = ships.iter().map(|&t| army_aboard(g, t)).sum();
     // What has landed next to the target already counts: the trips after the first reinforce it.
     // An unseen garrison is a guess: a scouting-sized force goes to look (as on land, campaign.rs).
-    let required = if g.plot_is_visible(amph.plot, v.team) { amph.need } else { amph.need.min(4) };
+    let required = if crate::view::sees_units(g, v.team, amph.plot) { amph.need } else { amph.need.min(4) };
     let have = aboard + amph.landed;
     if have < required {
         // More can still come: committed units walking to the port or in it, with room for them in

@@ -35,6 +35,64 @@ and determinism -- and a standing cost preference:
   rules call again within a turn only while some unit is moving, i.e. has spent moves). So a
   game saved and resumed with a new controller plays on exactly (`tests/save_resume.rs`).
 
+## Fog of war
+
+The owner's decisions (2026-10-24): the AI **sees units through fog of war, for its defense and
+for its attacks, never through stealth** (attacks too: conflict is much of what makes the game
+fun). Unrevealed land stays unknown. Honest inference about unseen
+units would need a memory of what was last seen (saved per-team state, decay, scouting to
+refresh it); the C++ AI never had one either -- `CvPlayerAI::AI_getPlotDanger`,
+`CvPlot::getNumVisibleEnemyDefenders` and `AI_findTargetCity` read through fog and skip only
+units whose invisibility type hides them (`CvUnit::isInvisible`).
+
+- **Threats to us: fog included** (`view::known_threat`, switch `FOG_SIGHT`): the danger map
+  (`View::danger`: settler and escort risk, workers fleeing, healing, explorers, casters,
+  assembly plots), a city's local threat (`production::local_threat`: cities in peril,
+  emergency defenders, the garrison quota, settlers held at home, units kept from disbanding),
+  barbarians and civ enemies near a city (`production::barbarians_near`, `civ_enemy_near`),
+  sorties (`defense::sortie_ok`), the peril that times defensive world spells
+  (`world_spells::city_in_peril`) and the enemy's forces near our cities when weighing peace
+  (`diplomacy::front_forces`). FfH's hidden units (the Hidden and Invisible promotions,
+  assassins, shadows, hidden nationality) stay hidden: stealth is how those units and
+  civilizations play.
+- **What we attack: fog included** (`view::sees_units`, switch `FOG_ATTACK`): a city's garrison
+  on any revealed plot (`campaign::visible_defenders`, the siege and amphibious planners, the
+  war gate's `diplomacy::city_best_defense`), hunting targets (`military::find_targets`),
+  opportune and empty-city captures (`military::opportune`, `CAPTURE`); stealthed units left
+  out. With the switch off, only what is visible: in the fog the siege and amphibious planners
+  assume a defender count (2 + population/5 for a civ city, 1 + age/25 for a barbarian town)
+  and the war gate assumes the best defender the owner can train (`best_trainable_defense`).
+  The pathing checks (`plot_is_visible_enemy_unit_for_unit`) are the rules' and unchanged.
+
+Map knowledge is unchanged: city sites, paths and exploration use revealed plots only.
+
+Measured (6 civs, standard map, 300 turns). Development seeds 1-24 against master `77495f2`:
+legacy +4.8%, research +7.7%, land +4.7% (|t| <= 1.5), wars declared -55% (t -4.4),
+eliminations -54% (t -2.1). Fresh seeds 6101-6148, one binary, each against both switches off
+(paired t):
+
+| | `FOG_SIGHT` only | honest attacks only | both |
+|---|---|---|---|
+| legacy score | +3.3% (1.4) | +4.0% (2.7) | +7.3% (3.3) |
+| research | +5.5% (1.4) | +9.7% (3.0) | +12.1% (2.9) |
+| techs | +1.1% (0.4) | +3.3% (2.2) | +5.7% (2.3) |
+| cities / land | +2.9% / +2.5% | +0.1% / +2.8% | +4.8% / +4.6% (2.0) |
+| power | +7.9% (1.8) | +0.9% (0.2) | +6.6% (1.7) |
+| civ cities captured | +28% (2.1) | -21% (-1.6) | -11% (-0.7) |
+| wars declared | +15% (1.5) | -52% (-6.1) | -48% (-4.6) |
+
+Seeing threats in the fog makes civs safer and their wars more effective; the honest war gate
+halves the wars (the fogged estimate, the best defender the owner can train, is pessimistic:
+real garrisons lag the tech) while captures fall far less, and the economy gains. That table
+measured the first version, where attacks used only what was visible (then switch
+`FOG_HONEST`); the owner chose attacks through fog instead, for the conflict.
+
+`FOG_ATTACK` (fresh seeds 6201-6248, one binary, on against off, paired t): wars declared +105%
+(5.1), civ cities captured +84% (3.2) -- the extra wars take cities --, civ cities lost to
+barbarians -26% (-1.4), military +5% (1.4); legacy -2.8% (-1.4), research -5.3% (-1.4), techs
+-3.3% (-1.6): war costs some economy. Against master before any fog change (`77495f2`, seeds
+1-24), both switches on: legacy +0.5%, research +2.9%, captures +13%, wars -13% (all |t| < 1.3).
+
 ## Where the rules call the AI
 
 `Ai` implements `ffh_core::Controller`; the rules call it where the C++ calls the AI:
