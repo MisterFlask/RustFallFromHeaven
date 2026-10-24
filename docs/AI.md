@@ -183,24 +183,35 @@ the same for any unit and the cheapest are disbanded first, so idle hammers buy 
 Units are chosen by power squared per production turn, so stronger units win unless much
 dearer.
 
-**City defense against rival civilizations** (`defense.rs`, switch `RIVAL_DEFENSE`, off by
-default: it cost legacy and research on fresh seeds, Known gaps): what a
-player watches along a border -- whose cities stand how close, whether we are at war with them or
-about to be, what they think of us, whether their army outweighs ours. Each rival's threat to a
-city is More Naval AI's (`CvCityAI::AI_cityThreat`): its closeness (its cities on the landmass
-within 8 plots, 12 at war, `(20 + both populations) x (9 - distance) / 9`, the nearest in full and
-the rest a quarter) times its hostility (at war 3, our war in preparation 1.8, a vassal or master
-0.3, else its attitude: furious 1.8 to friendly 0.2) times its power over our defensive power
-when it is the stronger (up to 3). At war (or preparing one) the flat defender every city used to
-add is a pool of one per city shared out by each city's share of the war threat (More Naval AI's
-floating defenders, `AI_updateNeededFloatingDefenders`): the front holds two or three, the
-interior none, at the old cost. In peacetime a city adds one defender for a threat of 40 and two
-for 100 (a cautious neighbour of our strength with a size-6 city 4 plots away is about 22, a
-furious one about 40). Production, the defenders' placement (`units::garrison_quota`: spare
-defenders walk from the interior to the border) and the upkeep scrapping (`finance::disband`)
-read the same number. Sorties (`defense::sortie_ok`, More Naval AI's `AI_leaveAttack(1, 70,
-175)`): a defender beyond its city's quota attacks out at 80% odds only while our strength in the
-city is 175% of the enemy's within two plots.
+**The standing army against rival civilizations** (`defense.rs`, switch `RIVAL_DEFENSE`): how
+many defenders beyond the barbarian and capital quotas our cities hold, and where.
+- *In peacetime, deterrence* (`defense::deterrence`): an expert keeps enough army that no
+  neighbour who can reach him and would fight him sees an easy target, and puts it where that
+  neighbour's army would land. Every AI here starts a war of expansion through the same gate
+  (`diplomacy::territory_check`): its power, with the power of the civs already at war with the
+  target, at least its leader's need ratio (85-180% by temperament, +30 when broke) of the
+  target's defensive power; the target's cities within 16 plots; the target's weakest city
+  takeable by its best attacker; a cautious leader sparing a civ it likes. For each neighbour that
+  passes the other tests (met, not a vassal or master, not already at war with us), the
+  defensive power that keeps its ratio under its bar with a 10% margin. The largest shortfall
+  against our defensive power, divided by the power of the best defender we can train, is the
+  number of extra defenders, placed in the cities facing that neighbour (on its landmass, within
+  16 plots of its cities), nearest first, one a city per round, at most three a city. No
+  neighbour that would see an easy target: no extra defender, however close or hostile it is.
+  (In a traced game, most civs need none or one to three; a civ beside a much stronger Khazad
+  needed 11-22 across its border.) More army also raises our own power against others' defense,
+  so wars of expansion rise a little with it (+9% declared, Round 7e).
+- *At war* (or preparing one) the flat defender every city used to add is a pool of one per city
+  shared out by each city's share of the war threat (More Naval AI's `CvCityAI::AI_cityThreat`
+  and floating defenders): each enemy's closeness (its cities on the landmass within 12 plots,
+  `(20 + both populations) x (13 - distance) / 13`, the nearest in full and the rest a quarter)
+  times its hostility (at war 3, our war in preparation 1.8) times its power over ours when it is
+  the stronger (up to 3). The front holds two or three, the interior none, at the old cost.
+- Production, the defenders' placement (`units::garrison_quota`: spare defenders walk from the
+  interior to the border) and the upkeep scrapping read the same number. Sorties
+  (`defense::sortie_ok`, More Naval AI's `AI_leaveAttack(1, 70, 175)`): a defender beyond its
+  city's quota attacks out at 80% odds only while our strength in the city is 175% of the enemy's
+  within two plots.
 
 **Unit support** (`economy.rs`): FfH units beyond the free ones (handicap, civics,
 population) cost gold every turn. Every optional unit (extra defenders beyond one per city
@@ -2498,17 +2509,16 @@ Where MNAI does something this AI does not, ranked by expected worth (each untri
 
 ## Known gaps (future work)
 
-- **Three military behaviours off by default (round 7b).** Implemented, switched, and costing
-  legacy on fresh seeds (26001-26192, 300 turns, each switched off inside the merged build):
-  defense weighed by rival civilizations (`RIVAL_DEFENSE`: legacy -3.2%, t -3.8; research
-  -7.2%, t -4.1; population -3.5%), heroes and veterans only at good odds (`PRECIOUS`: legacy
-  -2.0%, t -2.6; research -5.1%, t -2.7), and healing (`HEAL`: legacy -2.1%, t -2.1, and 1-3%
-  below on every set measured). Each is expert play in principle; the cost is the implementation
-  and is not traced yet. Likely levers: for `RIVAL_DEFENSE`, the peacetime defenders it holds
-  (the garrison entries in docs/AI_LOG.md found held defenders cost research and save no city);
-  for `PRECIOUS`, strikes that wait for odds the heroes never get, so sieges drag (count the
-  held-back strikes and the turns a siege lasts with it on and off); for `HEAL`, siege stacks
-  that march on wounded and lose units. `FFH_AI_<NAME>_ONLY=ALL` turns one on for measuring.
+- **Two military behaviours off by default (round 7b).** Implemented, switched, and costing
+  legacy on fresh seeds (26001-26192, 300 turns, each switched off inside the merged build with
+  the others on): heroes and veterans only at good odds (`PRECIOUS`: legacy -2.0%, t -2.6;
+  research -5.1%, t -2.7) and healing (`HEAL`: legacy -2.1%, t -2.1, and 1-3% below on every set
+  measured). Each is expert play in principle; the cost is the implementation and is not traced
+  yet. Likely levers: for `PRECIOUS`, strikes that wait for odds the heroes never get, so sieges
+  drag (count the held-back strikes and the turns a siege lasts with it on and off); for `HEAL`,
+  siege stacks that march on wounded and lose units. Measured together with them, the third,
+  `RIVAL_DEFENSE`, also cost (-3.2%); with them off it was neutral, and it is on (Round 7e).
+  `FFH_AI_<NAME>_ONLY=ALL` turns one on for measuring.
 
 - **Councils gang up (round 7c).** With `council.rs` the councils meet in about half the games
   and pass nearly every proposal; a head councilor at war has the council declare war on its

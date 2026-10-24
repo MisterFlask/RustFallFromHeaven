@@ -350,6 +350,23 @@ change also in full games, the allied-barbarian one with the Clan of Embers forc
    list), is where to work on it, not the disband threshold (disbanding from 50% of the commerce
    instead of 60% changed nothing at turn 300).
 
+### Peacetime defenders by a rival-threat threshold (2026-10-22, replaced 2026-10-24)
+
+1. Round 7b's `RIVAL_DEFENSE` gave a city one more defender in peacetime where More Naval AI's
+   threat index (a rival's closeness x attitude x its power over ours) reached 40, two at 100.
+2. Inside the merged round 7 build it measured legacy -3.2% (t -3.8) and research -7.2% (seeds
+   26001-26192, 300 turns), and was switched off by default. Measured again on the same seeds once
+   `HEAL` and `PRECIOUS` were off, it was neutral: legacy -0.4% (t -0.55), research -0.3%; and
+   none of its parts carried a cost alone (the peacetime defenders -0.5%, the war pool +0.4%, the
+   sortie check -0.7%, all |t| < 1.1). The earlier cost was an interaction with the other two
+   military behaviours, not this rule's.
+3. The threshold had no reason in it: it added defenders by how close and unfriendly a
+   neighbour was, whatever our army already deterred. It was replaced by deterrence, sized by the
+   gate every AI here uses to choose a war (docs/AI.md, "The standing army against rival
+   civilizations"); neutral as well, and the rule an expert can explain. Lesson for measuring:
+   switches measured inside a build with other new switches on can carry each other's costs;
+   re-measure a behaviour alone once its neighbours are settled.
+
 ### Healing only when most of the stack is hurt (2026-10-22, replaced)
 
 1. Our field stacks stopped to heal wherever they stood as soon as one unit passed 35% damage,

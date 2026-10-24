@@ -1,34 +1,36 @@
-//! City defense weighed by the rival civilizations near each city (switch `RIVAL_DEFENSE`).
+//! The standing army against rival civilizations (switch `RIVAL_DEFENSE`): how many defenders
+//! beyond the barbarian and capital quotas our cities hold, and where.
 //!
-//! What a player watches along a border: whose cities stand how close, whether we are at war
-//! with them (or about to be), what they think of us, and whether their army outweighs ours. A
-//! border city facing a stronger or hostile neighbour holds more defenders; an interior city
-//! fewer. The idea is More Naval AI's (`CvCityAI::AI_cityThreat`: each rival's closeness to the
-//! city, times war 3 / war plan 1.8 / attitude 0.2-1.8, times their power over ours when they are
-//! stronger; `AI_updateNeededFloatingDefenders` shares a pool of floating defenders out by it):
-//!
-//! - **closeness** of a rival to our city: its cities on the same landmass within 8 plots (12 at
-//!   war), each `(20 + both populations) x (9 - distance) / 9` (13 at war), the nearest counting
-//!   fully and the rest a quarter (C++ `AI_playerCloseness`, by plot distance rather than path
-//!   distance);
-//! - **hostility**: at war 3, our war in preparation 1.8, a vassal or master 0.3, else their
-//!   attitude towards us (furious 1.8, annoyed 1.3, cautious 1, pleased 0.5, friendly 0.2);
-//! - **power**: their power over our defensive power (pacts and vassals included) when they are
-//!   the stronger, up to 3.
+//! **In peacetime: deterrence** ([`deterrence`]). An expert keeps enough army that no neighbour who
+//! can reach him and would fight him sees an easy target, and puts it where that neighbour's army
+//! would land. Every AI here starts a war of expansion through the same gate
+//! (`diplomacy::territory_check`): its power, with the power of the civs already at war with the
+//! target, at least its leader's need ratio (85-180% by temperament, more when broke) of the
+//! target's defensive power, the target within 16 plots, the target's weakest city takeable by its
+//! best attacker, and a cautious leader sparing a civ it likes. So for each neighbour that passes
+//! the other tests, the defensive power that keeps its ratio under its bar with a 10% margin; the
+//! largest shortfall against what we hold, in our best defender's power, becomes defenders in the
+//! cities facing that neighbour, nearest first, at most three a city. No neighbour that would see
+//! an easy target: no extra defender. (Before: one or two defenders wherever More Naval AI's
+//! closeness x attitude x power index passed a threshold, whatever our army already deterred.)
 //!
 //! **At war** (or preparing one) the flat defender every city added before is a pool of one per
-//! city, shared out by each city's share of the war threat: the front holds two or three, the
-//! interior none, at the same cost. **In peacetime** a city adds one defender for a threat of 40
-//! and two for 100 (a cautious neighbour of our strength, a size-6 city 4 plots away, is about 22;
-//! a furious one of our strength about 40). Production (`production::decide`), the defenders'
-//! placement (`units::garrison_quota`, so spare defenders walk from the interior to the border)
-//! and the upkeep scrapping (`finance::disband`) read the same number.
+//! city, shared out by each city's share of the war threat -- More Naval AI's
+//! `CvCityAI::AI_cityThreat` and floating defenders: each enemy's closeness to the city (its
+//! cities on the landmass within 12 plots, `(20 + both populations) x (13 - distance) / 13`, the
+//! nearest in full and the rest a quarter) times its hostility (at war 3, our war in preparation
+//! 1.8) times its power over ours when it is the stronger (up to 3). The front holds two or three,
+//! the interior none, at the old cost.
+//!
+//! Production (`production::decide`), the defenders' placement (`units::garrison_quota`: spare
+//! defenders walk to the border) and the upkeep scrapping read the same number.
 //!
 //! **Sorties** (More Naval AI's `AI_leaveAttack(1, 70, 175)`): a defender beyond its city's quota
 //! attacks out only while our strength in the city is at least 175% of the enemy strength within
 //! two plots.
 //!
-//! Only what a human could see is read (cities, power, wars, attitudes); no state, no RNG.
+//! Only what a human could see is read (cities, power, wars, attitudes, leaders' temperaments);
+//! no state, no RNG.
 
 use std::collections::BTreeMap;
 
@@ -43,10 +45,6 @@ use crate::view::{attack_power, defense_power};
 /// raid).
 const CLOSE: i32 = 8;
 const CLOSE_WAR: i32 = 12;
-/// Peacetime threat for one more defender, and for two (the rule before deterrence, kept for
-/// measurement: `FFH_AI_RD_PARTS=oldpeace`).
-const ONE_MORE: i64 = 40;
-const TWO_MORE: i64 = 100;
 /// Defensive power wanted over what a rival's bar asks, percent.
 const DETER_MARGIN: i64 = 110;
 /// A rival's cities within this many plots of ours: its army can reach us (the war gate's 16).
@@ -55,13 +53,6 @@ const REACH: i32 = 16;
 const MAX_EXTRA: i32 = 3;
 /// Strength in the city against the enemy's within two plots, percent.
 const SORTIE_EDGE: i64 = 175;
-
-/// SCRATCH (measurement only, removed before merge): `FFH_AI_RD_PARTS=nopeace,nowar,nosortie`
-/// switches parts of the rule off. Read once; it changes no state.
-pub(crate) fn part_off(name: &str) -> bool {
-    static OFF: std::sync::OnceLock<Vec<String>> = std::sync::OnceLock::new();
-    OFF.get_or_init(|| std::env::var("FFH_AI_RD_PARTS").map(|v| v.split(',').map(|s| s.trim().to_string()).collect()).unwrap_or_default()).iter().any(|o| o == name)
-}
 
 /// A rival civilization and its weight (hostility x power, x10000).
 #[derive(Copy, Clone, Debug)]
@@ -225,17 +216,6 @@ fn deterrence_defenders(g: &Game, p: PlayerId) -> BTreeMap<CityId, i32> {
     out
 }
 
-/// Extra defenders a city wants for a peacetime rival threat.
-pub fn extra(threat: i64) -> i32 {
-    if threat >= TWO_MORE {
-        2
-    } else if threat >= ONE_MORE {
-        1
-    } else {
-        0
-    }
-}
-
 /// Extra defenders our city `c` wants for the rivals near it (0 with the switch off).
 pub fn rival_defenders(g: &Game, c: CityId) -> i32 {
     let p = g.cities[c].owner;
@@ -246,7 +226,7 @@ pub fn rival_defenders(g: &Game, c: CityId) -> i32 {
 /// preparing one) a pool of one defender per city -- what the flat war defender every city held
 /// added up to -- is shared out by each city's share of the war threat (largest remainders; at
 /// most [`MAX_EXTRA`] a city), so the front holds two or three and the interior none. The
-/// peacetime rivals add one or two where their threat reaches [`ONE_MORE`] / [`TWO_MORE`].
+/// peacetime defenders deter the neighbour that would see us as an easy target ([`deterrence`]).
 pub fn all_rival_defenders(g: &Game, p: PlayerId) -> BTreeMap<CityId, i32> {
     let mut out = BTreeMap::new();
     if !crate::switches::RIVAL_DEFENSE.on(g, p) || g.player_is_barbarian(p) {
@@ -260,7 +240,7 @@ pub fn all_rival_defenders(g: &Game, p: PlayerId) -> BTreeMap<CityId, i32> {
     let war: Vec<i64> = cities.iter().map(|&c| if rivals.iter().any(|r| r.war) { city_threat(g, c, &rivals, true) } else { 0 }).collect();
     let total: i64 = war.iter().sum();
     let mut share = vec![0i32; cities.len()];
-    if total > 0 && !part_off("nowar") {
+    if total > 0 {
         let pool = cities.len() as i64;
         let mut rest: Vec<(i64, CityId, usize)> = Vec::new();
         let mut left = pool;
@@ -282,16 +262,14 @@ pub fn all_rival_defenders(g: &Game, p: PlayerId) -> BTreeMap<CityId, i32> {
         }
     }
     // Peacetime: what deters the neighbour that would see us as an easy target (deterrence).
-    let deter = if part_off("oldpeace") || part_off("nopeace") { BTreeMap::new() } else { deterrence_defenders(g, p) };
+    let deter = deterrence_defenders(g, p);
     for (i, &c) in cities.iter().enumerate() {
-        let peace = city_threat(g, c, &rivals, false);
-        let peace_extra = if part_off("nopeace") { 0 } else if part_off("oldpeace") { extra(peace) } else { deter.get(&c).copied().unwrap_or(0) };
-        let n = (share[i] + peace_extra).min(MAX_EXTRA);
+        let n = (share[i] + deter.get(&c).copied().unwrap_or(0)).min(MAX_EXTRA);
         if n > 0 {
             out.insert(c, n);
         }
-        if war[i] > 0 || peace > 0 {
-            crate::trace!(g, p, "{}: rival threat war {} peace {} -> {} more defenders", g.cities[c].name, war[i], peace, n);
+        if war[i] > 0 {
+            crate::trace!(g, p, "{}: rival war threat {} -> {} more defenders", g.cities[c].name, war[i], n);
         }
     }
     out
@@ -301,7 +279,7 @@ pub fn all_rival_defenders(g: &Game, p: PlayerId) -> BTreeMap<CityId, i32> {
 /// be at least [`SORTIE_EDGE`] percent of the attack power of the enemy units we see within two
 /// plots. Always true with the switch off.
 pub fn sortie_ok(g: &Game, p: PlayerId, plot: PlotIdx, u: UnitId) -> bool {
-    if !crate::switches::RIVAL_DEFENSE.on(g, p) || part_off("nosortie") {
+    if !crate::switches::RIVAL_DEFENSE.on(g, p) {
         return true;
     }
     let team = g.players[p].team;
@@ -334,17 +312,4 @@ pub fn sortie_ok(g: &Game, p: PlayerId, plot: PlotIdx, u: UnitId) -> bool {
         g.tel_decision(p, "military", "sortie_held", "rival_defense", 1, String::new);
     }
     ok
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn extra_defenders_by_threat() {
-        assert_eq!(extra(0), 0);
-        assert_eq!(extra(ONE_MORE - 1), 0);
-        assert_eq!(extra(ONE_MORE), 1);
-        assert_eq!(extra(TWO_MORE), 2);
-    }
 }

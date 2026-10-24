@@ -29,10 +29,10 @@ pub struct Switch {
 pub static WS_TIMING: Switch = Switch::new("WS_TIMING");
 /// A prepared war is declared once the army stands near the target (`diplomacy::manage`).
 pub static WAR_STAGING: Switch = Switch::new("WAR_STAGING");
-/// City defenders weighed by the rival civilizations near each city, and sorties only with a
-/// strength edge (`defense.rs`). Off by default (`FFH_AI_RIVAL_DEFENSE_ONLY=ALL` turns it on):
-/// on fresh seeds it cost legacy -3.2% and research -7.2% at turn 300 (docs/AI.md, Known gaps).
-pub static RIVAL_DEFENSE: Switch = Switch::off_by_default("RIVAL_DEFENSE");
+/// City defenders weighed by the rival civilizations: in peacetime what deters a neighbour that
+/// would see us as an easy target, at war a pool shared by each city's war threat, and sorties
+/// only with a strength edge (`defense.rs`).
+pub static RIVAL_DEFENSE: Switch = Switch::new("RIVAL_DEFENSE");
 /// Field stacks heal as More Naval AI's do: only when most of the stack is hurt and where healing
 /// is good, the wounded splitting off in our cities (`military::heal`). Off by default
 /// (`FFH_AI_HEAL_ONLY=ALL`): it cost legacy -1 to -2% on every fresh set (docs/AI.md, Known gaps).
