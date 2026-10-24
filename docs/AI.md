@@ -2413,6 +2413,23 @@ Each of these gained on seeds 1-96 and was re-measured on reserved seeds (801-94
 For A/B tests compare `legacy_score`, techs, cities, research and the like, not `score`: the
 share score (docs/SCORE.md) averages 10000/N whatever the AI does.
 
+**Forks first** (CLAUDE.md, "AI changes"): a behaviour is judged first at its firings.
+- `tools/ai-branch.sh --bin $B --seed S --turn T --switch NAME [--turns N] [--trace P] -- WATCH..`
+  plays seed S (as `ffh stats` does; run options after the script's own) to the start of turn T
+  with the behaviour on, saves it, and resumes the save twice for N turns, the switch forced on
+  (`FFH_AI_<NAME>_ONLY=ALL`) and off (`FFH_AI_<NAME>_OFF=ALL`). It prints the watched facts turn by
+  turn for both, `*` marking the lines that differ, and with `--trace P` keeps player P's decision
+  trace of each branch. Watches (`ffh resume --watch`): `city:X,Y` (owner, size, defenders and
+  their health, defense damage), `player:P` (cities, units, army, power, research, gold, wars),
+  `area:X,Y,R` (each player's units within R plots: count, health, types), `unit:ID`.
+- Pick T a turn or two before the firing (the trace line's turn), the watches on what the
+  behaviour should change (the stack's area, the city it besieges, the hero's id), N the
+  behaviour's horizon. Combat is random and the dice part ways at the fork, so one fork can be
+  luck: look at a few firings, and read the traces for why each branch went as it did.
+- Underneath: `ffh save FILE --to-turn T [run options]` and `ffh resume FILE --turns N
+  [--watch SPEC]..` (`crates/ffh-cli/src/branch.rs`); a resumed save plays on exactly as the
+  game it was saved from (same checksums).
+
 - `ffh stats --seed N --at T1,T2,.. [--every N]` plays one game and prints one JSON line:
   per-civ snapshots after the given numbers of turns played (and always at the end), game-wide
   values at the same turns, whole-game events (captures by and from barbarians, wars, peace,

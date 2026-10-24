@@ -244,7 +244,18 @@ which forward to the C++ methods -- so port each Cy call to the corresponding po
   area you are about to change: each entry says why the idea made sense, why it failed in the
   games, and what that implies about the right version (or about the game's balance) -- both a
   warning and a source of better ideas.
-- Measure every change on development seeds, then validate it on seeds never used to choose
+- **Judge a change first in the games where it fires** (the owner's request, 2026-10-24). Before
+  any win-rate measurement, say what the behaviour should change locally (the border city holds,
+  the stack takes its city with fewer losses, the neighbour does not prepare war), find a few
+  firings in traced games (its `FFH_AI_TRACE` lines or telemetry name the turn, player and
+  place), and fork each one with `tools/ai-branch.sh`: the game saved just before the firing, then
+  played on with the behaviour on and off, the local facts side by side and both branches'
+  traces. Up to the fork the two branches are the same game, so the difference is that decision's.
+  Is it locally helpful, and why (or why not)? A win-rate result alone cannot tell a bad concept
+  from a bad implementation from a sound behaviour that another part of the AI undoes; the forks
+  can. The win-rate measurement below comes after, for side effects; when it disagrees with
+  locally helpful forks, follow the effect chain into the rest of the AI.
+- Then measure every change on development seeds, and validate it on seeds never used to choose
   anything, the change on against the same binary with it off (`civ_ab.py --off-base` /
   `FFH_AI_CIV_OFF` for a civilization's logic; docs/AI.md, "Tools"). Telemetry
   (docs/TELEMETRY.md) shows whether a behaviour fires when and as it should. For tuning (a
