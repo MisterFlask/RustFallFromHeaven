@@ -112,10 +112,9 @@ pub fn attack_ok(a: &Assessment, city: bool) -> bool {
 
 /// The group attack of `grp` on plot `q` played in expected values as the rules will fight it
 /// (`campaign::simulate_in_order`, [`Order::Group`](crate::campaign::Order::Group)): the attackers
-/// that can attack there, against the defenders we see. Kills count double on our own land (an
-/// invader or raider there will pillage, kill workers or besiege a city: removing it is worth
-/// about what it is worth again) and half again against the barbarians elsewhere (they come)
-/// (switch `FIELD_SIM`).
+/// that can attack there, against the defenders we see (switch `FIELD_SIM`). Kills count double
+/// on our own land: an invader or raider there pillages, kills workers or besieges a city, and
+/// removing it is worth about what it is worth again.
 pub(crate) fn field_sim(g: &Game, grp: GroupId, q: PlotIdx) -> Option<crate::campaign::Sim> {
     let atts: Vec<UnitId> = attackers(g, grp).into_iter().filter(|&u| g.unit_can_move_or_attack_into(u, q, false)).collect();
     if atts.is_empty() {
@@ -124,28 +123,31 @@ pub(crate) fn field_sim(g: &Game, grp: GroupId, q: PlotIdx) -> Option<crate::cam
     let team = g.players[g.groups[grp].owner].team;
     let defs = crate::campaign::visible_defenders(g, team, q);
     let ours = g.map.plots[q].owner.is_some_and(|o| g.players[o].team == team);
-    let barbarians = defs.iter().any(|&d| g.player_is_barbarian(g.units[d].owner));
-    let kill_pct = if ours { 200 } else if barbarians { 150 } else { 100 };
-    Some(crate::campaign::simulate_in_order(g, q, &defs, &atts, 0, crate::campaign::Order::Group, kill_pct, 100))
+    Some(crate::campaign::simulate_in_order(g, q, &defs, &atts, 0, crate::campaign::Order::Group, if ours { 200 } else { 100 }, 100))
 }
 
-/// Is the group attack [`field_sim`] played worth starting (or, `fought`, going on with)? Nothing
-/// to fight (a worker to capture, our own units there): yes. A city to `capture` (an opportune
-/// capture, a landing) when it falls (each defender 90% sure to); anything else -- a barbarian
-/// town's garrison included, and a capture once the fighting has started -- also when the kills
-/// are worth more than the losses (the simulation's `gain`). A hurt stack only at 75% odds.
-/// (Before: the best odds of 65%, or each attacker's odds against the best defender at full
-/// health plus a third of a kill for every lost fight, whatever the defender's strength or
-/// first strikes.)
+/// Is the group attack [`field_sim`] played worth starting (or, `fought`, going on with)? As an
+/// expert decides, on the simulation's numbers. Nothing to fight (a worker to capture, our own
+/// units there): yes. The attacker the rules send has good odds (65%; 75% for a `hurt` stack):
+/// yes -- a raider, an animal, a shot at a barbarian town's garrison. Wearing the defenders down
+/// at worse odds: only when the stack clears the plot (every defender 90% sure to fall) and the
+/// kills are worth more than the losses (`gain`). A city to `capture` (an opportune capture, a
+/// landing): when it falls; once the fighting has started, also on good odds or a winning trade.
+/// (Before: `attack_ok`, which counted a third of a kill for every lost fight whatever the odds,
+/// the defender's strength or its first strikes -- it sent four Warriors at a Griffon at 1% -- and
+/// took the odds against a defender at full health for each attacker. Measured first as a pure
+/// trade of what kills and losses are worth, the stacks traded lone units at 35-50% odds and the
+/// player fell behind in units by turn 100: docs/AI.md, round 7g.)
 pub(crate) fn field_go(s: &crate::campaign::Sim, city: bool, capture: bool, fought: bool, hurt: bool) -> bool {
     if s.n_def == 0 {
         return true;
     }
-    if hurt && s.best < 750 {
-        return false;
+    let falls = s.used.is_some();
+    if city && capture && !fought {
+        return falls;
     }
-    let falls = city && s.used.is_some();
-    falls || (!capture || fought) && s.gain > 0
+    let good = s.first >= if hurt { 750 } else { 650 };
+    good || falls && s.gain > 0
 }
 
 /// (Trace) Where the simulation ([`field_go`]) and the old estimate ([`attack_ok`]; for a hunt

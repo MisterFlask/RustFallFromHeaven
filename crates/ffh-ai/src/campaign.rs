@@ -355,6 +355,8 @@ pub struct Sim {
     /// worth exceeds what the losses are worth ([`worth`], kills weighted by the caller), from
     /// some first attacks on; 0 when not even the first attack is worth it.
     pub gain: i64,
+    /// The odds of the first attack (per mille; 0 when there is none).
+    pub first: i32,
 }
 
 /// The order in which [`simulate_in_order`] sends the attackers: the order the attack itself
@@ -486,12 +488,12 @@ pub fn simulate_in_order(g: &Game, tp: PlotIdx, defs: &[UnitId], atts: &[UnitId]
         .collect();
     let raised = |u: UnitId| crate::magic::raised(g.d, g.units[u].unit_type);
     let mut left: Vec<usize> = (0..n_att).collect();
-    let (mut best, mut kills, mut losses, mut gain, mut best_gain) = (0, 0i64, 0i64, 0i64, 0i64);
+    let (mut best, mut kills, mut losses, mut gain, mut best_gain, mut first_odds) = (0, 0i64, 0i64, 0i64, 0i64, 0);
     let mut used = 0;
     loop {
         let alive: Vec<usize> = (0..ds.len()).filter(|&j| standing(&ds[j])).collect();
         if alive.is_empty() {
-            return Sim { used: Some(used), n_def, hp_left: 0, best, n_att, kills: kills as i32, losses: losses as i32, gain: best_gain };
+            return Sim { used: Some(used), n_def, hp_left: 0, best, n_att, kills: kills as i32, losses: losses as i32, gain: best_gain, first: first_odds };
         }
         // Every attacker left: the defender it would meet, the odds and the damage of a loss.
         let cands: Vec<(usize, usize, i32, i32)> = left
@@ -566,6 +568,9 @@ pub fn simulate_in_order(g: &Game, tp: PlotIdx, defs: &[UnitId], atts: &[UnitId]
         let a = atts[i];
         let pr = pairs[i][j].unwrap();
         best = best.max(odds);
+        if used == 0 {
+            first_odds = odds;
+        }
         // A siege engine that wins leaves the defender at its combat limit; anything else kills.
         let kills_on_win = pr.a_limit >= pr.d_max_hp;
         let hp = ds[j].1;
@@ -608,7 +613,7 @@ pub fn simulate_in_order(g: &Game, tp: PlotIdx, defs: &[UnitId], atts: &[UnitId]
     }
     let alive: Vec<usize> = (0..ds.len()).filter(|&j| standing(&ds[j])).collect();
     let hp_left = alive.iter().map(|&j| ds[j].1).sum();
-    Sim { used: if alive.is_empty() { Some(used) } else { None }, n_def, hp_left, best, n_att, kills: kills as i32, losses: losses as i32, gain: best_gain }
+    Sim { used: if alive.is_empty() { Some(used) } else { None }, n_def, hp_left, best, n_att, kills: kills as i32, losses: losses as i32, gain: best_gain, first: first_odds }
 }
 
 /// City defense our siege engines in `units` can bombard away within three turns (0 without

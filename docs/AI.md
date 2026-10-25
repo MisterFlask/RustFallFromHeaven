@@ -693,17 +693,19 @@ Each army group is a stack; per decision, in order:
 11. join a bigger stack within 3 turns, else hold in the nearest city.
 
 **Deciding an attack** (switch `FIELD_SIM`; round 7g). Every attack in steps 1, 4, 5 and 10 and a
-landing's assault (`naval.rs`) is decided by the simulation of the group attack
+landing's assault (`naval.rs`) is decided on the simulation of the group attack
 (`military::field_sim`: `campaign::simulate_in_order` in the rules' own attacker order,
-`AI_getBestGroupAttacker` with its `AI_attackOdds`, against the defenders we see): a city to
-capture when every defender is 90% sure to fall; anything else -- a raider, an animal, a
-barbarian town's garrison, a capture already under way -- when the kills are worth more than the
-expected losses (`gain`: `campaign::worth` = cost or 15 hammers a point of strength, whichever is more,
-plus a tenth per experience point; kills count double on our land and half again against the
-barbarians elsewhere). A hurt stack still only attacks at 75%. Before: `assess`/`attack_ok`,
-the best odds of 65%, or every attacker's odds against the best defender at full health plus a
-third of a kill for each lost fight, whatever the defender's strength or first strikes -- it
-sent four Warriors at a Griffon at 1% and passed up a wounded Lizardman at 60%.
+`AI_getBestGroupAttacker` with its `AI_attackOdds`, against the defenders we see) as an expert
+decides (`military::field_go`): attack when the attacker the rules send has good odds (65%, 75%
+for a hurt stack); wear the defenders down at worse odds only when the stack clears the plot
+(every defender 90% sure to fall) and the kills are worth more than the expected losses
+(`gain`: `campaign::worth` = cost or 15 hammers a strength point, whichever is more, plus a tenth
+per experience point; kills double on our land); a city to capture (an opportune capture, a
+landing) when it falls. Before: `assess`/`attack_ok`, the best odds of 65%, or every attacker's
+odds against the best defender at full health plus a third of a kill for each lost fight,
+whatever the defender's strength or first strikes -- it sent four Warriors at a Griffon at 1% and
+six units at an Elephant at 0.2%. A pure trade rule (attack whenever the kills are worth more)
+lost units early and was replaced (docs/AI_LOG.md, "Field attacks as a pure trade").
 
 **Siege operations** (`campaign.rs`): one per player, rebuilt from the game state on the first
 army decision of each `play_turn` call (nothing outside `Game` is remembered).

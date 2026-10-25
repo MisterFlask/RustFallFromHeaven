@@ -31,6 +31,37 @@ Each entry answers three questions, from the games themselves (counts with `ffh 
   `FFH_AI_TRACE` (a throwaway trace line is fine on a scratch branch; it must not change the
   checksum) and compare the snapshots per checkpoint (`civ_ab.py --load`, the snapshot fields).
 
+## Round 7g: the simulation for every attack (2026-10-25)
+
+### Field attacks as a pure trade of what kills and losses are worth (replaced)
+
+1. **Why it made sense.** The field estimate (`military::assess`/`attack_ok`) counted a third of
+   a kill for every lost fight whatever the odds, the defender's strength or first strikes (four
+   Warriors at a Griffon at 1%), took each attacker's odds against the best defender at full
+   health, and passed up good shots (a wounded Lizardman at 60%). The faithful simulation
+   (`campaign::simulate_in_order`, the rules' group-attack order) gives the expected kills and
+   losses; an expert attacks when the exchange favours him. So: attack when the kills are worth
+   more than the expected losses (`campaign::worth`: cost or 15 hammers a strength point, whichever
+   is more, plus a tenth per experience point), kills counting double on our land and half again
+   against barbarians elsewhere.
+2. **Why it did not hold.** One player with it against opponents without (`civ_ab.py --civ all`,
+   seeds 33001-33016, 304 paired games, 300 turns): win rate 12.2% -> 9.2% (16 seeds won only with
+   it, 25 only without), share -3.9% (t -1.34), legacy -4.1% (t -1.42). The player was behind in
+   military units by turn 100 (-0.33, t -2.4) and in power, workers (t -2.5) and cities by turn
+   200. In traced games the switch added about 110 attacks a game the old rule refused: 285 of 439
+   by lone units, 126 whose best simulated fight stayed under 50%, a quarter against animals
+   (which stay out of our borders). The weights made a Warrior (worth 45) a fair trade for a Bear
+   (75 x 1.5) at 40%; every loss of a lone unit was a whole stack, early, when units are scarce.
+   Reweighted (losses at 150%, animals at half), it swung the other way: a lone unit passed up a
+   Lion at 75%, six units a barbarian Axeman they would surely kill.
+3. **What it implies.** A trade sum is too sensitive to its weights to be the decision, and it
+   prices neither the experience a winner gains nor the threat removed. The kept rule decides as
+   an expert does, on the simulation's numbers: attack when the attacker the rules send has good
+   odds (65%; 75% hurt); grind at worse odds only when the stack clears the plot (every defender
+   90% sure to fall) and the trade is favourable; a capture when the city falls. The simulation's
+   accuracy -- first strikes, wounded defenders, the real attacker order -- is what the old rule
+   lacked, not a different notion of when to attack.
+
 ## Round 7c: wars, diplomacy, councils (2026-10-22)
 
 Two first versions of round 7c's behaviours (docs/AI.md, "Diplomacy" and "Round 7c") were
