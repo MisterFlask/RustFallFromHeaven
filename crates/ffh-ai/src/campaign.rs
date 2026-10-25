@@ -21,7 +21,7 @@
 //!   within a few turns count as having done so. With switch `SIM_FAITHFUL`
 //!   ([`simulate_in_order`]) the strike is played as it will be fought -- the attackers in the
 //!   strike's own order, each against the defender the rules put up against it, a defender
-//!   fallen when it is 95% sure to be dead (80% once positioned) -- and the same simulation, in
+//!   fallen when it is 90% sure to be dead (70% once positioned) -- and the same simulation, in
 //!   the rules' group-attack order, decides every field attack (`FIELD_SIM`,
 //!   `military::field_go`).
 //! - **Phases** ([`Phase`]): while the committed force falls short, stacks gather in the rally
@@ -392,10 +392,10 @@ fn faithful(g: &Game, atts: &[UnitId]) -> bool {
 /// Play the strike of `atts` against the defenders `defs` of plot `tp` in expected values
 /// (see the module doc). `wall_cut`: city defense points bombarded away first. With switch
 /// `SIM_FAITHFUL` the strike is played as [`strike`] will fight it ([`simulate_in_order`], each
-/// defender 95% sure to fall).
+/// defender 90% sure to fall).
 pub fn simulate(g: &Game, tp: PlotIdx, defs: &[UnitId], atts: &[UnitId], wall_cut: i32) -> Sim {
     if faithful(g, atts) {
-        return simulate_in_order(g, tp, defs, atts, wall_cut, Order::Strike, 100, 50);
+        return simulate_in_order(g, tp, defs, atts, wall_cut, Order::Strike, 100, 100);
     }
     let mut ds: Vec<(UnitId, i32, i32)> = defs.iter().map(|&d| (d, g.unit_curr_hit_points(d), g.unit_max_combat_str(d, Some(tp), None, None))).collect();
     let n_def = ds.len();
@@ -643,11 +643,12 @@ pub(crate) fn covers(g: &Game, c: CityId, tp: PlotIdx, defs: &[UnitId], units: &
         return false;
     }
     let cut = if siege { wall_cut(g, c, units) } else { 0 };
-    // `SIM_FAITHFUL`: the confidence is the simulation's own -- every defender 95% sure to fall
-    // with a reserve to spare, 80% sure without -- in place of attackers held in reserve against
-    // an estimate that was optimistic.
+    // `SIM_FAITHFUL`: the confidence is the simulation's own -- every defender 90% sure to fall
+    // with a reserve to spare, 70% sure without -- in place of attackers held in reserve against
+    // an estimate that was optimistic. (At 95% and 80%, every civilization took 23% fewer
+    // cities, at no gain: docs/AI.md, round 7g.)
     if faithful(g, units) {
-        let s = simulate_in_order(g, tp, defs, units, cut, Order::Strike, 100, if spare { 50 } else { 200 });
+        let s = simulate_in_order(g, tp, defs, units, cut, Order::Strike, 100, if spare { 100 } else { 300 });
         return s.used.is_some() || s.best >= 850 && defs.len() == 1;
     }
     let spare = if spare { margin(n_att) } else { 0 };
@@ -800,7 +801,7 @@ fn need_for(g: &Game, team: TeamId, cand: &Cand, force: &[UnitId]) -> i32 {
         let all: Vec<UnitId> = force.iter().copied().take(24).collect();
         let s = simulate(g, cand.plot, &defs, &all, wall_cut(g, cand.city, &all));
         match s.used {
-            // (`SIM_FAITHFUL`: already every defender 95% sure to fall.)
+            // (`SIM_FAITHFUL`: already every defender 90% sure to fall.)
             Some(n) if faithful(g, &all) => n as i32,
             Some(n) => n as i32 + 1,
             // Short of the whole force: a defender's health per two more attackers.

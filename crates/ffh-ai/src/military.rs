@@ -130,14 +130,14 @@ pub(crate) fn field_sim(g: &Game, grp: GroupId, q: PlotIdx) -> Option<crate::cam
     let (x, y) = g.map.xy(q);
     let near_city = ours || g.players[p].cities.iter().any(|&c| g.plot_distance(x, y, g.cities[c].x, g.cities[c].y) <= 3);
     let kill_pct = if !animals && near_city { 400 } else { 100 };
-    Some(crate::campaign::simulate_in_order(g, q, &defs, &atts, 0, crate::campaign::Order::Group, kill_pct, 100))
+    Some(crate::campaign::simulate_in_order(g, q, &defs, &atts, 0, crate::campaign::Order::Group, kill_pct, 200))
 }
 
 /// Is the group attack [`field_sim`] played worth starting (or, `fought`, going on with)? As an
 /// expert decides, on the simulation's numbers. Nothing to fight (a worker to capture, our own
 /// units there): yes. The attacker the rules send has good odds (65%; 75% for a `hurt` stack):
 /// yes -- a raider, an animal, a shot at a barbarian town's garrison. Wearing the defenders down
-/// at worse odds: only when the stack clears the plot (every defender 90% sure to fall) and the
+/// at worse odds: only when the stack clears the plot (every defender 80% sure to fall) and the
 /// kills are worth more than the losses (`gain`). A city to `capture` (an opportune capture, a
 /// landing): when it falls; once the fighting has started, also on good odds or a winning trade.
 /// (Before: `attack_ok`, which counted a third of a kill for every lost fight whatever the odds,

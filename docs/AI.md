@@ -698,7 +698,7 @@ landing's assault (`naval.rs`) is decided on the simulation of the group attack
 `AI_getBestGroupAttacker` with its `AI_attackOdds`, against the defenders we see) as an expert
 decides (`military::field_go`): attack when the attacker the rules send has good odds (65%, 75%
 for a hurt stack); wear the defenders down at worse odds only when the stack clears the plot
-(every defender 90% sure to fall) and the kills are worth more than the expected losses
+(every defender 80% sure to fall) and the kills are worth more than the expected losses
 (`gain`: `campaign::worth` = cost or 15 hammers a strength point, whichever is more, plus a tenth
 per experience point; raiders -- any enemy but animals -- on our land or within three plots of one
 of our cities count four times their worth, since left alone they take the city); a city to
