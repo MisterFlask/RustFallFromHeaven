@@ -112,18 +112,25 @@ pub fn attack_ok(a: &Assessment, city: bool) -> bool {
 
 /// The group attack of `grp` on plot `q` played in expected values as the rules will fight it
 /// (`campaign::simulate_in_order`, [`Order::Group`](crate::campaign::Order::Group)): the attackers
-/// that can attack there, against the defenders we see (switch `FIELD_SIM`). Kills count double
-/// on our own land: an invader or raider there pillages, kills workers or besieges a city, and
-/// removing it is worth about what it is worth again.
+/// that can attack there, against the defenders we see (switch `FIELD_SIM`). Raiders on our land
+/// or within three plots of one of our cities (any enemy but animals, which stay out of our
+/// borders) count four times what they are worth: left alone they take the city. (Valued at face
+/// value, the stacks let them be, and more of our cities fell to the barbarians: docs/AI.md,
+/// round 7g.)
 pub(crate) fn field_sim(g: &Game, grp: GroupId, q: PlotIdx) -> Option<crate::campaign::Sim> {
     let atts: Vec<UnitId> = attackers(g, grp).into_iter().filter(|&u| g.unit_can_move_or_attack_into(u, q, false)).collect();
     if atts.is_empty() {
         return None;
     }
-    let team = g.players[g.groups[grp].owner].team;
+    let p = g.groups[grp].owner;
+    let team = g.players[p].team;
     let defs = crate::campaign::visible_defenders(g, team, q);
+    let animals = !defs.is_empty() && defs.iter().all(|&d| g.d.units[g.units[d].unit_type].animal);
     let ours = g.map.plots[q].owner.is_some_and(|o| g.players[o].team == team);
-    Some(crate::campaign::simulate_in_order(g, q, &defs, &atts, 0, crate::campaign::Order::Group, if ours { 200 } else { 100 }, 100))
+    let (x, y) = g.map.xy(q);
+    let near_city = ours || g.players[p].cities.iter().any(|&c| g.plot_distance(x, y, g.cities[c].x, g.cities[c].y) <= 3);
+    let kill_pct = if !animals && near_city { 400 } else { 100 };
+    Some(crate::campaign::simulate_in_order(g, q, &defs, &atts, 0, crate::campaign::Order::Group, kill_pct, 100))
 }
 
 /// Is the group attack [`field_sim`] played worth starting (or, `fought`, going on with)? As an
