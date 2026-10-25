@@ -73,6 +73,12 @@ pub static SIM_FAITHFUL: Switch = Switch::new("SIM_FAITHFUL");
 /// trade; a city to capture when it falls (`military::field_sim`, `military::field_go`). On since
 /// round 7g.
 pub static FIELD_SIM: Switch = Switch::new("FIELD_SIM");
+/// A siege strike starts at the odds that put the stacks in the strike phase (the adjacent ring
+/// takes the city, every defender 70% sure to fall) instead of waiting next to the city for a
+/// reserve (90%) (`campaign::strike`).
+pub static STRIKE_AT_PHASE: Switch = Switch::off_by_default("STRIKE_AT_PHASE");
+/// `STRIKE_AT_PHASE`, and the strike phase at 60% sure instead of 70% (`campaign::covers`).
+pub static BOLD_STRIKE: Switch = Switch::off_by_default("BOLD_STRIKE");
 /// A temporary summon on its last turn attacks at any odds when it is not its stack's cover
 /// (`casting::summon_target`).
 pub static SUMMON_SPEND: Switch = Switch::new("SUMMON_SPEND");

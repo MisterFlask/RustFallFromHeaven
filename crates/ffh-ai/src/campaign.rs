@@ -648,7 +648,9 @@ pub(crate) fn covers(g: &Game, c: CityId, tp: PlotIdx, defs: &[UnitId], units: &
     // an estimate that was optimistic. (At 95% and 80%, every civilization took 23% fewer
     // cities, at no gain: docs/AI.md, round 7g.)
     if faithful(g, units) {
-        let s = simulate_in_order(g, tp, defs, units, cut, Order::Strike, 100, if spare { 100 } else { 300 });
+        // `BOLD_STRIKE`: without a reserve, 60% sure.
+        let bold = crate::switches::BOLD_STRIKE.on(g, g.units[units[0]].owner);
+        let s = simulate_in_order(g, tp, defs, units, cut, Order::Strike, 100, if spare { 100 } else if bold { 400 } else { 300 });
         return s.used.is_some() || s.best >= 850 && defs.len() == 1;
     }
     let spare = if spare { margin(n_att) } else { 0 };
@@ -1573,8 +1575,17 @@ fn strike(g: &mut Game, v: &mut View, op: &Op) {
             .collect();
         // Start with a margin; once started, go on while the rest still takes the city, or
         // while the defenders are worn down to half their health and we outnumber them (they
-        // heal if we stop).
-        let takes = covers(g, op.city, tp, &defs, &able, fights == 0, false);
+        // heal if we stop). With switch `STRIKE_AT_PHASE` (or `BOLD_STRIKE`) the strike starts
+        // at the odds that put the stacks in the strike phase (`plan`: the adjacent ring takes
+        // the city without a reserve) instead of waiting next to the city for a reserve.
+        let at_phase = crate::switches::STRIKE_AT_PHASE.on(g, p) || crate::switches::BOLD_STRIKE.on(g, p);
+        let takes = covers(g, op.city, tp, &defs, &able, fights == 0 && !at_phase, false);
+        if fights == 0 && at_phase && crate::trace_on(p) {
+            let reserve = covers(g, op.city, tp, &defs, &able, true, false);
+            if takes != reserve {
+                crate::trace!(g, p, "  strike on {} at the strike phase's odds: {} (with a reserve: {})", name, takes, reserve);
+            }
+        }
         let go = takes || fights > 0 && {
             let hp: i32 = defs.iter().map(|&d| g.unit_curr_hit_points(d)).sum();
             let max: i32 = defs.iter().map(|&d| g.unit_max_hit_points(d)).sum();
