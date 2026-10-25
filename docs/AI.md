@@ -1871,6 +1871,28 @@ unless they strike this turn (`campaign::on_the_move` at war only). Seeds 331-37
 41-52: score (dead as 0) +15 (t 2.0), 16% fewer civ cities lost to barbarians; seeds 379-426:
 -7, 4% more lost; all 120 seeds: +6 (t 1.2), techs +0.2 (t 1.7), eliminations unchanged.
 
+### Round 7h (2026-10-25): striking at the strike phase's odds; bolder conquerors
+
+The test of whether the AI is too timid in sieges (the owner's request, after round 7g). A siege
+entered its strike phase when the adjacent ring took the city every defender 70% sure to fall, but
+`strike` started only at 90% (with a reserve): stacks stood next to cities, the phase saying
+strike and the strike holding. `STRIKE_AT_PHASE` starts the strike at the phase's own odds;
+`BOLD_STRIKE` also lowers the phase's bar to 60%. Both fire rarely (3 bold starts in four traced
+games). Forks: the Khazad took a six-defender Doviello city at once (the reserve rule never took
+it in 12 turns; power 419 against 394 at turn 300); a Calabim lone unit struck a barbarian town
+at 75%, lost, and missed the town the reserve rule took a turn later with a second unit.
+
+As one player's edge (fresh seeds 40001-40016, 304 paired games, 300 turns): `STRIKE_AT_PHASE`
+win rate 14.1% -> 14.5% (1 / 0), share +0.5% (t 1.5), 264 games identical; `BOLD_STRIKE` win
+14.1% -> 12.8% (0 / 4, p 0.13), share +0.6% (t 1.2), 238 identical. Across all players (seeds
+41001-41096): `STRIKE_AT_PHASE` civ cities taken +2.7%; `BOLD_STRIKE` civ cities +8.2% (t 1.8),
+barbarian towns +7.5%, civs eliminated +30% (t 2.8), techs -1.7% (t -2.2). Neither makes a
+player win more: the AI is not too timid in sieges, and fewer cities changing hands under the
+faithful simulation (round 7g) is a matter of flavor. Kept: `STRIKE_AT_PHASE` for every
+civilization (a consistency fix, neutral), `BOLD_STRIKE` for the conquerors only
+(`campaign::conqueror`: the Clan of Embers, the Doviello, the Bannor, Aggressive leaders;
+CLAUDE.md, "Conquest and domination are a flavor drive").
+
 ### Round 7g (2026-10-25): the simulation for every attack
 
 The owner's request: fix the strike simulation and run it for every attack. Two switches, both
@@ -2766,10 +2788,11 @@ Where MNAI does something this AI does not, ranked by expected worth (each untri
 - **Fewer cities change hands with the faithful simulation (round 7g).** With `SIM_FAITHFUL` and
   `FIELD_SIM` every civilization took 14% fewer civ cities (t -1.8) and 11% fewer barbarian towns
   in 300 turns, and declared 11% fewer wars, at no cost to anyone's win rate: the AI no longer
-  strikes on an estimate that was optimistic, and waits for a force that takes the city. Whether
-  the warlike civilizations (CLAUDE.md, "Conquest and domination are a flavor drive") should
-  accept worse odds than the rest, or build their forces faster, is open; sureness thresholds
-  (`covers`, `field_sim`) are the lever, and the drop was 23% at stricter ones.
+  strikes on an estimate that was optimistic, and waits for a force that takes the city. Round 7h
+  recovers part of it (strikes at the strike phase's odds for all; 60% for the conquerors, whose
+  bolder bar took 8% more cities when every civilization had it); striking at lower odds did not
+  make a player win more, so the rest is a flavor choice. Faster force building for the
+  conquerors is the other lever.
 
 - **Councils gang up (round 7c).** With `council.rs` the councils meet in about half the games
   and pass nearly every proposal; a head councilor at war has the council declare war on its

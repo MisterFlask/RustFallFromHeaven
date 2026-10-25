@@ -384,6 +384,24 @@ pub(crate) fn worth(g: &Game, u: UnitId) -> i64 {
     base * (10 + unit.experience.max(0) as i64) / 10
 }
 
+/// A civilization with the conquest drive (CLAUDE.md, "Conquest and domination are a flavor
+/// drive"): the Clan of Embers, the Doviello, the Bannor, and every leader with the Aggressive
+/// trait.
+pub(crate) fn conqueror(g: &Game, p: PlayerId) -> bool {
+    let civ = g.player_get_civilization_type(p).map(|c| g.d.civilizations[c].base.type_.as_str());
+    matches!(civ, Some("CIVILIZATION_CLAN_OF_EMBERS" | "CIVILIZATION_DOVIELLO" | "CIVILIZATION_BANNOR"))
+        || g.d.ty::<TraitType>("TRAIT_AGGRESSIVE").is_some_and(|t| g.players[p].traits[t])
+}
+
+/// Does `p` strike sieges at 60% sure (switch `BOLD_STRIKE`, conquerors only)? As one player's
+/// edge the bolder bar won nothing and cost nothing measurable (seeds 40001-40016: share +0.6%,
+/// win rate 14.1% -> 12.8%, 4 seeds lost only with it); across all players it took 8% more civ
+/// cities. The conquest drive is flavor, so the conquerors take the bolder bar (docs/AI.md,
+/// round 7h).
+fn bold_striker(g: &Game, p: PlayerId) -> bool {
+    crate::switches::BOLD_STRIKE.on(g, p) && conqueror(g, p)
+}
+
 /// Is switch `SIM_FAITHFUL` on for the owner of `atts`?
 fn faithful(g: &Game, atts: &[UnitId]) -> bool {
     atts.first().is_some_and(|&a| crate::switches::SIM_FAITHFUL.on(g, g.units[a].owner))
@@ -648,8 +666,8 @@ pub(crate) fn covers(g: &Game, c: CityId, tp: PlotIdx, defs: &[UnitId], units: &
     // an estimate that was optimistic. (At 95% and 80%, every civilization took 23% fewer
     // cities, at no gain: docs/AI.md, round 7g.)
     if faithful(g, units) {
-        // `BOLD_STRIKE`: without a reserve, 60% sure.
-        let bold = crate::switches::BOLD_STRIKE.on(g, g.units[units[0]].owner);
+        // `BOLD_STRIKE` (conquerors): without a reserve, 60% sure.
+        let bold = bold_striker(g, g.units[units[0]].owner);
         let s = simulate_in_order(g, tp, defs, units, cut, Order::Strike, 100, if spare { 100 } else if bold { 400 } else { 300 });
         return s.used.is_some() || s.best >= 850 && defs.len() == 1;
     }
@@ -1578,7 +1596,7 @@ fn strike(g: &mut Game, v: &mut View, op: &Op) {
         // heal if we stop). With switch `STRIKE_AT_PHASE` (or `BOLD_STRIKE`) the strike starts
         // at the odds that put the stacks in the strike phase (`plan`: the adjacent ring takes
         // the city without a reserve) instead of waiting next to the city for a reserve.
-        let at_phase = crate::switches::STRIKE_AT_PHASE.on(g, p) || crate::switches::BOLD_STRIKE.on(g, p);
+        let at_phase = crate::switches::STRIKE_AT_PHASE.on(g, p) || bold_striker(g, p);
         let takes = covers(g, op.city, tp, &defs, &able, fights == 0 && !at_phase, false);
         if fights == 0 && at_phase && crate::trace_on(p) {
             let reserve = covers(g, op.city, tp, &defs, &able, true, false);
