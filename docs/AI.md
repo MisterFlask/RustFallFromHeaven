@@ -700,12 +700,14 @@ decides (`military::field_go`): attack when the attacker the rules send has good
 for a hurt stack); wear the defenders down at worse odds only when the stack clears the plot
 (every defender 90% sure to fall) and the kills are worth more than the expected losses
 (`gain`: `campaign::worth` = cost or 15 hammers a strength point, whichever is more, plus a tenth
-per experience point; kills double on our land); a city to capture (an opportune capture, a
-landing) when it falls. Before: `assess`/`attack_ok`, the best odds of 65%, or every attacker's
+per experience point; raiders -- any enemy but animals -- on our land or within three plots of one
+of our cities count four times their worth, since left alone they take the city); a city to
+capture (an opportune capture, a landing) when it falls. Before: `assess`/`attack_ok`, the best odds of 65%, or every attacker's
 odds against the best defender at full health plus a third of a kill for each lost fight,
 whatever the defender's strength or first strikes -- it sent four Warriors at a Griffon at 1% and
 six units at an Elephant at 0.2%. A pure trade rule (attack whenever the kills are worth more)
-lost units early and was replaced (docs/AI_LOG.md, "Field attacks as a pure trade").
+lost units early, and the same rule with raiders at face value lost cities to the barbarians;
+both were replaced (docs/AI_LOG.md, round 7g).
 
 **Siege operations** (`campaign.rs`): one per player, rebuilt from the game state on the first
 army decision of each `play_turn` call (nothing outside `Game` is remembered).

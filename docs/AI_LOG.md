@@ -62,6 +62,23 @@ Each entry answers three questions, from the games themselves (counts with `ffh 
    accuracy -- first strikes, wounded defenders, the real attacker order -- is what the old rule
    lacked, not a different notion of when to attack.
 
+### Field attacks on good odds or a clearing grind, raiders at face value (replaced)
+
+1. **Why it made sense.** After the pure trade (above): attack when the attacker the rules send
+   has good odds, wear the defenders down only when the stack clears the plot at a favourable
+   trade -- the old rule's intent on the simulation's accurate numbers, without its hopeless
+   grinds (six units at an Elephant at 0.2%).
+2. **Why it did not hold.** One player with it (304 paired games each, 300 turns): seeds
+   33001-33016 win rate 12.2% -> 12.2%, share -3.1% (t -1.61), legacy -3.7% (t -1.89); seeds
+   35001-35016 win 17.1% -> 14.1% (15 / 24), share -1.2%. The player was behind in military by
+   turn 100 on the first set (t -2.9), and the games lost more cities to the barbarians (+0.33 a
+   game, t 2.2); the player ended with fewer cities (-0.34, t -1.8 on the second set).
+3. **What it implies.** Grinding at a raider near our cities is not a trade of units: the raider
+   left alone takes a city. The old estimate's eagerness, wasteful by unit value, was protecting
+   the cities. Kept: raiders (not animals) on our land or within three plots of one of our cities
+   count four times their worth, so a grind that clears them is always worth it; elsewhere the
+   rule stands.
+
 ## Round 7c: wars, diplomacy, councils (2026-10-22)
 
 Two first versions of round 7c's behaviours (docs/AI.md, "Diplomacy" and "Round 7c") were
