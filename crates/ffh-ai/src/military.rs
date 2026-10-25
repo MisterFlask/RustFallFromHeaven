@@ -110,6 +110,62 @@ pub fn attack_ok(a: &Assessment, city: bool) -> bool {
     a.effective >= need && (a.best >= 300 || a.n_att >= a.n_def + 2)
 }
 
+/// The group attack of `grp` on plot `q` played in expected values as the rules will fight it
+/// (`campaign::simulate_in_order`, [`Order::Group`](crate::campaign::Order::Group)): the attackers
+/// that can attack there, against the defenders we see. Kills count double on our own land (an
+/// invader or raider there will pillage, kill workers or besiege a city: removing it is worth
+/// about what it is worth again) and half again against the barbarians elsewhere (they come)
+/// (switch `FIELD_SIM`).
+pub(crate) fn field_sim(g: &Game, grp: GroupId, q: PlotIdx) -> Option<crate::campaign::Sim> {
+    let atts: Vec<UnitId> = attackers(g, grp).into_iter().filter(|&u| g.unit_can_move_or_attack_into(u, q, false)).collect();
+    if atts.is_empty() {
+        return None;
+    }
+    let team = g.players[g.groups[grp].owner].team;
+    let defs = crate::campaign::visible_defenders(g, team, q);
+    let ours = g.map.plots[q].owner.is_some_and(|o| g.players[o].team == team);
+    let barbarians = defs.iter().any(|&d| g.player_is_barbarian(g.units[d].owner));
+    let kill_pct = if ours { 200 } else if barbarians { 150 } else { 100 };
+    Some(crate::campaign::simulate_in_order(g, q, &defs, &atts, 0, crate::campaign::Order::Group, kill_pct, 100))
+}
+
+/// Is the group attack [`field_sim`] played worth starting (or, `fought`, going on with)? Nothing
+/// to fight (a worker to capture, our own units there): yes. A city to `capture` (an opportune
+/// capture, a landing) when it falls (each defender 90% sure to); anything else -- a barbarian
+/// town's garrison included, and a capture once the fighting has started -- also when the kills
+/// are worth more than the losses (the simulation's `gain`). A hurt stack only at 75% odds.
+/// (Before: the best odds of 65%, or each attacker's odds against the best defender at full
+/// health plus a third of a kill for every lost fight, whatever the defender's strength or
+/// first strikes.)
+pub(crate) fn field_go(s: &crate::campaign::Sim, city: bool, capture: bool, fought: bool, hurt: bool) -> bool {
+    if s.n_def == 0 {
+        return true;
+    }
+    if hurt && s.best < 750 {
+        return false;
+    }
+    let falls = city && s.used.is_some();
+    falls || (!capture || fought) && s.gain > 0
+}
+
+/// (Trace) Where the simulation ([`field_go`]) and the old estimate ([`attack_ok`]; for a hunt
+/// also 30% odds with two attackers) disagree on attacking `q`: the firings of switch
+/// `FIELD_SIM`, to fork.
+fn trace_field(g: &Game, grp: GroupId, q: PlotIdx, city: bool, hurt: bool, hunt: bool) {
+    let p = g.groups[grp].owner;
+    if !crate::trace_on(p) {
+        return;
+    }
+    let s = field_sim(g, grp, q);
+    let new = s.is_some_and(|s| field_go(&s, city, false, false, hurt));
+    let old = assess(g, grp, q).is_some_and(|a| if hurt { a.best >= 750 } else { attack_ok(&a, city) || hunt && a.best >= 300 && a.n_att >= 2 }) && precious_holds(g, grp, q).is_none();
+    if new != old {
+        let theirs: Vec<String> = g.map.plots[q].units.iter().map(|&o| format!("{}({}%) p{}", g.d.units[g.units[o].unit_type].base.type_.trim_start_matches("UNIT_"), 100 - g.units[o].damage, g.units[o].owner.0)).collect();
+        let team = g.players[p].team;
+        crate::trace!(g, p, "  field sim: {} {:?} on {:?} {:?} (seen {}): simulation {} ({:?}), old estimate {}", if hunt { "hunt" } else { "attack" }, grp, g.map.xy(q), theirs, crate::view::sees_units(g, team, q), new, s, old);
+    }
+}
+
 /// The attacker the rules would send from `grp` into `q` (`AI_getBestGroupAttacker`, which already
 /// puts heroes and veterans last) is a hero or a veteran below its odds (switch `PRECIOUS`,
 /// `campaign::precious_bar`): `(unit, odds, bar)`. The others are worse still, so the stack does
@@ -134,12 +190,12 @@ fn precious_holds(g: &Game, grp: GroupId, q: PlotIdx) -> Option<(UnitId, i32, i3
 pub fn assault(g: &mut Game, v: &View, grp: GroupId, q: PlotIdx) -> bool {
     let mut fought = false;
     let city = g.map.plots[q].plot_city.is_some();
+    let by_sim = crate::switches::FIELD_SIM.on(g, v.p);
     // Casters of ours around the target cast first when the assault goes ahead (magic.rs).
-    if let Some(a) = assess(g, grp, q) {
-        if a.n_def > 0 && attack_ok(&a, city) {
-            let atts = attackers(g, grp);
-            crate::magic::before_attack(g, v, q, &atts);
-        }
+    let goes = if by_sim { field_sim(g, grp, q).is_some_and(|s| field_go(&s, city, false, false, false)) } else { assess(g, grp, q).is_some_and(|a| a.n_def > 0 && attack_ok(&a, city)) };
+    if goes {
+        let atts = attackers(g, grp);
+        crate::magic::before_attack(g, v, q, &atts);
     }
     for _ in 0..12 {
         if !alive(g, grp) {
@@ -155,7 +211,13 @@ pub fn assault(g: &mut Game, v: &View, grp: GroupId, q: PlotIdx) -> bool {
         if n_def == 0 {
             break;
         }
-        if !attack_ok(&a, city) {
+        if by_sim {
+            let s = field_sim(g, grp, q);
+            crate::trace!(g, v.p, "  assault {:?} on {:?} simulated: {:?} go {}", grp, g.map.xy(q), s, s.is_some_and(|s| field_go(&s, city, false, fought, false)));
+            if !s.is_some_and(|s| field_go(&s, city, false, fought, false)) {
+                break;
+            }
+        } else if !attack_ok(&a, city) {
             break;
         }
         // The attacker the rules would send is a hero or a veteran below its odds: the stack stops
@@ -667,7 +729,12 @@ fn opportune(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
         // ones the assault itself goes on with (the estimate counts the wounds lost fights leave,
         // which a stack fighting at 10% odds should not rely on).
         let units = g.groups[grp].units.clone();
-        if !assess(g, grp, q).is_some_and(|a| attack_ok(&a, true)) || !crate::campaign::covers(g, c, q, &defs, &units, true, false) {
+        let takes = if crate::switches::FIELD_SIM.on(g, p) {
+            field_sim(g, grp, q).is_some_and(|s| field_go(&s, true, true, false, false))
+        } else {
+            assess(g, grp, q).is_some_and(|a| attack_ok(&a, true)) && crate::campaign::covers(g, c, q, &defs, &units, true, false)
+        };
+        if !takes {
             continue;
         }
         crate::trace!(g, p, "stack {:?} ({} units) takes its chance on {} ({} defenders)", grp, units.len(), name, defs.len());
@@ -685,7 +752,7 @@ fn opportune(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
 fn best_adjacent(g: &Game, grp: GroupId, here: PlotIdx, hurt: bool, skip: Option<PlotIdx>) -> Option<PlotIdx> {
     let head = g.group_get_head_unit(grp)?;
     let (x, y) = g.map.xy(here);
-    let mut best: Option<(PlotIdx, i32)> = None;
+    let mut best: Option<(PlotIdx, i64)> = None;
     for dir in 0..DirectionType::NUM {
         let Some(q) = g.plot_direction(x, y, DirectionType::from_usize(dir)) else { continue };
         if !g.plot_is_visible_enemy_unit_for_unit(q, head) || skip == Some(q) {
@@ -696,12 +763,17 @@ fn best_adjacent(g: &Game, grp: GroupId, here: PlotIdx, hurt: bool, skip: Option
         if city.is_some_and(|c| !g.player_is_barbarian(g.cities[c].owner)) {
             continue;
         }
-        let Some(a) = assess(g, grp, q) else { continue };
-        let ok = if hurt { a.best >= 750 } else { attack_ok(&a, city.is_some()) };
+        trace_field(g, grp, q, city.is_some(), hurt, false);
+        let (ok, score) = if crate::switches::FIELD_SIM.on(g, g.groups[grp].owner) {
+            let Some(s) = field_sim(g, grp, q) else { continue };
+            (field_go(&s, city.is_some(), false, false, hurt), if city.is_some() { 1_000_000 + s.best as i64 } else { s.gain })
+        } else {
+            let Some(a) = assess(g, grp, q) else { continue };
+            (if hurt { a.best >= 750 } else { attack_ok(&a, city.is_some()) }, (a.best + if city.is_some() { 300 } else { 0 }) as i64)
+        };
         if !ok || precious_holds(g, grp, q).is_some() {
             continue;
         }
-        let score = a.best + if city.is_some() { 300 } else { 0 };
         if best.map_or(true, |(_, s)| score > s) {
             best = Some((q, score));
         }
@@ -749,9 +821,16 @@ fn hunt(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
         let t = v.targets[i];
         // Exact check where it matters: the best odds against what stands there.
         if t.units > 0 {
-            match assess(g, grp, t.plot) {
-                Some(a) if attack_ok(&a, t.city) || a.best >= 300 && a.n_att >= 2 => {}
-                _ => continue,
+            trace_field(g, grp, t.plot, t.city, false, true);
+            if crate::switches::FIELD_SIM.on(g, v.p) {
+                if !field_sim(g, grp, t.plot).is_some_and(|s| field_go(&s, t.city, false, false, false)) {
+                    continue;
+                }
+            } else {
+                match assess(g, grp, t.plot) {
+                    Some(a) if attack_ok(&a, t.city) || a.best >= 300 && a.n_att >= 2 => {}
+                    _ => continue,
+                }
             }
             if precious_holds(g, grp, t.plot).is_some() {
                 continue;
