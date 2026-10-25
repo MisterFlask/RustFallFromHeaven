@@ -2934,6 +2934,17 @@ Where MNAI does something this AI does not, ranked by expected worth (each untri
   research flat; but gross captures-per-war was flat (-1.9%), so this is a coherence/retention
   improvement (the army stops striking piecemeal and keeps more of what it takes), NOT a
   conversion win -- the outcome deltas other than razing are within 16-seed noise.
+- Loose stacks exposed to a stronger enemy, re-measured (2026-10-25): the `FFH_AI_EXPOSURE` check
+  runs at the start of our turn, before our units move, with a crude reach (moves + 1 plots as the
+  crow flies) and generic strengths; it now also reports what happened by our next turn
+  (`[EXPOSED-AFTER ..]`). Over four games to turn 450 it flagged 1317 stacks; 152 lost any unit
+  (11.5%), 86 the whole stack -- about 6 losses a civilization in 450 turns. Most flags are false
+  alarms (the stack moves, attacks or is simply not attacked). The real losses: lone siege engines
+  and single units walking to a siege's assembly ring one at a time (27 lost of 360 flagged); a
+  stack next to a stronger enemy that judges the attack not worth it and stays put (19 of 25
+  flagged lost units, the worst rate); wounded units walking to heal (7 of 28); and units with no
+  AI decision traced that turn (61 of 631: lone Warriors, Catapults, Horse Archers -- units on a
+  standing mission or outside the army logic). Earlier write-up:
 - Loose stacks exposed to a stronger enemy (the classic Civ4 "a stack parked in front of
   something that one-shots it"). Measured with a gated diagnostic (`FFH_AI_EXPOSURE`, which flags
   army stacks standing where a single visible enemy can reach and out-fight their best defender

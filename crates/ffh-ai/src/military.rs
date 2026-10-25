@@ -326,11 +326,32 @@ fn stack_power(g: &Game, grp: GroupId) -> i32 {
 /// an operation, `ctx=loose` one not in any. Compares single units (not summed power, which
 /// over-counts many weak attackers a strong defender beats one at a time). Pure read, printed only
 /// when the env var is set, so it has no cost or effect otherwise. Called once per player's turn.
+///
+/// It runs at the start of our turn, before our units move: a flagged stack can still answer
+/// (move, attack, fortify). So each report is followed, at the start of our next turn, by an
+/// `[EXPOSED-AFTER ..]` line: how many of the stack's units died in between (killed after we
+/// played the turn), and where the head unit stands now.
 pub fn report_exposure(g: &Game, v: &View, p: PlayerId) {
-    use std::sync::OnceLock;
+    use std::sync::{Mutex, OnceLock};
     static ON: OnceLock<bool> = OnceLock::new();
     if !*ON.get_or_init(|| std::env::var("FFH_AI_EXPOSURE").is_ok()) {
         return;
+    }
+    // Last turn's reports per player (diagnostic only: never read by the AI).
+    static PREV: Mutex<Vec<(u8, i32, u32, Vec<UnitId>, (i32, i32))>> = Mutex::new(Vec::new());
+    {
+        let mut prev = PREV.lock().unwrap();
+        prev.retain(|&(pp, t, grp, ref us, at)| {
+            if pp != p.0 {
+                return true;
+            }
+            if t < g.game_turn() {
+                let dead = us.iter().filter(|&&u| !g.units.contains(u) || g.units[u].owner != p).count();
+                let now = us.iter().find(|&&u| g.units.contains(u) && g.units[u].owner == p).map(|&u| (g.units[u].x, g.units[u].y));
+                eprintln!("[EXPOSED-AFTER t{} p{} grp{}] lost {}/{} at {:?} now {:?}", t, pp, grp, dead, us.len(), at, now);
+            }
+            false
+        });
     }
     let mut seen = std::collections::BTreeSet::new();
     for &u in &g.players[p].units {
@@ -377,10 +398,14 @@ pub fn report_exposure(g: &Game, v: &View, p: PlayerId) {
         }
         if max_att * 2 > best_def * 3 {
             let ctx = if crate::campaign::on_the_move(v, grp) { "op" } else { "loose" };
+            let ours = g.map.plots[here].owner == Some(p);
+            let types: Vec<&str> = g.groups[grp].units.iter().map(|&o| g.d.units[g.units[o].unit_type].base.type_.trim_start_matches("UNIT_")).collect();
             eprintln!(
-                "[EXPOSED t{} p{} grp{}] bestdef={} maxatt={} ratio={} natt={} units={} wipe={} ctx={}",
-                g.game_turn(), p.0, grp.0, best_def, max_att, max_att * 100 / best_def, n_att, g.groups[grp].units.len(), n_att >= g.groups[grp].units.len(), ctx
+                "[EXPOSED t{} p{} grp{}] bestdef={} maxatt={} ratio={} natt={} units={} wipe={} ctx={} at=({}, {}) ours={} defmod={} types={:?}",
+                g.game_turn(), p.0, grp.0, best_def, max_att, max_att * 100 / best_def, n_att, g.groups[grp].units.len(), n_att >= g.groups[grp].units.len(), ctx,
+                hx, hy, ours, g.plot_defense_modifier(here, Some(v.team), true), types
             );
+            PREV.lock().unwrap().push((p.0, g.game_turn(), grp.0, g.groups[grp].units.clone(), (hx, hy)));
         }
     }
 }
