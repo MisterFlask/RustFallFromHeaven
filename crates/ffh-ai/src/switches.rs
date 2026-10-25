@@ -65,13 +65,14 @@ pub static CASTER_ROLES: Switch = Switch::new("CASTER_ROLES");
 pub static STRIKE_DAMAGE: Switch = Switch::new("STRIKE_DAMAGE");
 /// The strike's simulation plays the strike as it will be fought: the attackers in the order
 /// the strike picks them, each against the defender the rules put up against it; a siege engine's
-/// win no longer counts as a kill (`campaign::simulate_in_order`).
-pub static SIM_FAITHFUL: Switch = Switch::off_by_default("SIM_FAITHFUL");
+/// win no longer counts as a kill (`campaign::simulate_in_order`). On since round 7g.
+pub static SIM_FAITHFUL: Switch = Switch::new("SIM_FAITHFUL");
 /// Every attack outside a siege operation's strike -- a stack's assault, an adjacent target, a
 /// hunt, an opportune capture, a landing -- is decided on the simulation of the group attack:
 /// good odds for the attacker the rules send, or a grind that clears the plot at a favourable
-/// trade; a city to capture when it falls (`military::field_sim`, `military::field_go`).
-pub static FIELD_SIM: Switch = Switch::off_by_default("FIELD_SIM");
+/// trade; a city to capture when it falls (`military::field_sim`, `military::field_go`). On since
+/// round 7g.
+pub static FIELD_SIM: Switch = Switch::new("FIELD_SIM");
 /// A temporary summon on its last turn attacks at any odds when it is not its stack's cover
 /// (`casting::summon_target`).
 pub static SUMMON_SPEND: Switch = Switch::new("SUMMON_SPEND");

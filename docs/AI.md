@@ -692,7 +692,7 @@ Each army group is a stack; per decision, in order:
    lair destroys it; an empty enemy city at war within 2 turns is walked into, `CAPTURE`);
 11. join a bigger stack within 3 turns, else hold in the nearest city.
 
-**Deciding an attack** (switch `FIELD_SIM`; round 7g). Every attack in steps 1, 4, 5 and 10 and a
+**Deciding an attack** (switch `FIELD_SIM`, on; round 7g). Every attack in steps 1, 4, 5 and 10 and a
 landing's assault (`naval.rs`) is decided on the simulation of the group attack
 (`military::field_sim`: `campaign::simulate_in_order` in the rules' own attacker order,
 `AI_getBestGroupAttacker` with its `AI_attackOdds`, against the defenders we see) as an expert
@@ -1871,6 +1871,42 @@ unless they strike this turn (`campaign::on_the_move` at war only). Seeds 331-37
 41-52: score (dead as 0) +15 (t 2.0), 16% fewer civ cities lost to barbarians; seeds 379-426:
 -7, 4% more lost; all 120 seeds: +6 (t 1.2), techs +0.2 (t 1.7), eliminations unchanged.
 
+### Round 7g (2026-10-25): the simulation for every attack
+
+The owner's request: fix the strike simulation and run it for every attack. Two switches, both
+on (the code and its forks: "Siege operations" and "Deciding an attack" under Field armies).
+- `SIM_FAITHFUL` (`campaign::simulate_in_order`, `Order::Strike`): the strike played as it will
+  be fought -- the attackers in the strike's own order, each against the defender the rules put
+  up against it (strength against that attacker, first strikes, a world unit halved); a siege
+  engine's win leaves the defender at its combat limit; a lost fight deals at most a round short
+  of a kill; a defender has fallen when it is 90% sure to be dead (70% once positioned), in place
+  of an eighth of its expected health and a reserve fifth of the force. Fork (seed 26001, saved
+  at turn 221 from the game with the switch off): the old estimate expected four attackers to
+  take a barbarian town; the Sheaim struck with six, lost five and the town held; with the switch
+  the six held back (expected losses 3.5, a defender likely standing) and kept all 13 army units.
+- `FIELD_SIM` (`military::field_sim`, `field_go`): every field attack decided on the simulation
+  of the group attack in the rules' own order (`AI_getBestGroupAttacker` with its
+  `AI_attackOdds`). Forks: the Kuriotates killed a barbarian Warrior two turns sooner, a
+  one-city Elohim killed a Gargoyle beside its capital (off, the Gargoyle killed a Warrior of
+  theirs); it no longer grinds four Warriors into a Griffon at 1%. Two versions were replaced on
+  the way (docs/AI_LOG.md, round 7g): a pure trade of kill and loss values lost units early;
+  good odds or a clearing grind with raiders at face value lost cities to the barbarians.
+- Bugs the simulation's own traces turned up before any measurement: wounded defenders counted
+  as already dead, follow-up attacks never played (a defender's blended expected health read as
+  dead while it was alive half the time; fallen is now by the chance it is alive), the rules'
+  attacker picked by the exact odds where the rules use their own estimate.
+
+Measured as one player's edge (`civ_ab.py --civ all`, 304 paired games a set, 300 turns), the
+kept version: `FIELD_SIM` on seeds 33001-33016 win 12.2% -> 13.8%, share -1.0% (t -0.5);
+35001-35016 win 17.1% -> 13.8%, share -0.2%; fresh 37001-37016 win 16.8% -> 15.8%, share +0.9%,
+legacy +2.1% (t 1.0). `SIM_FAITHFUL` alone: 33001-33016 win 12.2% -> 12.8%, share 0.0%;
+35001-35016 win 17.1% -> 16.1%, share -0.9%. Both, fresh 37001-37016 (sureness 95% / 80%): win
+16.8% -> 15.8%, share +0.8%; fresh 39001-39016 (the kept 90% / 70%): win 19.1% -> 20.7% (22 / 17),
+share -2.0% (t -0.9), legacy -1.4% (t -0.6). Neutral on every set. Time per turn unchanged (25.90
+-> 25.88 ms, all AIs, seeds 38001-38096). With every AI using both (38001-38096): legacy -1.4% (t
+-0.9), civ cities captured -14% (t -1.8; -23% at 95% / 80%), barbarian towns taken -11%, wars
+declared -11% (t -1.7): fewer cities change hands (Known gaps).
+
 ### Round 7f (2026-10-24): healing and the hero gate at their firings
 
 The first use of forks (Tools, "Forks first") on the two military behaviours then off by default
@@ -2726,6 +2762,14 @@ Where MNAI does something this AI does not, ranked by expected worth (each untri
    off by default (round 7a).
 
 ## Known gaps (future work)
+
+- **Fewer cities change hands with the faithful simulation (round 7g).** With `SIM_FAITHFUL` and
+  `FIELD_SIM` every civilization took 14% fewer civ cities (t -1.8) and 11% fewer barbarian towns
+  in 300 turns, and declared 11% fewer wars, at no cost to anyone's win rate: the AI no longer
+  strikes on an estimate that was optimistic, and waits for a force that takes the city. Whether
+  the warlike civilizations (CLAUDE.md, "Conquest and domination are a flavor drive") should
+  accept worse odds than the rest, or build their forces faster, is open; sureness thresholds
+  (`covers`, `field_sim`) are the lever, and the drop was 23% at stricter ones.
 
 - **Councils gang up (round 7c).** With `council.rs` the councils meet in about half the games
   and pass nearly every proposal; a head councilor at war has the council declare war on its
