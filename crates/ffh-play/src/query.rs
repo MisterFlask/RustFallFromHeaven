@@ -267,11 +267,13 @@ pub struct UiState {
     pub view_version: u64,
     /// The map as the `map` query last answered it, for the tile deltas (`map {since}`).
     pub map: MapTracker,
+    /// The game's vanilla experience (`NewGame::vanilla`): leaders speak only FfH2's lines.
+    pub vanilla: bool,
 }
 
 impl Default for UiState {
     fn default() -> UiState {
-        UiState { reveal: false, finder: PathFinder::new(FinderKind::Path), view_version: 0, map: MapTracker::default() }
+        UiState { reveal: false, finder: PathFinder::new(FinderKind::Path), view_version: 0, map: MapTracker::default(), vanilla: false }
     }
 }
 
@@ -353,7 +355,7 @@ pub fn run(g: &Game, ctx: &Ctx, q: &Query) -> Result<Json, QueryErr> {
             Some(m) => m.since_json(*since),
             None => return Err(busy("the message log")),
         },
-        Query::Speech { with, comment, salt } => view::speech::speech(&v, *with, *comment, *salt)?,
+        Query::Speech { with, comment, salt } => view::speech::speech(&v, *with, *comment, *salt, !UiState::lock(ctx.ui).vanilla)?,
         Query::Moments { since } => match ctx.messages {
             Some(m) => m.moments_json(*since),
             None => return Err(busy("the leader moments")),

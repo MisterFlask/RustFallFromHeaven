@@ -36,6 +36,10 @@ pub struct NewGame {
     /// gets `civ` / `leader` (the civilization the view follows first) and an AI's difficulty,
     /// and `handicap` is the game handicap (the AIs' bonuses), as in `ffh autoplay`.
     pub observe: bool,
+    /// The vanilla experience: leaders speak only FFH2's own lines (`CIV4DiplomacyInfos.xml`),
+    /// not also the lines each civilization has for each other (`data/text/barks.md`).
+    /// Presentation only.
+    pub vanilla: bool,
 }
 
 impl NewGame {
@@ -58,12 +62,13 @@ impl NewGame {
             civ: None,
             leader: None,
             observe: false,
+            vanilla: false,
         }
     }
 
     /// The members of a `setup` object.
     pub const FIELDS: &'static [&'static str] =
-        &["seed", "opponents", "world", "speed", "handicap", "era", "climate", "sea_level", "options", "disabled_victories", "max_turns", "civ", "leader", "observe"];
+        &["seed", "opponents", "world", "speed", "handicap", "era", "climate", "sea_level", "options", "disabled_victories", "max_turns", "civ", "leader", "observe", "vanilla"];
 
     /// Decodes a `setup` object (every member optional; types by name or index; an unknown
     /// member is an error, so a typo cannot start a game with a default instead).
@@ -99,6 +104,7 @@ impl NewGame {
         ng.civ = names::opt_field(d, j, "civ")?;
         ng.leader = names::opt_field(d, j, "leader")?;
         ng.observe = j.get_or("observe", false)?;
+        ng.vanilla = j.get_or("vanilla", false)?;
         Ok(ng)
     }
 
@@ -119,6 +125,7 @@ impl NewGame {
             "civ" => Json::opt_idx(self.civ),
             "leader" => Json::opt_idx(self.leader),
             "observe" => self.observe,
+            "vanilla" => self.vanilla,
         }
     }
 
@@ -140,6 +147,7 @@ impl NewGame {
             "civ" => self.civ.map(|c| d.type_name(c).to_string()),
             "leader" => self.leader.map(|l| d.type_name(l).to_string()),
             "observe" => self.observe,
+            "vanilla" => self.vanilla,
         }
     }
 

@@ -244,6 +244,10 @@ the differences; it does not ask for them to be undone.
 
 **Human play (ffh-play; docs/PLAY_DESIGN.md §10)**
 
+- Leaders have lines for each civilization they speak to (`data/text/barks.md`, new writing, not
+  FFH2's), mixed with FFH2's own diplomacy lines; the new-game screen's "Vanilla experience" keeps
+  FFH2's alone. Presentation only.
+
 - Human popups whose rules answer can be deferred are answered at the next control point, as in
   C++: production, events, diplomatic votes, the research popup.
 - Free tech, keep/raze/disband and elections are answered during the rules call that raises them

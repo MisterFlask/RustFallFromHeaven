@@ -35,6 +35,9 @@ macro_rules! game_data {
             pub define_map: DefineMap,
             pub defines: Defines,
             pub text: Text,
+            /// The lines each civilization's leaders have for each other civilization
+            /// (`text/barks.md`, Markdown; empty when absent). Presentation only: ffh-play reads it.
+            pub barks: String,
             /// Non-fatal data problems found while loading (unknown types etc.).
             pub warnings: Vec<String>,
             $( pub $field: IdxVec<$id, $info>, )*
@@ -65,7 +68,7 @@ macro_rules! game_data {
                 )*
                 let defines = Defines::from_map(&define_map);
                 // (derived tables are filled by `GameData::derive`)
-                GameData { reg, define_map, defines, text, warnings, $( $field, )* combat_mod_promotions: Vec::new() }
+                GameData { reg, define_map, defines, text, barks: String::new(), warnings, $( $field, )* combat_mod_promotions: Vec::new() }
             }
         }
     };
@@ -247,6 +250,7 @@ impl GameData {
 
         // Pass 2: typed tables.
         let mut gd = GameData::load_tables(&docs, reg, define_map, text);
+        gd.barks = std::fs::read_to_string(data_dir.join("text").join("barks.md")).unwrap_or_default();
         for (name, a, b) in &gd.reg.duplicates {
             gd.warnings.push(format!("type {name} registered as both {a} and {b}"));
         }

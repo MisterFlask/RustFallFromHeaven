@@ -742,8 +742,9 @@ button.civ-item .banner { flex: none; }
 #modals button.leader-card.chosen { border-color: var(--c-bone); background: var(--c-coal); box-shadow: 0 0 0 1px var(--c-gold); }
 .leader-card .leader-name { font-size: 12px; line-height: 1.2; }
 .ng-more { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; margin-top: 8px; }
-.ng-more details { flex: 1 1 220px; margin-top: 0; }
-.ng-more label.check { margin: 0; flex: 1 1 220px; }
+.ng-more details { flex: 1 1 160px; margin-top: 0; }
+.ng-more details > summary, .ng-more label.check { white-space: nowrap; }
+.ng-more label.check { margin: 0; flex: 0 0 auto; }
 @media (max-width: 760px) {
   .ng-civ { grid-template-columns: minmax(0, 1fr); }
   .civ-list { height: 160px; }

@@ -299,6 +299,7 @@ export function newGame({ dismissible = true, noGame = false } = {}) {
     st.victories.map((v) => h("label", { tip: v.help ? [h("div.tip-title", v.name), h("div.tip-effects", markup(v.help))] : null }, h("input", { type: "checkbox", value: v.type, checked: !d.disabled_victories.includes(v.id) }), ` ${v.name}`)),
   );
   const spectate = h("input", { type: "checkbox", id: "ng-spectate" });
+  const vanilla = h("input", { type: "checkbox", id: "ng-vanilla", checked: !!d.vanilla });
   const err = h("p.error");
   const field = (label, el, extra = null) => h("label.field", h("span", label), el, extra);
   const form = h(
@@ -325,7 +326,13 @@ export function newGame({ dismissible = true, noGame = false } = {}) {
         "label.check",
         { title: "An AI-only game watched with the whole map shown (the AI plays every civilization; the one chosen above is followed first): play, pause, step, follow a civilization, and flag bad play for a bug report from the top bar. It is the `ffh autoplay` game of these settings." },
         spectate,
-        " Spectate: watch the AI play",
+        " Spectate the AI",
+      ),
+      h(
+        "label.check",
+        { title: "Vanilla experience: leaders speak only FFH2's own lines. Unticked, each civilization also has lines of its own for every other civilization." },
+        vanilla,
+        " Vanilla experience",
       ),
     ),
     err,
@@ -349,6 +356,7 @@ export function newGame({ dismissible = true, noGame = false } = {}) {
     err.textContent = "";
     try {
       if (spectate.checked) setup.observe = true;
+      if (vanilla.checked) setup.vanilla = true;
       await api.session("new", name.value ? { setup, name: name.value } : { setup });
       m.close("started");
       emit("game-started", { spectate: spectate.checked });

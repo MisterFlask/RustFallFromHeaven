@@ -32,7 +32,9 @@ cards (or random), the first paragraph of its pedia (its trait and how it plays)
 what the leader and the civilization bring: alignment, hero, world spell, each trait's effects,
 starting techs, unique and blocked units and buildings, special abilities; then the world
 (opponents, world size, speed, difficulty, era, climate, sea level, seed, the game's name), game
-options and victory conditions, each choice's description as its tooltip. The load screen has a
+options and victory conditions, each choice's description as its tooltip, and "Vanilla experience"
+(leaders speak only FFH2's own lines; unticked, each civilization also has its own lines for
+every other civilization, `data/text/barks.md`). The load screen has a
 card per game (the current one first, then the most recently saved) and a row per save with its
 turn and when it was written, the older autosaves folded away. Each game gets a directory in `./saves` (`--saves DIR` to change it).
 `serve` takes the GAME flags too (`--seed 3 --world WORLDSIZE_SMALL --new` starts a game at once,
@@ -264,7 +266,9 @@ the question to take over a civilization that appeared and by each candidate of 
 (gold with an amount; peace, open borders and pacts go both ways, so they are greyed on both
 sides when either side refuses them), "Propose": the AI accepts or declines at once.
 
-**Leaders speak** as in Civ4's diplomacy screen, with FfH2's own lines for each leader. The trade
+**Leaders speak** as in Civ4's diplomacy screen, with FfH2's own lines for each leader and,
+unless the game was started with "Vanilla experience", lines their civilization has for yours
+(`data/text/barks.md`: every civilization to every other, at each of the moments below). The trade
 screen opens on the leader's greeting (by its attitude towards you; sometimes, as in Civ4, a word
 about its worst enemy or a boast about its army), or on its refusal to talk (at war, until it is
 ready for peace); the leader answers each proposal: thanks for a gift, its line for peace made or
@@ -302,7 +306,7 @@ from the data, they follow the rules as they change. Each appears wherever its t
 build list and the buildings of a city, the unit panel's actions, the promotions and spells
 dialogs, the civics and religion screens, the trade table, the map's resources.
 
-**Watching the AI.** Tick "Spectate: watch the AI play" in the new-game screen for an **observed
+**Watching the AI.** Tick "Spectate the AI" in the new-game screen for an **observed
 game**: an AI-only game (the AI plays every civilization, also the one you pick, which is the one
 the view follows first) watched with the whole map shown. It is the game `ffh autoplay` plays
 with the same settings, move for move (`ffh-cli`'s tests check it at every turn boundary), so

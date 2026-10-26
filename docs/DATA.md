@@ -23,6 +23,10 @@ attitude and relative power; presentation only) names lines from FFH2's own text
 `CIV4DiplomacyText.xml` files, so `data/text/en.tsv` merges each text layer's
 `CIV4DiplomacyText*.xml` before its `CIV4GameText*.xml` (`tools/vendor_xml.py`).
 
+`data/text/barks.md` is not vendored: it is the port's own writing, the lines each civilization's
+leaders have for each other civilization at eleven diplomacy moments (ffh-play
+`view/speech.rs`, `Barks`; off in a game started with the vanilla experience).
+
 ## GlobalDefines.xml reconstruction
 
 The reference repo's BTS `GlobalDefines.xml` was edited by that repo's mod. For

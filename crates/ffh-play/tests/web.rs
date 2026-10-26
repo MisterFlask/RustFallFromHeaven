@@ -367,6 +367,24 @@ fn leaders_speak_at_first_contact_war_and_greeting() {
     assert!(r.req_str("text").is_ok_and(|t| !t.is_empty()), "{r}");
     // The view of a game without moments.
     assert_eq!(s.query_json(&ffh_play::jobj! { "q" => "view" }).unwrap().req::<i64>("moments_next"), Ok(0));
+
+    // The vanilla experience: FfH2's lines only; else the civilizations' own lines join them.
+    let distinct = |s: &Session| {
+        let mut texts: Vec<String> = (0..40)
+            .filter_map(|salt| s.query_json(&ffh_play::jobj! { "q" => "speech", "with" => st.with, "comment" => "AI_DIPLOCOMMENT_ACCEPT", "salt" => salt }).ok())
+            .filter_map(|r| r.req_str("text").ok().map(str::to_string))
+            .collect();
+        texts.sort();
+        texts.dedup();
+        texts.len()
+    };
+    let own = distinct(&s);
+    ffh_play::query::UiState::lock(&s.ui).vanilla = true;
+    let vanilla = distinct(&s);
+    assert!(own >= 3 && vanilla < own, "own lines {own}, vanilla {vanilla}");
+    let mut ng = ffh_play::setup::NewGame::new(d, 3);
+    ng.vanilla = true;
+    assert!(ffh_play::setup::NewGame::from_json(d, &ng.to_json()).unwrap().vanilla);
 }
 
 /// The files a directory holds, relative, sorted.

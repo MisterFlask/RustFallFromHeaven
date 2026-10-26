@@ -213,6 +213,7 @@ impl Session {
         let g = if ng.observe { setup::build_observed_game(d, ng) } else { setup::build_game(d, ng) }.map_err(PlayError::Setup)?;
         let mut s = Session::assemble(g, HUMAN_SLOT, answerer, opts, journal, ng.observe);
         s.setup = Some(ng.clone());
+        UiState::lock(&s.ui).vanilla = ng.vanilla;
         s.journal(&Line::New { setup: ng.to_json() });
         s.g.game_init();
         if !ng.observe {
@@ -255,6 +256,7 @@ impl Session {
         s.journal(&Line::Load { fnv: journal::fnv_hex(save), human });
         if let Some(sc) = sidecar {
             s.setup = sc.setup.as_ref().and_then(|j| NewGame::from_json(s.g.d, j).ok());
+            UiState::lock(&s.ui).vanilla = s.setup.as_ref().is_some_and(|ng| ng.vanilla);
             if observe {
                 s.to_play = sc.to_play.max(0);
             }
@@ -681,10 +683,11 @@ impl Session {
         let diplo = std::mem::take(&mut self.g.log.diplo);
         if !self.observing && diplo.iter().any(|e| e.to == h) {
             // The leader's line is chosen now, with the attitude it has now.
+            let own = !UiState::lock(&self.ui).vanilla;
             let g = QueryGuard::new(&self.g);
             for e in diplo.into_iter().filter(|e| e.to == h) {
                 let salt = (self.messages.moments_total() as u64) << 32 | e.turn as u32 as u64;
-                if let Some(text) = crate::view::speech::line(&g, e.from, h, e.comment, &mut crate::view::speech::Async::new(salt)) {
+                if let Some(text) = crate::view::speech::line(&g, e.from, h, e.comment, own, &mut crate::view::speech::Async::new(salt)) {
                     self.messages.push_moment(Moment { turn: e.turn, player: e.from, comment: e.comment, text });
                 }
             }

@@ -24,6 +24,14 @@
 //!
 //! **Power** (`DiplomacyPowerTypes`, also not in the DLL): the AI is weaker when its power
 //! (`CvPlayer::getPower`) is below 4/5 of the human's, stronger above 5/4 of it, else equal.
+//!
+//! **The civilizations' own lines** (not FfH2's): `data/text/barks.md` gives every civilization
+//! lines for each other civilization at eleven moments ([`MOMENTS`]; [`Barks`]). Unless the game
+//! is set to the vanilla experience (`NewGame::vanilla`), a leader picks from those of its
+//! civilization for the human's civilization together with FfH2's own.
+
+use std::collections::BTreeMap;
+use std::sync::OnceLock;
 
 use ffh_core::game::Game;
 use ffh_core::ids::*;
@@ -90,9 +98,85 @@ pub fn greeting(g: &Game, ai: PlayerId, other: PlayerId, rand: &mut Async) -> Di
     d.t("AI_DIPLOCOMMENT_GREETINGS")
 }
 
-/// The text keys of the lines `ai` may say to `other` for `comment` (see the module docs);
-/// empty when no response matches.
-pub fn lines(g: &Game, ai: PlayerId, other: PlayerId, comment: DiploCommentType) -> Vec<&'static str> {
+/// The moments of `barks.md`: its heading, the comment it is said for, and for the greeting
+/// whether it is the one for an annoyed or furious leader.
+pub const MOMENTS: [(&str, &str, bool); 11] = [
+    ("First contact", "AI_DIPLOCOMMENT_FIRST_CONTACT", false),
+    ("Declares war", "AI_DIPLOCOMMENT_DECLARE_WAR", false),
+    ("Refuses to talk", "AI_DIPLOCOMMENT_REFUSE_TO_TALK", false),
+    ("Greeting (friendly)", "AI_DIPLOCOMMENT_GREETINGS", false),
+    ("Greeting (hostile)", "AI_DIPLOCOMMENT_GREETINGS", true),
+    ("Accepts a deal", "AI_DIPLOCOMMENT_ACCEPT", false),
+    ("Thanks for a gift", "AI_DIPLOCOMMENT_THANKS", false),
+    ("Turns down a deal", "AI_DIPLOCOMMENT_NO_DEAL", false),
+    ("Agrees to peace", "AI_DIPLOCOMMENT_PEACE", false),
+    ("Refuses peace", "AI_DIPLOCOMMENT_NO_PEACE", false),
+    ("Rejects a demand", "AI_DIPLOCOMMENT_REJECT", false),
+];
+
+/// The civilizations' own lines (`data/text/barks.md`, `GameData::barks`): by speaker, listener,
+/// comment and, for the greeting, hostility. The file is Markdown: `### Speaker → Listener`
+/// sections (civilizations by their short names), `#### Moment` headings ([`MOMENTS`]), a line
+/// per `- ` bullet; anything else is prose.
+#[derive(Debug, Default)]
+pub struct Barks {
+    pub lines: BTreeMap<(CivilizationType, CivilizationType, DiploCommentType, bool), Vec<String>>,
+    /// What did not read (an unknown civilization or moment, a line outside a moment).
+    pub problems: Vec<String>,
+}
+
+impl Barks {
+    pub fn parse(d: &GameData, md: &str) -> Barks {
+        let civ = |name: &str| d.civilizations.keys().find(|&c| d.text.name(&d.civilizations[c].short_description_key) == name);
+        let mut out = Barks::default();
+        let mut pair: Option<(CivilizationType, CivilizationType)> = None;
+        let mut moment: Option<(DiploCommentType, bool)> = None;
+        for (n, l) in md.lines().enumerate() {
+            let l = l.trim_end();
+            if let Some(h) = l.strip_prefix("### ") {
+                moment = None;
+                pair = match h.split_once(" → ").map(|(a, b)| (civ(a.trim()), civ(b.trim()))) {
+                    Some((Some(a), Some(b))) => Some((a, b)),
+                    _ => {
+                        out.problems.push(format!("line {}: unknown pair {h:?}", n + 1));
+                        None
+                    }
+                };
+            } else if let Some(h) = l.strip_prefix("#### ") {
+                moment = MOMENTS.iter().find(|m| m.0 == h.trim()).map(|m| (d.t::<DiploCommentType>(m.1), m.2));
+                if moment.is_none() || pair.is_none() {
+                    out.problems.push(format!("line {}: moment {h:?} unknown or outside a pair", n + 1));
+                }
+            } else if let Some(t) = l.strip_prefix("- ") {
+                match (pair, moment) {
+                    (Some((a, b)), Some((c, hostile))) => out.lines.entry((a, b, c, hostile)).or_default().push(t.trim().to_string()),
+                    _ if pair.is_some() => out.problems.push(format!("line {}: a line outside a moment", n + 1)),
+                    _ => {}
+                }
+            } else if l.starts_with("## ") || l.starts_with("# ") {
+                pair = None;
+                moment = None;
+            }
+        }
+        out
+    }
+
+    /// The lines of `speaker` to `listener` for `comment` (`hostile`: the annoyed or furious
+    /// greeting).
+    pub fn get(&self, speaker: CivilizationType, listener: CivilizationType, comment: DiploCommentType, hostile: bool) -> &[String] {
+        self.lines.get(&(speaker, listener, comment, hostile)).map_or(&[], Vec::as_slice)
+    }
+}
+
+/// The game data's [`Barks`], read once.
+pub fn barks(d: &'static GameData) -> &'static Barks {
+    static BARKS: OnceLock<Barks> = OnceLock::new();
+    BARKS.get_or_init(|| Barks::parse(d, &d.barks))
+}
+
+/// The lines `ai` may say to `other` for `comment` (see the module docs): FfH2's, and with
+/// `own` also its civilization's own lines for `other`'s; empty when none fits.
+pub fn lines(g: &Game, ai: PlayerId, other: PlayerId, comment: DiploCommentType, own: bool) -> Vec<&'static str> {
     let d = g.d;
     let leader = g.player_get_leader_type(ai);
     let civ = g.player_get_civilization_type(ai);
@@ -121,25 +205,30 @@ pub fn lines(g: &Game, ai: PlayerId, other: PlayerId, comment: DiploCommentType)
             _ => best = Some((rank, r.diplomacy_text.iter().map(String::as_str).collect())),
         }
     }
-    best.map(|(_, keys)| keys).unwrap_or_default()
+    let mut out: Vec<&'static str> = best.map(|(_, keys)| keys).unwrap_or_default().into_iter().map(|k| d.text.get(k)).collect();
+    if let (true, Some(civ), Some(theirs)) = (own, civ, g.player_get_civilization_type(other)) {
+        let hostile = comment == d.t::<DiploCommentType>("AI_DIPLOCOMMENT_GREETINGS") && attitude <= AttitudeType::ATTITUDE_ANNOYED;
+        out.extend(barks(d).get(civ, theirs, comment, hostile).iter().map(String::as_str));
+    }
+    out
 }
 
-/// The line `ai` says to `other` for `comment`, its placeholders filled in (`None` when no
-/// response has a line for them).
-pub fn line(g: &Game, ai: PlayerId, other: PlayerId, comment: DiploCommentType, rand: &mut Async) -> Option<String> {
-    let keys = lines(g, ai, other, comment);
-    if keys.is_empty() {
+/// The line `ai` says to `other` for `comment` (`own`: its civilization's own lines too), its
+/// placeholders filled in (`None` when it has no line for them).
+pub fn line(g: &Game, ai: PlayerId, other: PlayerId, comment: DiploCommentType, own: bool, rand: &mut Async) -> Option<String> {
+    let texts = lines(g, ai, other, comment, own);
+    if texts.is_empty() {
         return None;
     }
-    let key = keys[rand.get(keys.len() as u32) as usize];
-    Some(fill(g, ai, other, g.d.text.get(key)))
+    Some(fill(g, ai, other, texts[rand.get(texts.len() as u32) as usize]))
 }
 
 /// `speech {with, comment, salt}`: `{with, comment, text}`, what the leader of `with` says to the
 /// human for `comment`; with no comment, what it says when the human contacts it: its greeting
 /// ([`greeting`]), or `AI_DIPLOCOMMENT_REFUSE_TO_TALK` when it will not talk. `text` is `null`
-/// when it has no line for it.
-pub fn speech(v: &Viewer, with: PlayerId, comment: Option<DiploCommentType>, salt: i64) -> Result<Json, QueryErr> {
+/// when it has no line for it. `own`: the civilizations' own lines too (not the vanilla
+/// experience).
+pub fn speech(v: &Viewer, with: PlayerId, comment: Option<DiploCommentType>, salt: i64, own: bool) -> Result<Json, QueryErr> {
     let g = v.g;
     if with.idx() >= g.num_civ_players() || with == v.h || g.player_is_barbarian(with) || !v.player_met(with) || g.players[with].human || !g.players[with].alive {
         return Err(invalid(format!("field `with`: player {} is not a living AI civilization the human knows", with.0)));
@@ -150,7 +239,7 @@ pub fn speech(v: &Viewer, with: PlayerId, comment: Option<DiploCommentType>, sal
         None if !super::diplo::ai_willing_to_talk(g, with, v.h) => g.d.t("AI_DIPLOCOMMENT_REFUSE_TO_TALK"),
         None => greeting(g, with, v.h, &mut rand),
     };
-    let text = line(g, with, v.h, comment, &mut rand);
+    let text = line(g, with, v.h, comment, own, &mut rand);
     Ok(crate::jobj! { "with" => with, "comment" => Json::idx(comment), "text" => text })
 }
 
@@ -233,6 +322,46 @@ mod tests {
                     assert_ne!(d.text.get(k), k.as_str(), "{c}: {k} has no text");
                 }
             }
+        }
+    }
+
+    #[test]
+    fn barks_parse_by_pair_and_moment() {
+        let d = ffh_data::global();
+        let md = "# Barks\n\nSome prose.\n\n## Bannor\n\n### Bannor → Sheaim\n\n#### First contact\n- Repent, gate-opener.\n- The Order sees you.\n\n#### Greeting (hostile)\n- You again, [CT_NAME].\n\n### Bannor → Nowhere\n#### Declares war\n- Lost.\n";
+        let b = Barks::parse(d, md);
+        let (bannor, sheaim) = (d.t::<CivilizationType>("CIVILIZATION_BANNOR"), d.t::<CivilizationType>("CIVILIZATION_SHEAIM"));
+        assert_eq!(b.get(bannor, sheaim, d.t("AI_DIPLOCOMMENT_FIRST_CONTACT"), false), ["Repent, gate-opener.", "The Order sees you."]);
+        assert_eq!(b.get(bannor, sheaim, d.t("AI_DIPLOCOMMENT_GREETINGS"), true), ["You again, [CT_NAME]."]);
+        assert!(b.get(bannor, sheaim, d.t("AI_DIPLOCOMMENT_GREETINGS"), false).is_empty());
+        assert_eq!(b.problems.len(), 2, "{:?}", b.problems);
+    }
+
+    #[test]
+    fn every_civilization_pair_has_its_own_lines() {
+        let d = ffh_data::global();
+        let b = barks(d);
+        assert!(b.problems.is_empty(), "{:?}", &b.problems[..b.problems.len().min(10)]);
+        // The civilizations that can be in a game: the playable ones, the Infernal and the
+        // Mercurians.
+        let civs: Vec<CivilizationType> = d
+            .civilizations
+            .keys()
+            .filter(|&c| (d.civilizations[c].playable && !d.civilizations[c].base.graphical_only) || ["CIVILIZATION_INFERNAL", "CIVILIZATION_MERCURIANS"].contains(&d.type_name(c)))
+            .filter(|&c| d.type_name(c) != "CIVILIZATION_RANDOM")
+            .collect();
+        assert_eq!(civs.len(), 21);
+        for &a in &civs {
+            for &l in civs.iter().filter(|&&l| l != a) {
+                for m in MOMENTS {
+                    let n = b.get(a, l, d.t(m.1), m.2).len();
+                    assert!(n >= 2, "{} → {}: {}: {n} lines", d.type_name(a), d.type_name(l), m.0);
+                }
+            }
+        }
+        for t in b.lines.values().flatten() {
+            let tokens: Vec<&str> = t.match_indices('[').map(|(i, _)| &t[i..t[i..].find(']').map_or(t.len(), |e| i + e + 1)]).collect();
+            assert!(tokens.iter().all(|x| *x == "[CT_NAME]" || *x == "[OUR_NAME]"), "{t}");
         }
     }
 
