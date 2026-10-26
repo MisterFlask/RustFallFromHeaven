@@ -228,6 +228,17 @@ model calls (longer if the API rate-limits) plus a few seconds to cut, warp and 
 `final_<unit>/` and `final_<unit>_nofx/`. Raws, templates and diagnostics go to `work/final_<unit>/`, which is not
 committed.
 
+**Without image credit (or to refresh only the idle):** `--rebuild --anims idle` builds the idle from the sprite with
+no API call. Without `--rebuild`, `--anims idle` still enters the generation step with zero calls and crashes
+(`max_workers must be greater than 0`). If an image call fails (an empty OpenAI balance answers every call with
+`429 credit_balance_exhausted`, billed at $0), the recipe ends with a `TypeError` in `build`; read the `error` fields in
+the JSON printed just above it. `UNITS.md` lists which units are done and which wait; `./animate_batch.sh` runs the
+paid steps for the prepared ones.
+
+**Sprites.** Unit files point to `m7/roster/units/unit_<name>.png` inside `anim-sprint/`, which holds only the sprites
+animated so far. The full roster is `tools/m7/roster/units/`: copy the unit's PNG into `anim-sprint/m7/roster/units/`
+first (they are identical copies).
+
 ## Step 3: pick the variants by eye
 
 The recipe picks a variant per sheet by a score (reference-cell fidelity, scale, ground snaps, and gate flags that only
