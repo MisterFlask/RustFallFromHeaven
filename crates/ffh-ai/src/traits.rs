@@ -433,23 +433,32 @@ fn gp_city_score(g: &Game, c: CityId) -> i32 {
 // ----------------------------------------------------------------------------
 
 /// The value of the extra yield a Financial leader gets at the threshold (+1 commerce on plots
-/// with 2 or more) that an improvement adds or removes on plot `q`: `old` and `new` are the
-/// improvement yield changes (`plot_calculate_improvement_yield_change`, which leaves the
-/// threshold out), `w` the worker's weight of a point of that yield.
-pub fn threshold_value(g: &Game, p: PlayerId, q: PlotIdx, y: usize, old: i32, new: i32, w: i32) -> i32 {
+/// with 2 or more) that an improvement adds or removes on plot `q`, counted as the worker counts
+/// the yields: `now` is the improvement's yield change when built and `grown` its grown form's
+/// (a cottage's town), weighted 1 and 2 as the yields are; `old` the current improvement's
+/// (`plot_calculate_improvement_yield_change` leaves the threshold out). `w` is the worker's weight
+/// of a point of that yield. Only on a plot a city of ours works now: an unworked cottage never
+/// grows, and the extra yield is only had by working the plot (counting it on every plot drew the
+/// workers from mines, farms and roads to cottages nobody worked: the Financial leaders alone lost
+/// a fifth of their hammers around turn 250 and won 11% of their games instead of 27%, seeds 1-40).
+pub fn threshold_value(g: &Game, p: PlayerId, q: PlotIdx, y: usize, old: i32, now: i32, grown: Option<i32>, w: i32) -> i32 {
     if !has(g, p, Trait::Financial) {
         return 0;
     }
     let th = g.players[p].extra_yield_threshold[y];
-    if th <= 0 {
+    if th <= 0 || !g.plot_is_being_worked(q) || !g.map.plots[q].working_city.is_some_and(|c| g.cities[c].owner == p) {
         return 0;
     }
     let extra = g.d.defines.extra_yield;
-    let now = g.map.plots[q].yields[y];
+    let cur = g.map.plots[q].yields[y];
     // The plot's yield for its owner includes the extra yield already when it is ours.
-    let raw = if g.map.plots[q].owner == Some(p) && now >= th + extra { now - extra } else { now };
-    let after = raw - old + new;
-    (i32::from(after >= th) - i32::from(raw >= th)) * extra * w
+    let raw = if g.map.plots[q].owner == Some(p) && cur >= th + extra { cur - extra } else { cur };
+    let gain = |change: i32| i32::from(raw - old + change >= th) - i32::from(raw >= th);
+    let thirds = match grown {
+        Some(gy) => gain(now) + 2 * gain(gy),
+        None => 3 * gain(now),
+    };
+    thirds * extra * w / 3
 }
 
 // ----------------------------------------------------------------------------
