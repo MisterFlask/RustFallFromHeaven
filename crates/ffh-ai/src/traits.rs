@@ -433,27 +433,22 @@ fn gp_city_score(g: &Game, c: CityId) -> i32 {
 // ----------------------------------------------------------------------------
 
 /// The value of the extra yield a Financial leader gets at the threshold (+1 commerce on plots
-/// with 2 or more) that an improvement adds or removes on plot `q`, counted as the worker counts
-/// the yields: `now` is the improvement's yield change when built and `grown` its grown form's
-/// (a cottage's town), weighted 1 and 2 as the yields are; `old` the current improvement's
+/// with 2 or more) that an improvement brings to plot `q`, counted as the worker counts the
+/// yields: `now` is the improvement's yield change when built and `grown` its grown form's (a
+/// cottage's town), weighted 1 and 2 as the yields are; `old` the current improvement's
 /// (`plot_calculate_improvement_yield_change` leaves the threshold out). `w` is the worker's weight
-/// of a point of that yield. Only on a plot a city of ours works now: an unworked cottage never
-/// grows, and the extra yield is only had by working the plot (counting it on every plot drew the
-/// workers from mines, farms and roads to cottages nobody worked: the Financial leaders alone lost
-/// a fifth of their hammers around turn 250 and won 11% of their games instead of 27%, seeds 1-40).
+/// of a point of that yield. Only on an unimproved plot a city of ours works now: an unworked
+/// cottage never grows and its extra commerce is never had (counting it on every plot drew the
+/// workers from mines, farms and roads to cottages nobody worked), and on an improved plot it made
+/// workers replace farms with cottages that start over (fewer improved plots worked around turn
+/// 250). docs/AI_LOG.md, "Leader traits".
 pub fn threshold_value(g: &Game, p: PlayerId, q: PlotIdx, y: usize, old: i32, now: i32, grown: Option<i32>, w: i32) -> i32 {
     if !has(g, p, Trait::Financial) {
         return 0;
     }
     let th = g.players[p].extra_yield_threshold[y];
-    let Some(c) = g.map.plots[q].working_city.filter(|&c| g.cities[c].owner == p) else { return 0 };
-    if th <= 0 || !g.plot_is_being_worked(q) {
-        return 0;
-    }
-    // Not while the city is short of food and can still grow (the worker weighs food most then):
-    // the extra commerce tipped such plots from farms to cottages and the cities grew less.
-    let surplus = g.city_yield_rate(c, YieldType::YIELD_FOOD) - g.city_food_consumption(c, false, 0);
-    if surplus < 2 && g.city_happy_level(c) > g.city_unhappy_level(c, 0) {
+    let pl = &g.map.plots[q];
+    if th <= 0 || pl.improvement_type.is_some() || !g.plot_is_being_worked(q) || !pl.working_city.is_some_and(|c| g.cities[c].owner == p) {
         return 0;
     }
     let extra = g.d.defines.extra_yield;
