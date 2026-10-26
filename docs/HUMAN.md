@@ -22,11 +22,19 @@ cargo build --release
 ./target/release/ffh-play serve            # then open http://127.0.0.1:8642/
 ```
 
-The page starts with the new-game screen (civilization and leader or random, with the chosen
-leader's portrait and, beside it, what the leader and the civilization bring: alignment, hero, world
-spell, each trait's effects, starting techs, unique and blocked units and buildings, special
-abilities; opponents, world size, speed, difficulty, era, climate, sea level, seed, game options,
-victory conditions, each choice's description as its tooltip; "Load a game…" lists the saves). Each game gets a directory in `./saves` (`--saves DIR` to change it).
+The page opens on the title screen: a small isometric island drawn from the map's own sprites (a
+kingdom on one shore, the hells creeping in on the other) under drifting clouds, and the main menu:
+**Continue** (the newest save or autosave, by its time), **New game**, **Load game**, **Options**
+and **Keys and controls**. With a game running the title screen goes; the menu's Main menu button
+(the map icon) brings it back with Resume (or `Esc`). The new-game screen lists the civilizations
+with their banners; picking one shows the chosen leader's portrait and its leaders as portrait
+cards (or random), the first paragraph of its pedia (its trait and how it plays) and, beside it,
+what the leader and the civilization bring: alignment, hero, world spell, each trait's effects,
+starting techs, unique and blocked units and buildings, special abilities; then the world
+(opponents, world size, speed, difficulty, era, climate, sea level, seed, the game's name), game
+options and victory conditions, each choice's description as its tooltip. The load screen has a
+card per game (the current one first, then the most recently saved) and a row per save with its
+turn and when it was written, the older autosaves folded away. Each game gets a directory in `./saves` (`--saves DIR` to change it).
 `serve` takes the GAME flags too (`--seed 3 --world WORLDSIZE_SMALL --new` starts a game at once,
 `--load saves/game-3/auto/T0040.ffhsave` resumes one). Use a current Chrome, Firefox or Safari;
 nothing is fetched from the internet.
@@ -644,7 +652,7 @@ Session operations (`op`):
 | `follow {player}` | an observed game: the view follows `player` (the game is not changed) |
 | `flag {x, y, note?}` | flag a plot while the game is stopped: the record (above, "Flags"), appended to the game's `flags.jsonl`, its replay's start save pinned in `flags/` |
 | `flags` | the current game's flags |
-| `saves` | every game directory with its saves |
+| `saves` | every game directory with its saves (each `{name, path, auto, sidecar, modified}`; `modified`: when the file was written, seconds since 1970, or null) |
 | `quit` | end the agent / stop the server |
 
 **Blocking decisions** (keep or abandon a captured city, a free tech, an election, ...) are
@@ -779,7 +787,7 @@ node tools/web-touch-smoke.mjs           # the same on an emulated phone, with t
   again after loading the same turn, the transport picker (`stage load`), Shift-right-click
   waypoints and go-to (`G`) Shift-click waypoints held until Shift is released (`stage
   automoves`), a game started by another client
-  while the page shows the new-game screen, and the crash screen of a server started with
+  while the page shows the title screen's New game dialog (both go), and the crash screen of a server started with
   `--panic-at`; and (P6) the city screen (a worked plot clicked off and on, the automation), the
   tech tree (`F6`, a click researches), civics (`F3`, a pick and the revolution), religion
   (`F7`), the sliders (top bar and `F2`), diplomacy (`F4`; the trade screen when a player was
@@ -807,7 +815,8 @@ node tools/web-touch-smoke.mjs           # the same on an emulated phone, with t
 **Manual checklist** (a human tester, `ffh-play serve` and a real browser; also try a narrow
 window, and a phone: `ffh-play serve --bind 0.0.0.0` on the same network, or the site):
 
-1. New game: change the civilization (the leader list follows), world size, difficulty, a game
+1. The title screen: the island draws and drifts (still under "reduce motion"); New game: change
+   the civilization (its leaders' cards follow), world size, difficulty, a game
    option and a victory condition; start. The map centres on your units; the top bar shows the
    turn, gold and "choose research".
 2. Map: drag to pan across the east-west seam (no seam in the ground, borders or rivers), zoom

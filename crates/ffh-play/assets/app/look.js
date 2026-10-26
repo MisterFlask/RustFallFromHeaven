@@ -158,6 +158,9 @@ function installChrome(art) {
     const w = `${n.T * u}px ${n.R * u}px ${n.B * u}px ${n.L * u}px`;
     const name = f.replace(/_/g, "-");
     lines.push(`  --nine-${name}: url(${url}) ${n.T * k} ${n.R * k} ${n.B * k} ${n.L * k}${n.fill ? " fill" : ""} / ${w} repeat;`);
+    // The frame without its middle, for a control whose background must show (a drop-down's
+    // chevron): it paints that middle as a background colour of its own.
+    if (n.fill) lines.push(`  --nine-${name}-nofill: url(${url}) ${n.T * k} ${n.R * k} ${n.B * k} ${n.L * k} / ${w} repeat;`);
     lines.push(`  --nine-${name}-w: ${w};`);
   }
   for (const c of CURSORS) if (art.hasSprite(`ui/${c}`)) lines.push(`  --${c.replace(/_/g, "-")}: ${UI.cursorCSS(art, `ui/${c}`, { u })};`);
@@ -379,6 +382,32 @@ export function unitIcon(unitType, owner, { u = look.u, title } = {}) {
   c.style.width = `${spr.w * u}px`;
   c.style.height = `${spr.h * u}px`;
   c.className = "ui-px unit-figure";
+  if (title) c.title = title;
+  return c;
+}
+
+/** A civilization's banner (`ui/banner` in its tincture with its sigil, as its cities fly it on
+ *  the map: docs/ART.md 7) as a canvas, `u` CSS px per art px; null before the art loaded. */
+export function bannerEl(civType, { u = 4, title } = {}) {
+  const art = look.art;
+  if (!art || !art.hasSprite("ui/banner")) return null;
+  const owner = art.ownerStyle(civType || null);
+  const k = Math.max(1, Math.round(u * look.dpr));
+  const c = document.createElement("canvas");
+  c.width = 9 * k;
+  c.height = 14 * k;
+  const old = art.scale;
+  art.scale = k;
+  try {
+    const g = c.getContext("2d");
+    art.drawSprite(g, 1 * k, 1 * k, art.pick("ui/banner").name, { owner, flag: true, rim: 1 });
+    if (owner.sigil && art.hasSprite(owner.sigil)) art.drawSprite(g, 2 * k, 3 * k, art.pick(owner.sigil).name, { owner });
+  } finally {
+    art.scale = old;
+  }
+  c.style.width = `${9 * u}px`;
+  c.style.height = `${14 * u}px`;
+  c.className = "ui-px banner";
   if (title) c.title = title;
   return c;
 }

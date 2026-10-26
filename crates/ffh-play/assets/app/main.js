@@ -22,6 +22,7 @@ import * as tools from "./tools.js";
 import { applyMapDelta, plotDistance } from "./tiles.js";
 import * as K from "./hotkeys.js";
 import * as screens from "./screens.js";
+import * as title from "./title.js";
 import { showDecision, modalOpen, closeTag, closeAll, onEscape, openTags, openModal } from "./modals.js";
 import { renderTop, renderBottom, setTab, currentTab } from "./hud.js";
 import { endTurn, sending } from "./commands.js";
@@ -100,18 +101,19 @@ async function syncOnce() {
   if (phase !== "crashed") closeTag("crash");
   if (phase !== "stuck") closeTag("stuck");
   if (phase !== "decision") showDecision(null);
-  // The New game dialog the no-game screen forced (it cannot be closed) goes once there is a
-  // game, also one started by another client or a restarted server (P5 review); so does the
-  // game-over screen once the game is no longer over.
+  // The New game dialog opened from the title screen with no game goes once there is a game,
+  // also one started by another client or a restarted server (P5 review); so does the game-over
+  // screen once the game is no longer over.
   if (phase !== "no_game") closeTag(screens.NEWGAME_REQUIRED);
   if (phase !== "over") closeTag("over");
+  // No game: the title screen (Continue, New game, Load game ...); a game: the title screen goes,
+  // unless the player opened it over the game (Main menu).
+  title.titlePhase(phase);
   if (phase === "no_game" || phase === "crashed") {
     clearGame();
     if (phase === "crashed") {
       closeAll(["crash", "load", "newgame"]);
       if (!openTags().includes("crash")) screens.crashScreen(st);
-    } else if (!openTags().some((t) => t === "newgame" || t === screens.NEWGAME_REQUIRED || t === "load")) {
-      screens.newGame({ dismissible: false });
     }
     return;
   }
@@ -415,6 +417,11 @@ function onKey(ev) {
   const t = ev.target;
   const typing = t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement;
   if (ev.key === "Escape") {
+    if (title.titleShown() && !modalOpen()) {
+      // Over a running game, Escape resumes it.
+      if (gameRunning()) title.hideTitle();
+      return;
+    }
     if (document.body.classList.contains("menu-open")) setMenu(false);
     else if (tools.cancelFlagPick()) toast("No flag.");
     else if (units.currentMode()) units.setMode(null);
@@ -430,6 +437,8 @@ function onKey(ev) {
   const cityStep = { Home: 1, End: -1 }[k] ?? (ev.code === "NumpadAdd" ? 1 : ev.code === "NumpadSubtract" ? -1 : 0);
   if (cityStep && plain && !typing && stepCityScreen(cityStep, openTags().at(-1))) return handled();
   if (typing || modalOpen()) return;
+  // The title screen takes no game keys (its buttons take Tab and Enter as any page's do).
+  if (title.titleShown()) return;
   const dir = K.scrollKey(ev);
   if (dir) {
     if (!ev.repeat) mapView.scrollHold(dir, true);
@@ -578,6 +587,7 @@ function wire() {
   click("btn-new", () => screens.newGame());
   click("btn-keys", () => screens.keysHelp());
   click("btn-raw", () => screens.rawRequest());
+  click("btn-title", () => title.showTitle({ game: gameRunning() }));
   click("zoom-in", () => mapView.zoom(1));
   click("zoom-out", () => mapView.zoom(-1));
   for (const b of document.querySelectorAll("#mapwrap .layers button")) b.addEventListener("click", () => setLayer(b.dataset.layer));
@@ -628,6 +638,8 @@ function wire() {
   on("open-screen", (name) => openScreen(name));
   on("spectate", () => renderTop());
   on("game-started", (opts) => {
+    title.titleSavesChanged();
+    title.hideTitle();
     if (opts?.spectate) tools.startSpectating({ newGame: true });
     else if (tools.spectating()) tools.dropSpectating();
     closeAll();
@@ -662,8 +674,30 @@ function wire() {
   on("renderer", (r) => setRenderer(r));
 }
 
+/** Whether a game exists (by the phase: the view is not read during the AI turns, so after a
+ *  reload then it is still null). */
+function gameRunning() {
+  const p = S.status?.phase;
+  return !!p && p !== "no_game" && p !== "crashed";
+}
+
 async function boot() {
   wire();
+  // The title screen first: it shows while the client connects and stays when there is no game.
+  title.initTitle({
+    newGame: () => screens.newGame({ noGame: !gameRunning() }),
+    load: () => screens.loadScreen(),
+    keys: () => screens.keysHelp(),
+    options: () => tools.openOptions(),
+    loadSave: async (name) => {
+      try {
+        await api.session("load", { name });
+        emit("game-started");
+      } catch (e) {
+        toast(e.detail ?? e.message, "error");
+      }
+    },
+  });
   mapView = new MapView($("#mapwrap"), {
     click: (x, y, ev) => tools.flagClick(x, y) || units.click(x, y, ev),
     rightClick: (x, y, ev) => units.rightClick(x, y, ev),
@@ -707,6 +741,7 @@ async function boot() {
 function lookLoaded() {
   if (!mapView.iso && rendererChoice() === "art") mapView.useArt(true);
   syncSkin();
+  title.titleArt();
   renderTop();
   renderBottom();
   units.renderPanel();

@@ -93,6 +93,8 @@ export async function openTechTree() {
           const y2 = to.y + H / 2;
           path.setAttribute("d", `M${x1},${y1} C${x1 + GX / 2},${y1} ${x2 - GX / 2},${y2} ${x2},${y2}`);
           path.setAttribute("class", from.has ? "have" : "");
+          path.dataset.from = String(p);
+          path.dataset.to = String(x.tech);
           if (dash) path.setAttribute("stroke-dasharray", dash);
           svg.appendChild(path);
         }
@@ -107,6 +109,11 @@ export async function openTechTree() {
         {
           class: state,
           "data-tech": x.tech,
+          "data-era": x.era ?? "",
+          onmouseenter: () => focus(x.tech),
+          onmouseleave: () => focus(null),
+          onfocus: () => focus(x.tech),
+          onblur: () => focus(null),
           style: { left: `${p.x}px`, top: `${p.y}px`, width: `${W}px`, height: `${H}px` },
           tip: techTip(x, x.has ? null : "Click: research it (with its missing prerequisites). Shift-click: add it to the queue."),
           disabled: x.has,
@@ -119,16 +126,34 @@ export async function openTechTree() {
         x.progress && !x.has ? h("span.tech-bar", h("span", { style: { width: `${Math.min(100, Math.round((100 * x.progress) / Math.max(1, x.cost)))}%` } })) : null,
       );
     });
+    // Hovering a tech lights it, every tech it needs (its and/or prerequisites, all the way
+    // back) and the lines between them; the rest of the tree dims.
+    const tree = h("div.tree", { style: { width: `${width}px`, height: `${height}px` } }, svg, boxes);
+    const ancestors = (id) => {
+      const seen = new Set([id]);
+      const stack = [id];
+      while (stack.length) {
+        const x = byId.get(stack.pop());
+        for (const p of [...(x?.and ?? []), ...(x?.or ?? [])]) if (byId.has(p) && !seen.has(p)) (seen.add(p), stack.push(p));
+      }
+      return seen;
+    };
+    function focus(id) {
+      tree.classList.toggle("focus", id !== null);
+      const lit = id === null ? new Set() : ancestors(id);
+      for (const b of boxes) b.classList.toggle("lit", lit.has(Number(b.dataset.tech)));
+      for (const p of svg.children) p.classList.toggle("lit", lit.has(Number(p.dataset.to)) && lit.has(Number(p.dataset.from)));
+    }
     const cur = t.current !== null ? dname("TechType", t.current) : null;
     m.setBody(
       h(
         "div.research-head",
         cur ? h("div", "Researching ", h("b", cur)) : h("div.warn", "Nothing is being researched."),
         t.queue.length > 1 ? h("div.dim", `Queue: ${t.queue.map((q) => dname("TechType", q)).join(" → ")}`) : null,
-        h("div.dim", `${t.rate} research per turn. Click a technology to research it (with what it needs); Shift-click to queue it.`),
+        h("div.dim", `${t.rate} research per turn. Click a technology to research it (with what it needs); Shift-click to queue it. Point at one to see the path to it.`),
         tapModes(tapMode, [["now", "Research now", "A tap researches it now"], ["queue", "Add to queue", "A tap adds it to the research queue (Shift-click)"]], (v) => ((tapMode = v), load())),
       ),
-      h("div.tree-scroll", h("div.tree", { style: { width: `${width}px`, height: `${height}px` } }, svg, boxes)),
+      h("div.tree-scroll", tree),
     );
     const now = m.el.querySelector(".tech.researching") ?? m.el.querySelector(".tech.can");
     now?.scrollIntoView({ block: "center", inline: "center" });

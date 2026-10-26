@@ -371,6 +371,7 @@ const SYSTEM = [
   ["btn-new", "newgame"],
   ["btn-keys", "help"],
   ["btn-raw", "pedia"],
+  ["btn-title", "map"],
 ];
 const LAYERS = { terrain: "terrain", political: "political", yield: "yields" };
 

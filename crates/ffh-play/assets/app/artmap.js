@@ -952,7 +952,7 @@ export class ArtMap {
   }
 
   /** The minimap's picture (docs/ART.md 8.4): a pixel a tile, terrain colours, owned land in the
-   *  owner's field colour, cities vellum, fog through FOG, unrevealed void. */
+   *  owner's field colour, cities vellum, fog through FOG, unrevealed transparent. */
   minimap() {
     if (this.miniCanvas) return this.miniCanvas;
     if (!this.plots) return null;
@@ -966,7 +966,8 @@ export class ArtMap {
       for (let x = 0; x < map.w; x++) {
         const p = this.plots.get(x, row);
         let k = this.miniIndex(p);
-        if (k === null) k = art.K("0");
+        // Unrevealed: transparent, so the minimap's chart (map.js `uncharted`) shows through.
+        if (k === null) continue;
         else {
           const o = p.owner !== null && p.owner !== undefined && p.plotType !== 3 ? this.owners.get(p.owner) : null;
           if (o) k = o.tincture.field;

@@ -1414,7 +1414,9 @@ export class MapView {
     const c = this.mini;
     const g = c.getContext("2d");
     g.setTransform(1, 0, 0, 1, 0, 0);
-    g.fillStyle = "#000";
+    // The uncharted world: a dark chart with a faint hatch, so an early-game minimap reads as a
+    // map still to be explored rather than as a black box.
+    g.fillStyle = uncharted(g);
     g.fillRect(0, 0, c.width, c.height);
     const map = this.map;
     if (!map) return;
@@ -1430,7 +1432,7 @@ export class MapView {
         for (let x = 0; x < map.w; x++) {
           const k = y * map.w + x;
           const o = ((map.h - 1 - y) * map.w + x) * 4;
-          let col = [0, 0, 0];
+          let col = null;
           if (map.vis[k] > 0) {
             col = rgb(T.terrainColor(tname("TerrainType", map.terrain[k])));
             if (map.owner[k] >= 0) {
@@ -1440,6 +1442,7 @@ export class MapView {
             if (map.city[k] >= 0) col = [255, 255, 255];
             if (map.vis[k] === 1) col = col.map((v) => Math.round(v * 0.6));
           }
+          if (!col) continue; // unrevealed: transparent, the chart shows through
           img.data[o] = col[0];
           img.data[o + 1] = col[1];
           img.data[o + 2] = col[2];
@@ -1525,6 +1528,22 @@ export class MapView {
   hideTip() {
     this.tip.hidden = true;
   }
+}
+
+/** The minimap's background (the unrevealed world): void with a faint diagonal hatch. */
+let unchartedPattern = null;
+function uncharted(g) {
+  if (unchartedPattern) return unchartedPattern;
+  const t = document.createElement("canvas");
+  t.width = 6;
+  t.height = 6;
+  const tg = t.getContext("2d");
+  tg.fillStyle = "#0e1424";
+  tg.fillRect(0, 0, 6, 6);
+  tg.fillStyle = "#1a2440";
+  for (let i = 0; i < 6; i++) tg.fillRect(i, 5 - i, 1, 1);
+  unchartedPattern = g.createPattern(t, "repeat") ?? "#0e1424";
+  return unchartedPattern;
 }
 
 function roundRect(g, x, y, w, h, r) {

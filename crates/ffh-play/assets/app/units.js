@@ -882,8 +882,10 @@ function actionButton(a) {
   const help = a.kind === "spell" || a.kind === "promotion" || a.kind === "upgrade" ? helpOf(a) : "";
   const extra = a.turns !== undefined ? ` (${turns(a.turns)})` : "";
   if (isoSkin()) return isoAction(a, key, extra);
+  // Deleting units is a danger button (docs/ART.md 11.4: delete, raze, declare war).
+  const danger = a.kind === "command" && tname("CommandType", a.command) === "COMMAND_DELETE";
   const btn = h(
-    "button.action",
+    `button.action${danger ? ".danger" : ""}`,
     {
       disabled: !a.enabled,
       "data-kind": a.kind,
@@ -1068,14 +1070,14 @@ export function renderPanel() {
     h("button", { onclick: () => select(own.map((u) => u.id)), disabled: own.length < 2, title: "Select every unit here" }, "All"),
     h("button", { onclick: groupAll, disabled: own.length < 2, title: "Join the units here into one group" }, "Group"),
     h("button", { onclick: splitAll, disabled: S.sel.units.length < 2, title: "Each selected unit its own group" }, "Split"),
-    h("button", { onclick: () => selectNext(), title: "Next unit waiting for orders [Tab]" }, "Next ⟳"),
+    h("button", { onclick: () => selectNext(), title: "Next unit waiting for orders [Tab]" }, "Next"),
   );
   if (r?.actions?.some((a) => a.kind === "promotion" && a.enabled)) {
     tools.append(h("button.promote", { onclick: () => openPromotions(), title: "Choose a promotion" }, "Promote…"));
   }
   const city = cityAt(x, y);
   if (city && city.owner === me()?.player) {
-    tools.append(h("button", { onclick: () => emit("open-city", city.id), title: "Open the city (or double-click it)" }, `${city.name} ▸`));
+    tools.append(h("button", { onclick: () => emit("open-city", city.id), title: "Open the city (or double-click it)" }, `Open ${city.name}`));
   }
   const status = [];
   if (grp?.missions?.length) status.push(h("div.dim", `Orders: ${grp.missions.map((m) => dname("MissionType", m.m)).join(", ")}`));
@@ -1093,10 +1095,11 @@ export function renderPanel() {
   }
   const others = foreign.length ? h("div.section", h("h4", "Others here"), foreign.map((u) => h("div.dim", `${dname("UnitType", u.type)} (${playerName(u.owner)})`))) : null;
   const pick = touchy() ? (isGoTo(mode?.action) ? "Tap a plot to go there." : `Tap a plot: ${mode && actionLabel(mode.action)}.`) : isGoTo(mode?.action) ? "Click a plot to go there (Shift: add waypoints; Esc cancels)." : `Pick a plot: ${mode && actionLabel(mode.action)} (Esc cancels).`;
-  const hint = mode ? h("div.mode-hint", h("span", pick), h("button.small", { onclick: () => setMode(null), title: "Leave the plot pick [Esc]" }, "Cancel")) : null;
+  // One hint at a time: waypoints being laid say more than the go-to mode they are laid in.
   const way = waypoints && unitsKey(waypoints.units) === unitsKey(S.sel.units)
     ? h("p.mode-hint", `${waypoints.points.length === 1 ? "1 waypoint" : `${waypoints.points.length} waypoints`}: release Shift to send (Esc drops them).`)
     : null;
+  const hint = mode && !way ? h("div.mode-hint", h("span", pick), h("button.small", { onclick: () => setMode(null), title: "Leave the plot pick [Esc]" }, "Cancel")) : null;
   // The lead unit's promotions as their seals (docs/ART.md 11.5), with the level as pips.
   const leadDetails = details.get(S.sel.units[0]);
   const seals = look.art && leadDetails?.promotions?.length

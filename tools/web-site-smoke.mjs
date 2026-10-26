@@ -290,7 +290,14 @@ async function endTurns(n) {
   }
 }
 
+/** The title screen (no game): its menu, then `id`'s button. */
+async function fromTitle(id, ms = 60000) {
+  await until(() => ev(`!document.getElementById("title-screen").hidden && !!document.getElementById(${JSON.stringify(id)})`), "the title screen", ms);
+  await click(`#${id}`);
+}
+
 async function newGame() {
+  await fromTitle("title-new");
   await dialog("New game", 60000);
   await shot("new-game");
   await ev(`(() => {
@@ -353,10 +360,9 @@ async function save() {
   return turn;
 }
 
-/** After a reload (a fresh engine, no game): loads `smoke` from the new-game screen. */
+/** After a reload (a fresh engine, no game): loads `smoke` from the title screen's Load game. */
 async function loadSmoke(turn) {
-  await dialog("New game", 60000);
-  await clickButton("Load a game…");
+  await fromTitle("title-load");
   const sel = `#modals button.save[data-save$="/smoke"]`;
   await until2(`!!document.querySelector(${JSON.stringify(sel)})`, "the save in the load screen (from IndexedDB)", 30000);
   await shot("load-screen");

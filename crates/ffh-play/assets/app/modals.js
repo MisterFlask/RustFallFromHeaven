@@ -94,6 +94,7 @@ export function openModal({ title, body = [], buttons = [], dismissible = true, 
   stack.push(m);
   $("#modals").appendChild(backdrop);
   updateLayer();
+  emit("modal-opened", tag);
   const first = box.querySelector("button.primary:not([disabled])") ?? box.querySelector("input, select, button:not(.close)");
   first?.focus({ preventScroll: true });
   return m;

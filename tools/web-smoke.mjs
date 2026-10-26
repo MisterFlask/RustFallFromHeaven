@@ -315,7 +315,18 @@ async function answerPopups(log = true) {
 async function newGame(url, saves) {
   await b.goto(url);
   await until2("window.ffh && window.ffh.ready", "the client to boot");
+  // No game: the title screen, its island drawn, its menu up (New game: the new-game screen).
+  await until2(`!document.getElementById("title-screen").hidden && !!document.getElementById("title-new")`, "the title screen");
+  await until2(`(() => { const c = document.querySelector("#title-screen canvas.title-backdrop"); return !!c && c.width > 1; })()`, "the title screen's island");
+  await new Promise((r) => setTimeout(r, 400));
+  await shot("title");
+  steps.push("the title screen with its menu");
+  await click("#title-new");
   await until(async () => (await modalTitles()).includes("New game"), "the new-game screen");
+  // The civilizations' list drives the form; picking one shows its leaders' cards.
+  await click('#modals button.civ-item[data-civ="CIVILIZATION_BANNOR"]');
+  await until2(`!!document.querySelector("#modals button.leader-card[data-leader]:not([data-leader=''])")`, "the Bannor's leaders");
+  await click('#modals button.civ-item[data-civ=""]');
   await shot("new-game");
   await b.eval(`(() => {
     const set = (id, v) => { const e = document.getElementById(id); e.value = v; e.dispatchEvent(new Event("change")); };
@@ -325,6 +336,7 @@ async function newGame(url, saves) {
   const start = await b.eval(`(() => { const r = document.querySelector("#modals .modal-buttons button.primary").getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; })()`);
   await b.dblclick(start.x, start.y);
   await waitHuman("the first turn");
+  await until2(`document.getElementById("title-screen").hidden`, "the title screen to go");
   const games = fs.readdirSync(saves).filter((f) => fs.statSync(path.join(saves, f)).isDirectory());
   if (games.length !== 1) throw new Error(`a double click on Start made ${games.length} games: ${games}`);
   steps.push(`new game (Start double-clicked: one game): turn ${await S("S.status.turn")}`);
@@ -1295,15 +1307,17 @@ async function stagedLoad(bin, saves) {
   steps.push(`loaded the warrior into trireme ${pick} through the transport picker`);
 }
 
-/** A game started by another client while the page shows the no-game New game dialog (which
- *  cannot be closed): the dialog goes (P5 review). */
+/** A game started by another client while the page shows the title screen with the New game
+ *  dialog open: both go (P5 review). */
 async function newGameElsewhere(bin) {
   const saves = tempDir("smoke-elsewhere");
   const server = await startServer({ bin, saves, extra: ASSETS });
   try {
     await b.goto(server.url);
     await until2("window.ffh && window.ffh.ready", "the client to boot");
-    await until(async () => (await modalTitles()).includes("New game"), "the no-game New game dialog");
+    await until2(`!document.getElementById("title-screen").hidden && !!document.getElementById("title-new")`, "the title screen");
+    await click("#title-new");
+    await until(async () => (await modalTitles()).includes("New game"), "the New game dialog");
     const r = await fetch(`${server.url}/api`, {
       method: "POST",
       headers: { "X-FFH": "1", "Content-Type": "application/json" },
@@ -1311,8 +1325,9 @@ async function newGameElsewhere(bin) {
     });
     if (!(await r.json()).ok) throw new Error("another client could not start a game");
     await waitHuman("the game another client started");
+    await until2(`document.getElementById("title-screen").hidden`, "the title screen to go", 10000);
     await until(async () => !(await modalTitles()).includes("New game"), "the New game dialog to close", 10000);
-    steps.push("the no-game dialog closed when another client started a game");
+    steps.push("the title screen and its New game dialog went when another client started a game");
   } finally {
     await b.goto("about:blank");
     await server.stop();

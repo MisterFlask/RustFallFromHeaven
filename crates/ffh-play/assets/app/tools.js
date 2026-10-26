@@ -516,10 +516,12 @@ export function openOptions() {
       ` ${label}`,
     ),
   );
+  // Without a game (the title screen) there is no player to set them on.
+  const game = my ? h("div.checks.single", rows) : h("p.dim", "The player options (quick moves, stack attack, unit cycling, …) are set during a game.");
   return openModal({
     title: "Options",
     tag: "options",
-    body: [h("div.checks.single", rows), h("h4", "This browser"), h("div.checks.single", renderer)],
+    body: [game, h("h4", "This browser"), h("div.checks.single", renderer)],
     buttons: [{ label: "Close", value: null }],
   });
 }

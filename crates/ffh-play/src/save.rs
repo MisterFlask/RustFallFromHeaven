@@ -205,12 +205,16 @@ pub fn list_json(dir: Option<&Path>) -> Json {
         found.sort();
         for p in found {
             let name = p.file_stem().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+            // When the file was written (seconds since 1970; null when the file system does not
+            // say): the load screen sorts and dates the saves by it. Presentation only.
+            let modified = fs::metadata(&p).and_then(|m| m.modified()).ok().and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok()).map(|d| d.as_secs() as i64);
             saves.push(crate::jobj! {
                 "name" => format!("{prefix}{name}"),
                 "path" => p.display().to_string(),
                 "auto" => prefix == "auto/",
                 "flag" => prefix == "flags/",
                 "sidecar" => p.with_extension("ffhsess").exists(),
+                "modified" => modified,
             });
         }
     }

@@ -110,20 +110,32 @@ export function fill(el, ...children) {
   return el;
 }
 
-/** A transient message at the bottom right: `kind` is "info", "error" or "log". */
+/** The most toasts shown at once (the oldest goes first). */
+const TOASTS_SHOWN = 4;
+
+/** A transient message at the top right of the map: `kind` is "info", "error" or "log". A
+ *  click dismisses it. */
 export function toast(text, kind = "info", ms = 4500) {
+  return toastNode(h(`div.toast.${kind}`, { role: kind === "error" ? "alert" : "status", title: "Click to dismiss" }, text), ms);
+}
+
+/** Shows a built toast element (`div.toast`) for `ms`; returns it. */
+export function toastNode(el, ms = 4500) {
   const box = $("#toasts");
-  if (!box) return;
-  const el = h(`div.toast.${kind}`, { role: kind === "error" ? "alert" : "status" }, text);
+  if (!box) return null;
   box.appendChild(el);
-  while (box.children.length > 6) box.firstChild.remove();
+  while (box.children.length > TOASTS_SHOWN) box.firstChild.remove();
   // Fade out before removing (CSS transition on `.leaving`); a fallback removes it even when no
   // transition runs (reduced motion, a hidden tab).
-  setTimeout(() => {
+  const leave = () => {
+    if (el.classList.contains("leaving")) return;
     el.classList.add("leaving");
     el.addEventListener("transitionend", () => el.remove(), { once: true });
     setTimeout(() => el.remove(), 400);
-  }, ms);
+  };
+  el.addEventListener("click", leave);
+  setTimeout(leave, ms);
+  return el;
 }
 
 let busyCount = 0;

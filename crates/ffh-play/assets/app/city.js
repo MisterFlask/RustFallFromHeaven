@@ -126,8 +126,8 @@ export async function openCity(id, { popup = false } = {}) {
     popup
       ? [{ label: "Later", value: "later", title: "Leave the city idle for now (the end of turn reminds you)" }]
       : [
-          { label: "‹ Previous city", onClick: () => go(-1), title: "The previous city" },
-          { label: "Next city ›", onClick: () => go(1), title: "The next city" },
+          { label: "Previous city", onClick: () => go(-1), title: "The previous city [End]" },
+          { label: "Next city", onClick: () => go(1), title: "The next city [Home]" },
           { label: "Close", value: null },
         ],
   );

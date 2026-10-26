@@ -134,14 +134,14 @@ K22222K
 .00000.
 
 = ui/button_hover 7x7 0,0
-: note button, hover: stone border; text in vellum
+: note button, hover (docs/ART.md 11.4): the normal coal fill with a brighter light along the top and left, a gold border; text in vellum
 : tags nine=3,3,3,3
 .00000.
 0KKKKK0
 0K555K0
-0K542K0
-0K542K0
-0K222K0
+0K521K0
+0K521K0
+0K111K0
 .00000.
 
 = ui/button_pressed 7x7 0,0
