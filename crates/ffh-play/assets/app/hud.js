@@ -217,7 +217,8 @@ export function renderTop() {
   if (end) {
     end.disabled = st.phase !== "human";
     const n = observing() ? 0 : openCount();
-    const label = observing() ? "Next turn" : n ? `End turn (${n} open)` : "End turn";
+    // "(1 open)" keeps together where the label wraps (a phone's bottom bar).
+    const label = observing() ? "Next turn" : n ? `End turn (${n}\u00a0open)` : "End turn";
     const skinKey = `${label}|${!!look.art}|${isoSkin()}`;
     if (end.dataset.label !== skinKey) {
       end.dataset.label = skinKey;

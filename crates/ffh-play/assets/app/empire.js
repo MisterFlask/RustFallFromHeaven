@@ -9,6 +9,8 @@ import { h, toast, typeIconOf, tapModes } from "./dom.js";
 import { openModal } from "./modals.js";
 import { run } from "./commands.js";
 import { render as markup } from "./markup.js";
+import { isoSkin, unlockIcon } from "./isoui.js";
+import { infoTip } from "./infotips.js";
 
 /** The rich tooltip of entry `x` of the `techs` query: its name and era, what it brings the
  *  player (`help`, the server's C++ `setTechHelp`), its strategy text, and what a click does. */
@@ -20,6 +22,33 @@ export function techTip(x, hint) {
     e?.strategy ? h("div.tip-strategy", markup(e.strategy)) : null,
     hint ? h("div.tip-hint", hint) : null,
   ];
+}
+
+/** The `techs` query's `unlocks` kinds, in the order a tech's card shows them, with their tables. */
+const UNLOCKS = [["units", "UnitType"], ["builds", "BuildType"], ["buildings", "BuildingType"], ["religions", "ReligionType"], ["civics", "CivicType"]];
+
+/** What entry `x` of the `techs` query unlocks (its units, builds, buildings, religions, civics),
+ *  for a tech's card: in the isometric interface a row of their icons, each with its own tooltip,
+ *  the first `max` and a count of the rest; else their names on a line. Null when it unlocks none of
+ *  them. */
+export function unlockRow(x, max = 6) {
+  const items = UNLOCKS.flatMap(([kind, table]) => (x.unlocks?.[kind] ?? []).map((i) => ({ kind, table, i })));
+  if (!items.length) return null;
+  const names = items.map((it) => dname(it.table, it.i));
+  if (!isoSkin()) return h("span.unlocks.dim", { title: names.join(", ") }, names.join(", "));
+  const shown = items.length > max ? items.slice(0, max - 1) : items;
+  // A build's tooltip is its improvement's (or road's): what the land gains.
+  const tipOf = ({ kind, table, i }) => {
+    const b = kind === "builds" ? info("BuildType", i) : null;
+    if (b?.improvement !== null && b?.improvement !== undefined) return infoTip("ImprovementType", b.improvement);
+    if (b?.route !== null && b?.route !== undefined) return infoTip("RouteType", b.route);
+    return infoTip(table, i);
+  };
+  return h(
+    "span.unlocks",
+    shown.map((it) => h("span.unlock", { tip: tipOf(it) }, unlockIcon(it.kind, it.i))),
+    shown.length < items.length ? h("span.unlock.more", { title: names.slice(shown.length).join(", ") }, `+${items.length - shown.length}`) : null,
+  );
 }
 
 // ---------------------------------------------------------------------------------------------

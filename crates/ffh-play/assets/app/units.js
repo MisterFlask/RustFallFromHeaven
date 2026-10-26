@@ -841,7 +841,7 @@ const AUTOMATE_LABELS = {
 };
 
 /** The actions panel's sections; each lists its actions in the action list's order
- *  (`iOrderPriority`, C++ `SetGlobalActionInfo`). */
+ *  (`iOrderPriority`, C++ `SetGlobalActionInfo`), but for Delete (`sectionActions`). */
 const SECTIONS = [
   ["Orders", (a) => (a.kind === "mission" && ![...GREAT_PERSON, ...RELIGION, "MISSION_BUILD"].includes(typeOf(a))) || a.kind === "target" || (a.kind === "command" && !CARGO.includes(typeOf(a)))],
   ["Build", (a) => typeOf(a) === "MISSION_BUILD"],
@@ -853,6 +853,16 @@ const SECTIONS = [
   ["Promotions", (a) => a.kind === "promotion"],
   ["Upgrades", (a) => a.kind === "upgrade"],
 ];
+
+/** Deleting units: a danger button (docs/ART.md 11.4: delete, raze, declare war). */
+const isDelete = (a) => a.kind === "command" && tname("CommandType", a.command) === "COMMAND_DELETE";
+
+/** The actions of a section (`test`) in the action list's order, except that Delete goes last:
+ *  its order priority puts it first, under the pointer or the finger that meant another order. */
+function sectionActions(actions, test) {
+  const list = K.sortActions(actions.filter(test), S.data);
+  return [...list.filter((a) => !isDelete(a)), ...list.filter(isDelete)];
+}
 
 /** An action's help text (markup): a spell's, a promotion's, a build's or a mission's. */
 function helpOf(a) {
@@ -882,10 +892,8 @@ function actionButton(a) {
   const help = a.kind === "spell" || a.kind === "promotion" || a.kind === "upgrade" ? helpOf(a) : "";
   const extra = a.turns !== undefined ? ` (${turns(a.turns)})` : "";
   if (isoSkin()) return isoAction(a, key, extra);
-  // Deleting units is a danger button (docs/ART.md 11.4: delete, raze, declare war).
-  const danger = a.kind === "command" && tname("CommandType", a.command) === "COMMAND_DELETE";
   const btn = h(
-    `button.action${danger ? ".danger" : ""}`,
+    `button.action${isDelete(a) ? ".danger" : ""}`,
     {
       disabled: !a.enabled,
       "data-kind": a.kind,
@@ -915,7 +923,7 @@ function isoAction(a, key, extra) {
   if (!coarse()) descs.set(a, description(a, label, key, listed ? "" : help));
   const show = () => describe(a);
   return h(
-    `button.action${listed ? ".listed" : ".tile"}`,
+    `button.action${listed ? ".listed" : ".tile"}${isDelete(a) ? ".danger" : ""}`,
     {
       disabled: !a.enabled,
       "data-kind": a.kind,
@@ -1087,7 +1095,7 @@ export function renderPanel() {
   else if (!r?.actions) actions.push(h("p.dim", "…"));
   else {
     for (const [title, test] of SECTIONS) {
-      const list = K.sortActions(r.actions.filter(test), S.data);
+      const list = sectionActions(r.actions, test);
       if (!list.length) continue;
       const more = title === "Spells" ? h("button.link.small", { onclick: () => openSpells(), title: "Every spell with its description" }, "details") : null;
       actions.push(h("div.section", h("h4", title, more ? " " : null, more), h("div.actions", list.map(actionButton))));
@@ -1132,10 +1140,12 @@ function renderCard({ own, r, details, lead, list, seals, tools, status, hint, w
   if (r?.error) tiles.push(h("p.warn", r.error));
   else if (!r?.actions) tiles.push(h("p.dim", "…"));
   else {
+    // The tiles run on without headings: Delete's tile ends the row (after the automation's).
+    const del = r.actions.filter((a) => isDelete(a) && !listedAction(a));
     for (const [title, test] of SECTIONS) {
-      const acts = K.sortActions(r.actions.filter(test), S.data);
+      const acts = sectionActions(r.actions, test);
       if (!acts.length) continue;
-      const tl = acts.filter((a) => !listedAction(a));
+      const tl = acts.filter((a) => !listedAction(a) && !del.includes(a));
       const ls = acts.filter((a) => listedAction(a));
       if (tl.length) tiles.push(h("div.iso-tiles", { "data-section": title, title: null }, tl.map(actionButton)));
       if (ls.length) {
@@ -1143,6 +1153,7 @@ function renderCard({ own, r, details, lead, list, seals, tools, status, hint, w
         listed.push(h("div.iso-listed", h("h4", title, more ? " " : null, more), h("div.actions", ls.map(actionButton))));
       }
     }
+    if (del.length) tiles.push(h("div.iso-tiles", { "data-section": "Delete", title: null }, del.map(actionButton)));
   }
   let state = [hint, way, ...[status].flat()].filter(Boolean);
   // On a touch screen the box holds only the selection's state (a plot pick, done for the turn).

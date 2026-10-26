@@ -32,8 +32,15 @@ pub fn tech_depths(d: &GameData) -> Vec<i32> {
     memo
 }
 
+/// A list of type indices.
+fn ids<I: Idx + Copy>(v: &[I]) -> Json {
+    Json::Arr(v.iter().map(|&i| Json::idx(i)).collect())
+}
+
 /// `techs`: every tech with the human's state (has, can research, progress, cost, turns),
-/// its prerequisites, its depth and its help (what it brings the human).
+/// its prerequisites, its depth, its help (what it brings the human) and, unless the human has it,
+/// what it unlocks as type indices (`unlocks`: the help's units, buildings, builds, civics and
+/// religions; the screens draw them as icons).
 pub fn techs(v: &Viewer) -> Json {
     let g = v.g;
     let d = g.d;
@@ -44,6 +51,7 @@ pub fn techs(v: &Viewer) -> Json {
         let info = &d.techs[t];
         let has = g.teams[v.team].has_tech[t];
         let can = g.player_can_research(h, t, false);
+        let un = crate::view::help::tech::unlocks(g, h, t);
         crate::jobj! {
             "tech" => Json::idx(t),
             "has" => has,
@@ -59,7 +67,19 @@ pub fn techs(v: &Viewer) -> Json {
             "depth" => depths[t.idx()],
             "disabled" => info.disable,
             // What it brings the human (C++ `setTechHelp`), for the research screens' tooltips.
-            "help" => crate::view::help::tech::tech_help(g, h, t),
+            "help" => crate::view::help::tech::tech_help_with(g, h, t, &un),
+            "unlocks" => if has {
+                Json::Null
+            } else {
+                crate::jobj! {
+                    "units" => ids(&un.units),
+                    "buildings" => ids(&un.buildings),
+                    "builds" => ids(&un.builds),
+                    "civics" => ids(&un.civics),
+                    // With "pick religion" the founder chooses which (the help says "a Religion").
+                    "religions" => if g.is_option(GameOptionType::GAMEOPTION_PICK_RELIGION) { Json::Arr(Vec::new()) } else { ids(&un.religions) },
+                }
+            },
         }
     });
     crate::jobj! {

@@ -27,6 +27,27 @@ fn text(d: &GameData, key: &str) -> Json {
     }
 }
 
+/// A name without its hyperlinks: the builds' texts link their improvement ("Build a
+/// [LINK=IMPROVEMENT_FARM]Farm[\LINK]"), which reads as "Build a Farm" where names are plain text.
+fn unlinked(name: &str) -> String {
+    let mut out = String::with_capacity(name.len());
+    let mut rest = name;
+    while let Some(i) = rest.find('[') {
+        out.push_str(&rest[..i]);
+        let tag = &rest[i..];
+        let end = tag.find(']').map(|j| j + 1);
+        match end {
+            Some(j) if tag.starts_with("[LINK=") || tag.starts_with("[\\LINK]") => rest = &tag[j..],
+            _ => {
+                out.push('[');
+                rest = &tag[1..];
+            }
+        }
+    }
+    out.push_str(rest);
+    out
+}
+
 fn yields(y: &[i32; YieldType::NUM]) -> Json {
     Json::from(y.to_vec())
 }
@@ -153,7 +174,7 @@ fn build(d: &GameData) -> Json {
         let mut list = Vec::with_capacity((k.count)(d));
         for i in 0..(k.count)(d) {
             let name = (k.name)(d, i);
-            let mut j = crate::jobj! { "type" => name, "name" => k.display(d, i).into_owned() };
+            let mut j = crate::jobj! { "type" => name, "name" => unlinked(&k.display(d, i)) };
             if let Some(base) = (k.base)(d, i) {
                 j.set("help", text(d, &base.help));
                 j.set("strategy", text(d, &base.strategy));
@@ -185,4 +206,17 @@ fn build(d: &GameData) -> Json {
 pub fn data(d: &'static GameData) -> &'static Json {
     static DATA: OnceLock<Json> = OnceLock::new();
     DATA.get_or_init(|| build(d))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::unlinked;
+
+    #[test]
+    fn names_lose_their_links() {
+        assert_eq!(unlinked("Build a [LINK=IMPROVEMENT_FARM]Farm[\\LINK]"), "Build a Farm");
+        assert_eq!(unlinked("+1 Trade Route ([ICON_TRADE])"), "+1 Trade Route ([ICON_TRADE])");
+        assert_eq!(unlinked("Warrior"), "Warrior");
+        assert_eq!(unlinked("a [b"), "a [b");
+    }
 }

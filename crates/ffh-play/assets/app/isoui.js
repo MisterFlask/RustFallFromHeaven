@@ -17,7 +17,7 @@
 
 import { S, me, dname, tname, turns, orderName, emit, isBarbarian } from "./state.js";
 import * as T from "./tiles.js";
-import { h, fill, COMPACT, compactScreen } from "./dom.js";
+import { h, fill, COMPACT, compactScreen, typeIconOf } from "./dom.js";
 import { installIsoFont } from "./isofont.js";
 import { SPRITES } from "./iso/sprites.js";
 import { ISO_TABLES } from "./iso.js";
@@ -171,6 +171,30 @@ export function actionIcon(a, px = 40) {
     name = "upgrade";
   }
   return isoIcon(name ?? "goto", { px: px > 32 ? 48 : 32 });
+}
+
+/** The icon of something a tech unlocks (the `techs` query's `unlocks`: `kind` "units",
+ *  "builds", "buildings", "religions" or "civics", `type` its index), 32 CSS px: a unit's map
+ *  figure, a build's map sprite, a building's or a religion's icon of the 2D art (as the city screen
+ *  lists them), else the interface icon of its kind. */
+export function unlockIcon(kind, type) {
+  if (kind === "units") {
+    const key = skin.view?.iso?.unitKey(type, me()?.player);
+    const fig = key && Object.hasOwn(SPRITES, key) ? spriteIcon(key, 32) : null;
+    if (fig) return fig;
+  } else if (kind === "builds") {
+    const b = buildSprite(S.data?.tables?.BuildType?.[type]);
+    if (b.sprite) {
+      const box = h("span.iso-build", spriteIcon(b.sprite, 32));
+      if (b.cancel) box.append(isoIcon("cancel", { px: 16, cls: "badge" }));
+      return box;
+    }
+    return isoIcon(b.icon, { px: 32 });
+  } else if (kind === "buildings" || kind === "religions") {
+    const art = typeIconOf(kind === "buildings" ? "building" : "religion", type, 16);
+    if (art) return art;
+  }
+  return isoIcon({ units: "strength", buildings: "cities", religions: "religion", civics: "civics" }[kind] ?? "research", { px: 32 });
 }
 
 /** The selection's portrait: the lead unit's map figure on the painted meadow (`ui_backdrop`), in
@@ -633,7 +657,8 @@ export async function renderCityPanel() {
   const cur = prod?.current ?? city.production;
   const rates = Object.fromEntries((c?.commerces ?? []).map((x) => [x.commerce, x.rate]));
   const yields = Object.fromEntries((c?.yields ?? []).map((x) => [x.yield, x.rate]));
-  const row = (icon, label, value, title, tip = null) => h("div.iso-yield", { title: tip ? null : (title ?? null), tip }, isoIcon(icon, { px: 32 }), h("span.label", label), h("span.value", value));
+  // The label names the row (also as its tooltip: short screens show the yields by their icons).
+  const row = (icon, label, value, title, tip = null) => h("div.iso-yield", { title: tip ? null : (title ?? label), tip }, isoIcon(icon, { px: 32 }), h("span.label", label), h("span.value", value));
   // The mood's and health's parts (the `city` query's lists, which sum to the totals).
   const partsTip = (head, good, goodWord, bad, badWord) => {
     const list = (ps) => (ps ?? []).map(([l, n]) => `${n} ${l}`).join(", ");

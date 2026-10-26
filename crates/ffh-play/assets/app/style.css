@@ -282,6 +282,9 @@ button.option small { color: var(--dim); }
 button.build { display: flex; justify-content: space-between; gap: 8px; text-align: left; padding: 4px 8px; }
 button.build.current { border-color: var(--c-bone); color: var(--c-vellum); }
 button.build.queued { border-style: dashed; }
+/* What a tech unlocks (empire.js `unlockRow`): their names on a line of their own. */
+button.build:has(> .unlocks) { flex-wrap: wrap; }
+button.build > .unlocks { flex: 1 1 100%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
 .city-summary div { margin: 2px 0; }
 ol.queue { margin: 2px 0; padding-left: 22px; }
 ol.queue li { margin: 2px 0; }

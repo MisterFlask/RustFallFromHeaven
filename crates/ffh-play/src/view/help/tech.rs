@@ -11,30 +11,101 @@ use ffh_data::*;
 use super::{changes_help, color, finish, list_help, txt, Arg, COMMERCE_ICONS, NEWLINE, YIELD_ICONS};
 use crate::names;
 
+/// What tech `t` gives player `p` that it cannot have yet, as the help lists it: the player's own
+/// units and buildings ("Can Train", "Can Construct"), the worker's builds ("Can ..."), the civics
+/// ("Enables") and the religions the first to discover it founds (which the help leaves unnamed
+/// with "pick religion"). The research screens draw them as icons.
+pub struct Unlocks {
+    pub units: Vec<UnitType>,
+    pub buildings: Vec<BuildingType>,
+    pub builds: Vec<BuildType>,
+    pub civics: Vec<CivicType>,
+    pub religions: Vec<ReligionType>,
+}
+
+/// The player's unit of a class (C++ `getCivilizationUnits` of the active civ).
+fn civ_unit(g: &Game, p: PlayerId, class: UnitClassType) -> Option<UnitType> {
+    let d = g.d;
+    match g.player_get_civilization_type(p) {
+        Some(c) => d.civilizations[c].civilization_units(class, d.unit_classes[class].default_unit_index),
+        None => d.unit_classes[class].default_unit_index,
+    }
+}
+
+/// The player's building of a class (C++ `getCivilizationBuildings` of the active civ).
+fn civ_building(g: &Game, p: PlayerId, class: BuildingClassType) -> Option<BuildingType> {
+    let d = g.d;
+    match g.player_get_civilization_type(p) {
+        Some(c) => d.civilizations[c].civilization_buildings(class, &d.building_classes),
+        None => d.building_classes[class].default_building_index,
+    }
+}
+
+/// [`Unlocks`] of tech `t` for player `p`.
+pub fn unlocks(g: &Game, p: PlayerId, t: TechType) -> Unlocks {
+    let d = g.d;
+    let ours = |c: Option<CivilizationType>| c.is_none() || c == g.player_get_civilization_type(p);
+    let units = d
+        .unit_classes
+        .keys()
+        .filter(|&class| !g.player_is_production_maxed_unit_class(p, class))
+        .filter_map(|class| civ_unit(g, p, class))
+        .filter(|&u| {
+            let ui = &d.units[u];
+            !g.player_can_train(p, u, false, false, false) && (ui.prereq_and_tech == Some(t) || ui.prereq_and_techs.contains(&t))
+        })
+        .collect();
+    let buildings = d
+        .building_classes
+        .keys()
+        .filter(|&class| !g.player_is_production_maxed_building_class(p, class, false))
+        .filter_map(|class| civ_building(g, p, class))
+        .filter(|&bl| {
+            let bi = &d.buildings[bl];
+            !g.player_can_construct(p, bl, false, true, false) && (bi.prereq_and_tech == Some(t) || bi.prereq_and_techs.contains(&Some(t)))
+        })
+        .collect();
+    // C++ `buildImprovementString`: a build without its own tech is allowed by its feature techs
+    // (the chop of a forest).
+    let builds = d
+        .builds
+        .keys()
+        .filter(|&build| {
+            let bi = &d.builds[build];
+            match bi.tech_prereq {
+                None => bi.feature_tech.iter().any(|&f| f == Some(t)),
+                Some(x) => x == t,
+            }
+        })
+        .collect();
+    let civics = d.civics.keys().filter(|&x| d.civics[x].tech_prereq == Some(t) && ours(d.civics[x].prereq_civilization)).collect();
+    let religions = if g.count_known_tech_num_teams(t) == 0 {
+        d.religions.keys().filter(|&r| !g.religion_slot_taken[r] && d.religions[r].tech_prereq == Some(t)).collect()
+    } else {
+        Vec::new()
+    };
+    Unlocks { units, buildings, builds, civics, religions }
+}
+
 /// The help of tech `t` for player `p` (Civ4 markup, lines joined by `[NEWLINE]`; empty when the
 /// tech brings nothing to list).
 pub fn tech_help(g: &Game, p: PlayerId, t: TechType) -> String {
+    tech_help_with(g, p, t, &unlocks(g, p, t))
+}
+
+/// [`tech_help`] with the tech's [`unlocks`] already worked out.
+pub fn tech_help_with(g: &Game, p: PlayerId, t: TechType, un: &Unlocks) -> String {
     let d = g.d;
     let pl = &g.players[p];
     let team = pl.team;
-    let civ = g.player_get_civilization_type(p).map(|c| &d.civilizations[c]);
     let info = &d.techs[t];
     let mut b = String::new();
-    // The player's building of a class (C++ `getCivilizationBuildings` of the active civ).
-    let civ_building = |class: BuildingClassType| match civ {
-        Some(c) => c.civilization_buildings(class, &d.building_classes),
-        None => d.building_classes[class].default_building_index,
-    };
-    let civ_unit = |class: UnitClassType| match civ {
-        Some(c) => c.civilization_units(class, d.unit_classes[class].default_unit_index),
-        None => d.unit_classes[class].default_unit_index,
-    };
     let nobody_knows = g.count_known_tech_num_teams(t) == 0;
 
     // Obsolete buildings (of the classes the player has), resources, special buildings.
     for class in d.building_classes.keys() {
         if pl.building_class_count[class] > 0 {
-            if let Some(bl) = civ_building(class).filter(|&bl| d.buildings[bl].obsolete_tech == Some(t)) {
+            if let Some(bl) = civ_building(g, p, class).filter(|&bl| d.buildings[bl].obsolete_tech == Some(t)) {
                 b.push_str(NEWLINE);
                 b.push_str(&txt(d, "TXT_KEY_TECH_OBSOLETES", "[COLOR_WARNING_TEXT]Obsoletes [LINK=literal]%s1_Name[\\LINK][COLOR_REVERT]", &[Arg::S(&names::display(d, bl))]));
             }
@@ -144,18 +215,10 @@ pub fn tech_help(g: &Game, p: PlayerId, t: TechType) -> String {
         }
     }
 
-    // C++ `buildImprovementString`: the builds it allows (a build without its own tech: those of
-    // its feature techs, the chop of a forest).
-    for build in d.builds.keys() {
-        let bi = &d.builds[build];
-        let found = match bi.tech_prereq {
-            None => bi.feature_tech.iter().any(|&f| f == Some(t)),
-            Some(x) => x == t,
-        };
-        if found {
-            b.push_str(NEWLINE);
-            b.push_str(&txt(d, "TXT_KEY_MISC_CAN_BUILD_IMPROVEMENT", "[ICON_BULLET]Can [COLOR_HIGHLIGHT_TEXT]%s1_ImpName[COLOR_REVERT]", &[Arg::S(&names::display(d, build))]));
-        }
+    // C++ `buildImprovementString`: the builds it allows.
+    for &build in &un.builds {
+        b.push_str(NEWLINE);
+        b.push_str(&txt(d, "TXT_KEY_MISC_CAN_BUILD_IMPROVEMENT", "[ICON_BULLET]Can [COLOR_HIGHLIGHT_TEXT]%s1_ImpName[COLOR_REVERT]", &[Arg::S(&names::display(d, build))]));
     }
     for dom in d.domains.keys() {
         let n = info.domain_extra_moves[dom];
@@ -213,7 +276,7 @@ pub fn tech_help(g: &Game, p: PlayerId, t: TechType) -> String {
     }
     let ours = |c: Option<CivilizationType>| c.is_none() || c == g.player_get_civilization_type(p);
     let mut first = true;
-    for civic in d.civics.keys().filter(|&x| d.civics[x].tech_prereq == Some(t) && ours(d.civics[x].prereq_civilization)) {
+    for &civic in &un.civics {
         if first {
             b.push_str(NEWLINE);
         }
@@ -222,29 +285,11 @@ pub fn tech_help(g: &Game, p: PlayerId, t: TechType) -> String {
     }
 
     // The units, buildings and projects it allows that the player cannot have yet.
-    let mut first = true;
-    for class in d.unit_classes.keys() {
-        if g.player_is_production_maxed_unit_class(p, class) {
-            continue;
-        }
-        let Some(u) = civ_unit(class) else { continue };
-        let ui = &d.units[u];
-        if !g.player_can_train(p, u, false, false, false) && (ui.prereq_and_tech == Some(t) || ui.prereq_and_techs.contains(&t)) {
-            list_help(&mut b, &format!("{NEWLINE}{}", txt(d, "TXT_KEY_TECH_CAN_TRAIN", "[ICON_BULLET]Can Train ", &[])), &color("COLOR_UNIT_TEXT", &names::display(d, u)), ", ", first);
-            first = false;
-        }
+    for (i, &u) in un.units.iter().enumerate() {
+        list_help(&mut b, &format!("{NEWLINE}{}", txt(d, "TXT_KEY_TECH_CAN_TRAIN", "[ICON_BULLET]Can Train ", &[])), &color("COLOR_UNIT_TEXT", &names::display(d, u)), ", ", i == 0);
     }
-    let mut first = true;
-    for class in d.building_classes.keys() {
-        if g.player_is_production_maxed_building_class(p, class, false) {
-            continue;
-        }
-        let Some(bl) = civ_building(class) else { continue };
-        let bi = &d.buildings[bl];
-        if !g.player_can_construct(p, bl, false, true, false) && (bi.prereq_and_tech == Some(t) || bi.prereq_and_techs.contains(&Some(t))) {
-            list_help(&mut b, &format!("{NEWLINE}{}", txt(d, "TXT_KEY_TECH_CAN_CONSTRUCT", "[ICON_BULLET]Can Construct ", &[])), &color("COLOR_BUILDING_TEXT", &names::display(d, bl)), ", ", first);
-            first = false;
-        }
+    for (i, &bl) in un.buildings.iter().enumerate() {
+        list_help(&mut b, &format!("{NEWLINE}{}", txt(d, "TXT_KEY_TECH_CAN_CONSTRUCT", "[ICON_BULLET]Can Construct ", &[])), &color("COLOR_BUILDING_TEXT", &names::display(d, bl)), ", ", i == 0);
     }
     let mut first = true;
     for pr in d.projects.keys() {
@@ -264,10 +309,7 @@ pub fn tech_help(g: &Game, p: PlayerId, t: TechType) -> String {
     }
     // The religions the first to discover it founds (those not founded yet).
     let mut first = true;
-    for r in d.religions.keys() {
-        if g.religion_slot_taken[r] || d.religions[r].tech_prereq != Some(t) || !nobody_knows {
-            continue;
-        }
+    for &r in &un.religions {
         if first {
             b.push_str(NEWLINE);
         }
@@ -327,7 +369,7 @@ pub fn tech_help(g: &Game, p: PlayerId, t: TechType) -> String {
         // The great people who can discover it (the player's own).
         for u in d.units.keys() {
             let ui = &d.units[u];
-            let own = ui.unit_class_type.and_then(&civ_unit) == Some(u);
+            let own = ui.unit_class_type.and_then(|c| civ_unit(g, p, c)) == Some(u);
             if own && (ui.base_discover > 0 || ui.discover_multiplier > 0) && g.get_discovery_tech(u, p) == Some(t) {
                 b.push_str(NEWLINE);
                 b.push_str(&txt(d, "TXT_KEY_TECH_GREAT_PERSON_DISCOVER", "[ICON_BULLET]Can be researched by a [COLOR_UNIT_TEXT]%s1_great_person[COLOR_REVERT]", &[Arg::S(&names::display(d, u))]));

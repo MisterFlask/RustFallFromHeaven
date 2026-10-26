@@ -283,7 +283,7 @@ html.iso .iso-picture {
   height: 116px; display: flex; align-items: flex-end; justify-content: center; overflow: hidden;
   background: url(iso/ui_backdrop.png) -40px -84px / 384px 256px no-repeat; background-clip: padding-box; image-rendering: pixelated;
 }
-html.iso .iso-picture .iso-figure { image-rendering: auto; margin-bottom: 2px; }
+html.iso .iso-picture .iso-figure { image-rendering: auto; margin-bottom: 2px; max-height: calc(100% - 2px); object-fit: contain; object-position: bottom; }
 html.iso .iso-stat { display: flex; align-items: center; gap: 8px; }
 html.iso .iso-stat > .num { min-width: 22px; text-align: center; }
 html.iso .iso-stack { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
@@ -402,7 +402,23 @@ html.iso .cplot:hover:not([disabled]) { border-image: none; }
   html.iso #iso-rail button .iso-icon { width: 24px; height: 24px; }
   html.iso #iso-rail { gap: 4px; }
   html.iso #bottom { left: calc(var(--iso-gap) + 54px); }
-  html.iso .iso-picture { height: 96px; }
+  html.iso .iso-picture { height: 72px; }
+}
+/* A laptop's height leaves the city panel little room above the minimap: its yields go three to a
+   row by their icons (each names itself as its tooltip) and its picture shrinks (above), so they
+   show without scrolling. */
+@media (max-height: 1000px) {
+  html.iso #iso-city { gap: 4px; }
+  html.iso #iso-city .iso-rule { margin: 2px 10px; }
+  html.iso .iso-yields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 6px; }
+  html.iso .iso-yields .label { display: none; }
+  html.iso .iso-yields .iso-mood { display: contents; }
+}
+/* Shorter still (a 1280 x 800 window, whose top bar takes two rows): the numbers before the picture. */
+@media (max-height: 860px) {
+  html.iso #iso-city { gap: 3px; }
+  html.iso #iso-city .iso-picture { display: none; }
+  html.iso #iso-city .iso-rule { margin: 0 10px; }
 }
 @media (max-width: 900px) {
   html.iso #iso-city { display: none; }
@@ -433,6 +449,11 @@ html.iso button.build > .build-icon { grid-row: span 2; }
 html.iso button.build > span:not(.build-icon):not(.dim) { grid-column: 2; }
 html.iso button.build > .dim { grid-column: 2; }
 html.iso button.build > .dim { font-weight: 400; }
+/* What a tech unlocks (empire.js `unlockRow`): its units', builds' and buildings' icons. */
+html.iso button.build > .unlocks { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 2px; }
+html.iso .unlock { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; background: rgba(1, 8, 30, 0.55); }
+html.iso .unlock .iso-build { width: 32px; height: 32px; }
+html.iso .unlock.more { width: auto; min-width: 32px; padding: 0 4px; color: var(--iso-dim); }
 html.iso .h1 { font-size: 20px; }
 html.iso .ccity { font-size: 20px; }
 
@@ -490,6 +511,11 @@ html.iso .iso-name .coords { font-weight: 400; }
   html.iso #phase-text { max-width: 30vw; }
   html.iso #empire { flex: 1 1 auto; min-width: 0; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; gap: 12px; padding: 0 8px; }
   html.iso #empire::-webkit-scrollbar { display: none; }
+  /* Where the numbers run under the frame they fade out, rather than end in half an icon. */
+  html.iso #empire::after {
+    content: ""; position: sticky; right: -8px; flex: none; align-self: stretch; width: 28px; margin-left: -28px;
+    background: linear-gradient(90deg, rgba(1, 18, 58, 0), var(--iso-navy-bot) 85%); pointer-events: none;
+  }
   html.iso #menu { display: none; }
   html.iso body.menu-open #menu {
     display: grid; position: fixed; z-index: 7; top: calc(var(--iso-top) + 4px); left: 4px; right: 4px; margin: 0;
@@ -503,6 +529,11 @@ html.iso .iso-name .coords { font-weight: 400; }
   html.iso body.menu-open #menu button .iso-icon { width: 32px; height: 32px; }
   html.iso body.menu-open #btn-keys::after { content: "Controls"; }
   html.iso body.menu-open #btn-raw::after { content: "Raw request"; }
+  /* Their glyphs ("?", "⌘") give way to those names beside the icons; a long name wraps under itself
+     inside a taller button. */
+  html.iso body.menu-open #menu button { height: auto; min-height: 48px; padding: 2px 6px; line-height: 20px; text-align: left; }
+  html.iso body.menu-open #menu :is(#btn-keys, #btn-raw) { font-size: 0; }
+  html.iso body.menu-open #menu :is(#btn-keys, #btn-raw)::after { font-size: 20px; margin-left: -8px; }
   html.iso #iso-rail, html.iso #iso-city { display: none; }
 
   html.iso #bottom { left: 4px; top: calc(var(--iso-top) + 4px); width: auto; max-width: calc(100vw - 8px); }
@@ -515,7 +546,8 @@ html.iso .iso-name .coords { font-weight: 400; }
   }
   html.iso #iso-corner > * { pointer-events: auto; }
   html.iso #iso-corner .layers button, html.iso #iso-corner .zoom button { width: 44px; height: 44px; }
-  html.iso #iso-corner #end-turn { margin-left: auto; width: auto; height: var(--iso-bar-h); padding: 0 14px; flex: none; }
+  /* With things open ("End turn (1 open)") the label takes two lines rather than run off the screen. */
+  html.iso #iso-corner #end-turn { margin-left: auto; width: auto; height: var(--iso-bar-h); padding: 0 14px; flex: 0 1 auto; min-width: 0; white-space: normal; line-height: 20px; }
   html.iso #iso-corner canvas.minimap { position: fixed; top: calc(var(--iso-top) + 4px); right: 4px; width: 136px; height: 92px; border-width: 6px; }
 
   html.iso #side {

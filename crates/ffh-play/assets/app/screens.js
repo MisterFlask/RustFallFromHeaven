@@ -11,7 +11,7 @@ import { run } from "./commands.js";
 import { render as markup, plain } from "./markup.js";
 import { illuminate, bannerEl } from "./look.js";
 import { leaderPortrait, teamPortrait, PORTRAIT } from "./portraits.js";
-import { techTip } from "./empire.js";
+import { techTip, unlockRow } from "./empire.js";
 
 // ---------------------------------------------------------------------------------------------
 // Research (the CHOOSETECH popup and the research button).
@@ -63,6 +63,7 @@ export async function openResearch({ popup = false } = {}) {
           },
           h("span", dname("TechType", x.tech)),
           h("span.dim", `${turns(x.turns)} · ${x.cost}${x.progress ? ` (${x.progress})` : ""}`),
+          unlockRow(x),
         );
       }),
     );
