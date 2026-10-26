@@ -5,7 +5,9 @@ Both sides are `ai_metrics.py --out` files of the same seeds and settings (rando
 the same seed gives the same leaders on both sides), typically the same binary with
 `FFH_AI_TRAIT_OFF=all` on the base side. Every player present at the end of a game on both sides
 is a pair; a trait's rows are the pairs whose leader has it at the start (Adaptive and Insane
-leaders change traits later; the Infernals and Mercurians count when they appear on both sides).
+leaders change traits later). The Infernals and Mercurians, who join mid-game (the Mercurians on
+the team of the civ that built their gate, whose wins they share), are left out unless
+`--joiners`.
 
 Per trait (and pooled over players with none of the played traits, the spill-over on the rest):
 - win: the player's team decided the game (victory, last standing, `--until-supremacy`'s clear
@@ -34,6 +36,9 @@ LEADERS_XML = os.path.join(ROOT, 'data', 'xml', 'Civilizations', 'CIV4LeaderHead
 # The traits traits.rs plays, in its order.
 PLAYED = ['RAIDERS', 'SPIRITUAL', 'ARCANE', 'SUMMONER', 'PHILOSOPHICAL', 'FINANCIAL', 'INDUSTRIOUS',
           'AGGRESSIVE', 'INGENUITY', 'TOLERANT', 'EXPANSIVE']
+
+# Civilizations that join mid-game (not in a starting slot).
+JOINERS = ('MERCURIANS', 'INFERNAL')
 
 COUNTERS = ['cities', 'pop', 'techs', 'research', 'gold', 'gp_created', 'wonders', 'nat_wonders',
             'casters', 'summons', 'mil_str', 'taken_civ', 'lost_civ', 'razed', 'wars', 'anarchy_turns',
@@ -184,6 +189,7 @@ def main():
     ap.add_argument('--trait', action='append', default=[], help='TRAIT_X (default: every played trait)')
     ap.add_argument('--counters', default=','.join(COUNTERS))
     ap.add_argument('--per-player', action='store_true', help='list every pair whose win or share@end differs')
+    ap.add_argument('--joiners', action='store_true', help='count the Infernals and Mercurians too')
     a = ap.parse_args()
     checkpoints = [t for t in a.at.split(',') if t]
     counters = [c for c in a.counters.split(',') if c]
@@ -196,6 +202,8 @@ def main():
         for p in ps:
             fb, fn = facts(base[s], p, checkpoints, counters), facts(new[s], p, checkpoints, counters)
             if fb is None or fn is None or fb['leader'] != fn['leader']:
+                continue
+            if not a.joiners and fb['civ'] in JOINERS:
                 continue
             pairs.append((s, p, traits_of.get(fb['leader'], []), fb, fn))
     print('%d seeds, %d player pairs (%s vs %s)' % (len(seeds), len(pairs), a.base, a.new))

@@ -280,6 +280,10 @@ fn civics(g: &mut Game, p: PlayerId) {
         }
     }
     if new != current && gain > min_gain && g.player_can_revolution(p, Some(&new)) {
+        if crate::trace_on(p) {
+            let names = |cs: &IdxVec<CivicOptionType, Option<CivicType>>| cs.iter().zip(current.iter()).filter(|(n, o)| n != o).map(|(n, _)| n.map_or("-", |c| d.civics[c].base.type_.as_str())).collect::<Vec<_>>().join(",");
+            crate::trace!(g, p, "civics: {} (gain {}, gold {}, research {}%)", names(&new), gain, g.players[p].gold, g.players[p].commerce_percent[CommerceType::COMMERCE_RESEARCH.idx()]);
+        }
         g.player_revolution(p, &new, false);
     }
 }

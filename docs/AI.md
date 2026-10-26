@@ -61,7 +61,8 @@ counters, war success, war plans) that the diplomacy below reads.
 1. **Empire** (`empire.rs`): research when the queue is empty (a broke empire first
    researches its way out, see Finance; the victory goal's techs beeline, see Victory pursuit);
    civics every 10 turns when the summed gain in civic value exceeds a flat 100 (the anarchy's
-   length is not weighed; sooner under a structural deficit);
+   length is not weighed; sooner under a structural deficit; a Spiritual leader every 2 turns at
+   40, see "Leader traits");
    state religion; the culture slider a cultural victory wants, then the highest research
    slider that keeps the treasury from running dry; unit support that holds research below its
    target is cut first (see Finance); a bankrupt empire (slider at the bottom, still losing
