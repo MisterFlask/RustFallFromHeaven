@@ -1347,6 +1347,44 @@ earlier cast is the first thing to measure.
   `unit_convert` could leave a converted unit as its own transport (an Airship, a stack overflow;
   a rules fix, docs/PORTING.md).
 
+## Leader traits (`traits.rs`)
+
+The rules apply every trait's effect by themselves (free promotions, cheaper civics, more health,
+...), and the generic AI already profits where it reads numbers a trait changes: wonder turns
+(Industrious), civic upkeep (Organized), upgrade prices (Ingenuity), combat odds (the free
+promotions). What it did not do was play to them. `traits.rs` adds the decisions a trait calls for
+(the owner's decision, 2026-10-26: this is flavour as much as strength, so a trait's play is kept
+whatever the win rate does, and a drop is investigated as a flaw to fix). The hooks are marked
+`// trait-play`:
+
+| trait | leaders | play |
+|---|---|---|
+| Raiders (pillaged gold +100%, Commando) | Decius, Basium, Amelanchier, Hannah, Tasunke, Mahala, Weevil, Faeryl, Sallos | an army stack at war pillages the improved enemy plot it stands on with one unit (taken out of the stack and back), before its orders when that costs no march (no operation needs the stack and no city of ours is in peril, or every unit has a move to spare) and after them while it holds; a stack no operation needs raids the best enemy improvement within two turns whose danger is under two thirds of its defense and that is not next to an enemy city; the land within two plots of the city our war operation is taking is spared (it is ours once the city falls). The generic AI never pillages. |
+| Spiritual (no anarchy) | Capria, Varn, Arendel, Jonas, Hyborem, Lethe | civics every 2 turns at a summed gain of 40 (others every 10 at 100); keeping the state religion weighs 5 instead of 15 |
+| Arcane (adepts +20% experience) | Thessa, Valledia, Dain, Tya, Perpentach, Faeryl, Tebryn | a caster corps of (cities + 2) / 3, trained in the most productive safe city, its Mage Guild first (`civs::casters_up_to`, the civilizations' unique casters' helper) |
+| Summoner (summons +1 turn, Combat I) | Keelyn, Tebryn, Os-Gabella, Malchavic, Hyborem | the caster corps, and its casters value a summoning sphere (a mana sphere opening a summon any civilization may cast: Death I-III, Fire II-III, Air/Earth/Water III, ...) at 1.5x + 60 |
+| Philosophical (great people +100%) | Einion, Cardith, Cassiel, Koun, Dain, Alexis, Judecca, Gosea | the great-people emphasis (`EMPHASIZE_GREAT_PEOPLE`) on its best great-people cities, 1 + cities / 8, size 4+, only cities that can employ a specialist making great people; a city is replaced only by one half as good again |
+| Financial (+1 commerce on plots with 2+) | Garrim, Beeri, Kandros, Hannah, Rhoanna, Flauros, Dumannios | workers count the extra commerce an improvement adds or removes at the threshold (`plot_calculate_improvement_yield_change` leaves it out) |
+| Industrious (limited wonders +50% production) | Capria, Tethira, Beeri, Arturus, Sandalphon, Cassiel, Os-Gabella, Statius | limited wonders (world, team and national) are worth 1.5x |
+| Aggressive (Combat I) | Basium, Kandros, Tasunke, Charadon, Duin, Weevil, Sheelba, Hafgan, Volanna, Alexis, Mahon, Averax, Ouzza | the war bar counts the free Combat I: the power edge it needs over a target is divided by 1.2 and its best trainable attacker counts 20% stronger against a city's defenders (the power rating and a unit type's strength leave the promotion out) |
+| Ingenuity (upgrades at half price) | Basium, Arturus, Kandros, Mahala | upgrades keep half the gold reserve |
+| Tolerant (Assimilation) | Ethne, Einion | never razes a conquered city |
+| Expansive (+3 health a city) | Cardith, Thessa, Falamar, Rhoanna, Melisandre, Jonas, Meresin | one more settler at a time |
+
+Passive (nothing to decide; their effect reaches every decision that reads the game):
+Charismatic, Creative, Defender, Organized, Magic Resistant. Played elsewhere: Adaptive (the
+trait choice, `events.rs`), Agnostic and Barbarian (`tech_plan.rs`), Fallow (`workers.rs`),
+Sprawling (`civs/kuriotates.rs`).
+
+`FFH_AI_TRAIT_OFF=TRAIT_X,..` (or `X`, or `all`) turns traits' play off and
+`FFH_AI_TRAIT_CIVS=CIVILIZATION_X,..` keeps it only for those civilizations' players; with every
+trait off the games are the same as without the module. `crates/ffh-cli/scripts/trait_ab.py
+--base off.json --new on.json` pairs every player of two `ai_metrics.py` runs of the same seeds
+and reports per trait (the leader's traits at the start; the Infernals and Mercurians, who join
+mid-game and share the wins of the team they join, only with `--joiners`).
+
+**How it was measured.** TRAIT_MEASUREMENT_PLACEHOLDER
+
 ## Measured together
 
 Finance, settlers and escorts, siege operations and the civilization-specific code were
