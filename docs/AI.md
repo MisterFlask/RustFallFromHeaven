@@ -1383,7 +1383,50 @@ trait off the games are the same as without the module. `crates/ffh-cli/scripts/
 and reports per trait (the leader's traits at the start; the Infernals and Mercurians, who join
 mid-game and share the wins of the team they join, only with `--joiners`).
 
-**How it was measured.** TRAIT_MEASUREMENT_PLACEHOLDER
+**How it was measured.** Full games (6 civs, standard map, to a decision or turn 690), the same
+binary with every trait's play on against `FFH_AI_TRAIT_OFF=all`, read per trait with
+`trait_ab.py`; development on seeds 1-40 (and 41-129 for Financial), validation on fresh seeds
+7401-7496. Reading a trait's numbers needs care: a trait's play re-draws every game its leaders
+are in, so on 40 seeds a group's win rate moves by 10 points on chaos alone -- a group that won
+more than its share falls back and one that won less rises, whatever the change (in runs where
+only Industrious or Spiritual was played, the Summoner leaders went 0% -> 14% with their own play
+off). A drop was therefore checked with the trait played alone (the other traits off, so only its
+leaders' games change), and three of them were flaws, fixed (docs/AI_LOG.md, "Leader traits"):
+Raiders pillaged the land of the city they were taking, Financial workers built cottages nobody
+worked, Aggressive leaders went to war while land was still free.
+
+Fresh seeds 7401-7496, every trait on against off (578 players; "one side only" = seeds the
+player won with the play and not without / without and not with):
+
+| trait | players | win, off -> on | one side only | share@300 | share@end |
+|---|---|---|---|---|---|
+| Raiders | 110 | 6.4% -> 10.0% | 5 / 1 | -11 (t -0.23) | -55 (t -0.52) |
+| Spiritual | 63 | 28.6% -> 22.2% | 4 / 8 | -95 (t -1.31) | -228 (t -1.73) |
+| Arcane | 95 | 11.6% -> 15.8% | 10 / 6 | +20 (t 0.28) | +186 (t 1.79) |
+| Summoner | 49 | 14.3% -> 12.2% | 2 / 3 | +133 (t 1.36) | +298 (t 2.30) |
+| Philosophical | 89 | 7.9% -> 4.5% | 3 / 6 | +22 (t 0.38) | -74 (t -0.58) |
+| Financial | 91 | 19.8% -> 26.4% | 15 / 9 | +81 (t 1.18) | +120 (t 0.76) |
+| Industrious | 110 | 12.7% -> 13.6% | 9 / 8 | -33 (t -0.63) | -5 (t -0.04) |
+| Aggressive | 85 | 21.2% -> 15.3% | 7 / 12 | +40 (t 0.80) | +3 (t 0.02) |
+| Ingenuity | 45 | 20.0% -> 24.4% | 6 / 4 | -41 (t -0.62) | +93 (t 0.56) |
+| Tolerant | 40 | 10.0% -> 12.5% | 3 / 2 | -96 (t -1.24) | -236 (t -1.16) |
+| Expansive | 78 | 28.2% -> 23.1% | 5 / 9 | -12 (t -0.15) | -146 (t -1.06) |
+
+No trait's difference is significant (sign tests p >= 0.22). The two lower win rates were played
+alone on the same seeds: Aggressive (the kept version) 21.2% -> 23.5% (5 / 3), share@end +30,
+cities taken +0.8 (t 1.7); Spiritual 28.6% -> 30.2% (5 / 4), share@end -141 (t -0.95) -- their
+leaders lose in the pooled games to what their neighbours' traits do, not to their own play.
+Financial alone on 60 seeds with a Financial leader: 18.4% -> 17.2% (6 / 7), share@end -39
+(t -0.33); Industrious alone (seeds 1-40): 10.9% -> 10.9%, world wonders 2.1 -> 2.9 (t 1.9).
+What the play does in the games: Summoner leaders keep casters (0.3 -> 1.9 at the end, t 4.6) and
+summon (0.9 -> 3.5 summons, t 3.7); Raiders pillage (Hannah, seed 2: 28 improvements in 210
+turns, 10-66 gold each); Industrious leaders build more wonders; Aggressive ones take more
+cities once their land is full.
+
+The games are decided sooner: final turn 527 -> 490 (t -2.48), clear supremacy 37 -> 52 of 96
+games and 12 instead of 5 decided by turn 250 -- the leaders whose traits snowball (Financial,
+Expansive) win earlier. In the games still running at turn 300 on both sides the world develops
+the same (techs -1.3%, population -0.8%, research 0.0%, all |t| < 1).
 
 ## Measured together
 
@@ -1699,6 +1742,11 @@ share score (docs/SCORE.md) averages 10000/N whatever the AI does.
 
 ## Known gaps (future work)
 
+- Leader traits (`traits.rs`): Charismatic, Creative, Defender, Organized and Magic Resistant have
+  no play of their own (their effects reach every decision that reads the game). Candidates if
+  they should: Defender stacks counterattacking inside our borders (Homeland), Creative leaders
+  leaning to the cultural victory, Charismatic ones promoting for the faster levels. Raiders
+  pillage where they stand and raid nearby; they do not yet send fast units deep into enemy land.
 - Naval: amphibious invasions now ship an army across water to take an overseas enemy city
   (see Naval), but there is no naval combat, no escorts and no blockades (the transport sails
   undefended), and one trip lands only the ship's cargo capacity, so invasions are small until

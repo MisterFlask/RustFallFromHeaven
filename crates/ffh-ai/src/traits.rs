@@ -17,7 +17,7 @@
 //! - **Philosophical** (great people +100%): the great-people emphasis in its best great-people
 //!   city, one more per eight cities ([`turn`]).
 //! - **Financial** (+1 commerce on plots with 2 or more): workers count the extra commerce an
-//!   improvement brings over the threshold ([`threshold_value`]).
+//!   improvement brings over the threshold on an unimproved plot a city works ([`threshold_value`]).
 //! - **Industrious** (limited wonders +50% production): wonders are worth half again as much
 //!   ([`building_value`]).
 //! - **Aggressive** (Combat I for its fighters): once its home land is full, the war bar counts
