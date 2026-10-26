@@ -31,6 +31,42 @@ Each entry answers three questions, from the games themselves (counts with `ffh 
   `FFH_AI_TRACE` (a throwaway trace line is fine on a scratch branch; it must not change the
   checksum) and compare the snapshots per checkpoint (`civ_ab.py --load`, the snapshot fields).
 
+## Leader traits (2026-10-26)
+
+The kept version is in docs/AI.md, "Leader traits". A trait's play is kept whatever its measured
+cost (the owner's decision: flavour as much as strength), so these entries record versions that
+were replaced because the games showed a flaw, and what the games showed. Numbers are full games
+(6 civs, standard map, to a decision or turn 690), seeds 1-40, `trait_ab.py` against the same
+binary with `FFH_AI_TRAIT_OFF=all`; "pooled" is every trait on, "alone" one trait on (the others
+off), which leaves out what the other traits' players do to their neighbours.
+
+### Raiders pillaging the land of the city they besiege (replaced the same day)
+
+1. A Raiders leader's stacks pillaged every improved enemy plot they stood on, and a siege holds
+   its stacks on the plots around the target city for turns.
+2. In the traced games the siege stacks stripped the target city's own land: Hannah (seed 2)
+   pillaged a town four times over at the city she was taking (town, village, hamlet, cottage:
+   164 gold) and then owned a city with bare land. Pooled, the Raiders leaders won 11.1% of their
+   games instead of 17.8% (1 / 4 seeds won by one side only), share@end -119 (t -0.91).
+3. The plots within two of the city the war operation is taking are spared (ours once it falls);
+   the march and the raids pillage the rest. Pooled again: share@end +170 (t 0.93), cities +0.7,
+   cities taken +0.7.
+
+### Financial counting the threshold on every plot (replaced the same day)
+
+1. A Financial leader gets +1 commerce on plots with 2 or more; the workers' valuation
+   (`plot_calculate_improvement_yield_change`) leaves that out, so the first version added it on
+   every plot, at the averaged grown yield of a cottage (a cottage counted as a town for two
+   thirds).
+2. Alone, the Financial leaders won 11.1% of their games instead of 26.7% (2 / 9, p 0.07),
+   share@end -291 (t -1.42). Their alive players had a fifth fewer hammers around turn 250
+   (-2.6 at turn 200, t -2.4; -4.5 at turn 250, t -2.5) and more research only from turn 400
+   (+48, t 2.7). Traced (seed 22, Garrim): cottage decisions 50 -> 98 in 250 turns, farms
+   94 -> 79, mines 83 -> 65, roads 96 -> 75 -- the workers' turns went into cottages, many on
+   plots no city worked, where a cottage never grows and the extra commerce is never had.
+3. The extra commerce counts only on a plot a city of ours works now, weighted as the yields are
+   (the improvement 1, its grown form 2). FINANCIAL_V2_RESULT_PLACEHOLDER
+
 ## Unique units (2026-10-20)
 
 The kept version is in docs/AI.md, "Unique units". It is kept under the owner's rule (CLAUDE.md,
