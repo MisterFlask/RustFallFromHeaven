@@ -31,6 +31,9 @@ cd anim-sprint
 | paladin | lower-right | mace, kite shield | near | |
 | goblin | lower-right | spear in the far hand (screen-right), no shield | far, mirrored | 56 px tall (`scale` 0.65); its other hand is "an empty clawed hand" in the texts |
 
+To watch the idles: `previews/idle_roster.{gif,mp4}` (all six side by side) and `final_<unit>/idle_3x.{gif,mp4}`, made
+by `python3 lib/preview_idle.py` (free; `lib/preview.py` needs a full set).
+
 `animate_batch.sh` stops at its first failed call. `anim/units` in `budget.json` was raised from $5 to $12 for the
 batch (the ledger prices are deliberately high, so the real bill is lower; the $20 `anim` and `total` caps still bind).
 
