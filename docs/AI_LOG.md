@@ -65,7 +65,25 @@ off), which leaves out what the other traits' players do to their neighbours.
    94 -> 79, mines 83 -> 65, roads 96 -> 75 -- the workers' turns went into cottages, many on
    plots no city worked, where a cottage never grows and the extra commerce is never had.
 3. The extra commerce counts only on a plot a city of ours works now, weighted as the yields are
-   (the improvement 1, its grown form 2). FINANCIAL_V2_RESULT_PLACEHOLDER
+   (the improvement 1, its grown form 2). On seeds 1-40 that version still looked worse (win
+   26.7% -> 17.8%, share@end -506, t -2.52), but most of the seeds 1-40 numbers were the games'
+   chaos, not the change: a change re-draws every game it touches, so a group that won more than
+   its share of these seeds falls back and one that won less rises -- in runs where only
+   Industrious or Spiritual was played, the Summoner leaders' win rate went 0% -> 14% and the
+   Arcane leaders' 4.8% -> 9.5% with their own play off. On 60 more seeds chosen for a Financial
+   leader (41-129, 87 Financial players), Financial alone against all traits off: this version
+   win 18.4% -> 18.4% (7 / 7), share@end -32 (t -0.24); a variant skipping the extra commerce
+   while the city is short of food 18.4% -> 20.7% (9 / 7), share@end -57 (t -0.52). Both had
+   fewer improved plots worked around turn 250 (-3.4, t -2.7; -2.9, t -2.4); on an improved plot
+   the extra commerce could tip a farm into a cottage that starts over, so the kept version counts
+   it only on an unimproved worked plot: win 18.4% -> 17.2% (6 / 7), share@end -39 (t -0.33),
+   improved plots worked at turn 250 still -2.9 (t -2.2; not the replacements, then -- unexplained,
+   and within what a dozen compared fields throw up by chance).
+
+Lesson for measuring a trait (or any play a few players have): 40 seeds give each trait 15-45
+players whose win rates move by 10 points on chaos alone. Play the trait alone (the other traits
+off, so only games with its leaders change) on seeds chosen to contain its leaders, 60+ of them,
+before reading a drop as a flaw.
 
 ## Unique units (2026-10-20)
 
