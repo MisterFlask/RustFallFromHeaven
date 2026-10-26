@@ -20,8 +20,8 @@
 //!   improvement brings over the threshold ([`threshold_value`]).
 //! - **Industrious** (limited wonders +50% production): wonders are worth half again as much
 //!   ([`building_value`]).
-//! - **Aggressive** (Combat I for its fighters): the war bar counts that edge, which the power
-//!   rating does not ([`attack_bonus_pct`]).
+//! - **Aggressive** (Combat I for its fighters): once its home land is full, the war bar counts
+//!   that edge, which the power rating does not ([`attack_bonus_pct`]).
 //! - **Ingenuity** (upgrades at half price): upgrades keep half the gold reserve ([`upgrade_reserve`]).
 //! - **Tolerant** (a conquered city keeps its civilization's buildings and units): never razes
 //!   a conquered city ([`keeps_conquests`]).
@@ -484,9 +484,16 @@ pub fn building_value(g: &Game, c: CityId, b: BuildingType, value: i32) -> i32 {
 // ----------------------------------------------------------------------------
 
 /// The strength (percent) an Aggressive leader's fighters get from their free Combat I, which
-/// neither the power rating nor a unit type's strength counts; 0 for others.
+/// neither the power rating nor a unit type's strength counts, once its home landmass is full
+/// (`naval::home_is_full`); 0 for others. Counted from the start, the lower war bar had Aggressive
+/// leaders preparing wars while land was still free: preparing halves the settlers and turns
+/// production to the army, and at turn 200 they had 0.7 fewer cities (t -4.0) and from turn 250 a
+/// fifth less research (seeds 7401-7496, every trait on; docs/AI_LOG.md, "Leader traits").
 pub fn attack_bonus_pct(g: &Game, p: PlayerId) -> i32 {
     let Some(tr) = enabled_type(g, p, Trait::Aggressive).filter(|&tr| g.players[p].traits[tr]) else { return 0 };
+    if !crate::naval::home_is_full(g, p) {
+        return 0;
+    }
     let info = &g.d.traits[tr];
     g.d.promotions.keys().filter(|&pr| info.free_promotion[pr]).map(|pr| g.d.promotions[pr].combat_percent).sum::<i32>().max(0)
 }
