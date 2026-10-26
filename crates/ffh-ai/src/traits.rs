@@ -446,7 +446,14 @@ pub fn threshold_value(g: &Game, p: PlayerId, q: PlotIdx, y: usize, old: i32, no
         return 0;
     }
     let th = g.players[p].extra_yield_threshold[y];
-    if th <= 0 || !g.plot_is_being_worked(q) || !g.map.plots[q].working_city.is_some_and(|c| g.cities[c].owner == p) {
+    let Some(c) = g.map.plots[q].working_city.filter(|&c| g.cities[c].owner == p) else { return 0 };
+    if th <= 0 || !g.plot_is_being_worked(q) {
+        return 0;
+    }
+    // Not while the city is short of food and can still grow (the worker weighs food most then):
+    // the extra commerce tipped such plots from farms to cottages and the cities grew less.
+    let surplus = g.city_yield_rate(c, YieldType::YIELD_FOOD) - g.city_food_consumption(c, false, 0);
+    if surplus < 2 && g.city_happy_level(c) > g.city_unhappy_level(c, 0) {
         return 0;
     }
     let extra = g.d.defines.extra_yield;
