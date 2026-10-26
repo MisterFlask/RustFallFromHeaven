@@ -448,8 +448,25 @@ table.scores.diplo td { vertical-align: top; }
 .trade-item.on { border-color: var(--c-bone); background: var(--c-coal); }
 .trade-item > button { width: 26px; padding: 0; }
 input.amount { width: 80px; }
-.trade-head { display: flex; gap: 14px; align-items: center; margin-bottom: 10px; }
-.trade-head h3 { margin: 0 0 4px; }
+/* A leader speaking (diplo.js `leaderHead`): the portrait, then the name, civilization and mood
+   over the line they say. */
+.leader-head { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 10px; }
+.leader-head h3 { margin: 2px 0 2px; color: var(--em); }
+.leader-words { flex: 1; min-width: 0; }
+blockquote.leader-says {
+  margin: 10px 0 0; padding: 10px 14px; position: relative; white-space: pre-line;
+  font-style: italic; font-size: 16px; line-height: 1.45; color: var(--em);
+  background: var(--panel-2); border-left: 3px solid var(--frame);
+}
+blockquote.leader-says::before { content: "\201C"; position: absolute; left: -2px; top: -14px; font-size: 40px; color: var(--frame); font-style: normal; }
+.modal.leader { width: min(620px, 100%); border-color: var(--c-bone); }
+.replies button.reply { flex-direction: row; font-style: italic; }
+.replies button.reply::before { content: "\2023"; margin-right: 8px; color: var(--frame); font-style: normal; }
+@media (max-width: 520px) {
+  .leader-head { flex-direction: column; align-items: center; }
+  .leader-words { text-align: center; }
+  blockquote.leader-says { text-align: left; }
+}
 
 /* Leader portraits (portraits.js): 80 art px drawn as 2 px blocks. The border sits outside the
    content box, so the picture keeps its exact size and its pixels stay square. */

@@ -22,12 +22,27 @@ impl LogEntry {
     }
 }
 
+/// A leader opening the diplomacy screen with a human (C++ `gDLL->beginDiplomacy` with
+/// `setAIContact(true)`): `from`'s leader says `comment` (`AI_DIPLOCOMMENT_FIRST_CONTACT`,
+/// `AI_DIPLOCOMMENT_DECLARE_WAR`) to the human `to`. Presentation only, like the messages: not
+/// saved, and nothing in the rules reads it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct DiploEntry {
+    pub turn: i32,
+    pub from: crate::ids::PlayerId,
+    pub to: crate::ids::PlayerId,
+    pub comment: ffh_data::DiploCommentType,
+}
+
 #[derive(Clone, Debug, Default)]
 pub struct GameLog {
     pub enabled: bool,
     pub entries: Vec<LogEntry>,
     /// Keep at most this many entries (0 = unbounded).
     pub cap: usize,
+    /// The diplomacy screens AI leaders opened with humans since a UI last took them (not
+    /// saved; not capped: a UI drains them with the messages).
+    pub diplo: Vec<DiploEntry>,
 }
 
 impl GameLog {
@@ -39,6 +54,13 @@ impl GameLog {
             self.entries.remove(0);
         }
         self.entries.push(LogEntry { turn, player: player.map(|p| p.0), text: f(), at: None });
+    }
+
+    /// A diplomacy screen `from` opens with the human `to` ([`DiploEntry`]).
+    pub fn diplo(&mut self, turn: i32, from: crate::ids::PlayerId, to: crate::ids::PlayerId, comment: ffh_data::DiploCommentType) {
+        if self.enabled {
+            self.diplo.push(DiploEntry { turn, from, to, comment });
+        }
     }
 
     /// [`GameLog::msg`] about plot `at` (`(x, y)`).

@@ -128,6 +128,7 @@ game_data! {
     traits: TraitType => TraitInfo, "Civilizations/CIV4TraitInfos.xml", civ::read_trait;
     civilizations: CivilizationType => CivilizationInfo, "Civilizations/CIV4CivilizationInfos.xml", civ::read_civilization;
     leader_heads: LeaderHeadType => LeaderHeadInfo, "Civilizations/CIV4LeaderHeadInfos.xml", civ::read_leader_head;
+    diplomacies: DiploCommentType => DiplomacyInfo, "Gameinfo/CIV4DiplomacyInfos.xml", game::read_diplomacy;
     // ---- Units ----
     special_units: SpecialUnitType => SpecialUnitInfo, "Units/CIV4SpecialUnitInfos.xml", unit::read_special_unit;
     unit_classes: UnitClassType => UnitClassInfo, "Units/CIV4UnitClassInfos.xml", unit::read_unit_class;

@@ -264,6 +264,16 @@ the question to take over a civilization that appeared and by each candidate of 
 (gold with an amount; peace, open borders and pacts go both ways, so they are greyed on both
 sides when either side refuses them), "Propose": the AI accepts or declines at once.
 
+**Leaders speak** as in Civ4's diplomacy screen, with FfH2's own lines for each leader. The trade
+screen opens on the leader's greeting (by its attitude towards you; sometimes, as in Civ4, a word
+about its worst enemy or a boast about its army), or on its refusal to talk (at war, until it is
+ready for peace); the leader answers each proposal: thanks for a gift, its line for peace made or
+refused, a deal welcomed or turned down, a demand rejected. A leader also contacts you, in the
+leader screen: when you first meet (answer "Let's make a deal…" for the trade screen, or
+"Farewell") and when it declares war on you ("So be it."). Those moments show when they happen, or
+at the start of your turn when they happened in the AI turns; loading a game shows the moments
+of its turn and the one before again.
+
 **Tools** (the Tools menu): **Debug reveal** (the whole map and every unit and city; the top
 bar says DEBUG REVEAL); the **Inspector** (the rules engine's own data of your unit, group, city,
 player or team, and of anything under debug reveal, plots too; an info entry by kind and index);
@@ -361,14 +371,15 @@ a reload is always safe, also in the middle of a decision.
 so an edit shows on reload; the art then comes from `crates/ffh-play/web/art` too (the
 directory beside the assets: its modules, and the sprite bundle made on each request), so an
 edit to a sprite file shows on reload as well. `window.ffh.mapView.art.stats` has the last
-frame's times by phase and the chunks drawn. `ffh-play stage capture|attack|automoves|load|trade DIR` writes a save at a
+frame's times by phase and the chunks drawn. `ffh-play stage capture|attack|automoves|load|trade|diplomacy DIR` writes a save at a
 staged situation into `DIR` (put it under the saves directory, e.g. `saves/staged`, then load
 `staged/capture`): `capture`, a warrior next to an undefended enemy city (moving in raises the
 keep/raze dialog); `attack`, a warrior next to a barbarian warrior (the odds tooltip, an attack);
 `automoves`, one unit waiting while another has a long move queued (skip the first: the second
 moves on, Civ4's AutoMoves); `load`, a warrior and two triremes in a coastal city (Load asks
 which trireme); `trade`, a civilization met at peace with gold trading and 100 gold on each side
-(Diplomacy, Trade…: a gift of gold is accepted). It writes only `DIR/KIND.ffhsave` and its sidecar (no journal, no autosaves), so
+(Diplomacy, Trade…: a gift of gold is accepted); `diplomacy`, an AI leader that has just met you
+and then declared war on you (loading it shows both leader moments; it then refuses to talk). It writes only `DIR/KIND.ffhsave` and its sidecar (no journal, no autosaves), so
 `DIR` may be a game's directory. See "Testing the browser client" below for the checklist.
 
 ## Commands
@@ -450,7 +461,8 @@ cargo build --release
   next to an undefended enemy city, moving in raises the keep/raze decision; `attack`: a warrior
   next to a barbarian warrior; `automoves`: skipping the one ready unit runs the AutoMoves rule;
   `load`: a warrior and two triremes in a coastal city, loading asks which trireme; `trade`: a
-  civilization met at peace, Currency known and 100 gold each, so the trade tables hold gold),
+  civilization met at peace, Currency known and 100 gold each, so the trade tables hold gold;
+  `diplomacy`: an AI leader's first contact and war declaration, shown as leader moments on load),
   and prints
   its path and the ids as JSON. It writes only `DIR/KIND.ffhsave` and its sidecar (the staged
   game keeps no journal and no autosaves). Nothing in play uses it.
@@ -580,6 +592,8 @@ Errors: `invalid`, `not_owner`, `gone`, `busy`.
 | `city {city}` | the city screen of one of your cities: plots (with `can_work`), specialists (with `plus` and `minus`: what `do_task TASK_CHANGE_SPECIALIST` accepts now), yields, happiness, health, buildings, hurry, emphasis, queue, the buildable list with cost and turns |
 | `techs`, `civics`, `religions`, `players` | the tech tree (prerequisites, depth, turns; each tech's `help` and, unless you have it, `unlocks`: the units, buildings, builds, civics and religions of its help as type indices, which the research chooser shows as icons), civics (availability, upkeep, anarchy; `civics {with: [civic, ..]}` adds `proposed`: the set a revolution to those civics makes, whether `update_civics` would be applied, its anarchy and upkeep), religions, the players you met with your deals |
 | `trade {with}` | the trade tables both ways (see Deals) |
+| `speech {with,comment?,salt?}` | what the AI leader of `with` says to you: `{with, comment, text}`; `comment` an `AI_DIPLOCOMMENT_*` (`DiploCommentType`), or none for what it says when you contact it (its greeting, Civ4's `AI_getGreeting`, or `AI_DIPLOCOMMENT_REFUSE_TO_TALK`); `salt` picks among its lines (Civ4 uses the interface's random numbers); `text` null when it has no line |
+| `moments {since}` | the leader moments from index `since` (`view.moments_next` is the next one): `{i, t, player, comment, text}`, an AI leader opening the diplomacy screen with you (first contact, a war declared on you) and what it said; the last 20 are kept in a save |
 | `log {since}` | your messages from index `since` (`view.log_next` is the next one): `{i, t, text, player, at?}`, `at` the plot `[x, y]` a combat or a city captured or razed happened on; observed, every player's messages |
 | `report` | the turn report: what changed between your end of turn and now, or the end of the game (units lost and gained, cities founded, lost, grown, starving, buildings, techs, civilizations met, wars and peace between those you had met, enemies near your cities, the Armageddon counter, borders), with the messages |
 | `text` | a plain-text summary for agents |

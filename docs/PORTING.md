@@ -13,6 +13,7 @@ re-read against the original in the audit wave (see "Audit and stress testing" b
 | Module | Classes | Status |
 |---|---|---|
 | infos/game.rs | Commerce, GameSpeed, World, Climate, SeaLevel, Era, Handicap, GameOption, Goody, Hurry, Upkeep, CultureLevel, Victory, Process, Emphasize | done, audited |
+| infos/game.rs | Diplomacy (+ DiplomacyResponse): the leaders' lines, presentation only (ffh-play `view/speech.rs`) | done |
 | infos/civics.rs | Specialist, Religion, Corporation, CivicOption, Civic, Vote, VoteSource, EspionageMission, Project, Tech | done, audited |
 | infos/unit.rs | Unit, UnitClass, Promotion, Spell, Build, SpecialUnit, Automate, Command, Mission | done, audited |
 | infos/building.rs, civ.rs | Building, BuildingClass, SpecialBuilding, Trait, Civilization, LeaderHead | done, audited |

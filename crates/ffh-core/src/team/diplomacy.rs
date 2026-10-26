@@ -317,9 +317,12 @@ impl Game {
 
             // C++ `isFinalInitialized() && !GetWorldBuilderMode()` (no world builder here).
             if self.final_initialized {
-                // UI: with bNewDiplo, a non-human declaring team opens the
-                // AI_DIPLOCOMMENT_DECLARE_WAR diplomacy screen with every human member of `other`
-                // its leader can contact (no game-state effect).
+                // With bNewDiplo, a non-human declaring team opens the AI_DIPLOCOMMENT_DECLARE_WAR
+                // diplomacy screen with every human member of `other` its leader can contact
+                // (UI only: the game log's diplomacy entries).
+                if new_diplo && self.log.enabled && !self.team_is_human(t) {
+                    self.log_diplo_with_humans(t, other, "AI_DIPLOCOMMENT_DECLARE_WAR");
+                }
 
                 // TXT_KEY_MISC_YOU_DECLARED_WAR_ON / DECLARED_WAR_ON_YOU / SOMEONE_DECLARED_WAR messages
                 // and the replay message, between non-barbarian, non-minor teams only.
@@ -664,14 +667,31 @@ impl Game {
                 if self.team_is_human(t) && t != other {
                     self.team_declare_war(t, other, false, None);
                 }
-            } else {
-                // UI: once final-initialized, with bNewDiplo, a non-human team at peace with `other`
-                // opens the AI_DIPLOCOMMENT_FIRST_CONTACT diplomacy screen with every human member
-                // of `other` its leader can contact (no game-state effect).
+            } else if self.final_initialized && new_diplo && self.log.enabled {
+                // A non-human team at peace with `other` opens the AI_DIPLOCOMMENT_FIRST_CONTACT
+                // diplomacy screen with every human member of `other` its leader can contact (UI
+                // only: the game log's diplomacy entries).
+                if !self.team_is_human(t) && !self.at_war(t, other) {
+                    self.log_diplo_with_humans(t, other, "AI_DIPLOCOMMENT_FIRST_CONTACT");
+                }
             }
 
             // report event to Python, along with some other key state
             self.ev_first_contact(t, other);
+        }
+    }
+
+    /// The `gDLL->beginDiplomacy` loops of `CvTeam::declareWar` and `CvTeam::makeHasMet`: `t`'s
+    /// leader opens the `comment` diplomacy screen with every alive human member of `other` it
+    /// can contact (a game log diplomacy entry each; presentation only).
+    fn log_diplo_with_humans(&mut self, t: TeamId, other: TeamId, comment: &str) {
+        let Some(leader) = self.team_get_leader_id(t) else { return };
+        let comment = self.d.t::<DiploCommentType>(comment);
+        let turn = self.game_turn();
+        for p in self.player_ids() {
+            if self.players[p].alive && self.players[p].team == other && self.player_can_contact(leader, p) && self.players[p].human {
+                self.log.diplo(turn, leader, p, comment);
+            }
         }
     }
 

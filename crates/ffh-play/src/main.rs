@@ -45,7 +45,7 @@
 //!                                      the HTTP server (design §4.2) on 127.0.0.1:8642 with the
 //!                                      browser client (P5); no game until the client starts
 //!                                      one, or GAME says so
-//!   ffh-play stage capture|attack|automoves|load|trade|automate|election|settlement|corrupt DIR
+//!   ffh-play stage capture|attack|automoves|load|trade|diplomacy|automate|election|settlement|corrupt DIR
 //!                                      write a save at a staged situation into DIR (testing the
 //!                                      clients): `capture` (a warrior next to an undefended
 //!                                      enemy city: moving in raises the keep/raze decision),
@@ -91,7 +91,7 @@ fn usage() -> ! {
          \x20      | soak [--seeds A..B] [--sizes ..] [--civs ..] [--options ..] [--speeds ..] [--turns N] [--jobs N] [--timeout SECS]\n\
          \x20             [--saves DIR] [--keep-saves] [--out FILE] [--filter TEXT] [--list]\n\
          \x20      | agent [GAME] [--on-eof quit|end-turn] [--progress]\n\
-         \x20      | serve [GAME] [--port N] [--bind ADDR] [--assets DIR] | stage capture|attack|automoves|load|trade|automate|election|settlement|corrupt DIR\n\
+         \x20      | serve [GAME] [--port N] [--bind ADDR] [--assets DIR] | stage capture|attack|automoves|load|trade|diplomacy|automate|election|settlement|corrupt DIR\n\
          \x20      | bench [--quick] [--seed N] [--turns T] [--runs R] [--world W] [--opponents N] [--ffh PATH] [--json]\n\
          \x20      | export-site OUT [--data DIR]\n\
          \x20  GAME: [--saves DIR | --no-saves] [--autosaves N] [--setup JSON] [--seed N] [--opponents N] [--world W] [--civ C]\n\
@@ -726,7 +726,7 @@ fn cmd_lookup(args: &[String]) {
     }
 }
 
-/// `ffh-play stage capture|attack|automoves|load|trade|automate|election|settlement|corrupt DIR`: a save
+/// `ffh-play stage capture|attack|automoves|load|trade|diplomacy|automate|election|settlement|corrupt DIR`: a save
 /// at a staged situation (testing the clients).
 fn cmd_stage(args: &[String]) {
     let [kind, dir] = args else { usage() };
@@ -737,6 +737,7 @@ fn cmd_stage(args: &[String]) {
         "automoves" => ffh_play::stage::auto_moves(dir).map(|s| s.to_json()),
         "load" => ffh_play::stage::load(dir).map(|s| s.to_json()),
         "trade" => ffh_play::stage::trade(dir).map(|s| s.to_json()),
+        "diplomacy" => ffh_play::stage::diplomacy(dir).map(|s| s.to_json()),
         "automate" => ffh_play::stage::automate(dir).map(|s| s.to_json()),
         "election" => ffh_play::stage::election(dir).map(|s| s.to_json()),
         "settlement" => ffh_play::stage::settlement(dir).map(|s| s.to_json()),

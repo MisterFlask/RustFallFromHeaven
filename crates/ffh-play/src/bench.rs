@@ -345,6 +345,7 @@ fn raw_run(start: &[u8], human: PlayerId, turns: i32) -> (Duration, i32, i32) {
     loop {
         g.update();
         g.log.entries.clear();
+        g.log.diplo.clear();
         if !matches!(phase(&g, human), Phase::Running) {
             break;
         }

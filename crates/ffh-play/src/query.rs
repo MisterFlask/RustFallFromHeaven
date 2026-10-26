@@ -14,7 +14,7 @@ use std::sync::{Mutex, MutexGuard, PoisonError};
 
 use ffh_core::game::Game;
 use ffh_core::ids::*;
-use ffh_data::CivicType;
+use ffh_data::{CivicType, DiploCommentType};
 use ffh_core::path::{FinderKind, PathFinder};
 
 use crate::decision::Decision;
@@ -52,6 +52,12 @@ pub enum Query {
     Trade { with: PlayerId },
     /// Messages from index `since` (`view.log_next` is the next index).
     Log { since: usize },
+    /// What the leader of `with` says to the human: for `comment` (an `AI_DIPLOCOMMENT_*`), or
+    /// when the human contacts it (`None`: its greeting, or its refusal to talk). `salt` picks
+    /// among its lines (C++ uses the interface's random numbers).
+    Speech { with: PlayerId, comment: Option<DiploCommentType>, salt: i64 },
+    /// The leader moments from index `since` (`view.moments_next` is the next index).
+    Moments { since: usize },
     /// The turn report of the last turn.
     Report,
     /// `{:#?}` of a game object (`unit`, `group`, `city`, `plot`, `player`, `team`, `deal`) or
@@ -99,7 +105,7 @@ impl Layer {
 /// Every query name (`q`).
 pub const QUERY_NAMES: &[&str] = &[
     "status", "pending", "view", "map", "plot", "group", "path", "combat", "city", "techs", "civics", "religions", "players", "trade", "log",
-    "report", "inspect", "text", "ascii", "data", "setup", "saves",
+    "speech", "moments", "report", "inspect", "text", "ascii", "data", "setup", "saves",
 ];
 
 /// Why a query was refused.
@@ -171,6 +177,8 @@ impl Query {
             Query::Players => "players",
             Query::Trade { .. } => "trade",
             Query::Log { .. } => "log",
+            Query::Speech { .. } => "speech",
+            Query::Moments { .. } => "moments",
             Query::Report => "report",
             Query::Inspect { .. } => "inspect",
             Query::Text => "text",
@@ -202,6 +210,12 @@ impl Query {
             "players" => Query::Players,
             "trade" => Query::Trade { with: j.req("with")? },
             "log" => Query::Log { since: j.get_or("since", 0)? },
+            "speech" => Query::Speech {
+                with: j.req("with")?,
+                comment: crate::names::opt_field(ffh_data::global(), j, "comment")?,
+                salt: j.get_or("salt", 0)?,
+            },
+            "moments" => Query::Moments { since: j.get_or("since", 0)? },
             "report" => Query::Report,
             "inspect" => Query::Inspect { kind: j.req("kind")?, oid: j.req("oid")? },
             "text" => Query::Text,
@@ -233,6 +247,8 @@ impl Query {
             Query::City { city } => j.with("city", *city),
             Query::Trade { with } => j.with("with", *with),
             Query::Log { since } => j.with("since", *since),
+            Query::Speech { with, comment, salt } => j.with("with", *with).with("comment", Json::opt_idx(*comment)).with("salt", *salt),
+            Query::Moments { since } => j.with("since", *since),
             Query::Inspect { kind, oid } => j.with("kind", kind.as_str()).with("oid", *oid),
             Query::Ascii { x, y, w, h, layer } => j.with("x", *x).with("y", *y).with("w", *w).with("h", *h).with("layer", layer.name()),
             _ => j,
@@ -337,6 +353,11 @@ pub fn run(g: &Game, ctx: &Ctx, q: &Query) -> Result<Json, QueryErr> {
             Some(m) => m.since_json(*since),
             None => return Err(busy("the message log")),
         },
+        Query::Speech { with, comment, salt } => view::speech::speech(&v, *with, *comment, *salt)?,
+        Query::Moments { since } => match ctx.messages {
+            Some(m) => m.moments_json(*since),
+            None => return Err(busy("the leader moments")),
+        },
         Query::Report => {
             if ctx.in_decision {
                 return Err(busy("the turn report"));
@@ -383,6 +404,9 @@ mod tests {
             Query::Players,
             Query::Trade { with: PlayerId(2) },
             Query::Log { since: 10 },
+            Query::Speech { with: PlayerId(1), comment: None, salt: 0 },
+            Query::Speech { with: PlayerId(1), comment: Some(ffh_data::DiploCommentType::from_usize(3)), salt: -5 },
+            Query::Moments { since: 2 },
             Query::Report,
             Query::Inspect { kind: "unit".into(), oid: 4 },
             Query::Text,

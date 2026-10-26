@@ -41,6 +41,7 @@ info_ids! {
     SpecialBuildingType => "SpecialBuildingInfo",
     CivilizationType => "CivilizationInfo",
     LeaderHeadType => "LeaderHeadInfo",
+    DiploCommentType => "DiplomacyInfo",
     TraitType => "TraitInfo",
     EventType => "EventInfo",
     EventTriggerType => "EventTriggerInfo",

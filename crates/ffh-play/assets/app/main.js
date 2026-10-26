@@ -17,7 +17,7 @@ import { MapView } from "./map.js";
 import * as units from "./units.js";
 import { openCity, ownCities, stepCityScreen } from "./city.js";
 import * as empire from "./empire.js";
-import { openDiplomacy } from "./diplo.js";
+import { openDiplomacy, checkMoments, resetMoments } from "./diplo.js";
 import * as tools from "./tools.js";
 import { applyMapDelta, plotDistance } from "./tiles.js";
 import * as K from "./hotkeys.js";
@@ -149,6 +149,7 @@ function clearGame() {
   S.messages = [];
   S.logNext = 0;
   S.report = null;
+  resetMoments();
   gameKey = null;
   viewKey = null;
   lastTurn = null;
@@ -166,7 +167,7 @@ function clearGame() {
 
 /** The dialogs that belong to one game (closed when another game arrives); the load, options,
  *  tools and crash dialogs stay. */
-const GAME_DIALOGS = ["city", "decision", "election", "event", "research", "vote", "promotions", "spells", "trade", "diplomacy", "cities", "civics", "finance", "religion", "techtree", "inspect", "gate", "over", "stuck", "takeover", "save"];
+const GAME_DIALOGS = ["city", "decision", "election", "event", "research", "vote", "promotions", "spells", "trade", "leader", "diplomacy", "cities", "civics", "finance", "religion", "techtree", "inspect", "gate", "over", "stuck", "takeover", "save"];
 
 /** Fetches the view (and the map when its revision changed) when the status says it changed. */
 async function refreshView(st) {
@@ -182,6 +183,7 @@ async function refreshView(st) {
     S.report = null;
     S.sel = null;
     lastTurn = null;
+    resetMoments();
     // Another game (new, loaded, started elsewhere): its deferred popups are asked again,
     // also at the turn the last game's were set aside (P5 review); waypoints not sent yet
     // were the last game's.
@@ -222,6 +224,9 @@ async function refreshView(st) {
   viewKey = vk;
   if (newGame) tools.loadFlags();
   await refreshLog();
+  // A leader who contacted you (first contact, a war declared on you) speaks: not while
+  // watching the AI play your side.
+  if (!tools.spectating() && !observing()) checkMoments();
   updateMarkers();
   units.viewChanged();
   empire.viewChanged();

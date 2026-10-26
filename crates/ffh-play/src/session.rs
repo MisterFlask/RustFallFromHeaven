@@ -26,7 +26,7 @@ use crate::human::{Answerer, HumanController, SessionShared, Stats};
 use crate::journal::{self, Cursor, Journal, JournalAnswerer, Line, Stamp};
 use crate::json::Json;
 use crate::query::{self, Query, QueryErr, UiState};
-use crate::report::{self, MessageStore, Report, Snapshot};
+use crate::report::{self, MessageStore, Moment, Report, Snapshot};
 use crate::save::{self, SavePaths, Sidecar};
 use crate::setup::{self, NewGame, HUMAN_SLOT};
 use crate::view::fog::LogFog;
@@ -259,7 +259,10 @@ impl Session {
                 s.to_play = sc.to_play.max(0);
             }
             *s.shared.pending_events.lock().unwrap() = sc.pending_events.clone();
-            s.messages = MessageStore::from_tail(sc.messages_tail.clone());
+            // The moments are presentation only: one that does not read (another data version)
+            // or names no player of this game is dropped.
+            let moments = sc.moments_tail.iter().filter_map(|j| Moment::from_json(s.g.d, j).ok()).filter(|m| m.player.idx() < s.g.num_players()).collect();
+            s.messages = MessageStore::from_tail(sc.messages_tail.clone(), moments);
             s.auto_moves_tried = sc.auto_moves_tried;
             // The report is presentation only: one that does not read (another data version),
             // or whose ids do not fit this game (a mismatched or corrupted sidecar), is dropped.
@@ -671,10 +674,21 @@ impl Session {
 
     /// Moves the game log into the message store: the entries C++ would send to the human
     /// ([`LogFog`]).
-    fn drain_log(&mut self) {
+    pub(crate) fn drain_log(&mut self) {
         let h = self.human;
         let d = self.g.d;
         let entries = std::mem::take(&mut self.g.log.entries);
+        let diplo = std::mem::take(&mut self.g.log.diplo);
+        if !self.observing && diplo.iter().any(|e| e.to == h) {
+            // The leader's line is chosen now, with the attitude it has now.
+            let g = QueryGuard::new(&self.g);
+            for e in diplo.into_iter().filter(|e| e.to == h) {
+                let salt = (self.messages.moments_total() as u64) << 32 | e.turn as u32 as u64;
+                if let Some(text) = crate::view::speech::line(&g, e.from, h, e.comment, &mut crate::view::speech::Async::new(salt)) {
+                    self.messages.push_moment(Moment { turn: e.turn, player: e.from, comment: e.comment, text });
+                }
+            }
+        }
         // Only untagged entries read the game (under a guard). The text keys ffh-core logs
         // (city names, civilization descriptions, unit names) are resolved for the human.
         let resolve = |mut e: LogEntry| {
@@ -829,6 +843,7 @@ impl Session {
             journal: journal.path().map(|p| p.display().to_string()),
             journal_line: journal.count(),
             messages_tail: tail,
+            moments_tail: self.messages.moments_tail(20).iter().map(Moment::to_json).collect(),
             auto_moves_tried: self.auto_moves_tried,
             report_snapshot,
             report: self.report.as_ref().map(Report::to_json),

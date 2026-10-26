@@ -1120,7 +1120,8 @@ async function stagedCapture(bin, saves) {
 }
 
 /** The trade screen (P6, `stage trade`: a civilization met at peace, gold trading): F4, Trade…,
- *  the tables, 7 gold put into the deal, Propose: accepted, the gold gone. */
+ *  the leader's greeting, the tables, 7 gold put into the deal, Propose: accepted with the
+ *  leader's thanks, the gold gone. */
 async function stagedTrade(bin, saves) {
   await loadStaged(bin, saves, "trade");
   const gold = await S("S.view.me.gold");
@@ -1130,16 +1131,51 @@ async function stagedTrade(bin, saves) {
   await click(`${TOP} button[data-trade]`);
   await dialog(/^Trade with/);
   await until2(`document.querySelectorAll(${q(`${TOP} .trade .trade-side`)}).length === 2`, "the trade tables");
+  const says = `${TOP} .leader-head blockquote.leader-says`;
+  await until2(`(() => { const e = document.querySelector(${q(says)}); return !!e && e.textContent.length > 3 && !/\\[|…/.test(e.textContent); })()`, "the leader's greeting");
+  const greeting = await b.eval(`document.querySelector(${q(says)}).textContent`);
   const ours = `${TOP} .trade .trade-side:first-child .trade-item[data-item="TRADE_GOLD"]`;
   await click(`${ours} button`);
   await until2(`!!document.querySelector(${q(`${ours}.on input.amount`)})`, "the gold amount");
   await b.eval(`(() => { const i = document.querySelector(${q(`${ours} input.amount`)}); i.value = "7"; i.dispatchEvent(new Event("input")); })()`);
   await shot("trade");
   await click(`${TOP} .modal-buttons button.primary`);
-  await until(async () => !(await modalTitles()).some((t) => t.startsWith("Trade with")), "the deal accepted (the trade screen closes)");
+  await until2(`document.querySelector(${q(`${TOP} p[data-answer]`)})?.dataset.answer === "accepted"`, "the deal accepted");
+  await until2(`(() => { const e = document.querySelector(${q(says)}); return !!e && e.textContent !== ${q(greeting)} && e.textContent.length > 3 && !/\\[|…/.test(e.textContent); })()`, "the leader's thanks");
   await until2(`window.ffh.S.view.me.gold === ${gold - 7}`, "7 gold given");
+  await shot("trade-thanks");
+  await closeDialog(await b.eval(`document.querySelector(${q(`${TOP} .modal-head h2`)}).textContent`));
   await closeDialog("Foreign affairs");
-  steps.push("trade screen (stage trade): 7 gold offered and accepted");
+  steps.push("trade screen (stage trade): the leader's greeting; 7 gold offered, accepted with thanks");
+}
+
+/** The leader moments (`stage diplomacy`: an AI leader met the human, then declared war): loading
+ *  the save, the leader's first contact speaks, "Farewell"; then its war declaration, "So be it";
+ *  F4, Trade…: at war since this turn, the leader refuses to talk. */
+async function stagedDiplomacy(bin, saves) {
+  await loadStaged(bin, saves, "diplomacy", { answer: false });
+  const leader = (comment) => `${TOP} .modal.leader[data-comment="${comment}"]`;
+  const spoken = (comment) => `(() => { const e = document.querySelector(${q(`${leader(comment)} blockquote.leader-says`)}); return !!e && e.textContent.length > 3 && !/\\[/.test(e.textContent); })()`;
+  await until2(spoken("AI_DIPLOCOMMENT_FIRST_CONTACT"), "the leader's first contact");
+  await shot("leader-first-contact");
+  await click(`${leader("AI_DIPLOCOMMENT_FIRST_CONTACT")} button.reply[data-reply="exit"]`);
+  await until2(spoken("AI_DIPLOCOMMENT_DECLARE_WAR"), "the leader's war declaration");
+  await shot("leader-declares-war");
+  await click(`${leader("AI_DIPLOCOMMENT_DECLARE_WAR")} button.reply`);
+  await until2(`!document.querySelector("#modals .modal.leader")`, "the leader screens closed");
+  // The popups held back while the leader spoke (the research chooser) come next.
+  await answerPopups(false);
+  await b.key("F4");
+  await dialog("Foreign affairs");
+  await until2(`!!document.querySelector(${q(`${TOP} button[data-trade]`)})`, "the Trade button");
+  await click(`${TOP} button[data-trade]`);
+  await dialog(/^Trade with/);
+  const says = `${TOP} .leader-head blockquote.leader-says`;
+  await until2(`(() => { const e = document.querySelector(${q(says)}); return !!e && e.textContent.length > 3 && !/\\[|…/.test(e.textContent); })() && /refuses to talk/.test(document.querySelector(${q(`${TOP} p.warn`)})?.textContent ?? "")`, "the leader's refusal to talk");
+  await shot("leader-refuses");
+  await closeDialog(await b.eval(`document.querySelector(${q(`${TOP} .modal-head h2`)}).textContent`));
+  await closeDialog("Foreign affairs");
+  steps.push("leader moments (stage diplomacy): first contact, war declared, then a refusal to talk");
 }
 
 /** Selects the group of unit `u` with a click on its plot. */
@@ -1391,6 +1427,7 @@ async function main() {
     await stagedAttack(bin, saves);
     await stagedCapture(bin, saves);
     await stagedTrade(bin, saves);
+    await stagedDiplomacy(bin, saves);
     await stagedAutomate(bin, saves);
     await stagedElection(bin, saves);
     await stagedSettlement(bin, saves);

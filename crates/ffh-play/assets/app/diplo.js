@@ -4,11 +4,18 @@
 // (the `trade` query, C++ `buildTradeTable`, refusals greyed), a deal put together from both
 // tables and offered (`propose_deal`), which the AI accepts or declines at once. Each leader shows
 // their portrait (portraits.js).
+//
+// Leaders speak as in Civ4's diplomacy screen (`speech` query, view/speech.rs: FfH2's lines for
+// each leader, by attitude): the trade screen opens with the leader's greeting (or its refusal to
+// talk) and answers each proposal (accepted: thanks for a gift, peace, or a deal welcomed;
+// declined: no peace, a demand rejected, or a deal refused). The moments when a leader contacts
+// you (first contact, a war declared on you) open the leader screen on their own (the view's
+// `moments_next`, `moments` query).
 
 import * as api from "./api.js";
 import { S, dname, tname, teamName, tradeItemLabel, tradeRefusal, DUAL_ITEMS, me, scoreText, fairShareText } from "./state.js";
-import { h, toast } from "./dom.js";
-import { openModal, ask, closeTag } from "./modals.js";
+import { h } from "./dom.js";
+import { openModal, ask } from "./modals.js";
 import { infoTip } from "./infotips.js";
 import { render as markup } from "./markup.js";
 import { run } from "./commands.js";
@@ -76,6 +83,136 @@ function attitudeTip(p) {
   ];
 }
 
+/** The human's side of the conversation: Civ4's USER_DIPLO_* lines. */
+const SAY = {
+  trade: "Let's make a deal…",
+  exit: "Farewell ... (Exit)",
+  warResponse: "So be it.",
+};
+
+/** What player `p`'s leader says (the `speech` query): for `comment` (an AI_DIPLOCOMMENT_* name),
+ *  or with none what it says when you contact it, its greeting or its refusal to talk. Returns
+ *  `{comment, text}`, or null when the query fails. */
+async function speech(p, comment = null) {
+  try {
+    return await api.query("speech", { with: p, comment, salt: Math.floor(Math.random() * 2 ** 31) });
+  } catch {
+    return null;
+  }
+}
+
+/** A leader speaking: the large portrait, name, civilization and mood, and the line in quotes;
+ *  `say(text)` changes the line. */
+function leaderHead(p, text) {
+  const pl = S.players.get(p);
+  const quote = h("blockquote.leader-says", text ?? "…");
+  const mood = pl && pl.attitude !== null && pl.attitude !== undefined ? ` · ${dname("AttitudeType", pl.attitude)}` : "";
+  const el = h(
+    "div.leader-head",
+    { "data-player": p },
+    playerPortrait(p, { size: PORTRAIT.large }),
+    h("div.leader-words", h("h3", pl?.name ?? `Player ${p}`), h("div.dim", `${pl ? dname("CivilizationType", pl.civ) : ""}${mood}`), quote),
+  );
+  return {
+    el,
+    say(t) {
+      quote.textContent = t ?? "…";
+    },
+  };
+}
+
+/** The leader screen: player `p`'s leader says `text` and you answer with one of `replies`
+ *  (`[{label, value}]`, Civ4's list of answers). Resolves with the chosen value (null: closed). */
+export function openLeader(p, text, replies, { comment = null } = {}) {
+  const head = leaderHead(p, text);
+  const m = openModal({
+    title: S.players.get(p)?.name ?? `Player ${p}`,
+    body: [head.el, h("div.options.replies", replies.map((r) => h("button.option.reply", { "data-reply": r.value, onclick: () => m.close(r.value) }, r.label)))],
+    tag: "leader",
+    className: "leader",
+    buttons: [],
+  });
+  if (comment) m.el.dataset.comment = comment;
+  return m.done;
+}
+
+// ---- leader moments ---------------------------------------------------------------------------
+
+/** The next moment index this page has not shown (null: none seen yet in this game). */
+let momentsNext = null;
+let momentsRunning = false;
+let momentsChecking = false;
+let momentsAgain = false;
+/** Bumped by another game: a reply for the last game is dropped. */
+let momentsGame = 0;
+const momentQueue = [];
+
+/** Another game: its moments start afresh. */
+export function resetMoments() {
+  momentsNext = null;
+  momentsAgain = false;
+  momentsGame++;
+  momentQueue.length = 0;
+}
+
+/** Shows the leader moments the view announces (`moments_next`). A page that opens a game shows
+ *  only the moments of this turn and the last (a reload shows them again, as the turn report);
+ *  older ones are history. */
+export async function checkMoments() {
+  // One request at a time: a view that arrives meanwhile asks again after it.
+  if (momentsChecking) {
+    momentsAgain = true;
+    return;
+  }
+  momentsChecking = true;
+  try {
+    do {
+      momentsAgain = false;
+      const next = S.view?.moments_next;
+      if (next === null || next === undefined) return;
+      if (momentsNext !== null && next < momentsNext) momentsNext = 0;
+      if (next === momentsNext) continue;
+      const first = momentsNext === null;
+      const game = momentsGame;
+      let r;
+      try {
+        r = await api.query("moments", { since: first ? 0 : momentsNext });
+      } catch {
+        return; /* busy inside a decision: the next view asks again */
+      }
+      if (game !== momentsGame) {
+        momentsAgain = true;
+        continue;
+      }
+      momentsNext = r.next;
+      const turn = S.view?.turn ?? 0;
+      momentQueue.push(...r.entries.filter((e) => !first || e.t >= turn - 1));
+      runMoments();
+    } while (momentsAgain);
+  } finally {
+    momentsChecking = false;
+  }
+}
+
+async function runMoments() {
+  if (momentsRunning) return;
+  momentsRunning = true;
+  try {
+    while (momentQueue.length) {
+      const e = momentQueue.shift();
+      const comment = tname("DiploCommentType", e.comment);
+      if (comment === "AI_DIPLOCOMMENT_DECLARE_WAR") {
+        await openLeader(e.player, e.text, [{ label: SAY.warResponse, value: "ok" }], { comment });
+      } else {
+        const v = await openLeader(e.player, e.text, [{ label: SAY.trade, value: "trade" }, { label: SAY.exit, value: "exit" }], { comment });
+        if (v === "trade") await openTrade(e.player, null, { opening: e.text });
+      }
+    }
+  } finally {
+    momentsRunning = false;
+  }
+}
+
 /** The tooltip of a trade item: what a tech brings you, what a resource, civic or religion
  *  does; null for the others. */
 function itemTip(it, techHelp) {
@@ -100,7 +237,7 @@ async function declareWar(p) {
 /** The trade screen with player `with`: both trade tables; clicking an item puts it into the
  *  deal (an item that goes on both sides, such as a peace treaty, goes on both, and is greyed on
  *  both when either side refuses it), gold as an amount; Propose offers it. */
-export async function openTrade(withPlayer, name = null) {
+export async function openTrade(withPlayer, name = null, { opening = null } = {}) {
   const m = openModal({ title: `Trade with ${name ?? S.players.get(withPlayer)?.name ?? `player ${withPlayer}`}`, body: [h("p.dim", "…")], tag: "trade", wide: true, buttons: [{ label: "Close", value: null }] });
   let t;
   try {
@@ -109,8 +246,12 @@ export async function openTrade(withPlayer, name = null) {
     m.setBody(h("p.warn", e.detail ?? e.message));
     return m.done;
   }
+  // The leader greets you, or refuses to talk (Civ4 opens the screen on its line).
+  const leader = t.contact || /refuses to talk/.test(t.why_not ?? "") ? leaderHead(withPlayer, opening) : null;
+  if (leader && !opening) speech(withPlayer).then((r) => !m.closed && leader.say(r?.text));
   if (!t.contact) {
-    m.setBody(h("p.warn", t.why_not ?? "No contact."));
+    const pl = S.players.get(withPlayer);
+    m.setBody(leader?.el, h("p.warn", leader && pl ? `${pl.name} refuses to talk.` : (t.why_not ?? "No contact.")));
     return m.done;
   }
   // What a tech brings you (the techs query's help, in your context) for the techs on offer.
@@ -126,15 +267,6 @@ export async function openTrade(withPlayer, name = null) {
   const isDual = (it) => DUAL_ITEMS.includes(tname("TradeableItem", it.item));
   const isGold = (it) => ["TRADE_GOLD", "TRADE_GOLD_PER_TURN"].includes(tname("TradeableItem", it.item));
   const status = h("p.dim");
-  // Who you are dealing with: their leader's portrait, name, civilization and mood.
-  const pl = S.players.get(withPlayer);
-  const head = pl
-    ? h(
-        "div.trade-head",
-        playerPortrait(withPlayer, { size: PORTRAIT.large }),
-        h("div", h("h3", pl.name), h("div.dim", dname("CivilizationType", pl.civ)), pl.attitude !== null && pl.attitude !== undefined ? h("div", `Attitude: ${dname("AttitudeType", pl.attitude)}`) : null),
-      )
-    : null;
   const draw = () => {
     const side = (list, mapKey, other, title) =>
       h(
@@ -187,7 +319,7 @@ export async function openTrade(withPlayer, name = null) {
           : h("p.dim", "Nothing."),
       );
     m.setBody(
-      head,
+      leader.el,
       t.war ? h("p.warn", "You are at war: a deal makes peace, so it must hold the peace treaty (or a capitulation).") : null,
       h("div.trade", side(t.we_give, "give", t.they_give, "You give"), side(t.they_give, "get", t.we_give, "They give")),
       status,
@@ -206,13 +338,28 @@ export async function openTrade(withPlayer, name = null) {
         }
         const reply = await run({ c: "propose_deal", to: withPlayer, give, get });
         if (!reply) return;
-        if (reply.r?.accepted) {
-          toast("They accepted the deal.");
-          closeTag("trade");
+        // The leader answers (Civ4's lines for a deal: peace, a gift, a demand, a trade).
+        const accepted = !!reply.r?.accepted;
+        const comment = accepted ? (t.war ? "AI_DIPLOCOMMENT_PEACE" : get.length ? "AI_DIPLOCOMMENT_ACCEPT" : "AI_DIPLOCOMMENT_THANKS") : t.war ? "AI_DIPLOCOMMENT_NO_PEACE" : give.length ? "AI_DIPLOCOMMENT_NO_DEAL" : "AI_DIPLOCOMMENT_REJECT";
+        if (accepted) {
+          // The tables change with the deal (gold spent, peace made): read them again.
+          try {
+            t = await api.query("trade", { with: withPlayer });
+          } catch {
+            /* keep the old tables */
+          }
+          deal.give.clear();
+          deal.get.clear();
+          draw();
+          status.textContent = "They accepted the deal.";
+          status.className = "good";
         } else {
           status.textContent = "They declined.";
           status.className = "warn";
         }
+        status.dataset.answer = accepted ? "accepted" : "declined";
+        const r = await speech(withPlayer, comment);
+        if (!m.closed) leader.say(r?.text);
       },
     },
     { label: "Close", value: null },

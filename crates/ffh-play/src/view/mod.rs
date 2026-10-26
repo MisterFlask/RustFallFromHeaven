@@ -8,6 +8,7 @@
 //! * [`view`] and [`status`] here; [`map`] (map arrays, `plot`), [`units`] (`group` with its
 //!   actions, `path`, `combat`), [`city`] (the city screen), [`player`] (`techs`, `civics`,
 //!   `religions`, `players`), [`diplo`] (`trade` and the deal checks of `propose_deal`),
+//!   [`speech`] (what a leader says: `speech`, the leader moments),
 //!   [`data`] (the static tables, with [`improvement_help`]), [`text`] (`text`, `ascii`,
 //!   `inspect`); [`help`] writes the help texts (what a tech, a building, ... does).
 
@@ -20,6 +21,7 @@ pub mod hotkeys;
 pub mod improvement_help;
 pub mod map;
 pub mod player;
+pub mod speech;
 pub mod text;
 pub mod units;
 
@@ -403,5 +405,7 @@ pub fn view(v: &Viewer, ctx: &Ctx) -> Json {
         // Observed, nothing waits: the AI answers its own players.
         "pending" => if ctx.observe.is_some() { crate::decision::Pending::default() } else { crate::decision::pending(g, v.h, ctx.events) }.to_json(),
         "log_next" => ctx.messages.map(|m| m.total()),
+        // The leader moments (a leader opening the diplomacy screen): the next index (`moments`).
+        "moments_next" => ctx.messages.map(|m| m.moments_total()),
     }
 }

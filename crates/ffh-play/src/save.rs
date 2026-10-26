@@ -37,6 +37,8 @@ pub struct Sidecar {
     pub journal_line: usize,
     /// The human's latest messages.
     pub messages_tail: Vec<LogEntry>,
+    /// The latest leader moments (absent: none). Presentation only.
+    pub moments_tail: Vec<Json>,
     /// The session's AutoMoves rule already fired at this control point (absent: false).
     pub auto_moves_tried: bool,
     /// The turn report's snapshot, taken at the human's end of turn and not yet diffed (a save
@@ -77,6 +79,7 @@ impl Sidecar {
             "journal" => self.journal.as_deref(),
             "journal_line" => self.journal_line,
             "messages_tail" => Json::Arr(self.messages_tail.iter().map(log_entry_json).collect()),
+            "moments_tail" => Json::Arr(self.moments_tail.clone()),
             "auto_moves_tried" => self.auto_moves_tried,
             "report_snapshot" => self.report_snapshot.clone(),
             "report" => self.report.clone(),
@@ -113,6 +116,7 @@ impl Sidecar {
             journal: j.opt("journal").map_err(e)?,
             journal_line: j.req("journal_line").map_err(e)?,
             messages_tail,
+            moments_tail: j.opt_value("moments_tail").map_err(e)?.and_then(Json::as_arr).map(<[Json]>::to_vec).unwrap_or_default(),
             auto_moves_tried: j.get_or("auto_moves_tried", false).map_err(e)?,
             report_snapshot: j.opt_value("report_snapshot").map_err(e)?.filter(|v| !v.is_null()).cloned(),
             report: j.opt_value("report").map_err(e)?.filter(|v| !v.is_null()).cloned(),
@@ -244,6 +248,7 @@ mod tests {
             journal: Some("saves/journal.jsonl".into()),
             journal_line: 12,
             messages_tail: vec![LogEntry { at: Some((4, 5)), ..LogEntry::new(3, Some(0), "hi \"there\"".into()) }],
+            moments_tail: vec![crate::jobj! { "t" => 3, "player" => 1, "comment" => 2, "text" => "Hail" }],
             auto_moves_tried: true,
             report_snapshot: Some(crate::jobj! { "turn" => 3 }),
             report: None,
