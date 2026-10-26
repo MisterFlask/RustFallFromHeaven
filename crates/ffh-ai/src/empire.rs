@@ -252,7 +252,8 @@ fn civics(g: &mut Game, p: PlayerId) {
         return;
     }
     // Re-evaluate at most every 10 turns per player (staggered), as revolutions cost anarchy.
-    if (g.game_turn() + p.0 as i32) % 10 != 0 && !crate::finance::civics_due(g, p) { // bankruptcy-guard
+    let (period, min_gain) = crate::traits::civic_cadence(g, p); // trait-play
+    if (g.game_turn() + p.0 as i32) % period != 0 && !crate::finance::civics_due(g, p) { // bankruptcy-guard
         return;
     }
     let d = g.d;
@@ -278,7 +279,7 @@ fn civics(g: &mut Game, p: PlayerId) {
             }
         }
     }
-    if new != current && gain > 100 && g.player_can_revolution(p, Some(&new)) {
+    if new != current && gain > min_gain && g.player_can_revolution(p, Some(&new)) {
         g.player_revolution(p, &new, false);
     }
 }
@@ -304,7 +305,7 @@ fn religion(g: &mut Game, p: PlayerId) {
             v += 20;
         }
         if current == Some(r) {
-            v += 15; // conversion costs anarchy
+            v += crate::traits::religion_stickiness(g, p); // conversion costs anarchy (trait-play)
         }
         if best.map_or(true, |(_, b)| v > b) {
             best = Some((r, v));

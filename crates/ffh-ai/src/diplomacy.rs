@@ -264,6 +264,8 @@ pub fn manage(g: &mut Game, v: &View) {
     // empire wants a bigger edge (a captured city has to pay for itself in plunder and land).
     let war_rand = leader.map_or(150, |l| l.max_war_rand);
     let need_ratio = (80 + war_rand as i64 / 4).clamp(85, 180) + if broke { 30 } else { 0 };
+    // An Aggressive leader's fighters are a fifth stronger than the power rating says (trait-play).
+    let need_ratio = need_ratio * 100 / (100 + crate::traits::attack_bonus_pct(g, p) as i64);
     let spare_friends = war_rand > 80;
     let ours = g.team_get_power(team, true).max(1) as i64;
     let mut best: Option<(TeamId, i64, bool)> = None;
@@ -534,6 +536,8 @@ pub(crate) fn best_trainable_attack(g: &Game, p: PlayerId) -> Option<(i32, bool)
         best_attack = best_attack.max((info.combat + info.damage_type_combat.iter().sum::<i32>()) * (100 + info.city_attack_modifier.max(0)));
         siege |= info.bombard_rate > 0;
     }
+    // An Aggressive leader's fighters start with Combat I (trait-play).
+    let best_attack = best_attack * (100 + crate::traits::attack_bonus_pct(g, p)) / 100;
     Some((best_attack, siege))
 }
 
@@ -970,7 +974,7 @@ pub fn consider_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeD
 /// C++ `AI_conquerCity`: raze small, distant conquests we could not hold.
 pub fn raze_conquered_city(g: &Game, p: PlayerId, c: CityId) -> bool {
     let city = &g.cities[c];
-    if city.population > 2 || g.player_is_barbarian(p) {
+    if city.population > 2 || g.player_is_barbarian(p) || crate::traits::keeps_conquests(g, p) { // trait-play
         return false;
     }
     let (x, y) = (city.x, city.y);

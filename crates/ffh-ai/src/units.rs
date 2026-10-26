@@ -219,6 +219,9 @@ pub fn play(ai: &Ai, g: &mut Game, v: &mut View) {
             Role::Transport | Role::SeaExplore => hold(g, grp),
             Role::Naval | Role::Other => hold(g, grp),
         }
+        if role == Role::Army && !v.barbarian {
+            crate::traits::after_army(g, v, grp); // trait-play
+        }
     }
     finalize(g, p);
 }
@@ -267,7 +270,7 @@ fn upkeep(g: &mut Game, u: UnitId) {
     }
     if let Some((target, _)) = best {
         // Keep a reserve for a few turns of deficit; defenders first.
-        let reserve = 20 + 3 * g.players[p].cities.len() as i32;
+        let reserve = crate::traits::upgrade_reserve(g, p, 20 + 3 * g.players[p].cities.len() as i32); // trait-play
         let defender = matches!(g.units[u].ai_type, Some(UnitAIType::UNITAI_CITY_DEFENSE) | Some(UnitAIType::UNITAI_CITY_COUNTER));
         let price = g.unit_upgrade_price(u, target);
         if g.players[p].gold - price >= if defender { reserve } else { reserve * 2 } {
@@ -314,6 +317,7 @@ fn best_promotion(g: &Game, u: UnitId) -> Option<PromotionType> {
             continue;
         }
         let v = crate::civs::promotion_value(g, u, promo, promotion_value(g, u, promo)); // civ-mechanics
+        let v = crate::traits::promotion_value(g, u, promo, v); // trait-play
         if best.map_or(true, |(_, b)| v > b) {
             best = Some((promo, v));
         }

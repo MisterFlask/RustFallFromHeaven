@@ -95,7 +95,7 @@ pub struct Plan {
 }
 
 impl Plan {
-    fn op_of(&self, grp: GroupId) -> Option<usize> {
+    pub(crate) fn op_of(&self, grp: GroupId) -> Option<usize> {
         self.ops.iter().position(|o| o.groups.contains(&grp))
     }
 

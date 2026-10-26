@@ -179,6 +179,7 @@ fn build_value(g: &Game, v: &View, p: PlayerId, plot: PlotIdx, build: BuildType)
             }
             let old = pl.improvement_type.map_or(0, |o| g.plot_calculate_improvement_yield_change(plot, o, yt, Some(p), false, false));
             value += (new - old) * weights[y];
+            value += crate::traits::threshold_value(g, p, plot, y, old, new, weights[y]); // trait-play
             new_total += pl.yields[y] - old + new;
         }
         // A plot nobody would work (total yield 2 or less) is not worth improving.

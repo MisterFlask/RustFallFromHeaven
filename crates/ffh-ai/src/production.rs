@@ -477,6 +477,7 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
         return Some(choice);
     }
     if let Some(choice) = crate::civs::production(ai, g, c, ctx.threat) { return Some(choice); } // civ-mechanics
+    if let Some(choice) = crate::traits::production(g, c, ctx.threat) { return Some(choice); } // trait-play
     // An assault fleet (transport + attackers) for an overseas enemy city we can take.
     if safe && crate::naval::is_coastal_city(g, c) {
         if let Some(choice) = crate::naval::assault_production(g, c) {
@@ -1010,7 +1011,8 @@ fn is_economy_building(g: &Game, c: CityId, b: BuildingType, threat: i32) -> boo
 /// What building `b` is worth in city `c`: the generic estimate, then the civilization's own
 /// (civs/, e.g. a unique building whose effect lives in Python).
 pub fn building_value(g: &Game, c: CityId, b: BuildingType, threat: i32) -> i32 {
-    crate::civs::building_value(g, c, b, generic_building_value(g, c, b, threat)) // civ-mechanics
+    let v = crate::civs::building_value(g, c, b, generic_building_value(g, c, b, threat)); // civ-mechanics
+    crate::traits::building_value(g, c, b, v) // trait-play
 }
 
 /// The generic part of [`building_value`].

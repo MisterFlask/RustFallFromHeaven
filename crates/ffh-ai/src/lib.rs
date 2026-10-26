@@ -39,6 +39,7 @@ pub mod research;
 pub mod sites;
 pub mod tech_plan;
 pub mod trade;
+pub mod traits;
 pub mod units;
 pub mod values;
 pub mod victory;
@@ -128,6 +129,7 @@ impl Controller for Ai {
             // War declarations change the picture.
             v = view::View::new(g, p);
             civs::turn(self, g, &mut v); // civ-mechanics
+            traits::turn(g, &v); // trait-play
         }
         units::play(self, g, &mut v);
         casting::end_turn(g, &v);

@@ -99,7 +99,7 @@ pub fn settler_choice(ai: &Ai, g: &Game, c: CityId, p: PlayerId, threat: i32, de
             None => No,
         };
     }
-    let mut max_settlers = ((ctx.n_cities + 1) / 2).max(1).min(area_sites);
+    let mut max_settlers = (((ctx.n_cities + 1) / 2).max(1) + crate::traits::extra_settlers(g, p)).min(area_sites); // trait-play
     // C++ AI_chooseProduction: no settlers while in financial trouble.
     if ctx.broke && crate::economy::spend_pct(g, p) < 20 {
         return No;

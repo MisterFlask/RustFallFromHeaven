@@ -320,6 +320,10 @@ pub fn army(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
     }
 
     merge_here(g, v, grp, here);
+    crate::traits::before_army(g, v, grp); // trait-play
+    if !alive(g, grp) {
+        return;
+    }
 
     // Heal before anything but a sure kill.
     let max_hp = g.d.defines.max_hit_points.max(1);
@@ -391,6 +395,9 @@ pub fn army(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
     if hunt(g, v, grp, u) {
         return;
     }
+
+    // A Raiders leader's spare stack raids the enemy's improvements (traits.rs).
+    if crate::traits::raid(g, v, grp, u) { return; } // trait-play
 
     // Peacetime campaign against a barbarian city (campaign.rs).
     if crate::campaign::act(g, v, grp, u, false) {

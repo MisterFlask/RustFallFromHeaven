@@ -263,24 +263,39 @@ pub fn tech_value(g: &Game, p: PlayerId, t: TechType, value: i32) -> i32 {
 /// `magic.rs` and upgrade by the generic upgrade. The owner's rule: civilizations use their unique
 /// units (CLAUDE.md "AI changes"); the Amurites' round-5 version is in docs/AI_LOG.md.
 pub(crate) fn unique_casters(g: &Game, c: CityId, threat: i32) -> Option<Choice> {
+    let n = g.players[g.cities[c].owner].cities.len() as i32;
+    casters_up_to(g, c, threat, (n + 2) / 2)
+}
+
+/// [`unique_casters`] up to `target` casters (also the Arcane and Summoner leaders' corps,
+/// `traits::production`). The training city is the most productive one, or a city that already
+/// has the building the Adepts need when it makes at least two thirds as many hammers (the most
+/// productive city changes as cities grow, and each change built another Mage Guild).
+pub(crate) fn casters_up_to(g: &Game, c: CityId, threat: i32, target: i32) -> Option<Choice> {
     let d = g.d;
     let p = g.cities[c].owner;
     let pl = &g.players[p];
     if threat > 0 {
         return None;
     }
+    let civ = g.player_get_civilization_type(p)?;
+    let adept = d.civ_unit(civ, d.ty::<UnitClassType>("UNITCLASS_ADEPT")?)?;
+    let needs = crate::production::unit_building(d, civ, &d.units[adept]).and_then(|b| d.buildings[b].building_class_type);
     let prod = |o: CityId| g.city_yield_rate(o, YieldType::YIELD_PRODUCTION);
-    let best = pl.cities.iter().copied().max_by_key(|&o| (prod(o), std::cmp::Reverse(o)))?;
+    let mut best = pl.cities.iter().copied().max_by_key(|&o| (prod(o), std::cmp::Reverse(o)))?;
+    if let Some(bc) = needs {
+        let built = pl.cities.iter().copied().filter(|&o| g.city_is_has_building_class(o, bc)).max_by_key(|&o| (prod(o), std::cmp::Reverse(o)));
+        if let Some(o) = built.filter(|&o| prod(o) * 3 >= prod(best) * 2) {
+            best = o;
+        }
+    }
     if best != c {
         return None;
     }
-    let n = pl.cities.len() as i32;
     let casters = crate::production::count_ai(g, p, UnitAIType::UNITAI_MAGE) + crate::production::count_ai(g, p, UnitAIType::UNITAI_WARWIZARD);
-    if casters >= (n + 2) / 2 {
+    if casters >= target {
         return None;
     }
-    let civ = g.player_get_civilization_type(p)?;
-    let adept = d.civ_unit(civ, d.ty::<UnitClassType>("UNITCLASS_ADEPT")?)?;
     if !g.player_can_train(p, adept, false, false, false) {
         return None;
     }
@@ -290,7 +305,7 @@ pub(crate) fn unique_casters(g: &Game, c: CityId, threat: i32) -> Option<Choice>
         return None;
     }
     if let Some(b) = crate::production::unit_building(d, civ, &d.units[adept]) {
-        let bc = d.buildings[b].building_class_type?;
+        let bc = needs?;
         if !g.city_is_has_building_class(c, bc) {
             if !g.city_can_construct(c, b, false, false, false) {
                 return None;
@@ -300,7 +315,7 @@ pub(crate) fn unique_casters(g: &Game, c: CityId, threat: i32) -> Option<Choice>
         }
     }
     let u = crate::production::best_unit(g, c, crate::production::Role::Mage)?;
-    crate::trace!(g, p, "{}: caster {} ({} of {})", g.cities[c].name, d.units[u].base.type_, casters, (n + 2) / 2);
+    crate::trace!(g, p, "{}: caster {} ({} of {})", g.cities[c].name, d.units[u].base.type_, casters, target);
     Some(Choice::Train(u, UnitAIType::UNITAI_MAGE))
 }
 
