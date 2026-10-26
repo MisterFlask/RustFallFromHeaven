@@ -1,0 +1,623 @@
+/* The isometric map's interface (isoui.js; docs/ISO.md, "The interface"): the client's chrome in
+   the look of the reference screenshot (tools/m7/ref/reference_full.png). The map fills the page;
+   the panels float over it: deep navy with a faint grain, framed by a gilt rule lit from the upper
+   left with nails at the corners (the frames are drawn by isoui.js on the 2 px grid, --hu, as
+   --iso-<frame> border-images), lettered in Herald (isofont.js) at 2x: 20px is 2 CSS px a pixel
+   of the font, and its lines are 24px so every baseline falls on a whole pixel.
+
+   Everything here is under html.iso, which isoui.js sets while the isometric renderer draws the map;
+   without it the page keeps style.css's look. */
+
+html.iso {
+  --hu: 2px;
+  --iso-font: Herald, "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --iso-ink: #fbf2d6;
+  --iso-dim: #b3c0dc;
+  --iso-gold: #f6c650;
+  --iso-gold-lt: #ffe58c;
+  --iso-navy-top: #031a48;
+  --iso-navy-bot: #01123a;
+  --iso-deep: #020c28;
+  --iso-tile-top: #173e8a;
+  --iso-tile-bot: #0a2258;
+  --iso-tile-lit: #2f6bd0;
+  --iso-good: #96e676;
+  --iso-bad: #ff8d6e;
+  --iso-warn: #ffc451;
+  --iso-top-h: 56px;
+  /* The top bar's bottom edge (isoui.js measures it: the bar wraps on narrow screens). */
+  --iso-top: 62px;
+  --iso-top1: 62px;
+  --iso-gap: 10px;
+  --good: var(--iso-good);
+  --warn: var(--iso-bad);
+  --caution: var(--iso-warn);
+  --dim: var(--iso-dim);
+  --fg: var(--iso-ink);
+  --link: var(--iso-gold);
+}
+
+html.iso body {
+  display: block;
+  font: 20px/24px var(--iso-font);
+  color: var(--iso-ink);
+  background: #7fbdeb;
+  -webkit-font-smoothing: none;
+  font-smooth: never;
+}
+html.iso ::selection { background: var(--iso-tile-lit); color: #fff; }
+html.iso * { scrollbar-color: var(--iso-gold) var(--iso-deep); }
+html.iso ::-webkit-scrollbar-track { background: var(--iso-deep); }
+html.iso ::-webkit-scrollbar-thumb { background: #b07a24; border: 2px solid var(--iso-deep); }
+html.iso ::-webkit-scrollbar-thumb:hover { background: var(--iso-gold); }
+
+/* Shown only in the skin (the icons isoui.js gives the static buttons). */
+.iso-only { display: none; }
+html.iso .iso-only { display: inline-block; }
+html.iso .iso-icon, html.iso .iso-sprite { image-rendering: pixelated; flex: none; display: inline-block; vertical-align: middle; }
+html.iso .iso-sprite { background-repeat: no-repeat; image-rendering: auto; }
+html.iso img.iso-icon[width="16"] { vertical-align: -3px; }
+html.iso .inline-icon { vertical-align: -3px; }
+
+/* --- type -------------------------------------------------------------------------------- */
+
+html.iso h2, html.iso h3 { font: 700 20px/24px var(--iso-font); letter-spacing: 0; color: #fff8e4; }
+html.iso h4 { font: 400 20px/24px var(--iso-font); letter-spacing: 0; text-transform: none; color: var(--iso-gold); margin: 8px 0 4px; }
+html.iso b, html.iso strong, html.iso th { font-weight: 700; }
+html.iso .dim { color: var(--iso-dim); }
+html.iso .warn { color: var(--iso-bad); }
+html.iso .good { color: var(--iso-good); }
+html.iso kbd { font: 400 20px/24px var(--iso-font); color: var(--iso-gold); border: 0; padding: 0; margin-left: 8px; }
+html.iso code, html.iso pre, html.iso textarea.raw { font-family: var(--mono); font-size: 13px; line-height: 1.4; }
+html.iso .badge { font: 400 20px/24px var(--iso-font); background: var(--iso-deep); border: 2px solid #8a6420; color: var(--iso-gold); padding: 0 6px; }
+html.iso .badge.reveal { background: #6a1a14; border-color: var(--iso-bad); color: #fff; }
+html.iso .badge.auto { color: var(--iso-good); border-color: var(--iso-good); }
+html.iso .num { color: #fff8e4; font-weight: 400; }
+
+/* --- panels ------------------------------------------------------------------------------ */
+
+html.iso #top > .group,
+html.iso #side,
+html.iso #bottom,
+html.iso #iso-city,
+html.iso .tooltip,
+html.iso .modal {
+  border: var(--iso-panel-w, 10px) solid transparent;
+  border-image: var(--iso-panel);
+  background: var(--iso-grain) 0 0 / var(--iso-grain-size), linear-gradient(180deg, var(--iso-navy-top), var(--iso-navy-bot));
+  background-clip: padding-box;
+  box-shadow: none;
+  image-rendering: auto;
+}
+
+/* The boxes inside a panel (the reference's movement box, the description, the picture). */
+html.iso .iso-plate,
+html.iso .iso-desc,
+html.iso .iso-picture,
+html.iso .iso-portrait,
+html.iso input,
+html.iso select,
+html.iso textarea,
+html.iso pre.report {
+  border: var(--iso-inset-w, 6px) solid transparent;
+  border-image: var(--iso-inset);
+  background: rgba(1, 8, 30, 0.55);
+  background-clip: padding-box;
+}
+html.iso input, html.iso select, html.iso textarea { color: var(--iso-ink); font: 20px/24px var(--iso-font); padding: 2px 6px; }
+html.iso pre.report { color: var(--iso-ink); }
+
+/* A divider: a gilt rule with a stud at each end. */
+html.iso .iso-rule { position: relative; height: 4px; margin: 4px 10px; background: linear-gradient(#f0b443 0 2px, #6a4410 2px 4px); flex: none; }
+html.iso .iso-rule::before, html.iso .iso-rule::after {
+  content: ""; position: absolute; top: -2px; width: 8px; height: 8px;
+  background: #ffe58c; box-shadow: inset -2px -2px 0 #a86d1c, 0 0 0 2px #0c0703;
+}
+html.iso .iso-rule::before { left: -8px; }
+html.iso .iso-rule::after { right: -8px; }
+
+/* --- buttons ----------------------------------------------------------------------------- */
+
+html.iso button {
+  border: var(--iso-tile-w, 8px) solid transparent;
+  border-image: var(--iso-tile);
+  background: linear-gradient(180deg, var(--iso-tile-top), var(--iso-tile-bot));
+  background-clip: padding-box;
+  color: var(--iso-ink);
+  font: 400 20px/24px var(--iso-font);
+  padding: 2px 10px;
+  min-height: 0;
+  border-radius: 0;
+  box-shadow: none;
+  gap: 8px;
+}
+html.iso button:hover:not([disabled]) { border-image: var(--iso-tile-hover); background: linear-gradient(180deg, #2a62c4, #12347e); background-clip: padding-box; color: #fff; }
+html.iso button:active:not([disabled]) { border-image: var(--iso-tile-down); background: linear-gradient(180deg, #0a2258, #13388a); background-clip: padding-box; box-shadow: none; }
+html.iso button[disabled] { border-image: var(--iso-tile-off); background: linear-gradient(180deg, #16244a, #0b1530); background-clip: padding-box; color: #7d88a4; }
+html.iso button[disabled] .iso-icon, html.iso button[disabled] .iso-sprite { filter: grayscale(0.85) brightness(0.65); }
+html.iso button:focus-visible { outline: 2px solid var(--iso-gold-lt); outline-offset: 2px; }
+html.iso button.danger:not([disabled]) { border-image: var(--iso-tile-danger); }
+html.iso button.primary:not([disabled]) { border-image: var(--iso-primary); border-width: var(--iso-primary-w, 10px); }
+/* Bare buttons keep no frame: links, close crosses, the top bar's own stats, the city plots and
+   the techs (they keep their own boxes, below). */
+html.iso button.link, html.iso button.close, html.iso button.stat {
+  border: 0; border-image: none; background: none; padding: 0; color: var(--iso-gold);
+}
+html.iso button.stat { color: inherit; }
+html.iso button.stat:hover:not([disabled]) { border-image: none; background: rgba(120, 170, 255, 0.12); }
+html.iso button.small { font-size: 20px; padding: 0 6px; }
+html.iso button.option.chosen, html.iso button.build.current, html.iso button.civic.chosen, html.iso .trade-item.on {
+  border-image: var(--iso-tile-hover); background: linear-gradient(180deg, var(--iso-tile-lit), #163f96); background-clip: padding-box;
+}
+html.iso button.civic.current { box-shadow: inset 4px 0 0 var(--iso-good); }
+
+/* Icon buttons: the rail, the system buttons, the map's layers and zoom (their text stays for
+   screen readers and as the tooltip, at size 0). */
+html.iso #iso-rail button, html.iso #menu button, html.iso #iso-corner .layers button, html.iso #iso-corner .zoom button {
+  width: 56px; height: 56px; padding: 0; font-size: 0; line-height: 0; flex: none; justify-content: center;
+}
+html.iso #menu button { width: 48px; height: var(--iso-top-h); }
+html.iso #iso-corner .layers button, html.iso #iso-corner .zoom button { width: 48px; height: 48px; }
+html.iso #iso-corner .layers button .iso-icon, html.iso #iso-corner .zoom button .iso-icon { width: 32px; height: 32px; }
+html.iso #iso-corner .layers button.active { border-image: var(--iso-tile-hover); background: linear-gradient(180deg, var(--iso-tile-lit), #163f96); background-clip: padding-box; }
+
+/* --- the top bar --------------------------------------------------------------------------- */
+
+html.iso #top {
+  position: fixed; top: 6px; left: var(--iso-gap); right: var(--iso-gap); z-index: 6;
+  display: flex; flex-wrap: wrap; align-items: stretch; gap: 0; row-gap: 6px;
+  padding: 0; min-height: 0; background: none; border: 0; box-shadow: none; pointer-events: none;
+}
+html.iso #top::after, html.iso #top .break, html.iso #top .sep { display: none; }
+html.iso #top > * { pointer-events: auto; }
+html.iso #top > .group { height: var(--iso-top-h); display: flex; align-items: center; gap: 20px; padding: 0 14px; min-height: 0; white-space: nowrap; }
+html.iso #top > .group:empty { display: none; }
+html.iso #phase { flex: none; max-width: 100%; margin-right: -4px; padding: 0 12px; }
+html.iso #phase .phase-dot, html.iso #phase .turn-crescent { display: none; }
+html.iso #phase .year { order: -1; color: #fff8e4; }
+html.iso #phase .turn { color: #fff8e4; font-weight: 400; gap: 8px; }
+html.iso #phase .turn .dim { color: #fff8e4; }
+html.iso #phase-text { color: var(--iso-dim); overflow: hidden; text-overflow: ellipsis; min-width: 0; max-width: 360px; }
+html.iso body[data-phase="human"] #phase-text { display: none; }
+html.iso #empire { flex: 0 1 auto; flex-wrap: nowrap; gap: 14px; padding: 0 12px; }
+html.iso #empire .stat { gap: 8px; }
+html.iso #empire .stat > span:not(.num) + .num { margin-left: 0; }
+html.iso #empire .stat .dim { color: #fff8e4; }
+html.iso #empire .stat.research { padding: 4px 6px; border: 0; }
+html.iso #empire .slider-item + .slider-item { margin-left: 8px; }
+html.iso #empire .stat.sliders { gap: 0; }
+html.iso #empire .slider-item { gap: 4px; }
+html.iso #menu { flex: none; display: flex; gap: 4px; margin-left: auto; padding-left: 4px; flex-wrap: nowrap; }
+
+/* --- the left rail ------------------------------------------------------------------------- */
+
+html.iso #iso-rail { position: absolute; left: var(--iso-gap); top: calc(var(--iso-top1) + 12px); z-index: 4; display: flex; flex-direction: column; gap: 6px; }
+html.iso #iso-rail button { width: 52px; height: 52px; }
+
+/* --- the turn report (collapsed to its tabs unless opened) --------------------------------- */
+
+html.iso #bottom {
+  position: fixed; z-index: 4; left: calc(var(--iso-gap) + 62px); top: calc(var(--iso-top1) + 12px);
+  width: min(480px, 40vw); height: auto; max-height: 44vh; display: flex; flex-direction: column; padding: 2px 4px;
+}
+html.iso #bottom-tabs { border: 0; padding: 0; gap: 2px; flex-wrap: nowrap; }
+html.iso body.bottom-closed #bottom { width: auto; }
+html.iso #bottom-tabs button { border: 0; border-image: none; background: none; color: var(--iso-dim); padding: 2px 6px; white-space: nowrap; }
+html.iso #bottom-tabs button .iso-icon { margin-right: 4px; }
+html.iso #bottom-tabs button.active { color: #fff8e4; box-shadow: inset 0 -2px 0 var(--iso-gold); }
+html.iso #bottom-tabs button:hover:not([disabled]) { background: none; color: #fff; }
+html.iso #bottom-toggle { margin-left: auto; }
+html.iso #bottom-body { padding: 4px 6px; overflow: auto; }
+html.iso #bottom-body h4 { margin-top: 2px; }
+html.iso body.bottom-closed #bottom { max-height: none; }
+
+/* --- the selection's card ------------------------------------------------------------------ */
+
+html.iso #main { position: fixed; inset: 0; display: block; }
+html.iso #mapwrap { position: absolute; inset: 0; background: linear-gradient(180deg, #5aa7e4, #a9d5f4); min-height: 0; }
+html.iso #side {
+  position: fixed; z-index: 5; left: var(--iso-gap); bottom: var(--iso-gap);
+  width: auto; max-width: calc(100vw - 2 * var(--iso-gap) - 330px); max-height: min(48vh, 360px); overflow: auto; padding: 4px 8px;
+}
+html.iso #side:has(#unit-panel:empty) { display: none; }
+html.iso .iso-card { display: flex; gap: 12px; align-items: flex-start; }
+html.iso .iso-portrait {
+  flex: none; width: 124px; height: 152px; display: flex; align-items: flex-end; justify-content: center; overflow: hidden;
+  background: url(iso/ui_backdrop.png) -130px -96px / 384px 256px no-repeat; background-clip: padding-box; image-rendering: pixelated;
+}
+html.iso .iso-portrait .figure { margin-bottom: 4px; image-rendering: auto; }
+html.iso .iso-card-mid { display: flex; flex-direction: column; gap: 6px; flex: none; width: 262px; }
+html.iso .iso-name { margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html.iso .iso-name .coords { font-weight: 400; }
+html.iso .iso-plate { display: flex; flex-direction: column; gap: 0; padding: 2px 8px; }
+html.iso .iso-statline { display: flex; align-items: center; gap: 8px; min-height: 34px; }
+html.iso .iso-statline .label { flex: 1; }
+html.iso .iso-statline .value { color: #fff8e4; }
+html.iso .iso-card .unit-list { max-height: 120px; }
+html.iso .unit-row { padding: 0 4px; }
+html.iso .unit-row:hover, html.iso .unit-row.selected { background: rgba(60, 110, 220, 0.3); }
+html.iso .unit-row.selected { box-shadow: inset 4px 0 0 var(--iso-gold); }
+html.iso .unit-stats { font-size: 20px; color: var(--iso-dim); gap: 6px; }
+html.iso .iso-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+html.iso .iso-tools:empty { display: none; }
+html.iso .iso-card .row { margin: 0; gap: 6px; }
+html.iso .iso-card .row button { padding: 0 8px; }
+html.iso .iso-card-right { display: flex; flex-direction: column; gap: 8px; flex: 1 1 auto; min-width: 240px; max-width: 560px; }
+html.iso .iso-orders { display: flex; flex-wrap: wrap; gap: 6px 16px; }
+html.iso .iso-tiles { display: flex; flex-wrap: wrap; gap: 6px; }
+html.iso button.action.tile { position: relative; width: 60px; height: 60px; padding: 0; justify-content: center; }
+html.iso button.action.tile kbd { display: none; }
+html.iso .iso-build { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; }
+html.iso .iso-build .badge, html.iso .iso-build .iso-icon.badge { position: absolute; right: -4px; bottom: -4px; border: 0; padding: 0; background: none; }
+/* Every description the card can show, in one cell: the box is the size of the largest from the
+   start, so showing another (an order pointed at) moves nothing (units.js describe). */
+html.iso .iso-desc { display: grid; min-height: 72px; padding: 4px 10px; }
+html.iso .iso-desc-one { grid-area: 1 / 1; visibility: hidden; }
+html.iso .iso-desc-one.shown { visibility: visible; }
+html.iso .iso-desc-title { font-weight: 700; color: #fff8e4; }
+html.iso .iso-desc-title kbd { margin-left: 10px; }
+html.iso .iso-desc-text { color: var(--iso-ink); }
+html.iso .iso-desc .mode-hint { background: none; border: 0; padding: 0; color: var(--iso-gold-lt); margin: 0; }
+html.iso .iso-listed h4 { margin: 0 0 4px; }
+html.iso .iso-listed .actions { gap: 6px; }
+html.iso button.action.listed { padding: 0 8px; }
+html.iso .seals { gap: 4px; margin: 0; }
+html.iso .panel-head { border-bottom: 0; margin: 0 0 4px; }
+html.iso table.kv th { color: var(--iso-dim); font-weight: 400; }
+
+/* Leader portraits in the boxes' inset frame (portraits.js). */
+html.iso img.leader-portrait { border: var(--iso-inset-w, 6px) solid transparent; border-image: var(--iso-inset); background: rgba(1, 8, 30, 0.55); background-clip: padding-box; }
+html.iso img.leader-portrait[data-size="small"] { border-width: 2px; border-image: none; border-color: #8a6420; }
+
+/* --- the city panel ------------------------------------------------------------------------ */
+
+html.iso #iso-city {
+  position: absolute; z-index: 3; right: var(--iso-gap); top: calc(var(--iso-top) + 12px);
+  width: 312px; max-height: calc(100% - var(--iso-top) - 22px - var(--iso-corner-h, 330px)); overflow: auto;
+  padding: 4px 10px 8px; display: flex; flex-direction: column; gap: 6px;
+}
+html.iso #iso-city[hidden] { display: none; }
+html.iso #iso-city > * { flex: none; }
+html.iso .iso-title { margin: 0; text-align: center; display: flex; align-items: center; justify-content: center; gap: 6px; }
+html.iso .iso-picture {
+  height: 116px; display: flex; align-items: flex-end; justify-content: center; overflow: hidden;
+  background: url(iso/ui_backdrop.png) -40px -84px / 384px 256px no-repeat; background-clip: padding-box; image-rendering: pixelated;
+}
+html.iso .iso-picture .iso-figure { image-rendering: auto; margin-bottom: 2px; max-height: calc(100% - 2px); object-fit: contain; object-position: bottom; }
+html.iso .iso-stat { display: flex; align-items: center; gap: 8px; }
+html.iso .iso-stat > .num { min-width: 22px; text-align: center; }
+html.iso .iso-stack { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+html.iso .iso-stack .label { }
+html.iso .iso-stack .sub { color: var(--iso-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 230px; }
+html.iso .iso-yields { display: flex; flex-direction: column; }
+html.iso .iso-yield, html.iso .iso-qrow { display: flex; align-items: center; gap: 8px; min-height: 32px; }
+html.iso .iso-mood { display: flex; gap: 12px; }
+html.iso .iso-mood .iso-yield { flex: 1; }
+html.iso .iso-yield .label, html.iso .iso-qrow .label { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html.iso .iso-yield .value, html.iso .iso-qrow .value { color: #fff8e4; }
+html.iso .iso-queue h4 { margin: 4px 0 2px; color: #fff8e4; }
+html.iso .iso-qicon { width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+html.iso button.iso-open { margin-top: 2px; }
+
+/* --- bars ---------------------------------------------------------------------------------- */
+
+html.iso .iso-bar {
+  position: relative; display: inline-block; height: 20px; flex: none; vertical-align: middle;
+  border: var(--iso-bar-w, 6px) solid transparent; border-image: var(--iso-bar); background: #02060f; background-clip: padding-box;
+}
+html.iso .iso-bar .fill, html.iso .iso-bar .next { position: absolute; left: 0; top: 0; bottom: 0; }
+html.iso .iso-bar .fill { background: linear-gradient(180deg, #7fd2ff 0 2px, #2c9cf2 2px 6px, #1468c8 6px); }
+html.iso .iso-bar .next { background: repeating-linear-gradient(90deg, rgba(60, 150, 240, 0.5) 0 2px, transparent 2px 4px); }
+html.iso .iso-bar.food .fill { background: linear-gradient(180deg, #c8f08a 0 2px, #6fc23e 2px 6px, #3f8a22 6px); }
+html.iso .iso-bar.hp .fill { background: linear-gradient(180deg, #c8f08a 0 2px, #58c040 2px 6px, #2f8a2a 6px); }
+html.iso .iso-bar.low .fill, html.iso .iso-bar.hp_low .fill { background: linear-gradient(180deg, #ffb09a 0 2px, #e2533a 2px 6px, #a82a1c 6px); }
+html.iso .iso-bar.production .fill { background: linear-gradient(180deg, #ffd79a 0 2px, #e8922e 2px 6px, #a85c14 6px); }
+
+/* --- the minimap, the layers, zoom and End turn (bottom right) ------------------------------ */
+
+html.iso #iso-corner {
+  position: absolute; z-index: 5; right: var(--iso-gap); bottom: var(--iso-gap); width: 312px;
+  display: grid; grid-template-columns: auto auto; grid-template-areas: "end end" "layers zoom" "mini mini"; gap: 8px; align-items: center;
+}
+html.iso #iso-corner #end-turn { grid-area: end; height: 60px; width: 100%; font-size: 20px; letter-spacing: 0; gap: 10px; }
+html.iso #iso-corner #end-turn:not([disabled]) { background: linear-gradient(180deg, #2a62c4, #0f2f78); background-clip: padding-box; }
+html.iso #iso-corner #end-turn.end-turn-message:not([disabled]) { background: linear-gradient(180deg, #3c86ea, #1a49b0); background-clip: padding-box; color: #fff; animation: iso-glow 1.6s ease-in-out infinite; }
+@keyframes iso-glow { 50% { filter: brightness(1.18); } }
+html.iso #iso-corner .layers { grid-area: layers; position: static; display: flex; gap: 4px; }
+html.iso #iso-corner .zoom { grid-area: zoom; position: static; display: flex; flex-direction: row; gap: 4px; justify-self: end; }
+html.iso #iso-corner canvas.minimap {
+  grid-area: mini; position: static; width: 312px; height: 196px; box-sizing: border-box;
+  border: var(--iso-panel-w, 10px) solid transparent; border-image: var(--iso-panel); background: #06122e; background-clip: padding-box; box-shadow: none;
+}
+
+/* --- the map's tooltip, toasts, dialogs ----------------------------------------------------- */
+
+html.iso .tooltip { padding: 4px 10px; font-size: 20px; line-height: 24px; color: var(--iso-ink); max-width: 440px; }
+/* The map's tooltip covers the whole window's map: above the panels laid over it (the unit card,
+   the corner), which would hide its lower lines; below the dialogs. */
+html.iso #mapwrap .tooltip { z-index: 8; }
+html.iso .tip-title { color: #fff8e4; }
+html.iso .tip-city { color: var(--iso-gold); }
+/* A unique improvement's block (what it does), between gilt rules; Herald stays at 20px (its
+   grid's 2x: other sizes blur it). */
+html.iso .tip-unique {
+  margin: 4px 0; padding: 8px 0 6px; border: 0;
+  background: linear-gradient(#f0b443 0 2px, #6a4410 2px 4px) no-repeat top / 100% 4px, linear-gradient(#f0b443 0 2px, #6a4410 2px 4px) no-repeat bottom / 100% 4px;
+}
+html.iso .tip-unique-name { color: var(--iso-gold); }
+html.iso .tip-effects { font-size: 20px; line-height: 24px; color: var(--iso-ink); }
+html.iso .richtip { max-width: 520px; }
+html.iso .ng-about { font-size: 20px; line-height: 24px; max-height: 440px; }
+html.iso .tip-strategy, html.iso .tip-hint, html.iso .tip-parts { font-size: 20px; line-height: 24px; font-style: normal; }
+html.iso .tip-requires { color: #ff8a70; }
+html.iso .tip-combat { border-top: 0; background: linear-gradient(#f0b443 0 2px, #6a4410 2px 4px) no-repeat top / 100% 4px; padding-top: 8px; }
+html.iso .tip-combat .odds { font-size: 20px; }
+html.iso .tip-combat .mods { font-size: 20px; color: var(--iso-dim); }
+html.iso .tip-yields { gap: 12px; }
+
+html.iso #toasts { top: calc(var(--iso-top) + 12px); bottom: auto; right: 50%; transform: translateX(50%); align-items: center; }
+html.iso .toast {
+  border: var(--iso-inset-w, 6px) solid transparent; border-image: var(--iso-inset);
+  background: linear-gradient(180deg, var(--iso-navy-top), var(--iso-navy-bot)); background-clip: padding-box; box-shadow: none; padding: 4px 10px;
+}
+html.iso .toast.error { color: #fff; background: linear-gradient(180deg, #7a2016, #4a0e0a); background-clip: padding-box; }
+
+html.iso #modals .backdrop { background: rgba(2, 10, 34, 0.6); }
+@keyframes iso-backdrop-in { from { background-color: rgba(2, 10, 34, 0); } }
+html.iso #modals .backdrop { animation-name: iso-backdrop-in; }
+html.iso .modal { width: min(620px, 100%); color: var(--iso-ink); }
+html.iso .modal.wide { width: min(980px, 100%); }
+html.iso .modal.city-screen { width: min(1240px, 100%); }
+html.iso .modal-head {
+  position: relative; justify-content: center; padding: 4px 44px 10px; margin: 0;
+  border: 0; border-image: none; background: linear-gradient(#f0b443 0 2px, #6a4410 2px 4px) no-repeat bottom / calc(100% - 28px) 4px;
+}
+html.iso .modal-head h2 { text-align: center; }
+html.iso .modal-head .close { position: absolute; right: 6px; top: 2px; color: var(--iso-gold); font: 700 20px/24px var(--iso-font); }
+html.iso .modal-head .close:hover { color: #fff; background: none; }
+html.iso .modal-body { padding: 8px 14px; }
+html.iso .modal-buttons { border-top: 0; background: none; padding: 8px 14px 6px; }
+html.iso .page-text { font-size: 20px; line-height: 24px; }
+html.iso table.scores th, html.iso table.scores td { border-bottom: 2px solid rgba(240, 180, 67, 0.25); }
+html.iso tr.clickable:hover td, html.iso .unit-row:hover { background: rgba(60, 110, 220, 0.3); }
+html.iso .chip { border: 2px solid #8a6420; background: var(--iso-deep); font-size: 20px; }
+html.iso .mode-hint { background: rgba(60, 40, 130, 0.5); border: 2px solid #a276da; color: #fff; }
+html.iso label.field > span { font-size: 20px; color: var(--iso-dim); }
+html.iso .tree-scroll { background: #020a20; border: 2px solid #8a6420; }
+/* The techs keep their measured boxes: Herald at 1x, the grid's smallest size. */
+html.iso button.tech { border-width: 2px; border-style: solid; border-image: none; border-color: #8a6420; background: #0c2058; font: 400 10px/12px var(--iso-font); }
+html.iso button.tech .tech-sub { font-size: 10px; }
+html.iso button.tech.has { background: #24461c; border-color: var(--iso-good); }
+html.iso button.tech.researching { background: #1f4ea6; border-color: var(--iso-gold-lt); }
+html.iso button.tech.can { border-color: var(--iso-gold); }
+html.iso .cplot { border: 2px solid #3a4a74; background: #0c1c48; border-image: none; font-size: 20px; }
+html.iso .cplot.worked { background: #2c5a1c; border-color: var(--iso-good); }
+html.iso .cplot.centre { background: #5a3a14; border-color: var(--iso-gold); }
+html.iso .cplot:hover:not([disabled]) { border-image: none; }
+
+/* --- narrow screens ------------------------------------------------------------------------ */
+
+@media (max-height: 880px) {
+  html.iso #iso-rail button { width: 44px; height: 44px; }
+  html.iso #iso-rail button .iso-icon { width: 24px; height: 24px; }
+  html.iso #iso-rail { gap: 4px; }
+  html.iso #bottom { left: calc(var(--iso-gap) + 54px); }
+  html.iso .iso-picture { height: 72px; }
+}
+/* A laptop's height leaves the city panel little room above the minimap: its yields go three to a
+   row by their icons (each names itself as its tooltip) and its picture shrinks (above), so they
+   show without scrolling. */
+@media (max-height: 1000px) {
+  html.iso #iso-city { gap: 4px; }
+  html.iso #iso-city .iso-rule { margin: 2px 10px; }
+  html.iso .iso-yields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 6px; }
+  html.iso .iso-yields .label { display: none; }
+  html.iso .iso-yields .iso-mood { display: contents; }
+}
+/* Shorter still (a 1280 x 800 window, whose top bar takes two rows): the numbers before the picture. */
+@media (max-height: 860px) {
+  html.iso #iso-city { gap: 3px; }
+  html.iso #iso-city .iso-picture { display: none; }
+  html.iso #iso-city .iso-rule { margin: 0 10px; }
+}
+@media (max-width: 900px) {
+  html.iso #iso-city { display: none; }
+  html.iso #side { max-width: calc(100vw - 2 * var(--iso-gap)); bottom: calc(var(--iso-gap) + 280px); }
+  html.iso #menu button { width: 44px; height: 44px; }
+  html.iso #menu button .iso-icon { width: 24px; height: 24px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html.iso #iso-corner #end-turn.end-turn-message:not([disabled]) { animation: none; }
+}
+html.iso .iso-mood .label { display: none; }
+
+/* --- screens sized for 14 px text, at the skin's 20 px ------------------------------------- */
+
+html.iso table.kv th { white-space: normal; width: 38%; }
+html.iso table.kv td { word-break: normal; overflow-wrap: anywhere; }
+html.iso .cgrid { max-width: 560px; }
+html.iso .cplot { font: 400 20px/22px var(--iso-font); }
+html.iso .cplot .yields { flex-direction: column; align-items: flex-start; gap: 0; }
+html.iso .cplot .ccity { position: absolute; top: 0; left: 4px; }
+html.iso .city-cols { grid-template-columns: minmax(0, 560px) minmax(0, 1fr); }
+html.iso button.civic { display: flex; flex-direction: column; align-items: flex-start; gap: 0; text-align: left; }
+html.iso button.civic > :not(:first-child) { color: var(--iso-dim); font-weight: 400; }
+html.iso .civics { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+html.iso .modal[data-tag="keys"] { width: min(900px, 100%); }
+html.iso button.build { display: grid; grid-template-columns: auto 1fr; column-gap: 8px; align-items: center; justify-items: start; text-align: left; }
+html.iso button.build > .build-icon { grid-row: span 2; }
+html.iso button.build > span:not(.build-icon):not(.dim) { grid-column: 2; }
+html.iso button.build > .dim { grid-column: 2; }
+html.iso button.build > .dim { font-weight: 400; }
+/* What a tech unlocks (empire.js `unlockRow`): its units', builds' and buildings' icons. */
+html.iso button.build > .unlocks { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 2px; }
+html.iso .unlock { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; background: rgba(1, 8, 30, 0.55); }
+html.iso .unlock .iso-build { width: 32px; height: 32px; }
+html.iso .unlock.more { width: auto; min-width: 32px; padding: 0 4px; color: var(--iso-dim); }
+html.iso .h1 { font-size: 20px; }
+html.iso .ccity { font-size: 20px; }
+
+/* --- the city screen over the map (Civ4's: city.js `overlay`, map.js `cityOverlay`) --------- */
+/* The dialog lets the map through: its title, summary and buttons are plaques at the top and
+   bottom centre, its two columns panels at the sides (map.js CITY_FRAME keeps the city framed in
+   the room between them); the plots are worked on the map. The rest of the interface steps aside. */
+
+html.iso #modals .backdrop:has(> .modal.city-overlay) { background: none; pointer-events: none; animation: none; padding: 0; display: block; }
+html.iso .modal.city-overlay {
+  position: fixed; inset: 0; width: auto; max-width: none; max-height: none; display: block;
+  border: 0; border-image: none; background: none; pointer-events: none; animation: none;
+}
+html.iso .modal.city-overlay .modal-head,
+html.iso .modal.city-overlay .city-summary,
+html.iso .modal.city-overlay .city-col,
+html.iso .modal.city-overlay .modal-buttons {
+  position: fixed; pointer-events: auto; z-index: 1;
+  border: var(--iso-panel-w, 10px) solid transparent; border-image: var(--iso-panel);
+  background: var(--iso-grain) 0 0 / var(--iso-grain-size), linear-gradient(180deg, var(--iso-navy-top), var(--iso-navy-bot));
+  background-clip: padding-box;
+}
+html.iso .modal.city-overlay .modal-head { top: calc(var(--iso-top1) + 10px); left: 50%; transform: translateX(-50%); min-width: 340px; padding: 4px 44px; margin: 0; }
+html.iso .modal.city-overlay .modal-body { display: contents; }
+html.iso .modal.city-overlay .city-summary {
+  top: calc(var(--iso-top1) + 70px); left: 50%; transform: translateX(-50%); white-space: nowrap; padding: 2px 12px; margin: 0;
+  display: flex; align-items: center; gap: 6px;
+}
+html.iso .modal.city-overlay .city-cols { display: contents; }
+html.iso .modal.city-overlay .city-col { top: calc(var(--iso-top1) + 10px); bottom: var(--iso-gap); width: 360px; overflow: auto; padding: 4px 12px 8px; gap: 6px; }
+html.iso .modal.city-overlay .city-col:first-child { left: var(--iso-gap); }
+html.iso .modal.city-overlay .city-col:last-child { right: var(--iso-gap); top: calc(var(--iso-top) + 10px); }
+html.iso .modal.city-overlay .modal-buttons { bottom: var(--iso-gap); left: 50%; transform: translateX(-50%); padding: 4px 10px; white-space: nowrap; flex-wrap: nowrap; }
+html.iso .modal.city-overlay .city-hint { margin: 2px 0 4px; }
+html.iso body:has(.modal.city-overlay) :is(#side, #iso-city, #iso-rail, #bottom, #iso-corner) { display: none; }
+
+/* Titles in the bold, rows and values in the regular weight (the reference's). */
+html.iso .iso-title, html.iso .iso-name, html.iso .iso-desc-title, html.iso .modal-head h2, html.iso #iso-corner #end-turn { font-weight: 700; }
+html.iso .iso-name .coords { font-weight: 400; }
+
+/* --- phones (dom.js `compactScreen`: up to 760 px wide, or up to 520 px high) -------------- */
+/* The map takes the screen; the interface keeps to its edges. The top bar is one row: the menu
+   button (the advisors and the system buttons drop down from it as a labelled sheet: isoui.js
+   puts the advisors there instead of on a rail), the turn and the empire's numbers, which scroll
+   sideways. The turn report folds to its open tab under the bar at the left, the minimap is small
+   at the right. The bottom bar holds the layers (and zoom with a mouse: fingers pinch) and End
+   turn; the selection's card sits on it, its orders as labelled buttons on a touch screen
+   (units.js). The city screen is the whole-screen dialog (city.js), not panels around the city. */
+@media (max-width: 760px), (max-height: 520px) {
+  html.iso { --iso-gap: 4px; --iso-top-h: 48px; --iso-bar-h: 56px; }
+  html.iso #top { top: 4px; left: 4px; right: 4px; flex-wrap: nowrap; gap: 4px; }
+  html.iso #btn-menu { display: inline-flex; flex: none; width: 48px; height: var(--iso-top-h); padding: 0; font: 400 24px/24px var(--iso-font); justify-content: center; }
+  html.iso #phase { flex: none; padding: 0 8px; margin-right: 0; }
+  html.iso #phase .year { display: none; }
+  html.iso #phase-text { max-width: 30vw; }
+  html.iso #empire { flex: 1 1 auto; min-width: 0; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; gap: 12px; padding: 0 8px; }
+  html.iso #empire::-webkit-scrollbar { display: none; }
+  /* Where the numbers run under the frame they fade out, rather than end in half an icon. */
+  html.iso #empire::after {
+    content: ""; position: sticky; right: -8px; flex: none; align-self: stretch; width: 28px; margin-left: -28px;
+    background: linear-gradient(90deg, rgba(1, 18, 58, 0), var(--iso-navy-bot) 85%); pointer-events: none;
+  }
+  html.iso #menu { display: none; }
+  html.iso body.menu-open #menu {
+    display: grid; position: fixed; z-index: 7; top: calc(var(--iso-top) + 4px); left: 4px; right: 4px; margin: 0;
+    grid-template-columns: repeat(auto-fill, minmax(156px, 1fr)); gap: 6px; padding: 8px;
+    max-height: calc(100vh - var(--iso-top) - 12px); max-height: calc(100dvh - var(--iso-top) - 12px); overflow: auto;
+    border: var(--iso-panel-w, 10px) solid transparent; border-image: var(--iso-panel);
+    background: var(--iso-grain) 0 0 / var(--iso-grain-size), linear-gradient(180deg, var(--iso-navy-top), var(--iso-navy-bot)); background-clip: padding-box;
+  }
+  /* In the sheet the buttons say what they are (a finger cannot hover for the tooltip). */
+  html.iso body.menu-open #menu button { width: auto; height: 48px; padding: 0 10px; font-size: 20px; line-height: 24px; justify-content: flex-start; gap: 8px; }
+  html.iso body.menu-open #menu button .iso-icon { width: 32px; height: 32px; }
+  html.iso body.menu-open #btn-keys::after { content: "Controls"; }
+  html.iso body.menu-open #btn-raw::after { content: "Raw request"; }
+  /* Their glyphs ("?", "⌘") give way to those names beside the icons; a long name wraps under itself
+     inside a taller button. */
+  html.iso body.menu-open #menu button { height: auto; min-height: 48px; padding: 2px 6px; line-height: 20px; text-align: left; }
+  html.iso body.menu-open #menu :is(#btn-keys, #btn-raw) { font-size: 0; }
+  html.iso body.menu-open #menu :is(#btn-keys, #btn-raw)::after { font-size: 20px; margin-left: -8px; }
+  html.iso #iso-rail, html.iso #iso-city { display: none; }
+
+  html.iso #bottom { left: 4px; top: calc(var(--iso-top) + 4px); width: auto; max-width: calc(100vw - 8px); }
+  html.iso body:not(.bottom-closed) #bottom { right: 4px; max-height: 50vh; max-height: 50dvh; }
+  html.iso body.bottom-closed #bottom-tabs button[data-tab]:not(.active) { display: none; }
+
+  html.iso #iso-corner {
+    position: fixed; left: 4px; right: 4px; bottom: 4px; width: auto; height: var(--iso-bar-h);
+    display: flex; align-items: center; gap: 4px; pointer-events: none;
+  }
+  html.iso #iso-corner > * { pointer-events: auto; }
+  html.iso #iso-corner .layers button, html.iso #iso-corner .zoom button { width: 44px; height: 44px; }
+  /* With things open ("End turn (1 open)") the label takes two lines rather than run off the screen. */
+  html.iso #iso-corner #end-turn { margin-left: auto; width: auto; height: var(--iso-bar-h); padding: 0 14px; flex: 0 1 auto; min-width: 0; white-space: normal; line-height: 20px; }
+  html.iso #iso-corner canvas.minimap { position: fixed; top: calc(var(--iso-top) + 4px); right: 4px; width: 136px; height: 92px; border-width: 6px; }
+
+  html.iso #side {
+    left: 4px; right: 4px; bottom: calc(var(--iso-bar-h) + 8px); width: auto; max-width: none;
+    max-height: 40vh; max-height: 40dvh; padding: 2px 6px;
+  }
+  html.iso body.side-folded #side { max-height: 64px; overflow: hidden; }
+  html.iso #side-toggle { width: 40px; height: 40px; padding: 0; }
+  html.iso .iso-portrait { display: none; }
+  html.iso .iso-card { flex-wrap: wrap; gap: 4px 12px; }
+  html.iso .iso-card-mid { flex: 1 1 100%; width: auto; min-width: 0; gap: 4px; }
+  html.iso .iso-card-right { flex: 1 1 100%; min-width: 0; max-width: none; gap: 6px; }
+  html.iso .iso-name { display: flex; align-items: center; gap: 6px; }
+  html.iso .iso-name .deselect { margin-left: auto; }
+  /* The numbers on one line, by their icons. */
+  html.iso .iso-plate { flex-direction: row; flex-wrap: wrap; gap: 0 14px; padding: 0 6px; }
+  html.iso .iso-statline { min-height: 32px; gap: 4px; }
+  html.iso .iso-statline .label { display: none; }
+  html.iso .iso-statline .iso-icon { width: 24px; height: 24px; }
+  html.iso .iso-desc { min-height: 0; }
+  html.iso .iso-listed .actions { gap: 4px; }
+
+  html.iso .tooltip { max-width: min(440px, calc(100vw - 12px)); }
+  html.iso #toasts { left: 8px; right: 8px; transform: none; }
+  /* Watching the AI (tools.js): the spectator bar is too wide for the top bar; it gets its own row
+     above the bottom bar, without its labels, and the selection's card moves up over it. */
+  html.iso body.spectating #phase .spectate {
+    position: fixed; z-index: 5; left: 4px; right: 4px; bottom: calc(var(--iso-bar-h) + 8px); height: 48px;
+    margin: 0; padding: 0 4px; gap: 4px; justify-content: space-between; overflow-x: auto; scrollbar-width: none;
+    border: 6px solid transparent; border-image: var(--iso-panel);
+    background: var(--iso-grain) 0 0 / var(--iso-grain-size), linear-gradient(180deg, var(--iso-navy-top), var(--iso-navy-bot)); background-clip: padding-box;
+  }
+  html.iso body.spectating #phase .spectate .sp-label, html.iso body.spectating #spectate-running { display: none; }
+  html.iso body.spectating #phase .spectate select { max-width: 7.5em; }
+  html.iso body.spectating #side { bottom: calc(var(--iso-bar-h) + 8px + 56px); max-height: 34vh; max-height: 34dvh; }
+  html.iso .city-cols { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* A phone on its side: the card is a column at the right, above End turn; the minimap goes to the
+   bottom left, above the layers. */
+@media (max-height: 520px) and (min-width: 761px) {
+  html.iso #side { left: auto; right: 4px; top: calc(var(--iso-top) + 4px); bottom: calc(var(--iso-bar-h) + 8px); width: 340px; max-height: none; }
+  html.iso #iso-corner canvas.minimap { top: auto; bottom: calc(var(--iso-bar-h) + 8px); left: 4px; right: auto; width: 128px; height: 84px; }
+}
+
+/* Fingers pinch to zoom: the zoom buttons give their room to End turn. */
+@media (pointer: coarse) and (max-width: 760px), (pointer: coarse) and (max-height: 520px) {
+  html.iso #iso-corner .zoom { display: none; }
+}
+@media (max-width: 760px), (max-height: 520px) {
+  /* The orders first (labelled on a touch screen), then the state and the stack's buttons. */
+  html.iso .iso-card-right > .iso-listed { order: -1; }
+}
+@media (max-width: 760px), (max-height: 520px) {
+  /* Labelled orders two by two; a long label wraps inside its button. */
+  html.iso .iso-listed .actions { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 4px; }
+  html.iso button.action.listed { justify-content: flex-start; text-align: left; white-space: normal; line-height: 20px; padding: 2px 6px; gap: 6px; min-height: 44px; }
+  html.iso button.action.listed > .iso-icon, html.iso button.action.listed > .iso-build { width: 28px; height: 28px; flex: none; }
+  html.iso button.action.listed > .iso-build .iso-sprite { max-width: 28px; max-height: 28px; }
+}
+@media (max-width: 760px) {
+  /* The fold button in the card's top right corner (floated, it would narrow the card). */
+  html.iso #side-toggle { position: absolute; top: 4px; right: 4px; float: none; margin: 0; }
+  html.iso .iso-name { padding-right: 46px; }
+}
+@media (max-width: 760px), (max-height: 520px) {
+  /* The open report's tabs wrap rather than push the fold button off the screen. */
+  html.iso #bottom-tabs { flex-wrap: wrap; }
+}
+@media (max-width: 760px), (max-height: 520px) {
+  /* A radius-3 city's 7x7 plots across a phone: the lettering at 1x (the grid's smallest size). */
+  html.iso .cplot { font: 400 10px/12px var(--iso-font); }
+}

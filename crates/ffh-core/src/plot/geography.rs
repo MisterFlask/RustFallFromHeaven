@@ -248,9 +248,16 @@ impl Game {
             self.map.areas[area].num_improvements[improvement] += change;
         }
 
+        // Every unit count below iterates this plot's units: with none (most plots, the whole map
+        // during map generation) they are all 0 and the updates add nothing, so skip them.
+        let has_units = !self.map.plots[p].units.is_empty();
         for i in self.player_ids() {
             if self.player_get_starting_plot(i) == Some(p) {
                 self.map.areas[area].num_starting_plots += change;
+            }
+
+            if !has_units {
+                continue;
             }
 
             let unit_power = self.plot_get_unit_power(p, Some(i));

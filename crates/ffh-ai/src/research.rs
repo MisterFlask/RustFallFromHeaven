@@ -256,6 +256,8 @@ pub fn choose(g: &Game, p: PlayerId) -> Option<TechType> {
     let goal_techs = crate::victory::goal_techs(g, p, &crate::victory::plan_ours(g, p));
     let mut best: Option<TechType> = None;
     let mut best_score = i64::MIN;
+    // Telemetry: every candidate's score, for the runner-ups.
+    let mut scored: Vec<(TechType, i64, bool)> = Vec::new();
     for t in g.d.techs.keys() {
         if g.team_is_has_tech(team, Some(t)) || !g.player_can_research(p, t, false) {
             continue;
@@ -284,6 +286,9 @@ pub fn choose(g: &Game, p: PlayerId) -> Option<TechType> {
             turns = turns.min(GOAL_TECH_TURNS);
         }
         let score = value * 1000 / (turns + 4);
+        if g.telemetry.on() {
+            scored.push((t, score, goal_techs.contains(&t)));
+        }
         if trace_tech {
             crate::trace!(g, p, "  tech {} value {} turns {} score {}", g.d.techs[t].base.type_, value, turns, score);
         }
@@ -294,6 +299,12 @@ pub fn choose(g: &Game, p: PlayerId) -> Option<TechType> {
     }
     if let Some(t) = best {
         crate::trace!(g, p, "research {} (score {})", g.d.techs[t].base.type_, best_score);
+        if g.telemetry.on() {
+            let goal = scored.iter().any(|&(s, _, goal)| s == t && goal);
+            scored.sort_by_key(|&(s, score, _)| (std::cmp::Reverse(score), s));
+            let alts = || ffh_core::telemetry::tel_alts(scored.iter().take(4).map(|&(s, score, _)| (g.d.techs[s].base.type_.as_str(), score)));
+            g.tel_decision(p, "research", &g.d.techs[t].base.type_, if goal { "victory_goal" } else { "value" }, best_score, alts);
+        }
     }
     best
 }
@@ -495,12 +506,21 @@ fn goal_bonus(g: &Game, p: PlayerId, ctx: &Ctx, trace: bool) -> Vec<(TechType, i
     out
 }
 
-/// Improvements unlocked by `t`: value of building them on our land.
+/// Improvements unlocked by `t`: value of building them on our land. Mana nodes are valued by the
+/// node types our raw mana would become (`mana::tech_value`, `MANA_NODES`); without it, as any
+/// improvement that connects a resource.
 fn builds_value(g: &Game, p: PlayerId, t: TechType, ctx: &Ctx) -> i32 {
     let d = g.d;
     let mut total = 0;
+    let nodes = crate::switches::MANA_NODES.on(g, p);
+    if nodes {
+        total += crate::mana::tech_value(g, p, t);
+    }
     for (b, binfo) in d.builds.iter_enumerated() {
         if binfo.tech_prereq != Some(t) {
+            continue;
+        }
+        if nodes && binfo.improvement.is_some_and(|i| d.improvements[i].bonus_convert.is_some()) {
             continue;
         }
         let _ = b;

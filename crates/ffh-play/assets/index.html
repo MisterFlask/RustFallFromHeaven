@@ -3,9 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ffh-play</title>
-<link rel="icon" href="data:,">
+<title>Fall from Heaven</title>
+<meta name="description" content="Fall from Heaven 2, the turn-based fantasy strategy game, ported to Rust: play in the browser.">
+<meta name="theme-color" content="#14223e">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27 shape-rendering=%27crispEdges%27%3E%3Crect width=%2716%27 height=%2716%27 fill=%27%2314223e%27/%3E%3Cpath fill=%27%23ffe78c%27 d=%27M9 1h2v1H9zM8 2h1v1H8zM6 3h2v1H6zM5 4h2v2H5zM4 6h3v4H4zM5 10h2v1H5zM5 11h1v1H5z%27/%3E%3Cpath fill=%27%23ffb63b%27 d=%27M7 10h1v1H7zM6 11h3v1H6zM6 12h4v1H6zM8 13h1v1H8z%27/%3E%3Cpath fill=%27%23ef6b1b%27 d=%27M9 13h3v1H9zM13 13h1v1h-1z%27/%3E%3C/svg%3E">
 <link rel="stylesheet" href="app/style.css">
+<link rel="stylesheet" href="app/iso.css">
 <script type="module" src="app/main.js"></script>
 </head>
 <body>
@@ -13,6 +16,7 @@
      server (`ffh-play serve`): /api/status (long-poll), /api/view, /api/map (tile deltas),
      /api/data and the POST /api envelope. -->
 <header id="top">
+  <button id="btn-menu" title="The screens, files and tools" aria-label="Menu" aria-expanded="false" aria-controls="menu">☰</button>
   <div id="phase" class="group" aria-live="polite">connecting…</div>
   <div id="empire" class="group"></div>
   <div class="break" aria-hidden="true"></div>
@@ -29,6 +33,7 @@
     <button id="btn-new" title="Start a new game">New</button>
     <button id="btn-keys" title="Keys [?]">?</button>
     <button id="btn-raw" title="Send a raw protocol request (testing)">⌘</button>
+    <button id="btn-title" title="The title screen (the game stays where it is)">Main menu</button>
   </nav>
   <button id="end-turn" class="primary" title="End the turn [Enter when no unit waits]; Shift: without the checks" disabled>End turn</button>
 </header>
@@ -48,6 +53,7 @@
     <div class="tooltip" hidden></div>
   </div>
   <aside id="side">
+    <button id="side-toggle" title="Fold or unfold this panel" aria-label="Fold the panel" aria-expanded="true">▾</button>
     <section id="unit-panel" aria-label="Selection"></section>
   </aside>
 </main>
@@ -55,11 +61,13 @@
   <div id="bottom-tabs" role="tablist">
     <button data-tab="report" class="active">Turn report</button>
     <button data-tab="messages">Messages</button>
+    <button data-tab="flags" title="Flags: play that looked wrong while you watched the AI, ready for a bug report">Flags</button>
     <button data-tab="game">Game files</button>
     <button id="bottom-toggle" title="Show or hide this panel" aria-label="Toggle the panel">▾</button>
   </div>
   <div id="bottom-body"></div>
 </footer>
+<div id="title-screen" hidden></div>
 <div id="modals"></div>
 <div id="toasts" aria-live="polite"></div>
 </body>

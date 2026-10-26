@@ -1046,6 +1046,10 @@ impl Game {
                     self.set_vote_outcome(&data, if passed { PlayerVote::PLAYER_VOTE_YES } else { PlayerVote::PLAYER_VOTE_NO });
                 }
 
+                if self.telemetry.on() {
+                    self.tel_vote_result(vote_source, &data.vote_option, passed);
+                }
+
                 // C++: result popup to the human voting members and, when passed,
                 // TXT_KEY_VOTE_RESULTS to the humans concerned (UI). Logged once.
                 let turn = self.game_turn();

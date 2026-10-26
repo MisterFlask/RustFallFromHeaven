@@ -9,6 +9,17 @@ pub struct LogEntry {
     pub turn: i32,
     pub player: Option<u8>,
     pub text: String,
+    /// The plot `(x, y)` the message is about (combat, a city captured or razed), for a UI that
+    /// shows it on the map; `None` for the others. Presentation only: not saved (a saved log
+    /// reads back without it), and nothing in the rules reads it.
+    pub at: Option<(i32, i32)>,
+}
+
+impl LogEntry {
+    /// An entry with no plot.
+    pub fn new(turn: i32, player: Option<u8>, text: String) -> LogEntry {
+        LogEntry { turn, player, text, at: None }
+    }
 }
 
 #[derive(Clone, Debug, Default)]
@@ -27,6 +38,17 @@ impl GameLog {
         if self.cap > 0 && self.entries.len() >= self.cap {
             self.entries.remove(0);
         }
-        self.entries.push(LogEntry { turn, player: player.map(|p| p.0), text: f() });
+        self.entries.push(LogEntry { turn, player: player.map(|p| p.0), text: f(), at: None });
+    }
+
+    /// [`GameLog::msg`] about plot `at` (`(x, y)`).
+    pub fn msg_at(&mut self, turn: i32, player: Option<crate::ids::PlayerId>, at: (i32, i32), f: impl FnOnce() -> String) {
+        if !self.enabled {
+            return;
+        }
+        self.msg(turn, player, f);
+        if let Some(e) = self.entries.last_mut() {
+            e.at = Some(at);
+        }
     }
 }

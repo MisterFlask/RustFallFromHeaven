@@ -85,7 +85,7 @@ test("the action list's order and the action a key runs", () => {
   assert.deepEqual(K.sortActions(actions, data).map(name), ["m5", "m4", "m0", "m2", "build0", "build1", "c0", "c1", "INTERFACEMODE_GO_TO", "INTERFACEMODE_ROUTE_TO", "INTERFACEMODE_RANGE_ATTACK"]);
   const run = (ev) => K.actionForKey(actions, ev, data);
   assert.equal(run(key("KeyF")).mission, 0);
-  assert.equal(run(key("KeyS")).mission, 2);
+  assert.equal(run(key("KeyS")), null, "plain S scrolls the map: sentry keeps its button, not the key");
   assert.equal(run(key("KeyR")).data1, 0, "R builds the road");
   assert.equal(run(key("KeyR", { altKey: true })).mode, "INTERFACEMODE_ROUTE_TO");
   assert.equal(run(key("KeyG")).mode, "INTERFACEMODE_GO_TO");
@@ -102,8 +102,37 @@ test("the action list's order and the action a key runs", () => {
   assert.equal(K.actionForKey(sleeper, key("KeyF"), data).mission, 1);
   // The automate buttons (CvAutomateInfo hotkeys).
   const worker = [{ kind: "automate", automate: 0, enabled: true }, { kind: "automate", automate: 1, enabled: true }];
-  assert.equal(K.actionForKey(worker, key("KeyA"), data).automate, 0);
+  assert.equal(K.actionForKey(worker, key("KeyA"), data), null, "plain A scrolls the map");
+  assert.deepEqual(K.bindings(worker[0], data), [], "so the automate button shows no key");
   assert.equal(K.actionForKey(worker, key("KeyN"), data).automate, 1);
   // Without the founding, B is the range attack.
   assert.equal(K.actionForKey(actions.filter((a) => a.mission !== 5), key("KeyB"), data).mode, "INTERFACEMODE_RANGE_ATTACK");
+});
+
+test("W A S D scroll the map, by their place on the keyboard; modified letters do not", () => {
+  assert.equal(K.scrollKey(key("KeyW")), "up");
+  assert.equal(K.scrollKey(key("KeyA")), "left");
+  assert.equal(K.scrollKey(key("KeyS")), "down");
+  assert.equal(K.scrollKey(key("KeyD")), "right");
+  assert.equal(K.scrollKey({ code: "KeyW", key: "z" }), "up", "AZERTY's Z is W's place");
+  assert.equal(K.scrollKey({ key: "D" }), "right", "a script's event without a code");
+  assert.equal(K.scrollKey(key("KeyW", { shiftKey: true })), null, "Shift+W is the windmill");
+  assert.equal(K.scrollKey(key("KeyS", { ctrlKey: true })), null, "Ctrl+S saves");
+  assert.equal(K.scrollKey(key("KeyW", { shiftKey: true }), { anyMods: true }), "up", "released with Shift down");
+  assert.equal(K.scrollKey(key("KeyQ")), null);
+});
+
+test("Q and E zoom the map out and in, by their place on the keyboard; modified letters do not", () => {
+  assert.equal(K.zoomKey(key("KeyQ")), -1);
+  assert.equal(K.zoomKey(key("KeyE")), 1);
+  assert.equal(K.zoomKey({ code: "KeyQ", key: "a" }), -1, "AZERTY's A is Q's place");
+  assert.equal(K.zoomKey({ key: "E" }), 1, "a script's event without a code");
+  assert.equal(K.zoomKey(key("KeyE", { ctrlKey: true })), 0);
+  assert.equal(K.zoomKey(key("KeyW")), 0);
+  // Civ4's plain Q (quarry) and E (explore) keep their buttons, not the keys.
+  const tables = { ...data.tables, BuildType: [{ type: "BUILD_QUARRY", keys: [b("KB_Q")] }], AutomateType: [{ type: "AUTOMATE_EXPLORE", keys: [b("KB_E")] }] };
+  const scout = [{ kind: "automate", automate: 0, enabled: true }, mission(3, true, { data1: 0 })];
+  assert.equal(K.actionForKey(scout, key("KeyE"), { ...data, tables }), null);
+  assert.equal(K.actionForKey(scout, key("KeyQ"), { ...data, tables }), null);
+  assert.deepEqual(K.bindings(scout[0], { ...data, tables }), [], "so the explore button shows no key");
 });

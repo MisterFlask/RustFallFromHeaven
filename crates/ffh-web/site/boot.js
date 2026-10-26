@@ -466,8 +466,9 @@ function mb(n) {
   return (n / 1048576).toFixed(1);
 }
 
-/** The loading overlay (a small card in the middle of the page, gone once the engine is ready)
- *  and the notes (a line at the left, above the client's bottom panel, that goes by itself).
+/** The loading overlay (a small card low in the middle of the page, under the client's title
+ *  screen's menu; gone once the engine is ready) and the notes (a line at the left, above the
+ *  client's bottom panel, that goes by itself).
  *  Plain DOM, styled inline with the client's palette variables (with fallbacks, for before its
  *  stylesheet loads). */
 class Overlay {
@@ -484,7 +485,7 @@ class Overlay {
     el.setAttribute("role", "status");
     el.setAttribute("aria-live", "polite");
     el.style.cssText =
-      "position:fixed;left:50%;top:42%;transform:translate(-50%,-50%);z-index:1000;box-sizing:border-box;" +
+      "position:fixed;left:50%;bottom:64px;transform:translateX(-50%);z-index:1000;box-sizing:border-box;" +
       "width:min(360px,calc(100vw - 32px));padding:14px 18px;background:var(--c-soot,#14223e);color:var(--c-bone,#e9dbb3);" +
       "border:1px solid var(--c-ochre,#dba63b);box-shadow:0 0 0 1px var(--c-void,#140d0c),0 10px 30px rgba(0,0,0,.45);" +
       "font:14px/1.4 var(--font,Georgia,serif);transition:opacity .3s ease;pointer-events:none";

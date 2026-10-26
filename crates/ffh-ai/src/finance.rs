@@ -15,8 +15,11 @@
 //!   ([`civic_maintenance_x100`]); Aristocracy is charged for FfH's AI-only cottage ban
 //!   ([`civic_penalty`]); a structural deficit re-checks civics outside the 10-turn cadence
 //!   when a cheaper civic would win ([`civics_due`]);
-//! - **unit support** (`empire::disband`): obsolete and surplus units go first while support
-//!   keeps research below its target ([`disband`]);
+//! - **unit support** (`empire::disband`): built units are kept, More Naval AI's rule -- at
+//!   peace, the military unit of least value goes while costs take more than 60% of the commerce
+//!   ([`disband_military`]); idle workers beyond the need while support keeps research below its
+//!   target ([`disband_workers`]). With `KEEP_UNITS` off, the previous rule: obsolete and surplus
+//!   units go first while support keeps research below its target ([`disband`]);
 //! - **research** (`empire::research`): the cheapest tech that unlocks a cost-cutting civic or
 //!   a Courthouse-like building, while research is down to 30% or the deficit is structural
 //!   ([`escape_tech`]);
@@ -290,7 +293,9 @@ fn relative_power(g: &Game, u: UnitId, best_def: i64, best_att: i64, garrison: b
 /// beyond one per city (two in the capital and near barbarians) in cities with no threat in
 /// sight, then idle workers beyond twice what the worked plots need. Never heroes, units that
 /// would defect, summons, a city's last defender. Returns whether it disbanded anything
-/// (`empire::disband` then stops).
+/// (`empire::disband` then stops). Only with `KEEP_UNITS` off: More Naval AI's rule
+/// ([`disband_military`], reading no threat) replaces it by the owner's decision
+/// (docs/AI_LOG.md, "More Naval AI's disband rule").
 pub fn disband(g: &mut Game, p: PlayerId) -> bool {
     let f = state(g, p);
     if !f.support_heavy() || f.at_war || g.player_calculate_unit_cost(p) == 0 {
@@ -333,12 +338,15 @@ pub fn disband(g: &mut Game, p: PlayerId) -> bool {
         cands.push((relative_power(g, u, best_def, best_att, false), u));
     }
     // Garrison units beyond the quota production keeps when it cannot afford more.
+    let rival = crate::defense::all_rival_defenders(g, p);
     for &c in &g.players[p].cities {
         let plot = g.city_plot(c);
         if crate::production::local_threat(g, p, plot, 3) > 0 {
             continue;
         }
-        let keep = if g.city_is_capital(c) || crate::production::barbarians_near(g, p, plot, 4) { 2 } else { 1 };
+        // (Plus what the rivals near the city call for: defense.rs, the same number production
+        // trains to.)
+        let keep = if g.city_is_capital(c) || crate::production::barbarians_near(g, p, plot, 4) { 2 } else { 1 } + rival.get(&c).copied().unwrap_or(0);
         let mut garrison: Vec<UnitId> = g.map.plots[plot]
             .units
             .iter()
@@ -387,10 +395,179 @@ pub fn disband(g: &mut Game, p: PlayerId) -> bool {
             break;
         }
         crate::trace!(g, p, "finance: support {}% of commerce, disbanding {} ({}% of our best)", f.unit_share(), d.units[g.units[u].unit_type].base.type_, key);
+        g.tel_decision(p, "disband", &d.units[g.units[u].unit_type].base.type_, "support", key, String::new);
         g.unit_scrap(u);
         done += 1;
     }
     done > 0
+}
+
+/// With [`crate::switches::KEEP_UNITS`]: while unit support keeps research below its target share
+/// ([`Finance::support_heavy`]) and we are not at war, disband idle workers (no job this turn)
+/// beyond twice what the worked plots need, as production counts them (that need moves as cities
+/// grow and switch tiles); up to two a turn, one when the deficit is a single gold. Military units
+/// go by [`disband_military`].
+pub fn disband_workers(g: &mut Game, p: PlayerId) {
+    let f = state(g, p);
+    if !f.support_heavy() || f.at_war || g.player_calculate_unit_cost(p) == 0 {
+        return;
+    }
+    let n = g.players[p].cities.len() as i32;
+    let unimproved = crate::production::unimproved_worked_plots(g, p);
+    let need = 2 * (n.min(3) + (unimproved + 1) / 3).min(n * 2).max(1);
+    let workers: Vec<UnitId> = g.players[p]
+        .units
+        .iter()
+        .copied()
+        .filter(|&u| g.units[u].ai_type == Some(UnitAIType::UNITAI_WORKER) && g.unit_get_domain_type(u) == DomainType::DOMAIN_LAND)
+        .collect();
+    if workers.len() as i32 <= need {
+        return;
+    }
+    let mut idle: Vec<UnitId> = workers
+        .iter()
+        .copied()
+        .filter(|&u| {
+            let betrays = g.d.promotions.keys().any(|pr| g.units[u].has_promotion[pr] && g.d.promotions[pr].betrayal_chance != 0);
+            !betrays && g.units[u].duration == 0 && g.unit_can_scrap(u) && g.units[u].group.is_some_and(|grp| g.groups[grp].mission_queue.is_empty())
+        })
+        .take((workers.len() as i32 - need) as usize)
+        .collect();
+    idle.sort();
+    let max = if f.deficit() > 1 { 2 } else { 1 };
+    for &u in idle.iter().take(max) {
+        if !g.units.contains(u) {
+            break;
+        }
+        crate::trace!(g, p, "finance: support {}% of commerce, disbanding {}", f.unit_share(), g.d.units[g.units[u].unit_type].base.type_);
+        g.tel_decision(p, "disband", &g.d.units[g.units[u].unit_type].base.type_, "idle_worker", 0, String::new);
+        g.unit_scrap(u);
+    }
+}
+
+/// More Naval AI's measure of financial trouble (C++ `CvPlayerAI::AI_getFundedPercent`): the
+/// percent of the commerce left once every cost is paid. `getGoldPerTurn` is the gold from deals.
+pub fn funded_percent(g: &Game, p: PlayerId) -> i32 {
+    let deals = g.players[p].gold_per_turn;
+    let net_commerce = 1 + g.player_get_commerce_rate(p, CommerceType::COMMERCE_GOLD) + g.player_get_commerce_rate(p, CommerceType::COMMERCE_RESEARCH) + deals.max(0);
+    let net_expenses = g.player_calculate_inflated_costs(p) + (-deals).max(0);
+    100 * (net_commerce - net_expenses) / net_commerce.max(1)
+}
+
+/// With [`crate::switches::KEEP_UNITS`], More Naval AI's disbanding (C++
+/// `CvPlayerAI::AI_doMilitary`): at peace, while costs take more than 60% of the commerce
+/// (`AI_isFinancialTrouble`: funded below 40%) and units cost gold, disband the military unit of
+/// least value ([`least_valued`]). Nothing else disbands military units for their upkeep, and
+/// nothing here reads the threats in sight: what was trained is kept and research pays for it;
+/// the build side keeps the army from growing past the need (docs/AI.md, "Finance").
+pub fn disband_military(g: &mut Game, p: PlayerId) {
+    if g.player_is_barbarian(p) || at_war(g, p) {
+        return;
+    }
+    for _ in 0..g.players[p].units.len() {
+        if funded_percent(g, p) >= 40 || g.player_calculate_unit_cost(p) <= 0 {
+            break;
+        }
+        let Some(u) = least_valued(g, p) else { break };
+        crate::trace!(g, p, "finance: funded {}%, disbanding {} (xp {})", funded_percent(g, p), g.d.units[g.units[u].unit_type].base.type_, g.units[u].experience);
+        g.tel_decision(p, "disband", &g.d.units[g.units[u].unit_type].base.type_, "funded", funded_percent(g, p) as i64, String::new);
+        // C++ `kill(false)`: gone at once, so the next pass sees the lower cost (a scrap dies
+        // with delay and would still be paid for).
+        g.unit_kill(u, false, None);
+        if g.units.contains(u) {
+            break;
+        }
+    }
+}
+
+/// C++ `CvPlayerAI::AI_disbandUnit(1, false)`: among the military-support units that can fight
+/// with at most 1 experience (not great people, not carrying cargo, not free), the one of least
+/// value: dearer, more experienced and higher-level units are worth more, units in our
+/// territory three times as much (six when defending a city), city defenders six times and
+/// field units twice as much as an untyped unit; extra upkeep makes a unit go first. The random
+/// term of the C++ is dropped (ties: the first unit in our list). Kept from our own rule: never
+/// a hero, a unit that would defect, a summon or one the rules will not scrap.
+fn least_valued(g: &Game, p: PlayerId) -> Option<UnitId> {
+    let team = g.players[p].team;
+    let turn = g.game_turn();
+    let mut best: Option<(i64, UnitId)> = None;
+    for &u in &g.players[p].units {
+        let unit = &g.units[u];
+        let info = &g.d.units[unit.unit_type];
+        if g.unit_has_cargo(u) || !info.military_support || g.unit_is_golden_age(u) || info.production_cost <= 0 {
+            continue;
+        }
+        if !g.unit_can_fight(u) || unit.experience > 1 {
+            continue;
+        }
+        let plot = g.unit_plot(u);
+        let in_city = g.map.plots[plot].plot_city.is_some();
+        if g.unit_is_military_happiness(u) && in_city && g.map.plots[plot].units.iter().filter(|&&o| g.units[o].owner == p && g.unit_is_military_happiness(o)).count() <= 2 {
+            continue;
+        }
+        let hero = info.default_unit_ai_type == Some(UnitAIType::UNITAI_HERO)
+            || info.unit_class_type.is_some_and(|c| g.d.unit_classes[c].max_global_instances > 0 || g.d.unit_classes[c].max_player_instances > 0);
+        let betrays = g.d.promotions.keys().any(|pr| unit.has_promotion[pr] && g.d.promotions[pr].betrayal_chance != 0);
+        if hero || betrays || unit.duration > 0 || !g.unit_can_scrap(u) {
+            continue;
+        }
+        let mut v: i64 = 10000;
+        v = v * (100 + info.production_cost as i64 * 3) / 100;
+        v = v * (100 + unit.experience as i64 * 10) / 100;
+        v = v * (100 + unit.level as i64 * 25) / 100;
+        let home = g.plot_get_team(plot) == Some(team);
+        if home {
+            v *= 3;
+            if in_city && g.unit_can_defend(u, Some(plot)) {
+                v *= 2;
+            }
+        }
+        let young_or_away = turn - unit.game_turn_created < 10 || !home;
+        v *= match unit.ai_type {
+            Some(UnitAIType::UNITAI_SETTLE) => 20,
+            Some(UnitAIType::UNITAI_ATTACK) | Some(UnitAIType::UNITAI_ATTACK_CITY) | Some(UnitAIType::UNITAI_COLLATERAL) | Some(UnitAIType::UNITAI_PILLAGE) | Some(UnitAIType::UNITAI_RESERVE) | Some(UnitAIType::UNITAI_COUNTER) => 2,
+            Some(UnitAIType::UNITAI_CITY_DEFENSE) | Some(UnitAIType::UNITAI_CITY_COUNTER) | Some(UnitAIType::UNITAI_CITY_SPECIAL) | Some(UnitAIType::UNITAI_PARADROP) => 6,
+            Some(UnitAIType::UNITAI_EXPLORE) => {
+                if young_or_away {
+                    15
+                } else {
+                    2
+                }
+            }
+            Some(UnitAIType::UNITAI_MISSIONARY) => {
+                if young_or_away {
+                    8
+                } else {
+                    1
+                }
+            }
+            Some(UnitAIType::UNITAI_PROPHET) | Some(UnitAIType::UNITAI_ARTIST) | Some(UnitAIType::UNITAI_SCIENTIST) | Some(UnitAIType::UNITAI_GENERAL) | Some(UnitAIType::UNITAI_MERCHANT) | Some(UnitAIType::UNITAI_ENGINEER) => 20,
+            Some(UnitAIType::UNITAI_SPY) => 12,
+            Some(UnitAIType::UNITAI_ICBM) => 4,
+            Some(UnitAIType::UNITAI_WORKER_SEA) => 18,
+            Some(UnitAIType::UNITAI_EXPLORE_SEA) => {
+                if young_or_away {
+                    12
+                } else {
+                    1
+                }
+            }
+            // C++ quirk: the sea cases fall through (6 * 4 * 2, 4 * 2, 2 at peace).
+            Some(UnitAIType::UNITAI_SETTLER_SEA) => 48,
+            Some(UnitAIType::UNITAI_MISSIONARY_SEA) | Some(UnitAIType::UNITAI_SPY_SEA) => 8,
+            Some(UnitAIType::UNITAI_ASSAULT_SEA) | Some(UnitAIType::UNITAI_CARRIER_SEA) | Some(UnitAIType::UNITAI_MISSILE_CARRIER_SEA) => 2,
+            Some(UnitAIType::UNITAI_PIRATE_SEA) => 5,
+            Some(UnitAIType::UNITAI_DEFENSE_AIR) | Some(UnitAIType::UNITAI_CARRIER_AIR) | Some(UnitAIType::UNITAI_MISSILE_AIR) => 3,
+            _ => 1,
+        };
+        if info.extra_cost > 0 {
+            v /= info.extra_cost as i64 + 1;
+        }
+        if best.map_or(true, |(b, _)| v < b) {
+            best = Some((v, u));
+        }
+    }
+    best.map(|(_, u)| u)
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -473,6 +650,7 @@ pub fn escape_research(g: &mut Game, p: PlayerId) -> bool {
     }
     let f = state(g, p);
     crate::trace!(g, p, "finance: research {} to cut costs (deficit {}, costs {}% of commerce, {} turns of reserve)", g.d.techs[t].base.type_, f.deficit(), f.cost_share(), f.reserve_turns());
+    g.tel_decision(p, "research", &g.d.techs[t].base.type_, "escape_costs", f.deficit() as i64, String::new);
     g.player_push_research(p, t, true)
 }
 

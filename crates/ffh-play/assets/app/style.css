@@ -45,15 +45,25 @@
 
 * { box-sizing: border-box; }
 html, body { height: 100%; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 body {
   margin: 0;
   background: var(--bg);
   color: var(--fg);
   font: 14px/1.4 var(--font);
   display: grid;
+  /* One column, the viewport's width: a bar's content never widens the page. */
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr) auto;
   overflow: hidden;
+  /* Taps on the chrome act at once (no double-tap zoom waiting). */
+  touch-action: manipulation;
 }
+/* The page is the visible viewport: a phone's browser bars come and go (100% would be the tallest). */
+@supports (height: 100dvh) { body { height: 100dvh; } }
+/* A long press on the map or the bars selects no text and offers no image menu. */
+#top, #mapwrap, #bottom-tabs, #side-toggle { -webkit-user-select: none; user-select: none; }
+#mapwrap canvas { -webkit-touch-callout: none; }
 body.busy { cursor: progress; }
 body.picking #mapwrap canvas.map { cursor: crosshair; }
 ::selection { background: var(--c-dusk); color: var(--c-vellum); }
@@ -175,7 +185,7 @@ html.art #top .sep { display: block; }
 #mapwrap canvas.minimap {
   position: absolute; right: 10px; bottom: 10px; width: 220px; height: 136px;
   border: 1px solid var(--c-ash); background: var(--c-void); cursor: pointer; image-rendering: pixelated;
-  box-shadow: 0 0 0 2px var(--c-soot), 0 0 0 3px var(--c-iron);
+  box-shadow: 0 0 0 2px var(--c-soot), 0 0 0 3px var(--c-iron); touch-action: none;
 }
 #mapwrap .zoom { position: absolute; left: 10px; bottom: 10px; display: flex; flex-direction: column; gap: 4px; }
 #mapwrap .zoom button { width: 28px; height: 28px; padding: 0; }
@@ -189,7 +199,21 @@ html.art #top .sep { display: block; }
 .tip-title { color: var(--c-vellum); }
 .tip-city { color: var(--c-sand); }
 .tip-path { color: var(--c-bone); margin-top: 3px; }
+.tip-unique { margin: 4px 0; padding: 4px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.tip-unique-name { color: var(--c-sand); }
+.tip-effects { font-size: 12px; line-height: 1.4; }
 .tip-combat { margin-top: 4px; padding-top: 4px; border-top: 1px solid var(--line); }
+/* The rich tooltips of the screens (tips.js): above the dialogs, at the pointer. */
+.richtip { position: fixed; z-index: 60; max-width: 420px; line-height: 1.4; }
+/* The new-game screen: the chosen civilization and leader beside the fields. */
+.ng-side { flex: 0 1 320px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.ng-about { max-height: 360px; overflow-y: auto; font-size: 12px; line-height: 1.4; padding-right: 4px; }
+.ng-about .ng-civ { margin-top: 8px; padding-top: 6px; border-top: 1px solid var(--line); }
+.richtip .tip-effects { margin-top: 3px; }
+.tip-requires { color: var(--c-scarlet); margin-top: 3px; }
+.tip-strategy { margin-top: 5px; padding-top: 4px; border-top: 1px solid var(--line); font-size: 12px; font-style: italic; color: var(--c-stone); }
+.tip-hint { margin-top: 5px; font-size: 12px; color: var(--c-ash); }
+.tip-parts { font-size: 12px; color: var(--c-stone); }
 .tip-combat .odds { font-size: 15px; color: var(--c-vellum); display: flex; align-items: center; gap: 6px; }
 .tip-combat .odds.bad { color: var(--c-scarlet); }
 .tip-combat .mods { font-size: 12px; color: var(--dim); }
@@ -197,7 +221,10 @@ html.art #top .sep { display: block; }
 #side { background: var(--panel); border-left: 1px solid var(--c-ash); box-shadow: inset 2px 0 0 var(--c-soot), inset 3px 0 0 var(--c-iron); overflow: auto; padding: 10px 12px; }
 .panel-head { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid var(--c-ash); }
 .panel-head .unit-figure { margin: -4px 0; }
-.mode-hint { background: var(--c-bruise); border: 1px solid var(--c-lilac); padding: 4px 8px; color: var(--c-vellum); }
+.mode-hint { background: var(--c-bruise); border: 1px solid var(--c-lilac); padding: 4px 8px; color: var(--c-vellum); margin: 6px 0; }
+div.mode-hint { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.panel-head .deselect { margin-left: auto; background: none; border: none; color: var(--dim); font-size: 20px; line-height: 1; padding: 0 4px; box-shadow: none; }
+.panel-head .deselect:hover { color: var(--c-vellum); }
 .unit-list { display: flex; flex-direction: column; gap: 1px; max-height: 240px; overflow: auto; }
 .unit-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 2px 6px; border: 1px solid transparent; cursor: pointer; }
 .unit-row:hover { background: var(--c-coal); }
@@ -209,7 +236,7 @@ html.art #top .sep { display: block; }
 button.action { padding: 3px 8px; font-size: 13px; }
 table.kv { border-collapse: collapse; width: 100%; }
 table.kv th { text-align: left; font-weight: normal; color: var(--dim); padding: 2px 10px 2px 0; vertical-align: top; white-space: nowrap; }
-table.kv td { padding: 2px 0; word-break: break-all; }
+table.kv td { padding: 2px 0; overflow-wrap: anywhere; }
 
 /* Bottom panel. */
 #bottom { background: var(--panel); border-top: 1px solid var(--c-ash); box-shadow: inset 0 2px 0 var(--c-soot), inset 0 3px 0 var(--c-iron); height: 170px; display: flex; flex-direction: column; min-height: 0; }
@@ -220,6 +247,9 @@ body.bottom-closed #bottom-body { display: none; }
 #bottom-tabs button:hover:not([disabled]) { color: var(--c-vellum); border-color: var(--c-ash); }
 #bottom-tabs button.active { color: var(--c-vellum); border-bottom: 1px solid var(--c-vellum); }
 #bottom-toggle { margin-left: auto; }
+body.bottom-closed #bottom-toggle { transform: rotate(180deg); }
+/* A tab with news the folded panel hides (the turn report). */
+#bottom-tabs button.unread::after { content: ""; width: 6px; height: 6px; margin-left: 5px; background: var(--c-amber); flex: none; }
 #bottom-body { overflow: auto; padding: 6px 12px; flex: 1; }
 #bottom-body ul { margin: 2px 0; padding-left: 18px; }
 .turn-group h4 { margin-top: 4px; }
@@ -234,7 +264,7 @@ body.bottom-closed #bottom-body { display: none; }
 .modal {
   background: var(--c-soot); border: 1px solid var(--c-ash); width: min(540px, 100%);
   box-shadow: inset 0 0 0 2px var(--c-soot), inset 0 0 0 3px var(--c-iron);
-  max-height: calc(100vh - 32px); display: flex; flex-direction: column;
+  max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px); display: flex; flex-direction: column;
 }
 .modal.wide { width: min(880px, 100%); }
 .modal.decision { border-color: var(--c-bone); }
@@ -252,6 +282,9 @@ button.option small { color: var(--dim); }
 button.build { display: flex; justify-content: space-between; gap: 8px; text-align: left; padding: 4px 8px; }
 button.build.current { border-color: var(--c-bone); color: var(--c-vellum); }
 button.build.queued { border-style: dashed; }
+/* What a tech unlocks (empire.js `unlockRow`): their names on a line of their own. */
+button.build:has(> .unlocks) { flex-wrap: wrap; }
+button.build > .unlocks { flex: 1 1 100%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
 .city-summary div { margin: 2px 0; }
 ol.queue { margin: 2px 0; padding-left: 22px; }
 ol.queue li { margin: 2px 0; }
@@ -312,8 +345,24 @@ textarea.raw { width: 100%; font: 12px var(--mono); }
 #mapwrap .layers button.active { border-color: var(--c-bone); color: var(--c-vellum); }
 .spectate { display: inline-flex; align-items: center; gap: 4px; margin-left: 10px; padding: 1px 6px; border: 1px solid var(--c-frost); }
 .spectate b { color: var(--c-rime); font-weight: normal; margin-right: 2px; }
-button.stat.sliders { background: none; border: 1px dashed var(--line); padding: 0 6px; }
-th.group { text-align: left; padding-top: 8px; color: var(--c-sand); font-weight: normal; }
+/* Watching the AI (tools.js, units.js, hud.js): the bar's selects, the stack line, the turn's
+   events (crimson: a unit lost, amber: a retreat, gold: a city taken), the flags list. */
+.spectate select.small { font-size: 12px; padding: 0 2px; max-width: 13em; }
+.stack-summary { margin: 4px 0; color: var(--c-rime); }
+#unit-panel div.small, label.check.small { font-size: 12px; }
+.tip-event, .ev-event { color: var(--c-bone); }
+.ev-loss, .ev-kill { color: #ff8a7a; }
+.ev-retreat { color: #f0b860; }
+.ev-city { color: #ffd34d; }
+#flag-plot { margin-top: 8px; }
+.flag-list { list-style: none; padding: 0; margin: 4px 0; }
+.flag-list li { margin: 2px 0; }
+.msg-who { font-weight: normal; }
+#flag-note { width: 100%; box-sizing: border-box; }
+button.stat.sliders { background: none; border: 1px solid transparent; padding: 1px 6px; }
+button.stat.sliders:hover { border-color: var(--line); background: var(--c-coal); }
+th.group, table.kv th.group { text-align: left; padding-top: 12px; padding-bottom: 3px; color: var(--c-sand); font-weight: normal; border-bottom: 1px solid var(--c-iron); }
+table.kv.sliders th, table.kv.sliders td { vertical-align: middle; height: 30px; }
 
 /* Chips, toggles, small lists. */
 .chips { display: flex; flex-wrap: wrap; gap: 4px; }
@@ -346,23 +395,38 @@ td.num { text-align: right; font-variant-numeric: lining-nums tabular-nums; }
 
 /* The tech tree. */
 .modal { min-width: 0; }
-.modal.techtree { width: min(1400px, 100%); height: calc(100vh - 32px); }
+.modal.techtree { width: min(1400px, 100%); height: calc(100vh - 32px); height: calc(100dvh - 32px); }
 .techtree .modal-body { display: flex; flex-direction: column; gap: 6px; min-height: 0; flex: 1; }
 .tree-scroll { overflow: auto; flex: 1; min-height: 240px; border: 1px solid var(--line); background: var(--c-void); }
 .tree { position: relative; }
 .tree-lines { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
-.tree-lines path { fill: none; stroke: var(--c-iron); stroke-width: 1.2; }
-.tree-lines path.have { stroke: var(--c-olive); }
-button.tech { position: absolute; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 1px; padding: 2px 6px; text-align: left; font-size: 12px; line-height: 1.15; overflow: hidden; }
+.tree-lines path { fill: none; stroke: #33405e; stroke-width: 1.2; transition: stroke 120ms ease, opacity 120ms ease; }
+.tree-lines path.have { stroke: #4f6e2b; }
+.tree.focus .tree-lines path { opacity: 0.25; }
+.tree.focus .tree-lines path.lit { opacity: 1; stroke: var(--c-gold); stroke-width: 2; }
+/* A tech: opaque (the lines pass behind it), its era as a stripe at the left. */
+button.tech { position: absolute; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 1px; padding: 2px 6px 2px 9px; text-align: left; font-size: 12px; line-height: 1.15; overflow: hidden; background: #1c2944; border-color: #3a4560; transition: opacity 120ms ease, box-shadow 120ms ease; }
+button.tech::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--era, var(--c-slate)); }
+button.tech[data-era="0"] { --era: var(--c-ochre); }
+button.tech[data-era="1"] { --era: var(--c-glint); }
+button.tech[data-era="2"] { --era: var(--c-lilac); }
+button.tech[data-era="3"] { --era: var(--c-scarlet); }
+button.tech[data-era="4"] { --era: var(--c-ritual); }
+button.tech[data-era="5"] { --era: var(--c-glow); }
 button.tech .tech-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; color: var(--c-vellum); }
 button.tech .tech-sub { color: var(--dim); font-size: 11px; white-space: nowrap; }
-button.tech .tech-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--c-iron); }
+button.tech .tech-bar { position: absolute; left: 3px; right: 0; bottom: 0; height: 3px; background: var(--c-iron); }
 button.tech .tech-bar span { display: block; height: 100%; background: var(--c-frost); }
-button.tech.has { background: var(--c-moss-dk); border-color: var(--c-olive); opacity: 0.75; }
-button.tech.researching { border-color: var(--c-frost); background: var(--c-navy); }
-button.tech.queued { border-color: var(--c-frost); border-style: dashed; }
-button.tech.can { border-color: var(--c-bone); }
-button.tech.later { opacity: 0.75; }
+button.tech.has, button.tech.has[disabled] { background: #1f3a26; border-color: #4f6e2b; color: var(--c-stone); }
+button.tech.has .tech-name { color: var(--c-lichen); }
+button.tech.researching { border-color: var(--c-frost); background: var(--c-navy); box-shadow: 0 0 0 1px var(--c-void), 0 0 10px rgba(128, 183, 227, 0.45); }
+button.tech.queued { border-color: var(--c-frost); border-style: dashed; background: #1d3050; }
+button.tech.can { border-color: var(--c-bone); background: var(--c-coal); }
+button.tech.later { background: #18223a; }
+button.tech.later .tech-name { color: var(--c-stone); }
+.tree.focus button.tech { opacity: 0.45; }
+.tree.focus button.tech.lit { opacity: 1; box-shadow: 0 0 0 1px var(--c-gold); }
+.tree.focus button.tech:hover { box-shadow: 0 0 0 2px var(--c-gold); }
 
 /* Civics, religion, finances. */
 .civics { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
@@ -384,6 +448,20 @@ table.scores.diplo td { vertical-align: top; }
 .trade-item.on { border-color: var(--c-bone); background: var(--c-coal); }
 .trade-item > button { width: 26px; padding: 0; }
 input.amount { width: 80px; }
+.trade-head { display: flex; gap: 14px; align-items: center; margin-bottom: 10px; }
+.trade-head h3 { margin: 0 0 4px; }
+
+/* Leader portraits (portraits.js): 80 art px drawn as 2 px blocks. The border sits outside the
+   content box, so the picture keeps its exact size and its pixels stay square. */
+img.leader-portrait { display: block; flex: none; box-sizing: content-box; image-rendering: pixelated; border: 2px solid var(--line); background: var(--panel-2); }
+img.leader-portrait[data-size="small"] { image-rendering: auto; }
+.leader-cell { display: flex; gap: 10px; align-items: center; }
+.leader-cell > div { white-space: nowrap; }
+.vote-choice { display: flex; gap: 8px; align-items: center; }
+.decision-head { display: flex; gap: 12px; align-items: flex-start; }
+.decision-head .page-text { flex: 1; min-width: 0; }
+.ng-top { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; }
+.ng-top .fields { flex: 1 1 480px; min-width: 0; }
 
 /* Tools, inspector. */
 .tools { display: flex; flex-direction: column; gap: 4px; }
@@ -489,11 +567,227 @@ button.action canvas.ui-px { margin-right: 2px; }
 .page-text { display: flow-root; font-size: 15px; }
 .page-text canvas.initial { float: left; margin: 2px calc(var(--u) * 4) 2px 0; }
 
-/* Narrow screens: the side panel goes under the map. */
-@media (max-width: 760px) {
-  #main { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) 40%; }
-  #side { border-left: none; border-top: 1px solid var(--line); }
-  #mapwrap canvas.minimap { width: 120px; height: 75px; }
-  #bottom { height: 120px; }
-  .city-cols, .trade { grid-template-columns: minmax(0, 1fr); }
+/* What a tap does where a mouse would hold Shift or Ctrl (dom.js `tapModes`): touch screens only. */
+.tap-mode { display: none; align-items: center; gap: 4px; flex-wrap: wrap; margin: 4px 0 6px; }
+.tap-mode button.on { border-color: var(--c-bone); color: var(--c-vellum); background: var(--c-navy); }
+html.art .tap-mode button.on:not(.link):not(.close):not(.cplot):not(.tech):not(.stat) {
+  border-image: var(--nine-frame-card-selected); border-width: var(--nine-frame-card-selected-w); background: var(--c-navy); color: var(--c-vellum);
 }
+
+/* The menu button and the side panel's fold: small screens only (below). */
+#btn-menu, #side-toggle { display: none; }
+
+/* ------------------------------------------------------------------------------------------
+   Small screens: a phone upright (narrow) or on its side (short). The map gets the room: one bar
+   on top (the menu folds into a button that drops it down as a sheet), the bottom panel starts
+   folded to its tabs (main.js), the minimap moves to the top corner, dialogs take the screen. */
+@media (max-width: 760px), (max-height: 520px) {
+  #top { flex-wrap: nowrap; gap: calc(var(--u) * 2); padding: calc(var(--u) * 1) calc(var(--u) * 2); min-height: 0; z-index: 6; }
+  #top .break { display: none; }
+  #btn-menu { display: inline-flex; flex: none; font-size: 18px; }
+  /* The turn always shows; a long phase line ("Moving: ...") is cut, and the empire's numbers
+     scroll sideways in what room is left. */
+  #phase { flex: none; max-width: 50vw; overflow: hidden; }
+  #phase > * { flex: none; }
+  #phase > #phase-text { flex: 0 1 auto; min-width: 0; overflow: hidden; white-space: nowrap; }
+  #phase .year, body[data-phase="human"] #phase-text { display: none; }
+  #empire { flex: 1 1 auto; min-width: 0; flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; }
+  #empire::-webkit-scrollbar { display: none; }
+  #end-turn { flex: none; margin-left: auto; }
+  #menu { display: none; }
+  body.menu-open #menu {
+    display: grid; position: absolute; top: 100%; left: 0; right: 0; z-index: 1;
+    grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: calc(var(--u) * 3);
+    padding: calc(var(--u) * 4); background: var(--c-soot); border-bottom: 1px solid var(--c-ash);
+    box-shadow: 0 8px 18px rgba(5, 8, 11, 0.65); max-height: 70vh; overflow: auto;
+  }
+  body.menu-open #btn-menu { color: var(--c-vellum); }
+  /* In the sheet, the two glyph buttons say what they are. */
+  body.menu-open #btn-keys::after { content: "Controls"; }
+  body.menu-open #btn-raw::after { content: "Raw request"; }
+  /* The map takes what the bars and panels leave (a floor would push it over the bottom panel). */
+  #mapwrap { min-height: 0; }
+  #mapwrap canvas.minimap { top: 8px; right: 8px; bottom: auto; width: 128px; height: 80px; }
+  #mapwrap .zoom { left: 8px; bottom: 8px; }
+  #mapwrap .layers { left: 50px; bottom: 8px; }
+  .tooltip { max-width: min(380px, calc(100% - 8px)); }
+  #toasts { left: 12px; right: 12px; bottom: 64px; }
+  .toast { max-width: 100%; }
+  #modals .backdrop { padding: 0; }
+  .modal { max-height: 100vh; max-height: 100dvh; }
+  .modal.wide, .modal.city-screen, .modal.techtree { width: 100%; }
+  .modal.techtree { height: 100vh; height: 100dvh; }
+  .modal-head, .modal-body, .modal-buttons { padding-left: 10px; padding-right: 10px; }
+  .city-cols, .trade { grid-template-columns: minmax(0, 1fr); }
+  .build-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+  .newgame .fields { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .checks { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+}
+
+/* A phone upright: two bars on top (the turn, the menu and End turn; then the empire's numbers,
+   which scroll sideways), the side panel under the map (it folds to its heading). */
+@media (max-width: 760px) {
+  #top { flex-wrap: wrap; row-gap: calc(var(--u) * 1); }
+  #empire { order: 5; flex-basis: 100%; }
+  #main { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
+  #side { border-left: none; border-top: 1px solid var(--line); max-height: 38vh; max-height: 38dvh; }
+  html.art #side { border-left-width: 0; border-right-width: 0; }
+  #side-toggle { display: inline-flex; position: sticky; top: 0; float: right; z-index: 1; margin: 0 0 4px 8px; }
+  body.side-folded #side { max-height: 56px; overflow: hidden; }
+  body.side-folded #side-toggle { transform: rotate(180deg); }
+  #bottom { height: 28vh; height: 28dvh; }
+}
+
+/* A phone on its side: one bar on top, a narrower side panel. */
+@media (max-height: 520px) and (min-width: 761px) {
+  #main { grid-template-columns: minmax(0, 1fr) 300px; }
+  #bottom { height: 40vh; height: 40dvh; }
+}
+
+/* Fingers: targets big enough to hit (about 40 CSS px), text fields that a phone does not zoom
+   into (16 px), and the tap-mode rows. */
+@media (pointer: coarse) {
+  button:not(.link):not(.close):not(.cplot):not(.tech):not(.stat),
+  html.art button:not(.link):not(.close):not(.cplot):not(.tech):not(.stat) { min-height: 40px; }
+  button.small, html.art button.small { min-height: 36px; min-width: 36px; }
+  .close, .panel-head .deselect { min-width: 40px; min-height: 40px; }
+  #mapwrap .zoom { gap: 8px; }
+  #mapwrap .zoom button, html.art #mapwrap .zoom button { width: 40px; height: 40px; }
+  #mapwrap .layers { left: 56px; }
+  .unit-row { padding: 8px 6px; }
+  #bottom-tabs button, html.art #bottom-tabs button:not(.link) { padding: 6px 12px 8px; }
+  input[type="checkbox"], input[type="radio"] { width: 20px; height: 20px; }
+  label.toggle, label.check { min-height: 32px; }
+  input, select, textarea { font-size: 16px; }
+  tr.clickable td { padding-top: 9px; padding-bottom: 9px; }
+  .tap-mode { display: flex; }
+  /* The buttons' key labels are for keyboards; on a phone they only cost width. */
+  button kbd { display: none; }
+}
+
+/* The load screen: a card per game, a row per save (name, turn, when). */
+.modal.load-screen { width: min(760px, 100%); }
+.save-game { margin: 0 0 14px; }
+.save-game-head { display: flex; align-items: center; gap: 8px; padding-bottom: 4px; margin-bottom: 4px; border-bottom: 1px solid var(--c-iron); }
+.save-game-head h4 { margin: 0; color: var(--c-sand); }
+.save-count { margin-left: auto; font-size: 12px; }
+.save-rows { display: flex; flex-direction: column; gap: 2px; }
+#modals button.save {
+  display: grid; grid-template-columns: minmax(0, 1fr) 90px 110px; align-items: center; gap: 12px; width: 100%;
+  padding: 5px 10px; min-height: 34px; text-align: left; border: none; border-image: none; background: none;
+}
+#modals button.save:nth-child(odd) { background: rgba(38, 51, 79, 0.45); }
+#modals button.save:hover:not([disabled]) { border-image: none; background: var(--c-coal); box-shadow: inset calc(var(--u)) 0 0 var(--c-gold); color: var(--c-vellum); }
+#modals button.save:active:not([disabled]) { border-image: none; padding: 5px 10px; background: var(--c-iron); }
+.save-name { display: inline-flex; align-items: center; gap: 6px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.save-turn { color: var(--c-bone); font-variant-numeric: lining-nums tabular-nums; }
+.save-when { color: var(--dim); font-size: 13px; text-align: right; }
+details.save-more > summary { cursor: pointer; color: var(--dim); font-size: 13px; padding: 4px 10px; }
+details.save-more > summary:hover { color: var(--c-vellum); }
+details.save-more .save-rows { margin-left: 12px; }
+.save-root { font-size: 12px; margin-top: 10px; overflow-wrap: anywhere; }
+/* The game-over screen: your banner and the result, then the scores. */
+.over-head { display: flex; align-items: center; gap: 18px; margin: 6px 0 14px; }
+.over-head .banner { filter: drop-shadow(0 4px 0 var(--c-void)); }
+.over-title { font-size: 26px; color: var(--c-vellum); letter-spacing: 0.02em; }
+.game-over.won .over-title { color: var(--c-gold); text-shadow: 0 0 18px rgba(255, 182, 59, 0.35); }
+.over-result { color: var(--dim); margin-top: 4px; }
+table.scores th.num { text-align: right; }
+
+/* The new-game screen: the civilizations at the left; the chosen one's leader portrait, its
+   summary and its leaders' cards at the right; the world below. */
+.modal.newgame-screen { width: min(1000px, 100%); }
+.ng-civ { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 16px; margin-bottom: 6px; }
+.ng-civ-col h4 { margin-top: 0; }
+.civ-list { display: flex; flex-direction: column; gap: 2px; height: 360px; overflow: auto; padding: 4px; background: var(--c-void); border: 1px solid var(--c-iron); }
+#modals button.civ-item {
+  justify-content: flex-start; gap: 10px; padding: 2px 8px; min-height: 34px; border: none; border-image: none; background: none; text-align: left; flex: none;
+}
+#modals button.civ-item:hover:not([disabled]) { border-image: none; background: var(--c-coal); }
+#modals button.civ-item:active:not([disabled]) { border-image: none; padding: 2px 8px; }
+#modals button.civ-item.chosen { border-image: none; background: var(--c-coal); box-shadow: inset 2px 0 0 var(--c-gold); color: var(--c-vellum); }
+button.civ-item .banner { flex: none; }
+.civ-swatch { width: 18px; height: 28px; background: var(--c-slate); flex: none; }
+.civ-info { display: flex; flex-direction: column; gap: 10px; min-width: 0; height: 384px; overflow: auto; padding-right: 4px; }
+.civ-head { display: flex; align-items: flex-start; gap: 14px; }
+.civ-head .ng-portrait { flex: none; }
+.civ-head-text { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.civ-title { display: flex; align-items: center; gap: 10px; }
+.civ-title h3 { font-size: 20px; }
+.civ-title .banner { filter: drop-shadow(0 3px 0 var(--c-void)); }
+.ng-leader-name { color: var(--c-vellum); }
+.ng-who .ng-leader { font-size: 13px; line-height: 1.4; }
+.civ-summary { color: var(--c-bone); font-size: 14px; line-height: 1.45; padding: 7px 10px; background: rgba(20, 13, 12, 0.35); border-left: 2px solid var(--c-khaki); }
+.ng-about { display: flex; flex-direction: column; gap: 8px; font-size: 13px; line-height: 1.4; }
+.ng-about .ng-civ { display: block; margin: 0; padding: 0; border: 0; }
+.leader-cards { display: flex; flex-wrap: wrap; gap: 6px; }
+#modals button.leader-card { flex-direction: column; align-items: center; justify-content: flex-start; gap: 3px; padding: 4px 6px; min-width: 78px; text-align: center; }
+#modals button.leader-card.chosen { border-color: var(--c-bone); background: var(--c-coal); box-shadow: 0 0 0 1px var(--c-gold); }
+.leader-card .leader-name { font-size: 12px; line-height: 1.2; }
+.ng-more { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; margin-top: 8px; }
+.ng-more details { flex: 1 1 220px; margin-top: 0; }
+.ng-more label.check { margin: 0; flex: 1 1 220px; }
+@media (max-width: 760px) {
+  .ng-civ { grid-template-columns: minmax(0, 1fr); }
+  .civ-list { height: 160px; }
+  .civ-info { height: auto; }
+}
+
+/* Checkboxes and radios in the interface's gold; the 2D look's drop-downs with a pixel chevron and
+   the text inset of the fields beside them (the isometric skin draws its own, iso.css). */
+html:not(.iso) input[type="checkbox"], html:not(.iso) input[type="radio"] { accent-color: var(--c-gold); }
+html:not(.iso) select { appearance: none; -webkit-appearance: none; padding-right: 28px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 6 4' shape-rendering='crispEdges'%3E%3Cpath fill='%23dba63b' d='M0 0h1v1H0zM5 0h1v1H5zM0 1h2v1H0zM4 1h2v1H4zM1 2h4v1H1zM2 3h2v1H2z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; background-size: 12px 8px; cursor: pointer; }
+html.art:not(.iso) select { border-image: var(--nine-frame-inset-nofill, var(--nine-frame-inset)); background: var(--c-soot) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 6 4' shape-rendering='crispEdges'%3E%3Cpath fill='%23dba63b' d='M0 0h1v1H0zM5 0h1v1H5zM0 1h2v1H0zM4 1h2v1H4zM1 2h4v1H1zM2 3h2v1H2z'/%3E%3C/svg%3E") no-repeat right 10px center / 12px 8px; }
+
+/* ------------------------------------------------------------------------------------------
+   The title screen (title.js): the island behind, a shade at the left, the logo and the main
+   menu over it, the credits at the foot. Over the game's chrome, under dialogs and toasts. */
+
+#title-screen { position: fixed; inset: 0; z-index: 17; background: #0e1730; overflow: hidden; opacity: 1; transition: opacity 420ms ease; }
+#title-screen[hidden] { display: none; }
+#title-screen.leaving { opacity: 0; pointer-events: none; }
+.title-backdrop { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.title-shade {
+  position: absolute; inset: 0; pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(12, 19, 38, 0.94) 0%, rgba(12, 19, 38, 0.86) 24%, rgba(12, 19, 38, 0.35) 44%, rgba(12, 19, 38, 0) 58%),
+    radial-gradient(ellipse at 62% 55%, rgba(12, 19, 38, 0) 40%, rgba(12, 19, 38, 0.55) 100%);
+}
+.title-column {
+  position: absolute; left: clamp(24px, 6vw, 120px); top: 50%; transform: translateY(-52%);
+  width: min(400px, calc(100vw - 48px)); display: flex; flex-direction: column; gap: 14px;
+}
+.title-logo { color: var(--c-gold); font-size: 54px; line-height: 1.05; letter-spacing: 0.02em; filter: drop-shadow(0 4px 0 var(--c-void)) drop-shadow(0 0 22px rgba(255, 182, 59, 0.28)); }
+.title-logo { transition: opacity 300ms ease; }
+.title-logo.pending { opacity: 0; }
+.title-logo .ui-ptext.title-logo-px { background-color: transparent; background-image: linear-gradient(180deg, var(--c-glow) 0%, var(--c-gold) 48%, var(--c-ochre) 100%); }
+.title-tagline { margin: 0; color: var(--c-stone); font-size: 15px; line-height: 1.5; max-width: 30em; }
+.title-menu { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; width: min(340px, 100%); }
+button.title-item { flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; min-height: 48px; padding: 6px 18px; text-align: left; font-size: 16px; }
+button.title-item small { color: var(--dim); font-size: 12px; letter-spacing: 0; }
+html.art button.title-item:not(.link) { min-height: 48px; padding: calc(var(--u) * 2) calc(var(--u) * 6); }
+html.art button.title-item.primary:not([disabled]) { padding: calc(var(--u) * 2) calc(var(--u) * 6); }
+.title-status { margin: 0; min-height: 1.4em; color: var(--c-stone); font-size: 14px; }
+.title-status:not(:empty)::after { content: ""; display: inline-block; width: 1.2em; text-align: left; animation: title-dots 1.2s steps(4) infinite; }
+@keyframes title-dots { 0% { content: ""; } 25% { content: "."; } 50% { content: ".."; } 75% { content: "..."; } }
+.title-foot {
+  position: absolute; left: 0; right: 0; bottom: 0; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  padding: 18px clamp(24px, 6vw, 120px) 12px; color: var(--c-ash); font-size: 12px;
+  background: linear-gradient(rgba(12, 19, 38, 0), rgba(12, 19, 38, 0.88));
+}
+.title-build { font-family: var(--mono); }
+body.title-up #top, body.title-up #main, body.title-up #bottom { visibility: hidden; }
+@media (max-width: 760px) {
+  .title-shade { background: rgba(12, 19, 38, 0.8); }
+  .title-column { left: 50%; transform: translate(-50%, -52%); }
+  .title-logo { font-size: 36px; }
+  .title-foot { padding: 12px 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #title-screen { transition: none; }
+  .title-status:not(:empty)::after { animation: none; content: "…"; }
+}
+/* The isometric skin's larger lettering: a shorter civilization list, so the world's fields fit. */
+html.iso .civ-list { height: 300px; }
+html.iso .civ-info { height: 324px; }
+html.iso .civ-summary { font-size: inherit; }

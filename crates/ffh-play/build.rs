@@ -4,6 +4,7 @@
 // from `src/transport/art_files.rs`, which the server also uses for `--assets DIR`.
 // Also embeds the isometric renderer's sprites (`assets/app/iso/*.png`, docs/ISO.md, written by
 // `tools/m7/m7.py export`): `$OUT_DIR/iso_assets.rs`, every PNG there by `include_bytes!`.
+// And sets `FFH_BUILD_COMMIT` (`crate::BUILD_COMMIT`): the commit being built, for bug reports.
 
 use std::path::{Path, PathBuf};
 
@@ -46,6 +47,46 @@ fn main() {
     }
     rs.push_str("];\n");
     write_if_changed(&out.join("iso_assets.rs"), &rs);
+
+    build_commit(&manifest);
+}
+
+/// `cargo:rustc-env=FFH_BUILD_COMMIT`: `$FFH_BUILD_COMMIT` when set, else the short hash of git's
+/// HEAD, else "unknown"; the script reruns when HEAD moves (its file and the branch it names).
+fn build_commit(manifest: &Path) {
+    println!("cargo:rerun-if-env-changed=FFH_BUILD_COMMIT");
+    let git = |args: &[&str]| -> Option<String> {
+        let out = std::process::Command::new("git").args(args).current_dir(manifest).output().ok()?;
+        let s = String::from_utf8_lossy(&out.stdout).trim().to_string();
+        (out.status.success() && !s.is_empty()).then_some(s)
+    };
+    let commit = std::env::var("FFH_BUILD_COMMIT").ok().filter(|s| !s.is_empty()).or_else(|| git(&["rev-parse", "--short=12", "HEAD"]));
+    println!("cargo:rustc-env=FFH_BUILD_COMMIT={}", commit.as_deref().unwrap_or("unknown"));
+    let abs = |p: String| {
+        let p = PathBuf::from(p);
+        if p.is_absolute() {
+            p
+        } else {
+            manifest.join(p)
+        }
+    };
+    let mut watch = Vec::new();
+    if let Some(dir) = git(&["rev-parse", "--git-dir"]) {
+        let dir = abs(dir);
+        // HEAD's reflog moves with every commit, checkout and pull, also when the branch's ref
+        // is packed (no loose ref file to watch).
+        watch.push(dir.join("logs").join("HEAD"));
+        watch.push(dir.join("HEAD"));
+    }
+    if let (Some(common), Some(branch)) = (git(&["rev-parse", "--git-common-dir"]), git(&["symbolic-ref", "-q", "HEAD"])) {
+        let common = abs(common);
+        watch.push(common.join(branch));
+        watch.push(common.join("packed-refs"));
+    }
+    // A path that does not exist would rerun the script on every build.
+    for p in watch.into_iter().filter(|p| p.exists()) {
+        println!("cargo:rerun-if-changed={}", p.display());
+    }
 }
 
 fn write_if_changed(path: &Path, text: &str) {

@@ -49,6 +49,7 @@ fn loki(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
     if let Some(c) = g.map.plots[here].plot_city.filter(|&c| disrupt_target(g, v.team, c)) {
         if g.unit_can_cast(u, spell, false) {
             crate::trace!(g, p, "loki: disrupt {} (culture {})", g.cities[c].name, g.city_culture(c, g.cities[c].owner));
+            g.tel_cast_reason(u, "loki_disrupt", 0);
             g.unit_cast(u, spell);
             // A city taken is a new city (the old id is gone).
             crate::trace!(g, p, "loki: {}", if g.cities.contains(c) { "not yet" } else { "city taken" });
@@ -67,6 +68,7 @@ fn loki(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
     crate::trace!(g, p, "loki at {:?}: to {:?} ({} turns)", g.map.xy(here), g.map.xy(r.plot), r.turns);
     move_to(g, grp, r.plot, 0);
     if alive(g, grp) && g.units.contains(u) && g.unit_plot(u) == r.plot && g.unit_can_cast(u, spell, false) {
+        g.tel_cast_reason(u, "loki_disrupt", 0);
         g.unit_cast(u, spell);
     }
     if alive(g, grp) && g.group_ready_to_move(grp, true) {

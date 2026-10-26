@@ -8,8 +8,9 @@
 #   tools/web-check.sh --smoke      also the node smoke client: 20 turns against `ffh-play serve`
 #                                   (tools/web-api-smoke.mjs; builds nothing, needs
 #                                   target/release/ffh-play)
-#   tools/web-check.sh --browser    also the headless-Chromium smoke test (tools/web-smoke.mjs;
-#                                   skipped when no browser is found)
+#   tools/web-check.sh --browser    also the headless-Chromium smoke tests (tools/web-smoke.mjs and,
+#                                   on an emulated phone, tools/web-touch-smoke.mjs; skipped when no
+#                                   browser is found)
 #
 # NODE=/path/to/node overrides the node binary.
 set -euo pipefail
@@ -69,4 +70,5 @@ if [ "$smoke" = 1 ]; then
 fi
 if [ "$browser" = 1 ]; then
   "$node" "$root/tools/web-smoke.mjs"
+  "$node" "$root/tools/web-touch-smoke.mjs"
 fi

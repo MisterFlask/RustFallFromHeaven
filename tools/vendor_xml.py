@@ -101,7 +101,9 @@ def reconstruct_global_defines(dst):
     return changed
 
 
-_TEXT_RE = re.compile(r"<TEXT>\s*<Tag>([^<]+)</Tag>\s*<English>(.*?)</English>", re.S)
+# XML comments may stand between the elements (`<Tag>..</Tag> <!-- %s1_Text = ... --> <English>`,
+# 65 entries in BtS's CIV4GameTextInfos.xml alone).
+_TEXT_RE = re.compile(r"<TEXT>\s*(?:<!--.*?-->\s*)*<Tag>([^<]+)</Tag>\s*(?:<!--.*?-->\s*)*<English>(.*?)</English>", re.S)
 
 
 def read_english(src, into):

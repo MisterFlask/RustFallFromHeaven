@@ -21,8 +21,13 @@ export const S = {
   unitsAt: new Map(),
   /** The selection: own units on one plot, `{units: [ids], x, y}` or null. */
   sel: null,
-  /** Messages `{i, t, text}` read with the `log` query, and the next index. */
+  /** Messages `{i, t, text, player, at?}` read with the `log` query (`at`: the plot it is
+   *  about), and the next index. */
   messages: [],
+  /** This game's flags (`session flags`; tools.js). */
+  flags: [],
+  /** The spectator mode is on (tools.js). */
+  spectating: false,
   logNext: 0,
   /** The turn report of the current turn (`report` query). */
   report: null,
@@ -125,9 +130,49 @@ export function setMap(map) {
   S.map = map;
 }
 
-/** The human's player id and team. */
+/** The human's player id and team (observing: the player the view follows). */
 export function me() {
   return S.view?.me ?? null;
+}
+
+/** An observed game (an AI-only game watched by a spectator; `status.observe`): nothing is
+ *  ordered, only turns are played, and `me()` is the civilization the view follows. */
+export function observing(status = S.status) {
+  return !!status?.observe;
+}
+
+/** The commands an observed game takes: they play turns. */
+export const OBSERVER_COMMANDS = ["autoplay", "end_turn"];
+
+/** The kind of a located log entry for its map marker: "loss" (an attacker died), "kill" (a
+ *  defender died), "retreat" (fled or withdrew), "city" (a city captured or razed), else
+ *  "event". */
+export function eventKind(text) {
+  const t = text ?? "";
+  if (/ was captured by | was razed by |^You have (captured|destroyed) /.test(t)) return "city";
+  if (/ died attacking /.test(t)) return "loss";
+  if (/ destroyed | killed /.test(t)) return "kill";
+  if (/ fled from | withdrew from /.test(t)) return "retreat";
+  return "event";
+}
+
+/** The map markers of the latest located messages: one per plot (the strongest kind there),
+ *  `{x, y, kind, texts}`, for the messages of turn `from` on. */
+export function eventMarkers(messages, from) {
+  const rank = { city: 4, loss: 3, kill: 2, retreat: 1, event: 0 };
+  const byPlot = new Map();
+  for (const m of messages) {
+    if (!Array.isArray(m.at) || m.t < from) continue;
+    const key = `${m.at[0]},${m.at[1]}`;
+    const kind = eventKind(m.text);
+    const cur = byPlot.get(key);
+    if (!cur) byPlot.set(key, { x: m.at[0], y: m.at[1], kind, texts: [m.text] });
+    else {
+      cur.texts.push(m.text);
+      if (rank[kind] > rank[cur.kind]) cur.kind = kind;
+    }
+  }
+  return [...byPlot.values()];
 }
 
 /** The units the viewer sees on a plot. */
@@ -443,6 +488,35 @@ export function gateLines(c) {
 export function turns(n) {
   if (n === null || n === undefined || n < 0) return "-";
   return n === 1 ? "1 turn" : `${n} turns`;
+}
+
+/** A score for people: the score is a share of the world in basis points (docs/SCORE.md), shown
+ *  as a percentage: 1341 -> "13.4%". */
+export function scoreText(bp) {
+  if (bp === null || bp === undefined) return "-";
+  return `${(bp / 100).toFixed(1)}%`;
+}
+
+/** The fair share of `n` alive civilizations as a percentage ("20.0%"). */
+export function fairShareText(n) {
+  return n > 0 ? `${(100 / n).toFixed(1)}%` : "-";
+}
+
+/** The gold rate by its parts (`me.gold_parts`): income `[[what, gold]]`, costs `[[what, gold]]`
+ *  and the net they make (the gold rate while research is flexible). Null without parts. */
+export function goldBreakdown(gp) {
+  if (!gp) return null;
+  const income = [["from your cities' commerce", gp.income]];
+  if (gp.deals > 0) income.push(["from deals", gp.deals]);
+  const costs = [];
+  if (gp.units) costs.push([`units (${gp.units_count}, ${gp.units_free} of them free${gp.military_count ? `; ${gp.military_count} military, ${gp.military_free} free` : ""})`, gp.units]);
+  if (gp.supply) costs.push([`supply of ${gp.supply_units} unit${gp.supply_units === 1 ? "" : "s"} outside your borders`, gp.supply]);
+  if (gp.maintenance) costs.push(["city maintenance", gp.maintenance]);
+  if (gp.civics) costs.push(["civic upkeep", gp.civics]);
+  if (gp.deals < 0) costs.push(["deals", -gp.deals]);
+  if (gp.inflation) costs.push([`inflation (+${gp.inflation_rate}% on the costs)`, gp.inflation]);
+  const sum = (l) => l.reduce((n, [, g]) => n + g, 0);
+  return { income, costs, net: sum(income) - sum(costs) };
 }
 
 /** Moves for people: C++ counts 60 per move (`MOVE_DENOMINATOR`). */

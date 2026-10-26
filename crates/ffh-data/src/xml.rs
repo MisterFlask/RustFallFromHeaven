@@ -6,7 +6,9 @@
 //! Files may be UTF-8 or ISO-8859-1 (Civ4 uses both); bytes that are not
 //! valid UTF-8 are decoded as Latin-1.
 
+use std::collections::HashMap;
 use std::fmt;
+use std::hash::{BuildHasherDefault, Hasher};
 
 #[derive(Debug)]
 pub struct XmlError {
@@ -24,10 +26,40 @@ impl std::error::Error for XmlError {}
 
 const NONE: u32 = u32::MAX;
 
+/// FNV-1a for the element-name interner: names are short ASCII tags from trusted files, so
+/// SipHash's DoS resistance buys nothing and costs several times more per lookup. The map is only
+/// looked up, never iterated.
+#[derive(Clone, Copy)]
+struct Fnv(u64);
+
+impl Default for Fnv {
+    fn default() -> Self {
+        Fnv(0xcbf2_9ce4_8422_2325)
+    }
+}
+
+impl Hasher for Fnv {
+    fn finish(&self) -> u64 {
+        self.0
+    }
+    fn write(&mut self, bytes: &[u8]) {
+        let mut h = self.0;
+        for &b in bytes {
+            h ^= b as u64;
+            h = h.wrapping_mul(0x0000_0100_0000_01b3);
+        }
+        self.0 = h;
+    }
+}
+
+type NameIds = HashMap<String, u32, BuildHasherDefault<Fnv>>;
+
 #[derive(Debug, Clone)]
 struct XNode {
-    name: String,
-    /// Concatenated direct character data (not trimmed).
+    /// Interned element name: index into `XmlDoc::names` (equal ids <=> equal names).
+    name: u32,
+    /// Concatenated direct character data (not trimmed), except whitespace-only runs before the
+    /// first other character data, which `Elem::text` would trim anyway.
     text: String,
     attrs: Vec<(String, String)>,
     first_child: u32,
@@ -40,6 +72,10 @@ struct XNode {
 #[derive(Debug, Clone)]
 pub struct XmlDoc {
     nodes: Vec<XNode>,
+    /// Distinct element names in order of first appearance (`XNode::name` indexes this).
+    names: Vec<String>,
+    /// Name -> id, for lookups by tag (`child`, `children_named`, `find`).
+    name_ids: NameIds,
 }
 
 /// Borrowed handle to an element.
@@ -64,26 +100,41 @@ pub fn decode_bytes(bytes: &[u8]) -> String {
 
 impl XmlDoc {
     pub fn parse_bytes(bytes: &[u8]) -> Result<XmlDoc, XmlError> {
-        Self::parse(&decode_bytes(bytes))
+        // Same text as `decode_bytes`, without copying a UTF-8 file into a new String.
+        match std::str::from_utf8(bytes) {
+            Ok(s) => Self::parse(s.trim_start_matches('\u{feff}')),
+            Err(_) => Self::parse(&decode_bytes(bytes)),
+        }
     }
 
     pub fn parse(src: &str) -> Result<XmlDoc, XmlError> {
-        let mut p = Parser { s: src.as_bytes(), src, pos: 0, nodes: Vec::new() };
+        let mut p = Parser { s: src.as_bytes(), src, pos: 0, nodes: Vec::new(), names: Vec::new(), name_ids: NameIds::default() };
         p.parse_document()?;
         if p.nodes.is_empty() {
             return Err(XmlError { msg: "no root element".into(), offset: 0 });
         }
-        Ok(XmlDoc { nodes: p.nodes })
+        Ok(XmlDoc { nodes: p.nodes, names: p.names, name_ids: p.name_ids })
     }
 
     pub fn root(&self) -> Elem<'_> {
         Elem { doc: self, idx: 0 }
     }
+
+    /// The interned id of an element name, `None` if no element of this document has it.
+    #[inline]
+    fn name_id(&self, name: &str) -> Option<u32> {
+        self.name_ids.get(name).copied()
+    }
 }
 
 impl<'a> Elem<'a> {
     pub fn name(&self) -> &'a str {
-        &self.doc.nodes[self.idx as usize].name
+        &self.doc.names[self.doc.nodes[self.idx as usize].name as usize]
+    }
+
+    #[inline]
+    fn name_is(&self, id: u32) -> bool {
+        self.doc.nodes[self.idx as usize].name == id
     }
 
     /// Trimmed direct character content.
@@ -122,7 +173,8 @@ impl<'a> Elem<'a> {
 
     /// First direct child element with the given tag name.
     pub fn child(&self, name: &str) -> Option<Elem<'a>> {
-        self.children().find(|c| c.name() == name)
+        let id = self.doc.name_id(name)?;
+        self.children().find(|c| c.name_is(id))
     }
 
     /// All direct child elements with the given tag name.
@@ -130,7 +182,8 @@ impl<'a> Elem<'a> {
     where
         'a: 'b,
     {
-        self.children().filter(move |c| c.name() == name)
+        let id = self.doc.name_id(name);
+        self.children().filter(move |c| id.is_some_and(|id| c.name_is(id)))
     }
 
     pub fn next_sibling(&self) -> Option<Elem<'a>> {
@@ -145,11 +198,16 @@ impl<'a> Elem<'a> {
 
     /// Depth-first search for the first descendant (or self) with the given name.
     pub fn find(&self, name: &str) -> Option<Elem<'a>> {
-        if self.name() == name {
+        let id = self.doc.name_id(name)?;
+        self.find_id(id)
+    }
+
+    fn find_id(&self, id: u32) -> Option<Elem<'a>> {
+        if self.name_is(id) {
             return Some(*self);
         }
         for c in self.children() {
-            if let Some(f) = c.find(name) {
+            if let Some(f) = c.find_id(id) {
                 return Some(f);
             }
         }
@@ -179,6 +237,8 @@ struct Parser<'s> {
     src: &'s str,
     pos: usize,
     nodes: Vec<XNode>,
+    names: Vec<String>,
+    name_ids: NameIds,
 }
 
 impl<'s> Parser<'s> {
@@ -227,7 +287,7 @@ impl<'s> Parser<'s> {
         }
     }
 
-    fn parse_name(&mut self) -> Result<String, XmlError> {
+    fn parse_name(&mut self) -> Result<&'s str, XmlError> {
         let start = self.pos;
         while self.pos < self.s.len() {
             let c = self.s[self.pos];
@@ -239,10 +299,21 @@ impl<'s> Parser<'s> {
         if self.pos == start {
             return self.err("expected name");
         }
-        Ok(self.src[start..self.pos].to_string())
+        let src: &'s str = self.src;
+        Ok(&src[start..self.pos])
     }
 
-    fn add_node(&mut self, name: String, parent: u32) -> u32 {
+    fn intern(&mut self, name: &str) -> u32 {
+        if let Some(&id) = self.name_ids.get(name) {
+            return id;
+        }
+        let id = self.names.len() as u32;
+        self.names.push(name.to_string());
+        self.name_ids.insert(name.to_string(), id);
+        id
+    }
+
+    fn add_node(&mut self, name: u32, parent: u32) -> u32 {
         let idx = self.nodes.len() as u32;
         self.nodes.push(XNode {
             name,
@@ -277,6 +348,7 @@ impl<'s> Parser<'s> {
             debug_assert!(self.s[self.pos] == b'<');
             self.pos += 1;
             let name = self.parse_name()?;
+            let name = self.intern(name);
             let idx = self.add_node(name, cur_parent);
             // attributes
             let mut self_closing = false;
@@ -299,7 +371,7 @@ impl<'s> Parser<'s> {
                         break;
                     }
                     _ => {
-                        let an = self.parse_name()?;
+                        let an = self.parse_name()?.to_string();
                         self.skip_ws();
                         if self.s.get(self.pos) != Some(&b'=') {
                             return self.err("expected '=' after attribute name");
@@ -354,11 +426,9 @@ impl<'s> Parser<'s> {
                     }
                     self.pos += 1;
                     let top = stack.pop().unwrap();
-                    if self.nodes[top as usize].name != name {
-                        return self.err(format!(
-                            "mismatched end tag </{}> for <{}>",
-                            name, self.nodes[top as usize].name
-                        ));
+                    let open = &self.names[self.nodes[top as usize].name as usize];
+                    if open != name {
+                        return self.err(format!("mismatched end tag </{}> for <{}>", name, open));
                     }
                     cur_parent = stack.last().copied().unwrap_or(parent);
                 } else if self.s[self.pos] == b'<' {
@@ -370,11 +440,14 @@ impl<'s> Parser<'s> {
                     }
                     let raw = &self.src[start..self.pos];
                     let top = *stack.last().unwrap();
-                    if raw.contains('&') {
-                        let t = unescape(raw);
-                        self.nodes[top as usize].text.push_str(&t);
+                    let text = &mut self.nodes[top as usize].text;
+                    if text.is_empty() && raw.chars().all(char::is_whitespace) {
+                        // Whitespace before an element's first character data (the indentation
+                        // between child elements): `text()` trims it away, so it is not kept.
+                    } else if raw.contains('&') {
+                        text.push_str(&unescape(raw));
                     } else {
-                        self.nodes[top as usize].text.push_str(raw);
+                        text.push_str(raw);
                     }
                 }
             }

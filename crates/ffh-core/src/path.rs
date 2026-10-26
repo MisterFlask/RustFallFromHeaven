@@ -56,6 +56,7 @@
 //! Efficiency: node storage is allocated once per map (`initialize`); a search only resets the
 //! nodes the previous search touched; the open list is a binary heap with lazy deletion.
 
+use std::cell::{Cell, RefCell};
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 
@@ -264,6 +265,52 @@ pub struct PathFinder {
     search_key: Option<SearchKey>,
     /// The destination where the kept search stopped: closed but not yet expanded.
     unexpanded: Option<u32>,
+    /// Scratch for the path finder's callbacks (see [`DefenseMemo`]); not saved.
+    defense_memo: DefenseMemo,
+}
+
+/// `pathCost`'s `CvPlot::defenseModifier(team, bIgnoreBuilding = false)` values within one
+/// `generate_path` call. `plot_defense_modifier` reaches none of the state a `&Game` call can
+/// write (the path finders, `Player::ai_bonus_value`, the city rank caches), so the game it
+/// reads cannot change during the call and a value computed once per (plot, team) is the value
+/// every later call would compute. (A change that lets it reach such state must drop this
+/// memo.) Entries are stamped with the call they were computed in, and entries of an earlier
+/// call are ignored (its game state may differ, also when the call continues a kept search).
+/// Pure scratch: it never changes a result, so it is not saved (a loaded finder starts empty).
+#[derive(Clone, Debug, Default)]
+pub(crate) struct DefenseMemo {
+    stamp: u32,
+    /// Per plot index: (stamp, team, modifier).
+    entries: Vec<(u32, TeamId, i32)>,
+}
+
+impl DefenseMemo {
+    /// Starts a new `generate_path` call on a map of `num_plots` plots.
+    fn begin(&mut self, num_plots: usize) {
+        if self.entries.len() != num_plots {
+            self.entries = vec![(0, TeamId(0), 0); num_plots];
+            self.stamp = 0;
+        }
+        self.stamp = self.stamp.wrapping_add(1);
+        if self.stamp == 0 {
+            self.entries.iter_mut().for_each(|e| e.0 = 0);
+            self.stamp = 1;
+        }
+    }
+
+    fn get(&self, plot: PlotIdx, team: TeamId) -> Option<i32> {
+        match self.entries.get(plot.idx()) {
+            Some(&(stamp, t, value)) if stamp == self.stamp && t == team => Some(value),
+            _ => None,
+        }
+    }
+
+    fn set(&mut self, plot: PlotIdx, team: TeamId, value: i32) {
+        let stamp = self.stamp;
+        if let Some(e) = self.entries.get_mut(plot.idx()) {
+            *e = (stamp, team, value);
+        }
+    }
 }
 
 impl PathFinder {
@@ -285,6 +332,7 @@ impl PathFinder {
             stack: Vec::new(),
             search_key: None,
             unexpanded: None,
+            defense_memo: DefenseMemo::default(),
         }
     }
 
@@ -336,7 +384,13 @@ impl PathFinder {
             FinderKind::Path => {
                 // C++ dereferences the SetData pointer in every callback.
                 let group = self.group.expect("FAStar path finder: SetData (selection group) not set");
-                self.search(&PathCallbacks { g, group }, start_x, start_y, dest_x, dest_y, cardinal_only, info, reuse, Some(group))
+                let sea = g.group_get_domain_type(group) == Some(DomainType::DOMAIN_SEA);
+                let mut memo = std::mem::take(&mut self.defense_memo);
+                memo.begin(self.nodes.len());
+                let cb = PathCallbacks { g, group, sea, from_memo: Cell::new(None), defense_memo: RefCell::new(memo) };
+                let found = self.search(&cb, start_x, start_y, dest_x, dest_y, cardinal_only, info, reuse, Some(group));
+                self.defense_memo = cb.defense_memo.into_inner();
+                found
             }
             FinderKind::Step => self.search(&StepCallbacks { g }, start_x, start_y, dest_x, dest_y, cardinal_only, info, reuse, None),
             FinderKind::Route => self.search(&RouteCallbacks { g }, start_x, start_y, dest_x, dest_y, cardinal_only, info, reuse, None),
@@ -699,6 +753,21 @@ fn parent_and_child(nodes: &mut [PathNode], p: usize, c: usize) -> (&PathNode, &
 struct PathCallbacks<'a> {
     g: &'a Game,
     group: GroupId,
+    /// The last [`Game::path_valid_from`] result, keyed by the parent's (x, y, data1, data2).
+    /// `expand` asks `Valid(parent, child)` for the up to 8 children of one parent in a row, and
+    /// that part of pathValid reads only the parent's plot, `data1` and `data2` (which change
+    /// when a node is re-parented: hence the key), the group, the finder info and the game. The
+    /// group and the info are fixed for one `generate_path`, and the game cannot change during
+    /// it: `path_valid_from` reaches none of the state a `&Game` call can write (the path
+    /// finders, `Player::ai_bonus_value`, the city rank caches; a change that lets it must drop
+    /// this memo). A new `PathCallbacks` is built for every `generate_path`, so nothing is kept
+    /// across searches.
+    from_memo: Cell<Option<((i32, i32, i32, i32), bool)>>,
+    /// `group_get_domain_type(group) == DOMAIN_SEA` (fixed during one search): only sea groups
+    /// have a step test ([`Game::path_valid_step`] is true for the others).
+    sea: bool,
+    /// `pathCost`'s defense modifiers within this call (see [`DefenseMemo`]).
+    defense_memo: RefCell<DefenseMemo>,
 }
 
 impl FinderCallbacks for PathCallbacks<'_> {
@@ -711,11 +780,26 @@ impl FinderCallbacks for PathCallbacks<'_> {
     }
 
     fn cost(&self, ctx: &FinderCtx, parent: &PathNode, node: &PathNode) -> i32 {
-        self.g.path_cost(parent, node, 0, self.group, ctx)
+        self.g.path_cost_memo(parent, node, 0, self.group, ctx, Some(&self.defense_memo))
     }
 
     fn valid(&self, ctx: &FinderCtx, parent: Option<&PathNode>, node: &PathNode) -> bool {
-        self.g.path_valid(parent, node, 0, self.group, ctx)
+        // `Game::path_valid`, with its parent-only part memoized (see `from_memo`).
+        let Some(parent) = parent else {
+            return true;
+        };
+        if self.sea && !self.g.path_valid_step(parent, node, self.group) {
+            return false;
+        }
+        let key = (parent.x, parent.y, parent.data1, parent.data2);
+        if let Some((k, v)) = self.from_memo.get() {
+            if k == key {
+                return v;
+            }
+        }
+        let v = self.g.path_valid_from(parent, self.group, ctx);
+        self.from_memo.set(Some((key, v)));
+        v
     }
 
     fn notify_child(&self, ctx: &FinderCtx, parent: Option<&PathNode>, node: &mut PathNode, data: i32) {
@@ -985,7 +1069,32 @@ impl Game {
     }
 
     /// C++ `pathCost(parent, node, data, pointer = group, finder)`.
-    pub fn path_cost(&self, parent: &PathNode, node: &PathNode, _data: i32, group: GroupId, finder: &FinderCtx) -> i32 {
+    pub fn path_cost(&self, parent: &PathNode, node: &PathNode, data: i32, group: GroupId, finder: &FinderCtx) -> i32 {
+        self.path_cost_memo(parent, node, data, group, finder, None)
+    }
+
+    /// [`Game::path_cost`] with the path finder's per-call memo of the defense modifiers.
+    pub(crate) fn path_cost_memo(
+        &self,
+        parent: &PathNode,
+        node: &PathNode,
+        _data: i32,
+        group: GroupId,
+        finder: &FinderCtx,
+        memo: Option<&RefCell<DefenseMemo>>,
+    ) -> i32 {
+        // `CvPlot::defenseModifier(eTeam, false)`: pure, so the memo returns what it computes.
+        let defense_modifier = |plot: PlotIdx, team: TeamId| -> i32 {
+            let Some(memo) = memo else {
+                return self.plot_defense_modifier(plot, Some(team), false);
+            };
+            if let Some(value) = memo.borrow().get(plot, team) {
+                return value;
+            }
+            let value = self.plot_defense_modifier(plot, Some(team), false);
+            memo.borrow_mut().set(plot, team, value);
+            value
+        };
         let d = self.d;
         let from_plot = self.map.plot_soren(parent.x, parent.y).expect("pathCost: FromPlot");
         let to_plot = self.map.plot_soren(node.x, node.y).expect("pathCost: ToPlot");
@@ -1037,7 +1146,7 @@ impl Game {
                         let no_defensive_bonus = self.unit_no_defensive_bonus(loop_unit);
 
                         if moves_left == 0 {
-                            let defense = if no_defensive_bonus { 0 } else { self.plot_defense_modifier(to_plot, Some(unit_team), false) };
+                            let defense = if no_defensive_bonus { 0 } else { defense_modifier(to_plot, unit_team) };
                             cost += PATH_DEFENSE_WEIGHT * 0.max(200 - defense);
                         }
 
@@ -1045,11 +1154,7 @@ impl Game {
                             if self.unit_can_attack(loop_unit) {
                                 if is_path_dest {
                                     if self.plot_is_visible_enemy_defender(to_plot, loop_unit) {
-                                        let defense = if no_defensive_bonus {
-                                            0
-                                        } else {
-                                            self.plot_defense_modifier(from_plot, Some(unit_team), false)
-                                        };
+                                        let defense = if no_defensive_bonus { 0 } else { defense_modifier(from_plot, unit_team) };
                                         cost += PATH_DEFENSE_WEIGHT * 0.max(200 - defense);
 
                                         if self.map.plots[from_plot].plot_city.is_none() {
@@ -1092,11 +1197,18 @@ impl Game {
     }
 
     /// C++ `pathValid(parent, node, data, pointer = group, finder)` (`parent` NULL = start node).
+    /// Split in two pure halves: [`Self::path_valid_step`] (the only test that reads `node`) and
+    /// [`Self::path_valid_from`] (everything else, a function of the parent alone), so the path
+    /// finder can evaluate the second once per expanded parent.
     pub fn path_valid(&self, parent: Option<&PathNode>, node: &PathNode, _data: i32, group: GroupId, finder: &FinderCtx) -> bool {
         let Some(parent) = parent else {
             return true;
         };
+        self.path_valid_step(parent, node, group) && self.path_valid_from(parent, group, finder)
+    }
 
+    /// The step test of C++ `pathValid`: sea groups cannot cut a diagonal between two land plots.
+    pub fn path_valid_step(&self, parent: &PathNode, node: &PathNode, group: GroupId) -> bool {
         let from_plot = self.map.plot_soren(parent.x, parent.y).expect("pathValid: FromPlot");
         let to_plot = self.map.plot_soren(node.x, node.y).expect("pathValid: ToPlot");
 
@@ -1110,6 +1222,13 @@ impl Game {
                 }
             }
         }
+        true
+    }
+
+    /// The rest of C++ `pathValid` (after the step test): leaving the parent's plot (danger,
+    /// territory flags, moving through it). Reads only `parent` (plot, `data1`, `data2`).
+    pub fn path_valid_from(&self, parent: &PathNode, group: GroupId, finder: &FinderCtx) -> bool {
+        let from_plot = self.map.plot_soren(parent.x, parent.y).expect("pathValid: FromPlot");
 
         if self.group_at_plot(group, Some(from_plot)) {
             return true;
@@ -1313,7 +1432,12 @@ impl Game {
         let old_plot = self.map.plot_soren(parent.x, parent.y).expect("plotGroupValid: OldPlot");
         let new_plot = self.map.plot_soren(node.x, node.y).expect("plotGroupValid: NewPlot");
 
-        let player = finder_player(finder);
+        self.plot_group_valid_step(old_plot, new_plot, finder_player(finder))
+    }
+
+    /// [`Game::plot_group_valid`] for the step `old_plot` -> `new_plot` of `player`'s plot group
+    /// finder (the plots the nodes stand for).
+    pub fn plot_group_valid_step(&self, old_plot: PlotIdx, new_plot: PlotIdx, player: PlayerId) -> bool {
         let team = self.players[player].team;
 
         if self.plot_get_plot_group(old_plot, player) == self.plot_get_plot_group(new_plot, player) {

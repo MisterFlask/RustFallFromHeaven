@@ -4,16 +4,52 @@
 // `percent_change`); the server checks them as the exe's screens do.
 
 import * as api from "./api.js";
-import { S, dname, info, turns, me } from "./state.js";
-import { h, toast, typeIconOf } from "./dom.js";
+import { S, dname, info, turns, me, goldBreakdown } from "./state.js";
+import { h, toast, typeIconOf, tapModes } from "./dom.js";
 import { openModal } from "./modals.js";
 import { run } from "./commands.js";
-import { plain } from "./markup.js";
+import { render as markup } from "./markup.js";
+import { isoSkin, unlockIcon } from "./isoui.js";
+import { infoTip } from "./infotips.js";
 
-const helpOf = (kind, i) => {
-  const e = info(kind, i);
-  return [e?.help, e?.strategy].filter(Boolean).map((s) => plain(s)).join("\n");
-};
+/** The rich tooltip of entry `x` of the `techs` query: its name and era, what it brings the
+ *  player (`help`, the server's C++ `setTechHelp`), its strategy text, and what a click does. */
+export function techTip(x, hint) {
+  const e = info("TechType", x.tech);
+  return () => [
+    h("div.tip-title", dname("TechType", x.tech), x.era !== null && x.era !== undefined ? h("span.dim", ` (${dname("EraType", x.era)})`) : null),
+    x.help ? h("div.tip-effects", markup(x.help)) : h("div.dim", "Nothing new by itself."),
+    e?.strategy ? h("div.tip-strategy", markup(e.strategy)) : null,
+    hint ? h("div.tip-hint", hint) : null,
+  ];
+}
+
+/** The `techs` query's `unlocks` kinds, in the order a tech's card shows them, with their tables. */
+const UNLOCKS = [["units", "UnitType"], ["builds", "BuildType"], ["buildings", "BuildingType"], ["religions", "ReligionType"], ["civics", "CivicType"]];
+
+/** What entry `x` of the `techs` query unlocks (its units, builds, buildings, religions, civics),
+ *  for a tech's card: in the isometric interface a row of their icons, each with its own tooltip,
+ *  the first `max` and a count of the rest; else their names on a line. Null when it unlocks none of
+ *  them. */
+export function unlockRow(x, max = 6) {
+  const items = UNLOCKS.flatMap(([kind, table]) => (x.unlocks?.[kind] ?? []).map((i) => ({ kind, table, i })));
+  if (!items.length) return null;
+  const names = items.map((it) => dname(it.table, it.i));
+  if (!isoSkin()) return h("span.unlocks.dim", { title: names.join(", ") }, names.join(", "));
+  const shown = items.length > max ? items.slice(0, max - 1) : items;
+  // A build's tooltip is its improvement's (or road's): what the land gains.
+  const tipOf = ({ kind, table, i }) => {
+    const b = kind === "builds" ? info("BuildType", i) : null;
+    if (b?.improvement !== null && b?.improvement !== undefined) return infoTip("ImprovementType", b.improvement);
+    if (b?.route !== null && b?.route !== undefined) return infoTip("RouteType", b.route);
+    return infoTip(table, i);
+  };
+  return h(
+    "span.unlocks",
+    shown.map((it) => h("span.unlock", { tip: tipOf(it) }, unlockIcon(it.kind, it.i))),
+    shown.length < items.length ? h("span.unlock.more", { title: names.slice(shown.length).join(", ") }, `+${items.length - shown.length}`) : null,
+  );
+}
 
 // ---------------------------------------------------------------------------------------------
 // The tech tree (Civ4's technology advisor, F6).
@@ -51,6 +87,8 @@ export async function openTechTree() {
   const H = 38;
   const GX = 36;
   const GY = 8;
+  /** What a tap does on a touch screen (for want of Shift): "now" or "queue". */
+  let tapMode = "now";
   const load = async () => {
     let t;
     try {
@@ -84,6 +122,8 @@ export async function openTechTree() {
           const y2 = to.y + H / 2;
           path.setAttribute("d", `M${x1},${y1} C${x1 + GX / 2},${y1} ${x2 - GX / 2},${y2} ${x2},${y2}`);
           path.setAttribute("class", from.has ? "have" : "");
+          path.dataset.from = String(p);
+          path.dataset.to = String(x.tech);
           if (dash) path.setAttribute("stroke-dasharray", dash);
           svg.appendChild(path);
         }
@@ -98,11 +138,16 @@ export async function openTechTree() {
         {
           class: state,
           "data-tech": x.tech,
+          "data-era": x.era ?? "",
+          onmouseenter: () => focus(x.tech),
+          onmouseleave: () => focus(null),
+          onfocus: () => focus(x.tech),
+          onblur: () => focus(null),
           style: { left: `${p.x}px`, top: `${p.y}px`, width: `${W}px`, height: `${H}px` },
-          title: `${dname("TechType", x.tech)}${x.era !== null ? ` (${dname("EraType", x.era)})` : ""}\n${helpOf("TechType", x.tech)}\nClick: research it (with its missing prerequisites). Shift-click: add it to the queue.`,
+          tip: techTip(x, x.has ? null : "Click: research it (with its missing prerequisites). Shift-click: add it to the queue."),
           disabled: x.has,
           onclick: async (ev) => {
-            if (await run({ c: "research", tech: x.tech, shift: !!ev.shiftKey })) load();
+            if (await run({ c: "research", tech: x.tech, shift: !!ev.shiftKey || tapMode === "queue" })) load();
           },
         },
         h("span.tech-name", dname("TechType", x.tech)),
@@ -110,15 +155,34 @@ export async function openTechTree() {
         x.progress && !x.has ? h("span.tech-bar", h("span", { style: { width: `${Math.min(100, Math.round((100 * x.progress) / Math.max(1, x.cost)))}%` } })) : null,
       );
     });
+    // Hovering a tech lights it, every tech it needs (its and/or prerequisites, all the way
+    // back) and the lines between them; the rest of the tree dims.
+    const tree = h("div.tree", { style: { width: `${width}px`, height: `${height}px` } }, svg, boxes);
+    const ancestors = (id) => {
+      const seen = new Set([id]);
+      const stack = [id];
+      while (stack.length) {
+        const x = byId.get(stack.pop());
+        for (const p of [...(x?.and ?? []), ...(x?.or ?? [])]) if (byId.has(p) && !seen.has(p)) (seen.add(p), stack.push(p));
+      }
+      return seen;
+    };
+    function focus(id) {
+      tree.classList.toggle("focus", id !== null);
+      const lit = id === null ? new Set() : ancestors(id);
+      for (const b of boxes) b.classList.toggle("lit", lit.has(Number(b.dataset.tech)));
+      for (const p of svg.children) p.classList.toggle("lit", lit.has(Number(p.dataset.to)) && lit.has(Number(p.dataset.from)));
+    }
     const cur = t.current !== null ? dname("TechType", t.current) : null;
     m.setBody(
       h(
         "div.research-head",
         cur ? h("div", "Researching ", h("b", cur)) : h("div.warn", "Nothing is being researched."),
         t.queue.length > 1 ? h("div.dim", `Queue: ${t.queue.map((q) => dname("TechType", q)).join(" → ")}`) : null,
-        h("div.dim", `${t.rate} research per turn. Click a technology to research it (with what it needs); Shift-click to queue it.`),
+        h("div.dim", `${t.rate} research per turn. Click a technology to research it (with what it needs); Shift-click to queue it. Point at one to see the path to it.`),
+        tapModes(tapMode, [["now", "Research now", "A tap researches it now"], ["queue", "Add to queue", "A tap adds it to the research queue (Shift-click)"]], (v) => ((tapMode = v), load())),
       ),
-      h("div.tree-scroll", h("div.tree", { style: { width: `${width}px`, height: `${height}px` } }, svg, boxes)),
+      h("div.tree-scroll", tree),
     );
     const now = m.el.querySelector(".tech.researching") ?? m.el.querySelector(".tech.can");
     now?.scrollIntoView({ block: "center", inline: "center" });
@@ -157,7 +221,7 @@ export async function openCivics() {
               class: [x.current ? "current" : "", chosen ? "chosen" : ""].filter(Boolean).join(" "),
               "data-civic": x.civic,
               disabled: !x.available && !x.current,
-              title: `${helpOf("CivicType", x.civic)}\nUpkeep ${x.upkeep} gold${x.anarchy ? `, ${turns(x.anarchy)} of anarchy alone` : ""}`,
+              tip: () => civicTip(x),
               onclick: () => {
                 // One civic per option: a pick replaces the option's other pick; the current civic
                 // takes the pick back.
@@ -200,8 +264,41 @@ export async function openCivics() {
   return m.done;
 }
 
+/** The rich tooltip of civic `x` of the `civics` query: why it cannot be adopted now, what it
+ *  does, its upkeep and the anarchy of switching to it alone. */
+function civicTip(x) {
+  const e = info("CivicType", x.civic);
+  // The row's help leaves out the requirements, which `requires` lists when one is not met.
+  const does = (x.help ?? e?.effects) || e?.help;
+  return [
+    h("div.tip-title", dname("CivicType", x.civic), x.current ? h("span.dim", " (current)") : null),
+    (x.requires ?? []).length ? h("div.tip-requires", x.requires.map((r) => h("div", r))) : null,
+    does ? h("div.tip-effects", markup(does)) : null,
+    e?.strategy ? h("div.tip-strategy", markup(e.strategy)) : null,
+    h("div.tip-hint", `Upkeep ${x.upkeep} gold${x.anarchy ? `; ${turns(x.anarchy)} of anarchy alone` : ""}`),
+  ];
+}
+
 // ---------------------------------------------------------------------------------------------
 // Religion (F7).
+
+/** "first to discover <tech>" for a religion not founded yet (C++ `buildFoundReligionString`). */
+function foundedBy(religion) {
+  const t = info("ReligionType", religion)?.tech;
+  return h("span.dim", t !== null && t !== undefined ? `not founded: the first to discover ${dname("TechType", t)} founds it` : "not founded");
+}
+
+/** The rich tooltip of row `x` of the `religions` query: what the religion does, and how it is
+ *  founded. */
+function religionTip(x) {
+  const e = info("ReligionType", x.religion);
+  const does = e?.effects || e?.help;
+  return [
+    h("div.tip-title", dname("ReligionType", x.religion), e?.alignment !== null && e?.alignment !== undefined ? h("span.dim", ` (${dname("AlignmentType", e.alignment)})`) : null),
+    does ? h("div.tip-effects", markup(does)) : null,
+    !x.founded && e?.tech !== null && e?.tech !== undefined ? h("div.tip-hint", `The first civilization to discover ${dname("TechType", e.tech)} founds it.`) : null,
+  ];
+}
 
 /** The religion screen: every religion (founded, its holy city as far as revealed, your cities
  *  with it), the state religion, conversion (`convert`). */
@@ -222,8 +319,8 @@ export async function openReligion() {
       h(
         "tr",
         { class: r.state_religion === x.religion ? "state" : "", "data-religion": x.religion },
-        h("td", { title: helpOf("ReligionType", x.religion) }, typeIconOf("religion", x.religion, 16), dname("ReligionType", x.religion), r.state_religion === x.religion ? h("span.badge", "state religion") : null),
-        h("td", x.founded ? "founded" : h("span.dim", "not founded")),
+        h("td", { tip: () => religionTip(x) }, typeIconOf("religion", x.religion, 16), dname("ReligionType", x.religion), r.state_religion === x.religion ? h("span.badge", "state religion") : null),
+        h("td", x.founded ? "founded" : foundedBy(x.religion)),
         h("td", x.holy_city !== null ? (S.cities.get(x.holy_city)?.name ?? `city ${x.holy_city}`) : x.our_holy_city ? "yours" : h("span.dim", "-")),
         h("td", String(x.our_cities)),
         h("td", x.can_convert ? h("button.small", { onclick: () => convert(x.religion) }, "Convert") : null),
@@ -264,13 +361,25 @@ export function openFinance() {
                 h("button.small.minus", { disabled: p < step, title: `−${step}%`, onclick: () => change(i, -step) }, "−"),
                 h("button.small.plus", { disabled: p + step > 100, title: `+${step}%`, onclick: () => change(i, step) }, "+"),
               ]
-            : h("span.dim", "fixed"),
+            : h("span.dim", i === 0 ? "the rest" : "fixed"),
         ),
       ),
     );
+    // Where the gold rate comes from (the financial advisor).
+    const b = goldBreakdown(my.gold_parts);
+    const money = b
+      ? h(
+          "table.kv.finance",
+          b.income.map(([what, n]) => h("tr", h("th", `+${n}`), h("td", what))),
+          b.costs.map(([what, n]) => h("tr", h("th.warn", `−${n}`), h("td", what))),
+          h("tr.total", h("th", `${my.gold_rate >= 0 ? "+" : ""}${my.gold_rate}`), h("td", my.gold_parts.research_fixed ? "a turn (research cannot be adjusted: only a loss counts)" : "a turn")),
+        )
+      : null;
     m.setBody(
       h("table.kv.sliders", rows),
       h("p", `Gold ${my.gold} (${my.gold_rate >= 0 ? "+" : ""}${my.gold_rate} per turn) · research ${my.research_rate} per turn${my.anarchy ? ` · anarchy ${turns(my.anarchy)}` : ""}`),
+      money ? h("h4", "Gold per turn") : null,
+      money,
     );
   };
   const change = async (commerce, by) => {

@@ -25,10 +25,14 @@ pub fn end_turn(g: &mut Game, v: &View) {
         if !g.units.contains(u) {
             continue;
         }
+        // What `u` can cast, asked once for the choices below until a cast changes the game (the
+        // choices themselves change nothing). `fresh`: nothing was cast since.
+        let castable = castable_spells(g, u);
+        let mut fresh = true;
         if magic {
             // C++ quirk: a unit another unit's spell has just killed (delayed death: Form Wolf
             // Pack's second wolf) still casts, as in FfH's loop below.
-            if let Some((spell, value)) = crate::magic::choose_turn_spell(g, v, u) {
+            if let Some((spell, value)) = crate::magic::choose_turn_spell_from(g, v, u, &castable) {
                 cast_and_act(g, v, u, spell, "turn", value);
                 continue;
             }
@@ -36,21 +40,50 @@ pub fn end_turn(g: &mut Game, v: &View) {
             // or a Dance of Blades that blesses no one) that keeps the game FfH's where the values
             // see no difference (a cast rolls for a miscast and ends promotions casting removes).
         }
-        if let Some(spell) = choose_spell(g, u) {
-            cast_and_act(g, v, u, spell, "turn", 0);
+        if let Some(spell) = choose_spell_from(g, u, &castable) {
+            cast_and_act(g, v, u, spell, "turn_ffh", 0);
+            fresh = false;
         }
         if !g.units.contains(u) || g.units[u].death_delay {
             continue;
         }
-        if is_buffer(g, u) {
-            buff_cast(g, v, u);
+        let known = fresh.then_some(castable.as_slice());
+        let buffer = match known {
+            Some(list) => list.iter().any(|&s| is_buff_spell(g.d, s)),
+            None => is_buffer(g, u),
+        };
+        if buffer && buff_cast(g, v, u, known) {
+            fresh = false;
         }
         if !g.units.contains(u) || g.units[u].death_delay {
             continue;
         }
-        summon_cast(g, v, u);
+        summon_cast(g, v, u, fresh.then_some(castable.as_slice()));
     }
     g.players[p].sum_sui_mode = false;
+}
+
+/// The spells `u` can cast now (`unit_can_cast`), in spell order. The rules are not asked about
+/// spells whose fixed prerequisites `u` lacks -- a promotion, its unit type, class or combat
+/// type, its owner's civilization: `unit_can_cast` refuses those whatever else holds.
+pub fn castable_spells(g: &Game, u: UnitId) -> Vec<SpellType> {
+    let d = g.d;
+    let unit = &g.units[u];
+    let info = &d.units[unit.unit_type];
+    let civ = g.player_get_civilization_type(unit.owner);
+    d.spells
+        .iter_enumerated()
+        .filter(|(_, s)| {
+            s.promotion_prereq1.map_or(true, |pr| unit.has_promotion[pr])
+                && s.promotion_prereq2.map_or(true, |pr| unit.has_promotion[pr])
+                && s.unit_prereq.map_or(true, |t| t == unit.unit_type)
+                && s.unit_class_prereq.map_or(true, |c| info.unit_class_type.map_or(true, |own| own == c))
+                && s.unit_combat_prereq.map_or(true, |c| info.unit_combat_type == Some(c))
+                && s.civilization_prereq.map_or(true, |c| civ.map_or(true, |own| own == c))
+        })
+        .map(|(s, _)| s)
+        .filter(|&s| g.unit_can_cast(u, s, false))
+        .collect()
 }
 
 /// Cast (`value`: the cast's value, for `FFH_AI_TRACE_CAST`), then let the summons it made attack
@@ -73,7 +106,6 @@ fn cast_and_act(g: &mut Game, v: &View, u: UnitId, spell: SpellType, ctx: &str, 
 /// 5% or better; Loki's puppets, cast every turn, fought more and the Balseraphs lost.
 pub fn summons_attack(g: &mut Game, v: &View, newest: Option<UnitId>) {
     let p = v.p;
-    let barbarian = g.player_is_barbarian(p);
     let summons: Vec<UnitId> = g.players[p]
         .units
         .iter()
@@ -81,32 +113,102 @@ pub fn summons_attack(g: &mut Game, v: &View, newest: Option<UnitId>) {
         .filter(|&n| newest.map_or(true, |m| n > m) && g.units[n].ai_suicide_summon)
         .collect();
     for n in summons {
-        // Attack while alive with moves left (blitzing summons may attack more than once).
-        for _ in 0..4 {
-            if !g.units.contains(n) || g.unit_moves_left(n) <= 0 {
+        summon_attacks(g, v, n, false);
+    }
+}
+
+/// Summon `n` attacks while alive with moves left (blitzing summons may attack more than once).
+/// `strike`: our units move after it this turn (a city's defenders it weakens are still weak when
+/// our stacks strike; at the end of the turn they heal first).
+fn summon_attacks(g: &mut Game, v: &View, n: UnitId, strike: bool) {
+    let barbarian = g.player_is_barbarian(v.p);
+    for _ in 0..4 {
+        if !g.units.contains(n) || g.unit_moves_left(n) <= 0 {
+            break;
+        }
+        let Some(grp) = g.units[n].group else { break };
+        if barbarian {
+            if !crate::units::attack_adjacent(g, v, grp, n, 50) {
                 break;
             }
-            let Some(grp) = g.units[n].group else { break };
-            if barbarian {
-                if !crate::units::attack_adjacent(g, v, grp, n, 50) {
-                    break;
-                }
-                continue;
-            }
-            if attack_power(g, n) == 0 || !g.unit_can_attack(n) {
-                break;
-            }
-            let Some(q) = summon_target(g, n) else { break };
-            let (x, y) = (g.units[n].x, g.units[n].y);
-            let (qx, qy) = g.map.xy(q);
-            let flags = if g.plot_distance(x, y, qx, qy) == 1 { MOVE_DIRECT_ATTACK } else { 0 };
-            let moves = g.unit_moves_left(n);
-            crate::units::move_to(g, grp, q, flags);
-            if g.units.contains(n) && g.unit_moves_left(n) == moves {
-                break;
-            }
+            continue;
+        }
+        if attack_power(g, n) == 0 || !g.unit_can_attack(n) {
+            break;
+        }
+        let Some(q) = summon_target(g, v, n, strike) else { break };
+        let (x, y) = (g.units[n].x, g.units[n].y);
+        let (qx, qy) = g.map.xy(q);
+        let flags = if g.plot_distance(x, y, qx, qy) == 1 { MOVE_DIRECT_ATTACK } else { 0 };
+        let moves = g.unit_moves_left(n);
+        crate::units::move_to(g, grp, q, flags);
+        if g.units.contains(n) && g.unit_moves_left(n) == moves {
+            break;
         }
     }
+}
+
+/// Temporary summons on their last turn (`duration` 1: gone at the start of our next turn) that
+/// outlived the turn they were cast in (a Summoner's summons last a turn longer) attack as fresh
+/// ones do, before the other units move (`SUMMON_SPEND`; without it they moved as army units and
+/// mostly expired unspent).
+pub fn spend_expiring(g: &mut Game, v: &View) {
+    let p = v.p;
+    if v.barbarian || !crate::switches::SUMMON_SPEND.on(g, p) {
+        return;
+    }
+    let expiring: Vec<UnitId> =
+        g.players[p].units.iter().copied().filter(|&n| g.units[n].duration == 1 && !g.unit_is_cargo(n) && attack_power(g, n) > 0).collect();
+    for n in expiring {
+        if !g.units.contains(n) {
+            continue;
+        }
+        // Out of its group (it joined its caster's), so the attack moves it alone.
+        if g.units[n].group.is_some_and(|grp| g.groups[grp].units.len() > 1) {
+            g.unit_join_group(n, None, true);
+        }
+        summon_attacks(g, v, n, true);
+    }
+}
+
+/// The least a summon spent at bad odds must take from the defender, in hit points (by
+/// `magic::summon_fight`'s estimate): below it the attack only throws the summon away.
+pub const SPEND_MIN_HP: i32 = 5;
+
+/// How a summon ranks a target: at 5% odds or better by its odds (a city 10% more), as FfH's
+/// `AI_anyAttack(.., 5)`; below, only when it may spend itself, by the hit points the fight takes
+/// (`hp`, 0 when it may not), at least [`SPEND_MIN_HP`]: at such odds the summon's chance hardly
+/// differs, the damage it does does. `None`: not a target.
+pub fn summon_score(odds: i32, city: bool, hp: impl FnOnce() -> i32) -> Option<i64> {
+    if odds >= 50 {
+        return Some(1_000_000 + odds as i64 + if city { 100 } else { 0 });
+    }
+    let hp = hp();
+    (hp >= SPEND_MIN_HP).then_some(hp as i64 + if city { 10 } else { 0 })
+}
+
+/// May temporary summon `n` attack at any odds ([`summon_target`], `SUMMON_SPEND`)? Only when it
+/// will be gone before it could act again (`duration` 1 or less: More Naval AI's
+/// `AI_summonAttackMove`, `AI_anyAttack(.., 0)`) and it is not its stack's cover: a summon on a
+/// plot an enemy can strike next turn, stronger in defense than every lasting unit of ours there,
+/// is what that enemy would meet (the Balseraphs' Loki lost his health to a Spectre his puppet
+/// had left him alone with, docs/AI_LOG.md, "Spellcasting").
+fn may_spend(g: &Game, v: &View, n: UnitId) -> bool {
+    let unit = &g.units[n];
+    if !crate::switches::SUMMON_SPEND.on(g, v.p) || unit.duration == 0 || unit.duration > 1 {
+        return false;
+    }
+    !is_cover(g, v, g.unit_plot(n), crate::view::defense_power(g, n), Some(n))
+}
+
+/// Would a unit of defense power `def` on `plot` be our cover there: an enemy can strike the plot
+/// next turn, and lasting units of ours stand on it (`except` aside), none of which defends as well?
+pub fn is_cover(g: &Game, v: &View, plot: PlotIdx, def: i32, except: Option<UnitId>) -> bool {
+    if v.danger_at(plot) == 0 {
+        return false;
+    }
+    let mut ours = g.map.plots[plot].units.iter().filter(|&&o| Some(o) != except && g.units[o].owner == v.p && g.units[o].duration == 0).peekable();
+    ours.peek().is_some() && ours.all(|&o| crate::view::defense_power(g, o) < def)
 }
 
 /// The plot fresh summon `n` attacks (C++ `AI_summonAttackMove`: `AI_anyAttack(baseMoves(), 5)`):
@@ -115,11 +217,17 @@ pub fn summons_attack(g: &mut Game, v: &View, newest: Option<UnitId>) {
 /// `units::attack_adjacent`). A plot holding only temporary summons is left alone, as in FfH:
 /// they are gone before they could act again. FfH also walks toward targets up to `baseMoves()`
 /// turns away; a summon gone at the start of our next turn only attacks what it reaches now.
-fn summon_target(g: &Game, n: UnitId) -> Option<PlotIdx> {
+/// A summon that [`may_spend`] itself also takes worse odds, where the fight still takes
+/// [`SPEND_MIN_HP`] (a 5% target first) -- on a city only when our stacks strike after it
+/// (`strike`): at the end of our turn a city's defenders heal before anything of ours could use
+/// the damage, while units in the open that come for us fight hurt.
+fn summon_target(g: &Game, v: &View, n: UnitId, strike: bool) -> Option<PlotIdx> {
     let owner = g.units[n].owner;
+    let ut = g.units[n].unit_type;
+    let spend = may_spend(g, v, n);
     let reach = crate::reach::Flood::default().run(g, n, 0, false);
     let mut seen: Vec<PlotIdx> = Vec::new();
-    let mut best: Option<(PlotIdx, i32)> = None;
+    let mut best: Option<(PlotIdx, i64, i32)> = None;
     for r in reach.iter().filter(|r| r.turns == 0) {
         let (x, y) = g.map.xy(r.plot);
         for dir in 0..DirectionType::NUM {
@@ -136,13 +244,18 @@ fn summon_target(g: &Game, n: UnitId) -> Option<PlotIdx> {
             }
             let Some(def) = g.plot_get_best_defender(q, None, Some(owner), Some(n), false, false, false) else { continue };
             let odds = g.get_combat_odds(n, def);
-            let score = odds + if g.map.plots[q].plot_city.is_some() { 100 } else { 0 };
-            if odds >= 50 && best.map_or(true, |(_, s)| score > s) {
-                best = Some((q, score));
+            let city = g.map.plots[q].plot_city.is_some();
+            let hp = || if spend && (strike || !city) { crate::magic::summon_fight(g, owner, ut, q).map_or(0, |(_, hp)| hp) } else { 0 };
+            let Some(score) = summon_score(odds, city, hp) else { continue };
+            if best.map_or(true, |(_, s, _)| score > s) {
+                best = Some((q, score, odds));
             }
         }
     }
-    best.map(|(q, _)| q)
+    if let Some((q, _, odds)) = best.filter(|&(_, _, odds)| odds < 50) {
+        crate::trace!(g, owner, "summon {} spent at {} per mille on {:?}", g.d.units[ut].base.type_, odds, g.map.xy(q));
+    }
+    best.map(|(q, _, _)| q)
 }
 
 fn unit_value(d: &GameData, ut: UnitType) -> i32 {
@@ -178,11 +291,15 @@ fn summon_value(g: &Game, u: UnitId, spell: SpellType) -> i32 {
 
 /// Port of `CvUnit::chooseSpell` (with AI value estimates).
 pub fn choose_spell(g: &Game, u: UnitId) -> Option<SpellType> {
-    let d = g.d;
+    choose_spell_from(g, u, &castable_spells(g, u))
+}
+
+/// [`choose_spell`] among `castable`, the spells `u` can cast now ([`castable_spells`]).
+fn choose_spell_from(g: &Game, u: UnitId, castable: &[SpellType]) -> Option<SpellType> {
     let mut best: Option<SpellType> = None;
     let mut best_value = 0;
-    for spell in d.spells.keys() {
-        if !g.unit_can_cast(u, spell, false) || !crate::world_spells::ready(g, g.units[u].owner, spell) {
+    for &spell in castable {
+        if !crate::world_spells::ready(g, g.units[u].owner, spell) {
             continue;
         }
         // Civilization-specific values (civs/: e.g. Luchuirp units in our cities leave a Golden
@@ -318,16 +435,27 @@ pub fn ffh_misc_value(g: &Game, u: UnitId, spell: SpellType) -> i32 {
 
 /// C++ `CvUnitAI::isBuffer`: can cast a spell adding a beneficial promotion.
 fn is_buffer(g: &Game, u: UnitId) -> bool {
-    g.d.spells.keys().any(|s| {
-        let info = &g.d.spells[s];
-        info.add_promotion_type1.is_some_and(|p| g.d.promotions[p].ai_weight > 0) && g.unit_can_cast(u, s, false)
-    })
+    g.d.spells.keys().any(|s| is_buff_spell(g.d, s) && g.unit_can_cast(u, s, false))
 }
 
-/// C++ `CvUnitAI::AI_BuffCast`.
-fn buff_cast(g: &mut Game, v: &View, u: UnitId) {
+/// A spell adding a beneficial promotion (see [`is_buffer`]).
+fn is_buff_spell(d: &GameData, s: SpellType) -> bool {
+    d.spells[s].add_promotion_type1.is_some_and(|p| d.promotions[p].ai_weight > 0)
+}
+
+/// Can `u` cast `s` now: `known` holds what it can cast when that is known
+/// ([`castable_spells`]), else the rules are asked.
+fn can_cast(g: &Game, u: UnitId, s: SpellType, known: Option<&[SpellType]>) -> bool {
+    match known {
+        Some(list) => list.contains(&s),
+        None => g.unit_can_cast(u, s, false),
+    }
+}
+
+/// C++ `CvUnitAI::AI_BuffCast` (`known`: see [`can_cast`]). True when it cast.
+fn buff_cast(g: &mut Game, v: &View, u: UnitId, known: Option<&[SpellType]>) -> bool {
     if g.units[u].has_casted {
-        return;
+        return false;
     }
     let d = g.d;
     let mut best: Option<SpellType> = None;
@@ -335,7 +463,7 @@ fn buff_cast(g: &mut Game, v: &View, u: UnitId) {
     for s in d.spells.keys() {
         let info = &d.spells[s];
         let Some(p1) = info.add_promotion_type1 else { continue };
-        if !g.unit_can_cast(u, s, false) {
+        if !can_cast(g, u, s, known) {
             continue;
         }
         let mut value = d.promotions[p1].ai_weight;
@@ -353,17 +481,19 @@ fn buff_cast(g: &mut Game, v: &View, u: UnitId) {
     if let Some(s) = best {
         cast_and_act(g, v, u, s, "buff", 0);
     }
+    best.is_some()
 }
 
-/// C++ `CvUnitAI::AI_SummonCast` (only when enemies are within the summon's reach).
-fn summon_cast(g: &mut Game, v: &View, u: UnitId) {
+/// C++ `CvUnitAI::AI_SummonCast` (only when enemies are within the summon's reach; `known`:
+/// see [`can_cast`]).
+fn summon_cast(g: &mut Game, v: &View, u: UnitId, known: Option<&[SpellType]>) {
     if g.units[u].has_casted {
         return;
     }
     let mut best: Option<SpellType> = None;
     let mut best_value = 0;
     for s in g.d.spells.keys() {
-        if g.d.spells[s].create_unit_type.is_none() || !g.unit_can_cast(u, s, false) {
+        if g.d.spells[s].create_unit_type.is_none() || !can_cast(g, u, s, known) {
             continue;
         }
         let value = summon_value(g, u, s);

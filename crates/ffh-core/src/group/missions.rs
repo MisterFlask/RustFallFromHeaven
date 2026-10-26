@@ -218,6 +218,10 @@ impl Game {
             self.group_set_automate_type(g, None);
         }
 
+        if self.telemetry.on() {
+            self.tel_mission(g, mission, mission_ai);
+        }
+
         let data = MissionData { mission_type: mission, data1, data2, flags, push_turn: self.game_turn() };
 
         self.group_ai_set_mission_ai(g, mission_ai, mission_ai_plot, mission_ai_unit);
@@ -628,7 +632,17 @@ impl Game {
     }
 
     /// C++ `CvSelectionGroup::startMission`.
+    /// Units the mission uses up die of `mission` (telemetry).
     pub fn group_start_mission(&mut self, g: GroupId) {
+        if !self.telemetry.on() {
+            return self.group_start_mission_inner(g);
+        }
+        self.tel_ctx_push("mission");
+        self.group_start_mission_inner(g);
+        self.tel_ctx_pop();
+    }
+
+    fn group_start_mission_inner(&mut self, g: GroupId) {
         debug_assert!(!self.group_is_busy(g));
         debug_assert!(!self.groups[g].mission_queue.is_empty());
 

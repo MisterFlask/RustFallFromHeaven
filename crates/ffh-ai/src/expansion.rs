@@ -6,6 +6,10 @@
 //! A settler leaves a city with an escort that covers the danger on its way and at the site,
 //! and the escort becomes the new city's first garrison: a city founded without a defender
 //! builds one at one or two hammers a turn while the barbarians walk in.
+//!
+//! A faster "expert opening" (settlers under a threat the garrison holds, one in flight per
+//! city, fewer capital defenders, no buildings while growing toward a settler) was measured and
+//! reverted: docs/AI_LOG.md, "Expansion: the expert opening".
 
 use ffh_core::defs::*;
 use ffh_core::game::Game;
@@ -62,11 +66,14 @@ fn facts(g: &Game, c: CityId) -> CityFacts {
 
 /// Settlers: while sites remain in this city's area, a bounded number at a time, from cities
 /// big enough to pay for them (food goes into settler production, so growth stops).
-/// `threat`/`defense`: the visible threat around city `c` (of player `p`) and its garrison's
-/// defense. Any visible threat stops settlers: letting them go under a held threat founded
+/// `threat`/`defense`: the threat around city `c` (of player `p`) and its garrison's
+/// defense. Any threat stops settlers: letting them go under a held threat founded
 /// more cities but lost more to the barbarians (measured twice, see docs/AI.md).
 pub fn settler_choice(ai: &Ai, g: &Game, c: CityId, p: PlayerId, threat: i32, defense: i32) -> SettlerPlan {
     use SettlerPlan::No;
+    // Any visible threat stops settler production, even one the garrison holds: training them
+    // under a threat held twice over founded 10% more cities by turn 100 and cost 7% of the techs
+    // by turn 300 (docs/AI_LOG.md, "Settlers under a threat the garrison holds").
     let _ = defense;
     let ctx = facts(g, c);
     let pl = &g.players[p];
@@ -210,7 +217,7 @@ fn escorted(g: &Game, grp: GroupId) -> bool {
 
 /// A fighter on `plot` that can leave with a settler: a field unit, or a garrison unit the
 /// city can spare (two defenders stay in the capital, one elsewhere, and they still hold the
-/// visible threat). Field units first; of the garrison, the weakest that will do.
+/// threat). Field units first; of the garrison, the weakest that will do.
 fn escort_on_plot(g: &Game, p: PlayerId, plot: PlotIdx, grp: Option<GroupId>) -> Option<UnitId> {
     let city = g.map.plots[plot].plot_city.filter(|&c| g.cities[c].owner == p);
     let (garrison_n, garrison_def) = if city.is_some() { garrison(g, p, plot) } else { (0, 0) };
@@ -346,7 +353,7 @@ pub fn settler(ai: &Ai, g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
     if best.is_none() && !first_city && scored.is_empty() && crate::naval::settler_overseas(ai, g, v, grp, u) {
         return;
     }
-    let Some((site, _)) = best.or_else(|| {
+    let Some((site, site_score)) = best.or_else(|| {
         // No scored site: the first settler founds where it stands if it can.
         if first_city && g.unit_can_found(u, here, false) { Some((here, 0)) } else { None }
     }) else {
@@ -354,12 +361,14 @@ pub fn settler(ai: &Ai, g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
             // Sites, but none safe enough: wait in a city for an escort, or go back to one.
             if in_city {
                 crate::trace!(g, p, "settler {:?} waits for an escort (power {})", u, power);
+                g.tel_decision(p, "settler", "wait", "no_safe_site", power as i64, String::new);
                 v.escort_requests.push(here);
                 skip(g, grp);
                 return;
             }
             if let Some(c) = crate::units::nearest_city(g, p, here) {
                 crate::trace!(g, p, "settler {:?} falls back to {}", u, g.cities[c].name);
+                g.tel_decision(p, "settler", "fall_back", "no_safe_site", power as i64, String::new);
                 move_to(g, grp, g.city_plot(c), 0);
                 if alive(g, grp) && g.group_ready_to_move(grp, false) {
                     skip(g, grp);
@@ -368,10 +377,22 @@ pub fn settler(ai: &Ai, g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
             }
         }
         // Nowhere to go: wait in a city.
+        g.tel_decision(p, "settler", "hold", if scored.is_empty() { "no_site" } else { "no_safe_site" }, 0, String::new);
         hold(g, grp);
         return;
     };
     v.claimed.push(site);
+    if previous != Some(site) && g.telemetry.on() {
+        let xy = |q: PlotIdx| {
+            let (x, y) = g.map.xy(q);
+            format!("{x},{y}")
+        };
+        let mut top = scored.clone();
+        top.sort_by_key(|&(q, s, _)| (std::cmp::Reverse(s), q));
+        let names: Vec<(String, i64)> = top.iter().take(4).map(|&(q, s, _)| (xy(q), s)).collect();
+        let why = if site == here { "here" } else if first_city { "first_city" } else { "walk" };
+        g.tel_decision(p, "settle_target", &xy(site), why, site_score, || ffh_core::telemetry::tel_alts(names.iter().map(|(n, s)| (n.as_str(), *s))));
+    }
     crate::trace!(g, p, "settler {:?} at {:?} -> site {:?} (danger here {}, site {}, escort {})", u, g.map.xy(here), g.map.xy(site), v.danger_at(here), v.danger_at(site), power);
     if site == here {
         if can_start(g, grp, MissionType::MISSION_FOUND, -1, -1) {

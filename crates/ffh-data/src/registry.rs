@@ -225,7 +225,7 @@ impl<'a> Rd<'a> {
 
     pub fn children_named(&self, tag: &'a str) -> impl Iterator<Item = Rd<'a>> + 'a {
         let cx = self.cx;
-        self.e.children().filter(move |c| c.name() == tag).map(move |e| Rd { e, cx })
+        self.e.children_named(tag).map(move |e| Rd { e, cx })
     }
 
     pub fn text(&self) -> &'a str {

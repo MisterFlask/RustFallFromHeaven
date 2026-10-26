@@ -31,6 +31,10 @@ tools/agents/build-rev.sh <rev> --profile checked     # release + debug assertio
   runs the same `cargo build --release && cargo test --release` the commit rule asks for, on
   those files; once they passed for an exact set of files they are not rerun (`--force-test`).
   Arguments after `--` go to `cargo test` (e.g. `-- -p ffh-ai`).
+- The binaries report the commit they were built from (`ffh-play`'s status `build`, quoted by
+  spectators' flags): the rev's for `build-rev.sh`, the worktree's HEAD with `+worktree` for
+  `build-tree.sh` (`FFH_BUILD_COMMIT`). An output reused for identical content keeps the commit of
+  the build that made it.
 - An output is keyed by the content of the project (the repo minus `anim-sprint/`; + profile, toolchain): asking again for
   the same content, from any rev or worktree, returns at once. Outputs are immutable, so a batch
   can keep using one while you rebuild. The 12 most recently used per profile are kept (one used
@@ -68,6 +72,24 @@ NEW=$(tools/agents/build-tree.sh --bins ffh)
 python3 crates/ffh-cli/scripts/ai_metrics.py --bin $BASE/ffh --seeds 1-12 --out base.json
 python3 crates/ffh-cli/scripts/ai_metrics.py --bin $NEW/ffh --seeds 1-12 --compare base.json
 ```
+
+## Performance A/B (behaviour-identical changes)
+
+```
+tools/agents/perf-ab.sh same --set dev --soak     # bit-identical games against the base?
+tools/agents/perf-ab.sh same --set val            # then on configs not used while working
+tools/agents/perf-ab.sh time --rounds 3           # interleaved CPU timing (seed 1, 8 civs, standard, 400 turns)
+tools/agents/perf-ab.sh time --config H1          # the 18-civ huge map
+```
+
+`perf-ab.sh` (`perf_ab.py`) takes `--base` and `--new` like `ab.sh` (a revision, a worktree or a
+build output dir; default: the merge-base with master, and this worktree). `same` plays each
+config of a set with both builds through the run cache and the CPU slots and compares every
+turn's sync checksum, units and cities and the final summary; `--soak` adds 3 human-slot games
+(`ffh-play soak run`) compared by checksum and final save hash. `time` holds every CPU slot and
+the build lock and alternates the two builds; whole runs drift by 5-20% between sessions on this
+shared host, so only the per-round ratios of one session mean something. docs/PERF.md has the
+rules for performance changes and `tools/perf-stacks.py` for reading profiles.
 
 ## Run games
 

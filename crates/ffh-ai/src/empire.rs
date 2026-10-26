@@ -64,11 +64,20 @@ fn hurry(g: &mut Game, p: PlayerId) {
     }
 }
 
-/// A bankrupt empire (research slider at the bottom and still losing gold) disbands its
-/// weakest surplus garrison units: never a city's last defender (two in the capital), never a
-/// unit that would defect to the barbarians, at most two per turn.
+/// Units the empire cannot pay for. With `KEEP_UNITS` (the default): idle workers while support
+/// keeps research below its target (`finance::disband_workers`), military units only by More
+/// Naval AI's rule (`finance::disband_military`). Without it: surplus units while support keeps
+/// research below its target (`finance::disband`), then a bankrupt empire (research slider at
+/// the bottom and still losing gold) disbands its weakest surplus garrison units: never a city's
+/// last defender (two in the capital), never a unit that would defect to the barbarians, at most
+/// two per turn.
 fn disband(g: &mut Game, p: PlayerId) {
     if !g.player_is_commerce_flexible(p, CommerceType::COMMERCE_RESEARCH) || g.player_calculate_unit_cost(p) == 0 {
+        return;
+    }
+    if crate::switches::KEEP_UNITS.on(g, p) {
+        crate::finance::disband_workers(g, p);
+        crate::finance::disband_military(g, p);
         return;
     }
     if crate::finance::disband(g, p) { return; } // bankruptcy-guard
@@ -117,6 +126,7 @@ fn disband(g: &mut Game, p: PlayerId) {
             continue;
         }
         crate::trace!(g, p, "bankrupt: disbanding {} in {}", g.d.units[g.units[u].unit_type].base.type_, g.cities[c].name);
+        g.tel_decision(p, "disband", &g.d.units[g.units[u].unit_type].base.type_, "bankrupt", 0, String::new);
         g.unit_scrap(u);
         done += 1;
     }
@@ -164,6 +174,7 @@ fn disband_field_units(g: &mut Game, p: PlayerId, max: i32) {
             continue;
         }
         crate::trace!(g, p, "cannot pay: disbanding field unit {}", info.base.type_);
+        g.tel_decision(p, "disband", &info.base.type_, "cannot_pay", 0, String::new);
         g.unit_scrap(u);
         done += 1;
     }
@@ -319,7 +330,8 @@ fn religion(g: &mut Game, p: PlayerId) {
 
 /// Highest research rate that keeps the treasury from running dry. A cultural victory first
 /// sets the culture slider (`victory::culture_slider`), lowered in steps when even no research
-/// leaves the treasury short.
+/// leaves the treasury short. Saving gold to upgrade the army at war was measured and reverted
+/// (docs/AI_LOG.md, "Unit choices and an upgrade reserve").
 fn sliders(g: &mut Game, p: PlayerId) {
     if !g.player_is_commerce_flexible(p, CommerceType::COMMERCE_RESEARCH) {
         return;

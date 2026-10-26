@@ -37,6 +37,7 @@
 #![allow(unused_variables)]
 
 use crate::ffh::game_utils::py_div;
+use crate::controller::AiHook;
 use crate::game::Game;
 use crate::ids::*;
 use crate::utils::{is_national_unit_class, is_national_wonder_class, is_world_unit_class};
@@ -258,6 +259,9 @@ impl Game {
 
         // AI: `if not pPlayer.isHuman(): cf.warScript(iPlayer)` (not in scenarios) -- AI war
         // policy, replaced by the new AI (docs/PORTING.md).
+        if !self.players[p].human {
+            self.ai_hook(p, AiHook::WarScript(p));
+        }
 
         let cultural_values = d.t::<CivicOptionType>("CIVICOPTION_CULTURAL_VALUES");
         if self.players[p].civics[cultural_values] == Some(d.t::<CivicType>("CIVIC_CRUSADE")) {
@@ -658,6 +662,9 @@ impl Game {
     /// Warrens) and the advisor feats.
     pub fn ev_unit_built(&mut self, c: CityId, u: UnitId) {
         let d = self.d;
+        if self.telemetry.on() {
+            self.tel_built_unit(u);
+        }
         // `pPlayer` is the unit's owner.
         let p = self.units[u].owner;
         let free_promotion_pick = self.units[u].free_promotion_pick;
@@ -666,6 +673,9 @@ impl Game {
         // (UNITAI_TERRAFORMER up to a quota from the city count and Sorcery, else UNITAI_MAGE
         // or UNITAI_WARWIZARD by `AI_neededPermDefenseReserve`), Devouts and Priests of Leaves
         // (UNITAI_TERRAFORMER quotas): AI unit roles, left to the new AI (docs/PORTING.md).
+        if !self.players[p].human && !self.player_is_barbarian(p) {
+            self.ai_hook(p, AiHook::UnitBuilt(u));
+        }
 
         let (x, y) = (self.cities[c].x, self.cities[c].y);
 
@@ -907,6 +917,9 @@ impl Game {
     /// of the Hand, Grand Menagerie trophy) and the advisor feats.
     pub fn ev_building_built(&mut self, c: CityId, building: BuildingType) {
         let d = self.d;
+        if self.telemetry.on() {
+            self.tel_built_building(c, building);
+        }
         let player = self.cities[c].owner;
         let plot = self.city_plot(c);
         let is = |name: &str| building == d.t::<BuildingType>(name);
@@ -1032,6 +1045,9 @@ impl Game {
     /// Ascension, Pact of the Nilhorn).
     pub fn ev_project_built(&mut self, c: CityId, project: ProjectType) {
         let d = self.d;
+        if self.telemetry.on() {
+            self.tel_built_project(c, project);
+        }
         let p = self.cities[c].owner;
         let is = |name: &str| project == d.t::<ProjectType>(name);
         let (x, y) = (self.cities[c].x, self.cities[c].y);
@@ -1455,6 +1471,8 @@ impl Game {
         let hyborem = d.t::<LeaderHeadType>("LEADER_HYBOREM");
         let infernal = d.t::<CivilizationType>("CIVILIZATION_INFERNAL");
         self.add_player_advanced(infernal_player, None, hyborem, infernal);
+        // The new civilization is played by its creator's controller (one AI per side in head-to-head games; the same controller otherwise).
+        self.controllers[infernal_player] = self.controllers[p].clone();
         let founder_team = self.players[p].team;
         let infernal_team = self.players[infernal_player].team;
         for tech in d.techs.keys() {
@@ -1538,6 +1556,8 @@ impl Game {
         let basium = d.t::<LeaderHeadType>("LEADER_BASIUM");
         let mercurians = d.t::<CivilizationType>("CIVILIZATION_MERCURIANS");
         self.add_player_advanced(mercurian_player, Some(team), basium, mercurians);
+        // The new civilization is played by its creator's controller (one AI per side in head-to-head games; the same controller otherwise).
+        self.controllers[mercurian_player] = self.controllers[player].clone();
         let (x, y) = self.map.xy(plot);
         const UNITS: [&str; 10] = [
             "UNIT_BASIUM",

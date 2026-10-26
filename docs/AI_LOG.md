@@ -31,6 +31,573 @@ Each entry answers three questions, from the games themselves (counts with `ffh 
   `FFH_AI_TRACE` (a throwaway trace line is fine on a scratch branch; it must not change the
   checksum) and compare the snapshots per checkpoint (`civ_ab.py --load`, the snapshot fields).
 
+## Round 7g: the simulation for every attack (2026-10-25)
+
+### Field attacks as a pure trade of what kills and losses are worth (replaced)
+
+1. **Why it made sense.** The field estimate (`military::assess`/`attack_ok`) counted a third of
+   a kill for every lost fight whatever the odds, the defender's strength or first strikes (four
+   Warriors at a Griffon at 1%), took each attacker's odds against the best defender at full
+   health, and passed up good shots (a wounded Lizardman at 60%). The faithful simulation
+   (`campaign::simulate_in_order`, the rules' group-attack order) gives the expected kills and
+   losses; an expert attacks when the exchange favours him. So: attack when the kills are worth
+   more than the expected losses (`campaign::worth`: cost or 15 hammers a strength point, whichever
+   is more, plus a tenth per experience point), kills counting double on our land and half again
+   against barbarians elsewhere.
+2. **Why it did not hold.** One player with it against opponents without (`civ_ab.py --civ all`,
+   seeds 33001-33016, 304 paired games, 300 turns): win rate 12.2% -> 9.2% (16 seeds won only with
+   it, 25 only without), share -3.9% (t -1.34), legacy -4.1% (t -1.42). The player was behind in
+   military units by turn 100 (-0.33, t -2.4) and in power, workers (t -2.5) and cities by turn
+   200. In traced games the switch added about 110 attacks a game the old rule refused: 285 of 439
+   by lone units, 126 whose best simulated fight stayed under 50%, a quarter against animals
+   (which stay out of our borders). The weights made a Warrior (worth 45) a fair trade for a Bear
+   (75 x 1.5) at 40%; every loss of a lone unit was a whole stack, early, when units are scarce.
+   Reweighted (losses at 150%, animals at half), it swung the other way: a lone unit passed up a
+   Lion at 75%, six units a barbarian Axeman they would surely kill.
+3. **What it implies.** A trade sum is too sensitive to its weights to be the decision, and it
+   prices neither the experience a winner gains nor the threat removed. The kept rule decides as
+   an expert does, on the simulation's numbers: attack when the attacker the rules send has good
+   odds (65%; 75% hurt); grind at worse odds only when the stack clears the plot (every defender
+   90% sure to fall) and the trade is favourable; a capture when the city falls. The simulation's
+   accuracy -- first strikes, wounded defenders, the real attacker order -- is what the old rule
+   lacked, not a different notion of when to attack.
+
+### Field attacks on good odds or a clearing grind, raiders at face value (replaced)
+
+1. **Why it made sense.** After the pure trade (above): attack when the attacker the rules send
+   has good odds, wear the defenders down only when the stack clears the plot at a favourable
+   trade -- the old rule's intent on the simulation's accurate numbers, without its hopeless
+   grinds (six units at an Elephant at 0.2%).
+2. **Why it did not hold.** One player with it (304 paired games each, 300 turns): seeds
+   33001-33016 win rate 12.2% -> 12.2%, share -3.1% (t -1.61), legacy -3.7% (t -1.89); seeds
+   35001-35016 win 17.1% -> 14.1% (15 / 24), share -1.2%. The player was behind in military by
+   turn 100 on the first set (t -2.9), and the games lost more cities to the barbarians (+0.33 a
+   game, t 2.2); the player ended with fewer cities (-0.34, t -1.8 on the second set).
+3. **What it implies.** Grinding at a raider near our cities is not a trade of units: the raider
+   left alone takes a city. The old estimate's eagerness, wasteful by unit value, was protecting
+   the cities. Kept: raiders (not animals) on our land or within three plots of one of our cities
+   count four times their worth, so a grind that clears them is always worth it; elsewhere the
+   rule stands.
+
+## Round 7c: wars, diplomacy, councils (2026-10-22)
+
+Two first versions of round 7c's behaviours (docs/AI.md, "Diplomacy" and "Round 7c") were
+measured, traced and replaced by the versions kept.
+
+### Tech-trade discipline by monopoly value, the leader refused outright (replaced)
+
+1. More Naval AI's `CvTeamAI::AI_techTrade` keeps a technology while few civs know it, the more so
+   the more it is worth (`AI_getTechMonopolyValue`: unbuilt wonders, world units, strong units),
+   and an expert does not feed the runaway leader. The first version refused the clear leader
+   (a share 1.5x the runner-up's) and the victory rival every technology, any military technology
+   while we prepared or fought a war, and to a non-friend any technology of monopoly value 50+ that
+   most civs we had met lacked.
+2. In 24 full games (seeds 1-24, everyone with it against everyone without) it withheld 1,000
+   swaps as monopolies, blocked 353 with the leader or rival and 64 military ones; the world fell
+   4.5% behind in technologies at turn 300 (t -3.0), legacy -3.7% (t -2.7), power -5.5%, and games
+   were decided 29 turns later. One civilization with it against the rest (`civ_ab.py`, seeds 1-4,
+   76 pairs) won 18.4% of its games against 21.1% (5 seeds won by the base only, 3 by the new
+   side), share at the end -143 (t -1.5), legacy at turn 200 -1.9 (t -2.4), rank 3.5 -> 3.7.
+3. The swaps here are one for one at similar cost, so each side gains a technology against every
+   other civ; refusing one costs the refuser the technology it would have received, while the
+   others trade on. Keeping a monopoly pays only when the technology itself is a race -- the wonder
+   one of our cities is building (More Naval AI's DENIAL_MYSTERY) -- or a weapon against a
+   neighbour we may fight; and the leader's swaps are worth taking when they favour us. The kept
+   version does exactly that (125% from the leader, the victory rival still refused).
+
+### Re-check before declaring at the selection's 120% margin (replaced)
+
+1. More Naval AI checks a prepared war once more before declaring it ("last chance to change our
+   mind", `AI_doWar`): the target must still pass the gate that chose it. The first version used
+   the gate unchanged but for 10% slack on the power bar, so takeability kept its 120% margin:
+   our best trainable attacker against the best defender of their weakest city, fortified.
+2. Seeds 1-48, 300 turns, against the same binary with it off (in seeds 1-24, 39 prepared wars
+   dropped, 35 as no longer takeable): wars declared 3.04 -> 1.67 a game (t -6.3), civ cities captured -24%
+   (t -2.8), legacy +0.8% (t 1.0). The test takes the weakest of their revealed cities, and
+   revealing more cities can only lower it, so a target that passed at the selection and fails at
+   the declaration has better defenders after the 30-40 turns of preparation (telemetry reason
+   `not_takeable`; not traced city by city), while our massed army is the same.
+3. The 120% margin selects wars (docs/AI.md, "War conversion vs. decisive wars"); at the
+   declaration the army is massed at the border and the question is whether its units still match
+   the defenders. The kept version asks for parity there: full games, wars +4%, legacy +3.7% at
+   turn 400 (t 1.7).
+
+## Low-hanging fixes (2026-10-21)
+
+Six fixes for things a good player does differently, found by tracing seeds 1-18 (the two kept --
+great people building shrines and rushing wonders, explorers moving one safe turn at a time --
+are in docs/AI.md, "Measured together", round 6: neutral on fresh seeds, kept as plainly right
+play), and two garrison quotas tried after review. Each was measured alone against the same binary
+with it off (a scratch switch), seeds 1-48, 300 turns (6 civs, standard map); the great-person
+change also in full games, the allied-barbarian one with the Clan of Embers forced.
+
+### Young units never scrapped (removed on review)
+
+1. Traced build-then-scrap churn: in the civs that scrapped most (seeds 3 and 5), 30-60 units a
+   civ were trained in the windows they scrapped 8-34, and scrapped defenders were often 1-9 turns
+   old (a Svartalfar bankruptcy scrapped one a turn while its cities trained new ones). The build
+   rules (`production::decide`: a visible threat within 3 plots, a barbarian unit within 3-4) and
+   the scrap rules (`finance::disband`, `empire::disband`: no threat in sight, a barbarian within
+   4) both read the moment, so a raider walking in and out of range flipped both.
+2. A unit trained in the last 20 turns was never scrapped for upkeep. Development (seeds 1-48):
+   cities lost to the barbarians -24% (t -2.5), gold +8% (t 2.4), legacy +1.0% (t 0.8); validated
+   only inside a combination with the great-person and explorer changes, which was neutral on
+   fresh seeds (docs/AI.md, round 6).
+3. Removed on the owner's review: the 20 turns is an arbitrary time constant on the scrap side,
+   and the build and scrap rules still disagree. The right version is one notion of what a city
+   needs that both sides read -- see the next entry for why that notion cannot be built from
+   lasting map features alone.
+
+### Garrison quota from lasting threats only (reverted)
+
+1. The owner's rule: a city's defenders follow what it needs in expectation, not a barbarian
+   wandering into range; what is needed is built and kept whatever it costs (research pays),
+   what is not is not built. One quota for production, finance and the bankrupt rule: one, two
+   in the capital, one more within 4 plots of a barbarian lair or town, at war, for a defensive
+   leader, the victory guard; no affordability cap; nothing seen this turn (no +1 for a threat in
+   sight, no barbarian unit counted). Above it only step 1's overwhelmed garrison trained more.
+2. The churn went (seed 3: defenders trained 183 -> 78, units scrapped 110 -> 42, scrapped under
+   10 turns old 30 -> 3) and the cities fell (seeds 1-48, 300 turns): military -18% at turn 100,
+   -22% at turn 200 (t -11); cities -6.6% at turn 100 (t -3.9), -5.1% at turn 300 (t -2.4); cities
+   lost to the barbarians +73% (t 2.5), razed +112% (t 3.7); civs eliminated 0.33 -> 0.58 a game
+   (t 1.9); legacy -2.8%, -4.1%, -3.0%.
+3. The raiders in sight are not noise: barbarians spawn in the unowned land around our frontier
+   and roam, and lairs and towns account for few of them, so a quota from lasting map features
+   undercounts the expected threat badly. The principle holds, but "in expectation" needs an
+   estimate of how often raiders come by each city, which the moment cannot give and the map
+   alone does not: a per-city record of the threats seen (a field on `City`, saved with the game:
+   the turn and strength of the last threat, or a decaying average), read by both the build and
+   the scrap rules.
+
+### Garrison quota from a record of threats seen (reverted)
+
+1. The entry above implied it: "in expectation" needs an estimate of how often raiders come by
+   each city. `City::ai_threat_record` (saved) was the owner's AI record of the threats seen:
+   once a turn it kept (D-1)/D of itself and gained 100 when an enemy (not an animal) was in
+   sight within 3 plots. One quota for production, finance, the bankrupt rule and the defenders'
+   placement (`units::garrison_quota` never below it): one, two in the capital, one more near a
+   lair or barbarian town, one more once the record reached a first bar and two at a second, war,
+   a defensive leader, the victory guard; trained whatever it cost, never scrapped below it
+   (keeping at half the training bar, so a defender trained for raids outlasted the lull).
+2. Every variant lost against master's quota (seeds 1-48, 300 turns; legacy / research at turn
+   300, t in brackets; cities lost to the barbarians per game, master 1.75):
+
+   | record (D, first bar, second bar) | legacy | research | lost to barbarians |
+   |---|---|---|---|
+   | 20, 150, 400 | -4.2% (-1.5) | -10.0% (-2.2) | 1.79 |
+   | 20, 100, 300 (one sighting trains) | -6.4% (-2.4) | -9.7% (-1.9) | 2.50 |
+   | 40, 150, 400 (longer memory) | -7.2% (-3.1) | -12.4% (-3.1) | 1.96 |
+   | 20, 150, 400, master's affordability cap kept | -5.1% (-2.0) | -10.3% (-2.5) | 1.62 |
+   | the same without the placement floor | -3.6% (-1.4) | -3.9% (-0.9; -7.5% at turn 200, t -2.1) | 2.04 |
+
+   The longer and the more firmly defenders were held, the worse; none lost fewer cities to the
+   barbarians. Keeping master's affordability cap changed nothing (the cap rarely binds); the
+   placement floor (a defender never leaving a city below its need) cost a third of the loss --
+   spare defenders no longer walked to the city under attack -- and the rest is the upkeep of
+   the defenders held between raids.
+3. In this game a defender is cheaper to rebuild than to keep: a Warrior is 25 hammers, its
+   upkeep is paid every turn it stands. Training one when raiders are in sight and scrapping it
+   when the upkeep bites is a reasonable rent-or-buy choice, not a bug, and holding garrisons
+   by an estimate of the expected threat does not save the cities that would pay for them. If
+   the build-and-scrap pattern is attacked again, the lever is the cost of the reaction (train
+   the cheapest adequate defender, or move one from a city with a spare), not holding units.
+
+### Settlers under a threat the garrison holds (reverted)
+
+1. `expansion::settler_choice` trains no settler while any visible enemy is within 3 plots,
+   whatever the garrison (its `defense` argument is unused), while the rest of
+   `production::decide` lets a threat the garrison holds twice over pass. In seeds 1-5, 100 of the
+   619 capital decisions before turn 150 had such a held threat, the capital at or near its
+   happy cap at size 3+, and went to something else (39 Warriors, 21 Workers); seed 3's Sidar sat
+   at size 6 from turn 52 to 85 with 4 defenders against a threat of 293 and reached turn 100 with
+   one city and 14 military units; 19 of 94 civs had one city at turn 100.
+2. Training settlers under a held threat did found more cities early: +9.8% at turn 100 (t 4.3),
+   +5.3% at turn 200 (t 2.5). They were smaller (3.67 -> 3.46 population a city at turn 100), the
+   costs rose from 34% to 37% of the commerce at turn 200 (maintenance, civic upkeep and unit
+   support all up), the research slider fell (61 -> 55% at turn 200, t -3.6) and more cities fell
+   to the barbarians (80 -> 95 by turn 200, 121 -> 133 by turn 300). By turn 300 the cities were
+   back to the same number (-2.3%) and techs were -7.0% (t -2.3), legacy score -5.1% (t -1.9).
+3. The same result as the faster openings in docs/AI.md ("Settlers and escorts", "Tried and
+   dropped") and the sparse-world note: in this game, cities the economy and the garrisons
+   cannot carry yet are a cost, not a lead, and the barbarians (whose cities the rules create
+   in step with ours) take the extra ones. The idle capital is a symptom of the opening's real
+   bind -- the maintenance a second and third city brings before the techs that pay for it --
+   so the lever is the economy that supports cities (Code of Laws / City States timing,
+   Courthouses), not the settler gate.
+
+### Allied barbarians no longer counted as a threat (reverted)
+
+1. The Clan of Embers and Charadon's Doviello are at peace with the barbarians, but
+   `production::barbarians_near` (an extra defender in the city's quota, the "second defender
+   first" rule, finance's garrison keep) and research's military pressure counted barbarian units
+   all the same (docs/AI.md listed it as a known gap). At turn 300 (seeds 1-8) the Clan had the
+   most military per city of any civilization (6.7, against 1.6-5.3), unit support at 25% of its
+   commerce and research at 40%.
+2. Across all civilizations (seeds 1-48, 23 games changed) it looked good: legacy +2.3%, cities
+   lost to the barbarians -31% (t -2.1). With the Clan forced into slot 0 (full games, seeds
+   1-24, `civ_ab.py`): its finances improved as intended (unit support 22 -> 15 gold and the
+   research slider 41 -> 54% at turn 300; Longbowmen 26 -> 17, Archers 11 -> 5 at the end), but
+   it lost twice as many cities to its rivals (0.95 -> 2.25 by turn 300, 1.9 -> 3.3 by turn
+   400), held fewer (11.7 -> 10.6 at turn 300, 14.5 -> 11.8 at turn 400), and won less: 58% ->
+   42% (won by one side only 4 / 8), share@end -498 (t -1.40). The other civilizations' gain was
+   the Clan's loss.
+3. The barbarian term is the only garrison term that grows with a frontier, and for the Clan it
+   was standing in for the missing one: the threat of neighbouring civilizations (the Clan, at
+   peace with the barbarians and strong, is attacked often). The right version is a garrison
+   quota that weighs rival civilizations' land power near the city (what a player watches
+   along a border); with that in place the barbarian term can drop for barbarian allies.
+
+### Worker demand only where a build is possible now (reverted)
+
+1. Workers had nothing to build in 8-45% of their turns before turn 100 (seeds 1-5; a Malakim
+   pair waited from turn 40 to 83 while Bronze Working was researched), and 27% of the hammers
+   before turn 100 went into workers. `production::worker_target` counts every worked plot
+   without an improvement as demand, including plots no known build can improve, so cities
+   trained a second worker for land the first could not touch yet.
+2. Counting only plots where a build is possible now cut the workers at turn 100 by 15% (2.11 ->
+   1.79 a civ) and with them the improvements: worked plots improved per citizen 0.71 -> 0.62 at
+   turn 100, 1.01 -> 0.94 at turn 200. Research fell at every checkpoint (-3.7%, -5.1%, -3.7%),
+   techs at turn 300 -3.7% (t -1.2), legacy -2.4% (t -0.9); nothing gained.
+3. The idle worker is the one standing ready when the tech arrives; its waiting turns are the
+   price of improving the land the turn it can be. Same conclusion as gating the first worker
+   (docs/AI.md, "Workers"): the early worker count is not where the waste is. If the waiting is
+   worth reducing, the lever is research timing (the techs that give the waiting workers work),
+   not fewer workers.
+
+### Stuck workers take their next best job (reverted)
+
+1. A worker's build target is chosen by this AI's danger map, but the move there
+   (`MOVE_SAFE_TERRITORY`) can be refused by the rules' AI path finder (a non-combat group next
+   to danger, C++ `pathValid`), and the worker asked for the same job again next turn without
+   moving (docs/AI.md listed it as a known gap; 44-151 such worker-turns in 300-turn games).
+   On a refused move the worker took the next best job it could walk to (up to four tries).
+2. The repeats went (19 -> 0 and 6 -> 0 in two 200-turn games, seeds 2 and 5): they were rarer
+   than the first count suggested. The workers switched jobs far more often (build orders 560 ->
+   879 in seed 2), and the economy came out slightly worse (seeds 1-48): production -1.8% (t
+   -2.1) and research -1.9% (t -2.2) at turn 100, production -3.9% (t -1.6) and legacy -1.0% at
+   turn 300.
+3. A refused move is usually a passing danger; waiting a turn for the best job costs less than
+   walking to a worse one. A version worth trying would switch only after the same move has
+   been refused for several turns (the group's mission plot could carry the job), but the cost
+   it removes is small.
+
+### Fog-busting posts (2026-10-22, reverted)
+
+1. Barbarians and animals appear only on land no civilization sees, at least two plots from any
+   unit (`create_barbarian_units`, `create_animals`: `RANDPLOT_NOT_VISIBLE_TO_CIV`,
+   `MIN_BARBARIAN_STARTING_DISTANCE`), so they appear just past the ring our borders light, a
+   turn or two from our cities; players keep that ring lit with a warrior on a hill. A lone army
+   unit with nothing to do (the step before Gather in `military::army`) went to the plot within 5
+   turns, out of sight of every enemy, that blocked the most unseen land within 6 plots of our
+   cities (weighted by closeness, good ground preferred), and stayed there under a mission AI
+   tag the gathering stacks left alone.
+2. It lost on every measure (seeds 1-48, 300 turns, against the same binary with it off): cities
+   -6.1% (t -3.1), workers -7.7% and improvements -9.0% at turn 100; research -14.7% (t -3.5) at
+   turn 200; legacy -2.2%, -7.0% (t -3.4), -8.2% (t -3.0) at turns 100/200/300; cities lost to
+   the barbarians 1.75 -> 2.40 a game, civs eliminated 0.33 -> 0.56 (both t 1.7). A probe over
+   seeds 1-12 to turn 150 counted what it did. Posts were few (0.6 a civ on average, mostly
+   Warriors) and blocked little: new barbarian units appearing 4-6 plots from a civ city went 455
+   -> 415 (-9%), beyond 6 plots 508 -> 530, within 3 plots 185 -> 247 (lairs and towns spawn
+   there; not traced further). Barbarian units within 3 plots of a civ city, summed over turns,
+   rose 5% (16962 -> 17858). Barbarian attacks that destroyed a unit rose 20% (486 -> 585); 111
+   posted units were lost. The posts were taken from units that had been holding in a city:
+   idle units sent to the nearest city fell from 949 to 174 decisions in seeds 1-4 to turn 120.
+   The garrison count does not include those units, but they fight for the city.
+3. The premise is weak in this game. A landmass's barbarian count is fixed (its unowned plots /
+   50, minus the barbarians already there), so blocking moves spawns, and the barbarians
+   walk to cities from wherever they appear. Only the 4-6 plot band (40% of new barbarians,
+   about 6 a civ in 150 turns) is within a post's reach. With every civ posting, spawns only
+   move between neighbours, so an all-AI A/B shows the cost alone. A one-civ test (the change
+   for player 0 only, as `civ_ab.py` does for civilizations) would measure the relative gain
+   a player gets by pushing spawns onto neighbours, but those counts bound it to a few
+   barbarians a game. The real cost was taking idle units out of cities, which, as the garrison
+   entries above found, hold more of the AI's thin city defense than the garrison count shows. A
+   retry should post only units a city can spare. The posts must also be a function of the
+   saved state: this version made the quick bench's bare loop and session play different games
+   (`the_quick_bench_plays_the_same_game_three_ways`; not diagnosed).
+
+### More Naval AI's disband rule (2026-10-22, reverted; brought back the same day)
+
+1. The owner's principle (keep what the empire needs and let research pay, rather than react to
+   a raider in sight), in the form More Naval AI uses (C++ `CvPlayerAI::AI_doMilitary` /
+   `AI_disbandUnit`): at peace, while costs take more than 60% of the commerce ("funded" below
+   40%), disband the military unit of least value -- combat units with at most 1 experience, field
+   units outside our borders first, city defenders last -- reading no threat. It replaced
+   `finance::disband`'s military part and `empire::disband`'s bankrupt path (scrapping from 10% of
+   the commerce, garrisons beyond one per city where no threat was in sight), which made cities
+   train defenders the treasury scrapped a few turns later. It did end the churn: military units
+   scrapped 61 -> 6 in seeds 1, 2, 4, 6 to turn 200, units trained unchanged (608 -> 611).
+2. On the base before merging master's late-October AI work it looked neutral: seeds 1-48 (300
+   turns) legacy -0.9% at turn 300; seeds 12001-12096 -1.6% (t -2.0), cities -2.6% (t -3.0); full
+   games 1-24 +1.5% / +5.9% at turns 300 / 400, 12101-12148 +4.0% (t 2.2) / +2.5% / +3.4% at
+   300 / 400 / 500. On the merged code (war staging, vassals, chopping) it was not: seeds 1-48
+   legacy -3.4% at turn 300 (t -2.1), techs -4.8% (t -2.6); full games 1-24 -1.0% / -2.7% / -4.0%
+   / -0.9% at 200-500; seeds 13001-13192 -1.0% (t -1.1), techs -1.4%; full games 13201-13296
+   0.0% / -1.4% / +1.1% / -1.4%, research -5.7% at turn 200 (t -3.05). Every set kept 4-8% more
+   military (t 2.4-5.5), and the units bought nothing: cities lost to the barbarians +18% (t 1.7)
+   in one fresh set, -10% (t -0.8) in the other, civ cities taken unchanged.
+3. In this game a unit kept at peace is upkeep for nothing: the garrison entries above found the
+   same for held defenders, and this finds it for every unit the old rule would have scrapped.
+   The reactive build-and-scrap, churn included, is the cheaper policy. A version worth trying
+   would attack the churn's cost at the build end (do not train against a raider the garrison
+   already holds; production.rs's +1 for a threat in sight), not keep the units. MNAI pairs this
+   rule with a cap on unit spending at training time; ours already gates optional units on
+   affording them at 60% research, and a 12% spending cap was tried with no gain.
+4. **Brought back by the owner's decision** (round 7d, docs/AI.md; switch `KEEP_UNITS`, on by
+   default), and its cost worked on at the build end. Measured against the same binary with the
+   switch off (development seeds 1-96, 300 turns; t in brackets; fresh seeds in docs/AI.md,
+   round 7d). The rule alone, restored as it was: research -3.9% at turn 200 (t -1.9), military
+   +4.9% (t 3.7), unit support +12.6% (t 3.0), legacy -1.0% at turn 300. With the kept build
+   side (below), in 16 games with telemetry (seeds 1-16, 300 turns): military units disbanded
+   859 -> 258, two thirds of them Warriors, in bursts when costs pass 60% of the commerce; the
+   player-turns with support above a tenth of the commerce and research below its target 849 ->
+   1504. What was tried on the build side:
+   - **No defender against a raider the garrison holds** (the +1 a threat in sight and a
+     barbarian unit within 3-4 plots add to the quota), the visible threat no more than the
+     garrison's defense. In every city and against any threat (seeds 1-48): military -17% at turn
+     100 (t -8), cities -6.8% at turn 300 (t -2.8), cities razed 0.38 -> 1.23 a game (t 4.3); the
+     free early units are the ones the raiders meet. Only once units cost gold: research +3.0%
+     at turn 200, but civ cities captured +31% (t 2.0) and razed +117% (t 2.6); a civ threat in
+     sight counted as held. Only against barbarians (no enemy civ unit within 3 plots), seeds
+     1-96: research +5.5% at turn 200 (t 2.6), military -4.3%, unit support -11.8%, but cities
+     lost to civs 391 -> 472 and civs eliminated 39 -> 51 over 96 games, techs -2.3% at turn
+     300. The defenders trained against raiders are also the ones that hold a border city when a
+     neighbour attacks (the same finding as the Clan of Embers' garrison term above).
+   - Kept: the same only in interior cities (no other civilization's city within 8 plots):
+     research +0.7% / -1.7% at turns 200 / 300, military -1.0% / +1.6%, unit support -1.0% /
+     +0.9%, legacy -0.9% (t -1.2) / -1.1% (t -0.8), civs eliminated 39 -> 41; it removes the
+     extra military the rule kept at turn 200 and most of its research cost, little else (most
+     raiders show up at the frontier, where the border cities are).
+   - **More Naval AI's cap on unit spending** at training time (peace: 20 + 4/3 of the leader's
+     `iBuildUnitProb` + 6 per mil of the commerce, `AI_maxUnitCostPerMil`) on every optional
+     unit: research -1.3% at turn 200 instead of -3.9%, but cities -2.5% (t -2.8) and -2.4% (t
+     -2.2) at turns 200 / 300 -- it blocked the cheap units that escort settlers and halved the
+     peacetime campaign force against barbarian towns (431 -> 218 trained in 16 games); with the
+     campaign exempt the cities still fell (-2.0%). Dropped, as the 12% cap was before. Flat caps
+     of 8% and 12%, a war-time extra defender only within 10 plots of an enemy city, a worker
+     instead of a unit when the fallback cannot afford one, and disbanding from 50% instead of
+     60% of the commerce were all within noise (seeds 1-48, legacy -1.1% to -2.6% at turn 300).
+   Under every variant the AI took more barbarian towns and lost more cities to the barbarians
+   (taken 297 -> 318-338, lost 233 -> 258-279 over 96 games): kept armies take towns they cannot
+   hold, the siege operations' known pattern (docs/AI.md, "Measured together").
+   On fresh seeds (the kept version against it off): 300 turns, 23001-23192, legacy -0.5% /
+   +0.4% and research +0.6% / +1.8% at turns 200 / 300, military +0.4% / +0.2%; full games,
+   23201-23296, research +4.1% (t 1.7) and +2.4% at turns 200 and 300, legacy +0.3% to +1.9%
+   through turn 400. The cost left is late: research -1.2% at turn 400 and -5.7% at turn 500 (t
+   -1.3, the 40 games still running), research slider -7.8% (t -1.8). It follows the wars the kept
+   armies start: civs at war at turn 400 +50% (t 2.1), military +6.9% (t 1.9), unit support +8.6%;
+   civ cities captured +11% and cities lost to the barbarians +20% over the games, time-limit games
+   6 -> 10 of 96, cultural victories 34 -> 31.
+   What it implies: the reactive build-and-scrap was cheap partly because the reactive
+   defenders were the AI's only standing defense against its neighbours. Keeping units costs
+   little once interior cities stop buying defenders against raiders they hold; the lever left
+   is a garrison term for rival civilizations (docs/AI.md, "More Naval AI compared", item 2), with
+   which the border cities could stop reacting to raiders too. The late cost is the war gate's:
+   a kept army passes the power-ratio test more often, and the wars it starts run the slider at
+   the war target. Weighing the army's upkeep in the gate, or the peace terms (item 3 of the same
+   list), is where to work on it, not the disband threshold (disbanding from 50% of the commerce
+   instead of 60% changed nothing at turn 300).
+
+### Peacetime defenders by a rival-threat threshold (2026-10-22, replaced 2026-10-24)
+
+1. Round 7b's `RIVAL_DEFENSE` gave a city one more defender in peacetime where More Naval AI's
+   threat index (a rival's closeness x attitude x its power over ours) reached 40, two at 100.
+2. Inside the merged round 7 build it measured legacy -3.2% (t -3.8) and research -7.2% (seeds
+   26001-26192, 300 turns), and was switched off by default. Measured again on the same seeds once
+   `HEAL` and `PRECIOUS` were off, it was neutral: legacy -0.4% (t -0.55), research -0.3%; and
+   none of its parts carried a cost alone (the peacetime defenders -0.5%, the war pool +0.4%, the
+   sortie check -0.7%, all |t| < 1.1). The earlier cost was an interaction with the other two
+   military behaviours, not this rule's.
+3. The threshold had no reason in it: it added defenders by how close and unfriendly a
+   neighbour was, whatever our army already deterred. It was replaced by deterrence, sized by the
+   gate every AI here uses to choose a war (docs/AI.md, "The standing army against rival
+   civilizations"); neutral as well, and the rule an expert can explain. Lesson for measuring:
+   switches measured inside a build with other new switches on can carry each other's costs;
+   re-measure a behaviour alone once its neighbours are settled.
+
+### Healing only when most of the stack is hurt (2026-10-22, replaced)
+
+1. Our field stacks stopped to heal wherever they stood as soon as one unit passed 35% damage,
+   committed stacks next to their target included, where they heal at 5-10% a turn beside
+   defenders that heal faster. More Naval AI's `CvUnitAI::AI_heal` stops a stack in the field only
+   when more than half of it is hurt, and only where healing is good.
+2. Applied to every stack it lost units and cities (seeds 1-48, 300 turns): civ cities lost +41%
+   (t 2.7), military -6.4% (t -2.1). Our loose stacks are two to four units hunting raiders; one
+   badly hurt unit is a large share of such a stack, and it marched on into the next fight.
+3. The rule fits More Naval AI's big stacks, not ours. The kept version (`military::heal`, switch
+   `HEAL`; docs/AI.md, Field armies step 6) applies "most of the stack" only to a stack committed
+   to a siege, keeps the one-unit rule for loose stacks, splits the wounded off in our cities and
+   heals only where healing is good (walking into a city or onto our land when it is not).
+
+## Wars: no peace sold before the war is decided (2026-10-21)
+
+Item 5 of the strong-player list. In 24 full games (seeds 1-24) our civilizations declared 325
+wars with armies of 23 units against a computed need of 10; 38% took a city, 22% saw no combat
+at all, and in seeds 1-8 about 40% of the wars we declared ended in our own "cash out": a
+winner's peace for tribute at turn 11, the first turn peace is allowed (traced, seed 2: the army
+marched 19 plots for 11 turns, never arrived, and the war was sold for one tribute item).
+
+- **No cash-out before a city or 30 turns.** 1: an expert does not sell a war of conquest
+  before its army has fought for its first city. A war we declared could be sold for tribute
+  only once it had taken a city from them or lasted 30 turns (losing wars still ended as before).
+  2: everyone, full games: wars 448 -> 383, captures 423 -> 423 (a city per war 0.94 -> 1.10),
+  every checkpoint flat; one civilization against the rest (114 pairs, seeds 1-6): wins 22.8%
+  -> 19.3% (0 / 4 pairs, p 0.125), legacy@300 -23 (t -2.0), share@end -25. 3: the tribute this AI
+  takes after ten turns (technologies, gold) is worth more than the extra turns of a war it wins
+  38% of the time; the expert's test is the city the operation will take soon against the
+  tribute on offer, which needs the operation's own estimate (its phase, the force near the
+  target), not a turn count. Kept instead: declaring only once the army stands near the target
+  (docs/AI.md, "Diplomacy"), which shortens the march the cash-out cut short.
+
+## World spells: For the Horde at a dozen orcs, Ardor after three great people (2026-10-21)
+
+Item 4. FfH's condition for the Clan of Embers' For the Horde (60 barbarian units of any kind)
+looked like it almost never held (1 cast in 10 unforced games), so the expert moment was a
+dozen barbarian orcs to turn, with the Clan's own rule (only with a war to fight) kept. 2: with
+the Clan forced into every game (seeds 1-24, full games) FfH's condition held in 14 of 24 games
+already -- the Clan is at peace with the barbarians, whose units pile up -- and the earlier cast
+(21 of 24) cost: wins 54.2% -> 41.7% (0 / 3), share@end -425 (t -2.0), legacy@end -450 (t -2.3).
+3: half of a dozen orcs is a few units the Clan pays upkeep for, cast before the barbarians have
+grown into the horde the spell is named for; FfH's condition is the expert moment here.
+
+Ardor (Grigori: the great-people count and threshold start over) after the third great person
+instead of FfH's fifth: development seeds flat (wins 16.7% -> 20.8%, share@end +21); fresh seeds
+9601-9624 share@end -221 (t -1.1), legacy@end -210 (t -1.0), casts 16 -> 21 games. FfH's
+condition already held in two games of three, and the spell is worth more the later it comes
+(it resets a higher threshold); if anything the expert waits longer, not less.
+
+## Sanctuary and March of the Trees at a losing war (2026-10-22, off by default)
+
+1. More Naval AI casts both defensive world spells only when the civilizations at war with it
+   have 1.5 times its power (`reqSanctuary`, `reqMarchOfTheTrees`), and the round-5 entry below
+   ("World spells at moments of their own") names a losing war as the right trigger: a 30-turn
+   lockout (Sanctuary) or a Treant on every forest at the price of the Ancient Forests (March of
+   the Trees) are last stands. FfH's own condition is two wars at once, which says nothing about
+   who is winning. Kept behind `WS_LOSING_WAR` (`world_spells::losing_war`, `city_in_peril`),
+   off by default.
+2. Measured with the civilization forced, development seeds 1-24, full games, the switch on
+   against the same binary with it off; four versions, each traced where it lost:
+   - the power ratio alone: Elohim win 12.5% -> 12.5%, share@end -162 (t -1.69), legacy@end -176
+     (t -1.55); Sanctuary in 17 games instead of 14, first seen at turn ~358 instead of ~441;
+   - with a city whose threat exceeds its garrison: share@end -127 (t -1.12), legacy@end -196
+     (t -1.84), alive -0.1 (t -1.81);
+   - with four or more units of a civilization at war at that city: share@end -153 (t -1.74),
+     legacy@end -189 (t -1.97);
+   - with the capital or two cities so threatened (the last version): Elohim win 16.7% ->
+     16.7%, share@end -146 (t -1.42), legacy@end -175 (t -1.42), alive t -1.81; Ljosalfar win
+     33.3% -> 29.2% (1 / 2), share@end -34 (t -0.31), legacy@400 +48 (t 1.27).
+   Every version moved the one-shot spell and lost it where it mattered. Seed 21: the Luchuirp,
+   stronger, sent a raid of three or four units at turn 138-145 and every version cast Sanctuary
+   then (the city held without it in the game without the change, its warriors killed the
+   raiders); their invasion of turns 210-300 took nine Elohim cities, where FfH's condition had
+   cast it (turn 272) and lost two. Seed 7: the last version waited for the second city in peril
+   and cast at turn 396, ten turns after FfH's two wars (turn 386), when two cities had already
+   fallen; the Elohim were eliminated by turn 500 instead of surviving with 19% of the world.
+3. "We are losing" is right, but the moment needs what the invasion will take: a raid on a city
+   the garrison holds is not it, and a city that has already fallen is too late. The expert reads
+   the size of the force coming against what we can put in its way -- the enemy stacks heading for
+   our land against our army there -- which this AI does not estimate yet (the defense gap of
+   docs/AI.md, "More Naval AI compared", item 2: threat weighed by rival civilizations). Until it
+   does, FfH's two wars, a proxy for "the whole neighbourhood is at us", did better on these
+   seeds. The rule and its test stay (`FFH_AI_WS_LOSING_WAR_ONLY=ALL` turns it on).
+
+## Unit choices and an upgrade reserve (2026-10-21)
+
+Item 3 of the strong-player list: the head-to-head games had the original AI fielding 3.9 axemen
+and 2.4 swordsmen a civilization at turn 200 against our 0.8 and 0.4, and banking 438 gold
+against our 62 (it keeps the gold to upgrade its units). By turn 300 our civilizations had built
+12.2 warriors each, 122 of those in turns 200-300 as peacetime army fill (seeds 1-8). Three
+behaviours, each behind a per-civilization switch, measured for everyone (seeds 1-48, 300
+turns) and as one civilization against opponents without it (`civ_ab.py --civ all`, seeds 1-6,
+450 turns, 114 pairs):
+
+- **Upkeep in a unit's price.** 1: FfH units beyond the free ones cost gold every turn (unit
+  support was 35-48% of the costs at turn 300), so an expert buys strength per total cost:
+  `best_unit` scored strength squared per (build turns + 4 + 40 turns of upkeep as hammers).
+  2: warriors 12.2 -> 10.5 a civilization, archers 4.4 -> 3.1, more champions; everyone: flat
+  (cities lost to barbarians -0.6 a game, t -2.0); one civilization: wins 23.7% -> 17.5% (2 / 9
+  pairs, p 0.065), share@end -70 (t -1.0), the Clan of Embers worst (share@end -676, t -2.2: its
+  Warrens copy every unit, so fewer, dearer units lose it copies). 3: the quotas count units
+  (defenders a city, attackers an army), so dearer units at the same count put more hammers into
+  the army, not fewer units; "fewer, better units" needs quotas in strength, not in heads.
+- **Gold kept for upgrades at war** (C++ `AI_goldTarget` counts the cost of upgrading every
+  unit): while at war or preparing one, the research slider (never below 30%) saved toward the
+  price of upgrading every military unit that had a better unit to become. 2: upgrades 9.5 ->
+  10.2 a civilization by turn 300; everyone: flat; one civilization: wins 23.7% -> 19.3% (6 / 11,
+  p 0.33), share@end +4, legacy@300 -17 (t -1.4). 3: an upgrade costs 3 gold a hammer plus 20,
+  about what hurrying costs; it pays for veterans and emergencies, not as the way to field an
+  army, and the research it takes during war preparation is not won back.
+- **The peacetime army from the cities that train good units**: a city whose best attacker was
+  under 75% (then 90%) of the best any of our cities trains (a Training Yard's axeman against a
+  warrior) built no peacetime army units. 2: at 75% it never fired (a warrior is exactly 75% of
+  an axeman); at 90% warriors 12.2 -> 10.9 and buildings +0.8 a civilization by turn 300;
+  everyone: flat; one civilization: wins 23.7% -> 19.3% (5 / 10, p 0.30), share@300 +33 (t 1.7),
+  share@end -7. 3: the warriors persist where no city has the enabling building: tier-2 units
+  need a Training Yard or Archery Range in the training city, and `enabler_building` builds one
+  in at most half the cities; the lever, if any, is which cities get them (military cities),
+  not refusing to train.
+
+## Expansion: the expert opening (2026-10-21)
+
+Reopened under the expert-play rule (docs/AI.md, "Settlers and escorts", had dropped faster
+openings in 2026-10 for costing research). Four parts, behind a per-civilization switch so they
+could be measured for everyone (seeds 1-48, 300 turns) and as one civilization with them against
+opponents without (`civ_ab.py --civ all`, seeds 1-8, 152 paired games):
+(a) a threat the garrison holds (a lair guard next door) no longer stops a city building
+settlers, the escort deciding when it leaves; (b) one settler in flight per city instead of one
+per two; (c) the capital's second defender only once barbarians are within 4 plots; (d) no
+buildings while a city grows toward its next settler.
+
+1. **Why it made sense.** The second city came at turn 70 and the third at 105 (seeds 1-8). By
+   turn 100 a civilization had spent 29% of its hammers on settlers, 30% on military (3.7
+   warriors), 23% on workers and 15% on buildings; its first settler started at a median turn
+   45; one capital (seed 1, the Grigori, a goblin fort two plots away) built none by turn 80
+   because the lair guard counted as a threat, though four warriors held it.
+2. **Why it did not pay.** All four, everyone: cities +0.6 at turn 150 (t 6.7), then -0.2 at
+   300; techs -3.6 at 300 (t -4.5), research -16%, legacy -110 (t -3.3); cities lost to the
+   barbarians +1.9 a game (t 3.2), barbarian cities +0.9. One civilization with them: wins 15.8%
+   -> 16.4%, share@300 -52 (t -0.7), legacy@300 -74 (t -1.6) -- no competitive gain either. Part
+   by part (everyone): (a) carries nearly all of it (cities lost to barbarians +1.8, t 3.0;
+   improvements -1.9 at 150, t -4.8; techs -2.4 at 300, t -3.5): the cities a held threat let
+   the city found were the ones next to lairs, and the settlers took the hammers the workers had
+   had. (b), (c) and (d) did not bring cities sooner (cities at turn 100 +0.00, at 150 +0.19)
+   and together cost techs for everyone (-1.8 at 300, t -2.7) while one civilization with them
+   gained noise (wins 15.8% -> 17.8%, 16 / 13 pairs, share@300 +54, t 0.9). Where the faster
+   opening's cities went: at turn 150 commerce +0.4 for +0.6 cities, while maintenance rose 1.6
+   gold (t 5.4) and the research slider fell 7.6 points -- a size-1 FfH city costs more than it
+   gives for dozens of turns.
+3. **What it implies.** The pace is bounded by what a settler costs (120 food and hammers at
+   6-9 a turn from a size-3 capital) and by FfH's early maintenance, not by the production
+   ladder: freeing slots and hammers does not bring settlers sooner, and settling past a lair
+   loses the city. The original AI expands slower still (4.4 cities at turn 200 against our 5.3,
+   head-to-head games) and is richer (research 78 against 46, markets in 68% of its cities). The
+   expert levers left are development, not pace: more commerce per new city (cottages, river and
+   coastal sites, markets) and clearing a lair that blocks expansion (the lair guard on a fort
+   beats warriors; it takes axemen or archers -- item 3, unit choices). A balance note: the rules
+   start barbarian cities once civilizations average two cities and size them by the number of
+   civ cities (`createBarbarianCities`), so any faster opening brings them sooner.
+
+## Workers and citizens (2026-10-21)
+
+The kept version (docs/AI.md, "Citizens" and "Chops") came out of six variants measured on
+seeds 1-24 (300 turns) and validated on 401-472; the governor change was in all of them.
+
+- **Every clearing counted** (workers v1-v3, v5): a farm or mine on a forest or jungle valued
+  with the feature's lost yields on a worked plot and the hammers of the clearing (half again to
+  a city rushing a settler, a worker or a world wonder, 20 turns' worth otherwise), the kept
+  features (Ancient Forest, happy and healthy features, a city's last three forests) refusing
+  the improvement as well as the chop, and in v1-v2 chops for any city. 1: the C++ AI and an
+  expert both weigh what a forest gives against what replaces it; our workers ignored both the
+  hammers and the loss. 2: research at turn 300 -15 to -18 (t -1.9 to -2.5), techs -1.4 to
+  -1.8, population flat; workers alone (v1 without the governor change) population -3.5,
+  research -11. The forests kept around cities blocked mines and farms on the plots the cities
+  worked, and chops for buildings took worker turns from farms. 3: for this AI an improvement's
+  yield gain matters more than the feature it replaces; chops pay only when they bring a city
+  sooner. The kept v6 (chops only for settlers, workers, world wonders; improvements valued as
+  before) measured +10 research on seeds 1-24 but flat on 72 fresh seeds: the spread between
+  variants (research -18 to +10) is about what choosing among six variants on 24 seeds
+  produces. Separating effects this small takes 48+ development seeds.
+
 ## Unique units (2026-10-20)
 
 The kept version is in docs/AI.md, "Unique units". It is kept under the owner's rule (CLAUDE.md,

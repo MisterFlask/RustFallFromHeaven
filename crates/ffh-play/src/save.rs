@@ -20,7 +20,14 @@ pub const SIDECAR_VERSION: i64 = 1;
 /// The session part of a save.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Sidecar {
+    /// The human player; in an observed game, the player the view follows.
     pub human: PlayerId,
+    /// An observed game (an AI-only game watched by an observer; absent: false).
+    pub observe: bool,
+    /// Observed: the turns still to play when it was saved (a multi-turn autoplay; absent: 0).
+    pub to_play: i32,
+    /// The game's settings (`NewGame`, type names; absent: unknown), quoted by flags.
+    pub setup: Option<Json>,
     /// Deferred event popups, in order (`[player, triggered id, launched]`; a version 1 pair
     /// without `launched` reads as not yet launched).
     pub pending_events: Vec<DeferredEvent>,
@@ -40,11 +47,22 @@ pub struct Sidecar {
 }
 
 pub fn log_entry_json(e: &LogEntry) -> Json {
-    crate::jobj! { "t" => e.turn, "player" => e.player, "text" => e.text.as_str() }
+    let j = crate::jobj! { "t" => e.turn, "player" => e.player, "text" => e.text.as_str() };
+    match e.at {
+        Some((x, y)) => j.with("at", crate::jarr![x, y]),
+        None => j,
+    }
 }
 
 fn log_entry_from(j: &Json) -> Result<LogEntry, FieldError> {
-    Ok(LogEntry { turn: j.req("t")?, player: j.opt("player")?, text: j.req("text")? })
+    let at = match j.opt_value("at")? {
+        Some(a) => match (a.at(0).and_then(Json::as_i64), a.at(1).and_then(Json::as_i64)) {
+            (Some(x), Some(y)) => Some((x as i32, y as i32)),
+            _ => None,
+        },
+        None => None,
+    };
+    Ok(LogEntry { at, ..LogEntry::new(j.req("t")?, j.opt("player")?, j.req("text")?) })
 }
 
 impl Sidecar {
@@ -52,6 +70,9 @@ impl Sidecar {
         crate::jobj! {
             "v" => SIDECAR_VERSION,
             "human" => self.human,
+            "observe" => self.observe,
+            "to_play" => self.to_play,
+            "setup" => self.setup.clone(),
             "pending_events" => Json::Arr(self.pending_events.iter().map(|e| crate::jarr![e.player, e.triggered, e.launched]).collect()),
             "journal" => self.journal.as_deref(),
             "journal_line" => self.journal_line,
@@ -85,6 +106,9 @@ impl Sidecar {
         let messages_tail = j.req_arr("messages_tail").map_err(e)?.iter().map(log_entry_from).collect::<Result<_, _>>().map_err(e)?;
         Ok(Sidecar {
             human: j.req("human").map_err(e)?,
+            observe: j.get_or("observe", false).map_err(e)?,
+            to_play: j.get_or("to_play", 0i32).map_err(e)?,
+            setup: j.opt_value("setup").map_err(e)?.filter(|v| !v.is_null()).cloned(),
             pending_events,
             journal: j.opt("journal").map_err(e)?,
             journal_line: j.req("journal_line").map_err(e)?,
@@ -175,17 +199,22 @@ pub fn autosave(dir: &Path, turn: i32, save: &[u8], sidecar: &Sidecar, keep: usi
 pub fn list_json(dir: Option<&Path>) -> Json {
     let Some(dir) = dir else { return crate::jobj! { "dir" => Json::Null, "saves" => Json::arr() } };
     let mut saves = Vec::new();
-    for (sub, auto) in [(dir.to_path_buf(), false), (dir.join("auto"), true)] {
+    for (sub, prefix) in [(dir.to_path_buf(), ""), (dir.join("auto"), "auto/"), (dir.join(crate::flag::FLAGS_DIR), "flags/")] {
         let Ok(entries) = fs::read_dir(&sub) else { continue };
         let mut found: Vec<PathBuf> = entries.filter_map(|e| e.ok().map(|e| e.path())).filter(|p| p.extension().is_some_and(|e| e == "ffhsave")).collect();
         found.sort();
         for p in found {
             let name = p.file_stem().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+            // When the file was written (seconds since 1970; null when the file system does not
+            // say): the load screen sorts and dates the saves by it. Presentation only.
+            let modified = fs::metadata(&p).and_then(|m| m.modified()).ok().and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok()).map(|d| d.as_secs() as i64);
             saves.push(crate::jobj! {
-                "name" => if auto { format!("auto/{name}") } else { name },
+                "name" => format!("{prefix}{name}"),
                 "path" => p.display().to_string(),
-                "auto" => auto,
+                "auto" => prefix == "auto/",
+                "flag" => prefix == "flags/",
                 "sidecar" => p.with_extension("ffhsess").exists(),
+                "modified" => modified,
             });
         }
     }
@@ -208,10 +237,13 @@ mod tests {
     fn sidecar_round_trip_and_autosave_ring() {
         let s = Sidecar {
             human: PlayerId(0),
+            observe: false,
+            to_play: 0,
+            setup: None,
             pending_events: vec![DeferredEvent { player: PlayerId(0), triggered: TriggeredId(7), launched: true }],
             journal: Some("saves/journal.jsonl".into()),
             journal_line: 12,
-            messages_tail: vec![LogEntry { turn: 3, player: Some(0), text: "hi \"there\"".into() }],
+            messages_tail: vec![LogEntry { at: Some((4, 5)), ..LogEntry::new(3, Some(0), "hi \"there\"".into()) }],
             auto_moves_tried: true,
             report_snapshot: Some(crate::jobj! { "turn" => 3 }),
             report: None,

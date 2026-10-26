@@ -17,7 +17,8 @@ pub struct View {
     pub enemies: Vec<TeamId>,
     /// Enemies other than the barbarian team.
     pub civ_enemies: Vec<TeamId>,
-    /// Per plot: summed attack power of visible enemy units that can reach it next turn.
+    /// Per plot: summed attack power of the enemy units that can reach it next turn, fog
+    /// included (see [`known_threat`]).
     pub danger: Vec<i32>,
     /// Plots our units already target this turn (city sites, builds), to spread them out.
     pub claimed: Vec<PlotIdx>,
@@ -30,7 +31,7 @@ pub struct View {
     /// This turn's amphibious invasion target, if any (an overseas enemy city we can take by
     /// shipping an army across water; `naval::amphibious_target`).
     pub amphibious: Option<crate::naval::Amph>,
-    /// Our cities whose visible threat exceeds their garrison (city plot, shortfall).
+    /// Our cities whose threat exceeds their garrison (city plot, shortfall).
     pub peril: Vec<(PlotIdx, i32)>,
     /// Roads to build this turn (see `workers::road_plan`).
     pub roads: Vec<(PlotIdx, i32)>,
@@ -38,8 +39,33 @@ pub struct View {
     pub escort_requests: Vec<PlotIdx>,
     /// Our units committed to each city's garrison this turn.
     pub garrison: BTreeMap<CityId, i32>,
+    /// Extra defenders our cities want for the rival civilizations near them (`defense.rs`;
+    /// cities that want none are absent).
+    pub rival_def: BTreeMap<CityId, i32>,
     /// Reusable flood buffers.
     pub flood: Flood,
+}
+
+/// Does enemy unit `u` count when player `p` weighs the threats to itself (the danger map, a
+/// city's local threat, barbarians or enemies near a city, sorties, peril, the front)? Every
+/// unit its invisibility type does not hide from us, in the fog or not: the AI sees through
+/// fog of war for its own defense, as the C++ AI did (`CvPlayerAI::AI_getPlotDanger` skips only
+/// `isInvisible` units), but not through stealth, which is part of how FfH's hidden units and
+/// civilizations play. Attacks see through fog the same way ([`sees_units`], docs/AI.md, "Fog
+/// of war"). Switch `FOG_SIGHT` off: only units on plots we see.
+pub fn known_threat(g: &Game, p: PlayerId, u: UnitId) -> bool {
+    let team = g.players[p].team;
+    !g.unit_is_invisible(u, team, false) && (crate::switches::FOG_SIGHT.on(g, p) || g.plot_is_visible(g.unit_plot(u), team))
+}
+
+/// Does `team` know which units stand on plot `q` when it plans an attack (a city's garrison,
+/// a target to hunt or to walk into)? Visible plots always; with switch `FOG_ATTACK` (the
+/// owner's call, 2026-10-24: conflict makes the game) every plot we have revealed, fog
+/// included -- the units themselves still pass [`known_threat`]'s stealth test where they are
+/// read (`unit_is_invisible`). Unrevealed land stays unknown (docs/AI.md, "Fog of war").
+pub fn sees_units(g: &Game, team: TeamId, q: PlotIdx) -> bool {
+    g.plot_is_visible(q, team)
+        || g.map.plots[q].revealed[team] && g.team_get_leader_id(team).is_some_and(|l| crate::switches::FOG_ATTACK.on(g, l))
 }
 
 /// Rough attack power of a unit: strength x health x experience. 0 for non-combatants.
@@ -108,6 +134,7 @@ impl View {
             campaign: Default::default(),
             amphibious: None,
             garrison: BTreeMap::new(),
+            rival_def: BTreeMap::new(),
             flood: Flood::default(),
         };
         v.build_danger(g);
@@ -115,6 +142,7 @@ impl View {
             v.targets = crate::military::find_targets(g, &v);
             v.amphibious = crate::naval::amphibious_target(g, p);
             v.roads = crate::workers::road_plan(g, p);
+            v.rival_def = crate::defense::all_rival_defenders(g, p);
             for &c in &g.players[p].cities {
                 let cp = g.city_plot(c);
                 let threat = crate::production::local_threat(g, p, cp, 3);
@@ -141,7 +169,7 @@ impl View {
                     Some(p) => p,
                     None => continue,
                 };
-                if !g.plot_is_visible(plot, self.team) {
+                if !known_threat(g, self.p, u) {
                     continue;
                 }
                 let power = attack_power(g, u);

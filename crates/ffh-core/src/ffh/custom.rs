@@ -742,7 +742,10 @@ impl Game {
                 self.unit_set_xy(unit, x2, y2, true);
             }
         }
+        let creator = from_player.unwrap_or(self.cities[city].owner);
         self.add_player_advanced(new_player, team, leader, civ);
+        // The new civilization is played by its creator's controller (one AI per side in head-to-head games; the same controller otherwise).
+        self.controllers[new_player] = self.controllers[creator].clone();
         self.player_acquire_city(new_player, city, false, false, true);
         // `pPlot.getPlotCity()`: the acquired city has a new id (a NULL city would ignore the call).
         if let Some(new_city) = self.map.plots[plot].plot_city {

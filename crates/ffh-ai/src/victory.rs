@@ -548,7 +548,13 @@ pub fn plan_ours(g: &Game, p: PlayerId) -> Plan {
         return Plan::default();
     }
     let left = turns_left(g);
-    let ours = races(g, p).into_iter().filter(|r| r.eta <= left && (r.goal != Goal::Culture || culture_front_runner(g, p, r.eta))).min_by_key(|r| (r.eta, r.goal));
+    // The Tower of Mastery and the Altar of the Luonnotar are never our goal (the owner's
+    // decision, 2026-10-21: solitaire victories); a rival close to one is still stopped (`plan`).
+    let ours = races(g, p)
+        .into_iter()
+        .filter(|r| !matches!(r.goal, Goal::Tower | Goal::Altar))
+        .filter(|r| r.eta <= left && (r.goal != Goal::Culture || culture_front_runner(g, p, r.eta)))
+        .min_by_key(|r| (r.eta, r.goal));
     Plan { ours, rival: None }
 }
 

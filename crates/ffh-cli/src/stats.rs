@@ -330,6 +330,7 @@ fn snapshot(g: &Game, civ_events: &BTreeMap<PlayerId, CivEvents>, detail: bool) 
         let mut o = Obj::new();
         o.int("p", p.0)
             .str("civ", &civ)
+            .str("ctrl", g.controller(p).name())
             .boolean("barb", barbarian)
             .boolean("alive", pl.alive)
             .int("cities", pl.cities.len() as i64)
@@ -611,7 +612,7 @@ pub fn cmd_stats(cfg: &RunConfig, at: &[i32]) {
     let world_json: Vec<String> = snaps.iter().map(|(t, _, w)| format!("\"{t}\":{w}")).collect();
     let elim_json: Vec<String> = civ_ev.iter().filter_map(|(p, e)| e.elim_turn.map(|t| format!("\"{}\":{t}", p.0))).collect();
     println!(
-        "{{\"score_version\":2,\"seed\":{},\"civs\":{},\"world\":\"{}\",\"turns\":{},\"setup_ms\":{:.1},\"ms_per_turn\":{:.2},\"slowest_ms\":{:.1},\"checksum\":\"{:08x}\",\"captured_civ\":{},\"captured_from_barb\":{},\"captured_by_barb\":{},\"destroyed\":{},\"founded\":{},\"wars_declared\":{},\"peace_made\":{},\"eliminated\":{},\"outcome\":{},\"final_turn\":{},\"eliminated_at\":{{{}}},\"snapshots\":{{{}}},\"world_at\":{{{}}}}}",
+        "{{\"score_version\":2,\"seed\":{},\"civs\":{},\"world\":\"{}\",\"turns\":{},\"setup_ms\":{:.1},\"ms_per_turn\":{:.2},\"slowest_ms\":{:.1},\"checksum\":\"{:08x}\",\"captured_civ\":{},\"captured_from_barb\":{},\"captured_by_barb\":{},\"destroyed\":{},\"founded\":{},\"wars_declared\":{},\"peace_made\":{},\"eliminated\":{},\"outcome\":{},\"final_turn\":{},\"eliminated_at\":{{{}}},\"snapshots\":{{{}}},\"world_at\":{{{}}}{}}}",
         cfg.seed,
         cfg.civs,
         cfg.world,
@@ -632,6 +633,8 @@ pub fn cmd_stats(cfg: &RunConfig, at: &[i32]) {
         final_turn,
         elim_json.join(","),
         snaps_json.join(","),
-        world_json.join(",")
+        world_json.join(","),
+        g.telemetry_json().map_or(String::new(), |t| format!(",\"telemetry\":{t}"))
     );
+    g.telemetry.flush();
 }

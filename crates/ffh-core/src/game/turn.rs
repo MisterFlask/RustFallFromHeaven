@@ -12,6 +12,7 @@ use std::collections::BTreeSet;
 
 use crate::deal::Deal;
 use crate::defs::{MAX_CIV_PLAYERS, MIN_INT, RANDPLOT_LAND, RANDPLOT_NOT_CITY, SCORE_TOTAL_BP};
+use crate::controller::AiHook;
 use crate::game::Game;
 use crate::ids::*;
 use crate::player::set_turn_history;
@@ -296,6 +297,9 @@ impl Game {
                             // chosen by chooseSpell(), then AI_BuffCast() / AI_SummonCast();
                             // AI_setSummonSuicideMode(false). The controller casts its own
                             // end-of-turn spells inside play_turn.
+                            if !self.players[p].human {
+                                self.ai_hook(p, AiHook::EndTurnSpells(p));
+                            }
 
                             self.player_set_auto_moves(p, false);
                         }
@@ -609,6 +613,9 @@ impl Game {
     /// C++ `CvGame::implementDeal(eWho, eOtherWho, pOurList, pTheirList, bForce)`.
     pub fn implement_deal(&mut self, who: PlayerId, other_who: PlayerId, our_list: &[TradeData], their_list: &[TradeData], force: bool) {
         debug_assert!(who != other_who, "eWho is not expected to be equal with eOtherWho");
+        if self.telemetry.on() {
+            self.tel_deal(who, other_who, our_list, their_list);
+        }
 
         // addDeal(), then pDeal->init(pDeal->getID(), eWho, eOtherWho)
         let deal = self.deals.insert_with(|id| Deal::new(id, who, other_who));

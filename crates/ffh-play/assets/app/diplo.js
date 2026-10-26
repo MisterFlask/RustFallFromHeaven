@@ -2,13 +2,17 @@
 // met (leader, civilization, war or peace, open borders, pacts, vassals, attitude, score), your
 // deals with them, declaring war (`declare_war`), and the trade screen: what each side can give
 // (the `trade` query, C++ `buildTradeTable`, refusals greyed), a deal put together from both
-// tables and offered (`propose_deal`), which the AI accepts or declines at once.
+// tables and offered (`propose_deal`), which the AI accepts or declines at once. Each leader shows
+// their portrait (portraits.js).
 
 import * as api from "./api.js";
-import { S, dname, tname, teamName, tradeItemLabel, tradeRefusal, DUAL_ITEMS } from "./state.js";
+import { S, dname, tname, teamName, tradeItemLabel, tradeRefusal, DUAL_ITEMS, me, scoreText, fairShareText } from "./state.js";
 import { h, toast } from "./dom.js";
 import { openModal, ask, closeTag } from "./modals.js";
+import { infoTip } from "./infotips.js";
+import { render as markup } from "./markup.js";
 import { run } from "./commands.js";
+import { leaderPortrait, playerPortrait, PORTRAIT } from "./portraits.js";
 
 /** The players screen. */
 export async function openDiplomacy() {
@@ -29,10 +33,11 @@ export async function openDiplomacy() {
         return h(
           "tr",
           { class: p.alive ? "" : "dead", "data-player": p.id },
-          h("td", h("b", p.name), h("div.dim", `${dname("CivilizationType", p.civ)} · team ${p.team}`)),
+          h("td", { tip: infoTip("LeaderHeadType", p.leader, { title: p.name }) }, h("div.leader-cell", leaderPortrait(p.leader, { size: PORTRAIT.medium }), h("div", h("b", p.name), h("div.dim", `${dname("CivilizationType", p.civ)} · team ${p.team}`)))),
           h("td", relation.flatMap((x, i) => (i ? [", ", x] : [x]))),
-          h("td", p.attitude !== null ? dname("AttitudeType", p.attitude) : "-"),
-          h("td.num", String(p.score)),
+          h("td", { tip: p.attitude !== null ? () => attitudeTip(p) : null }, p.attitude !== null ? dname("AttitudeType", p.attitude) : "-"),
+          h("td", p.alignment !== null && p.alignment !== undefined ? dname("AlignmentType", p.alignment) : h("span.dim", "-"), h("div.dim", p.state_religion !== null && p.state_religion !== undefined ? dname("ReligionType", p.state_religion) : "no state religion")),
+          h("td.num", scoreText(p.score)),
           h(
             "td.actions",
             p.alive && p.contact ? h("button.small", { "data-trade": p.id, onclick: () => openTrade(p.id, p.name).then(load) }, "Trade…") : h("span.dim", p.alive ? "no contact" : "dead"),
@@ -41,14 +46,47 @@ export async function openDiplomacy() {
           deals.length ? h("td.dim", deals.map((d) => h("div", d))) : h("td"),
         );
       });
+    const my = me();
+    const you = my
+      ? h(
+          "p.dim",
+          `You: ${my.alignment !== null && my.alignment !== undefined ? dname("AlignmentType", my.alignment) : "no alignment"}, ${my.state_religion !== null && my.state_religion !== undefined ? `${dname("ReligionType", my.state_religion)} as state religion` : "no state religion"}; score ${scoreText(my.score)}${my.civs_alive ? ` (a fair share is ${fairShareText(my.civs_alive)})` : ""}. Point at an attitude to see its reasons.`,
+        )
+      : null;
     m.setBody(
+      you,
       rows.length
-        ? h("table.scores.diplo", h("tr", h("th", "Leader"), h("th", "Relations"), h("th", "Attitude"), h("th", "Score"), h("th", ""), h("th", "Deals")), rows)
+        ? h("table.scores.diplo", h("tr", h("th", "Leader"), h("th", "Relations"), h("th", "Attitude"), h("th", "Alignment"), h("th", "Score"), h("th", ""), h("th", "Deals")), rows)
         : h("p.dim", "You have not met anyone yet."),
     );
   };
   load();
   return m.done;
+}
+
+/** Why player `p` feels as it does about you (the `players` query's `attitude_parts`, which sum to
+ *  its `attitude_score`), and what the next better attitude takes. */
+function attitudeTip(p) {
+  const parts = p.attitude_parts ?? [];
+  const sign = (n) => (n > 0 ? `+${n}` : `${n}`);
+  return [
+    h("div.tip-title", `${p.name}: ${dname("AttitudeType", p.attitude)} towards you`),
+    parts.length ? parts.map(([why, n]) => h("div", n ? `${sign(n)} ${why}` : why)) : h("div.dim", "Nothing for or against you."),
+    p.attitude_score !== null && p.attitude_score !== undefined ? h("div.tip-hint", `Total ${sign(p.attitude_score)}${p.attitude_next !== null && p.attitude_next !== undefined ? `; at ${sign(p.attitude_next)} they would be ${dname("AttitudeType", p.attitude + 1)}` : ""}.`) : null,
+  ];
+}
+
+/** The tooltip of a trade item: what a tech brings you, what a resource, civic or religion
+ *  does; null for the others. */
+function itemTip(it, techHelp) {
+  const type = tname("TradeableItem", it.item);
+  const head = h("div.tip-title", tradeItemLabel(it));
+  if (type === "TRADE_TECHNOLOGIES") {
+    const help = techHelp.get(it.data);
+    return help ? [head, h("div.tip-effects", markup(help))] : null;
+  }
+  const kind = { TRADE_RESOURCES: "BonusType", TRADE_CIVIC: "CivicType", TRADE_RELIGION: "ReligionType" }[type];
+  return kind ? infoTip(kind, it.data) : null;
 }
 
 async function declareWar(p) {
@@ -75,12 +113,28 @@ export async function openTrade(withPlayer, name = null) {
     m.setBody(h("p.warn", t.why_not ?? "No contact."));
     return m.done;
   }
+  // What a tech brings you (the techs query's help, in your context) for the techs on offer.
+  let techHelp = new Map();
+  try {
+    techHelp = new Map((await api.query("techs")).techs.map((x) => [x.tech, x.help]));
+  } catch {
+    /* the tips go without */
+  }
   // The deal: per side, the chosen items by key (gold: the amount typed).
   const deal = { give: new Map(), get: new Map() };
   const keyOf = (it) => `${it.item}:${it.data}`;
   const isDual = (it) => DUAL_ITEMS.includes(tname("TradeableItem", it.item));
   const isGold = (it) => ["TRADE_GOLD", "TRADE_GOLD_PER_TURN"].includes(tname("TradeableItem", it.item));
   const status = h("p.dim");
+  // Who you are dealing with: their leader's portrait, name, civilization and mood.
+  const pl = S.players.get(withPlayer);
+  const head = pl
+    ? h(
+        "div.trade-head",
+        playerPortrait(withPlayer, { size: PORTRAIT.large }),
+        h("div", h("h3", pl.name), h("div.dim", dname("CivilizationType", pl.civ)), pl.attitude !== null && pl.attitude !== undefined ? h("div", `Attitude: ${dname("AttitudeType", pl.attitude)}`) : null),
+      )
+    : null;
   const draw = () => {
     const side = (list, mapKey, other, title) =>
       h(
@@ -97,7 +151,7 @@ export async function openTrade(withPlayer, name = null) {
               const label = isGold(it) ? `${tradeItemLabel({ ...it, data: 0 })} (up to ${it.max})` : tradeItemLabel(it);
               const row = h(
                 "div.trade-item",
-                { class: on ? "on" : "", "data-item": tname("TradeableItem", it.item), "data-data": it.data },
+                { class: on ? "on" : "", "data-item": tname("TradeableItem", it.item), "data-data": it.data, tip: itemTip(it, techHelp) },
                 h(
                   "button.small",
                   {
@@ -133,6 +187,7 @@ export async function openTrade(withPlayer, name = null) {
           : h("p.dim", "Nothing."),
       );
     m.setBody(
+      head,
       t.war ? h("p.warn", "You are at war: a deal makes peace, so it must hold the peace treaty (or a capitulation).") : null,
       h("div.trade", side(t.we_give, "give", t.they_give, "You give"), side(t.they_give, "get", t.we_give, "They give")),
       status,

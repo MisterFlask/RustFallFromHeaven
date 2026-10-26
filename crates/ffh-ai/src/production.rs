@@ -54,16 +54,29 @@ pub fn choose(ai: &Ai, g: &mut Game, c: CityId) {
             g.unit_ai_set_unit_ai_type(u, UnitAIType::UNITAI_CITY_DEFENSE);
         }
     }
-    if let Some(choice) = decide(ai, g, c) {
+    if let Some((choice, why)) = decide(ai, g, c) {
         crate::trace!(g, p, "{} size {} builds {}", g.cities[c].name, g.cities[c].population, choice_name(g, choice));
+        g.tel_decision(p, "production", type_name(g, choice), why, 0, String::new);
         push(g, c, choice);
     }
     if g.cities[c].order_queue.is_empty() {
         // Never leave a city idle: anything it can make.
         if let Some(choice) = fallback(g, c) {
             crate::trace!(g, p, "{} size {} falls back to {}", g.cities[c].name, g.cities[c].population, choice_name(g, choice));
+            g.tel_decision(p, "production", type_name(g, choice), "fallback", 0, String::new);
             push(g, c, choice);
         }
+    }
+}
+
+/// The type name of what a choice makes (telemetry).
+fn type_name(g: &Game, choice: Choice) -> &'static str {
+    let d = g.d;
+    match choice {
+        Choice::Train(u, _) => d.units[u].base.type_.as_str(),
+        Choice::Construct(b) => d.buildings[b].base.type_.as_str(),
+        Choice::Create(pr) => d.projects[pr].base.type_.as_str(),
+        Choice::Maintain(pr) => d.processes[pr].base.type_.as_str(),
     }
 }
 
@@ -112,7 +125,7 @@ pub fn emergency(ai: &Ai, g: &mut Game, p: PlayerId) {
         if threat == 0 {
             // A long build in a city that should have a second defender by now (decide puts
             // the defender first).
-            let exposed = g.game_turn() > 30 && defenders < 2 && (g.city_is_capital(c) || barbarians_near(g, p, plot, 4));
+            let exposed = g.game_turn() > 30 && defenders < 2 && second_defender_wanted(g, p, c, plot, defenders, local_threat(g, p, plot, 3), defense);
             if exposed && !building_fighter && g.city_production_turns_left(c) > 3 && !g.player_is_barbarian(p) && best_unit(g, c, Role::Defense).is_some() {
                 crate::trace!(g, p, "{}: second defender first", g.cities[c].name);
                 g.city_clear_order_queue(c);
@@ -204,7 +217,8 @@ pub fn garrison(g: &Game, p: PlayerId, plot: PlotIdx) -> (i32, i32) {
     (n, power)
 }
 
-/// Summed attack power of visible enemy units within `range` plots.
+/// Summed attack power of enemy units within `range` plots, fog included
+/// ([`crate::view::known_threat`]).
 pub fn local_threat(g: &Game, p: PlayerId, plot: PlotIdx, range: i32) -> i32 {
     let team = g.players[p].team;
     let (x, y) = g.map.xy(plot);
@@ -212,10 +226,10 @@ pub fn local_threat(g: &Game, p: PlayerId, plot: PlotIdx, range: i32) -> i32 {
     for dx in -range..=range {
         for dy in -range..=range {
             let Some(q) = g.plot_xy(x, y, dx, dy) else { continue };
-            if !g.plot_is_visible(q, team) {
-                continue;
-            }
             for &u in &g.map.plots[q].units {
+                if !crate::view::known_threat(g, p, u) {
+                    continue;
+                }
                 let ut = g.units[u].owner;
                 let their_team = g.players[ut].team;
                 // Animals cannot enter owned land: no threat to a city.
@@ -233,27 +247,117 @@ pub fn local_threat(g: &Game, p: PlayerId, plot: PlotIdx, range: i32) -> i32 {
     threat
 }
 
-/// A barbarian lair or a (non-animal) barbarian unit within `range` plots.
+/// A revealed barbarian lair or a (non-animal) barbarian unit within `range` plots.
 pub fn barbarians_near(g: &Game, p: PlayerId, plot: PlotIdx, range: i32) -> bool {
     let team = g.players[p].team;
     let barb = g.barbarian_player();
+    // Barbarians we are at peace with (the Clan of Embers, Charadon's Doviello) count too: their
+    // garrison term holds the defenders that keep the Clan's cities from its rivals (docs/AI_LOG.md,
+    // "Allied barbarians no longer counted as a threat"). Raiders in sight count, not only lairs:
+    // a quota from lairs and towns alone lost cities to the barbarians, and one from a per-city
+    // record of the raiders seen cost research for no city saved (docs/AI_LOG.md, "Garrison
+    // quota from lasting threats only", "Garrison quota from a record of threats seen").
     let (x, y) = g.map.xy(plot);
     for dx in -range..=range {
         for dy in -range..=range {
             let Some(q) = g.plot_xy(x, y, dx, dy) else { continue };
             let pl = &g.map.plots[q];
-            if !pl.revealed[team] {
-                continue;
-            }
-            if pl.improvement_type.is_some_and(|i| g.d.improvements[i].spawn_unit_type.is_some_and(|u| !g.d.units[u].animal)) {
+            if pl.revealed[team] && pl.improvement_type.is_some_and(|i| g.d.improvements[i].spawn_unit_type.is_some_and(|u| !g.d.units[u].animal)) {
                 return true;
             }
-            if g.plot_is_visible(q, team) && pl.units.iter().any(|&u| g.units[u].owner == barb && !g.d.units[g.units[u].unit_type].animal) {
+            // Units: fog included (`view::known_threat`).
+            if pl.units.iter().any(|&u| g.units[u].owner == barb && !g.d.units[g.units[u].unit_type].animal && crate::view::known_threat(g, p, u)) {
                 return true;
             }
         }
     }
     false
+}
+
+/// A barbarian lair (an improvement that spawns non-animal units) within `range` plots: the
+/// lasting part of [`barbarians_near`].
+pub fn barbarian_lair_near(g: &Game, p: PlayerId, plot: PlotIdx, range: i32) -> bool {
+    let team = g.players[p].team;
+    let (x, y) = g.map.xy(plot);
+    for dx in -range..=range {
+        for dy in -range..=range {
+            let Some(q) = g.plot_xy(x, y, dx, dy) else { continue };
+            let pl = &g.map.plots[q];
+            if pl.revealed[team] && pl.improvement_type.is_some_and(|i| g.d.improvements[i].spawn_unit_type.is_some_and(|u| !g.d.units[u].animal)) {
+                return true;
+            }
+        }
+    }
+    false
+}
+
+/// With `KEEP_UNITS` (units trained are kept, `finance::disband_military`): does the garrison
+/// of an interior city hold the barbarians it sees, when one more defender would cost gold?
+/// At war with the barbarians, the visible threat within 3 plots (`threat`, [`local_threat`]) no
+/// more than the garrison's defense (`defense`), nothing in sight included; no unit of a
+/// civilization at war with us within 3 plots; no city of another civilization within 8 plots;
+/// no free unit slot left. Then a raider in sight adds no defender to the city's quota: under
+/// More Naval AI's rule a defender trained against a raider the garrison holds is kept and paid
+/// for long after the raider has gone (docs/AI_LOG.md, "More Naval AI's disband rule"). A border
+/// city keeps the reactive defender: the defenders trained against raiders are also the ones
+/// that hold it when a neighbour attacks (the same rule in every city lost civ cities to
+/// rivals). While units are free a defender costs nothing to keep. Lairs still count, and so do
+/// the barbarians of a civilization at peace with them (the Clan of Embers' garrison term,
+/// docs/AI_LOG.md, "Allied barbarians no longer counted as a threat").
+pub(crate) fn garrison_holds(g: &Game, p: PlayerId, plot: PlotIdx, threat: i32, defense: i32) -> bool {
+    crate::switches::KEEP_UNITS.on(g, p)
+        && g.at_war(g.players[p].team, g.barbarian_team())
+        && threat <= defense
+        && crate::economy::marginal_unit_cost_x100(g, p, true) > 0
+        && !civ_enemy_near(g, p, plot, 3)
+        && !rival_city_near(g, p, plot, 8)
+}
+
+/// A unit of a civilization we are at war with within `range` plots, fog included
+/// ([`crate::view::known_threat`]).
+fn civ_enemy_near(g: &Game, p: PlayerId, plot: PlotIdx, range: i32) -> bool {
+    let team = g.players[p].team;
+    let barb = g.barbarian_team();
+    let (x, y) = g.map.xy(plot);
+    for dx in -range..=range {
+        for dy in -range..=range {
+            let Some(q) = g.plot_xy(x, y, dx, dy) else { continue };
+            if g.map.plots[q].units.iter().any(|&u| {
+                let t = g.players[g.units[u].owner].team;
+                t != team && t != barb && g.at_war(team, t) && crate::view::known_threat(g, p, u)
+            }) {
+                return true;
+            }
+        }
+    }
+    false
+}
+
+/// A city of another civilization (not a vassal of ours, not the barbarians) that we have seen,
+/// within `range` plots: a border city.
+fn rival_city_near(g: &Game, p: PlayerId, plot: PlotIdx, range: i32) -> bool {
+    let team = g.players[p].team;
+    let (x, y) = g.map.xy(plot);
+    g.player_ids().any(|o| {
+        let t = g.players[o].team;
+        t != team
+            && !g.player_is_barbarian(o)
+            && g.players[o].alive
+            && !g.teams[t].vassal[team]
+            && g.players[o].cities.iter().any(|&c| {
+                let city = &g.cities[c];
+                g.plot_distance(x, y, city.x, city.y) <= range && g.map.plots[g.city_plot(c)].revealed[team]
+            })
+    })
+}
+
+/// The second defender after turn 30: in the capital, and in a city near barbarians (a lair
+/// within 4 plots; barbarian units in sight there unless the garrison holds them,
+/// [`garrison_holds`]).
+fn second_defender_wanted(g: &Game, p: PlayerId, c: CityId, plot: PlotIdx, defenders: i32, threat: i32, defense: i32) -> bool {
+    g.game_turn() > 30
+        && defenders < 2
+        && (g.city_is_capital(c) || barbarian_lair_near(g, p, plot, 4) || !garrison_holds(g, p, plot, threat, defense) && barbarians_near(g, p, plot, 4))
 }
 
 pub fn count_ai(g: &Game, p: PlayerId, unit_ai: UnitAIType) -> i32 {
@@ -300,7 +404,9 @@ pub fn sea_resources_unimproved(g: &Game, c: CityId) -> i32 {
     n
 }
 
-/// Plots worked by our cities that have no improvement (a measure of worker demand).
+/// Plots worked by our cities that have no improvement (a measure of worker demand). Plots no
+/// known build improves yet count too: the worker that waits for the tech is the one ready the
+/// turn it comes (docs/AI_LOG.md, "Worker demand only where a build is possible now").
 pub fn unimproved_worked_plots(g: &Game, p: PlayerId) -> i32 {
     let mut n = 0;
     for &c in &g.players[p].cities {
@@ -336,6 +442,35 @@ fn civ_enemies_at_war(g: &Game, p: PlayerId) -> bool {
     g.teams.keys().any(|t| t != team && t != barb && g.teams[t].alive_count > 0 && g.at_war(team, t))
 }
 
+/// Is `c` in the top third of our cities by production (the best one at least), among those
+/// for which `eligible` holds (the cities that could build the item at all: a hero ship needs a
+/// coast)? More Naval AI builds world wonders and heroes only there
+/// (`CvCityAI::AI_chooseProduction`: `iProductionRank <= max(1, iNumCities / 3)`); the rules let
+/// one city at a time build each, so the first empty queue otherwise locks it in. Ties go to the
+/// older city, as in `victory::ranked_by_production`.
+pub(crate) fn top_production_city(g: &Game, c: CityId, eligible: impl Fn(CityId) -> bool) -> bool {
+    let p = g.cities[c].owner;
+    let mine = g.city_yield_rate(c, YieldType::YIELD_PRODUCTION);
+    let mut n = 0;
+    let mut ahead = 0;
+    for &o in &g.players[p].cities {
+        if o != c && !eligible(o) {
+            continue;
+        }
+        n += 1;
+        let prod = g.city_yield_rate(o, YieldType::YIELD_PRODUCTION);
+        if prod > mine || prod == mine && o < c {
+            ahead += 1;
+        }
+    }
+    ahead < (n / 3).max(1)
+}
+
+/// A world wonder (one in the world, `isWorldWonderClass`).
+pub(crate) fn is_world_wonder(d: &GameData, b: BuildingType) -> bool {
+    d.buildings[b].building_class_type.is_some_and(|k| ffh_core::utils::is_world_wonder_class(d, k))
+}
+
 /// The owner cannot pay for more: research slider pushed down to cover costs.
 pub fn financial_trouble(g: &Game, p: PlayerId) -> bool {
     g.player_is_commerce_flexible(p, CommerceType::COMMERCE_RESEARCH) && crate::economy::spend_pct(g, p) < 40 && g.players[p].cities.len() > 1
@@ -359,7 +494,7 @@ struct Ctx {
     afford: bool,
 }
 
-fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
+fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static str)> {
     let d = g.d;
     let city = &g.cities[c];
     let p = city.owner;
@@ -406,11 +541,19 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
 
     // Garrison quota: one, the capital and threatened cities more, cities near barbarian lairs
     // or barbarians more.
-    let mut needed = 1 + i32::from(ctx.capital && (ctx.n_cities > 1 || g.game_turn() > 30)) + i32::from(ctx.threat > 0);
-    if barbarians_near(g, p, plot, 3) {
+    // With `KEEP_UNITS`, a raider in sight the garrison holds adds nothing (`garrison_holds`).
+    let held = garrison_holds(g, p, plot, ctx.threat, ctx.defense);
+    let mut needed = 1 + i32::from(ctx.capital && (ctx.n_cities > 1 || g.game_turn() > 30)) + i32::from(ctx.threat > 0 && !held);
+    if barbarian_lair_near(g, p, plot, 3) || !held && barbarians_near(g, p, plot, 3) {
         needed += 1;
     }
-    if ctx.at_war {
+    let mut rival = 0;
+    if crate::switches::RIVAL_DEFENSE.on(g, p) {
+        // The rival civilizations near this city (war, hostility, power; defense.rs): at war the
+        // front holds more and the interior fewer than the flat one more below.
+        rival = crate::defense::rival_defenders(g, c);
+        needed += rival;
+    } else if ctx.at_war {
         needed += 1;
     }
     if let Some(l) = leader {
@@ -423,11 +566,11 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
     // Fortified defenders in a city fight at about 1.5x their strength.
     if ctx.defenders == 0 || (ctx.threat > 0 && ctx.defense * 3 / 2 < ctx.threat && ctx.defenders < needed + 2) {
         if let Some(u) = best_unit(g, c, Role::Defense) {
-            return Some(Choice::Train(u, UnitAIType::UNITAI_CITY_DEFENSE));
+            return Some((Choice::Train(u, UnitAIType::UNITAI_CITY_DEFENSE), "garrison"));
         }
     }
     if barbarian {
-        return best_unit(g, c, Role::Attack).map(|u| Choice::Train(u, UnitAIType::UNITAI_ATTACK));
+        return best_unit(g, c, Role::Attack).map(|u| (Choice::Train(u, UnitAIType::UNITAI_ATTACK), "barbarian"));
     }
 
     let workers = count_ai(g, p, UnitAIType::UNITAI_WORKER);
@@ -439,20 +582,20 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
     // 2. The first worker, once workers have something to do.
     if workers == 0 && can_improve && safe && (ctx.pop >= 2 || ctx.food_surplus <= 1) {
         if let Some(u) = best_unit(g, c, Role::Worker) {
-            return Some(Choice::Train(u, UnitAIType::UNITAI_WORKER));
+            return Some((Choice::Train(u, UnitAIType::UNITAI_WORKER), "first_worker"));
         }
     }
 
     // A second defender before more settlers once the barbarians are about.
-    if g.game_turn() > 30 && ctx.defenders < 2 && (ctx.capital || barbarians_near(g, p, plot, 4)) {
+    if second_defender_wanted(g, p, c, plot, ctx.defenders, ctx.threat, ctx.defense) {
         if let Some(u) = best_unit(g, c, Role::Defense) {
-            return Some(Choice::Train(u, UnitAIType::UNITAI_CITY_DEFENSE));
+            return Some((Choice::Train(u, UnitAIType::UNITAI_CITY_DEFENSE), "second_defender"));
         }
     }
 
     // A victory a few turns away comes before expansion (victory.rs).
     if safe {
-        if let Some(choice) = crate::victory::production(g, c, true) { return Some(choice); } // victory-pursuit
+        if let Some(choice) = crate::victory::production(g, c, true) { return Some((choice, "victory_soon")); } // victory-pursuit
     }
 
     // An explorer while much of our landmass is unknown (sites, goody huts, contact with
@@ -464,7 +607,7 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
             if unknown * 5 > g.map.areas[a].num_tiles && unknown > 20 {
                 if let Some(u) = best_unit(g, c, Role::Explore).or_else(|| best_unit(g, c, Role::Attack)) {
                     if g.city_production_turns_left_unit(c, u, 0) <= 10 {
-                        return Some(Choice::Train(u, UnitAIType::UNITAI_EXPLORE));
+                        return Some((Choice::Train(u, UnitAIType::UNITAI_EXPLORE), "explorer"));
                     }
                 }
             }
@@ -474,13 +617,13 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
     // 3. Settlers while good sites remain in reach.
     let settler = crate::expansion::settler_choice(ai, g, c, ctx.p, ctx.threat, ctx.defense); // early-expansion
     if let SettlerPlan::Now(choice) = settler {
-        return Some(choice);
+        return Some((choice, "settler"));
     }
-    if let Some(choice) = crate::civs::production(ai, g, c, ctx.threat) { return Some(choice); } // civ-mechanics
+    if let Some(choice) = crate::civs::production(ai, g, c, ctx.threat) { return Some((choice, "civ_mechanics")); } // civ-mechanics
     // An assault fleet (transport + attackers) for an overseas enemy city we can take.
     if safe && crate::naval::is_coastal_city(g, c) {
         if let Some(choice) = crate::naval::assault_production(g, c) {
-            return Some(choice);
+            return Some((choice, "assault_fleet"));
         }
     }
     // A ship for a settler waiting in port; a sea explorer while our land is full and
@@ -488,7 +631,7 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
     if safe && crate::naval::is_coastal_city(g, c) {
         if crate::naval::settler_waiting(g, p).is_some() && crate::naval::num_transports(g, p) == 0 {
             if let Some(u) = best_unit(g, c, Role::Transport) {
-                return Some(Choice::Train(u, UnitAIType::UNITAI_SETTLER_SEA));
+                return Some((Choice::Train(u, UnitAIType::UNITAI_SETTLER_SEA), "settler_ship"));
             }
         }
         if count_ai(g, p, UnitAIType::UNITAI_EXPLORE_SEA) == 0
@@ -500,7 +643,7 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
             let unknown = g.map.num_plots() as i32 - g.map.areas.iter().map(|(_, a)| a.num_revealed_tiles[pl.team]).sum::<i32>();
             if unknown * 5 > g.map.num_plots() as i32 {
                 if let Some(u) = best_unit(g, c, Role::SeaExplore) {
-                    return Some(Choice::Train(u, UnitAIType::UNITAI_EXPLORE_SEA));
+                    return Some((Choice::Train(u, UnitAIType::UNITAI_EXPLORE_SEA), "sea_explorer"));
                 }
             }
         }
@@ -510,7 +653,7 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
         let need: i32 = pl.cities.iter().map(|&o| sea_resources_unimproved(g, o)).sum();
         if count_ai(g, p, UnitAIType::UNITAI_WORKER_SEA) < need.min(ctx.n_cities) {
             if let Some(u) = best_unit(g, c, Role::SeaWorker) {
-                return Some(Choice::Train(u, UnitAIType::UNITAI_WORKER_SEA));
+                return Some((Choice::Train(u, UnitAIType::UNITAI_WORKER_SEA), "work_boat"));
             }
         }
     }
@@ -521,7 +664,7 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
     // Training Yard for axemen, ...): build it when it opens a clearly better unit.
     if safe && ctx.pop >= 2 {
         if let Some(b) = enabler_building(g, c, ctx.threat) {
-            return Some(Choice::Construct(b));
+            return Some((Choice::Construct(b), "unit_enabler"));
         }
     }
 
@@ -535,7 +678,8 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
     needed += crate::victory::guard(g, c); // victory-pursuit
     if ctx.defenders < needed {
         if let Some(u) = best_unit(g, c, Role::Defense) {
-            return Some(Choice::Train(u, UnitAIType::UNITAI_CITY_DEFENSE));
+            let why = if ctx.defenders >= needed - rival { "rival_defender" } else { "defender_quota" };
+            return Some((Choice::Train(u, UnitAIType::UNITAI_CITY_DEFENSE), why));
         }
     }
 
@@ -544,7 +688,7 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
     let min_army = if ctx.broke { 1 + ctx.n_cities / 4 } else { 1 + ctx.n_cities / 2 };
     if attackers < min_army && (ctx.production >= 3 || settler == SettlerPlan::Soon) && (ctx.afford || attackers == 0) {
         if let Some(u) = best_unit(g, c, Role::Attack) {
-            return Some(Choice::Train(u, UnitAIType::UNITAI_ATTACK));
+            return Some((Choice::Train(u, UnitAIType::UNITAI_ATTACK), "barbarian_force"));
         }
     }
 
@@ -553,7 +697,7 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
         let target = worker_target(g, p);
         if workers < target && ctx.pop >= 2 {
             if let Some(u) = best_unit(g, c, Role::Worker) {
-                return Some(Choice::Train(u, UnitAIType::UNITAI_WORKER));
+                return Some((Choice::Train(u, UnitAIType::UNITAI_WORKER), "workers"));
             }
         }
     }
@@ -561,19 +705,41 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
     // Victory pursuit (victory.rs): the towers in our best cities, culture in the cities
     // nearest legendary -- after the garrison, the first army and the workers.
     if safe {
-        if let Some(choice) = crate::victory::production(g, c, false) { return Some(choice); } // victory-pursuit
+        if let Some(choice) = crate::victory::production(g, c, false) { return Some((choice, "victory")); } // victory-pursuit
+    }
+
+    // Mana nodes (MANA_NODES) and the caster corps (CASTER_ROLES): a caster to convert our raw mana
+    // when none of ours can, and the corps' casters (mana.rs, casters.rs).
+    if safe && ctx.afford && !ctx.broke {
+        if let Some(choice) = crate::mana::production(g, c) {
+            return Some((choice, "mana_builder"));
+        }
+        if let Some(choice) = crate::casters::production(g, c, ctx.at_war, attackers) {
+            return Some((choice, "caster_corps"));
+        }
+    }
+
+    // A wonder slot in our most productive cities at peace (More Naval AI's quick wonder).
+    if safe && settler != SettlerPlan::Soon {
+        if let Some(b) = wonder_slot(g, c, ctx.at_war) {
+            return Some((Choice::Construct(b), "wonder_slot"));
+        }
     }
 
     // 7. Heroes are unique and strong (but not at the cost of the first expansion); a coastal city
-    // trains a hero ship (the Lanun's Black Wind, which serves as a transport).
+    // trains a hero ship (the Lanun's Black Wind, which serves as a transport). Only the top third
+    // of our cities by production that can train it builds one (`TOP_CITIES`).
+    let top_cities = crate::switches::TOP_CITIES.on(g, p);
     if let Some(u) = best_unit(g, c, Role::Hero) {
-        if g.city_production_turns_left_unit(c, u, 0) <= max_turns.min(25) || ctx.n_cities >= 3 {
-            return Some(Choice::Train(u, UnitAIType::UNITAI_HERO));
+        let best_city = !top_cities || top_production_city(g, c, |o| g.city_can_train(o, u, false, false, false, false));
+        if best_city && (g.city_production_turns_left_unit(c, u, 0) <= max_turns.min(25) || ctx.n_cities >= 3) {
+            return Some((Choice::Train(u, UnitAIType::UNITAI_HERO), "hero"));
         }
     }
     if let Some(u) = best_unit(g, c, Role::SeaHero) {
-        if g.city_production_turns_left_unit(c, u, 0) <= max_turns.min(25) || ctx.n_cities >= 3 {
-            return Some(Choice::Train(u, d.units[u].default_unit_ai_type.unwrap_or(UnitAIType::UNITAI_ATTACK_SEA)));
+        let best_city = !top_cities || top_production_city(g, c, |o| g.city_can_train(o, u, false, false, false, false));
+        if best_city && (g.city_production_turns_left_unit(c, u, 0) <= max_turns.min(25) || ctx.n_cities >= 3) {
+            return Some((Choice::Train(u, d.units[u].default_unit_ai_type.unwrap_or(UnitAIType::UNITAI_ATTACK_SEA)), "hero_ship"));
         }
     }
 
@@ -591,10 +757,10 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
     // At war (or preparing): a third of the army in siege engines. A stack camped next to a
     // city it cannot take (a barbarian town, say) asks for a couple as well.
     let siege = count_ai(g, p, UnitAIType::UNITAI_ATTACK_CITY) + count_ai(g, p, UnitAIType::UNITAI_COLLATERAL);
-    if let Some(choice) = crate::campaign::army_choice(g, c, attackers - siege, siege, ctx.afford) { return Some(choice); } // siege-campaigns
+    if let Some(choice) = crate::campaign::army_choice(g, c, attackers - siege, siege, ctx.afford) { return Some((choice, "campaign_army")); } // siege-campaigns
     if (ctx.at_war && army_short && siege * 3 < attackers + 1) || (siege < 2 && besieging(g, p) && ctx.afford) {
         if let Some(u) = best_unit(g, c, Role::Siege) {
-            return Some(Choice::Train(u, UnitAIType::UNITAI_ATTACK_CITY));
+            return Some((Choice::Train(u, UnitAIType::UNITAI_ATTACK_CITY), "siege"));
         }
     }
     // 9. Buildings by marginal value per turn of production. Computed BEFORE the surplus-army
@@ -606,6 +772,12 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
     // deferred -- a few turns per city, until the economy buildings are up.
     let mut best_building: Option<(BuildingType, i32)> = None;
     let mut best_economy: Option<(BuildingType, i32)> = None;
+    // With `TOP_CITIES`, a city outside the top third of ours by production takes a world wonder
+    // only if it finishes it as quickly as the wonder slot asks (2 x cities + 1 turns): the rules
+    // let one city at a time build it, and a slow city that starts one first locks it away from
+    // the cities that would finish it sooner.
+    let mut wonder_city: Option<bool> = if top_cities { None } else { Some(true) };
+    let quick_wonder = 2 * ctx.n_cities + 1;
     for b in d.buildings.keys() {
         if !building_allowed(g, c, b) || !g.city_can_construct(c, b, false, false, false) {
             continue;
@@ -617,6 +789,9 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
         let turns = g.city_production_turns_left_building(c, b, 0).max(1);
         // Nothing that ties a city up for ages (wonders belong in productive cities).
         if turns > max_turns {
+            continue;
+        }
+        if turns > quick_wonder && is_world_wonder(d, b) && !*wonder_city.get_or_insert_with(|| top_production_city(g, c, |_| true)) {
             continue;
         }
         let score = value * 100 / (turns + 3);
@@ -640,7 +815,7 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
             if score >= ECON_BUILD_BAR {
                 let f = crate::finance::state(g, p);
                 if f.support_heavy() || f.structural() {
-                    return Some(Choice::Construct(b));
+                    return Some((Choice::Construct(b), "economy_building_strained"));
                 }
             }
         }
@@ -649,18 +824,31 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
     // Interleave army and buildings in peacetime (deterministic: no RNG draw from the AI).
     if army_short && (ctx.at_war || (g.game_turn() + c.0 as i32) % 3 == 0) {
         if let Some(u) = best_unit(g, c, if ctx.at_war { Role::CityAttack } else { Role::Attack }) {
-            return Some(Choice::Train(u, UnitAIType::UNITAI_ATTACK));
+            return Some((Choice::Train(u, UnitAIType::UNITAI_ATTACK), "army_interleave"));
+        }
+    }
+    // A missionary for a foreign city while our shrine pays a gold a turn for every city with the
+    // religion (MISSIONARY_ABROAD): weighed like a building worth that gold (`building_value`'s
+    // 80 a gold, less the odds of failing on the way), against the best building.
+    if let Some(r) = crate::units::abroad_religion(g, p).filter(|&r| g.player_get_state_religion(p) == Some(r)) {
+        if count_ai(g, p, UnitAIType::UNITAI_MISSIONARY) == 0 && abroad_targets(g, p, c, r) {
+            if let Some(u) = best_missionary(g, c, r) {
+                let score = MISSIONARY_ABROAD_VALUE * 100 / (g.city_production_turns_left_unit(c, u, 0).max(1) + 3);
+                if best_building.map_or(true, |(_, s)| score > s) && (score >= ECON_BUILD_BAR || !army_short) {
+                    return Some((Choice::Train(u, UnitAIType::UNITAI_MISSIONARY), "missionary_abroad"));
+                }
+            }
         }
     }
     if let Some((b, score)) = best_building {
         if score >= ECON_BUILD_BAR || !army_short {
-            return Some(Choice::Construct(b));
+            return Some((Choice::Construct(b), "building_interleave"));
         }
     }
     if settler == SettlerPlan::Soon && ctx.afford {
         // Cheap units while the city grows: they explore, escort and hunt.
         if let Some(u) = best_unit(g, c, Role::Attack) {
-            return Some(Choice::Train(u, UnitAIType::UNITAI_ATTACK));
+            return Some((Choice::Train(u, UnitAIType::UNITAI_ATTACK), "army"));
         }
     }
 
@@ -669,28 +857,28 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
     let mage_target = (ctx.n_cities + 2) / 4 + leader.map_or(0, |l| i32::from(l.ai_value_mage > 100));
     if mages < mage_target && ctx.afford {
         if let Some(u) = best_unit(g, c, Role::Mage) {
-            return Some(Choice::Train(u, UnitAIType::UNITAI_MAGE));
+            return Some((Choice::Train(u, UnitAIType::UNITAI_MAGE), "caster"));
         }
     }
     if let Some(r) = g.player_get_state_religion(p) {
         let missing = pl.cities.iter().filter(|&&cc| !g.cities[cc].has_religion[r]).count() as i32;
         if missing > 0 && count_ai(g, p, UnitAIType::UNITAI_MISSIONARY) == 0 {
             if let Some(u) = best_missionary(g, c, r) {
-                return Some(Choice::Train(u, UnitAIType::UNITAI_MISSIONARY));
+                return Some((Choice::Train(u, UnitAIType::UNITAI_MISSIONARY), "missionary"));
             }
         }
     }
 
     if army_short {
         if let Some(u) = best_unit(g, c, Role::Attack) {
-            return Some(Choice::Train(u, UnitAIType::UNITAI_ATTACK));
+            return Some((Choice::Train(u, UnitAIType::UNITAI_ATTACK), "attacker"));
         }
     }
     if let Some((b, _)) = best_building {
-        return Some(Choice::Construct(b));
+        return Some((Choice::Construct(b), "building"));
     }
     if let Some(pr) = best_project(g, c) {
-        return Some(Choice::Create(pr));
+        return Some((Choice::Create(pr), "project"));
     }
     // 11. Convert production to research (else gold).
     let mut best_process: Option<(ProcessType, i32)> = None;
@@ -704,7 +892,148 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
             best_process = Some((pr, v));
         }
     }
-    best_process.map(|(pr, _)| Choice::Maintain(pr))
+    best_process.map(|(pr, _)| (Choice::Maintain(pr), "process"))
+}
+
+/// More Naval AI's quick wonder (`CvCityAI::AI_chooseProduction`, `BUILDINGFOCUS_WORLDWONDER`):
+/// at peace, a city in the top third of ours by production builds the world wonder of most value
+/// per turn that it finishes within 2 x cities + 1 turns (four times that in a city making more
+/// than three hammers a citizen at size 6+). FfH's wonders carry culture, the cultural victory's
+/// currency; hammers taken from the army cost cities (docs/AI.md, "Looked promising on
+/// development seeds, failed on fresh ones": buildings valued for more effects), so the slot is
+/// only for the best cities and only at peace.
+fn wonder_slot(g: &Game, c: CityId, at_war: bool) -> Option<BuildingType> {
+    let p = g.cities[c].owner;
+    if at_war || !crate::switches::WONDER_SLOT.on(g, p) || !top_production_city(g, c, |_| true) {
+        return None;
+    }
+    let d = g.d;
+    let horizon = wonder_horizon(g, c);
+    let mut best: Option<(BuildingType, i32)> = None;
+    for b in d.buildings.keys() {
+        if !is_world_wonder(d, b) || !g.city_can_construct(c, b, false, false, false) {
+            continue;
+        }
+        let turns = g.city_production_turns_left_building(c, b, 0).max(1);
+        if turns > horizon {
+            continue;
+        }
+        let value = building_value(g, c, b, 0);
+        if value <= 0 {
+            continue;
+        }
+        let score = value * 100 / (turns + 3);
+        if best.map_or(true, |(_, s)| score > s) {
+            best = Some((b, score));
+        }
+    }
+    best.map(|(b, _)| b)
+}
+
+/// The wonder slot's horizon in city `c`: 2 x cities + 1 turns, four times that in a city of size
+/// 6+ making more than three hammers a citizen (More Naval AI's `iWonderTime`, "SuperCity").
+fn wonder_horizon(g: &Game, c: CityId) -> i32 {
+    let p = g.cities[c].owner;
+    let pop = g.cities[c].population;
+    let super_city = pop > 5 && g.city_yield_rate(c, YieldType::YIELD_PRODUCTION) > pop * 3;
+    (2 * g.players[p].cities.len() as i32 + 1) * if super_city { 4 } else { 1 }
+}
+
+/// With `WONDER_SLOT`, once a turn: a city in the top third of ours by production pushing a
+/// world wonder home at peace -- done within the wonder slot's horizon ([`wonder_horizon`]) --
+/// emphasizes production (More Naval AI's special yield multiplier,
+/// `CvCityAI::AI_updateSpecialYieldMultiplier`: production +50% while building a wonder; here
+/// the player's `EMPHASIZE_PRODUCTION`, which the governor weighs the same), and drops it once
+/// the wonder is done, switched or at war. On every world wonder for the whole build, as More
+/// Naval AI does, it cost growth and commerce for few hammers (seeds 1-48, 300 turns: population
+/// -1.3% and commerce -1.3% at turn 200, research -4.3% at turn 300, against -0.1%, -0.2% and
+/// -1.4% for the slot without it, about the same wonders). The AI sets this emphasis for nothing
+/// else.
+pub fn wonder_emphasis(g: &mut Game, p: PlayerId) {
+    static EMPHASIZE: OnceLock<Option<EmphasizeType>> = OnceLock::new();
+    let Some(e) = *EMPHASIZE.get_or_init(|| g.d.ty::<EmphasizeType>("EMPHASIZE_PRODUCTION")) else { return };
+    if !crate::switches::WONDER_SLOT.on(g, p) {
+        return;
+    }
+    let peace = !civ_enemies_at_war(g, p) && crate::diplomacy::preparing_target(g, g.players[p].team).is_none();
+    for c in g.players[p].cities.clone() {
+        let want = peace
+            && g.city_production_building(c).is_some_and(|b| is_world_wonder(g.d, b))
+            && g.city_production_turns_left(c) <= wonder_horizon(g, c)
+            && top_production_city(g, c, |_| true);
+        if g.cities[c].ai_emphasize[e] != want {
+            crate::trace!(g, p, "{}: production emphasis {}", g.cities[c].name, if want { "on (wonder)" } else { "off" });
+            g.city_ai_set_emphasize(c, e, want);
+        }
+    }
+}
+
+/// With `TROUBLE_REBUILD`, once a turn while the empire cannot research at its target share
+/// (`finance::Finance::deficit`): More Naval AI re-decides every city's production when the
+/// empire runs into financial trouble (`CvPlayerAI::AI_doCheckFinancialTrouble`,
+/// `CvCityAI::AI_chooseProduction`), keeping items within 3 turns of done, wonders, world
+/// projects and heroes. Here a city in the middle of a longer build re-runs the ladder
+/// ([`decide`]) and switches only when it now picks an economy building (commerce, research,
+/// specialists, trade or maintenance savings make up most of its value: Market, Library,
+/// Courthouse...) -- the building it needs now. Also kept: units without combat (settlers,
+/// workers, ships for them, great people), a fighter for a city without defenders or under
+/// threat, any fighter at war, an economy building already under way. Each city is looked at
+/// every fifth turn (the ladder is the costly part).
+pub fn trouble_rebuild(ai: &Ai, g: &mut Game, p: PlayerId) {
+    if !crate::switches::TROUBLE_REBUILD.on(g, p) || g.player_is_barbarian(p) {
+        return;
+    }
+    let f = crate::finance::state(g, p);
+    if !f.flexible || f.deficit() == 0 {
+        return;
+    }
+    let d = g.d;
+    let turn = g.game_turn();
+    for c in g.players[p].cities.clone() {
+        if (turn + c.0 as i32) % 5 != 0 || g.cities[c].order_queue.is_empty() || g.city_is_production_process(c) || g.city_production_turns_left(c) <= 3 {
+            continue;
+        }
+        let plot = g.city_plot(c);
+        let threat = local_threat(g, p, plot, 3);
+        if let Some(u) = g.city_production_unit(c) {
+            let info = &d.units[u];
+            let limited = info.unit_class_type.is_some_and(|k| ffh_core::utils::is_limited_unit_class(d, k));
+            if info.combat == 0 || limited || f.at_war || threat > 0 || garrison(g, p, plot).0 == 0 {
+                continue;
+            }
+        } else if let Some(b) = g.city_production_building(c) {
+            let limited = d.buildings[b].building_class_type.is_some_and(|k| ffh_core::utils::is_limited_wonder_class(d, k));
+            if limited || is_finance_building(g, c, b, threat) {
+                continue;
+            }
+        } else {
+            // A project (rituals, world projects): kept.
+            continue;
+        }
+        let Some((Choice::Construct(b), why)) = decide(ai, g, c) else { continue };
+        let limited = d.buildings[b].building_class_type.is_some_and(|k| ffh_core::utils::is_limited_wonder_class(d, k));
+        if limited || Some(b) == g.city_production_building(c) || !is_finance_building(g, c, b, threat) {
+            continue;
+        }
+        let current = g.city_production_unit(c).map(|u| d.units[u].base.type_.as_str()).or_else(|| g.city_production_building(c).map(|b| d.buildings[b].base.type_.as_str())).unwrap_or("?");
+        crate::trace!(g, p, "{}: financial trouble (deficit {}, costs {}%): {} with {} turns left gives way to {}", g.cities[c].name, f.deficit(), f.cost_share(), current, g.city_production_turns_left(c), d.buildings[b].base.type_);
+        // Alternatives: what it replaces (turns left), and the ladder step that chose the building.
+        let left = g.city_production_turns_left(c) as i64;
+        g.tel_decision(p, "production", &d.buildings[b].base.type_, "trouble_rebuild", f.deficit() as i64, || ffh_core::telemetry::tel_alts([(current, left), (why, 0)]));
+        g.city_clear_order_queue(c);
+        push(g, c, Choice::Construct(b));
+    }
+}
+
+/// A building whose value is mostly economy -- commerce, research, specialists, great people,
+/// trade routes ([`economy_value`]) or maintenance savings -- as `building_value` weighs them.
+fn is_finance_building(g: &Game, c: CityId, b: BuildingType, threat: i32) -> bool {
+    let info = &g.d.buildings[b];
+    let p = g.cities[c].owner;
+    let gold_value = if financial_trouble(g, p) { 160 } else { 80 };
+    let savings = -info.maintenance_modifier * g.cities[c].maintenance.max(0) / 100 * gold_value / 100;
+    let ev = economy_value(g, c, b) + savings.max(0);
+    ev > 0 && ev * 2 >= building_value(g, c, b, threat).max(1)
 }
 
 /// Projects worth building by default (positive AI weight, not a world-ending or self-harming
@@ -887,7 +1216,9 @@ pub(crate) fn type_city_defense(info: &UnitInfo) -> i64 {
     v
 }
 
-/// Best unit this city can train for `role`, by power per production turn.
+/// Best unit this city can train for `role`, by power per production turn. Upkeep in the price
+/// and a peacetime army only from the cities that train good units were measured and reverted
+/// (docs/AI_LOG.md, "Unit choices and an upgrade reserve").
 pub fn best_unit(g: &Game, c: CityId, role: Role) -> Option<UnitType> {
     let d = g.d;
     let mut best: Option<(UnitType, i64)> = None;
@@ -951,6 +1282,25 @@ fn strongest_unit(g: &Game, c: CityId, role: Role) -> Option<UnitType> {
         .max_by_key(|&u| (type_attack_power(d, u), d.units[u].production_cost, std::cmp::Reverse(u)))
 }
 
+/// Is there a foreign city a missionary of `r` from city `c` could convert: one we may visit
+/// (`units::abroad_city`), revealed to us, on `c`'s landmass within 15 plots.
+fn abroad_targets(g: &Game, p: PlayerId, c: CityId, r: ReligionType) -> bool {
+    let team = g.players[p].team;
+    let (x, y) = (g.cities[c].x, g.cities[c].y);
+    let area = g.map.plots[g.city_plot(c)].area;
+    g.civ_player_ids().any(|q| {
+        q != p
+            && g.players[q].alive
+            && g.players[q].cities.iter().any(|&oc| {
+                let op = g.city_plot(oc);
+                g.map.plots[op].area == area
+                    && g.map.plots[op].revealed[team]
+                    && g.plot_distance(x, y, g.cities[oc].x, g.cities[oc].y) <= 15
+                    && crate::units::abroad_city(g, p, oc, r)
+            })
+    })
+}
+
 fn best_missionary(g: &Game, c: CityId, r: ReligionType) -> Option<UnitType> {
     g.d.units.keys().filter(|&u| {
         let info = &g.d.units[u];
@@ -964,6 +1314,11 @@ fn best_missionary(g: &Game, c: CityId, r: ReligionType) -> Option<UnitType> {
 /// while the army is short -- the ladder's existing army-short bar, shared by the economy gate and
 /// step 9 (lifted from a literal so the two stay identical).
 const ECON_BUILD_BAR: i32 = 40;
+
+/// What a missionary sent abroad is worth in [`building_value`] points: the shrine's gold a turn
+/// for the city it converts (80), at the odds of reaching it and spreading (a city without a
+/// religion takes it almost surely; one with another religion about four times in five).
+const MISSIONARY_ABROAD_VALUE: i32 = 60;
 
 /// The economy portion of [`building_value`] -- its gold/research commerce terms plus specialists,
 /// great people and trade routes -- using the identical weights. A literal subset of
