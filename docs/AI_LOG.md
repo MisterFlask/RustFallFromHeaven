@@ -80,6 +80,22 @@ off), which leaves out what the other traits' players do to their neighbours.
    improved plots worked at turn 250 still -2.9 (t -2.2; not the replacements, then -- unexplained,
    and within what a dozen compared fields throw up by chance).
 
+### Aggressive counting its Combat I from the start (replaced the same day)
+
+1. An Aggressive leader's fighters start with Combat I (+20%), which neither the power rating
+   nor a unit type's strength counts, so the war bar (`diplomacy`: the power edge over a target,
+   our best trainable attacker against its cities' defenders) undervalued them.
+2. With every trait on (fresh seeds 7401-7496, 85 Aggressive players) they won 14.1% of their
+   games instead of 21.2% (4 / 10), share@300 -91 (t -2.04). Alone (the other traits off) the
+   win rate held (21.2% -> 20.0%, 7 / 8; share@end -24) and they took more cities (+1.3, t 2.0),
+   but the war came early: at turn 200 wars +0.2 (t 3.3) and military +13 (t 3.1), and 0.6 fewer
+   cities (t -4.4); at turn 300 research -28 (t -3.5). Preparing a war halves the settlers and
+   turns production to the army while land is still free -- the cost docs/AI.md records for a
+   looser war gate in general.
+3. The bonus applies once the home landmass is full (`naval::home_is_full`: under a quarter of
+   it unowned). Alone: win 21.2% -> 23.5% (5 / 3), share@end +30 (t 0.38), the same game to turn
+   200, cities taken +0.8 (t 1.7), research at turn 300 -8 (t -2.3: the price of the wars).
+
 Lesson for measuring a trait (or any play a few players have): 40 seeds give each trait 15-45
 players whose win rates move by 10 points on chaos alone. Play the trait alone (the other traits
 off, so only games with its leaders change) on seeds chosen to contain its leaders, 60+ of them,
