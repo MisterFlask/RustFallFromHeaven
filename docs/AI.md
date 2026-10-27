@@ -260,14 +260,41 @@ scale (one hammer a turn = 150):
   enabling buildings (Gambling House, Carnival, Public Baths, Mage Guild, ...) gain their
   creature. A summoned unit's hammers: its strength's (squared x 10 / 3) or its tier's mean cost;
 - city defense in code (Citadel of Light's fire, Hall of Mirrors' copies, Mokka's Cauldron, Soul
-  Forge): a fixed worth when threatened, a quarter at war, a tenth at peace;
+  Forge): a fixed worth when threatened; in a frontier city (a met rival civilization's city
+  within 8 plots: an expert builds it there before the war) half at war and a quarter at peace;
+  elsewhere a quarter at war and a tenth at peace;
+- the Mercurian Gate: the units the Mercurians bring to our team (Basium, six Angels, a settler,
+  two workers), each worth its hammers over 50 turns;
 - the Eyes and Ears Network's free techs (by the open borders we have), the Temple of the Hand's
   snow (the yields of the land within 2, from the terrain data: snow is 2/0/0 for the Illians),
   the towers' Strong promotion and free elemental, the Infernal Grimoire's 20% barbarian Balor
   (negative).
-Not covered: the Asylum (Crazed and Enraged), the Mercurian Gate (its `iAIWeight` stands for its
-code), buildings that only open a spell (Arena, Demon's Altar's sacrifice), the Dwarven Vaults
-(set by the rules). `FFH_AI_CODE_EFFECTS_OFF` leaves the table out but for the Warrens.
+Not covered: the Asylum (10% Crazed, which makes a unit Enraged: +20% attack, -20% defense, and it
+fights on its own: a wash), buildings that only open a spell (Arena, Demon's Altar: the spells'
+own logic, "Spells FfH kept from its AI" below), the Dwarven Vaults (set by the rules; the Khazad's
+finance keeps their gold, "Civilization-specific"). `FFH_AI_CODE_EFFECTS_OFF` leaves the table out
+but for the Warrens. Buildings that need a mana resource are also worth that much to the mana node
+that opens them (`mana::node_value`, switch `MANA_BUILDINGS`): the Luchuirp's Blasting Workshop
+(Fire), Pallens Engine (Sun) and Adularia Chamber (Shadow), never built before, come once a caster
+makes the node.
+
+**Spells FfH kept from its AI** (`unflagged.rs`). 57 of the 267 spells lack `bAllowAI`, and C++
+refused them to every AI player: the old AI could not value them. The rules no longer do
+(docs/PORTING.md, "Changes from FFH2"); the generic casting keeps them out
+(`casting::castable_spells`), and four are cast by logic of their own:
+- Sacrifice Altar: a unit we disband anyway (finance, bankruptcy) standing in a Demon's Altar
+  city is sacrificed first, for 10 + level squared research (switch `SACRIFICE`);
+- Arena Battle (Balseraphs): an Arena city with an unhappy citizen and no games running sends a
+  slave, else a spare tier-1 melee or recon unit: +1 happiness for 3 turns, and the unit dies or
+  gains 1-6 experience (a slave becomes a Warrior);
+- Wane (Sidar): at peace with no war prepared, one level-6+ unit a turn that its city's garrison
+  can spare (not heroes, limited classes or casters, whose levels are their spheres) becomes a
+  Shade, which then joins a city as a great person;
+- Kidnap (Svartalfar): a recon unit of strength 4+ goes into a city with settled great people of
+  the team we prepare a war against, once that war is near, and takes one (8% a strength point);
+  failing, it dies or goes home and the war starts, which it would anyway. The AIs settle great
+  people rarely (they discover techs), so it fires against humans more than against AIs; a test
+  covers it (`a_shadow_kidnaps_as_the_war_opens`).
 
 Measured as one civilization's edge (`civ_ab.py --base-env FFH_AI_CODE_EFFECTS_OFF=ALL --new-env
 FFH_AI_CODE_EFFECTS_ONLY={civ}`, full games): the buildings now come -- Planar Gates 0 -> 2.6 a
