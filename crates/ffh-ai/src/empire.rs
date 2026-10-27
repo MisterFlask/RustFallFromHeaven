@@ -361,7 +361,7 @@ fn sliders(g: &mut Game, p: PlayerId) {
                 g.player_set_commerce_percent(p, CommerceType::COMMERCE_RESEARCH, pct);
             }
             let rate = g.player_calculate_gold_rate(p);
-            if (rate >= 0 || gold + rate * 10 > reserve) && (rate >= saving || pct <= 30) {
+            if (rate >= 0 || gold + rate * 10 > reserve) && (saving == 0 || rate >= saving || pct <= 30) {
                 paid = true;
                 break;
             }
