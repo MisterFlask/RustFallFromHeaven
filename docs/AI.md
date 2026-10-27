@@ -856,6 +856,27 @@ turn, to move casters and to promote them:
   unit in the city can cast it (`bRequiresCaster`, C++ `CvCity::doTurn`): the caster that keeps one
   stays unless twice as much waits elsewhere (without this rule casters recast Inspiration a hundred
   times a game).
+- **The caster school** (2026-10-27): how the rules raise an arcane caster decides how to use it.
+  An Adept gains experience by itself, each turn with chance (spellcaster XP - experience)%
+  (bFreeXP: 20 with Channeling I, more with Channeling II and III and with Potency), not by casting
+  or by where it stands; at level 4 with Sorcery it becomes a Mage (Channeling II: Fireball,
+  Maelstrom, the Spectre, Pit Beast and Ice Elemental), at level 6 with Strength of Will an
+  Archmage (the elementals). No Channeling I spell summons a fighter or does damage, so an Adept
+  adds little at the front, and its worth is its age: lost there (strength 3, two times in three
+  alone on the way), it took the 30 to 70 turns it had studied. So: an **apprentice** (an arcane
+  caster without Channeling II that can still become a Mage, not a hero -- at any level: an Adept
+  of level 4 casts an Adept's spells until the tech and the gold make it a Mage) works at home --
+  city spells, blessings and terraforming in our land where no enemy we see can reach -- and
+  otherwise waits in the city of ours it stands in, or goes to the nearest quiet one
+  (`magic::study_city`; first versions sent it to the least threatened city, and apprentices
+  shuttled between two cities as the danger moved and died on the open ground between); **every
+  caster** moves toward its target only onto plots where it is sheltered (`magic::safe_step`: our
+  city, a plot no enemy we see can reach outside an enemy's land, or beside a unit of ours at least
+  as strong, not another caster), waiting at the last one when the next step is not, and goes to
+  study when it can reach none; a player with an apprentice a level short of its upgrade
+  researches the upgrade's tech (+300 for each such apprentice, up to five, and +100 on the techs
+  on the way: `magic::school_tech_value`) and pays for the upgrade with a defender's gold reserve
+  (`units::upgrade`).
 - **Promotions** (`units::promotion_value`): a sphere is worth the spells it opens, plus half of
   those the next promotion of the sphere opens (a quarter for an adept, which gets Channeling II only
   as a mage): Fire I for Fireball, Enchantment I for Enchanted Blade.
@@ -865,7 +886,9 @@ turn, to move casters and to promote them:
   in a fight was tried and lost wins (docs/AI_LOG.md, "Spellcasting").
 
 `FFH_AI_MAGIC_OFF=CIVILIZATION_X,..|X|all` makes those civilizations cast by FfH's terms
-(`casting.rs`; their summons attack as everyone's do: the measurement switch); `FFH_AI_TRACE_CAST=1`
+(`casting.rs`; their summons attack as everyone's do: the measurement switch);
+`FFH_AI_CASTER_SCHOOL_OFF=CIVILIZATION_X,..|X|all` turns the caster school off for those
+civilizations (their casters move as before it, and the same games result); `FFH_AI_TRACE_CAST=1`
 prints every AI cast (turn, player, civilization, unit, spell, where, value). Tests:
 `crates/ffh-ai/tests/magic.rs` (a mage Fireballs a city before the stack attacks; an adept
 blesses its stack with Enchanted Blade, and values Haste at nothing on a quiet turn; a fresh
@@ -1693,7 +1716,14 @@ share score (docs/SCORE.md) averages 10000/N whatever the AI does.
     (other buildings), `projects` (team project count), `holy_cities`, `gp_created`,
     `gg_created`, `gp_units` (great-person units alive), `gp_settled` (settled great specialists);
   - units: `units`, `mil`, `workers`, `settlers`, `animals`, `ships`, `heroes` (PROMOTION_HERO),
-    `world_units`, `summons`, `casters` (adept + disciple units), `ucombat` (count by unit combat
+    `world_units`, `summons`, `casters` (adept + disciple units), arcane casters (unit combat
+    Adept, summons left out: Adepts, Mages, Archmages and their variants) `arcane` alive,
+    `arcane_mages` (Channeling II), `arcane_archmages` (Channeling III), `arcane_levels`, and
+    cumulative `arcane_made`, `arcane_lost` (while the owner lives), `arcane_lost_alone` (of those,
+    the ones that had ended the turn before outside our cities with no other unit of ours that
+    fights), `arcane_lost_levels`, `arcane_lost_with_owner`, `arcane_upgraded`, and caster-turns
+    `arcane_turns`, `arcane_ready_turns` (no Channeling II at level 4 or more, not heroes: waiting
+    for the upgrade), `arcane_mage_turns`, `arcane_archmage_turns`; `ucombat` (count by unit combat
     type, `NONE` for workers/settlers/great people), `levels` and `xp` (summed over fighting
     units); `mil_str` = sum over non-naval units that can fight of max(attack, defence) base
     strength x (100 + promotion combat %) / 100 x hit-point fraction, `mil_best` (strongest
@@ -1734,6 +1764,14 @@ share score (docs/SCORE.md) averages 10000/N whatever the AI does.
   game's last value carried forward) with the paired t, survival, rank, world-spell use, the games
   that are identical on both sides and the per-type counts that differ; `--off-base` makes the
   base side the same binary with `FFH_AI_CIV_OFF` for that civilization (identical opponents).
+- `crates/ffh-cli/scripts/caster_ab.py --bin DIR --seeds S --out-dir D [--base-bin DIR]
+  [--base-env K=V ..] [--new-env K=V ..] [--common] [--civ] [--load]` plays the seeds on two sides
+  (by default the same binary with `FFH_AI_CASTER_SCHOOL_OFF=all` on the base side) with the cast
+  trace and reports how every civilization used its arcane casters: the `arcane_*` counters above,
+  their casts by Channeling tier, context (before a strike, end of turn) and kind, and the rates
+  per 1000 caster-turns; `--common` compares each seed's games up to the last 50-turn checkpoint
+  both reached (a longer game has more caster-turns, and more casters lost with an eliminated
+  owner).
 - `crates/ffh-cli/scripts/victory_check.py --seeds 1-24 [--out games.json | --load games.json]
   [--compare base.json] [--min-share 0.5]` plays full games (to turn 690 or an earlier
   victory) and reports the share decided before the time limit, per victory type, the decision

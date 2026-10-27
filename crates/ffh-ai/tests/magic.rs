@@ -263,3 +263,42 @@ fn donal_recruits_once_in_a_big_city() {
     g.units[home].has_casted = false;
     assert!(!g.unit_can_cast(home, recruit, false), "the Recruiter promotion is spent");
 }
+
+#[test]
+fn an_apprentice_stays_home_and_casters_step_only_beside_our_units() {
+    let d = ffh_data::global();
+    let mut g = one_landmass_game(17);
+    let (us, them) = (PlayerId(0), PlayerId(1));
+    if !magic::school(&g, us) {
+        // FFH_AI_CASTER_SCHOOL_OFF names our civilization: nothing to test.
+        return;
+    }
+    g.player_found(us, 4, 5);
+    g.player_found(them, 16, 5);
+    let (ut, tt) = (g.players[us].team, g.players[them].team);
+    g.team_declare_war(ut, tt, true, None);
+    // An Adept is an apprentice until it is a Mage, also at the Mage's level (it still casts an
+    // Adept's spells); a Mage is not.
+    let adept = g.player_init_unit(us, d.t::<UnitType>("UNIT_ADEPT"), 4, 5, Some(UnitAIType::UNITAI_MAGE), None);
+    let mage = g.player_init_unit(us, d.t::<UnitType>("UNIT_MAGE"), 4, 5, Some(UnitAIType::UNITAI_MAGE), None);
+    assert!(magic::apprentice(&g, adept));
+    assert!(!magic::apprentice(&g, mage));
+    g.units[adept].level = d.units[d.t::<UnitType>("UNIT_MAGE")].min_level;
+    assert!(magic::apprentice(&g, adept), "an Adept at the Mage's level waits for the upgrade at home");
+    // An enemy Champion two plots east of our city, seen by a Scout of ours beside it (too weak
+    // to escort a Mage): the plots around the city are in danger. The Mage heading east stays in
+    // the city until a soldier of ours stands on the way.
+    g.player_init_unit(us, d.t::<UnitType>("UNIT_SCOUT"), 5, 4, Some(UnitAIType::UNITAI_EXPLORE), None);
+    g.player_init_unit(them, d.t::<UnitType>("UNIT_CHAMPION"), 6, 5, Some(UnitAIType::UNITAI_ATTACK), None);
+    let east = g.map.plot_xy(12, 5).unwrap();
+    let next = g.map.plot_xy(5, 5).unwrap();
+    let here = g.unit_plot(mage);
+    let mut v = View::new(&g, us);
+    assert!(v.danger_at(next) > 0, "the Champion threatens the plot east of the city");
+    assert!(!magic::sheltered(&g, &v, mage, next));
+    assert_eq!(magic::safe_step(&g, &mut v, mage, east), Some(here), "the Mage waits in the city");
+    g.player_init_unit(us, d.t::<UnitType>("UNIT_AXEMAN"), 5, 5, Some(UnitAIType::UNITAI_ATTACK), None);
+    let mut v = View::new(&g, us);
+    assert!(magic::sheltered(&g, &v, mage, next));
+    assert_eq!(magic::safe_step(&g, &mut v, mage, east), Some(next), "the Mage steps beside the Axeman");
+}

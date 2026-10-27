@@ -272,6 +272,9 @@ fn upkeep(g: &mut Game, u: UnitId) {
         // Keep a reserve for a few turns of deficit; defenders first.
         let reserve = crate::traits::upgrade_reserve(g, p, 20 + 3 * g.players[p].cities.len() as i32); // trait-play
         let defender = matches!(g.units[u].ai_type, Some(UnitAIType::UNITAI_CITY_DEFENSE) | Some(UnitAIType::UNITAI_CITY_COUNTER));
+        // A school caster's upgrade (an Adept that becomes a Mage) opens its second circle of
+        // spells: it pays like a defender's (magic.rs, "The caster school").
+        let defender = defender || crate::magic::apprentice(g, u);
         let price = g.unit_upgrade_price(u, target);
         if g.players[p].gold - price >= if defender { reserve } else { reserve * 2 } {
             crate::trace!(g, p, "upgrade {} -> {} ({} gold)", g.d.units[ut].base.type_, g.d.units[target].base.type_, price);
@@ -642,15 +645,36 @@ fn caster(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
     if crate::victory::mana_node(g, v, grp, u) { return; } // victory-pursuit
     if crate::magic::enabled(g, p) {
         crate::campaign::plan(g, v);
-        if let Some((q, why)) = crate::magic::caster_target(g, v, u) {
+        let school = crate::magic::school(g, p);
+        let target = crate::magic::caster_target(g, v, u);
+        if let Some((q, why)) = target {
             crate::trace!(g, p, "caster {} at {:?} -> {:?} ({})", g.d.units[g.units[u].unit_type].base.type_, g.map.xy(here), g.map.xy(q), why);
-            if q != here {
-                move_to(g, grp, q, 0);
+            // A school caster crosses dangerous ground only beside our units (magic.rs, "The
+            // caster school"); with nowhere safe to step, it goes to study.
+            let step = if school { crate::magic::safe_step(g, v, u, q) } else { Some(q) };
+            if let Some(s) = step {
+                if s != here {
+                    move_to(g, grp, s, 0);
+                }
+                if alive(g, grp) && g.group_ready_to_move(grp, false) {
+                    skip(g, grp);
+                }
+                return;
             }
-            if alive(g, grp) && g.group_ready_to_move(grp, false) {
-                skip(g, grp);
+        }
+        if school && (target.is_some() || crate::magic::apprentice(g, u)) {
+            if let Some(c) = crate::magic::study_city(g, v, u) {
+                crate::trace!(g, p, "caster {} at {:?} -> {:?} (study)", g.d.units[g.units[u].unit_type].base.type_, g.map.xy(here), g.map.xy(c));
+                match crate::magic::safe_step(g, v, u, c) {
+                    Some(s) if s != here => move_to(g, grp, s, 0),
+                    Some(_) => {}
+                    None => move_to(g, grp, c, MOVE_SAFE_TERRITORY),
+                }
+                if alive(g, grp) && g.group_ready_to_move(grp, false) {
+                    skip(g, grp);
+                }
+                return;
             }
-            return;
         }
     } else if let Some(target) = crate::military::war_target(g, v) {
         let tp = g.city_plot(target);

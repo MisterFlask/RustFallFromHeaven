@@ -728,6 +728,7 @@ fn tech_value(g: &Game, p: PlayerId, t: TechType, ctx: &Ctx) -> i32 {
         }
     }
     let value = crate::civs::tech_value(g, p, t, value); // civ-mechanics
+    let value = crate::magic::school_tech_value(g, p, t, value);
     crate::traits::tech_value(g, p, t, value).max(1) // trait-play
 }
 

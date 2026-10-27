@@ -75,6 +75,26 @@ pub fn enabled(g: &Game, p: PlayerId) -> bool {
     !g.player_is_barbarian(p) && g.player_get_civilization_type(p).is_some_and(|c| !off_table(g.d)[c.idx()])
 }
 
+fn school_off_table(d: &GameData) -> &'static [bool] {
+    static TABLE: OnceLock<Vec<bool>> = OnceLock::new();
+    TABLE.get_or_init(|| {
+        let off: Vec<String> = std::env::var("FFH_AI_CASTER_SCHOOL_OFF")
+            .unwrap_or_default()
+            .split(',')
+            .map(|s| s.trim().trim_start_matches("CIVILIZATION_").to_ascii_uppercase())
+            .filter(|s| !s.is_empty())
+            .collect();
+        d.civilizations.keys().map(|c| off.iter().any(|o| o == "ALL" || o == d.civilizations[c].base.type_.trim_start_matches("CIVILIZATION_"))).collect()
+    })
+}
+
+/// Does player `p` raise its arcane casters as the rules intend ([`apprentice`], [`safe_step`]):
+/// its spellcasting is this AI's ([`enabled`]) and `FFH_AI_CASTER_SCHOOL_OFF` (civilizations,
+/// comma-separated, or `all`) does not list it. A measurement switch, read once.
+pub fn school(g: &Game, p: PlayerId) -> bool {
+    enabled(g, p) && g.player_get_civilization_type(p).is_some_and(|c| !school_off_table(g.d)[c.idx()])
+}
+
 /// Every AI cast goes through here: `FFH_AI_TRACE_CAST=1` prints one line per cast (turn,
 /// player, civilization, unit, spell, where, value) to stderr. It only prints.
 pub fn cast(g: &mut Game, u: UnitId, spell: SpellType, ctx: &str, value: i32) {
@@ -1034,7 +1054,10 @@ fn known(g: &Game, u: UnitId) -> Vec<SpellType> {
 pub fn caster_target(g: &Game, v: &mut View, u: UnitId) -> Option<(PlotIdx, &'static str)> {
     let d = g.d;
     let p = v.p;
-    if combat_caster(g, u) {
+    // An apprentice stays away from the front and works at home: its city spells and blessings
+    // in our cities, terraforming where no enemy can come ([`apprentice`]).
+    let apprentice = apprentice(g, u);
+    if combat_caster(g, u) && !apprentice {
         for op in &v.campaign.ops {
             if !g.cities.contains(op.city) || g.cities[op.city].owner == p {
                 continue;
@@ -1084,6 +1107,9 @@ pub fn caster_target(g: &Game, v: &mut View, u: UnitId) -> Option<(PlotIdx, &'st
     for r in &reach {
         let q = r.plot;
         let units = &g.map.plots[q].units;
+        if apprentice && (v.danger_at(q) > 0 || g.map.plots[q].owner != Some(p)) {
+            continue;
+        }
         // Our land to terraform (no one else heading there).
         if !v.is_claimed(q) {
             for &s in spells.iter().filter(|&&s| matches!(py_kind(d, s), Py::Spring | Py::Scorch | Py::Vitalize)) {
@@ -1158,6 +1184,160 @@ fn upkeep_value(g: &Game, u: UnitId, spells: &[SpellType]) -> i32 {
 fn claimed_city_spell(g: &Game, u: UnitId, c: CityId, s: SpellType) -> bool {
     let cp = g.city_plot(c);
     g.map.plots[cp].units.iter().any(|&o| o != u && g.units[o].owner == g.units[u].owner && g.unit_can_cast(o, s, true))
+}
+
+// ----------------------------------------------------------------------------
+// The caster school
+// ----------------------------------------------------------------------------
+//
+// How the rules raise an arcane caster: an Adept gains experience by itself, each turn with
+// chance (spellcaster XP - experience)% (`CvUnit::doTurn`, bFreeXP: 20 with Channeling I, more
+// with Channeling II and III and with the Arcane trait's Potency), not by casting or by where it
+// stands; at level 4, with Sorcery, it becomes a Mage (Channeling II: Fireball, Maelstrom, the
+// Spectre, Pit Beast and Ice Elemental), at level 6 with Strength of Will an Archmage
+// (Channeling III: the elementals). No Channeling I spell summons a fighter or does damage: an
+// Adept's spells are curses, blessings, city spells and terraforming. So an Adept adds little at
+// the front and its worth is its age: lost there (strength 3, most often alone on the way), it
+// takes with it the 30 to 70 turns it studied -- also once it has the level, until the tech and
+// the gold make it a Mage. The school: an apprentice works at home and waits in our city
+// (`caster_target`, [`study_city`]); every caster crosses dangerous ground only
+// where our units stand ([`safe_step`]); a player with an apprentice near its level researches
+// the tech that makes it a Mage ([`school_tech_value`]) and pays for the upgrade before a soldier's
+// (`units::upgrade`).
+
+/// Is `u` an apprentice of the caster school ([`school`]): an arcane caster of ours (unit combat
+/// Adept, not a hero or a summon) without Channeling II that can still become a Mage -- at any
+/// level: an Adept of level 4 casts an Adept's spells until the upgrade.
+pub fn apprentice(g: &Game, u: UnitId) -> bool {
+    apprentice_need(g, u).is_some()
+}
+
+/// The level and unit type of an [`apprentice`]'s upgrade: the lowest `iMinLevel` among them (a
+/// Mage's 4).
+fn apprentice_need(g: &Game, u: UnitId) -> Option<(i32, UnitType)> {
+    static IDS: OnceLock<(Option<UnitCombatType>, Option<PromotionType>, Option<PromotionType>)> = OnceLock::new();
+    let d = g.d;
+    let &(adept, hero, channeling2) = IDS.get_or_init(|| (d.ty::<UnitCombatType>("UNITCOMBAT_ADEPT"), d.ty::<PromotionType>("PROMOTION_HERO"), d.ty::<PromotionType>("PROMOTION_CHANNELING2")));
+    let unit = &g.units[u];
+    let info = &d.units[unit.unit_type];
+    if adept.is_none() || info.unit_combat_type != adept || unit.duration > 0 || !school(g, unit.owner) {
+        return None;
+    }
+    if [hero, channeling2].into_iter().flatten().any(|pr| unit.has_promotion[pr]) {
+        return None;
+    }
+    let civ = g.player_get_civilization_type(unit.owner)?;
+    info.upgrade_unit_class
+        .iter_enumerated()
+        .filter(|&(_, &ok)| ok)
+        .filter_map(|(class, _)| d.civ_unit(civ, class))
+        .filter(|&t| d.units[t].min_level > 0)
+        .map(|t| (d.units[t].min_level, t))
+        .min()
+}
+
+/// Can caster `u` of player `v.p` end its turn on `q`: in our city, where no enemy we see can
+/// reach (not in an enemy's land), or beside a unit of ours at least as strong (that defends the
+/// plot before it does; not another caster, and a Scout is no escort).
+pub fn sheltered(g: &Game, v: &View, u: UnitId, q: PlotIdx) -> bool {
+    let d = g.d;
+    let p = v.p;
+    let plot = &g.map.plots[q];
+    if plot.plot_city.is_some_and(|c| g.cities[c].owner == p) {
+        return true;
+    }
+    if v.danger_at(q) == 0 && !plot.owner.is_some_and(|o| v.enemies.contains(&g.players[o].team)) {
+        return true;
+    }
+    let strength = |t: UnitId| {
+        let info = &d.units[g.units[t].unit_type];
+        info.combat.max(info.combat_defense)
+    };
+    let caster_combat = d.units[g.units[u].unit_type].unit_combat_type;
+    plot.units.iter().any(|&o| {
+        o != u
+            && g.units[o].owner == p
+            && g.units[o].duration == 0
+            && (caster_combat.is_none() || d.units[g.units[o].unit_type].unit_combat_type != caster_combat)
+            && strength(o) >= strength(u)
+    })
+}
+
+/// Where caster `u` heading for `q` goes this turn when it is a school caster ([`school`]): the
+/// [`sheltered`] plot it can reach this turn that is nearest `q` (here when none is nearer);
+/// `None` when it can reach none (it falls back to [`study_city`]).
+pub fn safe_step(g: &Game, v: &mut View, u: UnitId, q: PlotIdx) -> Option<PlotIdx> {
+    let (qx, qy) = g.map.xy(q);
+    let here = g.unit_plot(u);
+    // A budget of 0 turns: the plots it can enter with the moves it has left this turn.
+    let reach = v.flood.run(g, u, 0, false);
+    let mut best: Option<(i32, i32, PlotIdx)> = None;
+    for r in &reach {
+        if !sheltered(g, v, u, r.plot) {
+            continue;
+        }
+        let (x, y) = g.map.xy(r.plot);
+        let key = (g.plot_distance(x, y, qx, qy), if r.plot == here { 0 } else { 1 }, r.plot);
+        if best.map_or(true, |b| key < b) {
+            best = Some(key);
+        }
+    }
+    best.map(|(_, _, s)| s)
+}
+
+/// Where an idle apprentice of player `v.p` waits: the city of ours it stands in (behind its walls
+/// and defenders; leaving one in danger for another meant crossing open ground, where the
+/// apprentices that shuttled between two cities died), else the nearest of ours it reaches within
+/// 10 turns where no enemy we see can reach, else the nearest.
+pub fn study_city(g: &Game, v: &mut View, u: UnitId) -> Option<PlotIdx> {
+    let p = v.p;
+    let here = g.unit_plot(u);
+    if g.map.plots[here].plot_city.is_some_and(|c| g.cities[c].owner == p) {
+        return Some(here);
+    }
+    let reach = v.flood.run(g, u, 10, false);
+    reach
+        .iter()
+        .filter(|r| g.map.plots[r.plot].plot_city.is_some_and(|c| g.cities[c].owner == p))
+        .min_by_key(|r| (v.danger_at(r.plot) > 0, r.turns, r.plot))
+        .map(|r| r.plot)
+}
+
+/// Tech `t`'s worth to player `p` with what its school adds: for each apprentice at most a level
+/// short of its upgrade (up to 5), 300 on the tech the upgrade needs and 100 on the techs on the
+/// way to it.
+pub fn school_tech_value(g: &Game, p: PlayerId, t: TechType, value: i32) -> i32 {
+    let team = g.players[p].team;
+    if !school(g, p) || g.team_is_has_tech(team, Some(t)) {
+        return value;
+    }
+    let mut needed: Vec<(TechType, i32)> = Vec::new();
+    for &u in &g.players[p].units {
+        let Some((need, mage)) = g.units.contains(u).then(|| apprentice_need(g, u)).flatten() else { continue };
+        if g.units[u].level + 1 < need {
+            continue;
+        }
+        let info = &g.d.units[mage];
+        for x in info.prereq_and_tech.into_iter().chain(info.prereq_and_techs.iter().copied()) {
+            if g.team_is_has_tech(team, Some(x)) {
+                continue;
+            }
+            match needed.iter_mut().find(|(y, _)| *y == x) {
+                Some((_, n)) => *n += 1,
+                None => needed.push((x, 1)),
+            }
+        }
+    }
+    let mut bonus = 0;
+    for (x, n) in needed {
+        let n = n.min(5);
+        if x == t {
+            bonus += 300 * n;
+        } else if crate::victory::tech_path(g, team, &[x]).contains(&t) {
+            bonus += 100 * n;
+        }
+    }
+    value + bonus
 }
 
 // ----------------------------------------------------------------------------

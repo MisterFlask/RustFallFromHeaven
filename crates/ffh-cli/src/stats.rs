@@ -58,6 +58,69 @@ struct CivEvents {
     founded: i32,
     /// Turns played when the player was found dead (None while alive).
     elim_turn: Option<i32>,
+    /// Arcane casters (unit combat Adept: Adepts, Mages, Archmages, their civilization variants)
+    /// that appeared at the end of a turn (trained, summoned or gifted), other than by upgrade.
+    arcane_made: i32,
+    /// Arcane casters gone at the end of a turn, other than by upgrade (killed, disbanded, ...),
+    /// while their owner lives.
+    arcane_lost: i32,
+    /// Arcane casters gone with their owner (eliminated that turn).
+    arcane_lost_with_owner: i32,
+    /// Of `arcane_lost`, those that had ended the turn before on a plot with no other unit of
+    /// ours that defends and outside our cities.
+    arcane_lost_alone: i32,
+    /// Sum of the levels the lost arcane casters had reached.
+    arcane_lost_levels: i32,
+    /// Upgrades (an arcane caster gone and a new one of ours on its plot with at least its
+    /// experience).
+    arcane_upgraded: i32,
+    /// Arcane casters alive at the end of each turn, summed over turns (caster-turns), and the
+    /// same for those with Channeling II (Mages) and Channeling III (Archmages).
+    arcane_turns: i32,
+    /// Caster-turns of those without Channeling II at level 4 or more, not heroes (Adepts with
+    /// a Mage's level, waiting for the tech or the gold of the upgrade).
+    arcane_ready_turns: i32,
+    arcane_mage_turns: i32,
+    arcane_archmage_turns: i32,
+}
+
+/// An arcane caster at the end of a turn: owner, plot, experience, level, and whether another unit
+/// of ours that defends stands with it (or it is in our city).
+#[derive(Clone, Copy)]
+struct Arcane {
+    owner: PlayerId,
+    plot: PlotIdx,
+    xp: i32,
+    level: i32,
+    guarded: bool,
+}
+
+/// The arcane casters (unit combat Adept) of the civilizations (barbarians left out).
+fn arcane_units(g: &Game) -> BTreeMap<UnitId, Arcane> {
+    let d = g.d;
+    let mut out = BTreeMap::new();
+    let Some(adept) = d.ty::<UnitCombatType>("UNITCOMBAT_ADEPT") else { return out };
+    let arcane = |u: UnitId| d.units[g.units[u].unit_type].unit_combat_type == Some(adept);
+    for p in g.player_ids() {
+        if g.player_is_barbarian(p) || !g.players[p].alive {
+            continue;
+        }
+        for &u in &g.players[p].units {
+            if !g.units.contains(u) || !arcane(u) || g.units[u].duration > 0 {
+                continue;
+            }
+            let plot = g.unit_plot(u);
+            let in_city = g.map.plots[plot].plot_city.is_some_and(|c| g.cities[c].owner == p);
+            let escort = g.map.plots[plot].units.iter().any(|&o| {
+                o != u && g.units[o].owner == p && !arcane(o) && g.units[o].duration == 0 && {
+                    let info = &d.units[g.units[o].unit_type];
+                    info.combat > 0 || info.combat_defense > 0
+                }
+            });
+            out.insert(u, Arcane { owner: p, plot, xp: g.units[u].experience, level: g.units[u].level, guarded: in_city || escort });
+        }
+    }
+    out
 }
 
 fn city_owners(g: &Game) -> BTreeMap<PlotIdx, PlayerId> {
@@ -152,6 +215,8 @@ fn snapshot(g: &Game, civ_events: &BTreeMap<PlayerId, CivEvents>, detail: bool) 
     let people = d.ty::<SpecialUnitType>("SPECIALUNIT_PEOPLE");
     let adept = d.ty::<UnitCombatType>("UNITCOMBAT_ADEPT");
     let disciple = d.ty::<UnitCombatType>("UNITCOMBAT_DISCIPLE");
+    let channeling2 = d.ty::<PromotionType>("PROMOTION_CHANNELING2");
+    let channeling3 = d.ty::<PromotionType>("PROMOTION_CHANNELING3");
     let legendary = d.ty::<CultureLevelType>("CULTURELEVEL_LEGENDARY");
     let barb_team = g.barbarian_team();
     // Score v2 (share of the world, basis points) and its three shares (parts per million).
@@ -182,6 +247,7 @@ fn snapshot(g: &Game, civ_events: &BTreeMap<PlayerId, CivEvents>, detail: bool) 
         let mut gp_units = 0;
         let mut summons = 0;
         let mut casters = 0;
+        let (mut arcane_now, mut arcane_mages, mut arcane_archmages, mut arcane_levels) = (0, 0, 0, 0);
         let mut levels = 0i64;
         let mut xp = 0i64;
         let mut mil_str = 0.0;
@@ -216,6 +282,15 @@ fn snapshot(g: &Game, civ_events: &BTreeMap<PlayerId, CivEvents>, detail: bool) 
             let uc = info.unit_combat_type;
             if uc.is_some() && (uc == adept || uc == disciple) {
                 casters += 1;
+            }
+            if uc.is_some() && uc == adept && unit.duration == 0 {
+                arcane_now += 1;
+                arcane_levels += unit.level;
+                if channeling3.is_some_and(|c| unit.has_promotion[c]) {
+                    arcane_archmages += 1;
+                } else if channeling2.is_some_and(|c| unit.has_promotion[c]) {
+                    arcane_mages += 1;
+                }
             }
             *ucombat.entry(uc.map_or("NONE", |c| short(&d.unit_combats[c].base.type_, "UNITCOMBAT_"))).or_insert(0) += 1;
             if g.unit_can_fight(u) {
@@ -437,6 +512,22 @@ fn snapshot(g: &Game, civ_events: &BTreeMap<PlayerId, CivEvents>, detail: bool) 
             .int("lost_other", ev.lost_other)
             .int("founded", ev.founded)
             .int("cities_lost_rule", pl.cities_lost)
+            // Arcane casters (unit combat Adept): alive now, Mages (Channeling II) and Archmages
+            // (Channeling III) among them, their levels; cumulative events (see `CivEvents`).
+            .int("arcane", arcane_now)
+            .int("arcane_mages", arcane_mages)
+            .int("arcane_archmages", arcane_archmages)
+            .int("arcane_levels", arcane_levels)
+            .int("arcane_made", ev.arcane_made)
+            .int("arcane_lost", ev.arcane_lost)
+            .int("arcane_lost_alone", ev.arcane_lost_alone)
+            .int("arcane_lost_with_owner", ev.arcane_lost_with_owner)
+            .int("arcane_lost_levels", ev.arcane_lost_levels)
+            .int("arcane_upgraded", ev.arcane_upgraded)
+            .int("arcane_turns", ev.arcane_turns)
+            .int("arcane_ready_turns", ev.arcane_ready_turns)
+            .int("arcane_mage_turns", ev.arcane_mage_turns)
+            .int("arcane_archmage_turns", ev.arcane_archmage_turns)
             .int("players_killed", pl.players_killed)
             // FfH world spell (once per game; FEAT_GLOBAL_SPELL is set when it is cast).
             .boolean("world_spell", pl.feat_accomplished[FeatType::FEAT_GLOBAL_SPELL]);
@@ -519,6 +610,10 @@ pub fn cmd_stats(cfg: &RunConfig, at: &[i32]) {
     let mut civ_ev: BTreeMap<PlayerId, CivEvents> = BTreeMap::new();
     let mut owners = city_owners(&g);
     let mut wars = civ_war_pairs(&g);
+    let mut arcane = arcane_units(&g);
+    let channeling2 = g.d.ty::<PromotionType>("PROMOTION_CHANNELING2");
+    let channeling3 = g.d.ty::<PromotionType>("PROMOTION_CHANNELING3");
+    let hero = g.d.ty::<PromotionType>("PROMOTION_HERO");
     let mut snaps: Vec<(i32, String, String)> = Vec::new();
     let barb = g.barbarian_player();
     let t = Instant::now();
@@ -577,6 +672,46 @@ pub fn cmd_stats(cfg: &RunConfig, at: &[i32]) {
                 }
             }
         }
+        // Arcane casters: upgrades (gone, and a new one of ours on its plot with at least its
+        // experience), losses, new ones, and caster-turns.
+        let now_arcane = arcane_units(g);
+        let mut fresh: Vec<UnitId> = now_arcane.keys().copied().filter(|u| !arcane.contains_key(u)).collect();
+        for (u, a) in &arcane {
+            if now_arcane.contains_key(u) {
+                continue;
+            }
+            if let Some(i) = fresh.iter().position(|n| {
+                let b = &now_arcane[n];
+                b.owner == a.owner && b.plot == a.plot && b.xp >= a.xp
+            }) {
+                fresh.remove(i);
+                civ_ev.entry(a.owner).or_default().arcane_upgraded += 1;
+            } else if !g.players[a.owner].alive {
+                civ_ev.entry(a.owner).or_default().arcane_lost_with_owner += 1;
+            } else {
+                let e = civ_ev.entry(a.owner).or_default();
+                e.arcane_lost += 1;
+                e.arcane_lost_levels += a.level;
+                if !a.guarded {
+                    e.arcane_lost_alone += 1;
+                }
+            }
+        }
+        for u in fresh {
+            civ_ev.entry(now_arcane[&u].owner).or_default().arcane_made += 1;
+        }
+        for (u, a) in &now_arcane {
+            let e = civ_ev.entry(a.owner).or_default();
+            e.arcane_turns += 1;
+            if channeling3.is_some_and(|c| g.units[*u].has_promotion[c]) {
+                e.arcane_archmage_turns += 1;
+            } else if channeling2.is_some_and(|c| g.units[*u].has_promotion[c]) {
+                e.arcane_mage_turns += 1;
+            } else if g.units[*u].level >= 4 && !hero.is_some_and(|h| g.units[*u].has_promotion[h]) {
+                e.arcane_ready_turns += 1;
+            }
+        }
+        arcane = now_arcane;
         let w = civ_war_pairs(g);
         ev.wars_declared += w.iter().filter(|x| !wars.contains(x)).count() as i32;
         ev.peace_made += wars.iter().filter(|x| !w.contains(x)).count() as i32;
