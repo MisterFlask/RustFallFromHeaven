@@ -1363,21 +1363,27 @@ turn, to move casters and to promote them:
   caster** moves toward its target only onto plots where it is sheltered (`magic::safe_step`: our
   city, a plot no enemy we see can reach outside an enemy's land, or beside a unit of ours at least
   as strong, not another caster), waiting at the last one when the next step is not, and goes to
-  study when it can reach none; a player with an apprentice a level short of its upgrade
+  study when it can reach none (the same steps take a caster with nothing to do to the most
+  threatened city); a player with an apprentice a level short of its upgrade
   researches the upgrade's tech (+300 for each such apprentice, up to five, and +100 on the techs
   on the way: `magic::school_tech_value`) and pays for the upgrade with a defender's gold reserve
   (`units::upgrade`).
 - **Casters in the stacks** (`CASTER_STACKS`, 2026-10-27): a caster going to an operation
-  (`magic::strike_target`) joins a committed stack of it where it stands, before or after its
-  sheltered step, and marches with it from then on (`magic::stack_to_join`, `join_stack`): the
-  stack guards it and carries it to the city at the stack's pace (on its own it waited at the last
-  sheltered plot while the stack went on). It joins as a war wizard, the AI type FfH's group attack
+  (`magic::strike_target`) joins a committed stack of it with four fighters or more where it
+  stands, before or after its sheltered step, and marches with it from then on
+  (`magic::stack_to_join`, `join_stack`): the stack guards it and carries it to the city at the
+  stack's pace (on its own it waited at the last sheltered plot while the stack went on). Joining
+  any committed group, a third of the joins went to groups of one to three units -- stragglers and
+  reinforcements on their way -- and the casters lost rose by a quarter: they shared those groups'
+  fate. It joins as a war wizard, the AI type FfH's group attack
   sends below 95% odds only when no other unit can attack (`AI_getBestGroupAttacker`, Sephi's
   block), and it does not fight for the stack: below those odds the strike leaves it out, a stack's
   assault holds rather than send it (`military::precious_holds`), the campaign's force estimates do
   not count it (`campaign::fights`), and a captured city is entered by fighters first. It leaves the
-  stack (`magic::leave_stack`) once the stack is out of our operations or no fighter is left to head
-  it; a group a caster heads splits at the start of the turn. Inside a stack it never heads, it gets
+  stack (`magic::leave_stack`) once the stack is out of our operations or fewer than two fighters
+  are left in it (a strike takes the attackers out of their stacks, a battle kills them), and takes
+  its own orders at once; a group a
+  caster heads splits at the start of the turn. Inside a stack it never heads, it gets
   its promotions at the start of the turn (`units::play`; the AI otherwise promotes only a group's
   head or a unit that does not move). A stack moves at its slowest unit's pace: a caster slows a
   mounted stack.
@@ -1444,7 +1450,8 @@ the switches `CASTER_SCHOOL` and `CASTER_STACKS` (`switches.rs`: `FFH_AI_CASTER_
 `FFH_AI_CASTER_STACKS_OFF`, `.._ONLY`) turn the caster school and the casters in the stacks off
 (the stacks need the school; with each off the same games result as before it);
 `FFH_AI_TRACE_CAST=1` prints every AI cast (turn, player, civilization, unit, spell, where,
-value) and every strike (our arcane casters within two plots of the city, Mages anywhere). Tests:
+value), every strike (our arcane casters within two plots of the city, Mages anywhere) and every
+caster joining or leaving a stack. Tests:
 `crates/ffh-ai/tests/magic.rs` (a mage Fireballs a city before the stack attacks; an adept
 blesses its stack with Enchanted Blade, and values Haste at nothing on a quiet turn; a fresh
 summon attacks a Warrior but not a Champion; a Spectre walks two plots to a wounded Warrior, and

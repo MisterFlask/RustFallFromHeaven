@@ -35,6 +35,7 @@ UNITS = os.path.join(ROOT, 'data', 'xml', 'Units')
 FIELDS = ['arcane_made', 'arcane_lost', 'arcane_lost_alone', 'arcane_lost_with_owner', 'arcane_lost_levels',
           'arcane_upgraded', 'arcane_turns', 'arcane_ready_turns', 'arcane_mage_turns', 'arcane_archmage_turns']
 CAST = re.compile(r'\[cast t(\d+) p(\d+)\] civ=(\S+) unit=(\S+) spell=(\S+) ctx=(\S+)')
+STACK = re.compile(r'\[(join|leave) t(\d+) p(\d+)\] civ=(\S+)')
 STRIKE = re.compile(r'\[strike t(\d+) p(\d+)\] civ=(\S+) near=(\d+) near_mages=(\d+) mages=(\d+)')
 
 
@@ -141,6 +142,11 @@ def main():
                     tot[side]['taken_by_caster_civs'] += r.get('taken_civ', 0) + r.get('taken_barb', 0)
             with open(os.path.join(a.out_dir, '%s_%d.cast' % (side, s))) as f:
                 for line in f:
+                    sk = STACK.match(line)
+                    if sk and int(sk.group(2)) <= end:
+                        tot[side]['stack_' + sk.group(1)] += 1
+                        civ_tot[side][sk.group(4)]['stack_' + sk.group(1)] += 1
+                        continue
                     st = STRIKE.match(line)
                     if st and int(st.group(1)) <= end and int(st.group(6)) > 0:
                         # A strike by a player with a Mage somewhere: was one within casting range?
@@ -165,7 +171,8 @@ def main():
     print('%d seeds%s (base %s, new %s)' % (len(games), ', equal game time' if a.common else '', a.base_env or 'FFH_AI_CASTER_SCHOOL_OFF=all', a.new_env or '-'))
     keys = ['games', 'turns'] + FIELDS + ['casts', 'casts_t0', 'casts_t1', 'casts_t2', 'casts_t3', 'casts_attack', 'casts_turn',
                                           'casts_summon', 'casts_damage', 'casts_promo', 'casts_city', 'casts_python', 'casts_t2+_fight',
-                                          'strikes_with_mages', 'strikes_mage_near', 'strikes_caster_near', 'taken_by_caster_civs']
+                                          'strikes_with_mages', 'strikes_mage_near', 'strikes_caster_near', 'taken_by_caster_civs',
+                                          'stack_join', 'stack_leave']
     for k in keys:
         b, n = tot['base'][k], tot['new'][k]
         print('%-24s base %8d  new %8d  %s' % (k, b, n, ('%+.0f%%' % (100.0 * (n - b) / b)) if b else ''))

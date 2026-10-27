@@ -1982,7 +1982,7 @@ pub(crate) mod tests {
         g.player_init_unit(them, d.t::<UnitType>("UNIT_WARRIOR"), 12, 5, Some(UnitAIType::UNITAI_CITY_DEFENSE), None);
         let (ut, tt) = (g.players[us].team, g.players[them].team);
         g.team_declare_war(ut, tt, true, None);
-        let champions: Vec<UnitId> = (0..3).map(|_| g.player_init_unit(us, d.t::<UnitType>("UNIT_CHAMPION"), 11, 5, Some(UnitAIType::UNITAI_ATTACK), None)).collect();
+        let champions: Vec<UnitId> = (0..4).map(|_| g.player_init_unit(us, d.t::<UnitType>("UNIT_CHAMPION"), 11, 5, Some(UnitAIType::UNITAI_ATTACK), None)).collect();
         let grp = g.units[champions[0]].group.expect("a group");
         for &u in &champions[1..] {
             g.unit_join_group(u, Some(grp), false);

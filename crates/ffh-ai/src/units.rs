@@ -210,6 +210,16 @@ pub fn play(ai: &Ai, g: &mut Game, v: &mut View) {
         if !alive(g, grp) || !g.units.contains(head) {
             continue;
         }
+        // A stack whose fighters a strike took out is no army: its casters take their own
+        // orders (CASTER_STACKS).
+        if role == Role::Army && !v.barbarian && crate::magic::spared_caster(g, head) {
+            for (c, ng) in crate::magic::leave_stack(g, v, grp) {
+                if alive(g, ng) && g.units.contains(c) && g.group_ready_to_move(ng, false) {
+                    caster(g, v, ng, c);
+                }
+            }
+            continue;
+        }
         if !v.barbarian && crate::civs::unit(ai, g, v, grp, head) { continue; } // civ-mechanics
         // Govannon teaches (TEACH_SPELLS).
         if !v.barbarian && crate::casters::govannon(g, v, grp, head) {
@@ -233,7 +243,11 @@ pub fn play(ai: &Ai, g: &mut Game, v: &mut View) {
         }
         if role == Role::Army && !v.barbarian {
             crate::traits::after_army(g, v, grp); // trait-play
-            crate::magic::leave_stack(g, v, grp);
+            for (c, ng) in crate::magic::leave_stack(g, v, grp) {
+                if alive(g, ng) && g.units.contains(c) && g.group_ready_to_move(ng, false) {
+                    caster(g, v, ng, c);
+                }
+            }
         }
     }
     finalize(g, p);
@@ -918,7 +932,14 @@ fn caster(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
     let worst = g.players[p].cities.iter().copied().max_by_key(|&c| (v.danger_at(g.city_plot(c)), std::cmp::Reverse(c)));
     match worst {
         Some(c) if g.city_plot(c) != here => {
-            move_to(g, grp, g.city_plot(c), MOVE_SAFE_TERRITORY);
+            // A school caster gets there from one sheltered plot to the next (a Mage an operation
+            // left at the front walked home across open ground).
+            let step = if crate::magic::school(g, p) { crate::magic::safe_step(g, v, u, g.city_plot(c)) } else { None };
+            match step {
+                Some(s) if s != here => move_to(g, grp, s, 0),
+                Some(_) => {}
+                None => move_to(g, grp, g.city_plot(c), MOVE_SAFE_TERRITORY),
+            }
             if alive(g, grp) && g.group_ready_to_move(grp, false) {
                 skip(g, grp);
             }

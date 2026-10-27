@@ -105,12 +105,28 @@ pub fn cast(g: &mut Game, u: UnitId, spell: SpellType, ctx: &str, value: i32) {
     g.unit_cast(u, spell);
 }
 
+/// `FFH_AI_TRACE_CAST` is set (read once).
+fn trace_cast_on() -> bool {
+    static ON: OnceLock<bool> = OnceLock::new();
+    *ON.get_or_init(|| std::env::var("FFH_AI_TRACE_CAST").is_ok())
+}
+
+/// With `FFH_AI_TRACE_CAST=1`, a caster joining (`join`) or leaving (`leave`) a stack. It only
+/// prints.
+fn trace_stack(g: &Game, u: UnitId, what: &str) {
+    if !trace_cast_on() {
+        return;
+    }
+    let p = g.units[u].owner;
+    let civ = g.player_get_civilization_type(p).map_or("NONE", |c| g.d.civilizations[c].base.type_.as_str());
+    eprintln!("[{} t{} p{}] civ={} unit={} at={:?}", what, g.game_turn(), p.0, civ.trim_start_matches("CIVILIZATION_"), g.d.units[g.units[u].unit_type].base.type_.trim_start_matches("UNIT_"), g.map.xy(g.unit_plot(u)));
+}
+
 /// With `FFH_AI_TRACE_CAST=1`, one line per strike of player `p` on city plot `tp` (before its
 /// casts): our arcane casters within two plots of it (where they cast before the strike) and
 /// those with Channeling II anywhere. It only prints.
 pub fn trace_strike(g: &Game, p: PlayerId, tp: PlotIdx) {
-    static ON: OnceLock<bool> = OnceLock::new();
-    if !*ON.get_or_init(|| std::env::var("FFH_AI_TRACE_CAST").is_ok()) {
+    if !trace_cast_on() {
         return;
     }
     let channeling2 = g.d.ty::<PromotionType>("PROMOTION_CHANNELING2");
@@ -1310,11 +1326,24 @@ pub fn spared_caster(g: &Game, u: UnitId) -> bool {
     arcane(g, u) && school(g, p) && crate::switches::CASTER_STACKS.on(g, p)
 }
 
+/// Fighters a stack needs for a caster to join it ([`stack_to_join`]); below [`STACK_KEEP`] the
+/// casters leave it ([`leave_stack`]). A group of one to three units is a straggler or a
+/// reinforcement on its way, not the stack that strikes: a third of the joins went to such groups,
+/// and a caster shared their fate.
+const STACK_JOIN: usize = 4;
+const STACK_KEEP: usize = 2;
+
+/// Units of group `grp` that fight (`campaign::fights`: not the casters marching with it).
+fn stack_fighters(g: &Game, grp: GroupId) -> usize {
+    g.groups[grp].units.iter().filter(|&&o| crate::campaign::fights(g, o)).count()
+}
+
 /// The stack caster `u` joins where it stands (`CASTER_STACKS`; `units::caster`, for a caster
-/// [`strike_target`] sends to an operation): a committed group of ours there headed by a unit
-/// that fights, the largest. It then moves with that stack, which guards it on the way and
-/// carries it to the city at the stack's pace -- marching on its own from one sheltered plot to
-/// the next, it fell behind any stack that moved faster or crossed open ground.
+/// [`strike_target`] sends to an operation): a committed group of ours there with
+/// [`STACK_JOIN`] fighters or more, headed by one, the largest. It then moves with that stack,
+/// which guards it on the way and carries it to the city at the stack's pace -- marching on its
+/// own from one sheltered plot to the next, it fell behind any stack that moved faster or crossed
+/// open ground.
 pub fn stack_to_join(g: &Game, v: &View, u: UnitId) -> Option<GroupId> {
     if !spared_caster(g, u) {
         return None;
@@ -1326,7 +1355,8 @@ pub fn stack_to_join(g: &Game, v: &View, u: UnitId) -> Option<GroupId> {
         .flat_map(|op| op.groups.iter().copied())
         .filter(|&grp| crate::units::alive(g, grp) && g.units[u].group != Some(grp))
         .filter(|&grp| g.group_get_head_unit(grp).is_some_and(|h| g.unit_plot(h) == here && !spared_caster(g, h) && attack_power(g, h) > 0))
-        .max_by_key(|&grp| (g.groups[grp].units.len(), std::cmp::Reverse(grp)))
+        .filter(|&grp| stack_fighters(g, grp) >= STACK_JOIN)
+        .max_by_key(|&grp| (stack_fighters(g, grp), std::cmp::Reverse(grp)))
 }
 
 /// The spared casters of group `from` join stack `grp` on their plot, as war wizards (the AI type
@@ -1343,30 +1373,43 @@ pub fn join_stack(g: &mut Game, from: GroupId, grp: GroupId) -> bool {
             g.unit_ai_set_unit_ai_type(u, UnitAIType::UNITAI_WARWIZARD);
         }
         g.unit_join_group(u, Some(grp), true);
-        joined |= g.units[u].group == Some(grp);
+        if g.units[u].group == Some(grp) {
+            trace_stack(g, u, "join");
+            joined = true;
+        }
     }
     joined
 }
 
-/// Spared casters leave stack `grp` (each into a group of its own, to take their own orders
-/// again) once it is out of our operations, or no unit of ours that fights is left in it to head
-/// it (`CASTER_STACKS`; after the stack's orders, `units::play`). Left in, a caster would follow a
-/// stack home to heal or to guard, or head a group of casters by the army's orders.
-pub fn leave_stack(g: &mut Game, v: &View, grp: GroupId) {
-    if !crate::units::alive(g, grp) || g.groups[grp].units.len() < 2 {
-        return;
+/// Spared casters leave stack `grp` (each into a group of its own) once it is out of our
+/// operations, or fewer than [`STACK_KEEP`] units of ours that fight are left in it -- a strike
+/// takes its attackers out of their stacks, a battle kills them (`CASTER_STACKS`; after the stack's orders, `units::play`, which
+/// gives the casters their own orders at once: left where the strike left them, with no one
+/// beside them, they were lost alone). Left in, a caster would follow a stack home to heal or to
+/// guard, or head a group of casters by the army's orders. The casters released, with their
+/// groups.
+pub fn leave_stack(g: &mut Game, v: &View, grp: GroupId) -> Vec<(UnitId, GroupId)> {
+    if !crate::units::alive(g, grp) {
+        return Vec::new();
     }
     let casters: Vec<UnitId> = g.groups[grp].units.iter().copied().filter(|&u| spared_caster(g, u)).collect();
     if casters.is_empty() {
-        return;
+        return Vec::new();
     }
-    let fighters = g.groups[grp].units.iter().any(|&u| !spared_caster(g, u) && attack_power(g, u) > 0);
-    if fighters && v.campaign.op_of(grp).is_some() {
-        return;
+    if stack_fighters(g, grp) >= STACK_KEEP && v.campaign.op_of(grp).is_some() {
+        return Vec::new();
     }
+    let mut out = Vec::new();
     for u in casters {
-        g.unit_join_group(u, None, true);
+        trace_stack(g, u, "leave");
+        if g.groups[grp].units.len() > 1 {
+            g.unit_join_group(u, None, true);
+        }
+        if let Some(ng) = g.units[u].group {
+            out.push((u, ng));
+        }
     }
+    out
 }
 
 /// At the start of player `p`'s turn: a group a spared caster heads (its fighters fell or left
