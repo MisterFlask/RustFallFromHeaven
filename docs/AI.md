@@ -1418,12 +1418,15 @@ cities taken +0.8 (t 1.7); Spiritual 28.6% -> 30.2% (5 / 4), share@end -141 (t -
 leaders lose in the pooled games to what their neighbours' traits do, not to their own play.
 Financial alone on 60 seeds with a Financial leader: 18.4% -> 17.2% (6 / 7), share@end -39
 (t -0.33); Industrious alone (seeds 1-40): 10.9% -> 10.9%, world wonders 2.1 -> 2.9 (t 1.9).
-What the play does in the games: Summoner leaders keep casters (0.3 -> 1.9 at the end, t 4.6;
-1.3 at turn 300, 2.1 at turn 400) and summon: over 20 of these seeds (22 Summoner players,
-`FFH_AI_TRACE_CAST`) 15.0 Raise Skeleton / Summon casts a game instead of 1.9, and 6.5 Fireballs
-instead of 0, in 13 of the 22 games instead of 6 -- 40-55 in the Sheaim games with a war, 0-3 in
-the others (summons are cast in fights only: a temporary one with an enemy in its reach, a lasting
-one at war), none by Keelyn's Balseraphs, whose casters make puppets instead (207 a game); Raiders pillage (Hannah, seed 2: 28 improvements in 210
+What the play does in the games: Summoner leaders keep casters and summon. Over 40 fresh seeds
+with a Summoner leader (7501-7604, 48 Summoner players, `FFH_AI_TRACE_CAST`), the kept version
+against all traits off: 16.4 Raise Skeleton / Summon casts a game instead of 2.4 (Tebryn 35.1,
+Os-Gabella 20.9; the first version of the trait play cast 10.3: Tebryn 27.1, Os-Gabella 7.8),
+12.2 Fireballs instead of 0.2, 2.3 casters at the end instead of 0.1; Keelyn's Balseraphs take no
+summoning sphere and their casters make puppets instead, 652 a game (48 without the play, 425 with
+the first version). Summons come in fights (a temporary one with an enemy in its reach, a lasting
+one at war, or at peace while the army is short), so they bunch in the wars. Win rate 16.7% ->
+12.5% (0 / 2), share@end +14 (t 0.13): neutral. Raiders pillage (Hannah, seed 2: 28 improvements in 210
 turns, 10-66 gold each); Industrious leaders build more wonders; Aggressive ones take more
 cities once their land is full.
 

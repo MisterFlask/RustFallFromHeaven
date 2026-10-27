@@ -96,6 +96,23 @@ off), which leaves out what the other traits' players do to their neighbours.
    it unowned). Alone: win 21.2% -> 23.5% (5 / 3), share@end +30 (t 0.38), the same game to turn
    200, cities taken +0.8 (t 1.7), research at turn 300 -8 (t -2.3: the price of the wars).
 
+### Summoners summoning more without more casters (kept, but did not do it alone)
+
+1. The first version's Summoner leaders summoned 15 times a game (fresh seeds 7401-7420): casters
+   came around turn 300 and summoned only in fights. Three changes aimed at that: research toward
+   the Adept (Knowledge of the Ether), Raise Skeleton at peace while the army is short, and a
+   temporary summon valued 1.5x for the turn longer it lasts.
+2. On 40 seeds with a Summoner leader (45-136, 48 players) they summoned 16.8 times a game against
+   16.9 before, though the first summon came at turn 266 instead of 295: 0-4 casters were alive at
+   a time and they died in the fights where they summon (seed 45: one Adept at turn 200, none at
+   250 and 300); the peace skeletons hardly fired, as these empires met their peacetime army
+   target (permanent summons pay support like any unit, so the cap stays).
+3. The bound was the number of casters. With the bigger corps of the civilizations with unique
+   casters, (cities + 2) / 2, the same seeds gave 24.3 summons a game (Tebryn 43.5, Os-Gabella
+   32.5), 15.0 Fireballs, win 12.5% -> 14.6% (1 / 0), share@end +59 (t 0.43); on fresh seeds
+   7501-7604 16.4 against the first version's 10.3 (docs/AI.md, "Leader traits"). The three
+   changes stay: they bring the casters sooner and give them more to do.
+
 Lesson for measuring a trait (or any play a few players have): 40 seeds give each trait 15-45
 players whose win rates move by 10 points on chaos alone. Play the trait alone (the other traits
 off, so only games with its leaders change) on seeds chosen to contain its leaders, 60+ of them,
