@@ -2834,6 +2834,22 @@ Mage-turns +79%, Channeling II+ summons and damage 25.4 -> 62.5 per 1000 caster-
 before strikes 90 -> 195 (0.57 -> 1.01 per city taken). For context only: players with arcane
 casters won 21.8% -> 21.8% (8 / 8 seeds won by one side only), share@end +130 (t 1.14), on the
 fresh seeds; 12.5% -> 18.8% (4 / 1), share@end +269 (t 1.90) on the development seeds.
+(Measured before master's caster corps, `casters.rs`, was merged in.)
+
+**Casters in the stacks (2026-10-27).** The owner's proposal for the gap above: casters march in
+the attacking stack's group and are almost never its attackers. Measured with `caster_ab.py
+--common --base-env FFH_AI_CASTER_STACKS_OFF=all` (the same binary, the school on both sides).
+Fresh seeds 9401-9440 (16950 game turns a side, 30 of 40 games changed): casters joined stacks
+613 times; strikes by a player with a Mage had one within two plots in 33% -> 49% of them; casts
+before attacks 145 -> 262 (per such strike 0.90 -> 1.47, per city the caster civilizations took
+0.23 -> 0.39); Channeling II and III summons and damage per 1000 caster-turns 13.3 -> 21.5;
+casters lost 114 -> 128 (per player +0.05, t 1.12; lost alone 43 -> 44), the Amurites, whose
+Wizards march most, 4 -> 15 (t 1.96 over 16 players); upgrades 359 -> 377. Development seeds
+9301-9340, where the first version (joining any committed group) lost casters a quarter more
+often (144 -> 186) and the version kept did not (151 -> 153): a Mage within range 28% -> 42%,
+casts before attacks per strike 1.37 -> 1.81, Channeling II+ summons and damage +35%; seeds
+7501-7530 (the first version) 44% -> 53%. For context only: players with arcane casters won
+22.2% -> 22.2% (9 / 9 seeds won by one side only), share@end -12 (t -0.34), on the fresh seeds.
 
 ## Tools
 
@@ -3266,4 +3282,8 @@ Where MNAI does something this AI does not, ranked by expected worth (each untri
   no logic; the Sheaim's Planar Gates are valued by their creatures, "Cities", effects in the
   rules' code).
   Casters march to the front in the stacks (`CASTER_STACKS`); a player with two operations at once
-  spreads them over both, so a strike can still find none within range.
+  spreads them over both, and a stack too small to join leaves them on their own, so half the
+  strikes still find no Mage within range. The AI promotes and upgrades only a group's head and
+  units that do not move (`units::play`; the C++ `AI_doTurnUnitsPost` that promotes every unit has
+  no port): a fighter inside a marching stack waits for its promotions until a strike takes it out
+  (casters in stacks get theirs, `CASTER_STACKS`).
