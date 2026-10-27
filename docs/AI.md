@@ -269,6 +269,24 @@ Not covered: the Asylum (Crazed and Enraged), the Mercurian Gate (its `iAIWeight
 code), buildings that only open a spell (Arena, Demon's Altar's sacrifice), the Dwarven Vaults
 (set by the rules). `FFH_AI_CODE_EFFECTS_OFF` leaves the table out but for the Warrens.
 
+Measured as one civilization's edge (`civ_ab.py --base-env FFH_AI_CODE_EFFECTS_OFF=ALL --new-env
+FFH_AI_CODE_EFFECTS_ONLY={civ}`, full games): the buildings now come -- Planar Gates 0 -> 2.6 a
+Sheaim game (dev) and 3.8 (fresh), with Mage Guilds 2.2 -> 4.2, Public Baths and Gambling Houses
+in the gate cities and about a dozen creatures a game (Mobius Witches 2.4, Chaos Marauders 2.3,
+Tar Demons 2.1, Revelers 1.9, Succubi 1.8, Manticores 1.4); Cave of Ancestors 0 -> 0.5, Hall of
+Mirrors 0.1 -> 0.7, Temple of the Hand 3.0 -> 4.2, the Citadel of Light 0.4 -> 0.8 (when the
+Malakim have Sorcery), Breweries earlier for the dwarves. Development (seeds 1-32, Sheaim,
+Amurites, Elohim, Luchuirp, Khazad, Illians, Balseraphs, Malakim, Clan of Embers; 288 pairs): win
+17.0% -> 17.7% (6 / 4), share@300 +11.8 (t 1.66), share@end -21.9 (t -0.80). Fresh (seeds
+41001-41048, the same civilizations but the Clan; 384 pairs): win 18.8% -> 19.0% (10 / 9),
+share@300 +4.9 (t 0.96), share@end -0.6 (t -0.02); by civilization share@end from Luchuirp +93 and
+Amurites +90 to Khazad -78 and Illians -125 (|t| < 1.2 for all; the Sheaim, Luchuirp and
+Illians changed sign between the two sets, the Khazad and Balseraphs were below on both). Forks at the firings (`ai-branch.sh`): a Sheaim gate
+city has 2 Mobius Witches and 2 Succubi 80 turns on, none without; the Illians' Temple of the Hand
+takes a city's food surplus from +4 to +6 for one hammer; a Khazad capital that builds a Brewery
+instead of a Granary at turn 49 (its Ale clears the unhappiness that held the city back) has 7
+cities to 6 at turn 148; a Luchuirp capital that builds one instead of Walls, 7 to 5 at turn 202.
+
 **The standing army against rival civilizations** (`defense.rs`, switch `RIVAL_DEFENSE`): how
 many defenders beyond the barbarian and capital quotas our cities hold, and where.
 - *In peacetime, deterrence* (`defense::deterrence`): an expert keeps enough army that no
@@ -1484,7 +1502,8 @@ Unique content the base AI never used in those games: the Amurites' Arcane Lacun
 Ancestors, the Clan's Warrens, the Sheaim's Worldbreak (Planar Gate 1/40), the Luchuirp's
 Blasting Workshop, Pallens Engine and Adularia Chamber, the heroes Corlindale (Elohim), Wilboman
 (Illians), War Machine (Doviello) and Eurabatres (Kuriotates), and every civ's adepts (no AI
-built a Mage Guild: 29 adepts in 3408 civ positions at turn 300).
+built a Mage Guild: 29 adepts in 3408 civ positions at turn 300). Since 2026-10-27 the
+buildings among them whose effects are in the rules' code are valued (`code_effects.rs`, "Cities").
 
 ### Kept
 
@@ -3010,5 +3029,6 @@ Where MNAI does something this AI does not, ranked by expected worth (each untri
   (`world_spells.rs`), and the defensive ones (Sanctuary, March of the Trees) wait for FfH's two
   wars: a losing war was the wrong moment without an estimate of the invasion coming
   (docs/AI_LOG.md). Civilization mechanics handled and tried: "Civilization-specific"
-  and docs/AI_LOG.md (Sheaim planar gates, Infernal and Mercurian projects, Khazad vaults and
-  Armageddon rituals have no logic).
+  and docs/AI_LOG.md (Infernal and Mercurian projects, Khazad vaults and Armageddon rituals have
+  no logic; the Sheaim's Planar Gates are valued by their creatures, "Cities", effects in the
+  rules' code).
