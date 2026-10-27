@@ -10,7 +10,8 @@ our cities with no unit of ours that fights; with their owner: eliminated), upgr
 Channeling III) and their casts -- by the tier of the
 Channeling the spell needs, by context (`attack`: before a strike, `turn`: the end of the turn)
 and by kind (a summon, damage, a promotion, a city spell, Python) -- with the rates per 1000
-caster-turns. Win rates are not its business (ai_metrics.py, trait_ab.py, civ_ab.py).
+caster-turns; the strikes of players with a Mage and how many had one within two plots (where it
+casts before the strike), and the casts before strikes per city the caster civilizations took. Win rates are not its business (ai_metrics.py, trait_ab.py, civ_ab.py).
 
 Games diverge, and a longer game has more caster-turns and more casters lost with an eliminated
 owner: `--common` compares each seed's two games up to the last 50-turn checkpoint both reached.
@@ -34,6 +35,7 @@ UNITS = os.path.join(ROOT, 'data', 'xml', 'Units')
 FIELDS = ['arcane_made', 'arcane_lost', 'arcane_lost_alone', 'arcane_lost_with_owner', 'arcane_lost_levels',
           'arcane_upgraded', 'arcane_turns', 'arcane_ready_turns', 'arcane_mage_turns', 'arcane_archmage_turns']
 CAST = re.compile(r'\[cast t(\d+) p(\d+)\] civ=(\S+) unit=(\S+) spell=(\S+) ctx=(\S+)')
+STRIKE = re.compile(r'\[strike t(\d+) p(\d+)\] civ=(\S+) near=(\d+) near_mages=(\d+) mages=(\d+)')
 
 
 def parse_seeds(s):
@@ -125,6 +127,7 @@ def main():
                 continue
             tot[side]['games'] += 1
             tot[side]['turns'] += end
+            users = set()
             for r in rows:
                 if r.get('barb'):
                     continue
@@ -133,13 +136,25 @@ def main():
                 for f in FIELDS:
                     tot[side][f] += r.get(f, 0)
                     c[f] += r.get(f, 0)
+                if r.get('arcane_turns', 0) > 0:
+                    users.add(r['civ'])
+                    tot[side]['taken_by_caster_civs'] += r.get('taken_civ', 0) + r.get('taken_barb', 0)
             with open(os.path.join(a.out_dir, '%s_%d.cast' % (side, s))) as f:
                 for line in f:
+                    st = STRIKE.match(line)
+                    if st and int(st.group(1)) <= end and int(st.group(6)) > 0:
+                        # A strike by a player with a Mage somewhere: was one within casting range?
+                        tot[side]['strikes_with_mages'] += 1
+                        tot[side]['strikes_mage_near'] += int(st.group(5)) > 0
+                        tot[side]['strikes_caster_near'] += int(st.group(4)) > 0
+                        continue
                     m = CAST.match(line)
                     if not m or m.group(3) == 'BARBARIAN' or m.group(4) not in arcane or int(m.group(1)) > end:
                         continue
                     sp, ctx = m.group(5), m.group(6)
                     t, k = stier.get(sp, 0), kind.get(sp, '?')
+                    if ctx == 'attack' and m.group(3) in users:
+                        tot[side]['casts_attack_caster_civs'] += 1
                     for c in (tot[side], civ_tot[side][m.group(3)]):
                         c['casts'] += 1
                         c['casts_t%d' % t] += 1
@@ -149,7 +164,8 @@ def main():
                             c['casts_t2+_fight'] += 1
     print('%d seeds%s (base %s, new %s)' % (len(games), ', equal game time' if a.common else '', a.base_env or 'FFH_AI_CASTER_SCHOOL_OFF=all', a.new_env or '-'))
     keys = ['games', 'turns'] + FIELDS + ['casts', 'casts_t0', 'casts_t1', 'casts_t2', 'casts_t3', 'casts_attack', 'casts_turn',
-                                          'casts_summon', 'casts_damage', 'casts_promo', 'casts_city', 'casts_python', 'casts_t2+_fight']
+                                          'casts_summon', 'casts_damage', 'casts_promo', 'casts_city', 'casts_python', 'casts_t2+_fight',
+                                          'strikes_with_mages', 'strikes_mage_near', 'strikes_caster_near', 'taken_by_caster_civs']
     for k in keys:
         b, n = tot['base'][k], tot['new'][k]
         print('%-24s base %8d  new %8d  %s' % (k, b, n, ('%+.0f%%' % (100.0 * (n - b) / b)) if b else ''))
@@ -161,6 +177,11 @@ def main():
                   side, per('arcane_lost'), per('arcane_lost_alone'), per('arcane_lost_with_owner'), per('arcane_upgraded'), per('casts'),
                   per('casts_attack'), per('casts_t2+_fight'), (t['arcane_mage_turns'] + t['arcane_archmage_turns']) / max(1, t['arcane_turns']),
                   t['arcane_lost_levels'] / max(1, t['arcane_lost'])))
+        print('%-4s strikes by players with a Mage: %d, a Mage within two plots in %.0f%% (any caster %.0f%%); casts before attacks '
+              'per such strike %.2f, per city the caster civilizations took %.2f' % (
+                  side, t['strikes_with_mages'], 100.0 * t['strikes_mage_near'] / max(1, t['strikes_with_mages']),
+                  100.0 * t['strikes_caster_near'] / max(1, t['strikes_with_mages']), t['casts_attack_caster_civs'] / max(1, t['strikes_with_mages']),
+                  t['casts_attack_caster_civs'] / max(1, t['taken_by_caster_civs'])))
     if a.civ:
         print('%-14s %7s %7s %7s %7s %7s %11s %11s %9s %9s %9s' % ('civ (base/new)', 'n', 'made', 'lost', 'alone', 'upg', 'turns', 'mage', 'arch', 'casts', 'II+fight'))
         for c in sorted(set(civ_tot['base']) | set(civ_tot['new'])):

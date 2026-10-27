@@ -1367,6 +1367,20 @@ turn, to move casters and to promote them:
   researches the upgrade's tech (+300 for each such apprentice, up to five, and +100 on the techs
   on the way: `magic::school_tech_value`) and pays for the upgrade with a defender's gold reserve
   (`units::upgrade`).
+- **Casters in the stacks** (`CASTER_STACKS`, 2026-10-27): a caster going to an operation
+  (`magic::strike_target`) joins a committed stack of it where it stands, before or after its
+  sheltered step, and marches with it from then on (`magic::stack_to_join`, `join_stack`): the
+  stack guards it and carries it to the city at the stack's pace (on its own it waited at the last
+  sheltered plot while the stack went on). It joins as a war wizard, the AI type FfH's group attack
+  sends below 95% odds only when no other unit can attack (`AI_getBestGroupAttacker`, Sephi's
+  block), and it does not fight for the stack: below those odds the strike leaves it out, a stack's
+  assault holds rather than send it (`military::precious_holds`), the campaign's force estimates do
+  not count it (`campaign::fights`), and a captured city is entered by fighters first. It leaves the
+  stack (`magic::leave_stack`) once the stack is out of our operations or no fighter is left to head
+  it; a group a caster heads splits at the start of the turn. Inside a stack it never heads, it gets
+  its promotions at the start of the turn (`units::play`; the AI otherwise promotes only a group's
+  head or a unit that does not move). A stack moves at its slowest unit's pace: a caster slows a
+  mounted stack.
 - **Promotions** (`units::promotion_value`): a sphere is worth the spells it opens, plus half of
   those the next promotion of the sphere opens (a quarter for an adept, which gets Channeling II only
   as a mage): Fire I for Fireball, Enchantment I for Enchanted Blade.
@@ -1426,13 +1440,18 @@ turn, to move casters and to promote them:
 
 `FFH_AI_MAGIC_OFF=CIVILIZATION_X,..|X|all` makes those civilizations cast by FfH's terms
 (`casting.rs`; their summons attack as everyone's do: the measurement switch);
-`FFH_AI_CASTER_SCHOOL_OFF=CIVILIZATION_X,..|X|all` turns the caster school off for those
-civilizations (their casters move as before it, and the same games result); `FFH_AI_TRACE_CAST=1`
-prints every AI cast (turn, player, civilization, unit, spell, where, value). Tests:
+the switches `CASTER_SCHOOL` and `CASTER_STACKS` (`switches.rs`: `FFH_AI_CASTER_SCHOOL_OFF`,
+`FFH_AI_CASTER_STACKS_OFF`, `.._ONLY`) turn the caster school and the casters in the stacks off
+(the stacks need the school; with each off the same games result as before it);
+`FFH_AI_TRACE_CAST=1` prints every AI cast (turn, player, civilization, unit, spell, where,
+value) and every strike (our arcane casters within two plots of the city, Mages anywhere). Tests:
 `crates/ffh-ai/tests/magic.rs` (a mage Fireballs a city before the stack attacks; an adept
 blesses its stack with Enchanted Blade, and values Haste at nothing on a quiet turn; a fresh
 summon attacks a Warrior but not a Champion; a Spectre walks two plots to a wounded Warrior, and
-is worth nothing next to a city it cannot hurt) and `magic::tests` (the worth table's order).
+is worth nothing next to a city it cannot hurt; an apprentice stays home, and a Mage steps only
+beside our units), `magic::tests` (the worth table's order) and
+`campaign::tests::a_mage_in_the_stack_does_not_attack` (the strike takes the city without the
+Mage in its stack, and a stack whose only unit left to attack is the Mage holds).
 
 Measured: each civilization forced into slot 0, its spellcasting on against the same binary with
 `FFH_AI_MAGIC_OFF` for it (every other civilization casting by `magic.rs`), full games (6 civs,
@@ -3239,6 +3258,5 @@ Where MNAI does something this AI does not, ranked by expected worth (each untri
   and docs/AI_LOG.md (Infernal and Mercurian projects, Khazad vaults and Armageddon rituals have
   no logic; the Sheaim's Planar Gates are valued by their creatures, "Cities", effects in the
   rules' code).
-  Casters march to the front on their own, from one sheltered plot to the next (the caster school):
-  a stack that moves faster or crosses open ground leaves them behind, and casts before strikes did
-  not rise with the Mages the school keeps alive.
+  Casters march to the front in the stacks (`CASTER_STACKS`); a player with two operations at once
+  spreads them over both, so a strike can still find none within range.

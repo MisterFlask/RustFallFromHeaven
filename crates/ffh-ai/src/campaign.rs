@@ -423,7 +423,7 @@ pub fn simulate(g: &Game, tp: PlotIdx, defs: &[UnitId], atts: &[UnitId], wall_cu
     let max_hp = g.d.defines.max_hit_points.max(1);
     let dead = max_hp / 8;
     let collateral = |u: UnitId| g.unit_collateral_damage(u) > 0;
-    let mut order: Vec<UnitId> = atts.iter().copied().filter(|&u| attack_power(g, u) > 0 && g.unit_can_attack(u)).collect();
+    let mut order: Vec<UnitId> = atts.iter().copied().filter(|&u| fights(g, u)).collect();
     order.sort_by_key(|&u| (std::cmp::Reverse(collateral(u) && n_def >= 2), std::cmp::Reverse(attack_power(g, u)), u));
     let mut best = 0;
     for (i, &a) in order.iter().enumerate() {
@@ -482,7 +482,7 @@ pub fn simulate(g: &Game, tp: PlotIdx, defs: &[UnitId], atts: &[UnitId], wall_cu
 /// a siege engine's win as a kill: the simulation saw the city fall where the strike stalled.
 pub fn simulate_in_order(g: &Game, tp: PlotIdx, defs: &[UnitId], atts: &[UnitId], wall_cut: i32, order: Order, kill_pct: i64, sure: i64) -> Sim {
     let n_def = defs.len();
-    let atts: Vec<UnitId> = atts.iter().copied().filter(|&u| attack_power(g, u) > 0 && g.unit_can_attack(u)).collect();
+    let atts: Vec<UnitId> = atts.iter().copied().filter(|&u| fights(g, u)).collect();
     let n_att = atts.len();
     if defs.is_empty() {
         return Sim { used: Some(0), n_def, hp_left: 0, best: 1000, n_att, ..Sim::default() };
@@ -656,7 +656,7 @@ fn margin(n: usize) -> usize {
 /// Does `units` take city `c` (plot `tp`, defenders `defs`) with `spare` attackers to spare?
 /// With `spare`, a [`margin`] of attackers must be left over (only units able to attack count).
 pub(crate) fn covers(g: &Game, c: CityId, tp: PlotIdx, defs: &[UnitId], units: &[UnitId], spare: bool, siege: bool) -> bool {
-    let n_att = units.iter().filter(|&&u| attack_power(g, u) > 0 && g.unit_can_attack(u)).count();
+    let n_att = units.iter().filter(|&&u| fights(g, u)).count();
     if n_att == 0 {
         return false;
     }
@@ -781,6 +781,12 @@ fn rough_score(c: &Cand) -> i64 {
     c.value as i64 * 1000 / (need as i64 * 100 + c.dist as i64 * 25 + 200)
 }
 
+/// A unit our operations count on to attack: one that can, other than a caster that marches with
+/// the stack without fighting for it (`magic::spared_caster`).
+pub(crate) fn fights(g: &Game, u: UnitId) -> bool {
+    attack_power(g, u) > 0 && g.unit_can_attack(u) && !crate::magic::spared_caster(g, u)
+}
+
 /// Our army units on `area` able to attack (heroes included), strongest first.
 fn force_on(g: &Game, p: PlayerId, area: Option<AreaId>) -> Vec<UnitId> {
     let mut out: Vec<UnitId> = Vec::new();
@@ -792,7 +798,7 @@ fn force_on(g: &Game, p: PlayerId, area: Option<AreaId>) -> Vec<UnitId> {
         if g.map.plots[g.unit_plot(head)].area != area {
             continue;
         }
-        out.extend(g.groups[grp].units.iter().copied().filter(|&u| attack_power(g, u) > 0 && g.unit_can_attack(u)));
+        out.extend(g.groups[grp].units.iter().copied().filter(|&u| fights(g, u)));
     }
     out.sort_by_key(|&u| (std::cmp::Reverse(attack_power(g, u)), u));
     out
@@ -954,7 +960,13 @@ fn op_groups(g: &Game, p: PlayerId, cand: &Cand) -> Vec<(i32, GroupId)> {
 }
 
 fn units_in(g: &Game, groups: &[(i32, GroupId)]) -> i32 {
-    groups.iter().map(|&(_, grp)| g.groups[grp].units.len() as i32).sum()
+    groups.iter().map(|&(_, grp)| stack_units(g, grp)).sum()
+}
+
+/// The units of stack `grp` that count in an operation's force: all but the casters marching with
+/// it (`magic::spared_caster`).
+fn stack_units(g: &Game, grp: GroupId) -> i32 {
+    g.groups[grp].units.iter().filter(|&&u| !crate::magic::spared_caster(g, u)).count() as i32
 }
 
 /// A war force split in two (see [`split`]).
@@ -1029,7 +1041,7 @@ fn split(g: &Game, p: PlayerId, cand: &Cand, need: i32, groups: &[(i32, GroupId)
     let takes = |t2: usize, second: &[(i32, GroupId)], reserve: bool| -> Option<i32> {
         let c2 = &others[t2];
         let all: Vec<UnitId> = second.iter().flat_map(|&(_, grp)| g.groups[grp].units.iter().copied()).collect();
-        let mut force: Vec<UnitId> = all.iter().copied().filter(|&u| attack_power(g, u) > 0 && g.unit_can_attack(u)).collect();
+        let mut force: Vec<UnitId> = all.iter().copied().filter(|&u| fights(g, u)).collect();
         force.sort_by_key(|&u| (std::cmp::Reverse(attack_power(g, u)), u));
         let need2 = need_for(g, team, c2, &force);
         if force.is_empty() || need2 > force.len() as i32 || c2.visible && !covers(g, c2.city, c2.plot, &visible_defenders(g, team, c2.plot), &all, reserve, true) {
@@ -1087,13 +1099,13 @@ fn build_op(g: &Game, v: &mut View, cand: Cand, need: i32, groups: Vec<(i32, Gro
             continue;
         }
         committed.push(grp);
-        n_units += g.groups[grp].units.len() as i32;
+        n_units += stack_units(g, grp);
     }
     let units_of = |pred: &dyn Fn(i32, GroupId) -> bool| -> Vec<UnitId> {
         let mut out = Vec::new();
         for &(d, grp) in &groups {
             if committed.contains(&grp) && pred(d, grp) {
-                out.extend(g.groups[grp].units.iter().copied());
+                out.extend(g.groups[grp].units.iter().copied().filter(|&u| !crate::magic::spared_caster(g, u)));
             }
         }
         out
@@ -1547,7 +1559,8 @@ fn strike(g: &mut Game, v: &mut View, op: &Op) {
     // Our casters around the city soften its defenders and summon attackers first (magic.rs); the
     // strike below then weighs the defenders as they are left (a summon may even take or raze
     // the city), and blesses our attackers once it goes ahead.
-    let ready: Vec<UnitId> = pool.iter().copied().filter(|&u| next_to(g, u) && g.unit_moves_left(u) > 0 && attack_power(g, u) > 0 && g.unit_can_attack(u)).collect();
+    let ready: Vec<UnitId> = pool.iter().copied().filter(|&u| next_to(g, u) && g.unit_moves_left(u) > 0 && fights(g, u)).collect();
+    crate::magic::trace_strike(g, p, tp);
     crate::magic::soften(g, v, tp, &ready);
     let mut done: Vec<UnitId> = Vec::new();
     let mut fights = 0;
@@ -1577,6 +1590,8 @@ fn strike(g: &mut Game, v: &mut View, op: &Op) {
             .copied()
             .filter(|&u| next_to(g, u) && !done.contains(&u) && g.unit_moves_left(u) > 0 && !g.units[u].made_attack && attack_power(g, u) > 0 && g.unit_can_attack(u))
             .filter(|&u| !(walls && g.unit_bombard_rate(u) > 0))
+            // A caster that marches with the stack attacks only at war wizard odds (CASTER_STACKS).
+            .filter(|&u| !crate::magic::spared_caster(g, u) || odds(g, u) >= crate::magic::SPARED_CASTER_ODDS)
             .collect();
         // Heroes and veterans below their odds (switch `PRECIOUS`, [`precious_bar`]) fight last:
         // while another unit can attack, and never to wear the defenders down, only in a strike
@@ -1674,8 +1689,10 @@ fn strike(g: &mut Game, v: &mut View, op: &Op) {
     // The defenders are gone: move in.
     let taken = |g: &Game| !g.cities.contains(op.city) || g.cities[op.city].owner == p;
     if !taken(g) && g.cities.contains(op.city) && visible_defenders(g, team, tp).is_empty() {
-        // (Workers left in the city are captured on the way in.)
-        if let Some(u) = pool.iter().copied().find(|&u| next_to(g, u) && g.unit_moves_left(u) > 0 && g.unit_can_move_or_attack_into(u, tp, false)) {
+        // (Workers left in the city are captured on the way in.) A fighter first: a caster that
+        // marches with the stack goes in only when no other unit can.
+        let first = |g: &Game, u: UnitId| next_to(g, u) && g.unit_moves_left(u) > 0 && g.unit_can_move_or_attack_into(u, tp, false);
+        if let Some(u) = pool.iter().copied().filter(|&u| first(g, u)).min_by_key(|&u| crate::magic::spared_caster(g, u)) {
             if g.units[u].group.is_some_and(|grp| g.groups[grp].units.iter().any(|&o| g.unit_moves_left(o) <= 0)) {
                 g.unit_join_group(u, None, true);
             }
@@ -1688,6 +1705,9 @@ fn strike(g: &mut Game, v: &mut View, op: &Op) {
     // would lose it to the next counterattack).
     if taken(g) && g.cities.contains(op.city) {
         let mut n = 0;
+        // Fighters first (a caster that marches with the stack is no garrison).
+        let mut pool = pool.clone();
+        pool.sort_by_key(|&u| g.units.contains(u) && crate::magic::spared_caster(g, u));
         for &u in &pool {
             if n >= 3 {
                 break;
@@ -1942,5 +1962,56 @@ pub(crate) mod tests {
         let mut v = View::new(&g, us);
         strike(&mut g, &mut v, &op);
         assert!(!g.units.contains(skeleton) || g.units[skeleton].made_attack, "the skeleton attacked");
+    }
+
+    /// A Mage that marches with a stack (CASTER_STACKS) is no attacker: the strike takes the city
+    /// with the Champions and leaves the Mage out, and a stack whose only unit left to attack is
+    /// the Mage holds rather than send it.
+    #[test]
+    fn a_mage_in_the_stack_does_not_attack() {
+        let d = ffh_data::global();
+        let mut g = one_landmass_game(22);
+        let (us, them) = (PlayerId(0), PlayerId(1));
+        if !crate::magic::school(&g, us) || !crate::switches::CASTER_STACKS.on(&g, us) {
+            return;
+        }
+        g.player_found(us, 4, 5);
+        g.player_found(them, 12, 5);
+        let city = g.players[them].capital_city.expect("the enemy founded a city");
+        let tp = g.city_plot(city);
+        g.player_init_unit(them, d.t::<UnitType>("UNIT_WARRIOR"), 12, 5, Some(UnitAIType::UNITAI_CITY_DEFENSE), None);
+        let (ut, tt) = (g.players[us].team, g.players[them].team);
+        g.team_declare_war(ut, tt, true, None);
+        let champions: Vec<UnitId> = (0..3).map(|_| g.player_init_unit(us, d.t::<UnitType>("UNIT_CHAMPION"), 11, 5, Some(UnitAIType::UNITAI_ATTACK), None)).collect();
+        let grp = g.units[champions[0]].group.expect("a group");
+        for &u in &champions[1..] {
+            g.unit_join_group(u, Some(grp), false);
+        }
+        let mage = g.player_init_unit(us, d.t::<UnitType>("UNIT_MAGE"), 11, 5, Some(UnitAIType::UNITAI_MAGE), None);
+        assert!(crate::magic::spared_caster(&g, mage));
+        let from = g.units[mage].group.expect("a group");
+        assert!(crate::magic::join_stack(&mut g, from, grp), "the Mage joins the stack");
+        assert_eq!(g.units[mage].ai_type, Some(UnitAIType::UNITAI_WARWIZARD));
+        assert_eq!(g.group_get_head_unit(grp), Some(champions[0]), "a Champion heads the stack");
+        assert!(!fights(&g, mage), "the Mage does not count in the force");
+        let op = Op { city, plot: tp, civ: true, phase: Phase::Strike, groups: vec![grp], rally: None, assembly: None, staging: None, struck: false, at_war: true, need: 1, have: 3 };
+        let mut v = View::new(&g, us);
+        strike(&mut g, &mut v, &op);
+        assert!(g.units.contains(mage) && !g.units[mage].made_attack, "the Mage did not attack");
+        assert!(!g.cities.contains(city) || g.cities[city].owner == us, "the Champions took the city");
+        // A Warrior of theirs in the open next to the Mage and one Champion that has attacked:
+        // the Mage is the only unit left to attack, and the stack holds.
+        let warrior = g.player_init_unit(them, d.t::<UnitType>("UNIT_WARRIOR"), 9, 6, Some(UnitAIType::UNITAI_ATTACK), None);
+        let q = g.unit_plot(warrior);
+        let champion = g.player_init_unit(us, d.t::<UnitType>("UNIT_CHAMPION"), 10, 6, Some(UnitAIType::UNITAI_ATTACK), None);
+        let mage2 = g.player_init_unit(us, d.t::<UnitType>("UNIT_MAGE"), 10, 6, Some(UnitAIType::UNITAI_MAGE), None);
+        let stack = g.units[champion].group.expect("a group");
+        let from = g.units[mage2].group.expect("a group");
+        assert!(crate::magic::join_stack(&mut g, from, stack));
+        g.units[champion].made_attack = true;
+        g.units[champion].moves = g.unit_max_moves(champion);
+        let v = View::new(&g, us);
+        crate::military::assault(&mut g, &v, stack, q);
+        assert!(g.units.contains(mage2) && !g.units[mage2].made_attack, "the Mage was not sent at the Warrior");
     }
 }

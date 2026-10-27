@@ -134,6 +134,14 @@ pub static CODE_EFFECTS: Switch = Switch::new("CODE_EFFECTS");
 pub static MANA_BUILDINGS: Switch = Switch::new("MANA_BUILDINGS");
 /// A unit we disband in a Demon's Altar city is sacrificed for research first (`unflagged.rs`).
 pub static SACRIFICE: Switch = Switch::new("SACRIFICE");
+/// The caster school: an Adept works at home until it is a Mage, casters cross dangerous ground
+/// only where they are sheltered, the Mage's tech and upgrade come sooner (`magic.rs`, "The
+/// caster school").
+pub static CASTER_SCHOOL: Switch = Switch::new("CASTER_SCHOOL");
+/// Casters march in the group of the stack they go to war with, and attack only at FfH's war
+/// wizard odds (95%): not in a strike, not in a stack's assault, not counted in its force
+/// (`magic::spared_caster`, `magic::join_stack`). Needs `CASTER_SCHOOL`.
+pub static CASTER_STACKS: Switch = Switch::new("CASTER_STACKS");
 
 fn civ_list(var: &str) -> Option<Vec<String>> {
     let v = std::env::var(var).ok()?;

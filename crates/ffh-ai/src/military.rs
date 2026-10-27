@@ -44,9 +44,10 @@ pub fn is_army_unit(g: &Game, u: UnitId) -> bool {
         )
 }
 
-/// Units of the group able to attack now.
+/// Units of the group able to attack now (not the casters that march with it without fighting
+/// for it, `magic::spared_caster`).
 fn attackers(g: &Game, grp: GroupId) -> Vec<UnitId> {
-    g.groups[grp].units.iter().copied().filter(|&u| attack_power(g, u) > 0 && g.unit_can_attack(u) && g.unit_moves_left(u) > 0).collect()
+    g.groups[grp].units.iter().copied().filter(|&u| crate::campaign::fights(g, u) && g.unit_moves_left(u) > 0).collect()
 }
 
 /// Fight estimate against a plot.
@@ -176,18 +177,23 @@ fn trace_field(g: &Game, grp: GroupId, q: PlotIdx, city: bool, hurt: bool, hunt:
 }
 
 /// The attacker the rules would send from `grp` into `q` (`AI_getBestGroupAttacker`, which already
-/// puts heroes and veterans last) is a hero or a veteran below its odds (switch `PRECIOUS`,
-/// `campaign::precious_bar`): `(unit, odds, bar)`. The others are worse still, so the stack does
+/// puts heroes, veterans and war wizards last) is a hero or a veteran below its odds (switch
+/// `PRECIOUS`, `campaign::precious_bar`), or a caster marching with the stack below war wizard
+/// odds (switch `CASTER_STACKS`, `magic::spared_caster`): `(unit, odds, bar)`. The others are worse still, so the stack does
 /// not attack there -- and does not pick the target either: a Balseraph stack whose best attacker
 /// was a level-5 Warrior at 35% stood next to the same raider for 12 turns (docs/AI.md, "Forks of
 /// the hero gate").
 fn precious_holds(g: &Game, grp: GroupId, q: PlotIdx) -> Option<(UnitId, i32, i32)> {
     let p = g.units[g.group_get_head_unit(grp)?].owner;
-    if !crate::switches::PRECIOUS.on(g, p) {
+    let precious = crate::switches::PRECIOUS.on(g, p);
+    if !precious && !crate::switches::CASTER_STACKS.on(g, p) {
         return None;
     }
     let b = g.group_ai_get_best_group_attacker(grp, q, false, false, false).0?;
-    let bar = crate::campaign::precious_bar(g, b);
+    // A caster that marches with the stack (`magic::spared_caster`): the rules send it below war
+    // wizard odds only when no other unit of the stack can attack; then the stack stops too.
+    let caster_bar = if crate::magic::spared_caster(g, b) { crate::magic::SPARED_CASTER_ODDS } else { 0 };
+    let bar = if precious { crate::campaign::precious_bar(g, b) } else { 0 }.max(caster_bar);
     if bar == 0 {
         return None;
     }

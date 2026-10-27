@@ -147,11 +147,17 @@ pub fn play(ai: &Ai, g: &mut Game, v: &mut View) {
                 continue;
             }
             let Some(grp) = g.units[u].group else { continue };
-            if g.group_ready_to_move(grp, false) {
+            // A caster marching in a stack never heads it, and never splits off to attack: its
+            // promotions (the next spheres) come here (CASTER_STACKS).
+            let stack_caster = g.group_get_head_unit(grp) != Some(u) && crate::magic::spared_caster(g, u);
+            if g.group_ready_to_move(grp, false) && !stack_caster {
                 continue;
             }
             upkeep(g, u);
         }
+    }
+    if !v.barbarian {
+        crate::magic::split_caster_heads(g, p);
     }
     let mut order: Vec<(Role, GroupId)> = Vec::new();
     for &grp in &g.players[p].groups {
@@ -227,6 +233,7 @@ pub fn play(ai: &Ai, g: &mut Game, v: &mut View) {
         }
         if role == Role::Army && !v.barbarian {
             crate::traits::after_army(g, v, grp); // trait-play
+            crate::magic::leave_stack(g, v, grp);
         }
     }
     finalize(g, p);
@@ -848,12 +855,26 @@ fn caster(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
         let target = crate::magic::caster_target(g, v, u);
         if let Some((q, why)) = target {
             crate::trace!(g, p, "caster {} at {:?} -> {:?} ({})", g.d.units[g.units[u].unit_type].base.type_, g.map.xy(here), g.map.xy(q), why);
+            // A caster on its way to an operation joins a stack of it where it stands, before or
+            // after its step, and marches with it from then on (CASTER_STACKS).
+            let to_stack = matches!(why, "strike" | "rally");
+            let join = |g: &mut Game, v: &View, grp: GroupId| {
+                let Some(stack) = crate::magic::stack_to_join(g, v, u) else { return false };
+                crate::trace!(g, p, "caster {} at {:?} joins stack {:?} ({} units)", g.d.units[g.units[u].unit_type].base.type_, g.map.xy(g.unit_plot(u)), stack, g.groups[stack].units.len());
+                crate::magic::join_stack(g, grp, stack)
+            };
+            if to_stack && join(g, v, grp) {
+                return;
+            }
             // A school caster crosses dangerous ground only beside our units (magic.rs, "The
             // caster school"); with nowhere safe to step, it goes to study.
             let step = if school { crate::magic::safe_step(g, v, u, q) } else { Some(q) };
             if let Some(s) = step {
                 if s != here {
                     move_to(g, grp, s, 0);
+                }
+                if to_stack && alive(g, grp) && g.units.contains(u) && join(g, v, grp) {
+                    return;
                 }
                 if alive(g, grp) && g.group_ready_to_move(grp, false) {
                     skip(g, grp);

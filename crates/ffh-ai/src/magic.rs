@@ -76,24 +76,10 @@ pub fn enabled(g: &Game, p: PlayerId) -> bool {
     !g.player_is_barbarian(p) && g.player_get_civilization_type(p).is_some_and(|c| !off_table(g.d)[c.idx()])
 }
 
-fn school_off_table(d: &GameData) -> &'static [bool] {
-    static TABLE: OnceLock<Vec<bool>> = OnceLock::new();
-    TABLE.get_or_init(|| {
-        let off: Vec<String> = std::env::var("FFH_AI_CASTER_SCHOOL_OFF")
-            .unwrap_or_default()
-            .split(',')
-            .map(|s| s.trim().trim_start_matches("CIVILIZATION_").to_ascii_uppercase())
-            .filter(|s| !s.is_empty())
-            .collect();
-        d.civilizations.keys().map(|c| off.iter().any(|o| o == "ALL" || o == d.civilizations[c].base.type_.trim_start_matches("CIVILIZATION_"))).collect()
-    })
-}
-
 /// Does player `p` raise its arcane casters as the rules intend ([`apprentice`], [`safe_step`]):
-/// its spellcasting is this AI's ([`enabled`]) and `FFH_AI_CASTER_SCHOOL_OFF` (civilizations,
-/// comma-separated, or `all`) does not list it. A measurement switch, read once.
+/// its spellcasting is this AI's ([`enabled`]) and the switch `CASTER_SCHOOL` is on for it.
 pub fn school(g: &Game, p: PlayerId) -> bool {
-    enabled(g, p) && g.player_get_civilization_type(p).is_some_and(|c| !school_off_table(g.d)[c.idx()])
+    enabled(g, p) && crate::switches::CASTER_SCHOOL.on(g, p)
 }
 
 /// Every AI cast goes through here: `FFH_AI_TRACE_CAST=1` prints one line per cast (turn,
@@ -117,6 +103,33 @@ pub fn cast(g: &mut Game, u: UnitId, spell: SpellType, ctx: &str, value: i32) {
     }
     g.tel_cast_reason(u, ctx, value as i64);
     g.unit_cast(u, spell);
+}
+
+/// With `FFH_AI_TRACE_CAST=1`, one line per strike of player `p` on city plot `tp` (before its
+/// casts): our arcane casters within two plots of it (where they cast before the strike) and
+/// those with Channeling II anywhere. It only prints.
+pub fn trace_strike(g: &Game, p: PlayerId, tp: PlotIdx) {
+    static ON: OnceLock<bool> = OnceLock::new();
+    if !*ON.get_or_init(|| std::env::var("FFH_AI_TRACE_CAST").is_ok()) {
+        return;
+    }
+    let channeling2 = g.d.ty::<PromotionType>("PROMOTION_CHANNELING2");
+    let (tx, ty) = g.map.xy(tp);
+    let ours: Vec<UnitId> = g.players[p].units.iter().copied().filter(|&u| g.units.contains(u) && arcane(g, u)).collect();
+    let near = ours.iter().filter(|&&u| {
+        let (x, y) = g.map.xy(g.unit_plot(u));
+        g.plot_distance(x, y, tx, ty) <= 2
+    });
+    let civ = g.player_get_civilization_type(p).map_or("NONE", |c| g.d.civilizations[c].base.type_.as_str());
+    eprintln!(
+        "[strike t{} p{}] civ={} near={} near_mages={} mages={}",
+        g.game_turn(),
+        p.0,
+        civ.trim_start_matches("CIVILIZATION_"),
+        near.clone().count(),
+        near.filter(|&&u| channeling2.is_some_and(|c| g.units[u].has_promotion[c])).count(),
+        ours.iter().filter(|&&u| channeling2.is_some_and(|c| g.units[u].has_promotion[c])).count()
+    );
 }
 
 // ----------------------------------------------------------------------------
@@ -1254,15 +1267,12 @@ pub fn apprentice(g: &Game, u: UnitId) -> bool {
 /// The level and unit type of an [`apprentice`]'s upgrade: the lowest `iMinLevel` among them (a
 /// Mage's 4).
 fn apprentice_need(g: &Game, u: UnitId) -> Option<(i32, UnitType)> {
-    static IDS: OnceLock<(Option<UnitCombatType>, Option<PromotionType>, Option<PromotionType>)> = OnceLock::new();
+    static CHANNELING2: OnceLock<Option<PromotionType>> = OnceLock::new();
     let d = g.d;
-    let &(adept, hero, channeling2) = IDS.get_or_init(|| (d.ty::<UnitCombatType>("UNITCOMBAT_ADEPT"), d.ty::<PromotionType>("PROMOTION_HERO"), d.ty::<PromotionType>("PROMOTION_CHANNELING2")));
+    let channeling2 = *CHANNELING2.get_or_init(|| d.ty::<PromotionType>("PROMOTION_CHANNELING2"));
     let unit = &g.units[u];
     let info = &d.units[unit.unit_type];
-    if adept.is_none() || info.unit_combat_type != adept || unit.duration > 0 || !school(g, unit.owner) {
-        return None;
-    }
-    if [hero, channeling2].into_iter().flatten().any(|pr| unit.has_promotion[pr]) {
+    if !arcane(g, u) || !school(g, unit.owner) || channeling2.is_some_and(|pr| unit.has_promotion[pr]) {
         return None;
     }
     let civ = g.player_get_civilization_type(unit.owner)?;
@@ -1273,6 +1283,106 @@ fn apprentice_need(g: &Game, u: UnitId) -> Option<(i32, UnitType)> {
         .filter(|&t| d.units[t].min_level > 0)
         .map(|t| (d.units[t].min_level, t))
         .min()
+}
+
+/// An arcane caster: unit combat Adept (Adepts, Mages, Archmages and their variants), not a hero
+/// or a summon.
+fn arcane(g: &Game, u: UnitId) -> bool {
+    static IDS: OnceLock<(Option<UnitCombatType>, Option<PromotionType>)> = OnceLock::new();
+    let d = g.d;
+    let &(adept, hero) = IDS.get_or_init(|| (d.ty::<UnitCombatType>("UNITCOMBAT_ADEPT"), d.ty::<PromotionType>("PROMOTION_HERO")));
+    let unit = &g.units[u];
+    adept.is_some() && d.units[unit.unit_type].unit_combat_type == adept && unit.duration == 0 && !hero.is_some_and(|h| unit.has_promotion[h])
+}
+
+/// The odds (per mille) from which a caster that marches with a stack attacks ([`spared_caster`]):
+/// FfH's own bar for its war wizards (`AI_getBestGroupAttacker`, Sephi's block, which the rules'
+/// group attack keeps).
+pub const SPARED_CASTER_ODDS: i32 = 950;
+
+/// Does caster `u` go to war in a stack without fighting for it (`CASTER_STACKS`): an arcane
+/// caster of a school player. Its worth is its spells and the levels it took to learn them; an
+/// attack at strength 4 or 5 risks them for little. Below [`SPARED_CASTER_ODDS`] the strike leaves
+/// it out, a stack's assault holds rather than send it, and the campaign's estimates of the force
+/// do not count it.
+pub fn spared_caster(g: &Game, u: UnitId) -> bool {
+    let p = g.units[u].owner;
+    arcane(g, u) && school(g, p) && crate::switches::CASTER_STACKS.on(g, p)
+}
+
+/// The stack caster `u` joins where it stands (`CASTER_STACKS`; `units::caster`, for a caster
+/// [`strike_target`] sends to an operation): a committed group of ours there headed by a unit
+/// that fights, the largest. It then moves with that stack, which guards it on the way and
+/// carries it to the city at the stack's pace -- marching on its own from one sheltered plot to
+/// the next, it fell behind any stack that moved faster or crossed open ground.
+pub fn stack_to_join(g: &Game, v: &View, u: UnitId) -> Option<GroupId> {
+    if !spared_caster(g, u) {
+        return None;
+    }
+    let here = g.unit_plot(u);
+    v.campaign
+        .ops
+        .iter()
+        .flat_map(|op| op.groups.iter().copied())
+        .filter(|&grp| crate::units::alive(g, grp) && g.units[u].group != Some(grp))
+        .filter(|&grp| g.group_get_head_unit(grp).is_some_and(|h| g.unit_plot(h) == here && !spared_caster(g, h) && attack_power(g, h) > 0))
+        .max_by_key(|&grp| (g.groups[grp].units.len(), std::cmp::Reverse(grp)))
+}
+
+/// The spared casters of group `from` join stack `grp` on their plot, as war wizards (the AI type
+/// FfH's group attack keeps from attacking below [`SPARED_CASTER_ODDS`]). True when they joined.
+pub fn join_stack(g: &mut Game, from: GroupId, grp: GroupId) -> bool {
+    let Some(head) = g.group_get_head_unit(grp) else { return false };
+    let at = g.unit_plot(head);
+    let mut joined = false;
+    for u in g.groups[from].units.clone() {
+        if !spared_caster(g, u) || g.unit_plot(u) != at {
+            continue;
+        }
+        if g.units[u].ai_type != Some(UnitAIType::UNITAI_WARWIZARD) {
+            g.unit_ai_set_unit_ai_type(u, UnitAIType::UNITAI_WARWIZARD);
+        }
+        g.unit_join_group(u, Some(grp), true);
+        joined |= g.units[u].group == Some(grp);
+    }
+    joined
+}
+
+/// Spared casters leave stack `grp` (each into a group of its own, to take their own orders
+/// again) once it is out of our operations, or no unit of ours that fights is left in it to head
+/// it (`CASTER_STACKS`; after the stack's orders, `units::play`). Left in, a caster would follow a
+/// stack home to heal or to guard, or head a group of casters by the army's orders.
+pub fn leave_stack(g: &mut Game, v: &View, grp: GroupId) {
+    if !crate::units::alive(g, grp) || g.groups[grp].units.len() < 2 {
+        return;
+    }
+    let casters: Vec<UnitId> = g.groups[grp].units.iter().copied().filter(|&u| spared_caster(g, u)).collect();
+    if casters.is_empty() {
+        return;
+    }
+    let fighters = g.groups[grp].units.iter().any(|&u| !spared_caster(g, u) && attack_power(g, u) > 0);
+    if fighters && v.campaign.op_of(grp).is_some() {
+        return;
+    }
+    for u in casters {
+        g.unit_join_group(u, None, true);
+    }
+}
+
+/// At the start of player `p`'s turn: a group a spared caster heads (its fighters fell or left
+/// it) splits, each caster into a group of its own, so that no caster leads others by its own
+/// orders (`CASTER_STACKS`).
+pub fn split_caster_heads(g: &mut Game, p: PlayerId) {
+    for grp in g.players[p].groups.clone() {
+        if !crate::units::alive(g, grp) || g.groups[grp].units.len() < 2 || !g.group_get_head_unit(grp).is_some_and(|h| spared_caster(g, h)) {
+            continue;
+        }
+        for u in g.groups[grp].units.clone() {
+            if spared_caster(g, u) && g.groups[grp].units.len() > 1 {
+                g.unit_join_group(u, None, true);
+            }
+        }
+    }
 }
 
 /// Can caster `u` of player `v.p` end its turn on `q`: in our city, where no enemy we see can
