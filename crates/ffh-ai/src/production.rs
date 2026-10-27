@@ -256,6 +256,23 @@ pub fn barbarians_near(g: &Game, p: PlayerId, plot: PlotIdx, range: i32) -> bool
     false
 }
 
+/// The peacetime army target of `decide` (step 8): attackers for `n_cities` cities and the
+/// leader's military flavour.
+fn army_target_for(n_cities: i32, mil_flavor: i32) -> i32 {
+    n_cities * (2 + mil_flavor / 5) / 2 + 1
+}
+
+/// Player `p`'s peacetime army target (step 8 of `decide`, before war, finances and
+/// affordability adjust it).
+pub(crate) fn army_target(g: &Game, p: PlayerId) -> i32 {
+    let d = g.d;
+    let mil_flavor = match (g.players[p].personality_type, d.ty::<FlavorType>("FLAVOR_MILITARY")) {
+        (Some(l), Some(f)) => d.leader_heads[l].flavor_value[f],
+        _ => 0,
+    };
+    army_target_for(g.players[p].cities.len() as i32, mil_flavor)
+}
+
 pub fn count_ai(g: &Game, p: PlayerId, unit_ai: UnitAIType) -> i32 {
     let pl = &g.players[p];
     pl.ai_num_ai_units[unit_ai] + pl.ai_num_train_ai_units[unit_ai]
@@ -579,7 +596,7 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<Choice> {
     }
 
     // 8. Army target (larger at war).
-    let mut army_target = ctx.n_cities * (2 + mil_flavor / 5) / 2 + 1;
+    let mut army_target = army_target_for(ctx.n_cities, mil_flavor);
     if ctx.at_war {
         army_target = army_target * 2 + 2;
     } else if ctx.broke {

@@ -765,14 +765,15 @@ fn summon_value(g: &Game, caster: UnitId, spell: SpellType, ctx: Ctx) -> i32 {
             if info.permanent_unit_create || g.plot_distance(x, y, tx, ty) != 1 {
                 return 0;
             }
-            summon_strike(g, p, ut, tp) * n
+            let (num, den) = crate::traits::summon_turns(g, p); // trait-play
+            summon_strike(g, p, ut, tp) * n * num / den
         }
         Ctx::Turn { v } => {
             if info.permanent_unit_create {
                 // A unit for good (it pays support like any other): while at war or with enemies
                 // about.
                 let near = v.danger_at(here) > 0 || v.at_war();
-                return if near { strength * 10 * n } else { 0 };
+                return if near { strength * 10 * n } else { crate::traits::peace_summon(g, p, strength, n) }; // trait-play
             }
             // It attacks what `casting::summons_attack` picks: of the plots with enemies next to a
             // plot it reaches with moves left (its own moves, the caster's way of moving), the one
@@ -803,7 +804,8 @@ fn summon_value(g: &Game, caster: UnitId, spell: SpellType, ctx: Ctx) -> i32 {
                     }
                 }
             }
-            best.map_or(0, |(_, value)| value) * 4 / 5 * n
+            let (num, den) = crate::traits::summon_turns(g, p); // trait-play
+            best.map_or(0, |(_, value)| value) * 4 / 5 * n * num / den
         }
     }
 }

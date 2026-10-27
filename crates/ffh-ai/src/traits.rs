@@ -13,7 +13,10 @@
 //! - **Arcane** (adepts gain experience 20% faster) and **Summoner** (summons last a turn longer
 //!   and fight with Combat I): a corps of casters, (cities + 2) / 3, from the most productive safe
 //!   city, its Mage Guild first ([`production`]); a Summoner's casters favour the spheres that
-//!   summon ([`promotion_value`]).
+//!   summon ([`promotion_value`]). A Summoner researches toward its Adepts (Knowledge of the
+//!   Ether, [`tech_value`]), values a temporary summon for the extra turn it lasts
+//!   ([`summon_turns`]) and raises lasting summons (Raise Skeleton) at peace too, as army units
+//!   while the army is short and a unit is affordable ([`peace_summon`]).
 //! - **Philosophical** (great people +100%): the great-people emphasis in its best great-people
 //!   city, one more per eight cities ([`turn`]).
 //! - **Financial** (+1 commerce on plots with 2 or more): workers count the extra commerce an
@@ -346,6 +349,74 @@ fn summoning_spheres(d: &GameData) -> &'static [PromotionType] {
         v.dedup();
         v
     })
+}
+
+/// What researching `t` is worth to player `p` (`value`: the generic estimate and the
+/// civilization's): a Summoner without Adepts values the tech that opens them (the civilization's
+/// Adept and the building it needs, Knowledge of the Ether) at +1500 once it can research it, and
+/// the techs on the way at +500 -- summons need casters, and casters came only around turn 300.
+pub fn tech_value(g: &Game, p: PlayerId, t: TechType, value: i32) -> i32 {
+    if !has(g, p, Trait::Summoner) {
+        return value;
+    }
+    let team = g.players[p].team;
+    let needed = adept_techs(g, p);
+    if needed.is_empty() || g.team_is_has_tech(team, Some(t)) {
+        return value;
+    }
+    let path = crate::victory::tech_path(g, team, &needed);
+    if !path.contains(&t) {
+        return value;
+    }
+    let info = &g.d.techs[t];
+    let ready = info.prereq_and_techs.iter().all(|&x| g.team_is_has_tech(team, Some(x)))
+        && (info.prereq_or_techs.is_empty() || info.prereq_or_techs.iter().any(|&x| g.team_is_has_tech(team, Some(x))));
+    value + if needed.contains(&t) && ready { 1500 } else { 500 }
+}
+
+/// The techs player `p`'s Adept still needs (its own and its building's); empty when it has them
+/// or has no Adept.
+fn adept_techs(g: &Game, p: PlayerId) -> Vec<TechType> {
+    let d = g.d;
+    let team = g.players[p].team;
+    let Some(civ) = g.player_get_civilization_type(p) else { return Vec::new() };
+    let Some(adept) = d.ty::<UnitClassType>("UNITCLASS_ADEPT").and_then(|cl| d.civ_unit(civ, cl)) else { return Vec::new() };
+    let info = &d.units[adept];
+    let mut techs: Vec<TechType> = info.prereq_and_tech.into_iter().chain(info.prereq_and_techs.iter().copied()).collect();
+    if let Some(b) = crate::production::unit_building(d, civ, info) {
+        techs.extend(d.buildings[b].prereq_and_tech);
+        techs.extend(d.buildings[b].prereq_and_techs.iter().flatten().copied());
+    }
+    techs.sort();
+    techs.dedup();
+    techs.retain(|&x| !g.team_is_has_tech(team, Some(x)));
+    techs
+}
+
+/// The factor (numerator, denominator) on what a temporary summon of player `p` is worth: a
+/// Summoner's last a turn longer (`iSummonDuration`), so one that fights this turn stands to fight
+/// again the next: 3/2. 1/1 for others.
+pub fn summon_turns(g: &Game, p: PlayerId) -> (i32, i32) {
+    if has(g, p, Trait::Summoner) {
+        (3, 2)
+    } else {
+        (1, 1)
+    }
+}
+
+/// What a lasting summon (Raise Skeleton) of `strength` cast `n` at a time is worth to player `p`
+/// at peace with no enemy about (the generic value is 0 then): for a Summoner, the army unit it
+/// is, while the army is short of its peacetime target (`production::army_target`) and the
+/// treasury can carry another unit. 0 for others.
+pub fn peace_summon(g: &Game, p: PlayerId, strength: i32, n: i32) -> i32 {
+    if !has(g, p, Trait::Summoner) {
+        return 0;
+    }
+    let attackers: i32 = [UnitAIType::UNITAI_ATTACK, UnitAIType::UNITAI_ATTACK_CITY, UnitAIType::UNITAI_COLLATERAL].into_iter().map(|a| crate::production::count_ai(g, p, a)).sum();
+    if attackers >= crate::production::army_target(g, p) || !crate::economy::can_afford_unit(g, p, true, false) {
+        return 0;
+    }
+    strength * 10 * n
 }
 
 // ----------------------------------------------------------------------------
