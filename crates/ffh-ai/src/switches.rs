@@ -127,6 +127,9 @@ pub static FOG_ATTACK: Switch = Switch::new("FOG_ATTACK");
 /// Production re-decided when the empire is in financial trouble: a long build gives way to the
 /// economy building the city now needs (`production::trouble_rebuild`).
 pub static TROUBLE_REBUILD: Switch = Switch::new("TROUBLE_REBUILD");
+/// Building effects the rules implement in code valued by `code_effects` (the Planar Gate's
+/// creatures, the Cave of Ancestors' experience...); the Warrens, valued before, stay on.
+pub static CODE_EFFECTS: Switch = Switch::new("CODE_EFFECTS");
 
 fn civ_list(var: &str) -> Option<Vec<String>> {
     let v = std::env::var(var).ok()?;

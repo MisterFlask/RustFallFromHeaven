@@ -56,6 +56,12 @@ pub fn choose(ai: &Ai, g: &mut Game, c: CityId) {
     }
     if let Some((choice, why)) = decide(ai, g, c) {
         crate::trace!(g, p, "{} size {} builds {}", g.cities[c].name, g.cities[c].population, choice_name(g, choice));
+        if let (true, Choice::Construct(b)) = (crate::trace_on(p), choice) {
+            let coded = crate::code_effects::building_value(g, c, b, 0);
+            if coded != 0 {
+                crate::trace!(g, p, "{}: {} worth {} for effects in the rules' code", g.cities[c].name, g.d.buildings[b].base.type_, coded);
+            }
+        }
         g.tel_decision(p, "production", type_name(g, choice), why, 0, String::new);
         push(g, c, choice);
     }
@@ -1444,6 +1450,9 @@ fn generic_building_value(g: &Game, c: CityId, b: BuildingType, threat: i32) -> 
     v += -info.maintenance_modifier * g.cities[c].maintenance.max(0) / 100 * gold_value / 100;
     v += info.heal_rate_change * 2;
     v += info.ai_weight;
+    // Effects the rules implement in code, not in the data (the Warrens' copies, the Planar
+    // Gate's creatures, ...).
+    v += crate::code_effects::building_value(g, c, b, threat);
     if let Some(l) = g.players[p].personality_type.map(|l| &d.leader_heads[l]) {
         if info.building_class_type.is_some() && (l.favorite_early_wonder == info.building_class_type || l.favorite_late_wonder == info.building_class_type) {
             v += 400;

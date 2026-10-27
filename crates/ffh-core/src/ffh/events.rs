@@ -69,6 +69,18 @@ const ADEPT_MANA_PROMOTIONS: [(&str, &str, &str, &str); 18] = [
     ("BONUS_MANA_WATER", "PROMOTION_WATER1", "PROMOTION_WATER2", "PROMOTION_WATER3"),
 ];
 
+/// onCityDoTurn, Planar Gate: the creature a Planar Gate city can summon for each building it
+/// has (building, the creature's class, the creature).
+pub const PLANAR_GATE_SUMMONS: [(&str, &str, &str); 7] = [
+    ("BUILDING_GAMBLING_HOUSE", "UNITCLASS_REVELERS", "UNIT_REVELERS"),
+    ("BUILDING_MAGE_GUILD", "UNITCLASS_MOBIUS_WITCH", "UNIT_MOBIUS_WITCH"),
+    ("BUILDING_CARNIVAL", "UNITCLASS_CHAOS_MARAUDER", "UNIT_CHAOS_MARAUDER"),
+    ("BUILDING_GROVE", "UNITCLASS_MANTICORE", "UNIT_MANTICORE"),
+    ("BUILDING_PUBLIC_BATHS", "UNITCLASS_SUCCUBUS", "UNIT_SUCCUBUS"),
+    ("BUILDING_OBSIDIAN_GATE", "UNITCLASS_MINOTAUR", "UNIT_MINOTAUR"),
+    ("BUILDING_TEMPLE_OF_THE_VEIL", "UNITCLASS_TAR_DEMON", "UNIT_TAR_DEMON"),
+];
+
 /// onCityBuilt / onCityAcquired: the buildings every Infernal city gets.
 const INFERNAL_CITY_BUILDINGS: [&str; 6] = [
     "BUILDING_ELDER_COUNCIL",
@@ -1929,10 +1941,9 @@ impl Game {
         }
     }
 
-    /// onCityDoTurn, Planar Gate: a chance (rising with the Armageddon counter) to summon a
-    /// creature matching one of the city's buildings, limited per Planar Gate.
-    fn ev_planar_gate(&mut self, c: CityId, p: PlayerId, plot: PlotIdx) {
-        let d = self.d;
+    /// Planar Gate: per creature class, how many a player may have per Planar Gate, and the
+    /// summon chance multiplier doubled; both rise with the Armageddon counter.
+    pub fn planar_gate_limits(&self) -> (i32, i32) {
         let mut max = 1;
         // Python `iMult` (1, 1.5, 2, 2.5) doubled, so the chance test stays exact in integers:
         // `rand <= PLANAR_GATE_CHANCE * iMult` (an int against a float) is
@@ -1950,19 +1961,18 @@ impl Game {
             max = 4;
             mult2 = 5;
         }
+        (max, mult2)
+    }
+
+    /// onCityDoTurn, Planar Gate: a chance (rising with the Armageddon counter) to summon a
+    /// creature matching one of the city's buildings, limited per Planar Gate.
+    fn ev_planar_gate(&mut self, c: CityId, p: PlayerId, plot: PlotIdx) {
+        let d = self.d;
+        let (max, mult2) = self.planar_gate_limits();
         if 2 * self.soren_rand_num(10000, "Planar Gate") <= d.defines.planar_gate_chance * mult2 {
-            const SUMMONS: [(&str, &str, &str); 7] = [
-                ("BUILDING_GAMBLING_HOUSE", "UNITCLASS_REVELERS", "UNIT_REVELERS"),
-                ("BUILDING_MAGE_GUILD", "UNITCLASS_MOBIUS_WITCH", "UNIT_MOBIUS_WITCH"),
-                ("BUILDING_CARNIVAL", "UNITCLASS_CHAOS_MARAUDER", "UNIT_CHAOS_MARAUDER"),
-                ("BUILDING_GROVE", "UNITCLASS_MANTICORE", "UNIT_MANTICORE"),
-                ("BUILDING_PUBLIC_BATHS", "UNITCLASS_SUCCUBUS", "UNIT_SUCCUBUS"),
-                ("BUILDING_OBSIDIAN_GATE", "UNITCLASS_MINOTAUR", "UNIT_MINOTAUR"),
-                ("BUILDING_TEMPLE_OF_THE_VEIL", "UNITCLASS_TAR_DEMON", "UNIT_TAR_DEMON"),
-            ];
             let mut list_units = Vec::new();
             let max = max * self.player_count_num_buildings(p, d.t::<BuildingType>("BUILDING_PLANAR_GATE"));
-            for (building, unit_class, unit) in SUMMONS {
+            for (building, unit_class, unit) in PLANAR_GATE_SUMMONS {
                 if self.city_num_building(c, d.t::<BuildingType>(building)) > 0
                     && self.players[p].unit_class_count[d.t::<UnitClassType>(unit_class)] < max
                 {

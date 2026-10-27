@@ -23,6 +23,7 @@ pub mod campaign;
 pub mod casters;
 pub mod casting;
 pub mod civs;
+pub mod code_effects;
 pub mod council;
 pub mod defense;
 pub mod diplomacy;

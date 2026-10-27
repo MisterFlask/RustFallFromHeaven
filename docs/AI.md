@@ -241,6 +241,34 @@ the same for any unit and the cheapest are disbanded first, so idle hammers buy 
 Units are chosen by power squared per production turn, so stronger units win unless much
 dearer.
 
+**Effects in the rules' code** (`code_effects.rs`, switch `CODE_EFFECTS`). FfH 0.41 gives a
+building's plain effects in the XML, which the value above reads, and its special ones in Python,
+ported to Rust in `ffh_core::ffh` (`events.rs`). Those were invisible to the AI: a building whose
+worth lies there was valued by its XML alone, often 0, so it was never or rarely built. FfH's own
+AI had the same blind spot (`CvCityAI::AI_buildingValue` sees them only through `iAIWeight`, 0
+for all of them). A table now says what each such effect does, and the value adds it on the same
+scale (one hammer a turn = 150):
+- on units finished in the city: the Warrens' copies (half the city's production, as the Clan's
+  module valued them before); experience (Cave of Ancestors, one per mana resource, for adepts at
+  double weight; Brewery for dwarves and Demon's Altar for demons, 2) as the XML's free
+  experience is valued; promotions (Chancel of Guardians, 20% Defensive; the Luchuirp golem
+  workshops) as 15% of what the city puts into such units. These count the share of our units the
+  effect covers, concentrated in the cities that can train them (adepts come from Mage Guild
+  cities);
+- the Planar Gate's creatures: each creature of the city's buildings (half for the ones it can
+  build now) worth its hammers over 50 turns, below the rules' cap per gate; with a gate, the
+  enabling buildings (Gambling House, Carnival, Public Baths, Mage Guild, ...) gain their
+  creature. A summoned unit's hammers: its strength's (squared x 10 / 3) or its tier's mean cost;
+- city defense in code (Citadel of Light's fire, Hall of Mirrors' copies, Mokka's Cauldron, Soul
+  Forge): a fixed worth when threatened, a quarter at war, a tenth at peace;
+- the Eyes and Ears Network's free techs (by the open borders we have), the Temple of the Hand's
+  snow (the yields of the land within 2, from the terrain data: snow is 2/0/0 for the Illians),
+  the towers' Strong promotion and free elemental, the Infernal Grimoire's 20% barbarian Balor
+  (negative).
+Not covered: the Asylum (Crazed and Enraged), the Mercurian Gate (its `iAIWeight` stands for its
+code), buildings that only open a spell (Arena, Demon's Altar's sacrifice), the Dwarven Vaults
+(set by the rules). `FFH_AI_CODE_EFFECTS_OFF` leaves the table out but for the Warrens.
+
 **The standing army against rival civilizations** (`defense.rs`, switch `RIVAL_DEFENSE`): how
 many defenders beyond the barbarian and capital quotas our cities hold, and where.
 - *In peacetime, deterrence* (`defense::deterrence`): an expert keeps enough army that no
@@ -1481,7 +1509,8 @@ built a Mage Guild: 29 adepts in 3408 civ positions at turn 300).
   with a civ at peace with us.
 - **Clan of Embers**: Warrens (Masonry, 180 hammers: every unit finished in the city that is not
   a world, national, siege or naval unit gets a free copy; Python only, so valued 0 and never
-  built) are valued as the hammers the copies add (half the city's production): 3.4 a game by
+  built) are valued as the hammers the copies add (half the city's production; since 2026-10-27
+  in `code_effects.rs` with the other buildings whose effects are in code, "Cities"): 3.4 a game by
   turn 300, 7.6 by the end. Rantine casts Convert City in a barbarian city whose units are no
   stronger than him -- the Clan is at peace with the barbarians (`TRAIT_BARBARIAN`), so no army
   ever went there -- walking to the nearest such city within 15 turns while no civ war is on:
