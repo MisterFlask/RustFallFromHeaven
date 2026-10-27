@@ -21,6 +21,18 @@ use crate::game::Game;
 use crate::ids::*;
 use ffh_data::*;
 
+
+/// `doTurnKhazad`: the Dwarven Vault level by the player's gold per city, from that much up
+/// (Python: <50, <100, <150, <200, <300, <500, 500+).
+pub const DWARVEN_VAULT_LEVELS: [(i32, &str); 7] = [
+    (i32::MIN, "BUILDING_DWARVEN_VAULT_EMPTY"),
+    (50, "BUILDING_DWARVEN_VAULT_LOW"),
+    (100, "BUILDING_DWARVEN_VAULT"),
+    (150, "BUILDING_DWARVEN_VAULT_STOCKED"),
+    (200, "BUILDING_DWARVEN_VAULT_ABUNDANT"),
+    (300, "BUILDING_DWARVEN_VAULT_FULL"),
+    (500, "BUILDING_DWARVEN_VAULT_OVERFLOWING"),
+];
 impl Game {
     /// `addBonus(iBonus, iNum, sIcon)`: place `num` of a bonus on random plots that can have it
     /// (latitude ignored) and have neither a bonus nor a city; the same plot may be drawn more
@@ -935,36 +947,15 @@ impl Game {
     }
 
     /// `doTurnKhazad(iPlayer)`: every city gets the Dwarven Vault level matching the player's
-    /// gold per city (<50, <100, <150, <200, <300, <500, 500+).
+    /// gold per city ([`DWARVEN_VAULT_LEVELS`]).
     pub fn cf_do_turn_khazad(&mut self, p: PlayerId) {
         if self.players[p].num_cities() > 0 {
             let d = self.d;
-            let vaults = [
-                d.t::<BuildingType>("BUILDING_DWARVEN_VAULT_EMPTY"),
-                d.t::<BuildingType>("BUILDING_DWARVEN_VAULT_LOW"),
-                d.t::<BuildingType>("BUILDING_DWARVEN_VAULT"),
-                d.t::<BuildingType>("BUILDING_DWARVEN_VAULT_STOCKED"),
-                d.t::<BuildingType>("BUILDING_DWARVEN_VAULT_ABUNDANT"),
-                d.t::<BuildingType>("BUILDING_DWARVEN_VAULT_FULL"),
-                d.t::<BuildingType>("BUILDING_DWARVEN_VAULT_OVERFLOWING"),
-            ];
+            let vaults = DWARVEN_VAULT_LEVELS.map(|(_, name)| d.t::<BuildingType>(name));
             let gold = py_div(self.players[p].gold, self.players[p].num_cities());
             // The Python ranges cover every value.
-            let new_vault = if gold <= 49 {
-                vaults[0]
-            } else if gold <= 99 {
-                vaults[1]
-            } else if gold <= 149 {
-                vaults[2]
-            } else if gold <= 199 {
-                vaults[3]
-            } else if gold <= 299 {
-                vaults[4]
-            } else if gold <= 499 {
-                vaults[5]
-            } else {
-                vaults[6]
-            };
+            let level = DWARVEN_VAULT_LEVELS.iter().rposition(|&(min, _)| gold >= min).unwrap_or(0);
+            let new_vault = vaults[level];
             for city in self.players[p].cities.clone() {
                 for vault in vaults {
                     self.city_set_num_real_building(city, vault, 0);

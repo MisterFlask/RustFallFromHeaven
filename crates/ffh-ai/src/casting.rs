@@ -80,6 +80,9 @@ pub fn castable_spells(g: &Game, u: UnitId) -> Vec<SpellType> {
                 && s.unit_class_prereq.map_or(true, |c| info.unit_class_type.map_or(true, |own| own == c))
                 && s.unit_combat_prereq.map_or(true, |c| info.unit_combat_type == Some(c))
                 && s.civilization_prereq.map_or(true, |c| civ.map_or(true, |own| own == c))
+                // FfH kept spells without `bAllowAI` from its AI: the generic casting does too;
+                // the ones we have logic for are cast by it (`unflagged.rs`).
+                && s.allow_ai
         })
         .map(|(s, _)| s)
         .filter(|&s| g.unit_can_cast(u, s, false))
@@ -440,7 +443,7 @@ fn is_buffer(g: &Game, u: UnitId) -> bool {
 
 /// A spell adding a beneficial promotion (see [`is_buffer`]).
 fn is_buff_spell(d: &GameData, s: SpellType) -> bool {
-    d.spells[s].add_promotion_type1.is_some_and(|p| d.promotions[p].ai_weight > 0)
+    d.spells[s].allow_ai && d.spells[s].add_promotion_type1.is_some_and(|p| d.promotions[p].ai_weight > 0)
 }
 
 /// Can `u` cast `s` now: `known` holds what it can cast when that is known
@@ -448,7 +451,7 @@ fn is_buff_spell(d: &GameData, s: SpellType) -> bool {
 fn can_cast(g: &Game, u: UnitId, s: SpellType, known: Option<&[SpellType]>) -> bool {
     match known {
         Some(list) => list.contains(&s),
-        None => g.unit_can_cast(u, s, false),
+        None => g.d.spells[s].allow_ai && g.unit_can_cast(u, s, false),
     }
 }
 

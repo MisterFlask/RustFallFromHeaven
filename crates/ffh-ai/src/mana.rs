@@ -13,7 +13,11 @@
 //!   healing, Earth resource discovery, Chaos mutation;
 //! - the first node of a type opens its sphere to our casters: the spells the sphere's promotions
 //!   open, for the casters we have and one we could train ([`magic::sphere_value`]);
-//! - units with an affinity for the mana grow stronger with every node.
+//! - units with an affinity for the mana grow stronger with every node;
+//! - the first node of a type opens the buildings that need the mana (the Luchuirp's Blasting
+//!   Workshop needs Fire, Pallens Engine Sun, the Adularia Chamber Shadow): each worth what
+//!   `production::building_value` gives it in our best city for it ([`buildings_value`], switch
+//!   `MANA_BUILDINGS`).
 //!
 //! A caster with nothing better to do (no strike to join, no city spell to keep) goes to build the
 //! node worth most for the turns it takes ([`build_node`]); production trains one caster for it
@@ -97,13 +101,37 @@ pub fn node_value(g: &Game, p: PlayerId, bonus: BonusType) -> i32 {
         v += info.discover_rand_modifier;
         v += info.mutate_chance * 5;
     }
-    // The first node opens the sphere to our casters.
+    // The first node opens the sphere to our casters, and the buildings that need the mana.
     if !have {
         v += SPELL_SCALE * spells_value(g, p, bonus);
+        if crate::switches::MANA_BUILDINGS.on(g, p) {
+            v += buildings_value(g, p, bonus);
+        }
     }
     // Affinities (a unit's strength grows with the mana of its type: Fire Elementals, ...).
     let affinity: i32 = pl.units.iter().map(|&u| g.units[u].bonus_affinity[bonus].max(0)).sum();
     v += affinity * 40;
+    v
+}
+
+/// The buildings of our civilization that need mana `bonus` (`<Bonus>` or one of `<PrereqBonuses>`)
+/// and whose tech we know: each worth its value in the city of ours where it is worth most and
+/// not yet built (`production::building_value`, effects in the rules' code included).
+fn buildings_value(g: &Game, p: PlayerId, bonus: BonusType) -> i32 {
+    let d = g.d;
+    let Some(civ) = g.player_get_civilization_type(p) else { return 0 };
+    let team = g.players[p].team;
+    let mut v = 0;
+    for b in d.buildings.keys() {
+        let info = &d.buildings[b];
+        let needs = info.prereq_and_bonus == Some(bonus) || info.prereq_or_bonuses.contains(&Some(bonus));
+        let ours = info.building_class_type.is_some_and(|k| d.civ_building(civ, k) == Some(b));
+        if !needs || !ours || !info.prereq_and_tech.map_or(true, |t| g.team_is_has_tech(team, Some(t))) {
+            continue;
+        }
+        let best = g.players[p].cities.iter().filter(|&&c| g.city_num_building(c, b) == 0).map(|&c| crate::production::building_value(g, c, b, 0)).max().unwrap_or(0);
+        v += best.max(0);
+    }
     v
 }
 

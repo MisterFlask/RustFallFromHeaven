@@ -311,7 +311,7 @@ pub(crate) fn value(g: &Game, s: &Seen, data: &VoteSelectionSubData, vs: VoteSou
             .count() as i32;
         v -= 5 * outside;
     }
-    if info.free_units > 0 && g.players[p].gold > info.cost + 10 {
+    if info.free_units > 0 && g.players[p].gold > info.cost + 10 + crate::civs::gold_floor(g, p) {
         // A great person (no hammer cost) is worth a technology; another unit, its upkeep less.
         let great = info.free_unit_class.and_then(|uc| d.unit_classes[uc].default_unit_index).is_some_and(|u| d.units[u].production_cost < 0);
         v += info.free_units * if great { 40 } else { 10 };

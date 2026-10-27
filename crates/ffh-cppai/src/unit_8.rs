@@ -451,7 +451,7 @@ impl Cai {
             if let Some(c) = plot_city(g, g.unit_plot(u)) {
                 if g.cities[c].population > 13 {
                     if let Some(spell) = spell_define(feast) {
-                        if g.unit_can_cast(u, spell, false) {
+                        if crate::ai_can_cast(g, u, spell, false) {
                             g.tel_cast_reason(u, "feastingmove", 0);
                             g.unit_cast(u, spell);
                         }
@@ -1539,7 +1539,7 @@ impl Cai {
         let teach = g.d.defines.spell_teach_spellcasting;
         if teach != NO_SPELL {
             if let Some(spell) = spell_define(teach) {
-                if g.unit_can_cast(u, spell, false) {
+                if crate::ai_can_cast(g, u, spell, false) {
                     g.tel_cast_reason(u, "govannonmove", 0);
                     g.unit_cast(u, spell);
                 }
@@ -1606,7 +1606,7 @@ impl Cai {
             let disrupt = g.d.defines.spell_disrupt;
             if disrupt != NO_SPELL {
                 if let Some(spell) = spell_define(disrupt) {
-                    if g.unit_can_cast(u, spell, false) {
+                    if crate::ai_can_cast(g, u, spell, false) {
                         g.tel_cast_reason(u, "lokimove", 0);
                         g.unit_cast(u, spell);
                     }
@@ -1711,7 +1711,7 @@ impl Cai {
                 let search_range = 8;
                 if is_city(g, g.unit_plot(u)) {
                     if let Some(spell) = spell_define(convert) {
-                        if g.unit_can_cast(u, spell, false) {
+                        if crate::ai_can_cast(g, u, spell, false) {
                             g.tel_cast_reason(u, "rantinemove", 0);
                             g.unit_cast(u, spell);
                         }
@@ -1801,7 +1801,7 @@ impl Cai {
                 value += info.ai_weight_city;
             }
             if value > 0 {
-                if g.unit_can_cast(u, spell, false) {
+                if crate::ai_can_cast(g, u, spell, false) {
                     if value > best_value {
                         best_value = value;
                         best_spell = Some(spell);
@@ -1833,7 +1833,7 @@ impl Cai {
     pub fn unit_ai_is_summoner(&self, g: &Game, u: UnitId) -> bool {
         for spell in g.d.spells.keys() {
             if g.d.spells[spell].create_unit_type.is_some() {
-                if g.unit_can_cast(u, spell, false) {
+                if crate::ai_can_cast(g, u, spell, false) {
                     return true;
                 }
             }
@@ -1856,7 +1856,7 @@ impl Cai {
             let mut value = 0;
             let info = &g.d.spells[spell];
             if let Some(create_unit) = info.create_unit_type {
-                if g.unit_can_cast(u, spell, false) {
+                if crate::ai_can_cast(g, u, spell, false) {
                     let move_range = g.d.units[create_unit].moves + g.unit_get_extra_spell_move(u);
                     let mut enemy = false;
                     'scan: for i in -move_range..=move_range {
@@ -1899,7 +1899,7 @@ impl Cai {
         }
         for spell in g.d.spells.keys() {
             if g.d.spells[spell].damage > 0 {
-                if g.unit_can_cast(u, spell, false) {
+                if crate::ai_can_cast(g, u, spell, false) {
                     return true;
                 }
             }
@@ -1926,7 +1926,7 @@ impl Cai {
             let range = info.range;
             let mut value = 0;
             if info.damage != 0 {
-                if g.unit_can_cast(u, spell, false) {
+                if crate::ai_can_cast(g, u, spell, false) {
                     let dmg = info.damage;
                     let dmg_limit = info.damage_limit;
                     for i in -range..=range {
@@ -1979,7 +1979,7 @@ impl Cai {
             return false;
         }
         match spell_define(haste) {
-            Some(spell) => g.unit_can_cast(u, spell, false),
+            Some(spell) => crate::ai_can_cast(g, u, spell, false),
             None => false,
         }
     }
@@ -1989,7 +1989,7 @@ impl Cai {
         let haste = g.d.defines.spell_haste;
         if haste != NO_SPELL {
             if let Some(spell) = spell_define(haste) {
-                if g.unit_can_cast(u, spell, false) {
+                if crate::ai_can_cast(g, u, spell, false) {
                     g.tel_cast_reason(u, "movement_cast", 0);
                     g.unit_cast(u, spell);
                 }
@@ -2002,7 +2002,7 @@ impl Cai {
         for spell in g.d.spells.keys() {
             if let Some(promotion) = g.d.spells[spell].add_promotion_type1 {
                 if g.d.promotions[promotion].ai_weight > 0 {
-                    if g.unit_can_cast(u, spell, false) {
+                    if crate::ai_can_cast(g, u, spell, false) {
                         return true;
                     }
                 }
@@ -2026,7 +2026,7 @@ impl Cai {
             let mut value = 0;
             let info = &g.d.spells[spell];
             if let Some(promotion1) = info.add_promotion_type1 {
-                if g.unit_can_cast(u, spell, false) {
+                if crate::ai_can_cast(g, u, spell, false) {
                     value += g.d.promotions[promotion1].ai_weight;
                     if let Some(promotion2) = info.add_promotion_type2 {
                         value += g.d.promotions[promotion2].ai_weight;
@@ -2550,7 +2550,7 @@ impl Cai {
             if g.unit_plot(u) != bp {
                 push_move_to(g, u, bp, 0, Some(MissionAIType::MISSIONAI_BUILD), Some(bp));
             } else {
-                if g.unit_can_cast(u, cove_spell, false) {
+                if crate::ai_can_cast(g, u, cove_spell, false) {
                     g.tel_cast_reason(u, "build_pirate_cove", 0);
                     g.unit_cast(u, cove_spell);
                 }

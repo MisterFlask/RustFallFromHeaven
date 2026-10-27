@@ -11,12 +11,13 @@
 //! change its entry. The switch `CODE_EFFECTS` (`FFH_AI_CODE_EFFECTS_OFF` / `_ONLY`, per
 //! civilization) leaves the table out but for the Warrens, which the Clan of Embers' module valued
 //! before the table took them. Not covered:
-//! the Asylum (10% Crazed and Enraged, a mixed blessing), the Mercurian Gate (its `iAIWeight` of
-//! 300 stands for its code), buildings that only open a spell (Arena, Demon's Altar sacrifice,
-//! Drown), the Dwarven Vaults (set by the rules, never built), the barbarians' Dragon's Horde and
-//! the Grand Menagerie (a human trophy).
+//! the Asylum (10% Crazed: an Enraged unit, +20% attack and -20% defense, fights on its own; a
+//! wash), buildings that only open a spell (Arena, Demon's Altar sacrifice, Drown: the spell's
+//! logic decides when they are worth it), the Dwarven Vaults (set by the rules, never built: the
+//! Khazad's finance keeps the gold for them), the barbarians' Dragon's Horde and the Grand
+//! Menagerie (a human trophy).
 
-use ffh_core::ffh::events::PLANAR_GATE_SUMMONS;
+use ffh_core::ffh::events::{MERCURIAN_GATE_UNITS, PLANAR_GATE_SUMMONS};
 use ffh_core::game::Game;
 use ffh_core::ids::*;
 use ffh_data::*;
@@ -55,7 +56,9 @@ enum Effect {
     PlanarGate,
     /// Works on the enemies next to the city (fire on the strongest stack, a copy of an attacker,
     /// our fallen back as demons, production from the dead): worth this much while the city is
-    /// threatened, a quarter at war, a tenth at peace.
+    /// threatened; in a city near a rival civilization, half at war and a quarter at peace (an
+    /// expert builds it on the border before the war comes); elsewhere a quarter at war, a tenth
+    /// at peace.
     Siege(i32),
     /// With open borders to three players, every tech three of them know (`ev_eyes_and_ears_network`).
     OpenBordersTechs,
@@ -66,6 +69,8 @@ enum Effect {
     StrongFor(&'static str),
     /// When built, a free unit of one of these types (the rules pick one).
     FreeUnit(&'static [&'static str]),
+    /// When built, all these units, for a new civilization on our team (the Mercurians).
+    FreeUnits(&'static [&'static str]),
     /// When built, a chance in percent of this unit appearing near the city for the barbarians.
     HostileSpawn(&'static str, i32),
 }
@@ -73,7 +78,7 @@ enum Effect {
 const ELEMENTALS: [&str; 4] = ["UNIT_AIR_ELEMENTAL", "UNIT_EARTH_ELEMENTAL", "UNIT_FIRE_ELEMENTAL", "UNIT_WATER_ELEMENTAL"];
 
 /// Each building's effects in the rules' code (`ffh_core::ffh::events`).
-const TABLE: [(&str, &[Effect]); 18] = [
+const TABLE: [(&str, &[Effect]); 19] = [
     // ev_unit_built
     ("BUILDING_WARRENS", &[Effect::Copy]),
     ("BUILDING_CAVE_OF_ANCESTORS", &[Effect::Experience(Units::Combat("UNITCOMBAT_ADEPT"), Xp::PerMana, 200)]),
@@ -88,6 +93,9 @@ const TABLE: [(&str, &[Effect]); 18] = [
     ("BUILDING_CITADEL_OF_LIGHT", &[Effect::Siege(600)]),
     ("BUILDING_HALL_OF_MIRRORS", &[Effect::Siege(450)]),
     ("BUILDING_EYES_AND_EARS_NETWORK", &[Effect::OpenBordersTechs]),
+    // ev_building_built: the Mercurians join our team with these units (its `iAIWeight` of 300
+    // was FfH's stand-in for them)
+    ("BUILDING_MERCURIAN_GATE", &[Effect::FreeUnits(&MERCURIAN_GATE_UNITS)]),
     // ev_unit_killed
     ("BUILDING_SOUL_FORGE", &[Effect::Siege(300)]),
     ("BUILDING_MOKKAS_CAULDRON", &[Effect::Siege(200)]),
@@ -172,9 +180,12 @@ fn effect_value(g: &Game, c: CityId, b: BuildingType, e: Effect, threat: i32) ->
         Effect::Promotion(units, chance) => prod * HAMMER / 2 * share(g, c, units) / 100 * PROMOTION_WORTH / 100 * chance / 100,
         Effect::PlanarGate => summons_value(g, c, None),
         Effect::Siege(value) => {
+            let war = civ_war(g, p);
             if threat > 0 {
                 value
-            } else if civ_war(g, p) {
+            } else if frontier(g, c) {
+                if war { value / 2 } else { value / 4 }
+            } else if war {
                 value / 4
             } else {
                 value / 10
@@ -201,6 +212,7 @@ fn effect_value(g: &Game, c: CityId, b: BuildingType, e: Effect, threat: i32) ->
             }
             costs.iter().sum::<i32>() / costs.len() as i32 * HAMMER / UNIT_LIFE
         }
+        Effect::FreeUnits(units) => units.iter().filter_map(|&n| d.ty::<UnitType>(n)).map(|u| unit_hammers(d, &d.units[u]) * HAMMER / UNIT_LIFE).sum(),
         // A barbarian of that strength near our city costs more than its hammers: twice them.
         Effect::HostileSpawn(unit, chance) => d.ty::<UnitType>(unit).map_or(0, |u| -2 * unit_hammers(d, &d.units[u]) * HAMMER / UNIT_LIFE * chance / 100),
     }
@@ -320,6 +332,24 @@ fn summons_value(g: &Game, c: CityId, extra: Option<BuildingType>) -> i32 {
     v
 }
 
+/// The distance within which a rival civilization's city makes ours a frontier city.
+const FRONTIER: i32 = 8;
+
+/// Is city `c` near a city of a civilization we have met (not ours, not the barbarians)?
+fn frontier(g: &Game, c: CityId) -> bool {
+    let p = g.cities[c].owner;
+    let team = g.players[p].team;
+    let (x, y) = (g.cities[c].x, g.cities[c].y);
+    g.player_ids().any(|o| {
+        let ot = g.players[o].team;
+        ot != team
+            && g.players[o].alive
+            && !g.player_is_barbarian(o)
+            && g.teams[team].has_met[ot]
+            && g.players[o].cities.iter().any(|&oc| g.plot_distance(x, y, g.cities[oc].x, g.cities[oc].y) <= FRONTIER)
+    })
+}
+
 /// At war with a civilization (not the barbarians).
 fn civ_war(g: &Game, p: PlayerId) -> bool {
     let team = g.players[p].team;
@@ -424,7 +454,7 @@ mod tests {
                     },
                     Effect::Terrain(t, _) => assert!(d.ty::<TerrainType>(t).is_some(), "{t}"),
                     Effect::StrongFor(n) => assert!(d.ty::<PromotionType>(n).is_some(), "{n}"),
-                    Effect::FreeUnit(us) => us.iter().for_each(|n| assert!(d.ty::<UnitType>(n).is_some(), "{n}")),
+                    Effect::FreeUnit(us) | Effect::FreeUnits(us) => us.iter().for_each(|n| assert!(d.ty::<UnitType>(n).is_some(), "{n}")),
                     Effect::HostileSpawn(n, _) => assert!(d.ty::<UnitType>(n).is_some(), "{n}"),
                     Effect::Copy | Effect::PlanarGate | Effect::Siege(_) | Effect::OpenBordersTechs => {}
                 }

@@ -26,6 +26,8 @@ fn hurry(g: &mut Game, p: PlayerId) {
         return;
     }
     let reserve = 30 + 5 * g.players[p].cities.len() as i32;
+    // Gold a civilization keeps (the Khazad's vault level) is not spent.
+    let reserve = reserve + crate::civs::gold_floor(g, p);
     for c in g.players[p].cities.clone() {
         let urgent = match g.city_production_unit(c) {
             Some(u) => {
@@ -127,7 +129,9 @@ fn disband(g: &mut Game, p: PlayerId) {
         }
         crate::trace!(g, p, "bankrupt: disbanding {} in {}", g.d.units[g.units[u].unit_type].base.type_, g.cities[c].name);
         g.tel_decision(p, "disband", &g.d.units[g.units[u].unit_type].base.type_, "bankrupt", 0, String::new);
-        g.unit_scrap(u);
+        if !crate::unflagged::sacrifice(g, u) {
+            g.unit_scrap(u);
+        }
         done += 1;
     }
     disband_field_units(g, p, 2 - done);
@@ -175,7 +179,9 @@ fn disband_field_units(g: &mut Game, p: PlayerId, max: i32) {
         }
         crate::trace!(g, p, "cannot pay: disbanding field unit {}", info.base.type_);
         g.tel_decision(p, "disband", &info.base.type_, "cannot_pay", 0, String::new);
-        g.unit_scrap(u);
+        if !crate::unflagged::sacrifice(g, u) {
+            g.unit_scrap(u);
+        }
         done += 1;
     }
 }
@@ -337,7 +343,12 @@ fn sliders(g: &mut Game, p: PlayerId) {
         return;
     }
     let gold = g.players[p].gold;
-    let reserve = 20 + 5 * g.players[p].cities.len() as i32;
+    // Gold a civilization keeps (the Khazad's vault level) does not pay a deficit either.
+    let reserve = 20 + 5 * g.players[p].cities.len() as i32 + crate::civs::gold_floor(g, p);
+    // A civilization that saves (the Khazad's vaults) keeps a gold rate that reaches its target
+    // in about 20 turns, but never below 30% research for it.
+    let target = crate::civs::gold_target(g, p);
+    let saving = if target > gold { (target - gold + 19) / 20 } else { 0 };
     let mut culture = crate::victory::culture_slider(g, p); // victory-pursuit
     loop {
         if g.players[p].commerce_percent[CommerceType::COMMERCE_CULTURE.idx()] != culture {
@@ -350,7 +361,7 @@ fn sliders(g: &mut Game, p: PlayerId) {
                 g.player_set_commerce_percent(p, CommerceType::COMMERCE_RESEARCH, pct);
             }
             let rate = g.player_calculate_gold_rate(p);
-            if rate >= 0 || gold + rate * 10 > reserve {
+            if (rate >= 0 || gold + rate * 10 > reserve) && (rate >= saving || pct <= 30) {
                 paid = true;
                 break;
             }

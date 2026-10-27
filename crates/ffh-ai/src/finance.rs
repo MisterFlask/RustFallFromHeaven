@@ -396,7 +396,9 @@ pub fn disband(g: &mut Game, p: PlayerId) -> bool {
         }
         crate::trace!(g, p, "finance: support {}% of commerce, disbanding {} ({}% of our best)", f.unit_share(), d.units[g.units[u].unit_type].base.type_, key);
         g.tel_decision(p, "disband", &d.units[g.units[u].unit_type].base.type_, "support", key, String::new);
-        g.unit_scrap(u);
+        if !crate::unflagged::sacrifice(g, u) {
+            g.unit_scrap(u);
+        }
         done += 1;
     }
     done > 0
@@ -441,7 +443,9 @@ pub fn disband_workers(g: &mut Game, p: PlayerId) {
         }
         crate::trace!(g, p, "finance: support {}% of commerce, disbanding {}", f.unit_share(), g.d.units[g.units[u].unit_type].base.type_);
         g.tel_decision(p, "disband", &g.d.units[g.units[u].unit_type].base.type_, "idle_worker", 0, String::new);
-        g.unit_scrap(u);
+        if !crate::unflagged::sacrifice(g, u) {
+            g.unit_scrap(u);
+        }
     }
 }
 
@@ -473,7 +477,11 @@ pub fn disband_military(g: &mut Game, p: PlayerId) {
         g.tel_decision(p, "disband", &g.d.units[g.units[u].unit_type].base.type_, "funded", funded_percent(g, p) as i64, String::new);
         // C++ `kill(false)`: gone at once, so the next pass sees the lower cost (a scrap dies
         // with delay and would still be paid for).
-        g.unit_kill(u, false, None);
+        if crate::unflagged::sacrifice(g, u) {
+            g.unit_do_delayed_death(u);
+        } else {
+            g.unit_kill(u, false, None);
+        }
         if g.units.contains(u) {
             break;
         }

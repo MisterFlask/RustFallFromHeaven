@@ -45,6 +45,7 @@ pub mod sites;
 pub mod switches;
 pub mod tech_plan;
 pub mod trade;
+pub mod unflagged;
 pub mod units;
 pub mod values;
 pub mod vassals;

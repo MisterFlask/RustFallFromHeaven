@@ -1855,8 +1855,20 @@ pub(crate) mod tests {
     /// One block of grassland (x 2..=17, y 3..=8) in an ocean, revealed to both players: a fresh
     /// two-player AI game whose starting units are gone (as `tests/magic.rs`).
     pub(crate) fn one_landmass_game(seed: u32) -> Game {
+        one_landmass_game_with(seed, &[])
+    }
+
+    /// [`one_landmass_game`] with the first players' civilizations given (each with its first
+    /// leader).
+    pub(crate) fn one_landmass_game_with(seed: u32, civs: &[&str]) -> Game {
         let d = ffh_data::global();
-        let mut g = Game::new(d, GameSetup::standard(d, 2, "WORLDSIZE_DUEL", seed));
+        let mut setup = GameSetup::standard(d, 2, "WORLDSIZE_DUEL", seed);
+        for (slot, name) in civs.iter().enumerate() {
+            let civ = d.t::<CivilizationType>(name);
+            setup.players[slot].civ = Some(civ);
+            setup.players[slot].leader = d.leader_heads.keys().find(|&l| d.civilizations[civ].leaders[l]);
+        }
+        let mut g = Game::new(d, setup);
         g.setup.options[GameOptionType::GAMEOPTION_NO_BARBARIANS] = true;
         g.map_script = Arc::new(FractalMapScript::default());
         let ai = crate::ai_controller();

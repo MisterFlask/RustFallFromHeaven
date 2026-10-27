@@ -187,6 +187,12 @@ impl Cai {
     }
 }
 
+/// C++ `CvUnit::canCast`'s `bAllowAI` refusal for AI players, which the port's rules no longer
+/// apply (AI policy: docs/PORTING.md, "Changes from FFH2"); the C++ AI keeps it.
+pub(crate) fn ai_can_cast(g: &Game, u: UnitId, spell: SpellType, test_visible: bool) -> bool {
+    g.d.spells[spell].allow_ai && g.unit_can_cast(u, spell, test_visible)
+}
+
 impl Controller for Cai {
     fn name(&self) -> &str {
         "cppai"

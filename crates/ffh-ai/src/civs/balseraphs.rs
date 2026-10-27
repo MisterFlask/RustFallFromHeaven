@@ -8,6 +8,12 @@
 //!   average, so a city producing culture never falls), and Disrupt is cast there. Otherwise he
 //!   moves as a caster (`units::role_of`: he defends only): as an army unit he walked alone, and
 //!   30 of 42 Lokis were killed.
+//! - **Arena Battle** (the Arena, their Training Yard; FfH kept it from its AI, `bAllowAI` 0,
+//!   `unflagged.rs`): a melee or recon unit or a slave in the city fights in the arena -- the city
+//!   gets 3 turns of +1 happiness (`TEMP_HAPPY`); half the time the unit dies, else it gains 1-6
+//!   experience (a slave becomes a Warrior). [`arena`] stages one in a city with an unhappy
+//!   citizen and no games running, with a slave if one is there, else the cheapest melee or recon
+//!   unit the garrison can spare (tier 1: arena fodder an expert would gamble).
 
 use ffh_core::game::Game;
 use ffh_core::ids::*;
@@ -21,6 +27,10 @@ use crate::Ai;
 pub struct Balseraphs;
 
 impl CivPlay for Balseraphs {
+    fn turn(&self, _ai: &Ai, g: &mut Game, v: &mut View) {
+        arena(g, v);
+    }
+
     fn unit(&self, _ai: &Ai, g: &mut Game, v: &mut View, grp: GroupId, head: UnitId) -> bool {
         if g.d.units[g.units[head].unit_type].base.type_ != "UNIT_LOKI" {
             return false;
@@ -75,4 +85,67 @@ fn loki(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
         hold(g, grp);
     }
     true
+}
+
+/// Arena Battle in each Arena city with an unhappy citizen and no games running (see the module
+/// doc): a slave first, else a tier-1 melee or recon unit the garrison can spare.
+fn arena(g: &mut Game, v: &View) {
+    let d = g.d;
+    let p = v.p;
+    let (Some(spell), Some(arena)) = (d.ty::<SpellType>("SPELL_ARENA_BATTLE"), d.ty::<BuildingType>("BUILDING_ARENA")) else { return };
+    let slave = d.ty::<UnitClassType>("UNITCLASS_SLAVE");
+    for c in g.players[p].cities.clone() {
+        if !g.cities.contains(c) || g.city_num_building(c, arena) == 0 || g.cities[c].happiness_timer > 0 {
+            continue;
+        }
+        if g.city_happy_level(c) - g.city_unhappy_level(c, 0) >= 0 {
+            continue;
+        }
+        let plot = g.city_plot(c);
+        let ours: Vec<UnitId> = g.map.plots[plot].units.iter().copied().filter(|&u| g.units[u].owner == p && !g.units[u].has_casted).collect();
+        let defenders = ours.iter().filter(|&&u| g.unit_can_defend(u, Some(plot))).count() as i32;
+        let spare = defenders > crate::units::garrison_quota(g, v, c);
+        let pick = ours
+            .iter()
+            .copied()
+            .filter(|&u| g.unit_can_cast(u, spell, false))
+            .filter(|&u| {
+                let info = &d.units[g.units[u].unit_type];
+                info.unit_class_type == slave || (info.tier <= 1 && (spare || !g.unit_can_defend(u, Some(plot))))
+            })
+            .min_by_key(|&u| (d.units[g.units[u].unit_type].unit_class_type != slave, d.units[g.units[u].unit_type].production_cost, u));
+        let Some(u) = pick else { continue };
+        crate::trace!(g, p, "{}: arena battle with {} (unhappy city)", g.cities[c].name, d.units[g.units[u].unit_type].base.type_);
+        g.unit_cast(u, spell);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::campaign::tests::one_landmass_game_with;
+
+    /// An Arena city with an unhappy citizen sends its spare Warrior into the arena (the city
+    /// gets its games: the happiness timer); a content city does not.
+    #[test]
+    fn an_unhappy_arena_city_holds_games() {
+        let d = ffh_data::global();
+        let mut g = one_landmass_game_with(9, &["CIVILIZATION_BALSERAPHS", "CIVILIZATION_MALAKIM"]);
+        let us = PlayerId(0);
+        g.player_found(us, 4, 5);
+        let c = g.players[us].cities[0];
+        g.city_set_num_real_building(c, d.t::<BuildingType>("BUILDING_ARENA"), 1);
+        let warrior = d.t::<UnitType>("UNIT_WARRIOR");
+        for _ in 0..4 {
+            g.player_init_unit(us, warrior, 4, 5, Some(UnitAIType::UNITAI_CITY_DEFENSE), None);
+        }
+        let v = View::new(&g, us);
+        arena(&mut g, &v);
+        assert_eq!(g.cities[c].happiness_timer, 0, "a content city holds no games");
+        g.city_set_population(c, 14);
+        assert!(g.city_happy_level(c) < g.city_unhappy_level(c, 0), "the city is unhappy");
+        let v = View::new(&g, us);
+        arena(&mut g, &v);
+        assert!(g.cities[c].happiness_timer > 0, "the arena's games");
+    }
 }

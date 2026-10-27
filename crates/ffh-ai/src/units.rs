@@ -273,7 +273,7 @@ fn upkeep(g: &mut Game, u: UnitId) {
     }
     if let Some((target, _)) = best {
         // Keep a reserve for a few turns of deficit; defenders first.
-        let reserve = 20 + 3 * g.players[p].cities.len() as i32;
+        let reserve = 20 + 3 * g.players[p].cities.len() as i32 + crate::civs::gold_floor(g, p);
         let defender = matches!(g.units[u].ai_type, Some(UnitAIType::UNITAI_CITY_DEFENSE) | Some(UnitAIType::UNITAI_CITY_COUNTER));
         let price = g.unit_upgrade_price(u, target);
         if g.players[p].gold - price >= if defender { reserve } else { reserve * 2 } {

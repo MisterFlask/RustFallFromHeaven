@@ -2706,12 +2706,13 @@ mod tests {
         assert!(!g.city_can_construct(city, lyre, false, false, false));
         assert!(!g.city_can_construct(other_city, lyre, false, false, false));
 
-        // The take spell has no bAllowAI: an AI player cannot cast it.
+        // The take spell has no bAllowAI. C++ refuses it to an AI player; here that is the AIs'
+        // policy, not a rule (docs/PORTING.md, "Changes from FFH2"): the rules let it cast.
         g.units[caster].has_casted = false;
         g.setup.players[0].slot_status = crate::setup::SlotStatus::Computer;
         g.setup.players[0].human = false;
         g.player_update_human(p);
-        assert!(!g.unit_can_cast(caster, take, false));
+        assert!(g.unit_can_cast(caster, take, false));
     }
 
     #[test]

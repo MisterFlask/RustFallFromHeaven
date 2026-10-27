@@ -81,6 +81,20 @@ pub const PLANAR_GATE_SUMMONS: [(&str, &str, &str); 7] = [
     ("BUILDING_TEMPLE_OF_THE_VEIL", "UNITCLASS_TAR_DEMON", "UNIT_TAR_DEMON"),
 ];
 
+/// onBuildingBuilt, Mercurian Gate: the units the Mercurians start with.
+pub const MERCURIAN_GATE_UNITS: [&str; 10] = [
+    "UNIT_BASIUM",
+    "UNIT_SETTLER",
+    "UNIT_ANGEL",
+    "UNIT_ANGEL",
+    "UNIT_ANGEL",
+    "UNIT_ANGEL",
+    "UNIT_ANGEL",
+    "UNIT_ANGEL",
+    "UNIT_WORKER",
+    "UNIT_WORKER",
+];
+
 /// onCityBuilt / onCityAcquired: the buildings every Infernal city gets.
 const INFERNAL_CITY_BUILDINGS: [&str; 6] = [
     "BUILDING_ELDER_COUNCIL",
@@ -1571,19 +1585,8 @@ impl Game {
         // The new civilization is played by its creator's controller (one AI per side in head-to-head games; the same controller otherwise).
         self.controllers[mercurian_player] = self.controllers[player].clone();
         let (x, y) = self.map.xy(plot);
-        const UNITS: [&str; 10] = [
-            "UNIT_BASIUM",
-            "UNIT_SETTLER",
-            "UNIT_ANGEL",
-            "UNIT_ANGEL",
-            "UNIT_ANGEL",
-            "UNIT_ANGEL",
-            "UNIT_ANGEL",
-            "UNIT_ANGEL",
-            "UNIT_WORKER",
-            "UNIT_WORKER",
-        ];
-        for unit in UNITS {
+
+        for unit in MERCURIAN_GATE_UNITS {
             self.player_init_unit(mercurian_player, d.t::<UnitType>(unit), x, y, None, Some(DirectionType::DIRECTION_NORTH));
         }
         // `if pPlayer.isHuman()`: the TXT_KEY_POPUP_CONTROL_MERCURIANS popup.

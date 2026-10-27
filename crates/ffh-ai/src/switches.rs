@@ -130,6 +130,10 @@ pub static TROUBLE_REBUILD: Switch = Switch::new("TROUBLE_REBUILD");
 /// Building effects the rules implement in code valued by `code_effects` (the Planar Gate's
 /// creatures, the Cave of Ancestors' experience...); the Warrens, valued before, stay on.
 pub static CODE_EFFECTS: Switch = Switch::new("CODE_EFFECTS");
+/// A mana node type is also worth the buildings that need the mana (`mana::node_value`).
+pub static MANA_BUILDINGS: Switch = Switch::new("MANA_BUILDINGS");
+/// A unit we disband in a Demon's Altar city is sacrificed for research first (`unflagged.rs`).
+pub static SACRIFICE: Switch = Switch::new("SACRIFICE");
 
 fn civ_list(var: &str) -> Option<Vec<String>> {
     let v = std::env::var(var).ok()?;

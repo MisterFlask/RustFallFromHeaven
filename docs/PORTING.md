@@ -163,6 +163,14 @@ the differences; it does not ask for them to be undone.
   its once-a-game spell, not rules: the port drops them from the rules, and ffh-ai applies the
   same conditions as its default timing (`world_spells::ready`), so the move alone changes no AI
   game. Hyborem's Whisper had none.
+- **A spell's `bAllowAI` is the AIs' to apply** (user decision, 2026-10-27). C++ `CvUnit::canCast`
+  refuses a spell without `bAllowAI` (57 of the 267) to every AI player. That is the old AI's
+  policy -- spells it could not value -- not a rule, so `unit_can_cast` no longer checks it: the
+  rule is the same for every player. Each AI applies it: ffh-ai's generic casting keeps such
+  spells out (`casting::castable_spells`) and casts only those it has logic for (Arena Battle,
+  Sacrifice Altar, Wane, Kidnap: `ffh-ai/src/unflagged.rs`); the C++ AI port keeps C++'s check
+  (`ffh-cppai`, `ai_can_cast`). With the other 53 kept out, no AI game changes until a spell's
+  logic is added.
 - **AI-only branches in the other spells' requirements are kept** (for now). Unlike CvGameUtils,
   the `isHuman() == False` checks in the other CvSpellInterface `req*` functions are ported as
   written: they decide whether a spell is castable at all for AI players. They are AI policy like

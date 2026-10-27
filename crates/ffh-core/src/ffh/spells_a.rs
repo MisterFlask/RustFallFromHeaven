@@ -2300,7 +2300,7 @@ fn spell_ira_unleashed(g: &mut Game, caster: UnitId, _call: &PyCall) {
 
 /// The great-person specialists `reqKidnap` / `spellKidnap` look at, in Python order, with the
 /// unit `spellKidnap` creates for each.
-const KIDNAP_TARGETS: [(&str, &str); 5] = [
+pub const KIDNAP_TARGETS: [(&str, &str); 5] = [
     ("SPECIALIST_GREAT_PRIEST", "UNIT_PROPHET"),
     ("SPECIALIST_GREAT_ARTIST", "UNIT_ARTIST"),
     ("SPECIALIST_GREAT_MERCHANT", "UNIT_MERCHANT"),

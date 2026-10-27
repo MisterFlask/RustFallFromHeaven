@@ -186,11 +186,9 @@ impl Game {
         if self.unit_get_immobile_timer(u) > 0 {
             return false;
         }
-        if !self.unit_is_human(u) {
-            if !info.allow_ai {
-                return false;
-            }
-        }
+        // Change from FFH2: C++ refuses a spell without `bAllowAI` to every AI player. That is AI
+        // policy, applied by the AIs themselves (ffh-ai casts such a spell only where it has logic
+        // for it; docs/PORTING.md, "Changes from FFH2"), so the rule is the same for every player.
         if let Some(promotion) = info.promotion_prereq1 {
             if !unit.has_promotion[promotion] {
                 return false;
