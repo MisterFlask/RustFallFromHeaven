@@ -11,8 +11,8 @@
 //!   every 10 at 100, and a change of state religion carries no anarchy weight ([`civic_cadence`],
 //!   [`religion_stickiness`]).
 //! - **Arcane** (adepts gain experience 20% faster) and **Summoner** (summons last a turn longer
-//!   and fight with Combat I): a corps of casters, (cities + 2) / 3, from the most productive safe
-//!   city, its Mage Guild first ([`production`]); a Summoner's casters favour the spheres that
+//!   and fight with Combat I): a corps of casters, (cities + 2) / 3 (a Summoner's (cities + 2) / 2),
+//!   from the most productive safe city, its Mage Guild first ([`production`]); a Summoner's casters favour the spheres that
 //!   summon ([`promotion_value`]). A Summoner researches toward its Adepts (Knowledge of the
 //!   Ether, [`tech_value`]), values a temporary summon for the extra turn it lasts
 //!   ([`summon_turns`]) and raises lasting summons (Raise Skeleton) at peace too, as army units
@@ -293,15 +293,20 @@ pub fn religion_stickiness(g: &Game, p: PlayerId) -> i32 {
 // Arcane and Summoner: casters
 // ----------------------------------------------------------------------------
 
-/// A production choice for city `c` (after the civilization's own): an Arcane or Summoner
-/// leader keeps (cities + 2) / 3 casters, trained in its most productive safe city.
+/// A production choice for city `c` (after the civilization's own): an Arcane leader keeps
+/// (cities + 2) / 3 casters, a Summoner (cities + 2) / 2 (its summons need casters, and they die
+/// in the fights where they summon), trained in its most productive safe city.
 pub fn production(g: &Game, c: CityId, threat: i32) -> Option<Choice> {
     let p = g.cities[c].owner;
-    if !has(g, p, Trait::Arcane) && !has(g, p, Trait::Summoner) {
-        return None;
-    }
     let n = g.players[p].cities.len() as i32;
-    crate::civs::casters_up_to(g, c, threat, ((n + 2) / 3).max(1))
+    let target = if has(g, p, Trait::Summoner) {
+        (n + 2) / 2
+    } else if has(g, p, Trait::Arcane) {
+        (n + 2) / 3
+    } else {
+        return None;
+    };
+    crate::civs::casters_up_to(g, c, threat, target.max(1))
 }
 
 /// What promotion `promo` is worth to unit `u` (`value`: the generic estimate and the
