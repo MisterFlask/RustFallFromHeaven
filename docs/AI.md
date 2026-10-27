@@ -296,6 +296,20 @@ refused them to every AI player: the old AI could not value them. The rules no l
   people rarely (they discover techs), so it fires against humans more than against AIs; a test
   covers it (`a_shadow_kidnaps_as_the_war_opens`).
 
+Measured (2026-10-27, with the Khazad's vault policy, "Civilization-specific"; full games, fresh
+seeds). The four civilizations' own logic (Khazad vaults, Balseraphs' Arena, Sidar's Wane,
+Svartalfar's Kidnap) against the same binary with it off (`civ_ab.py --off-base`, seeds
+43001-43048, 192 pairs): win 14.1% -> 20.3% (23 / 11, p 0.058), share@end +183 (t 2.01); Khazad
++244 (t 1.19), Balseraphs +172, Sidar +222 (t 1.51), Svartalfar +93. The whole batch against master,
+nine civilizations forced (seeds 43101-43148, 432 pairs): win 14.8% -> 13.0% (25 / 33), share@end
+-78 (t -1.41) -- the stronger Khazad: in the 179 games of the other eight with a Khazad opponent
+they won 33 -> 20, in the 205 without one 22 -> 23 (share@end -43, t -1.07). The generic parts
+(frontier defense, the Mercurian Gate, mana buildings, sacrifices) are neutral there: the
+Mercurians join slot 0's team in 37 -> 34 games, Malakim Citadels 1 -> 16 (dev), Luchuirp
+workshops 1 -> 8 (dev). A first fresh run (seeds 42001-42148) had a bug in the slider's saving
+clause (every civilization refused small deficits; found from the first turn its games left
+master's) and is not counted.
+
 Measured as one civilization's edge (`civ_ab.py --base-env FFH_AI_CODE_EFFECTS_OFF=ALL --new-env
 FFH_AI_CODE_EFFECTS_ONLY={civ}`, full games): the buildings now come -- Planar Gates 0 -> 2.6 a
 Sheaim game (dev) and 3.8 (fresh), with Mage Guilds 2.2 -> 4.2, Public Baths and Gambling Houses
@@ -1591,6 +1605,18 @@ buildings among them whose effects are in the rules' code are valued (`code_effe
   take higher, so the garrison warriors took nearly every hammer (seeds 1-16: 59 takes, 13
   gives); units in our own cities now leave it, and the hammer gives itself (round 4, the 47 games
   where Luchuirp cast Gifts: production +11.8% at turn 300, t 2.5, great people +47%).
+- **Khazad** (2026-10-27): the Dwarven Vaults. The rules set every Khazad city's vault by the
+  treasury's gold per city: -2 happiness under 50, -1 under 100, +1 from 150, +2 and +10%
+  production from 200, +2 and +25% from 300, +3 and +40% from 500. The generic AI spent its
+  treasury down, so the cities sat in the Empty vault (8.3 a game). Now the treasury saves toward
+  the highest level whose happiness (where cities are near their cap) and production repay the
+  missing gold within 30 turns (15 at war), the slider keeping a gold rate that reaches it in about
+  20 turns (never below 30% research for it); the current level is a floor that hurrying,
+  upgrades, gold in deals, council costs and deficits leave (`civs/khazad.rs`, `civs::gold_target`
+  / `gold_floor`). Vaults at the end: Empty 8.3 -> 0, Full 4.2, Overflowing 2.0 a game. Forks from
+  turn 80: power at turn 229 +11-24%, research equal or better after an early dip. Fresh seeds
+  43001-43048 against its logic off: win 27.1% -> 31.2% (7 / 5), share@end +244 (t 1.19),
+  legacy@end +418 (t 1.75); its neighbours pay for it (see "Spells FfH kept from its AI").
 - **Sidar**: Into the Mist (every unit gets `PROMOTION_HIDDEN`: invisible to other teams outside
   our cities and +1 first strike, until it fights or casts; units trained later do not get it)
   was cast the first turn the default timing (40 units) allowed, usually at peace, and the army
@@ -1730,7 +1756,8 @@ Night lost already in development; the Khazad's, Luchuirp's and Lanun's `PrereqB
 Grigori Medics, Elohim's Sanctuary hold, more Ljosalfar workers and the Kuriotates variants (no
 settlements, extra defenders) were flat or worse. Older civilization notes kept for the record: the
 Khazad's Dwarven Vault target (round 3: saving gold for the vault level cost more research than the
-happiness repaid, score -5 +- 37 over 40 games) and the elves' forests (`MaintainFeatures` keeps the
+happiness repaid, score -5 +- 37 over 40 games; back since 2026-10-27 counting the vaults'
+production, "Kept") and the elves' forests (`MaintainFeatures` keeps the
 forest under every improvement they build on their own plots; `FFH_LOG` shows no forest cleared by
 them).
 
