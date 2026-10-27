@@ -1412,7 +1412,8 @@ player won with the play and not without / without and not with):
 | Tolerant | 40 | 10.0% -> 12.5% | 3 / 2 | -96 (t -1.24) | -236 (t -1.16) |
 | Expansive | 78 | 28.2% -> 23.1% | 5 / 9 | -12 (t -0.15) | -146 (t -1.06) |
 
-No trait's difference is significant (sign tests p >= 0.22). The two lower win rates were played
+No trait's difference is significant (sign tests p >= 0.22). (The Summoner row is the first
+version, before the bigger corps and the summoning changes; the kept one is measured below.) The two lower win rates were played
 alone on the same seeds: Aggressive (the kept version) 21.2% -> 23.5% (5 / 3), share@end +30,
 cities taken +0.8 (t 1.7); Spiritual 28.6% -> 30.2% (5 / 4), share@end -141 (t -0.95) -- their
 leaders lose in the pooled games to what their neighbours' traits do, not to their own play.
