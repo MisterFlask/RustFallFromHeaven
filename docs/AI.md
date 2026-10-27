@@ -1682,6 +1682,26 @@ Each of these gained on seeds 1-96 and was re-measured on reserved seeds (801-94
   turn on average (four games in parallel on four cores), two thirds of it inside the
   controller (including the moves it orders).
 
+**The caster school (2026-10-27).** Measured for what the casters do, not for wins (the owner's
+question: are the mages used better?), with `caster_ab.py --common` (each seed's two games up to
+the last checkpoint both reached), the same binary with `FFH_AI_CASTER_SCHOOL_OFF=all` on the base
+side, every civilization's arcane casters. Fresh seeds 7901-7940 (17950 game turns a side, 35 of 40
+games changed): casters lost per 1000 caster-turns 4.6 -> 1.8 (lost alone 3.1 -> 0.5; in all 231
+-> 96, the levels they took with them 972 -> 500), upgrades 177 -> 237, caster-turns +10%
+(fewer trained, 485 -> 414: fewer die to be replaced), Mage-turns +29% (Archmage-turns even),
+Adepts at a Mage's level waiting for the upgrade -14%, casts +15%, Channeling II and III summons
+and damage per 1000 caster-turns 30.5 -> 35.5. Casts before strikes did not follow: 300 -> 277,
+0.80 -> 0.66 per city the casters' civilizations took (375 -> 421); they come from a few war
+games (two games that conquered less on the new side, 65 -> 35 and 88 -> 31; three others 0-7 ->
+22-27), and a stack that marches on leaves the caster at the last sheltered plot behind it (seed
+7930: the Amurite Wizards stood 5 or more plots from their strike target on 111 of 403 turns).
+Development seeds 7501-7520 (two fixes found there: Adepts at level 4 without Sorcery went to the
+front as Mages, and apprentices shuttled between cities): lost per 1000 caster-turns 7.8 -> 1.6,
+Mage-turns +79%, Channeling II+ summons and damage 25.4 -> 62.5 per 1000 caster-turns, casts
+before strikes 90 -> 195 (0.57 -> 1.01 per city taken). For context only: players with arcane
+casters won 21.8% -> 21.8% (8 / 8 seeds won by one side only), share@end +130 (t 1.14), on the
+fresh seeds; 12.5% -> 18.8% (4 / 1), share@end +269 (t 1.90) on the development seeds.
+
 ## Tools
 
 For A/B tests compare `legacy_score`, techs, cities, research and the like, not `score`: the
@@ -1955,6 +1975,10 @@ share score (docs/SCORE.md) averages 10000/N whatever the AI does.
   it, and Knowledge of the Ether comes around turn 230). Nothing goes after the mana a sphere needs
   (no trade for mana, mana nodes only for the Tower of Mastery). Summons attack only next to the
   caster; a lasting summon is an army unit with no plan of its own; world spells keep their own
-  timing (`world_spells.rs`). Civilization mechanics handled and tried: "Civilization-specific"
+  timing (`world_spells.rs`). Casters march to the front on their own, from one sheltered plot to
+  the next (the caster school): a stack that moves faster or crosses open ground leaves them
+  behind, and casts before strikes did not rise with the Mages the school keeps alive; casters
+  that joined the strike stack's group would move with it (not tried: a group's attacks could then
+  pick a caster). Civilization mechanics handled and tried: "Civilization-specific"
   and docs/AI_LOG.md (Sheaim planar gates, Infernal and Mercurian projects, Khazad vaults and
   Armageddon rituals have no logic).
