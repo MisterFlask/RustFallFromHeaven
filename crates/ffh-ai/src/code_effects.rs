@@ -107,17 +107,24 @@ const UNIT_LIFE: i32 = 50;
 /// experience: Combat I is +10% strength, Defensive or Fire II more for the unit it suits).
 const PROMOTION_WORTH: i32 = 15;
 
-/// Per building type: its effects, or none (most). Built once from the game data.
-fn effects(d: &GameData) -> &'static IdxVec<BuildingType, Vec<Effect>> {
-    static TABLE_BY_TYPE: std::sync::OnceLock<IdxVec<BuildingType, Vec<Effect>>> = std::sync::OnceLock::new();
-    TABLE_BY_TYPE.get_or_init(|| {
-        let mut by_type = IdxVec::from_elem(Vec::new(), d.buildings.len());
+/// The table by building type (most have no effects), and the two buildings named in the hot
+/// path. Built once from the game data.
+struct ByType {
+    effects: IdxVec<BuildingType, Vec<Effect>>,
+    gate: Option<BuildingType>,
+    warrens: Option<BuildingType>,
+}
+
+fn by_type(d: &GameData) -> &'static ByType {
+    static BY_TYPE: std::sync::OnceLock<ByType> = std::sync::OnceLock::new();
+    BY_TYPE.get_or_init(|| {
+        let mut effects = IdxVec::from_elem(Vec::new(), d.buildings.len());
         for &(name, list) in &TABLE {
             if let Some(b) = d.ty::<BuildingType>(name) {
-                by_type[b] = list.to_vec();
+                effects[b] = list.to_vec();
             }
         }
-        by_type
+        ByType { effects, gate: d.ty::<BuildingType>("BUILDING_PLANAR_GATE"), warrens: d.ty::<BuildingType>("BUILDING_WARRENS") }
     })
 }
 
@@ -125,20 +132,19 @@ fn effects(d: &GameData) -> &'static IdxVec<BuildingType, Vec<Effect>> {
 /// `production::building_value`'s scale; 0 for a building without any. Also the creature a
 /// Planar Gate already in the city would summon for `b`.
 pub fn building_value(g: &Game, c: CityId, b: BuildingType, threat: i32) -> i32 {
-    let d = g.d;
-    let table = &effects(d)[b];
-    if !crate::switches::CODE_EFFECTS.on(g, g.cities[c].owner) {
-        // The Warrens were valued before the table (the Clan of Embers' module), so the switch
-        // leaves them as they were.
-        if d.buildings[b].base.type_ != "BUILDING_WARRENS" {
-            return 0;
-        }
+    let t = by_type(g.d);
+    let gate_here = t.gate.filter(|&gate| gate != b && g.cities[c].num_real_building[gate] > 0);
+    if t.effects[b].is_empty() && gate_here.is_none() {
+        return 0;
     }
-    let mut v: i32 = table.iter().map(|&e| effect_value(g, c, b, e, threat)).sum();
-    if let Some(gate) = d.ty::<BuildingType>("BUILDING_PLANAR_GATE") {
-        if g.cities[c].num_real_building[gate] > 0 && b != gate {
-            v += summons_value(g, c, Some(b));
-        }
+    // The Warrens were valued before the table (the Clan of Embers' module), so the switch leaves
+    // them as they were.
+    if Some(b) != t.warrens && !crate::switches::CODE_EFFECTS.on(g, g.cities[c].owner) {
+        return 0;
+    }
+    let mut v: i32 = t.effects[b].iter().map(|&e| effect_value(g, c, b, e, threat)).sum();
+    if gate_here.is_some() {
+        v += summons_value(g, c, Some(b));
     }
     v
 }
