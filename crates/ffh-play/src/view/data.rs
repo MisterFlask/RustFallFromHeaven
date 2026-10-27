@@ -2,7 +2,9 @@
 //! GlobalTypes list and hard-coded C++ enum of [`crate::names::KINDS`]), indexed like the
 //! protocol's type indices. Each entry is `{type, name}`; info-table entries add the help,
 //! strategy and pedia texts (Civ4 markup kept, `null` when the text is missing) and the
-//! gameplay fields the renderer and the screens need for the main tables. Built once.
+//! gameplay fields the renderer and the screens need for the main tables, and `effects`: what an
+//! entry does, as Civ4 markup ([`crate::view::help::effects_of`]; unique improvements:
+//! [`crate::view::improvement_help`]). Built once.
 
 use std::sync::OnceLock;
 
@@ -11,7 +13,8 @@ use ffh_data::*;
 use crate::json::Json;
 use crate::names::{self, KINDS};
 
-/// Text of a key, or `null` when the key is empty or has no text.
+/// Text of a key as `gDLL->getText(key)` gives it (`%%` is a percent sign: "a 5% defensive
+/// bonus"), or `null` when the key is empty or has no text.
 fn text(d: &GameData, key: &str) -> Json {
     if key.is_empty() {
         return Json::Null;
@@ -20,8 +23,29 @@ fn text(d: &GameData, key: &str) -> Json {
     if t == key {
         Json::Null
     } else {
-        Json::from(t)
+        Json::from(crate::view::help::fill(t, &[]))
     }
+}
+
+/// A name without its hyperlinks: the builds' texts link their improvement ("Build a
+/// [LINK=IMPROVEMENT_FARM]Farm[\LINK]"), which reads as "Build a Farm" where names are plain text.
+fn unlinked(name: &str) -> String {
+    let mut out = String::with_capacity(name.len());
+    let mut rest = name;
+    while let Some(i) = rest.find('[') {
+        out.push_str(&rest[..i]);
+        let tag = &rest[i..];
+        let end = tag.find(']').map(|j| j + 1);
+        match end {
+            Some(j) if tag.starts_with("[LINK=") || tag.starts_with("[\\LINK]") => rest = &tag[j..],
+            _ => {
+                out.push('[');
+                rest = &tag[1..];
+            }
+        }
+    }
+    out.push_str(rest);
+    out
 }
 
 fn yields(y: &[i32; YieldType::NUM]) -> Json {
@@ -62,6 +86,9 @@ fn fields(d: &GameData, kind: &str, i: usize, j: &mut Json) {
             j.set("upgrade_time", m.upgrade_time);
             j.set("permanent", m.permanent);
             j.set("unique", m.unique);
+            if m.unique {
+                j.set("effects", crate::view::improvement_help::effects(d, ImprovementType::from_usize(i)));
+            }
         }
         "RouteType" => {
             let r = &d.routes[RouteType::from_usize(i)];
@@ -101,6 +128,20 @@ fn fields(d: &GameData, kind: &str, i: usize, j: &mut Json) {
             j.set("option", Json::opt_idx(c.civic_option_type));
             j.set("upkeep", Json::opt_idx(c.upkeep));
             j.set("anarchy", c.anarchy_length);
+            j.set("tech", Json::opt_idx(c.tech_prereq));
+        }
+        "ReligionType" => {
+            let r = &d.religions[ReligionType::from_usize(i)];
+            // The first to discover it founds the religion.
+            j.set("tech", Json::opt_idx(r.tech_prereq));
+            j.set("alignment", Json::opt_idx(r.alignment));
+        }
+        "SpecialistType" => {
+            let s = &d.specialists[SpecialistType::from_usize(i)];
+            j.set("yields", yields(&s.yield_change));
+            j.set("commerces", Json::from(s.commerce_change.to_vec()));
+            j.set("great_people", s.great_people_rate_change);
+            j.set("experience", s.experience);
         }
         "SpellType" => {
             let s = &d.spells[SpellType::from_usize(i)];
@@ -133,13 +174,17 @@ fn build(d: &GameData) -> Json {
         let mut list = Vec::with_capacity((k.count)(d));
         for i in 0..(k.count)(d) {
             let name = (k.name)(d, i);
-            let mut j = crate::jobj! { "type" => name, "name" => k.display(d, i).into_owned() };
+            let mut j = crate::jobj! { "type" => name, "name" => unlinked(&k.display(d, i)) };
             if let Some(base) = (k.base)(d, i) {
                 j.set("help", text(d, &base.help));
                 j.set("strategy", text(d, &base.strategy));
                 j.set("pedia", text(d, &base.civilopedia));
             }
             fields(d, k.kind, i, &mut j);
+            // What it does (the help texts, `view::help`); the unique improvements set theirs above.
+            if let Some(e) = crate::view::help::effects_of(d, k.kind, i) {
+                j.set("effects", e);
+            }
             if let Some((_, a)) = keys.iter().find(|(t, _)| t == name) {
                 j.set("keys", Json::Arr(a.bindings.iter().map(crate::view::hotkeys::Binding::to_json).collect()));
                 j.set("order", a.order);
@@ -161,4 +206,17 @@ fn build(d: &GameData) -> Json {
 pub fn data(d: &'static GameData) -> &'static Json {
     static DATA: OnceLock<Json> = OnceLock::new();
     DATA.get_or_init(|| build(d))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::unlinked;
+
+    #[test]
+    fn names_lose_their_links() {
+        assert_eq!(unlinked("Build a [LINK=IMPROVEMENT_FARM]Farm[\\LINK]"), "Build a Farm");
+        assert_eq!(unlinked("+1 Trade Route ([ICON_TRADE])"), "+1 Trade Route ([ICON_TRADE])");
+        assert_eq!(unlinked("Warrior"), "Warrior");
+        assert_eq!(unlinked("a [b"), "a [b");
+    }
 }

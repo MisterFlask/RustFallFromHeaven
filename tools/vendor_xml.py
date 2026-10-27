@@ -39,7 +39,8 @@ FFH_FILES = [
     "Events/CIV4EventInfos.xml", "Events/CIV4EventTriggerInfos.xml",
     "Gameinfo/CIV4CivicInfos.xml", "Gameinfo/CIV4CivicOptionInfos.xml",
     "Gameinfo/CIV4CommerceInfo.xml", "Gameinfo/CIV4CorporationInfo.xml",
-    "Gameinfo/CIV4CultureLevelInfo.xml", "Gameinfo/CIV4EmphasizeInfo.xml",
+    "Gameinfo/CIV4CultureLevelInfo.xml", "Gameinfo/CIV4DiplomacyInfos.xml",
+    "Gameinfo/CIV4EmphasizeInfo.xml",
     "Gameinfo/CIV4EraInfos.xml", "Gameinfo/CIV4EspionageMissionInfo.xml",
     "Gameinfo/CIV4GameOptionInfos.xml", "Gameinfo/CIV4GameSpeedInfo.xml",
     "Gameinfo/CIV4GoodyInfo.xml", "Gameinfo/CIV4HandicapInfo.xml",
@@ -101,7 +102,9 @@ def reconstruct_global_defines(dst):
     return changed
 
 
-_TEXT_RE = re.compile(r"<TEXT>\s*<Tag>([^<]+)</Tag>\s*<English>(.*?)</English>", re.S)
+# XML comments may stand between the elements (`<Tag>..</Tag> <!-- %s1_Text = ... --> <English>`,
+# 65 entries in BtS's CIV4GameTextInfos.xml alone).
+_TEXT_RE = re.compile(r"<TEXT>\s*(?:<!--.*?-->\s*)*<Tag>([^<]+)</Tag>\s*(?:<!--.*?-->\s*)*<English>(.*?)</English>", re.S)
 
 
 def read_english(src, into):
@@ -115,11 +118,13 @@ def read_english(src, into):
 
 
 def text_files(text_dir):
-    """The gameplay CIV4GameText files of a Text dir, sorted; the civilopedia files are left out
-    (the client has no civilopedia screen, and they are ~0.5 MB of unused prose)."""
+    """The gameplay CIV4GameText files of a Text dir, sorted, after its CIV4DiplomacyText files (the
+    leaders' lines CIV4DiplomacyInfos.xml names); the civilopedia files are left out (the client has
+    no civilopedia screen, and they are ~0.5 MB of unused prose)."""
     import glob
-    return [f for f in sorted(glob.glob(os.path.join(text_dir, "CIV4GameText*.xml")))
-            if "Civilopedia" not in os.path.basename(f)]
+    diplo = sorted(glob.glob(os.path.join(text_dir, "CIV4DiplomacyText*.xml")))
+    return diplo + [f for f in sorted(glob.glob(os.path.join(text_dir, "CIV4GameText*.xml")))
+                    if "Civilopedia" not in os.path.basename(f)]
 
 
 def extract_english(dst):

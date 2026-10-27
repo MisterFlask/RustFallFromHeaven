@@ -37,6 +37,7 @@
 #![allow(unused_variables)]
 
 use crate::ffh::game_utils::py_div;
+use crate::controller::AiHook;
 use crate::game::Game;
 use crate::ids::*;
 use crate::utils::{is_national_unit_class, is_national_wonder_class, is_world_unit_class};
@@ -66,6 +67,32 @@ const ADEPT_MANA_PROMOTIONS: [(&str, &str, &str, &str); 18] = [
     ("BONUS_MANA_SPIRIT", "PROMOTION_SPIRIT1", "PROMOTION_SPIRIT2", "PROMOTION_SPIRIT3"),
     ("BONUS_MANA_SUN", "PROMOTION_SUN1", "PROMOTION_SUN2", "PROMOTION_SUN3"),
     ("BONUS_MANA_WATER", "PROMOTION_WATER1", "PROMOTION_WATER2", "PROMOTION_WATER3"),
+];
+
+/// onCityDoTurn, Planar Gate: the creature a Planar Gate city can summon for each building it
+/// has (building, the creature's class, the creature).
+pub const PLANAR_GATE_SUMMONS: [(&str, &str, &str); 7] = [
+    ("BUILDING_GAMBLING_HOUSE", "UNITCLASS_REVELERS", "UNIT_REVELERS"),
+    ("BUILDING_MAGE_GUILD", "UNITCLASS_MOBIUS_WITCH", "UNIT_MOBIUS_WITCH"),
+    ("BUILDING_CARNIVAL", "UNITCLASS_CHAOS_MARAUDER", "UNIT_CHAOS_MARAUDER"),
+    ("BUILDING_GROVE", "UNITCLASS_MANTICORE", "UNIT_MANTICORE"),
+    ("BUILDING_PUBLIC_BATHS", "UNITCLASS_SUCCUBUS", "UNIT_SUCCUBUS"),
+    ("BUILDING_OBSIDIAN_GATE", "UNITCLASS_MINOTAUR", "UNIT_MINOTAUR"),
+    ("BUILDING_TEMPLE_OF_THE_VEIL", "UNITCLASS_TAR_DEMON", "UNIT_TAR_DEMON"),
+];
+
+/// onBuildingBuilt, Mercurian Gate: the units the Mercurians start with.
+pub const MERCURIAN_GATE_UNITS: [&str; 10] = [
+    "UNIT_BASIUM",
+    "UNIT_SETTLER",
+    "UNIT_ANGEL",
+    "UNIT_ANGEL",
+    "UNIT_ANGEL",
+    "UNIT_ANGEL",
+    "UNIT_ANGEL",
+    "UNIT_ANGEL",
+    "UNIT_WORKER",
+    "UNIT_WORKER",
 ];
 
 /// onCityBuilt / onCityAcquired: the buildings every Infernal city gets.
@@ -258,6 +285,9 @@ impl Game {
 
         // AI: `if not pPlayer.isHuman(): cf.warScript(iPlayer)` (not in scenarios) -- AI war
         // policy, replaced by the new AI (docs/PORTING.md).
+        if !self.players[p].human {
+            self.ai_hook(p, AiHook::WarScript(p));
+        }
 
         let cultural_values = d.t::<CivicOptionType>("CIVICOPTION_CULTURAL_VALUES");
         if self.players[p].civics[cultural_values] == Some(d.t::<CivicType>("CIVIC_CRUSADE")) {
@@ -658,6 +688,9 @@ impl Game {
     /// Warrens) and the advisor feats.
     pub fn ev_unit_built(&mut self, c: CityId, u: UnitId) {
         let d = self.d;
+        if self.telemetry.on() {
+            self.tel_built_unit(u);
+        }
         // `pPlayer` is the unit's owner.
         let p = self.units[u].owner;
         let free_promotion_pick = self.units[u].free_promotion_pick;
@@ -666,6 +699,9 @@ impl Game {
         // (UNITAI_TERRAFORMER up to a quota from the city count and Sorcery, else UNITAI_MAGE
         // or UNITAI_WARWIZARD by `AI_neededPermDefenseReserve`), Devouts and Priests of Leaves
         // (UNITAI_TERRAFORMER quotas): AI unit roles, left to the new AI (docs/PORTING.md).
+        if !self.players[p].human && !self.player_is_barbarian(p) {
+            self.ai_hook(p, AiHook::UnitBuilt(u));
+        }
 
         let (x, y) = (self.cities[c].x, self.cities[c].y);
 
@@ -907,6 +943,9 @@ impl Game {
     /// of the Hand, Grand Menagerie trophy) and the advisor feats.
     pub fn ev_building_built(&mut self, c: CityId, building: BuildingType) {
         let d = self.d;
+        if self.telemetry.on() {
+            self.tel_built_building(c, building);
+        }
         let player = self.cities[c].owner;
         let plot = self.city_plot(c);
         let is = |name: &str| building == d.t::<BuildingType>(name);
@@ -1032,6 +1071,9 @@ impl Game {
     /// Ascension, Pact of the Nilhorn).
     pub fn ev_project_built(&mut self, c: CityId, project: ProjectType) {
         let d = self.d;
+        if self.telemetry.on() {
+            self.tel_built_project(c, project);
+        }
         let p = self.cities[c].owner;
         let is = |name: &str| project == d.t::<ProjectType>(name);
         let (x, y) = (self.cities[c].x, self.cities[c].y);
@@ -1455,6 +1497,8 @@ impl Game {
         let hyborem = d.t::<LeaderHeadType>("LEADER_HYBOREM");
         let infernal = d.t::<CivilizationType>("CIVILIZATION_INFERNAL");
         self.add_player_advanced(infernal_player, None, hyborem, infernal);
+        // The new civilization is played by its creator's controller (one AI per side in head-to-head games; the same controller otherwise).
+        self.controllers[infernal_player] = self.controllers[p].clone();
         let founder_team = self.players[p].team;
         let infernal_team = self.players[infernal_player].team;
         for tech in d.techs.keys() {
@@ -1538,20 +1582,11 @@ impl Game {
         let basium = d.t::<LeaderHeadType>("LEADER_BASIUM");
         let mercurians = d.t::<CivilizationType>("CIVILIZATION_MERCURIANS");
         self.add_player_advanced(mercurian_player, Some(team), basium, mercurians);
+        // The new civilization is played by its creator's controller (one AI per side in head-to-head games; the same controller otherwise).
+        self.controllers[mercurian_player] = self.controllers[player].clone();
         let (x, y) = self.map.xy(plot);
-        const UNITS: [&str; 10] = [
-            "UNIT_BASIUM",
-            "UNIT_SETTLER",
-            "UNIT_ANGEL",
-            "UNIT_ANGEL",
-            "UNIT_ANGEL",
-            "UNIT_ANGEL",
-            "UNIT_ANGEL",
-            "UNIT_ANGEL",
-            "UNIT_WORKER",
-            "UNIT_WORKER",
-        ];
-        for unit in UNITS {
+
+        for unit in MERCURIAN_GATE_UNITS {
             self.player_init_unit(mercurian_player, d.t::<UnitType>(unit), x, y, None, Some(DirectionType::DIRECTION_NORTH));
         }
         // `if pPlayer.isHuman()`: the TXT_KEY_POPUP_CONTROL_MERCURIANS popup.
@@ -1909,10 +1944,9 @@ impl Game {
         }
     }
 
-    /// onCityDoTurn, Planar Gate: a chance (rising with the Armageddon counter) to summon a
-    /// creature matching one of the city's buildings, limited per Planar Gate.
-    fn ev_planar_gate(&mut self, c: CityId, p: PlayerId, plot: PlotIdx) {
-        let d = self.d;
+    /// Planar Gate: per creature class, how many a player may have per Planar Gate, and the
+    /// summon chance multiplier doubled; both rise with the Armageddon counter.
+    pub fn planar_gate_limits(&self) -> (i32, i32) {
         let mut max = 1;
         // Python `iMult` (1, 1.5, 2, 2.5) doubled, so the chance test stays exact in integers:
         // `rand <= PLANAR_GATE_CHANCE * iMult` (an int against a float) is
@@ -1930,19 +1964,18 @@ impl Game {
             max = 4;
             mult2 = 5;
         }
+        (max, mult2)
+    }
+
+    /// onCityDoTurn, Planar Gate: a chance (rising with the Armageddon counter) to summon a
+    /// creature matching one of the city's buildings, limited per Planar Gate.
+    fn ev_planar_gate(&mut self, c: CityId, p: PlayerId, plot: PlotIdx) {
+        let d = self.d;
+        let (max, mult2) = self.planar_gate_limits();
         if 2 * self.soren_rand_num(10000, "Planar Gate") <= d.defines.planar_gate_chance * mult2 {
-            const SUMMONS: [(&str, &str, &str); 7] = [
-                ("BUILDING_GAMBLING_HOUSE", "UNITCLASS_REVELERS", "UNIT_REVELERS"),
-                ("BUILDING_MAGE_GUILD", "UNITCLASS_MOBIUS_WITCH", "UNIT_MOBIUS_WITCH"),
-                ("BUILDING_CARNIVAL", "UNITCLASS_CHAOS_MARAUDER", "UNIT_CHAOS_MARAUDER"),
-                ("BUILDING_GROVE", "UNITCLASS_MANTICORE", "UNIT_MANTICORE"),
-                ("BUILDING_PUBLIC_BATHS", "UNITCLASS_SUCCUBUS", "UNIT_SUCCUBUS"),
-                ("BUILDING_OBSIDIAN_GATE", "UNITCLASS_MINOTAUR", "UNIT_MINOTAUR"),
-                ("BUILDING_TEMPLE_OF_THE_VEIL", "UNITCLASS_TAR_DEMON", "UNIT_TAR_DEMON"),
-            ];
             let mut list_units = Vec::new();
             let max = max * self.player_count_num_buildings(p, d.t::<BuildingType>("BUILDING_PLANAR_GATE"));
-            for (building, unit_class, unit) in SUMMONS {
+            for (building, unit_class, unit) in PLANAR_GATE_SUMMONS {
                 if self.city_num_building(c, d.t::<BuildingType>(building)) > 0
                     && self.players[p].unit_class_count[d.t::<UnitClassType>(unit_class)] < max
                 {

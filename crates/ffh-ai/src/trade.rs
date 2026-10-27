@@ -192,7 +192,8 @@ pub fn max_gold_trade(g: &Game, p: PlayerId, other: PlayerId) -> i32 {
     max -= g.players[p].ai_gold_traded_to[other];
     let mut buffer = -g.player_calculate_gold_rate(p) * 12;
     buffer = buffer * g.d.game_speeds[g.game_speed_type()].research_percent / 100;
-    let gold = g.players[p].gold;
+    // Gold a civilization keeps (the Khazad's vault level) is not traded.
+    let gold = g.players[p].gold - crate::civs::gold_floor(g, p);
     max = max.min(gold - buffer).min(gold);
     let remainder = g.d.defines.diplomacy_value_remainder.max(1);
     max -= max.rem_euclid(remainder);

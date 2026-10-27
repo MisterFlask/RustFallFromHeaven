@@ -1527,6 +1527,9 @@ impl Game {
         self.unit_finish_moves(u); // needs to be at bottom because movesLeft() can affect workRate()...
 
         if finished {
+            if self.telemetry.on() {
+                self.tel_improvement(u, build);
+            }
             if self.d.builds[build].kill {
                 self.unit_kill(u, true, None);
             }

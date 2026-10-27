@@ -4,6 +4,7 @@
 import { h, $ } from "./dom.js";
 import { render as markup } from "./markup.js";
 import { emit } from "./state.js";
+import { playerPortrait, PORTRAIT } from "./portraits.js";
 
 const stack = [];
 
@@ -36,7 +37,7 @@ export function openModal({ title, body = [], buttons = [], dismissible = true, 
   const bodyEl = h("div.modal-body");
   const btnRow = h("div.modal-buttons");
   const head = h("div.modal-head", h("h2", title ?? ""), dismissible ? h("button.close", { title: "Close (Esc)", "aria-label": "Close", onclick: () => m.close(null) }, "×") : null);
-  const box = h(`div.modal${wide ? ".wide" : ""}`, { role: "dialog", "aria-modal": "true", "aria-label": title ?? "", class: className }, head, bodyEl, btnRow);
+  const box = h(`div.modal${wide ? ".wide" : ""}`, { role: "dialog", "aria-modal": "true", "aria-label": title ?? "", class: className, "data-tag": tag }, head, bodyEl, btnRow);
   const backdrop = h("div.backdrop", box);
   const m = {
     el: box,
@@ -93,6 +94,7 @@ export function openModal({ title, body = [], buttons = [], dismissible = true, 
   stack.push(m);
   $("#modals").appendChild(backdrop);
   updateLayer();
+  emit("modal-opened", tag);
   const first = box.querySelector("button.primary:not([disabled])") ?? box.querySelector("input, select, button:not(.close)");
   first?.focus({ preventScroll: true });
   return m;
@@ -165,16 +167,21 @@ export function showDecision(d, answer) {
     d.options.map((o, i) =>
       h(
         "button.option",
-        { disabled: !o.enabled, title: o.help ?? "", "data-option": i, onclick: () => send(i) },
+        // A long help (a free tech's) shows its first line and the whole text as the tooltip.
+        { disabled: !o.enabled, tip: o.help?.includes("[NEWLINE]") ? [h("div.tip-title", o.label), h("div.tip-effects", markup(o.help))] : null, "data-option": i, onclick: () => send(i) },
         h("span", o.label),
         d.advisor === i ? h("span.badge", "advisor") : null,
-        o.help ? h("small", markup(o.help)) : null,
+        o.help ? h("small", markup(o.help.split("[NEWLINE]")[0])) : null,
       ),
     ),
   );
+  // A deal offered, a civilization to take over: that player's leader beside the text.
+  const other = d.context?.other_player;
+  const face = other !== null && other !== undefined ? playerPortrait(other, { size: PORTRAIT.medium }) : null;
+  const text = h("p.page-text", illuminate(markup(d.text)));
   m = openModal({
     title: d.title,
-    body: [h("p.page-text", illuminate(markup(d.text))), options, errorLine],
+    body: [face ? h("div.decision-head", face, text) : text, options, errorLine],
     buttons: [{ label: "AI default", title: "The advisor's pick", onClick: () => send(null) }],
     dismissible: false,
     tag: "decision",

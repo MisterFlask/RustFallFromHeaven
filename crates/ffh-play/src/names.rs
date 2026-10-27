@@ -305,6 +305,7 @@ kinds! {
         TraitType => traits,
         CivilizationType => civilizations,
         LeaderHeadType => leader_heads,
+        DiploCommentType => diplomacies,
         // ---- Units ----
         SpecialUnitType => special_units,
         UnitClassType => unit_classes,

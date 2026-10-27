@@ -104,6 +104,21 @@ pub struct RunConfig {
     pub force_civs: Vec<String>,
     /// `ffh stats`: also record per-player counts of unit, building and project types.
     pub detail: bool,
+    /// The other custom-game settings (type names; `None`: the standard game's), so that every
+    /// game `ffh-play` builds for an observer can be played here (a spectator's flag quotes the
+    /// command): game speed, the game handicap (the AIs' bonuses), era, climate, sea level.
+    pub speed: Option<String>,
+    pub handicap: Option<String>,
+    pub era: Option<String>,
+    pub climate: Option<String>,
+    pub sea_level: Option<String>,
+    /// `CvInitCore::m_iMaxTurns` (0 = from the game speed).
+    pub max_turns: i32,
+    /// Victory conditions (`VICTORY_*`) turned off.
+    pub disabled_victories: Vec<String>,
+    /// The leader of the first civ slot (`LEADER_*`): with a forced civilization, one of its
+    /// leaders; alone, it forces its civilization too (as `ffh-play`'s new game does).
+    pub leader: Option<String>,
 }
 
 impl Default for RunConfig {
@@ -119,6 +134,14 @@ impl Default for RunConfig {
             until_supremacy: false,
             force_civs: Vec::new(),
             detail: false,
+            speed: None,
+            handicap: None,
+            era: None,
+            climate: None,
+            sea_level: None,
+            max_turns: 0,
+            disabled_victories: Vec::new(),
+            leader: None,
         }
     }
 }
@@ -132,11 +155,77 @@ pub struct TurnStat {
     pub cities: usize,
 }
 
+/// ffh-ai with the citizen management of the C++ AI port (`FFH_CPPAI_CITIZENS=1`): every
+/// decision is ffh-ai's except `assign_working_plots`, which is `CvCityAI::AI_assignWorkingPlots`
+/// (ffh-cppai). An analysis switch (docs/CPPAI.md), not a game mode.
+struct CppCitizens {
+    inner: ControllerRef,
+    cai: ffh_cppai::Cai,
+}
+
+impl Controller for CppCitizens {
+    fn name(&self) -> &str {
+        self.inner.name()
+    }
+    fn play_turn(&self, g: &mut Game, p: PlayerId) {
+        self.inner.play_turn(g, p)
+    }
+    fn choose_production(&self, g: &mut Game, c: CityId) {
+        self.inner.choose_production(g, c)
+    }
+    fn choose_research(&self, g: &Game, p: PlayerId) -> Option<TechType> {
+        self.inner.choose_research(g, p)
+    }
+    fn raze_conquered_city(&self, g: &Game, p: PlayerId, c: CityId) -> bool {
+        self.inner.raze_conquered_city(g, p, c)
+    }
+    fn choose_event(&self, g: &Game, p: PlayerId, t: &EventTriggeredData, options: &[EventType]) -> Option<EventType> {
+        self.inner.choose_event(g, p, t, options)
+    }
+    fn consider_offer(&self, g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData], we_give: &[TradeData]) -> bool {
+        self.inner.consider_offer(g, p, from, they_give, we_give)
+    }
+    fn choose_religion(&self, g: &Game, p: PlayerId) -> Option<ReligionType> {
+        self.inner.choose_religion(g, p)
+    }
+    fn attitude(&self, g: &Game, p: PlayerId, towards: PlayerId) -> AttitudeType {
+        self.inner.attitude(g, p, towards)
+    }
+    fn update_automated_group(&self, g: &mut Game, grp: GroupId) -> bool {
+        self.inner.update_automated_group(g, grp)
+    }
+    fn assign_working_plots(&self, g: &mut Game, c: CityId) -> bool {
+        // Barbarian cities keep the rules' governor (the comparison is about the civs).
+        if g.player_is_barbarian(g.cities[c].owner) {
+            return false;
+        }
+        self.cai.city_ai_assign_working_plots(g, c);
+        true
+    }
+}
+
 /// A new game with the AI on every slot; the returned `Timed` measures AI time.
 pub fn new_game(cfg: &RunConfig) -> (Game, Arc<Timed>) {
     let d = ffh_data::global();
     let mut o = ffh_core::setup::SetupOptions::new(d, cfg.civs, &cfg.world, cfg.seed);
     o.options = cfg.options.iter().map(|name| d.t::<GameOptionType>(name)).collect();
+    if let Some(n) = &cfg.speed {
+        o.game_speed = d.t(n);
+    }
+    if let Some(n) = &cfg.handicap {
+        o.handicap = d.t(n);
+    }
+    if let Some(n) = &cfg.era {
+        o.era = d.t(n);
+    }
+    if let Some(n) = &cfg.climate {
+        o.climate = d.t(n);
+    }
+    if let Some(n) = &cfg.sea_level {
+        o.sea_level = d.t(n);
+    }
+    o.max_turns = cfg.max_turns;
+    o.disabled_victories = cfg.disabled_victories.iter().map(|name| d.t::<VictoryType>(name)).collect();
     let mut setup = ffh_core::setup::GameSetup::from_options(d, &o);
     assert!(cfg.force_civs.len() <= cfg.civs, "more forced civilizations than civ slots");
     for (slot, name) in cfg.force_civs.iter().enumerate() {
@@ -148,15 +237,67 @@ pub fn new_game(cfg: &RunConfig) -> (Game, Arc<Timed>) {
         setup.players[slot].civ = Some(civ);
         setup.players[slot].leader = Some(leaders[cfg.seed as usize % leaders.len()]);
     }
+    // FFH_PLAYER_HANDICAP=<slot>:HANDICAP_X,...: per-slot handicap (`CvInitCore::getHandicap`),
+    // for head-to-head runs that give one side an easier difficulty.
+    if let Ok(v) = std::env::var("FFH_PLAYER_HANDICAP") {
+        for item in v.split(',').filter(|s| !s.is_empty()) {
+            let (slot, name) = item.split_once(':').expect("FFH_PLAYER_HANDICAP: <slot>:HANDICAP_X,...");
+            let slot: usize = slot.trim().parse().expect("FFH_PLAYER_HANDICAP: slot number");
+            setup.players[slot].handicap = Some(d.t::<HandicapType>(name.trim()));
+        }
+    }
+    if let Some(name) = &cfg.leader {
+        let leader = d.t::<LeaderHeadType>(name);
+        let playable = |c: CivilizationType| d.civilizations[c].playable && !d.civilizations[c].base.graphical_only;
+        let civ = match cfg.force_civs.first() {
+            Some(c) => d.t::<CivilizationType>(c),
+            None => d.civilizations.keys().find(|&c| playable(c) && d.civilizations[c].leaders[leader]).unwrap_or_else(|| panic!("{name} leads no playable civilization")),
+        };
+        assert!(d.civilizations[civ].leaders[leader], "{name} does not lead {}", d.type_name(civ));
+        setup.players[0].civ = Some(civ);
+        setup.players[0].leader = Some(leader);
+    }
     let mut g = Game::new(d, setup);
     g.handicap = o.handicap;
     g.map_script = Arc::new(FractalMapScript::default());
     let timed = Arc::new(Timed::new(ffh_ai::ai_controller()));
-    let ai: ControllerRef = timed.clone();
+    let mut ai: ControllerRef = timed.clone();
+    if std::env::var_os("FFH_CPPAI_CITIZENS").is_some() {
+        ai = Arc::new(CppCitizens { inner: ai, cai: ffh_cppai::Cai::new(cfg.seed) });
+    }
     for p in g.player_ids() {
         g.controllers[p] = ai.clone();
     }
+    // FFH_CPPAI=<player>,<player>,... | all | even | odd (barbarians: `barb`): those players are
+    // played by the port of the FFH2 C++ AI (ffh-cppai) instead of ffh-ai.
+    if let Ok(v) = std::env::var("FFH_CPPAI") {
+        let cppai = ffh_cppai::cppai_controller(cfg.seed);
+        let barb = g.barbarian_player();
+        for p in g.player_ids() {
+            let on = v.split(',').any(|s| match s.trim() {
+                "all" => p != barb,
+                "even" => p != barb && p.0 % 2 == 0,
+                "odd" => p != barb && p.0 % 2 == 1,
+                "barb" => p == barb,
+                n => n.parse::<u8>().ok() == Some(p.0),
+            });
+            if on {
+                g.controllers[p] = cppai.clone();
+            }
+        }
+    }
     g.autorun = true;
+    // FFH_TELEMETRY=1: record what the players do and why (ffh_core::telemetry, docs/TELEMETRY.md;
+    // `ffh stats` adds the aggregates as "telemetry"). FFH_TELEMETRY_FILE=<path> also writes
+    // every event to that file, one JSON object per line.
+    let tel_file = std::env::var("FFH_TELEMETRY_FILE").ok();
+    if tel_file.is_some() || std::env::var_os("FFH_TELEMETRY").is_some() {
+        let events = tel_file.map(|f| {
+            let file = std::fs::File::create(&f).unwrap_or_else(|e| panic!("FFH_TELEMETRY_FILE {f}: {e}"));
+            Box::new(std::io::BufWriter::new(file)) as Box<dyn std::io::Write + Send>
+        });
+        g.telemetry = ffh_core::telemetry::Telemetry::new(events);
+    }
     // FFH_LOG=1 (all players) or FFH_LOG=<player id>: print the game log as it is written.
     if std::env::var("FFH_LOG").is_ok() {
         g.log.enabled = true;
@@ -549,6 +690,55 @@ mod tests {
         assert_eq!(sa.len(), sb.len());
         for (x, y) in sa.iter().zip(sb.iter()) {
             assert_eq!((x.turn, x.checksum), (y.turn, y.checksum), "games diverged at turn {}", x.turn);
+        }
+    }
+
+    /// The checksum at each turn boundary of game `g` until turn `turns` ends.
+    fn boundary_checksums(g: &mut Game, turns: i32) -> Vec<(i32, i32)> {
+        let mut out = Vec::new();
+        while g.game_state == GameStateType::GAMESTATE_ON && out.len() < turns as usize {
+            g.update();
+            if g.at_turn_boundary() {
+                out.push((g.game_turn(), g.calculate_sync_checksum()));
+            }
+        }
+        out
+    }
+
+    /// A game `ffh-play` builds for an observer (a spectator watching the AI) is the game `ffh
+    /// autoplay` plays with the arguments a spectator's flag quotes for it
+    /// (`ffh_play::flag::ffh_args`): the same checksum at every turn boundary, also with every
+    /// custom-game setting away from its default.
+    #[test]
+    fn observed_games_are_the_autoplay_games_flags_quote() {
+        let d = ffh_data::global();
+        let setups = [
+            r#"{"seed": 3, "opponents": 3, "world": "WORLDSIZE_TINY"}"#,
+            r#"{"seed": 5, "opponents": 2, "world": "WORLDSIZE_DUEL", "civ": "CIVILIZATION_SHEAIM", "speed": "GAMESPEED_QUICK",
+                "handicap": "HANDICAP_MONARCH", "climate": "CLIMATE_ARID", "sea_level": "SEALEVEL_HIGH",
+                "options": ["GAMEOPTION_RAGING_BARBARIANS"], "disabled_victories": ["VICTORY_CULTURAL"], "max_turns": 300}"#,
+            r#"{"seed": 7, "opponents": 2, "world": "WORLDSIZE_DUEL", "leader": "LEADER_SABATHIEL", "era": "ERA_CLASSICAL"}"#,
+        ];
+        for setup in setups {
+            let mut ng = ffh_play::NewGame::from_json(d, &ffh_play::Json::parse(setup).unwrap()).unwrap();
+            ng.observe = true;
+            let args: Vec<String> = ffh_play::flag::ffh_args(d, &ng).split_whitespace().map(String::from).collect();
+            let cfg = crate::parse_run_config(&args);
+            let (mut a, _) = new_game(&cfg);
+            let want = boundary_checksums(&mut a, 25);
+            assert_eq!(want.len(), 25, "{setup}: the game ended early");
+
+            let opts = ffh_play::SessionOptions { journal: false, ..ffh_play::SessionOptions::default() };
+            let mut s = ffh_play::Session::new_game(&ng, Arc::new(ffh_play::human::AdvisorAnswerer), opts).unwrap();
+            let mut got = Vec::new();
+            assert_eq!(s.advance(&mut |_| {}), ffh_play::Stop::Human, "{setup}: stops at the start");
+            while got.len() < want.len() {
+                s.execute(&ffh_play::Command::AutoPlay { turns: 1 }).unwrap();
+                assert_eq!(s.advance(&mut |_| {}), ffh_play::Stop::Human, "{setup}");
+                assert!(s.g.at_turn_boundary(), "{setup}: an observed game stops at turn boundaries");
+                got.push((s.g.game_turn(), s.g.calculate_sync_checksum()));
+            }
+            assert_eq!(got, want, "{setup}: `ffh {}`", args.join(" "));
         }
     }
 

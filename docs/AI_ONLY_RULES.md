@@ -111,7 +111,11 @@ Heroic Gesture 2, Great Mediator 2 (`ffh/random_events_b.rs:1136/1169`) and Wedd
   Consume Soul, Create Battering Ram, Enter Portal, Herald's Call, Hide, Impersonate Leader, Kidnap,
   Mask, Open Chest, Promote Settlement, Read the Grimoire, Reveal, Sacrifice Altar, Sacrifice Pyre,
   Sing, Slave Trade Buy, Slave Trade Sell, Sprint, Taunt, Tsunami, Wane. These are capabilities the
-  old AI could not value: opening one needs AI logic for it (the lairs go with A4).
+  old AI could not value: opening one needs AI logic for it (the lairs go with A4). **Moved** (2026-10-27): the
+  rules no longer check `bAllowAI` (docs/PORTING.md, "Changes from FFH2"); ffh-ai keeps the 57 out
+  of its generic casting and casts Arena Battle, Sacrifice Altar, Wane and Kidnap by logic of their
+  own (`unflagged.rs`); the C++ AI port keeps the check. Opening another one is now an ffh-ai
+  change alone.
 - Trigger `bOtherPlayerAI` (Saundra, Switch Civs never pick a human as the other player),
   civilization `bAIPlayable` (equal to `bPlayable` for every civilization), promotion `bAIControl`
   (Enraged: the unit acts on its own, for a human too): legitimate.

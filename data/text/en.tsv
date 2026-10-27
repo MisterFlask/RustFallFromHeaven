@@ -1,3 +1,38 @@
+AI_DIPLO_ACCEPT_1	Agreed.
+AI_DIPLO_ACCEPT_10	It is agreed.
+AI_DIPLO_ACCEPT_11	It's against my better judgment, but we'll take it. Done.
+AI_DIPLO_ACCEPT_12	Sounds fair to me. Done.
+AI_DIPLO_ACCEPT_13	That is acceptable to us. Done.
+AI_DIPLO_ACCEPT_14	I dislike haggling. Agreed.
+AI_DIPLO_ACCEPT_15	The offer is a bit light - but we'll agree to it.
+AI_DIPLO_ACCEPT_16	We accept your fair offer.
+AI_DIPLO_ACCEPT_17	We accept your gracious offer.
+AI_DIPLO_ACCEPT_18	We are agreed then.
+AI_DIPLO_ACCEPT_19	We can accept these terms. Done.
+AI_DIPLO_ACCEPT_2	All right then. Agreed.
+AI_DIPLO_ACCEPT_20	We can do business along these lines. Agreed.
+AI_DIPLO_ACCEPT_21	We'll take it.
+AI_DIPLO_ACCEPT_22	Very well, we'll take it.
+AI_DIPLO_ACCEPT_23	It's a good deal. Done.
+AI_DIPLO_ACCEPT_24	Your terms are acceptable.
+AI_DIPLO_ACCEPT_25	You are a hard bargainer, [CT_NAME]. Agreed.
+AI_DIPLO_ACCEPT_26	Excellent. It is done.
+AI_DIPLO_ACCEPT_27	[OUR_CIV_SHORT] thanks you. Done.
+AI_DIPLO_ACCEPT_3	Done.
+AI_DIPLO_ACCEPT_4	Excellent. We are agreed.
+AI_DIPLO_ACCEPT_5	Hrmph. This is highway robbery - but we'll take it.
+AI_DIPLO_ACCEPT_6	Well, if that's the best you can do, I guess we'll take it. Done.
+AI_DIPLO_ACCEPT_7	I agree to your terms.
+AI_DIPLO_ACCEPT_8	I believe we can accept that. Agreed.
+AI_DIPLO_ACCEPT_9	I think I can accept these terms. It is agreed.
+AI_DIPLO_ACCEPT_ASK_1	Always happy to help...
+AI_DIPLO_ACCEPT_DEMAND_1	We accede to your unreasonable demands.
+AI_DIPLO_ACCEPT_DEMAND_2	I accept your terms, for now. But you just wait until next time!
+AI_DIPLO_ACCEPT_DEMAND_3	It appears that I have no choice but to agree.
+AI_DIPLO_ACCEPT_DEMAND_4	All right, then. But just remember: what goes around comes around!
+AI_DIPLO_ACCEPT_DEMAND_5	Sure: kick a civilization when it's down. I accept your terms.
+AI_DIPLO_ACCEPT_DEMAND_6	I agree to your terms. For now.
+AI_DIPLO_ACCEPT_DEMAND_TEAM_1	Always happy to help!
 AI_DIPLO_ACCEPT_LEADER_BALSERAPHS	Thank you, I won't vote for you in the tribal council.
 AI_DIPLO_ACCEPT_LEADER_BANNOR	A just and equitable deal for us both, I think.
 AI_DIPLO_ACCEPT_LEADER_CALABIM	Very well.
@@ -22,10 +57,112 @@ AI_DIPLO_ACCEPT_LEADER_PERPENTACH	Such is life that leads a man to his desire.[N
 AI_DIPLO_ACCEPT_LEADER_SHEAIM	'Til the end of time...
 AI_DIPLO_ACCEPT_LEADER_SIDAR	This deal will do, for a time, though all things pass... except us, of course.
 AI_DIPLO_ACCEPT_LEADER_SVARTALFAR	Well, I suppose trade is quicker than theft, though I fear my reflexes dulling.
+AI_DIPLO_ATTITUDE_1	Yes?
+AI_DIPLO_ATTITUDE_PLAYER_ANNOYED_1	We're becoming increasingly frustrated with %s1's behavior! (Annoyed)
+AI_DIPLO_ATTITUDE_PLAYER_ANNOYED_10	%s1 is a pain in the butt. (Annoyed)
+AI_DIPLO_ATTITUDE_PLAYER_ANNOYED_11	%s1 is a useless waste of space, as far as I'm concerned. (Annoyed)
+AI_DIPLO_ATTITUDE_PLAYER_ANNOYED_12	I hardly trust %s1 at all. (Annoyed)
+AI_DIPLO_ATTITUDE_PLAYER_ANNOYED_13	%s1 is a petty criminal masquerading as a world leader. (Annoyed)
+AI_DIPLO_ATTITUDE_PLAYER_ANNOYED_14	A cheap, jumped-up little weasel. (Annoyed)
+AI_DIPLO_ATTITUDE_PLAYER_ANNOYED_15	%s1 is a pain in the neck, to be honest. (Annoyed)
+AI_DIPLO_ATTITUDE_PLAYER_ANNOYED_2	%s1 is an extremely annoying person. (Annoyed)
+AI_DIPLO_ATTITUDE_PLAYER_ANNOYED_3	%s1 tries my patience. (Annoyed)
+AI_DIPLO_ATTITUDE_PLAYER_ANNOYED_4	I don't like %s1 much, to be honest. (Annoyed)
+AI_DIPLO_ATTITUDE_PLAYER_ANNOYED_5	%s1 is more trouble than [NUM1:he:she:x:x] is worth. (Annoyed)
+AI_DIPLO_ATTITUDE_PLAYER_ANNOYED_6	I think that the world would be better off without %s1. (Annoyed)
+AI_DIPLO_ATTITUDE_PLAYER_ANNOYED_7	I don't think much of %s1 at all. (Annoyed)
+AI_DIPLO_ATTITUDE_PLAYER_ANNOYED_8	%s1 is no better than [NUM1:he:she:x:x] should be. (Annoyed)
+AI_DIPLO_ATTITUDE_PLAYER_ANNOYED_9	A worthless windbag, in my opinion. (Annoyed)
+AI_DIPLO_ATTITUDE_PLAYER_CAUTIOUS_1	We're not quite sure yet what to think of %s1. (Cautious)
+AI_DIPLO_ATTITUDE_PLAYER_CAUTIOUS_10	I'm adopting a "wait and see" attitude on %s1. (Cautious)
+AI_DIPLO_ATTITUDE_PLAYER_CAUTIOUS_11	I haven't made up my mind yet. (Cautious)
+AI_DIPLO_ATTITUDE_PLAYER_CAUTIOUS_12	I have the feeling that %s1 is up to something, but I can't prove it yet. (Cautious)
+AI_DIPLO_ATTITUDE_PLAYER_CAUTIOUS_13	%s1? Who knows? (Cautious)
+AI_DIPLO_ATTITUDE_PLAYER_CAUTIOUS_14	I don't know what to think of %s1, to be totally honest. (Cautious)
+AI_DIPLO_ATTITUDE_PLAYER_CAUTIOUS_15	Reply hazy. Ask again later. (Cautious)
+AI_DIPLO_ATTITUDE_PLAYER_CAUTIOUS_2	%s1 is all right, I suppose. (Cautious)
+AI_DIPLO_ATTITUDE_PLAYER_CAUTIOUS_3	%s1 has [NUM1:his:her:x:x] uses. (Cautious)
+AI_DIPLO_ATTITUDE_PLAYER_CAUTIOUS_4	I have no problems with %s1. (Cautious)
+AI_DIPLO_ATTITUDE_PLAYER_CAUTIOUS_5	%s1 is all right, I guess. (Cautious)
+AI_DIPLO_ATTITUDE_PLAYER_CAUTIOUS_6	I'm not too sure about %s1, to be honest. (Cautious)
+AI_DIPLO_ATTITUDE_PLAYER_CAUTIOUS_7	%s1 is all right as long as you keep an eye on [NUM1:him:her:x:x]. (Cautious)
+AI_DIPLO_ATTITUDE_PLAYER_CAUTIOUS_8	We trust %s1. Sometimes. (Cautious)
+AI_DIPLO_ATTITUDE_PLAYER_CAUTIOUS_9	I'm not sure what to think of %s1. (Cautious)
+AI_DIPLO_ATTITUDE_PLAYER_FRIENDLY_1	%s1 is a close, trusted friend. (Friendly)
+AI_DIPLO_ATTITUDE_PLAYER_FRIENDLY_10	A better friend would be hard to find. (Friendly)
+AI_DIPLO_ATTITUDE_PLAYER_FRIENDLY_11	%s1 has many admirable traits. (Friendly)
+AI_DIPLO_ATTITUDE_PLAYER_FRIENDLY_12	%s1 is a leader of quality. (Friendly)
+AI_DIPLO_ATTITUDE_PLAYER_FRIENDLY_13	We're old buddies, %s1 and I. (Friendly)
+AI_DIPLO_ATTITUDE_PLAYER_FRIENDLY_14	%s1 hasn't let us down yet! (Friendly)
+AI_DIPLO_ATTITUDE_PLAYER_FRIENDLY_15	They don't come any better than %s1! (Friendly)
+AI_DIPLO_ATTITUDE_PLAYER_FRIENDLY_2	I'd trust %s1 with my life! (Friendly)
+AI_DIPLO_ATTITUDE_PLAYER_FRIENDLY_3	A friend indeed. (Friendly)
+AI_DIPLO_ATTITUDE_PLAYER_FRIENDLY_4	%s1 is a true friend. (Friendly)
+AI_DIPLO_ATTITUDE_PLAYER_FRIENDLY_5	%s1 is da bomb! (Friendly)
+AI_DIPLO_ATTITUDE_PLAYER_FRIENDLY_6	%s1 has been a faithful friend to us. (Friendly)
+AI_DIPLO_ATTITUDE_PLAYER_FRIENDLY_7	%s1 is an old crony of ours. (Friendly)
+AI_DIPLO_ATTITUDE_PLAYER_FRIENDLY_8	%s1 is a faithful friend and boon companion. (Friendly)
+AI_DIPLO_ATTITUDE_PLAYER_FRIENDLY_9	I like and trust %s1 completely! (Friendly)
+AI_DIPLO_ATTITUDE_PLAYER_FURIOUS_1	%s1 is a scourge on our world! (Furious)
+AI_DIPLO_ATTITUDE_PLAYER_FURIOUS_10	%s1 is evil through and through! (Furious)
+AI_DIPLO_ATTITUDE_PLAYER_FURIOUS_11	%s1 is a dirty, rotten scoundrel! (Furious)
+AI_DIPLO_ATTITUDE_PLAYER_FURIOUS_12	%s1 is a nasty piece of work, if you want my opinion! (Furious)
+AI_DIPLO_ATTITUDE_PLAYER_FURIOUS_13	Not to be trusted at all. (Furious)
+AI_DIPLO_ATTITUDE_PLAYER_FURIOUS_14	Do not mention that creature's name in my presence! (Furious)
+AI_DIPLO_ATTITUDE_PLAYER_FURIOUS_15	%s1 is a rat fink. (Furious)
+AI_DIPLO_ATTITUDE_PLAYER_FURIOUS_2	%s1 is a snake in the grass! Do not trust [NUM1:him:her:x:x]! (Furious)
+AI_DIPLO_ATTITUDE_PLAYER_FURIOUS_3	I neither like nor trust %s1. (Furious)
+AI_DIPLO_ATTITUDE_PLAYER_FURIOUS_4	A despicable villain! (Furious)
+AI_DIPLO_ATTITUDE_PLAYER_FURIOUS_5	%s1 is a deceitful cretin! (Furious)
+AI_DIPLO_ATTITUDE_PLAYER_FURIOUS_6	%s1 is dead to me! (Furious)
+AI_DIPLO_ATTITUDE_PLAYER_FURIOUS_7	%s1 is a very bad person. (Furious)
+AI_DIPLO_ATTITUDE_PLAYER_FURIOUS_8	%s1? A treacherous cowardly baboon. (Furious)
+AI_DIPLO_ATTITUDE_PLAYER_FURIOUS_9	%s1 is not worth a bucket of owl spit. (Furious)
+AI_DIPLO_ATTITUDE_PLAYER_PLEASED_1	We get along with %s1 quite well. (Pleased)
+AI_DIPLO_ATTITUDE_PLAYER_PLEASED_10	We get along fine with %s1. (Pleased)
+AI_DIPLO_ATTITUDE_PLAYER_PLEASED_11	%s1 is all right. (Pleased)
+AI_DIPLO_ATTITUDE_PLAYER_PLEASED_12	I have no problems with %s1.(Pleased)
+AI_DIPLO_ATTITUDE_PLAYER_PLEASED_13	%s1 has treated us well. (Pleased)
+AI_DIPLO_ATTITUDE_PLAYER_PLEASED_14	I like %s1. (Pleased)
+AI_DIPLO_ATTITUDE_PLAYER_PLEASED_15	We get along just fine. (Pleased)
+AI_DIPLO_ATTITUDE_PLAYER_PLEASED_2	%s1 is a friend of ours. (Pleased)
+AI_DIPLO_ATTITUDE_PLAYER_PLEASED_3	No complaints here! (Pleased)
+AI_DIPLO_ATTITUDE_PLAYER_PLEASED_4	%s1? A good person to have at your back. (Pleased)
+AI_DIPLO_ATTITUDE_PLAYER_PLEASED_5	%s1 has done all right by us. (Pleased)
+AI_DIPLO_ATTITUDE_PLAYER_PLEASED_6	%s1? I like [NUM1:him:her:x:x]. (Pleased)
+AI_DIPLO_ATTITUDE_PLAYER_PLEASED_7	%s1 is better than most. (Pleased)
+AI_DIPLO_ATTITUDE_PLAYER_PLEASED_8	%s1 is all right in my book. (Pleased)
+AI_DIPLO_ATTITUDE_PLAYER_PLEASED_9	%s1 is a fine ruler and a credit to [NUM1:his:her:x:x] people! (Pleased)
 AI_DIPLO_CHANGED_DEMAND_TRIBUTE_POWER_EQUAL_MEHMED_1	We require mighty [CT_CIV_SHORT]'s assistance. I hope you won't disappoint us.
 AI_DIPLO_CHANGED_FIRST_CONTACT_LEADER_RAGNAR_LODBROK_1	Hail and well met, [CT_NAME]! I am [OUR_NAME], ruler of the glorious [OUR_CIV_SHORT].  So tell me: does [CT_CIV_SHORT] have a lot of rich and unprotected coastal cities, or what?
 AI_DIPLO_CHANGED_FIRST_CONTACT_LEADER_RAMESSES_II_1	Mighty [OUR_NAME], all-powerful god-king of [OUR_CIV_SHORT] welcomes you, [CT_NAME]! Feel free to grovel in terror and awe if the mood takes you.
 AI_DIPLO_CHANGED_GREETINGS_ATT_FUR_LEADER_SHAKA_1	So you have emerged from your fetid country and come to me, [CT_NAME]. To what do I owe this extremely dubious honor?
+AI_DIPLO_CIVIC_DENIED_1	As you will.
+AI_DIPLO_CIVIC_DENIED_2	I suppose you know best. 
+AI_DIPLO_CIVIC_DENIED_3	On your head be it.
+AI_DIPLO_CIVIC_DENIED_4	Really? How foolish.
+AI_DIPLO_CIVIC_DENIED_5	That's not very intelligent of you, [CT_NAME].
+AI_DIPLO_CIVIC_DENIED_6	Nobody ever listens to me.
+AI_DIPLO_CIVIC_PRESSURE_1	Please join us by adopting %s1.
+AI_DIPLO_CIVIC_PRESSURE_16	Adopt %s1 - before it's too late!
+AI_DIPLO_CIVIC_PRESSURE_2	All the cool civs are adopting %s1, [CT_NAME]. How about you?
+AI_DIPLO_CIVIC_PRESSURE_3	Have you considered adopting %s1? it will bring our two civilizations even closer together.
+AI_DIPLO_CIVIC_PRESSURE_4	I urge you to adopt %s1, [CT_NAME]. Your civilization will be the better for it.
+AI_DIPLO_CIVIC_PRESSURE_5	%s1 is extremely useful, [CT_NAME]. [CT_CIV_SHORT] would do well to adopt it.
+AI_DIPLO_CURRENT_DEALS_1	As I see it, these are our current deals.
+AI_DIPLO_CURRENT_DEALS_2	These are our active deals.
+AI_DIPLO_CURRENT_DEALS_3	[CT_NAME], these are the deals we have agreed upon.
+AI_DIPLO_CURRENT_DEALS_4	These are the deals we have with the [CT_EMPIRE].
+AI_DIPLO_DECLARE_WAR_1	This world isn't big enough for the two of us! ([OUR_NAME] declares war!)
+AI_DIPLO_DECLARE_WAR_10	Mighty [OUR_EMPIRE] has had enough of your treachery and deceit! Now you must pay! ([OUR_NAME] declares war!)
+AI_DIPLO_DECLARE_WAR_2	We have suffered your insolence for long enough! ([OUR_NAME] declares war!)
+AI_DIPLO_DECLARE_WAR_3	Prepare to meet your doom! ([OUR_NAME] declares war!)
+AI_DIPLO_DECLARE_WAR_4	Now you shall pay for your many insults to the [OUR_EMPIRE]! ([OUR_NAME] declares war!)
+AI_DIPLO_DECLARE_WAR_5	The time for talking is over, [CT_NAME]! We shall shall settle this on the field of battle! ([OUR_NAME] declares war!)
+AI_DIPLO_DECLARE_WAR_6	Soon my numberless minions shall destroy you all! ([OUR_NAME] declares war!)
+AI_DIPLO_DECLARE_WAR_7	Time to die, [CT_NAME]. ([OUR_NAME] declares war!)
+AI_DIPLO_DECLARE_WAR_8	Fool! Now we shall destroy you! ([OUR_NAME] declares war!)
+AI_DIPLO_DECLARE_WAR_9	I suppose you realize, this means war. ([OUR_NAME] declares war!)
 AI_DIPLO_DECLARE_WAR_LEADER_AMURITES	Prepare to be added to the long list of tribes who wouldn't leave us alone, and paid the price for it.
 AI_DIPLO_DECLARE_WAR_LEADER_ARENDEL	The shining legions of the Elven court have unsheathed their graceful blades. They march to purge the rot you have become.
 AI_DIPLO_DECLARE_WAR_LEADER_BALSERAPHS	Toy soldiers are no fun without battles to fight with them.
@@ -79,121 +216,235 @@ AI_DIPLO_DEMAND_REJECTED_LEADER_PERPENTACH	This was a gift I dearly needed,[NEWL
 AI_DIPLO_DEMAND_REJECTED_LEADER_SHEAIM	One more reason to cheer when the end takes you. 
 AI_DIPLO_DEMAND_REJECTED_LEADER_SIDAR	Do you think we are unable to fulfill the threat I implied? Sidar are all around us, even now. You see, but do not perceive.
 AI_DIPLO_DEMAND_REJECTED_LEADER_SVARTALFAR	You would presume to deny me? The Winter Queen? You are no longer amusing.
+AI_DIPLO_DEMAND_REJECTED_POWER_EQUAL_1	Foolish stubborness will lead to your destruction, [CT_NAME].
+AI_DIPLO_DEMAND_REJECTED_POWER_EQUAL_2	Very well. On your head be it.
+AI_DIPLO_DEMAND_REJECTED_POWER_EQUAL_3	I don't think you realize just who you're dealing with, [CT_NAME]. I suggest you reconsider, and quickly!
+AI_DIPLO_DEMAND_REJECTED_POWER_EQUAL_4	You gamble with the lives of your people, [CT_NAME]. Are you ready to pay the price if you lose?
+AI_DIPLO_DEMAND_REJECTED_POWER_EQUAL_5	Fine. Next time I won't ask so nicely!
+AI_DIPLO_DEMAND_REJECTED_POWER_EQUAL_6	You're playing with fire, [CT_NAME]. See that you don't get burned.
+AI_DIPLO_DEMAND_REJECTED_POWER_STRONGER_1	You'll regret this, you wretched creature!
+AI_DIPLO_DEMAND_REJECTED_POWER_STRONGER_2	You test my patience, [CT_NAME]!
+AI_DIPLO_DEMAND_REJECTED_POWER_STRONGER_3	Very well. I suggest that you start cranking out those soldiers, [CT_NAME]. You'll have need of them shortly.
+AI_DIPLO_DEMAND_REJECTED_POWER_STRONGER_4	You should think more carefully before you anger your betters, [CT_NAME], for it can lead to bitter consequences.
+AI_DIPLO_DEMAND_REJECTED_POWER_STRONGER_5	Fool! Don't you know that I could crush you like a grape?
+AI_DIPLO_DEMAND_REJECTED_POWER_STRONGER_6	How dare you deny my extremely reasonable request! You'll regret this, I promise!
+AI_DIPLO_DEMAND_REJECTED_POWER_WEAKER_1	Very well. I hope that you won't come to regret this decision, [CT_NAME].
+AI_DIPLO_DEMAND_REJECTED_POWER_WEAKER_2	In the future you'd best remember who your friends are, [CT_NAME].
+AI_DIPLO_DEMAND_REJECTED_POWER_WEAKER_3	Once again you disappoint me, [CT_NAME]. You'd be advised to see that it doesn't happen again.
+AI_DIPLO_DEMAND_REJECTED_POWER_WEAKER_4	Well that's not very nice, if you ask me.
+AI_DIPLO_DEMAND_REJECTED_POWER_WEAKER_5	Curses: foiled again!
+AI_DIPLO_DEMAND_REJECTED_POWER_WEAKER_6	You are arrogant, [CT_NAME]. Some day it will lead to your destruction. 
+AI_DIPLO_DEMAND_TRIBUTE_1	We demand the following in tribute!
+AI_DIPLO_DEMAND_TRIBUTE_2	[CT_NAME], meet our demands or suffer the consequences.
+AI_DIPLO_DEMAND_TRIBUTE_3	It would be wise for you to give us what we want.
+AI_DIPLO_DEMAND_TRIBUTE_4	Give us what we want or prepare to be destroyed.
+AI_DIPLO_DEMAND_TRIBUTE_5	Be wise [CT_NAME] and give in to our demands.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_ AUGUSTUS_CAESAR _1	Hand this over quickly, [CT_NAME], and nobody gets hurt.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_ BRENNUS _1	I recommend that you give us what we want, [CT_NAME].
+AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_1	The honor of [OUR_CIV_SHORT] requires that we ask you to give us a small donation.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_2	For the sake of friendship, you might want to consider giving us a small gift.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_3	Agree to our demands, [CT_NAME], or be prepared to fight!
+AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_4	Know that [OUR_CIV_SHORT] stands by [CT_CIV_SHORT]'s side as friend and equal Now - about our fee...
+AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_5	Peace with the [OUR_EMPIRE] comes with a price, [CT_NAME]. Will you pay?
+AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_6	[OUR_CIV_SHORT] demands that you give us the following tribute. Our [OUR_BEST_UNIT] await your response.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_7	[OUR_CIV_SHORT] needs this, [CT_NAME]. Will you give it to us, or must we fight for it?
+AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_ALEXANDER_1	Do you choose to cravenly lick our boots and give us what we want, or to stand and fight us in a heroic but doomed last stand?
+AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_ASOKA_1	A small donation would help insure continued frirendship between our two peoples, [CT_NAME]. 
+AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_AUGUSTUS_CAESAR_1	The [CT_EMPIRE] is strong, [CT_NAME]. But are you sure that it is as strong as Mighty [OUR_CIV_SHORT]? Deny us our tribute and you may have a chance to find out.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_BALSERAPHS	What better way to enjoy friends than to share our toys with them.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_BISMARCK_1	"Blackmail" is such an ugly word, [CT_NAME]. I prefer to call it, "extortion."
 AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_BOUDICA_1	Give us this, [CT_NAME]. Frankly you need all of the friends you can get.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_CALABIM	[CT_NAME], I have a proposal for you. Consider it carefully, until you reach the inevitable conclusion of accepting.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_CATHERINE_1	I do so hope that we can remain friends, [CT_NAME]. The world just wouldn't be as much fun with you not in it.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_CHARLEMAGNE_1	I believe that you'll find it in [CT_CIV_SHORT]'s best interest to supply us with the following.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_CHINESE_LEADER_1	Would you care to take part in our share-the-wealth program, [CT_NAME]?
 AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_CLAN_OF_EMBERS	I tolerate you. Wouldn't it be a shame if we had a falling out over something small like this?
 AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_DARIUS_1	You should give us what we want, [CT_NAME] - your people's future depends upon it.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_DE_GAULLE_1	The honor of [OUR_CIV_SHORT] demands that you provide us with the following. We really mean it this time.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_ELIZABETH_1	My dear [CT_NAME], [OUR_CIV_SHORT] can make life very difficult indeed for [CT_CIV_SHORT]. Give us what we want or suffer the consequences.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_ELOHIM	[CT_NAME], we have a proposal to make that will surely further the peace between our nations.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_FRANKLIN_ROOSEVELT_1	Hello, [CT_NAME]! The price of freedom has just gone up.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_GANDHI_1	[OUR_CIV_SHORT] requests a small donation from their good friends, the [CT_CIV_ADJ] people. 
+AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_GENGHIS_KHAN_1	Give us what we want, [CT_NAME], or 20,000 screaming warriors will come and take it.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_GILGAMESH_1	Decide now, [CT_NAME]: deal, or no deal.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_GRIGORI	I wish to test your faith, [CT_NAME]. Give me this. Or do you think your gods can protect you?
 AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_HAMMURABI_1	Can you spare this for a good friend?
 AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_HANNAH	A little tribute will keep our ships in other waters, [CT_NAME].
 AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_HANNIBAL_1	Share the wealth, [CT_NAME].
+AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_HATSHEPSUT_1	It is customary for puny mortals to show their devotion by giving their goddess a gift. Or if they prefer they can be cut into small pieces and fed to the royal crocodiles.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_HIPPUS	We could take this by raiding your villages and cities, but why don't you save us both the trouble?
+AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_HUAYNA_CAPAC_1	I have sacrificed many foes, [CT_NAME]. Give me what I want or you may be next.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_ISABELLA_1	Mighty [OUR_CIV_SHORT] is leading the battle against evil, godless, heathen, barbarians, [CT_NAME]. It is time to show your appreciation. 
 AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_JOAO_1	We could use your aid, [CT_NAME]. Can you spare us this?
 AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_JOSEF_STALIN_1	Pay up or be destroyed.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_JULIUS_CAESAR_1	If you wish to ensure [CT_CIV_SHORT]'s continued survival, you would be wise to comply with my demands.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_JUSTINIAN_1	Please give us this, [CT_NAME]. It will help to ensure continued friendship between our two great empires.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_KEELYN	[CT_NAME], we've run out of this. Please don't make me ask my daddy, I'd rather leave him out of this.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_KUBLAI_KHAN_1	You may purchase your continued existence with this, [CT_NAME]. I suggest that you be sensible and do so.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_LANUN	We make a good pair, you and I! But you know what'd make things even better between the two of us?
 AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_LINCOLN_1	Sharing is caring, [CT_NAME].
 AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_LJOSALFAR	There are many people who plot against the Ljosalfar. We ask this to prove your fidelity, friend.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_LUCHUIRP	Sorry to bother you, but the Luchuirp greatly need this, probably more than your people do.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_MALAKIM	[CT_NAME], I wonder if we could persuade you to part with this. Our gratitude will be great.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_MANSA_MUSA_1	My generosity is known the world over, [CT_NAME]. How about yours?
+AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_MENES_1	Furnish [OUR_CIV_SHORT] with these gifts and we will tolerate your existence for a little while longer.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_MERCURIANS	You are not using this to its full effect. Let me show you how.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_MONTEZUMA_1	The [OUR_EMPIRE] requests from you a small donation, [CT_NAME]. Or, if you prefer, we can battle until one of us is destroyed. 
+AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_NAPOLEON_1	I'll keep this short: comply with our demands or suffer the consequences. That is all.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_PACAL_1	Giving us what we want is the only way to avoid immediate destruction. Pay up.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_PERICLES_1	A truly civilized leader would give us what we want, [CT_NAME]? 
 AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_PERPENTACH	In Jubilee no show comes free[NEWLINE]Pay the Merryman for your delight.[NEWLINE]For amusement joined set loose your coin[NEWLINE]And dance with us into the night.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_PETER_1	Hand this over or die.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_RAGNAR_LODBROK_1	Give us what we want or face our wrath.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_RAMESSES_II_1	I demand that you give me this tribute.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_SALADIN_1	By the glory of God, I, [OUR_NAME], mightiest of his servants, do request a small donation from you, [CT_NAME]. You would be wise to consider my request carefully.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_SHAKA_1	Unlikely as it may seem, it appears that your puny civilization has something that we want. I suggest you hand it over quickly. 
 AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_SHEAIM	[CT_NAME], we have dire need of this. I trust you are wise enough to give us what we want.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_SITTING_BULL_1	For the sake of the continued friendship between our two great peoples, I request the following token of appreciation.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_SULEIMAN_1	It is wise for inferior cultures to shower their betters with gifts, don't you think?
 AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_SURYAVARMAN_1	Share the wealth, Baby?
 AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_SVARTALFAR	You are not Svartalfar, [CT_NAME]. We recognize no claim of yours. Yield this at once.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_TOKUGAWA_1	We are bigger and stronger than you, [CT_NAME]. You must give us tribute, or suffer the consequences.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_VICTORIA_1	We have needs, [CT_NAME]. Please comply.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_WANG_KON_1	Care to give [OUR_CIV_SHORT] a small token of friendship, [CT_NAME]?
+AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_WASHINGTON_1	I cannot tell a lie, [CT_NAME]: we want your stuff. Kindly give it to us at your earliest convenience.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_WILLEM_VAN_ORANJE_1	It would be diplomatically expedient to give us what we want, [CT_NAME]?
 AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_WINSTON_CHURCHILL_1	Give us this one small thing, [CT_NAME], and you shall earn [OUR_CIV_SHORT]'s gratitude tenfold. That's quite a bargain, don't you agree?
 AI_DIPLO_DEMAND_TRIBUTE_POWER_EQUAL_ZARA_YAQOB_1	The heavens command that you give us the following, [CT_NAME]. Unless you particularly like thunderbolts I urge you to comply.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_ AUGUSTUS_CAESAR _1	Here's what we want, [CT_NAME]. Shall you give it to us now or would you prefer me to send my legions to [CT_CIV_SHORT] to pick it up?
 AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_ BRENNUS _1	Pay now or pay tenfold later, [CT_NAME].
+AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_1	Think well, [CT_NAME]: if you give us tribute, our friendship will continue. If not, we will have to seriously re-evaluate our relationship.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_2	[OUR_CIV_SHORT] demands that you pay her tribute.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_3	Give us what we want or be destroyed.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_4	Mighty [OUR_CIV_SHORT] demands that you acknowledge her superiority with a small token of respect.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_5	The superior [OUR_CIV_ADJ] civilization is worthy of tribute. Dispense goods to us, and we'll refrain from sending our [OUR_BEST_UNIT] to crush you.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_6	Time is short and so too will be the memory of [CT_CIV_SHORT] should you deny me this token of respect.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_7	I wonder if you would consider giving us a small gift, [CT_NAME], in honor of the timeless friendship between Mighty [OUR_CIV_SHORT] and your weak and defenseless people?
+AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_8	For the sake of your country's continued survival, I suggest that you comply with our demands.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_ASOKA_1	Mighty [OUR_CIV_SHORT]'s protection comes at a price, [CT_NAME]. You would be wise to pay it.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_AUGUSTUS_CAESAR_1	Resistance is futile! Comply with our demands or face destruction!
 AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_BALSERAPHS	Share your toys, or we will take them from you.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_BISMARCK_1	To be honest, raw greed is the only thing stopping us from destroying your puny civilization. Pay us what we want, or perish.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_BOUDICA_1	Give until it hurts, [CT_NAME].
 AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_CALABIM	My vampires are hungry. You wish to continue living. A conflict of interests indeed, but thankfully there is a satisfying solution for both of us if you comply.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_CATHERINE_1	Some enjoy licking our boots, [CT_NAME]. How about you give it a try?
 AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_CHARLEMAGNE_1	Give us what we want and perhaps your heathenish empire will survive another day. Perhaps...
+AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_CHINESE_LEADER_1	For too long have the glorious [CT_CIV_ADJ] workers put up with your contemptible bourgoise insolence! It's time for an immediate redistribution of wealth!
 AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_CLAN_OF_EMBERS	Hand it over. Don't make me come and take it from you.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_DARIUS_1	I'm all about the bling, [CT_NAME]. Hand it over or suffer the consequences.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_DE_GAULLE_1	The honor of [OUR_CIV_SHORT] demands that you provide us with the following. Or we'll destroy you.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_ELIZABETH_1	Conventional wisdom suggests that you bequeath certain goods to us or be destroyed.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_ELOHIM	Here is the deal we would propose. Accepting it is surely the wiser choice.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_FRANKLIN_ROOSEVELT_1	That certainly is a nice little civilization you have there, [CT_NAME]. It would be unfortunate if something were to happen to it...
+AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_GANDHI_1	I believe in peace at any price, [CT_NAME]. This is your price.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_GENGHIS_KHAN_1	When you find a hungry tiger at your door, commen sense says that you feed him.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_GILGAMESH_1	If you wish for your puny civilization to survive, I urge you to make a small donation to us. Immediately.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_GRIGORI	The Order demands unquestioning obedience. The Overlords, a lifetime of slavery. The Veil takes your soul. See how much more merciful I am?
 AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_HAMMURABI_1	Give us this or we shall surely come and take it.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_HANNAH	A storm brews on the waters, dark and inescapable. Perhaps ye could postpone the monsoon?
 AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_HANNIBAL_1	Give us what we want and perhaps we'll let your puny civilization survive for a while longer.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_HIPPUS	Don't think of it as theft. Think of it as extortion.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_HUAYNA_CAPAC_1	Foolish [CT_NAME]! Give us what we want and you may live for yet another day!
 AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_JOAO_1	[CT_NAME], I'm making you an offer you can't refuse.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_JOSEF_STALIN_1	Give us what we want or suffer the consequences.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_JULIUS_CAESAR_1	Acceed to our demands or face us in battle. 
 AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_JUSTINIAN_1	Give us what we want, [CT_NAME]. Your armies are no match for ours, and you know it.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_KEELYN	I want this. Gimme some or feel our fangs.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_KUBLAI_KHAN_1	[OUR_CIV_SHORT] requires tribute from inferior cultures such as yours. Comply or be destroyed.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_LANUN	You'd do well to share your riches with me. The wrath of the Sea is a terrible thing, savvy?
 AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_LINCOLN_1	Hand this over or feel the wrath of our 'terrible swift sword.' 
 AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_LJOSALFAR	I'm sure you do not wish to challenge the dominance of the elves. Simply tribute us this.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_LOUIS_XIV	The [OUR_CIV_ADJ] Folk have put up with your insults long enough! Pay us the following or suffer the consequences!
 AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_LUCHUIRP	This is what we need. And this... is what will happen to you if we do not get it.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_MALAKIM	[CT_NAME], it's about time you handed this over to us. I assure you we'll put it to good use.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_MANSA_MUSA_1	Time is short and so too will be the memory of [CT_CIV_SHORT] should you deny me this token of respect.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_MEHMED_1	If you want our continued friendship,[CT_NAME], you'll have to pay for it.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_MENES_1	Glorious [OUR_CIV_SHORT] requires from you a token of aubmission. Or would you prefer that we wipe [CT_CIV_SHORT] from the face of the planet?
 AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_MERCURIANS	We protect you from the Infernal menace, but we cannot do it for free.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_MONTEZUMA_1	Your weakness is contemptible, #CT_NAME! Give us what we want or perish!
 AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_MONTEZUMA_1_CORRECTED	Your weakness is contemptible, [CT_NAME]! Give us what we want or perish!
+AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_NAPOLEON_1	If you wish to delay your destruction, [CT_NAME], give us what we want.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_PACAL_1	Give us what we want or die.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_PERICLES_1	Beware of Greeks demanding gifts, [CT_NAME]. 
 AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_PERPENTACH	So even does the slightest flute[NEWLINE]Contribute to the choral bliss[NEWLINE]So will you pay me from your loot[NEWLINE]My feet I grace your lips to kiss[NEWLINE]Aim well your mark upon my boots[NEWLINE]Or else our sky-hurled cows won't miss
+AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_PETER_1	Ah, [CT_NAME]. I have an excellent deal to offer you: give us what we want, and we will not crush you. Does that not sound fair?
+AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_QIN_SHI_HUANG_1	If you wish your pathetic civilization to survive, [CT_NAME], you had better comply with our demands!
 AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_RAGNAR_LODBROK_1	Give us this or die.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_RAMESSES_II_1	Give this to me immediately or face my divine wrath!
+AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_SALADIN_1	It is only proper that the vassal states provide tribute to their lord and protector. That would be me.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_SHAKA_1	Hand this over, [CT_NAME], and I might let you continue to exist for a short while longer.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_SHEAIM	Once again, it is time that you acknowledge our superiority. It is the only way to ensure the continued survival of your pitiful civilization.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_SITTING_BULL_1	It is unwise to deny a hungry bear its food, [CT_NAME]. You're liable to get mauled.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_SULEIMAN_1	Our protection comes at a price, [CT_NAME]. Pay up or suffer the consequences.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_SURYAVARMAN_1	You may pay us in treasure today or in blood tomorrow. I strongly recommend the former.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_SVARTALFAR	It is our right to rule all lesser beasts. Perhaps you could persuade me to look elsewhere at the moment with this.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_TOKUGAWA_1	Do not let foolish pride cause the downfall of your people, [CT_NAME]. Pay us what we want - or be destroyed!
+AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_VICTORIA_1	Give [OUR_CIV_SHORT] what is due her, [CT_NAME]! We shall not ask a second time.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_WANG_KON_1	Time to pay it forward, [CT_NAME].
+AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_WASHINGTON_1	Don't think of this as a demand for tribute, [CT_NAME]. Think of it as an investment in world peace.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_WILLEM_VAN_ORANJE_1	Time to pay the piper, [CT_NAME].
 AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_WINSTON_CHURCHILL_1	You have something we need, [CT_NAME]. Isn't it NICE to be needed?
 AI_DIPLO_DEMAND_TRIBUTE_POWER_STRONGER_ZARA_YAQOB_1	Everyone has needs, [CT_NAME]. For example, we need the following, and you need to give it to us. 
 AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_ AUGUSTUS_CAESAR _1	Friendship should be rewarded, don't you think? Here's a suggestion.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_ BRENNUS _1	Give 'til it hurts, [CT_NAME].
+AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_1	We can do this the easy way, or the hard way. Which do you prefer?
+AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_2	For the sake of our long friendship, [CT_NAME], will you not give us this small present?
+AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_3	Friend [CT_NAME], we are in some need of assistance. Will you not help your longstanding friend and ally?
+AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_4	Give us what we want, [CT_NAME], lest we come and take it.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_5	This is what we need, [CT_NAME]. Surely our continued friendship is worth far more than that!
+AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_6	The [OUR_EMPIRE] would be quite grateful if your terribly vulnerable country gave us what we want.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_7	Our continued friendship provides many benefits, [CT_NAME]. Surely it is worth this small tribute in return?
+AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_8	Pay it forward, [CT_NAME]. Please?
+AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_ALEXANDER_1	For the sake of our continued friendship, provide the great people of the [OUR_NAME] with tribute.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_ARENDEL	Ominous winds of autumn chill our people, [CT_NAME]. I beg your help to stand against the Winter court.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_ASOKA_1	Peace demands sacrifice, [CT_NAME]. From you.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_AUGUSTUS_CAESAR_1	The truth is, [OUR_CIV_SHORT] is stronger than your empire, [CT_NAME]. It would be wise of you to give us what we want.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_BALSERAPHS	You have so many toys, surely you won't mind sharing them with us.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_BOUDICA_1	Could you spare your good friends a small gift?
 AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_CALABIM	We seek aid, friend of the Calabim. I hope you can spare this trifle.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_CATHERINE_1	A present for me? Why, it's just what I wanted! How ever did you guess?
 AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_CHARLEMAGNE_1	Share the wealth a little, willya?
+AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_CHINESE_LEADER_1	[CT_NAME], please give us the following immediately. Think of it as an investment in our continued friendship.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_CLAN_OF_EMBERS	Do you want to give us this, or not?
+AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_CYRUS_1	Friendly [OUR_CIV_SHORT] requires a goodwill gesture from our firm yet surprisingly vulnerable ally, [CT_CIV_SHORT]. 
 AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_DARIUS_1	We need this. Now. Thank you for your cooperation.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_DE_GAULLE_1	The honor of [OUR_CIV_SHORT] demands that you provide us with the following. If it isn't too much trouble, that is.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_ELIZABETH_1	The world is a better place because of our friendship, [CT_NAME]; don't you agree? Surely this isn't too large a price to pay to insure that it continues...
 AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_ELOHIM	[CT_NAME], I hope you won't think ill of us for asking you this.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_FRANKLIN_ROOSEVELT_1	The only thing you have to fear is the terrible consequence of not giving me what I want.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_GANDHI_1	I hope you see, [CT_NAME], that it is in your country's best interest to give us what we want. 
+AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_GENGHIS_KHAN_1	Bestow gifts upon your friends and you are likely to be rewarded a hundred times over.  Ignore the advice of wise-men, and you risk being flogged about the head, neck, face, and shoulders.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_GILGAMESH_1	Even the most inferior culture may have something to contribute to [OUR_CIV_SHORT]'s greatness, [CT_NAME]. For example:
 AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_GRIGORI	[CT_NAME], surely you realize that I am not the devil your meddling priests say? I must ask your assistance.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_HAMMURABI_1	We could use your assistance, friend [CT_NAME].
 AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_HANNAH	[CT_NAME], surely it is better to have the Lanun a strong friend than a desperate enemy?
 AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_HANNIBAL_1	Our continued protection comes at a price, [CT_NAME]. I recommend that you pay it.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_HATSHEPSUT_1	I was going to demand that you sacrifice 1000 warriors to my greatness, [CT_NAME], but if you prefer, you can give me this.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_HIPPUS	For the gratitude of the Hippus, it's actually quite a deal!
+AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_HUAYNA_CAPAC_1	Give us what we want, [CT_NAME] - it is the will of the gods. 
+AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_ISABELLA_1	Heaven is on our side, [CT_NAME]. I pray that you know what's good for you.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_JOAO_1	If it pleases you, [CT_NAME], [OUR_CIV_SHORT] could use a little assistance.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_JOSEF_STALIN_1	It's time for a redistribution of wealth, [CT_NAME]. 
+AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_JULIUS_CAESAR_1	Usually, when I see something I want, I just come over and take it. Consider this your lucky day.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_JUSTINIAN_1	Could you spare this for us, [CT_NAME]?
 AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_KEELYN	The show must go on, and I would so appreciate your help, [CT_NAME].
+AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_KUBLAI_KHAN_1	The mighty [OUR_EMPIRE] thanks you for your generous gift, [CT_NAME]. Now hand it over.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_LANUN	Do you want to give your old friends the Lanun a hand?
 AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_LINCOLN_1	Can you spare this for a good friend, [CT_NAME]?
 AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_LJOSALFAR	Pray, preserve the balance of this age, [CT_NAME]. We need your help to continue.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_LUCHUIRP	Hello there. Uh I wondered if could you spare this for us please?
 AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_MALAKIM	Please, the Malakim are in dire need. Can you help us?
+AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_MANSA_MUSA_1	Forsake greed, friend!  Provide me with tribute, or risk the anger of the [OUR_CIV_ADJ] people.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_MEHMED_1	How about a small token of appreciation, [CT_NAME]? 
+AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_MENES_1	I want this right now. Do not make me angry - you wouldn't like me when I'm angry...
 AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_MERCURIANS	Our mission has taken a setback. Please, you must aid us.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_MONTEZUMA_1	The gods demand sacrifice, [CT_NAME]. If your civilization is to exist for much longer, I recommend that you comply.
+AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_NAPOLEON_1	My armies thirst for new lands to conquer, [CT_NAME]. Would you care to ensure that they aren't yours?
 AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_PACAL_1	[CT_NAME], a war between our two great people is to be avoided at all costs, wouldn't you agree? So pay up.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_PERICLES_1	Mighty [OUR_CIV_SHORT] requests a small token of friendship from its faithful ally, [CT_CIV_SHORT]. 
 AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_PERPENTACH	So even does the slightest flute[NEWLINE]Contribute to the choral bliss[NEWLINE]So will you pay me from your loot[NEWLINE]My feet I grace your lips to kiss[NEWLINE]Aim well your mark upon my boots[NEWLINE]Or else our sky-hurled cows won't miss
+AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_PETER_1	Give us this or our mighty Cossacks will roam across your ravaged country, burning your cities, stealing your pigs and making lewd gestures at your women!
+AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_QIN_SHI_HUANG_1	That's quite a nice little civilization you have going there, [CT_NAME]. It would be very unfortunate if something bad were to happen to it... We understand each other, do we not?
 AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_RAGNAR_LODBROK_1	We usually take what we want, [CT_NAME], but in the name of our continued good relations I'll ask for it first.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_RAMESSES_II_1	A wise ruler makes sacrifices to gain the good will of the gods, [CT_NAME]. You can start with me.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_SHAKA_1	Give me this, [CT_NAME] and perhaps our two nations can live in peace for a while longer.
@@ -202,49 +453,74 @@ AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_SITTING_BULL_1	Would you care to share some
 AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_SULEIMAN_1	Would you care to give [OUR_CIV_SHORT] a small token of your affection, [CT_NAME]?
 AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_SURYAVARMAN_1	The [OUR_CIV_ADJ] people could use your assistance, [CT_NAME]. I trust that you won't disappoint them.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_SVARTALFAR	You think I am beaten? Apparently you've never seen a cornered panther before. 
+AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_TOKUGAWA_1	Give us what we want, now! Or face imminent destruction! 
+AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_VICTORIA_1	The [CT_CIV_ADJ] people are in great need, [CT_NAME]. Do not disappoint us.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_WANG_KON_1	We require some assistance at this time, [CT_NAME]. Will you come to our aid?
+AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_WASHINGTON_1	The best things in life are free, [CT_NAME]. Unfortunately, our continued friendship isn't one of them.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_WILLEM_VAN_ORANJE_1	Can you spare us this, [CT_NAME]? I would be extremely grateful for your assistance.
 AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_WINSTON_CHURCHILL_1	Perhaps you would care to show your appreciation for our friendship, [CT_NAME]...
 AI_DIPLO_DEMAND_TRIBUTE_POWER_WEAKER_ZARA_YAQOB_1	Pay it forward, [CT_NAME]. 
+AI_DIPLO_FIRST_CONTACT_LEADER_ALEXANDER_1	Greetings, [CT_NAME]! I am [OUR_NAME], ruler of the warlike [OUR_EMPIRE]! Let us join together and crush the world's armies beneath our sandals! It'll be way cool!
 AI_DIPLO_FIRST_CONTACT_LEADER_AMURITES	We are students of the arcane, not warlords. We will be good neighbors as long as you realize that mana nodes belong to us.
 AI_DIPLO_FIRST_CONTACT_LEADER_ARENDEL	Winter has faded and the sun is again warm. You do well to pay homage to the Summer Throne.
+AI_DIPLO_FIRST_CONTACT_LEADER_ASOKA_1	May peace and happiness go with you always, [CT_NAME]. I am [OUR_NAME] of [OUR_CIV_SHORT]. 
 AI_DIPLO_FIRST_CONTACT_LEADER_AUGUSTUS_CAESAR_1	It is excellent to meet you, [CT_NAME]! Would you care to surrender to mighty [OUR_CIV_SHORT] now or would you prefer to put off the inevitable for a while?
 AI_DIPLO_FIRST_CONTACT_LEADER_BALSERAPHS	The game has only begun. Imagine what delights lie in store for us.
 AI_DIPLO_FIRST_CONTACT_LEADER_BANNOR	You will find our cities gracious and well maintained, and our friendship unwavering, as long as you remain equally loyal.
+AI_DIPLO_FIRST_CONTACT_LEADER_BISMARCK_1	[OUR_CIV_SHORT] the great and its superior people greet you. I, [OUR_NAME], desire peace with all my neighbors - even with your puny culture.
 AI_DIPLO_FIRST_CONTACT_LEADER_BOUDICA_1	Welcome, [CT_NAME]! Mighty [OUR_CIV_SHORT] seeks peace with your weak little civilization. For the moment, that is.
 AI_DIPLO_FIRST_CONTACT_LEADER_BRENNUS_1	Greetings, [CT_NAME]! I am [OUR_NAME] of the warlike [OUR_CIV_ADJ] people!  My druids shall construct a huge stone circle to honor this auspicious occasion!
 AI_DIPLO_FIRST_CONTACT_LEADER_CALABIM	Welcome to the lands of the Calabim. I trust you will recognize our nations as joyful places, where all men and women are allowed to fulfill their potential and purpose in life - as well as in death. Here, no people go hungry, and we have the most tasteful remedies against overpopulation.
+AI_DIPLO_FIRST_CONTACT_LEADER_CATHERINE_1	Well hello there, [CT_NAME]. It is a pleasure to meet you at last! I'm always looking for CLOSER relations with other leaders, if you get my drift...
 AI_DIPLO_FIRST_CONTACT_LEADER_CHARLEMAGNE_1	May the blessings of Heaven be upon you, [CT_NAME]. I, [OUR_NAME], leader of the puissant [OUR_CIV_ADJ] people, welcome you to our mighty empire.
+AI_DIPLO_FIRST_CONTACT_LEADER_CHINESE_LEADER_1	Greetings, [CT_NAME]. It is a pleasure to meet you. Here: have a copy of my little red book. You might learn something.
 AI_DIPLO_FIRST_CONTACT_LEADER_CLAN_OF_EMBERS	Do not confuse us with our wild brothers. We are both more civilized - and more deadly.
+AI_DIPLO_FIRST_CONTACT_LEADER_CYRUS_1	Greetings, oh wise ruler of the [CT_CIV_ADJ] peoples! [OUR_CIV_SHORT] is strong - shall we count you among our friends, or among our enemies?
 AI_DIPLO_FIRST_CONTACT_LEADER_DARIUS_1	I, [OUR_NAME], welcome [CT_NAME], ruler of the upstart nation of [CT_CIV_SHORT].
 AI_DIPLO_FIRST_CONTACT_LEADER_DECIUS	Thrones sit easily beneath me. If you remain loyal I will allow you to keep yours.
 AI_DIPLO_FIRST_CONTACT_LEADER_DE_GAULLE_1	I, [OUR_NAME], possessor of one of the largest and finest noses in human history, welcome you to glorious [OUR_CIV_SHORT]!
 AI_DIPLO_FIRST_CONTACT_LEADER_DOVIELLO	Long has this tundra been ours to hunt, and you think now you can just claim it?
+AI_DIPLO_FIRST_CONTACT_LEADER_ELIZABETH_1	Welcome to my palace, [CT_NAME]. I'm [OUR_NAME], the wise and really quite beautiful leader of mighty [OUR_CIV_SHORT]. Let there be peace between us or we'll kill you.
 AI_DIPLO_FIRST_CONTACT_LEADER_ELOHIM	Welcome to you, friend. I am [OUR_NAME], leader of the Elohim. Our quest is one of peaceful preservation of these lands, and I trust you come to us in peace as well.
+AI_DIPLO_FIRST_CONTACT_LEADER_FRANKLIN_ROOSEVELT_1	Greetings! I am [OUR_NAME] of the [OUR_EMPIRE]. I hope that our two great peoples can live together in peace.
+AI_DIPLO_FIRST_CONTACT_LEADER_GANDHI_1	Welcome to my humble home, [CT_NAME]. [OUR_CIV_SHORT] desires peace with all of her neighbors - even the really annoying ones like yours.
+AI_DIPLO_FIRST_CONTACT_LEADER_GENGHIS_KHAN_1	Welcome, oh leader of the [CT_EMPIRE]. My horde can beat your horde any day of the week. Shall we be friends or enemies?
 AI_DIPLO_FIRST_CONTACT_LEADER_GILGAMESH_1	Welcome, puny mortal. I am [OUR_NAME], divine leader of [OUR_CIV_SHORT]. How can you assist me?
 AI_DIPLO_FIRST_CONTACT_LEADER_GRIGORI	I respect more the sheep who flees the shepherd than the one that remains to be mutton. Which sort are you?
 AI_DIPLO_FIRST_CONTACT_LEADER_HAMMURABI_1	Greetings, stranger! Gaze in awe on the majesty that is [OUR_CIV_SHORT]!
 AI_DIPLO_FIRST_CONTACT_LEADER_HANNAH	The mother ocean calls the Lanun. Keep your feet in the dirt, and we'll get along fine.
 AI_DIPLO_FIRST_CONTACT_LEADER_HANNIBAL_1	The glorious [OUR_CIV_ADJ] people welcome the cute little civilization of [CT_CIV_SHORT]!
+AI_DIPLO_FIRST_CONTACT_LEADER_HATSHEPSUT_1	Surely the gods have smiled upon you, [CT_NAME] - for they have led you to me!
 AI_DIPLO_FIRST_CONTACT_LEADER_HIPPUS	Well met. We will be fast friends indeed, [CT_NAME], for as long as you can afford it.
+AI_DIPLO_FIRST_CONTACT_LEADER_HUAYNA_CAPAC_1	The [OUR_EMPIRE] welcomes the glorious [CT_CIV_ADJ] people and their leader, [CT_NAME]. You play ceremonial ball with us, we'll play ceremonial ball with you.
 AI_DIPLO_FIRST_CONTACT_LEADER_ILLIANS	This age will be short, you should spend it preparing for what is to come.
 AI_DIPLO_FIRST_CONTACT_LEADER_INFERNAL	Ahh... a new tribe slinking across creation, still in that twilight between birth and the recruitment of hell.
+AI_DIPLO_FIRST_CONTACT_LEADER_ISABELLA_1	Her most righteous majesty, Isabella, beloved of God and protector of the faith, does condescend to greet you, [CT_NAME]. Do tell me: are you a righteous people, or are you fiendish heathens who need to be wiped off of the face of this fair land?
 AI_DIPLO_FIRST_CONTACT_LEADER_JOAO_1	Congratulations, [CT_NAME]! At last your explorations have led you to me!
 AI_DIPLO_FIRST_CONTACT_LEADER_JOSEF_STALIN_1	Greetings from the glorious worker's paradise of [OUR_CIV_SHORT]! Shall we be friends, or do you have a death wish?
+AI_DIPLO_FIRST_CONTACT_LEADER_JULIUS_CAESAR_1	Welcome to [OUR_CIV_SHORT], [CT_NAME]. Care for some salad? I made it myself.
 AI_DIPLO_FIRST_CONTACT_LEADER_JUSTINIAN_1	Welcome, [CT_NAME]! May the heavens bless you as you deserve to be blessed!
 AI_DIPLO_FIRST_CONTACT_LEADER_KEELYN	Oh, welcome to our festive land! Won't you stay and chat with me? Puppets, make them stay! Forever!
 AI_DIPLO_FIRST_CONTACT_LEADER_KHAZAD	The Dwarven Nation was never dimmed by the Age of Ice as winter has no hold on the underhome.
+AI_DIPLO_FIRST_CONTACT_LEADER_KUBLAI_KHAN_1	The mighty [OUR_EMPIRE] greets you. Let us work together to achieve the total destruction of our foes, and only THEN betray and rend each other like the rabid dogs we truly are!
 AI_DIPLO_FIRST_CONTACT_LEADER_KURIOTATES	Only by standing together can we hope to remain through the challenges of the coming age.
 AI_DIPLO_FIRST_CONTACT_LEADER_LANUN	Enjoy well your continents and crowded cities, but leave the islands to us.
 AI_DIPLO_FIRST_CONTACT_LEADER_LINCOLN_1	Greetings, [CT_NAME]. I am [OUR_NAME]. It is indeed an honor to meet you.
 AI_DIPLO_FIRST_CONTACT_LEADER_LJOSALFAR	Greetings! You are a welcome neighbor, as long as you respect us and the land we share.
+AI_DIPLO_FIRST_CONTACT_LEADER_LOUIS_XIV_1	Welcome! I am [OUR_NAME], absolute monarch of mighty [OUR_CIV_SHORT] and indisputably the handsomest and best-dressed ruler in the entire history of the universe. Wouldn't you agree?
 AI_DIPLO_FIRST_CONTACT_LEADER_LUCHUIRP	Excuse our rusty manners, we are more accustomed to fashioned friends than those of tissue and tendon.
 AI_DIPLO_FIRST_CONTACT_LEADER_MALAKIM	As dawn marks the beginning of day, whose outcome is unknown, so does our friendship start here.
+AI_DIPLO_FIRST_CONTACT_LEADER_MANSA_MUSA_1	Welcome, [CT_NAME]. I, [OUR_NAME], humble ruler of [OUR_CIV_SHORT], offer my hand to you in friendship. 
 AI_DIPLO_FIRST_CONTACT_LEADER_MEHMED_1	May the heavens rain down blessings upon you, [CT_NAME]! I am [OUR_NAME], wise and benevolent ruler of [OUR_EMPIRE]! Feel free to begin showering me with tribute at your convenience!
 AI_DIPLO_FIRST_CONTACT_LEADER_MERCURIANS	We come to wage war with the Infernal, your fate is inconsequential.
+AI_DIPLO_FIRST_CONTACT_LEADER_MONTEZUMA_1	I am pleased to meet you, [CT_NAME]! Let us each slaughter fifty thousand slaves to celebrate this auspicious occasion.
+AI_DIPLO_FIRST_CONTACT_LEADER_NAPOLEON_1	Greetings. I'm [OUR_NAME], Emperor, Marshal, and First Citizen of [OUR_CIV_SHORT]. You can call me "Little Corporal," but then I'll have to kill you.
 AI_DIPLO_FIRST_CONTACT_LEADER_PACAL_1	I greet you, [CT_NAME]. [OUR_CIV_SHORT] is mighty - deal with us fairly and you will prosper. Attack us and our temples will run red with the blood of your warriors!
 AI_DIPLO_FIRST_CONTACT_LEADER_PERICLES_1	As the leader of ancient [OUR_CIV_SHORT], father and mother of all that is civilized, I, [OUR_NAME], welcome the leader of the upstart [CT_CIV_ADJ] people into my august presence.
 AI_DIPLO_FIRST_CONTACT_LEADER_PERPENTACH	I welcome you to us[NEWLINE]Fresh part of the show[NEWLINE]Perpentach greets you warmly[NEWLINE]your intent we shall know[NEWLINE]So tell us your wish, do not seek to beguile,[NEWLINE]To be prey for amusement[NEWLINE]or to live for a while?
+AI_DIPLO_FIRST_CONTACT_LEADER_PETER_1	Welcome, [CT_NAME]. I am [OUR_NAME], ruler of all of [OUR_CIV_SHORT]. You will find me a fair man to deal with - cruel, but fair. 
+AI_DIPLO_FIRST_CONTACT_LEADER_QIN_SHI_HUANG_1	Greetings, honorable [CT_NAME]. Let us hope that there will always be peace and friendship between [OUR_EMPIRE] and [CT_CIV_SHORT] - for that is all that stands between you and immediate annihilation. 
+AI_DIPLO_FIRST_CONTACT_LEADER_SALADIN_1	Greetings, [CT_NAME]! It is an honor to meet you! May the heavens bestow upon you an empire only slightly less glorious than mine!
 AI_DIPLO_FIRST_CONTACT_LEADER_SHAKA_1	Greetings, [CT_NAME]! The [OUR_CIV_ADJ] people always enjoy meeting vulnerable and undefended new civilizations!
 AI_DIPLO_FIRST_CONTACT_LEADER_SHEAIM	Ah, what have we here, another feeble civilization awaiting the apocalypse?
 AI_DIPLO_FIRST_CONTACT_LEADER_SIDAR	You must have keen eyes to spot the Sidar for many times have we walked through your lands unnoticed.
@@ -252,10 +528,41 @@ AI_DIPLO_FIRST_CONTACT_LEADER_SITTING_BULL_1	The great [OUR_CIV_ADJ] people welc
 AI_DIPLO_FIRST_CONTACT_LEADER_SULEIMAN_1	Well met, [CT_NAME]! I am [OUR_NAME] the Magnificent. Come - sit and bathe in my glory while we discuss many things.
 AI_DIPLO_FIRST_CONTACT_LEADER_SURYAVARMAN_1	I am pleased to meet you, [CT_NAME], and I look forward to many years of peace and friendship between our two great nations.
 AI_DIPLO_FIRST_CONTACT_LEADER_SVARTALFAR	Do not listen to the stories spread to discredit us; we don't betray and kill ALL of our allies.
+AI_DIPLO_FIRST_CONTACT_LEADER_TOKUGAWA_1	Welcome, [CT_NAME]! May your empire flourish and grow for as long as it remains useful to us! I mean that sincerely. 
+AI_DIPLO_FIRST_CONTACT_LEADER_VICTORIA_1	Good day to you, [CT_NAME]. We are [OUR_NAME], ruler of [OUR_CIV_SHORT]. Please do not hesitate to call upon us if you need assistance - God commands us give aid and comfort to our inferiors...
 AI_DIPLO_FIRST_CONTACT_LEADER_WANG_KON_1	Welcome, [CT_NAME], ruler of mighty [CT_CIV_SHORT]! Deal faithfully with [OUR_CIV_SHORT] and we will deal faithfully with you. Betray us and your life will be both short and full of excitement...
+AI_DIPLO_FIRST_CONTACT_LEADER_WASHINGTON_1	Welcome, [CT_NAME]! I cannot tell a lie: I'm darned glad to meet you!
 AI_DIPLO_FIRST_CONTACT_LEADER_WILLEM_VAN_ORANJE_1	I am honored to meet you, [CT_NAME]. I hope that our two nations will be able to live in peace and friendship.
 AI_DIPLO_FIRST_CONTACT_LEADER_WINSTON_CHURCHILL_1	Welcome, [CT_NAME]! I hope that our two great nations can be firm friends and allies. However if you attack us we shall fight you on the beaches, we shall fight you on the landing grounds, we shall fight you in the fields and in the streets - well, you get the idea... 
 AI_DIPLO_FIRST_CONTACT_LEADER_ZARA_YAQOB_1	Hail to you, [CT_NAME]. I am [OUR_NAME], ruler of the god-fearing [OUR_CIV_ADJ] people! May the friendship between our two great civilizations last until we are much, much larger than you! 
+AI_DIPLO_FR_ASK_FOR_HELP_1	Charity begins at home, [CT_NAME]. Care to give us some?
+AI_DIPLO_FR_ASK_FOR_HELP_2	[OUR_CIV_SHORT] requires your assistance, friend [CT_NAME]. I hope that you will not disappoint us.
+AI_DIPLO_FR_ASK_FOR_HELP_3	I have always relied on the kindness of strangers, [CT_NAME]. Can you help?
+AI_DIPLO_FR_ASK_FOR_HELP_4	A friend in need is a friend indeed, [CT_NAME]. Care to help us out?
+AI_DIPLO_FR_ASK_FOR_HELP_5	[OUR_CIV_SHORT] could use your assistance, [CT_NAME]. 
+AI_DIPLO_FR_ASK_FOR_HELP_6	Could you possibly spare us this, [CT_NAME]?
+AI_DIPLO_FR_CANCEL_DEAL_1	I'm afraid this deal will no longer work for us.
+AI_DIPLO_FR_CANCEL_DEAL_2	I'm sorry, [CT_NAME], but this deal will no longer work for us.
+AI_DIPLO_FR_CANCEL_DEAL_3	All good things come to an end, unfortunately. Including this deal.
+AI_DIPLO_FR_CANCEL_DEAL_4	[OUR_CIV_SHORT] can no longer afford this deal, [CT_NAME]. 
+AI_DIPLO_FR_CANCEL_DEAL_5	It's time to end this deal, friend. 
+AI_DIPLO_FR_CANCEL_DEAL_6	If you don't mind, [OUR_CIV_SHORT] would like to cancel this deal.
+AI_DIPLO_FR_GLAD_1	We're glad you accepted our offer.
+AI_DIPLO_FR_GLAD_10	Cha-CHING!
+AI_DIPLO_FR_GLAD_2	It is wonderful that you have accepted.
+AI_DIPLO_FR_GLAD_3	I'm glad that you found the offer acceptable, [CT_NAME]
+AI_DIPLO_FR_GLAD_4	Marvelous!
+AI_DIPLO_FR_GLAD_5	You have chosen wisely, [CT_NAME].
+AI_DIPLO_FR_GLAD_6	Wonderful! Let us celebrate!!
+AI_DIPLO_FR_GLAD_7	It's a pleasure doing business with you.
+AI_DIPLO_FR_GLAD_8	Excellent!
+AI_DIPLO_FR_GLAD_9	I'm glad that we could come to an agreement.
+AI_DIPLO_FR_NO_DEAL_1	I don't see how a deal is possible.
+AI_DIPLO_FR_NO_DEAL_2	That's just crazy-talk. I don't think it can be done.
+AI_DIPLO_FR_NO_DEAL_3	I'm sorry to say that no such deal is possible.
+AI_DIPLO_FR_NO_DEAL_4	That can't be done, [CT_NAME].
+AI_DIPLO_FR_NO_DEAL_5	I don't see how we can make such a trade.
+AI_DIPLO_FR_NO_DEAL_6	We can't do that.
 AI_DIPLO_FR_NO_DEAL_LEADER_BALSERAPHS	Well... I would but you see I already promised to help someone else.
 AI_DIPLO_FR_NO_DEAL_LEADER_CALABIM	I am afraid that is not an option, mortal.
 AI_DIPLO_FR_NO_DEAL_LEADER_CLAN_OF_EMBERS	Not interested.
@@ -273,6 +580,60 @@ AI_DIPLO_FR_NO_DEAL_LEADER_MERCURIANS	You have not proven your devotion to our c
 AI_DIPLO_FR_NO_DEAL_LEADER_PERPENTACH	These were your charms, sweet [CT_NAME]; sports like these,[NEWLINE]With sweet succession, taught even toil to please;[NEWLINE]These were your bowers, their cheerful influence shed,[NEWLINE]These were your charms-but all these charms are fled.
 AI_DIPLO_FR_NO_DEAL_LEADER_SHEAIM	I am afraid your proposal is unacceptable at this time.
 AI_DIPLO_FR_NO_DEAL_LEADER_SVARTALFAR	This is not the respect one shows their betters, [CT_NAME]. I had thought you knew your place in the world.
+AI_DIPLO_FR_OFFER_DEAL_1	Greetings, [CT_NAME]! What do you think of this deal?
+AI_DIPLO_FR_OFFER_DEAL_2	The peace-loving people of [OUR_CIV_SHORT] seek a fair trade with [CT_CIV_SHORT]. How about it?
+AI_DIPLO_FR_OFFER_DEAL_3	How does this sound to you, [CT_NAME]?
+AI_DIPLO_FR_OFFER_DEAL_4	What do you think of this deal, [CT_NAME]?
+AI_DIPLO_FR_OFFER_DEAL_5	My friend, can [OUR_CIV_SHORT] tempt you with this offer?
+AI_DIPLO_FR_OFFER_DEAL_6	Let's make a deal!
+AI_DIPLO_FR_REJECT_1	You'll have to do better than that, [CT_NAME].
+AI_DIPLO_FR_REJECT_10	I don't think so. You'll have to do better than that.
+AI_DIPLO_FR_REJECT_2	We really do not think this trade will benefit our people.
+AI_DIPLO_FR_REJECT_3	This proposal will not work for us.
+AI_DIPLO_FR_REJECT_4	No, seriously. Quit fooling around: what's your offer?
+AI_DIPLO_FR_REJECT_5	That's not good enough, friend [CT_NAME].
+AI_DIPLO_FR_REJECT_6	Is that your final offer? 
+AI_DIPLO_FR_REJECT_7	I'm afraid that your offer is not acceptable to the [OUR_CIV_ADJ] people.
+AI_DIPLO_FR_REJECT_8	No can do, my friend. 
+AI_DIPLO_FR_REJECT_9	We cannot afford to be so generous, [CT_NAME]. Try again.
+AI_DIPLO_FR_SORRY_1	We're sorry you don't feel that our offer is reasonable.
+AI_DIPLO_FR_SORRY_10	Well, perhaps you would care to suggest something then.
+AI_DIPLO_FR_SORRY_2	Too bad. Do you have something different in mind?
+AI_DIPLO_FR_SORRY_3	Let's hear an offer from you, then.
+AI_DIPLO_FR_SORRY_4	All right. Why don't you put something on the table?
+AI_DIPLO_FR_SORRY_5	Well, do you wish to make a counter-proposal?
+AI_DIPLO_FR_SORRY_6	All right: let's hear your counter-proposal.
+AI_DIPLO_FR_SORRY_7	That is regrettable.
+AI_DIPLO_FR_SORRY_8	That is unfortunate.
+AI_DIPLO_FR_SORRY_9	Oh well. Perhaps next time, then.
+AI_DIPLO_FUR_ASK_FOR_HELP_1	Supplying us with this would go a long way towards healing the unfortunate rift between our peoples, [CT_NAME]. 
+AI_DIPLO_FUR_ASK_FOR_HELP_2	I find that [OUR_CIV_SHORT] needs your aid, [CT_NAME]. I'm certain you won't disappoint us.
+AI_DIPLO_FUR_ASK_FOR_HELP_3	As difficult as it may be to believe, you actually have something that we could use.
+AI_DIPLO_FUR_ASK_FOR_HELP_4	Your assistance at this vital time will do much towards regaining [OUR_CIV_SHORT]'s friendship, [CT_NAME].
+AI_DIPLO_FUR_ASK_FOR_HELP_5	Despite our differences, I believe that our two nations have much in common. For example, you have this and we need it.
+AI_DIPLO_FUR_ASK_FOR_HELP_6	We could use your assistance, [CT_NAME]. Do not disappoint us.
+AI_DIPLO_FUR_CANCEL_DEAL_1	The [OUR_CIV_ADJ] people are no longer interested in this deal, [CT_NAME]. 
+AI_DIPLO_FUR_CANCEL_DEAL_2	This deal is over. 
+AI_DIPLO_FUR_CANCEL_DEAL_3	We're ending this deal, [CT_NAME]. 
+AI_DIPLO_FUR_CANCEL_DEAL_4	We're sick of this deal. And of you, too, frankly.
+AI_DIPLO_FUR_CANCEL_DEAL_5	We are terminating this deal, [CT_NAME], effective immediately.
+AI_DIPLO_FUR_CANCEL_DEAL_6	This deal no longer suits our needs. It is canceled. 
+AI_DIPLO_FUR_GLAD_1	All right then. We're agreed.
+AI_DIPLO_FUR_GLAD_10	[OUR_CIV_SHORT] thanks you and your petty little civilization.
+AI_DIPLO_FUR_GLAD_2	Now you are beginning to show some sense, [CT_NAME]. Perhaps there is some hope for you yet.
+AI_DIPLO_FUR_GLAD_3	Done.
+AI_DIPLO_FUR_GLAD_4	Excellent. Perhaps you are not as foolish as you look.
+AI_DIPLO_FUR_GLAD_5	Mighty  [OUR_CIV_SHORT] thanks you. You may go now.
+AI_DIPLO_FUR_GLAD_6	Thank you for your cooperation.
+AI_DIPLO_FUR_GLAD_7	We thank you. 
+AI_DIPLO_FUR_GLAD_8	That is all for now. 
+AI_DIPLO_FUR_GLAD_9	Fine. It is done.
+AI_DIPLO_FUR_NO_DEAL_1	That's impossible. 
+AI_DIPLO_FUR_NO_DEAL_2	Don't be foolish. That can't possibly be done.
+AI_DIPLO_FUR_NO_DEAL_3	Don't waste my time with impossibilities!
+AI_DIPLO_FUR_NO_DEAL_4	What are you talking about? That's not possible.
+AI_DIPLO_FUR_NO_DEAL_5	Are you kidding? That can't be done!
+AI_DIPLO_FUR_NO_DEAL_6	There's no way such a deal is possible.
 AI_DIPLO_FUR_NO_DEAL_LEADER_CALABIM	Do you want to be feed for my fellow vampires? Then why do you keep pestering me with unreasonable demands?
 AI_DIPLO_FUR_NO_DEAL_LEADER_CLAN_OF_EMBERS	You think I'm dumb? Even I can count well enough to see that that is a bad deal!
 AI_DIPLO_FUR_NO_DEAL_LEADER_ELOHIM	Why do you waste our time? You know we can never agree to this proposal.
@@ -288,48 +649,117 @@ AI_DIPLO_FUR_NO_DEAL_LEADER_MALAKIM	Please stop wasting our time. We would get n
 AI_DIPLO_FUR_NO_DEAL_LEADER_MERCURIANS	You seek to buy me off? After your transgressions?
 AI_DIPLO_FUR_NO_DEAL_LEADER_SHEAIM	Your insolence knows no bounds, it seems. I would be mad to accept such an offer.
 AI_DIPLO_FUR_NO_DEAL_LEADER_SVARTALFAR	How long does it take you to prepare for war? The Svartalfar are always ready, and you are set to give us cause as well.
+AI_DIPLO_FUR_OFFER_DEAL_1	[CT_NAME], I'm making you an offer you can't refuse.
+AI_DIPLO_FUR_OFFER_DEAL_2	Show some intelligence for a change, [CT_NAME]. Accept this deal.
+AI_DIPLO_FUR_OFFER_DEAL_3	The [OUR_EMPIRE] offers you this trade. I suggest you take it.
+AI_DIPLO_FUR_OFFER_DEAL_4	Here's our offer. Take it or leave it.
+AI_DIPLO_FUR_OFFER_DEAL_5	[OUR_CIV_SHORT] offers your nasty little civilization the following deal.
+AI_DIPLO_FUR_OFFER_DEAL_6	Here's the deal. 
+AI_DIPLO_FUR_REJECT_1	We reject your proposal.  No thanks.
+AI_DIPLO_FUR_REJECT_10	Quit wasting my time. Make a reasonable offer or go away.
+AI_DIPLO_FUR_REJECT_2	Forget it.
+AI_DIPLO_FUR_REJECT_3	We reject your laughable offer.
+AI_DIPLO_FUR_REJECT_4	Just how gullible do you think I am, [CT_NAME]?
+AI_DIPLO_FUR_REJECT_5	Your generosity is underwhelming. Forget it.
+AI_DIPLO_FUR_REJECT_6	This is totally unacceptable!
+AI_DIPLO_FUR_REJECT_7	Just who do you think you're dealing with, [CT_NAME]?
+AI_DIPLO_FUR_REJECT_8	Your offer is an insult to [OUR_CIV_SHORT]. 
+AI_DIPLO_FUR_REJECT_9	Now that's just crazy talk. 
+AI_DIPLO_FUR_SORRY_1	Well, you suggest something then!
+AI_DIPLO_FUR_SORRY_10	Does puny [CT_CIV_SHORT] wish to make a counter-proposal? 
 AI_DIPLO_FUR_SORRY_2	How typical. Let's hear your brilliant idea then.
+AI_DIPLO_FUR_SORRY_3	You annoy me, [CT_NAME].
+AI_DIPLO_FUR_SORRY_4	You are incredibly stubborn, [CT_NAME]. 
+AI_DIPLO_FUR_SORRY_5	You are remarkably short-sighted, [CT_NAME], to treat your betters thusly.
+AI_DIPLO_FUR_SORRY_6	I suppose you have something better in mind?
+AI_DIPLO_FUR_SORRY_7	Then quit wasting my time. Either make a counter-proposal or be gone.
+AI_DIPLO_FUR_SORRY_8	Let's hear your idea, then.
+AI_DIPLO_FUR_SORRY_9	Then you put something on the table!
+AI_DIPLO_GIVE_HELP_1	We see that you could probably use a little help.
+AI_DIPLO_GIVE_HELP_2	Perhaps this could be of assistance to you, [CT_NAME].
+AI_DIPLO_GIVE_HELP_3	Here's a little something from us to you.
+AI_DIPLO_GIVE_HELP_4	Here, my friend: you might need this.
+AI_DIPLO_GIVE_HELP_5	Would this be of any use to you, [CT_NAME]?
+AI_DIPLO_GIVE_HELP_6	The [OUR_CIV_ADJ] people are feeling quite generous today, [CT_NAME]. Perhaps this could be of some use to you.
+AI_DIPLO_GREETINGS_ATT_FR_1	Hello, [CT_NAME]. What is it that you wish to discuss?
+AI_DIPLO_GREETINGS_ATT_FR_10	To what do I owe the pleasure of your company?'
+AI_DIPLO_GREETINGS_ATT_FR_11	Greetings, [CT_NAME]; how may we be of service?
+AI_DIPLO_GREETINGS_ATT_FR_12	Welcome, [CT_NAME], to my home.
+AI_DIPLO_GREETINGS_ATT_FR_13	Hello, [CT_NAME], leader of mighty [CT_CIV_SHORT].
+AI_DIPLO_GREETINGS_ATT_FR_14	And what brings [CT_CIV_SHORT] to my humble palace?
+AI_DIPLO_GREETINGS_ATT_FR_15	How may the [OUR_EMPIRE] assist mighty [CT_CIV_SHORT]?
+AI_DIPLO_GREETINGS_ATT_FR_16	And to what do I owe the pleasure of your company?
+AI_DIPLO_GREETINGS_ATT_FR_2	Greetings. What may humble [OUR_CIV_SHORT] do for the mighty [CT_CIV_SHORT]?
+AI_DIPLO_GREETINGS_ATT_FR_3	Greetings.  How may we be of assistance?
+AI_DIPLO_GREETINGS_ATT_FR_4	Welcome, friend [CT_NAME]. How may we be of assistance?
+AI_DIPLO_GREETINGS_ATT_FR_5	Hello again!
+AI_DIPLO_GREETINGS_ATT_FR_6	Good day to you, [CT_NAME].
+AI_DIPLO_GREETINGS_ATT_FR_7	So what's going on?
+AI_DIPLO_GREETINGS_ATT_FR_8	Hello, [CT_NAME]. What can I do for you?
+AI_DIPLO_GREETINGS_ATT_FR_9	What is on your mind?
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_ AUGUSTUS_CAESAR _1	Greetings, [CT_NAME]! What brings you to mighty [OUR_CIV_SHORT] today? Let's go over to the Coliseum and watch a bunch of prisoners get eaten by wild animals, shall we? 
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_ BRENNUS _1	We welcome our friend and ally, [CT_NAME]. 
+AI_DIPLO_GREETINGS_ATT_FR_LEADER_ALEXANDER_1	Welcome, my friend! Come, let us mount our chariots and destroy our foes, leaving fifty thousand rotting corpses upon the battlefield for the crows to fatten upon!
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_AMURITES	Well met, [CT_NAME]. Let us share our secrets, hmmm?
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_ARENDEL	The true queen of the elves shall ever welcome her friends into the warmth of her presence.
+AI_DIPLO_GREETINGS_ATT_FR_LEADER_ASOKA_1	Greetings, fair [CT_NAME]! May our two countries live forever in peace and harmony!
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_BALSERAPHS	Do you have time for a game of Somnium?
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_BANNOR	Come, [CT_NAME], make your case, but be quick. Evil's reach grows by the year, and we must all prepare for the end.
+AI_DIPLO_GREETINGS_ATT_FR_LEADER_BISMARCK_1	[OUR_CIV_SHORT] salutes you, [CT_NAME]. Come - sit down and admire my huge mustaches!
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_BOUDICA_1	Greetings, [CT_NAME]! Let us mount my mighty chariot and hunt down some barbarians! You can ride "shotgun!"
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_CALABIM	Greetings, mortal. Can I offer you a drink?
+AI_DIPLO_GREETINGS_ATT_FR_LEADER_CATHERINE_1	Welcome, [CT_NAME]. Is that a treaty in your pocket or are you just glad to see me?
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_CHARLEMAGNE_1	We graciously welcome the mighty leader of [OUR_CIV_SHORT] to our presence.
+AI_DIPLO_GREETINGS_ATT_FR_LEADER_CHINESE_LEADER_1	On behalf of the great and glorious Communist Party of China and of all of her horrible little peasants - I mean, "glorious workers" - greetings!
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_CLAN_OF_EMBERS	If you have something useful to say, say it now. I'm feeling friendly.
+AI_DIPLO_GREETINGS_ATT_FR_LEADER_CYRUS_1	I salute you, ruler of the [CT_EMPIRE]. May your inevitable destruction at the hands of Mighty [OUR_CIV_SHORT] be long delayed!
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_DARIUS_1	Back again, eh? What is it this time?
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_DECIUS	In my history of betrayal and lost friends you remain steadfast. I pray that it will remain so.
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_DE_GAULLE_1	Welcome, [CT_NAME]. Have you come yet again to admire my heroic profile?
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_DOVIELLO	I'm glad to have strong friends. Makes the betrayal more exciting once we vanquish our foes.
+AI_DIPLO_GREETINGS_ATT_FR_LEADER_ELIZABETH_1	Good afternoon, [CT_NAME]. And how is that quaint little empire of yours doing?
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_ELOHIM	I bid you welcome, friend of the Elohim. Pray tell, what can I do for you?
+AI_DIPLO_GREETINGS_ATT_FR_LEADER_FRANKLIN_ROOSEVELT_1	How absolutely marvey to see you again, [CT_NAME]! Do sit down; my man will get you a Martini.
+AI_DIPLO_GREETINGS_ATT_FR_LEADER_GANDHI_1	Greetings, [CT_NAME]. I trust you have come in peace?
+AI_DIPLO_GREETINGS_ATT_FR_LEADER_GENGHIS_KHAN_1	Welcome to my yurt, [CT_NAME]! Let us sit upon these horse-hair cushions and discuss many things! Care for some boiled yak?
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_GILGAMESH_1	You are truly blessed to come once more into my divine presence, [CT_NAME]. I assume that you've brought gifts?
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_GRIGORI	As flies to wanton boys, are we to the gods; They kill us for their sport.
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_HAMMURABI_1	Welcome, friend [CT_NAME]! What can mighty [OUR_CIV_SHORT] do to assist your humble empire?
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_HANNAH	I hope you are having a pleasant voyage. The waters around here can be rough on those more accustomed to frog ponds.
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_HANNIBAL_1	So you have come, [CT_NAME]? Excellent. It always gives me pleasure to speak with one who is almost my equal.
+AI_DIPLO_GREETINGS_ATT_FR_LEADER_HATSHEPSUT_1	Hello again, [CT_NAME]. How honored you must be to see me once more.
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_HIPPUS	Need the services of the Hippus?
+AI_DIPLO_GREETINGS_ATT_FR_LEADER_HUAYNA_CAPAC_1	I, [OUR_NAME], do welcome you, [CT_NAME], leader of the [CT_EMPIRE]. Let us speak of the slow, painful deaths of our enemies! Care for a smoked hamster?
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_ILLIANS	Between you and me, I think you'd better put on something a bit warmer.
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_INFERNAL	[CT_NAME], tell me what you need. Power? Yes, I believe we can make an arrangement...
+AI_DIPLO_GREETINGS_ATT_FR_LEADER_ISABELLA_1	Her most righteous majesty, [OUR_NAME], beloved of God and protector of the faith, does condescend to greet you once more, [CT_NAME].
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_JOAO_1	I greet you with effusive ebullience, my good friend.
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_JOSEF_STALIN_1	Ah, [CT_NAME]. Come to surrender and join our glorious collectivist society, have you?
+AI_DIPLO_GREETINGS_ATT_FR_LEADER_JULIUS_CAESAR_1	Greetings, my friend. What may I, [OUR_NAME], Emperor of Mighty [OUR_CIV_SHORT], do for your insignificant civilization today?
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_JUSTINIAN_1	You honor [OUR_CIV_SHORT] with your presence, [CT_NAME]. How can we assist you?
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_KEELYN	You've come back to see me, how delightful! Shall we watch the skeletons dance?
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_KHAZAD	Ah, [CT_NAME]. Come, we've much to discuss!
+AI_DIPLO_GREETINGS_ATT_FR_LEADER_KUBLAI_KHAN_1	Welcome to China, [CT_NAME]! Let us sit upon these golden thrones and discuss many things! Care for some kung pao yak?
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_KURIOTATES	It is good to speak with you again, [CT_NAME]. 
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_LANUN	Ahoy there! Can I offer you some rum?
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_LINCOLN_1	Greetings, [CT_NAME]. Sit down and let's chat for a spell.
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_LJOSALFAR	Ah, [CT_NAME]. I was just thinking how much I value your support.
+AI_DIPLO_GREETINGS_ATT_FR_LEADER_LOUIS_XIV_1	Welcome to my palace, [CT_NAME]. Care to watch me shave?
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_LUCHUIRP	Hello again, [CT_NAME]. What business do you have with the Luchuirp?
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_MALAKIM	Greetings again, [CT_NAME]. As ever, your presence brings light to our lands. What can the Malakim do for you?
+AI_DIPLO_GREETINGS_ATT_FR_LEADER_MANSA_MUSA_1	We meet again, [CT_NAME]. It is truly a blessed day for [OUR_CIV_SHORT]!
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_MEHMED_1	Welcome, [CT_NAME]. Let us eat figs and sip sherbet and discuss important things.
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_MERCURIANS	[CT_NAME]. Well, speak already.
+AI_DIPLO_GREETINGS_ATT_FR_LEADER_MONTEZUMA_1	Welcome, friend [CT_NAME]! I will slaughter many slaves in celebration of your visit!
+AI_DIPLO_GREETINGS_ATT_FR_LEADER_NAPOLEON_1	I am quite busy today, [CT_NAME], but perhaps I can grant you a short audience.
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_PACAL_1	I greet my friend and almost equal, [CT_NAME]. And what present shall you give us today?
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_PERICLES_1	Have you come again, [CT_NAME]? Wonderful! Let us sit on a log and debate Aristotelian Metaphysics until bedtime, shall we?
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_PERPENTACH	Take this kiss upon the brow! And, in parting from you now,[NEWLINE]Thus much let me avow-[NEWLINE]You are not wrong who deem[NEWLINE]That my days have been a dream;[NEWLINE]Yet if hope has flown away[NEWLINE]In a night, or in a day, [NEWLINE]In a vision, or in none, [NEWLINE]Is it therefore the less gone?[NEWLINE]All that we see or seem[NEWLINE]Is but a dream within a dream.
+AI_DIPLO_GREETINGS_ATT_FR_LEADER_PETER_1	Mighty [OUR_CIV_SHORT] greets you in friendship, [CT_NAME]. And in a drunken stupor too. 
+AI_DIPLO_GREETINGS_ATT_FR_LEADER_QIN_SHI_HUANG_1	Greetings, [CT_NAME]! Who shall we betray and destroy today?
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_RAGNAR_LODBROK_1	Greetings, friend [CT_NAME]! Of all the decadent and vulnerable civilizations in the world, yours is one of my favorites! 
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_RAMESSES_II_1	Ah, [CT_NAME] - come to bask for a while in my wondrous glory, have you?
+AI_DIPLO_GREETINGS_ATT_FR_LEADER_SALADIN_1	Blessings be upon you, oh mighty [CT_NAME]! Your glorious personage bestows great honor upon my humble kingdom!
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_SHAKA_1	Welcome, [CT_NAME]. And how is that undefended civilization of your coming along?
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_SHEAIM	Welcome once again, fellow horseman of the apocalypse. What do you need from the Sheaim?
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_SIDAR	[CT_NAME]? I'm glad you are still around. Our friends tend to die off before we Sidar notice.
@@ -337,107 +767,202 @@ AI_DIPLO_GREETINGS_ATT_FR_LEADER_SITTING_BULL_1	Welcome, my friend! You are inde
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_SULEIMAN_1	My palace is always open to you, [CT_NAME], oh wise and generous leader of [CT_CIV_SHORT].
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_SURYAVARMAN_1	Welcome, my friend! Let us discuss many things. Here: have a mango.
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_SVARTALFAR	You are wise to keep us close.
+AI_DIPLO_GREETINGS_ATT_FR_LEADER_TOKUGAWA_1	It is good to see you again, [CT_NAME]! Let us sit down and plot the ruination of our enemies. 
+AI_DIPLO_GREETINGS_ATT_FR_LEADER_VICTORIA_1	On behalf of Mighty Britannia, we are almost pleased to grant you an audience, [CT_NAME].
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_WANG_KON_1	We are honored by your visit, [CT_NAME]. Let us speak of many important things.
+AI_DIPLO_GREETINGS_ATT_FR_LEADER_WASHINGTON_1	Greetings, [CT_NAME]. How was your journey from the [CT_EMPIRE]? I slept there once, you know. 
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_WILLEM_VAN_ORANJE_1	Welcome, [CT_NAME]. I can always spare a few moments to converse with friends and allies.
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_WINSTON_CHURCHILL_1	Greetings, [CT_NAME]! Let us have tea and crumpets and divide the world between us.
 AI_DIPLO_GREETINGS_ATT_FR_LEADER_ZARA_YAQOB_1	May the blessings of Heaven be upon you, [CT_NAME]!
+AI_DIPLO_GREETINGS_ATT_FUR_1	Well?
+AI_DIPLO_GREETINGS_ATT_FUR_10	Speak your piece, [CT_NAME] - I haven't got all day.
+AI_DIPLO_GREETINGS_ATT_FUR_11	Are you still around? I thought somebody wiped out your puny civilization years ago.
+AI_DIPLO_GREETINGS_ATT_FUR_12	Oh, it's you. Now my day is complete.
+AI_DIPLO_GREETINGS_ATT_FUR_13	Well, look what the cat dragged in.
+AI_DIPLO_GREETINGS_ATT_FUR_14	I studied on killin' you.
+AI_DIPLO_GREETINGS_ATT_FUR_15	You try my patience, [CT_NAME].
+AI_DIPLO_GREETINGS_ATT_FUR_16	I'm listening.
+AI_DIPLO_GREETINGS_ATT_FUR_2	What is it?
+AI_DIPLO_GREETINGS_ATT_FUR_3	Well? Get on with it!
+AI_DIPLO_GREETINGS_ATT_FUR_4	What do YOU want?
+AI_DIPLO_GREETINGS_ATT_FUR_5	Let's hear it.
+AI_DIPLO_GREETINGS_ATT_FUR_6	What is it this time, [CT_NAME]?
+AI_DIPLO_GREETINGS_ATT_FUR_7	My time is valuable, [CT_NAME]. What do you want?
+AI_DIPLO_GREETINGS_ATT_FUR_8	Do not make me angry, [CT_NAME]. You wouldn't like me when I'm angry.
+AI_DIPLO_GREETINGS_ATT_FUR_9	And what does puny [CT_CIV_SHORT] want from mighty [OUR_CIV_SHORT]?
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_ BRENNUS _1	Speak your piece, [CT_NAME], and then be gone!
+AI_DIPLO_GREETINGS_ATT_FUR_LEADER_ALEXANDER_1	Still alive, are you? How disappointing. 
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_AMURITES	I guess I could spare a moment to listen to you... but you had better be more civil than before.
+AI_DIPLO_GREETINGS_ATT_FUR_LEADER_ASOKA_1	Why have you come to trouble us, [CT_NAME]?
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_BALSERAPHS	I bet you've come to beg for more favors.
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_BANNOR	There could have been nobility to your people, [CT_NAME]. But it appears you take the easy path to power, the sure road to corruption.
+AI_DIPLO_GREETINGS_ATT_FUR_LEADER_BISMARCK_1	Get to the point, [CT_NAME]. I have IMPORTANT matters of state to deal with.
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_BOUDICA_1	Go ahead: Make my day. 
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_CALABIM	You I do not wish to see you here, mortal. I hope you have something serious to discuss, otherwise your usefulness as a bargaining partner will soon be surpassed by the merits of your bodily nectar.
+AI_DIPLO_GREETINGS_ATT_FUR_LEADER_CATHERINE_1	Remarkable: a politician who even I won't sleep with.
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_CHARLEMAGNE_1	What do YOU want, knave?
+AI_DIPLO_GREETINGS_ATT_FUR_LEADER_CHINESE_LEADER_1	It is people like you, [CT_NAME], who give ruthless dictators a bad name. Why are you here?
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_CLAN_OF_EMBERS	This had better be very, very good, or your envoy's life is worth very, very little.
+AI_DIPLO_GREETINGS_ATT_FUR_LEADER_CYRUS_1	I wonder, [CT_NAME]: how many hanging chads did it take to get YOU into office?
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_DARIUS_1	Well look what the goat dragged in.
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_DECIUS	You are nothing but another in a long line of pampered bureaucrats trading your nation's resources for your own petty desires.
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_DE_GAULLE_1	Say what you have to say, [CT_NAME]. I have no desire to spend any more time with you than absolutely necessary.
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_DOVIELLO	Shouldn't you be preparing for our war?
+AI_DIPLO_GREETINGS_ATT_FUR_LEADER_ELIZABETH_1	Well? Out with it, you tiresome little person!
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_ELOHIM	You should not be coming here. Your violent stature is an abomination to the Elohim.
+AI_DIPLO_GREETINGS_ATT_FUR_LEADER_FRANKLIN_ROOSEVELT_1	Come to add to our troubles, have you? Well, get on with it then.
+AI_DIPLO_GREETINGS_ATT_FUR_LEADER_GANDHI_1	All people, no matter how unpleasant, are welcome in [OUR_CIV_SHORT], [CT_NAME].
+AI_DIPLO_GREETINGS_ATT_FUR_LEADER_GENGHIS_KHAN_1	And they call US barbarians?
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_GILGAMESH_1	Speak quickly before I open a big old can of divine wrath on you, false one!
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_GRIGORI	So, you wish to barter with the "heathen" do you? Out with it, then.
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_HAMMURABI_1	Well? Get on with it! I have laws to write!
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_HANNAH	Ye're on the wrong side of the Kraken of Fields. 
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_HANNIBAL_1	This had better be good, [CT_NAME]. I have no time for nonsense.
+AI_DIPLO_GREETINGS_ATT_FUR_LEADER_HATSHEPSUT_1	Bow before me, [CT_NAME] - a goddess deserves no less!
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_HIPPUS	You? I suppose we could help you, though you'll pay plenty for it.
+AI_DIPLO_GREETINGS_ATT_FUR_LEADER_HUAYNA_CAPAC_1	It is a source of unending astonishment to me that the gods permit you to live, [CT_NAME]. Why are you here?
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_ILLIANS	The howling winds cry of the wrongs done to me. We forget nothing.
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_INFERNAL	Please, come a little closer, [CT_NAME]. Come to my world, where the rules aren't stacked in favor of pathetic motes like yourself.
+AI_DIPLO_GREETINGS_ATT_FUR_LEADER_ISABELLA_1	I'm glad you're here, [CT_NAME]. My Grand Inquisitor would like to have a word with you.
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_JOAO_1	What now?
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_JOSEF_STALIN_1	What do YOU want?
+AI_DIPLO_GREETINGS_ATT_FUR_LEADER_JULIUS_CAESAR_1	Why are you here? Is it the Ides of March already?
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_JUSTINIAN_1	You may skip the pleasantries, [CT_NAME]. Why have you come to mighty [OUR_CIV_SHORT]?
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_KEELYN	My friends think that you don't like me... Hurry up and tell me what you want this time.
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_KHAZAD	You think you're so high-and-mighty, eh? Well you'd better not overlook the dwarves, I'll tell ye!
+AI_DIPLO_GREETINGS_ATT_FUR_LEADER_KUBLAI_KHAN_1	My grandfather would have destroyed you on sight, [CT_NAME]. Alas, but I live in more "civilized" times. What do you want?
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_KURIOTATES	Greatness comes from building up, [CT_NAME], not tearing down.
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_LANUN	If you do not impress me, you WILL be swimming home.
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_LINCOLN_1	And to what do I owe the dubious honor of your presence?
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_LJOSALFAR	It is only a matter of time until your arrogance destroys you, [CT_NAME].
+AI_DIPLO_GREETINGS_ATT_FUR_LEADER_LOUIS_XIV_1	Back again so soon, [CT_NAME]? How glorious. Imagine my excitement.
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_LUCHUIRP	Ahh! Why do you keep pestering me?! How am I to get any research done at this rate, can you tell me that? No? Then I propose you tell me why you've chosen to disturb me once again. I hope for your sake that it is important very important.
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_MALAKIM	Hmm it seems a shadow is cast in this room, blocking out the sun. I wonder what it will take for it to go away.
+AI_DIPLO_GREETINGS_ATT_FUR_LEADER_MANSA_MUSA_1	I do not approve of you or your country, [CT_NAME]. What have you to say that will change my opinion of you?
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_MEHMED_1	Speak quickly, [CT_NAME]. Your voice has an unpleasant grating whine that is distasteful to listen to.
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_MERCURIANS	My patience is razor thin with you, [CT_NAME]. Let's hope I like what you have to say.
+AI_DIPLO_GREETINGS_ATT_FUR_LEADER_MONTEZUMA_1	Tell me, [CT_NAME]: what has [CT_CIV_SHORT] done to anger the gods so that they give them you as leader?
+AI_DIPLO_GREETINGS_ATT_FUR_LEADER_NAPOLEON_1	I have little time for your prattle, [CT_NAME]. That is the long and short of it.
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_PACAL_1	Come to grovel at our feet, eh? Well, go ahead.
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_PERICLES_1	Well? Out with it!
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_PERPENTACH	That is not dead which can eternal lie,[NEWLINE]And with strange aeons, even death may die.
+AI_DIPLO_GREETINGS_ATT_FUR_LEADER_PETER_1	Be brief, [CT_NAME]. I'm trying to give up hacking annoying people to death in a blind rage for Lent. 
+AI_DIPLO_GREETINGS_ATT_FUR_LEADER_QIN_SHI_HUANG_1	Greetings, [CT_NAME]! We are, as always, happy to see you again.
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_RAGNAR_LODBROK_1	Speak quickly, [CT_NAME]. You are stinking up my palace.
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_RAMESSES_II_1	Talk quickly and be gone, knave, before I forget myself and turn you into a beetle.
+AI_DIPLO_GREETINGS_ATT_FUR_LEADER_SALADIN_1	What a surprise! I did not realize it was locust season once again.
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_SHEAIM	Oh, it's you again. Don't mind the screams, it's just our newest recruits being conditioned. Apparently the process takes some getting used to. State your business quickly, or you might just find yourself joining them.
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_SIDAR	We will live to see your demise, [CT_NAME].
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_SITTING_BULL_1	What could you possibly say that would be of even the slightest interest to me?
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_SULEIMAN_1	Well? Get on with it! Every moment that I spend gazing upon your wizened visage is painful to me.
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_SURYAVARMAN_1	Well?
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_SVARTALFAR	Twelve assassins loyal to me reside in your palace alone. Get to the point and make it worth my while.
+AI_DIPLO_GREETINGS_ATT_FUR_LEADER_TOKUGAWA_1	Greetings, [CT_NAME]! [OUR_CIV_SHORT] is honored by your visit. You can be sure that we will be coming to your country very soon now. 
+AI_DIPLO_GREETINGS_ATT_FUR_LEADER_VICTORIA_1	Good day to you, [CT_NAME]. To what do we owe this unexpected interruption?
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_WANG_KON_1	Speak quickly, [CT_NAME]. I have little time for your imbecilities. 
+AI_DIPLO_GREETINGS_ATT_FUR_LEADER_WASHINGTON_1	What could [CT_CIV_SHORT] possibly have to say that would be of interest to [OUR_CIV_SHORT]?
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_WILLEM_VAN_ORANJE_1	I'm listening.
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_WINSTON_CHURCHILL_1	I have no desire to exchange social pleasantries with you, [CT_NAME]. Why have you come?
 AI_DIPLO_GREETINGS_ATT_FUR_LEADER_ZARA_YAQOB_1	Say what you have come to say, sinful one. I am listening.
+AI_DIPLO_HELP_REFUSED_EQUAL_1	We shall remember this, [CT_NAME].
+AI_DIPLO_HELP_REFUSED_EQUAL_2	How shortsighted of you.
+AI_DIPLO_HELP_REFUSED_EQUAL_3	That's not very nice of you, [CT_NAME]. 
+AI_DIPLO_HELP_REFUSED_EQUAL_4	We'll remember this.
+AI_DIPLO_HELP_REFUSED_EQUAL_5	You foolish person.
+AI_DIPLO_HELP_REFUSED_EQUAL_6	I expected better of you, [CT_NAME]. 
+AI_DIPLO_HELP_REFUSED_STRONGER_1	I hope you don't come to regret this, [CT_NAME]. 
+AI_DIPLO_HELP_REFUSED_STRONGER_2	Very well. On your own head be it.
+AI_DIPLO_HELP_REFUSED_STRONGER_3	As you will. 
+AI_DIPLO_HELP_REFUSED_STRONGER_4	Remember, what goes around comes around...
+AI_DIPLO_HELP_REFUSED_STRONGER_5	Fine. See if we help you out when you need it.
+AI_DIPLO_HELP_REFUSED_STRONGER_6	That's too bad. For the both of us, I fear.
+AI_DIPLO_HELP_REFUSED_WEAKER_1	How disappointing. 
+AI_DIPLO_HELP_REFUSED_WEAKER_2	Well, dang.
+AI_DIPLO_HELP_REFUSED_WEAKER_3	You are really not a very giving person, [CT_NAME].
+AI_DIPLO_HELP_REFUSED_WEAKER_4	Very well. We shall say nothing more of this - for the moment.
+AI_DIPLO_HELP_REFUSED_WEAKER_5	You have chosen foolishly, [CT_NAME].
+AI_DIPLO_HELP_REFUSED_WEAKER_6	Very well. But greed will be your ultimate downfall, [CT_NAME]. 
+AI_DIPLO_JOIN_DENIED_1	You should choose your sides carefully.
+AI_DIPLO_JOIN_DENIED_2	Very well. That just means more plunder for us!
+AI_DIPLO_JOIN_DENIED_3	Really? I had no idea you were so timid!
+AI_DIPLO_JOIN_DENIED_4	How very disappointing.
+AI_DIPLO_JOIN_DENIED_5	I hope you know what you're doing, [CT_NAME].
+AI_DIPLO_JOIN_DENIED_6	We shall remember this, [CT_NAME]!
 AI_DIPLO_JOIN_WAR_1	The %s1:2 are a threat to us all. Please join us in wiping them out.
 AI_DIPLO_JOIN_WAR_2	Care to assist us in destroying the evil %s1:2?
 AI_DIPLO_JOIN_WAR_3	Greetings, [CT_NAME]. The annoying %s1:2 must be destroyed, don't you agree?
 AI_DIPLO_JOIN_WAR_4	[CT_NAME]: we urgently request mighty [CT_CIV_SHORT]'s assistance in our crusade against the %s1:2!
 AI_DIPLO_JOIN_WAR_5	The treacherous %s1:2 must be punished for their offences against civilization, [CT_NAME]! I assume we can count on your assistance?
 AI_DIPLO_JOIN_WAR_6	The nasty %s1:2 are plotting against us all, [CT_NAME]! Let us destroy them together!
+AI_DIPLO_NO_PEACE_1	No way.
 AI_DIPLO_NO_PEACE_2	Not until every last [CT_CIV_ADJ] warrior is ground into dust!
+AI_DIPLO_NO_PEACE_3	Never!
+AI_DIPLO_NO_PEACE_4	There will be no peace, [CT_NAME].
+AI_DIPLO_NO_PEACE_5	Peace? Hah! Forget it.
+AI_DIPLO_NO_PEACE_6	It is much too late for that, [CT_NAME]. Take your punishment like a man!
 AI_DIPLO_NO_PEACE_LEADER_ AUGUSTUS_CAESAR _1	You shall have peace, [CT_NAME] - the peace of death!
 AI_DIPLO_NO_PEACE_LEADER_ BRENNUS _1	Peace? Don't make me laugh!
+AI_DIPLO_NO_PEACE_LEADER_ALEXANDER_1	Your continued existence is an insult to the mighty [OUR_EMPIRE]. This war shall end when you have been erased from the planet.
 AI_DIPLO_NO_PEACE_LEADER_AMURITES	You have awakened the blood of heroes coursing through our veins. It is too late for you to call this off!
 AI_DIPLO_NO_PEACE_LEADER_ARENDEL	We know the side you have chosen. Peace between us is sundered.
+AI_DIPLO_NO_PEACE_LEADER_ASOKA_1	There shall be no true peace in the world until you are no longer in it. The war continues.
 AI_DIPLO_NO_PEACE_LEADER_BALSERAPHS	But we are having so much fun.
 AI_DIPLO_NO_PEACE_LEADER_BANNOR	The Crusade has been launched. Every man has taken to his sword. The legions are at march to eradicate your evil. There shall be no peace until you are broken. 
+AI_DIPLO_NO_PEACE_LEADER_BISMARCK_1	Your request is denied. Welcome to total war, [CT_NAME].
 AI_DIPLO_NO_PEACE_LEADER_BOUDICA_1	Don't make me laugh!
 AI_DIPLO_NO_PEACE_LEADER_CALABIM	Well, well, well... You want it to end, you say? I'm afraid that is not an option. The Calabim thirst for blood, and our own cities are all but sucked dry.
+AI_DIPLO_NO_PEACE_LEADER_CATHERINE_1	I must refuse, [CT_NAME]; peace is not in our best interests at this time. Besides, I think that men in uniform look totally yummy, don't you?
 AI_DIPLO_NO_PEACE_LEADER_CHARLEMAGNE_1	Peace? Not by the hair on my chinny-chin-chin!
+AI_DIPLO_NO_PEACE_LEADER_CHINESE_LEADER_1	There can never be peace in the unending war between the people and the bloodsucking bourgoise capitalist opressors who seek to enslave them! That would be you, punk.
 AI_DIPLO_NO_PEACE_LEADER_CLAN_OF_EMBERS	HAH! Forget it! Don't make the mistake of thinking I won't finish this. When I finally catch you, your head will hang on my spear.
+AI_DIPLO_NO_PEACE_LEADER_CYRUS_1	You have yet to pay fully for your sins, [CT_NAME]. Your people's sufferings will continue until you have done so.
 AI_DIPLO_NO_PEACE_LEADER_DARIUS_1	Grovel all you want, [CT_NAME]. It will not save your pitiful people from their destruction!
 AI_DIPLO_NO_PEACE_LEADER_DECIUS	You are unfit for your throne, and I mean to remove you from it.
 AI_DIPLO_NO_PEACE_LEADER_DE_GAULLE_1	Certainly not! The honor of [OUR_CIV_SHORT] demands that this war continue until you are ground into very small bits.
 AI_DIPLO_NO_PEACE_LEADER_DOVIELLO	I smell blood. 
+AI_DIPLO_NO_PEACE_LEADER_ELIZABETH_1	Do you plead for mercy, [CT_NAME]? You'll find none here - only justice!
 AI_DIPLO_NO_PEACE_LEADER_ELOHIM	We have seen that your nature is destructive, and any solace we would gain by such a deal would only be temporary. Much as I regret it, you will have to be put down.
+AI_DIPLO_NO_PEACE_LEADER_FRANKLIN_ROOSEVELT_1	Certainly not! You've awoken a sleeping tiger, [CT_NAME], and I hope you choke on it.
+AI_DIPLO_NO_PEACE_LEADER_GANDHI_1	I may be a pacifist, [CT_NAME], but I'm not an idiot. [OUR_CIV_SHORT] declines your request.
+AI_DIPLO_NO_PEACE_LEADER_GENGHIS_KHAN_1	Now? While everybody's having so much fun? I don't think so!
 AI_DIPLO_NO_PEACE_LEADER_GILGAMESH_1	This war will continue until my divine bloodlust is completely sated.
 AI_DIPLO_NO_PEACE_LEADER_GRIGORI	Alas, I offered reason, you responded with fanaticism. For my people's sake, I must break you.
 AI_DIPLO_NO_PEACE_LEADER_HAMMURABI_1	There will be no peace until the last [CT_CIV_ADJ] soldier's head is atop a [OUR_CIV_ADJ] spear!
 AI_DIPLO_NO_PEACE_LEADER_HANNAH	Ye seek to stop the wave from falling? To quell the storm at the peak of its fury? To stay the maw of the kraken once opened? 
 AI_DIPLO_NO_PEACE_LEADER_HANNIBAL_1	And why in the world would I want to discuss peace when mighty [OUR_CIV_SHORT] is on the verge of wiping your puny civilization off of the planet?
+AI_DIPLO_NO_PEACE_LEADER_HATSHEPSUT_1	Gods do not negitiate with mortals - particularly with ugly little slimeballs such as yourself. Go back to your home to await your doom.
 AI_DIPLO_NO_PEACE_LEADER_HIPPUS	When there is plunder to be had from your fields? Nah...
+AI_DIPLO_NO_PEACE_LEADER_HUAYNA_CAPAC_1	You may beg and plead all you like, [CT_NAME], but it will do you no good. The war will continue until the gods grow tired of it.
 AI_DIPLO_NO_PEACE_LEADER_ILLIANS	I would not dream of quitting-I grow closer to this world by the season.
 AI_DIPLO_NO_PEACE_LEADER_INFERNAL	Why should the son of fire fall down before a son of clay?
+AI_DIPLO_NO_PEACE_LEADER_ISABELLA_1	No! God commands that I continue this holy crusade until I have achieved total victory! Begone, churl!
 AI_DIPLO_NO_PEACE_LEADER_JOAO_1	Not while there are still so many [CT_CIV_ADJ] warriors to slaughter!
 AI_DIPLO_NO_PEACE_LEADER_JOSEF_STALIN_1	No! You have made your bed, now you must die in it!
+AI_DIPLO_NO_PEACE_LEADER_JULIUS_CAESAR_1	I have a better idea - how about I just raze your cities and sow your fields with salt?
 AI_DIPLO_NO_PEACE_LEADER_JUSTINIAN_1	Thank you for your kind offer, [CT_NAME], but I believe that I would prefer to wipe your civilization off of the face of the world.
 AI_DIPLO_NO_PEACE_LEADER_KEELYN	But your men look so funny when they flee my puppets! I think we'll see a bit more of it! 
 AI_DIPLO_NO_PEACE_LEADER_KHAZAD	What're you trying to pull? No, enough of that, stand and fight!
+AI_DIPLO_NO_PEACE_LEADER_KUBLAI_KHAN_1	No! [OUR_CIV_ADJ] laws demand that you be further punished for your insolence!
 AI_DIPLO_NO_PEACE_LEADER_KURIOTATES	If I let you go now, you'll only threaten us again. Much as it goes against my nature, you must be devoured.
 AI_DIPLO_NO_PEACE_LEADER_LANUN	Stop now? But my ships haven't sampled the hospitality of all your harbors yet!
 AI_DIPLO_NO_PEACE_LEADER_LINCOLN_1	As a friend of mine once said, 'No terms except unconditional and immediate surrender can be accepted.' Pithy, don't you agree?
 AI_DIPLO_NO_PEACE_LEADER_LJOSALFAR	We are gentle creatures by nature, but you have aroused our wrath, and it has yet to be spent.
+AI_DIPLO_NO_PEACE_LEADER_LOUIS_XIV_1	It is far too late for peace, you silly [CT_CIV_ADJ] person! Now go away or I shall taunt you a second time!
 AI_DIPLO_NO_PEACE_LEADER_LUCHUIRP	You want peace, eh? Should've thought of that before angering me, I think. We wouldn't want our golems standing idle, would we? Especially not when we can send them to kill annoying people like yourself.
 AI_DIPLO_NO_PEACE_LEADER_MALAKIM	I am afraid it is too late to turn back now. Our soldiers are on the march, the light has illumined their path, and they are determined to eliminate the dread shadow that your nation casts over these lands. Your people will surely be happier once they find themselves in sunlight once again.
+AI_DIPLO_NO_PEACE_LEADER_MANSA_MUSA_1	Your nation pollutes the very world with its corruption, [CT_NAME]. You must be exterminated.
 AI_DIPLO_NO_PEACE_LEADER_MEHMED_1	One cannot make peace with a jackal. Now go!
 AI_DIPLO_NO_PEACE_LEADER_MERCURIANS	Mercy is for the innocent. Join your friends in Hell.
+AI_DIPLO_NO_PEACE_LEADER_MONTEZUMA_1	No. We have not yet sacrificed enough [CT_CIV_ADJ] warriors to slake the gods' unending thirst for blood. Try back later.
+AI_DIPLO_NO_PEACE_LEADER_NAPOLEON_1	Why should I agree to peace when my [OUR_CIV_ADJ] armies are making such short work of you?
 AI_DIPLO_NO_PEACE_LEADER_PACAL_1	Peace now? You've got to be kidding me!
 AI_DIPLO_NO_PEACE_LEADER_PERICLES_1	Peace? Don't be foolish. There can be no peace between Civilization and Barbarian. 
 AI_DIPLO_NO_PEACE_LEADER_PERPENTACH	Why stop here already? We've had so much fun.[NEWLINE]We've seen you do battle, now let's see you run.
+AI_DIPLO_NO_PEACE_LEADER_PETER_1	Mighty [OUR_CIV_SHORT] does not negotiate with the likes of you! Now go before I have my Cossacks hack you to bits!
+AI_DIPLO_NO_PEACE_LEADER_QIN_SHI_HUANG_1	No. You have not yet learned the proper respect for your betters.
 AI_DIPLO_NO_PEACE_LEADER_RAGNAR_LODBROK_1	Peace? Hah! Peace is for the weak and the dead - not for mighty Viking warriors!
 AI_DIPLO_NO_PEACE_LEADER_RAMESSES_II_1	Peace now? When my mighty chariots are on the verge of destroying your civilization in its entirety? Don't make me laugh!
+AI_DIPLO_NO_PEACE_LEADER_SALADIN_1	Never! You are an enemy of God! Prepare for thy doom!
 AI_DIPLO_NO_PEACE_LEADER_SHAKA_1	Not a chance. The mighty [OUR_CIV_ADJ] people do not care to make peace with cattle-stealing brigands like you. 
 AI_DIPLO_NO_PEACE_LEADER_SHEAIM	I think not. You have chosen the path of fire yourself, now walk it all the way to the end.
 AI_DIPLO_NO_PEACE_LEADER_SIDAR	This conquest is a novel experience for Sidar. We cannot stop now.
@@ -445,11 +970,17 @@ AI_DIPLO_NO_PEACE_LEADER_SITTING_BULL_1	This war will end when I decide it will 
 AI_DIPLO_NO_PEACE_LEADER_SULEIMAN_1	That would be unwise at the moment. The war shall continue.
 AI_DIPLO_NO_PEACE_LEADER_SURYAVARMAN_1	We do not make peace with barbarians.
 AI_DIPLO_NO_PEACE_LEADER_SVARTALFAR	You shall have peace. The peace of the grave.
+AI_DIPLO_NO_PEACE_LEADER_TOKUGAWA_1	What? Leave you alive to betray and backstab us again?! I shall not sleep easily until you are totally vanquished!
+AI_DIPLO_NO_PEACE_LEADER_VICTORIA_1	War is deeply unpleasant, but sometimes necessary. We're told that this is one of those times, so we must refuse your pleas. This interview is concluded.
 AI_DIPLO_NO_PEACE_LEADER_WANG_KON_1	There shall be no peace until you are languishing in a [OUR_CIV_ADJ] prison, [CT_NAME]. Get out of here.
+AI_DIPLO_NO_PEACE_LEADER_WASHINGTON_1	America does not negotiate with terrorists. 
 AI_DIPLO_NO_PEACE_LEADER_WILLEM_VAN_ORANJE_1	Certainly not. The war will continue until we have achieved total victory.
 AI_DIPLO_NO_PEACE_LEADER_WINSTON_CHURCHILL_1	The [OUR_CIV_ADJ] people shall accept no terms but unconditional surrender, [CT_NAME]. 
 AI_DIPLO_NO_PEACE_LEADER_ZARA_YAQOB_1	There shall be no peace until your tortured soul is burning in the fiery pits of the netherworld!
 AI_DIPLO_NO_VASSAL_1	It appears you are too weak to protect us, so we no longer have any interest in being your Vassal State. What are you going to do about it?
+AI_DIPLO_NUKES_1	Beware, our words are backed by nuclear weapons!
+AI_DIPLO_OFFER_CITY_1	We would like to offer up this city as a sign of our respect.
+AI_DIPLO_OFFER_PEACE_1	Perhaps it is time for all this bloodshed to end?
 AI_DIPLO_OFFER_PEACE_LEADER_BALSERAPHS	Let's play another game instead.
 AI_DIPLO_OFFER_PEACE_LEADER_BANNOR	I'm tired of old men dreaming up wars for young men to die in.
 AI_DIPLO_OFFER_PEACE_LEADER_CALABIM	I believe the time where war could be of benefit to us is past. For now, I would strongly advise you to cease hostilities, and perhaps we will even be inclined to do the same.
@@ -470,6 +1001,26 @@ AI_DIPLO_OFFER_PEACE_LEADER_PERPENTACH	Bring in the force you thought I would ig
 AI_DIPLO_OFFER_PEACE_LEADER_SHEAIM	You have shown great prowess in the arts of destruction, [CT_NAME], and I am much impressed. But I trust you are wise enough to know when you've gone too far, and that this time is now. I hope we can come to an agreement on ending this war, lest it destroys us both prematurely.
 AI_DIPLO_OFFER_PEACE_LEADER_SVARTALFAR	You have slipped from my web. Why don't you retreat while I spin another?
 AI_DIPLO_OFFER_VASSAL	Oh [CT_NAME], leader of mighty [CT_CIV_SHORT], please protect [OUR_CIV_SHORT] from harm and you shall have our loyalty.
+AI_DIPLO_PEACE_1	We look forward to many years of peace between the [OUR_CIV_ADJ] and [CT_CIV_ADJ] Empires.
+AI_DIPLO_PEACE_10	May the peace last a thousand years.
+AI_DIPLO_PEACE_11	There is no way to peace. Peace is the way.
+AI_DIPLO_PEACE_12	You have chosen wisely.
+AI_DIPLO_PEACE_13	Excellent!
+AI_DIPLO_PEACE_14	I applaud your wisdom.
+AI_DIPLO_PEACE_15	Wonderful.
+AI_DIPLO_PEACE_16	Excellent! Now let us join together and destroy somebody else!
+AI_DIPLO_PEACE_17	You are wiser than you appear, [CT_NAME].
+AI_DIPLO_PEACE_18	Peace with honor, [CT_NAME]: that's what it's all about.
+AI_DIPLO_PEACE_19	You are not as foolish as you first appear, [CT_NAME]. I am pleased.
+AI_DIPLO_PEACE_2	May the peace be eternal.
+AI_DIPLO_PEACE_20	May the peace last until there is no one else to conquer!
+AI_DIPLO_PEACE_3	May we all live long and prosper.
+AI_DIPLO_PEACE_4	May this peace last until there is no more room to expand!
+AI_DIPLO_PEACE_5	I look forward to years of peace with you, [CT_NAME].
+AI_DIPLO_PEACE_6	Wonderful!
+AI_DIPLO_PEACE_7	[CT_NAME], let us sit in a circle and sing "Kumbaya" to celebrate this great event!
+AI_DIPLO_PEACE_8	Minions! Prepare a feast to celebrate the peace between our great Empires!
+AI_DIPLO_PEACE_9	You have our gratitude.
 AI_DIPLO_PEACE_LEADER_AMURITES	Good, without warfare we can continue our studies. I trust you can find your own way out?
 AI_DIPLO_PEACE_LEADER_BALSERAPHS	You're my new best friend. I broke my last one.
 AI_DIPLO_PEACE_LEADER_BANNOR	The noble halls of the Bannor lands will ever be open to those who love justice and goodness.
@@ -495,46 +1046,74 @@ AI_DIPLO_PEACE_LEADER_PERPENTACH	When at last the cast departs the stage[NEWLINE
 AI_DIPLO_PEACE_LEADER_SHEAIM	It seems there will be no exchange of fiery death between us in the immediate future. A pity...
 AI_DIPLO_PEACE_LEADER_SIDAR	All done? Good, then we shall return. There is much to discover, and it takes much concentration to remain in this world.
 AI_DIPLO_PEACE_LEADER_SVARTALFAR	Yes, we are locked into eternal bonds of peace, dear [CT_NAME]. You can bet your life on it.
+AI_DIPLO_REFUSE_TO_TALK_1	Stop pestering me!
+AI_DIPLO_REFUSE_TO_TALK_2	I have nothing to say to you.
+AI_DIPLO_REFUSE_TO_TALK_3	Sorry, [CT_NAME], talk does not interest us!
+AI_DIPLO_REFUSE_TO_TALK_4	Go away. We have nothing to discuss.
+AI_DIPLO_REFUSE_TO_TALK_5	Leave me alone!
+AI_DIPLO_REFUSE_TO_TALK_6	I am not interested in hearing any more of your lies. Go away.
 AI_DIPLO_REFUSE_TO_TALK_LEADER_ AUGUSTUS_CAESAR _1	Go away, [CT_NAME]; you bother me.
 AI_DIPLO_REFUSE_TO_TALK_LEADER_ BRENNUS _1	Your words twist like they were serpents, [CT_NAME]. Begone!
+AI_DIPLO_REFUSE_TO_TALK_LEADER_ALEXANDER_1	I have more important things to do than to exchange lies with you. Come back another day.
 AI_DIPLO_REFUSE_TO_TALK_LEADER_AMURITES	Why do you keep coming here? It is suspicious... I'd rather not see you for awhile.
+AI_DIPLO_REFUSE_TO_TALK_LEADER_ASOKA_1	We will not listen to your lies, [CT_NAME]. Remove yourself from our presence.
 AI_DIPLO_REFUSE_TO_TALK_LEADER_BALSERAPHS	Oh, I was hoping it was someone else.
 AI_DIPLO_REFUSE_TO_TALK_LEADER_BANNOR	Civilized men know talk is preferable to warfare. But treating with you is getting us nowhere.
+AI_DIPLO_REFUSE_TO_TALK_LEADER_BISMARCK_1	Speak with YOU? Do not make me laugh!
 AI_DIPLO_REFUSE_TO_TALK_LEADER_BOUDICA_1	Go away before I throw you to the badgers!
 AI_DIPLO_REFUSE_TO_TALK_LEADER_CALABIM	Bad blood runs between us. We have nothing to discuss.
+AI_DIPLO_REFUSE_TO_TALK_LEADER_CATHERINE_1	I find you strangely unattractive, [CT_NAME]. Do not return until you are better-looking.
 AI_DIPLO_REFUSE_TO_TALK_LEADER_CHARLEMAGNE_1	Get out of my sight before I do something extremely undiplomatic.
+AI_DIPLO_REFUSE_TO_TALK_LEADER_CHINESE_LEADER_1	[OUR_CIV_SHORT] will not listen to your bourgoise lies!
 AI_DIPLO_REFUSE_TO_TALK_LEADER_CLAN_OF_EMBERS	Get lost, vermin!
+AI_DIPLO_REFUSE_TO_TALK_LEADER_CYRUS_1	Vile serpent! [OUR_CIV_SHORT] will not listen to your lies!
 AI_DIPLO_REFUSE_TO_TALK_LEADER_DARIUS_1	I will not speak with you!
 AI_DIPLO_REFUSE_TO_TALK_LEADER_DECIUS	I am experienced enough to recognize when diplomacy is only a pretense for actions you have already committed to.
 AI_DIPLO_REFUSE_TO_TALK_LEADER_DE_GAULLE_1	There is nothing to discuss. Go away now.
 AI_DIPLO_REFUSE_TO_TALK_LEADER_DOVIELLO	Diplomacy is a trick of the weak to tie down the strong. 
+AI_DIPLO_REFUSE_TO_TALK_LEADER_ELIZABETH_1	Go away you horrible little person!
 AI_DIPLO_REFUSE_TO_TALK_LEADER_ELOHIM	You stray too far from the path of peace. We do not wish to speak with you.
+AI_DIPLO_REFUSE_TO_TALK_LEADER_FRANKLIN_ROOSEVELT_1	[OUR_EMPIRE] does not negotiate with terrorists.
+AI_DIPLO_REFUSE_TO_TALK_LEADER_GANDHI_1	Further discussion at this point would be meaningless. Not to mention very annoying. Go away.
+AI_DIPLO_REFUSE_TO_TALK_LEADER_GENGHIS_KHAN_1	Bah! This chatter is a waste of time! Begone!
 AI_DIPLO_REFUSE_TO_TALK_LEADER_GILGAMESH_1	No! Your prayers will remain unanswered!
 AI_DIPLO_REFUSE_TO_TALK_LEADER_GRIGORI	If I wish not to see gods, why would I parley with their puppets?
 AI_DIPLO_REFUSE_TO_TALK_LEADER_HAMMURABI_1	I do not speak to liars and cheats.
 AI_DIPLO_REFUSE_TO_TALK_LEADER_HANNAH	Aw, ye got your feet wet for nothing. Take a swim.
 AI_DIPLO_REFUSE_TO_TALK_LEADER_HANNIBAL_1	Go away. [OUR_EMPIRE] has no time for your nonsense. 
+AI_DIPLO_REFUSE_TO_TALK_LEADER_HATSHEPSUT_1	Begone, you lying serpent!
 AI_DIPLO_REFUSE_TO_TALK_LEADER_HIPPUS	Idle chat is for old women, not warriors.
+AI_DIPLO_REFUSE_TO_TALK_LEADER_HUAYNA_CAPAC_1	It is a waste of time to speak with fools. Go away.
 AI_DIPLO_REFUSE_TO_TALK_LEADER_ILLIANS	I tire of your empty prattle echoing through these sacred caverns. Return to your lands.
 AI_DIPLO_REFUSE_TO_TALK_LEADER_INFERNAL	Do I look like that friendly to you? Be gone, lest my flames do the "talking!"
+AI_DIPLO_REFUSE_TO_TALK_LEADER_ISABELLA_1	Your lying words pollute the heavens, [CT_NAME]!
 AI_DIPLO_REFUSE_TO_TALK_LEADER_JOAO_1	Go away, you vile person!
 AI_DIPLO_REFUSE_TO_TALK_LEADER_JOSEF_STALIN_1	I'll have no truck with liars and villains, [CT_NAME]! Begone!
+AI_DIPLO_REFUSE_TO_TALK_LEADER_JULIUS_CAESAR_1	Negotiate this, pal!
 AI_DIPLO_REFUSE_TO_TALK_LEADER_JUSTINIAN_1	No!
 AI_DIPLO_REFUSE_TO_TALK_LEADER_KEELYN	Talk to the imp!
 AI_DIPLO_REFUSE_TO_TALK_LEADER_KHAZAD	Ach, more of your blabbing? I much prefer the sound of hammer and steel.
+AI_DIPLO_REFUSE_TO_TALK_LEADER_KUBLAI_KHAN_1	Hello, this is [OUR_NAME]. [OUR_CIV_SHORT] is not at home right now: please leave your name and number and we'll get back to you when pigs have wings.
 AI_DIPLO_REFUSE_TO_TALK_LEADER_KURIOTATES	There are matters for me to attend to more urgent than your talk, [CT_NAME]. Another time.
 AI_DIPLO_REFUSE_TO_TALK_LEADER_LANUN	Found sea-legs, have you? Well, take them elsewhere.
 AI_DIPLO_REFUSE_TO_TALK_LEADER_LINCOLN_1	Drop dead.
 AI_DIPLO_REFUSE_TO_TALK_LEADER_LJOSALFAR	Must you traipse about bellowing so? I know you are there. I simply have no desire for your company.
+AI_DIPLO_REFUSE_TO_TALK_LEADER_LOUIS_XIV_1	Forget it. I have wigs that are smarter than you are.
 AI_DIPLO_REFUSE_TO_TALK_LEADER_LUCHUIRP	You wish to speak with us, [CT_NAME]? What a shame. We do not wish to speak with you.
 AI_DIPLO_REFUSE_TO_TALK_LEADER_MALAKIM	You walk in the darkness, [CT_NAME]. Our path is too bright for you.
+AI_DIPLO_REFUSE_TO_TALK_LEADER_MANSA_MUSA_1	Take your pathetic lies elsewhere, for I do not wish to hear them.
 AI_DIPLO_REFUSE_TO_TALK_LEADER_MEHMED_1	You're wasting your time, [CT_NAME]. I'll not be swayed by your lying words.
 AI_DIPLO_REFUSE_TO_TALK_LEADER_MERCURIANS	Do I look eager to see you, [CT_NAME]?
+AI_DIPLO_REFUSE_TO_TALK_LEADER_MONTEZUMA_1	Talk to the ceremonial blade, [CT_NAME].
+AI_DIPLO_REFUSE_TO_TALK_LEADER_NAPOLEON_1	Talk to the massed artillery, [CT_NAME].
 AI_DIPLO_REFUSE_TO_TALK_LEADER_PACAL_1	No! I am far too important to speak with you!
 AI_DIPLO_REFUSE_TO_TALK_LEADER_PERICLES_1	No!
 AI_DIPLO_REFUSE_TO_TALK_LEADER_PERPENTACH	[CT_NAME], we have nothing more to discuss[NEWLINE]Why talk when you clearly have no love for us?
+AI_DIPLO_REFUSE_TO_TALK_LEADER_PETER_1	Guards! Toss this villain out into the snow before I commit a diplomatic incident!
+AI_DIPLO_REFUSE_TO_TALK_LEADER_QIN_SHI_HUANG_1	The mere sight of you offends me, [CT_NAME]. Begone!
 AI_DIPLO_REFUSE_TO_TALK_LEADER_RAGNAR_LODBROK_1	Be gone before I chop you into tiny pieces and feed you to the walruses!
 AI_DIPLO_REFUSE_TO_TALK_LEADER_RAMESSES_II_1	Hold your tongue less I tear it out and feed it to the crocodiles!
+AI_DIPLO_REFUSE_TO_TALK_LEADER_SALADIN_1	Your words are but the braying of a jackass, [CT_NAME]. Take them elsewhere.
 AI_DIPLO_REFUSE_TO_TALK_LEADER_SHAKA_1	Your words are but the grunts of a diseased pig, [CT_NAME]. I do not hear them.
 AI_DIPLO_REFUSE_TO_TALK_LEADER_SHEAIM	You are naught but a puny weakling, [CT_NAME], be gone from my sight.
 AI_DIPLO_REFUSE_TO_TALK_LEADER_SIDAR	We have nothing to learn from you, [CT_NAME]. You merely repeat the same lines I've heard from your people for generations.
@@ -542,10 +1121,20 @@ AI_DIPLO_REFUSE_TO_TALK_LEADER_SITTING_BULL_1	I don't speak with liars. Now scra
 AI_DIPLO_REFUSE_TO_TALK_LEADER_SULEIMAN_1	Not a chance.
 AI_DIPLO_REFUSE_TO_TALK_LEADER_SURYAVARMAN_1	Leave me alone, you barbarian cur!
 AI_DIPLO_REFUSE_TO_TALK_LEADER_SVARTALFAR	Scurry along back to whatever hovel you dwell in. 
+AI_DIPLO_REFUSE_TO_TALK_LEADER_TOKUGAWA_1	I have no time to exchange pleasantries with you, [CT_NAME]: I am too busy plotting your downfall. 
+AI_DIPLO_REFUSE_TO_TALK_LEADER_VICTORIA_1	We are not amused by your meaningless babble, [CT_NAME]!
 AI_DIPLO_REFUSE_TO_TALK_LEADER_WANG_KON_1	Your web of deceit will not ensnare [OUR_CIV_SHORT]. I've been lied to by far better men than you!
+AI_DIPLO_REFUSE_TO_TALK_LEADER_WASHINGTON_1	We shall not listen to your insidious lies. Begone!
 AI_DIPLO_REFUSE_TO_TALK_LEADER_WILLEM_VAN_ORANJE_1	No!
 AI_DIPLO_REFUSE_TO_TALK_LEADER_WINSTON_CHURCHILL_1	I have nothing to say to you, you pestilential insect.
 AI_DIPLO_REFUSE_TO_TALK_LEADER_ZARA_YAQOB_1	Be gone, you heathen fool!
+AI_DIPLO_REJECT_ASK_1	Sorry, but you press us too hard.
+AI_DIPLO_REJECT_DEMAND_1	We reject your meaningless threats!
+AI_DIPLO_REJECT_DEMAND_2	How dare you insult glorious [OUR_CIV_SHORT] with your stupid demands!
+AI_DIPLO_REJECT_DEMAND_3	Not bloody likely.
+AI_DIPLO_REJECT_DEMAND_4	Not on my watch!
+AI_DIPLO_REJECT_DEMAND_5	Never!
+AI_DIPLO_REJECT_DEMAND_6	You badly underestimate the [OUR_EMPIRE], [CT_NAME]. We would never agree to any such thing.
 AI_DIPLO_REJECT_LEADER_AMURITES	You see us as weak. Many do, all fools who can see only outward signs of power. We have brought the demise of stronger than you.
 AI_DIPLO_REJECT_LEADER_ARENDEL	This is not a path you wish to tread, [CT_NAME]. The summer elves reject your threats.
 AI_DIPLO_REJECT_LEADER_BALSERAPHS	That hardly seems fair.
@@ -573,7 +1162,100 @@ AI_DIPLO_REJECT_LEADER_PERPENTACH	Could it be that my infectious mirth,[NEWLINE]
 AI_DIPLO_REJECT_LEADER_SHEAIM	What a petty threat. And so very idle. 
 AI_DIPLO_REJECT_LEADER_SIDAR	Ah, yes, jealousy. I had forgotten its hold upon the living.
 AI_DIPLO_REJECT_LEADER_SVARTALFAR	We have academies dedicated to the art of persuasion, you lack the talent to even qualify for entrance.
+AI_DIPLO_RELIGION_DENIED_EQUAL_1	On your own head be it.
+AI_DIPLO_RELIGION_DENIED_EQUAL_2	You disappoint me. And you disappoint the heavens. Foolish.
+AI_DIPLO_RELIGION_DENIED_EQUAL_3	Very well. But remember, [CT_NAME], The wages of sin are death. 
+AI_DIPLO_RELIGION_DENIED_STRONGER_1	So be it. I pray that your people do not suffer overmuch for your folly.
+AI_DIPLO_RELIGION_DENIED_STRONGER_2	You mock the heavens at your peril, [CT_NAME]! I can but hope that you will see wisdom before it is too late.
+AI_DIPLO_RELIGION_DENIED_STRONGER_3	I fear that your blasphemy will not go unpunished, [CT_NAME]. I'd invest in a lot of lightning rods if I were you.
+AI_DIPLO_RELIGION_DENIED_WEAKER_1	Very well. We know that this can be a sensitive matter.
+AI_DIPLO_RELIGION_DENIED_WEAKER_2	As you wish. 
+AI_DIPLO_RELIGION_DENIED_WEAKER_3	We shall speak of this again at a later time.
+AI_DIPLO_RELIGION_PRESSURE_EQUAL_1	I urge you to convert to [OUR_STATE_RELIGION], [CT_NAME]. Religious wars can be so unpleasant...
+AI_DIPLO_RELIGION_PRESSURE_EQUAL_2	Our gods can beat your gods any day of the week, [CT_NAME]. Convert to [OUR_STATE_RELIGION] before it's too late!
+AI_DIPLO_RELIGION_PRESSURE_EQUAL_3	[OUR_STATE_RELIGION] is mighty, [CT_NAME]. Convert now, before the heavens rain their displeasure upon you.
+AI_DIPLO_RELIGION_PRESSURE_STRONGER_1	The heavens demand that you join [OUR_STATE_RELIGION] immediately. Consider your answer carefully!
+AI_DIPLO_RELIGION_PRESSURE_STRONGER_2	Abandon your heathenish ways and join [OUR_STATE_RELIGION], [CT_NAME]. Your people's survival depends on it!
+AI_DIPLO_RELIGION_PRESSURE_STRONGER_3	Discard your false religion and embrace [OUR_STATE_RELIGION], [CT_NAME]. If you wish to survive...
+AI_DIPLO_RELIGION_PRESSURE_WEAKER_1	The bonds between our civilizations would be greatly strengthened if you converted to [OUR_STATE_RELIGION].
+AI_DIPLO_RELIGION_PRESSURE_WEAKER_2	Isn't it about time that you abandoned your foolish beliefs and converted to [OUR_STATE_RELIGION], [CT_NAME]?
+AI_DIPLO_RELIGION_PRESSURE_WEAKER_3	You should consider converting to [OUR_STATE_RELIGION], [CT_NAME]. It is the one true path to salvation.
+AI_DIPLO_RESEARCH_1	What would you like us to research?
+AI_DIPLO_RESEARCH_TECH_1	We'll switch right away!
+AI_DIPLO_SOMETHING_ELSE_1	What else would you like to discuss?
+AI_DIPLO_STOP_DENIED_1	We won't take this lightly, [CT_NAME]!
 AI_DIPLO_STOP_TRADING_1	It can no longer be tolerated - we demand that you cancel your deals with the vile %s1:2!
+AI_DIPLO_TARGET_1	Where should we attack?
+AI_DIPLO_TARGET_CITY_1	We'll do our best!
+AI_DIPLO_THANKS_1	[OUR_NAME] thanks you on behalf of the grateful [OUR_CIV_ADJ] people!
+AI_DIPLO_THANKS_10	Good decision. We must build a closer bond - or else!
+AI_DIPLO_THANKS_11	I [OUR_NAME], Godlike Ruler of the Mighty [OUR_EMPIRE], do hereby offer my sincerest thanks to my good friend, [CT_NAME].
+AI_DIPLO_THANKS_12	I am glad that we have concluded this arrangement amicably, [CT_NAME].
+AI_DIPLO_THANKS_13	I am so happy that our two nations can rise above petty rivalries like this! We will set an example the whole world will follow!
+AI_DIPLO_THANKS_14	I am SO pleased that we have been able to come to a fair agreement, [CT_NAME]!
+AI_DIPLO_THANKS_15	I appreciate this, friend [CT_NAME]. Thanks from all the [OUR_CIV_ADJ] people!
+AI_DIPLO_THANKS_16	I bow before you in friendship, [CT_NAME]!
+AI_DIPLO_THANKS_17	I congratulate you on your common sense, [CT_NAME].
+AI_DIPLO_THANKS_18	I thank you. Now I'm sure that you have pressing business elsewhere...
+AI_DIPLO_THANKS_19	I will sacrifice fifty warriors in honor of your friendship!
+AI_DIPLO_THANKS_2	[OUR_CIV_SHORT] acknowledges your friendship. Thank you.
+AI_DIPLO_THANKS_20	I, [OUR_NAME], ruler of way too many places to mention, do hereby thank my good friend, [CT_NAME]!
+AI_DIPLO_THANKS_21	It has been a pleasure doing business with you, [CT_NAME].
+AI_DIPLO_THANKS_22	It is good that we can come together as equals, [CT_NAME].
+AI_DIPLO_THANKS_23	We enjoyed speaking with you [CT_NAME]. Odd, since you are so far inferior, but personality goes a long way.
+AI_DIPLO_THANKS_24	You are the wind beneath my wings, [CT_NAME]!
+AI_DIPLO_THANKS_25	You have our gratitude.
+AI_DIPLO_THANKS_26	Many thanks, [CT_NAME]!
+AI_DIPLO_THANKS_27	Many thanks. 
+AI_DIPLO_THANKS_28	May the heavens bless and sanctify the friendship between our two great people!
+AI_DIPLO_THANKS_29	May the bond between [OUR_NAME] and [CT_NAME] grow ever stronger!.
+AI_DIPLO_THANKS_3	[OUR_CIV_SHORT] graciously acknowledges your friendship, [CT_NAME].
+AI_DIPLO_THANKS_30	May the friendship between [OUR_CIV_SHORT] and [CT_CIV_SHORT] last for many years!
+AI_DIPLO_THANKS_31	Did you ever know that you're my hero? You're everything I wish I could be. 
+AI_DIPLO_THANKS_32	On behalf of the [OUR_CIV_ADJ] people, I thank you!
+AI_DIPLO_THANKS_33	On behalf of the people of [OUR_CIV_SHORT], I thank you and all the [CT_CIV_ADJ] people.
+AI_DIPLO_THANKS_34	Our work is concluded. You may go.
+AI_DIPLO_THANKS_35	Our work is finished here, is it not? Well, then, don't let me keep you.
+AI_DIPLO_THANKS_36	Thank me?  No, no...thank you, [CT_NAME]!
+AI_DIPLO_THANKS_37	Thank you, [CT_NAME]! 
+AI_DIPLO_THANKS_38	Thank you, [CT_NAME].
+AI_DIPLO_THANKS_39	Thank you, [CT_NAME].  Is there anything else?
+AI_DIPLO_THANKS_4	[OUR_CIV_SHORT] salutes its friend, the tiny nation of [CT_CIV_SHORT].
+AI_DIPLO_THANKS_40	Thank you, [CT_NAME]. May both our people profit from our continued friendship!
+AI_DIPLO_THANKS_41	Thank you.  Your cooperation has been noted.
+AI_DIPLO_THANKS_42	Thanks, [CT_NAME].
+AI_DIPLO_THANKS_43	It's been a small slice of heaven. I mean that sincerely.
+AI_DIPLO_THANKS_44	Thanks.  Will that be all?
+AI_DIPLO_THANKS_45	You have our gratitude.
+AI_DIPLO_THANKS_46	That will be all for now, [CT_NAME].
+AI_DIPLO_THANKS_47	There. That's a job well done, don't you think?
+AI_DIPLO_THANKS_48	That's done, then. Thanks and farewell!
+AI_DIPLO_THANKS_49	The [OUR_CIV_ADJ] people graciously thank the people of - whatever your culture's name is.
+AI_DIPLO_THANKS_5	[OUR_CIV_SHORT] salutes you, [CT_NAME]!
+AI_DIPLO_THANKS_50	The [OUR_EMPIRE] thanks you, [CT_NAME]. You may go now.
+AI_DIPLO_THANKS_51	We thank our friends and partners, the [CT_CIV_ADJ] people!
+AI_DIPLO_THANKS_52	We thank our partner, [CT_CIV_SHORT], for coming to a fair and just agreement.
+AI_DIPLO_THANKS_53	We work together well, [CT_NAME]. I look forward to many more mutually profitable arrangements in the future!
+AI_DIPLO_THANKS_54	We're done here, right? Well, don't let me keep you. Thanks and good bye.
+AI_DIPLO_THANKS_55	Yes, I believe we will both profit from this deal.  I look forward to doing business with you again.
+AI_DIPLO_THANKS_56	You are almost an equal in cunning and martial prowess, [CT_NAME]. I, [OUR_NAME], thank you for your visit.
+AI_DIPLO_THANKS_57	You are wise beyond your years, friend [CT_NAME]. [OUR_CIV_SHORT] offers you its sincerest thanks.
+AI_DIPLO_THANKS_58	You have [OUR_CIV_SHORT]'s thanks.
+AI_DIPLO_THANKS_59	You have chosen wisely, [CT_NAME]. It is important to maintain good relations with your betters, don't you agree?
+AI_DIPLO_THANKS_6	[OUR_CIV_SHORT] thanks you, [CT_NAME].
+AI_DIPLO_THANKS_60	You have my eternal gratitude, [CT_NAME].
+AI_DIPLO_THANKS_61	You have our gratitude.
+AI_DIPLO_THANKS_62	You have our thanks.
+AI_DIPLO_THANKS_63	You make me so happy, [CT_NAME]!
+AI_DIPLO_THANKS_64	You show great wisdom and acumen in picking your friends, [CT_NAME]. The [OUR_EMPIRE] thanks you.
+AI_DIPLO_THANKS_65	You show great wisdom and friendship. [OUR_CIV_SHORT] thanks you!
+AI_DIPLO_THANKS_66	Your fair and courteous dealings with the [OUR_CIV_ADJ] people will not be forgotten.
+AI_DIPLO_THANKS_67	You have [OUR_CIV_SHORT]'s thanks.
+AI_DIPLO_THANKS_68	It appears that your visit was not a complete waste. Come back again when you have something else to offer the [OUR_EMPIRE].
+AI_DIPLO_THANKS_69	Yours is a friendly and accommodating little culture. We thank you.
+AI_DIPLO_THANKS_7	[OUR_CIV_SHORT] thanks you, fair and generous [CT_NAME]!
+AI_DIPLO_THANKS_8	[CT_NAME], my people thank you.
+AI_DIPLO_THANKS_9	Excellent! I'm quite pleased. Let's sit down and have a jolly cup of tea, shall we?
 AI_DIPLO_THANKS_LEADER_BALSERAPHS	You're the best!
 AI_DIPLO_THANKS_LEADER_CALABIM	I am most grateful.
 AI_DIPLO_THANKS_LEADER_CLAN_OF_EMBERS	I'm glad you can see reason.
@@ -591,6 +1273,30 @@ AI_DIPLO_THANKS_LEADER_MERCURIANS	It seems some mortals have wisdom after all.
 AI_DIPLO_THANKS_LEADER_PERPENTACH	He that is your friend indeed,[NEWLINE]He will help you in your need:[NEWLINE]If you sorrow, he will weep; [NEWLINE]If you wake, he cannot sleep:[NEWLINE]Thus of every grief in heart[NEWLINE]He with you does bear a part.[NEWLINE]These are certain signs to know[NEWLINE]Faithful friend from flattering foe.
 AI_DIPLO_THANKS_LEADER_SHEAIM	You have our gratitude, known widely to be a temporary safeguard against sudden showers of meteors. Temporary.
 AI_DIPLO_THANKS_LEADER_SVARTALFAR	Hmm. Unpleasant as it is to admit, even you have your uses.
+AI_DIPLO_TRADING_1	So what do you propose?
+AI_DIPLO_TRADING_10	All right. Let's hear it then.
+AI_DIPLO_TRADING_2	Make an offer.
+AI_DIPLO_TRADING_3	Let us begin!
+AI_DIPLO_TRADING_4	Hopefully we can come to an agreement.
+AI_DIPLO_TRADING_5	What does [CT_CIV_SHORT] have to offer?
+AI_DIPLO_TRADING_6	I'm listening...
+AI_DIPLO_TRADING_7	We're always looking for a fair exchange, [CT_NAME]. Please go ahead.
+AI_DIPLO_TRADING_8	Go on.
+AI_DIPLO_TRADING_9	Well, go ahead and put something on the table.
+AI_DIPLO_TRY_THIS_DEAL_1	How does this deal sound?
+AI_DIPLO_TRY_THIS_DEAL_2	What do you think of this deal, [CT_NAME]?
+AI_DIPLO_TRY_THIS_DEAL_3	Do you find this offer tempting?
+AI_DIPLO_TRY_THIS_DEAL_4	Here's my offer.
+AI_DIPLO_TRY_THIS_DEAL_5	I'm sure that you'll agree that this deal is fair...
+AI_DIPLO_TRY_THIS_DEAL_6	And that's my final offer. 
+AI_DIPLO_UNIT_BRAG_1	Fear my [OUR_BEST_UNIT]!
+AI_DIPLO_UNIT_BRAG_2	Soon my numberless [OUR_BEST_UNIT] shall destroy you all!
+AI_DIPLO_UNIT_BRAG_3	Now I have a [OUR_BEST_UNIT]. Ho-Ho-Ho.
+AI_DIPLO_UNIT_BRAG_4	Oh look: I've just built a [OUR_BEST_UNIT]. Now where shall I put it?
+AI_DIPLO_UNIT_BRAG_5	Cower before the might of my [OUR_BEST_UNIT]!
+AI_DIPLO_WELL_1	Well?
+AI_DIPLO_WORST_ENEMY_1	Watch out for our worst enemy - [OUR_WORST_ENEMY]! They can't be trusted.
+AI_DIPLO_WORST_ENEMY_TRADING_1	We would encourage you to stop trading with our bitter enemy - [OUR_WORST_ENEMY]!
 CHANGED_TXT_KEY_CIV_ATHENS_PEDIA	[TAB]Athens is one of the great cities in world history. In ancient times its citizens made great contributions to many areas of politics, culture, and learning - including the virtual invention of philosophy, drama, science, and democracy. It can be argued that Athens has had the greatest influence of any city, state or empire on what is called, "Western Civilization." [PARAGRAPH:1]Humans have lived on the site of Athens since the Neolithic period (circa 4000 BC). According to tradition, the city-state (or "polis") of Athens was ruled by kings until roughly 1000 BC, after which it was governed by officials known as "archons," who were drawn from the ruling aristocracy. At first there were three archons, but six more were added later, bringing the total number of rulers to nine. Although originally reserved for the powerful ruling class, as time passed these offices were opened up to commoners. [PARAGRAPH:1]One archon, Solon, is credited with creating the famed Athenian democracy. Beginning in 594 BC, Solon implemented a series of liberal reforms that abolished serfdom, modified some of Athens' harsher laws, and removed some of the political restrictions on the city's economy. His reforms were so popular that Solon was subsequently given the task of rewriting Athens' constitution. While doing so, Solon significantly liberalized the Athenian government. creating a limited democracy which for the first time gave power to the non-aristocratic propertied classes. Throughout this period Athens continued to prosper and grow in size and influence. [PARAGRAPH:1]Some thirty years later, Athens' government was overthrown in a coup by a man named "Pisistratus." Though keeping many of Solon's reforms, Pisistratus ruled as a "tyrant," reserving the city-state's highest offices for friends and family. Pisistratus and his sons ruled Athens from 560-511 BC, until they were overthrown in turn by Cleisthenes, who restored Athens' limited democracy. Cleisthenes then expanded the democracy further, allowing all free Athenian men to participate in the government. Although women and slaves were still excluded from power, this was the most liberal - even radical - form of government yet seen in the world. [PARAGRAPH:1]In classical Athenian democracy, anyone (excluding women and slaves) was free to vote or serve a term in office. Most officials were chosen by lot, and government positions were rotated frequently. This was not always the most effective form of government, as it was quite common for people with no training whatsoever to find themselves elevated to positions of power and prestige, but under it the city-state thrived. [PARAGRAPH:1]As of 500 BC, much of Greece was thriving, and there were a number of successful city-states competing with Athens for primacy of the region. It wasn't until the Persian Wars of that century that Athens rose to preeminence. Athenian hoplites first fought and defeated a much larger Persian army at the Battle of Marathon in 492 BC. When the Persians returned a decade later with a much larger army, the united Greek armies were unable to halt the Persians' advance upon Athens. At the famous battle of Thermopylae, however, 300 Spartans sacrificed their lives to slow the Persians enough to allow the Athenians to evacuate their city, which the Persians subsequently entered and burned. [PARAGRAPH:1]Despite this grievous loss, the Athenian navy held firm, defeating the Persians at the Battle of Salamis in 480 BC. The combined Greek forces subsequently destroyed the invading armies and navies. As the war progressed Athens put together a loose confederation of polis, including most of the important island-based city-states, called the "Delian League," which brought the fight into Persia itself, eventually gaining the freedom of several important Greek colonies on the coast of Asia Minor and nearby islands. When the war ended the citizens of Athens returned to their city, and over the next years rebuilt it stronger and grander than ever before. In the following decades Athens became the cultural center of the Greek world. This was the golden age of the classical Athenian democracy, the era of famous figures such as Herodotus, Aeschylus, Sophocles, Euripides, and Socrates. [PARAGRAPH:1]During this period Athens became the dominant city-state in Greece. It possessed a lucrative trading empire, which was protected by its powerful navy, and it gradually transformed the Delian League into an empire, the other city-states in the League required to pay Athens tribute. This alarmed many of the other Greek polis, which, under the leadership of Sparta - the greatest land power in Greece - banded together in the "Spartan Alliance" to counter Athens' growing might. [PARAGRAPH:1]In 431 BC war broke out between the Delian League and the Spartan Alliance. commanded by Pericles, Athens' greatest statesman and general, Athens won numerous victories, but was unable to ever deliver the knockout blow needed to force the Spartans to surrender. Upon Pericles' death - from a plague that badly weakened Athens - command of the Athenian government and armed forces fell to less able hands, and the Athenians found themselves in a thirty-year war of attrition which grew ever more bitter and bloody as the years passed. [PARAGRAPH:1]Protected from direct assault by its Long Walls, and supplied by its offshore empire (inaccessible to the enemy), Athens survived the long war in fairly good shape (though its democratic institutions were gradually undermined). It is quite possible that Athens could have eventually forced its opponents into peace, if her people hadn't decided to send off a large portion of Athens' military forces on a foolish adventure of conquest to Sicily in 415 BC. During the campaign the Athenian army was obliterated, and its navy destroyed in detail. Though Athens continued to resist for some ten years, its defeat was inevitable. Athens finally surrendered to Sparta in 404 BC, its fleet in shambles and its overseas empire destroyed. [PARAGRAPH:1]Although Athens was able to recover briefly in the following decades, its golden age was past and it would never again reach the heights it attained before the disastrous war with Sparta. In 338 BC, Athens (along with the rest of Greece) was conquered by Philip of Macedon. The city would never again see independence, and Greece would spend most of the next 2,000 years under foreign rule - governed in turn by Macedonia, Rome, Byzantium, and the Ottoman Empire. In 1829 AD Greece would finally win independence - and Athens was naturally chosen as the new state's capital city.
 CHANGED_TXT_KEY_CORPORATION_2	Sid's Sushi Co
 CHANGED_TXT_KEY_GREEKWAR_CIV_AMPHIPOLIS_PEDIA	The city-state (or "polis") of Amphipolis was founded by Athenian colonists under the command of Hagnon in 437 BC after three previous failed attempts. Barely six years later the Peloponnesian War broke out. The city's location was of great strategic importance: it sat at the mouth of the Strymon River and consequently controlled the route from northern Greece to the Hellespont. There were also a number of valuable gold and silver mines in the region, and ample supplies of lumber for use in shipbuilding. [PARAGRAPH:2]In 424 BC Amphipolis was attacked and captured by the Spartan general Brasidas. The famous historian Thucydides, who was an Athenian general at the time, was held accountable for the disaster and was sent into exile. Athens attempted to recapture the city two years later with a force under the command of Cleon; the Spartans routed the Athenians in the subsequent Battle of Amphipolis, a brutal fight during which both commanders were killed. During a temporary truce in 421 BC the city was restored to Athens, but Athens had much bigger things on its mind and Amphipolis enjoyed de facto independence until 357 BC, when it was conquered by Philip of Macedon. [PARAGRAPH:2]Since that time Amphipolous has all but faded from the world stage. In present times it is perhaps best known as the birthplace of television's fictional warrior-princess, "Xena"[PARAGRAPH:2]
@@ -807,8 +1513,11 @@ MOD_TXT_KEY_CITY_WIGTON	Wigton
 MOD_TXT_KEY_CITY_YORK	York
 MOD_TXT_KEY_CIVIC_PRIMITIVISM	Primitivism
 SYSTEM_END_TURN	Press &lt;ENTER> to end turn...
+SYSTEM_GAME_PAUSED	Game Paused by %s1
+SYSTEM_PLAYER_JOINING	%s1 (Player %d2) is joining the game.  Please wait...
 SYSTEM_RETURN	Press &lt;ESC> to return...
 SYSTEM_WAITING	Waiting for other Civilizations...
+SYSTEM_WAITING_FOR_PLAYER	Waiting to hear from %s1 (Player %d2)
 SYSTEM_WAITING_FOR_YOU	Waiting for YOU to finish turn...
 TXT_BUDDY_LIST_PLAYING_LOC	Playing Game: "%s1_GameName"
 TXT_BUDDY_LIST_STAGING_LOC	In Staging Room: "%s1_GameName"
@@ -867,9 +1576,13 @@ TXT_KEY_ACTION_CYCLE_UNITS_ALT	Cycle Units (Alt)
 TXT_KEY_ACTION_CYCLE_WORKERS	Cycle Workers
 TXT_KEY_ACTION_DEFENSE_MODIFIER	[ICON_BULLET]%D1%% Tile Defense
 TXT_KEY_ACTION_DELETE	Delete the Unit
+TXT_KEY_ACTION_DESTROY_IMP	[ICON_BULLET]Destroys [COLOR_HIGHLIGHT_TEXT]%s1_ImpName[COLOR_REVERT]
 TXT_KEY_ACTION_ENDTURN	End of Turn
 TXT_KEY_ACTION_ENDTURN_ALT	End of Turn (Alt)
 TXT_KEY_ACTION_ESPIONAGE_MISSION	Unit can perform Espionage Missions when in a valid location and if the player has sufficient Espionage Points to execute them.
+TXT_KEY_ACTION_EXTRA_CONSTRUCTION	%D1_Change[ICON_PRODUCTION] for Construction of [COLOR_BUILDING_TEXT]%s2_BuildName[COLOR_REVERT].
+TXT_KEY_ACTION_EXTRA_RESEARCH	%D1_NumResearch[ICON_RESEARCH] for Research of [COLOR_TECH_TEXT]%s2_TechName[COLOR_REVERT].
+TXT_KEY_ACTION_FINISH_CONSTRUCTION	Finish Construction of [COLOR_BUILDING_TEXT]%s1_BuildName[COLOR_REVERT].
 TXT_KEY_ACTION_FLAT_MOVEMENT_COST	[ICON_BULLET]All Units Can Move %d1 Tiles/Turn
 TXT_KEY_ACTION_FLYING_CAMERA	Toggle Flying Camera
 TXT_KEY_ACTION_FORCE_DELETE	Delete the Unit
@@ -895,6 +1608,7 @@ TXT_KEY_ACTION_NEXT_CITY	Next City
 TXT_KEY_ACTION_NEXT_UNIT	Next Unit
 TXT_KEY_ACTION_NUKE	NUKE
 TXT_KEY_ACTION_NUM_TURNS	[COLOR_HIGHLIGHT_TEXT]%d1_Num[COLOR_REVERT] [NUM1:Turn:Turns]
+TXT_KEY_ACTION_ONLY_HOLY_CONSTRUCT	[COLOR_WARNING_TEXT]Can only be Constructed in the %F1_RelIcon Holy City.[COLOR_REVERT]
 TXT_KEY_ACTION_OPTIONS_SCREEN	Options Screen
 TXT_KEY_ACTION_ORTHO_CAMERA	Orthographic Camera
 TXT_KEY_ACTION_PING	Ping
@@ -904,6 +1618,7 @@ TXT_KEY_ACTION_PREVIOUS_CITY	Previous City
 TXT_KEY_ACTION_PREVIOUS_UNIT	Previous Unit
 TXT_KEY_ACTION_PROBABILITY	Probability of Success: %d1_Prob%%
 TXT_KEY_ACTION_PROBABILITY_RANGE	Probability of Success: %d1_Prob - %d2_Prob%%
+TXT_KEY_ACTION_PROVIDES_BONUS	[ICON_BULLET]Provides [COLOR_HIGHLIGHT_TEXT]%s1_BonusName[COLOR_REVERT]
 TXT_KEY_ACTION_QUICK_LOAD	Quick Load Game
 TXT_KEY_ACTION_QUICK_SAVE	Quick Save Game
 TXT_KEY_ACTION_REMOVE_FEATURE	[COLOR_WARNING_TEXT]Will remove the %s1_FeatName[COLOR_REVERT]
@@ -990,6 +1705,7 @@ TXT_KEY_ANGER_BIG_CITY	+%d1_Change[ICON_UNHAPPY]: "We long for the open country!
 TXT_KEY_ANGER_BONUS	+%d1_Change[ICON_UNHAPPY]: "Some goods are making us unhappy!"
 TXT_KEY_ANGER_BUILDINGS	+%d1_Change[ICON_UNHAPPY]: "Some buildings are upsetting us!"
 TXT_KEY_ANGER_DEFY_RESOLUTION	+%d1_Change[ICON_UNHAPPY]: "The world considers you a villain!"
+TXT_KEY_ANGER_DEMAND_CIVIC	+%d1_Change[ICON_UNHAPPY]: "We demand %s2_Name!"
 TXT_KEY_ANGER_DRAFT	+%d1_Change[ICON_UNHAPPY]: "Hell NO, we won't GO!"
 TXT_KEY_ANGER_ESPIONAGE	+%d1_Change[ICON_UNHAPPY]: "People are telling us of your villainy!"
 TXT_KEY_ANGER_FEATURES	+%d1_Change[ICON_UNHAPPY]: "All this tree-hugging drives me crazy!"
@@ -1386,7 +2102,6 @@ TXT_KEY_BUILDING_CORPORATION_7_STRATEGY	Build the [COLOR_BUILDING_TEXT]Civilized
 TXT_KEY_BUILDING_COURTHOUSE	Courthouse
 TXT_KEY_BUILDING_COURTHOUSE_PEDIA	[TAB]Curse those cards! He'd been so close to winning his passage on the earlier ship, when he was dealt the Curse of Arawn-particularly sickening as it had followed a Seven of Towers which surely would have won him the pot. His luck had been horrendous since then, he'd lost most of his winnings on that game, and then spent a lot more drowning his sorrows. He'd then been woken with a pail of water, finding himself press-ganged into service on a galley heading for the unknown lands. After five torturous days of seasickness, Lanun pirates struck, the galley was sunk and here he was now-after being washed ashore-in a Svartalfar courtroom charged with spying.[PARAGRAPH:1]What did he know about these elves? Civil war was it? Something about Seelie and Unseelie Court. Growing up on a farmstead had left him a little vague on world politics. His eyes looked around this strange court-pretty grandiose décor, with a sense of opulence, certainly not the functional style of his Hippus homeland. His eyes fell on a statuette. There was something not quite right about it... ah... yes... the scales, tipped with coins. So... Mammon has a part to play in this courtroom does he? There were still some coins in his hidden pouch. Once he signaled to the bailiff, things began to gather momentum, indeed Mammon had obviously provided a slick fast-tracking system as he found himself ushered away from the courtroom-at the cost of a few coins-to a private room.[PARAGRAPH:1]"It seems you have been a little down on your luck, and would like to... aha... speed the courtroom process up, so to speak?"[PARAGRAPH:1]"Yes, your honor."[PARAGRAPH:1]"...and you can pay the fine of five coins?"[PARAGRAPH:1]"Yes."[PARAGRAPH:1]"Okay... that seems in order. No need for paper work, I think we can come to a satisfactory conclusion here and now: Guilty as charged, you hang tomorrow. In Esus we Trust."[PARAGRAPH:1]"...but ...but the statuette to Mammon?!"[PARAGRAPH:1]"Yes, a pretty little thing isn't it? ...and worth its weight in gold I must say."[PARAGRAPH:2]-When entering a courtroom, effort should be made to check the patron Angel before constructing your defense.
 TXT_KEY_BUILDING_COURTHOUSE_STRATEGY	[COLOR_BUILDING_TEXT]Courthouses[COLOR_REVERT] lower city maintenance costs, provide you with a bonus to espionage and are required to build the [COLOR_BUILDING_TEXT]Forbidden Palace[COLOR_REVERT] national wonder. [COLOR_BUILDING_TEXT]Courthouses[COLOR_REVERT] help manage the cost of controlling large empires. 
-TXT_KEY_BUILDING_CRAFT_FAIR	Artisan Fair
 TXT_KEY_BUILDING_CRIME	[ICON_BULLET]%D1 to the crime rate
 TXT_KEY_BUILDING_CRISTO_REDENTOR	Cristo Redentor
 TXT_KEY_BUILDING_CRISTO_REDENTOR_STRATEGY	The [COLOR_BUILDING_TEXT]Cristo Redentor[COLOR_REVERT] allows its builder to switch [COLOR_HIGHLIGHT_TEXT]Religions[COLOR_REVERT] or [COLOR_HIGHLIGHT_TEXT]Civics[COLOR_REVERT] instantly once per turn, with no anarchy. It also increases the chances of a [COLOR_UNIT_TEXT]Great Engineer[COLOR_REVERT] appearing.
@@ -1431,6 +2146,7 @@ TXT_KEY_BUILDING_ELDER_COUNCIL_PEDIA	[TAB]During the Age of Ice, it was uncommon
 TXT_KEY_BUILDING_ELECTION_ELIGIBILITY	[ICON_BULLET]Guarantees Eligibility for Diplomatic Votes
 TXT_KEY_BUILDING_ELF_CAGE	Elf Cage
 TXT_KEY_BUILDING_ELF_CAGE_PEDIA	[TAB]The Elf Cage can only be created by the Balseraph civilization in a city with a Freak Show. An Elven Slave must be sacrificed to create one.
+TXT_KEY_BUILDING_ENABLES_CIVICS	[ICON_BULLET]Enables all [COLOR_HIGHLIGHT_TEXT]%s1_Name[COLOR_REVERT] Civics
 TXT_KEY_BUILDING_ENEMY_WAR_WEAR	[ICON_BULLET]Enemies suffer %D1_percent%% War Weariness
 TXT_KEY_BUILDING_ENGLISH_BANK	English Stock Exchange
 TXT_KEY_BUILDING_ENGLISH_STOCK_EXCHANGE	Stock Exchange
@@ -1449,7 +2165,9 @@ TXT_KEY_BUILDING_FORGE	Forge
 TXT_KEY_BUILDING_FORGE_STRATEGY	Boosts production in the city and removes the [LINK=PROMOTION_RUST]rust[/LINK] promotion from units in the city.
 TXT_KEY_BUILDING_FORM_OF_THE_TITAN	Form of the Titan
 TXT_KEY_BUILDING_FREAK_SHOW	Freak Show
+TXT_KEY_BUILDING_FREE_IN_CITY	[ICON_BULLET]Free [COLOR_BUILDING_TEXT][LINK=literal]%s1_Name[\LINK][COLOR_REVERT] in Every City
 TXT_KEY_BUILDING_FREE_JOURNALISM	Free Journalism
+TXT_KEY_BUILDING_FREE_PROMOTION	[ICON_BULLET]Free [COLOR_HIGHLIGHT_TEXT][LINK=literal]%s1_Name[\LINK][COLOR_REVERT] Promotion for Units Built in this City
 TXT_KEY_BUILDING_FREE_PROMOTION_PICK	[ICON_BULLET]Units start with a %D1 free promotion(s)
 TXT_KEY_BUILDING_FREE_SPECIALIST	[ICON_BULLET]%D1_Change Free [COLOR_HIGHLIGHT_TEXT][LINK=literal]%s2_SpclstName[\LINK][COLOR_REVERT]
 TXT_KEY_BUILDING_FREE_SPECIALISTS	[ICON_BULLET]%D1_Change Free Specialists
@@ -1466,6 +2184,7 @@ TXT_KEY_BUILDING_FRENCH_SALON	Salon
 TXT_KEY_BUILDING_FRENCH_SALON_PEDIA	In the sixteenth and seventeenth centuries, the French nobility used to gather the local "intelligentsia" to discuss the literary or artistic works of the day. The word "salon" refers to the reception room where these parties were held. The salons were almost always organized by the most beautiful, intelligent and rich women in the French nobility. During the seventeenth centuries the two most important literary salons were run by Madame de Rambouillet and her rival, Madeleine de Scudery. Virtually every important French author, poet, artist and scientist attended one or the other of these gatherings, making them the very centers of French intellectual thought.
 TXT_KEY_BUILDING_FRENCH_SALON_STRATEGY	The [COLOR_BUILDING_TEXT]Salon[COLOR_REVERT], the French replacement for the [COLOR_BUILDING_TEXT]Observatory[COLOR_REVERT], increases a city's scientific research and increases the city's chances of generating a [COLOR_HIGHLIGHT_TEXT]Great Artist[COLOR_REVERT].
 TXT_KEY_BUILDING_FROM_ALL_REL_BUILDINGS	[SPACE]from All %F1_RelIcon Buildings
+TXT_KEY_BUILDING_FROM_IN_ALL_CITIES	[SPACE]from [COLOR_UNIT_TEXT][LINK=literal]%s1_SpclstName[\LINK][COLOR_REVERT] in All Cities
 TXT_KEY_BUILDING_GAMBLING_HOUSE	Gambling House
 TXT_KEY_BUILDING_GAMBLING_HOUSE_PEDIA	[TAB]Gambling houses are full of assorted dice, card and board games. Some even host pits for animal fights or darker pleasures. The Khazad are known to host rat races while Sheaim adepts summon minor creatures to battle against each other.[PARAGRAPH:1]But one thing is similar across all of them, their most popular game, Somnium. Played on cards among the Balseraphs, on tiles by the Elohim and on crude patches of dried leather by the Clan of Embers the game has permeated all layers of Erebus. Thats not to say that house rules dont exist, Overlord faithful often offer extra points for Cups cards, followers of Kilmorph often make Tower cards immune to stealing. But regardless of the specific rules the game remains a fascination for kings and peasants and nearly every gambling house hosts a few men praying desperately to avoid death and turn over the 7 of the suit they are missing.
 TXT_KEY_BUILDING_GAMBLING_HOUSE_STRATEGY	A Gambling House grants some happiness per 10% of the gold rate. It does tend to draw crime and increases the maintenance cost of the city. Countries that have come to depend on the happiness boost from Gambling Houses should be wary of reducing their Gold rate; doing so may start riots in their cities.
@@ -1643,6 +2362,7 @@ TXT_KEY_BUILDING_MARKET_STRATEGY	[COLOR_BUILDING_TEXT]Markets[COLOR_REVERT] incr
 TXT_KEY_BUILDING_MARTIAL_LAW	Martial Law
 TXT_KEY_BUILDING_MAUSOLEUM_OF_MAUSSOLLOS	Mausoleum of Maussollos
 TXT_KEY_BUILDING_MAUSOLEUM_OF_MAUSSOLLOS_STRATEGY	The [COLOR_BUILDING_TEXT]Mausoleum of Maussollos[COLOR_REVERT] increases its builder's Golden Ages by fifty percent. It also increases the chances of a [COLOR_UNIT_TEXT]Great Artist[COLOR_REVERT] appearing.
+TXT_KEY_BUILDING_MAX_START_ERA	[ICON_BULLET]Can only be Built on %s1_Name and Earlier Starts
 TXT_KEY_BUILDING_MAYA_BALL_COURT	Ball Court
 TXT_KEY_BUILDING_MAYA_BALL_COURT_STRATEGY	Build the [COLOR_BUILDING_TEXT]Ball Court[COLOR_REVERT], the Mayan replacement for the [COLOR_BUILDING_TEXT]Colosseum[COLOR_REVERT], to provide cities with three happiness instead of one.
 TXT_KEY_BUILDING_MERCURIAN_GATE	Mercurian Gate
@@ -1802,8 +2522,12 @@ TXT_KEY_BUILDING_REQUIRES_CASTER	[ICON_BULLET]Removed if the caster leaves the c
 TXT_KEY_BUILDING_REQUIRES_HOLY_CITY	[COLOR_WARNING_TEXT]Requires %F1_RelIcon Holy City[COLOR_REVERT]
 TXT_KEY_BUILDING_REQUIRES_LIST	[COLOR_WARNING_TEXT]Requires[SPACE][COLOR_REVERT]
 TXT_KEY_BUILDING_REQUIRES_NUM_CITIES	[COLOR_WARNING_TEXT]Requires at least %d1_Num Cities[COLOR_REVERT]
+TXT_KEY_BUILDING_REQUIRES_NUM_SPECIAL_BUILDINGS	[COLOR_WARNING_TEXT]Requires %s1_Name (%d2_NumCurr/%d3_NumTotal Total)[COLOR_REVERT]
+TXT_KEY_BUILDING_REQUIRES_NUM_SPECIAL_BUILDINGS_NO_CITY	[COLOR_WARNING_TEXT]Requires %s1_Name (%d2_NumTotal Total)[COLOR_REVERT]
 TXT_KEY_BUILDING_REQUIRES_NUM_TEAMS	[ICON_BULLET]Requires at least %d1_Num Teams
+TXT_KEY_BUILDING_REQUIRES_STRING	[COLOR_WARNING_TEXT]Requires [LINK=literal]%s1_Name[\LINK][COLOR_REVERT]
 TXT_KEY_BUILDING_REQUIRES_UNIT_LEVEL	[COLOR_WARNING_TEXT]Requires a Unit of Level %d1_Num Experience[COLOR_REVERT]
+TXT_KEY_BUILDING_REQUIRES_VICTORY	[ICON_BULLET]%s1_Name Victory must be Enabled
 TXT_KEY_BUILDING_RESIST_MAGIC	[ICON_BULLET]Units in the city are %D1% resistant to magic
 TXT_KEY_BUILDING_RIDE_OF_THE_NINE_KINGS	Ride of the Nine Kings
 TXT_KEY_BUILDING_RIVER_PLOTS	River Tiles
@@ -1990,7 +2714,6 @@ TXT_KEY_BUILDING_WORKER_MOD	[ICON_BULLET]Workers Build Improvements %D1_Mod%% Fa
 TXT_KEY_BUILDING_WORLD_WONDERS_PER_CITY	[COLOR_WARNING_TEXT]Can only Construct %d1_Num World Wonders per City[COLOR_REVERT]
 TXT_KEY_BUILDING_WORLD_WONDER_ALLOWED	[ICON_BULLET]World Wonder (%d1_Num Allowed)
 TXT_KEY_BUILDING_WORLD_WONDER_LEFT	[SPACE](World Wonder: %d1_Num Left)
-TXT_KEY_BUILDING_ZEN_GARDEN	Zen Garden
 TXT_KEY_BUILDING_ZULU_BARRACKS	Zulu Barracks
 TXT_KEY_BUILDING_ZULU_IKHANDA	Ikhanda
 TXT_KEY_BUILDING_ZULU_IKHANDA_PEDIA	Upon ascending to power, the great Zulu leader Shaka implemented a number of important civil and military reforms to his growing civilization. In addition to his important innovations to Zulu warfare - he is often credited with the invention of the famous Zulu "buffalo horns" formation, as well as the introduction of the "iklwa," a short stabbing spear that proved enormously successful in combat - Shaka also reorganized Zulu society to better support his military ambitions.[NEWLINE][NEWLINE]At the age of six, young boys joined Shaka's military as apprentice warriors. (This is a surprising parallel to the way that Spartan boys were raised - though it's unlikely that Shaka every heard of the Spartans.) The young warriors were trained in "ikhanda" (special military camps). During their training the Zulu boys were imbued with military fervor, put through rigorous physical exercise, and of course instructed in the use of the Zulu's powerful weapons. In battle they carried supplies and extra weapons for the warriors, and it is believed that they occasionally went out on hit-and-run raids against less dangerous enemy tribes. When the boys reached the appropriate age, they became full-fledged warriors. As a result the Zulu warriors were among the bravest and best-trained soldiers in the world.
@@ -4325,6 +5048,9 @@ TXT_KEY_CITY_SVARTALFAR_9	Drax Tallen
 TXT_KEY_CITY_WARNING_ANSWER1	Very well, do so at the next opportunity.
 TXT_KEY_CITY_WARNING_ANSWER2	Bah! Let them suffer!
 TXT_KEY_CITY_WARNING_ANSWER3	Wait, let me examine the city first...
+TXT_KEY_CITY_WARNING_HAPPY	Sire, the people %s1 are an unruly lot. Some are even refusing to work! They demand construction of a %s2
+TXT_KEY_CITY_WARNING_HEALTH	Sire, %s1 has become an unhealthy cesspool of filth and vermin! The citizens demand construction of a %s2
+TXT_KEY_CITY_WARNING_TITLE	Trouble in %s1
 TXT_KEY_CIVICOPTION_CULTURAL_VALUES	Cultural Values
 TXT_KEY_CIVICOPTION_ECONOMY	Economy
 TXT_KEY_CIVICOPTION_GOVERNMENT	Government
@@ -5008,7 +5734,6 @@ TXT_KEY_CORPORATION_HEADQUARTERS	Headquarters
 TXT_KEY_CORPORATION_PER_RESOURCE	per resource consumed
 TXT_KEY_CORPORATION_SCREEN_HEADQUARTERS	Headquarters:
 TXT_KEY_CORPORATION_SCREEN_TITLE	Guilds
-TXT_KEY_CRAFT_FAIR	Artisan Fair
 TXT_KEY_CROSSROADS_INI	Carve your fortune from the Crossroads of the World!
 TXT_KEY_CROSSROADS_WB_DESC	The year is 1300. European traders have caught the sweet waft of spices from the East, and the craving for the goods of the Orient has become an epidemic. China, for the first time in their history, has sent out trading vessels to establish contact with the West. Indian storehouses spill over with finery. It is a trader's age and you stand at the Crossroads of the World.[NEWLINE][NEWLINE]Features:[NEWLINE]Commerce Victory[NEWLINE]This new victory requires players to accumulate wealth through any means necessary. Taxes, pillaging, conquest or trade - the means matter not, only that in the end, you have the deepest coffers. Ten new Corporations are among the many features that will let players engage in unprecedented economic warfare.[NEWLINE][NEWLINE]Raiders[NEWLINE]These lightning-quick cavalry bear no markings of nationality, allowing players to pillage the lands of friends and foes alike. 
 TXT_KEY_CS_5_1_3	Bravado and luck, buddy.  Bravado and luck.
@@ -5062,6 +5787,7 @@ TXT_KEY_DAWN_OF_MAN_LANUN	[NEWLINE][NEWLINE]Strategy: The Lanun are a sea people
 TXT_KEY_DAWN_OF_MAN_LJOSALFAR	[NEWLINE][NEWLINE]Strategy: The Ljosalfar are a defensive civilization-after all, they can't build any siege weapons. Instead, the Light Elves are capable of effectively mounting a war of attrition, using their forested infrastructure to overwhelm the opponent with units and pillage his lands until he's as good as dead. There are alternative methods as well-getting the Baron from the Feral Bond tech and unleashing a horde of Werewolves is an effective way of taking down enemy cities, and mages always exist. With their ability to build things in forests, the Elves have a good synergy with the Fellowship of the Leaves' forest bonuses-but a Fellowship strategy isn't strictly necessary, and following an aggressive religion like the Octopus Overlords will give good early attack units in the form of the Drown.
 TXT_KEY_DAWN_OF_MAN_LUCHUIRP	[NEWLINE][NEWLINE]Strategy: Golems gain no experience, but a combination of the different golem-boosting buildings and Barnaxus will make them pretty mean anyway. Combine this with the fact that they're slightly more powerful than the units they replace, and you'll get a tough army, equally useful for defense and offense. Should you lose Barnaxus, you still have a chance of rebuilding him if you can kill the unit that destroyed him.
 TXT_KEY_DAWN_OF_MAN_MALAKIM	[NEWLINE][NEWLINE]Strategy: Varn Gosam starts with the Creative and Financial traits, a powerful combination in vanilla Civ, and useful here as well. Quick expansion yields good results, as monuments aren't necessary for Malakim cities to expand. Cottage-spammers will enjoy this Civ, but other strategies are viable as well. Malakim units also start with the nomad promotion, allowing them to ignore the negative effect of deserts. The Malakim's World Spell will help them reach powerful priest units quickly if they spread it well and build temples beforehand.
+TXT_KEY_DAWN_OF_MAN_SCREEN_TITLE	The Dawn of Man
 TXT_KEY_DAWN_OF_MAN_SHEAIM	[NEWLINE][NEWLINE]Strategy: Masters of summoning, the Sheaim's Eater of Dreams are a powerful unit made even more powerful by allowing their summoned units to last for three turns instead of the normal one. They also have access to the Pyre Zombie units, which explode when killed and do damage to the one killing them. Their most important difference from other civs concerns their method for acquiring units. Later melee units are not buildable, but by building a planar gate building, cities will acquire units freely over time, more so as the Armageddon Counter rises. This allows the Sheaim to focus research on the magic line without neglecting other units types.
 TXT_KEY_DAWN_OF_MAN_TEXT	The Age of Ice is ended and fertile lands are newly exposed by retreating sheets of ice. The glory of the Age of Magic is long past and the %s2_civ people set forth to build a civilization to recapture that lost knowledge. %s3_leader, your people have vested absolute power in you, trusting you to lead them into the next age, the Age of Rebirth.
 TXT_KEY_DECLARE_WAR_NO	No, let's reconsider...
@@ -5136,12 +5862,22 @@ TXT_KEY_DOMAIN_SEA	Water Units
 TXT_KEY_DOMESTIC_ADVISOR_APPLY	Apply Changes
 TXT_KEY_DOMESTIC_ADVISOR_APPLY_HELP	Click to change all selected cities governor settings to the options chosen.
 TXT_KEY_DOMESTIC_ADVISOR_AUTOMATION	Automation
+TXT_KEY_DOMESTIC_ADVISOR_COMMERCE	%s1 is generating %d2 commerce per turn.
+TXT_KEY_DOMESTIC_ADVISOR_CULTURE	%s1 has %s2 culture.
+TXT_KEY_DOMESTIC_ADVISOR_DATE_FOUNDED	%s1 was founded in %s2.
 TXT_KEY_DOMESTIC_ADVISOR_EMPHASIZE	When active, this will cause the selected cities to emphasize
+TXT_KEY_DOMESTIC_ADVISOR_FOOD	%s1 is generating %d2 food per turn.
 TXT_KEY_DOMESTIC_ADVISOR_FOUNDED	Founded
 TXT_KEY_DOMESTIC_ADVISOR_GREATPEOPLE	great people production.
 TXT_KEY_DOMESTIC_ADVISOR_GROWTH	growth.
+TXT_KEY_DOMESTIC_ADVISOR_HAPPY	%s1 has %d2 unhappy [NUM2:citizen:citizens] and %d3 happy [NUM3:citizen:citizens], for a net happiness of %d4 [NUM4:citizen:citizens].
+TXT_KEY_DOMESTIC_ADVISOR_HEALTH	%s1 has %d2 good health and %d3 bad health], for a total health of %d4.
+TXT_KEY_DOMESTIC_ADVISOR_MOUSEOVER_CITY	%s1 (Click to select city, double click to view city).
+TXT_KEY_DOMESTIC_ADVISOR_MOUSEOVER_PROD_CANCHANGE	%s1 is currently producing %s2.  Open drop down to change production in this city.
+TXT_KEY_DOMESTIC_ADVISOR_MOUSEOVER_PROD_NOCHANGE	%s1 is currently producing %s2.  You are currently unable to change production in this city.
 TXT_KEY_DOMESTIC_ADVISOR_NAME	Name
 TXT_KEY_DOMESTIC_ADVISOR_PRODUCING	Producing
+TXT_KEY_DOMESTIC_ADVISOR_PRODUCTION	%s1 is generating %d2 production per turn.
 TXT_KEY_DOMESTIC_ADVISOR_REDRAW	Redraw
 TXT_KEY_DOMESTIC_ADVISOR_SELECT_ALL	Select All Cities
 TXT_KEY_DOMESTIC_ADVISOR_TITLE	Domestic Advisor
@@ -6945,6 +7681,7 @@ TXT_KEY_EXTENDED_GAME_TITLE	The End of History...
 TXT_KEY_EXTENDED_GAME_YES	Wait! Just... one... more... turn...
 TXT_KEY_FATAL_ERROR	Fatal Error
 TXT_KEY_FEATURE_ADDS_FRESH_WATER	[NEWLINE][ICON_BULLET]Acts as a source of fresh water
+TXT_KEY_FEATURE_BAD_HEALTH	[NEWLINE][ICON_BULLET]+%s1[ICON_UNHEALTHY] in nearby cities
 TXT_KEY_FEATURE_BLIZZARD	Blizzard
 TXT_KEY_FEATURE_DOOR	Door
 TXT_KEY_FEATURE_EVERGREEN	Evergreen
@@ -6956,6 +7693,7 @@ TXT_KEY_FEATURE_FOREST_ANCIENT	Ancient Forest
 TXT_KEY_FEATURE_FOREST_BURNT	Burnt Forest
 TXT_KEY_FEATURE_FOREST_BURNT_PEDIA	[ICON_BULLET]Has a chance per turn of regrowing into a new forest.
 TXT_KEY_FEATURE_FOREST_NEW	New Forest
+TXT_KEY_FEATURE_GOOD_HEALTH	[NEWLINE][ICON_BULLET]+%s1[ICON_HEALTHY] in nearby cities
 TXT_KEY_FEATURE_ICE	Ice
 TXT_KEY_FEATURE_JUNGLE	Jungle
 TXT_KEY_FEATURE_MOVEMENT_COST	[NEWLINE][ICON_BULLET]Added movement Cost: %d1
@@ -7109,6 +7847,7 @@ TXT_KEY_GAMESPY_ERROR_EMAIL_ADDRESS_REQUIRED	An email address is required to cre
 TXT_KEY_GAMESPY_ERROR_NOT_CONNECTED_TO_INTERNET	Could not resolve connection manager host name.
 TXT_KEY_GAMESPY_ERROR_PASSWORD_NEEDED	A password must be provided
 TXT_KEY_GAMESPY_ERROR_UNIQUE_NICKNAME_NEEDED	A unique nickname must be provided.
+TXT_KEY_GAMESPY_LOGIN	Login
 TXT_KEY_GAMESPY_LOGIN_BUTTON	LOGIN
 TXT_KEY_GAMESPY_LOGIN_DESC	Enter your existing GameSpy ID and password to login.
 TXT_KEY_GAMESPY_LOGIN_NAME	GameSpy ID
@@ -8993,8 +9732,12 @@ TXT_KEY_MISC_CULTURE	Culture: %d1_Curr/%d2_Need [ICON_CULTURE]
 TXT_KEY_MISC_CULTURE_FLOAT	Culture: %s1_Curr/%d2_Need [ICON_CULTURE]
 TXT_KEY_MISC_CULTURE_LEVEL	%s1_CityName has achieved %s2_LevelName Culture!
 TXT_KEY_MISC_CULTURE_LEVEL_UNKNOWN	An unknown city has achieved %s1_LevelName Culture!
+TXT_KEY_MISC_DEAL	%s1 gives %s2 to %s3 for %s4
 TXT_KEY_MISC_DEAL_NO_CANCEL	This deal can be canceled in %d1 [NUM1:turn:turns]
 TXT_KEY_MISC_DEAL_NO_CANCEL_EVER	This deal cannot be canceled
+TXT_KEY_MISC_DEAL_ONESIDED	%s1 gives %s2 to %s3
+TXT_KEY_MISC_DEAL_ONESIDED_OURS	%s1 to %s2
+TXT_KEY_MISC_DEAL_ONESIDED_THEIRS	%s1 from %s2
 TXT_KEY_MISC_DECLARED_WAR_ON_YOU	%s1_PlyrName has declared war on you!
 TXT_KEY_MISC_DECREASE_RATE	Decrease %s1_CmrcType Rate by %d2_Mod%%
 TXT_KEY_MISC_DEFEAT	You have been defeated!!!
@@ -9157,6 +9900,7 @@ TXT_KEY_MISC_ON_CITIZEN_AUTO	Turn On Citizen Automation
 TXT_KEY_MISC_ON_HILLS	[SPACE]on Hills
 TXT_KEY_MISC_ON_PROD_AUTO	Turn On Production Automation
 TXT_KEY_MISC_OPEN_BORDERS	Open Borders
+TXT_KEY_MISC_OUR_DEAL	%s1 to %s2 for %s3
 TXT_KEY_MISC_OUT_OF_SYNC	***** OUT OF SYNC! MY SYNC SEED = %d1_Sync : MY OPTIONS SEED = %d2_Options *****[NEWLINE]
 TXT_KEY_MISC_PEACE_TREATY	Peace Treaty (%d1_Num Turns)
 TXT_KEY_MISC_PEDIA_BACK	Back
@@ -9658,12 +10402,15 @@ TXT_KEY_PEDIA_GREAT_PEOPLE	Great People: %D1
 TXT_KEY_PEDIA_HAPPY	Happy: %D1
 TXT_KEY_PEDIA_HEALTHY	Healthy: %D1
 TXT_KEY_PEDIA_HELP	Short Description
+TXT_KEY_PEDIA_HILLS_YIELD	%s1: %D2%F3 (on Hills)
+TXT_KEY_PEDIA_IRRIGATED_YIELD	%s1: %D2%F3 (with [LINK=CONCEPT_IRRIGATION]Irrigation[\LINK])
 TXT_KEY_PEDIA_LEADS_TO	Leads To
 TXT_KEY_PEDIA_MOVEMENT	Movement: %d1_Num
 TXT_KEY_PEDIA_NATIONAL_WONDER	National Wonder
 TXT_KEY_PEDIA_PROMOTION_UNITS	Available To
 TXT_KEY_PEDIA_RANGE	Range: %d1_Num
 TXT_KEY_PEDIA_REQUIRES	Requires
+TXT_KEY_PEDIA_RIVER_YIELD	%s1: %D2%F3 (next to River)
 TXT_KEY_PEDIA_ROUTE_YIELD	%s1: %D2%F3 (with [LINK=CONCEPT_MOVEMENT]%s4[\LINK])
 TXT_KEY_PEDIA_SCREEN_BACK	Back
 TXT_KEY_PEDIA_SCREEN_EXIT	Exit
@@ -9676,6 +10423,7 @@ TXT_KEY_PEDIA_STRENGTH	Strength: %d1_Num
 TXT_KEY_PEDIA_STRENGTH_DEFENSE	Strength: %d1_Num / %d2_Num
 TXT_KEY_PEDIA_TEAM_PROJECT	Team Project
 TXT_KEY_PEDIA_TEAM_WONDER	Team Wonder
+TXT_KEY_PEDIA_TECH_YIELD	%s1: %D2%F3 (with [LINK=literal]%s4[\LINK])
 TXT_KEY_PEDIA_TRAITS	Traits
 TXT_KEY_PEDIA_UNHAPPY	Unhappy: %D1
 TXT_KEY_PEDIA_UNHEALTHY	Unhealthy: %D1
@@ -9737,6 +10485,7 @@ TXT_KEY_PITBOSS_HOST_ERROR	Host Error
 TXT_KEY_PITBOSS_HUMAN	Human
 TXT_KEY_PITBOSS_INTERNET	Internet
 TXT_KEY_PITBOSS_KICK	Kick
+TXT_KEY_PITBOSS_KICK_VERIFY	Are you sure you want to kick %s1 out of the game?
 TXT_KEY_PITBOSS_KICK_VERIFY_TITLE	Double checking...
 TXT_KEY_PITBOSS_LAN	LAN
 TXT_KEY_PITBOSS_LEADER	Leader
@@ -9788,6 +10537,7 @@ TXT_KEY_PITBOSS_SAVE_AS_TEXT	Civ Save files
 TXT_KEY_PITBOSS_SAVE_ERROR	Save Error
 TXT_KEY_PITBOSS_SAVE_FILES	Civ Save files %s1
 TXT_KEY_PITBOSS_SAVE_GAME	Save Game
+TXT_KEY_PITBOSS_SAVE_SUCCESS	'%s1' successfully saved"
 TXT_KEY_PITBOSS_SAVE_TEXT	Save the Game
 TXT_KEY_PITBOSS_SCENARIO	New Scenario
 TXT_KEY_PITBOSS_SCENARIO_ERROR	Initialization Error
@@ -10084,6 +10834,7 @@ TXT_KEY_PROJECT_DOUBLE_SPEED_WITH	Double Production Speed with [LINK=literal]%s1
 TXT_KEY_PROJECT_ELEGY_OF_THE_SHEAIM	Elegy of the Sheaim
 TXT_KEY_PROJECT_ELEGY_OF_THE_SHEAIM_STRATEGY	Increases the Armageddon counter by a small amount.
 TXT_KEY_PROJECT_ENABLES_NUKES	[ICON_BULLET]Enables Nuclear Attacks (For all Players)
+TXT_KEY_PROJECT_ENABLES_SPECIAL	[ICON_BULLET]Enables %s1_Name (For all Players)
 TXT_KEY_PROJECT_GENESIS	Genesis
 TXT_KEY_PROJECT_GENESIS_STRATEGY	[TAB]Upgrades the terrain in the building empire.
 TXT_KEY_PROJECT_GLORY_EVERLASTING	Glory Everlasting
@@ -10102,9 +10853,14 @@ TXT_KEY_PROJECT_PACT_OF_THE_NILHORN_STRATEGY	Three allied Hill Giants will appea
 TXT_KEY_PROJECT_PURGE_THE_UNFAITHFUL	Purge the Unfaithful
 TXT_KEY_PROJECT_PURGE_THE_UNFAITHFUL_STRATEGY	Removes all non-state religions and non-state religions' buildings from all of the player's cities. It can cause rioting in the player's affected cities.
 TXT_KEY_PROJECT_REQUIRED_FOR_VICTORY	[ICON_BULLET]%s1 Required for %s2_victory Victory
+TXT_KEY_PROJECT_REQUIRED_STRING	[COLOR_WARNING_TEXT]Required for %s1_Name Victory (%d2_Num Total)[COLOR_REVERT]
 TXT_KEY_PROJECT_REQUIRED_TO_CREATE	Required to Create[SPACE]
 TXT_KEY_PROJECT_REQUIRED_TO_CREATE_ANYONE	Required for Anyone to Create[SPACE]
+TXT_KEY_PROJECT_REQUIRED_TYPE_VICTORY	[COLOR_WARNING_TEXT]Required for %s1_Name Victory (%d2_NumCurr/%d3_NumTotal Total)[COLOR_REVERT]
+TXT_KEY_PROJECT_REQUIRES	[COLOR_WARNING_TEXT]Requires [LINK=literal]%s1[\LINK] (%d2/%d3)[COLOR_REVERT]
 TXT_KEY_PROJECT_REQUIRES_ANYONE	[COLOR_WARNING_TEXT]Requires Someone to Create [LINK=literal]%s1_Name[\LINK][COLOR_REVERT]
+TXT_KEY_PROJECT_REQUIRES_NO_CITY	[COLOR_WARNING_TEXT]Requires [LINK=literal]%s1[\LINK] (%d2)[COLOR_REVERT]
+TXT_KEY_PROJECT_REQUIRES_STRING_VICTORY	[ICON_BULLET]%s1_Name Victory must be Enabled
 TXT_KEY_PROJECT_RITES_OF_OGHMA	Rites of Oghma
 TXT_KEY_PROJECT_RITES_OF_OGHMA_STRATEGY	Creates new raw mana nodes in the world.
 TXT_KEY_PROJECT_SAMHAIN	Samhain
@@ -10134,6 +10890,7 @@ TXT_KEY_PROJECT_THE_WHITE_HAND	The White Hand
 TXT_KEY_PROJECT_THE_WHITE_HAND_STRATEGY	Completing this ritual will spawn three [LINK=literal]Priest of Winter[\LINK] in the player's city.
 TXT_KEY_PROJECT_WORLD_NUM_ALLOWED	[ICON_BULLET]World Project (%d1_Num Allowed)
 TXT_KEY_PROJECT_WORLD_NUM_LEFT	[SPACE](World Project: %d1_Num Left)
+TXT_KEY_PROMOTION	%s1 promotion awarded!
 TXT_KEY_PROMOTION_ACCURACY	Accuracy
 TXT_KEY_PROMOTION_ACE	Ace
 TXT_KEY_PROMOTION_AERONS_CHOSEN	Aeron's Chosen
@@ -11540,6 +12297,8 @@ TXT_KEY_TECH_NEVER	Never
 TXT_KEY_TECH_NEVER_PEDIA	This tech is not available for research. It is used to block any action that players cannot build or perform on their own such as objects that are only given in special situations.
 TXT_KEY_TECH_NEVER_QUOTE	There is a rescue waiting for you. A god who may be willing to accept you back in his ara. Will you trade the ideology of three ages for a chance to retain your immortal soul? Are you willing to admit that you exist only to serve the gods?-Auric Ulvin
 TXT_KEY_TECH_NUM_TURNS	[ICON_BULLET][COLOR_HIGHLIGHT_TEXT]%d1_Num Turns[COLOR_REVERT]
+TXT_KEY_TECH_OBSOLETES	[COLOR_WARNING_TEXT]Obsoletes [LINK=literal]%s1_Name[\LINK][COLOR_REVERT]
+TXT_KEY_TECH_OBSOLETES_NO_LINK	[COLOR_WARNING_TEXT]Obsoletes %s1_Name[COLOR_REVERT]
 TXT_KEY_TECH_OMNISCIENCE	Omniscience
 TXT_KEY_TECH_OMNISCIENCE_PEDIA	Do not tell me anything! Needing to know is a sign of weakness, and to reveal ignorance is to expose oneself. If I truly knew everything, I would have no weaknesses, and all would tremble before me.-Arean Sethrail, Mage Elder
 TXT_KEY_TECH_OPTICS	Optics
@@ -11891,6 +12650,7 @@ TXT_KEY_TRAIT_HEALTH	[NEWLINE][SPACE][SPACE][ICON_BULLET]%D1[ICON_HEALTHY]/City
 TXT_KEY_TRAIT_HORSELORD	Horselord
 TXT_KEY_TRAIT_HORSELORD_SHORT	Hor
 TXT_KEY_TRAIT_IDEALIST	Idealist
+TXT_KEY_TRAIT_IDEALIST_SHORT	Ide
 TXT_KEY_TRAIT_IGNORE_FOOD_HELP	[NEWLINE][SPACE][SPACE][ICON_BULLET]Cities won't change population due to food
 TXT_KEY_TRAIT_IMPERIALIST	Imperialistic
 TXT_KEY_TRAIT_IMPERIALIST_SHORT	Imp
@@ -11901,7 +12661,10 @@ TXT_KEY_TRAIT_INGENUITY_SHORT	Ing
 TXT_KEY_TRAIT_INSANE	Insane
 TXT_KEY_TRAIT_INSANE_HELP	[NEWLINE][SPACE][SPACE][ICON_BULLET]Three traits are generated randomly and switch randomly during the game
 TXT_KEY_TRAIT_INSANE_SHORT	Insane
+TXT_KEY_TRAIT_INVENTIVE	Inventive
+TXT_KEY_TRAIT_INVENTIVE_SHORT	Inv
 TXT_KEY_TRAIT_ISOLATIONIST	Isolationist
+TXT_KEY_TRAIT_ISOLATIONIST_SHORT	Iso
 TXT_KEY_TRAIT_MAGIC_RESISTANT	Magic Resistant
 TXT_KEY_TRAIT_MAGIC_RESISTANT_SHORT	Mag
 TXT_KEY_TRAIT_MAX_ANARCHY	[NEWLINE][SPACE][SPACE][ICON_BULLET]Max %d1 [NUM1:Turn:Turns] of Anarchy
@@ -11922,11 +12685,16 @@ TXT_KEY_TRAIT_PLAYER_UNKNOWN	Unknown
 TXT_KEY_TRAIT_PRODUCTION_MODIFIER	[NEWLINE][SPACE][SPACE][ICON_BULLET]%d1%% Faster Production of[SPACE]
 TXT_KEY_TRAIT_PRODUCTIVE	Productive
 TXT_KEY_TRAIT_PRODUCTIVE_SHORT	Prod
+TXT_KEY_TRAIT_PROTECTIVE	Scientific
+TXT_KEY_TRAIT_PROTECTIVE_SHORT	Sci
 TXT_KEY_TRAIT_RAIDERS	Raiders
 TXT_KEY_TRAIT_RAIDERS_SHORT	Rai
 TXT_KEY_TRAIT_REALIST	Realist
+TXT_KEY_TRAIT_REALIST_SHORT	Rea
 TXT_KEY_TRAIT_RELIGIOUS	Religious
+TXT_KEY_TRAIT_RELIGIOUS_SHORT	Rel
 TXT_KEY_TRAIT_SCHOLAR	Scholar
+TXT_KEY_TRAIT_SCHOLAR_SHORT	Sco
 TXT_KEY_TRAIT_SINISTER	Sinister
 TXT_KEY_TRAIT_SINISTER_SHORT	Sin
 TXT_KEY_TRAIT_SPIRITUAL	Spiritual
@@ -11944,6 +12712,8 @@ TXT_KEY_TRAIT_TEAM_WONDER_PRODUCTION_MODIFIER	[NEWLINE][SPACE][SPACE][ICON_BULLE
 TXT_KEY_TRAIT_TOLERANT	Tolerant
 TXT_KEY_TRAIT_TOLERANT_SHORT	Tol
 TXT_KEY_TRAIT_TRADE_YIELD_MODIFIERS	[NEWLINE][SPACE][SPACE][ICON_BULLET]%D1%F2_yield from [ICON_TRADE]
+TXT_KEY_TRAIT_TYRANT	Tyrannical
+TXT_KEY_TRAIT_TYRANT_SHORT	Tyr
 TXT_KEY_TRAIT_UPGRADE_COST_MODIFIER_HELP	[NEWLINE][SPACE][SPACE][ICON_BULLET]%D1% to upgrade costs
 TXT_KEY_TRAIT_WEAK	Weak
 TXT_KEY_TRAIT_WEAK_SHORT	Weak
@@ -12137,6 +12907,7 @@ TXT_KEY_UNIT_ASSASSIN	Assassin
 TXT_KEY_UNIT_ASSASSIN_PEDIA	When a Hunter chooses to forgo her life in the woods and begin hunting the most elusive of animals, an Assassin is created. Although weak at attacking and defending cities, an Assassin's ability to attack the weakest unit in a stack makes it perfect for picking off spellcasters.
 TXT_KEY_UNIT_ASSASSIN_STRATEGY	Assassins attack the weakest unit in the defending stack, making them perfect for picking off enemy mages even in the best defended cities and stacks.
 TXT_KEY_UNIT_ATTACK	[ICON_BULLET]%D1_Change%% %s2_TerrOrFeat Attack
+TXT_KEY_UNIT_ATTACK_MOD_VS_CLASS	[ICON_BULLET]%D1_Change%% Attack vs. [LINK=literal]%s2_Class[\LINK]
 TXT_KEY_UNIT_ATTACK_SUBMARINE	Attack Submarine
 TXT_KEY_UNIT_ATTACK_SUBMARINE_STRATEGY	The [COLOR_UNIT_TEXT]Attack Submarine[COLOR_REVERT] is the ultimate defense against [COLOR_UNIT_TEXT]Submarines[COLOR_REVERT]. While unable to carry missiles, it does receive a significant bonus against enemy [COLOR_UNIT_TEXT]Submarines[COLOR_REVERT].
 TXT_KEY_UNIT_AT_INFANTRY	Anti-Tank
@@ -12340,6 +13111,7 @@ TXT_KEY_UNIT_DEATH_KNIGHT_PEDIA	Death Knights are a grotesque mockery of their l
 TXT_KEY_UNIT_DEATH_KNIGHT_STRATEGY	The Death Knight combines the strength and mobility of a typical knight with the ability to cast Death Spells.
 TXT_KEY_UNIT_DEFENDS_UNIT_FIRST	[ICON_BULLET]Defends first against %s1_unit_list
 TXT_KEY_UNIT_DEFENSE	[ICON_BULLET]%D1_Change%% %s2_TerrOrFeat Defense
+TXT_KEY_UNIT_DEFENSE_MOD_VS_CLASS	[ICON_BULLET]%D1_Change%% Defense vs. [LINK=literal]%s2_Type[\LINK]
 TXT_KEY_UNIT_DEMAGOG	Demagog
 TXT_KEY_UNIT_DEMAGOG_PEDIA	The Demagog can only be built during a Crusade (religion civic option). The unit is nearly as powerful as a Champion with only half the cost. Demagogs abandon their empire when the Crusade is ended.
 TXT_KEY_UNIT_DEMAGOG_STRATEGY	The Demagog is designed for fast mobilization, costing half as much as a champion. But they will abandon you when the crusade is over.
@@ -12823,6 +13595,8 @@ TXT_KEY_UNIT_MOBIUS_WITCH	Mobius Witch
 TXT_KEY_UNIT_MOBIUS_WITCH_STRATEGY	Mobius Witches have a chance of appearing in Sheaim cities with a Planar Gate and Mage Guild buildings. They have a chance of starting with a few spells.
 TXT_KEY_UNIT_MODERN_ARMOR	Modern Armor
 TXT_KEY_UNIT_MODERN_ARMOR_STRATEGY	[COLOR_UNIT_TEXT]Modern Armor[COLOR_REVERT] units are extremely powerful offensive weapons. Warlike leaders should build them early and often.
+TXT_KEY_UNIT_MOD_VS_TYPE	[ICON_BULLET]%D1_Change%% vs. [LINK=literal]%s2_Type[\LINK]
+TXT_KEY_UNIT_MOD_VS_TYPE_NO_LINK	[ICON_BULLET]%D1_Change%% vs. %s2_Type
 TXT_KEY_UNIT_MOKKA	Mokka
 TXT_KEY_UNIT_MOKKA_PEDIA	[TAB]Mokka sat playing in the snow. In one hand, he held a stickman and in the other a beast made out of packed snow. He made growls and weapon noises as he pretended they were fighting.[PARAGRAPH:1]"What have we here, a frostling out by himself?" [PARAGRAPH:1]Two scouts approached, weapons drawn. Mokka's staff lay on the ground beside him, but he was unwilling to give up his play to grab it. Instead he held the stickman up to the closest scout. Unimpressed the scout raised his axe. Mokka snapped the stickman in two; as it broke so did the scout, bending backwards until his head slammed into his heels with a thud. [PARAGRAPH:1]The second scout stepped away, terrified. [PARAGRAPH:1]Mokka held the snow beast out towards him, shaking it gently in the air. The scout heard the snow rising up behind him. Mokka had lost his stickman, he would need new toys to entertain him, and these new toys made their own sounds.
 TXT_KEY_UNIT_MOKKA_STRATEGY	Mokka can only be created by the Illian Samhain ritual.
@@ -12982,6 +13756,7 @@ TXT_KEY_UNIT_REPENTANT_ANGEL	Repentant Angel
 TXT_KEY_UNIT_REPENTANT_ANGEL_PEDIA	Repentant Angels are powerful, but they lose 1 point of strength every time they kill a living creature.
 TXT_KEY_UNIT_REQUIRED_TO_BUILD	[ICON_BULLET]Can be built by[SPACE]
 TXT_KEY_UNIT_REQUIRES_HOLY_CITY	[COLOR_WARNING_TEXT]Requires %F1_RelIcon Holy City[COLOR_REVERT]
+TXT_KEY_UNIT_REQUIRES_STRING	[COLOR_WARNING_TEXT]Requires %s1_Text[COLOR_REVERT]
 TXT_KEY_UNIT_REVELERS	Revelers
 TXT_KEY_UNIT_REVELERS_PEDIA	Everything they needed was provided. There was no disease, no weakness and a world of gifts to fascinate and learn from. They were overjoyed at what they had, until they saw someone with an even more amazing gift. This was the first pain they experienced.[PARAGRAPH:1]This pain consumed them, they lost an appreciation for the value of anything they possessed and were ruled by desire for what others had.[PARAGRAPH:1]A society without those willing to sacrifice made it impossible to wage real wars, so instead they cheated and stole from each other. A small group tried to protect themselves from their own envy by binding their eyes. Unable to see what others had they became content. These were the only ones who survived. [PARAGRAPH:1]Even without their sight the Revelers, as those from other worlds came to call them, remain true to their nature. They still have a fondness for gambling and stealing, and will come through a Planar Gate if the city contains a Gambling House. Their eyes remain bound but it does not hinder them, and they are even able to detect shadows and other hidden units.
 TXT_KEY_UNIT_REVELERS_STRATEGY	Revelers are automatically created in Sheaim cities that contain a Planar Gate and a Gambling House. Use them as scouts and despite the caecus cloth that cover their eyes, they can see very well, even detecting invisible units around them.
@@ -13249,6 +14024,9 @@ TXT_KEY_VICTORY_RELIGIOUS	Religious
 TXT_KEY_VICTORY_RESET	[COLOR_HIGHLIGHT_TEXT]Mission Failed! All progress of %s1_player towards a %s2_victory has been lost![COLOR_REVERT]
 TXT_KEY_VICTORY_SCORE	Score
 TXT_KEY_VICTORY_SCREEN_BUILDING	Build %s1 %s2
+TXT_KEY_VICTORY_SCREEN_BUILT	Built by %s1
+TXT_KEY_VICTORY_SCREEN_CITY_CULTURE	%d1 cities with %s2 Culture
+TXT_KEY_VICTORY_SCREEN_ELECTION	Election triggered by %s1
 TXT_KEY_VICTORY_SCREEN_ELIMINATE_ALL	Eliminate all rivals
 TXT_KEY_VICTORY_SCREEN_HIGHEST_SCORE	Highest score at %s1
 TXT_KEY_VICTORY_SCREEN_NOT_BUILT	Not yet built
@@ -13732,6 +14510,7 @@ TXT_KEY_WITH_SPACE	[SPACE]with[SPACE]
 TXT_KEY_WONDERS_SCREEN_BEING_BUILT_BY	Being built by %s1_CivShortDesc
 TXT_KEY_WONDERS_SCREEN_TOP_CITIES_TEXT	Top 5 Cities / Wonders
 TXT_KEY_WONDERS_SCREEN_WONDERS_TEXT	Wonders of the World
+TXT_KEY_WONDER_SCREEN_TEXT	You have completed %s1
 TXT_KEY_WONDER_SCREEN_TITLE	Wonder Acquired
 TXT_KEY_WORLDSIZE_DUEL_HELP	A very tiny map with only one opponent.  This is tougher than it sounds because you will have to work extra hard at research without the benefit of multiple trading partners.
 TXT_KEY_WORLDSIZE_HUGE_HELP	If you are looking for a truly epic experience, this map size is for you.  It has room for you and 10 opponents.
@@ -13756,7 +14535,6 @@ TXT_KEY_WWI_CITY_NOVGOROD	Novgorod
 TXT_KEY_YIELD_COMMERCE	Commerce
 TXT_KEY_YIELD_FOOD	Food
 TXT_KEY_YIELD_PRODUCTION	Production
-TXT_KEY_ZEN_GARDEN	Zen Garden
 TXT_KEY_ZOOM_CITY_HELP	Enter the city screen for this City
 TXT_KEY_ZOOM_TO_CITY_DOMESTIC	Zoom
 TXT_LEGAL_LINE_1	&#169;2007 Take-Two Interactive Software and its subsidiaries. Developed by Firaxis Games. Sid Meier's Civilization IV: Warlords, Civ, Civilization, 2K Games, the 2K logo, Firaxis Games, the Firaxis Games logo and Take-Two Interactive Software are all trademarks and/or registered trademarks of Take-Two Interactive Software, Inc. in the USA and/or foreign countries.  GameSpy and the "Powered by GameSpy" design are trademarks of GameSpy Industries, Inc. All other marks and trademarks are the property of their respective owners. Uses Bink Video (Copyright &#169;1997-2007 by RAD Game Tools, Inc.). Uses Miles Sound System &#169;1991-2007 by RAD Game Tools, Inc.). Portions of this software are included under license from Numerical Design, Ltd. (&#169;2007) and Scaleform Corporation (&#169;2007). Unauthorized copying,reverse engineering, transmission, public performance, rental, pay for play, or circumvention of copy protection is strictly prohibited. All rights reserved. 
@@ -13767,4 +14545,46 @@ TXT_MAIN_MENU_CIV_PASSWORD_TITLE	ENTER CIV PASSWORD
 TXT_MAIN_MENU_CIV_PASSWORD_TITLEBAR	Password Protection
 TXT_MAIN_MENU_CIV_PROTECT_DESC	Enter a password to protect your Civilization, or leave it blank to waive password protection.
 TXT_MAIN_MENU_CIV_PROTECT_TITLE	PROTECT YOUR CIV
+USER_DIPLO_ACCEPT_1	We accept your offer.
+USER_DIPLO_ACCEPT_DEMAND_1	Well, if you insist...
+USER_DIPLO_ACCEPT_OFFER_1	Sounds like a deal!!!
+USER_DIPLO_ASK_1	Could you spare this for a good friend?
+USER_DIPLO_ATTITUDE_1	What do you think of...
+USER_DIPLO_ATTITUDE_PLAYER_1	%s1...
+USER_DIPLO_COMPLETE_DEAL_1	What would make this deal work?
+USER_DIPLO_CONVERT_1	I agree. We will convert to [OUR_STATE_RELIGION] immediately. (Convert Religion)
+USER_DIPLO_CURRENT_DEALS_1	What are the current deals we have together?
+USER_DIPLO_DEMAND_1	We demand that you give this to us in tribute.
+USER_DIPLO_DEMAND_TEAM_1	This sure would come in handy...
+USER_DIPLO_EXIT_1	Farewell ... (Exit)
+USER_DIPLO_FISH_FOR_DEAL_1	What will you give me for this?
+USER_DIPLO_GIFT_1	Please, accept this gift.
+USER_DIPLO_GIVE_HELP_1	Sure! We're always glad to help!
+USER_DIPLO_JOIN_WAR_1	Let's get this war started! (Declare War)
+USER_DIPLO_NEVERMIND_1	Never mind...
+USER_DIPLO_NO_CONVERT_1	Our people will never give up their beliefs.
+USER_DIPLO_NO_JOIN_WAR_1	Sorry, but we cannot afford a war right now.
+USER_DIPLO_NO_RENEGOTIATE_1	Fair enough. (exit)
+USER_DIPLO_NO_REVOLUTION_1	You must learn to respect our differences.
+USER_DIPLO_NO_STOP_TRADING_1	Sorry, but we just can't turn our back on them.
+USER_DIPLO_OFFER_1	What do you want for this?
+USER_DIPLO_OFFER_PEACE_1	Let us bury the hatchet. What is the price for peace?
+USER_DIPLO_PEACE_1	There shall be peace in our time!
+USER_DIPLO_PROPOSAL_1	We would like to make a trade proposal.
+USER_DIPLO_PROPOSE_1	Would you accept this deal?
+USER_DIPLO_REFUSE_HELP_1	Sorry, but it's no rose garden over here either.
+USER_DIPLO_REJECT_1	Sorry, we cannot accept such a deal.
+USER_DIPLO_REJECT_DEMAND_1	We reject your empty threats!
+USER_DIPLO_REJECT_OFFER_1	It ain't happening.
+USER_DIPLO_RENEGOTIATE_1	Care to negotiate?
+USER_DIPLO_RESEARCH_1	We would like you to research...
+USER_DIPLO_RESEARCH_TECH_1	%s1...
+USER_DIPLO_REVOLUTION_1	But of course... we now see the error of our ways. (Start Revolution)
+USER_DIPLO_SOMETHING_ELSE_1	Let's discuss something else...
+USER_DIPLO_STOP_TRADING_1	You're right, we can't stand them either! (Cancel Deals)
+USER_DIPLO_SUGGEST_PEACE_1	Lets stop this pointless fighting and declare peace!
+USER_DIPLO_TARGET_1	Why don't you attack...
+USER_DIPLO_TARGET_CITY_1	%s1...
 USER_DIPLO_TRIBUTE_1	Time for your tribute! Refusal means WAR!
+USER_DIPLO_WAR_1	Your head would look good on the end of a pole. (WAR)
+USER_DIPLO_WAR_RESPONSE_1	So be it.

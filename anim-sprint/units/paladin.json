@@ -1,0 +1,110 @@
+{
+ "name": "paladin",
+ "sprite": "m7/roster/units/unit_paladin.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Paladin, a holy knight: swept blond hair, polished steel plate armour with gold trim, a white tabard with a golden sun emblem, a brown belt, steel greaves and boots, a spiked steel flanged mace on a wooden handle in his RIGHT hand and a white-and-steel kite shield with a golden sun emblem on his LEFT arm",
+ "hands": "the mace stays in his right hand on the screen-left side and the shield on his left arm on the screen-right side",
+ "guide_style": "grey",
+ "scale": 0.98,
+ "head_r": 13,
+ "limb": 1.1,
+ "joints": {
+  "head": [
+   86,
+   55
+  ],
+  "neck": [
+   83,
+   67
+  ],
+  "chest": [
+   84,
+   75
+  ],
+  "pelvis": [
+   84,
+   85
+  ],
+  "r_sh": [
+   71,
+   67
+  ],
+  "r_el": [
+   66,
+   75
+  ],
+  "r_ha": [
+   59,
+   80
+  ],
+  "tip": [
+   47,
+   44
+  ],
+  "l_sh": [
+   100,
+   66
+  ],
+  "l_el": [
+   104,
+   80
+  ],
+  "l_ha": [
+   108,
+   88
+  ],
+  "shield": [
+   111,
+   86,
+   10,
+   21
+  ],
+  "r_hip": [
+   77,
+   90
+  ],
+  "r_kn": [
+   70,
+   102
+  ],
+  "r_ft": [
+   68,
+   118
+  ],
+  "l_hip": [
+   93,
+   91
+  ],
+  "l_kn": [
+   102,
+   103
+  ],
+  "l_ft": [
+   107,
+   120
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back toward the upper-left, the mace is lifted beside the head with its spiked head pointing up and back",
+   "2": "wind-up extreme: body coiled back and crouched, the mace hand behind the head and the mace hanging back and down behind the shoulders to the left, shield tucked across the belly",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips round, the mace arm sweeps across in front of the chest and the mace is level, its spiked head pointing to the right",
+   "4": "contact: mace arm fully extended toward the lower-right, the mace's spiked head striking down-right, front knee bent, body low and leaning in, shield arm swung back behind the shoulders for balance",
+   "5": "follow-through: the mace carries on down until its spiked head nearly touches the ground at the lower-right, torso twisted, hair trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the mace comes back up on the near side toward the ready angle, shield tucked across the belly"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (mace arm thrown up and out to the left, shield flung out to the right)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the mace dipping, shield still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, mace arm flung up, shield drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the mace lowering",
+   "3": "kneeling: on both knees, slumped forward, the mace's spiked head resting on the ground at the lower-right, shield arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the mace slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left; the mace lies on the ground at the lower-right; the shield lies flat beside him",
+   "7": "corpse: lying flat and still on his back, eyes closed, mace and shield on the ground beside him"
+  }
+ }
+}

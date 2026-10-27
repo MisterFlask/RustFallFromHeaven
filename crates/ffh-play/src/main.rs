@@ -11,11 +11,17 @@
 //!   ffh-play bot [--seed N] [--turns T] [--opponents N] [--world WORLDSIZE_X] [--saves DIR] [--quiet]
 //!                                      a scripted human plays the human slot (design §8 T1);
 //!                                      with --saves: journal and autosaves in DIR
-//!   ffh-play replay JOURNAL [--from SAVE]
+//!   ffh-play replay JOURNAL [--from SAVE] [--to-turn T]
 //!                                      replay a journal from its header (a new game), from the
 //!                                      save its load / take-over header names, or from an
 //!                                      autosave at one of its checkpoints; exit code 1 at a
-//!                                      divergence
+//!                                      divergence; --to-turn: stop after the moves of turn T
+//!   ffh-play observe (--setup JSON | --load SAVE) [--to-turn T | --turns N] [--plot X,Y] [--saves DIR]
+//!                                      an observed (AI-only) game, headless: from new-game
+//!                                      settings (`observe` implied) or an observed / AI-only
+//!                                      save, to the end of turn T (or N turns); one line per
+//!                                      turn with its checksum, then the units at the plot (a
+//!                                      flag's repro: run it with FFH_AI_TRACE=<player>)
 //!   ffh-play journal print JOURNAL     the journal as lines for people
 //!   ffh-play soak run [SETTINGS] [--saves DIR] [--resume SAVE] [--check-every N] [--save-check-every N]
 //!                                      the AI plays the human slot for one game (design P2):
@@ -39,7 +45,7 @@
 //!                                      the HTTP server (design §4.2) on 127.0.0.1:8642 with the
 //!                                      browser client (P5); no game until the client starts
 //!                                      one, or GAME says so
-//!   ffh-play stage capture|attack|automoves|load|trade|automate|election|settlement|corrupt DIR
+//!   ffh-play stage capture|attack|automoves|load|trade|diplomacy|automate|election|settlement|corrupt DIR
 //!                                      write a save at a staged situation into DIR (testing the
 //!                                      clients): `capture` (a warrior next to an undefended
 //!                                      enemy city: moving in raises the keep/raze decision),
@@ -79,12 +85,13 @@ fn usage() -> ! {
     eprintln!(
         "usage: ffh-play kinds | names [KIND] [--pretty] | lookup NAME|KIND:INDEX ..\n\
          \x20      | bot [--seed N] [--turns T] [--opponents N] [--world WORLDSIZE_X] [--saves DIR] [--quiet]\n\
-         \x20      | replay JOURNAL [--from SAVE] | journal print JOURNAL\n\
+         \x20      | replay JOURNAL [--from SAVE] [--to-turn T] | journal print JOURNAL\n\
+         \x20      | observe (--setup JSON | --load SAVE) [--to-turn T | --turns N] [--plot X,Y] [--saves DIR]\n\
          \x20      | soak run [SETTINGS] [--saves DIR] [--resume SAVE] [--check-every N] [--save-check-every N]\n\
          \x20      | soak [--seeds A..B] [--sizes ..] [--civs ..] [--options ..] [--speeds ..] [--turns N] [--jobs N] [--timeout SECS]\n\
          \x20             [--saves DIR] [--keep-saves] [--out FILE] [--filter TEXT] [--list]\n\
          \x20      | agent [GAME] [--on-eof quit|end-turn] [--progress]\n\
-         \x20      | serve [GAME] [--port N] [--bind ADDR] [--assets DIR] | stage capture|attack|automoves|load|trade|automate|election|settlement|corrupt DIR\n\
+         \x20      | serve [GAME] [--port N] [--bind ADDR] [--assets DIR] | stage capture|attack|automoves|load|trade|diplomacy|automate|election|settlement|corrupt DIR\n\
          \x20      | bench [--quick] [--seed N] [--turns T] [--runs R] [--world W] [--opponents N] [--ffh PATH] [--json]\n\
          \x20      | export-site OUT [--data DIR]\n\
          \x20  GAME: [--saves DIR | --no-saves] [--autosaves N] [--setup JSON] [--seed N] [--opponents N] [--world W] [--civ C]\n\
@@ -177,10 +184,12 @@ fn cmd_bot(args: &[String]) {
 fn cmd_replay(args: &[String]) {
     let mut journal = None;
     let mut from = None;
+    let mut to_turn = None;
     let mut i = 0;
     while i < args.len() {
         match args[i].as_str() {
             "--from" => from = Some(flag_value(args, &mut i).to_string()),
+            "--to-turn" => to_turn = Some(flag_value(args, &mut i).parse::<i32>().unwrap_or_else(|_| usage())),
             a if journal.is_none() && !a.starts_with('-') => journal = Some(a.to_string()),
             _ => usage(),
         }
@@ -195,13 +204,101 @@ fn cmd_replay(args: &[String]) {
     let bundle = from.map(|f| ffh_play::save::read_bundle(std::path::Path::new(&f)).unwrap_or_else(|e| fail(e)));
     let from = bundle.as_ref().map(|(save, sidecar)| ReplayFrom { save, sidecar: sidecar.as_ref() });
     let n = lines.len();
-    let s = ffh_play::session::replay(lines, from, SessionOptions::default()).unwrap_or_else(|e| fail(e));
+    let s = ffh_play::session::replay_to(lines, from, SessionOptions::default(), to_turn).unwrap_or_else(|e| fail(e));
+    let what = match to_turn {
+        Some(t) => format!("replayed the journal ({n} lines) to the end of turn {t}"),
+        None => format!("replayed {n} journal lines"),
+    };
     println!(
-        "replayed {n} journal lines: turn {} slice {}, checksum {:08x}",
+        "{what}: turn {} slice {}, checksum {:08x}",
         s.g.game_turn(),
         s.g.turn_slice,
         s.g.calculate_sync_checksum() as u32
     );
+}
+
+/// `ffh-play observe`: an observed game played headless (a flag's repro; docs/HUMAN.md).
+fn cmd_observe(args: &[String]) {
+    let mut setup = None;
+    let mut load = None;
+    let mut to_turn = None;
+    let mut turns = None;
+    let mut plot = None;
+    let mut saves = None;
+    let mut i = 0;
+    while i < args.len() {
+        match args[i].as_str() {
+            "--setup" => setup = Some(flag_value(args, &mut i).to_string()),
+            "--load" => load = Some(std::path::PathBuf::from(flag_value(args, &mut i))),
+            "--to-turn" => to_turn = Some(flag_value(args, &mut i).parse::<i32>().unwrap_or_else(|_| usage())),
+            "--turns" => turns = Some(flag_value(args, &mut i).parse::<i32>().unwrap_or_else(|_| usage())),
+            "--plot" => {
+                let v = flag_value(args, &mut i);
+                let xy: Vec<i32> = v.split(',').map(|n| n.trim().parse().unwrap_or_else(|_| usage())).collect();
+                let [x, y] = xy[..] else { usage() };
+                plot = Some((x, y));
+            }
+            "--saves" => saves = Some(std::path::PathBuf::from(flag_value(args, &mut i))),
+            _ => usage(),
+        }
+        i += 1;
+    }
+    let fail = |e: String| -> ! {
+        eprintln!("observe: {e}");
+        std::process::exit(1)
+    };
+    let d = ffh_data::global();
+    let opts = SessionOptions { journal: saves.is_some(), saves_dir: saves, ..SessionOptions::default() };
+    let answerer = std::sync::Arc::new(ffh_play::human::AdvisorAnswerer);
+    let mut s = match (setup, load) {
+        (Some(j), None) => {
+            let j = Json::parse(&j).unwrap_or_else(|e| fail(format!("--setup: {e}")));
+            let mut ng = NewGame::from_json(d, &j).unwrap_or_else(|e| fail(format!("--setup: {e}")));
+            ng.observe = true;
+            Session::new_game(&ng, answerer, opts).unwrap_or_else(|e| fail(e.to_string()))
+        }
+        (None, Some(path)) => {
+            let (bytes, sidecar) = ffh_play::save::read_bundle(&path).unwrap_or_else(|e| fail(e));
+            let mut s = Session::load(&bytes, sidecar.as_ref(), answerer, opts).unwrap_or_else(|e| fail(e.to_string()));
+            if s.observe_state().is_none() {
+                fail(format!("{}: a human game's save (replay its journal instead)", path.display()));
+            }
+            // Turn by turn from the save, whatever autoplay was under way when it was taken.
+            s.halt();
+            s
+        }
+        _ => usage(),
+    };
+    let mut played = 0;
+    loop {
+        match s.advance(&mut |_| {}) {
+            Stop::Human => {}
+            Stop::Over => {
+                println!("game over at turn {}", s.g.game_turn());
+                break;
+            }
+            Stop::Stuck(diag) => fail(diag),
+        }
+        if s.g.at_turn_boundary() {
+            println!("turn {:4} checksum {:08x}", s.g.game_turn(), s.g.calculate_sync_checksum() as u32);
+        }
+        let done = match (to_turn, turns) {
+            (Some(t), _) => s.g.at_turn_boundary() && s.g.game_turn() >= t,
+            (None, Some(n)) => played >= n,
+            (None, None) => true,
+        };
+        if done {
+            break;
+        }
+        s.execute(&ffh_play::Command::AutoPlay { turns: 1 }).unwrap_or_else(|e| fail(e.to_string()));
+        played += 1;
+    }
+    if let Some((x, y)) = plot {
+        println!("units at ({x}, {y}) and next to it:");
+        for u in ffh_play::flag::units_around(&s.g, x, y) {
+            println!("  {u}");
+        }
+    }
 }
 
 fn cmd_journal(args: &[String]) {
@@ -629,7 +726,7 @@ fn cmd_lookup(args: &[String]) {
     }
 }
 
-/// `ffh-play stage capture|attack|automoves|load|trade|automate|election|settlement|corrupt DIR`: a save
+/// `ffh-play stage capture|attack|automoves|load|trade|diplomacy|automate|election|settlement|corrupt DIR`: a save
 /// at a staged situation (testing the clients).
 fn cmd_stage(args: &[String]) {
     let [kind, dir] = args else { usage() };
@@ -640,6 +737,7 @@ fn cmd_stage(args: &[String]) {
         "automoves" => ffh_play::stage::auto_moves(dir).map(|s| s.to_json()),
         "load" => ffh_play::stage::load(dir).map(|s| s.to_json()),
         "trade" => ffh_play::stage::trade(dir).map(|s| s.to_json()),
+        "diplomacy" => ffh_play::stage::diplomacy(dir).map(|s| s.to_json()),
         "automate" => ffh_play::stage::automate(dir).map(|s| s.to_json()),
         "election" => ffh_play::stage::election(dir).map(|s| s.to_json()),
         "settlement" => ffh_play::stage::settlement(dir).map(|s| s.to_json()),
@@ -734,6 +832,7 @@ fn main() {
         "lookup" => cmd_lookup(&args[1..]),
         "bot" => cmd_bot(&args[1..]),
         "replay" => cmd_replay(&args[1..]),
+        "observe" => cmd_observe(&args[1..]),
         "journal" => cmd_journal(&args[1..]),
         "soak" => cmd_soak(&args[1..]),
         "agent" => cmd_agent(&args[1..]),

@@ -217,6 +217,9 @@ impl Game {
         // nothing below changes them before the old city is killed).
         let old_owner = self.cities[old_city].owner;
         let original_owner = self.cities[old_city].original_owner;
+        if self.telemetry.on() {
+            self.tel_acquire(p, old_city, conquest, trade);
+        }
 
         // C++ copies the plot's unit list first (`oldUnits`).
         let old_units = self.map.plots[city_plot].units.clone();
@@ -283,8 +286,9 @@ impl Game {
                 let name = city_name(self, old_city).to_string();
                 let old_owner_name = self.player_get_name(old_owner);
                 let civ = self.player_get_civilization_description(p);
-                self.log.msg(turn, Some(p), || format!("You have captured {name}!"));
-                self.log.msg(turn, None, || format!("{name} ({old_owner_name}) was captured by the {civ}"));
+                let at = (self.cities[old_city].x, self.cities[old_city].y);
+                self.log.msg_at(turn, Some(p), at, || format!("You have captured {name}!"));
+                self.log.msg_at(turn, None, at, || format!("{name} ({old_owner_name}) was captured by the {civ}"));
             }
         }
 
@@ -702,6 +706,9 @@ impl Game {
         }
 
         let city = self.player_init_city(p, x, y, true, true);
+        if self.telemetry.on() {
+            self.tel_found(p, city);
+        }
 
         if self.player_is_barbarian(p) {
             // AI: C++ `pCity->AI_bestUnitAI(UNITAI_CITY_DEFENSE)`, else
@@ -792,6 +799,9 @@ impl Game {
         }
 
         debug_assert!(self.cities[city].owner == p);
+        if self.telemetry.on() {
+            self.tel_raze(p, city);
+        }
 
         let team = self.players[p].team;
 
@@ -819,8 +829,9 @@ impl Game {
             let turn = self.game_turn();
             let name = city_name(self, city).to_string();
             let civ = self.player_get_civilization_description(p);
-            self.log.msg(turn, Some(p), || format!("You have destroyed {name}!"));
-            self.log.msg(turn, None, || format!("{name} was razed by the {civ}"));
+            let at = (self.cities[city].x, self.cities[city].y);
+            self.log.msg_at(turn, Some(p), at, || format!("You have destroyed {name}!"));
+            self.log.msg_at(turn, None, at, || format!("{name} was razed by the {civ}"));
         }
 
         //FfH Global Counter: Added by Kael 08/11/2007

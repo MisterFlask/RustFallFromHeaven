@@ -31,7 +31,7 @@ pub fn text(v: &Viewer, ctx: &Ctx) -> Json {
         h.0,
         crate::view::player_name(g, h),
         g.player_get_civilization_type(h).map_or("-".to_string(), |c| name(d, c)),
-        crate::view::phase_name(g, h, ctx.decision.is_some()),
+        crate::view::phase_name(g, h, ctx.decision.is_some(), ctx.observe),
         if v.reveal { " [DEBUG REVEAL]" } else { "" }
     );
     let research = g.player_get_current_research(h).map_or("none".to_string(), |t| {

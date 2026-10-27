@@ -15,6 +15,7 @@
 //! there as well.
 
 use crate::defs::*;
+use crate::controller::AiHook;
 use crate::game::Game;
 use crate::ids::*;
 use crate::structs::MissionData;
@@ -378,6 +379,15 @@ impl Game {
             // that has not cast yet tries `AI_DirectDamageCast(5)` (direct damage casters),
             // `AI_SummonCast()` (summoners), `AI_DirectDamageCast(1)`, `AI_BuffCast()` (buffers):
             // AI auto-casting, omitted.
+            if let Some(gp) = self.group_plot(g) {
+                let (gx, gy) = self.map.xy(gp);
+                if (gx - x) * (gx - x) + (gy - y) * (gy - y) < 4 {
+                    self.ai_hook(owner, AiHook::GroupAttackSpells(g));
+                }
+            }
+            if !self.groups.contains(g) {
+                return (false, false);
+            }
 
             if let Some(dest) = dest_plot {
                 if let Some(city) = self.map.plots[dest].plot_city {

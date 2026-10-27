@@ -2,9 +2,10 @@
 //!
 //! - **Warrens** (`BUILDING_WARRENS`, Masonry, 180 hammers): every unit finished in the city that
 //!   is not a world, national, siege or naval unit gets a free copy (`ev_unit_built`; settlers and
-//!   workers too). Its effect lives in Python, so the generic estimate is 0 and it was never
-//!   built. [`ClanOfEmbers::building_value`] values it as the hammers it adds: the copies are worth
-//!   the share of the city's production that goes into units.
+//!   workers too). Its effect is in the rules' code, not the data, so the data's estimate is 0 and
+//!   it was never built; `code_effects` values it (the copies are worth the share of the city's
+//!   production that goes into units). It was this module's until the table took it, so
+//!   `FFH_AI_CIV_OFF` no longer turns it off (`FFH_AI_CODE_EFFECTS_OFF=WARRENS` does).
 //! - **Rantine** (hero) can cast Convert City in a barbarian city whose barbarian units are no
 //!   stronger than him (base strength): the city becomes ours, without war. The Clan is at peace
 //!   with the barbarians (`TRAIT_BARBARIAN`), so its armies never go there; [`ClanOfEmbers::unit`]
@@ -48,16 +49,6 @@ impl CivPlay for ClanOfEmbers {
         }
     }
 
-    fn building_value(&self, g: &Game, c: CityId, b: BuildingType, value: i32) -> i32 {
-        if g.d.buildings[b].base.type_ != "BUILDING_WARRENS" {
-            return value;
-        }
-        // One hammer a turn is worth 150 in `building_value` (yield weight 15 x 10). The copies
-        // double what the city puts into units, about half of its production.
-        let prod = g.city_yield_rate(c, YieldType::YIELD_PRODUCTION).max(0);
-        value + prod * 150 / 2
-    }
-
     fn unit(&self, _ai: &Ai, g: &mut Game, v: &mut View, grp: GroupId, head: UnitId) -> bool {
         if g.d.units[g.units[head].unit_type].base.type_ != "UNIT_RANTINE" {
             return false;
@@ -73,6 +64,7 @@ fn rantine(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
     let Some(spell) = g.d.ty::<SpellType>("SPELL_CONVERT_CITY_RANTINE") else { return false };
     if g.unit_can_cast(u, spell, false) {
         crate::trace!(g, p, "rantine: convert city at {:?}", g.map.xy(g.unit_plot(u)));
+        g.tel_cast_reason(u, "rantine_convert", 0);
         g.unit_cast(u, spell);
         if alive(g, grp) && g.group_ready_to_move(grp, true) {
             hold(g, grp);
@@ -98,6 +90,7 @@ fn rantine(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
     move_to(g, grp, r.plot, 0);
     if alive(g, grp) && g.units.contains(u) && g.unit_plot(u) == r.plot && g.unit_can_cast(u, spell, false) {
         crate::trace!(g, p, "rantine: convert city at {:?}", g.map.xy(r.plot));
+        g.tel_cast_reason(u, "rantine_convert", 0);
         g.unit_cast(u, spell);
     }
     if alive(g, grp) && g.group_ready_to_move(grp, true) {

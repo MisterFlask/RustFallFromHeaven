@@ -20,8 +20,12 @@ use ffh_data::*;
 pub mod advanced_start;
 pub mod automation;
 pub mod campaign;
+pub mod casters;
 pub mod casting;
 pub mod civs;
+pub mod code_effects;
+pub mod council;
+pub mod defense;
 pub mod diplomacy;
 pub mod economy;
 pub mod empire;
@@ -29,6 +33,7 @@ pub mod events;
 pub mod expansion;
 pub mod finance;
 pub mod magic;
+pub mod mana;
 pub mod military;
 pub mod naval;
 pub mod offers;
@@ -37,11 +42,14 @@ pub mod production;
 pub mod reach;
 pub mod research;
 pub mod sites;
+pub mod switches;
 pub mod tech_plan;
 pub mod trade;
 pub mod traits;
+pub mod unflagged;
 pub mod units;
 pub mod values;
+pub mod vassals;
 pub mod victory;
 pub mod view;
 pub mod workers;
@@ -121,8 +129,13 @@ impl Controller for Ai {
             if trace_on(p) {
                 trace!(g, p, "{}", victory::describe(g, p, &victory::plan(g, p)));
             }
+            if g.telemetry.on() {
+                telemetry_intents(g, p);
+            }
             empire::manage(g, p);
             production::emergency(self, g, p);
+            production::trouble_rebuild(self, g, p);
+            production::wonder_emphasis(g, p);
             expansion::prepare_escorts(g, p); // early-expansion
             diplomacy::manage(g, &v);
             offers::to_humans(g, &v); // ai-offers: deals offered to human players
@@ -163,7 +176,35 @@ impl Controller for Ai {
         events::choose(g, p, t, options)
     }
 
+    fn choose_election(&self, g: &Game, p: PlayerId, vs: &VoteSelectionData) -> Option<usize> {
+        council::choose_election(g, p, vs)
+    }
+
+    fn diplo_vote(&self, g: &Game, p: PlayerId, vote: &VoteSelectionSubData, source: VoteSourceType) -> PlayerVote {
+        council::diplo_vote(g, p, vote, source)
+    }
+
     fn choose_religion(&self, g: &Game, p: PlayerId) -> Option<ReligionType> {
         g.players[p].personality_type.and_then(|l| g.d.leader_heads[l].favorite_religion)
     }
+}
+
+/// The plans telemetry follows as they change (ffh_core::telemetry, docs/TELEMETRY.md): the victory
+/// goal, the finances, the war being prepared.
+fn telemetry_intents(g: &Game, p: PlayerId) {
+    let plan = victory::plan_ours(g, p);
+    g.tel_intent(p, "goal", || plan.goal().map_or_else(|| "none".to_string(), |goal| format!("{goal:?}")));
+    let f = finance::state(g, p);
+    let finance = if f.structural() {
+        "structural_deficit"
+    } else if f.support_heavy() {
+        "support_heavy"
+    } else if f.rate < 0 {
+        "losing_gold"
+    } else {
+        "ok"
+    };
+    g.tel_intent(p, "finance", || finance.to_string());
+    let team = g.players[p].team;
+    g.tel_intent(p, "war_prep", || diplomacy::preparing_target(g, team).map_or_else(|| "none".to_string(), |t| format!("team {}", t.0)));
 }

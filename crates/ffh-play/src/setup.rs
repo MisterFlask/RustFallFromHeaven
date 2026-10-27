@@ -32,6 +32,14 @@ pub struct NewGame {
     pub max_turns: i32,
     pub civ: Option<CivilizationType>,
     pub leader: Option<LeaderHeadType>,
+    /// An AI-only game watched by an observer ([`build_observed_game`]): no human player; slot 0
+    /// gets `civ` / `leader` (the civilization the view follows first) and an AI's difficulty,
+    /// and `handicap` is the game handicap (the AIs' bonuses), as in `ffh autoplay`.
+    pub observe: bool,
+    /// The vanilla experience: leaders speak only FFH2's own lines (`CIV4DiplomacyInfos.xml`),
+    /// not also the lines each civilization has for each other (`data/text/barks.md`).
+    /// Presentation only.
+    pub vanilla: bool,
 }
 
 impl NewGame {
@@ -53,12 +61,14 @@ impl NewGame {
             max_turns: 0,
             civ: None,
             leader: None,
+            observe: false,
+            vanilla: false,
         }
     }
 
     /// The members of a `setup` object.
     pub const FIELDS: &'static [&'static str] =
-        &["seed", "opponents", "world", "speed", "handicap", "era", "climate", "sea_level", "options", "disabled_victories", "max_turns", "civ", "leader"];
+        &["seed", "opponents", "world", "speed", "handicap", "era", "climate", "sea_level", "options", "disabled_victories", "max_turns", "civ", "leader", "observe", "vanilla"];
 
     /// Decodes a `setup` object (every member optional; types by name or index; an unknown
     /// member is an error, so a typo cannot start a game with a default instead).
@@ -93,6 +103,8 @@ impl NewGame {
         ng.max_turns = j.get_or("max_turns", 0i32)?;
         ng.civ = names::opt_field(d, j, "civ")?;
         ng.leader = names::opt_field(d, j, "leader")?;
+        ng.observe = j.get_or("observe", false)?;
+        ng.vanilla = j.get_or("vanilla", false)?;
         Ok(ng)
     }
 
@@ -112,6 +124,30 @@ impl NewGame {
             "max_turns" => self.max_turns,
             "civ" => Json::opt_idx(self.civ),
             "leader" => Json::opt_idx(self.leader),
+            "observe" => self.observe,
+            "vanilla" => self.vanilla,
+        }
+    }
+
+    /// [`NewGame::to_json`] with type names instead of indices (what a bug report quotes: it
+    /// reads the same with another build's data order, and `from_json` takes it back).
+    pub fn to_json_names(&self, d: &GameData) -> Json {
+        crate::jobj! {
+            "seed" => self.seed,
+            "opponents" => self.opponents,
+            "world" => d.type_name(self.world),
+            "speed" => d.type_name(self.speed),
+            "handicap" => d.type_name(self.handicap),
+            "era" => d.type_name(self.era),
+            "climate" => d.type_name(self.climate),
+            "sea_level" => d.type_name(self.sea_level),
+            "options" => Json::Arr(self.options.iter().map(|&o| Json::from(d.type_name(o))).collect()),
+            "disabled_victories" => Json::Arr(self.disabled_victories.iter().map(|&v| Json::from(d.type_name(v))).collect()),
+            "max_turns" => self.max_turns,
+            "civ" => self.civ.map(|c| d.type_name(c).to_string()),
+            "leader" => self.leader.map(|l| d.type_name(l).to_string()),
+            "observe" => self.observe,
+            "vanilla" => self.vanilla,
         }
     }
 
@@ -164,16 +200,7 @@ pub const HUMAN_SLOT: PlayerId = PlayerId(0);
 pub fn build_game(d: &'static GameData, ng: &NewGame) -> Result<Game, String> {
     ng.validate(d)?;
     let (civ, leader) = ng.resolve_civ(d)?;
-    let mut o = SetupOptions::new(d, ng.opponents + 1, "WORLDSIZE_SMALL", ng.seed);
-    o.world_size = ng.world;
-    o.game_speed = ng.speed;
-    o.handicap = ng.handicap;
-    o.era = ng.era;
-    o.climate = ng.climate;
-    o.sea_level = ng.sea_level;
-    o.options = ng.options.clone();
-    o.disabled_victories = ng.disabled_victories.clone();
-    o.max_turns = ng.max_turns;
+    let o = setup_options(d, ng);
     let mut setup = GameSetup::from_options(d, &o);
     let slot = &mut setup.players[HUMAN_SLOT.idx()];
     slot.human = true;
@@ -186,6 +213,52 @@ pub fn build_game(d: &'static GameData, ng: &NewGame) -> Result<Game, String> {
     g.handicap = Game::setup_handicap(d, &g.setup);
     g.map_script = std::sync::Arc::new(FractalMapScript::default());
     Ok(g)
+}
+
+/// The settings of [`build_game`] as `ffh_core`'s custom-game options (slot 0 not yet set up).
+fn setup_options(d: &'static GameData, ng: &NewGame) -> SetupOptions {
+    let mut o = SetupOptions::new(d, ng.opponents + 1, "WORLDSIZE_SMALL", ng.seed);
+    o.world_size = ng.world;
+    o.game_speed = ng.speed;
+    o.handicap = ng.handicap;
+    o.era = ng.era;
+    o.climate = ng.climate;
+    o.sea_level = ng.sea_level;
+    o.options = ng.options.clone();
+    o.disabled_victories = ng.disabled_victories.clone();
+    o.max_turns = ng.max_turns;
+    o
+}
+
+/// `Game::new` for an observed game (`ng.observe`): every slot is the AI's, as `ffh autoplay`
+/// builds its games (`SetupOptions`, the game handicap `ng.handicap`, AI slots at
+/// `STANDARD_HANDICAP`); `ng.civ` / `ng.leader` go to slot 0 as `ffh autoplay --civ` forces
+/// them (a civilization alone gets the leader the seed picks, the same one). Not yet
+/// `game_init`ed.
+pub fn build_observed_game(d: &'static GameData, ng: &NewGame) -> Result<Game, String> {
+    ng.validate(d)?;
+    let (civ, leader) = ng.resolve_civ(d)?;
+    let o = setup_options(d, ng);
+    let mut setup = GameSetup::from_options(d, &o);
+    if civ.is_some() {
+        let slot = &mut setup.players[0];
+        slot.civ = civ;
+        slot.leader = leader;
+    }
+    let mut g = Game::new(d, setup);
+    g.handicap = o.handicap;
+    g.map_script = std::sync::Arc::new(FractalMapScript::default());
+    Ok(g)
+}
+
+/// The flags of an observed game: the AI plays every slot, nobody is the active player, and the
+/// game goes on without humans (`autorun`, as in `ffh autoplay`); the log is on and unbounded
+/// (the session drains it).
+pub fn configure_observer(g: &mut Game) {
+    g.autorun = true;
+    g.active_player = None;
+    g.log.enabled = true;
+    g.log.cap = 0;
 }
 
 /// Controllers: every slot but `human` gets the one shared AI controller, as in ffh-cli (no
@@ -219,15 +292,30 @@ pub fn set_human_options(g: &mut Game, human: PlayerId) {
 /// speeds, handicaps, eras, climates, sea levels, visible game options, victories, and the
 /// defaults (`NewGame::new`).
 pub fn setup_lists(d: &GameData) -> Json {
-    fn list<T: names::Named>(d: &GameData, keep: impl Fn(T) -> bool) -> Json {
+    /// The entries kept, each with its `help` (Civ4 markup; omitted when empty).
+    fn list_help<T: names::Named>(d: &GameData, keep: impl Fn(T) -> bool, help: impl Fn(T) -> String) -> Json {
         Json::Arr(
             (0..T::count(d))
                 .map(T::from_usize)
                 .filter(|&t| keep(t))
-                .map(|t| crate::jobj! { "id" => Json::idx(t), "type" => names::name(d, t), "name" => names::display(d, t).into_owned() })
+                .map(|t| {
+                    let mut j = crate::jobj! { "id" => Json::idx(t), "type" => names::name(d, t), "name" => names::display(d, t).into_owned() };
+                    let h = help(t);
+                    if !h.is_empty() {
+                        j.set("help", h);
+                    }
+                    j
+                })
                 .collect(),
         )
     }
+    // An XML help text (empty when it has none).
+    let xml = |key: &str| {
+        let t = names::text(d, key);
+        if key.is_empty() || t == key { String::new() } else { t.to_string() }
+    };
+    // A leader's civilization (the first that has it), for its hero, world spell and unique units.
+    let civ_of = |l: LeaderHeadType| d.civilizations.keys().find(|&c| d.civilizations[c].leaders[l]);
     let civs = Json::Arr(
         d.civilizations
             .keys()
@@ -239,21 +327,25 @@ pub fn setup_lists(d: &GameData) -> Json {
                     "type" => names::name(d, c),
                     "name" => names::display(d, c).into_owned(),
                     "leaders" => Json::Arr(leaders),
+                    // What it brings (C++ `parseCivInfos`) and its pedia text.
+                    "help" => crate::view::help::civ::civ_help(d, c),
+                    "pedia" => xml(&d.civilizations[c].base.civilopedia),
                 }
             })
             .collect(),
     );
     crate::jobj! {
         "civilizations" => civs,
-        "leaders" => list::<LeaderHeadType>(d, |_| true),
-        "worlds" => list::<WorldSizeType>(d, |_| true),
-        "speeds" => list::<GameSpeedType>(d, |_| true),
-        "handicaps" => list::<HandicapType>(d, |_| true),
-        "eras" => list::<EraType>(d, |_| true),
-        "climates" => list::<ClimateType>(d, |_| true),
-        "sea_levels" => list::<SeaLevelType>(d, |_| true),
-        "options" => list::<GameOptionType>(d, |o| d.game_options[o].visible && o != GameOptionType::GAMEOPTION_ADVANCED_START),
-        "victories" => list::<VictoryType>(d, |_| true),
+        // Each leader's alignment, hero, world spell and traits (C++ `parseLeaderTraits`).
+        "leaders" => list_help::<LeaderHeadType>(d, |_| true, |l| crate::view::help::civ::leader_help(d, l, civ_of(l))),
+        "worlds" => list_help::<WorldSizeType>(d, |_| true, |w| xml(&d.worlds[w].base.help)),
+        "speeds" => list_help::<GameSpeedType>(d, |_| true, |s| xml(&d.game_speeds[s].base.help)),
+        "handicaps" => list_help::<HandicapType>(d, |_| true, |h| xml(&d.handicaps[h].base.help)),
+        "eras" => list_help::<EraType>(d, |_| true, |e| xml(&d.eras[e].base.help)),
+        "climates" => list_help::<ClimateType>(d, |_| true, |c| xml(&d.climates[c].base.help)),
+        "sea_levels" => list_help::<SeaLevelType>(d, |_| true, |s| xml(&d.sea_levels[s].base.help)),
+        "options" => list_help::<GameOptionType>(d, |o| d.game_options[o].visible && o != GameOptionType::GAMEOPTION_ADVANCED_START, |o| xml(&d.game_options[o].base.help)),
+        "victories" => list_help::<VictoryType>(d, |_| true, |v| xml(&d.victories[v].base.help)),
         "max_opponents" => MAX_CIV_PLAYERS - 1,
         "defaults" => NewGame::new(d, 1).to_json(),
     }

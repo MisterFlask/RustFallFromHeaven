@@ -4,6 +4,7 @@
 
 use super::{ai_choose_production, ai_reset, building_class_of, order_type_data, unit_class_of, City};
 use crate::defs::*;
+use crate::controller::AiHook;
 use crate::game::Game;
 use crate::ids::*;
 use crate::structs::*;
@@ -342,6 +343,11 @@ impl Game {
         }
         // AI: AI_doTurn() (forced specialists of AI cities, plot stealing, worker/build/route
         // caches, panic, draft, hurry and emphasize decisions) is the controller's business.
+        let owner = self.cities[c].owner;
+        self.ai_hook(owner, AiHook::CityTurn(c));
+        if !self.cities.contains(c) {
+            return;
+        }
 
         let allow_no_production = !self.city_do_check_production(c);
 

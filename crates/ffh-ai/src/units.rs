@@ -137,6 +137,8 @@ pub(crate) fn fighters_off_worker_ai(g: &mut Game, p: PlayerId) {
 pub fn play(ai: &Ai, g: &mut Game, v: &mut View) {
     let p = v.p;
     fighters_off_worker_ai(g, p);
+    // Summons on their last turn attack before anything else moves (SUMMON_SPEND).
+    crate::casting::spend_expiring(g, v);
     // Promotions and upgrades for units that will not get orders this turn (fortified
     // garrisons, sentries); the others get theirs before acting.
     if !v.barbarian {
@@ -203,6 +205,10 @@ pub fn play(ai: &Ai, g: &mut Game, v: &mut View) {
             continue;
         }
         if !v.barbarian && crate::civs::unit(ai, g, v, grp, head) { continue; } // civ-mechanics
+        // Govannon teaches (TEACH_SPELLS).
+        if !v.barbarian && crate::casters::govannon(g, v, grp, head) {
+            continue;
+        }
         match role {
             Role::Settler => crate::expansion::settler(ai, g, v, grp, head),
             Role::Worker => crate::workers::worker(g, v, grp, head, false),
@@ -270,7 +276,7 @@ fn upkeep(g: &mut Game, u: UnitId) {
     }
     if let Some((target, _)) = best {
         // Keep a reserve for a few turns of deficit; defenders first.
-        let reserve = crate::traits::upgrade_reserve(g, p, 20 + 3 * g.players[p].cities.len() as i32); // trait-play
+        let reserve = crate::traits::upgrade_reserve(g, p, 20 + 3 * g.players[p].cities.len() as i32) + crate::civs::gold_floor(g, p); // trait-play
         let defender = matches!(g.units[u].ai_type, Some(UnitAIType::UNITAI_CITY_DEFENSE) | Some(UnitAIType::UNITAI_CITY_COUNTER));
         // A school caster's upgrade (an Adept that becomes a Mage) opens its second circle of
         // spells: it pays like a defender's (magic.rs, "The caster school").
@@ -348,6 +354,8 @@ pub(crate) fn garrison_quota(g: &Game, v: &View, c: CityId) -> i32 {
     if v.danger_at(plot) > 0 {
         q += 1 + v.danger_at(plot) / 1000;
     }
+    // The rival civilizations near the city (defense.rs): spare defenders walk to the border.
+    q += v.rival_def.get(&c).copied().unwrap_or(0);
     q.min(5)
 }
 
@@ -356,7 +364,7 @@ fn garrison_unit(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
     let here = g.unit_plot(u);
     if let Some(c) = g.map.plots[here].plot_city.filter(|&c| g.cities[c].owner == p) {
         let have = v.garrison.get(&c).copied().unwrap_or(0);
-        if have < garrison_quota(g, v, c) || attack_adjacent(g, v, grp, u, 800) {
+        if have < garrison_quota(g, v, c) || crate::defense::sortie_ok(g, p, here, u) && attack_adjacent(g, v, grp, u, 800) {
             *v.garrison.entry(c).or_insert(0) += 1;
             if alive(g, grp) && g.group_ready_to_move(grp, false) {
                 hold(g, grp);
@@ -364,20 +372,38 @@ fn garrison_unit(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
             return;
         }
     }
-    // Go to the city that most needs a defender.
-    let reach = v.flood.run(g, u, 8, false);
-    let mut best: Option<(CityId, i32)> = None;
+    // Go to the city that most needs a defender. Only cities that need one are scored, so the
+    // flood (their travel times) runs only when there is one.
+    let mut needs: Vec<(CityId, PlotIdx, i32)> = Vec::new();
     for &c in &g.players[p].cities {
         let cp = g.city_plot(c);
-        let Some(r) = reach.iter().find(|r| r.plot == cp) else { continue };
         let have = v.garrison.get(&c).copied().unwrap_or(0) + garrison(g, p, cp).0 * i32::from(cp != here);
         let need = garrison_quota(g, v, c) - have;
-        if need <= 0 {
-            continue;
+        if need > 0 {
+            needs.push((c, cp, need));
         }
-        let score = need * 100 - r.turns * 10;
-        if best.map_or(true, |(_, s)| score > s) {
-            best = Some((c, score));
+    }
+    let mut best: Option<(CityId, i32)> = None;
+    if !needs.is_empty() {
+        // The flood stops once it has arrived at every such city (one city per plot; `find`
+        // below takes a plot's first arrival).
+        let mut seen = vec![false; needs.len()];
+        let mut left = needs.len();
+        let reach = v.flood.run_until(g, u, 8, false, |r| {
+            if let Some(i) = needs.iter().position(|n| n.1 == r.plot) {
+                if !seen[i] {
+                    seen[i] = true;
+                    left -= 1;
+                }
+            }
+            left == 0
+        });
+        for &(c, cp, need) in &needs {
+            let Some(r) = reach.iter().find(|r| r.plot == cp) else { continue };
+            let score = need * 100 - r.turns * 10;
+            if best.map_or(true, |(_, s)| score > s) {
+                best = Some((c, score));
+            }
         }
     }
     match best {
@@ -474,9 +500,29 @@ fn explore(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
     match explore_target(g, v, u) {
         Some(plot) => {
             v.claimed.push(plot);
-            move_to(g, grp, plot, 0);
+            // One turn at a time, ending where no enemy we see can reach: a multi-turn move gets
+            // no orders until it ends, and explorers walked on into the animals the first steps
+            // revealed (nearly every scout died, most a few turns out).
+            let step = safe_step(g, v, u, plot);
+            move_to(g, grp, step, 0);
+            if alive(g, grp) && !g.groups[grp].mission_queue.is_empty() && !g.group_ready_to_move(grp, false) {
+                g.group_clear_mission_queue(grp);
+            }
             if alive(g, grp) && g.group_ready_to_move(grp, false) {
                 skip(g, grp);
+            }
+        }
+        None if g.game_turn() < 150 && home_unexplored(g, v.p) => {
+            // Nothing safe in reach today, but the land is not known yet: wait in a city
+            // rather than become an army unit (production would only train another explorer).
+            let here = g.unit_plot(u);
+            if g.map.plots[here].plot_city.is_none() {
+                if let Some(c) = nearest_city(g, v.p, here) {
+                    move_to(g, grp, g.city_plot(c), 0);
+                }
+            }
+            if alive(g, grp) && g.group_ready_to_move(grp, false) {
+                hold(g, grp);
             }
         }
         None => {
@@ -487,6 +533,47 @@ fn explore(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
             }
         }
     }
+}
+
+/// Where an explorer bound for `target` ends this turn: the target if it gets there today,
+/// else the plot it reaches today that no enemy we see can reach, nearest the target (more
+/// unrevealed plots around it first on a tie); the target itself when every such plot is unsafe.
+fn safe_step(g: &Game, v: &mut View, u: UnitId, target: PlotIdx) -> PlotIdx {
+    let team = v.team;
+    let (tx, ty) = g.map.xy(target);
+    let reach = v.flood.run(g, u, 0, false);
+    if reach.iter().any(|r| r.plot == target) {
+        return target;
+    }
+    let mut best: Option<((i32, i32, PlotIdx), PlotIdx)> = None;
+    for r in &reach {
+        if v.danger_at(r.plot) > 0 || g.map.plots[r.plot].plot_city.is_some_and(|c| g.cities[c].owner != v.p) {
+            continue;
+        }
+        let (x, y) = g.map.xy(r.plot);
+        let mut unrevealed = 0;
+        for dx in -1..=1 {
+            for dy in -1..=1 {
+                if g.plot_xy(x, y, dx, dy).is_some_and(|q| !g.map.plots[q].revealed[team]) {
+                    unrevealed += 1;
+                }
+            }
+        }
+        let key = (g.plot_distance(x, y, tx, ty), -unrevealed, r.plot);
+        if best.map_or(true, |(k, _)| key < k) {
+            best = Some((key, r.plot));
+        }
+    }
+    best.map_or(target, |(_, q)| q)
+}
+
+/// Is a fifth or more of our capital's landmass still unrevealed (production's reason to train
+/// an explorer, `production::decide`)?
+pub(crate) fn home_unexplored(g: &Game, p: PlayerId) -> bool {
+    let Some(capital) = g.player_get_capital_city(p) else { return false };
+    let Some(a) = g.map.plots[g.city_plot(capital)].area else { return false };
+    let unknown = g.area_get_num_unrevealed_tiles(a, g.players[p].team);
+    unknown * 5 > g.map.areas[a].num_tiles && unknown > 20
 }
 
 /// The land explorer's next goal: the reachable plot (8 turns) that reveals the most unrevealed
@@ -564,6 +651,9 @@ pub(crate) fn barbarian(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
 fn great_person(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
     let p = v.p;
     if crate::victory::great_work(g, v, grp, u) { return; } // victory-pursuit
+    if great_person_build(g, v, grp, u) {
+        return;
+    }
     let here = g.unit_plot(u);
     let Some(capital) = g.player_get_capital_city(p) else {
         hold(g, grp);
@@ -597,32 +687,137 @@ fn great_person(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
     hold(g, grp);
 }
 
+/// A great person's own work where it is worth more than a lightbulb (about one tech): a
+/// prophet builds the shrine of a holy city of ours (a gold a turn for every city in the world
+/// with the religion, culture, a free mana; the AI used to lightbulb every prophet, and no AI
+/// ever built a shrine), an engineer rushes a wonder one of our cities is building when at
+/// least two thirds of the rush go into it. Shrines first, then the nearest city it can reach.
+fn great_person_build(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
+    let d = g.d;
+    let p = v.p;
+    let info = &d.units[g.units[u].unit_type];
+    let shrines: Vec<BuildingType> = d.buildings.keys().filter(|&b| info.buildings[b] && d.buildings[b].holy_city.is_some() && d.buildings[b].global_religion_commerce.is_some()).collect();
+    if shrines.is_empty() && info.base_hurry <= 0 {
+        return false;
+    }
+    let here = g.unit_plot(u);
+    let reach = v.flood.run(g, u, 20, false);
+    // Shrines first, then the fewest turns away (then the lowest city id): city, mission, data.
+    let mut best: Option<((bool, i32, std::cmp::Reverse<CityId>), CityId, MissionType, i32)> = None;
+    for &c in &g.players[p].cities {
+        let cp = g.city_plot(c);
+        let Some(turns) = (if cp == here { Some(0) } else { reach.iter().find(|r| r.plot == cp).map(|r| r.turns) }) else { continue };
+        let mut job = shrines.iter().find(|&&b| g.unit_can_construct(u, cp, Some(b), false)).map(|&b| (true, MissionType::MISSION_CONSTRUCT, b.i()));
+        if job.is_none() && info.base_hurry > 0 {
+            let wonder = g.city_production_building(c).and_then(|b| d.buildings[b].building_class_type).is_some_and(|bc| ffh_core::utils::is_limited_wonder_class(d, bc));
+            let rush = g.unit_get_max_hurry_production(u, c);
+            if wonder && rush > 0 && g.city_production_left(c) * 3 >= rush * 2 && g.unit_can_hurry(u, cp, false) {
+                job = Some((false, MissionType::MISSION_HURRY, -1));
+            }
+        }
+        let Some((shrine, mission, data)) = job else { continue };
+        let key = (shrine, -turns, std::cmp::Reverse(c));
+        if best.map_or(true, |(k, ..)| key > k) {
+            best = Some((key, c, mission, data));
+        }
+    }
+    let Some((_, c, mission, data)) = best else { return false };
+    let target = g.city_plot(c);
+    crate::trace!(g, p, "great person {} goes to {} for {:?}", info.base.type_, g.cities[c].name, mission);
+    if target == here {
+        push(g, grp, mission, data, -1, 0, false);
+    } else {
+        move_to(g, grp, target, MOVE_SAFE_TERRITORY);
+        if !alive(g, grp) {
+            return true;
+        }
+        if g.unit_plot(u) == here && g.group_ready_to_move(grp, false) {
+            // The rules found no path: do the usual instead.
+            g.group_clear_mission_queue(grp);
+            return false;
+        }
+        push(g, grp, mission, data, -1, 0, true);
+    }
+    if alive(g, grp) && g.group_ready_to_move(grp, false) {
+        skip(g, grp);
+    }
+    true
+}
+
+/// The religion player `p` spreads abroad (`MISSIONARY_ABROAD`): its state religion, once the
+/// religion's holy city is ours and has its shrine (a gold a turn for every city in the world with
+/// the religion; MNAI's missionary strategy also wants the holy city).
+pub(crate) fn abroad_religion(g: &Game, p: PlayerId) -> Option<ReligionType> {
+    if !crate::switches::MISSIONARY_ABROAD.on(g, p) {
+        return None;
+    }
+    let r = g.player_get_state_religion(p)?;
+    g.team_has_shrine(g.players[p].team, Some(r)).then_some(r)
+}
+
+/// A foreign city our missionaries may visit: a civ at peace with us whose borders are open to
+/// us, whose rules let our religion in.
+pub(crate) fn abroad_city(g: &Game, p: PlayerId, c: CityId, r: ReligionType) -> bool {
+    let owner = g.cities[c].owner;
+    let (team, ot) = (g.players[p].team, g.players[owner].team);
+    if ot == team || g.player_is_barbarian(owner) || g.cities[c].has_religion[r] || g.at_war(team, ot) || !g.team_is_open_borders(team, ot) {
+        return false;
+    }
+    !g.player_is_no_non_state_religion_spread(owner) || g.player_get_state_religion(owner) == Some(r)
+}
+
 pub(crate) fn missionary(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
     let p = v.p;
     let ut = g.units[u].unit_type;
     let religions: Vec<ReligionType> = g.d.units[ut].religion_spreads.iter_enumerated().filter(|(_, &n)| n > 0).map(|(r, _)| r).collect();
-    let reach = v.flood.run(g, u, 10, false);
-    let mut best: Option<(PlotIdx, ReligionType, i32)> = None;
+    let abroad = abroad_religion(g, p).filter(|r| religions.contains(r));
+    let reach = v.flood.run(g, u, if abroad.is_some() { 15 } else { 10 }, false);
+    // Our own cities first (score 1000+), then foreign cities without a religion (an almost sure
+    // spread: the chance rises with every religion a city lacks), then the rest.
+    let mut best: Option<(PlotIdx, ReligionType, i32, bool)> = None;
     for &c in &g.players[p].cities {
         let cp = g.city_plot(c);
-        let Some(r) = reach.iter().find(|r| r.plot == cp) else { continue };
+        let Some(r) = reach.iter().find(|r| r.plot == cp && r.turns <= 10) else { continue };
         for &rel in &religions {
             if g.cities[c].has_religion[rel] || v.is_claimed(cp) {
                 continue;
             }
-            let score = g.cities[c].population * 10 - r.turns * 5;
-            if best.map_or(true, |(_, _, s)| score > s) {
-                best = Some((cp, rel, score));
+            let score = 1000 + g.cities[c].population * 10 - r.turns * 5;
+            if best.map_or(true, |(_, _, s, _)| score > s) {
+                best = Some((cp, rel, score, false));
             }
         }
     }
-    let Some((plot, rel, _)) = best else {
+    if let Some(rel) = abroad.filter(|_| best.is_none()) {
+        for q in g.civ_player_ids() {
+            if q == p || !g.players[q].alive {
+                continue;
+            }
+            for &c in &g.players[q].cities {
+                let cp = g.city_plot(c);
+                if v.is_claimed(cp) || !abroad_city(g, p, c, rel) || !g.unit_can_spread(u, cp, Some(rel), false) {
+                    continue;
+                }
+                let Some(r) = reach.iter().find(|r| r.plot == cp) else { continue };
+                let none = g.city_religion_count(c) == 0;
+                let score = if none { 500 } else { 0 } + g.cities[c].population * 10 - r.turns * 5;
+                if best.map_or(true, |(_, _, s, _)| score > s) {
+                    best = Some((cp, rel, score, true));
+                }
+            }
+        }
+    }
+    let Some((plot, rel, _, foreign)) = best else {
         hold(g, grp);
         return;
     };
+    if foreign {
+        crate::trace!(g, p, "missionary abroad to {:?} ({})", g.map.xy(plot), g.d.religions[rel].base.type_);
+        g.tel_decision(p, "missionary", "abroad", if g.map.plots[plot].plot_city.is_some_and(|c| g.city_religion_count(c) == 0) { "no_religion" } else { "other_religion" }, 0, String::new);
+    }
     v.claimed.push(plot);
     if plot != g.unit_plot(u) {
-        move_to(g, grp, plot, MOVE_SAFE_TERRITORY);
+        move_to(g, grp, plot, if foreign { MOVE_NO_ENEMY_TERRITORY } else { MOVE_SAFE_TERRITORY });
         if !alive(g, grp) {
             return;
         }
@@ -643,6 +838,10 @@ fn caster(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
     let p = v.p;
     let here = g.unit_plot(u);
     if crate::victory::mana_node(g, v, grp, u) { return; } // victory-pursuit
+    // Caster roles (CASTER_ROLES) and mana nodes (MANA_NODES).
+    if crate::casters::play(g, v, grp, u) {
+        return;
+    }
     if crate::magic::enabled(g, p) {
         crate::campaign::plan(g, v);
         let school = crate::magic::school(g, p);
@@ -679,11 +878,12 @@ fn caster(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
     } else if let Some(target) = crate::military::war_target(g, v) {
         let tp = g.city_plot(target);
         let (tx, ty) = g.map.xy(tp);
-        let reach = v.flood.run(g, u, 15, false);
-        if let Some(r) = reach.iter().filter(|r| {
+        let next_to_ours = |r: &Reached| {
             let (rx, ry) = g.map.xy(r.plot);
             g.plot_distance(rx, ry, tx, ty) == 1 && g.map.plots[r.plot].units.iter().any(|&o| g.units[o].owner == p && attack_power(g, o) > 0)
-        }).min_by_key(|r| (r.turns, r.plot)) {
+        };
+        let reach = v.flood.run_nearest(g, u, 15, false, |r| next_to_ours(&r));
+        if let Some(r) = reach.iter().filter(|r| next_to_ours(r)).min_by_key(|r| (r.turns, r.plot)) {
             let plot = r.plot;
             if plot != here {
                 move_to(g, grp, plot, 0);

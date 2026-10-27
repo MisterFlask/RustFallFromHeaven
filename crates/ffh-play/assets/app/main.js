@@ -12,22 +12,24 @@
 // map) the client draws as before. `window.ffh` exposes the state for the headless smoke test.
 
 import * as api from "./api.js";
-import { S, setData, setView, setMap, on, emit, resetDismissed, clearDismissed, popupQueue, endTurnMessage, cycleCity } from "./state.js";
+import { S, setData, setView, setMap, on, emit, resetDismissed, clearDismissed, popupQueue, endTurnMessage, cycleCity, observing, eventMarkers } from "./state.js";
 import { MapView } from "./map.js";
 import * as units from "./units.js";
 import { openCity, ownCities, stepCityScreen } from "./city.js";
 import * as empire from "./empire.js";
-import { openDiplomacy } from "./diplo.js";
+import { openDiplomacy, checkMoments, resetMoments } from "./diplo.js";
 import * as tools from "./tools.js";
 import { applyMapDelta, plotDistance } from "./tiles.js";
 import * as K from "./hotkeys.js";
 import * as screens from "./screens.js";
+import * as title from "./title.js";
 import { showDecision, modalOpen, closeTag, closeAll, onEscape, openTags, openModal } from "./modals.js";
 import { renderTop, renderBottom, setTab, currentTab } from "./hud.js";
 import { endTurn, sending } from "./commands.js";
-import { h, $, toast } from "./dom.js";
+import { h, $, toast, compactScreen } from "./dom.js";
 import { dname, turns, me } from "./state.js";
-import { look, loadLook, setLookData, rendererChoice } from "./look.js";
+import { look, loadLook, setLookData, rendererChoice, decorate, undecorate } from "./look.js";
+import { setIsoSkin, isoSkin, renderCityPanel } from "./isoui.js";
 
 let mapView = null;
 let syncing = false;
@@ -99,21 +101,24 @@ async function syncOnce() {
   if (phase !== "crashed") closeTag("crash");
   if (phase !== "stuck") closeTag("stuck");
   if (phase !== "decision") showDecision(null);
-  // The New game dialog the no-game screen forced (it cannot be closed) goes once there is a
-  // game, also one started by another client or a restarted server (P5 review); so does the
-  // game-over screen once the game is no longer over.
+  // The New game dialog opened from the title screen with no game goes once there is a game,
+  // also one started by another client or a restarted server (P5 review); so does the game-over
+  // screen once the game is no longer over.
   if (phase !== "no_game") closeTag(screens.NEWGAME_REQUIRED);
   if (phase !== "over") closeTag("over");
+  // No game: the title screen (Continue, New game, Load game ...); a game: the title screen goes,
+  // unless the player opened it over the game (Main menu).
+  title.titlePhase(phase);
   if (phase === "no_game" || phase === "crashed") {
     clearGame();
     if (phase === "crashed") {
       closeAll(["crash", "load", "newgame"]);
       if (!openTags().includes("crash")) screens.crashScreen(st);
-    } else if (!openTags().some((t) => t === "newgame" || t === screens.NEWGAME_REQUIRED || t === "load")) {
-      screens.newGame({ dismissible: false });
     }
     return;
   }
+  // An observed game is watched: the spectator bar is up (paused after a load or a reload).
+  if (observing(st) && !tools.spectating() && !["over", "crashed", "no_game", "stuck"].includes(phase)) tools.startSpectating({ playing: false });
   if (phase === "running") return;
   await refreshView(st);
   if (S.status !== st && S.status.phase !== phase) return; // a newer status is being handled
@@ -144,6 +149,7 @@ function clearGame() {
   S.messages = [];
   S.logNext = 0;
   S.report = null;
+  resetMoments();
   gameKey = null;
   viewKey = null;
   lastTurn = null;
@@ -156,11 +162,12 @@ function clearGame() {
   renderTop();
   renderBottom();
   units.renderPanel();
+  renderCityPanel();
 }
 
 /** The dialogs that belong to one game (closed when another game arrives); the load, options,
  *  tools and crash dialogs stay. */
-const GAME_DIALOGS = ["city", "decision", "election", "event", "research", "vote", "promotions", "spells", "trade", "diplomacy", "cities", "civics", "finance", "religion", "techtree", "inspect", "gate", "over", "stuck", "takeover", "save"];
+const GAME_DIALOGS = ["city", "decision", "election", "event", "research", "vote", "promotions", "spells", "trade", "leader", "diplomacy", "cities", "civics", "finance", "religion", "techtree", "inspect", "gate", "over", "stuck", "takeover", "save"];
 
 /** Fetches the view (and the map when its revision changed) when the status says it changed. */
 async function refreshView(st) {
@@ -176,6 +183,7 @@ async function refreshView(st) {
     S.report = null;
     S.sel = null;
     lastTurn = null;
+    resetMoments();
     // Another game (new, loaded, started elsewhere): its deferred popups are asked again,
     // also at the turn the last game's were set aside (P5 review); waypoints not sent yet
     // were the last game's.
@@ -214,11 +222,17 @@ async function refreshView(st) {
   }
   gameKey = gk;
   viewKey = vk;
+  if (newGame) tools.loadFlags();
   await refreshLog();
+  // A leader who contacted you (first contact, a war declared on you) speaks: not while
+  // watching the AI play your side.
+  if (!tools.spectating() && !observing()) checkMoments();
+  updateMarkers();
   units.viewChanged();
   empire.viewChanged();
   renderTop();
   renderBottom();
+  renderCityPanel();
   mapView.request();
 }
 
@@ -238,6 +252,16 @@ async function refreshLog() {
   } catch {
     /* busy inside a decision */
   }
+}
+
+/** The map's markers while watching the AI: where this turn's combats and captures happened
+ *  (from the located messages) and this game's flags. */
+function updateMarkers() {
+  if (!mapView) return;
+  const watching = tools.spectating() || observing();
+  const events = watching ? eventMarkers(S.messages, units.latestEventTurn()) : [];
+  const flags = (S.flags ?? []).filter((f) => Array.isArray(f.plot)).map((f) => ({ x: f.plot[0], y: f.plot[1], n: f.flag }));
+  mapView.setOverlay({ events, flags });
 }
 
 function centerOnStart() {
@@ -260,8 +284,11 @@ async function onControl(st) {
     } catch {
       S.report = null;
     }
-    if (S.report && ((S.report.lines?.length ?? 0) > 0 || (S.report.messages?.length ?? 0) > 0)) setTab("report");
-    else renderBottom();
+    if (S.report && ((S.report.lines?.length ?? 0) > 0 || (S.report.messages?.length ?? 0) > 0)) {
+      setTab("report");
+      // A folded panel (phones fold it): its tab says there is news.
+      if (document.body.classList.contains("bottom-closed")) document.querySelector('#bottom-tabs button[data-tab="report"]')?.classList.add("unread");
+    } else renderBottom();
     // Civ4 starts a turn on the first unit waiting for orders (not while spectating).
     const g = S.sel ? S.units.get(S.sel.units[0])?.group : null;
     if (!tools.spectating() && (!S.sel || !S.view.pending.ready_groups.includes(g))) units.selectNext();
@@ -383,17 +410,26 @@ function stepCity(forward) {
  *  ends the turn when the end-turn message is up (no group waits) and otherwise cycles to the
  *  next group (CONTROL_ENDTURN, priority 1, before CONTROL_CYCLEUNIT); Shift+Enter ends it
  *  whatever waits; Space ends it like Enter when the selection's actions do not take it (no
- *  selection: CONTROL_ENDTURN_ALT); W cycles; C centres on the selection; Home / End the next /
+ *  selection: CONTROL_ENDTURN_ALT); C centres on the selection; Home / End the next /
  *  previous city; F10 the capital's screen; F1-F4, F6, F7 the advisors; Ctrl+S, Ctrl+L. Then
- *  ffh-play's own: Tab / Shift+Tab cycle forward / back (Civ4's Tab is chat), Ctrl+1/2/3 the
- *  layers, `?`, the arrows and `+`/`-`. Then the selection's action hotkeys from the XML
- *  (`units.hotkeyEvent`: F fortify or sleep, S sentry, Space skip, B found, G go to, R road, Del
- *  delete, Backspace cancel, L load, U unload, Shift+P pillage, ...). */
+ *  ffh-play's own: W A S D held scroll the map (`K.scrollKey`; Civ4's W cycle is Tab and Enter
+ *  here), Q / E zoom out / in (`K.zoomKey`; Civ4's Q quarry and E explore are on their buttons),
+ *  Tab / Shift+Tab cycle forward / back (Civ4's Tab is chat), Ctrl+1/2/3 the layers, `?`,
+ *  the arrows and `+`/`-`. Then the selection's action hotkeys from the XML (`units.hotkeyEvent`:
+ *  F fortify or sleep, Space skip, B found, G go to, R road, Del delete, Backspace cancel, L load,
+ *  U unload, Shift+P pillage, ...). */
 function onKey(ev) {
   const t = ev.target;
   const typing = t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement;
   if (ev.key === "Escape") {
-    if (units.currentMode()) units.setMode(null);
+    if (title.titleShown() && !modalOpen()) {
+      // Over a running game, Escape resumes it.
+      if (gameRunning()) title.hideTitle();
+      return;
+    }
+    if (document.body.classList.contains("menu-open")) setMenu(false);
+    else if (tools.cancelFlagPick()) toast("No flag.");
+    else if (units.currentMode()) units.setMode(null);
     else if (units.clearWaypoints()) return;
     else if (!onEscape() && !modalOpen()) units.clearSelection();
     return;
@@ -406,6 +442,18 @@ function onKey(ev) {
   const cityStep = { Home: 1, End: -1 }[k] ?? (ev.code === "NumpadAdd" ? 1 : ev.code === "NumpadSubtract" ? -1 : 0);
   if (cityStep && plain && !typing && stepCityScreen(cityStep, openTags().at(-1))) return handled();
   if (typing || modalOpen()) return;
+  // The title screen takes no game keys (its buttons take Tab and Enter as any page's do).
+  if (title.titleShown()) return;
+  const dir = K.scrollKey(ev);
+  if (dir) {
+    if (!ev.repeat) mapView.scrollHold(dir, true);
+    return handled();
+  }
+  const zoom = K.zoomKey(ev);
+  if (zoom) {
+    mapView.zoom(zoom);
+    return handled();
+  }
   const human = S.status?.phase === "human";
   if (ctrl && !ev.altKey) {
     const lower = k.toLowerCase();
@@ -422,6 +470,13 @@ function onKey(ev) {
     stepCity(cityStep > 0);
     return handled();
   }
+  // F while watching the AI: flag the plot under the mouse (else pick one).
+  if ((k === "f" || k === "F") && plain && (tools.spectating() || observing())) {
+    const p = units.hoveredPlot();
+    if (p) tools.openFlag(p.x, p.y);
+    else tools.flagPrompt();
+    return handled();
+  }
   switch (k) {
     case "Enter":
       if (!ctrl && !ev.altKey) {
@@ -436,13 +491,6 @@ function onKey(ev) {
     case "Tab":
       if (!ctrl && !ev.altKey) {
         units.selectNext({ forward: !ev.shiftKey });
-        return handled();
-      }
-      break;
-    case "w":
-    case "W":
-      if (plain) {
-        units.selectNext();
         return handled();
       }
       break;
@@ -513,6 +561,20 @@ function onKey(ev) {
 }
 
 // ---------------------------------------------------------------------------------------------
+// Small screens (dom.js `compactScreen`: a phone upright or on its side): the menu folds into one
+// button, the bottom panel starts folded and the side panel can fold.
+
+function setMenu(open) {
+  document.body.classList.toggle("menu-open", open);
+  $("#btn-menu")?.setAttribute("aria-expanded", String(open));
+}
+
+function setBottomOpen(open) {
+  document.body.classList.toggle("bottom-closed", !open);
+  if (open) for (const b of document.querySelectorAll("#bottom-tabs button.unread")) b.classList.remove("unread");
+}
+
+// ---------------------------------------------------------------------------------------------
 // Boot
 
 function wire() {
@@ -530,24 +592,61 @@ function wire() {
   click("btn-new", () => screens.newGame());
   click("btn-keys", () => screens.keysHelp());
   click("btn-raw", () => screens.rawRequest());
+  click("btn-title", () => title.showTitle({ game: gameRunning() }));
   click("zoom-in", () => mapView.zoom(1));
   click("zoom-out", () => mapView.zoom(-1));
   for (const b of document.querySelectorAll("#mapwrap .layers button")) b.addEventListener("click", () => setLayer(b.dataset.layer));
-  for (const b of document.querySelectorAll("#bottom-tabs button")) b.addEventListener("click", () => setTab(b.dataset.tab));
-  click("bottom-toggle", () => document.body.classList.toggle("bottom-closed"));
+  for (const b of document.querySelectorAll("#bottom-tabs button[data-tab]")) {
+    b.addEventListener("click", () => {
+      setTab(b.dataset.tab);
+      setBottomOpen(true);
+    });
+  }
+  click("bottom-toggle", () => setBottomOpen(document.body.classList.contains("bottom-closed")));
+  click("btn-menu", () => setMenu(!document.body.classList.contains("menu-open")));
+  // A pick in the folded menu closes it; so does a touch anywhere else (on the map, that touch
+  // only closes it: it does not also select or move).
+  $("#menu")?.addEventListener("click", (ev) => ev.target.closest?.("button") && setMenu(false));
+  document.addEventListener(
+    "pointerdown",
+    (ev) => {
+      if (!document.body.classList.contains("menu-open") || ev.target.closest?.("#menu, #btn-menu")) return;
+      setMenu(false);
+      if (ev.target.closest?.("#mapwrap")) ev.stopPropagation();
+    },
+    { capture: true },
+  );
+  click("side-toggle", () => {
+    const folded = document.body.classList.toggle("side-folded");
+    const b = $("#side-toggle");
+    b.setAttribute("aria-expanded", String(!folded));
+    b.setAttribute("aria-label", folded ? "Unfold the panel" : "Fold the panel");
+  });
+  if (compactScreen()) setBottomOpen(false);
   document.addEventListener("ffh-research", () => S.view && screens.openResearch());
   document.addEventListener("keydown", onKey);
   // Shift-right-click waypoints are sent when Shift is released (or the page loses the keys).
-  document.addEventListener("keyup", (ev) => ev.key === "Shift" && units.shiftReleased());
-  window.addEventListener("blur", () => units.shiftReleased());
+  document.addEventListener("keyup", (ev) => {
+    if (ev.key === "Shift") units.shiftReleased();
+    const dir = K.scrollKey(ev, { anyMods: true });
+    if (dir) mapView.scrollHold(dir, false);
+    // macOS sends no keyup for a letter released while Cmd is held: Cmd's own lets go of them all.
+    if (ev.key === "Meta") mapView.scrollRelease();
+  });
+  window.addEventListener("blur", () => {
+    units.shiftReleased();
+    mapView.scrollRelease();
+  });
   on("applied", () => refreshStatus());
   on("refused", () => refreshStatus());
   on("kick", () => refreshStatus());
   on("open-screen", (name) => openScreen(name));
   on("spectate", () => renderTop());
   on("game-started", (opts) => {
+    title.titleSavesChanged();
+    title.hideTitle();
     if (opts?.spectate) tools.startSpectating({ newGame: true });
-    else if (tools.spectating()) tools.stopSpectating();
+    else if (tools.spectating()) tools.dropSpectating();
     closeAll();
     units.clearWaypoints();
     S.sel = null;
@@ -562,6 +661,7 @@ function wire() {
   on("select-ready", () => units.selectNext());
   on("modals-closed", () => S.status?.phase === "human" && runPopups());
   on("open-city", (id) => openCity(id));
+  on("city-overlay", (o) => mapView.cityOverlay(o));
   on("center", (x, y) => mapView.centerOn(x, y));
   on("selection", () => {
     if (S.sel) citySel = null;
@@ -569,13 +669,42 @@ function wire() {
     renderTop();
   });
   on("mode", () => units.renderPanel());
+  on("flag-plot", (x, y) => tools.openFlag(x, y));
+  on("flash", (x, y) => mapView.flashTile(x, y, "hit"));
+  on("flags", () => {
+    updateMarkers();
+    renderBottom();
+  });
+  on("spectate", () => updateMarkers());
   on("renderer", (r) => setRenderer(r));
+}
+
+/** Whether a game exists (by the phase: the view is not read during the AI turns, so after a
+ *  reload then it is still null). */
+function gameRunning() {
+  const p = S.status?.phase;
+  return !!p && p !== "no_game" && p !== "crashed";
 }
 
 async function boot() {
   wire();
+  // The title screen first: it shows while the client connects and stays when there is no game.
+  title.initTitle({
+    newGame: () => screens.newGame({ noGame: !gameRunning() }),
+    load: () => screens.loadScreen(),
+    keys: () => screens.keysHelp(),
+    options: () => tools.openOptions(),
+    loadSave: async (name) => {
+      try {
+        await api.session("load", { name });
+        emit("game-started");
+      } catch (e) {
+        toast(e.detail ?? e.message, "error");
+      }
+    },
+  });
   mapView = new MapView($("#mapwrap"), {
-    click: (x, y, ev) => units.click(x, y, ev),
+    click: (x, y, ev) => tools.flagClick(x, y) || units.click(x, y, ev),
     rightClick: (x, y, ev) => units.rightClick(x, y, ev),
     hover: (x, y) => units.hoverAt(x, y),
     dblclick: (x, y) => {
@@ -590,6 +719,7 @@ async function boot() {
   // It owns its own projection, so the art/flat switches leave it be.
   // Chosen with `?renderer=iso` or the remembered Tools → Options choice.
   if (rendererChoice() === "iso") mapView.useIso(true);
+  syncSkin();
   // The experimental 3D renderer (docs/R3D.md): loaded on demand; without WebGL2 it falls back.
   if (rendererChoice() === "3d") use3d();
   // The art loads beside the data; the page works meanwhile (and without it). lookLoaded() builds
@@ -615,6 +745,8 @@ async function boot() {
  *  interface redraws with its type and icons. */
 function lookLoaded() {
   if (!mapView.iso && rendererChoice() === "art") mapView.useArt(true);
+  syncSkin();
+  title.titleArt();
   renderTop();
   renderBottom();
   units.renderPanel();
@@ -630,15 +762,36 @@ function setRenderer(r) {
   if (mapView.r3d) mapView.useR3d(false);
   if (r === "iso") {
     mapView.useIso(true);
+    syncSkin();
     return;
   }
   if (mapView.iso) mapView.useIso(false);
   mapView.useArt(r === "art" && !!look.art);
+  syncSkin();
+}
+
+/** The interface follows the map: the isometric map's own (isoui.js) while it draws, else the 2D
+ *  art's (or the plain one). Redraws what the two draw differently. */
+function syncSkin() {
+  const on = !!mapView.iso;
+  // A city screen opened in one interface is not the other's (over the map or with its grid).
+  if (on !== isoSkin() && openTags().includes("city")) closeTag("city");
+  if (!setIsoSkin(on, mapView)) return;
+  document.documentElement.classList.toggle("art", !on && !!look.art);
+  if (on) undecorate(document.body);
+  else decorate(document.body);
+  mapView.resize();
+  renderTop();
+  renderBottom();
+  units.renderPanel();
+  renderCityPanel();
 }
 
 /** Turns the 3D renderer on; when it cannot run, says so and draws with the art (or flat). */
 async function use3d() {
-  if (await mapView.useR3d(true)) return;
+  const ok = await mapView.useR3d(true);
+  syncSkin();
+  if (ok) return;
   if (mapView.r3dError?.code === "software-webgl") {
     toast(`${mapView.r3dError.message} Enable hardware acceleration in your browser (or add ?force3d=1 to try anyway); using the 2D map.`, "error", 15000);
   } else {
@@ -652,6 +805,7 @@ window.addEventListener("ffh:r3d-lost", () => {
   if (!mapView.r3d) return;
   mapView.useR3d(false);
   if (look.art) mapView.useArt(true);
+  syncSkin();
   toast("The 3D renderer lost its graphics context; using the 2D map until the page is reloaded.", "error");
 });
 

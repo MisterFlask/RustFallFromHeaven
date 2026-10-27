@@ -8,6 +8,7 @@ test("tags become tokens; other brackets stay text", () => {
   assert.deepEqual(tokenize("a[NEWLINE]b"), [{ t: "text", s: "a" }, { t: "br" }, { t: "text", s: "b" }]);
   assert.deepEqual(tokenize("[ICON_BULLET]x"), [{ t: "icon", name: "ICON_BULLET" }, { t: "text", s: "x" }]);
   assert.deepEqual(tokenize("[PARAGRAPH:1][TAB]"), [{ t: "para" }, { t: "tab" }]);
+  assert.deepEqual(tokenize("Can Train[SPACE]Warrior"), [{ t: "text", s: "Can Train Warrior" }]);
   assert.deepEqual(tokenize("[LINK=TECH_X]Tech[\\LINK]"), [{ t: "link", target: "TECH_X" }, { t: "text", s: "Tech" }, { t: "/link" }]);
   assert.deepEqual(tokenize("[LINK=X]a[/LINK]"), [{ t: "link", target: "X" }, { t: "text", s: "a" }, { t: "/link" }]);
   assert.deepEqual(tokenize("[COLOR_WARNING_TEXT]w[COLOR_REVERT]"), [{ t: "color", name: "COLOR_WARNING_TEXT" }, { t: "text", s: "w" }, { t: "/color" }]);

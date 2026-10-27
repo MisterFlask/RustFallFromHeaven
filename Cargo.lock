@@ -16,13 +16,24 @@ version = "0.1.0"
 dependencies = [
  "ffh-ai",
  "ffh-core",
+ "ffh-cppai",
  "ffh-data",
+ "ffh-play",
 ]
 
 [[package]]
 name = "ffh-core"
 version = "0.1.0"
 dependencies = [
+ "ffh-data",
+]
+
+[[package]]
+name = "ffh-cppai"
+version = "0.1.0"
+dependencies = [
+ "ffh-ai",
+ "ffh-core",
  "ffh-data",
 ]
 

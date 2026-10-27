@@ -206,6 +206,7 @@ impl Game {
                 // FfH Spell System: Added by Kael 07/23/2007
                 CommandType::COMMAND_CAST => {
                     let spell = command_spell(self, data1).expect("CvUnit::doCommand: COMMAND_CAST with an invalid spell");
+                    self.tel_cast_reason(u, "command", 0);
                     self.unit_cast(u, spell);
                 }
 
@@ -321,6 +322,15 @@ impl Game {
 
     /// C++ `CvUnit::scrap` (CvUnit.cpp:3953-3974).
     pub fn unit_scrap(&mut self, u: UnitId) {
+        if !self.telemetry.on() {
+            return self.unit_scrap_inner(u);
+        }
+        self.tel_ctx_push("scrap");
+        self.unit_scrap_inner(u);
+        self.tel_ctx_pop();
+    }
+
+    fn unit_scrap_inner(&mut self, u: UnitId) {
         if !self.unit_can_scrap(u) {
             return;
         }

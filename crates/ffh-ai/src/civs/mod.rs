@@ -17,7 +17,9 @@
 //! - [`tech_value`]: `research::tech_value`;
 //! - [`promotion_value`]: `units::best_promotion`, the value of each promotion a unit can take;
 //! - [`civic_value`]: `empire::civic_value` (civics, the finance guard and research use it);
-//! - [`site_value`]: `sites::compute`, the value of a city site.
+//! - [`site_value`]: `sites::compute`, the value of a city site;
+//! - [`gold_target`], [`gold_floor`]: `empire::sliders` saves toward the target, and the gold
+//!   spenders (hurrying, upgrades, deals, council costs) leave the floor.
 //!
 //! What each civilization does is described in its module (docs/AI.md, "Civilization-specific").
 
@@ -184,6 +186,16 @@ pub trait CivPlay: Sync {
     /// What a city site at `q` is worth to `p` (`value` is `AI_foundValue`; 0 or less: no site).
     fn site_value(&self, g: &Game, p: PlayerId, q: PlotIdx, value: i32) -> i32 {
         value
+    }
+    /// Gold the treasury saves toward (`empire::sliders` keeps a gold rate that reaches it in
+    /// about 20 turns); 0: none.
+    fn gold_target(&self, g: &Game, p: PlayerId) -> i32 {
+        0
+    }
+    /// Gold that spending (hurrying, upgrades, gold in deals, council costs) leaves in the
+    /// treasury; 0: none.
+    fn gold_floor(&self, g: &Game, p: PlayerId) -> i32 {
+        0
     }
 }
 
@@ -377,6 +389,14 @@ pub fn civic_value(g: &Game, p: PlayerId, civic: CivicType, value: i32) -> i32 {
 
 pub fn site_value(g: &Game, p: PlayerId, q: PlotIdx, value: i32) -> i32 {
     of(g, p).site_value(g, p, q, value)
+}
+
+pub fn gold_target(g: &Game, p: PlayerId) -> i32 {
+    of(g, p).gold_target(g, p)
+}
+
+pub fn gold_floor(g: &Game, p: PlayerId) -> i32 {
+    of(g, p).gold_floor(g, p)
 }
 
 #[cfg(test)]

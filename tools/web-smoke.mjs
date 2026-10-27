@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // The headless-Chromium smoke test of the browser client (docs/PLAY_DESIGN.md §7 P5, F21):
 // starts `ffh-play serve`, loads the page in headless Chromium and plays through the UI with the
-// mouse and keyboard: the new-game screen (Start double-clicked), W over the waiting groups,
+// mouse and keyboard: the new-game screen (Start double-clicked), Tab over the waiting groups, W A S D,
 // hotkeys right after a selection change, founding a city, the research and production popups,
 // the city queue, selecting a unit, the path preview, moving with a right-click, ending turns
 // through the end-turn gate, the turn report, saving and loading; then staged saves (`ffh-play
@@ -91,6 +91,12 @@ async function playwrightBrowser(pw, problems) {
     dblclick: (x, y) => page.mouse.dblclick(x, y),
     move: (x, y) => page.mouse.move(x, y),
     key: (key, shift = false) => page.keyboard.press(shift ? `Shift+${key}` : key),
+    // A letter held for `ms` (W A S D scroll the map while held).
+    hold: async (key, ms) => {
+      await page.keyboard.down(key);
+      await new Promise((r) => setTimeout(r, ms));
+      await page.keyboard.up(key);
+    },
     // A held key (Shift): the mouse events meanwhile carry it.
     keyDown: (key) => page.keyboard.down(key),
     keyUp: (key) => page.keyboard.up(key),
@@ -215,6 +221,12 @@ async function cdpBrowser(exe, problems) {
       await send("Input.dispatchKeyEvent", { type: text ? "keyDown" : "rawKeyDown", text: text || undefined, ...base });
       await send("Input.dispatchKeyEvent", { type: "keyUp", ...base });
     },
+    hold: async (key, ms) => {
+      const base = { key, code: `Key${key.toUpperCase()}`, windowsVirtualKeyCode: key.toUpperCase().charCodeAt(0), modifiers: held };
+      await send("Input.dispatchKeyEvent", { type: "keyDown", text: key, ...base });
+      await new Promise((r) => setTimeout(r, ms));
+      await send("Input.dispatchKeyEvent", { type: "keyUp", ...base });
+    },
     keyDown: async (key) => {
       const [code, bit, name] = MODIFIERS[key];
       held |= bit;
@@ -303,7 +315,18 @@ async function answerPopups(log = true) {
 async function newGame(url, saves) {
   await b.goto(url);
   await until2("window.ffh && window.ffh.ready", "the client to boot");
+  // No game: the title screen, its island drawn, its menu up (New game: the new-game screen).
+  await until2(`!document.getElementById("title-screen").hidden && !!document.getElementById("title-new")`, "the title screen");
+  await until2(`(() => { const c = document.querySelector("#title-screen canvas.title-backdrop"); return !!c && c.width > 1; })()`, "the title screen's island");
+  await new Promise((r) => setTimeout(r, 400));
+  await shot("title");
+  steps.push("the title screen with its menu");
+  await click("#title-new");
   await until(async () => (await modalTitles()).includes("New game"), "the new-game screen");
+  // The civilizations' list drives the form; picking one shows its leaders' cards.
+  await click('#modals button.civ-item[data-civ="CIVILIZATION_BANNOR"]');
+  await until2(`!!document.querySelector("#modals button.leader-card[data-leader]:not([data-leader=''])")`, "the Bannor's leaders");
+  await click('#modals button.civ-item[data-civ=""]');
   await shot("new-game");
   await b.eval(`(() => {
     const set = (id, v) => { const e = document.getElementById(id); e.value = v; e.dispatchEvent(new Event("change")); };
@@ -313,6 +336,7 @@ async function newGame(url, saves) {
   const start = await b.eval(`(() => { const r = document.querySelector("#modals .modal-buttons button.primary").getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; })()`);
   await b.dblclick(start.x, start.y);
   await waitHuman("the first turn");
+  await until2(`document.getElementById("title-screen").hidden`, "the title screen to go");
   const games = fs.readdirSync(saves).filter((f) => fs.statSync(path.join(saves, f)).isDirectory());
   if (games.length !== 1) throw new Error(`a double click on Start made ${games.length} games: ${games}`);
   steps.push(`new game (Start double-clicked: one game): turn ${await S("S.status.turn")}`);
@@ -459,6 +483,8 @@ async function rendererIso(url) {
   await b.eval(`window.ffh.setLayer("terrain")`);
   await b.eval("window.ffh.mapView.draw()");
   await shot("renderer-iso");
+  // The city screen over the isometric map: its plots worked by clicking them on the map.
+  await cityScreen();
   await b.eval(`window.ffh.setRenderer("art")`);
   await until2(`window.ffh.mapView.renderer() === "art"`, "the art renderer after the isometric one");
   steps.push(`?renderer=iso: a frame of ${colours} colours, ${clicked ? "a click on a unit's figure selects it, hover, " : ""}zoom ${zooms.join(" ")}, political layer, back to the art`);
@@ -563,20 +589,20 @@ async function recordPosts() {
 }
 const posted = () => b.eval(`window.__posts.filter((p) => p.k === "cmd")`);
 
-/** W (and Tab, "Next") reaches every group the cycle selects (`selectable`: C++
+/** Tab (Civ4's W; "Next") reaches every group the cycle selects (`selectable`: C++
  *  `readyToSelect()`), not just the two nearest each other (P5 review). */
 async function cycleAll() {
   const ready = await S("S.view.groups.filter((g) => g.selectable).map((g) => g.id)");
-  if (ready.length < 2) return steps.push(`W: ${ready.length} group waiting, nothing to cycle`);
+  if (ready.length < 2) return steps.push(`Tab: ${ready.length} group waiting, nothing to cycle`);
   const seen = new Set([await S("S.sel ? S.units.get(S.sel.units[0]).group : null")]);
   for (let k = 0; k < 2 * ready.length; k++) {
-    await b.key("w");
+    await b.key("Tab");
     await new Promise((r) => setTimeout(r, 120));
     seen.add(await S("S.sel ? S.units.get(S.sel.units[0]).group : null"));
   }
   const missed = ready.filter((g) => !seen.has(g));
-  if (missed.length) throw new Error(`W never selected groups ${missed} of ${ready}`);
-  steps.push(`W selected all ${ready.length} waiting groups`);
+  if (missed.length) throw new Error(`Tab never selected groups ${missed} of ${ready}`);
+  steps.push(`Tab selected all ${ready.length} waiting groups`);
 }
 
 /** A hotkey pressed right after the selection changed acts on the new selection, never with the
@@ -738,13 +764,15 @@ async function closeDialog(title) {
 }
 
 /** The city screen (P6): a worked plot clicked stops being worked (a specialist instead, the
- *  citizens' automation off), clicked again it is worked; the automation back on. */
+ *  citizens' automation off), clicked again it is worked; the automation back on. With the
+ *  isometric map the plots are clicked on the map, which frames the city (Civ4's city view). */
 async function cityScreen() {
   const city = await S("S.view.cities.find((c) => c.owner === S.view.me.player) || null");
   if (!city) return steps.push("no city for the city screen");
   const p = await plotPos(city.x, city.y);
   await b.dblclick(p.x, p.y);
   await dialog(city.name);
+  if (await b.eval("!!window.ffh.mapView.iso")) return cityOverlay(city);
   const screen = `${TOP} .modal.city-screen`;
   await until2(`!!document.querySelector(${q(`${screen} .cgrid .cplot.centre`)})`, "the city screen's plots");
   await shot("city-screen");
@@ -764,6 +792,33 @@ async function cityScreen() {
     steps.push(`city screen: plot ${worked} clicked off (a specialist) and on, the automation off and on`);
   }
   await closeDialog(city.name);
+}
+
+/** The city screen over the isometric map: the city's plots worked by clicking them on the map. */
+async function cityOverlay(city) {
+  const o = "window.ffh.mapView.overlay.city";
+  await until2(`!!${o} && ${o}.id === ${city.id} && !window.ffh.mapView.anim`, "the city's plots on the map");
+  await shot("city-screen");
+  const worked = await b.eval(`(() => { const q = ${o}.plots.find((p) => p.worked && p.i !== 0); return q ? { i: q.i, x: q.x, y: q.y } : null; })()`);
+  if (!worked) {
+    steps.push("city screen (map): no worked plot to click");
+  } else {
+    const at = () => b.eval(`(() => { const m = window.ffh.mapView; const p = m.screenOf(${worked.x}, ${worked.y}); const r = document.querySelector("canvas.map").getBoundingClientRect(); return { x: p.x + r.left, y: p.y + r.top }; })()`);
+    const isWorked = `(() => { const c = ${o}; return !!c && c.plots.find((p) => p.i === ${worked.i}).worked; })()`;
+    let q = await at();
+    await b.mouse(q.x, q.y);
+    await until2(`!${isWorked}`, "the plot no longer worked (clicked on the map)");
+    await until2(`!!document.querySelector(".modal.city-overlay .spec") && !document.querySelector("#city-auto-citizens").checked`, "a specialist and the automation off");
+    await shot("city-specialist");
+    q = await at();
+    await b.mouse(q.x, q.y);
+    await until2(isWorked, "the plot worked again");
+    await click("#city-auto-citizens");
+    await until2(`document.querySelector("#city-auto-citizens").checked`, "the automation back on");
+    steps.push(`city screen (map): plot ${worked.i} clicked off (a specialist) and on on the map, the automation off and on`);
+  }
+  await closeDialog(city.name);
+  await until2(`!${o}`, "the map back from the city");
 }
 
 /** The empire screens (P6) through their keys: the tech tree, civics, religion, the sliders,
@@ -850,7 +905,7 @@ async function keysAndLayers() {
   await b.key("?");
   await dialog("Keys");
   await closeDialog("Keys");
-  if (!(await S("!!S.sel"))) await b.key("w");
+  if (!(await S("!!S.sel"))) await b.key("Tab");
   if (await S("!!S.sel")) {
     await until2(`window.ffh.units.currentActions().length > 0`, "the selection's actions");
     if (await b.eval(`window.ffh.units.currentActions().some((a) => a.kind === "target" && a.mode === "INTERFACEMODE_GO_TO" && a.enabled)`)) {
@@ -861,6 +916,19 @@ async function keysAndLayers() {
       steps.push("G: the go-to mode, Esc leaves it");
     }
   }
+  // W A S D held scroll the map smoothly and leave the selection as it is (W no longer cycles).
+  const view = () => b.eval(`(() => { const v = window.ffh.mapView; const S = window.ffh.S; return { cx: v.cam.cx, w: v.map.w, sel: S.sel ? S.sel.units.join() : "" }; })()`);
+  // The east-west move, the short way round a wrapping map.
+  const east = (v0, v1) => ((((v1.cx - v0.cx) % v0.w) + v0.w * 1.5) % v0.w) - v0.w / 2;
+  for (const [k, sign] of [["d", 1], ["a", -1]]) {
+    const v0 = await view();
+    await b.hold(k, 350);
+    await new Promise((r) => setTimeout(r, 300));
+    const v1 = await view();
+    if (!(sign * east(v0, v1) > 0.3)) throw new Error(`${k.toUpperCase()} held did not scroll the map: ${JSON.stringify([v0, v1])}`);
+    if (v1.sel !== v0.sel) throw new Error(`${k.toUpperCase()} changed the selection: ${v0.sel} -> ${v1.sel}`);
+  }
+  steps.push("W A S D: the map scrolls while D and A are held, the selection stays");
   for (const layer of ["political", "yield", "terrain"]) {
     await click(`#mapwrap .layers button[data-layer="${layer}"]`);
     await until2(`window.ffh.mapView.layer === "${layer}" && document.querySelector('#mapwrap .layers button[data-layer="${layer}"]').classList.contains("active")`, `the ${layer} layer`);
@@ -1012,11 +1080,20 @@ async function stagedAttack(bin, saves) {
   const odds = await b.eval(`document.querySelector("#mapwrap .tooltip .tip-combat").textContent`);
   if (!/Odds \d+(\.\d)?%/.test(odds)) throw new Error(`the odds tooltip: ${odds}`);
   await shot("attack-odds");
-  // Watch for the combat flash (units.js flashCombat -> mapView.flashTile) across the resolution.
-  await b.eval(`(() => { window.__fmax = 0; window.__fi = setInterval(() => { const f = window.ffh.mapView.flashes; if (Array.isArray(f) && f.length > window.__fmax) window.__fmax = f.length; }, 16); })()`);
+  // Watch for the combat flash (units.js flashCombat -> mapView.flashTile) across the resolution:
+  // count the calls. Polling `mapView.flashes` missed it when a slow software-rendered frame held
+  // the page past the flash's 460-620 ms.
+  await b.eval(`(() => {
+    const mv = window.ffh.mapView;
+    const own = Object.prototype.hasOwnProperty.call(mv, "flashTile");
+    const orig = mv.flashTile;
+    window.__flashes = 0;
+    mv.flashTile = function (...a) { window.__flashes++; return orig.apply(this, a); };
+    window.__unflash = () => { if (own) mv.flashTile = orig; else delete mv.flashTile; };
+  })()`);
   await b.mouse(e.x, e.y, "right");
   await until2(`(() => { const S = window.ffh.S; const me = S.units.get(${st.unit}); return !S.units.has(${st.enemy}) || !me || me.hp < me.max_hp; })()`, "the combat");
-  const flashed = await b.eval(`(() => { clearInterval(window.__fi); const f = window.ffh.mapView.flashes; return Math.max(window.__fmax || 0, Array.isArray(f) ? f.length : 0); })()`);
+  const flashed = await b.eval(`(() => { const n = window.__flashes || 0; window.__unflash(); return n; })()`);
   if (!flashed) throw new Error("no combat flash was shown on the attack");
   const won = await S(`!S.units.has(${st.enemy})`);
   steps.push(`attacked from the odds tooltip (${odds.replace(/\s+/g, " ").slice(0, 40)}…): ${won ? "won" : "lost or damaged"}; combat flash shown`);
@@ -1043,7 +1120,8 @@ async function stagedCapture(bin, saves) {
 }
 
 /** The trade screen (P6, `stage trade`: a civilization met at peace, gold trading): F4, Trade…,
- *  the tables, 7 gold put into the deal, Propose: accepted, the gold gone. */
+ *  the leader's greeting, the tables, 7 gold put into the deal, Propose: accepted with the
+ *  leader's thanks, the gold gone. */
 async function stagedTrade(bin, saves) {
   await loadStaged(bin, saves, "trade");
   const gold = await S("S.view.me.gold");
@@ -1053,16 +1131,51 @@ async function stagedTrade(bin, saves) {
   await click(`${TOP} button[data-trade]`);
   await dialog(/^Trade with/);
   await until2(`document.querySelectorAll(${q(`${TOP} .trade .trade-side`)}).length === 2`, "the trade tables");
+  const says = `${TOP} .leader-head blockquote.leader-says`;
+  await until2(`(() => { const e = document.querySelector(${q(says)}); return !!e && e.textContent.length > 3 && !/\\[|…/.test(e.textContent); })()`, "the leader's greeting");
+  const greeting = await b.eval(`document.querySelector(${q(says)}).textContent`);
   const ours = `${TOP} .trade .trade-side:first-child .trade-item[data-item="TRADE_GOLD"]`;
   await click(`${ours} button`);
   await until2(`!!document.querySelector(${q(`${ours}.on input.amount`)})`, "the gold amount");
   await b.eval(`(() => { const i = document.querySelector(${q(`${ours} input.amount`)}); i.value = "7"; i.dispatchEvent(new Event("input")); })()`);
   await shot("trade");
   await click(`${TOP} .modal-buttons button.primary`);
-  await until(async () => !(await modalTitles()).some((t) => t.startsWith("Trade with")), "the deal accepted (the trade screen closes)");
+  await until2(`document.querySelector(${q(`${TOP} p[data-answer]`)})?.dataset.answer === "accepted"`, "the deal accepted");
+  await until2(`(() => { const e = document.querySelector(${q(says)}); return !!e && e.textContent !== ${q(greeting)} && e.textContent.length > 3 && !/\\[|…/.test(e.textContent); })()`, "the leader's thanks");
   await until2(`window.ffh.S.view.me.gold === ${gold - 7}`, "7 gold given");
+  await shot("trade-thanks");
+  await closeDialog(await b.eval(`document.querySelector(${q(`${TOP} .modal-head h2`)}).textContent`));
   await closeDialog("Foreign affairs");
-  steps.push("trade screen (stage trade): 7 gold offered and accepted");
+  steps.push("trade screen (stage trade): the leader's greeting; 7 gold offered, accepted with thanks");
+}
+
+/** The leader moments (`stage diplomacy`: an AI leader met the human, then declared war): loading
+ *  the save, the leader's first contact speaks, "Farewell"; then its war declaration, "So be it";
+ *  F4, Trade…: at war since this turn, the leader refuses to talk. */
+async function stagedDiplomacy(bin, saves) {
+  await loadStaged(bin, saves, "diplomacy", { answer: false });
+  const leader = (comment) => `${TOP} .modal.leader[data-comment="${comment}"]`;
+  const spoken = (comment) => `(() => { const e = document.querySelector(${q(`${leader(comment)} blockquote.leader-says`)}); return !!e && e.textContent.length > 3 && !/\\[/.test(e.textContent); })()`;
+  await until2(spoken("AI_DIPLOCOMMENT_FIRST_CONTACT"), "the leader's first contact");
+  await shot("leader-first-contact");
+  await click(`${leader("AI_DIPLOCOMMENT_FIRST_CONTACT")} button.reply[data-reply="exit"]`);
+  await until2(spoken("AI_DIPLOCOMMENT_DECLARE_WAR"), "the leader's war declaration");
+  await shot("leader-declares-war");
+  await click(`${leader("AI_DIPLOCOMMENT_DECLARE_WAR")} button.reply`);
+  await until2(`!document.querySelector("#modals .modal.leader")`, "the leader screens closed");
+  // The popups held back while the leader spoke (the research chooser) come next.
+  await answerPopups(false);
+  await b.key("F4");
+  await dialog("Foreign affairs");
+  await until2(`!!document.querySelector(${q(`${TOP} button[data-trade]`)})`, "the Trade button");
+  await click(`${TOP} button[data-trade]`);
+  await dialog(/^Trade with/);
+  const says = `${TOP} .leader-head blockquote.leader-says`;
+  await until2(`(() => { const e = document.querySelector(${q(says)}); return !!e && e.textContent.length > 3 && !/\\[|…/.test(e.textContent); })() && /refuses to talk/.test(document.querySelector(${q(`${TOP} p.warn`)})?.textContent ?? "")`, "the leader's refusal to talk");
+  await shot("leader-refuses");
+  await closeDialog(await b.eval(`document.querySelector(${q(`${TOP} .modal-head h2`)}).textContent`));
+  await closeDialog("Foreign affairs");
+  steps.push("leader moments (stage diplomacy): first contact, war declared, then a refusal to talk");
 }
 
 /** Selects the group of unit `u` with a click on its plot. */
@@ -1076,8 +1189,8 @@ async function selectUnit(u) {
 const automated = (u) => `(() => { const S = window.ffh.S; const u = S.units.get(${u}); const g = u && S.groups.get(u.group); return !!g && g.automated !== null && g.automated !== undefined; })()`;
 
 /** P7, `stage automate`: the worker's Automation section; a click automates it and the AI gives
- *  it orders at once (it waits for none); the scout explores by the hotkey E; the unit panel
- *  marks automated units. */
+ *  it orders at once (it waits for none); the scout explores by its button (E zooms the map); the
+ *  unit panel marks automated units. */
 async function stagedAutomate(bin, saves) {
   const st = await loadStaged(bin, saves, "automate");
   await selectUnit(st.worker);
@@ -1088,13 +1201,14 @@ async function stagedAutomate(bin, saves) {
   await until2(automated(st.worker), "the worker automated");
   await until2(`(() => { const S = window.ffh.S; const u = S.units.get(${st.worker}); const g = u && S.groups.get(u.group); return !!g && (g.missions.length > 0 || !g.ready); })()`, "the automated worker's orders");
   await selectUnit(st.scout);
-  await until2(`!!document.querySelector('#unit-panel button.action[data-kind="automate"][data-type="AUTOMATE_EXPLORE"]')`, "the scout's explore button");
-  await b.key("e");
+  const explore = '#unit-panel button.action[data-kind="automate"][data-type="AUTOMATE_EXPLORE"]';
+  await until2(`!!document.querySelector(${q(explore)})`, "the scout's explore button");
+  await click(explore);
   await until2(automated(st.scout), "the scout exploring");
   await selectUnit(st.worker);
   await until2(`!!document.querySelector("#unit-panel .badge.auto")`, "the automated badge");
   await shot("automated");
-  steps.push("automate buttons (stage automate): a worker automated with a click, a scout exploring with E");
+  steps.push("automate buttons (stage automate): a worker and a scout (explore) automated with a click");
 }
 
 /** P7, `stage election`: the human secretary general's election popup (deferred, like events
@@ -1229,15 +1343,17 @@ async function stagedLoad(bin, saves) {
   steps.push(`loaded the warrior into trireme ${pick} through the transport picker`);
 }
 
-/** A game started by another client while the page shows the no-game New game dialog (which
- *  cannot be closed): the dialog goes (P5 review). */
+/** A game started by another client while the page shows the title screen with the New game
+ *  dialog open: both go (P5 review). */
 async function newGameElsewhere(bin) {
   const saves = tempDir("smoke-elsewhere");
   const server = await startServer({ bin, saves, extra: ASSETS });
   try {
     await b.goto(server.url);
     await until2("window.ffh && window.ffh.ready", "the client to boot");
-    await until(async () => (await modalTitles()).includes("New game"), "the no-game New game dialog");
+    await until2(`!document.getElementById("title-screen").hidden && !!document.getElementById("title-new")`, "the title screen");
+    await click("#title-new");
+    await until(async () => (await modalTitles()).includes("New game"), "the New game dialog");
     const r = await fetch(`${server.url}/api`, {
       method: "POST",
       headers: { "X-FFH": "1", "Content-Type": "application/json" },
@@ -1245,8 +1361,9 @@ async function newGameElsewhere(bin) {
     });
     if (!(await r.json()).ok) throw new Error("another client could not start a game");
     await waitHuman("the game another client started");
+    await until2(`document.getElementById("title-screen").hidden`, "the title screen to go", 10000);
     await until(async () => !(await modalTitles()).includes("New game"), "the New game dialog to close", 10000);
-    steps.push("the no-game dialog closed when another client started a game");
+    steps.push("the title screen and its New game dialog went when another client started a game");
   } finally {
     await b.goto("about:blank");
     await server.stop();
@@ -1310,6 +1427,7 @@ async function main() {
     await stagedAttack(bin, saves);
     await stagedCapture(bin, saves);
     await stagedTrade(bin, saves);
+    await stagedDiplomacy(bin, saves);
     await stagedAutomate(bin, saves);
     await stagedElection(bin, saves);
     await stagedSettlement(bin, saves);

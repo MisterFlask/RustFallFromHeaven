@@ -76,6 +76,164 @@ fn queue(v: &Viewer, c: CityId) -> Json {
     Json::Arr(out.collect())
 }
 
+/// One line of a city's happiness or health: what it comes from and how much (a positive count).
+type Part = (String, i32);
+
+/// Adds `n` to the part labelled `label` (a new part when there is none), if `n` > 0.
+fn add_part(parts: &mut Vec<Part>, label: &str, n: i32) {
+    if n <= 0 {
+        return;
+    }
+    match parts.iter_mut().find(|(l, _)| l == label) {
+        Some(p) => p.1 += n,
+        None => parts.push((label.to_string(), n)),
+    }
+}
+
+/// `[[label, n], ..]`.
+fn parts_json(parts: &[Part]) -> Json {
+    Json::Arr(parts.iter().map(|(l, n)| crate::jarr![l.as_str(), *n]).collect())
+}
+
+/// The name of the one feature of the city's plots whose health is `good` (> 0) or bad (< 0),
+/// else "features" (C++ `setGoodHealthHelp` / `setBadHealthHelp`).
+fn feature_label(g: &ffh_core::game::Game, c: CityId, good: bool) -> String {
+    let d = g.d;
+    let mut only: Option<FeatureType> = None;
+    for i in 0..g.city_num_city_plots(c).max(0) as usize {
+        let Some(p) = g.city_index_plot(c, i) else { continue };
+        let Some(f) = g.map.plots[p].feature_type else { continue };
+        let hp = d.features[f].health_percent;
+        if (good && hp > 0) || (!good && hp < 0) {
+            match only {
+                None => only = Some(f),
+                Some(o) if o != f => return "features".to_string(),
+                _ => {}
+            }
+        }
+    }
+    only.map_or_else(|| "features".to_string(), |f| crate::names::display(d, f).into_owned())
+}
+
+/// What makes city `c` happy: the terms of C++ `CvCity::happyLevel`, which they sum to (C++
+/// `setHappyHelp`, with the city's and its owner's extra happiness as one term, as the rules
+/// count them).
+pub fn happy_parts(g: &ffh_core::game::Game, c: CityId) -> Vec<Part> {
+    let city = &g.cities[c];
+    let owner = city.owner;
+    let player = &g.players[owner];
+    let mut out = Vec::new();
+    add_part(&mut out, "largest cities", g.city_largest_city_happiness(c));
+    add_part(&mut out, "military units", g.city_military_happiness(c));
+    add_part(&mut out, "vassals", g.city_vassal_happiness(c));
+    add_part(&mut out, "state religion", g.city_current_state_religion_happiness(c));
+    add_part(&mut out, "buildings", city.building_good_happiness.max(0) + city.extra_building_good_happiness.max(0));
+    add_part(&mut out, "features", city.feature_good_happiness);
+    add_part(&mut out, "resources", city.bonus_good_happiness);
+    add_part(&mut out, "religions", city.religion_good_happiness);
+    add_part(&mut out, "luxury", g.city_commerce_happiness(c));
+    add_part(&mut out, "buildings", g.map.areas[g.city_area(c)].building_happiness[owner]);
+    add_part(&mut out, "buildings", player.building_happiness);
+    add_part(&mut out, "other", city.extra_happiness + player.extra_happiness);
+    add_part(&mut out, "difficulty", g.d.handicaps[g.city_handicap_type(c)].happy_bonus);
+    if city.happiness_timer > 0 {
+        add_part(&mut out, &format!("past events ({} turns)", city.happiness_timer), g.d.defines.temp_happy);
+    }
+    out
+}
+
+/// What makes city `c` unhappy: the terms of C++ `CvCity::unhappyLevel`, which they sum to
+/// (C++ `setAngerHelp`: each percent anger turns into citizens by the difference it makes to the
+/// running total, so that the rounding of the whole is shared out and the parts add up).
+pub fn unhappy_parts(g: &ffh_core::game::Game, c: CityId) -> Vec<Part> {
+    let d = g.d;
+    let mut out = Vec::new();
+    if g.city_is_no_unhappiness(c) {
+        return out;
+    }
+    let city = &g.cities[c];
+    let owner = city.owner;
+    let player = &g.players[owner];
+    let pop = city.population;
+    let div = d.defines.percent_anger_divisor;
+    let (mut old_pct, mut new_pct, mut old, mut new) = (0, 0, 0, 0);
+    let mut step = |out: &mut Vec<Part>, label: &str, pct: Option<i32>, flat: i32| {
+        match pct {
+            Some(p) => {
+                new_pct += p;
+                new += (new_pct * pop) / div - (old_pct * pop) / div;
+                old_pct = new_pct;
+            }
+            None => new += flat,
+        }
+        add_part(out, label, (new - old) + old.min(0));
+        old = new;
+    };
+    step(&mut out, "population", Some(g.city_overcrowding_percent_anger(c, 0)), 0);
+    step(&mut out, "no military protection", Some(g.city_no_military_percent_anger(c)), 0);
+    step(&mut out, "foreign culture", Some(g.city_culture_percent_anger(c)), 0);
+    step(&mut out, "war on its religion", Some(g.city_religion_percent_anger(c)), 0);
+    step(&mut out, "hurried production", Some(g.city_hurry_percent_anger(c, 0)), 0);
+    step(&mut out, "draft", Some(g.city_conscript_percent_anger(c, 0)), 0);
+    step(&mut out, "defied resolution", Some(g.city_defy_resolution_percent_anger(c, 0)), 0);
+    step(&mut out, "war weariness", Some(g.city_war_weariness_percent_anger(c)), 0);
+    step(&mut out, "being a vassal", None, g.city_vassal_unhappiness(c).max(0));
+    step(&mut out, "espionage", None, city.espionage_happiness_counter.max(0));
+    for civic in d.civics.keys() {
+        let label = format!("wants {}", crate::names::display(d, civic));
+        step(&mut out, &label, Some(g.player_get_civic_percent_anger(owner, civic, false)), 0);
+    }
+    step(&mut out, "largest cities", None, -g.city_largest_city_happiness(c).min(0));
+    step(&mut out, "military units", None, -g.city_military_happiness(c).min(0));
+    step(&mut out, "state religion", None, -g.city_current_state_religion_happiness(c).min(0));
+    step(&mut out, "buildings", None, -city.building_bad_happiness.min(0) - city.extra_building_bad_happiness.min(0));
+    step(&mut out, "features", None, -city.feature_bad_happiness.min(0));
+    step(&mut out, "resources", None, -city.bonus_bad_happiness.min(0));
+    step(&mut out, "religions", None, -city.religion_bad_happiness.min(0));
+    step(&mut out, "luxury", None, -g.city_commerce_happiness(c).min(0));
+    step(&mut out, "buildings", None, -g.map.areas[g.city_area(c)].building_happiness[owner].min(0));
+    step(&mut out, "buildings", None, -player.building_happiness.min(0));
+    step(&mut out, "other", None, -(city.extra_happiness + player.extra_happiness).min(0));
+    step(&mut out, "difficulty", None, -d.handicaps[g.city_handicap_type(c)].happy_bonus.min(0));
+    out
+}
+
+/// What keeps city `c` healthy: the terms of C++ `CvCity::goodHealth`, which they sum to.
+pub fn good_health_parts(g: &ffh_core::game::Game, c: CityId) -> Vec<Part> {
+    let city = &g.cities[c];
+    let mut out = Vec::new();
+    add_part(&mut out, "fresh water", city.fresh_water_good_health);
+    if city.feature_good_health > 0 {
+        add_part(&mut out, &feature_label(g, c, true), city.feature_good_health);
+    }
+    add_part(&mut out, "power", city.power_good_health);
+    add_part(&mut out, "resources", city.bonus_good_health);
+    add_part(&mut out, "buildings", g.city_total_good_building_health(c));
+    add_part(&mut out, "other", g.players[city.owner].extra_health + city.extra_health);
+    add_part(&mut out, "difficulty", g.d.handicaps[g.city_handicap_type(c)].health_bonus);
+    out
+}
+
+/// What makes city `c` unhealthy: the terms of C++ `CvCity::badHealth`, which they sum to (its
+/// population first; the extra building bad health, which the rules count twice, is in
+/// "buildings").
+pub fn bad_health_parts(g: &ffh_core::game::Game, c: CityId) -> Vec<Part> {
+    let city = &g.cities[c];
+    let mut out = Vec::new();
+    add_part(&mut out, "population", g.city_unhealthy_population(c, false, 0));
+    add_part(&mut out, "blight", city.espionage_health_counter);
+    add_part(&mut out, "fresh water", -city.fresh_water_bad_health);
+    if city.feature_bad_health < 0 {
+        add_part(&mut out, &feature_label(g, c, false), -city.feature_bad_health);
+    }
+    add_part(&mut out, "power", -city.power_bad_health);
+    add_part(&mut out, "resources", -city.bonus_bad_health);
+    add_part(&mut out, "buildings", -g.city_total_bad_building_health(c).min(0) - city.extra_building_bad_health.min(0));
+    add_part(&mut out, "other", -(g.players[city.owner].extra_health + city.extra_health));
+    add_part(&mut out, "difficulty", -g.d.handicaps[g.city_handicap_type(c)].health_bonus);
+    out
+}
+
 /// `city {city}`: the full city screen.
 pub fn city(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
     let g = v.g;
@@ -143,6 +301,9 @@ pub fn city(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
         "war_weariness_percent_anger" => g.city_war_weariness_percent_anger(c),
         "hurry_anger_timer" => city.hurry_anger_timer,
         "conscript_anger_timer" => city.conscript_anger_timer,
+        // The terms the totals are made of (labels and counts, each list sums to its total).
+        "happy_parts" => parts_json(&happy_parts(g, c)),
+        "unhappy_parts" => parts_json(&unhappy_parts(g, c)),
     };
     let health = crate::jobj! {
         "good" => g.city_good_health(c),
@@ -159,6 +320,8 @@ pub fn city(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
         "bonuses" => city.bonus_good_health,
         "bonuses_bad" => city.bonus_bad_health,
         "extra" => city.extra_health,
+        "good_parts" => parts_json(&good_health_parts(g, c)),
+        "bad_parts" => parts_json(&bad_health_parts(g, c)),
     };
     let buildings: Vec<Json> = d
         .buildings

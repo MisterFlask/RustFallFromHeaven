@@ -1283,6 +1283,7 @@ impl Game {
             // (setInfoBarDirty: interface)
             if self.unit_get_immobile_timer(u) == 0 {
                 if let Some(spell) = self.units[u].delayed_spell {
+                    self.tel_cast_reason(u, "delayed", 0);
                     self.unit_cast(u, spell);
                 }
             }
@@ -1464,17 +1465,20 @@ impl Game {
     /// `plot` `None` = the unit's own plot (C++ default NULL).
     pub fn unit_is_enemy(&self, u: UnitId, team: Option<TeamId>, plot: Option<PlotIdx>) -> bool {
         let plot = plot.or_else(|| self.unit_plot_opt(u));
+        let our_team = self.unit_get_team(u);
 
         //FfH: Added by Kael 10/26/2007 (to prevent spinlocks when always hostile units attack barbarian allied teams)
         if self.unit_is_always_hostile(u, plot) {
-            if Some(self.unit_get_team(u)) != team {
+            if Some(our_team) != team {
                 return true;
             }
         }
         //FfH: End Add
 
-        let combat_owner = self.unit_get_combat_owner(u, team, plot);
-        self.at_war_opt(Some(self.players[combat_owner].team), team)
+        // C++ `atWar(GET_PLAYER(getCombatOwner(eTeam, pPlot)).getTeam(), eTeam)`. Here
+        // `getCombatOwner` is always the owner: it differs only for an always-hostile unit
+        // (`isAlwaysHostile(pPlot)`) seen by another team, which returned above.
+        self.at_war_opt(Some(our_team), team)
     }
 
     /// C++ `CvUnit::isPotentialEnemy` (CvUnit.cpp:18031-18039).

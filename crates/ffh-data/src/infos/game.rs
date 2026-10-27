@@ -1,6 +1,6 @@
 //! Info classes: CommerceInfo, GameSpeedInfo, WorldInfo, ClimateInfo, SeaLevelInfo, EraInfo,
 //! HandicapInfo, GameOptionInfo, GoodyInfo, HurryInfo, UpkeepInfo, CultureLevelInfo,
-//! VictoryInfo, ProcessInfo, EmphasizeInfo.
+//! VictoryInfo, ProcessInfo, EmphasizeInfo, DiplomacyInfo.
 //! Port of the corresponding `Cv*Info::read(CvXMLLoadUtility*)` functions in CvInfos.cpp.
 //! None of these classes has a `readPass2`/`readPass3`.
 //!
@@ -850,4 +850,47 @@ mod tests {
         let (c, _) = read_with(&[SPEEDS], xml, read_culture_level);
         assert_eq!(c.speed_threshold.raw, vec![0, 40]);
     }
+}
+
+// ---------------------------------------------------------------------------------------------
+// DiplomacyInfo
+// ---------------------------------------------------------------------------------------------
+
+/// C++ `CvDiplomacyResponse`: one set of lines and the leaders, civilizations, attitudes and
+/// relative powers it is for (an empty filter matches any; the exe picks among the matching
+/// responses, see ffh-play's `view/speech.rs`).
+#[derive(Debug, Clone, Default)]
+pub struct DiplomacyResponse {
+    pub civilization_types: IdxVec<CivilizationType, bool>,
+    pub leader_head_types: IdxVec<LeaderHeadType, bool>,
+    pub attitude_types: IdxVec<AttitudeType, bool>,
+    pub diplomacy_power_types: IdxVec<DiplomacyPowerType, bool>,
+    /// Text keys of the lines (`AI_DIPLO_GREETINGS_ATT_FR_LEADER_ARENDEL`, ...).
+    pub diplomacy_text: Vec<String>,
+}
+
+/// C++ `CvDiplomacyResponse::read`.
+fn read_diplomacy_response(rd: &Rd) -> DiplomacyResponse {
+    DiplomacyResponse {
+        civilization_types: rd.pairs_bool::<CivilizationType>("Civilizations"),
+        leader_head_types: rd.pairs_bool::<LeaderHeadType>("Leaders"),
+        attitude_types: rd.pairs_bool::<AttitudeType>("Attitudes"),
+        diplomacy_power_types: rd.pairs_bool::<DiplomacyPowerType>("DiplomacyPowers"),
+        diplomacy_text: rd.string_list("DiplomacyText"),
+    }
+}
+
+/// C++ `CvDiplomacyInfo` (Gameinfo/CIV4DiplomacyInfos.xml): what a leader says in one diplomacy
+/// moment (`AI_DIPLOCOMMENT_*`, the AI's lines) or what the human may answer
+/// (`USER_DIPLOCOMMENT_*`). Presentation only: the rules never read it.
+#[derive(Debug, Clone, Default)]
+pub struct DiplomacyInfo {
+    pub base: InfoBase,
+    pub responses: Vec<DiplomacyResponse>,
+}
+
+/// C++ `CvDiplomacyInfo::read`.
+pub fn read_diplomacy(rd: &Rd) -> DiplomacyInfo {
+    let responses = rd.child("Responses").map(|r| r.children_named("Response").map(|x| read_diplomacy_response(&x)).collect()).unwrap_or_default();
+    DiplomacyInfo { base: InfoBase::read(rd), responses }
 }

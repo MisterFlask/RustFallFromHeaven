@@ -1,0 +1,16 @@
+sleep: the white letters "zZ" with a dark blue outline, like the screenshot's sleep icon
+fortify: a large steel kite shield with a gold rim
+sentry: a wide-open watchful eye with a blue iris
+skip: a golden arrow curving up and over to the right
+goto: a red pennant flag on a short wooden pole
+disband: a steel sword broken in two pieces
+heal: a red heart with a white bandage cross on it
+pillage: a burning wooden torch with orange flames
+found: a white canvas tent with a small blue pennant on top
+explore: a brass spyglass telescope
+automate: a brass cogwheel with a green circular arrow around it
+promote: a gold star medal hanging from a red ribbon
+upgrade: a bold green arrow pointing up
+spell: a purple magic wand with a glowing star at its tip and sparkles
+board: a small wooden sailing ship with a white sail
+attack: two crossed steel swords

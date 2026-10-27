@@ -13,6 +13,7 @@
 //! behaviour); the port stops using it there.
 
 use crate::defs::*;
+use crate::controller::AiHook;
 use crate::game::Game;
 use crate::ids::*;
 use ffh_data::*;
@@ -185,11 +186,9 @@ impl Game {
         if self.unit_get_immobile_timer(u) > 0 {
             return false;
         }
-        if !self.unit_is_human(u) {
-            if !info.allow_ai {
-                return false;
-            }
-        }
+        // Change from FFH2: C++ refuses a spell without `bAllowAI` to every AI player. That is AI
+        // policy, applied by the AIs themselves (ffh-ai casts such a spell only where it has logic
+        // for it; docs/PORTING.md, "Changes from FFH2"), so the rule is the same for every player.
         if let Some(promotion) = info.promotion_prereq1 {
             if !unit.has_promotion[promotion] {
                 return false;
@@ -764,6 +763,17 @@ impl Game {
     /// C++ `CvUnit::cast` (CvUnit.cpp:14503-14675).
     /// Runs the spell's `PyResult` through `crate::ffh` and the built-in effects below.
     pub fn unit_cast(&mut self, u: UnitId, spell: SpellType) {
+        if !self.telemetry.on() {
+            return self.unit_cast_inner(u, spell);
+        }
+        let snap = self.tel_cast_begin(u, spell);
+        self.tel_ctx_push("spell");
+        self.unit_cast_inner(u, spell);
+        self.tel_ctx_pop();
+        self.tel_cast_end(snap);
+    }
+
+    fn unit_cast_inner(&mut self, u: UnitId, spell: SpellType) {
         let d = self.d;
         let info = &d.spells[spell];
 
@@ -1262,6 +1272,7 @@ impl Game {
                     self.units[summon].ai_groupflag = GROUPFLAG_NONE;
                     self.units[summon].ai_suicide_summon = true;
                     // AI: `pUnit->AI_update()` (the summon acts at once).
+                    self.ai_hook(owner, AiHook::UnitUpdate(summon));
                 }
             } else if self.units[summon].unit_type.i() == d.defines.unit_fireball {
                 if self.unit_bombard(summon) {
@@ -1423,6 +1434,10 @@ impl Game {
 
     /// C++ `CvUnit::isHiddenNationality` (CvUnit.cpp:15399-15409).
     pub fn unit_is_hidden_nationality(&self, u: UnitId) -> bool {
+        // (Both C++ exits are false without a hidden-nationality source: test that first.)
+        if self.units[u].hidden_nationality == 0 {
+            return false;
+        }
         // Cargo is only hidden if its transport is.
         if self.unit_is_cargo(u) {
             if let Some(transport) = self.units[u].transport_unit {

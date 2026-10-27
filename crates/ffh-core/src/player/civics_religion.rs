@@ -185,6 +185,9 @@ impl Game {
         }
 
         let anarchy_length = self.player_get_civic_anarchy_length(p, new_civics);
+        if self.telemetry.on() {
+            self.tel_revolution(p, new_civics);
+        }
 
         if anarchy_length > 0 {
             self.player_change_anarchy_turns(p, anarchy_length);
@@ -907,6 +910,9 @@ impl Game {
 
         if !self.player_can_convert(p, religion) {
             return;
+        }
+        if self.telemetry.on() {
+            self.tel_convert(p, religion);
         }
 
         let anarchy_length = self.player_get_religion_anarchy_length(p);

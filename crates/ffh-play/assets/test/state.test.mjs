@@ -287,3 +287,49 @@ test("save names from paths", () => {
   assert.equal(St.saveNameOfPath(null), null);
   assert.equal(St.saveNameOfPath("auto/T1.ffhsave"), null);
 });
+
+test("the gold rate by its parts adds up; scores are shares", async () => {
+  const { goldBreakdown, scoreText, fairShareText } = await import("../app/state.js");
+  const gp = { income: 20, deals: -3, units: 4, units_count: 9, units_free: 5, military_count: 2, military_free: 1, supply: 1, supply_units: 2, maintenance: 6, civics: 2, inflation: 1, inflation_rate: 8, research_fixed: false };
+  const b = goldBreakdown(gp);
+  assert.equal(b.net, 20 - 3 - 4 - 1 - 6 - 2 - 1);
+  assert.deepEqual(b.income, [["from your cities' commerce", 20]]);
+  assert.equal(b.costs.find(([w]) => w === "deals")[1], 3);
+  assert.equal(goldBreakdown(null), null);
+  assert.equal(goldBreakdown({ ...gp, deals: 4, units: 0, supply: 0, inflation: 0 }).income.length, 2);
+  assert.equal(scoreText(1341), "13.4%");
+  assert.equal(scoreText(10000), "100.0%");
+  assert.equal(fairShareText(5), "20.0%");
+});
+
+test("observed games: the status flag, and the commands they take", () => {
+  assert.equal(St.observing({ observe: true }), true);
+  assert.equal(St.observing({ observe: false }), false);
+  assert.equal(St.observing(null), false);
+  assert.deepEqual(St.OBSERVER_COMMANDS, ["autoplay", "end_turn"]);
+});
+
+test("located messages make one map marker per plot, the strongest kind there", () => {
+  assert.equal(St.eventKind("Axeman died attacking Longbowman (12.3% to win)"), "loss");
+  assert.equal(St.eventKind("Axeman destroyed Warrior (81.0% to win)"), "kill");
+  assert.equal(St.eventKind("Horseman withdrew from Archer (40.2% to win)"), "retreat");
+  assert.equal(St.eventKind("Scout fled from Wolf"), "retreat");
+  assert.equal(St.eventKind("Bannor City (Sabathiel) was captured by the Sheaim"), "city");
+  assert.equal(St.eventKind("You have destroyed Ilythia!"), "city");
+  assert.equal(St.eventKind("The revolution has begun!"), "event");
+  const msgs = [
+    { t: 9, at: [1, 1], text: "Axeman destroyed Warrior" },
+    { t: 10, at: [2, 3], text: "Axeman destroyed Warrior" },
+    { t: 10, at: [2, 3], text: "Warrior died attacking Axeman" },
+    { t: 10, at: [5, 5], text: "Horseman withdrew from Archer" },
+    { t: 10, text: "no plot" },
+  ];
+  const m = St.eventMarkers(msgs, 10);
+  assert.deepEqual(
+    m.map((e) => [e.x, e.y, e.kind, e.texts.length]),
+    [
+      [2, 3, "loss", 2],
+      [5, 5, "retreat", 1],
+    ],
+  );
+});

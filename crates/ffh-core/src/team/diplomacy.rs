@@ -6,6 +6,7 @@
 #![allow(unused_imports)]
 use super::{civ_team_ids, is_option};
 use crate::defs::*;
+use crate::controller::AiHook;
 use crate::game::Game;
 use crate::ids::*;
 use crate::structs::*;
@@ -164,6 +165,9 @@ impl Game {
         debug_assert!(other != t, "eTeam is not expected to be equal with getID()");
 
         if !self.teams[t].at_war[other] {
+            if self.telemetry.on() {
+                self.tel_declare_war(t, other, war_plan);
+            }
             //FfH: Added by Kael 11/29/2007
             for p in self.player_ids() {
                 if self.players[p].team == t {
@@ -313,9 +317,12 @@ impl Game {
 
             // C++ `isFinalInitialized() && !GetWorldBuilderMode()` (no world builder here).
             if self.final_initialized {
-                // UI: with bNewDiplo, a non-human declaring team opens the
-                // AI_DIPLOCOMMENT_DECLARE_WAR diplomacy screen with every human member of `other`
-                // its leader can contact (no game-state effect).
+                // With bNewDiplo, a non-human declaring team opens the AI_DIPLOCOMMENT_DECLARE_WAR
+                // diplomacy screen with every human member of `other` its leader can contact
+                // (UI only: the game log's diplomacy entries).
+                if new_diplo && self.log.enabled && !self.team_is_human(t) {
+                    self.log_diplo_with_humans(t, other, "AI_DIPLOCOMMENT_DECLARE_WAR");
+                }
 
                 // TXT_KEY_MISC_YOU_DECLARED_WAR_ON / DECLARED_WAR_ON_YOU / SOMEONE_DECLARED_WAR messages
                 // and the replay message, between non-barbarian, non-minor teams only.
@@ -403,6 +410,9 @@ impl Game {
         debug_assert!(other != t, "eTeam is not expected to be equal with getID()");
 
         if self.teams[t].at_war[other] {
+            if self.telemetry.on() {
+                self.tel_make_peace(t, other);
+            }
             for p in self.player_ids() {
                 if self.players[p].team == t || self.players[p].team == other {
                     self.player_update_plunder(p, -1, false);
@@ -657,14 +667,31 @@ impl Game {
                 if self.team_is_human(t) && t != other {
                     self.team_declare_war(t, other, false, None);
                 }
-            } else {
-                // UI: once final-initialized, with bNewDiplo, a non-human team at peace with `other`
-                // opens the AI_DIPLOCOMMENT_FIRST_CONTACT diplomacy screen with every human member
-                // of `other` its leader can contact (no game-state effect).
+            } else if self.final_initialized && new_diplo && self.log.enabled {
+                // A non-human team at peace with `other` opens the AI_DIPLOCOMMENT_FIRST_CONTACT
+                // diplomacy screen with every human member of `other` its leader can contact (UI
+                // only: the game log's diplomacy entries).
+                if !self.team_is_human(t) && !self.at_war(t, other) {
+                    self.log_diplo_with_humans(t, other, "AI_DIPLOCOMMENT_FIRST_CONTACT");
+                }
             }
 
             // report event to Python, along with some other key state
             self.ev_first_contact(t, other);
+        }
+    }
+
+    /// The `gDLL->beginDiplomacy` loops of `CvTeam::declareWar` and `CvTeam::makeHasMet`: `t`'s
+    /// leader opens the `comment` diplomacy screen with every alive human member of `other` it
+    /// can contact (a game log diplomacy entry each; presentation only).
+    fn log_diplo_with_humans(&mut self, t: TeamId, other: TeamId, comment: &str) {
+        let Some(leader) = self.team_get_leader_id(t) else { return };
+        let comment = self.d.t::<DiploCommentType>(comment);
+        let turn = self.game_turn();
+        for p in self.player_ids() {
+            if self.players[p].alive && self.players[p].team == other && self.player_can_contact(leader, p) && self.players[p].human {
+                self.log.diplo(turn, leader, p, comment);
+            }
         }
     }
 
@@ -992,6 +1019,9 @@ impl Game {
 
             change_master_outside_units(self, master, -1);
 
+            if self.telemetry.on() {
+                self.tel_vassal(t, master, value, capitulated);
+            }
             self.teams[t].vassal[master] = value;
             // Score v2 moves half of a vassal's people and land to its master (docs/SCORE.md).
             self.score_dirty = true;
@@ -1213,12 +1243,16 @@ impl Game {
     pub fn team_ai_set_war_plan(&mut self, t: TeamId, other: TeamId, plan: Option<WarPlanType>, war: bool) {
         if self.teams[t].ai_war_plan[other] != plan {
             if war || !self.teams[t].at_war[other] {
+                if self.telemetry.on() {
+                    self.tel_war_plan(t, other, plan);
+                }
                 self.teams[t].ai_war_plan[other] = plan;
 
                 // AI_setWarPlanStateCounter(eIndex, 0)
                 self.teams[t].ai_war_plan_state_counter[other] = 0;
 
                 // AI: AI_updateAreaStragies() (area AI types, AI-only state).
+                self.ai_hook_team(t, AiHook::TeamAreaStrategies(t));
 
                 for p in self.player_ids() {
                     if self.players[p].alive {

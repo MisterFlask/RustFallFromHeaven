@@ -13,6 +13,7 @@ re-read against the original in the audit wave (see "Audit and stress testing" b
 | Module | Classes | Status |
 |---|---|---|
 | infos/game.rs | Commerce, GameSpeed, World, Climate, SeaLevel, Era, Handicap, GameOption, Goody, Hurry, Upkeep, CultureLevel, Victory, Process, Emphasize | done, audited |
+| infos/game.rs | Diplomacy (+ DiplomacyResponse): the leaders' lines, presentation only (ffh-play `view/speech.rs`) | done |
 | infos/civics.rs | Specialist, Religion, Corporation, CivicOption, Civic, Vote, VoteSource, EspionageMission, Project, Tech | done, audited |
 | infos/unit.rs | Unit, UnitClass, Promotion, Spell, Build, SpecialUnit, Automate, Command, Mission | done, audited |
 | infos/building.rs, civ.rs | Building, BuildingClass, SpecialBuilding, Trait, Civilization, LeaderHead | done, audited |
@@ -81,8 +82,11 @@ each time a unit drops it in a city; found by the `ffh-play soak` human games).
 
 - C++ AI (CvUnitAI, CvCityAI, CvPlayerAI, CvTeamAI, CvSelectionGroupAI, CvGameAI) and
   the Python AI hooks (`AI_chooseTech`, `AI_chooseProduction`, `AI_MageTurn`,
-  `CustomFunctions.warScript`, ...): replaced by the new AI in `ffh-ai`.
-- UI, graphics, sound, networking, Python screens, worldbuilder, replays.
+  `CustomFunctions.warScript`, ...): replaced by the new AI in `ffh-ai`. A port of them for
+  head-to-head comparison lives in `crates/ffh-cppai` (docs/CPPAI.md; not the game's AI).
+- UI, graphics, sound, networking, Python screens, worldbuilder, replays. The help texts of
+  `CvGameTextMgr` are ported for the human client, in ffh-play (`src/view/help/`, docs/HUMAN.md
+  "Help.").
 
 ## Changes from FFH2
 
@@ -159,6 +163,14 @@ the differences; it does not ask for them to be undone.
   its once-a-game spell, not rules: the port drops them from the rules, and ffh-ai applies the
   same conditions as its default timing (`world_spells::ready`), so the move alone changes no AI
   game. Hyborem's Whisper had none.
+- **A spell's `bAllowAI` is the AIs' to apply** (user decision, 2026-10-27). C++ `CvUnit::canCast`
+  refuses a spell without `bAllowAI` (57 of the 267) to every AI player. That is the old AI's
+  policy -- spells it could not value -- not a rule, so `unit_can_cast` no longer checks it: the
+  rule is the same for every player. Each AI applies it: ffh-ai's generic casting keeps such
+  spells out (`casting::castable_spells`) and casts only those it has logic for (Arena Battle,
+  Sacrifice Altar, Wane, Kidnap: `ffh-ai/src/unflagged.rs`); the C++ AI port keeps C++'s check
+  (`ffh-cppai`, `ai_can_cast`). With the other 53 kept out, no AI game changes until a spell's
+  logic is added.
 - **AI-only branches in the other spells' requirements are kept** (for now). Unlike CvGameUtils,
   the `isHuman() == False` checks in the other CvSpellInterface `req*` functions are ported as
   written: they decide whether a spell is castable at all for AI players. They are AI policy like
@@ -239,6 +251,10 @@ the differences; it does not ask for them to be undone.
   Ashen Veil worker inside.
 
 **Human play (ffh-play; docs/PLAY_DESIGN.md §10)**
+
+- Leaders have lines for each civilization they speak to (`data/text/barks.md`, new writing, not
+  FFH2's), mixed with FFH2's own diplomacy lines; the new-game screen's "Vanilla experience" keeps
+  FFH2's alone. Presentation only.
 
 - Human popups whose rules answer can be deferred are answered at the next control point, as in
   C++: production, events, diplomatic votes, the research popup.
