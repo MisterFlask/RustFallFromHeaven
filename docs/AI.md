@@ -1581,7 +1581,11 @@ threatened cities) are in docs/AI_LOG.md, "Magic civilizations":
   and its best cast at the end of the turn is worth less than 30. Haste was FfH's free cast at the
   end of the turn, after the stack had moved, and worth nothing. Fork (Amurites seed 10, turn
   357): the hasted stack stepped in a turn earlier and took a barbarian city. It fires about 10
-  times a game where a Mage with Body marches with a stack without siege engines.
+  times a game where a Mage with Body marches with a stack without siege engines. Measured on for
+  the forced civilization only, the rest of the package on both sides: development seeds
+  52001-52040, win 15.6% on both sides (1 / 1), share@end +18 (t 0.91), 144 of 160 games
+  unchanged; fresh seeds 55001-55040, win 10.6% -> 11.9% (2 / 0; Amurites 0 -> 2), share@end +57
+  (t 2.07), legacy@end +69 (t 2.20), rank -0.1 (t -2.06), 140 of 160 games unchanged.
 
 `FFH_AI_TRACE` shows the casters' count in the force (`casters count on ...`, with the planned
 damage) and the probes (`strike on ...: 0 attacks, holds`); `FFH_AI_TRACE_CAST` shows the barrage
