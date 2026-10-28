@@ -18,13 +18,13 @@
 //! 5. Mysticism, Festivals, Cartography (City States), Sailing for coastal empires;
 //! 6. economy tier 2: Trade, Sanitation, Currency, Construction, Taxation, while fewer are known
 //!    than `AI_chooseTech`'s "economy tier 2" needs (the rest come after step 7);
-//! 7. the per-civ beelines of `AI_chooseTech` (`civs::tech_goals`, in each civilization's module).
+//! 7. the per-civ beelines of `AI_chooseTech` (`civs::tech_goals`, in each civilization's module);
+//! 8. the magic spheres (Necromancy, Elementalism, Divination, Alteration) once tier 3 military
+//!    and economy tier 2 are reached.
 //!
 //! The civilization-specific parts (the early military tech, the lore religion, the beelines) are
 //! the civilizations' own (`CivPlay::tech_goals`), so `FFH_AI_CIV_OFF` turns them off with the rest
 //! of a civilization's play.
-//! 8. the magic spheres (Necromancy, Elementalism, Divination, Alteration) once tier 3 military
-//!    and economy tier 2 are reached.
 //!
 //! This is not `AI_chooseTech`'s exact order. That function returns a single tech: blocks gated
 //! by its tiers assign it in turn and the last assignment wins, which makes its precedence the
