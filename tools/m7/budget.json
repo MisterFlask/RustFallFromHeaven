@@ -1,8 +1,8 @@
 {
- "total": 60.0,
+ "total": 80.0,
  "tags": {
-  "m7": 40.0,
-  "m7/units": 30.0,
+  "m7": 55.0,
+  "m7/units": 45.0,
   "m7/buildings": 4.0,
   "m7/terrain": 4.0,
   "test": 2.0,
