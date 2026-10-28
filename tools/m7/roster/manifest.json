@@ -15183,5 +15183,85 @@
   "gen_size": "1024x1024",
   "quality": "medium",
   "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_barbarian_warrior": {
+  "kind": "unit",
+  "file": "roster/units/unit_barbarian_warrior.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 3,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "prompts/assets/unit_barbarian_warrior__anchor_roster_barbarian.png",
+   "prompts/assets/unit_barbarian_warrior__ref3x_warrior.png"
+  ],
+  "prompt": "prompts/assets/unit_barbarian_warrior.txt",
+  "accepted": "2026-10-28 05:04",
+  "height": 92,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_barbarian_axeman": {
+  "kind": "unit",
+  "file": "roster/units/unit_barbarian_axeman.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r2",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "prompts/assets/unit_barbarian_axeman__anchor_roster_barbarian.png",
+   "prompts/assets/unit_barbarian_axeman__ref3x_axeman.png",
+   "prompts/assets/unit_barbarian_axeman__unit_barbarian_axeman_r1_3.png"
+  ],
+  "prompt": "prompts/assets/unit_barbarian_axeman.txt",
+  "accepted": "2026-10-28 05:04",
+  "height": 88,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_barbarian_worker": {
+  "kind": "unit",
+  "file": "roster/units/unit_barbarian_worker.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r2",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "prompts/assets/unit_barbarian_worker__anchor_roster_barbarian.png",
+   "prompts/assets/unit_barbarian_worker__ref3x_worker.png",
+   "prompts/assets/unit_barbarian_worker__unit_barbarian_worker_r1_2.png"
+  ],
+  "prompt": "prompts/assets/unit_barbarian_worker.txt",
+  "accepted": "2026-10-28 05:04",
+  "height": 82,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
  }
 }
