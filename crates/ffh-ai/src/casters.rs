@@ -166,12 +166,23 @@ fn city_mage(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
     let p = v.p;
     let here = g.unit_plot(u);
     let other_mage = |q: PlotIdx| g.map.plots[q].units.iter().any(|&o| o != u && g.units[o].owner == p && g.units[o].ai_type == Some(UnitAIType::UNITAI_MAGE) && crate::mana::is_caster(g, o));
-    if g.map.plots[here].plot_city.is_some_and(|c| g.cities[c].owner == p) && !other_mage(here) && !v.is_claimed(here) {
+    let reach = v.flood.run(g, u, 10, false);
+    let threat = |v: &View, q: PlotIdx| v.danger_at(q).min(5000) as i64 / 100 + v.peril.iter().filter(|&&(o, _)| o == q).count() as i64 * 20;
+    // A city of ours under threat within reach that has no mage of its own (`MAGE_FRONT`): a
+    // mage with a spell that hurts (`magic::damage_caster`: a Mage's Fireball, not an Adept's
+    // Haste) in a quiet city goes there, as an expert moves his Mages to the front. Without it the
+    // city mages stayed where they were while the cities a few turns away fell.
+    let front = crate::switches::MAGE_FRONT.on(g, p) && crate::magic::damage_caster(g, u) && threat(v, here) == 0 && {
+        g.players[p].cities.iter().any(|&c| {
+            let cp = g.city_plot(c);
+            threat(v, cp) > 0 && !other_mage(cp) && !v.is_claimed(cp) && reach.iter().any(|r| r.plot == cp && r.turns <= 6)
+        })
+    };
+    if g.map.plots[here].plot_city.is_some_and(|c| g.cities[c].owner == p) && !other_mage(here) && !v.is_claimed(here) && !front {
         v.claimed.push(here);
         go(g, grp, u, here, "city mage");
         return true;
     }
-    let reach = v.flood.run(g, u, 10, false);
     let mut best: Option<(i64, PlotIdx)> = None;
     for &c in &g.players[p].cities {
         let cp = g.city_plot(c);
@@ -179,8 +190,10 @@ fn city_mage(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
             continue;
         }
         let Some(turns) = reach.iter().find(|r| r.plot == cp).map(|r| r.turns) else { continue };
-        let threat = v.danger_at(cp).min(5000) as i64 / 100 + v.peril.iter().filter(|&&(q, _)| q == cp).count() as i64 * 20;
-        let score = (10 + threat) * (g.cities[c].population as i64 + 5) * if g.city_is_capital(c) { 2 } else { 1 } * 10 / (turns as i64 + 2);
+        if front && threat(v, cp) == 0 {
+            continue;
+        }
+        let score = (10 + threat(v, cp)) * (g.cities[c].population as i64 + 5) * if g.city_is_capital(c) { 2 } else { 1 } * 10 / (turns as i64 + 2);
         if best.map_or(true, |(b, bq)| score > b || score == b && cp < bq) {
             best = Some((score, cp));
         }

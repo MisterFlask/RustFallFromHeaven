@@ -1776,6 +1776,17 @@ pub fn combat_caster(g: &Game, u: UnitId) -> bool {
     })
 }
 
+/// Does `u` know a spell that hurts enemy units: damage, a temporary summon, Crush, Pillar of Fire
+/// or Destroy Undead (a Mage's Fireball, not an Adept's Haste)?
+pub fn damage_caster(g: &Game, u: UnitId) -> bool {
+    let d = g.d;
+    let fights = |t: UnitType| d.units[t].combat + d.units[t].damage_type_combat.iter().sum::<i32>() > 0;
+    known(g, u).into_iter().any(|s| {
+        let i = &d.spells[s];
+        i.damage > 0 || i.create_unit_type.is_some_and(fights) && !i.permanent_unit_create || damage_spell(d, s)
+    })
+}
+
 /// What sphere promotion `pr` would be worth to a fresh caster of player `p` (Channeling I and no
 /// other sphere: an adept just trained), on [`promotion_value`]'s scale: the best spell it opens,
 /// and a quarter of the best a next promotion of the line opens (an adept becomes a mage only

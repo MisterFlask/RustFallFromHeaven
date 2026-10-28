@@ -220,11 +220,13 @@ pub fn barrage(g: &mut Game, v: &View) {
         crate::magic::cast(g, u, spell, "barrage", value);
         let summons: Vec<UnitId> = g.players[p].units.iter().copied().filter(|&n| newest.map_or(true, |m| n > m) && g.units[n].ai_suicide_summon).collect();
         for n in summons {
-            // Out of its caster's group, so the attack moves it alone.
+            // Out of its caster's group, so the attack moves it alone. A city is spent on only as
+            // at the end of the turn: no strike of ours follows (an operation's casters cast in its
+            // strike, `magic::soften`).
             if g.units[n].group.is_some_and(|grp| g.groups[grp].units.len() > 1) {
                 g.unit_join_group(n, None, true);
             }
-            summon_attacks(g, v, n, true);
+            summon_attacks(g, v, n, false);
         }
     }
     g.players[p].sum_sui_mode = was;
