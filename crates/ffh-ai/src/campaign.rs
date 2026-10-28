@@ -660,6 +660,17 @@ pub(crate) fn covers(g: &Game, c: CityId, tp: PlotIdx, defs: &[UnitId], units: &
     if n_att == 0 {
         return false;
     }
+    let s = covers_sim(g, c, tp, defs, units, spare, siege);
+    if faithful(g, units) {
+        return s.used.is_some() || s.best >= 850 && defs.len() == 1;
+    }
+    let spare = if spare { margin(n_att) } else { 0 };
+    s.used.is_some_and(|n| n + spare <= n_att) || s.best >= 850 && defs.len() == 1
+}
+
+/// The simulation [`covers`] judges (also what the strike's trace shows: printing another one,
+/// at a different sureness, showed a strike going ahead on a simulation where the city held).
+pub(crate) fn covers_sim(g: &Game, c: CityId, tp: PlotIdx, defs: &[UnitId], units: &[UnitId], spare: bool, siege: bool) -> Sim {
     let cut = if siege { wall_cut(g, c, units) } else { 0 };
     // `SIM_FAITHFUL`: the confidence is the simulation's own -- every defender 90% sure to fall
     // with a reserve to spare, 70% sure without -- in place of attackers held in reserve against
@@ -668,12 +679,9 @@ pub(crate) fn covers(g: &Game, c: CityId, tp: PlotIdx, defs: &[UnitId], units: &
     if faithful(g, units) {
         // `BOLD_STRIKE` (conquerors): without a reserve, 60% sure.
         let bold = bold_striker(g, g.units[units[0]].owner);
-        let s = simulate_in_order(g, tp, defs, units, cut, Order::Strike, 100, if spare { 100 } else if bold { 400 } else { 300 });
-        return s.used.is_some() || s.best >= 850 && defs.len() == 1;
+        return simulate_in_order(g, tp, defs, units, cut, Order::Strike, 100, if spare { 100 } else if bold { 400 } else { 300 });
     }
-    let spare = if spare { margin(n_att) } else { 0 };
-    let s = simulate(g, tp, defs, units, cut);
-    s.used.is_some_and(|n| n + spare <= n_att) || s.best >= 850 && defs.len() == 1
+    simulate(g, tp, defs, units, cut)
 }
 
 // ----------------------------------------------------------------------------
@@ -1628,8 +1636,8 @@ fn strike(g: &mut Game, v: &mut View, op: &Op) {
         if units.len() < able.len() {
             held_steps += 1;
         }
-        if crate::trace_on(p) {
-            let s = simulate(g, tp, &defs, &units, 0);
+        if crate::trace_on(p) && !able.is_empty() {
+            let s = covers_sim(g, op.city, tp, &defs, &able, fights == 0 && !at_phase, false);
             let hp: Vec<i32> = defs.iter().map(|&d| g.unit_curr_hit_points(d)).collect();
             crate::trace!(g, p, "  strike step {}: {} units, defenders hp {:?}, sim {:?}, go {}", fights, units.len(), hp, s, go);
         }

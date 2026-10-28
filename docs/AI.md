@@ -147,9 +147,15 @@ counters, war success, war plans) that the diplomacy below reads.
    added to the plots it can reach next turn; animals only on unowned plots since they cannot
    enter owned land; city garrisons ignored), field-army targets, cities in peril, the road
    plan, escort requests. O(enemy units x reach^2 + our cities).
-5. **Units** (`units.rs`): promotions and upgrades first (also for fortified garrisons that
-   get no orders), then every group that needs orders gets one decision by its head unit's
-   role (`Unit::ai_type`, set when the city trains it):
+5. **Units** (`units.rs`): promotions and upgrades first, for every unit (switch
+   `PROMOTE_ALL`, as C++ `AI_doTurnUnitsPost` promotes every unit; before it only a group's head,
+   before it acted, and units that get no orders, so a unit inside a marching stack waited for its
+   promotions until a strike took it out of the stack; measured on fresh seeds 9501-9540 against
+   the same binary with it off: unspent promotions 0.27 -> 0.10 per player and 50-turn
+   checkpoint, every game changed, win rate 16.7% on both sides, share@end +29 (t 0.30), players
+   alive at the end 0.85 -> 0.80 (per player -0.04, t -1.6; eliminations 37 -> 48, cities the
+   barbarians took 156 -> 162)), then every group that needs orders gets one decision by its head
+   unit's role (`Unit::ai_type`, set when the city trains it):
    - **settlers** (`expansion.rs`, see "Settlers and escorts" below) go with an escort to the
      best reachable site whose danger the escort covers; the first city is founded in place
      unless a clearly better site is reachable this turn; with no site left on its landmass a
@@ -1384,9 +1390,8 @@ turn, to move casters and to promote them:
   are left in it (a strike takes the attackers out of their stacks, a battle kills them), and takes
   its own orders at once; a group a
   caster heads splits at the start of the turn. Inside a stack it never heads, it gets
-  its promotions at the start of the turn (`units::play`; the AI otherwise promotes only a group's
-  head or a unit that does not move). A stack moves at its slowest unit's pace: a caster slows a
-  mounted stack.
+  its promotions at the start of the turn (`units::play`, also without `PROMOTE_ALL`). A stack
+  moves at its slowest unit's pace: a caster slows a mounted stack.
 - **Promotions** (`units::promotion_value`): a sphere is worth the spells it opens, plus half of
   those the next promotion of the sphere opens (a quarter for an adept, which gets Channeling II only
   as a mage): Fire I for Fireball, Enchantment I for Enchanted Blade.
@@ -2914,12 +2919,14 @@ only, against opponents without it, and reports that player's wins and share.
     (other buildings), `projects` (team project count), `holy_cities`, `gp_created`,
     `gg_created`, `gp_units` (great-person units alive), `gp_settled` (settled great specialists);
   - units: `units`, `mil`, `workers`, `settlers`, `animals`, `ships`, `heroes` (PROMOTION_HERO),
-    `world_units`, `summons`, `casters` (adept + disciple units), arcane casters (unit combat
+    `world_units`, `summons`, `casters` (adept + disciple units), `promo_ready` (units with a
+    promotion they have not taken), arcane casters (unit combat
     Adept, summons left out: Adepts, Mages, Archmages and their variants) `arcane` alive,
     `arcane_mages` (Channeling II), `arcane_archmages` (Channeling III), `arcane_levels`, and
     cumulative `arcane_made`, `arcane_lost` (while the owner lives), `arcane_lost_alone` (of those,
     the ones that had ended the turn before outside our cities with no other unit of ours that
-    fights), `arcane_lost_levels`, `arcane_lost_with_owner`, `arcane_upgraded`, and caster-turns
+    fights), `arcane_lost_levels`, `arcane_lost_with_owner`, `arcane_upgraded` (a new caster of ours
+    on its plot, of a type it upgrades to, with at least its experience), and caster-turns
     `arcane_turns`, `arcane_ready_turns` (no Channeling II at level 4 or more, not heroes: waiting
     for the upgrade), `arcane_mage_turns`, `arcane_archmage_turns`; `ucombat` (count by unit combat
     type, `NONE` for workers/settlers/great people), `levels` and `xp` (summed over fighting
@@ -3283,7 +3290,4 @@ Where MNAI does something this AI does not, ranked by expected worth (each untri
   rules' code).
   Casters march to the front in the stacks (`CASTER_STACKS`); a player with two operations at once
   spreads them over both, and a stack too small to join leaves them on their own, so half the
-  strikes still find no Mage within range. The AI promotes and upgrades only a group's head and
-  units that do not move (`units::play`; the C++ `AI_doTurnUnitsPost` that promotes every unit has
-  no port): a fighter inside a marching stack waits for its promotions until a strike takes it out
-  (casters in stacks get theirs, `CASTER_STACKS`).
+  strikes still find no Mage within range.

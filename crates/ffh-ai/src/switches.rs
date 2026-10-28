@@ -142,6 +142,11 @@ pub static CASTER_SCHOOL: Switch = Switch::new("CASTER_SCHOOL");
 /// wizard odds (95%): not in a strike, not in a stack's assault, not counted in its force
 /// (`magic::spared_caster`, `magic::join_stack`). Needs `CASTER_SCHOOL`.
 pub static CASTER_STACKS: Switch = Switch::new("CASTER_STACKS");
+/// Every unit takes its promotions and upgrades at the start of its player's turn (C++
+/// `CvPlayerAI::AI_doTurnUnitsPost` promotes every unit), not only a group's head before it acts
+/// and units that do not move: a unit inside a marching stack waited for its promotions until a
+/// strike took it out of the stack (`units::play`).
+pub static PROMOTE_ALL: Switch = Switch::new("PROMOTE_ALL");
 
 fn civ_list(var: &str) -> Option<Vec<String>> {
     let v = std::env::var(var).ok()?;

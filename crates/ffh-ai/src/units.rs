@@ -139,9 +139,12 @@ pub fn play(ai: &Ai, g: &mut Game, v: &mut View) {
     fighters_off_worker_ai(g, p);
     // Summons on their last turn attack before anything else moves (SUMMON_SPEND).
     crate::casting::spend_expiring(g, v);
-    // Promotions and upgrades for units that will not get orders this turn (fortified
-    // garrisons, sentries); the others get theirs before acting.
-    if !v.barbarian {
+    // Promotions and upgrades: every unit (switch `PROMOTE_ALL`; C++ `AI_doTurnUnitsPost`
+    // promotes every unit), else the units that will not get orders this turn (fortified
+    // garrisons, sentries) and the casters marching in stacks; a group's head gets its own again
+    // before it acts.
+    let all = crate::switches::PROMOTE_ALL.on(g, p);
+    if all || !v.barbarian {
         for u in g.players[p].units.clone() {
             if !g.units.contains(u) {
                 continue;
@@ -149,8 +152,8 @@ pub fn play(ai: &Ai, g: &mut Game, v: &mut View) {
             let Some(grp) = g.units[u].group else { continue };
             // A caster marching in a stack never heads it, and never splits off to attack: its
             // promotions (the next spheres) come here (CASTER_STACKS).
-            let stack_caster = g.group_get_head_unit(grp) != Some(u) && crate::magic::spared_caster(g, u);
-            if g.group_ready_to_move(grp, false) && !stack_caster {
+            let stack_caster = !v.barbarian && g.group_get_head_unit(grp) != Some(u) && crate::magic::spared_caster(g, u);
+            if !all && g.group_ready_to_move(grp, false) && !stack_caster {
                 continue;
             }
             upkeep(g, u);
@@ -932,6 +935,7 @@ fn caster(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
     let worst = g.players[p].cities.iter().copied().max_by_key(|&c| (v.danger_at(g.city_plot(c)), std::cmp::Reverse(c)));
     match worst {
         Some(c) if g.city_plot(c) != here => {
+            crate::trace!(g, p, "caster {} at {:?} -> {:?} (most threatened city)", g.d.units[g.units[u].unit_type].base.type_, g.map.xy(here), g.map.xy(g.city_plot(c)));
             // A school caster gets there from one sheltered plot to the next (a Mage an operation
             // left at the front walked home across open ground).
             let step = if crate::magic::school(g, p) { crate::magic::safe_step(g, v, u, g.city_plot(c)) } else { None };

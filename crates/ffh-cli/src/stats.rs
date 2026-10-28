@@ -84,11 +84,12 @@ struct CivEvents {
     arcane_archmage_turns: i32,
 }
 
-/// An arcane caster at the end of a turn: owner, plot, experience, level, and whether another unit
-/// of ours that defends stands with it (or it is in our city).
+/// An arcane caster at the end of a turn: owner, type, plot, experience, level, and whether another
+/// unit of ours that defends stands with it (or it is in our city).
 #[derive(Clone, Copy)]
 struct Arcane {
     owner: PlayerId,
+    unit_type: UnitType,
     plot: PlotIdx,
     xp: i32,
     level: i32,
@@ -117,7 +118,7 @@ fn arcane_units(g: &Game) -> BTreeMap<UnitId, Arcane> {
                     info.combat > 0 || info.combat_defense > 0
                 }
             });
-            out.insert(u, Arcane { owner: p, plot, xp: g.units[u].experience, level: g.units[u].level, guarded: in_city || escort });
+            out.insert(u, Arcane { owner: p, unit_type: g.units[u].unit_type, plot, xp: g.units[u].experience, level: g.units[u].level, guarded: in_city || escort });
         }
     }
     out
@@ -248,6 +249,7 @@ fn snapshot(g: &Game, civ_events: &BTreeMap<PlayerId, CivEvents>, detail: bool) 
         let mut summons = 0;
         let mut casters = 0;
         let (mut arcane_now, mut arcane_mages, mut arcane_archmages, mut arcane_levels) = (0, 0, 0, 0);
+        let mut promo_ready = 0;
         let mut levels = 0i64;
         let mut xp = 0i64;
         let mut mil_str = 0.0;
@@ -282,6 +284,9 @@ fn snapshot(g: &Game, civ_events: &BTreeMap<PlayerId, CivEvents>, detail: bool) 
             let uc = info.unit_combat_type;
             if uc.is_some() && (uc == adept || uc == disciple) {
                 casters += 1;
+            }
+            if unit.promotion_ready {
+                promo_ready += 1;
             }
             if uc.is_some() && uc == adept && unit.duration == 0 {
                 arcane_now += 1;
@@ -515,6 +520,8 @@ fn snapshot(g: &Game, civ_events: &BTreeMap<PlayerId, CivEvents>, detail: bool) 
             .int("cities_lost_rule", pl.cities_lost)
             // Arcane casters (unit combat Adept): alive now, Mages (Channeling II) and Archmages
             // (Channeling III) among them, their levels; cumulative events (see `CivEvents`).
+            // Units with a promotion they have not taken.
+            .int("promo_ready", promo_ready)
             .int("arcane", arcane_now)
             .int("arcane_mages", arcane_mages)
             .int("arcane_archmages", arcane_archmages)
@@ -673,8 +680,8 @@ pub fn cmd_stats(cfg: &RunConfig, at: &[i32]) {
                 }
             }
         }
-        // Arcane casters: upgrades (gone, and a new one of ours on its plot with at least its
-        // experience), losses, new ones, and caster-turns.
+        // Arcane casters: upgrades (gone, and a new one of ours on its plot, of a type it upgrades
+        // to, with at least its experience), losses, new ones, and caster-turns.
         let now_arcane = arcane_units(g);
         let mut fresh: Vec<UnitId> = now_arcane.keys().copied().filter(|u| !arcane.contains_key(u)).collect();
         for (u, a) in &arcane {
@@ -683,7 +690,8 @@ pub fn cmd_stats(cfg: &RunConfig, at: &[i32]) {
             }
             if let Some(i) = fresh.iter().position(|n| {
                 let b = &now_arcane[n];
-                b.owner == a.owner && b.plot == a.plot && b.xp >= a.xp
+                let upgrade = g.d.units[b.unit_type].unit_class_type.is_some_and(|cl| g.d.units[a.unit_type].upgrade_unit_class[cl]);
+                b.owner == a.owner && b.plot == a.plot && b.xp >= a.xp && upgrade
             }) {
                 fresh.remove(i);
                 civ_ev.entry(a.owner).or_default().arcane_upgraded += 1;
