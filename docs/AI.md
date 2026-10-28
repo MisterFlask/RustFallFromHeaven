@@ -138,7 +138,13 @@ counters, war success, war plans) that the diplomacy below reads.
    research below its target.
 2. **Emergency production** (`production::emergency`): a city whose visible threat exceeds
    its garrison switches to a defender (the rules keep the hammers); a capital or a city near
-   barbarians that has only one defender after turn 30 puts a second one first. Then, while the
+   barbarians that has only one defender after turn 30 puts a second one first. Either switch
+   happens only when `decide` would then put a fighter first (switch `EMERGENCY_DECIDE`): the two
+   rules disagreed for a city whose garrison `decide` finds full (`needed + 2` defenders), which was
+   switched every turn and re-chose a building, often another one -- an Illian city under a threat
+   three times its defense alternated a Courthouse and an Elder Council 21 times in 30 turns, now it
+   builds the Courthouse. Whether a full garrison should still grow under such a threat is a
+   question for `decide`'s rule, unchanged. Then, while the
    empire cannot research at its target share, cities re-decide long builds for the economy
    building they need (`production::trouble_rebuild`, see Finance), and a top city finishing a
    world wonder at peace emphasizes production (`production::wonder_emphasis`, see Citizens).
@@ -1976,9 +1982,12 @@ earlier cast is the first thing to measure.
   treat nearby barbarians as a threat all the same. Dropping them cost the Clan cities to its
   rivals and wins (docs/AI_LOG.md, "Allied barbarians no longer counted as a threat"): the term
   stands in for a missing rival-civilization term in the garrison quota.
-- **AI-to-AI deals ignore `player_can_contact`** (`diplomacy::manage`, `implement_deal`), so a
-  Crusading Bannor (`bNoDiplomacyWithEnemies`) still makes peace with its enemies; only
-  `offers.rs` (deals with humans) checks it.
+- **AI-to-AI deals ignored `player_can_contact`** (fixed 2026-10-28, `diplomacy::can_talk`,
+  switch `CONTACT`): a Crusading Bannor (`bNoDiplomacyWithEnemies`) still made peace with its
+  enemies, and deals went to players FfH had just created (the temporary-player timer), vassals
+  making their own peace and teams in a permanent war or peace. Peace, gifts, war bribes, trades,
+  open borders and pacts now need both sides' `canContact`, and so do the offers to humans (C++
+  `AI_doDiplo` asks only the proposer's, so a Crusader's enemy could still offer it peace).
 - **Rules questions**: Wane and Kidnap (Sidar, Svartalfar) lack `bAllowAI`, so the AI can never
   cast them; `GAMEOPTION_NO_BARBARIANS` does not stop barbarians spawned by FfH's Python (a
   barbarian city holding the Dragon's Horde keeps sending units); C++ `AI_foundValue`'s
