@@ -1,7 +1,7 @@
 //! The AI-as-human soak (design §7 P2): `ffh_ai::Ai` plays the human slot through the session,
 //! so the rules' human-only branches (deferred and blocking decisions, human mission timers,
 //! the active-player paths, the human governor, take-over) run for whole games, with the
-//! invariants of ffh-stress's `check.rs` checked as it goes.
+//! invariants of `ffh_harness::check` checked as it goes.
 //!
 //! At every control point the driver plays the human's turn the way design §8 T5 describes:
 //! * production: every other city (odd ids) is set to automated production with the
@@ -23,7 +23,7 @@
 //!   running the human's missions in between;
 //! * `end_turn`, then `end_turn {force}` if the end-turn gate asks.
 //!
-//! Checks: `check.rs` every [`RunOptions::check_every`] turns, at most one active player
+//! Checks: `ffh_harness::check` every [`RunOptions::check_every`] turns, at most one active player
 //! turn at a time, and `save(load(save)) == save` (plus the sidecar's JSON round trip) every
 //! [`RunOptions::save_check_every`] turns. A refused command, a stuck turn (the watchdog) or a
 //! failed check is a failure.
@@ -40,11 +40,8 @@
 //! `ffh-play soak` (batch) runs a matrix of games, each in a child process, so aborts, stack
 //! overflows and hangs are caught too.
 
-use std::backtrace::Backtrace;
-use std::panic::{self, AssertUnwindSafe};
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicI32, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::time::Instant;
 
 use ffh_ai::Ai;
@@ -67,9 +64,8 @@ pub mod batch;
 
 pub use batch::{BatchOptions, Done, Matrix};
 
-/// ffh-stress's invariant checks, reused without editing ffh-stress (design F20).
-#[path = "../../ffh-stress/src/check.rs"]
-pub mod check;
+/// The rules' invariant checks (shared with ffh-stress).
+pub use ffh_harness::check;
 
 /// Civilizations a soak takes over when they appear (not playable at the start).
 pub const SPAWNED_CIVS: [&str; 2] = ["CIVILIZATION_INFERNAL", "CIVILIZATION_MERCURIANS"];
@@ -304,7 +300,7 @@ pub struct RunOptions {
     pub saves: Option<PathBuf>,
     /// Continue from this save (with its sidecar, if any) instead of starting the game.
     pub resume: Option<PathBuf>,
-    /// `check.rs` every N game turns (0 = never).
+    /// `ffh_harness::check` every N game turns (0 = never).
     pub check_every: i32,
     /// `save(load(save)) == save` every N game turns (0 = never).
     pub save_check_every: i32,
@@ -413,9 +409,6 @@ impl Outcome {
     }
 }
 
-/// Game turn being played (for panic reports).
-static TURN: AtomicI32 = AtomicI32::new(-1);
-
 /// Plays `game` (panics propagate; see [`run_caught`]). `on_turn` is called at the human's
 /// first control point of every game turn.
 pub fn run(game: &SoakGame, opts: &RunOptions, on_turn: &mut dyn FnMut(&Session)) -> Result<Outcome, String> {
@@ -443,8 +436,8 @@ pub fn run(game: &SoakGame, opts: &RunOptions, on_turn: &mut dyn FnMut(&Session)
     let until = s.g.start_turn + game.turns;
     let mut driver = Driver { ai: Ai::new(), stats, last_turn: i32::MIN };
     let end = loop {
-        let stop = s.advance(&mut |s| TURN.store(s.g.game_turn(), Ordering::Relaxed));
-        TURN.store(s.g.game_turn(), Ordering::Relaxed);
+        let stop = s.advance(&mut |s| ffh_harness::panic::set_turn(s.g.game_turn()));
+        ffh_harness::panic::set_turn(s.g.game_turn());
         match stop {
             Stop::Stuck(diag) => break End::Stuck(diag),
             Stop::Over => break End::Over { human_alive: s.g.players[s.human].alive, victory: s.g.victory, winner: s.g.winner },
@@ -570,7 +563,7 @@ impl Driver {
             }
             let before = fingerprint(&s.g, h);
             self.ai.play_turn(&mut s.g, h);
-            if s.advance(&mut |s| TURN.store(s.g.game_turn(), Ordering::Relaxed)) != Stop::Human {
+            if s.advance(&mut |s| ffh_harness::panic::set_turn(s.g.game_turn())) != Stop::Human {
                 return Ok(());
             }
             if fingerprint(&s.g, h) == before {
@@ -713,7 +706,7 @@ pub fn spawn_civ(game: &SoakGame, civ: CivilizationType) -> Result<(Vec<u8>, Pla
     let mut spawned = None;
     let mut slices = 0u64;
     loop {
-        TURN.store(g.game_turn(), Ordering::Relaxed);
+        ffh_harness::panic::set_turn(g.game_turn());
         if g.game_state != GameStateType::GAMESTATE_ON {
             return Err(format!("the game ended at turn {} before {} appeared", g.game_turn(), d.type_name(civ)));
         }
@@ -774,79 +767,13 @@ fn found_spawned_civ(g: &mut Game, p: PlayerId, civ: CivilizationType) -> Result
 
 // ---- panics --------------------------------------------------------------------------------------
 
-/// A caught panic.
-#[derive(Clone, Debug)]
-pub struct Crash {
-    pub message: String,
-    /// `file:line` (from `crates/`).
-    pub location: String,
-    /// Frames of the workspace crates (`fn (file:line)`).
-    pub frames: Vec<String>,
-    pub turn: i32,
-}
+/// A caught panic (message, location, workspace frames, game turn).
+pub use ffh_harness::panic::Crash;
 
-static PANIC: Mutex<Option<Crash>> = Mutex::new(None);
-
-/// Keeps the frames of the workspace crates (`fn (file:line)`) of a backtrace.
-fn ffh_frames(bt: &Backtrace) -> Vec<String> {
-    let text = bt.to_string();
-    let mut frames = Vec::new();
-    let mut lines = text.lines().peekable();
-    while let Some(l) = lines.next() {
-        let Some((_, sym)) = l.trim().split_once(": ") else { continue };
-        let at = match lines.peek() {
-            Some(n) if n.trim().starts_with("at ") => lines.next().unwrap_or_default().trim().trim_start_matches("at ").to_string(),
-            _ => String::new(),
-        };
-        // The frames below `run_caught` are its callers (the CLI).
-        if sym.starts_with("ffh_play::soak::run_caught") {
-            break;
-        }
-        let ours = ["ffh_core", "ffh_ai", "ffh_data", "ffh_play", "<ffh"].iter().any(|c| sym.starts_with(c));
-        if ours && !sym.contains("soak::ffh_frames") && !sym.contains("soak::install_hook") && !at.starts_with("/rustc/") {
-            let at = at.rsplit_once("/crates/").map_or(at.clone(), |(_, r)| r.to_string());
-            let sym = sym.rsplit_once("::h").filter(|(_, h)| h.len() == 16).map_or(sym, |(s, _)| s);
-            frames.push(format!("{sym} ({at})"));
-        }
-    }
-    frames.truncate(16);
-    frames
-}
-
-/// Records every panic (message, location, workspace frames) for [`run_caught`].
-pub fn install_hook() {
-    panic::set_hook(Box::new(|info| {
-        let message = if let Some(s) = info.payload().downcast_ref::<&str>() {
-            s.to_string()
-        } else if let Some(s) = info.payload().downcast_ref::<String>() {
-            s.clone()
-        } else {
-            "<non-string panic>".to_string()
-        };
-        let location = info.location().map_or("?".to_string(), |l| {
-            let f = l.file();
-            let f = f.rsplit_once("/crates/").map_or(f.to_string(), |(_, r)| r.to_string());
-            format!("{f}:{}", l.line())
-        });
-        let turn = TURN.load(Ordering::Relaxed);
-        eprintln!("panic at turn {turn}: {message} at {location}");
-        let frames = ffh_frames(&Backtrace::force_capture());
-        *PANIC.lock().unwrap_or_else(|e| e.into_inner()) = Some(Crash { message, location, frames, turn });
-    }));
-}
-
-/// [`run`] with panics caught (installs the panic hook).
+/// [`run`] with panics caught.
 pub fn run_caught(game: &SoakGame, opts: &RunOptions, on_turn: &mut dyn FnMut(&Session)) -> Result<Result<Outcome, String>, Crash> {
-    install_hook();
-    TURN.store(-1, Ordering::Relaxed);
-    panic::catch_unwind(AssertUnwindSafe(|| run(game, opts, on_turn))).map_err(|_| {
-        PANIC.lock().unwrap_or_else(|e| e.into_inner()).take().unwrap_or(Crash {
-            message: "?".into(),
-            location: "?".into(),
-            frames: Vec::new(),
-            turn: TURN.load(Ordering::Relaxed),
-        })
-    })
+    // The frames below `run_caught` are its callers (the CLI).
+    ffh_harness::panic::catch("ffh_play::soak::run_caught", || run(game, opts, on_turn))
 }
 
 /// The newest autosave in `<saves>/auto/` (`T####.ffhsave`).

@@ -12,12 +12,12 @@
 //!   ffh-stress list [opts]           print the games of a matrix (one `run` command each)
 //!
 //! FFH_STRESS_LOG=1 makes `run` print the game log (LOG lines) turn by turn.
-//! `run` cross-checks the rules' redundant bookkeeping (`check.rs`) every 5 turns
+//! `run` cross-checks the rules' redundant bookkeeping (`ffh_harness::check`) every 5 turns
 //! (FFH_STRESS_CHECK=N: every N turns, 0 = never).
 //!
 //! Settings (`run`): --seed N --civs N --size WORLDSIZE_X --speed GAMESPEED_X
 //!   --handicap HANDICAP_X (game handicap) --player-handicap HANDICAP_X (AI slots)
-//!   --era ERA_X --climate CLIMATE_X --sea SEALEVEL_X --options GAMEOPTION_A,GAMEOPTION_B
+//!   --era ERA_X --climate CLIMATE_X --sea SEALEVEL_X (or --sea-level) --options GAMEOPTION_A,GAMEOPTION_B (or repeated --option)
 //!   --teams N (consecutive civs in teams of N) --turns N --max-turns N
 //!   --target-score N (score victory at N basis points of the world: 5000 = half; 0 = off)
 //!   --max-city-elimination N --no-victory VICTORY_A,VICTORY_B --spare N
@@ -27,15 +27,12 @@
 //!   --random N (games in the random matrix) --out FILE (TSV of all results)
 //!   --filter TEXT (only games whose settings contain TEXT)
 
-mod check;
 mod matrix;
 mod play;
 mod settings;
 
-use std::io::{BufReader, Read, Write};
-use std::process::{Command, Stdio};
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::{Arc, Mutex};
+use std::io::Write;
+use std::process::Command;
 use std::time::{Duration, Instant};
 
 use settings::Settings;
@@ -134,37 +131,21 @@ fn batch(args: &[String], list_only: bool) {
     let exe = std::env::current_exe().expect("current_exe");
     let n = games.len();
     eprintln!("{n} games, {} jobs, timeout {} s", o.jobs, o.timeout.as_secs());
-    let games = Arc::new(games);
-    let next = Arc::new(AtomicUsize::new(0));
-    let results: Arc<Mutex<Vec<Option<Done>>>> = Arc::new(Mutex::new((0..n).map(|_| None).collect()));
     let t0 = Instant::now();
-    let mut workers = Vec::new();
-    for _ in 0..o.jobs.max(1) {
-        let (games, next, results, exe) = (games.clone(), next.clone(), results.clone(), exe.clone());
-        let timeout = o.timeout;
-        workers.push(std::thread::spawn(move || loop {
-            let i = next.fetch_add(1, Ordering::SeqCst);
-            if i >= games.len() {
-                break;
-            }
-            let done = run_child(&exe, &games[i], timeout);
-            eprintln!(
-                "[{:4}/{n} {:6.0}s] {:7} turn {:>5} {:>7.1}s  {}  {}",
-                i + 1,
-                t0.elapsed().as_secs_f64(),
-                done.status,
-                done.turn,
-                done.secs,
-                done.settings.describe(),
-                if done.status == "ok" { done.end.clone() } else { done.detail.lines().next().unwrap_or("").to_string() }
-            );
-            results.lock().unwrap()[i] = Some(done);
-        }));
-    }
-    for w in workers {
-        w.join().unwrap();
-    }
-    let results: Vec<Done> = std::mem::take(&mut *results.lock().unwrap()).into_iter().map(Option::unwrap).collect();
+    let results = ffh_harness::pool::run_all(&games, o.jobs, |i, game| {
+        let done = run_child(&exe, game, o.timeout);
+        eprintln!(
+            "[{:4}/{n} {:6.0}s] {:7} turn {:>5} {:>7.1}s  {}  {}",
+            i + 1,
+            t0.elapsed().as_secs_f64(),
+            done.status,
+            done.turn,
+            done.secs,
+            done.settings.describe(),
+            if done.status == "ok" { done.end.clone() } else { done.detail.lines().next().unwrap_or("").to_string() }
+        );
+        done
+    });
     summary(&results, t0.elapsed());
     if let Some(path) = &o.out {
         let mut f = std::fs::File::create(path).expect("create --out file");
@@ -189,67 +170,30 @@ fn batch(args: &[String], list_only: bool) {
 
 /// Runs `ffh-stress run <settings>` with a timeout and parses its result lines.
 fn run_child(exe: &std::path::Path, s: &Settings, timeout: Duration) -> Done {
-    let t = Instant::now();
-    let mut child = Command::new(exe)
-        .arg("run")
-        .args(s.to_args())
-        .env("RUST_BACKTRACE", "0")
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .expect("spawn ffh-stress run");
-    let mut stdout = child.stdout.take().unwrap();
-    let mut stderr = child.stderr.take().unwrap();
-    let out_thread = std::thread::spawn(move || {
-        let mut v = String::new();
-        let _ = stdout.read_to_string(&mut v);
-        v
-    });
-    let err_thread = std::thread::spawn(move || {
-        let mut v = String::new();
-        let _ = BufReader::new(&mut stderr).read_to_string(&mut v);
-        v
-    });
-    let mut timed_out = false;
-    let status = loop {
-        if let Some(st) = child.try_wait().expect("wait child") {
-            break st;
-        }
-        if t.elapsed() > timeout {
-            let _ = child.kill();
-            timed_out = true;
-            break child.wait().expect("wait child");
-        }
-        std::thread::sleep(Duration::from_millis(50));
-    };
-    let out = out_thread.join().unwrap_or_default();
-    let err = err_thread.join().unwrap_or_default();
-    let secs = t.elapsed().as_secs_f64();
-    let mut done = Done { settings: s.clone(), status: String::new(), turn: "?".into(), end: String::new(), detail: String::new(), secs };
+    let run = ffh_harness::child::run(Command::new(exe).arg("run").args(s.to_args()), timeout).expect("spawn ffh-stress run");
+    let mut done = Done { settings: s.clone(), status: String::new(), turn: "?".into(), end: String::new(), detail: String::new(), secs: run.secs };
     let mut panic_lines = Vec::new();
     let mut progress = String::new();
     let mut victory = String::new();
-    for line in out.lines() {
-        let mut f = line.splitn(2, '\t');
-        match (f.next(), f.next()) {
-            (Some("TURN"), Some(v)) => done.turn = v.to_string(),
-            (Some("END"), Some(v)) => done.end = v.to_string(),
-            (Some("PANIC"), Some(v)) | (Some("BT"), Some(v)) => panic_lines.push(v.to_string()),
-            (Some("PROGRESS"), Some(v)) => progress = v.to_string(),
-            (Some("VICTORY"), Some(v)) => victory = v.replace('\t', " "),
+    for (k, v) in run.lines() {
+        match k {
+            "TURN" => done.turn = v.to_string(),
+            "END" => done.end = v.to_string(),
+            "PANIC" | "BT" => panic_lines.push(v.to_string()),
+            "PROGRESS" => progress = v.to_string(),
+            "VICTORY" => victory = v.replace('\t', " "),
             _ => {}
         }
     }
-    if timed_out {
+    if run.timed_out {
         done.status = "timeout".into();
         done.detail = format!("killed after {} s", timeout.as_secs());
     } else if !panic_lines.is_empty() {
         done.status = "panic".into();
         done.detail = panic_lines.join("\n");
-    } else if !status.success() {
+    } else if !run.success() {
         done.status = "crash".into();
-        let tail: Vec<&str> = err.lines().rev().take(6).collect();
-        done.detail = format!("{status}: {}", tail.into_iter().rev().collect::<Vec<_>>().join(" | "));
+        done.detail = run.crash_detail();
     } else {
         done.status = "ok".into();
     }

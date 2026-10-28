@@ -203,9 +203,7 @@ persist_struct!(City {
     state_religion_happiness, unit_combat_free_experience, free_promotion_count,
     num_real_building, num_free_building, working_plot, has_religion, has_corporation,
     trade_cities, order_queue, events_occured, building_yield_change, building_commerce_change,
-    building_happy_change, building_health_change, population_rank, population_rank_valid,
-    base_yield_rank, base_yield_rank_valid, yield_rank, yield_rank_valid, commerce_rank,
-    commerce_rank_valid, ai_assign_work_dirty, ai_choose_production_dirty, ai_emphasize,
+    building_happy_change, building_health_change, ai_assign_work_dirty, ai_choose_production_dirty, ai_emphasize,
     ai_emphasize_avoid_growth_count, ai_emphasize_great_people_count, ai_emphasize_yield_count,
     ai_emphasize_commerce_count, ai_emphasize_avoid_angry_citizens_count,
     ai_emphasize_avoid_unhealthy_citizens_count,
@@ -263,7 +261,7 @@ persist_struct!(Player {
     score_history, economy_history, industry_history, agriculture_history, power_history,
     culture_history, espionage_history, ai_civic_timer, ai_religion_timer, ai_num_train_ai_units,
     ai_num_ai_units, ai_peacetime_trade_value, ai_peacetime_grant_value, ai_gold_traded_to,
-    ai_attitude_extra, ai_first_contact, ai_memory_count, ai_bonus_value,
+    ai_attitude_extra, ai_first_contact, ai_memory_count,
 });
 
 persist_struct!(Team {

@@ -650,9 +650,9 @@ impl Report {
     }
 }
 
-/// [`Snapshot::take`] under a guard, for the session.
+/// [`Snapshot::take`], for the session.
 pub fn snapshot(g: &Game, h: PlayerId, log_mark: usize) -> Snapshot {
-    crate::guard::read(g, |g| Snapshot::take(&Viewer::new(g, h, false), log_mark))
+    Snapshot::take(&Viewer::new(g, h, false), log_mark)
 }
 
 #[cfg(test)]

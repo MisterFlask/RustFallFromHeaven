@@ -1730,7 +1730,8 @@ impl Cai {
     pub fn city_ai_update_route_to_city(&self, g: &mut Game, c: CityId) {
         let g: &Game = &*g;
 
-        g.route_finder.borrow_mut().force_reset();
+        // C++ reuses GC.getRouteFinder() across the loop; ffh-core's searches are always fresh.
+        let mut route_finder = ffh_core::path::PathFinder::new(ffh_core::path::FinderKind::Route);
 
         let mut best_value = MAX_INT;
         let mut best_city: Option<CityId> = None;
@@ -1746,7 +1747,7 @@ impl Cai {
                     if loop_city != c {
                         if g.city_area(loop_city) == area {
                             let (lx, ly) = (g.cities[loop_city].x, g.cities[loop_city].y);
-                            let found = g.route_finder.borrow_mut().generate_path(g, x, y, lx, ly, false, owner.i(), true);
+                            let found = route_finder.generate_path(g, x, y, lx, ly, false, owner.i());
                             if !found {
                                 let value = g.plot_distance(x, y, lx, ly);
 

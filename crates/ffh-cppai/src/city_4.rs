@@ -41,7 +41,7 @@ fn calculate_path_distance(g: &Game, source: PlotIdx, dest: PlotIdx) -> i32 {
     let (sx, sy) = g.map.xy(source);
     let (dx, dy) = g.map.xy(dest);
     let mut finder = g.step_finder.borrow_mut();
-    if finder.generate_path(g, sx, sy, dx, dy, false, 0, true) {
+    if finder.generate_path(g, sx, sy, dx, dy, false, 0) {
         if let Some(node) = finder.last_node() {
             return node.data1;
         }

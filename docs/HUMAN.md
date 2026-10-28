@@ -476,7 +476,7 @@ cargo build --release
   inside its runs, which is budgeted; and, reported only, a bare update loop, the session and the
   session with its autosaves timed whole, `--runs` interleaved rounds, the same game each time:
   separate runs differ by a quarter or more on a busy host, even in the thread's CPU time),
-  command latency on a standard map at turn 200, the view on a huge map and the QueryGuard; it
+  command latency on a standard map at turn 200, the view on a huge map and the status query; it
   prints each against its budget (`--json`: the figures) and exits 1 when one is missed.
   `--quick` is a small variant (seconds).
   The full run takes about a minute.
@@ -531,7 +531,7 @@ loop {
 * `query(&Query)` (or `query_json` of a `{"q": ..}` object) answers a protocol query from your
   side of the fog (below); `set_reveal(true)` switches debug reveal on (the true state, every
   reply marked `"reveal": true`).
-* `read(|g| ..)` reads the game under a `QueryGuard` (no side effects on the saved state).
+* `read(|g| ..)` reads the game (`&Game` reads have no side effects on the game).
 * `save(name)` / `save_bytes()` work at a control point or turn boundary; `Session::load`,
   `Session::take_over` (an AI save, debugging) resume.
 * FfH can move the human to another slot (`reassignPlayerAdvanced`: the Impersonate Leader

@@ -948,8 +948,7 @@ impl Cai {
         let path: Option<(i32, Vec<(i32, i32)>)> = {
             let gr: &Game = g;
             let mut finder = gr.step_finder.borrow_mut();
-            finder.force_reset();
-            if finder.generate_path(gr, fx, fy, tx, ty, false, 0, true) {
+            if finder.generate_path(gr, fx, fy, tx, ty, false, 0) {
                 match finder.last_node() {
                     Some(node) => {
                         let data1 = node.data1;
@@ -1583,15 +1582,13 @@ impl Cai {
     }
 
     /// C++ `void CvPlayerAI::AI_updateBonusValue(BonusTypes eBonus)` (CvPlayerAI.cpp:18796-18802)
-    pub fn player_ai_update_bonus_value(&self, g: &mut Game, p: PlayerId, bonus: BonusType) {
-        //reset
-        g.players[p].ai_bonus_value[bonus.idx()].set(-1);
+    pub fn player_ai_update_bonus_value(&self, _g: &mut Game, _p: PlayerId, _bonus: BonusType) {
+        // ffh-core keeps no AI_baseBonusVal cache: nothing to reset.
     }
 
     /// C++ `void CvPlayerAI::AI_updateBonusValue()` (CvPlayerAI.cpp:18805-18815)
-    pub fn player_ai_update_bonus_value_2(&self, g: &mut Game, p: PlayerId) {
-        // ffh-core resets every bonus (the same loop).
-        g.player_ai_update_bonus_value(p);
+    pub fn player_ai_update_bonus_value_2(&self, _g: &mut Game, _p: PlayerId) {
+        // ffh-core keeps no AI_baseBonusVal cache: nothing to reset.
     }
 
     /// C++ `int CvPlayerAI::AI_getUnitClassWeight(UnitClassTypes eUnitClass) const` (CvPlayerAI.cpp:18817-18820)

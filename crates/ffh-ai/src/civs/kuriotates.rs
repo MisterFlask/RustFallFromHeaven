@@ -27,6 +27,11 @@ use crate::Ai;
 pub struct Kuriotates;
 
 impl CivPlay for Kuriotates {
+    /// FfH's `AI_chooseTech` research plan (`tech_plan::goals`).
+    fn tech_goals(&self, _g: &Game, _p: PlayerId) -> super::TechGoals {
+        super::TechGoals { beelines: vec!["TECH_STIRRUPS"], ..Default::default() }
+    }
+
     fn production(&self, ai: &Ai, g: &Game, c: CityId, threat: i32) -> Option<Choice> {
         settlement_defender(g, c).or_else(|| full_city_settler(ai, g, c, threat)).or_else(|| settlement_settler(ai, g, c, threat))
     }

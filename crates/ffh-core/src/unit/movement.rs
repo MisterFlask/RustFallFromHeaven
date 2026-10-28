@@ -55,31 +55,10 @@ fn py_unit_cannot_move_into(_g: &Game, _player: PlayerId, _u: UnitId, _x: i32, _
 }
 
 impl Game {
-    /// C++ `CvUnit::getPathEndTurnPlot` (CvUnit.cpp:2914-2917).
-    /// C++ `getGroup()->getPathEndTurnPlot()` (last path generated for the group).
-    pub fn unit_get_path_end_turn_plot(&self, u: UnitId) -> Option<PlotIdx> {
-        self.group_get_path_end_turn_plot(group_of(self, u))
-    }
-
-    /// C++ `CvUnit::generatePath` (CvUnit.cpp:2920-2923).
-    /// C++ `getGroup()->generatePath(plot(), pToPlot, iFlags, bReuse, piPathTurns)`; `flags` are `MOVE_*`.
-    pub fn unit_generate_path(
-        &self,
-        u: UnitId,
-        to: PlotIdx,
-        flags: i32,
-        reuse: bool,
-        path_turns: Option<&mut i32>,
-    ) -> bool {
-        let from = self.unit_plot(u);
-        let result = self.group_generate_path(group_of(self, u), from, to, flags, reuse);
-
-        // C++ `CvSelectionGroup::generatePath`: `*piPathTurns = MAX_INT` unless a path was found.
-        if let Some(path_turns) = path_turns {
-            *path_turns = result.unwrap_or(MAX_INT);
-        }
-
-        result.is_some()
+    /// C++ `CvUnit::generatePath` (CvUnit.cpp:2920-2923): `getGroup()->generatePath(plot(),
+    /// pToPlot, iFlags)`; `flags` are `MOVE_*`. See [`Game::group_find_path`].
+    pub fn unit_find_path(&self, u: UnitId, to: PlotIdx, flags: i32) -> Option<crate::group::GroupPath> {
+        self.group_find_path(group_of(self, u), self.unit_plot(u), to, flags)
     }
 
     /// C++ `CvUnit::canEnterTerritory` (CvUnit.cpp:2926-2987).

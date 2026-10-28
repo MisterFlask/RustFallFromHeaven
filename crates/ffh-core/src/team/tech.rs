@@ -3,9 +3,7 @@
 //! water work, extra water sight, improvement yields, building effects, turn processing
 //! and circumnavigation.
 
-#![allow(unused_variables)]
-#![allow(unused_imports)]
-use super::{civ_team_ids, is_option};
+use super::civ_team_ids;
 use crate::defs::*;
 use crate::controller::AiHook;
 use crate::game::Game;
@@ -546,7 +544,6 @@ impl Game {
                         // every 10 turns; production is the controller's decision).
                         self.ai_hook(p, AiHook::NowHasTech(p, tech));
 
-                        self.player_invalidate_yield_rank_cache(p, None);
                     }
                 }
 
@@ -854,14 +851,6 @@ impl Game {
                         }
                     }
                 }
-            }
-        }
-
-        // AI_updateBonusValue() for every alive member player of `other` (the bonus value cache
-        // read by AI_foundValue).
-        for p in self.player_ids() {
-            if self.players[p].alive && self.players[p].team == other {
-                self.player_ai_update_bonus_value(p);
             }
         }
     }

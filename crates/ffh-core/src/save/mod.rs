@@ -21,10 +21,8 @@
 //!   * `map_script`: only used while generating the map (`game_init`); a loaded game gets the
 //!     default script;
 //!   * `dying`: empty outside `unit_kill`;
-//!   * `telemetry`: observation only; a loaded game has it off.
-//!
-//!   Rules caches are saved as they are (`Player::ai_bonus_value`, the city rank caches, the
-//!   path finders' kept search trees), so nothing has to be recomputed after loading.
+//!   * `telemetry`: observation only; a loaded game has it off;
+//!   * the path finders: scratch storage for searches, holding nothing between them.
 //!
 //! **Turn boundaries.** Save between two `update()` calls while no player's turn is active
 //! (`num_game_turn_active == 0`, see [`Game::at_turn_boundary`]): the next `update()` then starts
@@ -33,7 +31,7 @@
 //! controller that remembers what it already did this turn will not.
 //!
 //! **Adding state.** Every saved struct is written by destructuring it exhaustively
-//! (`persist_struct!` in `state.rs`, the `Game` impl below, `PathFinder` in `path_finder.rs`),
+//! (`persist_struct!` in `state.rs`, the `Game` impl below),
 //! so a new field fails to compile until it is saved. Add it to the list in declaration order
 //! and bump [`FORMAT_VERSION`].
 
@@ -42,12 +40,14 @@ mod state;
 
 pub use io::{Persist, Reader, Writer};
 
+use std::cell::RefCell;
 use std::fmt;
 
 use crate::controller::null_controller;
 use crate::defs::NUM_CITY_PLOTS;
 use crate::game::Game;
 use crate::mapgen::default_map_script;
+use crate::path::{FinderKind, PathFinder};
 use ffh_data::*;
 
 /// First bytes of every save.
@@ -59,7 +59,9 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 /// - 1: first layout.
 /// - 2: score v2 (docs/SCORE.md): `player_score`, `team_score` and `Player::score_history` hold
 ///   shares of the world in basis points instead of FFH2's `calculateScore` (no new fields).
-pub const FORMAT_VERSION: u32 = 2;
+/// - 3: no rules caches: the path finders, `Player::ai_bonus_value` and the city rank caches
+///   are gone (computed when needed).
+pub const FORMAT_VERSION: u32 = 3;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -290,12 +292,10 @@ fn write_game(g: &Game, w: &mut Writer) {
         map_script: _,
         dying: _,
         telemetry: _,
-        path_finder,
-        step_finder,
-        route_finder,
-        border_finder,
-        area_finder,
-        plot_group_finder,
+        // Scratch storage for searches (path.rs, "No reuse"): not saved.
+        path_finder: _,
+        step_finder: _,
+        border_finder: _,
     } = g;
     setup.write(w);
     map.write(w);
@@ -396,12 +396,6 @@ fn write_game(g: &Game, w: &mut Writer) {
     num_culture_victory_cities.write(w);
     culture_victory_culture_level.write(w);
     trophies.write(w);
-    path_finder.write(w);
-    step_finder.write(w);
-    route_finder.write(w);
-    border_finder.write(w);
-    area_finder.write(w);
-    plot_group_finder.write(w);
 }
 
 /// Reads the fields `write_game` wrote, in the same order (struct literal fields are evaluated
@@ -512,12 +506,9 @@ fn read_game(d: &'static GameData, r: &mut Reader<'_>) -> Result<Game, LoadError
         map_script: default_map_script(),
         dying: Vec::new(),
         telemetry: crate::telemetry::Telemetry::off(),
-        path_finder: Persist::read(r)?,
-        step_finder: Persist::read(r)?,
-        route_finder: Persist::read(r)?,
-        border_finder: Persist::read(r)?,
-        area_finder: Persist::read(r)?,
-        plot_group_finder: Persist::read(r)?,
+        path_finder: RefCell::new(PathFinder::new(FinderKind::Path)),
+        step_finder: RefCell::new(PathFinder::new(FinderKind::Step)),
+        border_finder: RefCell::new(PathFinder::new(FinderKind::Border)),
     };
     if g.players.is_empty() || g.teams.len() != g.players.len() {
         return Err(LoadError::Corrupt(format!("{} players and {} teams", g.players.len(), g.teams.len())));

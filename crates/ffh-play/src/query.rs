@@ -1,6 +1,6 @@
-//! Queries (design §3, §4.6): what a client reads. Every query is pure: it runs on the game under
-//! a [`QueryGuard`](crate::guard::QueryGuard), keeps to the allow-list of §2.5 (no game path
-//! finder, no AI valuations), and sees the game from the human's side only (the fog rules of
+//! Queries (design §3, §4.6): what a client reads. Every query is pure: it reads `&Game` (which
+//! has no side effects: ffh-core keeps no caches written by reads), keeps to the allow-list of
+//! §2.5 (no game path finder, no AI valuations), and sees the game from the human's side only (the fog rules of
 //! [`crate::view::fog`]), unless debug reveal is on.
 //!
 //! A query is decoded from the protocol ([`Query::from_json`]) and answered by [`run`] with a
@@ -18,7 +18,6 @@ use ffh_data::{CivicType, DiploCommentType};
 use ffh_core::path::{FinderKind, PathFinder};
 
 use crate::decision::Decision;
-use crate::guard::QueryGuard;
 use crate::json::{FieldError, Json};
 use crate::report::{MessageStore, Report};
 use crate::view::map::MapTracker;
@@ -307,13 +306,11 @@ pub struct Ctx<'a> {
     pub observe: Option<i32>,
 }
 
-/// Answers `q` from `g` for `ctx.h` (under a `QueryGuard`).
+/// Answers `q` from `g` for `ctx.h`.
 pub fn run(g: &Game, ctx: &Ctx, q: &Query) -> Result<Json, QueryErr> {
-    let guard = QueryGuard::new(g);
     let reveal = UiState::lock(ctx.ui).reveal;
-    let v = Viewer::new(&guard, ctx.h, reveal);
+    let v = Viewer::new(g, ctx.h, reveal);
     let busy = |what: &str| QueryErr::Busy(format!("{what} is not available during a decision"));
-    let finders = || if guard.finders_busy() { Err(QueryErr::Busy("a rules call holds the path finders".into())) } else { Ok(()) };
     let out = match q {
         Query::Status => view::status(&v, ctx),
         Query::Pending if ctx.observe.is_some() => crate::decision::Pending::default().to_json(),
@@ -328,12 +325,8 @@ pub fn run(g: &Game, ctx: &Ctx, q: &Query) -> Result<Json, QueryErr> {
             ui.map.reply(*since, epoch.as_deref())
         }
         Query::Plot { x, y } => view::map::plot(&v, *x, *y)?,
-        Query::Group { units } => {
-            finders()?;
-            view::units::group(&v, units)?
-        }
+        Query::Group { units } => view::units::group(&v, units)?,
         Query::Path { units, x, y, flags } => {
-            finders()?;
             // The search runs without the lock: the finder is taken out and put back (a fresh
             // one stays if the search panics, which is harmless for a cache).
             let mut finder = std::mem::replace(&mut UiState::lock(ctx.ui).finder, PathFinder::new(FinderKind::Path));
@@ -341,10 +334,7 @@ pub fn run(g: &Game, ctx: &Ctx, q: &Query) -> Result<Json, QueryErr> {
             UiState::lock(ctx.ui).finder = finder;
             r?
         }
-        Query::Combat { units, x, y } => {
-            finders()?;
-            view::units::combat(&v, units, *x, *y)?
-        }
+        Query::Combat { units, x, y } => view::units::combat(&v, units, *x, *y)?,
         Query::City { city } => view::city::city(&v, *city)?,
         Query::Techs => view::player::techs(&v),
         Query::Civics { with } => view::player::civics(&v, with),

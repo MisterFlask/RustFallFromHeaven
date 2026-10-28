@@ -787,26 +787,28 @@ function syncSkin() {
   renderCityPanel();
 }
 
-/** Turns the 3D renderer on; when it cannot run, says so and draws with the art (or flat). */
+/** Turns the 3D renderer on; when it cannot run, says so and draws with the default renderer (the
+ *  isometric map, `rendererChoice`). Not the art: at boot this runs before the art has loaded, and
+ *  `lookLoaded` switches to the art only when it was the choice, so the map would stay flat. The
+ *  remembered choice stays "3d": the next page tries again. */
 async function use3d() {
   const ok = await mapView.useR3d(true);
   syncSkin();
   if (ok) return;
   if (mapView.r3dError?.code === "software-webgl") {
-    toast(`${mapView.r3dError.message} Enable hardware acceleration in your browser (or add ?force3d=1 to try anyway); using the 2D map.`, "error", 15000);
+    toast(`${mapView.r3dError.message} Enable hardware acceleration in your browser (or add ?force3d=1 to try anyway); using the isometric map.`, "error", 15000);
   } else {
-    toast("The 3D renderer cannot run in this browser (it needs WebGL2); using the 2D map.", "error");
+    toast("The 3D renderer cannot run in this browser (it needs WebGL2); using the isometric map.", "error");
   }
-  if (look.art) mapView.useArt(true);
+  setRenderer("iso");
 }
 
-// The 3D renderer lost its WebGL context (a driver reset): the 2D map until the page is reloaded.
+// The 3D renderer lost its WebGL context (a driver reset): the isometric map (the default, as in
+// use3d) until the page is reloaded.
 window.addEventListener("ffh:r3d-lost", () => {
   if (!mapView.r3d) return;
-  mapView.useR3d(false);
-  if (look.art) mapView.useArt(true);
-  syncSkin();
-  toast("The 3D renderer lost its graphics context; using the 2D map until the page is reloaded.", "error");
+  setRenderer("iso");
+  toast("The 3D renderer lost its graphics context; using the isometric map until the page is reloaded.", "error");
 });
 
 window.ffh = { S, get mapView() { return mapView; }, units, screens, empire, tools, api, emit, ready: false, tab: currentTab, setLayer, openScreen, look, setRenderer };

@@ -19,10 +19,9 @@
 //! every DLL caller holds a `CvPlayerAI` (`GET_PLAYER` is `CvPlayerAI::getPlayer`;
 //! `AI_foundValue` calls it on `this`), so the effective default is 1.
 //!
-//! `AI_baseBonusVal` is cached per player as in C++ (`Player::ai_bonus_value`, C++
-//! `m_aiBonusValue`): filled on first use and reset by `player_ai_update_bonus_value` (each
-//! turn in `AI_doTurnPre`'s place, on team merge and empire split), so a value can lag behind
-//! changes to the player's cities or techs exactly as in C++.
+//! `AI_baseBonusVal` is computed when asked (not in C++: `m_aiBonusValue` cached it from const
+//! code until the next `AI_updateBonusValue`, so a value could lag behind the player's cities
+//! and techs, and whichever read came first decided what later reads saw).
 //!
 //! Integer arithmetic is the C++ `int` arithmetic: truncating division, and wrapping on
 //! overflow like the MSVC build (the starting-location distance scaling multiplies the value
@@ -888,31 +887,8 @@ impl Game {
     }
 
     /// C++ `CvPlayerAI::AI_baseBonusVal(eBonus)`: the value of a bonus without corporations,
-    /// cached per player in `ai_bonus_value` (C++ `m_aiBonusValue`) until the next
-    /// `player_ai_update_bonus_value`.
+    /// computed when asked (C++ caches it per player for the turn, see the module docs).
     pub fn player_ai_base_bonus_val(&self, p: PlayerId, bonus: BonusType) -> i32 {
-        match self.players[p].ai_bonus_value.get(bonus.idx()) {
-            Some(cached) if cached.get() != -1 => cached.get(),
-            Some(cached) => {
-                let value = self.player_ai_base_bonus_val_uncached(p, bonus);
-                cached.set(value);
-                value
-            }
-            None => self.player_ai_base_bonus_val_uncached(p, bonus),
-        }
-    }
-
-    /// C++ `CvPlayerAI::AI_updateBonusValue()`: forget the cached base bonus values (C++ calls it
-    /// in `AI_doTurnPre` for every player each turn, in `CvTeam::addTeam` and `splitEmpire`).
-    pub fn player_ai_update_bonus_value(&self, p: PlayerId) {
-        for cached in &self.players[p].ai_bonus_value {
-            cached.set(-1);
-        }
-    }
-
-    /// C++ `CvPlayerAI::AI_baseBonusVal` (value of a bonus without corporations), computed fresh
-    /// (C++ caches it in `m_aiBonusValue`, see the module docs).
-    fn player_ai_base_bonus_val_uncached(&self, p: PlayerId, bonus: BonusType) -> i32 {
         let d = self.d;
         let pl = &self.players[p];
         let team = pl.team;

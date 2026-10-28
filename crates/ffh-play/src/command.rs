@@ -4,7 +4,7 @@
 //! `selectionListGameNetMessage`, `cityPushOrder`, the `handleAction` confirmations, the
 //! DECLAREWARMOVE / LOADUNIT / DIPLOVOTE / EVENT popups).
 //!
-//! Validation runs before any rules call and is pure (`&Game`, under a `QueryGuard`): ids exist
+//! Validation runs before any rules call and is pure (`&Game`): ids exist
 //! and belong to the human, type indices are in range, and the rules' own `can*` gates pass, as
 //! the exe only offers legal actions. A command that would need a C++ confirmation popup returns
 //! [`Confirm`] (nothing changes); the client resends it with the confirmation flag.

@@ -1,4 +1,4 @@
-//! The standing army against rival civilizations (switch `RIVAL_DEFENSE`): how many defenders
+//! The standing army against rival civilizations (round 7e): how many defenders
 //! beyond the barbarian and capital quotas our cities hold, and where.
 //!
 //! **In peacetime: deterrence** ([`deterrence`]). An expert keeps enough army that no neighbour who
@@ -229,7 +229,7 @@ pub fn rival_defenders(g: &Game, c: CityId) -> i32 {
 /// peacetime defenders deter the neighbour that would see us as an easy target ([`deterrence`]).
 pub fn all_rival_defenders(g: &Game, p: PlayerId) -> BTreeMap<CityId, i32> {
     let mut out = BTreeMap::new();
-    if !crate::switches::RIVAL_DEFENSE.on(g, p) || g.player_is_barbarian(p) {
+    if g.player_is_barbarian(p) {
         return out;
     }
     let rivals = rivals(g, p);
@@ -277,11 +277,8 @@ pub fn all_rival_defenders(g: &Game, p: PlayerId) -> BTreeMap<CityId, i32> {
 
 /// May defender `u` of our city on `plot` attack out of it? Our units' defense power there must
 /// be at least [`SORTIE_EDGE`] percent of the attack power of the enemy units within two plots,
-/// fog included ([`crate::view::known_threat`]). Always true with the switch off.
+/// fog included ([`crate::view::known_threat`]).
 pub fn sortie_ok(g: &Game, p: PlayerId, plot: PlotIdx, u: UnitId) -> bool {
-    if !crate::switches::RIVAL_DEFENSE.on(g, p) {
-        return true;
-    }
     let team = g.players[p].team;
     let (x, y) = g.map.xy(plot);
     // Nothing next to the city to attack: nothing to hold back.

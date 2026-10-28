@@ -9,12 +9,10 @@
 //! disabled by their USE_*_CALLBACK defines; `getExtraCost` returns 0; `doGold`, `doResearch`
 //! and `skipResearchPopup` return False (= run the C++ default).
 
-#![allow(unused_imports)]
 
 use crate::controller::AiHook;
 use crate::game::Game;
 use crate::ids::*;
-use crate::structs::*;
 use ffh_data::*;
 
 /// Out-parameters of C++ `CvPlayer::calculateUnitCost(int& iFreeUnits, ...)`.
@@ -192,29 +190,6 @@ impl Game {
 
         for c in city_list {
             self.city_update_trade_routes(c);
-        }
-    }
-
-    /// C++ `CvPlayer::invalidatePopulationRankCache`.
-    pub fn player_invalidate_population_rank_cache(&mut self, p: PlayerId) {
-        for c in self.players[p].cities.clone() {
-            self.city_invalidate_population_rank_cache(c);
-        }
-    }
-
-    /// C++ `CvPlayer::invalidateYieldRankCache(eYield = NO_YIELD)` (every yield is invalidated).
-    pub fn player_invalidate_yield_rank_cache(&mut self, p: PlayerId, _yield_type: Option<YieldType>) {
-        // C++ quirk: eYield is ignored; every city invalidates all yields (`invalidateYieldRankCache()`).
-        for c in self.players[p].cities.clone() {
-            self.city_invalidate_yield_rank_cache(c, None);
-        }
-    }
-
-    /// C++ `CvPlayer::invalidateCommerceRankCache(eCommerce = NO_COMMERCE)` (every commerce is invalidated).
-    pub fn player_invalidate_commerce_rank_cache(&mut self, p: PlayerId, _commerce: Option<CommerceType>) {
-        // C++ quirk: eCommerce is ignored; every city invalidates all commerce types.
-        for c in self.players[p].cities.clone() {
-            self.city_invalidate_commerce_rank_cache(c, None);
         }
     }
 
@@ -1378,7 +1353,6 @@ impl Game {
         if change != 0 {
             self.players[p].yield_rate_modifier[yield_type.idx()] += change;
 
-            self.player_invalidate_yield_rank_cache(p, Some(yield_type));
 
             if yield_type == YieldType::YIELD_COMMERCE {
                 self.player_update_commerce(p);
@@ -1393,7 +1367,6 @@ impl Game {
         if change != 0 {
             self.players[p].capital_yield_rate_modifier[yield_type.idx()] += change;
 
-            self.player_invalidate_yield_rank_cache(p, Some(yield_type));
 
             if let Some(capital_city) = self.player_get_capital_city(p) {
                 if yield_type == YieldType::YIELD_COMMERCE {

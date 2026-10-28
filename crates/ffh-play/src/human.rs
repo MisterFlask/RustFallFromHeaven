@@ -26,7 +26,6 @@ use ffh_core::structs::*;
 use ffh_data::*;
 
 use crate::decision::{self, Decision};
-use crate::guard::QueryGuard;
 use crate::journal::{Journal, Line, Stamp};
 use crate::json::Json;
 use crate::query::{Ctx, Query, QueryErr, UiState};
@@ -82,7 +81,7 @@ pub enum Answer {
 /// Answers blocking decisions (design §2.4).
 pub trait Answerer: Send + Sync {
     /// On the game thread, inside a rules call, with the `&Game` the rules handed the
-    /// controller (under a `QueryGuard`: reads are free).
+    /// controller (reads of `&Game` have no side effects).
     fn ask(&self, g: &Game, d: &Decision) -> Answer;
 
     /// [`Answerer::ask`] with a reader that also answers the protocol's queries, as a client
@@ -93,8 +92,7 @@ pub trait Answerer: Send + Sync {
     }
 }
 
-/// What an [`Answerer`] can read while a blocking decision is open: the game (under the
-/// decision's `QueryGuard`) and the queries of the protocol, from the deciding player's side.
+/// What an [`Answerer`] can read while a blocking decision is open: the game and the queries of the protocol, from the deciding player's side.
 /// The message log, the turn report and the saves list are not available inside a rules call
 /// (`busy`); a query that panics is caught (design §2.4) and answered `busy`.
 pub struct DecisionReader<'a> {
@@ -105,7 +103,7 @@ pub struct DecisionReader<'a> {
 }
 
 impl DecisionReader<'_> {
-    /// The game, as the rules handed it to the controller (guarded).
+    /// The game, as the rules handed it to the controller.
     pub fn game(&self) -> &Game {
         self.g
     }
@@ -267,8 +265,7 @@ impl HumanController {
         // the decision): the decision's view is a new one, and so is the view after it.
         UiState::lock(&self.ui).view_version += 1;
         let answer = {
-            let guard = QueryGuard::new(g);
-            let reader = DecisionReader { g: &guard, shared: &self.shared, ui: &self.ui, decision: &d };
+            let reader = DecisionReader { g, shared: &self.shared, ui: &self.ui, decision: &d };
             self.answerer.ask_with(&reader, &d)
         };
         *self.shared.open_decision.lock().unwrap() = None;
@@ -287,11 +284,10 @@ impl HumanController {
         option
     }
 
-    /// An advisor computation shown to the human as a suggestion: run under a guard, so it is
+    /// An advisor computation shown to the human as a suggestion: a read of `&Game`, so it is
     /// free of side effects on the game (C++ never computes it for a human).
     fn suggest<R>(&self, g: &Game, f: impl FnOnce(&Game) -> R) -> R {
-        let guard = QueryGuard::new(g);
-        f(&guard)
+        f(g)
     }
 }
 

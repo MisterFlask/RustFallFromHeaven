@@ -50,21 +50,21 @@ pub fn effects(d: &GameData, p: ProjectType) -> String {
     };
     // C++ `isWorldProject`, `isTeamProject`.
     if *max_global_instances != -1 {
-        line(&mut b, txt(d, "TXT_KEY_PROJECT_WORLD_NUM_ALLOWED", "[ICON_BULLET]World Project (%d1_Num Allowed)", &[Arg::N(*max_global_instances)]));
+        line(&mut b, txt(d, "TXT_KEY_PROJECT_WORLD_NUM_ALLOWED", &[Arg::N(*max_global_instances)]));
     }
     if *max_team_instances != -1 {
-        line(&mut b, txt(d, "TXT_KEY_PROJECT_TEAM_NUM_ALLOWED", "[ICON_BULLET]Team Project (%d1_Num Allowed)", &[Arg::N(*max_team_instances)]));
+        line(&mut b, txt(d, "TXT_KEY_PROJECT_TEAM_NUM_ALLOWED", &[Arg::N(*max_team_instances)]));
     }
     if *nuke_interception != 0 {
-        line(&mut b, txt(d, "TXT_KEY_PROJECT_CHANCE_INTERCEPT_NUKES", "[ICON_BULLET]%D1_Mod%% Chance of Intercepting [LINK=CONCEPT_NUKES]Nukes[\\LINK]", &[Arg::N(*nuke_interception)]));
+        line(&mut b, txt(d, "TXT_KEY_PROJECT_CHANCE_INTERCEPT_NUKES", &[Arg::N(*nuke_interception)]));
     }
     if *tech_share != 0 {
-        line(&mut b, txt(d, "TXT_KEY_PROJECT_TECH_SHARE", "[ICON_BULLET]Grants all Technologies acquired by any %d1_Num Known [NUM1:Civilization:Civilizations]", &[Arg::N(*tech_share)]));
+        line(&mut b, txt(d, "TXT_KEY_PROJECT_TECH_SHARE", &[Arg::N(*tech_share)]));
     }
     if *allows_nukes {
-        line(&mut b, txt(d, "TXT_KEY_PROJECT_ENABLES_NUKES", "[ICON_BULLET]Enables Nuclear Attacks (For all Players)", &[]));
+        line(&mut b, txt(d, "TXT_KEY_PROJECT_ENABLES_NUKES", &[]));
     }
-    let enables_special = |name: &str| txt(d, "TXT_KEY_PROJECT_ENABLES_SPECIAL", "[ICON_BULLET]Enables %s1_Name (For all Players)", &[Arg::S(name)]);
+    let enables_special = |name: &str| txt(d, "TXT_KEY_PROJECT_ENABLES_SPECIAL", &[Arg::S(name)]);
     if let Some(su) = everyone_special_unit {
         line(&mut b, enables_special(&display(d, *su)));
     }
@@ -75,46 +75,46 @@ pub fn effects(d: &GameData, p: ProjectType) -> String {
         let (max, min) = (victory_threshold[v], victory_min_threshold[v]);
         if max > 0 {
             let n = if max == min { max.to_string() } else { format!("{min}-{max}") };
-            line(&mut b, txt(d, "TXT_KEY_PROJECT_REQUIRED_FOR_VICTORY", "[ICON_BULLET]%s1 Required for %s2_victory Victory", &[Arg::S(&n), Arg::S(&display(d, v))]));
+            line(&mut b, txt(d, "TXT_KEY_PROJECT_REQUIRED_FOR_VICTORY", &[Arg::S(&n), Arg::S(&display(d, v))]));
         }
     }
     // The projects it unlocks (C++ checks each against the city; without one, all).
     let mut first = true;
     for o in d.projects.keys().filter(|&o| d.projects[o].anyone_project_prereq == Some(p)) {
-        let start = format!("{NEWLINE}{}", txt(d, "TXT_KEY_PROJECT_REQUIRED_TO_CREATE_ANYONE", "Required for Anyone to Create[SPACE]", &[]));
+        let start = format!("{NEWLINE}{}", txt(d, "TXT_KEY_PROJECT_REQUIRED_TO_CREATE_ANYONE", &[]));
         list_help(&mut b, &start, &color("COLOR_PROJECT_TEXT", &display(d, o)), ", ", first);
         first = false;
     }
     let mut first = true;
     for o in d.projects.keys().filter(|&o| d.projects[o].projects_needed[p] > 0) {
-        let start = format!("{NEWLINE}{}", txt(d, "TXT_KEY_PROJECT_REQUIRED_TO_CREATE", "Required to Create[SPACE]", &[]));
+        let start = format!("{NEWLINE}{}", txt(d, "TXT_KEY_PROJECT_REQUIRED_TO_CREATE", &[]));
         list_help(&mut b, &start, &color("COLOR_PROJECT_TEXT", &display(d, o)), ", ", first);
         first = false;
     }
     // FfH.
     if *modify_global_counter != 0 {
-        line(&mut b, txt(d, "TXT_KEY_MESSAGE_MODIFY_GLOBAL_COUNTER", "[ICON_BULLET]%D1 to the Armageddon Counter", &[Arg::N(*modify_global_counter)]));
+        line(&mut b, txt(d, "TXT_KEY_MESSAGE_MODIFY_GLOBAL_COUNTER", &[Arg::N(*modify_global_counter)]));
     }
     if let Some(civ) = prereq_civilization {
-        line(&mut b, txt(d, "TXT_KEY_IMPROVEMENT_PREREQ_CIVILIZATION", "[ICON_BULLET]Requires %s1_civilization civilization", &[Arg::S(&display(d, *civ))]));
+        line(&mut b, txt(d, "TXT_KEY_IMPROVEMENT_PREREQ_CIVILIZATION", &[Arg::S(&display(d, *civ))]));
     }
     if *prereq_global_counter != 0 {
-        line(&mut b, req(d, "TXT_KEY_UNIT_PREREQ_GLOBAL_COUNTER", "[COLOR_WARNING_TEXT]Requires an Armageddon Count of %D1 or higher[COLOR_REVERT]", &[Arg::N(*prereq_global_counter)]));
+        line(&mut b, req(d, "TXT_KEY_UNIT_PREREQ_GLOBAL_COUNTER", &[Arg::N(*prereq_global_counter)]));
     }
     // What it requires (C++: without a city, every requirement; the banned-nukes line needs one),
     // uncoloured (`super::unwarned`).
     if let Some(o) = anyone_project_prereq {
-        line(&mut b, req(d, "TXT_KEY_PROJECT_REQUIRES_ANYONE", "[COLOR_WARNING_TEXT]Requires Someone to Create [LINK=literal]%s1_Name[\\LINK][COLOR_REVERT]", &[Arg::S(&display(d, *o))]));
+        line(&mut b, req(d, "TXT_KEY_PROJECT_REQUIRES_ANYONE", &[Arg::S(&display(d, *o))]));
     }
     for o in d.projects.keys() {
         let n = projects_needed[o];
         if n > 0 {
-            line(&mut b, req(d, "TXT_KEY_PROJECT_REQUIRES_NO_CITY", "[COLOR_WARNING_TEXT]Requires [LINK=literal]%s1[\\LINK] (%d2)[COLOR_REVERT]", &[Arg::S(&display(d, o)), Arg::N(n)]));
+            line(&mut b, req(d, "TXT_KEY_PROJECT_REQUIRES_NO_CITY", &[Arg::S(&display(d, o)), Arg::N(n)]));
         }
     }
     // The Civilopedia's (`bCivilopediaText`) line: the city's tooltip leaves it out.
     if let Some(v) = victory_prereq {
-        line(&mut b, txt(d, "TXT_KEY_PROJECT_REQUIRES_STRING_VICTORY", "[ICON_BULLET]%s1_Name Victory must be Enabled", &[Arg::S(&display(d, *v))]));
+        line(&mut b, txt(d, "TXT_KEY_PROJECT_REQUIRES_STRING_VICTORY", &[Arg::S(&display(d, *v))]));
     }
     // The resources that speed it up, as the Civilopedia writes them (a bulleted line each; the
     // tooltip appends them to the cost line, which is not here).
@@ -127,9 +127,9 @@ pub fn effects(d: &GameData, p: ProjectType) -> String {
                 format!(
                     "[ICON_BULLET]{}",
                     if n == 100 {
-                        txt(d, "TXT_KEY_PROJECT_DOUBLE_SPEED_WITH", "Double Production Speed with [LINK=literal]%s1_Bonus[\\LINK]", &[Arg::S(&name)])
+                        txt(d, "TXT_KEY_PROJECT_DOUBLE_SPEED_WITH", &[Arg::S(&name)])
                     } else {
-                        txt(d, "TXT_KEY_PROJECT_BUILDS_FASTER_WITH", "Builds %d1_Mod%% Faster with [LINK=literal]%s2_Bonus[\\LINK]", &[Arg::N(n), Arg::S(&name)])
+                        txt(d, "TXT_KEY_PROJECT_BUILDS_FASTER_WITH", &[Arg::N(n), Arg::S(&name)])
                     }
                 ),
             );
