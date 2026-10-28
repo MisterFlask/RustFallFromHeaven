@@ -288,6 +288,49 @@ change also in full games, the allied-barbarian one with the Clan of Embers forc
    the build-and-scrap pattern is attacked again, the lever is the cost of the reaction (train
    the cheapest adequate defender, or move one from a city with a spare), not holding units.
 
+### One garrison quota for production and placement (2026-10-28, reverted)
+
+1. A review found two quotas that disagree. Production's (`production::decide`: one, the capital,
+   a threat in sight within 3 plots, a lair or barbarians within 3, the rival defenders, a
+   defensive leader, the victory guard; the second defender after turn 30 near barbarians within
+   4) and placement's (`units::garrison_quota`: one, the capital, the danger map -- what can
+   strike the city next turn --, the rival defenders). A defender trained for a term placement
+   lacks is spare there and walks to a needier city while its city trains another. Traced (seeds
+   1-12, 300 turns, 72 civs): of 1757 defenders trained and 1266 walks from one of our cities to
+   another, 248 left their city below production's quota and 162 of those were followed within
+   15 turns by a defender trained there; 480 walks in all were followed by one (the first of them
+   a second defender in 196). The suspected terms were not the cause: the defensive leader term
+   never fires (no FFH2 0.41 leader has `iAIValueDefense` above 100), the victory guard was on 0
+   of the 1757 trainings, a lair behind 11 of the 248. The gap is the two threat models: in 167
+   of the 248 the city saw barbarians within 3 plots that could not strike it next turn, and 187
+   of them walked to a city that enemies could strike next turn. `defense::quota(g, c, danger,
+   rival)` (switch `GARRISON_QUOTA`) was one quota for both: the union of the threat terms
+   (unless the garrison holds the raiders), the lair and barbarian terms, the second defender as
+   a floor of two, the rival defenders, the treasury cap, the victory guard; placement capped at 5.
+2. It did not stop the walking. Traced (seeds 1-12): walks 1266 -> 1663 (more cities now asked
+   for a defender, so more spares walked), walks followed by a defender trained in the city left
+   480 -> 676, defenders trained 1757 -> 1707. Eight forks at walks that left a city below the
+   one quota (seeds 1-4, the game played with the old quotas to the fork, 30 turns): in seed 1
+   turn 111 (Luchuirp) both branches lost the threatened city to barbarians four turns later; the
+   old placement retook it at turn 118 with the defenders it had sent, the one quota kept five
+   in the sending city and never did (2 cities against 4 at turn 141); in seed 2 turn 170
+   (Ljosalfar) the city the one quota held its defenders in fell at turn 196 while the old
+   branch kept all five cities; the other six changed no city. Games, the same binary with the
+   switch off (6 civs, standard, 300 turns): development seeds 1-48 legacy@300 +1.3% (t 0.59),
+   share@300 -1.2% (t -1.43), cities lost to the barbarians -33% (t -2.1); fresh seeds
+   47001-47048 legacy@300 +0.4% (t 0.24), share@300 -0.3% (t -0.37), cities lost to the
+   barbarians -13.5% (t -0.74).
+3. The disagreement is triage, not churn: a city that sees raiders three or four plots out gives
+   its spare to the city they can strike next turn and trains a replacement, which is what the
+   previous entry calls the cheap reaction (move one from a city with a spare). One count for
+   both sides makes the city that only sees raiders hold the defender the struck city needs. If
+   the two are reconciled again, the shared notion is urgency, not a count: placement ranks
+   cities by what can strike them against their garrison (`View::peril`), and production knows
+   it trains reserves for the cities around it. Noticed, not changed: in placement's search for
+   a needy city (`units::garrison_unit`), a city whose defenders already took their orders this
+   turn counts them twice (committed and present), so spares walk mostly to cities whose
+   garrisons come later in the turn's order.
+
 ### Settlers under a threat the garrison holds (reverted)
 
 1. `expansion::settler_choice` trains no settler while any visible enemy is within 3 plots,

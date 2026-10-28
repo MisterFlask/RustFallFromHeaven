@@ -156,7 +156,9 @@ counters, war success, war plans) that the diplomacy below reads.
 4. **View** (`view.rs`): enemies, a *danger map* (each visible enemy unit's attack power
    added to the plots it can reach next turn; animals only on unowned plots since they cannot
    enter owned land; city garrisons ignored), field-army targets, cities in peril, the road
-   plan, escort requests. O(enemy units x reach^2 + our cities).
+   plan, escort requests. O(enemy units x reach^2 + our cities). Built after diplomacy, since
+   war declarations change it; steps 1-3 read only its header (`View::header`: who we are at
+   war with), so the turn analyses it once (`View::analyze`).
 5. **Units** (`units.rs`): promotions and upgrades first, for every unit (switch
    `PROMOTE_ALL`, as C++ `AI_doTurnUnitsPost` promotes every unit; before it only a group's head,
    before it acted, and units that get no orders, so a unit inside a marching stack waited for its

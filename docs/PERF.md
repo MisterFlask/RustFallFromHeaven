@@ -72,6 +72,7 @@ Each change alone against the base, D1, median of 3 interleaved rounds:
 | hot predicates: the 9 promotions with a combat mod listed at load; `isAlwaysHostile` once in `isEnemy`; empty-plot early returns | `unit/combat.rs`, `unit/movement.rs`, `utils.rs`, `plot/units.rs` | -9% |
 | workers: AI build bans resolved once per search, build-independent parts of `build_value` memoized; casting: one castable-spell list per unit | `ffh-ai/src/workers.rs`, `casting.rs`, `magic.rs` | -7% |
 | plot groups: cheap tests before the per-plot heap arrays, flood fill on plot indices, buildings without an effect skipped in bonus processing | `plot/ownership.rs`, `plot_group.rs`, `city/buildings.rs` | -2% (H1: -13%) |
+| the first View of a turn is only its header (`View::header`; the analysis once, after diplomacy) | `ffh-ai/src/view.rs`, `lib.rs` | -0.3% (rounds 1.016 0.997 0.914: noise) |
 | XML element names interned; no per-player unit counts on empty plots in `plot_process_area` | `ffh-data/src/xml.rs`, `plot/geography.rs` | data load -23%, huge-map setup -13% |
 
 Checked: `perf-ab.sh same` IDENTICAL on D1-D4 and V1-V4 and the 3 soak games (save hashes too),
@@ -80,8 +81,7 @@ the test suite, `ffh data` 0 warnings; each change reviewed for a state in which
 Measured and left out: a bool early-exit `AI_getPlotDanger` (-6% alone, nothing measurable after
 the `pathValid` memo, and a second copy of a ported function); skipping feature growth for
 features no neighbour has and the cultural-owner city loop for a lone non-vassal team (about 1%
-together by samples, not measurable); a light first View per turn (0.3%, and it skips a call
-that can fill a saved rank cache).
+together by samples, not measurable).
 
 ## Open: same game
 
