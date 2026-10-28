@@ -17,9 +17,9 @@
 //!
 //! Only what a human could see is read: power, technologies, the world's score shares, distance,
 //! wars and their success. Pure functions of the game state; no RNG, no saved state.
-//! `FFH_AI_VASSAL_OFF=1` turns all of it off (the measurement switch; read once).
-
-use std::sync::OnceLock;
+//! `FFH_AI_VASSAL_OFF=ALL` (or `1`) turns all of it off, `FFH_AI_VASSAL_OFF=X,..` for the players
+//! of those civilizations, each deciding for itself (the measurement switch
+//! [`crate::switches::VASSAL`]; read once).
 
 use ffh_core::game::Game;
 use ffh_core::ids::*;
@@ -42,9 +42,9 @@ const SHARE_BEHIND_PCT: i32 = 50;
 const POWER_CRUSHED: i64 = 2;
 const CITIES_CRUSHED: i32 = 3;
 
-pub fn off() -> bool {
-    static OFF: OnceLock<bool> = OnceLock::new();
-    *OFF.get_or_init(|| std::env::var_os("FFH_AI_VASSAL_OFF").is_some())
+/// Is vassal play off for player `p` (switch [`crate::switches::VASSAL`])?
+pub fn off(g: &Game, p: PlayerId) -> bool {
+    !crate::switches::VASSAL.on(g, p)
 }
 
 pub fn vassal_item(surrender: bool) -> TradeData {
@@ -156,7 +156,7 @@ pub fn crushed_by(g: &Game, team: TeamId, enemy: TeamId) -> Option<&'static str>
 /// neighbour we are hopelessly behind. True when we became a vassal.
 pub fn seek(g: &mut Game, p: PlayerId) -> bool {
     let team = g.players[p].team;
-    if off() || g.players[p].human || g.team_is_human(team) || g.player_is_barbarian(p) || !is_team_leader(g, p) || !free_civ(g, team) {
+    if off(g, p) || g.players[p].human || g.team_is_human(team) || g.player_is_barbarian(p) || !is_team_leader(g, p) || !free_civ(g, team) {
         return false;
     }
     // Capitulation: to the enemy that has done us the most damage.
@@ -209,7 +209,7 @@ fn offer(g: &mut Game, p: PlayerId, master: TeamId, surrender: bool, why: &'stat
 /// deal is not of that kind.
 pub fn agree(g: &Game, p: PlayerId, from: PlayerId, we_give: &[TradeData]) -> Option<bool> {
     let item = we_give.iter().find(|t| is_vassal_item(t))?;
-    if off() || g.players[p].human || !we_give.iter().all(|t| is_vassal_item(t) || t.item_type == TradeableItem::TRADE_PEACE_TREATY) {
+    if off(g, p) || g.players[p].human || !we_give.iter().all(|t| is_vassal_item(t) || t.item_type == TradeableItem::TRADE_PEACE_TREATY) {
         return Some(false);
     }
     let master = g.players[from].team;
@@ -228,7 +228,7 @@ pub fn agree(g: &Game, p: PlayerId, from: PlayerId, we_give: &[TradeData]) -> Op
 /// `None` when the deal is not of that kind.
 pub fn accept_master(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData], we_give: &[TradeData]) -> Option<bool> {
     let item = they_give.iter().find(|t| is_vassal_item(t))?;
-    if off() {
+    if off(g, p) {
         return Some(we_give.is_empty());
     }
     if !we_give.is_empty() {
@@ -262,7 +262,7 @@ pub fn accept_master(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeDa
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::campaign::tests::one_landmass_game;
+    use crate::testkit::one_landmass_game;
 
     /// Player 0 strong (Feudalism, 30 techs, six times the power, most of the world), player 1 a
     /// one-city neighbour with 5 techs; both good.

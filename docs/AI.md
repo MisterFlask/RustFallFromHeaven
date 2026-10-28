@@ -56,7 +56,7 @@ units whose invisibility type hides them (`CvUnit::isInvisible`).
   assassins, shadows, hidden nationality) stay hidden: stealth is how those units and
   civilizations play.
 - **What we attack: fog included** (`view::sees_units`, switch `FOG_ATTACK`): a city's garrison
-  on any revealed plot (`campaign::visible_defenders`, the siege and amphibious planners, the
+  on any revealed plot (`combat_sim::visible_defenders`, the siege and amphibious planners, the
   war gate's `diplomacy::city_best_defense`), hunting targets (`military::find_targets`),
   opportune and empty-city captures (`military::opportune`, `CAPTURE`); stealthed units left
   out. With the switch off, only what is visible: in the fog the siege and amphibious planners
@@ -215,8 +215,8 @@ counters, war success, war plans) that the diplomacy below reads.
    Training Yard for axemen, ...): when one would open a defender or attacker a third
    stronger, about half the cities build it;
 7. extra defenders up to the quota (capital, threat, nearby barbarians, the rival civilizations
-   near the city, leader; with `KEEP_UNITS`, barbarians an interior city's garrison holds add
-   none once units cost gold, see Finance, "Unit support");
+   near the city, leader; barbarians an interior city's garrison holds add none once units
+   cost gold, see Finance, "Unit support");
 8. a small mobile force (1 + cities/2) for barbarians and animals; more workers as worked
    plots need improving; the victory goal's items (`victory::production`: towers, culture in
    the cities nearest legendary; before expansion, item 4, when the goal is 30 turns away);
@@ -335,7 +335,7 @@ takes a city's food surplus from +4 to +6 for one hammer; a Khazad capital that 
 instead of a Granary at turn 49 (its Ale clears the unhappiness that held the city back) has 7
 cities to 6 at turn 148; a Luchuirp capital that builds one instead of Walls, 7 to 5 at turn 202.
 
-**The standing army against rival civilizations** (`defense.rs`, switch `RIVAL_DEFENSE`): how
+**The standing army against rival civilizations** (`defense.rs`, round 7e): how
 many defenders beyond the barbarian and capital quotas our cities hold, and where.
 - *In peacetime, deterrence* (`defense::deterrence`): an expert keeps enough army that no
   neighbour who can reach him and would fight him sees an easy target, and puts it where that
@@ -426,7 +426,7 @@ single hook tagged `bankruptcy-guard`:
   the cities' actual distance and number-of-cities parts; Aristocracy is charged for the
   cottages FfH's AI-only `canBuild` bans under it once Education is near; a structural
   deficit re-checks civics outside the 10-turn cadence when a cheaper civic would win.
-- **Unit support** (`empire::disband`, `finance::disband_military`, switch `KEEP_UNITS`): built
+- **Unit support** (`empire::disband`, `finance::disband_military`; once switch `KEEP_UNITS`): built
   units are kept, by More Naval AI's rule (C++ `CvPlayerAI::AI_doMilitary` /
   `AI_disbandUnit`), brought back by the owner's decision. At peace, while costs take more than
   60% of the commerce (its "funded percent" below 40) and units cost gold, the military unit of
@@ -443,10 +443,10 @@ single hook tagged `bankruptcy-guard`:
   no extra defender for them once units cost gold, since that defender would be kept for good;
   border cities still do, because the defenders trained against raiders are also the ones that
   hold them when a neighbour attacks (round 7d; docs/AI_LOG.md, "More Naval AI's disband rule").
-  With the switch off, the previous rule: while support takes a tenth of the commerce and keeps
-  research below its target (at peace), up to two units a turn go, obsolete ones first (weakest
-  relative to what we can train now): field units beyond 1 + cities/4, garrison units beyond one
-  per city (two in the capital and near barbarians) where no threat is in sight, idle workers
+  The previous rule (the switch off, removed once this was kept): while support takes a tenth
+  of the commerce and keeps research below its target (at peace), up to two units a turn go,
+  obsolete ones first (weakest relative to what we can train now): field units beyond
+  1 + cities/4, garrison units beyond one per city (two in the capital and near barbarians) where no threat is in sight, idle workers
   beyond twice the need; a bankrupt empire scraps surplus garrisons and field units. That rule and
   the build rules both read the moment, so a raider walking in and out of range had cities train
   defenders the treasury scrapped a few turns later; holding defenders by a quota instead lost
@@ -542,7 +542,9 @@ beelines (Amurites Bowyers/Sorcery, Bannor Fanaticism, Calabim Feudalism, Hippus
 Kuriotates Stirrups, Sheaim Corruption of Spirit/Necromancy/Sorcery, Sidar and Svartalfar
 Poisons, Luchuirp Construction then Elementalism/Sorcery, Elohim and Malakim Priesthood, Iron
 Working for the Khazad, Clan of Embers, Doviello, Lanun, Grigori, Illians and Balseraphs, then
-Medicine for the Grigori); the magic spheres once tier 3 and economy tier 2 are reached. The
+Medicine for the Grigori; each civilization's in its module, `CivPlay::tech_goals`, with its
+default military tech and lore religion, so `FFH_AI_CIV_OFF` covers them); the magic spheres
+once tier 3 and economy tier 2 are reached. The
 religion is the first unfounded one of the player's preferences, most preferred first: the
 civ's own (Runes of Kilmorph for the Khazad, Fellowship of Leaves for the elves), the leader's
 favorite early and favorite religions (data; FfH leaves these unset), then -- data-driven from
@@ -754,7 +756,7 @@ research +3.6, legacy -5, every |t| < 1; workers alone also flat). Kept as an ex
 the forests, not for a measured gain. Valuing every improvement on a feature by the clearing
 (the feature's lost yields, its hammers) cost research (docs/AI_LOG.md, "Workers and citizens").
 
-## Field armies (`military.rs`, `campaign.rs`)
+## Field armies (`military.rs`, `campaign.rs`, `combat_sim.rs`)
 
 Each army group is a stack; per decision, in order:
 
@@ -767,9 +769,8 @@ Each army group is a stack; per decision, in order:
    160)`; the targets of our operations are left to their strikes);
 5. attack an adjacent target worth it (never a civ city outside a war plan, nor the target of
    our siege operation, which is left to its strike);
-6. heal (`heal`; switch `HEAL`, on since round 7f -- off, a stack heals where it stands when one
-   unit is over 35% damage and it is safe; More Naval AI's `AI_heal`, fitted to our small
-   stacks): in one of
+6. heal (`heal`, round 7f; More Naval AI's `AI_heal`, fitted to our small stacks; before it, a
+   stack healed where it stood when one unit was over 35% damage and it was safe): in one of
    our cities the wounded (20%+ damage, the field rule's threshold, so a stack leaves a city only
    in a state the field rule accepts: with More Naval AI's 30% it walked out and back each turn,
    "Forks of the healing rule" below) split off and heal while the rest go on; in the field
@@ -786,14 +787,14 @@ Each army group is a stack; per decision, in order:
    lair destroys it; an empty enemy city at war within 2 turns is walked into, `CAPTURE`);
 11. join a bigger stack within 3 turns, else hold in the nearest city.
 
-**Deciding an attack** (switch `FIELD_SIM`, on; round 7g). Every attack in steps 1, 4, 5 and 10 and a
-landing's assault (`naval.rs`) is decided on the simulation of the group attack
-(`military::field_sim`: `campaign::simulate_in_order` in the rules' own attacker order,
+**Deciding an attack** (round 7g). Every attack in steps 1, 4, 5 and 10 and a landing's
+assault (`naval.rs`) is decided on the simulation of the group attack
+(`military::field_sim`: `combat_sim::simulate` in the rules' own attacker order,
 `AI_getBestGroupAttacker` with its `AI_attackOdds`, against the defenders we see) as an expert
 decides (`military::field_go`): attack when the attacker the rules send has good odds (65%, 75%
 for a hurt stack); wear the defenders down at worse odds only when the stack clears the plot
 (every defender 80% sure to fall) and the kills are worth more than the expected losses
-(`gain`: `campaign::worth` = cost or 15 hammers a strength point, whichever is more, plus a tenth
+(`gain`: `combat_sim::worth` = cost or 15 hammers a strength point, whichever is more, plus a tenth
 per experience point; raiders -- any enemy but animals -- on our land or within three plots of one
 of our cities count four times their worth, since left alone they take the city); a city to
 capture (an opportune capture, a landing) when it falls. Before: `assess`/`attack_ok`, the best odds of 65%, or every attacker's
@@ -815,15 +816,18 @@ army decision of each `play_turn` call (nothing outside `Game` is remembered).
   resources, a barbarian town near our cities) for its cost (the force it needs, the
   distance). Without that stickiness the target changed whenever a stack came close enough to
   see a garrison, and stacks walked back and forth between two or three cities.
-- *Force*: the strike is played out in expected values with the rules' odds (fortification,
-  city defense, first strikes, the attacker's health): collateral attackers first, then the
-  strongest; a lost fight still wounds (the rounds won before dying), collateral damage hits
-  the other defenders, siege engines that can bring the walls down in three turns count as
-  having done so. The force covers the city when the defenders fall; committing to *march* wants
-  a fifth of the attackers (at least one) to spare (so stacks do not advance understrength), but a
-  committed force already positioned next to or beside the city *strikes at acceptable odds* -- it
-  expects to clear the defenders without keeping that reserve -- rather than retreating to muster
-  an overwhelming force against a target that only hardens while it waits (a lone unit still never
+- *Force* (`combat_sim::simulate`, round 7g): the strike is played out in expected values with
+  the rules' odds (fortification, city defense, first strikes, the attacker's health) as it will
+  be fought: the attackers in the strike's own order, each against the defender the rules put up
+  against it; a lost fight still wounds (the rounds won before dying, first strikes counted),
+  a siege engine's win leaves the defender at its combat limit, collateral damage hits the
+  other defenders, siege engines that can bring the walls down in three turns count as having
+  done so. The force covers the city when every defender is 70% sure to be dead (60% for the
+  conquerors, `BOLD_STRIKE`); committing to *march* wants a reserve, every defender 90% sure
+  (so stacks do not advance understrength), but a committed force already positioned next to
+  or beside the city *strikes at acceptable odds* -- it expects to clear the defenders without
+  keeping that reserve (round 7h) -- rather than retreating to muster an overwhelming force
+  against a target that only hardens while it waits (a lone unit still never
   qualifies: it cannot clear a city). Unseen cities: 2 + population/5 defenders for a civ,
   1 + age/25 for a barbarian town -- but the force needed to *approach and reveal* an unseen
   target is capped at a scouting-sized stack (not that growing assumption, which otherwise made
@@ -845,11 +849,11 @@ army decision of each `play_turn` call (nothing outside `Game` is remembered).
   defenders stand, then units summoned for good (skeletons and the like, `magic::raised`: free
   to replace, they wear the defenders down as siege fodder; the owner's call, 2026-10-20), then
   the best odds when 68%+, else the unit cheapest to lose for the damage it is expected to deal
-  (C++ `AI_getBestGroupSacrifice` weighs strength; switch `STRIKE_DAMAGE`), never one that would
+  (C++ `AI_getBestGroupSacrifice` weighs strength; round 7f), never one that would
   deal under a tenth of a defender's hit points -- while the attackers left still cover the
   defenders left (or the defenders are down to half their health and outnumbered). Up to three
   units follow the victor into the city. The expected damage of a lost fight, in the strike's
-  simulation and its sacrifices, counts first strikes (`fight`, `STRIKE_DAMAGE`): in the rounds a
+  simulation and its sacrifices, counts first strikes (`fight`, round 7f): in the rounds a
   side has first strikes left it cannot be hurt. Heroes and veterans (switch `PRECIOUS`; More
   Naval AI's `AI_getBestGroupAttacker`) below their odds -- a hero's 85% plus 1%
   a level, a unit above level 4 at 70% plus 3% a level (at most 95%) -- attack last in a strike:
@@ -1048,7 +1052,11 @@ ported; the judgement is here. Only what a human could see is read.
   fewer and we can press the conquest; then we take the cities instead.
 - **Humans:** asked on the leader's contact cadence. A human can't be an AI's vassal (rules).
 
-Measured with `FFH_AI_VASSAL_OFF` (the switch), full games of ffh-ai only.
+Measured with `FFH_AI_VASSAL_OFF` (the switch), full games of ffh-ai only. The switch is a
+civilization switch like the others (`switches::VASSAL`): `FFH_AI_VASSAL_OFF=ALL` (or `1`, as
+before) turns vassal play off for everyone, `FFH_AI_VASSAL_OFF=X,..` / `FFH_AI_VASSAL_ONLY=X,..`
+for the players of those civilizations, each deciding for itself (it neither seeks nor agrees to
+vassalage, and as the master takes a vassal only when the deal costs it nothing).
 
 | | Development seeds 1-12 | | Fresh seeds 201-224 | |
 |---|---|---|---|---|
@@ -1432,7 +1440,7 @@ turn, to move casters and to promote them:
   (`research::builds_value`). Before, only the Tower of Mastery goal built nodes, and it is never
   ours: no civilization converted its raw mana. In 24 full games the nodes built were two thirds
   Enchantment (a happy face in every city per node), then Entropy and Mind (round 7a).
-- **The caster corps** (`casters.rs`, `CASTER_ROLES`; More Naval AI's adept roles): each caster
+- **The caster corps** (`casters.rs`, round 7a; More Naval AI's adept roles): each caster
   (an adept or better, not a hero) has a role kept in its unit AI type, so it is saved with the
   unit: the node builder (`UNITAI_MANA_UPGRADE`, one while there are node jobs), the terraformer
   (`UNITAI_TERRAFORMER`, one while a caster knows Spring, Scorch or Vitalize and our worked land
@@ -1507,12 +1515,16 @@ stub naming what was tried. The generic AI calls the hooks at fixed points (mark
 `// civ-mechanics`): `production` (after the settler step), `turn` (once per turn before units
 move), `unit` (a group's orders before its role logic), `sea_worker`, `spell_value` (the
 end-of-turn spell choice; 0 = not cast there), `building_value`, `tech_value`, `promotion_value`,
-`civic_value` and `site_value`. Every hook dispatches on `civs::civ`, so a game without a
+`civic_value`, `site_value` and `tech_goals` (the research plan's civilization part:
+`tech_plan.rs`). Every hook dispatches on `civs::civ`, so a game without a
 civilization that has logic plays exactly as before (same checksum), and
 `FFH_AI_CIV_OFF=CIVILIZATION_X` (comma-separated, `X` alone, or `all`) makes a civilization play
 as a generic one: the measurement switch. `civs/world_spell.rs` holds a world spell for a chosen
 moment (`spell_value` returns 0 for it and the `turn` hook casts it once the rules and the AI's
-default timing allow it). The older research flavours in `tech_plan.rs` are outside the switch.
+default timing allow it). The research flavours of `tech_plan.rs` (FfH's per-civilization
+beelines) are hooks too (`tech_goals`), under the switch since 2026-10-28; what remains outside
+`civs/` mirrors the rules (the Doviello's and Illians' snow kept from Scorch, the rules' own
+AI-only `reqScorch`) or is a flavor drive (`campaign::conqueror`).
 
 **Unique mechanics are used** (the owner's decision, 2026-10-20): a civilization's own units,
 spells and abilities are part of how it plays, so its AI uses them whether or not the games show a
@@ -2978,7 +2990,19 @@ only, against opponents without it, and reports that player's wins and share.
   both reached (a longer game has more caster-turns, and more casters lost with an eliminated
   owner).
   Generic behaviours have switches of their own (`switches.rs`): `FFH_AI_<NAME>_OFF=X,..|ALL`
-  plays without it, `FFH_AI_<NAME>_ONLY=X,..` only for those civilizations. A contest between
+  plays without it, `FFH_AI_<NAME>_ONLY=X,..` only for those civilizations (`ALL` or `1`: every
+  one; names with or without `CIVILIZATION_`, any case). The module switches `FFH_AI_MAGIC_OFF`,
+  `FFH_AI_CIV_OFF`, `FFH_AI_VASSAL_OFF` and `FFH_AI_TRAIT_CIVS` are read the same way
+  (`switches::env_list`; `_ONLY` works for the first three too), and `FFH_AI_TRAIT_OFF` lists
+  traits in the same form.
+  **Implementation forks do not stay.** A switch whose off side is the algorithm a change
+  replaced (not merely the behaviour absent) is removed, with the old algorithm, the round after
+  the change is kept: later comparisons with the old version run against an older revision
+  (`tools/agents/ab.sh --base <rev>`, `civ_ab.py --base-bin`), not a switch nobody plays and no
+  test exercises. Feature toggles (off = the behaviour absent), flavor switches and default-off
+  experiments stay. Removed so (2026-10-28): `KEEP_UNITS` (7d), `CASTER_ROLES` (7a),
+  `RIVAL_DEFENSE` (7e), `HEAL` and `STRIKE_DAMAGE` (7f), `SIM_FAITHFUL` and `FIELD_SIM` (7g),
+  `STRIKE_AT_PHASE` (7h); the rounds below name them as they were measured. A contest between
   civilizations (a land race, a war) is measured as one civilization with the behaviour against
   opponents without it: `civ_ab.py --civ all --base-env FFH_AI_<NAME>_OFF=ALL --new-env
   FFH_AI_<NAME>_ONLY={civ}` (the same binary on both sides; `{civ}` is the forced civilization).
@@ -3164,7 +3188,7 @@ Where MNAI does something this AI does not, ranked by expected worth (each untri
   to per-unit parity PLUS a numbers requirement (the force we will field overwhelms the softest
   revealed city's defender *count* with a reserve, via the campaign's own `rough_need`/`margin`),
   and a new DECLARE backstop that commits a prepared war only when the *real gathered army*
-  decisively covers a visible target city -- reusing `campaign::covers`/`force_on`, the exact
+  decisively covers a visible target city -- reusing `combat_sim::covers`/`campaign::force_on`, the exact
   predicate the march logic uses, so a declared war is one the army would actually march on. This is
   the numbers-aware, truthfully-computed gate v1 lacked. It also measured net-negative (16-seed A/B):
   wars +15% but captures-per-war -19% (wars LESS decisive, not more), economy -8% at t300 worsening

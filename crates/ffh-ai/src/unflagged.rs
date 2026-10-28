@@ -33,7 +33,7 @@ pub fn sacrifice(g: &mut Game, u: UnitId) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::campaign::tests::one_landmass_game;
+    use crate::testkit::one_landmass_game;
 
     /// A level-3 unit disbanded in a Demon's Altar city goes as a sacrifice: research for the
     /// current tech (10 + 3 x 3); elsewhere it is simply scrapped.

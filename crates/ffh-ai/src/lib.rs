@@ -22,6 +22,7 @@ pub mod automation;
 pub mod campaign;
 pub mod casters;
 pub mod casting;
+pub mod combat_sim;
 pub mod civs;
 pub mod code_effects;
 pub mod council;
@@ -44,6 +45,8 @@ pub mod research;
 pub mod sites;
 pub mod switches;
 pub mod tech_plan;
+#[cfg(test)]
+pub(crate) mod testkit;
 pub mod trade;
 pub mod traits;
 pub mod unflagged;

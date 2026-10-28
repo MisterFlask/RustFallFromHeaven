@@ -314,7 +314,7 @@ pub fn barbarian_lair_near(g: &Game, p: PlayerId, plot: PlotIdx, range: i32) -> 
     false
 }
 
-/// With `KEEP_UNITS` (units trained are kept, `finance::disband_military`): does the garrison
+/// Units trained are kept (`finance::disband_military`): does the garrison
 /// of an interior city hold the barbarians it sees, when one more defender would cost gold?
 /// At war with the barbarians, the visible threat within 3 plots (`threat`, [`local_threat`]) no
 /// more than the garrison's defense (`defense`), nothing in sight included; no unit of a
@@ -328,8 +328,7 @@ pub fn barbarian_lair_near(g: &Game, p: PlayerId, plot: PlotIdx, range: i32) -> 
 /// the barbarians of a civilization at peace with them (the Clan of Embers' garrison term,
 /// docs/AI_LOG.md, "Allied barbarians no longer counted as a threat").
 pub(crate) fn garrison_holds(g: &Game, p: PlayerId, plot: PlotIdx, threat: i32, defense: i32) -> bool {
-    crate::switches::KEEP_UNITS.on(g, p)
-        && g.at_war(g.players[p].team, g.barbarian_team())
+    g.at_war(g.players[p].team, g.barbarian_team())
         && threat <= defense
         && crate::economy::marginal_unit_cost_x100(g, p, true) > 0
         && !civ_enemy_near(g, p, plot, 3)
@@ -564,21 +563,17 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static str)> {
 
     // Garrison quota: one, the capital and threatened cities more, cities near barbarian lairs
     // or barbarians more.
-    // With `KEEP_UNITS`, a raider in sight the garrison holds adds nothing (`garrison_holds`).
+    // A raider in sight the garrison holds adds nothing (`garrison_holds`).
     let held = garrison_holds(g, p, plot, ctx.threat, ctx.defense);
     let mut needed = 1 + i32::from(ctx.capital && (ctx.n_cities > 1 || g.game_turn() > 30)) + i32::from(ctx.threat > 0 && !held);
     if barbarian_lair_near(g, p, plot, 3) || !held && barbarians_near(g, p, plot, 3) {
         needed += 1;
     }
-    let mut rival = 0;
-    if crate::switches::RIVAL_DEFENSE.on(g, p) {
-        // The rival civilizations near this city (war, hostility, power; defense.rs): at war the
-        // front holds more and the interior fewer than the flat one more below.
-        rival = crate::defense::rival_defenders(g, c);
-        needed += rival;
-    } else if ctx.at_war {
-        needed += 1;
-    }
+    // The rival civilizations near this city (war, hostility, power; defense.rs): at war the
+    // front holds more and the interior fewer than a flat one more in every city (the rule before
+    // round 7e, switch `RIVAL_DEFENSE` off).
+    let rival = crate::defense::rival_defenders(g, c);
+    needed += rival;
     if let Some(l) = leader {
         if l.ai_value_defense > 100 && ctx.n_cities > 3 {
             needed += 1;
@@ -732,7 +727,7 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static str)> {
         if let Some(choice) = crate::victory::production(g, c, false) { return Some((choice, "victory")); } // victory-pursuit
     }
 
-    // Mana nodes (MANA_NODES) and the caster corps (CASTER_ROLES): a caster to convert our raw mana
+    // Mana nodes (MANA_NODES) and the caster corps (casters.rs): a caster to convert our raw mana
     // when none of ours can, and the corps' casters (mana.rs, casters.rs).
     if safe && ctx.afford && !ctx.broke {
         if let Some(choice) = crate::mana::production(g, c) {

@@ -1520,7 +1520,7 @@ pub fn raze_conquered_city(g: &Game, p: PlayerId, c: CityId) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::campaign::tests::one_landmass_game;
+    use crate::testkit::one_landmass_game;
 
     #[test]
     fn the_trust_spell_raises_attitudes() {
