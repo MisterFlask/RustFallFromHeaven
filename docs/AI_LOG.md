@@ -103,6 +103,21 @@ switch off (for a switch every civilization may play, on for the forced civiliza
    leader's beeline is Sorcery itself, with Knowledge of the Ether and the sphere tech on the way,
    after the economy's tier 2 (the Amurites' own plan already did this).
 
+### Puppets counted as Fireballs (`MAGIC_WAR`, `CASTER_FORCE`; fixed)
+
+1. The package with the Sorcery beeline after the economy, the mage army with Sorcery and
+   `MAGIC_WAR` (each caster whose spells hurt counts 10% of a defender's health in the war
+   gate's takeability test), on fresh seeds 53001-53040 (160 pairs).
+2. Win 13.8% -> 10.6% (4 / 9, p 0.27), share@400 +45 (t 1.40), share@end +22 (t 0.38); the
+   Amurites, Sheaim and Svartalfar together 10 -> 9 wins, the Balseraphs 12 -> 8 -- as in every
+   version of the package. In the Balseraphs' lost games they declared more wars, and earlier,
+   that took nothing (seed 53002: war at turn 376 instead of 455; 53004: 49 casters made instead
+   of 9, 20 cities taken and 19 lost). Every Balseraph caster knows Create Puppet (a
+   civilization spell, FfH weight 1000), a summon of strength 2, so each counted as a Fireball:
+   the gate saw 40% off every defender.
+3. Spells with an FfH weight of their own are cast for the weight, not the fight: the war gate
+   and the force estimate leave them out, as the barrage did.
+
 ### City mages to the front (`MAGE_FRONT`, reverted)
 
 1. A city mage stayed in its own city: in seed 4 (Amurites forced) a Wizard cast Haste in a quiet

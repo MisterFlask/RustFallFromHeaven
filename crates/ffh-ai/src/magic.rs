@@ -841,7 +841,8 @@ pub fn planned_soften(g: &Game, tp: PlotIdx, defs: &[UnitId], casters: &[UnitId]
         let mut best: Option<(i32, Vec<i32>)> = None;
         for s in known(g, c) {
             let info = &d.spells[s];
-            if !info.allow_ai || info.global {
+            // (FfH's weighted spells -- the Balseraphs' puppets -- are cast for the weight.)
+            if !info.allow_ai || info.global || info.ai_weight > 0 {
                 continue;
             }
             let mut after = cur.clone();
@@ -1791,12 +1792,15 @@ pub fn combat_caster(g: &Game, u: UnitId) -> bool {
 
 /// Does `u` know a spell that hurts enemy units: damage, a temporary summon that fights, Crush,
 /// Pillar of Fire or Destroy Undead (a Mage's Fireball, not an Adept's Haste or Floating Eye)?
+/// Spells with an FfH weight of their own are cast for it, not for the fight: the Balseraphs'
+/// Create Puppet, which every Balseraph caster knows, made each of them count as a Fireball and
+/// sent them to wars they could not win (docs/AI_LOG.md, "Magic civilizations").
 pub fn damage_caster(g: &Game, u: UnitId) -> bool {
     let d = g.d;
     let fights = |t: UnitType| d.units[t].combat + d.units[t].damage_type_combat.iter().sum::<i32>() > 0;
     known(g, u).into_iter().any(|s| {
         let i = &d.spells[s];
-        i.damage > 0 || i.create_unit_type.is_some_and(fights) && !i.permanent_unit_create || damage_spell(d, s)
+        i.ai_weight <= 0 && (i.damage > 0 || i.create_unit_type.is_some_and(fights) && !i.permanent_unit_create || damage_spell(d, s))
     })
 }
 
