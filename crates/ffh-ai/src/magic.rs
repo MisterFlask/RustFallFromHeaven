@@ -746,7 +746,7 @@ pub(crate) fn summon_fight(g: &Game, p: PlayerId, ut: UnitType, tp: PlotIdx) -> 
     };
     let defines = &d.defines;
     let odds = combat_odds(&k, defines.combat_die_sides, defines.combat_damage) as i64;
-    // A lost fight: the rounds won before the summon's hit points are gone (as `campaign::fight`).
+    // A lost fight: the rounds won before the summon's hit points are gone (as `combat_sim::fight`).
     let sf = (a + d_fp + 1) / 2;
     let to_att = (defines.combat_damage * (d_fp + sf) / (a + sf)).max(1);
     let to_def = (defines.combat_damage * (a + sf) / (d_fp + sf)).max(1);

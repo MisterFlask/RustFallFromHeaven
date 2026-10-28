@@ -955,7 +955,7 @@ fn caster(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::campaign::tests::one_landmass_game;
+    use crate::testkit::one_landmass_game;
 
     #[test]
     fn heroes_that_cannot_attack_move_as_casters() {

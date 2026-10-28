@@ -72,7 +72,7 @@ pub static FLEET: Switch = Switch::new("FLEET");
 /// caster is trained for it, research values the node techs (`mana.rs`).
 pub static MANA_NODES: Switch = Switch::new("MANA_NODES");
 /// For the conquerors (`campaign::conqueror`): the strike phase at 60% sure instead of 70%
-/// (`campaign::covers`). On since round 7h.
+/// (`combat_sim::covers`). On since round 7h.
 pub static BOLD_STRIKE: Switch = Switch::new("BOLD_STRIKE");
 /// A temporary summon on its last turn attacks at any odds when it is not its stack's cover
 /// (`casting::summon_target`).

@@ -97,7 +97,7 @@ fn wane(g: &mut Game, v: &View) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::campaign::tests::one_landmass_game_with;
+    use crate::testkit::one_landmass_game_with;
 
     /// At peace, a level-6 Archer the garrison can spare wanes into a Shade, which then acts as
     /// a great person; a level-6 Archer the garrison needs stays.

@@ -107,7 +107,7 @@ fn amph_need(g: &Game, p: PlayerId, c: CityId) -> i32 {
     let team = g.players[p].team;
     let cp = g.city_plot(c);
     let n_def = if crate::view::sees_units(g, team, cp) {
-        crate::campaign::visible_defenders(g, team, cp).len() as i32
+        crate::combat_sim::visible_defenders(g, team, cp).len() as i32
     } else if g.player_is_barbarian(g.cities[c].owner) {
         (1 + (g.game_turn() - g.cities[c].game_turn_acquired) / 25).clamp(1, 6)
     } else {

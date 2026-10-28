@@ -125,9 +125,9 @@ before reading a drop as a flaw.
    a kill for every lost fight whatever the odds, the defender's strength or first strikes (four
    Warriors at a Griffon at 1%), took each attacker's odds against the best defender at full
    health, and passed up good shots (a wounded Lizardman at 60%). The faithful simulation
-   (`campaign::simulate_in_order`, the rules' group-attack order) gives the expected kills and
+   (`combat_sim::simulate`, the rules' group-attack order) gives the expected kills and
    losses; an expert attacks when the exchange favours him. So: attack when the kills are worth
-   more than the expected losses (`campaign::worth`: cost or 15 hammers a strength point, whichever
+   more than the expected losses (`combat_sim::worth`: cost or 15 hammers a strength point, whichever
    is more, plus a tenth per experience point), kills counting double on our land and half again
    against barbarians elsewhere.
 2. **Why it did not hold.** One player with it against opponents without (`civ_ab.py --civ all`,

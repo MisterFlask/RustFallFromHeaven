@@ -56,7 +56,7 @@ units whose invisibility type hides them (`CvUnit::isInvisible`).
   assassins, shadows, hidden nationality) stay hidden: stealth is how those units and
   civilizations play.
 - **What we attack: fog included** (`view::sees_units`, switch `FOG_ATTACK`): a city's garrison
-  on any revealed plot (`campaign::visible_defenders`, the siege and amphibious planners, the
+  on any revealed plot (`combat_sim::visible_defenders`, the siege and amphibious planners, the
   war gate's `diplomacy::city_best_defense`), hunting targets (`military::find_targets`),
   opportune and empty-city captures (`military::opportune`, `CAPTURE`); stealthed units left
   out. With the switch off, only what is visible: in the fog the siege and amphibious planners
@@ -754,7 +754,7 @@ research +3.6, legacy -5, every |t| < 1; workers alone also flat). Kept as an ex
 the forests, not for a measured gain. Valuing every improvement on a feature by the clearing
 (the feature's lost yields, its hammers) cost research (docs/AI_LOG.md, "Workers and citizens").
 
-## Field armies (`military.rs`, `campaign.rs`)
+## Field armies (`military.rs`, `campaign.rs`, `combat_sim.rs`)
 
 Each army group is a stack; per decision, in order:
 
@@ -787,12 +787,12 @@ Each army group is a stack; per decision, in order:
 
 **Deciding an attack** (round 7g). Every attack in steps 1, 4, 5 and 10 and a landing's
 assault (`naval.rs`) is decided on the simulation of the group attack
-(`military::field_sim`: `campaign::simulate` in the rules' own attacker order,
+(`military::field_sim`: `combat_sim::simulate` in the rules' own attacker order,
 `AI_getBestGroupAttacker` with its `AI_attackOdds`, against the defenders we see) as an expert
 decides (`military::field_go`): attack when the attacker the rules send has good odds (65%, 75%
 for a hurt stack); wear the defenders down at worse odds only when the stack clears the plot
 (every defender 80% sure to fall) and the kills are worth more than the expected losses
-(`gain`: `campaign::worth` = cost or 15 hammers a strength point, whichever is more, plus a tenth
+(`gain`: `combat_sim::worth` = cost or 15 hammers a strength point, whichever is more, plus a tenth
 per experience point; raiders -- any enemy but animals -- on our land or within three plots of one
 of our cities count four times their worth, since left alone they take the city); a city to
 capture (an opportune capture, a landing) when it falls. Before: `assess`/`attack_ok`, the best odds of 65%, or every attacker's
@@ -814,7 +814,7 @@ army decision of each `play_turn` call (nothing outside `Game` is remembered).
   resources, a barbarian town near our cities) for its cost (the force it needs, the
   distance). Without that stickiness the target changed whenever a stack came close enough to
   see a garrison, and stacks walked back and forth between two or three cities.
-- *Force* (`campaign::simulate`, round 7g): the strike is played out in expected values with
+- *Force* (`combat_sim::simulate`, round 7g): the strike is played out in expected values with
   the rules' odds (fortification, city defense, first strikes, the attacker's health) as it will
   be fought: the attackers in the strike's own order, each against the defender the rules put up
   against it; a lost fight still wounds (the rounds won before dying, first strikes counted),
@@ -3182,7 +3182,7 @@ Where MNAI does something this AI does not, ranked by expected worth (each untri
   to per-unit parity PLUS a numbers requirement (the force we will field overwhelms the softest
   revealed city's defender *count* with a reserve, via the campaign's own `rough_need`/`margin`),
   and a new DECLARE backstop that commits a prepared war only when the *real gathered army*
-  decisively covers a visible target city -- reusing `campaign::covers`/`force_on`, the exact
+  decisively covers a visible target city -- reusing `combat_sim::covers`/`campaign::force_on`, the exact
   predicate the march logic uses, so a declared war is one the army would actually march on. This is
   the numbers-aware, truthfully-computed gate v1 lacked. It also measured net-negative (16-seed A/B):
   wars +15% but captures-per-war -19% (wars LESS decisive, not more), economy -8% at t300 worsening

@@ -262,7 +262,7 @@ pub fn accept_master(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeDa
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::campaign::tests::one_landmass_game;
+    use crate::testkit::one_landmass_game;
 
     /// Player 0 strong (Feudalism, 30 techs, six times the power, most of the world), player 1 a
     /// one-city neighbour with 5 techs; both good.

@@ -110,7 +110,7 @@ fn kidnap(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::campaign::tests::one_landmass_game_with;
+    use crate::testkit::one_landmass_game_with;
 
     /// A Shadow standing in a city of the team we prepare a war against, with a great scientist
     /// settled there, kidnaps: the scientist is ours, or the attempt failed and the war is on.

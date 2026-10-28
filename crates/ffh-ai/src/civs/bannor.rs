@@ -38,7 +38,7 @@ mod tests {
     use ffh_core::ids::*;
 
     use super::*;
-    use crate::campaign::tests::one_landmass_game;
+    use crate::testkit::one_landmass_game;
 
     #[test]
     fn donal_recruits_before_he_moves() {

@@ -123,7 +123,7 @@ fn arena(g: &mut Game, v: &View) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::campaign::tests::one_landmass_game_with;
+    use crate::testkit::one_landmass_game_with;
 
     /// An Arena city with an unhappy citizen sends its spare Warrior into the arena (the city
     /// gets its games: the happiness timer); a content city does not.
