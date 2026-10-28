@@ -581,7 +581,10 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static str)> {
 
     // Garrison quota: one, the capital and threatened cities more, cities near barbarian lairs
     // or barbarians more.
-    // A raider in sight the garrison holds adds nothing (`garrison_holds`).
+    // A raider in sight the garrison holds adds nothing (`garrison_holds`). Placement's quota is
+    // smaller (`units::garrison_quota`: what can strike the city next turn): a defender trained
+    // for a raider only in sight may walk to a city under attack while this one trains another.
+    // Kept on purpose (docs/AI_LOG.md, "One garrison quota for production and placement").
     let held = garrison_holds(g, p, plot, ctx.threat, ctx.defense);
     let mut needed = 1 + i32::from(ctx.capital && (ctx.n_cities > 1 || g.game_turn() > 30)) + i32::from(ctx.threat > 0 && !held);
     if barbarian_lair_near(g, p, plot, 3) || !held && barbarians_near(g, p, plot, 3) {
@@ -592,6 +595,8 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static str)> {
     // round 7e, switch `RIVAL_DEFENSE` off).
     let rival = crate::defense::rival_defenders(g, c);
     needed += rival;
+    // A defensive leader: no FFH2 0.41 leader has `iAIValueDefense` above 100 (61 at 100, one
+    // at 70), so this term never fires with the vendored data.
     if let Some(l) = leader {
         if l.ai_value_defense > 100 && ctx.n_cities > 3 {
             needed += 1;
