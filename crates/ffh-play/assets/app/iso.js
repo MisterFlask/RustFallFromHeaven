@@ -141,12 +141,14 @@ function resourceSprite(t) {
   return "res_goods"; // silk, dye, incense, cotton, ale, fine clothes, reagents, toads, razorweed
 }
 
-/** A city's settlement sprite by size, then the others; the 2x2 city (`bld_city`) last, drawn at
- *  half size since a city holds one plot. */
-function citySprites(size) {
-  const tiers = ["bld_city_village", "bld_city_town", "bld_city_castle"];
+/** A city's settlement sprite by size, then the others; each tier its civilization's look
+ *  (`bld_city_<civ>_town`) before the shared one; the 2x2 city (`bld_city`) last, drawn at half
+ *  size since a city holds one plot. */
+function citySprites(size, civ) {
+  const tiers = ["village", "town", "castle"];
   const i = size <= 3 ? 0 : size <= 8 ? 1 : 2;
-  return [tiers[i], ...tiers.filter((_, j) => j !== i).sort((a, b) => Math.abs(tiers.indexOf(a) - i) - Math.abs(tiers.indexOf(b) - i)), "bld_city"];
+  const order = [i, ...[0, 1, 2].filter((j) => j !== i).sort((a, b) => Math.abs(a - i) - Math.abs(b - i))];
+  return [...order.flatMap((j) => [...(civ ? [`bld_city_${civ}_${tiers[j]}`] : []), `bld_city_${tiers[j]}`]), "bld_city"];
 }
 
 /** A unit type or class (its name without UNIT_ / UNITCLASS_, lower case) -> the sprites that
@@ -621,10 +623,15 @@ export class IsoMap {
     return hash32(k) & 1 && this.sprites.has(alt) ? alt : key;
   }
 
+  /** The short name of `owner`'s civilization (`clan_of_embers`), the prefix of its own sprites. */
+  civKey(owner) {
+    const civIdx = owner === me()?.player ? me()?.civ : S.players.get(owner)?.civ;
+    return shortName(tname("CivilizationType", civIdx), "CIVILIZATION_");
+  }
+
   /** The sprite standing in for unit type `type` owned by `owner` (memoised). */
   unitKey(type, owner) {
-    const civIdx = owner === me()?.player ? me()?.civ : S.players.get(owner)?.civ;
-    const civ = shortName(tname("CivilizationType", civIdx), "CIVILIZATION_");
+    const civ = this.civKey(owner);
     const memo = `${type}|${civ}`;
     if (this.unitKeys.has(memo)) return this.unitKeys.get(memo);
     const info = S.data?.tables?.UnitType?.[type] ?? {};
@@ -893,7 +900,7 @@ export class IsoMap {
     this.cityFlags = new Map();
     for (const { city, c } of cities) {
       if (city.size !== null && city.size !== undefined) this.lastSize.set(city.id, city.size);
-      const base = this.pick(citySprites(city.size ?? this.lastSize.get(city.id) ?? 1));
+      const base = this.pick(citySprites(city.size ?? this.lastSize.get(city.id) ?? 1, this.civKey(city.owner)));
       const banner = this.bannerKey(city.owner);
       const bottom = c.sy + f.TH / 2;
       items.push({
