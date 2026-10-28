@@ -2,15 +2,16 @@
 # Checks the browser client of ffh-play (docs/PLAY_DESIGN.md §8 item 14): `node --check` of every
 # module and tool script, then the pure-module tests (`node --test crates/ffh-play/assets/test/*.test.mjs`
 # and the static site's page side, `crates/ffh-web/site/test/*.test.mjs`, docs/WEB.md).
-# Skipped (exit 0) when node is not installed. Not part of `cargo test`.
+# SKIPPED when node is not installed: exit 0, or 1 when $CI is set (a skipped check must not pass
+# for a passed one there). Not part of `cargo test`.
 #
 #   tools/web-check.sh              syntax and unit tests
 #   tools/web-check.sh --smoke      also the node smoke client: 20 turns against `ffh-play serve`
 #                                   (tools/web-api-smoke.mjs; builds nothing, needs
 #                                   target/release/ffh-play)
 #   tools/web-check.sh --browser    also the headless-Chromium smoke tests (tools/web-smoke.mjs and,
-#                                   on an emulated phone, tools/web-touch-smoke.mjs; skipped when no
-#                                   browser is found)
+#                                   on an emulated phone, tools/web-touch-smoke.mjs; SKIPPED when no
+#                                   browser is found, a failure when $CI is set)
 #
 # NODE=/path/to/node overrides the node binary.
 set -euo pipefail
@@ -21,7 +22,11 @@ node="${NODE:-}"
 if [ -z "$node" ]; then node="$(command -v node || true)"; fi
 if [ -z "$node" ] && [ -x /opt/node22/bin/node ]; then node=/opt/node22/bin/node; fi
 if [ -z "$node" ]; then
-  echo "web-check: node not found; skipped"
+  if [ -n "${CI:-}" ]; then
+    echo "web-check: SKIPPED (node not found); failing because CI is set" >&2
+    exit 1
+  fi
+  echo "web-check: SKIPPED (node not found)"
   exit 0
 fi
 

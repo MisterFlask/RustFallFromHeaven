@@ -29,7 +29,8 @@
 // The browser: the `playwright` package (resolved normally, then in node's global modules),
 // else Chromium driven directly over the DevTools protocol (`--cdp` forces that): the
 // executable from $CHROME, or the Playwright browsers in $PLAYWRIGHT_BROWSERS_PATH (or
-// /opt/pw-browsers, ~/.cache/ms-playwright). Without a browser the test is skipped (exit 0).
+// /opt/pw-browsers, ~/.cache/ms-playwright). Without a browser the test is SKIPPED: exit 0, or 1
+// when $CI is set.
 // Screenshots go to --out (default target/web-smoke, not committed). Exit 1 on a failure.
 
 import { spawn } from "node:child_process";
@@ -37,7 +38,7 @@ import { createRequire } from "node:module";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { ROOT, parseArgs, findBin, tempDir, startServer, stage, until } from "./web-lib.mjs";
+import { ROOT, parseArgs, findBin, tempDir, startServer, stage, until, skipped } from "./web-lib.mjs";
 
 let args;
 try {
@@ -1401,8 +1402,7 @@ async function main() {
   const pw = await loadPlaywright();
   const chrome = pw ? null : findChrome();
   if (!pw && !chrome) {
-    console.log("web-smoke: no browser (neither the playwright package nor a Chromium executable); skipped");
-    return 0;
+    return skipped("web-smoke", "no browser: neither the playwright package nor a Chromium executable");
   }
   const bin = findBin(args.bin);
   fs.mkdirSync(OUT, { recursive: true });
