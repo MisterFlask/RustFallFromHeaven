@@ -144,7 +144,11 @@ counters, war success, war plans) that the diplomacy below reads.
    switched every turn and re-chose a building, often another one -- an Illian city under a threat
    three times its defense alternated a Courthouse and an Elder Council 21 times in 30 turns, now it
    builds the Courthouse. Whether a full garrison should still grow under such a threat is a
-   question for `decide`'s rule, unchanged. Then, while the
+   question for `decide`'s rule, unchanged. Measured with the contact fix ("Generic gaps"), every AI with both
+   against every AI without (`EMERGENCY_DECIDE`, `CONTACT`): legacy at turns 300 / 400 1080 / 1585
+   -> 1076 / 1598 (seeds 1-32) and 1090 / 1605 -> 1084 / 1609 (fresh 44001-44048); peace treaties
+   437 -> 395 and 569 -> 538 (no deals with a Crusader or a player that cannot be contacted),
+   eliminations 35 -> 39 and 59 -> 55: neutral, as a bug fix should be. Then, while the
    empire cannot research at its target share, cities re-decide long builds for the economy
    building they need (`production::trouble_rebuild`, see Finance), and a top city finishing a
    world wonder at peace emphasizes production (`production::wonder_emphasis`, see Citizens).
