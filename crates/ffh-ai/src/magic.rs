@@ -1223,13 +1223,6 @@ pub fn support_target(g: &Game, v: &mut View, u: UnitId) -> Option<(PlotIdx, &'s
     best.map(|(_, q, why)| (q, why))
 }
 
-/// Does caster `u` alone keep a building in our city it stands in ([`upkeep_value`])? It stays.
-pub fn keeps_building(g: &Game, u: UnitId) -> bool {
-    let d = g.d;
-    let spells: Vec<SpellType> = known(g, u).into_iter().filter(|&s| d.spells[s].create_building_type.is_some()).collect();
-    !spells.is_empty() && upkeep_value(g, u, &spells) > 0
-}
-
 /// What the buildings `u` alone keeps in our city it stands in are worth: those that need a
 /// caster (C++ `CvCity::doTurn` removes a `bRequiresCaster` building when no unit in the city can
 /// cast the spell that makes it) made by one of `spells` and that no other unit there could cast.
@@ -1669,7 +1662,7 @@ fn channeling_below(d: &GameData, and: PromotionType) -> Option<PromotionType> {
 // Casters to train
 // ----------------------------------------------------------------------------
 //
-// The corps by role is `casters.rs` (`CASTER_ROLES`), the node builder `mana.rs` (`MANA_NODES`).
+// The corps by role is `casters.rs`, the node builder `mana.rs` (`MANA_NODES`).
 // Tried before, not kept (docs/AI_LOG.md, "Spellcasting"): training casters by what their spells
 // are worth in a fight alone -- one per five field units when an adept could cast such a spell
 // with our mana (Enchanted Blade, Rust), and the Mage Guild that opens them in our most productive

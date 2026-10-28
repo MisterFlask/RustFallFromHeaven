@@ -862,7 +862,7 @@ fn caster(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
     let p = v.p;
     let here = g.unit_plot(u);
     if crate::victory::mana_node(g, v, grp, u) { return; } // victory-pursuit
-    // Caster roles (CASTER_ROLES) and mana nodes (MANA_NODES).
+    // Caster roles (casters.rs) and mana nodes (MANA_NODES).
     if crate::casters::play(g, v, grp, u) {
         return;
     }

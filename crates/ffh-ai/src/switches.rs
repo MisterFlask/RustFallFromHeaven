@@ -29,14 +29,6 @@ pub struct Switch {
 pub static WS_TIMING: Switch = Switch::new("WS_TIMING");
 /// A prepared war is declared once the army stands near the target (`diplomacy::manage`).
 pub static WAR_STAGING: Switch = Switch::new("WAR_STAGING");
-/// City defenders weighed by the rival civilizations: in peacetime what deters a neighbour that
-/// would see us as an easy target, at war a pool shared by each city's war threat, and sorties
-/// only with a strength edge (`defense.rs`).
-pub static RIVAL_DEFENSE: Switch = Switch::new("RIVAL_DEFENSE");
-/// Field stacks heal as More Naval AI's do: only when most of the stack is hurt and where healing
-/// is good, the wounded splitting off in our cities (`military::heal`). On since round 7f, once a
-/// city/field threshold mismatch was fixed (docs/AI.md).
-pub static HEAL: Switch = Switch::new("HEAL");
 /// A stack next to an enemy city at war takes it when it is empty or the stack clearly covers it,
 /// even outside the operation (`military::opportune`).
 pub static CAPTURE: Switch = Switch::new("CAPTURE");
@@ -53,15 +45,6 @@ pub static FLEET: Switch = Switch::new("FLEET");
 /// Mana nodes as an economy: casters convert our raw mana into the node type worth most, a
 /// caster is trained for it, research values the node techs (`mana.rs`).
 pub static MANA_NODES: Switch = Switch::new("MANA_NODES");
-/// A small caster corps by role -- terraformer, city mages, war wizards -- and its training
-/// (`casters.rs`).
-pub static CASTER_ROLES: Switch = Switch::new("CASTER_ROLES");
-/// Every attack outside a siege operation's strike -- a stack's assault, an adjacent target, a
-/// hunt, an opportune capture, a landing -- is decided on the simulation of the group attack:
-/// good odds for the attacker the rules send, or a grind that clears the plot at a favourable
-/// trade; a city to capture when it falls (`military::field_sim`, `military::field_go`). On since
-/// round 7g.
-pub static FIELD_SIM: Switch = Switch::new("FIELD_SIM");
 /// For the conquerors (`campaign::conqueror`): the strike phase at 60% sure instead of 70%
 /// (`campaign::covers`). On since round 7h.
 pub static BOLD_STRIKE: Switch = Switch::new("BOLD_STRIKE");

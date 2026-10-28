@@ -569,15 +569,11 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static str)> {
     if barbarian_lair_near(g, p, plot, 3) || !held && barbarians_near(g, p, plot, 3) {
         needed += 1;
     }
-    let mut rival = 0;
-    if crate::switches::RIVAL_DEFENSE.on(g, p) {
-        // The rival civilizations near this city (war, hostility, power; defense.rs): at war the
-        // front holds more and the interior fewer than the flat one more below.
-        rival = crate::defense::rival_defenders(g, c);
-        needed += rival;
-    } else if ctx.at_war {
-        needed += 1;
-    }
+    // The rival civilizations near this city (war, hostility, power; defense.rs): at war the
+    // front holds more and the interior fewer than a flat one more in every city (the rule before
+    // round 7e, switch `RIVAL_DEFENSE` off).
+    let rival = crate::defense::rival_defenders(g, c);
+    needed += rival;
     if let Some(l) = leader {
         if l.ai_value_defense > 100 && ctx.n_cities > 3 {
             needed += 1;
@@ -731,7 +727,7 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static str)> {
         if let Some(choice) = crate::victory::production(g, c, false) { return Some((choice, "victory")); } // victory-pursuit
     }
 
-    // Mana nodes (MANA_NODES) and the caster corps (CASTER_ROLES): a caster to convert our raw mana
+    // Mana nodes (MANA_NODES) and the caster corps (casters.rs): a caster to convert our raw mana
     // when none of ours can, and the corps' casters (mana.rs, casters.rs).
     if safe && ctx.afford && !ctx.broke {
         if let Some(choice) = crate::mana::production(g, c) {
