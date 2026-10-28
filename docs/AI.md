@@ -215,8 +215,8 @@ counters, war success, war plans) that the diplomacy below reads.
    Training Yard for axemen, ...): when one would open a defender or attacker a third
    stronger, about half the cities build it;
 7. extra defenders up to the quota (capital, threat, nearby barbarians, the rival civilizations
-   near the city, leader; with `KEEP_UNITS`, barbarians an interior city's garrison holds add
-   none once units cost gold, see Finance, "Unit support");
+   near the city, leader; barbarians an interior city's garrison holds add none once units
+   cost gold, see Finance, "Unit support");
 8. a small mobile force (1 + cities/2) for barbarians and animals; more workers as worked
    plots need improving; the victory goal's items (`victory::production`: towers, culture in
    the cities nearest legendary; before expansion, item 4, when the goal is 30 turns away);
@@ -426,7 +426,7 @@ single hook tagged `bankruptcy-guard`:
   the cities' actual distance and number-of-cities parts; Aristocracy is charged for the
   cottages FfH's AI-only `canBuild` bans under it once Education is near; a structural
   deficit re-checks civics outside the 10-turn cadence when a cheaper civic would win.
-- **Unit support** (`empire::disband`, `finance::disband_military`, switch `KEEP_UNITS`): built
+- **Unit support** (`empire::disband`, `finance::disband_military`; once switch `KEEP_UNITS`): built
   units are kept, by More Naval AI's rule (C++ `CvPlayerAI::AI_doMilitary` /
   `AI_disbandUnit`), brought back by the owner's decision. At peace, while costs take more than
   60% of the commerce (its "funded percent" below 40) and units cost gold, the military unit of
@@ -443,10 +443,10 @@ single hook tagged `bankruptcy-guard`:
   no extra defender for them once units cost gold, since that defender would be kept for good;
   border cities still do, because the defenders trained against raiders are also the ones that
   hold them when a neighbour attacks (round 7d; docs/AI_LOG.md, "More Naval AI's disband rule").
-  With the switch off, the previous rule: while support takes a tenth of the commerce and keeps
-  research below its target (at peace), up to two units a turn go, obsolete ones first (weakest
-  relative to what we can train now): field units beyond 1 + cities/4, garrison units beyond one
-  per city (two in the capital and near barbarians) where no threat is in sight, idle workers
+  The previous rule (the switch off, removed once this was kept): while support takes a tenth
+  of the commerce and keeps research below its target (at peace), up to two units a turn go,
+  obsolete ones first (weakest relative to what we can train now): field units beyond
+  1 + cities/4, garrison units beyond one per city (two in the capital and near barbarians) where no threat is in sight, idle workers
   beyond twice the need; a bankrupt empire scraps surplus garrisons and field units. That rule and
   the build rules both read the moment, so a raider walking in and out of range had cities train
   defenders the treasury scrapped a few turns later; holding defenders by a quota instead lost

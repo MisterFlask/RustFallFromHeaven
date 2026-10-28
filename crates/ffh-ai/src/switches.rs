@@ -106,11 +106,6 @@ pub static WAR_RECHECK: Switch = Switch::new("WAR_RECHECK");
 pub static COUNCIL: Switch = Switch::new("COUNCIL");
 /// Missionaries spread the state religion abroad once its shrine stands (`units::missionary`).
 pub static MISSIONARY_ABROAD: Switch = Switch::new("MISSIONARY_ABROAD");
-/// Built units are kept: More Naval AI's disband rule (`finance::disband_military`) instead of
-/// scrapping surplus garrisons and field units for their upkeep, and no extra defender against
-/// barbarians an interior city's garrison holds once units cost gold
-/// (`production::garrison_holds`; docs/AI.md, "Finance").
-pub static KEEP_UNITS: Switch = Switch::new("KEEP_UNITS");
 /// Heroes only in the top third of our cities by production, world wonders outside it only when
 /// quick (`production::top_production_city`).
 pub static TOP_CITIES: Switch = Switch::new("TOP_CITIES");
