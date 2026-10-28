@@ -2,40 +2,29 @@
 
 Status of the M7 unit sprites (`tools/m7/roster/units/`, 56 of them). The method and its limits are in
 `ANIMATING_UNITS.md`; this file says what has been done with it, what is waiting and why. Nothing under `crates/` loads
-these frames yet, the three finished sets included.
+these frames yet, the finished sets included. The hero, religion and unique-unit sprites added to the roster on
+2026-10-28 are not animated.
 
 ## Done: idle, strike, flinch, death
 
-`swordsman` (`final_swordsman/`), `ogre` (`final_ogre/`), `hyborem` (`final_hyborem/`). None has a walk yet (only the
-experimental `final_swordsman/walk/`).
+`swordsman` (`final_swordsman/`), `ogre` (`final_ogre/`), `hyborem` (`final_hyborem/`), and since 2026-10-28
+`warrior`, `skeleton`, `phalanx`, `lizardman`, `paladin` and `goblin` (`final_<unit>/`, `final_<unit>_nofx/`), each
+with a walk (`final_<unit>/walk/`, experimental like the swordsman's). The six were run with `./animate_batch.sh`
+(3 sheet calls and 1 walk call each, about $0.31 a unit at the ledger's prices) and picked by eye from
+`work/final_<unit>/variants_*.png` (ANIMATING_UNITS.md step 3):
 
-## Idle done, the rest waiting for image credit
+| Unit | strike | flinch | death | walk | Why |
+|---|---|---|---|---|---|
+| warrior | 2 | 2 | 2 | 1 | strike 2 slides less; flinch 1 swells the hair; death 2 lies on the diagonal, eyes shut |
+| skeleton | 2 | 2 | 1 | 1 | flinch 1 swells the skull; death 2 has pink smudges in the corpse |
+| phalanx | 2 | 1 | 1 | 2 | strike 1 slides up to 17 px |
+| lizardman | 2 | 1 | 1 | 2 | walk 1 needed 20+ px ground snaps |
+| paladin | 1 | 1 | 1 | 1 | strike 2 has red specks on frame 5; death 2 throws the mace to the wrong side |
+| goblin | 1 | 1 | 2 | 1 | strike 2 grows on frame 1; death 1 needed 25 px snaps; walk 2 16 px |
 
-Unit file written, guides checked (`--check-guides`, `lib/walk.py --check-guides`), idle built and looked at (frame 0 is
-the exact sprite, no tearing, a one-pixel breath). Strike, flinch, death and walk need the image model, and the OpenAI
-account behind the session key had no credit on 2026-10-26: every call failed with `429 credit_balance_exhausted` (the
-key and the model were fine; nothing was billed). Once the balance is back:
-
-```bash
-cd anim-sprint
-./animate_batch.sh                  # the six units below: 3 sheet calls + 1 walk call each, about $0.31 a unit
-# then, per unit, ANIMATING_UNITS.md step 3 and 4: pick variants by eye, --rebuild --pick, lib/preview.py
-```
-
-| Unit | Looks | Weapon | Pose set | Notes |
-|---|---|---|---|---|
-| warrior | lower-right | club, shield | near | the pilot; walk guides checked |
-| skeleton | lower-right | sword, shield | near | no hair, no eyes to squeeze shut: texts reworded |
-| phalanx | lower-right | long spear, shield | near | the spear is longer than the canvas area in strikes 1-5: expect clipping, reject variants that cut it |
-| lizardman | lower-right | long spear, shield | near | tail and crest in the texts |
-| paladin | lower-right | mace, kite shield | near | |
-| goblin | lower-right | spear in the far hand (screen-right), no shield | far, mirrored | 56 px tall (`scale` 0.65); its other hand is "an empty clawed hand" in the texts |
-
-To watch the idles: `previews/idle_roster.{gif,mp4}` (all six side by side) and `final_<unit>/idle_3x.{gif,mp4}`, made
-by `python3 lib/preview_idle.py` (free; `lib/preview.py` needs a full set).
-
-`animate_batch.sh` stops at its first failed call. `anim/units` in `budget.json` was raised from $5 to $12 for the
-batch (the ledger prices are deliberately high, so the real bill is lower; the $20 `anim` and `total` caps still bind).
+Every strike lands on the side the sprite looks (lower-right for all six) and every death falls away from it. Like
+the first three, these sets have not been judged blind; the strike's turn into the lunge (the shield swinging
+behind the back on frames 4-5, "Known limits" in the guide) shows in all five shield units.
 
 ## Not started, same body plan (melee biped), each needs a decision first
 
