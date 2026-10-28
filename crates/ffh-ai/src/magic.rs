@@ -963,6 +963,19 @@ pub fn attack_value(g: &Game, caster: UnitId, spell: SpellType, tp: PlotIdx, att
     a + b + summon_value(g, caster, spell, ctx)
 }
 
+/// The threat a city spell's building is valued against in city `c` (switch `CITY_SPELL_THREAT`):
+/// the enemies in sight within three plots (`production::local_threat`), so a Wall of Stone (+25%
+/// defense, valued three times over under threat) goes up in a besieged city; 0 without the switch
+/// (it was worth 3 and never cast).
+fn city_spell_threat(g: &Game, c: CityId) -> i32 {
+    let p = g.cities[c].owner;
+    if crate::switches::CITY_SPELL_THREAT.on(g, p) {
+        crate::production::local_threat(g, p, g.city_plot(c), 3)
+    } else {
+        0
+    }
+}
+
 /// What `spell` cast by `u` at the end of the turn is worth (see the module doc), `None` for a
 /// spell FfH's terms value ([`understood`]). Besides the effects: FfH's own terms for gold,
 /// conversion, population, sacrifice, features, and the spell's AI weight (FfH's explicit
@@ -979,7 +992,7 @@ pub fn turn_value(g: &Game, v: &View, u: UnitId, spell: SpellType) -> Option<i32
     let here = g.unit_plot(u);
     if let Some(b) = info.create_building_type {
         if let Some(c) = g.map.plots[here].plot_city {
-            value += crate::production::building_value(g, c, b, 0) / 4;
+            value += crate::production::building_value(g, c, b, city_spell_threat(g, c)) / 4;
         }
     }
     value += crate::casting::ffh_misc_value(g, u, spell);
@@ -1275,7 +1288,7 @@ pub fn support_target(g: &Game, v: &mut View, u: UnitId) -> Option<(PlotIdx, &'s
             let mut why = "bless";
             if let Some(b) = info.create_building_type {
                 if let Some(c) = g.map.plots[q].plot_city.filter(|&c| g.cities[c].owner == p && g.city_num_building(c, b) == 0 && !claimed_city_spell(g, u, c, s)) {
-                    value += crate::production::building_value(g, c, b, 0) / 4;
+                    value += crate::production::building_value(g, c, b, city_spell_threat(g, c)) / 4;
                     why = "city spell";
                 }
             }
@@ -1323,7 +1336,7 @@ fn upkeep_value(g: &Game, u: UnitId, spells: &[SpellType]) -> i32 {
     for &s in spells {
         let Some(b) = d.spells[s].create_building_type.filter(|&b| d.buildings[b].requires_caster && g.city_num_building(c, b) > 0) else { continue };
         if !g.map.plots[here].units.iter().any(|&o| o != u && g.unit_can_cast(o, s, true)) {
-            value += crate::production::building_value(g, c, b, 0) / 4;
+            value += crate::production::building_value(g, c, b, city_spell_threat(g, c)) / 4;
         }
     }
     value
@@ -1773,6 +1786,17 @@ pub fn combat_caster(g: &Game, u: UnitId) -> bool {
                 || adds(i).any(|p| d.promotions[p].ai_weight != 0 && !i.buff_caster_only))
             && [i.promotion_prereq1, i.promotion_prereq2].into_iter().flatten().all(|q| unit.has_promotion[q])
             && could_cast(g, u, s)
+    })
+}
+
+/// Does `u` know a spell that hurts enemy units: damage, a temporary summon that fights, Crush,
+/// Pillar of Fire or Destroy Undead (a Mage's Fireball, not an Adept's Haste or Floating Eye)?
+pub fn damage_caster(g: &Game, u: UnitId) -> bool {
+    let d = g.d;
+    let fights = |t: UnitType| d.units[t].combat + d.units[t].damage_type_combat.iter().sum::<i32>() > 0;
+    known(g, u).into_iter().any(|s| {
+        let i = &d.spells[s];
+        i.damage > 0 || i.create_unit_type.is_some_and(fights) && !i.permanent_unit_create || damage_spell(d, s)
     })
 }
 

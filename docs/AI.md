@@ -1499,6 +1499,76 @@ skeleton attacks in two replays where the old order made 1 and 8. Calabim forced
 8501-8520 (7 of 20 games changed): win 10% -> 15% (1 / 0), share@end +22 (t 0.37), legacy@end -2.5
 (t -0.02).
 
+### Magic civilizations (2026-10-28)
+
+In 37 games with a magic civilization forced into slot 0 (Amurites, Sheaim, Svartalfar,
+Balseraphs; seeds 1-10, full games), the AI had no arcane caster at turn 200 in all but one:
+Knowledge of the Ether came as the 11th to 24th tech, at turns 170-250, the Mage Guild 20-50 turns
+later, the first Adept at turns 250-350 -- and many of these games are decided by turns 230-500.
+Where Wizards existed they spent most turns on Haste (FfH's free cast), fired Fireballs at units
+immune to fire, and their damage at the end of the turn came after every attack decision of ours:
+in seed 10 the Amurites' Wizards fireballed the stack at a city's gates turn after turn while the
+city fell. Four behaviours, each with a switch (`switches.rs`); the versions that failed are in
+docs/AI_LOG.md, "Magic civilizations":
+
+- **The arcane path** (`ARCANE_PATH`, `traits::arcane_path`, `tech_plan`): an Arcane or Summoner
+  leader heads for Sorcery once the economy's tier 2 is in, with Knowledge of the Ether and a
+  sphere tech on the way (the one whose nodes our raw mana makes worth most, Necromancy first among
+  equals for a Summoner); the Amurites' own plan did so, the other magic leaders reached Sorcery by
+  the plain scores. Earlier versions opened the school right after the first essentials and
+  Sorcery right after Writing: casters at turn 200 rose from 0.06 to 0.9, but they were Adepts a
+  century before their Mages, and the economy fell behind when the games are decided (fresh seeds:
+  win 16% -> 9-10%; docs/AI_LOG.md).
+- **The barrage** (`BARRAGE`, `casting::barrage`): at the start of our turn, before any unit moves,
+  a caster whose best end-of-turn cast is damage or a temporary summon casts it (a cast uses no
+  moves). Our units then decide their attacks on enemies already hurt: an expert fireballs the
+  stack at his gates, then sorties against the survivors. Casters in a stack of our operations
+  keep their cast for the strike, spells with an FfH weight of their own (the Balseraphs' puppets)
+  keep their time, and the summons spend themselves on a city only as at the end of the turn. A
+  summon's estimated fight counts the defender's resistance to its damage types
+  (`magic::summon_fight`): a Fireball is all fire, and was sent at Fire Elementals.
+- **Casters in the force** (`CASTER_FORCE`, `magic::planned_soften`, `campaign::covers_with`): the
+  estimates that decide when an operation's stacks march, step in and strike count the hit points
+  the casters marching with them should take from the defenders (each its best damage spell or
+  temporary summon, each cast on the defenders as the casts before left them). They can make a
+  strike decisive, never a marginal one go a turn before the reinforcements: the strike phase they
+  alone open is a probe (`Op::probe`) -- the casters cast, and the stacks attack only if the city is
+  still covered with a reserve. (Counted in the marginal strike too, they sent a ring into a city
+  a turn early, defenders at 84 hit points, and it bounced with five units lost; the probe holds
+  that turn and takes the city the next.)
+- **A mage army** (`MAGE_ARMY`, `traits::mage_army`): once its Adepts can become Mages (Sorcery),
+  a magic leader keeps a caster for every four field units (at least its corps), on top of its
+  army, and trains its casters while a raider the garrison holds is in sight (before, any threat
+  in sight stopped them).
+- **City spells under threat** (`CITY_SPELL_THREAT`, `magic::city_spell_threat`): a city spell's
+  building is valued against the enemies in sight of the city, so a Wall of Stone (+25% defense)
+  goes up in a besieged city; valued as if the city were quiet, it was worth 3 and never cast.
+
+`FFH_AI_TRACE` shows the casters' count in the force (`casters count on ...`, with the planned
+damage) and the probes (`strike on ...: 0 attacks, holds`); `FFH_AI_TRACE_CAST` shows the barrage
+(`ctx=barrage`). Tests: `crates/ffh-ai/tests/magic.rs` (a Fireball does nothing to a Fire
+Elemental; the barrage softens the stack at our gates before our units move; the force estimate
+counts a Mage's Fireball once; a besieged city gets its Wall of Stone).
+
+Measured on development seeds 1-30 with each of the four civilizations forced into slot 0 (120
+pairs), the same binary with the switch off on the base side (for the barrage and the casters in
+the force, which every civilization may play: on for the forced civilization only, against
+opponents without it):
+
+| switch | win (one side only) | share@300 | share@end | other |
+|---|---|---|---|---|
+| `ARCANE_PATH` | 12.5% -> 12.5% (6 / 6) | -99 (t -1.70) | -81 (t -0.67) | arcane at turn 200 0.1 -> 0.5, first Mage (median) Sheaim 475 -> 350, Svartalfar never -> 400; Svartalfar wins 2 -> 5 |
+| `BARRAGE` | 12.5% -> 11.7% (0 / 1) | -1 (t -0.68) | -2 (t -0.06) | alive at the end +0.1 (t 2.50); 82 games unchanged |
+| `CASTER_FORCE` | 12.5% -> 12.5% (1 / 1) | 0 | -21 (t -1.37) | 96 games unchanged; in the others more cities taken, and some more lost |
+| `MAGE_ARMY` | 12.5% -> 10.8% (4 / 6) | +27 (t 0.75) | +20 (t 0.27) | legacy@end +137 (t 1.74), alive at the end +0.1 (t 2.03); arcane casters made 5.0 -> 9.0 a game, at turn 200 0.4 -> 1.1; spell damage 108 -> 227 and summon kills 12 -> 15 a game |
+
+Forks at their firings (`tools/ai-branch.sh`): the barrage (seed 10, Amurites, turn 421) let a
+stack of 8 attack five barbarian Disciples of Acheron the Fireballs had hurt -- four killed for a
+Horse Archer -- where without it the simulation said no; at seed 7 turn 332 the branch with it had
+14 cities to 13 and 45 more power ten turns later. The probe (seed 7, turn 329) held the strike the
+casters alone opened, cast, and took Elohim's city the next turn, a turn before the branch without
+it.
+
 ## Civilization-specific (`civs/`)
 
 Each civilization has a module in `crates/ffh-ai/src/civs/` implementing `CivPlay`, whose
@@ -2002,8 +2072,8 @@ whatever the win rate does, and a drop is investigated as a flaw to fix). The ho
 |---|---|---|
 | Raiders (pillaged gold +100%, Commando) | Decius, Basium, Amelanchier, Hannah, Tasunke, Mahala, Weevil, Faeryl, Sallos | an army stack at war pillages the improved enemy plot it stands on with one unit (taken out of the stack and back), before its orders when that costs no march (no operation needs the stack and no city of ours is in peril, or every unit has a move to spare) and after them while it holds; a stack no operation needs raids the best enemy improvement within two turns whose danger is under two thirds of its defense and that is not next to an enemy city; the land within two plots of the city our war operation is taking is spared (it is ours once the city falls). The generic AI never pillages. |
 | Spiritual (no anarchy) | Capria, Varn, Arendel, Jonas, Hyborem, Lethe | civics every 2 turns at a summed gain of 40 (others every 10 at 100); keeping the state religion weighs 5 instead of 15 |
-| Arcane (adepts +20% experience) | Thessa, Valledia, Dain, Tya, Perpentach, Faeryl, Tebryn | a caster corps of (cities + 2) / 3, trained in the most productive safe city, its Mage Guild first (`civs::casters_up_to`, the civilizations' unique casters' helper) |
-| Summoner (summons +1 turn, Combat I) | Keelyn, Tebryn, Os-Gabella, Malchavic, Hyborem | a bigger caster corps, (cities + 2) / 2; research toward its Adepts (the techs the Adept and its Mage Guild need, Knowledge of the Ether: +1500 once researchable, +500 on the way); its casters value a summoning sphere (a mana sphere opening a summon any civilization may cast: Death I-III, Fire II-III, Air/Earth/Water III, ...) at 1.5x + 60, a temporary summon at 1.5x (it lasts a turn longer), and raise lasting summons (Raise Skeleton) at peace too while the army is short of its peacetime target and a unit is affordable (others only at war); without a mana whose Mage-level spell summons a creature (Death: Spectre, Entropy: Pit Beast, Law: Einherjar, Ice: Ice Elemental; Keelyn's Balseraphs start with Mind, Chaos and Air), it goes for one first (switch `SUMMON_MANA`, 2026-10-28): its node on our raw mana is worth 3000 more (`mana::node_value`; nodes run 1000-3000), so research takes the node's tech first and the first node goes to it; it is worth 20 more in a trade (two happy resources on `AI_bonusVal`'s scale: the AI pays its own valuation in gold); and its casters value the sphere's first promotion (Entropy I before Entropy II) like a summoning one |
+| Arcane (adepts +20% experience) | Thessa, Valledia, Dain, Tya, Perpentach, Faeryl, Tebryn | a caster corps of (cities + 2) / 3, or with Sorcery one for every four field units if more (`MAGE_ARMY`), trained in the most productive city whose garrison holds, its Mage Guild first (`civs::casters_up_to`, the civilizations' unique casters' helper); research toward Sorcery once the economy's tier 2 is in (`ARCANE_PATH`; "Spellcasting", "Magic civilizations") |
+| Summoner (summons +1 turn, Combat I) | Keelyn, Tebryn, Os-Gabella, Malchavic, Hyborem | a bigger caster corps, (cities + 2) / 2, or with Sorcery one for every four field units if more, and the Arcane leaders' research path ("Magic civilizations"); research toward its Adepts (the techs the Adept and its Mage Guild need, Knowledge of the Ether: +1500 once researchable, +500 on the way); its casters value a summoning sphere (a mana sphere opening a summon any civilization may cast: Death I-III, Fire II-III, Air/Earth/Water III, ...) at 1.5x + 60, a temporary summon at 1.5x (it lasts a turn longer), and raise lasting summons (Raise Skeleton) at peace too while the army is short of its peacetime target and a unit is affordable (others only at war); without a mana whose Mage-level spell summons a creature (Death: Spectre, Entropy: Pit Beast, Law: Einherjar, Ice: Ice Elemental; Keelyn's Balseraphs start with Mind, Chaos and Air), it goes for one first (switch `SUMMON_MANA`, 2026-10-28): its node on our raw mana is worth 3000 more (`mana::node_value`; nodes run 1000-3000), so research takes the node's tech first and the first node goes to it; it is worth 20 more in a trade (two happy resources on `AI_bonusVal`'s scale: the AI pays its own valuation in gold); and its casters value the sphere's first promotion (Entropy I before Entropy II) like a summoning one |
 | Philosophical (great people +100%) | Einion, Cardith, Cassiel, Koun, Dain, Alexis, Judecca, Gosea | the great-people emphasis (`EMPHASIZE_GREAT_PEOPLE`) on its best great-people cities, 1 + cities / 8, size 4+, only cities that can employ a specialist making great people; a city is replaced only by one half as good again |
 | Financial (+1 commerce on plots with 2+) | Garrim, Beeri, Kandros, Hannah, Rhoanna, Flauros, Dumannios | workers count the extra commerce an improvement brings at the threshold (`plot_calculate_improvement_yield_change` leaves it out), on an unimproved plot a city of ours works, weighted as the yields are (the improvement 1, its grown form 2) |
 | Industrious (limited wonders +50% production) | Capria, Tethira, Beeri, Arturus, Sandalphon, Cassiel, Os-Gabella, Statius | limited wonders (world, team and national) are worth 1.5x |
@@ -3289,11 +3359,15 @@ Where MNAI does something this AI does not, ranked by expected worth (each untri
   stages; domination needs two thirds of the land and the siege operations take about one city
   per war; the religious victory (80% of the world's people) is not pursued.
 - Casters ("Spellcasting"): a small corps by role and mana nodes on our raw mana (round 7a).
-  Not tried: casters for a lasting summon (the Sheaim's Raise Skeleton, an army unit a turn while
-  at war), magic earlier in the game (research values the first caster unit with a flat bonus and
-  the node techs by our raw mana, not Knowledge of the Ether by the spells our mana would give a
-  caster; it comes around turn 230), a caster's sphere chosen for its role (a terraformer is a
-  caster that happens to know Spring or Scorch), and trading for the mana a sphere needs. A
+  Magic leaders head for their Adepts early and keep a caster for every four field units ("Magic
+  civilizations"); other civilizations still value Knowledge of the Ether with a flat bonus and
+  get it around turn 230. Not tried: casters for a lasting summon (the Sheaim's Raise Skeleton, an
+  army unit a turn while at war), a caster's sphere chosen for its role (a terraformer is a caster
+  that happens to know Spring or Scorch), trading for the mana a sphere needs, and a Mage sent to
+  the city whose siege it would turn (sending it to the threatened city killed the casters with
+  the cities: docs/AI_LOG.md, "Magic civilizations"). Most of a Mage's turns at peace still go to
+  FfH's free cast (Haste, Dance of Blades), and the barrage fires about 8 times a game: the casts
+  that matter come at the end of the turn and in strikes. A
   lasting summon is an army unit with no plan of its own; world spells keep their own timing
   (`world_spells.rs`), and the defensive ones (Sanctuary, March of the Trees) wait for FfH's two
   wars: a losing war was the wrong moment without an estimate of the invasion coming

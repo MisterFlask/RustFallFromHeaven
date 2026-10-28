@@ -70,6 +70,39 @@ switch off (for a switch every civilization may play, on for the forced civiliza
    fighters do and does not replace them. The casters come on top of the army, one for every four
    field units.
 
+### The first package on fresh seeds (Sorcery after Writing, Adepts for the army before Sorcery; replaced)
+
+1. The four behaviours kept on development seeds (`ARCANE_PATH` with Sorcery after Writing once
+   we had an Adept, `BARRAGE`, `CASTER_FORCE`, `MAGE_ARMY` with a caster for every four field
+   units) and `CITY_SPELL_THREAT`, on for the forced civilization only against all off, fresh
+   seeds 52001-52040 (160 pairs, telemetry on).
+2. Every magic measure rose -- arcane casters at turn 200 0.06 -> 0.88 and at turn 400 3.6 ->
+   5.4, Mages at turn 400 2.6 -> 4.3, the first Mage (median) at turn 450 -> 350, spell damage 72
+   -> 99 and summon kills 9.5 -> 14.8 a game -- but win 16.2% -> 9.4% (7 / 18 seeds, p 0.043),
+   the Balseraphs 13 -> 5 wins, share@end -48 (t -0.47), legacy@400 +62 (t 1.03). The economy
+   paid in the window that decides these games: research -6% at turn 200, -11% at turn 250, -8%
+   at turn 300, the slider at turn 200 67% -> 60%, population -1.4, unit costs up; most of the
+   lost games split from the base between turns 150 and 250, before a single Mage. Sorcery's
+   2000 beakers came right after Writing, ahead of Trade, Currency and the other economy techs,
+   and the army's extra Adepts were trained a hundred turns before they could be Mages.
+3. An expert times both to pay: Sorcery after the economy's tier 2, and the army's casters once
+   they can be Mages (the corps the traits and unique casters keep comes before, as it did).
+
+### Knowledge of the Ether right after the first essentials (`ARCANE_PATH`, replaced)
+
+1. The package again with those two timings (seeds 52001-52040, now development seeds): an Adept
+   studies 30 to 70 turns before it can be a Mage, so the school still opened early -- Mysticism
+   and Knowledge of the Ether right after the early military tech, Exploration and Mining.
+2. The late game recovered (share@400 +103, t 1.39; legacy@400 +111, t 1.74; share@end +2), but
+   win 16.2% -> 10.0% (5 / 15, p 0.041; Balseraphs 13 -> 7, Amurites 4 -> 1, Sheaim 5 -> 2) and
+   share@200 -43 (t -1.46): only 2 of 160 games stayed the same, and Knowledge of the Ether at
+   turn ~120 let the corps the traits keep train its Adepts (0.9 at turn 200 instead of 0.06) that
+   then waited 150 turns and more for Sorcery, at the economy's cost, while the games' leaders
+   pulled away.
+3. The Adepts should be in school when Sorcery is in sight, not a century before: the magic
+   leader's beeline is Sorcery itself, with Knowledge of the Ether and the sphere tech on the way,
+   after the economy's tier 2 (the Amurites' own plan already did this).
+
 ### City mages to the front (`MAGE_FRONT`, reverted)
 
 1. A city mage stayed in its own city: in seed 4 (Amurites forced) a Wizard cast Haste in a quiet

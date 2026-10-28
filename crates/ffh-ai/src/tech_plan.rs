@@ -96,9 +96,8 @@ enum Step {
     Economy2Rest,
     /// The magic techs, once tier 3 military and economy tier 2 are reached.
     Magic,
-    /// A magic leader's Adepts: Mysticism and Knowledge of the Ether (`ARCANE_PATH`).
-    ArcaneEarly,
-    /// A magic leader's Mages: a sphere tech and Sorcery (`ARCANE_PATH`).
+    /// A magic leader's Mages: Sorcery with a sphere tech on the way, after the economy's tier 2
+    /// (`ARCANE_PATH`).
     ArcaneSorcery,
 }
 
@@ -107,19 +106,18 @@ const ORDER: &[Step] = &[
     Step::Military,
     Step::Tech("TECH_EXPLORATION"),
     Step::Tech("TECH_MINING"),
-    Step::ArcaneEarly,
     Step::Tech("TECH_CALENDAR"),
     Step::Tech("TECH_ANCIENT_CHANTS"),
     Step::Tech("TECH_EDUCATION"),
     Step::Religion,
     Step::CodeOfLaws,
     Step::Writing,
-    Step::ArcaneSorcery,
     Step::Tech("TECH_MYSTICISM"),
     Step::Tech("TECH_FESTIVALS"),
     Step::Tech("TECH_CARTOGRAPHY"),
     Step::Sailing,
     Step::Economy2,
+    Step::ArcaneSorcery,
     Step::Civ,
     Step::Economy2Rest,
     Step::Magic,
@@ -217,16 +215,8 @@ pub fn goals(g: &Game, p: PlayerId) -> Vec<Goal> {
                     push(t, "civ");
                 }
             }
-            Step::ArcaneEarly => {
-                if crate::traits::arcane_path(g, p) {
-                    push("TECH_MYSTICISM", "arcane");
-                    push("TECH_KNOWLEDGE_OF_THE_ETHER", "arcane");
-                }
-            }
             Step::ArcaneSorcery => {
-                // Once the school has a student: an Adept of ours to make a Mage of.
-                let student = || pl.units.iter().any(|&u| crate::mana::is_caster(g, u) && crate::magic::apprentice(g, u));
-                if crate::traits::arcane_path(g, p) && !n.has("TECH_SORCERY") && student() {
+                if crate::traits::arcane_path(g, p) && !n.has("TECH_SORCERY") {
                     if let Some(t) = sphere_tech(g, p, &n) {
                         push(&d.techs[t].base.type_, "arcane");
                     }

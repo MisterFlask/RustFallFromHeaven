@@ -4,7 +4,8 @@
 //! a fresh summon attacks only a fight it has a chance in unless it is about to expire and covers
 //! no one, Donal recruits once in a big city, a caster builds a mana node on our raw mana and
 //! Govannon teaches his spheres; a Fireball does nothing to a Fire Elemental, and the barrage
-//! softens the stack at our gates before our units move.
+//! softens the stack at our gates before our units move, the force estimate counts a Mage's
+//! Fireball, and a besieged city gets its Wall of Stone.
 //! They fix no unit's stats, only what the spells are for.
 
 use std::sync::Arc;
@@ -503,4 +504,30 @@ fn the_force_estimate_counts_the_mages_fireballs() {
     assert!(soften.iter().sum::<i32>() > 0, "the Fireball's fight and collateral damage count: {soften:?}");
     // A caster counts once, however often it is listed.
     assert_eq!(soften, magic::planned_soften(&g, tp, &defs, &[mage]));
+}
+
+#[test]
+fn a_besieged_city_gets_its_wall_of_stone() {
+    let d = ffh_data::global();
+    let mut g = one_landmass_game(21);
+    let (us, them) = (PlayerId(0), PlayerId(1));
+    if !magic::enabled(&g, us) || !ffh_ai::switches::CITY_SPELL_THREAT.on(&g, us) {
+        return;
+    }
+    g.player_found(us, 4, 5);
+    g.player_found(them, 16, 5);
+    let wall = d.t::<SpellType>("SPELL_WALL_OF_STONE");
+    let adept = g.player_init_unit(us, d.t::<UnitType>("UNIT_ADEPT"), 4, 5, Some(UnitAIType::UNITAI_MAGE), None);
+    give(&mut g, adept, &["PROMOTION_EARTH1"]);
+    g.player_init_unit(us, d.t::<UnitType>("UNIT_ARCHER"), 4, 5, Some(UnitAIType::UNITAI_CITY_DEFENSE), None);
+    assert!(g.unit_can_cast(adept, wall, false));
+    let quiet = magic::turn_value(&g, &View::new(&g, us), adept, wall).expect("Wall of Stone is understood");
+    // An enemy stack at the gates.
+    let (ut, tt) = (g.players[us].team, g.players[them].team);
+    g.team_declare_war(ut, tt, true, None);
+    for _ in 0..3 {
+        g.player_init_unit(them, d.t::<UnitType>("UNIT_AXEMAN"), 6, 5, Some(UnitAIType::UNITAI_ATTACK), None);
+    }
+    let besieged = magic::turn_value(&g, &View::new(&g, us), adept, wall).expect("Wall of Stone is understood");
+    assert!(besieged > quiet && besieged >= 15, "the wall is worth more under threat ({quiet} -> {besieged})");
 }

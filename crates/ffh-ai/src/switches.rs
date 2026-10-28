@@ -163,6 +163,12 @@ pub static CASTER_FORCE: Switch = Switch::new("CASTER_FORCE");
 /// A magic leader (Arcane or Summoner) keeps a caster for every four field units, on top of its
 /// army (`traits::mage_army`).
 pub static MAGE_ARMY: Switch = Switch::new("MAGE_ARMY");
+/// A city spell's building is valued against the enemies in sight of the city (`magic.rs`): a
+/// Wall of Stone in a besieged city.
+pub static CITY_SPELL_THREAT: Switch = Switch::new("CITY_SPELL_THREAT");
+/// The war of expansion's takeability test counts our casters' damage on a city's defenders
+/// (`diplomacy::can_take_cities_at`).
+pub static MAGIC_WAR: Switch = Switch::new("MAGIC_WAR");
 
 fn civ_list(var: &str) -> Option<Vec<String>> {
     let v = std::env::var(var).ok()?;
