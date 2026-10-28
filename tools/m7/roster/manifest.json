@@ -16640,5 +16640,221 @@
   "gen_size": "1024x1024",
   "quality": "medium",
   "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_svartalfar_castle": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_svartalfar_castle.png",
+  "size": [
+   192,
+   160
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "ref/crop_forest.png",
+   "prompts/assets/bld_city_svartalfar_castle__bld_city_svartalfar_town_r2_1.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_svartalfar_castle.txt",
+  "accepted": "2026-10-28 05:15",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#00ffff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_svartalfar_village": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_svartalfar_village.png",
+  "size": [
+   192,
+   134
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 3,
+  "mirrored": false,
+  "images": [
+   "ref/crop_forest.png",
+   "prompts/assets/bld_city_svartalfar_village__bld_city_svartalfar_town_r2_1.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_svartalfar_village.txt",
+  "accepted": "2026-10-28 05:15",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#00ffff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_mercurians_village": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_mercurians_village.png",
+  "size": [
+   192,
+   126
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "anchors/buildings/crop_houses.png",
+   "prompts/assets/bld_city_mercurians_village__bld_city_mercurians_town_r1_1.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_mercurians_village.txt",
+  "accepted": "2026-10-28 05:15",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_mercurians_castle": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_mercurians_castle.png",
+  "size": [
+   192,
+   156
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "ref/crop_city.png",
+   "prompts/assets/bld_city_mercurians_castle__bld_city_mercurians_town_r1_1.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_mercurians_castle.txt",
+  "accepted": "2026-10-28 05:15",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_infernal_town": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_infernal_town.png",
+  "size": [
+   192,
+   132
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 2,
+  "mirrored": false,
+  "images": [
+   "ref/crop_city.png",
+   "prompts/assets/bld_city_castle__bld_city_town_r2_1.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_infernal_town.txt",
+  "accepted": "2026-10-28 05:16",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_clan_of_embers_village": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_clan_of_embers_village.png",
+  "size": [
+   192,
+   120
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r3",
+  "variant": 3,
+  "mirrored": false,
+  "images": [
+   "anchors/buildings/crop_houses.png",
+   "prompts/assets/bld_city_clan_of_embers_village__bld_city_clan_of_embers_town_r1_3.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_clan_of_embers_village.txt",
+  "accepted": "2026-10-28 05:16",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_clan_of_embers_castle": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_clan_of_embers_castle.png",
+  "size": [
+   192,
+   160
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r3",
+  "variant": 3,
+  "mirrored": false,
+  "images": [
+   "ref/crop_city.png",
+   "prompts/assets/bld_city_clan_of_embers_castle__bld_city_clan_of_embers_town_r1_3.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_clan_of_embers_castle.txt",
+  "accepted": "2026-10-28 05:16",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_grigori_town": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_grigori_town.png",
+  "size": [
+   192,
+   130
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "ref/crop_city.png",
+   "anchors/buildings/crop_houses.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_grigori_town.txt",
+  "accepted": "2026-10-28 05:16",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
  }
 }
