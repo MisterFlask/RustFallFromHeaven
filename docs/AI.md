@@ -1050,7 +1050,11 @@ ported; the judgement is here. Only what a human could see is read.
   fewer and we can press the conquest; then we take the cities instead.
 - **Humans:** asked on the leader's contact cadence. A human can't be an AI's vassal (rules).
 
-Measured with `FFH_AI_VASSAL_OFF` (the switch), full games of ffh-ai only.
+Measured with `FFH_AI_VASSAL_OFF` (the switch), full games of ffh-ai only. The switch is a
+civilization switch like the others (`switches::VASSAL`): `FFH_AI_VASSAL_OFF=ALL` (or `1`, as
+before) turns vassal play off for everyone, `FFH_AI_VASSAL_OFF=X,..` / `FFH_AI_VASSAL_ONLY=X,..`
+for the players of those civilizations, each deciding for itself (it neither seeks nor agrees to
+vassalage, and as the master takes a vassal only when the deal costs it nothing).
 
 | | Development seeds 1-12 | | Fresh seeds 201-224 | |
 |---|---|---|---|---|
@@ -2980,7 +2984,11 @@ only, against opponents without it, and reports that player's wins and share.
   both reached (a longer game has more caster-turns, and more casters lost with an eliminated
   owner).
   Generic behaviours have switches of their own (`switches.rs`): `FFH_AI_<NAME>_OFF=X,..|ALL`
-  plays without it, `FFH_AI_<NAME>_ONLY=X,..` only for those civilizations.
+  plays without it, `FFH_AI_<NAME>_ONLY=X,..` only for those civilizations (`ALL` or `1`: every
+  one; names with or without `CIVILIZATION_`, any case). The module switches `FFH_AI_MAGIC_OFF`,
+  `FFH_AI_CIV_OFF`, `FFH_AI_VASSAL_OFF` and `FFH_AI_TRAIT_CIVS` are read the same way
+  (`switches::env_list`; `_ONLY` works for the first three too), and `FFH_AI_TRAIT_OFF` lists
+  traits in the same form.
   **Implementation forks do not stay.** A switch whose off side is the algorithm a change
   replaced (not merely the behaviour absent) is removed, with the old algorithm, the round after
   the change is kept: later comparisons with the old version run against an older revision

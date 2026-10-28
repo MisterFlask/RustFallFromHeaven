@@ -48,32 +48,12 @@ use crate::view::{attack_power, View};
 // Switch and trace
 // ----------------------------------------------------------------------------
 
-fn off_table(d: &GameData) -> &'static [bool] {
-    static TABLE: OnceLock<Vec<bool>> = OnceLock::new();
-    TABLE.get_or_init(|| {
-        let off: Vec<String> = std::env::var("FFH_AI_MAGIC_OFF")
-            .unwrap_or_default()
-            .split(',')
-            .map(|s| s.trim().trim_start_matches("CIVILIZATION_").to_ascii_uppercase())
-            .filter(|s| !s.is_empty())
-            .collect();
-        d.civilizations
-            .keys()
-            .map(|c| {
-                let name = d.civilizations[c].base.type_.trim_start_matches("CIVILIZATION_");
-                off.iter().any(|o| o == "ALL" || o == name)
-            })
-            .collect()
-    })
-}
-
 /// False when the player casts as FfH's AI did (`casting.rs` as ported, nothing before attacks,
 /// casters moved and promoted as before): the barbarians, and the civilizations listed in
-/// `FFH_AI_MAGIC_OFF` (`CIVILIZATION_AMURITES` or `AMURITES`, comma-separated, or `all`). A
-/// measurement switch like `FFH_AI_CIV_OFF`: read once, so play stays deterministic, and the run
-/// cache keys runs by every `FFH_*` variable.
+/// `FFH_AI_MAGIC_OFF` (`CIVILIZATION_AMURITES` or `AMURITES`, comma-separated, or `all`), or left
+/// out of `FFH_AI_MAGIC_ONLY`: the measurement switch [`crate::switches::MAGIC`].
 pub fn enabled(g: &Game, p: PlayerId) -> bool {
-    !g.player_is_barbarian(p) && g.player_get_civilization_type(p).is_some_and(|c| !off_table(g.d)[c.idx()])
+    !g.player_is_barbarian(p) && g.player_get_civilization_type(p).is_some_and(|c| crate::switches::MAGIC.civ_on(g.d, c))
 }
 
 /// Does player `p` raise its arcane casters as the rules intend ([`apprentice`], [`safe_step`]):

@@ -105,23 +105,18 @@ const NAMES: [(&str, Civ); 21] = [
 ];
 
 /// Per civilization type: the [`Civ`] whose logic it plays (`Civ::Other` when it has none or is
-/// listed in `FFH_AI_CIV_OFF`). Built once from the game data and the environment.
+/// turned off by `FFH_AI_CIV_OFF`, [`crate::switches::CIV`]). Built once from the game data and
+/// the environment.
 fn table(d: &GameData) -> &'static [Civ] {
     static TABLE: std::sync::OnceLock<Vec<Civ>> = std::sync::OnceLock::new();
     TABLE.get_or_init(|| {
-        let off: Vec<String> = std::env::var("FFH_AI_CIV_OFF")
-            .unwrap_or_default()
-            .split(',')
-            .map(|s| s.trim().trim_start_matches("CIVILIZATION_").to_ascii_uppercase())
-            .filter(|s| !s.is_empty())
-            .collect();
         d.civilizations
             .keys()
             .map(|c| {
-                let name = d.civilizations[c].base.type_.trim_start_matches("CIVILIZATION_");
-                if off.iter().any(|o| o == "ALL" || o == name) {
+                if !crate::switches::CIV.civ_on(d, c) {
                     return Civ::Other;
                 }
+                let name = d.civilizations[c].base.type_.trim_start_matches("CIVILIZATION_");
                 NAMES.iter().find(|(n, _)| *n == name).map_or(Civ::Other, |&(_, civ)| civ)
             })
             .collect()
@@ -136,7 +131,7 @@ pub fn civ(g: &Game, p: PlayerId) -> Civ {
 
 /// False when the player's civilization-specific play is turned off: `FFH_AI_CIV_OFF` lists
 /// civilizations (`CIVILIZATION_KHAZAD` or `KHAZAD`, comma-separated, or `all`) that play as
-/// generic civs. A measurement switch (civ X with and without its logic, against the same
+/// generic civs (`FFH_AI_CIV_ONLY`: the only ones that do not; [`crate::switches::CIV`]). A measurement switch (civ X with and without its logic, against the same
 /// opponents, in one binary); it is read once and never changes during a game, so play stays
 /// deterministic, and the run cache keys runs by every `FFH_*` variable. The research flavours
 /// of `tech_plan.rs` (older, per-civilization beelines) are not covered.
