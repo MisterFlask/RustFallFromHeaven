@@ -90,6 +90,10 @@ pub struct Op {
     /// Units the target needs (estimate) and units committed.
     pub need: i32,
     pub have: i32,
+    /// The strike phase comes from our casters alone (`CASTER_FORCE`): the adjacent ring takes the
+    /// city with a reserve once they have cast, not without them. The strike casts, then attacks
+    /// only if the city is still covered with a reserve.
+    pub probe: bool,
 }
 
 /// This turn's operations (built on the first army decision of the turn, see [`plan`]).
@@ -481,6 +485,14 @@ pub fn simulate(g: &Game, tp: PlotIdx, defs: &[UnitId], atts: &[UnitId], wall_cu
 /// sent its sacrifices first, a defender at an eighth of its expected health counted as dead, and
 /// a siege engine's win as a kill: the simulation saw the city fall where the strike stalled.
 pub fn simulate_in_order(g: &Game, tp: PlotIdx, defs: &[UnitId], atts: &[UnitId], wall_cut: i32, order: Order, kill_pct: i64, sure: i64) -> Sim {
+    simulate_softened(g, tp, defs, &[], atts, wall_cut, order, kill_pct, sure)
+}
+
+/// [`simulate_in_order`] with the defenders `defs` hurt by `soften` more hit points each (in their
+/// order; empty: none): what our casters take from them first (`magic::planned_soften`).
+#[allow(clippy::too_many_arguments)]
+pub fn simulate_softened(g: &Game, tp: PlotIdx, defs: &[UnitId], soften: &[i32], atts: &[UnitId], wall_cut: i32, order: Order, kill_pct: i64, sure: i64) -> Sim {
+    let health = |i: usize, d: UnitId| (g.unit_curr_hit_points(d) - soften.get(i).copied().unwrap_or(0)).max(0);
     let n_def = defs.len();
     let atts: Vec<UnitId> = atts.iter().copied().filter(|&u| fights(g, u)).collect();
     let n_att = atts.len();
@@ -488,7 +500,7 @@ pub fn simulate_in_order(g: &Game, tp: PlotIdx, defs: &[UnitId], atts: &[UnitId]
         return Sim { used: Some(0), n_def, hp_left: 0, best: 1000, n_att, ..Sim::default() };
     }
     let Some(&first) = atts.first() else {
-        return Sim { used: None, n_def, hp_left: defs.iter().map(|&d| g.unit_curr_hit_points(d)).sum(), best: 0, n_att, ..Sim::default() };
+        return Sim { used: None, n_def, hp_left: defs.iter().enumerate().map(|(i, &d)| health(i, d)).sum(), best: 0, n_att, ..Sim::default() };
     };
     let owner = g.units[first].owner;
     let precious = crate::switches::PRECIOUS.on(g, owner);
@@ -498,7 +510,8 @@ pub fn simulate_in_order(g: &Game, tp: PlotIdx, defs: &[UnitId], atts: &[UnitId]
     // fallen when the chance it is still alive is `sure` per mille or less. (Its expected health,
     // which blends the fights it lost and the ones it won, is no measure: after a 50% fight it
     // reads low while the defender is alive half the time and still has to be killed.)
-    let mut ds: Vec<(UnitId, i32, i64, i64)> = defs.iter().map(|&d| (d, g.unit_curr_hit_points(d), 1000, worth(g, d))).collect();
+    // A defender our casters leave at no health is dead before the first attack.
+    let mut ds: Vec<(UnitId, i32, i64, i64)> = defs.iter().enumerate().map(|(i, &d)| (d, health(i, d), if health(i, d) > 0 { 1000 } else { 0 }, worth(g, d))).collect();
     let standing = |d: &(UnitId, i32, i64, i64)| d.2 > sure;
     let pairs: Vec<Vec<Option<Pair>>> = atts
         .iter()
@@ -656,11 +669,18 @@ fn margin(n: usize) -> usize {
 /// Does `units` take city `c` (plot `tp`, defenders `defs`) with `spare` attackers to spare?
 /// With `spare`, a [`margin`] of attackers must be left over (only units able to attack count).
 pub(crate) fn covers(g: &Game, c: CityId, tp: PlotIdx, defs: &[UnitId], units: &[UnitId], spare: bool, siege: bool) -> bool {
+    covers_with(g, c, tp, defs, units, &[], spare, siege)
+}
+
+/// [`covers`] once our `casters` have cast on the defenders (`magic::planned_soften`, switch
+/// `CASTER_FORCE`).
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn covers_with(g: &Game, c: CityId, tp: PlotIdx, defs: &[UnitId], units: &[UnitId], casters: &[UnitId], spare: bool, siege: bool) -> bool {
     let n_att = units.iter().filter(|&&u| fights(g, u)).count();
     if n_att == 0 {
         return false;
     }
-    let s = covers_sim(g, c, tp, defs, units, spare, siege);
+    let s = covers_sim_with(g, c, tp, defs, units, casters, spare, siege);
     if faithful(g, units) {
         return s.used.is_some() || s.best >= 850 && defs.len() == 1;
     }
@@ -671,6 +691,11 @@ pub(crate) fn covers(g: &Game, c: CityId, tp: PlotIdx, defs: &[UnitId], units: &
 /// The simulation [`covers`] judges (also what the strike's trace shows: printing another one,
 /// at a different sureness, showed a strike going ahead on a simulation where the city held).
 pub(crate) fn covers_sim(g: &Game, c: CityId, tp: PlotIdx, defs: &[UnitId], units: &[UnitId], spare: bool, siege: bool) -> Sim {
+    covers_sim_with(g, c, tp, defs, units, &[], spare, siege)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn covers_sim_with(g: &Game, c: CityId, tp: PlotIdx, defs: &[UnitId], units: &[UnitId], casters: &[UnitId], spare: bool, siege: bool) -> Sim {
     let cut = if siege { wall_cut(g, c, units) } else { 0 };
     // `SIM_FAITHFUL`: the confidence is the simulation's own -- every defender 90% sure to fall
     // with a reserve to spare, 70% sure without -- in place of attackers held in reserve against
@@ -679,7 +704,8 @@ pub(crate) fn covers_sim(g: &Game, c: CityId, tp: PlotIdx, defs: &[UnitId], unit
     if faithful(g, units) {
         // `BOLD_STRIKE` (conquerors): without a reserve, 60% sure.
         let bold = bold_striker(g, g.units[units[0]].owner);
-        return simulate_in_order(g, tp, defs, units, cut, Order::Strike, 100, if spare { 100 } else if bold { 400 } else { 300 });
+        let soften = if casters.is_empty() || !crate::switches::CASTER_FORCE.on(g, g.units[units[0]].owner) { Vec::new() } else { crate::magic::planned_soften(g, tp, defs, casters) };
+        return simulate_softened(g, tp, defs, &soften, units, cut, Order::Strike, 100, if spare { 100 } else if bold { 400 } else { 300 });
     }
     simulate(g, tp, defs, units, cut)
 }
@@ -1121,6 +1147,18 @@ fn build_op(g: &Game, v: &mut View, cand: Cand, need: i32, groups: Vec<(i32, Gro
     let all = units_of(&|_, _| true);
     let near = units_of(&|d, _| d <= 2);
     let adj: Vec<UnitId> = units_of(&|d, _| d <= 1).into_iter().filter(|&u| g.unit_moves_left(u) > 0).collect();
+    // The casters marching with those stacks, whose casts open the strike (`CASTER_FORCE`).
+    let casters_of = |pred: &dyn Fn(i32, GroupId) -> bool| -> Vec<UnitId> {
+        let mut out = Vec::new();
+        for &(d, grp) in &groups {
+            if committed.contains(&grp) && pred(d, grp) {
+                out.extend(g.groups[grp].units.iter().copied().filter(|&u| crate::magic::spared_caster(g, u)));
+            }
+        }
+        out
+    };
+    let (c_all, c_near) = (casters_of(&|_, _| true), casters_of(&|d, _| d <= 2));
+    let c_adj: Vec<UnitId> = casters_of(&|d, _| d <= 1).into_iter().filter(|&u| !g.units[u].has_casted).collect();
     // (Heroes and veterans count: below their odds they attack last in the strike, but they do.)
     let defs = visible_defenders(g, team, tp);
     // We commit to marching only with a confident force (a reserve to spare: `spare = true`), so
@@ -1131,8 +1169,10 @@ fn build_op(g: &Game, v: &mut View, cand: Cand, need: i32, groups: Vec<(i32, Gro
     // acceptable risk is the point; a lone unit still never qualifies (it cannot clear a city).
     let (ok_all, ok_near, ok_adj) = if cand.visible {
         (
-            covers(g, cand.city, tp, &defs, &all, true, true),
-            covers(g, cand.city, tp, &defs, &near, false, true),
+            covers_with(g, cand.city, tp, &defs, &all, &c_all, true, true),
+            covers_with(g, cand.city, tp, &defs, &near, &c_near, false, true),
+            // (Without the casters: they make a strike decisive below, never a marginal one go a
+            // turn before the reinforcements that would make it decisive.)
             !adj.is_empty() && covers(g, cand.city, tp, &defs, &adj, false, false),
         )
     } else {
@@ -1153,7 +1193,15 @@ fn build_op(g: &Game, v: &mut View, cand: Cand, need: i32, groups: Vec<(i32, Gro
     // strike together next turn. Strictly one turn: a stack that cannot close this turn is not
     // counted, so a city that only hardens is still struck now at acceptable odds, and a ring that
     // already wins with a reserve (`adj_decisive`) strikes now regardless.
-    let adj_decisive = ok_adj && covers(g, cand.city, tp, &defs, &adj, true, false);
+    if cand.visible && !c_all.is_empty() && crate::trace_on(p) {
+        // (Trace) Where our casters change the force estimates: the firings of `CASTER_FORCE`.
+        let decisive = !adj.is_empty() && covers_with(g, cand.city, tp, &defs, &adj, &c_adj, true, false);
+        let without = (covers(g, cand.city, tp, &defs, &all, true, true), covers(g, cand.city, tp, &defs, &near, false, true), ok_adj && covers(g, cand.city, tp, &defs, &adj, true, false));
+        if without != (ok_all, ok_near, decisive) {
+            crate::trace!(g, p, "  casters count on {}: {} casters, covers (all, near, adjacent with a reserve) {:?} without them {:?}; defenders {:?} lose {:?} to {} adjacent casters", g.cities[cand.city].name, c_all.len(), (ok_all, ok_near, decisive), without, defs.iter().map(|&d| g.unit_curr_hit_points(d)).collect::<Vec<_>>(), crate::magic::planned_soften(g, tp, &defs, &c_adj), c_adj.len());
+        }
+    }
+    let adj_decisive = !adj.is_empty() && (ok_adj || !c_adj.is_empty()) && covers_with(g, cand.city, tp, &defs, &adj, &c_adj, true, false);
     let concentrate = ok_adj
         && !adj_decisive
         && {
@@ -1176,12 +1224,12 @@ fn build_op(g: &Game, v: &mut View, cand: Cand, need: i32, groups: Vec<(i32, Gro
                     strikeable.extend(g.groups[grp].units.iter().copied());
                 }
             }
-            strikeable.len() > adj.len() && covers(g, cand.city, tp, &defs, &strikeable, true, true)
+            strikeable.len() > adj.len() && covers_with(g, cand.city, tp, &defs, &strikeable, &c_near, true, true)
         };
     // Strike when the adjacent ring is decisive, or when no one-turn concentration would improve
     // it; otherwise defer one turn to concentrate. `concentrate` implies `ok_near` and `ok_all`
     // (strikeable is a subset of near and all), so a deferred strike lands on StepIn, never Gather.
-    let strike_now = ok_adj && (adj_decisive || !concentrate);
+    let strike_now = adj_decisive || ok_adj && !concentrate;
     let phase = if !at_war {
         Phase::Gather
     } else if strike_now {
@@ -1218,7 +1266,8 @@ fn build_op(g: &Game, v: &mut View, cand: Cand, need: i32, groups: Vec<(i32, Gro
         g.game_turn() - g.cities[cand.city].game_turn_acquired,
         cand.dist
     );
-    Some(Op { city: cand.city, plot: tp, civ: cand.civ, phase, groups: committed, rally, assembly, staging, struck: false, at_war, need, have: all.len() as i32 })
+    let probe = phase == Phase::Strike && !ok_adj;
+    Some(Op { city: cand.city, plot: tp, civ: cand.civ, phase, groups: committed, rally, assembly, staging, struck: false, at_war, need, have: all.len() as i32, probe })
 }
 
 /// The plot two plots from the target where the stacks gather: land we can enter, no enemy
@@ -1619,7 +1668,7 @@ fn strike(g: &mut Game, v: &mut View, op: &Op) {
         // heal if we stop). With switch `STRIKE_AT_PHASE` (or `BOLD_STRIKE`) the strike starts
         // at the odds that put the stacks in the strike phase (`plan`: the adjacent ring takes
         // the city without a reserve) instead of waiting next to the city for a reserve.
-        let at_phase = crate::switches::STRIKE_AT_PHASE.on(g, p) || bold_striker(g, p);
+        let at_phase = (crate::switches::STRIKE_AT_PHASE.on(g, p) || bold_striker(g, p)) && !op.probe;
         let takes = covers(g, op.city, tp, &defs, &able, fights == 0 && !at_phase, false);
         if fights == 0 && at_phase && crate::trace_on(p) {
             let reserve = covers(g, op.city, tp, &defs, &able, true, false);
@@ -1966,6 +2015,7 @@ pub(crate) mod tests {
             at_war: true,
             need: 1,
             have: 3,
+            probe: false,
         };
         let mut v = View::new(&g, us);
         strike(&mut g, &mut v, &op);
@@ -2002,7 +2052,7 @@ pub(crate) mod tests {
         assert_eq!(g.units[mage].ai_type, Some(UnitAIType::UNITAI_WARWIZARD));
         assert_eq!(g.group_get_head_unit(grp), Some(champions[0]), "a Champion heads the stack");
         assert!(!fights(&g, mage), "the Mage does not count in the force");
-        let op = Op { city, plot: tp, civ: true, phase: Phase::Strike, groups: vec![grp], rally: None, assembly: None, staging: None, struck: false, at_war: true, need: 1, have: 3 };
+        let op = Op { city, plot: tp, civ: true, phase: Phase::Strike, groups: vec![grp], rally: None, assembly: None, staging: None, struck: false, at_war: true, need: 1, have: 3, probe: false };
         let mut v = View::new(&g, us);
         strike(&mut g, &mut v, &op);
         assert!(g.units.contains(mage) && !g.units[mage].made_attack, "the Mage did not attack");

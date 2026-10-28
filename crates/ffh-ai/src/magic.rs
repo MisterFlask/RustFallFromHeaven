@@ -203,6 +203,11 @@ fn py_kind(d: &GameData, s: SpellType) -> Py {
 /// The spells this module values; the others keep FfH's terms (`casting::ffh_value`): world
 /// spells (their timing is `world_spells.rs`), abilities (equipment, crews, cages, upgrades...),
 /// and spells whose effect lives only in Python and is not one of [`Py`].
+/// A Python spell that damages enemy units ([`Py`]: Crush, Pillar of Fire, Destroy Undead).
+pub fn damage_spell(d: &GameData, s: SpellType) -> bool {
+    matches!(py_kind(d, s), Py::Crush | Py::PillarOfFire | Py::DestroyUndead)
+}
+
 pub fn understood(d: &GameData, s: SpellType) -> bool {
     let i = &d.spells[s];
     if i.global || i.ability {
@@ -277,6 +282,11 @@ fn side(g: &Game, t: UnitId, team: TeamId) -> Side {
 /// its defense strength, twice its level, a quarter of its city's defense, its resistance to
 /// the damage type -- and never past the limit.
 fn expected_damage(g: &Game, caster: UnitId, t: UnitId, dmg: i32, limit: i32, dt: Option<DamageType>) -> i32 {
+    expected_damage_at(g, caster, t, dmg, limit, dt, g.units[t].damage)
+}
+
+/// [`expected_damage`] on `t` hurt by `damage` hit points.
+fn expected_damage_at(g: &Game, caster: UnitId, t: UnitId, dmg: i32, limit: i32, dt: Option<DamageType>, damage: i32) -> i32 {
     let unit = &g.units[t];
     let mut resist = g.unit_base_combat_str_defense(t) * 2 + unit.level * 2;
     if let Some(c) = g.map.plots[g.unit_plot(t)].plot_city {
@@ -292,7 +302,7 @@ fn expected_damage(g: &Game, caster: UnitId, t: UnitId, dmg: i32, limit: i32, dt
     if dt != Some(DamageType::DAMAGE_PHYSICAL) {
         n += g.units[caster].spell_damage_modify;
     }
-    ((n - 1).max(0) * (100 - resist) / 100).min(limit - unit.damage).max(0)
+    ((n - 1).max(0) * (100 - resist) / 100).min(limit - damage).max(0)
 }
 
 /// Strength change, in percent, that promotion `pr` makes to `t` attacking (`attack`) or
@@ -724,11 +734,17 @@ fn summon_strike(g: &Game, p: PlayerId, ut: UnitType, tp: PlotIdx) -> i32 {
 
 /// [`summon_strike`] with the summon's odds of winning (of 1000) by the same estimate; `None`
 /// when it cannot fight there.
-pub(crate) fn summon_fight(g: &Game, p: PlayerId, ut: UnitType, tp: PlotIdx) -> Option<(i32, i32)> {
+pub fn summon_fight(g: &Game, p: PlayerId, ut: UnitType, tp: PlotIdx) -> Option<(i32, i32)> {
+    summon_fight_at(g, p, ut, tp, &|e| hp(g, e)).map(|(odds, taken)| (odds, taken.iter().map(|&(_, v)| v).sum()))
+}
+
+/// [`summon_fight`] against defenders whose health is `health` (hit points), with what the fight
+/// takes from each: the defender the rules put up first, then those its collateral damage hurts.
+fn summon_fight_at(g: &Game, p: PlayerId, ut: UnitType, tp: PlotIdx, health: &dyn Fn(UnitId) -> i32) -> Option<(i32, Vec<(UnitId, i32)>)> {
     let d = g.d;
+    let hp = |_: &Game, e: UnitId| health(e);
     let info = &d.units[ut];
-    let a = (info.combat + info.damage_type_combat.iter().sum::<i32>()) * 100;
-    if a <= 0 || info.only_defensive {
+    if info.combat + info.damage_type_combat.iter().sum::<i32>() <= 0 || info.only_defensive {
         return None;
     }
     let team = g.players[p].team;
@@ -736,7 +752,7 @@ pub(crate) fn summon_fight(g: &Game, p: PlayerId, ut: UnitType, tp: PlotIdx) -> 
         .units
         .iter()
         .copied()
-        .filter(|&e| g.unit_is_enemy(e, Some(team), None) && g.unit_can_defend(e, Some(tp)) && !g.unit_is_invisible(e, team, false))
+        .filter(|&e| g.unit_is_enemy(e, Some(team), None) && g.unit_can_defend(e, Some(tp)) && !g.unit_is_invisible(e, team, false) && health(e) > 0)
         .collect();
     if defs.is_empty() {
         return None;
@@ -744,6 +760,13 @@ pub(crate) fn summon_fight(g: &Game, p: PlayerId, ut: UnitType, tp: PlotIdx) -> 
     let max_hp = d.defines.max_hit_points.max(1);
     let strength = |e: UnitId| g.unit_max_combat_str(e, Some(tp), None, None);
     let best = *defs.iter().max_by_key(|&&e| (strength(e) as i64 * hp(g, e) as i64, std::cmp::Reverse(e))).unwrap();
+    // The summon's damage types count as far as the defender does not resist them (C++
+    // `maxCombatStr`; switch `BARRAGE`): a Fireball, all fire, does nothing to a Fire Elemental.
+    let resist = |dt: DamageType| if crate::switches::BARRAGE.on(g, p) { g.unit_get_damage_type_resist(best, dt) } else { 0 };
+    let a = info.combat * 100 + d.damages.keys().map(|dt| info.damage_type_combat[dt] * (100 - resist(dt))).sum::<i32>();
+    if a <= 0 {
+        return None;
+    }
     let d_max = strength(best).max(1);
     let d_hp = hp(g, best).max(1);
     let d_str = (d_max * d_hp / max_hp).max(1);
@@ -777,7 +800,7 @@ pub(crate) fn summon_fight(g: &Game, p: PlayerId, ut: UnitType, tp: PlotIdx) -> 
     if info.combat_limit < max_hp {
         wound = wound.min((d_hp - (max_hp - info.combat_limit)).max(0) as i64);
     }
-    let mut v = (odds * d_hp as i64 + (1000 - odds) * wound) / 1000;
+    let mut taken = vec![(best, ((odds * d_hp as i64 + (1000 - odds) * wound) / 1000) as i32)];
     if info.collateral_damage > 0 && defs.len() > 1 {
         let cs = a / 100 * info.collateral_damage / 100;
         let limit = info.collateral_damage_limit * max_hp / 100;
@@ -791,10 +814,69 @@ pub(crate) fn summon_fight(g: &Game, p: PlayerId, ut: UnitType, tp: PlotIdx) -> 
             }
             let dmg = defines.collateral_combat_damage * (cs + s2) / (ts + s2);
             let cap = limit.min(limit * (cs + s2) / (ts + s2));
-            v += dmg.min(cap - g.units[o].damage).max(0) as i64;
+            taken.push((o, dmg.min(cap - (max_hp - hp(g, o))).max(0)));
         }
     }
-    Some((odds as i32, v as i32))
+    Some((odds as i32, taken))
+}
+
+/// What the casts of our `casters` before a strike on `tp` should take from its defenders `defs`
+/// (switch `CASTER_FORCE`; hit points, in `defs`' order), for the force estimates that decide when
+/// our stacks gather, close and strike (`campaign::covers`): an expert counts his Mages' Fireballs
+/// in the force he needs. Each caster that is no apprentice casts once, the spell taking most hit
+/// points of those it knows (damage on every defender, a temporary summon's fight with the
+/// defender the rules put up and its collateral damage), each cast on the defenders as the casts
+/// before it left them. The strike itself casts first and weighs what is left (`soften`).
+pub fn planned_soften(g: &Game, tp: PlotIdx, defs: &[UnitId], casters: &[UnitId]) -> Vec<i32> {
+    let d = g.d;
+    let max_hp = d.defines.max_hit_points.max(1);
+    let start: Vec<i32> = defs.iter().map(|&e| hp(g, e)).collect();
+    let mut cur = start.clone();
+    let mut casters: Vec<UnitId> = casters.iter().copied().filter(|&c| g.units.contains(c) && combat_caster(g, c) && !apprentice(g, c)).collect();
+    casters.sort();
+    casters.dedup();
+    for c in casters {
+        let p = g.units[c].owner;
+        let twin = if g.unit_is_twincast(c) { 2 } else { 1 };
+        let mut best: Option<(i32, Vec<i32>)> = None;
+        for s in known(g, c) {
+            let info = &d.spells[s];
+            if !info.allow_ai || info.global {
+                continue;
+            }
+            let mut after = cur.clone();
+            if info.damage > 0 && info.range >= 1 {
+                for (i, &e) in defs.iter().enumerate() {
+                    if g.unit_is_immune_to_spell(e, c, s) {
+                        continue;
+                    }
+                    let land = if info.resistable { 100 - g.unit_get_resist_chance(e, c, s) } else { 100 };
+                    let dmg = expected_damage_at(g, c, e, info.damage, info.damage_limit, info.damage_type, max_hp - after[i]) * land / 100;
+                    after[i] -= dmg;
+                }
+            } else if let Some(ut) = info.create_unit_type.filter(|_| !info.permanent_unit_create) {
+                for _ in 0..info.create_unit_num.max(1) * twin {
+                    let health = |e: UnitId| defs.iter().position(|&x| x == e).map_or_else(|| hp(g, e), |i| after[i]);
+                    let Some((_, taken)) = summon_fight_at(g, p, ut, tp, &health) else { break };
+                    for (e, v) in taken {
+                        if let Some(i) = defs.iter().position(|&x| x == e) {
+                            after[i] = (after[i] - v).max(0);
+                        }
+                    }
+                }
+            } else {
+                continue;
+            }
+            let gain: i32 = cur.iter().zip(&after).map(|(a, b)| a - b).sum();
+            if gain > 0 && best.as_ref().map_or(true, |(b, _)| gain > *b) {
+                best = Some((gain, after));
+            }
+        }
+        if let Some((_, after)) = best {
+            cur = after;
+        }
+    }
+    start.iter().zip(&cur).map(|(a, b)| a - b).collect()
 }
 
 /// Value of the summons of `spell` cast by `caster` (temporary summons attack at once; a lasting

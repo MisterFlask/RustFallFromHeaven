@@ -144,6 +144,10 @@ impl Controller for Ai {
             civs::turn(self, g, &mut v); // civ-mechanics
             traits::turn(g, &v); // trait-play
         }
+        if !v.barbarian {
+            campaign::plan(g, &mut v);
+            casting::barrage(g, &v);
+        }
         units::play(self, g, &mut v);
         casting::end_turn(g, &v);
         // Spells may have summoned units or used moves: make sure nothing is left ready.

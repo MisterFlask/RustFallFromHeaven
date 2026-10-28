@@ -150,6 +150,19 @@ pub static PROMOTE_ALL: Switch = Switch::new("PROMOTE_ALL");
 /// A Summoner without a mana whose Mage-level spell summons a creature goes for one first: its
 /// node, research toward it, trade, the sphere's first promotion (`traits::summon_mana`).
 pub static SUMMON_MANA: Switch = Switch::new("SUMMON_MANA");
+/// A magic leader (Arcane or Summoner) researches toward its Adepts early and toward Sorcery after
+/// Writing (`tech_plan`, `traits::arcane_path`).
+pub static ARCANE_PATH: Switch = Switch::new("ARCANE_PATH");
+/// Casters cast their damage and temporary summons at the start of our turn, before our units
+/// decide their attacks (`casting::barrage`); a summon's estimated fight counts the defender's
+/// resistances to its damage types (`magic::summon_fight`).
+pub static BARRAGE: Switch = Switch::new("BARRAGE");
+/// An operation's force estimates count the casts of the casters marching with its stacks: the
+/// defenders they soften before the strike (`magic::planned_soften`, `campaign::covers_with`).
+pub static CASTER_FORCE: Switch = Switch::new("CASTER_FORCE");
+/// A magic leader (Arcane or Summoner) keeps a caster for every three field units, and its war
+/// wizards count toward its army target (`traits::mage_army`).
+pub static MAGE_ARMY: Switch = Switch::new("MAGE_ARMY");
 
 fn civ_list(var: &str) -> Option<Vec<String>> {
     let v = std::env::var(var).ok()?;

@@ -298,6 +298,30 @@ pub fn religion_stickiness(g: &Game, p: PlayerId) -> i32 {
 // Arcane and Summoner: casters
 // ----------------------------------------------------------------------------
 
+/// Does `p` take the arcane path (switch `ARCANE_PATH`): a magic leader (Arcane or Summoner)
+/// heads for its Adepts right after the first essentials, and for Sorcery right after Writing
+/// (`tech_plan`). An Adept studies for 30 to 70 turns before it can be a Mage, so the sooner the
+/// school opens, the sooner the Mages come; without it the Adepts came around turn 250.
+pub fn arcane_path(g: &Game, p: PlayerId) -> bool {
+    (has(g, p, Trait::Arcane) || has(g, p, Trait::Summoner)) && crate::switches::ARCANE_PATH.on(g, p)
+}
+
+/// Does `p` field a magic leader's army (switch `MAGE_ARMY`; Arcane or Summoner): casters in
+/// proportion to its field army ([`mage_army_casters`]), its war wizards counting toward the army
+/// target (`production::decide`). An expert who plays a magic civilization fights with his
+/// Mages: a Fireball softens what his swords then take, and a Wizard is never lost in the attack.
+/// Without it the corps stayed at (cities + 2) / 2 or less while the army grew: 4 casters to 45
+/// field units at turn 400.
+pub fn mage_army(g: &Game, p: PlayerId) -> bool {
+    (has(g, p, Trait::Arcane) || has(g, p, Trait::Summoner)) && crate::switches::MAGE_ARMY.on(g, p)
+}
+
+/// The casters a [`mage_army`] wants: one for every three field units (attackers, siege).
+pub fn mage_army_casters(g: &Game, p: PlayerId) -> i32 {
+    use crate::production::count_ai;
+    (count_ai(g, p, UnitAIType::UNITAI_ATTACK) + count_ai(g, p, UnitAIType::UNITAI_ATTACK_CITY) + count_ai(g, p, UnitAIType::UNITAI_COLLATERAL)) / 3
+}
+
 /// A production choice for city `c` (after the civilization's own): an Arcane leader keeps
 /// (cities + 2) / 3 casters, a Summoner (cities + 2) / 2 (its summons need casters, and they die
 /// in the fights where they summon), trained in its most productive safe city.

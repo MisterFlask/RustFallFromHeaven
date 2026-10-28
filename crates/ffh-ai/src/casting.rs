@@ -174,6 +174,62 @@ pub fn spend_expiring(g: &mut Game, v: &View) {
     }
 }
 
+/// A barrage cast must be worth this much (`magic::turn_value`, in hit points).
+const BARRAGE_MIN: i32 = 10;
+
+/// The barrage (switch `BARRAGE`), at the start of our turn before any unit moves: a caster whose
+/// best cast by the end-of-turn values ([`magic::choose_turn_spell`]) is damage or a temporary
+/// summon casts it now, its summons attacking as they would at the end of the turn but with our
+/// units still to move. The enemies it reaches are as weak when our units decide their attacks
+/// as they are in the enemies' turn: an expert fireballs the stack besieging his city and then
+/// sorties against the survivors. At the end of the turn the same casts came after every attack
+/// decision, and nothing of ours used the damage before the enemy healed (a Wizard's Fireballs on
+/// the stack at a city's gates, turn after turn, while the city fell). Casters in a stack of our
+/// operations keep their cast for the strike (`magic::soften`). Casting uses no moves: a caster
+/// may still walk after it.
+pub fn barrage(g: &mut Game, v: &View) {
+    let p = v.p;
+    if v.barbarian || !crate::switches::BARRAGE.on(g, p) || !crate::magic::enabled(g, p) {
+        return;
+    }
+    let d = g.d;
+    let striking: Vec<GroupId> = v.campaign.ops.iter().flat_map(|o| o.groups.iter().copied()).collect();
+    let barrage_spell = |s: SpellType| {
+        let i = &d.spells[s];
+        // FfH's explicit preferences (the Balseraphs' puppets, AI weight 1000) keep their time.
+        i.ai_weight <= 0 && (i.damage > 0 || i.create_unit_type.is_some() && !i.permanent_unit_create || crate::magic::damage_spell(d, s))
+    };
+    let was = g.players[p].sum_sui_mode;
+    g.players[p].sum_sui_mode = true;
+    for u in g.players[p].units.clone() {
+        if !g.units.contains(u) || g.units[u].has_casted || g.units[u].death_delay || g.unit_is_cargo(u) {
+            continue;
+        }
+        if g.units[u].group.is_some_and(|grp| striking.contains(&grp)) {
+            continue;
+        }
+        let castable = castable_spells(g, u);
+        if !castable.iter().any(|&s| barrage_spell(s)) {
+            continue;
+        }
+        let Some((spell, value)) = crate::magic::choose_turn_spell_from(g, v, u, &castable) else { continue };
+        if !barrage_spell(spell) || value < BARRAGE_MIN {
+            continue;
+        }
+        let newest = g.players[p].units.iter().copied().max();
+        crate::magic::cast(g, u, spell, "barrage", value);
+        let summons: Vec<UnitId> = g.players[p].units.iter().copied().filter(|&n| newest.map_or(true, |m| n > m) && g.units[n].ai_suicide_summon).collect();
+        for n in summons {
+            // Out of its caster's group, so the attack moves it alone.
+            if g.units[n].group.is_some_and(|grp| g.groups[grp].units.len() > 1) {
+                g.unit_join_group(n, None, true);
+            }
+            summon_attacks(g, v, n, true);
+        }
+    }
+    g.players[p].sum_sui_mode = was;
+}
+
 /// The least a summon spent at bad odds must take from the defender, in hit points (by
 /// `magic::summon_fight`'s estimate): below it the attack only throws the summon away.
 pub const SPEND_MIN_HP: i32 = 5;
