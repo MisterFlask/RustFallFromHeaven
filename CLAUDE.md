@@ -25,6 +25,7 @@ crates/ffh-core  rules engine (port of CvGame/CvPlayer/CvTeam/CvCity/CvUnit/CvPl
 crates/ffh-ai    AI players (new design)
 crates/ffh-cppai the FFH2 C++ AI ported as a second controller, for head-to-head comparison (docs/CPPAI.md)
 crates/ffh-cli   `ffh` binary: autoplay, benchmarks, inspection
+crates/ffh-harness what the game runners share: child processes, worker pool, panic capture, invariant checks
 crates/ffh-stress `ffh-stress` binary: AI games over a settings matrix, crashes caught per game
 crates/ffh-play  `ffh-play`: human play (docs/PLAY_DESIGN.md, docs/HUMAN.md)
 crates/ffh-web   the engine as WebAssembly and the page side of the static site (docs/WEB.md)

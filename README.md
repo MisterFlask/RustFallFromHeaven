@@ -25,6 +25,7 @@ Play in the browser, nothing to install (on a phone too): https://misterflask.gi
 | `crates/ffh-core` | rules engine: CvGame, CvPlayer, CvTeam, CvCity, CvUnit, CvPlot, CvSelectionGroup, CvMap, map generation, deals, and the rules Python (`src/ffh/`: spells, events, random events, custom functions, CvGameUtils hooks) |
 | `crates/ffh-ai` | the new AI (implements `ffh_core::Controller`) |
 | `crates/ffh-cli` | `ffh` binary: data checks, AI-only autoplay, benchmarks |
+| `crates/ffh-harness` | what the game runners (`ffh-stress`, `ffh-play soak`) share: child processes with a timeout, a worker pool, panic capture, the rules' invariant checks |
 | `crates/ffh-stress` | `ffh-stress` binary: AI games over a matrix of game settings (speed, handicap, era, world size, civs, climate, sea level, options, teams, victories), crashes caught per game |
 | `crates/ffh-play` | `ffh-play` binary and library: human play (session core, JSONL agent, HTTP server with the browser client; see `docs/HUMAN.md`) |
 | `docs/` | `PORTING.md` (status, changes from FFH2), `AI.md`, `ENTITIES.md` (every unit, building and spell: what it does, how to play it, how far the AI uses it), `ARCHITECTURE.md`, `DATA.md`, `AGENTS.md` (parallel agents), `porting/*.md` (C++ function maps) |

@@ -15,13 +15,13 @@
 //!                                    turn: one branch of `tools/ai-branch.sh` (branch.rs)
 //!
 //! Options: --seed N  --civs N  --size WORLDSIZE_X  --turns N  --report N (per-player report
-//! every N turns)  --option GAMEOPTION_X (repeatable)  --until-supremacy (stop at a victory, the
+//! every N turns)  --option GAMEOPTION_X (repeatable; or --options A,B as ffh-stress)  --until-supremacy (stop at a victory, the
 //! last civ standing, or one team holding 1.5x the runner-up's score -- share of the world --
 //! for 30 turns, counted from turn 200; `--turns` stays the cap)  --civ CIVILIZATION_X
 //! (repeatable: force the first civ slots to these civilizations, leader picked by the seed)
 //! --detail (`stats`: per-player counts of unit, building and project types)
 //! --speed GAMESPEED_X --handicap HANDICAP_X (the game handicap: the AIs' bonuses) --era ERA_X
-//! --climate CLIMATE_X --sea-level SEALEVEL_X --max-turns N --no-victory VICTORY_X (repeatable)
+//! --climate CLIMATE_X --sea-level SEALEVEL_X (or --sea) --max-turns N --no-victory VICTORY_X (repeatable)
 //! --leader LEADER_X (the first slot's leader; alone, it forces its civilization): the rest of
 //! a custom game, so that a game `ffh-play` builds for an observer plays here too
 
@@ -55,12 +55,14 @@ fn parse_run_config_at(args: &[String]) -> (run::RunConfig, Vec<i32>) {
             "--size" => cfg.world = val(i),
             "--turns" => cfg.turns = val(i).parse().unwrap_or_else(|_| usage()),
             "--option" => cfg.options.push(val(i)),
+            // ffh-stress's spelling: a comma-separated list.
+            "--options" => cfg.options.extend(val(i).split(',').filter(|o| !o.is_empty()).map(String::from)),
             "--civ" => cfg.force_civs.push(val(i)),
             "--speed" => cfg.speed = Some(val(i)),
             "--handicap" => cfg.handicap = Some(val(i)),
             "--era" => cfg.era = Some(val(i)),
             "--climate" => cfg.climate = Some(val(i)),
-            "--sea-level" => cfg.sea_level = Some(val(i)),
+            "--sea-level" | "--sea" => cfg.sea_level = Some(val(i)),
             "--max-turns" => cfg.max_turns = val(i).parse().unwrap_or_else(|_| usage()),
             "--no-victory" => cfg.disabled_victories.push(val(i)),
             "--leader" => cfg.leader = Some(val(i)),

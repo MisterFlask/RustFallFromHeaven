@@ -17,6 +17,7 @@ ffh-data   XML -> typed info tables (GameData). No game state.
 ffh-core   Rules engine. Owns all mutable game state (Game). Deterministic.
 ffh-ai     Controllers (the new AI). Reads state, issues the same calls a human UI would.
 ffh-cli    `ffh` binary: autoplay, benchmarks, inspection.
+ffh-harness What the game runners share: child processes, worker pool, panic capture, invariant checks.
 ffh-stress `ffh-stress` binary: AI games over a matrix of game settings, crashes caught per game.
 ffh-play   Human play: a session that drives one human slot through ports of the C++ input paths.
 ffh-web    ffh-play's web host compiled to WebAssembly, and the static site's page side (docs/WEB.md).

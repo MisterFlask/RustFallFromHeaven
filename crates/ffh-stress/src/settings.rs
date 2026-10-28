@@ -75,8 +75,10 @@ impl Settings {
                 "--player-handicap" => s.player_handicap = v,
                 "--era" => s.era = v,
                 "--climate" => s.climate = v,
-                "--sea" => s.sea = v,
+                // `--sea-level` and repeated `--option`: ffh's spellings.
+                "--sea" | "--sea-level" => s.sea = v,
                 "--options" => s.options = list(&v),
+                "--option" => s.options.push(v),
                 "--teams" => s.teams = num(&v)? as usize,
                 "--turns" => s.turns = num(&v)? as i32,
                 "--max-turns" => s.max_turns = num(&v)? as i32,

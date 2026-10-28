@@ -120,7 +120,7 @@ fn cmd_bot(args: &[String]) {
             "--seed" => ng.seed = flag_value(args, &mut i).parse().unwrap_or_else(|_| usage()),
             "--turns" => turns = flag_value(args, &mut i).parse().unwrap_or_else(|_| usage()),
             "--opponents" => ng.opponents = flag_value(args, &mut i).parse().unwrap_or_else(|_| usage()),
-            "--world" => {
+            "--world" | "--size" => {
                 let w = flag_value(args, &mut i);
                 ng.world = d.ty(w).unwrap_or_else(|| {
                     eprintln!("unknown world size {w:?}");
