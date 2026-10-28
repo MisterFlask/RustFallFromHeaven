@@ -335,7 +335,7 @@ takes a city's food surplus from +4 to +6 for one hammer; a Khazad capital that 
 instead of a Granary at turn 49 (its Ale clears the unhappiness that held the city back) has 7
 cities to 6 at turn 148; a Luchuirp capital that builds one instead of Walls, 7 to 5 at turn 202.
 
-**The standing army against rival civilizations** (`defense.rs`, switch `RIVAL_DEFENSE`): how
+**The standing army against rival civilizations** (`defense.rs`, round 7e): how
 many defenders beyond the barbarian and capital quotas our cities hold, and where.
 - *In peacetime, deterrence* (`defense::deterrence`): an expert keeps enough army that no
   neighbour who can reach him and would fight him sees an easy target, and puts it where that
@@ -767,9 +767,8 @@ Each army group is a stack; per decision, in order:
    160)`; the targets of our operations are left to their strikes);
 5. attack an adjacent target worth it (never a civ city outside a war plan, nor the target of
    our siege operation, which is left to its strike);
-6. heal (`heal`; switch `HEAL`, on since round 7f -- off, a stack heals where it stands when one
-   unit is over 35% damage and it is safe; More Naval AI's `AI_heal`, fitted to our small
-   stacks): in one of
+6. heal (`heal`, round 7f; More Naval AI's `AI_heal`, fitted to our small stacks; before it, a
+   stack healed where it stood when one unit was over 35% damage and it was safe): in one of
    our cities the wounded (20%+ damage, the field rule's threshold, so a stack leaves a city only
    in a state the field rule accepts: with More Naval AI's 30% it walked out and back each turn,
    "Forks of the healing rule" below) split off and heal while the rest go on; in the field
@@ -786,9 +785,9 @@ Each army group is a stack; per decision, in order:
    lair destroys it; an empty enemy city at war within 2 turns is walked into, `CAPTURE`);
 11. join a bigger stack within 3 turns, else hold in the nearest city.
 
-**Deciding an attack** (switch `FIELD_SIM`, on; round 7g). Every attack in steps 1, 4, 5 and 10 and a
-landing's assault (`naval.rs`) is decided on the simulation of the group attack
-(`military::field_sim`: `campaign::simulate_in_order` in the rules' own attacker order,
+**Deciding an attack** (round 7g). Every attack in steps 1, 4, 5 and 10 and a landing's
+assault (`naval.rs`) is decided on the simulation of the group attack
+(`military::field_sim`: `campaign::simulate` in the rules' own attacker order,
 `AI_getBestGroupAttacker` with its `AI_attackOdds`, against the defenders we see) as an expert
 decides (`military::field_go`): attack when the attacker the rules send has good odds (65%, 75%
 for a hurt stack); wear the defenders down at worse odds only when the stack clears the plot
@@ -825,8 +824,8 @@ army decision of each `play_turn` call (nothing outside `Game` is remembered).
   conquerors, `BOLD_STRIKE`); committing to *march* wants a reserve, every defender 90% sure
   (so stacks do not advance understrength), but a committed force already positioned next to
   or beside the city *strikes at acceptable odds* -- it expects to clear the defenders without
-  keeping that reserve (`STRIKE_AT_PHASE` before it was settled, round 7h) -- rather than retreating to muster
-  an overwhelming force against a target that only hardens while it waits (a lone unit still never
+  keeping that reserve (round 7h) -- rather than retreating to muster an overwhelming force
+  against a target that only hardens while it waits (a lone unit still never
   qualifies: it cannot clear a city). Unseen cities: 2 + population/5 defenders for a civ,
   1 + age/25 for a barbarian town -- but the force needed to *approach and reveal* an unseen
   target is capped at a scouting-sized stack (not that growing assumption, which otherwise made
@@ -1435,7 +1434,7 @@ turn, to move casters and to promote them:
   (`research::builds_value`). Before, only the Tower of Mastery goal built nodes, and it is never
   ours: no civilization converted its raw mana. In 24 full games the nodes built were two thirds
   Enchantment (a happy face in every city per node), then Entropy and Mind (round 7a).
-- **The caster corps** (`casters.rs`, `CASTER_ROLES`; More Naval AI's adept roles): each caster
+- **The caster corps** (`casters.rs`, round 7a; More Naval AI's adept roles): each caster
   (an adept or better, not a hero) has a role kept in its unit AI type, so it is saved with the
   unit: the node builder (`UNITAI_MANA_UPGRADE`, one while there are node jobs), the terraformer
   (`UNITAI_TERRAFORMER`, one while a caster knows Spring, Scorch or Vitalize and our worked land
@@ -2981,7 +2980,15 @@ only, against opponents without it, and reports that player's wins and share.
   both reached (a longer game has more caster-turns, and more casters lost with an eliminated
   owner).
   Generic behaviours have switches of their own (`switches.rs`): `FFH_AI_<NAME>_OFF=X,..|ALL`
-  plays without it, `FFH_AI_<NAME>_ONLY=X,..` only for those civilizations. A contest between
+  plays without it, `FFH_AI_<NAME>_ONLY=X,..` only for those civilizations.
+  **Implementation forks do not stay.** A switch whose off side is the algorithm a change
+  replaced (not merely the behaviour absent) is removed, with the old algorithm, the round after
+  the change is kept: later comparisons with the old version run against an older revision
+  (`tools/agents/ab.sh --base <rev>`, `civ_ab.py --base-bin`), not a switch nobody plays and no
+  test exercises. Feature toggles (off = the behaviour absent), flavor switches and default-off
+  experiments stay. Removed so (2026-10-28): `KEEP_UNITS` (7d), `CASTER_ROLES` (7a),
+  `RIVAL_DEFENSE` (7e), `HEAL` and `STRIKE_DAMAGE` (7f), `SIM_FAITHFUL` and `FIELD_SIM` (7g),
+  `STRIKE_AT_PHASE` (7h); the rounds below name them as they were measured. A contest between
   civilizations (a land race, a war) is measured as one civilization with the behaviour against
   opponents without it: `civ_ab.py --civ all --base-env FFH_AI_<NAME>_OFF=ALL --new-env
   FFH_AI_<NAME>_ONLY={civ}` (the same binary on both sides; `{civ}` is the forced civilization).
