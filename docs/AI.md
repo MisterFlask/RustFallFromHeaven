@@ -1528,8 +1528,9 @@ later, the first Adept at turns 250-350 -- and many of these games are decided b
 Where Wizards existed they spent most turns on Haste (FfH's free cast), fired Fireballs at units
 immune to fire, and their damage at the end of the turn came after every attack decision of ours:
 in seed 10 the Amurites' Wizards fireballed the stack at a city's gates turn after turn while the
-city fell. Six behaviours, each with a switch (`switches.rs`); the versions that failed are in
-docs/AI_LOG.md, "Magic civilizations":
+city fell. Seven behaviours, each with a switch (`switches.rs`); the versions that failed and the ideas
+that did not hold (spheres chosen by the caster's role, mana bought for its sphere, Mages sent to
+threatened cities) are in docs/AI_LOG.md, "Magic civilizations":
 
 - **The arcane path** (`ARCANE_PATH`, `traits::arcane_path`, `tech_plan`): an Arcane or Summoner
   leader heads for Sorcery once the economy's tier 2 is in, with Knowledge of the Ether and a
@@ -1573,11 +1574,20 @@ docs/AI_LOG.md, "Magic civilizations":
   cities to 10 forty turns later; Sheaim seed 6 took a city at turn 262 that the branch without it
   left alone.
 
+- **Haste on the march** (`HASTE_MARCH`, `magic::haste_march`, 2026-10-28): a caster in a stack of
+  our operations that has further to go than this turn (to its rally city, the assembly ring or
+  the plot next to the city) casts Haste on it before it moves, when every unit with the fewest
+  moves left gains a move -- a siege engine, which Haste does not reach, holds the stack back --
+  and its best cast at the end of the turn is worth less than 30. Haste was FfH's free cast at the
+  end of the turn, after the stack had moved, and worth nothing. Fork (Amurites seed 10, turn
+  357): the hasted stack stepped in a turn earlier and took a barbarian city. It fires about 10
+  times a game where a Mage with Body marches with a stack without siege engines.
+
 `FFH_AI_TRACE` shows the casters' count in the force (`casters count on ...`, with the planned
 damage) and the probes (`strike on ...: 0 attacks, holds`); `FFH_AI_TRACE_CAST` shows the barrage
-(`ctx=barrage`), and `magic war: our casters make ... cities takeable` the war gate. Tests: `crates/ffh-ai/tests/magic.rs` (a Fireball does nothing to a Fire
+(`ctx=barrage`) and the Haste on the march (`ctx=march`), and `magic war: our casters make ... cities takeable` the war gate. Tests: `crates/ffh-ai/tests/magic.rs` (a Fireball does nothing to a Fire
 Elemental; the barrage softens the stack at our gates before our units move; the force estimate
-counts a Mage's Fireball once; a besieged city gets its Wall of Stone).
+counts a Mage's Fireball once; a besieged city gets its Wall of Stone; a Mage hastes its marching stack unless a catapult holds it back).
 
 Measured with each of the four civilizations forced into slot 0, full games, the same binary on
 both sides, the switches on for the forced civilization only (`FFH_AI_<NAME>_ONLY={civ}`) against
