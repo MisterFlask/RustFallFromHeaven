@@ -1577,7 +1577,14 @@ Seeds 52001-52040 (160 pairs; a first validation that the first package failed, 
 | package without `MAGIC_WAR` against all off | 16.2% -> 13.8% (6 / 10) | +5 (t 0.92) | +41 (t 0.85) | -10 (t -0.14) | Mages at turn 400 2.6 -> 3.7, spell damage 72 -> 136 a game, summon kills 9.5 -> 12.9 |
 | `MAGIC_WAR` on top of it | 13.8% -> 15.0% (8 / 6) | 0 | +20 (t 0.90) | +96 (t 1.70) | legacy@end +72 (t 1.42); Amurites 2 -> 5 wins, Sheaim 3 -> 5 |
 
-VALIDATION_RESULT
+Validation, fresh seeds 54001-54040 (160 pairs), all six switches on for the forced civilization
+against all off: win 13.1% -> 12.5% (8 / 9 seeds won by one side only), share@400 +44 (t 1.61),
+share@end +30 (t 0.49), legacy@end +59 (t 0.87); Amurites 3 -> 4 wins, Sheaim 3 -> 2, Svartalfar
+5 -> 3, Balseraphs 10 -> 11. What the casters did, a game: Mages at turn 300 0.45 -> 0.79 and at
+turn 400 2.3 -> 3.8, the first Mage (median) at turn 450 -> 400, arcane casters made 5.6 -> 8.6
+and lost 1.6 -> 1.9, spell damage 53 -> 94, summons' kills 9.3 -> 12.8, casts before strikes 4.5
+-> 5.9, barrage casts 8; cities taken 3.09 -> 3.30, lost 2.99 -> 2.76. (Seeds 52001-52040 and
+53001-53040 were spent on the versions that failed: docs/AI_LOG.md.)
 
 Forks at their firings (`tools/ai-branch.sh`): the barrage (seed 10, Amurites, turn 421) let a
 stack of 8 attack five barbarian Disciples of Acheron the Fireballs had hurt -- four killed for a
