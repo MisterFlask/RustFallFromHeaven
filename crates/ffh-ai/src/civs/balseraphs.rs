@@ -27,6 +27,11 @@ use crate::Ai;
 pub struct Balseraphs;
 
 impl CivPlay for Balseraphs {
+    /// FfH's `AI_chooseTech` research plan (`tech_plan::goals`).
+    fn tech_goals(&self, _g: &Game, _p: PlayerId) -> super::TechGoals {
+        super::TechGoals { beelines: vec!["TECH_IRON_WORKING"], ..Default::default() }
+    }
+
     fn turn(&self, _ai: &Ai, g: &mut Game, v: &mut View) {
         arena(g, v);
     }

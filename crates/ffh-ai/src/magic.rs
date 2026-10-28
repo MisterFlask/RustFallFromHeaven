@@ -634,7 +634,8 @@ pub(crate) fn recruit_value(g: &Game, caster: UnitId) -> i32 {
 
 /// The terrain a terraforming spell makes of our plot `q` when a unit of `p` casts it there (the
 /// Python's change, under its AI requirement: our own land): Spring a desert (not flood plains)
-/// into plains, Scorch snow into tundra (not for the Doviello and the Illians, who like snow),
+/// into plains, Scorch snow into tundra (not for the Doviello and the Illians, who like snow: the
+/// rules' own AI-only gate, `reqScorch`, so it is not civilization-specific play under `civs/`),
 /// Vitalize snow into tundra, tundra and desert into plains, plains into grassland.
 fn terraform(g: &Game, p: PlayerId, s: SpellType, q: PlotIdx) -> Option<TerrainType> {
     let d = g.d;

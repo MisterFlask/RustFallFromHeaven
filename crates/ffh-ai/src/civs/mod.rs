@@ -15,6 +15,8 @@
 //!   cast by the end-of-turn spell choice);
 //! - [`building_value`]: `production::building_value` (what production, research and spells use);
 //! - [`tech_value`]: `research::tech_value`;
+//! - [`tech_goals`]: `tech_plan::goals`, the civilization's research plan (FfH's
+//!   `AI_chooseTech` beelines);
 //! - [`promotion_value`]: `units::best_promotion`, the value of each promotion a unit can take;
 //! - [`civic_value`]: `empire::civic_value` (civics, the finance guard and research use it);
 //! - [`site_value`]: `sites::compute`, the value of a city site;
@@ -131,12 +133,25 @@ pub fn civ(g: &Game, p: PlayerId) -> Civ {
 
 /// False when the player's civilization-specific play is turned off: `FFH_AI_CIV_OFF` lists
 /// civilizations (`CIVILIZATION_KHAZAD` or `KHAZAD`, comma-separated, or `all`) that play as
-/// generic civs (`FFH_AI_CIV_ONLY`: the only ones that do not; [`crate::switches::CIV`]). A measurement switch (civ X with and without its logic, against the same
-/// opponents, in one binary); it is read once and never changes during a game, so play stays
-/// deterministic, and the run cache keys runs by every `FFH_*` variable. The research flavours
-/// of `tech_plan.rs` (older, per-civilization beelines) are not covered.
+/// generic civs (`FFH_AI_CIV_ONLY`: the only ones that do not; [`crate::switches::CIV`]). A
+/// measurement switch (civ X with and without its logic, against the same opponents, in one
+/// binary); it is read once and never changes during a game, so play stays deterministic, and the
+/// run cache keys runs by every `FFH_*` variable. It covers the civilizations' research plans
+/// ([`tech_goals`]) too.
 pub fn enabled(g: &Game, p: PlayerId) -> bool {
     civ(g, p) != Civ::Other
+}
+
+/// A civilization's research plan (`tech_plan::goals`, from FfH's `AI_chooseTech`).
+#[derive(Clone, Debug, Default)]
+pub struct TechGoals {
+    /// The early military tech it heads for before Bronze Working when its leader has no
+    /// favorite; knowing it counts as having reached `AI_chooseTech`'s military tier 2.
+    pub early_military: Option<&'static str>,
+    /// The religion tech of its lore, preferred over every other early religion.
+    pub religion: Option<&'static str>,
+    /// `AI_chooseTech`'s "Civ Specific" beelines, in order.
+    pub beelines: Vec<&'static str>,
 }
 
 /// A civilization's own play. Every method defaults to "nothing special".
@@ -164,6 +179,10 @@ pub trait CivPlay: Sync {
     /// What building `b` is worth in city `c` (`value` is the generic estimate).
     fn building_value(&self, g: &Game, c: CityId, b: BuildingType, value: i32) -> i32 {
         value
+    }
+    /// The civilization's research plan (`tech_plan::goals`).
+    fn tech_goals(&self, g: &Game, p: PlayerId) -> TechGoals {
+        TechGoals::default()
     }
     /// What researching `t` is worth (`value` is the generic estimate, before cost).
     fn tech_value(&self, g: &Game, p: PlayerId, t: TechType, value: i32) -> i32 {
@@ -372,6 +391,10 @@ fn unique_unit_tech_value(g: &Game, p: PlayerId, t: TechType) -> i32 {
         }
     }
     value
+}
+
+pub fn tech_goals(g: &Game, p: PlayerId) -> TechGoals {
+    of(g, p).tech_goals(g, p)
 }
 
 pub fn promotion_value(g: &Game, u: UnitId, promo: PromotionType, value: i32) -> i32 {

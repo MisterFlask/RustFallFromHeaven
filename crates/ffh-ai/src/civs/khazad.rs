@@ -33,6 +33,11 @@ pub struct Khazad;
 const PAYBACK: i32 = 30;
 
 impl CivPlay for Khazad {
+    /// FfH's `AI_chooseTech` research plan (`tech_plan::goals`).
+    fn tech_goals(&self, _g: &Game, _p: PlayerId) -> super::TechGoals {
+        super::TechGoals { religion: Some("TECH_WAY_OF_THE_EARTHMOTHER"), beelines: vec!["TECH_IRON_WORKING"], ..Default::default() }
+    }
+
     fn gold_target(&self, g: &Game, p: PlayerId) -> i32 {
         target(g, p)
     }

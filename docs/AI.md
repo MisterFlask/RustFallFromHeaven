@@ -542,7 +542,9 @@ beelines (Amurites Bowyers/Sorcery, Bannor Fanaticism, Calabim Feudalism, Hippus
 Kuriotates Stirrups, Sheaim Corruption of Spirit/Necromancy/Sorcery, Sidar and Svartalfar
 Poisons, Luchuirp Construction then Elementalism/Sorcery, Elohim and Malakim Priesthood, Iron
 Working for the Khazad, Clan of Embers, Doviello, Lanun, Grigori, Illians and Balseraphs, then
-Medicine for the Grigori); the magic spheres once tier 3 and economy tier 2 are reached. The
+Medicine for the Grigori; each civilization's in its module, `CivPlay::tech_goals`, with its
+default military tech and lore religion, so `FFH_AI_CIV_OFF` covers them); the magic spheres
+once tier 3 and economy tier 2 are reached. The
 religion is the first unfounded one of the player's preferences, most preferred first: the
 civ's own (Runes of Kilmorph for the Khazad, Fellowship of Leaves for the elves), the leader's
 favorite early and favorite religions (data; FfH leaves these unset), then -- data-driven from
@@ -1513,12 +1515,16 @@ stub naming what was tried. The generic AI calls the hooks at fixed points (mark
 `// civ-mechanics`): `production` (after the settler step), `turn` (once per turn before units
 move), `unit` (a group's orders before its role logic), `sea_worker`, `spell_value` (the
 end-of-turn spell choice; 0 = not cast there), `building_value`, `tech_value`, `promotion_value`,
-`civic_value` and `site_value`. Every hook dispatches on `civs::civ`, so a game without a
+`civic_value`, `site_value` and `tech_goals` (the research plan's civilization part:
+`tech_plan.rs`). Every hook dispatches on `civs::civ`, so a game without a
 civilization that has logic plays exactly as before (same checksum), and
 `FFH_AI_CIV_OFF=CIVILIZATION_X` (comma-separated, `X` alone, or `all`) makes a civilization play
 as a generic one: the measurement switch. `civs/world_spell.rs` holds a world spell for a chosen
 moment (`spell_value` returns 0 for it and the `turn` hook casts it once the rules and the AI's
-default timing allow it). The older research flavours in `tech_plan.rs` are outside the switch.
+default timing allow it). The research flavours of `tech_plan.rs` (FfH's per-civilization
+beelines) are hooks too (`tech_goals`), under the switch since 2026-10-28; what remains outside
+`civs/` mirrors the rules (the Doviello's and Illians' snow kept from Scorch, the rules' own
+AI-only `reqScorch`) or is a flavor drive (`campaign::conqueror`).
 
 **Unique mechanics are used** (the owner's decision, 2026-10-20): a civilization's own units,
 spells and abilities are part of how it plays, so its AI uses them whether or not the games show a

@@ -28,6 +28,11 @@ use crate::Ai;
 pub struct Svartalfar;
 
 impl CivPlay for Svartalfar {
+    /// FfH's `AI_chooseTech` research plan (`tech_plan::goals`).
+    fn tech_goals(&self, _g: &Game, _p: PlayerId) -> super::TechGoals {
+        super::TechGoals { early_military: Some("TECH_HUNTING"), religion: Some("TECH_WAY_OF_THE_FORESTS"), beelines: vec!["TECH_POISONS", "TECH_ANIMAL_HANDLING"] }
+    }
+
     fn production(&self, _ai: &Ai, g: &Game, c: CityId, threat: i32) -> Option<Choice> {
         super::unique_casters(g, c, threat).or_else(|| kidnapper(g, c, threat))
     }
