@@ -56,7 +56,7 @@
 //!                                      ids as JSON; writes only DIR/KIND.ffhsave and its sidecar
 //!   ffh-play bench [--quick] [--seed N] [--turns T] [--runs R] [--world W] [--opponents N] [--ffh PATH] [--json]
 //!                                      T13 (design §8): the session overhead on the AI turns,
-//!                                      command latency, the view on a huge map, the QueryGuard;
+//!                                      command latency, the view on a huge map, the status query;
 //!                                      exit code 1 when a budget is missed
 //!   ffh-play export-site OUT [--data DIR]
 //!                                      the static site's files from this binary (docs/WEB.md):
@@ -755,7 +755,7 @@ fn cmd_stage(args: &[String]) {
 
 /// `ffh-play bench [--quick] [--seed N] [--turns T] [--runs R] [--world W] [--opponents N]
 /// [--ffh PATH] [--json]`: T13 (design §8): the session overhead on the AI turns (`--runs`
-/// rounds of the three ways), command latency, the view build on a huge map, the QueryGuard.
+/// rounds of the three ways), command latency, the view build on a huge map, the status query.
 /// Exit code 1 when a budget is missed.
 fn cmd_bench(args: &[String]) {
     let mut o = if args.iter().any(|a| a == "--quick") { ffh_play::bench::BenchOptions::quick() } else { ffh_play::bench::BenchOptions::default() };

@@ -8,12 +8,11 @@
 //! parties) are ported; the AI's own judgement (attitudes, valuations, power) is not, and
 //! reads as "no denial": whether an AI accepts a deal is `Controller::consider_offer`.
 
-#![allow(unused_imports)]
-#![allow(unused_variables)]
 
 use crate::defs::{MAX_INT, NUM_CITY_PLOTS};
 use crate::game::Game;
 use crate::ids::*;
+use crate::path::FinderKind;
 use crate::structs::*;
 use crate::utils::{espionage_modifier, is_limited_wonder_class, is_world_project, set_trade_item};
 use ffh_data::*;
@@ -911,7 +910,21 @@ impl Game {
         let d = self.d;
         let team = self.players[p].team;
 
-        self.border_finder.borrow_mut().force_reset();
+        // The plots reachable from `from_plot` through the player's territory (C++ searches the
+        // border finder per plot, reusing the tree; one flood fill gives the same answers).
+        let reachable_from: Option<Vec<bool>> = from_plot.map(|from| {
+            let (from_x, from_y) = self.map.xy(from);
+            self.with_finder(FinderKind::Border, |finder| {
+                finder.generate_path(self, from_x, from_y, -1, -1, false, p.i());
+                let mut reachable = vec![false; self.map.plots.len()];
+                for node in finder.closed_nodes() {
+                    if let Some(pl) = self.map.plot_idx(node.x, node.y) {
+                        reachable[pl.idx()] = true;
+                    }
+                }
+                reachable
+            })
+        });
 
         let mut count = 0;
 
@@ -923,16 +936,7 @@ impl Game {
                             let improvement = self.map.plots[pl].improvement_type;
 
                             if improvement.map_or(true, |i| !d.improvements[i].improvement_bonus[non_obsolete_bonus].bonus_trade) {
-                                let reachable = match from_plot {
-                                    None => true,
-                                    Some(from) => {
-                                        let (from_x, from_y) = self.map.xy(from);
-                                        let (to_x, to_y) = self.map.xy(pl);
-                                        let g: &Game = self;
-                                        let mut finder = g.border_finder.borrow_mut();
-                                        finder.generate_path(g, from_x, from_y, to_x, to_y, false, p.i(), true)
-                                    }
-                                };
+                                let reachable = reachable_from.as_ref().map_or(true, |r| r[pl.idx()]);
 
                                 if reachable {
                                     for build in d.builds.keys() {
@@ -1238,7 +1242,7 @@ impl Game {
     ///
     /// Where the C++ reads `GET_PLAYER(eTargetPlayer)` (undefined for NO_PLAYER; no caller passes
     /// NO_PLAYER there) a `None` target makes the mission not possible.
-    pub fn player_get_espionage_mission_base_cost(&self, p: PlayerId, mission: EspionageMissionType, target: Option<PlayerId>, plot: Option<PlotIdx>, extra_data: i32, spy_unit: Option<UnitId>) -> i32 {
+    pub fn player_get_espionage_mission_base_cost(&self, p: PlayerId, mission: EspionageMissionType, target: Option<PlayerId>, plot: Option<PlotIdx>, extra_data: i32, _spy_unit: Option<UnitId>) -> i32 {
         let d = self.d;
         let kmission = &d.espionage_missions[mission];
         let base_mission_cost = kmission.cost;
@@ -1600,7 +1604,7 @@ impl Game {
     }
 
     /// C++ `CvPlayer::getEspionageMissionCostModifier(eMission, eTargetPlayer, pPlot = NULL, iExtraData = -1, pSpyUnit = NULL)`.
-    pub fn player_get_espionage_mission_cost_modifier(&self, p: PlayerId, mission: EspionageMissionType, target: Option<PlayerId>, plot: Option<PlotIdx>, extra_data: i32, spy_unit: Option<UnitId>) -> i32 {
+    pub fn player_get_espionage_mission_cost_modifier(&self, p: PlayerId, mission: EspionageMissionType, target: Option<PlayerId>, plot: Option<PlotIdx>, _extra_data: i32, spy_unit: Option<UnitId>) -> i32 {
         let d = self.d;
         let kmission = &d.espionage_missions[mission];
         let mut modifier = 100;
@@ -2072,7 +2076,7 @@ impl Game {
     }
 
     /// C++ `CvPlayer::canSpyDestroyUnit(eTarget, kUnit)`.
-    pub fn player_can_spy_destroy_unit(&self, p: PlayerId, target: PlayerId, unit: UnitId) -> bool {
+    pub fn player_can_spy_destroy_unit(&self, p: PlayerId, _target: PlayerId, unit: UnitId) -> bool {
         let team = self.players[p].team;
 
         if self.unit_get_team(unit) == team {
@@ -2123,7 +2127,7 @@ impl Game {
     }
 
     /// C++ `CvPlayer::canSpyDestroyBuilding(eTarget, eBuilding)`.
-    pub fn player_can_spy_destroy_building(&self, p: PlayerId, target: PlayerId, building: BuildingType) -> bool {
+    pub fn player_can_spy_destroy_building(&self, _p: PlayerId, _target: PlayerId, building: BuildingType) -> bool {
         let kbuilding = &self.d.buildings[building];
         if kbuilding.production_cost <= 0 {
             return false;
@@ -2138,7 +2142,7 @@ impl Game {
     }
 
     /// C++ `CvPlayer::canSpyDestroyProject(eTarget, eProject)`.
-    pub fn player_can_spy_destroy_project(&self, p: PlayerId, target: PlayerId, project: ProjectType) -> bool {
+    pub fn player_can_spy_destroy_project(&self, _p: PlayerId, target: PlayerId, project: ProjectType) -> bool {
         let kproject = &self.d.projects[project];
         if kproject.production_cost <= 0 {
             return false;
@@ -2322,7 +2326,7 @@ fn ai_count_num_bonuses(
     include_ours: bool,
     include_neutral: bool,
     other_culture_threshold: i32,
-    land: bool,
+    _land: bool,
     water: bool,
 ) -> i32 {
     let (x, y) = (g.cities[c].x, g.cities[c].y);
@@ -2364,7 +2368,7 @@ fn ai_count_num_bonuses(
 /// capitulated vassal of `master`. Ported: `t` must be able to follow `master` into its wars
 /// and out of its peace (checked for human teams too). AI: the rest (power and war success,
 /// land targets, victory threats, worst enemy, attitude) -- no denial.
-fn ai_surrender_trade(g: &Game, t: TeamId, master: TeamId, power_multiplier: i32) -> Option<DenialType> {
+fn ai_surrender_trade(g: &Game, t: TeamId, master: TeamId, _power_multiplier: i32) -> Option<DenialType> {
     for o in g.team_ids() {
         if g.team_is_alive(o) && o != t && o != master {
             if g.teams[o].at_war[master] && !g.teams[o].at_war[t] {
@@ -2466,7 +2470,7 @@ fn ai_make_peace_trade(g: &Game, t: TeamId, peace_team: TeamId, team: TeamId) ->
 /// C++ `CvTeamAI::AI_declareWarTrade(eWarTeam, eTeam, bConsiderPower = true)`: team `t` declaring
 /// war on `war_team` for `team`. Ported: not on `team`'s own vassal or defensive pact partner,
 /// and `t` must be able to declare war. AI: war plans, power, attitudes, nukes.
-fn ai_declare_war_trade(g: &Game, t: TeamId, war_team: TeamId, team: TeamId, consider_power: bool) -> Option<DenialType> {
+fn ai_declare_war_trade(g: &Game, t: TeamId, war_team: TeamId, team: TeamId, _consider_power: bool) -> Option<DenialType> {
     debug_assert!(team != t, "shouldn't call this function on ourselves");
     debug_assert!(war_team != t, "shouldn't call this function on ourselves");
 

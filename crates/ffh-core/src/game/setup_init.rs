@@ -8,7 +8,7 @@
 //! Start normalization (`normalizeAddExtras`) needs `CvPlayerAI::AI_foundValue(x, y, -1, true)`
 //! (`Game::player_ai_found_value`, found_value.rs).
 
-use std::cmp::{max, min};
+use std::cmp::max;
 
 use crate::defs::*;
 use crate::controller::AiHook;

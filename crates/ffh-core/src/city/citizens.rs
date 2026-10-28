@@ -11,9 +11,8 @@
 use super::range;
 use crate::defs::*;
 use crate::game::Game;
-use crate::governor::Weights;
 use crate::ids::*;
-use crate::utils::get_population_power;
+use crate::utils::{get_population_power, NUM_CITY_PLOTS_RADIUS_2};
 use ffh_data::*;
 
 impl Game {
@@ -714,7 +713,6 @@ impl Game {
             self.cities[c].population = new_value;
 
             let owner = self.cities[c].owner;
-            self.player_invalidate_population_rank_cache(owner);
 
             let population = self.cities[c].population;
             if population > self.cities[c].highest_population {
@@ -774,9 +772,6 @@ impl Game {
     pub fn city_change_specialist_population(&mut self, c: CityId, change: i32) {
         if change != 0 {
             self.cities[c].specialist_population += change;
-
-            let owner = self.cities[c].owner;
-            self.player_invalidate_yield_rank_cache(owner, None);
 
             self.city_update_commerces(c);
         }
@@ -1824,6 +1819,17 @@ impl Game {
         best_yield_available
     }
 
+    /// The radius `c` has without a radius building (not in C++): 3 for a full city of a player
+    /// with a city limit (Kuriotates: its cities found at radius 3, its settlements at 2), else 2.
+    pub fn city_base_plot_radius(&self, c: CityId) -> i32 {
+        let city = &self.cities[c];
+        if self.players[city.owner].max_cities != -1 && !city.settlement {
+            3
+        } else {
+            2
+        }
+    }
+
     /// C++ `CvCity::getNumCityPlots` (CvCity.cpp:14613-14620, FFH): 37 at radius 3, else 21.
     pub fn city_num_city_plots(&self, c: CityId) -> i32 {
         if self.cities[c].plot_radius == 3 {
@@ -1833,25 +1839,25 @@ impl Game {
         }
     }
 
-    /// C++ `CvCity::setPlotRadius` (CvCity.cpp:14627-14655, FFH). C++ quirk: the loop that
-    /// frees worked outer plots tests `iNewValue < getPlotRadius()` after the assignment, so
-    /// it never runs.
+    /// C++ `CvCity::setPlotRadius` (CvCity.cpp:14627-14655, FFH). Not in C++ (2026-10-28): a
+    /// shrinking city stops working the plots now outside its radius (C++ compared the radii
+    /// after the assignment, so its loop never ran, and the city kept citizens on plots it no
+    /// longer had).
     pub fn city_set_plot_radius(&mut self, c: CityId, new_value: i32) {
         if new_value == self.cities[c].plot_radius {
             return;
         }
 
-        self.cities[c].plot_radius = new_value;
-
-        // C++ quirk: compared after the assignment above, so this is always false.
         if new_value < self.cities[c].plot_radius {
-            for i in 8..NUM_CITY_PLOTS {
-                // That workers in outlying plots are not stuck there...
+            // The plots beyond the smaller radius (radius 3 is the only larger one).
+            for i in NUM_CITY_PLOTS_RADIUS_2 as usize..NUM_CITY_PLOTS {
                 if self.cities[c].working_plot[i] {
                     self.city_set_working_plot(c, i, false);
                 }
             }
         }
+
+        self.cities[c].plot_radius = new_value;
 
         let (x, y) = (self.cities[c].x, self.cities[c].y);
         for i in 8..NUM_CITY_PLOTS {

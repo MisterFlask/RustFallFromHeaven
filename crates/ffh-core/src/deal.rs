@@ -8,8 +8,6 @@
 //! `headFirstTradesNode` ... are plain `Vec` operations on `first_trades` / `second_trades`.
 //! C++ `pszReason` (UI text) out-parameters are dropped.
 
-#![allow(unused_variables)]
-#![allow(unused_imports)]
 use crate::game::Game;
 use crate::ids::*;
 use crate::structs::*;
@@ -288,7 +286,7 @@ impl Game {
 
     /// C++ `CvDeal::isPeaceDealBetweenOthers`: either list contains TRADE_PEACE (making peace
     /// with a third party). Does not read the deal itself.
-    pub fn deal_is_peace_deal_between_others(&self, d: DealId, first: &[TradeData], second: &[TradeData]) -> bool {
+    pub fn deal_is_peace_deal_between_others(&self, _d: DealId, first: &[TradeData], second: &[TradeData]) -> bool {
         first.iter().any(|t| t.item_type == TradeableItem::TRADE_PEACE)
             || second.iter().any(|t| t.item_type == TradeableItem::TRADE_PEACE)
     }
@@ -347,7 +345,7 @@ impl Game {
     }
 
     /// C++ `CvDeal::turnsToCancel` (C++ default `eByPlayer = NO_PLAYER`, unused).
-    pub fn deal_turns_to_cancel(&self, d: DealId, by_player: Option<PlayerId>) -> i32 {
+    pub fn deal_turns_to_cancel(&self, d: DealId, _by_player: Option<PlayerId>) -> i32 {
         // C++ GC.getGameINLINE().getGameTurn() == GC.getInitCore().getGameTurn().
         self.deals[d].initial_game_turn + self.d.defines.peace_treaty_length - self.setup.game_turn
     }

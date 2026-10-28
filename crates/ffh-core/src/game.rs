@@ -24,13 +24,11 @@
 //! `read`/`write`, hall of fame, pause/active player, PBEM/pitboss/hot-seat and MP turn
 //! timers, debug mode, checksums of options, soundtracks, flyout menus.
 
-#![allow(unused_imports)]
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 
-use crate::area::Area;
 use crate::city::City;
-use crate::controller::{null_controller, Controller, ControllerRef};
+use crate::controller::{null_controller, ControllerRef};
 use crate::deal::Deal;
 use crate::group::SelectionGroup;
 use crate::ids::*;
@@ -41,7 +39,7 @@ use crate::path::{FinderKind, PathFinder};
 use crate::player::Player;
 use crate::plot_group::PlotGroup;
 use crate::rng::Rng;
-use crate::setup::{GameSetup, PlayerSetup, SlotStatus};
+use crate::setup::GameSetup;
 use crate::slab::Slab;
 use crate::structs::*;
 use crate::team::Team;
@@ -281,21 +279,32 @@ pub struct Game {
     /// Not in C++: what the players did and why, for analysis (`telemetry.rs`); off unless the
     /// runner turns it on, never read by the rules, not saved.
     pub telemetry: crate::telemetry::Telemetry,
-    /// C++ `GC.getPathFinder()`.
+    /// C++ `GC.getPathFinder()`: scratch storage for path searches (path.rs, "No reuse"); not
+    /// game state, not saved. Use [`Game::with_finder`].
     pub path_finder: RefCell<PathFinder>,
-    /// C++ `GC.getStepFinder()`.
+    /// C++ `GC.getStepFinder()`: scratch, as `path_finder`.
     pub step_finder: RefCell<PathFinder>,
-    /// C++ `GC.getRouteFinder()`.
-    pub route_finder: RefCell<PathFinder>,
-    /// C++ `GC.getBorderFinder()`.
+    /// C++ `GC.getBorderFinder()`: scratch, as `path_finder`.
     pub border_finder: RefCell<PathFinder>,
-    /// C++ `GC.getAreaFinder()`.
-    pub area_finder: RefCell<PathFinder>,
-    /// C++ `GC.getPlotGroupFinder()`.
-    pub plot_group_finder: RefCell<PathFinder>,
 }
 
 impl Game {
+    /// Runs `op` with the scratch finder of `kind` (`Path`, `Step` or `Border`). When that finder
+    /// is already in use (a read nested inside a search's callbacks) `op` gets a fresh one: a
+    /// finder holds no state between searches (path.rs, "No reuse"), so the result is the same.
+    pub fn with_finder<R>(&self, kind: FinderKind, op: impl FnOnce(&mut PathFinder) -> R) -> R {
+        let cell = match kind {
+            FinderKind::Path => &self.path_finder,
+            FinderKind::Step => &self.step_finder,
+            FinderKind::Border => &self.border_finder,
+            _ => return op(&mut PathFinder::new(kind)),
+        };
+        match cell.try_borrow_mut() {
+            Ok(mut finder) => op(&mut finder),
+            Err(_) => op(&mut PathFinder::new(kind)),
+        }
+    }
+
     /// C++ `CvGame::CvGame()` + `reset(eHandicap)`: a game in its pre-`init` state, with players
     /// and teams sized to `setup` (one team slot per player slot, as C++
     /// `MAX_TEAMS == MAX_PLAYERS`), an empty map (`Map::default()`, built by `map_init`),
@@ -413,10 +422,7 @@ impl Game {
             telemetry: crate::telemetry::Telemetry::off(),
             path_finder: RefCell::new(PathFinder::new(FinderKind::Path)),
             step_finder: RefCell::new(PathFinder::new(FinderKind::Step)),
-            route_finder: RefCell::new(PathFinder::new(FinderKind::Route)),
             border_finder: RefCell::new(PathFinder::new(FinderKind::Border)),
-            area_finder: RefCell::new(PathFinder::new(FinderKind::Area)),
-            plot_group_finder: RefCell::new(PathFinder::new(FinderKind::PlotGroup)),
         };
         g.reset(handicap);
         g

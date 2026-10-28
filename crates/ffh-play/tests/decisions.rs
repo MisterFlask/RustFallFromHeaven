@@ -630,7 +630,7 @@ fn auto_moves_fires_once_per_control_episode() {
             for (dx, dy) in [(r, 0), (-r, 0), (0, r), (0, -r), (r, r), (-r, -r), (r, -r), (-r, r)] {
                 let Some(p) = s.g.plot_xy(x, y, dx, dy) else { continue };
                 let (tx, ty) = (s.g.map.plots[p].x, s.g.map.plots[p].y);
-                if finder.generate_path(&s.g, x, y, tx, ty, false, 0, false) && finder.path_turns().is_some_and(|t| t >= 2) {
+                if finder.generate_path(&s.g, x, y, tx, ty, false, 0) && finder.path_turns().is_some_and(|t| t >= 2) {
                     target = Some((grp, tx, ty));
                     break 'search;
                 }

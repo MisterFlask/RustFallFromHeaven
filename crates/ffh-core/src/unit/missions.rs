@@ -9,12 +9,9 @@
 //! `isActiveVisible`, popups and `addMessage`) is not ported; the outcome messages go to the
 //! game log.
 
-#![allow(unused_variables, unused_imports)]
 
-use crate::defs::*;
 use crate::game::Game;
 use crate::ids::*;
-use crate::unit::{CombatDetails, DefenderCombatValues, Unit, UnitResetInfo};
 use crate::utils::{is_limited_project, is_limited_unit_class, is_limited_wonder_class};
 use ffh_data::*;
 
@@ -67,19 +64,19 @@ fn city_display_name(g: &Game, city: CityId) -> String {
 /// Python `CvGameUtils.cannotSpreadReligion(argsList)`: FFH2 0.41 returns False. `canSpread`
 /// only calls it when `USE_USE_CANNOT_SPREAD_RELIGION_CALLBACK` is set (the define is not in the
 /// FFH2 XML, so C++ reads 0).
-fn py_cannot_spread_religion(g: &Game, owner: PlayerId, u: UnitId, religion: ReligionType, x: i32, y: i32) -> bool {
+fn py_cannot_spread_religion(_g: &Game, _owner: PlayerId, _u: UnitId, _religion: ReligionType, _x: i32, _y: i32) -> bool {
     false
 }
 
 impl Game {
     /// C++ `CvUnit::sabotageCost` (CvUnit.cpp:5857-5860).
-    pub fn unit_sabotage_cost(&self, u: UnitId, plot: PlotIdx) -> i32 {
+    pub fn unit_sabotage_cost(&self, _u: UnitId, _plot: PlotIdx) -> i32 {
         self.d.defines.base_spy_sabotage_cost
     }
 
     /// C++ `CvUnit::sabotageProb` (CvUnit.cpp:5864-5908).
     /// C++ default `eProbStyle = PROBABILITY_REAL`.
-    pub fn unit_sabotage_prob(&self, u: UnitId, plot: PlotIdx, prob_style: ProbabilityType) -> i32 {
+    pub fn unit_sabotage_prob(&self, _u: UnitId, plot: PlotIdx, prob_style: ProbabilityType) -> i32 {
         let mut prob = 0; // XXX
 
         let (defense_count, mut counter_spy_count) = if self.plot_is_owned(plot) { spy_unit_counts(self, plot) } else { (0, 0) };
@@ -175,7 +172,7 @@ impl Game {
     }
 
     /// C++ `CvUnit::destroyCost` (CvUnit.cpp:6019-6047).
-    pub fn unit_destroy_cost(&self, u: UnitId, plot: PlotIdx) -> i32 {
+    pub fn unit_destroy_cost(&self, _u: UnitId, plot: PlotIdx) -> i32 {
         let d = self.d;
 
         let Some(city) = live_plot_city(self, plot) else {
@@ -202,7 +199,7 @@ impl Game {
     }
 
     /// C++ `CvUnit::destroyProb` (CvUnit.cpp:6050-6097).
-    pub fn unit_destroy_prob(&self, u: UnitId, plot: PlotIdx, prob_style: ProbabilityType) -> i32 {
+    pub fn unit_destroy_prob(&self, _u: UnitId, plot: PlotIdx, prob_style: ProbabilityType) -> i32 {
         let Some(city) = live_plot_city(self, plot) else {
             return 0;
         };
@@ -296,7 +293,7 @@ impl Game {
     }
 
     /// C++ `CvUnit::stealPlansCost` (CvUnit.cpp:6198-6210).
-    pub fn unit_steal_plans_cost(&self, u: UnitId, plot: PlotIdx) -> i32 {
+    pub fn unit_steal_plans_cost(&self, _u: UnitId, plot: PlotIdx) -> i32 {
         let Some(city) = live_plot_city(self, plot) else {
             return 0;
         };
@@ -308,7 +305,7 @@ impl Game {
     }
 
     /// C++ `CvUnit::stealPlansProb` (CvUnit.cpp:6214-6259).
-    pub fn unit_steal_plans_prob(&self, u: UnitId, plot: PlotIdx, prob_style: ProbabilityType) -> i32 {
+    pub fn unit_steal_plans_prob(&self, _u: UnitId, plot: PlotIdx, prob_style: ProbabilityType) -> i32 {
         let Some(city) = live_plot_city(self, plot) else {
             return 0;
         };
@@ -911,7 +908,7 @@ impl Game {
     }
 
     /// C++ `CvUnit::canDiscover` (CvUnit.cpp:6967-6989).
-    pub fn unit_can_discover(&self, u: UnitId, plot: PlotIdx) -> bool {
+    pub fn unit_can_discover(&self, u: UnitId, _plot: PlotIdx) -> bool {
         let Some(tech) = self.unit_get_discovery_tech(u) else {
             return false;
         };
@@ -1106,7 +1103,7 @@ impl Game {
     }
 
     /// C++ `CvUnit::getGreatWorkCulture` (CvUnit.cpp:7208-7225).
-    pub fn unit_get_great_work_culture(&self, u: UnitId, plot: PlotIdx) -> i32 {
+    pub fn unit_get_great_work_culture(&self, u: UnitId, _plot: PlotIdx) -> i32 {
         let mut culture = self.d.units[self.units[u].unit_type].great_work_culture;
 
         culture *= game_speed_info(self).unit_great_work_percent;
@@ -1179,7 +1176,7 @@ impl Game {
 
     /// C++ `CvUnit::getEspionagePoints` (CvUnit.cpp:7295-7305).
     /// `plot` is unused by the C++ (callers pass NULL).
-    pub fn unit_get_espionage_points(&self, u: UnitId, plot: Option<PlotIdx>) -> i32 {
+    pub fn unit_get_espionage_points(&self, u: UnitId, _plot: Option<PlotIdx>) -> i32 {
         let mut espionage_points = self.d.units[self.units[u].unit_type].espionage_points;
 
         // (C++ scales by the game speed's great work percent.)
@@ -1435,7 +1432,7 @@ impl Game {
     }
 
     /// C++ `CvUnit::canGoldenAge` (CvUnit.cpp:7604-7620).
-    pub fn unit_can_golden_age(&self, u: UnitId, plot: PlotIdx, test_visible: bool) -> bool {
+    pub fn unit_can_golden_age(&self, u: UnitId, _plot: PlotIdx, test_visible: bool) -> bool {
         if !self.unit_is_golden_age(u) {
             return false;
         }
@@ -1617,6 +1614,7 @@ impl Game {
 mod tests {
     use super::*;
     use crate::group::SelectionGroup;
+    use crate::unit::{Unit, UnitResetInfo};
     use crate::map::{Map, MapInitData};
     use crate::player::Player;
     use crate::setup::GameSetup;

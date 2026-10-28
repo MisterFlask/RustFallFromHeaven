@@ -23,7 +23,7 @@
 //!   budgeted. The autosave (`Game::save` and the file write) is reported, not budgeted.
 //! * **Command latency**: `execute` (with its settle) plus the `view` query, for commands at a
 //!   control point of a standard map at turn 200 (reached by autoplay; budget 50 ms).
-//! * **View build** on a huge map (budget 10 ms), and the **QueryGuard** (budget 1 ms).
+//! * **View build** on a huge map (budget 10 ms), and the **status query**.
 
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -36,7 +36,6 @@ use ffh_data::*;
 
 use crate::bot::Bot;
 use crate::command::{CmdOk, Command};
-use crate::guard::QueryGuard;
 use crate::human::{AdvisorAnswerer, HumanController, SessionShared};
 use crate::journal::Journal;
 use crate::json::Json;
@@ -149,8 +148,7 @@ pub struct BenchReport {
     pub view_median_ms: f64,
     pub view_max_ms: f64,
     pub map_median_ms: f64,
-    /// `QueryGuard::new` + drop, and the `status` query, mean over 1000 (microseconds).
-    pub guard_us: f64,
+    /// The `status` query, mean over 1000 (microseconds).
     pub status_us: f64,
 }
 
@@ -182,7 +180,6 @@ impl BenchReport {
             "view_median_ms" => self.view_median_ms,
             "view_max_ms" => self.view_max_ms,
             "map_median_ms" => self.map_median_ms,
-            "guard_us" => self.guard_us,
             "status_us" => self.status_us,
         }
     }
@@ -209,9 +206,6 @@ impl BenchReport {
         }
         if self.view_median_ms >= 10.0 {
             out.push(format!("view build {:.1} ms (budget 10 ms)", self.view_median_ms));
-        }
-        if self.guard_us >= 1000.0 {
-            out.push(format!("QueryGuard {:.0} µs (budget 1 ms)", self.guard_us));
         }
         out
     }
@@ -536,7 +530,7 @@ pub fn run(o: &BenchOptions) -> BenchReport {
     r.command_slowest = slowest;
     drop(s);
 
-    // 4. The view on a big map, the guard.
+    // 4. The view on a big map, the status query.
     say(&format!("view build: {} with {} opponents at turn {}", o.view_world, o.view_opponents, o.view_turn));
     let (s, seed) = session_at(&new_game(o.seed, &o.view_world, o.view_opponents), o.view_turn);
     r.view_seed = seed;
@@ -555,12 +549,6 @@ pub fn run(o: &BenchOptions) -> BenchReport {
     r.view_median_ms = median(&mut views);
     r.map_median_ms = median(&mut maps);
     let n = 1000;
-    let t0 = Instant::now();
-    for _ in 0..n {
-        let g = QueryGuard::new(&s.g);
-        std::hint::black_box(&g);
-    }
-    r.guard_us = t0.elapsed().as_secs_f64() * 1e6 / n as f64;
     let t0 = Instant::now();
     for _ in 0..n {
         std::hint::black_box(s.query(&Query::Status).expect("status"));
@@ -612,6 +600,6 @@ pub fn render(o: &BenchOptions, r: &BenchReport) -> String {
         "view, {} ({} plots, {} opponents, seed {}) at turn {}: median {:.2} ms, slowest {:.2} ms (budget 10 ms); full map {:.2} ms\n",
         o.view_world, r.view_plots, o.view_opponents, r.view_seed, o.view_turn, r.view_median_ms, r.view_max_ms, r.map_median_ms
     );
-    out += &format!("QueryGuard {:.1} µs (budget 1 ms); status query {:.1} µs\n", r.guard_us, r.status_us);
+    out += &format!("status query {:.1} µs\n", r.status_us);
     out
 }

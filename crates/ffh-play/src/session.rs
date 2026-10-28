@@ -21,7 +21,6 @@ use ffh_data::*;
 
 use crate::command::{self, Action, CmdErr, CmdOk, Command, Plan};
 use crate::decision::{self, Pending};
-use crate::guard::{self, QueryGuard};
 use crate::human::{Answerer, HumanController, SessionShared, Stats};
 use crate::journal::{self, Cursor, Journal, JournalAnswerer, Line, Stamp};
 use crate::json::Json;
@@ -357,8 +356,8 @@ impl Session {
 
     /// Runs the game until the human has control or the game ends (design §2.2). `on_slice` is
     /// called after every `update()` while running, with the session (the HTTP transport
-    /// publishes status there and answers the queries queued meanwhile: `Session::query` reads
-    /// under a `QueryGuard`; plain fields of `s.g` may be read directly).
+    /// publishes status there and answers the queries queued meanwhile through `Session::query`;
+    /// `&Game` reads cannot change the game, see ffh-core's `path.rs`, "No reuse").
     pub fn advance(&mut self, on_slice: &mut dyn FnMut(&Session)) -> Stop {
         if self.observing {
             return self.advance_observed(on_slice);
@@ -518,8 +517,7 @@ impl Session {
         let Phase::Human(h) = self.phase() else { return Err(CmdErr::NotYourTurn) };
         let events = self.shared.open_events_of(h);
         let plan = {
-            let g = QueryGuard::new(&self.g);
-            command::validate(&g, h, cmd, &command::Ctx { events: &events })?
+            command::validate(&self.g, h, cmd, &command::Ctx { events: &events })?
         };
         match plan {
             Plan::Noop => Ok(CmdOk::Applied { log: Vec::new(), accepted: None }),
@@ -586,11 +584,11 @@ impl Session {
         CmdOk::Applied { log, accepted: None }
     }
 
-    /// At a control point after the human ended its turn: the turn report (under a guard).
+    /// At a control point after the human ended its turn: the turn report.
     fn build_report(&mut self, h: PlayerId) {
         if let Some(snap) = self.snapshot.take() {
             let messages = self.messages.since(snap.log_mark).to_vec();
-            self.report = Some(guard::read(&self.g, |g| Report::build(&snap, &Viewer::new(g, h, false), messages)));
+            self.report = Some(Report::build(&snap, &Viewer::new(&self.g, h, false), messages));
         }
     }
 
@@ -684,15 +682,15 @@ impl Session {
         if !self.observing && diplo.iter().any(|e| e.to == h) {
             // The leader's line is chosen now, with the attitude it has now.
             let own = !UiState::lock(&self.ui).vanilla;
-            let g = QueryGuard::new(&self.g);
+            let g = &self.g;
             for e in diplo.into_iter().filter(|e| e.to == h) {
                 let salt = (self.messages.moments_total() as u64) << 32 | e.turn as u32 as u64;
-                if let Some(text) = crate::view::speech::line(&g, e.from, h, e.comment, own, &mut crate::view::speech::Async::new(salt)) {
+                if let Some(text) = crate::view::speech::line(g, e.from, h, e.comment, own, &mut crate::view::speech::Async::new(salt)) {
                     self.messages.push_moment(Moment { turn: e.turn, player: e.from, comment: e.comment, text });
                 }
             }
         }
-        // Only untagged entries read the game (under a guard). The text keys ffh-core logs
+        // Only untagged entries read the game. The text keys ffh-core logs
         // (city names, civilization descriptions, unit names) are resolved for the human.
         let resolve = |mut e: LogEntry| {
             if let std::borrow::Cow::Owned(t) = crate::names::resolve_keys(d, &e.text) {
@@ -707,15 +705,8 @@ impl Session {
             }
             return;
         }
-        if entries.iter().any(|e| e.player.is_none()) {
-            let g = QueryGuard::new(&self.g);
-            for e in entries.into_iter().filter_map(|e| self.fog.filter(&g, h, e)) {
-                self.messages.push(resolve(e));
-            }
-        } else {
-            for e in entries.into_iter().filter_map(|e| self.fog.filter(&self.g, h, e)) {
-                self.messages.push(resolve(e));
-            }
+        for e in entries.into_iter().filter_map(|e| self.fog.filter(&self.g, h, e)) {
+            self.messages.push(resolve(e));
         }
         self.fog.update(&self.g, h);
     }
@@ -726,14 +717,14 @@ impl Session {
     /// enabled as `canDoEvent` says at each moment) until answered or closed by a forced end
     /// turn; it is dropped only when its data is gone (`applyEvent` would do nothing).
     fn launch_events(&mut self, h: PlayerId) {
-        let g = QueryGuard::new(&self.g);
+        let g = &self.g;
         self.shared.pending_events.lock().unwrap().retain_mut(|e| {
             if e.player != h {
                 true
             } else if e.launched {
                 g.player_get_event_triggered(h, e.triggered).is_some()
             } else {
-                e.launched = decision::event_available(&g, h, e.triggered);
+                e.launched = decision::event_available(g, h, e.triggered);
                 e.launched
             }
         });
@@ -741,9 +732,9 @@ impl Session {
 
     // ---- reads ---------------------------------------------------------------------------------
 
-    /// Reads the game under a `QueryGuard` (in-process readers such as the bot).
+    /// Reads the game (in-process readers such as the bot).
     pub fn read<R>(&self, f: impl FnOnce(&Game) -> R) -> R {
-        guard::read(&self.g, f)
+        f(&self.g)
     }
 
     /// What waits for the human.
@@ -780,7 +771,7 @@ impl Session {
         }
     }
 
-    /// Answers a protocol query (design §4.6) from the human's side, under a `QueryGuard`.
+    /// Answers a protocol query (design §4.6) from the human's side.
     pub fn query(&self, q: &Query) -> Result<Json, QueryErr> {
         let events = self.shared.open_events_of(self.human);
         let decision = self.shared.open_decision.lock().unwrap().clone();
@@ -883,7 +874,7 @@ impl Session {
             journal: self.journal_path(),
             messages: self.messages.entries(),
         };
-        guard::read(&self.g, |_| crate::flag::record(&input)).map_err(PlayError::Refused)
+        crate::flag::record(&input).map_err(PlayError::Refused)
     }
 
     /// The game's settings, when known.

@@ -1,8 +1,8 @@
 //! The city screen (`city {city}`, design §4.6): the human's own cities only (C++ opens the city
 //! screen for the active player's cities; debug reveal opens any city).
 //!
-//! The happiness reads fill the city rank caches (F11): the query runs under a `QueryGuard`,
-//! which restores them, so building a city screen leaves the save bytes as they were (tested).
+//! Building a city screen leaves the save bytes as they were (tests/purity.rs): ffh-core's
+//! `&self` functions, the happiness reads included, write nothing.
 
 use ffh_core::ids::*;
 use ffh_data::*;

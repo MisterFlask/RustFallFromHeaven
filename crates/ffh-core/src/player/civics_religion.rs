@@ -12,8 +12,6 @@
 //! - C++ indexes info arrays with `getCivicOptionType()` unchecked; every FFH2 civic belongs to a
 //!   civic option (`civic_option_of`).
 
-#![allow(unused_imports)]
-#![allow(unused_variables)]
 
 use crate::game::Game;
 use crate::ids::*;
@@ -1615,7 +1613,7 @@ impl Game {
 
     /// C++ `CvPlayer::setDefiedResolution(eVoteSource, kData)`: defiance anger in cities,
     /// loses loyal membership.
-    pub fn player_set_defied_resolution(&mut self, p: PlayerId, vote_source: VoteSourceType, data: &VoteSelectionSubData) {
+    pub fn player_set_defied_resolution(&mut self, p: PlayerId, vote_source: VoteSourceType, _data: &VoteSelectionSubData) {
         // C++ FAssert(canDefyResolution(eVoteSource, kData)): debug-only check, not ported.
 
         // cities get unhappiness
@@ -1636,7 +1634,7 @@ impl Game {
     }
 
     /// C++ `CvPlayer::setEndorsedResolution(eVoteSource, kData)`.
-    pub fn player_set_endorsed_resolution(&mut self, p: PlayerId, vote_source: VoteSourceType, data: &VoteSelectionSubData) {
+    pub fn player_set_endorsed_resolution(&mut self, p: PlayerId, vote_source: VoteSourceType, _data: &VoteSelectionSubData) {
         self.player_set_loyal_member(p, vote_source, true);
     }
 

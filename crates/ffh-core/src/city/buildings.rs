@@ -240,9 +240,9 @@ impl Game {
                 self.city_change_free_bonus(c, bonus, num_free_bonuses * change);
             }
 
-            // C++ quirk: not multiplied by `iChange`, so removing (or re-processing) the
-            // building moves the global counter the same way as adding it.
-            self.change_global_counter(info.modify_global_counter);
+            // Not in C++ (2026-10-28): multiplied by `change`, so removing the building undoes it
+            // (C++ moved the counter the same way again).
+            self.change_global_counter(info.modify_global_counter * change);
             if info.resist_magic != 0 {
                 // changeResistMagic
                 self.cities[c].resist_magic += info.resist_magic * change;
@@ -251,7 +251,10 @@ impl Game {
                 if change > 0 {
                     self.city_set_plot_radius(c, info.plot_radius);
                 } else {
-                    self.city_set_plot_radius(c, 2);
+                    // Not in C++ (2026-10-28): back to the radius the city has without the
+                    // building (C++ set 2, shrinking a full Kuriotates city).
+                    let base = self.city_base_plot_radius(c);
+                    self.city_set_plot_radius(c, base);
                 }
             }
             // FfH: End Add
@@ -799,9 +802,6 @@ impl Game {
             }
 
             if old_power != self.city_is_power(c) {
-                let owner = self.cities[c].owner;
-                self.player_invalidate_yield_rank_cache(owner, None);
-
                 self.city_update_commerces(c);
 
                 // UI: setInfoDirty for the active team.

@@ -74,9 +74,10 @@ without changing the rules engine:
   a popup whose "no answer" the rules already handle (production, events, votes, research) and
   asks an `Answerer` synchronously where no answer would lose information (free tech, keep/raze,
   election, offer, religion). AI work C++ also runs for humans goes to a private advisor `Ai`.
-- **Purity contract.** Every read of `&Game` outside a rules call goes through a `QueryGuard`,
-  which restores the interior-mutable caches (path finders, `ai_bonus_value`, city rank caches)
-  that `&self` rules functions fill, so reads never change later results or save bytes.
+- **Purity.** Reads of `&Game` never change later results or save bytes: ffh-core's `&self`
+  functions write no game state (no caches written by reads; the path finders are scratch,
+  path.rs "No reuse"). `tests/purity.rs` checks the save bytes around a noisy client and the
+  city screen.
 - **Saves.** A save is `Game::save()` bytes plus a JSON sidecar with the session state the rules
   need and `Game` lacks (the deferred event popups). Saves taken at a human control point resume
   exactly (the human plays slot 0, before any AI acts that turn; ffh-ai caches are per turn).
@@ -91,7 +92,7 @@ without changing the rules engine:
   settings matrix (each game in a child process, ffh-stress's invariant checks every 5 turns), so
   the rules' human-only branches run before people play; failures print a repro command.
 - **Views and queries.** Clients read the game only through protocol queries (`query.rs`,
-  `view/`), answered under a `QueryGuard` from the human team's side: `view/fog.rs` holds the
+  `view/`), answered from the human team's side: `view/fog.rs` holds the
   only visibility predicates (revealed and visible plots, invisible units, revealed cities, met
   players). Path previews use a session-owned interface path finder, never the game's. A turn
   report diffs a fog-filtered snapshot taken at the end of the human's turn against its next
@@ -119,11 +120,11 @@ info table, plus the fixed array lengths; a save made with other XML is refused)
 `Game` field in declaration order (varint integers, length-prefixed strings/vectors, tagged
 options; slabs keep their ids and next id). Encoding details: `save/io.rs`.
 
-- Everything mutable is saved, rules caches included (`Player::ai_bonus_value`, city rank
-  caches, the path finders' kept search trees), so a loaded game needs no recomputation.
+- Everything mutable is saved; there are no rules caches to recompute after loading.
 - Not saved: `d`, `controllers` (a loaded game has `NullController`s: the caller re-attaches
-  its controllers, as after `Game::new`), `map_script` (only used by `game_init`) and
-  `telemetry` (observation only, docs/TELEMETRY.md; off in a loaded game).
+  its controllers, as after `Game::new`), `map_script` (only used by `game_init`),
+  `telemetry` (observation only, docs/TELEMETRY.md; off in a loaded game) and the path finders
+  (scratch storage for searches).
 - Resume guarantee: a game saved at a turn boundary (`Game::at_turn_boundary()`: no player's
   turn active, so the next `update()` starts the next game turn) or right after `game_init`,
   loaded with fresh controllers and continued, plays out exactly like the uninterrupted game

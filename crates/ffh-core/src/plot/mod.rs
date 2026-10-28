@@ -18,7 +18,6 @@
 //! full C++ -> Rust table). Graphics/UI members (symbols, flag entities, plot
 //! builder, center unit, layout/flag dirty bits, feature art variety) are not ported.
 
-#![allow(unused_imports)]
 
 pub mod geography;
 pub mod ownership;

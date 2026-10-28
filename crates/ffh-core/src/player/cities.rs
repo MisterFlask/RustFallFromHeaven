@@ -12,7 +12,6 @@
 //! `cannotFoundCity` / `canFoundCitiesOnWater` (disabled by USE_CANNOT_FOUND_CITY_CALLBACK /
 //! USE_CAN_FOUND_CITIES_ON_WATER_CALLBACK = 0, and they return False anyway).
 
-#![allow(unused_imports)]
 
 use crate::city::City;
 use crate::controller::ConqueredCityChoice;

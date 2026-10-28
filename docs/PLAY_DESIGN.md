@@ -230,6 +230,12 @@ Rules for re-entrancy:
 
 ### 2.5 Purity of reads: interface finder, allow-list, QueryGuard
 
+> **Since 2026-10-28 there is no `QueryGuard`.** ffh-core no longer has caches written by `&self`
+> functions (F11 is gone: path searches are fresh and their finders are scratch, bonus values and
+> city ranks are computed when asked; docs/PORTING.md, "No rules caches written by reads"), so a
+> read of `&Game` cannot change the game and the guard had nothing left to restore. The
+> interface finder, the allow-list and the save-bytes tests stay. The text below is the original design.
+
 Every read of `&Game` outside rules calls goes through `QueryGuard`. That includes views, queries, the bot's own reads, Answerer modals and the turn-report snapshot.
 
 ```rust

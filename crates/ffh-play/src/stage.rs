@@ -219,7 +219,7 @@ pub fn auto_moves(dir: &Path) -> Result<StagedAutoMoves, String> {
             for (dx, dy) in [(r, 0), (-r, 0), (0, r), (0, -r), (r, r), (-r, -r), (r, -r), (-r, r)] {
                 let Some(p) = g.plot_xy(x, y, dx, dy) else { continue };
                 let (tx, ty) = (g.map.plots[p].x, g.map.plots[p].y);
-                if finder.generate_path(g, x, y, tx, ty, false, 0, false) && finder.path_turns().is_some_and(|t| t >= 2) {
+                if finder.generate_path(g, x, y, tx, ty, false, 0) && finder.path_turns().is_some_and(|t| t >= 2) {
                     target = Some((grp, tx, ty));
                     break 'search;
                 }

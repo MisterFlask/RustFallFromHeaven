@@ -1456,9 +1456,10 @@ impl Game {
                 self.players[p].see_invisible = value;
             }
         }
-        // C++ quirk: not multiplied by iChange, so removing the building adds the modifiers again.
-        self.players[p].resist_enemy_modify += info.global_resist_enemy_modify;
-        self.players[p].resist_modify += info.global_resist_modify;
+        // Not in C++ (2026-10-28): multiplied by `change`, so removing the building undoes them
+        // (C++ added the modifiers again).
+        self.players[p].resist_enemy_modify += info.global_resist_enemy_modify * change;
+        self.players[p].resist_modify += info.global_resist_modify * change;
         // FfH: End Add
 
         if info.area_health > 0 {
@@ -1897,9 +1898,9 @@ mod tests {
         let tower = d.t::<BuildingType>("BUILDING_TOWER_OF_ALTERATION");
         g.player_process_building(p, tower, 1, area);
         assert_eq!((g.players[p].resist_modify, g.players[p].resist_enemy_modify), (20, -20));
-        // C++ quirk: the resist modifiers are not multiplied by iChange.
+        // Removing the building takes them away again.
         g.player_process_building(p, tower, -1, area);
-        assert_eq!((g.players[p].resist_modify, g.players[p].resist_enemy_modify), (40, -40));
+        assert_eq!((g.players[p].resist_modify, g.players[p].resist_enemy_modify), (0, 0));
 
         let nox_noctis = d.t::<BuildingType>("BUILDING_NOX_NOCTIS");
         g.player_process_building(p, nox_noctis, 1, area);
