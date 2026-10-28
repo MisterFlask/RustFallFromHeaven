@@ -25,10 +25,10 @@ use ffh_data::*;
 use super::{finish, list_help, req, txt, Arg, NEWLINE};
 use crate::names::display;
 
-/// A line of help: `NEWLINE` and the text of `key` (`fallback` when the key has no text).
-fn add(d: &GameData, b: &mut String, key: &str, fallback: &str, args: &[Arg]) {
+/// A line of help: `NEWLINE` and the text of `key`.
+fn add(d: &GameData, b: &mut String, key: &str, args: &[Arg]) {
     b.push_str(NEWLINE);
-    b.push_str(&txt(d, key, fallback, args));
+    b.push_str(&txt(d, key, args));
 }
 
 /// C++ `setListHelp` over a whole list: `start` and the first item, then `sep` and each other one.
@@ -39,24 +39,24 @@ fn list(b: &mut String, start: &str, items: &[String], sep: &str) {
 }
 
 /// A requirement line: `add` without the warning colour (`super::unwarned`).
-fn add_req(d: &GameData, b: &mut String, key: &str, fallback: &str, args: &[Arg]) {
+fn add_req(d: &GameData, b: &mut String, key: &str, args: &[Arg]) {
     b.push_str(NEWLINE);
-    b.push_str(&req(d, key, fallback, args));
+    b.push_str(&req(d, key, args));
 }
 
 /// A "Requires X" line (C++ `TXT_KEY_UNIT_REQUIRES_STRING`).
 fn requires(d: &GameData, b: &mut String, what: &str) {
-    add_req(d, b, "TXT_KEY_UNIT_REQUIRES_STRING", "[COLOR_WARNING_TEXT]Requires %s1_Text[COLOR_REVERT]", &[Arg::S(what)]);
+    add_req(d, b, "TXT_KEY_UNIT_REQUIRES_STRING", &[Arg::S(what)]);
 }
 
 /// "Requires A or B" / "Requires A and B" (C++ `TXT_KEY_REQUIRES` + `setListHelp`, uncoloured);
 /// nothing for an empty list.
-fn requires_list(d: &GameData, b: &mut String, items: &[String], sep_key: &str, sep_fallback: &str) {
+fn requires_list(d: &GameData, b: &mut String, items: &[String], sep_key: &str) {
     if items.is_empty() {
         return;
     }
-    let start = format!("{NEWLINE}{}", req(d, "TXT_KEY_REQUIRES", "[COLOR_WARNING_TEXT]Requires[SPACE]", &[]));
-    list(b, &start, items, &txt(d, sep_key, sep_fallback, &[]));
+    let start = format!("{NEWLINE}{}", req(d, "TXT_KEY_REQUIRES", &[]));
+    list(b, &start, items, &txt(d, sep_key, &[]));
 }
 
 /// What unit `u` does (Civ4 markup, lines joined by `[NEWLINE]`): its strength and moves, what it
@@ -300,7 +300,7 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
     b.push_str(&format!("{moves}[ICON_MOVES]"));
     if *air_range > 0 {
         b.push_str(", ");
-        b.push_str(&txt(d, "TXT_KEY_UNIT_AIR_RANGE", "%d1_Num Range", &[Arg::N(*air_range)]));
+        b.push_str(&txt(d, "TXT_KEY_UNIT_AIR_RANGE", &[Arg::N(*air_range)]));
     }
     // The unit combat C++'s name line shows after the name, " (Melee)".
     if let Some(uc) = unit_combat_type {
@@ -319,159 +319,157 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
     let mut civs: Vec<CivilizationType> = Vec::new();
     if unique || default.is_some_and(|x| x != u) {
         for c in d.civilizations.keys().filter(|&c| civ_unit(c) == Some(u) && Some(c) != random) {
-            add(d, &mut b, "TXT_KEY_UNIQUE_UNIT", "Unique Unit for [LINK=literal]%s1_civ[\\LINK]", &[Arg::S(&display(d, c))]);
+            add(d, &mut b, "TXT_KEY_UNIQUE_UNIT", &[Arg::S(&display(d, c))]);
             civs.push(c);
         }
         if let Some(x) = default.filter(|_| !unique) {
-            add(d, &mut b, "TXT_KEY_REPLACES_UNIT", "Replaces [LINK=literal]%s1_default_unit[\\LINK]", &[Arg::S(&display(d, x))]);
+            add(d, &mut b, "TXT_KEY_REPLACES_UNIT", &[Arg::S(&display(d, x))]);
         }
     }
     // ffh-play's: `PrereqCiv` (CvCity::canTrain) when the lines above do not name it (the class
     // is open to every civilization: the Angel, the Priest of Winter, two barbarian units).
     if let Some(c) = prereq_civ.filter(|c| !civs.contains(c)) {
-        add(d, &mut b, "TXT_KEY_UNIQUE_UNIT", "Unique Unit for [LINK=literal]%s1_civ[\\LINK]", &[Arg::S(&display(d, c))]);
+        add(d, &mut b, "TXT_KEY_UNIQUE_UNIT", &[Arg::S(&display(d, c))]);
         civs.push(c);
     }
     if let Some(c) = class {
         let ci = &d.unit_classes[c];
         // Without a city: how many are allowed (with one: how many are left).
         if ci.max_global_instances != -1 {
-            add(d, &mut b, "TXT_KEY_UNIT_WORLD_UNIT_ALLOWED", "[ICON_BULLET]World Unit (%d1_Num Allowed)", &[Arg::N(ci.max_global_instances)]);
+            add(d, &mut b, "TXT_KEY_UNIT_WORLD_UNIT_ALLOWED", &[Arg::N(ci.max_global_instances)]);
         }
         if ci.max_team_instances != -1 {
-            add(d, &mut b, "TXT_KEY_UNIT_TEAM_UNIT_ALLOWED", "[ICON_BULLET]Team Unit (%d1_Num Allowed)", &[Arg::N(ci.max_team_instances)]);
+            add(d, &mut b, "TXT_KEY_UNIT_TEAM_UNIT_ALLOWED", &[Arg::N(ci.max_team_instances)]);
         }
         if ci.max_player_instances != -1 {
-            add(d, &mut b, "TXT_KEY_UNIT_NATIONAL_UNIT_ALLOWED", "[ICON_BULLET]National Unit (%d1_Num Allowed)", &[Arg::N(ci.max_player_instances)]);
+            add(d, &mut b, "TXT_KEY_UNIT_NATIONAL_UNIT_ALLOWED", &[Arg::N(ci.max_player_instances)]);
         }
         if ci.instance_cost_modifier != 0 {
-            add(d, &mut b, "TXT_KEY_UNIT_INSTANCE_COST_MOD", "Each Unit in Play Increases Base Cost by %d1%%", &[Arg::N(ci.instance_cost_modifier)]);
+            add(d, &mut b, "TXT_KEY_UNIT_INSTANCE_COST_MOD", &[Arg::N(ci.instance_cost_modifier)]);
         }
     }
 
     // ---- setBasicUnitHelp ----
     if *golden_age {
-        add(d, &mut b, "TXT_KEY_UNIT_GOLDEN_AGE", "[ICON_BULLET]Can Start a Golden Age", &[]);
+        add(d, &mut b, "TXT_KEY_UNIT_GOLDEN_AGE", &[]);
     }
     if *leader_experience > 0 {
         if d.defines.warlord_extra_experience_per_unit_percent == 0 {
-            add(d, &mut b, "TXT_KEY_UNIT_LEADER", "[ICON_BULLET]Can Provide %d1_Num Experience to Units in the Same Tile", &[Arg::N(*leader_experience)]);
+            add(d, &mut b, "TXT_KEY_UNIT_LEADER", &[Arg::N(*leader_experience)]);
         } else {
-            add(d, &mut b, "TXT_KEY_UNIT_LEADER_EXPERIENCE", "[ICON_BULLET]Can Provide up to %d1 XP to Each Unit in the Same Tile", &[Arg::N(*leader_experience)]);
+            add(d, &mut b, "TXT_KEY_UNIT_LEADER_EXPERIENCE", &[Arg::N(*leader_experience)]);
         }
     }
     if let Some(p) = leader_promotion {
-        b.push_str(&format!("{NEWLINE}[ICON_BULLET]{}", txt(d, "TXT_KEY_PROMOTION_WHEN_LEADING", "When attached to a unit:", &[])));
+        b.push_str(&format!("{NEWLINE}[ICON_BULLET]{}", txt(d, "TXT_KEY_PROMOTION_WHEN_LEADING", &[])));
         // C++ `parsePromotionHelp(.., L"\n   ")`: the promotion's lines, indented.
         for l in super::promotion::effects(d, *p).split(NEWLINE).filter(|l| !l.is_empty()) {
             b.push_str(&format!("{NEWLINE}[SPACE][SPACE][SPACE]{l}"));
         }
     }
     if *base_discover > 0 || *discover_multiplier > 0 {
-        add(d, &mut b, "TXT_KEY_UNIT_DISCOVER_TECH", "[ICON_BULLET]Can Discover a Technology", &[]);
+        add(d, &mut b, "TXT_KEY_UNIT_DISCOVER_TECH", &[]);
     }
     if *base_hurry > 0 || *hurry_multiplier > 0 {
-        add(d, &mut b, "TXT_KEY_UNIT_HURRY_PRODUCTION", "[ICON_BULLET]Can Hurry Production", &[]);
+        add(d, &mut b, "TXT_KEY_UNIT_HURRY_PRODUCTION", &[]);
     }
     if *base_trade > 0 || *trade_multiplier > 0 {
-        add(d, &mut b, "TXT_KEY_UNIT_TRADE_MISSION", "[ICON_BULLET]Can Conduct a Trade Mission", &[]);
+        add(d, &mut b, "TXT_KEY_UNIT_TRADE_MISSION", &[]);
     }
     // C++ scales these two by the game speed's `getUnitGreatWorkPercent`, unknown before the game:
     // as at Normal speed (100%).
     if *great_work_culture > 0 {
-        add(d, &mut b, "TXT_KEY_UNIT_GREAT_WORK", "[ICON_BULLET]Can Create a Great Work (%D1_Change[ICON_CULTURE])", &[Arg::N(*great_work_culture)]);
+        add(d, &mut b, "TXT_KEY_UNIT_GREAT_WORK", &[Arg::N(*great_work_culture)]);
     }
     if *espionage_points > 0 {
         add(
             d,
             &mut b,
             "TXT_KEY_UNIT_ESPIONAGE_MISSION",
-            "[ICON_BULLET]Can Infiltrate another player's City (%D1_Change[ICON_ESPIONAGE])",
             &[Arg::N(*espionage_points)],
         );
     }
-    let start = |key: &str, fallback: &str| format!("{NEWLINE}{}", txt(d, key, fallback, &[]));
+    let start = |key: &str| format!("{NEWLINE}{}", txt(d, key, &[]));
     let religions: Vec<String> = religion_spreads.iter_enumerated().filter(|(_, &n)| n > 0).map(|(r, _)| display(d, r).into_owned()).collect();
-    list(&mut b, &start("TXT_KEY_UNIT_CAN_SPREAD", "[ICON_BULLET]Can Spread[SPACE]"), &religions, ", ");
+    list(&mut b, &start("TXT_KEY_UNIT_CAN_SPREAD"), &religions, ", ");
     let corporations: Vec<String> = corporation_spreads.iter_enumerated().filter(|(_, &n)| n > 0).map(|(c, _)| display(d, c).into_owned()).collect();
-    list(&mut b, &start("TXT_KEY_UNIT_CAN_EXPAND", "[ICON_BULLET]Can Expand[SPACE]"), &corporations, ", ");
+    list(&mut b, &start("TXT_KEY_UNIT_CAN_EXPAND"), &corporations, ", ");
     let specialists: Vec<String> = great_peoples.iter_enumerated().filter(|(_, &x)| x).map(|(s, _)| display(d, s).into_owned()).collect();
-    list(&mut b, &start("TXT_KEY_UNIT_CAN_JOIN", "[ICON_BULLET]Can Join City as[SPACE]"), &specialists, ", ");
+    list(&mut b, &start("TXT_KEY_UNIT_CAN_JOIN"), &specialists, ", ");
     let constructs: Vec<String> = d.buildings.keys().filter(|&bl| buildings[bl] || force_buildings[bl]).map(|bl| display(d, bl).into_owned()).collect();
-    list(&mut b, &start("TXT_KEY_UNIT_CAN_CONSTRUCT", "[ICON_BULLET]Can Construct[SPACE]"), &constructs, ", ");
+    list(&mut b, &start("TXT_KEY_UNIT_CAN_CONSTRUCT"), &constructs, ", ");
     if *cargo_space > 0 {
-        add(d, &mut b, "TXT_KEY_UNIT_CARGO_SPACE", "[ICON_BULLET]Cargo Space: %d1_Num", &[Arg::N(*cargo_space)]);
+        add(d, &mut b, "TXT_KEY_UNIT_CARGO_SPACE", &[Arg::N(*cargo_space)]);
         if let Some(su) = special_cargo {
-            b.push_str(&txt(d, "TXT_KEY_UNIT_CARRIES", "[SPACE](Carries %s1_Name)", &[Arg::S(&display(d, *su))]));
+            b.push_str(&txt(d, "TXT_KEY_UNIT_CARRIES", &[Arg::S(&display(d, *su))]));
         }
     }
     let until = |what: &str, tech: Option<TechType>| match tech {
         None => what.to_string(),
-        Some(t) => txt(d, "TXT_KEY_TERRAIN_UNTIL_TECH", "[LINK=literal]%s1_terrain[\\LINK] (until %s2_technology)", &[Arg::S(what), Arg::S(&display(d, t))]),
+        Some(t) => txt(d, "TXT_KEY_TERRAIN_UNTIL_TECH", &[Arg::S(what), Arg::S(&display(d, t))]),
     };
     let mut cannot_enter: Vec<String> = terrain_impassable.iter_enumerated().filter(|(_, &x)| x).map(|(t, _)| until(&display(d, t), terrain_passable_tech[t])).collect();
     // C++ reads `getTerrainPassableTech` with the feature's index here (a slip that would name the
     // wrong tech): the feature's own `getFeaturePassableTech`.
     cannot_enter.extend(feature_impassable.iter_enumerated().filter(|(_, &x)| x).map(|(f, _)| until(&display(d, f), feature_passable_tech[f])));
-    list(&mut b, &format!("{} ", start("TXT_KEY_UNIT_CANNOT_ENTER", "[ICON_BULLET]Cannot Enter")), &cannot_enter, ", ");
+    list(&mut b, &format!("{} ", start("TXT_KEY_UNIT_CANNOT_ENTER")), &cannot_enter, ", ");
     if *invisible {
-        add(d, &mut b, "TXT_KEY_UNIT_INVISIBLE_ALL", "[ICON_BULLET]Invisible to All Units", &[]);
+        add(d, &mut b, "TXT_KEY_UNIT_INVISIBLE_ALL", &[]);
     } else if invisible_type.is_some() {
-        add(d, &mut b, "TXT_KEY_UNIT_INVISIBLE_MOST", "[ICON_BULLET]Invisible to Most Units", &[]);
+        add(d, &mut b, "TXT_KEY_UNIT_INVISIBLE_MOST", &[]);
     }
     // Every type it sees, as the Civilopedia lists them (the tooltip skips its own invisible type).
     for &i in see_invisible_types {
-        add(d, &mut b, "TXT_KEY_UNIT_SEE_INVISIBLE", "[ICON_BULLET]Can See %s1_Name", &[Arg::S(&display(d, i))]);
+        add(d, &mut b, "TXT_KEY_UNIT_SEE_INVISIBLE", &[Arg::S(&display(d, i))]);
     }
-    for (has, key, fallback) in [
-        (*investigate, "TXT_KEY_UNIT_INVESTIGATE_CITY", "[ICON_BULLET]Can Investigate Rival City"),
-        (*can_move_impassable, "TXT_KEY_UNIT_CAN_MOVE_IMPASSABLE", "[ICON_BULLET]Can Move through Impassable Terrain"),
-        (*no_bad_goodies, "TXT_KEY_UNIT_NO_BAD_GOODIES", "[ICON_BULLET]Better Results from Tribal Villages"),
-        (*hidden_nationality, "TXT_KEY_UNIT_HIDDEN_NATIONALITY", "[ICON_BULLET]Hidden Nationality"),
-        (*always_hostile, "TXT_KEY_UNIT_ALWAYS_HOSTILE", "[ICON_BULLET]Can Attack without Declaring War"),
-        (*only_defensive, "TXT_KEY_UNIT_ONLY_DEFENSIVE", "[ICON_BULLET]Can Only Defend"),
-        (*no_capture, "TXT_KEY_UNIT_CANNOT_CAPTURE", "[ICON_BULLET]Unit cannot capture"),
-        (!*pillage, "TXT_KEY_UNIT_CANNOT_PILLAGE", "[ICON_BULLET]Unit cannot pillage"),
-        (!*military_happiness, "TXT_KEY_UNIT_CANNOT_PROTECT_CITY", "[ICON_BULLET]Unit doesn't provide military happiness"),
-        (*rival_territory, "TXT_KEY_UNIT_EXPLORE_RIVAL", "[ICON_BULLET]Can Explore Rival Territory"),
-        (*found, "TXT_KEY_UNIT_FOUND_CITY", "[ICON_BULLET]Can Found a [LINK=CONCEPT_CITIES]New City[\\LINK]"),
+    for (has, key) in [
+        (*investigate, "TXT_KEY_UNIT_INVESTIGATE_CITY"),
+        (*can_move_impassable, "TXT_KEY_UNIT_CAN_MOVE_IMPASSABLE"),
+        (*no_bad_goodies, "TXT_KEY_UNIT_NO_BAD_GOODIES"),
+        (*hidden_nationality, "TXT_KEY_UNIT_HIDDEN_NATIONALITY"),
+        (*always_hostile, "TXT_KEY_UNIT_ALWAYS_HOSTILE"),
+        (*only_defensive, "TXT_KEY_UNIT_ONLY_DEFENSIVE"),
+        (*no_capture, "TXT_KEY_UNIT_CANNOT_CAPTURE"),
+        (!*pillage, "TXT_KEY_UNIT_CANNOT_PILLAGE"),
+        (!*military_happiness, "TXT_KEY_UNIT_CANNOT_PROTECT_CITY"),
+        (*rival_territory, "TXT_KEY_UNIT_EXPLORE_RIVAL"),
+        (*found, "TXT_KEY_UNIT_FOUND_CITY"),
     ] {
         if has {
-            add(d, &mut b, key, fallback, &[]);
+            add(d, &mut b, key, &[]);
         }
     }
     // The builds: all of them in a word when it has more than three quarters.
     let my_builds: Vec<String> = builds.iter_enumerated().filter(|(_, &x)| x).map(|(x, _)| display(d, x).into_owned()).collect();
     if my_builds.len() > d.builds.len() * 3 / 4 {
-        add(d, &mut b, "TXT_KEY_UNIT_IMPROVE_PLOTS", "[ICON_BULLET]Can Improve Tiles", &[]);
+        add(d, &mut b, "TXT_KEY_UNIT_IMPROVE_PLOTS", &[]);
     } else {
-        list(&mut b, &format!("{} ", start("TXT_KEY_UNIT_CAN", "[ICON_BULLET]Can[SPACE]")), &my_builds, ", ");
+        list(&mut b, &format!("{} ", start("TXT_KEY_UNIT_CAN")), &my_builds, ", ");
     }
     if *nuke_range != -1 {
-        add(d, &mut b, "TXT_KEY_UNIT_CAN_NUKE", "[ICON_BULLET]Can [LINK=CONCEPT_NUKES]Nuke[\\LINK] Enemy Lands", &[]);
+        add(d, &mut b, "TXT_KEY_UNIT_CAN_NUKE", &[]);
     }
     if *counter_spy {
-        add(d, &mut b, "TXT_KEY_UNIT_EXPOSE_SPIES", "[ICON_BULLET]Helps Thwart Rival Spies", &[]);
+        add(d, &mut b, "TXT_KEY_UNIT_EXPOSE_SPIES", &[]);
     }
     if first_strikes + chance_first_strikes > 0 {
         if *chance_first_strikes == 0 {
             if *first_strikes == 1 {
-                add(d, &mut b, "TXT_KEY_UNIT_ONE_FIRST_STRIKE", "[ICON_BULLET]1 First Strike", &[]);
+                add(d, &mut b, "TXT_KEY_UNIT_ONE_FIRST_STRIKE", &[]);
             } else {
-                add(d, &mut b, "TXT_KEY_UNIT_NUM_FIRST_STRIKES", "[ICON_BULLET]%d1_Num First Strikes", &[Arg::N(*first_strikes)]);
+                add(d, &mut b, "TXT_KEY_UNIT_NUM_FIRST_STRIKES", &[Arg::N(*first_strikes)]);
             }
         } else {
             add(
                 d,
                 &mut b,
                 "TXT_KEY_UNIT_FIRST_STRIKE_CHANCES",
-                "[ICON_BULLET]%d1_Num1-%d2_Num2 First Strikes",
                 &[Arg::N(*first_strikes), Arg::N(first_strikes + chance_first_strikes)],
             );
         }
     }
     if *first_strike_immune {
-        add(d, &mut b, "TXT_KEY_UNIT_IMMUNE_FIRST_STRIKES", "[ICON_BULLET]Immune to First Strikes", &[]);
+        add(d, &mut b, "TXT_KEY_UNIT_IMMUNE_FIRST_STRIKES", &[]);
     }
     // FfH.
     if *defensive_strike_chance > 0 {
@@ -479,48 +477,47 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
             d,
             &mut b,
             "TXT_KEY_PROMOTION_DEFENSIVE_STRIKE_PEDIA",
-            "[ICON_BULLET]+%d1% chance to do +%d2% damage to units attacking this unit's stack",
             &[Arg::N(*defensive_strike_chance), Arg::N(*defensive_strike_damage)],
         );
     }
     if *immune_to_defensive_strike {
-        add(d, &mut b, "TXT_KEY_PROMOTION_IMMUNE_TO_DEFENSIVE_STRIKE_PEDIA", "[ICON_BULLET]Immune to Defensive Strikes", &[]);
+        add(d, &mut b, "TXT_KEY_PROMOTION_IMMUNE_TO_DEFENSIVE_STRIKE_PEDIA", &[]);
     }
-    for (has, key, fallback) in [
-        (*no_defensive_bonus, "TXT_KEY_UNIT_NO_DEFENSE_BONUSES", "[ICON_BULLET]Doesn't Receive Defensive Bonuses"),
-        (*flat_movement_cost, "TXT_KEY_UNIT_FLAT_MOVEMENT", "[ICON_BULLET]Flat Movement Costs"),
-        (*ignore_terrain_cost, "TXT_KEY_UNIT_IGNORE_TERRAIN", "[ICON_BULLET]Ignores Terrain Movement Costs"),
+    for (has, key) in [
+        (*no_defensive_bonus, "TXT_KEY_UNIT_NO_DEFENSE_BONUSES"),
+        (*flat_movement_cost, "TXT_KEY_UNIT_FLAT_MOVEMENT"),
+        (*ignore_terrain_cost, "TXT_KEY_UNIT_IGNORE_TERRAIN"),
     ] {
         if has {
-            add(d, &mut b, key, fallback, &[]);
+            add(d, &mut b, key, &[]);
         }
     }
-    for (n, key, fallback) in [
-        (*interception_probability, "TXT_KEY_UNIT_INTERCEPT_AIRCRAFT", "[ICON_BULLET]Can Intercept Aircraft (%d1_Amount%% Chance)"),
-        (*evasion_probability, "TXT_KEY_UNIT_EVADE_INTERCEPTION", "[ICON_BULLET]Can Evade Interception (%d1_Amount%% Chance)"),
-        (*withdrawal_probability, "TXT_KEY_UNIT_WITHDRAWL_PROBABILITY", "[ICON_BULLET]Can Withdraw from Combat (%d1_Amount%% Chance)"),
+    for (n, key) in [
+        (*interception_probability, "TXT_KEY_UNIT_INTERCEPT_AIRCRAFT"),
+        (*evasion_probability, "TXT_KEY_UNIT_EVADE_INTERCEPTION"),
+        (*withdrawal_probability, "TXT_KEY_UNIT_WITHDRAWL_PROBABILITY"),
     ] {
         if n > 0 {
-            add(d, &mut b, key, fallback, &[Arg::N(n)]);
+            add(d, &mut b, key, &[Arg::N(n)]);
         }
     }
     let hp = d.defines.max_hit_points.max(1);
     if *combat_limit < hp && *combat > 0 && !*only_defensive {
-        add(d, &mut b, "TXT_KEY_UNIT_COMBAT_LIMIT", "[ICON_BULLET]Maximum %d1%% damage to enemy on attack", &[Arg::N(100 * combat_limit / hp)]);
+        add(d, &mut b, "TXT_KEY_UNIT_COMBAT_LIMIT", &[Arg::N(100 * combat_limit / hp)]);
     }
     if *collateral_damage > 0 {
-        add(d, &mut b, "TXT_KEY_UNIT_COLLATERAL_DAMAGE", "[ICON_BULLET]Causes Collateral Damage (max. %d1%%)", &[Arg::N(100 * collateral_damage_limit / hp)]);
+        add(d, &mut b, "TXT_KEY_UNIT_COLLATERAL_DAMAGE", &[Arg::N(100 * collateral_damage_limit / hp)]);
     }
     for (uc, &n) in unit_combat_collateral_immune.iter_enumerated() {
         if n != 0 {
-            add(d, &mut b, "TXT_KEY_UNIT_COLLATERAL_IMMUNE", "[ICON_BULLET]Immune to collateral damage from [LINK=literal]%s1_units[\\LINK]", &[Arg::S(&display(d, uc))]);
+            add(d, &mut b, "TXT_KEY_UNIT_COLLATERAL_IMMUNE", &[Arg::S(&display(d, uc))]);
         }
     }
     // A modifier for attack and defence: one "Strength" line when they are equal, else each.
-    let strength_or_each = |b: &mut String, attack: i32, defense: i32, both: (&str, &str), att: (&str, &str), def: (&str, &str), what: &str, defense_first: bool| {
+    let strength_or_each = |b: &mut String, attack: i32, defense: i32, both: &str, att: &str, def: &str, what: &str, defense_first: bool| {
         if attack == defense {
             if attack != 0 {
-                add(d, b, both.0, both.1, &[Arg::N(attack), Arg::S(what)]);
+                add(d, b, both, &[Arg::N(attack), Arg::S(what)]);
             }
             return;
         }
@@ -528,9 +525,9 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
         if defense_first {
             lines.swap(0, 1);
         }
-        for (n, (key, fallback)) in lines {
+        for (n, key) in lines {
             if n != 0 {
-                add(d, b, key, fallback, &[Arg::N(n), Arg::S(what)]);
+                add(d, b, key, &[Arg::N(n), Arg::S(what)]);
             }
         }
     };
@@ -538,32 +535,32 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
         &mut b,
         *city_attack_modifier,
         *city_defense_modifier,
-        ("TXT_KEY_UNIT_CITY_STRENGTH_MOD", "[ICON_BULLET]%D1_Change%% City Strength"),
-        ("TXT_KEY_UNIT_CITY_ATTACK_MOD", "[ICON_BULLET]%D1_Change%% City Attack"),
-        ("TXT_KEY_UNIT_CITY_DEFENSE_MOD", "[ICON_BULLET]%D1_Change%% City Defense"),
+        "TXT_KEY_UNIT_CITY_STRENGTH_MOD",
+        "TXT_KEY_UNIT_CITY_ATTACK_MOD",
+        "TXT_KEY_UNIT_CITY_DEFENSE_MOD",
         "",
         false,
     );
     if *animal_combat_modifier != 0 {
-        add(d, &mut b, "TXT_KEY_UNIT_ANIMAL_COMBAT_MOD", "[ICON_BULLET]%D1_Change%% vs. Animals", &[Arg::N(*animal_combat_modifier)]);
+        add(d, &mut b, "TXT_KEY_UNIT_ANIMAL_COMBAT_MOD", &[Arg::N(*animal_combat_modifier)]);
     }
     if *drop_range > 0 {
-        add(d, &mut b, "TXT_KEY_UNIT_PARADROP_RANGE", "[ICON_BULLET]Can perform paradrops (Range=%d1_range)", &[Arg::N(*drop_range)]);
+        add(d, &mut b, "TXT_KEY_UNIT_PARADROP_RANGE", &[Arg::N(*drop_range)]);
     }
     strength_or_each(
         &mut b,
         *hills_attack_modifier,
         *hills_defense_modifier,
-        ("TXT_KEY_UNIT_HILLS_STRENGTH", "[ICON_BULLET]%D1_Change%% Hills Strength"),
-        ("TXT_KEY_UNIT_HILLS_ATTACK", "[ICON_BULLET]%D1_Change%% Hills Attack"),
-        ("TXT_KEY_UNIT_HILLS_DEFENSE", "[ICON_BULLET]%D1_Change%% Hills Defense"),
+        "TXT_KEY_UNIT_HILLS_STRENGTH",
+        "TXT_KEY_UNIT_HILLS_ATTACK",
+        "TXT_KEY_UNIT_HILLS_DEFENSE",
         "",
         false,
     );
     let terrain_keys = (
-        ("TXT_KEY_UNIT_STRENGTH", "[ICON_BULLET]%D1_Change%% %s2_TerrOrFeat Strength"),
-        ("TXT_KEY_UNIT_ATTACK", "[ICON_BULLET]%D1_Change%% %s2_TerrOrFeat Attack"),
-        ("TXT_KEY_UNIT_DEFENSE", "[ICON_BULLET]%D1_Change%% %s2_TerrOrFeat Defense"),
+        "TXT_KEY_UNIT_STRENGTH",
+        "TXT_KEY_UNIT_ATTACK",
+        "TXT_KEY_UNIT_DEFENSE",
     );
     // C++ writes the defence before the attack for terrains and features.
     for t in d.terrains.keys() {
@@ -579,38 +576,36 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
             &mut b,
             unit_class_attack_modifier[c],
             unit_class_defense_modifier[c],
-            ("TXT_KEY_UNIT_MOD_VS_TYPE", "[ICON_BULLET]%D1_Change%% vs. [LINK=literal]%s2_Type[\\LINK]"),
-            ("TXT_KEY_UNIT_ATTACK_MOD_VS_CLASS", "[ICON_BULLET]%D1_Change%% Attack vs. [LINK=literal]%s2_Class[\\LINK]"),
-            ("TXT_KEY_UNIT_DEFENSE_MOD_VS_CLASS", "[ICON_BULLET]%D1_Change%% Defense vs. [LINK=literal]%s2_Type[\\LINK]"),
+            "TXT_KEY_UNIT_MOD_VS_TYPE",
+            "TXT_KEY_UNIT_ATTACK_MOD_VS_CLASS",
+            "TXT_KEY_UNIT_DEFENSE_MOD_VS_CLASS",
             &display(d, c),
             false,
         );
     }
     for (uc, &n) in unit_combat_modifier.iter_enumerated() {
         if n != 0 {
-            add(d, &mut b, "TXT_KEY_UNIT_MOD_VS_TYPE", "[ICON_BULLET]%D1_Change%% vs. [LINK=literal]%s2_Type[\\LINK]", &[Arg::N(n), Arg::S(&display(d, uc))]);
+            add(d, &mut b, "TXT_KEY_UNIT_MOD_VS_TYPE", &[Arg::N(n), Arg::S(&display(d, uc))]);
         }
     }
     for (dom, &n) in domain_modifier.iter_enumerated() {
         if n != 0 {
-            add(d, &mut b, "TXT_KEY_UNIT_MOD_VS_TYPE_NO_LINK", "[ICON_BULLET]%D1_Change%% vs. %s2_Type", &[Arg::N(n), Arg::S(&display(d, dom))]);
+            add(d, &mut b, "TXT_KEY_UNIT_MOD_VS_TYPE_NO_LINK", &[Arg::N(n), Arg::S(&display(d, dom))]);
         }
     }
     // The classes and unit combats it attacks or defends first, and flanks.
-    let targets = "[ICON_BULLET]Targets any %s1_unit_list first in combat outside cities";
-    let defends = "[ICON_BULLET]Defends first against %s1_unit_list";
     let class_list = |of: &IdxVec<UnitClassType, bool>| -> String { d.unit_classes.keys().filter(|&c| of[c]).map(|c| display(d, c).into_owned()).collect::<Vec<_>>().join(", ") };
     let combat_list = |of: &IdxVec<UnitCombatType, bool>| -> String { d.unit_combats.keys().filter(|&c| of[c]).map(|c| display(d, c).into_owned()).collect::<Vec<_>>().join(", ") };
     let flanks = d.unit_classes.keys().filter(|&c| flanking_strike_unit_class[c] > 0).map(|c| display(d, c).into_owned()).collect::<Vec<_>>().join(", ");
-    for (names, key, fallback) in [
-        (class_list(target_unit_class), "TXT_KEY_UNIT_TARGETS_UNIT_FIRST", targets),
-        (class_list(defender_unit_class), "TXT_KEY_UNIT_DEFENDS_UNIT_FIRST", defends),
-        (combat_list(target_unit_combat), "TXT_KEY_UNIT_TARGETS_UNIT_FIRST", targets),
-        (combat_list(defender_unit_combat), "TXT_KEY_UNIT_DEFENDS_UNIT_FIRST", defends),
-        (flanks, "TXT_KEY_UNIT_FLANKING_STRIKES", "[ICON_BULLET][LINK=CONCEPT_FLANK_ATTACK]Flank attack[\\LINK] against %s1_unitlist"),
+    for (names, key) in [
+        (class_list(target_unit_class), "TXT_KEY_UNIT_TARGETS_UNIT_FIRST"),
+        (class_list(defender_unit_class), "TXT_KEY_UNIT_DEFENDS_UNIT_FIRST"),
+        (combat_list(target_unit_combat), "TXT_KEY_UNIT_TARGETS_UNIT_FIRST"),
+        (combat_list(defender_unit_combat), "TXT_KEY_UNIT_DEFENDS_UNIT_FIRST"),
+        (flanks, "TXT_KEY_UNIT_FLANKING_STRIKES"),
     ] {
         if !names.is_empty() {
-            add(d, &mut b, key, fallback, &[Arg::S(&names)]);
+            add(d, &mut b, key, &[Arg::S(&names)]);
         }
     }
     let city_damage = d.defines.max_city_defense_damage.max(1);
@@ -619,59 +614,57 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
             d,
             &mut b,
             "TXT_KEY_UNIT_BOMB_RATE",
-            "[ICON_BULLET]Can Destroy Tile Improvements and Bomb City Defenses (-%d1_Mod%%/Turn)",
             &[Arg::N(bomb_rate * 100 / city_damage)],
         );
     }
     if *bombard_rate > 0 {
-        add(d, &mut b, "TXT_KEY_UNIT_BOMBARD_RATE", "[ICON_BULLET]Can Bombard City Defenses (-%d1_Mod%%/Turn)", &[Arg::N(bombard_rate * 100 / city_damage)]);
+        add(d, &mut b, "TXT_KEY_UNIT_BOMBARD_RATE", &[Arg::N(bombard_rate * 100 / city_damage)]);
     }
     let promotions: Vec<String> = free_promotions.iter_enumerated().filter(|(_, &x)| x).map(|(p, _)| display(d, p).into_owned()).collect();
-    list(&mut b, &start("TXT_KEY_UNIT_STARTS_WITH", "[ICON_BULLET]Starts with[SPACE]"), &promotions, ", ");
+    list(&mut b, &start("TXT_KEY_UNIT_STARTS_WITH"), &promotions, ", ");
     if *extra_cost != 0 {
-        add(d, &mut b, "TXT_KEY_UNIT_EXTRA_COST", "[ICON_BULLET]%D1_Change[ICON_GOLD] Cost", &[Arg::N(*extra_cost)]);
+        add(d, &mut b, "TXT_KEY_UNIT_EXTRA_COST", &[Arg::N(*extra_cost)]);
     }
     // The Civilopedia's: the leader traits that build it faster.
     for (t, &n) in production_traits.iter_enumerated() {
         if n == 100 {
-            add(d, &mut b, "TXT_KEY_DOUBLE_SPEED_TRAIT", "[ICON_BULLET]Double production speed for %s1_trait leaders", &[Arg::S(&display(d, t))]);
+            add(d, &mut b, "TXT_KEY_DOUBLE_SPEED_TRAIT", &[Arg::S(&display(d, t))]);
         } else if n != 0 {
-            add(d, &mut b, "TXT_KEY_PRODUCTION_MODIFIER_TRAIT", "[ICON_BULLET]%D1_change%% production speed for %s2_trait leaders", &[Arg::N(n), Arg::S(&display(d, t))]);
+            add(d, &mut b, "TXT_KEY_PRODUCTION_MODIFIER_TRAIT", &[Arg::N(n), Arg::S(&display(d, t))]);
         }
     }
     // FfH.
     for (dt, &n) in damage_type_combat.iter_enumerated() {
         if n != 0 {
-            add(d, &mut b, "TXT_KEY_DAMAGE_TYPE_COMBAT", "[ICON_BULLET]%D1 %s2 combat", &[Arg::N(n), Arg::S(&display(d, dt))]);
+            add(d, &mut b, "TXT_KEY_DAMAGE_TYPE_COMBAT", &[Arg::N(n), Arg::S(&display(d, dt))]);
         }
     }
     for (bonus, &n) in bonus_affinity.iter_enumerated() {
         if n != 0 {
-            add(d, &mut b, "TXT_KEY_BONUS_AFFINITY", "[ICON_BULLET]%D1: Affinity for %s2", &[Arg::N(n), Arg::S(&display(d, bonus))]);
+            add(d, &mut b, "TXT_KEY_BONUS_AFFINITY", &[Arg::N(n), Arg::S(&display(d, bonus))]);
         }
     }
     if *min_level > 0 {
-        add(d, &mut b, "TXT_KEY_UNIT_CANT_BUILD", "[ICON_BULLET]Unit cannot be built", &[]);
-        add(d, &mut b, "TXT_KEY_UNIT_MIN_LEVEL", "[ICON_BULLET]Must be upgraded from a unit of level %D1 or higher", &[Arg::N(*min_level)]);
+        add(d, &mut b, "TXT_KEY_UNIT_CANT_BUILD", &[]);
+        add(d, &mut b, "TXT_KEY_UNIT_MIN_LEVEL", &[Arg::N(*min_level)]);
     }
     if *disable_upgrade_to {
-        add(d, &mut b, "TXT_KEY_UNIT_DISABLE_UPGRADE_TO", "[ICON_BULLET]Cannot Upgrade to this Unit Type", &[]);
+        add(d, &mut b, "TXT_KEY_UNIT_DISABLE_UPGRADE_TO", &[]);
     }
     if *free_promotion_pick > 0 {
-        add(d, &mut b, "TXT_KEY_UNIT_FREE_PROMOTION_PICK", "[ICON_BULLET]Unit starts with %D1 free promotion(s)", &[Arg::N(*free_promotion_pick)]);
+        add(d, &mut b, "TXT_KEY_UNIT_FREE_PROMOTION_PICK", &[Arg::N(*free_promotion_pick)]);
     }
     if *gold_from_combat != 0 {
-        add(d, &mut b, "TXT_KEY_UNIT_GOLD_FROM_COMBAT", "[ICON_BULLET]Combat victories produce %D1 gold", &[Arg::N(*gold_from_combat)]);
+        add(d, &mut b, "TXT_KEY_UNIT_GOLD_FROM_COMBAT", &[Arg::N(*gold_from_combat)]);
     }
     if *modify_global_counter != 0 {
-        add(d, &mut b, "TXT_KEY_MESSAGE_MODIFY_GLOBAL_COUNTER", "[ICON_BULLET]%D1 to the Armageddon Counter", &[Arg::N(*modify_global_counter)]);
+        add(d, &mut b, "TXT_KEY_MESSAGE_MODIFY_GLOBAL_COUNTER", &[Arg::N(*modify_global_counter)]);
     }
     if let Some(x) = unit_convert_from_combat {
         add(
             d,
             &mut b,
             "TXT_KEY_UNIT_CONVERT_FROM_COMBAT",
-            "[ICON_BULLET]%D1% chance of becoming a %s2_unit if successful in combat",
             &[Arg::N(*unit_convert_from_combat_chance), Arg::S(&display(d, *x))],
         );
     }
@@ -680,19 +673,17 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
             d,
             &mut b,
             "TXT_KEY_UNIT_CREATE_FROM_COMBAT",
-            "[ICON_BULLET]%D1% chance of creating a %s2_unit if successful in combat",
             &[Arg::N(*unit_create_from_combat_chance), Arg::S(&display(d, *x))],
         );
     }
     if *enslavement_chance != 0 {
-        add(d, &mut b, "TXT_KEY_UNIT_ENSLAVEMENT_CHANCE", "[ICON_BULLET]%D1% chance to create a slave from combat", &[Arg::N(*enslavement_chance)]);
+        add(d, &mut b, "TXT_KEY_UNIT_ENSLAVEMENT_CHANCE", &[Arg::N(*enslavement_chance)]);
     }
     if let Some(p) = promotion_from_combat {
         add(
             d,
             &mut b,
             "TXT_KEY_UNIT_PROMOTION_FROM_COMBAT",
-            "[ICON_BULLET]Gains the %s1_promotion promotion after defeating a living unit in combat",
             &[Arg::S(&display(d, *p))],
         );
     }
@@ -700,27 +691,27 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
         // C++ quirk: the line break comes first, so a tier above 3 (none in FfH2) leaves an empty line.
         b.push_str(NEWLINE);
         match weapon_tier {
-            1 => b.push_str(&txt(d, "TXT_KEY_UNIT_WEAPON_TIER_1", "[ICON_BULLET]Unit can use Bronze weapons.", &[])),
-            2 => b.push_str(&txt(d, "TXT_KEY_UNIT_WEAPON_TIER_2", "[ICON_BULLET]Unit can use Bronze and Iron weapons.", &[])),
-            3 => b.push_str(&txt(d, "TXT_KEY_UNIT_WEAPON_TIER_3", "[ICON_BULLET]Unit can use Bronze, Iron and Mithril weapons.", &[])),
+            1 => b.push_str(&txt(d, "TXT_KEY_UNIT_WEAPON_TIER_1", &[])),
+            2 => b.push_str(&txt(d, "TXT_KEY_UNIT_WEAPON_TIER_2", &[])),
+            3 => b.push_str(&txt(d, "TXT_KEY_UNIT_WEAPON_TIER_3", &[])),
             _ => {}
         }
     }
     if *immortal {
-        add(d, &mut b, "TXT_KEY_PROMOTION_IMMORTAL_PEDIA", "[ICON_BULLET]Resurrected in the civilization's capital if killed", &[]);
+        add(d, &mut b, "TXT_KEY_PROMOTION_IMMORTAL_PEDIA", &[]);
     }
     if *no_war_weariness {
-        add(d, &mut b, "TXT_KEY_UNIT_NO_WAR_WEARINESS", "[ICON_BULLET]Death won't cause War Weariness", &[]);
+        add(d, &mut b, "TXT_KEY_UNIT_NO_WAR_WEARINESS", &[]);
     }
     if let Some(v) = diplo_vote_type {
-        add(d, &mut b, "TXT_KEY_UNIT_DIPLO_VOTE_TYPE", "[ICON_BULLET]+1 vote in the %s1", &[Arg::S(&display(d, *v))]);
+        add(d, &mut b, "TXT_KEY_UNIT_DIPLO_VOTE_TYPE", &[Arg::S(&display(d, *v))]);
     }
     if *abandon {
-        add(d, &mut b, "TXT_KEY_UNIT_ABANDON", "[ICON_BULLET]Unit will abandon civilizations that don't maintain its Civic or Religion requirements", &[]);
+        add(d, &mut b, "TXT_KEY_UNIT_ABANDON", &[]);
     }
     // Its own spells: those of the unit or its class, without a civilization or religion
     // prerequisite (C++ checks the two independently; no FfH2 spell has both).
-    let ability = |b: &mut String, s: SpellType| add(d, b, "TXT_KEY_UNIT_SPELL_ABILITY", "[ICON_BULLET]Unit can use the [LINK=literal]%s1_spell[\\LINK] ability", &[Arg::S(&display(d, s))]);
+    let ability = |b: &mut String, s: SpellType| add(d, b, "TXT_KEY_UNIT_SPELL_ABILITY", &[Arg::S(&display(d, s))]);
     let of_class = |s: &SpellInfo| s.unit_class_prereq.is_some() && s.unit_class_prereq == class;
     let listed = |s: &SpellInfo| s.civilization_prereq.is_none() && s.religion_prereq.is_none() && (s.unit_prereq == Some(u) || of_class(s));
     for s in d.spells.keys() {
@@ -770,22 +761,22 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
             .filter(|&x| !d.units[x].disable_upgrade_to)
             .map(|x| display(d, x).into_owned())
             .collect();
-        list(&mut b, &format!("{NEWLINE}[ICON_BULLET]{}: ", txt(d, "TXT_KEY_PEDIA_UPGRADES_TO", "Upgrades To", &[])), &upgrades, ", ");
+        list(&mut b, &format!("{NEWLINE}[ICON_BULLET]{}: ", txt(d, "TXT_KEY_PEDIA_UPGRADES_TO", &[])), &upgrades, ", ");
     }
 
     // ---- setUnitHelp: what it requires (without a city, all of it) ----
     if let Some(r) = holy_city {
         // `%F1` is the religion's font icon: its name stands in for it.
-        add_req(d, &mut b, "TXT_KEY_UNIT_REQUIRES_HOLY_CITY", "[COLOR_WARNING_TEXT]Requires %F1_RelIcon Holy City[COLOR_REVERT]", &[Arg::S(&display(d, *r))]);
+        add_req(d, &mut b, "TXT_KEY_UNIT_REQUIRES_HOLY_CITY", &[Arg::S(&display(d, *r))]);
     }
     if let Some(su) = special_unit_type {
         let projects: Vec<String> = d.projects.keys().filter(|&p| d.projects[p].everyone_special_unit == Some(*su)).map(|p| display(d, p).into_owned()).collect();
-        requires_list(d, &mut b, &projects, "TXT_KEY_OR", "[SPACE]or[SPACE]");
+        requires_list(d, &mut b, &projects, "TXT_KEY_OR");
     }
     if *nuke_range != -1 {
         let mut allow: Vec<String> = d.projects.keys().filter(|&p| d.projects[p].allows_nukes).map(|p| display(d, p).into_owned()).collect();
         allow.extend(d.buildings.keys().filter(|&bl| d.buildings[bl].allows_nukes).map(|bl| display(d, bl).into_owned()));
-        requires_list(d, &mut b, &allow, "TXT_KEY_OR", "[SPACE]or[SPACE]");
+        requires_list(d, &mut b, &allow, "TXT_KEY_OR");
     }
     if let Some(bl) = prereq_building {
         requires(d, &mut b, &display(d, *bl));
@@ -795,7 +786,7 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
         requires(d, &mut b, &display(d, *bc));
     }
     if let Some(a) = prereq_alignment {
-        add_req(d, &mut b, "TXT_KEY_UNIT_PREREQ_ALIGNMENT", "[COLOR_WARNING_TEXT]Requires %s1 alignment[COLOR_REVERT]", &[Arg::S(&display(d, *a))]);
+        add_req(d, &mut b, "TXT_KEY_UNIT_PREREQ_ALIGNMENT", &[Arg::S(&display(d, *a))]);
     }
     if let Some(c) = prereq_civic {
         requires(d, &mut b, &display(d, *c));
@@ -805,7 +796,6 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
             d,
             &mut b,
             "TXT_KEY_UNIT_PREREQ_GLOBAL_COUNTER",
-            "[COLOR_WARNING_TEXT]Requires an Armageddon Count of %D1 or higher[COLOR_REVERT]",
             &[Arg::N(*prereq_global_counter)],
         );
     }
@@ -816,18 +806,18 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
     }
     if let Some(r) = state_religion {
         b.push_str(NEWLINE);
-        b.push_str(&txt(d, "TXT_KEY_TECH_PREREQ_RELIGION", "Requires: %s1_religion state religion", &[Arg::S(&display(d, *r))]));
+        b.push_str(&txt(d, "TXT_KEY_TECH_PREREQ_RELIGION", &[Arg::S(&display(d, *r))]));
     }
     if let Some(t) = prereq_and_tech {
         requires(d, &mut b, &display(d, *t));
     }
     let techs: Vec<String> = prereq_and_techs.iter().map(|&t| display(d, t).into_owned()).collect();
-    requires_list(d, &mut b, &techs, "TXT_KEY_AND", "[SPACE]and[SPACE]");
+    requires_list(d, &mut b, &techs, "TXT_KEY_AND");
     if let Some(bonus) = prereq_and_bonus {
         requires(d, &mut b, &display(d, *bonus));
     }
     let bonuses: Vec<String> = prereq_or_bonuses.iter().map(|&x| display(d, x).into_owned()).collect();
-    requires_list(d, &mut b, &bonuses, "TXT_KEY_OR", "[SPACE]or[SPACE]");
+    requires_list(d, &mut b, &bonuses, "TXT_KEY_OR");
 
     // The resources that speed it up, as the Civilopedia writes them (the tooltip puts them after
     // its cost line).
@@ -839,9 +829,9 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
         b.push_str("[ICON_BULLET]");
         b.push_str(&if n == 100 {
             // BtS's English leaves the link open: closed here.
-            txt(d, "TXT_KEY_UNIT_DOUBLE_SPEED", "Double Production Speed with [LINK=literal]%s1_Bonus[\\LINK]", &[Arg::S(&display(d, bonus))])
+            txt(d, "TXT_KEY_UNIT_DOUBLE_SPEED", &[Arg::S(&display(d, bonus))])
         } else {
-            txt(d, "TXT_KEY_UNIT_BUILDS_FASTER", "Builds %d1_Change%% Faster with [LINK=literal]%s2_Bonus[\\LINK]", &[Arg::N(n), Arg::S(&display(d, bonus))])
+            txt(d, "TXT_KEY_UNIT_BUILDS_FASTER", &[Arg::N(n), Arg::S(&display(d, bonus))])
         });
     }
     // The XML help (no FfH2 unit has one).

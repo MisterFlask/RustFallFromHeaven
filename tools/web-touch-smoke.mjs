@@ -17,14 +17,14 @@
 //        [--assets DIR]   (serve the client files from DIR: crates/ffh-play/assets, live edits)
 //
 // The browser: the `playwright` package (resolved normally, then in node's global modules and
-// $NODE_PATH, as tools/web-smoke.mjs does) and its Chromium; without it the test is skipped
-// (exit 0). Screenshots go to --out (default target/web-touch-smoke, not committed). Exit 1 on a
-// failure, 2 on bad arguments.
+// $NODE_PATH, as tools/web-smoke.mjs does) and its Chromium; without it the test is SKIPPED
+// (exit 0, or 1 when $CI is set). Screenshots go to --out (default target/web-touch-smoke, not
+// committed). Exit 1 on a failure, 2 on bad arguments.
 
 import { createRequire } from "node:module";
 import fs from "node:fs";
 import path from "node:path";
-import { ROOT, parseArgs, findBin, tempDir, startServer, until } from "./web-lib.mjs";
+import { ROOT, parseArgs, findBin, tempDir, startServer, until, skipped } from "./web-lib.mjs";
 
 let args;
 try {
@@ -262,8 +262,7 @@ async function run(pw, bin, phone) {
 
 const pw = await loadPlaywright();
 if (!pw) {
-  console.log("web-touch-smoke: no playwright package; skipped");
-  process.exit(0);
+  process.exit(skipped("web-touch-smoke", "no playwright package"));
 }
 let bin;
 try {

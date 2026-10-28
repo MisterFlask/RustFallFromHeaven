@@ -29,6 +29,15 @@ export function parseArgs(argv, known) {
   return out;
 }
 
+/** A smoke test that cannot run here (no browser, no playwright package): says so loudly and
+ *  returns the exit code. Locally a skip passes (0); under CI (`$CI` set, as GitHub Actions does)
+ *  it fails (1), so a missing browser never passes for a passed check. */
+export function skipped(name, why) {
+  const ci = !!process.env.CI;
+  console.log(`${name}: SKIPPED (${why})${ci ? "; failing because CI is set" : ""}`);
+  return ci ? 1 : 0;
+}
+
 /** The ffh-play binary: `--bin`, $FFH_PLAY, or target/release/ffh-play. */
 export function findBin(given) {
   const bin = given ?? process.env.FFH_PLAY ?? path.join(ROOT, "target", "release", process.platform === "win32" ? "ffh-play.exe" : "ffh-play");

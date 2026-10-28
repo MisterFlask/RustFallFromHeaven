@@ -4,8 +4,9 @@
 //! The texts are built from the info tables, so they follow the rules as the data changes. Each
 //! line is Civ4 markup (`[ICON_BULLET]`, `[COLOR_X]..[COLOR_REVERT]`, `[ICON_FOOD]`, ...) and
 //! lines are joined by `[NEWLINE]`; the page renders it (`markup.js`). Text keys are looked up in
-//! FfH2's text first; the keys FfH2 inherits from BtS are not vendored, so each call carries the
-//! BtS English as its fallback.
+//! the vendored English (`data/text/en.tsv`: FfH2's text over the stock BtS/Civ4 text it
+//! inherits, plus the few keys the port adds, tools/vendor_xml.py); a test checks that every key
+//! the help code names has text there.
 //!
 //! * [`tech`]: what researching a tech brings the human (C++ `setTechHelp`, in the player's
 //!   context: its own units and buildings, only what it cannot do yet).
@@ -128,17 +129,15 @@ pub(crate) fn fill(t: &str, args: &[Arg]) -> String {
     out
 }
 
-/// A text key filled with `args`; `fallback` when the key has no text (a key the vendored text,
-/// FFH2's and the stock BtS/Civ4 files it inherits, lacks).
-pub(crate) fn txt(d: &GameData, key: &str, fallback: &str, args: &[Arg]) -> String {
-    let t = names::text(d, key);
-    fill(if t == key { fallback } else { t }, args)
+/// A text key filled with `args` (C++ `gDLL->getText(key, ..)`). Every key the help code names
+/// is in the vendored text (`help_text_keys_exist`); a missing one would read as the key itself.
+pub(crate) fn txt(d: &GameData, key: &str, args: &[Arg]) -> String {
+    fill(names::text(d, key), args)
 }
 
 /// A requirement: `txt` without the warning colour C++ gives it (`unwarned`).
-pub(crate) fn req(d: &GameData, key: &str, fallback: &str, args: &[Arg]) -> String {
-    let t = names::text(d, key);
-    fill(unwarned(if t == key { fallback } else { t }), args)
+pub(crate) fn req(d: &GameData, key: &str, args: &[Arg]) -> String {
+    fill(unwarned(names::text(d, key)), args)
 }
 
 /// `t` without its enclosing `[COLOR_WARNING_TEXT]` or `[COLOR_RED]` .. `[COLOR_REVERT]`. C++'s
@@ -275,5 +274,42 @@ mod tests {
         let mut b = String::new();
         changes_help(&mut b, "x", "", "end", &[0, 0, 0], &YIELD_ICONS, false, true);
         assert!(b.is_empty());
+    }
+
+    /// Every text key the view code names (a `"TXT_KEY_.."` literal under `src/view/`) has text in
+    /// the vendored English, so no help line reads as a key. Scans the source rather than the
+    /// lookups, so a line no info entry triggers yet (`TXT_KEY_SPELL_CORPORATION_PREREQ`) counts.
+    #[test]
+    fn help_text_keys_exist() {
+        fn rs_files(dir: &std::path::Path, out: &mut Vec<std::path::PathBuf>) {
+            for e in std::fs::read_dir(dir).unwrap() {
+                let p = e.unwrap().path();
+                if p.is_dir() {
+                    rs_files(&p, out);
+                } else if p.extension().is_some_and(|x| x == "rs") {
+                    out.push(p);
+                }
+            }
+        }
+        let d = ffh_data::global();
+        let mut files = Vec::new();
+        rs_files(&std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/view"), &mut files);
+        let (mut n, mut missing) = (0, Vec::new());
+        for f in files {
+            let src = std::fs::read_to_string(&f).unwrap();
+            for (at, _) in src.match_indices("\"TXT_KEY_") {
+                let key: String = src[at + 1..].chars().take_while(|c| c.is_ascii_alphanumeric() || *c == '_').collect();
+                // A bare prefix (`contains("TXT_KEY_")`) is not a key.
+                if key == "TXT_KEY_" || src[at + 1 + key.len()..].chars().next() != Some('"') {
+                    continue;
+                }
+                n += 1;
+                if names::text(d, &key) == key {
+                    missing.push(format!("{key} ({})", f.display()));
+                }
+            }
+        }
+        assert!(n > 500, "only {n} text keys found under src/view");
+        assert!(missing.is_empty(), "text keys without text: {missing:?}");
     }
 }

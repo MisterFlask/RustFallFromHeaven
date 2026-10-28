@@ -81,52 +81,51 @@ pub fn trait_help(d: &GameData, t: TraitType, civ: Option<CivilizationType>) -> 
     if !base.help.is_empty() && help != base.help {
         b.push_str(help);
     }
-    let add = |b: &mut String, key: &str, fallback: &str, args: &[Arg]| b.push_str(&txt(d, key, fallback, args));
+    let add = |b: &mut String, key: &str, args: &[Arg]| b.push_str(&txt(d, key, args));
     if *health != 0 {
-        add(&mut b, "TXT_KEY_TRAIT_HEALTH", "[NEWLINE][SPACE][SPACE][ICON_BULLET]%D1[ICON_HEALTHY]/City", &[Arg::N(*health)]);
+        add(&mut b, "TXT_KEY_TRAIT_HEALTH", &[Arg::N(*health)]);
     }
     if *happiness != 0 {
-        add(&mut b, "TXT_KEY_TRAIT_HAPPINESS", "[NEWLINE][SPACE][SPACE][ICON_BULLET]%D1[ICON_HAPPY]/City", &[Arg::N(*happiness)]);
+        add(&mut b, "TXT_KEY_TRAIT_HAPPINESS", &[Arg::N(*happiness)]);
     }
     if *max_anarchy != -1 {
         if *max_anarchy == 0 {
-            add(&mut b, "TXT_KEY_TRAIT_NO_ANARCHY", "[NEWLINE][SPACE][SPACE][ICON_BULLET]No Anarchy", &[]);
+            add(&mut b, "TXT_KEY_TRAIT_NO_ANARCHY", &[]);
         } else {
-            add(&mut b, "TXT_KEY_TRAIT_MAX_ANARCHY", "[NEWLINE][SPACE][SPACE][ICON_BULLET]Max %d1 [NUM1:Turn:Turns] of Anarchy", &[Arg::N(*max_anarchy)]);
+            add(&mut b, "TXT_KEY_TRAIT_MAX_ANARCHY", &[Arg::N(*max_anarchy)]);
         }
     }
     if *upkeep_modifier != 0 {
-        add(&mut b, "TXT_KEY_TRAIT_CIVIC_UPKEEP_MODIFIER", "[NEWLINE][SPACE][SPACE][ICON_BULLET]%D1%% Civic Upkeep", &[Arg::N(*upkeep_modifier)]);
+        add(&mut b, "TXT_KEY_TRAIT_CIVIC_UPKEEP_MODIFIER", &[Arg::N(*upkeep_modifier)]);
     }
     if *level_experience_modifier != 0 {
-        add(&mut b, "TXT_KEY_TRAIT_CIVIC_LEVEL_MODIFIER", "[NEWLINE][SPACE][SPACE][ICON_BULLET]%D1%% XP Needed for Unit Promotions", &[Arg::N(*level_experience_modifier)]);
+        add(&mut b, "TXT_KEY_TRAIT_CIVIC_LEVEL_MODIFIER", &[Arg::N(*level_experience_modifier)]);
     }
     if *great_people_rate_modifier != 0 {
-        add(&mut b, "TXT_KEY_TRAIT_GREAT_PEOPLE_MODIFIER", "[NEWLINE][SPACE][SPACE][ICON_BULLET]%D1%% [ICON_GREATPEOPLE] Birth Rate", &[Arg::N(*great_people_rate_modifier)]);
+        add(&mut b, "TXT_KEY_TRAIT_GREAT_PEOPLE_MODIFIER", &[Arg::N(*great_people_rate_modifier)]);
     }
     if *great_general_rate_modifier != 0 {
-        add(&mut b, "TXT_KEY_TRAIT_GREAT_GENERAL_MODIFIER", "[NEWLINE][SPACE][SPACE][ICON_BULLET]%D1%% Great General Emergence", &[Arg::N(*great_general_rate_modifier)]);
+        add(&mut b, "TXT_KEY_TRAIT_GREAT_GENERAL_MODIFIER", &[Arg::N(*great_general_rate_modifier)]);
     }
     if *domestic_great_general_rate_modifier != 0 {
         add(
             &mut b,
             "TXT_KEY_TRAIT_DOMESTIC_GREAT_GENERAL_MODIFIER",
-            "[NEWLINE][SPACE][SPACE][ICON_BULLET]%D1%% Great General Emergence inside Cultural Borders",
             &[Arg::N(*domestic_great_general_rate_modifier)],
         );
     }
     if *global_wonders != 0 || *team_wonders != 0 || *national_wonders != 0 {
         if global_wonders == team_wonders && global_wonders == national_wonders {
-            add(&mut b, "TXT_KEY_TRAIT_WONDER_PRODUCTION_MODIFIER", "[NEWLINE][SPACE][SPACE][ICON_BULLET]%D1%% Wonder Production", &[Arg::N(*global_wonders)]);
+            add(&mut b, "TXT_KEY_TRAIT_WONDER_PRODUCTION_MODIFIER", &[Arg::N(*global_wonders)]);
         } else {
             if *global_wonders != 0 {
-                add(&mut b, "TXT_KEY_TRAIT_WORLD_WONDER_PRODUCTION_MODIFIER", "[NEWLINE][SPACE][SPACE][ICON_BULLET]%D1%% World Wonder Production", &[Arg::N(*global_wonders)]);
+                add(&mut b, "TXT_KEY_TRAIT_WORLD_WONDER_PRODUCTION_MODIFIER", &[Arg::N(*global_wonders)]);
             }
             if *team_wonders != 0 {
-                add(&mut b, "TXT_KEY_TRAIT_TEAM_WONDER_PRODUCTION_MODIFIER", "[NEWLINE][SPACE][SPACE][ICON_BULLET]%D1%% Team Wonder Production", &[Arg::N(*team_wonders)]);
+                add(&mut b, "TXT_KEY_TRAIT_TEAM_WONDER_PRODUCTION_MODIFIER", &[Arg::N(*team_wonders)]);
             }
             if *national_wonders != 0 {
-                add(&mut b, "TXT_KEY_TRAIT_NATIONAL_WONDER_PRODUCTION_MODIFIER", "[NEWLINE][SPACE][SPACE][ICON_BULLET]%D1%% National Wonder Production", &[Arg::N(*national_wonders)]);
+                add(&mut b, "TXT_KEY_TRAIT_NATIONAL_WONDER_PRODUCTION_MODIFIER", &[Arg::N(*national_wonders)]);
             }
         }
     }
@@ -135,38 +134,37 @@ pub fn trait_help(d: &GameData, t: TraitType, civ: Option<CivilizationType>) -> 
             add(
                 &mut b,
                 "TXT_KEY_TRAIT_EXTRA_YIELD_THRESHOLDS",
-                "[NEWLINE][SPACE][SPACE][ICON_BULLET]+1%F1_yield on Plots with %d2%F3_yield",
                 &[Arg::S(YIELD_ICONS[y]), Arg::N(extra_yield_threshold[y]), Arg::S(YIELD_ICONS[y])],
             );
         }
         if trade_yield_modifier[y] != 0 {
-            add(&mut b, "TXT_KEY_TRAIT_TRADE_YIELD_MODIFIERS", "[NEWLINE][SPACE][SPACE][ICON_BULLET]%D1%F2_yield from [ICON_TRADE]", &[Arg::N(trade_yield_modifier[y]), Arg::S(YIELD_ICONS[y])]);
+            add(&mut b, "TXT_KEY_TRAIT_TRADE_YIELD_MODIFIERS", &[Arg::N(trade_yield_modifier[y]), Arg::S(YIELD_ICONS[y])]);
         }
     }
     for k in 0..CommerceType::NUM {
         if commerce_change[k] != 0 {
-            add(&mut b, "TXT_KEY_TRAIT_COMMERCE_CHANGES", "[NEWLINE][SPACE][SPACE][ICON_BULLET]%D1%F2_commerce/City", &[Arg::N(commerce_change[k]), Arg::S(COMMERCE_ICONS[k])]);
+            add(&mut b, "TXT_KEY_TRAIT_COMMERCE_CHANGES", &[Arg::N(commerce_change[k]), Arg::S(COMMERCE_ICONS[k])]);
         }
         if commerce_modifier[k] != 0 {
-            add(&mut b, "TXT_KEY_TRAIT_COMMERCE_MODIFIERS", "[NEWLINE][SPACE][SPACE][ICON_BULLET]%D1%% %F2_commerce", &[Arg::N(commerce_modifier[k]), Arg::S(COMMERCE_ICONS[k])]);
+            add(&mut b, "TXT_KEY_TRAIT_COMMERCE_MODIFIERS", &[Arg::N(commerce_modifier[k]), Arg::S(COMMERCE_ICONS[k])]);
         }
     }
     let promos: Vec<String> = d.promotions.keys().filter(|&p| free_promotion[p]).map(|p| display(d, p).into_owned()).collect();
     if !promos.is_empty() {
-        add(&mut b, "TXT_KEY_TRAIT_FREE_PROMOTIONS", "[NEWLINE][SPACE][SPACE][ICON_BULLET]Free Promotion (%s1)", &[Arg::S(&promos.join(", "))]);
+        add(&mut b, "TXT_KEY_TRAIT_FREE_PROMOTIONS", &[Arg::S(&promos.join(", "))]);
         for uc in d.unit_combats.keys().filter(|&uc| free_promotion_unit_combat[uc]) {
             b.push_str(&format!("{NEWLINE}[SPACE][SPACE][SPACE][SPACE][ICON_BULLET]{}", display(d, uc)));
         }
     }
     for o in d.civic_options.keys().filter(|&o| d.civic_options[o].trait_no_upkeep[t]) {
-        add(&mut b, "TXT_KEY_TRAIT_NO_UPKEEP", "[NEWLINE][SPACE][SPACE][ICON_BULLET]No Upkeep Costs for %s1", &[Arg::S(&display(d, o))]);
+        add(&mut b, "TXT_KEY_TRAIT_NO_UPKEEP", &[Arg::S(&display(d, o))]);
     }
     // The units and buildings it builds faster, grouped by the speed-up.
     let speed = |n: i32| {
         if n == 100 {
-            txt(d, "TXT_KEY_TRAIT_DOUBLE_SPEED", "[NEWLINE][SPACE][SPACE][ICON_BULLET]Double Production Speed of ", &[])
+            txt(d, "TXT_KEY_TRAIT_DOUBLE_SPEED", &[])
         } else {
-            txt(d, "TXT_KEY_TRAIT_PRODUCTION_MODIFIER", "[NEWLINE][SPACE][SPACE][ICON_BULLET]%d1%% Faster Production of ", &[Arg::N(n)])
+            txt(d, "TXT_KEY_TRAIT_PRODUCTION_MODIFIER", &[Arg::N(n)])
         }
     };
     let mut last = 0;
@@ -209,7 +207,7 @@ pub fn trait_help(d: &GameData, t: TraitType, civ: Option<CivilizationType>) -> 
         let n = d.buildings[bl].happiness_traits[t];
         if n != 0 {
             let icon = if n > 0 { "[ICON_HAPPY]" } else { "[ICON_UNHAPPY]" };
-            let start = txt(d, "TXT_KEY_TRAIT_BUILDING_HAPPINESS", "[NEWLINE][SPACE][SPACE][ICON_BULLET]%D1_Change%F2_HappOrUnhapp from ", &[Arg::N(n.abs()), Arg::S(icon)]);
+            let start = txt(d, "TXT_KEY_TRAIT_BUILDING_HAPPINESS", &[Arg::N(n.abs()), Arg::S(icon)]);
             list_help(&mut b, &start, &display(d, bl), ", ", n != last);
             last = n;
         }
@@ -225,23 +223,23 @@ pub fn trait_help(d: &GameData, t: TraitType, civ: Option<CivilizationType>) -> 
         (*sprawling, "TXT_KEY_TRAIT_SPRAWLING_HELP"),
     ] {
         if has {
-            add(&mut b, key, key, &[]);
+            add(&mut b, key, &[]);
         }
     }
     if *max_cities != -1 {
         // C++ adds the world size's `getMaxCitiesMod`, unknown before the game: said in words.
-        b.push_str(&txt(d, "TXT_KEY_TRAIT_MAX_CITIES_HELP", "[NEWLINE][SPACE][SPACE][ICON_BULLET]%D1 Maximum Cities", &[Arg::N(*max_cities)]));
+        b.push_str(&txt(d, "TXT_KEY_TRAIT_MAX_CITIES_HELP", &[Arg::N(*max_cities)]));
         b.push_str(" (plus the world size's)");
     }
-    for (n, key, fallback) in [
-        (*free_xp_from_combat, "TXT_KEY_TRAIT_FREE_XP_FROM_COMBAT_HELP", "[NEWLINE][SPACE][SPACE][ICON_BULLET]%D1 XP from combat"),
-        (*pillaging_gold, "TXT_KEY_TRAIT_PILLAGING_GOLD_HELP", "[NEWLINE][SPACE][SPACE][ICON_BULLET]%D1% gold from pillaging"),
-        (*starting_gold, "TXT_KEY_TRAIT_STARTING_GOLD_HELP", "[NEWLINE][SPACE][SPACE][ICON_BULLET]%D1 to starting gold"),
-        (*summon_duration, "TXT_KEY_TRAIT_SUMMON_DURATION_HELP", "[NEWLINE][SPACE][SPACE][ICON_BULLET]%D1 duration to summoned units"),
-        (*upgrade_cost_modifier, "TXT_KEY_TRAIT_UPGRADE_COST_MODIFIER_HELP", "[NEWLINE][SPACE][SPACE][ICON_BULLET]%D1% to upgrade costs"),
+    for (n, key) in [
+        (*free_xp_from_combat, "TXT_KEY_TRAIT_FREE_XP_FROM_COMBAT_HELP"),
+        (*pillaging_gold, "TXT_KEY_TRAIT_PILLAGING_GOLD_HELP"),
+        (*starting_gold, "TXT_KEY_TRAIT_STARTING_GOLD_HELP"),
+        (*summon_duration, "TXT_KEY_TRAIT_SUMMON_DURATION_HELP"),
+        (*upgrade_cost_modifier, "TXT_KEY_TRAIT_UPGRADE_COST_MODIFIER_HELP"),
     ] {
         if n != 0 {
-            add(&mut b, key, fallback, &[Arg::N(n)]);
+            add(&mut b, key, &[Arg::N(n)]);
         }
     }
     finish(b)
@@ -254,16 +252,16 @@ pub fn leader_help(d: &GameData, l: LeaderHeadType, civ: Option<CivilizationType
     let mut b = format!("[COLOR_HIGHLIGHT_TEXT]{}[COLOR_REVERT]", display(d, l));
     if let Some(a) = info.alignment {
         b.push_str(NEWLINE);
-        b.push_str(&txt(d, "TXT_KEY_ALIGNMENT", "Alignment: %s1", &[Arg::S(&display(d, a))]));
+        b.push_str(&txt(d, "TXT_KEY_ALIGNMENT", &[Arg::S(&display(d, a))]));
     }
     if let Some(c) = civ {
         if let Some(hero) = d.civilizations[c].hero {
             b.push_str(NEWLINE);
-            b.push_str(&txt(d, "TXT_KEY_HERO", "Hero: %s1", &[Arg::S(&display(d, hero))]));
+            b.push_str(&txt(d, "TXT_KEY_HERO", &[Arg::S(&display(d, hero))]));
         }
         for s in d.spells.keys().filter(|&s| d.spells[s].global && d.spells[s].civilization_prereq == Some(c)) {
             b.push_str(NEWLINE);
-            b.push_str(&txt(d, "TXT_KEY_GLOBAL_SPELL", "World Spell: %s1", &[Arg::S(&display(d, s))]));
+            b.push_str(&txt(d, "TXT_KEY_GLOBAL_SPELL", &[Arg::S(&display(d, s))]));
         }
     }
     for t in d.traits.keys().filter(|&t| info.has_trait[t]) {
@@ -278,31 +276,31 @@ pub fn leader_help(d: &GameData, l: LeaderHeadType, civ: Option<CivilizationType
 /// its special abilities (its XML help).
 pub fn civ_help(d: &GameData, c: CivilizationType) -> String {
     let info = &d.civilizations[c];
-    let head = |b: &mut String, key: &str, fallback: &str| {
+    let head = |b: &mut String, key: &str| {
         b.push_str(NEWLINE);
-        b.push_str(&format!("[COLOR_ALT_HIGHLIGHT_TEXT]{}[COLOR_REVERT]", txt(d, key, fallback, &[])));
+        b.push_str(&format!("[COLOR_ALT_HIGHLIGHT_TEXT]{}[COLOR_REVERT]", txt(d, key, &[])));
     };
     let item = |b: &mut String, s: &str| b.push_str(&format!("{NEWLINE}[SPACE][SPACE][ICON_BULLET]{s}"));
-    let none = |b: &mut String, key: &str, fallback: &str| b.push_str(&format!("{NEWLINE}[SPACE][SPACE]{}", txt(d, key, fallback, &[])));
+    let none = |b: &mut String, key: &str| b.push_str(&format!("{NEWLINE}[SPACE][SPACE]{}", txt(d, key, &[])));
     let mut b = format!("[COLOR_HIGHLIGHT_TEXT]{}[COLOR_REVERT]", display(d, c));
 
-    head(&mut b, "TXT_KEY_FREE_TECHS", "Starting Technologies");
+    head(&mut b, "TXT_KEY_FREE_TECHS");
     let techs: Vec<TechType> = d.techs.keys().filter(|&t| info.civilization_free_techs[t]).collect();
     for &t in &techs {
         item(&mut b, &display(d, t));
     }
     if techs.is_empty() {
-        none(&mut b, "TXT_KEY_FREE_TECHS_NO", "No Starting Technologies");
+        none(&mut b, "TXT_KEY_FREE_TECHS_NO");
     }
     if let Some(t) = info.civ_trait {
-        head(&mut b, "TXT_KEY_CIV_TRAIT", "Civilization Trait");
+        head(&mut b, "TXT_KEY_CIV_TRAIT");
         item(&mut b, &display(d, t));
     }
     if let Some(hero) = info.hero {
-        head(&mut b, "TXT_KEY_HERO_PEDIA", "Hero");
+        head(&mut b, "TXT_KEY_HERO_PEDIA");
         item(&mut b, &display(d, hero));
     }
-    head(&mut b, "TXT_KEY_GLOBAL_SPELL_PEDIA", "World Spell");
+    head(&mut b, "TXT_KEY_GLOBAL_SPELL_PEDIA");
     for s in d.spells.keys().filter(|&s| d.spells[s].global && d.spells[s].civilization_prereq == Some(c)) {
         item(&mut b, &display(d, s));
     }
@@ -312,16 +310,16 @@ pub fn civ_help(d: &GameData, c: CivilizationType) -> String {
             let n = d.terrains[terrain].civilization_yield_change[y];
             if n != 0 {
                 if first {
-                    head(&mut b, "TXT_KEY_MISC_CIV_TERRAIN", "Terrain Modifier");
+                    head(&mut b, "TXT_KEY_MISC_CIV_TERRAIN");
                     first = false;
                 }
-                item(&mut b, &txt(d, "TXT_KEY_MISC_CIV_TERRAIN_MOD", "%D1 %F2_yield from %s3_Terrain tiles", &[Arg::N(n), Arg::S(YIELD_ICONS[y]), Arg::S(&display(d, terrain))]));
+                item(&mut b, &txt(d, "TXT_KEY_MISC_CIV_TERRAIN_MOD", &[Arg::N(n), Arg::S(YIELD_ICONS[y]), Arg::S(&display(d, terrain))]));
             }
         }
     }
     // Unique units: the civilization's own in place of a class default ("Ours - (Default)"), or
     // a unit only it can build.
-    head(&mut b, "TXT_KEY_FREE_UNITS", "Unique Units");
+    head(&mut b, "TXT_KEY_FREE_UNITS");
     let mut found = false;
     for class in d.unit_classes.keys() {
         let (Some(ours), Some(default)) = (civ_unit(d, Some(c), class), d.unit_classes[class].default_unit_index) else { continue };
@@ -334,9 +332,9 @@ pub fn civ_help(d: &GameData, c: CivilizationType) -> String {
         }
     }
     if !found {
-        none(&mut b, "TXT_KEY_FREE_UNITS_NO", "No Unique Units");
+        none(&mut b, "TXT_KEY_FREE_UNITS_NO");
     }
-    head(&mut b, "TXT_KEY_MISC_CIV_BLOCKED_UNITS", "Blocked Units");
+    head(&mut b, "TXT_KEY_MISC_CIV_BLOCKED_UNITS");
     let mut found = false;
     for class in d.unit_classes.keys() {
         let default = d.unit_classes[class].default_unit_index;
@@ -346,9 +344,9 @@ pub fn civ_help(d: &GameData, c: CivilizationType) -> String {
         }
     }
     if !found {
-        none(&mut b, "TXT_KEY_MISC_CIV_BLOCKED_UNITS_NO", "No Blocked Units");
+        none(&mut b, "TXT_KEY_MISC_CIV_BLOCKED_UNITS_NO");
     }
-    head(&mut b, "TXT_KEY_UNIQUE_BUILDINGS", "Unique Buildings");
+    head(&mut b, "TXT_KEY_UNIQUE_BUILDINGS");
     let mut found = false;
     for class in d.building_classes.keys() {
         let Some(ours) = civ_building(d, Some(c), class) else { continue };
@@ -362,9 +360,9 @@ pub fn civ_help(d: &GameData, c: CivilizationType) -> String {
         }
     }
     if !found {
-        none(&mut b, "TXT_KEY_UNIQUE_BUILDINGS_NO", "No Unique Buildings");
+        none(&mut b, "TXT_KEY_UNIQUE_BUILDINGS_NO");
     }
-    head(&mut b, "TXT_KEY_MISC_CIV_BLOCKED_BUILDINGS", "Blocked Buildings");
+    head(&mut b, "TXT_KEY_MISC_CIV_BLOCKED_BUILDINGS");
     let mut found = false;
     for class in d.building_classes.keys() {
         if let Some(def) = d.building_classes[class].default_building_index.filter(|_| civ_building(d, Some(c), class).is_none()) {
@@ -373,11 +371,11 @@ pub fn civ_help(d: &GameData, c: CivilizationType) -> String {
         }
     }
     if !found {
-        none(&mut b, "TXT_KEY_MISC_CIV_BLOCKED_BUILDINGS_NO", "No Blocked Buildings");
+        none(&mut b, "TXT_KEY_MISC_CIV_BLOCKED_BUILDINGS_NO");
     }
     let help = crate::names::text(d, &info.base.help);
     if !info.base.help.is_empty() && help != info.base.help {
-        head(&mut b, "TXT_KEY_MISC_CIV_SPECIAL_ABILITIES", "Special Abilities");
+        head(&mut b, "TXT_KEY_MISC_CIV_SPECIAL_ABILITIES");
         item(&mut b, help);
     }
     b

@@ -127,6 +127,18 @@ def text_files(text_dir):
                     if "Civilopedia" not in os.path.basename(f)]
 
 
+# Text the port adds: keys the C++ names (CvGameTextMgr) that no vendored text file has, so the
+# client's help would otherwise show the key. Written in Civ4's markup; a vendored entry wins.
+PORT_TEXT = {
+    # setImprovementHelp: `getFeatureGrowthProbability() < 0` (only MORE_GROWTH has text).
+    "TXT_KEY_IMPROVEMENT_LESS_GROWTH": "[ICON_BULLET]Gives terrain a lower chance to spread",
+    # FfH2's spell help (CvGameTextMgr::parseSpellHelp) for `getCorporationPrereq()`; no FfH2 spell
+    # needs a corporation, so FfH2 never wrote the text.
+    "TXT_KEY_SPELL_CORPORATION_PREREQ":
+        "[ICON_BULLET]Requires the [LINK=literal]%s1_corporation[\\LINK] corporation in the caster's city",
+}
+
+
 def extract_english(dst):
     """Vendor the English text the mod loads into en.tsv (TAG<TAB>text, sorted). FfH2 inherits the
     stock BtS text for the keys it does not override (e.g. TXT_KEY_UNIT_WARRIOR), so merge the stock
@@ -143,6 +155,8 @@ def extract_english(dst):
             read_english(f, strings)
     stock = len(strings)
     read_english(os.path.join(FFH, "Text", "CIV4GameText_FFH2.xml"), strings)  # FfH2 overrides
+    for tag, text in PORT_TEXT.items():
+        strings.setdefault(tag, text)
     with open(dst, "w", encoding="utf-8") as f:
         for tag in sorted(strings):
             f.write(f"{tag}\t{strings[tag]}\n")
