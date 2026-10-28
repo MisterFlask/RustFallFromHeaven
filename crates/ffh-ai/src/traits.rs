@@ -16,7 +16,12 @@
 //!   summon ([`promotion_value`]). A Summoner researches toward its Adepts (Knowledge of the
 //!   Ether, [`tech_value`]), values a temporary summon for the extra turn it lasts
 //!   ([`summon_turns`]) and raises lasting summons (Raise Skeleton) at peace too, as army units
-//!   while the army is short and a unit is affordable ([`peace_summon`]).
+//!   while the army is short and a unit is affordable ([`peace_summon`]). A Summoner without a
+//!   mana whose Mage-level spell summons a creature (Death, Entropy, Law, Ice: Keelyn's Balseraphs
+//!   start with Mind, Chaos and Air) goes for one first: its node on our raw mana is worth
+//!   [`SUMMON_NODE`] more (`mana::node_value`, which research and the builder's training follow),
+//!   it pays more for it in trade, and its casters take the sphere's first promotion toward the
+//!   summon ([`summon_mana`], switch `SUMMON_MANA`).
 //! - **Philosophical** (great people +100%): the great-people emphasis in its best great-people
 //!   city, one more per eight cities ([`turn`]).
 //! - **Financial** (+1 commerce on plots with 2 or more): workers count the extra commerce an
@@ -289,8 +294,65 @@ pub fn promotion_value(g: &Game, u: UnitId, promo: PromotionType, value: i32) ->
     if !matches!(unit.ai_type, Some(UnitAIType::UNITAI_MAGE) | Some(UnitAIType::UNITAI_WARWIZARD)) || !has(g, unit.owner, Trait::Summoner) {
         return value;
     }
-    if summoning_spheres(g.d).contains(&promo) {
+    let d = g.d;
+    // A sphere's first promotion that leads to a summon (Entropy I before Entropy II's Pit Beast)
+    // counts as one (switch `SUMMON_MANA`).
+    let toward = || crate::switches::SUMMON_MANA.on(g, unit.owner) && d.promotions.keys().any(|next| d.promotions[next].prereq_promotion == Some(promo) && summoning_spheres(d).contains(&next));
+    if summoning_spheres(d).contains(&promo) || toward() {
         value + value / 2 + 60
+    } else {
+        value
+    }
+}
+
+/// What a node of mana `bonus` is worth over [`summon_mana`]'s competitors to a Summoner without
+/// one (`mana::node_value` scale; nodes run from about 1000 to 3000): the first node goes to the
+/// summon.
+pub const SUMMON_NODE: i32 = 3000;
+
+/// The mana whose sphere's second promotion (a Mage's, with Channeling II) opens a spell summoning
+/// a creature that stays to fight: Death (Spectre), Entropy (Pit Beast), Law (Einherjar), Ice (Ice
+/// Elemental). Fire's, Fireball, summons a projectile (`bSuicide`), not a creature.
+pub fn summon_mana(d: &GameData) -> &'static [BonusType] {
+    static S: std::sync::OnceLock<Vec<BonusType>> = std::sync::OnceLock::new();
+    S.get_or_init(|| {
+        let creature = |u: UnitType| !d.units[u].suicide && d.units[u].combat + d.units[u].damage_type_combat.iter().sum::<i32>() > 0;
+        let mut v: Vec<BonusType> = d
+            .spells
+            .iter()
+            .filter(|s| s.civilization_prereq.is_none() && s.create_unit_type.is_some_and(creature))
+            .filter_map(|s| s.promotion_prereq1)
+            .filter_map(|second| d.promotions[second].prereq_promotion)
+            .filter_map(|first| d.promotions[first].bonus_prereq)
+            .collect();
+        v.sort();
+        v.dedup();
+        v
+    })
+}
+
+/// Does Summoner `p` still go for one of the [`summon_mana`] (switch `SUMMON_MANA`): it has none.
+pub fn wants_summon_mana(g: &Game, p: PlayerId) -> bool {
+    has(g, p, Trait::Summoner) && crate::switches::SUMMON_MANA.on(g, p) && !summon_mana(g.d).iter().any(|&b| g.player_has_bonus(p, b))
+}
+
+/// What one more node of mana `bonus` is worth to `p` (`mana::node_value`; `value`: its generic
+/// worth): [`SUMMON_NODE`] more for a Summoner's first [`summon_mana`].
+pub fn node_value(g: &Game, p: PlayerId, bonus: BonusType, value: i32) -> i32 {
+    if summon_mana(g.d).contains(&bonus) && wants_summon_mana(g, p) {
+        value + SUMMON_NODE
+    } else {
+        value
+    }
+}
+
+/// The base value (C++ `AI_bonusVal` scale) of resource `bonus` to `p` gaining it in a trade
+/// (`trade::bonus_trade_val`; `value`: the generic one): a Summoner's first [`summon_mana`] is
+/// worth 20 more, two happy resources (`AI_baseBonusVal` gives 10 a point of happiness) -- not
+/// more: `trade::buy_resource_offer` pays our own valuation in gold.
+pub fn bonus_trade_value(g: &Game, p: PlayerId, bonus: BonusType, change: i32, value: i32) -> i32 {
+    if change > 0 && summon_mana(g.d).contains(&bonus) && wants_summon_mana(g, p) {
+        value + 20
     } else {
         value
     }
@@ -577,6 +639,14 @@ mod tests {
         for (name, _) in NAMES {
             assert!(d.ty::<TraitType>(&format!("TRAIT_{name}")).is_some(), "TRAIT_{name}");
         }
+    }
+
+    #[test]
+    fn summon_mana_is_death_entropy_law_ice() {
+        let d = ffh_data::global();
+        let mut names: Vec<&str> = super::summon_mana(d).iter().map(|&b| d.bonuses[b].base.type_.as_str()).collect();
+        names.sort();
+        assert_eq!(names, ["BONUS_MANA_DEATH", "BONUS_MANA_ENTROPY", "BONUS_MANA_ICE", "BONUS_MANA_LAW"]);
     }
 
     #[test]

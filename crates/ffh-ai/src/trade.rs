@@ -61,7 +61,7 @@ pub fn gold_per_turn_trade_val(g: &Game, p: PlayerId, gpt: i32) -> i32 {
 /// less), by the resource's data `ai_trade_modifier`, halved if `other` is our non-capitulated
 /// vassal, and spread over a treaty's length.
 pub fn bonus_trade_val(g: &Game, p: PlayerId, bonus: BonusType, other: PlayerId, change: i32) -> i32 {
-    let mut v = g.player_ai_bonus_val(p, bonus, change);
+    let mut v = crate::traits::bonus_trade_value(g, p, bonus, change, g.player_ai_bonus_val(p, bonus, change)); // trait-play
     let cities = g.players[p].num_cities().min(g.players[other].num_cities());
     v = v * ((cities + 3) * 30) / 100;
     v = v * (g.d.bonuses[bonus].ai_trade_modifier + 100).max(0) / 100;

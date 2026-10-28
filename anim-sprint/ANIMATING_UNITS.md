@@ -55,7 +55,8 @@ For a unit `<unit>` you write `units/<unit>.json` and get two folders:
 
 | Folder | Contents |
 |---|---|
-| `final_<unit>/` | the shipping look: a white hit flash on frame 0 of flinch and death; on the strike, an impact spark on the hit frame at the outermost point of the largest steel-coloured patch in it (a blade, a club's spikes, or light steel armour if that is the largest patch), and a smear arc on the swing frame and on the hit frame, each only when a steel-coloured blade at least 20 px long shows in that frame and the one before it. A dark weapon such as Hyborem's flaming blade gets neither. |
+| `final_<unit>/` | the shipping look: a white hit flash on frame 0 of flinch and death; on the strike, an impact spark on the hit frame at the outermost point of the largest steel-coloured patch in it (a blade, a club's spikes, or steel armour if that is the largest patch: the axeman's spark lands on his mail shirt,
+behind him; use `_nofx` or re-place it by hand for armoured units), and a smear arc on the swing frame and on the hit frame, each only when a steel-coloured blade at least 20 px long shows in that frame and the one before it. A dark weapon such as Hyborem's flaming blade gets neither. |
 | `final_<unit>_nofx/` | the same frames without effects, for engines that draw their own effects |
 
 Each holds, per animation `idle`, `strike`, `flinch`, `death`:
@@ -152,7 +153,8 @@ same side of the body, wherever they are on screen; `l_` is the other arm and le
 head, so that `r_ha` to `tip` runs along the whole weapon; the other hand is `l_ha`. The poses swing one-handed, so say
 in `hands` that the other hand holds the shaft lower down at rest and lets go during the action, and describe it as an
 empty fist in every override that mentions it (strike 2–5, flinch 0–1, death 1–3), or the model gets a text and a guide
-that disagree. No two-handed unit has been generated yet, so check its strike closely in step 3:
+that disagree. Two two-handed units have been generated this way (`axeman`, `maros`; both struck cleanly, the free hand
+letting go as the poses ask); still check the strike closely in step 3:
 
 | Joint | Where |
 |---|---|
@@ -321,7 +323,8 @@ sequence and vignette files and the preview stills) and `final_<unit>_nofx/` (fr
 `lib/walk.py` applies the same method to a 6-frame walk, toward the unit's facing (rule 1):
 ```bash
 python3 lib/walk.py --unit units/<unit>.json --out final_<unit> --check-guides     # walk guides, free
-python3 lib/walk.py --unit units/<unit>.json --out final_<unit>                    # 1 call, about $0.08
+python3 lib/walk.py --unit units/<unit>.json --out final_<unit>                    # 1 call, about $0.08; after recipe.py
+                                                                                   # (it needs final_<unit>/idle/)
 python3 lib/walk.py --unit units/<unit>.json --out final_<unit> --rebuild --pick 2 # re-cut with a variant, free
 ```
 The poses come from a planted-foot walk rig on the unit's frame-0 skeleton: each foot travels along the facing's ground

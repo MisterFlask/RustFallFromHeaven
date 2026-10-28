@@ -123,6 +123,13 @@ pub static CODE_EFFECTS: Switch = Switch::new("CODE_EFFECTS");
 pub static MANA_BUILDINGS: Switch = Switch::new("MANA_BUILDINGS");
 /// A unit we disband in a Demon's Altar city is sacrificed for research first (`unflagged.rs`).
 pub static SACRIFICE: Switch = Switch::new("SACRIFICE");
+/// A city under threat switches its production to a defender only when `production::decide`
+/// would put a fighter first (`production::emergency`); off, it always switches (and re-picks the
+/// same building when its garrison is full).
+pub static EMERGENCY_DECIDE: Switch = Switch::new("EMERGENCY_DECIDE");
+/// AI-to-AI deals (peace, gifts, bribes, trades, pacts) and offers to humans need both players to
+/// be able to contact the other (`diplomacy::can_talk`); off, the AI-to-AI ones did not ask.
+pub static CONTACT: Switch = Switch::new("CONTACT");
 /// The caster school: an Adept works at home until it is a Mage, casters cross dangerous ground
 /// only where they are sheltered, the Mage's tech and upgrade come sooner (`magic.rs`, "The
 /// caster school").
@@ -136,6 +143,9 @@ pub static CASTER_STACKS: Switch = Switch::new("CASTER_STACKS");
 /// and units that do not move: a unit inside a marching stack waited for its promotions until a
 /// strike took it out of the stack (`units::play`).
 pub static PROMOTE_ALL: Switch = Switch::new("PROMOTE_ALL");
+/// A Summoner without a mana whose Mage-level spell summons a creature goes for one first: its
+/// node, research toward it, trade, the sphere's first promotion (`traits::summon_mana`).
+pub static SUMMON_MANA: Switch = Switch::new("SUMMON_MANA");
 
 /// The names environment variable `var` lists, comma-separated: trimmed, upper-cased, `prefix`
 /// (`CIVILIZATION_`, `TRAIT_`) taken off. `None` when it is unset or lists nothing.

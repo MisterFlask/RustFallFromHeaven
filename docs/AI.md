@@ -138,7 +138,17 @@ counters, war success, war plans) that the diplomacy below reads.
    research below its target.
 2. **Emergency production** (`production::emergency`): a city whose visible threat exceeds
    its garrison switches to a defender (the rules keep the hammers); a capital or a city near
-   barbarians that has only one defender after turn 30 puts a second one first. Then, while the
+   barbarians that has only one defender after turn 30 puts a second one first. Either switch
+   happens only when `decide` would then put a fighter first (switch `EMERGENCY_DECIDE`): the two
+   rules disagreed for a city whose garrison `decide` finds full (`needed + 2` defenders), which was
+   switched every turn and re-chose a building, often another one -- an Illian city under a threat
+   three times its defense alternated a Courthouse and an Elder Council 21 times in 30 turns, now it
+   builds the Courthouse. Whether a full garrison should still grow under such a threat is a
+   question for `decide`'s rule, unchanged. Measured with the contact fix ("Generic gaps"), every AI with both
+   against every AI without (`EMERGENCY_DECIDE`, `CONTACT`): legacy at turns 300 / 400 1080 / 1585
+   -> 1076 / 1598 (seeds 1-32) and 1090 / 1605 -> 1084 / 1609 (fresh 44001-44048); peace treaties
+   437 -> 395 and 569 -> 538 (no deals with a Crusader or a player that cannot be contacted),
+   eliminations 35 -> 39 and 59 -> 55: neutral, as a bug fix should be. Then, while the
    empire cannot research at its target share, cities re-decide long builds for the economy
    building they need (`production::trouble_rebuild`, see Finance), and a top city finishing a
    world wonder at peace emphasizes production (`production::wonder_emphasis`, see Citizens).
@@ -1988,9 +1998,12 @@ earlier cast is the first thing to measure.
   treat nearby barbarians as a threat all the same. Dropping them cost the Clan cities to its
   rivals and wins (docs/AI_LOG.md, "Allied barbarians no longer counted as a threat"): the term
   stands in for a missing rival-civilization term in the garrison quota.
-- **AI-to-AI deals ignore `player_can_contact`** (`diplomacy::manage`, `implement_deal`), so a
-  Crusading Bannor (`bNoDiplomacyWithEnemies`) still makes peace with its enemies; only
-  `offers.rs` (deals with humans) checks it.
+- **AI-to-AI deals ignored `player_can_contact`** (fixed 2026-10-28, `diplomacy::can_talk`,
+  switch `CONTACT`): a Crusading Bannor (`bNoDiplomacyWithEnemies`) still made peace with its
+  enemies, and deals went to players FfH had just created (the temporary-player timer), vassals
+  making their own peace and teams in a permanent war or peace. Peace, gifts, war bribes, trades,
+  open borders and pacts now need both sides' `canContact`, and so do the offers to humans (C++
+  `AI_doDiplo` asks only the proposer's, so a Crusader's enemy could still offer it peace).
 - **Rules questions**: Wane and Kidnap (Sidar, Svartalfar) lack `bAllowAI`, so the AI can never
   cast them; `GAMEOPTION_NO_BARBARIANS` does not stop barbarians spawned by FfH's Python (a
   barbarian city holding the Dragon's Horde keeps sending units); C++ `AI_foundValue`'s
@@ -2015,7 +2028,7 @@ whatever the win rate does, and a drop is investigated as a flaw to fix). The ho
 | Raiders (pillaged gold +100%, Commando) | Decius, Basium, Amelanchier, Hannah, Tasunke, Mahala, Weevil, Faeryl, Sallos | an army stack at war pillages the improved enemy plot it stands on with one unit (taken out of the stack and back), before its orders when that costs no march (no operation needs the stack and no city of ours is in peril, or every unit has a move to spare) and after them while it holds; a stack no operation needs raids the best enemy improvement within two turns whose danger is under two thirds of its defense and that is not next to an enemy city; the land within two plots of the city our war operation is taking is spared (it is ours once the city falls). The generic AI never pillages. |
 | Spiritual (no anarchy) | Capria, Varn, Arendel, Jonas, Hyborem, Lethe | civics every 2 turns at a summed gain of 40 (others every 10 at 100); keeping the state religion weighs 5 instead of 15 |
 | Arcane (adepts +20% experience) | Thessa, Valledia, Dain, Tya, Perpentach, Faeryl, Tebryn | a caster corps of (cities + 2) / 3, trained in the most productive safe city, its Mage Guild first (`civs::casters_up_to`, the civilizations' unique casters' helper) |
-| Summoner (summons +1 turn, Combat I) | Keelyn, Tebryn, Os-Gabella, Malchavic, Hyborem | a bigger caster corps, (cities + 2) / 2; research toward its Adepts (the techs the Adept and its Mage Guild need, Knowledge of the Ether: +1500 once researchable, +500 on the way); its casters value a summoning sphere (a mana sphere opening a summon any civilization may cast: Death I-III, Fire II-III, Air/Earth/Water III, ...) at 1.5x + 60, a temporary summon at 1.5x (it lasts a turn longer), and raise lasting summons (Raise Skeleton) at peace too while the army is short of its peacetime target and a unit is affordable (others only at war) |
+| Summoner (summons +1 turn, Combat I) | Keelyn, Tebryn, Os-Gabella, Malchavic, Hyborem | a bigger caster corps, (cities + 2) / 2; research toward its Adepts (the techs the Adept and its Mage Guild need, Knowledge of the Ether: +1500 once researchable, +500 on the way); its casters value a summoning sphere (a mana sphere opening a summon any civilization may cast: Death I-III, Fire II-III, Air/Earth/Water III, ...) at 1.5x + 60, a temporary summon at 1.5x (it lasts a turn longer), and raise lasting summons (Raise Skeleton) at peace too while the army is short of its peacetime target and a unit is affordable (others only at war); without a mana whose Mage-level spell summons a creature (Death: Spectre, Entropy: Pit Beast, Law: Einherjar, Ice: Ice Elemental; Keelyn's Balseraphs start with Mind, Chaos and Air), it goes for one first (switch `SUMMON_MANA`, 2026-10-28): its node on our raw mana is worth 3000 more (`mana::node_value`; nodes run 1000-3000), so research takes the node's tech first and the first node goes to it; it is worth 20 more in a trade (two happy resources on `AI_bonusVal`'s scale: the AI pays its own valuation in gold); and its casters value the sphere's first promotion (Entropy I before Entropy II) like a summoning one |
 | Philosophical (great people +100%) | Einion, Cardith, Cassiel, Koun, Dain, Alexis, Judecca, Gosea | the great-people emphasis (`EMPHASIZE_GREAT_PEOPLE`) on its best great-people cities, 1 + cities / 8, size 4+, only cities that can employ a specialist making great people; a city is replaced only by one half as good again |
 | Financial (+1 commerce on plots with 2+) | Garrim, Beeri, Kandros, Hannah, Rhoanna, Flauros, Dumannios | workers count the extra commerce an improvement brings at the threshold (`plot_calculate_improvement_yield_change` leaves it out), on an unimproved plot a city of ours works, weighted as the yields are (the improvement 1, its grown form 2) |
 | Industrious (limited wonders +50% production) | Capria, Tethira, Beeri, Arturus, Sandalphon, Cassiel, Os-Gabella, Statius | limited wonders (world, team and national) are worth 1.5x |
@@ -2083,6 +2096,19 @@ one at war, or at peace while the army is short), so they bunch in the wars. Win
 12.5% (0 / 2), share@end +14 (t 0.13): neutral. Raiders pillage (Hannah, seed 2: 28 improvements in 210
 turns, 10-66 gold each); Industrious leaders build more wonders; Aggressive ones take more
 cities once their land is full.
+
+**A summon mana first (2026-10-28, the owner's proposal; switch `SUMMON_MANA`).** Keelyn's
+Balseraphs had no mana whose Mage-level spell summons a creature, so their casters never summoned
+above Raise Skeleton. With the switch, seed 7502: Necromancy at turn 291 instead of 321, Entropy
+nodes planned on all four raw mana plots, the first node Entropy (it was Enchantment). Measured
+with the Balseraphs forced into slot 0 on seeds led by Keelyn, the same binary with
+`FFH_AI_SUMMON_MANA_OFF=all` on the base side. Fresh seeds (40 of 47081-47160): Pit Beast,
+Spectre, Einherjar and Ice Elemental casts 22 -> 213, games with one 6 -> 12, the first at turn
+479 -> 428 (median); Raise Skeleton 42 -> 24 and Archmage summons 38 -> 26 (the first node went to
+Entropy rather than Death or Air), all summons 102 -> 263; win 32.5% -> 35.0% (1 / 0), share@end
++50 (t 1.02). Development seeds (40 of 47001-47080): 28 -> 136, 10 -> 15 games, win 30% on both
+sides. What still limits them: half the games never see a Mage of hers (20 of 40), and summons come
+only in fights.
 
 The games are decided sooner: final turn 527 -> 490 (t -2.48), clear supremacy 37 -> 52 of 96
 games and 12 instead of 5 decided by turn 250 -- the leaders whose traits snowball (Financial,
