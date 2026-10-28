@@ -403,10 +403,19 @@ fn garrison_unit(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
     }
     // Go to the city that most needs a defender. Only cities that need one are scored, so the
     // flood (their travel times) runs only when there is one.
+    // Another city has the defenders standing in it plus those on their way there. (Those
+    // committed there this turn that stand in it already, holders and arrivals, are among the
+    // standing ones: counting `v.garrison` as well counted them twice, so spares went mostly to
+    // the cities whose garrisons took their orders later in the turn.) This unit's own city has
+    // only the defenders that chose to hold it so far.
     let mut needs: Vec<(CityId, PlotIdx, i32)> = Vec::new();
     for &c in &g.players[p].cities {
         let cp = g.city_plot(c);
-        let have = v.garrison.get(&c).copied().unwrap_or(0) + garrison(g, p, cp).0 * i32::from(cp != here);
+        let have = if cp == here {
+            v.garrison.get(&c).copied().unwrap_or(0)
+        } else {
+            garrison(g, p, cp).0 + v.garrison_incoming.get(&c).copied().unwrap_or(0)
+        };
         let need = garrison_quota(g, v, c) - have;
         if need > 0 {
             needs.push((c, cp, need));
@@ -439,6 +448,9 @@ fn garrison_unit(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
         Some((c, _)) => {
             *v.garrison.entry(c).or_insert(0) += 1;
             move_to(g, grp, g.city_plot(c), 0);
+            if g.units.contains(u) && g.unit_plot(u) != g.city_plot(c) {
+                *v.garrison_incoming.entry(c).or_insert(0) += 1;
+            }
             if alive(g, grp) && g.group_ready_to_move(grp, false) {
                 hold(g, grp);
             }

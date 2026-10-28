@@ -37,8 +37,11 @@ pub struct View {
     pub roads: Vec<(PlotIdx, i32)>,
     /// Plots (cities) where a settler waits for an escort.
     pub escort_requests: Vec<PlotIdx>,
-    /// Our units committed to each city's garrison this turn.
+    /// Our units committed to each city's garrison this turn (holding there, or sent there).
     pub garrison: BTreeMap<CityId, i32>,
+    /// Of those, the ones sent there that have not arrived yet (on their way: not counted by the
+    /// units standing in the city).
+    pub garrison_incoming: BTreeMap<CityId, i32>,
     /// Extra defenders our cities want for the rival civilizations near them (`defense.rs`;
     /// cities that want none are absent).
     pub rival_def: BTreeMap<CityId, i32>,
@@ -145,6 +148,7 @@ impl View {
             campaign: Default::default(),
             amphibious: None,
             garrison: BTreeMap::new(),
+            garrison_incoming: BTreeMap::new(),
             rival_def: BTreeMap::new(),
             flood: Flood::default(),
         }
