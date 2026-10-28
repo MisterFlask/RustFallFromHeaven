@@ -449,13 +449,20 @@ change also in full games, the allied-barbarian one with the Clan of Embers forc
 3. The disagreement is triage, not churn: a city that sees raiders three or four plots out gives
    its spare to the city they can strike next turn and trains a replacement, which is what the
    previous entry calls the cheap reaction (move one from a city with a spare). One count for
-   both sides makes the city that only sees raiders hold the defender the struck city needs. If
+   both sides makes the city that only sees raiders hold the defender the struck city needs.
+   It was reverted for that reason -- the concept was wrong, not its implementation: production's
+   quota is how many defenders a city builds and keeps over the coming turns, placement's is where
+   one must stand now, and the forks above lost cities through exactly that conflation (the share
+   figures were not the ground). If
    the two are reconciled again, the shared notion is urgency, not a count: placement ranks
    cities by what can strike them against their garrison (`View::peril`), and production knows
-   it trains reserves for the cities around it. Noticed, not changed: in placement's search for
-   a needy city (`units::garrison_unit`), a city whose defenders already took their orders this
-   turn counts them twice (committed and present), so spares walk mostly to cities whose
-   garrisons come later in the turn's order.
+   it trains reserves for the cities around it. Noticed then, fixed since (a bug, kept whatever
+   it measured): in placement's search for a needy city (`units::garrison_unit`), a city whose
+   defenders already took their orders this turn counted them twice (committed and present), so
+   spares walked mostly to cities whose garrisons came later in the turn's order. Counted once
+   (seeds 1-48, 6 civs, 300 turns, against the double count): cities lost to the barbarians
+   128 -> 104, cities captured by civs 225 -> 194, civs alive at turn 300 273 -> 279,
+   population +2.3%, production +4%, leader share and legacy score unchanged.
 
 ### Settlers under a threat the garrison holds (reverted)
 
