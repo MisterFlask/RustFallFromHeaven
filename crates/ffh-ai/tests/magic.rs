@@ -531,3 +531,41 @@ fn a_besieged_city_gets_its_wall_of_stone() {
     let besieged = magic::turn_value(&g, &View::new(&g, us), adept, wall).expect("Wall of Stone is understood");
     assert!(besieged > quiet && besieged >= 15, "the wall is worth more under threat ({quiet} -> {besieged})");
 }
+
+#[test]
+fn a_mage_hastes_its_marching_stack_unless_a_catapult_holds_it_back() {
+    let d = ffh_data::global();
+    let mut g = one_landmass_game(22);
+    let us = PlayerId(0);
+    if !magic::enabled(&g, us) || !ffh_ai::switches::HASTE_MARCH.on(&g, us) {
+        return;
+    }
+    g.player_found(us, 3, 5);
+    let stack = |g: &mut Game, x: i32, siege: bool| {
+        let mage = g.player_init_unit(us, d.t::<UnitType>("UNIT_MAGE"), x, 5, Some(UnitAIType::UNITAI_WARWIZARD), None);
+        give(g, mage, &["PROMOTION_BODY1"]);
+        let grp = g.units[mage].group.expect("a group");
+        let mut units = vec![mage];
+        for _ in 0..3 {
+            units.push(g.player_init_unit(us, d.t::<UnitType>("UNIT_AXEMAN"), x, 5, Some(UnitAIType::UNITAI_ATTACK), None));
+        }
+        if siege {
+            units.push(g.player_init_unit(us, d.t::<UnitType>("UNIT_CATAPULT"), x, 5, Some(UnitAIType::UNITAI_ATTACK_CITY), None));
+        }
+        for &o in &units[1..] {
+            g.unit_join_group(o, Some(grp), false);
+        }
+        (grp, units)
+    };
+    let (grp, units) = stack(&mut g, 8, false);
+    let pace = |g: &Game, units: &[UnitId]| units.iter().map(|&o| g.unit_moves_left(o)).min().unwrap();
+    let before = pace(&g, &units);
+    let v = View::new(&g, us);
+    assert!(magic::haste_march(&mut g, &v, grp), "the mage hastes its stack");
+    assert!(pace(&g, &units) > before, "the stack moves farther this turn");
+    let (grp2, units2) = stack(&mut g, 12, true);
+    let before2 = pace(&g, &units2);
+    let v = View::new(&g, us);
+    assert!(!magic::haste_march(&mut g, &v, grp2), "a catapult, which Haste does not reach, holds the stack back");
+    assert_eq!(pace(&g, &units2), before2);
+}

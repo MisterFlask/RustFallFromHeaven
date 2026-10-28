@@ -804,6 +804,12 @@ fn go(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, dest: PlotIdx, tp: Pl
         hold_for(g, grp, tp);
         return;
     }
+    // Farther than the stack walks this turn: our casters haste it (`HASTE_MARCH`).
+    let ((hx, hy), (dx, dy)) = (g.map.xy(here), g.map.xy(dest));
+    let pace = g.groups[grp].units.iter().map(|&o| g.unit_moves_left(o)).min().unwrap_or(0) / g.d.defines.move_denominator.max(1);
+    if g.plot_distance(hx, hy, dx, dy) > pace {
+        crate::magic::haste_march(g, v, grp);
+    }
     march(g, grp, dest, tp);
     if alive(g, grp) && g.group_ready_to_move(grp, false) && g.units.contains(u) && g.unit_moves_left(u) > 0 {
         // No path: the reached plot nearest the destination.
@@ -853,6 +859,10 @@ fn approach(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, op: &Op, ring: 
     match best {
         Some(r) if r.plot == here => hold_for(g, grp, op.plot),
         Some(r) => {
+            // Not there this turn: our casters haste the stack (`HASTE_MARCH`).
+            if r.turns >= 1 {
+                crate::magic::haste_march(g, v, grp);
+            }
             march(g, grp, r.plot, op.plot);
             finish(g, grp);
         }

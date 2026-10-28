@@ -1124,6 +1124,63 @@ fn cast_phases(g: &mut Game, v: &View, tp: PlotIdx, attackers: &[UnitId], phases
     g.players[p].sum_sui_mode = was;
 }
 
+/// A cast worth less than this at the end of the turn gives way to Haste for a marching stack.
+const HASTE_RESERVE: i32 = 30;
+
+/// Haste for a stack of our operations about to march on (switch `HASTE_MARCH`): a caster in
+/// group `grp` that knows a spell giving our units on its plot an extra move (Haste) casts it
+/// when that raises the stack's pace -- every unit with the fewest moves left gains one (a siege
+/// engine, which Haste does not reach, holds the stack back) -- and its best cast at the end of
+/// the turn is worth less than [`HASTE_RESERVE`]. An expert's Mages march with the army and haste
+/// it toward the city: two plots a turn instead of one, before the defenders gather. Before, Haste
+/// was the free cast at the end of the turn, after the stack had moved, and worth nothing. True if
+/// it was cast.
+pub fn haste_march(g: &mut Game, v: &View, grp: GroupId) -> bool {
+    let p = v.p;
+    if !enabled(g, p) || !crate::switches::HASTE_MARCH.on(g, p) || !crate::units::alive(g, grp) {
+        return false;
+    }
+    let d = g.d;
+    let units = g.groups[grp].units.clone();
+    let mut best: Option<(UnitId, SpellType)> = None;
+    for &c in &units {
+        if g.units[c].has_casted || g.units[c].death_delay {
+            continue;
+        }
+        for s in known(g, c) {
+            let i = &d.spells[s];
+            if !i.allow_ai || i.buff_caster_only || !adds(i).any(|pr| d.promotions[pr].moves_change > 0) || !g.unit_can_cast(c, s, false) {
+                continue;
+            }
+            best = Some((c, s));
+            break;
+        }
+        if best.is_some() {
+            break;
+        }
+    }
+    let Some((caster, spell)) = best else { return false };
+    let info = &d.spells[spell];
+    let denom = d.defines.move_denominator.max(1);
+    let gain = |t: UnitId| {
+        if g.unit_is_immune_to_spell(t, caster, spell) {
+            return 0;
+        }
+        adds(info).filter(|&pr| takes(g, t, pr)).map(|pr| d.promotions[pr].moves_change * denom).sum::<i32>()
+    };
+    let before = units.iter().map(|&t| g.unit_moves_left(t)).min().unwrap_or(0);
+    let after = units.iter().map(|&t| g.unit_moves_left(t) + gain(t)).min().unwrap_or(0);
+    if after <= before || before <= 0 {
+        return false;
+    }
+    let reserve = choose_turn_spell(g, v, caster).map_or(0, |(_, val)| val);
+    if reserve >= HASTE_RESERVE {
+        return false;
+    }
+    cast(g, caster, spell, "march", after - before);
+    true
+}
+
 /// The summons player `p` just made (unit ids are never reused: those above `newest`) attack
 /// `tp` while they can, each out of its group (a summon joins its caster's group).
 fn summons_attack(g: &mut Game, p: PlayerId, newest: Option<UnitId>, tp: PlotIdx) {

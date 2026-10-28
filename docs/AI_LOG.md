@@ -118,6 +118,28 @@ switch off (for a switch every civilization may play, on for the forced civiliza
 3. Spells with an FfH weight of their own are cast for the weight, not the fight: the war gate
    and the force estimate leave them out, as the barrage did.
 
+### Spheres chosen by the caster's role (`ROLE_SPHERES`, reverted before measuring)
+
+1. An expert specializes his casters: Fire for the Mage that marches with the army, Earth or
+   Mind for the one that holds a city. A war wizard valued spells that hurt enemies half again
+   when choosing a sphere, a city mage city spells and lasting blessings half again.
+2. In three traced full games (Amurites 10, Sheaim 6, Svartalfar 7; switch on against off) the
+   casters took less Fire, not more: the Svartalfar 12 Fire promotions -> 0, the Amurites' Fire II
+   10 -> 9 and Enchantment 14 -> 25, and Sheaim summons won 10 fights instead of 41. An Adept
+   studies in the city-mage role (the corps fills city mages first), so it picked city spheres just
+   before Sorcery made it a war Mage.
+3. A caster's role at promotion time does not tell its job: the sphere would follow the job the
+   corps plans for it (war Mages-to-be among the students), not the role it holds while it waits.
+
+### Mana bought for its sphere (`MANA_TRADE`, removed: never fired)
+
+A mana we lacked was worth, in a trade, a tenth of what its sphere is worth to a fresh caster of
+ours (25 at most, two happy resources). In four traced games (Amurites 7 and 10, Sheaim 6,
+Svartalfar 7) no mana was ever bought, with or without it: the AIs sell only a spare copy
+(`trade::buy_resource_offer`), and mana nodes almost never come in pairs. Trading for mana needs
+a swap of single copies (a resource of ours they value more for their only mana), which the
+trade code does not offer.
+
 ### City mages to the front (`MAGE_FRONT`, reverted)
 
 1. A city mage stayed in its own city: in seed 4 (Amurites forced) a Wizard cast Haste in a quiet

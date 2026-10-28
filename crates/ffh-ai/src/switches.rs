@@ -165,6 +165,9 @@ pub static CITY_SPELL_THREAT: Switch = Switch::new("CITY_SPELL_THREAT");
 /// The war of expansion's takeability test counts our casters' damage on a city's defenders
 /// (`diplomacy::can_take_cities_at`).
 pub static MAGIC_WAR: Switch = Switch::new("MAGIC_WAR");
+/// A caster in a marching stack of our operations hastes it when that raises the stack's pace
+/// (`magic::haste_march`).
+pub static HASTE_MARCH: Switch = Switch::new("HASTE_MARCH");
 
 /// The names environment variable `var` lists, comma-separated: trimmed, upper-cased, `prefix`
 /// (`CIVILIZATION_`, `TRAIT_`) taken off. `None` when it is unset or lists nothing.
