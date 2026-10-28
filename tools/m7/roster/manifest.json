@@ -11657,5 +11657,257 @@
   "gen_size": "1024x1024",
   "quality": "medium",
   "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_battering_ram": {
+  "kind": "unit",
+  "file": "roster/units/unit_battering_ram.png",
+  "size": [
+   101,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 3,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png"
+  ],
+  "prompt": "prompts/assets/unit_battering_ram.txt",
+  "accepted": "2026-10-28 04:30",
+  "height": 74,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_cannon": {
+  "kind": "unit",
+  "file": "roster/units/unit_cannon.png",
+  "size": [
+   101,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 3,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png"
+  ],
+  "prompt": "prompts/assets/unit_cannon.txt",
+  "accepted": "2026-10-28 04:30",
+  "height": 70,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_slave": {
+  "kind": "unit",
+  "file": "roster/units/unit_slave.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 1,
+  "mirrored": true,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png",
+   "ref/crop_worker.png"
+  ],
+  "prompt": "prompts/assets/unit_slave.txt",
+  "accepted": "2026-10-28 04:30",
+  "height": 78,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_supplies": {
+  "kind": "unit",
+  "file": "roster/units/unit_supplies.png",
+  "size": [
+   106,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 2,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png"
+  ],
+  "prompt": "prompts/assets/unit_supplies.txt",
+  "accepted": "2026-10-28 04:30",
+  "height": 84,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_artist": {
+  "kind": "unit",
+  "file": "roster/units/unit_artist.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png"
+  ],
+  "prompt": "prompts/assets/unit_artist.txt",
+  "accepted": "2026-10-28 04:30",
+  "height": 86,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_fawn": {
+  "kind": "unit",
+  "file": "roster/units/unit_fawn.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 2,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png"
+  ],
+  "prompt": "prompts/assets/unit_fawn.txt",
+  "accepted": "2026-10-28 04:30",
+  "height": 76,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_frostling": {
+  "kind": "unit",
+  "file": "roster/units/unit_frostling.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 3,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png"
+  ],
+  "prompt": "prompts/assets/unit_frostling.txt",
+  "accepted": "2026-10-28 04:30",
+  "height": 70,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_frostling_archer": {
+  "kind": "unit",
+  "file": "roster/units/unit_frostling_archer.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png"
+  ],
+  "prompt": "prompts/assets/unit_frostling_archer.txt",
+  "accepted": "2026-10-28 04:30",
+  "height": 70,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_frostling_wolf_rider": {
+  "kind": "unit",
+  "file": "roster/units/unit_frostling_wolf_rider.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png",
+   "ref/crop_horseman.png"
+  ],
+  "prompt": "prompts/assets/unit_frostling_wolf_rider.txt",
+  "accepted": "2026-10-28 04:30",
+  "height": 92,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_minotaur": {
+  "kind": "unit",
+  "file": "roster/units/unit_minotaur.png",
+  "size": [
+   99,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png"
+  ],
+  "prompt": "prompts/assets/unit_minotaur.txt",
+  "accepted": "2026-10-28 04:30",
+  "height": 108,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
  }
 }
