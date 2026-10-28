@@ -434,6 +434,7 @@ export const SPRITES = {
   unit_rantine: { w: 96, h: 120, box: [2, 22, 95, 118] },
   unit_ratha: { w: 109, h: 120, box: [0, 20, 109, 118] },
   unit_rathus: { w: 96, h: 120, box: [2, 26, 94, 118] },
+  unit_ravenous_werewolf: { w: 96, h: 120, box: [3, 22, 94, 118] },
   unit_repentant_angel: { w: 96, h: 120, box: [15, 22, 82, 118] },
   unit_revelers: { w: 96, h: 120, box: [12, 32, 84, 118] },
   unit_rosier: { w: 96, h: 120, box: [1, 12, 94, 118] },
