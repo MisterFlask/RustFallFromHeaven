@@ -31,6 +31,62 @@ Each entry answers three questions, from the games themselves (counts with `ffh 
   `FFH_AI_TRACE` (a throwaway trace line is fine on a scratch branch; it must not change the
   checksum) and compare the snapshots per checkpoint (`civ_ab.py --load`, the snapshot fields).
 
+## Magic civilizations (2026-10-28)
+
+The kept versions are in docs/AI.md, "Spellcasting", "Magic civilizations". Numbers are full games
+(6 civs, standard map, to a decision or turn 690), the Amurites, Sheaim, Svartalfar and Balseraphs
+each forced into slot 0 on seeds 1-30 (120 pairs), `civ_ab.py` against the same binary with the
+switch off (for a switch every civilization may play, on for the forced civilization only:
+`--new-env FFH_AI_<NAME>_ONLY={civ}`); "arcane" counts arcane casters (unit combat Adept).
+
+### Sorcery right after Writing, whether or not we had an Adept (`ARCANE_PATH`, replaced)
+
+1. A magic leader's Adepts study 30 to 70 turns before they can become Mages, so the school should
+   open early and Sorcery (2000 beakers) come as the students reach level 4: Mysticism and
+   Knowledge of the Ether after the first essentials, a sphere tech and Sorcery after Writing.
+2. Knowledge of the Ether came at turns 115-150 instead of 170-250, arcane casters at turn 200
+   0.1 -> 0.5, but the Sheaim lost share at turns 200-300 (-151, t -2.0; -179, t -2.1): Sorcery
+   came before the Adepts it was for, and its 2000 beakers before the economy's techs. Pooled: win
+   12.5% -> 11.7% (5 / 6), share@end -100 (t -0.97).
+3. Sorcery waits for a student (an Adept of ours that can become a Mage). With that: win 12.5% on
+   both sides (6 / 6; Svartalfar 2 -> 5 wins), share@300 -99 (t -1.70), share@end -81 (t -0.67);
+   the cost is spread thin (population -2 at turns 200-250; cities, techs, production equal).
+
+### A caster for every three field units, counted in the army (`MAGE_ARMY`, replaced)
+
+1. At turn 400 a magic civilization had 4 arcane casters to 45 military units: its corps was
+   (cities + 2) / 2 at most, trained only while the training city saw no threat at all, and an
+   expert's magic army has its Mages in proportion. A magic leader kept a caster for every three
+   field units, its war wizards counting toward the army target (so the army's size held), and
+   trained casters while a raider the garrison held was in sight.
+2. The casters came (made per game about 4.5 -> 10, arcane at turn 200 0.4 -> 1.1, Mage-turns
+   x1.9) and died in proportion (about 30% of those made on both sides), but win 13.3% -> 10.0%
+   (0 / 4, p 0.125), share@end -90 (t -1.30), legacy@end +64 (t 0.92). The army held its size, so
+   the war wizards replaced fighters and defenders: cities lost to civilizations 3.02 -> 3.48 a
+   game, cities taken 2.60 -> 2.67; research 7-11% lower at turns 250-400 (the slider, for the
+   casters' upkeep). In the four games lost (Sheaim 20 and 30, Svartalfar 8, Balseraphs 18) the
+   empire fell behind in research from turn 250 and lost cities it had held.
+3. A Mage neither attacks nor holds a city as a fighter does; its Fireball adds to what the
+   fighters do and does not replace them. The casters come on top of the army, one for every four
+   field units.
+
+### City mages to the front (`MAGE_FRONT`, reverted)
+
+1. A city mage stayed in its own city: in seed 4 (Amurites forced) a Wizard cast Haste in a quiet
+   city while three cities a few turns away fell to a stack of Champions. An expert moves his
+   Mages where the fighting is: a mage with a spell that hurts (a Fireball, not an Adept's Haste or
+   Floating Eye) left a quiet city for a threatened city of ours without a mage within six turns.
+2. On for the forced civilization only: win 12.5% -> 10.0% (1 / 4), players alive at the end
+   down (t -2.03), legacy@end -66 (t -1.45); 51 of 120 games changed. In the changed games the
+   casters lost rose sharply (Amurites seed 18: 2 -> 26, seed 2: 2 -> 13; Svartalfar 24: 3 -> 14;
+   Balseraphs 6: 1 -> 13): the threatened cities they went to were the ones that fell, and every
+   unit in a city that falls dies with it. A first version also sent Adepts (no damage spell) and
+   one died in the city it walked into.
+3. "Threatened" is the wrong test for where a Mage helps: a city the enemy is about to take is a
+   trap for every unit in it. The barrage already lets a city's own mage hurt the stack at its
+   gates. A Mage would go where the city holds with it and falls without it -- that needs an
+   estimate of the siege's outcome, which the AI does not make yet.
+
 ## Leader traits (2026-10-26)
 
 The kept version is in docs/AI.md, "Leader traits". A trait's play is kept whatever its measured

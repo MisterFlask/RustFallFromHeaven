@@ -307,19 +307,20 @@ pub fn arcane_path(g: &Game, p: PlayerId) -> bool {
 }
 
 /// Does `p` field a magic leader's army (switch `MAGE_ARMY`; Arcane or Summoner): casters in
-/// proportion to its field army ([`mage_army_casters`]), its war wizards counting toward the army
-/// target (`production::decide`). An expert who plays a magic civilization fights with his
-/// Mages: a Fireball softens what his swords then take, and a Wizard is never lost in the attack.
-/// Without it the corps stayed at (cities + 2) / 2 or less while the army grew: 4 casters to 45
-/// field units at turn 400.
+/// proportion to its field army ([`mage_army_casters`]), on top of it. An expert who plays a magic
+/// civilization fights with his Mages: a Fireball softens what his swords then take, and a Wizard
+/// is never lost in the attack. Without it the corps stayed at (cities + 2) / 2 or less while the
+/// army grew: 4 casters to 45 field units at turn 400. (First version: one for every three field
+/// units, its war wizards counting toward the army target -- the casters replaced fighters and
+/// defenders, and the magic civilizations lost more cities: docs/AI_LOG.md, "Magic civilizations".)
 pub fn mage_army(g: &Game, p: PlayerId) -> bool {
     (has(g, p, Trait::Arcane) || has(g, p, Trait::Summoner)) && crate::switches::MAGE_ARMY.on(g, p)
 }
 
-/// The casters a [`mage_army`] wants: one for every three field units (attackers, siege).
+/// The casters a [`mage_army`] wants: one for every four field units (attackers, siege).
 pub fn mage_army_casters(g: &Game, p: PlayerId) -> i32 {
     use crate::production::count_ai;
-    (count_ai(g, p, UnitAIType::UNITAI_ATTACK) + count_ai(g, p, UnitAIType::UNITAI_ATTACK_CITY) + count_ai(g, p, UnitAIType::UNITAI_COLLATERAL)) / 3
+    (count_ai(g, p, UnitAIType::UNITAI_ATTACK) + count_ai(g, p, UnitAIType::UNITAI_ATTACK_CITY) + count_ai(g, p, UnitAIType::UNITAI_COLLATERAL)) / 4
 }
 
 /// A production choice for city `c` (after the civilization's own): an Arcane leader keeps

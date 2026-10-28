@@ -160,12 +160,9 @@ pub static BARRAGE: Switch = Switch::new("BARRAGE");
 /// An operation's force estimates count the casts of the casters marching with its stacks: the
 /// defenders they soften before the strike (`magic::planned_soften`, `campaign::covers_with`).
 pub static CASTER_FORCE: Switch = Switch::new("CASTER_FORCE");
-/// A magic leader (Arcane or Summoner) keeps a caster for every three field units, and its war
-/// wizards count toward its army target (`traits::mage_army`).
+/// A magic leader (Arcane or Summoner) keeps a caster for every four field units, on top of its
+/// army (`traits::mage_army`).
 pub static MAGE_ARMY: Switch = Switch::new("MAGE_ARMY");
-/// A city mage in a quiet city goes to a threatened city of ours without a mage within six turns
-/// (`casters::city_mage`).
-pub static MAGE_FRONT: Switch = Switch::new("MAGE_FRONT");
 
 fn civ_list(var: &str) -> Option<Vec<String>> {
     let v = std::env::var(var).ok()?;

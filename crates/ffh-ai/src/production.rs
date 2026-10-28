@@ -709,8 +709,6 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static str)> {
 
     // 5. A small mobile force to clear barbarians and animals near our lands.
     let attackers = count_ai(g, p, UnitAIType::UNITAI_ATTACK) + count_ai(g, p, UnitAIType::UNITAI_ATTACK_CITY) + count_ai(g, p, UnitAIType::UNITAI_COLLATERAL);
-    // A magic leader's war wizards are part of its army (`MAGE_ARMY`).
-    let attackers = attackers + if crate::traits::mage_army(g, p) { count_ai(g, p, UnitAIType::UNITAI_WARWIZARD) } else { 0 };
     let min_army = if ctx.broke { 1 + ctx.n_cities / 4 } else { 1 + ctx.n_cities / 2 };
     if attackers < min_army && (ctx.production >= 3 || settler == SettlerPlan::Soon) && (ctx.afford || attackers == 0) {
         if let Some(u) = best_unit(g, c, Role::Attack) {
