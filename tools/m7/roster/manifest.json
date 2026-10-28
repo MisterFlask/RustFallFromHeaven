@@ -15296,10 +15296,10 @@
   "file": "roster/buildings/bld_city_kuriotates_town.png",
   "size": [
    192,
-   146
+   138
   ],
   "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
-  "round": "r1",
+  "round": "r2",
   "variant": 1,
   "mirrored": false,
   "images": [
@@ -15308,7 +15308,7 @@
    "anchors/buildings/house_style_city_raw.png"
   ],
   "prompt": "prompts/assets/bld_city_kuriotates_town.txt",
-  "accepted": "2026-10-28 05:04",
+  "accepted": "2026-10-28 05:07",
   "width": 184,
   "pixel": 2,
   "footprint": 1,
@@ -15336,6 +15336,951 @@
   ],
   "prompt": "prompts/assets/bld_city_amurites_town.txt",
   "accepted": "2026-10-28 05:04",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_luchuirp_village": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_luchuirp_village.png",
+  "size": [
+   192,
+   134
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 3,
+  "mirrored": false,
+  "images": [
+   "anchors/buildings/crop_houses.png",
+   "prompts/assets/bld_city_luchuirp_village__bld_city_luchuirp_town_r1_1.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_luchuirp_village.txt",
+  "accepted": "2026-10-28 05:05",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_kuriotates_village": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_kuriotates_village.png",
+  "size": [
+   192,
+   114
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 2,
+  "mirrored": false,
+  "images": [
+   "anchors/buildings/crop_houses.png",
+   "prompts/assets/bld_city_kuriotates_village__bld_city_kuriotates_town_r1_1.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_kuriotates_village.txt",
+  "accepted": "2026-10-28 05:05",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_bannor_town": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_bannor_town.png",
+  "size": [
+   192,
+   130
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r2",
+  "variant": 3,
+  "mirrored": false,
+  "images": [
+   "ref/crop_city.png",
+   "anchors/buildings/crop_houses.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_bannor_town.txt",
+  "accepted": "2026-10-28 05:05",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_amurites_village": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_amurites_village.png",
+  "size": [
+   192,
+   130
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 3,
+  "mirrored": false,
+  "images": [
+   "anchors/buildings/crop_houses.png",
+   "prompts/assets/bld_city_amurites_village__bld_city_amurites_town_r2_1.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_amurites_village.txt",
+  "accepted": "2026-10-28 05:05",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_amurites_castle": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_amurites_castle.png",
+  "size": [
+   192,
+   156
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "ref/crop_city.png",
+   "prompts/assets/bld_city_amurites_castle__bld_city_amurites_town_r2_1.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_amurites_castle.txt",
+  "accepted": "2026-10-28 05:05",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_luchuirp_castle": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_luchuirp_castle.png",
+  "size": [
+   192,
+   158
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r2",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "ref/crop_city.png",
+   "prompts/assets/bld_city_luchuirp_castle__bld_city_luchuirp_town_r1_1.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_luchuirp_castle.txt",
+  "accepted": "2026-10-28 05:07",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_calabim_town": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_calabim_town.png",
+  "size": [
+   192,
+   138
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r2",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "ref/crop_city.png",
+   "prompts/assets/bld_city_castle__bld_city_town_r2_1.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_calabim_town.txt",
+  "accepted": "2026-10-28 05:07",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_bannor_village": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_bannor_village.png",
+  "size": [
+   192,
+   128
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r2",
+  "variant": 2,
+  "mirrored": false,
+  "images": [
+   "anchors/buildings/crop_houses.png",
+   "prompts/assets/bld_city_bannor_village__bld_city_bannor_town_r2_3.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_bannor_village.txt",
+  "accepted": "2026-10-28 05:07",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_bannor_castle": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_bannor_castle.png",
+  "size": [
+   192,
+   158
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r2",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "ref/crop_city.png",
+   "prompts/assets/bld_city_bannor_castle__bld_city_bannor_town_r2_3.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_bannor_castle.txt",
+  "accepted": "2026-10-28 05:07",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_balseraphs_town": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_balseraphs_town.png",
+  "size": [
+   192,
+   138
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r2",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "ref/crop_city.png",
+   "anchors/buildings/crop_houses.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_balseraphs_town.txt",
+  "accepted": "2026-10-28 05:07",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_kuriotates_castle": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_kuriotates_castle.png",
+  "size": [
+   192,
+   150
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r3",
+  "variant": 2,
+  "mirrored": false,
+  "images": [
+   "ref/crop_city.png",
+   "prompts/assets/bld_city_kuriotates_castle__bld_city_kuriotates_town_r2_1.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_kuriotates_castle.txt",
+  "accepted": "2026-10-28 05:08",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_balseraphs_village": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_balseraphs_village.png",
+  "size": [
+   192,
+   130
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 2,
+  "mirrored": false,
+  "images": [
+   "anchors/buildings/crop_houses.png",
+   "prompts/assets/bld_city_balseraphs_village__bld_city_balseraphs_town_r2_1.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_balseraphs_village.txt",
+  "accepted": "2026-10-28 05:08",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_balseraphs_castle": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_balseraphs_castle.png",
+  "size": [
+   192,
+   164
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 2,
+  "mirrored": false,
+  "images": [
+   "ref/crop_city.png",
+   "prompts/assets/bld_city_balseraphs_castle__bld_city_balseraphs_town_r2_1.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_balseraphs_castle.txt",
+  "accepted": "2026-10-28 05:08",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_khazad_town": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_khazad_town.png",
+  "size": [
+   192,
+   146
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 2,
+  "mirrored": false,
+  "images": [
+   "ref/crop_mountains.png",
+   "ref/crop_city.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_khazad_town.txt",
+  "accepted": "2026-10-28 05:08",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_calabim_village": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_calabim_village.png",
+  "size": [
+   192,
+   128
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 3,
+  "mirrored": false,
+  "images": [
+   "anchors/buildings/crop_houses.png",
+   "prompts/assets/bld_city_calabim_village__bld_city_calabim_town_r2_1.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_calabim_village.txt",
+  "accepted": "2026-10-28 05:08",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_sidar_town": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_sidar_town.png",
+  "size": [
+   192,
+   142
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 2,
+  "mirrored": false,
+  "images": [
+   "ref/crop_city.png",
+   "anchors/buildings/crop_keep.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_sidar_town.txt",
+  "accepted": "2026-10-28 05:09",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_malakim_town": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_malakim_town.png",
+  "size": [
+   192,
+   134
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r2",
+  "variant": 2,
+  "mirrored": false,
+  "images": [
+   "ref/crop_city.png",
+   "anchors/buildings/crop_houses.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_malakim_town.txt",
+  "accepted": "2026-10-28 05:09",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_khazad_castle": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_khazad_castle.png",
+  "size": [
+   192,
+   162
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 3,
+  "mirrored": false,
+  "images": [
+   "ref/crop_mountains.png",
+   "prompts/assets/bld_city_khazad_castle__bld_city_khazad_town_r1_2.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_khazad_castle.txt",
+  "accepted": "2026-10-28 05:09",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_khazad_village": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_khazad_village.png",
+  "size": [
+   192,
+   132
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "ref/crop_mountains.png",
+   "prompts/assets/bld_city_khazad_village__bld_city_khazad_town_r1_2.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_khazad_village.txt",
+  "accepted": "2026-10-28 05:09",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_calabim_castle": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_calabim_castle.png",
+  "size": [
+   192,
+   170
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "ref/crop_city.png",
+   "prompts/assets/bld_city_calabim_castle__bld_city_calabim_town_r2_1.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_calabim_castle.txt",
+  "accepted": "2026-10-28 05:09",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_sidar_village": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_sidar_village.png",
+  "size": [
+   192,
+   118
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 3,
+  "mirrored": false,
+  "images": [
+   "anchors/buildings/crop_houses.png",
+   "prompts/assets/bld_city_sidar_village__bld_city_sidar_town_r1_2.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_sidar_village.txt",
+  "accepted": "2026-10-28 05:09",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_sidar_castle": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_sidar_castle.png",
+  "size": [
+   192,
+   170
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 3,
+  "mirrored": false,
+  "images": [
+   "ref/crop_city.png",
+   "prompts/assets/bld_city_sidar_castle__bld_city_sidar_town_r1_2.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_sidar_castle.txt",
+  "accepted": "2026-10-28 05:09",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_malakim_village": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_malakim_village.png",
+  "size": [
+   192,
+   124
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "anchors/buildings/crop_houses.png",
+   "prompts/assets/bld_city_malakim_village__bld_city_malakim_town_r2_2.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_malakim_village.txt",
+  "accepted": "2026-10-28 05:10",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_malakim_castle": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_malakim_castle.png",
+  "size": [
+   192,
+   150
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "ref/crop_city.png",
+   "prompts/assets/bld_city_malakim_castle__bld_city_malakim_town_r2_2.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_malakim_castle.txt",
+  "accepted": "2026-10-28 05:10",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_doviello_town": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_doviello_town.png",
+  "size": [
+   192,
+   130
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r2",
+  "variant": 3,
+  "mirrored": false,
+  "images": [
+   "ref/crop_city.png",
+   "anchors/buildings/crop_houses.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_doviello_town.txt",
+  "accepted": "2026-10-28 05:10",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_sheaim_town": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_sheaim_town.png",
+  "size": [
+   192,
+   124
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "ref/crop_city.png",
+   "prompts/assets/bld_city_castle__bld_city_town_r2_1.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_sheaim_town.txt",
+  "accepted": "2026-10-28 05:10",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_elohim_town": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_elohim_town.png",
+  "size": [
+   192,
+   146
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 2,
+  "mirrored": false,
+  "images": [
+   "ref/crop_city.png",
+   "anchors/buildings/crop_houses.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_elohim_town.txt",
+  "accepted": "2026-10-28 05:11",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_ljosalfar_town": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_ljosalfar_town.png",
+  "size": [
+   192,
+   132
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r2",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "ref/crop_forest.png",
+   "anchors/buildings/crop_houses.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_ljosalfar_town.txt",
+  "accepted": "2026-10-28 05:11",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_lanun_town": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_lanun_town.png",
+  "size": [
+   192,
+   148
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 3,
+  "mirrored": false,
+  "images": [
+   "ref/crop_city.png",
+   "anchors/buildings/crop_houses.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_lanun_town.txt",
+  "accepted": "2026-10-28 05:11",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_sheaim_village": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_sheaim_village.png",
+  "size": [
+   192,
+   118
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 2,
+  "mirrored": false,
+  "images": [
+   "anchors/buildings/crop_houses.png",
+   "prompts/assets/bld_city_sheaim_village__bld_city_sheaim_town_r1_1.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_sheaim_village.txt",
+  "accepted": "2026-10-28 05:11",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_ljosalfar_castle": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_ljosalfar_castle.png",
+  "size": [
+   192,
+   164
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 3,
+  "mirrored": false,
+  "images": [
+   "ref/crop_forest.png",
+   "prompts/assets/bld_city_ljosalfar_castle__bld_city_ljosalfar_town_r2_1.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_ljosalfar_castle.txt",
+  "accepted": "2026-10-28 05:12",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_ljosalfar_village": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_ljosalfar_village.png",
+  "size": [
+   192,
+   128
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "anchors/buildings/crop_houses.png",
+   "prompts/assets/bld_city_ljosalfar_village__bld_city_ljosalfar_town_r2_1.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_ljosalfar_village.txt",
+  "accepted": "2026-10-28 05:12",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_sheaim_castle": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_sheaim_castle.png",
+  "size": [
+   192,
+   166
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 2,
+  "mirrored": false,
+  "images": [
+   "ref/crop_city.png",
+   "prompts/assets/bld_city_sheaim_castle__bld_city_sheaim_town_r1_1.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_sheaim_castle.txt",
+  "accepted": "2026-10-28 05:12",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_doviello_village": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_doviello_village.png",
+  "size": [
+   192,
+   128
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r2",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "anchors/buildings/crop_houses.png",
+   "prompts/assets/bld_city_doviello_village__bld_city_doviello_town_r2_3.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_doviello_village.txt",
+  "accepted": "2026-10-28 05:12",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_elohim_village": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_elohim_village.png",
+  "size": [
+   192,
+   128
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 3,
+  "mirrored": false,
+  "images": [
+   "anchors/buildings/crop_houses.png",
+   "prompts/assets/bld_city_elohim_village__bld_city_elohim_town_r1_2.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_elohim_village.txt",
+  "accepted": "2026-10-28 05:12",
   "width": 184,
   "pixel": 2,
   "footprint": 1,
