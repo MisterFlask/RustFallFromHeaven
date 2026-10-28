@@ -654,7 +654,7 @@ fn finish(g: &mut Game, grp: GroupId) {
 
 /// Opportunistic captures (switch `CAPTURE`): an enemy city at war (a civ's or the barbarians')
 /// that the stack can walk into this turn because it is empty, or one next to it whose defenders
-/// it takes with a reserve to spare (the siege operations' estimate, `combat_sim::covers`) -- even
+/// it takes when the simulation of the group attack says the city falls ([`field_go`]) -- even
 /// when no operation targets it (the targets of our operations are left to their strikes). An
 /// expert takes the city the enemy has left open, wherever his army stands. Before, a stack next
 /// to an empty enemy city walked on: the plan named another city, and the hunt only went for
@@ -706,9 +706,9 @@ fn opportune(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
         if d != 1 {
             continue;
         }
-        // Clearly: the siege estimate takes the city with a reserve to spare, and the odds are
-        // ones the assault itself goes on with (the estimate counts the wounds lost fights leave,
-        // which a stack fighting at 10% odds should not rely on).
+        // When the simulation of the group attack says the city falls (`field_go` with
+        // `capture`; before round 7g, the siege estimate with a reserve and odds the assault goes
+        // on with).
         let units = g.groups[grp].units.clone();
         let takes = field_sim(g, grp, q).is_some_and(|s| field_go(&s, true, true, false, false));
         if !takes {
