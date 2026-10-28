@@ -102,7 +102,8 @@ leaves a hole.
 - **Resources:** a prop per family (`resourceSprite`: grain, cattle, sheep, horses, deer, fish,
   whales, iron, gold, gems, marble, mithril, wine, fruit, mana, trade goods).
 - **Cities:** a one-plot settlement by size: `bld_city_village` (1-3), `bld_city_town` (4-8),
-  `bld_city_castle` (9+), its saturated blue (the art's stock roofs, spires and flags) recoloured to
+  `bld_city_castle` (9+), each its owner's civilization's own (`bld_city_khazad_town`, tier by
+  tier before the shared one: `citySprites`), its saturated blue (the art's stock roofs, spires and flags) recoloured to
   the owner's colour (slate roofs stay slate), with the owner's banner at its front-left and a
   plaque over the front of its base (size, name, turns left on its build for your own; a star on a
   capital). As in the 2D renderer a garrison would hide its city, so it shows only while selected
@@ -162,12 +163,40 @@ Everything below is in `tools/m7/roster/` with its exact prompt in `tools/m7/pro
 - **Settlements and buildings:** city village, town and castle (one plot each), the 2x2 city;
   cottage, hamlet, fort, watchtower, lumbermill, windmill, workshop, mine, camp, lair, ruins,
   graveyard, goblin fort, harbor; the mage guild and temple of leaves (not on the map yet).
-- **Units (56):** settler, worker, warrior, scout, hunter, archer, crossbowman, axeman, swordsman,
-  phalanx, champion, adept, mage, archmage, disciple, priest, paladin, druid, assassin, great
-  person, commander, goblin, lizardman, skeleton; horseman, knight, chariot, war elephant,
-  catapult, trireme, frigate, workboat; wolf, bear, lion, giant spider, griffon, werewolf, demon,
-  manes, fire, earth, water and air elementals, golem, angel, treant, sea serpent, spectre; and the
-  package's own lich, hyborem, hill giant, ogre, priest of leaves, ljosalfar archer, sheaim mage.
+- **Units (373):** the first 56 (settler, worker, warrior, scout, hunter, archer, crossbowman, axeman,
+  swordsman, phalanx, champion, adept, mage, archmage, disciple, priest, paladin, druid, assassin, great
+  person, commander, goblin, lizardman, skeleton; horseman, knight, chariot, war elephant, catapult,
+  trireme, frigate, workboat; wolf, bear, lion, giant spider, griffon, werewolf, demon, manes, the four
+  elementals, golem, angel, treant, sea serpent, spectre; and the package's own lich, hyborem, hill
+  giant, ogre, priest of leaves, ljosalfar archer, sheaim mage), then on 2026-10-28 a sprite for
+  every unit type that drew a stand-in: all 57 heroes and world units (the four dragons one family
+  in four colourings, the four Horsemen one grim set), the 27 civilization unique units, a disciple /
+  priest / high priest ladder per religion (one palette per religion), and 86 more (upgrades such
+  as the longbowman and marksman, the ship ladder from galley to queen of the line, animals and
+  packs, angels, demons, undead, elementals, the five great people as one family). Each took one
+  round (the Ogre Warchief two), about $0.10 a unit at the ledger's prices; every one faces right
+  (accepted `--mirror` where the model drew it facing left), as the engine expects. Still on
+  stand-ins: the equipment pickups (`EQUIPMENT_*`), the illusions (`puppet`), and spell effects
+  that fit their alias (fireball, meteor, eye, shade, severed soul, guardian vines); Brigit held
+  and Rosier Oathtaker use their hero's sprite (`UNIT_ALIASES`). The older left-facing sprites
+  (ogre, hyborem, priest of leaves and a few others) were left as they are.
+- **Civilization looks (2026-10-28):** each civilization's own warrior, axeman, adept, worker,
+  settler and horseman (`unit_<civ>_<type>`, 107 sprites): the generic unit's pose and props kept
+  (its 3x upscale passed as the last image), restyled in the people's race, colours and one or two
+  cultural details; plus the 18 civilization replacements of those units that drew a stand-in
+  (wood and mud golems, boar rider, hornguard, centaur, centaur lancer and charger, war tortoise,
+  beastman, Sons of Asena, shaman, bison rider, wolf rider, bloodpet, moroi, pyre zombie, imp,
+  death knight). And a village, town and castle per civilization, barbarians included
+  (`bld_city_<civ>_<tier>`, 66 sprites, cut like the shared three: `--footprint 1 --width 184
+  --pixel 2 --holes 30`), the town made first and passed to the village and castle so the three
+  read as one people. The owner's colour is the art's saturated mid-blue (hue 195-252, saturation
+  35% and up), so each set keeps that blue to the roofs, cones and domes meant for it and none on
+  water, ice or glass. Several castles (and the Grigori village) warn on base cover (0.71-0.83):
+  their corner towers stand a few pixels above the row the check reads; their outlines match the
+  shared castle's. Hand-fixed after the cut, so not reproducible from `work/` alone: lavender smoke
+  greyed on `bld_city_luchuirp_town` and `bld_city_illians_village`, cyan-key fringe on the three
+  Svartalfar settlements and blue well water on `bld_city_bannor_village` recoloured out of the
+  owner band.
 
 Notes from making them (also in the package README): one-tile buildings need the "CAMERA CHECK"
 sentence (now the default) or their footprint comes out too steep; `--height` is the trimmed
@@ -179,10 +208,9 @@ ask for solid nets; the cottage is deliberately small, padded to sit in the midd
 
 - **Roads, rivers and coasts** are drawn as lines and banks, not art: the README's main gap to the
   reference look (neighbour-aware river and coast overlays, roads along tile edges).
-- **Cultures:** one settlement set for every civilization; the README's route to elven, dwarven,
-  infernal and undead cities is the same prompt shape with other materials.
-- **Units:** about fifty sprites stand in for 325 unit types. Heroes and civilization-specific
-  units (`unit_<civilization>_<type>`) are the next batches.
+- **Units:** every unit type has its own sprite but the equipment pickups and a few spell
+  effects (section 7). Civilization looks cover the warrior, axeman, adept, worker, settler and
+  horseman; the archers, spearmen, swordsmen, priests and later units are shared.
 - **Resources** by family; the exact resource shows on hover.
 - The minimap is MapView's top-down one.
 

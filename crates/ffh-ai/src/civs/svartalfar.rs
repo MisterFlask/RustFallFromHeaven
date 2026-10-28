@@ -28,6 +28,11 @@ use crate::Ai;
 pub struct Svartalfar;
 
 impl CivPlay for Svartalfar {
+    /// FfH's `AI_chooseTech` research plan (`tech_plan::goals`).
+    fn tech_goals(&self, _g: &Game, _p: PlayerId) -> super::TechGoals {
+        super::TechGoals { early_military: Some("TECH_HUNTING"), religion: Some("TECH_WAY_OF_THE_FORESTS"), beelines: vec!["TECH_POISONS", "TECH_ANIMAL_HANDLING"] }
+    }
+
     fn production(&self, _ai: &Ai, g: &Game, c: CityId, threat: i32) -> Option<Choice> {
         super::unique_casters(g, c, threat).or_else(|| kidnapper(g, c, threat))
     }
@@ -110,7 +115,7 @@ fn kidnap(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::campaign::tests::one_landmass_game_with;
+    use crate::testkit::one_landmass_game_with;
 
     /// A Shadow standing in a city of the team we prepare a war against, with a great scientist
     /// settled there, kidnaps: the scientist is ours, or the attempt failed and the war is on.

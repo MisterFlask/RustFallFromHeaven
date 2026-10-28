@@ -98,6 +98,20 @@ pub(crate) fn is_team_leader(g: &Game, p: PlayerId) -> bool {
     g.player_ids().into_iter().find(|&q| g.players[q].alive && g.players[q].team == team) == Some(p)
 }
 
+/// May `p` and `other` make a deal: both can contact the other (`CvPlayer::canContact`: met, not
+/// a war under a civic without diplomacy with enemies -- the Bannor's Crusade -- nor one too young to
+/// end). C++ `AI_doDiplo` asks only the proposer's side, so a Crusader's enemy could still offer it
+/// peace; the civic means no diplomacy with enemies either way, so both sides are asked. It also
+/// refuses a player FfH has just created (its temporary-player timer), a vassal's own peace and a
+/// permanent war or peace, which the AI-to-AI deals ignored too. Switch `CONTACT` (off: no check,
+/// as before; the AI's offers to humans then ask only our side).
+pub(crate) fn can_talk(g: &Game, p: PlayerId, other: PlayerId) -> bool {
+    if !crate::switches::CONTACT.on(g, p) {
+        return !g.players[other].human || g.player_can_contact(p, other);
+    }
+    g.player_can_contact(p, other) && g.player_can_contact(other, p)
+}
+
 /// The alive (non-barbarian) leader player of a team.
 pub(crate) fn team_leader(g: &Game, t: TeamId) -> Option<PlayerId> {
     g.player_ids().into_iter().find(|&q| g.players[q].alive && g.players[q].team == t)
@@ -210,7 +224,7 @@ pub fn manage(g: &mut Game, v: &View) {
             continue;
         }
         let item = TradeData { item_type: TradeableItem::TRADE_PEACE_TREATY, data: 0, offering: false, hidden: false };
-        if !g.player_can_trade_item(p, other, &item, true) || !g.player_can_trade_item(other, p, &item, true) {
+        if !can_talk(g, p, other) || !g.player_can_trade_item(p, other, &item, true) || !g.player_can_trade_item(other, p, &item, true) {
             continue;
         }
         let mut ours_list = vec![item.clone()];
@@ -528,7 +542,7 @@ fn tech_item(t: TechType) -> TradeData {
 fn give_help(g: &mut Game, p: PlayerId, other: PlayerId, plan: &crate::victory::Plan) {
     let (team, ot) = (g.players[p].team, g.players[other].team);
     // Markedly weaker (team assets < half ours), at peace, and not a civ contesting our victory.
-    if g.team_get_assets(ot) >= g.team_get_assets(team) / 2 || g.at_war(team, ot) || crate::victory::rival_team(g, plan) == Some(ot) {
+    if g.team_get_assets(ot) >= g.team_get_assets(team) / 2 || g.at_war(team, ot) || crate::victory::rival_team(g, plan) == Some(ot) || !can_talk(g, p, other) {
         return;
     }
     // Attitude + FfH alignment / favourite-religion sweetener vs the TARGET leader's NoGiveHelp bar.
@@ -563,7 +577,7 @@ fn give_help(g: &mut Game, p: PlayerId, other: PlayerId, plan: &crate::victory::
 /// `consider_offer`.
 fn hire_war_ally(g: &mut Game, p: PlayerId, bribee: PlayerId, plan: &crate::victory::Plan) {
     let (team, bribee_team) = (g.players[p].team, g.players[bribee].team);
-    if g.at_war(team, bribee_team) || crate::victory::rival_team(g, plan) == Some(bribee_team) {
+    if g.at_war(team, bribee_team) || crate::victory::rival_team(g, plan) == Some(bribee_team) || !can_talk(g, p, bribee) {
         return;
     }
     // Deterministic cadence (replaces the getDeclareWarTradeRand roll); staggered by the pair.
@@ -782,7 +796,7 @@ fn trade(g: &mut Game, p: PlayerId) {
             continue;
         }
         let ot = op.team;
-        if !g.teams[team].has_met[ot] || g.at_war(team, ot) || relation(g, p, other) < 0 {
+        if !g.teams[team].has_met[ot] || g.at_war(team, ot) || relation(g, p, other) < 0 || !can_talk(g, p, other) {
             continue;
         }
         // Open borders (trade routes, passage).
@@ -1539,7 +1553,7 @@ pub fn raze_conquered_city(g: &Game, p: PlayerId, c: CityId) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::campaign::tests::one_landmass_game;
+    use crate::testkit::one_landmass_game;
 
     #[test]
     fn the_trust_spell_raises_attitudes() {
@@ -1550,5 +1564,27 @@ mod tests {
         assert_eq!(relation(&g, us, them), before + 2, "Trust adds one attitude step towards its caster");
         assert!(attitude_parts(&g, us, them).contains(&("the Trust spell", 2)), "and the reason shows");
         assert_eq!(relation(&g, them, us), theirs, "the caster's own attitude is unchanged");
+    }
+
+    /// At war, a player under a civic without diplomacy with enemies (the Bannor's Crusade) makes
+    /// no deal with its enemy, whichever of the two would propose it.
+    #[test]
+    fn no_deals_with_a_crusader_at_war() {
+        let mut g = one_landmass_game(23);
+        let (us, them) = (PlayerId(0), PlayerId(1));
+        let (t0, t1) = (g.players[us].team, g.players[them].team);
+        g.team_meet(t0, t1, false);
+        assert!(can_talk(&g, us, them), "met, at peace: they talk");
+        g.team_declare_war(t0, t1, true, Some(WarPlanType::WARPLAN_TOTAL));
+        for t in [t0, t1] {
+            for o in [t0, t1] {
+                g.teams[t].ai_at_war_counter[o] = 50;
+            }
+        }
+        let talked = can_talk(&g, us, them);
+        g.players[them].no_diplomacy_with_enemies = 1;
+        assert!(!can_talk(&g, us, them) && !can_talk(&g, them, us), "no diplomacy with enemies either way");
+        // C++ asks only the proposer: we could still have offered the Crusader peace.
+        assert!(talked && g.player_can_contact(us, them), "the one-sided check lets us through");
     }
 }

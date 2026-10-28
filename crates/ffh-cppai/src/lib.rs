@@ -22,9 +22,11 @@ use ffh_core::controller::{AiHook, Controller, ControllerRef, ConqueredCityChoic
 use ffh_core::game::Game;
 use ffh_core::ids::*;
 use ffh_core::structs::*;
+use crate::paths::CppPaths;
 use ffh_data::*;
 
 pub mod defs;
+pub mod paths;
 pub mod state;
 
 pub mod city_1;
@@ -65,6 +67,7 @@ pub fn trace_on(p: PlayerId) -> bool {
 /// Everything the ported files need, imported with `use crate::prelude::*`.
 pub mod prelude {
     pub use crate::defs::*;
+    pub use crate::paths::CppPaths;
     pub use crate::state::*;
     pub use crate::{trace_on, Cai};
     pub use ffh_core::controller::{AiHook, Controller};

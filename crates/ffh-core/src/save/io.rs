@@ -19,7 +19,6 @@ use std::collections::BTreeMap;
 use ffh_data::{Idx, IdxVec};
 
 use super::LoadError;
-use crate::city::{CacheBool, CacheI32};
 use crate::slab::Slab;
 
 /// Appends the encoding of values to a byte buffer.
@@ -407,24 +406,6 @@ impl<T: Persist> Persist for RefCell<T> {
     }
     fn read(r: &mut Reader<'_>) -> Result<Self, LoadError> {
         Ok(RefCell::new(T::read(r)?))
-    }
-}
-
-impl Persist for CacheI32 {
-    fn write(&self, w: &mut Writer) {
-        self.get().write(w);
-    }
-    fn read(r: &mut Reader<'_>) -> Result<Self, LoadError> {
-        Ok(CacheI32::new(i32::read(r)?))
-    }
-}
-
-impl Persist for CacheBool {
-    fn write(&self, w: &mut Writer) {
-        self.get().write(w);
-    }
-    fn read(r: &mut Reader<'_>) -> Result<Self, LoadError> {
-        Ok(CacheBool::new(bool::read(r)?))
     }
 }
 

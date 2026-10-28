@@ -13,17 +13,13 @@
 //! They are free functions (not `Game` methods) so they cannot clash with helpers of the
 //! same C++ functions elsewhere.
 
-#![allow(unused_imports)]
-#![allow(unused_variables)]
 
-use std::cell::Cell;
 use std::cmp::{max, min};
 
 use crate::defs::*;
 use crate::game::Game;
 use crate::ids::*;
-use crate::structs::*;
-use crate::utils::{is_limited_unit_class, is_limited_wonder_class, is_world_unit_class};
+use crate::utils::is_world_unit_class;
 use ffh_data::*;
 
 /// C++ `AdvancedStartActionTypes` (CvEnums.h; not generated since no info table uses it).
@@ -296,7 +292,7 @@ impl Game {
     // ------------------------------------------------------------------ starting plot
 
     /// C++ `CvPlayer::startingPlotRange`.
-    pub fn player_starting_plot_range(&self, p: PlayerId) -> i32 {
+    pub fn player_starting_plot_range(&self, _p: PlayerId) -> i32 {
         let d = self.d;
         let civs_alive = self.count_civ_players_alive();
 
@@ -324,7 +320,7 @@ impl Game {
 
     /// C++ `CvPlayer::startingPlotWithinRange`: always false since BtS ("XXX changes to
     /// AI_foundValue ... make this function redundant but it is still called from Python").
-    pub fn player_starting_plot_within_range(&self, p: PlayerId, plot: PlotIdx, other: PlayerId, range: i32, pass: i32) -> bool {
+    pub fn player_starting_plot_within_range(&self, _p: PlayerId, _plot: PlotIdx, _other: PlayerId, _range: i32, _pass: i32) -> bool {
         false
     }
 

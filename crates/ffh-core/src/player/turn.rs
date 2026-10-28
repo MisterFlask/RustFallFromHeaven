@@ -9,14 +9,11 @@
 //! `player_set_turn_active(p, false)` (reached through `setAutoMoves(false)` /
 //! `setEndTurn(true)`), which runs `doTurn` and activates the next alive player.
 
-#![allow(unused_imports)]
 
 use super::set_turn_history;
 use crate::controller::AiHook;
 use crate::game::Game;
 use crate::ids::*;
-use crate::setup::SlotStatus;
-use crate::structs::*;
 use crate::utils::{get_land_plots_asset, get_land_plots_score, get_population_asset, get_population_power, get_population_score};
 use ffh_data::*;
 
@@ -187,10 +184,7 @@ impl Game {
         }
 
         self.verify_deals();
-        // C++ AI_doTurnPre(): of its steps only AI_updateBonusValue feeds rules (through
-        // AI_foundValue), so it is kept for every player as in C++.
-        self.player_ai_update_bonus_value(p);
-        // AI: rest of AI_doTurnPre() -- AI_doCounter (contact timers, memory decay; game RNG),
+        // AI: AI_doTurnPre() -- AI_doCounter (contact timers, memory decay; game RNG),
         // enemy unit data, and for AI players research/commerce/military/civics/religion
         // choices: the controller does this while the player's turn is active.
         self.ai_hook(p, AiHook::PlayerTurnPre(p));
@@ -1092,9 +1086,6 @@ impl Game {
             self.teams[new_team].espionage_points_ever = self.teams[team].espionage_points_ever;
 
             self.team_assign_vassal(team, new_team, false);
-
-            // CvPlayerAI::AI_updateBonusValue() (cache read by AI_foundValue).
-            self.player_ai_update_bonus_value(p);
         }
 
         let team = self.players[p].team;
@@ -1362,7 +1353,7 @@ fn py_ai_tower_mastery(g: &Game, p: PlayerId, flag: i32) -> i32 {
 mod tests {
     use super::*;
     use crate::player::Player;
-    use crate::setup::GameSetup;
+    use crate::setup::{GameSetup, SlotStatus};
 
     /// A game whose first `n_civs` slots hold freshly reset players (C++ `reset`), alive on
     /// their own teams, with the given civilizations/leaders; other slots stay placeholders.

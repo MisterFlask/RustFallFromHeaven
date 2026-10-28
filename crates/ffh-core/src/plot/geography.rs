@@ -69,8 +69,6 @@ impl Game {
             }
         }
 
-        self.map_reset_path_distance();
-
         if was_water != self.plot_is_water(p) {
             let (x, y) = self.map.xy(p);
 

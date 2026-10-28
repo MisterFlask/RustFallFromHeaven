@@ -16,7 +16,6 @@
 //!   the advisor's) and the [`Answerer`] that answers blocking [`Decision`]s.
 //! * [`command`], [`selection`]: commands as ports of the C++ human input paths.
 //! * [`decision`]: blocking decisions and the pending items of a control point.
-//! * [`guard`]: [`QueryGuard`], which keeps reads of `&Game` free of side effects.
 //! * [`view`]: what the human may see (P1: the fog rules of the game log).
 //! * [`setup`], [`save`], [`journal`], [`bot`] (a scripted human for tests).
 //! * [`soak`]: the AI plays the human slot through the session over a settings matrix
@@ -33,7 +32,6 @@ pub mod bot;
 pub mod command;
 pub mod decision;
 pub mod flag;
-pub mod guard;
 pub mod human;
 pub mod journal;
 pub mod json;
@@ -57,7 +55,6 @@ pub const BUILD_COMMIT: &str = env!("FFH_BUILD_COMMIT");
 
 pub use command::{CmdErr, CmdOk, Command, Confirm};
 pub use decision::{Decision, DecisionKind, Pending};
-pub use guard::QueryGuard;
 pub use human::{Answer, Answerer, DecisionReader, HumanController, Policy, POLICIES};
 pub use json::{FieldError, FromJson, Json, ParseError};
 pub use names::{Kind, Named, KINDS};

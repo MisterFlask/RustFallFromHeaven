@@ -100,8 +100,8 @@ take-control offers, the citizen governor, trade denials, end of turn, war-plan 
 AI's queued follow-up attack, automation and wake-ups, `AI_isDeclareWar` (AI units enter closed
 borders or declare war when moving only with a war plan ready; inert because `ffh-ai` declares war
 explicitly). Three events give a human the AI's answer because the port has no popup hook for them:
-Heroic Gesture 2, Great Mediator 2 (`ffh/random_events_b.rs:1136/1169`) and Wedding Feud 3
-(`random_events_a.rs:2844`).
+Heroic Gesture 2, Great Mediator 2 (`ffh/random_events_b.rs`: `do_heroic_gesture2`, `do_great_mediator2`) and Wedding Feud 3
+(`random_events_a.rs`: `do_wedding_feud3`).
 
 ## D. Data flags
 

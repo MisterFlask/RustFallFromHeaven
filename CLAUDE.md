@@ -25,6 +25,7 @@ crates/ffh-core  rules engine (port of CvGame/CvPlayer/CvTeam/CvCity/CvUnit/CvPl
 crates/ffh-ai    AI players (new design)
 crates/ffh-cppai the FFH2 C++ AI ported as a second controller, for head-to-head comparison (docs/CPPAI.md)
 crates/ffh-cli   `ffh` binary: autoplay, benchmarks, inspection
+crates/ffh-harness what the game runners share: child processes, worker pool, panic capture, invariant checks
 crates/ffh-stress `ffh-stress` binary: AI games over a settings matrix, crashes caught per game
 crates/ffh-play  `ffh-play`: human play (docs/PLAY_DESIGN.md, docs/HUMAN.md)
 crates/ffh-web   the engine as WebAssembly and the page side of the static site (docs/WEB.md)
@@ -80,13 +81,13 @@ When porting, read the C++/Python being ported -- never port from memory.
 - **Rules changes are deliberate and recorded.** Change rules on purpose, not as a side effect
   of other work: say what changed and why in the commit, and list gameplay changes from FFH2 0.41
   in docs/PORTING.md ("Changes from FFH2").
-- **When porting C++/Python,** port what the source does, quirks included, so the port can be
-  checked against it; changing the behaviour is a separate step (a rules change, above). Mark
-  quirks `// C++ quirk:` so they are easy to find when the rules change. Two RNG draws in one C++
-  expression follow the original DLL compiler (MSVC 2003, x86): function-call *arguments* are
-  evaluated right to left (`f(rand(a), rand(b))` draws `b` first), operands of binary operators
-  left to right (`rand(a) + rand(b)` draws `a` first); comment `// C++ quirk: MSVC evaluation order`.
-  Skip pure UI/graphics/sound/network code (messages may go to the game log).
+- **Mirroring the C++ is no longer a goal** (the owner's decision, 2026-10-28). Echoing the C++
+  closely was the method for the initial port, which is complete; it has no value in itself now.
+  Restructure ported code, its C++-shaped APIs and its quirks whenever that makes present code or
+  future changes more correct or clearer (the `// C++ quirk:` notes and the C++ names in doc
+  comments are a map of where the code came from, not a constraint). A change that plays
+  differently is still a rules change: deliberate and recorded (above). The rest of this file's
+  C++ -> Rust conventions describe how the existing code is laid out.
 - `cargo build --release && cargo test --release` must pass before committing.
   `cargo run --release -p ffh-cli` must report `0 warnings` for data loading.
 

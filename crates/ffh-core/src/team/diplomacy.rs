@@ -2,8 +2,6 @@
 //! war weariness; plus the `CvTeamAI` war-plan and contact-counter bookkeeping that rules
 //! code reads and writes (`AI_setWarPlan`, `AI_isSneakAttackReady`, `AI_doCounter`, ...).
 
-#![allow(unused_variables)]
-#![allow(unused_imports)]
 use super::{civ_team_ids, is_option};
 use crate::defs::*;
 use crate::controller::AiHook;

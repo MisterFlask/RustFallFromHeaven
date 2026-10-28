@@ -161,6 +161,13 @@ impl Registry {
         self.names.get(T::CLASS).and_then(|v| v.get(t.idx())).map(|s| s.as_str()).unwrap_or("?")
     }
 
+    /// Every registered class, sorted.
+    pub fn classes(&self) -> Vec<&'static str> {
+        let mut v: Vec<&'static str> = self.names.keys().copied().collect();
+        v.sort_unstable();
+        v
+    }
+
     pub fn names_of(&self, class: &str) -> &[String] {
         self.names.get(class).map(|v| v.as_slice()).unwrap_or(&[])
     }

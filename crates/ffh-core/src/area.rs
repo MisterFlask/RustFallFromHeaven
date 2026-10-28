@@ -324,7 +324,6 @@ impl Game {
         if change != 0 {
             self.map.areas[a].yield_rate_modifier[player][yield_type.idx()] += change;
 
-            self.player_invalidate_yield_rank_cache(player, Some(yield_type));
 
             if yield_type == YieldType::YIELD_COMMERCE {
                 self.player_update_commerce(player);

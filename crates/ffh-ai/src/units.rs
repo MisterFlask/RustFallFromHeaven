@@ -371,7 +371,12 @@ pub(crate) fn nearest_city(g: &Game, p: PlayerId, from: PlotIdx) -> Option<CityI
     g.players[p].cities.iter().copied().min_by_key(|&c| (g.plot_distance(x, y, g.cities[c].x, g.cities[c].y), c))
 }
 
-/// Defenders a city wants (garrison quota).
+/// Defenders a city wants (garrison quota). Smaller than production's (`production::decide`
+/// also counts raiders in sight that cannot strike next turn, lairs, the second defender): a
+/// defender trained for those is spare here and walks to a city enemies can strike next turn,
+/// and its city trains another. That is triage, kept on purpose: one quota for both
+/// (`defense::quota`, switch `GARRISON_QUOTA`) held the defenders the struck cities needed and
+/// was reverted (docs/AI_LOG.md, "One garrison quota for production and placement").
 pub(crate) fn garrison_quota(g: &Game, v: &View, c: CityId) -> i32 {
     let plot = g.city_plot(c);
     let mut q = 1 + i32::from(g.city_is_capital(c));
@@ -862,7 +867,7 @@ fn caster(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
     let p = v.p;
     let here = g.unit_plot(u);
     if crate::victory::mana_node(g, v, grp, u) { return; } // victory-pursuit
-    // Caster roles (CASTER_ROLES) and mana nodes (MANA_NODES).
+    // Caster roles (casters.rs) and mana nodes (MANA_NODES).
     if crate::casters::play(g, v, grp, u) {
         return;
     }
@@ -955,7 +960,7 @@ fn caster(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::campaign::tests::one_landmass_game;
+    use crate::testkit::one_landmass_game;
 
     #[test]
     fn heroes_that_cannot_attack_move_as_casters() {

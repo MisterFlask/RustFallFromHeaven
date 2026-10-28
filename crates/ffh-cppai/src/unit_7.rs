@@ -1399,7 +1399,7 @@ impl Cai {
         let steps: Vec<(i32, i32)> = {
             let gr: &Game = g;
             let mut finder = gr.step_finder.borrow_mut();
-            if !finder.generate_path(gr, sx, sy, dx, dy, false, 0, true) {
+            if !finder.generate_path(gr, sx, sy, dx, dy, false, 0) {
                 return false;
             }
             let mut steps = Vec::new();

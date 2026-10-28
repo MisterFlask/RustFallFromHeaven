@@ -48,32 +48,12 @@ use crate::view::{attack_power, View};
 // Switch and trace
 // ----------------------------------------------------------------------------
 
-fn off_table(d: &GameData) -> &'static [bool] {
-    static TABLE: OnceLock<Vec<bool>> = OnceLock::new();
-    TABLE.get_or_init(|| {
-        let off: Vec<String> = std::env::var("FFH_AI_MAGIC_OFF")
-            .unwrap_or_default()
-            .split(',')
-            .map(|s| s.trim().trim_start_matches("CIVILIZATION_").to_ascii_uppercase())
-            .filter(|s| !s.is_empty())
-            .collect();
-        d.civilizations
-            .keys()
-            .map(|c| {
-                let name = d.civilizations[c].base.type_.trim_start_matches("CIVILIZATION_");
-                off.iter().any(|o| o == "ALL" || o == name)
-            })
-            .collect()
-    })
-}
-
 /// False when the player casts as FfH's AI did (`casting.rs` as ported, nothing before attacks,
 /// casters moved and promoted as before): the barbarians, and the civilizations listed in
-/// `FFH_AI_MAGIC_OFF` (`CIVILIZATION_AMURITES` or `AMURITES`, comma-separated, or `all`). A
-/// measurement switch like `FFH_AI_CIV_OFF`: read once, so play stays deterministic, and the run
-/// cache keys runs by every `FFH_*` variable.
+/// `FFH_AI_MAGIC_OFF` (`CIVILIZATION_AMURITES` or `AMURITES`, comma-separated, or `all`), or left
+/// out of `FFH_AI_MAGIC_ONLY`: the measurement switch [`crate::switches::MAGIC`].
 pub fn enabled(g: &Game, p: PlayerId) -> bool {
-    !g.player_is_barbarian(p) && g.player_get_civilization_type(p).is_some_and(|c| !off_table(g.d)[c.idx()])
+    !g.player_is_barbarian(p) && g.player_get_civilization_type(p).is_some_and(|c| crate::switches::MAGIC.civ_on(g.d, c))
 }
 
 /// Does player `p` raise its arcane casters as the rules intend ([`apprentice`], [`safe_step`]):
@@ -664,7 +644,8 @@ pub(crate) fn recruit_value(g: &Game, caster: UnitId) -> i32 {
 
 /// The terrain a terraforming spell makes of our plot `q` when a unit of `p` casts it there (the
 /// Python's change, under its AI requirement: our own land): Spring a desert (not flood plains)
-/// into plains, Scorch snow into tundra (not for the Doviello and the Illians, who like snow),
+/// into plains, Scorch snow into tundra (not for the Doviello and the Illians, who like snow: the
+/// rules' own AI-only gate, `reqScorch`, so it is not civilization-specific play under `civs/`),
 /// Vitalize snow into tundra, tundra and desert into plains, plains into grassland.
 fn terraform(g: &Game, p: PlayerId, s: SpellType, q: PlotIdx) -> Option<TerrainType> {
     let d = g.d;
@@ -789,7 +770,7 @@ fn summon_fight_at(g: &Game, p: PlayerId, ut: UnitType, tp: PlotIdx, health: &dy
     };
     let defines = &d.defines;
     let odds = combat_odds(&k, defines.combat_die_sides, defines.combat_damage) as i64;
-    // A lost fight: the rounds won before the summon's hit points are gone (as `campaign::fight`).
+    // A lost fight: the rounds won before the summon's hit points are gone (as `combat_sim::fight`).
     let sf = (a + d_fp + 1) / 2;
     let to_att = (defines.combat_damage * (d_fp + sf) / (a + sf)).max(1);
     let to_def = (defines.combat_damage * (a + sf) / (d_fp + sf)).max(1);
@@ -1319,13 +1300,6 @@ pub fn support_target(g: &Game, v: &mut View, u: UnitId) -> Option<(PlotIdx, &'s
     best.map(|(_, q, why)| (q, why))
 }
 
-/// Does caster `u` alone keep a building in our city it stands in ([`upkeep_value`])? It stays.
-pub fn keeps_building(g: &Game, u: UnitId) -> bool {
-    let d = g.d;
-    let spells: Vec<SpellType> = known(g, u).into_iter().filter(|&s| d.spells[s].create_building_type.is_some()).collect();
-    !spells.is_empty() && upkeep_value(g, u, &spells) > 0
-}
-
 /// What the buildings `u` alone keeps in our city it stands in are worth: those that need a
 /// caster (C++ `CvCity::doTurn` removes a `bRequiresCaster` building when no unit in the city can
 /// cast the spell that makes it) made by one of `spells` and that no other unit there could cast.
@@ -1765,7 +1739,7 @@ fn channeling_below(d: &GameData, and: PromotionType) -> Option<PromotionType> {
 // Casters to train
 // ----------------------------------------------------------------------------
 //
-// The corps by role is `casters.rs` (`CASTER_ROLES`), the node builder `mana.rs` (`MANA_NODES`).
+// The corps by role is `casters.rs`, the node builder `mana.rs` (`MANA_NODES`).
 // Tried before, not kept (docs/AI_LOG.md, "Spellcasting"): training casters by what their spells
 // are worth in a fight alone -- one per five field units when an adept could cast such a spell
 // with our mana (Enchanted Blade, Rust), and the Mage Guild that opens them in our most productive

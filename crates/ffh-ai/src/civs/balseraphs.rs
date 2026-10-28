@@ -27,6 +27,11 @@ use crate::Ai;
 pub struct Balseraphs;
 
 impl CivPlay for Balseraphs {
+    /// FfH's `AI_chooseTech` research plan (`tech_plan::goals`).
+    fn tech_goals(&self, _g: &Game, _p: PlayerId) -> super::TechGoals {
+        super::TechGoals { beelines: vec!["TECH_IRON_WORKING"], ..Default::default() }
+    }
+
     fn turn(&self, _ai: &Ai, g: &mut Game, v: &mut View) {
         arena(g, v);
     }
@@ -123,7 +128,7 @@ fn arena(g: &mut Game, v: &View) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::campaign::tests::one_landmass_game_with;
+    use crate::testkit::one_landmass_game_with;
 
     /// An Arena city with an unhappy citizen sends its spare Warrior into the arena (the city
     /// gets its games: the happiness timer); a content city does not.

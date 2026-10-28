@@ -29,7 +29,8 @@
 // The browser: the `playwright` package (resolved normally, then in node's global modules),
 // else Chromium driven directly over the DevTools protocol (`--cdp` forces that): the
 // executable from $CHROME, or the Playwright browsers in $PLAYWRIGHT_BROWSERS_PATH (or
-// /opt/pw-browsers, ~/.cache/ms-playwright). Without a browser the test is skipped (exit 0).
+// /opt/pw-browsers, ~/.cache/ms-playwright). Without a browser the test is SKIPPED: exit 0, or 1
+// when $CI is set.
 // Screenshots go to --out (default target/web-smoke, not committed). Exit 1 on a failure.
 
 import { spawn } from "node:child_process";
@@ -37,7 +38,7 @@ import { createRequire } from "node:module";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { ROOT, parseArgs, findBin, tempDir, startServer, stage, until } from "./web-lib.mjs";
+import { ROOT, parseArgs, findBin, tempDir, startServer, stage, until, skipped } from "./web-lib.mjs";
 
 let args;
 try {
@@ -564,13 +565,15 @@ async function renderer3d(url) {
   // Back to the 2D art: the 3D canvas goes.
   await b.eval(`window.ffh.setRenderer("art")`);
   await until2(`window.ffh.mapView.renderer() === "art" && !document.querySelector("canvas.map3d")`, "the art renderer after the 3D one");
-  // A lost WebGL context (a driver reset) hands the map back to the 2D art.
+  // A lost WebGL context (a driver reset) hands the map to the default renderer, the isometric one;
+  // then back to the art for what follows.
   await b.eval(`window.ffh.setRenderer("3d")`);
   await until2(`window.ffh.mapView.renderer() === "3d" && !!window.ffh.mapView.r3d.cam`, "the 3D renderer again", 180000);
   const canLose = await b.eval(`(() => { const x = window.ffh.mapView.r3d.gl.getExtension("WEBGL_lose_context"); if (x) x.loseContext(); return !!x; })()`);
-  if (canLose) await until2(`window.ffh.mapView.renderer() === "art" && !document.querySelector("canvas.map3d")`, "the art renderer after the 3D context was lost");
-  else await b.eval(`window.ffh.setRenderer("art")`);
-  steps.push(`?renderer=3d: a frame of ${frame.colours} colours mid-view (${frame.props} props, ${frame.units} unit figures), ${pick.n} plots picked right through the relief, click-select, hover, zoom ${zooms.join(" ")}, pan, political layer, back to the art${canLose ? ", a lost WebGL context falls back to the art" : " (no WEBGL_lose_context: context loss not checked)"}`);
+  if (canLose) await until2(`window.ffh.mapView.renderer() === "iso" && !document.querySelector("canvas.map3d")`, "the isometric renderer after the 3D context was lost");
+  await b.eval(`window.ffh.setRenderer("art")`);
+  await until2(`window.ffh.mapView.renderer() === "art" && !document.querySelector("canvas.map3d")`, "the art renderer after the 3D one");
+  steps.push(`?renderer=3d: a frame of ${frame.colours} colours mid-view (${frame.props} props, ${frame.units} unit figures), ${pick.n} plots picked right through the relief, click-select, hover, zoom ${zooms.join(" ")}, pan, political layer, back to the art${canLose ? ", a lost WebGL context falls back to the isometric map" : " (no WEBGL_lose_context: context loss not checked)"}`);
 }
 
 /** Records the page's POST bodies in `window.__posts` (from now on). */
@@ -1399,8 +1402,7 @@ async function main() {
   const pw = await loadPlaywright();
   const chrome = pw ? null : findChrome();
   if (!pw && !chrome) {
-    console.log("web-smoke: no browser (neither the playwright package nor a Chromium executable); skipped");
-    return 0;
+    return skipped("web-smoke", "no browser: neither the playwright package nor a Chromium executable");
   }
   const bin = findBin(args.bin);
   fs.mkdirSync(OUT, { recursive: true });

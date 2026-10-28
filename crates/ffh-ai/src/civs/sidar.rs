@@ -32,6 +32,11 @@ pub struct Sidar;
 const SPELL: &str = "SPELL_INTO_THE_MIST";
 
 impl CivPlay for Sidar {
+    /// FfH's `AI_chooseTech` research plan (`tech_plan::goals`).
+    fn tech_goals(&self, _g: &Game, _p: PlayerId) -> super::TechGoals {
+        super::TechGoals { beelines: vec!["TECH_POISONS", "TECH_ANIMAL_HANDLING"], ..Default::default() }
+    }
+
     fn spell_value(&self, g: &Game, _u: UnitId, spell: SpellType, value: i32) -> i32 {
         if world_spell::is(g, spell, SPELL) {
             return 0;
@@ -97,7 +102,7 @@ fn wane(g: &mut Game, v: &View) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::campaign::tests::one_landmass_game_with;
+    use crate::testkit::one_landmass_game_with;
 
     /// At peace, a level-6 Archer the garrison can spare wanes into a Shade, which then acts as
     /// a great person; a level-6 Archer the garrison needs stays.

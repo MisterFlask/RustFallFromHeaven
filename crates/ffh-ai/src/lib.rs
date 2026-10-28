@@ -22,6 +22,7 @@ pub mod automation;
 pub mod campaign;
 pub mod casters;
 pub mod casting;
+pub mod combat_sim;
 pub mod civs;
 pub mod code_effects;
 pub mod council;
@@ -44,6 +45,8 @@ pub mod research;
 pub mod sites;
 pub mod switches;
 pub mod tech_plan;
+#[cfg(test)]
+pub(crate) mod testkit;
 pub mod trade;
 pub mod traits;
 pub mod unflagged;
@@ -116,7 +119,13 @@ impl Controller for Ai {
         // some unit is still moving, i.e. has spent moves this turn.
         let seen = self.played.lock().unwrap().insert(p, turn) == Some(turn);
         let first_call = !seen && !g.players[p].units.iter().any(|&u| g.units.contains(u) && g.unit_has_moved(u));
-        let mut v = view::View::new(g, p);
+        // The first call's empire decisions read only the view's header (diplomacy, offers, the
+        // exposure diagnostic), and the view is rebuilt after them: analyse it now only when the
+        // units play on it (a later call, or the barbarians).
+        let mut v = view::View::header(g, p);
+        if !first_call || v.barbarian {
+            v.analyze(g);
+        }
         if first_call && !v.barbarian {
             military::report_exposure(g, &v, p);
         }

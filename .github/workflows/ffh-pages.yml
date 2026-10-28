@@ -1,6 +1,7 @@
 # ffh2-rs in the browser (docs/WEB.md): builds the static site (the client with
-# the game engine compiled to WebAssembly), smoke-tests it in headless Chromium and deploys it to
-# GitHub Pages (https://misterflask.github.io/RustFallFromHeaven/) on every push to master
+# the game engine compiled to WebAssembly), smoke-tests it in headless Chromium and, once the
+# workspace's own gate passes too (`test`: cargo build and test, `ffh data` with 0 warnings, the
+# client's checks), deploys it to GitHub Pages (https://misterflask.github.io/RustFallFromHeaven/) on every push to master
 # (except pushes touching only anim-sprint/). One-time setup by the repository owner: Settings -> Pages ->
 # Build and deployment -> Source: GitHub Actions.
 #
@@ -27,6 +28,38 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # The commit gate (CLAUDE.md): `cargo build --release && cargo test --release`, the data loading
+  # with 0 warnings and tools/web-check.sh. In parallel with the site build; deploy needs both.
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      CARGO_TERM_COLOR: always
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build and test the workspace
+        run: cargo build --release && cargo test --release
+
+      - name: Load the data (0 warnings)
+        run: |
+          out="$(cargo run --release -q -p ffh-cli -- data)"
+          echo "$out"
+          if ! echo "$out" | head -n 1 | grep -q '; 0 warnings$'; then
+            echo "::error::ffh data reports warnings"
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # GitHub sets CI, so a missing node fails here instead of being skipped.
+      - name: Check the browser client (tools/web-check.sh)
+        run: bash tools/web-check.sh
+
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -86,7 +119,7 @@ jobs:
           path: _site
 
   deploy:
-    needs: build
+    needs: [build, test]
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     environment:

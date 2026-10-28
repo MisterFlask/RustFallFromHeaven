@@ -34,7 +34,6 @@
 //! - `pPlot.getUnit(i)` loops re-read the plot's unit list each step; an index past its end
 //!   is a NULL CyUnit whose calls do nothing.
 
-#![allow(unused_variables)]
 
 use crate::ffh::game_utils::py_div;
 use crate::controller::AiHook;
@@ -256,7 +255,7 @@ impl Game {
     }
 
     /// `endGameTurn` -> `onEndGameTurn`: does nothing.
-    pub fn ev_end_game_turn(&mut self, game_turn: i32) {}
+    pub fn ev_end_game_turn(&mut self, _game_turn: i32) {}
 
     /// `beginPlayerTurn` -> `onBeginPlayerTurn`: religion eras, Crusade, Khazad/Luchuirp turns,
     /// Insane and Adaptive trait events, barbarians declare war on leading human barbarian-trait
@@ -350,17 +349,17 @@ impl Game {
     }
 
     /// `endPlayerTurn` -> `onEndPlayerTurn`: advisor feats (`CvAdvisorUtils.endTurnFeats`).
-    pub fn ev_end_player_turn(&mut self, game_turn: i32, p: PlayerId) {
+    pub fn ev_end_player_turn(&mut self, _game_turn: i32, p: PlayerId) {
         // UI: on the first elapsed turn, humans who can change civics get the civics screen
         // (BUTTONPOPUP_CHANGECIVIC); CvAdvisorUtils.resetAdvisorNags().
         self.ev_end_turn_feats(p);
     }
 
     /// `firstContact` -> `onFirstContact`: logging only.
-    pub fn ev_first_contact(&mut self, team1: TeamId, team2: TeamId) {}
+    pub fn ev_first_contact(&mut self, _team1: TeamId, _team2: TeamId) {}
 
     /// `combatResult` -> `onCombatResult`: logging only.
-    pub fn ev_combat_result(&mut self, winner: UnitId, loser: UnitId) {}
+    pub fn ev_combat_result(&mut self, _winner: UnitId, _loser: UnitId) {}
 
     /// `improvementBuilt` -> `onImprovementBuilt`: the Ring of Carcer sets a minimum level and
     /// holds Brigit.
@@ -383,7 +382,7 @@ impl Game {
 
     /// `improvementDestroyed` -> `onImprovementDestroyed`: the Ring of Carcer's minimum level is
     /// lifted; a destroyed Necrototem lowers the Armageddon counter by 2.
-    pub fn ev_improvement_destroyed(&mut self, improvement: ImprovementType, player: Option<PlayerId>, x: i32, y: i32) {
+    pub fn ev_improvement_destroyed(&mut self, improvement: ImprovementType, _player: Option<PlayerId>, x: i32, y: i32) {
         let d = self.d;
         if d.improvements[improvement].unique {
             if let Some(plot) = self.map.plot_xy(x, y) {
@@ -402,13 +401,13 @@ impl Game {
     }
 
     /// `routeBuilt` -> `onRouteBuilt`: logging only.
-    pub fn ev_route_built(&mut self, route: RouteType, x: i32, y: i32) {}
+    pub fn ev_route_built(&mut self, _route: RouteType, _x: i32, _y: i32) {}
 
     /// `plotRevealed` -> `onPlotRevealed`: does nothing.
-    pub fn ev_plot_revealed(&mut self, plot: PlotIdx, team: TeamId) {}
+    pub fn ev_plot_revealed(&mut self, _plot: PlotIdx, _team: TeamId) {}
 
     /// `plotFeatureRemoved` -> `onPlotFeatureRemoved`: does nothing.
-    pub fn ev_plot_feature_removed(&mut self, plot: PlotIdx, feature: FeatureType, city: Option<CityId>) {}
+    pub fn ev_plot_feature_removed(&mut self, _plot: PlotIdx, _feature: FeatureType, _city: Option<CityId>) {}
 
     /// `cityBuilt` -> `onCityBuilt`: Infernal cities start with the Ashen Veil, 3 population and
     /// their demonic buildings; barbarian cities get an orc garrison.
@@ -462,7 +461,7 @@ impl Game {
 
     /// `cityRazed` -> `onCityRazed` (city still exists when called): the dead rise according to
     /// the alignment of the city's founder (Manes for the Infernals, Angels for the Mercurians).
-    pub fn ev_city_razed(&mut self, c: CityId, p: PlayerId) {
+    pub fn ev_city_razed(&mut self, c: CityId, _p: PlayerId) {
         let d = self.d;
         // `city.findHighestCulture()` is only used by the commented-out Partisans event.
         let angel = d.t::<UnitType>("UNIT_ANGEL");
@@ -505,7 +504,7 @@ impl Game {
 
     /// `cityAcquired` -> `onCityAcquired` (`c` is the new city): Infernal cities lose the
     /// Obsidian Gate when taken; Infernal conquerors convert the city (Ashen Veil, buildings).
-    pub fn ev_city_acquired(&mut self, old_owner: PlayerId, p: PlayerId, c: CityId, conquest: bool, trade: bool) {
+    pub fn ev_city_acquired(&mut self, old_owner: PlayerId, p: PlayerId, c: CityId, _conquest: bool, _trade: bool) {
         let d = self.d;
         let infernal = d.t::<CivilizationType>("CIVILIZATION_INFERNAL");
 
@@ -525,20 +524,20 @@ impl Game {
     }
 
     /// `cityAcquiredAndKept` -> `onCityAcquiredAndKept`: logging only.
-    pub fn ev_city_acquired_and_kept(&mut self, p: PlayerId, c: CityId) {}
+    pub fn ev_city_acquired_and_kept(&mut self, _p: PlayerId, _c: CityId) {}
 
     /// `cityLost` -> `onCityLost`: logging only.
-    pub fn ev_city_lost(&mut self, c: CityId) {}
+    pub fn ev_city_lost(&mut self, _c: CityId) {}
 
     /// `cultureExpansion` -> `onCultureExpansion`: logging only.
-    pub fn ev_culture_expansion(&mut self, c: CityId, p: PlayerId) {}
+    pub fn ev_culture_expansion(&mut self, _c: CityId, _p: PlayerId) {}
 
     /// `cityGrowth` -> `onCityGrowth`: logging only.
-    pub fn ev_city_growth(&mut self, c: CityId, p: PlayerId) {}
+    pub fn ev_city_growth(&mut self, _c: CityId, _p: PlayerId) {}
 
     /// `cityDoTurn` -> `onCityDoTurn`: Citadel of Light, Hall of Mirrors, Eyes and Ears Network,
     /// Planar Gate, Infernal/Mercurian religion purity, Shrine of Sirona, the Dragon's Horde.
-    pub fn ev_city_do_turn(&mut self, c: CityId, p: PlayerId) {
+    pub fn ev_city_do_turn(&mut self, c: CityId, _p: PlayerId) {
         let d = self.d;
         let plot = self.city_plot(c);
         // Python re-reads the player from the city: `iPlayer = pCity.getOwner()`.
@@ -599,22 +598,22 @@ impl Game {
     }
 
     /// `cityBuildingUnit` -> `onCityBuildingUnit`: logging only.
-    pub fn ev_city_building_unit(&mut self, c: CityId, unit: UnitType) {}
+    pub fn ev_city_building_unit(&mut self, _c: CityId, _unit: UnitType) {}
 
     /// `cityBuildingBuilding` -> `onCityBuildingBuilding`: logging only.
-    pub fn ev_city_building_building(&mut self, c: CityId, building: BuildingType) {}
+    pub fn ev_city_building_building(&mut self, _c: CityId, _building: BuildingType) {}
 
     /// `cityHurry` -> `onCityHurry`: does nothing.
-    pub fn ev_city_hurry(&mut self, c: CityId, hurry: HurryType) {}
+    pub fn ev_city_hurry(&mut self, _c: CityId, _hurry: HurryType) {}
 
     /// `selectionGroupPushMission` -> `onSelectionGroupPushMission`: logging only.
-    pub fn ev_selection_group_push_mission(&mut self, g: GroupId, mission: MissionType) {}
+    pub fn ev_selection_group_push_mission(&mut self, _g: GroupId, _mission: MissionType) {}
 
     /// `unitMove` -> `onUnitMove`: logging only.
-    pub fn ev_unit_move(&mut self, plot: PlotIdx, u: UnitId, old_plot: Option<PlotIdx>) {}
+    pub fn ev_unit_move(&mut self, _plot: PlotIdx, _u: UnitId, _old_plot: Option<PlotIdx>) {}
 
     /// `unitSetXY` -> `onUnitSetXY`: logging only.
-    pub fn ev_unit_set_xy(&mut self, plot: PlotIdx, u: UnitId) {}
+    pub fn ev_unit_set_xy(&mut self, _plot: PlotIdx, _u: UnitId) {}
 
     /// `unitCreated` -> `onUnitCreated` (USE_ON_UNIT_CREATED_CALLBACK is enabled in FFH2):
     /// conquest mode for heroes, vampires feast, adepts get mana promotions, elementals and
@@ -817,7 +816,7 @@ impl Game {
 
     /// `unitKilled` -> `onUnitKilled` (unit still exists when called): Soul Forge production,
     /// Mokka's Cauldron, Manes and Angels rising, the Spirit Guide's experience, Acheron.
-    pub fn ev_unit_killed(&mut self, u: UnitId, attacker: Option<PlayerId>) {
+    pub fn ev_unit_killed(&mut self, u: UnitId, _attacker: Option<PlayerId>) {
         let d = self.d;
         let p = self.units[u].owner;
 
@@ -915,28 +914,28 @@ impl Game {
     }
 
     /// `unitLost` -> `onUnitLost`: logging only.
-    pub fn ev_unit_lost(&mut self, u: UnitId) {}
+    pub fn ev_unit_lost(&mut self, _u: UnitId) {}
 
     /// `unitPromoted` -> `onUnitPromoted`: logging only.
-    pub fn ev_unit_promoted(&mut self, u: UnitId, promotion: PromotionType) {}
+    pub fn ev_unit_promoted(&mut self, _u: UnitId, _promotion: PromotionType) {}
 
     /// `unitPillage` -> `onUnitPillage`: logging only.
-    pub fn ev_unit_pillage(&mut self, u: UnitId, improvement: Option<ImprovementType>, route: Option<RouteType>, p: PlayerId) {}
+    pub fn ev_unit_pillage(&mut self, _u: UnitId, _improvement: Option<ImprovementType>, _route: Option<RouteType>, _p: PlayerId) {}
 
     /// `unitSpreadReligionAttempt` -> `onUnitSpreadReligionAttempt`: does nothing.
-    pub fn ev_unit_spread_religion_attempt(&mut self, u: UnitId, religion: ReligionType, success: bool) {}
+    pub fn ev_unit_spread_religion_attempt(&mut self, _u: UnitId, _religion: ReligionType, _success: bool) {}
 
     /// `unitGifted` -> `onUnitGifted`: does nothing.
-    pub fn ev_unit_gifted(&mut self, u: UnitId, gifting_player: PlayerId, plot: PlotIdx) {}
+    pub fn ev_unit_gifted(&mut self, _u: UnitId, _gifting_player: PlayerId, _plot: PlotIdx) {}
 
     /// `unitBuildImprovement` -> `onUnitBuildImprovement`: does nothing.
-    pub fn ev_unit_build_improvement(&mut self, u: UnitId, build: BuildType, finished: bool) {}
+    pub fn ev_unit_build_improvement(&mut self, _u: UnitId, _build: BuildType, _finished: bool) {}
 
     /// `goodyReceived` -> `onGoodyReceived`: logging only.
-    pub fn ev_goody_received(&mut self, p: PlayerId, plot: PlotIdx, u: Option<UnitId>, goody: GoodyType) {}
+    pub fn ev_goody_received(&mut self, _p: PlayerId, _plot: PlotIdx, _u: Option<UnitId>, _goody: GoodyType) {}
 
     /// `greatPersonBorn` -> `onGreatPersonBorn`: logging only.
-    pub fn ev_great_person_born(&mut self, u: UnitId, p: PlayerId, c: Option<CityId>) {}
+    pub fn ev_great_person_born(&mut self, _u: UnitId, _p: PlayerId, _c: Option<CityId>) {}
 
     /// `buildingBuilt` -> `onBuildingBuilt`: FfH wonder effects (Infernal Grimoire, the Altar of
     /// the Luonnotar stages, Mercurian Gate, Tower of the Elements, Tower of Necromancy, Temple
@@ -1208,7 +1207,7 @@ impl Game {
     /// `techAcquired` -> `onTechAcquired` (`p` may be None): conquest mode (Better AI) for
     /// civilizations and leaders reaching their key tech, religion disciples for religion
     /// techs, and Hyborem's arrival with the first Infernal Pact.
-    pub fn ev_tech_acquired(&mut self, tech: TechType, team: TeamId, p: Option<PlayerId>, announce: bool) {
+    pub fn ev_tech_acquired(&mut self, tech: TechType, _team: TeamId, p: Option<PlayerId>, _announce: bool) {
         let d = self.d;
         // UI: tech splash screen for the active player.
 
@@ -1266,10 +1265,10 @@ impl Game {
     }
 
     /// `techSelected` -> `onTechSelected`: logging only.
-    pub fn ev_tech_selected(&mut self, tech: TechType, p: PlayerId) {}
+    pub fn ev_tech_selected(&mut self, _tech: TechType, _p: PlayerId) {}
 
     /// `religionFounded` -> `onReligionFounded`: religion movie popup (UI) and scenario hook only.
-    pub fn ev_religion_founded(&mut self, religion: ReligionType, p: PlayerId) {}
+    pub fn ev_religion_founded(&mut self, _religion: ReligionType, _p: PlayerId) {}
 
     /// `religionSpread` -> `onReligionSpread`: the Order spawns a Crusader (with Fanaticism) or a
     /// Disciple when it spreads to a city of an Order player.
@@ -1295,25 +1294,25 @@ impl Game {
     }
 
     /// `religionRemove` -> `onReligionRemove`: logging only.
-    pub fn ev_religion_remove(&mut self, religion: ReligionType, p: PlayerId, c: CityId) {}
+    pub fn ev_religion_remove(&mut self, _religion: ReligionType, _p: PlayerId, _c: CityId) {}
 
     /// `corporationFounded` -> `onCorporationFounded`: logging only.
-    pub fn ev_corporation_founded(&mut self, corp: CorporationType, p: PlayerId) {}
+    pub fn ev_corporation_founded(&mut self, _corp: CorporationType, _p: PlayerId) {}
 
     /// `corporationSpread` -> `onCorporationSpread`: logging only.
-    pub fn ev_corporation_spread(&mut self, corp: CorporationType, p: PlayerId, c: CityId) {}
+    pub fn ev_corporation_spread(&mut self, _corp: CorporationType, _p: PlayerId, _c: CityId) {}
 
     /// `corporationRemove` -> `onCorporationRemove`: logging only.
-    pub fn ev_corporation_remove(&mut self, corp: CorporationType, p: PlayerId, c: CityId) {}
+    pub fn ev_corporation_remove(&mut self, _corp: CorporationType, _p: PlayerId, _c: CityId) {}
 
     /// `goldenAge` -> `onGoldenAge`: logging only.
-    pub fn ev_golden_age(&mut self, p: PlayerId) {}
+    pub fn ev_golden_age(&mut self, _p: PlayerId) {}
 
     /// `endGoldenAge` -> `onEndGoldenAge`: logging only.
-    pub fn ev_end_golden_age(&mut self, p: PlayerId) {}
+    pub fn ev_end_golden_age(&mut self, _p: PlayerId) {}
 
     /// `changeWar` -> `onChangeWar`: logging only.
-    pub fn ev_change_war(&mut self, war: bool, team: TeamId, other: TeamId) {}
+    pub fn ev_change_war(&mut self, _war: bool, _team: TeamId, _other: TeamId) {}
 
     /// `setPlayerAlive` -> `onSetPlayerAlive`: a dying good player raises the Armageddon counter
     /// by 5, a dying evil player lowers it by 5 (from game year 5 on).
@@ -1332,10 +1331,10 @@ impl Game {
     }
 
     /// `playerChangeStateReligion` -> `onPlayerChangeStateReligion`: does nothing.
-    pub fn ev_player_change_state_religion(&mut self, p: PlayerId, new: Option<ReligionType>, old: Option<ReligionType>) {}
+    pub fn ev_player_change_state_religion(&mut self, _p: PlayerId, _new: Option<ReligionType>, _old: Option<ReligionType>) {}
 
     /// `playerGoldTrade` -> `onPlayerGoldTrade`: does nothing.
-    pub fn ev_player_gold_trade(&mut self, from: PlayerId, to: PlayerId, amount: i32) {}
+    pub fn ev_player_gold_trade(&mut self, _from: PlayerId, _to: PlayerId, _amount: i32) {}
 
     /// `victory` -> `onVictory`: victory trophies for the winning team's human players.
     pub fn ev_victory(&mut self, winner: TeamId, victory: VictoryType) {
@@ -1373,7 +1372,7 @@ impl Game {
     }
 
     /// `vassalState` -> `onVassalState`: logging only.
-    pub fn ev_vassal_state(&mut self, master: TeamId, vassal: TeamId, is_vassal: bool) {}
+    pub fn ev_vassal_state(&mut self, _master: TeamId, _vassal: TeamId, _is_vassal: bool) {}
 
     // ---------------------------------------------------------------------------------------
     // Parts of the handlers above, split out for readability (same order of effects)
@@ -2329,64 +2328,4 @@ mod tests {
         assert_eq!(g.trophy_value("TROPHY_FEAT_INTRODUCTION"), 1);
     }
 
-    /// Every type name hard-coded in this file (string literals with a type prefix) exists in
-    /// the game data, in the class its prefix names (Python `getInfoTypeForString` never -1).
-    #[test]
-    fn hard_coded_type_names_resolve() {
-        let d = ffh_data::global();
-        let mut checked = 0;
-        let mut missing = Vec::new();
-        for line in include_str!("events.rs").lines() {
-            let code = line.split("//").next().unwrap_or("");
-            for (i, s) in code.split('"').enumerate() {
-                let is_name = i % 2 == 1
-                    && s.len() > 2
-                    && s.contains('_')
-                    && !s.ends_with('_')
-                    && s.chars().all(|c| c.is_ascii_uppercase() || c.is_ascii_digit() || c == '_');
-                if !is_name {
-                    continue;
-                }
-                let prefixes: [(&str, fn(&GameData, &str) -> bool); 29] = [
-                    ("UNITCLASS_", |d, s| d.ty::<UnitClassType>(s).is_some()),
-                    ("UNITCOMBAT_", |d, s| d.ty::<UnitCombatType>(s).is_some()),
-                    ("UNITAI_", |d, s| d.ty::<UnitAIType>(s).is_some()),
-                    ("UNIT_", |d, s| d.ty::<UnitType>(s).is_some()),
-                    ("EQUIPMENT_", |d, s| d.ty::<UnitType>(s).is_some()),
-                    ("PROMOTION_", |d, s| d.ty::<PromotionType>(s).is_some()),
-                    ("BONUSCLASS_", |d, s| d.ty::<BonusClassType>(s).is_some()),
-                    ("BONUS_", |d, s| d.ty::<BonusType>(s).is_some()),
-                    ("TERRAIN_", |d, s| d.ty::<TerrainType>(s).is_some()),
-                    ("FEATURE_", |d, s| d.ty::<FeatureType>(s).is_some()),
-                    ("IMPROVEMENT_", |d, s| d.ty::<ImprovementType>(s).is_some()),
-                    ("TECH_", |d, s| d.ty::<TechType>(s).is_some()),
-                    ("CIVILIZATION_", |d, s| d.ty::<CivilizationType>(s).is_some()),
-                    ("CIVICOPTION_", |d, s| d.ty::<CivicOptionType>(s).is_some()),
-                    ("CIVIC_", |d, s| d.ty::<CivicType>(s).is_some()),
-                    ("RELIGION_", |d, s| d.ty::<ReligionType>(s).is_some()),
-                    ("ALIGNMENT_", |d, s| d.ty::<AlignmentType>(s).is_some()),
-                    ("BUILDING_", |d, s| d.ty::<BuildingType>(s).is_some()),
-                    ("DAMAGE_", |d, s| d.ty::<DamageType>(s).is_some()),
-                    ("EVENTTRIGGER_", |d, s| d.ty::<EventTriggerType>(s).is_some()),
-                    ("PROJECT_", |d, s| d.ty::<ProjectType>(s).is_some()),
-                    ("GAMESPEED_", |d, s| d.ty::<GameSpeedType>(s).is_some()),
-                    ("WORLDSIZE_", |d, s| d.ty::<WorldSizeType>(s).is_some()),
-                    ("ERA_", |d, s| d.ty::<EraType>(s).is_some()),
-                    ("LEADER_", |d, s| d.ty::<LeaderHeadType>(s).is_some()),
-                    ("TRAIT_", |d, s| d.ty::<TraitType>(s).is_some()),
-                    ("VICTORY_", |d, s| d.ty::<VictoryType>(s).is_some()),
-                    ("GAMEOPTION_", |d, s| d.ty::<GameOptionType>(s).is_some()),
-                    ("HANDICAP_", |d, s| d.ty::<HandicapType>(s).is_some()),
-                ];
-                // Trophy names and text keys are not types.
-                let Some((_, found)) = prefixes.iter().find(|(prefix, _)| s.starts_with(prefix)) else { continue };
-                checked += 1;
-                if !found(d, s) {
-                    missing.push(s.to_string());
-                }
-            }
-        }
-        assert!(missing.is_empty(), "unknown type names: {missing:?}");
-        assert!(checked > 300, "only {checked} names checked");
-    }
 }

@@ -1,0 +1,460 @@
+{
+ "idle": {
+  "nonrigid": [
+   0.0,
+   0.026,
+   0.052,
+   0.023
+  ],
+  "overlap": {
+   "displacement": {
+    "steel": [
+     null,
+     null,
+     null,
+     null
+    ],
+    "tunic": [
+     null,
+     null,
+     null,
+     null
+    ],
+    "hair": [
+     0.0,
+     1.49,
+     0.97,
+     1.2
+    ],
+    "wood": [
+     0.0,
+     0.46,
+     0.98,
+     0.78
+    ]
+   },
+   "peak_frame": {
+    "hair": 1,
+    "wood": 2
+   },
+   "overlap_index": 0.5
+  },
+  "drift_dE": [
+   {
+    "mean": 3.44,
+    "p95": 11.72
+   },
+   {
+    "mean": 3.42,
+    "p95": 11.72
+   },
+   {
+    "mean": 3.43,
+    "p95": 11.72
+   },
+   {
+    "mean": 3.43,
+    "p95": 11.72
+   }
+  ],
+  "boil": [
+   14.72,
+   10.81,
+   15.95
+  ],
+  "arc": [
+   null,
+   null,
+   null,
+   null
+  ],
+  "gates": [
+   "frame 0: little or no steel (sword missing?)",
+   "frame 1: little or no steel (sword missing?)",
+   "frame 2: little or no steel (sword missing?)",
+   "frame 3: little or no steel (sword missing?)"
+  ],
+  "jitter": {
+   "bottom_std": 0.0,
+   "feet_x_std": 0.0,
+   "bottoms": [
+    125,
+    125,
+    125,
+    125
+   ]
+  },
+  "summary": {
+   "nonrigid_mean": 0.034,
+   "overlap_index": 0.5,
+   "drift_mean": 3.43,
+   "boil_mean": 13.83,
+   "n_gate_flags": 4
+  }
+ },
+ "strike": {
+  "nonrigid": [
+   0.0,
+   0.381,
+   0.351,
+   0.451,
+   0.452,
+   0.424,
+   0.177,
+   0.043
+  ],
+  "overlap": {
+   "displacement": {
+    "steel": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "tunic": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "hair": [
+     0.0,
+     2.2,
+     4.82,
+     7.55,
+     6.93,
+     7.94,
+     3.25,
+     0.54
+    ],
+    "wood": [
+     0.0,
+     3.17,
+     6.74,
+     5.9,
+     2.91,
+     3.36,
+     1.76,
+     0.67
+    ]
+   },
+   "peak_frame": {
+    "hair": 5,
+    "wood": 2
+   },
+   "overlap_index": 1.5
+  },
+  "drift_dE": [
+   {
+    "mean": 3.44,
+    "p95": 11.72
+   },
+   {
+    "mean": 4.16,
+    "p95": 12.36
+   },
+   {
+    "mean": 4.29,
+    "p95": 12.26
+   },
+   {
+    "mean": 4.61,
+    "p95": 12.35
+   },
+   {
+    "mean": 5.1,
+    "p95": 12.6
+   },
+   {
+    "mean": 5.14,
+    "p95": 12.52
+   },
+   {
+    "mean": 4.09,
+    "p95": 12.2
+   },
+   {
+    "mean": 3.43,
+    "p95": 11.69
+   }
+  ],
+  "boil": [
+   103.78,
+   106.27,
+   109.77,
+   125.61,
+   100.02,
+   116.47,
+   90.3
+  ],
+  "arc": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "gates": [
+   "frame 0: little or no steel (sword missing?)",
+   "frame 1: little or no steel (sword missing?)",
+   "frame 2: little or no steel (sword missing?)",
+   "frame 3: little or no steel (sword missing?)",
+   "frame 4: little or no steel (sword missing?)",
+   "frame 5: little or no steel (sword missing?)",
+   "frame 6: little or no steel (sword missing?)",
+   "frame 7: little or no steel (sword missing?)"
+  ],
+  "summary": {
+   "nonrigid_mean": 0.326,
+   "overlap_index": 1.5,
+   "drift_mean": 4.28,
+   "boil_mean": 107.46,
+   "n_gate_flags": 8
+  }
+ },
+ "flinch": {
+  "nonrigid": [
+   0.0,
+   0.231,
+   0.388,
+   0.411
+  ],
+  "overlap": {
+   "displacement": {
+    "steel": [
+     0.0,
+     36.82,
+     20.97,
+     null
+    ],
+    "tunic": [
+     null,
+     null,
+     null,
+     null
+    ],
+    "hair": [
+     null,
+     null,
+     null,
+     null
+    ],
+    "wood": [
+     null,
+     null,
+     null,
+     null
+    ]
+   },
+   "peak_frame": {
+    "steel": 1
+   },
+   "overlap_index": 0.0
+  },
+  "drift_dE": [
+   {
+    "mean": 2.71,
+    "p95": 5.45
+   },
+   {
+    "mean": 3.78,
+    "p95": 11.62
+   },
+   {
+    "mean": 3.62,
+    "p95": 11.62
+   },
+   {
+    "mean": 3.43,
+    "p95": 11.71
+   }
+  ],
+  "boil": [
+   164.79,
+   134.58,
+   54.88
+  ],
+  "arc": [
+   [
+    106,
+    114
+   ],
+   [
+    114,
+    74
+   ],
+   [
+    107,
+    87
+   ],
+   null
+  ],
+  "gates": [
+   "frame 1: little or no steel (sword missing?)",
+   "frame 1: blade and shield on the wrong sides (hands swapped?)",
+   "frame 2: little or no steel (sword missing?)",
+   "frame 2: blade and shield on the wrong sides (hands swapped?)",
+   "frame 3: little or no steel (sword missing?)"
+  ],
+  "jitter": {
+   "bottom_std": 0.0,
+   "feet_x_std": 2.8,
+   "bottoms": [
+    125,
+    125,
+    125,
+    125
+   ]
+  },
+  "summary": {
+   "nonrigid_mean": 0.343,
+   "overlap_index": 0.0,
+   "drift_mean": 3.38,
+   "boil_mean": 118.08,
+   "n_gate_flags": 5
+  }
+ },
+ "death": {
+  "nonrigid": [
+   0.0,
+   0.368,
+   0.413,
+   0.425,
+   0.463,
+   0.476,
+   0.429,
+   0.478
+  ],
+  "overlap": {
+   "displacement": {
+    "steel": [
+     0.0,
+     null,
+     null,
+     null,
+     null,
+     13.25,
+     null,
+     null
+    ],
+    "tunic": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "hair": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "wood": [
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null,
+     null
+    ]
+   },
+   "peak_frame": {
+    "steel": 5
+   },
+   "overlap_index": 0.0
+  },
+  "drift_dE": [
+   {
+    "mean": 2.71,
+    "p95": 5.45
+   },
+   {
+    "mean": 4.56,
+    "p95": 13.58
+   },
+   {
+    "mean": 4.65,
+    "p95": 13.45
+   },
+   {
+    "mean": 4.83,
+    "p95": 13.5
+   },
+   {
+    "mean": 4.6,
+    "p95": 13.28
+   },
+   {
+    "mean": 4.76,
+    "p95": 13.43
+   },
+   {
+    "mean": 4.8,
+    "p95": 13.45
+   },
+   {
+    "mean": 4.78,
+    "p95": 13.38
+   }
+  ],
+  "boil": [
+   176.69,
+   124.54,
+   104.04,
+   124.87,
+   97.88,
+   83.92,
+   79.09
+  ],
+  "arc": [
+   [
+    106,
+    114
+   ],
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null
+  ],
+  "gates": [
+   "frame 1: little or no steel (sword missing?)",
+   "frame 2: little or no steel (sword missing?)",
+   "frame 3: little or no steel (sword missing?)",
+   "frame 4: little or no steel (sword missing?)",
+   "frame 5: little or no steel (sword missing?)",
+   "frame 6: little or no steel (sword missing?)",
+   "frame 7: little or no steel (sword missing?)"
+  ],
+  "summary": {
+   "nonrigid_mean": 0.436,
+   "overlap_index": 0.0,
+   "drift_mean": 4.46,
+   "boil_mean": 113.0,
+   "n_gate_flags": 7
+  }
+ }
+}

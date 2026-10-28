@@ -623,7 +623,7 @@ impl Game {
                                 let y_dist = city_y - y;
                                 if (x_dist * x_dist) + (y_dist * y_dist) < 10 {
                                     let city_plot = self.city_plot(loop_city);
-                                    if !self.unit_generate_path(u, city_plot, 0, true, None) {
+                                    if self.unit_find_path(u, city_plot, 0).is_none() {
                                         value *= 16;
                                     }
                                 } else {

@@ -98,10 +98,10 @@ pub fn effects(d: &GameData, r: ReligionType) -> String {
         b.push_str(NEWLINE);
         b.push_str(&s);
     };
-    changes_help(&mut b, &txt(d, "TXT_KEY_RELIGION_HOLY_CITY", "Holy City (if State [ICON_RELIGION])", &[]), ": ", "", holy_city_commerce, &COMMERCE_ICONS, false, true);
-    changes_help(&mut b, &txt(d, "TXT_KEY_RELIGION_ALL_CITIES", "All Cities (if State [ICON_RELIGION])", &[]), ": ", "", state_religion_commerce, &COMMERCE_ICONS, false, true);
+    changes_help(&mut b, &txt(d, "TXT_KEY_RELIGION_HOLY_CITY", &[]), ": ", "", holy_city_commerce, &COMMERCE_ICONS, false, true);
+    changes_help(&mut b, &txt(d, "TXT_KEY_RELIGION_ALL_CITIES", &[]), ": ", "", state_religion_commerce, &COMMERCE_ICONS, false, true);
     if let Some(t) = tech_prereq {
-        line(&mut b, txt(d, "TXT_KEY_RELIGION_FOUNDED_FIRST", "[ICON_BULLET]Founded by First to Discover [COLOR_TECH_TEXT]%s1_TechName[COLOR_REVERT]", &[Arg::S(&display(d, *t))]));
+        line(&mut b, txt(d, "TXT_KEY_RELIGION_FOUNDED_FIRST", &[Arg::S(&display(d, *t))]));
     }
     if let Some(u) = free_unit_class.and_then(|c| d.unit_classes[c].default_unit_index) {
         if *num_free_units > 1 {
@@ -110,18 +110,17 @@ pub fn effects(d: &GameData, r: ReligionType) -> String {
                 txt(
                     d,
                     "TXT_KEY_RELIGION_FOUNDER_RECEIVES_NUM",
-                    "[ICON_BULLET]Founder Receives [COLOR_UNIT_TEXT]%s1_UnitName[COLOR_REVERT] (%d2_num)",
                     &[Arg::S(&display(d, u)), Arg::N(*num_free_units)],
                 ),
             );
         } else if *num_free_units > 0 {
-            line(&mut b, txt(d, "TXT_KEY_RELIGION_FOUNDER_RECEIVES", "[ICON_BULLET]Founder Receives a %s1_UnitName", &[Arg::S(&display(d, u))]));
+            line(&mut b, txt(d, "TXT_KEY_RELIGION_FOUNDER_RECEIVES", &[Arg::S(&display(d, u))]));
         }
     }
 
     // ffh-play's, from here on.
     if let Some(a) = alignment {
-        line(&mut b, format!("[ICON_BULLET]{}", txt(d, "TXT_KEY_ALIGNMENT", "Alignment: %s1", &[Arg::S(&display(d, *a))])));
+        line(&mut b, format!("[ICON_BULLET]{}", txt(d, "TXT_KEY_ALIGNMENT", &[Arg::S(&display(d, *a))])));
     }
     // C++ `CvPlayer::convert`: the leader's alignment is pulled up to the best and down to the
     // worst (alignments order good < neutral < evil).
@@ -156,7 +155,7 @@ pub fn effects(d: &GameData, r: ReligionType) -> String {
     if *update_sight {
         line(&mut b, "[ICON_BULLET]The owner of its holy city, with it as state religion, sees around every city it has spread to".to_string());
     }
-    let counter = |n: i32| txt(d, "TXT_KEY_MESSAGE_MODIFY_GLOBAL_COUNTER", "[ICON_BULLET]%D1 to the Armageddon Counter", &[Arg::N(n)]);
+    let counter = |n: i32| txt(d, "TXT_KEY_MESSAGE_MODIFY_GLOBAL_COUNTER", &[Arg::N(n)]);
     if *global_counter_found != 0 {
         line(&mut b, counter(*global_counter_found) + " when founded");
     }

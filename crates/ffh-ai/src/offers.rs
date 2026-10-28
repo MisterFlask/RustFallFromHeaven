@@ -58,7 +58,7 @@ pub fn to_humans(g: &mut Game, v: &View) {
             continue;
         }
         let their = hp.team;
-        if !g.teams[team].has_met[their] || !g.player_can_contact(p, human) {
+        if !g.teams[team].has_met[their] || !crate::diplomacy::can_talk(g, p, human) {
             continue;
         }
         // abContacted: one contact per human a turn, peace first, then a tech or a resource offer.

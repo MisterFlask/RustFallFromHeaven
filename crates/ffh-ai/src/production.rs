@@ -106,7 +106,11 @@ pub fn push(g: &mut Game, c: CityId, choice: Choice) {
 
 /// Once per turn (C++ `CvCityAI::AI_doTurn` sets production dirty on danger): a city under
 /// threat that is not building a defender switches to one (the progress on the old item is
-/// kept by the rules).
+/// kept by the rules). The switch clears the queue and asks [`decide`] again, whose garrison rule
+/// has the last word: with switch `EMERGENCY_DECIDE` (on), a city switches only when `decide` would
+/// put a fighter first. Before, a city whose garrison `decide` found full (`needed + 2` defenders)
+/// was switched every turn and re-picked the same building: an Illian city with six defenders
+/// chose its Temple of the Hand seven times in ten turns, losing the rest of its queue each time.
 pub fn emergency(ai: &Ai, g: &mut Game, p: PlayerId) {
     // A settler waiting in port for a ship that nobody builds: the port builds one now.
     if let Some(q) = crate::naval::settler_waiting(g, p) {
@@ -132,7 +136,7 @@ pub fn emergency(ai: &Ai, g: &mut Game, p: PlayerId) {
             // A long build in a city that should have a second defender by now (decide puts
             // the defender first).
             let exposed = g.game_turn() > 30 && defenders < 2 && second_defender_wanted(g, p, c, plot, defenders, local_threat(g, p, plot, 3), defense);
-            if exposed && !building_fighter && g.city_production_turns_left(c) > 3 && !g.player_is_barbarian(p) && best_unit(g, c, Role::Defense).is_some() {
+            if exposed && !building_fighter && g.city_production_turns_left(c) > 3 && !g.player_is_barbarian(p) && best_unit(g, c, Role::Defense).is_some() && switch_gets_fighter(ai, g, c) {
                 crate::trace!(g, p, "{}: second defender first", g.cities[c].name);
                 g.city_clear_order_queue(c);
                 choose(ai, g, c);
@@ -142,10 +146,24 @@ pub fn emergency(ai: &Ai, g: &mut Game, p: PlayerId) {
         if building_fighter || defense * 3 / 2 >= threat && defenders > 0 {
             continue;
         }
+        if !switch_gets_fighter(ai, g, c) {
+            crate::trace!(g, p, "{} under threat {} (defense {}, {} defenders): its garrison holds, the build goes on", g.cities[c].name, threat, defense, defenders);
+            continue;
+        }
         crate::trace!(g, p, "{} under threat {} (defense {}): switching to defense", g.cities[c].name, threat, defense);
         g.city_clear_order_queue(c);
         choose(ai, g, c);
     }
+}
+
+/// Would clearing city `c`'s queue get a fighter: does [`decide`] put one first? (It does not read
+/// the queue.) Always true with switch `EMERGENCY_DECIDE` off: the switch then clears the queue
+/// whatever comes next.
+fn switch_gets_fighter(ai: &Ai, g: &Game, c: CityId) -> bool {
+    if !crate::switches::EMERGENCY_DECIDE.on(g, g.cities[c].owner) {
+        return true;
+    }
+    matches!(decide(ai, g, c), Some((Choice::Train(u, _), _)) if g.d.units[u].combat > 0)
 }
 
 /// Last resort when the priority list found nothing: the cheapest useful building, else the
@@ -314,7 +332,7 @@ pub fn barbarian_lair_near(g: &Game, p: PlayerId, plot: PlotIdx, range: i32) -> 
     false
 }
 
-/// With `KEEP_UNITS` (units trained are kept, `finance::disband_military`): does the garrison
+/// Units trained are kept (`finance::disband_military`): does the garrison
 /// of an interior city hold the barbarians it sees, when one more defender would cost gold?
 /// At war with the barbarians, the visible threat within 3 plots (`threat`, [`local_threat`]) no
 /// more than the garrison's defense (`defense`), nothing in sight included; no unit of a
@@ -328,8 +346,7 @@ pub fn barbarian_lair_near(g: &Game, p: PlayerId, plot: PlotIdx, range: i32) -> 
 /// the barbarians of a civilization at peace with them (the Clan of Embers' garrison term,
 /// docs/AI_LOG.md, "Allied barbarians no longer counted as a threat").
 pub(crate) fn garrison_holds(g: &Game, p: PlayerId, plot: PlotIdx, threat: i32, defense: i32) -> bool {
-    crate::switches::KEEP_UNITS.on(g, p)
-        && g.at_war(g.players[p].team, g.barbarian_team())
+    g.at_war(g.players[p].team, g.barbarian_team())
         && threat <= defense
         && crate::economy::marginal_unit_cost_x100(g, p, true) > 0
         && !civ_enemy_near(g, p, plot, 3)
@@ -564,21 +581,22 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static str)> {
 
     // Garrison quota: one, the capital and threatened cities more, cities near barbarian lairs
     // or barbarians more.
-    // With `KEEP_UNITS`, a raider in sight the garrison holds adds nothing (`garrison_holds`).
+    // A raider in sight the garrison holds adds nothing (`garrison_holds`). Placement's quota is
+    // smaller (`units::garrison_quota`: what can strike the city next turn): a defender trained
+    // for a raider only in sight may walk to a city under attack while this one trains another.
+    // Kept on purpose (docs/AI_LOG.md, "One garrison quota for production and placement").
     let held = garrison_holds(g, p, plot, ctx.threat, ctx.defense);
     let mut needed = 1 + i32::from(ctx.capital && (ctx.n_cities > 1 || g.game_turn() > 30)) + i32::from(ctx.threat > 0 && !held);
     if barbarian_lair_near(g, p, plot, 3) || !held && barbarians_near(g, p, plot, 3) {
         needed += 1;
     }
-    let mut rival = 0;
-    if crate::switches::RIVAL_DEFENSE.on(g, p) {
-        // The rival civilizations near this city (war, hostility, power; defense.rs): at war the
-        // front holds more and the interior fewer than the flat one more below.
-        rival = crate::defense::rival_defenders(g, c);
-        needed += rival;
-    } else if ctx.at_war {
-        needed += 1;
-    }
+    // The rival civilizations near this city (war, hostility, power; defense.rs): at war the
+    // front holds more and the interior fewer than a flat one more in every city (the rule before
+    // round 7e, switch `RIVAL_DEFENSE` off).
+    let rival = crate::defense::rival_defenders(g, c);
+    needed += rival;
+    // A defensive leader: no FFH2 0.41 leader has `iAIValueDefense` above 100 (61 at 100, one
+    // at 70), so this term never fires with the vendored data.
     if let Some(l) = leader {
         if l.ai_value_defense > 100 && ctx.n_cities > 3 {
             needed += 1;
@@ -732,7 +750,7 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static str)> {
         if let Some(choice) = crate::victory::production(g, c, false) { return Some((choice, "victory")); } // victory-pursuit
     }
 
-    // Mana nodes (MANA_NODES) and the caster corps (CASTER_ROLES): a caster to convert our raw mana
+    // Mana nodes (MANA_NODES) and the caster corps (casters.rs): a caster to convert our raw mana
     // when none of ours can, and the corps' casters (mana.rs, casters.rs).
     if safe && ctx.afford && !ctx.broke {
         if let Some(choice) = crate::mana::production(g, c) {

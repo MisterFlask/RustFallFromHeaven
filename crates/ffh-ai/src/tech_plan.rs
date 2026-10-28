@@ -6,8 +6,8 @@
 //! leaving out the techs we know and those we can never research:
 //! 1. an early tier-2 military tech until one of Bronze Working, Archery, Hunting or Horseback
 //!    Riding is known: the first we do not know and can ever research of the leader's favorite
-//!    early military tech, the civ's (Hunting for the elves, Construction for the Luchuirp)
-//!    and Bronze Working;
+//!    early military tech, the civ's (`civs::tech_goals`: Hunting for the elves, Construction for
+//!    the Luchuirp) and Bronze Working;
 //! 2. the early economy: Exploration, Mining, Calendar, Ancient Chants, Education;
 //! 3. an early religion nobody has founded yet, unless we know one of the three early religion
 //!    techs or have a holy city ([`religion_preferences`]: the Khazad and elves' own, the
@@ -18,9 +18,13 @@
 //! 5. Mysticism, Festivals, Cartography (City States), Sailing for coastal empires;
 //! 6. economy tier 2: Trade, Sanitation, Currency, Construction, Taxation, while fewer are known
 //!    than `AI_chooseTech`'s "economy tier 2" needs (the rest come after step 7);
-//! 7. the per-civ beelines of `AI_chooseTech`;
+//! 7. the per-civ beelines of `AI_chooseTech` (`civs::tech_goals`, in each civilization's module);
 //! 8. the magic spheres (Necromancy, Elementalism, Divination, Alteration) once tier 3 military
 //!    and economy tier 2 are reached.
+//!
+//! The civilization-specific parts (the early military tech, the lore religion, the beelines) are
+//! the civilizations' own (`CivPlay::tech_goals`), so `FFH_AI_CIV_OFF` turns them off with the rest
+//! of a civilization's play.
 //!
 //! This is not `AI_chooseTech`'s exact order. That function returns a single tech: blocks gated
 //! by its tiers assign it in turn and the last assignment wins, which makes its precedence the
@@ -136,14 +140,15 @@ pub fn goals(g: &Game, p: PlayerId) -> Vec<Goal> {
     let pl = &g.players[p];
     let team = pl.team;
     let n = Names { g, team };
-    let civ = g.player_get_civilization_type(p);
-    let is_civ = |name: &str| civ.is_some() && civ == d.ty::<CivilizationType>(name);
+    // The civilization's own research (`civs::tech_goals`; none with `FFH_AI_CIV_OFF`).
+    let civ = crate::civs::tech_goals(g, p);
     let leader = pl.personality_type.map(|l| &d.leader_heads[l]);
     let has_trait = |name: &str| d.ty::<TraitType>(name).is_some_and(|tr| pl.traits[tr]);
 
-    // AI_chooseTech's tiers.
+    // AI_chooseTech's tiers (the civilization's early military tech counts: the Luchuirp's
+    // Construction).
     let tier2 = ["TECH_BRONZE_WORKING", "TECH_ARCHERY", "TECH_HUNTING", "TECH_HORSEBACK_RIDING"].iter().any(|t| n.has(t))
-        || (is_civ("CIVILIZATION_LUCHUIRP") && n.has("TECH_CONSTRUCTION"));
+        || civ.early_military.is_some_and(|t| n.has(t));
     let tier3 = ["TECH_IRON_WORKING", "TECH_BOWYERS", "TECH_STIRRUPS", "TECH_ANIMAL_HANDLING"].iter().any(|t| n.has(t));
     let econ_count = ECONOMY2.iter().filter(|t| n.has(t)).count() as i32;
     let econ_val = leader.map_or(100, |l| l.economy_tech_value).min(130);
@@ -166,13 +171,7 @@ pub fn goals(g: &Game, p: PlayerId) -> Vec<Goal> {
                     // not know and can ever research (the Earthmother is closed to agnostics and
                     // with its religion off).
                     let fav = leader.and_then(|l| l.favorite_early_mil_tech).map(|t| d.techs[t].base.type_.as_str());
-                    let civ_default = if is_civ("CIVILIZATION_LJOSALFAR") || is_civ("CIVILIZATION_SVARTALFAR") {
-                        Some("TECH_HUNTING")
-                    } else if is_civ("CIVILIZATION_LUCHUIRP") {
-                        Some("TECH_CONSTRUCTION")
-                    } else {
-                        None
-                    };
+                    let civ_default = civ.early_military;
                     let open = |name: &str| n.tech(name).is_some_and(|t| !g.team_is_has_tech(team, Some(t)) && g.player_can_ever_research(p, t));
                     if let Some(name) = [fav, civ_default, Some("TECH_BRONZE_WORKING")].into_iter().flatten().find(|&name| open(name)) {
                         push(name, "tier2-military");
@@ -211,7 +210,7 @@ pub fn goals(g: &Game, p: PlayerId) -> Vec<Goal> {
                 }
             }
             Step::Civ => {
-                for t in civ_beelines(&n, &is_civ) {
+                for &t in &civ.beelines {
                     push(t, "civ");
                 }
             }
@@ -279,17 +278,11 @@ fn religion_preferences(g: &Game, p: PlayerId, n: &Names) -> Vec<TechType> {
     let d = g.d;
     let pl = &g.players[p];
     let team = pl.team;
-    let civ = g.player_get_civilization_type(p);
-    let is_civ = |name: &str| civ.is_some() && civ == d.ty::<CivilizationType>(name);
     let leader = pl.personality_type.map(|l| &d.leader_heads[l]);
     let mut prefs: Vec<TechType> = Vec::new();
-    // Civ lore religions first (the dwarves' Runes of Kilmorph, the elves' Fellowship of Leaves).
-    if is_civ("CIVILIZATION_KHAZAD") {
-        prefs.extend(n.tech("TECH_WAY_OF_THE_EARTHMOTHER"));
-    }
-    if is_civ("CIVILIZATION_LJOSALFAR") || is_civ("CIVILIZATION_SVARTALFAR") {
-        prefs.extend(n.tech("TECH_WAY_OF_THE_FORESTS"));
-    }
+    // Civ lore religions first (the dwarves' Runes of Kilmorph, the elves' Fellowship of Leaves:
+    // `civs::tech_goals`).
+    prefs.extend(crate::civs::tech_goals(g, p).religion.and_then(|t| n.tech(t)));
     // The leader's favourite religions, when the data sets them (FfH leaves these NONE by default).
     if let Some(r) = leader.and_then(|l| l.favorite_early_religion) {
         prefs.extend(d.religions[r].tech_prereq);
@@ -323,51 +316,6 @@ fn religion_preferences(g: &Game, p: PlayerId, n: &Names) -> Vec<TechType> {
     let mut seen: Vec<TechType> = Vec::new();
     prefs.retain(|&t| !seen.contains(&t) && { seen.push(t); true });
     prefs
-}
-
-/// AI_chooseTech "Civ Specific" beelines (and the Luchuirp's early Construction).
-fn civ_beelines(n: &Names, is_civ: &dyn Fn(&str) -> bool) -> Vec<&'static str> {
-    let mut v: Vec<&'static str> = Vec::new();
-    if is_civ("CIVILIZATION_AMURITES") {
-        v.extend(["TECH_BOWYERS", "TECH_SORCERY"]);
-    }
-    if is_civ("CIVILIZATION_BANNOR") {
-        v.push("TECH_FANATICISM");
-    }
-    if is_civ("CIVILIZATION_CALABIM") {
-        v.push("TECH_FEUDALISM");
-    }
-    if is_civ("CIVILIZATION_HIPPUS") || is_civ("CIVILIZATION_KURIOTATES") {
-        v.push("TECH_STIRRUPS");
-    }
-    if is_civ("CIVILIZATION_SHEAIM") {
-        v.extend(["TECH_CORRUPTION_OF_SPIRIT", "TECH_NECROMANCY", "TECH_SORCERY"]);
-    }
-    if is_civ("CIVILIZATION_SIDAR") || is_civ("CIVILIZATION_SVARTALFAR") {
-        v.extend(["TECH_POISONS", "TECH_ANIMAL_HANDLING"]);
-    }
-    if is_civ("CIVILIZATION_LJOSALFAR") {
-        v.push("TECH_BOWYERS");
-    }
-    if is_civ("CIVILIZATION_LUCHUIRP") {
-        v.push("TECH_CONSTRUCTION");
-        if n.has("TECH_TRADE") {
-            v.extend(["TECH_ELEMENTALISM", "TECH_SORCERY"]);
-        }
-    }
-    if is_civ("CIVILIZATION_ELOHIM") || is_civ("CIVILIZATION_MALAKIM") {
-        v.push("TECH_PRIESTHOOD");
-    }
-    if ["CIVILIZATION_KHAZAD", "CIVILIZATION_CLAN_OF_EMBERS", "CIVILIZATION_DOVIELLO", "CIVILIZATION_LANUN", "CIVILIZATION_GRIGORI", "CIVILIZATION_ILLIANS", "CIVILIZATION_BALSERAPHS"]
-        .iter()
-        .any(|c| is_civ(c))
-    {
-        v.push("TECH_IRON_WORKING");
-    }
-    if is_civ("CIVILIZATION_GRIGORI") {
-        v.push("TECH_MEDICINE");
-    }
-    v
 }
 
 /// The unknown techs `p` needs for `goal` and their research left, or `None` if some needed

@@ -12,22 +12,16 @@ docs/AI.md), `ffh-stress`, `ffh-play soak`, and the AI turns of the browser clie
    once with `--set val`, configs not used while working (docs/AGENTS.md, "Performance A/B").
    Passing those games is the check, not the argument: make the change identical by
    construction and say why in a comment.
-2. **`&self` is not pure here.** Code reached through `&Game` can write saved state: the path
-   finders (`RefCell`s, written by any `group_generate_path` / `unit_generate_path`),
-   `Player::ai_bonus_value` (`player_ai_base_bonus_val`) and the city rank caches
-   (`city_find_population_rank` and friends, filled for example by `city_unhappy_level`).
-   Skipping or reordering a call that can fill one of them changes later reads or the save
-   bytes. A memo inside a search or a flood is sound only while the memoized calls reach none of
-   them (`PathCallbacks::from_memo` and `DefenseMemo` in `path.rs` say so where they are
-   defined).
-3. **The path finders' saved state depends on every search since the game began**
-   (`PathFinder::clear_search` keeps `open_seq`), so a change in which searches run changes the
-   save bytes from then on even when every result is the same.
-4. **A faster version that plays differently is a rules or AI change** (CLAUDE.md): a path
+2. **`&self` is pure.** Code reached through `&Game` writes no game state (the path finders are
+   scratch storage, not saved, and ffh-core keeps no caches written by reads; path.rs, "No
+   reuse"), so skipping, adding or reordering a read changes nothing else. Keep it that way: a
+   cache must be filled from `&mut` code, or be a memo within one call whose inputs cannot change
+   during it (`PathCallbacks::from_memo` and `DefenseMemo` in `path.rs`).
+3. **A faster version that plays differently is a rules or AI change** (CLAUDE.md): a path
    heuristic that breaks ties differently, following a path instead of searching again, an AI
    that remembers failed targets. Those are listed under "Open: changes the game" and need a
    deliberate decision and the AI measurements of docs/AI.md.
-5. **Timing**: `tools/agents/perf-ab.sh time` holds every CPU slot and the build lock, alternates
+4. **Timing**: `tools/agents/perf-ab.sh time` holds every CPU slot and the build lock, alternates
    the two builds and reports the child's CPU time. Whole runs drift by 5-20% between sessions on
    this host (contention that `steal` does not show): compare builds only within one session, by
    the median of the per-round ratios. `tools/perf-stacks.py` reads `perf` call stacks (only the
@@ -78,6 +72,7 @@ Each change alone against the base, D1, median of 3 interleaved rounds:
 | hot predicates: the 9 promotions with a combat mod listed at load; `isAlwaysHostile` once in `isEnemy`; empty-plot early returns | `unit/combat.rs`, `unit/movement.rs`, `utils.rs`, `plot/units.rs` | -9% |
 | workers: AI build bans resolved once per search, build-independent parts of `build_value` memoized; casting: one castable-spell list per unit | `ffh-ai/src/workers.rs`, `casting.rs`, `magic.rs` | -7% |
 | plot groups: cheap tests before the per-plot heap arrays, flood fill on plot indices, buildings without an effect skipped in bonus processing | `plot/ownership.rs`, `plot_group.rs`, `city/buildings.rs` | -2% (H1: -13%) |
+| the first View of a turn is only its header (`View::header`; the analysis once, after diplomacy) | `ffh-ai/src/view.rs`, `lib.rs` | -0.3% (rounds 1.016 0.997 0.914: noise) |
 | XML element names interned; no per-player unit counts on empty plots in `plot_process_area` | `ffh-data/src/xml.rs`, `plot/geography.rs` | data load -23%, huge-map setup -13% |
 
 Checked: `perf-ab.sh same` IDENTICAL on D1-D4 and V1-V4 and the 3 soak games (save hashes too),
@@ -86,8 +81,7 @@ the test suite, `ffh data` 0 warnings; each change reviewed for a state in which
 Measured and left out: a bool early-exit `AI_getPlotDanger` (-6% alone, nothing measurable after
 the `pathValid` memo, and a second copy of a ported function); skipping feature growth for
 features no neighbour has and the cultural-owner city loop for a lone non-vassal team (about 1%
-together by samples, not measurable); a light first View per turn (0.3%, and it skips a call
-that can fill a saved rank cache).
+together by samples, not measurable).
 
 ## Open: same game
 

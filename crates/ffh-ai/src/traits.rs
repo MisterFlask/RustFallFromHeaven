@@ -85,52 +85,24 @@ const NAMES: [(&str, Trait); 11] = [
     ("EXPANSIVE", Trait::Expansive),
 ];
 
-struct Switches {
-    /// Per [`Trait`] (in `NAMES` order): its trait type, `None` when the data lacks it or
-    /// `FFH_AI_TRAIT_OFF` turns it off.
-    types: Vec<Option<TraitType>>,
-    /// `FFH_AI_TRAIT_CIVS`: the civilizations whose players keep trait play (`None`: all).
-    civs: Option<Vec<CivilizationType>>,
-}
-
-fn list(var: &str, prefix: &str) -> Vec<String> {
-    std::env::var(var)
-        .unwrap_or_default()
-        .split(',')
-        .map(|s| s.trim().to_ascii_uppercase().trim_start_matches(prefix).to_string())
-        .filter(|s| !s.is_empty())
-        .collect()
-}
-
-fn switches(d: &GameData) -> &'static Switches {
-    static S: std::sync::OnceLock<Switches> = std::sync::OnceLock::new();
+/// Per [`Trait`] (in `NAMES` order): its trait type, `None` when the data lacks it or
+/// `FFH_AI_TRAIT_OFF` turns it off ([`crate::switches::env_list`]).
+fn types(d: &GameData) -> &'static [Option<TraitType>] {
+    static S: std::sync::OnceLock<Vec<Option<TraitType>>> = std::sync::OnceLock::new();
     S.get_or_init(|| {
-        let off = list("FFH_AI_TRAIT_OFF", "TRAIT_");
-        let types = NAMES
+        let off = crate::switches::env_list("FFH_AI_TRAIT_OFF", "TRAIT_").unwrap_or_default();
+        NAMES
             .iter()
-            .map(|(name, _)| if off.iter().any(|o| o == "ALL" || o == name) { None } else { d.ty::<TraitType>(&format!("TRAIT_{name}")) })
-            .collect();
-        let civs = list("FFH_AI_TRAIT_CIVS", "CIVILIZATION_");
-        let civs = if civs.is_empty() {
-            None
-        } else {
-            Some(d.civilizations.keys().filter(|&c| civs.iter().any(|n| d.civilizations[c].base.type_.trim_start_matches("CIVILIZATION_") == n)).collect())
-        };
-        Switches { types, civs }
+            .map(|(name, _)| if crate::switches::listed(&off, name) { None } else { d.ty::<TraitType>(&format!("TRAIT_{name}")) })
+            .collect()
     })
 }
 
 /// The trait type of `t` if its play is on for player `p` (switches), whether or not `p` has it.
 fn enabled_type(g: &Game, p: PlayerId, t: Trait) -> Option<TraitType> {
-    let s = switches(g.d);
     let i = NAMES.iter().position(|&(_, x)| x == t)?;
-    let tr = s.types[i]?;
-    if let Some(civs) = &s.civs {
-        if !g.player_get_civilization_type(p).is_some_and(|c| civs.contains(&c)) {
-            return None;
-        }
-    }
-    if g.player_is_barbarian(p) {
+    let tr = types(g.d)[i]?;
+    if !crate::switches::TRAIT_CIVS.on(g, p) || g.player_is_barbarian(p) {
         return None;
     }
     Some(tr)

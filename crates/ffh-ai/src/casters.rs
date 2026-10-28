@@ -1,6 +1,6 @@
-//! The caster corps (`CASTER_ROLES`; More Naval AI's adept roles, `CvUnitAI::AI_update` and
-//! `CvCityAI::AI_chooseProduction`), mana-node builders for casters without a role
-//! (`MANA_NODES`, `mana.rs`), and Govannon's Teach Spellcasting (`TEACH_SPELLS`).
+//! The caster corps (round 7a; More Naval AI's adept roles, `CvUnitAI::AI_update` and
+//! `CvCityAI::AI_chooseProduction`), its mana-node builder (`MANA_NODES`, `mana.rs`), and
+//! Govannon's Teach Spellcasting (`TEACH_SPELLS`).
 //!
 //! **Roles.** Each caster of ours (an adept or better, not a hero: `mana::is_caster`) has a role,
 //! kept in its unit AI type, so it survives saves and needs no state of its own:
@@ -110,25 +110,11 @@ fn role_for(g: &Game, p: PlayerId, u: UnitId) -> UnitAIType {
     UnitAIType::UNITAI_WARWIZARD
 }
 
-/// Orders for caster `u` by its role (`CASTER_ROLES`), or, without roles, a mana node when it has
-/// nothing better to do (`MANA_NODES`). False: the generic caster logic decides (`units::caster`).
+/// Orders for caster `u` by its role. False: the generic caster logic decides (`units::caster`).
 pub fn play(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
     let p = v.p;
     if !crate::mana::is_caster(g, u) {
         return false;
-    }
-    if !crate::switches::CASTER_ROLES.on(g, p) {
-        // A caster with no strike to join and no city spell to keep builds nodes.
-        if !crate::switches::MANA_NODES.on(g, p) || crate::magic::keeps_building(g, u) {
-            return false;
-        }
-        if crate::magic::enabled(g, p) {
-            crate::campaign::plan(g, v);
-            if crate::magic::strike_target(g, v, u).is_some() {
-                return false;
-            }
-        }
-        return crate::mana::build_node(g, v, grp, u);
     }
     let role = role_for(g, p, u);
     if g.units[u].ai_type != Some(role) {
@@ -210,13 +196,13 @@ pub fn best_sphere(g: &Game, p: PlayerId) -> i32 {
         .unwrap_or(0)
 }
 
-/// Production (`CASTER_ROLES`): a caster for the corps while it is short (see the module doc), in a
+/// Production: a caster for the corps while it is short (see the module doc), in a
 /// city that can train one, or the Mage Guild where none can. `at_war`: at war or preparing one;
 /// `attackers`: our field army.
 pub fn production(g: &Game, c: CityId, at_war: bool, attackers: i32) -> Option<crate::production::Choice> {
     use crate::production::Choice;
     let p = g.cities[c].owner;
-    if !crate::switches::CASTER_ROLES.on(g, p) || g.players[p].cities.len() < 3 {
+    if g.players[p].cities.len() < 3 {
         return None;
     }
     let quota = mage_quota(g, p);

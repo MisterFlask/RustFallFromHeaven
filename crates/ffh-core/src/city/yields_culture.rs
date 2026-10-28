@@ -45,101 +45,41 @@ impl Game {
         }
     }
 
-    // ---- rank caches ----
+    // ---- ranks ----
     //
-    // C++ breaks ties by `CvCity::getID()`. Within one player's FFreeListTrashArray the ids grow
-    // with creation order (`m_iCurrentID + iIndex`, `m_iCurrentID` += FLTA_MAX_BUCKETS per add),
-    // and so do the global `CityId`s, so comparing `CityId`s ranks the owner's cities the same.
+    // Computed when asked (not in C++: `mutable` caches filled by the first read and cleared by
+    // `invalidate*RankCache`, so a rank could be stale). Ties go to the older city: C++ breaks
+    // them by `CvCity::getID()`, which grows with creation order within the owner's cities, as
+    // the global `CityId`s do.
 
-    /// C++ `CvCity::findPopulationRank` (CvCity.cpp:1569-1592): rank among the owner's
-    /// cities, cached in `population_rank` (C++ `mutable`).
+    /// The rank of `c` among its owner's cities by `rate` (1 = highest; ties: the older city first).
+    fn city_rank_by(&self, c: CityId, rate: impl Fn(CityId) -> i32) -> i32 {
+        let own = rate(c);
+        let owner = self.cities[c].owner;
+        1 + self.players[owner].cities.iter().filter(|&&other| {
+            let r = rate(other);
+            r > own || (r == own && other < c)
+        }).count() as i32
+    }
+
+    /// C++ `CvCity::findPopulationRank`: rank by population among the owner's cities.
     pub fn city_find_population_rank(&self, c: CityId) -> i32 {
-        let city = &self.cities[c];
-        if !city.population_rank_valid.get() {
-            let mut rank = 1;
-
-            for &loop_city in &self.players[city.owner].cities {
-                let loop_population = self.cities[loop_city].population;
-                if (loop_population > city.population) || ((loop_population == city.population) && (loop_city < c)) {
-                    rank += 1;
-                }
-            }
-
-            // shenanigans are to get around the const check
-            city.population_rank_valid.set(true);
-            city.population_rank.set(rank);
-        }
-
-        city.population_rank.get()
+        self.city_rank_by(c, |city| self.cities[city].population)
     }
 
-    /// C++ `CvCity::findBaseYieldRateRank` (CvCity.cpp:1595-1619), cached in `base_yield_rank`.
+    /// C++ `CvCity::findBaseYieldRateRank`.
     pub fn city_find_base_yield_rate_rank(&self, c: CityId, yield_type: YieldType) -> i32 {
-        let y = yield_type.idx();
-        let city = &self.cities[c];
-        if !city.base_yield_rank_valid[y].get() {
-            let rate = city.base_yield_rate[y];
-
-            let mut rank = 1;
-
-            for &loop_city in &self.players[city.owner].cities {
-                let loop_rate = self.cities[loop_city].base_yield_rate[y];
-                if (loop_rate > rate) || ((loop_rate == rate) && (loop_city < c)) {
-                    rank += 1;
-                }
-            }
-
-            city.base_yield_rank_valid[y].set(true);
-            city.base_yield_rank[y].set(rank);
-        }
-
-        city.base_yield_rank[y].get()
+        self.city_rank_by(c, |city| self.cities[city].base_yield_rate[yield_type.idx()])
     }
 
-    /// C++ `CvCity::findYieldRateRank` (CvCity.cpp:1622-1646), cached in `yield_rank`.
+    /// C++ `CvCity::findYieldRateRank`.
     pub fn city_find_yield_rate_rank(&self, c: CityId, yield_type: YieldType) -> i32 {
-        let y = yield_type.idx();
-        let city = &self.cities[c];
-        if !city.yield_rank_valid[y].get() {
-            let rate = self.city_yield_rate(c, yield_type);
-
-            let mut rank = 1;
-
-            for &loop_city in &self.players[city.owner].cities {
-                let loop_rate = self.city_yield_rate(loop_city, yield_type);
-                if (loop_rate > rate) || ((loop_rate == rate) && (loop_city < c)) {
-                    rank += 1;
-                }
-            }
-
-            city.yield_rank_valid[y].set(true);
-            city.yield_rank[y].set(rank);
-        }
-
-        city.yield_rank[y].get()
+        self.city_rank_by(c, |city| self.city_yield_rate(city, yield_type))
     }
 
-    /// C++ `CvCity::findCommerceRateRank` (CvCity.cpp:1649-1673), cached in `commerce_rank`.
+    /// C++ `CvCity::findCommerceRateRank`.
     pub fn city_find_commerce_rate_rank(&self, c: CityId, commerce: CommerceType) -> i32 {
-        let i = commerce.idx();
-        let city = &self.cities[c];
-        if !city.commerce_rank_valid[i].get() {
-            let rate = self.city_commerce_rate_times100(c, commerce);
-
-            let mut rank = 1;
-
-            for &loop_city in &self.players[city.owner].cities {
-                let loop_rate = self.city_commerce_rate_times100(loop_city, commerce);
-                if (loop_rate > rate) || ((loop_rate == rate) && (loop_city < c)) {
-                    rank += 1;
-                }
-            }
-
-            city.commerce_rank_valid[i].set(true);
-            city.commerce_rank[i].set(rank);
-        }
-
-        city.commerce_rank[i].get()
+        self.city_rank_by(c, |city| self.city_commerce_rate_times100(city, commerce))
     }
 
     // ---- owner helpers ----
@@ -606,9 +546,6 @@ impl Game {
         if change != 0 {
             self.cities[c].yield_rate_modifier[yield_type.idx()] += change;
 
-            let owner = self.cities[c].owner;
-            self.player_invalidate_yield_rank_cache(owner, Some(yield_type));
-
             if yield_type == YieldType::YIELD_COMMERCE {
                 self.city_update_commerces(c);
             }
@@ -622,9 +559,6 @@ impl Game {
         if change != 0 {
             self.cities[c].power_yield_rate_modifier[yield_type.idx()] += change;
 
-            let owner = self.cities[c].owner;
-            self.player_invalidate_yield_rank_cache(owner, Some(yield_type));
-
             if yield_type == YieldType::YIELD_COMMERCE {
                 self.city_update_commerces(c);
             }
@@ -637,9 +571,6 @@ impl Game {
     pub fn city_change_bonus_yield_rate_modifier(&mut self, c: CityId, yield_type: YieldType, change: i32) {
         if change != 0 {
             self.cities[c].bonus_yield_rate_modifier[yield_type.idx()] += change;
-
-            let owner = self.cities[c].owner;
-            self.player_invalidate_yield_rank_cache(owner, Some(yield_type));
 
             if yield_type == YieldType::YIELD_COMMERCE {
                 self.city_update_commerces(c);
@@ -872,7 +803,6 @@ impl Game {
             // (no >= 0 assert: some buildings can give negative commerce, Sephi)
 
             let owner = self.cities[c].owner;
-            self.player_invalidate_commerce_rank_cache(owner, Some(commerce));
 
             // CvPlayer::changeCommerceRate (times 100; otherwise only a UI dirty bit)
             self.players[owner].commerce_rate[i] += new_commerce - old_commerce;
@@ -883,9 +813,6 @@ impl Game {
 
     /// C++ `CvCity::updateCommerce()` (CvCity.cpp:8527-8535).
     pub fn city_update_commerces(&mut self, c: CityId) {
-        let owner = self.cities[c].owner;
-        self.player_invalidate_yield_rank_cache(owner, None);
-
         for i in 0..CommerceType::NUM {
             self.city_update_commerce(c, CommerceType::from_usize(i));
         }
@@ -1546,43 +1473,6 @@ impl Game {
         has_shrine
     }
 
-    /// C++ `CvCity::invalidatePopulationRankCache` (CvCity.cpp:13713-13716).
-    pub fn city_invalidate_population_rank_cache(&mut self, c: CityId) {
-        self.cities[c].population_rank_valid.set(false);
-    }
-
-    /// C++ `CvCity::invalidateYieldRankCache` (CvCity.cpp:13718-13735). C++ default
-    /// `eYield = NO_YIELD` (= all yields).
-    pub fn city_invalidate_yield_rank_cache(&mut self, c: CityId, yield_type: Option<YieldType>) {
-        let city = &self.cities[c];
-        match yield_type {
-            None => {
-                for i in 0..YieldType::NUM {
-                    city.base_yield_rank_valid[i].set(false);
-                    city.yield_rank_valid[i].set(false);
-                }
-            }
-            Some(y) => {
-                city.base_yield_rank_valid[y.idx()].set(false);
-                city.yield_rank_valid[y.idx()].set(false);
-            }
-        }
-    }
-
-    /// C++ `CvCity::invalidateCommerceRankCache` (CvCity.cpp:13737-13752). C++ default
-    /// `eCommerce = NO_COMMERCE` (= all commerce types).
-    pub fn city_invalidate_commerce_rank_cache(&mut self, c: CityId, commerce: Option<CommerceType>) {
-        let city = &self.cities[c];
-        match commerce {
-            None => {
-                for i in 0..CommerceType::NUM {
-                    city.commerce_rank_valid[i].set(false);
-                }
-            }
-            Some(ct) => city.commerce_rank_valid[ct.idx()].set(false),
-        }
-    }
-
     /// C++ `CvCity::getExtraSpecialistCommerce(CommerceTypes)` (CvCity.cpp:14720-14728, FFH).
     pub fn city_extra_specialist_commerce(&self, c: CityId, commerce: CommerceType) -> i32 {
         let mut count = 0;
@@ -1645,7 +1535,7 @@ mod tests {
     }
 
     #[test]
-    fn population_rank_is_cached_until_invalidated() {
+    fn population_rank_follows_population() {
         let mut g = test_game();
         let p0 = PlayerId(0);
         let a = add_city(&mut g, p0, 1, 1, 3);
@@ -1655,10 +1545,7 @@ mod tests {
         assert_eq!(g.city_find_population_rank(b), 1);
         assert_eq!(g.city_find_population_rank(a), 2, "ties: the older city first");
         assert_eq!(g.city_find_population_rank(c), 3);
-        // the cache is real state: a stale rank survives until invalidated
         g.cities[c].population = 6;
-        assert_eq!(g.city_find_population_rank(c), 3);
-        g.city_invalidate_population_rank_cache(c);
         assert_eq!(g.city_find_population_rank(c), 1);
     }
 
@@ -1674,10 +1561,7 @@ mod tests {
         assert_eq!(g.city_find_base_yield_rate_rank(a, food), 1);
         assert_eq!(g.city_find_base_yield_rate_rank(b, food), 2);
         g.cities[b].base_yield_rate[food.idx()] = 7;
-        g.city_invalidate_yield_rank_cache(b, Some(food));
         assert_eq!(g.city_find_base_yield_rate_rank(b, food), 1);
-        assert_eq!(g.city_find_base_yield_rate_rank(a, food), 1, "stale until invalidated");
-        g.city_invalidate_yield_rank_cache(a, None);
         assert_eq!(g.city_find_base_yield_rate_rank(a, food), 2);
 
         let culture = CommerceType::COMMERCE_CULTURE;

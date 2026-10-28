@@ -54,43 +54,42 @@ pub fn effects(d: &GameData, i: ImprovementType) -> String {
         lines.push(format!("[ICON_BULLET]{}", yields.join(", ")));
     }
     if info.defense_modifier != 0 {
-        lines.push(txt(d, "TXT_KEY_IMPROVEMENT_DEFENSE_MODIFIER", "[ICON_BULLET]%D1%% Tile Defense", &[Arg::N(info.defense_modifier)]));
+        lines.push(txt(d, "TXT_KEY_IMPROVEMENT_DEFENSE_MODIFIER", &[Arg::N(info.defense_modifier)]));
     }
     if info.happiness != 0 {
         let icon = if info.happiness > 0 { "[ICON_HAPPY]" } else { "[ICON_UNHAPPY]" };
-        lines.push(txt(d, "TXT_KEY_MISC_ICON_CHANGE_NEARBY_CITIES", "[ICON_BULLET]+%d1%F2 in nearby cities", &[Arg::N(info.happiness), Arg::S(icon)]));
+        lines.push(txt(d, "TXT_KEY_MISC_ICON_CHANGE_NEARBY_CITIES", &[Arg::N(info.happiness), Arg::S(icon)]));
     }
     if info.acts_as_city {
-        lines.push(txt(d, "TXT_KEY_IMPROVEMENT_DEFENSE_MODIFIER_EXTRA", "[ICON_BULLET]Acts as a city for combat purposes", &[]));
+        lines.push(txt(d, "TXT_KEY_IMPROVEMENT_DEFENSE_MODIFIER_EXTRA", &[]));
     }
     if info.feature_growth_probability > 0 {
-        lines.push(txt(d, "TXT_KEY_IMPROVEMENT_MORE_GROWTH", "[ICON_BULLET]Gives terrain a higher chance to spread", &[]));
+        lines.push(txt(d, "TXT_KEY_IMPROVEMENT_MORE_GROWTH", &[]));
     } else if info.feature_growth_probability < 0 {
-        lines.push(txt(d, "TXT_KEY_IMPROVEMENT_LESS_GROWTH", "[ICON_BULLET]Gives terrain a lower chance to spread", &[]));
+        lines.push(txt(d, "TXT_KEY_IMPROVEMENT_LESS_GROWTH", &[]));
     }
     if info.unique {
-        lines.push(txt(d, "TXT_KEY_IMPROVEMENT_UNIQUE", "[ICON_BULLET]World Improvement", &[]));
+        lines.push(txt(d, "TXT_KEY_IMPROVEMENT_UNIQUE", &[]));
     }
     if let Some(c) = info.prereq_civilization {
-        lines.push(txt(d, "TXT_KEY_IMPROVEMENT_PREREQ_CIVILIZATION", "[ICON_BULLET]Requires %s1_civilization civilization", &[Arg::S(&names::display(d, c))]));
+        lines.push(txt(d, "TXT_KEY_IMPROVEMENT_PREREQ_CIVILIZATION", &[Arg::S(&names::display(d, c))]));
     }
     if info.heal_rate_change != 0 {
-        lines.push(txt(d, "TXT_KEY_IMPROVEMENT_HEAL_RATE_CHANGE", "[ICON_BULLET]%D1% heal rate", &[Arg::N(info.heal_rate_change)]));
+        lines.push(txt(d, "TXT_KEY_IMPROVEMENT_HEAL_RATE_CHANGE", &[Arg::N(info.heal_rate_change)]));
     }
     if info.range_defense_modifier != 0 {
         // The text signs the range too ("within +3 tiles"): passed as text, it reads "within 3".
         lines.push(txt(
             d,
             "TXT_KEY_IMPROVEMENT_RANGE_DEFENSE_MODIFIER",
-            "[ICON_BULLET]%D1% strength to all units within %D2 tiles",
             &[Arg::N(info.range_defense_modifier), Arg::S(&info.range.to_string())],
         ));
     }
     if info.visibility_change != 0 {
-        lines.push(txt(d, "TXT_KEY_IMPROVEMENT_VISIBILITY_CHANGE", "[ICON_BULLET]%D1 to unit visibility range", &[Arg::N(info.visibility_change)]));
+        lines.push(txt(d, "TXT_KEY_IMPROVEMENT_VISIBILITY_CHANGE", &[Arg::N(info.visibility_change)]));
     }
     if let Some(u) = info.spawn_unit_type {
-        lines.push(txt(d, "TXT_KEY_IMPROVEMENT_SPAWN_UNIT_TYPE", "[ICON_BULLET]Spawns %s1_unit barbarian units until eliminated", &[Arg::S(&names::display(d, u))]));
+        lines.push(txt(d, "TXT_KEY_IMPROVEMENT_SPAWN_UNIT_TYPE", &[Arg::S(&names::display(d, u))]));
     }
     if !info.base.help.is_empty() {
         let help = names::text(d, &info.base.help);

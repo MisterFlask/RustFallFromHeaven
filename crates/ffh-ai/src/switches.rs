@@ -5,38 +5,56 @@
 //! or any other contest between civilizations needs.
 //!
 //! `FFH_AI_<NAME>_OFF` lists civilizations (`CIVILIZATION_KHAZAD` or `KHAZAD`, comma-separated,
-//! or `ALL`) that play without the behaviour; `FFH_AI_<NAME>_ONLY` lists the only ones that play
-//! with it. A switch made with [`Switch::off_by_default`] is off unless `FFH_AI_<NAME>_ONLY` lists
-//! the civilization (`ALL` for every one). Like `FFH_AI_CIV_OFF`, the table is read once and never
-//! changes during a game, so play stays deterministic, and the run cache keys runs by every
-//! `FFH_*` variable.
+//! any case, or `ALL`; `1` also means every one) that play without the behaviour;
+//! `FFH_AI_<NAME>_ONLY` lists the only ones that play with it (unset or empty: no such limit). A
+//! switch made with [`Switch::off_by_default`] is off unless `FFH_AI_<NAME>_ONLY` lists the
+//! civilization (`ALL` for every one). The table is read once and never changes during a game, so
+//! play stays deterministic, and the run cache keys runs by every `FFH_*` variable.
+//!
+//! Every measurement switch of the AI is read here ([`env_list`]): the generic behaviours below,
+//! and the switches of whole modules -- [`MAGIC`] (`FFH_AI_MAGIC_OFF`, `magic::enabled`), [`CIV`]
+//! (`FFH_AI_CIV_OFF`, `civs::enabled`), [`VASSAL`] (`FFH_AI_VASSAL_OFF`, `vassals.rs`) and the
+//! trait switches (`FFH_AI_TRAIT_OFF` lists traits, [`TRAIT_CIVS`] civilizations; `traits.rs`).
 
 use std::sync::OnceLock;
 
 use ffh_core::game::Game;
 use ffh_core::ids::*;
-use ffh_data::{GameData, Idx};
+use ffh_data::{CivilizationType, GameData, Idx};
 
 pub struct Switch {
     name: &'static str,
     /// On unless listed in `FFH_AI_<NAME>_OFF`; when false, off unless listed in
     /// `FFH_AI_<NAME>_ONLY` (a behaviour kept for measurement whose cost is not worked out).
     default_on: bool,
+    /// The variables listing the civilizations without and with the behaviour, when they are not
+    /// `FFH_AI_<NAME>_OFF` and `FFH_AI_<NAME>_ONLY` (`None`: no such variable).
+    vars: Option<(Option<&'static str>, Option<&'static str>)>,
     table: OnceLock<Vec<bool>>,
 }
+
+// Switches of whole modules (see the module doc).
+
+/// This AI's spellcasting (`magic::enabled`); off, a civilization casts by FfH's terms
+/// (`casting.rs`). The barbarians always do.
+pub static MAGIC: Switch = Switch::new("MAGIC");
+/// Civilization-specific play (`civs::enabled`): off, a civilization plays as a generic one.
+pub static CIV: Switch = Switch::new("CIV");
+/// Vassal states (`vassals.rs`): off, a player neither seeks nor agrees to vassalage, and as the
+/// master takes a vassal only when it costs nothing. (`FFH_AI_VASSAL_OFF=1`, as before the switch
+/// was per civilization, is every civilization.)
+pub static VASSAL: Switch = Switch::new("VASSAL");
+/// The civilizations whose players play their leaders' traits (`traits.rs`):
+/// `FFH_AI_TRAIT_CIVS` lists them (unset: every one); the traits themselves are turned off by
+/// `FFH_AI_TRAIT_OFF` ([`env_list`], trait names).
+pub static TRAIT_CIVS: Switch = Switch::with_vars("TRAIT_CIVS", None, Some("FFH_AI_TRAIT_CIVS"));
+
+// Generic behaviours.
 
 /// Expert moments for the world spells FfH's conditions almost never allowed (`world_spells.rs`).
 pub static WS_TIMING: Switch = Switch::new("WS_TIMING");
 /// A prepared war is declared once the army stands near the target (`diplomacy::manage`).
 pub static WAR_STAGING: Switch = Switch::new("WAR_STAGING");
-/// City defenders weighed by the rival civilizations: in peacetime what deters a neighbour that
-/// would see us as an easy target, at war a pool shared by each city's war threat, and sorties
-/// only with a strength edge (`defense.rs`).
-pub static RIVAL_DEFENSE: Switch = Switch::new("RIVAL_DEFENSE");
-/// Field stacks heal as More Naval AI's do: only when most of the stack is hurt and where healing
-/// is good, the wounded splitting off in our cities (`military::heal`). On since round 7f, once a
-/// city/field threshold mismatch was fixed (docs/AI.md).
-pub static HEAL: Switch = Switch::new("HEAL");
 /// A stack next to an enemy city at war takes it when it is empty or the stack clearly covers it,
 /// even outside the operation (`military::opportune`).
 pub static CAPTURE: Switch = Switch::new("CAPTURE");
@@ -53,32 +71,8 @@ pub static FLEET: Switch = Switch::new("FLEET");
 /// Mana nodes as an economy: casters convert our raw mana into the node type worth most, a
 /// caster is trained for it, research values the node techs (`mana.rs`).
 pub static MANA_NODES: Switch = Switch::new("MANA_NODES");
-/// A small caster corps by role -- terraformer, city mages, war wizards -- and its training
-/// (`casters.rs`).
-pub static CASTER_ROLES: Switch = Switch::new("CASTER_ROLES");
-/// The damage a lost fight is expected to deal counts first strikes, in the strike's simulation
-/// and its sacrifices; a sacrifice (no attacker at 68%+) is the unit whose expected damage, not
-/// strength, is cheapest for what it costs, and none is sent that would leave the defender almost
-/// unhurt (`campaign::fight`, `campaign::strike`): Bloodpets and Moroi went at Acheron's city at
-/// odds 0, turn after turn, and left him at full health (a fork of seed 26002, turn 274: docs/AI.md,
-/// round 7f).
-pub static STRIKE_DAMAGE: Switch = Switch::new("STRIKE_DAMAGE");
-/// The strike's simulation plays the strike as it will be fought: the attackers in the order
-/// the strike picks them, each against the defender the rules put up against it; a siege engine's
-/// win no longer counts as a kill (`campaign::simulate_in_order`). On since round 7g.
-pub static SIM_FAITHFUL: Switch = Switch::new("SIM_FAITHFUL");
-/// Every attack outside a siege operation's strike -- a stack's assault, an adjacent target, a
-/// hunt, an opportune capture, a landing -- is decided on the simulation of the group attack:
-/// good odds for the attacker the rules send, or a grind that clears the plot at a favourable
-/// trade; a city to capture when it falls (`military::field_sim`, `military::field_go`). On since
-/// round 7g.
-pub static FIELD_SIM: Switch = Switch::new("FIELD_SIM");
-/// A siege strike starts at the odds that put the stacks in the strike phase (the adjacent ring
-/// takes the city, every defender 70% sure to fall) instead of waiting next to the city for a
-/// reserve (90%) (`campaign::strike`). On since round 7h.
-pub static STRIKE_AT_PHASE: Switch = Switch::new("STRIKE_AT_PHASE");
-/// For the conquerors (`campaign::conqueror`): `STRIKE_AT_PHASE`, and the strike phase at 60%
-/// sure instead of 70% (`campaign::covers`). On since round 7h.
+/// For the conquerors (`campaign::conqueror`): the strike phase at 60% sure instead of 70%
+/// (`combat_sim::covers`). On since round 7h.
 pub static BOLD_STRIKE: Switch = Switch::new("BOLD_STRIKE");
 /// A temporary summon on its last turn attacks at any odds when it is not its stack's cover
 /// (`casting::summon_target`).
@@ -106,11 +100,6 @@ pub static WAR_RECHECK: Switch = Switch::new("WAR_RECHECK");
 pub static COUNCIL: Switch = Switch::new("COUNCIL");
 /// Missionaries spread the state religion abroad once its shrine stands (`units::missionary`).
 pub static MISSIONARY_ABROAD: Switch = Switch::new("MISSIONARY_ABROAD");
-/// Built units are kept: More Naval AI's disband rule (`finance::disband_military`) instead of
-/// scrapping surplus garrisons and field units for their upkeep, and no extra defender against
-/// barbarians an interior city's garrison holds once units cost gold
-/// (`production::garrison_holds`; docs/AI.md, "Finance").
-pub static KEEP_UNITS: Switch = Switch::new("KEEP_UNITS");
 /// Heroes only in the top third of our cities by production, world wonders outside it only when
 /// quick (`production::top_production_city`).
 pub static TOP_CITIES: Switch = Switch::new("TOP_CITIES");
@@ -134,6 +123,13 @@ pub static CODE_EFFECTS: Switch = Switch::new("CODE_EFFECTS");
 pub static MANA_BUILDINGS: Switch = Switch::new("MANA_BUILDINGS");
 /// A unit we disband in a Demon's Altar city is sacrificed for research first (`unflagged.rs`).
 pub static SACRIFICE: Switch = Switch::new("SACRIFICE");
+/// A city under threat switches its production to a defender only when `production::decide`
+/// would put a fighter first (`production::emergency`); off, it always switches (and re-picks the
+/// same building when its garrison is full).
+pub static EMERGENCY_DECIDE: Switch = Switch::new("EMERGENCY_DECIDE");
+/// AI-to-AI deals (peace, gifts, bribes, trades, pacts) and offers to humans need both players to
+/// be able to contact the other (`diplomacy::can_talk`); off, the AI-to-AI ones did not ask.
+pub static CONTACT: Switch = Switch::new("CONTACT");
 /// The caster school: an Adept works at home until it is a Mage, casters cross dangerous ground
 /// only where they are sheltered, the Mage's tech and upgrade come sooner (`magic.rs`, "The
 /// caster school").
@@ -170,38 +166,60 @@ pub static CITY_SPELL_THREAT: Switch = Switch::new("CITY_SPELL_THREAT");
 /// (`diplomacy::can_take_cities_at`).
 pub static MAGIC_WAR: Switch = Switch::new("MAGIC_WAR");
 
-fn civ_list(var: &str) -> Option<Vec<String>> {
+/// The names environment variable `var` lists, comma-separated: trimmed, upper-cased, `prefix`
+/// (`CIVILIZATION_`, `TRAIT_`) taken off. `None` when it is unset or lists nothing.
+pub fn env_list(var: &str, prefix: &str) -> Option<Vec<String>> {
     let v = std::env::var(var).ok()?;
-    Some(v.split(',').map(|s| s.trim().trim_start_matches("CIVILIZATION_").to_ascii_uppercase()).filter(|s| !s.is_empty()).collect())
+    let names: Vec<String> = v.split(',').map(|s| s.trim().to_ascii_uppercase().trim_start_matches(prefix).to_string()).filter(|s| !s.is_empty()).collect();
+    (!names.is_empty()).then_some(names)
+}
+
+/// Does `list` ([`env_list`]) name `name` (without its prefix), or everything (`ALL`, `1`)?
+pub fn listed(list: &[String], name: &str) -> bool {
+    list.iter().any(|o| o == "ALL" || o == "1" || o == name)
 }
 
 impl Switch {
     pub const fn new(name: &'static str) -> Self {
-        Switch { name, default_on: true, table: OnceLock::new() }
+        Switch { name, default_on: true, vars: None, table: OnceLock::new() }
     }
 
     /// A switch that is off unless `FFH_AI_<NAME>_ONLY` lists the civilization (or `ALL`).
     pub const fn off_by_default(name: &'static str) -> Self {
-        Switch { name, default_on: false, table: OnceLock::new() }
+        Switch { name, default_on: false, vars: None, table: OnceLock::new() }
+    }
+
+    /// A switch (on by default) read from the variables `off` and `only` instead of
+    /// `FFH_AI_<NAME>_OFF` and `FFH_AI_<NAME>_ONLY`.
+    pub const fn with_vars(name: &'static str, off: Option<&'static str>, only: Option<&'static str>) -> Self {
+        Switch { name, default_on: true, vars: Some((off, only)), table: OnceLock::new() }
     }
 
     fn table(&self, d: &GameData) -> &[bool] {
         self.table.get_or_init(|| {
-            let off = civ_list(&format!("FFH_AI_{}_OFF", self.name)).unwrap_or_default();
-            let only = civ_list(&format!("FFH_AI_{}_ONLY", self.name));
+            let read = |var: Option<String>| var.and_then(|v| env_list(&v, "CIVILIZATION_"));
+            let (off, only) = match self.vars {
+                Some((off, only)) => (read(off.map(String::from)), read(only.map(String::from))),
+                None => (read(Some(format!("FFH_AI_{}_OFF", self.name))), read(Some(format!("FFH_AI_{}_ONLY", self.name)))),
+            };
+            let off = off.unwrap_or_default();
             d.civilizations
                 .keys()
                 .map(|c| {
                     let name = d.civilizations[c].base.type_.trim_start_matches("CIVILIZATION_");
-                    let listed = |l: &[String]| l.iter().any(|o| o == "ALL" || o == name);
-                    !listed(&off) && only.as_deref().map_or(self.default_on, listed)
+                    !listed(&off, name) && only.as_deref().map_or(self.default_on, |l| listed(l, name))
                 })
                 .collect()
         })
     }
 
+    /// Does civilization `c` play with the behaviour?
+    pub fn civ_on(&self, d: &GameData, c: CivilizationType) -> bool {
+        self.table(d)[c.idx()]
+    }
+
     /// Does player `p` play with the behaviour? (Players without a civilization: yes.)
     pub fn on(&self, g: &Game, p: PlayerId) -> bool {
-        g.player_get_civilization_type(p).map_or(self.default_on, |c| self.table(g.d)[c.idx()])
+        g.player_get_civilization_type(p).map_or(self.default_on, |c| self.civ_on(g.d, c))
     }
 }

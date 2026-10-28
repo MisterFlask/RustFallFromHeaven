@@ -334,7 +334,7 @@ pub fn path(v: &Viewer, finder: &mut PathFinder, units: &[UnitId], x: i32, y: i3
     let from = selection::plot(g, units);
     let (fx, fy) = g.map.xy(from);
     finder.set_group(Some(grp));
-    let ok = finder.generate_path(g, fx, fy, x, y, false, flags, false);
+    let ok = finder.generate_path(g, fx, fy, x, y, false, flags);
     let mut nodes = Vec::new();
     if ok {
         let mut node = finder.last_node().cloned();

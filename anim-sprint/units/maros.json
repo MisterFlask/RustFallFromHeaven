@@ -1,0 +1,105 @@
+{
+ "name": "maros",
+ "sprite": "m7/roster/units/unit_maros.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "Maros, the Khazad dwarf hero: short, broad and stocky, a steel helmet with gold trim and two large curved golden horns, a huge braided red beard, heavy grey steel plate armour with gold trim, a red cloth loincloth panel with a gold diamond buckle, gold-trimmed steel boots, a round steel-and-gold shield slung on his back behind his right shoulder, and a double-bladed steel battle axe with a gold head mount on a wooden haft gripped in his RIGHT hand at the end of the haft",
+ "hands": "the axe stays in his right hand at the end of the haft on the screen-left side; at rest his left hand also holds the haft higher up near the axe head on the screen-right side, and during the action it lets go and is an empty gauntleted fist; the round shield stays slung on his back",
+ "guide_style": "grey",
+ "scale": 0.84,
+ "head_r": 10,
+ "limb": 1.4,
+ "joints": {
+  "head": [
+   74,
+   61
+  ],
+  "neck": [
+   74,
+   70
+  ],
+  "chest": [
+   74,
+   80
+  ],
+  "pelvis": [
+   74,
+   100
+  ],
+  "r_sh": [
+   56,
+   70
+  ],
+  "r_el": [
+   60,
+   90
+  ],
+  "r_ha": [
+   71,
+   99
+  ],
+  "tip": [
+   106,
+   70
+  ],
+  "l_sh": [
+   90,
+   72
+  ],
+  "l_el": [
+   93,
+   90
+  ],
+  "l_ha": [
+   98,
+   82
+  ],
+  "r_hip": [
+   64,
+   104
+  ],
+  "r_kn": [
+   58,
+   112
+  ],
+  "r_ft": [
+   52,
+   122
+  ],
+  "l_hip": [
+   84,
+   104
+  ],
+  "l_kn": [
+   88,
+   112
+  ],
+  "l_ft": [
+   92,
+   122
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back toward the upper-left, the battle axe is lifted beside the head in the right hand with its axe head pointing up and back",
+   "2": "wind-up extreme: body coiled back and crouched, the axe hand behind the head and the battle axe hanging back and down behind the shoulders to the left, the left hand an empty fist tucked across the belly",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips round, the axe arm sweeps across in front of the chest and the axe is level, its double-bladed head pointing to the right",
+   "4": "contact: axe arm fully extended toward the lower-right, the battle axe head chopping down-right, front knee bent, body low and leaning in, the empty left fist swung back for balance",
+   "5": "follow-through: the axe carries on down until its head nearly touches the ground at the lower-right, torso twisted, the braided red beard swinging",
+   "6": "recover: body rises, front foot pulls back halfway, the axe comes back up on the near side toward the ready angle, the left hand reaching back toward the haft"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (axe arm thrown up and out to the left, the empty left fist flung out to the right)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the axe dipping, the empty left fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, axe arm flung up, the empty left fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, horned helmet droops, the axe lowering",
+   "3": "kneeling: on both knees, slumped forward, the battle axe's head resting on the ground at the lower-right, the empty left fist hanging",
+   "4": "falling back: torso tips back toward the upper-left, the axe slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back on top of his round shield along the ground, feet toward the lower-right and head toward the upper-left; the battle axe lies on the ground at the lower-right",
+   "6": "bounce: head and shoulders lift slightly off the ground, the horned helmet rocks",
+   "7": "corpse: lying flat and still on his back, eyes closed, the battle axe on the ground beside him, the round shield under his shoulders"
+  }
+ }
+}
