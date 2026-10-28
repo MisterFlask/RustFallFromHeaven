@@ -1,0 +1,105 @@
+{
+ "name": "losha",
+ "sprite": "m7/roster/units/unit_losha.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "Losha Valas, the Calabim vampire heroine: a pale woman with long flowing black hair, glowing red eyes and red lips, black spiked plate armour with red trim and a high red-lined collar, a long red-and-black skirt and a red cape trailing on the screen-left side, black armoured boots, and a dark steel curved sabre with a red crossguard in her LEFT hand",
+ "hands": "the sabre stays in her left hand on the screen-right side and her right hand is an empty black-gauntleted hand resting on her hip on the screen-left side",
+ "guide_style": "grey",
+ "scale": 1.09,
+ "head_r": 10,
+ "limb": 0.9,
+ "joints": {
+  "head": [
+   78,
+   44
+  ],
+  "neck": [
+   77,
+   55
+  ],
+  "chest": [
+   76,
+   64
+  ],
+  "pelvis": [
+   75,
+   79
+  ],
+  "r_sh": [
+   90,
+   58
+  ],
+  "r_el": [
+   93,
+   70
+  ],
+  "r_ha": [
+   98,
+   82
+  ],
+  "tip": [
+   123,
+   42
+  ],
+  "l_sh": [
+   62,
+   58
+  ],
+  "l_el": [
+   57,
+   66
+  ],
+  "l_ha": [
+   64,
+   72
+  ],
+  "r_hip": [
+   82,
+   90
+  ],
+  "r_kn": [
+   86,
+   104
+  ],
+  "r_ft": [
+   89,
+   120
+  ],
+  "l_hip": [
+   70,
+   90
+  ],
+  "l_kn": [
+   66,
+   104
+  ],
+  "l_ft": [
+   61,
+   120
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the sabre is lifted up over the head with its tip pointing up and back",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the sabre cocked behind the head with its curved blade hanging down behind the shoulders, the empty right hand tucked in",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the arm sweeps over the head and the curved blade is level, pointing to the lower-right",
+   "4": "contact: sabre arm fully extended toward the lower-right, the curved blade slashing down-right, front knee bent, body low and leaning in, the empty right hand swung back for balance",
+   "5": "follow-through: the curved blade carries on down until its tip nearly touches the ground at the lower-right, torso twisted, the long black hair and red cape trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the sabre lifts back toward the ready angle"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (the empty right hand flung out to the left, sabre arm thrown up and out)",
+   "1": "recoil extreme: leaning back further, knees bent, the sabre dipping, the empty right hand still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, sabre arm flung up, the empty right hand drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the sabre lowering",
+   "3": "kneeling: on both knees, slumped forward, the sabre's tip resting on the ground, the empty right hand hanging",
+   "4": "falling back: torso tips back toward the upper-left, the sabre slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on her back along the ground, feet toward the lower-right and head toward the upper-left; the sabre lies on the ground at the lower-right; her long black hair and red cape spread under her",
+   "6": "bounce: head and shoulders lift slightly off the ground, the long black hair and red cape settle",
+   "7": "corpse: lying flat and still on her back, eyes closed, the sabre on the ground beside her"
+  }
+ }
+}
