@@ -14751,7 +14751,7 @@
    120
   ],
   "anchor": "canvas bottom-centre on tile centre",
-  "round": "r1",
+  "round": "r2",
   "variant": 2,
   "mirrored": false,
   "images": [
@@ -14760,7 +14760,7 @@
    "prompts/assets/unit_hippus_adept__ref3x_adept.png"
   ],
   "prompt": "prompts/assets/unit_hippus_adept.txt",
-  "accepted": "2026-10-28 05:01",
+  "accepted": "2026-10-28 05:03",
   "height": 88,
   "pixel": 1,
   "key": "#ff00ff",
@@ -15021,6 +15021,162 @@
   "prompt": "prompts/assets/unit_imp.txt",
   "accepted": "2026-10-28 05:02",
   "height": 72,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_grigori_warrior": {
+  "kind": "unit",
+  "file": "roster/units/unit_grigori_warrior.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 2,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "prompts/assets/unit_grigori_warrior__c5_roster_grigori.png",
+   "prompts/assets/unit_grigori_warrior__ref3x_warrior.png"
+  ],
+  "prompt": "prompts/assets/unit_grigori_warrior.txt",
+  "accepted": "2026-10-28 05:03",
+  "height": 90,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_grigori_axeman": {
+  "kind": "unit",
+  "file": "roster/units/unit_grigori_axeman.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 2,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "prompts/assets/unit_grigori_axeman__c5_roster_grigori.png",
+   "prompts/assets/unit_grigori_axeman__ref3x_axeman.png"
+  ],
+  "prompt": "prompts/assets/unit_grigori_axeman.txt",
+  "accepted": "2026-10-28 05:03",
+  "height": 86,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_grigori_adept": {
+  "kind": "unit",
+  "file": "roster/units/unit_grigori_adept.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 2,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "prompts/assets/unit_grigori_adept__c5_roster_grigori.png",
+   "prompts/assets/unit_grigori_adept__ref3x_adept.png"
+  ],
+  "prompt": "prompts/assets/unit_grigori_adept.txt",
+  "accepted": "2026-10-28 05:03",
+  "height": 88,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_grigori_worker": {
+  "kind": "unit",
+  "file": "roster/units/unit_grigori_worker.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 2,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "prompts/assets/unit_grigori_worker__c5_roster_grigori.png",
+   "prompts/assets/unit_grigori_worker__ref3x_worker.png"
+  ],
+  "prompt": "prompts/assets/unit_grigori_worker.txt",
+  "accepted": "2026-10-28 05:03",
+  "height": 82,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_grigori_settler": {
+  "kind": "unit",
+  "file": "roster/units/unit_grigori_settler.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 2,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "prompts/assets/unit_grigori_settler__c5_roster_grigori.png",
+   "prompts/assets/unit_grigori_settler__ref3x_settler.png"
+  ],
+  "prompt": "prompts/assets/unit_grigori_settler.txt",
+  "accepted": "2026-10-28 05:03",
+  "height": 90,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_grigori_horseman": {
+  "kind": "unit",
+  "file": "roster/units/unit_grigori_horseman.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 2,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "prompts/assets/unit_grigori_horseman__c5_roster_grigori.png",
+   "prompts/assets/unit_grigori_horseman__ref3x_horseman.png"
+  ],
+  "prompt": "prompts/assets/unit_grigori_horseman.txt",
+  "accepted": "2026-10-28 05:03",
+  "height": 100,
   "pixel": 1,
   "key": "#ff00ff",
   "holes": 30,
