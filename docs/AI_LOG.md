@@ -330,10 +330,13 @@ change also in full games, the allied-barbarian one with the Clan of Embers forc
    figures were not the ground). If
    the two are reconciled again, the shared notion is urgency, not a count: placement ranks
    cities by what can strike them against their garrison (`View::peril`), and production knows
-   it trains reserves for the cities around it. Noticed, not changed: in placement's search for
-   a needy city (`units::garrison_unit`), a city whose defenders already took their orders this
-   turn counts them twice (committed and present), so spares walk mostly to cities whose
-   garrisons come later in the turn's order.
+   it trains reserves for the cities around it. Noticed then, fixed since (a bug, kept whatever
+   it measured): in placement's search for a needy city (`units::garrison_unit`), a city whose
+   defenders already took their orders this turn counted them twice (committed and present), so
+   spares walked mostly to cities whose garrisons came later in the turn's order. Counted once
+   (seeds 1-48, 6 civs, 300 turns, against the double count): cities lost to the barbarians
+   128 -> 104, cities captured by civs 225 -> 194, civs alive at turn 300 273 -> 279,
+   population +2.3%, production +4%, leader share and legacy score unchanged.
 
 ### Settlers under a threat the garrison holds (reverted)
 
