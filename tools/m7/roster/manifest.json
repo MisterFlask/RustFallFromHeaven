@@ -15263,5 +15263,86 @@
   "gen_size": "1024x1024",
   "quality": "medium",
   "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_luchuirp_town": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_luchuirp_town.png",
+  "size": [
+   192,
+   134
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "ref/crop_city.png",
+   "anchors/buildings/crop_houses.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_luchuirp_town.txt",
+  "accepted": "2026-10-28 05:04",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_kuriotates_town": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_kuriotates_town.png",
+  "size": [
+   192,
+   146
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "ref/crop_city.png",
+   "anchors/buildings/crop_keep.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_kuriotates_town.txt",
+  "accepted": "2026-10-28 05:04",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_amurites_town": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_amurites_town.png",
+  "size": [
+   192,
+   130
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r2",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "ref/crop_city.png",
+   "anchors/buildings/crop_keep.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_amurites_town.txt",
+  "accepted": "2026-10-28 05:04",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
  }
 }

@@ -3,7 +3,10 @@
 export const SPRITES = {
   bld_camp: { w: 192, h: 134, box: [4, 0, 188, 134] },
   bld_city: { w: 384, h: 250, box: [6, 0, 378, 250] },
+  bld_city_amurites_town: { w: 192, h: 130, box: [4, 0, 188, 130] },
   bld_city_castle: { w: 192, h: 152, box: [4, 0, 188, 152] },
+  bld_city_kuriotates_town: { w: 192, h: 146, box: [4, 0, 188, 146] },
+  bld_city_luchuirp_town: { w: 192, h: 134, box: [4, 0, 188, 134] },
   bld_city_town: { w: 192, h: 134, box: [4, 0, 188, 134] },
   bld_city_village: { w: 192, h: 130, box: [4, 0, 188, 130] },
   bld_cottage: { w: 192, h: 110, box: [28, 0, 164, 98] },
