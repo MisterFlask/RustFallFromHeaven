@@ -1,1 +1,12 @@
-{"total": 30.0, "tags": {"m7": 15.0, "m7/units": 6.0, "m7/buildings": 4.0, "m7/terrain": 4.0, "test": 2.0, "ui": 18.0, "ui/leaders": 14.0}}
+{
+ "total": 60.0,
+ "tags": {
+  "m7": 40.0,
+  "m7/units": 30.0,
+  "m7/buildings": 4.0,
+  "m7/terrain": 4.0,
+  "test": 2.0,
+  "ui": 18.0,
+  "ui/leaders": 14.0
+ }
+}

@@ -182,7 +182,7 @@ const UNIT_ALIASES = {
   wraith: ["spectre"], shade: ["spectre"], ghost: ["spectre"], mistform: ["spectre"], severed_soul: ["spectre"],
   divided_soul: ["spectre"], eidolon: ["spectre"], diseased_corpse: ["skeleton"], pyre_zombie: ["skeleton"],
   drown: ["skeleton"], ogre: ["ogre_embers"], ogre_warchief: ["ogre_embers"], stoneskin_ogre: ["ogre_embers"],
-  minotaur: ["ogre_embers"],
+  minotaur: ["ogre_embers"], brigit_held: ["brigit"], rosier_oathtaker: ["rosier"],
 };
 
 /** The last resorts by combat type and domain. */
