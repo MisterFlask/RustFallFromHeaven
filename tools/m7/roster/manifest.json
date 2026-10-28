@@ -16289,5 +16289,356 @@
   "gen_size": "1024x1024",
   "quality": "medium",
   "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_lanun_village": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_lanun_village.png",
+  "size": [
+   192,
+   136
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 2,
+  "mirrored": false,
+  "images": [
+   "anchors/buildings/crop_houses.png",
+   "prompts/assets/bld_city_lanun_village__bld_city_lanun_town_r1_3.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_lanun_village.txt",
+  "accepted": "2026-10-28 05:12",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_lanun_castle": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_lanun_castle.png",
+  "size": [
+   192,
+   162
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "ref/crop_city.png",
+   "prompts/assets/bld_city_lanun_castle__bld_city_lanun_town_r1_3.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_lanun_castle.txt",
+  "accepted": "2026-10-28 05:12",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_doviello_castle": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_doviello_castle.png",
+  "size": [
+   192,
+   162
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r2",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "ref/crop_city.png",
+   "prompts/assets/bld_city_doviello_castle__bld_city_doviello_town_r2_3.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_doviello_castle.txt",
+  "accepted": "2026-10-28 05:12",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_hippus_town": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_hippus_town.png",
+  "size": [
+   192,
+   116
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "ref/crop_city.png",
+   "anchors/buildings/crop_houses.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_hippus_town.txt",
+  "accepted": "2026-10-28 05:13",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_illians_town": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_illians_town.png",
+  "size": [
+   192,
+   138
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r2",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "ref/crop_city.png",
+   "prompts/assets/bld_city_castle__bld_city_town_r2_1.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_illians_town.txt",
+  "accepted": "2026-10-28 05:13",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_clan_of_embers_town": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_clan_of_embers_town.png",
+  "size": [
+   192,
+   136
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 3,
+  "mirrored": false,
+  "images": [
+   "ref/crop_city.png",
+   "anchors/buildings/crop_houses.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_clan_of_embers_town.txt",
+  "accepted": "2026-10-28 05:13",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_elohim_castle": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_elohim_castle.png",
+  "size": [
+   192,
+   174
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 2,
+  "mirrored": false,
+  "images": [
+   "ref/crop_city.png",
+   "prompts/assets/bld_city_elohim_castle__bld_city_elohim_town_r1_2.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_elohim_castle.txt",
+  "accepted": "2026-10-28 05:13",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_hippus_village": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_hippus_village.png",
+  "size": [
+   192,
+   106
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "anchors/buildings/crop_houses.png",
+   "prompts/assets/bld_city_hippus_village__bld_city_hippus_town_r1_1.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_hippus_village.txt",
+  "accepted": "2026-10-28 05:14",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_hippus_castle": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_hippus_castle.png",
+  "size": [
+   192,
+   150
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "ref/crop_city.png",
+   "prompts/assets/bld_city_hippus_castle__bld_city_hippus_town_r1_1.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_hippus_castle.txt",
+  "accepted": "2026-10-28 05:14",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_svartalfar_town": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_svartalfar_town.png",
+  "size": [
+   192,
+   144
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r2",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "ref/crop_forest.png",
+   "ref/crop_city.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_svartalfar_town.txt",
+  "accepted": "2026-10-28 05:14",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#00ffff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_mercurians_town": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_mercurians_town.png",
+  "size": [
+   192,
+   134
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "ref/crop_city.png",
+   "anchors/buildings/crop_houses.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_mercurians_town.txt",
+  "accepted": "2026-10-28 05:14",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_illians_village": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_illians_village.png",
+  "size": [
+   192,
+   130
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "anchors/buildings/crop_houses.png",
+   "prompts/assets/bld_city_illians_village__bld_city_illians_town_r2_1.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_illians_village.txt",
+  "accepted": "2026-10-28 05:15",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_illians_castle": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_illians_castle.png",
+  "size": [
+   192,
+   166
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "ref/crop_city.png",
+   "prompts/assets/bld_city_illians_castle__bld_city_illians_town_r2_1.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_illians_castle.txt",
+  "accepted": "2026-10-28 05:15",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
  }
 }
