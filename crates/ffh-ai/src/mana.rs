@@ -111,7 +111,7 @@ pub fn node_value(g: &Game, p: PlayerId, bonus: BonusType) -> i32 {
     // Affinities (a unit's strength grows with the mana of its type: Fire Elementals, ...).
     let affinity: i32 = pl.units.iter().map(|&u| g.units[u].bonus_affinity[bonus].max(0)).sum();
     v += affinity * 40;
-    v
+    crate::traits::node_value(g, p, bonus, v) // trait-play
 }
 
 /// The buildings of our civilization that need mana `bonus` (`<Bonus>` or one of `<PrereqBonuses>`)
