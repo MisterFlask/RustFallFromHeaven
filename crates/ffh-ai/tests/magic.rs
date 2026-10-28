@@ -3,7 +3,9 @@
 //! Enchanted Blade and Haste blesses its stack rather than hasting it at the end of a quiet turn,
 //! a fresh summon attacks only a fight it has a chance in unless it is about to expire and covers
 //! no one, Donal recruits once in a big city, a caster builds a mana node on our raw mana and
-//! Govannon teaches his spheres.
+//! Govannon teaches his spheres; a Fireball does nothing to a Fire Elemental, and the barrage
+//! softens the stack at our gates before our units move, the force estimate counts a Mage's
+//! Fireball, and a besieged city gets its Wall of Stone.
 //! They fix no unit's stats, only what the spells are for.
 
 use std::sync::Arc;
@@ -343,7 +345,7 @@ fn a_caster_builds_a_mana_node_on_our_raw_mana() {
 #[test]
 fn govannon_teaches_his_spheres_to_the_garrison() {
     let d = ffh_data::global();
-    let mut g = one_landmass_game(18);
+    let mut g = one_landmass_game(19);
     let us = PlayerId(0);
     if !ffh_ai::switches::TEACH_SPELLS.on(&g, us) {
         return;
@@ -419,4 +421,113 @@ fn an_apprentice_stays_home_and_casters_step_only_beside_our_units() {
     let mut v = View::new(&g, us);
     assert!(magic::sheltered(&g, &v, mage, next));
     assert_eq!(magic::safe_step(&g, &mut v, mage, east), Some(next), "the Mage steps beside the Axeman");
+}
+
+#[test]
+fn a_fireball_does_nothing_to_a_fire_elemental() {
+    let d = ffh_data::global();
+    let mut g = one_landmass_game(17);
+    let (us, them) = (PlayerId(0), PlayerId(1));
+    if !magic::enabled(&g, us) || !ffh_ai::switches::BARRAGE.on(&g, us) {
+        return;
+    }
+    g.player_found(us, 3, 5);
+    g.player_found(them, 16, 5);
+    let (ut, tt) = (g.players[us].team, g.players[them].team);
+    g.team_declare_war(ut, tt, true, None);
+    // A Fire Elemental next to our mage, in the open: immune to fire, and a Fireball is all fire.
+    let mage = g.player_init_unit(us, d.t::<UnitType>("UNIT_MAGE"), 8, 5, Some(UnitAIType::UNITAI_MAGE), None);
+    give(&mut g, mage, &["PROMOTION_FIRE1", "PROMOTION_FIRE2"]);
+    let elemental = g.player_init_unit(them, d.t::<UnitType>("UNIT_FIRE_ELEMENTAL"), 9, 5, Some(UnitAIType::UNITAI_ATTACK), None);
+    let fireball = d.t::<SpellType>("SPELL_FIREBALL");
+    assert!(g.unit_can_cast(mage, fireball, false));
+    let ep = g.unit_plot(elemental);
+    assert_eq!(magic::summon_fight(&g, us, d.t::<UnitType>("UNIT_FIREBALL"), ep), None, "a Fireball cannot fight a Fire Elemental");
+    // A Warrior instead: the Fireball takes hit points from it.
+    g.unit_kill(elemental, false, None);
+    let warrior = g.player_init_unit(them, d.t::<UnitType>("UNIT_WARRIOR"), 9, 5, Some(UnitAIType::UNITAI_ATTACK), None);
+    let wp = g.unit_plot(warrior);
+    assert!(magic::summon_fight(&g, us, d.t::<UnitType>("UNIT_FIREBALL"), wp).is_some_and(|(_, hp)| hp > 0));
+}
+
+#[test]
+fn the_barrage_softens_the_stack_at_our_gates_before_our_units_move() {
+    let d = ffh_data::global();
+    let mut g = one_landmass_game(19);
+    let (us, them) = (PlayerId(0), PlayerId(1));
+    if !magic::enabled(&g, us) || !ffh_ai::switches::BARRAGE.on(&g, us) {
+        return;
+    }
+    g.player_found(us, 4, 5);
+    g.player_found(them, 16, 5);
+    let (ut, tt) = (g.players[us].team, g.players[them].team);
+    g.team_declare_war(ut, tt, true, None);
+    // Our city mage of the Fire sphere, and three enemy Warriors at the gates.
+    let mage = g.player_init_unit(us, d.t::<UnitType>("UNIT_MAGE"), 4, 5, Some(UnitAIType::UNITAI_MAGE), None);
+    give(&mut g, mage, &["PROMOTION_FIRE1", "PROMOTION_FIRE2"]);
+    g.player_init_unit(us, d.t::<UnitType>("UNIT_AXEMAN"), 4, 5, Some(UnitAIType::UNITAI_CITY_DEFENSE), None);
+    let warriors: Vec<UnitId> = (0..3).map(|_| g.player_init_unit(them, d.t::<UnitType>("UNIT_WARRIOR"), 5, 5, Some(UnitAIType::UNITAI_ATTACK), None)).collect();
+    let hp = |g: &Game| warriors.iter().filter(|&&w| g.units.contains(w)).map(|&w| g.unit_curr_hit_points(w)).sum::<i32>();
+    let before = hp(&g);
+    let v = View::new(&g, us);
+    if magic::choose_turn_spell(&g, &v, mage).map_or(true, |(s, _)| d.spells[s].base.type_ != "SPELL_FIREBALL") {
+        // A civilization whose mage prefers a spell of its own (the Balseraphs' puppets): it
+        // keeps it for the end of the turn.
+        return;
+    }
+    ffh_ai::casting::barrage(&mut g, &v);
+    assert!(g.units[mage].has_casted, "the mage casts at the start of the turn");
+    assert!(hp(&g) < before, "the Fireball hurt the Warriors before our units move ({before} -> {})", hp(&g));
+}
+
+#[test]
+fn the_force_estimate_counts_the_mages_fireballs() {
+    let d = ffh_data::global();
+    let mut g = one_landmass_game(20);
+    let (us, them) = (PlayerId(0), PlayerId(1));
+    if !magic::enabled(&g, us) {
+        return;
+    }
+    g.player_found(us, 4, 5);
+    g.player_found(them, 12, 5);
+    let target = g.players[them].capital_city.expect("the enemy founded a city");
+    let tp = g.city_plot(target);
+    let defs: Vec<UnitId> = (0..3).map(|_| g.player_init_unit(them, d.t::<UnitType>("UNIT_WARRIOR"), 12, 5, Some(UnitAIType::UNITAI_CITY_DEFENSE), None)).collect();
+    let mage = g.player_init_unit(us, d.t::<UnitType>("UNIT_MAGE"), 11, 5, Some(UnitAIType::UNITAI_WARWIZARD), None);
+    let (ut, tt) = (g.players[us].team, g.players[them].team);
+    g.team_declare_war(ut, tt, true, None);
+    // Without a damage sphere the mage softens nothing; with Fire II its Fireball takes hit points.
+    assert_eq!(magic::planned_soften(&g, tp, &defs, &[mage]).iter().sum::<i32>(), 0);
+    give(&mut g, mage, &["PROMOTION_FIRE1", "PROMOTION_FIRE2"]);
+    let soften = magic::planned_soften(&g, tp, &defs, &[mage, mage]);
+    assert_eq!(soften.len(), defs.len());
+    assert!(soften.iter().sum::<i32>() > 0, "the Fireball's fight and collateral damage count: {soften:?}");
+    // A caster counts once, however often it is listed.
+    assert_eq!(soften, magic::planned_soften(&g, tp, &defs, &[mage]));
+}
+
+#[test]
+fn a_besieged_city_gets_its_wall_of_stone() {
+    let d = ffh_data::global();
+    let mut g = one_landmass_game(21);
+    let (us, them) = (PlayerId(0), PlayerId(1));
+    if !magic::enabled(&g, us) || !ffh_ai::switches::CITY_SPELL_THREAT.on(&g, us) {
+        return;
+    }
+    g.player_found(us, 4, 5);
+    g.player_found(them, 16, 5);
+    let wall = d.t::<SpellType>("SPELL_WALL_OF_STONE");
+    let adept = g.player_init_unit(us, d.t::<UnitType>("UNIT_ADEPT"), 4, 5, Some(UnitAIType::UNITAI_MAGE), None);
+    give(&mut g, adept, &["PROMOTION_EARTH1"]);
+    g.player_init_unit(us, d.t::<UnitType>("UNIT_ARCHER"), 4, 5, Some(UnitAIType::UNITAI_CITY_DEFENSE), None);
+    assert!(g.unit_can_cast(adept, wall, false));
+    let quiet = magic::turn_value(&g, &View::new(&g, us), adept, wall).expect("Wall of Stone is understood");
+    // An enemy stack at the gates.
+    let (ut, tt) = (g.players[us].team, g.players[them].team);
+    g.team_declare_war(ut, tt, true, None);
+    for _ in 0..3 {
+        g.player_init_unit(them, d.t::<UnitType>("UNIT_AXEMAN"), 6, 5, Some(UnitAIType::UNITAI_ATTACK), None);
+    }
+    let besieged = magic::turn_value(&g, &View::new(&g, us), adept, wall).expect("Wall of Stone is understood");
+    assert!(besieged > quiet && besieged >= 15, "the wall is worth more under threat ({quiet} -> {besieged})");
 }

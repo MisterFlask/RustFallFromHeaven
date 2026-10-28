@@ -294,6 +294,14 @@ pub(crate) fn worth(g: &Game, u: UnitId) -> i64 {
 /// sent its sacrifices first, a defender at an eighth of its expected health counted as dead, and
 /// a siege engine's win as a kill: the simulation saw the city fall where the strike stalled.)
 pub fn simulate(g: &Game, tp: PlotIdx, defs: &[UnitId], atts: &[UnitId], wall_cut: i32, order: Order, kill_pct: i64, sure: i64) -> Sim {
+    simulate_softened(g, tp, defs, &[], atts, wall_cut, order, kill_pct, sure)
+}
+
+/// [`simulate`] with the defenders `defs` hurt by `soften` more hit points each (in their order;
+/// empty: none): what our casters take from them first (`magic::planned_soften`).
+#[allow(clippy::too_many_arguments)]
+pub fn simulate_softened(g: &Game, tp: PlotIdx, defs: &[UnitId], soften: &[i32], atts: &[UnitId], wall_cut: i32, order: Order, kill_pct: i64, sure: i64) -> Sim {
+    let health = |i: usize, d: UnitId| (g.unit_curr_hit_points(d) - soften.get(i).copied().unwrap_or(0)).max(0);
     let n_def = defs.len();
     let atts: Vec<UnitId> = atts.iter().copied().filter(|&u| fights(g, u)).collect();
     let n_att = atts.len();
@@ -301,7 +309,7 @@ pub fn simulate(g: &Game, tp: PlotIdx, defs: &[UnitId], atts: &[UnitId], wall_cu
         return Sim { used: Some(0), n_def, hp_left: 0, best: 1000, n_att, ..Sim::default() };
     }
     let Some(&first) = atts.first() else {
-        return Sim { used: None, n_def, hp_left: defs.iter().map(|&d| g.unit_curr_hit_points(d)).sum(), best: 0, n_att, ..Sim::default() };
+        return Sim { used: None, n_def, hp_left: defs.iter().enumerate().map(|(i, &d)| health(i, d)).sum(), best: 0, n_att, ..Sim::default() };
     };
     let owner = g.units[first].owner;
     let precious = crate::switches::PRECIOUS.on(g, owner);
@@ -310,7 +318,8 @@ pub fn simulate(g: &Game, tp: PlotIdx, defs: &[UnitId], atts: &[UnitId], wall_cu
     // fallen when the chance it is still alive is `sure` per mille or less. (Its expected health,
     // which blends the fights it lost and the ones it won, is no measure: after a 50% fight it
     // reads low while the defender is alive half the time and still has to be killed.)
-    let mut ds: Vec<(UnitId, i32, i64, i64)> = defs.iter().map(|&d| (d, g.unit_curr_hit_points(d), 1000, worth(g, d))).collect();
+    // A defender our casters leave at no health is dead before the first attack.
+    let mut ds: Vec<(UnitId, i32, i64, i64)> = defs.iter().enumerate().map(|(i, &d)| (d, health(i, d), if health(i, d) > 0 { 1000 } else { 0 }, worth(g, d))).collect();
     let standing = |d: &(UnitId, i32, i64, i64)| d.2 > sure;
     let pairs: Vec<Vec<Option<Pair>>> = atts
         .iter()
@@ -462,21 +471,35 @@ pub(crate) fn wall_cut(g: &Game, c: CityId, units: &[UnitId]) -> i32 {
 /// Does `units` take city `c` (plot `tp`, defenders `defs`)? With `spare`, with a reserve: every
 /// defender 90% sure to fall rather than 70% ([`covers_sim`]).
 pub(crate) fn covers(g: &Game, c: CityId, tp: PlotIdx, defs: &[UnitId], units: &[UnitId], spare: bool, siege: bool) -> bool {
+    covers_with(g, c, tp, defs, units, &[], spare, siege)
+}
+
+/// [`covers`] once our `casters` have cast on the defenders (`magic::planned_soften`, switch
+/// `CASTER_FORCE`).
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn covers_with(g: &Game, c: CityId, tp: PlotIdx, defs: &[UnitId], units: &[UnitId], casters: &[UnitId], spare: bool, siege: bool) -> bool {
     if !units.iter().any(|&u| fights(g, u)) {
         return false;
     }
-    let s = covers_sim(g, c, tp, defs, units, spare, siege);
+    let s = covers_sim_with(g, c, tp, defs, units, casters, spare, siege);
     s.used.is_some() || s.best >= 850 && defs.len() == 1
 }
 
 /// The simulation [`covers`] judges (also what the strike's trace shows: printing another one,
 /// at a different sureness, showed a strike going ahead on a simulation where the city held).
 pub(crate) fn covers_sim(g: &Game, c: CityId, tp: PlotIdx, defs: &[UnitId], units: &[UnitId], spare: bool, siege: bool) -> Sim {
+    covers_sim_with(g, c, tp, defs, units, &[], spare, siege)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn covers_sim_with(g: &Game, c: CityId, tp: PlotIdx, defs: &[UnitId], units: &[UnitId], casters: &[UnitId], spare: bool, siege: bool) -> Sim {
     let cut = if siege { wall_cut(g, c, units) } else { 0 };
     // The confidence is the simulation's own -- every defender 90% sure to fall with a reserve to
     // spare, 70% sure without -- in place of attackers held in reserve against an estimate that
     // was optimistic. (At 95% and 80%, every civilization took 23% fewer cities, at no gain:
     // docs/AI.md, round 7g.) `BOLD_STRIKE` (conquerors): without a reserve, 60% sure.
-    let bold = bold_striker(g, g.units[units[0]].owner);
-    simulate(g, tp, defs, units, cut, Order::Strike, 100, if spare { 100 } else if bold { 400 } else { 300 })
+    let owner = g.units[units[0]].owner;
+    let bold = bold_striker(g, owner);
+    let soften = if casters.is_empty() || !crate::switches::CASTER_FORCE.on(g, owner) { Vec::new() } else { crate::magic::planned_soften(g, tp, defs, casters) };
+    simulate_softened(g, tp, defs, &soften, units, cut, Order::Strike, 100, if spare { 100 } else if bold { 400 } else { 300 })
 }

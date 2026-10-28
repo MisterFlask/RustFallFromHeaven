@@ -270,6 +270,52 @@ pub fn religion_stickiness(g: &Game, p: PlayerId) -> i32 {
 // Arcane and Summoner: casters
 // ----------------------------------------------------------------------------
 
+/// Does `p` take the arcane path (switch `ARCANE_PATH`): a magic leader (Arcane or Summoner)
+/// heads for Sorcery once the economy's tier 2 is in (`tech_plan`), with the sphere tech its mana
+/// makes worth most on the way; the Amurites' own plan did so, the other magic leaders reached
+/// Sorcery by the plain scores. (Earlier versions put Knowledge of the Ether right after the first
+/// essentials and Sorcery right after Writing: Adepts a century before their Mages, and an economy
+/// behind when the games are decided -- docs/AI_LOG.md, "Magic civilizations".)
+pub fn arcane_path(g: &Game, p: PlayerId) -> bool {
+    (has(g, p, Trait::Arcane) || has(g, p, Trait::Summoner)) && crate::switches::ARCANE_PATH.on(g, p)
+}
+
+/// Does `p` field a magic leader's army (switch `MAGE_ARMY`; Arcane or Summoner): casters in
+/// proportion to its field army ([`mage_army_casters`]), on top of it. An expert who plays a magic
+/// civilization fights with his Mages: a Fireball softens what his swords then take, and a Wizard
+/// is never lost in the attack. Without it the corps stayed at (cities + 2) / 2 or less while the
+/// army grew: 4 casters to 45 field units at turn 400. (First version: one for every three field
+/// units, its war wizards counting toward the army target -- the casters replaced fighters and
+/// defenders, and the magic civilizations lost more cities: docs/AI_LOG.md, "Magic civilizations".)
+pub fn mage_army(g: &Game, p: PlayerId) -> bool {
+    (has(g, p, Trait::Arcane) || has(g, p, Trait::Summoner)) && crate::switches::MAGE_ARMY.on(g, p)
+}
+
+/// The casters a [`mage_army`] wants: one for every four field units (attackers, siege), once our
+/// Adepts can become Mages (we know the tech of a unit an Adept upgrades to: Sorcery); 0 before.
+/// Adepts trained for the army before then studied for a hundred turns at the economy's cost
+/// (docs/AI_LOG.md, "Magic civilizations").
+pub fn mage_army_casters(g: &Game, p: PlayerId) -> i32 {
+    use crate::production::count_ai;
+    if !mages_open(g, p) {
+        return 0;
+    }
+    (count_ai(g, p, UnitAIType::UNITAI_ATTACK) + count_ai(g, p, UnitAIType::UNITAI_ATTACK_CITY) + count_ai(g, p, UnitAIType::UNITAI_COLLATERAL)) / 4
+}
+
+/// Can `p`'s Adepts become Mages: its team knows the tech of a unit its Adept upgrades to.
+fn mages_open(g: &Game, p: PlayerId) -> bool {
+    let d = g.d;
+    let Some(civ) = g.player_get_civilization_type(p) else { return false };
+    let Some(adept) = d.ty::<UnitClassType>("UNITCLASS_ADEPT").and_then(|cl| d.civ_unit(civ, cl)) else { return false };
+    let team = g.players[p].team;
+    d.unit_classes
+        .keys()
+        .filter(|&cl| d.units[adept].upgrade_unit_class[cl])
+        .filter_map(|cl| d.civ_unit(civ, cl))
+        .any(|m| d.units[m].prereq_and_tech.map_or(true, |t| g.team_is_has_tech(team, Some(t))))
+}
+
 /// A production choice for city `c` (after the civilization's own): an Arcane leader keeps
 /// (cities + 2) / 3 casters, a Summoner (cities + 2) / 2 (its summons need casters, and they die
 /// in the fights where they summon), trained in its most productive safe city.

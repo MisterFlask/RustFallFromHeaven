@@ -301,9 +301,13 @@ pub(crate) fn casters_up_to(g: &Game, c: CityId, threat: i32, target: i32) -> Op
     let d = g.d;
     let p = g.cities[c].owner;
     let pl = &g.players[p];
-    if threat > 0 {
+    // A magic leader's army has its casters (`MAGE_ARMY`): one for every four field units at
+    // least, trained also while a raider the garrison holds is in sight.
+    let mage_army = crate::traits::mage_army(g, p);
+    if threat > 0 && !(mage_army && threat * 2 <= crate::production::garrison(g, p, g.city_plot(c)).1) {
         return None;
     }
+    let target = if mage_army { target.max(crate::traits::mage_army_casters(g, p)) } else { target };
     let civ = g.player_get_civilization_type(p)?;
     let adept = d.civ_unit(civ, d.ty::<UnitClassType>("UNITCLASS_ADEPT")?)?;
     let needs = crate::production::unit_building(d, civ, &d.units[adept]).and_then(|b| d.buildings[b].building_class_type);

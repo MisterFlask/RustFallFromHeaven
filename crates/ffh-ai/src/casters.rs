@@ -148,6 +148,10 @@ fn go(g: &mut Game, grp: GroupId, u: UnitId, q: PlotIdx, why: &str) {
 /// A city mage guards a city of its own: where it stands if no other city mage of ours is there,
 /// else the city without one that is most threatened, then the capital, then the largest, for the
 /// turns it takes (within 10).
+///
+/// Tried, not kept (`MAGE_FRONT`, docs/AI_LOG.md, "Magic civilizations"): a mage with a spell that
+/// hurts left a quiet city for a threatened one without a mage within six turns. The cities it
+/// went to were the ones that fell, and the casters fell with them.
 fn city_mage(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
     let p = v.p;
     let here = g.unit_plot(u);

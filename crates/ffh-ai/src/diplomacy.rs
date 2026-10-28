@@ -1006,7 +1006,26 @@ pub(crate) fn can_take_cities_at(g: &Game, p: PlayerId, other: PlayerId, margin:
     let Some(best_defense) = weakest else { return false };
     // Fortified in a city: roughly +50%; siege engines take most of that away.
     let needed = best_defense * if siege { 85 } else { margin } / 100;
-    best_attack >= needed
+    // Our Mages' Fireballs soften the defenders first (`MAGIC_WAR`): a defender left at 80% of its
+    // health fights at 80% of its strength.
+    let soften = magic_soften_pct(g, p);
+    if soften > 0 && best_attack < needed && best_attack >= needed * (100 - soften) / 100 {
+        crate::trace!(g, p, "  magic war: our casters make {:?}'s cities takeable (attack {} against {} less {}%)", other, best_attack, needed, soften);
+    }
+    best_attack >= needed * (100 - soften) / 100
+}
+
+/// How much of a city defender's health our casters' damage takes before our attackers go in, in
+/// percent (switch `MAGIC_WAR`): 10 for each caster of ours whose spells hurt (a Mage's Fireball:
+/// 15 to 30 hit points on a fortified defender, but not every caster reaches every strike), 40 at
+/// most. An expert who fights with Mages counts their Fireballs when he judges a city takeable;
+/// without it a magic civilization judged its targets by its swords alone.
+fn magic_soften_pct(g: &Game, p: PlayerId) -> i32 {
+    if !crate::switches::MAGIC_WAR.on(g, p) {
+        return 0;
+    }
+    let n = g.players[p].units.iter().filter(|&&u| crate::mana::is_caster(g, u) && crate::magic::damage_caster(g, u)).count() as i32;
+    (n * 10).min(40)
 }
 
 /// The war our victory plan calls for (victory-pursuit): against the rival about to win, else,

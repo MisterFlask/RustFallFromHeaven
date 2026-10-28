@@ -100,6 +100,9 @@ enum Step {
     Economy2Rest,
     /// The magic techs, once tier 3 military and economy tier 2 are reached.
     Magic,
+    /// A magic leader's Mages: Sorcery with a sphere tech on the way, after the economy's tier 2
+    /// (`ARCANE_PATH`).
+    ArcaneSorcery,
 }
 
 /// The plan, most urgent first.
@@ -118,6 +121,7 @@ const ORDER: &[Step] = &[
     Step::Tech("TECH_CARTOGRAPHY"),
     Step::Sailing,
     Step::Economy2,
+    Step::ArcaneSorcery,
     Step::Civ,
     Step::Economy2Rest,
     Step::Magic,
@@ -210,6 +214,14 @@ pub fn goals(g: &Game, p: PlayerId) -> Vec<Goal> {
                     push(t, "civ");
                 }
             }
+            Step::ArcaneSorcery => {
+                if crate::traits::arcane_path(g, p) && !n.has("TECH_SORCERY") {
+                    if let Some(t) = sphere_tech(g, p, &n) {
+                        push(&d.techs[t].base.type_, "arcane");
+                    }
+                    push("TECH_SORCERY", "arcane");
+                }
+            }
             Step::Magic => {
                 if tier3 && econ2 {
                     for t in ["TECH_NECROMANCY", "TECH_ELEMENTALISM", "TECH_DIVINATION", "TECH_ALTERATION"] {
@@ -220,6 +232,24 @@ pub fn goals(g: &Game, p: PlayerId) -> Vec<Goal> {
         }
     }
     out
+}
+
+/// The sphere tech a magic leader takes on its way to Sorcery (any of the four opens it): one it
+/// knows already, else the one whose mana nodes are worth most on our raw mana
+/// (`mana::tech_value`), Necromancy first among equals for a Summoner (Death: Raise Skeleton,
+/// the Spectre), then the listed order.
+fn sphere_tech(g: &Game, p: PlayerId, n: &Names) -> Option<TechType> {
+    const SPHERES: [&str; 4] = ["TECH_NECROMANCY", "TECH_ELEMENTALISM", "TECH_ALTERATION", "TECH_DIVINATION"];
+    if SPHERES.iter().any(|t| n.has(t)) {
+        return None;
+    }
+    let summoner = crate::traits::has(g, p, crate::traits::Trait::Summoner);
+    SPHERES
+        .iter()
+        .enumerate()
+        .filter_map(|(i, name)| n.tech(name).filter(|&t| g.player_can_ever_research(p, t)).map(|t| (i, t)))
+        .max_by_key(|&(i, t)| (crate::mana::tech_value(g, p, t), summoner && i == 0, std::cmp::Reverse(i)))
+        .map(|(_, t)| t)
 }
 
 /// The three early religion techs, in the fixed fallback order of [`religion_preferences`].
