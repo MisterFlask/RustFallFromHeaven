@@ -112,19 +112,30 @@ pub fn type_defense_power(d: &GameData, ut: UnitType) -> i32 {
 }
 
 impl View {
+    /// The full view: the header and the analysis ([`View::analyze`]).
     pub fn new(g: &Game, p: PlayerId) -> View {
+        let mut v = View::header(g, p);
+        v.analyze(g);
+        v
+    }
+
+    /// Only who we are and whom we are at war with (`p`, `team`, `barbarian`, `enemies`,
+    /// `civ_enemies`); the analysis fields stay empty (`danger` too: [`View::danger_at`] panics
+    /// until [`View::analyze`]). Enough for the empire-level decisions at the start of a turn
+    /// (diplomacy, offers), which read nothing else.
+    pub fn header(g: &Game, p: PlayerId) -> View {
         let team = g.players[p].team;
         let barbarian = g.player_is_barbarian(p);
         let enemies: Vec<TeamId> = g.teams.keys().filter(|&t| t != team && g.teams[t].alive_count > 0 && g.at_war(team, t)).collect();
         let barb_team = g.players[g.barbarian_player()].team;
         let civ_enemies = enemies.iter().copied().filter(|&t| t != barb_team).collect();
-        let mut v = View {
+        View {
             p,
             team,
             barbarian,
             enemies,
             civ_enemies,
-            danger: vec![0; g.map.num_plots()],
+            danger: Vec::new(),
             claimed: Vec::new(),
             escort_requests: Vec::new(),
             roads: Vec::new(),
@@ -136,10 +147,18 @@ impl View {
             garrison: BTreeMap::new(),
             rival_def: BTreeMap::new(),
             flood: Flood::default(),
-        };
+        }
+    }
+
+    /// The analysis of the turn: the danger map, and for a civilization the field army
+    /// targets, the amphibious target, the road plan, the rival defenders and the cities in peril.
+    pub fn analyze(&mut self, g: &Game) {
+        let p = self.p;
+        let v = self;
+        v.danger = vec![0; g.map.num_plots()];
         v.build_danger(g);
         if !v.barbarian {
-            v.targets = crate::military::find_targets(g, &v);
+            v.targets = crate::military::find_targets(g, &*v);
             v.amphibious = crate::naval::amphibious_target(g, p);
             v.roads = crate::workers::road_plan(g, p);
             v.rival_def = crate::defense::all_rival_defenders(g, p);
@@ -152,7 +171,6 @@ impl View {
                 }
             }
         }
-        v
     }
 
     fn build_danger(&mut self, g: &Game) {
