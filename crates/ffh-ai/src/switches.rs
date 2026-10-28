@@ -154,6 +154,9 @@ pub static CASTER_STACKS: Switch = Switch::new("CASTER_STACKS");
 /// and units that do not move: a unit inside a marching stack waited for its promotions until a
 /// strike took it out of the stack (`units::play`).
 pub static PROMOTE_ALL: Switch = Switch::new("PROMOTE_ALL");
+/// A Summoner without a mana whose Mage-level spell summons a creature goes for one first: its
+/// node, research toward it, trade, the sphere's first promotion (`traits::summon_mana`).
+pub static SUMMON_MANA: Switch = Switch::new("SUMMON_MANA");
 
 fn civ_list(var: &str) -> Option<Vec<String>> {
     let v = std::env::var(var).ok()?;
