@@ -112,7 +112,7 @@ pub fn attack_ok(a: &Assessment, city: bool) -> bool {
 }
 
 /// The group attack of `grp` on plot `q` played in expected values as the rules will fight it
-/// (`campaign::simulate_in_order`, [`Order::Group`](crate::campaign::Order::Group)): the attackers
+/// (`campaign::simulate`, [`Order::Group`](crate::campaign::Order::Group)): the attackers
 /// that can attack there, against the defenders we see (switch `FIELD_SIM`). Raiders on our land
 /// or within three plots of one of our cities (any enemy but animals, which stay out of our
 /// borders) count four times what they are worth: left alone they take the city. (Valued at face
@@ -131,7 +131,7 @@ pub(crate) fn field_sim(g: &Game, grp: GroupId, q: PlotIdx) -> Option<crate::cam
     let (x, y) = g.map.xy(q);
     let near_city = ours || g.players[p].cities.iter().any(|&c| g.plot_distance(x, y, g.cities[c].x, g.cities[c].y) <= 3);
     let kill_pct = if !animals && near_city { 400 } else { 100 };
-    Some(crate::campaign::simulate_in_order(g, q, &defs, &atts, 0, crate::campaign::Order::Group, kill_pct, 200))
+    Some(crate::campaign::simulate(g, q, &defs, &atts, 0, crate::campaign::Order::Group, kill_pct, 200))
 }
 
 /// Is the group attack [`field_sim`] played worth starting (or, `fought`, going on with)? As an

@@ -815,14 +815,17 @@ army decision of each `play_turn` call (nothing outside `Game` is remembered).
   resources, a barbarian town near our cities) for its cost (the force it needs, the
   distance). Without that stickiness the target changed whenever a stack came close enough to
   see a garrison, and stacks walked back and forth between two or three cities.
-- *Force*: the strike is played out in expected values with the rules' odds (fortification,
-  city defense, first strikes, the attacker's health): collateral attackers first, then the
-  strongest; a lost fight still wounds (the rounds won before dying), collateral damage hits
-  the other defenders, siege engines that can bring the walls down in three turns count as
-  having done so. The force covers the city when the defenders fall; committing to *march* wants
-  a fifth of the attackers (at least one) to spare (so stacks do not advance understrength), but a
-  committed force already positioned next to or beside the city *strikes at acceptable odds* -- it
-  expects to clear the defenders without keeping that reserve -- rather than retreating to muster
+- *Force* (`campaign::simulate`, round 7g): the strike is played out in expected values with
+  the rules' odds (fortification, city defense, first strikes, the attacker's health) as it will
+  be fought: the attackers in the strike's own order, each against the defender the rules put up
+  against it; a lost fight still wounds (the rounds won before dying, first strikes counted),
+  a siege engine's win leaves the defender at its combat limit, collateral damage hits the
+  other defenders, siege engines that can bring the walls down in three turns count as having
+  done so. The force covers the city when every defender is 70% sure to be dead (60% for the
+  conquerors, `BOLD_STRIKE`); committing to *march* wants a reserve, every defender 90% sure
+  (so stacks do not advance understrength), but a committed force already positioned next to
+  or beside the city *strikes at acceptable odds* -- it expects to clear the defenders without
+  keeping that reserve (`STRIKE_AT_PHASE` before it was settled, round 7h) -- rather than retreating to muster
   an overwhelming force against a target that only hardens while it waits (a lone unit still never
   qualifies: it cannot clear a city). Unseen cities: 2 + population/5 defenders for a civ,
   1 + age/25 for a barbarian town -- but the force needed to *approach and reveal* an unseen
@@ -845,11 +848,11 @@ army decision of each `play_turn` call (nothing outside `Game` is remembered).
   defenders stand, then units summoned for good (skeletons and the like, `magic::raised`: free
   to replace, they wear the defenders down as siege fodder; the owner's call, 2026-10-20), then
   the best odds when 68%+, else the unit cheapest to lose for the damage it is expected to deal
-  (C++ `AI_getBestGroupSacrifice` weighs strength; switch `STRIKE_DAMAGE`), never one that would
+  (C++ `AI_getBestGroupSacrifice` weighs strength; round 7f), never one that would
   deal under a tenth of a defender's hit points -- while the attackers left still cover the
   defenders left (or the defenders are down to half their health and outnumbered). Up to three
   units follow the victor into the city. The expected damage of a lost fight, in the strike's
-  simulation and its sacrifices, counts first strikes (`fight`, `STRIKE_DAMAGE`): in the rounds a
+  simulation and its sacrifices, counts first strikes (`fight`, round 7f): in the rounds a
   side has first strikes left it cannot be hurt. Heroes and veterans (switch `PRECIOUS`; More
   Naval AI's `AI_getBestGroupAttacker`) below their odds -- a hero's 85% plus 1%
   a level, a unit above level 4 at 70% plus 3% a level (at most 95%) -- attack last in a strike:

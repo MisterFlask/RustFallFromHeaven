@@ -56,29 +56,14 @@ pub static MANA_NODES: Switch = Switch::new("MANA_NODES");
 /// A small caster corps by role -- terraformer, city mages, war wizards -- and its training
 /// (`casters.rs`).
 pub static CASTER_ROLES: Switch = Switch::new("CASTER_ROLES");
-/// The damage a lost fight is expected to deal counts first strikes, in the strike's simulation
-/// and its sacrifices; a sacrifice (no attacker at 68%+) is the unit whose expected damage, not
-/// strength, is cheapest for what it costs, and none is sent that would leave the defender almost
-/// unhurt (`campaign::fight`, `campaign::strike`): Bloodpets and Moroi went at Acheron's city at
-/// odds 0, turn after turn, and left him at full health (a fork of seed 26002, turn 274: docs/AI.md,
-/// round 7f).
-pub static STRIKE_DAMAGE: Switch = Switch::new("STRIKE_DAMAGE");
-/// The strike's simulation plays the strike as it will be fought: the attackers in the order
-/// the strike picks them, each against the defender the rules put up against it; a siege engine's
-/// win no longer counts as a kill (`campaign::simulate_in_order`). On since round 7g.
-pub static SIM_FAITHFUL: Switch = Switch::new("SIM_FAITHFUL");
 /// Every attack outside a siege operation's strike -- a stack's assault, an adjacent target, a
 /// hunt, an opportune capture, a landing -- is decided on the simulation of the group attack:
 /// good odds for the attacker the rules send, or a grind that clears the plot at a favourable
 /// trade; a city to capture when it falls (`military::field_sim`, `military::field_go`). On since
 /// round 7g.
 pub static FIELD_SIM: Switch = Switch::new("FIELD_SIM");
-/// A siege strike starts at the odds that put the stacks in the strike phase (the adjacent ring
-/// takes the city, every defender 70% sure to fall) instead of waiting next to the city for a
-/// reserve (90%) (`campaign::strike`). On since round 7h.
-pub static STRIKE_AT_PHASE: Switch = Switch::new("STRIKE_AT_PHASE");
-/// For the conquerors (`campaign::conqueror`): `STRIKE_AT_PHASE`, and the strike phase at 60%
-/// sure instead of 70% (`campaign::covers`). On since round 7h.
+/// For the conquerors (`campaign::conqueror`): the strike phase at 60% sure instead of 70%
+/// (`campaign::covers`). On since round 7h.
 pub static BOLD_STRIKE: Switch = Switch::new("BOLD_STRIKE");
 /// A temporary summon on its last turn attacks at any odds when it is not its stack's cover
 /// (`casting::summon_target`).
