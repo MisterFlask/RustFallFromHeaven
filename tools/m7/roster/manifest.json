@@ -10520,8 +10520,8 @@
    "anchors/anchor_roster_r1.png"
   ],
   "prompt": "prompts/assets/unit_crusader.txt",
-  "accepted": "2026-10-28 04:28",
-  "height": 88,
+  "accepted": "2026-10-28 04:32",
+  "height": 92,
   "pixel": 1,
   "key": "#ff00ff",
   "holes": 30,
@@ -11172,8 +11172,8 @@
    "anchors/anchor_roster_r1.png"
   ],
   "prompt": "prompts/assets/unit_demagog.txt",
-  "accepted": "2026-10-28 04:29",
-  "height": 88,
+  "accepted": "2026-10-28 04:32",
+  "height": 92,
   "pixel": 1,
   "key": "#ff00ff",
   "holes": 30,
@@ -11903,6 +11903,110 @@
   "prompt": "prompts/assets/unit_minotaur.txt",
   "accepted": "2026-10-28 04:30",
   "height": 108,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_engineer": {
+  "kind": "unit",
+  "file": "roster/units/unit_engineer.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 2,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png",
+   "prompts/assets/unit_engineer__unit_artist_r1_1.png"
+  ],
+  "prompt": "prompts/assets/unit_engineer.txt",
+  "accepted": "2026-10-28 04:32",
+  "height": 86,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_merchant": {
+  "kind": "unit",
+  "file": "roster/units/unit_merchant.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png",
+   "prompts/assets/unit_merchant__unit_artist_r1_1.png"
+  ],
+  "prompt": "prompts/assets/unit_merchant.txt",
+  "accepted": "2026-10-28 04:32",
+  "height": 86,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_prophet": {
+  "kind": "unit",
+  "file": "roster/units/unit_prophet.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 2,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png",
+   "prompts/assets/unit_prophet__unit_artist_r1_1.png"
+  ],
+  "prompt": "prompts/assets/unit_prophet.txt",
+  "accepted": "2026-10-28 04:32",
+  "height": 86,
+  "pixel": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "unit_scientist": {
+  "kind": "unit",
+  "file": "roster/units/unit_scientist.png",
+  "size": [
+   96,
+   120
+  ],
+  "anchor": "canvas bottom-centre on tile centre",
+  "round": "r1",
+  "variant": 3,
+  "mirrored": false,
+  "images": [
+   "anchors/anchor_units.png",
+   "anchors/anchor_roster_r1.png",
+   "prompts/assets/unit_scientist__unit_artist_r1_1.png"
+  ],
+  "prompt": "prompts/assets/unit_scientist.txt",
+  "accepted": "2026-10-28 04:32",
+  "height": 86,
   "pixel": 1,
   "key": "#ff00ff",
   "holes": 30,

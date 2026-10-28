@@ -1,6 +1,6 @@
 # Which units are animated
 
-Status of the M7 unit sprites (`tools/m7/roster/units/`, 56 of them). The method and its limits are in
+Status of the M7 unit sprites (`tools/m7/roster/units/`, the first 56 of them). The method and its limits are in
 `ANIMATING_UNITS.md`; this file says what has been done with it, what is waiting and why. Nothing under `crates/` loads
 these frames yet, the finished sets included. The hero, religion and unique-unit sprites added to the roster on
 2026-10-28 are not animated.

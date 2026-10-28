@@ -162,12 +162,23 @@ Everything below is in `tools/m7/roster/` with its exact prompt in `tools/m7/pro
 - **Settlements and buildings:** city village, town and castle (one plot each), the 2x2 city;
   cottage, hamlet, fort, watchtower, lumbermill, windmill, workshop, mine, camp, lair, ruins,
   graveyard, goblin fort, harbor; the mage guild and temple of leaves (not on the map yet).
-- **Units (56):** settler, worker, warrior, scout, hunter, archer, crossbowman, axeman, swordsman,
-  phalanx, champion, adept, mage, archmage, disciple, priest, paladin, druid, assassin, great
-  person, commander, goblin, lizardman, skeleton; horseman, knight, chariot, war elephant,
-  catapult, trireme, frigate, workboat; wolf, bear, lion, giant spider, griffon, werewolf, demon,
-  manes, fire, earth, water and air elementals, golem, angel, treant, sea serpent, spectre; and the
-  package's own lich, hyborem, hill giant, ogre, priest of leaves, ljosalfar archer, sheaim mage.
+- **Units (248):** the first 56 (settler, worker, warrior, scout, hunter, archer, crossbowman, axeman,
+  swordsman, phalanx, champion, adept, mage, archmage, disciple, priest, paladin, druid, assassin, great
+  person, commander, goblin, lizardman, skeleton; horseman, knight, chariot, war elephant, catapult,
+  trireme, frigate, workboat; wolf, bear, lion, giant spider, griffon, werewolf, demon, manes, the four
+  elementals, golem, angel, treant, sea serpent, spectre; and the package's own lich, hyborem, hill
+  giant, ogre, priest of leaves, ljosalfar archer, sheaim mage), then on 2026-10-28 a sprite for
+  every unit type that drew a stand-in: all 57 heroes and world units (the four dragons one family
+  in four colourings, the four Horsemen one grim set), the 27 civilization unique units, a disciple /
+  priest / high priest ladder per religion (one palette per religion), and 86 more (upgrades such
+  as the longbowman and marksman, the ship ladder from galley to queen of the line, animals and
+  packs, angels, demons, undead, elementals, the five great people as one family). Each took one
+  round (the Ogre Warchief two), about $0.10 a unit at the ledger's prices; every one faces right
+  (accepted `--mirror` where the model drew it facing left), as the engine expects. Still on
+  stand-ins: the equipment pickups (`EQUIPMENT_*`), the illusions (`puppet`), and spell effects
+  that fit their alias (fireball, meteor, eye, shade, severed soul, guardian vines); Brigit held
+  and Rosier Oathtaker use their hero's sprite (`UNIT_ALIASES`). The older left-facing sprites
+  (ogre, hyborem, priest of leaves and a few others) were left as they are.
 
 Notes from making them (also in the package README): one-tile buildings need the "CAMERA CHECK"
 sentence (now the default) or their footprint comes out too steep; `--height` is the trimmed
@@ -181,8 +192,9 @@ ask for solid nets; the cottage is deliberately small, padded to sit in the midd
   reference look (neighbour-aware river and coast overlays, roads along tile edges).
 - **Cultures:** one settlement set for every civilization; the README's route to elven, dwarven,
   infernal and undead cities is the same prompt shape with other materials.
-- **Units:** about fifty sprites stand in for 325 unit types. Heroes and civilization-specific
-  units (`unit_<civilization>_<type>`) are the next batches.
+- **Units:** every unit type has its own sprite but the equipment pickups and a few spell
+  effects (section 7). Civilization looks of the shared units (`unit_<civilization>_<type>`: an
+  elven or dwarven axeman) are the next batch.
 - **Resources** by family; the exact resource shows on hover.
 - The minimap is MapView's top-down one.
 
