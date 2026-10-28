@@ -25,11 +25,11 @@ pub fn effects(d: &GameData, s: SpecialistType) -> String {
     changes_help(&mut b, "", "", "", commerce_change, &COMMERCE_ICONS, false, true);
     if *experience > 0 {
         b.push_str(NEWLINE);
-        b.push_str(&txt(d, "TXT_KEY_SPECIALIST_EXPERIENCE", "[ICON_BULLET]New Military Units Receive %D1_Change Experience Points", &[Arg::N(*experience)]));
+        b.push_str(&txt(d, "TXT_KEY_SPECIALIST_EXPERIENCE", &[Arg::N(*experience)]));
     }
     if *great_people_rate_change != 0 {
         b.push_str(NEWLINE);
-        b.push_str(&txt(d, "TXT_KEY_SPECIALIST_BIRTH_RATE", "[ICON_BULLET]%D1_ChangeRate[ICON_GREATPEOPLE] Birth Rate", &[Arg::N(*great_people_rate_change)]));
+        b.push_str(&txt(d, "TXT_KEY_SPECIALIST_BIRTH_RATE", &[Arg::N(*great_people_rate_change)]));
         // ffh-play's: the great person the points count toward (C++ `CvCity::processSpecialist`
         // adds them to its civilization's unit of the class, and `doGreatPeople` draws the born
         // great person by those points); without a civilization, the class's default unit.

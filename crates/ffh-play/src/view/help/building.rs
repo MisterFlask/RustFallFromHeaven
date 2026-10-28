@@ -265,13 +265,13 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
         bonus_yield_modifier,
     } = &d.buildings[b];
     let mut h = String::new();
-    let add = |h: &mut String, key: &str, fallback: &str, args: &[Arg]| {
+    let add = |h: &mut String, key: &str, args: &[Arg]| {
         h.push_str(NEWLINE);
-        h.push_str(&txt(d, key, fallback, args));
+        h.push_str(&txt(d, key, args));
     };
-    let add_req = |h: &mut String, key: &str, fallback: &str, args: &[Arg]| {
+    let add_req = |h: &mut String, key: &str, args: &[Arg]| {
         h.push_str(NEWLINE);
-        h.push_str(&req(d, key, fallback, args));
+        h.push_str(&req(d, key, args));
     };
     let class = *building_class_type;
     let default = class.and_then(|c| d.building_classes[c].default_building_index);
@@ -325,13 +325,13 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
     if let Some(c) = class {
         let unique = |h: &mut String| {
             for &civ in &civs {
-                add(h, "TXT_KEY_UNIQUE_BUILDING", "Unique Building for [LINK=literal]%s1_civ[\\LINK]", &[Arg::S(&display(d, civ))]);
+                add(h, "TXT_KEY_UNIQUE_BUILDING", &[Arg::S(&display(d, civ))]);
             }
         };
         match default {
             Some(def) if def != b => {
                 unique(&mut h);
-                add(&mut h, "TXT_KEY_REPLACES_UNIT", "Replaces [LINK=literal]%s1_default_unit[\\LINK]", &[Arg::S(&display(d, def))]);
+                add(&mut h, "TXT_KEY_REPLACES_UNIT", &[Arg::S(&display(d, def))]);
             }
             // ffh-play's: FFH2's civilization-only buildings share classes without a default
             // (`BUILDINGCLASS_CIV_BUILDING1`, ...), which C++ passes over.
@@ -340,25 +340,25 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
         }
         let ci = &d.building_classes[c];
         if ci.max_global_instances != -1 {
-            add(&mut h, "TXT_KEY_BUILDING_WORLD_WONDER_ALLOWED", "[ICON_BULLET]World Wonder (%d1_Num Allowed)", &[Arg::N(ci.max_global_instances)]);
+            add(&mut h, "TXT_KEY_BUILDING_WORLD_WONDER_ALLOWED", &[Arg::N(ci.max_global_instances)]);
         }
         if ci.max_team_instances != -1 {
-            add(&mut h, "TXT_KEY_BUILDING_TEAM_WONDER_ALLOWED", "[ICON_BULLET]Team Wonder (%d1_Num Allowed)", &[Arg::N(ci.max_team_instances)]);
+            add(&mut h, "TXT_KEY_BUILDING_TEAM_WONDER_ALLOWED", &[Arg::N(ci.max_team_instances)]);
         }
         if ci.max_player_instances != -1 {
-            add(&mut h, "TXT_KEY_BUILDING_NATIONAL_WONDER_ALLOWED", "[ICON_BULLET]National Wonder (%d1_Num Allowed)", &[Arg::N(ci.max_player_instances)]);
+            add(&mut h, "TXT_KEY_BUILDING_NATIONAL_WONDER_ALLOWED", &[Arg::N(ci.max_player_instances)]);
         }
     }
 
     if let Some(r) = *global_religion_commerce {
-        let end = txt(d, "TXT_KEY_BUILDING_PER_CITY_WITH", "[SPACE]per City with %F1_RelIcon", &[Arg::S(&highlight(&display(d, r)))]);
+        let end = txt(d, "TXT_KEY_BUILDING_PER_CITY_WITH", &[Arg::S(&highlight(&display(d, r)))]);
         changes_help(&mut h, "", "", &end, &d.religions[r].global_religion_commerce, &COMMERCE_ICONS, false, true);
     }
     if let Some(c) = *founds_corporation {
-        add(&mut h, "TXT_KEY_FOUNDS_CORPORATION", "[ICON_BULLET]Incorporates [LINK=literal]%s1_corporation[\\LINK]", &[Arg::S(&display(d, c))]);
+        add(&mut h, "TXT_KEY_FOUNDS_CORPORATION", &[Arg::S(&display(d, c))]);
     }
     if let Some(c) = *global_corporation_commerce {
-        let end = txt(d, "TXT_KEY_BUILDING_PER_CITY_WITH", "[SPACE]per City with %F1_RelIcon", &[Arg::S(&highlight(&display(d, c)))]);
+        let end = txt(d, "TXT_KEY_BUILDING_PER_CITY_WITH", &[Arg::S(&highlight(&display(d, c)))]);
         changes_help(&mut h, "", "", &end, &d.corporations[c].headquarter_commerce, &COMMERCE_ICONS, false, true);
     }
     if let Some(x) = *no_bonus {
@@ -366,7 +366,6 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
         h.push_str(&without_icon(txt(
             d,
             "TXT_KEY_BUILDING_DISABLES",
-            "[ICON_BULLET]Removes access to [LINK=literal]%s1_BonusName[\\LINK][COLOR_REVERT] (%F2_BonusIcon) from the city.",
             &[Arg::S(&display(d, x)), Arg::S("")],
         )));
     }
@@ -377,7 +376,6 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
         h.push_str(&without_icon(txt(
             d,
             "TXT_KEY_BUILDING_PROVIDES",
-            "[ICON_BULLET]Provides %d1_Num [COLOR_HIGHLIGHT_TEXT][LINK=literal]%s2_BonusName[\\LINK][COLOR_REVERT] (%F3_BonusIcon)",
             &[Arg::S(&count), Arg::S(&display(d, x)), Arg::S("")],
         )));
         let bonus = &d.bonuses[x];
@@ -391,245 +389,242 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
 
     // FfH.
     if *crime != 0 {
-        add(&mut h, "TXT_KEY_BUILDING_CRIME", "[ICON_BULLET]%D1 to the crime rate", &[Arg::N(*crime)]);
+        add(&mut h, "TXT_KEY_BUILDING_CRIME", &[Arg::N(*crime)]);
     }
     if *free_promotion_pick > 0 {
-        add(&mut h, "TXT_KEY_BUILDING_FREE_PROMOTION_PICK", "[ICON_BULLET]Units start with a %D1 free promotion(s)", &[Arg::N(*free_promotion_pick)]);
+        add(&mut h, "TXT_KEY_BUILDING_FREE_PROMOTION_PICK", &[Arg::N(*free_promotion_pick)]);
     }
     if *modify_global_counter != 0 {
-        add(&mut h, "TXT_KEY_MESSAGE_MODIFY_GLOBAL_COUNTER", "[ICON_BULLET]%D1 to the Armageddon Counter", &[Arg::N(*modify_global_counter)]);
+        add(&mut h, "TXT_KEY_MESSAGE_MODIFY_GLOBAL_COUNTER", &[Arg::N(*modify_global_counter)]);
     }
     if let Some(p) = *remove_promotion {
-        add(&mut h, "TXT_KEY_BUILDING_REMOVE_PROMOTION", "[ICON_BULLET]Removes the %s1_promotion promotion from units", &[Arg::S(&display(d, p))]);
+        add(&mut h, "TXT_KEY_BUILDING_REMOVE_PROMOTION", &[Arg::S(&display(d, p))]);
     }
     if *resist_magic != 0 {
-        add(&mut h, "TXT_KEY_BUILDING_RESIST_MAGIC", "[ICON_BULLET]Units in the city are %D1% resistant to magic", &[Arg::N(*resist_magic)]);
+        add(&mut h, "TXT_KEY_BUILDING_RESIST_MAGIC", &[Arg::N(*resist_magic)]);
     }
     if *global_resist_enemy_modify != 0 {
-        add(&mut h, "TXT_KEY_BUILDING_GLOBAL_RESIST_ENEMY_MODIFY", "[ICON_BULLET]Enemy units are %D1% to resist your spells", &[Arg::N(*global_resist_enemy_modify)]);
+        add(&mut h, "TXT_KEY_BUILDING_GLOBAL_RESIST_ENEMY_MODIFY", &[Arg::N(*global_resist_enemy_modify)]);
     }
     if *global_resist_modify != 0 {
-        add(&mut h, "TXT_KEY_BUILDING_GLOBAL_RESIST_MODIFY", "[ICON_BULLET]Your units are %D1% to resist spells", &[Arg::N(*global_resist_modify)]);
+        add(&mut h, "TXT_KEY_BUILDING_GLOBAL_RESIST_MODIFY", &[Arg::N(*global_resist_modify)]);
     }
-    for (has, key, fallback) in [
-        (*hide_units, "TXT_KEY_BUILDING_HIDE_UNITS", "[ICON_BULLET]Makes all your units invisible while they are within your borders and not in a city."),
-        (*unhappy_production, "TXT_KEY_BUILDING_UNHAPPY_PRODUCTION", "[ICON_BULLET]Provides +1 [ICON_PRODUCTION] per Unhappy population"),
-        (*requires_caster, "TXT_KEY_BUILDING_REQUIRES_CASTER", "[ICON_BULLET]Removed if the caster leaves the city"),
-        (*see_invisible, "TXT_KEY_BUILDING_SEE_INVISIBLE", "[ICON_BULLET]Reveals all invisible units within your empire"),
+    for (has, key) in [
+        (*hide_units, "TXT_KEY_BUILDING_HIDE_UNITS"),
+        (*unhappy_production, "TXT_KEY_BUILDING_UNHAPPY_PRODUCTION"),
+        (*requires_caster, "TXT_KEY_BUILDING_REQUIRES_CASTER"),
+        (*see_invisible, "TXT_KEY_BUILDING_SEE_INVISIBLE"),
     ] {
         if has {
-            add(&mut h, key, fallback, &[]);
+            add(&mut h, key, &[]);
         }
     }
     let from_specialist =
-        |s: SpecialistType| txt(d, "TXT_KEY_BUILDING_FROM_IN_ALL_CITIES", "[SPACE]from [COLOR_UNIT_TEXT][LINK=literal]%s1_SpclstName[\\LINK][COLOR_REVERT] in All Cities", &[Arg::S(&display(d, s))]);
+        |s: SpecialistType| txt(d, "TXT_KEY_BUILDING_FROM_IN_ALL_CITIES", &[Arg::S(&display(d, s))]);
     for s in d.specialists.keys() {
         changes_help(&mut h, "", "", &from_specialist(s), &specialist_commerce_change[s], &COMMERCE_ICONS, false, true);
     }
     if *no_civic_anger {
-        add(&mut h, "TXT_KEY_BUILDING_NO_CIVIC_ANGER", "[ICON_BULLET]Negates the effects of Civic Anger for your team", &[]);
+        add(&mut h, "TXT_KEY_BUILDING_NO_CIVIC_ANGER", &[]);
     }
     if *plot_radius != 0 {
         // The text signs the radius ("to +3"): passed as text, it reads "to 3".
-        add(&mut h, "TXT_KEY_BUILDING_PLOT_RADIUS", "[ICON_BULLET]Changes the Plot Radius of the city to %D1", &[Arg::S(&plot_radius.to_string())]);
+        add(&mut h, "TXT_KEY_BUILDING_PLOT_RADIUS", &[Arg::S(&plot_radius.to_string())]);
     }
 
     if let Some(fb) = free_building_class.and_then(civ_building) {
-        add(&mut h, "TXT_KEY_BUILDING_FREE_IN_CITY", "[ICON_BULLET]Free [COLOR_BUILDING_TEXT][LINK=literal]%s1_Name[\\LINK][COLOR_REVERT] in Every City", &[Arg::S(&display(d, fb))]);
+        add(&mut h, "TXT_KEY_BUILDING_FREE_IN_CITY", &[Arg::S(&display(d, fb))]);
     }
     if let Some(p) = *free_promotion {
         add(
             &mut h,
             "TXT_KEY_BUILDING_FREE_PROMOTION",
-            "[ICON_BULLET]Free [COLOR_HIGHLIGHT_TEXT][LINK=literal]%s1_Name[\\LINK][COLOR_REVERT] Promotion for Units Built in this City",
             &[Arg::S(&display(d, p))],
         );
         if *apply_free_promotion_on_move {
-            h.push_str(&txt(d, "TXT_KEY_BUILDING_APPLY_FREE_PROMOTION_ON_MOVE", "[SPACE](applied to units in the city)", &[]));
+            h.push_str(&txt(d, "TXT_KEY_BUILDING_APPLY_FREE_PROMOTION_ON_MOVE", &[]));
         }
     }
     if let Some(o) = *civic_option {
-        add(&mut h, "TXT_KEY_BUILDING_ENABLES_CIVICS", "[ICON_BULLET]Enables all [COLOR_HIGHLIGHT_TEXT]%s1_Name[COLOR_REVERT] Civics", &[Arg::S(&display(d, o))]);
+        add(&mut h, "TXT_KEY_BUILDING_ENABLES_CIVICS", &[Arg::S(&display(d, o))]);
     }
     let dirty = d.defines.dirty_power_health_change;
     let dirty_health = format!(" (+{}{})", dirty.abs(), health_icon(dirty));
     if *power {
-        add(&mut h, "TXT_KEY_BUILDING_PROVIDES_POWER", "[ICON_BULLET]Provides Power ([ICON_POWER])", &[]);
+        add(&mut h, "TXT_KEY_BUILDING_PROVIDES_POWER", &[]);
         if *dirty_power && dirty != 0 {
             h.push_str(&dirty_health);
         }
     }
     if *area_clean_power {
-        add(&mut h, "TXT_KEY_BUILDING_PROVIDES_AREA_CLEAN_POWER", "[ICON_BULLET]Provides Power ([ICON_POWER]) for All Cities on this Continent", &[]);
+        add(&mut h, "TXT_KEY_BUILDING_PROVIDES_AREA_CLEAN_POWER", &[]);
     }
     if *area_border_obstacle {
-        add(&mut h, "TXT_KEY_BUILDING_BORDER_OBSTACLE", "[ICON_BULLET]Prevents Barbarians from Entering Borders on Continent", &[]);
+        add(&mut h, "TXT_KEY_BUILDING_BORDER_OBSTACLE", &[]);
     }
     if let Some(v) = *vote_source_type {
-        add(&mut h, "TXT_KEY_BUILDING_DIPLO_VOTE", "[ICON_BULLET]Triggers %s1 Global Elections", &[Arg::S(&display(d, v))]);
+        add(&mut h, "TXT_KEY_BUILDING_DIPLO_VOTE", &[Arg::S(&display(d, v))]);
     }
-    for (has, key, fallback) in [
-        (*force_team_vote_eligible, "TXT_KEY_BUILDING_ELECTION_ELIGIBILITY", "[ICON_BULLET]Guarantees Eligibility for Diplomatic Votes"),
-        (*capital, "TXT_KEY_BUILDING_CAPITAL", "[ICON_BULLET]Makes this City the Capital"),
-        (*government_center, "TXT_KEY_BUILDING_REDUCES_MAINTENANCE", "[ICON_BULLET]Reduces [LINK=CONCEPT_MAINTENANCE]Maintenance[\\LINK] in Nearby Cities"),
-        (*golden_age, "TXT_KEY_BUILDING_GOLDEN_AGE", "[ICON_BULLET]Starts a Golden Age"),
-        (*allows_nukes, "TXT_KEY_PROJECT_ENABLES_NUKES", "[ICON_BULLET]Enables Nuclear Attacks (For all Players)"),
-        (*map_centering, "TXT_KEY_BUILDING_CENTERS_MAP", "[ICON_BULLET]Centers [LINK=CONCEPT_MAPS]World Map[\\LINK]"),
-        (*no_unhappiness, "TXT_KEY_BUILDING_NO_UNHAPPY", "[ICON_BULLET]No [ICON_UNHAPPY] in this City"),
-        (*no_unhealthy_population, "TXT_KEY_BUILDING_NO_UNHEALTHY_POP", "[ICON_BULLET]No [ICON_UNHEALTHY] from Population"),
-        (*building_only_healthy, "TXT_KEY_BUILDING_NO_UNHEALTHY_BUILDINGS", "[ICON_BULLET]No [ICON_UNHEALTHY] from Buildings"),
+    for (has, key) in [
+        (*force_team_vote_eligible, "TXT_KEY_BUILDING_ELECTION_ELIGIBILITY"),
+        (*capital, "TXT_KEY_BUILDING_CAPITAL"),
+        (*government_center, "TXT_KEY_BUILDING_REDUCES_MAINTENANCE"),
+        (*golden_age, "TXT_KEY_BUILDING_GOLDEN_AGE"),
+        (*allows_nukes, "TXT_KEY_PROJECT_ENABLES_NUKES"),
+        (*map_centering, "TXT_KEY_BUILDING_CENTERS_MAP"),
+        (*no_unhappiness, "TXT_KEY_BUILDING_NO_UNHAPPY"),
+        (*no_unhealthy_population, "TXT_KEY_BUILDING_NO_UNHEALTHY_POP"),
+        (*building_only_healthy, "TXT_KEY_BUILDING_NO_UNHEALTHY_BUILDINGS"),
     ] {
         if has {
-            add(&mut h, key, fallback, &[]);
+            add(&mut h, key, &[]);
         }
     }
-    for (n, key, fallback) in [
-        (*great_people_rate_modifier, "TXT_KEY_BUILDING_BIRTH_RATE_MOD", "[ICON_BULLET]%D1_Mod%% [ICON_GREATPEOPLE] Birth Rate"),
-        (*great_general_rate_modifier, "TXT_KEY_BUILDING_GENERAL_RATE_MOD", "[ICON_BULLET]%D1_Mod%% Great General Emergence"),
-        (*domestic_great_general_rate_modifier, "TXT_KEY_DOMESTIC_GREAT_GENERAL_MODIFIER", "[ICON_BULLET]%D1_Mod%% Great General Emergence inside Cultural Borders"),
-        (*global_great_people_rate_modifier, "TXT_KEY_BUILDING_BIRTH_RATE_MOD_ALL_CITIES", "[ICON_BULLET]%D1_Mod%% [ICON_GREATPEOPLE] Birth Rate in All Cities"),
+    for (n, key) in [
+        (*great_people_rate_modifier, "TXT_KEY_BUILDING_BIRTH_RATE_MOD"),
+        (*great_general_rate_modifier, "TXT_KEY_BUILDING_GENERAL_RATE_MOD"),
+        (*domestic_great_general_rate_modifier, "TXT_KEY_DOMESTIC_GREAT_GENERAL_MODIFIER"),
+        (*global_great_people_rate_modifier, "TXT_KEY_BUILDING_BIRTH_RATE_MOD_ALL_CITIES"),
     ] {
         if n != 0 {
-            add(&mut h, key, fallback, &[Arg::N(n)]);
+            add(&mut h, key, &[Arg::N(n)]);
         }
     }
     if *anarchy_modifier == -100 {
-        add(&mut h, "TXT_KEY_BUILDING_NO_ANARCHY", "[ICON_BULLET]No Anarchy[NEWLINE][ICON_BULLET]Minimal wait between Civics or State Religion changes", &[]);
+        add(&mut h, "TXT_KEY_BUILDING_NO_ANARCHY", &[]);
     } else if *anarchy_modifier != 0 {
-        add(&mut h, "TXT_KEY_BUILDING_ANARCHY_MOD", "[ICON_BULLET]%D1_Mod%% Anarchy Length", &[Arg::N(*anarchy_modifier)]);
-        add(&mut h, "TXT_KEY_BUILDING_ANARCHY_TIMER_MOD", "[ICON_BULLET]%D1%% wait between Civics or State Religion changes", &[Arg::N(*anarchy_modifier)]);
+        add(&mut h, "TXT_KEY_BUILDING_ANARCHY_MOD", &[Arg::N(*anarchy_modifier)]);
+        add(&mut h, "TXT_KEY_BUILDING_ANARCHY_TIMER_MOD", &[Arg::N(*anarchy_modifier)]);
     }
-    for (n, key, fallback) in [
-        (*golden_age_modifier, "TXT_KEY_BUILDING_GOLDENAGE_MOD", "[ICON_BULLET]%D1_Mod%% Golden Age Length"),
-        (*global_hurry_modifier, "TXT_KEY_BUILDING_HURRY_MOD", "[ICON_BULLET]%D1_Mod%% Hurry Production Cost"),
-        (*free_experience, "TXT_KEY_BUILDING_FREE_XP_UNITS", "[ICON_BULLET]New Units Receive %D1_Change Experience Points"),
-        (*global_free_experience, "TXT_KEY_BUILDING_FREE_XP_ALL_CITIES", "[ICON_BULLET]New Units Receive %D1_Change Experience Points in All Cities"),
+    for (n, key) in [
+        (*golden_age_modifier, "TXT_KEY_BUILDING_GOLDENAGE_MOD"),
+        (*global_hurry_modifier, "TXT_KEY_BUILDING_HURRY_MOD"),
+        (*free_experience, "TXT_KEY_BUILDING_FREE_XP_UNITS"),
+        (*global_free_experience, "TXT_KEY_BUILDING_FREE_XP_ALL_CITIES"),
     ] {
         if n != 0 {
-            add(&mut h, key, fallback, &[Arg::N(n)]);
+            add(&mut h, key, &[Arg::N(n)]);
         }
     }
     if *food_kept > 0 {
-        add(&mut h, "TXT_KEY_BUILDING_STORES_FOOD", "[ICON_BULLET]Stores %d1_Mod%% of [ICON_FOOD] after Growth", &[Arg::N(*food_kept)]);
+        add(&mut h, "TXT_KEY_BUILDING_STORES_FOOD", &[Arg::N(*food_kept)]);
     }
     if *airlift > 0 {
-        add(&mut h, "TXT_KEY_BUILDING_AIRLIFT", "[ICON_BULLET]Can Airlift %d1_Num Land [NUM1:Unit:Units] per Turn", &[Arg::N(*airlift)]);
+        add(&mut h, "TXT_KEY_BUILDING_AIRLIFT", &[Arg::N(*airlift)]);
     }
-    for (n, key, fallback) in [
-        (*air_modifier, "TXT_KEY_BUILDING_AIR_DAMAGE_MOD", "[ICON_BULLET]%D1_Mod%% Damage from [LINK=CONCEPT_AIR_UNITS]Air Units[\\LINK]"),
-        (*air_unit_capacity, "TXT_KEY_BUILDING_AIR_UNIT_CAPACITY", "[ICON_BULLET]%D1 [LINK=CONCEPT_AIR_UNITS]Air Unit[\\LINK] Capacity"),
-        (*nuke_modifier, "TXT_KEY_BUILDING_NUKE_DAMAGE_MOD", "[ICON_BULLET]%D1_Mod%% Damage from [LINK=CONCEPT_NUKES]Nukes[\\LINK]"),
-        (*nuke_explosion_rand, "TXT_KEY_BUILDING_NUKE_EXPLOSION_CHANCE", "[ICON_BULLET]Small Chance of Nuclear Meltdown"),
-        (*free_specialist, "TXT_KEY_BUILDING_FREE_SPECIALISTS", "[ICON_BULLET]%D1_Change Free Specialists"),
-        (*area_free_specialist, "TXT_KEY_BUILDING_FREE_SPECIALISTS_CONT", "[ICON_BULLET]%D1_Change Free Specialists in All Cities on this Continent"),
-        (*global_free_specialist, "TXT_KEY_BUILDING_FREE_SPECIALISTS_ALL_CITIES", "[ICON_BULLET]%D1_Change Free Specialists in All Cities"),
-        (*maintenance_modifier, "TXT_KEY_BUILDING_MAINT_MOD", "[ICON_BULLET]%D1_Mod%% [LINK=CONCEPT_MAINTENANCE]Maintenance[\\LINK]"),
-        (*hurry_anger_modifier, "TXT_KEY_BUILDING_HURRY_ANGER_MOD", "[ICON_BULLET]%D1_percent%% Anger Duration from Sacrificing Population"),
-        (*war_weariness_modifier, "TXT_KEY_BUILDING_WAR_WEAR_MOD", "[ICON_BULLET]%D1_Mod%% War [ICON_UNHAPPY]"),
-        (*global_war_weariness_modifier, "TXT_KEY_BUILDING_WAR_WEAR_MOD_ALL_CITIES", "[ICON_BULLET]%D1_Mod%% War [ICON_UNHAPPY] in All Cities"),
-        (*enemy_war_weariness_modifier, "TXT_KEY_BUILDING_ENEMY_WAR_WEAR", "[ICON_BULLET]Enemies suffer %D1_percent%% War Weariness"),
-        (*heal_rate_change, "TXT_KEY_BUILDING_HEAL_MOD", "[ICON_BULLET]Heals Units Extra %d1_Mod%% Damage/Turn"),
+    for (n, key) in [
+        (*air_modifier, "TXT_KEY_BUILDING_AIR_DAMAGE_MOD"),
+        (*air_unit_capacity, "TXT_KEY_BUILDING_AIR_UNIT_CAPACITY"),
+        (*nuke_modifier, "TXT_KEY_BUILDING_NUKE_DAMAGE_MOD"),
+        (*nuke_explosion_rand, "TXT_KEY_BUILDING_NUKE_EXPLOSION_CHANCE"),
+        (*free_specialist, "TXT_KEY_BUILDING_FREE_SPECIALISTS"),
+        (*area_free_specialist, "TXT_KEY_BUILDING_FREE_SPECIALISTS_CONT"),
+        (*global_free_specialist, "TXT_KEY_BUILDING_FREE_SPECIALISTS_ALL_CITIES"),
+        (*maintenance_modifier, "TXT_KEY_BUILDING_MAINT_MOD"),
+        (*hurry_anger_modifier, "TXT_KEY_BUILDING_HURRY_ANGER_MOD"),
+        (*war_weariness_modifier, "TXT_KEY_BUILDING_WAR_WEAR_MOD"),
+        (*global_war_weariness_modifier, "TXT_KEY_BUILDING_WAR_WEAR_MOD_ALL_CITIES"),
+        (*enemy_war_weariness_modifier, "TXT_KEY_BUILDING_ENEMY_WAR_WEAR"),
+        (*heal_rate_change, "TXT_KEY_BUILDING_HEAL_MOD"),
     ] {
         if n != 0 {
-            add(&mut h, key, fallback, &[Arg::N(n)]);
+            add(&mut h, key, &[Arg::N(n)]);
         }
     }
     if *area_health != 0 {
-        add(&mut h, "TXT_KEY_BUILDING_HEALTH_CHANGE_CONT", "[ICON_BULLET]%D1_Change%F2_HealthOrUn in All Cities on this Continent", &[Arg::N(area_health.abs()), Arg::S(health_icon(*area_health))]);
+        add(&mut h, "TXT_KEY_BUILDING_HEALTH_CHANGE_CONT", &[Arg::N(area_health.abs()), Arg::S(health_icon(*area_health))]);
     }
     if *global_health != 0 {
-        add(&mut h, "TXT_KEY_BUILDING_HEALTH_CHANGE_ALL_CITIES", "[ICON_BULLET]%D1_Change%F2_HealthOrUn in All Cities", &[Arg::N(global_health.abs()), Arg::S(health_icon(*global_health))]);
+        add(&mut h, "TXT_KEY_BUILDING_HEALTH_CHANGE_ALL_CITIES", &[Arg::N(global_health.abs()), Arg::S(health_icon(*global_health))]);
     }
     // C++ quirk: only a gain is said (a loss of happiness here or in all cities is not).
     if *area_happiness > 0 {
-        add(&mut h, "TXT_KEY_BUILDING_HAPPY_CHANGE_CONT", "[ICON_BULLET]%D1_Change%F2_HappyOrUn in All Cities on this Continent", &[Arg::N(*area_happiness), Arg::S(happy_icon(*area_happiness))]);
+        add(&mut h, "TXT_KEY_BUILDING_HAPPY_CHANGE_CONT", &[Arg::N(*area_happiness), Arg::S(happy_icon(*area_happiness))]);
     }
     if *global_happiness > 0 {
-        add(&mut h, "TXT_KEY_BUILDING_HAPPY_CHANGE_ALL_CITIES", "[ICON_BULLET]%D1_Change%F2_HappyOrUn in All Cities", &[Arg::N(*global_happiness), Arg::S(happy_icon(*global_happiness))]);
+        add(&mut h, "TXT_KEY_BUILDING_HAPPY_CHANGE_ALL_CITIES", &[Arg::N(*global_happiness), Arg::S(happy_icon(*global_happiness))]);
     }
     if let Some(r) = religion_type.filter(|_| *state_religion_happiness > 0) {
         add(
             &mut h,
             "TXT_KEY_BUILDING_RELIGION_HAPPINESS",
-            "[ICON_BULLET]%D1_Change%F2_HappyOrUn if %F3_RelIcon is State [ICON_RELIGION]",
             &[Arg::N(*state_religion_happiness), Arg::S(happy_icon(*state_religion_happiness)), Arg::S(&highlight(&display(d, r)))],
         );
     }
-    for (n, key, fallback) in [
-        (*worker_speed_modifier, "TXT_KEY_BUILDING_WORKER_MOD", "[ICON_BULLET]Workers Build Improvements %D1_Mod%% Faster"),
-        (*military_production_modifier, "TXT_KEY_BUILDING_MILITARY_MOD", "[ICON_BULLET]%D1_Mod%% Military Unit Production"),
-        (*space_production_modifier, "TXT_KEY_BUILDING_SPACESHIP_MOD", "[ICON_BULLET]%D1_Mod%% Ritual Production"),
-        (*global_space_production_modifier, "TXT_KEY_BUILDING_SPACESHIP_MOD_ALL_CITIES", "[ICON_BULLET]%D1_Mod%% Ritual Production in All Cities"),
-        (*trade_routes, "TXT_KEY_BUILDING_TRADE_ROUTES", "[ICON_BULLET]%D1_Change Trade Routes"),
-        (*coastal_trade_routes, "TXT_KEY_BUILDING_COASTAL_TRADE_ROUTES", "[ICON_BULLET]%D1_Change Trade Routes in All Coastal Cities"),
-        (*global_trade_routes, "TXT_KEY_BUILDING_TRADE_ROUTES_ALL_CITIES", "[ICON_BULLET]%D1_Change Trade Routes in All Cities"),
-        (*trade_route_modifier, "TXT_KEY_BUILDING_TRADE_ROUTE_MOD", "[ICON_BULLET]%D1_Mod%% Trade Route Yield"),
-        (*foreign_trade_route_modifier, "TXT_KEY_BUILDING_FOREIGN_TRADE_ROUTE_MOD", "[ICON_BULLET]%D1_Mod%% Foreign Trade Route Yield"),
-        (*global_population_change, "TXT_KEY_BUILDING_GLOBAL_POP", "[ICON_BULLET]%D1_Change Population in All Cities"),
+    for (n, key) in [
+        (*worker_speed_modifier, "TXT_KEY_BUILDING_WORKER_MOD"),
+        (*military_production_modifier, "TXT_KEY_BUILDING_MILITARY_MOD"),
+        (*space_production_modifier, "TXT_KEY_BUILDING_SPACESHIP_MOD"),
+        (*global_space_production_modifier, "TXT_KEY_BUILDING_SPACESHIP_MOD_ALL_CITIES"),
+        (*trade_routes, "TXT_KEY_BUILDING_TRADE_ROUTES"),
+        (*coastal_trade_routes, "TXT_KEY_BUILDING_COASTAL_TRADE_ROUTES"),
+        (*global_trade_routes, "TXT_KEY_BUILDING_TRADE_ROUTES_ALL_CITIES"),
+        (*trade_route_modifier, "TXT_KEY_BUILDING_TRADE_ROUTE_MOD"),
+        (*foreign_trade_route_modifier, "TXT_KEY_BUILDING_FOREIGN_TRADE_ROUTE_MOD"),
+        (*global_population_change, "TXT_KEY_BUILDING_GLOBAL_POP"),
     ] {
         if n != 0 {
-            add(&mut h, key, fallback, &[Arg::N(n)]);
+            add(&mut h, key, &[Arg::N(n)]);
         }
     }
     if *free_techs == 1 {
-        add(&mut h, "TXT_KEY_BUILDING_FREE_TECH", "[ICON_BULLET]1 Free Technology", &[]);
+        add(&mut h, "TXT_KEY_BUILDING_FREE_TECH", &[]);
     } else if *free_techs != 0 {
-        add(&mut h, "TXT_KEY_BUILDING_FREE_TECHS", "[ICON_BULLET]%d1_Num Free Technologies", &[Arg::N(*free_techs)]);
+        add(&mut h, "TXT_KEY_BUILDING_FREE_TECHS", &[Arg::N(*free_techs)]);
     }
     if *defense_modifier != 0 {
-        add(&mut h, "TXT_KEY_BUILDING_DEFENSE_MOD", "[ICON_BULLET]%d1_Mod%% Defense (Except vs. Gunpowder-based Units)", &[Arg::N(*defense_modifier)]);
+        add(&mut h, "TXT_KEY_BUILDING_DEFENSE_MOD", &[Arg::N(*defense_modifier)]);
     }
     if *bombard_defense_modifier != 0 {
-        add(&mut h, "TXT_KEY_BUILDING_BOMBARD_DEFENSE_MOD", "[ICON_BULLET]%D1_Mod%% Damage to Defenses from Bombardment (Except vs. Gunpowder-based Units)", &[Arg::N(-*bombard_defense_modifier)]);
+        add(&mut h, "TXT_KEY_BUILDING_BOMBARD_DEFENSE_MOD", &[Arg::N(-*bombard_defense_modifier)]);
     }
     if *all_city_defense_modifier != 0 {
-        add(&mut h, "TXT_KEY_BUILDING_DEFENSE_MOD_ALL_CITIES", "[ICON_BULLET]%d1_Mod%% Defense in All Cities", &[Arg::N(*all_city_defense_modifier)]);
+        add(&mut h, "TXT_KEY_BUILDING_DEFENSE_MOD_ALL_CITIES", &[Arg::N(*all_city_defense_modifier)]);
     }
     if *espionage_defense_modifier != 0 {
-        add(&mut h, "TXT_KEY_BUILDING_ESPIONAGE_DEFENSE_MOD", "[ICON_BULLET]%D1_Mod%% Defense against Espionage", &[Arg::N(*espionage_defense_modifier)]);
-        add(&mut h, "TXT_KEY_UNIT_EXPOSE_SPIES", "[ICON_BULLET]Helps Thwart Rival Spies", &[]);
+        add(&mut h, "TXT_KEY_BUILDING_ESPIONAGE_DEFENSE_MOD", &[Arg::N(*espionage_defense_modifier)]);
+        add(&mut h, "TXT_KEY_UNIT_EXPOSE_SPIES", &[]);
     }
 
     // Plot yields and the modifiers elsewhere.
-    changes_help(&mut h, &txt(d, "TXT_KEY_BUILDING_WATER_PLOTS", "Water Tiles", &[]), ": ", "", sea_plot_yield_change, &YIELD_ICONS, false, true);
-    changes_help(&mut h, &txt(d, "TXT_KEY_BUILDING_RIVER_PLOTS", "River Tiles", &[]), ": ", "", river_plot_yield_change, &YIELD_ICONS, false, true);
-    changes_help(&mut h, &txt(d, "TXT_KEY_BUILDING_WATER_PLOTS_ALL_CITIES", "All Cities Water Tiles", &[]), ": ", "", global_sea_plot_yield_change, &YIELD_ICONS, false, true);
-    changes_help(&mut h, "", "", &txt(d, "TXT_KEY_BUILDING_WITH_POWER", "[SPACE]with Power ([ICON_POWER])", &[]), power_yield_modifier, &YIELD_ICONS, true, true);
-    changes_help(&mut h, "", "", &txt(d, "TXT_KEY_BUILDING_ALL_CITIES_THIS_CONTINENT", "[SPACE]All Cities This Continent", &[]), area_yield_modifier, &YIELD_ICONS, true, true);
-    let all_cities = txt(d, "TXT_KEY_BUILDING_ALL_CITIES", "[SPACE]All Cities", &[]);
+    changes_help(&mut h, &txt(d, "TXT_KEY_BUILDING_WATER_PLOTS", &[]), ": ", "", sea_plot_yield_change, &YIELD_ICONS, false, true);
+    changes_help(&mut h, &txt(d, "TXT_KEY_BUILDING_RIVER_PLOTS", &[]), ": ", "", river_plot_yield_change, &YIELD_ICONS, false, true);
+    changes_help(&mut h, &txt(d, "TXT_KEY_BUILDING_WATER_PLOTS_ALL_CITIES", &[]), ": ", "", global_sea_plot_yield_change, &YIELD_ICONS, false, true);
+    changes_help(&mut h, "", "", &txt(d, "TXT_KEY_BUILDING_WITH_POWER", &[]), power_yield_modifier, &YIELD_ICONS, true, true);
+    changes_help(&mut h, "", "", &txt(d, "TXT_KEY_BUILDING_ALL_CITIES_THIS_CONTINENT", &[]), area_yield_modifier, &YIELD_ICONS, true, true);
+    let all_cities = txt(d, "TXT_KEY_BUILDING_ALL_CITIES", &[]);
     changes_help(&mut h, "", "", &all_cities, global_yield_modifier, &YIELD_ICONS, true, true);
     changes_help(&mut h, "", "", &all_cities, global_commerce_modifier, &COMMERCE_ICONS, true, true);
-    changes_help(&mut h, "", "", &txt(d, "TXT_KEY_BUILDING_PER_SPECIALIST_ALL_CITIES", "[SPACE]per Specialist in All Cities", &[]), specialist_extra_commerce, &COMMERCE_ICONS, false, true);
+    changes_help(&mut h, "", "", &txt(d, "TXT_KEY_BUILDING_PER_SPECIALIST_ALL_CITIES", &[]), specialist_extra_commerce, &COMMERCE_ICONS, false, true);
     // With no player, any state religion's buildings.
-    changes_help(&mut h, "", "", &txt(d, "TXT_KEY_BUILDING_STATE_REL_BUILDINGS", "[SPACE]from All State [ICON_RELIGION] Buildings", &[]), state_religion_commerce, &COMMERCE_ICONS, false, true);
+    changes_help(&mut h, "", "", &txt(d, "TXT_KEY_BUILDING_STATE_REL_BUILDINGS", &[]), state_religion_commerce, &COMMERCE_ICONS, false, true);
     for k in 0..CommerceType::NUM {
         let n = commerce_happiness[k];
         if n != 0 {
-            add(&mut h, "TXT_KEY_BUILDING_PER_LEVEL", "[ICON_BULLET]+1%F1_HappyOrUn per %d2_Percent%% %F3_CommIcon Rate", &[Arg::S(happy_icon(n)), Arg::N(100 / n), Arg::S(COMMERCE_ICONS[k])]);
+            add(&mut h, "TXT_KEY_BUILDING_PER_LEVEL", &[Arg::S(happy_icon(n)), Arg::N(100 / n), Arg::S(COMMERCE_ICONS[k])]);
         }
         if commerce_flexible[k] {
-            add(&mut h, "TXT_KEY_BUILDING_ADJUST_COMM_RATE", "[ICON_BULLET]Can Adjust %F1_CmrcIcon Rate", &[Arg::S(COMMERCE_ICONS[k])]);
+            add(&mut h, "TXT_KEY_BUILDING_ADJUST_COMM_RATE", &[Arg::S(COMMERCE_ICONS[k])]);
         }
     }
     for s in d.specialists.keys() {
         changes_help(&mut h, "", "", &from_specialist(s), &specialist_yield_change[s], &YIELD_ICONS, false, true);
     }
     for x in d.bonuses.keys() {
-        let end = txt(d, "TXT_KEY_BUILDING_WITH_BONUS", "[SPACE]with [LINK=literal]%s1_Bonus[\\LINK]", &[Arg::S(&display(d, x))]);
+        let end = txt(d, "TXT_KEY_BUILDING_WITH_BONUS", &[Arg::S(&display(d, x))]);
         changes_help(&mut h, "", "", &end, &bonus_yield_modifier[x], &YIELD_ICONS, true, true);
     }
     for r in d.religions.keys().filter(|&r| religion_change[r] > 0) {
-        add(&mut h, "TXT_KEY_BUILDING_SPREADS_RELIGION", "[ICON_BULLET]Spreads %F1_RelIcon", &[Arg::S(&highlight(&display(d, r)))]);
+        add(&mut h, "TXT_KEY_BUILDING_SPREADS_RELIGION", &[Arg::S(&highlight(&display(d, r)))]);
     }
     for s in d.specialists.keys() {
         let n = specialist_count[s];
         if n == 1 {
-            add(&mut h, "TXT_KEY_BUILDING_TURN_CITIZEN_INTO", "[ICON_BULLET]Can turn 1 Citizen into [COLOR_HIGHLIGHT_TEXT][LINK=literal]%s1_SpecName[\\LINK][COLOR_REVERT]", &[Arg::S(&display(d, s))]);
+            add(&mut h, "TXT_KEY_BUILDING_TURN_CITIZEN_INTO", &[Arg::S(&display(d, s))]);
         } else if n > 1 {
             add(
                 &mut h,
                 "TXT_KEY_BUILDING_TURN_CITIZENS_INTO",
-                "[ICON_BULLET]Can turn %d1_Num Citizens into [COLOR_HIGHLIGHT_TEXT][LINK=literal]%s2_SpclstName[\\LINK][COLOR_REVERT]",
                 &[Arg::N(n), Arg::S(&display(d, s))],
             );
         }
@@ -637,7 +632,6 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
             add(
                 &mut h,
                 "TXT_KEY_BUILDING_FREE_SPECIALIST",
-                "[ICON_BULLET]%D1_Change Free [COLOR_HIGHLIGHT_TEXT][LINK=literal]%s2_SpclstName[\\LINK][COLOR_REVERT]",
                 &[Arg::N(free_specialist_count[s]), Arg::S(&display(d, s))],
             );
         }
@@ -648,13 +642,13 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
     for i in d.improvements.keys() {
         let n = improvement_free_specialist[i];
         if n > 0 {
-            let start = txt(d, "TXT_KEY_BUILDING_IMPROVEMENT_FREE_SPECIALISTS", "[ICON_BULLET]%D1_Change Free [NUM1:Specialist:Specialists] per[SPACE]", &[Arg::N(n)]);
+            let start = txt(d, "TXT_KEY_BUILDING_IMPROVEMENT_FREE_SPECIALISTS", &[Arg::N(n)]);
             list_help(&mut h, &format!("{NEWLINE}{start}"), &display(d, i), ", ", n != last);
             last = n;
         }
     }
-    let from = |n: i32, icon: &str| txt(d, "TXT_KEY_BUILDING_HEALTH_HAPPINESS_CHANGE", "[ICON_BULLET]%D1_Change%F2_HappyOrHealth from[SPACE]", &[Arg::N(n.abs()), Arg::S(icon)]);
-    let with = |n: i32, icon: &str| txt(d, "TXT_KEY_BUILDING_CIVIC_HEALTH_HAPPINESS_CHANGE", "[ICON_BULLET]%D1_Change%F2_HappyOrHealth with[SPACE]", &[Arg::N(n.abs()), Arg::S(icon)]);
+    let from = |n: i32, icon: &str| txt(d, "TXT_KEY_BUILDING_HEALTH_HAPPINESS_CHANGE", &[Arg::N(n.abs()), Arg::S(icon)]);
+    let with = |n: i32, icon: &str| txt(d, "TXT_KEY_BUILDING_CIVIC_HEALTH_HAPPINESS_CHANGE", &[Arg::N(n.abs()), Arg::S(icon)]);
     let mut last = 0;
     for x in d.bonuses.keys() {
         let n = bonus_health_changes[x];
@@ -694,25 +688,25 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
     for uc in d.unit_combats.keys() {
         let n = unit_combat_free_experience[uc];
         if n != 0 {
-            add(&mut h, "TXT_KEY_BUILDING_FREE_XP", "[ICON_BULLET]New %s1_UnitName Receive %D2_Change Experience Points", &[Arg::S(&display(d, uc)), Arg::N(n)]);
+            add(&mut h, "TXT_KEY_BUILDING_FREE_XP", &[Arg::S(&display(d, uc)), Arg::N(n)]);
         }
     }
     for dom in d.domains.keys() {
         let n = domain_free_experience[dom];
         if n != 0 {
-            add(&mut h, "TXT_KEY_BUILDING_FREE_XP", "[ICON_BULLET]New %s1_UnitName Receive %D2_Change Experience Points", &[Arg::S(&display(d, dom)), Arg::N(n)]);
+            add(&mut h, "TXT_KEY_BUILDING_FREE_XP", &[Arg::S(&display(d, dom)), Arg::N(n)]);
         }
     }
     for dom in d.domains.keys() {
         let n = domain_production_modifier[dom];
         if n != 0 {
-            add(&mut h, "TXT_KEY_BUILDING_BUILDS_FASTER_DOMAIN", "[ICON_BULLET]Builds %s1_UnitName %D2_Mod%% Faster", &[Arg::S(&display(d, dom)), Arg::N(n)]);
+            add(&mut h, "TXT_KEY_BUILDING_BUILDS_FASTER_DOMAIN", &[Arg::S(&display(d, dom)), Arg::N(n)]);
         }
     }
 
     // The units that need it (FfH: the civilization's unit of each class; the building or its
     // class), and those that can build it.
-    let to_train = format!("{NEWLINE}{}", txt(d, "TXT_KEY_BUILDING_REQUIRED_TO_TRAIN", "[ICON_BULLET]Required to Train[SPACE]", &[]));
+    let to_train = format!("{NEWLINE}{}", txt(d, "TXT_KEY_BUILDING_REQUIRED_TO_TRAIN", &[]));
     let mut first = true;
     for uc in d.unit_classes.keys() {
         let Some(u) = civ_unit(uc) else { continue };
@@ -722,7 +716,7 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
             first = false;
         }
     }
-    let built_by = format!("{NEWLINE}{}", txt(d, "TXT_KEY_UNIT_REQUIRED_TO_BUILD", "[ICON_BULLET]Can be built by[SPACE]", &[]));
+    let built_by = format!("{NEWLINE}{}", txt(d, "TXT_KEY_UNIT_REQUIRED_TO_BUILD", &[]));
     let mut first = true;
     for u in d.units.keys().filter(|&u| d.units[u].buildings[b] || d.units[u].force_buildings[b]) {
         list_help(&mut h, &built_by, &color("COLOR_UNIT_TEXT", &display(d, u)), ", ", first);
@@ -734,20 +728,20 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
         // C++ slip fixed: for a civilization without a building of the class it lists an empty
         // name.
         if n != 0 && (owner.is_none() || civ_building(c).is_some()) {
-            let start = txt(d, "TXT_KEY_BUILDING_HAPPINESS_CHANGE", "[ICON_BULLET]%D1_Change%F2_HappOrUn from[SPACE]", &[Arg::N(n), Arg::S(happy_icon(n))]);
+            let start = txt(d, "TXT_KEY_BUILDING_HAPPINESS_CHANGE", &[Arg::N(n), Arg::S(happy_icon(n))]);
             list_help(&mut h, &format!("{NEWLINE}{start}"), &display(d, c), ", ", n != last);
             last = n;
         }
     }
     if let Some(x) = *power_bonus {
-        add(&mut h, "TXT_KEY_BUILDING_PROVIDES_POWER_WITH", "[ICON_BULLET]Provides Power with [COLOR_HIGHLIGHT_TEXT][LINK=literal]%s1_BonusName[\\LINK][COLOR_REVERT]", &[Arg::S(&display(d, x))]);
+        add(&mut h, "TXT_KEY_BUILDING_PROVIDES_POWER_WITH", &[Arg::S(&display(d, x))]);
         if *dirty_power && dirty != 0 {
             h.push_str(&dirty_health);
         }
     }
     // The buildings that need it in their city (the civilization's building of each class).
     if let Some(c) = class {
-        let to_build = format!("{NEWLINE}{}", txt(d, "TXT_KEY_BUILDING_REQUIRED_TO_BUILD", "[ICON_BULLET]Required to Build[SPACE]", &[]));
+        let to_build = format!("{NEWLINE}{}", txt(d, "TXT_KEY_BUILDING_REQUIRED_TO_BUILD", &[]));
         let mut first = true;
         for other in d.building_classes.keys().filter_map(civ_building) {
             if d.buildings[other].building_class_needed_in_city[c] {
@@ -762,22 +756,22 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
     for t in d.traits.keys() {
         let n = production_traits[t];
         if n == 100 {
-            add(&mut h, "TXT_KEY_DOUBLE_SPEED_TRAIT", "[ICON_BULLET]Double production speed for %s1_trait leaders", &[Arg::S(&display(d, t))]);
+            add(&mut h, "TXT_KEY_DOUBLE_SPEED_TRAIT", &[Arg::S(&display(d, t))]);
         } else if n != 0 {
-            add(&mut h, "TXT_KEY_PRODUCTION_MODIFIER_TRAIT", "[ICON_BULLET]%D1_change%% production speed for %s2_trait leaders", &[Arg::N(n), Arg::S(&display(d, t))]);
+            add(&mut h, "TXT_KEY_PRODUCTION_MODIFIER_TRAIT", &[Arg::N(n), Arg::S(&display(d, t))]);
         }
     }
     for t in d.traits.keys() {
         let n = happiness_traits[t];
         if n != 0 {
-            add(&mut h, "TXT_KEY_BUILDING_HAPPINESS_TRAIT", "[ICON_BULLET]%D1_change[ICON_HAPPY] for %s2_trait leaders", &[Arg::N(n), Arg::S(&display(d, t))]);
+            add(&mut h, "TXT_KEY_BUILDING_HAPPINESS_TRAIT", &[Arg::N(n), Arg::S(&display(d, t))]);
         }
     }
     if let Some(u) = great_person.filter(|_| *great_people_rate_change == 0) {
-        add(&mut h, "TXT_KEY_BUILDING_LIKELY_TO_GENERATE", "[ICON_BULLET]City more likely to generate [COLOR_HIGHLIGHT_TEXT][LINK=literal]%s1_GPName[\\LINK][COLOR_REVERT]", &[Arg::S(&display(d, u))]);
+        add(&mut h, "TXT_KEY_BUILDING_LIKELY_TO_GENERATE", &[Arg::S(&display(d, u))]);
     }
     if let Some(e) = *free_start_era {
-        add(&mut h, "TXT_KEY_BUILDING_FREE_START_ERA", "[ICON_BULLET]Available for free on %s1_EraName and later starts", &[Arg::S(&display(d, e))]);
+        add(&mut h, "TXT_KEY_BUILDING_FREE_START_ERA", &[Arg::S(&display(d, e))]);
     }
 
     let help = names::text(d, &base.help);
@@ -787,12 +781,12 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
     }
 
     // C++ `buildBuildingRequiresString`, which with no city writes every requirement.
-    let requires = format!("{NEWLINE}{}", req(d, "TXT_KEY_REQUIRES", "[COLOR_WARNING_TEXT]Requires[SPACE]", &[]));
-    let and = txt(d, "TXT_KEY_AND", "[SPACE]and[SPACE]", &[]);
-    let or = txt(d, "TXT_KEY_OR", "[SPACE]or[SPACE]", &[]);
+    let requires = format!("{NEWLINE}{}", req(d, "TXT_KEY_REQUIRES", &[]));
+    let and = txt(d, "TXT_KEY_AND", &[]);
+    let or = txt(d, "TXT_KEY_OR", &[]);
     if let Some(r) = *holy_city {
         // FFH2's religion names have no article ("Order"): "in the Order Holy City".
-        add_req(&mut h, "TXT_KEY_ACTION_ONLY_HOLY_CONSTRUCT", "[COLOR_WARNING_TEXT]Can only be Constructed in the %F1_RelIcon Holy City.[COLOR_REVERT]", &[Arg::S(&highlight(&display(d, r)))]);
+        add_req(&mut h, "TXT_KEY_ACTION_ONLY_HOLY_CONSTRUCT", &[Arg::S(&highlight(&display(d, r)))]);
     }
     if let Some(sb) = *special_building_type {
         let mut first = true;
@@ -804,7 +798,6 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
             add_req(
                 &mut h,
                 "TXT_KEY_REQUIRES_TECH_ANYONE",
-                "[COLOR_WARNING_TEXT]Requires [COLOR_TECH_TEXT][LINK=literal]%s1_tech[\\LINK][COLOR_REVERT] (any player)[COLOR_REVERT]",
                 &[Arg::S(&display(d, t))],
             );
         }
@@ -816,7 +809,7 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
         let name = || highlight(&civ_building(c).map_or_else(|| display(d, c), |x| display(d, x)));
         let n = prereq_num_of_building_class[c];
         if n > 0 {
-            add_req(&mut h, "TXT_KEY_BUILDING_REQUIRES_NUM_SPECIAL_BUILDINGS_NO_CITY", "[COLOR_WARNING_TEXT]Requires %s1_Name (%d2_NumTotal Total)[COLOR_REVERT]", &[Arg::S(&name()), Arg::N(n)]);
+            add_req(&mut h, "TXT_KEY_BUILDING_REQUIRES_NUM_SPECIAL_BUILDINGS_NO_CITY", &[Arg::S(&name()), Arg::N(n)]);
         }
         // C++ slip fixed: an `else if`, so that a class both counted and needed in the city (the
         // Great Library's libraries) said only the count. After the count, ffh-play's line says
@@ -824,11 +817,11 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
         if building_class_needed_in_city[c] && n > 0 {
             h.push_str(&format!("{NEWLINE}Requires {} in the city", name()));
         } else if building_class_needed_in_city[c] {
-            add_req(&mut h, "TXT_KEY_BUILDING_REQUIRES_STRING", "[COLOR_WARNING_TEXT]Requires [LINK=literal]%s1_Name[\\LINK][COLOR_REVERT]", &[Arg::S(&name())]);
+            add_req(&mut h, "TXT_KEY_BUILDING_REQUIRES_STRING", &[Arg::S(&name())]);
         }
     }
     if *is_state_religion {
-        add_req(&mut h, "TXT_KEY_REQUIRES_STATE_RELIGION", "[COLOR_WARNING_TEXT]State Religion must be present in city[COLOR_REVERT]", &[]);
+        add_req(&mut h, "TXT_KEY_REQUIRES_STATE_RELIGION", &[]);
     }
     // ffh-play's: the religions FFH2's `canConstruct` asks for.
     if let Some(r) = *prereq_religion {
@@ -841,16 +834,16 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
         h.push_str(&format!("{NEWLINE}Requires a city without a religion"));
     }
     if *num_cities_prereq > 0 {
-        add_req(&mut h, "TXT_KEY_BUILDING_REQUIRES_NUM_CITIES", "[COLOR_WARNING_TEXT]Requires at least %d1_Num Cities[COLOR_REVERT]", &[Arg::N(*num_cities_prereq)]);
+        add_req(&mut h, "TXT_KEY_BUILDING_REQUIRES_NUM_CITIES", &[Arg::N(*num_cities_prereq)]);
     }
     if *unit_level_prereq > 0 {
-        add_req(&mut h, "TXT_KEY_BUILDING_REQUIRES_UNIT_LEVEL", "[COLOR_WARNING_TEXT]Requires a Unit of Level %d1_Num Experience[COLOR_REVERT]", &[Arg::N(*unit_level_prereq)]);
+        add_req(&mut h, "TXT_KEY_BUILDING_REQUIRES_UNIT_LEVEL", &[Arg::N(*unit_level_prereq)]);
     }
     if *min_latitude > 0 {
-        add_req(&mut h, "TXT_KEY_MIN_LATITUDE", "[COLOR_WARNING_TEXT]Can build at a minimum latitude of %d1 degrees[COLOR_REVERT]", &[Arg::N(*min_latitude)]);
+        add_req(&mut h, "TXT_KEY_MIN_LATITUDE", &[Arg::N(*min_latitude)]);
     }
     if *max_latitude < 90 {
-        add_req(&mut h, "TXT_KEY_MAX_LATITUDE", "[COLOR_WARNING_TEXT]Can build at a maximum latitude of %d1 degrees[COLOR_REVERT]", &[Arg::N(*max_latitude)]);
+        add_req(&mut h, "TXT_KEY_MAX_LATITUDE", &[Arg::N(*max_latitude)]);
     }
     // ffh-play's: where it may stand (C++ `CvCity::isValidBuildingLocation`: the coast with water of
     // at least the area size, or a river when both are set; else the land's size and a river).
@@ -873,17 +866,17 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
     }
     // The Civilopedia's.
     if let Some(v) = *victory_prereq {
-        add(&mut h, "TXT_KEY_BUILDING_REQUIRES_VICTORY", "[ICON_BULLET]%s1_Name Victory must be Enabled", &[Arg::S(&display(d, v))]);
+        add(&mut h, "TXT_KEY_BUILDING_REQUIRES_VICTORY", &[Arg::S(&display(d, v))]);
     }
     if let Some(e) = *max_start_era {
-        add(&mut h, "TXT_KEY_BUILDING_MAX_START_ERA", "[ICON_BULLET]Can only be Built on %s1_Name and Earlier Starts", &[Arg::S(&display(d, e))]);
+        add(&mut h, "TXT_KEY_BUILDING_MAX_START_ERA", &[Arg::S(&display(d, e))]);
     }
     if *num_teams_prereq > 0 {
-        add(&mut h, "TXT_KEY_BUILDING_REQUIRES_NUM_TEAMS", "[ICON_BULLET]Requires at least %d1_Num Teams", &[Arg::N(*num_teams_prereq)]);
+        add(&mut h, "TXT_KEY_BUILDING_REQUIRES_NUM_TEAMS", &[Arg::N(*num_teams_prereq)]);
     }
     // The tooltip's: techs and resources.
     if let Some(t) = *prereq_and_tech {
-        add_req(&mut h, "TXT_KEY_BUILDING_REQUIRES_STRING", "[COLOR_WARNING_TEXT]Requires [LINK=literal]%s1_Name[\\LINK][COLOR_REVERT]", &[Arg::S(&highlight(&display(d, t)))]);
+        add_req(&mut h, "TXT_KEY_BUILDING_REQUIRES_STRING", &[Arg::S(&highlight(&display(d, t)))]);
     }
     let mut first = true;
     for &t in prereq_and_techs.iter().flatten() {
@@ -891,7 +884,7 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
         first = false;
     }
     if let Some(x) = *prereq_and_bonus {
-        add_req(&mut h, "TXT_KEY_UNIT_REQUIRES_STRING", "[COLOR_WARNING_TEXT]Requires %s1_Text[COLOR_REVERT]", &[Arg::S(&highlight(&display(d, x)))]);
+        add_req(&mut h, "TXT_KEY_UNIT_REQUIRES_STRING", &[Arg::S(&highlight(&display(d, x)))]);
     }
     // FfH: every one of these resources ("and"; BtS asks for one of them). C++ builds the list
     // aside and writes it after the trait.
@@ -902,7 +895,7 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
         first = false;
     }
     if let Some(t) = *prereq_trait {
-        add_req(&mut h, "TXT_KEY_UNIT_REQUIRES_STRING", "[COLOR_WARNING_TEXT]Requires %s1_Text[COLOR_REVERT]", &[Arg::S(&highlight(&display(d, t)))]);
+        add_req(&mut h, "TXT_KEY_UNIT_REQUIRES_STRING", &[Arg::S(&highlight(&display(d, t)))]);
     }
     h.push_str(&bonuses);
     if let Some(c) = *founds_corporation {
@@ -921,18 +914,18 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
             h.push_str(NEWLINE);
             h.push_str("[ICON_BULLET]");
             h.push_str(&if n == 100 {
-                txt(d, "TXT_KEY_BUILDING_DOUBLE_SPEED_WITH", "Double Production Speed with [LINK=literal]%s1_Bonus[\\LINK]", &[Arg::S(&display(d, x))])
+                txt(d, "TXT_KEY_BUILDING_DOUBLE_SPEED_WITH", &[Arg::S(&display(d, x))])
             } else {
-                txt(d, "TXT_KEY_BUILDING_BUILDS_FASTER_WITH", "Builds %d1_Mod%% Faster with [LINK=literal]%s2_Bonus[\\LINK]", &[Arg::N(n), Arg::S(&display(d, x))])
+                txt(d, "TXT_KEY_BUILDING_BUILDS_FASTER_WITH", &[Arg::N(n), Arg::S(&display(d, x))])
             });
         }
     }
     let obsolete =
-        |h: &mut String, t: TechType| add(h, "TXT_KEY_BUILDING_OBSOLETE_WITH", "[COLOR_WARNING_TEXT]Obsolete with [LINK=literal]%s1_TechName[\\LINK][COLOR_REVERT]", &[Arg::S(&display(d, t))]);
+        |h: &mut String, t: TechType| add(h, "TXT_KEY_BUILDING_OBSOLETE_WITH", &[Arg::S(&display(d, t))]);
     if let Some(t) = *obsolete_tech {
         obsolete(&mut h, t);
         if *defense_modifier != 0 || *bombard_defense_modifier != 0 {
-            h.push_str(&txt(d, "TXT_KEY_BUILDING_OBSOLETE_EXCEPT", "[SPACE][COLOR_WARNING_TEXT](Except defensive bonus)[COLOR_REVERT]", &[]));
+            h.push_str(&txt(d, "TXT_KEY_BUILDING_OBSOLETE_EXCEPT", &[]));
         }
     }
     if let Some(t) = special_building_type.and_then(|sb| d.special_buildings[sb].obsolete_tech) {

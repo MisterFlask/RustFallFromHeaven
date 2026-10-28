@@ -23,7 +23,6 @@ pub fn effects(d: &GameData, p: ProcessType) -> String {
             b.push_str(&txt(
                 d,
                 "TXT_KEY_PROCESS_CONVERTS",
-                "[ICON_BULLET]Converts %d1_Mod%% of %F2_Type1 to %F3_Type2",
                 &[Arg::N(n), Arg::S(YIELD_ICONS[YieldType::YIELD_PRODUCTION.idx()]), Arg::S(COMMERCE_ICONS[k])],
             ));
         }

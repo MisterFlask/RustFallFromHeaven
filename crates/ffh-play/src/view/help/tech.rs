@@ -107,17 +107,17 @@ pub fn tech_help_with(g: &Game, p: PlayerId, t: TechType, un: &Unlocks) -> Strin
         if pl.building_class_count[class] > 0 {
             if let Some(bl) = civ_building(g, p, class).filter(|&bl| d.buildings[bl].obsolete_tech == Some(t)) {
                 b.push_str(NEWLINE);
-                b.push_str(&txt(d, "TXT_KEY_TECH_OBSOLETES", "[COLOR_WARNING_TEXT]Obsoletes [LINK=literal]%s1_Name[\\LINK][COLOR_REVERT]", &[Arg::S(&names::display(d, bl))]));
+                b.push_str(&txt(d, "TXT_KEY_TECH_OBSOLETES", &[Arg::S(&names::display(d, bl))]));
             }
         }
     }
     for bonus in d.bonuses.keys().filter(|&x| d.bonuses[x].tech_obsolete == Some(t)) {
         b.push_str(NEWLINE);
-        b.push_str(&txt(d, "TXT_KEY_TECH_OBSOLETES", "[COLOR_WARNING_TEXT]Obsoletes [LINK=literal]%s1_Name[\\LINK][COLOR_REVERT]", &[Arg::S(&names::display(d, bonus))]));
+        b.push_str(&txt(d, "TXT_KEY_TECH_OBSOLETES", &[Arg::S(&names::display(d, bonus))]));
     }
     for sb in d.special_buildings.keys().filter(|&x| d.special_buildings[x].obsolete_tech == Some(t)) {
         b.push_str(NEWLINE);
-        b.push_str(&txt(d, "TXT_KEY_TECH_OBSOLETES_NO_LINK", "[COLOR_WARNING_TEXT]Obsoletes %s1_Name[COLOR_REVERT]", &[Arg::S(&names::display(d, sb))]));
+        b.push_str(&txt(d, "TXT_KEY_TECH_OBSOLETES_NO_LINK", &[Arg::S(&names::display(d, sb))]));
     }
 
     // C++ `buildMoveString`: the moves a route gains.
@@ -127,7 +127,7 @@ pub fn tech_help_with(g: &Game, p: PlayerId, t: TechType, un: &Unlocks) -> Strin
         let diff = denom / cost.max(1) - denom / (cost + d.routes[r].tech_movement_change[t]).max(1);
         if diff != 0 {
             b.push_str(NEWLINE);
-            b.push_str(&txt(d, "TXT_KEY_UNIT_MOVEMENT", "[ICON_BULLET]%D1_Change %s2_MoveType Movement", &[Arg::N(-diff), Arg::S(&names::display(d, r))]));
+            b.push_str(&txt(d, "TXT_KEY_UNIT_MOVEMENT", &[Arg::N(-diff), Arg::S(&names::display(d, r))]));
         }
     }
     // The free unit and the free techs of the first to discover it.
@@ -136,126 +136,122 @@ pub fn tech_help_with(g: &Game, p: PlayerId, t: TechType, un: &Unlocks) -> Strin
         b.push_str(&txt(
             d,
             "TXT_KEY_TECH_FIRST_RECEIVES",
-            "[ICON_BULLET]First to Discover Receives a [COLOR_UNIT_TEXT][LINK=literal]%s1_UnitName[\\LINK][COLOR_REVERT]",
             &[Arg::S(&names::display(d, u))],
         ));
     }
     if info.feature_production_modifier != 0 {
         b.push_str(NEWLINE);
-        b.push_str(&txt(d, "TXT_KEY_FEATURE_PRODUCTION_MODIFIER", "[ICON_BULLET]Workers Produce %D1_Change%% [ICON_PRODUCTION] from Chopping", &[Arg::N(info.feature_production_modifier)]));
+        b.push_str(&txt(d, "TXT_KEY_FEATURE_PRODUCTION_MODIFIER", &[Arg::N(info.feature_production_modifier)]));
     }
     if info.worker_speed_modifier != 0 {
         b.push_str(NEWLINE);
-        b.push_str(&txt(d, "TXT_KEY_UNIT_WORKERS_FASTER", "[ICON_BULLET]Workers Build Improvements %D1_Change%% Faster", &[Arg::N(info.worker_speed_modifier)]));
+        b.push_str(&txt(d, "TXT_KEY_UNIT_WORKERS_FASTER", &[Arg::N(info.worker_speed_modifier)]));
     }
     if info.trade_routes != 0 {
         b.push_str(NEWLINE);
-        b.push_str(&txt(d, "TXT_KEY_MISC_TRADE_ROUTES", "[ICON_BULLET]%D1_Change Trade [NUM1:Route:Routes] per City", &[Arg::N(info.trade_routes)]));
+        b.push_str(&txt(d, "TXT_KEY_MISC_TRADE_ROUTES", &[Arg::N(info.trade_routes)]));
     }
     if info.health != 0 {
         let icon = if info.health > 0 { "[ICON_HEALTHY]" } else { "[ICON_UNHEALTHY]" };
         b.push_str(NEWLINE);
-        b.push_str(&txt(d, "TXT_KEY_MISC_HEALTH_ALL_CITIES", "[ICON_BULLET]%D1_Change%F2_HealthOrUn in All Cities", &[Arg::N(info.health.abs()), Arg::S(icon)]));
+        b.push_str(&txt(d, "TXT_KEY_MISC_HEALTH_ALL_CITIES", &[Arg::N(info.health.abs()), Arg::S(icon)]));
     }
     if info.happiness != 0 {
         let icon = if info.happiness > 0 { "[ICON_HAPPY]" } else { "[ICON_UNHAPPY]" };
         b.push_str(NEWLINE);
-        b.push_str(&txt(d, "TXT_KEY_MISC_HAPPINESS_ALL_CITIES", "[ICON_BULLET]%D1_Change%F2_HappyOrUn in All Cities", &[Arg::N(info.happiness.abs()), Arg::S(icon)]));
+        b.push_str(&txt(d, "TXT_KEY_MISC_HAPPINESS_ALL_CITIES", &[Arg::N(info.happiness.abs()), Arg::S(icon)]));
     }
     if info.first_free_techs > 0 && nobody_knows {
         b.push_str(NEWLINE);
         b.push_str(&if info.first_free_techs == 1 {
-            txt(d, "TXT_KEY_TECH_FIRST_FREE_TECH", "[ICON_BULLET]First to Discover Receives a [COLOR_TECH_TEXT]Free Technology[COLOR_REVERT]", &[])
+            txt(d, "TXT_KEY_TECH_FIRST_FREE_TECH", &[])
         } else {
-            txt(d, "TXT_KEY_TECH_FIRST_FREE_TECHS", "[ICON_BULLET]First to Discover Receives [COLOR_TECH_TEXT]%d1_Num Free Technologies[COLOR_REVERT]", &[Arg::N(info.first_free_techs)])
+            txt(d, "TXT_KEY_TECH_FIRST_FREE_TECHS", &[Arg::N(info.first_free_techs)])
         });
     }
 
     // What the team gains once (each only while it does not have it yet).
-    let flags: [(bool, bool, &str, &str); 10] = [
-        (info.extra_water_see_from, g.team_is_extra_water_see_from(team), "TXT_KEY_UNIT_EXTRA_SIGHT", "[ICON_BULLET]+1 Sight Across Water"),
-        (info.map_centering, g.teams[team].map_centering, "TXT_KEY_MISC_CENTERS_MAP", "[ICON_BULLET]Centers [LINK=CONCEPT_MAPS]World Map[\\LINK]"),
-        (info.map_visible, false, "TXT_KEY_MISC_REVEALS_MAP", "[ICON_BULLET]Reveals [LINK=CONCEPT_MAPS]World Map[\\LINK]"),
-        (info.map_trading, g.team_is_map_trading(team), "TXT_KEY_MISC_ENABLES_MAP_TRADING", "[ICON_BULLET]Enables [LINK=CONCEPT_TRADE]Map Trading[\\LINK]"),
-        (info.tech_trading, g.team_is_tech_trading(team), "TXT_KEY_MISC_ENABLES_TECH_TRADING", "[ICON_BULLET]Enables [LINK=CONCEPT_TRADE]Technology Trading[\\LINK]"),
-        (info.gold_trading, g.team_is_gold_trading(team), "TXT_KEY_MISC_ENABLES_GOLD_TRADING", "[ICON_BULLET]Enables [LINK=CONCEPT_TRADE]Gold Trading[\\LINK] via Diplomacy"),
-        (info.open_borders_trading, g.team_is_open_borders_trading(team), "TXT_KEY_MISC_ENABLES_OPEN_BORDERS", "[ICON_BULLET]Enables [LINK=CONCEPT_BORDERS]Open Borders[\\LINK]"),
-        (info.defensive_pact_trading, g.team_is_defensive_pact_trading(team), "TXT_KEY_MISC_ENABLES_DEFENSIVE_PACTS", "[ICON_BULLET]Enables Defensive Pacts"),
+    let flags: [(bool, bool, &str); 10] = [
+        (info.extra_water_see_from, g.team_is_extra_water_see_from(team), "TXT_KEY_UNIT_EXTRA_SIGHT"),
+        (info.map_centering, g.teams[team].map_centering, "TXT_KEY_MISC_CENTERS_MAP"),
+        (info.map_visible, false, "TXT_KEY_MISC_REVEALS_MAP"),
+        (info.map_trading, g.team_is_map_trading(team), "TXT_KEY_MISC_ENABLES_MAP_TRADING"),
+        (info.tech_trading, g.team_is_tech_trading(team), "TXT_KEY_MISC_ENABLES_TECH_TRADING"),
+        (info.gold_trading, g.team_is_gold_trading(team), "TXT_KEY_MISC_ENABLES_GOLD_TRADING"),
+        (info.open_borders_trading, g.team_is_open_borders_trading(team), "TXT_KEY_MISC_ENABLES_OPEN_BORDERS"),
+        (info.defensive_pact_trading, g.team_is_defensive_pact_trading(team), "TXT_KEY_MISC_ENABLES_DEFENSIVE_PACTS"),
         // Only with permanent alliances on (C++).
         (
             info.permanent_alliance_trading && g.is_option(GameOptionType::GAMEOPTION_PERMANENT_ALLIANCES),
             g.team_is_permanent_alliance_trading(team),
             "TXT_KEY_MISC_ENABLES_PERM_ALLIANCES",
-            "[ICON_BULLET]Enables Permanent Alliances",
         ),
-        (info.bridge_building, g.team_is_bridge_building(team), "TXT_KEY_MISC_ENABLES_BRIDGE_BUILDING", "[ICON_BULLET]Enables Bridge Building"),
+        (info.bridge_building, g.team_is_bridge_building(team), "TXT_KEY_MISC_ENABLES_BRIDGE_BUILDING"),
     ];
-    for (gives, has, key, fallback) in flags {
+    for (gives, has, key) in flags {
         if gives && !has {
             b.push_str(NEWLINE);
-            b.push_str(&txt(d, key, fallback, &[]));
+            b.push_str(&txt(d, key, &[]));
         }
     }
-    for (gives, has, key, fallback) in [
-        (info.irrigation, g.team_is_irrigation(team), "TXT_KEY_MISC_SPREAD_IRRIGATION", "[ICON_BULLET][LINK=IMPROVEMENT_FARM]Farms[\\LINK] Spread [LINK=CONCEPT_IRRIGATION]Irrigation[\\LINK]"),
-        (info.ignore_irrigation, g.team_is_ignore_irrigation(team), "TXT_KEY_MISC_IRRIGATION_ANYWHERE", "[ICON_BULLET]Can Build [LINK=IMPROVEMENT_FARM]Farms[\\LINK] without Irrigation"),
-        (info.water_work, g.team_is_water_work(team), "TXT_KEY_MISC_WATER_WORK", "[ICON_BULLET]Can Work Water Tiles"),
+    for (gives, has, key) in [
+        (info.irrigation, g.team_is_irrigation(team), "TXT_KEY_MISC_SPREAD_IRRIGATION"),
+        (info.ignore_irrigation, g.team_is_ignore_irrigation(team), "TXT_KEY_MISC_IRRIGATION_ANYWHERE"),
+        (info.water_work, g.team_is_water_work(team), "TXT_KEY_MISC_WATER_WORK"),
         // C++ shows this one only when vassal states are *off* (`isOption(GAMEOPTION_NO_VASSAL_STATES)`,
         // a BtS slip); here it shows when they are on, which is when it is true.
         (
             info.vassal_state_trading && !g.is_option(GameOptionType::GAMEOPTION_NO_VASSAL_STATES),
             g.team_is_vassal_state_trading(team),
             "TXT_KEY_MISC_ENABLES_VASSAL_STATES",
-            "[ICON_BULLET]Enables Vassal States",
         ),
     ] {
         if gives && !has {
             b.push_str(NEWLINE);
-            b.push_str(&txt(d, key, fallback, &[]));
+            b.push_str(&txt(d, key, &[]));
         }
     }
 
     // C++ `buildImprovementString`: the builds it allows.
     for &build in &un.builds {
         b.push_str(NEWLINE);
-        b.push_str(&txt(d, "TXT_KEY_MISC_CAN_BUILD_IMPROVEMENT", "[ICON_BULLET]Can [COLOR_HIGHLIGHT_TEXT]%s1_ImpName[COLOR_REVERT]", &[Arg::S(&names::display(d, build))]));
+        b.push_str(&txt(d, "TXT_KEY_MISC_CAN_BUILD_IMPROVEMENT", &[Arg::S(&names::display(d, build))]));
     }
     for dom in d.domains.keys() {
         let n = info.domain_extra_moves[dom];
         if n != 0 {
             b.push_str(NEWLINE);
-            b.push_str(&txt(d, "TXT_KEY_MISC_EXTRA_MOVES", "[ICON_BULLET]%D1_Change Extra Moves for %s2_Name", &[Arg::N(n), Arg::S(&names::display(d, dom))]));
+            b.push_str(&txt(d, "TXT_KEY_MISC_EXTRA_MOVES", &[Arg::N(n), Arg::S(&names::display(d, dom))]));
         }
     }
     for k in 0..CommerceType::NUM {
         if info.commerce_flexible[k] && !g.team_is_commerce_flexible(team, CommerceType::from_usize(k)) {
             b.push_str(NEWLINE);
-            b.push_str(&txt(d, "TXT_KEY_MISC_ADJUST_COMMERCE_RATE", "[ICON_BULLET]Can Adjust %F1_CmrcIcon Rate", &[Arg::S(COMMERCE_ICONS[k])]));
+            b.push_str(&txt(d, "TXT_KEY_MISC_ADJUST_COMMERCE_RATE", &[Arg::S(COMMERCE_ICONS[k])]));
         }
     }
     for terrain in d.terrains.keys() {
         if info.terrain_trade[terrain] && !g.team_is_terrain_trade(team, terrain) {
             b.push_str(NEWLINE);
-            b.push_str(&txt(d, "TXT_KEY_MISC_ENABLES_ON_TERRAIN", "[ICON_BULLET]Enables %F1_Icon on %s2_TerrainName", &[Arg::S("[ICON_TRADE]"), Arg::S(&names::display(d, terrain))]));
+            b.push_str(&txt(d, "TXT_KEY_MISC_ENABLES_ON_TERRAIN", &[Arg::S("[ICON_TRADE]"), Arg::S(&names::display(d, terrain))]));
         }
     }
     if info.river_trade && !g.team_is_river_trade(team) {
         b.push_str(NEWLINE);
-        let rivers = txt(d, "TXT_KEY_MISC_RIVERS", "Rivers", &[]);
-        b.push_str(&txt(d, "TXT_KEY_MISC_ENABLES_ON_TERRAIN", "[ICON_BULLET]Enables %F1_Icon on %s2_TerrainName", &[Arg::S("[ICON_TRADE]"), Arg::S(&rivers)]));
+        let rivers = txt(d, "TXT_KEY_MISC_RIVERS", &[]);
+        b.push_str(&txt(d, "TXT_KEY_MISC_ENABLES_ON_TERRAIN", &[Arg::S("[ICON_TRADE]"), Arg::S(&rivers)]));
     }
     for sb in d.special_buildings.keys() {
         let s = &d.special_buildings[sb];
         if s.tech_prereq == Some(t) {
             b.push_str(NEWLINE);
-            b.push_str(&txt(d, "TXT_KEY_MISC_CAN_CONSTRUCT_BUILDING", "[ICON_BULLET]Can Construct [COLOR_BUILDING_TEXT]%s1_BldgName[COLOR_REVERT]", &[Arg::S(&names::display(d, sb))]));
+            b.push_str(&txt(d, "TXT_KEY_MISC_CAN_CONSTRUCT_BUILDING", &[Arg::S(&names::display(d, sb))]));
         }
         if s.tech_prereq_anyone == Some(t) {
             b.push_str(NEWLINE);
             b.push_str(&txt(
                 d,
                 "TXT_KEY_MISC_CAN_CONSTRUCT_BUILDING_ANYONE",
-                "[ICON_BULLET]Any player can Construct [COLOR_BUILDING_TEXT][LINK=literal]%s1_BldgName[\\LINK][COLOR_REVERT]",
                 &[Arg::S(&names::display(d, sb))],
             ));
         }
@@ -271,7 +267,7 @@ pub fn tech_help_with(g: &Game, p: PlayerId, t: TechType, un: &Unlocks) -> Strin
         if first {
             b.push_str(NEWLINE);
         }
-        list_help(&mut b, &txt(d, "TXT_KEY_MISC_REVEALS", "[ICON_BULLET]Reveals ", &[]), &color("COLOR_HIGHLIGHT_TEXT", &names::display(d, bonus)), ", ", first);
+        list_help(&mut b, &txt(d, "TXT_KEY_MISC_REVEALS", &[]), &color("COLOR_HIGHLIGHT_TEXT", &names::display(d, bonus)), ", ", first);
         first = false;
     }
     let ours = |c: Option<CivilizationType>| c.is_none() || c == g.player_get_civilization_type(p);
@@ -280,22 +276,22 @@ pub fn tech_help_with(g: &Game, p: PlayerId, t: TechType, un: &Unlocks) -> Strin
         if first {
             b.push_str(NEWLINE);
         }
-        list_help(&mut b, &txt(d, "TXT_KEY_MISC_ENABLES", "[ICON_BULLET]Enables ", &[]), &color("COLOR_HIGHLIGHT_TEXT", &names::display(d, civic)), ", ", first);
+        list_help(&mut b, &txt(d, "TXT_KEY_MISC_ENABLES", &[]), &color("COLOR_HIGHLIGHT_TEXT", &names::display(d, civic)), ", ", first);
         first = false;
     }
 
     // The units, buildings and projects it allows that the player cannot have yet.
     for (i, &u) in un.units.iter().enumerate() {
-        list_help(&mut b, &format!("{NEWLINE}{}", txt(d, "TXT_KEY_TECH_CAN_TRAIN", "[ICON_BULLET]Can Train ", &[])), &color("COLOR_UNIT_TEXT", &names::display(d, u)), ", ", i == 0);
+        list_help(&mut b, &format!("{NEWLINE}{}", txt(d, "TXT_KEY_TECH_CAN_TRAIN", &[])), &color("COLOR_UNIT_TEXT", &names::display(d, u)), ", ", i == 0);
     }
     for (i, &bl) in un.buildings.iter().enumerate() {
-        list_help(&mut b, &format!("{NEWLINE}{}", txt(d, "TXT_KEY_TECH_CAN_CONSTRUCT", "[ICON_BULLET]Can Construct ", &[])), &color("COLOR_BUILDING_TEXT", &names::display(d, bl)), ", ", i == 0);
+        list_help(&mut b, &format!("{NEWLINE}{}", txt(d, "TXT_KEY_TECH_CAN_CONSTRUCT", &[])), &color("COLOR_BUILDING_TEXT", &names::display(d, bl)), ", ", i == 0);
     }
     let mut first = true;
     for pr in d.projects.keys() {
         let pi = &d.projects[pr];
         if pi.tech_prereq == Some(t) && !g.player_is_production_maxed_project(p, pr) && !g.player_can_create(p, pr, false, true) && ours(pi.prereq_civilization) {
-            list_help(&mut b, &format!("{NEWLINE}{}", txt(d, "TXT_KEY_TECH_CAN_CREATE", "[ICON_BULLET]Can Create ", &[])), &color("COLOR_PROJECT_TEXT", &names::display(d, pr)), ", ", first);
+            list_help(&mut b, &format!("{NEWLINE}{}", txt(d, "TXT_KEY_TECH_CAN_CREATE", &[])), &color("COLOR_PROJECT_TEXT", &names::display(d, pr)), ", ", first);
             first = false;
         }
     }
@@ -304,7 +300,7 @@ pub fn tech_help_with(g: &Game, p: PlayerId, t: TechType, un: &Unlocks) -> Strin
         if first {
             b.push_str(NEWLINE);
         }
-        list_help(&mut b, &txt(d, "TXT_KEY_MISC_CAN_BUILD", "[ICON_BULLET]Can Build ", &[]), &color("COLOR_HIGHLIGHT_TEXT", &names::display(d, pr)), ", ", first);
+        list_help(&mut b, &txt(d, "TXT_KEY_MISC_CAN_BUILD", &[]), &color("COLOR_HIGHLIGHT_TEXT", &names::display(d, pr)), ", ", first);
         first = false;
     }
     // The religions the first to discover it founds (those not founded yet).
@@ -313,8 +309,8 @@ pub fn tech_help_with(g: &Game, p: PlayerId, t: TechType, un: &Unlocks) -> Strin
         if first {
             b.push_str(NEWLINE);
         }
-        let item = if g.is_option(GameOptionType::GAMEOPTION_PICK_RELIGION) { txt(d, "TXT_KEY_RELIGION_UNKNOWN", "a Religion", &[]) } else { color("COLOR_HIGHLIGHT_TEXT", &names::display(d, r)) };
-        list_help(&mut b, &txt(d, "TXT_KEY_MISC_FIRST_DISCOVER_FOUNDS", "[ICON_BULLET]First to Discover Founds ", &[]), &item, ", ", first);
+        let item = if g.is_option(GameOptionType::GAMEOPTION_PICK_RELIGION) { txt(d, "TXT_KEY_RELIGION_UNKNOWN", &[]) } else { color("COLOR_HIGHLIGHT_TEXT", &names::display(d, r)) };
+        list_help(&mut b, &txt(d, "TXT_KEY_MISC_FIRST_DISCOVER_FOUNDS", &[]), &item, ", ", first);
         first = false;
     }
     let mut first = true;
@@ -325,7 +321,7 @@ pub fn tech_help_with(g: &Game, p: PlayerId, t: TechType, un: &Unlocks) -> Strin
         if first {
             b.push_str(NEWLINE);
         }
-        list_help(&mut b, &txt(d, "TXT_KEY_MISC_FIRST_DISCOVER_INCORPORATES", "[ICON_BULLET]First to Discover Incorporates ", &[]), &color("COLOR_HIGHLIGHT_TEXT", &names::display(d, c)), ", ", first);
+        list_help(&mut b, &txt(d, "TXT_KEY_MISC_FIRST_DISCOVER_INCORPORATES", &[]), &color("COLOR_HIGHLIGHT_TEXT", &names::display(d, c)), ", ", first);
         first = false;
     }
     let mut first = true;
@@ -333,7 +329,7 @@ pub fn tech_help_with(g: &Game, p: PlayerId, t: TechType, un: &Unlocks) -> Strin
         if first {
             b.push_str(NEWLINE);
         }
-        list_help(&mut b, &txt(d, "TXT_KEY_MISC_ENABLES", "[ICON_BULLET]Enables ", &[]), &color("COLOR_HIGHLIGHT_TEXT", &names::display(d, pr)), ", ", first);
+        list_help(&mut b, &txt(d, "TXT_KEY_MISC_ENABLES", &[]), &color("COLOR_HIGHLIGHT_TEXT", &names::display(d, pr)), ", ", first);
         first = false;
     }
     // ffh-play's: the spells it allows (FfH2's help leaves them out).
@@ -353,7 +349,7 @@ pub fn tech_help_with(g: &Game, p: PlayerId, t: TechType, un: &Unlocks) -> Strin
             continue;
         }
         if d.techs[o].prereq_or_techs.contains(&t) || d.techs[o].prereq_and_techs.contains(&t) {
-            list_help(&mut b, &txt(d, "TXT_KEY_MISC_LEADS_TO", "[NEWLINE][ICON_BULLET]Leads to ", &[]), &color("COLOR_TECH_TEXT", &names::display(d, o)), ", ", first);
+            list_help(&mut b, &txt(d, "TXT_KEY_MISC_LEADS_TO", &[]), &color("COLOR_TECH_TEXT", &names::display(d, o)), ", ", first);
             first = false;
         }
     }
@@ -372,18 +368,18 @@ pub fn tech_help_with(g: &Game, p: PlayerId, t: TechType, un: &Unlocks) -> Strin
             let own = ui.unit_class_type.and_then(|c| civ_unit(g, p, c)) == Some(u);
             if own && (ui.base_discover > 0 || ui.discover_multiplier > 0) && g.get_discovery_tech(u, p) == Some(t) {
                 b.push_str(NEWLINE);
-                b.push_str(&txt(d, "TXT_KEY_TECH_GREAT_PERSON_DISCOVER", "[ICON_BULLET]Can be researched by a [COLOR_UNIT_TEXT]%s1_great_person[COLOR_REVERT]", &[Arg::S(&names::display(d, u))]));
+                b.push_str(&txt(d, "TXT_KEY_TECH_GREAT_PERSON_DISCOVER", &[Arg::S(&names::display(d, u))]));
             }
         }
         if let Some(era) = info.era.filter(|&e| pl.current_era < e) {
             b.push_str(NEWLINE);
-            b.push_str(&txt(d, "TXT_KEY_TECH_ERA_ADVANCE", "[ICON_BULLET]Advances to the [COLOR_HIGHLIGHT_TEXT]%s1_era[COLOR_REVERT] Era", &[Arg::S(&names::display(d, era))]));
+            b.push_str(&txt(d, "TXT_KEY_TECH_ERA_ADVANCE", &[Arg::S(&names::display(d, era))]));
         }
     }
     // FfH: a tech of a state religion.
     if let Some(r) = info.prereq_religion.filter(|&r| g.player_get_state_religion(p) != Some(r)) {
         b.push_str(NEWLINE);
-        b.push_str(&color("COLOR_NEGATIVE_TEXT", &txt(d, "TXT_KEY_TECH_PREREQ_RELIGION", "Requires: %s1_religion state religion", &[Arg::S(&names::display(d, r))])));
+        b.push_str(&color("COLOR_NEGATIVE_TEXT", &txt(d, "TXT_KEY_TECH_PREREQ_RELIGION", &[Arg::S(&names::display(d, r))])));
     }
     finish(b)
 }

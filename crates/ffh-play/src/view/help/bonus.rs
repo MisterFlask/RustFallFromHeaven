@@ -111,7 +111,7 @@ pub fn effects(d: &GameData, bonus: BonusType) -> String {
     // The tooltip's (`!bCivilopediaText`): the plot's yields, the tech that reveals it.
     changes_help(&mut b, "", "", "", yield_change, &YIELD_ICONS, false, true);
     if let Some(t) = tech_reveal {
-        line(&mut b, txt(d, "TXT_KEY_BONUS_REVEALED_BY", "[ICON_BULLET]Revealed by [COLOR_TECH_TEXT]%s1_TechName[COLOR_REVERT]", &[Arg::S(&display(d, *t))]));
+        line(&mut b, txt(d, "TXT_KEY_BONUS_REVEALED_BY", &[Arg::S(&display(d, *t))]));
     }
     // ffh-play's: the tech without which a team gets nothing from its plots (C++
     // `CvPlot::updatePlotGroupBonus`; the copies buildings provide do not need it; a disabled
@@ -121,7 +121,7 @@ pub fn effects(d: &GameData, bonus: BonusType) -> String {
         line(&mut b, if d.techs[*t].disable { "[ICON_BULLET]Cannot be connected as it is".to_string() } else { format!("[ICON_BULLET]Can be connected once you know {}", tech(*t)) });
     }
     if let Some(t) = tech_obsolete {
-        line(&mut b, txt(d, "TXT_KEY_BUILDING_OBSOLETE_WITH", "[COLOR_WARNING_TEXT]Obsolete with [LINK=literal]%s1_TechName[\\LINK][COLOR_REVERT]", &[Arg::S(&display(d, *t))]));
+        line(&mut b, txt(d, "TXT_KEY_BUILDING_OBSOLETE_WITH", &[Arg::S(&display(d, *t))]));
     }
 
     // ffh-play's: the improvements that connect it (C++ `isImprovementBonusTrade`), with what they
@@ -175,19 +175,19 @@ pub fn effects(d: &GameData, bonus: BonusType) -> String {
     let improvement = d.improvements.keys().find(|&i| d.improvements[i].improvement_bonus[bonus].bonus_makes_valid);
     // BtS writes these lines without a bullet and the "(with ..)" right after the icon: here they
     // read as the other lines do.
-    let with = |name: &str| format!(" {}", txt(d, "TXT_KEY_BONUS_WITH_IMPROVEMENT", "(with %s1_ImpName)", &[Arg::S(name)]));
+    let with = |name: &str| format!(" {}", txt(d, "TXT_KEY_BONUS_WITH_IMPROVEMENT", &[Arg::S(name)]));
     let healthy = |n: i32| {
         if n > 0 {
-            txt(d, "TXT_KEY_BONUS_HEALTHY", "Healthy: +%d1_Change[ICON_HEALTHY]", &[Arg::N(n)])
+            txt(d, "TXT_KEY_BONUS_HEALTHY", &[Arg::N(n)])
         } else {
-            txt(d, "TXT_KEY_BONUS_UNHEALTHY", "Unhealthy: +%d1_Change[ICON_UNHEALTHY]", &[Arg::N(-n)])
+            txt(d, "TXT_KEY_BONUS_UNHEALTHY", &[Arg::N(-n)])
         }
     };
     let happy = |n: i32| {
         if n > 0 {
-            txt(d, "TXT_KEY_BONUS_HAPPY", "Happy: +%d1_Change[ICON_HAPPY]", &[Arg::N(n)])
+            txt(d, "TXT_KEY_BONUS_HAPPY", &[Arg::N(n)])
         } else {
-            txt(d, "TXT_KEY_BONUS_UNHAPPY", "Unhappy: +%d1_Change[ICON_UNHAPPY]", &[Arg::N(-n)])
+            txt(d, "TXT_KEY_BONUS_UNHAPPY", &[Arg::N(-n)])
         }
     };
     let with_improvement = improvement.map(|i| with(&display(d, i))).unwrap_or_default();
@@ -200,23 +200,23 @@ pub fn effects(d: &GameData, bonus: BonusType) -> String {
 
     // FfH.
     if *discover_rand_modifier > 0 {
-        line(&mut b, txt(d, "TXT_KEY_BONUS_DISCOVER_RAND_MODIFIER_INCREASE", "[ICON_BULLET]Increases the chance of discovering new resources.", &[]));
+        line(&mut b, txt(d, "TXT_KEY_BONUS_DISCOVER_RAND_MODIFIER_INCREASE", &[]));
     } else if *discover_rand_modifier < 0 {
-        line(&mut b, txt(d, "TXT_KEY_BONUS_DISCOVER_RAND_MODIFIER_DECREASE", "[ICON_BULLET]Decreases the chance of discovering new resources.", &[]));
+        line(&mut b, txt(d, "TXT_KEY_BONUS_DISCOVER_RAND_MODIFIER_DECREASE", &[]));
     }
-    for (n, key, fallback) in [
-        (*great_people_rate_modifier, "TXT_KEY_BONUS_GREAT_PEOPLE_RATE_MODIFIER", "[ICON_BULLET]%D1% to Great Person Growth"),
-        (*heal_change, "TXT_KEY_BONUS_HEAL_CHANGE", "[ICON_BULLET]%D1% to heal rate of friendly units within your borders"),
-        (*heal_change_enemy, "TXT_KEY_BONUS_HEAL_CHANGE_ENEMY", "[ICON_BULLET]%D1% to heal rate of enemy units within your borders"),
-        (*maintenance_modifier, "TXT_KEY_BONUS_MAINTENANCE_MODIFIER", "[ICON_BULLET]%D1% to maintenance costs"),
-        (*research_modifier, "TXT_KEY_BONUS_RESEARCH_MODIFIER", "[ICON_BULLET]%D1% to research"),
+    for (n, key) in [
+        (*great_people_rate_modifier, "TXT_KEY_BONUS_GREAT_PEOPLE_RATE_MODIFIER"),
+        (*heal_change, "TXT_KEY_BONUS_HEAL_CHANGE"),
+        (*heal_change_enemy, "TXT_KEY_BONUS_HEAL_CHANGE_ENEMY"),
+        (*maintenance_modifier, "TXT_KEY_BONUS_MAINTENANCE_MODIFIER"),
+        (*research_modifier, "TXT_KEY_BONUS_RESEARCH_MODIFIER"),
     ] {
         if n != 0 {
-            line(&mut b, txt(d, key, fallback, &[Arg::N(n)]));
+            line(&mut b, txt(d, key, &[Arg::N(n)]));
         }
     }
     if *modifier_per_bonus {
-        line(&mut b, txt(d, "TXT_KEY_BONUS_MODIFIER_PER_BONUS", "[ICON_BULLET]Benefits of this resource are cumulative.", &[]));
+        line(&mut b, txt(d, "TXT_KEY_BONUS_MODIFIER_PER_BONUS", &[]));
     }
 
     // ffh-play's: what it does to units. A free promotion for the units a city with it trains

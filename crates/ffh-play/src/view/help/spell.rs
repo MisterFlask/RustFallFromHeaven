@@ -9,9 +9,9 @@ use super::{finish, txt, Arg, NEWLINE};
 use crate::names::{self, display};
 
 /// One line of the help: C++ `szBuffer.append(pcNewline); szBuffer.append(gDLL->getText(..))`.
-fn line(b: &mut String, d: &GameData, key: &str, fallback: &str, args: &[Arg]) {
+fn line(b: &mut String, d: &GameData, key: &str, args: &[Arg]) {
     b.push_str(NEWLINE);
-    b.push_str(&txt(d, key, fallback, args));
+    b.push_str(&txt(d, key, args));
 }
 
 /// What spell `s` does (Civ4 markup, lines joined by `[NEWLINE]`; empty when there is nothing to
@@ -123,60 +123,59 @@ pub fn effects(d: &GameData, s: SpellType) -> String {
     }
 
     if *global {
-        line(b, d, "TXT_KEY_SPELL_GLOBAL", "[ICON_BULLET]Can only be used once per game", &[]);
+        line(b, d, "TXT_KEY_SPELL_GLOBAL", &[]);
     }
     if *prereq_slave_trade {
-        line(b, d, "TXT_KEY_SPELL_PREREQ_SLAVE_TRADE", "[ICON_BULLET]Player must have Slave Trade vote passed in the Undercouncil to use this ability", &[]);
+        line(b, d, "TXT_KEY_SPELL_PREREQ_SLAVE_TRADE", &[]);
     }
     if *caster_min_level != 0 {
-        line(b, d, "TXT_KEY_SPELL_CASTER_MIN_LEVEL", "[ICON_BULLET]Caster must be at least %d1 level", &[Arg::N(*caster_min_level)]);
+        line(b, d, "TXT_KEY_SPELL_CASTER_MIN_LEVEL", &[Arg::N(*caster_min_level)]);
     }
     if let Some(x) = building_prereq {
-        line(b, d, "TXT_KEY_SPELL_BUILDING_PREREQ", "[ICON_BULLET]Requires a [LINK=literal]%s1_building[\\LINK] building in the caster's city", &[Arg::S(&display(d, *x))]);
+        line(b, d, "TXT_KEY_SPELL_BUILDING_PREREQ", &[Arg::S(&display(d, *x))]);
     }
     if let Some(x) = building_class_owned_prereq {
-        line(b, d, "TXT_KEY_SPELL_BUILDINGCLASS_OWNED_PREREQ", "[ICON_BULLET]The player must own the [LINK=literal]%s1_building[\\LINK] to use this spell", &[Arg::S(&display(d, *x))]);
+        line(b, d, "TXT_KEY_SPELL_BUILDINGCLASS_OWNED_PREREQ", &[Arg::S(&display(d, *x))]);
     }
     if let Some(x) = civilization_prereq {
-        line(b, d, "TXT_KEY_SPELL_CIVILIZATION_PREREQ", "[ICON_BULLET]Can only be used by the [LINK=literal]%s1_civ[\\LINK] civilization", &[Arg::S(&display(d, *x))]);
+        line(b, d, "TXT_KEY_SPELL_CIVILIZATION_PREREQ", &[Arg::S(&display(d, *x))]);
     }
     if let Some(x) = corporation_prereq {
-        // No text has this key (no FFH2 spell needs a corporation): the line is written here, as
-        // the rules check it (the corporation in the caster's city).
-        line(b, d, "TXT_KEY_SPELL_CORPORATION_PREREQ", "[ICON_BULLET]Requires the [LINK=literal]%s1_corporation[\\LINK] corporation in the caster's city", &[Arg::S(&display(d, *x))]);
+        // FFH2 has no text for this key (no FFH2 spell needs a corporation): the port adds it
+        // (tools/vendor_xml.py `PORT_TEXT`), as the rules check it (the corporation in the
+        // caster's city).
+        line(b, d, "TXT_KEY_SPELL_CORPORATION_PREREQ", &[Arg::S(&display(d, *x))]);
     }
     if let Some(f) = feature_or_prereq1 {
         match feature_or_prereq2 {
-            None => line(b, d, "TXT_KEY_SPELL_FEATURE_PREREQ", "[ICON_BULLET]Requires a [LINK=literal]%s1_feature[\\LINK] in the casters tile", &[Arg::S(&display(d, *f))]),
+            None => line(b, d, "TXT_KEY_SPELL_FEATURE_PREREQ", &[Arg::S(&display(d, *f))]),
             Some(g) => line(
                 b,
                 d,
                 "TXT_KEY_SPELL_FEATURE2_PREREQ",
-                "[ICON_BULLET]Requires a [LINK=literal]%s1_feature[\\LINK] or a [LINK=literal]%s2_feature[\\LINK] in the casters tile",
                 &[Arg::S(&display(d, *f)), Arg::S(&display(d, *g))],
             ),
         }
     }
     if let Some(x) = improvement_prereq {
-        line(b, d, "TXT_KEY_SPELL_IMPROVEMENT_PREREQ", "[ICON_BULLET]Requires a [LINK=literal]%s1_improvement[\\LINK] in the casters tile", &[Arg::S(&display(d, *x))]);
+        line(b, d, "TXT_KEY_SPELL_IMPROVEMENT_PREREQ", &[Arg::S(&display(d, *x))]);
     }
     if let Some(x) = promotion_in_stack_prereq {
-        line(b, d, "TXT_KEY_SPELL_PROMOTION_IN_STACK_PREREQ", "[ICON_BULLET]Requires a unit with [LINK=literal]%s1_prom[\\LINK] promotion in the casters stack", &[Arg::S(&display(d, *x))]);
+        line(b, d, "TXT_KEY_SPELL_PROMOTION_IN_STACK_PREREQ", &[Arg::S(&display(d, *x))]);
     }
     if let Some(x) = religion_prereq {
-        line(b, d, "TXT_KEY_SPELL_RELIGION_PREREQ", "[ICON_BULLET]Caster must have the [LINK=literal]%s1_religion[\\LINK] religion", &[Arg::S(&display(d, *x))]);
+        line(b, d, "TXT_KEY_SPELL_RELIGION_PREREQ", &[Arg::S(&display(d, *x))]);
     }
     if let Some(x) = state_religion_prereq {
-        line(b, d, "TXT_KEY_SPELL_STATE_RELIGION_PREREQ", "[ICON_BULLET]Player must have the [LINK=literal]%s1_religion[\\LINK] state religion", &[Arg::S(&display(d, *x))]);
+        line(b, d, "TXT_KEY_SPELL_STATE_RELIGION_PREREQ", &[Arg::S(&display(d, *x))]);
     }
     if let Some(x) = tech_prereq {
-        line(b, d, "TXT_KEY_SPELL_TECH_PREREQ", "[ICON_BULLET]Requires the [LINK=literal]%s1_tech[\\LINK] technology", &[Arg::S(&display(d, *x))]);
+        line(b, d, "TXT_KEY_SPELL_TECH_PREREQ", &[Arg::S(&display(d, *x))]);
     }
     // The unit, unit combat or unit class that casts it: C++ says all three in the unit's words
     // ("Can only be used by a Naval Units.").
-    const UNIT_PREREQ: &str = "[ICON_BULLET]Can only be used by a [LINK=literal]%s1_unit[\\LINK].";
     if let Some(x) = unit_prereq {
-        line(b, d, "TXT_KEY_SPELL_UNIT_PREREQ", UNIT_PREREQ, &[Arg::S(&display(d, *x))]);
+        line(b, d, "TXT_KEY_SPELL_UNIT_PREREQ", &[Arg::S(&display(d, *x))]);
     }
     if let Some(x) = unit_combat_prereq {
         // C++ reuses the unit's key ("by a Naval Units."): a unit combat is plural.
@@ -184,33 +183,33 @@ pub fn effects(d: &GameData, s: SpellType) -> String {
         b.push_str(&format!("[ICON_BULLET]Can only be used by [LINK=literal]{}[\\LINK].", display(d, *x)));
     }
     if let Some(x) = unit_class_prereq {
-        line(b, d, "TXT_KEY_SPELL_UNIT_PREREQ", UNIT_PREREQ, &[Arg::S(&display(d, *x))]);
+        line(b, d, "TXT_KEY_SPELL_UNIT_PREREQ", &[Arg::S(&display(d, *x))]);
     }
     if let Some(x) = unit_in_stack_prereq {
-        line(b, d, "TXT_KEY_SPELL_UNIT_IN_STACK_PREREQ", "[ICON_BULLET]Can only be used if there is a [LINK=literal]%s1_unit[\\LINK] unit in the stack.", &[Arg::S(&display(d, *x))]);
+        line(b, d, "TXT_KEY_SPELL_UNIT_IN_STACK_PREREQ", &[Arg::S(&display(d, *x))]);
     }
 
     // What it does.
     if let Some(u) = create_unit_type {
         let unit = display(d, *u);
         if *create_unit_num == 1 {
-            line(b, d, "TXT_KEY_SPELL_SUMMON_UNIT", "[ICON_BULLET]Summons a [LINK=literal]%s1_unit[\\LINK].", &[Arg::S(&unit)]);
+            line(b, d, "TXT_KEY_SPELL_SUMMON_UNIT", &[Arg::S(&unit)]);
         } else {
-            line(b, d, "TXT_KEY_SPELL_SUMMON_UNIT_MULTIPLE", "[ICON_BULLET]Summons %D1 [LINK=literal]%s2_unitname[\\LINK](s).", &[Arg::N(*create_unit_num), Arg::S(&unit)]);
+            line(b, d, "TXT_KEY_SPELL_SUMMON_UNIT_MULTIPLE", &[Arg::N(*create_unit_num), Arg::S(&unit)]);
         }
         if *permanent_unit_create {
             // On the same line.
-            b.push_str(&txt(d, "TXT_KEY_SPELL_SUMMON_UNIT_PERMANENT", " (permanent)", &[]));
+            b.push_str(&txt(d, "TXT_KEY_SPELL_SUMMON_UNIT_PERMANENT", &[]));
         }
         if *copy_casters_promotions {
-            line(b, d, "TXT_KEY_SPELL_COPY_CASTERS_PROMOTIONS", "[ICON_BULLET]Unit gains all the promotions of the caster", &[]);
+            line(b, d, "TXT_KEY_SPELL_COPY_CASTERS_PROMOTIONS", &[]);
         }
     }
     if let Some(x) = create_unit_promotion {
-        line(b, d, "TXT_KEY_SPELL_CREATE_UNIT_PROMOTION", "[ICON_BULLET]Summoned units start with the [LINK=literal]%s1_promotion[\\LINK] promotion", &[Arg::S(&display(d, *x))]);
+        line(b, d, "TXT_KEY_SPELL_CREATE_UNIT_PROMOTION", &[Arg::S(&display(d, *x))]);
     }
     if *damage != 0 {
-        line(b, d, "TXT_KEY_SPELL_DAMAGE", "[ICON_BULLET]Damages units about %D1%, to a limit of %D2% damage.", &[Arg::N(*damage), Arg::N(*damage_limit)]);
+        line(b, d, "TXT_KEY_SPELL_DAMAGE", &[Arg::N(*damage), Arg::N(*damage_limit)]);
     }
     // The promotions it adds and removes (the second and third only with the first), on the
     // caster alone, its stack, or the units in range.
@@ -218,11 +217,11 @@ pub fn effects(d: &GameData, s: SpellType) -> String {
         for q in [Some(*first), *add_promotion_type2, *add_promotion_type3].into_iter().flatten() {
             let name = display(d, q);
             if *buff_caster_only {
-                line(b, d, "TXT_KEY_SPELL_ADD_PROMOTION_CASTER", "[ICON_BULLET]Adds the [LINK=literal]%s1_promotion[\\LINK] promotion to the caster", &[Arg::S(&name)]);
+                line(b, d, "TXT_KEY_SPELL_ADD_PROMOTION_CASTER", &[Arg::S(&name)]);
             } else if *range == 0 {
-                line(b, d, "TXT_KEY_SPELL_ADD_PROMOTION", "[ICON_BULLET]Adds the [LINK=literal]%s1_promotion[\\LINK] promotion to all units in the caster's stack", &[Arg::S(&name)]);
+                line(b, d, "TXT_KEY_SPELL_ADD_PROMOTION", &[Arg::S(&name)]);
             } else {
-                line(b, d, "TXT_KEY_SPELL_ADD_PROMOTION_AT_RANGE", "[ICON_BULLET]Adds the [LINK=literal]%s1_promotion[\\LINK] promotion to units within %d2 range", &[Arg::S(&name), Arg::N(*range)]);
+                line(b, d, "TXT_KEY_SPELL_ADD_PROMOTION_AT_RANGE", &[Arg::S(&name), Arg::N(*range)]);
             }
         }
     }
@@ -230,33 +229,33 @@ pub fn effects(d: &GameData, s: SpellType) -> String {
         for q in [Some(*first), *remove_promotion_type2, *remove_promotion_type3].into_iter().flatten() {
             let name = display(d, q);
             if *buff_caster_only {
-                line(b, d, "TXT_KEY_SPELL_REMOVE_PROMOTION_CASTER", "[ICON_BULLET]Removes the [LINK=literal]%s1_promotion[\\LINK] promotion from the caster", &[Arg::S(&name)]);
+                line(b, d, "TXT_KEY_SPELL_REMOVE_PROMOTION_CASTER", &[Arg::S(&name)]);
             } else {
-                line(b, d, "TXT_KEY_SPELL_REMOVE_PROMOTION", "[ICON_BULLET]Removes the [LINK=literal]%s1_promotion[\\LINK] promotion", &[Arg::S(&name)]);
+                line(b, d, "TXT_KEY_SPELL_REMOVE_PROMOTION", &[Arg::S(&name)]);
             }
         }
     }
     // The range, when the promotions it adds did not say it.
     if *range != 0 && add_promotion_type1.is_none() {
-        line(b, d, "TXT_KEY_SPELL_RANGE", "[ICON_BULLET]Range: %D1", &[Arg::N(*range)]);
+        line(b, d, "TXT_KEY_SPELL_RANGE", &[Arg::N(*range)]);
     }
     if let Some(x) = convert_unit_type {
-        line(b, d, "TXT_KEY_SPELL_CONVERT_UNIT", "[ICON_BULLET]Transforms the caster into a %s1_unit", &[Arg::S(&display(d, *x))]);
+        line(b, d, "TXT_KEY_SPELL_CONVERT_UNIT", &[Arg::S(&display(d, *x))]);
     }
     if let Some(x) = create_building_type {
-        line(b, d, "TXT_KEY_SPELL_CREATE_BUILDING", "[ICON_BULLET]Creates a [LINK=literal]%s1_building[\\LINK] in the city", &[Arg::S(&display(d, *x))]);
+        line(b, d, "TXT_KEY_SPELL_CREATE_BUILDING", &[Arg::S(&display(d, *x))]);
     }
     if let Some(x) = create_feature_type {
-        line(b, d, "TXT_KEY_SPELL_CREATE_FEATURE", "[ICON_BULLET]Creates a [LINK=literal]%s1_feature[\\LINK] in the tile", &[Arg::S(&display(d, *x))]);
+        line(b, d, "TXT_KEY_SPELL_CREATE_FEATURE", &[Arg::S(&display(d, *x))]);
     }
     if let Some(x) = create_improvement_type {
-        line(b, d, "TXT_KEY_SPELL_CREATE_IMPROVEMENT", "[ICON_BULLET]Creates a [LINK=literal]%s1_improvement[\\LINK] in the tile", &[Arg::S(&display(d, *x))]);
+        line(b, d, "TXT_KEY_SPELL_CREATE_IMPROVEMENT", &[Arg::S(&display(d, *x))]);
     }
     if let Some(x) = spread_religion {
-        line(b, d, "TXT_KEY_SPELL_SPREAD_RELIGION", "[ICON_BULLET]Spreads [LINK=literal]%s1_religion[\\LINK] religion", &[Arg::S(&display(d, *x))]);
+        line(b, d, "TXT_KEY_SPELL_SPREAD_RELIGION", &[Arg::S(&display(d, *x))]);
     }
     if *dispel {
-        line(b, d, "TXT_KEY_SPELL_DISPEL", "[ICON_BULLET]Removes beneficial spell effects from enemy units, and negative spell effects from allied units", &[]);
+        line(b, d, "TXT_KEY_SPELL_DISPEL", &[]);
     }
     // The XML help (in the middle, as C++ puts it).
     let help = names::text(d, &base.help);
@@ -268,62 +267,62 @@ pub fn effects(d: &GameData, s: SpellType) -> String {
     // Who it affects and where it can be cast.
     if *resistable {
         if *resist_modify != 0 {
-            line(b, d, "TXT_KEY_SPELL_RESIST_WITH_MODIFY", "[ICON_BULLET]Can be resisted (%D1%)", &[Arg::N(*resist_modify)]);
+            line(b, d, "TXT_KEY_SPELL_RESIST_WITH_MODIFY", &[Arg::N(*resist_modify)]);
         } else {
-            line(b, d, "TXT_KEY_SPELL_RESIST", "[ICON_BULLET]Can be resisted", &[]);
+            line(b, d, "TXT_KEY_SPELL_RESIST", &[]);
         }
     }
     if *adjacent_to_water_only {
-        line(b, d, "TXT_KEY_SPELL_ADJACENT_TO_WATER_ONLY", "[ICON_BULLET]Can only be cast next to water tiles", &[]);
+        line(b, d, "TXT_KEY_SPELL_ADJACENT_TO_WATER_ONLY", &[]);
     }
     if *in_borders_only && *in_city_only {
-        line(b, d, "TXT_KEY_SPELL_IN_BORDERS_AND_CITY_ONLY", "[ICON_BULLET]Can only be cast in cities you own", &[]);
+        line(b, d, "TXT_KEY_SPELL_IN_BORDERS_AND_CITY_ONLY", &[]);
     } else {
         if *in_borders_only {
-            line(b, d, "TXT_KEY_SPELL_IN_BORDERS_ONLY", "[ICON_BULLET]Can only be cast within your civilizations borders", &[]);
+            line(b, d, "TXT_KEY_SPELL_IN_BORDERS_ONLY", &[]);
         }
         if *in_city_only {
-            line(b, d, "TXT_KEY_SPELL_IN_CITY_ONLY", "[ICON_BULLET]Can only be cast in cities", &[]);
+            line(b, d, "TXT_KEY_SPELL_IN_CITY_ONLY", &[]);
         }
     }
     let immune = match (*immune_team, *immune_neutral, *immune_enemy) {
-        (true, false, false) => Some(("TXT_KEY_SPELL_IMMUNE_TEAM", "[ICON_BULLET]Won't affect units on your team")),
-        (false, true, false) => Some(("TXT_KEY_SPELL_IMMUNE_NEUTRAL", "[ICON_BULLET]Won't affect neutral units")),
-        (false, false, true) => Some(("TXT_KEY_SPELL_IMMUNE_ENEMY", "[ICON_BULLET]Won't affect enemy units")),
-        (true, true, false) => Some(("TXT_KEY_SPELL_IMMUNE_TEAM_NEUTRAL", "[ICON_BULLET]Only affects enemy units")),
-        (true, false, true) => Some(("TXT_KEY_SPELL_IMMUNE_TEAM_ENEMY", "[ICON_BULLET]Only affects neutral units")),
-        (false, true, true) => Some(("TXT_KEY_SPELL_IMMUNE_NEUTRAL_ENEMY", "[ICON_BULLET]Only affects units on your team")),
-        (true, true, true) => Some(("TXT_KEY_SPELL_IMMUNE_TEAM_NEUTRAL_ENEMY", "[ICON_BULLET]Won't affect team, neutral or enemy units")),
+        (true, false, false) => Some("TXT_KEY_SPELL_IMMUNE_TEAM"),
+        (false, true, false) => Some("TXT_KEY_SPELL_IMMUNE_NEUTRAL"),
+        (false, false, true) => Some("TXT_KEY_SPELL_IMMUNE_ENEMY"),
+        (true, true, false) => Some("TXT_KEY_SPELL_IMMUNE_TEAM_NEUTRAL"),
+        (true, false, true) => Some("TXT_KEY_SPELL_IMMUNE_TEAM_ENEMY"),
+        (false, true, true) => Some("TXT_KEY_SPELL_IMMUNE_NEUTRAL_ENEMY"),
+        (true, true, true) => Some("TXT_KEY_SPELL_IMMUNE_TEAM_NEUTRAL_ENEMY"),
         (false, false, false) => None,
     };
-    if let Some((key, fallback)) = immune {
-        line(b, d, key, fallback, &[]);
+    if let Some(key) = immune {
+        line(b, d, key, &[]);
     }
     if *immune_flying {
-        line(b, d, "TXT_KEY_SPELL_IMMUNE_FLYING", "[ICON_BULLET]Won't affect flying units", &[]);
+        line(b, d, "TXT_KEY_SPELL_IMMUNE_FLYING", &[]);
     }
     if *immune_not_alive {
-        line(b, d, "TXT_KEY_SPELL_IMMUNE_NOT_ALIVE", "[ICON_BULLET]Only affects living targets", &[]);
+        line(b, d, "TXT_KEY_SPELL_IMMUNE_NOT_ALIVE", &[]);
     }
     if *remove_has_casted {
-        line(b, d, "TXT_KEY_SPELL_REMOVE_HAS_CASTED", "[ICON_BULLET]Restores a caster's arcane energy", &[]);
+        line(b, d, "TXT_KEY_SPELL_REMOVE_HAS_CASTED", &[]);
     }
     // Its price: C++ adds the active player's upgrade cost modifier to a conversion's cost; no
     // player here, so the base cost.
     if *cost != 0 {
-        line(b, d, "TXT_KEY_SPELL_COST", "[ICON_BULLET]Costs %d1 gold", &[Arg::N(*cost)]);
+        line(b, d, "TXT_KEY_SPELL_COST", &[Arg::N(*cost)]);
     }
     if *delay != 0 {
-        line(b, d, "TXT_KEY_SPELL_DELAY", "[ICON_BULLET]Takes %d1 turns to cast", &[Arg::N(*delay)]);
+        line(b, d, "TXT_KEY_SPELL_DELAY", &[Arg::N(*delay)]);
     }
     if *miscast_chance != 0 {
-        line(b, d, "TXT_KEY_SPELL_MISCAST_CHANCE", "[ICON_BULLET]%D1% to be miscast", &[Arg::N(*miscast_chance)]);
+        line(b, d, "TXT_KEY_SPELL_MISCAST_CHANCE", &[Arg::N(*miscast_chance)]);
     }
     if *immobile_turns != 0 {
-        line(b, d, "TXT_KEY_SPELL_IMMOBILE_TURNS", "[ICON_BULLET]Units become immobile for %d1 turns", &[Arg::N(*immobile_turns)]);
+        line(b, d, "TXT_KEY_SPELL_IMMOBILE_TURNS", &[Arg::N(*immobile_turns)]);
     }
     if *sacrifice_caster {
-        line(b, d, "TXT_KEY_SPELL_SACRIFICE_CASTER", "[ICON_BULLET]Casting this spell kills the caster", &[]);
+        line(b, d, "TXT_KEY_SPELL_SACRIFICE_CASTER", &[]);
     }
     finish(std::mem::take(b))
 }

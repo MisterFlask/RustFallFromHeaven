@@ -8595,6 +8595,7 @@ TXT_KEY_IMPROVEMENT_HELLFIRE	Hellfire
 TXT_KEY_IMPROVEMENT_HELLFIRE_PEDIA	Spawns demons if it isn't eliminated.
 TXT_KEY_IMPROVEMENT_JUNGLE_ALTAR	Jungle Altar
 TXT_KEY_IMPROVEMENT_LAND_WORKED	Land Worked
+TXT_KEY_IMPROVEMENT_LESS_GROWTH	[ICON_BULLET]Gives terrain a lower chance to spread
 TXT_KEY_IMPROVEMENT_LETUM_FRIGUS	Letum Frigus
 TXT_KEY_IMPROVEMENT_LETUM_FRIGUS_PEDIA	There is nothing left here but echoes of the battles that have been fought here. This is where Kylorin met Mulcarn in the final battle that killed a god. Wild men live in the caves around the site and claim that someday their god will return.
 TXT_KEY_IMPROVEMENT_LION_DEN	Lion Den
@@ -11602,6 +11603,7 @@ TXT_KEY_SPELL_CONVERT_CITY_HELP	[ICON_BULLET]Converts the city to the casters em
 TXT_KEY_SPELL_CONVERT_CITY_PEDIA	[TAB]The wild ones rule not by reason and persuasion as we do, nor by deference to tradition, nor even submission to the will of the god-king. They follow their leaders for one reason. They know that their leaders can trounce them in combat. This costs them all the benefits of the wisdom of age and robs their cities of any stability or continuity. But one's place in the world is always clear.[PARAGRAPH:1]Excerpt from Lilar Jaswin's "Interactions among the lesser races"
 TXT_KEY_SPELL_CONVERT_UNIT	[ICON_BULLET]Transforms the caster into a %s1_unit
 TXT_KEY_SPELL_COPY_CASTERS_PROMOTIONS	[ICON_BULLET]Unit gains all the promotions of the caster
+TXT_KEY_SPELL_CORPORATION_PREREQ	[ICON_BULLET]Requires the [LINK=literal]%s1_corporation[\LINK] corporation in the caster's city
 TXT_KEY_SPELL_COST	[ICON_BULLET]Costs %d1 gold
 TXT_KEY_SPELL_COURAGE	Courage
 TXT_KEY_SPELL_CREATE_BATTERING_RAM	Create Battering Ram
