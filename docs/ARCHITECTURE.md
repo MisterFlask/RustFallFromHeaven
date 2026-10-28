@@ -19,6 +19,7 @@ ffh-ai     Controllers (the new AI). Reads state, issues the same calls a human 
 ffh-cli    `ffh` binary: autoplay, benchmarks, inspection.
 ffh-stress `ffh-stress` binary: AI games over a matrix of game settings, crashes caught per game.
 ffh-play   Human play: a session that drives one human slot through ports of the C++ input paths.
+ffh-web    ffh-play's web host compiled to WebAssembly, and the static site's page side (docs/WEB.md).
 ```
 
 `ffh-core` must stay free of OS dependencies (no filesystem/threads/clock in the
@@ -96,19 +97,27 @@ without changing the rules engine:
   players). Path previews use a session-owned interface path finder, never the game's. A turn
   report diffs a fog-filtered snapshot taken at the end of the human's turn against its next
   control point. Queries can also be served inside a blocking decision (`Answerer::ask_with`).
-- **Transports.** One JSON envelope (`cmd`, `q`, `answer`, `session`) over two transports:
+- **Transports.** One JSON envelope (`cmd`, `q`, `answer`, `session`) over three transports:
   `ffh-play agent` reads JSON lines from stdin on the game thread itself; `ffh-play serve` runs a
   std-only HTTP/1.1 server (127.0.0.1, a thread per connection) whose GET requests are served
   from a published status and cached view and map, and whose `POST /api` envelopes go over a
-  channel to the game thread. A blocking decision raised inside a rules call reads the same
-  input (the next lines, the same channel), so it is answered while the command that raised it
-  waits. A panic on the game thread is caught and reported with the replay command.
+  channel to the game thread; `transport::web` is the same `/api` without threads or sockets, one
+  request at a time, for the engine compiled to WebAssembly (`crates/ffh-web`) that the public
+  static site runs in a Web Worker (docs/WEB.md). A blocking decision raised inside a rules call
+  reads the same input (the next lines, the same channel, the requests the page queues), so it is
+  answered while the command that raised it waits. A panic on the game thread is caught and
+  reported with the replay command (on wasm it aborts and the page restarts the engine).
 - **Browser client.** `crates/ffh-play/assets/` (embedded with `include_str!`, served by
-  `ffh-play serve`): vanilla ES modules and a `<canvas>` map, no build step and no external
-  code. It only renders what the server computes (fog, legal actions, odds, paths, turns) and
-  sends the same commands as the agent; the terrain is cached in offscreen chunks redrawn where
-  the map changed. Checked by `tests/web.rs` (files and imports), and with node by
-  `tools/web-check.sh`, `tools/web-api-smoke.mjs` and the headless-Chromium `tools/web-smoke.mjs`.
+  `ffh-play serve`, and copied into the static site): vanilla ES modules, no build step and no
+  external code. It only renders what the engine computes (fog, legal actions, odds, paths,
+  turns) and sends the same commands as the agent. The map has four renderers (Tools → Options,
+  or `?renderer=`): the isometric 2.5D map, the default (`iso.js`, docs/ISO.md); the 2D pixel art
+  and the flat debugging map, both drawn on a `<canvas>` in offscreen chunks redrawn where the map
+  changed; and the experimental WebGL2 3D map (`r3d/`, docs/R3D.md), loaded on demand, which
+  falls back to the isometric map where it cannot run. Checked by `tests/web.rs` (files and
+  imports), and with node by `tools/web-check.sh`, `tools/web-api-smoke.mjs`, the
+  headless-Chromium `tools/web-smoke.mjs` and `tools/web-touch-smoke.mjs`, and for the static site
+  `tools/web-site-smoke.mjs`.
 
 ## Saved games
 
