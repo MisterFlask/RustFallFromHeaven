@@ -1508,7 +1508,7 @@ later, the first Adept at turns 250-350 -- and many of these games are decided b
 Where Wizards existed they spent most turns on Haste (FfH's free cast), fired Fireballs at units
 immune to fire, and their damage at the end of the turn came after every attack decision of ours:
 in seed 10 the Amurites' Wizards fireballed the stack at a city's gates turn after turn while the
-city fell. Four behaviours, each with a switch (`switches.rs`); the versions that failed are in
+city fell. Six behaviours, each with a switch (`switches.rs`); the versions that failed are in
 docs/AI_LOG.md, "Magic civilizations":
 
 - **The arcane path** (`ARCANE_PATH`, `traits::arcane_path`, `tech_plan`): an Arcane or Summoner
@@ -1544,23 +1544,40 @@ docs/AI_LOG.md, "Magic civilizations":
   building is valued against the enemies in sight of the city, so a Wall of Stone (+25% defense)
   goes up in a besieged city; valued as if the city were quiet, it was worth 3 and never cast.
 
+- **War with Mages** (`MAGIC_WAR`, `diplomacy::can_take_cities_at`): the war of expansion's test
+  that a neighbour's weakest city can be taken counts our casters' damage on its defender: 10% of
+  its health for each caster of ours whose spells hurt (a Mage's Fireball, not an Adept's Haste),
+  40% at most. Without it a magic civilization judged its targets by its swords alone, and its
+  Mages saw few strikes (one of seven strikes in a traced Amurite game with ten Mages had one near).
+  Forked at its firings: Amurites seed 10 went to war on a weak neighbour at turn 325 and had 12
+  cities to 10 forty turns later; Sheaim seed 6 took a city at turn 262 that the branch without it
+  left alone.
+
 `FFH_AI_TRACE` shows the casters' count in the force (`casters count on ...`, with the planned
 damage) and the probes (`strike on ...: 0 attacks, holds`); `FFH_AI_TRACE_CAST` shows the barrage
-(`ctx=barrage`). Tests: `crates/ffh-ai/tests/magic.rs` (a Fireball does nothing to a Fire
+(`ctx=barrage`), and `magic war: our casters make ... cities takeable` the war gate. Tests: `crates/ffh-ai/tests/magic.rs` (a Fireball does nothing to a Fire
 Elemental; the barrage softens the stack at our gates before our units move; the force estimate
 counts a Mage's Fireball once; a besieged city gets its Wall of Stone).
 
-Measured on development seeds 1-30 with each of the four civilizations forced into slot 0 (120
-pairs), the same binary with the switch off on the base side (for the barrage and the casters in
-the force, which every civilization may play: on for the forced civilization only, against
-opponents without it):
+Measured with each of the four civilizations forced into slot 0, full games, the same binary on
+both sides, the switches on for the forced civilization only (`FFH_AI_<NAME>_ONLY={civ}`) against
+them off; "one side only" counts the seeds won by one side only. Development seeds 1-30 (120
+pairs), each switch against the others as they then were:
 
 | switch | win (one side only) | share@300 | share@end | other |
 |---|---|---|---|---|
-| `ARCANE_PATH` | 12.5% -> 12.5% (6 / 6) | -99 (t -1.70) | -81 (t -0.67) | arcane at turn 200 0.1 -> 0.5, first Mage (median) Sheaim 475 -> 350, Svartalfar never -> 400; Svartalfar wins 2 -> 5 |
 | `BARRAGE` | 12.5% -> 11.7% (0 / 1) | -1 (t -0.68) | -2 (t -0.06) | alive at the end +0.1 (t 2.50); 82 games unchanged |
 | `CASTER_FORCE` | 12.5% -> 12.5% (1 / 1) | 0 | -21 (t -1.37) | 96 games unchanged; in the others more cities taken, and some more lost |
-| `MAGE_ARMY` | 12.5% -> 10.8% (4 / 6) | +27 (t 0.75) | +20 (t 0.27) | legacy@end +137 (t 1.74), alive at the end +0.1 (t 2.03); arcane casters made 5.0 -> 9.0 a game, at turn 200 0.4 -> 1.1; spell damage 108 -> 227 and summon kills 12 -> 15 a game |
+| `MAGE_ARMY` (before the Sorcery timing) | 12.5% -> 10.8% (4 / 6) | +27 (t 0.75) | +20 (t 0.27) | legacy@end +137 (t 1.74), alive +0.1 (t 2.03); arcane casters made 5.0 -> 9.0 a game; spell damage 108 -> 227 a game |
+
+Seeds 52001-52040 (160 pairs; a first validation that the first package failed, development since):
+
+| side | win (one side only) | share@200 | share@400 | share@end | magic |
+|---|---|---|---|---|---|
+| package without `MAGIC_WAR` against all off | 16.2% -> 13.8% (6 / 10) | +5 (t 0.92) | +41 (t 0.85) | -10 (t -0.14) | Mages at turn 400 2.6 -> 3.7, spell damage 72 -> 136 a game, summon kills 9.5 -> 12.9 |
+| `MAGIC_WAR` on top of it | 13.8% -> 15.0% (8 / 6) | 0 | +20 (t 0.90) | +96 (t 1.70) | legacy@end +72 (t 1.42); Amurites 2 -> 5 wins, Sheaim 3 -> 5 |
+
+VALIDATION_RESULT
 
 Forks at their firings (`tools/ai-branch.sh`): the barrage (seed 10, Amurites, turn 421) let a
 stack of 8 attack five barbarian Disciples of Acheron the Fireballs had hurt -- four killed for a
@@ -3359,9 +3376,10 @@ Where MNAI does something this AI does not, ranked by expected worth (each untri
   stages; domination needs two thirds of the land and the siege operations take about one city
   per war; the religious victory (80% of the world's people) is not pursued.
 - Casters ("Spellcasting"): a small corps by role and mana nodes on our raw mana (round 7a).
-  Magic leaders head for their Adepts early and keep a caster for every four field units ("Magic
-  civilizations"); other civilizations still value Knowledge of the Ether with a flat bonus and
-  get it around turn 230. Not tried: casters for a lasting summon (the Sheaim's Raise Skeleton, an
+  Magic leaders beeline Sorcery after the economy's tier 2, keep a caster for every four field
+  units once they have it, and count their Mages in their wars ("Magic civilizations"); opening
+  the school earlier cost them the economy (docs/AI_LOG.md). Other civilizations still value
+  Knowledge of the Ether with a flat bonus and get it around turn 230. Not tried: casters for a lasting summon (the Sheaim's Raise Skeleton, an
   army unit a turn while at war), a caster's sphere chosen for its role (a terraformer is a caster
   that happens to know Spring or Scorch), trading for the mana a sphere needs, and a Mage sent to
   the city whose siege it would turn (sending it to the threatened city killed the casters with
