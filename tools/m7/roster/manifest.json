@@ -16964,5 +16964,86 @@
   "gen_size": "1024x1024",
   "quality": "medium",
   "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_barbarian_town": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_barbarian_town.png",
+  "size": [
+   192,
+   138
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 2,
+  "mirrored": false,
+  "images": [
+   "anchors/buildings/crop_houses.png",
+   "prompts/assets/bld_city_castle__bld_city_town_r2_1.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_barbarian_town.txt",
+  "accepted": "2026-10-28 05:19",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_barbarian_village": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_barbarian_village.png",
+  "size": [
+   192,
+   122
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 1,
+  "mirrored": false,
+  "images": [
+   "anchors/buildings/crop_houses.png",
+   "prompts/assets/bld_city_barbarian_village__bld_city_barbarian_town_r1_2.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_barbarian_village.txt",
+  "accepted": "2026-10-28 05:20",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
+ },
+ "bld_city_barbarian_castle": {
+  "kind": "building",
+  "file": "roster/buildings/bld_city_barbarian_castle.png",
+  "size": [
+   192,
+   160
+  ],
+  "anchor": "canvas bottom-centre on bottom vertex of front-most footprint tile",
+  "round": "r1",
+  "variant": 2,
+  "mirrored": false,
+  "images": [
+   "anchors/buildings/crop_houses.png",
+   "prompts/assets/bld_city_barbarian_castle__bld_city_barbarian_town_r1_2.png",
+   "anchors/buildings/house_style_city_raw.png"
+  ],
+  "prompt": "prompts/assets/bld_city_barbarian_castle.txt",
+  "accepted": "2026-10-28 05:20",
+  "width": 184,
+  "pixel": 2,
+  "footprint": 1,
+  "key": "#ff00ff",
+  "holes": 30,
+  "gen_size": "1024x1024",
+  "quality": "medium",
+  "model": "gpt-image-2.5-sunburst"
  }
 }
