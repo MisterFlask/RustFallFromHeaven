@@ -33,6 +33,7 @@ export const SPRITES = {
   bld_city_illians_town: { w: 192, h: 138, box: [6, 0, 186, 138] },
   bld_city_illians_village: { w: 192, h: 130, box: [4, 0, 188, 130] },
   bld_city_infernal_town: { w: 192, h: 132, box: [6, 0, 186, 132] },
+  bld_city_infernal_village: { w: 192, h: 126, box: [4, 0, 188, 126] },
   bld_city_khazad_castle: { w: 192, h: 162, box: [6, 0, 186, 162] },
   bld_city_khazad_town: { w: 192, h: 146, box: [4, 0, 188, 146] },
   bld_city_khazad_village: { w: 192, h: 132, box: [4, 0, 188, 132] },
