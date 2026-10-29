@@ -91,6 +91,27 @@ test("woods stand as single tree cards and open ground as scattered props, claim
   assert.deepEqual(dressSpriteStatic(w, map, atlas, env, null).list, list, "the same state, the same cards");
 });
 
+test("shores are rimmed with stones and open ground is filled with small props in clumps", () => {
+  const rows = ["~~~~~~", "~~~~~~", "......", "......", "......"];
+  const map = buildMap(data, rows);
+  const view = buildView(data, { players: [{ civ: "CIVILIZATION_BANNOR" }] });
+  const w = scene({ map, view });
+  const env = { unitAt: new Set(), cityAt: new Map() };
+  const { list } = dressSpriteStatic(w, map, atlas, env, null);
+  const shore = list.filter((r) => r.key.startsWith("shore_"));
+  // Along the coast (the land's last row, y 2 -- the rows are listed north first -- and the warped
+  // waterline about it), not inland.
+  assert.ok(shore.length >= 8, `a coast six plots long has a rim of stones, not ${shore.length}`);
+  for (const r of shore) assert.ok(-r.z > 1.6 && -r.z < 3.5, `a shore stone inland at ${-r.z}`);
+  for (const r of shore) assert.ok(Math.abs(r.y - Math.max(0, w.heightAt(r.x, -r.z))) < 0.03, "a shore stone at the waterline");
+  // Open grassland carries grass tufts, on every inland plot.
+  for (let x = 0; x < 6; x++) {
+    const n = list.filter((r) => r.key.startsWith("grass_") && Math.floor(r.x) === x && Math.floor(-r.z) === 0).length;
+    assert.ok(n >= 2, `grass tufts on (${x}, 0): ${n}`);
+  }
+  assert.deepEqual(dressSpriteStatic(w, map, atlas, env, null).list, list, "the same state, the same cards");
+});
+
 test("nothing stands on, and no mood comes from, what the player has not seen", () => {
   const rows = ["..,,..", "..ff..", "xx..pp", "......"];
   const hidden = [[1, 1], [2, 1], [4, 1]];

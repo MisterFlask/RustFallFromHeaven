@@ -5,7 +5,9 @@
 import { hexLinear } from "../math.js";
 import { DEFAULTS, PRESETS } from "../config.js";
 
-export const STORE = "ffh.hd2d.config";
+// Renamed when the look changes enough that a panel tuning saved for the old one would mislead
+// (batch 3: the muted land palette, the wider default view).
+export const STORE = "ffh.hd2d.config.3";
 
 /** The light: the sprites are painted lit from the upper left, so the sun stands there -- to the
  *  west and a little north of the view (the camera looks north and never turns), about 45 degrees
@@ -33,8 +35,9 @@ export const HD2D = {
   lighting: "hd2d",
   ssao: 0.85,
   glow: 1.0,
-  saturation: 1.16,
-  contrast: 1.22,
+  // The land's own palette is graded in the mood pass (landGrade): the finish keeps the colours.
+  saturation: 1.0,
+  contrast: 1.12,
   grain: 0,
   vignette: 0.42,
   rim: 0.4,
@@ -51,6 +54,7 @@ export const HD2D = {
   tiltShift: 0.6,
   rays: 0.6,
   mood: 1,
+  landGrade: 1,
   bloom: 0.8,
   beams: 1,
   contact: 1,
@@ -58,13 +62,14 @@ export const HD2D = {
 };
 
 export const DEFAULTS_HD2D = { ...DEFAULTS, ...HD2D, preset: "hd2d" };
-export const PRESETS_HD2D = { hd2d: HD2D, plain: { ...PRESETS.plain, tiltShift: 0, rays: 0, mood: 0, bloom: 0, beams: 0, borderGlow: 0 } };
+export const PRESETS_HD2D = { hd2d: HD2D, plain: { ...PRESETS.plain, tiltShift: 0, rays: 0, mood: 0, landGrade: 0, bloom: 0, beams: 0, borderGlow: 0 } };
 
 /** The panel rows of the mode's own switches (after the 3D renderer's). */
 export const PANEL_HD2D = [
   ["tiltShift", "Tilt-shift blur", "range", 0, 1, 0.05],
   ["rays", "Light shafts", "range", 0, 1.5, 0.05],
   ["mood", "Region moods", "range", 0, 1, 0.05],
+  ["landGrade", "Muted land palette", "range", 0, 1, 0.05],
   ["bloom", "Wide bloom", "range", 0, 1.5, 0.05],
   ["beams", "Light beams (mana, towers)", "range", 0, 1.5, 0.05],
   ["borderGlow", "Glowing borders", "range", 0, 1.5, 0.05],

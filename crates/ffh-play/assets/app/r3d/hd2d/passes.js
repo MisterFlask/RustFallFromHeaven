@@ -150,10 +150,11 @@ export class Hd2dPasses {
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   }
 
-  /** The region moods, graded into the display colour: returns the graded frame (or null). */
+  /** The region moods and the land's palette, graded into the display colour: returns the graded
+ *  frame (or null). */
   grade(fr, cfg) {
     const fx = this.frame;
-    if (!fx?.mood || !((cfg.mood ?? 0) > 0)) return null;
+    if (!fx?.mood || !((cfg.mood ?? 0) > 0 || (cfg.landGrade ?? 0) > 0)) return null;
     const pl = this.pl;
     pl.timed("mood", () => {
       pl.pass(this.p.mood, this.f.mood, pl.w, pl.h, {
@@ -163,7 +164,8 @@ export class Hd2dPasses {
         uMood: fx.mood,
         uTan: fr.tan,
         uInvView: fr.invView,
-        uMoodAmount: cfg.mood,
+        uMoodAmount: cfg.mood ?? 0,
+        uLand: cfg.landGrade ?? 0,
         uTime: fr.uniforms.uTime,
         uMapSize: fx.mapSize,
         uWrapX: fx.wrapX,

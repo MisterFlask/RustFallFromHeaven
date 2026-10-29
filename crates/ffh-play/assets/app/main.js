@@ -771,10 +771,11 @@ function setRenderer(r) {
   syncSkin();
 }
 
-/** The interface follows the map: the isometric map's own (isoui.js) while it draws, else the 2D
- *  art's (or the plain one). Redraws what the two draw differently. */
+/** The interface follows the map: the isometric map's own (isoui.js) while it or the HD-2D map
+ *  (which draws the same sprites, full bleed under the floating panels, as its look target) draws,
+ *  else the 2D art's (or the plain one). Redraws what the two draw differently. */
 function syncSkin() {
-  const on = !!mapView.iso;
+  const on = !!mapView.iso || mapView.r3d?.mode === "hd2d";
   // A city screen opened in one interface is not the other's (over the map or with its grid).
   if (on !== isoSkin() && openTags().includes("city")) closeTag("city");
   if (!setIsoSkin(on, mapView)) return;

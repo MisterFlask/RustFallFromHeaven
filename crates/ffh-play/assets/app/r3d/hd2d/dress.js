@@ -170,13 +170,23 @@ function manaColour(name) {
 const variantsOf = new Map();
 function variants(kind) {
   let v = variantsOf.get(kind);
-  if (!v) variantsOf.set(kind, (v = Object.keys(CARDS).filter((k) => k.startsWith(`${kind}_`) && /^\d+$/.test(k.slice(kind.length + 1))).sort()));
+  if (!v) {
+    // A kind names its numbered cards (`tree_oak` -> tree_oak_1, ...), or one card itself.
+    v = Object.keys(CARDS).filter((k) => k.startsWith(`${kind}_`) && /^\d+$/.test(k.slice(kind.length + 1))).sort();
+    if (!v.length && Object.hasOwn(CARDS, kind)) v = [kind];
+    variantsOf.set(kind, v);
+  }
   return v;
 }
 
 const WOODED = new Set([FEAT.FOREST, FEAT.JUNGLE, FEAT.ANCIENT, FEAT.BURNT, FEAT.YOUNG]);
-/** A wood's trees against a lone prop's scale (PX.prop): smaller, many to a plot. */
-const TREE = 0.75;
+/** A wood's trees against a lone prop's scale (PX.prop): smaller, many to a plot -- the look
+ *  target's woods are crowds of trees about half a figure's height. */
+const TREE = 0.58;
+/** The props drawn by code (tools/hd2d/draw.py: grass, reeds, pebbles, shore stones, standing
+ *  stones, fences, haystacks) are small art drawn for about one art pixel a screen pixel at the
+ *  gameplay zoom (96 px a plot): their scale against PX.prop. */
+const FINE = 2.6;
 const HELLISH = new Set([GROUND.BURNING_SANDS, GROUND.BROKEN_LANDS, GROUND.PERDITION]);
 
 /** The trees of a wooded plot, by its feature and ground: [kind, weight, scale]. */
@@ -190,20 +200,32 @@ function woodOf(feat, ground, hills) {
   return hills ? [["tree_pine", 2, 1], ["tree_oak", 1, 1]] : [["tree_oak", 3, 1], ["tree_pine", 1, 1]];
 }
 
-/** What scatters over open ground, by its ground and mood: [kind, how many (expected), scale]. */
+/** What scatters over open ground, by its ground and mood: [kind, how many (expected), scale]. The
+ *  look target fills every plot with small things, in clumps: a lone tree with bushes and grass
+ *  round it, a rock among pebbles. */
 function clutterOf(kind, ground, mood) {
   const out = [];
-  if (HELLISH.has(ground)) out.push(["lava_rock", 1.1, 1], ["tree_dead", 0.25, 0.8]);
-  else if (ground === GROUND.SNOW) out.push(["tree_pine_snow", 0.35, 0.85], ["rock", 0.4, 1]);
-  else if (ground === GROUND.TUNDRA) out.push(["tree_pine", 0.35, 0.85], ["rock", 0.6, 1], ["bush", 0.4, 0.9]);
-  else if (ground === GROUND.DESERT) out.push(["rock", 0.5, 1]);
-  else if (ground === GROUND.MARSH) out.push(["bush", 1.2, 1]);
-  else out.push(["bush", 1.0, 1], ["flowers", ground === GROUND.GRASS ? 1.1 : 0.5, 1], ["tree_oak", 0.35, 0.8], ["rock", 0.25, 0.9]);
-  if (kind === KIND.HILLS) out.push(["rock", 1.0, 1.1]);
-  if (kind === KIND.PEAK) out.push(["rock", 2.0, 1.3]);
-  if (mood && mood[1] >= 0.5 && !HELLISH.has(ground)) out.push(["crystal", 0.8, 1]);
+  if (HELLISH.has(ground)) out.push(["lava_rock", 1.3, 1], ["tree_dead", 0.35, 0.75], ["pebbles", 1.5, FINE]);
+  else if (ground === GROUND.SNOW) out.push(["tree_pine_snow", 0.6, 0.75], ["rock", 0.5, 1], ["pebbles", 1.0, FINE]);
+  else if (ground === GROUND.TUNDRA) out.push(["tree_pine", 0.6, 0.75], ["rock", 0.7, 1], ["bush", 0.6, 0.85], ["grass", 2.0, FINE], ["pebbles", 1.0, FINE]);
+  else if (ground === GROUND.DESERT) out.push(["rock", 0.6, 1], ["pebbles", 1.5, FINE], ["grass_3", 1.2, FINE]);
+  else if (ground === GROUND.MARSH) out.push(["bush", 1.4, 0.9], ["reeds", 3.0, FINE], ["grass", 2.0, FINE]);
+  else {
+    const lush = ground === GROUND.GRASS;
+    out.push(["bush", 1.6, 0.85], ["flowers", lush ? 1.6 : 0.7, 0.9], ["tree_oak", 0.7, 0.7], ["rock", 0.35, 0.8], ["grass", lush ? 4.5 : 3.0, FINE], ["pebbles", 0.8, FINE], ["stones", 0.05, FINE]);
+    if (!lush) out.push(["grass_3", 1.5, FINE]);
+  }
+  if (kind === KIND.HILLS) out.push(["rock", 1.2, 1.0], ["pebbles", 1.5, FINE]);
+  if (kind === KIND.PEAK) out.push(["rock", 2.2, 1.2], ["pebbles", 2.0, FINE]);
+  if (mood && mood[1] >= 0.5 && !HELLISH.has(ground)) out.push(["crystal", 1.0, 0.9]);
   return out;
 }
+
+/** Props too low to cast a shadow worth the shadow map's while. */
+const FLAT = new Set(["flowers", "grass", "grass_3", "pebbles"]);
+
+/** Farmland's own clutter, near a town or on a farm, pasture or cottage plot: fences and haystacks. */
+const FARMED = /FARM|PASTURE|COTTAGE|HAMLET|VILLAGE|PLANTATION|WINERY/;
 
 /** The prop cards of the land: stands of single trees on wooded plots (a jittered three by three,
  *  thinned where something stands on the plot), bushes, flowers, rocks, crystals and lava rocks
@@ -250,7 +272,7 @@ function dressProps(world, map, atlas, env, moods, list) {
       const art = atlas.info(key);
       const mx = x + 0.5 + lx, my = y + 0.5 - lz;
       const glow = kindKey === "crystal" || kindKey === "lava_rock" ? 1.3 : 0;
-      list.push(card(key, art, PX.prop * scale, mx, H(mx, my) - 0.01, -my, { shadow: kindKey !== "flowers", flip: r() < 0.5, glow, id: 0.0002, vis: [x + 0.5, y + 0.5] }));
+      list.push(card(key, art, PX.prop * scale, mx, H(mx, my) - 0.01, -my, { shadow: !FLAT.has(kindKey), flip: r() < 0.5, glow, id: 0.0002, vis: [x + 0.5, y + 0.5] }));
     };
     if (WOODED.has(feat)) {
       const wood = woodOf(feat, world.ground[i], kind === KIND.HILLS);
@@ -259,23 +281,105 @@ function dressProps(world, map, atlas, env, moods, list) {
       if (feat === FEAT.ANCIENT && variants("tree_ancient").length) {
         put("tree_ancient", r.range(-0.12, 0.12), r.range(-0.18, 0.0), r.range(0.95, 1.15));
       }
-      // A crowd of small trees, as the look target's woods: four by four, jittered.
-      for (let gy = 0; gy < 4; gy++) {
-        for (let gx = 0; gx < 4; gx++) {
+      // A crowd of small trees, as the look target's woods: five by five, jittered.
+      for (let gy = 0; gy < 5; gy++) {
+        for (let gx = 0; gx < 5; gx++) {
           let pick = r() * total, k = wood[0];
           for (const it of wood) if ((pick -= it[1]) <= 0) { k = it; break; }
           if (k[0] === "tree_ancient") k = ["tree_oak", 1, 1];
-          const s = TREE * k[2] * r.range(0.82, 1.15);
-          const lx = (gx - 1.5) * 0.24 + r.range(-0.07, 0.07), lz = (gy - 1.5) * 0.24 + r.range(-0.07, 0.07);
+          const s = TREE * k[2] * r.range(0.8, 1.18);
+          const lx = (gx - 2) * 0.19 + r.range(-0.055, 0.055), lz = (gy - 2) * 0.19 + r.range(-0.055, 0.055);
           if (northHeld && gy === 0) continue;
           put(k[0], lx, lz, northHeld && gy === 1 ? s * 0.7 : s);
         }
       }
-      if (r() < 0.6) put("bush", r.range(-0.42, 0.42), r.range(-0.42, 0.42), r.range(0.8, 1.1));
+      if (r() < 0.7) put("bush", r.range(-0.42, 0.42), r.range(-0.42, 0.42), r.range(0.7, 1.0));
+      // The wood's floor at its edge: grass and a fern-like bush where light reaches.
+      for (let k = 0; k < 2; k++) put("grass", r.range(-0.46, 0.46), r.range(0.3, 0.48), FINE * r.range(0.85, 1.1));
     } else if (kind === KIND.LAND || kind === KIND.HILLS || kind === KIND.PEAK) {
+      // Clumps: most things gather round one or two spots of the plot, the rest lie anywhere.
+      const clumps = [[r.range(-0.3, 0.3), r.range(-0.3, 0.3)], [r.range(-0.3, 0.3), r.range(-0.3, 0.3)]];
+      const at = () => {
+        if (r() < 0.3) return [r.range(-0.44, 0.44), r.range(-0.44, 0.44)];
+        const c = clumps[r() < 0.6 ? 0 : 1];
+        return [c[0] + r.range(-0.16, 0.16), c[1] + r.range(-0.14, 0.14)];
+      };
       for (const [k, n, s] of clutterOf(kind, world.ground[i], moods?.[i])) {
         let count = Math.floor(n) + (r() < n - Math.floor(n) ? 1 : 0);
-        while (count-- > 0) put(k, r.range(-0.42, 0.42), r.range(-0.42, 0.42), s * r.range(0.8, 1.15));
+        while (count-- > 0) put(k, ...at(), s * r.range(0.8, 1.15));
+      }
+      // Farmland: fences along a side of the plot and a haystack or two.
+      const imp = map.improvement[i] >= 0 ? tname("ImprovementType", map.improvement[i]) : "";
+      if (FARMED.test(imp) || (nearCity(map, world, x, y) && r() < 0.45)) {
+        if (r() < 0.75) put("fence", r.range(-0.2, 0.2), r() < 0.5 ? 0.42 : -0.4, FINE);
+        if (r() < 0.55) put("hay", r.range(-0.35, 0.35), r.range(-0.1, 0.38), FINE * r.range(0.85, 1.05));
+      }
+    }
+  }
+}
+
+/** Whether a city stands within two plots of (x, y). */
+function nearCity(map, world, x, y) {
+  for (let dy = -2; dy <= 2; dy++) {
+    for (let dx = -2; dx <= 2; dx++) {
+      const j = world.index(x + dx, y + dy);
+      if (j >= 0 && map.city[j] >= 0) return true;
+    }
+  }
+  return false;
+}
+
+/** The look target's land ends at its water in a rim of dark, wet stones: rows of them along the
+ *  sea's and the lakes' shores (where the ground falls through the waterline) and along the river
+ *  banks, with reeds here and there. One stone a cell of about a fifth of a plot at most (a global
+ *  grid, so two plots never stack theirs); a pure function of the state. */
+function dressShores(world, map, atlas, list) {
+  const w = world.w;
+  const taken = new Set();
+  const cellOf = (mx, my) => `${Math.floor(mx / 0.17)},${Math.floor(my / 0.17)}`;
+  const place = (kindKey, mx, my, y, scale, r) => {
+    const vs = variants(kindKey);
+    const c = cellOf(mx, my);
+    if (!vs.length || taken.has(c)) return;
+    taken.add(c);
+    const key = vs[r.int(0, vs.length - 1)];
+    const art = atlas.info(key);
+    list.push(card(key, art, PX.prop * scale, mx, y, -my, { flip: r() < 0.5, id: 0.0002, vis: [Math.floor(mx) + 0.5, Math.floor(my) + 0.5] }));
+  };
+  const dry = (k) => k === KIND.LAND || k === KIND.HILLS || k === KIND.PEAK;
+  for (let i = 0; i < w * world.h; i++) {
+    const kind = world.kind[i];
+    if (!dry(kind) || map.city[i] >= 0) continue;
+    const x = i % w, y = (i - x) / w;
+    const r = rng(i * 104729 + 7);
+    let coast = false;
+    for (let dy = -1; dy <= 1 && !coast; dy++) for (let dx = -1; dx <= 1; dx++) if ((dx || dy) && world.index(x + dx, y + dy) >= 0 && world.isWater(world.index(x + dx, y + dy))) coast = true;
+    const river = world.riverCells.size > 0 && world.riverDist(x + 0.5, y + 0.5) < 1.2;
+    if (!coast && !river) continue;
+    const road = map.route[i] >= 0;
+    // Over the plot and a quarter plot past its edges (the warped coast wanders off the grid).
+    for (let gy = 0; gy < 14; gy++) {
+      for (let gx = 0; gx < 14; gx++) {
+        const mx = x - 0.25 + (gx + r.range(0.2, 0.8)) * 0.107, my = y - 0.25 + (gy + r.range(0.2, 0.8)) * 0.107;
+        const own = world.index(Math.floor(mx), Math.floor(my));
+        // A point past the edge belongs to this plot only if it lies over water (or the next plot
+        // is not land, whose own pass draws it).
+        if (own !== i && (own < 0 || dry(world.kind[own]))) continue;
+        if (road && Math.abs(mx - x - 0.5) < 0.12) continue;
+        if (coast) {
+          const h = world.heightAt(mx, my);
+          if (h > -0.004 && h < 0.02 && r() < 0.8) {
+            place(r() < 0.8 ? "shore" : "pebbles", mx, my, Math.max(SEA, h) - 0.004, FINE * r.range(0.8, 1.05), r);
+            continue;
+          }
+        }
+        if (river) {
+          const d = world.riverDist(mx, my);
+          if (d > RIVER_HALF + 0.01 && d < RIVER_HALF + 0.055 && r() < 0.55) {
+            const k = r() < 0.15 ? "reeds" : r() < 0.7 ? "shore" : "pebbles";
+            place(k, mx, my, world.heightAt(mx, my) - 0.004, FINE * (k === "shore" ? r.range(0.55, 0.8) : r.range(0.8, 1)), r);
+          }
+        }
       }
     }
   }
@@ -290,6 +394,7 @@ export function dressSpriteStatic(world, map, atlas, env = null, moods = null) {
   const claims = { city: new Set(), improvement: new Set(), bonus: new Set() };
   if (env && Object.keys(CARDS).length) {
     dressProps(world, map, atlas, env, moods, list);
+    dressShores(world, map, atlas, list);
     claims.trees = claims.flora = claims.rocks = true;
   }
   const w = world.w;

@@ -24,8 +24,10 @@ import { staticEnv } from "../dress.js";
 import { MAT } from "../materials.js";
 import { GROUNDS } from "./art/index.js";
 
-/** A closer view than the 3D renderer's (128 px a plot against 96): the cards' pixels read. */
-export const DEFAULT_ZOOM = 128;
+/** The 3D renderer's gameplay zoom: on the full-bleed map (the isometric screen's floating
+ *  panels) it shows about fifteen plots across, as the look target does, and its figures are about
+ *  the target's share of the screen. */
+export const DEFAULT_ZOOM = 96;
 
 /** The pixel-art ground layers (hd2d/art, tools/hd2d/art.py) and the material layer each replaces
  *  in the 3D renderer's ground (materials.js): the terrain shader tints a layer by its mean colour,
@@ -231,7 +233,7 @@ export class MapHd2d extends Map3D {
       cfg: this.qualityCfg(),
       focus: this.focus,
       tilt: smoothstep(48, 90, this.ts),
-      beamZoom: smoothstep(60, 110, this.ts),
+      beamZoom: smoothstep(48, 96, this.ts),
       farDepth: cam.dist * 2.2,
       mood: this.scene.tex.mood,
       mapSize: [this.world.w, this.world.h],

@@ -20,7 +20,7 @@ import * as T from "./tiles.js";
 import { h, fill, COMPACT, compactScreen, typeIconOf } from "./dom.js";
 import { installIsoFont } from "./isofont.js";
 import { SPRITES } from "./iso/sprites.js";
-import { ISO_TABLES } from "./iso.js";
+import { ISO_TABLES, unitSpriteKeys, civShortName } from "./iso.js";
 import * as api from "./api.js";
 import { infoTip } from "./infotips.js";
 
@@ -28,6 +28,15 @@ import { infoTip } from "./infotips.js";
 export const skin = { on: false, view: null };
 
 /** Whether the isometric interface is on. */
+/** The sprite standing in for unit type `type` of `owner`: the isometric map's choice, or (under
+ *  another map that wears this interface, the HD-2D one) the first of the same candidates that
+ *  exists. */
+function unitKeyOf(type, owner) {
+  const iso = skin.view?.iso;
+  if (iso) return iso.unitKey(type, owner);
+  return unitSpriteKeys(type, civShortName(owner)).find((k) => Object.hasOwn(SPRITES, k)) ?? null;
+}
+
 export function isoSkin() {
   return skin.on;
 }
@@ -166,7 +175,7 @@ export function actionIcon(a, px = 40) {
   else if (a.kind === "spell") name = "spell";
   else if (a.kind === "promotion") name = "promote";
   else if (a.kind === "upgrade") {
-    const key = skin.view?.iso?.unitKey(a.unit, me()?.player);
+    const key = unitKeyOf(a.unit, me()?.player);
     if (key && Object.hasOwn(SPRITES, key)) return h("span.iso-build", spriteIcon(key, px), isoIcon("upgrade", { px: 16, cls: "badge" }));
     name = "upgrade";
   }
@@ -179,7 +188,7 @@ export function actionIcon(a, px = 40) {
  *  lists them), else the interface icon of its kind. */
 export function unlockIcon(kind, type) {
   if (kind === "units") {
-    const key = skin.view?.iso?.unitKey(type, me()?.player);
+    const key = unitKeyOf(type, me()?.player);
     const fig = key && Object.hasOwn(SPRITES, key) ? spriteIcon(key, 32) : null;
     if (fig) return fig;
   } else if (kind === "builds") {
@@ -200,7 +209,7 @@ export function unlockIcon(kind, type) {
 /** The selection's portrait: the lead unit's map figure on the painted meadow (`ui_backdrop`), in
  *  a gold frame; `flip` faces it left. */
 export function portrait(type, owner) {
-  const key = skin.view?.iso?.unitKey(type, owner);
+  const key = unitKeyOf(type, owner);
   const fig = key ? spriteIcon(key, 96, { cls: "figure" }) : null;
   return h("div.iso-portrait", { tip: infoTip("UnitType", type) }, fig);
 }
@@ -719,7 +728,7 @@ export async function renderCityPanel() {
 export function queueIcon(q) {
   const order = tname("OrderType", q.order);
   if (order === "ORDER_TRAIN") {
-    const key = skin.view?.iso?.unitKey(q.type, me()?.player);
+    const key = unitKeyOf(q.type, me()?.player);
     const el = key ? spriteIcon(key, 32) : null;
     if (el) return h("span.iso-qicon", el);
   }

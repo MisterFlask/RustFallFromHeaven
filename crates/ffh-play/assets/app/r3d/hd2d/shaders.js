@@ -442,6 +442,7 @@ uniform sampler2D uMood;
 uniform vec2 uTan;
 uniform mat4 uInvView;
 uniform float uMoodAmount;
+uniform float uLand;
 uniform float uFarDepth;
 out vec4 o;
 vec3 sat(vec3 c, float s) { float l = lum(c); return mix(vec3(l), c, s); }
@@ -449,7 +450,7 @@ void main() {
   vec4 src = texture(uSrc, vUv);
   vec3 col = src.rgb;
   vec4 nd = texture(uND, vUv);
-  if (uMoodAmount <= 0.0 || nd.w <= 0.0) { o = src; return; }
+  if ((uMoodAmount <= 0.0 && uLand <= 0.0) || nd.w <= 0.0) { o = src; return; }
   vec3 vp = vec3((vUv * 2.0 - 1.0) * uTan * nd.w, -nd.w);
   vec3 wp = (uInvView * vec4(vp, 1.0)).xyz;
   vec2 m = vec2(wp.x, -wp.z);
@@ -467,8 +468,9 @@ void main() {
   float k = uMoodAmount;
   float hell = md.r * k, corrupt = md.g * k, lush = md.b * k, gloom = md.a * k;
   float L = lum(col);
-  // Lush: deeper, richer greens, golden light, a sap-green cast in the shade.
-  vec3 lushC = sat(col, 1.28) * mix(vec3(0.9, 1.02, 0.94), vec3(1.07, 1.04, 0.9), smoothstep(0.25, 0.75, L));
+  // Lush: deeper greens, golden light, a sap-green cast in the shade (richer in value, not in
+  // saturation: the land's palette below keeps foliage an olive).
+  vec3 lushC = sat(col, 1.04) * mix(vec3(0.9, 1.02, 0.94), vec3(1.07, 1.04, 0.9), smoothstep(0.25, 0.75, L));
   col = mix(col, lushC, lush);
   // Corruption (the Sheaim): the land darkened and cooled toward violet and slate by a multiply (its
   // contrast kept), its shade deepened, only its bright accents (crystals, magic) pushed to magenta.
@@ -513,6 +515,34 @@ void main() {
   float wsum = corrupt + hell + gloom + 1e-4;
   air += vec3(0.3, 0.16, 0.42) * corrupt + vec3(0.36, 0.16, 0.1) * hell + vec3(0.26, 0.3, 0.4) * gloom;
   col = mix(col, air / wsum, clamp(far * (corrupt + hell + gloom), 0.0, 1.0) * 0.1);
+  // The land's palette (the look target's, measured: docs/HD2D.md §6): earthy and muted -- foliage
+  // a half-saturated olive, water a slate teal, the shade a dark olive rather than black -- so that
+  // saturation is left to the accents: what glows (mana, crystals, lava, fire), gold, banners.
+  if (!figure && uLand > 0.0) {
+    float mx = max(col.r, max(col.g, col.b)), mn = min(col.r, min(col.g, col.b));
+    float ch = mx - mn;
+    // The hue in degrees (0 red, 60 yellow, 120 green, 240 blue).
+    float hue = ch < 1e-4 ? 0.0 : mx == col.r ? 60.0 * mod((col.g - col.b) / ch, 6.0) : mx == col.g ? 60.0 * ((col.b - col.r) / ch + 2.0) : 60.0 * ((col.r - col.g) / ch + 4.0);
+    float s = ch / max(mx, 1e-4);
+    // Earth and foliage: orange-brown through green; water: cyan through blue.
+    float earth = smoothstep(8.0, 30.0, hue) * (1.0 - smoothstep(150.0, 180.0, hue));
+    float green = smoothstep(62.0, 85.0, hue) * (1.0 - smoothstep(150.0, 180.0, hue));
+    float water = smoothstep(170.0, 190.0, hue) * (1.0 - smoothstep(235.0, 255.0, hue)) * (src.a < 0.85 ? 1.0 : 0.3);
+    // Accents keep their colour: the emission, and gold (bright, saturated yellow-orange).
+    float gold = smoothstep(0.62, 0.82, s) * smoothstep(0.55, 0.8, mx) * (1.0 - smoothstep(52.0, 64.0, hue)) * smoothstep(25.0, 35.0, hue);
+    float keepC = max(hot, gold);
+    float drop = (earth * 0.32 + water * 0.38 + (1.0 - max(earth, water)) * 0.1) * (1.0 - keepC) * uLand;
+    float Lc = lum(col);
+    col = mix(vec3(Lc), col, 1.0 - drop);
+    // Greens toward olive (a little red), water toward teal (a little green, less blue).
+    col.r += (col.g - col.r) * 0.14 * green * (1.0 - keepC) * uLand;
+    col += vec3(0.0, 0.02, -0.03) * water * uLand;
+    // The land a little lighter in its middle values, and the shade lifted toward a dark olive
+    // floor (the target's darkest woods are a deep olive, not black).
+    col = mix(col, pow(max(col, vec3(0.0)), vec3(0.84)), uLand);
+    float dark = 1.0 - smoothstep(0.02, 0.3, lum(col));
+    col = mix(col, max(col, vec3(0.0)) * 0.85 + vec3(0.075, 0.08, 0.05), dark * 0.55 * uLand);
+  }
   // A figure keeps its own colours: of the grade, it takes a quarter of the change in value only.
   if (figure) col = src.rgb * mix(1.0, lum(col) / max(lum(src.rgb), 1e-3), 0.25);
   o = vec4(col, src.a);

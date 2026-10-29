@@ -64,7 +64,19 @@ layers and single-object prop cards (trees, bushes, flowers, rocks, crystals, la
 a local image model, the woods stood as crowds of small tree cards in place of the modelled trees,
 a darker grade (deep shade, little haze, more contrast), settlement cards about two plots wide, a
 closer and lower default camera, and a stronger tilt-shift and bloom. The land, the woods and the
-figures are now one medium; the shots below are after it.
+figures are now one medium.
+
+**The third batch** went after what a measured comparison with the look target found (the numbers
+in §6): a palette far too saturated (foliage at 0.86-0.95 saturation against the target's 0.49) and
+too dark (twice its near-black share), a view zoomed in about twice as far as the target's, the
+plain interface's sidebar boxing the map in, sparse open ground and bare shores. It grades the land
+to the target's palette (§6, "the land's palette"), wears the isometric map's floating interface
+over a full-bleed map at the 3D renderer's gameplay zoom (§9), stands the woods as denser crowds of
+smaller trees, fills open ground with clumps of small props drawn by code and rims the coasts and
+river banks with stones (§5b). The image-model art for more prop kinds (huts, ruins, elven and
+corrupted clutter: `tools/hd2d/gen.py`) waits on API credit; nothing was generated for this batch.
+The shots below are the second batch's, on the owner's GPU; [hd2d/batch3.jpg](hd2d/batch3.jpg) is
+the third's (software renders: the lab before and after, and the real game).
 
 | | |
 |---|---|
@@ -98,7 +110,7 @@ assets/app/
     config.js    loadConfig/saveConfig/withPreset take the store and presets
     hd2d/
       index.js    MapHd2d: the 3D renderer's Map3D with the hooks set (the module map.js imports)
-      config.js   the HD-2D preset, its light, its panel rows (stored apart: ffh.hd2d.config)
+      config.js   the HD-2D preset, its light, its panel rows (stored apart: ffh.hd2d.config.3)
       dress.js    which card stands where: unit groups and banners, cities, buildings, resources,
                   light beams; the claims
       mood.js     the per-plot mood channel and its particles
@@ -184,7 +196,9 @@ lab and tools. The camera is the 3D one with the HD-2D preset's pitch and lens (
 * Scale (`dress.js` `PX`): a unit's 96 × 120 canvas is 0.46 × 0.58 of a plot, a 192-wide
   settlement 1.7 plots (as the reference's towns, which span about two tiles; the prop cards keep
   clear of its footprint), other buildings 0.73, resources' canvases 0.65 (their props about 0.25),
-  banners 0.8 tall, a lone prop 0.0031 a plot an art pixel (a 150 px oak about 0.47 of a plot).
+  banners 0.8 tall, a lone prop 0.0031 a plot an art pixel (a 150 px oak about 0.47 of a plot; in
+  a wood 0.58 of that, about 0.27: the target's trees are about half a figure's height), the props
+  drawn by code 2.6 times that (`FINE`: about one art pixel a screen pixel at 96 px a plot).
 
 ## 5b. The mode's own art: pixel ground and prop cards
 
@@ -219,6 +233,22 @@ does for the isometric sprites. No unit art changed.
   the spot a stack stands on; they cast their outline into the sun's shadow map and a contact
   shadow, so a wood is dark beneath. What they replace is **claimed** from the 3D dressing
   (`claims.trees`, `.flora`, `.rocks`): no modelled tree, plant or rock stands in the mode.
+* **Small props drawn by code** (`tools/hd2d/draw.py`, batch 3): grass tufts (green and dry),
+  reeds, pebbles, shore stones (rows of wet, mossy stones, a band much wider than tall), standing
+  stones, fences and haystacks -- each a few muted tones a material shaded from the upper left, with
+  the cards' dark outline, written as art cards (`art.py index` lists them). Small enough that code
+  draws them well; anything with a design (a hut, a ruin) is left to the image model.
+* **Density** (batch 3): woods are five by five trees a plot (four by four before) at 0.58 of a
+  lone prop's scale, with grass at their sunny edge; open ground carries about a dozen props, most
+  gathered round one or two clumps a plot (a lone tree with bushes, flowers and grass round it, a
+  rock among pebbles), now and then a ring of standing stones; farms, pastures, cottages and the
+  land round a town add fences and haystacks.
+* **Shores** (batch 3, `dressShores`): the look target's land ends at its water in a rim of dark
+  stones. Along every coast and lake shore a 14 × 14 sampling of the plot (and a quarter plot past
+  its edges, as the warped coast wanders off the grid) finds where the ground falls through the
+  waterline and stands a shore stone or pebbles there; along rivers, just outside the water's edge
+  (`RIVER_HALF` + 0.01-0.055), smaller stones, pebbles and now and then reeds. One a cell of 0.17
+  plot at most, on a global grid, so neighbouring plots never stack theirs.
 
 ## 6. Light, moods and the post passes
 
@@ -243,11 +273,32 @@ does for the isometric sprites. No unit art changed.
   broken into separate fissures, pulsing; on the ground only); gloom cools and dims. Each mood's air
   tints the distance a little. Violet motes drift over corrupted land and gold-green ones in lush
   woods.
+* **The land's palette** (batch 3, in the mood pass, `landGrade`): measured on the look target's
+  map area against the mode's shots (medians; saturation and value as HSV):
+
+  | | brightness | saturation | pixels over 0.6 saturation | foliage saturation / value | near-black |
+  |---|---|---|---|---|---|
+  | look target | 0.31 | 0.35 | 17% | 0.49 / 0.34 | 11% |
+  | lab, batch 2 | 0.21 | 0.89 | 79% | 1.00 / 0.26 | 29% |
+  | lab, batch 3 | 0.30 | 0.37 | 9% | 0.44 / 0.33 | 7% (before a last pull-back of the shade) |
+  | turn-200 game at 96 px, batch 2 (GPU) | 0.32 | 0.64 | 55% | 0.91 / 0.21 | 20% |
+  | the same, batch 3 (software) | 0.35 | 0.36 | 11% | 0.43 / 0.32 | 5% |
+
+  The target is earthy and muted: its saturation is in the accents (the gold town, the Sheaim's
+  violet, lava, the banners) and its shade is a dark olive, not black. The second batch read it as
+  near-black woods and raised the saturation (1.16): the opposite of the target. So every pixel but
+  the figures and banners (the keep mask) loses chroma by hue -- earth and foliage (orange through
+  green) about a third, water about two fifths, the rest a tenth -- except what glows (the
+  emission) and gold (bright, saturated yellow-orange); greens are pushed toward olive and water
+  toward slate teal; the middle values are lightened a little (a gamma of 0.84) and the shade lifted
+  toward a dark olive floor. The finish pass's saturation is 1.0 and its contrast 1.12 (1.16 and
+  1.22 before); the lush mood deepens the greens in value only (its saturation boost, 1.28, went).
+  Re-measure with the table's columns after a change to the grade or the art.
 * **Light shafts** (half resolution): the sunlit haze — the sun's light scattered along each view
   ray near the ground, through the gaps of a high drifting cloud layer and past the props' shadow
   map (anchored to the world) — and painted **beams**: broad soft beams fanning from the sun beyond
   the upper left, strongest over the far land, turning slowly with the camera's position (a distant
-  layer, not stuck to the lens) and fading out below about 110 px a plot (gone by 60). Seen from
+  layer, not stuck to the lens), full from 96 px a plot (the gameplay zoom) and gone by 48. Seen from
   above, a view ray crosses too little air for the physical shafts alone to show, so the beams are
   painted, as in the target. They lie in the air before the land: over a figure, a third as strong.
 * **Wide bloom** (quarter resolution) of the emission and the brightest light, added before the
@@ -367,10 +418,17 @@ beside an Intel UHD integrated GPU, headless Chrome 156 (`FFH_CHROMIUM_CHANNEL=c
 
 ## 9. Cities and the camera
 
-The camera is the 3D renderer's with a lower pitch, a narrower swing, a wider lens and a closer
-default zoom (`pitch` 32, `fov` 30 against 50 and 24; `pitchAt`; 128 px a plot against 96): 38°
-from the horizon at the farthest zoom, about 29° at the default zoom and 26° at the closest, so the
-top of the view runs out toward the horizon.
+The camera is the 3D renderer's with a lower pitch, a narrower swing and a wider lens (`pitch` 32,
+`fov` 30 against 50 and 24; `pitchAt`): 38° from the horizon at the farthest zoom, about 32° at the
+default zoom and 26° at the closest, so the top of the view runs out toward the horizon. The default
+zoom is the 3D renderer's 96 px a plot (128 in batches 1-2): with the map full bleed under the
+isometric interface's floating panels (below) it shows about fifteen plots across, as the look
+target does, and its figures take about the target's share of the screen.
+
+**The interface** (batch 3) is the isometric map's (`isoui.js`: the floating panels, the advisors'
+rail, the city panel over the map; main.js `syncSkin`), as the look target's, not the plain one's
+sidebar and bars round a boxed map. Its unit portraits and build icons take the sprite the
+isometric map would choose (`unitKeyOf`), as there is no isometric map behind it.
 
 The figures are cards that face the camera: they look the same at any pitch. The settlements and
 buildings are cards too, but their art has its ground painted in, drawn for the isometric map's
@@ -389,17 +447,20 @@ review ranked the ground textures first and single trees second: both are done (
 the mode's own, and they closed the largest part of the gap — the land and the woods are now the
 same medium as the figures.
 
-1. **Detail on open ground** (more art, code). The reference fills every tile: huts, gold piles,
-   standing stones, flowers and rocks in clusters; our open plots carry a bush, a flower patch and
-   now and then a boulder. More prop kinds (huts, fences, stones, flower beds, small ruins) and
-   denser, clustered scattering would close it.
+1. **Detail on open ground** (more art). Batch 3 made the scattering dense and clustered and drew
+   the small props by code; what is missing is the props with a design -- huts, small ruins,
+   shrines, elven lanterns, corrupted altars and obelisks, hell's vents and bones -- which the
+   image model draws (`tools/hd2d/gen.py` sheets: village, meadow, shore, trees, corrupt, hell,
+   elven, desert; about $0.17 a sheet of nine at gpt-image-1's high quality).
 2. **Cities without their ground patch** (new art). A settlement's painted diamond of ground is the
    isometric map's, seen along a plot's diagonal from 30°: on this camera it reads as a plinth, and
    it limits the camera to about 45° (§9). The cards are now about two plots wide, as the
    reference's Eärlann; the same towns drawn without ground would sit in the land at any pitch, and
    a matching ground decal can be drawn by code.
 3. **Water** (code). The reference is laced with rivers, lakes and waterfalls; the lab scene and
-   the 3D renderer's rivers are narrower and have no falls (docs/R3D.md §14).
+   the 3D renderer's rivers are narrower and have no falls (docs/R3D.md §14). Batch 3 rimmed the
+   shores with stones and graded the water toward slate; a raised bank (the land standing over its
+   water as a low cliff) would be the terrain's own change.
 4. **Scale of the figures** (a parameter). The reference's figures are about a third of a tile;
    ours are about 0.6 of a plot, chosen for readability at 96 px a plot. Smaller groups at the
    closer default zoom (128) would match it; it is a readability call for the owner.
@@ -414,13 +475,14 @@ same medium as the figures.
 ## 11. Configuration
 
 `r3d/hd2d/config.js`: the `hd2d` preset (the 3D renderer's painterly switches with: a lower camera,
-`pitch` 32 and `fov` 30; `grid` 0; deeper shade, `stylize` 0.7, `ssao` 0.85; `saturation` 1.16,
-`contrast` 1.22, `vignette` 0.42, `haze` 0.1, `mist` 0.08, `clouds` 0.3, `glow` 1.0) and the mode's
-own switches: `tiltShift` (0.6), `rays` (0.6), `mood` (1), `bloom` (0.8, from a lower threshold),
+`pitch` 32 and `fov` 30; `grid` 0; deeper shade, `stylize` 0.7, `ssao` 0.85; `saturation` 1.0 and
+`contrast` 1.12 (batch 3: the land's palette is graded in the mood pass), `vignette` 0.42, `haze`
+0.1, `mist` 0.08, `clouds` 0.3, `glow` 1.0) and the mode's own switches: `tiltShift` (0.6), `rays`
+(0.6), `mood` (1), `landGrade` (1, the land's palette, §6), `bloom` (0.8, from a lower threshold),
 `beams` (1), `borderGlow` (1), `contact` (1), `lean` (1). `LIGHT` gives little sky and ground fill
-(0.5 and 0.15). The `plain`
-preset turns the stylisation and the mode's passes off (the cards stay). Its `LIGHT` is the one
-light. Stored apart from the 3D renderer's look (`ffh.hd2d.config`); the panel offers the 3D
+(0.5 and 0.15). The `plain` preset turns the stylisation and the mode's passes off (the cards stay).
+Its `LIGHT` is the one light. Stored apart from the 3D renderer's look (`ffh.hd2d.config.3`, renamed
+when the look changes enough that a saved panel tuning would mislead); the panel offers the 3D
 switches that apply (not the paint filter, ink or grid) and the mode's rows.
 
 ## 12. Removing it
@@ -463,7 +525,11 @@ The units, cities, buildings and resources are the isometric renderer's sprites 
 by an image model and brought to one contract by code in `tools/m7/`). The ground layers and prop
 cards in `assets/app/r3d/hd2d/art/` were drawn by FLUX 3 Image Klein (Black Forest Labs) running
 locally in ComfyUI, and post-processed by `tools/hd2d/art.py` (prompts in §5b's spirit: 16-bit
-pixel art, top-down for ground, a single object lit from the upper left on white for props).
+pixel art, top-down for ground, a single object lit from the upper left on white for props). The grass, reeds, pebbles, shore and
+standing stones, fences and haystacks are drawn by code (`tools/hd2d/draw.py`). `tools/hd2d/gen.py`
+asks OpenAI's gpt-image-1 for sheets of nine props on a transparent background (to be cut apart
+by an `art.py` step still to write, then carded by `prop`); under OpenAI's terms its outputs belong
+to the user.
 **Licence:** FLUX 3 Image Klein is under the FLUX Kommunity License — non-commercial use, with a
 commercial-output exception for "Qualifying Users" under its terms; check
 https://huggingface.co/black-forest-labs/flux-3-image-klein-comfy/blob/main/LICENSE.md before
