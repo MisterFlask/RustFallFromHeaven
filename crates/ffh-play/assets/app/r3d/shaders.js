@@ -824,16 +824,13 @@ vec3 featureFloor(int f, vec3 c, vec2 m, inout vec3 emit) {
 
 // Bump from a height field given per pixel (derivative bump mapping, Mikkelsen 2010): the brush
 // strokes' impasto catching the light. The field is world-anchored; only its derivatives are taken
-// on screen, so it does not swim.
-// bumpD takes the derivatives already taken (where every pixel of the quad still runs).
+// on screen, so it does not swim. bumpD takes the derivatives already taken, where every pixel of
+// the quad still runs (main).
 vec3 bumpD(vec3 n, vec3 dpdx, vec3 dpdy, float dhdx, float dhdy, float k) {
   vec3 r1 = cross(dpdy, n), r2 = cross(n, dpdx);
   float det = dot(dpdx, r1);
   vec3 grad = sign(det) * (dhdx * r1 + dhdy * r2);
   return normalize(abs(det) * n - k * grad);
-}
-vec3 bump(vec3 n, vec3 p, float hgt, float k) {
-  return bumpD(n, dFdx(p), dFdy(p), dFdx(hgt), dFdy(hgt), k);
 }
 
 void main() {
@@ -846,19 +843,27 @@ void main() {
   gDx = dFdx(m);
   gDy = dFdy(m);
   gPpx = length(abs(gDx) + abs(gDy));
+  // The surface's too, for the bumps. A derivative is undefined in a 2x2 quad some of whose pixels
+  // have left (skipped the branch, returned): on a real GPU the bumps' derivatives, taken in
+  // branches, came out zero there and their normals NaN -- black dashes along the branches' edges
+  // (the deep floor's contour, the rock's), which the water seen through then spread. SwiftShader
+  // runs a quad in step and never showed them. So the bumps' derivatives are all taken outside the
+  // branches.
+  vec3 pDx = dFdx(vWorld), pDy = dFdy(vWorld);
   // The deep sea floor is deeper than the water lets anyone see (the water, drawn over it, shows at
   // most a dark trace of it), so it is shaded cheaply -- but with its true depth, which the water
   // reads for its thickness. Not where unexplored: no water is drawn there, and the blank
   // parchment below must show.
-  if (h < -0.3) {
-    float v0 = visAt(vWorld);
-    if (v0 >= 0.05) {
-      vec3 c0 = srgb(vec3(0.22, 0.26, 0.28)) * (uSunColor * max(dot(n, uSunDir), 0.0) * 0.6 + uSkyColor);
-      oColor = vec4(atmosphere(fogOfWar(c0, v0), vWorld), 0.0);
-      oND = vec4(normalize((uView * vec4(n, 0.0)).xyz), -(uView * vec4(vWorld, 1.0)).z);
-      oEmit = vec4(0.0);
-      return;
-    }
+  float v0 = h < -0.3 ? visAt(vWorld) : 0.0;
+  // Where that return splits a quad, the pixels left have lost the neighbours their bumps'
+  // derivatives need: they go unbumped (a line of pixels under 0.3 of water).
+  float split = fwidth(v0 >= 0.05 ? 1.0 : 0.0);
+  if (v0 >= 0.05) {
+    vec3 c0 = srgb(vec3(0.22, 0.26, 0.28)) * (uSunColor * max(dot(n, uSunDir), 0.0) * 0.6 + uSkyColor);
+    oColor = vec4(atmosphere(fogOfWar(c0, v0), vWorld), 0.0);
+    oND = vec4(normalize((uView * vec4(n, 0.0)).xyz), -(uView * vec4(vWorld, 1.0)).z);
+    oEmit = vec4(0.0);
+    return;
   }
 
   // The ground of the four plots around the point, blended by bilinear weights sharpened and
@@ -934,6 +939,22 @@ void main() {
   alb = fa;
   int here = plotAt(m).z;
   bool known = here != 0;
+  // Rock on steep ground (painted below). Its crags: creases of ridged noise across the rock faces
+  // catch the light (a bump on the shading normal, world-anchored, close up mostly), finer than the
+  // terrain mesh can carry -- their height here, its derivatives outside the branches.
+  float rockMask = 0.0, crag = 0.0;
+  if (known) {
+    float slope = 1.0 - n.y;
+    rockMask = smoothstep(0.24, 0.4, slope + (mnoise(m, 4.0) - 0.5) * 0.14);
+    rockMask = max(rockMask, smoothstep(0.42, 0.62, h) * 0.85);
+    if (rockMask > 0.0) {
+      float crease = 1.0 - abs(mnoise(m + 1.7, 2.2) * 2.0 - 1.0);
+      float crease2 = 1.0 - abs(mnoise(m - 6.1, 5.3) * 2.0 - 1.0);
+      crag = (crease * crease * 0.7 + crease2 * crease2 * 0.3) * rockMask * 0.1 * (0.35 + 0.65 * near);
+    }
+  }
+  vec2 dCrag = vec2(dFdx(crag), dFdy(crag));
+  if (split > 0.0) dCrag = vec2(0.0);
 
   if (known) {
     // Beaches: the land's lowest rim by the water.
@@ -949,17 +970,10 @@ void main() {
       alb = mix(alb, srgb(matTint(tb, M_SAND, mix(vec3(0.66, 0.57, 0.40), vec3(0.78, 0.70, 0.52), mnoise(m, 2.0)))), beach * 0.85);
       hG = mix(hG, tb.a, beach * 0.85);
     }
-    // Rock on steep ground: cliffs and the flanks of the mountains, with strata.
-    float slope = 1.0 - n.y;
-    float rockMask = smoothstep(0.24, 0.4, slope + (mnoise(m, 4.0) - 0.5) * 0.14);
-    rockMask = max(rockMask, smoothstep(0.42, 0.62, h) * 0.85);
+    // Rock on steep ground: cliffs and the flanks of the mountains, with strata, its crags catching
+    // the light.
     if (rockMask > 0.0) {
-      // Crags: creases of ridged noise across the rock faces catch the light (a bump on the
-      // shading normal, world-anchored, close up mostly), finer than the terrain mesh can carry.
-      float crease = 1.0 - abs(mnoise(m + 1.7, 2.2) * 2.0 - 1.0);
-      float crease2 = 1.0 - abs(mnoise(m - 6.1, 5.3) * 2.0 - 1.0);
-      float crag = (crease * crease * 0.7 + crease2 * crease2 * 0.3) * rockMask;
-      n = bump(n, vWorld, crag * 0.1 * (0.35 + 0.65 * near), 1.0);
+      n = bumpD(n, pDx, pDy, dCrag.x, dCrag.y, 1.0);
       float strata = 0.5 + 0.5 * sin(h * 30.0 + (m.x - m.y) * 1.3 + mnoise(m, 2.5) * 7.0);
       strata *= smoothstep(0.3, 0.7, mnoise(m + 2.0, 1.2));
       float rb = mnoise(m + 2.7, 1.7);
@@ -1076,9 +1090,11 @@ void main() {
       hG = mix(hG, td.a, on);
       keepG = max(keepG, on * 0.6);
     }
-    // The materials' relief, picked out by the light (the mipmaps flatten it with distance).
-    n = bump(n, vWorld, hG * 0.004, 1.0);
   }
+  // The materials' relief, picked out by the light (the mipmaps flatten it with distance).
+  vec2 dRel = vec2(dFdx(hG), dFdy(hG)) * 0.004;
+  if (split > 0.0) dRel = vec2(0.0);
+  if (known) n = bumpD(n, pDx, pDy, dRel.x, dRel.y, 1.0);
 
   // Painter's pigment: a broad hue/value drift that keeps large areas from reading flat.
   float pig = mnoise(m, 0.35) - 0.5;
