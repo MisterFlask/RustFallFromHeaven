@@ -18,24 +18,54 @@ export const ATTR = {
 
 const SAMPLERS = new Set();
 
+/** How long the programs may take to compile before the renderer gives up (`whenCompiled`). On
+ *  ANGLE's Direct3D backend (Chrome's default on Windows) the HLSL compiler once took over 15
+ *  minutes over the terrain shader (docs/R3D.md §11.1); it now takes about 5 s there. */
+export const COMPILE_TIMEOUT_MS = 45000;
+
 export class Program {
-  /** `defines`: `{NAME: value}` prepended as `#define NAME value`. */
+  /** `defines`: `{NAME: value}` prepended as `#define NAME value`. Where the browser compiles in
+   *  parallel (KHR_parallel_shader_compile) the program's status and uniforms are read once it is
+   *  done (`whenCompiled`) or on first use, so building many programs does not wait for each. */
   constructor(gl, name, vs, fs, defines = {}) {
     this.gl = gl;
     this.name = name;
     const head = "#version 300 es\nprecision highp float;\nprecision highp int;\nprecision highp sampler2D;\n" + Object.entries(defines).map(([k, v]) => `#define ${k} ${v}\n`).join("");
-    const v = compileShader(gl, gl.VERTEX_SHADER, head + "#define VERTEX 1\n" + vs, name);
-    const f = compileShader(gl, gl.FRAGMENT_SHADER, head + "#define FRAGMENT 1\n" + fs, name);
+    this.v = shader(gl, gl.VERTEX_SHADER, head + "#define VERTEX 1\n" + vs);
+    this.f = shader(gl, gl.FRAGMENT_SHADER, head + "#define FRAGMENT 1\n" + fs);
     const p = gl.createProgram();
-    gl.attachShader(p, v);
-    gl.attachShader(p, f);
+    gl.attachShader(p, this.v);
+    gl.attachShader(p, this.f);
     for (const [k, loc] of Object.entries(ATTR)) gl.bindAttribLocation(p, loc, k);
     gl.linkProgram(p);
-    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(`r3d program ${name}: ${gl.getProgramInfoLog(p)}`);
-    gl.deleteShader(v);
-    gl.deleteShader(f);
     this.p = p;
-    this.u = {};
+    this.u = null;
+    this.units = null;
+    this.parallel = gl.getExtension("KHR_parallel_shader_compile");
+    if (!this.parallel) this.finish();
+    SAMPLERS.add(this);
+  }
+
+  /** Whether compiling and linking are over (without waiting for them, where the browser can). */
+  get done() {
+    return !!this.u || !this.parallel || this.gl.getProgramParameter(this.p, this.parallel.COMPLETION_STATUS_KHR);
+  }
+
+  /** Checks the link (throwing the compiler's log) and reads the uniforms; waits for the compile
+   *  when it is not done yet. */
+  finish() {
+    if (this.u) return this;
+    const gl = this.gl;
+    const p = this.p;
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
+      checkShader(gl, this.v, "vs", this.name);
+      checkShader(gl, this.f, "fs", this.name);
+      throw new Error(`r3d program ${this.name}: ${gl.getProgramInfoLog(p)}`);
+    }
+    gl.deleteShader(this.v);
+    gl.deleteShader(this.f);
+    this.v = this.f = null;
+    const u = {};
     this.units = {};
     let unit = 0;
     const n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
@@ -45,12 +75,14 @@ export class Program {
       const loc = gl.getUniformLocation(p, info.name);
       const isSampler = info.type === gl.SAMPLER_2D || info.type === gl.SAMPLER_3D || info.type === gl.SAMPLER_2D_ARRAY || info.type === gl.UNSIGNED_INT_SAMPLER_2D || info.type === gl.INT_SAMPLER_2D;
       if (isSampler) this.units[key] = unit++;
-      this.u[key] = { loc, type: info.type, size: info.size };
+      u[key] = { loc, type: info.type, size: info.size };
     }
-    SAMPLERS.add(this);
+    this.u = u;
+    return this;
   }
 
   use() {
+    if (!this.u) this.finish();
     this.gl.useProgram(this.p);
     return this;
   }
@@ -59,6 +91,7 @@ export class Program {
    *  Textures are WebGLTexture values; numbers, arrays and typed arrays otherwise. */
   set(values) {
     const gl = this.gl;
+    if (!this.u) this.finish();
     for (const [k, v] of Object.entries(values)) {
       const u = this.u[k];
       if (!u || v === undefined || v === null) continue;
@@ -103,24 +136,48 @@ export class Program {
   }
 
   dispose() {
+    if (this.v) {
+      this.gl.deleteShader(this.v);
+      this.gl.deleteShader(this.f);
+    }
     this.gl.deleteProgram(this.p);
     SAMPLERS.delete(this);
   }
 }
 
-function compileShader(gl, type, src, name) {
+/** Resolves once every program of `programs` has compiled and linked (each checked: a failure
+ *  rejects with the compiler's log), polling between frames where the browser compiles in parallel,
+ *  so the page stays live; rejects with code "slow-shaders" after `timeoutMs`. */
+export async function whenCompiled(programs, timeoutMs = COMPILE_TIMEOUT_MS) {
+  const t0 = performance.now();
+  while (!programs.every((p) => p.done)) {
+    if (performance.now() - t0 > timeoutMs) {
+      const slow = programs.filter((p) => !p.done).map((p) => p.name);
+      const err = new Error(`The 3D map's shaders did not compile within ${Math.round(timeoutMs / 1000)} s (${slow.join(", ")}).`);
+      err.code = "slow-shaders";
+      throw err;
+    }
+    await new Promise((r) => setTimeout(r, 50));
+  }
+  for (const p of programs) p.finish();
+}
+
+function shader(gl, type, src) {
   const s = gl.createShader(type);
   gl.shaderSource(s, src);
   gl.compileShader(s);
-  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
-    const log = gl.getShaderInfoLog(s);
-    const lines = src.split("\n");
-    const m = /ERROR: \d+:(\d+)/.exec(log);
-    const at = m ? Number(m[1]) : 0;
-    const ctx = lines.slice(Math.max(0, at - 4), at + 2).map((l, i) => `${Math.max(1, at - 3) + i}: ${l}`).join("\n");
-    throw new Error(`r3d shader ${name} (${type === gl.VERTEX_SHADER ? "vs" : "fs"}): ${log}\n${ctx}`);
-  }
   return s;
+}
+
+/** Throws a shader's compile log with the lines around its first error, if it did not compile. */
+function checkShader(gl, s, kind, name) {
+  if (gl.getShaderParameter(s, gl.COMPILE_STATUS)) return;
+  const log = gl.getShaderInfoLog(s);
+  const lines = gl.getShaderSource(s).split("\n");
+  const m = /ERROR: \d+:(\d+)/.exec(log);
+  const at = m ? Number(m[1]) : 0;
+  const ctx = lines.slice(Math.max(0, at - 4), at + 2).map((l, i) => `${Math.max(1, at - 3) + i}: ${l}`).join("\n");
+  throw new Error(`r3d shader ${name} (${kind}): ${log}\n${ctx}`);
 }
 
 /** A 2D texture. `opts`: `internal` (gl.RGBA8 ...), `format`, `type`, `filter` (gl.LINEAR),

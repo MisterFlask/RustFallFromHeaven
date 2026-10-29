@@ -13,6 +13,7 @@ import * as T from "../tiles.js";
 import { mul, perspective, lookAt, invert, xform4, ortho, vnorm, clamp, lerp, smoothstep } from "./math.js";
 import { World, SEA } from "./world.js";
 import { Pipeline } from "./pipeline.js";
+import { whenCompiled } from "./gl.js";
 import { Scene, bucketOf } from "./scene.js";
 import { dressStatic, dressUnits, staticEnv, teamColour, standHeight } from "./dress.js";
 import { loadConfig, saveConfig, withPreset, LIGHTING, PANEL } from "./config.js";
@@ -49,6 +50,9 @@ function force3d() {
   }
 }
 
+/** The contexts of renderers disposed while their programs still compiled (Map3D.dispose). */
+const STRANDED = [];
+
 export class Map3D {
   constructor(view) {
     /** "3d", or the mode built on this renderer that draws (the HD-2D mode sets "hd2d"). */
@@ -78,6 +82,8 @@ export class Map3D {
     }
     this.gl = gl;
     this.pipeline = new Pipeline(gl);
+    /** Whether the programs have compiled (`ready`): the loop draws nothing before. */
+    this.compiled = false;
     this.scene = new Scene(gl);
     this.world = null;
     this.mapSeen = null;
@@ -114,20 +120,41 @@ export class Map3D {
     });
   }
 
+  /** The programs of the pipeline and of the mode's passes. */
+  programs() {
+    return [...Object.values(this.pipeline.p), ...Object.values(this.pipeline.ext?.p ?? {})];
+  }
+
+  /** Resolves once the renderer's programs have compiled -- in parallel, where the browser can, the
+   *  page live meanwhile -- and rejects (code "slow-shaders") when they take longer than `timeoutMs`
+   *  (gl.js, whenCompiled) or do not compile; the caller then disposes the renderer. */
+  async ready(timeoutMs) {
+    await whenCompiled(this.programs(), timeoutMs);
+    this.compiled = true;
+    this.dirty = true;
+  }
+
   dispose() {
     this.running = false;
     cancelAnimationFrame(this.raf);
-    try {
-      this.scene.dispose();
-      this.pipeline.dispose();
-    } catch {
-      /* the context may be gone */
+    // Programs still compiling (`ready` gave up on them) are left alone, with their context: ANGLE
+    // waits for a compile to end before it deletes its program or the context, which would stall
+    // the GPU process -- and the page -- until then (docs/R3D.md §11.1). Kept until the page goes.
+    const compiling = !this.lost && this.programs().some((p) => !p.done);
+    if (compiling) STRANDED.push(this.gl);
+    else {
+      try {
+        this.scene.dispose();
+        this.pipeline.dispose();
+      } catch {
+        /* the context may be gone */
+      }
     }
     this.canvas.remove();
     this.panelBtn?.remove();
     this.panel?.remove();
     this.view.canvas.style.background = "";
-    this.gl.getExtension("WEBGL_lose_context")?.loseContext();
+    if (!compiling) this.gl.getExtension("WEBGL_lose_context")?.loseContext();
   }
 
   zooms() {
@@ -548,7 +575,7 @@ export class Map3D {
   loop() {
     if (!this.running) return;
     this.raf = requestAnimationFrame(() => this.loop());
-    if (this.lost) return;
+    if (this.lost || !this.compiled) return;
     const target = this.view.cam.ts;
     if (Math.abs(this.ts - target) > 0.05) {
       this.ts = this.view.reduceMotion() ? target : lerp(this.ts, target, 0.25);

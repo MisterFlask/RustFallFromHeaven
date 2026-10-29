@@ -146,8 +146,8 @@ export function chromiumLaunch(gpu = false) {
   // --gpu: `FFH_CHROMIUM_CHANNEL=chrome` draws with the installed Chrome instead of Playwright's
   // Chromium (which some Windows machines refuse to start, "spawn UNKNOWN"), and
   // --force_high_performance_gpu takes the discrete GPU on a laptop that also has an integrated one.
-  // `FFH_ANGLE=vulkan` picks ANGLE's backend: on Windows the default, Direct3D 11, compiles the 3D
-  // renderer's large shaders for minutes (docs/HD2D.md, "Real GPU").
+  // `FFH_ANGLE=vulkan` picks ANGLE's backend: on Windows the default, Direct3D 11, takes seconds over
+  // the 3D renderer's large shaders, twice (docs/R3D.md §11.1).
   if (gpu) {
     const args = ["--ignore-gpu-blocklist", "--enable-gpu", "--force_high_performance_gpu"];
     if (process.env.FFH_ANGLE) args.push(`--use-angle=${process.env.FFH_ANGLE}`);

@@ -230,7 +230,9 @@ async function run(device) {
   const t0 = performance.now();
   try {
     r3d = new Map3D(view);
+    await r3d.ready();
   } catch (e) {
+    r3d?.dispose();
     setStatus(e.code === "software-webgl" ? "This browser renders WebGL in software, so the results would not describe a graphics card." : `The renderer could not start: ${e.message}`);
     btn.disabled = false;
     return;
