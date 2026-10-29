@@ -257,7 +257,17 @@ does for the isometric sprites. No unit art changed.
   stone huts (a window lit from within), a well, ruins, gardens; the corrupted land's obelisks (violet
   runes) and altars, hell's bones and smouldering vents, the elven lands' lanterns -- each region's
   own, by the moods (`clutterOf`), now and then a ruin anywhere. What carries a light (`GLOWS`: runes,
-  lamps, embers, hut windows) feeds the bloom.
+    lamps, embers, hut windows) feeds the bloom.
+* **The image model's versions** (`tools/hd2d/props.json`, `tools/hd2d/local_props.py`): every
+  designed prop as one entry -- the card it replaces (a numbered new name joins its kind's
+  variants: `hut_3`, `ruin_3`; a new kind, `cart`, `shrine`, stands once its card exists), what to
+  draw, its height in art pixels (the code-drawn card's, so the dressing's scale holds). On the
+  owner's PC the local FLUX in ComfyUI runs them for free:
+  `python tools/hd2d/local_props.py --workflow W.json` (W.json: a text-to-image workflow saved in
+  ComfyUI's API format; the script writes the prompt, negative, seed and a 1024 square into it),
+  three candidates a prop by default, a contact sheet (`target/hd2d-local/sheet.png`), then the
+  chosen ones (`--pick hut_1=2,...`; `--cards` to re-card without generating) through `art.py prop`
+  and `index`. Tested against a stand-in ComfyUI server only: the first real run is the owner's.
 * **Towns spill over their walls** (batch 4, `townRing`): on the open plots within two of a town,
   houses (one or two a plot next to it, now and then one beyond), gardens, a well, fences and
   haystacks, as the look target's towns spread into the land round them.
@@ -369,7 +379,9 @@ does for the isometric sprites. No unit art changed.
 * Node tests: `assets/test/hd2d.test.mjs` (every unit type has a sprite; a stack is one to three
   figures of one sprite and one banner, deterministic; cities, buildings and resources are claimed
   as cards; nothing stands on, and no mood comes from, an unrevealed plot).
-* **Art**: `tools/hd2d/art.py ground SRC NAME` (a top-down texture to a seamless ground layer),
+* **Art**: `tools/hd2d/draw.py` (the props drawn by code), `tools/hd2d/local_props.py` (the image
+  model's, through a local ComfyUI, §5b), `tools/hd2d/gen.py` (sheets of nine from OpenAI's
+  gpt-image-1, cut apart by `art.py split SHEET PREFIX`), `tools/hd2d/art.py ground SRC NAME` (a top-down texture to a seamless ground layer),
   `prop SRC NAME HEIGHT [DEEPEN]` (an object on white to a card), `index` (writes
   `art/index.js`); run it with Python with Pillow and numpy (ComfyUI's bundled one has both). The
   images came from the local FLUX 3 Image Klein (the owner's `local-image-gen` skill); `build.rs`

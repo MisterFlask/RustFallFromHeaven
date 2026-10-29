@@ -10,6 +10,9 @@ here, the way tools/m7 does it for the isometric sprites:
                     cut, a dark one-pixel outline), its foot at the bottom centre: art/NAME.png;
                     DEEPEN (a gamma, e.g. 1.3) darkens its middle values (the model paints foliage
                     a bright lime; the look target's woods are deep greens under bright tips)
+  split SHEET PREFIX
+                    a sheet of separate objects (tools/hd2d/gen.py; transparent or white) -> one
+                    image a object beside it, PREFIX_1.png ... in reading order, for `prop`
   index             art/index.js: every card's size and opaque box, every ground layer
 
 Needs Pillow and numpy (ComfyUI's bundled Python has both):
@@ -104,8 +107,20 @@ def cutout(rgb, thresh=232):
     return ~bg
 
 
+def on_white(src):
+    """The image as RGB on white: an image with transparency (gpt-image-1's) is laid over white, so
+    the cut-out finds its background the same way as on a plain white one."""
+    im = Image.open(src)
+    if im.mode in ("RGBA", "LA", "P"):
+        im = im.convert("RGBA")
+        bg = Image.new("RGBA", im.size, (255, 255, 255, 255))
+        bg.alpha_composite(im)
+        im = bg
+    return im.convert("RGB")
+
+
 def prop(src, name, height, colors=32, outline=True, deepen=1.0):
-    rgb = np.asarray(Image.open(src).convert("RGB"))
+    rgb = np.asarray(on_white(src))
     if deepen != 1.0:
         # Only the object's colours (the white background must stay white for the cut-out).
         bg = rgb.min(2) >= 232
@@ -156,6 +171,70 @@ def prop(src, name, height, colors=32, outline=True, deepen=1.0):
     print(f"{name}: card {out.shape[1]}x{out.shape[0]}, {colors} colours")
 
 
+def split(src, prefix, min_px=600):
+    """A sheet of separate objects (tools/hd2d/gen.py: nine on a transparent or white background)
+    -> one image a object, PREFIX_1.png, PREFIX_2.png, ... beside the sheet, in reading order (rows
+    top to bottom, then left to right), each on white with a margin, for `prop`. Objects are the
+    sheet's connected non-background regions after closing small gaps (so a tree's loose leaves
+    stay with it); specks under MIN_PX pixels are dropped."""
+    rgb = np.asarray(on_white(src))
+    if max(rgb.shape[:2]) > 640:
+        rgb = np.asarray(Image.fromarray(rgb).resize((rgb.shape[1] // 2, rgb.shape[0] // 2), Image.Resampling.BOX))
+        min_px //= 4
+    fg = cutout(rgb)
+    # Close gaps of a few pixels (a dilation) before labelling, so one object stays one region.
+    grow = fg.copy()
+    for _ in range(3):
+        g = grow.copy()
+        for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            g |= np.roll(np.roll(grow, dy, 0), dx, 1)
+        grow = g
+    h, w = grow.shape
+    label = np.zeros((h, w), np.int32)
+    boxes = []
+    for y0 in range(h):
+        for x0 in range(w):
+            if not grow[y0, x0] or label[y0, x0]:
+                continue
+            n = len(boxes) + 1
+            stack = [(y0, x0)]
+            label[y0, x0] = n
+            ys, xs = [], []
+            while stack:
+                y, x = stack.pop()
+                ys.append(y)
+                xs.append(x)
+                for yy, xx in ((y + 1, x), (y - 1, x), (y, x + 1), (y, x - 1)):
+                    if 0 <= yy < h and 0 <= xx < w and grow[yy, xx] and not label[yy, xx]:
+                        label[yy, xx] = n
+                        stack.append((yy, xx))
+            boxes.append((min(ys), max(ys) + 1, min(xs), max(xs) + 1, int((fg & (label == n)).sum()), n))
+    boxes = [b for b in boxes if b[4] >= min_px]
+    # Reading order: by row (objects whose vertical middles are within a third of a row), then x.
+    boxes.sort(key=lambda b: ((b[0] + b[1]) / 2, b[2]))
+    rows, row = [], []
+    for b in boxes:
+        if row and (b[0] + b[1]) / 2 - (row[0][0] + row[0][1]) / 2 > h / 6:
+            rows.append(sorted(row, key=lambda b: b[2]))
+            row = []
+        row.append(b)
+    if row:
+        rows.append(sorted(row, key=lambda b: b[2]))
+    out = Path(src).parent
+    k = 0
+    for row in rows:
+        for y0, y1, x0, x1, _, n in row:
+            k += 1
+            # This object's pixels only (a neighbour reaching into its box is left white).
+            own = (label[y0:y1, x0:x1] == n) & fg[y0:y1, x0:x1]
+            crop = np.where(own[..., None], rgb[y0:y1, x0:x1], 255).astype(np.uint8)
+            m = 8
+            canvas = np.full((y1 - y0 + 2 * m, x1 - x0 + 2 * m, 3), 255, np.uint8)
+            canvas[m:-m, m:-m] = crop
+            Image.fromarray(canvas).save(out / f"{prefix}_{k}.png")
+    print(f"{Path(src).name}: {k} objects -> {prefix}_1..{k}.png")
+
+
 def index():
     cards, grounds = {}, []
     for p in sorted(ART.glob("*.png")):
@@ -185,6 +264,8 @@ if __name__ == "__main__":
         ground(sys.argv[2], sys.argv[3])
     elif cmd == "prop":
         prop(sys.argv[2], sys.argv[3], int(sys.argv[4]), deepen=float(sys.argv[5]) if len(sys.argv) > 5 else 1.0)
+    elif cmd == "split":
+        split(sys.argv[2], sys.argv[3])
     elif cmd == "index":
         index()
     else:

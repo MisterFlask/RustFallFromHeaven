@@ -222,7 +222,7 @@ function clutterOf(kind, ground, mood) {
   if (HELLISH.has(ground)) out.push(["bones", 0.4, FINE], ["vent", 0.35, FINE]);
   if (mood && mood[1] >= 0.5 && !HELLISH.has(ground)) out.push(["crystal", 1.0, 0.9], ["obelisk", 0.14, FINE], ["altar", 0.06, FINE]);
   if (mood && mood[2] >= 0.5) out.push(["lantern", 0.14, FINE]);
-  if (!HELLISH.has(ground) && ground !== GROUND.SNOW) out.push(["ruin", 0.025, FINE]);
+  if (!HELLISH.has(ground) && ground !== GROUND.SNOW) out.push(["ruin", 0.025, FINE], ["shrine", 0.02, FINE]);
   return out;
 }
 
@@ -347,6 +347,8 @@ function dressProps(world, map, atlas, env, moods, list) {
         for (let k = 0; k < huts; k++) put(r() < 0.25 ? "hut_stone" : "hut", huts === 1 ? r.range(-0.3, 0.3) : k ? r.range(0.08, 0.32) : r.range(-0.32, -0.08), r.range(-0.3, 0.3), FINE * r.range(0.9, 1.05));
         if (r() < (ring === 1 ? 0.5 : 0.25)) put("garden", r.range(-0.25, 0.25), r.range(-0.3, 0.35), FINE);
         if (ring === 1 && r() < 0.12) put("well", r.range(-0.3, 0.3), r.range(-0.2, 0.3), FINE);
+        // (Kinds the image model may add, tools/hd2d/props.json: none stand until their cards exist.)
+        if (r() < 0.12) put("cart", r.range(-0.3, 0.3), r.range(-0.2, 0.35), FINE);
       }
     }
   }
