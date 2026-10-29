@@ -11,7 +11,7 @@ import { openModal, closeTag } from "./modals.js";
 import { run, sending } from "./commands.js";
 import { rawRequest, loadScreen } from "./screens.js";
 import { plotIndex } from "./tiles.js";
-import { look, setRendererChoice, EXPERIMENTAL_3D } from "./look.js";
+import { look, setRendererChoice, EXPERIMENTAL_3D, EXPERIMENTAL_HD2D } from "./look.js";
 
 /** The tools menu. */
 export function openTools() {
@@ -496,6 +496,7 @@ export function openOptions() {
     ["iso", "Isometric 2.5D", "The isometric map in HD pixel art (docs/ISO.md)"],
     ["flat", "Flat (debug)", "The flat debugging renderer (colours, glyphs, labels)"],
     ...(EXPERIMENTAL_3D ? [["3d", "3D painterly (experimental)", "The experimental 3D renderer (docs/R3D.md); needs WebGL2"]] : []),
+    ...(EXPERIMENTAL_HD2D ? [["hd2d", "HD-2D (experimental)", "Pixel-art sprites standing in a lit 3D world (docs/HD2D.md); needs WebGL2"]] : []),
   ].map(([val, label, title]) =>
     h(
       "label.toggle",

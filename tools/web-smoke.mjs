@@ -17,7 +17,8 @@
 // drawn in full, a frame's time, the zoom steps and the chart, the bitmap type), Tools → Options
 // and `?renderer=flat` for the flat renderer; `?renderer=iso`, the isometric renderer (its sprites,
 // picking a unit by its figure, zoom, layers); `?renderer=3d`, the experimental 3D renderer (picking,
-// selection, zoom, pan, layers). Phase 7: the automate buttons (`stage automate`: a
+// selection, zoom, pan, layers); `?renderer=hd2d`, the HD-2D mode built on it (its frame, the cards,
+// switching modes). Phase 7: the automate buttons (`stage automate`: a
 // worker automated with a click, a scout exploring by its hotkey), the secretary general's election
 // popup (`stage election`) and the Kuriotates city-or-settlement decision (`stage settlement`). It
 // fails on any console error, page error, failed
@@ -574,6 +575,42 @@ async function renderer3d(url) {
   await b.eval(`window.ffh.setRenderer("art")`);
   await until2(`window.ffh.mapView.renderer() === "art" && !document.querySelector("canvas.map3d")`, "the art renderer after the 3D one");
   steps.push(`?renderer=3d: a frame of ${frame.colours} colours mid-view (${frame.props} props, ${frame.units} unit figures), ${pick.n} plots picked right through the relief, click-select, hover, zoom ${zooms.join(" ")}, pan, political layer, back to the art${canLose ? ", a lost WebGL context falls back to the isometric map" : " (no WEBGL_lose_context: context loss not checked)"}`);
+}
+
+/** `?renderer=hd2d`: the HD-2D mode (docs/HD2D.md) on the same game: its frame is drawn and not
+ *  blank, the sprites load and the units stand as cards, switching from the 3D renderer to it and
+ *  back to the art. As the 3D step, idle and at half resolution (software rendering). */
+async function rendererHd2d(url) {
+  const cfg = encodeURIComponent(JSON.stringify({ animate: false, renderScale: 0.5 }));
+  await b.goto(`${url}/?renderer=hd2d&r3d=${cfg}&force3d=1`);
+  await until2("window.ffh && window.ffh.ready", "the client to boot (hd2d)");
+  await waitHuman("the game in the HD-2D mode");
+  await answerPopups(false);
+  await until2(`window.ffh.mapView.renderer() === "hd2d" && !!window.ffh.mapView.r3d.cam`, "the HD-2D mode's first frame", 180000);
+  await until2(`window.ffh.mapView.r3d.sprites.atlas.pending === 0`, "the HD-2D sprites to load", 60000);
+  const frame = await b.eval(`(() => {
+    const r = window.ffh.mapView.r3d;
+    r.render(1);
+    const gl = r.gl;
+    const w = 48, h = 48, x = (r.canvas.width - w) >> 1, y = (r.canvas.height - h) >> 1;
+    const px = new Uint8Array(w * h * 4);
+    gl.readPixels(x, y, w, h, gl.RGBA, gl.UNSIGNED_BYTE, px);
+    const colours = new Set();
+    for (let i = 0; i < px.length; i += 4) colours.add((px[i] << 16) | (px[i + 1] << 8) | px[i + 2]);
+    return { colours: colours.size, cards: r.sprites.bufs.units?.n ?? 0, statics: r.sprites.bufs.static?.n ?? 0 };
+  })()`);
+  if (frame.colours < 16) throw new Error(`the HD-2D frame is nearly blank (${frame.colours} colours mid-view)`);
+  if (frame.cards < 1) throw new Error("the HD-2D mode stands no unit as a card");
+  await shot("renderer-hd2d");
+  // From the 3D renderer to the HD-2D mode (the other mode of the same renderer goes first), then
+  // back to the art.
+  await b.eval(`window.ffh.setRenderer("3d")`);
+  await until2(`window.ffh.mapView.renderer() === "3d" && !!window.ffh.mapView.r3d.cam`, "the 3D renderer after the HD-2D mode", 180000);
+  await b.eval(`window.ffh.setRenderer("hd2d")`);
+  await until2(`window.ffh.mapView.renderer() === "hd2d" && !!window.ffh.mapView.r3d.cam && document.querySelectorAll("canvas.map3d").length === 1`, "the HD-2D mode after the 3D renderer", 180000);
+  await b.eval(`window.ffh.setRenderer("art")`);
+  await until2(`window.ffh.mapView.renderer() === "art" && !document.querySelector("canvas.map3d")`, "the art renderer after the HD-2D mode");
+  steps.push(`?renderer=hd2d: a frame of ${frame.colours} colours mid-view, ${frame.cards} unit cards and ${frame.statics} other cards, 3D -> HD-2D -> art`);
 }
 
 /** Records the page's POST bodies in `window.__posts` (from now on). */
@@ -1439,6 +1476,7 @@ async function main() {
     await flatRenderer(server.url);
     await rendererIso(server.url);
     await renderer3d(server.url);
+    await rendererHd2d(server.url);
     await newGameElsewhere(bin);
     await crashScreen(bin);
     console.log(`web-smoke: ${steps.length} steps in ${((Date.now() - t0) / 1000).toFixed(1)} s`);

@@ -135,6 +135,9 @@ export function dressStatic(world, map, plots = null, env = staticEnv(world)) {
   const byPlot = new Map();
   const w = world.w;
   const { cityAt, unitAt } = env;
+  // What a mode stands there as sprites instead (the HD-2D mode, hd2d/dress.js): its city, its
+  // standing improvement or its resource marker is not modelled.
+  const claims = env.claims ?? null;
   const H = (mx, my) => world.heightAt(mx, my);
   const visit = plots ?? Array.from({ length: w * world.h }, (_, k) => k);
   let base = 0;
@@ -251,15 +254,16 @@ export function dressStatic(world, map, plots = null, env = staticEnv(world)) {
         const parts = Array.isArray(got) ? got : got ? [got] : [];
         const spot = unitAt.has(i) ? STRUCTURE_SPOT : [0, -0.02];
         const iid = idOf(`imp${i}`);
+        const claimed = !!claims?.improvement.has(i);
         for (const im of parts) {
           const px = im.dx ?? spot[0], pz = im.dz ?? spot[1];
           const yaw = im.yaw ?? r.range(-0.4, 0.4), sc = im.scale ?? 1;
-          place(im.asset, px, pz, { variant: im.variant ?? r.int(0, 7), param: im.param ?? family, scale: sc, sx: im.sx, sy: im.sy, sz: im.sz, yaw, float: im.float, draft: im.draft, id: im.id ?? iid, team, tint: im.tint });
-          for (const e of im.emit ?? []) emitters.push(partEmitter(e, x, y, px, pz, yaw, sc, im.float, H));
+          if (!claimed) place(im.asset, px, pz, { variant: im.variant ?? r.int(0, 7), param: im.param ?? family, scale: sc, sx: im.sx, sy: im.sy, sz: im.sz, yaw, float: im.float, draft: im.draft, id: im.id ?? iid, team, tint: im.tint });
+          if (!claimed) for (const e of im.emit ?? []) emitters.push(partEmitter(e, x, y, px, pz, yaw, sc, im.float, H));
         }
       }
       // The resource's marker.
-      if (bonus) {
+      if (bonus && !claims?.bonus.has(i)) {
         const b = CATALOG.bonus?.(bonus, ctx) ?? null;
         if (b) {
           const water = world.isWater(i);
@@ -301,14 +305,14 @@ export function dressStatic(world, map, plots = null, env = staticEnv(world)) {
         const team = hexRgb(teamColour(city.owner));
         const cr = rng(hash32(city.id * 977 + 13));
         const cctx = { r: cr, size: city.size ?? 1, capital: !!city.capital, walls: !!city.walls, family, civ, seed: city.id, height: (dx, dz) => H(x + 0.5 + dx, y + 0.5 - dz), world, x, y, coast: ctx.coast, river: ctx.river, ...townGround(world, map, cityAt, x, y) };
-        const parts = clearOfUnits(CATALOG.city?.(cctx) ?? basicCity(cctx), unitsRound(world, env, x, y));
+        const parts = claims?.city.has(i) ? [] : clearOfUnits(CATALOG.city?.(cctx) ?? basicCity(cctx), unitsRound(world, env, x, y));
         for (const e of parts.emit ?? []) emitters.push({ ...e, x: x + 0.5 + (e.dx ?? 0), y: H(x + 0.5 + (e.dx ?? 0), y + 0.5 - (e.dz ?? 0)) + (e.dy ?? 0.2), z: -(y + 0.5 - (e.dz ?? 0)) });
         const cid = idOf(`city${city.id}`);
         for (const p of parts) {
           const [mx, my] = at(p.x, p.z);
           out.push(inst(pick(p.asset, "basic.house"), mx, H(mx, my) + (p.lift ?? -0.005), -my, { variant: p.variant ?? 0, param: p.param ?? family, yaw: p.yaw ?? 0, scale: p.scale ?? 1, sx: p.sx, sy: p.sy, sz: p.sz, team, plot: i, id: p.id ?? cid, tint: p.tint }));
         }
-        for (const e of CATALOG.emitters?.("city", cctx) ?? []) emitters.push({ ...e, x: x + 0.5 + (e.dx ?? 0), y: H(x + 0.5, y + 0.5) + (e.dy ?? 0.2), z: -(y + 0.5 - (e.dz ?? 0)) });
+        if (!claims?.city.has(i)) for (const e of CATALOG.emitters?.("city", cctx) ?? []) emitters.push({ ...e, x: x + 0.5 + (e.dx ?? 0), y: H(x + 0.5, y + 0.5) + (e.dy ?? 0.2), z: -(y + 0.5 - (e.dz ?? 0)) });
         cities.push({ city, x: x + 0.5, y: H(x + 0.5, y + 0.5), z: -(y + 0.5) });
       }
     }

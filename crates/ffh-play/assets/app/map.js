@@ -746,13 +746,18 @@ export class MapView {
   /** Switches to the experimental 3D renderer (`?renderer=3d`, docs/R3D.md) or back. Its module
    *  is imported here, on first use; resolves to false when it cannot run (no WebGL2), leaving the
    *  renderer as it was. */
-  async useR3d(on) {
+  async useR3d(on, mode = "3d") {
+    // Another mode of the 3D renderer is drawing: it goes first.
+    if (on && this.r3d && this.r3d.mode !== mode) await this.useR3d(false);
     if (!!on === !!this.r3d) return true;
     if (on) {
       let mod;
       this.r3dError = null;
       try {
-        mod = await import("./r3d/map3d.js");
+        // The HD-2D mode (docs/HD2D.md) is the 3D renderer with its sprites and passes: its own
+        // module, so the 3D renderer alone never loads it.
+        if (mode === "hd2d") mod = await import("./r3d/hd2d/index.js");
+        else mod = await import("./r3d/map3d.js");
         if (this.iso) this.useIso(false);
         if (this.art) {
           this.art.dispose();
@@ -788,7 +793,7 @@ export class MapView {
 
   /** The renderer drawing the map: "art" or "flat". */
   renderer() {
-    return this.r3d ? "3d" : this.iso ? "iso" : this.art ? "art" : "flat";
+    return this.r3d ? this.r3d.mode ?? "3d" : this.iso ? "iso" : this.art ? "art" : "flat";
   }
 
   /** A new map (the `map` reply, or the map a delta brought up to date): redraws the chunks

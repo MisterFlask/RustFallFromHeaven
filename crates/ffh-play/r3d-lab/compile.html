@@ -1,0 +1,27 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>r3d shader compile times</title>
+<script type="module">
+// Compiles every program of the 3D renderer and of the HD-2D mode, one at a time, and logs how long
+// each takes (docs/HD2D.md, "Real GPU": ANGLE's Direct3D 11 backend compiles some for minutes).
+import { Program, FULLSCREEN_VS } from "/app/r3d/gl.js";
+import * as SH from "/app/r3d/shaders.js";
+import * as H from "/app/r3d/hd2d/shaders.js";
+const gl = document.createElement("canvas").getContext("webgl2", { powerPreference: "high-performance" });
+const C = SH.COMMON;
+const only = new URLSearchParams(location.search).get("only");
+const list = [
+  ["prop", C + SH.PROP_VS, C + SH.PROP_FS], ["water", C + SH.WATER_VS, C + SH.WATER_FS],
+  ["shadow-prop", C + SH.PROP_VS, C + SH.PROP_DEPTH_FS], ["ssao", FULLSCREEN_VS, C + SH.SSAO_FS], ["kuwahara", FULLSCREEN_VS, SH.KUWAHARA_FS],
+  ["finish", FULLSCREEN_VS, C + SH.FINISH_FS], ["overlay", C + SH.OVERLAY_VS, C + SH.OVERLAY_FS], ["ghost", C + SH.PROP_VS, C + SH.GHOST_FS],
+  ["hd2d-sprite", C + H.SPRITE_VS, C + H.SPRITE_FS], ["hd2d-rays", FULLSCREEN_VS, C + H.RAYS_FS], ["hd2d-mood", FULLSCREEN_VS, C + H.MOOD_FS],
+  ["terrain", C + SH.TERRAIN_VS, C + SH.TERRAIN_FS],
+];
+for (const [name, vs, fs] of list.filter(([n]) => !only || n === only)) {
+  const t0 = performance.now();
+  try { new Program(gl, name, vs, fs); console.log(`compiled ${name} ${(performance.now() - t0).toFixed(0)} ms`); }
+  catch (e) { console.log(`failed ${name}: ${String(e.message).slice(0, 200)}`); }
+  await new Promise((r) => setTimeout(r, 0));
+}
+console.log("done");
+</script>

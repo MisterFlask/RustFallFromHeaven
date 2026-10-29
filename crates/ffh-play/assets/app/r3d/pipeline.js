@@ -15,7 +15,9 @@
 //   blit     to the canvas
 //
 // Every stage after `scene` is optional (config.js); the timings of each are measured with GPU
-// timer queries when the browser offers them (`stats`).
+// timer queries when the browser offers them (`stats`). A mode built on this renderer (the HD-2D
+// mode, hd2d/passes.js) sets `ext`: it draws its sprites into the shadow, scene and overlay stages,
+// adds its own post passes and composes and presents the frame; without it nothing changes.
 
 import { Program, texture, framebuffer, depthBuffer, depthTexture, fullscreen, FULLSCREEN_VS } from "./gl.js";
 import * as SH from "./shaders.js";
@@ -63,11 +65,14 @@ export class Pipeline {
     this.h = 0;
     this.stats = { frames: 0, ms: {}, cpu: 0 };
     this.queries = [];
+    /** A mode's extra passes (hd2d/passes.js), or null. */
+    this.ext = null;
   }
 
   /** (Re)allocates the targets for an internal size of w x h pixels. */
   resize(w, h) {
     if (w === this.w && h === this.h) return;
+    this.ext?.resize(w, h);
     this.disposeTargets();
     const gl = this.gl;
     this.w = w;
@@ -135,6 +140,7 @@ export class Pipeline {
 
   dispose() {
     this.disposeTargets();
+    this.ext?.dispose();
     const gl = this.gl;
     gl.deleteTexture(this.shadowMap);
     gl.deleteFramebuffer(this.shadowFbo);
@@ -224,6 +230,7 @@ export class Pipeline {
         gl.viewport(0, 0, SHADOW_SIZE, SHADOW_SIZE);
         gl.clear(gl.DEPTH_BUFFER_BIT);
         scene.drawProps(this.p.shadowProp, { ...SU, uSunView: 1 }, true);
+        this.ext?.shadow(SU, scene);
         gl.bindFramebuffer(gl.FRAMEBUFFER, this.shadowFboT);
         gl.viewport(0, 0, TERRAIN_SHADOW_SIZE, TERRAIN_SHADOW_SIZE);
         gl.clear(gl.DEPTH_BUFFER_BIT);
@@ -259,6 +266,7 @@ export class Pipeline {
       gl.depthFunc(gl.EQUAL);
       scene.drawProps(this.p.prop, SU, false);
       gl.depthFunc(gl.LEQUAL);
+      this.ext?.scene({ ...SU, uExposure: fr.exposure }, scene);
     });
     this.timed("water", () => {
       this.grab();
@@ -295,8 +303,9 @@ export class Pipeline {
       glow = this.t.glow2;
     }
 
-    // --- compose
-    this.timed("compose", () => {
+    // --- a mode's own HDR passes (light shafts, wide bloom) and compose
+    if (this.ext) this.ext.post(fr, cfg, ao, glow);
+    else this.timed("compose", () => {
       this.pass(this.p.composite, this.f.ldrA, W, H, {
         uColor: this.t.color,
         uAO: ao ?? this.t.color,
@@ -307,15 +316,16 @@ export class Pipeline {
       });
     });
 
-    // --- paint
-    let painted = this.t.ldrA;
+    // --- paint (a mode's display-colour grade first: the HD-2D region moods)
+    let painted = this.ext?.grade(fr, cfg) ?? this.t.ldrA;
     if (cfg.kuwahara > 0) {
+      const src = painted;
       this.timed("kuwahara", () => {
-        this.pass(this.p.tensor, this.f.tensorA, W, H, { uSrc: this.t.ldrA, uTexel: [1 / W, 1 / H] });
+        this.pass(this.p.tensor, this.f.tensorA, W, H, { uSrc: src, uTexel: [1 / W, 1 / H] });
         this.pass(this.p.blur, this.f.tensorB, W, H, { uSrc: this.t.tensorA, uDir: [1 / W, 0], uSigma: 2 });
         this.pass(this.p.blur, this.f.tensorA, W, H, { uSrc: this.t.tensorB, uDir: [0, 1 / H], uSigma: 2 });
         this.pass(this.p.kuwahara, this.f.ldrB, W, H, {
-          uSrc: this.t.ldrA,
+          uSrc: src,
           uTensor: this.t.tensorA,
           uRadius: Math.min(8, cfg.kuwaharaRadius * (fr.scale ?? 1) * (fr.paintZoom ?? 1)),
           uSharp: cfg.sharp,
@@ -370,29 +380,35 @@ export class Pipeline {
       gl.polygonOffset(-1, -2);
       // The ground marks where the ground is the front surface, then ghosted where something
       // stands over it (a border under a forest still shows, faintly).
+      const OU = { ...U, uBorderGlow: cfg.borderGlow ?? 0 };
+      this.ext?.underlay(U, scene);
       for (const ghost of [0, 1]) {
         gl.depthFunc(ghost ? gl.GREATER : gl.LEQUAL);
-        scene.drawOverlay(this.p.overlay, { ...U, uGhost: ghost });
+        scene.drawOverlay(this.p.overlay, { ...OU, uGhost: ghost });
         scene.drawMarkers(this.p.marker, { ...U, uGhost: ghost });
       }
       gl.disable(gl.POLYGON_OFFSET_FILL);
       // Units behind scenery: their silhouettes, where something stands in front of them.
       gl.depthFunc(gl.GREATER);
       scene.drawUnitGhosts(this.p.ghost, { ...U, uND: this.t.nd, uEmitId: this.t.emit });
+      this.ext?.ghosts({ ...U, uND: this.t.nd, uEmitId: this.t.emit }, scene);
       gl.depthFunc(gl.LEQUAL);
       if (cfg.particles) {
         gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
         scene.drawParticles(this.p.particle, U);
       }
+      this.ext?.additive(U, scene);
       gl.disable(gl.BLEND);
       gl.disable(gl.DEPTH_TEST);
       gl.depthMask(true);
     });
 
-    // --- to the canvas
-    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, this.f.final);
-    gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
-    gl.blitFramebuffer(0, 0, W, H, 0, 0, canvasW, canvasH, gl.COLOR_BUFFER_BIT, W === canvasW && H === canvasH ? gl.NEAREST : gl.LINEAR);
+    // --- to the canvas (or a mode presents it: the HD-2D tilt-shift)
+    if (!this.ext?.present(fr, cfg, canvasW, canvasH)) {
+      gl.bindFramebuffer(gl.READ_FRAMEBUFFER, this.f.final);
+      gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
+      gl.blitFramebuffer(0, 0, W, H, 0, 0, canvasW, canvasH, gl.COLOR_BUFFER_BIT, W === canvasW && H === canvasH ? gl.NEAREST : gl.LINEAR);
+    }
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     this.stats.frames++;
   }

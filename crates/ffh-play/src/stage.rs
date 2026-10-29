@@ -514,7 +514,8 @@ pub fn settlement(dir: &Path) -> Result<StagedSettlement, String> {
 }
 
 /// A saved game at a human control point in a real mid-game world, for the 3D renderer's vertical
-/// slice (docs/R3D.md): seed 11, a standard map at low sea level, the human playing the Ljosalfar
+/// slice (docs/R3D.md): seed 11 (or the next seed, up to 30, while an AI change leaves no evil
+/// civilization holding a capital at turn 200), a standard map at low sea level, the human playing the Ljosalfar
 /// against six AI civilizations, 200 turns of AI autoplay; then the heartland of the evil
 /// civilization with the most cities is corrupted by FfH2's own hell rule -- every land plot it
 /// owns within two plots of its capital takes the plot counter an Infernal owner gives its plots
@@ -529,17 +530,35 @@ pub struct StagedCorrupt {
     /// Plots whose counter was raised.
     pub plots: usize,
     pub turn: i32,
+    /// The game's seed (11 unless that seed had no evil civilization with a capital).
+    pub seed: u32,
 }
 
 impl StagedCorrupt {
     pub fn to_json(&self) -> Json {
-        crate::jobj! { "stage" => "corrupt", "save" => self.save.display().to_string(), "player" => self.player.0 as i64, "x" => self.x, "y" => self.y, "plots" => self.plots as i64, "turn" => self.turn }
+        crate::jobj! { "stage" => "corrupt", "save" => self.save.display().to_string(), "player" => self.player.0 as i64, "x" => self.x, "y" => self.y, "plots" => self.plots as i64, "turn" => self.turn, "seed" => self.seed as i64 }
     }
 }
 
 pub fn corrupt(dir: &Path) -> Result<StagedCorrupt, String> {
+    // The AI decides which civilizations live to turn 200: when an AI change leaves seed 11 with no
+    // evil civilization holding a capital, the next seed that has one is staged instead.
+    let mut last = String::new();
+    for seed in 11..=30 {
+        match corrupt_seed(dir, seed) {
+            Ok(s) => return Ok(s),
+            Err(e) if e == NO_EVIL => last = e,
+            Err(e) => return Err(e),
+        }
+    }
+    Err(format!("{last} (seeds 11-30)"))
+}
+
+const NO_EVIL: &str = "no evil civilization with a capital";
+
+fn corrupt_seed(dir: &Path, seed: u32) -> Result<StagedCorrupt, String> {
     let d = ffh_data::global();
-    let mut ng = NewGame::new(d, 11);
+    let mut ng = NewGame::new(d, seed);
     ng.opponents = 6;
     ng.world = d.t("WORLDSIZE_STANDARD");
     ng.sea_level = d.t("SEALEVEL_LOW");
@@ -562,7 +581,7 @@ pub fn corrupt(dir: &Path) -> Result<StagedCorrupt, String> {
         .player_ids()
         .filter(|&p| g.players[p].alive && g.players[p].alignment == Some(evil) && g.player_get_capital_city(p).is_some())
         .max_by_key(|&p| (g.players[p].cities.len(), std::cmp::Reverse(p.0)))
-        .ok_or("no evil civilization with a capital")?;
+        .ok_or(NO_EVIL.to_string())?;
     let capital = g.player_get_capital_city(player).ok_or("no capital")?;
     let (cx, cy) = (g.cities[capital].x, g.cities[capital].y);
     let mut plots = 0;
@@ -575,5 +594,5 @@ pub fn corrupt(dir: &Path) -> Result<StagedCorrupt, String> {
     }
     let turn = s.g.game_turn();
     let paths = s.save("corrupt").map_err(|e| format!("save: {e:?}"))?;
-    Ok(StagedCorrupt { save: paths.save, player, x: cx, y: cy, plots, turn })
+    Ok(StagedCorrupt { save: paths.save, player, x: cx, y: cy, plots, turn, seed })
 }

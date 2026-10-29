@@ -39,6 +39,12 @@ cargo build --release
   tell and does not block.
 * The feature flag is `EXPERIMENTAL_3D` in `assets/app/look.js`: false hides the option and ignores
   `?renderer=3d`; the module is then never loaded (it is loaded on demand even when the flag is on).
+* The **HD-2D mode** (docs/HD2D.md, `?renderer=hd2d`) is this renderer with the isometric map's
+  sprites standing in its world: a subclass of `Map3D` (`r3d/hd2d/index.js`) that sets the mode
+  hooks `map3d.js` keeps at their defaults (`loadCfg`, `light`, `dressEnv`, `dressUnitsOf`,
+  `setUnits`, `ringOf`, `pitchAt`, `beforeFrame`, ...) and an extension of the pipeline
+  (`pipeline.ext`, null here). On Windows, Chrome's default ANGLE backend (Direct3D 11) does not
+  finish compiling `TERRAIN_FS` in 15 minutes (docs/HD2D.md §8): use `--use-angle=vulkan`.
 
 ## 2. The existing rendering architecture (as found)
 

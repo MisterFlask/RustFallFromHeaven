@@ -113,6 +113,14 @@ pub const ASSETS: &[(&str, &str, &str)] = &[
     ("app/r3d/assets/registry.js", JS, include_str!("../../assets/app/r3d/assets/registry.js")),
     ("app/r3d/assets/units.js", JS, include_str!("../../assets/app/r3d/assets/units.js")),
     ("app/r3d/assets/vegetation.js", JS, include_str!("../../assets/app/r3d/assets/vegetation.js")),
+    // The HD-2D mode built on it (docs/HD2D.md), loaded only when chosen.
+    ("app/r3d/hd2d/config.js", JS, include_str!("../../assets/app/r3d/hd2d/config.js")),
+    ("app/r3d/hd2d/dress.js", JS, include_str!("../../assets/app/r3d/hd2d/dress.js")),
+    ("app/r3d/hd2d/index.js", JS, include_str!("../../assets/app/r3d/hd2d/index.js")),
+    ("app/r3d/hd2d/mood.js", JS, include_str!("../../assets/app/r3d/hd2d/mood.js")),
+    ("app/r3d/hd2d/passes.js", JS, include_str!("../../assets/app/r3d/hd2d/passes.js")),
+    ("app/r3d/hd2d/shaders.js", JS, include_str!("../../assets/app/r3d/hd2d/shaders.js")),
+    ("app/r3d/hd2d/sprites.js", JS, include_str!("../../assets/app/r3d/hd2d/sprites.js")),
 ];
 
 // `ASSET_BYTES`: the binary client files, the isometric renderer's PNG sprites (docs/ISO.md),

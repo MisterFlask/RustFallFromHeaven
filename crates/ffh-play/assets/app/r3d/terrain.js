@@ -226,10 +226,21 @@ export class MapTextures {
     upload(gl, this.height, this.H);
   }
 
+  /** The per-plot mood channel (the HD-2D mode's region moods, hd2d/mood.js): RGBA8 a plot, read
+   *  LINEAR, so a mood blends over the plot between two centres. Made on first use. */
+  setMood(world, data) {
+    const gl = this.gl;
+    if (!this.mood || this.mood.w !== world.w || this.mood.h !== world.h) {
+      if (this.mood) gl.deleteTexture(this.mood);
+      this.mood = texture(gl, world.w, world.h, { filter: gl.LINEAR, wrapS: world.wrapX ? gl.REPEAT : gl.CLAMP_TO_EDGE });
+    }
+    upload(gl, this.mood, data);
+  }
+
   dispose() {
     const gl = this.gl;
-    for (const k of ["terrain", "vis", "owner", "height"]) if (this[k]) gl.deleteTexture(this[k]);
-    this.terrain = this.vis = this.owner = this.height = null;
+    for (const k of ["terrain", "vis", "owner", "height", "mood"]) if (this[k]) gl.deleteTexture(this[k]);
+    this.terrain = this.vis = this.owner = this.height = this.mood = null;
     this.w = this.h = 0;
   }
 }

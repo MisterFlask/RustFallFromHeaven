@@ -2184,6 +2184,7 @@ uniform sampler2D uOwner;
 uniform sampler2D uMarks;
 uniform vec3 uOwnerColors[64];
 uniform float uBorders;
+uniform float uBorderGlow; // the HD-2D mode's glowing borders (0: the painted ink line)
 uniform float uPolitical;
 uniform float uGrid;
 uniform float uGhost;
@@ -2249,10 +2250,23 @@ void main() {
       if (ownerAt(cell + vec2(diag[i])) != me) dmin = min(dmin, max(edgeDist(f, diag[i].x, 0), edgeDist(f, 0, diag[i].y)));
     }
     float wob = (mnoise(m, 6.0) - 0.5) * 0.02;
-    float line = 1.0 - smoothstep(0.035, 0.06, dmin + wob);
-    float band = (1.0 - smoothstep(0.05, 0.24, dmin + wob)) * 0.55;
-    acc = mix(acc, vec4(oc, 1.0), band * uBorders);
-    acc = mix(acc, vec4(oc * 0.55 + 0.45 * vec3(1.0, 0.95, 0.85) * lum(oc), 1.0), line * uBorders);
+    if (uBorderGlow > 0.0) {
+      // A glowing line of magic laid on the land: a hot core in the owner's colour, meandering a
+      // little inside the owner's side (so the plot grid does not show in it, and where two
+      // realms meet each draws its own colour), its light spilling softly over that side.
+      float inset = 0.025 + 0.04 * mnoise(m, 1.3);
+      float dl = abs(dmin - inset);
+      float core = 1.0 - smoothstep(0.01, 0.026, dl);
+      float halo = exp(-max(dmin - inset, 0.0) * 12.0) * smoothstep(0.0, inset, dmin) * 0.7;
+      vec3 hot = mix(oc * 1.25, vec3(1.0, 0.98, 0.94), 0.3);
+      acc = mix(acc, vec4(min(oc * 1.2, vec3(1.0)), 1.0), clamp(halo * uBorderGlow, 0.0, 1.0) * uBorders);
+      acc = mix(acc, vec4(hot, 1.0), clamp(core * uBorderGlow, 0.0, 1.0) * uBorders);
+    } else {
+      float line = 1.0 - smoothstep(0.035, 0.06, dmin + wob);
+      float band = (1.0 - smoothstep(0.05, 0.24, dmin + wob)) * 0.55;
+      acc = mix(acc, vec4(oc, 1.0), band * uBorders);
+      acc = mix(acc, vec4(oc * 0.55 + 0.45 * vec3(1.0, 0.95, 0.85) * lum(oc), 1.0), line * uBorders);
+    }
   }
   if (uPolitical > 0.0 && me > 0) acc = mix(acc, vec4(uOwnerColors[me], 1.0), 0.42 * uPolitical);
   // The grid: faint lines on the plot edges (the logical board under the painted world), a dark

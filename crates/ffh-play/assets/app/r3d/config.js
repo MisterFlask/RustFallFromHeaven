@@ -152,25 +152,27 @@ export const PANEL = [
   ["autoQuality", "Auto quality (drop paint/scale when slow)", "bool"],
 ];
 
-export function loadConfig() {
+/** The saved config (`store`: the localStorage key; `defaults` and `presets`: the 3D renderer's,
+ *  or the HD-2D mode's, hd2d/config.js), with the page's `?r3d=` override. */
+export function loadConfig(store = KEY, defaults = DEFAULTS, presets = PRESETS, lights = LIGHTING) {
   let saved = {};
   try {
-    saved = JSON.parse(globalThis.localStorage?.getItem(KEY) ?? "{}") ?? {};
+    saved = JSON.parse(globalThis.localStorage?.getItem(store) ?? "{}") ?? {};
   } catch {
     saved = {};
   }
   // Keys added since the config was saved come from the preset it was saved under, not from the
   // defaults (a plain look saved before the brushwork existed must not gain brush marks).
-  const base = PRESETS[saved.preset] ? { ...DEFAULTS, ...PRESETS[saved.preset] } : DEFAULTS;
+  const base = presets[saved.preset] ? { ...defaults, ...presets[saved.preset] } : defaults;
   const cfg = { ...base, ...saved };
   // The map is always in daylight; a light no longer offered (a saved "dusk", "afternoon" or
   // "day") falls back to the single "daylight" look.
-  if (!LIGHTING[cfg.lighting]) cfg.lighting = DEFAULTS.lighting;
+  if (!lights[cfg.lighting]) cfg.lighting = defaults.lighting;
   // A page-only override: ?r3d=plain|painterly or ?r3d={"kuwahara":0}.
   try {
     const q = new URLSearchParams(globalThis.location?.search ?? "").get("r3d");
     if (q) {
-      if (PRESETS[q]) Object.assign(cfg, PRESETS[q], { preset: q });
+      if (presets[q]) Object.assign(cfg, presets[q], { preset: q });
       else Object.assign(cfg, JSON.parse(q));
     }
   } catch {
@@ -179,15 +181,15 @@ export function loadConfig() {
   return cfg;
 }
 
-export function saveConfig(cfg) {
+export function saveConfig(cfg, store = KEY) {
   try {
-    globalThis.localStorage?.setItem(KEY, JSON.stringify(cfg));
+    globalThis.localStorage?.setItem(store, JSON.stringify(cfg));
   } catch {
     /* storage may be unavailable */
   }
 }
 
 /** The config with preset `name` applied. */
-export function withPreset(cfg, name) {
-  return { ...cfg, ...PRESETS[name], preset: name };
+export function withPreset(cfg, name, presets = PRESETS) {
+  return { ...cfg, ...presets[name], preset: name };
 }

@@ -175,7 +175,7 @@ function drawHudParts(r3d, cam) {
   // 3D props disappear among the rocks and shrubs (F12). Fades out above ~160 px, where the prop
   // carries it; dimmed on remembered (fogged) plots, as the city plates are. Fog of war is intact:
   // the server sends -1 for unrevealed plots and the remembered bonus for fogged ones.
-  if (ts >= 36 && v.map.bonus) {
+  if (ts >= 36 && v.map.bonus && (r3d.resourceChips?.() ?? true)) {
     const map = v.map;
     const rr = r3d.visibleRect(cam);
     const chipA = Math.max(0, Math.min(1, (160 - ts) / 40));

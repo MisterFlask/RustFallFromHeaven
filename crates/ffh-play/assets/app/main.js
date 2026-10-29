@@ -720,8 +720,9 @@ async function boot() {
   // Chosen with `?renderer=iso` or the remembered Tools → Options choice.
   if (rendererChoice() === "iso") mapView.useIso(true);
   syncSkin();
-  // The experimental 3D renderer (docs/R3D.md): loaded on demand; without WebGL2 it falls back.
-  if (rendererChoice() === "3d") use3d();
+  // The experimental 3D renderer (docs/R3D.md) and the HD-2D mode built on it (docs/HD2D.md):
+  // loaded on demand; without WebGL2 they fall back.
+  if (rendererChoice() === "3d" || rendererChoice() === "hd2d") use3d(rendererChoice());
   // The art loads beside the data; the page works meanwhile (and without it). lookLoaded() builds
   // the art worker, which bakes in the engine's type ordering (from /api/data) once, so it must run
   // after setLookData(): otherwise, if the static art bundle wins the race against the server-
@@ -755,8 +756,8 @@ function lookLoaded() {
 /** Switches the map's renderer ("art", "iso" or "flat"; Tools → Options). The isometric renderer
  *  owns the map on its own; leaving it turns it off and falls back to art or flat. */
 function setRenderer(r) {
-  if (r === "3d") {
-    use3d();
+  if (r === "3d" || r === "hd2d") {
+    use3d(r);
     return;
   }
   if (mapView.r3d) mapView.useR3d(false);
@@ -790,9 +791,9 @@ function syncSkin() {
 /** Turns the 3D renderer on; when it cannot run, says so and draws with the default renderer (the
  *  isometric map, `rendererChoice`). Not the art: at boot this runs before the art has loaded, and
  *  `lookLoaded` switches to the art only when it was the choice, so the map would stay flat. The
- *  remembered choice stays "3d": the next page tries again. */
-async function use3d() {
-  const ok = await mapView.useR3d(true);
+ *  remembered choice stays "3d": the next page tries again. `mode` "hd2d" is the HD-2D mode. */
+async function use3d(mode = "3d") {
+  const ok = await mapView.useR3d(true, mode);
   syncSkin();
   if (ok) return;
   if (mapView.r3dError?.code === "software-webgl") {

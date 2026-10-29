@@ -143,8 +143,17 @@ export function stage(bin, kind, dir) {
  *  machine's GPU, through Chromium's full headless mode and its own GL backend. Whether a GPU was
  *  really used shows in `webglRenderer` (a "SwiftShader" renderer means it was not). */
 export function chromiumLaunch(gpu = false) {
-  if (gpu) return { headless: true, channel: "chromium", args: ["--ignore-gpu-blocklist", "--enable-gpu"] };
-  return { headless: true, args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] };
+  // --gpu: `FFH_CHROMIUM_CHANNEL=chrome` draws with the installed Chrome instead of Playwright's
+  // Chromium (which some Windows machines refuse to start, "spawn UNKNOWN"), and
+  // --force_high_performance_gpu takes the discrete GPU on a laptop that also has an integrated one.
+  // `FFH_ANGLE=vulkan` picks ANGLE's backend: on Windows the default, Direct3D 11, compiles the 3D
+  // renderer's large shaders for minutes (docs/HD2D.md, "Real GPU").
+  if (gpu) {
+    const args = ["--ignore-gpu-blocklist", "--enable-gpu", "--force_high_performance_gpu"];
+    if (process.env.FFH_ANGLE) args.push(`--use-angle=${process.env.FFH_ANGLE}`);
+    return { headless: true, channel: process.env.FFH_CHROMIUM_CHANNEL || "chromium", args };
+  }
+  return { headless: true, ...(process.env.FFH_CHROMIUM_CHANNEL ? { channel: process.env.FFH_CHROMIUM_CHANNEL } : {}), args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] };
 }
 
 /** The name of the WebGL renderer a page draws with (a GPU's name, or SwiftShader). */

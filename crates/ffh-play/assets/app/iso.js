@@ -208,6 +208,32 @@ function shortName(type, prefix) {
   return type?.startsWith(prefix) ? type.slice(prefix.length).toLowerCase() : null;
 }
 
+/** The short name of `owner`'s civilization (`clan_of_embers`), the prefix of its own sprites. */
+export function civShortName(owner) {
+  const civIdx = owner === me()?.player ? me()?.civ : S.players.get(owner)?.civ;
+  return shortName(tname("CivilizationType", civIdx), "CIVILIZATION_");
+}
+
+/** The sprites that may stand in for unit type `type` of civilization `civ` (its short name), best
+ *  first: `unit_<civ>_<type>`, `unit_<civ>_<class>`, the type and its aliases, the class and its
+ *  aliases, settler or worker by ability, the combat type's and the domain's stand-ins, then the
+ *  swordsman. The first that exists is the unit's sprite (also the HD-2D map's, docs/HD2D.md). */
+export function unitSpriteKeys(type, civ) {
+  const info = S.data?.tables?.UnitType?.[type] ?? {};
+  const t = shortName(info.type, "UNIT_");
+  const c = shortName(tname("UnitClassType", info.class), "UNITCLASS_");
+  const names = [];
+  if (civ && t) names.push(`${civ}_${t}`);
+  if (civ && c) names.push(`${civ}_${c}`);
+  for (const n of [t, c]) if (n) names.push(n, ...(UNIT_ALIASES[n] ?? []));
+  if (info.found) names.push("settler");
+  if (info.worker) names.push("worker");
+  const combat = COMBAT_SPRITES[tname("UnitCombatType", info.unit_combat)];
+  const domain = DOMAIN_SPRITES[tname("DomainType", info.domain)];
+  for (const n of [combat, domain, "swordsman"]) if (n) names.push(n, ...(UNIT_ALIASES[n] ?? []));
+  return names.map((n) => `unit_${n}`);
+}
+
 function canvas(w, h) {
   const c = document.createElement("canvas");
   c.width = w;
@@ -625,8 +651,7 @@ export class IsoMap {
 
   /** The short name of `owner`'s civilization (`clan_of_embers`), the prefix of its own sprites. */
   civKey(owner) {
-    const civIdx = owner === me()?.player ? me()?.civ : S.players.get(owner)?.civ;
-    return shortName(tname("CivilizationType", civIdx), "CIVILIZATION_");
+    return civShortName(owner);
   }
 
   /** The sprite standing in for unit type `type` owned by `owner` (memoised). */
@@ -634,19 +659,7 @@ export class IsoMap {
     const civ = this.civKey(owner);
     const memo = `${type}|${civ}`;
     if (this.unitKeys.has(memo)) return this.unitKeys.get(memo);
-    const info = S.data?.tables?.UnitType?.[type] ?? {};
-    const t = shortName(info.type, "UNIT_");
-    const c = shortName(tname("UnitClassType", info.class), "UNITCLASS_");
-    const names = [];
-    if (civ && t) names.push(`${civ}_${t}`);
-    if (civ && c) names.push(`${civ}_${c}`);
-    for (const n of [t, c]) if (n) names.push(n, ...(UNIT_ALIASES[n] ?? []));
-    if (info.found) names.push("settler");
-    if (info.worker) names.push("worker");
-    const combat = COMBAT_SPRITES[tname("UnitCombatType", info.unit_combat)];
-    const domain = DOMAIN_SPRITES[tname("DomainType", info.domain)];
-    for (const n of [combat, domain, "swordsman"]) if (n) names.push(n, ...(UNIT_ALIASES[n] ?? []));
-    const key = this.pick(names.map((n) => `unit_${n}`));
+    const key = this.pick(unitSpriteKeys(type, civ));
     this.unitKeys.set(memo, key);
     return key;
   }

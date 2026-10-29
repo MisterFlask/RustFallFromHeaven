@@ -30,8 +30,13 @@ const RENDERER_KEY = "ffh.renderer";
  *  while this is true. Off, the client never loads its module. */
 export const EXPERIMENTAL_3D = true;
 
+/** The experimental HD-2D renderer (docs/HD2D.md: the isometric sprites standing in the 3D
+ *  renderer's lit world): offered in Tools -> Options and by `?renderer=hd2d` while this is true.
+ *  Off, the client never loads its module. */
+export const EXPERIMENTAL_HD2D = true;
+
 function known(r) {
-  return r === "flat" || r === "art" || r === "iso" || (EXPERIMENTAL_3D && r === "3d");
+  return r === "flat" || r === "art" || r === "iso" || (EXPERIMENTAL_3D && r === "3d") || (EXPERIMENTAL_HD2D && r === "hd2d");
 }
 
 /** The map renderer asked for: an explicit `?renderer=art` / `?renderer=flat` / `?renderer=iso`,

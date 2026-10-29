@@ -12,6 +12,8 @@
 //            &ground=.  &spacing=1
 //   &cx=..&cy=..&ts=..                         camera (map point, pixels per plot)
 //   &r3d=painterly|plain|{json}                pipeline overrides (as in the client)
+//   &renderer=hd2d                             the HD-2D mode (docs/HD2D.md); scene=hd2d is its
+//                                              look target's composition
 //   &float=1                                   (grid) things stand on the water, not the sea floor
 //   &scale=1.4                                 (grid) every item at this scale (a catalog's scale)
 //   scene=cities&civs=CIVILIZATION_A,CIVILIZATION_B&sizes=2,6,12&imps=IMPROVEMENT_COTTAGE,...
@@ -24,7 +26,8 @@
 
 import { S, setData, setView, setMap } from "/app/state.js";
 import { Map3D } from "/app/r3d/map3d.js";
-import { showcase, reference, riverTown, fields, grid, settlements, fromRows } from "./scenes.js";
+import { MapHd2d } from "/app/r3d/hd2d/index.js";
+import { showcase, reference, riverTown, fields, grid, settlements, fromRows, hd2d } from "./scenes.js";
 
 const q = new URLSearchParams(location.search);
 
@@ -47,6 +50,8 @@ async function main() {
     scene = riverTown(data);
   } else if (q.get("scene") === "fields") {
     scene = fields(data);
+  } else if (q.get("scene") === "hd2d") {
+    scene = hd2d(data);
   } else {
     scene = showcase(data);
   }
@@ -85,7 +90,7 @@ async function main() {
     S.sel = { units: here.map((u) => u.id), x: view.overlay.sel.x, y: view.overlay.sel.y };
     view.overlay.units = S.sel.units;
   }
-  const r3d = new Map3D(view);
+  const r3d = q.get("renderer") === "hd2d" ? new MapHd2d(view) : new Map3D(view);
   if (scene.items) {
     // Grid mode: the recipes in rows, not the dressing.
     r3d.sync();
@@ -128,6 +133,14 @@ async function main() {
     view.cam = { ...view.cam, ts: zs[Math.max(0, Math.min(zs.length - 1, (i < 0 ? zs.length - 1 : i) + (e.deltaY < 0 ? 1 : -1)))] };
     r3d.draw();
   }, { passive: false });
+  // The HD-2D mode's sprites load as images: a capture waits for them.
+  if (r3d.sprites) {
+    r3d.sync();
+    await r3d.sprites.atlas.whenLoaded();
+    r3d.viewSeen = null;
+    r3d.sync();
+    await r3d.sprites.atlas.whenLoaded();
+  }
   window.lab = { r3d, view, S, ready: true };
 }
 

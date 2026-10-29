@@ -107,7 +107,8 @@ export function buildView(data, { players = [], cities = [], units = [], me = 0 
     view_version: 1,
     turn: 1,
     reveal: true,
-    me: { player: me, team: me },
+    // As the server's: the viewer's civilization is on `me` (the others' on `players`).
+    me: { player: me, team: me, civ: players[me] ? idx("CivilizationType", players[me].civ) : null },
     players: players.map((p, k) => ({ id: p.id ?? k, name: p.civ, civ: idx("CivilizationType", p.civ), team: p.id ?? k, barbarian: !!p.barbarian, alive: true })),
     cities: cities.map((c) => ({ visible: true, walls: false, ...c })),
     units: units.map((u, k) => ({ id: u.id ?? 1000 + k, owner: u.owner ?? 0, type: idx("UnitType", u.type), x: u.x, y: u.y, hp: u.hp ?? 100, max_hp: 100, moves: 1, max_moves: 1, group: k })),
@@ -328,4 +329,81 @@ export function fromRows(data, rows) {
   const map = buildMap(data, rows);
   const view = buildView(data, { players: [{ civ: "CIVILIZATION_BANNOR" }] });
   return { map, view, focus: [rows[0].length / 2, rows.length / 2] };
+}
+
+/** The HD-2D look target (docs/HD2D.md, docs/art/hd2d-reference.png): an elven city on a bend of a
+ *  river in the Ljosalfar's forest, snowy peaks to the west, a golden town on the hills beyond,
+ *  the Sheaim's corrupted land to the north-east with its city, a mana node and a mage's tower, and
+ *  infernal hell land to the south-west and south-east; groups of Ljosalfar archers, warriors, a
+ *  hunter and an adept (selected), Sheaim mages, imps and wolves. Best framed with
+ *  `renderer=hd2d&ts=96` (the default focus). */
+export function hd2d(data) {
+  const rows = [
+    "^^^ffff,,nn,ffwfmmf.",
+    "^^hfff.f,nh,fff,mmwf",
+    "^shfffaf,.,.ff.f.mff",
+    "^hfffaaff.,ff-f.fwf.",
+    "hhffaaaa.,.ff--ffwff",
+    "hffaaaff.f.ff,ff.ff.",
+    "hfaaff...ff.fff.,fff",
+    "ffaff.f.fff.ff.f,.xx",
+    "fffff.fffff.f.f.fxxv",
+    "xxfff.f.ff,f.,ff.xpX",
+    "XxxXf.ff.f.f,.f.xxpX",
+    "XpXxx.f.ff.f,fxpXpXv",
+    "pPXxx.,f.ff..,.xXppX",
+    "pXXxxx.,,.f,f.xxXpXX",
+  ];
+  const h = rows.length;
+  // The river from the north edge, round the elven city's east and south sides, to the south-west.
+  const turns = [[11, 14], [11, 10], [10, 10], [10, 9], [9, 9], [9, 7], [6, 7], [6, 5], [4, 5], [4, 3], [3, 3], [3, 0]];
+  const corners = [turns[0]];
+  for (let k = 1; k < turns.length; k++) {
+    let [x, y] = corners[corners.length - 1];
+    const [tx, ty] = turns[k];
+    // Each turn runs along one axis: a corner a plot.
+    while (x !== tx || y !== ty) {
+      if (x !== tx) x += Math.sign(tx - x);
+      else y += Math.sign(ty - y);
+      corners.push([x, y]);
+    }
+  }
+  const elves = { id: 1, owner: 0, x: 8, y: 7, name: "Eärlann", capital: true, size: 9 };
+  const sheaim = { id: 2, owner: 1, x: 16, y: 10, name: "Sheaim", capital: true, size: 9 };
+  const golden = { id: 3, owner: 3, x: 9, y: 12, name: "Aurelis", capital: true, size: 7 };
+  const hell = { id: 4, owner: 2, x: 2, y: 2, name: "Pyre", capital: true, size: 6 };
+  const hell2 = { id: 5, owner: 2, x: 17, y: 1, name: "Cinder", capital: false, size: 3 };
+  const map = buildMap(data, rows, {
+    rivers: riverBits(corners),
+    routes: [[8, 7], [8, 6], [8, 5], [7, 5], [6, 5], [5, 5], [9, 5], [10, 5], [11, 5], [12, 6], [13, 7], [14, 8], [15, 9], [16, 10], [9, 8], [9, 9], [9, 10], [9, 11], [9, 12]],
+    improvements: [
+      [13, 8, "IMPROVEMENT_TOWER"], [14, 10, "IMPROVEMENT_MANA_ENTROPY"], [10, 4, "IMPROVEMENT_FARM"], [6, 9, "IMPROVEMENT_COTTAGE"], [4, 3, "IMPROVEMENT_MANA_FIRE"],
+      [7, 6, "IMPROVEMENT_COTTAGE"], [11, 5, "IMPROVEMENT_MINE"], [9, 9, "IMPROVEMENT_FARM"], [5, 7, "IMPROVEMENT_LUMBERMILL"], [17, 11, "IMPROVEMENT_RUINS"],
+    ],
+    bonuses: [
+      [10, 4, "BONUS_WHEAT"], [3, 7, "BONUS_GOLD"], [11, 6, "BONUS_GOLD"], [18, 8, "BONUS_GEMS"], [14, 10, "BONUS_MANA_ENTROPY"], [12, 3, "BONUS_MANA_WATER"],
+      [4, 3, "BONUS_MANA_FIRE"], [11, 5, "BONUS_GOLD"], [7, 4, "BONUS_DEER"], [16, 12, "BONUS_GEMS"], [9, 9, "BONUS_WHEAT"], [13, 10, "BONUS_FISH"],
+    ],
+    owners: [[1, 3, 12, 10, 0], [13, 6, 19, 13, 1], [5, 11, 12, 13, 3], [0, 0, 6, 3, 2], [13, 0, 19, 5, 2]],
+    cities: [elves, sheaim, golden, hell, hell2],
+  });
+  const view = buildView(data, {
+    players: [{ civ: "CIVILIZATION_LJOSALFAR" }, { civ: "CIVILIZATION_SHEAIM" }, { civ: "CIVILIZATION_INFERNAL" }, { civ: "CIVILIZATION_BANNOR" }, { civ: "CIVILIZATION_BARBARIAN", barbarian: true }],
+    cities: [elves, sheaim, golden, hell, hell2],
+    units: [
+      { owner: 0, type: "UNIT_ARCHER", x: 6, y: 8 },
+      { owner: 0, type: "UNIT_WARRIOR", x: 10, y: 7 },
+      { owner: 0, type: "UNIT_ADEPT", x: 11, y: 8 },
+      { owner: 0, type: "UNIT_HUNTER", x: 5, y: 5 },
+      { owner: 0, type: "UNIT_ARCHER", x: 8, y: 7 },
+      { owner: 0, type: "UNIT_WARRIOR", x: 12, y: 5 },
+      { owner: 1, type: "UNIT_MAGE", x: 15, y: 9 },
+      { owner: 1, type: "UNIT_WARRIOR", x: 14, y: 11 },
+      { owner: 2, type: "UNIT_IMP", x: 4, y: 2 },
+      { owner: 2, type: "UNIT_HELLHOUND", x: 16, y: 4 },
+      { owner: 4, type: "UNIT_WOLF", x: 3, y: 9 },
+      { owner: 3, type: "UNIT_WARRIOR", x: 10, y: 11 },
+    ],
+  });
+  return { map, view, focus: [9.5, 6.4] };
 }

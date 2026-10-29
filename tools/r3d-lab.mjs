@@ -14,6 +14,12 @@
 //     configuration, the mean difference (0-255) at the best shift and the share of pixels off by
 //     more than 24 -- shimmer from screen-space effects shows as a configuration scoring worse
 //     than the plain render.
+//   node tools/r3d-lab.mjs --capture OUT.mp4 [--query "scene=hd2d&renderer=hd2d"] [--frames 300]
+//        [--fps 30]
+//     a short film of the camera at work (for judging motion: shimmer, the tilt-shift's band):
+//     a pan east, a zoom in, a pan north while the pointer wanders (the HD-2D tilt-shift follows
+//     it), a zoom out to the far view and back -- each frame rendered at its own time (wind and
+//     water move), saved, and encoded with ffmpeg (on the PATH).
 //
 // Software rendering (SwiftShader, the default: no GPU needed) is slow: a 1280x800 frame takes
 // tens of seconds. --gpu draws with the machine's GPU instead (Chromium's full headless mode); the
@@ -25,7 +31,7 @@ import path from "node:path";
 import { createRequire } from "node:module";
 import { ROOT, parseArgs, chromiumLaunch, webglRenderer } from "./web-lib.mjs";
 
-const args = parseArgs(process.argv.slice(2), { gpu: "flag", out: "v", query: "v", w: "v", h: "v", shots: "v", serve: "flag", port: "v", timeout: "v", time: "v", stability: "flag", shift: "v", configs: "v" });
+const args = parseArgs(process.argv.slice(2), { gpu: "flag", out: "v", query: "v", w: "v", h: "v", shots: "v", serve: "flag", port: "v", timeout: "v", time: "v", stability: "flag", shift: "v", configs: "v", capture: "v", frames: "v", fps: "v" });
 const APP = path.join(ROOT, "crates", "ffh-play", "assets", "app");
 const LAB = path.join(ROOT, "crates", "ffh-play", "r3d-lab");
 const TYPES = { ".js": "text/javascript", ".mjs": "text/javascript", ".html": "text/html", ".json": "application/json", ".png": "image/png", ".css": "text/css" };
@@ -63,6 +69,12 @@ if (args.serve) {
     console.log(`WebGL renderer: ${await webglRenderer(p)}`);
     await p.close();
   }
+  if (args.capture) {
+    await capture(browser);
+    await browser.close();
+    server.close();
+    process.exit(0);
+  }
   if (args.stability) {
     await stability(browser);
     await browser.close();
@@ -95,11 +107,14 @@ if (args.serve) {
         r3d.autoLevel = 0;
         const px = new Uint8Array(4);
         const t0 = performance.now();
-        for (let k = 0; k < 2; k++) {
+        // The terrain chunks are built a few a frame: the HD-2D mode's low camera sees many more of
+        // them than the 3D one's, so it renders until they are all in.
+        const frames = r3d.mode === "hd2d" ? 10 : 2;
+        for (let k = 0; k < frames; k++) {
           r3d.render(time);
           r3d.gl.readPixels(0, 0, 1, 1, r3d.gl.RGBA, r3d.gl.UNSIGNED_BYTE, px);
         }
-        return performance.now() - t0;
+        return (performance.now() - t0) * (2 / frames);
       }, t);
       await page.screenshot({ path: s.out, timeout: 300000 });
       console.log(`${s.out}: ${(ms / 2).toFixed(0)} ms/frame`);
@@ -113,6 +128,54 @@ if (args.serve) {
   await browser.close();
   server.close();
   process.exit(failed ? 1 : 0);
+}
+
+async function capture(browser) {
+  const { execFileSync } = await import("node:child_process");
+  const os = await import("node:os");
+  const W = Number(args.w ?? 1280), H = Number(args.h ?? 720);
+  const frames = Number(args.frames ?? 300), fps = Number(args.fps ?? 30);
+  const q = args.query ?? "scene=hd2d&renderer=hd2d";
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "r3d-capture-"));
+  const page = await browser.newPage({ viewport: { width: W, height: H } });
+  await page.goto(`${base}/lab/lab.html?${q}&force3d=1`);
+  await page.waitForFunction(() => window.lab?.ready || window.lab?.error, null, { timeout: Number(args.timeout ?? 120000) });
+  await page.evaluate(() => {
+    const r = window.lab.r3d;
+    r.running = false;
+    cancelAnimationFrame(r.raf);
+    r.cfg.autoQuality = 0;
+    r.autoLevel = 0;
+    r.cfg.animate = true;
+    window.lab.start = { ...window.lab.view.cam };
+  });
+  for (let f = 0; f < frames; f++) {
+    await page.evaluate(([f, n, fps]) => {
+      const { r3d: r, view: v, start: s } = window.lab;
+      const ease = (t) => t * t * (3 - 2 * t);
+      const seg = (a, b) => ease(Math.min(1, Math.max(0, (f / n - a) / (b - a))));
+      // The path: pan east 3 plots, zoom 96 -> 168, pan north 2.5 plots, zoom out to 40, back to 96.
+      const cx = s.cx + 3 * seg(0, 0.25);
+      const cy = s.cy + 2.5 * seg(0.42, 0.62);
+      const z = seg(0.25, 0.4), out = seg(0.64, 0.8), back = seg(0.84, 1);
+      const ts = (z < 1 ? 96 + 72 * z : out < 1 ? 168 - 128 * out : 40 + 56 * back);
+      v.cam = { ...v.cam, cx, cy, ts };
+      r.ts = ts;
+      // The pointer wanders over the land: the tilt-shift's band follows it.
+      const hx = Math.floor(cx + 2.5 * Math.sin(f * 0.031)), hy = Math.floor(cy + 1.5 * Math.cos(f * 0.023));
+      v.overlay.hover = { x: hx, y: hy };
+      r.focusClock = (f * 1000) / fps;
+      r.overlaySeen = "";
+      const px = new Uint8Array(4);
+      // The far zoom brings new terrain chunks (built a few a frame): a few frames to fill in.
+      for (let k = 0; k < 3; k++) r.render(f / fps);
+      r.gl.readPixels(0, 0, 1, 1, r.gl.RGBA, r.gl.UNSIGNED_BYTE, px);
+    }, [f, frames, fps]);
+    await page.screenshot({ path: path.join(dir, `f${String(f).padStart(4, "0")}.png`) });
+  }
+  await page.close();
+  execFileSync("ffmpeg", ["-loglevel", "error", "-y", "-framerate", String(fps), "-i", path.join(dir, "f%04d.png"), "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "18", args.capture]);
+  console.log(`${args.capture}: ${frames} frames at ${fps} fps (frames kept in ${dir})`);
 }
 
 async function stability(browser) {

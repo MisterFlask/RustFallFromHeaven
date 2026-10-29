@@ -51,8 +51,10 @@ function force3d() {
 
 export class Map3D {
   constructor(view) {
+    /** "3d", or the mode built on this renderer that draws (the HD-2D mode sets "hd2d"). */
+    this.mode = "3d";
     this.view = view;
-    this.cfg = loadConfig();
+    this.cfg = this.loadCfg();
     this.canvas = document.createElement("canvas");
     this.canvas.className = "map3d";
     Object.assign(this.canvas.style, { position: "absolute", inset: "0", width: "100%", height: "100%", display: "block", pointerEvents: "none" });
@@ -102,6 +104,9 @@ export class Map3D {
     // A lost context (driver reset, too many contexts) drops back to the 2D renderer: main.js
     // listens for "ffh:r3d-lost" (the stored choice stays 3D, so a reload tries again).
     this.canvas.addEventListener("webglcontextlost", (ev) => {
+      // A disposed renderer loses its context on purpose (dispose): when the other mode of this
+      // renderer replaces it, that must not take the new one down.
+      if (!this.running) return;
       ev.preventDefault();
       console.warn("r3d: WebGL context lost");
       this.lost = true;
@@ -129,6 +134,89 @@ export class Map3D {
     return ZOOMS;
   }
 
+  // --- what a mode built on this renderer changes (the HD-2D mode, hd2d/index.js) -------------
+
+  /** The saved look (config.js). */
+  loadCfg() {
+    return loadConfig();
+  }
+
+  saveCfg(cfg) {
+    saveConfig(cfg);
+  }
+
+  /** The light of the frame (config.js LIGHTING). */
+  light() {
+    return LIGHTING[this.cfg.lighting] ?? LIGHTING.daylight;
+  }
+
+  /** The presets the panel offers, and the config with one applied. */
+  presetNames() {
+    return ["painterly", "plain"];
+  }
+
+  withPreset(name) {
+    return withPreset(this.cfg, name);
+  }
+
+  panelRows() {
+    return PANEL;
+  }
+
+  panelLabel() {
+    return "3D";
+  }
+
+  /** Whether the panel offers config.js's lights (the HD-2D mode has one of its own). */
+  offersLight() {
+    return true;
+  }
+
+  /** What the static dressing reads from the view (dress.js staticEnv). */
+  dressEnv(world) {
+    return staticEnv(world);
+  }
+
+  /** More of the static scene, after the dressing: particle emitters to add to `emitters`. */
+  staticExtras(map, env, emitters) {}
+
+  /** The unit stacks' figures (dress.js dressUnits): `{list, stacks}`. */
+  dressUnitsOf(world, map) {
+    return dressUnits(world, map);
+  }
+
+  /** The units' instances as they stand at this moment (walking ones partway). */
+  setUnits(list) {
+    this.scene.setInstances("units", list);
+  }
+
+  /** Called before each frame renders, with its camera and frame state. */
+  beforeFrame(cam, fr) {}
+
+  /** The camera's pitch (degrees from the horizon) at zoom `zt` (0 the farthest step, 1 the
+   *  closest). */
+  pitchAt(zt) {
+    return this.cfg.pitch + 12 - zt * 24;
+  }
+
+  /** The team ring under stack `s` (scene.js setMarkers), or null for none. */
+  ringOf(s) {
+    return {
+      x: this.nearXMap(s.x + 0.5 + s.spot[0]),
+      y: s.y + 0.5 - s.spot[1],
+      r: 0.17,
+      color: s.picked ? "#fff2a8" : s.team,
+      rim: s.picked ? "#3a2a08" : "#140e0a",
+      width: s.picked ? 0.05 : 0.04,
+      fill: s.picked ? 0.18 : 0.1,
+    };
+  }
+
+  /** Whether the HUD marks each resource with a chip (hud.js). */
+  resourceChips() {
+    return true;
+  }
+
   // --- camera -----------------------------------------------------------------------------------
 
   /** The camera for the current view: eye, matrices, pitch, the plot rect seen. */
@@ -137,7 +225,7 @@ export class Map3D {
     const vw = Math.max(1, v.vw), vh = Math.max(1, v.vh);
     const zt = clamp(Math.log(ts / ZOOMS[0]) / Math.log(ZOOMS[ZOOMS.length - 1] / ZOOMS[0]), 0, 1);
     // Looking down on the map when far, more over the shoulder when close.
-    const pitch = ((this.cfg.pitch + 12 - zt * 24) * Math.PI) / 180;
+    const pitch = (this.pitchAt(zt) * Math.PI) / 180;
     const fov = (this.cfg.fov * Math.PI) / 180;
     const dist = vh / (2 * ts * Math.tan(fov / 2));
     const target = [v.cam.cx, 0.08, -v.cam.cy];
@@ -276,7 +364,7 @@ export class Map3D {
       // plot and its neighbours (glades where units stand, a city's wood opening in front of it),
       // and the ground's height on the plots around (two plots after a map change). A unit's
       // move then rebuilds a few instance buckets instead of the whole map's.
-      const env = staticEnv(this.world);
+      const env = this.dressEnv(this.world);
       const n = map.w * map.h;
       const cityKey = new Map();
       for (const [i, c] of env.cityAt) cityKey.set(i, `${c.id}|${c.owner}|${c.size}|${c.walls}|${c.capital}|${c.name}`);
@@ -317,6 +405,7 @@ export class Map3D {
         count += d.list.length;
       }
       this.cities = cities;
+      this.staticExtras(map, env, emitters);
       this.emitters = emitters;
       this.scene.setParticles(emitters);
       const T4 = performance.now();
@@ -339,11 +428,11 @@ export class Map3D {
     const selKey = JSON.stringify(S.sel?.units ?? []) + JSON.stringify(this.view.overlay.units ?? []);
     if (selKey !== this.selSeen || viewChanged || mapChanged) {
       const T5 = performance.now();
-      const u = dressUnits(this.world, map);
+      const u = this.dressUnitsOf(this.world, map);
       this.stacks = u.stacks;
       this.startTweens(u.list);
       this.unitList = u.list;
-      this.scene.setInstances("units", this.tweened(performance.now()));
+      this.setUnits(this.tweened(performance.now()));
       this.syncMs.units = performance.now() - T5;
       this.unitCount = u.list.length;
       this.selSeen = selKey;
@@ -359,15 +448,7 @@ export class Map3D {
       const targets = Array.isArray(o.targets) ? o.targets : [];
       const nodes = o.path?.ok ? o.path.nodes ?? [] : [];
       this.scene.setMarks(targets, nodes.map((n) => [n.x, n.y]));
-      const rings = (this.stacks ?? []).map((s) => ({
-        x: this.nearXMap(s.x + 0.5 + s.spot[0]),
-        y: s.y + 0.5 - s.spot[1],
-        r: 0.17,
-        color: s.picked ? "#fff2a8" : s.team,
-        rim: s.picked ? "#3a2a08" : "#140e0a",
-        width: s.picked ? 0.05 : 0.04,
-        fill: s.picked ? 0.18 : 0.1,
-      }));
+      const rings = (this.stacks ?? []).map((s) => this.ringOf(s)).filter(Boolean);
       let path = null;
       if (nodes.length > 1) path = nodes.map((n) => [n.x + 0.5, n.y + 0.5]);
       const danger = o.path?.attack ? "#ff5a40" : o.path?.declare_war_team != null ? "#ffa040" : "#ffe9a0";
@@ -475,7 +556,7 @@ export class Map3D {
     } else this.ts = target;
     const animate = this.cfg.animate && !this.view.reduceMotion();
     if (this.tweens?.size) {
-      this.scene.setInstances("units", this.tweened(performance.now()));
+      this.setUnits(this.tweened(performance.now()));
       this.dirty = true;
     }
     if (!this.dirty && !animate) return;
@@ -494,7 +575,7 @@ export class Map3D {
   /** The frame's uniforms and light, for camera `cam`. */
   frameState(cam, time) {
     const cfg = this.cfg;
-    const L = LIGHTING[cfg.lighting] ?? LIGHTING.daylight;
+    const L = this.light();
     const sunDir = vnorm(L.sunDir);
     const sun = L.sun[0].map((c) => c * L.sun[1]);
     const sky = L.sky[0].map((c) => c * L.sky[1]);
@@ -612,6 +693,7 @@ export class Map3D {
       for (let k = Math.floor((rect.x0 - 2) / map.w); k <= Math.floor((rect.x1 + 2) / map.w); k++) copies.push(k * map.w);
     } else copies.push(0);
     this.scene.setView(rect, copies, this.ts < 48, this.ts, cam.viewProj);
+    this.beforeFrame(cam, fr);
     this.pipeline.measure = !!this.measuring;
     this.pipeline.render(fr, this.scene, qc, cw, ch);
     this.cam = cam;
@@ -666,7 +748,7 @@ export class Map3D {
 
   addPanelButton() {
     const b = document.createElement("button");
-    b.textContent = "3D";
+    b.textContent = this.panelLabel();
     b.title = "The 3D renderer's look: presets and every stage of the painterly pipeline";
     b.className = "r3d-btn";
     Object.assign(b.style, { position: "absolute", left: "10px", top: "10px", zIndex: 5, padding: "2px 8px" });
@@ -691,12 +773,12 @@ export class Map3D {
       p.append(r);
     };
     const presets = document.createElement("div");
-    for (const name of ["painterly", "plain"]) {
+    for (const name of this.presetNames()) {
       const b = document.createElement("button");
       b.textContent = name;
       b.style.marginRight = "4px";
       b.addEventListener("click", () => {
-        this.setConfig(withPreset(this.cfg, name));
+        this.setConfig(this.withPreset(name));
         this.togglePanel();
         this.togglePanel();
       });
@@ -706,8 +788,8 @@ export class Map3D {
     const light = document.createElement("select");
     for (const k of Object.keys(LIGHTING)) light.append(new Option(k, k, false, this.cfg.lighting === k));
     light.addEventListener("change", () => this.setConfig({ ...this.cfg, lighting: light.value }));
-    row("Light", light);
-    for (const [key, label, kind, min, max, step] of PANEL) {
+    if (this.offersLight()) row("Light", light);
+    for (const [key, label, kind, min, max, step] of this.panelRows()) {
       const el = document.createElement("input");
       if (kind === "bool") {
         el.type = "checkbox";
@@ -737,7 +819,7 @@ export class Map3D {
   setConfig(cfg) {
     const relight = cfg.lighting !== this.cfg.lighting;
     this.cfg = cfg;
-    saveConfig(cfg);
+    this.saveCfg(cfg);
     if (relight) this.viewSeen = null;
     this.overlaySeen = "";
     this.dirty = true;
