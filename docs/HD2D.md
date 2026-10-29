@@ -257,8 +257,9 @@ does for the isometric sprites. No unit art changed.
 * **Glowing borders**: the overlay's border becomes a hot core in the owner's colour, meandering a
   little inside the owner's side (so the plot grid does not show in it; where two realms meet each
   draws its own colour), its light spilling softly over that side; **no grid**.
-* **Mended pixels**: the HD-2D compose gives a non-finite pixel its neighbours' mean (the 3D
-  renderer's water writes some on a real GPU, §13).
+* **Mended pixels**: the HD-2D compose gives a non-finite pixel its neighbours' mean, as a guard
+  (the 3D renderer's terrain wrote some on a real GPU and its water spread them, until fixed:
+  docs/R3D.md §5.2).
 * **Tilt-shift** (as the frame goes to the canvas): sharp in a band across the view at the hovered
   plot (else the selection, else the middle; eased, so the band glides), blurring toward a half-
   and then a quarter-resolution copy above and below it — a little more at the top (far) — but
@@ -438,10 +439,6 @@ its defaults and do no harm.
 * **Windows' default browser backend** cannot compile the 3D renderer's terrain shader (§8): the
   first fix the mode needs is the 3D renderer's, a terrain shader FXC can compile (fewer unrolled
   loops), or the client detecting it and saying so.
-* **NaN in the 3D renderer's water**: on a real GPU its water shader writes non-finite pixels along
-  contour-like lines in lakes and on the shelf (black dashes in the 3D renderer too; found by
-  marking non-finite pixels in the compose). The mode mends them in its compose (each takes its
-  neighbours' mean); the cause in `WATER_FS` is still to be found.
 * **Picking** is the 3D renderer's (the ground under the pointer): clicking a tall figure's head
   can pick the plot behind it; the cards' boxes could be picked first, as the isometric map does.
 * **The overlay stage** costs about 3 ms at 1080p against 0.3 in the 3D renderer (§8); not yet

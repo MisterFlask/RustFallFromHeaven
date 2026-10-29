@@ -348,6 +348,20 @@ under and around it:
 * Seeing into the water and the mirror read the grabbed view depth, which only a float target holds:
   without float colour buffers the water is drawn opaque, mirroring only the painted sky (no
   reflected banks or ships).
+* **No NaN under the water.** On a real GPU (an NVIDIA laptop, ANGLE on Vulkan) lakes and the
+  shelf showed dashed black lines along contour-like curves: non-finite pixels in the HDR colour
+  target (about 2,500 in the lab's `scene=hd2d&ts=168&cx=13.8&cy=9.6`). The terrain wrote them, not
+  the water. `TERRAIN_FS` took its bumps' derivatives (of the world position, and of the crags' and
+  the materials' heights) inside branches and after the deep floor's early return. In a 2x2 quad
+  some of whose pixels had left, the GPU gave zero derivatives, so the bump normalised a zero
+  vector. The NaN normal lit a NaN colour along the branches' edges (the deep floor's contour at
+  -0.3, the rock mask's), and the water spread it: it sees that floor through itself
+  (`floorCol * T`, NaN even with refraction off), and its mirror and foam collar read the grab
+  around the pixel. SwiftShader runs a quad in step and never showed them. Now every derivative
+  the bumps use is taken where the whole quad runs (at the top of `main` or outside the branches);
+  a pixel whose quad the deep floor's return splits goes unbumped (a line of pixels under 0.3 of
+  water). The frame is otherwise unchanged. The HD-2D compose still mends any non-finite pixel, as a
+  guard (docs/HD2D.md §6).
 
 ## 6. Asset recipes
 
