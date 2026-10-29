@@ -199,7 +199,7 @@ export class SpriteLayer {
         if (!e) continue;
         [layer, u, v] = [e.layer, e.u, e.v];
       }
-      const flags = (r.flip ? 1 : 0) | (r.banner ? 2 : 0) | (r.shadow ? 4 : 0) | (r.fade ? 8 : 0);
+      const flags = (r.flip ? 1 : 0) | (r.banner ? 2 : 0) | (r.shadow ? 4 : 0) | (r.fade ? 8 : 0) | (r.town ? 16 : 0);
       const team = r.team ?? [1, 1, 1];
       const vis = r.vis ? [r.vis[0], r.vis[1], 1] : [0, 0, 0];
       arr.set([r.x, r.y, r.z, layer, r.w, r.h, r.phase ?? 0, flags, u, v, r.id ?? 0, r.glow ?? 0, team[0], team[1], team[2], r.bias ?? 0, r.anchor ?? 0.5, ...vis], n * FLOATS);

@@ -776,6 +776,8 @@ function setRenderer(r) {
  *  else the 2D art's (or the plain one). Redraws what the two draw differently. */
 function syncSkin() {
   const on = !!mapView.iso || mapView.r3d?.mode === "hd2d";
+  // The HD-2D map wears a variant of it (iso.css html.hd2d: glass panels, smaller on a desktop).
+  document.documentElement.classList.toggle("hd2d", mapView.r3d?.mode === "hd2d");
   // A city screen opened in one interface is not the other's (over the map or with its grid).
   if (on !== isoSkin() && openTags().includes("city")) closeTag("city");
   if (!setIsoSkin(on, mapView)) return;

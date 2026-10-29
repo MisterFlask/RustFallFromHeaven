@@ -17,10 +17,11 @@ import { stackState } from "../../stacks.js";
 import { isBarbarian } from "../../state.js";
 import { unitSpriteKeys, civShortName, ISO_TABLES } from "../../iso.js";
 import { hashf, hash32, rng } from "../noise.js";
-import { SEA, DRAFT, FEAT, KIND, GROUND, RIVER_BANK, RIVER_HALF } from "../world.js";
+import { SEA, DRAFT, FEAT, KIND, GROUND, RIVER_BANK, RIVER_HALF, RIVER_WANDER } from "../world.js";
 import { CARDS } from "./art/index.js";
 import { standHeight, hexRgb } from "../dress.js";
 import { MANA } from "../assets/palette.js";
+import { clamp } from "../math.js";
 
 /** World units per art pixel: figures (a 96 x 120 unit canvas is 0.46 x 0.58 of a plot), cities (a
  *  192-wide settlement 1.15 plots: its painted ground spans the plot), the other buildings, the
@@ -217,12 +218,36 @@ function clutterOf(kind, ground, mood) {
   }
   if (kind === KIND.HILLS) out.push(["rock", 1.2, 1.0], ["pebbles", 1.5, FINE]);
   if (kind === KIND.PEAK) out.push(["rock", 2.2, 1.2], ["pebbles", 2.0, FINE]);
-  if (mood && mood[1] >= 0.5 && !HELLISH.has(ground)) out.push(["crystal", 1.0, 0.9]);
+  // Each region's own things (the moods, hd2d/mood.js: [hell, corruption, lush, gloom]).
+  if (HELLISH.has(ground)) out.push(["bones", 0.4, FINE], ["vent", 0.35, FINE]);
+  if (mood && mood[1] >= 0.5 && !HELLISH.has(ground)) out.push(["crystal", 1.0, 0.9], ["obelisk", 0.14, FINE], ["altar", 0.06, FINE]);
+  if (mood && mood[2] >= 0.5) out.push(["lantern", 0.14, FINE]);
+  if (!HELLISH.has(ground) && ground !== GROUND.SNOW) out.push(["ruin", 0.025, FINE]);
   return out;
 }
 
+/** Props that carry a light of their own (hut windows, runes, lamps, embers): their bright,
+ *  saturated pixels feed the bloom. */
+const GLOWS = { crystal: 1.3, lava_rock: 1.3, obelisk: 1.4, altar: 1.2, vent: 1.4, lantern: 1.4, hut: 0.6 };
+
+/** A town spills over its walls, as the look target's do: on the open plots round it, huts,
+ *  gardens, a well, fences and haystacks -- more on the ring next to it than on the one beyond.
+ *  Returns how far the nearest city is (1 or 2 plots), or 0. */
+function townRing(map, world, x, y) {
+  let best = 0;
+  for (let dy = -2; dy <= 2; dy++) {
+    for (let dx = -2; dx <= 2; dx++) {
+      const j = world.index(x + dx, y + dy);
+      if (j < 0 || map.city[j] < 0) continue;
+      const d = Math.max(Math.abs(dx), Math.abs(dy));
+      if (d > 0 && (!best || d < best)) best = d;
+    }
+  }
+  return best;
+}
+
 /** Props too low to cast a shadow worth the shadow map's while. */
-const FLAT = new Set(["flowers", "grass", "grass_3", "pebbles"]);
+const FLAT = new Set(["flowers", "grass", "grass_3", "pebbles", "garden", "bones"]);
 
 /** Farmland's own clutter, near a town or on a farm, pasture or cottage plot: fences and haystacks. */
 const FARMED = /FARM|PASTURE|COTTAGE|HAMLET|VILLAGE|PLANTATION|WINERY/;
@@ -271,7 +296,7 @@ function dressProps(world, map, atlas, env, moods, list) {
       const key = vs[r.int(0, vs.length - 1)];
       const art = atlas.info(key);
       const mx = x + 0.5 + lx, my = y + 0.5 - lz;
-      const glow = kindKey === "crystal" || kindKey === "lava_rock" ? 1.3 : 0;
+      const glow = GLOWS[kindKey] ?? (kindKey.startsWith("hut") ? GLOWS.hut : 0);
       list.push(card(key, art, PX.prop * scale, mx, H(mx, my) - 0.01, -my, { shadow: !FLAT.has(kindKey), flip: r() < 0.5, glow, id: 0.0002, vis: [x + 0.5, y + 0.5] }));
     };
     if (WOODED.has(feat)) {
@@ -308,25 +333,23 @@ function dressProps(world, map, atlas, env, moods, list) {
         let count = Math.floor(n) + (r() < n - Math.floor(n) ? 1 : 0);
         while (count-- > 0) put(k, ...at(), s * r.range(0.8, 1.15));
       }
-      // Farmland: fences along a side of the plot and a haystack or two.
+      // Farmland and a town's outskirts: fences along a side of the plot, a haystack or two,
+      // and next to the town its houses and gardens.
       const imp = map.improvement[i] >= 0 ? tname("ImprovementType", map.improvement[i]) : "";
-      if (FARMED.test(imp) || (nearCity(map, world, x, y) && r() < 0.45)) {
+      const ring = HELLISH.has(world.ground[i]) ? 0 : townRing(map, world, x, y);
+      if (FARMED.test(imp) || (ring && r() < 0.6)) {
         if (r() < 0.75) put("fence", r.range(-0.2, 0.2), r() < 0.5 ? 0.42 : -0.4, FINE);
         if (r() < 0.55) put("hay", r.range(-0.35, 0.35), r.range(-0.1, 0.38), FINE * r.range(0.85, 1.05));
       }
+      if (ring && !imp) {
+        const huts = ring === 1 ? (r() < 0.75 ? 2 : 1) : r() < 0.45 ? 1 : 0;
+        // Two houses keep to either half of the plot, so they never stand in each other.
+        for (let k = 0; k < huts; k++) put(r() < 0.25 ? "hut_stone" : "hut", huts === 1 ? r.range(-0.3, 0.3) : k ? r.range(0.08, 0.32) : r.range(-0.32, -0.08), r.range(-0.3, 0.3), FINE * r.range(0.9, 1.05));
+        if (r() < (ring === 1 ? 0.5 : 0.25)) put("garden", r.range(-0.25, 0.25), r.range(-0.3, 0.35), FINE);
+        if (ring === 1 && r() < 0.12) put("well", r.range(-0.3, 0.3), r.range(-0.2, 0.3), FINE);
+      }
     }
   }
-}
-
-/** Whether a city stands within two plots of (x, y). */
-function nearCity(map, world, x, y) {
-  for (let dy = -2; dy <= 2; dy++) {
-    for (let dx = -2; dx <= 2; dx++) {
-      const j = world.index(x + dx, y + dy);
-      if (j >= 0 && map.city[j] >= 0) return true;
-    }
-  }
-  return false;
 }
 
 /** The look target's land ends at its water in a rim of dark, wet stones: rows of them along the
@@ -369,7 +392,10 @@ function dressShores(world, map, atlas, list) {
         if (coast) {
           const h = world.heightAt(mx, my);
           if (h > -0.004 && h < 0.02 && r() < 0.8) {
-            place(r() < 0.8 ? "shore" : "pebbles", mx, my, Math.max(SEA, h) - 0.004, FINE * r.range(0.8, 1.05), r);
+            // Mostly rows of shore stones; now and then a boulder of the bank, its rocky edge.
+            const k = r();
+            if (k < 0.12) place("rock", mx, my, Math.max(SEA, h) - 0.006, r.range(0.38, 0.5), r);
+            else place(k < 0.85 ? "shore" : "pebbles", mx, my, Math.max(SEA, h) - 0.004, FINE * r.range(0.8, 1.05), r);
             continue;
           }
         }
@@ -385,6 +411,43 @@ function dressShores(world, map, atlas, list) {
   }
 }
 
+/** Waterfalls: where a river's surface (as scene.js riverLevel lays it) drops steeply toward the
+ *  camera -- over a raised bank into the sea (world.js `bank`), or off the hills -- a card of white
+ *  water stands across it, its foot on the lower water. A river running across the view keeps its
+ *  slope unmarked (a card would face the wrong way). One a stretch of 0.7 plot at most. */
+function dressFalls(world, list, atlas) {
+  const vs = variants("falls");
+  if (!vs.length || !world.rivers?.length) return;
+  const level = (mx, my) => Math.max(SEA + 0.004, world.heightAt(mx, my) + 0.045);
+  const placed = [];
+  world.rivers.forEach((line, li) => {
+    const r = rng(li * 7907 + 13);
+    // Each point against the one about 0.2 plot on (the lines are subdivided every 0.1 plot).
+    for (let i = 0; i + 2 < line.length; i++) {
+      let [px, py] = line[i], [qx, qy] = line[i + 2];
+      let hi = level(px, py), lo = level(qx, qy);
+      // The falls face the camera: the water drops toward the south (smaller y), down the view.
+      if (lo > hi) [px, py, qx, qy, hi, lo] = [qx, qy, px, py, lo, hi];
+      const len = Math.hypot(qx - px, qy - py);
+      // On land: at a river's mouth its ribbon widens flat into the sea, and a wall of white water
+      // there would stand over nothing.
+      if (len < 1e-6 || (py - qy) / len < 0.55 || hi - lo < 0.022 || lo < SEA + 0.012) continue;
+      if (placed.some(([x, y]) => Math.hypot(x - px, y - py) < 0.7)) continue;
+      const j = world.index(Math.floor(qx), Math.floor(qy));
+      if (j < 0 || world.kind[j] === KIND.VOID) continue;
+      placed.push([px, py]);
+      const key = vs[r.int(0, vs.length - 1)];
+      const art = atlas.info(key);
+      // As wide as the river's water (2 RIVER_HALF, its edge wandering RIVER_WANDER), about as tall
+      // as the slope it covers looks from the camera.
+      const c = card(key, art, 1, qx, lo - 0.01, -qy, { id: 0.0002, bias: 0.04, vis: [qx, qy] });
+      c.w = 2 * (RIVER_HALF + RIVER_WANDER);
+      c.h = clamp(0.05 + (hi - lo) * 2.2, 0.08, 0.2);
+      list.push(c);
+    }
+  });
+}
+
 /** The static cards (cities, standing improvements, resources and their banners, the land's prop
  *  cards) and the light beams over mana nodes and towers; `claims` names what the 3D dressing no
  *  longer models (with prop cards: its trees, plants and rocks). */
@@ -395,6 +458,7 @@ export function dressSpriteStatic(world, map, atlas, env = null, moods = null) {
   if (env && Object.keys(CARDS).length) {
     dressProps(world, map, atlas, env, moods, list);
     dressShores(world, map, atlas, list);
+    dressFalls(world, list, atlas);
     claims.trees = claims.flora = claims.rocks = true;
   }
   const w = world.w;
@@ -412,7 +476,8 @@ export function dressSpriteStatic(world, map, atlas, env = null, moods = null) {
         // The card's foot on the plot's front edge: its painted ground then lies over the plot.
         const art = atlas.info(key);
         const [mx, my] = at(0, 0.5);
-        list.push(card(key, art, PX.city, mx, H(x + 0.5, y + 0.5), -my, { id: idOf(`c${city.id}`), bias: BIAS.building, vis: [x + 0.5, y + 0.5] }));
+        // A town: graded lighter than the land (it keeps its colours), its windows and fires lit.
+        list.push(card(key, art, PX.city, mx, H(x + 0.5, y + 0.5), -my, { id: idOf(`c${city.id}`), bias: BIAS.building, vis: [x + 0.5, y + 0.5], town: true, glow: 1.1 }));
         const css = teamCss(city.owner);
         const bk = bannerKey(atlas, css);
         const [bx, by] = at(-0.44, 0.38);

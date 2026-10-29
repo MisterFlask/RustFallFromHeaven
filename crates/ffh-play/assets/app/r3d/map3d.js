@@ -168,6 +168,11 @@ export class Map3D {
     return loadConfig();
   }
 
+  /** The world's options (world.js World): none for the 3D renderer; a mode may raise banks. */
+  worldOpts() {
+    return {};
+  }
+
   saveCfg(cfg) {
     saveConfig(cfg);
   }
@@ -368,7 +373,7 @@ export class Map3D {
       mapDirty = dirty;
       if (!prev || !dirty || dirty.length) {
         const before = this.world;
-        this.world = new World(map);
+        this.world = new World(map, this.worldOpts());
         // A lake is decided by its whole body (it touches no unrevealed plot): revealing one plot
         // can change the floor of water several plots away.
         if (dirty && before?.lake) for (let i = 0; i < map.w * map.h; i++) if (before.lake[i] !== this.world.lake[i]) dirty.push(i);

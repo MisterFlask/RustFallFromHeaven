@@ -78,6 +78,15 @@ corrupted clutter: `tools/hd2d/gen.py`) waits on API credit; nothing was generat
 The shots below are the second batch's, on the owner's GPU; [hd2d/batch3.jpg](hd2d/batch3.jpg) is
 the third's (software renders: the lab before and after, and the real game).
 
+**The fourth batch** closed the gaps the third left (§10), still without the image model (the API
+account had no credit): designed props drawn by code -- huts, a well, ruins, gardens, the corrupted
+land's obelisks and altars, hell's bones and vents, elven lanterns -- with towns spilling over their
+walls into houses and gardens (§5b); towns graded about half as the land is, their windows and fires
+lit (§5, §6); a raised bank where the land meets its water and waterfalls where a river drops toward
+the camera (§5b); the floating interface as dark glass, smaller on a desktop (§9); and the shade
+pulled back toward the target's (§6). [hd2d/batch4.jpg](hd2d/batch4.jpg) shows it (software
+renders).
+
 | | |
 |---|---|
 | the look target and the lab's composition after it, side by side | [hd2d/lab-vs-reference.jpg](hd2d/lab-vs-reference.jpg) |
@@ -189,8 +198,9 @@ lab and tools. The camera is the 3D one with the HD-2D preset's pitch and lens (
   cottages, forts, towers, mines, mills, camps, lairs, ruins, mana nodes, boats) is a card likewise,
   smaller than a city, its painted ground thinned out over its foot by a dither fixed to the art's
   texels (it melts into the 3D land instead of ending in the isometric diamond's edge); flat ones
-  (farms, pastures, plantations, wineries, quarries) stay the 3D renderer's fields. A resource is
-  its family's prop at the plot's front-left. Mana and gems glow (their bright, saturated pixels
+  (farms, pastures, plantations, wineries, quarries) stay the 3D renderer's fields. A resource is its family's prop at the plot's front-left. A town's card (batch 4: keep mask 0.95)
+  takes about half the moods' and the land palette's grade, so it keeps its own colours, and its
+  warm lights (windows, fires, braziers: orange to yellow, not its red roofs or blue domes) glow. Mana and gems glow (their bright, saturated pixels
   feed the bloom). What a card stands for is **claimed** from the 3D dressing (no house, wall,
   structure or marker is modelled under it); trees keep out of a town's reach as before.
 * Scale (`dress.js` `PX`): a unit's 96 × 120 canvas is 0.46 × 0.58 of a plot, a 192-wide
@@ -242,7 +252,24 @@ does for the isometric sprites. No unit art changed.
   lone prop's scale, with grass at their sunny edge; open ground carries about a dozen props, most
   gathered round one or two clumps a plot (a lone tree with bushes, flowers and grass round it, a
   rock among pebbles), now and then a ring of standing stones; farms, pastures, cottages and the
-  land round a town add fences and haystacks.
+    land round a town add fences and haystacks.
+* **Designed props drawn by code** (batch 4, until the image model draws better ones): thatched and
+  stone huts (a window lit from within), a well, ruins, gardens; the corrupted land's obelisks (violet
+  runes) and altars, hell's bones and smouldering vents, the elven lands' lanterns -- each region's
+  own, by the moods (`clutterOf`), now and then a ruin anywhere. What carries a light (`GLOWS`: runes,
+  lamps, embers, hut windows) feeds the bloom.
+* **Towns spill over their walls** (batch 4, `townRing`): on the open plots within two of a town,
+  houses (one or two a plot next to it, now and then one beyond), gardens, a well, fences and
+  haystacks, as the look target's towns spread into the land round them.
+* **Raised banks and waterfalls** (batch 4): the mode's world raises dry land 0.04 over its water
+  (world.js `bank`, `MapHd2d.worldOpts`; the 3D renderer's is 0), all but a narrow strip over the
+  waterline, so the shore climbs in a short steep step the terrain shader draws as rock, a boulder of
+  the bank now and then among the shore stones. (The terrain mesh, six vertices a plot, cannot draw a
+  true cliff face.) Where a river's surface drops steeply toward the camera on land (off the hills,
+  down a bank; not at its mouth, where the ribbon widens flat into the sea) a card of white water as
+  wide as the river and about as tall as the slope looks stands across it (`dressFalls`,
+  `falls_*`); a river running across the view keeps its slope unmarked, as a card would face the
+  wrong way.
 * **Shores** (batch 3, `dressShores`): the look target's land ends at its water in a rim of dark
   stones. Along every coast and lake shore a 14 × 14 sampling of the plot (and a quarter plot past
   its edges, as the warped coast wanders off the grid) finds where the ground falls through the
@@ -282,7 +309,8 @@ does for the isometric sprites. No unit art changed.
   | lab, batch 2 | 0.21 | 0.89 | 79% | 1.00 / 0.26 | 29% |
   | lab, batch 3 | 0.30 | 0.37 | 9% | 0.44 / 0.33 | 7% (before a last pull-back of the shade) |
   | turn-200 game at 96 px, batch 2 (GPU) | 0.32 | 0.64 | 55% | 0.91 / 0.21 | 20% |
-  | the same, batch 3 (software) | 0.35 | 0.36 | 11% | 0.43 / 0.32 | 5% |
+    | the same, batch 3 (software) | 0.35 | 0.36 | 11% | 0.43 / 0.32 | 5% |
+  | lab, batch 4 (towns half graded, the shade pulled back) | 0.30 | 0.39 | 15% | 0.47 / 0.33 | 8% |
 
   The target is earthy and muted: its saturation is in the accents (the gold town, the Sheaim's
   violet, lava, the banners) and its shade is a dark olive, not black. The second batch read it as
@@ -432,7 +460,10 @@ target does, and its figures take about the target's share of the screen.
 **The interface** (batch 3) is the isometric map's (`isoui.js`: the floating panels, the advisors'
 rail, the city panel over the map; main.js `syncSkin`), as the look target's, not the plain one's
 sidebar and bars round a boxed map. Its unit portraits and build icons take the sprite the
-isometric map would choose (`unitKeyOf`), as there is no isometric map behind it.
+isometric map would choose (`unitKeyOf`), as there is no isometric map behind it. Over the HD-2D
+map it is a variant (batch 4, iso.css `html.iso.hd2d`, set by `syncSkin`): its panels are
+near-black glass under the gilt frames (the map shows through, a little blurred), and on a desktop
+they are drawn at 80%, so the map, not the panels, holds the screen.
 
 The figures are cards that face the camera: they look the same at any pitch. The settlements and
 buildings are cards too, but their art has its ground painted in, drawn for the isometric map's
@@ -445,36 +476,26 @@ zoom.
 
 ## 10. The gaps to the reference
 
-Side by side ([hd2d/lab-vs-reference.jpg](hd2d/lab-vs-reference.jpg), after the second batch),
-ranked by how much of the remaining distance each closes; each says what would close it. The first
-review ranked the ground textures first and single trees second: both are done (§5b), with art of
-the mode's own, and they closed the largest part of the gap — the land and the woods are now the
-same medium as the figures.
+Batches 3 and 4 closed the gaps the second batch's review ranked (the palette, the framing, the
+interface, prop density, designed props, towns, shores and banks). What remains, by how much of the
+distance each closes:
 
-1. **Detail on open ground** (more art). Batch 3 made the scattering dense and clustered and drew
-   the small props by code; what is missing is the props with a design -- huts, small ruins,
-   shrines, elven lanterns, corrupted altars and obelisks, hell's vents and bones -- which the
-   image model draws (`tools/hd2d/gen.py` sheets: village, meadow, shore, trees, corrupt, hell,
-   elven, desert; about $0.17 a sheet of nine at gpt-image-1's high quality).
-2. **Cities without their ground patch** (new art). A settlement's painted diamond of ground is the
-   isometric map's, seen along a plot's diagonal from 30°: on this camera it reads as a plinth, and
-   it limits the camera to about 45° (§9). The cards are now about two plots wide, as the
-   reference's Eärlann; the same towns drawn without ground would sit in the land at any pitch, and
-   a matching ground decal can be drawn by code.
-3. **Water** (code). The reference is laced with rivers, lakes and waterfalls; the lab scene and
-   the 3D renderer's rivers are narrower and have no falls (docs/R3D.md §14). Batch 3 rimmed the
-   shores with stones and graded the water toward slate; a raised bank (the land standing over its
-   water as a low cliff) would be the terrain's own change.
-4. **Scale of the figures** (a parameter). The reference's figures are about a third of a tile;
-   ours are about 0.6 of a plot, chosen for readability at 96 px a plot. Smaller groups at the
-   closer default zoom (128) would match it; it is a readability call for the owner.
-5. **Darker and moodier variants of the sprites** (unit art; set aside by the owner for now). The
-   sprites are painted for a bright sunny board; corrupted and hell regions grade figures only a
-   little, so they stay readable.
-6. **Unit sprites facing left and animated** (unit art; set aside). Figures are mirrored when they
-   face west and stand still; idle frames exist for a few units in `anim-sprint/`.
-7. **The sky and the map's edge** (code). A small map's edge shows the 3D renderer's parchment void
-   under the shafts; a painted sky or far haze bank would hide it.
+1. **Art with a hand behind it** (the image model). The props drawn by code read well at their size
+   but are simple; huts, ruins, shrines and each region's things drawn by the image model would
+   match the trees' and the target's detail. `tools/hd2d/gen.py` asks for them in sheets of nine
+   (about $0.17 a sheet at gpt-image-1's high quality; a `split` step for `art.py` is still to write).
+2. **Cities drawn for this camera** (new art). The settlement sprites keep the isometric map's
+   walled diamond; the target's towns are irregular and spill out. Batch 4's houses round them
+   soften it; towns drawn for the mode would close it.
+3. **True cliffs and wide water** (code, the terrain). The raised bank is a steep step, not a cliff
+   face: the terrain mesh (six vertices a plot) cannot draw one; the target's rivers are broader and
+   braided. A finer mesh along shores, or cliff cards along the bank, would close it.
+4. **Darker, moodier sprite variants and figures facing left or animated** (unit art; set aside by
+   the owner).
+5. **The sky and the map's edge** (code): a small map's edge shows the 3D renderer's void under
+   the shafts.
+6. **On a real GPU**: batches 3 and 4 were judged on software renders; the palette's numbers should
+   be re-measured on the owner's GPU (§6's table).
 
 ## 11. Configuration
 

@@ -11,7 +11,8 @@
  *  base point (where its feet or its painted ground's front stand) is iPosRot.xyz.
  *    iPosRot  base x, y, z, layer of the sprite array
  *    iScale   width, height (world units), phase, flags (1 flip, 2 banner, 4 shadow caster,
- *             8 fade the painted ground at the foot)
+ *             8 fade the painted ground at the foot, 16 a town: graded lighter, only its warm
+ *             lights glow)
  *    iTint    u extent, v extent (of the 256-texel layer), object id, glow
  *    iTeam    owner colour, depth bias (toward the eye, world units)
  *    aExtra   (instanced) anchor across the card (0..1: where the base point is), the map point
@@ -41,6 +42,7 @@ flat out vec3 vTint;
 flat out float vVis;
 flat out float vRim;
 flat out float vFade;
+flat out float vTown;
 out float vDepth;
 invariant gl_Position;
 
@@ -104,6 +106,7 @@ void main() {
   // Figures and banners take the rim; buildings' cards carry their own painted edges.
   vRim = iTeam.a > 0.05 ? 0.85 : 0.0;
   vFade = (flags & 8) != 0 ? 0.2 : 0.0;
+  vTown = (flags & 16) != 0 ? 1.0 : 0.0;
   // In sight or remembered as the plot it stands for (a building's foot is on the plot's edge).
   vVis = texture(uVis, (aExtra.w > 0.5 ? aExtra.yz : vec2(iPosRot.x, -iPosRot.z)) / uMapSize).r;
   // Tinted by the light where the figure stands (not re-lit): the sun if it reaches the base, the
@@ -172,6 +175,7 @@ flat in vec3 vTint;
 flat in float vVis;
 flat in float vRim;
 flat in float vFade;
+flat in float vTown;
 in float vDepth;
 uniform float uExposure;
 layout(location = 0) out vec4 oColor;
@@ -200,13 +204,17 @@ void main() {
   // The art's colours, in the light where it stands, then dimmed and cooled where only remembered.
   vec3 lin = srgb(c) * vTint;
   lin = fogOfWar(lin, vVis);
-  // The keep mask: 1 for figures and banners (the moods leave them their colours), 0.9 for
-  // buildings (graded as the land).
-  oColor = vec4(invFilmic(lin) / uExposure, vRim > 0.0 ? 1.0 : 0.9);
+  // The keep mask: 1 for figures and banners (the moods leave them their colours), 0.95 for towns
+  // (about half graded), 0.9 for other buildings and props (graded as the land).
+  oColor = vec4(invFilmic(lin) / uExposure, vRim > 0.0 ? 1.0 : vTown > 0.5 ? 0.95 : 0.9);
   oND = vec4(0.0, 0.0, 1.0, vDepth);
-  // Glowing sprites (mana, gems, crystals): their bright, saturated pixels feed the bloom.
+  // Glowing sprites (mana, gems, crystals): their bright, saturated pixels feed the bloom. A town's
+  // only where they are a warm light (windows, fires, braziers: orange to yellow), not its red roofs
+  // or blue domes.
   float sat = max(c.r, max(c.g, c.b)) - min(c.r, min(c.g, c.b));
   float hot = smoothstep(0.35, 0.8, sat) * smoothstep(0.45, 0.9, max(c.r, max(c.g, c.b)));
+  // (Only the brightest, most saturated warm pixels: a sandstone town's walls are warm too.)
+  if (vTown > 0.5) hot = smoothstep(0.6, 0.78, sat) * smoothstep(0.9, 0.99, c.r) * smoothstep(0.15, 0.3, c.g - c.b) * step(c.g, c.r);
   oEmit = vec4(srgb(c) * hot * vGlow * smoothstep(0.5, 0.9, vVis), vId);
 }`;
 
@@ -541,8 +549,10 @@ void main() {
     // floor (the target's darkest woods are a deep olive, not black).
     col = mix(col, pow(max(col, vec3(0.0)), vec3(0.84)), uLand);
     float dark = 1.0 - smoothstep(0.02, 0.3, lum(col));
-    col = mix(col, max(col, vec3(0.0)) * 0.85 + vec3(0.075, 0.08, 0.05), dark * 0.55 * uLand);
+    col = mix(col, max(col, vec3(0.0)) * 0.85 + vec3(0.075, 0.08, 0.05), dark * 0.4 * uLand);
   }
+  // A town takes about half the grade: it keeps its colours, its fires their heat.
+  if (!figure && src.a > 0.93) col = mix(src.rgb, col, 0.45);
   // A figure keeps its own colours: of the grade, it takes a quarter of the change in value only.
   if (figure) col = src.rgb * mix(1.0, lum(col) / max(lum(src.rgb), 1e-3), 0.25);
   o = vec4(col, src.a);

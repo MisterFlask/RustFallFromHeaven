@@ -621,3 +621,38 @@ html.iso .iso-name .coords { font-weight: 400; }
   /* A radius-3 city's 7x7 plots across a phone: the lettering at 1x (the grid's smallest size). */
   html.iso .cplot { font: 400 10px/12px var(--iso-font); }
 }
+
+/* --- the HD-2D map's variant (docs/HD2D.md §9) ---------------------------------------------- */
+/* The same interface over the HD-2D map, as its look target has it: panels of near-black glass
+   (the map shows through, a little blurred) under the gilt frames, and on a desktop smaller, so the
+   map, not the panels, holds the screen. html.hd2d is set by main.js syncSkin. */
+
+html.iso.hd2d {
+  --iso-navy-top: rgba(14, 14, 18, 0.8);
+  --iso-navy-bot: rgba(6, 6, 9, 0.86);
+  --iso-deep: rgba(4, 4, 6, 0.88);
+  --iso-tile-top: rgba(40, 38, 46, 0.92);
+  --iso-tile-bot: rgba(18, 17, 22, 0.94);
+  --iso-tile-lit: #6a5a2c;
+  --iso-dim: #c2b89a;
+}
+html.iso.hd2d #top > .group,
+html.iso.hd2d #side,
+html.iso.hd2d #bottom,
+html.iso.hd2d #iso-city,
+html.iso.hd2d #iso-corner canvas.minimap {
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+html.iso.hd2d button:hover:not([disabled]) { background: linear-gradient(180deg, #4a4232, #221e16); background-clip: padding-box; }
+html.iso.hd2d #iso-corner #end-turn:not([disabled]) { background: linear-gradient(180deg, #5a4a22, #2a2210); background-clip: padding-box; }
+html.iso.hd2d #iso-corner #end-turn.end-turn-message:not([disabled]) { background: linear-gradient(180deg, #8a6a24, #4a3810); background-clip: padding-box; }
+html.iso.hd2d .unit-row:hover, html.iso.hd2d .unit-row.selected { background: rgba(200, 160, 70, 0.18); }
+@media (min-width: 761px) and (min-height: 521px) {
+  html.iso.hd2d #top,
+  html.iso.hd2d #side,
+  html.iso.hd2d #bottom,
+  html.iso.hd2d #iso-city,
+  html.iso.hd2d #iso-corner,
+  html.iso.hd2d #iso-rail { zoom: 0.8; }
+}

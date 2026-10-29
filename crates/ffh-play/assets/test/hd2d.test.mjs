@@ -112,6 +112,26 @@ test("shores are rimmed with stones and open ground is filled with small props i
   assert.deepEqual(dressSpriteStatic(w, map, atlas, env, null).list, list, "the same state, the same cards");
 });
 
+test("towns spill into houses round them, regions carry their own things, rivers fall off the hills", () => {
+  const s = hd2d(data);
+  St.setView(s.view);
+  St.setMap(s.map);
+  const w = new World(s.map, { bank: 0.04 });
+  const { moods } = plotMoods(w, s.map);
+  const { list } = dressSpriteStatic(w, s.map, atlas, { unitAt: new Set(), cityAt: new Map() }, moods);
+  const n = (kind) => list.filter((r) => r.key.startsWith(`${kind}_`)).length;
+  assert.ok(n("hut") >= 6, `huts round the towns: ${n("hut")}`);
+  assert.ok(n("obelisk") + n("altar") >= 1, "the Sheaim's corrupted land has its obelisks and altars");
+  assert.ok(n("lantern") >= 1, "the Ljosalfar's lush land has its lanterns");
+  assert.ok(n("bones") + n("vent") >= 4, "hell has its bones and vents");
+  assert.ok(n("falls") >= 1, "the lab's river falls off its hills");
+  // Houses only round towns: within two plots of a city.
+  const cities = [...St.S.cities.values()];
+  for (const r of list.filter((r) => r.key.startsWith("hut"))) {
+    assert.ok(cities.some((c) => Math.abs(Math.floor(r.x) - c.x) <= 2 && Math.abs(Math.floor(-r.z) - c.y) <= 2), `a hut far from any town at ${r.x}, ${-r.z}`);
+  }
+});
+
 test("nothing stands on, and no mood comes from, what the player has not seen", () => {
   const rows = ["..,,..", "..ff..", "xx..pp", "......"];
   const hidden = [[1, 1], [2, 1], [4, 1]];
