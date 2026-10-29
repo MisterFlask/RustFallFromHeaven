@@ -44,7 +44,7 @@ n=0
 # The client's .js files are ES modules, but no package.json says so, and `node --check FILE.js`
 # then accepts a module with a syntax error (Node 22 falls back without parsing it as a module):
 # they are checked as modules from stdin.
-for f in "$assets"/app/*.js "$assets"/app/r3d/*.js "$assets"/app/r3d/assets/*.js "$assets"/app/r3d/hd2d/*.js "$root"/crates/ffh-play/r3d-lab/*.js; do
+for f in "$assets"/app/*.js "$assets"/app/r3d/*.js "$assets"/app/r3d/assets/*.js "$assets"/app/r3d/hd2d/*.js "$assets"/app/r3d/hd2d/art/*.js "$root"/crates/ffh-play/r3d-lab/*.js; do
   if ! out="$("$node" --input-type=module --check < "$f" 2>&1)"; then
     echo "web-check: $f does not parse:" >&2
     echo "$out" >&2

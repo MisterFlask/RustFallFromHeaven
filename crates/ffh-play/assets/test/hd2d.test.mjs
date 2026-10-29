@@ -13,6 +13,7 @@ const { buildMap, buildView, hd2d } = await import("../../r3d-lab/scenes.js");
 const { World, KIND } = await import("../app/r3d/world.js");
 await import("../app/r3d/assets/index.js");
 const { SPRITES } = await import("../app/iso/sprites.js");
+const { CARDS, GROUNDS } = await import("../app/r3d/hd2d/art/index.js");
 const { unitSpriteKeys } = await import("../app/iso.js");
 const { dressSpriteStatic, dressSpriteUnits, PX } = await import("../app/r3d/hd2d/dress.js");
 const { plotMoods } = await import("../app/r3d/hd2d/mood.js");
@@ -20,8 +21,8 @@ const { plotMoods } = await import("../app/r3d/hd2d/mood.js");
 /** The atlas as the dressing sees it (hd2d/sprites.js SpriteAtlas): the PNG sprites and the banners,
  *  which are drawn by code in the browser. */
 const atlas = {
-  has: (k) => Object.hasOwn(SPRITES, k) || k.startsWith("banner:"),
-  info: (k) => SPRITES[k] ?? { w: 40, h: 150, box: [0, 0, 40, 150] },
+  has: (k) => Object.hasOwn(SPRITES, k) || Object.hasOwn(CARDS, k) || k.startsWith("banner:"),
+  info: (k) => SPRITES[k] ?? CARDS[k] ?? { w: 40, h: 150, box: [0, 0, 40, 150] },
   put() {},
 };
 
@@ -64,6 +65,30 @@ test("cities, standing improvements and resources stand as cards, and the 3D dre
   const cities = list.filter((r) => r.key.startsWith("bld_city"));
   assert.ok(cities.some((r) => r.key === "bld_city_ljosalfar_castle"), "the Ljosalfar capital is its civilization's castle");
   for (const r of cities) assert.ok(Math.abs(r.w - SPRITES[r.key].w * PX.city) < 1e-9);
+});
+
+test("woods stand as single tree cards and open ground as scattered props, claimed from the 3D dressing", () => {
+  assert.ok(GROUNDS.includes("gnd_grass") && Object.keys(CARDS).some((k) => k.startsWith("tree_oak_")), "the mode's art is there");
+  const rows = ["ffff..", "ffff..", "aa....", "......"];
+  const map = buildMap(data, rows, { hidden: [[5, 0]] });
+  const view = buildView(data, { players: [{ civ: "CIVILIZATION_BANNOR" }] });
+  const w = scene({ map, view });
+  const env = { unitAt: new Set(), cityAt: new Map() };
+  const { list, claims } = dressSpriteStatic(w, map, atlas, env, null);
+  assert.ok(claims.trees && claims.flora && claims.rocks);
+  const at = (r) => [Math.floor(r.x), Math.floor(-r.z)];
+  const wooded = list.filter((r) => r.key.startsWith("tree_"));
+  for (let y = 2; y < 4; y++) {
+    for (let x = 0; x < 4; x++) {
+      const n = wooded.filter((r) => at(r)[0] === x && at(r)[1] === y).length;
+      assert.ok(n >= 5, `a wooded plot (${x}, ${y}) holds a stand of trees, not ${n}`);
+    }
+  }
+  assert.ok(list.some((r) => r.key.startsWith("tree_ancient_")), "an ancient wood has its giants");
+  for (const r of list) assert.ok(atlas.has(r.key), r.key);
+  // The hidden plot (5, 0) holds nothing.
+  assert.ok(!list.some((r) => at(r)[0] === 5 && at(r)[1] === 0), "a card on an unrevealed plot");
+  assert.deepEqual(dressSpriteStatic(w, map, atlas, env, null).list, list, "the same state, the same cards");
 });
 
 test("nothing stands on, and no mood comes from, what the player has not seen", () => {

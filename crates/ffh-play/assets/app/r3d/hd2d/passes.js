@@ -127,7 +127,7 @@ export class Hd2dPasses {
     let bloom = null;
     if ((cfg.bloom ?? 0) > 0) {
       pl.timed("bloom", () => {
-        pl.pass(this.p.bright, this.f.bright, hw, hh, { uColor: pl.t.color, uEmit: pl.t.emit, uThreshold: 1.1 });
+        pl.pass(this.p.bright, this.f.bright, hw, hh, { uColor: pl.t.color, uEmit: pl.t.emit, uThreshold: 0.95 });
         pl.pass(pl.p.blur, this.f.bloom2, qw, qh, { uSrc: this.t.bright, uDir: [1 / qw, 0], uSigma: 4 });
         pl.pass(pl.p.blur, this.f.bloom, qw, qh, { uSrc: this.t.bloom2, uDir: [0, 1 / qh], uSigma: 4 });
       });

@@ -105,7 +105,7 @@ for (const [name, cfg] of CONFIGS.filter(([n]) => !args.configs || args.configs.
         // Warm up: chunks are built a few per frame (the HD-2D mode's low camera sees more of
         // them), and its sprites load as images.
         r3d.render(1);
-        await r3d.sprites?.atlas.whenLoaded();
+        await r3d.whenReady?.();
         for (let k = 0; k < (r3d.sprites ? 14 : 6); k++) r3d.render(1);
         gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
         // A fresh sync, timed by stage.

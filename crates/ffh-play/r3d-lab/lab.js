@@ -136,10 +136,10 @@ async function main() {
   // The HD-2D mode's sprites load as images: a capture waits for them.
   if (r3d.sprites) {
     r3d.sync();
-    await r3d.sprites.atlas.whenLoaded();
+    await r3d.whenReady();
     r3d.viewSeen = null;
     r3d.sync();
-    await r3d.sprites.atlas.whenLoaded();
+    await r3d.whenReady();
   }
   window.lab = { r3d, view, S, ready: true };
 }

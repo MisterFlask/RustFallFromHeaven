@@ -1,0 +1,30 @@
+// The HD-2D mode's own art (docs/HD2D.md): ground layers and prop cards drawn by a local image
+// model and brought to one contract by tools/hd2d/art.py, which writes this index; do not edit.
+export const GROUNDS = ["gnd_dirt", "gnd_grass", "gnd_lichen", "gnd_rock", "gnd_sand", "gnd_snow", "gnd_straw"];
+export const CARDS = {
+  bush_1: { w: 57, h: 54, box: [0,  0,  57,  54] },
+  bush_2: { w: 58, h: 54, box: [0,  0,  58,  54] },
+  crystal_1: { w: 62, h: 66, box: [0,  0,  62,  66] },
+  crystal_2: { w: 76, h: 66, box: [0,  0,  76,  66] },
+  crystal_3: { w: 74, h: 66, box: [0,  0,  74,  66] },
+  flowers_1: { w: 32, h: 38, box: [0,  0,  32,  38] },
+  flowers_2: { w: 41, h: 38, box: [0,  0,  41,  38] },
+  lava_rock_1: { w: 51, h: 48, box: [0,  0,  51,  48] },
+  lava_rock_2: { w: 59, h: 48, box: [0,  0,  59,  48] },
+  rock_1: { w: 76, h: 48, box: [0,  0,  76,  48] },
+  rock_2: { w: 81, h: 48, box: [0,  0,  81,  48] },
+  tree_ancient_1: { w: 239, h: 232, box: [0,  0,  239,  232] },
+  tree_ancient_2: { w: 246, h: 232, box: [0,  0,  246,  232] },
+  tree_dead_1: { w: 143, h: 142, box: [0,  0,  143,  142] },
+  tree_dead_2: { w: 160, h: 142, box: [0,  0,  160,  142] },
+  tree_jungle_1: { w: 139, h: 177, box: [0,  0,  139,  177] },
+  tree_jungle_2: { w: 130, h: 177, box: [0,  0,  130,  177] },
+  tree_oak_1: { w: 156, h: 152, box: [0,  0,  156,  152] },
+  tree_oak_2: { w: 169, h: 152, box: [0,  0,  169,  152] },
+  tree_oak_3: { w: 171, h: 152, box: [0,  0,  171,  152] },
+  tree_pine_1: { w: 149, h: 172, box: [0,  0,  149,  172] },
+  tree_pine_2: { w: 141, h: 172, box: [0,  0,  141,  172] },
+  tree_pine_3: { w: 142, h: 172, box: [0,  0,  142,  172] },
+  tree_pine_snow_1: { w: 169, h: 172, box: [0,  0,  169,  172] },
+  tree_pine_snow_2: { w: 160, h: 172, box: [0,  0,  160,  172] },
+};

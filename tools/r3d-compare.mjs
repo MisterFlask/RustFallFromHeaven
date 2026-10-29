@@ -107,7 +107,7 @@ for (const s of SHOTS) {
       // The HD-2D mode's sprites load as images; its low camera sees more terrain chunks (built a
       // few a frame), so it renders more frames.
       r.render(1.5);
-      await r.sprites?.atlas.whenLoaded();
+      await r.whenReady?.();
       for (let k = 0; k < (r.sprites ? 10 : 3); k++) {
         r.render(1.5);
         r.gl.readPixels(0, 0, 1, 1, r.gl.RGBA, r.gl.UNSIGNED_BYTE, px);

@@ -16,15 +16,16 @@ import * as T from "../../tiles.js";
 import { stackState } from "../../stacks.js";
 import { isBarbarian } from "../../state.js";
 import { unitSpriteKeys, civShortName, ISO_TABLES } from "../../iso.js";
-import { hashf, hash32 } from "../noise.js";
-import { SEA, DRAFT, FEAT, KIND, RIVER_BANK } from "../world.js";
+import { hashf, hash32, rng } from "../noise.js";
+import { SEA, DRAFT, FEAT, KIND, GROUND, RIVER_BANK, RIVER_HALF } from "../world.js";
+import { CARDS } from "./art/index.js";
 import { standHeight, hexRgb } from "../dress.js";
 import { MANA } from "../assets/palette.js";
 
 /** World units per art pixel: figures (a 96 x 120 unit canvas is 0.46 x 0.58 of a plot), cities (a
  *  192-wide settlement 1.15 plots: its painted ground spans the plot), the other buildings, the
  *  resources' props, the banners. */
-export const PX = { unit: 0.0048, city: 0.006, building: 0.0038, resource: 0.0034, banner: 0.0053 };
+export const PX = { unit: 0.0048, city: 0.0088, building: 0.0038, resource: 0.0034, banner: 0.0053, prop: 0.0031 };
 /** Depth toward the eye (world units): a figure before the card of the building it stands at. */
 const BIAS = { unit: 0.26, garrison: 0.4, building: 0, resource: 0.08 };
 /** Where a stack stands (plot-local x east, z south); on a city's plot, its front-left corner; on a
@@ -165,12 +166,132 @@ function manaColour(name) {
   return m ? MANA[m[1]] ?? "#b48aff" : /MANA/.test(name ?? "") ? "#b48aff" : null;
 }
 
-/** The static cards (cities, standing improvements, resources and their banners) and the light
- *  beams over mana nodes and towers; `claims` names what the 3D dressing no longer models. */
-export function dressSpriteStatic(world, map, atlas) {
+/** The variants of a prop card (`tree_oak` -> tree_oak_1, tree_oak_2, ...), from the art index. */
+const variantsOf = new Map();
+function variants(kind) {
+  let v = variantsOf.get(kind);
+  if (!v) variantsOf.set(kind, (v = Object.keys(CARDS).filter((k) => k.startsWith(`${kind}_`) && /^\d+$/.test(k.slice(kind.length + 1))).sort()));
+  return v;
+}
+
+const WOODED = new Set([FEAT.FOREST, FEAT.JUNGLE, FEAT.ANCIENT, FEAT.BURNT, FEAT.YOUNG]);
+/** A wood's trees against a lone prop's scale (PX.prop): smaller, many to a plot. */
+const TREE = 0.75;
+const HELLISH = new Set([GROUND.BURNING_SANDS, GROUND.BROKEN_LANDS, GROUND.PERDITION]);
+
+/** The trees of a wooded plot, by its feature and ground: [kind, weight, scale]. */
+function woodOf(feat, ground, hills) {
+  const cold = ground === GROUND.TUNDRA || ground === GROUND.SNOW;
+  if (feat === FEAT.JUNGLE) return [["tree_jungle", 3, 1], ["tree_oak", 1, 0.9]];
+  if (feat === FEAT.ANCIENT) return [["tree_ancient", 1, 1], ["tree_oak", 2, 1]];
+  if (feat === FEAT.BURNT || HELLISH.has(ground)) return [["tree_dead", 1, 0.9]];
+  if (feat === FEAT.YOUNG) return [["tree_oak", 2, 0.62], ["bush", 1, 1.2]];
+  if (cold) return [[ground === GROUND.SNOW ? "tree_pine_snow" : "tree_pine", 3, 1], ["tree_pine_snow", 1, 0.95]];
+  return hills ? [["tree_pine", 2, 1], ["tree_oak", 1, 1]] : [["tree_oak", 3, 1], ["tree_pine", 1, 1]];
+}
+
+/** What scatters over open ground, by its ground and mood: [kind, how many (expected), scale]. */
+function clutterOf(kind, ground, mood) {
+  const out = [];
+  if (HELLISH.has(ground)) out.push(["lava_rock", 1.1, 1], ["tree_dead", 0.25, 0.8]);
+  else if (ground === GROUND.SNOW) out.push(["tree_pine_snow", 0.35, 0.85], ["rock", 0.4, 1]);
+  else if (ground === GROUND.TUNDRA) out.push(["tree_pine", 0.35, 0.85], ["rock", 0.6, 1], ["bush", 0.4, 0.9]);
+  else if (ground === GROUND.DESERT) out.push(["rock", 0.5, 1]);
+  else if (ground === GROUND.MARSH) out.push(["bush", 1.2, 1]);
+  else out.push(["bush", 1.0, 1], ["flowers", ground === GROUND.GRASS ? 1.1 : 0.5, 1], ["tree_oak", 0.35, 0.8], ["rock", 0.25, 0.9]);
+  if (kind === KIND.HILLS) out.push(["rock", 1.0, 1.1]);
+  if (kind === KIND.PEAK) out.push(["rock", 2.0, 1.3]);
+  if (mood && mood[1] >= 0.5 && !HELLISH.has(ground)) out.push(["crystal", 0.8, 1]);
+  return out;
+}
+
+/** The prop cards of the land: stands of single trees on wooded plots (a jittered three by three,
+ *  thinned where something stands on the plot), bushes, flowers, rocks, crystals and lava rocks
+ *  scattered on open ground -- off rivers, roads, towns and the spot where a stack stands. A pure
+ *  function of the state and the plot index. */
+function dressProps(world, map, atlas, env, moods, list) {
+  const w = world.w;
+  const H = (mx, my) => world.heightAt(mx, my);
+  const cityNear = (x, y, lx, lz) => {
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const j = world.index(x + dx, y + dy);
+        if (j < 0 || map.city[j] < 0) continue;
+        // A settlement's card spans about 1.7 plots; keep its footprint (round its plot) clear.
+        const ex = lx - dx, ez = lz + dy;
+        if ((ex * ex) / (0.95 * 0.95) + ((ez - 0.15) * (ez - 0.15)) / (0.75 * 0.75) < 1) return true;
+      }
+    }
+    return false;
+  };
+  for (let i = 0; i < w * world.h; i++) {
+    const kind = world.kind[i];
+    if (kind === KIND.VOID || kind === KIND.OCEAN || kind === KIND.COAST || kind === KIND.ICE || map.city[i] >= 0) continue;
+    const x = i % w, y = (i - x) / w;
+    const feat = world.feat[i];
+    const r = rng(i * 7919 + 101);
+    const held = env.unitAt.has(i) || map.improvement[i] >= 0;
+    const road = map.route[i] >= 0;
+    // Something stands on the plot behind (north): this plot's trees stand between it and the
+    // camera, so its back row goes and its middle row keeps low.
+    const n = world.index(x, y + 1);
+    const northHeld = n >= 0 && (env.unitAt.has(n) || map.city[n] >= 0);
+    const ok = (lx, lz) => {
+      const mx = x + 0.5 + lx, my = y + 0.5 - lz;
+      if (world.riverCells.size && world.riverDist(mx, my) < RIVER_HALF + 0.1) return false;
+      if (road && (Math.abs(lx) < 0.12 || Math.abs(lz) < 0.12)) return false;
+      if (held && Math.hypot(lx, lz - 0.08) < 0.3) return false;
+      return !cityNear(x, y, lx, lz);
+    };
+    const put = (kindKey, lx, lz, scale) => {
+      const vs = variants(kindKey);
+      if (!vs.length || !ok(lx, lz)) return;
+      const key = vs[r.int(0, vs.length - 1)];
+      const art = atlas.info(key);
+      const mx = x + 0.5 + lx, my = y + 0.5 - lz;
+      const glow = kindKey === "crystal" || kindKey === "lava_rock" ? 1.3 : 0;
+      list.push(card(key, art, PX.prop * scale, mx, H(mx, my) - 0.01, -my, { shadow: kindKey !== "flowers", flip: r() < 0.5, glow, id: 0.0002, vis: [x + 0.5, y + 0.5] }));
+    };
+    if (WOODED.has(feat)) {
+      const wood = woodOf(feat, world.ground[i], kind === KIND.HILLS);
+      const total = wood.reduce((s, [, wt]) => s + wt, 0);
+      // The giants of an ancient wood stand one or two to a plot, in its middle.
+      if (feat === FEAT.ANCIENT && variants("tree_ancient").length) {
+        put("tree_ancient", r.range(-0.12, 0.12), r.range(-0.18, 0.0), r.range(0.95, 1.15));
+      }
+      // A crowd of small trees, as the look target's woods: four by four, jittered.
+      for (let gy = 0; gy < 4; gy++) {
+        for (let gx = 0; gx < 4; gx++) {
+          let pick = r() * total, k = wood[0];
+          for (const it of wood) if ((pick -= it[1]) <= 0) { k = it; break; }
+          if (k[0] === "tree_ancient") k = ["tree_oak", 1, 1];
+          const s = TREE * k[2] * r.range(0.82, 1.15);
+          const lx = (gx - 1.5) * 0.24 + r.range(-0.07, 0.07), lz = (gy - 1.5) * 0.24 + r.range(-0.07, 0.07);
+          if (northHeld && gy === 0) continue;
+          put(k[0], lx, lz, northHeld && gy === 1 ? s * 0.7 : s);
+        }
+      }
+      if (r() < 0.6) put("bush", r.range(-0.42, 0.42), r.range(-0.42, 0.42), r.range(0.8, 1.1));
+    } else if (kind === KIND.LAND || kind === KIND.HILLS || kind === KIND.PEAK) {
+      for (const [k, n, s] of clutterOf(kind, world.ground[i], moods?.[i])) {
+        let count = Math.floor(n) + (r() < n - Math.floor(n) ? 1 : 0);
+        while (count-- > 0) put(k, r.range(-0.42, 0.42), r.range(-0.42, 0.42), s * r.range(0.8, 1.15));
+      }
+    }
+  }
+}
+
+/** The static cards (cities, standing improvements, resources and their banners, the land's prop
+ *  cards) and the light beams over mana nodes and towers; `claims` names what the 3D dressing no
+ *  longer models (with prop cards: its trees, plants and rocks). */
+export function dressSpriteStatic(world, map, atlas, env = null, moods = null) {
   const list = [];
   const beams = [];
   const claims = { city: new Set(), improvement: new Set(), bonus: new Set() };
+  if (env && Object.keys(CARDS).length) {
+    dressProps(world, map, atlas, env, moods, list);
+    claims.trees = claims.flora = claims.rocks = true;
+  }
   const w = world.w;
   const H = (mx, my) => world.heightAt(mx, my);
   const cityAt = new Map();

@@ -116,7 +116,7 @@ void main() {
     vec3 amb = mix(uGroundColor, uSkyColor, 0.75);
     vec3 full = uSunColor * k + amb;
     vec3 pool = texture(uLight, vec2(iPosRot.x, -iPosRot.z) / uMapSize).rgb;
-    vec3 here = uSunColor * k * mix(0.42, 1.0, sun) + amb + pool * 0.25;
+    vec3 here = uSunColor * k * mix(0.32, 1.0, sun) + amb + pool * 0.25;
     vTint = clamp(here / full, vec3(0.3), vec3(1.15));
   } else vTint = vec3(1.0);
   vec4 c = uViewProj * vec4(p, 1.0);

@@ -136,7 +136,8 @@ export function dressStatic(world, map, plots = null, env = staticEnv(world)) {
   const w = world.w;
   const { cityAt, unitAt } = env;
   // What a mode stands there as sprites instead (the HD-2D mode, hd2d/dress.js): its city, its
-  // standing improvement or its resource marker is not modelled.
+  // standing improvement or its resource marker is not modelled, nor (claims.trees, .flora,
+  // .rocks) the land's trees, plants and rocks.
   const claims = env.claims ?? null;
   const H = (mx, my) => world.heightAt(mx, my);
   const visit = plots ?? Array.from({ length: w * world.h }, (_, k) => k);
@@ -212,14 +213,14 @@ export function dressStatic(world, map, plots = null, env = staticEnv(world)) {
       // Wooded plots: a stand of trees, thinned toward open neighbours, with a glade where a unit,
       // city or structure holds the plot.
       if (feat === FEAT.FOREST || feat === FEAT.JUNGLE || feat === FEAT.ANCIENT || feat === FEAT.BURNT || feat === FEAT.YOUNG) {
-        if (!city) placeTrees(world, ctx, place);
-      } else if ((kind === KIND.LAND || kind === KIND.HILLS) && !city) {
+        if (!city && !claims?.trees) placeTrees(world, ctx, place);
+      } else if ((kind === KIND.LAND || kind === KIND.HILLS) && !city && !claims?.flora) {
         // Open ground: plants scattered in clumps, thick in some places and bare in others.
         const flora = CATALOG.flora?.(ctx) ?? [{ asset: "basic.tree", scale: 0.45, count: r() < 0.25 ? 1 : 0, size: 2 }];
         scatterFlora(world, map, ctx, place, flora);
       }
       // Rocks on hills, peaks and rough ground (off the roads and out of the river).
-      const rocks = CATALOG.rocks?.(ctx) ?? (kind === KIND.HILLS || kind === KIND.PEAK ? [{ asset: "basic.rock", scale: 1, count: kind === KIND.PEAK ? 3 : 1 }] : []);
+      const rocks = claims?.rocks ? [] : CATALOG.rocks?.(ctx) ?? (kind === KIND.HILLS || kind === KIND.PEAK ? [{ asset: "basic.rock", scale: 1, count: kind === KIND.PEAK ? 3 : 1 }] : []);
       for (const rk of rocks) {
         for (let k = 0; k < (rk.count ?? 1); k++) {
           let lx = r.range(-0.4, 0.4), lz = r.range(-0.4, 0.4);

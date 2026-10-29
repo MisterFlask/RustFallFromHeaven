@@ -114,6 +114,7 @@ pub const ASSETS: &[(&str, &str, &str)] = &[
     ("app/r3d/assets/units.js", JS, include_str!("../../assets/app/r3d/assets/units.js")),
     ("app/r3d/assets/vegetation.js", JS, include_str!("../../assets/app/r3d/assets/vegetation.js")),
     // The HD-2D mode built on it (docs/HD2D.md), loaded only when chosen.
+    ("app/r3d/hd2d/art/index.js", JS, include_str!("../../assets/app/r3d/hd2d/art/index.js")),
     ("app/r3d/hd2d/config.js", JS, include_str!("../../assets/app/r3d/hd2d/config.js")),
     ("app/r3d/hd2d/dress.js", JS, include_str!("../../assets/app/r3d/hd2d/dress.js")),
     ("app/r3d/hd2d/index.js", JS, include_str!("../../assets/app/r3d/hd2d/index.js")),
@@ -566,14 +567,14 @@ fn post_api(req: &HttpRequest, ctx: &HttpCtx) -> Response {
     }
 }
 
-/// A client file: embedded, or from `--assets DIR`. Paths are 1-4 parts of `[A-Za-z0-9_.-]`
+/// A client file: embedded, or from `--assets DIR`. Paths are 1-5 parts of `[A-Za-z0-9_.-]`
 /// not starting with a dot, so a request cannot leave the directory. The art (`art/..`) comes
 /// from `DIR/../web/art` with `--assets DIR` when that directory exists (the repository's
 /// layout: `crates/ffh-play/assets` and `crates/ffh-play/web/art`), else from the binary; only
 /// the art's modules and its bundle are served, not its tools or previews.
 fn asset(path: &str, ctx: &HttpCtx) -> Response {
     let parts: Vec<&str> = path.split('/').collect();
-    let ok = (1..=4).contains(&parts.len()) && parts.iter().all(|p| crate::save::sanitize_name(p).is_ok());
+    let ok = (1..=5).contains(&parts.len()) && parts.iter().all(|p| crate::save::sanitize_name(p).is_ok());
     if !ok {
         return Response::error(404, "not_found", format!("no /{path}"));
     }

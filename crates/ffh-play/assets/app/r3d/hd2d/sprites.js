@@ -1,9 +1,11 @@
 // The HD-2D mode's sprites on the GPU (docs/HD2D.md): the isometric renderer's pixel art
-// (assets/app/iso/*.png, indexed by iso/sprites.js) in one texture array, a sprite a layer, and the
+// (assets/app/iso/*.png, indexed by iso/sprites.js) and the mode's own prop cards (hd2d/art/*.png,
+// indexed by hd2d/art/index.js: trees, bushes, rocks, crystals) in one texture array, a sprite a layer, and the
 // cards that stand them in the 3D world, built from the records hd2d/dress.js makes. Drawn by the
 // HD-2D passes (hd2d/passes.js) in the scene, the sun's shadow map and the overlays.
 
 import { SPRITES } from "../../iso/sprites.js";
+import { CARDS } from "./art/index.js";
 import { ATTR } from "../gl.js";
 
 /** Texels a side of each layer: every unit, building, feature and resource sprite fits (the 2x2
@@ -56,12 +58,12 @@ export class SpriteAtlas {
   }
 
   has(key) {
-    return Object.hasOwn(SPRITES, key) || this.drawn.has(key);
+    return Object.hasOwn(SPRITES, key) || Object.hasOwn(CARDS, key) || this.drawn.has(key);
   }
 
   /** The sprite's native size and opaque box (art px). */
   info(key) {
-    const s = SPRITES[key];
+    const s = SPRITES[key] ?? CARDS[key];
     if (s) return s;
     const c = this.drawn.get(key);
     return c ? { w: c.width, h: c.height, box: [0, 0, c.width, c.height] } : null;
@@ -94,7 +96,7 @@ export class SpriteAtlas {
   load(key, e) {
     this.pending++;
     const im = new Image();
-    im.src = new URL(`../../iso/${key}.png`, import.meta.url).href;
+    im.src = new URL(Object.hasOwn(CARDS, key) ? `./art/${key}.png` : `../../iso/${key}.png`, import.meta.url).href;
     im.decode()
       .then(() => this.store(e, im))
       .catch(() => {
@@ -221,10 +223,10 @@ export class SpriteLayer {
     gl.bindBuffer(gl.ARRAY_BUFFER, b.ibuf);
     gl.bufferData(gl.ARRAY_BUFFER, arr.subarray(0, n * FLOATS), gl.DYNAMIC_DRAW);
     b.n = n;
-    // Shadow casters and contact shadows are the units' figures only: a building's card carries
-    // its painted ground, which would cast a slab of shadow.
-    if (name === "units") {
-      const casts = list.filter((r) => r.shadow);
+    // Shadow casters and contact shadows are the figures and the props that stand up (trees,
+    // rocks): a building's card carries its painted ground, which would cast a slab of shadow.
+    if (name === "units" || name === "static") {
+      const casts = [...this.records.units, ...this.records.static].filter((r) => r.shadow);
       this.set("casters", casts);
     }
   }

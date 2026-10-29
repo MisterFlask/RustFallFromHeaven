@@ -59,9 +59,18 @@ take the new renderer down; a failed setup left a renderer running; extreme pane
 the horizon in view; buildings took their fog of war from the plot's edge; the shafts ignored the
 shadow switch; claimed improvements kept their models' particles.
 
+**The second batch** went after that medium without touching unit art (§5b): pixel-art ground
+layers and single-object prop cards (trees, bushes, flowers, rocks, crystals, lava rocks) drawn by
+a local image model, the woods stood as crowds of small tree cards in place of the modelled trees,
+a darker grade (deep shade, little haze, more contrast), settlement cards about two plots wide, a
+closer and lower default camera, and a stronger tilt-shift and bloom. The land, the woods and the
+figures are now one medium; the shots below are after it.
+
 | | |
 |---|---|
 | the look target and the lab's composition after it, side by side | [hd2d/lab-vs-reference.jpg](hd2d/lab-vs-reference.jpg) |
+| the mode's own art: the seven ground layers and the 25 prop cards | [hd2d/art-sheet.png](hd2d/art-sheet.png) |
+| the Sheaim's corrupted land (lab) | [hd2d/sheaim.jpg](hd2d/sheaim.jpg) |
 | a real game (the `stage corrupt` save at (46, 27)), 96 px a plot | [hd2d/game.jpg](hd2d/game.jpg) |
 | the same, close (168) and far (40) | [hd2d/game-close.jpg](hd2d/game-close.jpg), [hd2d/game-far.jpg](hd2d/game-far.jpg) |
 | the same spot in the isometric and 3D renderers | [hd2d/game-iso.jpg](hd2d/game-iso.jpg), [hd2d/game-3d.jpg](hd2d/game-3d.jpg) |
@@ -96,8 +105,11 @@ assets/app/
       sprites.js  the sprite atlas (a texture array) and the card instance buffers
       passes.js   the pipeline extension
       shaders.js  the cards, their shadows and ghosts, the beams, the post passes
+      art/        the mode's own art: gnd_*.png (ground layers), the prop cards, index.js
+                  (written by tools/hd2d/art.py)
 r3d-lab/          scene=hd2d, renderer=hd2d, compile.html (§7)
-tools/            r3d-lab.mjs --capture, r3d-perf.mjs --renderer hd2d, r3d-compare.mjs hd2d shots
+tools/            r3d-lab.mjs --capture, r3d-perf.mjs --renderer hd2d, r3d-compare.mjs hd2d shots,
+                  hd2d/art.py (the art's post-processing)
 ```
 
 The mode is the 3D renderer with a handful of hook methods overridden (`MapHd2d extends Map3D`)
@@ -170,13 +182,51 @@ lab and tools. The camera is the 3D one with the HD-2D preset's pitch and lens (
   feed the bloom). What a card stands for is **claimed** from the 3D dressing (no house, wall,
   structure or marker is modelled under it); trees keep out of a town's reach as before.
 * Scale (`dress.js` `PX`): a unit's 96 × 120 canvas is 0.46 × 0.58 of a plot, a 192-wide
-  settlement 1.15 plots, other buildings 0.73, resources' canvases 0.65 (their props about 0.25),
-  banners 0.8 tall.
+  settlement 1.7 plots (as the reference's towns, which span about two tiles; the prop cards keep
+  clear of its footprint), other buildings 0.73, resources' canvases 0.65 (their props about 0.25),
+  banners 0.8 tall, a lone prop 0.0031 a plot an art pixel (a 150 px oak about 0.47 of a plot).
+
+## 5b. The mode's own art: pixel ground and prop cards
+
+The first review found the gap was the medium around the sprites (§10). The second batch closes
+its two largest parts with art of the mode's own, drawn by a local image model (FLUX 3 Image Klein
+in ComfyUI on the owner's PC) and brought to one contract by `tools/hd2d/art.py`, as `tools/m7`
+does for the isometric sprites. No unit art changed.
+
+* **Pixel-art ground** (`hd2d/art/gnd_*.png`): grass, dry straw, packed dirt, sand, tundra moss
+  and lichen, snow and broken rock, drawn top-down, then pixelated to 128 art pixels a tile (two
+  texels each: about the sprites' density on screen), their palettes cut to 40 colours, made
+  seamless by a dithered cross-fade (each edge takes, more often the nearer it is, what lies one
+  tile further in the source), their height taken from their value into alpha. The mode loads them
+  into **its scene's** material layers (`materials.js` GRASS, STRAW, DIRT, SAND, LICHEN, SNOW,
+  ROCK; the crop, reed and noise layers stay), with their mean colours: the terrain shader tints a
+  layer by its mean (`matTint`, `matShade`), so the land keeps its painted design — which ground
+  lies where, the meadow's golden patches, the plot centres — and takes the pixel art's texture.
+  No shader changed; the 3D renderer's own layers are untouched.
+* **Prop cards** (`hd2d/art/*.png`, indexed by `hd2d/art/index.js`): single trees (broadleaf,
+  pine, snowy pine, jungle, ancient elven giants, dead), bushes, wildflowers, boulders, violet
+  crystals and lava rocks, drawn as single objects on white, cut out, scaled to a card a set
+  number of art pixels tall, their palette cut and a dark outline added; the trees and bushes with
+  their middle values deepened (a gamma of 1.25-1.35: the model paints foliage a bright lime, the
+  look target's woods are deep greens under bright tips). **Woods** stand as a crowd of small
+  trees, a jittered four-by-four a plot at three quarters of a lone prop's scale (an oak about 0.35
+  of a plot tall), the back row left out and the middle kept low where something stands on the plot
+  behind (species by feature and ground: oaks and pines,
+  pines and snowy pines in the cold, jungle trees, an ancient wood's one or two giants among oaks,
+  dead trees in burnt woods and hell), thinned where a stack or an improvement holds the plot; **open
+  ground** scatters bushes, flowers, a lone tree, boulders (more on hills and peaks), crystals on
+  corrupted land and lava rocks on hell ground. They keep off rivers, roads, a town's footprint and
+  the spot a stack stands on; they cast their outline into the sun's shadow map and a contact
+  shadow, so a wood is dark beneath. What they replace is **claimed** from the 3D dressing
+  (`claims.trees`, `.flora`, `.rocks`): no modelled tree, plant or rock stands in the mode.
 
 ## 6. Light, moods and the post passes
 
 * **The sun** stands at the upper left of the view (west and a little north, about 45° up), where
   the sprites' painted light comes from; shadows fall toward the lower right. The camera never turns.
+  Little fill comes from the sky and the ground, and cast shadows are less floored than the
+  painterly look's (`stylize` 0.7): shade goes deep, as the look target's near-black woods and
+  hollows under bright accents.
 * **Region moods** (`mood.js`): a per-plot RGBA channel in the terrain data
   (`MapTextures.setMood`), from what the player knows: **r hell** (hell terrain; flames, volcanoes,
   souls), **g corruption** (the Sheaim; part of the Infernal and Calabim), **b lush** (the
@@ -238,6 +288,12 @@ lab and tools. The camera is the 3D one with the HD-2D preset's pitch and lens (
 * Node tests: `assets/test/hd2d.test.mjs` (every unit type has a sprite; a stack is one to three
   figures of one sprite and one banner, deterministic; cities, buildings and resources are claimed
   as cards; nothing stands on, and no mood comes from, an unrevealed plot).
+* **Art**: `tools/hd2d/art.py ground SRC NAME` (a top-down texture to a seamless ground layer),
+  `prop SRC NAME HEIGHT [DEEPEN]` (an object on white to a card), `index` (writes
+  `art/index.js`); run it with Python with Pillow and numpy (ComfyUI's bundled one has both). The
+  images came from the local FLUX 3 Image Klein (the owner's `local-image-gen` skill); `build.rs`
+  embeds `assets/app/r3d/hd2d/art/*.png` beside the isometric sprites, and the server's client
+  paths may now have five parts (`app/r3d/hd2d/art/x.png`).
 * `ffh-play stage corrupt DIR` now tries seeds 11 to 30 until one has an evil civilization holding a
   capital at turn 200 (an AI change had left seed 11 without one) and reports the seed it used.
 
@@ -283,6 +339,11 @@ beside an Intel UHD integrated GPU, headless Chrome 156 (`FFH_CHROMIUM_CHANNEL=c
   (in front and ghosted) and the low camera puts more terrain on screen — to profile in phase 2.
   At 1280 × 800 (canvas 940 × 640) frames are 8-12 ms in both. Start-up (sync, CPU): world 9 ms,
   textures 61, dressing 166, instance upload 118, paint layers 101 — as the 3D renderer's.
+* **After the second batch** (the same save, page and runs; `r3d-perf --renderer hd2d --configs
+  hd2d --zooms 40,96,128`): frames **6.1, 4.5 and 5.9 ms** at 40, 96 and 128 px a plot (16-21 ms
+  before), scene pass 1.6, 1.5 and 2.9 ms; prop triangles 154k, 60k and 70k (1.32 M and 0.81 M
+  before): the cards that stand for the woods, plants and rocks are a quad each, where the models
+  they replace were hundreds of triangles. Sync: dressing 110 ms, instance upload 19 ms.
 * **Panning stability** (`tools/r3d-lab.mjs --gpu --stability`, `scene=hd2d` at 96 px, a 4 px pan,
   mean |diff| over 0-255 and the share of pixels off by more than 24, `{"animate":false}`):
 
@@ -306,10 +367,10 @@ beside an Intel UHD integrated GPU, headless Chrome 156 (`FFH_CHROMIUM_CHANNEL=c
 
 ## 9. Cities and the camera
 
-The camera is the 3D renderer's with a lower pitch, a narrower swing and a wider lens (`pitch` 36,
-`fov` 30 against 50 and 24; `pitchAt`): 42° from the horizon at the farthest zoom, about 35° at the
-gameplay zoom (96 px a plot) and 30° at the closest, so the top of the view runs out toward the
-horizon.
+The camera is the 3D renderer's with a lower pitch, a narrower swing, a wider lens and a closer
+default zoom (`pitch` 32, `fov` 30 against 50 and 24; `pitchAt`; 128 px a plot against 96): 38°
+from the horizon at the farthest zoom, about 29° at the default zoom and 26° at the closest, so the
+top of the view runs out toward the horizon.
 
 The figures are cards that face the camera: they look the same at any pitch. The settlements and
 buildings are cards too, but their art has its ground painted in, drawn for the isometric map's
@@ -322,56 +383,51 @@ zoom.
 
 ## 10. The gaps to the reference
 
-Side by side ([hd2d/lab-vs-reference.jpg](hd2d/lab-vs-reference.jpg)), ranked by how much of the
-remaining distance each closes; each says what new art (or code) would close it.
+Side by side ([hd2d/lab-vs-reference.jpg](hd2d/lab-vs-reference.jpg), after the second batch),
+ranked by how much of the remaining distance each closes; each says what would close it. The first
+review ranked the ground textures first and single trees second: both are done (§5b), with art of
+the mode's own, and they closed the largest part of the gap — the land and the woods are now the
+same medium as the figures.
 
-1. **Ground textures** (new art). The reference's land is a dense mosaic of pixel-painted ground —
-   meadow, moss, rock, sand, every tile busy with small props; ours is the 3D renderer's smooth,
-   painterly materials, which read as a different medium under pixel-art cards and leave open
-   ground flat. Pixel-art ground textures for the 3D materials (tiling, world-anchored, at the
-   sprites' texel density) would close the largest part of the gap.
-2. **Single trees cut for cards** (new art). The reference's forests are crowds of pixel-art trees;
-   ours are the 3D renderer's modelled crowns — well lit, but the one 3D-looking thing among the
-   cards. The iso forest sprites are whole-tile clumps with their ground painted in, so they
-   cannot stand as cards without that ground showing. Single trees (and bushes, rocks) cut out for
-   cards, a few variants each, would let woods be scattered card by card.
-3. **Cities without their ground patch** (new art). A settlement's painted diamond of ground is the
+1. **Detail on open ground** (more art, code). The reference fills every tile: huts, gold piles,
+   standing stones, flowers and rocks in clusters; our open plots carry a bush, a flower patch and
+   now and then a boulder. More prop kinds (huts, fences, stones, flower beds, small ruins) and
+   denser, clustered scattering would close it.
+2. **Cities without their ground patch** (new art). A settlement's painted diamond of ground is the
    isometric map's, seen along a plot's diagonal from 30°: on this camera it reads as a plinth, and
-   it limits the camera to about 45° (§9). The same towns drawn without ground (and, ideally, a
-   little larger, as the reference's Eärlann spans two tiles) would sit in the 3D land at any
-   pitch; a matching ground decal can be drawn by code.
-4. **Darker and moodier variants of the sprites** (new art, or a code stop-gap). The sprites are
-   painted for a bright sunny board; the corrupted and hell regions grade them only at 40% (so they
-   stay readable). The reference's Sheaim and infernal towns and figures are themselves dark,
-   purple and ember-lit. Night-and-corruption variants (or a palette-mapped recolour per mood, which
-   code could do now) would fit them into their regions.
-5. **Mana crystals and region props** (new art). The reference strews its corrupted land with
-   purple crystals, its forests with glowing flowers and its hell with lava pools; our regions get
-   their mood from the grade, the cracks and particles only. A small set of crystal, flower and
-   lava-rock cards would carry each mood into the land itself.
-6. **Unit sprites facing left and animated** (new art). Figures are mirrored when they face west
-   (the light painted from the upper left then comes from the upper right), and stand still; the
-   reference's groups face the viewer. Idle frames already exist for a few units in
-   `anim-sprint/`; a two-frame idle and a left-facing pose would bring the groups to life.
-7. **Tilt-shift and haze strength, the sky** (code, phase 2). The reference blurs more strongly and
-   shows no map edge; ours stays mild by the brief (the top third must read), and the edge of a
-   small map shows the 3D renderer's parchment void. A painted sky or far haze bank for the map's
-   north edge is code.
+   it limits the camera to about 45° (§9). The cards are now about two plots wide, as the
+   reference's Eärlann; the same towns drawn without ground would sit in the land at any pitch, and
+   a matching ground decal can be drawn by code.
+3. **Water** (code). The reference is laced with rivers, lakes and waterfalls; the lab scene and
+   the 3D renderer's rivers are narrower and have no falls (docs/R3D.md §14).
+4. **Scale of the figures** (a parameter). The reference's figures are about a third of a tile;
+   ours are about 0.6 of a plot, chosen for readability at 96 px a plot. Smaller groups at the
+   closer default zoom (128) would match it; it is a readability call for the owner.
+5. **Darker and moodier variants of the sprites** (unit art; set aside by the owner for now). The
+   sprites are painted for a bright sunny board; corrupted and hell regions grade figures only a
+   little, so they stay readable.
+6. **Unit sprites facing left and animated** (unit art; set aside). Figures are mirrored when they
+   face west and stand still; idle frames exist for a few units in `anim-sprint/`.
+7. **The sky and the map's edge** (code). A small map's edge shows the 3D renderer's parchment void
+   under the shafts; a painted sky or far haze bank would hide it.
 
 ## 11. Configuration
 
 `r3d/hd2d/config.js`: the `hd2d` preset (the 3D renderer's painterly switches with: a lower camera,
-`pitch` 36 and `fov` 30; `grid` 0; `saturation` 1.14, `contrast` 1.14, `vignette` 0.32, `haze` 0.22,
-`clouds` 0.22, `ssao` 0.6, `glow` 0.8) and the mode's own switches: `tiltShift` (0.4), `rays` (0.55),
-`mood` (1), `bloom` (0.45), `beams` (1), `borderGlow` (1), `contact` (1), `lean` (1). The `plain`
+`pitch` 32 and `fov` 30; `grid` 0; deeper shade, `stylize` 0.7, `ssao` 0.85; `saturation` 1.16,
+`contrast` 1.22, `vignette` 0.42, `haze` 0.1, `mist` 0.08, `clouds` 0.3, `glow` 1.0) and the mode's
+own switches: `tiltShift` (0.6), `rays` (0.6), `mood` (1), `bloom` (0.8, from a lower threshold),
+`beams` (1), `borderGlow` (1), `contact` (1), `lean` (1). `LIGHT` gives little sky and ground fill
+(0.5 and 0.15). The `plain`
 preset turns the stylisation and the mode's passes off (the cards stay). Its `LIGHT` is the one
 light. Stored apart from the 3D renderer's look (`ffh.hd2d.config`); the panel offers the 3D
 switches that apply (not the paint filter, ink or grid) and the mode's rows.
 
 ## 12. Removing it
 
-Delete `assets/app/r3d/hd2d/`, `assets/test/hd2d.test.mjs`, `r3d-lab/compile.html`, this file and
-`docs/art/hd2d-reference.png`; remove the `app/r3d/hd2d/*` lines of `ASSETS` in
+Delete `assets/app/r3d/hd2d/` (with its `art/`), `assets/test/hd2d.test.mjs`,
+`r3d-lab/compile.html`, `tools/hd2d/`, this file and `docs/art/hd2d-reference.png`, and the
+`r3d/hd2d/art` folder from `build.rs`; remove the `app/r3d/hd2d/*` lines of `ASSETS` in
 `src/transport/http.rs`, `EXPERIMENTAL_HD2D` and its option in `look.js`/`tools.js`, the `"hd2d"`
 branches in `main.js` and `map.js`, `scene=hd2d`/`renderer=hd2d` in the lab, the `hd2d` shots in
 `r3d-compare.mjs` and `--renderer` in `r3d-perf.mjs`. The hooks left in the 3D renderer's files are
@@ -403,7 +459,13 @@ its defaults and do no harm.
 
 ## 14. Provenance
 
-Every sprite is the isometric renderer's (docs/ISO.md: drawn by an image model and brought to one
-contract by code in `tools/m7/`); the banners, the cracks, the beams and every pattern are drawn by
-code at run time. No new art, model, texture, font or library was added for this mode; the
-reference image is the owner's.
+The units, cities, buildings and resources are the isometric renderer's sprites (docs/ISO.md: drawn
+by an image model and brought to one contract by code in `tools/m7/`). The ground layers and prop
+cards in `assets/app/r3d/hd2d/art/` were drawn by FLUX 3 Image Klein (Black Forest Labs) running
+locally in ComfyUI, and post-processed by `tools/hd2d/art.py` (prompts in §5b's spirit: 16-bit
+pixel art, top-down for ground, a single object lit from the upper left on white for props).
+**Licence:** FLUX 3 Image Klein is under the FLUX Kommunity License — non-commercial use, with a
+commercial-output exception for "Qualifying Users" under its terms; check
+https://huggingface.co/black-forest-labs/flux-3-image-klein-comfy/blob/main/LICENSE.md before
+shipping these images in a game that is sold. The banners, the cracks, the beams and every pattern
+are drawn by code at run time; the reference image is the owner's.

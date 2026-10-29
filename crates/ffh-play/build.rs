@@ -3,7 +3,8 @@
 // modules, each by `include_str!`), which `src/transport/http.rs` includes. The file lists come
 // from `src/transport/art_files.rs`, which the server also uses for `--assets DIR`.
 // Also embeds the isometric renderer's sprites (`assets/app/iso/*.png`, docs/ISO.md, written by
-// `tools/m7/m7.py export`): `$OUT_DIR/iso_assets.rs`, every PNG there by `include_bytes!`.
+// `tools/m7/m7.py export`) and the HD-2D mode's own art (`assets/app/r3d/hd2d/art/*.png`, its
+// ground and prop cards, docs/HD2D.md): `$OUT_DIR/iso_assets.rs`, every PNG there by `include_bytes!`.
 // And sets `FFH_BUILD_COMMIT` (`crate::BUILD_COMMIT`): the commit being built, for bug reports.
 
 use std::path::{Path, PathBuf};
@@ -32,18 +33,20 @@ fn main() {
     rs.push_str("];\n");
     write_if_changed(&out.join("art_assets.rs"), &rs);
 
-    let iso = manifest.join("assets").join("app").join("iso");
-    println!("cargo:rerun-if-changed=assets/app/iso");
-    let mut pngs: Vec<String> = std::fs::read_dir(&iso)
-        .unwrap_or_else(|e| panic!("{}: {e}", iso.display()))
-        .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
-        .filter(|n| n.ends_with(".png"))
-        .collect();
-    pngs.sort();
-    let mut rs = String::from("/// The isometric renderer's sprites (`assets/app/iso/*.png`, docs/ISO.md): `(path, content type, bytes)`.\n");
+    let mut rs = String::from("/// The isometric renderer's sprites (`assets/app/iso/*.png`, docs/ISO.md) and the HD-2D mode's art\n/// (`assets/app/r3d/hd2d/art/*.png`, docs/HD2D.md): `(path, content type, bytes)`.\n");
     rs.push_str("pub const ASSET_BYTES: &[(&str, &str, &[u8])] = &[\n");
-    for n in &pngs {
-        rs.push_str(&format!("    ({:?}, PNG, include_bytes!({:?})),\n", format!("app/iso/{n}"), iso.join(n).to_string_lossy()));
+    for sub in ["iso", "r3d/hd2d/art"] {
+        let dir = sub.split('/').fold(manifest.join("assets").join("app"), |d, s| d.join(s));
+        println!("cargo:rerun-if-changed=assets/app/{sub}");
+        let mut pngs: Vec<String> = std::fs::read_dir(&dir)
+            .unwrap_or_else(|e| panic!("{}: {e}", dir.display()))
+            .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
+            .filter(|n| n.ends_with(".png"))
+            .collect();
+        pngs.sort();
+        for n in &pngs {
+            rs.push_str(&format!("    ({:?}, PNG, include_bytes!({:?})),\n", format!("app/{sub}/{n}"), dir.join(n).to_string_lossy()));
+        }
     }
     rs.push_str("];\n");
     write_if_changed(&out.join("iso_assets.rs"), &rs);

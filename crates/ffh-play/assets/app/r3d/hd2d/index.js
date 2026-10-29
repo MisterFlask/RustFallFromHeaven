@@ -12,7 +12,7 @@
 // (hd2d/passes.js). Everything else -- the ground, water, trees, picking, camera, HUD, lab and
 // tools -- is the 3D renderer's.
 
-import { Map3D, DEFAULT_ZOOM as ZOOM_3D } from "../map3d.js";
+import { Map3D } from "../map3d.js";
 import { loadConfig, saveConfig, withPreset, PANEL } from "../config.js";
 import { clamp, smoothstep } from "../math.js";
 import { STORE, LIGHT, DEFAULTS_HD2D, PRESETS_HD2D, PANEL_HD2D } from "./config.js";
@@ -21,8 +21,16 @@ import { Hd2dPasses } from "./passes.js";
 import { dressSpriteStatic, dressSpriteUnits } from "./dress.js";
 import { plotMoods, moodEmitters } from "./mood.js";
 import { staticEnv } from "../dress.js";
+import { MAT } from "../materials.js";
+import { GROUNDS } from "./art/index.js";
 
-export const DEFAULT_ZOOM = ZOOM_3D;
+/** A closer view than the 3D renderer's (128 px a plot against 96): the cards' pixels read. */
+export const DEFAULT_ZOOM = 128;
+
+/** The pixel-art ground layers (hd2d/art, tools/hd2d/art.py) and the material layer each replaces
+ *  in the 3D renderer's ground (materials.js): the terrain shader tints a layer by its mean colour,
+ *  so the land keeps its painted design and takes the pixel art's texture. */
+const GROUND_LAYER = { gnd_grass: MAT.GRASS, gnd_straw: MAT.STRAW, gnd_dirt: MAT.DIRT, gnd_sand: MAT.SAND, gnd_lichen: MAT.LICHEN, gnd_snow: MAT.SNOW, gnd_rock: MAT.ROCK };
 
 export class MapHd2d extends Map3D {
   constructor(view) {
@@ -40,6 +48,61 @@ export class MapHd2d extends Map3D {
       this.dispose();
       throw e;
     }
+    this.groundReady = this.loadGround();
+  }
+
+  /** The pixel-art ground into the 3D renderer's material layers (this scene's own: the 3D
+   *  renderer's are untouched), with their means; resolves when done (a layer that fails to load
+   *  keeps the painted one). */
+  async loadGround() {
+    const gl = this.gl, mats = this.scene.materials;
+    const T = gl.TEXTURE_2D_ARRAY;
+    let n = 0;
+    await Promise.all(
+      GROUNDS.filter((name) => GROUND_LAYER[name] !== undefined).map(async (name) => {
+        try {
+          const im = new Image();
+          im.src = new URL(`./art/${name}.png`, import.meta.url).href;
+          await im.decode();
+          if (!this.running || im.width !== 256 || im.height !== 256) return;
+          const c = document.createElement("canvas");
+          c.width = c.height = 256;
+          const g = c.getContext("2d", { willReadFrequently: true });
+          g.drawImage(im, 0, 0);
+          const px = g.getImageData(0, 0, 256, 256).data;
+          let r = 0, gg = 0, b = 0;
+          for (let k = 0; k < px.length; k += 4) {
+            r += px[k];
+            gg += px[k + 1];
+            b += px[k + 2];
+          }
+          const m = 255 * 256 * 256;
+          gl.bindTexture(T, mats.tex);
+          // The PNG as it is: colour not premultiplied (alpha is the layer's height), no colour
+          // conversion (the shader treats the layers' colours as authored).
+          gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+          gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.NONE);
+          gl.texSubImage3D(T, 0, 0, 0, GROUND_LAYER[name], 256, 256, 1, gl.RGBA, gl.UNSIGNED_BYTE, im);
+          gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.BROWSER_DEFAULT_WEBGL);
+          mats.mean.set([r / m, gg / m, b / m], GROUND_LAYER[name] * 3);
+          n++;
+        } catch (e) {
+          console.warn(`hd2d: ground ${name} did not load`, e);
+        }
+      }),
+    );
+    if (n && this.running) {
+      gl.bindTexture(T, mats.tex);
+      gl.generateMipmap(T);
+      gl.bindTexture(T, null);
+      this.dirty = true;
+    }
+  }
+
+  /** Resolves once the sprites asked for and the ground have loaded (a capture waits for it). */
+  async whenReady() {
+    await this.groundReady;
+    await this.sprites.atlas.whenLoaded();
   }
 
   dispose() {
@@ -95,7 +158,8 @@ export class MapHd2d extends Map3D {
    *  static cards, the beams and the mood channel are made with it. */
   dressEnv(world) {
     const env = staticEnv(world);
-    const st = dressSpriteStatic(world, this.view.map, this.sprites.atlas);
+    this.moods = plotMoods(world, this.view.map);
+    const st = dressSpriteStatic(world, this.view.map, this.sprites.atlas, env, this.moods.moods);
     env.claims = st.claims;
     this.spriteStatic = st;
     return env;
@@ -105,7 +169,7 @@ export class MapHd2d extends Map3D {
     const st = this.spriteStatic;
     this.sprites.set("static", st?.list ?? []);
     this.sprites.set("beams", st?.beams ?? []);
-    const { data, moods } = plotMoods(this.world, map);
+    const { data, moods } = this.moods ?? plotMoods(this.world, map);
     this.scene.tex.setMood(this.world, data);
     for (const e of moodEmitters(this.world, moods)) emitters.push(e);
   }
