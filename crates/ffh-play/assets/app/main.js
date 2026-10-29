@@ -794,11 +794,16 @@ function syncSkin() {
  *  `lookLoaded` switches to the art only when it was the choice, so the map would stay flat. The
  *  remembered choice stays "3d": the next page tries again. `mode` "hd2d" is the HD-2D mode. */
 async function use3d(mode = "3d") {
+  // A slow start is the shaders compiling (seconds on Windows' default Direct3D backend): say so.
+  const slow = setTimeout(() => toast("Preparing the 3D map (compiling its shaders)…", "info", 6000), 1500);
   const ok = await mapView.useR3d(true, mode);
+  clearTimeout(slow);
   syncSkin();
   if (ok) return;
   if (mapView.r3dError?.code === "software-webgl") {
     toast(`${mapView.r3dError.message} Enable hardware acceleration in your browser (or add ?force3d=1 to try anyway); using the isometric map.`, "error", 15000);
+  } else if (mapView.r3dError?.code === "slow-shaders") {
+    toast(`${mapView.r3dError.message} Your browser's graphics backend compiles them too slowly; using the isometric map.`, "error", 15000);
   } else {
     toast("The 3D renderer cannot run in this browser (it needs WebGL2); using the isometric map.", "error");
   }

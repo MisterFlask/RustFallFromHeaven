@@ -387,8 +387,8 @@ vec3 filmic(vec3 x) {
 bool bad(vec3 c) { return any(isnan(c)) || any(isinf(c)); }
 void main() {
   vec4 c = texture(uColor, vUv);
-  // The 3D renderer's water shader leaves a few non-finite pixels on a real GPU (dashed black
-  // lines in lakes and on the shelf, docs/HD2D.md §8): each takes its finite neighbours' mean.
+  // A guard: a non-finite pixel takes its finite neighbours' mean (the 3D renderer's terrain wrote
+  // dashed lines of them on a real GPU, spread by its water, until fixed: docs/R3D.md §5.2).
   if (bad(c.rgb)) {
     vec2 px = 1.0 / vec2(textureSize(uColor, 0));
     vec3 s = vec3(0.0);

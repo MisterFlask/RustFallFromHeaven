@@ -71,26 +71,43 @@ float hash13(vec3 p3) {
   return fract((p3.x + p3.y) * p3.z);
 }
 
-// Value noise on a lattice periodic over P (cells).
+// Value noise on a lattice periodic over P (cells). The corners' hashes are hash12's, worked out
+// together: the same operations on the same values (the same image), in a third of the
+// instructions. The noise is inlined some 150 times into the terrain shader, and Direct3D's shader
+// compiler (FXC, under ANGLE: Chrome's default on Windows) takes time growing about with the
+// square of a shader's length (docs/R3D.md §11.1).
 float pnoise(vec2 p, vec2 P) {
   vec2 i = floor(p);
   vec2 f = fract(p);
   vec2 u = f * f * (3.0 - 2.0 * f);
-  float a = hash12(mod(i, P));
-  float b = hash12(mod(i + vec2(1.0, 0.0), P));
-  float c = hash12(mod(i + vec2(0.0, 1.0), P));
-  float d = hash12(mod(i + vec2(1.0, 1.0), P));
-  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+  // The corners' wrapped cells, (x0, y0, x1, y1); hash12's p3 is (r.x, r.y, r.x) at (x0, y0), and
+  // so on.
+  vec4 c = mod(vec4(i, i + 1.0), P.xyxy);
+  vec4 r = fract(c * 0.1031);
+  vec4 s = r + 33.33;
+  // Corners (0, 0), (1, 0), (0, 1), (1, 1).
+  vec4 d = vec4(dot(r.xyx, s.yxx), dot(r.zyz, s.yzz), dot(r.xwx, s.wxx), dot(r.zwz, s.wzz));
+  vec4 x = r.xzxz + d;
+  vec4 h = fract((x + (r.yyww + d)) * x);
+  return mix(mix(h.x, h.y, u.x), mix(h.z, h.w, u.x), u.y);
+}
+
+// The noises pick their lattice before one pnoise (mix with a bool: a select, which ANGLE keeps as
+// one; a '?:' becomes an if/else, and a pnoise in each branch would be two copies of it).
+bool wrapX() { return uWrapX > 0.5; }
+
+// The map point m on a lattice of about f cells a plot (xy) and the lattice's period in x (z): a
+// whole number of cells over a wrapping map's width.
+vec3 mlattice(vec2 m, float f) {
+  float P = mix(4096.0, max(1.0, floor(uMapSize.x * f + 0.5)), wrapX());
+  return vec3(mix(m * f, vec2(m.x * P / uMapSize.x, m.y * f), bvec2(wrapX())), P);
 }
 
 // Map-anchored noise at about f cycles per plot (0..1), periodic over the map's width on a
 // wrapping map.
 float mnoise(vec2 m, float f) {
-  if (uWrapX > 0.5) {
-    float P = max(1.0, floor(uMapSize.x * f + 0.5));
-    return pnoise(vec2(m.x * P / uMapSize.x, m.y * f), vec2(P, 4096.0));
-  }
-  return pnoise(m * f, vec2(4096.0));
+  vec3 l = mlattice(m, f);
+  return pnoise(l.xy, vec2(l.z, 4096.0));
 }
 
 float mfbm(vec2 m, float f) {
@@ -103,12 +120,10 @@ float mstroke(vec2 m, float f, float stretch) {
   vec2 d = vec2(m.x + m.y * 0.6, m.y - m.x * 0.6);
   float fa = f / stretch;
   float fb = f;
-  if (uWrapX > 0.5) {
-    float Pa = max(1.0, floor(uMapSize.x * fa + 0.5));
-    float Pb = max(1.0, floor(uMapSize.x * 0.6 * fb + 0.5));
-    return pnoise(vec2(d.x * Pa / uMapSize.x, d.y * Pb / (uMapSize.x * 0.6)), vec2(Pa, Pb));
-  }
-  return pnoise(vec2(d.x * fa, d.y * fb), vec2(4096.0));
+  bvec2 wr = bvec2(wrapX());
+  vec2 P = mix(vec2(4096.0), vec2(max(1.0, floor(uMapSize.x * fa + 0.5)), max(1.0, floor(uMapSize.x * 0.6 * fb + 0.5))), wr);
+  vec2 p = mix(vec2(d.x * fa, d.y * fb), vec2(d.x * P.x / uMapSize.x, d.y * P.y / (uMapSize.x * 0.6)), wr);
+  return pnoise(p, P);
 }
 
 // Strokes running along the map's x -- left to right on the screen, the camera looking north --
@@ -116,17 +131,16 @@ float mstroke(vec2 m, float f, float stretch) {
 // reflections into such level strokes).
 float mstrokeH(vec2 m, float f, float stretch) {
   float fa = f / stretch;
-  if (uWrapX > 0.5) {
-    float P = max(1.0, floor(uMapSize.x * fa + 0.5));
-    return pnoise(vec2(m.x * P / uMapSize.x, m.y * f), vec2(P, 4096.0));
-  }
-  return pnoise(vec2(m.x * fa, m.y * f), vec2(4096.0));
+  float P = mix(4096.0, max(1.0, floor(uMapSize.x * fa + 0.5)), wrapX());
+  vec2 p = mix(vec2(m.x * fa, m.y * f), vec2(m.x * P / uMapSize.x, m.y * f), bvec2(wrapX()));
+  return pnoise(p, vec2(P, 4096.0));
 }
 
 // Cellular noise: (distance to nearest, to second nearest) feature point, periodic like mnoise.
 vec2 mcells(vec2 m, float f) {
-  float P = uWrapX > 0.5 ? max(1.0, floor(uMapSize.x * f + 0.5)) : 4096.0;
-  vec2 p = uWrapX > 0.5 ? vec2(m.x * P / uMapSize.x, m.y * f) : m * f;
+  vec3 l = mlattice(m, f);
+  float P = l.z;
+  vec2 p = l.xy;
   vec2 i = floor(p);
   vec2 fr = fract(p);
   float d1 = 8.0, d2 = 8.0;
@@ -145,8 +159,9 @@ vec2 mcells(vec2 m, float f) {
 // each its own tone, laid in a consistent hand (orientations within a 60-degree fan). Returns the
 // tone of the dab covering the point, 0..1, and 0.5 between dabs; periodic like mnoise.
 float mdabs(vec2 m, float f) {
-  float P = uWrapX > 0.5 ? max(1.0, floor(uMapSize.x * f + 0.5)) : 4096.0;
-  vec2 p = uWrapX > 0.5 ? vec2(m.x * P / uMapSize.x, m.y * f) : m * f;
+  vec3 l = mlattice(m, f);
+  float P = l.z;
+  vec2 p = l.xy;
   vec2 i = floor(p);
   vec2 fr = fract(p);
   float best = 0.0, tone = 0.5;
@@ -483,7 +498,7 @@ float gH = 0.0;
 // Layer 'l' at about f tiles a plot -- a whole number of tiles over a wrapping map's width, so no
 // seam -- shifted by 'off', mirrored east-west when 'mir' is -1 (still seamless).
 vec4 matAt(vec2 m, int l, float f, vec2 off, float mir) {
-  float fx = uWrapX > 0.5 ? max(1.0, floor(uMapSize.x * f + 0.5)) / uMapSize.x : f;
+  float fx = mix(f, max(1.0, floor(uMapSize.x * f + 0.5)) / uMapSize.x, wrapX());
   vec2 s = vec2(fx * mir, f);
   return textureGrad(uMat, vec3(m * s + off, float(l)), gDx * s, gDy * s);
 }
@@ -552,8 +567,9 @@ vec3 flowers(vec2 m, vec3 c, float amt) {
   float k = amt * (1.0 - smoothstep(0.13, 0.24, aa)) * min(gK(), 1.0) * gMarkW;
   float drift = smoothstep(0.5, 0.78, mnoise(m + 19.0, 1.1));
   if (k * drift <= 0.0) return c;
-  float P = uWrapX > 0.5 ? max(1.0, floor(uMapSize.x * f + 0.5)) : 4096.0;
-  vec2 p = uWrapX > 0.5 ? vec2(m.x * P / uMapSize.x, m.y * f) : m * f;
+  vec3 l = mlattice(m, f);
+  float P = l.z;
+  vec2 p = l.xy;
   vec2 cell = mod(floor(p), vec2(P, 4096.0));
   vec2 h = hash22(cell + 0.7);
   if (h.x > 0.15 * drift) return c;
@@ -568,7 +584,7 @@ vec3 flowers(vec2 m, vec3 c, float amt) {
 // crest, the shadow dropping at once behind it), the crest's edge about two pixels wide. The phase
 // runs a whole number of cycles over a wrapping map's width (no seam).
 float dunePh(vec2 m) {
-  float fx = uWrapX > 0.5 ? floor(uMapSize.x * 1.146 + 0.5) / uMapSize.x : 1.146;
+  float fx = mix(1.146, floor(uMapSize.x * 1.146 + 0.5) / uMapSize.x, wrapX());
   return m.x * fx + m.y * 1.432 + 1.432 * mfbm(m, 0.8);
 }
 vec2 dunes(float ph) {
@@ -578,8 +594,9 @@ vec2 dunes(float ph) {
 }
 // mcells with the nearest cell's id (a hash of its wrapped cell, 0..1).
 vec3 mcellsId(vec2 m, float f) {
-  float P = uWrapX > 0.5 ? max(1.0, floor(uMapSize.x * f + 0.5)) : 4096.0;
-  vec2 p = uWrapX > 0.5 ? vec2(m.x * P / uMapSize.x, m.y * f) : m * f;
+  vec3 l = mlattice(m, f);
+  float P = l.z;
+  vec2 p = l.xy;
   vec2 i = floor(p);
   vec2 fr = fract(p);
   float d1 = 8.0, d2 = 8.0, id = 0.0;
@@ -595,8 +612,8 @@ vec3 mcellsId(vec2 m, float f) {
   return vec3(d1, d2, id);
 }
 
-// The unexplored: dark parchment with a faint ink hatching. Its own function: the frontier's call
-// would otherwise inline a second copy of every ground's painting.
+// The unexplored: dark parchment with a faint ink hatching (main paints it once, for the unexplored
+// ground and the frontier both).
 vec3 blankAlbedo(vec2 m) {
   float hatch = smoothstep(0.55, 0.9, mstroke(m, 14.0, 8.0));
   vec3 c = mix(vec3(0.15, 0.12, 0.10), vec3(0.25, 0.20, 0.15), mfbm(m, 0.5));
@@ -604,12 +621,28 @@ vec3 blankAlbedo(vec2 m) {
   return srgb(c * (1.0 - hatch * 0.22));
 }
 
+// The hell grounds' marks, the same under all three, worked out once a fragment (main, where any
+// hell ground has weight): scorch masses, a sparse smouldering network -- one low-frequency crack
+// line (the small iso-rings came from a second high-frequency term, now dropped), live where the
+// corruption runs deepest, with fissures in it -- its slow pulse and the sparks.
+float gScorch = 0.0, gLive = 0.0, gCrack = 0.0, gFis = 0.0, gPulse = 0.0, gSpark = 0.0;
+void hellMarks(vec2 m) {
+  gScorch = smoothstep(0.5, 0.82, mstroke(m, 3.0, 4.0));
+  gLive = smoothstep(0.42, 0.72, mfbm(m + 3.3, 0.5));
+  float r1 = 1.0 - abs(mfbm(m + 7.7, 1.2) - 0.5) * 2.0;
+  gCrack = smoothstep(0.93, 0.985, r1) * gLive;
+  gFis = smoothstep(0.986, 0.998, r1) * gLive;
+  gPulse = 0.72 + 0.28 * sin(uTime * 1.1 + mnoise(m, 0.7) * 9.0);
+  gSpark = smoothstep(0.965, 0.99, mnoise(m, 14.0));
+}
+
+// An open ground's colour ('g' one of the open grounds, the coast or the ocean: main paints the
+// unexplored ground, and each call passes a constant 'g', so it inlines only that ground's branch).
 vec3 groundAlbedo(int g, vec2 m, float h, inout vec3 emit) {
   gH = 0.5;
   if (g == G_SHALLOWS || g == G_COAST) return srgb(masses(m, vec3(0.45, 0.40, 0.30), vec3(0.62, 0.55, 0.40), vec3(0.72, 0.66, 0.50), 1.0));
   if (g == G_OCEAN) return srgb(vec3(0.22, 0.26, 0.28));
   bool hell = g == G_BURNING || g == G_BROKEN || g == G_PERDITION;
-  if (g != G_GRASS && g != G_PLAINS && g != G_DESERT && g != G_TUNDRA && g != G_SNOW && g != G_MARSH && !hell) return blankAlbedo(m);
   // Each open ground: its broad masses (c, procedural: the plot-scale design), then its material's
   // detail over them (materials.js, matTint), or for the hell grounds the value of a related
   // material's detail (matShade: their hue stays their own).
@@ -762,19 +795,11 @@ vec3 groundAlbedo(int g, vec2 m, float h, inout vec3 emit) {
   c = mix(c, c * 0.6, rimW);
   c = mix(c, vec3(0.10, 0.03, 0.05), poolW * 0.8);
   // Blight: scorch masses keep the dark contrast without a uniformly low base.
-  float scorch = smoothstep(0.5, 0.82, mstroke(m, 3.0, 4.0));
-  c = mix(c, c * 0.6, scorch * 0.4);
-  // A sparse smouldering network: one low-frequency crack line (the small iso-rings came from a
-  // second high-frequency term, now dropped), live where the corruption runs deepest.
-  float live = smoothstep(0.42, 0.72, mfbm(m + 3.3, 0.5));
-  float r1 = 1.0 - abs(mfbm(m + 7.7, 1.2) - 0.5) * 2.0;
-  float crackLine = smoothstep(0.93, 0.985, r1) * live;
-  float fis = smoothstep(0.986, 0.998, r1) * live;
-  c = mix(c, vec3(0.04, 0.02, 0.02), crackLine * 0.6);
-  float pulse = 0.72 + 0.28 * sin(uTime * 1.1 + mnoise(m, 0.7) * 9.0);
-  emit += srgb(hot) * fis * pulse * 1.1;
-  c += srgb(hot) * crackLine * 0.03;
-  emit += srgb(hot) * smoothstep(0.965, 0.99, mnoise(m, 14.0)) * live * 0.22;
+  c = mix(c, c * 0.6, gScorch * 0.4);
+  c = mix(c, vec3(0.04, 0.02, 0.02), gCrack * 0.6);
+  emit += srgb(hot) * gFis * gPulse * 1.1;
+  c += srgb(hot) * gCrack * 0.03;
+  emit += srgb(hot) * gSpark * gLive * 0.22;
   return srgb(c);
 }
 
@@ -824,16 +849,40 @@ vec3 featureFloor(int f, vec3 c, vec2 m, inout vec3 emit) {
 
 // Bump from a height field given per pixel (derivative bump mapping, Mikkelsen 2010): the brush
 // strokes' impasto catching the light. The field is world-anchored; only its derivatives are taken
-// on screen, so it does not swim.
-// bumpD takes the derivatives already taken (where every pixel of the quad still runs).
+// on screen, so it does not swim. bumpD takes the derivatives already taken, where every pixel of
+// the quad still runs (main).
 vec3 bumpD(vec3 n, vec3 dpdx, vec3 dpdy, float dhdx, float dhdy, float k) {
   vec3 r1 = cross(dpdy, n), r2 = cross(n, dpdx);
   float det = dot(dpdx, r1);
   vec3 grad = sign(det) * (dhdx * r1 + dhdy * r2);
   return normalize(abs(det) * n - k * grad);
 }
-vec3 bump(vec3 n, vec3 p, float hgt, float k) {
-  return bumpD(n, dFdx(p), dFdy(p), dFdx(hgt), dFdy(hgt), k);
+
+// The summed weight of the plots of one kind (ground or feature) among the four.
+float kindW(int kind, ivec4 kinds, vec4 w) { return dot(vec4(equal(kinds, ivec4(kind))), w); }
+
+// Ground 'g' (a constant: see main) painted with its weight wk: its colour, the paint filter's keep
+// mask, its relief and its glow added in.
+void paintGround(int g, float wk, vec2 m, float h, inout vec3 alb, inout float keepG, inout float hG, inout vec3 emit) {
+  if (wk < 0.004) return;
+  vec3 e = vec3(0.0);
+  gKeep = 0.0;
+  gMarkW = smoothstep(0.08, 0.2, wk);
+  alb += groundAlbedo(g, m, h, e) * wk;
+  keepG += gKeep * wk;
+  hG += gH * wk;
+  emit += e * wk;
+}
+
+// Whether feature 'f' lays a floor of its own (featureFloor).
+bool hasFloor(int f) { return f >= F_FOREST && f <= F_FALLOUT && f != F_OASIS && f != F_VOLCANO && f != F_BLIZZARD; }
+
+// Feature 'f''s floor over the ground's colour 'alb', with its weight wk, added in.
+void paintFeature(int f, float wk, vec3 alb, vec2 m, inout vec3 fa, inout vec3 emit) {
+  if (wk <= 0.0) return;
+  vec3 e = vec3(0.0);
+  fa += featureFloor(f, alb, m, e) * wk;
+  emit += e * wk;
 }
 
 void main() {
@@ -846,19 +895,27 @@ void main() {
   gDx = dFdx(m);
   gDy = dFdy(m);
   gPpx = length(abs(gDx) + abs(gDy));
+  // The surface's too, for the bumps. A derivative is undefined in a 2x2 quad some of whose pixels
+  // have left (skipped the branch, returned): on a real GPU the bumps' derivatives, taken in
+  // branches, came out zero there and their normals NaN -- black dashes along the branches' edges
+  // (the deep floor's contour, the rock's), which the water seen through then spread. SwiftShader
+  // runs a quad in step and never showed them. So the bumps' derivatives are all taken outside the
+  // branches.
+  vec3 pDx = dFdx(vWorld), pDy = dFdy(vWorld);
   // The deep sea floor is deeper than the water lets anyone see (the water, drawn over it, shows at
   // most a dark trace of it), so it is shaded cheaply -- but with its true depth, which the water
   // reads for its thickness. Not where unexplored: no water is drawn there, and the blank
   // parchment below must show.
-  if (h < -0.3) {
-    float v0 = visAt(vWorld);
-    if (v0 >= 0.05) {
-      vec3 c0 = srgb(vec3(0.22, 0.26, 0.28)) * (uSunColor * max(dot(n, uSunDir), 0.0) * 0.6 + uSkyColor);
-      oColor = vec4(atmosphere(fogOfWar(c0, v0), vWorld), 0.0);
-      oND = vec4(normalize((uView * vec4(n, 0.0)).xyz), -(uView * vec4(vWorld, 1.0)).z);
-      oEmit = vec4(0.0);
-      return;
-    }
+  float v0 = h < -0.3 ? visAt(vWorld) : 0.0;
+  // Where that return splits a quad, the pixels left have lost the neighbours their bumps'
+  // derivatives need: they go unbumped (a line of pixels under 0.3 of water).
+  float split = fwidth(v0 >= 0.05 ? 1.0 : 0.0);
+  if (v0 >= 0.05) {
+    vec3 c0 = srgb(vec3(0.22, 0.26, 0.28)) * (uSunColor * max(dot(n, uSunDir), 0.0) * 0.6 + uSkyColor);
+    oColor = vec4(atmosphere(fogOfWar(c0, v0), vWorld), 0.0);
+    oND = vec4(normalize((uView * vec4(n, 0.0)).xyz), -(uView * vec4(vWorld, 1.0)).z);
+    oEmit = vec4(0.0);
+    return;
   }
 
   // The ground of the four plots around the point, blended by bilinear weights sharpened and
@@ -892,53 +949,85 @@ void main() {
   float brk = matAt(m, M_NOISE, 0.75, vec2(0.13, 0.29), 1.0).r;
   w = pow(w, vec4(2.2 + 4.0 * brk));
   w /= dot(w, vec4(1.0));
-  // Each distinct ground among the four is painted once, with the summed weight of its plots.
   float ws[4] = float[](w.x, w.y, w.z, w.w);
-  // How much of the point is hell ground: its rock is basalt and it takes no snow.
-  float hellW = 0.0;
-  for (int k = 0; k < 4; k++) if (gs[k] == G_BURNING || gs[k] == G_BROKEN || gs[k] == G_PERDITION) hellW += ws[k];
+  // How much of the point is hell ground (its rock is basalt and it takes no snow), and how much is
+  // unexplored.
+  float hellW = 0.0, voidW = 0.0;
+  for (int k = 0; k < 4; k++) {
+    if (gs[k] == G_BURNING || gs[k] == G_BROKEN || gs[k] == G_PERDITION) hellW += ws[k];
+    if (gs[k] < G_GRASS || gs[k] > G_OCEAN) voidW += ws[k];
+  }
+  // Each ground among the four is painted once, with the summed weight of its plots: a call for
+  // each kind of ground, with its id a constant, so each inlines only its own branch, and no loop
+  // round them (docs/R3D.md §11.1: FXC took over 15 minutes over the painting unrolled once
+  // per plot, and minutes over it in a loop). The shallows are painted as the coast.
+  ivec4 gv = ivec4(gs[0], gs[1], gs[2], gs[3]);
   vec3 alb = vec3(0.0);
   float keepG = 0.0;
   // The relief of the ground's materials, by the same weights.
-  gBias = (mnoise(m + 71.0, 0.6) - 0.5) * 1.2;
   float hG = 0.0;
-  for (int k = 0; k < 4; k++) {
-    if (ws[k] < 0.0) continue;
-    float wk = ws[k];
-    for (int j = k + 1; j < 4; j++) {
-      if (gs[j] == gs[k] && ws[j] >= 0.0) { wk += ws[j]; ws[j] = -1.0; }
-    }
-    if (wk < 0.004) continue;
-    vec3 e = vec3(0.0);
-    gKeep = 0.0;
-    gMarkW = smoothstep(0.08, 0.2, wk);
-    alb += groundAlbedo(gs[k], m, h, e) * wk;
-    keepG += gKeep * wk;
-    hG += gH * wk;
-    emit += e * wk;
+  gBias = (mnoise(m + 71.0, 0.6) - 0.5) * 1.2;
+  if (hellW > 0.0) hellMarks(m);
+  paintGround(G_GRASS, kindW(G_GRASS, gv, w), m, h, alb, keepG, hG, emit);
+  paintGround(G_DESERT, kindW(G_DESERT, gv, w), m, h, alb, keepG, hG, emit);
+  paintGround(G_TUNDRA, kindW(G_TUNDRA, gv, w), m, h, alb, keepG, hG, emit);
+  paintGround(G_SNOW, kindW(G_SNOW, gv, w), m, h, alb, keepG, hG, emit);
+  paintGround(G_MARSH, kindW(G_MARSH, gv, w), m, h, alb, keepG, hG, emit);
+  paintGround(G_BURNING, kindW(G_BURNING, gv, w), m, h, alb, keepG, hG, emit);
+  paintGround(G_BROKEN, kindW(G_BROKEN, gv, w), m, h, alb, keepG, hG, emit);
+  paintGround(G_PERDITION, kindW(G_PERDITION, gv, w), m, h, alb, keepG, hG, emit);
+  paintGround(G_COAST, kindW(G_SHALLOWS, gv, w) + kindW(G_COAST, gv, w), m, h, alb, keepG, hG, emit);
+  paintGround(G_OCEAN, kindW(G_OCEAN, gv, w), m, h, alb, keepG, hG, emit);
+  // The unexplored ground: the blank parchment, painted once for it and for the frontier (below).
+  float v = visAt(vWorld);
+  vec3 blank = vec3(0.0);
+  if (voidW >= 0.004 || v < 0.7) blank = blankAlbedo(m);
+  if (voidW >= 0.004) {
+    alb += blank * voidW;
+    hG += 0.5 * voidW;
   }
-  // Features' floors, by the same weights.
+  // Features' floors, by the same weights, each kind once in the same way (the young forest's floor
+  // is the forest's).
   int fs[4] = int[](p00.y, p10.y, p01.y, p11.y);
-  float wf[4] = float[](w.x, w.y, w.z, w.w);
-  vec3 fa = vec3(0.0);
-  for (int k = 0; k < 4; k++) {
-    if (wf[k] < 0.0) continue;
-    float wk = wf[k];
-    for (int j = k + 1; j < 4; j++) {
-      if (fs[j] == fs[k] && wf[j] >= 0.0) { wk += wf[j]; wf[j] = -1.0; }
-    }
-    vec3 e = vec3(0.0);
-    fa += (fs[k] == F_NONE ? alb : featureFloor(fs[k], alb, m, e)) * wk;
-    emit += e * wk;
-  }
+  ivec4 fv = ivec4(fs[0], fs[1], fs[2], fs[3]);
+  float bareW = 0.0;
+  for (int k = 0; k < 4; k++) if (!hasFloor(fs[k])) bareW += ws[k];
+  vec3 fa = alb * bareW;
+  paintFeature(F_FOREST, kindW(F_FOREST, fv, w) + kindW(F_YOUNG, fv, w), alb, m, fa, emit);
+  paintFeature(F_JUNGLE, kindW(F_JUNGLE, fv, w), alb, m, fa, emit);
+  paintFeature(F_ANCIENT, kindW(F_ANCIENT, fv, w), alb, m, fa, emit);
+  paintFeature(F_BURNT, kindW(F_BURNT, fv, w), alb, m, fa, emit);
+  paintFeature(F_ICE, kindW(F_ICE, fv, w), alb, m, fa, emit);
+  paintFeature(F_FLOOD, kindW(F_FLOOD, fv, w), alb, m, fa, emit);
+  paintFeature(F_SCRUB, kindW(F_SCRUB, fv, w), alb, m, fa, emit);
+  paintFeature(F_FLAMES, kindW(F_FLAMES, fv, w), alb, m, fa, emit);
+  paintFeature(F_OBSIDIAN, kindW(F_OBSIDIAN, fv, w), alb, m, fa, emit);
+  paintFeature(F_SOULS, kindW(F_SOULS, fv, w), alb, m, fa, emit);
+  paintFeature(F_FALLOUT, kindW(F_FALLOUT, fv, w), alb, m, fa, emit);
   alb = fa;
   int here = plotAt(m).z;
   bool known = here != 0;
+  // Rock on steep ground (painted below). Its crags: creases of ridged noise across the rock faces
+  // catch the light (a bump on the shading normal, world-anchored, close up mostly), finer than the
+  // terrain mesh can carry -- their height here, its derivatives outside the branches.
+  float rockMask = 0.0, crag = 0.0;
+  if (known) {
+    float slope = 1.0 - n.y;
+    rockMask = smoothstep(0.24, 0.4, slope + (mnoise(m, 4.0) - 0.5) * 0.14);
+    rockMask = max(rockMask, smoothstep(0.42, 0.62, h) * 0.85);
+    if (rockMask > 0.0) {
+      float crease = 1.0 - abs(mnoise(m + 1.7, 2.2) * 2.0 - 1.0);
+      float crease2 = 1.0 - abs(mnoise(m - 6.1, 5.3) * 2.0 - 1.0);
+      crag = (crease * crease * 0.7 + crease2 * crease2 * 0.3) * rockMask * 0.1 * (0.35 + 0.65 * near);
+    }
+  }
+  vec2 dCrag = vec2(dFdx(crag), dFdy(crag));
+  if (split > 0.0) dCrag = vec2(0.0);
 
   if (known) {
     // Beaches: the land's lowest rim by the water.
     // Polar ice keeps its own blue-white floor at the waterline instead of being painted as beach
-    // sand (F16). The ice weight uses the original bilinear weights (w.*); wf[] was mutated above.
+    // sand (F16).
     float iceW = (fs[0] == F_ICE ? max(0.0, w.x) : 0.0) + (fs[1] == F_ICE ? max(0.0, w.y) : 0.0)
                + (fs[2] == F_ICE ? max(0.0, w.z) : 0.0) + (fs[3] == F_ICE ? max(0.0, w.w) : 0.0);
     float beach = (1.0 - smoothstep(0.02, 0.075, h)) * smoothstep(-0.05, 0.0, h);
@@ -949,17 +1038,10 @@ void main() {
       alb = mix(alb, srgb(matTint(tb, M_SAND, mix(vec3(0.66, 0.57, 0.40), vec3(0.78, 0.70, 0.52), mnoise(m, 2.0)))), beach * 0.85);
       hG = mix(hG, tb.a, beach * 0.85);
     }
-    // Rock on steep ground: cliffs and the flanks of the mountains, with strata.
-    float slope = 1.0 - n.y;
-    float rockMask = smoothstep(0.24, 0.4, slope + (mnoise(m, 4.0) - 0.5) * 0.14);
-    rockMask = max(rockMask, smoothstep(0.42, 0.62, h) * 0.85);
+    // Rock on steep ground: cliffs and the flanks of the mountains, with strata, its crags catching
+    // the light.
     if (rockMask > 0.0) {
-      // Crags: creases of ridged noise across the rock faces catch the light (a bump on the
-      // shading normal, world-anchored, close up mostly), finer than the terrain mesh can carry.
-      float crease = 1.0 - abs(mnoise(m + 1.7, 2.2) * 2.0 - 1.0);
-      float crease2 = 1.0 - abs(mnoise(m - 6.1, 5.3) * 2.0 - 1.0);
-      float crag = (crease * crease * 0.7 + crease2 * crease2 * 0.3) * rockMask;
-      n = bump(n, vWorld, crag * 0.1 * (0.35 + 0.65 * near), 1.0);
+      n = bumpD(n, pDx, pDy, dCrag.x, dCrag.y, 1.0);
       float strata = 0.5 + 0.5 * sin(h * 30.0 + (m.x - m.y) * 1.3 + mnoise(m, 2.5) * 7.0);
       strata *= smoothstep(0.3, 0.7, mnoise(m + 2.0, 1.2));
       float rb = mnoise(m + 2.7, 1.7);
@@ -1076,9 +1158,11 @@ void main() {
       hG = mix(hG, td.a, on);
       keepG = max(keepG, on * 0.6);
     }
-    // The materials' relief, picked out by the light (the mipmaps flatten it with distance).
-    n = bump(n, vWorld, hG * 0.004, 1.0);
   }
+  // The materials' relief, picked out by the light (the mipmaps flatten it with distance).
+  vec2 dRel = vec2(dFdx(hG), dFdy(hG)) * 0.004;
+  if (split > 0.0) dRel = vec2(0.0);
+  if (known) n = bumpD(n, pDx, pDy, dRel.x, dRel.y, 1.0);
 
   // Painter's pigment: a broad hue/value drift that keeps large areas from reading flat.
   float pig = mnoise(m, 0.35) - 0.5;
@@ -1092,7 +1176,6 @@ void main() {
   col = shadowColour(col, sun);
   col += emit;
 
-  float v = visAt(vWorld);
   // The unexplored: the map's blank, dark parchment. The frontier is a brushy edge (the smooth
   // visibility field pushed by brush dabs), with a scorched rim like the edge of burnt paper.
   // (Only near the unknown: well inside what is seen, v + edgeN cannot fall to the edge.)
@@ -1103,9 +1186,8 @@ void main() {
     if (!known) blankT = max(blankT, 1.0 - smoothstep(0.08, 0.3, v + edgeN));
   }
   if (blankT > 0.0) {
-    vec3 blank = blankAlbedo(m) * 1.5;
     float rim = smoothstep(0.0, 0.5, blankT) * (1.0 - smoothstep(0.5, 1.0, blankT));
-    col = mix(col, blank, blankT);
+    col = mix(col, blank * 1.5, blankT);
     col *= 1.0 - rim * 0.55;
     emit *= 1.0 - blankT;
   }

@@ -78,7 +78,8 @@ async function loadPlaywright() {
 
 /** Playwright's Chromium as the smoke test's browser. */
 async function playwrightBrowser(pw, problems) {
-  const browser = await pw.chromium.launch({ headless: !args.headed });
+  // FFH_CHROMIUM_CHANNEL=chrome: the installed Chrome (as the r3d tools, web-lib.mjs chromiumLaunch).
+  const browser = await pw.chromium.launch({ headless: !args.headed, ...(process.env.FFH_CHROMIUM_CHANNEL ? { channel: process.env.FFH_CHROMIUM_CHANNEL } : {}) });
   const page = await browser.newPage({ viewport: VIEW });
   page.on("console", (m) => m.type() === "error" && problems.push(`console: ${m.text()}`));
   page.on("pageerror", (e) => problems.push(`page error: ${e.message}`));

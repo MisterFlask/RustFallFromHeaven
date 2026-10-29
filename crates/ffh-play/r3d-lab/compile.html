@@ -3,24 +3,49 @@
 <title>r3d shader compile times</title>
 <script type="module">
 // Compiles every program of the 3D renderer and of the HD-2D mode, one at a time, and logs how long
-// each takes (docs/HD2D.md, "Real GPU": ANGLE's Direct3D 11 backend compiles some for minutes).
-import { Program, FULLSCREEN_VS } from "/app/r3d/gl.js";
+// each takes to link and then to draw once into as many colour targets as it writes (docs/R3D.md,
+// "Direct3D": ANGLE's Direct3D 11 backend links a program for its first output only and compiles it
+// again at its first draw into three targets). `?only=terrain` takes one.
+import { Program, FULLSCREEN_VS, texture, framebuffer } from "/app/r3d/gl.js";
 import * as SH from "/app/r3d/shaders.js";
 import * as H from "/app/r3d/hd2d/shaders.js";
 const gl = document.createElement("canvas").getContext("webgl2", { powerPreference: "high-performance" });
+const hdr = gl.getExtension("EXT_color_buffer_float");
 const C = SH.COMMON;
 const only = new URLSearchParams(location.search).get("only");
+// [name, vs, fs, colour targets]
 const list = [
-  ["prop", C + SH.PROP_VS, C + SH.PROP_FS], ["water", C + SH.WATER_VS, C + SH.WATER_FS],
-  ["shadow-prop", C + SH.PROP_VS, C + SH.PROP_DEPTH_FS], ["ssao", FULLSCREEN_VS, C + SH.SSAO_FS], ["kuwahara", FULLSCREEN_VS, SH.KUWAHARA_FS],
-  ["finish", FULLSCREEN_VS, C + SH.FINISH_FS], ["overlay", C + SH.OVERLAY_VS, C + SH.OVERLAY_FS], ["ghost", C + SH.PROP_VS, C + SH.GHOST_FS],
-  ["hd2d-sprite", C + H.SPRITE_VS, C + H.SPRITE_FS], ["hd2d-rays", FULLSCREEN_VS, C + H.RAYS_FS], ["hd2d-mood", FULLSCREEN_VS, C + H.MOOD_FS],
-  ["terrain", C + SH.TERRAIN_VS, C + SH.TERRAIN_FS],
+  ["prop", C + SH.PROP_VS, C + SH.PROP_FS, 3], ["water", C + SH.WATER_VS, C + SH.WATER_FS, 3],
+  ["shadow-prop", C + SH.PROP_VS, C + SH.PROP_DEPTH_FS, 1], ["ssao", FULLSCREEN_VS, C + SH.SSAO_FS, 1], ["kuwahara", FULLSCREEN_VS, SH.KUWAHARA_FS, 1],
+  ["finish", FULLSCREEN_VS, C + SH.FINISH_FS, 1], ["overlay", C + SH.OVERLAY_VS, C + SH.OVERLAY_FS, 1], ["ghost", C + SH.PROP_VS, C + SH.GHOST_FS, 1],
+  ["hd2d-sprite", C + H.SPRITE_VS, C + H.SPRITE_FS, 3], ["hd2d-rays", FULLSCREEN_VS, C + H.RAYS_FS, 1], ["hd2d-mood", FULLSCREEN_VS, C + H.MOOD_FS, 1],
+  ["terrain", C + SH.TERRAIN_VS, C + SH.TERRAIN_FS, 3],
 ];
-for (const [name, vs, fs] of list.filter(([n]) => !only || n === only)) {
-  const t0 = performance.now();
-  try { new Program(gl, name, vs, fs); console.log(`compiled ${name} ${(performance.now() - t0).toFixed(0)} ms`); }
-  catch (e) { console.log(`failed ${name}: ${String(e.message).slice(0, 200)}`); }
+const F = hdr ? { internal: gl.RGBA16F, format: gl.RGBA, type: gl.HALF_FLOAT } : {};
+const target = (n) => framebuffer(gl, Array.from({ length: n }, () => texture(gl, 4, 4, F)));
+const fbo = { 1: target(1), 3: target(3) };
+const sync = framebuffer(gl, [texture(gl, 1, 1)]);
+const px = new Uint8Array(4);
+for (const [name, vs, fs, n] of list.filter(([n]) => !only || n === only)) {
+  try {
+    let t0 = performance.now();
+    const p = new Program(gl, name, vs, fs).finish();
+    const link = performance.now() - t0;
+    // One draw (no vertices to speak of: what counts is the shader the draw needs), each sampler on
+    // its own unit (two sampler types on one unit would make the draw invalid, and skip it).
+    t0 = performance.now();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo[n]);
+    gl.viewport(0, 0, 4, 4);
+    p.use();
+    for (const [k, unit] of Object.entries(p.units)) gl.uniform1i(p.u[k].loc, unit);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, sync);
+    gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+    const err = gl.getError();
+    console.log(`compiled ${name} ${link.toFixed(0)} ms, first draw ${(performance.now() - t0).toFixed(0)} ms${err ? ` (GL error ${err})` : ""}`);
+  } catch (e) {
+    console.log(`failed ${name}: ${String(e.message).slice(0, 200)}`);
+  }
   await new Promise((r) => setTimeout(r, 0));
 }
 console.log("done");

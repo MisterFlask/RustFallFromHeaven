@@ -32,9 +32,9 @@ cargo build --release
   the mode's own rows, §11) with the frame time and per-pass GPU times.
 * `?r3d={"tiltShift":0}` (any key of §11) or `?r3d=plain` override the look for one page.
 * It needs WebGL2 with GPU acceleration, as the 3D renderer does (docs/R3D.md §1, the same software
-  guard and `?force3d=1`). **On Windows, Chrome's default ANGLE backend (Direct3D 11) does not get
-  through the 3D renderer's terrain shader in reasonable time (§8): start Chrome with
-  `--use-angle=vulkan` (or `--use-angle=gl`) until that shader is fixed.**
+  guard and `?force3d=1`). On Windows, Chrome's default ANGLE backend (Direct3D 11) compiles its
+  programs in about 5 s and stalls the first frame for 7-8 s more; with `--use-angle=vulkan` the
+  mode starts in about a second (§8, docs/R3D.md §11.1).
 * The feature flag is `EXPERIMENTAL_HD2D` in `assets/app/look.js`: false hides the option and
   ignores `?renderer=hd2d`, and the mode's module (`r3d/hd2d/index.js`) is never loaded. The 3D
   renderer alone (`?renderer=3d`) never loads it either.
@@ -308,8 +308,9 @@ does for the isometric sprites. No unit art changed.
 * **Glowing borders**: the overlay's border becomes a hot core in the owner's colour, meandering a
   little inside the owner's side (so the plot grid does not show in it; where two realms meet each
   draws its own colour), its light spilling softly over that side; **no grid**.
-* **Mended pixels**: the HD-2D compose gives a non-finite pixel its neighbours' mean (the 3D
-  renderer's water writes some on a real GPU, §13).
+* **Mended pixels**: the HD-2D compose gives a non-finite pixel its neighbours' mean, as a guard
+  (the 3D renderer's terrain wrote some on a real GPU and its water spread them, until fixed:
+  docs/R3D.md §5.2).
 * **Tilt-shift** (as the frame goes to the canvas): sharp in a band across the view at the hovered
   plot (else the selection, else the middle; eased, so the band glides), blurring toward a half-
   and then a quarter-resolution copy above and below it — a little more at the top (far) — but
@@ -327,7 +328,8 @@ does for the isometric sprites. No unit art changed.
   renders a scripted pan, zoom in, pan with the pointer wandering (the tilt-shift's band follows
   it), zoom out to the far view and back, each frame at its own time, and encodes it with ffmpeg.
 * **Shader compile times**: `r3d-lab/compile.html` (served by `--serve`) compiles every program of
-  the 3D renderer and of the mode, one at a time, and logs each one's time (`?only=terrain`).
+  the 3D renderer and of the mode, one at a time, and logs each one's link and first-draw times
+  (`?only=terrain`; docs/R3D.md §11.1).
 * `tools/r3d-compare.mjs` also saves `hd2d.png`, `hd2d-close.png`, `hd2d-far.png`;
   `tools/r3d-perf.mjs --renderer hd2d` measures the mode (configs: hd2d, no-rays, no-tilt, no-bloom,
   no-mood, no-hd2d-post, plain).
@@ -359,14 +361,16 @@ beside an Intel UHD integrated GPU, headless Chrome 156 (`FFH_CHROMIUM_CHANNEL=c
   GPU … Direct3D11)" — or, with `FFH_ANGLE=vulkan`, "… Vulkan 1.4.357 (NVIDIA NVIDIA GeForce RTX 4080
   Laptop GPU …)". Never a software rasteriser. A player's browser may make the same choice: on a
   laptop with two GPUs, Windows' graphics settings decide which one Chrome gets.
-* **Direct3D 11 does not get through the terrain shader.** On ANGLE's Direct3D 11 backend (Chrome's
-  default on Windows) the 3D renderer's lab page never became ready (stopped after 15 minutes).
-  Compiling each program alone (`r3d-lab/compile.html`): props 1.1 s, water 5.3 s, the HD-2D cards,
-  shafts and mood 0.04-0.11 s each, and the 3D renderer's **terrain shader (`TERRAIN_FS`) had not
-  finished after 15 minutes** (compiled alone, `compile.html?only=terrain`). On Vulkan every program compiles in 0.2 s together
-  (the terrain 151 ms) and the lab is ready in 1.9 s. This is the 3D renderer's, not the mode's, and
-  it blocks both for Windows players on Chrome's defaults (FXC, the HLSL compiler ANGLE uses there,
-  unrolls the terrain shader's loops); every measurement below is on Vulkan.
+* **Direct3D 11 gets through now, slowly at first.** On ANGLE's Direct3D 11 backend (Chrome's
+  default on Windows) the 3D renderer's terrain shader (`TERRAIN_FS`) had not finished compiling
+  after 15 minutes, so neither the 3D renderer nor the mode started for Windows players on Chrome's
+  defaults. It now compiles in 4.8 s (docs/R3D.md §11.1: the grounds are no longer painted in a
+  loop over the four plots, and the noise is a third of its size), the water in 1.5 s (5.3 before),
+  the props in 1.0 s and the HD-2D cards, shafts and mood in 0.03-0.08 s each, all in parallel
+  while the page stays live. The first frame then stalls for 7-8 s more there: ANGLE compiles the
+  terrain, water and prop pixel shaders a second time at their first draw into three targets
+  (4.4-4.8, 1.4-1.6 and 1.0-1.1 s; the cards 0.03-0.07 s). On Vulkan every program compiles in about
+  0.2 s together and the first frame takes 0.3 s; every measurement below is on Vulkan.
 * **Per-pass cost** (`tools/r3d-perf.mjs --gpu`, the `stage corrupt` save at (46, 27), a 1920 × 1080
   page whose map canvas is 1580 × 794, 15 frames a case, median frame; GPU times from
   `EXT_disjoint_timer_query_webgl2`, ms; one run each — on this laptop GPU, runs of one case vary by
@@ -500,10 +504,6 @@ its defaults and do no harm.
 * **Windows' default browser backend** cannot compile the 3D renderer's terrain shader (§8): the
   first fix the mode needs is the 3D renderer's, a terrain shader FXC can compile (fewer unrolled
   loops), or the client detecting it and saying so.
-* **NaN in the 3D renderer's water**: on a real GPU its water shader writes non-finite pixels along
-  contour-like lines in lakes and on the shelf (black dashes in the 3D renderer too; found by
-  marking non-finite pixels in the compose). The mode mends them in its compose (each takes its
-  neighbours' mean); the cause in `WATER_FS` is still to be found.
 * **Picking** is the 3D renderer's (the ground under the pointer): clicking a tall figure's head
   can pick the plot behind it; the cards' boxes could be picked first, as the isometric map does.
 * **The overlay stage** costs about 3 ms at 1080p against 0.3 in the 3D renderer (§8); not yet
@@ -516,8 +516,9 @@ its defaults and do no harm.
   light then comes from the upper right.
 * **Cities' garrisons** show one figure (the banner's badge carries the count), as the isometric map
   hides them.
-* Next, by value: new art per §10 (ground textures first); the D3D11 terrain shader; picking by
-  card; idle frames from `anim-sprint/`; a sky or haze bank beyond the map's north edge.
+* Next, by value: new art per §10 (ground textures first); the first frame's stall on Direct3D 11
+  (§8: cheaper terrain, water and prop shaders); picking by card; idle frames from `anim-sprint/`;
+  a sky or haze bank beyond the map's north edge.
 
 ## 14. Provenance
 
