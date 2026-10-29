@@ -108,8 +108,11 @@ export class MapView {
      *  the map, else null. Loaded on demand: the page never fetches it otherwise. */
     this.r3d = null;
     /** The error from the last failed `useR3d(true)`, so the caller can report why (e.g. a
-     *  software WebGL2 renderer: `code === "software-webgl"`). Cleared on a successful start. */
+     *  software WebGL2 renderer: `code === "software-webgl"`; shaders that did not compile in time:
+     *  "slow-shaders"). Cleared on a successful start. */
     this.r3dError = null;
+    /** While a 3D renderer compiles its shaders (`useR3d`): the promise of its being ready. */
+    this.r3dLoading = null;
     this.queued = false;
     /** An in-flight camera glide (`glideTo`): `{ sx, sy, dx, dy, t0, dur }`, else null. Direct
      *  manipulation (drag, zoom, pan) cancels it; `prefers-reduced-motion` skips it. */
@@ -744,14 +747,17 @@ export class MapView {
   }
 
   /** Switches to the experimental 3D renderer (`?renderer=3d`, docs/R3D.md) or back. Its module
-   *  is imported here, on first use; resolves to false when it cannot run (no WebGL2), leaving the
-   *  renderer as it was. */
+   *  is imported here, on first use; resolves to false when it cannot run (no WebGL2, or its
+   *  shaders do not compile in time), leaving no renderer but the flat one (the caller picks). */
   async useR3d(on, mode = "3d") {
+    // A 3D renderer still compiling its shaders is done (or has failed) first.
+    if (this.r3dLoading) await this.r3dLoading.catch(() => {});
     // Another mode of the 3D renderer is drawing: it goes first.
     if (on && this.r3d && this.r3d.mode !== mode) await this.useR3d(false);
     if (!!on === !!this.r3d) return true;
     if (on) {
       let mod;
+      let r3d = null;
       this.r3dError = null;
       try {
         // The HD-2D mode (docs/HD2D.md) is the 3D renderer with its sprites and passes: its own
@@ -763,11 +769,19 @@ export class MapView {
           this.art.dispose();
           this.art = null;
         }
-        this.r3d = new mod.Map3D(this);
+        r3d = new mod.Map3D(this);
+        // Its programs compile in parallel where the browser can; the page stays live meanwhile,
+        // and a compile that takes too long gives up (r3d/gl.js, whenCompiled).
+        this.r3dLoading = r3d.ready();
+        await this.r3dLoading;
+        this.r3d = r3d;
       } catch (e) {
         console.error("3d map:", e);
+        r3d?.dispose();
         this.r3dError = e;
         return false;
+      } finally {
+        this.r3dLoading = null;
       }
       this.snapZoom(mod.DEFAULT_ZOOM);
     } else {

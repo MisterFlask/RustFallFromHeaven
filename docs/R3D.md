@@ -43,8 +43,10 @@ cargo build --release
   sprites standing in its world: a subclass of `Map3D` (`r3d/hd2d/index.js`) that sets the mode
   hooks `map3d.js` keeps at their defaults (`loadCfg`, `light`, `dressEnv`, `dressUnitsOf`,
   `setUnits`, `ringOf`, `pitchAt`, `beforeFrame`, ...) and an extension of the pipeline
-  (`pipeline.ext`, null here). On Windows, Chrome's default ANGLE backend (Direct3D 11) does not
-  finish compiling `TERRAIN_FS` in 15 minutes (docs/HD2D.md §8): use `--use-angle=vulkan`.
+  (`pipeline.ext`, null here).
+* On Windows, Chrome's default ANGLE backend (Direct3D 11) compiles the programs in about 5 s (the
+  page stays live, with a message) and stalls the first frame for 7-8 s more; Vulkan
+  (`--use-angle=vulkan`) starts in about a second (§11.1).
 
 ## 2. The existing rendering architecture (as found)
 
@@ -519,10 +521,12 @@ marks the edge of the unexplored as a coast, and remembered water calms (§5.2).
   (`grid=tree.oak,tree.pine&variants=6`, `&params=a,b` a param per row, `&float=1` on water),
   settlements side by side (`scene=cities&civs=CIVILIZATION_BANNOR,CIVILIZATION_KHAZAD&sizes=2,6,12&imps=IMPROVEMENT_TOWN`),
   any map written as legend rows and dressed by the real placement (`rows=.www.kkk.,.zzz.qqq.`;
-  `scenes.js` `LEGEND`),
+  `scenes.js` `LEGEND`; `&wrap=1` wraps it east-west, `&hidden=x0,y0,x1,y1` leaves a rectangle
+  unrevealed),
   overlays (`&sel=x,y&path=...`), any pipeline override (`&r3d={...}`).
   `node tools/r3d-lab.mjs --out a.png --query "scene=showcase&ts=96"`; `--shots FILE` for many;
-  `--serve` to open it in a browser; `--stability` for the panning test (§11).
+  `--serve` to open it in a browser; `--stability` for the panning test (§11);
+  `r3d-lab/compile.html` for each program's compile times (§11.1).
 * **Browser smoke test** (`tools/web-smoke.mjs`, run by `tools/web-check.sh --browser`): a
   `?renderer=3d` step checks the frame is drawn and not blank, that picking through the relief finds
   every in-view plot under its own screen point, click-select, hover, the zoom steps, pan, the
@@ -656,6 +660,83 @@ above predates the paint filter going off and the materials; its 1.6 / 1.1% figu
 
 GPU numbers: from the GPU bench (§10), whose runs on real cards land in its artifact's database;
 `r3d-perf --gpu` measures the same on a machine with a GPU.
+
+### 11.1 Direct3D (Chrome on Windows)
+
+Chrome on Windows draws WebGL through ANGLE on Direct3D 11 unless told otherwise. ANGLE translates
+each program to HLSL and compiles it with FXC (`d3dcompiler_47.dll`), which inlines every function
+call and takes time growing about with the square of a shader's length -- and much faster than that
+over a large loop body. The terrain shader had not finished compiling there after 15 minutes
+(docs/HD2D.md §8). What made it slow, and what changed (the look did not: Vulkan renders of the lab
+scenes before and after differ in about 0.01% of their pixels, by at most 2 of 255 bar three single
+pixels, the last bits of rounding where a noise's lattice is now a select instead of a branch):
+
+* **The grounds were painted in a loop over the four plots around the point**, which FXC unrolled,
+  inlining `groundAlbedo` -- every ground's branch, some 10k instructions -- four times. A loop it
+  cannot unroll is no better: FXC took 122 s over `groundAlbedo` alone inside a loop with a dynamic
+  bound, against 4.6 s for it straight. Now `main` sums the weight of each kind of ground among the
+  four (`kindW`) and paints each kind by its own call with a constant id (`paintGround(G_GRASS,
+  ...)`, ...), with no loop round them: each call inlines only its ground's branch, so the shader
+  holds every ground's painting once, and at run time only the grounds with weight are painted, as
+  before. The features' floors likewise (`paintFeature`). What several grounds shared now runs once:
+  the hell grounds' marks (`hellMarks`), the blank parchment (the unexplored ground and the
+  frontier), the coast's painting for the shallows, the forest's floor for the young forest.
+* **Every noise was two noises.** `mnoise` and the stroke noises branched on the map's wrap with a
+  `pnoise` in each branch (and ANGLE turns every `?:` into an if/else too). They now pick their
+  lattice first (`mlattice`; `mix` with a bool, which ANGLE keeps a select) and call `pnoise` once.
+* **`pnoise` works its four corners' hashes out together**: one `vec4` mod and one fract, then the
+  same dots, on the same values, as four `hash12` -- a third of the instructions. With about 150
+  noise calls inlined into the terrain shader that alone took it from 30 s to 10 s; it also took the
+  water from 5.3 s to 1.5 s.
+
+Measured on the owner's laptop (RTX 4080 Laptop GPU, Chrome 156, `--use-angle=d3d11`,
+`r3d-lab/compile.html`, each program alone; the machine otherwise idle; two runs):
+
+| program | link, before | link | first draw |
+|---|---|---|---|
+| terrain | > 15 min | 4.7-4.8 s | 4.6-4.8 s |
+| water | 5.3 s | 1.5 s | 1.5-1.6 s |
+| prop | 1.1 s | 1.0 s | 1.1 s |
+| every other | ≤ 0.3 s | ≤ 0.2 s | ≤ 0.07 s |
+
+**Compiled twice.** ANGLE's Direct3D backend links a pixel shader for the program's first output
+only (`GetDefaultOutputLayoutFromShader`) and compiles it again at the first draw into the scene's
+three targets -- synchronously, on the GPU process's main thread, so the 3D map's first frame stalls
+the tab for the sum, 7-8 s (terrain 4.8, water 1.5, props 1.1), on every page load (Chrome's
+program cache keeps what the link compiled; the page's own thread stays free). No GLSL declaration
+avoids it (an output array is three locations too); making the three programs cheaper is the lever
+left -- the grounds' broad masses, seven `broad` calls of five noises each, could share one pass.
+On Vulkan (`--use-angle=vulkan`) the programs link in about 0.2 s together and the first frame
+takes 0.3 s. In the game (the `stage corrupt` save, Direct3D 11) the 3D renderer takes over 7 s
+after the page loads; its first frame then pays the stall above.
+
+Frame cost is not worse: `r3d-perf --gpu` on the `stage corrupt` save at (46, 27), Vulkan, the same
+binary with each tree's assets, alternating, three runs each: the scene pass 7.2-10.7 ms against
+9.7-22.3 ms before at ts 96, 3.2-4.1 against 3.7-11.6 at ts 40 (this laptop's GPU clocks vary that
+much between runs).
+
+**Compiling without freezing.** Where the browser offers `KHR_parallel_shader_compile` (Chrome
+does), a `Program` no longer waits for its link: the programs compile together on ANGLE's worker
+threads while the page stays live, and each reads its status and uniforms when done (`finish`, or on
+first use). `Map3D.ready()` (`gl.js` `whenCompiled`) polls them between frames, and the renderer
+draws only once they are done; `MapView.useR3d` awaits it. A start that takes over 1.5 s shows
+"Preparing the 3D map (compiling its shaders)…"; one that takes over `COMPILE_TIMEOUT_MS` (45 s)
+gives up and the client falls back to the isometric map with a message (`slow-shaders`), as for a
+software renderer. The renderer given up leaves its programs and context alone (`Map3D.dispose`):
+ANGLE waits for a compile in progress before it deletes a program or a context, which stalled the
+GPU process until the tab crashed; the context is kept until the page goes. The lab and the GPU
+bench await `ready()` too, so a slow compile is their error, not a hang. Checked with the old
+shaders on Direct3D 11: the page stays live (its longest stall 0.6 s, the page's load), the message
+shows after 45 s and the isometric map draws.
+
+**Measuring.** `r3d-lab/compile.html` (`tools/r3d-lab.mjs --serve`) links each program alone, then
+draws it once into as many targets as it writes, and logs both times (`?only=terrain` for one); open
+it in Chrome with `--use-angle=d3d11` (headless: `channel: "chrome"`, `--ignore-gpu-blocklist
+--enable-gpu --force_high_performance_gpu`). The HLSL ANGLE makes of a shader comes from
+`WEBGL_debug_shaders`' `getTranslatedShaderSource`; given its entry point and compiled with the
+`d3dcompiler_47.dll` Chrome ships (`D3DCompile`, `ps_5_0`, default flags, `ANGLE_ENABLE_LOOP_FLATTEN`
+defined) it takes within a few percent of the browser's time, which is how the terrain shader was
+bisected -- a check worth repeating on a shader change that adds loops or many noise calls.
 
 ## 12. Configuration
 

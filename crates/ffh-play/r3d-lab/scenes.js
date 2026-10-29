@@ -325,8 +325,10 @@ export function settlements(data, civs, sizes = [2, 6, 12], imps = [], { walls =
 
 /** Any map from legend rows (north first, equal lengths), dressed for real: forests, flora and
  *  rocks as the game would place them. */
-export function fromRows(data, rows) {
-  const map = buildMap(data, rows);
+export function fromRows(data, rows, { wrap = false, hidden = null } = {}) {
+  const hide = [];
+  if (hidden) for (let y = hidden[1]; y <= hidden[3]; y++) for (let x = hidden[0]; x <= hidden[2]; x++) hide.push([x, y]);
+  const map = buildMap(data, rows, { wrap, hidden: hide });
   const view = buildView(data, { players: [{ civ: "CIVILIZATION_BANNOR" }] });
   return { map, view, focus: [rows[0].length / 2, rows.length / 2] };
 }
