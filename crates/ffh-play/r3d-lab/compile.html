@@ -3,9 +3,11 @@
 <title>r3d shader compile times</title>
 <script type="module">
 // Compiles every program of the 3D renderer and of the HD-2D mode, one at a time, and logs how long
-// each takes to link and then to draw once into as many colour targets as it writes (docs/R3D.md,
-// "Direct3D": ANGLE's Direct3D 11 backend links a program for its first output only and compiles it
-// again at its first draw into three targets). `?only=terrain` takes one.
+// each takes to link and then to draw once into the targets it writes, laid out as in the pipeline
+// (docs/R3D.md, "Direct3D": ANGLE's Direct3D 11 backend links a program for its lowest output only
+// and compiles it again at its first draw into all of them; the scene's programs put a constant at
+// the lowest, so their link is quick and the first draw is where they compile). `?only=terrain`
+// takes one.
 import { Program, FULLSCREEN_VS, texture, framebuffer } from "/app/r3d/gl.js";
 import * as SH from "/app/r3d/shaders.js";
 import * as H from "/app/r3d/hd2d/shaders.js";
@@ -22,8 +24,8 @@ const list = [
   ["terrain", C + SH.TERRAIN_VS, C + SH.TERRAIN_FS, 3],
 ];
 const F = hdr ? { internal: gl.RGBA16F, format: gl.RGBA, type: gl.HALF_FLOAT } : {};
-const target = (n) => framebuffer(gl, Array.from({ length: n }, () => texture(gl, 4, 4, F)));
-const fbo = { 1: target(1), 3: target(3) };
+// 3: the scene's targets (pipeline.js f.scene: attachments 1-3).
+const fbo = { 1: framebuffer(gl, [texture(gl, 4, 4, F)]), 3: framebuffer(gl, [null, texture(gl, 4, 4, F), texture(gl, 4, 4, F), texture(gl, 4, 4, F)]) };
 const sync = framebuffer(gl, [texture(gl, 1, 1)]);
 const px = new Uint8Array(4);
 for (const [name, vs, fs, n] of list.filter(([n]) => !only || n === only)) {

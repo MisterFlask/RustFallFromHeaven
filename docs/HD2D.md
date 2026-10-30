@@ -32,9 +32,10 @@ cargo build --release
   the mode's own rows, §11) with the frame time and per-pass GPU times.
 * `?r3d={"tiltShift":0}` (any key of §11) or `?r3d=plain` override the look for one page.
 * It needs WebGL2 with GPU acceleration, as the 3D renderer does (docs/R3D.md §1, the same software
-  guard and `?force3d=1`). On Windows, Chrome's default ANGLE backend (Direct3D 11) compiles its
-  programs in about 5 s and stalls the first frame for 7-8 s more; with `--use-angle=vulkan` the
-  mode starts in about a second (§8, docs/R3D.md §11.1).
+  guard and `?force3d=1`). On Windows, Chrome's default ANGLE backend (Direct3D 11) compiles each
+  of the scene's programs at its first draw, the browser drawing nothing meanwhile: the lab's HD-2D
+  scene starts in about 25 s on an RTX 4060 laptop (38-41 s while each was compiled twice;
+  docs/R3D.md §11.1); with `--use-angle=vulkan` the mode starts in about a second (§8).
 * The feature flag is `EXPERIMENTAL_HD2D` in `assets/app/look.js`: false hides the option and
   ignores `?renderer=hd2d`, and the mode's module (`r3d/hd2d/index.js`) is never loaded. The 3D
   renderer alone (`?renderer=3d`) never loads it either.
@@ -407,10 +408,12 @@ beside an Intel UHD integrated GPU, headless Chrome 156 (`FFH_CHROMIUM_CHANNEL=c
   defaults. It now compiles in 4.8 s (docs/R3D.md §11.1: the grounds are no longer painted in a
   loop over the four plots, and the noise is a third of its size), the water in 1.5 s (5.3 before),
   the props in 1.0 s and the HD-2D cards, shafts and mood in 0.03-0.08 s each, all in parallel
-  while the page stays live. The first frame then stalls for 7-8 s more there: ANGLE compiles the
+  while the page stays live. The first frame then stalled for 7-8 s more there: ANGLE compiled the
   terrain, water and prop pixel shaders a second time at their first draw into three targets
-  (4.4-4.8, 1.4-1.6 and 1.0-1.1 s; the cards 0.03-0.07 s). On Vulkan every program compiles in about
-  0.2 s together and the first frame takes 0.3 s; every measurement below is on Vulkan.
+  (4.4-4.8, 1.4-1.6 and 1.0-1.1 s; the cards 0.03-0.07 s). Since 2026-10-30 that first draw is their
+  only compile, made before the first frame, one program at a time (docs/R3D.md §11.1, "Compiled
+  once"). On Vulkan every program compiles in about 0.2 s together and the first frame takes 0.3 s;
+  every measurement below is on Vulkan.
 * **Per-pass cost** (`tools/r3d-perf.mjs --gpu`, the `stage corrupt` save at (46, 27), a 1920 × 1080
   page whose map canvas is 1580 × 794, 15 frames a case, median frame; GPU times from
   `EXT_disjoint_timer_query_webgl2`, ms; one run each — on this laptop GPU, runs of one case vary by

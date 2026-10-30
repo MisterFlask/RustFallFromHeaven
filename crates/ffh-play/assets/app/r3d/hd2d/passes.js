@@ -70,6 +70,11 @@ export class Hd2dPasses {
     for (const p of Object.values(this.p)) p.dispose();
   }
 
+  /** The mode's programs that draw into the scene's targets (Pipeline.scenePrograms). */
+  scenePrograms() {
+    return [this.p.sprite];
+  }
+
   cardUniforms(U, scene, mode) {
     return { ...U, ...scene.mapUniforms(), uSprites: this.sprites.atlas.tex, uMode: mode, uLean: this.frame?.cfg.lean ?? 1 };
   }

@@ -420,6 +420,19 @@ vec3 atmosphere(vec3 c, vec3 wp) {
 }
 `;
 
+// The scene's three targets (pipeline.js f.scene: colour attachments 1-3), written by the
+// terrain, the props, the water and the HD-2D cards, and below them an output no attachment takes,
+// which main writes a constant first. ANGLE's Direct3D 11 backend (Chrome's default on Windows)
+// compiles a program's pixel shader at link for its lowest output alone, and again for all its
+// outputs at the first draw into them (docs/R3D.md §11.1): with only a constant at the lowest,
+// the link's compile is nothing, and each program is compiled once, not twice.
+export const SCENE_OUT = `
+layout(location = 0) out vec4 oLink;
+layout(location = 1) out vec4 oColor;
+layout(location = 2) out vec4 oND;
+layout(location = 3) out vec4 oEmit;
+`;
+
 // --------------------------------------------------------------------------------------------
 // Terrain
 
@@ -463,10 +476,7 @@ uniform sampler2D uOwner;
 // The ground's materials (materials.js): rgb albedo, a height; and each layer's mean albedo.
 uniform highp sampler2DArray uMat;
 uniform vec3 uMatMean[16];
-layout(location = 0) out vec4 oColor;
-layout(location = 1) out vec4 oND;
-layout(location = 2) out vec4 oEmit;
-
+${SCENE_OUT}
 const int M_GRASS = ${MAT.GRASS}, M_STRAW = ${MAT.STRAW}, M_DIRT = ${MAT.DIRT}, M_SOIL = ${MAT.SOIL}, M_GRAIN = ${MAT.GRAIN},
   M_VEG = ${MAT.VEG}, M_NOISE = ${MAT.NOISE}, M_SAND = ${MAT.SAND}, M_LICHEN = ${MAT.LICHEN}, M_SNOW = ${MAT.SNOW},
   M_REEDS = ${MAT.REEDS}, M_ROCK = ${MAT.ROCK};
@@ -886,6 +896,7 @@ void paintFeature(int f, float wk, vec3 alb, vec2 m, inout vec3 fa, inout vec3 e
 }
 
 void main() {
+  oLink = vec4(0.0);
   vec3 n = normalize(vNormal);
   vec2 m = mapOf(vWorld);
   float h = vWorld.y;
@@ -1289,11 +1300,9 @@ in float vVis;
 in vec3 vObj;
 in vec3 vObjN;
 uniform float uEmissive;
-layout(location = 0) out vec4 oColor;
-layout(location = 1) out vec4 oND;
-layout(location = 2) out vec4 oEmit;
-
+${SCENE_OUT}
 void main() {
+  oLink = vec4(0.0);
   int kind = int(vMat.x + 0.5);
   // Foliage (1, and leaf clusters 9) and blades of grass and reed (8) are lit as leaves, but only
   // a prop's foliage is painted as a crown (massed leaf marks, value steps, its lobes merged by the ink): not a unit's
@@ -1525,10 +1534,7 @@ uniform float uReflect;
 uniform float uRefract;
 uniform float uCoarse;
 uniform float uCaustics;
-layout(location = 0) out vec4 oColor;
-layout(location = 1) out vec4 oND;
-layout(location = 2) out vec4 oEmit;
-
+${SCENE_OUT}
 // The swell's crests run along the map's (1, 0.6) diagonal (mstroke's grain) and travel across it,
 // toward the north-north-west.
 const vec2 SWELL = vec2(-0.514, 0.857);
@@ -1635,6 +1641,7 @@ float laceAt(vec2 m, float t) {
 float bodyAt(vec2 m, float t) { return 0.9 + 0.2 * mfbm(m + t * 0.01, 0.5); }
 
 void main() {
+  oLink = vec4(0.0);
   vec2 m = mapOf(vWorld);
   float v = visAt(vWorld);
   bool river = uRiver > 0.5;

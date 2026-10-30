@@ -44,8 +44,9 @@ cargo build --release
   hooks `map3d.js` keeps at their defaults (`loadCfg`, `light`, `dressEnv`, `dressUnitsOf`,
   `setUnits`, `ringOf`, `pitchAt`, `beforeFrame`, ...) and an extension of the pipeline
   (`pipeline.ext`, null here).
-* On Windows, Chrome's default ANGLE backend (Direct3D 11) compiles the programs in about 5 s (the
-  page stays live, with a message) and stalls the first frame for 7-8 s more; Vulkan
+* On Windows, Chrome's default ANGLE backend (Direct3D 11) compiles each of the scene's programs at
+  its first draw, made before the first frame with a message showing, the browser drawing nothing
+  while each compiles: seconds (the terrain's 5-15 s, by the machine); Vulkan
   (`--use-angle=vulkan`) starts in about a second (§11.1).
 
 ## 2. The existing rendering architecture (as found)
@@ -699,21 +700,55 @@ Measured on the owner's laptop (RTX 4080 Laptop GPU, Chrome 156, `--use-angle=d3
 | prop | 1.1 s | 1.0 s | 1.1 s |
 | every other | ≤ 0.3 s | ≤ 0.2 s | ≤ 0.07 s |
 
-**Compiled twice.** ANGLE's Direct3D backend links a pixel shader for the program's first output
-only (`GetDefaultOutputLayoutFromShader`) and compiles it again at the first draw into the scene's
-three targets -- synchronously, on the GPU process's main thread, so the 3D map's first frame stalls
-the tab for the sum, 7-8 s (terrain 4.8, water 1.5, props 1.1), on every page load (Chrome's
-program cache keeps what the link compiled; the page's own thread stays free). No GLSL declaration
-avoids it (an output array is three locations too); making the three programs cheaper is the lever
-left -- the grounds' broad masses, seven `broad` calls of five noises each, could share one pass.
-On Vulkan (`--use-angle=vulkan`) the programs link in about 0.2 s together and the first frame
-takes 0.3 s. In the game (the `stage corrupt` save, Direct3D 11) the 3D renderer takes over 7 s
-after the page loads; its first frame then pays the stall above.
-
 Frame cost is not worse: `r3d-perf --gpu` on the `stage corrupt` save at (46, 27), Vulkan, the same
 binary with each tree's assets, alternating, three runs each: the scene pass 7.2-10.7 ms against
 9.7-22.3 ms before at ts 96, 3.2-4.1 against 3.7-11.6 at ts 40 (this laptop's GPU clocks vary that
 much between runs).
+
+**Compiled once, at the first draw.** ANGLE's Direct3D backend links a pixel shader for the
+program's lowest output only (`GetDefaultOutputLayoutFromShader`) and compiles it again at the
+first draw into all its targets -- synchronously, on the GPU process's main thread, so the browser
+draws nothing meanwhile. Each of the scene's programs was so compiled twice, and the link's compile
+thrown away: the 3D map's first frame stalled the tab for the sum, 7-8 s on the RTX 4080 laptop
+(terrain 4.8, water 1.5, props 1.1), after the links. No GLSL declaration avoids the second compile
+(an output array is three locations too), but the first can be made empty: the scene's programs
+(the terrain, props, water and the HD-2D cards) put an output no attachment takes at location 0,
+written a constant (`shaders.js` `SCENE_OUT`; the scene's targets are colour attachments 1-3,
+attachment 0 empty, its draw buffer NONE), so their link compiles a shader that writes a constant
+(the terrain's 1.0 s on the RTX 4060 laptop below, against 13-15 s there) and each is compiled
+once, at its first draw. `Map3D.ready` makes those draws itself (`Pipeline.warm`: one each into a
+4 × 4 framebuffer laid out as the scene's, a fence between them), after telling the page
+(`ffh:r3d-compiling`, so the "Preparing" message
+shows before the browser stops drawing, not after): the stalls come one program at a time, the
+page's script stays live (its longest stall 0.5 s, against 21.5), and the first frame draws at
+once. On the other backends the link is the compile and the warm-up costs nothing to speak of.
+Measured on an RTX 4060 laptop (Chrome 156, Direct3D 11, a fresh profile, the lab's
+`scene=hd2d&renderer=hd2d` to its first frame, the two trees alternating): 40.6 and 38.1 s before,
+25.0 and 25.7 s after. A reload with the shaders unchanged gains nothing: Chrome keeps what a link
+compiled, never what a draw did, so it skipped the link before too, and paid the first draws' compiles,
+as it does now. On Vulkan (`--use-angle=vulkan`) the programs link in about 0.2 s together and the
+first frame takes 0.3 s.
+
+**What the compile time is made of** (bisected with FXC on the HLSL ANGLE makes, see Measuring;
+that laptop's times drift by 20% within minutes, and ran 2.5 times slower once it was hot, so every
+comparison alternated old and new):
+
+* FXC's time grows about with the square of a shader's instruction count, alike for the three large
+  programs (terrain 7108 instructions 13.3 s, water 3458 3.3 s, props 2831 1.8 s: about
+  2.6e-7 s × N²), most of it in the optimiser (4 s with it off). Several compiles at once slow each
+  other: six together took three times as long each.
+* The value noise is about 80% of the terrain's instructions: some 180 noises inlined, each 25
+  instructions of `pnoise` and 8 of its map-wrapping lattice. Of the unoptimised shader the grounds'
+  painting is half (the meadow 10%, the desert 7%, the marsh, the hell grounds and the coast 5-6%
+  each), the features' floors 9%, the hell marks 5%: no single part to cut.
+* No faster: a function a ground in place of `groundAlbedo(g, ...)` (FXC folds the constant ids
+  before it inlines the branches), noise computed two at a time in vec4s (FXC packs it as well
+  itself: 7108 instructions to 7047), the hash's dot products as vec4 products, `textureLod` for the
+  samplers without mipmaps.
+* Faster, not done: the map's width and wrap as compile-time constants fold each noise's lattice to
+  one multiply (7108 instructions to 5907, the compile 23% faster), but the programs are built before
+  the map is known and would have to be built again for each map size; fewer noises would change
+  the look.
 
 **Compiling without freezing.** Where the browser offers `KHR_parallel_shader_compile` (Chrome
 does), a `Program` no longer waits for its link: the programs compile together on ANGLE's worker
@@ -727,10 +762,13 @@ ANGLE waits for a compile in progress before it deletes a program or a context, 
 GPU process until the tab crashed; the context is kept until the page goes. The lab and the GPU
 bench await `ready()` too, so a slow compile is their error, not a hang. Checked with the old
 shaders on Direct3D 11: the page stays live (its longest stall 0.6 s, the page's load), the message
-shows after 45 s and the isometric map draws.
+shows after 45 s and the isometric map draws. On Direct3D the links are quick now (above) and the
+compiles come in the warm-up draws, which the timeout does not cover: a compile in progress cannot
+be stopped.
 
 **Measuring.** `r3d-lab/compile.html` (`tools/r3d-lab.mjs --serve`) links each program alone, then
-draws it once into as many targets as it writes, and logs both times (`?only=terrain` for one); open
+draws it once into the targets it writes, laid out as the pipeline's, and logs both times
+(`?only=terrain` for one); open
 it in Chrome with `--use-angle=d3d11` (headless: `channel: "chrome"`, `--ignore-gpu-blocklist
 --enable-gpu --force_high_performance_gpu`). The HLSL ANGLE makes of a shader comes from
 `WEBGL_debug_shaders`' `getTranslatedShaderSource`; given its entry point and compiled with the

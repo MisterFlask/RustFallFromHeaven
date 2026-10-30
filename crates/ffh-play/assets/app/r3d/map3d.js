@@ -81,6 +81,7 @@ export class Map3D {
       throw err;
     }
     this.gl = gl;
+    this.glName = glName;
     this.pipeline = new Pipeline(gl);
     /** Whether the programs have compiled (`ready`): the loop draws nothing before. */
     this.compiled = false;
@@ -127,9 +128,17 @@ export class Map3D {
 
   /** Resolves once the renderer's programs have compiled -- in parallel, where the browser can, the
    *  page live meanwhile -- and rejects (code "slow-shaders") when they take longer than `timeoutMs`
-   *  (gl.js, whenCompiled) or do not compile; the caller then disposes the renderer. */
+   *  (gl.js, whenCompiled) or do not compile; the caller then disposes the renderer. Then the scene's
+   *  programs are drawn once each (Pipeline.warm): on Direct3D that is where they compile, the
+   *  browser drawing nothing meanwhile, so the page is told first ("ffh:r3d-compiling", main.js)
+   *  and given a moment to show it. */
   async ready(timeoutMs) {
     await whenCompiled(this.programs(), timeoutMs);
+    if (/direct3d|d3d1/i.test(this.glName)) {
+      globalThis.dispatchEvent?.(new CustomEvent("ffh:r3d-compiling"));
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    await this.pipeline.warm(this.pipeline.scenePrograms());
     this.compiled = true;
     this.dirty = true;
   }

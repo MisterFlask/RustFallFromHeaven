@@ -19,7 +19,7 @@
 // mode, hd2d/passes.js) sets `ext`: it draws its sprites into the shadow, scene and overlay stages,
 // adds its own post passes and composes and presents the frame; without it nothing changes.
 
-import { Program, texture, framebuffer, depthBuffer, depthTexture, fullscreen, FULLSCREEN_VS } from "./gl.js";
+import { Program, texture, framebuffer, depthBuffer, depthTexture, fullscreen, gpuIdle, FULLSCREEN_VS } from "./gl.js";
 import * as SH from "./shaders.js";
 
 const SHADOW_SIZE = 2048;
@@ -100,7 +100,9 @@ export class Pipeline {
     this.depth = depthBuffer(gl, w, h);
     const t = this.t;
     this.f = {
-      scene: framebuffer(gl, [t.color, t.nd, t.emit], this.depth),
+      // Attachments 1-3: the scene's programs write a constant at location 0, which none takes
+      // (shaders.js SCENE_OUT: one compile of each, not two, on Direct3D).
+      scene: framebuffer(gl, [null, t.color, t.nd, t.emit], this.depth),
       ao: framebuffer(gl, [t.ao]),
       ao2: framebuffer(gl, [t.ao2]),
       glow: framebuffer(gl, [t.glow]),
@@ -116,17 +118,59 @@ export class Pipeline {
     };
   }
 
+  /** The programs that draw into the scene's targets (the mode's too). */
+  scenePrograms() {
+    return [this.p.terrain, this.p.prop, this.p.water, ...(this.ext?.scenePrograms() ?? [])];
+  }
+
+  /** Draws each of `programs` once, a task each, into a small framebuffer laid out as the scene's.
+   *  ANGLE's Direct3D 11 backend (Chrome's default on Windows) compiles a program's pixel shader for
+   *  the scene's targets at its first draw into them -- synchronously in the GPU process, which
+   *  meanwhile draws nothing for any page (seconds for the terrain: docs/R3D.md §11.1) -- so the
+   *  renderer's first frame stalled for all of them at once. Warmed here (Map3D.ready), each stall
+   *  stands alone, the page gets a frame between them, and the first frame draws at once.
+   *  Elsewhere these draws cost next to nothing. Stops if the context is lost. */
+  async warm(programs) {
+    const gl = this.gl;
+    const F = this.hdr ? { internal: gl.RGBA16F, format: gl.RGBA, type: gl.HALF_FLOAT } : {};
+    const t = [texture(gl, 4, 4, F), texture(gl, 4, 4, F), texture(gl, 4, 4, F)];
+    // (Unbound, so no program samples a target it draws into: that draw would be skipped.)
+    gl.bindTexture(gl.TEXTURE_2D, null);
+    const depth = depthBuffer(gl, 4, 4);
+    const fbo = framebuffer(gl, [null, ...t], depth);
+    try {
+      for (const p of programs) {
+        if (gl.isContextLost()) return;
+        gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+        gl.viewport(0, 0, 4, 4);
+        p.use();
+        // Each sampler on a unit of its own (two kinds of sampler on one unit make a draw invalid);
+        // what it draws does not matter.
+        for (const [k, unit] of Object.entries(p.units)) gl.uniform1i(p.u[k].loc, unit);
+        this.fs();
+        await gpuIdle(gl);
+      }
+    } finally {
+      if (!gl.isContextLost()) {
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.deleteFramebuffer(fbo);
+        gl.deleteRenderbuffer(depth);
+        for (const x of t) gl.deleteTexture(x);
+      }
+    }
+  }
+
   /** Copies the scene's colour and normal/depth targets (the water reads them: it may not sample
    *  the targets it draws into). */
   grab() {
     const gl = this.gl, W = this.w, H = this.h;
     gl.bindFramebuffer(gl.READ_FRAMEBUFFER, this.f.scene);
-    for (const [i, dst] of [[0, this.f.sceneCopy], [1, this.f.ndCopy]]) {
+    for (const [i, dst] of [[1, this.f.sceneCopy], [2, this.f.ndCopy]]) {
       gl.readBuffer(gl.COLOR_ATTACHMENT0 + i);
       gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, dst);
       gl.blitFramebuffer(0, 0, W, H, 0, 0, W, H, gl.COLOR_BUFFER_BIT, gl.NEAREST);
     }
-    gl.readBuffer(gl.COLOR_ATTACHMENT0);
+    gl.readBuffer(gl.COLOR_ATTACHMENT1);
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.f.scene);
   }
 
@@ -244,9 +288,9 @@ export class Pipeline {
     this.timed("scene", () => {
       gl.bindFramebuffer(gl.FRAMEBUFFER, this.f.scene);
       gl.viewport(0, 0, W, H);
-      gl.clearBufferfv(gl.COLOR, 0, [...fr.background, 0]);
-      gl.clearBufferfv(gl.COLOR, 1, [0, 0, 1, 0]);
-      gl.clearBufferfv(gl.COLOR, 2, [0, 0, 0, 0]);
+      gl.clearBufferfv(gl.COLOR, 1, [...fr.background, 0]);
+      gl.clearBufferfv(gl.COLOR, 2, [0, 0, 1, 0]);
+      gl.clearBufferfv(gl.COLOR, 3, [0, 0, 0, 0]);
       gl.clear(gl.DEPTH_BUFFER_BIT);
       // Depth first (cheap vertex-only passes), then each pixel is shaded once: the ground under
       // a forest is never painted only to be covered. The water is not in it: the sea floor and

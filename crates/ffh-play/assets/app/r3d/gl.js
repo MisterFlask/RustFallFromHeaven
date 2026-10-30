@@ -162,6 +162,22 @@ export async function whenCompiled(programs, timeoutMs = COMPILE_TIMEOUT_MS) {
   for (const p of programs) p.finish();
 }
 
+/** Resolves once the GPU has done the work issued so far (a fence, polled between tasks, so the
+ *  page stays live), or the context is lost. */
+export function gpuIdle(gl) {
+  const s = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+  gl.flush();
+  return new Promise((resolve) => {
+    const poll = () => {
+      if (gl.isContextLost() || gl.getSyncParameter(s, gl.SYNC_STATUS) === gl.SIGNALED) {
+        gl.deleteSync(s);
+        resolve();
+      } else setTimeout(poll, 20);
+    };
+    setTimeout(poll, 0);
+  });
+}
+
 function shader(gl, type, src) {
   const s = gl.createShader(type);
   gl.shaderSource(s, src);
@@ -209,21 +225,23 @@ export function upload(gl, t, data) {
   gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, t.w, t.h, t.opts.format, t.opts.type, data);
 }
 
-/** A framebuffer over `colors` (textures) and an optional `depth` (renderbuffer or texture). */
+/** A framebuffer over `colors` (textures; a null leaves that attachment empty, its draw buffer
+ *  NONE) and an optional `depth` (renderbuffer or texture). */
 export function framebuffer(gl, colors, depth = null) {
   const f = gl.createFramebuffer();
   gl.bindFramebuffer(gl.FRAMEBUFFER, f);
-  colors.forEach((t, i) => gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i, gl.TEXTURE_2D, t, 0));
+  colors.forEach((t, i) => t && gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i, gl.TEXTURE_2D, t, 0));
   if (depth) {
     if (depth instanceof WebGLRenderbuffer) gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, depth);
     else gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, depth, 0);
   }
-  gl.drawBuffers(colors.length ? colors.map((_, i) => gl.COLOR_ATTACHMENT0 + i) : [gl.NONE]);
+  gl.drawBuffers(colors.length ? colors.map((t, i) => (t ? gl.COLOR_ATTACHMENT0 + i : gl.NONE)) : [gl.NONE]);
   const st = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
   if (st !== gl.FRAMEBUFFER_COMPLETE) throw new Error(`r3d framebuffer incomplete: 0x${st.toString(16)}`);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-  f.w = colors[0]?.w ?? depth?.w;
-  f.h = colors[0]?.h ?? depth?.h;
+  const c0 = colors.find((t) => t);
+  f.w = c0?.w ?? depth?.w;
+  f.h = c0?.h ?? depth?.h;
   return f;
 }
 

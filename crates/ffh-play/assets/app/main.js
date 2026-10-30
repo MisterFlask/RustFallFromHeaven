@@ -796,10 +796,20 @@ function syncSkin() {
  *  `lookLoaded` switches to the art only when it was the choice, so the map would stay flat. The
  *  remembered choice stays "3d": the next page tries again. `mode` "hd2d" is the HD-2D mode. */
 async function use3d(mode = "3d") {
-  // A slow start is the shaders compiling (seconds on Windows' default Direct3D backend): say so.
-  const slow = setTimeout(() => toast("Preparing the 3D map (compiling its shaders)…", "info", 6000), 1500);
+  // A slow start is the shaders compiling (seconds on Windows' default Direct3D backend): say so,
+  // at once when the renderer says it is about to compile there (r3d/map3d.js ready: the browser
+  // draws nothing while it does, so a message due later would only show after).
+  let said = false;
+  const say = () => {
+    clearTimeout(slow);
+    if (!said) toast("Preparing the 3D map (compiling its shaders)…", "info", 6000);
+    said = true;
+  };
+  const slow = setTimeout(say, 1500);
+  window.addEventListener("ffh:r3d-compiling", say);
   const ok = await mapView.useR3d(true, mode);
   clearTimeout(slow);
+  window.removeEventListener("ffh:r3d-compiling", say);
   syncSkin();
   if (ok) return;
   if (mapView.r3dError?.code === "software-webgl") {

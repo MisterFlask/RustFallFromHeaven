@@ -4,6 +4,8 @@
 // haze, the region moods, a wide bloom and the tilt-shift blur. The 3D renderer's own shaders
 // (../shaders.js, COMMON) supply the noise, light, shadow and fog helpers.
 
+import { SCENE_OUT } from "../shaders.js";
+
 // --------------------------------------------------------------------------------------------
 // Sprite cards
 
@@ -178,12 +180,11 @@ flat in float vFade;
 flat in float vTown;
 in float vDepth;
 uniform float uExposure;
-layout(location = 0) out vec4 oColor;
-layout(location = 1) out vec4 oND;
-layout(location = 2) out vec4 oEmit;
+${SCENE_OUT}
 ${SPRITE_SAMPLE}
 ${INV_FILMIC}
 void main() {
+  oLink = vec4(0.0);
   // Derivatives first, before any discard (undefined in a quad where some pixels have left).
   vec2 ex = dFdx(vUv), ey = dFdy(vUv);
   vec4 t = spriteTexel(vUv, vLayer);
