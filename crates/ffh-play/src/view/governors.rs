@@ -38,7 +38,6 @@ fn city_json(v: &Viewer, c: CityId) -> Json {
         "profile" => g.city_governor_profile(c).map(Json::idx),
         "feed_army" => city.feed_army,
         "feed_army_name" => city.feed_army.filter(|&a| g.armies.contains(a)).map(|a| g.armies[a].name.clone()),
-        "hostile_culture" => city.governor_hostile_culture,
         "penalty_turns" => city.governor_penalty_turns,
         "production" => g.city_yield_rate(c, ffh_data::YieldType::YIELD_PRODUCTION),
         "population" => city.population,

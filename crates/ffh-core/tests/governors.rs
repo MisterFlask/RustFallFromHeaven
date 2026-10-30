@@ -169,12 +169,10 @@ fn governors_survive_a_save() {
     let p0 = PlayerId(0);
     let gv = g.governor_generate(p0);
     g.city_assign_governor(p0, cities[4], gv).unwrap();
-    g.city_set_hostile_culture(p0, cities[4], true).unwrap();
     let bytes = g.save();
     let h = Game::load(g.d, &bytes).unwrap();
     assert_eq!(h.governors[gv], g.governors[gv]);
     assert_eq!(h.cities[cities[4]].governor, Some(gv));
-    assert!(h.cities[cities[4]].governor_hostile_culture);
     assert_eq!(h.save(), bytes);
 }
 

@@ -5,7 +5,8 @@
 // from your bench, who chooses what it builds. You choose who governs a city and whether it
 // develops itself or feeds one of your armies. The city query's `governance` and the `governors`
 // query list the cities, the bench and the armies; the buttons send `govern_direct`,
-// `govern_hand`, `govern_assign`, `govern_feed` and `govern_hostile`, which the server checks.
+// `govern_hand`, `govern_assign` and `govern_feed`, which the server checks. Cultural channels are
+// the player's alone (culture.js): a governor never sets one.
 
 import * as api from "./api.js";
 import { dname, info, turns } from "./state.js";
@@ -99,12 +100,6 @@ export function governanceView(c, reload) {
       k.penalty_turns ? h("span.warn", { title: "The cost of replacing a governor" }, ` · new governor: less production and commerce for ${turns(k.penalty_turns)}`) : null,
     ),
     h("div.row", modeSelect(k, k.armies, act), replaceSelect(k, k.bench, act)),
-    h(
-      "label.toggle",
-      { title: "The governor queues festivals, trade fairs and religion on its own; hostile actions only when allowed" },
-      h("input", { type: "checkbox", checked: k.hostile_culture, onchange: (ev) => act({ c: "govern_hostile", city: k.city, on: ev.target.checked }) }),
-      " Allow hostile cultural actions",
-    ),
     h("div.row", direct),
   );
 }

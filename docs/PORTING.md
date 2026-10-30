@@ -130,7 +130,8 @@ side)
   bench drawn toward the leader's flavors, with a profile (the flavors their city's production
   leans toward, its citizens' emphasis) and up to two traits (small modifiers of their city);
   replacing one costs the city 25% of its production and commerce for 5 turns; a lost city's
-  governor leaves the game. Swapping a city in or out of direct rule locks it for 10 turns.
+  governor leaves the game. Swapping a city in or out of direct rule locks it for 10 turns. A
+  governed city's cultural channel is its owner's, never its governor's (2026-10-30).
   Option off (the default outside the browser's new-game screen), nothing changes. Save format 7.
 
 **Container order and path finding**

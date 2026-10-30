@@ -17,7 +17,7 @@ experience modifiers, `city_can_train` / `construct` / `create`); data
 `data/xml/Gameinfo/CIV4GovernorProfileInfos.xml`, `CIV4GovernorTraitInfos.xml`,
 `CIV4GovernorNameInfos.xml` (`ffh-data` `infos/governor.rs`), tuning `data/xml/RulesDefines.xml`
 (`GOVERNOR_*`); AI `crates/ffh-ai/src/governor.rs` (the governor's production choice, the AI's
-slots and modes), `culture.rs` (`govern`: a human's governors' cultural actions); UI
+slots and modes), `culture.rs` (`govern`: a human's governors' defenders against revolt pressure); UI
 `crates/ffh-play/src/view/governors.rs`, the city query's `governance`, `assets/app/governors.js`.
 Tests: `crates/ffh-core/tests/governors.rs`, `crates/ffh-ai/src/governor.rs`; the harness checks
 that a governed city always has production (`ffh_harness::check`).
@@ -89,10 +89,10 @@ and commerce), and the replaced governor returns to the bench; moving a governor
 another costs both (the one it leaves is interim). A city lost (captured, flipped,
 traded, razed) takes its governor out of the game.
 
-**Cultural actions.** A governor queues friendly and defensive cultural actions on its own
-(festivals against hostile channels, trade fairs, religion: the AI's cultural play, limited to
-the governed cities), and hostile ones only where the player allowed them (the city's "Allow hostile
-cultural actions", off by default). The player can still queue any action by hand.
+**Cultural channels are the player's** (the owner's decision, 2026-10-30): a governor never sets,
+changes or ends a city's channel (docs/CULTURE.md); the player channels a governed city's culture
+as a directly ruled one's. The governor's part is its production: it trains defenders against the
+revolt pressure aimed at its city.
 
 ## Edge cases decided (beyond the spec's text)
 

@@ -1,7 +1,8 @@
 //! Cultural channels (this game's own rules, docs/CULTURE.md; docs/AI.md "Cultural actions").
 //!
 //! What an expert does with the standing channels, once a turn, after the diplomacy (so the war
-//! state is current) and the governors (whose leave a governed city's hostile channel needs):
+//! state is current). A channel is always the civilization's own decision, in a governed city too:
+//! governors never set one (the owner's decision, 2026-10-30).
 //!
 //! 1. **Defence** ([`defend`]). Revolt pressure aimed at one of our cities is held off by its
 //!    garrison, each defender resisting `CULTURE_REVOLT_GARRISON` a turn: [`defenders_needed`]
@@ -46,10 +47,8 @@
 //! religion moves to another channel only when that is clearly better (by half its cost).
 //!
 //! A human's governed cities ([`govern`], through `Controller::govern_cities`): the governor
-//! fills a governed city without a channel (a religion on its own, a revolt only where the player
-//! allowed hostile cultural actions, `City::governor_hostile_culture`) and never changes one that
-//! stands: the player's choice, or its own until the rules end it. The AI's own governed cities
-//! are the AI's (`governor::turn` grants them the permission).
+//! trains defenders against revolt pressure (production is its job); the channels are the
+//! player's.
 //!
 //! Switch `CULTURE` (`FFH_AI_CULTURE_OFF`): off, a civilization channels nothing and its cultural
 //! defence is only the governors' (`governor::decide`).
@@ -70,14 +69,6 @@ const MAX_DEFENDERS: i32 = 6;
 /// A channel: action, target civilization, religion.
 type Order = (CulturalActionType, PlayerId, Option<ReligionType>);
 
-/// Which of our cities act: every one (the AI's own play), or a human's governed cities, filling
-/// those without a channel.
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum Scope {
-    Player,
-    Governed,
-}
-
 /// The AI's cultural play, once a turn.
 pub fn turn(g: &mut Game, p: PlayerId) {
     let on = crate::switches::CULTURE.on(g, p);
@@ -89,19 +80,17 @@ fn turn_switched(g: &mut Game, p: PlayerId, on: bool) {
     if !on || !g.culture_actions_on() || g.player_is_barbarian(p) || g.players[p].cities.is_empty() {
         return;
     }
-    defend(g, p, Scope::Player);
-    channel(g, p, Scope::Player);
+    defend(g, p, false);
+    channel(g, p);
 }
 
-/// The governors of a human player's governed cities set channels on their own
-/// (docs/GOVERNORS.md): in a city without one, a religion, or a revolt where the player allowed
-/// hostile cultural actions; and they ask for defenders against revolt pressure.
+/// The governors of a human player's governed cities train defenders against the revolt pressure
+/// aimed at them (docs/GOVERNORS.md); they never set a channel.
 pub fn govern(g: &mut Game, p: PlayerId) {
     if !g.culture_actions_on() || g.player_is_barbarian(p) || g.players[p].cities.is_empty() {
         return;
     }
-    defend(g, p, Scope::Governed);
-    channel(g, p, Scope::Governed);
+    defend(g, p, true);
 }
 
 /// The cultural action with `effect`, if the data has one.
@@ -172,8 +161,9 @@ fn needed_with(g: &Game, c: CityId, inflows: &[(CityId, PlayerId, i32)]) -> i32 
 
 /// Our cities short of the defenders that hold off the revolt pressure aimed at them train one
 /// first: a directly ruled city (the AI's own play) puts one at the front of its queue, a governed
-/// city's governor chooses again (its choice then puts them first).
-fn defend(g: &mut Game, p: PlayerId, scope: Scope) {
+/// city's governor chooses again (its choice then puts them first). `only_governed`: a human's
+/// governed cities alone.
+fn defend(g: &mut Game, p: PlayerId, only_governed: bool) {
     let inflows = inflows_on(g, p);
     if inflows.is_empty() {
         return;
@@ -183,7 +173,7 @@ fn defend(g: &mut Game, p: PlayerId, scope: Scope) {
             continue;
         }
         let governed = g.city_is_governed(c);
-        if scope == Scope::Governed && !governed {
+        if only_governed && !governed {
             continue;
         }
         let (need, have) = (needed_with(g, c, &inflows), g.culture_garrison_count(c));
@@ -222,7 +212,7 @@ struct Ctx {
     revolt: Option<CulturalActionType>,
     spread: Option<CulturalActionType>,
     /// Percent the value of a revolt counts: halfway from 100 to the leader's
-    /// `iCulturalAggression`, a conqueror's a quarter more; 100 for a human's governors.
+    /// `iCulturalAggression`, a conqueror's a quarter more.
     aggression: i64,
     /// Our cities carrying a cultural victory we pursue: they keep their culture.
     carriers: Vec<CityId>,
@@ -235,7 +225,7 @@ struct Ctx {
 }
 
 impl Ctx {
-    fn new(g: &Game, p: PlayerId, scope: Scope) -> Ctx {
+    fn new(g: &Game, p: PlayerId) -> Ctx {
         let team = g.players[p].team;
         let plan = crate::victory::plan(g, p);
         let mut carriers: Vec<CityId> = Vec::new();
@@ -250,9 +240,7 @@ impl Ctx {
         // Half the leader's lean either way (40-180 gives 70-140%): a peaceful leader still takes
         // a city that clearly pays.
         let leader = (100 + g.players[p].personality_type.map_or(100, |l| g.d.leader_heads[l].cultural_aggression) as i64) / 2;
-        let aggression = if scope == Scope::Governed {
-            100
-        } else if crate::campaign::conqueror(g, p) {
+        let aggression = if crate::campaign::conqueror(g, p) {
             leader * 5 / 4
         } else {
             leader
@@ -281,12 +269,8 @@ struct Caster {
     /// city's borders still grow to its working radius (`CULTURELEVEL_FLEDGLING`), half after; 0
     /// in a city carrying a cultural victory we pursue (it spends none).
     weight: i64,
-    /// Whether it may channel revolt (a governed city: where its governor may).
-    hostile_ok: bool,
     /// Its channel now.
     current: Option<Order>,
-    /// Whether this turn's planning may change its channel.
-    free: bool,
 }
 
 impl Caster {
@@ -307,25 +291,11 @@ impl Caster {
     }
 }
 
-/// Whether governed city `c` may channel revolt: a directly ruled city always, a governed one
-/// where its governor may (an AI's always with its governor logic switched off).
-fn hostile_ok(g: &Game, c: CityId) -> bool {
-    let p = g.cities[c].owner;
-    !g.city_is_governed(c) || g.cities[c].governor_hostile_culture || !g.players[p].human && !crate::switches::GOVERNORS.on(g, p)
-}
-
-fn casters(g: &Game, ctx: &Ctx, scope: Scope) -> Vec<Caster> {
+fn casters(g: &Game, ctx: &Ctx) -> Vec<Caster> {
     let mut out = Vec::new();
     for &c in &g.players[ctx.p].cities {
         let city = &g.cities[c];
         let current = city.culture_channel.as_ref().map(|ch| (ch.action, ch.target, ch.religion));
-        let free = match scope {
-            Scope::Player => true,
-            Scope::Governed => g.city_is_governed(c) && current.is_none(),
-        };
-        if !free && current.is_none() {
-            continue;
-        }
         let weight = if ctx.carriers.contains(&c) {
             0
         } else {
@@ -335,7 +305,7 @@ fn casters(g: &Game, ctx: &Ctx, scope: Scope) -> Vec<Caster> {
             };
             if grown { 50 } else { 100 }
         };
-        out.push(Caster { city: c, amount: g.city_channel_amount(c), weight, hostile_ok: hostile_ok(g, c), current, free });
+        out.push(Caster { city: c, amount: g.city_channel_amount(c), weight, current });
     }
     out
 }
@@ -684,9 +654,9 @@ struct Change {
 }
 
 /// Sets, keeps or ends each city's channel (see the module comment).
-fn channel(g: &mut Game, p: PlayerId, scope: Scope) {
-    let ctx = Ctx::new(g, p, scope);
-    let casters = casters(g, &ctx, scope);
+fn channel(g: &mut Game, p: PlayerId) {
+    let ctx = Ctx::new(g, p);
+    let casters = casters(g, &ctx);
     if casters.is_empty() {
         return;
     }
@@ -734,21 +704,14 @@ fn channel(g: &mut Game, p: PlayerId, scope: Scope) {
         (0..casters.len()).filter(|&i| matches!(assign[i], Some((a, x, _)) if Some(a) == revolt && x == t)).collect()
     };
 
-    // 1. Standing channels that should end: a city that keeps its culture now, a revolt it may
-    //    not channel or against a civilization now spared.
+    // 1. Standing channels that should end: a city that keeps its culture now, a revolt against a
+    //    civilization now spared.
     for (i, k) in casters.iter().enumerate() {
         let Some((a, t, _)) = k.current else { continue };
-        if !k.free {
-            continue;
-        }
         let why = if k.weight == 0 {
             Some("keep_culture")
         } else if Some(a) == revolt {
-            if !k.hostile_ok {
-                Some("not_allowed")
-            } else {
-                spared.iter().find(|s| s.0 == t).map(|s| s.1)
-            }
+            spared.iter().find(|s| s.0 == t).map(|s| s.1)
         } else {
             None
         };
@@ -767,7 +730,7 @@ fn channel(g: &mut Game, p: PlayerId, scope: Scope) {
             }
             let full = group_value(g, p, &st, &r, &members).value;
             let mut worst: Option<(i64, usize, i64)> = None;
-            for &m in members.iter().filter(|&&m| casters[m].free) {
+            for &m in &members {
                 let without: Vec<usize> = members.iter().copied().filter(|&x| x != m).collect();
                 let marginal = (full - group_value(g, p, &st, &r, &without).value) * ctx.aggression / 100;
                 let slack = marginal * 100 - KEEP_PCT * (casters[m].cost() + st.diplo);
@@ -799,7 +762,7 @@ fn channel(g: &mut Game, p: PlayerId, scope: Scope) {
         }
         let value = religion_value(g, &ctx, k.city, r, t);
         current_net[i] = value - k.cost();
-        if k.free && value * 100 < KEEP_PCT * k.cost() {
+        if value * 100 < KEEP_PCT * k.cost() {
             stop(&mut changes, &mut assign, i, "worthless");
             if let Some(ch) = changes[i].as_mut().filter(|_| crate::trace_on(p)) {
                 ch.detail = format!("religion at p{}: worth {} a turn of its {}", t.0, value / 100, k.cost() / 100);
@@ -807,7 +770,7 @@ fn channel(g: &mut Game, p: PlayerId, scope: Scope) {
         }
     }
 
-    // 4. Each free city's best religion channel, and what it gives up by fomenting revolt
+    // 4. Each city's best religion channel, and what it gives up by fomenting revolt
     //    instead: that channel's worth, or its present one's and the margin to leave it.
     let mut rel_best: Vec<Option<(i64, ReligionType, PlayerId)>> = vec![None; casters.len()];
     let mut rel_alts: Vec<Vec<(String, i64)>> = vec![Vec::new(); casters.len()];
@@ -815,7 +778,7 @@ fn channel(g: &mut Game, p: PlayerId, scope: Scope) {
     for (i, k) in casters.iter().enumerate() {
         let idle = assign[i].is_none();
         let spreading = matches!(assign[i], Some((a, _, _)) if Some(a) == ctx.spread);
-        if !k.free || !(idle || spreading) {
+        if !(idle || spreading) {
             continue;
         }
         rel_best[i] = best_religion(g, &ctx, k, &mut rel_alts[i]);
@@ -840,7 +803,7 @@ fn channel(g: &mut Game, p: PlayerId, scope: Scope) {
                     .filter(|&i| {
                         let k = &casters[i];
                         let open = assign[i].is_none() || matches!(assign[i], Some((a, _, _)) if Some(a) == ctx.spread);
-                        k.free && open && k.hostile_ok && k.weight > 0 && !reach[i][ti].is_empty()
+                        open && k.weight > 0 && !reach[i][ti].is_empty()
                     })
                     .map(|i| (reach[i][ti].iter().map(|x| x.amount).max().unwrap_or(0), i))
                     .collect();
@@ -886,7 +849,7 @@ fn channel(g: &mut Game, p: PlayerId, scope: Scope) {
         }
     }
 
-    // 6. Religion for the free cities left: an idle one takes its best channel when it pays, a
+    // 6. Religion for the cities left: an idle one takes its best channel when it pays, a
     //    spreading one moves only when that is clearly better.
     for (i, k) in casters.iter().enumerate() {
         let Some((net, r, t)) = rel_best[i] else { continue };
@@ -1070,10 +1033,10 @@ mod tests {
         assert!(!g.cities[second].has_religion[r] && !g.cities[third].has_religion[r]);
     }
 
-    /// A human's governor fills a governed city without a channel, a revolt only with the player's
-    /// leave, and never changes a channel that stands.
+    /// A channel is the civilization's own decision: a human's governor never sets one, and an
+    /// AI's governed city channels as the AI decides.
     #[test]
-    fn a_humans_governor_fills_only_with_leave() {
+    fn governors_never_channel() {
         let (mut g, ours, _, town) = duel();
         let (p0, p1) = (PlayerId(0), PlayerId(1));
         g.setup.options[GameOptionType::GAMEOPTION_GOVERNORS] = true;
@@ -1082,17 +1045,12 @@ mod tests {
         g.city_set_population(town, 8);
         g.players[p0].power = g.players[p1].power;
         set_rate(&mut g, ours, 60);
-        assert!(g.city_is_governed(ours) && !g.cities[ours].governor_hostile_culture);
+        assert!(g.city_is_governed(ours));
         govern(&mut g, p0);
-        assert!(g.cities[ours].culture_channel.is_none(), "no revolt without leave");
-        g.cities[ours].governor_hostile_culture = true;
-        govern(&mut g, p0);
-        let ch = g.cities[ours].culture_channel.clone().expect("with leave, a revolt");
+        assert!(g.cities[ours].culture_channel.is_none(), "a human's governor sets no channel");
+        turn_switched(&mut g, p0, true);
+        let ch = g.cities[ours].culture_channel.clone().expect("the AI's own decision, governed or not");
         assert_eq!((ch.action, ch.target), (revolt(&g), p1));
-        // Now a friend: the standing channel is the player's to change.
-        befriend(&mut g);
-        govern(&mut g, p0);
-        assert!(g.cities[ours].culture_channel.is_some(), "a standing channel stands");
     }
 
     /// Their channel would take our town: it trains defenders first, and it provokes us.
@@ -1107,7 +1065,7 @@ mod tests {
         set_rate(&mut g, target, 0);
         g.city_set_culture_channel(town, Some((revolt(&g), p0, None))).unwrap();
         assert_eq!(defenders_needed(&g, target), MAX_DEFENDERS, "a town without culture, 3 plots from 30 culture a turn");
-        defend(&mut g, p0, Scope::Player);
+        defend(&mut g, p0, false);
         let first = g.cities[target].order_queue.first().expect("an order");
         assert_eq!(first.order_type, OrderType::ORDER_TRAIN);
         assert!(g.d.units[UnitType::from_usize(first.data1 as usize)].combat > 0, "a defender first");

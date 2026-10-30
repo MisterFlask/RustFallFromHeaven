@@ -240,7 +240,7 @@ persist_struct!(City {
     ai_emphasize_commerce_count, ai_emphasize_avoid_angry_citizens_count,
     ai_emphasize_avoid_unhealthy_citizens_count, culture_channel, culture_diverted, culture_pressure,
     culture_revolt_level, recruit_default, direct_rule, rule_changed_turn, governor, feed_army,
-    governor_penalty_turns, governor_hostile_culture,
+    governor_penalty_turns,
 });
 
 persist_struct!(Player {

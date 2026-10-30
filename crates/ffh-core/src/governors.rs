@@ -472,15 +472,6 @@ impl Game {
         Ok(())
     }
 
-    /// Whether governed city `c`'s governor may queue hostile cultural actions.
-    pub fn city_set_hostile_culture(&mut self, p: PlayerId, c: CityId, on: bool) -> GovResult {
-        if !self.cities.contains(c) || self.cities[c].owner != p {
-            return Err("not a city of yours");
-        }
-        self.cities[c].governor_hostile_culture = on;
-        Ok(())
-    }
-
     // ---------------------------------------------------------------------------------------
     // The turn
     // ---------------------------------------------------------------------------------------

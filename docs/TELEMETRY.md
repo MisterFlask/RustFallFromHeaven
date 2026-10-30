@@ -54,7 +54,8 @@ A 300-turn mixed game writes about 0.5 MB of events.
 | `revolution` | `n` | anarchy turns |
 | `civic` | civic adopted | – |
 | `convert` | religion | – |
-| `culture_start` / `culture_done` / `culture_cancel` | cultural action (docs/CULTURE.md) | `culture_done`: successes (a spread can fail) |
+| `culture_channel` / `culture_channel_end` / `culture_spread` | cultural action (docs/CULTURE.md): a channel set, ended, a religion spread through one | – |
+| `culture_revolt` | `unrest`, `revolt`, `near_flip`, `calm`, `flip` (a city's revolt level changed by the caster's pressure; counted for the caster) | – |
 | `transit` | `sent`, `arrived`, `diverted` (units in transit: docs/ARMIES.md) | `sent`: ETA turns; `arrived`: turns on the way; `diverted`: progress when diverted |
 | `attack` | `win`, `loss`, `withdraw`, `undefended` | – |
 | `attack_odds` / `attack_odds_exp` | odds decile `00`..`90` | wins / sum of odds (per mille) |
@@ -127,8 +128,10 @@ and **whys** (`whys.<kind>.<rule> = count`) record which rule made it.
 - `hurry` and `upgrade`;
 - `tech`, `civics`, `religion` and `project`;
 - `vassal` and `vote` (a council result: the vote type, its text and whether it passed);
-- `culture` (a cultural channel: `how` start / complete / cancel, the action, casting city,
-  target city and its owner, `hostile`, `success`, `magnitude`; docs/CULTURE.md);
+- `culture` (a cultural channel: `how` culture_channel / culture_channel_end / culture_spread,
+  the action, the target civilization; docs/CULTURE.md);
+- `revolt` (a city's revolt level changed: `how` unrest / revolt / near_flip / calm / flip, the
+  city, its owner; the event's player is the caster);
 - `transit` (a unit in transit: `how` sent / arrived / diverted, `to_army`, `turns`;
   docs/ARMIES.md);
 - `intent` and `decision`.

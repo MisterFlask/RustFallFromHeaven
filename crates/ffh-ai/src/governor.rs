@@ -16,8 +16,8 @@
 //! governed city makes half again as much as the weakest direct one, both past their cooldown);
 //! at war or preparing one, the governed cities nearest the enemy feed its main army until it
 //! has the army the war needs, the others develop; a vacant post takes the best-matching
-//! candidate (the rules do it); its governors may queue hostile cultural actions (its cultural
-//! play decides which are worth it).
+//! candidate (the rules do it). Cultural channels are the civilization's, not its governors'
+//! (culture.rs plans them in governed cities too).
 //!
 //! Switch `GOVERNORS` (`FFH_AI_GOVERNORS_OFF`): off, the AI keeps its first cities direct and every
 //! governed city develops.
@@ -228,12 +228,6 @@ pub fn turn(g: &mut Game, p: PlayerId) {
     }
     swap_direct(g, p);
     set_modes(g, p);
-    // Its cultural play (culture.rs) weighs hostile actions itself: its governors may queue them.
-    for c in g.players[p].cities.clone() {
-        if g.city_is_governed(c) && !g.cities[c].governor_hostile_culture {
-            let _ = g.city_set_hostile_culture(p, c, true);
-        }
-    }
 }
 
 /// A governed city making half again as much as the weakest directly ruled city other than the

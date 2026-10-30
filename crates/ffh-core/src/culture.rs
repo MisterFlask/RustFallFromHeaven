@@ -55,8 +55,10 @@ pub enum CultureRefusal {
     OwnTeam,
     /// Spread Religion: no religion chosen, or the city lacks it.
     Religion(&'static str),
-    /// None of the target's cities is within reach (or, for a spread, could take the religion).
+    /// None of the target's cities is within reach.
     NoneInReach,
+    /// Spread Religion: none of the target's cities in reach could take the religion.
+    NoneCanTake,
 }
 
 impl CultureRefusal {
@@ -70,6 +72,7 @@ impl CultureRefusal {
             CultureRefusal::OwnTeam => "not against our own team".into(),
             CultureRefusal::Religion(why) => (*why).into(),
             CultureRefusal::NoneInReach => "none of their cities is within reach".into(),
+            CultureRefusal::NoneCanTake => "none of their cities in reach can take it (they have it, or their civics admit only their state religion)".into(),
         }
     }
 }
@@ -244,16 +247,23 @@ impl Game {
                 if !self.cities[c].has_religion[r] {
                     return Err(CultureRefusal::Religion("the city lacks that religion"));
                 }
-                if !self.culture_channel_reach(c, action, target, religion).iter().any(|x| x.amount > 0) {
+                // Whether a city could take it, not the chance now: a turn without culture (in
+                // disorder) does not end the channel.
+                let reach = self.culture_channel_reach(c, action, target, religion);
+                if reach.is_empty() {
                     return Err(CultureRefusal::NoneInReach);
+                }
+                if !reach.iter().any(|x| self.culture_can_take_religion(x.city, r, caster)) {
+                    return Err(CultureRefusal::NoneCanTake);
                 }
             }
         }
         Ok(())
     }
 
-    /// City `c` channels `order` (action, target, religion) from now on, or nothing (`None`).
-    /// Setting the channel it already has keeps it (and its start turn).
+    /// City `c` channels `order` (action, target, religion) from now on, or nothing (`None`):
+    /// always its owner's decision (a governor never sets one). Setting the channel it already has
+    /// keeps it (and its start turn).
     pub fn city_set_culture_channel(&mut self, c: CityId, order: Option<(CulturalActionType, PlayerId, Option<ReligionType>)>) -> Result<(), CultureRefusal> {
         let current = self.cities[c].culture_channel.as_ref().map(|ch| (ch.action, ch.target, ch.religion));
         if current == order {

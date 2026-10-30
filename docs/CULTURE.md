@@ -34,7 +34,10 @@ added, the city diverts `CULTURE_CHANNEL_PERCENT` (50%) of its culture rate, rou
 (`City::culture_diverted`); that culture reaches neither the city's culture (its level, the
 culture victory) nor its plots. The channel stands until its owner changes it, or until it has
 nothing left to do: its target is gone, none of the target's cities is within reach (or, for a
-spread, could take the religion), the city lost the religion. The owner is told why it ended.
+spread, could take the religion), the city lost the religion. A turn in which the city makes no
+culture (in disorder) leaves it standing. The owner is told why it ended. A channel is always the
+owner's decision: a governor never sets, changes or ends one (the owner's decision, 2026-10-30;
+docs/GOVERNORS.md).
 
 **Reach and distance.** The effect on each of the target's cities falls with the square of the
 distance from the channelling city: in full within `CULTURE_CHANNEL_FULL_RANGE` (5 plots), then
@@ -105,6 +108,92 @@ starts and when it stops.
   plots from a rival town without culture or garrison settles its pressure near 100 (revolt); a
   flip needs about 15 net culture a turn on the city, a great cultural city near the border or
   several channels.
+
+## AI (summary; docs/AI.md "Cultural actions")
+
+Once a turn (`ffh-ai/src/culture.rs`), after the diplomacy and the governors:
+
+- **Defence.** Each defender resists 2 a turn, so the garrison answers revolt pressure.
+  - A city needs enough defenders that the pressure from the channels aimed at us, as it would settle, stays short of disorder (at most six).
+  - Past disorder the city makes no culture, only its garrison resists, and the pressure runs on to the flip.
+  - A directly ruled city trains a defender first; in a governed city, the governor chooses again.
+  - A rival whose pressure is two thirds of the way to taking one of our cities (not a capital) provokes the war logic: no friend is spared, 85% of the usual power edge is enough, and the target gets +40 to its score.
+- **Foment Revolt** comes from cities whose culture is worth spending.
+  - Cities carrying a cultural victory spend none. A point of culture counts in full while the city's borders still grow, half after.
+  - For each target city, the pressure is simulated over 40 turns as the rules run it. Resistance counts the city's culture and only its stationed defenders (an army passing through does not stay); once the city is in revolt, only the garrison.
+  - A city taken (never a capital) is worth 150 + 50 per population + 20 per building + 150 per wonder + 200 per holy city, spread over the turns it takes plus five. Disorder is worth the city's production and commerce a turn; unrest, half a commerce a point. Only what our channels change counts.
+  - The rival's losses count in full at war, while preparing one, against the barbarians, or against a victory rival. At peace they count 60% (Annoyed or Furious) or 40% (Cautious), and a city taken counts 75%.
+  - Against that stands the culture spent and, at peace, a memory cost per channel a turn: 2.5 when Cautious, 1 when Annoyed, 0.5 when Furious or while preparing war.
+  - Spared: Pleased or Friendly civilizations, vassals and masters, defensive pact partners, and, at peace, any civilization above 125% of our power (150% for a channel that stands).
+  - The leader's `iCulturalAggression` scales the value halfway from 100%; a conqueror's goes a quarter higher.
+  - Our cities aimed at one civilization are weighed as a group of at most `CULTURE_AI_MAX_HOSTILE_PER_TARGET`, twice that at war.
+- **Spread Religion.** The state religion, or one whose shrine we hold, goes first into our own cities, then to friends and neutrals.
+  - A civilization without a state religion is drawn toward ours, and a co-religionist remembers the spread as friendship.
+  - It goes into a civilization with another state religion only where we dislike it and a shrine pays.
+- **Stability.**
+  - A channel that stands is kept while it is worth 70% of its cost.
+  - A new one must be worth a quarter more than its cost.
+  - A religion channel moves only for one better by half its cost.
+- **Governed cities** channel as the civilization decides, like directly ruled ones. A human's governors set no channel; they only train defenders against revolt pressure.
+- **Switch `FFH_AI_CULTURE_OFF`:** nothing is channelled.
+
+Measured on 8 civs, a standard map and 350 turns, with `GAMEOPTION_CULTURE_ACTIONS`, `GAMEOPTION_ARMIES` and `GAMEOPTION_GOVERNORS`, seeds 1–4:
+
+| Seed | Revolt channels | Religion channels | Spreads | Cities in revolt | Cities taken | Defenders trained first |
+|---|---|---|---|---|---|---|
+| 1 | 11 | 17 | 12 | 1 | 0 | 0 |
+| 2 | 31 | 14 | 8 | 6 | 3 | 11 |
+| 3 | 28 | 19 | 16 | 7 | 4 | 11 |
+| 4 | 7 | 27 | 20 | 2 | 0 | 2 |
+
+- Nearly all spreads went into the casters' own cities, and all but one city taken fell after turn 300.
+- Checked stress games (400 turns, seeds 1–3) had no invariant failure.
+- Revolt channels begin around turns 200–290, once cities make 20 culture and more. A city in revolt makes no culture, which speeds its fall and weakens its own channels.
+
+## UI (ffh-play)
+
+- **City screen, "Culture"** sits in the left column, under the city's numbers. It shows the culture rate and, under a channel, the half it takes and what is left to the city.
+  - **The channel:** action, civilization (and religion), since when, the culture it takes a turn, "Stop", and what it does now.
+    - Foment Revolt lists each of their cities in reach, strongest first, with:
+      - its distance and the distance effect;
+      - the caster's pressure there now;
+      - what this channel adds a turn, and what the caster's other cities add, against the city's resistance;
+      - a small bar with the pressure now, a marker where it settles, and the thresholds.
+
+      It then says what that brings (no effect, unrest with its unhappiness, revolt, or the city joins you; a capital never) and when ("revolt in ~6 turns").
+    - Spread Religion shows the chance a turn (with the 25% cap) and each city's part of it, divided by the religions already there. It also lists the cities that have the religion or cannot take it, and how many cities in reach you have not seen; those count in the chance.
+  - **"Channel culture"** is open while the city channels nothing, and folded as "Change the channel" under one.
+    - You pick the action, the religion (for a spread), and a civilization with a city in reach.
+    - Each civilization has a one-line summary: how many cities and the most the channel would bring, or the chance a turn; "hostile"; or why it is not possible.
+    - Below come the preview of the one picked and the button that sets it ("Channel …" / "Switch to …").
+    - A city whose half rounds to nothing says so.
+  - **"Revolt pressure on this city"** has a bar by civilization, in their colours, against the thresholds: each point of unrest, revolt, two thirds of the way, and the line where one civilization's own pressure takes the city.
+    - Then come the level and its unhappiness, and each civilization's pressure with what its channels add a turn, where that settles and when the next level comes (or that it fades, and when it is gone).
+    - Last come the city's resistance (half its culture, 2 per defender) and, close to the flip, what to do.
+- **Cultural pressure (F8, the menu's Culture)** lists:
+  - your cities under revolt pressure, most pressed first (a click opens the city);
+  - the channels aimed at you, with the cities of yours they reach and what they do there;
+  - your channels, with what they do and "Stop";
+  - the channels you see between others (a click centres the map on the casting city);
+  - what other leaders remember of your cultural actions: hostility and friendship, out of `CULTURE_MEMORY_MAX`.
+- **Map:** a city's banner ends with a mark while you see it under revolt pressure, on the isometric and 2D maps:
+  - a small ochre dot while the pressure has no effect yet;
+  - an amber "!" for unrest;
+  - a red "!" in revolt;
+  - a red "!!" in a gold ring when a civilization's pressure is two thirds of the way to taking the city.
+- **Messages** from the rules reach the turn report and the message log like any other, and the located ones have their ⌖. They report:
+  - a spread, with its chance a turn;
+  - a city's revolt level changing;
+  - a hostile channel against you started or stopped;
+  - a channel that ended, and why;
+  - a city changing hands.
+- **Predictions:** "settles near" is where a civilization's pressure ends up after the city's turn under a steady inflow, found by running the turns: about `(inflow − resistance) / 5% − inflow`. "When" counts the same turns from the pressure now. Pressure from civilizations you have not met shows only as "unknown".
+- **Protocol:**
+  - The command `culture_channel {city, action?, target?, religion?}`; no action means stop.
+  - The `culture` query.
+  - The city query's `cultural`: `rate`, `amount`, `diverted`, `channel`, `options`, `pressure`, `thresholds`.
+  - The view's cities carry `channel` (your own cities) and `revolt` / `unrest` (cities you see under pressure).
+  - docs/HUMAN.md has the fields.
 
 ## Phase 1 baseline (master `9be40af`, before the sprint)
 

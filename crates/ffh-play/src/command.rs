@@ -70,8 +70,6 @@ pub enum Command {
     GovernAssign { city: CityId, governor: GovernorId },
     /// Governed city `city` feeds army `army` (`None`: it develops).
     GovernFeed { city: CityId, army: Option<ArmyId> },
-    /// Whether governed city `city`'s governor may queue hostile cultural actions.
-    GovernHostile { city: CityId, on: bool },
     Research { tech: Option<TechType>, shift: bool },
     /// Merged over the current civics.
     UpdateCivics { civics: Vec<CivicType> },
@@ -221,7 +219,6 @@ pub const COMMAND_NAMES: &[&str] = &[
     "govern_hand",
     "govern_assign",
     "govern_feed",
-    "govern_hostile",
     "research",
     "update_civics",
     "percent_change",
@@ -263,7 +260,6 @@ pub const COMMAND_FIELDS: &[(&str, &[&str])] = &[
     ("govern_hand", &["city"]),
     ("govern_assign", &["city", "governor"]),
     ("govern_feed", &["city", "army"]),
-    ("govern_hostile", &["city", "on"]),
     ("research", &["tech", "shift"]),
     ("update_civics", &["civics"]),
     ("percent_change", &["commerce", "change"]),
@@ -391,7 +387,6 @@ impl Command {
             Command::GovernHand { .. } => "govern_hand",
             Command::GovernAssign { .. } => "govern_assign",
             Command::GovernFeed { .. } => "govern_feed",
-            Command::GovernHostile { .. } => "govern_hostile",
             Command::Research { .. } => "research",
             Command::UpdateCivics { .. } => "update_civics",
             Command::PercentChange { .. } => "percent_change",
@@ -491,7 +486,6 @@ impl Command {
             "govern_hand" => Command::GovernHand { city: j.req("city")? },
             "govern_assign" => Command::GovernAssign { city: j.req("city")?, governor: j.req("governor")? },
             "govern_feed" => Command::GovernFeed { city: j.req("city")?, army: j.opt("army")? },
-            "govern_hostile" => Command::GovernHostile { city: j.req("city")?, on: j.req("on")? },
             "research" => Command::Research { tech: names::opt_field(d, j, "tech")?, shift: flag("shift")? },
             "update_civics" => Command::UpdateCivics { civics: names::list_field(d, j, "civics")? },
             "percent_change" => Command::PercentChange { commerce: names::field(d, j, "commerce")?, change: j.req("change")? },
@@ -574,7 +568,6 @@ impl Command {
             Command::GovernHand { city } => j.with("city", *city),
             Command::GovernAssign { city, governor } => j.with("city", *city).with("governor", *governor),
             Command::GovernFeed { city, army } => j.with("city", *city).with("army", *army),
-            Command::GovernHostile { city, on } => j.with("city", *city).with("on", *on),
             Command::Research { tech, shift } => j.with("tech", Json::opt_idx(*tech)).with("shift", *shift),
             Command::UpdateCivics { civics } => j.with("civics", Json::Arr(civics.iter().map(|&c| Json::idx(c)).collect())),
             Command::PercentChange { commerce, change } => j.with("commerce", Json::idx(*commerce)).with("change", *change),
@@ -781,7 +774,6 @@ fn apply_army(g: &mut Game, h: PlayerId, c: &Command) -> Result<(), CmdErr> {
         Command::GovernHand { city } => g.city_hand_to_governor(h, *city),
         Command::GovernAssign { city, governor } => g.city_assign_governor(h, *city, *governor),
         Command::GovernFeed { city, army } => g.city_set_feed_army(h, *city, *army),
-        Command::GovernHostile { city, on } => g.city_set_hostile_culture(h, *city, *on),
         Command::RecruitDest { city, index, dest, reinforce_to } => {
             if *index < 0 {
                 g.cities[*city].recruit_default = *dest;
@@ -1164,12 +1156,6 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             city_of(g, h, *city)?;
             governors_on(g)?;
             g.city_check_hand_to_governor(h, *city).map_err(cannot)?;
-            Plan::Apply(Action::Army(cmd.clone()))
-        }
-
-        Command::GovernHostile { city, .. } => {
-            city_of(g, h, *city)?;
-            governors_on(g)?;
             Plan::Apply(Action::Army(cmd.clone()))
         }
 
@@ -1623,7 +1609,6 @@ mod tests {
             Command::GovernAssign { city: CityId(3), governor: GovernorId(2) },
             Command::GovernFeed { city: CityId(3), army: Some(ArmyId(1)) },
             Command::GovernFeed { city: CityId(3), army: None },
-            Command::GovernHostile { city: CityId(3), on: true },
             Command::Research { tech: None, shift: false },
             Command::Research { tech: Some(TechType(3)), shift: true },
             Command::UpdateCivics { civics: vec![CivicType(1), CivicType(5)] },

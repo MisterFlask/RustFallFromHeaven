@@ -1345,11 +1345,10 @@ governors (whose leave a governed city's revolt needs), what an expert does with
   weighed again), and a new channel must be worth a quarter more than its cost (at least a
   commerce); a city spreading a religion moves to another channel only when that is better by half
   its cost.
-- **A human's governors** (`govern`, through `Controller::govern_cities`): a governed city without a
-  channel takes the one worth its culture by the same reckoning (at 100% lean), a revolt only where
-  the player allowed hostile cultural actions (`City::governor_hostile_culture`); a channel that
-  stands, the player's or its own, is never changed (the rules end one with nothing left to do).
-  The AI's own governed cities are the AI's (`governor::turn` grants them the leave).
+- **Governors never channel** (the owner's decision, 2026-10-30): a channel is the civilization's
+  own decision, so the AI plans every one of its cities, governed or not, and a human's governors
+  (`govern`, through `Controller::govern_cities`) set none; they only train defenders against
+  revolt pressure (above).
 - **Memory.** Their cultural acts against us are in the attitude (`relation_parts`): "cultural
   hostility" −1 per 2 points (to −3), "cultural friendship" +1 per 2 points (to +2), fading a
   point every 10 turns.
@@ -1357,8 +1356,8 @@ governors (whose leave a governed city's revolt needs), what an expert does with
 Switch `CULTURE` (`FFH_AI_CULTURE_OFF`): off, a civilization channels nothing and its cultural
 defence is only its governors'. Telemetry: the decisions of kind `culture` (the action, or `stop`
 or `garrison`; why: `revolt_flip`, `revolt_disorder`, `revolt_unrest`, `religion_home`,
-`religion_abroad`, `religion_hostile`; `worthless`, `friend`, `stronger`, `keep_culture`,
-`not_allowed`...; `defend`), with the rules' counts `culture_channel`, `culture_channel_end`,
+`religion_abroad`, `religion_hostile`; `worthless`, `friend`, `stronger`, `keep_culture`...;
+`defend`), with the rules' counts `culture_channel`, `culture_channel_end`,
 `culture_spread` and `culture_revolt`; `FFH_AI_TRACE` lines `culture:` name the city, the target
 civilization and, for a revolt, each target city's resistance, stationed defenders, pressure,
 inflow and simulated outcome.
@@ -1445,15 +1444,13 @@ cities.
   production again at once (the rules: what it was building keeps its progress); a change of army
   only redirects its units.
 - **Governors.** The rules give a vacant post the best-matching candidate; the AI replaces nobody
-  (a replacement costs the city). Its governors may channel revolt: its cultural play decides
-  where it is worth it.
-- **A human's governors** (`culture::govern`, through `Controller::govern_cities`): a governed city
-  without a channel takes the one worth its culture, a revolt only where the player allowed hostile
-  cultural actions; a channel that stands is the player's to change; defenders against revolt
-  pressure.
+  (a replacement costs the city). Cultural channels are the civilization's, not the governors'
+  (docs/CULTURE.md): its cultural play sets them in governed cities too.
+- **A human's governors** (`culture::govern`, through `Controller::govern_cities`): defenders
+  against revolt pressure; never a cultural channel.
 
 Switch `GOVERNORS` (`FFH_AI_GOVERNORS_OFF`): off, the AI keeps its first cities direct and every
-governed city develops, its cultural play unrestricted. With switch `ARMIES` off no city feeds an
+governed city develops. With switch `ARMIES` off no city feeds an
 army (no unit is sent in transit). The production audit the spec asks for (governors on against off, AI
 autoplay, 24 seeds) is in docs/GOVERNORS.md: the governed empires grow, produce and research more
 (+8% population, +13% production and research) and a quarter fewer cities change hands, mostly

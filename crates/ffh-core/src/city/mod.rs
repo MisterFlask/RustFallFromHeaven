@@ -282,8 +282,6 @@ pub struct City {
     pub feed_army: Option<ArmyId>,
     /// Turns left of the penalty for replacing its governor.
     pub governor_penalty_turns: i32,
-    /// Its governor may queue hostile cultural actions.
-    pub governor_hostile_culture: bool,
 }
 
 impl City {
@@ -500,7 +498,6 @@ impl City {
             governor: None,
             feed_army: None,
             governor_penalty_turns: 0,
-            governor_hostile_culture: false,
         }
     }
 

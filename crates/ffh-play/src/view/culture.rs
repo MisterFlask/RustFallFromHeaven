@@ -5,7 +5,7 @@
 //! (`Game::culture_channel_visible`). A channel's reach lists only the cities the human has seen
 //! (`unseen` counts the others).
 
-use ffh_core::culture::{Channel, ChannelReach, CultureRefusal};
+use ffh_core::culture::{Channel, ChannelReach};
 use ffh_core::ids::*;
 use ffh_data::*;
 
@@ -145,14 +145,7 @@ pub fn option_json(v: &Viewer, c: CityId, action: CulturalActionType, target: Pl
         }
         Err(e) => {
             j.set("ok", false);
-            // A spread with cities in reach that none can take is refused as "none in reach":
-            // say why.
-            let why = match e {
-                CultureRefusal::NoneInReach if !reach.is_empty() && g.city_channel_amount(c) <= 0 => "the city makes too little culture to channel any".to_string(),
-                CultureRefusal::NoneInReach if !reach.is_empty() => "none of their cities in reach could take it (they have it, or their civics admit only their state religion)".to_string(),
-                e => e.describe(),
-            };
-            j.set("why", why);
+            j.set("why", e.describe());
         }
     }
     if g.d.cultural_actions[action].effect == CultureEffect::SpreadReligion {
