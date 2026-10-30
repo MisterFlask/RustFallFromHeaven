@@ -726,26 +726,58 @@ async function cityQueue() {
   steps.push("city queue: appended with Shift, removed with ✕, no ✕ on the only order");
 }
 
-/** This game's cultural actions (docs/CULTURE.md; the new-game screen starts with them on): the
- *  city screen's Culture section lists every action with its targets or why not, and F8 opens the
- *  Cultural pressure panel. */
+/** This game's cultural channels (docs/CULTURE.md; the new-game screen starts with them on): the
+ *  city screen's Culture section has the channel chooser (a button for each action; for each, the
+ *  civilizations it could aim at with a preview, or why there are none) and the revolt pressure on
+ *  the city. A channel the game allows is set through it, shown as the city's channel, and stopped;
+ *  F8 opens the Cultural pressure panel. The smoke game is early and small: when nothing is in
+ *  reach (or the AI's cities are unseen), only the controls and the empty states are checked. */
 async function cultureUi() {
   const city = await S("S.view.cities.find((c) => c.owner === S.view.me.player)");
   await b.eval(`window.ffh.emit("open-city", ${city.id})`);
   const sec = `#modals .backdrop:not(.under) .section.culture`;
-  await until2(`!!document.querySelector("${sec}")`, "the city's Culture section");
+  const has = (sel) => b.eval(`!!document.querySelector(${q(`${sec} ${sel}`)})`);
+  await until2(`!!document.querySelector(${q(`${sec} .culture-under`)})`, "the city's Culture section with its revolt pressure");
+  if (!(await has("details.culture-choose[open]"))) throw new Error("the channel chooser is not open on a city without a channel");
+  if (await has(".culture-channel")) throw new Error("a new city has a channel");
   const n = await b.eval(`window.ffh.S.data.tables.CulturalActionType.length`);
-  const shown = await b.eval(`document.querySelectorAll("${sec} .culture-action").length`);
-  if (shown !== n) throw new Error(`the Culture section lists ${shown} actions of ${n}`);
-  if (!(await b.eval(`!!document.querySelector("${sec} ol.culture-queue li.dim")`))) throw new Error("no empty-queue line");
+  const shown = await b.eval(`document.querySelectorAll(${q(`${sec} .culture-actions button`)}).length`);
+  if (shown !== n) throw new Error(`the Culture section offers ${shown} actions of ${n}`);
+  // Each action: the civilizations it could aim at, or why there are none.
+  let ok = null;
+  for (let a = 0; a < n; a++) {
+    await click(`${sec} .culture-actions button[data-action="${a}"]`);
+    await until2(`!!document.querySelector(${q(`${sec} .culture-actions button[data-action="${a}"].on`)})`, `action ${a} picked`);
+    const targets = await b.eval(`document.querySelectorAll(${q(`${sec} button.culture-target`)}).length`);
+    if (!targets && !(await has("p.culture-none"))) throw new Error(`action ${a}: neither civilizations nor why there are none`);
+    if (targets && !(await has(".culture-commit button.culture-set"))) throw new Error(`action ${a}: no button to set the picked channel`);
+    if (!ok && (await has("button.culture-target:not(.refused)"))) ok = a;
+  }
+  let what = "nothing in reach to channel into";
+  if (ok !== null) {
+    await click(`${sec} .culture-actions button[data-action="${ok}"]`);
+    await click(`${sec} button.culture-target:not(.refused)`);
+    await until2(`!!document.querySelector(${q(`${sec} .culture-preview`)}) && !document.querySelector(${q(`${sec} button.culture-set[disabled]`)})`, "the preview of the picked channel");
+    await shot("culture-preview");
+    await click(`${sec} button.culture-set`);
+    await until2(`!!document.querySelector(${q(`${sec} .culture-channel .culture-stop`)})`, "the channel set");
+    await until2(`window.ffh.S.view.cities.some((c) => c.id === ${city.id} && !!c.channel)`, "the view's city with its channel");
+    await shot("culture-channel");
+    await click(`${sec} .culture-channel .culture-stop`);
+    await until2(`!document.querySelector(${q(`${sec} .culture-channel`)}) && !!document.querySelector(${q(`${sec} details.culture-choose[open]`)})`, "the channel stopped");
+    what = `a ${await b.eval(`window.ffh.S.data.tables.CulturalActionType[${ok}].name`)} channel set and stopped`;
+  } else {
+    await shot("culture-section");
+  }
   await b.key("Escape");
   await until(async () => !(await modalTitles()).length, "the city dialog closed");
   await b.key("F8");
   await until(async () => (await modalTitles()).includes("Cultural pressure"), "the Cultural pressure panel");
+  await until2(`[...document.querySelectorAll("#modals .modal[data-tag=culture] h4")].some((e) => /Your channels/.test(e.textContent))`, "the panel's sections");
   await shot("culture-panel");
   await b.key("Escape");
   await until(async () => !(await modalTitles()).length, "the panel closed");
-  steps.push(`culture: the city screen lists the ${n} cultural actions; F8 opens the pressure panel`);
+  steps.push(`culture: the city screen offers the ${n} cultural actions (${what}); F8 opens the pressure panel`);
 }
 
 /** This game's armies (docs/ARMIES.md; the new-game screen starts with them on): an army unit's

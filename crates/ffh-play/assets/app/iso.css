@@ -457,6 +457,32 @@ html.iso .unlock.more { width: auto; min-width: 32px; padding: 0 4px; color: var
 html.iso .h1 { font-size: 20px; }
 html.iso .ccity { font-size: 20px; }
 
+/* --- cultural channels (culture.js): the city screen's Culture section, the F8 panel -------- */
+
+html.iso .culture h5 { font: 400 20px/24px var(--iso-font); color: var(--iso-gold); margin: 8px 0 2px; }
+html.iso ul.culture-reach .reach-line, html.iso .culture-hint, html.iso button.culture-target .target-sum,
+html.iso .culture-preview .preview-head { font-size: 20px; line-height: 24px; }
+html.iso ul.culture-reach { gap: 6px; }
+html.iso .culture-channel, html.iso .culture-card { border: 2px solid #3a4a74; background: rgba(1, 8, 30, 0.35); }
+html.iso .culture-channel.hostile, html.iso .culture-card.hostile { border-color: #8a2a20; }
+html.iso .revolt-bar { height: 10px; border: 2px solid #8a6420; background: var(--iso-deep); }
+html.iso .revolt-tick { background: #4a5a84; width: 2px; }
+html.iso .revolt-tick.revolt { background: var(--iso-bad); }
+html.iso .revolt-tick.near { background: var(--iso-warn); }
+html.iso .revolt-tick.flip { background: #fff8e4; }
+html.iso .revolt-mark { top: -6px; border-top-color: var(--iso-gold-lt); }
+html.iso .revolt-labels { font: 400 10px/12px var(--iso-font); color: var(--iso-dim); }
+html.iso .revolt-scale { margin-bottom: 16px; }
+html.iso .swatch { width: 12px; height: 12px; border: 2px solid #0c0703; vertical-align: -1px; }
+html.iso details.culture-choose > summary { color: var(--iso-gold); }
+html.iso .culture-actions button.on, html.iso .culture-religions button.on, html.iso button.culture-target.on {
+  border-image: var(--iso-tile-hover); background: linear-gradient(180deg, var(--iso-tile-lit), #163f96); background-clip: padding-box; color: #fff;
+  box-shadow: inset 4px 0 0 var(--iso-gold);
+}
+html.iso button.culture-target { padding: 2px 8px; }
+html.iso button.culture-target.refused .target-name { color: var(--iso-dim); }
+html.iso .culture-preview { border-left: 4px solid #8a6420; padding-left: 8px; }
+
 /* --- the city screen over the map (Civ4's: city.js `overlay`, map.js `cityOverlay`) --------- */
 /* The dialog lets the map through: its title, summary and buttons are plaques at the top and
    bottom centre, its two columns panels at the sides (map.js CITY_FRAME keeps the city framed in

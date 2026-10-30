@@ -14,7 +14,7 @@
 import { S, tname, dname, info, me, isBarbarian, ORDER_KINDS, observing } from "./state.js";
 import * as T from "./tiles.js";
 import { ArtMap } from "./artmap.js";
-import { IsoMap, ISO_DEFAULT_ZOOM } from "./iso.js";
+import { IsoMap, ISO_DEFAULT_ZOOM, drawRevoltMark } from "./iso.js";
 import { artZooms, defaultArtZoom } from "./stacks.js";
 
 const ZOOMS = [12, 16, 24, 32, 48, 64];
@@ -1200,8 +1200,7 @@ export class MapView {
         g.textBaseline = "middle";
         g.fillText(c.size === null || c.size === undefined ? "?" : String(c.size), sx + ts / 2, by + hh / 2 + 0.5);
         if (ts >= 16) {
-          // Cultural pressure (docs/CULTURE.md): "!" for hostile channels aimed at the city.
-          const label = `${c.capital ? "★ " : ""}${c.name}${c.pressure ? " !" : ""}`;
+          const label = `${c.capital ? "★ " : ""}${c.name}`;
           g.font = `${ts >= 32 ? 12 : 10}px ${FONT}`;
           const tw = g.measureText(label).width + 8;
           g.fillStyle = "rgba(10,10,12,0.78)";
@@ -1209,6 +1208,9 @@ export class MapView {
           g.fill();
           g.fillStyle = c.owner === mine ? "#ffe9a8" : col;
           g.fillText(label, sx + ts / 2, sy - 1.5);
+          // Revolt pressure (docs/CULTURE.md): a mark at the label's right end by its level.
+          g.font = `bold ${ts >= 32 ? 11 : 9}px ${FONT}`;
+          drawRevoltMark(g, c, sx + ts / 2 + tw / 2 + 4, sy - 2, 6, 1, sy - 1.5);
           if (c.owner === mine && ts >= 32) {
             const prod = c.production ? `${dname(ORDER_KINDS[c.production.order], c.production.type)}${c.production.turns !== null ? ` ${c.production.turns}` : ""}` : c.idle ? "idle!" : "";
             if (prod) {

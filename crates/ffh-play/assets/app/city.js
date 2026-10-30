@@ -431,7 +431,9 @@ function screen(c, { task, choose, remove, popup, overlay, tap, reload }) {
     (look.art || isoSkin()) && f.threshold > 0 ? h("span.growth", uiIcon("yield", 0, 8), barEl(f.stored / f.threshold, "food", { w: 40, next: (f.stored + f.difference) / f.threshold, title: `${f.stored}/${f.threshold}` })) : null,
   );
   const plots = overlay ? h("p.dim.city-hint", "Click the city's plots on the map to work them; its own plot hands the choice back to the governor.") : plotGrid(c, task);
-  const left = h("div.city-col", plots, specialistsView(c, task), statsView(c), buildingsView(c));
-  const right = h("div.city-col", governanceView(c, reload), manageView(c, task), productionView(c, choose, remove, tap, reload), popup ? null : cultureView(c, reload));
+  // This game's cultural channel after the city's numbers (its culture among them), above the
+  // buildings: the right column's build lists are long.
+  const left = h("div.city-col", plots, specialistsView(c, task), statsView(c), popup ? null : cultureView(c, reload), buildingsView(c));
+  const right = h("div.city-col", governanceView(c, reload), manageView(c, task), productionView(c, choose, remove, tap, reload));
   return [head, popup ? h("div.city-cols.popup", right, left) : h("div.city-cols", left, right)];
 }

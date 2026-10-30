@@ -249,14 +249,21 @@ production"; the queue (✕ removes an entry while there are several; the only o
 choosing another) and everything it can build with turns and cost, each with its tooltip (a
 unit's strength, moves and class, what it does; click: build it; Shift: append; Ctrl: put it
 first). "‹ Previous city" and "Next city ›" go through your cities. With cultural actions on
-(this game's own system, docs/CULTURE.md) the screen also has a **Culture** section: the culture
-rate and what the channel took last turn, the cultural queue (progress, why a channel is paused,
-repeat, ✕ to cancel), the hostile channels aimed at the city, its festivals, fairs and unrest, and
-"Start a cultural action": each action's targets in reach with the predicted effectiveness and
-effect (hostile ones marked; click queues, Shift puts first, Alt repeats) and the ones not
-possible with the reason. With armies on, each queued land combat unit has a destination selector
-(the city's default, its garrison, another city's garrison, an army with its size and whether it
-is in supply) and, for an army, "reinforce to N" (the order comes back until the army, with the
+(this game's own system, docs/CULTURE.md) the screen also has a **Culture** section, under the
+city's numbers: the culture rate and the half the channel takes; the city's channel (the action,
+the civilization, the religion) with what it does now and "Stop": for Foment Revolt each of their
+cities in reach with its distance, the pressure it adds a turn against the city's resistance, a
+small scale (your pressure there now, where it settles) and what that brings (no effect, unrest,
+revolt, the city joins you; a capital never) and when; for Spread Religion the chance a turn and
+each city's part of it (or that it has the religion); then "Channel culture" (folded as "Change
+the channel" under a channel): the action, the religion, the civilizations in reach with a
+summary or the reason it is not possible, the preview of the picked one, and the button that
+sets it. Last, the revolt pressure on the city: a scale by civilization against the thresholds
+(each point of unrest, revolt, the line where one civilization's pressure takes the city), its
+level and unhappiness, what each civilization's channels add a turn and where that settles, and
+its resistance (half its culture, 2 per defender). With armies on, each queued land combat unit
+has a destination selector (the city's default, its garrison, another city's garrison, an army
+with its size and whether it is in supply) and, for an army, "reinforce to N" (the order comes back until the army, with the
 units on their way, counts N); under the queue, the city's default destination and its garrison.
 With governors on (docs/GOVERNORS.md) a **Governance** section heads the right column: a directly
 ruled city says so (with "Hand to a governor"); a governed city shows its governor (or the interim
@@ -277,10 +284,15 @@ tech, a war, an alignment, a state religion); pick civics and the screen shows t
 revolution's anarchy and upkeep (computed by the rules), then "Revolution!". **Religion** (`F7`):
 the religions, the tech whose first discoverer founds each, their holy cities as far as you know
 them, your cities with each, and "Convert" (with the anarchy). **Cultural pressure** (`F8`, the
-menu's Culture; with cultural actions on): every cultural channel aimed at your cities, every one
-you run, the others you see (all channels are public to civilizations that have met the caster),
-and what other leaders remember of your actions; a city with hostile channels aimed at it has a red
-"!" on its banner. **Armies** (`F5`, the menu's Armies; with armies on): every army with its name
+menu's Culture; with cultural actions on): your cities under revolt pressure (each with its scale,
+level, unhappiness, each civilization's pressure with what its channels add a turn and where it
+settles, and when the next level comes), the channels aimed at you (with the cities of yours they
+reach and what they do there), your channels with what they do (and "Stop"), the channels you see
+between others (all channels are public to civilizations that have met the caster), and what
+other leaders remember of your cultural actions. On the map a city you see under revolt pressure
+has a mark at its banner's end: a small ochre dot while the pressure has no effect yet, an amber
+"!" for unrest, a red "!" in revolt, a red "!!" in a gold ring when close to changing hands.
+**Armies** (`F5`, the menu's Armies; with armies on): every army with its name
 (type to rename), units, place (click: select it on the map), supply, target size, "Upgrade all",
 "Disband", and the units on their way (where from, how long, or why they wait); then each city's
 garrison with the units on their way to it. **Governors** (`F9`, the menu's Governors; with
@@ -577,10 +589,11 @@ loop {
 ### Commands
 
 `move`, `mission`, `do_command`, `join_group`, `auto_mission`, `push_order`, `pop_order`,
-`do_task`, `culture_push`, `culture_pop`, `culture_repeat` (this game's cultural queue:
-`{"c": "culture_push", "city": .., "action": "CULTURALACTION_FESTIVAL", "target": <city id>,
-"religion": .., "repeat": false, "first": false}`, checked by the rules' `culture_check`;
-docs/CULTURE.md), `army_form {units}`, `army_split {units}`, `army_join {units, army}`,
+`do_task`, `culture_channel {city, action?, target?, religion?}` (this game's cultural channel:
+`{"c": "culture_channel", "city": .., "action": "CULTURALACTION_FOMENT_REVOLT", "target": <player
+id>}`, with `"religion"` for `CULTURALACTION_SPREAD_RELIGION`; the city channels that from now on,
+replacing its channel; no `action` (or null): it channels nothing; checked by the rules'
+`culture_channel_check`, a refusal says why; docs/CULTURE.md), `army_form {units}`, `army_split {units}`, `army_join {units, army}`,
 `army_garrison {units}`, `army_rename {army, name}`, `army_disband {army}`, `army_upgrade {army}`,
 `army_target {army, size}`, `recruit_dest {city, index, dest, reinforce_to}` (this game's armies:
 `dest` is `{"garrison": city}`, `{"army": id}` or null for the city's default; `index` -1 sets the
@@ -629,16 +642,16 @@ Errors: `invalid`, `not_owner`, `gone`, `busy`.
 |---|---|
 | `status` | phase (`human`, `running`, `decision`, `over`; over the transports also `stuck`, `no_game`, `crashed` with the report), turn, year, you, the active players, the open decision, the winner, `view_version` (changes whenever the view does: a command, a decision opening or closing, debug reveal), `ai_auto_play` (the AI autoplay's turns left, 0 when off; observed, the turns left to play), `observe` (an observed game: `human` is the player the view follows, phase `human` means stopped at a turn boundary), `build` (the commit the binary was built from), and over the transports `game {dir, journal, autosave}` |
 | `pending` | open events (with each option's effects), votes, research needed, idle cities, promotions, ready groups, idle AI-controlled groups |
-| `view` | `me` (gold and rate, research, sliders, civics, score, Armageddon counter, mana, Stasis, the player options, AI autoplay), the players you met, the cities you revealed, the units you see, your groups (`ready`: some unit can move, as `pending.ready_groups`; `selectable`: every unit can, what Civ4's cycle selects), `group_cycle` (your groups in Civ4's cycle order) and `has_auto_unit`, `pending`, `log_next`; with armies (null without), `armies` (each: `id`, `name`, `group`, `units`, `x`, `y`, `in_supply`, `target_size`, `transit` with each unit's `from`, `to`, `turns_left`, `stalled`, `disband_to`, and `upgrades` with their `upgrade_price`) and `garrison_transit`, and each unit's `army`, `garrison` and `army_unit` |
+| `view` | `me` (gold and rate, research, sliders, civics, score, Armageddon counter, mana, Stasis, the player options, AI autoplay), the players you met, the cities you revealed, the units you see, your groups (`ready`: some unit can move, as `pending.ready_groups`; `selectable`: every unit can, what Civ4's cycle selects), `group_cycle` (your groups in Civ4's cycle order) and `has_auto_unit`, `pending`, `log_next`; with armies (null without), `armies` (each: `id`, `name`, `group`, `units`, `x`, `y`, `in_supply`, `target_size`, `transit` with each unit's `from`, `to`, `turns_left`, `stalled`, `disband_to`, and `upgrades` with their `upgrade_price`) and `garrison_transit`, and each unit's `army`, `garrison` and `army_unit`; with cultural actions, each of your cities' `channel` (`{action, target, religion}`, absent when it channels nothing), and `revolt` (the level: 0 pressure without effect yet, 1 unrest, 2 revolt, 3 close to changing hands) and `unrest` (its unhappiness) for the cities you see under revolt pressure |
 | `map` | flat arrays `y * w + x`: `vis` (0 unrevealed, 1 fogged, 2 visible), `plot_type`, `terrain`, `feature`, `bonus`, `improvement`, `route`, `owner`, `river` (bit 0 river on the south edge, bit 1 on the east edge, bits 2-4 north/south flow + 1, bits 5-7 west/east flow + 1), `city`, `yield` (`food \| production << 8 \| commerce << 16`, visible plots only), `map_rev`, and `epoch` and `rev`. `map {since: R, epoch: E}` answers only the tiles changed since revision `R` (`full: false`, `tiles` = their indices, each array the values of those tiles), or the full map (`full: true`) when `E` is not the current epoch, `R` is unknown or much of the map changed |
 | `plot {x,y}` | a plot as you know it (`min_level` when units below a level cannot enter); while visible also yields, defence, culture and the units (under debug reveal each with `ai_type`, the AI's role, and `missions`, its group's orders) |
 | `group {units}` | the units in detail and the actions: `mission`, `target` (an interface mode, `mode`: go-to, route-to for workers, range attack, the air modes; needs a plot), `command`, `load`, `spell`, `promotion`, `upgrade`, `army` (this game's armies: `army` the action, `label`, `help`), each `enabled` or not, each with its `cmd` |
 | `path {units,x,y}` | the path preview: nodes with the turn of arrival and moves left, total turns, a war it would declare, whether it ends in an attack |
 | `combat {units,x,y}` | the attack preview: attacker, defender, odds of winning and of retreating (per mille), strengths, the modifiers of both sides |
-| `city {city}` | the city screen of one of your cities: plots (with `can_work`), specialists (with `plus` and `minus`: what `do_task TASK_CHANGE_SPECIALIST` accepts now), yields, happiness, health, buildings, hurry, emphasis, queue, the buildable list with cost and turns; `cultural` (null without cultural actions): the cultural queue, each action's targets in reach (`ok` with `effect`, `hostile`, `magnitude`, `effect_turns`, else `why`), the hostile channels aimed at it (`pressure`), its `marks`; `recruit` (null without armies): the city's default destination, the destinations it may choose, its garrison; with armies, each queue entry of a land combat unit has `dest`, `dest_name`, `reinforce_to` |
+| `city {city}` | the city screen of one of your cities: plots (with `can_work`), specialists (with `plus` and `minus`: what `do_task TASK_CHANGE_SPECIALIST` accepts now), yields, happiness, health, buildings, hurry, emphasis, queue, the buildable list with cost and turns; `cultural` (null without cultural actions; pressures and amounts in hundredths of culture, chances in hundredths of a percent): `rate`, `amount` (what a channel takes a turn), `diverted` (what it took this turn), `channel` (null, or `{city, caster, action, target, religion, since_turn, hostile, amount, reach, unseen, chance}`), `options` (every channel it could set, one per action, civilization with a city in reach and religion of the city: `ok` or `why`, `hostile`, `reach`, `unseen` (cities in reach you have not seen), a spread's `chance`), each `reach` entry `{city, name, owner, distance, effect}` (the distance effect, percent) and `amount` (pressure or chance a turn), for Foment Revolt with `resist`, `settles` (where it settles from this city alone), `now` (the caster's pressure there), `others` (what the caster's other cities add a turn), `capital`, for Spread Religion with `has` and `religions`; `pressure` (on this city: `total`, `casters` `[{caster, pressure, inflow, settles}]`, `unknown`, `resist`, `defenders`, `level`, `unhappiness`, `capital`); `thresholds` (`unhappy_step`, `unhappy_max`, `disorder`, `near_flip`, `flip`, `fade_percent`, `resist_percent`, `garrison`, `channel_percent`, `full_range`, `range`, `spread_per_culture`, `spread_max`, `flipping`); `recruit` (null without armies): the city's default destination, the destinations it may choose, its garrison; with armies, each queue entry of a land combat unit has `dest`, `dest_name`, `reinforce_to` |
 | `governors` | the Governors screen: `on`, `slots`, `cooldown`, `penalty`, `penalty_turns`, each city (`governed`, `cooldown`, `governor` with name, profile, traits, `feed_army`, `hostile_culture`, `penalty_turns`), the `bench`, the `armies` cities may feed; the city query's `governance` adds the city's `bench` with each candidate's `match`, `swappable` direct cities, `slots`, `direct_count`, `ready` |
 | `armies` | the Armies screen: `on`, the `armies` (as the view's), each city's garrison (`units`) with the units on their way to it (`transit`), `supply_range`, `stall_turns` |
-| `culture` | the Cultural Pressure panel: `on`, the channels you see `incoming` (aimed at your cities), `ours`, `others`, each with caster, action, target (null if unseen), progress, `paused`, `hostile`; `memories`: what met leaders remember of your cultural actions |
+| `culture` | the Cultural Pressure panel: `on`; the channels you see (each `{city, city_name, x, y, caster, action, religion, target, since_turn, hostile}`): `ours` and `aimed` (at your team) also with `amount`, `reach`, `unseen` and a spread's `chance` as in the city query (for `aimed` the reach is your cities), `others`; `pressure`: your cities under revolt pressure (the city query's `pressure` with `city` and `name`); `memories`: what met leaders remember of your cultural actions (`{player, hostility, friendship}`, at most `memory_max`); `thresholds` as in the city query |
 | `techs`, `civics`, `religions`, `players` | the tech tree (prerequisites, depth, turns; each tech's `help` and, unless you have it, `unlocks`: the units, buildings, builds, civics and religions of its help as type indices, which the research chooser shows as icons), civics (availability, upkeep, anarchy; `civics {with: [civic, ..]}` adds `proposed`: the set a revolution to those civics makes, whether `update_civics` would be applied, its anarchy and upkeep), religions, the players you met with your deals |
 | `trade {with}` | the trade tables both ways (see Deals) |
 | `speech {with,comment?,salt?}` | what the AI leader of `with` says to you: `{with, comment, text}`; `comment` an `AI_DIPLOCOMMENT_*` (`DiploCommentType`), or none for what it says when you contact it (its greeting, Civ4's `AI_getGreeting`, or `AI_DIPLOCOMMENT_REFUSE_TO_TALK`); `salt` picks among its lines (Civ4 uses the interface's random numbers); `text` null when it has no line |

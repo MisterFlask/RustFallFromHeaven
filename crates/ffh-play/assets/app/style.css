@@ -286,13 +286,65 @@ button.build.queued { border-style: dashed; }
 button.build:has(> .unlocks) { flex-wrap: wrap; }
 button.build > .unlocks { flex: 1 1 100%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
 .city-summary div { margin: 2px 0; }
-ol.queue, ol.culture-queue { margin: 2px 0; padding-left: 22px; }
-ol.queue li, ol.culture-queue li { margin: 2px 0; }
-ol.queue button, ol.culture-queue button { margin-left: 8px; }
-/* The cultural queue's section (docs/CULTURE.md). */
-.culture-action { margin: 6px 0; }
-.culture-queue label.toggle { margin-left: 8px; }
-ul.culture-list li.hostile, ul.culture-pressure li { color: #f0c8b8; }
+ol.queue { margin: 2px 0; padding-left: 22px; }
+ol.queue li { margin: 2px 0; }
+ol.queue button { margin-left: 8px; }
+/* Cultural channels (culture.js, docs/CULTURE.md): the city screen's Culture section and the
+   Cultural pressure panel. Stages (where revolt pressure is or settles): 0 nothing yet, 1 unrest,
+   2 revolt, 3 close to changing hands, 4 the city changes hands. */
+.section.culture h5, .culture h5 { margin: 8px 0 2px; font-size: 13px; color: var(--c-stone); font-weight: normal; }
+.culture-rate { margin: 2px 0 4px; }
+.culture-channel { border: 1px solid var(--c-iron); padding: 4px 6px; margin: 4px 0; }
+.culture-channel.hostile, .culture-card.hostile { border-color: var(--c-maroon); }
+.channel-head, .card-head { display: flow-root; }
+.channel-head .culture-stop, .card-head .culture-stop { float: right; margin-left: 6px; }
+ul.culture-reach { margin: 4px 0; padding-left: 0; list-style: none; display: grid; gap: 4px; }
+ul.culture-reach.spread { gap: 1px; }
+ul.culture-reach .reach-line { font-size: 12px; }
+.stage-1 .stage { color: var(--caution); }
+.stage-2 .stage, .stage-3 .stage, .stage-4 .stage { color: var(--warn); }
+.stage-4 .stage { font-weight: bold; }
+.culture-chance { margin: 4px 0 2px; }
+/* The revolt pressure scale: the pressure by caster, the ticks of each point of unrest, the revolt
+   line, the line two thirds of the way to changing hands, the line where it changes hands; the
+   caret marks where it settles. */
+.revolt-scale { margin: 2px 0 14px; }
+.revolt-bar { position: relative; height: 8px; margin: 3px 0; background: var(--c-void); border: 1px solid var(--c-iron); }
+.revolt-fill { position: absolute; top: 0; bottom: 0; opacity: 0.85; }
+.revolt-tick { position: absolute; top: -1px; bottom: -1px; width: 1px; background: var(--c-slate); }
+.revolt-tick.revolt { background: var(--c-scarlet); width: 2px; }
+.revolt-tick.near { background: var(--c-amber); }
+.revolt-tick.flip { background: var(--c-vellum); width: 2px; }
+.revolt-mark { position: absolute; top: -4px; width: 0; height: 0; margin-left: -4px; border: 4px solid transparent; border-top-color: var(--c-vellum); border-bottom: 0; }
+.revolt-labels { position: relative; height: 12px; font-size: 11px; color: var(--dim); }
+.revolt-labels span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.revolt-labels span:last-child { transform: translateX(-100%); }
+.culture-under { margin: 2px 0; }
+.culture-under.stage-1 .under-head .stage { color: var(--caution); }
+.culture-under.stage-2 .under-head .stage, .culture-under.stage-3 .under-head .stage { color: var(--warn); }
+ul.culture-casters { margin: 2px 0; padding-left: 0; list-style: none; }
+.swatch { display: inline-block; width: 9px; height: 9px; margin-right: 4px; border: 1px solid var(--c-void); vertical-align: 0; }
+.culture-hint { font-size: 12px; margin: 2px 0; }
+details.culture-choose { margin: 6px 0; }
+details.culture-choose > summary { cursor: pointer; color: var(--link); }
+.culture-actions, .culture-religions { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0; }
+.culture-actions button.on, .culture-religions button.on { border-color: var(--c-bone); color: var(--c-vellum); background: var(--c-navy); box-shadow: inset 3px 0 0 var(--c-gold); }
+.culture-targets { display: grid; gap: 3px; margin: 4px 0; }
+button.culture-target { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: flex-start; gap: 0 4px; text-align: left; padding: 3px 6px; }
+button.culture-target.on { border-color: var(--c-bone); background: var(--c-navy); color: var(--c-vellum); box-shadow: inset 3px 0 0 var(--c-gold); }
+button.culture-target.refused .target-name { color: var(--dim); }
+button.culture-target .target-sum { flex: 1 1 100%; font-size: 12px; }
+.culture-preview { border-left: 2px solid var(--c-ochre); padding-left: 6px; margin: 4px 0; }
+.culture-preview .preview-head { color: var(--dim); font-size: 12px; }
+.culture-commit { margin: 4px 0; }
+.culture-low { margin: 4px 0; }
+.culture-list { display: grid; gap: 6px; }
+.culture-card { border: 1px solid var(--c-iron); padding: 4px 8px; }
+ul.culture-others, ul.culture-memories { margin: 2px 0; padding-left: 20px; }
+ul.culture-others li.hostile { color: #f0c8b8; }
+html.art .culture-actions button.on:not([disabled]), html.art .culture-religions button.on:not([disabled]), html.art button.culture-target.on:not([disabled]) {
+  border-image: var(--nine-frame-card-selected); border-width: var(--nine-frame-card-selected-w);
+}
 /* This game's armies (armies.js): the unit row's army badge, the Armies screen's cards, the
    production queue's destination. */
 .badge.army { color: var(--c-vellum); border-color: var(--c-ochre); }
