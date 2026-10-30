@@ -82,7 +82,7 @@ export class Map3D {
     }
     this.gl = gl;
     this.glName = glName;
-    this.pipeline = new Pipeline(gl);
+    this.pipeline = new Pipeline(gl, this.terrainDefines());
     /** Whether the programs have compiled (`ready`): the loop draws nothing before. */
     this.compiled = false;
     this.scene = new Scene(gl);
@@ -179,6 +179,12 @@ export class Map3D {
 
   /** The world's options (world.js World): none for the 3D renderer; a mode may raise banks. */
   worldOpts() {
+    return {};
+  }
+
+  /** `#define`s the terrain program is compiled with (shaders.js): none for the 3D renderer; a
+   *  mode may compile parts of the ground's painting out. */
+  terrainDefines() {
     return {};
   }
 

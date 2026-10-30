@@ -642,6 +642,22 @@ beside an Intel UHD integrated GPU, headless Chrome 156 (`FFH_CHROMIUM_CHANNEL=c
   zoom in, a pan with the pointer wandering, a zoom out and back), rendered on the GPU in 85 s. On
   consecutive frames the figures keep their shape and value (no sparkle, no swimming pixels), the
   tilt-shift's band glides after the pointer, and the far zoom fades the blur and the beams out.
+* **What each switch costs, against what it shows** (2026-10-30, after batch 4: an RTX 4060 laptop,
+  Vulkan, a 1920 × 1080 canvas, the `stage corrupt` save at (46, 27); GPU timer queries, the
+  median of rounds alternating the cases; "shows": the share of the frame's pixels a switch moves by
+  more than 8 of 255). At 96 px a plot the GPU frame is 10.2 ms: the terrain's shading 3.6, the
+  water 1.9, the overlay 0.7, the shafts 0.5 (they show over 34% of the frame), the shadows 0.9 in
+  all (15%), the props and the cards 0.3-0.4 each, every other pass 0.1-0.3. The mode's post passes
+  all earn their cost. The switches that only weight a term of a shader (dabs, pigment, brushwork,
+  cloud shadows) save nothing when set to 0: the term is still computed. Compiled out, the **brush
+  dabs** saved 0.5 ms of the terrain's shading (at 40 and 96 px) and 7% of its instructions (7110
+  to 6621; Direct3D's compiler alone took 6.1-6.3 s over it against 6.7-9.3, alternating runs: the
+  whole start drifted too much between runs on that laptop to show it) for no pixel moved by 8 at
+  96 px, 0.1% at 168, and at 220, the closest zoom, a few flower flecks: they are compiled out of
+  the mode's terrain since (`NO_DABS`, `MapHd2d.terrainDefines`; the 3D renderer keeps them, its
+  meadow's flowers show close up). The brushwork on objects (0.2 ms) stays: the mode's 3D fields and sheaves
+  take their texture from it close up. Ambient occlusion (0.25 ms) stays: its shade under the woods
+  shows close up. Glow and bloom (0.15 ms each) are cheap.
 
 ## 9. Cities and the camera
 
@@ -708,7 +724,8 @@ distance each closes:
 (0.5 and 0.15). The `plain` preset turns the stylisation and the mode's passes off (the cards stay).
 Its `LIGHT` is the one light. Stored apart from the 3D renderer's look (`ffh.hd2d.config.3`, renamed
 when the look changes enough that a saved panel tuning would mislead); the panel offers the 3D
-switches that apply (not the paint filter, ink or grid) and the mode's rows.
+switches that apply (not the paint filter, ink, grid or brush dabs, which the mode's terrain is
+compiled without, §8) and the mode's rows.
 
 ## 12. Removing it
 

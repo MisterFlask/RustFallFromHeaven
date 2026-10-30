@@ -129,6 +129,13 @@ export class MapHd2d extends Map3D {
     return { bank: BANK };
   }
 
+  /** The ground's brush dabs compiled out (shaders.js NO_DABS): the pixel-art ground carries its
+   *  own marks, and they showed only as a few flower flecks at the closest zoom, for 0.5 ms a 1080p
+   *  frame and about a second of the start on Direct3D (docs/HD2D.md §8). */
+  terrainDefines() {
+    return { NO_DABS: 1 };
+  }
+
   saveCfg(cfg) {
     saveConfig(cfg, STORE);
   }
@@ -146,7 +153,8 @@ export class MapHd2d extends Map3D {
   }
 
   panelRows() {
-    return [...PANEL.filter(([k]) => !["kuwahara", "kuwaharaRadius", "outline", "outlineWidth", "inkLost", "inkColour", "grid"].includes(k)), ...PANEL_HD2D];
+    // (Brush dabs: compiled out, terrainDefines.)
+    return [...PANEL.filter(([k]) => !["kuwahara", "kuwaharaRadius", "outline", "outlineWidth", "inkLost", "inkColour", "grid", "dabs"].includes(k)), ...PANEL_HD2D];
   }
 
   panelLabel() {

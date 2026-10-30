@@ -36,7 +36,15 @@ uniform float uMist;
 uniform float uFogWar;
 uniform float uStylize;
 uniform float uClouds;
+// The ground's brush dabs (its colour drift, the meadow's flowers, the coast's marks): compiled out
+// of the HD-2D mode's terrain (NO_DABS, MapHd2d.terrainDefines), whose pixel-art ground carries its
+// own marks. Not seen there below its closest zoom, they cost it 0.5 ms a 1080p frame and 7% of
+// the terrain shader's instructions (docs/HD2D.md §8).
+#ifdef NO_DABS
+const float uDabs = 0.0;
+#else
 uniform float uDabs;
+#endif
 uniform float uBrush;
 uniform sampler2D uShadowMap;
 uniform sampler2D uShadowMapT;
