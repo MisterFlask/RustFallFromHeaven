@@ -13,7 +13,7 @@ Phase 1 answers one question: **do today's sprites hold up in a lit 3D world?** 
 and no image model was used. The answer is in §2; the gaps that new art would close are in §10.
 
 Contents: 1 running it · 2 the answer · 3 architecture · 4 what is reused · 5 the sprites ·
-5b the mode's own art · 5c towns from a kit of cards · 6 light, moods and the post passes · 7 the lab and tools · 8 on a real GPU · 9 cities and the camera ·
+5b the mode's own art · 5c towns from a kit of cards · 5d towns that stand out · 6 light, moods and the post passes · 7 the lab and tools · 8 on a real GPU · 9 cities and the camera ·
 10 the gaps to the reference · 11 configuration · 12 removing it · 13 limitations and next steps ·
 14 provenance.
 
@@ -98,12 +98,18 @@ round a walled city, every piece at the prop cards' density, lit, shaded and in 
 [hd2d/towns.jpg](hd2d/towns.jpg) shows it before and after (software renders). It is one of two
 answers being compared: a parallel one builds the towns as 3D geometry with pixel-art textures.
 
+**The sixth batch** made those towns stand out at the gameplay zoom, where they had read less than
+the old bright cards (§5d): four switches -- the towns larger, lit and outlined, on a clearing in
+their own fields, flying their owner's banners over the roofs -- compared alone in
+[hd2d/towns-stand-out.jpg](hd2d/towns-stand-out.jpg) and on by default in a moderate mix.
+
 | | |
 |---|---|
 | the look target and the lab's composition after it, side by side | [hd2d/lab-vs-reference.jpg](hd2d/lab-vs-reference.jpg) |
 | the mode's own art: the seven ground layers and the 25 prop cards | [hd2d/art-sheet.png](hd2d/art-sheet.png) |
 | the town kit (batch 5): the eleven families' pieces and the 22 landmarks | [hd2d/town-kit.png](hd2d/town-kit.png) |
 | cities before and after the town kit: the lab's two views, the real game, close-ups | [hd2d/towns.jpg](hd2d/towns.jpg) |
+| the four ways of making towns stand out, each alone and the default (batch 6) | [hd2d/towns-stand-out.jpg](hd2d/towns-stand-out.jpg) |
 | the Sheaim's corrupted land (lab) | [hd2d/sheaim.jpg](hd2d/sheaim.jpg) |
 | a real game (the `stage corrupt` save at (46, 27)), 96 px a plot | [hd2d/game.jpg](hd2d/game.jpg) |
 | the same, close (168) and far (40) | [hd2d/game-close.jpg](hd2d/game-close.jpg), [hd2d/game-far.jpg](hd2d/game-far.jpg) |
@@ -411,6 +417,52 @@ buildings drawn for this camera, each its own card.
   `tools/hd2d/usage.jsonl`. Eight more calls ended in an HTTP 502 before streaming; whether those
   were billed is unknown.
 
+## 5d. Towns that stand out (batch 6)
+
+The owner liked the kit's towns, but at the gameplay zoom they stood out less than the old bright
+isometric cards. Four ways to make them stand out were tried, each a switch in the panel
+(`config.js`; 0 or 1 turns it off, for one page `?r3d={"townBanners":0}`):
+
+* **Size** (`townScale`, 1 to 1.6). Every piece is larger by this factor, and so is the spread
+  between them (`townShape`, `dressTown`), so the town is denser and larger at once. The pieces'
+  pixels get coarser by the same factor: at 1.25 an art pixel is 0.0039 of a plot, still 2.3 times
+  finer than the old card's. A larger town reaches further onto the plots round it; the HUD's plate
+  keeps its place, at the walls' foot in a great walled city.
+* **Lit** (`townLight`, 0 to 1). It works in the cards' shader (`SPRITE_FS`) and on the ground:
+  * each piece takes the figures' dark one-pixel outline, so roofs read against a wood;
+  * it is brighter (up to 24%) and never in deep shade;
+  * its windows feed the bloom up to 2.6 times as much, and a little of every pixel, warmed, feeds
+    it too, so the whole town glows softly, as the look target's golden town does;
+  * the cities' pools in the 3D renderer's light layer (`decals.js` `rasterLight`) grow up to three
+    times as bright and 30% wider, through a hook, `Map3D.cityLight`, that is 1 for the 3D
+    renderer.
+* **Clearing** (`townClearing`, 0 to 1). What stands tall (trees, bushes, rocks) keeps up to 0.6 of
+  a plot further from a town; grass, flowers and the fields do not. Garden plots, haystacks and
+  fences lie on the plots next to it (`fields`), fewer one further out, so a town in a wood sits in
+  its own farmland.
+* **Banners** (`townBanners`, 0 to 1). The owner's banner, drawn by code, flies from behind the
+  landmark, higher than anything in the town (0.7 to 1.1 of the city banner's height), and a great
+  city's (size 9+) towers fly smaller ones. Like all banners they ripple, take the figures' rim and
+  keep their colours under the moods.
+
+[hd2d/towns-stand-out.jpg](hd2d/towns-stand-out.jpg) shows each alone (size at 1.35, the others at
+1) and the default, on the lab's two views:
+
+* **Size** does the most. Eärlann and Aurelis take their place on the map, and a great walled city
+  dominates its land. In the cities scene, where cities stand two plots apart, larger towns run into
+  each other; a real game's cities stand further apart.
+* **Lit** turns a town into a lighter, glowing block. At full strength it washes the detail out, so
+  the default takes half.
+* **Clearing** shows where a town stands in a wood or among clutter; in the lab's open scenes it
+  adds mostly fields.
+* **Banners** mark a town from afar. Several to a town and larger, as first tried, they buried the
+  towns and the plates behind them; hence one over the landmark, and pennants only on a great city's
+  towers.
+
+**The default** combines them: size 1.25, lit 0.5, clearing 0.5, banners 0.6. The `plain` preset
+turns all four off; any of them can be turned off in the panel. A change to any of them redresses
+the map (`MapHd2d.setConfig`).
+
 ## 6. Light, moods and the post passes
 
 * **The sun** stands at the upper left of the view (west and a little north, about 45° up), where
@@ -647,7 +699,8 @@ distance each closes:
 ## 11. Configuration
 
 `r3d/hd2d/config.js`: the `hd2d` preset (the 3D renderer's painterly switches with: a lower camera,
-`pitch` 32 and `fov` 30; `grid` 0; deeper shade, `stylize` 0.7, `ssao` 0.85; `saturation` 1.0 and
+`pitch` 32 and `fov` 30; `grid` 0; the towns' switches, §5d: `townScale` 1.25, `townLight` 0.5,
+`townClearing` 0.5, `townBanners` 0.6; deeper shade, `stylize` 0.7, `ssao` 0.85; `saturation` 1.0 and
 `contrast` 1.12 (batch 3: the land's palette is graded in the mood pass), `vignette` 0.42, `haze`
 0.1, `mist` 0.08, `clouds` 0.3, `glow` 1.0) and the mode's own switches: `tiltShift` (0.6), `rays`
 (0.6), `mood` (1), `landGrade` (1, the land's palette, §6), `bloom` (0.8, from a lower threshold),

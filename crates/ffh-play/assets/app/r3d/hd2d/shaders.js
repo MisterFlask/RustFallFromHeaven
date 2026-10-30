@@ -183,6 +183,7 @@ flat in float vFade;
 flat in float vTown;
 in float vDepth;
 uniform float uExposure;
+uniform float uTownLight;
 ${SCENE_OUT}
 ${SPRITE_SAMPLE}
 ${INV_FILMIC}
@@ -204,9 +205,12 @@ void main() {
     vec2 o = i == 0 ? ex : i == 1 ? -ex : i == 2 ? ey : -ey;
     edge = max(edge, 1.0 - smoothstep(0.3, 0.6, textureGrad(uSprites, vec3(vUv + o, vLayer), ex, ey).a));
   }
-  c = mix(c, c * vec3(0.22, 0.2, 0.24), edge * vRim);
+  // (Lit towns, uTownLight: each piece outlined too, so the town's roofs read against a wood.)
+  float town = vTown * uTownLight;
+  c = mix(c, c * vec3(0.22, 0.2, 0.24), edge * max(vRim, town * 0.8));
   // The art's colours, in the light where it stands, then dimmed and cooled where only remembered.
-  vec3 lin = srgb(c) * vTint;
+  // A lit town is brighter and never in deep shade.
+  vec3 lin = srgb(c) * mix(vTint, max(vTint, vec3(0.95)), town) * (1.0 + 0.24 * town);
   lin = fogOfWar(lin, vVis);
   // The keep mask: 1 for figures and banners (the moods leave them their colours), 0.95 for towns
   // (about half graded), 0.9 for other buildings and props (graded as the land).
@@ -219,7 +223,10 @@ void main() {
   float hot = smoothstep(0.35, 0.8, sat) * smoothstep(0.45, 0.9, max(c.r, max(c.g, c.b)));
   // (Only the brightest, most saturated warm pixels: a sandstone town's walls are warm too.)
   if (vTown > 0.5) hot = smoothstep(0.6, 0.78, sat) * smoothstep(0.9, 0.99, c.r) * smoothstep(0.15, 0.3, c.g - c.b) * step(c.g, c.r);
-  oEmit = vec4(srgb(c) * hot * vGlow * smoothstep(0.5, 0.9, vVis), vId);
+  // A lit town also glows softly as a whole (a little of every pixel feeds the bloom, warmed): it
+  // reads from afar as a lit place, the way the look target's golden town does.
+  vec3 warm = srgb(c) * vec3(1.0, 0.86, 0.62);
+  oEmit = vec4((srgb(c) * hot * vGlow * (1.0 + 1.6 * town) + warm * 0.3 * town) * smoothstep(0.5, 0.9, vVis), vId);
 }`;
 
 export const SPRITE_SHADOW_FS = `

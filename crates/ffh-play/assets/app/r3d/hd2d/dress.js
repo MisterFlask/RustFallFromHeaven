@@ -279,9 +279,10 @@ function townKit(city) {
  *  about (0, cz), rx across and rz deep, from the 3D renderer's reach (CATALOG.cityReach: a village
  *  keeps to its plot, a great walled capital spills to about 0.9), so the HUD's plate, which stands
  *  just in front of that reach, stays in front of the town. */
-function townShape(city) {
+function townShape(city, scale = 1) {
   const reach = CATALOG.cityReach?.({ size: city.size ?? 1, walls: !!city.walls, capital: !!city.capital }) ?? 0.5;
-  return { cz: -0.05, rx: reach + 0.06, rz: reach * 0.78 };
+  // A larger town (config.js townScale) spreads as far as its pieces grow.
+  return { cz: -0.05 * scale, rx: (reach + 0.06) * scale, rz: reach * 0.78 * scale };
 }
 
 /** The pieces of a town as card records: the civilization's landmark at the back centre rising
@@ -295,7 +296,9 @@ function dressTown(world, map, atlas, env, city, kit, list) {
   const x = city.x, y = city.y;
   const r = rng(hash32(city.id * 7919 + 4099));
   const size = city.size ?? 1;
-  const { cz, rx, rz } = townShape(city);
+  // Larger towns (config.js townScale): every piece and the spread between them.
+  const S = env?.town?.scale ?? 1;
+  const { cz, rx, rz } = townShape(city, S);
   const css = teamCss(city.owner);
   // Only a piece with the owner-colour band (art.py index) needs its owner's variant.
   const own = (key) => (atlas.owned && CARDS[key]?.band ? atlas.owned(key, css) : key);
@@ -340,11 +343,11 @@ function dressTown(world, map, atlas, env, city, kit, list) {
   // all of it.
   const clear = (lx, lz, w) => placed.every((p) => {
     const dx = Math.abs(lx - p.lx), dz = Math.abs(lz - p.lz), half = (w + p.w) / 2;
-    return dz < 0.06 ? dx > half * 0.9 : dz < 0.15 ? dx > half * 0.35 : true;
+    return dz < 0.06 * S ? dx > half * 0.9 : dz < 0.15 * S ? dx > half * 0.35 : true;
   });
   const put = (key, lx, lz, o = {}) => {
     const art = atlas.info(key);
-    const s = o.scale ?? 1;
+    const s = (o.scale ?? 1) * S;
     const w = art.w * PX.prop * s;
     if (!o.force && (!clear(lx, lz, w) || !groundOk(lx, lz))) return false;
     const mx = x + 0.5 + lx, my = y + 0.5 - lz;
@@ -363,21 +366,44 @@ function dressTown(world, map, atlas, env, city, kit, list) {
     const lx = r.range(-0.05, 0.05);
     let lz = 0;
     for (let k = 0; k <= 8; k++) {
-      const z = cz - rz * 0.42 + k * 0.06;
+      const z = cz - rz * 0.42 + k * 0.06 * S;
       if (groundOk(lx, z)) {
         lz = z;
         break;
       }
     }
-    lm = { lx, lz, w: atlas.info(kit.landmark).w * PX.prop * lmScale };
+    lm = { lx, lz, w: atlas.info(kit.landmark).w * PX.prop * lmScale * S };
     put(kit.landmark, lx, lz, { scale: lmScale, force: true });
   }
   // The towers at the back corners.
   const towers = size >= 9 ? 2 : size >= 4 ? 1 : 0;
   const side = r.sign();
+  const towerAt = [];
   for (let k = 0; k < towers && kit.tower.length; k++) {
     const s = k ? -side : side;
-    for (let tries = 0; tries < 8; tries++) if (put(r.pick(kit.tower), ...inEllipse(s * r.range(0.5, 0.72), r.range(-0.55, -0.15)), { flip: r() < 0.5 })) break;
+    for (let tries = 0; tries < 8; tries++) {
+      const at = inEllipse(s * r.range(0.5, 0.72), r.range(-0.55, -0.15));
+      if (put(r.pick(kit.tower), ...at, { flip: r() < 0.5 })) {
+        towerAt.push(at);
+        break;
+      }
+    }
+  }
+  // Banners over the roofs (config.js townBanners): the owner's colour flying from behind the
+  // landmark, higher than anything in the town, and from behind each tower -- as the look target's
+  // towns fly theirs, readable from afar. (Drawn by code, so the colour is the owner's own; they
+  // ripple, take the figures' rim and keep their colours under the moods.)
+  const flags = env?.town?.banners ?? 0;
+  if (flags > 0) {
+    const bk = bannerKey(atlas, css);
+    const team = hexRgb(cssHex(css));
+    const flag = (lx, lz, k, n) => {
+      const mx = x + 0.5 + lx, my = y + 0.5 - lz;
+      list.push(card(bk, atlas.info(bk), PX.banner * k, mx, world.heightAt(mx, my), -my, { anchor: 5.5 / 40, banner: true, team, bias: 0.06, id: idOf(`ct${city.id}:${n}`), phase: hashf(city.id, 13 + n) }));
+    };
+    // One over the landmark; a great city's towers fly pennants too.
+    if (lm) flag(lm.lx + lm.w * 0.18, lm.lz - 0.03 * S, 0.7 + 0.4 * flags, 0);
+    if (size >= 9) towerAt.forEach(([lx, lz], n) => flag(lx + 0.03 * S, lz - 0.03 * S, 0.55 + 0.2 * flags, n + 1));
   }
   // The walls: segments round an ellipse just outside the houses', corner towers at its sides and
   // corners, the gate at the front middle.
@@ -402,7 +428,7 @@ function dressTown(world, map, atlas, env, city, kit, list) {
         const [x0, z0] = at(d), [x1, z1] = at(d + 5);
         len += Math.hypot(x1 - x0, z1 - z0);
       }
-      const n = Math.max(1, Math.round(len / 0.24));
+      const n = Math.max(1, Math.round(len / (0.24 * S)));
       for (let m = 1; m <= n; m++) {
         const [lx, lz] = at(a + ((b - a) * m) / (n + 1));
         if (groundOk(lx, lz)) put(r.pick(kit.wall), lx, lz, { force: true });
@@ -421,9 +447,23 @@ function dressTown(world, map, atlas, env, city, kit, list) {
     // lowest, so its lower storeys show.
     const [lx, lz] = inEllipse(a * (city.walls ? 0.9 : 1), b * (city.walls ? 0.86 : 1));
     const t = clamp(0.5 - b * 0.3 + r.range(-0.45, 0.45), 0, 0.999);
-    const before = lm && Math.abs(lx - lm.lx) < lm.w * 0.3 && lz > lm.lz && lz < lm.lz + 0.35;
+    const before = lm && Math.abs(lx - lm.lx) < lm.w * 0.3 && lz > lm.lz && lz < lm.lz + 0.35 * S;
     const key = byHeight[before ? 0 : Math.floor(t * byHeight.length)];
     if (put(key, lx, lz, { flip: r() < 0.5, scale: r.range(0.9, 1.06) })) n++;
+  }
+}
+
+/** What may stand on a town's clearing (config.js townClearing): low things and the fields. */
+const LOW = new Set(["flowers", "grass", "grass_3", "pebbles", "garden", "fence", "hay", "well", "cart"]);
+
+/** A town's fields round its clearing (config.js townClearing): garden plots, haystacks and fences
+ *  on the plots next to it, fewer one further out. */
+function fields(put, r, ring, clearing) {
+  if (!ring) return;
+  const n = Math.round((ring === 1 ? 3 : 1.5) * clearing * r.range(0.7, 1.3));
+  for (let k = 0; k < n; k++) {
+    const p = r();
+    put(p < 0.6 ? "garden" : p < 0.82 ? "hay" : "fence", r.range(-0.4, 0.4), r.range(-0.4, 0.42), FINE * r.range(0.95, 1.15));
   }
 }
 
@@ -443,11 +483,16 @@ function dressProps(world, map, atlas, env, moods, list) {
   const cityAt = new Map();
   /** A town of the kit's shape (townShape), by its plot: worked out once a dressing. */
   const shapeAt = new Map();
+  const townScale = env.town?.scale ?? 1;
   for (const c of S.cities.values()) {
     cityAt.set(c.y * w + c.x, c);
-    if (townKit(c)) shapeAt.set(c.y * w + c.x, townShape(c));
+    if (townKit(c)) shapeAt.set(c.y * w + c.x, townShape(c, townScale));
   }
-  const cityNear = (x, y, lx, lz) => {
+  // A town on a clearing (config.js townClearing): what stands tall (trees, bushes, rocks) keeps
+  // this much further out; grass, flowers and fields do not.
+  const clearing = env.town?.clearing ?? 0;
+  const margin = (kindKey) => (clearing > 0 && !LOW.has(kindKey) ? 0.6 * clearing : 0);
+  const cityNear = (x, y, lx, lz, m = 0) => {
     for (let dy = -1; dy <= 1; dy++) {
       for (let dx = -1; dx <= 1; dx++) {
         const j = world.index(x + dx, y + dy);
@@ -457,7 +502,8 @@ function dressProps(world, map, atlas, env, moods, list) {
         if (shape) {
           // A town of the kit: its reach (townShape) and a little round it.
           const { cz, rx, rz } = shape;
-          if ((ex * ex) / ((rx + 0.06) * (rx + 0.06)) + ((ez - cz) * (ez - cz)) / ((rz + 0.1) * (rz + 0.1)) < 1) return true;
+          const ax = rx + 0.06 + m, az = rz + 0.1 + m;
+          if ((ex * ex) / (ax * ax) + ((ez - cz) * (ez - cz)) / (az * az) < 1) return true;
           // And a lane before its middle: the way to its gate, where the HUD's plate stands.
           if (Math.abs(ex) < 0.24 && ez > cz && ez < cz + rz + 0.45) return true;
           // A settlement's card spans about 1.7 plots; keep its footprint (round its plot) clear.
@@ -478,16 +524,16 @@ function dressProps(world, map, atlas, env, moods, list) {
     // camera, so its back row goes and its middle row keeps low.
     const n = world.index(x, y + 1);
     const northHeld = n >= 0 && (env.unitAt.has(n) || map.city[n] >= 0);
-    const ok = (lx, lz) => {
+    const ok = (lx, lz, m = 0) => {
       const mx = x + 0.5 + lx, my = y + 0.5 - lz;
       if (world.riverCells.size && world.riverDist(mx, my) < RIVER_HALF + 0.1) return false;
       if (road && (Math.abs(lx) < 0.12 || Math.abs(lz) < 0.12)) return false;
       if (held && Math.hypot(lx, lz - 0.08) < 0.3) return false;
-      return !cityNear(x, y, lx, lz);
+      return !cityNear(x, y, lx, lz, m);
     };
     const put = (kindKey, lx, lz, scale) => {
       const vs = variants(kindKey);
-      if (!vs.length || !ok(lx, lz)) return;
+      if (!vs.length || !ok(lx, lz, margin(kindKey))) return;
       const key = vs[r.int(0, vs.length - 1)];
       const art = atlas.info(key);
       const mx = x + 0.5 + lx, my = y + 0.5 - lz;
@@ -516,6 +562,7 @@ function dressProps(world, map, atlas, env, moods, list) {
       if (r() < 0.7) put("bush", r.range(-0.42, 0.42), r.range(-0.42, 0.42), r.range(0.7, 1.0));
       // The wood's floor at its edge: grass and a fern-like bush where light reaches.
       for (let k = 0; k < 2; k++) put("grass", r.range(-0.46, 0.46), r.range(0.3, 0.48), FINE * r.range(0.85, 1.1));
+      if (clearing > 0) fields(put, r, townRing(map, world, x, y)[0], clearing);
     } else if (kind === KIND.LAND || kind === KIND.HILLS || kind === KIND.PEAK) {
       // Clumps: most things gather round one or two spots of the plot, the rest lie anywhere.
       const clumps = [[r.range(-0.3, 0.3), r.range(-0.3, 0.3)], [r.range(-0.3, 0.3), r.range(-0.3, 0.3)]];
@@ -555,6 +602,7 @@ function dressProps(world, map, atlas, env, moods, list) {
           }
         }
         if (r() < (ring === 1 ? 0.5 : 0.25)) put("garden", r.range(-0.25, 0.25), r.range(-0.3, 0.35), FINE);
+        if (clearing > 0) fields(put, r, ring, clearing);
         if (ring === 1 && r() < 0.12) put("well", r.range(-0.3, 0.3), r.range(-0.2, 0.3), FINE);
         // (Kinds the image model may add, tools/hd2d/props.json: none stand until their cards exist.)
         if (r() < 0.12) put("cart", r.range(-0.3, 0.3), r.range(-0.2, 0.35), FINE);

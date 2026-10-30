@@ -134,10 +134,10 @@ export class Scene {
   }
 
   /** The decal and light textures (after the cities are known). */
-  setPaint(world, map, cities, lightStrength) {
+  setPaint(world, map, cities, lightStrength, cityLight = 1) {
     const gl = this.gl;
     const d = rasterDecals(world, map, cities);
-    const l = rasterLight(world, map, cities, lightStrength);
+    const l = rasterLight(world, map, cities, lightStrength, cityLight);
     const wrap = world.wrapX ? gl.REPEAT : gl.CLAMP_TO_EDGE;
     if (!this.decal || this.decal.w !== d.w || this.decal.h !== d.h) {
       if (this.decal) gl.deleteTexture(this.decal);

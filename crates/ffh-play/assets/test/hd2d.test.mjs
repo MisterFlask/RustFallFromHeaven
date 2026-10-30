@@ -105,6 +105,28 @@ test("towns grow with their size, walled cities have walls, a gate and towers, d
   assert.deepEqual(dressSpriteStatic(w, s.map, atlas, env, null).list, list, "the same state, the same town");
 });
 
+test("towns stand out: larger, on a clearing, under their owner's banners, as the panel asks", () => {
+  const civs = ["CIVILIZATION_KHAZAD"];
+  const s = settlements(data, civs, [12], [], { walls: 8 });
+  const w = scene(s);
+  const plainEnv = { unitAt: new Set(), cityAt: new Map() };
+  const env = { ...plainEnv, town: { scale: 1.25, clearing: 1, banners: 1 } };
+  const plainList = dressSpriteStatic(w, s.map, atlas, plainEnv, null).list;
+  const { list } = dressSpriteStatic(w, s.map, atlas, env, null);
+  const [c] = St.S.cities.values();
+  const lm = (l) => l.find((r) => plain(r.key) === "town_lm_khazad");
+  assert.ok(Math.abs(lm(list).w / lm(plainList).w - 1.25) < 1e-9, "a larger town's landmark is larger by the town's scale");
+  // A banner flies over the landmark (beside the city's own at its front-left).
+  const flags = (l) => l.filter((r) => r.banner && Math.hypot(r.x - c.x - 0.5, -r.z - c.y - 0.5) < 1.2).length;
+  assert.ok(flags(list) >= flags(plainList) + 2, `banners over the town: ${flags(list)} against ${flags(plainList)}`);
+  // On a clearing, nothing tall (trees, bushes, rocks) stands near it, and fields lie round it.
+  const near = (r) => Math.hypot(r.x - c.x - 0.5, -r.z - c.y - 0.5) < 1.3;
+  const tall = (l) => l.filter((r) => near(r) && /^(tree|bush|rock)_/.test(r.key)).length;
+  assert.ok(tall(list) < tall(plainList) || tall(plainList) === 0, `tall props near the town: ${tall(list)} against ${tall(plainList)}`);
+  assert.ok(list.filter((r) => /^(garden|hay)_/.test(r.key)).length > plainList.filter((r) => /^(garden|hay)_/.test(r.key)).length, "fields round a town on a clearing");
+  assert.deepEqual(dressSpriteStatic(w, s.map, atlas, env, null).list, list, "the same state, the same town");
+});
+
 test("woods stand as single tree cards and open ground as scattered props, claimed from the 3D dressing", () => {
   assert.ok(GROUNDS.includes("gnd_grass") && Object.keys(CARDS).some((k) => k.startsWith("tree_oak_")), "the mode's art is there");
   const rows = ["ffff..", "ffff..", "aa....", "......"];

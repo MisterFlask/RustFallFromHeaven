@@ -169,11 +169,26 @@ export class MapHd2d extends Map3D {
    *  static cards, the beams and the mood channel are made with it. */
   dressEnv(world) {
     const env = staticEnv(world);
+    // How the towns stand out (config.js townScale, townClearing, townBanners; townLight is mostly
+    // the cards' shader's).
+    env.town = { scale: this.cfg.townScale ?? 1, clearing: this.cfg.townClearing ?? 0, banners: this.cfg.townBanners ?? 0 };
     this.moods = plotMoods(world, this.view.map);
     const st = dressSpriteStatic(world, this.view.map, this.sprites.atlas, env, this.moods.moods);
     env.claims = st.claims;
     this.spriteStatic = st;
     return env;
+  }
+
+  /** Lit towns light the ground round them more (config.js townLight). */
+  cityLight() {
+    return 1 + 2 * (this.cfg.townLight ?? 0);
+  }
+
+  /** A change to how the towns are dressed (their size, clearing or light pools) redresses the map. */
+  setConfig(cfg) {
+    const redress = ["townScale", "townClearing", "townLight", "townBanners"].some((k) => cfg[k] !== this.cfg[k]);
+    super.setConfig(cfg);
+    if (redress) this.viewSeen = null;
   }
 
   staticExtras(map, env, emitters) {

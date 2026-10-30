@@ -59,10 +59,19 @@ export const HD2D = {
   beams: 1,
   contact: 1,
   lean: 1,
+  // How the towns (docs/HD2D.md §5c, §5d) stand out from the land: their pieces and spread larger
+  // (townScale), lit (townLight: an outline round each piece, brighter, glowing softly, a warmer
+  // pool of light on the ground), on a clearing (townClearing: the woods and clutter pushed back,
+  // fields round them) and flying their owner's banners over the roofs (townBanners).
+  // (Each alone, and together at these strengths, compared in docs/hd2d/towns-stand-out.jpg.)
+  townScale: 1.25,
+  townLight: 0.5,
+  townClearing: 0.5,
+  townBanners: 0.6,
 };
 
 export const DEFAULTS_HD2D = { ...DEFAULTS, ...HD2D, preset: "hd2d" };
-export const PRESETS_HD2D = { hd2d: HD2D, plain: { ...PRESETS.plain, tiltShift: 0, rays: 0, mood: 0, landGrade: 0, bloom: 0, beams: 0, borderGlow: 0 } };
+export const PRESETS_HD2D = { hd2d: HD2D, plain: { ...PRESETS.plain, tiltShift: 0, rays: 0, mood: 0, landGrade: 0, bloom: 0, beams: 0, borderGlow: 0, townScale: 1, townLight: 0, townClearing: 0, townBanners: 0 } };
 
 /** The panel rows of the mode's own switches (after the 3D renderer's). */
 export const PANEL_HD2D = [
@@ -74,6 +83,10 @@ export const PANEL_HD2D = [
   ["beams", "Light beams (mana, towers)", "range", 0, 1.5, 0.05],
   ["borderGlow", "Glowing borders", "range", 0, 1.5, 0.05],
   ["contact", "Contact shadows", "range", 0, 1, 0.05],
+  ["townScale", "Towns: size", "range", 1, 1.6, 0.05],
+  ["townLight", "Towns: lit and outlined", "range", 0, 1, 0.05],
+  ["townClearing", "Towns: clearing and fields", "range", 0, 1, 0.05],
+  ["townBanners", "Towns: banners over the roofs", "range", 0, 1, 0.05],
   ["lean", "Sprites face the camera", "range", 0, 1, 0.05],
   ["pitch", "Camera pitch (degrees)", "range", 28, 52, 1],
   ["fov", "Lens (field of view)", "range", 20, 36, 1],

@@ -309,8 +309,9 @@ function rgba(hex, a) {
   return m ? `rgba(${parseInt(m[1], 16)},${parseInt(m[2], 16)},${parseInt(m[3], 16)},${a})` : `rgba(255,255,255,${a})`;
 }
 
-/** The light-pool texture's pixels (RGBA, LRES px per plot). `strength` scales the pools. */
-export function rasterLight(world, map, cities, strength = 1) {
+/** The light-pool texture's pixels (RGBA, LRES px per plot). `strength` scales the pools, `city`
+ *  the cities' (and spreads them a little: the HD-2D mode's lit towns, docs/HD2D.md §5d). */
+export function rasterLight(world, map, cities, strength = 1, city = 1) {
   const W = world.w * LRES, Hh = world.h * LRES;
   const [, g] = canvas(W, Hh);
   g.fillStyle = "#000";
@@ -327,7 +328,7 @@ export function rasterLight(world, map, cities, strength = 1) {
       g.fillRect(cx - r * LRES, cy - r * LRES, r * 2 * LRES, r * 2 * LRES);
     }
   };
-  for (const c of cities) pool(c.city.x + 0.5, c.city.y + 0.5, 0.9 + Math.min(0.6, (c.city.size ?? 1) * 0.05), "#ffaa55", 0.16);
+  for (const c of cities) pool(c.city.x + 0.5, c.city.y + 0.5, (0.9 + Math.min(0.6, (c.city.size ?? 1) * 0.05)) * (1 + (city - 1) * 0.15), "#ffaa55", 0.16 * city);
   for (let y = 0; y < world.h; y++) {
     for (let x = 0; x < world.w; x++) {
       const i = y * world.w + x;
