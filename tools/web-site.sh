@@ -68,11 +68,14 @@ done
 [ -n "$out" ] || usage
 [ -z "$saves" ] || [[ "$saves" =~ ^[A-Za-z0-9._-]+$ ]] || die "--saves $saves: use letters, digits, '.', '_' and '-'"
 
-# Paths given relative to the caller's directory.
+# Paths given relative to the caller's directory. (Git Bash on Windows: a drive path, C:/x, is
+# made the POSIX one, /c/x, first.)
 abs() {
-  case "$1" in
-    /*) printf '%s\n' "$1" ;;
-    *) printf '%s\n' "$PWD/$1" ;;
+  local p="$1"
+  case "$p" in [A-Za-z]:[/\\]*) if command -v cygpath > /dev/null; then p="$(cygpath -u "$p")"; fi ;; esac
+  case "$p" in
+    /*) printf '%s\n' "$p" ;;
+    *) printf '%s\n' "$PWD/$p" ;;
   esac
 }
 out="$(abs "$out")"
