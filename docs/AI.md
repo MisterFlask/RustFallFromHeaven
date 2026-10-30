@@ -1375,8 +1375,19 @@ the switch off on the same seeds nothing is channelled. Wars between civilizatio
 turn 250: 42 with the AI's channels, 25 without, but only 6 of the 42 between a civilization
 fomenting revolt and its target (the games diverge from the first channel: not a measurement of
 the channels' diplomatic cost). Turn times unchanged within the noise. Checked-build stress games
-(`ffh-stress`, 400 turns, seeds 1-3, the three options): no invariant failure. Not yet measured
-for win rate (the spec's tuning phase).
+(`ffh-stress`, 400 turns, seeds 1-3, the three options): no invariant failure.
+
+Measured as one civilization's edge (`civ_ab.py --base-env FFH_AI_CULTURE_OFF={civ}`, the three
+options, full games; Elohim, Bannor, Kuriotates, Sheaim forced into slot 0). Development seeds 1-12
+(48 pairs, before the review fixes of 2026-10-30): win 10.4% -> 12.5% (3 / 2 seeds won by one side
+only), share@end +139 (t 1.18), legacy@end +357 (t 2.69), alive at the end +0.1 (t 2.45); the
+Bannor the most (share@end +786, t 2.73). Fresh seeds 7001-7012 (48 pairs, the final code): win
+8.3% -> 6.2% (0 / 1), share@end +86 (t 0.83), legacy@end +132 (t 1.10); Elohim +322 (t 2.63),
+Bannor +398 (t 1.52), Kuriotates +13, Sheaim -390 (t -2.00; +26 on the development seeds): to look
+into. Revolt flips, 12 games of 400 turns (8 civs): 60 cities in all, 0-14 a game, nearly all by
+one strong cultural civilization a game (the Hippus 13 in one, the Amurites 10 in another), its
+weak neighbours losing most of their cities at peace although they trained the defenders asked
+for (docs/CULTURE.md, "Open points for the owner").
 
 Seen in the traces and not fixed here: channels end and start again when the cultural-victory plan
 flickers (its carrier cities keep their culture; seed 3, turns 321-322: the culture a group of

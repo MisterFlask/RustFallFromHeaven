@@ -109,6 +109,15 @@ starts and when it stops.
 
 ## Open points for the owner
 
+- **How many cities revolt takes.** In 12 AI games of 400 turns (8 civs, standard map) revolt took
+  60 cities, 0–14 a game. In a third of the games one strong cultural civilization (the Hippus, the
+  Amurites) took 10 or more from weak neighbours at peace, although they trained the defenders the
+  AI asks for (up to six: 12 culture a turn of resistance). The cliff is disorder: a city in revolt
+  makes no culture, so only its garrison resists, and the pressure usually runs on to the flip. If
+  that is too strong, the levers are a city's own culture still resisting in revolt (its culture
+  before the revolt), a larger `CULTURE_REVOLT_GARRISON`, a lower `CULTURE_AI_MAX_HOSTILE_PER_TARGET`
+  (2 channels at a civilization at peace), or a higher `CULTURE_REVOLT_FLIP`.
+
 - **The numbers are first guesses** (the `CULTURE_*` defines): a city channelling 10 culture 7
   plots from a rival town without culture or garrison settles its pressure near 100 (revolt); a
   flip needs about 15 net culture a turn on the city, a great cultural city near the border or
@@ -154,6 +163,8 @@ Measured on 8 civs, a standard map and 350 turns, with `GAMEOPTION_CULTURE_ACTIO
 - Nearly all spreads went into the casters' own cities, and all but one city taken fell after turn 300.
 - Checked stress games (400 turns, seeds 1–3) had no invariant failure.
 - Revolt channels begin around turns 200–290, once cities make 20 culture and more. A city in revolt makes no culture, which speeds its fall and weakens its own channels.
+- The AI's cultural play as one civilization's edge (docs/AI.md): on fresh seeds, share at the end +86 (t 0.83), legacy +132 (t 1.10), win rate unchanged within the noise; the Sheaim lose by it there (−390, t −2.00).
+- Flips, 12 games of 400 turns: 60 in all, 0–14 a game, nearly all by one strong cultural civilization a game.
 
 ## UI (ffh-play)
 
