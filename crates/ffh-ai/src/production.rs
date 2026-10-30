@@ -54,10 +54,7 @@ pub fn choose(ai: &Ai, g: &mut Game, c: CityId) {
             g.unit_ai_set_unit_ai_type(u, UnitAIType::UNITAI_CITY_DEFENSE);
         }
     }
-    // A governed city builds what its governor chooses (governor.rs, docs/GOVERNORS.md).
-    let governed = g.city_is_governed(c);
-    let decided = if governed { crate::governor::decide(g, c) } else { decide(ai, g, c).map(|(choice, why)| (choice, why, None)) };
-    if let Some((choice, why, dest)) = decided {
+    if let Some((choice, why, dest)) = decide_city(ai, g, c) {
         crate::trace!(g, p, "{} size {} builds {}", g.cities[c].name, g.cities[c].population, choice_name(g, choice));
         if let (true, Choice::Construct(b)) = (crate::trace_on(p), choice) {
             let coded = crate::code_effects::building_value(g, c, b, 0);
@@ -162,14 +159,24 @@ pub fn emergency(ai: &Ai, g: &mut Game, p: PlayerId) {
     }
 }
 
-/// Would clearing city `c`'s queue get a fighter: does [`decide`] put one first? (It does not read
-/// the queue.) Always true with switch `EMERGENCY_DECIDE` off: the switch then clears the queue
-/// whatever comes next.
+/// What city `c` builds next: [`decide`] for a directly ruled city, its governor's choice
+/// (`governor::decide`, docs/GOVERNORS.md) for a governed one, with the unit's destination.
+fn decide_city(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static str, Option<ffh_core::army::RecruitDest>)> {
+    if g.city_is_governed(c) {
+        crate::governor::decide(g, c)
+    } else {
+        decide(ai, g, c).map(|(choice, why)| (choice, why, None))
+    }
+}
+
+/// Would clearing city `c`'s queue get a fighter: does [`decide_city`] put one first? (It does not
+/// read the queue.) Always true with switch `EMERGENCY_DECIDE` off: the switch then clears the
+/// queue whatever comes next.
 fn switch_gets_fighter(ai: &Ai, g: &Game, c: CityId) -> bool {
     if !crate::switches::EMERGENCY_DECIDE.on(g, g.cities[c].owner) {
         return true;
     }
-    matches!(decide(ai, g, c), Some((Choice::Train(u, _), _)) if g.d.units[u].combat > 0)
+    matches!(decide_city(ai, g, c), Some((Choice::Train(u, _), _, _)) if g.d.units[u].combat > 0)
 }
 
 /// Last resort when the priority list found nothing: the cheapest useful building, else the
@@ -1005,6 +1012,10 @@ pub fn wonder_emphasis(g: &mut Game, p: PlayerId) {
     }
     let peace = !civ_enemies_at_war(g, p) && crate::diplomacy::preparing_target(g, g.players[p].team).is_none();
     for c in g.players[p].cities.clone() {
+        // A governed city's emphasis is its governor's (and it builds no wonders).
+        if g.city_is_governed(c) {
+            continue;
+        }
         let want = peace
             && g.city_production_building(c).is_some_and(|b| is_world_wonder(g.d, b))
             && g.city_production_turns_left(c) <= wonder_horizon(g, c)
@@ -1038,7 +1049,8 @@ pub fn trouble_rebuild(ai: &Ai, g: &mut Game, p: PlayerId) {
     let d = g.d;
     let turn = g.game_turn();
     for c in g.players[p].cities.clone() {
-        if (turn + c.0 as i32) % 5 != 0 || g.cities[c].order_queue.is_empty() || g.city_is_production_process(c) || g.city_production_turns_left(c) <= 3 {
+        // A governed city's production is its governor's.
+        if (turn + c.0 as i32) % 5 != 0 || g.city_is_governed(c) || g.cities[c].order_queue.is_empty() || g.city_is_production_process(c) || g.city_production_turns_left(c) <= 3 {
             continue;
         }
         let plot = g.city_plot(c);
@@ -1268,12 +1280,17 @@ pub(crate) fn type_city_defense(info: &UnitInfo) -> i64 {
 /// and a peacetime army only from the cities that train good units were measured and reverted
 /// (docs/AI_LOG.md, "Unit choices and an upgrade reserve").
 pub fn best_unit(g: &Game, c: CityId, role: Role) -> Option<UnitType> {
+    best_unit_where(g, c, role, |_| true)
+}
+
+/// `best_unit` among the unit types `keep` accepts.
+pub(crate) fn best_unit_where(g: &Game, c: CityId, role: Role, keep: impl Fn(UnitType) -> bool) -> Option<UnitType> {
     let d = g.d;
     let mut best: Option<(UnitType, i64)> = None;
     for u in d.units.keys() {
         let info = &d.units[u];
         let domain = if role.sea() { DomainType::DOMAIN_SEA } else { DomainType::DOMAIN_LAND };
-        if info.domain_type != Some(domain) || !role_ok(d, info, role) {
+        if info.domain_type != Some(domain) || !role_ok(d, info, role) || !keep(u) {
             continue;
         }
         if !g.city_offers_unit(c, u) || !g.city_can_train(c, u, false, false, false, false) {

@@ -222,7 +222,8 @@ impl Game {
     }
 
     /// Everything of `p` bound for army `from` goes to army `to` instead (`from` was merged into
-    /// it): the units in transit, the production orders, the cities' defaults.
+    /// it): the units in transit, the production orders, the cities' defaults, the governed cities
+    /// feeding it.
     fn army_redirect(&mut self, p: PlayerId, from: ArmyId, to: ArmyId) {
         for t in self.players[p].transit.iter_mut() {
             if t.dest == RecruitDest::Army(from) {
@@ -233,6 +234,9 @@ impl Game {
             let city = &mut self.cities[c];
             if city.recruit_default == Some(RecruitDest::Army(from)) {
                 city.recruit_default = Some(RecruitDest::Army(to));
+            }
+            if city.feed_army == Some(from) {
+                city.feed_army = Some(to);
             }
             for o in city.order_queue.iter_mut() {
                 if o.dest == Some(RecruitDest::Army(from)) {

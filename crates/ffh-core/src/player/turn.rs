@@ -229,6 +229,7 @@ impl Game {
                 self.city_do_turn(c);
             }
         }
+        self.player_governance_turn_end(p);
 
         // Xienwolf Tweak 12/27/08 (Stasis Pauses Golden Ages)
         let pl = &self.players[p];

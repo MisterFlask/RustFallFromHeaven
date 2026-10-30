@@ -1172,10 +1172,18 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
                 city_of(g, h, *o)?;
             }
             governors_on(g)?;
+            g.player_check_direct_rule(h, *city, *instead_of).map_err(cannot)?;
             Plan::Apply(Action::Army(cmd.clone()))
         }
 
-        Command::GovernHand { city } | Command::GovernHostile { city, .. } => {
+        Command::GovernHand { city } => {
+            city_of(g, h, *city)?;
+            governors_on(g)?;
+            g.city_check_hand_to_governor(h, *city).map_err(cannot)?;
+            Plan::Apply(Action::Army(cmd.clone()))
+        }
+
+        Command::GovernHostile { city, .. } => {
             city_of(g, h, *city)?;
             governors_on(g)?;
             Plan::Apply(Action::Army(cmd.clone()))
@@ -1192,6 +1200,7 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             if !g.city_is_governed(*city) {
                 return Err(cannot("the city is ruled directly"));
             }
+            g.city_check_assign_governor(h, *city, *governor).map_err(cannot)?;
             Plan::Apply(Action::Army(cmd.clone()))
         }
 
@@ -1204,6 +1213,7 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             if !g.city_is_governed(*city) {
                 return Err(cannot("the city is ruled directly"));
             }
+            g.city_check_feed_army(h, *city, *army).map_err(cannot)?;
             Plan::Apply(Action::Army(cmd.clone()))
         }
 
@@ -1239,6 +1249,9 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
                 }
                 TaskType::TASK_SET_EMPHASIZE => {
                     in_range("emphasize", *data1, d.emphasizes.len())?;
+                    if g.city_is_governed(c) {
+                        return Err(cannot("a governed city's emphasis is its governor's"));
+                    }
                 }
                 TaskType::TASK_CHANGE_SPECIALIST => {
                     // The city screen's specialist +/- buttons (WIDGET_CHANGE_SPECIALIST with

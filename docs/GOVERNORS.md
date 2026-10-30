@@ -46,13 +46,21 @@ governor chooses it (below). Each governed city runs in one of two modes: *devel
 governed cities) or *feed* one of the player's armies (docs/ARMIES.md): units for it, sent in
 transit, while the army with its units on their way is short of its target size, then develop
 until it needs units again. The army's target size (the Armies screen) replaces "Reinforce to N"
-for governed cities. An army gone or disbanded puts its feeding cities back to develop, with a
-message. The governor's profile sets the citizens' emphasis (its `Emphasizes`).
+for governed cities. A new mode takes effect at once: the governor chooses the city's production
+again (what it was building keeps its progress, as any order taken off a queue). An army gone or
+disbanded puts its feeding cities back to develop, with a message; an army merged into another
+takes its feeding cities with it. A governed city's units go to its own garrison unless it feeds an
+army: the default destination it had under direct rule is dropped when a governor takes over (it
+cannot be set while governed). The governor's profile sets the citizens' emphasis (its
+`Emphasizes`), which the player cannot change while the city is governed; a city back under direct
+rule drops it.
 
 **What a governor builds** (ffh-ai `governor.rs`, for the human's cities and the AI's alike):
 1. the garrison the city's danger asks for (the city AI's quota, the profile's `iDefenders`);
+   Against a Foment Revolt or Flip City aimed at the city, defenders up to three.
 2. feeding its army: siege while it is less than a third of the army, else the best attacker
-   against cities;
+   against cities, only units that serve in armies; the units the player's cities are already
+   training for the army count toward its target;
 3. workers while the land needs improving, work boats for unimproved sea resources;
 4. the best building by the city AI's value per turn of production, weighted by the profile:
    up to +50% for a building whose flavors are all ones the profile weighs 5;
@@ -75,8 +83,9 @@ flavors against what the city needs: growth while small or starving, production 
 little, military near a rival, science and gold with much commerce, culture on contested ground,
 religion with a religion); an interim city takes the next candidate that appears. Replacing a
 governor costs the city `GOVERNOR_SWAP_PENALTY` (25)% of its production and commerce for
-`GOVERNOR_SWAP_TURNS` (5) turns, and the replaced governor returns to the bench; moving a governor
-from one city to another costs both (the one it leaves is interim). A city lost (captured, flipped,
+`GOVERNOR_SWAP_TURNS` (5) turns (the turns' output: the countdown runs after the city's production
+and commerce), and the replaced governor returns to the bench; moving a governor from one city to
+another costs both (the one it leaves is interim). A city lost (captured, flipped,
 traded, razed) takes its governor out of the game.
 
 **Cultural actions.** A governor queues friendly and defensive cultural actions on its own
@@ -88,6 +97,12 @@ cultural actions", off by default). The player can still queue any action by han
 
 - **Barbarian cities are never governed** (and settlements, the Kuriotates' cities that build
   nothing, are governed but have nothing to build).
+- **A city that changes hands takes its governor when its owner's turn ends.** Captured, traded,
+  flipped or given: it is governed (if no direct slot is free) with production chosen at once, and
+  interim until its new owner's turn processing gives it the candidate that suits it best. So the
+  candidate is matched against the city as it comes (its size, buildings and religions), not the
+  blank city the transfer creates first, and a city razed, given away or disbanded at once costs
+  no governor from the bench.
 - **The capital moves.** A new capital (the old one lost) is ruled directly at once; if that makes
   one direct city too many, the city made direct most recently goes to a governor, with a message.
   A palace cannot be built in a governed city, so the capital never moves into one by choice.

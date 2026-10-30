@@ -347,8 +347,11 @@ fn the_advance_profile_splits_update_own_work_and_autosave() {
 #[test]
 fn the_city_screen_parts_add_up_to_the_totals() {
     use ffh_play::view::city::{bad_health_parts, good_health_parts, happy_parts, unhappy_parts};
-    // A peaceful game reaches the turn whatever the AI does (common::peaceful_game).
-    let (mut s, mut b) = bot_session(&peaceful_game(11), None);
+    // A peaceful game reaches the turn whatever the AI does (common::peaceful_game); with
+    // governors, whose traits add happiness and health.
+    let mut ng = peaceful_game(11);
+    ng.options.push(GameOptionType::GAMEOPTION_GOVERNORS);
+    let (mut s, mut b) = bot_session(&ng, None);
     let until = s.g.game_turn() + 120;
     let mut checked = 0;
     let mut nonzero = [0; 4];

@@ -85,9 +85,11 @@ impl Scope {
     }
 }
 
-/// Whether city `c` may queue a hostile action (a governed city only when allowed).
+/// Whether city `c` may queue a hostile action (a governed city only when allowed; an AI's
+/// always with its governor logic switched off, which grants it no more).
 fn hostile_ok(g: &Game, c: CityId) -> bool {
-    !g.city_is_governed(c) || g.cities[c].governor_hostile_culture
+    let p = g.cities[c].owner;
+    !g.city_is_governed(c) || g.cities[c].governor_hostile_culture || !g.players[p].human && !crate::switches::GOVERNORS.on(g, p)
 }
 
 /// The festival action, if the data has one.
@@ -121,12 +123,18 @@ fn defend(g: &mut Game, p: PlayerId, scope: Scope) {
     // them when there are more (expert play: festival and garrison).
     for &(t, _) in &threatened {
         let owner = g.cities[t].owner;
-        // (a governed city's own production chooser keeps its garrison)
-        if owner != p || g.city_is_governed(t) || scope == Scope::Governed {
+        if owner != p || !scope.acts(g, t) {
             continue;
         }
-        let grave = g.culture_hostile_channels_at(t).iter().any(|ch| matches!(g.d.cultural_actions[ch.order.action].effect, CultureEffect::FomentRevolt | CultureEffect::FlipCity));
-        if !grave || g.culture_garrison_count(t) >= 3 || g.city_production_unit(t).is_some_and(|u| g.d.units[u].combat > 0) {
+        if !crate::governor::culture_grave(g, t) || g.culture_garrison_count(t) >= 3 || g.city_production_unit(t).is_some_and(|u| g.d.units[u].combat > 0) {
+            continue;
+        }
+        // A governed city: its governor chooses again, the defenders first (governor::decide).
+        if g.city_is_governed(t) && crate::production::best_unit(g, t, crate::production::Role::Defense).is_some() {
+            crate::trace!(g, p, "culture: the governor of {} trains defenders against a revolt or flip", g.d.text.name(&g.cities[t].name));
+            g.city_clear_order_queue(t);
+            g.city_choose_production(t, None, None, None, false, false);
+            g.tel_decision(p, "culture", "garrison", "defend", 0, String::new);
             continue;
         }
         if let Some(u) = crate::production::best_unit(g, t, crate::production::Role::Defense) {

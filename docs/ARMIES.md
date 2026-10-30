@@ -133,7 +133,8 @@ army unchanged. What it adds is logistics: at war or preparing one, its cities s
 units they train (the attack, city attack, collateral and counter roles) to its main field army
 (the largest army of at least two units in supply, the nearest to the enemy on ties) instead of
 walking them there, and it sets that army's target size to the army the war needs. Defenders and
-everything else stay in their city's garrison.
+everything else stay in their city's garrison; a defender that walked to another of its cities
+joins that city's garrison when it arrives.
 
 ## UI (ffh-play)
 

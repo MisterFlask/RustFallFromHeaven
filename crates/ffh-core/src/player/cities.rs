@@ -186,6 +186,11 @@ impl Game {
 
     /// C++ `CvPlayer::initCity(iX, iY, bBumpUnits, bUpdatePlotGroups)`: creates and inits a city.
     pub fn player_init_city(&mut self, p: PlayerId, x: i32, y: i32, bump_units: bool, update_plot_groups: bool) -> CityId {
+        self.player_init_city_as(p, x, y, bump_units, update_plot_groups, false)
+    }
+
+    /// `player_init_city` for a new city (`acquired` false) or one changing hands.
+    fn player_init_city_as(&mut self, p: PlayerId, x: i32, y: i32, bump_units: bool, update_plot_groups: bool, acquired: bool) -> CityId {
         // addCity(): the new slot holds a default (reset) city until `init` re-runs `reset`.
         // Both "Crime" draws of the C++ (constructor + init) are made by `city_init`.
         let id = self.cities.next_id();
@@ -199,8 +204,9 @@ impl Game {
         );
 
         self.city_init(city, p, x, y, bump_units, update_plot_groups);
-        // This game's governors (docs/GOVERNORS.md): a direct slot or a governor.
-        self.city_governance_init(city);
+        // This game's governors (docs/GOVERNORS.md): a direct slot or a governor. A city that
+        // changed hands takes its governor when its owner's turn ends (`player_governance_turn`).
+        self.city_governance_init(city, !acquired);
 
         city
     }
@@ -397,7 +403,7 @@ impl Game {
             }
         }
 
-        let new_city = self.player_init_city(p, city_x, city_y, !conquest, false);
+        let new_city = self.player_init_city_as(p, city_x, city_y, !conquest, false, true);
 
         self.cities[new_city].previous_owner = Some(old_owner);
         self.cities[new_city].original_owner = original_owner;
@@ -580,6 +586,10 @@ impl Game {
                 }
             }
         }
+
+        // This game's governors: a governed city has production at once, and its owner a word on
+        // who runs it (a city razed at once is gone: it took no governor).
+        self.city_governance_acquired(new_city);
 
         // Forcing events that deal with the old city not to expire just because we conquered that city
         for trigger_data in self.players[p].events_occured.values_mut() {

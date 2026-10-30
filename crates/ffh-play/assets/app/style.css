@@ -313,6 +313,8 @@ table.governors { width: 100%; border-collapse: collapse; }
 table.governors th, table.governors td { text-align: left; padding: 2px 6px; border-bottom: 1px solid var(--c-iron); vertical-align: top; }
 table.governors td.num { text-align: right; }
 select.governor-mode, select.governor-assign, select.governor-swap { max-width: 18em; }
+div.governor-controls { display: flex; flex-direction: column; gap: 3px; align-items: flex-start; }
+div.governor-controls select { max-width: 20em; }
 ul.bench { margin: 2px 0; padding-left: 20px; }
 .governed-note { margin: 4px 0; }
 .newgame .fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px 14px; }

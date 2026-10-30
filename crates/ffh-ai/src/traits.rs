@@ -509,7 +509,7 @@ pub fn peace_summon(g: &Game, p: PlayerId, strength: i32, n: i32) -> i32 {
 // ----------------------------------------------------------------------------
 
 /// Once per turn, before units move: a Philosophical leader keeps the great-people emphasis on
-/// its best great-people cities, 1 + cities / 8 of them (size 4 and up, with a slot for a
+/// its best directly ruled great-people cities, 1 + cities / 8 of them (size 4 and up, with a slot for a
 /// specialist that makes great people), changing one only for a city clearly better (half as
 /// good again) so the specialists stay put. A player whose trait play is on but who lost the
 /// trait (Adaptive, Insane) drops the emphasis.
@@ -519,7 +519,8 @@ pub fn turn(g: &mut Game, v: &View) {
         return;
     }
     let Some(e) = g.d.emphasizes.keys().find(|&e| g.d.emphasizes[e].great_people) else { return };
-    let cities: Vec<CityId> = g.players[p].cities.iter().copied().filter(|&c| g.cities.contains(c)).collect();
+    // Directly ruled cities only: a governed city's emphasis is its governor's (docs/GOVERNORS.md).
+    let cities: Vec<CityId> = g.players[p].cities.iter().copied().filter(|&c| g.cities.contains(c) && !g.city_is_governed(c)).collect();
     let marked: Vec<CityId> = cities.iter().copied().filter(|&c| g.cities[c].ai_emphasize[e]).collect();
     if !has(g, p, Trait::Philosophical) {
         for c in marked {

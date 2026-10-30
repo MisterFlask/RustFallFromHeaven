@@ -155,9 +155,9 @@ impl Controller for Ai {
             v = view::View::new(g, p);
             civs::turn(self, g, &mut v); // civ-mechanics
             traits::turn(g, &v); // trait-play
-            culture::turn(g, p); // cultural actions (docs/CULTURE.md)
             armies::turn(g, p); // armies' reinforcements (docs/ARMIES.md)
             governor::turn(g, p); // governed cities (docs/GOVERNORS.md)
+            culture::turn(g, p); // cultural actions (docs/CULTURE.md), by the governors' leave
         }
         if !v.barbarian {
             campaign::plan(g, &mut v);

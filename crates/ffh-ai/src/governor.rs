@@ -60,6 +60,14 @@ pub fn decide(g: &Game, c: CityId) -> Option<(Choice, &'static str, Option<Recru
         }
     }
 
+    // Against a revolt or a flip aimed at it, defenders up to three: each resists it (the AI's
+    // cultural defense, culture.rs, re-chooses a threatened governed city's production).
+    if culture_grave(g, c) && g.culture_garrison_count(c) < 3 {
+        if let Some(u) = prod::best_unit(g, c, Role::Defense) {
+            return Some((Choice::Train(u, UnitAIType::UNITAI_CITY_DEFENSE), "governor_culture_defense", None));
+        }
+    }
+
     // 2. Feeding its army.
     if let Some(a) = city.feed_army.filter(|&a| g.recruit_dest_valid(p, RecruitDest::Army(a))) {
         if army_short(g, a) {
@@ -145,15 +153,33 @@ pub fn decide(g: &Game, c: CityId) -> Option<(Choice, &'static str, Option<Recru
     best_process.map(|(pr, _)| (Choice::Maintain(pr), "governor_process", None))
 }
 
-/// Whether army `a` is short of its target size, the units on their way counted (no target:
-/// it always takes more).
+/// Whether a hostile Foment Revolt or Flip City is aimed at city `c`.
+pub(crate) fn culture_grave(g: &Game, c: CityId) -> bool {
+    g.culture_hostile_channels_at(c).iter().any(|ch| matches!(g.d.cultural_actions[ch.order.action].effect, CultureEffect::FomentRevolt | CultureEffect::FlipCity))
+}
+
+/// Whether army `a` is short of its target size, the units on their way and those its owner's
+/// cities are training for it counted (no target: it always takes more): a feeding city starts a
+/// unit for it only then, so several feeders do not overshoot.
 pub fn army_short(g: &Game, a: ArmyId) -> bool {
     let target = g.armies[a].target_size;
-    target <= 0 || (g.army_units(a).len() as i32 + g.army_transit_count(a)) < target
+    if target <= 0 {
+        return true;
+    }
+    let owner = g.armies[a].owner;
+    let queued = g.players[owner]
+        .cities
+        .iter()
+        .flat_map(|&c| g.cities[c].order_queue.iter())
+        .filter(|o| o.order_type == OrderType::ORDER_TRAIN && o.dest == Some(RecruitDest::Army(a)))
+        .count() as i32;
+    g.army_units(a).len() as i32 + g.army_transit_count(a) + queued < target
 }
 
 /// The unit governed city `c` trains for army `a`: siege while it is less than a third of the
-/// army (on its way included), else the best attacker against cities, else any attacker.
+/// army (on its way included), else the best attacker against cities, else any attacker; only
+/// units that serve in armies (a Ranger or an Assassin would stay in the city, and the army would
+/// never fill).
 fn feeding_unit(g: &Game, c: CityId, a: ArmyId) -> Option<(UnitType, UnitAIType)> {
     let owner = g.armies[a].owner;
     let mut siege = 0;
@@ -170,12 +196,13 @@ fn feeding_unit(g: &Game, c: CityId, a: ArmyId) -> Option<(UnitType, UnitAIType)
             siege += 1;
         }
     }
+    let army_unit = |u: UnitType| g.unit_type_is_army_unit(u);
     if siege * 3 < total {
-        if let Some(u) = prod::best_unit(g, c, Role::Siege) {
+        if let Some(u) = prod::best_unit_where(g, c, Role::Siege, army_unit) {
             return Some((u, UnitAIType::UNITAI_ATTACK_CITY));
         }
     }
-    prod::best_unit(g, c, Role::CityAttack).or_else(|| prod::best_unit(g, c, Role::Attack)).map(|u| (u, UnitAIType::UNITAI_ATTACK))
+    prod::best_unit_where(g, c, Role::CityAttack, army_unit).or_else(|| prod::best_unit_where(g, c, Role::Attack, army_unit)).map(|u| (u, UnitAIType::UNITAI_ATTACK))
 }
 
 /// The AI's governed cities, once a turn: the direct slots on its most productive cities, the
@@ -215,16 +242,20 @@ fn swap_direct(g: &mut Game, p: PlayerId) {
 }
 
 /// At war or preparing one, with a main army: the governed cities nearest the enemy feed it
-/// while it is short of its target; every other governed city develops.
+/// while it is short of its target (those on its landmass: a recruit travels by land); every
+/// other governed city develops. The ARMIES switch off sends no unit in transit, so none feeds.
 fn set_modes(g: &mut Game, p: PlayerId) {
     let team = g.players[p].team;
     let target = crate::diplomacy::preparing_target(g, team).or_else(|| g.team_ids().find(|&t| t != team && g.team_is_alive(t) && !g.team_is_barbarian(t) && g.at_war(team, t)));
-    let main = if g.armies_on() { target.and_then(|t| crate::armies::main_army(g, p, t)) } else { None };
+    let main = if g.armies_on() && crate::switches::ARMIES.on(g, p) { target.and_then(|t| crate::armies::main_army(g, p, t)) } else { None };
+    let area = main.and_then(|a| g.army_plot(a)).and_then(|plot| g.map.plots[plot].area);
     let governed: Vec<CityId> = g.players[p].cities.iter().copied().filter(|&c| g.city_is_governed(c)).collect();
+    let reachable: Vec<CityId> = governed.iter().copied().filter(|&c| Some(g.city_area(c)) == area).collect();
     let feeders: Vec<CityId> = match (main, target) {
-        (Some(a), Some(t)) if army_short(g, a) => {
+        // (The units in production not counted: a city training the last one keeps feeding.)
+        (Some(a), Some(t)) if g.armies[a].target_size <= 0 || (g.army_units(a).len() as i32 + g.army_transit_count(a)) < g.armies[a].target_size => {
             // The half of our governed cities nearest the enemy's cities.
-            let mut by_dist: Vec<(i32, CityId)> = governed
+            let mut by_dist: Vec<(i32, CityId)> = reachable
                 .iter()
                 .map(|&c| {
                     let (x, y) = (g.cities[c].x, g.cities[c].y);
@@ -274,6 +305,11 @@ mod tests {
         let a = g.army_form(p0, &units).unwrap();
         g.army_set_target_size(p0, a, 3).unwrap();
         g.city_set_feed_army(p0, fed, Some(a)).unwrap();
+        // The mode takes effect at once: the city trains for the army, and that unit counts.
+        let o = g.cities[fed].order_queue.first().expect("an order");
+        assert_eq!((o.order_type, o.dest), (OrderType::ORDER_TRAIN, Some(RecruitDest::Army(a))));
+        assert!(!army_short(&g, a), "two and one in production");
+        g.city_clear_order_queue(fed);
         let (_, why, dest) = decide(&g, fed).expect("a choice");
         assert_eq!((why, dest), ("governor_feed", Some(RecruitDest::Army(a))));
         // One on its way: the army has its three.

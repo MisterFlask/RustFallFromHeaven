@@ -10,6 +10,8 @@
 //!   travel off the map and join it. Defenders and everything else stay in their city's garrison.
 //! - **Target size.** The main army's target is the army the war needs
 //!   (`diplomacy::army_needed_for_war`), so its reinforcements show how far it is from it.
+//! - **Defenders in the garrison.** A city defender that walked to another of our cities (an
+//!   army of its own on the way) joins that city's garrison when it arrives.
 //!
 //! Switch `ARMIES` (`FFH_AI_ARMIES_OFF`): off, every unit stays in its city's garrison when
 //! trained (the armies still form from the groups).
@@ -25,6 +27,22 @@ const FIELD_ROLES: [UnitAIType; 4] = [UnitAIType::UNITAI_ATTACK, UnitAIType::UNI
 pub fn turn(g: &mut Game, p: PlayerId) {
     if !g.armies_on() || !crate::switches::ARMIES.on(g, p) || g.player_is_barbarian(p) {
         return;
+    }
+    // A defender that walked into one of our cities to hold it serves in the city's garrison, not
+    // as an army of its own (an expert's garrison: what holds the city, in one place).
+    let mut garrisoned = false;
+    for a in g.players[p].armies.clone() {
+        let units = g.army_units(a);
+        let in_city = g.army_plot(a).and_then(|plot| g.map.plots[plot].plot_city).is_some_and(|c| g.cities.contains(c) && g.cities[c].owner == p);
+        if in_city && g.armies[a].disband_to.is_none() && !units.is_empty() && units.iter().all(|&u| g.units[u].ai_type == Some(UnitAIType::UNITAI_CITY_DEFENSE)) {
+            for u in units {
+                g.units[u].army = None;
+            }
+            garrisoned = true;
+        }
+    }
+    if garrisoned {
+        g.player_army_sync(p);
     }
     let team = g.players[p].team;
     let target = crate::diplomacy::preparing_target(g, team).or_else(|| g.team_ids().find(|&t| t != team && g.team_is_alive(t) && !g.team_is_barbarian(t) && g.at_war(team, t)));

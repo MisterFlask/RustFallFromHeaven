@@ -1338,7 +1338,7 @@ fairs completed. Not yet measured for win rate (the spec's tuning phase); the op
 This game's own system (`GAMEOPTION_ARMIES`, docs/ARMIES.md). The rules' army sync gives every
 group of army units an army, so the AI's movement logic (`military.rs`, `campaign.rs`) drives each
 army unchanged: a city-attack stack is an army, a city's defenders are its garrison. What an
-expert adds is logistics, once a turn after the cultural actions:
+expert adds is logistics, once a turn before the governed cities and the cultural actions:
 
 - **Reinforcements by transit.** At war, or preparing one, the attack units the cities train (the
   attack, city attack, collateral and counter roles) go to the main field army -- the largest army
@@ -1349,6 +1349,10 @@ expert adds is logistics, once a turn after the cultural actions:
 - **Target size.** The main army's target is the army the war needs
   (`diplomacy::army_needed_for_war`), so the human's Armies screen of a watched AI game shows how
   far it is from it.
+- **Defenders in the garrison.** A city defender that walked to another of its cities was an army
+  of one there (the rules keep an army that enters a city an army); it joins that city's garrison,
+  so the garrison shows what holds the city and the Armies screen only the field armies (a taken-over
+  turn-180 game had 10 armies of one unit, most of them defenders in cities).
 
 Switch `ARMIES` (`FFH_AI_ARMIES_OFF`): off, every unit stays in its city's garrison when trained
 (the armies still form from the groups). First games (8 civs, standard, 350 turns, seeds 1-2,
@@ -1370,13 +1374,23 @@ cities.
   against cities, sent in transit); workers and work boats while the land needs them; the best
   building by `building_value` per turn of production, up to half again for the profile's
   flavors; a Zealot's missionary; the profile's process. It never builds settlers, wonders or
-  rituals (the rules forbid them in governed cities).
+  rituals (the rules forbid them in governed cities). Against a Foment Revolt or Flip City aimed
+  at the city, defenders come first, up to three (the cultural defense, `culture::defend`, has a
+  threatened governed city's governor choose again). The units it feeds an army are units that serve
+  in armies (a Ranger or an Assassin would stay in the city and the army never fill); the units the
+  owner's cities are training for the army count toward its target, so several feeders do not
+  overshoot it. The AI's emergency switch to a defender and its rebuild in financial trouble judge a
+  governed city by this choice, not the direct-rule ladder's, and leave its production otherwise to
+  the governor; the wonder emphasis and the Philosophical great-people emphasis keep to directly
+  ruled cities (a governed city's emphasis is its profile's).
 - **Direct rule.** The AI's first four cities are direct; later a governed city making half again
   as much production as the weakest direct one (and at least 6) takes its slot when both are past
   their cooldown, so its settlers and wonders come from its best cities.
 - **Modes.** At war or preparing one, with a main army in the field (`armies::main_army`), the half
-  of its governed cities nearest the enemy feed that army while it is short of the army the war
-  needs (its target size, set by `armies.rs`); every other governed city develops.
+  of its governed cities nearest the enemy (on the army's landmass: a recruit travels by land) feed
+  that army while it is short of the army the war needs (its target size, set by `armies.rs`);
+  every other governed city develops. A city whose mode changes chooses its production again at
+  once (the rules: what it was building keeps its progress).
 - **Governors.** The rules give a vacant post the best-matching candidate; the AI replaces nobody
   (a replacement costs the city). Its governors may queue hostile cultural actions: its cultural
   play decides which are worth it.
@@ -1385,7 +1399,8 @@ cities.
   only, hostile ones only where the player allowed them.
 
 Switch `GOVERNORS` (`FFH_AI_GOVERNORS_OFF`): off, the AI keeps its first cities direct and every
-governed city develops. The production audit the spec asks for (governors on against off, AI
+governed city develops, its cultural play unrestricted. With switch `ARMIES` off no city feeds an
+army (no unit is sent in transit). The production audit the spec asks for (governors on against off, AI
 autoplay, 4 seeds) is in docs/GOVERNORS.md: the governed empires grow and research faster (+4%
 population, +19% research) and capture a fifth fewer cities.
 

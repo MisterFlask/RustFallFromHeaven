@@ -90,11 +90,16 @@ fn a_candidate_takes_the_vacant_post_and_a_replacement_costs_both_cities() {
     assert_eq!(g.cities[a].governor, None);
     assert!(g.cities[b].governor_penalty_turns > 0);
     assert!(g.cities[a].governor_penalty_turns > 0);
-    // The penalty wears off.
-    for _ in 0..g.d.defines.governor_swap_turns {
+    // The penalty wears off after its turns' output (the countdown is at the turn's end).
+    for _ in 1..g.d.defines.governor_swap_turns {
         g.player_governance_turn(p0);
+        g.player_governance_turn_end(p0);
     }
+    assert!(g.cities[a].governor_penalty_turns > 0, "the last turn still pays");
+    assert_eq!(g.city_base_yield_rate_modifier(b, YieldType::YIELD_PRODUCTION, 0), base - penalty);
+    g.player_governance_turn_end(p0);
     assert_eq!(g.cities[a].governor_penalty_turns, 0);
+    assert_eq!(g.city_base_yield_rate_modifier(b, YieldType::YIELD_PRODUCTION, 0), base);
 }
 
 #[test]
@@ -199,4 +204,91 @@ fn a_city_handed_to_a_governor_drops_the_orders_it_may_no_longer_build() {
     g.city_hand_to_governor(p0, c).unwrap();
     assert!(g.city_is_governed(c));
     assert!(!g.cities[c].order_queue.iter().any(|o| o.order_type == OrderType::ORDER_TRAIN && o.data1 == settler.idx() as i32), "no settler in a governed city");
+}
+
+/// A free land plot at least 4 plots from every city.
+fn free_plot(g: &Game) -> (i32, i32) {
+    g.map
+        .plot_ids()
+        .filter(|&q| !g.plot_is_water(q) && !g.plot_is_impassable(q) && g.map.plots[q].owner.is_none() && g.map.plots[q].plot_city.is_none())
+        .map(|q| g.map.xy(q))
+        .find(|&(x, y)| g.cities.iter().all(|(_, c)| g.plot_distance(x, y, c.x, c.y) >= 4))
+        .expect("a free plot")
+}
+
+#[test]
+fn an_acquired_city_takes_its_governor_at_the_turns_end_not_before_the_raze_decision() {
+    let (mut g, _) = game(4);
+    let (p0, p1) = (PlayerId(0), PlayerId(1));
+    let candidate = g.governor_generate(p0);
+    let (x, y) = free_plot(&g);
+    let theirs = g.player_init_city(p1, x, y, true, true);
+    g.player_acquire_city(p0, theirs, false, true, true);
+    let ours = g.map.plots[g.map.plot_xy(x, y).unwrap()].plot_city.expect("the city");
+    assert!(g.city_is_governed(ours));
+    assert_eq!(g.cities[ours].governor, None, "interim until the turn's end");
+    assert_eq!(g.player_bench(p0), vec![candidate], "the candidate waits on the bench");
+    g.player_governance_turn(p0);
+    assert!(g.cities[ours].governor.is_some(), "a governor at the turn's end");
+    // A city razed at once costs no governor.
+    let other = g.governor_generate(p0);
+    let (x, y) = free_plot(&g);
+    let size_one = g.player_init_city(p1, x, y, true, true);
+    g.player_acquire_city(p0, size_one, true, false, true);
+    assert!(g.governors.contains(other) && g.governors[other].city.is_none(), "still on the bench");
+}
+
+#[test]
+fn a_city_handed_to_a_governor_trains_for_its_own_garrison() {
+    let (mut g, cities) = game(4);
+    let p0 = PlayerId(0);
+    let c = cities[3];
+    g.cities[c].recruit_default = Some(ffh_core::army::RecruitDest::Garrison(cities[0]));
+    g.city_hand_to_governor(p0, c).unwrap();
+    assert_eq!(g.cities[c].recruit_default, None);
+}
+
+#[test]
+fn a_city_back_under_direct_rule_drops_its_governors_emphasis() {
+    let (mut g, cities) = game(5);
+    let p0 = PlayerId(0);
+    let c = cities[4];
+    let gv = g.governor_generate(p0);
+    let builder = g.d.t::<GovernorProfileType>("GOVERNORPROFILE_BUILDER");
+    g.governors[gv].profile = builder;
+    g.city_assign_governor(p0, c, gv).unwrap();
+    let wanted = g.d.governor_profiles[builder].emphasizes.clone();
+    assert!(!wanted.is_empty() && wanted.iter().all(|&e| g.cities[c].ai_emphasize[e]));
+    g.player_set_direct_rule(p0, c, Some(cities[1])).unwrap();
+    assert!(wanted.iter().all(|&e| !g.cities[c].ai_emphasize[e]));
+}
+
+#[test]
+fn merged_armies_keep_their_feeding_cities() {
+    let (mut g, cities) = game(5);
+    let p0 = PlayerId(0);
+    let c = cities[4];
+    let warrior = g.d.t::<UnitType>("UNIT_WARRIOR");
+    let (x, y) = free_plot(&g);
+    let mut army = |g: &mut Game| {
+        let units: Vec<UnitId> = (0..2).map(|_| g.player_init_unit(p0, warrior, x, y, None, None)).collect();
+        g.army_form(p0, &units).expect("formed")
+    };
+    let (one, two) = (army(&mut g), army(&mut g));
+    g.city_set_feed_army(p0, c, Some(one)).unwrap();
+    g.army_merge(p0, one, two).unwrap();
+    assert_eq!(g.cities[c].feed_army, Some(two));
+}
+
+#[test]
+fn governor_commands_say_why_they_cannot_be_done() {
+    let (g, cities) = game(5);
+    let p0 = PlayerId(0);
+    assert!(g.player_check_direct_rule(p0, cities[1], None).is_err(), "already ruled directly");
+    assert!(g.player_check_direct_rule(p0, cities[4], None).is_err(), "no free slot");
+    assert!(g.player_check_direct_rule(p0, cities[4], Some(cities[0])).is_err(), "the capital stays direct");
+    assert!(g.player_check_direct_rule(p0, cities[4], Some(cities[1])).is_ok());
+    assert!(g.city_check_hand_to_governor(p0, cities[0]).is_err());
+    assert!(g.city_check_hand_to_governor(p0, cities[4]).is_err(), "already governed");
+    assert!(g.city_check_feed_army(p0, cities[1], None).is_err(), "a direct city feeds no army");
 }

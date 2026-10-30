@@ -327,8 +327,15 @@ function manageView(c, task) {
       `${dname("HurryType", x.hurry)}${x.gold ? ` (${x.gold} gold)` : ""}${x.population ? ` (${x.population} pop.)` : ""}`,
     ),
   );
+  // A governed city's emphasis is its governor's profile's (shown, not chosen).
+  const governed = !!c.governance?.governed;
   const emphasize = c.emphasize.map((on, e) =>
-    h("label.toggle", { title: `${on ? "Turn off" : "Turn on"} ${dname("EmphasizeType", e)}` }, h("input", { type: "checkbox", checked: on, "data-emphasize": e, onchange: (ev) => task("TASK_SET_EMPHASIZE", e, -1, ev.target.checked) }), ` ${dname("EmphasizeType", e)}`),
+    h(
+      "label.toggle",
+      { title: governed ? "Set by the governor's profile" : `${on ? "Turn off" : "Turn on"} ${dname("EmphasizeType", e)}` },
+      h("input", { type: "checkbox", checked: on, disabled: governed, "data-emphasize": e, onchange: (ev) => task("TASK_SET_EMPHASIZE", e, -1, ev.target.checked) }),
+      ` ${dname("EmphasizeType", e)}`,
+    ),
   );
   return h(
     "div.section",
@@ -342,7 +349,7 @@ function manageView(c, task) {
     c.governance?.governed
       ? null
       : h("label.toggle", h("input", { type: "checkbox", checked: c.production.automated, id: "city-auto-production", onchange: (ev) => task("TASK_SET_AUTOMATED_PRODUCTION", -1, -1, ev.target.checked) }), " Automate production (the governor chooses)"),
-    emphasize.length ? h("details", h("summary", "Emphasis"), h("div.checks", emphasize)) : null,
+    emphasize.length ? h("details", h("summary", governed ? "Emphasis (the governor's)" : "Emphasis"), h("div.checks", emphasize)) : null,
   );
 }
 

@@ -41,7 +41,7 @@ function modeSelect(c, armies, act) {
 
 /** The bench as a selector: assign a candidate to city `c` (`bench` with `match` when known). */
 function replaceSelect(c, bench, act) {
-  if (!bench.length) return h("span.dim", " · the bench is empty");
+  if (!bench.length) return h("span.dim", "the bench is empty");
   return h(
     "select.governor-assign",
     {
@@ -60,8 +60,11 @@ function replaceSelect(c, bench, act) {
 export function governanceView(c, reload) {
   const k = c.governance;
   if (!k) return null;
+  // Re-read either way: a refused command leaves the selector showing the city's state, not the
+  // click.
   const act = async (cmd) => {
-    if (await run(cmd)) reload();
+    await run(cmd);
+    reload();
   };
   const wait = k.cooldown ? ` (its rule may change again in ${turns(k.cooldown)})` : "";
   if (!k.governed) {
@@ -123,7 +126,8 @@ export async function openGovernors({ openCity } = {}) {
       return;
     }
     const act = async (cmd) => {
-      if (await run(cmd)) load();
+      await run(cmd);
+      load();
     };
     const direct = r.cities.filter((c) => !c.governed);
     const rows = r.cities.map((c) =>
@@ -141,8 +145,8 @@ export async function openGovernors({ openCity } = {}) {
               : h("span.warn", "interim"),
           c.penalty_turns ? h("span.warn", ` · −${r.penalty}% for ${turns(c.penalty_turns)}`) : null,
         ),
-        h("td", c.governed ? modeSelect(c, r.armies, act) : h("span.dim", "—")),
-        h("td", c.governed ? replaceSelect(c, r.bench, act) : null),
+        // The mode and the replacement stacked: the table fits the dialog with the wide pixel font.
+        h("td", c.governed ? h("div.governor-controls", modeSelect(c, r.armies, act), replaceSelect(c, r.bench, act)) : h("span.dim", "—")),
         h("td.num", `${c.production}`),
       ),
     );
@@ -151,7 +155,7 @@ export async function openGovernors({ openCity } = {}) {
         "p.dim",
         `You rule ${direct.length} of ${r.slots} cities directly (the capital always); their status may change again ${turns(r.cooldown)} after a change. A governor chooses what its city builds: it develops, or feeds an army until the army reaches its target size. World wonders, rituals and settlers are built only in directly ruled cities. Replacing a governor costs the city ${r.penalty}% of its production and commerce for ${turns(r.penalty_turns)}.`,
       ),
-      h("table.governors", h("thead", h("tr", h("th", "City"), h("th", "Rule"), h("th", "Governor"), h("th", "Mode"), h("th", ""), h("th", { title: "Production" }, "Prod."))), h("tbody", rows)),
+      h("table.governors", h("thead", h("tr", h("th", "City"), h("th", "Rule"), h("th", "Governor"), h("th", "Mode"), h("th", { title: "Production" }, "Prod."))), h("tbody", rows)),
       h("h4", `The bench (${r.bench.length})`),
       r.bench.length ? h("ul.bench", r.bench.map((b) => h("li", { title: governorTitle(b) }, governorLabel(b)))) : h("p.dim", "Nobody yet: candidates appear now and then while posts are vacant or the bench is short."),
     );
