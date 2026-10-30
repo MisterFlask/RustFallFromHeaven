@@ -1352,7 +1352,8 @@ expert adds is logistics, once a turn before the governed cities and the cultura
 - **Defenders in the garrison.** A city defender that walked to another of its cities was an army
   of one there (the rules keep an army that enters a city an army); it joins that city's garrison,
   so the garrison shows what holds the city and the Armies screen only the field armies (a taken-over
-  turn-180 game had 10 armies of one unit, most of them defenders in cities).
+  turn-180 game had 10 armies of one unit, most of them defenders in cities). Units on their way to
+  such an army go to that garrison.
 
 Switch `ARMIES` (`FFH_AI_ARMIES_OFF`): off, every unit stays in its city's garrison when trained
 (the armies still form from the groups). First games (8 civs, standard, 350 turns, seeds 1-2,
@@ -1378,8 +1379,8 @@ cities.
   at the city, defenders come first, up to three (the cultural defense, `culture::defend`, has a
   threatened governed city's governor choose again). The units it feeds an army are units that serve
   in armies (a Ranger or an Assassin would stay in the city and the army never fill); the units the
-  owner's cities are training for the army count toward its target, so several feeders do not
-  overshoot it. The AI's emergency switch to a defender and its rebuild in financial trouble judge a
+  owner's cities will finish for the army within 10 turns count toward its target, so several
+  feeders do not overshoot it and a slow frontier feeder does not hold the others back. The AI's emergency switch to a defender and its rebuild in financial trouble judge a
   governed city by this choice, not the direct-rule ladder's (the rebuild keeps a unit for the army
   the city feeds); the wonder emphasis and the Philosophical great-people emphasis keep to directly
   ruled cities (a governed city's emphasis is its profile's).
@@ -1387,10 +1388,12 @@ cities.
   as much production as the weakest direct one (and at least 6) takes its slot when both are past
   their cooldown, so its settlers and wonders come from its best cities.
 - **Modes.** At war or preparing one, with a main army in the field (`armies::main_army`), the half
-  of its governed cities nearest the enemy (on the army's landmass: a recruit travels by land) feed
-  that army while it is short of the army the war needs (its target size, set by `armies.rs`);
-  every other governed city develops. A city whose mode changes chooses its production again at
-  once (the rules: what it was building keeps its progress).
+  of its governed cities nearest the enemy (those a recruit can reach it from by land) feed that
+  army while it is short of the army the war needs (its target size, set by `armies.rs`); every
+  other governed city develops. A feeder keeps feeding through a turn without a main army (out of
+  supply, at sea) while the war lasts and its army is short. A city whose mode changes chooses its
+  production again at once (the rules: what it was building keeps its progress); a change of army
+  only redirects its units.
 - **Governors.** The rules give a vacant post the best-matching candidate; the AI replaces nobody
   (a replacement costs the city). Its governors may queue hostile cultural actions: its cultural
   play decides which are worth it.

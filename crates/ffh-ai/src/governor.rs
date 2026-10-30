@@ -158,22 +158,35 @@ pub(crate) fn culture_grave(g: &Game, c: CityId) -> bool {
     g.culture_hostile_channels_at(c).iter().any(|ch| matches!(g.d.cultural_actions[ch.order.action].effect, CultureEffect::FomentRevolt | CultureEffect::FlipCity))
 }
 
+/// Turns within which a unit in production for an army counts toward its target.
+const FEED_HORIZON: i32 = 10;
+
 /// Whether army `a` is short of its target size, the units on their way and those its owner's
-/// cities are training for it counted (no target: it always takes more): a feeding city starts a
-/// unit for it only then, so several feeders do not overshoot.
+/// cities will finish for it soon counted (no target: it always takes more): a feeding city starts
+/// a unit for it only then, so several feeders do not overshoot, and a slow feeder's unit (a small
+/// frontier city's, due in 30 turns) does not hold the others back.
 pub fn army_short(g: &Game, a: ArmyId) -> bool {
     let target = g.armies[a].target_size;
     if target <= 0 {
         return true;
     }
     let owner = g.armies[a].owner;
-    let queued = g.players[owner]
+    let due = g.players[owner]
         .cities
         .iter()
-        .flat_map(|&c| g.cities[c].order_queue.iter())
-        .filter(|o| o.order_type == OrderType::ORDER_TRAIN && o.dest == Some(RecruitDest::Army(a)))
+        .filter(|&&c| {
+            g.cities[c].order_queue.first().is_some_and(|o| o.order_type == OrderType::ORDER_TRAIN && o.dest == Some(RecruitDest::Army(a)))
+                && g.city_production_turns_left(c) <= FEED_HORIZON
+        })
         .count() as i32;
-    g.army_units(a).len() as i32 + g.army_transit_count(a) + queued < target
+    g.army_units(a).len() as i32 + g.army_transit_count(a) + due < target
+}
+
+/// Whether army `a` is short of its target size, the units on their way counted (no target: it
+/// always takes more).
+fn short_on_the_way(g: &Game, a: ArmyId) -> bool {
+    let target = g.armies[a].target_size;
+    target <= 0 || (g.army_units(a).len() as i32 + g.army_transit_count(a)) < target
 }
 
 /// The unit governed city `c` trains for army `a`: siege while it is less than a third of the
@@ -242,18 +255,24 @@ fn swap_direct(g: &mut Game, p: PlayerId) {
 }
 
 /// At war or preparing one, with a main army: the governed cities nearest the enemy feed it
-/// while it is short of its target (those on its landmass: a recruit travels by land); every
-/// other governed city develops. The ARMIES switch off sends no unit in transit, so none feeds.
+/// while it is short of its target (those a recruit can reach it from: by land, around peaks);
+/// every other governed city develops. A feeder keeps feeding its army through a turn without a
+/// main army (out of supply, at sea) while the war lasts and the army is short, so its queue is
+/// not thrown away and taken up again. The ARMIES switch off sends no unit in transit, so none
+/// feeds.
 fn set_modes(g: &mut Game, p: PlayerId) {
     let team = g.players[p].team;
     let target = crate::diplomacy::preparing_target(g, team).or_else(|| g.team_ids().find(|&t| t != team && g.team_is_alive(t) && !g.team_is_barbarian(t) && g.at_war(team, t)));
-    let main = if g.armies_on() && crate::switches::ARMIES.on(g, p) { target.and_then(|t| crate::armies::main_army(g, p, t)) } else { None };
-    let area = main.and_then(|a| g.army_plot(a)).and_then(|plot| g.map.plots[plot].area);
+    let armies = g.armies_on() && crate::switches::ARMIES.on(g, p);
+    let main = if armies { target.and_then(|t| crate::armies::main_army(g, p, t)) } else { None };
     let governed: Vec<CityId> = g.players[p].cities.iter().copied().filter(|&c| g.city_is_governed(c)).collect();
-    let reachable: Vec<CityId> = governed.iter().copied().filter(|&c| Some(g.city_area(c)) == area).collect();
+    let reachable: Vec<CityId> = match main.and_then(|a| Some((g.army_plot(a)?, g.army_units(a).first().map(|&u| g.units[u].unit_type)?))) {
+        Some((at, unit_type)) => governed.iter().copied().filter(|&c| g.transit_turns(p, unit_type, g.city_plot(c), at).is_some()).collect(),
+        None => Vec::new(),
+    };
     let feeders: Vec<CityId> = match (main, target) {
         // (The units in production not counted: a city training the last one keeps feeding.)
-        (Some(a), Some(t)) if g.armies[a].target_size <= 0 || (g.army_units(a).len() as i32 + g.army_transit_count(a)) < g.armies[a].target_size => {
+        (Some(a), Some(t)) if short_on_the_way(g, a) => {
             // The half of our governed cities nearest the enemy's cities.
             let mut by_dist: Vec<(i32, CityId)> = reachable
                 .iter()
@@ -274,7 +293,8 @@ fn set_modes(g: &mut Game, p: PlayerId) {
         _ => Vec::new(),
     };
     for c in governed {
-        let want = if feeders.contains(&c) { main } else { None };
+        let keep = g.cities[c].feed_army.filter(|&a| main.is_none() && armies && target.is_some() && g.recruit_dest_valid(p, RecruitDest::Army(a)) && short_on_the_way(g, a));
+        let want = if feeders.contains(&c) { main } else { keep };
         if g.cities[c].feed_army != want {
             let _ = g.city_set_feed_army(p, c, want);
         }
@@ -308,7 +328,9 @@ mod tests {
         // The mode takes effect at once: the city trains for the army, and that unit counts.
         let o = g.cities[fed].order_queue.first().expect("an order");
         assert_eq!((o.order_type, o.dest), (OrderType::ORDER_TRAIN, Some(RecruitDest::Army(a))));
-        assert!(!army_short(&g, a), "two and one in production");
+        // It counts when it is due within the horizon (a slow city's unit does not hold others back).
+        let due = g.city_production_turns_left(fed) <= FEED_HORIZON;
+        assert_eq!(army_short(&g, a), !due, "two, and one in production due: {due}");
         g.city_clear_order_queue(fed);
         let (_, why, dest) = decide(&g, fed).expect("a choice");
         assert_eq!((why, dest), ("governor_feed", Some(RecruitDest::Army(a))));

@@ -34,7 +34,14 @@ pub fn turn(g: &mut Game, p: PlayerId) {
     for a in g.players[p].armies.clone() {
         let units = g.army_units(a);
         let in_city = g.army_plot(a).and_then(|plot| g.map.plots[plot].plot_city).is_some_and(|c| g.cities.contains(c) && g.cities[c].owner == p);
+        let city = g.army_plot(a).and_then(|plot| g.map.plots[plot].plot_city);
         if in_city && g.armies[a].disband_to.is_none() && !units.is_empty() && units.iter().all(|&u| g.units[u].ai_type == Some(UnitAIType::UNITAI_CITY_DEFENSE)) {
+            // What was on its way to the army goes to the garrison it joins.
+            if let Some(c) = city {
+                for t in g.players[p].transit.iter_mut().filter(|t| t.dest == RecruitDest::Army(a)) {
+                    t.dest = RecruitDest::Garrison(c);
+                }
+            }
             for u in units {
                 g.units[u].army = None;
             }
