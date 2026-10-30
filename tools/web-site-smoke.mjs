@@ -6,7 +6,8 @@
 // page cross-origin isolated, with one reload), a new game starts from the new-game screen (tiny
 // map, fixed seed), the map is drawn with the art, a few turns end through the end-turn gate with
 // the popups answered, the game is saved, the page is reloaded with `?renderer=iso` (a fresh
-// engine: the save comes back from IndexedDB) and the save loaded, the isometric renderer draws
+// engine: the save comes back from IndexedDB, in the database the site's web/site.js names) and
+// the save loaded, the isometric renderer draws
 // it, and one more turn ends. Fails on any page error, console error, failed request or HTTP
 // error; screenshots go to --out.
 //
@@ -46,6 +47,16 @@ try {
 const SITE = path.resolve(args.site);
 const BASE = args.base ?? "/RustFallFromHeaven/";
 const PORT = Number(args.port ?? 0);
+/** The site's saves database (web/site.js `SAVES_DB`, tools/web-site.sh --saves), or null when
+ *  the site has no web/site.js (reported as a problem in main). */
+function sitesSavesDb() {
+  try {
+    return /^export const SAVES_DB = "([^"]+)";$/m.exec(fs.readFileSync(path.join(SITE, "web", "site.js"), "utf8"))?.[1] ?? null;
+  } catch {
+    return null;
+  }
+}
+const SAVES_DB = sitesSavesDb();
 const TURNS = Number(args.turns ?? 3);
 const SEED = Number(args.seed ?? 5);
 const OUT = path.resolve(args.out ?? path.join(ROOT, "target", "web-site-smoke"));
@@ -343,9 +354,9 @@ async function save() {
   await until2(`[...document.querySelectorAll("#toasts .toast")].some((t) => t.textContent.startsWith("Saved"))`, "the saved toast");
   const turn = await S("S.status.turn");
   await ev("window.ffhWeb.flush()");
-  // The engine's IndexedDB (database ffh-play, store saves, keys: paths under /saves).
+  // The engine's IndexedDB (the site's saves database, store saves, keys: paths under /saves).
   const keys = await ev(`new Promise((resolve, reject) => {
-    const open = indexedDB.open("ffh-play");
+    const open = indexedDB.open(${JSON.stringify(SAVES_DB)});
     open.onerror = () => reject(open.error);
     open.onsuccess = () => {
       const db = open.result;
@@ -355,8 +366,8 @@ async function save() {
       rq.onsuccess = () => (db.close(), resolve(rq.result.map(String)));
     };
   })`);
-  if (!keys.some((k) => /(^|\/)smoke(\.[^/]*)?$/.test(k))) throw new Error(`the save is not in IndexedDB: ${JSON.stringify(keys)}`);
-  steps.push(`saved as smoke at turn ${turn} (${keys.length} files in IndexedDB)`);
+  if (!keys.some((k) => /(^|\/)smoke(\.[^/]*)?$/.test(k))) throw new Error(`the save is not in IndexedDB ${SAVES_DB}: ${JSON.stringify(keys)}`);
+  steps.push(`saved as smoke at turn ${turn} (${keys.length} files in IndexedDB ${SAVES_DB})`);
   return turn;
 }
 
@@ -401,9 +412,10 @@ async function main() {
     console.error(`web-site-smoke: no site at ${SITE} (no index.html): build it with tools/web-site.sh ${args.site}`);
     return 1;
   }
-  for (const f of ["web/boot.js", "web/engine.js", "web/wasi.js", "web/ffh.wasm.gz", "web/data.pak.gz", "coi-sw.js"]) {
+  for (const f of ["web/boot.js", "web/engine.js", "web/wasi.js", "web/site.js", "web/ffh.wasm.gz", "web/data.pak.gz", "coi-sw.js"]) {
     if (!fs.existsSync(path.join(SITE, f))) problems.push(`the site has no ${f}`);
   }
+  if (fs.existsSync(path.join(SITE, "web", "site.js")) && !SAVES_DB) problems.push("web/site.js does not name the saves database (export const SAVES_DB)");
   const server = await serveSite({ dir: SITE, base: BASE, port: PORT, isolated: !!args.isolated });
   if (args.serve) {
     console.log(`web-site-smoke: serving ${SITE} at ${server.url}${args.isolated ? " (with COOP/COEP)" : ""}; Ctrl-C stops`);

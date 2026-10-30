@@ -94,6 +94,10 @@ Every way the port's rules differ from FFH2 0.41, so the starting point can be r
 Matching FFH2 is not a requirement (CLAUDE.md, "FFH2 is the starting point"): this list records
 the differences; it does not ask for them to be undone.
 
+The rules as they stood before the first sweeping rules change are the tag `classic-1`, which
+stays playable at https://misterflask.github.io/RustFallFromHeaven/classic/ (docs/WEB.md, "The
+classic site"); the changes below up to that tag are its differences from FFH2.
+
 **Container order and path finding**
 
 - **Per-owner object lists iterate in creation order.** C++ keeps units, cities, selection groups

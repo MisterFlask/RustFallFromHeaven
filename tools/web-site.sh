@@ -2,18 +2,21 @@
 # Builds the static site (docs/WEB.md): the browser client with the game engine compiled to
 # WebAssembly, playable from any static host (GitHub Pages) without `ffh-play serve`.
 #
-#   tools/web-site.sh OUT [--bin PATH] [--wasm FILE]
+#   tools/web-site.sh OUT [--bin PATH] [--wasm FILE] [--saves NAME]
 #
 #   OUT           the site's directory (created; a directory this script made before is emptied
 #                 first, any other non-empty directory is refused)
 #   --bin PATH    use this ffh-play instead of `cargo build --release -p ffh-play` (for example
 #                 `$(tools/agents/build-tree.sh --bins ffh-play)/ffh-play`)
 #   --wasm FILE   use this ffh_web.wasm instead of building it
+#   --saves NAME  the IndexedDB database the site keeps its saves in (default ffh-play); a second
+#                 site on the same origin needs its own (the classic site: ffh-play-classic)
 #
 # Steps: builds ffh-play (native) and the engine (`cargo build --release --target wasm32-wasip1
 # -p ffh-web`, without debug info, with LTO; both honour CARGO_TARGET_DIR), runs `ffh-play
 # export-site OUT --data data` (index.html, app/, art/, web/data.pak), adds the page's scripts
-# (crates/ffh-web/site: web/boot.js, web/engine.js, web/wasi.js and coi-sw.js at the root),
+# (crates/ffh-web/site: web/boot.js, web/engine.js, web/wasi.js, web/site.js -- rewritten for
+# --saves -- and coi-sw.js at the root),
 # gzips the engine and the data pack (web/ffh.wasm.gz, web/data.pak.gz; the plain pack is
 # removed), and writes web/version.txt (the commit and its date) and .nojekyll.
 #
@@ -27,7 +30,7 @@ site_js="$root/crates/ffh-web/site"
 cargo="${CARGO:-cargo}"
 
 usage() {
-  sed -n '5,11p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' >&2
+  sed -n '5,13p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' >&2
   exit 2
 }
 die() {
@@ -41,12 +44,17 @@ say() {
 out=""
 bin=""
 wasm=""
+saves=""
 while [ $# -gt 0 ]; do
   case "$1" in
     -h | --help) usage ;;
-    --bin | --wasm)
+    --bin | --wasm | --saves)
       [ $# -ge 2 ] || die "$1 needs a value"
-      if [ "$1" = --bin ]; then bin="$2"; else wasm="$2"; fi
+      case "$1" in
+        --bin) bin="$2" ;;
+        --wasm) wasm="$2" ;;
+        --saves) saves="$2" ;;
+      esac
       shift 2
       ;;
     -*) echo "web-site: unknown option $1" >&2; usage ;;
@@ -58,6 +66,7 @@ while [ $# -gt 0 ]; do
   esac
 done
 [ -n "$out" ] || usage
+[ -z "$saves" ] || [[ "$saves" =~ ^[A-Za-z0-9._-]+$ ]] || die "--saves $saves: use letters, digits, '.', '_' and '-'"
 
 # Paths given relative to the caller's directory.
 abs() {
@@ -71,7 +80,7 @@ out="$(abs "$out")"
 [ -z "$wasm" ] || { wasm="$(abs "$wasm")"; [ -f "$wasm" ] || die "--wasm $wasm: no such file"; }
 
 command -v gzip > /dev/null || die "gzip not found"
-for f in boot.js engine.js wasi.js coi-sw.js; do
+for f in boot.js engine.js wasi.js site.js coi-sw.js; do
   [ -f "$site_js/$f" ] || die "missing $site_js/$f (the page's scripts)"
 done
 
@@ -132,8 +141,13 @@ done
 grep -q 'src="web/boot.js"' "$out/index.html" || die "$out/index.html does not load web/boot.js"
 
 mkdir -p "$out/web"
-cp "$site_js/boot.js" "$site_js/engine.js" "$site_js/wasi.js" "$out/web/"
+cp "$site_js/boot.js" "$site_js/engine.js" "$site_js/wasi.js" "$site_js/site.js" "$out/web/"
 cp "$site_js/coi-sw.js" "$out/coi-sw.js"
+if [ -n "$saves" ]; then
+  printf '%s
+' "// The static site's own settings (crates/ffh-web/site/site.js), written by tools/web-site.sh --saves."     "export const SAVES_DB = \"$saves\";" > "$out/web/site.js"
+fi
+grep -q '^export const SAVES_DB = "' "$out/web/site.js" || die "$out/web/site.js does not name the saves database"
 
 # -n: no name or time stamp in the header, so the same input gives the same bytes.
 gzip -9 -n -c "$wasm" > "$out/web/ffh.wasm.gz"

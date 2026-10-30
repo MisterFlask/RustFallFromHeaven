@@ -23,6 +23,7 @@
 // No DOM is touched on import outside a page; the node tests drive `EngineClient` directly.
 
 import { RequestQueue, QUEUE_BYTES } from "./engine.js";
+import { SAVES_DB } from "./site.js";
 
 export const JSON_TYPE = "application/json; charset=utf-8";
 /** The largest request body (`http::MAX_BODY`). */
@@ -117,11 +118,13 @@ function idOf(body) {
  *  terminate()}`. `ui` (optional): `progress(msg)`, `ready(msg)`, `fail(message)`,
  *  `note(message)`, `crashed(report)`, `restarting()`. */
 export class EngineClient {
-  constructor({ spawn, isolated = false, wasmUrl, dataUrl, autosaveKeep = 20, ui = {}, now = () => performance.now(), queueBytes = QUEUE_BYTES, maxRestarts = 3 }) {
+  constructor({ spawn, isolated = false, wasmUrl, dataUrl, savesDb, autosaveKeep = 20, ui = {}, now = () => performance.now(), queueBytes = QUEUE_BYTES, maxRestarts = 3 }) {
     this.spawn = spawn;
     this.isolated = isolated;
     this.wasmUrl = String(wasmUrl);
     this.dataUrl = String(dataUrl);
+    /** The saves' IndexedDB database (site.js `SAVES_DB`; the worker's default when unset). */
+    this.savesDb = savesDb;
     this.autosaveKeep = autosaveKeep;
     this.ui = ui;
     this.now = now;
@@ -166,7 +169,7 @@ export class EngineClient {
       if (this.state === "ready") this.#dead({ error: message });
       else this.#fail(message);
     });
-    w.post({ t: "init", wasm: this.wasmUrl, data: this.dataUrl, queue: this.queue?.sab ?? null, autosaveKeep: this.autosaveKeep });
+    w.post({ t: "init", wasm: this.wasmUrl, data: this.dataUrl, savesDb: this.savesDb, queue: this.queue?.sab ?? null, autosaveKeep: this.autosaveKeep });
     this.#pump();
   }
 
@@ -653,6 +656,7 @@ function main() {
     isolated,
     wasmUrl: new URL("ffh.wasm.gz", import.meta.url),
     dataUrl: new URL("data.pak.gz", import.meta.url),
+    savesDb: SAVES_DB,
     ui: {
       progress: (m) => ui.progress(m),
       ready: (m) => {
@@ -705,9 +709,10 @@ function main() {
     }
     // One tab at a time: each tab's engine keeps its own copy of the saves and writes it back,
     // so two tabs would overwrite each other's games. (Asked after the isolation reload, which
-    // would otherwise hold it across the reload.)
+    // would otherwise hold it across the reload.) One lock per saves database: a tab of the
+    // classic site does not share the main site's saves.
     navigator.locks
-      ?.request("ffh-web-saves", { ifAvailable: true }, (lock) => {
+      ?.request(`ffh-web-saves:${SAVES_DB}`, { ifAvailable: true }, (lock) => {
         if (!lock) {
           ui.note("The game is open in another tab too: saves made in both tabs may overwrite each other. Close one of them.", 30000);
           return null;

@@ -7,6 +7,10 @@
 #
 # Run by hand (Actions -> ffh2-rs web -> Run workflow) on any branch to build and test the site;
 # only master deploys.
+#
+# The deployed site also holds the classic rules below classic/ (docs/WEB.md, "The classic site"):
+# the tag $CLASSIC_REF, the game before the sweeping rules changes, built by the `classic` job with
+# its own saves database. The `pages` job puts the two together.
 
 name: ffh2-rs web
 
@@ -26,6 +30,11 @@ permissions:
 concurrency:
   group: pages
   cancel-in-progress: false
+
+env:
+  # The frozen classic rules deployed below classic/ (a tag; a branch would work too, for fixes
+  # backported to the classic game).
+  CLASSIC_REF: classic-1
 
 jobs:
   # The commit gate (CLAUDE.md): `cargo build --release && cargo test --release`, the data loading
@@ -111,6 +120,106 @@ jobs:
           path: ${{ runner.temp }}/smoke
           if-no-files-found: ignore
 
+      - uses: actions/upload-artifact@v4
+        with:
+          name: site
+          path: _site
+          include-hidden-files: true
+          if-no-files-found: error
+
+  # The classic site: $CLASSIC_REF built as it is, with the toolchain of its day, its saves in a
+  # database of their own (both sites share the origin, so IndexedDB) and smoke-tested below
+  # classic/. The tag never changes, so the site is built once per tag commit and then restored
+  # from the cache (which GitHub drops after a week unused: the next deploy then builds it again).
+  classic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      CARGO_TERM_COLOR: always
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.CLASSIC_REF }}
+
+      - name: The classic commit
+        id: rev
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the classic site
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: _classic
+          key: classic-site-v1-${{ steps.rev.outputs.sha }}
+
+      - if: steps.cache.outputs.cache-hit != 'true'
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: "1.99.1"
+          targets: wasm32-wasip1
+
+      - name: Build the classic site
+        if: steps.cache.outputs.cache-hit != 'true'
+        env:
+          CARGO_PROFILE_RELEASE_DEBUG: "0"
+        run: tools/web-site.sh _classic --saves ffh-play-classic
+
+      - if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Playwright and Chromium
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          npm install --no-save --no-package-lock --no-audit --no-fund --prefix "$RUNNER_TEMP/pw" playwright@1
+          "$RUNNER_TEMP/pw/node_modules/.bin/playwright" install --with-deps chromium
+
+      - name: Smoke test (below classic/)
+        if: steps.cache.outputs.cache-hit != 'true'
+        env:
+          NODE_PATH: ${{ runner.temp }}/pw/node_modules
+        run: node tools/web-site-smoke.mjs --site _classic --base /RustFallFromHeaven/classic/ --out "$RUNNER_TEMP/smoke/classic"
+
+      - name: Keep the smoke test's screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: classic-site-smoke
+          path: ${{ runner.temp }}/smoke
+          if-no-files-found: ignore
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: classic-site
+          path: _classic
+          include-hidden-files: true
+          if-no-files-found: error
+
+  # The deployed site: the main site, and the classic one below classic/.
+  pages:
+    needs: [build, classic]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: site
+          path: _site
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: classic-site
+          path: _site/classic
+
+      - name: Check the two sites and their saves databases
+        run: |
+          for f in index.html web/boot.js web/site.js classic/index.html classic/web/boot.js classic/web/site.js; do
+            [ -f "_site/$f" ] || { echo "::error::the site has no $f"; exit 1; }
+          done
+          grep -qx 'export const SAVES_DB = "ffh-play";' _site/web/site.js || { echo "::error::the main site does not keep its saves in ffh-play"; exit 1; }
+          grep -qx 'export const SAVES_DB = "ffh-play-classic";' _site/classic/web/site.js || { echo "::error::the classic site does not keep its saves in ffh-play-classic"; exit 1; }
+          echo "main: $(cat _site/web/version.txt); classic: $(cat _site/classic/web/version.txt)"
+
       # Fails with a clear message until Pages is enabled with the source "GitHub Actions".
       - uses: actions/configure-pages@v5
 
@@ -119,7 +228,7 @@ jobs:
           path: _site
 
   deploy:
-    needs: [build, test]
+    needs: [pages, test]
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     environment:

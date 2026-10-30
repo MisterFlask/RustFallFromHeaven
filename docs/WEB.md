@@ -1,6 +1,7 @@
 # ffh-play in the browser: the static site
 
 **Play: https://misterflask.github.io/RustFallFromHeaven/**
+(the classic rules, before the sweeping rules changes: https://misterflask.github.io/RustFallFromHeaven/classic/)
 
 The browser client of `ffh-play` (docs/HUMAN.md) with the whole game engine compiled to
 WebAssembly, served as plain files from GitHub Pages: nothing to download or install, no server.
@@ -36,7 +37,7 @@ or razing a city you conquer). The page says so once.
 
 **Saves** live in the browser: the engine writes them under `/saves` as the native server does
 (your saves, plus the autosaves; 20 kept), and the worker copies every changed file to IndexedDB
-(database `ffh-play`, store `saves`) after each request. The Load screen lists them after a
+(the database `web/site.js` names, `ffh-play` by default; store `saves`) after each request. The Load screen lists them after a
 reload. A crashed engine shows the crash screen as the native client does; a fresh engine starts
 and the last autosave can be loaded.
 
@@ -52,6 +53,7 @@ OUT/index.html        the client's page, relative URLs, web/boot.js loaded befor
 OUT/app/**            the client (every file `ffh-play serve` embeds)
 OUT/art/**            the art toolkit's modules and art/art.bundle.txt
 OUT/web/boot.js engine.js wasi.js
+OUT/web/site.js       the site's settings: the saves database (`--saves NAME`, default ffh-play)
 OUT/web/ffh.wasm.gz   the engine (gzip -9)
 OUT/web/data.pak.gz   the game data (gzip -9)
 OUT/web/version.txt   commit and date
@@ -77,7 +79,9 @@ node tools/web-site-smoke.mjs --site /tmp/ffh-site --serve --port 8000
 - `web-site.sh` works from any directory and honours `CARGO_TARGET_DIR`. `--bin PATH` uses a
   built `ffh-play` instead of building one (agents on the shared machine:
   `--bin "$(tools/agents/build-tree.sh --bins ffh-play)/ffh-play"`), `--wasm FILE` a built
-  engine. OUT must be new, empty or a site the script built (it is emptied).
+  engine. OUT must be new, empty or a site the script built (it is emptied). `--saves NAME`
+  keeps the site's saves in the IndexedDB database NAME instead of `ffh-play` (a second site on
+  the same origin, such as the classic one, needs its own).
 - Any static server works (`python3 -m http.server -d /tmp/ffh-site 8000`, then
   `http://localhost:8000/`): open it as `localhost`/`127.0.0.1` or over HTTPS, since service
   workers (isolation) need a secure context.
@@ -102,13 +106,31 @@ anything outside `anim-sprint/`, or the workflow, and by hand (Actions -> "ffh2-
 
 1. **build**: checkout, Rust stable with `wasm32-wasip1`, `tools/web-site.sh _site`, node 22 and
    Playwright's Chromium, the smoke test twice (service-worker isolation; `--no-sw`, the
-   fallback), then the Pages artifact. Screenshots of a failed smoke test are kept as the run's
+   fallback), then the artifact `site`. Screenshots of a failed smoke test are kept as the run's
    artifact `web-site-smoke`. A failure stops the deployment: the site keeps the last good build.
-2. **deploy**: `actions/deploy-pages` to the `github-pages` environment; only for `master` (a run
+2. **classic** (in parallel): the classic site (below), restored from the cache or built and
+   smoke-tested below `/RustFallFromHeaven/classic/`; the artifact `classic-site`.
+3. **pages**: the main site with the classic one in `classic/`, checked (both sites there, each
+   with its own saves database), then the Pages artifact.
+4. **deploy**: `actions/deploy-pages` to the `github-pages` environment; only for `master` (a run
    by hand on another branch builds and tests the site without deploying it).
 
 Runs are serialized (concurrency group `pages`, a newer push waits). A full run takes a few
 minutes (no cargo cache: with no external crates, a fresh checkout rebuilds every crate anyway).
+
+**The classic site.** The game as it was before the sweeping rules changes stays playable at
+`classic/`: the workflow's `CLASSIC_REF` (the tag `classic-1`) is built as it is, with the Rust
+release of its day (1.99.1, pinned in the job), by that tree's own `tools/web-site.sh` with
+`--saves ffh-play-classic`. Both sites are on one origin, so they share IndexedDB: the separate
+database keeps each site's Load screen to its own games and stops a classic autosave from
+overwriting one of the main site's (their games could not load into each other anyway once the
+rules differ). Their tabs take separate "one tab" locks for the same reason. The main site's
+service worker also covers `classic/` (its scope is the site) until the classic page registers
+its own; the two workers are the same file. The tag never moves, so the classic site is built once
+per tag commit and restored from the Actions cache afterwards (`classic-site-v1-<sha>`; GitHub
+drops a cache unused for a week, and the next deploy then builds it again). To serve
+classic fixes, point `CLASSIC_REF` at a branch cut from the tag; to retire it, remove the
+`classic` job and the `classic-site` download in `pages`.
 
 **One-time setup** (the repository owner): Settings -> Pages -> Build and deployment -> Source:
 **GitHub Actions**. Until then the workflow fails at "configure-pages". Pages on a private

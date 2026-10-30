@@ -54,7 +54,7 @@ for f in "$assets"/app/*.js "$assets"/app/r3d/*.js "$assets"/app/r3d/assets/*.js
 done
 # The static site's page side (docs/WEB.md): modules, and the service worker (a classic script).
 site="$root/crates/ffh-web/site"
-for f in "$site"/boot.js "$site"/engine.js "$site"/wasi.js; do
+for f in "$site"/boot.js "$site"/engine.js "$site"/wasi.js "$site"/site.js; do
   if ! out="$("$node" --input-type=module --check < "$f" 2>&1)"; then
     echo "web-check: $f does not parse:" >&2
     echo "$out" >&2
