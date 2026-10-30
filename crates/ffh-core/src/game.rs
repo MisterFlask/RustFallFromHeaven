@@ -77,6 +77,8 @@ pub struct Game {
     pub deals: Slab<DealId, Deal>,
     /// This game's armies (docs/ARMIES.md). Owner lists: `Player::armies`.
     pub armies: Slab<ArmyId, crate::army::Army>,
+    /// This game's governors (docs/GOVERNORS.md). Owner lists: `Player::governors`.
+    pub governors: Slab<GovernorId, crate::governors::Governor>,
     /// C++ `m_mapRand` (map generation).
     pub map_rand: Rng,
     /// C++ `m_sorenRand` (synchronized game randomness).
@@ -328,6 +330,7 @@ impl Game {
             plot_groups: Slab::new(),
             deals: Slab::new(),
             armies: Slab::new(),
+            governors: Slab::new(),
             map_rand: Rng::new(0),
             soren_rand: Rng::new(0),
             log: GameLog::default(),

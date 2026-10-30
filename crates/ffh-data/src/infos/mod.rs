@@ -9,6 +9,7 @@ pub mod civ;
 pub mod unit;
 pub mod event;
 pub mod culture;
+pub mod governor;
 
 pub use basic::*;
 pub use terrain::*;
@@ -19,6 +20,7 @@ pub use civ::*;
 pub use unit::*;
 pub use event::*;
 pub use culture::*;
+pub use governor::*;
 
 use crate::registry::Rd;
 

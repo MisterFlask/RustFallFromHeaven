@@ -779,6 +779,26 @@ async function armiesUi() {
   steps.push(`armies: the panel's army actions, F5 lists ${armies} arm${armies === 1 ? "y" : "ies"}${renamed}; the city's recruitment`);
 }
 
+/** This game's governors (docs/GOVERNORS.md; the new-game screen starts with them on): the city
+ *  screen's Governance section and F9's Governors screen. */
+async function governorsUi() {
+  const city = await S("S.view.cities.find((c) => c.owner === S.view.me.player)");
+  await b.eval(`window.ffh.emit("open-city", ${city.id})`);
+  await until2(`!!document.querySelector("#modals .backdrop:not(.under) .section.governance")`, "the city's Governance section");
+  const text = await b.eval(`document.querySelector("#modals .backdrop:not(.under) .section.governance").textContent`);
+  if (!/Ruled directly/.test(text)) throw new Error(`the capital is not ruled directly: ${text}`);
+  await b.key("Escape");
+  await until(async () => !(await modalTitles()).length, "the city dialog closed");
+  await b.key("F9");
+  await until(async () => (await modalTitles()).includes("Governors"), "the Governors screen");
+  const n = await S("S.view.cities.filter((c) => c.owner === S.view.me.player).length");
+  await until2(`document.querySelectorAll("#modals table.governors tbody tr").length === ${n}`, "every city listed");
+  await shot("governors-screen");
+  await b.key("Escape");
+  await until(async () => !(await modalTitles()).length, "the Governors screen closed");
+  steps.push(`governors: the capital ruled directly; F9 lists ${n} cit${n === 1 ? "y" : "ies"}`);
+}
+
 async function moveUnit() {
   const unit = await S(`(() => { const S = window.ffh.S; const me = S.view.me.player; return S.view.units.find((u) => u.owner === me && u.moves > 0 && S.data.tables.UnitType[u.type].combat > 0) || null; })()`);
   if (!unit) return steps.push("no unit to move");
@@ -1512,6 +1532,7 @@ async function main() {
     await cityQueue();
     await cultureUi();
     await armiesUi();
+    await governorsUi();
     await moveUnit();
     await endTurns(TURNS);
     await cityScreen();

@@ -13,6 +13,7 @@
 //!   `inspect`); [`help`] writes the help texts (what a tech, a building, ... does).
 
 pub mod armies;
+pub mod governors;
 pub mod city;
 pub mod culture;
 pub mod data;

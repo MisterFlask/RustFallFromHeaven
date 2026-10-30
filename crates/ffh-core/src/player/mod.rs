@@ -370,6 +370,11 @@ pub struct Player {
     pub army_count: i32,
     /// Trained units on their way to their destination.
     pub transit: Vec<crate::army::Transit>,
+    /// This player's governors (docs/GOVERNORS.md), in the order they joined; those without a
+    /// city are its bench.
+    pub governors: Vec<GovernorId>,
+    /// Governors drawn so far.
+    pub governor_count: i32,
 }
 
 impl Player {
@@ -624,6 +629,8 @@ impl Player {
             armies: Vec::new(),
             army_count: 0,
             transit: Vec::new(),
+            governors: Vec::new(),
+            governor_count: 0,
         }
     }
 

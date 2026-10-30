@@ -64,6 +64,17 @@ pub enum Command {
     /// garrison (for the city). `reinforce_to` > 0 with an army: repeat the order until the army
     /// counts that many.
     RecruitDest { city: CityId, index: i32, dest: Option<ffh_core::army::RecruitDest>, reinforce_to: i32 },
+    /// This game's governors (docs/GOVERNORS.md): rule governed city `city` directly, handing
+    /// `instead_of` (directly ruled) to a governor when no slot is free.
+    GovernDirect { city: CityId, instead_of: Option<CityId> },
+    /// Hand directly ruled city `city` to a governor.
+    GovernHand { city: CityId },
+    /// Governor `governor` governs city `city` (from the bench or another city).
+    GovernAssign { city: CityId, governor: GovernorId },
+    /// Governed city `city` feeds army `army` (`None`: it develops).
+    GovernFeed { city: CityId, army: Option<ArmyId> },
+    /// Whether governed city `city`'s governor may queue hostile cultural actions.
+    GovernHostile { city: CityId, on: bool },
     Research { tech: Option<TechType>, shift: bool },
     /// Merged over the current civics.
     UpdateCivics { civics: Vec<CivicType> },
@@ -211,6 +222,11 @@ pub const COMMAND_NAMES: &[&str] = &[
     "army_upgrade",
     "army_target",
     "recruit_dest",
+    "govern_direct",
+    "govern_hand",
+    "govern_assign",
+    "govern_feed",
+    "govern_hostile",
     "research",
     "update_civics",
     "percent_change",
@@ -250,6 +266,11 @@ pub const COMMAND_FIELDS: &[(&str, &[&str])] = &[
     ("army_upgrade", &["army"]),
     ("army_target", &["army", "size"]),
     ("recruit_dest", &["city", "index", "dest", "reinforce_to"]),
+    ("govern_direct", &["city", "instead_of"]),
+    ("govern_hand", &["city"]),
+    ("govern_assign", &["city", "governor"]),
+    ("govern_feed", &["city", "army"]),
+    ("govern_hostile", &["city", "on"]),
     ("research", &["tech", "shift"]),
     ("update_civics", &["civics"]),
     ("percent_change", &["commerce", "change"]),
@@ -375,6 +396,11 @@ impl Command {
             Command::ArmyUpgrade { .. } => "army_upgrade",
             Command::ArmyTarget { .. } => "army_target",
             Command::RecruitDest { .. } => "recruit_dest",
+            Command::GovernDirect { .. } => "govern_direct",
+            Command::GovernHand { .. } => "govern_hand",
+            Command::GovernAssign { .. } => "govern_assign",
+            Command::GovernFeed { .. } => "govern_feed",
+            Command::GovernHostile { .. } => "govern_hostile",
             Command::Research { .. } => "research",
             Command::UpdateCivics { .. } => "update_civics",
             Command::PercentChange { .. } => "percent_change",
@@ -474,6 +500,11 @@ impl Command {
                 dest: recruit_dest_field(j)?,
                 reinforce_to: j.get_or("reinforce_to", 0)?,
             },
+            "govern_direct" => Command::GovernDirect { city: j.req("city")?, instead_of: j.opt("instead_of")? },
+            "govern_hand" => Command::GovernHand { city: j.req("city")? },
+            "govern_assign" => Command::GovernAssign { city: j.req("city")?, governor: j.req("governor")? },
+            "govern_feed" => Command::GovernFeed { city: j.req("city")?, army: j.opt("army")? },
+            "govern_hostile" => Command::GovernHostile { city: j.req("city")?, on: j.req("on")? },
             "research" => Command::Research { tech: names::opt_field(d, j, "tech")?, shift: flag("shift")? },
             "update_civics" => Command::UpdateCivics { civics: names::list_field(d, j, "civics")? },
             "percent_change" => Command::PercentChange { commerce: names::field(d, j, "commerce")?, change: j.req("change")? },
@@ -558,6 +589,11 @@ impl Command {
             Command::RecruitDest { city, index, dest, reinforce_to } => {
                 j.with("city", *city).with("index", *index).with("dest", recruit_dest_json(*dest)).with("reinforce_to", *reinforce_to)
             }
+            Command::GovernDirect { city, instead_of } => j.with("city", *city).with("instead_of", *instead_of),
+            Command::GovernHand { city } => j.with("city", *city),
+            Command::GovernAssign { city, governor } => j.with("city", *city).with("governor", *governor),
+            Command::GovernFeed { city, army } => j.with("city", *city).with("army", *army),
+            Command::GovernHostile { city, on } => j.with("city", *city).with("on", *on),
             Command::Research { tech, shift } => j.with("tech", Json::opt_idx(*tech)).with("shift", *shift),
             Command::UpdateCivics { civics } => j.with("civics", Json::Arr(civics.iter().map(|&c| Json::idx(c)).collect())),
             Command::PercentChange { commerce, change } => j.with("commerce", Json::idx(*commerce)).with("change", *change),
@@ -679,7 +715,8 @@ pub enum Action {
     CulturePush { city: CityId, action: CulturalActionType, target: CityId, religion: Option<ReligionType>, repeat: bool, first: bool },
     CulturePop { city: CityId, index: usize },
     CultureRepeat { city: CityId, index: usize, repeat: bool },
-    /// An army command, checked by the rules call itself (they change nothing when they refuse).
+    /// An army or governor command, checked by the rules call itself (they change nothing when
+    /// they refuse).
     Army(Command),
     Research { tech: Option<TechType>, shift: bool },
     Revolution { civics: IdxVec<CivicOptionType, Option<CivicType>> },
@@ -722,6 +759,24 @@ fn city_of(g: &Game, h: PlayerId, c: CityId) -> Result<(), CmdErr> {
     }
 }
 
+/// This game's governors are on.
+fn governors_on(g: &Game) -> Result<(), CmdErr> {
+    if g.governors_on() {
+        Ok(())
+    } else {
+        Err(cannot("governors are off in this game"))
+    }
+}
+
+/// A governed city's production is its governor's (docs/GOVERNORS.md).
+fn not_governed(g: &Game, c: CityId) -> Result<(), CmdErr> {
+    if g.city_is_governed(c) {
+        Err(cannot("a governed city's production is its governor's"))
+    } else {
+        Ok(())
+    }
+}
+
 /// An army of the human's.
 fn army_of(g: &Game, h: PlayerId, a: ArmyId) -> Result<(), CmdErr> {
     match g.armies.get(a) {
@@ -742,6 +797,11 @@ fn apply_army(g: &mut Game, h: PlayerId, c: &Command) -> Result<(), CmdErr> {
         Command::ArmyDisband { army } => g.army_disband(h, *army),
         Command::ArmyUpgrade { army } => g.army_upgrade_all(h, *army).map(|_| ()),
         Command::ArmyTarget { army, size } => g.army_set_target_size(h, *army, *size),
+        Command::GovernDirect { city, instead_of } => g.player_set_direct_rule(h, *city, *instead_of),
+        Command::GovernHand { city } => g.city_hand_to_governor(h, *city),
+        Command::GovernAssign { city, governor } => g.city_assign_governor(h, *city, *governor),
+        Command::GovernFeed { city, army } => g.city_set_feed_army(h, *city, *army),
+        Command::GovernHostile { city, on } => g.city_set_hostile_culture(h, *city, *on),
         Command::RecruitDest { city, index, dest, reinforce_to } => {
             if *index < 0 {
                 g.cities[*city].recruit_default = *dest;
@@ -974,6 +1034,7 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
 
         Command::PushOrder { city, order, data, alt, shift, ctrl } => {
             city_of(g, h, *city)?;
+            not_governed(g, *city)?;
             let c = *city;
             let ok = match *order {
                 OrderType::ORDER_TRAIN => {
@@ -1002,6 +1063,7 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
 
         Command::PopOrder { city, index } => {
             city_of(g, h, *city)?;
+            not_governed(g, *city)?;
             let len = g.cities[*city].order_queue.len();
             in_range("queue index", *index, len)?;
             // selectedCitiesGameNetMessage(GAMEMESSAGE_POP_ORDER): only while the queue has more
@@ -1079,6 +1141,7 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
 
         Command::RecruitDest { city, index, dest, reinforce_to } => {
             city_of(g, h, *city)?;
+            not_governed(g, *city)?;
             if !g.armies_on() {
                 return Err(cannot("armies are off in this game"));
             }
@@ -1099,6 +1162,47 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             }
             if *reinforce_to > 0 && !matches!(dest, Some(ffh_core::army::RecruitDest::Army(_))) {
                 return Err(cannot("\"reinforce to\" needs an army"));
+            }
+            Plan::Apply(Action::Army(cmd.clone()))
+        }
+
+        Command::GovernDirect { city, instead_of } => {
+            city_of(g, h, *city)?;
+            if let Some(o) = instead_of {
+                city_of(g, h, *o)?;
+            }
+            governors_on(g)?;
+            Plan::Apply(Action::Army(cmd.clone()))
+        }
+
+        Command::GovernHand { city } | Command::GovernHostile { city, .. } => {
+            city_of(g, h, *city)?;
+            governors_on(g)?;
+            Plan::Apply(Action::Army(cmd.clone()))
+        }
+
+        Command::GovernAssign { city, governor } => {
+            city_of(g, h, *city)?;
+            governors_on(g)?;
+            match g.governors.get(*governor) {
+                None => return Err(CmdErr::Gone),
+                Some(gov) if gov.owner != h => return Err(CmdErr::NotOwner),
+                Some(_) => {}
+            }
+            if !g.city_is_governed(*city) {
+                return Err(cannot("the city is ruled directly"));
+            }
+            Plan::Apply(Action::Army(cmd.clone()))
+        }
+
+        Command::GovernFeed { city, army } => {
+            city_of(g, h, *city)?;
+            governors_on(g)?;
+            if let Some(a) = army {
+                army_of(g, h, *a)?;
+            }
+            if !g.city_is_governed(*city) {
+                return Err(cannot("the city is ruled directly"));
             }
             Plan::Apply(Action::Army(cmd.clone()))
         }
@@ -1169,10 +1273,8 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
                 TaskType::TASK_RALLY_PLOT => {
                     on_map(g, *data1, *data2)?;
                 }
-                TaskType::TASK_SET_AUTOMATED_CITIZENS
-                | TaskType::TASK_SET_AUTOMATED_PRODUCTION
-                | TaskType::TASK_CLEAR_ORDERS
-                | TaskType::TASK_CLEAR_RALLY_PLOT => {}
+                TaskType::TASK_SET_AUTOMATED_PRODUCTION | TaskType::TASK_CLEAR_ORDERS => not_governed(g, c)?,
+                TaskType::TASK_SET_AUTOMATED_CITIZENS | TaskType::TASK_CLEAR_RALLY_PLOT => {}
                 _ => return Err(invalid("field `task`: unknown task")),
             }
             Plan::Apply(Action::DoTask { city: c, task: *task, data1: *data1, data2: *data2, option: *option, alt: *alt, shift: *shift, ctrl: *ctrl })
@@ -1533,6 +1635,13 @@ mod tests {
             Command::RecruitDest { city: CityId(1), index: 0, dest: Some(ffh_core::army::RecruitDest::Army(ArmyId(2))), reinforce_to: 6 },
             Command::RecruitDest { city: CityId(1), index: -1, dest: Some(ffh_core::army::RecruitDest::Garrison(CityId(3))), reinforce_to: 0 },
             Command::RecruitDest { city: CityId(1), index: -1, dest: None, reinforce_to: 0 },
+            Command::GovernDirect { city: CityId(1), instead_of: Some(CityId(2)) },
+            Command::GovernDirect { city: CityId(1), instead_of: None },
+            Command::GovernHand { city: CityId(3) },
+            Command::GovernAssign { city: CityId(3), governor: GovernorId(2) },
+            Command::GovernFeed { city: CityId(3), army: Some(ArmyId(1)) },
+            Command::GovernFeed { city: CityId(3), army: None },
+            Command::GovernHostile { city: CityId(3), on: true },
             Command::Research { tech: None, shift: false },
             Command::Research { tech: Some(TechType(3)), shift: true },
             Command::UpdateCivics { civics: vec![CivicType(1), CivicType(5)] },

@@ -408,6 +408,7 @@ pub fn city(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
         "buildable" => buildable(v, c),
         "cultural" => cultural(v, c),
         "recruit" => crate::view::armies::recruit(v, c),
+        "governance" => crate::view::governors::city(v, c),
     })
 }
 

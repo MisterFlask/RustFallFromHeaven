@@ -85,3 +85,8 @@ entity_id!(
     /// This game's armies (`Game::armies`, docs/ARMIES.md).
     ArmyId(u32)
 );
+
+entity_id!(
+    /// This game's governors (`Game::governors`, docs/GOVERNORS.md).
+    GovernorId(u32)
+);

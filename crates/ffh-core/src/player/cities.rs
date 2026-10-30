@@ -199,6 +199,8 @@ impl Game {
         );
 
         self.city_init(city, p, x, y, bump_units, update_plot_groups);
+        // This game's governors (docs/GOVERNORS.md): a direct slot or a governor.
+        self.city_governance_init(city);
 
         city
     }
@@ -1108,6 +1110,8 @@ impl Game {
                 "(pBestCity->getNumRealBuilding(eCapitalBuilding)) did not return false as expected"
             );
             self.city_set_num_real_building(best_city, capital_building, 1);
+            // This game's governors: the new capital is ruled directly.
+            self.player_governance_settle(p);
         }
     }
 

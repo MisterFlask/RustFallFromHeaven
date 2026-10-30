@@ -321,6 +321,9 @@ kinds! {
         EventTriggerType => event_triggers,
         // ---- This game's own rules ----
         CulturalActionType => cultural_actions,
+        GovernorProfileType => governor_profiles,
+        GovernorTraitType => governor_traits,
+        GovernorNameType => governor_names,
     }
     globals {
         FlavorType,

@@ -105,6 +105,9 @@ pub static CULTURE: Switch = Switch::new("CULTURE");
 /// Armies' reinforcements by transit (`armies.rs`, docs/ARMIES.md): off, every unit stays in its
 /// city's garrison when trained.
 pub static ARMIES: Switch = Switch::new("ARMIES");
+/// Governed cities (`governor.rs`, docs/GOVERNORS.md): off, the AI keeps its first cities direct
+/// and every governed city develops.
+pub static GOVERNORS: Switch = Switch::new("GOVERNORS");
 /// Heroes only in the top third of our cities by production, world wonders outside it only when
 /// quick (`production::top_production_city`).
 pub static TOP_CITIES: Switch = Switch::new("TOP_CITIES");

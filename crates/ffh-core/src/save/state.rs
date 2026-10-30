@@ -43,12 +43,12 @@ persist_newtype!(
     SpecialBuildingType, SpecialUnitType, SpecialistType, SpellType, TaskType, TechType,
     TerrainType, TradeableItem, TraitType, UnitAIType, UnitArtStyleType, UnitClassType,
     UnitCombatType, UnitType, UpkeepType, VictoryType, VoteSourceType, VoteType, WarPlanType,
-    WorldSizeType, YieldType, CulturalActionType,
+    WorldSizeType, YieldType, CulturalActionType, GovernorProfileType, GovernorTraitType,
 );
 
 persist_newtype!(
     PlayerId, TeamId, UnitId, CityId, GroupId, AreaId, PlotGroupId, DealId, PlotIdx, TriggeredId, VoteId,
-    PlayerVote, ArmyId,
+    PlayerVote, ArmyId, GovernorId,
 );
 
 // ---- this game's own rules (docs/CULTURE.md) ----
@@ -101,6 +101,8 @@ use crate::culture::{CultureMark, CultureOrder};
 use crate::army::{Army, RecruitDest, Transit};
 persist_struct!(Army { id, owner, name, group, target_size, commander, disband_to, formed_turn });
 persist_struct!(Transit { unit_type, unit_ai, from_city, from_plot, dest, progress, eta, stalled, left_turn });
+use crate::governors::Governor;
+persist_struct!(Governor { id, owner, name, profile, traits, origin, born_turn, city, since_turn });
 
 impl Persist for RecruitDest {
     fn write(&self, w: &mut Writer) {
@@ -282,7 +284,8 @@ persist_struct!(City {
     ai_emphasize_avoid_growth_count, ai_emphasize_great_people_count, ai_emphasize_yield_count,
     ai_emphasize_commerce_count, ai_emphasize_avoid_angry_citizens_count,
     ai_emphasize_avoid_unhealthy_citizens_count, culture_queue, culture_diverted, culture_marks,
-    culture_revolt_turn, recruit_default,
+    culture_revolt_turn, recruit_default, direct_rule, rule_changed_turn, governor, feed_army,
+    governor_penalty_turns, governor_hostile_culture,
 });
 
 persist_struct!(Player {
@@ -338,6 +341,7 @@ persist_struct!(Player {
     culture_history, espionage_history, ai_civic_timer, ai_religion_timer, ai_num_train_ai_units,
     ai_num_ai_units, ai_peacetime_trade_value, ai_peacetime_grant_value, ai_gold_traded_to,
     ai_attitude_extra, ai_first_contact, ai_memory_count, culture_memory, armies, army_count, transit,
+    governors, governor_count,
 });
 
 persist_struct!(Team {

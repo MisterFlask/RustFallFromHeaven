@@ -22,6 +22,7 @@ import { focusOn, isoSkin, queueIcon, refreshCityPanel } from "./isoui.js";
 import { infoTip } from "./infotips.js";
 import { cultureView } from "./culture.js";
 import { recruitControls, recruitView } from "./armies.js";
+import { governanceView } from "./governors.js";
 
 const GROUPS = [
   [0, "Units"],
@@ -337,13 +338,18 @@ function manageView(c, task) {
       hurries,
       c.can_conscript ? h("button.small", { onclick: () => task("TASK_CONSCRIPT"), title: "Draft a unit (costs population and anger)" }, "Draft") : null,
     ),
-    h("label.toggle", h("input", { type: "checkbox", checked: c.production.automated, id: "city-auto-production", onchange: (ev) => task("TASK_SET_AUTOMATED_PRODUCTION", -1, -1, ev.target.checked) }), " Automate production (the governor chooses)"),
+    // A governed city's production is always its governor's (this game's governors).
+    c.governance?.governed
+      ? null
+      : h("label.toggle", h("input", { type: "checkbox", checked: c.production.automated, id: "city-auto-production", onchange: (ev) => task("TASK_SET_AUTOMATED_PRODUCTION", -1, -1, ev.target.checked) }), " Automate production (the governor chooses)"),
     emphasize.length ? h("details", h("summary", "Emphasis"), h("div.checks", emphasize)) : null,
   );
 }
 
 function productionView(c, choose, remove, [tapMode, setTapMode], reload) {
   const prod = c.production;
+  // This game's governors: a governed city's production is its governor's (shown, not chosen).
+  const locked = !!c.governance?.governed;
   const queue = h(
     "ol.queue",
     c.queue.length
@@ -353,15 +359,15 @@ function productionView(c, choose, remove, [tapMode, setTapMode], reload) {
             h("span", orderName(o.order, o.type)),
             h("span.dim", o.turns !== null ? ` ${turns(o.turns)}` : ""),
             // This game's armies: where a land combat unit goes when trained.
-            recruitControls(c, i, o, reload),
+            locked ? (o.dest_name ? h("span.dim", ` → ${o.dest_name}`) : null) : recruitControls(c, i, o, reload),
             // The exe pops an order only while the queue holds more than one (CvGameInterface
             // `getOrderQueueLength() > 1`); the only order is replaced by choosing another.
-            c.queue.length > 1 ? h("button.small", { title: "Remove from the queue", "aria-label": "Remove", "data-index": i, onclick: () => remove(i) }, "✕") : null,
+            c.queue.length > 1 && !locked ? h("button.small", { title: "Remove from the queue", "aria-label": "Remove", "data-index": i, onclick: () => remove(i) }, "✕") : null,
           ),
         )
       : h("li.dim", "Nothing: choose below."),
   );
-  const lists = GROUPS.map(([order, label]) => {
+  const lists = locked ? [] : GROUPS.map(([order, label]) => {
     const items = c.buildable.filter((b) => b.order === order);
     if (!items.length) return null;
     return h(
@@ -399,8 +405,8 @@ function productionView(c, choose, remove, [tapMode, setTapMode], reload) {
         prod.current && prod.needed ? barEl(prod.stored / prod.needed, "production", { w: 50, next: (prod.stored + prod.rate) / prod.needed }) : null,
       ),
       queue,
-      recruitView(c, reload),
-      tapModes(tapMode, [["now", "Build now", "A tap replaces what is being built"], ["queue", "Add to queue", "A tap adds to the end of the queue (Shift-click)"], ["first", "Put first", "A tap puts it first in the queue (Ctrl-click)"]], setTapMode),
+      locked ? h("p.dim.governed-note", "The governor chooses what this city builds: set its mode or its governor above.") : recruitView(c, reload),
+      locked ? null : tapModes(tapMode, [["now", "Build now", "A tap replaces what is being built"], ["queue", "Add to queue", "A tap adds to the end of the queue (Shift-click)"], ["first", "Put first", "A tap puts it first in the queue (Ctrl-click)"]], setTapMode),
     ),
     ...lists,
   ];
@@ -419,6 +425,6 @@ function screen(c, { task, choose, remove, popup, overlay, tap, reload }) {
   );
   const plots = overlay ? h("p.dim.city-hint", "Click the city's plots on the map to work them; its own plot hands the choice back to the governor.") : plotGrid(c, task);
   const left = h("div.city-col", plots, specialistsView(c, task), statsView(c), buildingsView(c));
-  const right = h("div.city-col", manageView(c, task), productionView(c, choose, remove, tap, reload), popup ? null : cultureView(c, reload));
+  const right = h("div.city-col", governanceView(c, reload), manageView(c, task), productionView(c, choose, remove, tap, reload), popup ? null : cultureView(c, reload));
   return [head, popup ? h("div.city-cols.popup", right, left) : h("div.city-cols", left, right)];
 }

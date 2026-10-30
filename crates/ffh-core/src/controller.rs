@@ -29,6 +29,11 @@ pub trait Controller: Send + Sync {
     /// C++ `CvCityAI::AI_chooseProduction`: push at least one order if the queue is empty.
     fn choose_production(&self, _g: &mut Game, _c: CityId) {}
 
+    /// This game's governors (docs/GOVERNORS.md): what the governors of player `p`'s governed
+    /// cities do on their own besides production (a human's: their cultural actions), in its
+    /// turn processing.
+    fn govern_cities(&self, _g: &mut Game, _p: PlayerId) {}
+
     /// The research choice of `CvPlayer::chooseTech(0)`: for a human the BUTTONPOPUP_CHOOSETECH
     /// popup (`None` = not answered now; the popup's answer arrives later as `CvNetResearch`),
     /// for an AI player `CvPlayerAI::AI_chooseResearch` (`chooseTech` deletes an AI player's

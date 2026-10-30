@@ -19,6 +19,7 @@ import { openCity, ownCities, stepCityScreen } from "./city.js";
 import * as empire from "./empire.js";
 import { openCulture } from "./culture.js";
 import { openArmies } from "./armies.js";
+import { openGovernors } from "./governors.js";
 import { openDiplomacy, checkMoments, resetMoments } from "./diplo.js";
 import * as tools from "./tools.js";
 import { applyMapDelta, plotDistance } from "./tiles.js";
@@ -169,7 +170,7 @@ function clearGame() {
 
 /** The dialogs that belong to one game (closed when another game arrives); the load, options,
  *  tools and crash dialogs stay. */
-const GAME_DIALOGS = ["city", "decision", "election", "event", "research", "vote", "promotions", "spells", "trade", "leader", "diplomacy", "cities", "civics", "finance", "religion", "techtree", "inspect", "gate", "over", "stuck", "takeover", "save"];
+const GAME_DIALOGS = ["city", "decision", "election", "event", "research", "vote", "promotions", "spells", "trade", "leader", "diplomacy", "cities", "civics", "finance", "religion", "techtree", "inspect", "gate", "over", "stuck", "takeover", "save", "culture", "armies", "governors"];
 
 /** Fetches the view (and the map when its revision changed) when the status says it changed. */
 async function refreshView(st) {
@@ -364,7 +365,7 @@ function citiesList() {
 
 /** The screens of the menu and the F keys (Civ4's advisors: F1 cities, F2 finances, F3 civics,
  *  F4 diplomacy, F5 military (this game's armies), F6 technology, F7 religion; F8 this game's
- *  cultural pressure). */
+ *  cultural pressure, F9 its governors). */
 function openScreen(name) {
   if (!S.view) return;
   switch (name) {
@@ -382,6 +383,8 @@ function openScreen(name) {
       return empire.openReligion();
     case "culture":
       return openCulture();
+    case "governors":
+      return openGovernors({ openCity: (id) => openCity(id) });
     case "armies":
       return openArmies({ select: (ids) => units.select(ids), centerOn: (x, y) => mapView.centerOn(x, y) });
     case "research":
@@ -389,7 +392,7 @@ function openScreen(name) {
   }
 }
 
-const F_KEYS = { F1: "cities", F2: "finance", F3: "civics", F4: "diplomacy", F5: "armies", F6: "techs", F7: "religion", F8: "culture" };
+const F_KEYS = { F1: "cities", F2: "finance", F3: "civics", F4: "diplomacy", F5: "armies", F6: "techs", F7: "religion", F8: "culture", F9: "governors" };
 
 function setLayer(layer) {
   mapView.setLayer(layer);
@@ -594,6 +597,7 @@ function wire() {
   click("btn-religion", () => openScreen("religion"));
   click("btn-culture", () => openScreen("culture"));
   click("btn-armies", () => openScreen("armies"));
+  click("btn-governors", () => openScreen("governors"));
   click("btn-diplo", () => openScreen("diplomacy"));
   click("btn-tools", () => tools.openTools());
   click("btn-save", () => S.view && screens.saveDialog());

@@ -19,6 +19,7 @@ use ffh_data::*;
 
 pub mod advanced_start;
 pub mod armies;
+pub mod governor;
 pub mod automation;
 pub mod campaign;
 pub mod casters;
@@ -156,6 +157,7 @@ impl Controller for Ai {
             traits::turn(g, &v); // trait-play
             culture::turn(g, p); // cultural actions (docs/CULTURE.md)
             armies::turn(g, p); // armies' reinforcements (docs/ARMIES.md)
+            governor::turn(g, p); // governed cities (docs/GOVERNORS.md)
         }
         if !v.barbarian {
             campaign::plan(g, &mut v);
@@ -169,6 +171,13 @@ impl Controller for Ai {
 
     fn choose_production(&self, g: &mut Game, c: CityId) {
         production::choose(self, g, c);
+    }
+
+    fn govern_cities(&self, g: &mut Game, p: PlayerId) {
+        // The AI's own cities are its play (`play_turn`); a human's governors act here.
+        if g.players[p].human {
+            culture::govern(g, p);
+        }
     }
 
     fn choose_research(&self, g: &Game, p: PlayerId) -> Option<TechType> {

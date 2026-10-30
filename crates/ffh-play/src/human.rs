@@ -48,6 +48,7 @@ pub const POLICIES: &[(&str, Policy)] = &[
     ("name", Policy::Fixed),
     ("play_turn", Policy::Advisor),
     ("choose_production", Policy::Deferred),
+    ("govern_cities", Policy::Advisor),
     ("choose_research", Policy::Deferred),
     ("ai_choose_research", Policy::Advisor),
     ("choose_free_tech", Policy::Blocking),
@@ -309,6 +310,11 @@ impl Controller for HumanController {
                 }
             }
         }
+    }
+
+    /// This game's governors: the governors of the human's governed cities act on their own.
+    fn govern_cities(&self, g: &mut Game, p: PlayerId) {
+        self.advisor.govern_cities(g, p);
     }
 
     /// C++ BUTTONPOPUP_CHOOSEPRODUCTION (deferred: the empty queue is `pending.idle_cities`);

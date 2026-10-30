@@ -55,8 +55,39 @@ pub fn turn(g: &mut Game, p: PlayerId) {
     if !g.culture_actions_on() || !crate::switches::CULTURE.on(g, p) || g.player_is_barbarian(p) {
         return;
     }
-    defend(g, p);
-    use_culture(g, p);
+    defend(g, p, Scope::Player);
+    use_culture(g, p, Scope::Player);
+}
+
+/// The governors of a human player's governed cities queue cultural actions on their own
+/// (docs/GOVERNORS.md): festivals against hostile channels and the actions worth their culture,
+/// hostile ones only where the player allowed them.
+pub fn govern(g: &mut Game, p: PlayerId) {
+    if !g.culture_actions_on() || g.player_is_barbarian(p) {
+        return;
+    }
+    defend(g, p, Scope::Governed);
+    use_culture(g, p, Scope::Governed);
+}
+
+/// Which of our cities act: all of them (the AI's own play), or only the governed ones (a
+/// human's governors). Either way a governed city queues a hostile action only where it is
+/// allowed to (`City::governor_hostile_culture`).
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Scope {
+    Player,
+    Governed,
+}
+
+impl Scope {
+    fn acts(self, g: &Game, c: CityId) -> bool {
+        self == Scope::Player || g.city_is_governed(c)
+    }
+}
+
+/// Whether city `c` may queue a hostile action (a governed city only when allowed).
+fn hostile_ok(g: &Game, c: CityId) -> bool {
+    !g.city_is_governed(c) || g.cities[c].governor_hostile_culture
 }
 
 /// The festival action, if the data has one.
@@ -65,7 +96,7 @@ fn find(g: &Game, effect: CultureEffect) -> Option<CulturalActionType> {
 }
 
 /// Festivals against the hostile channels aimed at our cities and our partners'.
-fn defend(g: &mut Game, p: PlayerId) {
+fn defend(g: &mut Game, p: PlayerId, scope: Scope) {
     let Some(festival) = find(g, CultureEffect::Festival) else { return };
     let team = g.players[p].team;
     // Threatened cities: (city, turns until the earliest hostile channel there completes).
@@ -90,7 +121,8 @@ fn defend(g: &mut Game, p: PlayerId) {
     // them when there are more (expert play: festival and garrison).
     for &(t, _) in &threatened {
         let owner = g.cities[t].owner;
-        if owner != p {
+        // (a governed city's own production chooser keeps its garrison)
+        if owner != p || g.city_is_governed(t) || scope == Scope::Governed {
             continue;
         }
         let grave = g.culture_hostile_channels_at(t).iter().any(|ch| matches!(g.d.cultural_actions[ch.order.action].effect, CultureEffect::FomentRevolt | CultureEffect::FlipCity));
@@ -113,7 +145,7 @@ fn defend(g: &mut Game, p: PlayerId) {
         // Who can hold it: the city itself (put first) or our nearest idle neighbour in reach.
         let mut casters: Vec<(i32, bool, CityId)> = Vec::new();
         for &c in &g.players[p].cities {
-            if g.culture_check(c, festival, CultureTarget::City(t), None, CultureCheck::Queue).is_err() {
+            if !scope.acts(g, c) || g.culture_check(c, festival, CultureTarget::City(t), None, CultureCheck::Queue).is_err() {
                 continue;
             }
             let idle = g.cities[c].culture_queue.is_empty();
@@ -321,7 +353,7 @@ fn culture_weight(g: &Game, c: CityId, carriers: &[CityId]) -> Option<i32> {
 }
 
 /// Queues the best action of each city with an empty queue.
-fn use_culture(g: &mut Game, p: PlayerId) {
+fn use_culture(g: &mut Game, p: PlayerId, scope: Scope) {
     let d = g.d;
     let cities = g.players[p].cities.clone();
     // A cultural victory needs `iNumCultureCities` legendary cities: our best ones keep theirs.
@@ -333,9 +365,10 @@ fn use_culture(g: &mut Game, p: PlayerId) {
         carriers = by_culture.into_iter().take(n).map(|(_, c)| c).collect();
     }
     for c in cities {
-        if !g.cities.contains(c) || !g.cities[c].culture_queue.is_empty() {
+        if !g.cities.contains(c) || !g.cities[c].culture_queue.is_empty() || !scope.acts(g, c) {
             continue;
         }
+        let may_hostile = hostile_ok(g, c);
         let rate = g.city_commerce_rate(c, CommerceType::COMMERCE_CULTURE);
         if rate <= 0 {
             continue;
@@ -363,6 +396,9 @@ fn use_culture(g: &mut Game, p: PlayerId) {
                 }
                 for &religion in &religions {
                     let Ok(pv) = g.culture_check(c, action, CultureTarget::City(t), religion, CultureCheck::Queue) else { continue };
+                    if pv.hostile && !may_hostile {
+                        continue;
+                    }
                     let Some((value, why)) = worth(g, p, info.effect, t, religion, &pv) else { continue };
                     // Worth its culture: the value per point of culture spent, in percent.
                     let score = value * 100 / cost;

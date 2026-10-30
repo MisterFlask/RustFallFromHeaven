@@ -7912,6 +7912,8 @@ TXT_KEY_GAME_OPTION_FLEXIBLE_DIFFICULTY	Flexible Difficulty
 TXT_KEY_GAME_OPTION_FLEXIBLE_DIFFICULTY_HELP	If the player is in the top third the game difficulty increases by one. If the player is in the bottom third the game difficulty decreases by one. (single player only)
 TXT_KEY_GAME_OPTION_FLIPPING_AFTER_CONQUEST	City Flipping after Conquest
 TXT_KEY_GAME_OPTION_FLIPPING_AFTER_CONQUEST_HELP	Cities which have been captured via conquest can convert peacefully back to a previous owner
+TXT_KEY_GAME_OPTION_GOVERNORS	Governors
+TXT_KEY_GAME_OPTION_GOVERNORS_HELP	You rule four cities directly, your capital among them; every other city is run by a governor from your bench. You choose who governs a city and whether it develops itself or feeds one of your armies; the governor chooses what it builds. World wonders, rituals and settlers are built only in directly ruled cities.
 TXT_KEY_GAME_OPTION_LEAD_ANY_CIV	Unrestricted Leaders
 TXT_KEY_GAME_OPTION_LEAD_ANY_CIV_HELP	Players may lead any Civilization with any Leader.
 TXT_KEY_GAME_OPTION_LOCK_MODS	Lock Modified Assets
@@ -8072,6 +8074,44 @@ TXT_KEY_GOODY_SETTLER	The villagers have provided you with a Settler!
 TXT_KEY_GOODY_TECH	The villagers have given you the secrets of a new Technology!
 TXT_KEY_GOODY_WARRIOR	The villagers have provided you with a Warrior!
 TXT_KEY_GOODY_WORKER	The villagers have provided you with a Worker!
+TXT_KEY_GOVERNORPROFILE_BUILDER	Builder
+TXT_KEY_GOVERNORPROFILE_BUILDER_HELP	Leans toward production and buildings; its citizens favour [ICON_PRODUCTION].
+TXT_KEY_GOVERNORPROFILE_INTERIM	Interim governor
+TXT_KEY_GOVERNORPROFILE_INTERIM_HELP	A caretaker while no governor holds the city: no leanings, no traits.
+TXT_KEY_GOVERNORPROFILE_MARSHAL	Marshal
+TXT_KEY_GOVERNORPROFILE_MARSHAL_HELP	Leans toward military and defense: one more defender in its city; its citizens favour [ICON_PRODUCTION].
+TXT_KEY_GOVERNORPROFILE_MERCHANT	Merchant
+TXT_KEY_GOVERNORPROFILE_MERCHANT_HELP	Leans toward gold and trade; its citizens favour [ICON_COMMERCE].
+TXT_KEY_GOVERNORPROFILE_SCHOLAR	Scholar
+TXT_KEY_GOVERNORPROFILE_SCHOLAR_HELP	Leans toward science; its citizens favour [ICON_RESEARCH].
+TXT_KEY_GOVERNORPROFILE_STEWARD	Steward
+TXT_KEY_GOVERNORPROFILE_STEWARD_HELP	Leans toward growth and production; its citizens favour [ICON_FOOD].
+TXT_KEY_GOVERNORPROFILE_ZEALOT	Zealot
+TXT_KEY_GOVERNORPROFILE_ZEALOT_HELP	Leans toward religion and culture.
+TXT_KEY_GOVERNORTRAIT_BELOVED	Beloved
+TXT_KEY_GOVERNORTRAIT_BELOVED_HELP	+1 [ICON_HAPPY]
+TXT_KEY_GOVERNORTRAIT_CORRUPT	Corrupt
+TXT_KEY_GOVERNORTRAIT_CORRUPT_HELP	-10% [ICON_GOLD]
+TXT_KEY_GOVERNORTRAIT_DRILLMASTER	Drillmaster
+TXT_KEY_GOVERNORTRAIT_DRILLMASTER_HELP	Units trained here start with 2 more experience
+TXT_KEY_GOVERNORTRAIT_FARMER	Farmer
+TXT_KEY_GOVERNORTRAIT_FARMER_HELP	+10% [ICON_FOOD]
+TXT_KEY_GOVERNORTRAIT_FRUGAL	Frugal
+TXT_KEY_GOVERNORTRAIT_FRUGAL_HELP	+10% [ICON_GOLD]
+TXT_KEY_GOVERNORTRAIT_HARSH	Harsh
+TXT_KEY_GOVERNORTRAIT_HARSH_HELP	-1 [ICON_HAPPY], +10% [ICON_PRODUCTION]
+TXT_KEY_GOVERNORTRAIT_HYGIENIC	Hygienic
+TXT_KEY_GOVERNORTRAIT_HYGIENIC_HELP	+1 [ICON_HEALTHY]
+TXT_KEY_GOVERNORTRAIT_INDUSTRIOUS	Industrious
+TXT_KEY_GOVERNORTRAIT_INDUSTRIOUS_HELP	+10% [ICON_PRODUCTION] toward buildings
+TXT_KEY_GOVERNORTRAIT_LAZY	Lazy
+TXT_KEY_GOVERNORTRAIT_LAZY_HELP	-10% [ICON_PRODUCTION]
+TXT_KEY_GOVERNORTRAIT_LEARNED	Learned
+TXT_KEY_GOVERNORTRAIT_LEARNED_HELP	+10% [ICON_RESEARCH]
+TXT_KEY_GOVERNORTRAIT_MARTIAL	Martial
+TXT_KEY_GOVERNORTRAIT_MARTIAL_HELP	+10% [ICON_PRODUCTION] toward units
+TXT_KEY_GOVERNORTRAIT_PATRON	Patron of the Arts
+TXT_KEY_GOVERNORTRAIT_PATRON_HELP	+10% [ICON_CULTURE]
 TXT_KEY_GRAPHICOPTION_CITY_RADIUS	Show City Radius
 TXT_KEY_GRAPHICOPTION_CITY_RADIUS_HELP	Shows City Radius when a Settler is Selected
 TXT_KEY_GRAPHICOPTION_EFFECTS_DISABLED	Effects Disabled

@@ -196,6 +196,8 @@ impl Game {
 
         // This game's cultural actions: the city's channel and those aimed at it end.
         self.city_culture_lost(c);
+        // This game's governors: its governor leaves the game.
+        self.city_governance_lost(c);
 
         let plot = self.city_plot(c);
 

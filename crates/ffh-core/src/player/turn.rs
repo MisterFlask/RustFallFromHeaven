@@ -195,6 +195,8 @@ impl Game {
         // move on.
         self.player_army_sync(p);
         self.player_do_transit(p);
+        // This game's governors (docs/GOVERNORS.md): direct rule, penalties, the bench.
+        self.player_governance_turn(p);
 
         if self.players[p].revolution_timer > 0 {
             self.players[p].revolution_timer -= 1;

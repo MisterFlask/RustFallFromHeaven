@@ -54,7 +54,10 @@ pub fn choose(ai: &Ai, g: &mut Game, c: CityId) {
             g.unit_ai_set_unit_ai_type(u, UnitAIType::UNITAI_CITY_DEFENSE);
         }
     }
-    if let Some((choice, why)) = decide(ai, g, c) {
+    // A governed city builds what its governor chooses (governor.rs, docs/GOVERNORS.md).
+    let governed = g.city_is_governed(c);
+    let decided = if governed { crate::governor::decide(g, c) } else { decide(ai, g, c).map(|(choice, why)| (choice, why, None)) };
+    if let Some((choice, why, dest)) = decided {
         crate::trace!(g, p, "{} size {} builds {}", g.cities[c].name, g.cities[c].population, choice_name(g, choice));
         if let (true, Choice::Construct(b)) = (crate::trace_on(p), choice) {
             let coded = crate::code_effects::building_value(g, c, b, 0);
@@ -64,6 +67,9 @@ pub fn choose(ai: &Ai, g: &mut Game, c: CityId) {
         }
         g.tel_decision(p, "production", type_name(g, choice), why, 0, String::new);
         push(g, c, choice);
+        if let (Some(dest), Some(o)) = (dest, g.cities[c].order_queue.last_mut()) {
+            o.dest = Some(dest);
+        }
     }
     if g.cities[c].order_queue.is_empty() {
         // Never leave a city idle: anything it can make.
@@ -394,7 +400,7 @@ fn rival_city_near(g: &Game, p: PlayerId, plot: PlotIdx, range: i32) -> bool {
 /// The second defender after turn 30: in the capital, and in a city near barbarians (a lair
 /// within 4 plots; barbarian units in sight there unless the garrison holds them,
 /// [`garrison_holds`]).
-fn second_defender_wanted(g: &Game, p: PlayerId, c: CityId, plot: PlotIdx, defenders: i32, threat: i32, defense: i32) -> bool {
+pub(crate) fn second_defender_wanted(g: &Game, p: PlayerId, c: CityId, plot: PlotIdx, defenders: i32, threat: i32, defense: i32) -> bool {
     g.game_turn() > 30
         && defenders < 2
         && (g.city_is_capital(c) || barbarian_lair_near(g, p, plot, 4) || !garrison_holds(g, p, plot, threat, defense) && barbarians_near(g, p, plot, 4))
@@ -467,7 +473,7 @@ pub fn unimproved_worked_plots(g: &Game, p: PlayerId) -> i32 {
 
 /// Buildings the AI never builds by itself: a new palace (moves the capital), buildings with
 /// no effect but a cost the generic valuation cannot see the downside of.
-fn building_allowed(g: &Game, c: CityId, b: BuildingType) -> bool {
+pub(crate) fn building_allowed(g: &Game, c: CityId, b: BuildingType) -> bool {
     let info = &g.d.buildings[b];
     if info.capital {
         // Only if we have lost our palace.
@@ -476,7 +482,7 @@ fn building_allowed(g: &Game, c: CityId, b: BuildingType) -> bool {
     true
 }
 
-fn civ_enemies_at_war(g: &Game, p: PlayerId) -> bool {
+pub(crate) fn civ_enemies_at_war(g: &Game, p: PlayerId) -> bool {
     let team = g.players[p].team;
     let barb = g.barbarian_team();
     g.teams.keys().any(|t| t != team && t != barb && g.teams[t].alive_count > 0 && g.at_war(team, t))
@@ -1343,7 +1349,7 @@ fn abroad_targets(g: &Game, p: PlayerId, c: CityId, r: ReligionType) -> bool {
     })
 }
 
-fn best_missionary(g: &Game, c: CityId, r: ReligionType) -> Option<UnitType> {
+pub(crate) fn best_missionary(g: &Game, c: CityId, r: ReligionType) -> Option<UnitType> {
     g.d.units.keys().filter(|&u| {
         let info = &g.d.units[u];
         info.unit_ai_type[UnitAIType::UNITAI_MISSIONARY] && info.religion_spreads[r] > 0

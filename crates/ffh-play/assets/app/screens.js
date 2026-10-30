@@ -620,6 +620,7 @@ export function keysHelp() {
     ["Screens", ""],
     ["F1 / F2 / F3 / F4", "cities / finances (the sliders) / civics / diplomacy and trade"],
     ["F5", "armies: your armies, their supply and the units on their way (this game's)"],
+    ["F9", "governors: who runs your cities, their modes, the bench (this game's)"],
     ["F6 / F7 / F8", "the tech tree / religion / cultural pressure (ffh-play's)"],
     ["Ctrl+S / Ctrl+L", "save / load"],
     ["Ctrl+1 / 2 / 3", "map layer: terrain / political / yields (ffh-play's)"],

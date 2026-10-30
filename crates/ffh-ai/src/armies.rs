@@ -56,7 +56,7 @@ pub fn turn(g: &mut Game, p: PlayerId) {
 
 /// Our main field army against `target`: the largest army (at least two units) in supply and not
 /// disbanding, the nearest to `target`'s cities on ties.
-fn main_army(g: &Game, p: PlayerId, target: TeamId) -> Option<ArmyId> {
+pub(crate) fn main_army(g: &Game, p: PlayerId, target: TeamId) -> Option<ArmyId> {
     let mut best: Option<(i32, i32, ArmyId)> = None;
     for &a in &g.players[p].armies {
         if !g.armies.contains(a) || g.armies[a].disband_to.is_some() || !g.army_in_supply(a) {

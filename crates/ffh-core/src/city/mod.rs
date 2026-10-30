@@ -273,6 +273,18 @@ pub struct City {
     /// Where the city's trained land combat units go when their order names no destination
     /// (docs/ARMIES.md); `None`: its own garrison.
     pub recruit_default: Option<crate::army::RecruitDest>,
+    /// This game's governors (docs/GOVERNORS.md): ruled directly (else governed).
+    pub direct_rule: bool,
+    /// The turn its rule last changed by choice (-1: never); a cooldown runs from it.
+    pub rule_changed_turn: i32,
+    /// Its governor (governed cities; `None`: an interim governor).
+    pub governor: Option<GovernorId>,
+    /// The army a governed city feeds (`None`: it develops).
+    pub feed_army: Option<ArmyId>,
+    /// Turns left of the penalty for replacing its governor.
+    pub governor_penalty_turns: i32,
+    /// Its governor may queue hostile cultural actions.
+    pub governor_hostile_culture: bool,
 }
 
 impl City {
@@ -484,6 +496,12 @@ impl City {
             culture_marks: Vec::new(),
             culture_revolt_turn: -1,
             recruit_default: None,
+            direct_rule: true,
+            rule_changed_turn: -1,
+            governor: None,
+            feed_army: None,
+            governor_penalty_turns: 0,
+            governor_hostile_culture: false,
         }
     }
 

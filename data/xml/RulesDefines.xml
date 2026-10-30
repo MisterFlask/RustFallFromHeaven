@@ -1,7 +1,8 @@
 <?xml version="1.0"?>
 <!-- Tuning values of this game's own rules (not FFH2's): read after GlobalDefines.xml,
      GlobalDefinesAlt.xml and PythonCallbackDefines.xml, like them. Each system's doc lists
-     its values: docs/CULTURE.md for the CULTURE_* defines, docs/ARMIES.md for the ARMY_* ones. Percentages are integers
+     its values: docs/CULTURE.md for the CULTURE_* defines, docs/ARMIES.md for the ARMY_* ones, docs/GOVERNORS.md for the
+     GOVERNOR_* ones. Percentages are integers
      (100 = 1.0). -->
 <Civ4Defines xmlns="x-schema:CIV4GlobalDefinesSchema.xml">
 	<!-- ==== Cultural actions (GAMEOPTION_CULTURE_ACTIONS, docs/CULTURE.md) ==== -->
@@ -149,5 +150,34 @@
 	<Define>
 		<DefineName>ARMY_TRANSIT_STALL_TURNS</DefineName>
 		<iDefineIntVal>5</iDefineIntVal>
+	</Define>
+	<!-- ==== Governors (GAMEOPTION_GOVERNORS, docs/GOVERNORS.md) ==== -->
+	<Define>
+		<DefineName>GOVERNOR_DIRECT_RULE_CITIES</DefineName>
+		<iDefineIntVal>4</iDefineIntVal>
+	</Define>
+	<Define>
+		<DefineName>GOVERNOR_DIRECT_RULE_SWAP_COOLDOWN</DefineName>
+		<iDefineIntVal>10</iDefineIntVal>
+	</Define>
+	<Define>
+		<DefineName>GOVERNOR_BENCH_SURPLUS</DefineName>
+		<iDefineIntVal>2</iDefineIntVal>
+	</Define>
+	<Define>
+		<DefineName>GOVERNOR_BENCH_GEN_CHANCE</DefineName>
+		<iDefineIntVal>15</iDefineIntVal>
+	</Define>
+	<Define>
+		<DefineName>GOVERNOR_SWAP_PENALTY</DefineName>
+		<iDefineIntVal>25</iDefineIntVal>
+	</Define>
+	<Define>
+		<DefineName>GOVERNOR_SWAP_TURNS</DefineName>
+		<iDefineIntVal>5</iDefineIntVal>
+	</Define>
+	<Define>
+		<DefineName>GOVERNOR_MAX_TRAITS</DefineName>
+		<iDefineIntVal>2</iDefineIntVal>
 	</Define>
 </Civ4Defines>

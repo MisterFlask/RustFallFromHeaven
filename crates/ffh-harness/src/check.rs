@@ -156,4 +156,40 @@ pub fn check(g: &Game) {
     if armies != g.armies.len() {
         fail(format!("{} armies exist but players list {armies}", g.armies.len()));
     }
+
+    // This game's governors (docs/GOVERNORS.md): a governed city always has production (an FfH
+    // settlement builds nothing at all); a governor is its owner's and holds the city that names
+    // it; no more direct cities than slots (the barbarians' cities are all direct).
+    if g.governors_on() {
+        for p in g.player_ids() {
+            let direct = g.player_direct_cities(p).len();
+            if direct > g.governor_direct_slots() && !g.player_is_barbarian(p) {
+                fail(format!("player {} rules {direct} cities directly", p.0));
+            }
+            for &c in &g.players[p].cities {
+                if g.city_is_governed(c) && !g.cities[c].settlement && g.cities[c].order_queue.is_empty() {
+                    fail(format!("governed city {} of player {} has no production", g.cities[c].name, p.0));
+                }
+                if let Some(gv) = g.cities[c].governor {
+                    match g.governors.get(gv) {
+                        Some(x) if x.owner == p && x.city == Some(c) => {}
+                        _ => fail(format!("city {} of player {} names governor {gv:?}, not its own", g.cities[c].name, p.0)),
+                    }
+                }
+            }
+            for &gv in &g.players[p].governors {
+                match g.governors.get(gv) {
+                    None => fail(format!("player {} lists dead governor {gv:?}", p.0)),
+                    Some(x) if x.owner != p => fail(format!("player {} lists governor {gv:?} of player {}", p.0, x.owner.0)),
+                    Some(x) => {
+                        if let Some(c) = x.city {
+                            if !g.cities.contains(c) || g.cities[c].governor != Some(gv) {
+                                fail(format!("governor {gv:?} of player {} holds city {c:?}, which does not name it", p.0));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

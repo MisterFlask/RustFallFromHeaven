@@ -125,6 +125,15 @@ side)
   split, join and merge, garrison, rename, disband (march to the nearest garrison), upgrade all,
   target size, "Reinforce to N". Option off (the default outside the browser's new-game screen),
   nothing changes. Save format 6.
+- **Governors** (`GAMEOPTION_GOVERNORS`, docs/GOVERNORS.md): a player rules four cities directly
+  (the capital always); every other city is governed: its production is its governor's (it cannot
+  be set by hand), in one of two modes, developing or feeding an army to its target size. World
+  wonders, palaces, rituals and settlers only in directly ruled cities. Governors come from a
+  bench drawn toward the leader's flavors, with a profile (the flavors their city's production
+  leans toward, its citizens' emphasis) and up to two traits (small modifiers of their city);
+  replacing one costs the city 25% of its production and commerce for 5 turns; a lost city's
+  governor leaves the game. Swapping a city in or out of direct rule locks it for 10 turns.
+  Option off (the default outside the browser's new-game screen), nothing changes. Save format 7.
 
 **Container order and path finding**
 

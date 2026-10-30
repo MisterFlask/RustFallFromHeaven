@@ -147,6 +147,9 @@ game_data! {
     event_triggers: EventTriggerType => EventTriggerInfo, "Events/CIV4EventTriggerInfos.xml", event::read_event_trigger;
     // ---- This game's own rules (not FFH2's) ----
     cultural_actions: CulturalActionType => CulturalActionInfo, "Gameinfo/CIV4CulturalActionInfos.xml", culture::read_cultural_action;
+    governor_profiles: GovernorProfileType => GovernorProfileInfo, "Gameinfo/CIV4GovernorProfileInfos.xml", governor::read_governor_profile;
+    governor_traits: GovernorTraitType => GovernorTraitInfo, "Gameinfo/CIV4GovernorTraitInfos.xml", governor::read_governor_trait;
+    governor_names: GovernorNameType => GovernorNameInfo, "Gameinfo/CIV4GovernorNameInfos.xml", governor::read_governor_names;
 }
 
 /// Lists declared in GlobalTypes.xml that are referenced by type name in XML.

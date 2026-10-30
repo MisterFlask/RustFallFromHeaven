@@ -157,6 +157,7 @@ XML (each button shows its key), and the global keys are Civ4's controls
 | `Del` / `Backspace` | delete the selected units (asks first) / cancel their orders |
 | `F1` `F2` `F3` `F4` `F6` `F7` | cities, finances (the sliders), civics, diplomacy, the tech tree, religion |
 | `F5` | armies (this game's armies: docs/ARMIES.md) |
+| `F9` | governors (this game's governors: docs/GOVERNORS.md) |
 | `F8` | cultural pressure (this game's cultural actions: docs/CULTURE.md) |
 | `Ctrl+S` / `Ctrl+L` | save / load |
 | `Ctrl+1` `Ctrl+2` `Ctrl+3`, `?` | ffh-play's own: the terrain, political and yield layers; the keys list |
@@ -257,6 +258,11 @@ possible with the reason. With armies on, each queued land combat unit has a des
 (the city's default, its garrison, another city's garrison, an army with its size and whether it
 is in supply) and, for an army, "reinforce to N" (the order comes back until the army, with the
 units on their way, counts N); under the queue, the city's default destination and its garrison.
+With governors on (docs/GOVERNORS.md) a **Governance** section heads the right column: a directly
+ruled city says so (with "Hand to a governor"); a governed city shows its governor (or the interim
+one), the mode, "Replace with…" (the bench, with each candidate's fit), "Allow hostile cultural
+actions" and "Rule directly" (or "Rule directly instead of…" a direct city); its production is
+shown but not chosen.
 With the isometric map the screen is Civ4's city view: the map glides to the city at the largest
 zoom that shows its radius, veils what lies outside it and draws the radius in gilt, each plot
 with its yields and the worked ones with a citizen; click a plot there to work it or stop. The
@@ -277,7 +283,10 @@ and what other leaders remember of your actions; a city with hostile channels ai
 "!" on its banner. **Armies** (`F5`, the menu's Armies; with armies on): every army with its name
 (type to rename), units, place (click: select it on the map), supply, target size, "Upgrade all",
 "Disband", and the units on their way (where from, how long, or why they wait); then each city's
-garrison with the units on their way to it. **Finances** (`F2`, or click the
+garrison with the units on their way to it. **Governors** (`F9`, the menu's Governors; with
+governors on): every city with its rule (direct or governed, and when it may change), its
+governor (name, profile, traits; the replacement penalty), its mode (develop or feed an army) and
+a selector to replace its governor from the bench; then the bench. **Finances** (`F2`, or click the
 commerce split in the top bar): each commerce's share with `−`/`+` by Civ4's step (only the ones
 you may change; gold takes the rest), and the gold per turn by its parts, as in the gold's tooltip.
 **Diplomacy** (`F4`): every player you met, by their leader's portrait (war or peace, open
@@ -575,7 +584,10 @@ docs/CULTURE.md), `army_form {units}`, `army_split {units}`, `army_join {units, 
 `army_garrison {units}`, `army_rename {army, name}`, `army_disband {army}`, `army_upgrade {army}`,
 `army_target {army, size}`, `recruit_dest {city, index, dest, reinforce_to}` (this game's armies:
 `dest` is `{"garrison": city}`, `{"army": id}` or null for the city's default; `index` -1 sets the
-city's default; docs/ARMIES.md), `research`, `update_civics`, `percent_change`, `convert`, `declare_war`,
+city's default; docs/ARMIES.md), `govern_direct {city, instead_of}`, `govern_hand {city}`,
+`govern_assign {city, governor}`, `govern_feed {city, army}`, `govern_hostile {city, on}` (this
+game's governors, docs/GOVERNORS.md; a governed city refuses `push_order`, `pop_order`,
+`recruit_dest` and the production tasks), `research`, `update_civics`, `percent_change`, `convert`, `declare_war`,
 `propose_deal`, `event`, `vote`, `set_option`, `auto_moves`, `end_turn`, `autoplay`. Each is
 the port of what Civ4 sends for that input; design §4.5 and the "As built" notes of P1 and P3 in
 §7 list the rules calls and checks. The `group` query lists the actions of a selection with the
@@ -624,6 +636,7 @@ Errors: `invalid`, `not_owner`, `gone`, `busy`.
 | `path {units,x,y}` | the path preview: nodes with the turn of arrival and moves left, total turns, a war it would declare, whether it ends in an attack |
 | `combat {units,x,y}` | the attack preview: attacker, defender, odds of winning and of retreating (per mille), strengths, the modifiers of both sides |
 | `city {city}` | the city screen of one of your cities: plots (with `can_work`), specialists (with `plus` and `minus`: what `do_task TASK_CHANGE_SPECIALIST` accepts now), yields, happiness, health, buildings, hurry, emphasis, queue, the buildable list with cost and turns; `cultural` (null without cultural actions): the cultural queue, each action's targets in reach (`ok` with `effect`, `hostile`, `magnitude`, `effect_turns`, else `why`), the hostile channels aimed at it (`pressure`), its `marks`; `recruit` (null without armies): the city's default destination, the destinations it may choose, its garrison; with armies, each queue entry of a land combat unit has `dest`, `dest_name`, `reinforce_to` |
+| `governors` | the Governors screen: `on`, `slots`, `cooldown`, `penalty`, `penalty_turns`, each city (`governed`, `cooldown`, `governor` with name, profile, traits, `feed_army`, `hostile_culture`, `penalty_turns`), the `bench`, the `armies` cities may feed; the city query's `governance` adds the city's `bench` with each candidate's `match`, `swappable` direct cities, `slots`, `direct_count`, `ready` |
 | `armies` | the Armies screen: `on`, the `armies` (as the view's), each city's garrison (`units`) with the units on their way to it (`transit`), `supply_range`, `stall_turns` |
 | `culture` | the Cultural Pressure panel: `on`, the channels you see `incoming` (aimed at your cities), `ours`, `others`, each with caster, action, target (null if unseen), progress, `paused`, `hostile`; `memories`: what met leaders remember of your cultural actions |
 | `techs`, `civics`, `religions`, `players` | the tech tree (prerequisites, depth, turns; each tech's `help` and, unless you have it, `unlocks`: the units, buildings, builds, civics and religions of its help as type indices, which the research chooser shows as icons), civics (availability, upkeep, anarchy; `civics {with: [civic, ..]}` adds `proposed`: the set a revolution to those civics makes, whether `update_civics` would be applied, its anarchy and upkeep), religions, the players you met with your deals |

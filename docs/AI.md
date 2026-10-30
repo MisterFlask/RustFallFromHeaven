@@ -1358,6 +1358,37 @@ and the actual one 7-8 (waits out of supply included). Before an army out of rea
 its reinforcements wait instead of diverting at once, 33 and 19 diverted. Not yet measured for win
 rate (the spec's tuning phase).
 
+## Governors (`governor.rs`)
+
+This game's own system (`GAMEOPTION_GOVERNORS`, docs/GOVERNORS.md). Two things: what a governor
+builds in a governed city (the human's as well as the AI's), and how the AI runs its own governed
+cities.
+
+- **The governor's production** (`decide`, called by `production::choose` for a governed city): the
+  garrison the city's danger asks for (the AI's own quota, plus a Marshal's defender); feeding its
+  army while the army is short of its target size (a third siege, the rest the best attackers
+  against cities, sent in transit); workers and work boats while the land needs them; the best
+  building by `building_value` per turn of production, up to half again for the profile's
+  flavors; a Zealot's missionary; the profile's process. It never builds settlers, wonders or
+  rituals (the rules forbid them in governed cities).
+- **Direct rule.** The AI's first four cities are direct; later a governed city making half again
+  as much production as the weakest direct one (and at least 6) takes its slot when both are past
+  their cooldown, so its settlers and wonders come from its best cities.
+- **Modes.** At war or preparing one, with a main army in the field (`armies::main_army`), the half
+  of its governed cities nearest the enemy feed that army while it is short of the army the war
+  needs (its target size, set by `armies.rs`); every other governed city develops.
+- **Governors.** The rules give a vacant post the best-matching candidate; the AI replaces nobody
+  (a replacement costs the city). Its governors may queue hostile cultural actions: its cultural
+  play decides which are worth it.
+- **A human's governors** (`culture::govern`, through `Controller::govern_cities`): festivals
+  against hostile channels and the cultural actions worth their culture, from the governed cities
+  only, hostile ones only where the player allowed them.
+
+Switch `GOVERNORS` (`FFH_AI_GOVERNORS_OFF`): off, the AI keeps its first cities direct and every
+governed city develops. The production audit the spec asks for (governors on against off, AI
+autoplay, 4 seeds) is in docs/GOVERNORS.md: the governed empires grow and research faster (+4%
+population, +19% research) and capture a fifth fewer cities.
+
 ## Random events (`events.rs`)
 
 The rules offer an AI player the trigger's events it can do, in trigger order (`player_trigger_data`).

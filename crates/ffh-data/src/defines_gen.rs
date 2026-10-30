@@ -558,6 +558,13 @@ pub struct Defines {
     pub culture_memory_max: i32,
     pub army_supply_range: i32,
     pub army_transit_stall_turns: i32,
+    pub governor_direct_rule_cities: i32,
+    pub governor_direct_rule_swap_cooldown: i32,
+    pub governor_bench_surplus: i32,
+    pub governor_bench_gen_chance: i32,
+    pub governor_swap_penalty: i32,
+    pub governor_swap_turns: i32,
+    pub governor_max_traits: i32,
     pub bbai_skip_bombard_base_stack_ratio: i32,  // not in XML: C++ reads 0
     pub bbai_skip_bombard_best_attack_odds: i32,  // not in XML: C++ reads 0
     pub bbai_skip_bombard_min_stack_ratio: i32,  // not in XML: C++ reads 0
@@ -1121,6 +1128,13 @@ impl Defines {
             culture_memory_max: m.int("CULTURE_MEMORY_MAX"),
             army_supply_range: m.int("ARMY_SUPPLY_RANGE"),
             army_transit_stall_turns: m.int("ARMY_TRANSIT_STALL_TURNS"),
+            governor_direct_rule_cities: m.int("GOVERNOR_DIRECT_RULE_CITIES"),
+            governor_direct_rule_swap_cooldown: m.int("GOVERNOR_DIRECT_RULE_SWAP_COOLDOWN"),
+            governor_bench_surplus: m.int("GOVERNOR_BENCH_SURPLUS"),
+            governor_bench_gen_chance: m.int("GOVERNOR_BENCH_GEN_CHANCE"),
+            governor_swap_penalty: m.int("GOVERNOR_SWAP_PENALTY"),
+            governor_swap_turns: m.int("GOVERNOR_SWAP_TURNS"),
+            governor_max_traits: m.int("GOVERNOR_MAX_TRAITS"),
             bbai_skip_bombard_base_stack_ratio: m.int("BBAI_SKIP_BOMBARD_BASE_STACK_RATIO"),
             bbai_skip_bombard_best_attack_odds: m.int("BBAI_SKIP_BOMBARD_BEST_ATTACK_ODDS"),
             bbai_skip_bombard_min_stack_ratio: m.int("BBAI_SKIP_BOMBARD_MIN_STACK_RATIO"),
