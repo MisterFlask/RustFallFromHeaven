@@ -309,7 +309,7 @@ fn web_host_new_game_cached_gets_and_turns() {
     assert_eq!(other.get("full").and_then(Json::as_bool), Some(true));
     let waited = page.send(&mut game, &get("/api/wait?since=0&timeout_ms=60000")).json();
     assert_eq!(waited.req::<i64>("version"), st.req::<i64>("version"));
-    assert_eq!(st.get("game").unwrap().req_str("dir"), Ok(tmp.0.join("saves/g").to_str().unwrap()));
+    assert_eq!(st.get("game").unwrap().req_str("dir"), Ok(tmp.0.join("saves").join("g").to_str().unwrap()));
 
     // End the turn; while the AI plays, the page's queued requests are answered between turn
     // slices: GETs from the caches, queries, commands `not_your_turn`, session operations `busy`.

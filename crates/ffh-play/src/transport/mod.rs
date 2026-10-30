@@ -941,7 +941,7 @@ mod tests {
         let (r, after) = host.handle(Json::Null, Request::Session(SessionOp::Load { name: "s1".into() }));
         assert_eq!((r.req::<bool>("ok"), after), (Ok(true), After::Advance), "{r}");
         let report = host.crashed(&PanicInfo { message: "boom".into(), location: "here".into() });
-        let save = root.join("g/s1.ffhsave").display().to_string();
+        let save = root.join("g").join("s1.ffhsave").display().to_string();
         assert_eq!(report.req_str("autosave"), Ok(save.as_str()));
         let journal = report.req_str("journal").unwrap().to_string();
         assert_eq!(report.req_str("repro"), Ok(format!("ffh-play replay {journal} --from {save}").as_str()));

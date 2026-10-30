@@ -115,7 +115,8 @@ mod tests {
         })
         .unwrap_err();
         assert_eq!(crash.message, "boom 2");
-        assert!(crash.location.contains("ffh-harness/src/panic.rs:"), "{}", crash.location);
+        // (Windows writes the path with backslashes.)
+        assert!(crash.location.replace('\\', "/").contains("ffh-harness/src/panic.rs:"), "{}", crash.location);
         assert_eq!(crash.turn, 7);
         assert_eq!(catch("x", || 5).unwrap(), 5);
     }
