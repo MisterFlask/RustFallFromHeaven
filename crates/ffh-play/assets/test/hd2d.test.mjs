@@ -9,7 +9,7 @@ import * as St from "../app/state.js";
 
 const data = JSON.parse(fs.readFileSync(fileURLToPath(new URL("../../r3d-lab/data.json", import.meta.url)), "utf8"));
 St.setData(data);
-const { buildMap, buildView, hd2d } = await import("../../r3d-lab/scenes.js");
+const { buildMap, buildView, hd2d, settlements } = await import("../../r3d-lab/scenes.js");
 const { World, KIND } = await import("../app/r3d/world.js");
 await import("../app/r3d/assets/index.js");
 const { SPRITES } = await import("../app/iso/sprites.js");
@@ -18,11 +18,14 @@ const { unitSpriteKeys } = await import("../app/iso.js");
 const { dressSpriteStatic, dressSpriteUnits, PX } = await import("../app/r3d/hd2d/dress.js");
 const { plotMoods } = await import("../app/r3d/hd2d/mood.js");
 
-/** The atlas as the dressing sees it (hd2d/sprites.js SpriteAtlas): the PNG sprites and the banners,
- *  which are drawn by code in the browser. */
+/** The atlas as the dressing sees it (hd2d/sprites.js SpriteAtlas): the PNG sprites, their owners'
+ *  variants (`key@css`, recoloured as they load) and the banners, which are drawn by code in the
+ *  browser. */
+const plain = (k) => k.split("@")[0];
 const atlas = {
-  has: (k) => Object.hasOwn(SPRITES, k) || Object.hasOwn(CARDS, k) || k.startsWith("banner:"),
-  info: (k) => SPRITES[k] ?? CARDS[k] ?? { w: 40, h: 150, box: [0, 0, 40, 150] },
+  has: (k) => Object.hasOwn(SPRITES, plain(k)) || Object.hasOwn(CARDS, plain(k)) || k.startsWith("banner:"),
+  info: (k) => SPRITES[plain(k)] ?? CARDS[plain(k)] ?? { w: 40, h: 150, box: [0, 0, 40, 150] },
+  owned: (k, css) => `${k}@${css}`,
   put() {},
 };
 
@@ -62,9 +65,43 @@ test("cities, standing improvements and resources stand as cards, and the 3D dre
   const { list, claims } = dressSpriteStatic(w, s.map, atlas);
   assert.equal(claims.city.size, St.S.cities.size);
   for (const r of list) assert.ok(atlas.has(r.key), r.key);
-  const cities = list.filter((r) => r.key.startsWith("bld_city"));
-  assert.ok(cities.some((r) => r.key === "bld_city_ljosalfar_castle"), "the Ljosalfar capital is its civilization's castle");
-  for (const r of cities) assert.ok(Math.abs(r.w - SPRITES[r.key].w * PX.city) < 1e-9);
+  // A city is a town of the kit's cards (docs/HD2D.md §5c), not the isometric settlement.
+  assert.ok(!list.some((r) => r.key.startsWith("bld_city")), "a city stood as the isometric sprite");
+  const town = list.filter((r) => plain(r.key).startsWith("town_"));
+  assert.ok(town.some((r) => plain(r.key) === "town_lm_ljosalfar"), "the Ljosalfar capital has its landmark");
+  assert.ok(town.some((r) => plain(r.key).startsWith("town_elven_house_")), "and its family's houses");
+  for (const r of town) {
+    // At the prop cards' density (PX.prop), a village's landmark a little smaller.
+    const k = r.w / (CARDS[plain(r.key)].w * PX.prop);
+    assert.ok(Math.abs(k - 1) < 1e-9 || Math.abs(k - 0.86) < 1e-9, `${r.key} at ${k} of the props' density`);
+    assert.ok(r.key.includes("@"), "a town's pieces take their owner's colour");
+    assert.ok(r.town && r.shadow, "a town's pieces are lit as towns and cast shadows");
+  }
+});
+
+test("towns grow with their size, walled cities have walls, a gate and towers, deterministic", () => {
+  const civs = ["CIVILIZATION_CALABIM", "CIVILIZATION_LJOSALFAR", "CIVILIZATION_KHAZAD"];
+  const s = settlements(data, civs, [2, 6, 12], [], { walls: 8 });
+  const w = scene(s);
+  const env = { unitAt: new Set(), cityAt: new Map() };
+  const { list } = dressSpriteStatic(w, s.map, atlas, env, null);
+  const pieces = (c) => list.filter((r) => r.id && plain(r.key).startsWith("town_") && Math.hypot(r.x - c.x - 0.5, -r.z - c.y - 0.5) < 1.1 && r.vis?.[0] === c.x + 0.5 && r.vis?.[1] === c.y + 0.5);
+  for (const civ of civs) {
+    const short = civ.replace("CIVILIZATION_", "").toLowerCase();
+    const mine = [...St.S.cities.values()].filter((c) => St.S.players.get(c.owner)?.civ === data.tables.CivilizationType.findIndex((t) => t.type === civ)).sort((a, b) => a.size - b.size);
+    assert.equal(mine.length, 3, civ);
+    const counts = mine.map((c) => pieces(c).filter((r) => /_house_/.test(plain(r.key))).length);
+    assert.ok(counts[0] >= 3 && counts[0] < counts[1] && counts[1] < counts[2], `${short}: houses by size ${counts}`);
+    for (const c of mine) {
+      const p = pieces(c).map((r) => plain(r.key));
+      assert.ok(p.includes(`town_lm_${short}`), `${short} ${c.size}: its landmark`);
+      const walls = p.filter((k) => /_wall_/.test(k)).length;
+      if (c.walls) {
+        assert.ok(walls >= 6 && p.some((k) => /_gate_/.test(k)) && p.filter((k) => /_corner_/.test(k)).length >= 4, `${short} ${c.size}: walls ${walls}`);
+      } else assert.equal(walls, 0, `${short} ${c.size}: no walls`);
+    }
+  }
+  assert.deepEqual(dressSpriteStatic(w, s.map, atlas, env, null).list, list, "the same state, the same town");
 });
 
 test("woods stand as single tree cards and open ground as scattered props, claimed from the 3D dressing", () => {
@@ -120,15 +157,17 @@ test("towns spill into houses round them, regions carry their own things, rivers
   const { moods } = plotMoods(w, s.map);
   const { list } = dressSpriteStatic(w, s.map, atlas, { unitAt: new Set(), cityAt: new Map() }, moods);
   const n = (kind) => list.filter((r) => r.key.startsWith(`${kind}_`)).length;
-  assert.ok(n("hut") >= 6, `huts round the towns: ${n("hut")}`);
+  // The houses round a town are its own family's (the lab's towns' families all have the kit).
+  const ring = list.filter((r) => r.id === 0.0002 && /^town_\w+_house_/.test(plain(r.key)));
+  assert.ok(ring.length >= 6, `houses round the towns: ${ring.length}`);
   assert.ok(n("obelisk") + n("altar") >= 1, "the Sheaim's corrupted land has its obelisks and altars");
   assert.ok(n("lantern") >= 1, "the Ljosalfar's lush land has its lanterns");
   assert.ok(n("bones") + n("vent") >= 4, "hell has its bones and vents");
   assert.ok(n("falls") >= 1, "the lab's river falls off its hills");
   // Houses only round towns: within two plots of a city.
   const cities = [...St.S.cities.values()];
-  for (const r of list.filter((r) => r.key.startsWith("hut"))) {
-    assert.ok(cities.some((c) => Math.abs(Math.floor(r.x) - c.x) <= 2 && Math.abs(Math.floor(-r.z) - c.y) <= 2), `a hut far from any town at ${r.x}, ${-r.z}`);
+  for (const r of list.filter((r) => r.key.startsWith("hut") || /^town_\w+_house_/.test(plain(r.key)))) {
+    assert.ok(cities.some((c) => Math.abs(Math.floor(r.x) - c.x) <= 2 && Math.abs(Math.floor(-r.z) - c.y) <= 2), `a house far from any town at ${r.x}, ${-r.z}`);
   }
 });
 

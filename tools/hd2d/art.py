@@ -107,15 +107,28 @@ def cutout(rgb, thresh=232):
     return ~bg
 
 
+def alpha_mask(src):
+    """The object mask of an image with transparency (gen.py's sheets and their cuts): coverage of
+    at least a half -- which also keeps the holes inside an object (between a tower's legs, under
+    an arch) open, where a flood fill from the border cannot reach them -- or None for an opaque
+    image (an object on white, cut out by `cutout`)."""
+    im = Image.open(src)
+    if im.mode not in ("RGBA", "LA", "P"):
+        return None
+    a = np.asarray(im.convert("RGBA"))[..., 3]
+    return None if a.min() >= 128 else a >= 128
+
+
 def on_white(src):
-    """The image as RGB on white: an image with transparency (gen.py's sheets) is laid over white, so
-    the cut-out finds its background the same way as on a plain white one."""
+    """The image as RGB on white: an image with transparency (gen.py's sheets) is cut at half
+    coverage onto white, so the cut-out finds its background the same way as on a plain white one.
+    (Laid over white instead, the faint haze the image model leaves round its objects turns a light
+    grey that is not background and bridges neighbouring objects into one.)"""
     im = Image.open(src)
     if im.mode in ("RGBA", "LA", "P"):
-        im = im.convert("RGBA")
-        bg = Image.new("RGBA", im.size, (255, 255, 255, 255))
-        bg.alpha_composite(im)
-        im = bg
+        a = np.asarray(im.convert("RGBA"))
+        rgb = np.where(a[..., 3:4] >= 128, a[..., :3], 255).astype(np.uint8)
+        return Image.fromarray(rgb, "RGB")
     return im.convert("RGB")
 
 
@@ -126,10 +139,14 @@ def prop(src, name, height, colors=32, outline=True, deepen=1.0):
         bg = rgb.min(2) >= 232
         deep = (255 * (rgb / 255.0) ** deepen).astype(np.uint8)
         rgb = np.where(bg[..., None], rgb, deep)
+    amask = alpha_mask(src)
     # Work at half size: the flood fill is pure Python.
     if max(rgb.shape[:2]) > 640:
-        rgb = np.asarray(Image.fromarray(rgb).resize((rgb.shape[1] // 2, rgb.shape[0] // 2), Image.Resampling.BOX))
-    mask = cutout(rgb)
+        half = (rgb.shape[1] // 2, rgb.shape[0] // 2)
+        rgb = np.asarray(Image.fromarray(rgb).resize(half, Image.Resampling.BOX))
+        if amask is not None:
+            amask = np.asarray(Image.fromarray((amask * 255).astype(np.uint8)).resize(half, Image.Resampling.BOX)) >= 128
+    mask = amask if amask is not None else cutout(rgb)
     ys, xs = np.nonzero(mask)
     if not len(ys):
         sys.exit(f"{name}: no object found")
@@ -167,24 +184,49 @@ def prop(src, name, height, colors=32, outline=True, deepen=1.0):
         out[ring, :3] = dark[ring].astype(np.uint8)
         out[ring, 3] = 255
     ART.mkdir(parents=True, exist_ok=True)
-    Image.fromarray(out, "RGBA").save(ART / f"{name}.png", optimize=True)
+    save_card(out, ART / f"{name}.png")
     print(f"{name}: card {out.shape[1]}x{out.shape[0]}, {colors} colours")
 
 
-def split(src, prefix, min_px=600):
+def save_card(rgba, path):
+    """A card as a palette PNG when its colours fit (the palette, the outline's shades and the
+    transparent one: lossless, a third of the size of RGBA), else as RGBA."""
+    im = Image.fromarray(rgba, "RGBA")
+    solid = rgba[..., 3] > 0
+    cols = np.unique(rgba[solid][:, :3], axis=0)
+    if len(cols) > 255:
+        im.save(path, optimize=True)
+        return
+    pal = [(0, 0, 0)] + [tuple(int(v) for v in c) for c in cols]
+    lut = {c: k for k, c in enumerate(pal)}
+    idx = np.zeros(rgba.shape[:2], np.uint8)
+    for y, x in zip(*np.nonzero(solid)):
+        idx[y, x] = lut[tuple(int(v) for v in rgba[y, x, :3])]
+    out = Image.fromarray(idx, "P")
+    out.putpalette([v for c in pal for v in c])
+    out.save(path, optimize=True, transparency=0)
+
+
+def split(src, prefix, min_px=600, grow=3):
     """A sheet of separate objects (tools/hd2d/gen.py: nine on a transparent or white background)
     -> one image a object, PREFIX_1.png, PREFIX_2.png, ... beside the sheet, in reading order (rows
     top to bottom, then left to right), each on white with a margin, for `prop`. Objects are the
-    sheet's connected non-background regions after closing small gaps (so a tree's loose leaves
-    stay with it); specks under MIN_PX pixels are dropped."""
+    sheet's connected non-background regions after closing gaps of GROW pixels (so a tree's loose
+    leaves stay with it; 0 for a transparent sheet's clean edges, where it would join objects that
+    nearly touch); specks under MIN_PX pixels are dropped."""
     rgb = np.asarray(on_white(src))
+    amask = alpha_mask(src)
     if max(rgb.shape[:2]) > 640:
-        rgb = np.asarray(Image.fromarray(rgb).resize((rgb.shape[1] // 2, rgb.shape[0] // 2), Image.Resampling.BOX))
+        half = (rgb.shape[1] // 2, rgb.shape[0] // 2)
+        rgb = np.asarray(Image.fromarray(rgb).resize(half, Image.Resampling.BOX))
+        if amask is not None:
+            amask = np.asarray(Image.fromarray((amask * 255).astype(np.uint8)).resize(half, Image.Resampling.BOX)) >= 128
         min_px //= 4
-    fg = cutout(rgb)
+    fg = amask if amask is not None else cutout(rgb)
+    grow_px = grow
     # Close gaps of a few pixels (a dilation) before labelling, so one object stays one region.
     grow = fg.copy()
-    for _ in range(3):
+    for _ in range(grow_px):
         g = grow.copy()
         for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
             g |= np.roll(np.roll(grow, dy, 0), dx, 1)
@@ -209,7 +251,25 @@ def split(src, prefix, min_px=600):
                         label[yy, xx] = n
                         stack.append((yy, xx))
             boxes.append((min(ys), max(ys) + 1, min(xs), max(xs) + 1, int((fg & (label == n)).sum()), n))
-    boxes = [b for b in boxes if b[4] >= min_px]
+    # A small part beside a big object -- a crystal floating over a spire, a wisp of smoke, a flag
+    # -- belongs to it: within its width, at most an eighth of the sheet above or below it.
+    big = max((b[4] for b in boxes), default=0)
+    merged = []
+    for b in sorted(boxes, key=lambda b: -b[4]):
+        cx = (b[2] + b[3]) / 2
+        host = None
+        if b[4] < big * 0.05:
+            for m in merged:
+                if m[2] <= cx <= m[3] and min(abs(b[1] - m[0]), abs(m[1] - b[0])) < h / 8 or (m[0] <= b[0] and b[1] <= m[1] and m[2] <= cx <= m[3]):
+                    host = m
+                    break
+        if host is None:
+            merged.append(list(b))
+            continue
+        label[label == b[5]] = host[5]
+        host[0], host[1], host[2], host[3] = min(host[0], b[0]), max(host[1], b[1]), min(host[2], b[2]), max(host[3], b[3])
+        host[4] += b[4]
+    boxes = [tuple(b) for b in merged if b[4] >= min_px]
     # Reading order: by row (objects whose vertical middles are within a third of a row), then x.
     boxes.sort(key=lambda b: ((b[0] + b[1]) / 2, b[2]))
     rows, row = [], []
@@ -231,7 +291,13 @@ def split(src, prefix, min_px=600):
             m = 8
             canvas = np.full((y1 - y0 + 2 * m, x1 - x0 + 2 * m, 3), 255, np.uint8)
             canvas[m:-m, m:-m] = crop
-            Image.fromarray(canvas).save(out / f"{prefix}_{k}.png")
+            if amask is None:
+                Image.fromarray(canvas).save(out / f"{prefix}_{k}.png")
+            else:
+                # A transparent sheet's cut keeps its alpha (so `prop` keeps the object's holes).
+                alpha = np.zeros(canvas.shape[:2], np.uint8)
+                alpha[m:-m, m:-m] = own * 255
+                Image.fromarray(np.dstack([canvas, alpha]), "RGBA").save(out / f"{prefix}_{k}.png")
     print(f"{Path(src).name}: {k} objects -> {prefix}_1..{k}.png")
 
 

@@ -91,7 +91,7 @@ def town_sheets():
             f"A 3 by 3 grid of {len(pieces)} separate buildings of one people, {f['look']} "
             f"Each one isolated, well apart from the others, the same scale and style. In reading order: {listed}"
         )
-        out[f"town:{fam}"] = (prompt, kit.get("size", "1536x1536"), [f"town_{fam}_{p['name']}" for p in pieces])
+        out[f"town:{fam}"] = (prompt, kit.get("size", "1024x1024"), [f"town_{fam}_{p['name']}" for p in pieces])
     lms = list(kit["landmarks"].items())
     for s in range(0, len(lms), 4):
         group = lms[s:s + 4]
@@ -102,7 +102,7 @@ def town_sheets():
             f"of its city, a tall composition rising well above a town's roofs, each one isolated, well "
             f"apart from the others. In reading order: {listed}"
         )
-        out[f"landmark:{s // 4 + 1}"] = (prompt, kit.get("size", "1536x1536"), [lm["name"] for _, lm in group])
+        out[f"landmark:{s // 4 + 1}"] = (prompt, kit.get("landmark_size", "1024x1536"), [lm["name"] for _, lm in group])
     return out
 
 
@@ -131,6 +131,21 @@ def cost(u):
     ct = min(cached - ci, text)
     out = u.get("output_tokens_details", {}).get("image_tokens", u.get("output_tokens", 0))
     return ((text - ct) * PRICE["text_in"] + ct * PRICE["text_in_cached"] + (image - ci) * PRICE["image_in"] + ci * PRICE["image_in_cached"] + out * PRICE["image_out"]) / 1e6
+
+
+def read_stream(r):
+    """The finished image of a streamed call (server-sent events: partial images, then a
+    `*.completed` event with the image and the usage) as {"data": [{"b64_json"}], "usage"}."""
+    for line in r:
+        line = line.decode().strip()
+        if not line.startswith("data:"):
+            continue
+        ev = json.loads(line[5:])
+        if ev.get("type", "").endswith(".completed"):
+            return {"data": [{"b64_json": ev["b64_json"]}], "usage": ev.get("usage", {})}
+        if ev.get("type") == "error" or "error" in ev:
+            sys.exit(f"stream error: {ev}")
+    sys.exit("the stream ended without an image")
 
 
 def opt(name, default=None, many=False):
@@ -171,7 +186,10 @@ def main():
     if refs:
         prompt = ("The attached images are accepted sprites of the same game: draw the new objects in "
                   "exactly their pixel art style, pixel size, outline, palette, camera and lighting. ") + prompt
-    fields = {"model": MODEL, "prompt": prompt, "size": size, "quality": quality, "background": "transparent", "output_format": "png", "n": 1}
+    # Streamed (with a partial image or two on the way): a long call -- high quality takes over a
+    # minute -- keeps its connection busy, where an idle one is cut by a proxy (HTTP 502).
+    fields = {"model": MODEL, "prompt": prompt, "size": size, "quality": quality, "background": "transparent",
+              "output_format": "png", "n": 1, "stream": "true" if refs else True, "partial_images": 2}
     key = os.environ.get("OPENAI_API_KEY", "sk-proxy")
     if refs:
         body, ctype = multipart(fields, [("image[]", r) for r in refs])
@@ -180,17 +198,18 @@ def main():
         body, ctype = json.dumps(fields).encode(), "application/json"
         url = f"{API}/generations"
     t0 = time.time()
-    for attempt in range(4):
+    for attempt in range(3):
         req = urllib.request.Request(url, data=body, headers={"Authorization": f"Bearer {key}", "Content-Type": ctype})
         try:
             with urllib.request.urlopen(req, timeout=900) as r:
-                res = json.load(r)
+                res = read_stream(r)
             break
         except urllib.error.HTTPError as e:
             msg = e.read().decode(errors="replace")
-            # A 429 is a rate limit, unless the account is out of credit (no point waiting).
-            if e.code in (429, 500, 502, 503) and attempt < 3 and "insufficient_quota" not in msg:
-                time.sleep(10 * (attempt + 1))
+            # Only a rate limit is retried (not an account out of credit, nor a failure upstream,
+            # which may have been billed).
+            if e.code == 429 and attempt < 2 and "insufficient_quota" not in msg:
+                time.sleep(20 * (attempt + 1))
                 continue
             sys.exit(f"{name}: HTTP {e.code}: {msg}")
     stem = f"{name.replace(':', '_')}{'_' + seed if seed else ''}"
