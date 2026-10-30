@@ -1032,7 +1032,8 @@ pub fn wonder_emphasis(g: &mut Game, p: PlayerId) {
 /// empire runs into financial trouble (`CvPlayerAI::AI_doCheckFinancialTrouble`,
 /// `CvCityAI::AI_chooseProduction`), keeping items within 3 turns of done, wonders, world
 /// projects and heroes. Here a city in the middle of a longer build re-runs the ladder
-/// ([`decide`]) and switches only when it now picks an economy building (commerce, research,
+/// ([`decide`]; a governed city its governor's, [`decide_city`], keeping a unit for the army it
+/// feeds) and switches only when it now picks an economy building (commerce, research,
 /// specialists, trade or maintenance savings make up most of its value: Market, Library,
 /// Courthouse...) -- the building it needs now. Also kept: units without combat (settlers,
 /// workers, ships for them, great people), a fighter for a city without defenders or under
@@ -1049,8 +1050,12 @@ pub fn trouble_rebuild(ai: &Ai, g: &mut Game, p: PlayerId) {
     let d = g.d;
     let turn = g.game_turn();
     for c in g.players[p].cities.clone() {
-        // A governed city's production is its governor's.
-        if (turn + c.0 as i32) % 5 != 0 || g.city_is_governed(c) || g.cities[c].order_queue.is_empty() || g.city_is_production_process(c) || g.city_production_turns_left(c) <= 3 {
+        if (turn + c.0 as i32) % 5 != 0 || g.cities[c].order_queue.is_empty() || g.city_is_production_process(c) || g.city_production_turns_left(c) <= 3 {
+            continue;
+        }
+        // A governed city's unit for the army it feeds stays (its governor counts it toward the
+        // army's target, so re-deciding would not ask for it again).
+        if g.city_is_governed(c) && g.cities[c].order_queue.first().is_some_and(|o| matches!(o.dest, Some(ffh_core::army::RecruitDest::Army(_)))) {
             continue;
         }
         let plot = g.city_plot(c);
@@ -1070,7 +1075,8 @@ pub fn trouble_rebuild(ai: &Ai, g: &mut Game, p: PlayerId) {
             // A project (rituals, world projects): kept.
             continue;
         }
-        let Some((Choice::Construct(b), why)) = decide(ai, g, c) else { continue };
+        // A governed city: its governor's choice (docs/GOVERNORS.md).
+        let Some((Choice::Construct(b), why, _)) = decide_city(ai, g, c) else { continue };
         let limited = d.buildings[b].building_class_type.is_some_and(|k| ffh_core::utils::is_limited_wonder_class(d, k));
         if limited || Some(b) == g.city_production_building(c) || !is_finance_building(g, c, b, threat) {
             continue;

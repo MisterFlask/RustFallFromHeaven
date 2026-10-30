@@ -1380,8 +1380,8 @@ cities.
   in armies (a Ranger or an Assassin would stay in the city and the army never fill); the units the
   owner's cities are training for the army count toward its target, so several feeders do not
   overshoot it. The AI's emergency switch to a defender and its rebuild in financial trouble judge a
-  governed city by this choice, not the direct-rule ladder's, and leave its production otherwise to
-  the governor; the wonder emphasis and the Philosophical great-people emphasis keep to directly
+  governed city by this choice, not the direct-rule ladder's (the rebuild keeps a unit for the army
+  the city feeds); the wonder emphasis and the Philosophical great-people emphasis keep to directly
   ruled cities (a governed city's emphasis is its profile's).
 - **Direct rule.** The AI's first four cities are direct; later a governed city making half again
   as much production as the weakest direct one (and at least 6) takes its slot when both are past
