@@ -116,7 +116,10 @@ void main() {
   // -- so in the open a sprite shows its own painted colours, and in a wood's shade it darkens and
   // cools.
   if (uMode < 0.5) {
-    float sun = sunAt(base + vec3(0.0, 0.06, 0.0) + uSunDir * 0.02);
+    // A town's piece takes the sun where its walls and roof are, not at its foot: the town's taller
+    // pieces behind it would otherwise shade a whole house by its doorstep.
+    bool town = (flags & 16) != 0;
+    float sun = sunAt(base + vec3(0.0, town ? 0.55 * h : 0.06, 0.0) + uSunDir * (town ? 0.03 : 0.02));
     float k = 0.85;
     vec3 amb = mix(uGroundColor, uSkyColor, 0.75);
     vec3 full = uSunColor * k + amb;

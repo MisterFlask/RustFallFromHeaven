@@ -301,6 +301,20 @@ def split(src, prefix, min_px=600, grow=3):
     print(f"{Path(src).name}: {k} objects -> {prefix}_1..{k}.png")
 
 
+def owner_band(rgba):
+    """How many opaque pixels of a card are in the owner-colour band (iso.js ownerBand: HSL hue
+    195-252, saturation 0.35 and up), which the client recolours to the owner's colour."""
+    c = rgba[..., :3].astype(np.float32) / 255
+    mx, mn = c.max(2), c.min(2)
+    l = (mx + mn) / 2
+    d = mx - mn
+    s = np.where(d == 0, 0, d / np.maximum(1e-6, np.where(l > 0.5, 2 - mx - mn, mx + mn)))
+    r, g, b = c[..., 0], c[..., 1], c[..., 2]
+    dd = np.maximum(d, 1e-6)
+    h = np.where(mx == r, ((g - b) / dd) % 6, np.where(mx == g, (b - r) / dd + 2, (r - g) / dd + 4)) * 60
+    return int(((rgba[..., 3] > 0) & (d > 0) & (h >= 195) & (h <= 252) & (s >= 0.35)).sum())
+
+
 def index():
     cards, grounds = {}, []
     for p in sorted(ART.glob("*.png")):
@@ -308,9 +322,14 @@ def index():
         if p.stem.startswith("gnd_"):
             grounds.append(p.stem)
             continue
-        a = np.asarray(im.convert("RGBA"))[..., 3]
+        rgba = np.asarray(im.convert("RGBA"))
+        a = rgba[..., 3]
         ys, xs = np.nonzero(a)
         cards[p.stem] = {"w": im.width, "h": im.height, "box": [int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1]}
+        # A town piece with the owner-colour band (more than a few stray pixels) takes its owner's
+        # colour: the client makes it an owner variant (an atlas layer each); the rest are shared.
+        if p.stem.startswith("town_") and owner_band(rgba) > 12:
+            cards[p.stem]["band"] = True
     lines = [
         "// The HD-2D mode's own art (docs/HD2D.md): ground layers and prop cards drawn by a local image",
         "// model and brought to one contract by tools/hd2d/art.py, which writes this index; do not edit.",
@@ -318,7 +337,8 @@ def index():
         "export const CARDS = {",
     ]
     for k, v in cards.items():
-        lines.append(f"  {k}: {{ w: {v['w']}, h: {v['h']}, box: {json.dumps(v['box']).replace(',', ', ')} }},")
+        band = ", band: true" if v.get("band") else ""
+        lines.append(f"  {k}: {{ w: {v['w']}, h: {v['h']}, box: {json.dumps(v['box']).replace(',', ', ')}{band} }},")
     lines.append("};")
     (ART / "index.js").write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
     print(f"index: {len(grounds)} ground layers, {len(cards)} cards")

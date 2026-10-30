@@ -71,10 +71,11 @@ test("cities, standing improvements and resources stand as cards, and the 3D dre
   assert.ok(town.some((r) => plain(r.key) === "town_lm_ljosalfar"), "the Ljosalfar capital has its landmark");
   assert.ok(town.some((r) => plain(r.key).startsWith("town_elven_house_")), "and its family's houses");
   for (const r of town) {
-    // At the prop cards' density (PX.prop), a village's landmark a little smaller.
+    // At the prop cards' density (PX.prop), within the props' own spread of scales (a house a
+    // little larger or smaller, a village's landmark smaller and a great city's larger).
     const k = r.w / (CARDS[plain(r.key)].w * PX.prop);
-    assert.ok(Math.abs(k - 1) < 1e-9 || Math.abs(k - 0.86) < 1e-9, `${r.key} at ${k} of the props' density`);
-    assert.ok(r.key.includes("@"), "a town's pieces take their owner's colour");
+    assert.ok(k > 0.77 && k < 1.19, `${r.key} at ${k} of the props' density`);
+    assert.equal(r.key.includes("@"), !!CARDS[plain(r.key)].band, "a town's pieces with the owner-colour band take their owner's colour");
     assert.ok(r.town && r.shadow, "a town's pieces are lit as towns and cast shadows");
   }
 });

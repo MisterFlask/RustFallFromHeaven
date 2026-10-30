@@ -107,7 +107,16 @@ export class SpriteAtlas {
       const info = this.info(key);
       if (!info) return null;
       const layer = this.entries.size;
-      if (layer >= this.cap) this.alloc(this.cap * 2);
+      if (layer >= this.cap) {
+        // The array doubles, up to what the GPU allows (WebGL2 guarantees 256 layers).
+        const max = this.gl.getParameter(this.gl.MAX_ARRAY_TEXTURE_LAYERS);
+        if (this.cap >= max) {
+          if (!this.full) console.warn(`hd2d: the sprite atlas is full (${max} layers); ${key} and later sprites are not drawn`);
+          this.full = true;
+          return null;
+        }
+        this.alloc(Math.min(this.cap * 2, max));
+      }
       e = { layer, ready: false, failed: false };
       this.entries.set(key, e);
       const drawn = this.drawn.get(key);

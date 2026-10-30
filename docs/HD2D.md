@@ -339,31 +339,47 @@ buildings drawn for this camera, each its own card.
   colour: roofs, domes, spires, banners. The atlas makes each piece's owner variant as it loads
   (`SpriteAtlas.owned`: `key@css`, recoloured by `iso.js` `ownerBand`, the isometric map's recolour,
   now shared). The old city card in this mode was never recoloured: its blue showed for every owner.
+  * **Variants only where needed.** Each variant takes a layer of the sprite array, so only the 78
+    pieces that carry the band get one. `art.py index` marks them `band` in `art/index.js`. The rest
+    (most walls, the low houses) are shared by every owner.
+  * **Recoloured before upload.** The recolour is done on the CPU before the mipmaps are built. A
+    recolour in the shader would see the band blended with its neighbours at far zooms and miss it.
+  * **A capped array.** The array still doubles as it fills, but only up to the GPU's
+    `MAX_ARRAY_TEXTURE_LAYERS`. Past that a sprite is not drawn, and the console says so once.
 * **The layout** (`dress.js` `dressTown`) is deterministic from the city's id.
   * **Reach.** The town's reach is the 3D renderer's (`CATALOG.cityReach`), so the HUD's plate,
     which stands just in front of that reach, stays in front of the town: an ellipse `reach + 0.06`
     across, `0.78 reach` deep, centred 0.05 behind the plot's centre. A village keeps to about its
     plot; a great walled city spills to about 0.9.
-  * **Pieces by size.** The landmark stands at the back centre (at 0.86 for a village). A town
-    (size 4+) has one family tower, a city (9+) two, at the back corners. Houses number 4 + 1.6 a
-    size point, 2 more for a capital, at most 26. They are scattered at random in the ellipse, the
-    taller ones toward the back, so the roofs climb toward the landmark.
+  * **The landmark.** It stands at the back centre. If the back is wet (a river along the plot's
+    back edge), it steps toward the front until it reaches dry ground. It grows with the town,
+    within the props' own spread of scales: 0.78 for a village, 1 for a town, 1.12 for a city (9+),
+    0.06 more for a capital, at most 1.18.
+  * **Towers and houses.** A town (size 4+) has one family tower, a city two, at the back corners.
+    Houses number 4 + 1.6 a size point, 2 more for a capital, at most 26. They are scattered at
+    random in the ellipse, more often the taller ones toward the back, so the roofs climb toward the
+    landmark. The heights are well mixed, so the two houses that carry the owner's colour are not
+    all at the back; right before the landmark stand only the lowest, so its lower storeys show.
+    Houses and towers are mirrored at random and vary from 0.9 to 1.06 in scale, as the land's props
+    do: four variants a family do not repeat in rows.
   * **Walls.** A walled city (`city.walls`) gets a ring just outside the houses: the gate at the
-    front middle, corner towers at the sides and the four corners, and a segment every 0.24 or so
-    of the ring between them. On the sides, where the ring runs into the view, the segments stand
-    one behind another.
+    front middle, corner towers at the sides and front corners (not the back corners, where the
+    family's towers stand), and a segment every 0.24 or so of the ring between them. On the sides,
+    where the ring runs into the view, the segments stand one behind another.
   * **Overlap.** Two pieces at about the same depth never overlap. One well in front of another may
     hide its lower part: roofs behind roofs, a dense town.
   * **Where pieces may stand.** They keep off water and rivers, a lane along each road from the
     plot, and the garrison's and banner's spots. They also keep off a neighbouring plot that is
     unrevealed, a peak, or holds a city, an improvement or a stack.
   * **Each piece's card.** Each piece is its own card with the town flag: half graded, its warm
-    lights glowing. It casts its outline into the sun's map and a contact shadow, is tinted by the
-    light at its own base, and is fogged as the city's plot.
+    lights glowing. It casts its outline into the sun's map and a contact shadow, and is fogged as
+    the city's plot. It is tinted by the light where its walls and roof are, at about half its
+    height (`SPRITE_VS`). Taken at its foot, a town's taller pieces behind would shade a whole house
+    by its doorstep.
 * **Round the town.** The props keep out of its reach, and out of a lane before its middle: the
   way to the gate, where the plate stands. The houses spilling onto the plots round it (`townRing`)
-  are the town's own two lowest houses, in its owner's colour. Code-drawn huts remain only round a
-  town whose family has no kit.
+  are the town's own houses (the low ones twice as often), in its owner's colour. Code-drawn huts
+  remain only round a town whose family has no kit.
 * **Fallback.** A family with no cards stands as the isometric settlement, as before.
 * **Making it.**
   * `python3 tools/hd2d/gen.py town:<family> --quality high --size 1024x1024 --ref human.png`: a
@@ -377,7 +393,18 @@ buildings drawn for this camera, each its own card.
   * Then `art.py index`.
 
   `gen.py` streams its calls: high quality takes 40-50 s, and a silent connection was cut by the
-  environment's proxy (HTTP 502) after about a minute. Every sheet was looked at and accepted
+  environment's proxy (HTTP 502) after about a minute.
+
+  **The review round** (one visual and one code critic) found:
+  * the town cores dark, each house tinted by the sun at its foot in its neighbours' shadows;
+  * the owner's colour missing from the town fronts and the houses round it;
+  * the landmark too large in a village and crowded in a city by eight identical round towers;
+  * the four houses of a family repeating in rows;
+  * the landmark able to stand in a river along the plot's back edge;
+  * the dressing half as slow again (the kit worked out per prop);
+  * a layer of the sprite array per owner for every piece.
+
+  Each was fixed as above. Every sheet was looked at and accepted
   (prompts in `towns.json`). The cost was $1.19 for 19 calls at list prices, recorded in
   `tools/hd2d/usage.jsonl`. Eight more calls ended in an HTTP 502 before streaming; whether those
   were billed is unknown.
@@ -653,6 +680,11 @@ its defaults and do no harm.
   a spreading hell) changes them only through the terrain and the owners.
 * **Figures stand still** (no idle frames) and are mirrored when facing west, so their painted
   light then comes from the upper right.
+* **The sprite array** holds one sprite a 256-texel layer, however small: the town kit adds up to
+  10 layers a civilization in play (7 or so of them owner variants), on top of the props, figures,
+  buildings and banners. A game of many civilizations can pass 256 layers, and the array then
+  doubles to 512 (about 180 MB of texture with mipmaps, capped at the GPU's limit). Packing small
+  cards several to a layer would need an offset per card in the instance data.
 * **Cities' garrisons** show one figure (the banner's badge carries the count), as the isometric map
   hides them.
 * Next, by value: new art per §10 (ground textures first); the first frame's stall on Direct3D 11
