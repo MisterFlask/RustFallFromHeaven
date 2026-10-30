@@ -68,9 +68,13 @@ function reply() {
 export function initUnits(view, panelEl) {
   mapView = view;
   panel = panelEl;
-  on("applied", (c) => {
+  on("applied", (c, reply) => {
     if (c?.units && S.sel && c.units.some((u) => S.sel.units.includes(u))) advance = { x: S.sel.x, y: S.sel.y };
-    if (pendingCombat) pendingCombat.applied = true;
+    if (pendingCombat) {
+      pendingCombat.applied = true;
+      // The view that shows the attack's result is at least this new.
+      pendingCombat.version = reply?.status?.view_version;
+    }
   });
   on("refused", () => {
     pendingCombat = null;
@@ -101,8 +105,9 @@ export function initUnits(view, panelEl) {
 
 /** Flashes the struck tile when a snapshotted attack (`pendingCombat`) resolved: a defender lost
  *  (death) or was hurt (hit), else the attacker if it took the loss. Best-effort: a view that
- *  shows no change yet keeps the snapshot until the command's reply has come; after that, an
- *  unmatched snapshot just clears. */
+ *  shows no change yet keeps the snapshot until the command's reply has come and a view as new
+ *  as the reply's status (a view fetched before the attack can arrive after its reply); after
+ *  that, an unmatched snapshot just clears. */
 function flashCombat() {
   const pc = pendingCombat;
   if (!pc || !mapView) {
@@ -121,6 +126,7 @@ function flashCombat() {
     else if (atkDied && pc.ax != null) mapView.flashTile(pc.ax, pc.ay, "death");
     else if (atkHit && pc.ax != null) mapView.flashTile(pc.ax, pc.ay, "hit");
     else if (!pc.applied) return; // not resolved in this view yet
+    else if (typeof pc.version === "number" && (S.view?.view_version ?? pc.version) < pc.version) return; // an older view
   } catch {
     /* a flash is never worth a thrown handler */
   }
