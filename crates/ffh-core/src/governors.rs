@@ -326,8 +326,8 @@ impl Game {
     }
 
     /// Governor `g` of player `p` (on the bench or in another city) governs city `c`. The governor
-    /// it replaces returns to the bench; a city that loses its governor this way (`c` when it had
-    /// one, and the city `g` leaves) pays the replacement penalty.
+    /// it replaces returns to the bench. A replacement costs the city the penalty; a move from
+    /// another city costs both cities; filling a vacant post from the bench costs nothing.
     pub fn city_assign_governor(&mut self, p: PlayerId, c: CityId, g: GovernorId) -> GovResult {
         if !self.governors_on() {
             return Err("governors are off in this game");
@@ -342,15 +342,16 @@ impl Game {
             return Ok(());
         }
         let turns = self.d.defines.governor_swap_turns.max(0);
-        // The city it leaves: interim, penalised.
+        // A move between two cities costs both; the city it leaves is interim.
         if let Some(from) = self.governors[g].city {
             self.cities[from].governor = None;
             self.cities[from].governor_penalty_turns = turns;
+            self.cities[c].governor_penalty_turns = turns;
             self.city_apply_governor_emphasis(from);
             self.city_governor_changed(from);
         }
         self.governors[g].city = None;
-        // The governor it replaces goes back to the bench.
+        // The governor it replaces goes back to the bench; the city pays.
         if let Some(old) = self.cities[c].governor.take() {
             if let Some(gov) = self.governors.get_mut(old) {
                 gov.city = None;

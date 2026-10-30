@@ -91,8 +91,9 @@ cultural actions", off by default). The player can still queue any action by han
 - **The capital moves.** A new capital (the old one lost) is ruled directly at once; if that makes
   one direct city too many, the city made direct most recently goes to a governor, with a message.
   A palace cannot be built in a governed city, so the capital never moves into one by choice.
-- **Filling a vacant post costs nothing**: the penalty is for replacing a governor, not for giving
-  an interim city one.
+- **Filling a vacant post from the bench costs nothing**: the penalty is for replacing a governor,
+  not for giving an interim city one (a governor moved in from another city costs both, the spec's
+  rule).
 - **An interim city takes the next candidate** without the player's click (the spec has newly
   governed cities auto-assign; an interim city is one that could not, and leaving it interim
   until the player notices would only cost the city).

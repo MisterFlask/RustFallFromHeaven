@@ -85,10 +85,10 @@ fn a_candidate_takes_the_vacant_post_and_a_replacement_costs_both_cities() {
     assert!(g.cities[a].governor_penalty_turns > 0);
     let penalty = g.d.defines.governor_swap_penalty;
     assert_eq!(g.city_base_yield_rate_modifier(a, YieldType::YIELD_PRODUCTION, 0), base - penalty);
-    // Moving the second to b: a pays again and is interim; b had nobody to replace.
+    // Moving the second to b: both cities pay (the spec), a is interim again.
     g.city_assign_governor(p0, b, second).unwrap();
     assert_eq!(g.cities[a].governor, None);
-    assert_eq!(g.cities[b].governor_penalty_turns, 0);
+    assert!(g.cities[b].governor_penalty_turns > 0);
     assert!(g.cities[a].governor_penalty_turns > 0);
     // The penalty wears off.
     for _ in 0..g.d.defines.governor_swap_turns {
