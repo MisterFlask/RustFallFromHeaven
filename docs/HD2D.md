@@ -102,6 +102,8 @@ answers being compared: a parallel one builds the towns as 3D geometry with pixe
 |---|---|
 | the look target and the lab's composition after it, side by side | [hd2d/lab-vs-reference.jpg](hd2d/lab-vs-reference.jpg) |
 | the mode's own art: the seven ground layers and the 25 prop cards | [hd2d/art-sheet.png](hd2d/art-sheet.png) |
+| the town kit (batch 5): the eleven families' pieces and the 22 landmarks | [hd2d/town-kit.png](hd2d/town-kit.png) |
+| cities before and after the town kit: the lab's two views, the real game, close-ups | [hd2d/towns.jpg](hd2d/towns.jpg) |
 | the Sheaim's corrupted land (lab) | [hd2d/sheaim.jpg](hd2d/sheaim.jpg) |
 | a real game (the `stage corrupt` save at (46, 27)), 96 px a plot | [hd2d/game.jpg](hd2d/game.jpg) |
 | the same, close (168) and far (40) | [hd2d/game-close.jpg](hd2d/game-close.jpg), [hd2d/game-far.jpg](hd2d/game-far.jpg) |
