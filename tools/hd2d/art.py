@@ -108,7 +108,7 @@ def cutout(rgb, thresh=232):
 
 
 def on_white(src):
-    """The image as RGB on white: an image with transparency (gpt-image-1's) is laid over white, so
+    """The image as RGB on white: an image with transparency (gen.py's sheets) is laid over white, so
     the cut-out finds its background the same way as on a plain white one."""
     im = Image.open(src)
     if im.mode in ("RGBA", "LA", "P"):

@@ -381,8 +381,10 @@ does for the isometric sprites. No unit art changed.
   figures of one sprite and one banner, deterministic; cities, buildings and resources are claimed
   as cards; nothing stands on, and no mood comes from, an unrevealed plot).
 * **Art**: `tools/hd2d/draw.py` (the props drawn by code), `tools/hd2d/local_props.py` (the image
-  model's, through a local ComfyUI, §5b), `tools/hd2d/gen.py` (sheets of nine from OpenAI's
-  gpt-image-1, cut apart by `art.py split SHEET PREFIX`), `tools/hd2d/art.py ground SRC NAME` (a top-down texture to a seamless ground layer),
+  model's, through a local ComfyUI, §5b), `tools/hd2d/gen.py` (sheets from OpenAI's
+  `gpt-image-2.5-sunburst`, pinned to its 2026-09-08 snapshot -- gpt-image-1 was shut down on
+  2026-10-23 -- the prop sheets of nine and the town kit's sheets of `tools/hd2d/towns.json`, with
+  `--ref` images to match an accepted sheet's style; cut apart by `art.py split SHEET PREFIX`), `tools/hd2d/art.py ground SRC NAME` (a top-down texture to a seamless ground layer),
   `prop SRC NAME HEIGHT [DEEPEN]` (an object on white to a card), `index` (writes
   `art/index.js`); run it with Python with Pillow and numpy (ComfyUI's bundled one has both). The
   images came from the local FLUX 3 Image Klein (the owner's `local-image-gen` skill); `build.rs`
@@ -498,7 +500,8 @@ distance each closes:
 1. **Art with a hand behind it** (the image model). The props drawn by code read well at their size
    but are simple; huts, ruins, shrines and each region's things drawn by the image model would
    match the trees' and the target's detail. `tools/hd2d/gen.py` asks for them in sheets of nine
-   (about $0.17 a sheet at gpt-image-1's high quality; a `split` step for `art.py` is still to write).
+   (`gpt-image-2.5-sunburst`, billed by token: $5 a million text tokens in, $8 image in, $30 image
+   out; `art.py split` cuts a sheet apart).
 2. **Cities drawn for this camera** (new art). The settlement sprites keep the isometric map's
    walled diamond; the target's towns are irregular and spill out. Batch 4's houses round them
    soften it; towns drawn for the mode would close it.
@@ -564,9 +567,9 @@ cards in `assets/app/r3d/hd2d/art/` were drawn by FLUX 3 Image Klein (Black Fore
 locally in ComfyUI, and post-processed by `tools/hd2d/art.py` (prompts in §5b's spirit: 16-bit
 pixel art, top-down for ground, a single object lit from the upper left on white for props). The grass, reeds, pebbles, shore and
 standing stones, fences and haystacks are drawn by code (`tools/hd2d/draw.py`). `tools/hd2d/gen.py`
-asks OpenAI's gpt-image-1 for sheets of nine props on a transparent background (to be cut apart
-by an `art.py` step still to write, then carded by `prop`); under OpenAI's terms its outputs belong
-to the user.
+asks OpenAI's `gpt-image-2.5-sunburst` (snapshot 2026-09-08) for sheets of props on a transparent
+background (cut apart by `art.py split`, then carded by `prop`); under OpenAI's terms its outputs
+belong to the user.
 **Licence:** FLUX 3 Image Klein is under the FLUX Kommunity License — non-commercial use, with a
 commercial-output exception for "Qualifying Users" under its terms; check
 https://huggingface.co/black-forest-labs/flux-3-image-klein-comfy/blob/main/LICENSE.md before
