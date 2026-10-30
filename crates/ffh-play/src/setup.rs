@@ -288,6 +288,15 @@ pub fn set_human_options(g: &mut Game, human: PlayerId) {
     o[PlayerOptionType::PLAYEROPTION_SHOW_ENEMY_MOVES] = false;
 }
 
+/// The new-game screen's starting settings: [`NewGame::new`] with the visible game options whose
+/// XML `bDefault` is on ticked (this game's own systems, which a player can untick to play the
+/// rules as they were). Agents, soaks and tests start from `NewGame::new` itself.
+pub fn screen_defaults(d: &GameData) -> NewGame {
+    let mut ng = NewGame::new(d, 1);
+    ng.options = d.game_options.keys().filter(|&o| d.game_options[o].visible && d.game_options[o].default && o != GameOptionType::GAMEOPTION_ADVANCED_START).collect();
+    ng
+}
+
 /// Lists for the new-game screen: AI-playable civilizations with their leaders, world sizes,
 /// speeds, handicaps, eras, climates, sea levels, visible game options, victories, and the
 /// defaults (`NewGame::new`).
@@ -347,7 +356,7 @@ pub fn setup_lists(d: &GameData) -> Json {
         "options" => list_help::<GameOptionType>(d, |o| d.game_options[o].visible && o != GameOptionType::GAMEOPTION_ADVANCED_START, |o| xml(&d.game_options[o].base.help)),
         "victories" => list_help::<VictoryType>(d, |_| true, |v| xml(&d.victories[v].base.help)),
         "max_opponents" => MAX_CIV_PLAYERS - 1,
-        "defaults" => NewGame::new(d, 1).to_json(),
+        "defaults" => screen_defaults(d).to_json(),
     }
 }
 
@@ -410,5 +419,8 @@ mod tests {
         let lists = setup_lists(d);
         assert!(!lists.req_arr("civilizations").unwrap().is_empty());
         assert!(lists.req_arr("options").unwrap().iter().all(|o| o.req_str("type").unwrap() != "GAMEOPTION_ADVANCED_START"));
+        // The screen starts with this game's own systems on.
+        assert!(screen_defaults(d).options.contains(&GameOptionType::GAMEOPTION_CULTURE_ACTIONS));
+        assert!(screen_defaults(d).validate(d).is_ok());
     }
 }

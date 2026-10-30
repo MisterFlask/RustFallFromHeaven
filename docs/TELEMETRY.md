@@ -54,6 +54,7 @@ A 300-turn mixed game writes about 0.5 MB of events.
 | `revolution` | `n` | anarchy turns |
 | `civic` | civic adopted | – |
 | `convert` | religion | – |
+| `culture_start` / `culture_done` / `culture_cancel` | cultural action (docs/CULTURE.md) | `culture_done`: successes (a spread can fail) |
 | `attack` | `win`, `loss`, `withdraw`, `undefended` | – |
 | `attack_odds` / `attack_odds_exp` | odds decile `00`..`90` | wins / sum of odds (per mille) |
 | `attack_vs` | `civ`, `barbarian`, `animal` | wins |
@@ -125,6 +126,8 @@ and **whys** (`whys.<kind>.<rule> = count`) record which rule made it.
 - `hurry` and `upgrade`;
 - `tech`, `civics`, `religion` and `project`;
 - `vassal` and `vote` (a council result: the vote type, its text and whether it passed);
+- `culture` (a cultural channel: `how` start / complete / cancel, the action, casting city,
+  target city and its owner, `hostile`, `success`, `magnitude`; docs/CULTURE.md);
 - `intent` and `decision`.
 
 Missions, promotions, improvements and builds are only counted.

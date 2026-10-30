@@ -726,6 +726,28 @@ async function cityQueue() {
   steps.push("city queue: appended with Shift, removed with ✕, no ✕ on the only order");
 }
 
+/** This game's cultural actions (docs/CULTURE.md; the new-game screen starts with them on): the
+ *  city screen's Culture section lists every action with its targets or why not, and F8 opens the
+ *  Cultural pressure panel. */
+async function cultureUi() {
+  const city = await S("S.view.cities.find((c) => c.owner === S.view.me.player)");
+  await b.eval(`window.ffh.emit("open-city", ${city.id})`);
+  const sec = `#modals .backdrop:not(.under) .section.culture`;
+  await until2(`!!document.querySelector("${sec}")`, "the city's Culture section");
+  const n = await b.eval(`window.ffh.S.data.tables.CulturalActionType.length`);
+  const shown = await b.eval(`document.querySelectorAll("${sec} .culture-action").length`);
+  if (shown !== n) throw new Error(`the Culture section lists ${shown} actions of ${n}`);
+  if (!(await b.eval(`!!document.querySelector("${sec} ol.culture-queue li.dim")`))) throw new Error("no empty-queue line");
+  await b.key("Escape");
+  await until(async () => !(await modalTitles()).length, "the city dialog closed");
+  await b.key("F8");
+  await until(async () => (await modalTitles()).includes("Cultural pressure"), "the Cultural pressure panel");
+  await shot("culture-panel");
+  await b.key("Escape");
+  await until(async () => !(await modalTitles()).length, "the panel closed");
+  steps.push(`culture: the city screen lists the ${n} cultural actions; F8 opens the pressure panel`);
+}
+
 async function moveUnit() {
   const unit = await S(`(() => { const S = window.ffh.S; const me = S.view.me.player; return S.view.units.find((u) => u.owner === me && u.moves > 0 && S.data.tables.UnitType[u.type].combat > 0) || null; })()`);
   if (!unit) return steps.push("no unit to move");
@@ -1457,6 +1479,7 @@ async function main() {
     await staleSelection();
     await foundCity();
     await cityQueue();
+    await cultureUi();
     await moveUnit();
     await endTurns(TURNS);
     await cityScreen();

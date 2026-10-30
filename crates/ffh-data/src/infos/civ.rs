@@ -366,6 +366,10 @@ pub struct LeaderHeadInfo {
     pub freedom_appreciation: i32,
     pub favorite_civic: Option<CivicType>,
     pub favorite_religion: Option<ReligionType>,
+    /// This game's own (docs/CULTURE.md): how readily the AI turns culture against rivals, in
+    /// percent (100 = normal). XML `iCulturalAggression`; when absent, derived at load from
+    /// the leader's war eagerness and culture flavor (`GameData::derive`).
+    pub cultural_aggression: i32,
     // ---- arrays ----
     /// C++ `hasTrait(i)`.
     pub has_trait: IdxVec<TraitType, bool>,
@@ -501,6 +505,7 @@ pub fn read_leader_head(rd: &Rd) -> LeaderHeadInfo {
         vassal_refuse_attitude_threshold: rd.rf("VassalRefuseAttitudeThreshold"),
         favorite_civic: rd.rf("FavoriteCivic"),
         favorite_religion: rd.rf("FavoriteReligion"),
+        cultural_aggression: rd.int_or("iCulturalAggression", -1),
         has_trait: rd.pairs_bool("Traits"),
         flavor_value: rd.pairs_int("Flavors", 0),
         contact_rand: rd.pairs_int("ContactRands", 0),

@@ -139,6 +139,7 @@ pub fn happy_parts(g: &ffh_core::game::Game, c: CityId) -> Vec<Part> {
     if city.happiness_timer > 0 {
         add_part(&mut out, &format!("past events ({} turns)", city.happiness_timer), g.d.defines.temp_happy);
     }
+    add_part(&mut out, "festival", g.city_culture_happiness(c));
     out
 }
 
@@ -179,6 +180,7 @@ pub fn unhappy_parts(g: &ffh_core::game::Game, c: CityId) -> Vec<Part> {
     step(&mut out, "war weariness", Some(g.city_war_weariness_percent_anger(c)), 0);
     step(&mut out, "being a vassal", None, g.city_vassal_unhappiness(c).max(0));
     step(&mut out, "espionage", None, city.espionage_happiness_counter.max(0));
+    step(&mut out, "incited unrest", None, g.city_culture_unhappiness(c));
     for civic in d.civics.keys() {
         let label = format!("wants {}", crate::names::display(d, civic));
         step(&mut out, &label, Some(g.player_get_civic_percent_anger(owner, civic, false)), 0);
@@ -397,5 +399,112 @@ pub fn city(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
         "hurries" => Json::Arr(hurries),
         "can_conscript" => g.city_can_conscript(c),
         "buildable" => buildable(v, c),
+        "cultural" => cultural(v, c),
     })
+}
+
+/// The city's cultural queue and what it could channel (docs/CULTURE.md): `null` when the game
+/// has no cultural actions.
+fn cultural(v: &Viewer, c: CityId) -> Json {
+    use ffh_core::culture::CultureTarget;
+    let g = v.g;
+    let d = g.d;
+    if !g.culture_actions_on() {
+        return Json::Null;
+    }
+    let city = &g.cities[c];
+    let queue: Vec<Json> = city
+        .culture_queue
+        .iter()
+        .map(|o| {
+            let CultureTarget::City(t) = o.target;
+            let mut j = crate::jobj! {
+                "action" => Json::idx(o.action),
+                "target" => t,
+                "target_name" => if g.cities.contains(t) { Json::from(city_name(g, t)) } else { Json::Null },
+                "religion" => Json::opt_idx(o.religion),
+                "repeat" => o.repeat,
+                "progress" => o.progress,
+                "duration" => g.culture_action_duration(o.action),
+                "stalled" => o.stalled,
+                "started" => o.started_turn >= 0,
+            };
+            // Why it would pause now (its check this turn).
+            if let Err(r) = g.culture_check(c, o.action, o.target, o.religion, false) {
+                j.set("paused", r.describe(d));
+            }
+            j
+        })
+        .collect();
+    // Every action, with the targets in its reach: possible ones with their preview, the others
+    // with the reason (only cities the human has seen).
+    let (cx, cy) = (city.x, city.y);
+    let team = g.players[v.h].team;
+    let actions: Vec<Json> = d
+        .cultural_actions
+        .keys()
+        .map(|a| {
+            let info = &d.cultural_actions[a];
+            let range = g.culture_tier_range(info.tier);
+            let religions: Vec<Option<ReligionType>> = if info.effect == CultureEffect::SpreadReligion {
+                d.religions.keys().filter(|&r| city.has_religion[r]).map(Some).collect()
+            } else {
+                vec![None]
+            };
+            let mut targets = Vec::new();
+            for (t, tc) in g.cities.iter() {
+                if g.plot_distance(cx, cy, tc.x, tc.y) > range || (tc.owner != v.h && !g.city_is_revealed(t, team, false)) {
+                    continue;
+                }
+                for &r in &religions {
+                    // A city that has the religion is no target for spreading it.
+                    if r.is_some_and(|r| tc.has_religion[r]) {
+                        continue;
+                    }
+                    let mut j = crate::jobj! { "city" => t, "name" => city_name(g, t), "owner" => tc.owner, "religion" => Json::opt_idx(r) };
+                    match g.culture_check(c, a, CultureTarget::City(t), r, true) {
+                        Ok(p) => {
+                            j.set("ok", true);
+                            j.set("effect", p.effectiveness);
+                            j.set("hostile", p.hostile);
+                            j.set("magnitude", p.magnitude);
+                            j.set("effect_turns", p.effect_turns);
+                        }
+                        Err(e) => {
+                            // Not the kind of city the action is for: not listed.
+                            if matches!(e, ffh_core::culture::CultureRefusal::Target(_)) {
+                                continue;
+                            }
+                            j.set("ok", false);
+                            j.set("why", e.describe(d));
+                        }
+                    }
+                    targets.push(j);
+                }
+            }
+            crate::jobj! {
+                "action" => Json::idx(a),
+                "tier" => info.tier,
+                "rate" => info.rate,
+                "duration" => g.culture_action_duration(a),
+                "range" => range,
+                "targets" => Json::Arr(targets),
+            }
+        })
+        .collect();
+    let pressure: Vec<Json> = g
+        .culture_hostile_channels_at(c)
+        .into_iter()
+        .filter(|ch| g.culture_channel_visible(team, ch.caster))
+        .map(|ch| crate::view::culture::channel_json(v, &ch))
+        .collect();
+    crate::jobj! {
+        "rate" => g.city_commerce_rate(c, CommerceType::COMMERCE_CULTURE),
+        "diverted" => city.culture_diverted,
+        "queue" => Json::Arr(queue),
+        "queue_max" => d.defines.culture_queue_max,
+        "actions" => Json::Arr(actions),
+        "pressure" => Json::Arr(pressure),
+        "marks" => crate::view::culture::marks_json(v, c),
+    }
 }

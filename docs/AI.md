@@ -1290,6 +1290,38 @@ the way) against the best building, while such a city lies within 15 plots on th
 almost never fires: the shrine comes late (after turn 300, a Great Prophet's work), open borders
 are rare by then, and a building nearly always outscores a gold a turn.
 
+## Cultural actions (`culture.rs`)
+
+This game's own system (`GAMEOPTION_CULTURE_ACTIONS`, docs/CULTURE.md). Once a turn, after the
+diplomacy (so the war state is current), what an expert does with a cultural queue:
+
+- **Answer pressure.** A hostile channel aimed at one of our cities or a pact partner's is
+  answered with a festival there (it resists hostile actions, +1 happy), unless one already lasts
+  past the channel's end or is on its way: the city itself puts the festival first (its own channel
+  waits with its progress), else our nearest idle city in reach holds it.
+- **Spend culture where it buys more than borders.** Each city with an empty queue weighs every
+  action and target it can afford by value ÷ culture cost (the rules' preview gives E and the
+  magnitude) and queues the best worth at least its culture, else leaves the queue empty. Culture
+  counts in full while the city's borders still grow to its working radius (below
+  `CULTURELEVEL_FLEDGLING`), half after (it then only presses on contested borders); the cities
+  carrying a cultural victory we pursue spend none. Values: a trade fair with a Pleased or Friendly
+  civilization is the extra commerce of the routes it lifts over its duration (ours, half of
+  theirs) plus a little goodwill with a Pleased one; spreading a religion follows the
+  missionaries' priorities (our state religion into our own cities, then abroad once its shrine
+  pays, never as a hostile spread unless we dislike them anyway); inciting unrest is for rivals
+  only (at war, or Annoyed or Furious with them), at most `CULTURE_AI_MAX_HOSTILE_PER_TARGET` at
+  once against one civilization, worth the unhappy faces × turns × the city's size, doubled at
+  war, times the leader's `iCulturalAggression` (derived from `iLimitedWarRand` and the culture
+  flavor when the XML gives none).
+- **Memory.** Their cultural acts against us are in the attitude (`relation_parts`): "cultural
+  hostility" −1 per 2 points (to −3), "cultural friendship" +1 per 2 points (to +2), fading a
+  point every 10 turns.
+
+Switch `CULTURE` (`FFH_AI_CULTURE_OFF`). First games (8 civs, standard, 450 turns, seeds 1-3, the
+option on): every action used, per game 86-170 festivals, 151-225 unrests, 26-59 spreads, 15-68
+fairs completed. Not yet measured for win rate (the spec's tuning phase); the open points
+(Trade Fair weak at the spec's numbers) are in docs/CULTURE.md.
+
 ## Random events (`events.rs`)
 
 The rules offer an AI player the trigger's events it can do, in trigger order (`player_trigger_data`).

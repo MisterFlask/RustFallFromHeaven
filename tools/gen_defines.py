@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Generate crates/ffh-data/src/defines_gen.rs: a typed struct with one field per
-global define (GlobalDefines.xml + GlobalDefinesAlt.xml + PythonCallbackDefines.xml),
+global define (GlobalDefines.xml + GlobalDefinesAlt.xml + PythonCallbackDefines.xml, and this
+game's own RulesDefines.xml),
 plus any define the DLL/Python reads that is absent from XML (C++ returns 0).
 
 Field name = lowercase define name. Int and text defines are i32 (text defines are
@@ -25,7 +26,7 @@ RUST_KW = {"type", "move", "loop", "match", "fn", "impl", "mod", "use", "ref", "
 def main():
     kinds = {}
     order = []
-    for f in ["GlobalDefines.xml", "GlobalDefinesAlt.xml", "PythonCallbackDefines.xml"]:
+    for f in ["GlobalDefines.xml", "GlobalDefinesAlt.xml", "PythonCallbackDefines.xml", "RulesDefines.xml"]:
         s = open(os.path.join(XML, f), encoding="latin-1").read()
         s = re.sub(r"<!--.*?-->", "", s, flags=re.S)
         for m in DEF_RE.finditer(s):

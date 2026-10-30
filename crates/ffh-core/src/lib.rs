@@ -7,6 +7,7 @@
 pub mod area;
 pub mod city;
 pub mod controller;
+pub mod culture;
 pub mod deal;
 pub mod defs;
 pub mod ffh;

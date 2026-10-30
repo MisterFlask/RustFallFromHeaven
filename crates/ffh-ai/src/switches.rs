@@ -100,6 +100,8 @@ pub static WAR_RECHECK: Switch = Switch::new("WAR_RECHECK");
 pub static COUNCIL: Switch = Switch::new("COUNCIL");
 /// Missionaries spread the state religion abroad once its shrine stands (`units::missionary`).
 pub static MISSIONARY_ABROAD: Switch = Switch::new("MISSIONARY_ABROAD");
+/// Cultural actions (`culture.rs`, docs/CULTURE.md): off, a civilization channels none.
+pub static CULTURE: Switch = Switch::new("CULTURE");
 /// Heroes only in the top third of our cities by production, world wonders outside it only when
 /// quick (`production::top_production_city`).
 pub static TOP_CITIES: Switch = Switch::new("TOP_CITIES");

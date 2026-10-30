@@ -36,6 +36,13 @@ pub enum Command {
     PushOrder { city: CityId, order: OrderType, data: i32, alt: bool, shift: bool, ctrl: bool },
     PopOrder { city: CityId, index: i32 },
     DoTask { city: CityId, task: TaskType, data1: i32, data2: i32, option: bool, alt: bool, shift: bool, ctrl: bool },
+    /// This game's cultural queue (docs/CULTURE.md): queue `action` on `target` (a city), at
+    /// the end or `first` (the current channel then waits with its progress).
+    CulturePush { city: CityId, action: CulturalActionType, target: CityId, religion: Option<ReligionType>, repeat: bool, first: bool },
+    /// Remove order `index` of the cultural queue (a started channel is cancelled).
+    CulturePop { city: CityId, index: i32 },
+    /// Set the repeat flag of order `index` of the cultural queue.
+    CultureRepeat { city: CityId, index: i32, repeat: bool },
     Research { tech: Option<TechType>, shift: bool },
     /// Merged over the current civics.
     UpdateCivics { civics: Vec<CivicType> },
@@ -171,6 +178,9 @@ pub const COMMAND_NAMES: &[&str] = &[
     "push_order",
     "pop_order",
     "do_task",
+    "culture_push",
+    "culture_pop",
+    "culture_repeat",
     "research",
     "update_civics",
     "percent_change",
@@ -198,6 +208,9 @@ pub const COMMAND_FIELDS: &[(&str, &[&str])] = &[
     ("push_order", &["city", "order", "data", "alt", "shift", "ctrl"]),
     ("pop_order", &["city", "index"]),
     ("do_task", &["city", "task", "data1", "data2", "option", "alt", "shift", "ctrl"]),
+    ("culture_push", &["city", "action", "target", "religion", "repeat", "first"]),
+    ("culture_pop", &["city", "index"]),
+    ("culture_repeat", &["city", "index", "repeat"]),
     ("research", &["tech", "shift"]),
     ("update_civics", &["civics"]),
     ("percent_change", &["commerce", "change"]),
@@ -284,6 +297,9 @@ impl Command {
             Command::PushOrder { .. } => "push_order",
             Command::PopOrder { .. } => "pop_order",
             Command::DoTask { .. } => "do_task",
+            Command::CulturePush { .. } => "culture_push",
+            Command::CulturePop { .. } => "culture_pop",
+            Command::CultureRepeat { .. } => "culture_repeat",
             Command::Research { .. } => "research",
             Command::UpdateCivics { .. } => "update_civics",
             Command::PercentChange { .. } => "percent_change",
@@ -359,6 +375,16 @@ impl Command {
                     ctrl: flag("ctrl")?,
                 }
             }
+            "culture_push" => Command::CulturePush {
+                city: j.req("city")?,
+                action: names::field(d, j, "action")?,
+                target: j.req("target")?,
+                religion: names::opt_field(d, j, "religion")?,
+                repeat: flag("repeat")?,
+                first: flag("first")?,
+            },
+            "culture_pop" => Command::CulturePop { city: j.req("city")?, index: j.req("index")? },
+            "culture_repeat" => Command::CultureRepeat { city: j.req("city")?, index: j.req("index")?, repeat: j.req("repeat")? },
             "research" => Command::Research { tech: names::opt_field(d, j, "tech")?, shift: flag("shift")? },
             "update_civics" => Command::UpdateCivics { civics: names::list_field(d, j, "civics")? },
             "percent_change" => Command::PercentChange { commerce: names::field(d, j, "commerce")?, change: j.req("change")? },
@@ -426,6 +452,15 @@ impl Command {
                 .with("alt", *alt)
                 .with("shift", *shift)
                 .with("ctrl", *ctrl),
+            Command::CulturePush { city, action, target, religion, repeat, first } => j
+                .with("city", *city)
+                .with("action", Json::idx(*action))
+                .with("target", *target)
+                .with("religion", Json::opt_idx(*religion))
+                .with("repeat", *repeat)
+                .with("first", *first),
+            Command::CulturePop { city, index } => j.with("city", *city).with("index", *index),
+            Command::CultureRepeat { city, index, repeat } => j.with("city", *city).with("index", *index).with("repeat", *repeat),
             Command::Research { tech, shift } => j.with("tech", Json::opt_idx(*tech)).with("shift", *shift),
             Command::UpdateCivics { civics } => j.with("civics", Json::Arr(civics.iter().map(|&c| Json::idx(c)).collect())),
             Command::PercentChange { commerce, change } => j.with("commerce", Json::idx(*commerce)).with("change", *change),
@@ -461,6 +496,15 @@ impl Command {
             }
             Command::PushOrder { city, order, data, .. } => format!("city {} {} {}", city.0, names::name(d, *order), data),
             Command::DoTask { city, task, data1, data2, option, .. } => format!("city {} {} ({data1}, {data2}, {option})", city.0, names::name(d, *task)),
+            Command::CulturePush { city, action, target, religion, repeat, first } => format!(
+                "city {} cultural {} on city {}{}{}{}",
+                city.0,
+                names::name(d, *action),
+                target.0,
+                religion.map_or(String::new(), |r| format!(" ({})", names::name(d, r))),
+                if *repeat { " (repeat)" } else { "" },
+                if *first { " (first)" } else { "" }
+            ),
             Command::Research { tech, shift } => {
                 format!("research {}{}", tech.map_or("none".to_string(), |t| names::name(d, t).to_string()), if *shift { " (queue)" } else { "" })
             }
@@ -535,6 +579,9 @@ pub enum Action {
     PushOrder { city: CityId, order: OrderType, data: i32, save: bool, pop: bool, append: bool },
     PopOrder { city: CityId, index: i32 },
     DoTask { city: CityId, task: TaskType, data1: i32, data2: i32, option: bool, alt: bool, shift: bool, ctrl: bool },
+    CulturePush { city: CityId, action: CulturalActionType, target: CityId, religion: Option<ReligionType>, repeat: bool, first: bool },
+    CulturePop { city: CityId, index: usize },
+    CultureRepeat { city: CityId, index: usize, repeat: bool },
     Research { tech: Option<TechType>, shift: bool },
     Revolution { civics: IdxVec<CivicOptionType, Option<CivicType>> },
     PercentChange { commerce: CommerceType, change: i32 },
@@ -830,6 +877,35 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
                 return Err(cannot("the only order cannot be removed: push its replacement instead"));
             }
             Plan::Apply(Action::PopOrder { city: *city, index: *index })
+        }
+
+        Command::CulturePush { city, action, target, religion, repeat, first } => {
+            city_of(g, h, *city)?;
+            in_range("cultural action", action.idx() as i32, d.cultural_actions.len())?;
+            if let Some(r) = religion {
+                in_range("religion", r.idx() as i32, d.religions.len())?;
+            }
+            if !g.cities.contains(*target) {
+                return Err(CmdErr::Gone);
+            }
+            // The human sees only revealed cities.
+            if g.cities[*target].owner != h && !g.city_is_revealed(*target, g.players[h].team, false) {
+                return Err(CmdErr::Gone);
+            }
+            g.culture_check(*city, *action, ffh_core::culture::CultureTarget::City(*target), *religion, true).map_err(|r| cannot(r.describe(d)))?;
+            Plan::Apply(Action::CulturePush { city: *city, action: *action, target: *target, religion: *religion, repeat: *repeat, first: *first })
+        }
+
+        Command::CulturePop { city, index } => {
+            city_of(g, h, *city)?;
+            let i = in_range("cultural queue index", *index, g.cities[*city].culture_queue.len())?;
+            Plan::Apply(Action::CulturePop { city: *city, index: i })
+        }
+
+        Command::CultureRepeat { city, index, repeat } => {
+            city_of(g, h, *city)?;
+            let i = in_range("cultural queue index", *index, g.cities[*city].culture_queue.len())?;
+            Plan::Apply(Action::CultureRepeat { city: *city, index: i, repeat: *repeat })
         }
 
         Command::DoTask { city, task, data1, data2, option, alt, shift, ctrl } => {
@@ -1163,6 +1239,12 @@ pub fn apply(g: &mut Game, h: PlayerId, action: &Action) {
             g.city_push_order(*city, *order, *data, -1, *save, *pop, *append, false);
         }
         Action::PopOrder { city, index } => g.city_pop_order(*city, *index, false, false),
+        Action::CulturePush { city, action, target, religion, repeat, first } => {
+            // Validated just before: the check passed.
+            let _ = g.city_push_culture_order(*city, *action, ffh_core::culture::CultureTarget::City(*target), *religion, *repeat, *first);
+        }
+        Action::CulturePop { city, index } => g.city_pop_culture_order(*city, *index),
+        Action::CultureRepeat { city, index, repeat } => g.city_set_culture_order_repeat(*city, *index, *repeat),
         Action::DoTask { city, task, data1, data2, option, alt, shift, ctrl } => {
             g.city_do_task(*city, *task, *data1, *data2, *option, *alt, *shift, *ctrl);
         }
@@ -1223,6 +1305,10 @@ mod tests {
             Command::PushOrder { city: CityId(1), order: OrderType::ORDER_TRAIN, data: 4, alt: false, shift: true, ctrl: false },
             Command::PopOrder { city: CityId(1), index: 0 },
             Command::DoTask { city: CityId(1), task: TaskType::TASK_HURRY, data1: 0, data2: -1, option: false, alt: false, shift: false, ctrl: false },
+            Command::CulturePush { city: CityId(1), action: CulturalActionType(2), target: CityId(4), religion: Some(ReligionType(1)), repeat: true, first: false },
+            Command::CulturePush { city: CityId(1), action: CulturalActionType(0), target: CityId(1), religion: None, repeat: false, first: true },
+            Command::CulturePop { city: CityId(1), index: 0 },
+            Command::CultureRepeat { city: CityId(1), index: 1, repeat: true },
             Command::Research { tech: None, shift: false },
             Command::Research { tech: Some(TechType(3)), shift: true },
             Command::UpdateCivics { civics: vec![CivicType(1), CivicType(5)] },

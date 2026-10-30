@@ -43,13 +43,57 @@ persist_newtype!(
     SpecialBuildingType, SpecialUnitType, SpecialistType, SpellType, TaskType, TechType,
     TerrainType, TradeableItem, TraitType, UnitAIType, UnitArtStyleType, UnitClassType,
     UnitCombatType, UnitType, UpkeepType, VictoryType, VoteSourceType, VoteType, WarPlanType,
-    WorldSizeType, YieldType,
+    WorldSizeType, YieldType, CulturalActionType,
 );
 
 persist_newtype!(
     PlayerId, TeamId, UnitId, CityId, GroupId, AreaId, PlotGroupId, DealId, PlotIdx, TriggeredId, VoteId,
     PlayerVote,
 );
+
+// ---- this game's own rules (docs/CULTURE.md) ----
+
+impl Persist for crate::culture::CultureTarget {
+    fn write(&self, w: &mut Writer) {
+        match self {
+            crate::culture::CultureTarget::City(c) => {
+                0u8.write(w);
+                c.write(w);
+            }
+        }
+    }
+    fn read(r: &mut Reader<'_>) -> Result<Self, LoadError> {
+        match u8::read(r)? {
+            0 => Ok(crate::culture::CultureTarget::City(CityId::read(r)?)),
+            t => Err(LoadError::Corrupt(format!("culture target tag {t}"))),
+        }
+    }
+}
+
+impl Persist for CultureEffect {
+    fn write(&self, w: &mut Writer) {
+        let tag: u8 = match self {
+            CultureEffect::Festival => 0,
+            CultureEffect::TradeFair => 1,
+            CultureEffect::SpreadReligion => 2,
+            CultureEffect::InciteUnrest => 3,
+        };
+        tag.write(w);
+    }
+    fn read(r: &mut Reader<'_>) -> Result<Self, LoadError> {
+        Ok(match u8::read(r)? {
+            0 => CultureEffect::Festival,
+            1 => CultureEffect::TradeFair,
+            2 => CultureEffect::SpreadReligion,
+            3 => CultureEffect::InciteUnrest,
+            t => return Err(LoadError::Corrupt(format!("culture effect tag {t}"))),
+        })
+    }
+}
+
+use crate::culture::{CultureMark, CultureOrder};
+persist_struct!(CultureOrder { action, target, religion, repeat, progress, stalled, started_turn });
+persist_struct!(CultureMark { effect, from, amount, turns });
 
 // ---- CvStructs.h ----
 
@@ -206,7 +250,7 @@ persist_struct!(City {
     building_happy_change, building_health_change, ai_assign_work_dirty, ai_choose_production_dirty, ai_emphasize,
     ai_emphasize_avoid_growth_count, ai_emphasize_great_people_count, ai_emphasize_yield_count,
     ai_emphasize_commerce_count, ai_emphasize_avoid_angry_citizens_count,
-    ai_emphasize_avoid_unhealthy_citizens_count,
+    ai_emphasize_avoid_unhealthy_citizens_count, culture_queue, culture_diverted, culture_marks,
 });
 
 persist_struct!(Player {
@@ -261,7 +305,7 @@ persist_struct!(Player {
     score_history, economy_history, industry_history, agriculture_history, power_history,
     culture_history, espionage_history, ai_civic_timer, ai_religion_timer, ai_num_train_ai_units,
     ai_num_ai_units, ai_peacetime_trade_value, ai_peacetime_grant_value, ai_gold_traded_to,
-    ai_attitude_extra, ai_first_contact, ai_memory_count,
+    ai_attitude_extra, ai_first_contact, ai_memory_count, culture_memory,
 });
 
 persist_struct!(Team {

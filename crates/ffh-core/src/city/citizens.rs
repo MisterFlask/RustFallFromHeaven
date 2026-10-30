@@ -440,6 +440,8 @@ impl Game {
             unhappiness -= self.d.handicaps[self.city_handicap_type(c)].happy_bonus.min(0);
             unhappiness += self.city_vassal_unhappiness(c).max(0);
             unhappiness += city.espionage_happiness_counter.max(0);
+            // This game's Incite Unrest (docs/CULTURE.md).
+            unhappiness += self.city_culture_unhappiness(c);
         }
 
         unhappiness.max(0)
@@ -470,6 +472,9 @@ impl Game {
         if city.happiness_timer > 0 {
             happiness += self.d.defines.temp_happy;
         }
+
+        // This game's festivals (docs/CULTURE.md).
+        happiness += self.city_culture_happiness(c);
 
         happiness.max(0)
     }

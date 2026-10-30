@@ -286,9 +286,13 @@ button.build.queued { border-style: dashed; }
 button.build:has(> .unlocks) { flex-wrap: wrap; }
 button.build > .unlocks { flex: 1 1 100%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
 .city-summary div { margin: 2px 0; }
-ol.queue { margin: 2px 0; padding-left: 22px; }
-ol.queue li { margin: 2px 0; }
-ol.queue button { margin-left: 8px; }
+ol.queue, ol.culture-queue { margin: 2px 0; padding-left: 22px; }
+ol.queue li, ol.culture-queue li { margin: 2px 0; }
+ol.queue button, ol.culture-queue button { margin-left: 8px; }
+/* The cultural queue's section (docs/CULTURE.md). */
+.culture-action { margin: 6px 0; }
+.culture-queue label.toggle { margin-left: 8px; }
+ul.culture-list li.hostile, ul.culture-pressure li { color: #f0c8b8; }
 .newgame .fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px 14px; }
 label.field { display: flex; flex-direction: column; gap: 2px; }
 label.field > span { color: var(--dim); font-size: 13px; }

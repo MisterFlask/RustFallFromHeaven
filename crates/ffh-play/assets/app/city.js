@@ -20,6 +20,7 @@ import { YIELD_COLORS } from "./tiles.js";
 import { look, uiIcon, typeIcon, barEl, pix } from "./look.js";
 import { focusOn, isoSkin, queueIcon, refreshCityPanel } from "./isoui.js";
 import { infoTip } from "./infotips.js";
+import { cultureView } from "./culture.js";
 
 const GROUPS = [
   [0, "Units"],
@@ -115,7 +116,7 @@ export async function openCity(id, { popup = false } = {}) {
     }
     if (m.closed || n !== loading) return;
     m.el.dataset.city = String(cityId);
-    m.setBody(screen(c, { task, choose, remove, go, popup, overlay, tap: [tapMode, setTapMode] }));
+    m.setBody(screen(c, { task, choose, remove, go, popup, overlay, tap: [tapMode, setTapMode], reload: load }));
     if (overlay) {
       const mine = me()?.player;
       // A click works the plot of the city these plots are of (Previous / Next may have moved on).
@@ -401,7 +402,7 @@ function productionView(c, choose, remove, [tapMode, setTapMode]) {
   ];
 }
 
-function screen(c, { task, choose, remove, popup, overlay, tap }) {
+function screen(c, { task, choose, remove, popup, overlay, tap, reload }) {
   const f = c.food;
   const head = h(
     "div.city-summary",
@@ -414,6 +415,6 @@ function screen(c, { task, choose, remove, popup, overlay, tap }) {
   );
   const plots = overlay ? h("p.dim.city-hint", "Click the city's plots on the map to work them; its own plot hands the choice back to the governor.") : plotGrid(c, task);
   const left = h("div.city-col", plots, specialistsView(c, task), statsView(c), buildingsView(c));
-  const right = h("div.city-col", manageView(c, task), productionView(c, choose, remove, tap));
+  const right = h("div.city-col", manageView(c, task), productionView(c, choose, remove, tap), popup ? null : cultureView(c, reload));
   return [head, popup ? h("div.city-cols.popup", right, left) : h("div.city-cols", left, right)];
 }

@@ -26,6 +26,7 @@ pub mod combat_sim;
 pub mod civs;
 pub mod code_effects;
 pub mod council;
+pub mod culture;
 pub mod defense;
 pub mod diplomacy;
 pub mod economy;
@@ -152,6 +153,7 @@ impl Controller for Ai {
             v = view::View::new(g, p);
             civs::turn(self, g, &mut v); // civ-mechanics
             traits::turn(g, &v); // trait-play
+            culture::turn(g, p); // cultural actions (docs/CULTURE.md)
         }
         if !v.barbarian {
             campaign::plan(g, &mut v);

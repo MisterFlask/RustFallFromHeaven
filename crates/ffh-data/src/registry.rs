@@ -9,6 +9,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 
 use crate::enums::*;
+use crate::infos::CulturalActionType;
 use crate::idx::{Idx, IdxVec};
 use crate::xml::Elem;
 
@@ -92,6 +93,7 @@ info_ids! {
     ContactType => "ContactTypes",
     DiplomacyPowerType => "DiplomacyPowerTypes",
     DirectionType => "DirectionTypes",
+    CulturalActionType => "CulturalActionInfo",
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

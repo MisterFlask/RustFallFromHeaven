@@ -145,6 +145,8 @@ game_data! {
     // ---- Events ----
     events: EventType => EventInfo, "Events/CIV4EventInfos.xml", event::read_event;
     event_triggers: EventTriggerType => EventTriggerInfo, "Events/CIV4EventTriggerInfos.xml", event::read_event_trigger;
+    // ---- This game's own rules (not FFH2's) ----
+    cultural_actions: CulturalActionType => CulturalActionInfo, "Gameinfo/CIV4CulturalActionInfos.xml", culture::read_cultural_action;
 }
 
 /// Lists declared in GlobalTypes.xml that are referenced by type name in XML.
@@ -239,7 +241,7 @@ impl GameData {
 
         // Defines (text defines resolve through the registry).
         let mut define_map = DefineMap::default();
-        for f in ["GlobalDefines.xml", "GlobalDefinesAlt.xml", "PythonCallbackDefines.xml"] {
+        for f in ["GlobalDefines.xml", "GlobalDefinesAlt.xml", "PythonCallbackDefines.xml", "RulesDefines.xml"] {
             define_map.read_file(&read_doc(&xml_dir, f)?, &reg);
         }
 
@@ -263,6 +265,15 @@ impl GameData {
     fn derive(&mut self) {
         self.combat_mod_promotions =
             self.promotions.keys().filter(|&p| self.promotions[p].promotion_combat_mod > 0).collect();
+        // A leader without `iCulturalAggression`: 100, more for a war-eager leader (FfH's
+        // iLimitedWarRand runs from 60, eager, to 300, peaceful) and for a culture lover.
+        let culture_flavor = self.reg.lookup::<FlavorType>("FLAVOR_CULTURE");
+        for info in self.leader_heads.iter_mut() {
+            if info.cultural_aggression < 0 {
+                let flavor = culture_flavor.map_or(0, |f| info.flavor_value.get(f).copied().unwrap_or(0));
+                info.cultural_aggression = (100 + (150 - info.limited_war_rand) / 3 + 2 * flavor).clamp(40, 180);
+            }
+        }
     }
 
     /// Verifies that data-defined tables whose order is hard-coded in C++ enums match.

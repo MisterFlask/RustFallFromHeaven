@@ -1,0 +1,78 @@
+<?xml version="1.0"?>
+<!-- Cultural actions (GAMEOPTION_CULTURE_ACTIONS; this game's own rules, docs/CULTURE.md).
+     A city channels one action at a time from its cultural queue: iRate culture a turn is
+     diverted for iDuration turns (scaled by the game speed's iTrainPercent), then the effect
+     resolves on the target.
+
+     Target:  OWN_OR_ALLY_CITY  a city of the caster's team or of a team it has a defensive pact with
+              FOREIGN_CITY      a city of another team (or the barbarians) the caster has met
+              ANY_CITY          either
+     Hostile: NEVER, ALWAYS, or DIFFERENT_STATE_RELIGION (only when the target's owner has a
+              state religion other than the one spread)
+     Effect:  what completion does (the code's dispatch); its magnitudes are the CULTURE_*
+              defines of RulesDefines.xml
+     bScaledByEffect: the magnitude or chance is multiplied by the effectiveness E (never for a
+              target of the caster's own team)
+     iThreatWeight: read by nothing yet (the future threat score)
+     iMemoryWeight: points of cultural hostility (hostile) or friendship (friendly) the target's
+              owner remembers when the action completes -->
+<Civ4CulturalActionInfos xmlns="x-schema:CIV4GameInfoSchema.xml">
+	<CulturalActionInfos>
+		<CulturalActionInfo>
+			<Type>CULTURALACTION_FESTIVAL</Type>
+			<Description>TXT_KEY_CULTURALACTION_FESTIVAL</Description>
+			<Help>TXT_KEY_CULTURALACTION_FESTIVAL_HELP</Help>
+			<iTier>1</iTier>
+			<iRate>3</iRate>
+			<iDuration>3</iDuration>
+			<Target>OWN_OR_ALLY_CITY</Target>
+			<Hostile>NEVER</Hostile>
+			<Effect>FESTIVAL</Effect>
+			<bScaledByEffect>0</bScaledByEffect>
+			<iThreatWeight>0</iThreatWeight>
+			<iMemoryWeight>1</iMemoryWeight>
+		</CulturalActionInfo>
+		<CulturalActionInfo>
+			<Type>CULTURALACTION_TRADE_FAIR</Type>
+			<Description>TXT_KEY_CULTURALACTION_TRADE_FAIR</Description>
+			<Help>TXT_KEY_CULTURALACTION_TRADE_FAIR_HELP</Help>
+			<iTier>1</iTier>
+			<iRate>3</iRate>
+			<iDuration>4</iDuration>
+			<Target>FOREIGN_CITY</Target>
+			<Hostile>NEVER</Hostile>
+			<Effect>TRADE_FAIR</Effect>
+			<bScaledByEffect>1</bScaledByEffect>
+			<iThreatWeight>0</iThreatWeight>
+			<iMemoryWeight>1</iMemoryWeight>
+		</CulturalActionInfo>
+		<CulturalActionInfo>
+			<Type>CULTURALACTION_SPREAD_RELIGION</Type>
+			<Description>TXT_KEY_CULTURALACTION_SPREAD_RELIGION</Description>
+			<Help>TXT_KEY_CULTURALACTION_SPREAD_RELIGION_HELP</Help>
+			<iTier>1</iTier>
+			<iRate>3</iRate>
+			<iDuration>4</iDuration>
+			<Target>ANY_CITY</Target>
+			<Hostile>DIFFERENT_STATE_RELIGION</Hostile>
+			<Effect>SPREAD_RELIGION</Effect>
+			<bScaledByEffect>1</bScaledByEffect>
+			<iThreatWeight>1</iThreatWeight>
+			<iMemoryWeight>1</iMemoryWeight>
+		</CulturalActionInfo>
+		<CulturalActionInfo>
+			<Type>CULTURALACTION_INCITE_UNREST</Type>
+			<Description>TXT_KEY_CULTURALACTION_INCITE_UNREST</Description>
+			<Help>TXT_KEY_CULTURALACTION_INCITE_UNREST_HELP</Help>
+			<iTier>1</iTier>
+			<iRate>4</iRate>
+			<iDuration>4</iDuration>
+			<Target>FOREIGN_CITY</Target>
+			<Hostile>ALWAYS</Hostile>
+			<Effect>INCITE_UNREST</Effect>
+			<bScaledByEffect>1</bScaledByEffect>
+			<iThreatWeight>2</iThreatWeight>
+			<iMemoryWeight>2</iMemoryWeight>
+		</CulturalActionInfo>
+	</CulturalActionInfos>
+</Civ4CulturalActionInfos>

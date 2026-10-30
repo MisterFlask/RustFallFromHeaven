@@ -57,6 +57,15 @@ pub fn relation_parts(g: &Game, p: PlayerId, other: PlayerId) -> Vec<(&'static s
     if b.feat_accomplished[FeatType::FEAT_TRUST] {
         out.push(("the Trust spell", 2));
     }
+    // What `other` did to us with cultural actions (docs/CULTURE.md): a point of memory per
+    // completed unrest-sized act, fading a point every few turns; two points are a step.
+    let [hostility, friendship] = a.culture_memory[other];
+    if hostility > 0 {
+        out.push(("cultural hostility", -((hostility + 1) / 2).min(3)));
+    }
+    if friendship > 0 {
+        out.push(("cultural friendship", ((friendship + 1) / 2).min(2)));
+    }
     out
 }
 

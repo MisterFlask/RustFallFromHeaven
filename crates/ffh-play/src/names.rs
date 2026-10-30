@@ -319,6 +319,8 @@ kinds! {
         // ---- Events ----
         EventType => events,
         EventTriggerType => event_triggers,
+        // ---- This game's own rules ----
+        CulturalActionType => cultural_actions,
     }
     globals {
         FlavorType,

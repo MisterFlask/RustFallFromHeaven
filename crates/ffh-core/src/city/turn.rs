@@ -194,6 +194,9 @@ impl Game {
 
         // Interface: clear the city selection.
 
+        // This game's cultural actions: the city's channel and those aimed at it end.
+        self.city_culture_lost(c);
+
         let plot = self.city_plot(c);
 
         for i in 0..NUM_CITY_PLOTS {
@@ -406,8 +409,11 @@ impl Game {
         }
         // FfH: End Add
 
+        // This game's cultural actions (docs/CULTURE.md): the channel takes its rate first;
+        // what it diverts reaches neither the city's culture nor its plots.
+        self.city_do_culture_channel(c);
         self.city_do_culture(c);
-        let culture_rate = self.city_commerce_rate(c, CommerceType::COMMERCE_CULTURE);
+        let culture_rate = self.city_commerce_rate(c, CommerceType::COMMERCE_CULTURE) - self.cities[c].culture_diverted;
         let owner = self.cities[c].owner;
         self.city_do_plot_culture(c, false, owner, culture_rate);
         self.city_do_production(c, allow_no_production);
@@ -459,6 +465,8 @@ impl Game {
         if self.cities[c].espionage_happiness_counter > 0 {
             self.cities[c].espionage_happiness_counter -= 1;
         }
+
+        self.city_do_culture_marks(c);
 
         if self.city_is_occupation(c) || self.city_angry_population(c, 0) > 0 || self.city_health_rate(c, false, 0) < 0 {
             self.city_set_we_love_the_king_day(c, false);

@@ -8,6 +8,7 @@ pub mod building;
 pub mod civ;
 pub mod unit;
 pub mod event;
+pub mod culture;
 
 pub use basic::*;
 pub use terrain::*;
@@ -17,6 +18,7 @@ pub use building::*;
 pub use civ::*;
 pub use unit::*;
 pub use event::*;
+pub use culture::*;
 
 use crate::registry::Rd;
 

@@ -360,6 +360,10 @@ pub struct Player {
     pub ai_first_contact: IdxVec<PlayerId, bool>,
     /// C++ `CvPlayerAI::m_aaiMemoryCount` (`AI_get/changeMemoryCount`): `[other][memory]`.
     pub ai_memory_count: IdxVec<PlayerId, IdxVec<MemoryType, i32>>,
+    // ---- This game's own rules (not FFH2's) ----
+    /// What this player remembers of each player's cultural actions against it
+    /// (docs/CULTURE.md): `[hostility, friendship]` points, capped and decaying.
+    pub culture_memory: IdxVec<PlayerId, [i32; 2]>,
 }
 
 impl Player {
@@ -610,6 +614,7 @@ impl Player {
             ai_attitude_extra: IdxVec::from_elem(0, num_players),
             ai_first_contact: IdxVec::from_elem(false, num_players),
             ai_memory_count: IdxVec::from_fn(num_players, |_| IdxVec::from_elem(0, MemoryType::NUM)),
+            culture_memory: IdxVec::from_elem([0, 0], num_players),
         }
     }
 
@@ -846,6 +851,7 @@ fn ai_reset(g: &mut Game, p: PlayerId) {
         for memory in pl.ai_memory_count.iter_mut() {
             memory.fill(0);
         }
+        pl.culture_memory.fill([0, 0]);
     }
     for other in g.player_ids() {
         let o = &mut g.players[other];
@@ -866,6 +872,9 @@ fn ai_reset(g: &mut Game, p: PlayerId) {
         }
         if let Some(memory) = o.ai_memory_count.get_mut(p) {
             memory.fill(0);
+        }
+        if let Some(memory) = o.culture_memory.get_mut(p) {
+            *memory = [0, 0];
         }
     }
 }

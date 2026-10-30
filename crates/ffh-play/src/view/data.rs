@@ -63,6 +63,28 @@ fn fields(d: &GameData, kind: &str, i: usize, j: &mut Json) {
             j.set("water", t.water);
             j.set("impassable", t.impassable);
         }
+        "CulturalActionType" => {
+            let a = &d.cultural_actions[CulturalActionType::from_usize(i)];
+            j.set("tier", a.tier);
+            j.set("rate", a.rate);
+            j.set("duration", a.duration);
+            j.set("target", match a.target {
+                CultureTargetKind::OwnOrAllyCity => "own_or_ally",
+                CultureTargetKind::ForeignCity => "foreign",
+                CultureTargetKind::AnyCity => "any",
+            });
+            j.set("hostile", match a.hostile {
+                CultureHostility::Never => "never",
+                CultureHostility::Always => "always",
+                CultureHostility::DifferentStateReligion => "different_state_religion",
+            });
+            j.set("effect", match a.effect {
+                CultureEffect::Festival => "festival",
+                CultureEffect::TradeFair => "trade_fair",
+                CultureEffect::SpreadReligion => "spread_religion",
+                CultureEffect::InciteUnrest => "incite_unrest",
+            });
+        }
         "FeatureType" => {
             let f = &d.features[FeatureType::from_usize(i)];
             j.set("yields", yields(&f.yield_change));

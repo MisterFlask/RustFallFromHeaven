@@ -619,7 +619,7 @@ export function keysHelp() {
     ["Del / Backspace", "delete the units (asks first) / cancel the orders"],
     ["Screens", ""],
     ["F1 / F2 / F3 / F4", "cities / finances (the sliders) / civics / diplomacy and trade"],
-    ["F6 / F7", "the tech tree / religion"],
+    ["F6 / F7 / F8", "the tech tree / religion / cultural pressure (ffh-play's)"],
     ["Ctrl+S / Ctrl+L", "save / load"],
     ["Ctrl+1 / 2 / 3", "map layer: terrain / political / yields (ffh-play's)"],
     ["?", "this list (ffh-play's)"],

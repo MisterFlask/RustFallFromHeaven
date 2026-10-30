@@ -330,6 +330,39 @@ impl Game {
         }
     }
 
+    /// A cultural channel started, completed or was cancelled (docs/CULTURE.md): counted per
+    /// action as `culture_start` / `culture_done` (sum: successes) / `culture_cancel`.
+    pub(crate) fn tel_culture(&self, c: CityId, order: &crate::culture::CultureOrder, kind: crate::culture::CultureEventKind, hostile: bool, target_owner: Option<PlayerId>) {
+        use crate::culture::CultureEventKind;
+        if !self.telemetry.on() {
+            return;
+        }
+        let p = self.cities[c].owner;
+        let name = self.d.cultural_actions[order.action].base.type_.as_str();
+        let turn = self.game_turn();
+        let crate::culture::CultureTarget::City(target) = order.target;
+        let (cat, how, success, magnitude) = match kind {
+            CultureEventKind::Start => ("culture_start", "start", true, 0),
+            CultureEventKind::Cancel => ("culture_cancel", "cancel", false, 0),
+            CultureEventKind::Complete { success, magnitude } => ("culture_done", "complete", success, magnitude),
+        };
+        self.telemetry.with(|t| {
+            t.count(p, cat, name, (cat == "culture_done" && success) as i64);
+            t.event(|| {
+                ev(turn, "culture", p)
+                    .s("how", how)
+                    .s("action", name)
+                    .i("city", c.0 as i64)
+                    .i("target", target.0 as i64)
+                    .i("target_owner", target_owner.map_or(-1, |o| o.0 as i64))
+                    .b("hostile", hostile)
+                    .b("success", success)
+                    .i("magnitude", magnitude as i64)
+                    .end()
+            });
+        });
+    }
+
     pub(crate) fn tel_hurry(&self, c: CityId, hurry: HurryType, gold: i32, pop: i32) {
         let p = self.cities[c].owner;
         let name = self.d.hurries[hurry].base.type_.as_str();

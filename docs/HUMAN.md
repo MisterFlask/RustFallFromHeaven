@@ -156,6 +156,7 @@ XML (each button shows its key), and the global keys are Civ4's controls
 | `Shift+P` | pillage |
 | `Del` / `Backspace` | delete the selected units (asks first) / cancel their orders |
 | `F1` `F2` `F3` `F4` `F6` `F7` | cities, finances (the sliders), civics, diplomacy, the tech tree, religion |
+| `F8` | cultural pressure (this game's cultural actions: docs/CULTURE.md) |
 | `Ctrl+S` / `Ctrl+L` | save / load |
 | `Ctrl+1` `Ctrl+2` `Ctrl+3`, `?` | ffh-play's own: the terrain, political and yield layers; the keys list |
 | `Esc` | leave a plot pick, close a dialog, clear the selection |
@@ -240,7 +241,13 @@ hurry (gold or population, with the price), draft, the emphasis flags and "Autom
 production"; the queue (✕ removes an entry while there are several; the only one is replaced by
 choosing another) and everything it can build with turns and cost, each with its tooltip (a
 unit's strength, moves and class, what it does; click: build it; Shift: append; Ctrl: put it
-first). "‹ Previous city" and "Next city ›" go through your cities.
+first). "‹ Previous city" and "Next city ›" go through your cities. With cultural actions on
+(this game's own system, docs/CULTURE.md) the screen also has a **Culture** section: the culture
+rate and what the channel took last turn, the cultural queue (progress, why a channel is paused,
+repeat, ✕ to cancel), the hostile channels aimed at the city, its festivals, fairs and unrest, and
+"Start a cultural action": each action's targets in reach with the predicted effectiveness and
+effect (hostile ones marked; click queues, Shift puts first, Alt repeats) and the ones not
+possible with the reason.
 With the isometric map the screen is Civ4's city view: the map glides to the city at the largest
 zoom that shows its radius, veils what lies outside it and draws the radius in gilt, each plot
 with its yields and the worked ones with a citizen; click a plot there to work it or stop. The
@@ -254,7 +261,11 @@ civics (the current ones marked, the ones you cannot adopt greyed, their tooltip
 tech, a war, an alignment, a state religion); pick civics and the screen shows the
 revolution's anarchy and upkeep (computed by the rules), then "Revolution!". **Religion** (`F7`):
 the religions, the tech whose first discoverer founds each, their holy cities as far as you know
-them, your cities with each, and "Convert" (with the anarchy). **Finances** (`F2`, or click the
+them, your cities with each, and "Convert" (with the anarchy). **Cultural pressure** (`F8`, the
+menu's Culture; with cultural actions on): every cultural channel aimed at your cities, every one
+you run, the others you see (all channels are public to civilizations that have met the caster),
+and what other leaders remember of your actions; a city with hostile channels aimed at it has a red
+"!" on its banner. **Finances** (`F2`, or click the
 commerce split in the top bar): each commerce's share with `−`/`+` by Civ4's step (only the ones
 you may change; gold takes the rest), and the gold per turn by its parts, as in the gold's tooltip.
 **Diplomacy** (`F4`): every player you met, by their leader's portrait (war or peace, open
@@ -545,7 +556,10 @@ loop {
 ### Commands
 
 `move`, `mission`, `do_command`, `join_group`, `auto_mission`, `push_order`, `pop_order`,
-`do_task`, `research`, `update_civics`, `percent_change`, `convert`, `declare_war`,
+`do_task`, `culture_push`, `culture_pop`, `culture_repeat` (this game's cultural queue:
+`{"c": "culture_push", "city": .., "action": "CULTURALACTION_FESTIVAL", "target": <city id>,
+"religion": .., "repeat": false, "first": false}`, checked by the rules' `culture_check`;
+docs/CULTURE.md), `research`, `update_civics`, `percent_change`, `convert`, `declare_war`,
 `propose_deal`, `event`, `vote`, `set_option`, `auto_moves`, `end_turn`, `autoplay`. Each is
 the port of what Civ4 sends for that input; design §4.5 and the "As built" notes of P1 and P3 in
 §7 list the rules calls and checks. The `group` query lists the actions of a selection with the
@@ -593,7 +607,8 @@ Errors: `invalid`, `not_owner`, `gone`, `busy`.
 | `group {units}` | the units in detail and the actions: `mission`, `target` (an interface mode, `mode`: go-to, route-to for workers, range attack, the air modes; needs a plot), `command`, `load`, `spell`, `promotion`, `upgrade`, each `enabled` or not, each with its `cmd` |
 | `path {units,x,y}` | the path preview: nodes with the turn of arrival and moves left, total turns, a war it would declare, whether it ends in an attack |
 | `combat {units,x,y}` | the attack preview: attacker, defender, odds of winning and of retreating (per mille), strengths, the modifiers of both sides |
-| `city {city}` | the city screen of one of your cities: plots (with `can_work`), specialists (with `plus` and `minus`: what `do_task TASK_CHANGE_SPECIALIST` accepts now), yields, happiness, health, buildings, hurry, emphasis, queue, the buildable list with cost and turns |
+| `city {city}` | the city screen of one of your cities: plots (with `can_work`), specialists (with `plus` and `minus`: what `do_task TASK_CHANGE_SPECIALIST` accepts now), yields, happiness, health, buildings, hurry, emphasis, queue, the buildable list with cost and turns; `cultural` (null without cultural actions): the cultural queue, each action's targets in reach (`ok` with `effect`, `hostile`, `magnitude`, `effect_turns`, else `why`), the hostile channels aimed at it (`pressure`), its `marks` |
+| `culture` | the Cultural Pressure panel: `on`, the channels you see `incoming` (aimed at your cities), `ours`, `others`, each with caster, action, target (null if unseen), progress, `paused`, `hostile`; `memories`: what met leaders remember of your cultural actions |
 | `techs`, `civics`, `religions`, `players` | the tech tree (prerequisites, depth, turns; each tech's `help` and, unless you have it, `unlocks`: the units, buildings, builds, civics and religions of its help as type indices, which the research chooser shows as icons), civics (availability, upkeep, anarchy; `civics {with: [civic, ..]}` adds `proposed`: the set a revolution to those civics makes, whether `update_civics` would be applied, its anarchy and upkeep), religions, the players you met with your deals |
 | `trade {with}` | the trade tables both ways (see Deals) |
 | `speech {with,comment?,salt?}` | what the AI leader of `with` says to you: `{with, comment, text}`; `comment` an `AI_DIPLOCOMMENT_*` (`DiploCommentType`), or none for what it says when you contact it (its greeting, Civ4's `AI_getGreeting`, or `AI_DIPLOCOMMENT_REFUSE_TO_TALK`); `salt` picks among its lines (Civ4 uses the interface's random numbers); `text` null when it has no line |

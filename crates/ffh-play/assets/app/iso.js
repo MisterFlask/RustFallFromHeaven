@@ -1453,6 +1453,24 @@ export class IsoMap {
         g.fill();
         g.stroke();
       }
+      // Cultural pressure (docs/CULTURE.md): hostile channels aimed at the city, a red "!" on a
+      // disc at the plaque's right end.
+      if (city.pressure) {
+        const r = Math.max(4, 5 * u);
+        const px = x0 + w + r - u;
+        const py = y0 + h / 2;
+        g.fillStyle = "#b3201a";
+        g.strokeStyle = "#0c0703";
+        g.lineWidth = Math.max(1, u);
+        g.beginPath();
+        g.arc(px, py, r, 0, Math.PI * 2);
+        g.fill();
+        g.stroke();
+        g.fillStyle = "#ffffff";
+        g.textAlign = "center";
+        g.fillText("!", px, base);
+        g.textAlign = "left";
+      }
     }
   }
 

@@ -191,8 +191,15 @@ fn game_options() {
     assert!(no_espionage.default && !no_espionage.visible);
     let advanced_start = &d.game_options[GameOptionType::GAMEOPTION_ADVANCED_START];
     assert!(!advanced_start.default && advanced_start.visible);
-    assert_eq!(d.game_options.iter().filter(|o| o.default).count(), 1);
-    assert_eq!(d.game_options.iter().filter(|o| o.visible).count(), 52);
+    // FFH2's options, and this game's own after them (docs/PORTING.md "This game's own systems"):
+    // visible, on by default.
+    let ffh2 = GameOptionType::GAMEOPTION_ALWAYS_RAZE.idx() + 1;
+    assert_eq!(d.game_options.iter().take(ffh2).filter(|o| o.default).count(), 1);
+    assert_eq!(d.game_options.iter().take(ffh2).filter(|o| o.visible).count(), 52);
+    for o in d.game_options.iter().skip(ffh2) {
+        assert!(o.default && o.visible, "{}", o.base.type_);
+    }
+    assert_eq!(d.game_options[GameOptionType::GAMEOPTION_CULTURE_ACTIONS].base.type_, "GAMEOPTION_CULTURE_ACTIONS");
 }
 
 #[test]

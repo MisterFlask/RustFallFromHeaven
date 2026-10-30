@@ -1200,7 +1200,8 @@ export class MapView {
         g.textBaseline = "middle";
         g.fillText(c.size === null || c.size === undefined ? "?" : String(c.size), sx + ts / 2, by + hh / 2 + 0.5);
         if (ts >= 16) {
-          const label = `${c.capital ? "★ " : ""}${c.name}`;
+          // Cultural pressure (docs/CULTURE.md): "!" for hostile channels aimed at the city.
+          const label = `${c.capital ? "★ " : ""}${c.name}${c.pressure ? " !" : ""}`;
           g.font = `${ts >= 32 ? 12 : 10}px ${FONT}`;
           const tw = g.measureText(label).width + 8;
           g.fillStyle = "rgba(10,10,12,0.78)";

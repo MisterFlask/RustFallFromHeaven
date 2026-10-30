@@ -61,7 +61,9 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 ///   shares of the world in basis points instead of FFH2's `calculateScore` (no new fields).
 /// - 3: no rules caches: the path finders, `Player::ai_bonus_value` and the city rank caches
 ///   are gone (computed when needed).
-pub const FORMAT_VERSION: u32 = 3;
+/// - 4: cultural actions (docs/CULTURE.md): `City::culture_queue`, `culture_diverted`,
+///   `culture_marks`, `Player::culture_memory`.
+pub const FORMAT_VERSION: u32 = 4;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]

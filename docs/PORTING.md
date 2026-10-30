@@ -98,6 +98,20 @@ The rules as they stood before the first sweeping rules change are the tag `clas
 stays playable at https://misterflask.github.io/RustFallFromHeaven/classic/ (docs/WEB.md, "The
 classic site"); the changes below up to that tag are its differences from FFH2.
 
+**This game's own systems** (after `classic-1`: the owner's design spec "FfH Culture Actions &
+Army Combat", 2026-10-29; each behind its own game option, so FFH2's rules stay playable side by
+side)
+
+- **Cultural actions** (`GAMEOPTION_CULTURE_ACTIONS`, docs/CULTURE.md): each city has a cultural
+  queue; its first order diverts a rate of the city's culture for a few turns (that culture reaches
+  neither the city's culture, its plots nor the culture victory), then resolves on a target city:
+  Festival (happiness, resists hostile actions), Trade Fair (trade routes with the caster's cities
+  yield more), Spread Religion (a chance to spread a religion of the casting city), Incite Unrest
+  (unhappiness abroad). Effects abroad scale with the caster's share of the target's culture against
+  the owner's. Every channel is public to the civilizations that have met the caster; completed
+  actions leave a memory of hostility or friendship that the AI's attitude reads. Option off (the
+  default outside the browser's new-game screen), nothing changes. Save format 4.
+
 **Container order and path finding**
 
 - **Per-owner object lists iterate in creation order.** C++ keeps units, cities, selection groups

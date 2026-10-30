@@ -47,6 +47,8 @@ pub enum Query {
     Civics { with: Vec<CivicType> },
     Religions,
     Players,
+    /// The Cultural Pressure panel (docs/CULTURE.md): the public cultural channels.
+    Culture,
     /// What can be traded with `with`, both ways (C++ `buildTradeTable`), with denials.
     Trade { with: PlayerId },
     /// Messages from index `since` (`view.log_next` is the next index).
@@ -103,7 +105,7 @@ impl Layer {
 
 /// Every query name (`q`).
 pub const QUERY_NAMES: &[&str] = &[
-    "status", "pending", "view", "map", "plot", "group", "path", "combat", "city", "techs", "civics", "religions", "players", "trade", "log",
+    "status", "pending", "view", "map", "plot", "group", "path", "combat", "city", "techs", "civics", "religions", "players", "culture", "trade", "log",
     "speech", "moments", "report", "inspect", "text", "ascii", "data", "setup", "saves",
 ];
 
@@ -174,6 +176,7 @@ impl Query {
             Query::Civics { .. } => "civics",
             Query::Religions => "religions",
             Query::Players => "players",
+            Query::Culture => "culture",
             Query::Trade { .. } => "trade",
             Query::Log { .. } => "log",
             Query::Speech { .. } => "speech",
@@ -207,6 +210,7 @@ impl Query {
             },
             "religions" => Query::Religions,
             "players" => Query::Players,
+            "culture" => Query::Culture,
             "trade" => Query::Trade { with: j.req("with")? },
             "log" => Query::Log { since: j.get_or("since", 0)? },
             "speech" => Query::Speech {
@@ -340,6 +344,7 @@ pub fn run(g: &Game, ctx: &Ctx, q: &Query) -> Result<Json, QueryErr> {
         Query::Civics { with } => view::player::civics(&v, with),
         Query::Religions => view::player::religions(&v),
         Query::Players => view::player::players(&v),
+        Query::Culture => view::culture::culture(&v),
         Query::Trade { with } => view::diplo::trade(&v, *with)?,
         Query::Log { since } => match ctx.messages {
             Some(m) => m.since_json(*since),
@@ -394,6 +399,7 @@ mod tests {
             Query::Civics { with: vec![CivicType::from_usize(2)] },
             Query::Religions,
             Query::Players,
+            Query::Culture,
             Query::Trade { with: PlayerId(2) },
             Query::Log { since: 10 },
             Query::Speech { with: PlayerId(1), comment: None, salt: 0 },

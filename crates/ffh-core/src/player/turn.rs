@@ -189,6 +189,9 @@ impl Game {
         // choices: the controller does this while the player's turn is active.
         self.ai_hook(p, AiHook::PlayerTurnPre(p));
 
+        // This game's cultural actions: their memories fade.
+        self.player_do_culture_memory(p);
+
         if self.players[p].revolution_timer > 0 {
             self.players[p].revolution_timer -= 1;
         }

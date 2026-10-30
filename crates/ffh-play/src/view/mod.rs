@@ -13,6 +13,7 @@
 //!   `inspect`); [`help`] writes the help texts (what a tech, a building, ... does).
 
 pub mod city;
+pub mod culture;
 pub mod data;
 pub mod diplo;
 pub mod fog;
@@ -310,6 +311,31 @@ pub fn cities(v: &Viewer) -> Json {
             j.set("automated_production", city.production_automated);
             j.set("food_turns", g.city_food_turns_left(c));
             j.set("disorder", g.city_is_disorder(c));
+            // This game's cultural queue: what the city channels (docs/CULTURE.md).
+            if let Some(o) = city.culture_queue.first() {
+                j.set("channel", crate::jobj! {
+                    "action" => Json::idx(o.action),
+                    "progress" => o.progress,
+                    "duration" => g.culture_action_duration(o.action),
+                    "paused" => o.stalled > 0,
+                });
+            }
+        }
+        // Hostile cultural channels the human sees aimed at the city (its banner's mark), and
+        // the festivals and unrest it shows.
+        if g.culture_actions_on() {
+            let pressure = crate::view::culture::pressure_count(v, c);
+            if pressure > 0 {
+                j.set("pressure", pressure);
+            }
+            if visible || own {
+                if g.city_culture_happiness(c) > 0 {
+                    j.set("festival", true);
+                }
+                if g.city_culture_unhappiness(c) > 0 {
+                    j.set("unrest", g.city_culture_unhappiness(c));
+                }
+            }
         }
         out.push(j);
     }

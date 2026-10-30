@@ -395,6 +395,7 @@ const RAIL = [
   ["btn-cities", "cities"],
   ["btn-civics", "civics"],
   ["btn-religion", "religion"],
+  ["btn-culture", "culture"],
   ["btn-diplo", "diplomacy"],
 ];
 const SYSTEM = [
