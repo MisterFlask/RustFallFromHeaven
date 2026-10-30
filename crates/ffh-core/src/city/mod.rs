@@ -260,16 +260,15 @@ pub struct City {
     /// FFH2 GrowthControl (`m_iEmphasizeAvoidUnhealthyCitizensCount`).
     pub ai_emphasize_avoid_unhealthy_citizens_count: i32,
     // ---- This game's own rules (not FFH2's) ----
-    /// The cultural queue (docs/CULTURE.md): its first order is the channel, the rest wait.
-    /// Change it through `Game::city_push_culture_order` / `city_pop_culture_order`.
-    pub culture_queue: Vec<crate::culture::CultureOrder>,
+    /// The city's standing cultural channel (docs/CULTURE.md); change it through
+    /// `Game::city_set_culture_channel`.
+    pub culture_channel: Option<crate::culture::CultureChannel>,
     /// Culture the channel diverted in the city's last turn (0 when nothing channelled).
     pub culture_diverted: i32,
-    /// Timed effects of completed cultural actions on this city (festivals, fairs, unrest).
-    pub culture_marks: Vec<crate::culture::CultureMark>,
-    /// The game turn of the last successful Foment Revolt in this city (-1: none); Flip City
-    /// needs a recent one.
-    pub culture_revolt_turn: i32,
+    /// Revolt pressure on this city from each caster's Foment Revolt, in hundredths of culture.
+    pub culture_pressure: IdxVec<PlayerId, i32>,
+    /// How far the revolt pressure has gone (`culture::REVOLT_*`), for the news of its changes.
+    pub culture_revolt_level: i32,
     /// Where the city's trained land combat units go when their order names no destination
     /// (docs/ARMIES.md); `None`: its own garrison.
     pub recruit_default: Option<crate::army::RecruitDest>,
@@ -491,10 +490,10 @@ impl City {
             ai_emphasize_commerce_count: [0; CommerceType::NUM],
             ai_emphasize_avoid_angry_citizens_count: 0,
             ai_emphasize_avoid_unhealthy_citizens_count: 0,
-            culture_queue: Vec::new(),
+            culture_channel: None,
             culture_diverted: 0,
-            culture_marks: Vec::new(),
-            culture_revolt_turn: -1,
+            culture_pressure: IdxVec::from_elem(0, num_players),
+            culture_revolt_level: 0,
             recruit_default: None,
             direct_rule: true,
             rule_changed_turn: -1,

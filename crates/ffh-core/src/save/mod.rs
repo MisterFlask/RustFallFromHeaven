@@ -69,7 +69,10 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 /// - 7: governors (docs/GOVERNORS.md): `Game::governors`, `Player::governors`, `governor_count`,
 ///   `City::direct_rule`, `rule_changed_turn`, `governor`, `feed_army`, `governor_penalty_turns`,
 ///   `governor_hostile_culture`.
-pub const FORMAT_VERSION: u32 = 7;
+/// - 8: cultural channels replace the cultural queue (docs/CULTURE.md): `City::culture_channel`,
+///   `culture_pressure`, `culture_revolt_level` in place of `culture_queue`, `culture_marks`,
+///   `culture_revolt_turn`.
+pub const FORMAT_VERSION: u32 = 8;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]

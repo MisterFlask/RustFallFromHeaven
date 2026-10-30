@@ -102,19 +102,17 @@ classic site"); the changes below up to that tag are its differences from FFH2.
 Army Combat", 2026-10-29; each behind its own game option, so FFH2's rules stay playable side by
 side)
 
-- **Cultural actions** (`GAMEOPTION_CULTURE_ACTIONS`, docs/CULTURE.md): each city has a cultural
-  queue; its first order diverts a rate of the city's culture for a few turns (that culture reaches
-  neither the city's culture, its plots nor the culture victory), then resolves on a target city:
-  Festival (happiness, resists hostile actions), Trade Fair (trade routes with the caster's cities
-  yield more), Spread Religion (a chance to spread a religion of the casting city), Incite Unrest
-  (unhappiness abroad). Effects abroad scale with the caster's share of the target's culture against
-  the owner's. Every channel is public to the civilizations that have met the caster; completed
-  actions leave a memory of hostility or friendship that the AI's attitude reads. Option off (the
-  default outside the browser's new-game screen), nothing changes. Save format 4. The escalation
-  actions (save format 5): Siphon Knowledge (research toward a tech the target's owner knows),
-  Foment Revolt (a chance of disorder for 2 turns and 30% damage to the garrison, never killing)
-  and Flip City (after a recent revolt or in disorder, never a capital: a chance that the city
-  changes hands as in a culture flip); the garrison resists unrest, revolt and flip.
+- **Cultural channels** (`GAMEOPTION_CULTURE_ACTIONS`, docs/CULTURE.md): a city may channel half its
+  culture (that culture reaches neither the city's culture, its plots nor the culture victory) into
+  one standing order aimed at a civilization, until its owner changes it: Foment Revolt (revolt
+  pressure on the target's cities: unhappiness, disorder, then the city joins the caster; never a
+  capital) or Spread Religion (a chance a turn to spread a religion of the city to one of the
+  target's cities). The effect falls with the square of the distance; a city resists revolt with
+  part of its own culture and its garrison. Not acts of war; the target's leader remembers them.
+  Every channel is public to the civilizations that have met the caster. Option off (the default
+  outside the browser's new-game screen), nothing changes. Save format 8 (it replaced the cultural
+  queue of timed actions of formats 4-5: Festival, Trade Fair, Incite Unrest, Siphon Knowledge,
+  Foment Revolt, Flip City, Spread Religion, removed on the owner's direction of 2026-10-30).
 - **Armies** (`GAMEOPTION_ARMIES`, docs/ARMIES.md): land combat units (not mages, recon units,
   heroes or summons) serve in named armies, kept one selection group each, or in a city's
   garrison. A trained land combat unit goes to its order's destination (the city's garrison by

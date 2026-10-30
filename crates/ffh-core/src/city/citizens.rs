@@ -477,8 +477,6 @@ impl Game {
             happiness += self.d.defines.temp_happy;
         }
 
-        // This game's festivals (docs/CULTURE.md).
-        happiness += self.city_culture_happiness(c);
         // This game's governors: a trait's faces (docs/GOVERNORS.md).
         if self.governors_on() {
             happiness += self.city_governor_mods(c).happy.max(0);

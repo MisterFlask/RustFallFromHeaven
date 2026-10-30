@@ -612,9 +612,6 @@ impl Game {
 
                 modifier += self.city_peace_trade_modifier(c, self.city_team(other));
             }
-
-            // This game's trade fairs (docs/CULTURE.md).
-            modifier += self.city_trade_fair_modifier(c, other);
         }
 
         modifier

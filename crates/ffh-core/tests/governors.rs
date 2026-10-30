@@ -284,7 +284,7 @@ fn merged_armies_keep_their_feeding_cities() {
     let c = cities[4];
     let warrior = g.d.t::<UnitType>("UNIT_WARRIOR");
     let (x, y) = free_plot(&g);
-    let mut army = |g: &mut Game| {
+    let army = |g: &mut Game| {
         let units: Vec<UnitId> = (0..2).map(|_| g.player_init_unit(p0, warrior, x, y, None, None)).collect();
         g.army_form(p0, &units).expect("formed")
     };

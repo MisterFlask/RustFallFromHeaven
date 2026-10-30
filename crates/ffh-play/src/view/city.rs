@@ -146,7 +146,6 @@ pub fn happy_parts(g: &ffh_core::game::Game, c: CityId) -> Vec<Part> {
     if city.happiness_timer > 0 {
         add_part(&mut out, &format!("past events ({} turns)", city.happiness_timer), g.d.defines.temp_happy);
     }
-    add_part(&mut out, "festival", g.city_culture_happiness(c));
     add_part(&mut out, "governor", governor(g, c).happy.max(0));
     out
 }
@@ -197,7 +196,7 @@ pub fn unhappy_parts(g: &ffh_core::game::Game, c: CityId) -> Vec<Part> {
     step(&mut out, "war weariness", Some(g.city_war_weariness_percent_anger(c)), 0);
     step(&mut out, "being a vassal", None, g.city_vassal_unhappiness(c).max(0));
     step(&mut out, "espionage", None, city.espionage_happiness_counter.max(0));
-    step(&mut out, "incited unrest", None, g.city_culture_unhappiness(c));
+    step(&mut out, "revolt pressure", None, g.city_culture_unhappiness(c));
     step(&mut out, "governor", None, -governor(g, c).happy.min(0));
     for civic in d.civics.keys() {
         let label = format!("wants {}", crate::names::display(d, civic));
@@ -425,110 +424,57 @@ pub fn city(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
     })
 }
 
-/// The city's cultural queue and what it could channel (docs/CULTURE.md): `null` when the game
-/// has no cultural actions.
+/// The city's cultural channel and what it could channel (docs/CULTURE.md): `null` when the
+/// game has no cultural actions. `options`: every channel it could set, one per civilization the
+/// human has met (and the barbarians) and action (and religion of the city), with whether it may,
+/// its reach and a spread's chance; `pressure`: the revolt pressure on the city.
 fn cultural(v: &Viewer, c: CityId) -> Json {
-    use ffh_core::culture::CultureTarget;
     let g = v.g;
     let d = g.d;
     if !g.culture_actions_on() {
         return Json::Null;
     }
     let city = &g.cities[c];
-    let queue: Vec<Json> = city
-        .culture_queue
-        .iter()
-        .map(|o| {
-            let CultureTarget::City(t) = o.target;
-            let mut j = crate::jobj! {
-                "action" => Json::idx(o.action),
-                "target" => t,
-                "target_name" => if g.cities.contains(t) { Json::from(city_name(g, t)) } else { Json::Null },
-                "religion" => Json::opt_idx(o.religion),
-                "repeat" => o.repeat,
-                "progress" => o.progress,
-                "duration" => g.culture_action_duration(o.action),
-                "stalled" => o.stalled,
-                "started" => o.started_turn >= 0,
-            };
-            // Why it would pause now (its check this turn).
-            if let Err(r) = g.culture_check(c, o.action, o.target, o.religion, if o.started_turn >= 0 { ffh_core::culture::CultureCheck::Channel } else { ffh_core::culture::CultureCheck::Start }) {
-                j.set("paused", r.describe(d));
-            }
-            j
-        })
-        .collect();
-    // Every action, with the targets in its reach: possible ones with their preview, the others
-    // with the reason (only cities the human has seen).
-    let (cx, cy) = (city.x, city.y);
     let team = g.players[v.h].team;
-    let actions: Vec<Json> = d
-        .cultural_actions
-        .keys()
-        .map(|a| {
-            let info = &d.cultural_actions[a];
-            let range = g.culture_tier_range(info.tier);
-            let religions: Vec<Option<ReligionType>> = if info.effect == CultureEffect::SpreadReligion {
-                d.religions.keys().filter(|&r| city.has_religion[r]).map(Some).collect()
-            } else {
-                vec![None]
+    let channel = g
+        .culture_channels()
+        .into_iter()
+        .find(|ch| ch.city == c)
+        .map_or(Json::Null, |ch| crate::view::culture::channel_json(v, &ch));
+    let mut options = Vec::new();
+    if city.owner == v.h {
+        let targets: Vec<PlayerId> = g
+            .player_ids()
+            .filter(|&t| g.players[t].alive && !g.players[t].cities.is_empty())
+            .filter(|&t| t == g.barbarian_player() || g.players[t].team == team || g.teams[team].has_met[g.players[t].team])
+            .collect();
+        for a in d.cultural_actions.keys() {
+            let religions: Vec<Option<ReligionType>> = match d.cultural_actions[a].effect {
+                CultureEffect::SpreadReligion => d.religions.keys().filter(|&r| city.has_religion[r]).map(Some).collect(),
+                CultureEffect::FomentRevolt => vec![None],
             };
-            let mut targets = Vec::new();
-            for (t, tc) in g.cities.iter() {
-                if g.plot_distance(cx, cy, tc.x, tc.y) > range || (tc.owner != v.h && !g.city_is_revealed(t, team, false)) {
+            for &t in &targets {
+                if d.cultural_actions[a].effect == CultureEffect::FomentRevolt && g.players[t].team == g.players[city.owner].team {
                     continue;
                 }
                 for &r in &religions {
-                    // A city that has the religion is no target for spreading it.
-                    if r.is_some_and(|r| tc.has_religion[r]) {
+                    let o = crate::view::culture::option_json(v, c, a, t, r);
+                    // Nothing in reach at all: not an option worth listing.
+                    if o.get("reach").and_then(|r| r.as_arr()).is_some_and(|r| r.is_empty()) && o.get("unseen").and_then(|u| u.as_i64()) == Some(0) {
                         continue;
                     }
-                    let mut j = crate::jobj! { "city" => t, "name" => city_name(g, t), "owner" => tc.owner, "religion" => Json::opt_idx(r) };
-                    match g.culture_check(c, a, CultureTarget::City(t), r, ffh_core::culture::CultureCheck::Queue) {
-                        Ok(p) => {
-                            j.set("ok", true);
-                            j.set("effect", p.effectiveness);
-                            j.set("hostile", p.hostile);
-                            j.set("magnitude", p.magnitude);
-                            j.set("effect_turns", p.effect_turns);
-                        }
-                        Err(e) => {
-                            // Not the kind of city the action is for: not listed.
-                            if matches!(e, ffh_core::culture::CultureRefusal::Target(_)) {
-                                continue;
-                            }
-                            j.set("ok", false);
-                            j.set("why", e.describe(d));
-                        }
-                    }
-                    targets.push(j);
+                    options.push(o);
                 }
             }
-            crate::jobj! {
-                "action" => Json::idx(a),
-                "tier" => info.tier,
-                "rate" => info.rate,
-                "duration" => g.culture_action_duration(a),
-                "range" => range,
-                "targets" => Json::Arr(targets),
-            }
-        })
-        .collect();
-    let pressure: Vec<Json> = g
-        .culture_hostile_channels_at(c)
-        .into_iter()
-        .filter(|ch| g.culture_channel_visible(team, ch.caster))
-        .map(|ch| crate::view::culture::channel_json(v, &ch))
-        .collect();
+        }
+    }
     crate::jobj! {
         "rate" => g.city_commerce_rate(c, CommerceType::COMMERCE_CULTURE),
+        "amount" => g.city_channel_amount(c),
         "diverted" => city.culture_diverted,
-        "queue" => Json::Arr(queue),
-        "queue_max" => d.defines.culture_queue_max,
-        "actions" => Json::Arr(actions),
-        "pressure" => Json::Arr(pressure),
-        "marks" => crate::view::culture::marks_json(v, c),
-        // The last successful Foment Revolt here (-1: none), which Flip City needs.
-        "revolt_turn" => city.culture_revolt_turn,
+        "channel" => channel,
+        "options" => Json::Arr(options),
+        "pressure" => crate::view::culture::pressure_json(v, c),
+        "thresholds" => crate::view::culture::thresholds_json(v),
     }
 }

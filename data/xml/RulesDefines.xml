@@ -5,139 +5,83 @@
      GOVERNOR_* ones. Percentages are integers
      (100 = 1.0). -->
 <Civ4Defines xmlns="x-schema:CIV4GlobalDefinesSchema.xml">
-	<!-- ==== Cultural actions (GAMEOPTION_CULTURE_ACTIONS, docs/CULTURE.md) ==== -->
+	<!-- ==== Cultural channels (GAMEOPTION_CULTURE_ACTIONS, docs/CULTURE.md) ==== -->
+	<!-- percent of a channelling city's culture rate diverted to its channel -->
 	<Define>
-		<DefineName>CULTURE_QUEUE_MAX</DefineName>
-		<iDefineIntVal>6</iDefineIntVal>
+		<DefineName>CULTURE_CHANNEL_PERCENT</DefineName>
+		<iDefineIntVal>50</iDefineIntVal>
 	</Define>
+	<!-- plots within which a channel works in full; beyond, it falls with the square of the distance -->
 	<Define>
-		<DefineName>CULTURE_CHANNEL_STALL_TURNS</DefineName>
+		<DefineName>CULTURE_CHANNEL_FULL_RANGE</DefineName>
 		<iDefineIntVal>5</iDefineIntVal>
 	</Define>
+	<!-- plots beyond which a channel does nothing -->
 	<Define>
-		<DefineName>CULTURE_TIER2_LEVEL</DefineName>
-		<DefineTextVal>CULTURELEVEL_INFLUENTIAL</DefineTextVal>
+		<DefineName>CULTURE_CHANNEL_RANGE</DefineName>
+		<iDefineIntVal>20</iDefineIntVal>
 	</Define>
+	<!-- percent of a city's own culture rate that resists revolt pressure each turn -->
 	<Define>
-		<DefineName>CULTURE_TIER3_LEVEL</DefineName>
-		<DefineTextVal>CULTURELEVEL_LEGENDARY</DefineTextVal>
+		<DefineName>CULTURE_REVOLT_RESIST_PERCENT</DefineName>
+		<iDefineIntVal>50</iDefineIntVal>
 	</Define>
+	<!-- revolt pressure resisted each turn per defender of the city's team -->
 	<Define>
-		<DefineName>CULTURE_RANGE_T1</DefineName>
-		<iDefineIntVal>6</iDefineIntVal>
+		<DefineName>CULTURE_REVOLT_GARRISON</DefineName>
+		<iDefineIntVal>2</iDefineIntVal>
 	</Define>
+	<!-- percent of its revolt pressure a city sheds each turn -->
 	<Define>
-		<DefineName>CULTURE_RANGE_T2</DefineName>
-		<iDefineIntVal>9</iDefineIntVal>
+		<DefineName>CULTURE_REVOLT_FADE_PERCENT</DefineName>
+		<iDefineIntVal>5</iDefineIntVal>
 	</Define>
+	<!-- revolt pressure per point of unhappiness -->
 	<Define>
-		<DefineName>CULTURE_RANGE_T3</DefineName>
-		<iDefineIntVal>12</iDefineIntVal>
-	</Define>
-	<Define>
-		<DefineName>CULTURE_MIN_SHARE_T1</DefineName>
-		<iDefineIntVal>10</iDefineIntVal>
-	</Define>
-	<Define>
-		<DefineName>CULTURE_MIN_SHARE_T2</DefineName>
+		<DefineName>CULTURE_REVOLT_UNHAPPY_STEP</DefineName>
 		<iDefineIntVal>25</iDefineIntVal>
 	</Define>
+	<!-- most unhappiness revolt pressure causes -->
 	<Define>
-		<DefineName>CULTURE_MIN_SHARE_T3</DefineName>
-		<iDefineIntVal>50</iDefineIntVal>
+		<DefineName>CULTURE_REVOLT_UNHAPPY_MAX</DefineName>
+		<iDefineIntVal>4</iDefineIntVal>
 	</Define>
+	<!-- revolt pressure at which a city falls into revolt (disorder) -->
 	<Define>
-		<DefineName>CULTURE_MIN_SHARE_MUTINY</DefineName>
-		<iDefineIntVal>40</iDefineIntVal>
-	</Define>
-	<Define>
-		<DefineName>CULTURE_MIN_EFFECT</DefineName>
-		<iDefineIntVal>15</iDefineIntVal>
-	</Define>
-	<Define>
-		<DefineName>CULTURE_RESIST_K</DefineName>
+		<DefineName>CULTURE_REVOLT_DISORDER</DefineName>
 		<iDefineIntVal>100</iDefineIntVal>
 	</Define>
+	<!-- one caster's revolt pressure at which a city joins it -->
 	<Define>
-		<DefineName>CULTURE_GARRISON_RESIST</DefineName>
+		<DefineName>CULTURE_REVOLT_FLIP</DefineName>
+		<iDefineIntVal>300</iDefineIntVal>
+	</Define>
+	<!-- turns of a hostile channel per point of the target leader's memory of it -->
+	<Define>
+		<DefineName>CULTURE_REVOLT_MEMORY_TURNS</DefineName>
 		<iDefineIntVal>5</iDefineIntVal>
 	</Define>
+	<!-- Spread Religion: chance a turn per culture channelled, in hundredths of a percent, before distance and the religions present -->
 	<Define>
-		<DefineName>CULTURE_FESTIVAL_RESIST</DefineName>
-		<iDefineIntVal>50</iDefineIntVal>
+		<DefineName>CULTURE_SPREAD_PER_CULTURE</DefineName>
+		<iDefineIntVal>100</iDefineIntVal>
 	</Define>
+	<!-- Spread Religion: most chance a turn, in hundredths of a percent -->
 	<Define>
-		<DefineName>CULTURE_FESTIVAL_TURNS</DefineName>
-		<iDefineIntVal>5</iDefineIntVal>
+		<DefineName>CULTURE_SPREAD_MAX</DefineName>
+		<iDefineIntVal>2500</iDefineIntVal>
 	</Define>
-	<Define>
-		<DefineName>CULTURE_FESTIVAL_HAPPY</DefineName>
-		<iDefineIntVal>1</iDefineIntVal>
-	</Define>
-	<Define>
-		<DefineName>CULTURE_TRADE_FAIR_PCT</DefineName>
-		<iDefineIntVal>50</iDefineIntVal>
-	</Define>
-	<Define>
-		<DefineName>CULTURE_TRADE_FAIR_TURNS</DefineName>
-		<iDefineIntVal>10</iDefineIntVal>
-	</Define>
-	<Define>
-		<DefineName>CULTURE_SPREAD_BASE</DefineName>
-		<iDefineIntVal>80</iDefineIntVal>
-	</Define>
-	<Define>
-		<DefineName>CULTURE_SIPHON_PCT_OF_COST</DefineName>
-		<iDefineIntVal>15</iDefineIntVal>
-	</Define>
-	<Define>
-		<DefineName>CULTURE_SIPHON_TARGET_LOSS_PCT</DefineName>
-		<iDefineIntVal>0</iDefineIntVal>
-	</Define>
-	<Define>
-		<DefineName>CULTURE_UNREST_UNHAPPY</DefineName>
-		<iDefineIntVal>3</iDefineIntVal>
-	</Define>
-	<Define>
-		<DefineName>CULTURE_UNREST_TURNS</DefineName>
-		<iDefineIntVal>5</iDefineIntVal>
-	</Define>
-	<Define>
-		<DefineName>CULTURE_REVOLT_BASE</DefineName>
-		<iDefineIntVal>60</iDefineIntVal>
-	</Define>
-	<Define>
-		<DefineName>CULTURE_REVOLT_TURNS</DefineName>
-		<iDefineIntVal>2</iDefineIntVal>
-	</Define>
-	<Define>
-		<DefineName>CULTURE_REVOLT_DAMAGE</DefineName>
-		<iDefineIntVal>30</iDefineIntVal>
-	</Define>
-	<Define>
-		<DefineName>CULTURE_MUTINY_MAX_UNITS</DefineName>
-		<iDefineIntVal>2</iDefineIntVal>
-	</Define>
-	<Define>
-		<DefineName>CULTURE_MUTINY_MAX_LEVEL</DefineName>
-		<iDefineIntVal>2</iDefineIntVal>
-	</Define>
-	<Define>
-		<DefineName>CULTURE_FLIP_BASE</DefineName>
-		<iDefineIntVal>50</iDefineIntVal>
-	</Define>
-	<Define>
-		<DefineName>CULTURE_FLIP_REVOLT_WINDOW</DefineName>
-		<iDefineIntVal>10</iDefineIntVal>
-	</Define>
+	<!-- the AI: most of its cities channelling revolt against one civilization -->
 	<Define>
 		<DefineName>CULTURE_AI_MAX_HOSTILE_PER_TARGET</DefineName>
 		<iDefineIntVal>2</iDefineIntVal>
 	</Define>
+	<!-- turns per point a leader's memory of cultural hostility or friendship fades -->
 	<Define>
 		<DefineName>CULTURE_MEMORY_DECAY_TURNS</DefineName>
 		<iDefineIntVal>10</iDefineIntVal>
 	</Define>
+	<!-- most points of cultural hostility or friendship a leader remembers -->
 	<Define>
 		<DefineName>CULTURE_MEMORY_MAX</DefineName>
 		<iDefineIntVal>8</iDefineIntVal>

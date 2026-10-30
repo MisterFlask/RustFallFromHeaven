@@ -5738,20 +5738,10 @@ TXT_KEY_CROSSROADS_INI	Carve your fortune from the Crossroads of the World!
 TXT_KEY_CROSSROADS_WB_DESC	The year is 1300. European traders have caught the sweet waft of spices from the East, and the craving for the goods of the Orient has become an epidemic. China, for the first time in their history, has sent out trading vessels to establish contact with the West. Indian storehouses spill over with finery. It is a trader's age and you stand at the Crossroads of the World.[NEWLINE][NEWLINE]Features:[NEWLINE]Commerce Victory[NEWLINE]This new victory requires players to accumulate wealth through any means necessary. Taxes, pillaging, conquest or trade - the means matter not, only that in the end, you have the deepest coffers. Ten new Corporations are among the many features that will let players engage in unprecedented economic warfare.[NEWLINE][NEWLINE]Raiders[NEWLINE]These lightning-quick cavalry bear no markings of nationality, allowing players to pillage the lands of friends and foes alike. 
 TXT_KEY_CS_5_1_3	Bravado and luck, buddy.  Bravado and luck.
 TXT_KEY_CTRL	Ctrl+
-TXT_KEY_CULTURALACTION_FESTIVAL	Festival
-TXT_KEY_CULTURALACTION_FESTIVAL_HELP	For a while the target city has +1 [ICON_HAPPY] and resists hostile cultural actions (+0.5 to its resistance). Aimed at one of your cities, or a city of a civilization you have a defensive pact with.
-TXT_KEY_CULTURALACTION_FLIP_CITY	Flip City
-TXT_KEY_CULTURALACTION_FLIP_CITY_HELP	A chance (50%, scaled by your effectiveness there) that a foreign city joins you, as a city does in a culture revolt. Needs a successful Foment Revolt there within the last 10 turns, or the city in disorder, when the channel starts. Capitals cannot be flipped. A failed roll spends the culture and changes nothing else. Hostile.
 TXT_KEY_CULTURALACTION_FOMENT_REVOLT	Foment Revolt
-TXT_KEY_CULTURALACTION_FOMENT_REVOLT_HELP	A chance (60%, scaled by your effectiveness there) that a foreign city falls into disorder for 2 turns and each of its defenders loses 30% of its hit points (never the last one). A successful revolt opens the way to Flip City. Hostile; the garrison resists it.
-TXT_KEY_CULTURALACTION_INCITE_UNREST	Incite Unrest
-TXT_KEY_CULTURALACTION_INCITE_UNREST_HELP	Adds [ICON_UNHAPPY] to a foreign city for a while: up to +3, scaled by your effectiveness there. Hostile.
-TXT_KEY_CULTURALACTION_SIPHON_KNOWLEDGE	Siphon Knowledge
-TXT_KEY_CULTURALACTION_SIPHON_KNOWLEDGE_HELP	Learns from a foreign city whose owner knows a technology you lack: research worth up to 15% of that technology's cost, scaled by your effectiveness there (your current research if they know it, else the cheapest they know that you can research). Hostile, though a minor offence.
+TXT_KEY_CULTURALACTION_FOMENT_REVOLT_HELP	Channels half the city's culture into revolt among a civilization's people: each of its cities within reach gains revolt pressure, the nearer the more (the effect falls with the square of the distance beyond 5 plots; nothing beyond 20). A city resists with half its own culture and its garrison, and the pressure fades when the channel stops. Pressure brings unhappiness, then disorder; a city under enough of your pressure joins you (never a capital). Not an act of war, but their leader remembers it.
 TXT_KEY_CULTURALACTION_SPREAD_RELIGION	Spread Religion
-TXT_KEY_CULTURALACTION_SPREAD_RELIGION_HELP	A chance (80%, scaled by your effectiveness abroad) to spread a religion of the casting city to a city without it, as a missionary would. Hostile only when the target's owner has another state religion.
-TXT_KEY_CULTURALACTION_TRADE_FAIR	Trade Fair
-TXT_KEY_CULTURALACTION_TRADE_FAIR_HELP	For a while, trade routes between a foreign city and your cities yield more for both sides: up to +50%, scaled by your effectiveness there.
+TXT_KEY_CULTURALACTION_SPREAD_RELIGION_HELP	Channels half the city's culture into spreading one of its religions among a civilization's cities that lack it (your own included). Each turn there is a chance that it spreads to one of them: more culture, nearer cities and fewer religions already there make it likelier. Their leader minds it only when it has another state religion.
 TXT_KEY_CULTURELEVEL_DEVELOPING	Developing
 TXT_KEY_CULTURELEVEL_FLEDGLING	Fledgling
 TXT_KEY_CULTURELEVEL_INFLUENTIAL	Influential
@@ -7899,7 +7889,7 @@ TXT_KEY_GAME_OPTION_CHALLENGE_INCREASING_DIFFICULTY_HELP	Every 50 turns the game
 TXT_KEY_GAME_OPTION_COMPLETE_KILLS	Require Complete Kills
 TXT_KEY_GAME_OPTION_COMPLETE_KILLS_HELP	Must kill all cities AND units to wipe out an enemy civilization.
 TXT_KEY_GAME_OPTION_CULTURE_ACTIONS	Cultural actions
-TXT_KEY_GAME_OPTION_CULTURE_ACTIONS_HELP	Cities spend part of their culture on cultural actions from a cultural queue: festivals, trade fairs, spreading a religion, inciting unrest abroad. Culture spent this way does not reach borders or the culture victory. Every action is public to the civilizations that have met its caster.
+TXT_KEY_GAME_OPTION_CULTURE_ACTIONS_HELP	A city may channel half its culture into fomenting revolt in a civilization's cities or spreading a religion among them, until you change it. Culture channelled this way does not reach borders or the culture victory. Every channel is public to the civilizations that have met its caster.
 TXT_KEY_GAME_OPTION_DOUBLE_ANIMALS	Wildlands
 TXT_KEY_GAME_OPTION_DOUBLE_ANIMALS_HELP	Double the amount of animals that spawn
 TXT_KEY_GAME_OPTION_DOUBLE_BONUSES	Blessing of Amathaon

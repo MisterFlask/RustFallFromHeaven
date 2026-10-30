@@ -411,7 +411,7 @@ impl Game {
         }
         // FfH: End Add
 
-        // This game's cultural actions (docs/CULTURE.md): the channel takes its rate first;
+        // This game's cultural channels (docs/CULTURE.md): the channel takes its share first;
         // what it diverts reaches neither the city's culture nor its plots.
         self.city_do_culture_channel(c);
         self.city_do_culture(c);
@@ -468,7 +468,11 @@ impl Game {
             self.cities[c].espionage_happiness_counter -= 1;
         }
 
-        self.city_do_culture_marks(c);
+        // This game's revolt pressure (docs/CULTURE.md): resisted, faded; disorder, a flip.
+        self.city_do_revolt_pressure(c);
+        if !self.cities.contains(c) {
+            return;
+        }
 
         if self.city_is_occupation(c) || self.city_angry_population(c, 0) > 0 || self.city_health_rate(c, false, 0) < 0 {
             self.city_set_we_love_the_king_day(c, false);

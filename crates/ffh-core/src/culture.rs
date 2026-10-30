@@ -1,250 +1,153 @@
-//! Cultural actions (this game's own rules, not FFH2's; `GAMEOPTION_CULTURE_ACTIONS`;
+//! Cultural channels (this game's own rules, not FFH2's; `GAMEOPTION_CULTURE_ACTIONS`;
 //! docs/CULTURE.md).
 //!
-//! Each city has a cultural queue next to its production queue. Its first order is the
-//! *channel*: every turn the city diverts the action's rate R of its culture to it (that culture
-//! reaches neither the city's culture, nor its plots, nor the culture victory), and after the
-//! action's duration D (scaled by the game speed) the effect resolves on the target. A channel
-//! whose city's culture rate falls below R, or whose target stops qualifying for a while (out of
-//! range, share too low, an ally no longer allied), pauses: no progress, nothing diverted; after
-//! `CULTURE_CHANNEL_STALL_TURNS` paused turns it is cancelled. Cancelling refunds nothing.
+//! A city may channel `CULTURE_CHANNEL_PERCENT` of its culture into one standing order aimed at
+//! a civilization, until its owner changes it ([`CultureChannel`]): fomenting revolt among its
+//! people, or spreading one of the city's religions among its cities. The channelled culture
+//! reaches neither the city's culture, nor its plots, nor the culture victory. Its effect on each
+//! of the target's cities falls with the square of the distance ([`Game::culture_distance_effect`]).
 //!
-//! The effectiveness E of an action on a foreign city is `Sc / (Sc + K·So + M)`: the caster's and
-//! the owner's shares of the culture on the city's plot (its nationality), `K` = `CULTURE_RESIST_K`, `M` the city's defences against
-//! hostile actions (a festival, the garrison). Here it is an integer percent.
+//! **Foment Revolt** adds revolt pressure (`City::culture_pressure`, per caster, in hundredths of
+//! culture) to each of the target's cities in reach, every turn of the caster's city. In its own
+//! turn a city resists it ([`Game::city_revolt_resistance`]: part of its own culture, its garrison)
+//! and sheds `CULTURE_REVOLT_FADE_PERCENT` of it (at least a culture); what is left brings
+//! unhappiness, then disorder
+//! (a revolt: the occupation timer), and a caster whose pressure reaches `CULTURE_REVOLT_FLIP`
+//! takes the city, as a culture revolt that flips it. Not an act of war; the target's leader
+//! remembers it (`Player::culture_memory`).
+//!
+//! **Spread Religion** rolls once a turn for the target: the chance is the sum over its cities in
+//! reach that could take the religion ([`Game::culture_channel_reach`]), capped; a success spreads
+//! the religion to one of them, picked by their chances.
 //!
 //! Every channel is public to the civilizations that have met its caster
-//! ([`Game::culture_channels`]); the target's owner is told when a hostile channel starts and
-//! when it resolves. Completed actions leave a memory of cultural hostility or friendship with
-//! the target's owner (`Player::culture_memory`), which the AI's attitude reads.
+//! ([`Game::culture_channels`]).
 
 use ffh_data::*;
 
 use crate::game::Game;
 use crate::ids::*;
 
-/// What a cultural order is aimed at.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub enum CultureTarget {
-    City(CityId),
-}
-
-/// One order of a city's cultural queue.
+/// A city's standing cultural order (`City::culture_channel`).
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct CultureOrder {
+pub struct CultureChannel {
     pub action: CulturalActionType,
-    pub target: CultureTarget,
-    /// The religion spread (Spread Religion); `None` for every other action.
+    /// The civilization it is aimed at.
+    pub target: PlayerId,
+    /// The religion spread (Spread Religion); `None` for Foment Revolt.
     pub religion: Option<ReligionType>,
-    /// Queue the order again once it completes (like production's repeat).
-    pub repeat: bool,
-    /// Turns channelled so far.
-    pub progress: i32,
-    /// Consecutive paused turns of the channel.
-    pub stalled: i32,
-    /// The game turn the order first became its city's channel (-1 while it has not).
-    pub started_turn: i32,
+    /// The game turn it was set.
+    pub since_turn: i32,
 }
 
-/// A timed effect of a completed cultural action on a city (`City::culture_marks`).
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct CultureMark {
-    /// Festival, TradeFair or InciteUnrest.
-    pub effect: CultureEffect,
-    /// The caster (for a trade fair: whose cities' routes with this city gain).
-    pub from: PlayerId,
-    /// Happiness (festival), trade percent (fair) or unhappiness (unrest).
-    pub amount: i32,
-    /// Turns left, counted down in the city's turn.
-    pub turns: i32,
-}
-
-/// Why an order cannot be queued, or why a channel pauses or ends.
+/// Why a channel cannot be set, or why one ends.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum CultureRefusal {
     /// `GAMEOPTION_CULTURE_ACTIONS` is off.
     Off,
-    /// The target city no longer exists.
-    TargetGone,
-    /// The target is of the wrong kind for the action (whose city it is, an unmet civilization,
-    /// a city the caster has not seen).
-    Target(&'static str),
-    /// The casting city's culture level is below the tier's.
-    Level(Option<CultureLevelType>),
-    /// The casting city makes `have` culture a turn; the action needs `need`.
-    Rate { have: i32, need: i32 },
-    /// The target is `dist` plots away; the tier reaches `max`.
-    Range { dist: i32, max: i32 },
-    /// The caster's share of the target's culture is `have`%; the tier needs `need`%.
-    Share { have: i32, need: i32 },
-    /// The effectiveness is `have`%; actions need at least `min`%.
-    Effect { have: i32, min: i32 },
-    /// Spread Religion: the casting city lacks the religion, the target has it, or the
-    /// target's owner admits no religion but its state religion.
+    /// The barbarians channel nothing.
+    Barbarian,
+    /// The target civilization is gone.
+    Dead,
+    /// The caster's team has not met the target.
+    NotMet,
+    /// Foment Revolt aimed at the caster's own team.
+    OwnTeam,
+    /// Spread Religion: no religion chosen, or the city lacks it.
     Religion(&'static str),
-    /// A trade fair needs trade routes between the two civilizations.
-    NoTrade,
-    /// Siphon Knowledge: the target's owner knows nothing we lack and could research.
-    NothingToLearn,
-    /// Flip City: no successful revolt there within the window, and the city is not in disorder.
-    NoRevolt { window: i32 },
-    /// Another city of the caster already channels this order.
-    Duplicate,
-    /// The queue is full, or already holds the order.
-    Queue(&'static str),
+    /// None of the target's cities is within reach (or, for a spread, could take the religion).
+    NoneInReach,
 }
 
 impl CultureRefusal {
-    /// A refusal that cannot pass by itself: the channel is cancelled at once rather than paused.
-    pub fn permanent(&self) -> bool {
-        matches!(self, CultureRefusal::Off | CultureRefusal::TargetGone | CultureRefusal::Target(_) | CultureRefusal::Religion(_))
-    }
-
-    /// The reason for the player, in a sentence fragment ("needs 4 culture a turn (has 2)").
-    pub fn describe(&self, d: &GameData) -> String {
+    /// The reason for the player, in a sentence fragment.
+    pub fn describe(&self) -> String {
         match self {
             CultureRefusal::Off => "cultural actions are off in this game".into(),
-            CultureRefusal::TargetGone => "the target is gone".into(),
-            CultureRefusal::Target(why) => (*why).into(),
-            CultureRefusal::Level(l) => match l {
-                Some(l) => format!("needs a {} city", d.text.name(&d.culture_levels[*l].base.description)),
-                None => "needs a higher culture level".into(),
-            },
-            CultureRefusal::Rate { have, need } => format!("needs {need} culture a turn (has {have})"),
-            CultureRefusal::Range { dist, max } => format!("out of range ({dist} plots; reaches {max})"),
-            CultureRefusal::Share { have, need } => format!("our culture there is {have}% (needs {need}%)"),
-            CultureRefusal::Effect { have, min } => format!("effectiveness {have}% (needs {min}%)"),
+            CultureRefusal::Barbarian => "the barbarians channel nothing".into(),
+            CultureRefusal::Dead => "that civilization is gone".into(),
+            CultureRefusal::NotMet => "we have not met them".into(),
+            CultureRefusal::OwnTeam => "not against our own team".into(),
             CultureRefusal::Religion(why) => (*why).into(),
-            CultureRefusal::NoTrade => "no trade routes with them (open borders, no war)".into(),
-            CultureRefusal::NothingToLearn => "they know nothing we lack and could research".into(),
-            CultureRefusal::NoRevolt { window } => format!("needs a successful Foment Revolt there in the last {window} turns, or the city in disorder"),
-            CultureRefusal::Duplicate => "another of our cities already channels it".into(),
-            CultureRefusal::Queue(why) => (*why).into(),
+            CultureRefusal::NoneInReach => "none of their cities is within reach".into(),
         }
     }
 }
 
-/// What an order would do now ([`Game::culture_check`]).
+/// One of the target's cities as a channel reaches it ([`Game::culture_channel_reach`]).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct CulturePreview {
-    /// Effectiveness E in percent (100 when the action is not scaled by it).
-    pub effectiveness: i32,
-    /// Hostile to the target's owner.
-    pub hostile: bool,
-    /// The magnitude on completion: happiness (festival), trade percent (fair), chance in
-    /// percent (spread), unhappiness (unrest).
-    pub magnitude: i32,
-    /// Turns the effect lasts (0 for a one-off: a spread).
-    pub effect_turns: i32,
-    /// R and D (scaled by the game speed).
-    pub rate: i32,
-    pub duration: i32,
+pub struct ChannelReach {
+    pub city: CityId,
+    /// Plots from the channelling city.
+    pub distance: i32,
+    /// The distance effect, percent.
+    pub effect: i32,
+    /// Foment Revolt: the revolt pressure a turn it adds, in hundredths of culture. Spread
+    /// Religion: the city's chance a turn, in hundredths of a percent (0 if it cannot take it).
+    pub amount: i32,
 }
 
-/// What [`Game::culture_check`] is asked for.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum CultureCheck {
-    /// Queueing an order: also the queue's room and duplicates, and Flip City's prerequisite.
-    Queue,
-    /// The order becomes the channel: Flip City's prerequisite, not the queue.
-    Start,
-    /// A started channel's turn: neither (its prerequisite held when it started).
-    Channel,
-}
-
-/// What happened to a channel ([`Game::culture_event`]).
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum CultureEventKind {
-    Start,
-    /// Completed: whether the effect took (a spread can fail) and its magnitude.
-    Complete { success: bool, magnitude: i32 },
-    Cancel,
-}
-
-/// A public channel: a city's first cultural order ([`Game::culture_channels`]).
+/// A public channel ([`Game::culture_channels`]).
 #[derive(Clone, Debug)]
 pub struct Channel {
     pub city: CityId,
     pub caster: PlayerId,
-    pub order: CultureOrder,
-    /// D, scaled by the game speed.
-    pub duration: i32,
+    pub channel: CultureChannel,
 }
 
+/// How far revolt pressure has gone in a city (`City::culture_revolt_level`).
+pub const REVOLT_CALM: i32 = 0;
+/// Unhappiness.
+pub const REVOLT_UNREST: i32 = 1;
+/// Disorder.
+pub const REVOLT_REVOLT: i32 = 2;
+/// A caster's pressure is two thirds of the way to taking the city.
+pub const REVOLT_NEAR_FLIP: i32 = 3;
+
 impl Game {
-    /// Whether this game has cultural actions.
+    /// Whether this game has cultural channels.
     #[inline]
     pub fn culture_actions_on(&self) -> bool {
         self.is_option(GameOptionType::GAMEOPTION_CULTURE_ACTIONS)
     }
 
-    /// A number of turns at normal speed, scaled by the game speed like build times
-    /// (`iTrainPercent`), rounded, at least 1.
-    pub fn culture_speed_turns(&self, turns: i32) -> i32 {
-        let pct = self.d.game_speeds[self.setup.game_speed].train_percent;
-        ((turns * pct + 50) / 100).max(1)
-    }
-
-    /// The channel's duration D of `action`, scaled by the game speed.
-    pub fn culture_action_duration(&self, action: CulturalActionType) -> i32 {
-        self.culture_speed_turns(self.d.cultural_actions[action].duration)
-    }
-
-    /// The culture level a tier needs (`None` for tier 1: any).
-    pub fn culture_tier_level(&self, tier: i32) -> Option<CultureLevelType> {
+    /// The distance effect (percent) of a channel on a city `dist` plots away: in full within
+    /// `CULTURE_CHANNEL_FULL_RANGE`, then falling with the square of the distance, nothing beyond
+    /// `CULTURE_CHANNEL_RANGE`.
+    pub fn culture_distance_effect(&self, dist: i32) -> i32 {
         let defines = &self.d.defines;
-        match tier {
-            2 => opt_from_i32(defines.culture_tier2_level),
-            3 => opt_from_i32(defines.culture_tier3_level),
-            _ => None,
+        if dist > defines.culture_channel_range {
+            return 0;
         }
-    }
-
-    /// A tier's reach in plots from the casting city.
-    pub fn culture_tier_range(&self, tier: i32) -> i32 {
-        let defines = &self.d.defines;
-        match tier {
-            2 => defines.culture_range_t2,
-            3 => defines.culture_range_t3,
-            _ => defines.culture_range_t1,
+        let full = defines.culture_channel_full_range.max(1);
+        if dist <= full {
+            return 100;
         }
+        100 * full * full / (dist * dist)
     }
 
-    /// A tier's minimum caster share (percent) in a foreign target.
-    pub fn culture_tier_min_share(&self, tier: i32) -> i32 {
-        let defines = &self.d.defines;
-        match tier {
-            2 => defines.culture_min_share_t2,
-            3 => defines.culture_min_share_t3,
-            _ => defines.culture_min_share_t1,
-        }
+    /// The culture a turn city `c` would channel now: `CULTURE_CHANNEL_PERCENT` of its culture
+    /// rate, rounded down.
+    pub fn city_channel_amount(&self, c: CityId) -> i32 {
+        self.city_commerce_rate(c, CommerceType::COMMERCE_CULTURE).max(0) * self.d.defines.culture_channel_percent / 100
     }
 
-    /// Whether `caster`'s team counts `owner`'s as an ally for friendly actions: the same team
-    /// (a permanent alliance is one team) or a defensive pact.
-    pub fn culture_is_ally(&self, caster: PlayerId, owner: PlayerId) -> bool {
-        let (a, b) = (self.players[caster].team, self.players[owner].team);
-        a == b || self.teams[a].defensive_pact[b]
-    }
-
-    /// Whether `action` with `religion` on city `target` would be hostile to its owner.
-    pub fn culture_is_hostile(&self, action: CulturalActionType, caster: PlayerId, target: CityId, religion: Option<ReligionType>) -> bool {
-        let owner = self.cities[target].owner;
-        if self.players[owner].team == self.players[caster].team {
+    /// Whether `caster`'s `action` with `religion` aimed at `target` is hostile to it.
+    pub fn culture_is_hostile(&self, action: CulturalActionType, caster: PlayerId, target: PlayerId, religion: Option<ReligionType>) -> bool {
+        if self.players[target].team == self.players[caster].team {
             return false;
         }
         match self.d.cultural_actions[action].hostile {
             CultureHostility::Never => false,
             CultureHostility::Always => true,
-            CultureHostility::DifferentStateReligion => match self.player_get_state_religion(owner) {
+            CultureHostility::DifferentStateReligion => match self.player_get_state_religion(target) {
                 Some(state) => Some(state) != religion,
                 None => false,
             },
         }
     }
 
-    /// Land combat units of the city's team on its plot: each resists the actions that the
-    /// garrison resists.
+    /// Land units of city `c`'s team on its plot able to defend it: each resists revolt pressure.
     pub fn culture_garrison_count(&self, c: CityId) -> i32 {
         let team = self.city_team(c);
         let plot = self.city_plot(c);
@@ -259,413 +162,401 @@ impl Game {
             .count() as i32
     }
 
-    /// The defensive modifiers M of city `c` against a hostile `action`, in share points
-    /// (100 = a whole share): a festival, and each garrison unit for the actions the garrison
-    /// resists (`bGarrisonResists`).
-    pub fn culture_resistance(&self, c: CityId, action: CulturalActionType) -> i32 {
+    /// Whether city `t` could take religion `r` from a channel: it lacks it, and its owner's civics
+    /// admit it (a foreign owner allowing only its state religion takes only that one).
+    pub fn culture_can_take_religion(&self, t: CityId, r: ReligionType, caster: PlayerId) -> bool {
+        let owner = self.cities[t].owner;
+        if self.cities[t].has_religion[r] {
+            return false;
+        }
+        let own_team = self.players[owner].team == self.players[caster].team;
+        own_team || !self.player_is_no_non_state_religion_spread(owner) || self.player_get_state_religion(owner) == Some(r)
+    }
+
+    /// Each of `target`'s cities that city `c` would reach with `action` (and `religion`): its
+    /// distance, the distance effect and what the channel would do there a turn, in city id order.
+    /// Cities out of reach are left out.
+    pub fn culture_channel_reach(&self, c: CityId, action: CulturalActionType, target: PlayerId, religion: Option<ReligionType>) -> Vec<ChannelReach> {
         let defines = &self.d.defines;
-        let mut m = 0;
-        if self.cities[c].culture_marks.iter().any(|k| k.effect == CultureEffect::Festival) {
-            m += defines.culture_festival_resist;
+        let caster = self.cities[c].owner;
+        let amount = self.city_channel_amount(c);
+        let (cx, cy) = (self.cities[c].x, self.cities[c].y);
+        let mut out = Vec::new();
+        for &t in &self.players[target].cities {
+            if !self.cities.contains(t) || t == c {
+                continue;
+            }
+            let distance = self.plot_distance(cx, cy, self.cities[t].x, self.cities[t].y);
+            let effect = self.culture_distance_effect(distance);
+            if effect <= 0 {
+                continue;
+            }
+            let per_turn = match self.d.cultural_actions[action].effect {
+                CultureEffect::FomentRevolt => amount * effect,
+                CultureEffect::SpreadReligion => match religion {
+                    Some(r) if self.culture_can_take_religion(t, r, caster) => {
+                        let present = self.d.religions.keys().filter(|&o| self.cities[t].has_religion[o]).count() as i32;
+                        amount * defines.culture_spread_per_culture * effect / 100 / (1 + present)
+                    }
+                    _ => 0,
+                },
+            };
+            out.push(ChannelReach { city: t, distance, effect, amount: per_turn });
         }
-        if self.d.cultural_actions[action].garrison_resists {
-            m += defines.culture_garrison_resist * self.culture_garrison_count(c);
-        }
-        m
+        out
     }
 
-    /// `player`'s share (percent) of the culture on city `c`'s plot: its nationality there, as
-    /// the city screen shows it.
-    pub fn culture_share(&self, c: CityId, player: PlayerId) -> i32 {
-        self.plot_calculate_culture_percent(self.city_plot(c), player)
+    /// Spread Religion's chance a turn (hundredths of a percent) from its reach: the cities'
+    /// chances added up, at most `CULTURE_SPREAD_MAX`.
+    pub fn culture_spread_chance(&self, reach: &[ChannelReach]) -> i32 {
+        reach.iter().map(|r| r.amount).sum::<i32>().min(self.d.defines.culture_spread_max.max(0))
     }
 
-    /// The effectiveness E (percent) of `caster`'s `action` on foreign city `target`:
-    /// `100·Sc / (Sc + K·So + M)` over the culture on the city's plot (M only against a hostile
-    /// action).
-    pub fn culture_effectiveness(&self, action: CulturalActionType, caster: PlayerId, target: CityId, hostile: bool) -> i32 {
-        let plot = self.city_plot(target);
-        let culture = &self.map.plots[plot].culture;
-        let sc = culture[caster] as i64;
-        if sc <= 0 {
-            return 0;
-        }
-        let so = culture[self.cities[target].owner] as i64;
-        let total = self.plot_count_total_culture(plot).max(1) as i64;
-        let k = self.d.defines.culture_resist_k as i64;
-        let m = if hostile { self.culture_resistance(target, action) as i64 } else { 0 };
-        // Sc / (Sc + K/100·So + M/100·total), all in hundredths.
-        let denom = 100 * sc + k * so + m * total;
-        ((100 * 100 * sc) / denom.max(1)) as i32
-    }
-
-    /// Whether city `c` could channel `action` on `target` now, and what it would do. `mode`
-    /// says what else to check: the queue (full, already holding the order) when queueing, Flip
-    /// City's prerequisite when queueing or starting (a started flip keeps going).
-    pub fn culture_check(&self, c: CityId, action: CulturalActionType, target: CultureTarget, religion: Option<ReligionType>, mode: CultureCheck) -> Result<CulturePreview, CultureRefusal> {
-        let d = self.d;
-        let defines = &d.defines;
+    /// Whether city `c` may channel `action` (with `religion`) into `target` now.
+    pub fn culture_channel_check(&self, c: CityId, action: CulturalActionType, target: PlayerId, religion: Option<ReligionType>) -> Result<(), CultureRefusal> {
         if !self.culture_actions_on() {
             return Err(CultureRefusal::Off);
         }
-        let info = &d.cultural_actions[action];
         let caster = self.cities[c].owner;
         if caster == self.barbarian_player() {
-            return Err(CultureRefusal::Target("barbarians take no cultural actions"));
+            return Err(CultureRefusal::Barbarian);
         }
-        let CultureTarget::City(t) = target;
-        if !self.cities.contains(t) {
-            return Err(CultureRefusal::TargetGone);
+        if !self.players[target].alive || self.players[target].cities.is_empty() {
+            return Err(CultureRefusal::Dead);
         }
-        let owner = self.cities[t].owner;
-        let caster_team = self.players[caster].team;
-        let owner_team = self.players[owner].team;
-        let own_team = caster_team == owner_team;
-
-        // The target's kind.
-        match info.target {
-            CultureTargetKind::OwnOrAllyCity => {
-                if !self.culture_is_ally(caster, owner) {
-                    return Err(CultureRefusal::Target("only our cities and those of our defensive-pact partners"));
+        let (ct, tt) = (self.players[caster].team, self.players[target].team);
+        if ct != tt && target != self.barbarian_player() && !self.teams[ct].has_met[tt] {
+            return Err(CultureRefusal::NotMet);
+        }
+        match self.d.cultural_actions[action].effect {
+            CultureEffect::FomentRevolt => {
+                if ct == tt {
+                    return Err(CultureRefusal::OwnTeam);
+                }
+                if self.culture_channel_reach(c, action, target, None).is_empty() {
+                    return Err(CultureRefusal::NoneInReach);
                 }
             }
-            CultureTargetKind::ForeignCity => {
-                if own_team {
-                    return Err(CultureRefusal::Target("only foreign cities"));
-                }
-            }
-            CultureTargetKind::AnyCity => {}
-        }
-        if !own_team {
-            if owner != self.barbarian_player() && !self.teams[caster_team].has_met[owner_team] {
-                return Err(CultureRefusal::Target("we have not met them"));
-            }
-            if !self.city_is_revealed(t, caster_team, false) {
-                return Err(CultureRefusal::Target("we have not seen that city"));
-            }
-        }
-
-        // The action's own conditions.
-        match info.effect {
             CultureEffect::SpreadReligion => {
                 let Some(r) = religion else {
                     return Err(CultureRefusal::Religion("no religion chosen"));
                 };
                 if !self.cities[c].has_religion[r] {
-                    return Err(CultureRefusal::Religion("the casting city lacks that religion"));
+                    return Err(CultureRefusal::Religion("the city lacks that religion"));
                 }
-                if self.cities[t].has_religion[r] {
-                    return Err(CultureRefusal::Religion("the target already has that religion"));
-                }
-                if !own_team && self.player_is_no_non_state_religion_spread(owner) && self.player_get_state_religion(owner) != Some(r) {
-                    return Err(CultureRefusal::Religion("their civics admit no religion but their state religion"));
-                }
-            }
-            CultureEffect::TradeFair => {
-                if self.at_war(caster_team, owner_team) || !self.player_can_have_trade_routes_with(caster, owner) {
-                    return Err(CultureRefusal::NoTrade);
-                }
-            }
-            CultureEffect::SiphonKnowledge => {
-                if self.culture_siphon_tech(caster, owner).is_none() {
-                    return Err(CultureRefusal::NothingToLearn);
-                }
-            }
-            CultureEffect::FlipCity => {
-                if self.city_is_capital(t) {
-                    return Err(CultureRefusal::Target("capitals cannot be flipped"));
-                }
-                if self.is_option(GameOptionType::GAMEOPTION_NO_CITY_FLIPPING) {
-                    return Err(CultureRefusal::Target("city flipping is off in this game"));
-                }
-                if mode != CultureCheck::Channel && !self.culture_flip_ready(t) {
-                    return Err(CultureRefusal::NoRevolt { window: self.culture_speed_turns(defines.culture_flip_revolt_window) });
-                }
-            }
-            CultureEffect::Festival | CultureEffect::InciteUnrest | CultureEffect::FomentRevolt => {}
-        }
-
-        // The casting city: tier, rate, range.
-        if let Some(level) = self.culture_tier_level(info.tier) {
-            if self.cities[c].culture_level.map_or(true, |l| l < level) {
-                return Err(CultureRefusal::Level(Some(level)));
-            }
-        }
-        let rate = self.city_commerce_rate(c, CommerceType::COMMERCE_CULTURE);
-        if rate < info.rate {
-            return Err(CultureRefusal::Rate { have: rate, need: info.rate });
-        }
-        let (cx, cy) = (self.cities[c].x, self.cities[c].y);
-        let dist = self.plot_distance(cx, cy, self.cities[t].x, self.cities[t].y);
-        let max = self.culture_tier_range(info.tier);
-        if dist > max {
-            return Err(CultureRefusal::Range { dist, max });
-        }
-
-        // Presence and effectiveness abroad.
-        let hostile = self.culture_is_hostile(action, caster, t, religion);
-        let mut effectiveness = 100;
-        if !own_team {
-            let share = self.culture_share(t, caster);
-            let need = self.culture_tier_min_share(info.tier);
-            if share < need {
-                return Err(CultureRefusal::Share { have: share, need });
-            }
-            if info.scaled_by_effect {
-                effectiveness = self.culture_effectiveness(action, caster, t, hostile);
-                if effectiveness < defines.culture_min_effect {
-                    return Err(CultureRefusal::Effect { have: effectiveness, min: defines.culture_min_effect });
+                if !self.culture_channel_reach(c, action, target, religion).iter().any(|x| x.amount > 0) {
+                    return Err(CultureRefusal::NoneInReach);
                 }
             }
         }
-
-        // One channel of an order per civilization.
-        let me = (action, target, religion);
-        let duplicate = self.players[caster].cities.iter().any(|&o| {
-            o != c && self.cities[o].culture_queue.first().is_some_and(|q| (q.action, q.target, q.religion) == me)
-        });
-        if duplicate {
-            return Err(CultureRefusal::Duplicate);
-        }
-        if mode == CultureCheck::Queue {
-            let queue = &self.cities[c].culture_queue;
-            if queue.len() as i32 >= defines.culture_queue_max.max(1) {
-                return Err(CultureRefusal::Queue("the cultural queue is full"));
-            }
-            if queue.iter().any(|q| (q.action, q.target, q.religion) == me) {
-                return Err(CultureRefusal::Queue("already in the queue"));
-            }
-        }
-
-        let scale = |n: i32| (n * effectiveness + 50) / 100;
-        let (magnitude, effect_turns) = match info.effect {
-            CultureEffect::Festival => (defines.culture_festival_happy, self.culture_speed_turns(defines.culture_festival_turns)),
-            CultureEffect::TradeFair => (scale(defines.culture_trade_fair_pct).max(1), self.culture_speed_turns(defines.culture_trade_fair_turns)),
-            CultureEffect::SpreadReligion => (scale(defines.culture_spread_base).clamp(0, 100), 0),
-            CultureEffect::InciteUnrest => (scale(defines.culture_unrest_unhappy).max(1), self.culture_speed_turns(defines.culture_unrest_turns)),
-            CultureEffect::SiphonKnowledge => {
-                let tech = self.culture_siphon_tech(caster, owner).expect("checked above");
-                let cost = self.team_get_research_cost(caster_team, tech) as i64;
-                ((cost * defines.culture_siphon_pct_of_cost as i64 * effectiveness as i64 / 10000).max(1) as i32, 0)
-            }
-            CultureEffect::FomentRevolt => (scale(defines.culture_revolt_base).clamp(0, 100), self.culture_speed_turns(defines.culture_revolt_turns)),
-            CultureEffect::FlipCity => (scale(defines.culture_flip_base).clamp(0, 100), 0),
-        };
-        Ok(CulturePreview { effectiveness, hostile, magnitude, effect_turns, rate: info.rate, duration: self.culture_action_duration(action) })
-    }
-
-    /// Queues `action` on `target` in city `c` (at the end, or `first`: the current channel then
-    /// waits, keeping its progress). An order that becomes the channel starts at once.
-    pub fn city_push_culture_order(&mut self, c: CityId, action: CulturalActionType, target: CultureTarget, religion: Option<ReligionType>, repeat: bool, first: bool) -> Result<(), CultureRefusal> {
-        self.culture_check(c, action, target, religion, CultureCheck::Queue)?;
-        let order = CultureOrder { action, target, religion, repeat, progress: 0, stalled: 0, started_turn: -1 };
-        let queue = &mut self.cities[c].culture_queue;
-        if first {
-            queue.insert(0, order);
-        } else {
-            queue.push(order);
-        }
-        self.culture_start_head(c);
         Ok(())
     }
 
-    /// Removes order `index` of city `c`'s cultural queue (a started channel is cancelled).
-    pub fn city_pop_culture_order(&mut self, c: CityId, index: usize) {
-        if index >= self.cities[c].culture_queue.len() {
-            return;
+    /// City `c` channels `order` (action, target, religion) from now on, or nothing (`None`).
+    /// Setting the channel it already has keeps it (and its start turn).
+    pub fn city_set_culture_channel(&mut self, c: CityId, order: Option<(CulturalActionType, PlayerId, Option<ReligionType>)>) -> Result<(), CultureRefusal> {
+        let current = self.cities[c].culture_channel.as_ref().map(|ch| (ch.action, ch.target, ch.religion));
+        if current == order {
+            return Ok(());
         }
-        let order = self.cities[c].culture_queue.remove(index);
-        if order.started_turn >= 0 {
-            self.culture_event(c, &order, CultureEventKind::Cancel);
+        if let Some((action, target, religion)) = order {
+            self.culture_channel_check(c, action, target, religion)?;
         }
-        if index == 0 {
-            self.culture_start_head(c);
+        if current.is_some() {
+            self.culture_channel_end(c, None);
         }
+        if let Some((action, target, religion)) = order {
+            let turn = self.game_turn();
+            self.cities[c].culture_channel = Some(CultureChannel { action, target, religion, since_turn: turn });
+            self.culture_channel_started(c);
+        }
+        Ok(())
     }
 
-    /// Sets the repeat flag of order `index`.
-    pub fn city_set_culture_order_repeat(&mut self, c: CityId, index: usize, repeat: bool) {
-        if let Some(o) = self.cities[c].culture_queue.get_mut(index) {
-            o.repeat = repeat;
-        }
-    }
-
-    /// The head of city `c`'s queue became the channel: the first time, it starts (public), unless
-    /// Flip City's prerequisite fails (it then waits, paused, until it holds or the stall ends it).
-    fn culture_start_head(&mut self, c: CityId) {
-        let turn = self.game_turn();
-        let Some(head) = self.cities[c].culture_queue.first() else { return };
-        if head.started_turn >= 0 {
-            self.cities[c].culture_queue[0].stalled = 0;
-            return;
-        }
-        if let Err(CultureRefusal::NoRevolt { .. }) = self.culture_check(c, head.action, head.target, head.religion, CultureCheck::Start) {
-            return;
-        }
-        let head = &mut self.cities[c].culture_queue[0];
-        head.stalled = 0;
-        head.started_turn = turn;
-        let order = head.clone();
-        self.culture_event(c, &order, CultureEventKind::Start);
-    }
-
-    /// The channel of city `c` this turn (its turn, before its culture is added): progress
-    /// or pause, completion, cancellation. Sets `culture_diverted`.
+    /// City `c`'s channel this turn (its turn, before its culture is added): it diverts its
+    /// culture, and Foment Revolt adds pressure to the target's cities, Spread Religion rolls. A
+    /// channel with nothing left to do ends. Sets `culture_diverted`.
     pub fn city_do_culture_channel(&mut self, c: CityId) {
         self.cities[c].culture_diverted = 0;
-        if self.cities[c].culture_queue.is_empty() {
+        let Some(ch) = self.cities[c].culture_channel.clone() else { return };
+        if let Err(why) = self.culture_channel_check(c, ch.action, ch.target, ch.religion) {
+            self.culture_channel_end(c, Some(why));
             return;
         }
-        let stall_turns = self.d.defines.culture_channel_stall_turns.max(1);
-        if self.cities[c].culture_queue[0].started_turn < 0 {
-            self.culture_start_head(c);
+        let amount = self.city_channel_amount(c);
+        self.cities[c].culture_diverted = amount;
+        if amount <= 0 {
+            return;
         }
-        let order = self.cities[c].culture_queue[0].clone();
-        let mode = if order.started_turn >= 0 { CultureCheck::Channel } else { CultureCheck::Start };
-        match self.culture_check(c, order.action, order.target, order.religion, mode) {
-            Err(r) if r.permanent() => {
-                self.cities[c].culture_queue.remove(0);
-                self.culture_event(c, &order, CultureEventKind::Cancel);
-                self.culture_start_head(c);
-            }
-            Err(_) => {
-                let head = &mut self.cities[c].culture_queue[0];
-                head.stalled += 1;
-                if head.stalled >= stall_turns {
-                    self.cities[c].culture_queue.remove(0);
-                    self.culture_event(c, &order, CultureEventKind::Cancel);
-                    self.culture_start_head(c);
-                }
-            }
-            Ok(preview) => {
-                self.cities[c].culture_diverted = preview.rate;
-                let head = &mut self.cities[c].culture_queue[0];
-                head.stalled = 0;
-                head.progress += 1;
-                if head.progress >= preview.duration {
-                    let done = self.cities[c].culture_queue.remove(0);
-                    self.culture_complete(c, &done, preview);
-                    if done.repeat && self.cities.contains(c) {
-                        let again = CultureOrder { progress: 0, stalled: 0, started_turn: -1, ..done };
-                        self.cities[c].culture_queue.push(again);
-                    }
-                    if self.cities.contains(c) {
-                        self.culture_start_head(c);
-                    }
-                }
-            }
-        }
-    }
-
-    /// Resolves a completed order of city `c` with what it does now (`p`).
-    fn culture_complete(&mut self, c: CityId, order: &CultureOrder, p: CulturePreview) {
-        let CultureTarget::City(t) = order.target;
         let caster = self.cities[c].owner;
-        let effect = self.d.cultural_actions[order.action].effect;
-        let mut success = true;
-        match effect {
-            CultureEffect::Festival | CultureEffect::TradeFair | CultureEffect::InciteUnrest => {
-                self.city_add_culture_mark(t, CultureMark { effect, from: caster, amount: p.magnitude, turns: p.effect_turns });
+        let reach = self.culture_channel_reach(c, ch.action, ch.target, ch.religion);
+        match self.d.cultural_actions[ch.action].effect {
+            CultureEffect::FomentRevolt => {
+                for x in &reach {
+                    self.cities[x.city].culture_pressure[caster] += x.amount;
+                }
+                self.culture_remember(c, &ch);
             }
             CultureEffect::SpreadReligion => {
-                let r = order.religion.expect("checked: a spread has a religion");
-                success = self.soren_rand_num(100, "Cultural Spread Religion") < p.magnitude;
-                if success {
-                    // The religion is in the casting city, so it is founded: as a missionary's
-                    // spread (CvUnit::spread), with FfH's religion hooks.
-                    self.city_set_has_religion(t, r, true, true, false);
-                }
-            }
-            CultureEffect::SiphonKnowledge => {
-                let owner = self.cities[t].owner;
-                match self.culture_siphon_tech(caster, owner) {
-                    Some(tech) => self.culture_siphon(caster, owner, tech, p.magnitude),
-                    None => success = false,
-                }
-            }
-            CultureEffect::FomentRevolt => {
-                success = self.soren_rand_num(100, "Cultural Foment Revolt") < p.magnitude;
-                if success {
-                    self.culture_revolt(t, caster, p.effect_turns);
-                }
-            }
-            CultureEffect::FlipCity => {
-                success = self.soren_rand_num(100, "Cultural Flip City") < p.magnitude;
-                // Told (and remembered) while the city is still the old owner's.
-                self.culture_event(c, order, CultureEventKind::Complete { success, magnitude: p.magnitude });
-                if success {
-                    self.culture_flip(t, caster);
-                }
-                return;
-            }
-        }
-        self.culture_event(c, order, CultureEventKind::Complete { success, magnitude: p.magnitude });
-    }
-
-    /// The tech `caster` would learn from `owner` (Siphon Knowledge): its current research if
-    /// `owner`'s team knows it, else the cheapest tech `owner`'s team knows that `caster`'s lacks
-    /// and could research (ties: the first in the tech list).
-    pub fn culture_siphon_tech(&self, caster: PlayerId, owner: PlayerId) -> Option<TechType> {
-        let (ct, ot) = (self.players[caster].team, self.players[owner].team);
-        let eligible = |tech: TechType| self.teams[ot].has_tech[tech] && !self.teams[ct].has_tech[tech] && self.player_can_research(caster, tech, false);
-        if let Some(cur) = self.player_get_current_research(caster).filter(|&t| eligible(t)) {
-            return Some(cur);
-        }
-        self.d.techs.keys().filter(|&t| eligible(t)).min_by_key(|&t| (self.team_get_research_cost(ct, t), t))
-    }
-
-    /// Siphon Knowledge resolves: `gain` research towards `tech` for `caster`'s team, and
-    /// `CULTURE_SIPHON_TARGET_LOSS_PCT` of it taken from `owner`'s current research (never below
-    /// nothing).
-    fn culture_siphon(&mut self, caster: PlayerId, owner: PlayerId, tech: TechType, gain: i32) {
-        let loss = gain * self.d.defines.culture_siphon_target_loss_pct / 100;
-        if loss > 0 {
-            if let Some(theirs) = self.player_get_current_research(owner) {
-                let ot = self.players[owner].team;
-                let take = loss.min(self.team_get_research_progress(ot, Some(theirs)).max(0));
-                if take > 0 {
-                    self.team_change_research_progress(ot, theirs, -take, owner);
+                let chance = self.culture_spread_chance(&reach);
+                if chance > 0 && self.soren_rand_num(10000, "Cultural Spread Religion") < chance {
+                    let total: i32 = reach.iter().map(|x| x.amount).sum();
+                    let mut pick = self.soren_rand_num(total.max(1), "Cultural Spread Religion city");
+                    let mut chosen = None;
+                    for x in reach.iter().filter(|x| x.amount > 0) {
+                        if pick < x.amount {
+                            chosen = Some(*x);
+                            break;
+                        }
+                        pick -= x.amount;
+                    }
+                    if let (Some(x), Some(r)) = (chosen, ch.religion) {
+                        self.culture_spread(c, &ch, x, r, chance);
+                    }
                 }
             }
         }
-        let ct = self.players[caster].team;
-        self.team_change_research_progress(ct, tech, gain, caster);
     }
 
-    /// Foment Revolt succeeds in city `t`: disorder for `turns` (the occupation timer, as a
-    /// culture revolt), each defender of the city's team loses `CULTURE_REVOLT_DAMAGE`% of its
-    /// hit points (never its last), and the revolt is recorded for Flip City.
-    fn culture_revolt(&mut self, t: CityId, caster: PlayerId, turns: i32) {
-        self.city_change_occupation_timer(t, turns);
-        let team = self.city_team(t);
-        let plot = self.city_plot(t);
-        let pct = self.d.defines.culture_revolt_damage;
-        for u in self.map.plots[plot].units.clone() {
-            if !self.units.contains(u) || self.unit_get_team(u) != team || !self.unit_can_defend(u, Some(plot)) {
-                continue;
-            }
-            let max = self.unit_max_hit_points(u);
-            let damage = (self.units[u].damage + max * pct / 100).min(max - 1);
-            if damage > self.units[u].damage {
-                self.unit_set_damage(u, damage, Some(caster));
+    /// A channel's hostile turn: every `CULTURE_REVOLT_MEMORY_TURNS` turns of it, the target's
+    /// leader remembers a point of cultural hostility.
+    fn culture_remember(&mut self, c: CityId, ch: &CultureChannel) {
+        let caster = self.cities[c].owner;
+        if !self.culture_is_hostile(ch.action, caster, ch.target, ch.religion) {
+            return;
+        }
+        let every = self.d.defines.culture_revolt_memory_turns.max(1);
+        let turns = self.game_turn() - ch.since_turn;
+        if turns > 0 && turns % every == 0 {
+            self.culture_add_memory(ch.target, caster, 0);
+        }
+    }
+
+    /// `of` remembers a point of cultural hostility (`slot` 0) or friendship (1) towards `towards`.
+    fn culture_add_memory(&mut self, of: PlayerId, towards: PlayerId, slot: usize) {
+        let cap = self.d.defines.culture_memory_max.max(1);
+        let m = &mut self.players[of].culture_memory[towards][slot];
+        *m = (*m + 1).min(cap);
+    }
+
+    /// Religion `r` spreads to `x.city` through city `c`'s channel (as a missionary's spread, with
+    /// FfH's religion hooks): both sides are told, and the target's leader remembers it when it
+    /// has a state religion (friendship for its own, hostility for another).
+    fn culture_spread(&mut self, c: CityId, ch: &CultureChannel, x: ChannelReach, r: ReligionType, chance: i32) {
+        let d = self.d;
+        let turn = self.game_turn();
+        let caster = self.cities[c].owner;
+        let t = x.city;
+        let owner = self.cities[t].owner;
+        self.city_set_has_religion(t, r, true, true, false);
+        if !self.cities.contains(t) {
+            return;
+        }
+        let religion = d.text.name(&d.religions[r].base.description).to_string();
+        let city = d.text.name(&self.cities[c].name).to_string();
+        let target = d.text.name(&self.cities[t].name).to_string();
+        let at = (self.cities[t].x, self.cities[t].y);
+        let pct = format_chance(chance);
+        let civ = self.player_get_civilization_adjective(owner);
+        self.log.msg_at(turn, Some(caster), at, || format!("{religion} spread to {target} ({civ}) through {city}'s culture ({pct} a turn)."));
+        let foreign = self.players[owner].team != self.players[caster].team;
+        if foreign {
+            let by = self.player_get_civilization_adjective(caster);
+            self.log.msg_at(turn, Some(owner), at, || format!("{religion} spread to {target} through the culture of {city} ({by})."));
+            if let Some(state) = self.player_get_state_religion(owner) {
+                self.culture_add_memory(owner, caster, if state == r { 1 } else { 0 });
             }
         }
-        self.cities[t].culture_revolt_turn = self.game_turn();
+        self.tel_culture(caster, "culture_spread", ch.action, ch.target, 1);
     }
 
-    /// Whether Flip City may start on city `t`: a successful Foment Revolt there within the last
-    /// `CULTURE_FLIP_REVOLT_WINDOW` turns (scaled by the game speed), or the city in disorder.
-    pub fn culture_flip_ready(&self, t: CityId) -> bool {
-        let window = self.culture_speed_turns(self.d.defines.culture_flip_revolt_window);
-        let revolt = self.cities[t].culture_revolt_turn;
-        (revolt >= 0 && self.game_turn() - revolt <= window) || self.city_is_disorder(t)
+    /// City `c`'s channel ends (`why`: it could no longer go on; `None`: its owner changed it).
+    fn culture_channel_end(&mut self, c: CityId, why: Option<CultureRefusal>) {
+        let Some(ch) = self.cities[c].culture_channel.take() else { return };
+        self.cities[c].culture_diverted = 0;
+        let caster = self.cities[c].owner;
+        if let Some(why) = why {
+            let turn = self.game_turn();
+            let city = self.d.text.name(&self.cities[c].name).to_string();
+            let what = self.culture_channel_name(&ch);
+            let reason = why.describe();
+            self.log.msg_at(turn, Some(caster), (self.cities[c].x, self.cities[c].y), || format!("{city} stops channelling {what}: {reason}."));
+        }
+        if self.culture_is_hostile(ch.action, caster, ch.target, ch.religion) && self.players[ch.target].alive {
+            let turn = self.game_turn();
+            let city = self.d.text.name(&self.cities[c].name).to_string();
+            let civ = self.player_get_civilization_adjective(caster);
+            let what = self.d.text.name(&self.d.cultural_actions[ch.action].base.description).to_string();
+            self.log.msg(turn, Some(ch.target), || format!("{city} ({civ}) no longer channels {what} against us."));
+        }
+        self.tel_culture(caster, "culture_channel_end", ch.action, ch.target, 1);
     }
 
-    /// Flip City succeeds: city `t` joins `caster` as in a culture revolt that flips the city
-    /// (`CvPlot::doCulture`): barbarian units on the plot move away, defenders lose half their hit
-    /// points, then the plot (and with it the city) changes hands; in a one-city challenge a human
-    /// caster's flip destroys the city instead.
+    /// City `c`'s channel was just set: the target is told when it is hostile.
+    fn culture_channel_started(&mut self, c: CityId) {
+        let Some(ch) = self.cities[c].culture_channel.clone() else { return };
+        let caster = self.cities[c].owner;
+        if self.culture_is_hostile(ch.action, caster, ch.target, ch.religion) {
+            let turn = self.game_turn();
+            let city = self.d.text.name(&self.cities[c].name).to_string();
+            let civ = self.player_get_civilization_adjective(caster);
+            let what = self.culture_channel_name(&ch);
+            self.log.msg(turn, Some(ch.target), || format!("{city} ({civ}) channels its culture into {what} against us."));
+        }
+        self.tel_culture(caster, "culture_channel", ch.action, ch.target, 1);
+    }
+
+    /// "Foment Revolt", "Spread Religion (Buddhism)".
+    pub fn culture_channel_name(&self, ch: &CultureChannel) -> String {
+        let d = self.d;
+        let action = d.text.name(&d.cultural_actions[ch.action].base.description).to_string();
+        match ch.religion {
+            Some(r) => format!("{action} ({})", d.text.name(&d.religions[r].base.description)),
+            None => action,
+        }
+    }
+
+    /// The revolt pressure city `c` resists each turn, in hundredths of culture:
+    /// `CULTURE_REVOLT_RESIST_PERCENT` of its own culture rate and `CULTURE_REVOLT_GARRISON` per
+    /// defender.
+    pub fn city_revolt_resistance(&self, c: CityId) -> i32 {
+        let defines = &self.d.defines;
+        let own = self.city_commerce_rate(c, CommerceType::COMMERCE_CULTURE).max(0) * defines.culture_revolt_resist_percent;
+        own + 100 * defines.culture_revolt_garrison * self.culture_garrison_count(c)
+    }
+
+    /// The revolt pressure on city `c` from every caster, in hundredths of culture.
+    pub fn city_revolt_pressure(&self, c: CityId) -> i32 {
+        self.cities[c].culture_pressure.iter().sum()
+    }
+
+    /// The caster with the most revolt pressure on city `c` (the lowest id on ties) and its
+    /// pressure, if any.
+    pub fn city_revolt_leader(&self, c: CityId) -> Option<(PlayerId, i32)> {
+        let mut best: Option<(PlayerId, i32)> = None;
+        for p in self.player_ids() {
+            let v = self.cities[c].culture_pressure[p];
+            if v > 0 && best.map_or(true, |(_, b)| v > b) {
+                best = Some((p, v));
+            }
+        }
+        best
+    }
+
+    /// How far revolt pressure `total` (and the leader's `lead`, hundredths) goes: the
+    /// `REVOLT_*` levels.
+    pub fn culture_revolt_level_of(&self, total: i32, lead: i32) -> i32 {
+        let defines = &self.d.defines;
+        if lead * 3 >= 100 * defines.culture_revolt_flip * 2 {
+            REVOLT_NEAR_FLIP
+        } else if total >= 100 * defines.culture_revolt_disorder {
+            REVOLT_REVOLT
+        } else if total >= 100 * defines.culture_revolt_unhappy_step.max(1) {
+            REVOLT_UNREST
+        } else {
+            REVOLT_CALM
+        }
+    }
+
+    /// Unhappiness from revolt pressure in city `c`: a point per `CULTURE_REVOLT_UNHAPPY_STEP`,
+    /// at most `CULTURE_REVOLT_UNHAPPY_MAX`.
+    pub fn city_culture_unhappiness(&self, c: CityId) -> i32 {
+        let defines = &self.d.defines;
+        let total = self.city_revolt_pressure(c);
+        (total / (100 * defines.culture_revolt_unhappy_step.max(1))).min(defines.culture_revolt_unhappy_max.max(0))
+    }
+
+    /// City `c`'s revolt pressure in its turn: each caster's resisted and faded; a revolt
+    /// (disorder) while the total is at `CULTURE_REVOLT_DISORDER`; the city joins a caster whose
+    /// pressure reaches `CULTURE_REVOLT_FLIP` (not a capital, not with
+    /// `GAMEOPTION_NO_CITY_FLIPPING`). The owner and the leading caster hear of each change.
+    pub fn city_do_revolt_pressure(&mut self, c: CityId) {
+        if self.city_revolt_pressure(c) <= 0 && self.cities[c].culture_revolt_level == REVOLT_CALM {
+            return;
+        }
+        let d = self.d;
+        let defines = &d.defines;
+        let resist = self.city_revolt_resistance(c);
+        let fade = defines.culture_revolt_fade_percent.max(0);
+        let before_unhappy = self.city_culture_unhappiness(c);
+        for p in self.player_ids() {
+            let v = self.cities[c].culture_pressure[p];
+            if v > 0 {
+                // At least a culture a turn fades, so the last of it goes too.
+                self.cities[c].culture_pressure[p] = (v - resist - (v * fade / 100).max(100)).max(0);
+            }
+        }
+        // A caster that is gone or now of the city's team presses no more.
+        let team = self.city_team(c);
+        for p in self.player_ids() {
+            if self.cities[c].culture_pressure[p] > 0 && (!self.players[p].alive || self.players[p].team == team) {
+                self.cities[c].culture_pressure[p] = 0;
+            }
+        }
+        let total = self.city_revolt_pressure(c);
+        let leader = self.city_revolt_leader(c);
+        if self.city_culture_unhappiness(c) != before_unhappy {
+            self.cities[c].ai_assign_work_dirty = true;
+        }
+        if total >= 100 * defines.culture_revolt_disorder && self.cities[c].occupation_timer < 1 {
+            self.city_set_occupation_timer(c, 1);
+        }
+        let level = self.culture_revolt_level_of(total, leader.map_or(0, |l| l.1));
+        let old = self.cities[c].culture_revolt_level;
+        self.cities[c].culture_revolt_level = level;
+        if level != old {
+            self.culture_revolt_news(c, old, level, leader.map(|l| l.0));
+        }
+        if let Some((p, v)) = leader {
+            let flip_ok = !self.city_is_capital(c) && !self.is_option(GameOptionType::GAMEOPTION_NO_CITY_FLIPPING);
+            if flip_ok && v >= 100 * defines.culture_revolt_flip {
+                self.culture_flip(c, p);
+            }
+        }
+    }
+
+    /// City `c`'s revolt level changed from `old` to `level`: its owner and the leading caster
+    /// hear of it.
+    fn culture_revolt_news(&mut self, c: CityId, old: i32, level: i32, leader: Option<PlayerId>) {
+        let turn = self.game_turn();
+        let owner = self.cities[c].owner;
+        let name = self.d.text.name(&self.cities[c].name).to_string();
+        let at = (self.cities[c].x, self.cities[c].y);
+        let by = leader.map(|p| self.player_get_civilization_adjective(p)).unwrap_or_default();
+        let (to_owner, to_caster) = match level {
+            REVOLT_CALM => (format!("The unrest in {name} has passed."), format!("{name} is calm again.")),
+            REVOLT_UNREST if level > old => (format!("{by} culture stirs unrest in {name}."), format!("Our culture stirs unrest in {name}.")),
+            REVOLT_UNREST => (format!("{name} is no longer in revolt, though still restless."), format!("{name} is no longer in revolt.")),
+            REVOLT_REVOLT if level > old => (format!("{name} is in revolt, stirred by {by} culture."), format!("{name} is in revolt, stirred by our culture.")),
+            REVOLT_REVOLT => (format!("{name} is no longer about to join the {by}."), format!("{name} is no longer about to join us.")),
+            _ => (format!("{name} is close to joining the {by}! A garrison and our own culture resist it."), format!("{name} is close to joining us.")),
+        };
+        self.log.msg_at(turn, Some(owner), at, || to_owner);
+        if let Some(p) = leader.filter(|&p| p != owner) {
+            self.log.msg_at(turn, Some(p), at, || to_caster);
+            let tag = match level {
+                REVOLT_CALM => "calm",
+                REVOLT_UNREST => "unrest",
+                REVOLT_REVOLT => "revolt",
+                _ => "near_flip",
+            };
+            self.tel_revolt(p, owner, c, tag);
+        }
+    }
+
+    /// City `t` joins `caster` as in a culture revolt that flips the city (`CvPlot::doCulture`):
+    /// barbarian units on the plot move away, defenders lose half their hit points, then the plot
+    /// (and with it the city) changes hands; in a one-city challenge a human caster's flip
+    /// destroys the city instead.
     fn culture_flip(&mut self, t: CityId, caster: PlayerId) {
+        let turn = self.game_turn();
+        let owner = self.cities[t].owner;
+        let name = self.d.text.name(&self.cities[t].name).to_string();
+        let at = (self.cities[t].x, self.cities[t].y);
+        let by = self.player_get_civilization_adjective(caster);
+        self.log.msg_at(turn, Some(owner), at, || format!("{name} has joined the {by}, won by their culture."));
+        self.log.msg_at(turn, Some(caster), at, || format!("{name} has joined us, won by our culture."));
+        self.tel_revolt(caster, owner, t, "flip");
         let plot = self.city_plot(t);
         for u in self.map.plots[plot].units.clone() {
             if !self.units.contains(u) {
@@ -688,97 +579,13 @@ impl Game {
         }
     }
 
-    /// Adds a timed mark to city `c`: one from the same caster with the same effect is
-    /// replaced (refreshed), others stack.
-    pub fn city_add_culture_mark(&mut self, c: CityId, mark: CultureMark) {
-        let marks = &mut self.cities[c].culture_marks;
-        marks.retain(|k| !(k.effect == mark.effect && k.from == mark.from));
-        let fair = mark.effect == CultureEffect::TradeFair;
-        let from = mark.from;
-        marks.push(mark);
-        self.cities[c].ai_assign_work_dirty = true;
-        if fair {
-            let owner = self.cities[c].owner;
-            self.player_update_trade_routes(owner);
-            if from != owner {
-                self.player_update_trade_routes(from);
-            }
-        }
-    }
-
-    /// City `c`'s marks age by a turn (its turn); expired ones go.
-    pub fn city_do_culture_marks(&mut self, c: CityId) {
-        if self.cities[c].culture_marks.is_empty() {
-            return;
-        }
-        let mut fairs_ended = Vec::new();
-        let marks = &mut self.cities[c].culture_marks;
-        for k in marks.iter_mut() {
-            k.turns -= 1;
-        }
-        marks.retain(|k| {
-            if k.turns > 0 {
-                return true;
-            }
-            if k.effect == CultureEffect::TradeFair {
-                fairs_ended.push(k.from);
-            }
-            false
-        });
-        self.cities[c].ai_assign_work_dirty = true;
-        if !fairs_ended.is_empty() {
-            let owner = self.cities[c].owner;
-            self.player_update_trade_routes(owner);
-            for from in fairs_ended {
-                if from != owner && self.players[from].alive {
-                    self.player_update_trade_routes(from);
-                }
-            }
-        }
-    }
-
-    /// Happiness from festivals in city `c` (they do not stack).
-    pub fn city_culture_happiness(&self, c: CityId) -> i32 {
-        self.cities[c].culture_marks.iter().filter(|k| k.effect == CultureEffect::Festival).map(|k| k.amount).max().unwrap_or(0)
-    }
-
-    /// Unhappiness incited in city `c` (one mark per caster; casters add up).
-    pub fn city_culture_unhappiness(&self, c: CityId) -> i32 {
-        self.cities[c].culture_marks.iter().filter(|k| k.effect == CultureEffect::InciteUnrest).map(|k| k.amount).sum()
-    }
-
-    /// The trade fair bonus (percent) of the route from city `c` to `other`: a fair in either
-    /// city held by the other city's owner (the larger, if both).
-    pub fn city_trade_fair_modifier(&self, c: CityId, other: CityId) -> i32 {
-        let fair = |at: CityId, by: PlayerId| {
-            self.cities[at].culture_marks.iter().filter(|k| k.effect == CultureEffect::TradeFair && k.from == by).map(|k| k.amount).max().unwrap_or(0)
-        };
-        fair(c, self.cities[other].owner).max(fair(other, self.cities[c].owner))
-    }
-
-    /// City `c` is going (destroyed, or captured: the capturer gets a new city): its channel
-    /// ends, and so do the channels aimed at it.
+    /// City `c` is going (destroyed, or captured: the capturer gets a new city): its channel ends.
+    /// (The pressure on it goes with it; channels aimed at its owner go on.)
     pub fn city_culture_lost(&mut self, c: CityId) {
-        if let Some(order) = self.cities[c].culture_queue.first().cloned() {
-            if order.started_turn >= 0 {
-                self.culture_event(c, &order, CultureEventKind::Cancel);
-            }
-        }
-        self.cities[c].culture_queue.clear();
-        let others: Vec<CityId> = self.cities.iter().map(|(o, _)| o).filter(|&o| o != c).collect();
-        for o in others {
-            let aimed = |q: &CultureOrder| q.target == CultureTarget::City(c);
-            if !self.cities[o].culture_queue.iter().any(aimed) {
-                continue;
-            }
-            let head_hit = self.cities[o].culture_queue.first().is_some_and(aimed);
-            let head = self.cities[o].culture_queue[0].clone();
-            self.cities[o].culture_queue.retain(|q| !aimed(q));
-            if head_hit {
-                if head.started_turn >= 0 {
-                    self.culture_event(o, &head, CultureEventKind::Cancel);
-                }
-                self.culture_start_head(o);
+        if self.cities[c].culture_channel.is_some() {
+            let caster = self.cities[c].owner;
+            if let Some(ch) = self.cities[c].culture_channel.take() {
+                self.tel_culture(caster, "culture_channel_end", ch.action, ch.target, 1);
             }
         }
     }
@@ -797,15 +604,9 @@ impl Game {
         }
     }
 
-    /// Every channel in the game (each city's first cultural order), in city id order.
+    /// Every channel in the game, in city id order.
     pub fn culture_channels(&self) -> Vec<Channel> {
-        let mut out = Vec::new();
-        for (c, city) in self.cities.iter() {
-            if let Some(order) = city.culture_queue.first() {
-                out.push(Channel { city: c, caster: city.owner, order: order.clone(), duration: self.culture_action_duration(order.action) });
-            }
-        }
-        out
+        self.cities.iter().filter_map(|(c, city)| city.culture_channel.clone().map(|channel| Channel { city: c, caster: city.owner, channel })).collect()
     }
 
     /// Whether team `team` sees `caster`'s channels: its own, and those of civilizations it has
@@ -814,109 +615,13 @@ impl Game {
         let ct = self.players[caster].team;
         ct == team || self.teams[team].has_met[ct]
     }
+}
 
-    /// The hostile channels aimed at city `t`.
-    pub fn culture_hostile_channels_at(&self, t: CityId) -> Vec<Channel> {
-        self.culture_channels()
-            .into_iter()
-            .filter(|ch| ch.order.target == CultureTarget::City(t) && self.culture_is_hostile(ch.order.action, ch.caster, t, ch.order.religion))
-            .collect()
-    }
-
-    /// A channel started, completed or was cancelled: the messages to the caster and the
-    /// target's owner, the target owner's memory of it, telemetry. (The hook for anything that
-    /// reacts to cultural actions: a diplomacy or threat system would subscribe here.)
-    pub fn culture_event(&mut self, c: CityId, order: &CultureOrder, kind: CultureEventKind) {
-        let d = self.d;
-        let turn = self.game_turn();
-        let caster = self.cities[c].owner;
-        let info = &d.cultural_actions[order.action];
-        let action = d.text.name(&info.base.description).to_string();
-        let CultureTarget::City(t) = order.target;
-        let target_alive = self.cities.contains(t);
-        let target_name = if target_alive { d.text.name(&self.cities[t].name).to_string() } else { "a lost city".to_string() };
-        let city_name = d.text.name(&self.cities[c].name).to_string();
-        let owner = target_alive.then(|| self.cities[t].owner);
-        let hostile = target_alive && self.culture_is_hostile(order.action, caster, t, order.religion);
-        let civ = self.player_get_civilization_adjective(caster);
-        let religion = order.religion.map(|r| d.text.name(&d.religions[r].base.description).to_string());
-        let what = match &religion {
-            Some(r) => format!("{action} ({r})"),
-            None => action.clone(),
-        };
-        let at = target_alive.then(|| (self.cities[t].x, self.cities[t].y));
-        let foreign_owner = owner.filter(|&o| self.players[o].team != self.players[caster].team);
-
-        let (to_caster, to_owner) = match kind {
-            CultureEventKind::Start => {
-                let dur = self.culture_action_duration(order.action);
-                (None, hostile.then(|| format!("{city_name} ({civ}) has begun {what} against {target_name}: {dur} turns. A festival or a garrison resists it.")))
-            }
-            CultureEventKind::Cancel => (
-                Some(format!("{city_name}'s {what} on {target_name} was cancelled.")),
-                hostile.then(|| format!("{city_name} ({civ}) gave up {what} against {target_name}.")),
-            ),
-            CultureEventKind::Complete { success, magnitude } => {
-                let result = self.culture_result_text(info.effect, success, magnitude, order);
-                (
-                    Some(format!("{city_name}'s {what} on {target_name}: {result}.")),
-                    foreign_owner.map(|_| format!("{city_name} ({civ}) completed {what} on {target_name}: {result}.")),
-                )
-            }
-        };
-        if let Some(text) = to_caster {
-            match at {
-                Some(at) => self.log.msg_at(turn, Some(caster), at, || text),
-                None => self.log.msg(turn, Some(caster), || text),
-            }
-        }
-        if let (Some(text), Some(o)) = (to_owner, foreign_owner) {
-            match at {
-                Some(at) => self.log.msg_at(turn, Some(o), at, || text),
-                None => self.log.msg(turn, Some(o), || text),
-            }
-        }
-
-        // The target owner's memory of a completed action.
-        if let (CultureEventKind::Complete { .. }, Some(o)) = (kind, foreign_owner) {
-            let friendly = match info.effect {
-                CultureEffect::Festival | CultureEffect::TradeFair => true,
-                CultureEffect::SpreadReligion => order.religion.is_some() && self.player_get_state_religion(o) == order.religion,
-                CultureEffect::InciteUnrest | CultureEffect::SiphonKnowledge | CultureEffect::FomentRevolt | CultureEffect::FlipCity => false,
-            };
-            let slot = if hostile { Some(0) } else if friendly { Some(1) } else { None };
-            if let Some(slot) = slot {
-                let cap = d.defines.culture_memory_max.max(1);
-                let m = &mut self.players[o].culture_memory[caster][slot];
-                *m = (*m + info.memory_weight).min(cap);
-            }
-        }
-
-        self.tel_culture(c, order, kind, hostile, owner);
-    }
-
-    /// A completed action's result for the messages ("+2 unhappiness for 5 turns").
-    fn culture_result_text(&self, effect: CultureEffect, success: bool, magnitude: i32, order: &CultureOrder) -> String {
-        let d = self.d;
-        let defines = &d.defines;
-        match effect {
-            CultureEffect::Festival => format!("+{magnitude} happiness and resistance to hostile actions for {} turns", self.culture_speed_turns(defines.culture_festival_turns)),
-            CultureEffect::TradeFair => format!("trade routes between the city and the caster's cities +{magnitude}% for {} turns", self.culture_speed_turns(defines.culture_trade_fair_turns)),
-            CultureEffect::SpreadReligion => {
-                let r = order.religion.map(|r| d.text.name(&d.religions[r].base.description).to_string()).unwrap_or_default();
-                if success { format!("{r} spread ({magnitude}% chance)") } else { format!("{r} failed to spread ({magnitude}% chance)") }
-            }
-            CultureEffect::InciteUnrest => format!("+{magnitude} unhappiness for {} turns", self.culture_speed_turns(defines.culture_unrest_turns)),
-            CultureEffect::SiphonKnowledge => {
-                if success { format!("{magnitude} research learnt") } else { "nothing left to learn".to_string() }
-            }
-            CultureEffect::FomentRevolt => {
-                let turns = self.culture_speed_turns(defines.culture_revolt_turns);
-                if success { format!("revolt: disorder for {turns} turns, the garrison hurt ({magnitude}% chance)") } else { format!("no revolt ({magnitude}% chance)") }
-            }
-            CultureEffect::FlipCity => {
-                if success { format!("the city joins the caster ({magnitude}% chance)") } else { format!("the city stays ({magnitude}% chance)") }
-            }
-        }
+/// A chance in hundredths of a percent as the player reads it: "12%", "0.5%".
+pub fn format_chance(bp: i32) -> String {
+    if bp >= 1000 || bp % 100 == 0 {
+        format!("{}%", (bp + 50) / 100)
+    } else {
+        format!("{}.{}%", bp / 100, (bp % 100) / 10)
     }
 }

@@ -330,36 +330,30 @@ impl Game {
         }
     }
 
-    /// A cultural channel started, completed or was cancelled (docs/CULTURE.md): counted per
-    /// action as `culture_start` / `culture_done` (sum: successes) / `culture_cancel`.
-    pub(crate) fn tel_culture(&self, c: CityId, order: &crate::culture::CultureOrder, kind: crate::culture::CultureEventKind, hostile: bool, target_owner: Option<PlayerId>) {
-        use crate::culture::CultureEventKind;
+    /// A cultural channel event (docs/CULTURE.md), counted per action under `cat`:
+    /// `culture_channel` (set), `culture_channel_end`, `culture_spread` (a religion spread).
+    pub(crate) fn tel_culture(&self, p: PlayerId, cat: &'static str, action: CulturalActionType, target: PlayerId, value: i64) {
         if !self.telemetry.on() {
             return;
         }
-        let p = self.cities[c].owner;
-        let name = self.d.cultural_actions[order.action].base.type_.as_str();
+        let name = self.d.cultural_actions[action].base.type_.as_str();
         let turn = self.game_turn();
-        let crate::culture::CultureTarget::City(target) = order.target;
-        let (cat, how, success, magnitude) = match kind {
-            CultureEventKind::Start => ("culture_start", "start", true, 0),
-            CultureEventKind::Cancel => ("culture_cancel", "cancel", false, 0),
-            CultureEventKind::Complete { success, magnitude } => ("culture_done", "complete", success, magnitude),
-        };
         self.telemetry.with(|t| {
-            t.count(p, cat, name, (cat == "culture_done" && success) as i64);
-            t.event(|| {
-                ev(turn, "culture", p)
-                    .s("how", how)
-                    .s("action", name)
-                    .i("city", c.0 as i64)
-                    .i("target", target.0 as i64)
-                    .i("target_owner", target_owner.map_or(-1, |o| o.0 as i64))
-                    .b("hostile", hostile)
-                    .b("success", success)
-                    .i("magnitude", magnitude as i64)
-                    .end()
-            });
+            t.count(p, cat, name, value);
+            t.event(|| ev(turn, "culture", p).s("how", cat).s("action", name).i("target", target.0 as i64).end());
+        });
+    }
+
+    /// Revolt pressure of caster `p` changed city `c`'s state (docs/CULTURE.md): counted as
+    /// `culture_revolt` by `tag` (`unrest`, `revolt`, `near_flip`, `calm`, `flip`).
+    pub(crate) fn tel_revolt(&self, p: PlayerId, owner: PlayerId, c: CityId, tag: &'static str) {
+        if !self.telemetry.on() {
+            return;
+        }
+        let turn = self.game_turn();
+        self.telemetry.with(|t| {
+            t.count(p, "culture_revolt", tag, 1);
+            t.event(|| ev(turn, "revolt", p).s("how", tag).i("city", c.0 as i64).i("owner", owner.0 as i64).end());
         });
     }
 

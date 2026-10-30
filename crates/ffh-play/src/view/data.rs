@@ -65,27 +65,14 @@ fn fields(d: &GameData, kind: &str, i: usize, j: &mut Json) {
         }
         "CulturalActionType" => {
             let a = &d.cultural_actions[CulturalActionType::from_usize(i)];
-            j.set("tier", a.tier);
-            j.set("rate", a.rate);
-            j.set("duration", a.duration);
-            j.set("target", match a.target {
-                CultureTargetKind::OwnOrAllyCity => "own_or_ally",
-                CultureTargetKind::ForeignCity => "foreign",
-                CultureTargetKind::AnyCity => "any",
-            });
             j.set("hostile", match a.hostile {
                 CultureHostility::Never => "never",
                 CultureHostility::Always => "always",
                 CultureHostility::DifferentStateReligion => "different_state_religion",
             });
             j.set("effect", match a.effect {
-                CultureEffect::Festival => "festival",
-                CultureEffect::TradeFair => "trade_fair",
                 CultureEffect::SpreadReligion => "spread_religion",
-                CultureEffect::InciteUnrest => "incite_unrest",
-                CultureEffect::SiphonKnowledge => "siphon_knowledge",
                 CultureEffect::FomentRevolt => "foment_revolt",
-                CultureEffect::FlipCity => "flip_city",
             });
         }
         "FeatureType" => {

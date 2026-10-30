@@ -60,8 +60,7 @@ pub fn decide(g: &Game, c: CityId) -> Option<(Choice, &'static str, Option<Recru
         }
     }
 
-    // Against a revolt or a flip aimed at it, defenders up to three: each resists it (the AI's
-    // cultural defense, culture.rs, re-chooses a threatened governed city's production).
+    // Against revolt pressure near disorder, defenders up to three: each resists it.
     if culture_grave(g, c) && g.culture_garrison_count(c) < 3 {
         if let Some(u) = prod::best_unit(g, c, Role::Defense) {
             return Some((Choice::Train(u, UnitAIType::UNITAI_CITY_DEFENSE), "governor_culture_defense", None));
@@ -153,9 +152,10 @@ pub fn decide(g: &Game, c: CityId) -> Option<(Choice, &'static str, Option<Recru
     best_process.map(|(pr, _)| (Choice::Maintain(pr), "governor_process", None))
 }
 
-/// Whether a hostile Foment Revolt or Flip City is aimed at city `c`.
+/// Whether revolt pressure on city `c` brings it near disorder (half the way or more): each
+/// defender resists it.
 pub(crate) fn culture_grave(g: &Game, c: CityId) -> bool {
-    g.culture_hostile_channels_at(c).iter().any(|ch| matches!(g.d.cultural_actions[ch.order.action].effect, CultureEffect::FomentRevolt | CultureEffect::FlipCity))
+    g.city_revolt_pressure(c) * 2 >= 100 * g.d.defines.culture_revolt_disorder
 }
 
 /// Turns within which a unit in production for an army counts toward its target.
