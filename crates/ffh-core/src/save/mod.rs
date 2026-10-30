@@ -63,7 +63,8 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 ///   are gone (computed when needed).
 /// - 4: cultural actions (docs/CULTURE.md): `City::culture_queue`, `culture_diverted`,
 ///   `culture_marks`, `Player::culture_memory`.
-pub const FORMAT_VERSION: u32 = 4;
+/// - 5: Foment Revolt and Flip City: `City::culture_revolt_turn`.
+pub const FORMAT_VERSION: u32 = 5;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]

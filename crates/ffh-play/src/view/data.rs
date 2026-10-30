@@ -83,6 +83,9 @@ fn fields(d: &GameData, kind: &str, i: usize, j: &mut Json) {
                 CultureEffect::TradeFair => "trade_fair",
                 CultureEffect::SpreadReligion => "spread_religion",
                 CultureEffect::InciteUnrest => "incite_unrest",
+                CultureEffect::SiphonKnowledge => "siphon_knowledge",
+                CultureEffect::FomentRevolt => "foment_revolt",
+                CultureEffect::FlipCity => "flip_city",
             });
         }
         "FeatureType" => {

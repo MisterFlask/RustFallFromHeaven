@@ -41,7 +41,13 @@ function effectText(action, t) {
           ? `${t.magnitude}% chance`
           : kind === "incite_unrest"
             ? `+${t.magnitude} unhappy${lasting}`
-            : "";
+            : kind === "siphon_knowledge"
+              ? `${t.magnitude} research`
+              : kind === "foment_revolt"
+                ? `${t.magnitude}% chance of disorder${lasting}`
+                : kind === "flip_city"
+                  ? `${t.magnitude}% chance the city joins you`
+                  : "";
   return `${t.effect < 100 ? `E ${t.effect}% · ` : ""}${what}`;
 }
 
@@ -124,6 +130,7 @@ export function cultureView(c, reload) {
     h("p.dim", `${k.rate} culture a turn${k.diverted ? `; ${k.diverted} went to the channel last turn` : ""}. One action channels at a time.`),
     queue,
     k.pressure.length ? h("div", h("b.warn", "Aimed at this city:"), h("ul.culture-pressure", k.pressure.map((ch) => channelLine(ch, { at: false })))) : null,
+    k.revolt_turn >= 0 ? h("p.warn", `A revolt was fomented here on turn ${k.revolt_turn}.`) : null,
     marks.length ? h("div.chips", marks) : null,
     h("details", h("summary", "Start a cultural action"), actions),
   );

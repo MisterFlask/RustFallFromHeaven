@@ -13,6 +13,8 @@
               defines of RulesDefines.xml
      bScaledByEffect: the magnitude or chance is multiplied by the effectiveness E (never for a
               target of the caster's own team)
+     bGarrisonResists: each land unit of the target's team on its plot adds
+              CULTURE_GARRISON_RESIST to the defences M
      iThreatWeight: read by nothing yet (the future threat score)
      iMemoryWeight: points of cultural hostility (hostile) or friendship (friendly) the target's
               owner remembers when the action completes -->
@@ -71,8 +73,53 @@
 			<Hostile>ALWAYS</Hostile>
 			<Effect>INCITE_UNREST</Effect>
 			<bScaledByEffect>1</bScaledByEffect>
+			<bGarrisonResists>1</bGarrisonResists>
 			<iThreatWeight>2</iThreatWeight>
 			<iMemoryWeight>2</iMemoryWeight>
+		</CulturalActionInfo>
+		<CulturalActionInfo>
+			<Type>CULTURALACTION_SIPHON_KNOWLEDGE</Type>
+			<Description>TXT_KEY_CULTURALACTION_SIPHON_KNOWLEDGE</Description>
+			<Help>TXT_KEY_CULTURALACTION_SIPHON_KNOWLEDGE_HELP</Help>
+			<iTier>1</iTier>
+			<iRate>5</iRate>
+			<iDuration>5</iDuration>
+			<Target>FOREIGN_CITY</Target>
+			<Hostile>ALWAYS</Hostile>
+			<Effect>SIPHON_KNOWLEDGE</Effect>
+			<bScaledByEffect>1</bScaledByEffect>
+			<iThreatWeight>1</iThreatWeight>
+			<iMemoryWeight>1</iMemoryWeight>
+		</CulturalActionInfo>
+		<CulturalActionInfo>
+			<Type>CULTURALACTION_FOMENT_REVOLT</Type>
+			<Description>TXT_KEY_CULTURALACTION_FOMENT_REVOLT</Description>
+			<Help>TXT_KEY_CULTURALACTION_FOMENT_REVOLT_HELP</Help>
+			<iTier>2</iTier>
+			<iRate>10</iRate>
+			<iDuration>6</iDuration>
+			<Target>FOREIGN_CITY</Target>
+			<Hostile>ALWAYS</Hostile>
+			<Effect>FOMENT_REVOLT</Effect>
+			<bScaledByEffect>1</bScaledByEffect>
+			<bGarrisonResists>1</bGarrisonResists>
+			<iThreatWeight>4</iThreatWeight>
+			<iMemoryWeight>3</iMemoryWeight>
+		</CulturalActionInfo>
+		<CulturalActionInfo>
+			<Type>CULTURALACTION_FLIP_CITY</Type>
+			<Description>TXT_KEY_CULTURALACTION_FLIP_CITY</Description>
+			<Help>TXT_KEY_CULTURALACTION_FLIP_CITY_HELP</Help>
+			<iTier>3</iTier>
+			<iRate>40</iRate>
+			<iDuration>10</iDuration>
+			<Target>FOREIGN_CITY</Target>
+			<Hostile>ALWAYS</Hostile>
+			<Effect>FLIP_CITY</Effect>
+			<bScaledByEffect>1</bScaledByEffect>
+			<bGarrisonResists>1</bGarrisonResists>
+			<iThreatWeight>10</iThreatWeight>
+			<iMemoryWeight>4</iMemoryWeight>
 		</CulturalActionInfo>
 	</CulturalActionInfos>
 </Civ4CulturalActionInfos>

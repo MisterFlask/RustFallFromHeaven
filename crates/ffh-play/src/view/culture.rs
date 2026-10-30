@@ -37,7 +37,7 @@ pub fn channel_json(v: &Viewer, ch: &Channel) -> Json {
         "hostile" => hostile,
     };
     if ch.caster == v.h || v.reveal {
-        if let Ok(p) = g.culture_check(ch.city, ch.order.action, ch.order.target, ch.order.religion, false) {
+        if let Ok(p) = g.culture_check(ch.city, ch.order.action, ch.order.target, ch.order.religion, ffh_core::culture::CultureCheck::Channel) {
             j.set("effect", p.effectiveness);
             j.set("magnitude", p.magnitude);
         }
@@ -58,7 +58,8 @@ pub fn marks_json(v: &Viewer, c: CityId) -> Json {
                     CultureEffect::Festival => "festival",
                     CultureEffect::TradeFair => "trade_fair",
                     CultureEffect::InciteUnrest => "unrest",
-                    CultureEffect::SpreadReligion => "spread",
+                    // (only the three above leave marks)
+                    CultureEffect::SpreadReligion | CultureEffect::SiphonKnowledge | CultureEffect::FomentRevolt | CultureEffect::FlipCity => "other",
                 };
                 crate::jobj! { "kind" => kind, "from" => k.from, "amount" => k.amount, "turns" => k.turns }
             })

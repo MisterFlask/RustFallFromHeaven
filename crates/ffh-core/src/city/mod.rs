@@ -267,6 +267,9 @@ pub struct City {
     pub culture_diverted: i32,
     /// Timed effects of completed cultural actions on this city (festivals, fairs, unrest).
     pub culture_marks: Vec<crate::culture::CultureMark>,
+    /// The game turn of the last successful Foment Revolt in this city (-1: none); Flip City
+    /// needs a recent one.
+    pub culture_revolt_turn: i32,
 }
 
 impl City {
@@ -476,6 +479,7 @@ impl City {
             culture_queue: Vec::new(),
             culture_diverted: 0,
             culture_marks: Vec::new(),
+            culture_revolt_turn: -1,
         }
     }
 

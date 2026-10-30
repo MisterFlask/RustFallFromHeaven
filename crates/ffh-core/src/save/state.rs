@@ -77,6 +77,9 @@ impl Persist for CultureEffect {
             CultureEffect::TradeFair => 1,
             CultureEffect::SpreadReligion => 2,
             CultureEffect::InciteUnrest => 3,
+            CultureEffect::SiphonKnowledge => 4,
+            CultureEffect::FomentRevolt => 5,
+            CultureEffect::FlipCity => 6,
         };
         tag.write(w);
     }
@@ -86,6 +89,9 @@ impl Persist for CultureEffect {
             1 => CultureEffect::TradeFair,
             2 => CultureEffect::SpreadReligion,
             3 => CultureEffect::InciteUnrest,
+            4 => CultureEffect::SiphonKnowledge,
+            5 => CultureEffect::FomentRevolt,
+            6 => CultureEffect::FlipCity,
             t => return Err(LoadError::Corrupt(format!("culture effect tag {t}"))),
         })
     }
@@ -251,6 +257,7 @@ persist_struct!(City {
     ai_emphasize_avoid_growth_count, ai_emphasize_great_people_count, ai_emphasize_yield_count,
     ai_emphasize_commerce_count, ai_emphasize_avoid_angry_citizens_count,
     ai_emphasize_avoid_unhealthy_citizens_count, culture_queue, culture_diverted, culture_marks,
+    culture_revolt_turn,
 });
 
 persist_struct!(Player {

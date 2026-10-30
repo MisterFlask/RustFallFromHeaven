@@ -1,7 +1,7 @@
 //! Cultural actions (docs/CULTURE.md): the queue, channelling, the four core actions, the
 //! public channels, saves.
 
-use ffh_core::culture::{CultureOrder, CultureRefusal, CultureTarget};
+use ffh_core::culture::{CultureCheck, CultureOrder, CultureRefusal, CultureTarget};
 use ffh_core::game::Game;
 use ffh_core::ids::*;
 use ffh_core::setup::GameSetup;
@@ -135,22 +135,22 @@ fn queueing_needs_the_rate_the_range_and_a_presence_abroad() {
     let unrest = action(&g, "CULTURALACTION_INCITE_UNREST");
     let need = g.d.cultural_actions[unrest].rate;
     set_rate(&mut g, a, need - 1);
-    assert_eq!(g.culture_check(a, unrest, CultureTarget::City(f), None, true), Err(CultureRefusal::Rate { have: need - 1, need }));
+    assert_eq!(g.culture_check(a, unrest, CultureTarget::City(f), None, CultureCheck::Queue), Err(CultureRefusal::Rate { have: need - 1, need }));
     set_rate(&mut g, a, need);
     let (p0, p1) = (PlayerId(0), PlayerId(1));
     set_culture(&mut g, f, p1, 95);
     set_culture(&mut g, f, p0, 5);
-    assert!(matches!(g.culture_check(a, unrest, CultureTarget::City(f), None, true), Err(CultureRefusal::Share { have: 5, .. })));
+    assert!(matches!(g.culture_check(a, unrest, CultureTarget::City(f), None, CultureCheck::Queue), Err(CultureRefusal::Share { have: 5, .. })));
     set_culture(&mut g, f, p0, 12);
     // 12 / (12 + 95) = 11% < the minimum effect
-    assert!(matches!(g.culture_check(a, unrest, CultureTarget::City(f), None, true), Err(CultureRefusal::Effect { .. })));
+    assert!(matches!(g.culture_check(a, unrest, CultureTarget::City(f), None, CultureCheck::Queue), Err(CultureRefusal::Effect { .. })));
     set_culture(&mut g, f, p0, 40);
     set_culture(&mut g, f, p1, 60);
-    let p = g.culture_check(a, unrest, CultureTarget::City(f), None, true).expect("possible");
+    let p = g.culture_check(a, unrest, CultureTarget::City(f), None, CultureCheck::Queue).expect("possible");
     assert!(p.hostile);
     assert_eq!(p.effectiveness, 40);
     // Not on our own city.
-    assert!(matches!(g.culture_check(a, unrest, CultureTarget::City(a), None, true), Err(CultureRefusal::Target(_))));
+    assert!(matches!(g.culture_check(a, unrest, CultureTarget::City(a), None, CultureCheck::Queue), Err(CultureRefusal::Target(_))));
 }
 
 #[test]
@@ -226,7 +226,7 @@ fn trade_fair_raises_the_routes_between_the_two() {
     set_culture(&mut g, f, p0, 40);
     set_culture(&mut g, f, p1, 60);
     set_rate(&mut g, a, 10);
-    match g.culture_check(a, fair, CultureTarget::City(f), None, true) {
+    match g.culture_check(a, fair, CultureTarget::City(f), None, CultureCheck::Queue) {
         Err(CultureRefusal::NoTrade) => {
             // No trade with them (no open borders): the fair needs trade routes.
             return;
@@ -253,7 +253,7 @@ fn spread_religion_goes_through_the_religion_rules() {
     let r = g.d.religions.keys().next().unwrap();
     // Not without the religion in the casting city.
     set_rate(&mut g, a, 10);
-    assert!(matches!(g.culture_check(a, spread, CultureTarget::City(b), Some(r), true), Err(CultureRefusal::Religion(_))));
+    assert!(matches!(g.culture_check(a, spread, CultureTarget::City(b), Some(r), CultureCheck::Queue), Err(CultureRefusal::Religion(_))));
     g.city_set_has_religion(a, r, true, false, false);
     g.city_push_culture_order(a, spread, CultureTarget::City(b), Some(r), false, false).unwrap();
     for _ in 0..g.culture_action_duration(spread) {
@@ -307,5 +307,143 @@ fn off_without_the_option() {
     let a = g.player_init_city(p0, x, y, true, true);
     let festival = action(&g, "CULTURALACTION_FESTIVAL");
     set_rate(&mut g, a, 10);
-    assert_eq!(g.culture_check(a, festival, CultureTarget::City(a), None, true), Err(CultureRefusal::Off));
+    assert_eq!(g.culture_check(a, festival, CultureTarget::City(a), None, CultureCheck::Queue), Err(CultureRefusal::Off));
+}
+
+// ---- phase 3: Siphon Knowledge, Foment Revolt, Flip City ----
+
+/// Another city of player 1 near `a` (not its capital, which cannot be flipped).
+fn second_foreign_city(g: &mut Game, a: CityId) -> CityId {
+    let (x, y) = (g.cities[a].x, g.cities[a].y);
+    for r in 2..=6 {
+        for dy in -r..=r {
+            for dx in -r..=r {
+                let Some(q) = g.map.plot_xy(x + dx, y + dy) else { continue };
+                let (qx, qy) = g.map.xy(q);
+                let clear = g.cities.iter().all(|(_, c)| g.plot_distance(c.x, c.y, qx, qy) >= 2);
+                if !g.plot_is_water(q) && clear {
+                    let c = g.player_init_city(PlayerId(1), qx, qy, true, true);
+                    let t0 = g.players[PlayerId(0)].team;
+                    g.cities[c].revealed[t0] = true;
+                    return c;
+                }
+            }
+        }
+    }
+    panic!("no room for a second foreign city");
+}
+
+/// Channels `action` from `a` on `t` to completion (the rate kept up every turn).
+fn channel(g: &mut Game, a: CityId, rate: i32, action: CulturalActionType, t: CityId) {
+    set_rate(g, a, rate);
+    g.city_push_culture_order(a, action, CultureTarget::City(t), None, false, false).expect("queued");
+    for _ in 0..g.culture_action_duration(action) {
+        set_rate(g, a, rate);
+        g.city_do_culture_channel(a);
+    }
+    assert!(g.cities[a].culture_queue.is_empty(), "completed");
+}
+
+#[test]
+fn siphon_knowledge_learns_a_tech_they_know() {
+    let (mut g, a, _, f) = game();
+    let (p0, p1) = (PlayerId(0), PlayerId(1));
+    let siphon = action(&g, "CULTURALACTION_SIPHON_KNOWLEDGE");
+    set_culture(&mut g, f, p0, 50);
+    set_culture(&mut g, f, p1, 50);
+    set_rate(&mut g, a, 10);
+    // They learn a tech we could research.
+    let (t0, t1) = (g.players[p0].team, g.players[p1].team);
+    let tech = g.d.techs.keys().find(|&t| !g.teams[t0].has_tech[t] && !g.teams[t1].has_tech[t] && g.player_can_research(p0, t, false)).expect("a tech");
+    g.team_set_has_tech(t1, tech, true, Some(p1), false, false);
+    let tech = g.culture_siphon_tech(p0, p1).expect("something to learn");
+    let pv = g.culture_check(a, siphon, CultureTarget::City(f), None, CultureCheck::Queue).expect("possible");
+    let before = g.team_get_research_progress(t0, Some(tech));
+    channel(&mut g, a, 10, siphon, f);
+    assert_eq!(g.team_get_research_progress(t0, Some(tech)) - before, pv.magnitude);
+    let cost = g.team_get_research_cost(t0, tech) as i64;
+    assert_eq!(pv.magnitude as i64, (cost * g.d.defines.culture_siphon_pct_of_cost as i64 * pv.effectiveness as i64 / 10000).max(1));
+    // Once we know everything they do, there is nothing left.
+    for t in g.d.techs.keys() {
+        if g.teams[t1].has_tech[t] {
+            g.teams[t0].has_tech[t] = true;
+        }
+    }
+    assert_eq!(g.culture_check(a, siphon, CultureTarget::City(f), None, CultureCheck::Queue), Err(CultureRefusal::NothingToLearn));
+}
+
+#[test]
+fn a_revolt_brings_disorder_never_kills_and_opens_the_way_to_a_flip() {
+    let (mut g, a, _, _) = game();
+    let (p0, p1) = (PlayerId(0), PlayerId(1));
+    let t = second_foreign_city(&mut g, a);
+    let revolt = action(&g, "CULTURALACTION_FOMENT_REVOLT");
+    let flip = action(&g, "CULTURALACTION_FLIP_CITY");
+    let legendary = g.d.t::<CultureLevelType>("CULTURELEVEL_LEGENDARY");
+    g.cities[a].culture_level = Some(legendary);
+    set_culture(&mut g, t, p0, 90);
+    set_culture(&mut g, t, p1, 10);
+    // A defender of theirs in the city, nearly dead: the revolt hurts it, never kills it.
+    let warrior = g.d.t::<UnitType>("UNIT_WARRIOR");
+    let (tx, ty) = (g.cities[t].x, g.cities[t].y);
+    let u = g.player_init_unit(p1, warrior, tx, ty, None, None);
+    let max = g.unit_max_hit_points(u);
+    g.units[u].damage = max - 2;
+    // No flip before a revolt.
+    set_rate(&mut g, a, 50);
+    assert!(matches!(g.culture_check(a, flip, CultureTarget::City(t), None, CultureCheck::Queue), Err(CultureRefusal::NoRevolt { .. })));
+    let mut tries = 0;
+    while g.cities[t].culture_revolt_turn < 0 {
+        tries += 1;
+        assert!(tries < 40, "no revolt in 40 tries");
+        channel(&mut g, a, 50, revolt, t);
+        assert!(g.units.contains(u), "the revolt killed a defender");
+        assert!(g.units[u].damage < max);
+    }
+    assert!(g.city_is_disorder(t), "in disorder");
+    assert_eq!(g.units[u].damage, max - 1, "hurt to its last hit point, not beyond");
+    // Now Flip City may be queued; capitals never.
+    g.culture_check(a, flip, CultureTarget::City(t), None, CultureCheck::Queue).expect("flip after a revolt");
+    let capital = g.players[p1].cities.iter().copied().find(|&c| g.city_is_capital(c)).unwrap();
+    assert_eq!(g.culture_check(a, flip, CultureTarget::City(capital), None, CultureCheck::Queue), Err(CultureRefusal::Target("capitals cannot be flipped")));
+}
+
+#[test]
+fn flip_city_hands_the_city_over() {
+    let (mut g, a, _, _) = game();
+    let (p0, p1) = (PlayerId(0), PlayerId(1));
+    let t = second_foreign_city(&mut g, a);
+    let flip = action(&g, "CULTURALACTION_FLIP_CITY");
+    let legendary = g.d.t::<CultureLevelType>("CULTURELEVEL_LEGENDARY");
+    g.cities[a].culture_level = Some(legendary);
+    let (tx, ty) = (g.cities[t].x, g.cities[t].y);
+    let mut tries = 0;
+    loop {
+        let Some(t) = g.map.plot_xy(tx, ty).and_then(|q| g.map.plots[q].plot_city) else { panic!("the city is gone") };
+        if g.cities[t].owner == p0 {
+            break;
+        }
+        tries += 1;
+        assert!(tries < 40, "no flip in 40 tries");
+        set_culture(&mut g, t, p0, 90);
+        set_culture(&mut g, t, p1, 10);
+        g.cities[t].culture_revolt_turn = g.game_turn();
+        channel(&mut g, a, 50, flip, t);
+    }
+    // The owner was told and remembers it.
+    assert!(g.players[p1].culture_memory[p0][0] > 0);
+}
+
+#[test]
+fn no_flips_when_city_flipping_is_off() {
+    let (mut g, a, _, _) = game();
+    let t = second_foreign_city(&mut g, a);
+    let flip = action(&g, "CULTURALACTION_FLIP_CITY");
+    g.setup.options[GameOptionType::GAMEOPTION_NO_CITY_FLIPPING] = true;
+    g.cities[a].culture_level = Some(g.d.t::<CultureLevelType>("CULTURELEVEL_LEGENDARY"));
+    g.cities[t].culture_revolt_turn = g.game_turn();
+    set_culture(&mut g, t, PlayerId(0), 90);
+    set_culture(&mut g, t, PlayerId(1), 10);
+    set_rate(&mut g, a, 50);
+    assert_eq!(g.culture_check(a, flip, CultureTarget::City(t), None, CultureCheck::Queue), Err(CultureRefusal::Target("city flipping is off in this game")));
 }

@@ -892,7 +892,7 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             if g.cities[*target].owner != h && !g.city_is_revealed(*target, g.players[h].team, false) {
                 return Err(CmdErr::Gone);
             }
-            g.culture_check(*city, *action, ffh_core::culture::CultureTarget::City(*target), *religion, true).map_err(|r| cannot(r.describe(d)))?;
+            g.culture_check(*city, *action, ffh_core::culture::CultureTarget::City(*target), *religion, ffh_core::culture::CultureCheck::Queue).map_err(|r| cannot(r.describe(d)))?;
             Plan::Apply(Action::CulturePush { city: *city, action: *action, target: *target, religion: *religion, repeat: *repeat, first: *first })
         }
 

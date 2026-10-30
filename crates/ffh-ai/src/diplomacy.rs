@@ -475,14 +475,18 @@ fn territory_check(g: &Game, p: PlayerId, bar: &WarBar, other: PlayerId, recheck
         return Err("treaty");
     }
     let rel = relation(g, p, other);
+    // A civ channelling Flip City against one of our cities provokes us (docs/CULTURE.md): no
+    // friend is spared, and a smaller edge will do.
+    let provoked = crate::culture::flips_against(g, p, other);
     // A cautious leader does not attack a civ it likes; a war-eager one takes any opening.
-    if bar.spare_friends && rel > 1 {
+    if bar.spare_friends && rel > 1 && !provoked {
         return Err("friend");
     }
     let theirs = g.team_get_defensive_power(ot).max(1) as i64;
     let allies = if crate::switches::DOGPILE.on(g, p) { dogpile_power(g, team, ot) } else { 0 };
     let ratio = (bar.ours + allies) * 100 / theirs;
-    if ratio < if recheck { bar.need_ratio * 9 / 10 } else { bar.need_ratio } {
+    let need = if provoked { bar.need_ratio * 85 / 100 } else { bar.need_ratio };
+    if ratio < if recheck { need * 9 / 10 } else { need } {
         return Err("power");
     }
     // Reachable and takeable: by land (a shared landmass within 16 plots whose weakest city
@@ -512,7 +516,7 @@ fn territory_check(g: &Game, p: PlayerId, bar: &WarBar, other: PlayerId, recheck
     };
     // Greedy gain: a bigger edge, more and closer cities; minus how much we like them; a
     // flavor nudge toward alignment-opposites.
-    let score = ratio - dist as i64 * 6 - rel as i64 * 15 + op.cities.len() as i64 * 10 + flavor;
+    let score = ratio - dist as i64 * 6 - rel as i64 * 15 + op.cities.len() as i64 * 10 + flavor + if provoked { 40 } else { 0 };
     Ok(Target { score, ratio, allies })
 }
 

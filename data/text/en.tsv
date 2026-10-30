@@ -5740,8 +5740,14 @@ TXT_KEY_CS_5_1_3	Bravado and luck, buddy.  Bravado and luck.
 TXT_KEY_CTRL	Ctrl+
 TXT_KEY_CULTURALACTION_FESTIVAL	Festival
 TXT_KEY_CULTURALACTION_FESTIVAL_HELP	For a while the target city has +1 [ICON_HAPPY] and resists hostile cultural actions (+0.5 to its resistance). Aimed at one of your cities, or a city of a civilization you have a defensive pact with.
+TXT_KEY_CULTURALACTION_FLIP_CITY	Flip City
+TXT_KEY_CULTURALACTION_FLIP_CITY_HELP	A chance (50%, scaled by your effectiveness there) that a foreign city joins you, as a city does in a culture revolt. Needs a successful Foment Revolt there within the last 10 turns, or the city in disorder, when the channel starts. Capitals cannot be flipped. A failed roll spends the culture and changes nothing else. Hostile.
+TXT_KEY_CULTURALACTION_FOMENT_REVOLT	Foment Revolt
+TXT_KEY_CULTURALACTION_FOMENT_REVOLT_HELP	A chance (60%, scaled by your effectiveness there) that a foreign city falls into disorder for 2 turns and each of its defenders loses 30% of its hit points (never the last one). A successful revolt opens the way to Flip City. Hostile; the garrison resists it.
 TXT_KEY_CULTURALACTION_INCITE_UNREST	Incite Unrest
 TXT_KEY_CULTURALACTION_INCITE_UNREST_HELP	Adds [ICON_UNHAPPY] to a foreign city for a while: up to +3, scaled by your effectiveness there. Hostile.
+TXT_KEY_CULTURALACTION_SIPHON_KNOWLEDGE	Siphon Knowledge
+TXT_KEY_CULTURALACTION_SIPHON_KNOWLEDGE_HELP	Learns from a foreign city whose owner knows a technology you lack: research worth up to 15% of that technology's cost, scaled by your effectiveness there (your current research if they know it, else the cheapest they know that you can research). Hostile, though a minor offence.
 TXT_KEY_CULTURALACTION_SPREAD_RELIGION	Spread Religion
 TXT_KEY_CULTURALACTION_SPREAD_RELIGION_HELP	A chance (80%, scaled by your effectiveness abroad) to spread a religion of the casting city to a city without it, as a missionary would. Hostile only when the target's owner has another state religion.
 TXT_KEY_CULTURALACTION_TRADE_FAIR	Trade Fair

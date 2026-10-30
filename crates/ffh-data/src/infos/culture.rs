@@ -42,6 +42,12 @@ pub enum CultureEffect {
     SpreadReligion,
     /// +unhappiness in the target for a while.
     InciteUnrest,
+    /// Research towards a tech the target's owner knows and the caster lacks.
+    SiphonKnowledge,
+    /// A chance of disorder in the target and damage to its garrison.
+    FomentRevolt,
+    /// A chance that the target joins the caster (it needs a recent revolt or disorder there).
+    FlipCity,
 }
 
 /// One cultural action (this game's `CvCulturalActionInfo`).
@@ -59,6 +65,8 @@ pub struct CulturalActionInfo {
     pub effect: CultureEffect,
     /// The magnitude or chance is multiplied by the effectiveness E (foreign targets only).
     pub scaled_by_effect: bool,
+    /// The target's garrison resists it (`CULTURE_GARRISON_RESIST` a unit in M).
+    pub garrison_resists: bool,
     /// For the future threat score; nothing reads it yet.
     pub threat_weight: i32,
     /// Memory points the target's owner keeps when the action completes.
@@ -90,6 +98,9 @@ pub fn read_cultural_action(rd: &Rd) -> CulturalActionInfo {
         "TRADE_FAIR" => CultureEffect::TradeFair,
         "SPREAD_RELIGION" => CultureEffect::SpreadReligion,
         "INCITE_UNREST" => CultureEffect::InciteUnrest,
+        "SIPHON_KNOWLEDGE" => CultureEffect::SiphonKnowledge,
+        "FOMENT_REVOLT" => CultureEffect::FomentRevolt,
+        "FLIP_CITY" => CultureEffect::FlipCity,
         other => {
             rd.cx.warn(format!("{}: unknown Effect {other:?}", base.type_));
             CultureEffect::Festival
@@ -104,6 +115,7 @@ pub fn read_cultural_action(rd: &Rd) -> CulturalActionInfo {
         hostile,
         effect,
         scaled_by_effect: rd.bool("bScaledByEffect"),
+        garrison_resists: rd.bool("bGarrisonResists"),
         threat_weight: rd.int("iThreatWeight"),
         memory_weight: rd.int("iMemoryWeight"),
     }

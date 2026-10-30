@@ -1313,6 +1313,17 @@ diplomacy (so the war state is current), what an expert does with a cultural que
   once against one civilization, worth the unhappy faces × turns × the city's size, doubled at
   war, times the leader's `iCulturalAggression` (derived from `iLimitedWarRand` and the culture
   flavor when the XML gives none).
+- **Escalation.** Siphoning knowledge from anyone but a Pleased or Friendly civilization (the
+  research is worth what commerce is); fomenting revolt in a rival's city (its output lost to the
+  disorder, the hurt garrison, and a third of the city's worth when one of our cities could then
+  flip it: tier 3 in reach, 50% of the plot's culture); flipping a rival's city after a revolt (its
+  worth times the chance; at peace only while our power is at least 80% of their defence, since a
+  flip invites war).
+- **Under escalation.** Against a revolt or a flip aimed at one of our cities, besides the
+  festival, the city trains a defender first while it has fewer than three (each resists, and a
+  revolt hurts fewer). A civilization channelling Flip City against us is a provocation for the war
+  of expansion (`territory_check`): no friend spared, 85% of the leader's power edge, +40 to the
+  target's score.
 - **Memory.** Their cultural acts against us are in the attitude (`relation_parts`): "cultural
   hostility" −1 per 2 points (to −3), "cultural friendship" +1 per 2 points (to +2), fading a
   point every 10 turns.

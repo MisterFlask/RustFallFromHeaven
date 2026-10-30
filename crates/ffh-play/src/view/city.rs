@@ -430,7 +430,7 @@ fn cultural(v: &Viewer, c: CityId) -> Json {
                 "started" => o.started_turn >= 0,
             };
             // Why it would pause now (its check this turn).
-            if let Err(r) = g.culture_check(c, o.action, o.target, o.religion, false) {
+            if let Err(r) = g.culture_check(c, o.action, o.target, o.religion, if o.started_turn >= 0 { ffh_core::culture::CultureCheck::Channel } else { ffh_core::culture::CultureCheck::Start }) {
                 j.set("paused", r.describe(d));
             }
             j
@@ -462,7 +462,7 @@ fn cultural(v: &Viewer, c: CityId) -> Json {
                         continue;
                     }
                     let mut j = crate::jobj! { "city" => t, "name" => city_name(g, t), "owner" => tc.owner, "religion" => Json::opt_idx(r) };
-                    match g.culture_check(c, a, CultureTarget::City(t), r, true) {
+                    match g.culture_check(c, a, CultureTarget::City(t), r, ffh_core::culture::CultureCheck::Queue) {
                         Ok(p) => {
                             j.set("ok", true);
                             j.set("effect", p.effectiveness);
@@ -506,5 +506,7 @@ fn cultural(v: &Viewer, c: CityId) -> Json {
         "actions" => Json::Arr(actions),
         "pressure" => Json::Arr(pressure),
         "marks" => crate::view::culture::marks_json(v, c),
+        // The last successful Foment Revolt here (-1: none), which Flip City needs.
+        "revolt_turn" => city.culture_revolt_turn,
     }
 }

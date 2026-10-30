@@ -10,7 +10,7 @@ what is left.
 |---|---|---|
 | 1 Baseline | AI autoplay turn times before the sprint | done (below); the owner then ruled turn time out of the acceptance criteria (2026-10-30: "no perf optimization until it impedes testing") |
 | 2 Culture core | queue, channelling, visibility, Festival, Trade Fair, Spread Religion, Incite Unrest, events, memories, AI, UI | done |
-| 3 Culture escalation | Siphon Knowledge, Foment Revolt, Flip City, espionage overlap | next |
+| 3 Culture escalation | Siphon Knowledge, Foment Revolt, Flip City, espionage overlap | done |
 | 7 FfH layer | Incite Mutiny (needs armies) | later |
 
 Code: rules `crates/ffh-core/src/culture.rs` (hooks in the city turn, happiness, trade routes,
@@ -62,8 +62,9 @@ share.
 E = Sc / (Sc + K·So + M): the caster's and the owner's shares of the plot's culture, K =
 `CULTURE_RESIST_K` (100 = 1.0), M the city's defences. Integer percent here. M counts only
 against *hostile* actions: a festival in the city adds `CULTURE_FESTIVAL_RESIST` (0.5, once
-however many festivals), and against Incite Unrest each land unit of the owner's team able to
-defend on the city plot adds `CULTURE_GARRISON_RESIST` (0.05). An action below `CULTURE_MIN_EFFECT`
+however many festivals), and each land unit of the owner's team able to defend on the city plot
+adds `CULTURE_GARRISON_RESIST` (0.05) against the actions marked `bGarrisonResists` (Incite
+Unrest, Foment Revolt, Flip City). An action below `CULTURE_MIN_EFFECT`
 (15%) cannot be queued (and pauses if it falls below while channelling). Actions on our own team's
 cities use E = 100%; Festival is never scaled.
 
@@ -97,6 +98,9 @@ warscore) subscribes. `iThreatWeight` is in the data for that system; nothing re
 | Trade Fair | 1 | foreign city of a civilization we can trade with (no war; open borders: `canHaveTradeRoutesWith`) | no | 3 / 4 | for `CULTURE_TRADE_FAIR_TURNS` (10): trade routes between that city and the caster's cities yield +`CULTURE_TRADE_FAIR_PCT`×E (50%×E) for both sides (a trade-route modifier, so it also draws routes) |
 | Spread Religion | 1 | any city lacking the religion; the religion must be in the casting city; a foreign owner whose civics admit only its state religion only takes that one | only when the target's owner has another state religion | 3 / 4 | a chance `CULTURE_SPREAD_BASE`×E (80%×E; E = 100% at home) to spread it, through the rules' religion spread (FfH's hooks fire as for a missionary) |
 | Incite Unrest | 1 | foreign city | yes | 4 / 4 | +`CULTURE_UNREST_UNHAPPY`×E unhappiness (3×E, rounded, at least 1) for `CULTURE_UNREST_TURNS` (5); one mark per caster (a new one refreshes), casters add up |
+| Siphon Knowledge | 1 | foreign city whose owner's team knows a tech the caster's lacks and the caster could research | yes (minor: memory 1) | 5 / 5 | research worth `CULTURE_SIPHON_PCT_OF_COST`×E (15%×E) of that tech's cost: the caster's current research if eligible, else the cheapest eligible (ties: the first); the target loses `CULTURE_SIPHON_TARGET_LOSS_PCT` (0%: diffusion) of it from its current research, never below nothing |
+| Foment Revolt | 2 | foreign city | yes | 10 / 6 | a chance `CULTURE_REVOLT_BASE`×E (60%×E): disorder for `CULTURE_REVOLT_TURNS` (2; the occupation timer, as a culture revolt) and each defender of the city's team loses `CULTURE_REVOLT_DAMAGE` (30%) of its hit points, never its last; the revolt's turn is recorded on the city (`City::culture_revolt_turn`) |
+| Flip City | 3 | foreign city, not a capital; not with `GAMEOPTION_NO_CITY_FLIPPING` | yes | 40 / 10 | needs, when queued and when the channel starts, a successful Foment Revolt there within `CULTURE_FLIP_REVOLT_WINDOW` (10) turns or the city in disorder; a chance `CULTURE_FLIP_BASE`×E (50%×E) that the city joins the caster as in a culture revolt that flips it (barbarian units on the plot move away, defenders lose half their hit points, the plot and city change hands; in a one-city challenge a human caster's flip destroys the city); a failed roll changes nothing else |
 
 Timed effects live on the target city (`City::culture_marks`) and count down in its turn.
 
@@ -120,8 +124,27 @@ Timed effects live on the target city (`City::culture_marks`) and count down in 
 - **Barbarian cities** may be targeted (they are foreign); barbarians cast nothing.
 - **Espionage overlap.** FfH locks `GAMEOPTION_NO_ESPIONAGE` on (`Game::is_option`), so BtS's
   influence missions cannot run in this game: there is nothing to disable.
+- **Flip City's prerequisite is checked when the channel starts, not every turn.** The spec asks
+  for a revolt "within the last 10 turns" and a 10-turn channel: checked every turn, a flip queued
+  a turn after the revolt could never finish. Here the order may only be queued, and only becomes
+  the channel, while the prerequisite holds (a waiting flip pauses until it does, and the stall
+  ends it); once started it runs to its roll. So a flip still cannot complete without its
+  prerequisite having held.
+- **Flip City and FFH2's flip options.** `GAMEOPTION_NO_CITY_FLIPPING` (no culture flips) also
+  forbids Flip City. `GAMEOPTION_FLIPPING_AFTER_CONQUEST`'s rule (a conquered city does not flip
+  back to its old owner) does not apply: retaking a city that culturally is still yours is what the
+  action is for (the spec: "recently conquered cities rank first").
+- **Siphon Knowledge's target loss** comes out of the target's current research (the spec's "taken
+  from the target's research"), never below nothing; at the default 0% it is diffusion.
 
 ## Open points for the owner
+
+- **Tiers 2 and 3 are rarely within an AI's reach.** Foment Revolt needs an Influential city
+  making 10 culture a turn and a 25% share abroad; Flip City a Legendary city making 40 and a 50%
+  share. In three 8-civ, 450-turn AI games (seeds 1-3, phase 3) Siphon Knowledge completed 65-242
+  times a game, Foment Revolt 0-10 (3 revolts), Flip City never. Lower rates or culture levels for
+  tiers 2-3 would bring the escalation into ordinary games; as specified they are late, rare
+  weapons.
 
 - **Trade Fair is weak at the spec's numbers.** It is multiplied by E (the spec notes no
   exception), and E abroad is usually 15-40%, so a fair lifts the linked routes by 8-20%: a 4-commerce
@@ -132,6 +155,15 @@ Timed effects live on the target city (`City::culture_marks`) and count down in 
   so the 15% minimum effect is the binding gate for tier 1 and the 10% minimum share never decides.
 
 ## AI (summary; docs/AI.md "Cultural actions")
+
+Phase 3 adds: siphoning knowledge from anyone but a Pleased or Friendly civilization; fomenting
+revolt in a rival's city (its output for the disorder, the hurt garrison, a third of the city's
+worth when one of our cities could then flip it); flipping a rival's city after a revolt (its worth
+times the chance; at peace only when our power is at least 80% of their defence). Against a revolt
+or a flip aimed at a city of ours, it also trains a defender first while the city has fewer than
+three; and a civilization channelling Flip City against us provokes the war logic (no friend
+spared, 85% of the usual power edge, a higher target score).
+
 
 Once a turn (`ffh-ai/src/culture.rs`): festivals against every hostile channel aimed at our or a
 partner's city (the city itself puts one first, else an idle neighbour in reach), then each idle
