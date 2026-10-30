@@ -174,7 +174,7 @@ Measured on 8 civs, a standard map and 350 turns, with `GAMEOPTION_CULTURE_ACTIO
     - A city whose half rounds to nothing says so.
   - **"Revolt pressure on this city"** has a bar by civilization, in their colours, against the thresholds: each point of unrest, revolt, two thirds of the way, and the line where one civilization's own pressure takes the city.
     - Then come the level and its unhappiness, and each civilization's pressure with what its channels add a turn, where that settles and when the next level comes (or that it fades, and when it is gone).
-    - Last come the city's resistance (half its culture, 2 per defender) and, close to the flip, what to do.
+    - Last come the city's resistance (half its culture, 2 per defender; in revolt only its defenders) and, close to the flip, what to do.
 - **Cultural pressure (F8, the menu's Culture)** lists:
   - your cities under revolt pressure, most pressed first (a click opens the city);
   - the channels aimed at you, with the cities of yours they reach and what they do there;
@@ -192,7 +192,12 @@ Measured on 8 civs, a standard map and 350 turns, with `GAMEOPTION_CULTURE_ACTIO
   - a hostile channel against you started or stopped;
   - a channel that ended, and why;
   - a city changing hands.
-- **Predictions:** "settles near" is where a civilization's pressure ends up after the city's turn under a steady inflow, found by running the turns: about `(inflow − resistance) / 5% − inflow`. "When" counts the same turns from the pressure now. Pressure from civilizations you have not met shows only as "unknown".
+- **Predictions:** "settles near" is where a civilization's pressure ends up after the city's turn under a steady inflow, found by running the turns from the pressure now: about `(inflow − resistance) / 5% − inflow`. "When" counts the same turns.
+  - The turns have two resistances. Out of revolt the city resists in full (half its culture and its defenders). From the turn after its total (this civilization's pressure and the others', taken as constant) reaches the revolt, only its defenders resist, since a city in disorder makes no culture; its culture resists again from the turn after the total falls below.
+  - So a city whose full resistance would hold the pressure above the revolt loses its culture's part, and the pressure runs on, often to the flip: the prediction says "the city joins you" there, as the rules will.
+  - A city in revolt now resists with its defenders both ways: its full resistance cannot be read while it makes no culture.
+  - Unrest and the revolt count the city's total, the flip the civilization's own pressure. The chooser's one line names the reached city with the furthest stage (a capital never changes hands).
+  - Pressure from civilizations you have not met shows only as "unknown".
 - **Protocol:**
   - The command `culture_channel {city, action?, target?, religion?}`; no action means stop.
   - The `culture` query.

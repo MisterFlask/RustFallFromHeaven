@@ -39,13 +39,15 @@ export function chancePct(bp) {
   return `${Math.floor(n / 100)}.${Math.floor((n % 100) / 10)}%`;
 }
 
-/** How far revolt pressure `p` (hundredths) goes: 0 nothing yet, 1 unrest, 2 revolt, 3 close to
- *  changing hands, 4 changes hands (one civilization's own pressure; `capital`: never). */
-export function pressureStage(p, th, capital = false) {
+/** How far a civilization's revolt pressure `p` (hundredths) goes with `rest` from the others: 0
+ *  nothing yet, 1 unrest, 2 revolt, 3 close to changing hands, 4 changes hands. Unrest and the
+ *  revolt come of the city's total (`p + rest`), the last two of the civilization's own pressure
+ *  (`capital`: never changes hands). */
+export function pressureStage(p, th, capital = false, rest = 0) {
   if (p >= th.flip && th.flipping && !capital) return 4;
   if (p >= th.near_flip) return 3;
-  if (p >= th.disorder) return 2;
-  if (p >= th.unhappy_step) return 1;
+  if (p + rest >= th.disorder) return 2;
+  if (p + rest >= th.unhappy_step) return 1;
   return 0;
 }
 
@@ -54,10 +56,10 @@ export function unrestOf(p, th) {
   return Math.min(th.unhappy_max, Math.floor(Math.max(0, p) / Math.max(1, th.unhappy_step)));
 }
 
-/** What pressure `p` brings about in a city: "no effect", "unrest (−2 happy)", "revolt
- *  (disorder)", ..., "joins <who>". */
-export function outcome(p, th, { capital = false, who = "you" } = {}) {
-  switch (pressureStage(p, th, capital)) {
+/** What a civilization's pressure `p` (with `rest` from the others) brings about in a city: "no
+ *  effect", "unrest (−2 happy)", "revolt (disorder)", ..., "the city joins <who>". */
+export function outcome(p, th, { capital = false, who = "you", rest = 0 } = {}) {
+  switch (pressureStage(p, th, capital, rest)) {
     case 4:
       return `the city joins ${who}`;
     case 3:
@@ -65,54 +67,77 @@ export function outcome(p, th, { capital = false, who = "you" } = {}) {
     case 2:
       return "revolt (disorder)";
     case 1:
-      return `unrest (−${unrestOf(p, th)} happy)`;
+      return `unrest (−${unrestOf(p + rest, th)} happy)`;
     default:
       return "no effect";
   }
 }
 
-/** One turn of revolt pressure `p` in a city (hundredths), as the rules run it: the inflow in,
- *  then the resistance and the fade (`fade_percent`, at least a culture) out. */
-function stepOf(p, inflow, resist, th) {
-  const q = p + inflow;
-  return q > 0 ? Math.max(0, q - resist - Math.max(Math.floor((q * th.fade_percent) / 100), 100)) : 0;
+// The predictions run the rules' turns against a city's resistance `r`, as the server sends it
+// with each Foment Revolt reach entry and each city's `pressure`: `resist` (what it resists now:
+// half its culture and its defenders), `resist_revolt` (its defenders' part: all it resists in
+// revolt, a city in disorder making no culture), `rest` (the other civilizations' pressure on it,
+// taken as constant) and `in_revolt` (in revolt now: its full resistance cannot be read, so it
+// resists `resist_revolt` both ways). A city whose total reached the revolt after its turn is in
+// revolt through its next turn; it leaves it in the turn the total falls below, and its culture
+// resists again from the turn after.
+
+/** What city `r` resists a turn out of revolt, or in revolt (`revolt`). */
+function resistOf(r, revolt) {
+  const garrison = r.resist_revolt ?? r.resist;
+  return revolt || r.in_revolt ? garrison : r.resist;
 }
 
-/** Where pressure settles under `inflow` a turn against `resist` (hundredths), where the city's
- *  turn weighs it, as the server's `settles`: about `(inflow − resist) / fade − inflow`. */
-export function settleOf(inflow, resist, th) {
-  if (inflow <= resist) return 0;
-  let p = 0;
+/** One turn of a civilization's revolt pressure `p` in a city (hundredths), as the rules run it:
+ *  the inflow in, then the city's resistance (its defenders' alone while `revolt`) and the fade
+ *  (`fade_percent`, at least a culture) out. Returns the pressure after it and whether the city
+ *  is in revolt in its next turn (the total, with `r.rest`, at the revolt). */
+function stepOf(p, inflow, revolt, r, th) {
+  const q = p + inflow;
+  const next = q > 0 ? Math.max(0, q - resistOf(r, revolt) - Math.max(Math.floor((q * th.fade_percent) / 100), 100)) : 0;
+  return [next, next + (r.rest ?? 0) >= th.disorder];
+}
+
+/** Where a civilization's pressure, now `now`, settles under `inflow` a turn against city `r`
+ *  (hundredths), where the city's turn weighs it, as the server's `settles`: about `(inflow −
+ *  resistance) / fade − inflow`, with the resistance of a city in revolt once the total reaches
+ *  the revolt (often past the flip). */
+export function settleOf(now, inflow, r, th) {
+  let p = Math.max(0, now ?? 0);
+  let revolt = !!r.in_revolt;
   for (let i = 0; i < 2000; i++) {
-    const next = stepOf(p, inflow, resist, th);
-    if (next === p) break;
+    const [next, rv] = stepOf(p, inflow, revolt, r, th);
+    if (next === p && rv === revolt) break;
     p = next;
+    revolt = rv;
   }
   return p;
 }
 
 /** Turns until a civilization's pressure, now `now`, reaches `target` (hundredths) under `inflow`
- *  a turn against `resist`, as the rules run a turn (the inflow, then the city resists and the
+ *  a turn against city `r`, as the rules run a turn (the inflow, then the city resists and the
  *  pressure fades by `fade_percent`, at least a culture); 0 when it is there, null when it never
  *  gets there (within `limit` turns). */
-export function turnsTo(now, inflow, resist, target, th, limit = 200) {
-  let p = Math.max(0, now);
+export function turnsTo(now, inflow, r, target, th, limit = 200) {
+  let p = Math.max(0, now ?? 0);
+  let revolt = !!r.in_revolt;
   if (p >= target) return 0;
-  if (inflow <= resist) return null;
+  if (inflow <= Math.min(resistOf(r, false), resistOf(r, true))) return null;
   for (let t = 1; t <= limit; t++) {
-    p = stepOf(p, inflow, resist, th);
+    [p, revolt] = stepOf(p, inflow, revolt, r, th);
     if (p >= target) return t;
   }
   return null;
 }
 
 /** Turns until pressure `now` with no inflow falls below `level` (hundredths): it loses the
- *  resistance and the fade each turn. */
-export function turnsBelow(now, resist, level, th, limit = 400) {
-  let p = Math.max(0, now);
+ *  city's resistance (`r`) and the fade each turn. */
+export function turnsBelow(now, r, level, th, limit = 400) {
+  let p = Math.max(0, now ?? 0);
+  let revolt = !!r.in_revolt;
   for (let t = 0; t <= limit; t++) {
     if (p < level) return t;
-    p = stepOf(p, 0, resist, th);
+    [p, revolt] = stepOf(p, 0, revolt, r, th);
   }
   return null;
 }
@@ -123,17 +148,50 @@ function soon(n) {
   return n <= 1 ? "next turn" : `in ~${n} turns`;
 }
 
-/** The next stage pressure reaches from `now` under `inflow` against `resist`, with when: "revolt
- *  in ~6 turns", or null when it is already as far as it will settle. */
-export function nextStage(now, inflow, resist, th, capital = false) {
-  const settle = settleOf(inflow, resist, th);
-  const cur = pressureStage(now, th, capital);
-  const end = pressureStage(settle, th, capital);
+/** The next stage a civilization's pressure brings from `now` under `inflow` against city `r`
+ *  (with the others' `r.rest`), with when: "revolt in ~6 turns", or null when it is already as
+ *  far as it will settle. */
+export function nextStage(now, inflow, r, th, capital = false) {
+  const rest = r.rest ?? 0;
+  const settle = settleOf(now, inflow, r, th);
+  const cur = pressureStage(now, th, capital, rest);
+  const end = pressureStage(settle, th, capital, rest);
   if (end <= cur) return null;
-  const marks = [th.unhappy_step, th.disorder, th.near_flip, th.flip];
+  // Where this civilization's pressure brings each stage: unrest and the revolt with the others'.
+  const marks = [th.unhappy_step - rest, th.disorder - rest, th.near_flip, th.flip];
   const names = ["unrest", "revolt", "close to changing hands", "changes hands"];
-  const n = turnsTo(now, inflow, resist, marks[cur], th);
+  const n = turnsTo(now, inflow, r, marks[cur], th);
   return n === null ? null : `${names[cur]} ${soon(n)}`;
+}
+
+/** A Foment Revolt reach entry with what the caster's channels bring there: `inflow` (this
+ *  channel's and the caster's other cities'), where it settles, and its stage (0 while this
+ *  channel brings nothing: the others' pressure alone is not its effect). */
+export function reachRow(x, th) {
+  const inflow = x.amount + (x.others ?? 0);
+  const settle = settleOf(x.now ?? 0, inflow, x, th);
+  return { x, inflow, settle, stage: settle > 0 ? pressureStage(settle, th, x.capital, x.rest ?? 0) : 0 };
+}
+
+/** The chooser's one line for a Foment Revolt option: how many cities it reaches and the most it
+ *  brings in one of them (the highest stage, then the highest pressure; a capital never changes
+ *  hands). */
+export function revoltSummary(o, th) {
+  const reach = o.reach ?? [];
+  const n = reach.length + (o.unseen ?? 0);
+  let best = null;
+  for (const row of reach.map((x) => reachRow(x, th))) {
+    if (!best || row.stage > best.stage || (row.stage === best.stage && row.settle > best.settle)) best = row;
+  }
+  const what = !best ? "" : best.settle > 0 ? ` · up to ${outcome(best.settle, th, { capital: best.x.capital, rest: best.x.rest ?? 0 })}` : " · too weak for an effect";
+  return `${n} cit${n === 1 ? "y" : "ies"} in reach${what}`;
+}
+
+/** "5 resisted", "5 resisted (2 in revolt)", "2 resisted (in revolt)": what city `r` resists. */
+function resistText(r) {
+  const garrison = resistOf(r, true);
+  if (r.in_revolt) return `${pts(garrison)} resisted (in revolt)`;
+  return garrison < r.resist ? `${pts(r.resist)} resisted (${pts(garrison)} in revolt)` : `${pts(r.resist)} resisted`;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -237,15 +295,9 @@ export function pressureBar(parts, th, { mark = null, labels = false, title = nu
  *  against the city's resistance, a small scale (the caster's pressure there now, where it
  *  settles), what that brings about and when. `who`: whom a city would join. */
 function revoltReach(o, th, { who = "you", caster = me()?.player ?? 0 } = {}) {
-  const rows = (o.reach ?? [])
-    .map((x) => {
-      const inflow = x.amount + (x.others ?? 0);
-      return { x, inflow, settle: settleOf(inflow, x.resist, th) };
-    })
-    .sort((a, b) => b.settle - a.settle || a.x.distance - b.x.distance);
-  const items = rows.map(({ x, inflow, settle }) => {
-    const stage = pressureStage(settle, th, x.capital);
-    const next = nextStage(x.now ?? 0, inflow, x.resist, th, x.capital);
+  const rows = (o.reach ?? []).map((x) => reachRow(x, th)).sort((a, b) => b.settle - a.settle || a.x.distance - b.x.distance);
+  const items = rows.map(({ x, inflow, settle, stage }) => {
+    const next = nextStage(x.now ?? 0, inflow, x, th, x.capital);
     const owner = x.owner !== o.target ? ` (${civName(x.owner)})` : "";
     return h(
       "li",
@@ -257,9 +309,9 @@ function revoltReach(o, th, { who = "you", caster = me()?.player ?? 0 } = {}) {
         x.now ? h("span", { title: "The pressure there now (this civilization's)" }, `now ${pts(x.now)}; `) : null,
         `+${pts(x.amount)} a turn`,
         x.others ? h("span.dim", ` (+${pts(x.others)} from other cities)`) : null,
-        `, ${pts(x.resist)} resisted`,
+        h("span", { title: "Half its culture and its defenders; in revolt (disorder) it makes no culture, and only its defenders resist" }, `, ${resistText(x)}`),
         settle > 0 ? ` → near ${pts(settle)}: ` : ": ",
-        h("span.stage", outcome(settle, th, { capital: x.capital, who })),
+        h("span.stage", settle > 0 ? outcome(settle, th, { capital: x.capital, who, rest: x.rest ?? 0 }) : "no effect"),
         next ? h("span.dim", ` · ${next}`) : null,
       ),
     );
@@ -310,21 +362,29 @@ function pressureView(p, th, { rate = null, name = null, compact = false } = {})
     rate !== null ? `${th.resist_percent}% of its ${rate} culture` : `${th.resist_percent}% of its culture`,
     `${pts(th.garrison)} for each defender (${p.defenders})`,
   ].join(" and ");
-  const hint = `It resists ${pts(p.resist)} of each civilization's pressure a turn: ${resist}; the pressure also fades ${th.fade_percent}% a turn.`;
+  const garrison = p.resist_revolt ?? p.resist;
+  const inRevolt = p.in_revolt
+    ? ` In revolt it makes no culture: only its defenders resist (${pts(garrison)}) until the total falls below ${pts(th.disorder)}.`
+    : garrison < p.resist
+      ? ` In revolt (disorder) it would make no culture: only its defenders would resist (${pts(garrison)}).`
+      : "";
+  const hint = `It resists ${pts(p.resist)} of each civilization's pressure a turn: ${resist}; the pressure also fades ${th.fade_percent}% a turn.${inRevolt}`;
   const calm = !p.total && !p.level && !p.casters.length;
   if (calm) return h("div.culture-under", h("p.dim", `No revolt pressure${name ? ` on ${name}` : ""}. ${hint}`));
   const stage = Math.max(p.level, pressureStage(p.total, th, p.capital));
   const lead = [...p.casters].sort((a, b) => b.pressure - a.pressure)[0];
   const casters = p.casters.map((x) => {
-    const next = nextStage(x.pressure, x.inflow, p.resist, th, p.capital);
-    const falling = !x.inflow && x.pressure > 0 ? turnsBelow(x.pressure, p.resist, th.unhappy_step, th) : null;
+    // The city's resistance against this civilization: the others' pressure is its `rest`.
+    const r = { resist: p.resist, resist_revolt: p.resist_revolt, in_revolt: p.in_revolt, rest: x.rest ?? Math.max(0, p.total - x.pressure) };
+    const next = nextStage(x.pressure, x.inflow, r, th, p.capital);
+    const falling = !x.inflow && x.pressure > 0 ? turnsBelow(x.pressure, r, th.unhappy_step, th) : null;
     return h(
       "li",
       h("span.swatch", { style: { background: colorOf(x.caster) } }),
       h("b", casterName(x.caster)),
       ` ${pts(x.pressure)}`,
       x.inflow
-        ? h("span.dim", ` · +${pts(x.inflow)} a turn → near ${pts(x.settles)}: ${outcome(x.settles, th, { capital: p.capital, who: joinWho(x.caster) })}${next ? `; ${next}` : ""}`)
+        ? h("span.dim", ` · +${pts(x.inflow)} a turn → near ${pts(x.settles)}: ${x.settles > 0 ? outcome(x.settles, th, { capital: p.capital, who: joinWho(x.caster), rest: r.rest }) : "no effect"}${next ? `; ${next}` : ""}`)
         : h("span.dim", ` · no channel feeds it: fading${falling !== null && falling > 0 ? `, gone ${soon(falling)}` : ""}`),
     );
   });
@@ -340,7 +400,12 @@ function pressureView(p, th, { rate = null, name = null, compact = false } = {})
     ),
     pressureBar(parts, th, { labels: !compact, title: `Unrest: a point of unhappiness per ${pts(th.unhappy_step)} (at most ${th.unhappy_max}); revolt (disorder) at ${pts(th.disorder)}; a civilization whose own pressure reaches ${pts(th.flip)} takes the city` }),
     h("ul.culture-casters", casters),
-    h("p.dim.culture-hint", compact ? `It resists ${pts(p.resist)} a turn (${p.defenders} defender${p.defenders === 1 ? "" : "s"} at ${pts(th.garrison)} each, and half its own culture).` : hint),
+    h(
+      "p.dim.culture-hint",
+      compact
+        ? `It resists ${pts(p.resist)} a turn (${p.defenders} defender${p.defenders === 1 ? "" : "s"} at ${pts(th.garrison)} each, ${p.in_revolt ? "and no culture while in revolt" : `and half its own culture${garrison < p.resist ? `; ${pts(garrison)} in revolt` : ""}`}).`
+        : hint,
+    ),
     p.capital ? h("p.dim", "A capital never changes hands, whatever the pressure.") : lead && lead.pressure >= th.near_flip ? h("p.warn", `Close to joining ${joinWho(lead.caster)}: station defenders, raise its culture, or make them stop.`) : null,
   );
 }
@@ -461,10 +526,7 @@ function chooser(c, k, set, draw) {
   const summary = (o) => {
     if (!o.ok) return o.why;
     if (kindOf(o.action) === "spread_religion") return `${chancePct(o.chance ?? 0)} a turn`;
-    const n = (o.reach ?? []).length + (o.unseen ?? 0);
-    const best = Math.max(0, ...(o.reach ?? []).map((x) => settleOf(x.amount + (x.others ?? 0), x.resist, th)));
-    const what = !(o.reach ?? []).length ? "" : best > 0 ? ` · up to ${outcome(best, th)}` : " · too weak for an effect";
-    return `${n} cit${n === 1 ? "y" : "ies"} in reach${what}`;
+    return revoltSummary(o, th);
   };
   const targetList = targets.length
     ? h(
