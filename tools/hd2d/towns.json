@@ -1,0 +1,199 @@
+{
+  "about": "The HD-2D mode's town kit (docs/HD2D.md §5c): the pieces a town is composed of, drawn by OpenAI's gpt-image-2.5-sunburst through tools/hd2d/gen.py (a sheet a family: `town:<family>`; the landmarks four to a sheet: `landmark:<n>`), cut by `art.py split` and carded by `art.py prop` at `height` art pixels (the cards stand at PX.prop, the prop cards' density). A family's pieces are named town_<family>_<piece>_<n> (house, tower, wall, gate, corner); a civilization's landmark town_lm_<civ>. Saturated royal blue is the owner-colour band (docs/ISO.md §7): the dressing turns it to the owner's colour, so the prompts put it only on what should carry that colour. `civs` lists each family's civilizations (the 3D renderer's architecture.js CIV_FAMILY with its sub-styles made families of their own).",
+  "size": "1024x1024",
+  "landmark_size": "1024x1536",
+  "style": "16-bit pixel art game sprites for an HD-2D fantasy strategy map (in the manner of Octopath Traveler and Triangle Strategy): crisp square pixels, a dark coloured one-pixel outline round each object, detailed but readable at small size, muted earthy palette (weathered stone, warm browns, deep olive, slate grey; no neon), windows and doorways glowing warm orange-yellow. Transparent background; no ground plane, no grass base, no terrain, no cast shadow, no text, no labels, no border.",
+  "view": "Camera: a front view from about 30 degrees above the horizon, as a low-tilted map shows a town: every building's front wall faces the viewer squarely, parallel to the bottom of the image, and its roof is seen from above the front; NOT isometric, not turned 45 degrees, no corner pointing at the viewer. Light from the upper left: the left parts and left roof slopes lit, the right parts and the undersides of eaves in shade. Each object stands upright, its foot a straight horizontal line at its bottom.",
+  "owner": "Saturated royal blue is reserved for the owner's colour: use it ONLY where a piece below names royal blue (roofs, domes, banners, pennants) and nowhere else: no blue glass, water, sky, stone, crystal, light or clothing.",
+  "families": {
+    "human": {
+      "civs": ["CIVILIZATION_BANNOR", "CIVILIZATION_ELOHIM", "CIVILIZATION_MERCURIANS", "CIVILIZATION_KURIOTATES", "CIVILIZATION_GRIGORI", "CIVILIZATION_HIPPUS", "CIVILIZATION_BALSERAPHS"],
+      "look": "a medieval European town: whitewashed plaster and dark oak timber framing over grey fieldstone footings, steep roofs of red-brown clay tile and dark wooden shingle.",
+      "pieces": [
+        { "name": "house_1", "height": 70, "prompt": "a small one-storey cottage with a red-brown clay tile roof, a stone chimney and one lit window" },
+        { "name": "house_2", "height": 90, "prompt": "a two-storey half-timbered townhouse with a steep royal blue slate roof and lit windows" },
+        { "name": "house_3", "height": 78, "prompt": "a wide timber-framed hall-house with a long dark brown shingle roof and a small dormer" },
+        { "name": "house_4", "height": 96, "prompt": "a tall narrow stone house with a stepped gable front and a royal blue tiled roof" },
+        { "name": "tower_1", "height": 150, "prompt": "a slender round stone watchtower with a tall pointed royal blue cone roof and a small royal blue pennant" },
+        { "name": "wall_1", "height": 56, "prompt": "a straight section of grey stone town wall with crenellated battlements, seen face-on, about twice as wide as it is tall" },
+        { "name": "wall_2", "height": 60, "prompt": "a straight section of grey stone town wall with crenellations and a small square buttress with an arrow slit, about twice as wide as it is tall" },
+        { "name": "gate_1", "height": 100, "prompt": "a stone gatehouse facing the viewer: a round-arched heavy wooden gate between two square crenellated towers, two royal blue banners hanging beside the arch" },
+        { "name": "corner_1", "height": 112, "prompt": "a round stone wall tower with crenellations and a royal blue conical roof" }
+      ]
+    },
+    "arcane": {
+      "civs": ["CIVILIZATION_AMURITES", "CIVILIZATION_SIDAR"],
+      "look": "a town of mages: pale lilac-grey stone and dark plum timber, slender pointed arches, roofs of dark violet-grey slate, small glowing amethyst crystals over the doors.",
+      "pieces": [
+        { "name": "house_1", "height": 72, "prompt": "a small pale stone cottage with a violet-grey slate roof and a round lit window" },
+        { "name": "house_2", "height": 92, "prompt": "a two-storey pale stone house with a steep royal blue slate roof and a little pointed turret" },
+        { "name": "house_3", "height": 80, "prompt": "a wide stone scholar's hall with arched lit windows and a violet-grey slate roof" },
+        { "name": "house_4", "height": 98, "prompt": "a narrow tall stone house crowned by a small royal blue dome and a glowing amethyst finial" },
+        { "name": "tower_1", "height": 155, "prompt": "a slender pale stone wizard's tower with a royal blue pointed roof and a glowing amethyst crystal at its tip" },
+        { "name": "wall_1", "height": 56, "prompt": "a straight section of pale lilac stone town wall with pointed crenellations, seen face-on, about twice as wide as it is tall" },
+        { "name": "wall_2", "height": 60, "prompt": "a straight section of pale stone town wall with a carved rune panel glowing faint violet, about twice as wide as it is tall" },
+        { "name": "gate_1", "height": 100, "prompt": "a pale stone gatehouse facing the viewer: a pointed arch with a glowing amethyst keystone between two slim towers, royal blue banners beside the arch" },
+        { "name": "corner_1", "height": 112, "prompt": "a round pale stone wall tower with a royal blue pointed roof" }
+      ]
+    },
+    "north": {
+      "civs": ["CIVILIZATION_ILLIANS", "CIVILIZATION_DOVIELLO"],
+      "look": "a town of the frozen north: dark weathered timber and grey fieldstone, steep roofs of dark shingle and green turf dusted with snow, carved beast-head gable ends.",
+      "pieces": [
+        { "name": "house_1", "height": 70, "prompt": "a small log cabin with a snow-dusted turf roof and a smoking stone chimney" },
+        { "name": "house_2", "height": 86, "prompt": "a timber longhouse with a steep royal blue shingle roof dusted with snow and crossed carved gable boards" },
+        { "name": "house_3", "height": 76, "prompt": "a low fieldstone house with a snow-covered dark shingle roof and a lit doorway" },
+        { "name": "house_4", "height": 94, "prompt": "a tall two-storey timber hall with a steep royal blue roof dusted with snow and a carved beast-head gable" },
+        { "name": "tower_1", "height": 150, "prompt": "a tall timber watchtower on a stone base with a steep royal blue shingle roof and a hanging horn" },
+        { "name": "wall_1", "height": 56, "prompt": "a straight section of timber palisade on a fieldstone footing, snow on top, seen face-on, about twice as wide as it is tall" },
+        { "name": "wall_2", "height": 60, "prompt": "a straight section of grey fieldstone wall topped with sharpened logs and a little snow, about twice as wide as it is tall" },
+        { "name": "gate_1", "height": 100, "prompt": "a timber gatehouse facing the viewer: a heavy log gate under a carved beast-head lintel between two timber towers with royal blue roofs" },
+        { "name": "corner_1", "height": 110, "prompt": "a square timber wall tower on a stone base with a snow-dusted royal blue roof" }
+      ]
+    },
+    "elven": {
+      "civs": ["CIVILIZATION_LJOSALFAR"],
+      "look": "an elven town in the deep forest: pale cream-white stone and silver-grey wood, slender curving arches and leaf-shaped windows, roofs of verdigris green copper, vines and small living trees growing through the buildings.",
+      "pieces": [
+        { "name": "house_1", "height": 72, "prompt": "a small round elven cottage of cream stone with a verdigris green leaf-shaped roof and a lit round window" },
+        { "name": "house_2", "height": 92, "prompt": "a two-storey cream stone elven house with a curving royal blue roof and climbing vines" },
+        { "name": "house_3", "height": 80, "prompt": "a long elven hall of silver-grey wood with a verdigris green roof and a small tree growing beside it" },
+        { "name": "house_4", "height": 100, "prompt": "a slender cream stone elven house with a tall pointed royal blue spire roof" },
+        { "name": "tower_1", "height": 160, "prompt": "a very slender white elven tower with a needle-sharp royal blue spire and a balcony" },
+        { "name": "wall_1", "height": 54, "prompt": "a straight section of low cream-white stone elven wall with leaf-carved crenellations and vines, seen face-on, about twice as wide as it is tall" },
+        { "name": "wall_2", "height": 58, "prompt": "a straight section of cream stone elven wall with a slender arched niche holding a lantern, about twice as wide as it is tall" },
+        { "name": "gate_1", "height": 104, "prompt": "an elven gate facing the viewer: a tall pointed leaf-shaped arch of cream stone between two slim towers with royal blue spires, vines over the arch" },
+        { "name": "corner_1", "height": 116, "prompt": "a slim round cream-white elven wall tower with a royal blue spire roof" }
+      ]
+    },
+    "darkelf": {
+      "civs": ["CIVILIZATION_SVARTALFAR"],
+      "look": "a dark elven town: black-violet stone and dark wood, sharp curving thorn-like spires, roofs of dark plum slate, pale violet lanterns.",
+      "pieces": [
+        { "name": "house_1", "height": 72, "prompt": "a small dark stone dwelling with a curved plum slate roof and a pale violet lit window" },
+        { "name": "house_2", "height": 92, "prompt": "a two-storey black stone house with a sharp curving royal blue roof" },
+        { "name": "house_3", "height": 80, "prompt": "a long dark wooden hall with thorn-shaped eaves and a plum slate roof" },
+        { "name": "house_4", "height": 100, "prompt": "a narrow tall black stone house with a thorn-like royal blue spire roof" },
+        { "name": "tower_1", "height": 160, "prompt": "a slender black stone tower curving like a thorn, with a royal blue pointed roof and a pale violet light" },
+        { "name": "wall_1", "height": 56, "prompt": "a straight section of black stone wall with thorn-shaped spikes along its top, seen face-on, about twice as wide as it is tall" },
+        { "name": "wall_2", "height": 60, "prompt": "a straight section of black-violet stone wall with a carved thorn relief, about twice as wide as it is tall" },
+        { "name": "gate_1", "height": 104, "prompt": "a dark elven gate facing the viewer: a sharp pointed arch of black stone between two thorn-spired towers with royal blue roofs" },
+        { "name": "corner_1", "height": 116, "prompt": "a slim black stone wall tower with a curved thorn-like royal blue roof" }
+      ]
+    },
+    "dwarven": {
+      "civs": ["CIVILIZATION_KHAZAD", "CIVILIZATION_LUCHUIRP"],
+      "look": "a dwarven town built against the rock: massive grey granite blocks, heavy round arches, low shallow-pitched roofs of dark slate, bronze and brass trims, forge chimneys glowing orange.",
+      "pieces": [
+        { "name": "house_1", "height": 66, "prompt": "a squat granite dwarven house with a low dark slate roof, a round door and a lit window" },
+        { "name": "house_2", "height": 82, "prompt": "a sturdy two-storey granite house with a royal blue slate roof and brass trims" },
+        { "name": "house_3", "height": 76, "prompt": "a wide stone forge workshop with a big chimney glowing orange and an anvil at its open door" },
+        { "name": "house_4", "height": 90, "prompt": "a blocky granite guild hall with a stepped royal blue roof and a bronze plaque over the door" },
+        { "name": "tower_1", "height": 140, "prompt": "a thick square granite tower with heavy crenellations, a royal blue roof and a brass bell" },
+        { "name": "wall_1", "height": 60, "prompt": "a straight section of massive granite block wall with square crenellations, seen face-on, about twice as wide as it is tall" },
+        { "name": "wall_2", "height": 62, "prompt": "a straight section of granite wall with a bronze-bound buttress, about twice as wide as it is tall" },
+        { "name": "gate_1", "height": 100, "prompt": "a massive dwarven gate facing the viewer: a heavy round arch of granite with bronze doors, carved stone faces and royal blue banners" },
+        { "name": "corner_1", "height": 108, "prompt": "a squat round granite wall tower with heavy crenellations and a low royal blue cone roof" }
+      ]
+    },
+    "gothic": {
+      "civs": ["CIVILIZATION_CALABIM"],
+      "look": "a gothic vampire town: dark grey stone and black timber, steep pointed gables and spires, black slate roofs, narrow lancet windows glowing deep red-orange.",
+      "pieces": [
+        { "name": "house_1", "height": 74, "prompt": "a small dark stone cottage with a steep black slate roof and a red-lit lancet window" },
+        { "name": "house_2", "height": 96, "prompt": "a tall narrow gothic townhouse with a very steep royal blue slate roof and red-lit windows" },
+        { "name": "house_3", "height": 80, "prompt": "a wide dark timber-framed house with a steep black slate roof and pointed dormers" },
+        { "name": "house_4", "height": 104, "prompt": "a gothic stone house with a pointed royal blue spire on one corner and lancet windows" },
+        { "name": "tower_1", "height": 160, "prompt": "a slender dark stone gothic bell tower with a needle-sharp royal blue spire" },
+        { "name": "wall_1", "height": 58, "prompt": "a straight section of dark grey stone wall with pointed crenellations, seen face-on, about twice as wide as it is tall" },
+        { "name": "wall_2", "height": 62, "prompt": "a straight section of dark stone wall with a pointed buttress and an iron-barred slit, about twice as wide as it is tall" },
+        { "name": "gate_1", "height": 106, "prompt": "a gothic gatehouse facing the viewer: a tall pointed arch with an iron portcullis between two spired towers with royal blue roofs, red light behind the bars" },
+        { "name": "corner_1", "height": 118, "prompt": "a round dark stone wall tower with a steep royal blue spire roof" }
+      ]
+    },
+    "infernal": {
+      "civs": ["CIVILIZATION_INFERNAL", "CIVILIZATION_SHEAIM"],
+      "look": "a demonic, corrupted town: black obsidian and dark basalt, jagged spiky roofs and horn-like spires, glowing cracks of orange lava and violet magic.",
+      "pieces": [
+        { "name": "house_1", "height": 70, "prompt": "a small black basalt hovel with a jagged roof and a glowing orange doorway" },
+        { "name": "house_2", "height": 90, "prompt": "a two-storey obsidian house with spiky royal blue roof plates and violet-glowing windows" },
+        { "name": "house_3", "height": 78, "prompt": "a low wide basalt hall with horn-shaped eaves and lava-glowing cracks" },
+        { "name": "house_4", "height": 100, "prompt": "a tall black obsidian house with a horn-like royal blue spire and violet glowing runes" },
+        { "name": "tower_1", "height": 160, "prompt": "a jagged black obsidian spire tower with a royal blue horned crown and a glowing violet eye-window" },
+        { "name": "wall_1", "height": 58, "prompt": "a straight section of black basalt wall with jagged spikes along its top and glowing orange cracks, seen face-on, about twice as wide as it is tall" },
+        { "name": "wall_2", "height": 62, "prompt": "a straight section of obsidian wall with horn-shaped spikes and a violet glowing rune, about twice as wide as it is tall" },
+        { "name": "gate_1", "height": 106, "prompt": "an infernal gate facing the viewer: a fanged arch of black obsidian glowing orange inside, between two horned towers with royal blue spikes" },
+        { "name": "corner_1", "height": 118, "prompt": "a jagged black obsidian wall tower with a horned royal blue roof" }
+      ]
+    },
+    "tribal": {
+      "civs": ["CIVILIZATION_CLAN_OF_EMBERS", "CIVILIZATION_BARBARIAN"],
+      "look": "an orc and barbarian camp-town: rough grey-brown logs, patched hide and fur tents, bone and tusk ornaments, sharpened-log palisades, muddy browns and olive.",
+      "pieces": [
+        { "name": "house_1", "height": 64, "prompt": "a small round hut of patched olive hides on poles with a smoke hole" },
+        { "name": "house_2", "height": 82, "prompt": "a big patched hide tent dyed royal blue on top, with bone ornaments" },
+        { "name": "house_3", "height": 72, "prompt": "a rough log hut with a crude plank roof and a skull over the door" },
+        { "name": "house_4", "height": 92, "prompt": "a tall timber war lodge with a steep royal blue hide roof and tusks crossed over the door" },
+        { "name": "tower_1", "height": 145, "prompt": "a rickety timber lookout tower lashed with rope, a royal blue hide roof and bone trophies" },
+        { "name": "wall_1", "height": 58, "prompt": "a straight section of palisade of sharpened grey-brown logs lashed with rope, seen face-on, about twice as wide as it is tall" },
+        { "name": "wall_2", "height": 62, "prompt": "a straight section of sharpened-log palisade with a skull on a spike, about twice as wide as it is tall" },
+        { "name": "gate_1", "height": 100, "prompt": "a crude log gate facing the viewer under a huge horned beast skull, between two timber towers with royal blue hide roofs" },
+        { "name": "corner_1", "height": 110, "prompt": "a crude timber palisade watchtower with a royal blue hide roof" }
+      ]
+    },
+    "desert": {
+      "civs": ["CIVILIZATION_MALAKIM"],
+      "look": "a desert town: sun-baked sandstone and white plaster, flat roofs and small domes, arched windows with wooden screens, striped awnings.",
+      "pieces": [
+        { "name": "house_1", "height": 64, "prompt": "a small flat-roofed sandstone house with an arched doorway and a striped awning" },
+        { "name": "house_2", "height": 84, "prompt": "a two-storey white plaster house with a small royal blue dome" },
+        { "name": "house_3", "height": 74, "prompt": "a wide sandstone house with a flat roof terrace, rugs hanging over the parapet" },
+        { "name": "house_4", "height": 96, "prompt": "a tall sandstone house with a wind-tower and a royal blue onion dome" },
+        { "name": "tower_1", "height": 160, "prompt": "a slender sandstone minaret with balconies and a royal blue onion cap" },
+        { "name": "wall_1", "height": 56, "prompt": "a straight section of sandstone town wall with rounded crenellations, seen face-on, about twice as wide as it is tall" },
+        { "name": "wall_2", "height": 60, "prompt": "a straight section of sandstone wall with a small arched window grille, about twice as wide as it is tall" },
+        { "name": "gate_1", "height": 104, "prompt": "a desert gate facing the viewer: a tall horseshoe arch of sandstone between two square towers with royal blue domes" },
+        { "name": "corner_1", "height": 112, "prompt": "a round sandstone wall tower with a royal blue dome" }
+      ]
+    },
+    "coastal": {
+      "civs": ["CIVILIZATION_LANUN"],
+      "look": "a pirate harbour town: weathered grey-brown ship timber and tarred planks, rope, roofs of dark shingle, round porthole windows, hanging lanterns.",
+      "pieces": [
+        { "name": "house_1", "height": 68, "prompt": "a small plank shack with a dark shingle roof, a porthole window and a coil of rope" },
+        { "name": "house_2", "height": 88, "prompt": "a two-storey timber tavern with a royal blue shingle roof and a hanging lantern" },
+        { "name": "house_3", "height": 76, "prompt": "a wide timber warehouse with a hoist beam and barrels by its door" },
+        { "name": "house_4", "height": 96, "prompt": "a tall narrow timber house with a crooked royal blue roof and a ship's figurehead over the door" },
+        { "name": "tower_1", "height": 150, "prompt": "a timber lookout tower like a ship's mast with a crow's nest and a royal blue pennant" },
+        { "name": "wall_1", "height": 56, "prompt": "a straight section of tarred plank stockade on stone footings, seen face-on, about twice as wide as it is tall" },
+        { "name": "wall_2", "height": 60, "prompt": "a straight section of plank stockade with a small cannon port, about twice as wide as it is tall" },
+        { "name": "gate_1", "height": 100, "prompt": "a harbour gate facing the viewer: heavy timber doors under a beam with a ship's bell, between two plank towers with royal blue roofs" },
+        { "name": "corner_1", "height": 108, "prompt": "a round plank wall tower with a royal blue roof and a small cannon" }
+      ]
+    }
+  },
+  "landmarks": {
+    "CIVILIZATION_BANNOR": { "name": "town_lm_bannor", "height": 230, "family": "human", "prompt": "the Bannor crusaders' fortified cathedral: a grey stone keep and a tall square bell tower with a royal blue spire, royal blue banners with a white cross, buttresses" },
+    "CIVILIZATION_ELOHIM": { "name": "town_lm_elohim", "height": 220, "family": "human", "prompt": "the Elohim's white marble monastery-temple: a great royal blue dome on a drum of arched windows, a slim bell tower, columns and a gold sun disc" },
+    "CIVILIZATION_MERCURIANS": { "name": "town_lm_mercurians", "height": 236, "family": "human", "prompt": "the Mercurian angels' radiant basilica of white stone and gold: a tall spire with royal blue roofs, winged statues, a glowing golden halo-window" },
+    "CIVILIZATION_KURIOTATES": { "name": "town_lm_kuriotates", "height": 220, "family": "human", "prompt": "the Kuriotates' grand civic palace: arcades of honey stone, a central royal blue dome and two square towers with royal blue banners" },
+    "CIVILIZATION_GRIGORI": { "name": "town_lm_grigori", "height": 224, "family": "human", "prompt": "the Grigori adventurers' guild hall: a broad timber-and-stone hall with a tall clock tower under a royal blue roof, crossed swords over the door" },
+    "CIVILIZATION_HIPPUS": { "name": "town_lm_hippus", "height": 216, "family": "human", "prompt": "the Hippus horse-lords' great hall: a long timber hall with carved horse-head gables, a royal blue roof and royal blue pennants on tall lances" },
+    "CIVILIZATION_BALSERAPHS": { "name": "town_lm_balseraphs", "height": 224, "family": "human", "prompt": "the Balseraphs' carnival palace: a whimsical theatre-palace with striped royal blue and gold onion domes, a stage arch and puppet banners" },
+    "CIVILIZATION_LANUN": { "name": "town_lm_lanun", "height": 236, "family": "coastal", "prompt": "the Lanun pirates' harbour keep: a tall stone lighthouse with a glowing lantern top and a royal blue cap, rising from a timber fort with a ship's figurehead" },
+    "CIVILIZATION_AMURITES": { "name": "town_lm_amurites", "height": 240, "family": "arcane", "prompt": "the Amurites' arcane academy: a tall pale stone wizard tower with royal blue roofs and floating rings of glowing amethyst runes around its top" },
+    "CIVILIZATION_SIDAR": { "name": "town_lm_sidar", "height": 226, "family": "arcane", "prompt": "the Sidar's pale mausoleum of shades: a misty grey-lilac stone temple with a tall pointed royal blue spire, ghostly pale lanterns" },
+    "CIVILIZATION_ILLIANS": { "name": "town_lm_illians", "height": 236, "family": "north", "prompt": "the Illians' temple of the winter god: a frost-white stone temple with tall icy spires, royal blue roofs dusted with snow and pale ice crystals" },
+    "CIVILIZATION_DOVIELLO": { "name": "town_lm_doviello", "height": 210, "family": "north", "prompt": "the Doviello's great mead hall: a huge timber longhall with a steep royal blue roof, crossed antlers and furs on the gable, a burning brazier" },
+    "CIVILIZATION_LJOSALFAR": { "name": "town_lm_ljosalfar", "height": 240, "family": "elven", "prompt": "the Ljosalfar's elven palace: slender white stone spires with royal blue roofs woven around a great living tree, curving bridges and balconies" },
+    "CIVILIZATION_SVARTALFAR": { "name": "town_lm_svartalfar", "height": 236, "family": "darkelf", "prompt": "the Svartalfar's dark elven spire-palace: black-violet stone curving like thorns, sharp royal blue spires, pale violet lights" },
+    "CIVILIZATION_KHAZAD": { "name": "town_lm_khazad", "height": 220, "family": "dwarven", "prompt": "the Khazad's dwarven hold: a great granite hall-gate carved into a rocky crag, giant carved dwarf statues, bronze doors, a royal blue roof and forge glow" },
+    "CIVILIZATION_LUCHUIRP": { "name": "town_lm_luchuirp", "height": 224, "family": "dwarven", "prompt": "the Luchuirp's golem workshop: a stone and brass clock tower with big gears, a royal blue roof, and a giant stone golem standing beside it" },
+    "CIVILIZATION_CALABIM": { "name": "town_lm_calabim", "height": 240, "family": "gothic", "prompt": "the Calabim vampires' gothic cathedral-castle: steep black stone spires with royal blue roofs, a great rose window glowing blood red" },
+    "CIVILIZATION_SHEAIM": { "name": "town_lm_sheaim", "height": 236, "family": "infernal", "prompt": "the Sheaim's planar gate temple: a jagged black obsidian ziggurat with violet crystal spikes, a glowing violet portal ring and royal blue horned spires" },
+    "CIVILIZATION_INFERNAL": { "name": "town_lm_infernal", "height": 236, "family": "infernal", "prompt": "the Infernals' demon citadel: horned black obsidian towers over rivers of glowing lava, a fanged gate and royal blue horn-tipped spires" },
+    "CIVILIZATION_MALAKIM": { "name": "town_lm_malakim", "height": 230, "family": "desert", "prompt": "the Malakim's desert sun temple: a sandstone temple with a great royal blue dome, tall minarets and a golden sun disc" },
+    "CIVILIZATION_CLAN_OF_EMBERS": { "name": "town_lm_clan_of_embers", "height": 190, "family": "tribal", "prompt": "the Clan of Embers' orc war hall: a huge log hall with a royal blue hide roof, a giant burning brazier, bone totems and tusks" },
+    "CIVILIZATION_BARBARIAN": { "name": "town_lm_barbarian", "height": 212, "family": "tribal", "prompt": "the barbarian warlord's fort: a crude tall log watchtower over a great hall, a royal blue hide roof, skulls and tusks on spikes" }
+  }
+}

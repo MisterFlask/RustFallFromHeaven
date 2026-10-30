@@ -76,7 +76,7 @@ export class Hd2dPasses {
   }
 
   cardUniforms(U, scene, mode) {
-    return { ...U, ...scene.mapUniforms(), uSprites: this.sprites.atlas.tex, uMode: mode, uLean: this.frame?.cfg.lean ?? 1 };
+    return { ...U, ...scene.mapUniforms(), uSprites: this.sprites.atlas.tex, uMode: mode, uLean: this.frame?.cfg.lean ?? 1, uTownLight: this.frame?.cfg.townLight ?? 0 };
   }
 
   /** The figures' outlines in the sun's shadow map (the shadow pass's state: depth, offset). */

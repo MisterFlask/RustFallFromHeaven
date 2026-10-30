@@ -784,7 +784,7 @@ transparency and caustics, which are ordinary rendering, not stylisation), `LIGH
 always daylight by design, a warm high sun at about 48 degrees, shadows ~0.9x an object's height; a saved light that is no longer
 offered -- a "dusk", "afternoon" or "day" -- falls back to it), and the switches of the panel
 (`PANEL`): shadows, ssao, glow, kuwahara (+ radius), outline (+ width, inkLost: lost-and-found
-line weight, inkColour: coloured ink), paint (pigment variation), dabs (now only the ground's colour drift and flowers: its marks are the baked materials'),
+line weight, inkColour: coloured ink), paint (pigment variation), dabs (now only the ground's colour drift and flowers: its marks are the baked materials'; the HD-2D mode compiles them out, docs/HD2D.md §8),
 brush (brush marks and gouache values on objects, §5.1), bands (stepped light), stylize (coloured
 shadows), rim, clouds, reflections, refraction and caustics (the water, §5.2), haze, mist, grade,
 grain, vignette, borders, grid, fogWar, particles, animate, renderScale, fxaa (anti-aliasing),

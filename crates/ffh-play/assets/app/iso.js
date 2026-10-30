@@ -335,6 +335,24 @@ function fromHsl(h, s, l) {
   return [Math.round(f(0) * 255), Math.round(f(8) * 255), Math.round(f(4) * 255)];
 }
 
+/** The owner-colour band of the art (docs/ISO.md §7): its stock saturated mid-blue (hue 195-252,
+ *  saturation 35% and up: the settlements' roofs, spires and flags) in the RGBA pixels `p` turned to
+ *  the owner's colour `css`, in place, keeping each pixel's lightness (a grey owner's colour takes
+ *  its lightness half way). Also the HD-2D towns' (r3d/hd2d/sprites.js). */
+export function ownerBand(p, css) {
+  const [oh, os, ol] = toHsl(...rgbOf(css));
+  const grey = os < 0.2;
+  for (let i = 0; i < p.length; i += 4) {
+    if (p[i + 3] === 0) continue;
+    const [h, s, l] = toHsl(p[i], p[i + 1], p[i + 2]);
+    if (h < 195 || h > 252 || s < 0.35) continue;
+    const rgb = fromHsl(oh, grey ? os : s * 0.4 + os * 0.6, grey ? l * 0.5 + ol * 0.5 : l);
+    p[i] = rgb[0];
+    p[i + 1] = rgb[1];
+    p[i + 2] = rgb[2];
+  }
+}
+
 /** The sprites: the PNGs of `iso/` (listed in iso/sprites.js, loaded on first use) and the ones
  *  drawn here (banners), each at the device scales of the frame. A scale that is a whole number
  *  draws the native image (or its variant) by nearest neighbour; others are scaled once and cached,
@@ -383,19 +401,8 @@ class SpriteStore {
     const c = canvas(src.width, src.height);
     const g = c.getContext("2d", { willReadFrequently: true });
     g.drawImage(src, 0, 0);
-    const [oh, os, ol] = toHsl(...rgbOf(css));
-    const grey = os < 0.2;
     const d = g.getImageData(0, 0, c.width, c.height);
-    const p = d.data;
-    for (let i = 0; i < p.length; i += 4) {
-      if (p[i + 3] === 0) continue;
-      const [h, s, l] = toHsl(p[i], p[i + 1], p[i + 2]);
-      if (h < 195 || h > 252 || s < 0.35) continue;
-      const rgb = fromHsl(oh, grey ? os : s * 0.4 + os * 0.6, grey ? l * 0.5 + ol * 0.5 : l);
-      p[i] = rgb[0];
-      p[i + 1] = rgb[1];
-      p[i + 2] = rgb[2];
-    }
+    ownerBand(d.data, css);
     g.putImageData(d, 0, 0);
     this.drawn.set(id, c);
     this.base.set(id, key);

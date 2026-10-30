@@ -5,6 +5,7 @@
 // HD-2D passes (hd2d/passes.js) in the scene, the sun's shadow map and the overlays.
 
 import { SPRITES } from "../../iso/sprites.js";
+import { ownerBand } from "../../iso.js";
 import { CARDS } from "./art/index.js";
 import { ATTR } from "../gl.js";
 
@@ -23,6 +24,17 @@ function canvas(w, h) {
   return c;
 }
 
+/** Image `im` with its owner-colour band in `css`, on a canvas. */
+function recoloured(im, css) {
+  const c = canvas(im.width, im.height);
+  const g = c.getContext("2d", { willReadFrequently: true });
+  g.drawImage(im, 0, 0);
+  const d = g.getImageData(0, 0, c.width, c.height);
+  ownerBand(d.data, css);
+  g.putImageData(d, 0, 0);
+  return c;
+}
+
 /** The sprites in a texture array (premultiplied colour, mipmapped), each loaded on first use. */
 export class SpriteAtlas {
   constructor(gl, onload) {
@@ -33,6 +45,8 @@ export class SpriteAtlas {
     /** layer -> the 256-square canvas uploaded there (kept for a re-upload when the array grows). */
     this.sources = [];
     this.drawn = new Map();
+    /** An owner's variant (`key@css`, `owned`) -> { key, css }. */
+    this.base = new Map();
     this.pending = 0;
     this.waiters = [];
     this.cap = 0;
@@ -58,11 +72,21 @@ export class SpriteAtlas {
   }
 
   has(key) {
-    return Object.hasOwn(SPRITES, key) || Object.hasOwn(CARDS, key) || this.drawn.has(key);
+    return Object.hasOwn(SPRITES, key) || Object.hasOwn(CARDS, key) || this.drawn.has(key) || this.base.has(key);
+  }
+
+  /** Sprite `key` in its owner's colour `css`: the art's owner-colour band (iso.js ownerBand, its
+   *  stock saturated blue) turned to `css` as it loads. Returns the variant's key. */
+  owned(key, css) {
+    const id = `${key}@${css}`;
+    if (!this.base.has(id)) this.base.set(id, { key, css });
+    return id;
   }
 
   /** The sprite's native size and opaque box (art px). */
   info(key) {
+    const b = this.base.get(key);
+    if (b) return this.info(b.key);
     const s = SPRITES[key] ?? CARDS[key];
     if (s) return s;
     const c = this.drawn.get(key);
@@ -83,7 +107,16 @@ export class SpriteAtlas {
       const info = this.info(key);
       if (!info) return null;
       const layer = this.entries.size;
-      if (layer >= this.cap) this.alloc(this.cap * 2);
+      if (layer >= this.cap) {
+        // The array doubles, up to what the GPU allows (WebGL2 guarantees 256 layers).
+        const max = this.gl.getParameter(this.gl.MAX_ARRAY_TEXTURE_LAYERS);
+        if (this.cap >= max) {
+          if (!this.full) console.warn(`hd2d: the sprite atlas is full (${max} layers); ${key} and later sprites are not drawn`);
+          this.full = true;
+          return null;
+        }
+        this.alloc(Math.min(this.cap * 2, max));
+      }
       e = { layer, ready: false, failed: false };
       this.entries.set(key, e);
       const drawn = this.drawn.get(key);
@@ -95,10 +128,12 @@ export class SpriteAtlas {
 
   load(key, e) {
     this.pending++;
+    const b = this.base.get(key);
+    const src = b ? b.key : key;
     const im = new Image();
-    im.src = new URL(Object.hasOwn(CARDS, key) ? `./art/${key}.png` : `../../iso/${key}.png`, import.meta.url).href;
+    im.src = new URL(Object.hasOwn(CARDS, src) ? `./art/${src}.png` : `../../iso/${src}.png`, import.meta.url).href;
     im.decode()
-      .then(() => this.store(e, im))
+      .then(() => this.store(e, b ? recoloured(im, b.css) : im))
       .catch(() => {
         e.failed = true;
         console.warn(`hd2d: sprite ${key} did not load`);

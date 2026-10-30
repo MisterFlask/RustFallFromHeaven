@@ -1,8 +1,9 @@
 // What the HD-2D mode stands in the world as sprites (docs/HD2D.md): the isometric renderer's art
 // (docs/ISO.md), chosen as iso.js chooses it -- a unit's sprite by its civilization, type, class and
-// stand-ins (iso.js unitSpriteKeys), a city's by its size and civilization, an improvement's and a
-// resource's by kind -- and placed on the 3D renderer's ground. A stack is a group of two or three
-// figures of its head unit under the owner's banner; a city, a standing improvement and a resource
+// stand-ins (iso.js unitSpriteKeys), an improvement's and a resource's by kind -- and the mode's own
+// art (hd2d/art: prop cards, the town kit), placed on the 3D renderer's ground. A stack is a group of
+// two or three figures of its head unit under the owner's banner; a city is a town composed of the
+// kit's cards (§5c: its landmark, houses, towers and walls); a standing improvement and a resource
 // are one card each. The 3D models of what these replace are not placed (`claims`, read by
 // ../dress.js); forests, rocks, fields, flat improvements and the land stay the 3D renderer's.
 //
@@ -21,6 +22,7 @@ import { SEA, DRAFT, FEAT, KIND, GROUND, RIVER_BANK, RIVER_HALF, RIVER_WANDER } 
 import { CARDS } from "./art/index.js";
 import { standHeight, hexRgb } from "../dress.js";
 import { MANA } from "../assets/palette.js";
+import { CATALOG } from "../assets/catalog.js";
 import { clamp } from "../math.js";
 
 /** World units per art pixel: figures (a 96 x 120 unit canvas is 0.46 x 0.58 of a plot), cities (a
@@ -35,6 +37,8 @@ const SPOT = [0, 0.06];
 const BUILT_SPOT = [0.05, 0.3];
 const VOLCANO_SPOT = [-0.14, 0.38];
 const BONUS_SPOT = [-0.26, 0.2];
+/** Where a city's banner stands (plot-local): at its front-left. */
+const BANNER_SPOT = [-0.44, 0.38];
 /** Where a city's garrison stands (plot-local): in front of the city's card (whose foot is on the
  *  plot's front edge), the first of a few spots out of a river, else the one furthest from it. */
 const GARRISON = [[-0.27, 0.36], [0.27, 0.36], [-0.1, 0.42], [0.12, 0.42]];
@@ -230,20 +234,237 @@ function clutterOf(kind, ground, mood) {
  *  saturated pixels feed the bloom. */
 const GLOWS = { crystal: 1.3, lava_rock: 1.3, obelisk: 1.4, altar: 1.2, vent: 1.4, lantern: 1.4, hut: 0.6 };
 
-/** A town spills over its walls, as the look target's do: on the open plots round it, huts,
+/** A town spills over its walls, as the look target's do: on the open plots round it, houses,
  *  gardens, a well, fences and haystacks -- more on the ring next to it than on the one beyond.
- *  Returns how far the nearest city is (1 or 2 plots), or 0. */
+ *  Returns how far the nearest city is (1 or 2 plots, 0 for none) and its plot index. */
 function townRing(map, world, x, y) {
-  let best = 0;
+  let best = 0, at = -1;
   for (let dy = -2; dy <= 2; dy++) {
     for (let dx = -2; dx <= 2; dx++) {
       const j = world.index(x + dx, y + dy);
       if (j < 0 || map.city[j] < 0) continue;
       const d = Math.max(Math.abs(dx), Math.abs(dy));
-      if (d > 0 && (!best || d < best)) best = d;
+      if (d > 0 && (!best || d < best)) [best, at] = [d, j];
     }
   }
-  return best;
+  return [best, at];
+}
+
+/** The town kit's architecture families (tools/hd2d/towns.json, docs/HD2D.md §5c), by the short
+ *  name of a civilization (iso.js civShortName): the 3D renderer's families (architecture.js
+ *  CIV_FAMILY), its sub-styles families of their own. */
+const TOWN_FAMILY = {
+  bannor: "human", elohim: "human", mercurians: "human", kuriotates: "human", grigori: "human", hippus: "human", balseraphs: "human",
+  amurites: "arcane", sidar: "arcane", illians: "north", doviello: "north", ljosalfar: "elven", svartalfar: "darkelf",
+  khazad: "dwarven", luchuirp: "dwarven", calabim: "gothic", infernal: "infernal", sheaim: "infernal",
+  clan_of_embers: "tribal", barbarian: "tribal", malakim: "desert", lanun: "coastal",
+};
+
+/** A city's town kit: its family and the card kinds it is built from (a family's
+ *  town_<family>_house_1.., tower, wall, gate, corner; the civilization's landmark town_lm_<civ>),
+ *  or null while the family has no cards (the town then stands as the isometric sprite). */
+const kits = new Map();
+function townKit(city) {
+  const civ = civShortName(city.owner);
+  if (kits.has(civ)) return kits.get(civ);
+  const fam = TOWN_FAMILY[civ] ?? "human";
+  const k = (piece) => variants(`town_${fam}_${piece}`);
+  const lm = variants(`town_lm_${civ}`);
+  const kit = k("house").length ? { fam, civ, house: k("house"), tower: k("tower"), wall: k("wall"), gate: k("gate"), corner: k("corner"), landmark: lm.length ? lm[0] : null } : null;
+  kits.set(civ, kit);
+  return kit;
+}
+
+/** How far a town reaches round its plot centre (plot-local, z toward the camera): an ellipse
+ *  about (0, cz), rx across and rz deep, from the 3D renderer's reach (CATALOG.cityReach: a village
+ *  keeps to its plot, a great walled capital spills to about 0.9), so the HUD's plate, which stands
+ *  just in front of that reach, stays in front of the town. */
+function townShape(city, scale = 1) {
+  const reach = CATALOG.cityReach?.({ size: city.size ?? 1, walls: !!city.walls, capital: !!city.capital }) ?? 0.5;
+  // A larger town (config.js townScale) spreads as far as its pieces grow.
+  return { cz: -0.05 * scale, rx: (reach + 0.06) * scale, rz: reach * 0.78 * scale };
+}
+
+/** The pieces of a town as card records: the civilization's landmark at the back centre rising
+ *  over the roofs, the family's towers at its back corners (a town has one, a city two), houses
+ *  packed irregularly round them -- more and further out as it grows, the taller ones behind -- and
+ *  for a walled city a ring of wall segments with corner towers and a gate at its front. Each piece
+ *  is its own card at the prop cards' density (PX.prop): lit, shaded and depth-sorted as props are.
+ *  Deterministic from the city's id; pieces keep off water, rivers, roads, the garrison's and the
+ *  banner's spots, and neighbouring plots that are unknown or hold something. */
+function dressTown(world, map, atlas, env, city, kit, list) {
+  const x = city.x, y = city.y;
+  const r = rng(hash32(city.id * 7919 + 4099));
+  const size = city.size ?? 1;
+  // Larger towns (config.js townScale): every piece and the spread between them.
+  const S = env?.town?.scale ?? 1;
+  const { cz, rx, rz } = townShape(city, S);
+  const css = teamCss(city.owner);
+  // Only a piece with the owner-colour band (art.py index) needs its owner's variant.
+  const own = (key) => (atlas.owned && CARDS[key]?.band ? atlas.owned(key, css) : key);
+  const id = idOf(`c${city.id}`);
+  const vis = [x + 0.5, y + 0.5];
+  const placed = [];
+  const garrison = garrisonSpot(world, x, y);
+  // Where a piece may stand (plot-local lx east, lz toward the camera).
+  const groundOk = (lx, lz) => {
+    const mx = x + 0.5 + lx, my = y + 0.5 - lz;
+    const j = world.index(Math.floor(mx), Math.floor(my));
+    if (j < 0) return false;
+    const kind = world.kind[j];
+    if (kind === KIND.VOID || kind === KIND.OCEAN || kind === KIND.COAST || kind === KIND.ICE || world.isWater(j)) return false;
+    if (world.heightAt(mx, my) < SEA + 0.01) return false;
+    if (world.riverCells.size && world.riverDist(mx, my) < RIVER_HALF + 0.05) return false;
+    if (j !== y * world.w + x) {
+      // A neighbour's plot: open land with nothing of its own on it.
+      if (kind === KIND.PEAK || map.city[j] >= 0 || map.improvement[j] >= 0) return false;
+      if (env?.unitAt?.has(j)) {
+        const ux = Math.floor(mx) + 0.5 + SPOT[0], uy = Math.floor(my) + 0.5 - SPOT[1];
+        if (Math.hypot(mx - ux, my - uy) < 0.3) return false;
+      }
+    }
+    // Roads run from the plot centre to its neighbours': keep a lane along each.
+    if (map.route[y * world.w + x] >= 0) {
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const n = world.index(x + dx, y + dy);
+          if ((!dx && !dy) || n < 0 || map.route[n] < 0) continue;
+          const ex = dx, ez = -dy, t = clamp((lx * ex + lz * ez) / (ex * ex + ez * ez), 0, 1);
+          if (Math.hypot(lx - ex * t, lz - ez * t) < 0.07) return false;
+        }
+      }
+    }
+    // The garrison's and the banner's spots stay clear.
+    if (Math.hypot(lx - garrison[0], lz - garrison[1]) < 0.13) return false;
+    return Math.hypot(lx - BANNER_SPOT[0], lz - BANNER_SPOT[1]) >= 0.09;
+  };
+  // Two upright cards at about the same depth must not overlap (they would cut into each other);
+  // one well in front of another may hide its lower part (roofs behind roofs, a dense town), not
+  // all of it.
+  const clear = (lx, lz, w) => placed.every((p) => {
+    const dx = Math.abs(lx - p.lx), dz = Math.abs(lz - p.lz), half = (w + p.w) / 2;
+    return dz < 0.06 * S ? dx > half * 0.9 : dz < 0.15 * S ? dx > half * 0.35 : true;
+  });
+  const put = (key, lx, lz, o = {}) => {
+    const art = atlas.info(key);
+    const s = (o.scale ?? 1) * S;
+    const w = art.w * PX.prop * s;
+    if (!o.force && (!clear(lx, lz, w) || !groundOk(lx, lz))) return false;
+    const mx = x + 0.5 + lx, my = y + 0.5 - lz;
+    placed.push({ lx, lz, w });
+    list.push(card(own(key), art, PX.prop * s, mx, world.heightAt(mx, my) - 0.006, -my, { id, bias: BIAS.building, vis, town: true, shadow: true, glow: 1.1, flip: !!o.flip }));
+    return true;
+  };
+  const inEllipse = (a, b) => [a * rx, cz + b * rz];
+  // The landmark, back centre, growing with the town (within the props' own spread of scales): a
+  // village's hall, a town's keep, a great city's palace over everything.
+  const lmScale = Math.min(1.18, (size <= 3 ? 0.78 : size <= 8 ? 1 : 1.12) + (city.capital && size > 3 ? 0.06 : 0));
+  let lm = null;
+  if (kit.landmark) {
+    // At the back, or as near it as there is dry ground (a river along the plot's back edge): stepped
+    // toward the front, at the plot's centre if nowhere else.
+    const lx = r.range(-0.05, 0.05);
+    let lz = 0;
+    for (let k = 0; k <= 8; k++) {
+      const z = cz - rz * 0.42 + k * 0.06 * S;
+      if (groundOk(lx, z)) {
+        lz = z;
+        break;
+      }
+    }
+    lm = { lx, lz, w: atlas.info(kit.landmark).w * PX.prop * lmScale * S };
+    put(kit.landmark, lx, lz, { scale: lmScale, force: true });
+  }
+  // The towers at the back corners.
+  const towers = size >= 9 ? 2 : size >= 4 ? 1 : 0;
+  const side = r.sign();
+  const towerAt = [];
+  for (let k = 0; k < towers && kit.tower.length; k++) {
+    const s = k ? -side : side;
+    for (let tries = 0; tries < 8; tries++) {
+      const at = inEllipse(s * r.range(0.5, 0.72), r.range(-0.55, -0.15));
+      if (put(r.pick(kit.tower), ...at, { flip: r() < 0.5 })) {
+        towerAt.push(at);
+        break;
+      }
+    }
+  }
+  // Banners over the roofs (config.js townBanners): the owner's colour flying from behind the
+  // landmark, higher than anything in the town, and from behind each tower -- as the look target's
+  // towns fly theirs, readable from afar. (Drawn by code, so the colour is the owner's own; they
+  // ripple, take the figures' rim and keep their colours under the moods.)
+  const flags = env?.town?.banners ?? 0;
+  if (flags > 0) {
+    const bk = bannerKey(atlas, css);
+    const team = hexRgb(cssHex(css));
+    const flag = (lx, lz, k, n) => {
+      const mx = x + 0.5 + lx, my = y + 0.5 - lz;
+      list.push(card(bk, atlas.info(bk), PX.banner * k, mx, world.heightAt(mx, my), -my, { anchor: 5.5 / 40, banner: true, team, bias: 0.06, id: idOf(`ct${city.id}:${n}`), phase: hashf(city.id, 13 + n) }));
+    };
+    // One over the landmark; a great city's towers fly pennants too.
+    if (lm) flag(lm.lx + lm.w * 0.18, lm.lz - 0.03 * S, 0.7 + 0.4 * flags, 0);
+    if (size >= 9) towerAt.forEach(([lx, lz], n) => flag(lx + 0.03 * S, lz - 0.03 * S, 0.55 + 0.2 * flags, n + 1));
+  }
+  // The walls: segments round an ellipse just outside the houses', corner towers at its sides and
+  // corners, the gate at the front middle.
+  if (city.walls && kit.wall.length) {
+    const wx = rx + 0.02, wz = rz + 0.03;
+    const at = (deg) => [wx * Math.cos((deg * Math.PI) / 180), cz + wz * Math.sin((deg * Math.PI) / 180)];
+    const post = (keys, deg) => {
+      const [lx, lz] = at(deg);
+      if (keys.length && groundOk(lx, lz)) put(keys[0], lx, lz, { force: true });
+    };
+    post(kit.gate, 90);
+    // (Not at the back corners, where the family's towers stand: the landmark would be crowded.)
+    const corners = [0, 35, 145, 180];
+    for (const deg of corners) post(kit.corner, deg);
+    // Between the posts, a segment every 0.24 or so of the ring (on its sides, where the ring runs
+    // into the view, they stand one behind another).
+    const ring = [0, 35, 90, 145, 180, 360];
+    for (let k = 0; k + 1 < ring.length; k++) {
+      const a = ring[k], b = ring[k + 1];
+      let len = 0;
+      for (let d = a; d < b; d += 5) {
+        const [x0, z0] = at(d), [x1, z1] = at(d + 5);
+        len += Math.hypot(x1 - x0, z1 - z0);
+      }
+      const n = Math.max(1, Math.round(len / (0.24 * S)));
+      for (let m = 1; m <= n; m++) {
+        const [lx, lz] = at(a + ((b - a) * m) / (n + 1));
+        if (groundOk(lx, lz)) put(r.pick(kit.wall), lx, lz, { force: true });
+      }
+    }
+  }
+  // The houses: rejection sampling in the ellipse, the tall ones toward the back.
+  const want = Math.min(26, Math.round(4 + size * 1.6 + (city.capital ? 2 : 0)));
+  const byHeight = [...kit.house].sort((a, b) => atlas.info(a).h - atlas.info(b).h);
+  let n = 0;
+  for (let tries = 0; tries < want * 30 && n < want; tries++) {
+    const a = r.range(-1, 1), b = r.range(-1, 1);
+    if (a * a + b * b > 1) continue;
+    // Behind (b < 0) more often the taller houses, in front the lower ones (well mixed: the two
+    // that carry the owner's colour are not all at the back); right before the landmark only the
+    // lowest, so its lower storeys show.
+    const [lx, lz] = inEllipse(a * (city.walls ? 0.9 : 1), b * (city.walls ? 0.86 : 1));
+    const t = clamp(0.5 - b * 0.3 + r.range(-0.45, 0.45), 0, 0.999);
+    const before = lm && Math.abs(lx - lm.lx) < lm.w * 0.3 && lz > lm.lz && lz < lm.lz + 0.35 * S;
+    const key = byHeight[before ? 0 : Math.floor(t * byHeight.length)];
+    if (put(key, lx, lz, { flip: r() < 0.5, scale: r.range(0.9, 1.06) })) n++;
+  }
+}
+
+/** What may stand on a town's clearing (config.js townClearing): low things and the fields. */
+const LOW = new Set(["flowers", "grass", "grass_3", "pebbles", "garden", "fence", "hay", "well", "cart"]);
+
+/** A town's fields round its clearing (config.js townClearing): garden plots, haystacks and fences
+ *  on the plots next to it, fewer one further out. */
+function fields(put, r, ring, clearing) {
+  if (!ring) return;
+  const n = Math.round((ring === 1 ? 3 : 1.5) * clearing * r.range(0.7, 1.3));
+  for (let k = 0; k < n; k++) {
+    const p = r();
+    put(p < 0.6 ? "garden" : p < 0.82 ? "hay" : "fence", r.range(-0.4, 0.4), r.range(-0.4, 0.42), FINE * r.range(0.95, 1.15));
+  }
 }
 
 /** Props too low to cast a shadow worth the shadow map's while. */
@@ -259,14 +480,34 @@ const FARMED = /FARM|PASTURE|COTTAGE|HAMLET|VILLAGE|PLANTATION|WINERY/;
 function dressProps(world, map, atlas, env, moods, list) {
   const w = world.w;
   const H = (mx, my) => world.heightAt(mx, my);
-  const cityNear = (x, y, lx, lz) => {
+  const cityAt = new Map();
+  /** A town of the kit's shape (townShape), by its plot: worked out once a dressing. */
+  const shapeAt = new Map();
+  const townScale = env.town?.scale ?? 1;
+  for (const c of S.cities.values()) {
+    cityAt.set(c.y * w + c.x, c);
+    if (townKit(c)) shapeAt.set(c.y * w + c.x, townShape(c, townScale));
+  }
+  // A town on a clearing (config.js townClearing): what stands tall (trees, bushes, rocks) keeps
+  // this much further out; grass, flowers and fields do not.
+  const clearing = env.town?.clearing ?? 0;
+  const margin = (kindKey) => (clearing > 0 && !LOW.has(kindKey) ? 0.6 * clearing : 0);
+  const cityNear = (x, y, lx, lz, m = 0) => {
     for (let dy = -1; dy <= 1; dy++) {
       for (let dx = -1; dx <= 1; dx++) {
         const j = world.index(x + dx, y + dy);
         if (j < 0 || map.city[j] < 0) continue;
-        // A settlement's card spans about 1.7 plots; keep its footprint (round its plot) clear.
         const ex = lx - dx, ez = lz + dy;
-        if ((ex * ex) / (0.95 * 0.95) + ((ez - 0.15) * (ez - 0.15)) / (0.75 * 0.75) < 1) return true;
+        const shape = shapeAt.get(j);
+        if (shape) {
+          // A town of the kit: its reach (townShape) and a little round it.
+          const { cz, rx, rz } = shape;
+          const ax = rx + 0.06 + m, az = rz + 0.1 + m;
+          if ((ex * ex) / (ax * ax) + ((ez - cz) * (ez - cz)) / (az * az) < 1) return true;
+          // And a lane before its middle: the way to its gate, where the HUD's plate stands.
+          if (Math.abs(ex) < 0.24 && ez > cz && ez < cz + rz + 0.45) return true;
+          // A settlement's card spans about 1.7 plots; keep its footprint (round its plot) clear.
+        } else if ((ex * ex) / (0.95 * 0.95) + ((ez - 0.15) * (ez - 0.15)) / (0.75 * 0.75) < 1) return true;
       }
     }
     return false;
@@ -283,16 +524,16 @@ function dressProps(world, map, atlas, env, moods, list) {
     // camera, so its back row goes and its middle row keeps low.
     const n = world.index(x, y + 1);
     const northHeld = n >= 0 && (env.unitAt.has(n) || map.city[n] >= 0);
-    const ok = (lx, lz) => {
+    const ok = (lx, lz, m = 0) => {
       const mx = x + 0.5 + lx, my = y + 0.5 - lz;
       if (world.riverCells.size && world.riverDist(mx, my) < RIVER_HALF + 0.1) return false;
       if (road && (Math.abs(lx) < 0.12 || Math.abs(lz) < 0.12)) return false;
       if (held && Math.hypot(lx, lz - 0.08) < 0.3) return false;
-      return !cityNear(x, y, lx, lz);
+      return !cityNear(x, y, lx, lz, m);
     };
     const put = (kindKey, lx, lz, scale) => {
       const vs = variants(kindKey);
-      if (!vs.length || !ok(lx, lz)) return;
+      if (!vs.length || !ok(lx, lz, margin(kindKey))) return;
       const key = vs[r.int(0, vs.length - 1)];
       const art = atlas.info(key);
       const mx = x + 0.5 + lx, my = y + 0.5 - lz;
@@ -321,6 +562,7 @@ function dressProps(world, map, atlas, env, moods, list) {
       if (r() < 0.7) put("bush", r.range(-0.42, 0.42), r.range(-0.42, 0.42), r.range(0.7, 1.0));
       // The wood's floor at its edge: grass and a fern-like bush where light reaches.
       for (let k = 0; k < 2; k++) put("grass", r.range(-0.46, 0.46), r.range(0.3, 0.48), FINE * r.range(0.85, 1.1));
+      if (clearing > 0) fields(put, r, townRing(map, world, x, y)[0], clearing);
     } else if (kind === KIND.LAND || kind === KIND.HILLS || kind === KIND.PEAK) {
       // Clumps: most things gather round one or two spots of the plot, the rest lie anywhere.
       const clumps = [[r.range(-0.3, 0.3), r.range(-0.3, 0.3)], [r.range(-0.3, 0.3), r.range(-0.3, 0.3)]];
@@ -336,16 +578,31 @@ function dressProps(world, map, atlas, env, moods, list) {
       // Farmland and a town's outskirts: fences along a side of the plot, a haystack or two,
       // and next to the town its houses and gardens.
       const imp = map.improvement[i] >= 0 ? tname("ImprovementType", map.improvement[i]) : "";
-      const ring = HELLISH.has(world.ground[i]) ? 0 : townRing(map, world, x, y);
+      const [ring, ringAt] = HELLISH.has(world.ground[i]) ? [0, -1] : townRing(map, world, x, y);
       if (FARMED.test(imp) || (ring && r() < 0.6)) {
         if (r() < 0.75) put("fence", r.range(-0.2, 0.2), r() < 0.5 ? 0.42 : -0.4, FINE);
         if (r() < 0.55) put("hay", r.range(-0.35, 0.35), r.range(-0.1, 0.38), FINE * r.range(0.85, 1.05));
       }
       if (ring && !imp) {
         const huts = ring === 1 ? (r() < 0.75 ? 2 : 1) : r() < 0.45 ? 1 : 0;
-        // Two houses keep to either half of the plot, so they never stand in each other.
-        for (let k = 0; k < huts; k++) put(r() < 0.25 ? "hut_stone" : "hut", huts === 1 ? r.range(-0.3, 0.3) : k ? r.range(0.08, 0.32) : r.range(-0.32, -0.08), r.range(-0.3, 0.3), FINE * r.range(0.9, 1.05));
+        // The town's own houses (in its owner's colour), else huts. Two keep
+        // to either half of the plot, so they never stand in each other.
+        const town = cityAt.get(ringAt);
+        const kit = town ? townKit(town) : null;
+        // All four (the low ones twice as often), so the owner's colour spills out too.
+        const low = kit ? (([a, b, c, d]) => [a, a, b, b, c, d].filter(Boolean))([...kit.house].sort((a, b) => atlas.info(a).h - atlas.info(b).h)) : null;
+        for (let k = 0; k < huts; k++) {
+          const lx = huts === 1 ? r.range(-0.3, 0.3) : k ? r.range(0.08, 0.32) : r.range(-0.32, -0.08), lz = r.range(-0.3, 0.3);
+          if (!low) put(r() < 0.25 ? "hut_stone" : "hut", lx, lz, FINE * r.range(0.9, 1.05));
+          else if (ok(lx, lz)) {
+            const key = r.pick(low);
+            const mx = x + 0.5 + lx, my = y + 0.5 - lz;
+            const owned = atlas.owned && CARDS[key]?.band ? atlas.owned(key, teamCss(town.owner)) : key;
+            list.push(card(owned, atlas.info(key), PX.prop * r.range(0.9, 1.04), mx, H(mx, my) - 0.006, -my, { shadow: true, town: true, glow: 1.1, flip: r() < 0.5, id: 0.0002, vis: [x + 0.5, y + 0.5] }));
+          }
+        }
         if (r() < (ring === 1 ? 0.5 : 0.25)) put("garden", r.range(-0.25, 0.25), r.range(-0.3, 0.35), FINE);
+        if (clearing > 0) fields(put, r, ring, clearing);
         if (ring === 1 && r() < 0.12) put("well", r.range(-0.3, 0.3), r.range(-0.2, 0.3), FINE);
         // (Kinds the image model may add, tools/hd2d/props.json: none stand until their cards exist.)
         if (r() < 0.12) put("cart", r.range(-0.3, 0.3), r.range(-0.2, 0.35), FINE);
@@ -473,16 +730,21 @@ export function dressSpriteStatic(world, map, atlas, env = null, moods = null) {
     const at = (lx, lz) => [x + 0.5 + lx, y + 0.5 - lz];
     const city = cityAt.get(i);
     if (city) {
-      const key = first(atlas, ISO_TABLES.citySprites(city.size ?? 1, civShortName(city.owner)));
-      if (key) {
-        // The card's foot on the plot's front edge: its painted ground then lies over the plot.
+      const kit = townKit(city);
+      const key = kit ? null : first(atlas, ISO_TABLES.citySprites(city.size ?? 1, civShortName(city.owner)));
+      if (kit) dressTown(world, map, atlas, env, city, kit, list);
+      else if (key) {
+        // No kit for its family: the isometric settlement, its foot on the plot's front edge (its
+        // painted ground then lies over the plot).
         const art = atlas.info(key);
         const [mx, my] = at(0, 0.5);
         // A town: graded lighter than the land (it keeps its colours), its windows and fires lit.
         list.push(card(key, art, PX.city, mx, H(x + 0.5, y + 0.5), -my, { id: idOf(`c${city.id}`), bias: BIAS.building, vis: [x + 0.5, y + 0.5], town: true, glow: 1.1 }));
+      }
+      if (kit || key) {
         const css = teamCss(city.owner);
         const bk = bannerKey(atlas, css);
-        const [bx, by] = at(-0.44, 0.38);
+        const [bx, by] = at(...BANNER_SPOT);
         list.push(card(bk, atlas.info(bk), PX.banner, bx, H(bx, by), -by, { anchor: 5.5 / 40, banner: true, team: hexRgb(cssHex(css)), bias: BIAS.unit, id: idOf(`cb${city.id}`), phase: hashf(city.id, 5) }));
         claims.city.add(i);
       }

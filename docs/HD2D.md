@@ -13,7 +13,7 @@ Phase 1 answers one question: **do today's sprites hold up in a lit 3D world?** 
 and no image model was used. The answer is in §2; the gaps that new art would close are in §10.
 
 Contents: 1 running it · 2 the answer · 3 architecture · 4 what is reused · 5 the sprites ·
-6 light, moods and the post passes · 7 the lab and tools · 8 on a real GPU · 9 cities and the camera ·
+5b the mode's own art · 5c towns from a kit of cards · 5d towns that stand out · 6 light, moods and the post passes · 7 the lab and tools · 8 on a real GPU · 9 cities and the camera ·
 10 the gaps to the reference · 11 configuration · 12 removing it · 13 limitations and next steps ·
 14 provenance.
 
@@ -88,10 +88,28 @@ the camera (§5b); the floating interface as dark glass, smaller on a desktop (�
 pulled back toward the target's (§6). [hd2d/batch4.jpg](hd2d/batch4.jpg) shows it (software
 renders).
 
+**The fifth batch** went after the cities, which the owner judged flat: each was still the isometric
+map's single settlement sprite stood up as one card, its pixels 2.8 times coarser than the prop
+cards round it, unshadowed and lit as one flat tint, its isometric diamond reading as a sticker on
+the land. Each city is now a town composed of many cards from a kit of pixel-art buildings drawn
+for this camera by OpenAI's `gpt-image-2.5-sunburst` (§5c): its civilization's landmark at the back,
+its family's houses packed round it, more and further out as it grows, walls with towers and a gate
+round a walled city, every piece at the prop cards' density, lit, shaded and in its owner's colour.
+[hd2d/towns.jpg](hd2d/towns.jpg) shows it before and after (software renders). It is one of two
+answers being compared: a parallel one builds the towns as 3D geometry with pixel-art textures.
+
+**The sixth batch** made those towns stand out at the gameplay zoom, where they had read less than
+the old bright cards (§5d): four switches -- the towns larger, lit and outlined, on a clearing in
+their own fields, flying their owner's banners over the roofs -- compared alone in
+[hd2d/towns-stand-out.jpg](hd2d/towns-stand-out.jpg) and on by default in a moderate mix.
+
 | | |
 |---|---|
 | the look target and the lab's composition after it, side by side | [hd2d/lab-vs-reference.jpg](hd2d/lab-vs-reference.jpg) |
 | the mode's own art: the seven ground layers and the 25 prop cards | [hd2d/art-sheet.png](hd2d/art-sheet.png) |
+| the town kit (batch 5): the eleven families' pieces and the 22 landmarks | [hd2d/town-kit.png](hd2d/town-kit.png) |
+| cities before and after the town kit: the lab's two views, the real game, close-ups | [hd2d/towns.jpg](hd2d/towns.jpg) |
+| the four ways of making towns stand out, each alone and the default (batch 6) | [hd2d/towns-stand-out.jpg](hd2d/towns-stand-out.jpg) |
 | the Sheaim's corrupted land (lab) | [hd2d/sheaim.jpg](hd2d/sheaim.jpg) |
 | a real game (the `stage corrupt` save at (46, 27)), 96 px a plot | [hd2d/game.jpg](hd2d/game.jpg) |
 | the same, close (168) and far (40) | [hd2d/game-close.jpg](hd2d/game-close.jpg), [hd2d/game-far.jpg](hd2d/game-far.jpg) |
@@ -191,10 +209,11 @@ lab and tools. The camera is the 3D one with the HD-2D preset's pitch and lens (
   gold trim and finial) stands behind the group's left, its cloth above the figures' heads; it
   ripples. A walking stack's figures glide as the 3D figures do; a figure that last walked west is
   mirrored (the art faces right).
-* **Settlements and buildings**: a city is its civilization's village, town or castle sprite by
-  size (`iso.js` `citySprites`), its card's foot on the plot's front edge so its painted ground lies
-  over the plot, with the owner's banner at its front-left; its garrison is one figure (80%) in
-  front of it, at the front-left corner or, out of a river, the front-right or the front's middle
+* **Settlements and buildings**: a city is a town composed of the kit's cards (batch 5, §5c), with
+  the owner's banner at its front-left (before batch 5, and still for a family without the kit, it
+  was its civilization's village, town or castle sprite by size, `iso.js` `citySprites`, its card's
+  foot on the plot's front edge so its painted ground lay over the plot); its garrison is one figure
+  (80%) in front of it, at the front-left corner or, out of a river, the front-right or the front's middle
   (the banner's badge carries the count). A standing improvement (`iso.js` `improvementSprites`:
   cottages, forts, towers, mines, mills, camps, lairs, ruins, mana nodes, boats) is a card likewise,
   smaller than a city, its painted ground thinned out over its foot by a dither fixed to the art's
@@ -206,7 +225,7 @@ lab and tools. The camera is the 3D one with the HD-2D preset's pitch and lens (
   structure or marker is modelled under it); trees keep out of a town's reach as before.
 * Scale (`dress.js` `PX`): a unit's 96 × 120 canvas is 0.46 × 0.58 of a plot, a 192-wide
   settlement 1.7 plots (as the reference's towns, which span about two tiles; the prop cards keep
-  clear of its footprint), other buildings 0.73, resources' canvases 0.65 (their props about 0.25),
+  clear of its footprint; the kit's towns, §5c, stand at the props' scale instead), other buildings 0.73, resources' canvases 0.65 (their props about 0.25),
   banners 0.8 tall, a lone prop 0.0031 a plot an art pixel (a 150 px oak about 0.47 of a plot; in
   a wood 0.58 of that, about 0.27: the target's trees are about half a figure's height), the props
   drawn by code 2.6 times that (`FINE`: about one art pixel a screen pixel at 96 px a plot).
@@ -287,6 +306,162 @@ does for the isometric sprites. No unit art changed.
   waterline and stands a shore stone or pebbles there; along rivers, just outside the water's edge
   (`RIVER_HALF` + 0.01-0.055), smaller stones, pebbles and now and then reeds. One a cell of 0.17
   plot at most, on a global grid, so neighbouring plots never stack theirs.
+
+## 5c. Towns from a kit of cards (batch 5)
+
+The fifth batch closes §10's second gap, "cities drawn for this camera". The isometric settlement
+sprite was drawn for a 2:1 view along a plot's diagonal, at 0.0088 of a plot an art pixel; the land
+round it was the prop cards' 0.0031. Its painted walled diamond stood up as one card, so a city
+cast no shadow, took one tint, and read as a sticker. A city is now built from a kit of single
+buildings drawn for this camera, each its own card.
+
+* **The kit** (`tools/hd2d/towns.json`, `art/town_*.png`: 121 cards). Eleven architecture families:
+  the 3D renderer's (`architecture.js` `CIV_FAMILY`), with its sub-styles made families of their own.
+  * human: the Bannor, Elohim, Mercurians, Kuriotates, Grigori, Hippus and Balseraphs;
+  * arcane: the Amurites and Sidar; north: the Illians and Doviello;
+  * elven: the Ljosalfar; darkelf: the Svartalfar;
+  * dwarven: the Khazad and Luchuirp; gothic: the Calabim; infernal: the Infernal and Sheaim;
+  * tribal: the Clan of Embers and the barbarians; desert: the Malakim; coastal: the Lanun.
+
+  A family has four houses, a tower, two wall segments, a gate and a corner tower
+  (`town_<family>_<piece>_<n>`). Each of the 22 civilizations, barbarians included, has a landmark
+  (`town_lm_<civ>`): a keep, temple or palace of its culture that rises over the roofs. Examples:
+  the Bannor's fortified cathedral, the Ljosalfar's spires woven round a living tree, the Khazad's
+  hold carved into a crag, the Sheaim's planar-gate ziggurat, the Lanun's lighthouse keep. Every
+  piece is one object, seen front-on from about 30° up, looking along the plot's side (not the
+  isometric diagonal), lit from the upper left, with its foot a straight line. Heights are in art
+  pixels:
+
+  | piece | art px | plot heights |
+  |---|---|---|
+  | house | 64-104 | about a quarter of a plot |
+  | tower | 140-160 | |
+  | wall segment | 54-62 | |
+  | gate | 100-106 | |
+  | corner tower | 108-118 | |
+  | landmark | 190-242 | about three quarters of a plot |
+
+  The cards stand at `PX.prop`, the prop cards' density. The two widest landmarks were drawn
+  shorter, so that no card exceeds the atlas's 256-texel layer.
+* **The owner's colour.** The prompts reserve saturated royal blue for what should carry the owner's
+  colour: roofs, domes, spires, banners. The atlas makes each piece's owner variant as it loads
+  (`SpriteAtlas.owned`: `key@css`, recoloured by `iso.js` `ownerBand`, the isometric map's recolour,
+  now shared). The old city card in this mode was never recoloured: its blue showed for every owner.
+  * **Variants only where needed.** Each variant takes a layer of the sprite array, so only the 78
+    pieces that carry the band get one. `art.py index` marks them `band` in `art/index.js`. The rest
+    (most walls, the low houses) are shared by every owner.
+  * **Recoloured before upload.** The recolour is done on the CPU before the mipmaps are built. A
+    recolour in the shader would see the band blended with its neighbours at far zooms and miss it.
+  * **A capped array.** The array still doubles as it fills, but only up to the GPU's
+    `MAX_ARRAY_TEXTURE_LAYERS`. Past that a sprite is not drawn, and the console says so once.
+* **The layout** (`dress.js` `dressTown`) is deterministic from the city's id.
+  * **Reach.** The town's reach is the 3D renderer's (`CATALOG.cityReach`), so the HUD's plate,
+    which stands just in front of that reach, stays in front of the town: an ellipse `reach + 0.06`
+    across, `0.78 reach` deep, centred 0.05 behind the plot's centre. A village keeps to about its
+    plot; a great walled city spills to about 0.9.
+  * **The landmark.** It stands at the back centre. If the back is wet (a river along the plot's
+    back edge), it steps toward the front until it reaches dry ground. It grows with the town,
+    within the props' own spread of scales: 0.78 for a village, 1 for a town, 1.12 for a city (9+),
+    0.06 more for a capital, at most 1.18.
+  * **Towers and houses.** A town (size 4+) has one family tower, a city two, at the back corners.
+    Houses number 4 + 1.6 a size point, 2 more for a capital, at most 26. They are scattered at
+    random in the ellipse, more often the taller ones toward the back, so the roofs climb toward the
+    landmark. The heights are well mixed, so the two houses that carry the owner's colour are not
+    all at the back; right before the landmark stand only the lowest, so its lower storeys show.
+    Houses and towers are mirrored at random and vary from 0.9 to 1.06 in scale, as the land's props
+    do: four variants a family do not repeat in rows.
+  * **Walls.** A walled city (`city.walls`) gets a ring just outside the houses: the gate at the
+    front middle, corner towers at the sides and front corners (not the back corners, where the
+    family's towers stand), and a segment every 0.24 or so of the ring between them. On the sides,
+    where the ring runs into the view, the segments stand one behind another.
+  * **Overlap.** Two pieces at about the same depth never overlap. One well in front of another may
+    hide its lower part: roofs behind roofs, a dense town.
+  * **Where pieces may stand.** They keep off water and rivers, a lane along each road from the
+    plot, and the garrison's and banner's spots. They also keep off a neighbouring plot that is
+    unrevealed, a peak, or holds a city, an improvement or a stack.
+  * **Each piece's card.** Each piece is its own card with the town flag: half graded, its warm
+    lights glowing. It casts its outline into the sun's map and a contact shadow, and is fogged as
+    the city's plot. It is tinted by the light where its walls and roof are, at about half its
+    height (`SPRITE_VS`). Taken at its foot, a town's taller pieces behind would shade a whole house
+    by its doorstep.
+* **Round the town.** The props keep out of its reach, and out of a lane before its middle: the
+  way to the gate, where the plate stands. The houses spilling onto the plots round it (`townRing`)
+  are the town's own houses (the low ones twice as often), in its owner's colour. Code-drawn huts
+  remain only round a town whose family has no kit.
+* **Fallback.** A family with no cards stands as the isometric settlement, as before.
+* **Making it.**
+  * `python3 tools/hd2d/gen.py town:<family> --quality high --size 1024x1024 --ref human.png`: a
+    family's sheet in a 3 × 3 grid, the accepted human sheet as the style reference.
+  * `gen.py landmark:<n> --quality high --ref <its families' sheets>`: four landmarks in a 2 × 2
+    grid, 1024 × 1536.
+  * `python3 tools/hd2d/towns.py SHEET_PNG SHEET [k=PIECE ...]`: cuts the sheet apart (`art.py
+    split`, cut by the sheet's alpha; a small part beside an object, such as a floating crystal or
+    smoke, joins it) and cards each piece at its height. Cards are cut to 48 colours and saved as
+    palette PNGs (lossless, a third of RGBA's size: the kit is 1 MB).
+  * Then `art.py index`.
+
+  `gen.py` streams its calls: high quality takes 40-50 s, and a silent connection was cut by the
+  environment's proxy (HTTP 502) after about a minute.
+
+  **The review round** (one visual and one code critic) found:
+  * the town cores dark, each house tinted by the sun at its foot in its neighbours' shadows;
+  * the owner's colour missing from the town fronts and the houses round it;
+  * the landmark too large in a village and crowded in a city by eight identical round towers;
+  * the four houses of a family repeating in rows;
+  * the landmark able to stand in a river along the plot's back edge;
+  * the dressing half as slow again (the kit worked out per prop);
+  * a layer of the sprite array per owner for every piece.
+
+  Each was fixed as above. Every sheet was looked at and accepted
+  (prompts in `towns.json`). The cost was $1.19 for 19 calls at list prices, recorded in
+  `tools/hd2d/usage.jsonl`. Eight more calls ended in an HTTP 502 before streaming; whether those
+  were billed is unknown.
+
+## 5d. Towns that stand out (batch 6)
+
+The owner liked the kit's towns, but at the gameplay zoom they stood out less than the old bright
+isometric cards. Four ways to make them stand out were tried, each a switch in the panel
+(`config.js`; 0 or 1 turns it off, for one page `?r3d={"townBanners":0}`):
+
+* **Size** (`townScale`, 1 to 1.6). Every piece is larger by this factor, and so is the spread
+  between them (`townShape`, `dressTown`), so the town is denser and larger at once. The pieces'
+  pixels get coarser by the same factor: at 1.25 an art pixel is 0.0039 of a plot, still 2.3 times
+  finer than the old card's. A larger town reaches further onto the plots round it; the HUD's plate
+  keeps its place, at the walls' foot in a great walled city.
+* **Lit** (`townLight`, 0 to 1). It works in the cards' shader (`SPRITE_FS`) and on the ground:
+  * each piece takes the figures' dark one-pixel outline, so roofs read against a wood;
+  * it is brighter (up to 24%) and never in deep shade;
+  * its windows feed the bloom up to 2.6 times as much, and a little of every pixel, warmed, feeds
+    it too, so the whole town glows softly, as the look target's golden town does;
+  * the cities' pools in the 3D renderer's light layer (`decals.js` `rasterLight`) grow up to three
+    times as bright and 30% wider, through a hook, `Map3D.cityLight`, that is 1 for the 3D
+    renderer.
+* **Clearing** (`townClearing`, 0 to 1). What stands tall (trees, bushes, rocks) keeps up to 0.6 of
+  a plot further from a town; grass, flowers and the fields do not. Garden plots, haystacks and
+  fences lie on the plots next to it (`fields`), fewer one further out, so a town in a wood sits in
+  its own farmland.
+* **Banners** (`townBanners`, 0 to 1). The owner's banner, drawn by code, flies from behind the
+  landmark, higher than anything in the town (0.7 to 1.1 of the city banner's height), and a great
+  city's (size 9+) towers fly smaller ones. Like all banners they ripple, take the figures' rim and
+  keep their colours under the moods.
+
+[hd2d/towns-stand-out.jpg](hd2d/towns-stand-out.jpg) shows each alone (size at 1.35, the others at
+1) and the default, on the lab's two views:
+
+* **Size** does the most. Eärlann and Aurelis take their place on the map, and a great walled city
+  dominates its land. In the cities scene, where cities stand two plots apart, larger towns run into
+  each other; a real game's cities stand further apart.
+* **Lit** turns a town into a lighter, glowing block. At full strength it washes the detail out, so
+  the default takes half.
+* **Clearing** shows where a town stands in a wood or among clutter; in the lab's open scenes it
+  adds mostly fields.
+* **Banners** mark a town from afar. Several to a town and larger, as first tried, they buried the
+  towns and the plates behind them; hence one over the landmark, and pennants only on a great city's
+  towers.
+
+**The default** combines them: size 1.25, lit 0.5, clearing 0.5, banners 0.6. The `plain` preset
+turns all four off; any of them can be turned off in the panel. A change to any of them redresses
+the map (`MapHd2d.setConfig`).
 
 ## 6. Light, moods and the post passes
 
@@ -379,10 +554,15 @@ does for the isometric sprites. No unit art changed.
   blank, the sprites load and the units stand as cards, 3D → HD-2D → art.
 * Node tests: `assets/test/hd2d.test.mjs` (every unit type has a sprite; a stack is one to three
   figures of one sprite and one banner, deterministic; cities, buildings and resources are claimed
-  as cards; nothing stands on, and no mood comes from, an unrevealed plot).
+  as cards, a city a town of the kit's cards at the props' density in its owner's colour; towns
+  grow with their size, walled ones have walls, a gate and towers, deterministic; the houses round
+  a town are its own; nothing stands on, and no mood comes from, an unrevealed plot).
 * **Art**: `tools/hd2d/draw.py` (the props drawn by code), `tools/hd2d/local_props.py` (the image
-  model's, through a local ComfyUI, §5b), `tools/hd2d/gen.py` (sheets of nine from OpenAI's
-  gpt-image-1, cut apart by `art.py split SHEET PREFIX`), `tools/hd2d/art.py ground SRC NAME` (a top-down texture to a seamless ground layer),
+  model's, through a local ComfyUI, §5b), `tools/hd2d/gen.py` (sheets from OpenAI's
+  `gpt-image-2.5-sunburst`, pinned to its 2026-09-08 snapshot -- gpt-image-1 was shut down on
+  2026-10-23 -- the prop sheets of nine and the town kit's sheets of `tools/hd2d/towns.json`, with
+  `--ref` images to match an accepted sheet's style; cut apart by `art.py split SHEET PREFIX`, or
+  for the town kit by `tools/hd2d/towns.py`, §5c), `tools/hd2d/art.py ground SRC NAME` (a top-down texture to a seamless ground layer),
   `prop SRC NAME HEIGHT [DEEPEN]` (an object on white to a card), `index` (writes
   `art/index.js`); run it with Python with Pillow and numpy (ComfyUI's bundled one has both). The
   images came from the local FLUX 3 Image Klein (the owner's `local-image-gen` skill); `build.rs`
@@ -462,6 +642,22 @@ beside an Intel UHD integrated GPU, headless Chrome 156 (`FFH_CHROMIUM_CHANNEL=c
   zoom in, a pan with the pointer wandering, a zoom out and back), rendered on the GPU in 85 s. On
   consecutive frames the figures keep their shape and value (no sparkle, no swimming pixels), the
   tilt-shift's band glides after the pointer, and the far zoom fades the blur and the beams out.
+* **What each switch costs, against what it shows** (2026-10-30, after batch 4: an RTX 4060 laptop,
+  Vulkan, a 1920 × 1080 canvas, the `stage corrupt` save at (46, 27); GPU timer queries, the
+  median of rounds alternating the cases; "shows": the share of the frame's pixels a switch moves by
+  more than 8 of 255). At 96 px a plot the GPU frame is 10.2 ms: the terrain's shading 3.6, the
+  water 1.9, the overlay 0.7, the shafts 0.5 (they show over 34% of the frame), the shadows 0.9 in
+  all (15%), the props and the cards 0.3-0.4 each, every other pass 0.1-0.3. The mode's post passes
+  all earn their cost. The switches that only weight a term of a shader (dabs, pigment, brushwork,
+  cloud shadows) save nothing when set to 0: the term is still computed. Compiled out, the **brush
+  dabs** saved 0.5 ms of the terrain's shading (at 40 and 96 px) and 7% of its instructions (7110
+  to 6621; Direct3D's compiler alone took 6.1-6.3 s over it against 6.7-9.3, alternating runs: the
+  whole start drifted too much between runs on that laptop to show it) for no pixel moved by 8 at
+  96 px, 0.1% at 168, and at 220, the closest zoom, a few flower flecks: they are compiled out of
+  the mode's terrain since (`NO_DABS`, `MapHd2d.terrainDefines`; the 3D renderer keeps them, its
+  meadow's flowers show close up). The brushwork on objects (0.2 ms) stays: the mode's 3D fields and sheaves
+  take their texture from it close up. Ambient occlusion (0.25 ms) stays: its shade under the woods
+  shows close up. Glow and bloom (0.15 ms each) are cheap.
 
 ## 9. Cities and the camera
 
@@ -498,10 +694,14 @@ distance each closes:
 1. **Art with a hand behind it** (the image model). The props drawn by code read well at their size
    but are simple; huts, ruins, shrines and each region's things drawn by the image model would
    match the trees' and the target's detail. `tools/hd2d/gen.py` asks for them in sheets of nine
-   (about $0.17 a sheet at gpt-image-1's high quality; a `split` step for `art.py` is still to write).
-2. **Cities drawn for this camera** (new art). The settlement sprites keep the isometric map's
-   walled diamond; the target's towns are irregular and spill out. Batch 4's houses round them
-   soften it; towns drawn for the mode would close it.
+   (`gpt-image-2.5-sunburst`, billed by token: $5 a million text tokens in, $8 image in, $30 image
+   out; `art.py split` cuts a sheet apart).
+2. **Cities drawn for this camera** (new art): closed by batch 5's town kit (§5c). What remains:
+   the pieces are flat cards, so a wall ring's sides are segments standing one behind another
+   rather than a wall running into the view. The landmark cannot exceed the atlas's 256-texel
+   layer at the props' density, about 0.8 of a plot; the reference's palace is somewhat taller
+   against its figures. The parallel answer, towns as 3D geometry with pixel-art textures, would
+   close the first; a larger atlas layer for a few cards would close the second.
 3. **True cliffs and wide water** (code, the terrain). The raised bank is a steep step, not a cliff
    face: the terrain mesh (six vertices a plot) cannot draw one; the target's rivers are broader and
    braided. A finer mesh along shores, or cliff cards along the bank, would close it.
@@ -515,7 +715,8 @@ distance each closes:
 ## 11. Configuration
 
 `r3d/hd2d/config.js`: the `hd2d` preset (the 3D renderer's painterly switches with: a lower camera,
-`pitch` 32 and `fov` 30; `grid` 0; deeper shade, `stylize` 0.7, `ssao` 0.85; `saturation` 1.0 and
+`pitch` 32 and `fov` 30; `grid` 0; the towns' switches, §5d: `townScale` 1.25, `townLight` 0.5,
+`townClearing` 0.5, `townBanners` 0.6; deeper shade, `stylize` 0.7, `ssao` 0.85; `saturation` 1.0 and
 `contrast` 1.12 (batch 3: the land's palette is graded in the mood pass), `vignette` 0.42, `haze`
 0.1, `mist` 0.08, `clouds` 0.3, `glow` 1.0) and the mode's own switches: `tiltShift` (0.6), `rays`
 (0.6), `mood` (1), `landGrade` (1, the land's palette, §6), `bloom` (0.8, from a lower threshold),
@@ -523,7 +724,8 @@ distance each closes:
 (0.5 and 0.15). The `plain` preset turns the stylisation and the mode's passes off (the cards stay).
 Its `LIGHT` is the one light. Stored apart from the 3D renderer's look (`ffh.hd2d.config.3`, renamed
 when the look changes enough that a saved panel tuning would mislead); the panel offers the 3D
-switches that apply (not the paint filter, ink or grid) and the mode's rows.
+switches that apply (not the paint filter, ink, grid or brush dabs, which the mode's terrain is
+compiled without, §8) and the mode's rows.
 
 ## 12. Removing it
 
@@ -550,6 +752,11 @@ its defaults and do no harm.
   a spreading hell) changes them only through the terrain and the owners.
 * **Figures stand still** (no idle frames) and are mirrored when facing west, so their painted
   light then comes from the upper right.
+* **The sprite array** holds one sprite a 256-texel layer, however small: the town kit adds up to
+  10 layers a civilization in play (7 or so of them owner variants), on top of the props, figures,
+  buildings and banners. A game of many civilizations can pass 256 layers, and the array then
+  doubles to 512 (about 180 MB of texture with mipmaps, capped at the GPU's limit). Packing small
+  cards several to a layer would need an offset per card in the instance data.
 * **Cities' garrisons** show one figure (the banner's badge carries the count), as the isometric map
   hides them.
 * Next, by value: new art per §10 (ground textures first); the first frame's stall on Direct3D 11
@@ -558,15 +765,18 @@ its defaults and do no harm.
 
 ## 14. Provenance
 
-The units, cities, buildings and resources are the isometric renderer's sprites (docs/ISO.md: drawn
-by an image model and brought to one contract by code in `tools/m7/`). The ground layers and prop
+The units, buildings and resources are the isometric renderer's sprites (docs/ISO.md: drawn by an
+image model and brought to one contract by code in `tools/m7/`), as are the cities of a family
+without the town kit. The ground layers and prop
 cards in `assets/app/r3d/hd2d/art/` were drawn by FLUX 3 Image Klein (Black Forest Labs) running
 locally in ComfyUI, and post-processed by `tools/hd2d/art.py` (prompts in §5b's spirit: 16-bit
 pixel art, top-down for ground, a single object lit from the upper left on white for props). The grass, reeds, pebbles, shore and
 standing stones, fences and haystacks are drawn by code (`tools/hd2d/draw.py`). `tools/hd2d/gen.py`
-asks OpenAI's gpt-image-1 for sheets of nine props on a transparent background (to be cut apart
-by an `art.py` step still to write, then carded by `prop`); under OpenAI's terms its outputs belong
-to the user.
+asks OpenAI's `gpt-image-2.5-sunburst` (snapshot 2026-09-08) for sheets of props on a transparent
+background (cut apart by `art.py split`, then carded by `prop`). **The town kit**
+(`art/town_*.png`, §5c) was drawn by `gpt-image-2.5-sunburst-2026-09-08` through `gen.py` (prompts
+in `tools/hd2d/towns.json`, usage in `tools/hd2d/usage.jsonl`) and carded by `tools/hd2d/towns.py`;
+under OpenAI's terms its outputs belong to the user.
 **Licence:** FLUX 3 Image Klein is under the FLUX Kommunity License — non-commercial use, with a
 commercial-output exception for "Qualifying Users" under its terms; check
 https://huggingface.co/black-forest-labs/flux-3-image-klein-comfy/blob/main/LICENSE.md before

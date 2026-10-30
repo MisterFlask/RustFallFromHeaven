@@ -82,7 +82,7 @@ export class Map3D {
     }
     this.gl = gl;
     this.glName = glName;
-    this.pipeline = new Pipeline(gl);
+    this.pipeline = new Pipeline(gl, this.terrainDefines());
     /** Whether the programs have compiled (`ready`): the loop draws nothing before. */
     this.compiled = false;
     this.scene = new Scene(gl);
@@ -180,6 +180,18 @@ export class Map3D {
   /** The world's options (world.js World): none for the 3D renderer; a mode may raise banks. */
   worldOpts() {
     return {};
+  }
+
+  /** `#define`s the terrain program is compiled with (shaders.js): none for the 3D renderer; a
+   *  mode may compile parts of the ground's painting out. */
+  terrainDefines() {
+    return {};
+  }
+
+  /** How strongly the cities light the ground round them (decals.js rasterLight): 1 for the 3D
+   *  renderer; a mode may light its towns more. */
+  cityLight() {
+    return 1;
   }
 
   saveCfg(cfg) {
@@ -452,9 +464,11 @@ export class Map3D {
       const T4 = performance.now();
       // The paint layers (roads, fields, settlement ground, light pools) change with the map, the
       // cities and the light.
-      const paintKey = `${this.cfg.lighting};${[...cityKey].join(";")}`;
+      // (A mode may light its towns' ground more: cityLight scales the pools round the cities.)
+      const cityLight = this.cityLight();
+      const paintKey = `${this.cfg.lighting};${cityLight};${[...cityKey].join(";")}`;
       if (mapChanged || paintKey !== this.paintSeen) {
-        this.scene.setPaint(this.world, map, cities);
+        this.scene.setPaint(this.world, map, cities, 1, cityLight);
         this.paintSeen = paintKey;
       }
       this.dressSeen = { n, civKey, unitAt: env.unitAt, cityKey };
