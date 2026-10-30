@@ -126,8 +126,9 @@ cultural actions", off by default). The player can still queue any action by han
   other worker; the spec does not say whether governors should automate them.
 - **Stance quotas.** "Feed army" fills by a simple role mix (a third siege) until phase 6 brings
   stances.
-- **Conquest.** With governors on, the AI captures a fifth fewer cities (below): governed cities
-  develop instead of building surplus attackers. Its wars are fed by its feeding cities.
+- **Conquest.** With governors on, a quarter fewer cities change hands (below), mostly because
+  governed cities are better built; the warlike civilizations declare about as many wars. Whether
+  their conquest drive should feed its armies harder with governors is for the tuning phase.
 
 ## The production audit
 
@@ -136,20 +137,28 @@ neutral governor is competent. The AI's own production choice (`production.rs`) 
 point; the governor's (`governor.rs`) keeps its garrison, worker and building logic and drops what
 direct rule is for (settlers, wonders, the AI's campaign armies outside feeding). Measured as the
 spec's acceptance asks ("large AI empires keep pace with the baseline in autoplay"): 8 civs,
-standard map, 350 turns, seeds 1-4, armies on in both, governors on against off (the AI governing
-every city beyond its first four):
+standard map, 350 turns, seeds 1-24, armies on in both, governors on against off (the AI governing
+every city beyond its first four), totals over the 24 games with the paired per-seed difference:
 
-| | governors off | governors on |
-|---|---|---|
-| population (all civs, end) | 1815 | 1888 (+4%) |
-| techs | 1446 | 1515 (+5%) |
-| production | 1733 | 2048 (+18%) |
-| research | 4667 | 5545 (+19%) |
-| cities | 196 | 198 |
-| cities captured | 85 | 68 |
-| civilizations eliminated | 7 | 4 |
-| the largest empire's techs (per seed) | 39, 54, 48, 42 | 46, 58, 44, 51 |
+| | governors off | governors on | change (t) |
+|---|---|---|---|
+| population (all civs, end) | 10517 | 11386 | +8.3% (2.1) |
+| techs | 7824 | 8112 | +3.7% (1.1) |
+| production | 10633 | 12001 | +12.9% (2.7) |
+| research | 26937 | 30388 | +12.8% (1.9) |
+| cities | 1221 | 1246 | +2.0% |
+| the largest empire's techs | 1050 | 1079 | +2.8% |
+| cities that changed hands | 383 | 280 | -27% (-2.9) |
+| civilizations eliminated | 27 | 16 | |
 
-The governed empires grow and research faster and fight a little less. Checked-build stress games
-(400 turns, culture, armies and governors on) pass the harness's checks, a governed city never
-without production among them.
+The governed empires grow, produce and research more, and fewer cities change hands. Most of that
+last difference comes from the profiles' emphasis: a Builder's or Marshal's production emphasis
+(the review found the AI's wonder emphasis turning it off every turn, and fixed it) makes governed
+cities produce 8% more and the world's cities change hands a fifth less often (the old behaviour
+restored, same seeds: captures +20%, t 2.1; production -8%, t -2.5), with about as many wars
+declared: better-built cities fall less, not fewer attacks. The fixes from the review (2026-10-30)
+measured against the code before them, same seeds: development within noise (production +4%,
+population +2%, techs +2%, research -1%). The first audit (4 seeds, before the review) showed the
+same direction with more noise. Checked-build stress games (400 turns, culture, armies and
+governors on, seeds 41-46) pass the harness's checks, a governed city never without production
+among them.

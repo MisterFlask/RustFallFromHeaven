@@ -1401,8 +1401,9 @@ cities.
 Switch `GOVERNORS` (`FFH_AI_GOVERNORS_OFF`): off, the AI keeps its first cities direct and every
 governed city develops, its cultural play unrestricted. With switch `ARMIES` off no city feeds an
 army (no unit is sent in transit). The production audit the spec asks for (governors on against off, AI
-autoplay, 4 seeds) is in docs/GOVERNORS.md: the governed empires grow and research faster (+4%
-population, +19% research) and capture a fifth fewer cities.
+autoplay, 24 seeds) is in docs/GOVERNORS.md: the governed empires grow, produce and research more
+(+8% population, +13% production and research) and a quarter fewer cities change hands, mostly
+because the profiles' production emphasis builds better cities.
 
 ## Random events (`events.rs`)
 
