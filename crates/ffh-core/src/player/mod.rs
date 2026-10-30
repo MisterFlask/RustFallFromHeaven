@@ -364,6 +364,12 @@ pub struct Player {
     /// What this player remembers of each player's cultural actions against it
     /// (docs/CULTURE.md): `[hostility, friendship]` points, capped and decaying.
     pub culture_memory: IdxVec<PlayerId, [i32; 2]>,
+    /// This player's armies (docs/ARMIES.md), in formation order.
+    pub armies: Vec<ArmyId>,
+    /// Armies formed so far (names them "Nth Army").
+    pub army_count: i32,
+    /// Trained units on their way to their destination.
+    pub transit: Vec<crate::army::Transit>,
 }
 
 impl Player {
@@ -615,6 +621,9 @@ impl Player {
             ai_first_contact: IdxVec::from_elem(false, num_players),
             ai_memory_count: IdxVec::from_fn(num_players, |_| IdxVec::from_elem(0, MemoryType::NUM)),
             culture_memory: IdxVec::from_elem([0, 0], num_players),
+            armies: Vec::new(),
+            army_count: 0,
+            transit: Vec::new(),
         }
     }
 

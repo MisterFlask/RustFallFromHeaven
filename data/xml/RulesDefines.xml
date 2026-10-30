@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!-- Tuning values of this game's own rules (not FFH2's): read after GlobalDefines.xml,
      GlobalDefinesAlt.xml and PythonCallbackDefines.xml, like them. Each system's doc lists
-     its values: docs/CULTURE.md for the CULTURE_* defines. Percentages are integers
+     its values: docs/CULTURE.md for the CULTURE_* defines, docs/ARMIES.md for the ARMY_* ones. Percentages are integers
      (100 = 1.0). -->
 <Civ4Defines xmlns="x-schema:CIV4GlobalDefinesSchema.xml">
 	<!-- ==== Cultural actions (GAMEOPTION_CULTURE_ACTIONS, docs/CULTURE.md) ==== -->
@@ -140,5 +140,14 @@
 	<Define>
 		<DefineName>CULTURE_MEMORY_MAX</DefineName>
 		<iDefineIntVal>8</iDefineIntVal>
+	</Define>
+	<!-- ==== Armies (GAMEOPTION_ARMIES, docs/ARMIES.md) ==== -->
+	<Define>
+		<DefineName>ARMY_SUPPLY_RANGE</DefineName>
+		<iDefineIntVal>3</iDefineIntVal>
+	</Define>
+	<Define>
+		<DefineName>ARMY_TRANSIT_STALL_TURNS</DefineName>
+		<iDefineIntVal>5</iDefineIntVal>
 	</Define>
 </Civ4Defines>

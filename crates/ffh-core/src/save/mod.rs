@@ -64,7 +64,9 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 /// - 4: cultural actions (docs/CULTURE.md): `City::culture_queue`, `culture_diverted`,
 ///   `culture_marks`, `Player::culture_memory`.
 /// - 5: Foment Revolt and Flip City: `City::culture_revolt_turn`.
-pub const FORMAT_VERSION: u32 = 5;
+/// - 6: armies (docs/ARMIES.md): `Game::armies`, `Unit::army`, `Player::armies`, `army_count`,
+///   `transit`, `City::recruit_default`, `OrderData::dest` and `reinforce_to`.
+pub const FORMAT_VERSION: u32 = 6;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -201,6 +203,7 @@ fn write_game(g: &Game, w: &mut Writer) {
         groups,
         plot_groups,
         deals,
+        armies,
         map_rand,
         soren_rand,
         log,
@@ -309,6 +312,7 @@ fn write_game(g: &Game, w: &mut Writer) {
     groups.write(w);
     plot_groups.write(w);
     deals.write(w);
+    armies.write(w);
     map_rand.write(w);
     soren_rand.write(w);
     log.write(w);
@@ -415,6 +419,7 @@ fn read_game(d: &'static GameData, r: &mut Reader<'_>) -> Result<Game, LoadError
         groups: Persist::read(r)?,
         plot_groups: Persist::read(r)?,
         deals: Persist::read(r)?,
+        armies: Persist::read(r)?,
         map_rand: Persist::read(r)?,
         soren_rand: Persist::read(r)?,
         log: Persist::read(r)?,

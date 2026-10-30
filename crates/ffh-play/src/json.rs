@@ -18,7 +18,7 @@
 
 use std::fmt::{self, Write};
 
-use ffh_core::ids::{AreaId, CityId, DealId, GroupId, PlayerId, TeamId, TriggeredId, UnitId, VoteId};
+use ffh_core::ids::{AreaId, ArmyId, CityId, DealId, GroupId, PlayerId, TeamId, TriggeredId, UnitId, VoteId};
 use ffh_data::Idx;
 
 /// Maximum nesting of arrays and objects accepted by the parser.
@@ -478,6 +478,7 @@ entity_ids! {
     DealId(u32) "a deal id",
     TriggeredId(u32) "a triggered event id",
     VoteId(u32) "a vote id",
+    ArmyId(u32) "an army id",
 }
 
 // ---------------------------------------------------------------------------------------------

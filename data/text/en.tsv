@@ -7884,6 +7884,8 @@ TXT_KEY_GAME_OPTION_ALL_UNIQUE_IMPROVEMENTS	All Unique Features
 TXT_KEY_GAME_OPTION_ALL_UNIQUE_IMPROVEMENTS_HELP	All of the game's Unique Features will be placed on the map
 TXT_KEY_GAME_OPTION_ALWAYS_WAR	Always War
 TXT_KEY_GAME_OPTION_ALWAYS_WAR_HELP	All AI civilizations are at war with the human for the length of the game
+TXT_KEY_GAME_OPTION_ARMIES	Armies
+TXT_KEY_GAME_OPTION_ARMIES_HELP	Land combat units serve in named armies, which move as one, or in a city's garrison. A city can send the units it trains to another city's garrison or to an army: they travel there off the map and join it, as long as the army stays in supply (near your connected network). Heroes, mages, scouts and summons move on their own.
 TXT_KEY_GAME_OPTION_BARBARIAN_WORLD	Challenge- Barbarian World
 TXT_KEY_GAME_OPTION_BARBARIAN_WORLD_HELP	The world starts already inhabited with barbarian cities
 TXT_KEY_GAME_OPTION_BLUE_MARBLE_TERRAIN	Blue Marble Terrain

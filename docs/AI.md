@@ -1333,6 +1333,31 @@ option on): every action used, per game 86-170 festivals, 151-225 unrests, 26-59
 fairs completed. Not yet measured for win rate (the spec's tuning phase); the open points
 (Trade Fair weak at the spec's numbers) are in docs/CULTURE.md.
 
+## Armies (`armies.rs`)
+
+This game's own system (`GAMEOPTION_ARMIES`, docs/ARMIES.md). The rules' army sync gives every
+group of army units an army, so the AI's movement logic (`military.rs`, `campaign.rs`) drives each
+army unchanged: a city-attack stack is an army, a city's defenders are its garrison. What an
+expert adds is logistics, once a turn after the cultural actions:
+
+- **Reinforcements by transit.** At war, or preparing one, the attack units the cities train (the
+  attack, city attack, collateral and counter roles) go to the main field army -- the largest army
+  of at least two units in supply and not disbanding, the nearest to the enemy's cities on ties --
+  instead of walking there: they travel off the map, safe, and join it where it stands. A war
+  stack that marches on keeps its strength without escorts for each reinforcement. Defenders and
+  everything else stay in their city's garrison, as they would.
+- **Target size.** The main army's target is the army the war needs
+  (`diplomacy::army_needed_for_war`), so the human's Armies screen of a watched AI game shows how
+  far it is from it.
+
+Switch `ARMIES` (`FFH_AI_ARMIES_OFF`): off, every unit stays in its city's garrison when trained
+(the armies still form from the groups). First games (8 civs, standard, 350 turns, seeds 1-2,
+armies and cultural actions on): 101 and 155 units sent off the map, 99 and 143 arrived (the rest
+were on their way at the end), 11 and 4 diverted to a garrison; a journey's ETA averages 7 turns
+and the actual one 7-8 (waits out of supply included). Before an army out of reach by land made
+its reinforcements wait instead of diverting at once, 33 and 19 diverted. Not yet measured for win
+rate (the spec's tuning phase).
+
 ## Random events (`events.rs`)
 
 The rules offer an AI player the trigger's events it can do, in trigger order (`player_trigger_data`).

@@ -5,6 +5,7 @@
 //! See `CLAUDE.md` for porting conventions.
 
 pub mod area;
+pub mod army;
 pub mod city;
 pub mod controller;
 pub mod culture;

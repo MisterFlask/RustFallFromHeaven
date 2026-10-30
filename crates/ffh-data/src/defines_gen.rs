@@ -556,6 +556,8 @@ pub struct Defines {
     pub culture_ai_max_hostile_per_target: i32,
     pub culture_memory_decay_turns: i32,
     pub culture_memory_max: i32,
+    pub army_supply_range: i32,
+    pub army_transit_stall_turns: i32,
     pub bbai_skip_bombard_base_stack_ratio: i32,  // not in XML: C++ reads 0
     pub bbai_skip_bombard_best_attack_odds: i32,  // not in XML: C++ reads 0
     pub bbai_skip_bombard_min_stack_ratio: i32,  // not in XML: C++ reads 0
@@ -1117,6 +1119,8 @@ impl Defines {
             culture_ai_max_hostile_per_target: m.int("CULTURE_AI_MAX_HOSTILE_PER_TARGET"),
             culture_memory_decay_turns: m.int("CULTURE_MEMORY_DECAY_TURNS"),
             culture_memory_max: m.int("CULTURE_MEMORY_MAX"),
+            army_supply_range: m.int("ARMY_SUPPLY_RANGE"),
+            army_transit_stall_turns: m.int("ARMY_TRANSIT_STALL_TURNS"),
             bbai_skip_bombard_base_stack_ratio: m.int("BBAI_SKIP_BOMBARD_BASE_STACK_RATIO"),
             bbai_skip_bombard_best_attack_odds: m.int("BBAI_SKIP_BOMBARD_BEST_ATTACK_ODDS"),
             bbai_skip_bombard_min_stack_ratio: m.int("BBAI_SKIP_BOMBARD_MIN_STACK_RATIO"),

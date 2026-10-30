@@ -12,6 +12,7 @@
 //!   [`data`] (the static tables, with [`improvement_help`]), [`text`] (`text`, `ascii`,
 //!   `inspect`); [`help`] writes the help texts (what a tech, a building, ... does).
 
+pub mod armies;
 pub mod city;
 pub mod culture;
 pub mod data;
@@ -367,6 +368,12 @@ pub fn unit_json(v: &Viewer, u: UnitId) -> Json {
         j.set("activity", grp.filter(|&gr| g.groups.contains(gr)).map(|gr| Json::idx(g.groups[gr].activity_type)));
         j.set("transport", unit.transport_unit);
         j.set("summon_turns", (unit.duration > 0).then_some(unit.duration));
+        // This game's armies (docs/ARMIES.md): its army, or the city whose garrison it is in.
+        if g.armies_on() {
+            j.set("army", unit.army);
+            j.set("garrison", g.unit_garrison_city(u));
+            j.set("army_unit", g.unit_is_army_unit(u));
+        }
     }
     j
 }
@@ -423,6 +430,10 @@ pub fn view(v: &Viewer, ctx: &Ctx) -> Json {
         "cities" => cities(v),
         "units" => units(v),
         "groups" => groups(v),
+        // This game's armies (null without them): the human's armies and the units on their
+        // way to garrisons.
+        "armies" => armies::armies(v),
+        "garrison_transit" => if g.armies_on() { armies::garrison_transit(v) } else { Json::Null },
         // C++ `CvPlayer::m_groupCycle`: the order W cycles the waiting groups in
         // (`cycleSelectionGroups`), and whether some group has orders to continue
         // (`hasAutoUnit`: the cycle's wrap then sends AutoMoves).

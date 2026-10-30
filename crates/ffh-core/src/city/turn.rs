@@ -675,7 +675,7 @@ impl Game {
             return;
         }
 
-        let order_data = OrderData { order_type: order, data1, data2, save };
+        let order_data = OrderData { order_type: order, data1, data2, save, dest: None, reinforce_to: 0 };
 
         if append {
             self.cities[c].order_queue.push(order_data);
@@ -713,7 +713,14 @@ impl Game {
         let order = self.cities[c].order_queue[index].clone();
 
         if finish && order.save {
+            let len = self.cities[c].order_queue.len();
             self.city_push_order(c, order.order_type, order.data1, order.data2, true, false, true, false);
+            // (this game's armies: the repeated order keeps its destination)
+            if self.cities[c].order_queue.len() > len {
+                let o = self.cities[c].order_queue.last_mut().expect("pushed");
+                o.dest = order.dest;
+                o.reinforce_to = order.reinforce_to;
+            }
         }
 
         let mut train_unit = None;
@@ -750,19 +757,55 @@ impl Game {
                         self.players[owner].gold += production_gold;
                     }
 
-                    let (x, y) = (self.cities[c].x, self.cities[c].y);
-                    let new_unit = self.player_init_unit(owner, unit, x, y, opt_from_i32(train_unit_ai), None);
+                    // This game's armies (docs/ARMIES.md): the unit goes to its destination,
+                    // in transit unless it is this city's garrison or an army standing here.
+                    let dest = self.city_recruit_dest(c, order.dest, unit);
+                    let in_transit = dest.is_some_and(|to| self.city_send_in_transit(c, unit, opt_from_i32(train_unit_ai), to));
+                    if !in_transit {
+                        let (x, y) = (self.cities[c].x, self.cities[c].y);
+                        let new_unit = self.player_init_unit(owner, unit, x, y, opt_from_i32(train_unit_ai), None);
 
-                    // FfH: Modified by Kael 07/05/2008 (finishMoves, production experience, the
-                    // rally plot mission and automation moved into applyBuildEffects)
-                    self.city_apply_build_effects(c, new_unit);
+                        // FfH: Modified by Kael 07/05/2008 (finishMoves, production experience, the
+                        // rally plot mission and automation moved into applyBuildEffects)
+                        self.city_apply_build_effects(c, new_unit);
 
-                    self.ev_unit_built(c, new_unit);
+                        self.ev_unit_built(c, new_unit);
 
-                    if d.units[unit].domain_type == Some(DomainType::DOMAIN_AIR) && self.units.contains(new_unit) {
-                        let team = self.city_team(c);
-                        if self.plot_count_num_air_units(self.city_plot(c), team) > self.city_air_unit_capacity(c, team) {
-                            self.unit_jump_to_nearest_valid_plot(new_unit); // can destroy unit
+                        if d.units[unit].domain_type == Some(DomainType::DOMAIN_AIR) && self.units.contains(new_unit) {
+                            let team = self.city_team(c);
+                            if self.plot_count_num_air_units(self.city_plot(c), team) > self.city_air_unit_capacity(c, team) {
+                                self.unit_jump_to_nearest_valid_plot(new_unit); // can destroy unit
+                            }
+                        }
+
+                        // An army standing in the city takes the unit at once.
+                        if let Some(crate::army::RecruitDest::Army(a)) = dest {
+                            if self.units.contains(new_unit) {
+                                if let Some(grp) = self.armies.get(a).and_then(|ar| ar.group).filter(|&g| self.groups.contains(g)) {
+                                    if let Some(own) = self.units[new_unit].group {
+                                        self.group_clear_mission_queue(own);
+                                    }
+                                    self.unit_join_group(new_unit, Some(grp), false);
+                                    self.units[new_unit].army = Some(a);
+                                }
+                            }
+                        }
+                    }
+
+                    // "Reinforce to N": the order comes back while the army (with its units on
+                    // their way) is short of N (a repeating order came back already).
+                    if let (Some(crate::army::RecruitDest::Army(a)), true) = (order.dest, order.reinforce_to > 0 && !order.save) {
+                        if self.armies.contains(a) {
+                            let have = self.army_units(a).len() as i32 + self.army_transit_count(a);
+                            if have < order.reinforce_to {
+                                let len = self.cities[c].order_queue.len();
+                                self.city_push_order(c, order.order_type, order.data1, order.data2, false, false, true, false);
+                                if self.cities[c].order_queue.len() > len {
+                                    let o = self.cities[c].order_queue.last_mut().expect("pushed");
+                                    o.dest = order.dest;
+                                    o.reinforce_to = order.reinforce_to;
+                                }
+                            }
                         }
                     }
                 }

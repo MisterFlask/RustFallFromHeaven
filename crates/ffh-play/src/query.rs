@@ -49,6 +49,9 @@ pub enum Query {
     Players,
     /// The Cultural Pressure panel (docs/CULTURE.md): the public cultural channels.
     Culture,
+    /// The Armies screen (docs/ARMIES.md): the human's armies and garrisons, with the units on
+    /// their way to each.
+    Armies,
     /// What can be traded with `with`, both ways (C++ `buildTradeTable`), with denials.
     Trade { with: PlayerId },
     /// Messages from index `since` (`view.log_next` is the next index).
@@ -105,7 +108,7 @@ impl Layer {
 
 /// Every query name (`q`).
 pub const QUERY_NAMES: &[&str] = &[
-    "status", "pending", "view", "map", "plot", "group", "path", "combat", "city", "techs", "civics", "religions", "players", "culture", "trade", "log",
+    "status", "pending", "view", "map", "plot", "group", "path", "combat", "city", "techs", "civics", "religions", "players", "culture", "armies", "trade", "log",
     "speech", "moments", "report", "inspect", "text", "ascii", "data", "setup", "saves",
 ];
 
@@ -177,6 +180,7 @@ impl Query {
             Query::Religions => "religions",
             Query::Players => "players",
             Query::Culture => "culture",
+            Query::Armies => "armies",
             Query::Trade { .. } => "trade",
             Query::Log { .. } => "log",
             Query::Speech { .. } => "speech",
@@ -211,6 +215,7 @@ impl Query {
             "religions" => Query::Religions,
             "players" => Query::Players,
             "culture" => Query::Culture,
+            "armies" => Query::Armies,
             "trade" => Query::Trade { with: j.req("with")? },
             "log" => Query::Log { since: j.get_or("since", 0)? },
             "speech" => Query::Speech {
@@ -345,6 +350,7 @@ pub fn run(g: &Game, ctx: &Ctx, q: &Query) -> Result<Json, QueryErr> {
         Query::Religions => view::player::religions(&v),
         Query::Players => view::player::players(&v),
         Query::Culture => view::culture::culture(&v),
+        Query::Armies => view::armies::screen(&v),
         Query::Trade { with } => view::diplo::trade(&v, *with)?,
         Query::Log { since } => match ctx.messages {
             Some(m) => m.since_json(*since),
@@ -400,6 +406,7 @@ mod tests {
             Query::Religions,
             Query::Players,
             Query::Culture,
+            Query::Armies,
             Query::Trade { with: PlayerId(2) },
             Query::Log { since: 10 },
             Query::Speech { with: PlayerId(1), comment: None, salt: 0 },

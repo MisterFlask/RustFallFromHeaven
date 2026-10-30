@@ -48,7 +48,7 @@ persist_newtype!(
 
 persist_newtype!(
     PlayerId, TeamId, UnitId, CityId, GroupId, AreaId, PlotGroupId, DealId, PlotIdx, TriggeredId, VoteId,
-    PlayerVote,
+    PlayerVote, ArmyId,
 );
 
 // ---- this game's own rules (docs/CULTURE.md) ----
@@ -98,13 +98,38 @@ impl Persist for CultureEffect {
 }
 
 use crate::culture::{CultureMark, CultureOrder};
+use crate::army::{Army, RecruitDest, Transit};
+persist_struct!(Army { id, owner, name, group, target_size, commander, disband_to, formed_turn });
+persist_struct!(Transit { unit_type, unit_ai, from_city, from_plot, dest, progress, eta, stalled, left_turn });
+
+impl Persist for RecruitDest {
+    fn write(&self, w: &mut Writer) {
+        match self {
+            RecruitDest::Garrison(c) => {
+                0u8.write(w);
+                c.write(w);
+            }
+            RecruitDest::Army(a) => {
+                1u8.write(w);
+                a.write(w);
+            }
+        }
+    }
+    fn read(r: &mut Reader<'_>) -> Result<Self, LoadError> {
+        match u8::read(r)? {
+            0 => Ok(RecruitDest::Garrison(CityId::read(r)?)),
+            1 => Ok(RecruitDest::Army(ArmyId::read(r)?)),
+            t => Err(LoadError::Corrupt(format!("recruit destination tag {t}"))),
+        }
+    }
+}
 persist_struct!(CultureOrder { action, target, religion, repeat, progress, stalled, started_turn });
 persist_struct!(CultureMark { effect, from, amount, turns });
 
 // ---- CvStructs.h ----
 
 persist_struct!(XYCoords { x, y });
-persist_struct!(OrderData { order_type, data1, data2, save });
+persist_struct!(OrderData { order_type, data1, data2, save, dest, reinforce_to });
 persist_struct!(MissionData { mission_type, data1, data2, flags, push_turn });
 persist_struct!(TradeData { item_type, data, offering, hidden });
 persist_struct!(EventTriggeredData {
@@ -212,7 +237,7 @@ persist_struct!(Unit {
     terrain_double_move_count, feature_double_move_count, extra_terrain_attack_percent,
     extra_terrain_defense_percent, extra_feature_attack_percent, extra_feature_defense_percent,
     extra_unit_combat_modifier, ai_birthmark, ai_type, ai_groupflag, ai_origin_x, ai_origin_y,
-    ai_suicide_summon, ai_allowed_perm_defense, ai_allowed_patrol, ai_allowed_explore,
+    ai_suicide_summon, ai_allowed_perm_defense, ai_allowed_patrol, ai_allowed_explore, army,
 });
 
 persist_struct!(City {
@@ -257,7 +282,7 @@ persist_struct!(City {
     ai_emphasize_avoid_growth_count, ai_emphasize_great_people_count, ai_emphasize_yield_count,
     ai_emphasize_commerce_count, ai_emphasize_avoid_angry_citizens_count,
     ai_emphasize_avoid_unhealthy_citizens_count, culture_queue, culture_diverted, culture_marks,
-    culture_revolt_turn,
+    culture_revolt_turn, recruit_default,
 });
 
 persist_struct!(Player {
@@ -312,7 +337,7 @@ persist_struct!(Player {
     score_history, economy_history, industry_history, agriculture_history, power_history,
     culture_history, espionage_history, ai_civic_timer, ai_religion_timer, ai_num_train_ai_units,
     ai_num_ai_units, ai_peacetime_trade_value, ai_peacetime_grant_value, ai_gold_traded_to,
-    ai_attitude_extra, ai_first_contact, ai_memory_count, culture_memory,
+    ai_attitude_extra, ai_first_contact, ai_memory_count, culture_memory, armies, army_count, transit,
 });
 
 persist_struct!(Team {

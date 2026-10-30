@@ -18,6 +18,7 @@ use ffh_core::structs::*;
 use ffh_data::*;
 
 pub mod advanced_start;
+pub mod armies;
 pub mod automation;
 pub mod campaign;
 pub mod casters;
@@ -154,6 +155,7 @@ impl Controller for Ai {
             civs::turn(self, g, &mut v); // civ-mechanics
             traits::turn(g, &v); // trait-play
             culture::turn(g, p); // cultural actions (docs/CULTURE.md)
+            armies::turn(g, p); // armies' reinforcements (docs/ARMIES.md)
         }
         if !v.barbarian {
             campaign::plan(g, &mut v);

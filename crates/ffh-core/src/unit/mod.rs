@@ -441,6 +441,9 @@ pub struct Unit {
     pub ai_allowed_patrol: bool,
     /// C++ `CvUnitAI::m_bAllowedExplore` (`changeAllowedExplore`, exposed to Python).
     pub ai_allowed_explore: bool,
+    // ---- This game's own rules (not FFH2's) ----
+    /// The army it is in (docs/ARMIES.md); `None` for a unit in a garrison or outside armies.
+    pub army: Option<ArmyId>,
 }
 
 impl Unit {
@@ -611,6 +614,7 @@ impl Unit {
             ai_allowed_perm_defense: true,
             ai_allowed_patrol: true,
             ai_allowed_explore: true,
+            army: None,
         }
     }
 }

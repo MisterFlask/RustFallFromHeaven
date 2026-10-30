@@ -33,6 +33,12 @@ pub struct OrderData {
     pub data2: i32,
     /// C++ `bSave`: keep the order in the queue after completion (repeat).
     pub save: bool,
+    /// This game's armies (docs/ARMIES.md): where a trained land combat unit goes (`None`: the
+    /// city's default, `City::recruit_default`, else its own garrison).
+    pub dest: Option<crate::army::RecruitDest>,
+    /// "Reinforce to N": with `dest` an army, the order repeats until the army (and its units on
+    /// their way) counts N; 0 = no such order.
+    pub reinforce_to: i32,
 }
 
 /// C++ `MissionData`: an entry of a selection group's mission queue.

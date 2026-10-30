@@ -80,3 +80,8 @@ entity_id!(
     /// C++ `VoteSelectionData::iId` / `VoteTriggeredData::iId`.
     VoteId(u32)
 );
+
+entity_id!(
+    /// This game's armies (`Game::armies`, docs/ARMIES.md).
+    ArmyId(u32)
+);

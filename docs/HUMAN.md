@@ -156,6 +156,7 @@ XML (each button shows its key), and the global keys are Civ4's controls
 | `Shift+P` | pillage |
 | `Del` / `Backspace` | delete the selected units (asks first) / cancel their orders |
 | `F1` `F2` `F3` `F4` `F6` `F7` | cities, finances (the sliders), civics, diplomacy, the tech tree, religion |
+| `F5` | armies (this game's armies: docs/ARMIES.md) |
 | `F8` | cultural pressure (this game's cultural actions: docs/CULTURE.md) |
 | `Ctrl+S` / `Ctrl+L` | save / load |
 | `Ctrl+1` `Ctrl+2` `Ctrl+3`, `?` | ffh-play's own: the terrain, political and yield layers; the keys list |
@@ -203,7 +204,12 @@ Upgrades). "Promote…" lists the promotions with their help, "details" by Spell
 spell with its help and whether it can be cast now. Units in a transport are listed under it.
 With the art, the panel's head shows the lead unit's figure in its owner's colours, each row its
 combat class, strength, health bar, moves and level, the lead unit's promotions are seals under
-the list (and each promotion button carries its seal).
+the list (and each promotion button carries its seal). With armies on (this game's own system,
+docs/ARMIES.md) each row shows the unit's army (red when out of supply) or "garrison", a whole
+army selected has a line with its size, target, reinforcements on the way and supply, and an
+**Army** section lists what the selection can do: form a new army, split into a new army, join or
+merge into an army on the plot, join the city's garrison, disband (march to the nearest city's
+garrison), upgrade all (the units, the most experienced first, with the total price).
 When a group is done, the next one waiting for orders on the plot it left, then on its plot,
 then the next in Civ4's group cycle is selected, as in Civ4 (not with the player option "No
 unit cycling", Tools → Options). As in Civ4, the cycle (`Tab`, `Enter`, the next group after an
@@ -247,7 +253,10 @@ rate and what the channel took last turn, the cultural queue (progress, why a ch
 repeat, ✕ to cancel), the hostile channels aimed at the city, its festivals, fairs and unrest, and
 "Start a cultural action": each action's targets in reach with the predicted effectiveness and
 effect (hostile ones marked; click queues, Shift puts first, Alt repeats) and the ones not
-possible with the reason.
+possible with the reason. With armies on, each queued land combat unit has a destination selector
+(the city's default, its garrison, another city's garrison, an army with its size and whether it
+is in supply) and, for an army, "reinforce to N" (the order comes back until the army, with the
+units on their way, counts N); under the queue, the city's default destination and its garrison.
 With the isometric map the screen is Civ4's city view: the map glides to the city at the largest
 zoom that shows its radius, veils what lies outside it and draws the radius in gilt, each plot
 with its yields and the worked ones with a citizen; click a plot there to work it or stop. The
@@ -265,7 +274,10 @@ them, your cities with each, and "Convert" (with the anarchy). **Cultural pressu
 menu's Culture; with cultural actions on): every cultural channel aimed at your cities, every one
 you run, the others you see (all channels are public to civilizations that have met the caster),
 and what other leaders remember of your actions; a city with hostile channels aimed at it has a red
-"!" on its banner. **Finances** (`F2`, or click the
+"!" on its banner. **Armies** (`F5`, the menu's Armies; with armies on): every army with its name
+(type to rename), units, place (click: select it on the map), supply, target size, "Upgrade all",
+"Disband", and the units on their way (where from, how long, or why they wait); then each city's
+garrison with the units on their way to it. **Finances** (`F2`, or click the
 commerce split in the top bar): each commerce's share with `−`/`+` by Civ4's step (only the ones
 you may change; gold takes the rest), and the gold per turn by its parts, as in the gold's tooltip.
 **Diplomacy** (`F4`): every player you met, by their leader's portrait (war or peace, open
@@ -559,7 +571,11 @@ loop {
 `do_task`, `culture_push`, `culture_pop`, `culture_repeat` (this game's cultural queue:
 `{"c": "culture_push", "city": .., "action": "CULTURALACTION_FESTIVAL", "target": <city id>,
 "religion": .., "repeat": false, "first": false}`, checked by the rules' `culture_check`;
-docs/CULTURE.md), `research`, `update_civics`, `percent_change`, `convert`, `declare_war`,
+docs/CULTURE.md), `army_form {units}`, `army_split {units}`, `army_join {units, army}`,
+`army_garrison {units}`, `army_rename {army, name}`, `army_disband {army}`, `army_upgrade {army}`,
+`army_target {army, size}`, `recruit_dest {city, index, dest, reinforce_to}` (this game's armies:
+`dest` is `{"garrison": city}`, `{"army": id}` or null for the city's default; `index` -1 sets the
+city's default; docs/ARMIES.md), `research`, `update_civics`, `percent_change`, `convert`, `declare_war`,
 `propose_deal`, `event`, `vote`, `set_option`, `auto_moves`, `end_turn`, `autoplay`. Each is
 the port of what Civ4 sends for that input; design §4.5 and the "As built" notes of P1 and P3 in
 §7 list the rules calls and checks. The `group` query lists the actions of a selection with the
@@ -601,13 +617,14 @@ Errors: `invalid`, `not_owner`, `gone`, `busy`.
 |---|---|
 | `status` | phase (`human`, `running`, `decision`, `over`; over the transports also `stuck`, `no_game`, `crashed` with the report), turn, year, you, the active players, the open decision, the winner, `view_version` (changes whenever the view does: a command, a decision opening or closing, debug reveal), `ai_auto_play` (the AI autoplay's turns left, 0 when off; observed, the turns left to play), `observe` (an observed game: `human` is the player the view follows, phase `human` means stopped at a turn boundary), `build` (the commit the binary was built from), and over the transports `game {dir, journal, autosave}` |
 | `pending` | open events (with each option's effects), votes, research needed, idle cities, promotions, ready groups, idle AI-controlled groups |
-| `view` | `me` (gold and rate, research, sliders, civics, score, Armageddon counter, mana, Stasis, the player options, AI autoplay), the players you met, the cities you revealed, the units you see, your groups (`ready`: some unit can move, as `pending.ready_groups`; `selectable`: every unit can, what Civ4's cycle selects), `group_cycle` (your groups in Civ4's cycle order) and `has_auto_unit`, `pending`, `log_next` |
+| `view` | `me` (gold and rate, research, sliders, civics, score, Armageddon counter, mana, Stasis, the player options, AI autoplay), the players you met, the cities you revealed, the units you see, your groups (`ready`: some unit can move, as `pending.ready_groups`; `selectable`: every unit can, what Civ4's cycle selects), `group_cycle` (your groups in Civ4's cycle order) and `has_auto_unit`, `pending`, `log_next`; with armies (null without), `armies` (each: `id`, `name`, `group`, `units`, `x`, `y`, `in_supply`, `target_size`, `transit` with each unit's `from`, `to`, `turns_left`, `stalled`, `disband_to`, and `upgrades` with their `upgrade_price`) and `garrison_transit`, and each unit's `army`, `garrison` and `army_unit` |
 | `map` | flat arrays `y * w + x`: `vis` (0 unrevealed, 1 fogged, 2 visible), `plot_type`, `terrain`, `feature`, `bonus`, `improvement`, `route`, `owner`, `river` (bit 0 river on the south edge, bit 1 on the east edge, bits 2-4 north/south flow + 1, bits 5-7 west/east flow + 1), `city`, `yield` (`food \| production << 8 \| commerce << 16`, visible plots only), `map_rev`, and `epoch` and `rev`. `map {since: R, epoch: E}` answers only the tiles changed since revision `R` (`full: false`, `tiles` = their indices, each array the values of those tiles), or the full map (`full: true`) when `E` is not the current epoch, `R` is unknown or much of the map changed |
 | `plot {x,y}` | a plot as you know it (`min_level` when units below a level cannot enter); while visible also yields, defence, culture and the units (under debug reveal each with `ai_type`, the AI's role, and `missions`, its group's orders) |
-| `group {units}` | the units in detail and the actions: `mission`, `target` (an interface mode, `mode`: go-to, route-to for workers, range attack, the air modes; needs a plot), `command`, `load`, `spell`, `promotion`, `upgrade`, each `enabled` or not, each with its `cmd` |
+| `group {units}` | the units in detail and the actions: `mission`, `target` (an interface mode, `mode`: go-to, route-to for workers, range attack, the air modes; needs a plot), `command`, `load`, `spell`, `promotion`, `upgrade`, `army` (this game's armies: `army` the action, `label`, `help`), each `enabled` or not, each with its `cmd` |
 | `path {units,x,y}` | the path preview: nodes with the turn of arrival and moves left, total turns, a war it would declare, whether it ends in an attack |
 | `combat {units,x,y}` | the attack preview: attacker, defender, odds of winning and of retreating (per mille), strengths, the modifiers of both sides |
-| `city {city}` | the city screen of one of your cities: plots (with `can_work`), specialists (with `plus` and `minus`: what `do_task TASK_CHANGE_SPECIALIST` accepts now), yields, happiness, health, buildings, hurry, emphasis, queue, the buildable list with cost and turns; `cultural` (null without cultural actions): the cultural queue, each action's targets in reach (`ok` with `effect`, `hostile`, `magnitude`, `effect_turns`, else `why`), the hostile channels aimed at it (`pressure`), its `marks` |
+| `city {city}` | the city screen of one of your cities: plots (with `can_work`), specialists (with `plus` and `minus`: what `do_task TASK_CHANGE_SPECIALIST` accepts now), yields, happiness, health, buildings, hurry, emphasis, queue, the buildable list with cost and turns; `cultural` (null without cultural actions): the cultural queue, each action's targets in reach (`ok` with `effect`, `hostile`, `magnitude`, `effect_turns`, else `why`), the hostile channels aimed at it (`pressure`), its `marks`; `recruit` (null without armies): the city's default destination, the destinations it may choose, its garrison; with armies, each queue entry of a land combat unit has `dest`, `dest_name`, `reinforce_to` |
+| `armies` | the Armies screen: `on`, the `armies` (as the view's), each city's garrison (`units`) with the units on their way to it (`transit`), `supply_range`, `stall_turns` |
 | `culture` | the Cultural Pressure panel: `on`, the channels you see `incoming` (aimed at your cities), `ours`, `others`, each with caster, action, target (null if unseen), progress, `paused`, `hostile`; `memories`: what met leaders remember of your cultural actions |
 | `techs`, `civics`, `religions`, `players` | the tech tree (prerequisites, depth, turns; each tech's `help` and, unless you have it, `unlocks`: the units, buildings, builds, civics and religions of its help as type indices, which the research chooser shows as icons), civics (availability, upkeep, anarchy; `civics {with: [civic, ..]}` adds `proposed`: the set a revolution to those civics makes, whether `update_civics` would be applied, its anarchy and upkeep), religions, the players you met with your deals |
 | `trade {with}` | the trade tables both ways (see Deals) |

@@ -815,6 +815,8 @@ function actionLabel(a) {
       return dname("SpellType", a.spell);
     case "promotion":
       return dname("PromotionType", a.promotion);
+    case "army":
+      return a.label;
     case "upgrade": {
       const u = info("UnitType", a.unit);
       return `Upgrade: ${dname("UnitType", a.unit)} (${a.price} gold${u ? `; ${u.combat}/${u.combat_defense} strength, ${u.moves} moves` : ""})`;
@@ -848,6 +850,7 @@ const SECTIONS = [
   ["Great person", (a) => GREAT_PERSON.includes(typeOf(a))],
   ["Religion", (a) => RELIGION.includes(typeOf(a))],
   ["Cargo", (a) => a.kind === "load" || CARGO.includes(typeOf(a))],
+  ["Army", (a) => a.kind === "army"],
   ["Automation", (a) => a.kind === "automate"],
   ["Spells", (a) => a.kind === "spell"],
   ["Promotions", (a) => a.kind === "promotion"],
@@ -870,6 +873,7 @@ function helpOf(a) {
   if (a.kind === "spell") return effectsOf("SpellType", a.spell) || a.help || "";
   if (a.kind === "promotion") return effectsOf("PromotionType", a.promotion);
   if (a.kind === "upgrade") return effectsOf("UnitType", a.unit);
+  if (a.kind === "army") return a.help ?? "";
   if (a.kind === "mission" && tname("MissionType", a.mission) === "MISSION_BUILD") return info("BuildType", a.data1)?.help ?? "";
   if (a.kind === "mission") return info("MissionType", a.mission)?.help ?? "";
   if (a.kind === "command") return info("CommandType", a.command)?.help ?? "";
@@ -877,19 +881,22 @@ function helpOf(a) {
 }
 
 const actionType = (a) =>
-  a.kind === "mission" ? tname("MissionType", a.mission) : a.kind === "target" ? a.mode : a.kind === "command" || a.kind === "load" ? tname("CommandType", a.command) : a.kind === "automate" ? tname("AutomateType", a.automate) : a.kind === "spell" ? tname("SpellType", a.spell) : a.kind === "promotion" ? tname("PromotionType", a.promotion) : a.kind === "upgrade" ? tname("UnitType", a.unit) : "";
+  a.kind === "mission" ? tname("MissionType", a.mission) : a.kind === "target" ? a.mode : a.kind === "command" || a.kind === "load" ? tname("CommandType", a.command) : a.kind === "automate" ? tname("AutomateType", a.automate) : a.kind === "spell" ? tname("SpellType", a.spell) : a.kind === "promotion" ? tname("PromotionType", a.promotion) : a.kind === "upgrade" ? tname("UnitType", a.unit) : a.kind === "army" ? a.army : "";
 
 /** The kinds the isometric card lists as labelled buttons rather than icon tiles (their icons
- *  would all look alike). */
-const LISTED = ["spell", "promotion", "upgrade"];
+ *  would all look alike), with the icon each label carries. */
+const LISTED = ["spell", "promotion", "upgrade", "army"];
+const ARMY_ICONS = { form: "units", split: "units", join: "units", garrison: "defense", disband: "disband", upgrade: "upgrade" };
+const listedIcon = (a) => (a.kind === "spell" ? "spell" : a.kind === "promotion" ? "promote" : a.kind === "army" ? (ARMY_ICONS[a.army] ?? "units") : "upgrade");
 
-/** Whether the card lists action `a` as a labelled button: spells, promotions and upgrades, and on
+/** Whether the card lists action `a` as a labelled button: spells, promotions, upgrades and army
+ *  actions, and on
  *  a touch screen every order (a finger cannot point at a tile to read what it does). */
 const listedAction = (a) => LISTED.includes(a.kind) || coarse();
 
 function actionButton(a) {
   const key = hotkeyOf(a);
-  const help = a.kind === "spell" || a.kind === "promotion" || a.kind === "upgrade" ? helpOf(a) : "";
+  const help = LISTED.includes(a.kind) ? helpOf(a) : "";
   const extra = a.turns !== undefined ? ` (${turns(a.turns)})` : "";
   if (isoSkin()) return isoAction(a, key, extra);
   const btn = h(
@@ -937,7 +944,7 @@ function isoAction(a, key, extra) {
       onmouseleave: () => describe(null),
       onblur: () => describe(null),
     },
-    !listed ? actionIcon(a, 40) : LISTED.includes(a.kind) ? isoIcon(a.kind === "spell" ? "spell" : a.kind === "promotion" ? "promote" : "upgrade", { px: 16 }) : actionIcon(a, 32),
+    !listed ? actionIcon(a, 40) : LISTED.includes(a.kind) ? isoIcon(listedIcon(a), { px: 16 }) : actionIcon(a, 32),
     listed ? h("span", label) : null,
     !listed && key ? h("kbd", key) : null,
   );
@@ -977,6 +984,39 @@ function automationBadge(u) {
   return grp.ai_control ? h("span.badge.auto", { title: "AI-controlled (FfH): the AI moves this unit" }, "AI control") : null;
 }
 
+/** This game's armies (docs/ARMIES.md): the army in the view's `armies`, or null. */
+export function armyById(id) {
+  return id === null || id === undefined ? null : (S.view?.armies ?? []).find((a) => a.id === id) ?? null;
+}
+
+/** The unit's army (its name; out of supply in warning colours) or "garrison"; null without
+ *  armies or for a unit outside them (heroes, mages, recon units, summons, ships, workers). */
+function armyBadge(u) {
+  const a = armyById(u.army);
+  if (a) return h(`span.badge.army${a.in_supply ? "" : ".warn"}`, { title: `${a.name}${a.in_supply ? "" : ": out of supply (its reinforcements wait)"}` }, a.name);
+  if (u.garrison !== null && u.garrison !== undefined) return h("span.badge.garrison", { title: `In the garrison of ${S.cities.get(u.garrison)?.name ?? "the city"}` }, "garrison");
+  return null;
+}
+
+/** The selection's army in one line: its size (and target), its reinforcements on the way, its
+ *  supply; the Armies screen [F5] has the rest. Null unless every selected unit is in one army. */
+function armyLine() {
+  const ids = (S.sel?.units ?? []).map((id) => S.units.get(id)?.army);
+  const a = ids.length && ids.every((x) => x === ids[0]) ? armyById(ids[0]) : null;
+  if (!a) return null;
+  const n = a.units.length;
+  return h(
+    "div.army-line",
+    h("b", a.name),
+    h("span.dim", ` · ${n} unit${n === 1 ? "" : "s"}${a.target_size ? ` of ${a.target_size}` : ""}`),
+    a.transit.length ? h("span.dim", ` · ${a.transit.length} on the way`) : null,
+    a.in_supply ? null : h("span.warn", { title: "More than the supply range from your network of cities: its reinforcements wait" }, " · out of supply"),
+    a.disband_to ? h("span.dim", ` · disbanding to ${a.disband_to}`) : null,
+    " ",
+    h("button.link.small", { onclick: () => emit("open-screen", "armies"), title: "The Armies screen [F5]" }, "armies"),
+  );
+}
+
 function unitRow(u, selected) {
   const busy = u.activity !== null && u.activity !== undefined && tname("ActivityType", u.activity) !== "ACTIVITY_AWAKE";
   const row = h(
@@ -1002,6 +1042,7 @@ function unitRow(u, selected) {
       u.name ?? dname("UnitType", u.type),
       u.promo_ready ? h("span.badge.promo", "promote") : null,
       automationBadge(u),
+      armyBadge(u),
       u.summon_turns ? h("span.badge", { title: "A summoned unit: turns left" }, `${u.summon_turns}t`) : null,
       u.cargo?.length ? h("span.badge", { title: "Units on board" }, `${u.cargo.length} aboard`) : null,
     ),
@@ -1088,6 +1129,8 @@ export function renderPanel() {
     tools.append(h("button", { onclick: () => emit("open-city", city.id), title: "Open the city (or double-click it)" }, `Open ${city.name}`));
   }
   const status = [];
+  const army = armyLine();
+  if (army) status.push(army);
   if (grp?.missions?.length) status.push(h("div.dim", `Orders: ${grp.missions.map((m) => dname("MissionType", m.m)).join(", ")}`));
   if (grp && !grp.ready) status.push(h("div.dim", grp.busy ? "Busy" : "Done for this turn"));
   const actions = [];

@@ -110,7 +110,21 @@ side)
   (unhappiness abroad). Effects abroad scale with the caster's share of the target's culture against
   the owner's. Every channel is public to the civilizations that have met the caster; completed
   actions leave a memory of hostility or friendship that the AI's attitude reads. Option off (the
-  default outside the browser's new-game screen), nothing changes. Save format 4.
+  default outside the browser's new-game screen), nothing changes. Save format 4. The escalation
+  actions (save format 5): Siphon Knowledge (research toward a tech the target's owner knows),
+  Foment Revolt (a chance of disorder for 2 turns and 30% damage to the garrison, never killing)
+  and Flip City (after a recent revolt or in disorder, never a capital: a chance that the city
+  changes hands as in a culture flip); the garrison resists unrest, revolt and flip.
+- **Armies** (`GAMEOPTION_ARMIES`, docs/ARMIES.md): land combat units (not mages, recon units,
+  heroes or summons) serve in named armies, kept one selection group each, or in a city's
+  garrison. A trained land combat unit goes to its order's destination (the city's garrison by
+  default, another city's garrison, or an army): anywhere but its own garrison it travels off the
+  map (paying upkeep, counting for unit class limits) and appears there when its journey is done,
+  advancing only while its army is in supply (within 3 plots of the owner's trade network); it
+  is never lost (a gone destination or a long wait sends it to the nearest garrison). Form,
+  split, join and merge, garrison, rename, disband (march to the nearest garrison), upgrade all,
+  target size, "Reinforce to N". Option off (the default outside the browser's new-game screen),
+  nothing changes. Save format 6.
 
 **Container order and path finding**
 

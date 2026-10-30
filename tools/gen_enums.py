@@ -111,6 +111,7 @@ WANT = {
 EXTRA_MEMBERS = {
     "GameOptionTypes": [
         "GAMEOPTION_CULTURE_ACTIONS",  # docs/CULTURE.md
+        "GAMEOPTION_ARMIES",  # docs/ARMIES.md
     ],
 }
 

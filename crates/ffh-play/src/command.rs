@@ -43,6 +43,27 @@ pub enum Command {
     CulturePop { city: CityId, index: i32 },
     /// Set the repeat flag of order `index` of the cultural queue.
     CultureRepeat { city: CityId, index: i32, repeat: bool },
+    /// This game's armies (docs/ARMIES.md): form a new army of the units (on one plot).
+    ArmyForm { units: Vec<UnitId> },
+    /// Split the units off their army into a new one.
+    ArmySplit { units: Vec<UnitId> },
+    /// The units (army units on one plot, from armies or a garrison) join army `army` there; a
+    /// whole army joining another is a merge.
+    ArmyJoin { units: Vec<UnitId>, army: ArmyId },
+    /// The units (in one of the human's cities) join its garrison.
+    ArmyGarrison { units: Vec<UnitId> },
+    ArmyRename { army: ArmyId, name: String },
+    /// The army's units join the garrison of the nearest city (they march there).
+    ArmyDisband { army: ArmyId },
+    /// Upgrade the army's units, the most experienced first, while the gold lasts.
+    ArmyUpgrade { army: ArmyId },
+    /// The size the army is to be kept at (0: none).
+    ArmyTarget { army: ArmyId, size: i32 },
+    /// Where city `city`'s trained land combat units go: production order `index`'s, or the
+    /// city's default (`index` -1); `dest` `None` = the city's default (for an order) or its own
+    /// garrison (for the city). `reinforce_to` > 0 with an army: repeat the order until the army
+    /// counts that many.
+    RecruitDest { city: CityId, index: i32, dest: Option<ffh_core::army::RecruitDest>, reinforce_to: i32 },
     Research { tech: Option<TechType>, shift: bool },
     /// Merged over the current civics.
     UpdateCivics { civics: Vec<CivicType> },
@@ -181,6 +202,15 @@ pub const COMMAND_NAMES: &[&str] = &[
     "culture_push",
     "culture_pop",
     "culture_repeat",
+    "army_form",
+    "army_split",
+    "army_join",
+    "army_garrison",
+    "army_rename",
+    "army_disband",
+    "army_upgrade",
+    "army_target",
+    "recruit_dest",
     "research",
     "update_civics",
     "percent_change",
@@ -211,6 +241,15 @@ pub const COMMAND_FIELDS: &[(&str, &[&str])] = &[
     ("culture_push", &["city", "action", "target", "religion", "repeat", "first"]),
     ("culture_pop", &["city", "index"]),
     ("culture_repeat", &["city", "index", "repeat"]),
+    ("army_form", &["units"]),
+    ("army_split", &["units"]),
+    ("army_join", &["units", "army"]),
+    ("army_garrison", &["units"]),
+    ("army_rename", &["army", "name"]),
+    ("army_disband", &["army"]),
+    ("army_upgrade", &["army"]),
+    ("army_target", &["army", "size"]),
+    ("recruit_dest", &["city", "index", "dest", "reinforce_to"]),
     ("research", &["tech", "shift"]),
     ("update_civics", &["civics"]),
     ("percent_change", &["commerce", "change"]),
@@ -274,6 +313,33 @@ fn order_data(d: &GameData, j: &Json, o: OrderType) -> Result<i32, FieldError> {
     }
 }
 
+/// `{"garrison": city}`, `{"army": id}` or null (this game's armies).
+pub fn recruit_dest_json(dest: Option<ffh_core::army::RecruitDest>) -> Json {
+    use ffh_core::army::RecruitDest;
+    match dest {
+        None => Json::Null,
+        Some(RecruitDest::Garrison(c)) => crate::jobj! { "garrison" => c },
+        Some(RecruitDest::Army(a)) => crate::jobj! { "army" => a },
+    }
+}
+
+/// The `dest` field of `recruit_dest` ([`recruit_dest_json`]'s form).
+fn recruit_dest_field(j: &Json) -> Result<Option<ffh_core::army::RecruitDest>, FieldError> {
+    use ffh_core::army::RecruitDest;
+    match j.opt_value("dest")? {
+        None | Some(Json::Null) => Ok(None),
+        Some(v) => {
+            if let Some(c) = v.opt::<CityId>("garrison")? {
+                Ok(Some(RecruitDest::Garrison(c)))
+            } else if let Some(a) = v.opt::<ArmyId>("army")? {
+                Ok(Some(RecruitDest::Army(a)))
+            } else {
+                Err(FieldError::wrong("dest", "{\"garrison\": city} or {\"army\": id} or null", v))
+            }
+        }
+    }
+}
+
 fn task_data1(d: &GameData, j: &Json, t: TaskType) -> Result<i32, FieldError> {
     match t {
         TaskType::TASK_HURRY => typed_data::<HurryType>(d, j, "data1"),
@@ -300,6 +366,15 @@ impl Command {
             Command::CulturePush { .. } => "culture_push",
             Command::CulturePop { .. } => "culture_pop",
             Command::CultureRepeat { .. } => "culture_repeat",
+            Command::ArmyForm { .. } => "army_form",
+            Command::ArmySplit { .. } => "army_split",
+            Command::ArmyJoin { .. } => "army_join",
+            Command::ArmyGarrison { .. } => "army_garrison",
+            Command::ArmyRename { .. } => "army_rename",
+            Command::ArmyDisband { .. } => "army_disband",
+            Command::ArmyUpgrade { .. } => "army_upgrade",
+            Command::ArmyTarget { .. } => "army_target",
+            Command::RecruitDest { .. } => "recruit_dest",
             Command::Research { .. } => "research",
             Command::UpdateCivics { .. } => "update_civics",
             Command::PercentChange { .. } => "percent_change",
@@ -385,6 +460,20 @@ impl Command {
             },
             "culture_pop" => Command::CulturePop { city: j.req("city")?, index: j.req("index")? },
             "culture_repeat" => Command::CultureRepeat { city: j.req("city")?, index: j.req("index")?, repeat: j.req("repeat")? },
+            "army_form" => Command::ArmyForm { units: j.req("units")? },
+            "army_split" => Command::ArmySplit { units: j.req("units")? },
+            "army_join" => Command::ArmyJoin { units: j.req("units")?, army: j.req("army")? },
+            "army_garrison" => Command::ArmyGarrison { units: j.req("units")? },
+            "army_rename" => Command::ArmyRename { army: j.req("army")?, name: j.req("name")? },
+            "army_disband" => Command::ArmyDisband { army: j.req("army")? },
+            "army_upgrade" => Command::ArmyUpgrade { army: j.req("army")? },
+            "army_target" => Command::ArmyTarget { army: j.req("army")?, size: j.req("size")? },
+            "recruit_dest" => Command::RecruitDest {
+                city: j.req("city")?,
+                index: j.get_or("index", -1)?,
+                dest: recruit_dest_field(j)?,
+                reinforce_to: j.get_or("reinforce_to", 0)?,
+            },
             "research" => Command::Research { tech: names::opt_field(d, j, "tech")?, shift: flag("shift")? },
             "update_civics" => Command::UpdateCivics { civics: names::list_field(d, j, "civics")? },
             "percent_change" => Command::PercentChange { commerce: names::field(d, j, "commerce")?, change: j.req("change")? },
@@ -461,6 +550,14 @@ impl Command {
                 .with("first", *first),
             Command::CulturePop { city, index } => j.with("city", *city).with("index", *index),
             Command::CultureRepeat { city, index, repeat } => j.with("city", *city).with("index", *index).with("repeat", *repeat),
+            Command::ArmyForm { units } | Command::ArmySplit { units } | Command::ArmyGarrison { units } => j.with("units", ids(units)),
+            Command::ArmyJoin { units, army } => j.with("units", ids(units)).with("army", *army),
+            Command::ArmyRename { army, name } => j.with("army", *army).with("name", name.as_str()),
+            Command::ArmyDisband { army } | Command::ArmyUpgrade { army } => j.with("army", *army),
+            Command::ArmyTarget { army, size } => j.with("army", *army).with("size", *size),
+            Command::RecruitDest { city, index, dest, reinforce_to } => {
+                j.with("city", *city).with("index", *index).with("dest", recruit_dest_json(*dest)).with("reinforce_to", *reinforce_to)
+            }
             Command::Research { tech, shift } => j.with("tech", Json::opt_idx(*tech)).with("shift", *shift),
             Command::UpdateCivics { civics } => j.with("civics", Json::Arr(civics.iter().map(|&c| Json::idx(c)).collect())),
             Command::PercentChange { commerce, change } => j.with("commerce", Json::idx(*commerce)).with("change", *change),
@@ -582,6 +679,8 @@ pub enum Action {
     CulturePush { city: CityId, action: CulturalActionType, target: CityId, religion: Option<ReligionType>, repeat: bool, first: bool },
     CulturePop { city: CityId, index: usize },
     CultureRepeat { city: CityId, index: usize, repeat: bool },
+    /// An army command, checked by the rules call itself (they change nothing when they refuse).
+    Army(Command),
     Research { tech: Option<TechType>, shift: bool },
     Revolution { civics: IdxVec<CivicOptionType, Option<CivicType>> },
     PercentChange { commerce: CommerceType, change: i32 },
@@ -621,6 +720,40 @@ fn city_of(g: &Game, h: PlayerId, c: CityId) -> Result<(), CmdErr> {
         Some(city) if city.owner != h => Err(CmdErr::NotOwner),
         Some(_) => Ok(()),
     }
+}
+
+/// An army of the human's.
+fn army_of(g: &Game, h: PlayerId, a: ArmyId) -> Result<(), CmdErr> {
+    match g.armies.get(a) {
+        None => Err(CmdErr::Gone),
+        Some(army) if army.owner != h => Err(CmdErr::NotOwner),
+        Some(_) => Ok(()),
+    }
+}
+
+/// Applies an army command (the rules check it too; a refusal changes nothing).
+fn apply_army(g: &mut Game, h: PlayerId, c: &Command) -> Result<(), CmdErr> {
+    let r: Result<(), &'static str> = match c {
+        Command::ArmyForm { units } => g.army_form(h, units).map(|_| ()),
+        Command::ArmySplit { units } => g.army_split(h, units).map(|_| ()),
+        Command::ArmyJoin { units, army } => g.army_join(h, units, *army),
+        Command::ArmyGarrison { units } => g.army_to_garrison(h, units),
+        Command::ArmyRename { army, name } => g.army_rename(h, *army, name),
+        Command::ArmyDisband { army } => g.army_disband(h, *army),
+        Command::ArmyUpgrade { army } => g.army_upgrade_all(h, *army).map(|_| ()),
+        Command::ArmyTarget { army, size } => g.army_set_target_size(h, *army, *size),
+        Command::RecruitDest { city, index, dest, reinforce_to } => {
+            if *index < 0 {
+                g.cities[*city].recruit_default = *dest;
+            } else if let Some(o) = g.cities[*city].order_queue.get_mut(*index as usize) {
+                o.dest = *dest;
+                o.reinforce_to = (*reinforce_to).max(0);
+            }
+            Ok(())
+        }
+        _ => Ok(()),
+    };
+    r.map_err(cannot)
 }
 
 /// The selection: non-empty, distinct, the human's, on one plot (the exe selects on one plot).
@@ -894,6 +1027,80 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             }
             g.culture_check(*city, *action, ffh_core::culture::CultureTarget::City(*target), *religion, ffh_core::culture::CultureCheck::Queue).map_err(|r| cannot(r.describe(d)))?;
             Plan::Apply(Action::CulturePush { city: *city, action: *action, target: *target, religion: *religion, repeat: *repeat, first: *first })
+        }
+
+        Command::ArmyForm { units } | Command::ArmySplit { units } | Command::ArmyGarrison { units } => {
+            if !g.armies_on() {
+                return Err(cannot("armies are off in this game"));
+            }
+            if units.is_empty() {
+                return Err(invalid("field `units`: none"));
+            }
+            for &u in units {
+                unit_of(g, h, u)?;
+            }
+            let plot = g.army_units_plot(h, units).map_err(cannot)?;
+            if matches!(cmd, Command::ArmyGarrison { .. }) && !g.map.plots[plot].plot_city.is_some_and(|c| g.cities.contains(c) && g.cities[c].owner == h) {
+                return Err(cannot("not in one of your cities"));
+            }
+            Plan::Apply(Action::Army(cmd.clone()))
+        }
+
+        Command::ArmyJoin { units, army } => {
+            army_of(g, h, *army)?;
+            if units.is_empty() {
+                return Err(invalid("field `units`: none"));
+            }
+            for &u in units {
+                unit_of(g, h, u)?;
+            }
+            let plot = g.army_units_plot(h, units).map_err(cannot)?;
+            if g.army_plot(*army) != Some(plot) {
+                return Err(cannot("the army is not on their plot"));
+            }
+            Plan::Apply(Action::Army(cmd.clone()))
+        }
+
+        Command::ArmyRename { army, name } => {
+            army_of(g, h, *army)?;
+            if name.trim().is_empty() || name.trim().chars().count() > 40 {
+                return Err(cannot("a name of 1 to 40 characters"));
+            }
+            Plan::Apply(Action::Army(cmd.clone()))
+        }
+
+        Command::ArmyDisband { army } | Command::ArmyUpgrade { army } | Command::ArmyTarget { army, .. } => {
+            army_of(g, h, *army)?;
+            if matches!(cmd, Command::ArmyDisband { .. }) && (g.army_plot(*army).is_none() || g.players[h].cities.is_empty()) {
+                return Err(cannot("you have no city for its units"));
+            }
+            Plan::Apply(Action::Army(cmd.clone()))
+        }
+
+        Command::RecruitDest { city, index, dest, reinforce_to } => {
+            city_of(g, h, *city)?;
+            if !g.armies_on() {
+                return Err(cannot("armies are off in this game"));
+            }
+            if *index >= 0 {
+                let i = in_range("queue index", *index, g.cities[*city].order_queue.len())?;
+                let o = &g.cities[*city].order_queue[i];
+                let is_army_unit = o.order_type == OrderType::ORDER_TRAIN && (o.data1 as usize) < d.units.len() && g.unit_type_is_army_unit(UnitType::from_usize(o.data1 as usize));
+                if !is_army_unit {
+                    return Err(cannot("only land combat units are recruited to a destination"));
+                }
+            } else if *index != -1 {
+                return Err(invalid("field `index`: an order's index, or -1 for the city's default"));
+            }
+            if let Some(dst) = dest {
+                if !g.recruit_dest_valid(h, *dst) {
+                    return Err(cannot("no such army or city of yours"));
+                }
+            }
+            if *reinforce_to > 0 && !matches!(dest, Some(ffh_core::army::RecruitDest::Army(_))) {
+                return Err(cannot("\"reinforce to\" needs an army"));
+            }
+            Plan::Apply(Action::Army(cmd.clone()))
         }
 
         Command::CulturePop { city, index } => {
@@ -1245,6 +1452,10 @@ pub fn apply(g: &mut Game, h: PlayerId, action: &Action) {
         }
         Action::CulturePop { city, index } => g.city_pop_culture_order(*city, *index),
         Action::CultureRepeat { city, index, repeat } => g.city_set_culture_order_repeat(*city, *index, *repeat),
+        // Validated just before (`validate`); a refusal in the rules would change nothing.
+        Action::Army(c) => {
+            let _ = apply_army(g, h, c);
+        }
         Action::DoTask { city, task, data1, data2, option, alt, shift, ctrl } => {
             g.city_do_task(*city, *task, *data1, *data2, *option, *alt, *shift, *ctrl);
         }
@@ -1286,6 +1497,8 @@ pub fn apply(g: &mut Game, h: PlayerId, action: &Action) {
         }
         Action::AutoPlay { turns } => g.set_ai_auto_play(*turns),
     }
+    // This game's armies follow the groups the command changed (docs/ARMIES.md).
+    g.player_army_sync(h);
 }
 
 #[cfg(test)]
@@ -1309,6 +1522,17 @@ mod tests {
             Command::CulturePush { city: CityId(1), action: CulturalActionType(0), target: CityId(1), religion: None, repeat: false, first: true },
             Command::CulturePop { city: CityId(1), index: 0 },
             Command::CultureRepeat { city: CityId(1), index: 1, repeat: true },
+            Command::ArmyForm { units: vec![UnitId(3), UnitId(4)] },
+            Command::ArmySplit { units: vec![UnitId(3)] },
+            Command::ArmyJoin { units: vec![UnitId(3)], army: ArmyId(2) },
+            Command::ArmyGarrison { units: vec![UnitId(5)] },
+            Command::ArmyRename { army: ArmyId(1), name: "The Iron Host".into() },
+            Command::ArmyDisband { army: ArmyId(1) },
+            Command::ArmyUpgrade { army: ArmyId(1) },
+            Command::ArmyTarget { army: ArmyId(1), size: 8 },
+            Command::RecruitDest { city: CityId(1), index: 0, dest: Some(ffh_core::army::RecruitDest::Army(ArmyId(2))), reinforce_to: 6 },
+            Command::RecruitDest { city: CityId(1), index: -1, dest: Some(ffh_core::army::RecruitDest::Garrison(CityId(3))), reinforce_to: 0 },
+            Command::RecruitDest { city: CityId(1), index: -1, dest: None, reinforce_to: 0 },
             Command::Research { tech: None, shift: false },
             Command::Research { tech: Some(TechType(3)), shift: true },
             Command::UpdateCivics { civics: vec![CivicType(1), CivicType(5)] },

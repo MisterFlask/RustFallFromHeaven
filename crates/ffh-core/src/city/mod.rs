@@ -270,6 +270,9 @@ pub struct City {
     /// The game turn of the last successful Foment Revolt in this city (-1: none); Flip City
     /// needs a recent one.
     pub culture_revolt_turn: i32,
+    /// Where the city's trained land combat units go when their order names no destination
+    /// (docs/ARMIES.md); `None`: its own garrison.
+    pub recruit_default: Option<crate::army::RecruitDest>,
 }
 
 impl City {
@@ -480,6 +483,7 @@ impl City {
             culture_diverted: 0,
             culture_marks: Vec::new(),
             culture_revolt_turn: -1,
+            recruit_default: None,
         }
     }
 

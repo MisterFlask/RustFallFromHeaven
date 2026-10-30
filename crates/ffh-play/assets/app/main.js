@@ -18,6 +18,7 @@ import * as units from "./units.js";
 import { openCity, ownCities, stepCityScreen } from "./city.js";
 import * as empire from "./empire.js";
 import { openCulture } from "./culture.js";
+import { openArmies } from "./armies.js";
 import { openDiplomacy, checkMoments, resetMoments } from "./diplo.js";
 import * as tools from "./tools.js";
 import { applyMapDelta, plotDistance } from "./tiles.js";
@@ -362,7 +363,8 @@ function citiesList() {
 // Keys
 
 /** The screens of the menu and the F keys (Civ4's advisors: F1 cities, F2 finances, F3 civics,
- *  F4 diplomacy, F6 technology, F7 religion; F8 this game's cultural pressure). */
+ *  F4 diplomacy, F5 military (this game's armies), F6 technology, F7 religion; F8 this game's
+ *  cultural pressure). */
 function openScreen(name) {
   if (!S.view) return;
   switch (name) {
@@ -380,12 +382,14 @@ function openScreen(name) {
       return empire.openReligion();
     case "culture":
       return openCulture();
+    case "armies":
+      return openArmies({ select: (ids) => units.select(ids), centerOn: (x, y) => mapView.centerOn(x, y) });
     case "research":
       return screens.openResearch();
   }
 }
 
-const F_KEYS = { F1: "cities", F2: "finance", F3: "civics", F4: "diplomacy", F6: "techs", F7: "religion", F8: "culture" };
+const F_KEYS = { F1: "cities", F2: "finance", F3: "civics", F4: "diplomacy", F5: "armies", F6: "techs", F7: "religion", F8: "culture" };
 
 function setLayer(layer) {
   mapView.setLayer(layer);
@@ -589,6 +593,7 @@ function wire() {
   click("btn-civics", () => openScreen("civics"));
   click("btn-religion", () => openScreen("religion"));
   click("btn-culture", () => openScreen("culture"));
+  click("btn-armies", () => openScreen("armies"));
   click("btn-diplo", () => openScreen("diplomacy"));
   click("btn-tools", () => tools.openTools());
   click("btn-save", () => S.view && screens.saveDialog());
@@ -665,6 +670,7 @@ function wire() {
   on("select-ready", () => units.selectNext());
   on("modals-closed", () => S.status?.phase === "human" && runPopups());
   on("open-city", (id) => openCity(id));
+  on("open-screen", (name) => openScreen(name));
   on("city-overlay", (o) => mapView.cityOverlay(o));
   on("center", (x, y) => mapView.centerOn(x, y));
   on("selection", () => {

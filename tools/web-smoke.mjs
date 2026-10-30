@@ -748,6 +748,37 @@ async function cultureUi() {
   steps.push(`culture: the city screen lists the ${n} cultural actions; F8 opens the pressure panel`);
 }
 
+/** This game's armies (docs/ARMIES.md; the new-game screen starts with them on): an army unit's
+ *  panel has the Army section, F5 opens the Armies screen (an army renamed there), and the city
+ *  screen has the recruitment destination. */
+async function armiesUi() {
+  const unit = await S(`(() => { const S = window.ffh.S; const me = S.view.me.player; return S.view.units.find((u) => u.owner === me && u.army_unit) || null; })()`);
+  if (!unit) return steps.push("armies: no army unit to try");
+  await b.eval(`window.ffh.units.select([${unit.id}])`);
+  await until2(`!!document.querySelector('#unit-panel button.action[data-kind="army"]')`, "the unit panel's army actions");
+  await shot("army-actions");
+  await b.eval(`window.ffh.units.clearSelection()`);
+  await b.key("F5");
+  await until(async () => (await modalTitles()).includes("Armies"), "the Armies screen");
+  const armies = await S("window.ffh.S.view.armies.length");
+  await until2(`document.querySelectorAll("#modals .army-card").length === ${armies} && !!document.querySelector("#modals ul.garrisons")`, "every army and the garrisons listed");
+  let renamed = "";
+  if (armies) {
+    await b.eval(`(() => { const i = document.querySelector("#modals .army-card input.army-name"); i.value = "Smoke Host"; i.dispatchEvent(new Event("change")); })()`);
+    await until2(`window.ffh.S.view.armies.some((a) => a.name === "Smoke Host")`, "the army renamed");
+    renamed = ", an army renamed";
+  }
+  await shot("armies-screen");
+  await b.key("Escape");
+  await until(async () => !(await modalTitles()).length, "the Armies screen closed");
+  const city = await S("S.view.cities.find((c) => c.owner === S.view.me.player)");
+  await b.eval(`window.ffh.emit("open-city", ${city.id})`);
+  await until2(`!!document.querySelector("#modals .backdrop:not(.under) select.recruit-default-dest")`, "the city's recruitment default");
+  await b.key("Escape");
+  await until(async () => !(await modalTitles()).length, "the city dialog closed");
+  steps.push(`armies: the panel's army actions, F5 lists ${armies} arm${armies === 1 ? "y" : "ies"}${renamed}; the city's recruitment`);
+}
+
 async function moveUnit() {
   const unit = await S(`(() => { const S = window.ffh.S; const me = S.view.me.player; return S.view.units.find((u) => u.owner === me && u.moves > 0 && S.data.tables.UnitType[u.type].combat > 0) || null; })()`);
   if (!unit) return steps.push("no unit to move");
@@ -1480,6 +1511,7 @@ async function main() {
     await foundCity();
     await cityQueue();
     await cultureUi();
+    await armiesUi();
     await moveUnit();
     await endTurns(TURNS);
     await cityScreen();

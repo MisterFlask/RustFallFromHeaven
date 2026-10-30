@@ -191,6 +191,11 @@ impl Game {
     /// `from` is C++ `pUnit` (the unit being replaced; it is killed with delay at the end).
     pub fn unit_convert(&mut self, u: UnitId, from: UnitId) {
         let d = self.d;
+        // This game's armies: the new unit takes the old one's place in its army (not when it
+        // changes hands: a dominated unit joins no army of its old owner's).
+        if self.units[u].owner == self.units[from].owner {
+            self.units[u].army = self.units[from].army;
+        }
         let info = &d.units[self.units[u].unit_type];
         // C++ `CvPlot* pPlot = plot();` (only dereferenced for the hidden nationality check).
         let plot = self.unit_plot_opt(u);

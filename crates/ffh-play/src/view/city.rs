@@ -71,7 +71,14 @@ fn queue(v: &Viewer, c: CityId) -> Json {
             OrderType::ORDER_CREATE if ok(d.projects.len()) => Json::from(g.city_production_turns_left_project(c, ProjectType::from_usize(k as usize), i as i32)),
             _ => Json::Null,
         };
-        crate::jobj! { "order" => Json::idx(o.order_type), "type" => k, "save" => o.save, "turns" => turns }
+        let mut j = crate::jobj! { "order" => Json::idx(o.order_type), "type" => k, "save" => o.save, "turns" => turns };
+        // This game's armies: where a trained land combat unit goes.
+        if g.armies_on() && o.order_type == OrderType::ORDER_TRAIN && ok(d.units.len()) && g.unit_type_is_army_unit(UnitType::from_usize(k as usize)) {
+            j.set("dest", crate::command::recruit_dest_json(o.dest));
+            j.set("dest_name", o.dest.map_or_else(|| "the city's default".to_string(), |x| g.recruit_dest_name(x)));
+            j.set("reinforce_to", o.reinforce_to);
+        }
+        j
     });
     Json::Arr(out.collect())
 }
@@ -400,6 +407,7 @@ pub fn city(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
         "can_conscript" => g.city_can_conscript(c),
         "buildable" => buildable(v, c),
         "cultural" => cultural(v, c),
+        "recruit" => crate::view::armies::recruit(v, c),
     })
 }
 

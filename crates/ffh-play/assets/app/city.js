@@ -21,6 +21,7 @@ import { look, uiIcon, typeIcon, barEl, pix } from "./look.js";
 import { focusOn, isoSkin, queueIcon, refreshCityPanel } from "./isoui.js";
 import { infoTip } from "./infotips.js";
 import { cultureView } from "./culture.js";
+import { recruitControls, recruitView } from "./armies.js";
 
 const GROUPS = [
   [0, "Units"],
@@ -341,7 +342,7 @@ function manageView(c, task) {
   );
 }
 
-function productionView(c, choose, remove, [tapMode, setTapMode]) {
+function productionView(c, choose, remove, [tapMode, setTapMode], reload) {
   const prod = c.production;
   const queue = h(
     "ol.queue",
@@ -351,6 +352,8 @@ function productionView(c, choose, remove, [tapMode, setTapMode]) {
             "li",
             h("span", orderName(o.order, o.type)),
             h("span.dim", o.turns !== null ? ` ${turns(o.turns)}` : ""),
+            // This game's armies: where a land combat unit goes when trained.
+            recruitControls(c, i, o, reload),
             // The exe pops an order only while the queue holds more than one (CvGameInterface
             // `getOrderQueueLength() > 1`); the only order is replaced by choosing another.
             c.queue.length > 1 ? h("button.small", { title: "Remove from the queue", "aria-label": "Remove", "data-index": i, onclick: () => remove(i) }, "✕") : null,
@@ -396,6 +399,7 @@ function productionView(c, choose, remove, [tapMode, setTapMode]) {
         prod.current && prod.needed ? barEl(prod.stored / prod.needed, "production", { w: 50, next: (prod.stored + prod.rate) / prod.needed }) : null,
       ),
       queue,
+      recruitView(c, reload),
       tapModes(tapMode, [["now", "Build now", "A tap replaces what is being built"], ["queue", "Add to queue", "A tap adds to the end of the queue (Shift-click)"], ["first", "Put first", "A tap puts it first in the queue (Ctrl-click)"]], setTapMode),
     ),
     ...lists,
@@ -415,6 +419,6 @@ function screen(c, { task, choose, remove, popup, overlay, tap, reload }) {
   );
   const plots = overlay ? h("p.dim.city-hint", "Click the city's plots on the map to work them; its own plot hands the choice back to the governor.") : plotGrid(c, task);
   const left = h("div.city-col", plots, specialistsView(c, task), statsView(c), buildingsView(c));
-  const right = h("div.city-col", manageView(c, task), productionView(c, choose, remove, tap), popup ? null : cultureView(c, reload));
+  const right = h("div.city-col", manageView(c, task), productionView(c, choose, remove, tap, reload), popup ? null : cultureView(c, reload));
   return [head, popup ? h("div.city-cols.popup", right, left) : h("div.city-cols", left, right)];
 }

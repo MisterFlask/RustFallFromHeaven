@@ -363,6 +363,19 @@ impl Game {
         });
     }
 
+    /// A unit in transit (docs/ARMIES.md): `sent` (to an army or a garrison), `arrived`, `diverted`;
+    /// the sum is the journey's turns.
+    pub(crate) fn tel_transit(&self, p: PlayerId, kind: &'static str, to_army: bool, turns: i32) {
+        if !self.telemetry.on() {
+            return;
+        }
+        let turn = self.game_turn();
+        self.telemetry.with(|t| {
+            t.count(p, "transit", kind, turns as i64);
+            t.event(|| ev(turn, "transit", p).s("how", kind).b("to_army", to_army).i("turns", turns as i64).end());
+        });
+    }
+
     pub(crate) fn tel_hurry(&self, c: CityId, hurry: HurryType, gold: i32, pop: i32) {
         let p = self.cities[c].owner;
         let name = self.d.hurries[hurry].base.type_.as_str();

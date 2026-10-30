@@ -132,4 +132,28 @@ pub fn check(g: &Game) {
             }
         }
     }
+
+    // This game's armies (docs/ARMIES.md): players list their own live armies, and a unit's army
+    // is its owner's.
+    let mut armies = 0;
+    for p in g.player_ids() {
+        for &a in &g.players[p].armies {
+            armies += 1;
+            match g.armies.get(a) {
+                None => fail(format!("player {} lists dead army {a:?}", p.0)),
+                Some(army) if army.owner != p => fail(format!("player {} lists army {a:?} of player {}", p.0, army.owner.0)),
+                Some(_) => {}
+            }
+        }
+        for &u in &g.players[p].units {
+            if let Some(a) = g.units[u].army {
+                if g.armies.get(a).map_or(true, |army| army.owner != p) {
+                    fail(format!("unit {u:?} of player {} is in army {a:?}, dead or not its owner's", p.0));
+                }
+            }
+        }
+    }
+    if armies != g.armies.len() {
+        fail(format!("{} armies exist but players list {armies}", g.armies.len()));
+    }
 }

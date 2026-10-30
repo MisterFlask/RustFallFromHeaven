@@ -191,6 +191,10 @@ impl Game {
 
         // This game's cultural actions: their memories fade.
         self.player_do_culture_memory(p);
+        // This game's armies (docs/ARMIES.md): settled with the groups, then the units in transit
+        // move on.
+        self.player_army_sync(p);
+        self.player_do_transit(p);
 
         if self.players[p].revolution_timer > 0 {
             self.players[p].revolution_timer -= 1;
