@@ -47,7 +47,8 @@ governed cities) or *feed* one of the player's armies (docs/ARMIES.md): units fo
 transit, while the army with its units on their way is short of its target size, then develop
 until it needs units again. The army's target size (the Armies screen) replaces "Reinforce to N"
 for governed cities. A new mode takes effect at once: the governor chooses the city's production
-again (what it was building keeps its progress, as any order taken off a queue). An army gone or
+again (what it was building keeps its progress, as any order taken off a queue); feeding another
+army only sends its units there. An army gone or
 disbanded puts its feeding cities back to develop, with a message; an army merged into another
 takes its feeding cities with it. A governed city's units go to its own garrison unless it feeds an
 army: the default destination it had under direct rule is dropped when a governor takes over (it
@@ -98,11 +99,14 @@ cultural actions", off by default). The player can still queue any action by han
 - **Barbarian cities are never governed** (and settlements, the Kuriotates' cities that build
   nothing, are governed but have nothing to build).
 - **A city that changes hands takes its governor when its owner's turn ends.** Captured, traded,
-  flipped or given: it is governed (if no direct slot is free) with production chosen at once, and
-  interim until its new owner's turn processing gives it the candidate that suits it best. So the
-  candidate is matched against the city as it comes (its size, buildings and religions), not the
-  blank city the transfer creates first, and a city razed, given away or disbanded at once costs
-  no governor from the bench.
+  flipped or given: it is governed (if no direct slot is free) and interim until its new owner's
+  turn processing gives it the candidate that suits it best. So the candidate is matched against
+  the city as it comes (its size, buildings and religions), not the blank city the transfer creates
+  first, and a city razed, given away or disbanded at once costs no governor from the bench. Its
+  production is chosen then too, with the units that took it inside; a city that changes hands
+  outside its owner's turn (a culture flip, a trade in another player's turn) chooses at once, so
+  no governed city reaches a turn's end without production. The message promises a governor only
+  when the bench has one for every vacant post.
 - **The capital moves.** A new capital (the old one lost) is ruled directly at once; if that makes
   one direct city too many, the city made direct most recently goes to a governor, with a message.
   A palace cannot be built in a governed city, so the capital never moves into one by choice.

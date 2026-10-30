@@ -193,24 +193,28 @@ impl Game {
     }
 
     /// City `c` was just acquired (`player_acquire_city`, after its state was restored and the
-    /// raze decision taken): a governed city has production at once (the governor's, whoever's turn
-    /// it is), and its owner learns who will run it.
+    /// raze decision taken): its owner learns who will run it. Outside its owner's turn (a culture
+    /// flip, a city traded in another player's turn) a governed city chooses its production at once,
+    /// so that it never reaches a turn's end without; in its owner's turn the city's turn chooses it
+    /// at the turn's end, with the units that took it standing in it (they move in after the
+    /// transfer) and its new governor in place.
     pub fn city_governance_acquired(&mut self, c: CityId) {
         if !self.governors_on() || !self.cities.contains(c) || !self.city_is_governed(c) {
             return;
         }
-        if self.cities[c].order_queue.is_empty() {
+        let p = self.cities[c].owner;
+        if !self.players[p].turn_active && self.cities[c].order_queue.is_empty() {
             self.city_choose_production(c, None, None, None, false, false);
         }
-        let p = self.cities[c].owner;
         let turn = self.game_turn();
         let name = self.d.text.name(&self.cities[c].name).to_string();
-        let bench = !self.player_bench(p).is_empty();
+        // The candidates go to the vacant posts in the order of the city list, this city last.
+        let covered = self.player_bench(p).len() >= self.player_vacant_posts(p).len();
         self.log.msg_at(turn, Some(p), (self.cities[c].x, self.cities[c].y), || {
-            if bench {
-                format!("{name} is governed: a governor from your bench takes it at the end of the turn.")
+            if covered {
+                format!("{name} is governed: a governor from your bench takes it when your turn ends.")
             } else {
-                format!("{name} is run by an interim governor: no candidate is on your bench.")
+                format!("{name} is run by an interim governor until a candidate is free on your bench.")
             }
         });
     }
@@ -296,11 +300,12 @@ impl Game {
     pub fn player_set_direct_rule(&mut self, p: PlayerId, to_rule: CityId, to_govern: Option<CityId>) -> GovResult {
         self.player_check_direct_rule(p, to_rule, to_govern)?;
         let turn = self.game_turn();
+        // Its governor returns to the bench first: the city handed over may take it.
+        self.city_become_direct(to_rule);
+        self.cities[to_rule].rule_changed_turn = turn;
         if let Some(o) = to_govern {
             self.city_hand_over(o);
         }
-        self.city_become_direct(to_rule);
-        self.cities[to_rule].rule_changed_turn = turn;
         Ok(())
     }
 
@@ -426,13 +431,24 @@ impl Game {
 
     /// Governed city `c` feeds army `a` (`None`: develops). A new mode takes effect at once: the
     /// governor chooses the city's production again (what it was building keeps its progress for
-    /// later, as any order taken off a queue).
+    /// later, as any order taken off a queue); feeding another army only sends its units there.
     pub fn city_set_feed_army(&mut self, p: PlayerId, c: CityId, a: Option<ArmyId>) -> GovResult {
         self.city_check_feed_army(p, c, a)?;
-        if self.cities[c].feed_army != a {
-            self.cities[c].feed_army = a;
-            self.city_clear_order_queue(c);
-            self.city_choose_production(c, None, None, None, false, false);
+        match (self.cities[c].feed_army, a) {
+            (old, new) if old == new => {}
+            (Some(old), Some(new)) => {
+                self.cities[c].feed_army = a;
+                for o in self.cities[c].order_queue.iter_mut() {
+                    if o.dest == Some(RecruitDest::Army(old)) {
+                        o.dest = Some(RecruitDest::Army(new));
+                    }
+                }
+            }
+            _ => {
+                self.cities[c].feed_army = a;
+                self.city_clear_order_queue(c);
+                self.city_choose_production(c, None, None, None, false, false);
+            }
         }
         Ok(())
     }

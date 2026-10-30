@@ -375,3 +375,54 @@ fn the_city_screen_parts_add_up_to_the_totals() {
     assert_eq!(stop, Stop::Human);
     assert!(checked >= 50 && nonzero.iter().all(|&n| n > 0), "{checked} cities checked, {nonzero:?} with each total above 0");
 }
+
+/// A governor's happiness and health traits are among the city screen's parts, which still add
+/// up to the totals (set up through the rules: a governed city given a Beloved and Hygienic, then
+/// a Harsh governor).
+#[test]
+fn a_governors_traits_are_among_the_city_screens_parts() {
+    use ffh_play::view::city::{bad_health_parts, good_health_parts, happy_parts, unhappy_parts};
+    let d = ffh_data::global();
+    let mut setup = ffh_core::setup::GameSetup::standard(d, 2, "WORLDSIZE_SMALL", 7);
+    setup.options[GameOptionType::GAMEOPTION_GOVERNORS] = true;
+    let mut g = ffh_core::game::Game::new(d, setup);
+    g.game_init();
+    let p0 = PlayerId(0);
+    let mut cities: Vec<CityId> = Vec::new();
+    for q in g.map.plot_ids().collect::<Vec<_>>() {
+        if cities.len() == 5 {
+            break;
+        }
+        let (x, y) = g.map.xy(q);
+        let free = !g.plot_is_water(q) && !g.plot_is_impassable(q) && g.map.plots[q].owner.is_none() && g.map.plots[q].plot_city.is_none();
+        if free && cities.iter().all(|&c| g.plot_distance(x, y, g.cities[c].x, g.cities[c].y) >= 4) {
+            cities.push(g.player_init_city(p0, x, y, true, true));
+        }
+    }
+    let c = cities[4];
+    assert!(g.city_is_governed(c));
+    let t = |name: &str| g.d.t::<GovernorTraitType>(name);
+    let (beloved, hygienic, harsh) = (t("GOVERNORTRAIT_BELOVED"), t("GOVERNORTRAIT_HYGIENIC"), t("GOVERNORTRAIT_HARSH"));
+    let part = |parts: Vec<(String, i32)>| parts.iter().find(|p| p.0 == "governor").map_or(0, |p| p.1);
+    let sum = |parts: Vec<(String, i32)>| -> i32 { parts.iter().map(|p| p.1).sum() };
+    let check = |g: &ffh_core::game::Game| {
+        assert_eq!(sum(happy_parts(g, c)), g.city_happy_level(c));
+        assert_eq!(sum(unhappy_parts(g, c)), g.city_unhappy_level(c, 0));
+        assert_eq!(sum(good_health_parts(g, c)), g.city_good_health(c));
+        assert_eq!(sum(bad_health_parts(g, c)), g.city_bad_health(c, false, 0));
+    };
+    let first = g.governor_generate(p0);
+    g.governors[first].traits = vec![beloved, hygienic];
+    g.city_assign_governor(p0, c, first).unwrap();
+    check(&g);
+    assert_eq!((part(happy_parts(&g, c)), part(good_health_parts(&g, c))), (1, 1));
+    let second = g.governor_generate(p0);
+    g.governors[second].traits = vec![harsh];
+    g.city_assign_governor(p0, c, second).unwrap();
+    check(&g);
+    assert_eq!(part(happy_parts(&g, c)), 0);
+    // (a size-1 city may have no unhappiness at all to show the harsh governor's face in)
+    if !g.city_is_no_unhappiness(c) {
+        assert_eq!(part(unhappy_parts(&g, c)), 1);
+    }
+}

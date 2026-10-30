@@ -372,7 +372,7 @@ function productionView(c, choose, remove, [tapMode, setTapMode], reload) {
             c.queue.length > 1 && !locked ? h("button.small", { title: "Remove from the queue", "aria-label": "Remove", "data-index": i, onclick: () => remove(i) }, "✕") : null,
           ),
         )
-      : h("li.dim", "Nothing: choose below."),
+      : h("li.dim", locked ? "Nothing yet: the governor chooses when your turn ends." : "Nothing: choose below."),
   );
   const lists = locked ? [] : GROUPS.map(([order, label]) => {
     const items = c.buildable.filter((b) => b.order === order);

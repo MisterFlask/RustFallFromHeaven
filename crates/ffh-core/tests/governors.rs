@@ -230,12 +230,15 @@ fn an_acquired_city_takes_its_governor_at_the_turns_end_not_before_the_raze_deci
     assert_eq!(g.player_bench(p0), vec![candidate], "the candidate waits on the bench");
     g.player_governance_turn(p0);
     assert!(g.cities[ours].governor.is_some(), "a governor at the turn's end");
-    // A city razed at once costs no governor.
-    let other = g.governor_generate(p0);
+    // A city razed at once (a size-one capture) costs no governor.
+    g.governor_generate(p0);
+    let bench = g.player_bench(p0);
+    assert!(!bench.is_empty());
     let (x, y) = free_plot(&g);
     let size_one = g.player_init_city(p1, x, y, true, true);
     g.player_acquire_city(p0, size_one, true, false, true);
-    assert!(g.governors.contains(other) && g.governors[other].city.is_none(), "still on the bench");
+    assert!(g.map.plots[g.map.plot_xy(x, y).unwrap()].plot_city.is_none(), "razed");
+    assert_eq!(g.player_bench(p0), bench, "the bench is untouched");
 }
 
 #[test]
@@ -261,6 +264,17 @@ fn a_city_back_under_direct_rule_drops_its_governors_emphasis() {
     assert!(!wanted.is_empty() && wanted.iter().all(|&e| g.cities[c].ai_emphasize[e]));
     g.player_set_direct_rule(p0, c, Some(cities[1])).unwrap();
     assert!(wanted.iter().all(|&e| !g.cities[c].ai_emphasize[e]));
+}
+
+#[test]
+fn a_direct_rule_swap_hands_the_freed_governor_to_the_other_city() {
+    let (mut g, cities) = game(5);
+    let p0 = PlayerId(0);
+    let gv = g.governor_generate(p0);
+    g.city_assign_governor(p0, cities[4], gv).unwrap();
+    assert!(g.player_bench(p0).is_empty());
+    g.player_set_direct_rule(p0, cities[4], Some(cities[1])).unwrap();
+    assert_eq!(g.cities[cities[1]].governor, Some(gv), "the governor follows the swap");
 }
 
 #[test]
