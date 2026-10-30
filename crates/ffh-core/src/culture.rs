@@ -233,6 +233,9 @@ impl Game {
         }
         match self.d.cultural_actions[action].effect {
             CultureEffect::FomentRevolt => {
+                if religion.is_some() {
+                    return Err(CultureRefusal::Religion("Foment Revolt takes no religion"));
+                }
                 if ct == tt {
                     return Err(CultureRefusal::OwnTeam);
                 }
@@ -372,7 +375,7 @@ impl Game {
         let foreign = self.players[owner].team != self.players[caster].team;
         if foreign {
             let by = self.player_get_civilization_adjective(caster);
-            self.log.msg_at(turn, Some(owner), at, || format!("{religion} spread to {target} through the culture of {city} ({by})."));
+            self.log.msg_at(turn, Some(owner), at, || format!("{religion} spread to {target} through the culture of {city} ({by}, {pct} a turn)."));
             if let Some(state) = self.player_get_state_religion(owner) {
                 self.culture_add_memory(owner, caster, if state == r { 1 } else { 0 });
             }
@@ -476,10 +479,16 @@ impl Game {
         (total / (100 * defines.culture_revolt_unhappy_step.max(1))).min(defines.culture_revolt_unhappy_max.max(0))
     }
 
-    /// City `c`'s revolt pressure in its turn: each caster's resisted and faded; a revolt
-    /// (disorder) while the total is at `CULTURE_REVOLT_DISORDER`; the city joins a caster whose
-    /// pressure reaches `CULTURE_REVOLT_FLIP` (not a capital, not with
-    /// `GAMEOPTION_NO_CITY_FLIPPING`). The owner and the leading caster hear of each change.
+    /// City `c`'s revolt pressure in its turn (before its occupation timer counts down): each
+    /// caster's resisted and faded; a revolt (disorder) while the total is at
+    /// `CULTURE_REVOLT_DISORDER`; the city joins a caster whose pressure reaches
+    /// `CULTURE_REVOLT_FLIP` (not a capital, not with `GAMEOPTION_NO_CITY_FLIPPING`). The owner
+    /// and the leading caster hear of each change.
+    ///
+    /// A revolt holds the occupation timer at 2, which the countdown after this step leaves at 1:
+    /// the city stays in disorder through its turn and into its next step, where it resists with
+    /// its garrison alone (in disorder it makes no culture); the turn the pressure falls below the
+    /// threshold, the countdown ends the disorder.
     pub fn city_do_revolt_pressure(&mut self, c: CityId) {
         if self.city_revolt_pressure(c) <= 0 && self.cities[c].culture_revolt_level == REVOLT_CALM {
             return;
@@ -508,17 +517,21 @@ impl Game {
         if self.city_culture_unhappiness(c) != before_unhappy {
             self.cities[c].ai_assign_work_dirty = true;
         }
-        if total >= 100 * defines.culture_revolt_disorder && self.cities[c].occupation_timer < 1 {
-            self.city_set_occupation_timer(c, 1);
+        if total >= 100 * defines.culture_revolt_disorder && self.cities[c].occupation_timer < 2 {
+            self.city_set_occupation_timer(c, 2);
         }
-        let level = self.culture_revolt_level_of(total, leader.map_or(0, |l| l.1));
+        let flip_ok = !self.city_is_capital(c) && !self.is_option(GameOptionType::GAMEOPTION_NO_CITY_FLIPPING);
+        let mut level = self.culture_revolt_level_of(total, leader.map_or(0, |l| l.1));
+        if !flip_ok {
+            // Never "close to joining" a city that cannot change hands.
+            level = level.min(REVOLT_REVOLT);
+        }
         let old = self.cities[c].culture_revolt_level;
         self.cities[c].culture_revolt_level = level;
         if level != old {
             self.culture_revolt_news(c, old, level, leader.map(|l| l.0));
         }
         if let Some((p, v)) = leader {
-            let flip_ok = !self.city_is_capital(c) && !self.is_option(GameOptionType::GAMEOPTION_NO_CITY_FLIPPING);
             if flip_ok && v >= 100 * defines.culture_revolt_flip {
                 self.culture_flip(c, p);
             }

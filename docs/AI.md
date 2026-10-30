@@ -1295,13 +1295,14 @@ are rare by then, and a building nearly always outscores a gold a turn.
 This game's own system (`GAMEOPTION_CULTURE_ACTIONS`, docs/CULTURE.md): a city may channel half
 its culture into one standing order aimed at a civilization, Foment Revolt or Spread Religion,
 until its owner changes it. Once a turn, after the diplomacy (so the war state is current) and the
-governors (whose leave a governed city's revolt needs), what an expert does with the channels:
+governors' production, what an expert does with the channels:
 
 - **Hold off revolt pressure.** Each defender resists 2 a turn, so the garrison is the answer.
   From the channels aimed at us now (they are public), `defenders_needed` is how many keep the
   pressure, as it would settle (net inflow over the fade), short of disorder, at most six: past it
   the city makes no culture (disorder stops its commerce), only its garrison resists, and the
-  pressure runs on to the flip. A directly ruled city short of them trains one first; a governed city's governor chooses again
+  pressure runs on to the flip. A directly ruled city short of them (unless it is already training
+  a defender that stays) trains one first; a governed city's governor chooses again
   (`governor::decide` puts them first, for a human's governed cities too). A rival whose pressure is
   two thirds of the way to taking one of our cities provokes the war logic (`flips_against`, read by
   `territory_check`: no friend spared, 85% of the usual power edge, +40 to the target's score).
@@ -1321,9 +1322,10 @@ governors (whose leave a governed city's revolt needs), what an expert does with
   in full at war, while we prepare one, against the barbarians or the civilization racing us to a
   victory; at peace 60% if we are Annoyed or Furious with them, 40% if Cautious; a city taken at
   peace three quarters (it invites war). Against that, the culture spent and, at peace, a
-  diplomatic cost a turn for each channel (the target remembers a point every 5 turns of it):
-  2.5 commerce with a Cautious civilization, 1 Annoyed, 0.5 Furious or while preparing war, none at
-  war. Spared: civilizations we are Pleased or Friendly with, vassals and masters, defensive pact
+  diplomatic cost a turn for each channel (the target remembers a point every 5 turns of it), by
+  what they think of us: 2.5 commerce while they are Cautious or better, 1 Annoyed, 0.5 Furious or
+  while we prepare war, none at war. A city that channels nothing this turn (in disorder, in
+  anarchy) costs nothing and keeps its channel. Spared: civilizations we are Pleased or Friendly with, vassals and masters, defensive pact
   partners, and at peace any whose defensive power exceeds 125% of ours (150% for a channel that
   stands). The leader's lean scales a revolt's value: halfway from 100% to its `iCulturalAggression`
   (40-180, derived from war eagerness and the culture flavor where the XML has none), a quarter

@@ -177,7 +177,7 @@ fn defend(g: &mut Game, p: PlayerId, only_governed: bool) {
             continue;
         }
         let (need, have) = (needed_with(g, c, &inflows), g.culture_garrison_count(c));
-        if have >= need || g.city_production_unit(c).is_some_and(|u| g.d.units[u].combat > 0) {
+        if have >= need || trains_a_defender(g, c) {
             continue;
         }
         let Some(u) = crate::production::best_unit(g, c, crate::production::Role::Defense) else { continue };
@@ -191,6 +191,21 @@ fn defend(g: &mut Game, p: PlayerId, only_governed: bool) {
             g.city_push_order(c, OrderType::ORDER_TRAIN, u.i(), UnitAIType::UNITAI_CITY_DEFENSE.i(), false, false, false, false);
         }
         g.tel_decision(p, "culture", "garrison", "defend", (need - have) as i64, String::new);
+    }
+}
+
+/// Whether city `c` is training a defender that will stay in it: a city defender whose order
+/// leaves it in the city's own garrison (an attacker, or a unit bound for an army, adds no lasting
+/// resistance).
+fn trains_a_defender(g: &Game, c: CityId) -> bool {
+    let Some(o) = g.cities[c].order_queue.first() else { return false };
+    if o.order_type != OrderType::ORDER_TRAIN || g.city_production_unit_ai(c) != Some(UnitAIType::UNITAI_CITY_DEFENSE) {
+        return false;
+    }
+    match o.dest.or(g.cities[c].recruit_default) {
+        None => true,
+        Some(ffh_core::army::RecruitDest::Garrison(to)) => to == c,
+        Some(ffh_core::army::RecruitDest::Army(_)) => false,
     }
 }
 
@@ -363,10 +378,16 @@ fn revolt_stance(g: &Game, ctx: &Ctx, t: PlayerId, keeping: bool) -> Result<Stan
     if crate::diplomacy::preparing_target(g, team) == Some(ot) {
         return Ok(Stance { harm: 100, take: 100, diplo: 50, war: false });
     }
-    let (harm, diplo) = match attitude {
-        AttitudeType::ATTITUDE_FURIOUS => (60, 50),
-        AttitudeType::ATTITUDE_ANNOYED => (60, 100),
-        _ => (40, 250),
+    // How much their losses count reads what we think of them; what the channel costs in their
+    // memory, what they think of us (more to lose the better it is).
+    let harm = match attitude {
+        AttitudeType::ATTITUDE_FURIOUS | AttitudeType::ATTITUDE_ANNOYED => 60,
+        _ => 40,
+    };
+    let diplo = match crate::diplomacy::attitude(g, t, ctx.p) {
+        AttitudeType::ATTITUDE_FURIOUS => 50,
+        AttitudeType::ATTITUDE_ANNOYED => 100,
+        _ => 250,
     };
     Ok(Stance { harm: if ctx.rival == Some(ot) { 100 } else { harm }, take: 75, diplo, war: false })
 }
@@ -721,6 +742,8 @@ fn channel(g: &mut Game, p: PlayerId) {
     }
 
     // 2. Standing revolt channels worth less than KEEP_PCT of their cost end, the weakest first.
+    //    A city that channels nothing this turn (in disorder, in anarchy) costs nothing and keeps
+    //    its channel: the rules leave it standing.
     for (ti, &(t, st)) in targets.iter().enumerate() {
         let r = reach_of(ti);
         loop {
@@ -730,7 +753,7 @@ fn channel(g: &mut Game, p: PlayerId) {
             }
             let full = group_value(g, p, &st, &r, &members).value;
             let mut worst: Option<(i64, usize, i64)> = None;
-            for &m in &members {
+            for &m in members.iter().filter(|&&m| casters[m].amount > 0) {
                 let without: Vec<usize> = members.iter().copied().filter(|&x| x != m).collect();
                 let marginal = (full - group_value(g, p, &st, &r, &without).value) * ctx.aggression / 100;
                 let slack = marginal * 100 - KEEP_PCT * (casters[m].cost() + st.diplo);
@@ -1065,10 +1088,18 @@ mod tests {
         set_rate(&mut g, target, 0);
         g.city_set_culture_channel(town, Some((revolt(&g), p0, None))).unwrap();
         assert_eq!(defenders_needed(&g, target), MAX_DEFENDERS, "a town without culture, 3 plots from 30 culture a turn");
+        // An attacker in the making adds no lasting resistance: a defender goes before it.
+        if let Some(a) = crate::production::best_unit(&g, target, crate::production::Role::Attack) {
+            g.city_push_order(target, OrderType::ORDER_TRAIN, a.i(), UnitAIType::UNITAI_ATTACK.i(), false, false, false, false);
+        }
         defend(&mut g, p0, false);
         let first = g.cities[target].order_queue.first().expect("an order");
         assert_eq!(first.order_type, OrderType::ORDER_TRAIN);
         assert!(g.d.units[UnitType::from_usize(first.data1 as usize)].combat > 0, "a defender first");
+        assert_eq!(g.city_production_unit_ai(target), Some(UnitAIType::UNITAI_CITY_DEFENSE));
+        let queued = g.cities[target].order_queue.len();
+        defend(&mut g, p0, false);
+        assert_eq!(g.cities[target].order_queue.len(), queued, "one defender in the making is enough a turn");
         assert!(!flips_against(&g, p0, p1));
         g.cities[target].culture_pressure[p1] = 100 * g.d.defines.culture_revolt_flip * 3 / 4;
         assert!(flips_against(&g, p0, p1), "close to taking it: a provocation");

@@ -59,13 +59,18 @@ pressure does (all casters' together, except the flip):
 - **Unrest:** a point of unhappiness per `CULTURE_REVOLT_UNHAPPY_STEP` (25), at most
   `CULTURE_REVOLT_UNHAPPY_MAX` (4).
 - **Revolt:** at `CULTURE_REVOLT_DISORDER` (100) the city is in revolt: disorder (the occupation
-  timer, as a culture revolt) for as long as the pressure stays there.
+  timer, as a culture revolt) for as long as the pressure stays there. The disorder holds through
+  the city's whole turn (the pressure step runs before the occupation timer counts down), so in
+  revolt the city makes no culture and resists with its garrison alone; it ends the turn the
+  pressure falls below the threshold. A city that would settle just above the threshold with its
+  culture resisting therefore runs on, usually to the flip.
 - **Flip:** a caster whose own pressure reaches `CULTURE_REVOLT_FLIP` (300) takes the city, as a
   culture revolt flips a city (barbarian units on the plot move away, defenders lose half their hit
   points, the plot and the city change hands; in a one-city challenge a human caster's flip
   destroys it). Never a capital; not with `GAMEOPTION_NO_CITY_FLIPPING`.
 The city's owner and the leading caster are told when the city's state changes: unrest, revolt,
-close to flipping (two thirds of the way), calm again, flipped (`City::culture_revolt_level`).
+close to flipping (two thirds of the way; never for a city that cannot flip), calm again, flipped
+(`City::culture_revolt_level`).
 Pressure from a caster that dies or joins the city's team goes.
 
 **Spread Religion.** Each turn of the channelling city, one roll for the target civilization: the
@@ -123,7 +128,7 @@ Once a turn (`ffh-ai/src/culture.rs`), after the diplomacy and the governors:
   - For each target city, the pressure is simulated over 40 turns as the rules run it. Resistance counts the city's culture and only its stationed defenders (an army passing through does not stay); once the city is in revolt, only the garrison.
   - A city taken (never a capital) is worth 150 + 50 per population + 20 per building + 150 per wonder + 200 per holy city, spread over the turns it takes plus five. Disorder is worth the city's production and commerce a turn; unrest, half a commerce a point. Only what our channels change counts.
   - The rival's losses count in full at war, while preparing one, against the barbarians, or against a victory rival. At peace they count 60% (Annoyed or Furious) or 40% (Cautious), and a city taken counts 75%.
-  - Against that stands the culture spent and, at peace, a memory cost per channel a turn: 2.5 when Cautious, 1 when Annoyed, 0.5 when Furious or while preparing war.
+  - Against that stands the culture spent and, at peace, a memory cost per channel a turn, by what the target thinks of us: 2.5 while it is Cautious or better, 1 when Annoyed, 0.5 when Furious or while we prepare war.
   - Spared: Pleased or Friendly civilizations, vassals and masters, defensive pact partners, and, at peace, any civilization above 125% of our power (150% for a channel that stands).
   - The leader's `iCulturalAggression` scales the value halfway from 100%; a conqueror's goes a quarter higher.
   - Our cities aimed at one civilization are weighed as a group of at most `CULTURE_AI_MAX_HOSTILE_PER_TARGET`, twice that at war.

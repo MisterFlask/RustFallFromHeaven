@@ -161,6 +161,42 @@ fn revolt_pressure_brings_unrest_then_disorder_then_the_city() {
     assert!(g.players[PlayerId(1)].culture_memory[PlayerId(0)][0] > 0, "their leader remembers it");
 }
 
+/// A revolt's disorder holds through the city's whole turn (`city_do_turn`): its borders do not
+/// regrow for a moment every turn (no "borders expanded" news while it lasts), and it ends the turn
+/// the pressure falls below the threshold.
+#[test]
+fn a_revolt_holds_through_the_city_turn() {
+    let (mut g, _, _, f) = game();
+    let town = second_city(&mut g, f);
+    let (p0, p1) = (PlayerId(0), PlayerId(1));
+    for u in g.map.plots[g.city_plot(town)].units.clone() {
+        g.unit_kill(u, false, None);
+    }
+    // Borders past the first ring, so a regrowth would be news.
+    g.city_set_culture(town, p1, 500, true, true);
+    let grown = g.cities[town].culture_level;
+    let disorder = 100 * g.d.defines.culture_revolt_disorder;
+    g.cities[town].culture_pressure[p0] = 2 * disorder;
+    let mut turns_in_revolt = 0;
+    for _ in 0..40 {
+        let next = g.game_turn() + 1;
+        g.set_game_turn(next);
+        let before = g.log.entries.len();
+        let was = g.city_revolt_pressure(town);
+        g.city_do_turn(town);
+        let news = g.log.entries[before..].iter().any(|m| m.text.contains("have expanded"));
+        if g.city_revolt_pressure(town) >= disorder {
+            turns_in_revolt += 1;
+            assert!(g.city_is_occupation(town), "in revolt, disorder");
+            assert!(!news, "no border news in revolt");
+            assert!(g.cities[town].culture_level < grown, "the borders stay down");
+        } else if was >= disorder {
+            assert!(!g.city_is_occupation(town), "the revolt ends the turn the pressure falls below it");
+        }
+    }
+    assert!(turns_in_revolt >= 5, "{turns_in_revolt} turns in revolt");
+}
+
 #[test]
 fn resistance_and_fading_hold_pressure_back() {
     let (mut g, a, _, f) = game();
@@ -225,6 +261,17 @@ fn channels_are_checked() {
     let revolt = action(&g, "CULTURALACTION_FOMENT_REVOLT");
     assert_eq!(g.culture_channel_check(a, revolt, PlayerId(0), None), Err(CultureRefusal::OwnTeam));
     assert!(g.culture_channel_check(a, revolt, PlayerId(1), None).is_ok());
+    let r = g.d.religions.keys().next().unwrap();
+    assert!(matches!(g.culture_channel_check(a, revolt, PlayerId(1), Some(r)), Err(CultureRefusal::Religion(_))), "Foment Revolt takes no religion");
+    // Spread Religion: refused when every city in reach has it, not for a turn without culture.
+    let spread = action(&g, "CULTURALACTION_SPREAD_RELIGION");
+    g.city_set_has_religion(a, r, true, false, false);
+    set_rate(&mut g, a, 0);
+    assert!(g.culture_channel_check(a, spread, PlayerId(1), Some(r)).is_ok(), "no culture this turn: the channel may stand");
+    for c in g.players[PlayerId(1)].cities.clone() {
+        g.city_set_has_religion(c, r, true, false, false);
+    }
+    assert_eq!(g.culture_channel_check(a, spread, PlayerId(1), Some(r)), Err(CultureRefusal::NoneCanTake));
     g.setup.options[GameOptionType::GAMEOPTION_CULTURE_ACTIONS] = false;
     assert_eq!(g.culture_channel_check(a, revolt, PlayerId(1), None), Err(CultureRefusal::Off));
 }

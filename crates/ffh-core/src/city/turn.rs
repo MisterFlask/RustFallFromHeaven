@@ -440,6 +440,13 @@ impl Game {
             self.cities[c].culture_update_timer -= 1;
         }
 
+        // This game's revolt pressure (docs/CULTURE.md): resisted, faded; disorder, a flip. Before
+        // the occupation timer counts down, so that a revolt's disorder holds through the turn.
+        self.city_do_revolt_pressure(c);
+        if !self.cities.contains(c) {
+            return;
+        }
+
         if self.cities[c].occupation_timer > 0 {
             self.city_change_occupation_timer(c, -1);
         }
@@ -466,12 +473,6 @@ impl Game {
 
         if self.cities[c].espionage_happiness_counter > 0 {
             self.cities[c].espionage_happiness_counter -= 1;
-        }
-
-        // This game's revolt pressure (docs/CULTURE.md): resisted, faded; disorder, a flip.
-        self.city_do_revolt_pressure(c);
-        if !self.cities.contains(c) {
-            return;
         }
 
         if self.city_is_occupation(c) || self.city_angry_population(c, 0) > 0 || self.city_health_rate(c, false, 0) < 0 {

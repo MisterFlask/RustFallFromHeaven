@@ -157,7 +157,7 @@ impl Controller for Ai {
             traits::turn(g, &v); // trait-play
             armies::turn(g, p); // armies' reinforcements (docs/ARMIES.md)
             governor::turn(g, p); // governed cities (docs/GOVERNORS.md)
-            culture::turn(g, p); // cultural actions (docs/CULTURE.md), by the governors' leave
+            culture::turn(g, p); // cultural channels (docs/CULTURE.md), after the governors' production
         }
         if !v.barbarian {
             campaign::plan(g, &mut v);
