@@ -60,8 +60,9 @@ pub fn decide(g: &Game, c: CityId) -> Option<(Choice, &'static str, Option<Recru
         }
     }
 
-    // Against revolt pressure near disorder, defenders up to three: each resists it.
-    if culture_grave(g, c) && g.culture_garrison_count(c) < 3 {
+    // Against revolt pressure that would bring disorder (and then take the city), the defenders
+    // that hold it off: each resists it (`culture::defenders_needed`).
+    if culture_grave(g, c) {
         if let Some(u) = prod::best_unit(g, c, Role::Defense) {
             return Some((Choice::Train(u, UnitAIType::UNITAI_CITY_DEFENSE), "governor_culture_defense", None));
         }
@@ -152,10 +153,11 @@ pub fn decide(g: &Game, c: CityId) -> Option<(Choice, &'static str, Option<Recru
     best_process.map(|(pr, _)| (Choice::Maintain(pr), "governor_process", None))
 }
 
-/// Whether revolt pressure on city `c` brings it near disorder (half the way or more): each
-/// defender resists it.
+/// Whether city `c` has fewer defenders than hold off the revolt pressure aimed at it
+/// (`culture::defenders_needed`: the pressure, as it would settle, short of disorder; past it the
+/// city makes no culture and the pressure runs on to the flip).
 pub(crate) fn culture_grave(g: &Game, c: CityId) -> bool {
-    g.city_revolt_pressure(c) * 2 >= 100 * g.d.defines.culture_revolt_disorder
+    g.culture_garrison_count(c) < crate::culture::defenders_needed(g, c)
 }
 
 /// Turns within which a unit in production for an army counts toward its target.

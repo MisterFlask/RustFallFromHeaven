@@ -1292,46 +1292,96 @@ are rare by then, and a building nearly always outscores a gold a turn.
 
 ## Cultural actions (`culture.rs`)
 
-This game's own system (`GAMEOPTION_CULTURE_ACTIONS`, docs/CULTURE.md). Once a turn, after the
-diplomacy (so the war state is current), what an expert does with a cultural queue:
+This game's own system (`GAMEOPTION_CULTURE_ACTIONS`, docs/CULTURE.md): a city may channel half
+its culture into one standing order aimed at a civilization, Foment Revolt or Spread Religion,
+until its owner changes it. Once a turn, after the diplomacy (so the war state is current) and the
+governors (whose leave a governed city's revolt needs), what an expert does with the channels:
 
-- **Answer pressure.** A hostile channel aimed at one of our cities or a pact partner's is
-  answered with a festival there (it resists hostile actions, +1 happy), unless one already lasts
-  past the channel's end or is on its way: the city itself puts the festival first (its own channel
-  waits with its progress), else our nearest idle city in reach holds it.
-- **Spend culture where it buys more than borders.** Each city with an empty queue weighs every
-  action and target it can afford by value ÷ culture cost (the rules' preview gives E and the
-  magnitude) and queues the best worth at least its culture, else leaves the queue empty. Culture
-  counts in full while the city's borders still grow to its working radius (below
-  `CULTURELEVEL_FLEDGLING`), half after (it then only presses on contested borders); the cities
-  carrying a cultural victory we pursue spend none. Values: a trade fair with a Pleased or Friendly
-  civilization is the extra commerce of the routes it lifts over its duration (ours, half of
-  theirs) plus a little goodwill with a Pleased one; spreading a religion follows the
-  missionaries' priorities (our state religion into our own cities, then abroad once its shrine
-  pays, never as a hostile spread unless we dislike them anyway); inciting unrest is for rivals
-  only (at war, or Annoyed or Furious with them), at most `CULTURE_AI_MAX_HOSTILE_PER_TARGET` at
-  once against one civilization, worth the unhappy faces × turns × the city's size, doubled at
-  war, times the leader's `iCulturalAggression` (derived from `iLimitedWarRand` and the culture
-  flavor when the XML gives none).
-- **Escalation.** Siphoning knowledge from anyone but a Pleased or Friendly civilization (the
-  research is worth what commerce is); fomenting revolt in a rival's city (its output lost to the
-  disorder, the hurt garrison, and a third of the city's worth when one of our cities could then
-  flip it: tier 3 in reach, 50% of the plot's culture); flipping a rival's city after a revolt (its
-  worth times the chance; at peace only while our power is at least 80% of their defence, since a
-  flip invites war).
-- **Under escalation.** Against a revolt or a flip aimed at one of our cities, besides the
-  festival, the city trains a defender first while it has fewer than three (each resists, and a
-  revolt hurts fewer). A civilization channelling Flip City against us is a provocation for the war
-  of expansion (`territory_check`): no friend spared, 85% of the leader's power edge, +40 to the
-  target's score.
+- **Hold off revolt pressure.** Each defender resists 2 a turn, so the garrison is the answer.
+  From the channels aimed at us now (they are public), `defenders_needed` is how many keep the
+  pressure, as it would settle (net inflow over the fade), short of disorder, at most six: past it
+  the city makes no culture (disorder stops its commerce), only its garrison resists, and the
+  pressure runs on to the flip. A directly ruled city short of them trains one first; a governed city's governor chooses again
+  (`governor::decide` puts them first, for a human's governed cities too). A rival whose pressure is
+  two thirds of the way to taking one of our cities provokes the war logic (`flips_against`, read by
+  `territory_check`: no friend spared, 85% of the usual power edge, +40 to the target's score).
+- **Foment revolt where it pays.** Cities whose culture is worth spending channel revolt at a
+  rival: the cities carrying a cultural victory we pursue spend none, and a point of culture counts
+  in full while the city's borders still grow to its working radius (below `CULTURELEVEL_FLEDGLING`),
+  half after. Per target city, the pressure our channels would build is simulated over 40 turns as
+  the rules run it (our inflow, `ChannelReach.amount`, less the city's resistance, faded 5%; the
+  other casters' pressure as it is; from the turn after disorder only the garrison resists). The
+  resistance counts the city's culture and its *stationed* defenders, those that did not move last
+  turn: in the first traced games a city whose stack came
+  and went every turn (12 defenders, then 4) had a channel set and ended in turn. Outcomes: a city
+  taken (never a capital) is worth `150 + 50·pop + 20·buildings + 150·wonders + 200·holy cities`
+  points, amortized over the turns it takes and five more; disorder costs the city its production
+  and commerce a turn; unrest half a commerce a point. Only what our channels change counts (a
+  city another caster already holds in revolt gains nothing from us). The rival's lost output counts
+  in full at war, while we prepare one, against the barbarians or the civilization racing us to a
+  victory; at peace 60% if we are Annoyed or Furious with them, 40% if Cautious; a city taken at
+  peace three quarters (it invites war). Against that, the culture spent and, at peace, a
+  diplomatic cost a turn for each channel (the target remembers a point every 5 turns of it):
+  2.5 commerce with a Cautious civilization, 1 Annoyed, 0.5 Furious or while preparing war, none at
+  war. Spared: civilizations we are Pleased or Friendly with, vassals and masters, defensive pact
+  partners, and at peace any whose defensive power exceeds 125% of ours (150% for a channel that
+  stands). The leader's lean scales a revolt's value: halfway from 100% to its `iCulturalAggression`
+  (40-180, derived from war eagerness and the culture flavor where the XML has none), a quarter
+  more for a conqueror (Aggressive leaders, the Clan of Embers, the Doviello, the Bannor). Our
+  channels at one civilization add up, so each target is weighed with the group of our cities that
+  would channel at it, the strongest first, at most `CULTURE_AI_MAX_HOSTILE_PER_TARGET` (2), twice
+  that at war or against the barbarians; groups are chosen greedily, the best net first.
+- **Spread our religion.** A city spreads our state religion, or a religion whose shrine we hold,
+  into a civilization whose cities lack it, worth the rules' chance a turn times what a spread is
+  worth, against the culture spent: in our own city our state religion's happiness and buildings
+  (`40 + 6·pop`), a shrine's gold a turn (25); abroad, a civilization without a state religion
+  drawn toward ours (the AI adopts the religion most of its cities have: the first city of ours
+  there 50, later ones 20), a co-religionist pleased (15: it remembers the spread as friendship);
+  into a civilization with another state religion only where we dislike it, and then the spread is
+  remembered as hostile (only a shrine pays for it). Our own cities come first by these numbers;
+  the chance's cap (25%) makes a smaller city the better spreader.
+- **Stability.** Stopping a revolt lets the pressure it built fade, so a channel that stands is
+  kept while it is worth 70% of what it costs (the weakest member of a group dropped first, the rest
+  weighed again), and a new channel must be worth a quarter more than its cost (at least a
+  commerce); a city spreading a religion moves to another channel only when that is better by half
+  its cost.
+- **A human's governors** (`govern`, through `Controller::govern_cities`): a governed city without a
+  channel takes the one worth its culture by the same reckoning (at 100% lean), a revolt only where
+  the player allowed hostile cultural actions (`City::governor_hostile_culture`); a channel that
+  stands, the player's or its own, is never changed (the rules end one with nothing left to do).
+  The AI's own governed cities are the AI's (`governor::turn` grants them the leave).
 - **Memory.** Their cultural acts against us are in the attitude (`relation_parts`): "cultural
   hostility" −1 per 2 points (to −3), "cultural friendship" +1 per 2 points (to +2), fading a
   point every 10 turns.
 
-Switch `CULTURE` (`FFH_AI_CULTURE_OFF`). First games (8 civs, standard, 450 turns, seeds 1-3, the
-option on): every action used, per game 86-170 festivals, 151-225 unrests, 26-59 spreads, 15-68
-fairs completed. Not yet measured for win rate (the spec's tuning phase); the open points
-(Trade Fair weak at the spec's numbers) are in docs/CULTURE.md.
+Switch `CULTURE` (`FFH_AI_CULTURE_OFF`): off, a civilization channels nothing and its cultural
+defence is only its governors'. Telemetry: the decisions of kind `culture` (the action, or `stop`
+or `garrison`; why: `revolt_flip`, `revolt_disorder`, `revolt_unrest`, `religion_home`,
+`religion_abroad`, `religion_hostile`; `worthless`, `friend`, `stronger`, `keep_culture`,
+`not_allowed`...; `defend`), with the rules' counts `culture_channel`, `culture_channel_end`,
+`culture_spread` and `culture_revolt`; `FFH_AI_TRACE` lines `culture:` name the city, the target
+civilization and, for a revolt, each target city's resistance, stationed defenders, pressure,
+inflow and simulated outcome.
+
+First games (8 civs, standard map, 350 turns, `GAMEOPTION_CULTURE_ACTIONS`, `GAMEOPTION_ARMIES`
+and `GAMEOPTION_GOVERNORS`, seeds 1-4, telemetry): revolt channels set 11 / 31 / 28 / 7 a game,
+religion channels 17 / 14 / 19 / 27; the religion spread 12 / 8 / 16 / 20 times, nearly all into
+our own cities (0-2 channels a game abroad: a spread abroad seldom beats half a city's culture
+without a shrine); cities driven into revolt (disorder) 1 / 6 / 7 / 2, cities taken 0 / 3 / 4 / 0,
+all but one after turn 300 (revolt channels start around turns 200-290, when cities make 20
+culture and more); defenders trained first against revolt pressure 0 / 11 / 11 / 2 times. With
+the switch off on the same seeds nothing is channelled. Wars between civilizations declared from
+turn 250: 42 with the AI's channels, 25 without, but only 6 of the 42 between a civilization
+fomenting revolt and its target (the games diverge from the first channel: not a measurement of
+the channels' diplomatic cost). Turn times unchanged within the noise. Checked-build stress games
+(`ffh-stress`, 400 turns, seeds 1-3, the three options): no invariant failure. Not yet measured
+for win rate (the spec's tuning phase).
+
+Seen in the traces and not fixed here: channels end and start again when the cultural-victory plan
+flickers (its carrier cities keep their culture; seed 3, turns 321-322: the culture a group of
+channels poured into one city fell from 48 a turn to 18 and the group was dropped). And a city in
+revolt makes no culture, so a civilization that foments revolt against one fomenting back loses
+its channels' strength in the cities it throws into revolt.
 
 ## Armies (`armies.rs`)
 
@@ -1375,9 +1425,9 @@ cities.
   against cities, sent in transit); workers and work boats while the land needs them; the best
   building by `building_value` per turn of production, up to half again for the profile's
   flavors; a Zealot's missionary; the profile's process. It never builds settlers, wonders or
-  rituals (the rules forbid them in governed cities). Against a Foment Revolt or Flip City aimed
-  at the city, defenders come first, up to three (the cultural defense, `culture::defend`, has a
-  threatened governed city's governor choose again). The units it feeds an army are units that serve
+  rituals (the rules forbid them in governed cities). Against revolt pressure aimed at the city,
+  the defenders that hold it off come first (`culture::defenders_needed`; the cultural defence,
+  `culture::defend`, has a threatened governed city's governor choose again). The units it feeds an army are units that serve
   in armies (a Ranger or an Assassin would stay in the city and the army never fill); the units the
   owner's cities will finish for the army within 10 turns count toward its target, so several
   feeders do not overshoot it and a slow frontier feeder does not hold the others back. The AI's emergency switch to a defender and its rebuild in financial trouble judge a
@@ -1395,11 +1445,12 @@ cities.
   production again at once (the rules: what it was building keeps its progress); a change of army
   only redirects its units.
 - **Governors.** The rules give a vacant post the best-matching candidate; the AI replaces nobody
-  (a replacement costs the city). Its governors may queue hostile cultural actions: its cultural
-  play decides which are worth it.
-- **A human's governors** (`culture::govern`, through `Controller::govern_cities`): festivals
-  against hostile channels and the cultural actions worth their culture, from the governed cities
-  only, hostile ones only where the player allowed them.
+  (a replacement costs the city). Its governors may channel revolt: its cultural play decides
+  where it is worth it.
+- **A human's governors** (`culture::govern`, through `Controller::govern_cities`): a governed city
+  without a channel takes the one worth its culture, a revolt only where the player allowed hostile
+  cultural actions; a channel that stands is the player's to change; defenders against revolt
+  pressure.
 
 Switch `GOVERNORS` (`FFH_AI_GOVERNORS_OFF`): off, the AI keeps its first cities direct and every
 governed city develops, its cultural play unrestricted. With switch `ARMIES` off no city feeds an
