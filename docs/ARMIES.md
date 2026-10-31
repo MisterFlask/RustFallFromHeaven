@@ -10,7 +10,7 @@ decided, and what is left.
 |---|---|---|
 | 4 Armies and recruitment | armies, garrisons, build destinations, transit, supply, form / split / join / merge / garrison / rename / disband / upgrade all, target size, "Reinforce to N", AI, UI | done |
 | 5 Governors | "Feed army" mode filling an army's target size | next |
-| 6 Engagement combat | stance, commander, S-unit engagements | after the owner's review of the promotion inventory |
+| 6 Engagement combat | stance, commander, S-unit engagements | next: the owner answered the inventory (docs/COMBAT_INVENTORY.md, 2026-10-31) |
 | 7 FfH layer | Incite Mutiny (cultural action against an army), commander auras | later |
 
 Code: rules `crates/ffh-core/src/army.rs` (hooks: the production queue's train order in
