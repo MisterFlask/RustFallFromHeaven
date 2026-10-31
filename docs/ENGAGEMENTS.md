@@ -11,12 +11,156 @@ With the option off nothing here runs: every attack is today's duel, byte for by
 every step: per-turn checksums of `ffh autoplay` against master). Naval and air combat stay the
 duel with the option on too.
 
-Code: `crates/ffh-core/src/engagement/` (`mod.rs` lists the modules: the round model in
+Code: `crates/ffh-core/src/engagement/` (`mod.rs` lists the modules: formation battles' pure
+resolver in `formation/`; the round model in
 `battle.rs`, `resolve.rs` and `expect.rs`; the rules in `state.rs`, `stats.rs`, `slots.rs`,
 `pick.rs`, `engage.rs`, `apply.rs`, `sink.rs`, `report.rs`; the estimator in `estimate.rs` and the
 attack preview in `preview.rs`). Scenario tests: `crates/ffh-core/tests/engagements.rs`; the
 estimator's and the preview's: `tests/engagement_estimate.rs`, `tests/engagement_preview.rs`; the
 round model's tests are in its modules.
+
+## Formation battles (revision 4): the data and the resolver
+
+The owner replaced the round model below with Ogre Battle-style formation battles (2026-10-31,
+designed in a browser prototype). Built so far: the data and the pure resolver
+(`engagement/formation/`); the rules still fight the round model until they move to it. Where this
+section and the rest of this document disagree, this section is the design and the rest is the
+round model's.
+
+**The field.** Slots per side as before (`slots.rs`). Each side stands on a grid of 3 rows (front 0,
+middle 1, rear 2) by `max(2, ceil((slots + 2) / 3))` lanes (`formation::lanes_for`). A large unit
+(`bLarge`, below) fills two cells side by side in one row and counts 2 slots, has
+`ENGAGEMENT_LARGE_HP_PERCENT` (150) of its role's HP, and is the front or back unit of both its
+lanes.
+
+**Roles** (`CIV4CombatRoleInfos.xml`; the round model's `bBack`, `bScreen`, `bIgnoresShield` and
+`TargetOrder` are gone, and Backline is Archer and Siege now, Support Arcane and Divine):
+
+| Role | defaults (unit combat) | A% | Dv% | HP | speed | Front | Middle | Rear | other | home row | auto pick |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| FRONTLINE | MELEE, ANIMAL, BEAST, RECON, bDefault | 100 | 100 | 120 | 4 | 2 strike | 1 strike | 1 strike | | front | 2 |
+| SCREEN | FRONTLINE + Formation | 100 | 110 | 120 | 3 | 2 strike | 1 strike | 1 strike | anti-flank | front | 1 |
+| FLANKER | MOUNTED | 110 | 80 | 100 | 6 | 2 charge | 1 strike | 1 strike | dodge 10 | front | 4 |
+| ASSASSIN | RECON with Marksman free | 120 | 60 | 60 | 7 | 1 stab | 2 stab | 1 stab | dodge 15, crit +15 | middle | 8 |
+| ARCHER | ARCHER, NAVAL (Airship) | 100 | 60 | 80 | 4 | 1 shoot | 2 shoot | 2 shoot | | middle | 3 |
+| SIEGE | SIEGE | 100 | 60 | 80 | 1 | none | 1 bombard | 2 bombard | | rear | 7 |
+| ARCANE | ADEPT | 100 | 50 | 70 | 3 | 1 strike | 1 spell | 2 spell | | rear | 5 |
+| DIVINE | DISCIPLE | 100 | 50 | 70 | 3 | 1 strike | 1 heal | 2 heal | | middle | 6 |
+
+Units of tier `ENGAGEMENT_EXTRA_ACTION_TIER` (4) and above and heroes get
+`ENGAGEMENT_EXTRA_ACTIONS` (1) more actions in their role's best row, the row with the most (the
+first such: `CombatRoleInfo::actions`). Speed is the role's plus `ENGAGEMENT_FIRST_STRIKE_SPEED` (2)
+per first strike and per chance first strike rolled at the battle's start. A flanker is a role
+with a CHARGE (`CombatRoleInfo::flanks`). The home row and the auto-pick order are the rules' auto
+formation's (`formation::auto_arrange`, the prototype's `autoArrange`).
+
+**Action kinds and reach** (`ffh_data::ActionKind`):
+- STRIKE: the front unit of each enemy lane; physical; a crit knocks the target back.
+- CHARGE: where flanking works (the defended plot has no city and no forest or jungle), every
+  enemy on the field, the target the one with the highest threat for its HP left (threat: its A
+  times its actions from its current row; compared `threat_x x hp_y`), and in the first round
+  `ENGAGEMENT_CHARGE_BONUS` (100) % more damage. Elsewhere it is a STRIKE (front reach, no bonus,
+  the normal choice; the log says strike). Physical; a crit knocks back.
+- STAB: any enemy. Physical.
+- SHOOT: the backmost unit of each enemy lane. Physical, `ENGAGEMENT_SHOOT_MISS_PERCENT` (10) more
+  miss.
+- SPELL: the backmost unit of each enemy lane; never misses, never crits. A caster that knows a
+  damage spell (`GameData::engage_damage_spell`: of the spells with `iDamage > 0` whose promotion,
+  unit, unit class and unit combat prerequisites it meets, the highest `iDamage`, then the lower
+  id) casts it at power 100 with a splash; one that knows none casts the magic bolt,
+  `ENGAGEMENT_BOLT_PERCENT` (60), one target.
+- BOMBARD: the backmost unit of each enemy lane; physical, `ENGAGEMENT_BOMBARD_MISS_PERCENT` (15)
+  more miss; never crits.
+- HEAL: the most hurt ally on the field (most HP missing; ties by lane, then row), itself
+  included: `ENGAGEMENT_BASE_DAMAGE x ENGAGEMENT_HEAL_PERCENT (50) x r`. No one hurt: the action is
+  spent.
+- Splash: a unit with collateral damage splashes its damaging hits (not a miss) on the target's
+  neighbours (beside it in its row, in front and behind in its lanes) for
+  `ENGAGEMENT_SPLASH_PERCENT` (50) % of a hit on each, never taking one past its collateral
+  limit; a known spell splashes the same way (no limit). Splash hits never crit.
+- Siege (combat limit below 100): its hits never take a target below `(100 - limit)%` of its max
+  HP, and such targets are not in its reach. (Both sides' engines: the resolver applies a
+  fighter's limit whichever side it is on; the rules decide what they pass.)
+- Anti-flank: whatever a flanker can reach (with any of its actions), units of an anti-flank role
+  in that reach are taken first.
+
+**Order.** `ENGAGEMENT_ROUNDS` (3) rounds; in each, pass k (k from 1 to the most actions any unit
+on the field has from its row at the round's start) lets every unit on the field with at least k
+actions from its current row act once. Within a pass the faster act first, equal speeds by a coin
+each mover draws at the pass's start (`0..65535`: the prototype's `2^20` does not fit the game's
+CvRandom; equal coins keep fighter order). One unit acts at a time and each hit lands at once; a
+unit killed, withdrawn or knocked to a row with fewer actions before its turn in a pass does not
+act in it. The battle ends after the last round, or at once when a side has no unit left on the
+field.
+
+**Targeting** (everyone, the player does not choose; `Formation::choose`): a flanker's pool is the
+anti-flank units in its reach when there are any; a charge where flanking works takes the highest
+threat for its HP left; otherwise, if this hit's expected damage would kill some, the one with the
+highest A among them, else the one it hurts most for its HP left (expected / HP, by
+cross-multiplication). The expected damage is capped at what the hitter's combat limit lets it
+take, so a siege engine takes no kill. Ties by the higher A (the unit's A against nobody in
+particular), then lane, then row, never by list order. A splash's centre is chosen so too.
+
+**Hits.** Expected damage, centi-HP: `ENGAGEMENT_BASE_DAMAGE (40) x 100 x A / (A + Dv)` (an even
+hit 20 HP; six kill a frontline unit), then times the hit's percentages (a spell's power, the
+ground's, the first round's charge, a splash's) over one division. A hit: `max(1, expected x r)`, r
+in `ENGAGEMENT_DAMAGE_RAND_MIN..=MAX` (80..120) %. A physical action misses with
+`ENGAGEMENT_MISS_PERCENT` (10) + the kind's extra + the target role's dodge (at most 95), rolled
+before the crit and the damage. Strike, charge, stab and shoot crit with `ENGAGEMENT_CRIT_PERCENT`
+(10) + the hitter role's crit bonus (at most 95), for `ENGAGEMENT_CRIT_DAMAGE_PERCENT` (150) % of
+the hit; a strike's or a charge's crit knocks the target back a row when every cell behind it is
+free (it acts from that row then).
+
+**Withdrawal** replaces a killing hit: a unit with a withdrawal chance that a hit (a splash too)
+would kill rolls it; on a success the hit does nothing and the unit leaves the battle alive. Never
+a city's defenders (the resolver enforces it).
+
+**The ground** (the defended plot's; several multiply): a city: the attacker's SHOOT deals
+`ENGAGEMENT_CITY_ATTACKER_SHOT_PERCENT` (50) %; a forest or jungle: SHOOT and BOMBARD deal
+`ENGAGEMENT_FOREST_RANGED_PERCENT` (50) % on both sides; hills: every attacker hit (spells too)
+deals `ENGAGEMENT_HILLS_ATTACKER_PERCENT` (75) %, the defender's SHOOT and BOMBARD
+`ENGAGEMENT_HILLS_DEFENDER_RANGED_PERCENT` (125) %.
+
+**Large units** (`bLarge` in `CIV4UnitInfos.xml`): the spec's Hill Giant, War Elephant and Elephant,
+the dragons (Abashi, Acheron, Drifa, Eurabatres), every golem (Bone, Clockwork, Flesh, Iron,
+Mithril, Mud, Nullstone, Wood) and the Treant, and of that size class the giant heroes Gurid,
+Margalard and Wilboman (a frost giant), Barnaxus (a golem), the War Machine, the Earth Elemental (a
+golem of rock) and the War Tortoise. Demons (the Balor, the Pit Beast) and the great beasts (the
+Giant Spider, the Manticore) stay one cell.
+
+**RNG**, in this order and nowhere else (the module comment of `formation/mod.rs`): per battle,
+each fighter with chance first strikes, in fighter order ("Engagement first strikes",
+`0..=chance`); per pass, each mover's coin in fighter order ("Engagement order"); per action, a
+physical one's miss ("Engagement miss"), if it lands the crit roll of strike, charge, stab and shoot
+("Engagement crit"), r ("Engagement hit"), the target's withdrawal if the hit would kill it
+("Engagement withdraw"), then each splashed neighbour's r and withdrawal in (lane, row) order; a
+heal's r ("Engagement heal"). An action with no target and a heal with no one hurt draw nothing.
+
+**The resolver's API** (`engagement::formation`, pure: nothing of `Game`): `Formation::new(params,
+ground, lanes, fighters, pair)` (each `Fighter`'s side, tag, lane, row, large, max HP and HP, role
+speed, first strikes and chance first strikes, actions per row, A against nobody, dodge, crit bonus,
+anti-flank, flanker, withdrawal chance, combat limit, collateral limit, spell; the pair table of A
+and Dv from `pair(h, t)`), `Formation::validate` (inside the grid, one unit a cell), `Params` (the
+defines: `Params::from_defines`), `Ground`; `resolve(&formation, rng)` / `resolve_quiet` give an
+`Outcome`: each fighter's `End` (HP, final row, speed, the first strikes it rolled, its fate:
+standing, fell by whom in which round, withdrew in which round; damage dealt, taken, healed), the
+kills in order, the damage matrix (`dealt(h, t)`, battle XP's shares), the rounds fought, which
+sides were cleared, and the events (`Event`: round, pass, actor, kind as fought, spell, target,
+hits `{target, dmg, expected, r, crit, miss, killed, withdrew, splash}`, heal, knock-back, note).
+`auto_arrange(candidates, lanes, slots)` is the rules' auto formation. Its tests:
+`formation/tests.rs`; the data's: `crates/ffh-data/tests/engagement_data.rs`.
+
+**What is left of the round model.** It fights on (the rules, the estimator, the preview and the
+battle log are the round model's) with its own constants (`engage_params`: B 20, 40 rounds,
+withdrawal below 40%; the defines `ENGAGEMENT_MAX_ROUNDS` and `ENGAGEMENT_WITHDRAW_HP_PERCENT` are
+gone) and its view of the new roles (`battle::RoundRole`: a role whose best row shoots, bombards,
+casts or heals is back position, an anti-flank role a screen, a role that charges or stabs ignores
+the shield), and the stances (`CIV4StanceInfos.xml`, whose Backline steps name Archer and Siege, and
+Support Arcane and Divine). Not built yet (the rules' part): A and Dv without the plot's own
+defence, the large units' HP and slots in the rules, the formation in the `engage` order and the
+auto formation in the rules, the result (the plot falls only when no defender is left), the
+report, the preview and the battle log of formation battles, and removing the stances, the round
+model, the estimator and the What-if list.
 
 ## Which attacks are engagements
 
