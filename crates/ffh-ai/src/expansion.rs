@@ -226,7 +226,8 @@ fn escort_on_plot(g: &Game, p: PlayerId, plot: PlotIdx, grp: Option<GroupId>) ->
     let mut best: Option<(UnitId, i32)> = None;
     for &o in &g.map.plots[plot].units {
         let unit = &g.units[o];
-        if unit.owner != p || grp.is_some_and(|grp| unit.group == Some(grp)) || g.unit_get_domain_type(o) != DomainType::DOMAIN_LAND {
+        // (Not a marching recruit: it goes where the rules take it, docs/ARMIES.md.)
+        if unit.owner != p || unit.march.is_some() || grp.is_some_and(|grp| unit.group == Some(grp)) || g.unit_get_domain_type(o) != DomainType::DOMAIN_LAND {
             continue;
         }
         let info = &g.d.units[unit.unit_type];

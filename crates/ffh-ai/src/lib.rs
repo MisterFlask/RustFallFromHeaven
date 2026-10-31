@@ -173,10 +173,10 @@ impl Controller for Ai {
         production::choose(self, g, c);
     }
 
-    /// The unit a city trains for an army's requisition (docs/ARMIES.md): the governors'
-    /// feeding choice (`governor::requisition_unit`).
+    /// The unit a city trains for an army's requisition (docs/ARMIES.md): siege up to a third
+    /// of the army, then the best attacker against cities (`armies::requisition_unit`).
     fn requisition_unit(&self, g: &Game, c: CityId, a: ArmyId) -> Option<(UnitType, UnitAIType)> {
-        governor::requisition_unit(g, c, a)
+        armies::requisition_unit(g, c, a)
     }
 
     fn govern_cities(&self, g: &mut Game, p: PlayerId) {

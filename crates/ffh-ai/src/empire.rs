@@ -29,7 +29,9 @@ fn hurry(g: &mut Game, p: PlayerId) {
     // Gold a civilization keeps (the Khazad's vault level) is not spent.
     let reserve = reserve + crate::civs::gold_floor(g, p);
     for c in g.players[p].cities.clone() {
-        let urgent = match g.city_production_unit(c) {
+        // (A unit an army requisitioned goes to the army: not the city's emergency.)
+        let requisition = g.cities[c].order_queue.first().is_some_and(|o| o.requisition);
+        let urgent = match g.city_production_unit(c).filter(|_| !requisition) {
             Some(u) => {
                 let info = &d.units[u];
                 let plot = g.city_plot(c);

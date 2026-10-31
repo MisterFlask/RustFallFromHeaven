@@ -32,10 +32,15 @@ pub struct Target {
     pub lair: bool,
 }
 
+/// A field unit of ours the AI's stacks command (attack, city attack, collateral, counter, reserve
+/// and pillage roles, on land): not a marching recruit, which goes where the rules take it
+/// (docs/ARMIES.md), so no stack takes it in, no transport loads it and no count of our stacks has
+/// it.
 pub fn is_army_unit(g: &Game, u: UnitId) -> bool {
     let unit = &g.units[u];
     let info = &g.d.units[unit.unit_type];
-    info.combat > 0
+    unit.march.is_none()
+        && info.combat > 0
         && !info.found
         && g.unit_get_domain_type(u) == DomainType::DOMAIN_LAND
         && matches!(
