@@ -1428,7 +1428,8 @@ enemy fed the main army and every reinforcement travelled off the map.
   not hold (`production::emergency`'s test), short of the defenders against revolt pressure, or
   training a defender of its own; a city in that state is released, its order withdrawn. A city
   whose order is under way keeps it while it can spare it; through a turn without a main army
-  while the war lasts, the orders under way stay and no new ones are placed. The unit
+  while the war lasts, the orders under way stay where the city can still spare them and no new
+  ones are placed. The unit
   (`requisition_unit`, the AI's `Controller::requisition_unit`, the governors' old feeding
   choice): siege while siege is less than a third of the army (its recruits and requisition
   orders counted), then the best attacker against cities; only army units.

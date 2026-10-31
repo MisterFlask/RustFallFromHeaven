@@ -15,7 +15,7 @@
 //!   a building); as many cities as the army lacks units, the soonest to deliver first. A city
 //!   whose order is under way keeps it while it can still serve. At peace, no requisition; through
 //!   a turn without a main army (out of supply, at sea) while the war lasts, the orders under way
-//!   are kept and no new ones placed. The unit is [`requisition_unit`] (the AI's
+//!   are kept where the city can still spare them and no new ones placed. The unit is [`requisition_unit`] (the AI's
 //!   `Controller::requisition_unit`): siege up to a third of the army, then the best attacker
 //!   against cities.
 //! - **Directly ruled cities' attackers.** The attack units the directly ruled cities train by
@@ -120,7 +120,8 @@ const REQUISITION_HORIZON: i32 = 20;
 
 /// The armies' requisition lists, once a turn after their target sizes (see the module comment):
 /// the main army draws on [`requisition_cities`]; at war without a main army this turn (out of
-/// supply, at sea) every army keeps only the cities whose orders are under way; otherwise (at
+/// supply, at sea) every army keeps only the cities whose orders are under way and that can still
+/// spare their production ([`can_spare`]: a threatened city trains its own defender); otherwise (at
 /// peace, or another army is the main one) an army requisitions from none. A city taken off a
 /// list loses its order at once; the rules place the new ones at the end of the turn
 /// (`player_do_requisition`), before the cities produce.
@@ -133,7 +134,7 @@ fn requisition(g: &mut Game, p: PlayerId, main: Option<ArmyId>, war: bool) {
             requisition_cities(g, p, a)
         } else if war && main.is_none() {
             let busy = ordered_cities(g, a);
-            g.armies[a].requisition.iter().copied().filter(|c| busy.contains(c)).collect()
+            g.armies[a].requisition.iter().copied().filter(|&c| busy.contains(&c) && can_spare(g, p, c)).collect()
         } else {
             Vec::new()
         };
@@ -147,10 +148,10 @@ fn requisition(g: &mut Game, p: PlayerId, main: Option<ArmyId>, war: bool) {
                 .into_iter()
                 .filter(|c| !list.contains(c))
                 .map(|c| {
-                    let why = if Some(a) != main {
-                        "not the main army"
-                    } else if !can_spare(g, p, c) {
+                    let why = if !can_spare(g, p, c) {
                         "needs its production"
+                    } else if Some(a) != main {
+                        "not the main army"
                     } else {
                         "?"
                     };
@@ -495,6 +496,38 @@ mod tests {
         turn(&mut g, p0);
         assert!(g.armies[a].requisition.is_empty());
         assert!(g.army_requisition_orders(a).is_empty(), "withdrawn");
+    }
+
+    /// At war through a turn without a main army (the army out of supply), the orders under way
+    /// stay, except in a city that can no longer spare its production: a threatened city trains
+    /// its own defender rather than the army's unit.
+    #[test]
+    fn without_a_main_army_a_threatened_city_is_released() {
+        let (mut g, c, a) = requisition_game();
+        let (p0, p1) = (PlayerId(0), PlayerId(1));
+        let (t0, t1) = (g.players[p0].team, g.players[p1].team);
+        g.team_declare_war(t0, t1, false, None);
+        turn(&mut g, p0);
+        g.player_do_requisition(p0);
+        let busy = ordered_cities(&g, a);
+        assert!(busy.contains(&c[4]) && busy.contains(&c[5]), "orders under way in the governed cities: {busy:?}");
+        // The army crosses out of supply (five plots beyond the last city): no main army.
+        for u in g.army_units(a) {
+            g.unit_set_xy(u, 17, 8, true);
+        }
+        assert!(!g.army_in_supply(a));
+        assert_eq!(main_army(&g, p0, t1), None);
+        // An enemy stack next to one of the cities with an order.
+        let w = g.d.t::<UnitType>("UNIT_WARRIOR");
+        for _ in 0..3 {
+            g.player_init_unit(p1, w, 9, 3, Some(UnitAIType::UNITAI_ATTACK), None);
+        }
+        assert!(!can_spare(&g, p0, c[4]));
+        turn(&mut g, p0);
+        assert!(!g.armies[a].requisition.contains(&c[4]), "the threatened city is released");
+        assert!(g.cities[c[4]].order_queue.iter().all(|o| !o.requisition), "its order withdrawn");
+        assert!(g.armies[a].requisition.contains(&c[5]), "the others keep theirs");
+        assert!(g.army_requisition_orders(a).iter().any(|&(x, _)| x == c[5]));
     }
 
     /// A marching recruit is the rules' to move: the AI gives it no orders, no stack of ours
