@@ -13,6 +13,7 @@
 //!   `inspect`); [`help`] writes the help texts (what a tech, a building, ... does).
 
 pub mod armies;
+pub mod battles;
 pub mod governors;
 pub mod city;
 pub mod culture;
@@ -321,6 +322,10 @@ pub fn cities(v: &Viewer) -> Json {
                     "religion" => Json::opt_idx(ch.religion),
                 });
             }
+            // Engagement combat: its garrison's stance (docs/ENGAGEMENTS.md).
+            if g.engagements_on() {
+                j.set("garrison_stance", Json::idx(city.garrison_stance));
+            }
         }
         // Revolt pressure on a city the human sees (its banner's mark): its level
         // (`culture::REVOLT_*`) and the unhappiness it causes.
@@ -369,6 +374,10 @@ pub fn unit_json(v: &Viewer, u: UnitId) -> Json {
             j.set("army_unit", g.unit_is_army_unit(u));
             j.set("march", if unit.march.is_some() { armies::march_json(v, u) } else { Json::Null });
         }
+    }
+    // Engagement combat: its role, A, Dv and max HP (`hp` / `max_hp` stay the duel's percent).
+    if g.engagements_on() {
+        battles::unit_fields(g, u, &mut j);
     }
     j
 }
@@ -429,6 +438,10 @@ pub fn view(v: &Viewer, ctx: &Ctx) -> Json {
         // to garrisons (unit ids: each unit's `march` says where and how long).
         "armies" => armies::armies(v),
         "garrison_marching" => if g.armies_on() { armies::garrison_marching(v) } else { Json::Null },
+        // Engagement combat (docs/ENGAGEMENTS.md): on, and the human's battles of this turn and
+        // the last (null when off).
+        "engagements" => g.engagements_on(),
+        "battles" => battles::recent(v),
         // C++ `CvPlayer::m_groupCycle`: the order W cycles the waiting groups in
         // (`cycleSelectionGroups`), and whether some group has orders to continue
         // (`hasAutoUnit`: the cycle's wrap then sends AutoMoves).

@@ -64,6 +64,44 @@ pub fn effects_of(d: &GameData, kind: &str, i: usize) -> Option<String> {
     (!t.is_empty()).then_some(t)
 }
 
+/// What a unit's or a promotion's first strikes, withdrawal, collateral damage, Blitz and combat
+/// limit mean in a battle under engagement combat (docs/ENGAGEMENTS.md; phase6_plan 9.3: opening
+/// volleys, one withdrawal roll, one more battle a turn, a limit per target on attack), as lines
+/// the page appends to the entry's `effects` when engagements are on (the data's
+/// `effects_engagement`); None when the entry has none of them.
+pub fn engagement_notes(d: &GameData, kind: &str, i: usize) -> Option<String> {
+    let (first_strikes, withdrawal, collateral, blitz, limit) = match kind {
+        "UnitType" => {
+            let u = &d.units[UnitType::from_usize(i)];
+            let limited = u.combat_limit < d.defines.max_hit_points && u.combat > 0 && !u.only_defensive;
+            let blitz = u.free_promotions.iter_enumerated().any(|(p, &free)| free && d.promotions[p].blitz);
+            (u.first_strikes + u.chance_first_strikes > 0, u.withdrawal_probability > 0, u.collateral_damage > 0, blitz, limited)
+        }
+        "PromotionType" => {
+            let p = &d.promotions[PromotionType::from_usize(i)];
+            (p.first_strikes_change + p.chance_first_strikes_change > 0, p.withdrawal_change > 0, p.collateral_damage_change > 0, p.blitz, p.combat_limit != 0)
+        }
+        _ => return None,
+    };
+    let mut lines = Vec::new();
+    for (has, key, args) in [
+        (first_strikes, "TXT_KEY_ENGAGE_HELP_FIRST_STRIKES", Vec::new()),
+        (withdrawal, "TXT_KEY_ENGAGE_HELP_WITHDRAWAL", vec![Arg::N(d.defines.engagement_withdraw_hp_percent)]),
+        (collateral, "TXT_KEY_ENGAGE_HELP_COLLATERAL", Vec::new()),
+        (blitz, "TXT_KEY_ENGAGE_HELP_BLITZ", Vec::new()),
+        (limit, "TXT_KEY_ENGAGE_HELP_COMBAT_LIMIT", Vec::new()),
+    ] {
+        if has {
+            lines.push(txt(d, key, &args));
+        }
+    }
+    if lines.is_empty() {
+        return None;
+    }
+    lines.insert(0, txt(d, "TXT_KEY_ENGAGE_HELP_HEAD", &[]));
+    Some(lines.join(NEWLINE))
+}
+
 /// Civ4 `getText` placeholders: `%d1` (a number), `%D1` (a number with its sign), `%s1` and
 /// `%F1` (text), each with an optional grammatical suffix (`%s1_unit`, `%d1_Num`), `%%`, and the
 /// plural form `[NUM1:Route:Routes]` (the first word when argument 1 is 1, else the second).

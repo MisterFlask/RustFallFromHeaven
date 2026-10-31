@@ -50,10 +50,11 @@ pub struct Sidecar {
 
 pub fn log_entry_json(e: &LogEntry) -> Json {
     let j = crate::jobj! { "t" => e.turn, "player" => e.player, "text" => e.text.as_str() };
-    match e.at {
+    let j = match e.at {
         Some((x, y)) => j.with("at", crate::jarr![x, y]),
         None => j,
-    }
+    };
+    crate::report::tag_battle(j, &e.text)
 }
 
 fn log_entry_from(j: &Json) -> Result<LogEntry, FieldError> {

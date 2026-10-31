@@ -526,8 +526,21 @@ fn details_json(c: &CombatDetails) -> Json {
 /// `combat {units,x,y}`: the attack preview of C++ `setCombatPlotHelp` on a plot the human sees:
 /// the attacker the selection would send, the defender it would meet, the odds of winning (per
 /// mille), of retreating (per mille), both current strengths (x100), and each side's strength
-/// breakdown (`CombatDetails` from `maxCombatStr`).
+/// breakdown (`CombatDetails` from `maxCombatStr`). Under engagements, an attack of land units
+/// on land adds `engagement: true` and decides `valid` by the pool and the defenders
+/// (`battles::combat_fields`); the duel's odds stay until the engagement forecast lands.
 pub fn combat(v: &Viewer, units: &[UnitId], x: i32, y: i32) -> Result<Json, QueryErr> {
+    let j = duel_combat(v, units, x, y)?;
+    let g = v.g;
+    let plot = plot_at(v, x, y)?;
+    if g.engagements_on() && g.engage_applies(units[0], plot) {
+        return Ok(crate::view::battles::combat_fields(v, units, plot, j));
+    }
+    Ok(j)
+}
+
+/// The duel's `combat` preview (C++ `setCombatPlotHelp`).
+fn duel_combat(v: &Viewer, units: &[UnitId], x: i32, y: i32) -> Result<Json, QueryErr> {
     check_selection(v, units)?;
     let plot = plot_at(v, x, y)?;
     let g = v.g;

@@ -520,9 +520,9 @@ impl Session {
             command::validate(&self.g, h, cmd, &command::Ctx { events: &events })?
         };
         match plan {
-            Plan::Noop => Ok(CmdOk::Applied { log: Vec::new(), accepted: None }),
+            Plan::Noop => Ok(CmdOk::Applied { log: Vec::new(), accepted: None, battle: None }),
             // An offer the AI declines: nothing changes (C++ sends no message).
-            Plan::Declined => Ok(CmdOk::Applied { log: Vec::new(), accepted: Some(false) }),
+            Plan::Declined => Ok(CmdOk::Applied { log: Vec::new(), accepted: Some(false), battle: None }),
             Plan::Confirm(c) => Ok(CmdOk::NeedsConfirm(c)),
             Plan::Apply(action) => {
                 // The human acted: a new control episode, in which the AutoMoves rule may fire
@@ -551,7 +551,7 @@ impl Session {
         self.journal(&Line::Cmd { stamp: Stamp::of(&self.g), cmd: cmd.to_json() });
         self.to_play = turns;
         UiState::lock(&self.ui).view_version += 1;
-        Ok(CmdOk::Applied { log: Vec::new(), accepted: None })
+        Ok(CmdOk::Applied { log: Vec::new(), accepted: None, battle: None })
     }
 
     fn apply_journaled(&mut self, h: PlayerId, cmd: &Command, action: &Action) -> CmdOk {
@@ -568,6 +568,8 @@ impl Session {
             // The turn report diffs what the human knows now against its next control point.
             self.snapshot = Some(report::snapshot(&self.g, h, mark));
         }
+        // Engagement combat: the first battle the command makes the human launch (its report).
+        let first_report = self.g.battle_report_next;
         command::apply(&mut self.g, h, action);
         self.follow_human(MovedIn::Command);
         self.settle();
@@ -581,7 +583,8 @@ impl Session {
         self.drain_log();
         let log = self.messages.since(mark).to_vec();
         UiState::lock(&self.ui).view_version += 1;
-        CmdOk::Applied { log, accepted: None }
+        let battle = self.g.battle_reports.iter().find(|r| r.id >= first_report && r.sides[0].players.contains(&h)).map(|r| r.id);
+        CmdOk::Applied { log, accepted: None, battle }
     }
 
     /// At a control point after the human ended its turn: the turn report.

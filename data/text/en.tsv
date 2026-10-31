@@ -5982,6 +5982,12 @@ TXT_KEY_EMPHASIZE_PRODUCTION	Emphasize Production
 TXT_KEY_EMPHASIZE_PRODUCTION_HELP	Select this to have a city obtain high levels of production (hammers) each turn. Focusing the city on production will slow growth but ensure that the cities are producing as quickly as possible.
 TXT_KEY_EMPHASIZE_RESEARCH	Emphasize Research
 TXT_KEY_EMPHASIZE_RESEARCH_HELP	Select this to have a city focus on achieving the highest amount of research possible. This will activate specialists if they are available to help facilitate the city's tech research.
+TXT_KEY_ENGAGE_HELP_BLITZ	[ICON_BULLET]Blitz: it may fight one more battle in a turn
+TXT_KEY_ENGAGE_HELP_COLLATERAL	[ICON_BULLET]Collateral damage splashes every enemy unit on the plot before the rounds, those that do not fight too; it never kills
+TXT_KEY_ENGAGE_HELP_COMBAT_LIMIT	[ICON_BULLET]Its combat limit holds for each target: on attack it never hits a unit already down to the limit, and leaves the battle when every target is
+TXT_KEY_ENGAGE_HELP_FIRST_STRIKES	[ICON_BULLET]First strikes are opening volleys: it hits before the first round, while the enemy cannot hit back
+TXT_KEY_ENGAGE_HELP_HEAD	[COLOR_HIGHLIGHT_TEXT]In a battle (engagements):[COLOR_REVERT]
+TXT_KEY_ENGAGE_HELP_WITHDRAWAL	[ICON_BULLET]Withdrawal is one roll, the first round it ends below %d1%% health: it pulls out alive, or fights on to the end (an attacker, or a defender outside a city)
 TXT_KEY_EQUIPMENT_ATHAME	Athame
 TXT_KEY_EQUIPMENT_BLACK_MIRROR	Black Mirror
 TXT_KEY_EQUIPMENT_CROWN_OF_AKHARIEN	Crown of Akharien

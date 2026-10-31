@@ -1,5 +1,5 @@
 //! Staged situations for testing the clients (`ffh-play stage
-//! capture|attack|automoves|load|trade|diplomacy|automate|armies|election|settlement|corrupt DIR`,
+//! capture|attack|automoves|load|trade|diplomacy|automate|armies|engagement|election|settlement|corrupt DIR`,
 //! and the transports' tests): a saved game at a human control point arranged with rules calls,
 //! so that a client can be tried on a situation a fresh game reaches only by chance (a captured
 //! city's keep/raze decision, an attack, the AutoMoves rule between commands, the transport
@@ -499,6 +499,77 @@ pub fn armies(dir: &Path) -> Result<StagedArmies, String> {
     g.player_army_sync(h);
     let paths = s.save("armies").map_err(|e| format!("save: {e:?}"))?;
     Ok(StagedArmies { save: paths.save, army, capital, city, recruit, turn: s.g.game_turn() })
+}
+
+/// A saved game at a human control point (turn 4 of a duel, seed 11, armies and engagements on)
+/// with an engagement to fight (docs/ENGAGEMENTS.md): the human's `army` (`units`: two Axemen, an
+/// Archer, a Horseman and a Warrior) stands next to `city` at (`x`, `y`), a size-3 AI city of a
+/// team at war with the human, held by `defenders` (a Warrior, an Archer and a Warrior); the
+/// human's `capital` (its garrison's stance can be set). Moving the army onto the city opens the
+/// battle plan in the browser client; `engage {army, to}` fights it.
+pub struct StagedEngagement {
+    pub save: PathBuf,
+    pub army: ffh_core::ids::ArmyId,
+    pub units: Vec<UnitId>,
+    pub city: ffh_core::ids::CityId,
+    pub x: i32,
+    pub y: i32,
+    pub defenders: Vec<UnitId>,
+    pub capital: ffh_core::ids::CityId,
+    pub turn: i32,
+}
+
+impl StagedEngagement {
+    pub fn to_json(&self) -> Json {
+        crate::jobj! {
+            "stage" => "engagement", "save" => self.save.display().to_string(), "army" => self.army, "units" => self.units.clone(),
+            "city" => self.city, "x" => self.x, "y" => self.y, "defenders" => self.defenders.clone(), "capital" => self.capital, "turn" => self.turn,
+        }
+    }
+}
+
+/// Writes a [`StagedEngagement`] into `dir` (a game directory).
+pub fn engagement(dir: &Path) -> Result<StagedEngagement, String> {
+    use ffh_core::engagement::WarTest;
+    let d = ffh_data::global();
+    let mut s = duel_with(dir, 11, 4, None, &[GameOptionType::GAMEOPTION_ARMIES, GameOptionType::GAMEOPTION_ENGAGEMENTS])?;
+    let h = s.human;
+    let g = &mut s.g;
+    if !g.engagements_on() {
+        return Err("engagements are not on".into());
+    }
+    let capital = *g.players[h].cities.first().ok_or("no city of the human's")?;
+    let (city, owner) = g.cities.iter().find(|(_, c)| c.owner != h).map(|(id, c)| (id, c.owner)).ok_or("no AI city")?;
+    g.city_set_population(city, 3);
+    let city_plot = g.city_plot(city);
+    for u in g.map.plots[city_plot].units.clone() {
+        g.unit_kill(u, false, None);
+    }
+    let (my, their) = (g.players[h].team, g.players[owner].team);
+    g.team_meet(my, their, false);
+    g.team_declare_war(my, their, false, None);
+    let (cx, cy) = (g.cities[city].x, g.cities[city].y);
+    let ty = |n: &str| d.t::<UnitType>(n);
+    let defenders: Vec<UnitId> = ["UNIT_WARRIOR", "UNIT_ARCHER", "UNIT_WARRIOR"].iter().map(|n| g.player_init_unit(owner, ty(n), cx, cy, None, None)).collect();
+    let kinds = ["UNIT_AXEMAN", "UNIT_AXEMAN", "UNIT_ARCHER", "UNIT_HORSEMAN", "UNIT_WARRIOR"];
+    for (dx, dy) in [(-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (1, 1), (-1, 1), (1, -1)] {
+        let Some(p) = g.plot_xy(cx, cy, dx, dy) else { continue };
+        if g.plot_is_water(p) || g.plot_is_impassable(p) || !g.map.plots[p].units.is_empty() || g.map.plots[p].plot_city.is_some() {
+            continue;
+        }
+        let (px, py) = (g.map.plots[p].x, g.map.plots[p].y);
+        let units: Vec<UnitId> = kinds.iter().map(|n| g.player_init_unit(h, ty(n), px, py, None, None)).collect();
+        if g.engage_attackers(h, p, city_plot, WarTest::AtWar).len() == units.len() && !g.engage_defenders(city_plot, h, &units, WarTest::AtWar).is_empty() {
+            let army = g.army_form(h, &units)?;
+            g.player_army_sync(h);
+            let paths = s.save("engagement").map_err(|e| format!("save: {e:?}"))?;
+            return Ok(StagedEngagement { save: paths.save, army, units, city, x: cx, y: cy, defenders, capital, turn: s.g.game_turn() });
+        }
+        for u in units {
+            g.unit_kill(u, false, None);
+        }
+    }
+    Err("no plot to attack the city from".into())
 }
 
 /// A saved game at a human control point (turn 3 of a duel, seed 15) where both players run a

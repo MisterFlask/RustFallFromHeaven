@@ -55,6 +55,15 @@ pub enum Query {
     /// The Governors screen (docs/GOVERNORS.md): direct rule, each city's governor and mode,
     /// the bench.
     Governors,
+    /// Engagement combat (docs/ENGAGEMENTS.md): the plan of an attack on `to` by `by` (with
+    /// `force`, else `stance`'s pick, else the attack's own stance's): the pool, the force and
+    /// the stance's own pick, the slots, the defenders seen, the pairs' A and Dv; `alternatives`:
+    /// the What-if plans instead (`view::battles::engage_preview`).
+    EngagePreview { by: crate::command::EngageBy, to: (i32, i32), force: Option<Vec<UnitId>>, stance: Option<ffh_data::StanceType>, alternatives: bool },
+    /// A battle report's log (the battle screens replay it), as the human may see it.
+    BattleLog { report: u32 },
+    /// The human's kept battle reports (summaries, newest first).
+    BattleReports,
     /// What can be traded with `with`, both ways (C++ `buildTradeTable`), with denials.
     Trade { with: PlayerId },
     /// Messages from index `since` (`view.log_next` is the next index).
@@ -111,7 +120,8 @@ impl Layer {
 
 /// Every query name (`q`).
 pub const QUERY_NAMES: &[&str] = &[
-    "status", "pending", "view", "map", "plot", "group", "path", "combat", "city", "techs", "civics", "religions", "players", "culture", "armies", "governors", "trade", "log",
+    "status", "pending", "view", "map", "plot", "group", "path", "combat", "city", "techs", "civics", "religions", "players", "culture", "armies", "governors", "engage_preview",
+    "battle_log", "battle_reports", "trade", "log",
     "speech", "moments", "report", "inspect", "text", "ascii", "data", "setup", "saves",
 ];
 
@@ -185,6 +195,9 @@ impl Query {
             Query::Culture => "culture",
             Query::Armies => "armies",
             Query::Governors => "governors",
+            Query::EngagePreview { .. } => "engage_preview",
+            Query::BattleLog { .. } => "battle_log",
+            Query::BattleReports => "battle_reports",
             Query::Trade { .. } => "trade",
             Query::Log { .. } => "log",
             Query::Speech { .. } => "speech",
@@ -221,6 +234,16 @@ impl Query {
             "culture" => Query::Culture,
             "armies" => Query::Armies,
             "governors" => Query::Governors,
+            "engage_preview" => Query::EngagePreview {
+                by: crate::command::EngageBy::from_json(j)?,
+                to: crate::command::plot_field(j, "to")?.ok_or_else(|| FieldError::missing("to"))?,
+                force: j.opt("force")?,
+                stance: crate::names::opt_field(ffh_data::global(), j, "stance")?,
+                alternatives: j.get_or("alternatives", false)?,
+            },
+            // `report`, not `id`: `id` is the envelope's request id (as `inspect`'s `oid`).
+            "battle_log" => Query::BattleLog { report: j.req("report")? },
+            "battle_reports" => Query::BattleReports,
             "trade" => Query::Trade { with: j.req("with")? },
             "log" => Query::Log { since: j.get_or("since", 0)? },
             "speech" => Query::Speech {
@@ -258,6 +281,13 @@ impl Query {
             Query::Path { units, x, y, flags } => j.with("units", ids(units)).with("x", *x).with("y", *y).with("flags", *flags),
             Query::Combat { units, x, y } => j.with("units", ids(units)).with("x", *x).with("y", *y),
             Query::City { city } => j.with("city", *city),
+            Query::EngagePreview { by, to, force, stance, alternatives } => by
+                .put(j)
+                .with("to", crate::command::plot_json(to.0, to.1))
+                .with("force", force.as_ref().map(|f| ids(f)))
+                .with("stance", Json::opt_idx(*stance))
+                .with("alternatives", *alternatives),
+            Query::BattleLog { report } => j.with("report", *report),
             Query::Trade { with } => j.with("with", *with),
             Query::Log { since } => j.with("since", *since),
             Query::Speech { with, comment, salt } => j.with("with", *with).with("comment", Json::opt_idx(*comment)).with("salt", *salt),
@@ -357,6 +387,9 @@ pub fn run(g: &Game, ctx: &Ctx, q: &Query) -> Result<Json, QueryErr> {
         Query::Culture => view::culture::culture(&v),
         Query::Armies => view::armies::screen(&v),
         Query::Governors => view::governors::screen(&v),
+        Query::EngagePreview { by, to, force, stance, alternatives } => view::battles::engage_preview(&v, by, *to, force.as_deref(), *stance, *alternatives)?,
+        Query::BattleLog { report } => view::battles::battle_log(&v, *report)?,
+        Query::BattleReports => view::battles::battle_reports(&v),
         Query::Trade { with } => view::diplo::trade(&v, *with)?,
         Query::Log { since } => match ctx.messages {
             Some(m) => m.since_json(*since),
@@ -414,6 +447,17 @@ mod tests {
             Query::Culture,
             Query::Armies,
             Query::Governors,
+            Query::EngagePreview { by: crate::command::EngageBy::Army(ArmyId(2)), to: (3, 4), force: None, stance: None, alternatives: false },
+            Query::EngagePreview {
+                by: crate::command::EngageBy::Units(vec![UnitId(1)]),
+                to: (3, 4),
+                force: Some(vec![UnitId(1)]),
+                stance: Some(ffh_data::StanceType::from_usize(1)),
+                alternatives: true,
+            },
+            Query::EngagePreview { by: crate::command::EngageBy::From(2, 4), to: (3, 4), force: None, stance: None, alternatives: false },
+            Query::BattleLog { report: 7 },
+            Query::BattleReports,
             Query::Trade { with: PlayerId(2) },
             Query::Log { since: 10 },
             Query::Speech { with: PlayerId(1), comment: None, salt: 0 },

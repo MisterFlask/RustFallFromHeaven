@@ -197,6 +197,11 @@ fn build(d: &GameData) -> Json {
             if let Some(e) = crate::view::help::effects_of(d, k.kind, i) {
                 j.set("effects", e);
             }
+            // Under engagement combat: what its combat abilities mean in a battle (the page
+            // appends it to `effects` when the game's engagements are on).
+            if let Some(n) = crate::view::help::engagement_notes(d, k.kind, i) {
+                j.set("effects_engagement", n);
+            }
             if let Some((_, a)) = keys.iter().find(|(t, _)| t == name) {
                 j.set("keys", Json::Arr(a.bindings.iter().map(crate::view::hotkeys::Binding::to_json).collect()));
                 j.set("order", a.order);
