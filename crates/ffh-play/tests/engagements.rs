@@ -49,39 +49,49 @@ fn int(j: &Json, key: &str) -> i64 {
     j.get(key).and_then(Json::as_i64).unwrap_or_else(|| panic!("no integer `{key}` in {j:?}"))
 }
 
-// The shapes of the battle log (`view/battles.rs`).
-const LOG: &[&str] = &["v", "id", "turn", "viewer_side", "plot", "from", "ground", "slots", "lanes", "sides", "fighters", "pairs", "events", "forecast", "outcome", "summary"];
+// The shapes of the battle log (`view/battles.rs`; `assets/app/battle_log.js`'s header is the
+// screens' contract).
+const LOG: &[&str] = &[
+    "v", "id", "turn", "viewer_side", "plot", "from", "ground", "params", "slots", "lanes", "sides", "fighters", "pairs", "events", "after", "forecast", "outcome", "summary",
+];
 const SIDE: &[&str] = &["player", "shown_player", "civ", "label", "lanes", "ordered"];
 const FIGHTER: &[&str] = &[
     "b", "unit", "unit_type", "name", "owner", "side", "lane", "row", "large", "level", "xp", "hero", "role", "promotions", "max_hp", "hp_start", "hp_battle", "speed",
-    "first_strikes", "chance_first_strikes", "rolled_first_strikes", "actions", "spell", "dodge", "crit_bonus", "anti_flank", "flanker", "withdraw_pct", "combat_limit",
-    "collateral_limit", "def_strike", "immune", "fear", "a", "dv", "fate", "dealt", "taken", "healed",
+    "first_strikes", "chance_first_strikes", "rolled_first_strikes", "actions", "bonus_action", "spell", "dodge", "crit_bonus", "anti_flank", "flanker", "withdraw_pct",
+    "combat_limit", "collateral_limit", "splash", "def_strike", "immune", "fear", "a_x100", "dv_x100", "a", "dv", "fate", "dealt", "taken", "healed",
 ];
 const STAT: &[&str] = &["base_x100", "role_pct", "terms", "total_x100"];
 const PAIR: &[&str] = &["h", "t", "a_x100", "dv_x100", "mean", "a_extra", "dv_extra"];
 const GROUND: &[&str] = &["city", "forest", "hills", "flanking", "rules"];
-const OUTCOME: &[&str] = &["result", "rounds", "plot_taken", "city_captured", "moved_in", "defenders_left"];
+const PARAMS: &[&str] = &["bolt_pct", "splash_pct", "large_hp_pct", "first_strike_speed"];
+const OUTCOME: &[&str] = &["result", "rounds", "plot_taken", "city_captured", "moved_in", "defenders_left", "lines_down", "sides"];
+const LINE: &[&str] = &["committed", "sat_out", "fallen", "escaped", "standing"];
 const SUMMARY: &[&str] = &["id", "turn", "x", "y", "from", "place", "city", "viewer_side", "result", "rounds", "plot_taken", "city_captured", "defenders_left", "has_log", "sides"];
-const SUMMARY_SIDE: &[&str] = &["player", "civ", "label", "slots", "lanes", "used", "committed", "sat_out", "fallen", "lost_types", "escaped", "standing"];
+const SUMMARY_SIDE: &[&str] = &["player", "civ", "label", "slots", "lanes", "used", "committed", "sat_out", "lost", "lost_types", "escaped", "standing"];
 const PLAN: &[&str] = &[
-    "plot", "from", "ground", "slots", "lanes", "sides", "fighters", "pairs", "formation", "auto", "reserve", "def_formation", "def_reserve", "forecast", "declare_war", "errors",
+    "plot", "from", "ground", "params", "slots", "lanes", "sides", "fighters", "formation", "auto_formation", "reserve", "def_formation", "def_reserve", "forecast", "declare_war",
+    "errors",
 ];
-const FORECAST: &[&str] = &["runs", "wiped_permille", "falls_permille", "repulsed_permille", "lost_x100", "escaped_x100", "per"];
+const FORECAST: &[&str] = &["runs", "line_wiped_permille", "plot_falls_permille", "attackers_wiped_permille", "lost_x100", "escaped_x100", "per"];
 const HIT: &[&str] = &["target", "dmg", "expected", "r", "crit", "miss", "killed", "withdrew", "splash"];
-/// Each event kind with its members (`kind` included).
+/// The action kinds as the screens name them.
+const KINDS: &[&str] = &["Strike", "Charge", "Stab", "Shoot", "Spell", "Bombard", "Heal", "None"];
+/// Each event kind of `events` with its members (`kind` included; an action's `kind` is its
+/// action kind).
 const EVENTS: &[(&str, &[&str])] = &[
-    ("Phase", &["kind", "phase"]),
-    ("Morale", &["kind", "unit", "source", "chance", "roll", "passed"]),
-    ("SatOut", &["kind", "unit", "why"]),
-    ("DefStrike", &["kind", "striker", "target", "rolled", "chance", "roll", "pct", "dmg"]),
-    ("Action", &["kind", "round", "pass", "actor", "action", "spell", "target", "hits", "heal", "knocked", "note"]),
-    ("End", &["kind", "rounds", "down"]),
+    ("Afraid", &["round", "pass", "kind", "actor", "target"]),
+    ("DefStrike", &["round", "pass", "kind", "actor", "target", "hits", "chance", "roll", "pct"]),
+    ("Cast", &["round", "pass", "kind", "actor", "spell", "targets", "effect", "hits"]),
+];
+const ACTION: &[&str] = &["round", "pass", "actor", "kind", "spell", "target", "hits", "heal", "knocked", "note"];
+/// Each kind of `after` with its members.
+const AFTER: &[(&str, &[&str])] = &[
     ("Heal", &["kind", "unit", "amount", "source"]),
     ("Xp", &["kind", "unit", "amount", "from"]),
     ("KillEffect", &["kind", "killer", "victim", "effect"]),
     ("Flee", &["kind", "unit", "to"]),
     ("MoveIn", &["kind", "units", "city"]),
-    ("Cast", &["kind", "caster", "spell", "targets", "effect"]),
+    ("Cast", &["kind", "actor", "spell", "targets", "effect", "hits"]),
 ];
 
 /// The staged engagement (the smoke test's): the plan with its forecast, the attack through
@@ -121,17 +131,27 @@ fn the_staged_engagement_is_fought_through_engage_and_its_log_has_the_screens_fi
     assert!(arr(&pv, "errors").is_empty(), "{pv:?}");
     let formation = arr(&pv, "formation");
     assert!(!formation.is_empty());
-    assert_eq!(formation, arr(&pv, "auto"), "no formation given: the auto formation");
+    assert_eq!(formation, arr(&pv, "auto_formation"), "no formation given: the auto formation");
     assert_eq!(arr(&pv, "fighters").len(), st.units.len() + st.defenders.len());
     assert_eq!(arr(&pv, "slots").len(), 2);
     assert_eq!(keys(pv.get("ground").unwrap()), sorted(GROUND));
+    assert_eq!(keys(pv.get("params").unwrap()), sorted(PARAMS));
+    for f in arr(&pv, "fighters") {
+        assert_eq!(keys(&f), sorted(FIGHTER));
+        for a in arr(&f, "actions") {
+            assert!(KINDS.contains(&a.get("kind").and_then(Json::as_str).unwrap_or("?")), "{a:?}");
+            assert!(int(&a, "n") >= 0);
+        }
+    }
     let fc = pv.get("forecast").unwrap();
     assert_eq!(keys(fc), sorted(FORECAST));
     assert!(int(fc, "runs") > 0 && arr(fc, "per").len() == formation.len() + arr(&pv, "def_formation").len());
-    // A formation that breaks the grid: the plan says why.
+    // A formation that breaks the grid: the plan in the auto formation, no forecast, and why.
     let u0 = int(&formation[0], "unit");
     let bad = q(&s, &format!(r#"{{"q":"engage_preview","army":{army},"to":{{"x":{x},"y":{y}}},"formation":[{{"unit":{u0},"lane":9,"row":0}}]}}"#));
     assert!(!arr(&bad, "errors").is_empty(), "{bad:?}");
+    assert!(bad.get("forecast").is_some_and(Json::is_null), "{bad:?}");
+    assert_eq!(arr(&bad, "formation"), formation, "the refused formation's plan is the auto formation's");
 
     // An attack on a plot that is not next to the army is refused, and changes nothing.
     let far = cmd(&mut s, &format!(r#"{{"c":"engage","army":{army},"to":{{"x":{},"y":{y}}}}}"#, x + 3));
@@ -172,6 +192,7 @@ fn the_staged_engagement_is_fought_through_engage_and_its_log_has_the_screens_fi
         assert_eq!(keys(&side), sorted(SIDE));
     }
     assert_eq!(keys(l.get("ground").unwrap()), sorted(GROUND));
+    assert_eq!(keys(l.get("params").unwrap()), sorted(PARAMS));
     let fighters = arr(&l, "fighters");
     assert_eq!(fighters.len(), st.units.len() + st.defenders.len(), "every unit of both sides is in the log");
     for (b, f) in fighters.iter().enumerate() {
@@ -179,11 +200,21 @@ fn the_staged_engagement_is_fought_through_engage_and_its_log_has_the_screens_fi
         assert_eq!(int(f, "b"), b as i64);
         assert_eq!(keys(f.get("a").unwrap()), sorted(STAT));
         assert_eq!(keys(f.get("dv").unwrap()), sorted(STAT));
+        assert_eq!(int(f, "a_x100"), int(f.get("a").unwrap(), "total_x100"));
+        assert_eq!(int(f, "dv_x100"), int(f.get("dv").unwrap(), "total_x100"));
     }
     for p in arr(&l, "pairs") {
         assert_eq!(keys(&p), sorted(PAIR));
     }
-    assert_eq!(keys(l.get("outcome").unwrap()), sorted(OUTCOME));
+    let outcome = l.get("outcome").unwrap();
+    assert_eq!(keys(outcome), sorted(OUTCOME));
+    let lines = arr(outcome, "sides");
+    assert_eq!(lines.len(), 2);
+    for (side, line) in lines.iter().enumerate() {
+        assert_eq!(keys(line), sorted(LINE));
+        let sum = int(line, "sat_out") + int(line, "fallen") + int(line, "escaped") + int(line, "standing");
+        assert_eq!(sum, int(line, "committed"), "side {side}: {line:?}");
+    }
     // Names for people, not text keys.
     let city = l.get("plot").and_then(|p| p.get("city")).and_then(|c| c.get("name")).and_then(Json::as_str).expect("the defended city's name");
     assert!(!city.is_empty() && !city.contains("TXT_KEY"), "{city}");
@@ -204,20 +235,38 @@ fn the_staged_engagement_is_fought_through_engage_and_its_log_has_the_screens_fi
     let n = fighters.len() as i64;
     let in_range = |e: &Json, k: &str| e.get(k).and_then(Json::as_i64).is_none_or(|b| (0..n).contains(&b));
     let events = arr(&l, "events");
-    assert!(events.iter().any(|e| e.get("kind").and_then(Json::as_str) == Some("Action")), "the battle has actions");
-    assert!(events.iter().any(|e| e.get("kind").and_then(Json::as_str) == Some("End")));
+    let kind = |e: &Json| e.get("kind").and_then(Json::as_str).unwrap_or("?").to_string();
+    assert!(events.iter().any(|e| KINDS.contains(&kind(e).as_str())), "the battle has actions");
+    let mut last = (0, 0);
     for e in &events {
-        let kind = e.get("kind").and_then(Json::as_str).unwrap_or("?");
-        let (_, members) = EVENTS.iter().find(|(k, _)| *k == kind).unwrap_or_else(|| panic!("an event kind the screens do not know: {e:?}"));
+        let k = kind(e);
+        let members: &[&str] = if KINDS.contains(&k.as_str()) {
+            ACTION
+        } else {
+            EVENTS.iter().find(|(x, _)| *x == k).unwrap_or_else(|| panic!("an event kind the screens do not know: {e:?}")).1
+        };
         assert_eq!(keys(e), sorted(members), "{e:?}");
-        for k in ["actor", "target", "unit", "striker", "source", "killer", "victim", "caster"] {
-            assert!(in_range(e, k), "{k} out of range: {e:?}");
+        for key in ["actor", "target"] {
+            assert!(in_range(e, key), "{key} out of range: {e:?}");
         }
-        if kind == "Action" {
-            for h in arr(e, "hits") {
-                assert_eq!(keys(&h), sorted(HIT));
-                assert!(in_range(&h, "target"));
+        for h in e.get("hits").and_then(Json::as_arr).unwrap_or(&[]) {
+            if members == ACTION {
+                assert_eq!(keys(h), sorted(HIT));
             }
+            assert!(in_range(h, "target"));
+        }
+        // In order: the opening (round 0, pass 0), then the rounds and their passes.
+        let at = (int(e, "round"), int(e, "pass"));
+        assert!(at >= last, "{e:?} after round {} pass {}", last.0, last.1);
+        assert_eq!(at.0 == 0, !members.eq(ACTION), "only the opening is at round 0: {e:?}");
+        last = at;
+    }
+    for a in arr(&l, "after") {
+        let k = kind(&a);
+        let (_, members) = AFTER.iter().find(|(x, _)| *x == k).unwrap_or_else(|| panic!("an after-battle kind the screens do not know: {a:?}"));
+        assert_eq!(keys(&a), sorted(members), "{a:?}");
+        for key in ["unit", "killer", "victim"] {
+            assert!(in_range(&a, key), "{key} out of range: {a:?}");
         }
     }
     // A report that is not kept, or not the viewer's, is gone.

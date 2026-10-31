@@ -15,7 +15,8 @@ setData({
   kinds: ["UnitType", "CombatRoleType", "SpellType", "FeatureType"],
   tables: {
     UnitType: [{ type: "UNIT_AXEMAN", name: "Axeman" }],
-    CombatRoleType: ["FRONTLINE", "SCREEN", "BACKLINE", "FLANKER", "ASSASSIN", "SUPPORT"].map((r) => ({ type: `COMBATROLE_${r}`, name: r[0] + r.slice(1).toLowerCase() })),
+    // the data's roles, in its order (Units/CIV4CombatRoleInfos.xml)
+    CombatRoleType: ["FRONTLINE", "SCREEN", "FLANKER", "ASSASSIN", "ARCHER", "SIEGE", "ARCANE", "DIVINE"].map((r) => ({ type: `COMBATROLE_${r}`, name: r[0] + r.slice(1).toLowerCase() })),
     SpellType: [{ type: "SPELL_MAELSTROM", name: "Maelstrom" }],
     FeatureType: [{ type: "FEATURE_FOREST", name: "Forest" }],
   },
@@ -24,14 +25,13 @@ setData({
 const logs = Object.entries(FIXTURES).flatMap(([name, fx]) => fx.logs.map((l, k) => ({ name: `${name}#${k}`, log: l.log, formation: l.formation })));
 const field = FIXTURES.field.logs[0].log;
 
-test("types resolve by index or by name; roles by their key, old names included", () => {
+test("types resolve by index or by name; roles by their key", () => {
   assert.equal(L.tyName("UnitType", 0), "UNIT_AXEMAN");
   assert.equal(L.tyIdx("UnitType", "UNIT_AXEMAN"), 0);
   assert.equal(L.tyLabel("UnitType", "UNIT_WAR_ELEPHANT"), "War Elephant");
-  assert.equal(L.roleKey({ role: 3 }), "flanker");
+  assert.equal(L.roleKey({ role: 2 }), "flanker");
+  assert.equal(L.roleKey({ role: 7 }), "divine");
   assert.equal(L.roleKey({ role: "COMBATROLE_ARCANE" }), "arcane");
-  assert.equal(L.roleKey({ role: 2 }), "archer", "BACKLINE is the archer's old name");
-  assert.equal(L.roleKey({ role: 5 }), "arcane", "SUPPORT is the arcane's old name");
   assert.equal(L.roleLabel({ role: "COMBATROLE_SIEGE" }), "Siege");
   assert.equal(L.kindKey("STRIKE"), "Strike");
   assert.equal(L.kindKey("bombard"), "Bombard");
@@ -254,6 +254,14 @@ test("the opening: a defensive strike and a unit afraid", () => {
   assert.equal(text(lines[2]), "Archer strikes Axeman as it comes in 18");
   assert.equal(lines[3].text, "Round 1 · pass 1");
   assert.equal(text(lines[4]), "Longbowman shoots Axeman 23 critical.");
+  // A strike that did no harm (the attacker too strong for it), as the engine sends it.
+  const harmless = { ...log, events: [{ round: 0, pass: 0, kind: "DefStrike", actor: 4, target: 0, hits: [{ target: 0, dmg: 0, miss: true }], chance: 40, roll: 12, pct: 0 }] };
+  assert.equal(text(L.logLines(harmless)[1]), "Archer strikes Axeman as it comes in, to no effect");
+  assert.equal(L.finalState(harmless).hp[0], 12000);
+  // Phase 7's opening spells (none yet): a cast's hits fold as an action's.
+  const cast = { ...log, events: [{ round: 0, pass: 0, kind: "Cast", actor: 2, spell: "SPELL_MAELSTROM", targets: [0], effect: { kind: "Damage", hits: [[0, 1500]] }, hits: [{ target: 0, dmg: 1500 }] }] };
+  assert.equal(text(L.logLines(cast)[1]), "Longbowman casts Maelstrom on Axeman 15.");
+  assert.equal(L.finalState(cast).hp[0], 12000 - 1500);
 });
 
 test("damage and HP in words: centi-HP rounded, never a hit of 0 shown for one that hurt", () => {

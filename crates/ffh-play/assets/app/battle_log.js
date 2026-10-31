@@ -9,7 +9,9 @@
 // words of a rule are keyed by the codes the engine sends: action kinds, ground rules, notes).
 //
 // ---------------------------------------------------------------------------------------------
-// The protocol fields the screens read (JSON; type-valued fields are indices as everywhere in the
+// The protocol fields the screens read (JSON; the server writes them in crates/ffh-play/src/view/
+// battles.rs, and crates/ffh-play/tests/engagements.rs checks every member it sends; members the
+// screens do not read are left out here. Type-valued fields are indices as everywhere in the
 // protocol, or type names as in the dev fixture: `tyName`/`tyIdx` take either; HP in centi-HP
 // unless named `max_hp`; A and Dv x100; percents as integers; `b` is a fighter's index in the
 // reply's `fighters`; a side is 0 (the attacker) or 1 (the defender); rows are 0 Front, 1 Middle,
@@ -33,8 +35,9 @@
 //     SlotChange {src: "Terrain" (terrain) | "Feature" (feature) | "Hills" | "River" | "CityDefense" (pct, next_at)
 //                 | "Bombarded" (pct) | "Minimum" | "Summons" (n), delta}
 //   lanes: [attacker's lanes, defender's lanes]
-//   sides: [SideSnap, SideSnap]: {player, shown_player, civ, label, army, garrison_of}
-//     (`player`: the real one on the viewer's side, the one the viewer saw on the other: hidden nationality)
+//   sides: [SideSnap, SideSnap]: {player, shown_player, civ, label, lanes, ordered (its formation was its order's,
+//     not the rules' auto formation)} (`player`: the real one on the viewer's side, the one the viewer saw on the
+//     other: hidden nationality)
 //   fighters: [Fighter]: both lines, and the units of both sides on the two plots that stayed out of them (the
 //     attacker's pool, the defenders' reserve the viewer sees: `lane` null):
 //     {b, unit, unit_type, name, owner, side, level, hero, promotions, role (CombatRoleType), large (fills two
@@ -49,25 +52,29 @@
 //   events, in order:
 //     the opening (round 0, pass 0):
 //       {round: 0, pass: 0, kind: "Afraid", actor (the Fear unit, or null), target}: the target sits out the battle
-//       {round: 0, pass: 0, kind: "DefStrike", actor (a defender, in the line or not), target, hits: [{target, dmg}]}
+//       {round: 0, pass: 0, kind: "DefStrike", actor (a defender, in the line or not), target, hits: [{target, dmg,
+//        miss (true: the strike did no harm)}]}
+//       {round: 0, pass: 0, kind: "Cast", actor, spell (SpellType), hits: [{target, dmg}]}: phase 7's opening spells
+//        (none yet)
 //     then the actions, one unit at a time (round 1.., pass 1..):
 //       {round, pass, actor, kind (ActionKind), spell? (SpellType; null: the magic bolt), target (null: none),
 //        hits: [{target, dmg, crit?, miss?, killed?, withdrew?}] (the first on `target`, the rest its splash; `dmg`
 //        what the target lost), heal?: {target, amount}, knocked?: {unit, from, to} (rows), note?: "NoTarget" |
 //        "NoOneHurt"}
 //   outcome: {plot_taken, city_captured (the city as the attacker's: its id changes with its owner; null), rounds
-//     (fought), defenders_left (on the plot after the battle, in the line or not), sides: [{fallen, escaped,
-//     standing} (counts of the units in the line), ...]}
-//   after: [{kind: "Xp", unit, amount} | {kind: "MoveIn", units, city} | {kind: "Flee", unit, to: {x, y}}] (what the
-//     battle did after it: optional, newer kinds are ignored)
+//     (fought), defenders_left (on the plot after the battle, in the line or not), sides: [{committed, sat_out,
+//     fallen, escaped, standing} (counts of the units in the line), ...]}
+//   after: [{kind: "Xp", unit, amount} | {kind: "MoveIn", units, city} | {kind: "Flee", unit, to: {x, y}} |
+//     {kind: "Heal", unit, amount} | {kind: "KillEffect", killer, victim, effect}] (what the battle did after it:
+//     optional, newer kinds are ignored)
 //   summary: the report's summary (below)
 //
 // Battle summary (`battle_reports` -> {on, reports: [summary], newest first}; the view's `battles`, this game turn's
 //   and the last; the turn report's `engagements`; the `engage` reply's `battle`): {id, turn, x, y, from: {x, y}, place
 //   (the city's name, or null), city, viewer_side, plot_taken, city_captured, rounds, defenders_left, has_log (false:
-//   only the summary is kept), sides: [{player, civ, label, slots, lanes, committed, lost, lost_types: [[unit_type,
-//   n]], escaped, sat_out, fled, standing}]}. A game-log message about a battle carries `kind: "engagement"` and
-//   `report` (its id).
+//   only the summary is kept), sides: [{player, civ, label, slots, lanes, used (the slots its line filled),
+//   committed, lost (fell), lost_types: [[unit_type, n]], escaped, sat_out, standing}]}. A game-log message about a
+//   battle carries `kind: "engagement"` and `report` (its id).
 //
 // EngagePreview (`engage_preview {army | units | from, to, formation?: [{unit, lane, row}]}`): plot, from, ground,
 //   params, slots, lanes, sides, fighters (the attacker's pool in the formation asked for, checked, else in the
@@ -75,7 +82,10 @@
 //   ([{unit, lane, row}]: the attacker's in `fighters`, the one the forecast is for, and the rules' own),
 //   forecast: Forecast | null (run before the reply: there is no later one; null whenever `errors` is not empty),
 //   declare_war (the team the attack declares war on, or null), errors (why the formation or the attack is
-//   refused). The plan drops a forecast whose `formation` is not the one it asked for. Forecast {runs, lost_x100: [attacker, defender] (units expected to fall, x100),
+//   refused: a refused formation's reply is the auto formation's, with no forecast; a plot the attackers do not see
+//   or are not next to, or an attack the rules refuse, has `declare_war` and `errors` alone). The plan drops a
+//   forecast whose `formation` is not the one it asked for. Forecast {runs, lost_x100: [attacker, defender] (units
+//   expected to fall, x100),
 //   line_wiped_permille (the defenders' line wiped out), plot_falls_permille, attackers_wiped_permille?,
 //   per: [{b, fall_pct, escape_pct}]}.
 // The `engage` command: {army | units | from, to, formation?, declare_war?}; its reply's `r.report` is the battle's.
@@ -114,14 +124,10 @@ export function tyLabel(kind, v) {
 
 export const ROWS = ["Front", "Middle", "Rear"];
 
-/** The roles' old names (data from before revision 4) as their new keys. */
-const OLD_ROLE = { backline: "archer", support: "arcane" };
-
 /** A role's short key ("flanker" for COMBATROLE_FLANKER), for its icon and its words. */
 export function roleKey(f) {
   const n = tyName("CombatRoleType", f?.role);
-  const k = n ? n.replace(/^COMBATROLE_/, "").toLowerCase() : "";
-  return OLD_ROLE[k] ?? k;
+  return n ? n.replace(/^COMBATROLE_/, "").toLowerCase() : "";
 }
 
 /** A role's display name ("Frontline"). */
@@ -668,7 +674,15 @@ export function logLines(log) {
     }
     if (e.kind === "DefStrike") {
       const h = e.hits?.[0];
-      parts.push(who(e.actor), t(" strikes "), who(e.target), t(" as it comes in "), t(dmgText(h?.dmg ?? 0), "bt-n"));
+      parts.push(who(e.actor), t(" strikes "), who(e.target), t(" as it comes in"));
+      parts.push(...(h?.miss || !h?.dmg ? [t(", to no effect", "dim")] : [t(" "), t(dmgText(h.dmg), "bt-n")]));
+      out.push({ i, parts, speed: null });
+      return;
+    }
+    if (e.kind === "Cast") {
+      parts.push(who(e.actor), t(` casts ${spellName(e.spell)}`));
+      (e.hits ?? []).forEach((h, k) => parts.push(t(k ? ", " : " on "), who(h.target), t(" "), t(dmgText(h.dmg), "bt-n")));
+      parts.push(t("."));
       out.push({ i, parts, speed: null });
       return;
     }

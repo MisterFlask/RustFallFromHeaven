@@ -145,7 +145,7 @@ function applyImpact(now) {
   if (e.heal) W.disp.hp[e.heal.target] = W.st.hp[e.heal.target];
   // the snap eases a knocked unit it lifted back during the return; one it did not, eases here
   if (e.knocked && knockFrom) W.vis[e.knocked.unit].knock = { from: knockFrom, at: now };
-  if (e.kind !== "Afraid" && !e.hits?.length && !e.heal) float(e.actor, e.note === "NoOneHurt" || e.kind === "Heal" ? "no one to heal" : "no target", "miss", now);
+  if (e.kind !== "Afraid" && e.kind !== "Cast" && !e.hits?.length && !e.heal) float(e.actor, e.note === "NoOneHurt" || e.kind === "Heal" ? "no one to heal" : "no target", "miss", now);
   settle(now);
   syncLog();
   syncTop();

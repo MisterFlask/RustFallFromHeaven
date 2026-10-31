@@ -9,12 +9,15 @@
 //! terrain (the map's, now), each side's civilization and label, each fighter's display name and
 //! promotions (the unit's while it lives, else the promotions among its A and Dv parts).
 //!
-//! **The log's events** are the engine's in order: the stages, the morale rolls and the units
-//! that sat out, the defensive strikes, then every action of the battle as
-//! `{kind: "Action", round, pass, actor, action, spell, target, hits: [{target, dmg, expected, r,
-//! crit, miss, killed, withdrew, splash}], heal: {target, amount, r}, knocked: {unit, from, to},
-//! note}` (fighters by their index in `fighters`), the battle's end, and the post-battle steps (XP,
-//! kill effects, heals, flight, the move in).
+//! **The log's events** are the engine's in order, as the battle screens fold them
+//! (`assets/app/battle_log.js`'s header is the contract): `events`, the opening at round 0 and
+//! pass 0 (`{kind: "Afraid", actor: the Fear unit, target}` for a unit that sat out,
+//! `{kind: "DefStrike", actor, target, hits: [{target, dmg, miss}]}` for a defensive strike), then
+//! every action of the battle as `{round, pass, actor, kind (an action kind: "Strike", ...), spell,
+//! target, hits: [{target, dmg, expected, r, crit, miss, killed, withdrew, splash}], heal: {target,
+//! amount, r}, knocked: {unit, from, to}, note}` (fighters by their index in `fighters`); `after`,
+//! the post-battle steps (XP, heals, kill effects, flight, the move in). The engine's stages, the
+//! morale rolls that passed and the battle's end stay out (the outcome says how it ended).
 //!
 //! **Per viewer (G5).** A viewer sees the reports of the battles it fought on a side (the
 //! engine's `BattleReport::involves`), or every one under debug reveal. Its own side shows its real
@@ -24,12 +27,11 @@
 //! **The plan** (`engage_preview`, the engine's `Game::engage_preview`) is the attack before it is
 //! made: the pool on the attacking plot, the plan's formation (the one asked for, checked, else
 //! the rules' auto formation) and the auto formation, the slots and lanes, the ground and its
-//! rules, the defenders the attacker sees and their formation, every pair's A and Dv both ways,
-//! and the forecast (the real resolver's battles on a private RNG). A plot the viewer does not
-//! see, or one not next to the attackers, has no plan: the reply is its `errors` (and
-//! `declare_war`) alone.
+//! rules, the defenders the attacker sees and their formation, and the forecast (the real
+//! resolver's battles on a private RNG). A plot the viewer does not see, or one not next to the
+//! attackers, has no plan: the reply is its `errors` (and `declare_war`) alone.
 
-use ffh_core::engagement::formation::{Event, Note};
+use ffh_core::engagement::formation::{Event, Hit, Note};
 use ffh_core::engagement::report::*;
 use ffh_core::engagement::{EngageResult, FighterIdx, GroundRule, HitCtx, Place, PreviewInput, Side, WarTest};
 use ffh_core::game::Game;
@@ -75,28 +77,59 @@ fn plot_idx_json(g: &Game, p: PlotIdx) -> Json {
     plot_json(x, y)
 }
 
-fn rule_json(r: &GroundRule) -> Json {
-    let j = |kind: &str| crate::jobj! { "kind" => kind };
+/// A ground rule as the screens read it, `{kind, pct}`; `None` for one the ground's flags say
+/// already (no flanking: `flanking` false) or that changes nothing (a charge's first round at
+/// 100%).
+fn rule_json(r: &GroundRule) -> Option<Json> {
+    let j = |kind: &str, pct: i32| Some(crate::jobj! { "kind" => kind, "pct" => pct });
     match *r {
-        GroundRule::CityShots { pct } => j("CityShots").with("pct", pct),
-        GroundRule::ForestRanged { pct } => j("ForestRanged").with("pct", pct),
-        GroundRule::HillsAttacker { pct } => j("HillsAttacker").with("pct", pct),
-        GroundRule::HillsDefenderRanged { pct } => j("HillsDefenderRanged").with("pct", pct),
-        GroundRule::Charge { pct } => j("Charge").with("pct", pct),
-        GroundRule::NoFlanking => j("NoFlanking"),
+        GroundRule::CityShots { pct } => j("CityShots", pct),
+        GroundRule::ForestRanged { pct } => j("ForestRanged", pct),
+        GroundRule::HillsAttacker { pct } => j("HillsAttacker", pct),
+        GroundRule::HillsDefenderRanged { pct } => j("HillsDefenderRanged", pct),
+        GroundRule::Charge { pct } if pct != 100 => j("ChargeFirstRound", pct),
+        GroundRule::Charge { .. } | GroundRule::NoFlanking => None,
     }
 }
 
 fn rules_json(rules: &[GroundRule]) -> Json {
-    Json::Arr(rules.iter().map(rule_json).collect())
+    Json::Arr(rules.iter().filter_map(rule_json).collect())
 }
 
 fn ground_json(g: &ffh_core::engagement::Ground, rules: &[GroundRule]) -> Json {
     crate::jobj! { "city" => g.city, "forest" => g.forest, "hills" => g.hills, "flanking" => g.flanking(), "rules" => rules_json(rules) }
 }
 
+/// The rule values the screens word (the tooltips' and the rules' sentences): the magic bolt's
+/// power, a splash on each neighbour (percent of the hit on the target), a large unit's HP (percent
+/// of its role's), the speed a first strike adds.
+fn params_json(d: &GameData) -> Json {
+    let x = &d.defines;
+    crate::jobj! {
+        "bolt_pct" => x.engagement_bolt_percent,
+        "splash_pct" => x.engagement_splash_percent,
+        "large_hp_pct" => x.engagement_large_hp_percent,
+        "first_strike_speed" => x.engagement_first_strike_speed,
+    }
+}
+
+/// An action kind as the screens name it ("Strike").
+fn kind_name(k: ActionKind) -> &'static str {
+    match k {
+        ActionKind::None => "None",
+        ActionKind::Strike => "Strike",
+        ActionKind::Charge => "Charge",
+        ActionKind::Stab => "Stab",
+        ActionKind::Shoot => "Shoot",
+        ActionKind::Spell => "Spell",
+        ActionKind::Bombard => "Bombard",
+        ActionKind::Heal => "Heal",
+    }
+}
+
+/// What a unit does from its front, middle and rear rows: `[{kind, n}]` (`n` actions of `kind`).
 fn actions_json(rows: &[RowActions; ROWS]) -> Json {
-    Json::Arr(rows.iter().map(|r| crate::jobj! { "kind" => r.kind.token(), "count" => r.count }).collect())
+    Json::Arr(rows.iter().map(|r| crate::jobj! { "kind" => kind_name(r.kind), "n" => r.count }).collect())
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -306,7 +339,10 @@ fn fighter_promotions(g: &Game, f: &LogFighter) -> Vec<PromotionType> {
     }
 }
 
-/// A fighter as the screens read it (`b` its index); `owner` the owner to show the viewer.
+/// A fighter as the screens read it (`b` its index); `owner` the owner to show the viewer. Its A
+/// and Dv against an ordinary opponent are `a_x100` and `dv_x100` (`a` and `dv` their parts);
+/// `bonus_action`: a tier 4 unit or a hero (its extra action is in `actions`); `splash`: its
+/// damaging hits splash the target's neighbours (collateral damage, or a damage spell it casts).
 fn fighter_json(g: &Game, b: usize, f: &LogFighter, owner: PlayerId) -> Json {
     let d = g.d;
     let name = if f.name.is_empty() { names::display(d, f.unit_type).into_owned() } else { names::text(d, &f.name).to_string() };
@@ -334,6 +370,7 @@ fn fighter_json(g: &Game, b: usize, f: &LogFighter, owner: PlayerId) -> Json {
         "chance_first_strikes" => f.chance_first_strikes,
         "rolled_first_strikes" => f.rolled_first_strikes,
         "actions" => actions_json(&f.actions),
+        "bonus_action" => d.engage_extra_actions(f.unit_type, f.hero) > 0,
         "spell" => Json::opt_idx(f.spell),
         "dodge" => f.dodge,
         "crit_bonus" => f.crit_bonus,
@@ -342,9 +379,12 @@ fn fighter_json(g: &Game, b: usize, f: &LogFighter, owner: PlayerId) -> Json {
         "withdraw_pct" => f.withdraw_pct,
         "combat_limit" => f.combat_limit,
         "collateral_limit" => f.collateral_limit,
+        "splash" => f.collateral_limit.is_some() || f.spell.is_some(),
         "def_strike" => f.def_strike.map(|(c, dmg)| crate::jarr![c, dmg]),
         "immune" => Json::Arr(immune),
         "fear" => f.fear,
+        "a_x100" => f.a.total_x100,
+        "dv_x100" => f.dv.total_x100,
         "a" => stat_json(d, f.unit_type, true, &f.a),
         "dv" => stat_json(d, f.unit_type, false, &f.dv),
         "fate" => f.fate.as_ref().map(fate_json),
@@ -364,22 +404,6 @@ fn pair_json(p: &LogPair) -> Json {
         "a_extra" => terms_json(&p.a_extra),
         "dv_extra" => terms_json(&p.dv_extra),
     }
-}
-
-/// `terms` less the terms of `headline` (a multiset difference): the pair-only terms (as the
-/// engine's log has them).
-fn extra_terms(terms: Vec<Term>, headline: &[Term]) -> Vec<Term> {
-    let mut left: Vec<&Term> = headline.iter().collect();
-    terms
-        .into_iter()
-        .filter(|t| match left.iter().position(|h| *h == t) {
-            Some(i) => {
-                left.swap_remove(i);
-                false
-            }
-            None => t.pct != 0,
-        })
-        .collect()
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -425,30 +449,31 @@ fn idxs(v: &[FighterIdx]) -> Json {
     Json::Arr(v.iter().map(|&b| Json::from(b)).collect())
 }
 
-/// An action of the battle (module comment).
-fn action_json(e: &Event) -> Json {
-    let hits = e.hits.iter().map(|h| {
-        crate::jobj! {
-            "target" => h.target,
-            "dmg" => h.dmg,
-            "expected" => h.expected,
-            "r" => h.r,
-            "crit" => h.crit,
-            "miss" => h.miss,
-            "killed" => h.killed,
-            "withdrew" => h.withdrew,
-            "splash" => h.splash,
-        }
-    });
+/// A hit of an action (the first on its target, the rest its splash).
+fn hit_json(h: &Hit) -> Json {
     crate::jobj! {
-        "kind" => "Action",
+        "target" => h.target,
+        "dmg" => h.dmg,
+        "expected" => h.expected,
+        "r" => h.r,
+        "crit" => h.crit,
+        "miss" => h.miss,
+        "killed" => h.killed,
+        "withdrew" => h.withdrew,
+        "splash" => h.splash,
+    }
+}
+
+/// An action of the battle (module comment): `kind` its action kind as fought.
+fn action_json(e: &Event) -> Json {
+    crate::jobj! {
         "round" => e.round,
         "pass" => e.pass,
         "actor" => e.actor,
-        "action" => e.kind.token(),
+        "kind" => kind_name(e.kind),
         "spell" => e.spell.map(|s| Json::idx(SpellType::from_usize(s as usize))),
         "target" => e.target,
-        "hits" => Json::Arr(hits.collect()),
+        "hits" => Json::Arr(e.hits.iter().map(hit_json).collect()),
         "heal" => e.heal.map(|h| crate::jobj! { "target" => h.target, "amount" => h.amount, "r" => h.r }),
         "knocked" => e.knocked.map(|k| crate::jobj! { "unit" => k.unit, "from" => k.from, "to" => k.to }),
         "note" => e.note.map(|n| match n {
@@ -458,50 +483,86 @@ fn action_json(e: &Event) -> Json {
     }
 }
 
-/// An event of the log, `{kind, ...}` (module comment).
-fn event_json(g: &Game, e: &LogEvent) -> Json {
+/// An event of the opening (round 0, pass 0), `{round, pass, kind}`.
+fn opening_json(kind: &str) -> Json {
+    crate::jobj! { "round" => 0, "pass" => 0, "kind" => kind }
+}
+
+/// The log's events as the screens read them (module comment): `events`, what the battle shows
+/// in order (the opening's units that sat out afraid and its defensive strikes, at round 0 and
+/// pass 0, then every action), and `after`, what the battle did after it (XP, heals, kill
+/// effects, flight, the move in). The stages, the morale rolls that passed and the battle's end
+/// are the log's bookkeeping (the outcome has the end): left out. Phase 7's casts go with their
+/// stage: before the battle into `events` (round 0), after it into `after`.
+fn log_events(g: &Game, log: &BattleLog) -> (Vec<Json>, Vec<Json>) {
+    let (mut events, mut after) = (Vec::new(), Vec::new());
+    let mut afraid_of: Vec<(FighterIdx, FighterIdx)> = Vec::new();
+    let mut post = false;
     let k = |kind: &str| crate::jobj! { "kind" => kind };
-    match e {
-        LogEvent::Stage { stage } => k("Phase").with(
-            "phase",
-            match stage {
-                Stage::PreBattle => "PreBattle",
-                Stage::Morale => "Morale",
-                Stage::Opening => "Opening",
-                Stage::Battle => "Battle",
-                Stage::Post => "Post",
-            },
-        ),
-        LogEvent::Cast { caster, spell, targets, effect } => k("Cast").with("caster", *caster).with("spell", Json::idx(*spell)).with("targets", idxs(targets)).with("effect", cast_effect_json(effect)),
-        LogEvent::Morale { unit, source, chance, roll, passed } => k("Morale").with("unit", *unit).with("source", *source).with("chance", *chance).with("roll", *roll).with("passed", *passed),
-        LogEvent::SatOut { unit, why } => k("SatOut").with("unit", *unit).with(
-            "why",
-            match why {
-                SatOutWhy::Afraid => "Afraid",
-            },
-        ),
-        LogEvent::DefStrike { striker, target, rolled, chance, roll, pct, dmg } => {
-            k("DefStrike").with("striker", *striker).with("target", *target).with("rolled", *rolled).with("chance", *chance).with("roll", *roll).with("pct", *pct).with("dmg", *dmg)
+    for e in &log.events {
+        match e {
+            LogEvent::Stage { stage } => post = matches!(stage, Stage::Post),
+            LogEvent::Morale { unit, source, passed, .. } => {
+                if !passed {
+                    afraid_of.push((*unit, *source));
+                }
+            }
+            LogEvent::SatOut { unit, why: SatOutWhy::Afraid } => {
+                let actor = afraid_of.iter().rev().find(|(u, _)| u == unit).map(|&(_, s)| s);
+                events.push(opening_json("Afraid").with("actor", actor).with("target", *unit));
+            }
+            LogEvent::DefStrike { striker, target, chance, roll, pct, dmg, .. } => {
+                let hit = crate::jobj! { "target" => *target, "dmg" => *dmg, "miss" => *dmg == 0 };
+                events.push(opening_json("DefStrike").with("actor", *striker).with("target", *target).with("hits", crate::jarr![hit]).with("chance", *chance).with("roll", *roll).with("pct", *pct));
+            }
+            LogEvent::Cast { caster, spell, targets, effect } => {
+                let j = if post { k("Cast") } else { opening_json("Cast") };
+                // A damaging cast's hits, as an action's (the screens fold them alike).
+                let hits = match effect {
+                    CastEffect::Damage(hits) => hits.iter().map(|&(b, dmg)| crate::jobj! { "target" => b, "dmg" => dmg }).collect(),
+                    _ => Vec::new(),
+                };
+                let j = j.with("actor", *caster).with("spell", Json::idx(*spell)).with("targets", idxs(targets)).with("effect", cast_effect_json(effect)).with("hits", Json::Arr(hits));
+                if post {
+                    after.push(j)
+                } else {
+                    events.push(j)
+                }
+            }
+            LogEvent::Action(a) => events.push(action_json(a)),
+            LogEvent::End { .. } => {}
+            LogEvent::Heal { unit, amount, source } => after.push(k("Heal").with("unit", *unit).with("amount", *amount).with("source", heal_source_json(source))),
+            LogEvent::Xp { unit, amount, from } => after.push(k("Xp").with("unit", *unit).with("amount", *amount).with("from", Json::Arr(from.iter().map(xp_source_json).collect()))),
+            LogEvent::KillEffect { killer, victim, kind } => after.push(k("KillEffect").with("killer", *killer).with("victim", *victim).with("effect", kill_kind_json(kind))),
+            LogEvent::Flee { unit, to } => after.push(k("Flee").with("unit", *unit).with("to", plot_idx_json(g, *to))),
+            LogEvent::MoveIn { units, city } => after.push(k("MoveIn").with("units", idxs(units)).with("city", *city)),
         }
-        LogEvent::Action(a) => action_json(a),
-        LogEvent::End { rounds, down } => k("End").with("rounds", *rounds).with("down", crate::jarr![down[0], down[1]]),
-        LogEvent::Heal { unit, amount, source } => k("Heal").with("unit", *unit).with("amount", *amount).with("source", heal_source_json(source)),
-        LogEvent::Xp { unit, amount, from } => k("Xp").with("unit", *unit).with("amount", *amount).with("from", Json::Arr(from.iter().map(xp_source_json).collect())),
-        LogEvent::KillEffect { killer, victim, kind } => k("KillEffect").with("killer", *killer).with("victim", *victim).with("effect", kill_kind_json(kind)),
-        LogEvent::Flee { unit, to } => k("Flee").with("unit", *unit).with("to", plot_idx_json(g, *to)),
-        LogEvent::MoveIn { units, city } => k("MoveIn").with("units", idxs(units)).with("city", *city),
+    }
+    (events, after)
+}
+
+/// A forecast as the screens read it: the battles played, each side's units expected to fall
+/// (x100), the chances (per mille) the defenders' line is wiped out, the plot falls and the
+/// attackers' line is wiped out, and per fighter `b` its chance to fall and to escape (percent).
+fn forecast_fields(runs: i32, wiped: i32, falls: i32, repulsed: i32, lost: [i32; 2], per: Vec<Json>) -> Json {
+    crate::jobj! {
+        "runs" => runs,
+        "line_wiped_permille" => wiped,
+        "plot_falls_permille" => falls,
+        "attackers_wiped_permille" => repulsed,
+        "lost_x100" => crate::jarr![lost[0], lost[1]],
+        "per" => Json::Arr(per),
     }
 }
 
+fn per_json(b: usize, fall_pct: i32, escape_pct: i32) -> Json {
+    crate::jobj! { "b" => b, "fall_pct" => fall_pct, "escape_pct" => escape_pct }
+}
+
+/// The plan the attacker saw, frozen into the log.
 fn forecast_json(f: &FrozenForecast) -> Json {
-    crate::jobj! {
-        "runs" => f.runs,
-        "wiped_permille" => f.wiped_permille,
-        "falls_permille" => f.falls_permille,
-        "repulsed_permille" => f.repulsed_permille,
-        "lost_x100" => crate::jarr![f.lost_x100[0], f.lost_x100[1]],
-        "per" => Json::Arr(f.per.iter().map(|p| crate::jobj! { "b" => p.b, "fall_pct" => p.fall_pct, "escape_pct" => p.escape_pct }).collect()),
-    }
+    let per = f.per.iter().map(|p| per_json(p.b as usize, p.fall_pct, p.escape_pct)).collect();
+    forecast_fields(f.runs, f.wiped_permille, f.falls_permille, f.repulsed_permille, f.lost_x100, per)
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -563,7 +624,7 @@ pub fn summary_json(v: &Viewer, r: &BattleReport) -> Json {
             "used" => side.used,
             "committed" => side.committed,
             "sat_out" => side.sat_out,
-            "fallen" => side.fallen,
+            "lost" => side.fallen,
             "lost_types" => Json::Arr(side.lost.iter().map(|&(t, n)| crate::jarr![Json::idx(t), n]).collect()),
             "escaped" => side.escaped,
             "standing" => side.standing,
@@ -668,7 +729,14 @@ pub fn battle_log(v: &Viewer, id: u32) -> Result<Json, QueryErr> {
         LogEvent::MoveIn { units, .. } => Some(idxs(units)),
         _ => None,
     });
+    let down = log.events.iter().find_map(|e| match e {
+        LogEvent::End { down, .. } => Some(*down),
+        _ => None,
+    });
+    let (events, after) = log_events(g, log);
     let o = &r.outcome;
+    // Each side's line: of the units in it, those that sat out, fell, escaped and stand.
+    let line = r.sides.iter().map(|s| crate::jobj! { "committed" => s.committed, "sat_out" => s.sat_out, "fallen" => s.fallen, "escaped" => s.escaped, "standing" => s.standing });
     Ok(crate::jobj! {
         "v" => LOG_VERSION,
         "id" => r.id,
@@ -677,12 +745,14 @@ pub fn battle_log(v: &Viewer, id: u32) -> Result<Json, QueryErr> {
         "plot" => plot_snap_json(g.d, &r.place),
         "from" => plot_now(v, r.from, false),
         "ground" => ground_json(&log.ground, &log.rules),
+        "params" => params_json(g.d),
         "slots" => Json::Arr(log.slots.iter().map(side_slots_json).collect()),
         "lanes" => crate::jarr![log.lanes[0], log.lanes[1]],
         "sides" => Json::Arr(sides.into_iter().collect()),
         "fighters" => Json::Arr(fighters),
         "pairs" => Json::Arr(log.pairs.iter().map(pair_json).collect()),
-        "events" => Json::Arr(log.events.iter().map(|e| event_json(g, e)).collect()),
+        "events" => Json::Arr(events),
+        "after" => Json::Arr(after),
         "forecast" => log.forecast.as_ref().map(forecast_json),
         "outcome" => crate::jobj! {
             "result" => result_name(o.result),
@@ -691,6 +761,8 @@ pub fn battle_log(v: &Viewer, id: u32) -> Result<Json, QueryErr> {
             "city_captured" => o.city_captured,
             "moved_in" => moved_in.unwrap_or_else(Json::arr),
             "defenders_left" => o.defenders_left,
+            "lines_down" => down.map(|d| crate::jarr![d[0], d[1]]),
+            "sides" => Json::Arr(line.collect()),
         },
         "summary" => summary_json(v, r),
     })
@@ -719,8 +791,11 @@ fn attack_origin(v: &Viewer, by: &EngageBy) -> Result<PlotIdx, QueryErr> {
 /// `engage_preview`: the plan of an attack on `to` by `by` in `formation` (else the rules' auto
 /// formation; module comment). Pure. A plot the viewer does not see, or one not next to the
 /// attackers, has no plan: the reply is its `errors` (and `declare_war`) alone, so the query tells
-/// no more of the fog than the `combat` query does (G5). A refused plan (an invalid formation,
-/// nobody to fight) says why in `errors`.
+/// no more of the fog than the `combat` query does (G5); so has an attack the rules refuse (nobody
+/// can attack there). A formation the rules refuse (off its side's grid, two units in a cell, more
+/// slots than the side has, a unit that cannot cross the river in a river slot) gets the plan in
+/// the rules' auto formation with no forecast (`forecast` null) and why in `errors`: the plan
+/// shows the refusal over the formation it sent.
 pub fn engage_preview(v: &Viewer, by: &EngageBy, to: (i32, i32), formation: Option<&[Place]>) -> Result<Json, QueryErr> {
     let g = v.g;
     let h = v.h;
@@ -744,8 +819,12 @@ pub fn engage_preview(v: &Viewer, by: &EngageBy, to: (i32, i32), formation: Opti
     }
     let war = rival.map_or(WarTest::AtWar, WarTest::DeclareWar);
     let inp = PreviewInput { player: h, from, to: dest, formation, war };
-    let pv = match g.engage_preview(&inp) {
-        Ok(pv) => pv,
+    let (pv, refused) = match g.engage_preview(&inp) {
+        Ok(pv) => (pv, None),
+        Err(e) if formation.is_some() => match g.engage_preview(&PreviewInput { formation: None, ..inp }) {
+            Ok(pv) => (pv, Some(e)),
+            Err(_) => return Ok(err_reply(vec![e.to_string()])),
+        },
         Err(e) => return Ok(err_reply(vec![e.to_string()])),
     };
     let ctx = HitCtx::new(from, dest);
@@ -765,28 +844,6 @@ pub fn engage_preview(v: &Viewer, by: &EngageBy, to: (i32, i32), formation: Opti
         .collect();
     let b_of = |u: UnitId, side: Side| units.iter().position(|&x| x == (u, side));
     let bs = |list: &[UnitId], side: Side| Json::Arr(list.iter().filter_map(|&u| b_of(u, side)).map(Json::from).collect());
-    // Every pair both ways (the cards' damage per hit).
-    let base = g.d.defines.engagement_base_damage.max(0) as i64 * 100;
-    let mut pairs = Vec::new();
-    for (ai, &(a, _)) in units.iter().enumerate().filter(|(_, x)| x.1 == Side::Attacker) {
-        for (di, &(dfd, _)) in units.iter().enumerate().filter(|(_, x)| x.1 == Side::Defender) {
-            for (h_i, hu, t_i, tu, side) in [(ai, a, di, dfd, Side::Attacker), (di, dfd, ai, a, Side::Defender)] {
-                let pr = g.engage_hit(hu, tu, side, &ctx);
-                let sa = g.engage_stat(hu, Some(tu), side, true, &ctx);
-                let sd = g.engage_stat(tu, Some(hu), side.other(), false, &ctx);
-                let mean = (base * pr.a.max(1) as i64 / (pr.a.max(1) as i64 + pr.dv.max(1) as i64)) as i32;
-                pairs.push(pair_json(&LogPair {
-                    h: h_i as FighterIdx,
-                    t: t_i as FighterIdx,
-                    a_x100: pr.a,
-                    dv_x100: pr.dv,
-                    mean,
-                    a_extra: extra_terms(sa.terms, &fighters[h_i].a.terms),
-                    dv_extra: extra_terms(sd.terms, &fighters[t_i].dv.terms),
-                }));
-            }
-        }
-    }
     let fighters_json: Vec<Json> = fighters
         .iter()
         .enumerate()
@@ -804,40 +861,31 @@ pub fn engage_preview(v: &Viewer, by: &EngageBy, to: (i32, i32), formation: Opti
         crate::jobj! { "player" => h, "civ" => Json::opt_idx(g.player_get_civilization_type(h)), "label" => "Your force", "lanes" => pv.lanes[0] },
         crate::jobj! { "player" => def_player, "civ" => Json::opt_idx(g.player_get_civilization_type(def_player)), "label" => def_label, "lanes" => pv.lanes[1] },
     ];
-    // The forecast, its fighters by index.
+    // The forecast, its fighters by index (none for a refused formation: the plan is the auto
+    // formation's, not the one asked for).
     let fc = &pv.forecast;
-    let per: Vec<Json> = fc
-        .per
-        .iter()
-        .filter_map(|p| Some(crate::jobj! { "b" => b_of(p.unit, p.side)?, "fall_pct" => p.fall_pct, "escape_pct" => p.escape_pct }))
-        .collect();
-    let forecast = crate::jobj! {
-        "runs" => fc.runs,
-        "wiped_permille" => fc.wiped_permille,
-        "falls_permille" => fc.falls_permille,
-        "repulsed_permille" => fc.repulsed_permille,
-        "lost_x100" => crate::jarr![fc.lost_x100[0], fc.lost_x100[1]],
-        "escaped_x100" => crate::jarr![fc.escaped_x100[0], fc.escaped_x100[1]],
-        "per" => Json::Arr(per),
-    };
+    let per: Vec<Json> = fc.per.iter().filter_map(|p| Some(per_json(b_of(p.unit, p.side)?, p.fall_pct, p.escape_pct))).collect();
+    let forecast = refused.is_none().then(|| {
+        forecast_fields(fc.runs, fc.wiped_permille, fc.falls_permille, fc.repulsed_permille, fc.lost_x100, per).with("escaped_x100", crate::jarr![fc.escaped_x100[0], fc.escaped_x100[1]])
+    });
     let crossing = g.plot_is_river_crossing(from, g.direction_xy_plots(from, dest));
     Ok(crate::jobj! {
         "plot" => plot_now(v, dest, crossing),
         "from" => plot_now(v, from, false),
         "ground" => ground_json(&pv.ground, &pv.rules),
+        "params" => params_json(g.d),
         "slots" => Json::Arr(pv.slots.sides.iter().map(side_slots_json).collect()),
         "lanes" => crate::jarr![pv.lanes[0], pv.lanes[1]],
         "sides" => sides,
         "fighters" => Json::Arr(fighters_json),
-        "pairs" => Json::Arr(pairs),
         "formation" => formation_json(&pv.formation),
-        "auto" => formation_json(&pv.auto),
+        "auto_formation" => formation_json(&pv.auto),
         "reserve" => bs(&pv.reserve, Side::Attacker),
         "def_formation" => formation_json(&pv.def_formation),
         "def_reserve" => bs(&pv.def_reserve, Side::Defender),
         "forecast" => forecast,
         "declare_war" => rival,
-        "errors" => Json::arr(),
+        "errors" => Json::Arr(refused.into_iter().map(Json::from).collect()),
     })
 }
 
