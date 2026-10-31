@@ -193,6 +193,25 @@ fn attacks_made_resets_with_made_attack() {
     assert_eq!(g.units[u].battle_heal_turn, 3, "the heal turn is a turn number, not a counter");
 }
 
+#[test]
+fn a_bombard_is_an_attack_made_under_the_option() {
+    for engagements in [false, true] {
+        let (mut g, c) = game(engagements);
+        let (p0, p1) = (PlayerId(0), PlayerId(1));
+        let walls = g.d.t::<BuildingType>("BUILDING_WALLS");
+        g.city_set_num_real_building(c, walls, 1);
+        let (x, y) = next_to(&g, c, true).expect("a land plot next to the city");
+        let cat = g.player_init_unit(p1, g.d.t::<UnitType>("UNIT_CATAPULT"), x, y, None, None);
+        let (t0, t1) = (g.players[p0].team, g.players[p1].team);
+        g.team_declare_war(t1, t0, false, None);
+        let before = g.cities[c].defense_damage;
+        assert!(g.unit_bombard(cat), "the catapult bombards the city");
+        assert!(g.cities[c].defense_damage > before);
+        assert!(g.units[cat].made_attack);
+        assert_eq!(g.units[cat].attacks_made, engagements as i32, "engagements: {engagements}");
+    }
+}
+
 /// A report of `p1` attacking `p2` at the city's plot, with a small log when `logged`.
 fn report(g: &Game, c: CityId, logged: bool) -> BattleReport {
     let plot = g.city_plot(c);

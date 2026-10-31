@@ -1328,6 +1328,10 @@ impl Game {
         self.city_change_defense_modifier(bombard_city, change);
 
         self.units[u].made_attack = true;
+        // Engagement combat: a bombard is one of the turn's attacks (plan 5.2).
+        if self.engagements_on() {
+            self.units[u].attacks_made += 1;
+        }
         self.unit_change_moves(u, self.d.defines.move_denominator);
 
         // UI: TXT_KEY_MISC_DEFENSES_IN_CITY_REDUCED_TO to the city owner and
