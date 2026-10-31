@@ -133,7 +133,8 @@ pub struct Outcome {
     pub city_captured: Option<CityId>,
     /// Units that moved in (they are listed in [`LogEvent::MoveIn`]).
     pub moved_in: i32,
-    /// Uncommitted defenders still on the plot.
+    /// Uncommitted defenders still on the plot: the defender's candidates the battle did not
+    /// commit that are alive there after the rout.
     pub defenders_left: i32,
 }
 

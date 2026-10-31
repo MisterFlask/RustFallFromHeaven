@@ -108,6 +108,8 @@ pub(crate) struct Eng {
     /// Each fighter's unit type and owner at the start.
     pub types: Vec<UnitType>,
     pub owners: Vec<PlayerId>,
+    /// The defender's candidates it did not commit (the report's `defenders_left`).
+    pub def_reserve: Vec<UnitId>,
 }
 
 impl Eng {
@@ -294,6 +296,7 @@ impl Game {
             ],
             types: Vec::new(),
             owners: Vec::new(),
+            def_reserve: candidates.iter().copied().filter(|u| !def_pick.contains(u)).collect(),
         };
         e.types = e.units.iter().map(|&u| self.units[u].unit_type).collect();
         e.owners = e.units.iter().map(|&u| self.units[u].owner).collect();
@@ -635,6 +638,9 @@ impl Game {
         self.unit_collateral_combat_ex(m, to, None, true);
         if let Some(v) = killed {
             self.engage_kill_bookkeeping(m, v, false, to);
+            if self.telemetry.on() && self.units.contains(m) && self.units.contains(v) {
+                self.tel_engage_kill(m, v);
+            }
             if self.units.contains(m) && self.units.contains(v) {
                 self.unit_combat_won_as(m, v, crate::unit::WonMode::Kill { roll_convert: false }, None);
                 if d.defines.use_combat_result_callback != 0 && self.units.contains(m) && self.units.contains(v) {

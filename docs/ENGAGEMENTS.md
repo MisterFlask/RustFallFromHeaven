@@ -78,7 +78,8 @@ transport counts: an amphibious attack) and `to` is land. The rule is applied at
    no visible enemy defender left, the launching group moves in (a city is captured as today), and
    only it; the armies of everyone involved are settled.
 6. **The report** (`report.rs`): every engagement's summary (sides with their real and shown
-   owners, stances, committed, lost, withdrawn, sat out, fled; the outcome) is kept for the current
+   owners, stances, slots, committed, lost, withdrawn, sat out, fled; the outcome, with the
+   defender's uncommitted units still on the plot) is kept for the current
    and previous turn and the last `ENGAGEMENT_REPORTS_KEPT`; a battle a human could see also gets
    its full battle log (below). A game-log message to each side's players names the report.
 
@@ -89,7 +90,7 @@ per unit in a pool, since each spends an attack of every committed unit.
 
 **Missiles** (Q11): a missile (Fireball, Meteor) ordered into an enemy plot strikes instead:
 one hit of the round model on a unit of the defender's pick (by the missile's role order), then
-its collateral; it dies, with the kill if it killed.
+its collateral; it dies, with the kill if it killed (counted as an engagement's kill is, below).
 
 ## Overkill (a rule of this game, not of the spec)
 
@@ -118,8 +119,8 @@ same game (test `the_sink_changes_nothing`).
 ## Telemetry
 
 `engage*` counts and the `engagement` event (docs/TELEMETRY.md); the per-unit `attack` / `defend`
-counts stay comparable with the duel's; each kill counts as a combat won (`kill_by`, the war's
-kills). `engage_est` records the moment estimator's win chance for the battle as fought against its
+counts stay comparable with the duel's; each kill, a missile strike's too, counts as a combat
+won (`kill_by`, the war's kills, a summon's kills). `engage_est` records the moment estimator's win chance for the battle as fought against its
 result: the estimator's calibration in real games. `telemetry.py`'s combat section prints them.
 
 ## Decided while building it (phase 6 step 6)

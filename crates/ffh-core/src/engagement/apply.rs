@@ -33,6 +33,7 @@
 //!    Withdrawn attackers stay in their group and army.
 //! 10. **Advance**: with no visible enemy defender left on the plot, the launcher's group moves in
 //!     (a city is captured as today); only the launcher's group; its mission queue is cleared.
+//!     The report counts the defender's uncommitted candidates still alive on the plot.
 //! 11. The armies of every player involved are settled (`player_army_sync`).
 
 use ffh_data::*;
@@ -52,7 +53,7 @@ pub(crate) struct Post {
     pub plot_taken: bool,
     pub city_captured: Option<CityId>,
     pub moved_in: i32,
-    /// Uncommitted defenders still on the plot.
+    /// Uncommitted defenders still on the plot (the report's `Outcome::defenders_left`).
     pub defenders_left: i32,
     /// Per fighter: the XP it gained after the battle.
     pub xp: Vec<i32>,
@@ -451,7 +452,7 @@ impl Game {
                 self.group_clear_mission_queue(g);
             }
         }
-        post.defenders_left = if post.plot_taken { 0 } else { self.engage_defenders(to, e.p, &[], super::WarTest::AtWar).len() as i32 };
+        post.defenders_left = e.def_reserve.iter().filter(|&&u| self.engage_alive(u) && self.unit_plot_opt(u) == Some(to)).count() as i32;
 
         // 11. Armies.
         for p in players {
