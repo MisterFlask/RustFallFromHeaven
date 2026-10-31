@@ -24,8 +24,13 @@ struct World {
 }
 
 fn world_with(engagements: bool, war: bool) -> World {
+    world_of(engagements, war, 2, "WORLDSIZE_DUEL")
+}
+
+/// [`world_with`] with `civs` players on a map of size `size`; players 0 and 1 at war if `war`.
+fn world_of(engagements: bool, war: bool, civs: usize, size: &str) -> World {
     let d = ffh_data::global();
-    let mut setup = GameSetup::standard(d, 2, "WORLDSIZE_DUEL", 5);
+    let mut setup = GameSetup::standard(d, civs, size, 5);
     setup.options[GameOptionType::GAMEOPTION_ARMIES] = true;
     setup.options[GameOptionType::GAMEOPTION_ENGAGEMENTS] = engagements;
     let mut g = Game::new(d, setup);
@@ -473,6 +478,88 @@ fn a_unit_with_a_combat_limit_needs_a_defender_below_it() {
     assert_eq!(w.g.engage_attackers(p0, from, to, WarTest::AtWar), vec![axeman]);
 }
 
+/// The rules change: the duel's best defender already prefers a unit the siege unit can hurt, but
+/// a Marksman's (bTargetWeakestUnit) picks the capped one, so today it may not attack; under
+/// engagements it attacks while any defender is below its limit.
+#[test]
+fn a_siege_unit_attacks_while_any_defender_is_below_its_limit_whoever_the_best_defender_is() {
+    for engagements in [true, false] {
+        let mut w = world_with(engagements, true);
+        let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
+        let cat = w.unit(p0, "UNIT_CATAPULT", from);
+        w.promote(cat, "PROMOTION_MARKSMAN");
+        assert!(w.g.unit_is_target_weakest_unit(cat));
+        let limit = w.g.units[cat].combat_limit;
+        let axeman = w.unit(p1, "UNIT_AXEMAN", to);
+        let warrior = w.unit(p1, "UNIT_WARRIOR", to);
+        w.g.units[axeman].damage = limit;
+        w.g.units[warrior].damage = limit - 1;
+        let owner = Some(p0);
+        assert_eq!(w.g.plot_get_best_defender(to, None, owner, Some(cat), true, false, false), Some(axeman), "the capped unit is the duel's best defender");
+        assert_eq!(w.g.unit_can_move_into(cat, to, true, false, false), engagements);
+        assert_eq!(w.g.unit_can_engage(cat, to, WarTest::AtWar), engagements);
+        w.g.units[warrior].damage = limit;
+        assert!(!w.g.unit_can_move_into(cat, to, true, false, false), "every defender at the cap");
+        assert!(!w.g.unit_can_engage(cat, to, WarTest::AtWar));
+    }
+}
+
+/// As today: a siege unit attacks no plot from the water (a non-combatant on it is enough to
+/// refuse it), and from land it needs a unit below its limit even when the plot holds only
+/// non-combatants (the attack captures them).
+#[test]
+fn a_siege_unit_does_not_attack_from_the_water_even_onto_workers() {
+    for engagements in [true, false] {
+        let mut w = world_with(engagements, true);
+        let (p0, p1) = (w.p0, w.p1);
+        // A plot of land with no units, next to the water.
+        let g = &w.g;
+        let (sea, coast) = g
+            .map
+            .plot_ids()
+            .filter(|&p| !g.plot_is_water(p) && !g.plot_is_peak(p) && g.map.plots[p].units.is_empty() && g.map.plots[p].owner.is_none())
+            .find_map(|p| {
+                let (x, y) = g.map.xy(p);
+                let q = g.map.plot_xy(x - 1, y)?;
+                (g.plot_is_water(q) && g.map.plots[q].units.is_empty()).then_some((q, p))
+            })
+            .expect("a coast");
+        let worker = w.unit(p1, "UNIT_WORKER", coast);
+        let aboard = |w: &mut World, name: &str| {
+            let ship = w.unit(p0, "UNIT_TRIREME", sea);
+            let u = w.unit(p0, name, sea);
+            w.g.unit_set_transport_unit(u, Some(ship));
+            w.g.units[u].moves = 0;
+            assert!(w.g.unit_is_cargo(u));
+            u
+        };
+        let cat = aboard(&mut w, "UNIT_CATAPULT");
+        let axeman = aboard(&mut w, "UNIT_AXEMAN");
+        assert!(w.g.unit_can_move_into(axeman, coast, true, false, false), "an amphibious attack");
+        assert!(!w.g.unit_can_move_into(cat, coast, true, false, false), "no amphibious artillery");
+        if engagements {
+            assert!(w.g.unit_can_engage(axeman, coast, WarTest::AtWar));
+            assert!(!w.g.unit_can_engage(cat, coast, WarTest::AtWar));
+            assert!(w.g.engage_defenders(coast, p0, &[axeman], WarTest::AtWar).is_empty(), "a worker does not defend");
+        }
+        // From land: the worker below the limit lets it capture, at the limit it does not.
+        let (x, y) = w.g.map.xy(coast);
+        let land = w
+            .g
+            .map
+            .plot_ids()
+            .find(|&p| {
+                let (px, py) = w.g.map.xy(p);
+                w.g.step_distance(px, py, x, y) == 1 && !w.g.plot_is_water(p) && !w.g.plot_is_peak(p) && w.g.map.plots[p].units.is_empty()
+            })
+            .expect("land next to the coast");
+        let siege = w.unit(p0, "UNIT_CATAPULT", land);
+        assert!(w.g.unit_can_move_into(siege, coast, true, false, false));
+        w.g.units[worker].damage = w.g.units[siege].combat_limit;
+        assert!(!w.g.unit_can_move_into(siege, coast, true, false, false));
+    }
+}
+
 #[test]
 fn the_pool_and_the_defenders() {
     let mut w = world();
@@ -518,6 +605,35 @@ fn a_declare_war_preview_counts_the_team_it_would_fight() {
     assert!(w.g.unit_can_engage(axeman, to, WarTest::DeclareWar(t1)));
     assert_eq!(w.g.engage_defenders(to, p0, &[axeman], WarTest::DeclareWar(t1)), vec![warrior]);
     assert_eq!(w.g.engage_attackers(p0, from, to, WarTest::DeclareWar(t1)), vec![axeman]);
+}
+
+/// A declaration brings in the target's vassals and its defensive-pact partners (and theirs):
+/// the preview's defenders are the ones the fight after the declaration meets.
+#[test]
+fn a_declare_war_preview_counts_every_team_the_declaration_brings_in() {
+    let mut w = world_of(true, false, 6, "WORLDSIZE_STANDARD");
+    let (p0, from, to) = (w.p0, w.from, w.to);
+    let [t1, vassal, pact, pact_vassal, neutral] = [1, 2, 3, 4, 5].map(|i| w.g.players[PlayerId(i)].team);
+    w.g.team_set_vassal(vassal, t1, true, false);
+    w.g.team_set_vassal(pact_vassal, pact, true, false);
+    let dp = [ffh_core::utils::set_trade_item(TradeableItem::TRADE_DEFENSIVE_PACT, 0)];
+    w.g.implement_deal(PlayerId(1), PlayerId(3), &dp, &dp, true);
+    assert!(w.g.teams[t1].defensive_pact[pact] && w.g.teams[pact].defensive_pact[t1]);
+    let defenders: Vec<UnitId> = (1..=5).map(|i| w.unit(PlayerId(i), "UNIT_WARRIOR", to)).collect();
+    let axeman = w.unit(p0, "UNIT_AXEMAN", from);
+    let t0 = w.g.players[p0].team;
+
+    let wars = w.g.team_wars_after_declaring(t0, t1);
+    assert_eq!([t1, vassal, pact, pact_vassal, neutral].map(|t| wars[t]), [true, true, true, true, false]);
+    let preview = w.g.engage_defenders(to, p0, &[axeman], WarTest::DeclareWar(t1));
+    assert_eq!(preview, defenders[..4].to_vec(), "not the neutral team's warrior");
+    assert!(w.g.engage_defenders(to, p0, &[axeman], WarTest::AtWar).is_empty());
+    assert!(w.g.unit_can_engage(axeman, to, WarTest::DeclareWar(t1)));
+
+    w.g.team_declare_war(t0, t1, false, None);
+    let at_war: Vec<TeamId> = w.g.team_ids().filter(|&t| w.g.teams[t0].at_war[t]).collect();
+    assert_eq!(at_war, w.g.team_ids().filter(|&t| wars[t]).collect::<Vec<_>>(), "the cascade as predicted");
+    assert_eq!(w.g.engage_defenders(to, p0, &[axeman], WarTest::AtWar), preview);
 }
 
 #[test]

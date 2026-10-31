@@ -6,13 +6,16 @@
 //! (one attack a turn, Blitz one more: [`Game::unit_has_attack_left`], counting engagements,
 //! bombards and missile strikes) and that the move rules let attack the plot
 //! (`unit_can_move_into` with its attack gates under the option: the attack count, and for a
-//! unit with a combat limit some defender below the limit and no amphibious attack). The
+//! unit with a combat limit some defender below the limit and no amphibious attack:
+//! [`Game::unit_engage_limit_ok`]). The
 //! attacker's pool ([`Game::engage_attackers`]) is every such unit of the player on the plot it
 //! attacks from: its armies, its garrison, its heroes, mages and recon units.
 //!
 //! **Who defends** ([`Game::engage_defenders`]): every unit on the plot that can defend there,
 //! is an enemy of the attacking side as `plot_get_best_defender` tests it (both ways, so hidden
-//! nationality works as in the duel) and is not invisible to the attacking team (G5). Ships never
+//! nationality works as in the duel) and is not invisible to the attacking team (G5); a
+//! declare-war preview also counts every team the declaration would bring into the war
+//! ([`WarTest::DeclareWar`]). Ships never
 //! defend land; marching units and immobile units with strength do. A unit defends any number of
 //! times a turn. Under the option `plot_get_best_defender` (and its "better defender" ratings)
 //! no longer picks the land defender; it stays for its other callers.
@@ -44,7 +47,10 @@ pub enum WarTest {
     /// The real fight: the defenders are the attacking side's enemies now (at war, or hostile:
     /// hidden nationality).
     AtWar,
-    /// The preview of a move that declares war on `team`: its units count as enemies too.
+    /// The preview of a move that declares war on `team`: the units of every team the
+    /// declaration would bring into the war count as enemies too (`team`, its vassals and master,
+    /// its defensive-pact partners and theirs: [`Game::team_wars_after_declaring`]), as the real
+    /// fight after the declaration counts them.
     DeclareWar(TeamId),
 }
 
@@ -87,7 +93,7 @@ impl Game {
         let declare_war = matches!(war, WarTest::DeclareWar(_));
         // `unit_can_move_into`'s attack branch tests the attack count and the combat limit
         // against the defenders at war (`unit_engage_limit_ok`); a declare-war preview also tests
-        // the limit against the team it would fight.
+        // the limit against the teams it would fight.
         if declare_war && !self.unit_engage_limit_ok(u, to, war) {
             return false;
         }
@@ -95,26 +101,39 @@ impl Game {
     }
 
     /// The combat-limit gate of an engagement (plan 5.2; C++ `canAttack(defender)`'s rules, on
-    /// every defender instead of the best one): when `to` has defenders, a unit with a combat
-    /// limit (siege, Illusion) needs one below its limit and does not attack from the water (no
-    /// amphibious artillery). Units without a limit pass at once.
+    /// every defender instead of the best one), for a unit with a combat limit (siege): from the
+    /// water it attacks no plot holding a unit it would meet, a non-combatant included (no
+    /// amphibious artillery, as today: the duel's best defender may be a lone Worker); otherwise
+    /// one of the units it would meet must be below its limit: a defender when the plot has any,
+    /// else a non-combatant (as today). Units without a limit pass at once.
     pub(crate) fn unit_engage_limit_ok(&self, u: UnitId, to: PlotIdx, war: WarTest) -> bool {
         let limit = self.units[u].combat_limit;
         if limit >= 100 {
             return true;
         }
         let from_water = self.unit_plot_opt(u).is_some_and(|at| self.plot_is_water(at));
-        let owner = self.units[u].owner;
-        let mut any = false;
+        let team = self.players[self.units[u].owner].team;
+        let declared = self.engage_declared(team, war);
+        let (mut defenders, mut others, mut other_below) = (false, false, false);
         for &d in &self.map.plots[to].units {
-            if self.engage_is_defender(d, to, owner, std::slice::from_ref(&u), war) {
-                if !from_water && self.units[d].damage < limit {
+            if !self.engage_meets(d, to, team, std::slice::from_ref(&u), declared.as_ref()) {
+                continue;
+            }
+            if from_water {
+                return false;
+            }
+            let below = self.units[d].damage < limit;
+            if self.engage_can_defend(d, to) {
+                if below {
                     return true;
                 }
-                any = true;
+                defenders = true;
+            } else {
+                others = true;
+                other_below |= below;
             }
         }
-        !any
+        !defenders && (!others || other_below)
     }
 
     /// The attacker's pool (plan 5.2): every unit of `p` on `from` that can attack `to` in an
@@ -128,23 +147,42 @@ impl Game {
     /// units are hostile to everyone fights any team's units, as such an attacker does in the
     /// duel; an empty force fights only `p`'s enemies.
     pub fn engage_defenders(&self, to: PlotIdx, p: PlayerId, force: &[UnitId], war: WarTest) -> Vec<UnitId> {
-        self.map.plots[to].units.iter().copied().filter(|&d| self.engage_is_defender(d, to, p, force, war)).collect()
+        let team = self.players[p].team;
+        let declared = self.engage_declared(team, war);
+        self.map.plots[to]
+            .units
+            .iter()
+            .copied()
+            .filter(|&d| self.engage_meets(d, to, team, force, declared.as_ref()) && self.engage_can_defend(d, to))
+            .collect()
     }
 
-    /// Whether unit `d` on `to` is a defender against `p`'s attack with `force`
-    /// ([`Game::engage_defenders`]).
-    fn engage_is_defender(&self, d: UnitId, to: PlotIdx, p: PlayerId, force: &[UnitId], war: WarTest) -> bool {
-        let team = self.players[p].team;
-        let d_team = self.unit_get_team(d);
-        if d_team == team || self.unit_is_dead(d) || !self.unit_can_defend(d, Some(to)) || self.unit_combat_role(d).is_none() {
-            return false;
+    /// The teams a `war` test counts as enemies of `team` beyond its wars now: none for the real
+    /// fight; for a declare-war preview every team the declaration brings in.
+    fn engage_declared(&self, team: TeamId, war: WarTest) -> Option<IdxVec<TeamId, bool>> {
+        match war {
+            WarTest::AtWar => None,
+            WarTest::DeclareWar(t) => Some(self.team_wars_after_declaring(team, t)),
         }
-        if self.unit_is_invisible(d, team, true) {
+    }
+
+    /// Whether `team`'s attack with `force` on `to` meets unit `d` there, combatant or not: not
+    /// its own, alive, not invisible to it (G5), and an enemy as `plot_get_best_defender` tests
+    /// it (both ways: hidden nationality), or of a team in `declared` ([`Game::engage_declared`]).
+    fn engage_meets(&self, d: UnitId, to: PlotIdx, team: TeamId, force: &[UnitId], declared: Option<&IdxVec<TeamId, bool>>) -> bool {
+        let d_team = self.unit_get_team(d);
+        if d_team == team || self.unit_is_dead(d) || self.unit_is_invisible(d, team, true) {
             return false;
         }
         self.unit_is_enemy(d, Some(team), Some(to))
             || (!force.is_empty() && force.iter().all(|&a| self.unit_is_enemy(a, Some(d_team), Some(to))))
-            || war == WarTest::DeclareWar(d_team)
+            || declared.is_some_and(|w| w[d_team])
+    }
+
+    /// Whether a unit the attack meets on `to` is one of its defenders ([`Game::engage_defenders`]):
+    /// it can defend there and has a role.
+    fn engage_can_defend(&self, d: UnitId, to: PlotIdx) -> bool {
+        self.unit_can_defend(d, Some(to)) && self.unit_combat_role(d).is_some()
     }
 
     /// The stance `p`'s attack from `from` proposes its force with (plan 5.3): the launching

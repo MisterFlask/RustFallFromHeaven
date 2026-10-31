@@ -403,6 +403,53 @@ impl Game {
         }
     }
 
+    /// The teams `t` would be at war with after `team_declare_war(t, other)`, without declaring:
+    /// its wars now and every team the declaration brings in, followed through the cascade as
+    /// [`Game::team_declare_war`] runs it (the declarer's pacts cancelled first, then the
+    /// target's defensive-pact partners declaring on it, the target's pacts cancelled, the
+    /// target's masters and vassals declared on, the declarer's masters and vassals declaring on
+    /// the target, each recursively). So `other`'s vassals and master, its pact partners and
+    /// their vassals and master, and its vassals' pact partners all count. A declare-war
+    /// preview's enemies (engagements: `WarTest::DeclareWar`).
+    pub fn team_wars_after_declaring(&self, t: TeamId, other: TeamId) -> IdxVec<TeamId, bool> {
+        type Matrix = IdxVec<TeamId, IdxVec<TeamId, bool>>;
+        fn cancel_pacts(pact: &mut Matrix, t: TeamId) {
+            for o in pact.keys() {
+                pact[t][o] = false;
+                pact[o][t] = false;
+            }
+        }
+        fn declare(g: &Game, war: &mut Matrix, pact: &mut Matrix, t: TeamId, other: TeamId) {
+            if t == other || war[t][other] {
+                return;
+            }
+            war[t][other] = true;
+            war[other][t] = true;
+            cancel_pacts(pact, t);
+            for o in g.team_ids() {
+                if g.team_is_alive(o) && pact[o][other] {
+                    declare(g, war, pact, o, t);
+                }
+            }
+            cancel_pacts(pact, other);
+            for o in g.team_ids() {
+                if o != t && o != other && g.team_is_alive(o) {
+                    let (ko, kt, kother) = (&g.teams[o], &g.teams[t], &g.teams[other]);
+                    if ko.vassal[other] || kother.vassal[o] {
+                        declare(g, war, pact, t, o);
+                    } else if ko.vassal[t] || kt.vassal[o] {
+                        declare(g, war, pact, o, other);
+                    }
+                }
+            }
+        }
+        let n = self.teams.len();
+        let mut war: Matrix = IdxVec::from_fn(n, |k| self.teams[k].at_war.clone());
+        let mut pact: Matrix = IdxVec::from_fn(n, |k| self.teams[k].defensive_pact.clone());
+        declare(self, &mut war, &mut pact, t, other);
+        war[t].clone()
+    }
+
     /// C++ `CvTeam::makePeace` (default `bBumpUnits = true`).
     pub fn team_make_peace(&mut self, t: TeamId, other: TeamId, bump_units: bool) {
         debug_assert!(other != t, "eTeam is not expected to be equal with getID()");
