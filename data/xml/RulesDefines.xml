@@ -195,7 +195,8 @@
 		<DefineName>ENGAGEMENT_RECON_REVEAL_RANGE</DefineName>
 		<iDefineIntVal>2</iDefineIntVal>
 	</Define>
-	<!-- battle reports the game keeps (the oldest are dropped) -->
+	<!-- battle reports the game keeps: those of the current and the previous turn's battles, and
+	     of this many latest battles (the oldest are dropped) -->
 	<Define>
 		<DefineName>ENGAGEMENT_REPORTS_KEPT</DefineName>
 		<iDefineIntVal>128</iDefineIntVal>

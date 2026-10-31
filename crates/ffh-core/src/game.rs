@@ -79,8 +79,9 @@ pub struct Game {
     pub armies: Slab<ArmyId, crate::army::Army>,
     /// This game's governors (docs/GOVERNORS.md). Owner lists: `Player::governors`.
     pub governors: Slab<GovernorId, crate::governors::Governor>,
-    /// Engagement combat's battle reports, oldest first: the last `ENGAGEMENT_REPORTS_KEPT`
-    /// (`engagement/report.rs`; add with `battle_report_add`).
+    /// Engagement combat's battle reports, oldest first: those of the current and the previous
+    /// turn and the last `ENGAGEMENT_REPORTS_KEPT` (`engagement/report.rs`; add with
+    /// `battle_report_add`).
     pub battle_reports: Vec<crate::engagement::report::BattleReport>,
     /// The next battle report's id (ids are never reused).
     pub battle_report_next: u32,

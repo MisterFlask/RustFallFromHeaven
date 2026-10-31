@@ -2,14 +2,17 @@
 //! log, `battle_ui/final/DESIGN.md` section 10): saved state, written by the engagement's
 //! post-battle step and read by the views, never by the rules.
 //!
-//! **Two layers.** A [`BattleReport`] is kept for each of the last `ENGAGEMENT_REPORTS_KEPT`
-//! engagements: where, who fought (a [`ReportSide`] each, with its real and shown owner), how
-//! many each side committed and lost, and the [`Outcome`]: what the turn report's "Battles" list
-//! and the toasts show. Its [`BattleLog`] is the full record the client replays (fighters with
-//! their A and Dv parts, the pair table, every event with its rolls, the frozen forecast). The
-//! engagement writes a log only for a battle a human could see; the log stays for every report of
-//! the current and the previous turn and for the last `ENGAGEMENT_REPORT_LOGS_KEPT` logged
-//! reports, and older reports keep their summary ([`Game::battle_reports_trim`]).
+//! **Two layers.** A [`BattleReport`] is kept for each engagement of the current and the previous
+//! game turn and for the last `ENGAGEMENT_REPORTS_KEPT` engagements: where, who fought (a
+//! [`ReportSide`] each, with its real and shown owner), how many each side committed and lost,
+//! and the [`Outcome`]: what the turn report's "Battles" list and the toasts show. Its
+//! [`BattleLog`] is the full record the client replays (fighters with their A and Dv parts, the
+//! pair table, every event with its rolls, the frozen forecast). The engagement writes a log only
+//! for a battle a human could see; the log stays for every report of the current and the previous
+//! turn and for the last `ENGAGEMENT_REPORT_LOGS_KEPT` logged reports, and older reports keep
+//! their summary ([`Game::battle_reports_trim`]). Both caps give way to the two-turn window: a
+//! turn's battles, however many (other players' wars included), never push out the reports or
+//! logs a player's turn report is about to show.
 //!
 //! **DESIGN.md's `BattleLog` is the report and its log together**: `id`, `turn`, `plot`, `from`,
 //! `outcome` and each side's players, army, garrison and stance are the report's (they outlive the
@@ -540,8 +543,8 @@ impl BattleReport {
 }
 
 impl Game {
-    /// Records an engagement's report: gives it the next id and the current turn, keeps the last
-    /// `ENGAGEMENT_REPORTS_KEPT` reports and trims the logs (module comment). Returns the id.
+    /// Records an engagement's report: gives it the next id and the current turn, and trims the
+    /// reports and their logs ([`Game::battle_reports_trim`]). Returns the id.
     pub fn battle_report_add(&mut self, mut report: BattleReport) -> u32 {
         let id = self.battle_report_next;
         self.battle_report_next += 1;
@@ -552,18 +555,21 @@ impl Game {
         id
     }
 
-    /// Drops the reports beyond `ENGAGEMENT_REPORTS_KEPT` (the oldest), and the logs of reports
-    /// that are neither of the current or the previous turn nor among the last
-    /// `ENGAGEMENT_REPORT_LOGS_KEPT` logged ones. Runs after each new report and at each new game
-    /// turn.
+    /// Drops the reports that are neither of the current or the previous turn nor among the last
+    /// `ENGAGEMENT_REPORTS_KEPT` (the oldest first), and the logs of reports that are neither of
+    /// those two turns nor among the last `ENGAGEMENT_REPORT_LOGS_KEPT` logged ones. So the two
+    /// turns' reports and logs stay whatever their number, and the caps bound the older ones.
+    /// Runs after each new report and at each new game turn.
     pub fn battle_reports_trim(&mut self) {
+        let recent = self.game_turn() - 1;
         let kept = self.d.defines.engagement_reports_kept.max(1) as usize;
         if self.battle_reports.len() > kept {
-            let extra = self.battle_reports.len() - kept;
+            // Reports are in turn order: the older-than-the-window ones are a prefix.
+            let older = self.battle_reports.iter().take_while(|r| r.turn < recent).count();
+            let extra = (self.battle_reports.len() - kept).min(older);
             self.battle_reports.drain(..extra);
         }
         let logs_kept = self.d.defines.engagement_report_logs_kept.max(0) as usize;
-        let recent = self.game_turn() - 1;
         let mut logged = 0;
         for r in self.battle_reports.iter_mut().rev() {
             if r.log.is_none() {

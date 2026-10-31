@@ -334,10 +334,25 @@ fn reports_keep_logs_for_two_turns_and_the_latest_battles() {
     // Unlogged reports (battles nobody saw) are summaries from the start.
     let id = g.battle_report_add(report(&g, c, false));
     assert!(g.battle_report(id).unwrap().log.is_none());
-    // At most ENGAGEMENT_REPORTS_KEPT, the oldest dropped; ids are never reused.
-    while g.battle_reports.len() < kept {
+    // A crowded turn: more than ENGAGEMENT_REPORTS_KEPT battles (other players' wars count too)
+    // push out the older reports only; every report of this turn and the previous one stays, with
+    // its log.
+    let prev: Vec<u32> = g.battle_reports.iter().filter(|r| r.turn == recent).map(|r| r.id).collect();
+    assert!(!prev.is_empty());
+    assert!(g.battle_reports.iter().any(|r| r.turn < recent));
+    for _ in 0..kept {
         g.battle_report_add(report(&g, c, false));
     }
+    assert!(g.battle_reports.len() > kept);
+    assert!(g.battle_reports.iter().all(|r| r.turn >= recent), "the older reports went first");
+    assert!(prev.iter().all(|&id| g.battle_report(id).is_some_and(|r| r.log.is_some())));
+    // Turns on, what is now older is held to the cap again, the oldest dropped; ids are never
+    // reused.
+    next_turn(&mut g);
+    assert!(prev.iter().all(|&id| g.battle_report(id).is_none()));
+    assert!(g.battle_reports.len() > kept, "the previous turn's crowd stays one more turn");
+    next_turn(&mut g);
+    assert_eq!(g.battle_reports.len(), kept);
     let next = g.battle_report_add(report(&g, c, false));
     assert_eq!(g.battle_reports.len(), kept);
     assert!(g.battle_report(0).is_none());
