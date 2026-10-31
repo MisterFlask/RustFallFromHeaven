@@ -46,9 +46,12 @@ macro_rules! game_data {
             /// instead of every promotion.
             pub combat_mod_promotions: Vec<PromotionType>,
             /// Derived at load (not XML): the engagement role of each unit type
-            /// ([`GameData::type_combat_role`]), `None` for a type that never fights in a land
-            /// engagement: no strength at all (workers, settlers, great people, equipment), sea and
-            /// air units. A unit's own role also depends on its promotions ([`Self::screen_role`]).
+            /// ([`GameData::type_combat_role`]). Every land and immobile type has one, a type
+            /// without strength too (workers, settlers, great people): whether a unit fights is its
+            /// own strength (C++ `CvUnit::canFight`), which promotions add to (a Worker that takes
+            /// the Godslayer is a 3/3 unit, and Frontline). `None` for sea and air types only, which
+            /// never take part in a land engagement. A unit's own role also depends on its
+            /// promotions ([`Self::screen_role`]).
             pub unit_roles: IdxVec<UnitType, Option<CombatRoleType>>,
             /// Derived at load: the role a unit changes to by promotion, from the role with
             /// `FromRole` (from, promotion, to): a Frontline unit with Formation is a Screen.
@@ -323,26 +326,24 @@ impl GameData {
         }
         self.default_stance = stances.first().copied().unwrap_or_default();
         self.unit_roles =
-            IdxVec::from_fn(self.units.len(), |u| if self.type_fights_on_land(u) { self.type_combat_role(u) } else { None });
+            IdxVec::from_fn(self.units.len(), |u| if self.type_engages_on_land(u) { self.type_combat_role(u) } else { None });
         self.warnings.extend(warnings);
     }
 
-    /// Whether units of a type can fight in a land engagement: some strength (C++
-    /// `CvUnit::canFight` on the type's own numbers: `iCombat` or `iCombatDefense` with its typed
-    /// strength, `DamageTypeCombats`) and a land domain (`DOMAIN_LAND`, or `DOMAIN_IMMOBILE` with
-    /// strength: Guardian Vines). Ships never defend a land plot and air units never engage.
-    pub fn type_fights_on_land(&self, u: UnitType) -> bool {
-        let info = &self.units[u];
-        let typed: i32 = info.damage_type_combat.iter().sum();
-        let strength = (info.combat + typed).max(0) > 0 || (info.combat_defense + typed).max(0) > 0;
-        strength && matches!(info.domain_type, Some(DomainType::DOMAIN_LAND) | Some(DomainType::DOMAIN_IMMOBILE))
+    /// Whether units of a type can take part in a land engagement once they have strength: a land
+    /// domain (`DOMAIN_LAND`, or `DOMAIN_IMMOBILE`: Guardian Vines). Ships never defend a land plot
+    /// and air units never engage. The type's own strength is not asked: whether a unit fights is
+    /// decided per unit (C++ `CvUnit::canFight`, on `baseCombatStr` / `baseCombatStrDefense`,
+    /// which promotions raise: equipment, Great Commander, Heroic Strength).
+    pub fn type_engages_on_land(&self, u: UnitType) -> bool {
+        matches!(self.units[u].domain_type, Some(DomainType::DOMAIN_LAND) | Some(DomainType::DOMAIN_IMMOBILE))
     }
 
     /// The engagement role a unit type's data gives it, its strength and domain aside: its
     /// `CombatRole`, else the first role whose `DefaultUnitCombats` holds its unit combat and
     /// whose `DefaultFreePromotion`, if any, it has free (roles with a promotion are tried first,
     /// then XML order: a recon unit with Marksman free is an Assassin), else the `bDefault` role.
-    /// [`Self::unit_roles`] holds it for every type that fights.
+    /// [`Self::unit_roles`] holds it for every land and immobile type.
     pub fn type_combat_role(&self, u: UnitType) -> Option<CombatRoleType> {
         let info = &self.units[u];
         if info.combat_role.is_some() {

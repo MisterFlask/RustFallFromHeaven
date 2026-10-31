@@ -1,12 +1,14 @@
 <?xml version="1.0"?>
 <!-- Engagement roles (GAMEOPTION_ENGAGEMENTS; this game's own rules, phase 6 of the owner's spec
      "Engagement combat"; docs/COMBAT_INVENTORY.md).
-     Every land unit that fights has one role. It comes from the unit's CombatRole if set, else
-     from the first role here whose DefaultUnitCombats holds the unit's unit combat and whose
+     Every land unit type has one role. It comes from the unit's CombatRole if set, else from
+     the first role here whose DefaultUnitCombats holds the unit's unit combat and whose
      DefaultFreePromotion, if any, the unit type has free (roles with a promotion are tried first),
      else from the bDefault role (monstrous units and summons with no unit combat). A unit of
      FromRole holding FromPromotion takes the role instead (a Frontline unit with Formation is a
-     Screen). Units with no strength, and sea and air units, have no role.
+     Screen). Sea and air units have no role. A type without strength (a Worker, a Settler, a great
+     person) has one too: whether a unit fights is its own strength, which promotions can add to
+     (a Worker that takes the Godslayer is a 3/3 Frontline unit).
 
      iAttackPercent / iDefensePercent: the unit's attack (iCombat) and defence (iCombatDefense)
          in an engagement are multiplied by these (100 = 1.0), unless the unit sets iAttack /

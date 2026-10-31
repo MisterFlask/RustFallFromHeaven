@@ -146,13 +146,15 @@ fn named_units_take_their_roles() {
         ("UNIT_LIGHTNING_ELEMENTAL", "COMBATROLE_FRONTLINE"),
         // missiles have a role (their strike targets by it); the rules never commit them
         ("UNIT_FIREBALL", "COMBATROLE_FRONTLINE"),
-        // no role: no strength, equipment, sea and air units
-        ("UNIT_WORKER", "-"),
-        ("UNIT_SETTLER", "-"),
-        ("UNIT_COMMANDER", "-"),
-        ("UNIT_CORLINDALE", "-"),
-        ("EQUIPMENT_GOLDEN_HAMMER", "-"),
-        ("UNIT_BRIGIT_HELD", "-"),
+        // Types without strength have a role too: a unit's strength is its own, and promotions
+        // add to it (a Worker that takes the Godslayer is a 3/3 unit, and it defends).
+        ("UNIT_WORKER", "COMBATROLE_FRONTLINE"),
+        ("UNIT_SETTLER", "COMBATROLE_FRONTLINE"),
+        ("UNIT_COMMANDER", "COMBATROLE_FRONTLINE"),
+        ("UNIT_CORLINDALE", "COMBATROLE_SUPPORT"),
+        ("EQUIPMENT_GOLDEN_HAMMER", "COMBATROLE_FRONTLINE"),
+        ("UNIT_BRIGIT_HELD", "COMBATROLE_FRONTLINE"),
+        // no role: sea and air units
         ("UNIT_TRIREME", "-"),
         ("UNIT_KRAKEN", "-"),
         ("UNIT_HAWK", "-"),
@@ -195,27 +197,28 @@ fn the_religions_fighters_are_frontline_and_every_assassin_has_marksman() {
 }
 
 #[test]
-fn every_type_has_a_role_but_those_that_never_fight_on_land() {
+fn every_land_type_has_a_role() {
     let d = d();
     let count = |want: Option<&str>| d.unit_roles.iter().filter(|r| r.map(|r| d.type_name(r)) == want).count();
     // (role, unit types) at the time of writing; the sum is every unit type.
     let want = [
-        (Some("COMBATROLE_FRONTLINE"), 152),
+        (Some("COMBATROLE_FRONTLINE"), 189),
         (Some("COMBATROLE_SCREEN"), 0),
         (Some("COMBATROLE_BACKLINE"), 21),
         (Some("COMBATROLE_FLANKER"), 38),
         (Some("COMBATROLE_ASSASSIN"), 11),
-        (Some("COMBATROLE_SUPPORT"), 46),
-        (None, 57),
+        (Some("COMBATROLE_SUPPORT"), 47),
+        (None, 19),
     ];
     for (r, n) in want {
         assert_eq!(count(r), n, "{r:?}");
     }
     assert_eq!(want.iter().map(|w| w.1).sum::<usize>(), d.units.len());
-    let land = |u: &UnitInfo| matches!(u.domain_type, Some(DomainType::DOMAIN_LAND) | Some(DomainType::DOMAIN_IMMOBILE));
+    // Whether a unit fights is its own strength, not its type's (promotions add to it), so every
+    // land and immobile type has a role, with or without strength; sea and air types have none.
     for (u, info) in d.units.iter_enumerated() {
-        let fights = (info.combat > 0 || info.combat_defense > 0 || info.damage_type_combat.iter().any(|&x| x > 0)) && land(info);
-        assert_eq!(d.unit_roles[u].is_some(), fights, "{}", info.base.type_);
+        let land = matches!(info.domain_type, Some(DomainType::DOMAIN_LAND) | Some(DomainType::DOMAIN_IMMOBILE));
+        assert_eq!(d.unit_roles[u].is_some(), land, "{}", info.base.type_);
     }
 }
 
