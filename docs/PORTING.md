@@ -141,6 +141,16 @@ side)
   governor leaves the game. Swapping a city in or out of direct rule locks it for 10 turns. A
   governed city's cultural channel is its owner's, never its governor's (2026-10-30).
   Option off (the default outside the browser's new-game screen), nothing changes. Save format 7.
+- **Engagement combat** (`GAMEOPTION_ENGAGEMENTS`, requires armies; docs/ENGAGEMENTS.md; being
+  built, phase 6 of the spec, off by default): a land attack is an engagement, not a duel: each side
+  commits up to its slots (10 a side on open land, fewer on rough ground and against city
+  defenses) by its stance; Fear sits units out, defensive strikes and collateral open the battle
+  (reserves included), then volleys and rounds of simultaneous hits by role (the front shields the
+  back), one withdrawal roll per unit, kill credit per kill (G2) and the post-battle effects; the
+  launching group moves in when the plot is cleared. Ships and air units keep the duel. One rule
+  departs from the spec too (2026-10-31, plan revision 3): within its target class a hit avoids the
+  units the round's pending damage already kills, unless all of them are (random pile-ons on doomed
+  units read as bad play). Option off, nothing changes. Save format 10.
 
 **Container order and path finding**
 

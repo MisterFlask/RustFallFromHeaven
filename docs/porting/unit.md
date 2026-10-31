@@ -198,7 +198,7 @@ CvUnit combat: strength (`maxCombatStr` & co., `isBetterDefenderThan`, attack/de
 | `CvUnit::resolveCombat` | CvUnit.cpp:1584-1783 | 200 | `unit_resolve_combat` | ported |
 | `CvUnit::updateCombat` | CvUnit.cpp:1786-2251 | 466 | `unit_update_combat` | ported |
 | `CvUnit::isBetterDefenderThan` | CvUnit.cpp:2479-2646 | 168 | `unit_is_better_defender_than` | ported |
-| `CvUnit::attack` | CvUnit.cpp:3459-3467 | 9 | `unit_attack` | ported |
+| `CvUnit::attack` | CvUnit.cpp:3459-3467 | 9 | `unit_attack` | ported; under engagement combat a land attack is a one-unit engagement or a missile strike (`engage_unit_attack`, docs/ENGAGEMENTS.md) |
 | `CvUnit::fightInterceptor` | CvUnit.cpp:3469-3476 | 8 | `unit_fight_interceptor` | ported |
 | `CvUnit::attackForDamage` | CvUnit.cpp:3478-3595 | 118 | `unit_attack_for_damage` | ported |
 | `CvUnit::isFighting` | CvUnit.cpp:8905-8908 | 4 | `unit_is_fighting` | ported |
@@ -229,10 +229,10 @@ CvUnit combat: strength (`maxCombatStr` & co., `isBetterDefenderThan`, attack/de
 | `CvUnit::changeCombatTimer` | CvUnit.cpp:11945-11948 | 4 | `unit_change_combat_timer` | ported |
 | `CvUnit::changeCombatFirstStrikes` | CvUnit.cpp:11961-11964 | 4 | `unit_change_combat_first_strikes` | ported |
 | `CvUnit::setCombatUnit` | CvUnit.cpp:12838-12909 | 72 | `unit_set_combat_unit` | ported |
-| `CvUnit::doDefensiveStrike` | CvUnit.cpp:16206-16259 | 54 | `unit_do_defensive_strike` | ported |
-| `CvUnit::combatWon` | CvUnit.cpp:16306-16560 | 255 | `unit_combat_won` | ported |
+| `CvUnit::doDefensiveStrike` | CvUnit.cpp:16206-16259 | 54 | `unit_do_defensive_strike` | ported; split into `unit_defensive_strike_roll` and `_apply` (an engagement's opening strikes) |
+| `CvUnit::combatWon` | CvUnit.cpp:16306-16560 | 255 | `unit_combat_won` | ported; `unit_combat_won_as` runs it whole (the duel) or as an engagement's per-kill part (no removed-by-combat, combat-apply or poison, the conversion only rolled) |
 | `CvUnit::canAdvance` | CvUnit.cpp:17230-17251 | 22 | `unit_can_advance` | ported |
-| `CvUnit::collateralCombat` | CvUnit.cpp:17254-17382 | 129 | `unit_collateral_combat` | ported |
+| `CvUnit::collateralCombat` | CvUnit.cpp:17254-17382 | 129 | `unit_collateral_combat` | ported; `unit_collateral_combat_ex` with an engagement's target count (no `- 1`) and the units hit |
 | `CvUnit::flankingStrikeCombat` | CvUnit.cpp:17385-17468 | 84 | `unit_flanking_strike_combat` | ported |
 | `CvUnit::interceptTest` | CvUnit.cpp:17472-17490 | 19 | `unit_intercept_test` | ported |
 | `CvUnit::airStrikeTarget` | CvUnit.cpp:17493-17511 | 19 | `unit_air_strike_target` | ported |

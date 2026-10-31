@@ -196,8 +196,54 @@ def section_combat(groups, top):
             exp = g.counts['attack_odds_exp'][b][1]
             cells += '%14s' % ('%.1f/%2.0f/%2.0f' % (per(g, nn), exp / 10 / max(1, nn), 100 * won / max(1, nn)) if nn else '-')
         print('  %-30s' % ('%s-%d%%' % (b, int(b) + 10)) + cells)
-    top_table(groups, 'combats won, by unit', lambda g: {k: v[0] for k, v in g.counts['kill_by'].items()}, top)
+    top_table(groups, 'combats won (kills in engagements), by unit', lambda g: {k: v[0] for k, v in g.counts['kill_by'].items()}, top)
     top_table(groups, 'combat units lost (combat, spells, killed)', lambda g: {k: v[0] for k, v in g.counts['lost_unit'].items()}, top)
+    section_engagements(groups, top)
+
+
+def section_engagements(groups, top):
+    """Engagement combat (GAMEOPTION_ENGAGEMENTS, docs/ENGAGEMENTS.md); nothing without it."""
+    if not any(g.counts['engage'] for g in groups.values()):
+        return
+    print('\n== Engagements (per civ and game; the attacker\'s view)')
+    names = list(groups)
+    print('%-32s' % '' + ''.join('%14s' % n for n in names))
+    def c(g, cat, k, i=0):
+        return g.counts[cat][k][i]
+    def n_eng(g):
+        return sum(v[0] for v in g.counts['engage'].values())
+    rows = [
+        ('engagements', lambda g: per(g, n_eng(g))),
+        ('  won %', lambda g: 100 * c(g, 'engage', 'won') / max(1, n_eng(g))),
+        ('  held by the defender %', lambda g: 100 * c(g, 'engage', 'held') / max(1, n_eng(g))),
+        ('  draw %', lambda g: 100 * c(g, 'engage', 'draw') / max(1, n_eng(g))),
+        ('  mutual %', lambda g: 100 * c(g, 'engage', 'mutual') / max(1, n_eng(g))),
+        ('  mean rounds', lambda g: sum(v[1] for v in g.counts['engage'].values()) / max(1, n_eng(g))),
+        ('  units committed', lambda g: sum(v[1] for v in g.counts['engage_slots'].values()) / max(1, n_eng(g))),
+        ('  defenders committed', lambda g: sum(v[1] for v in g.counts['engage_slots_def'].values()) / max(1, n_eng(g))),
+        ('  attackers withdrew', lambda g: per(g, c(g, 'engage_withdrew', 'att'))),
+        ('  defenders withdrew', lambda g: per(g, c(g, 'engage_withdrew', 'def'))),
+        ('  sat out (fear)', lambda g: per(g, c(g, 'engage_satout', 'att') + c(g, 'engage_satout', 'def'))),
+        ('  with defensive strikes', lambda g: per(g, c(g, 'engage_strike', 'n'))),
+        ('  with collateral', lambda g: per(g, c(g, 'engage_collateral', 'n'))),
+        ('missile strikes', lambda g: per(g, sum(v[0] for v in g.counts['engage_missile'].values()))),
+        ('defenses (engagements)', lambda g: per(g, sum(v[0] for v in g.counts['engage_def'].values()))),
+    ]
+    for label, f in rows:
+        print('%-32s' % label + ''.join('%14.1f' % f(groups[n]) for n in names))
+    print('\n-- the estimator\'s win chance against the result (calibration): n per game / expected % / won %')
+    keys = sorted({k for g in groups.values() for k in g.counts['engage_est']}, key=lambda k: (['1', '2-3', '4-7', '8+'].index(k.split(':')[0]), k))
+    for k in keys:
+        cells = ''
+        for n in names:
+            g = groups[n]
+            nn, won = g.counts['engage_est'][k]
+            exp = g.counts['engage_est_exp'][k][1]
+            cells += '%14s' % ('%.1f/%2.0f/%2.0f' % (per(g, nn), exp / 10 / max(1, nn), 100 * won / max(1, nn)) if nn else '-')
+        print('  %-30s' % k + cells)
+    top_table(groups, 'committed attackers, by role', lambda g: {k: v[0] for k, v in g.counts['engage_force'].items()}, top)
+    top_table(groups, 'units lost in engagements, by role', lambda g: {k: v[0] for k, v in g.counts['engage_lost_role'].items()}, top)
+    top_table(groups, 'stances fought with', lambda g: {k: v[0] for k, v in g.counts['engage_stance'].items()}, top)
 
 
 def section_deaths(groups, top):
@@ -245,8 +291,8 @@ def section_wars(groups, top):
         ('  ended in peace %', lambda g: stat(g, lambda ws: 100 * sum(1 for w in ws if w['end'] is not None) / len(ws))),
         ('  cities taken by declarer', lambda g: stat(g, lambda ws: sum(w['cities'][0] for w in ws) / len(ws))),
         ('  cities taken by target', lambda g: stat(g, lambda ws: sum(w['cities'][1] for w in ws) / len(ws))),
-        ('  combats won by declarer', lambda g: stat(g, lambda ws: sum(w['kills'][0] for w in ws) / len(ws))),
-        ('  combats won by target', lambda g: stat(g, lambda ws: sum(w['kills'][1] for w in ws) / len(ws))),
+        ('  combats won (kills) by declarer', lambda g: stat(g, lambda ws: sum(w['kills'][0] for w in ws) / len(ws))),
+        ('  combats won (kills) by target', lambda g: stat(g, lambda ws: sum(w['kills'][1] for w in ws) / len(ws))),
         ('  gained a city %', lambda g: stat(g, lambda ws: 100 * sum(1 for w in ws if w['cities'][0] > 0) / len(ws))),
     ]
     for label, f in rows:

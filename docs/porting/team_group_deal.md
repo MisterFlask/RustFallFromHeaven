@@ -366,7 +366,7 @@ C++ lines: **1348** total; 26 functions, all ported.
 | `CvSelectionGroup::canBombard` | CvSelectionGroup.cpp:2644-2659 | 16 | `group_can_bombard` | ported |
 | `CvSelectionGroup::getBestBuildRoute` | CvSelectionGroup.cpp:2956-3008 | 53 | `group_get_best_build_route` | ported |
 | `CvSelectionGroup::groupDeclareWar` | CvSelectionGroup.cpp:3012-3036 | 25 | `group_declare_war` | ported |
-| `CvSelectionGroup::groupAttack` | CvSelectionGroup.cpp:3040-3264 | 225 | `group_attack` | ported |
+| `CvSelectionGroup::groupAttack` | CvSelectionGroup.cpp:3040-3264 | 225 | `group_attack` | ported; `group_attack_force` (a force; under engagement combat the engagement's preamble and one engagement, docs/ENGAGEMENTS.md) |
 | `CvSelectionGroup::groupMove` | CvSelectionGroup.cpp:3266-3333 | 68 | `group_move` | ported |
 | `CvSelectionGroup::groupPathTo` | CvSelectionGroup.cpp:3337-3399 | 63 | `group_path_to` | ported |
 | `CvSelectionGroup::groupRoadTo` | CvSelectionGroup.cpp:3403-3423 | 21 | `group_road_to` | ported |
