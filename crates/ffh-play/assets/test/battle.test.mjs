@@ -334,6 +334,20 @@ test("the result and the names are the viewer's: a battle seen by its defender",
   assert.equal(line.parts.find((p) => p.b === giant.b).cls, "you");
 });
 
+test("a preview's forecast is the formation's asked for, not the auto formation the engine answers a refusal in", () => {
+  const pv = FIXTURES.field.preview;
+  const auto = pv.auto_formation;
+  // the first preview (nothing sent) and a reply for the formation sent bring their forecast
+  assert.deepEqual(L.previewForecast(pv), { forecast: pv.forecast, refused: false });
+  assert.equal(L.previewForecast(pv, [...auto].reverse()).forecast, pv.forecast, "the same formation in another order");
+  // a refused formation, answered in the auto formation: no forecast of it
+  const moved = auto.map((p, i) => (i === 0 ? { ...p, row: (p.row + 1) % 3 } : p));
+  assert.deepEqual(L.previewForecast({ ...pv, errors: ["Not across the river."] }, moved), { forecast: null, refused: true });
+  assert.deepEqual(L.previewForecast({ ...pv, formation: undefined }, moved), { forecast: null, refused: true });
+  // a reply with no forecast is answered: nothing is pending
+  assert.deepEqual(L.previewForecast({ ...pv, formation: moved, forecast: null }, moved), { forecast: null, refused: false });
+});
+
 test("the result when no attacker is left: worded from the fates (fallen, escaped, afraid)", () => {
   const fighter = (b, side, name, lane) => ({ b, unit: 900 + b, unit_type: "UNIT_AXEMAN", name, owner: side, side, role: "COMBATROLE_FLANKER", large: false, lane, row: 0, max_hp: 100, hp_start: 10000, speed: 6, actions: [] });
   const fighters = [fighter(0, 0, "Horseman", 0), fighter(1, 0, "Horseman", 1), fighter(2, 0, "Axeman", 2), fighter(3, 1, "Axeman", 0)];

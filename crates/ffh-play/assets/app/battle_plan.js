@@ -9,13 +9,16 @@
 import { h, toast } from "./dom.js";
 import {
   uname, roleKey, roleLabel, ROLE_UNITS, ROWS, actionAt, actionText, reachText, specials, groundRules, slotSum, slotCap,
-  placeOf, placeFromList, formationOf, gridOf, slotsUsed, placeUnit, benchUnit, inLine, x100, hpOf, tyLabel,
+  placeOf, placeFromList, formationOf, previewForecast, gridOf, slotsUsed, placeUnit, benchUnit, inLine, x100, hpOf, tyLabel,
 } from "./battle_log.js";
 import { loadArt, unitXY, cellXY, cellAt, figBox, pic, faceFlip, headChip, uiIcon, btn, add, FRAME_W, FRAME_H, COLORS } from "./battle_stage.js";
 
 export const NAME = "plan";
 
-const P = { ctx: null, pv: null, F: null, place: null, def: null, sel: null, hover: null, hoverCell: null, mouse: null, fc: null, fcFor: null, pending: false, errors: [], declare: null, seq: 0, timer: 0, busy: false, figs: [], flash: null, tip: null };
+// `fc`: the forecast of the formation shown (null: none); `pending`: a preview asked and not yet
+// answered; `refused`: the last answer was for another formation than the one asked (the engine
+// refused it and answered in its auto formation).
+const P = { ctx: null, pv: null, F: null, place: null, def: null, sel: null, hover: null, hoverCell: null, fc: null, pending: false, refused: false, errors: [], declare: null, seq: 0, timer: 0, busy: false, figs: [], flash: null, tip: null };
 
 const me = 0;
 
@@ -60,12 +63,16 @@ export function leave() {
 /** The formation as the protocol sends it. */
 const formation = () => formationOf(P.place, P.F);
 
-/** Takes a preview's forecast, errors and war (its fighters' `b` mapped to ours by unit). */
-function takePreview(pv) {
+/** Takes a preview's forecast, errors and war (its fighters' `b` mapped to ours by unit). `sent`:
+ *  the formation asked for (none: the first preview, in the rules' own). A reply for another
+ *  formation (the engine refused the one sent and answered in its auto formation) brings no
+ *  forecast of this one: its numbers are dropped, its errors say why. */
+function takePreview(pv, sent = null) {
   const byUnit = new Map(P.F.map((f) => [f.unit, f.b]));
-  const fc = pv.forecast ? { ...pv.forecast, per: (pv.forecast.per ?? []).map((p) => ({ ...p, b: byUnit.get(pv.fighters?.[p.b]?.unit) ?? p.b })) } : null;
-  P.fc = fc;
-  P.pending = !fc && !!pv.estimate_pending;
+  const { forecast, refused } = previewForecast(pv, sent);
+  P.fc = forecast ? { ...forecast, per: (forecast.per ?? []).map((p) => ({ ...p, b: byUnit.get(pv.fighters?.[p.b]?.unit) ?? p.b })) } : null;
+  P.pending = false;
+  P.refused = refused;
   P.errors = pv.errors ?? [];
   P.declare = pv.declare_war ?? null;
 }
@@ -74,13 +81,15 @@ function takePreview(pv) {
 function changed(ctx) {
   P.fc = null;
   P.pending = true;
+  P.refused = false;
   render(ctx);
   clearTimeout(P.timer);
   const seq = ++P.seq;
   P.timer = setTimeout(async () => {
+    const sent = formation();
     let pv;
     try {
-      pv = await ctx.source.preview({ formation: formation() });
+      pv = await ctx.source.preview({ formation: sent });
     } catch (e) {
       if (seq !== P.seq) return;
       P.pending = false;
@@ -89,7 +98,7 @@ function changed(ctx) {
       return;
     }
     if (seq !== P.seq) return;
-    takePreview(pv);
+    takePreview(pv, sent);
     render(ctx);
   }, 120);
 }
@@ -431,7 +440,7 @@ function forecastPanel(ctx, { mineIn, theirsIn, theirsOut }) {
       ),
     );
   } else if (P.pending) body.push(h("div.bt-row", h("span.bt-h4", "Forecast"), h("span.dim", "estimating…")), h("div.small.dim", "The engine plays this formation many times over."));
-  else body.push(h("div.bt-row", h("span.bt-h4", "Forecast")), h("div.small.dim", P.place.size ? "No forecast for this formation." : "Put at least one unit in the line."));
+  else body.push(h("div.bt-row", h("span.bt-h4", "Forecast")), h("div.small.dim", !P.place.size ? "Put at least one unit in the line." : P.refused ? "No forecast: the engine refuses this formation." : "No forecast for this formation."));
   if (war) body.push(h("div.warn.small", "Attacking declares war."));
   for (const e of P.errors) body.push(h("div.bad.small", e));
   return pnl(

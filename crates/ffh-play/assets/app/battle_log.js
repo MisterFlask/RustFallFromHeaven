@@ -65,11 +65,12 @@
 //   `report` (its id).
 //
 // EngagePreview (`engage_preview {army | units | from, to, formation?: [{unit, lane, row}]}`): plot, from, ground,
-//   slots, lanes, sides, fighters (the attacker's pool in the formation asked for, checked, else in the rules' auto
-//   formation; the defenders it sees in their formation as it knows it), formation and auto_formation ([{unit, lane,
-//   row}]: the attacker's in `fighters`, and the rules' own), forecast: Forecast | null (with `estimate_pending`:
-//   still being run), declare_war (the team the attack declares war on, or null), errors (why the formation or the
-//   attack is refused). Forecast {runs, lost_x100: [attacker, defender] (units expected to fall, x100),
+//   params, slots, lanes, sides, fighters (the attacker's pool in the formation asked for, checked, else in the
+//   rules' auto formation; the defenders it sees in their formation as it knows it), formation and auto_formation
+//   ([{unit, lane, row}]: the attacker's in `fighters`, the one the forecast is for, and the rules' own),
+//   forecast: Forecast | null (run before the reply: there is no later one; null whenever `errors` is not empty),
+//   declare_war (the team the attack declares war on, or null), errors (why the formation or the attack is
+//   refused). The plan drops a forecast whose `formation` is not the one it asked for. Forecast {runs, lost_x100: [attacker, defender] (units expected to fall, x100),
 //   line_wiped_permille (the defenders' line wiped out), plot_falls_permille, attackers_wiped_permille?,
 //   per: [{b, fall_pct, escape_pct}]}.
 // The `engage` command: {army | units | from, to, formation?, declare_war?}; its reply's `r.report` is the battle's.
@@ -411,6 +412,15 @@ export function formationKey(list) {
     .map((p) => `${p.unit}:${p.lane}:${p.row}`)
     .sort()
     .join(",");
+}
+
+/** The forecast preview `pv` brings for formation `sent` (the one asked for; null: the first
+ *  preview, in the rules' own): `{forecast, refused}`. A reply for another formation (the engine
+ *  refused the one sent and answered in its auto formation) brings none of this one: `forecast`
+ *  null, `refused` true. */
+export function previewForecast(pv, sent = null) {
+  const forThis = !sent || (Array.isArray(pv?.formation) && formationKey(pv.formation) === formationKey(sent));
+  return { forecast: forThis ? (pv?.forecast ?? null) : null, refused: !forThis };
 }
 
 /** `grid[row][lane]`: the `b` standing there (a large unit fills two lanes), or null. */
