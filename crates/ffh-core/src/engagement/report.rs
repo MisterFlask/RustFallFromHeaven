@@ -484,20 +484,38 @@ pub enum KillKind {
     Promotion(PromotionType),
 }
 
-/// The plan as the attacker saw it (DESIGN `FrozenForecast`).
+/// The plan as the attacker saw it (DESIGN `FrozenForecast`; frozen from the attack preview,
+/// `Game::engage_preview`, when the attack is made: plan 15 items 1-2).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FrozenForecast {
     pub source: ForecastSource,
+    /// The attacker's chance to win and to draw (per mille).
     pub win_permille: i32,
     pub draw_permille: i32,
-    /// p10, p50, p90.
+    /// The rounds fought (volley rounds not counted): p10, p50, p90.
     pub rounds: (i32, i32, i32),
-    pub losses_if_win_x10: i32,
+    /// The attacker's committed units lost when it wins, x10; `None`: it never won (or, from the
+    /// moment integrator, not known).
+    pub losses_if_win_x10: Option<i32>,
+    /// Each committed fighter of the plan (both sides).
     pub per: Vec<ForecastFighter>,
-    /// Each side's mean HP after each step (opening, round 1, ...).
+    /// Each side's mean engaged HP (centi-HP) after each step: the opening (its volleys
+    /// included), round 1, ... (empty from the moment integrator).
     pub curve: [Vec<i32>; 2],
-    /// What the What-if list showed: the plan and its win chance (per mille).
-    pub alternatives: Vec<(AltKind, i32)>,
+    /// What the What-if list showed.
+    pub alternatives: Vec<ForecastAlt>,
+}
+
+/// A What-if plan as the list showed it.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ForecastAlt {
+    pub kind: AltKind,
+    /// The stance whose pick it is (a swap: the plan's).
+    pub stance: StanceType,
+    /// Its force, in log fighter indices.
+    pub force: Vec<FighterIdx>,
+    pub win_permille: i32,
+    pub losses_if_win_x10: Option<i32>,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -511,18 +529,23 @@ pub enum ForecastSource {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ForecastFighter {
     pub b: FighterIdx,
+    /// The chance it falls and withdraws (percent).
     pub fall_pct: i32,
     pub withdraw_pct: i32,
+    /// The round by which it has fallen in half the battles (`None`: it survives more than
+    /// half; 0: in the opening volleys).
     pub death_round: Option<i32>,
 }
 
-/// A What-if plan.
-#[derive(Clone, Debug, PartialEq, Eq)]
+/// What a What-if plan is (DESIGN 2, "the dock"; the client's `kind`).
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum AltKind {
-    ThisPlan,
+    /// The stance's own pick (its quotas, before the swap search).
     StancePick,
-    Swap { out: FighterIdx, add: FighterIdx },
-    Stance(StanceType),
+    /// One of the best single swaps of the plan's force.
+    Swap,
+    /// Another stance's pick.
+    OtherStance,
 }
 
 impl BattleReport {

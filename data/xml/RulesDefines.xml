@@ -207,4 +207,11 @@
 		<DefineName>ENGAGEMENT_REPORT_LOGS_KEPT</DefineName>
 		<iDefineIntVal>32</iDefineIntVal>
 	</Define>
+	<!-- PREVIEW_RUNS: battles the attack preview plays on its own RNG for its forecast (the
+	     plan's win chance, rounds, losses, each unit's chance to fall), and as many for each of
+	     its What-if plans -->
+	<Define>
+		<DefineName>ENGAGEMENT_PREVIEW_RUNS</DefineName>
+		<iDefineIntVal>200</iDefineIntVal>
+	</Define>
 </Civ4Defines>

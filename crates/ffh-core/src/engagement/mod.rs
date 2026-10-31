@@ -34,6 +34,7 @@ pub mod estimate;
 pub mod expect;
 mod phi_table;
 pub mod pick;
+pub mod preview;
 pub mod report;
 pub mod resolve;
 mod sink;
@@ -55,9 +56,10 @@ pub use estimate::{AssaultEstimate, Attackers, Eligible, Estimate, EstimateInput
 pub use battle::{damage_from_hp, hp_from_damage, Battle, BattleEffect, Fighter, FighterIdx, Pair, Params, Side, TargetClass};
 pub use expect::{resolve_expected, resolve_expected_from, Expectation, FighterExpect, MomentStart};
 pub use pick::{StanceChoice, WarTest};
+pub use preview::{Alternative, DefPick, EngagePreview, Forecast, PreviewFighter, PreviewInput};
 pub use slots::Slots;
 pub use stats::HitCtx;
 pub use resolve::{
-    resolve_sampled, resolve_sampled_quiet, targets, BattleEvent, BattleRng, Block, Death, EngageResult, Fate, FighterEnd, Hit, Kill, NoTarget,
+    resolve_sampled, resolve_sampled_quiet, resolve_sampled_traced, targets, BattleEvent, BattleRng, Block, Death, EngageResult, Fate, FighterEnd, Hit, Kill, NoTarget,
     Phase, Resolution, TargetState, Targets,
 };

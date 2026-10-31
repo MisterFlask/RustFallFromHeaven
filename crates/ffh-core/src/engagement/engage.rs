@@ -441,7 +441,11 @@ impl Game {
                 .map(|&u| (u, Side::Attacker))
                 .chain(candidates.iter().filter(|u| !e.units.contains(u)).map(|&u| (u, Side::Defender)))
                 .collect();
-            Some(Sink::new(self, &e, &reserves, [&auto, &def_pick], by_player))
+            let mut s = Sink::new(self, &e, &reserves, [&auto, &def_pick], by_player);
+            // The plan as the attacker saw it, before anything changes (plan 15 items 1-2).
+            let forecast = self.engage_forecast_frozen(p, from, to, launcher, &force, att_stance.stance, |u| s.index_of(u));
+            s.set_forecast(forecast);
+            Some(s)
         } else {
             None
         };

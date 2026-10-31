@@ -277,10 +277,10 @@ fn report(g: &Game, c: CityId, logged: bool) -> BattleReport {
             win_permille: 640,
             draw_permille: 0,
             rounds: (1, 2, 4),
-            losses_if_win_x10: 3,
+            losses_if_win_x10: Some(3),
             per: vec![ForecastFighter { b: 0, fall_pct: 30, withdraw_pct: 0, death_round: None }],
             curve: [vec![12000, 9000], vec![12000, 0]],
-            alternatives: vec![(AltKind::ThisPlan, 640)],
+            alternatives: vec![ForecastAlt { kind: AltKind::StancePick, stance: StanceType(0), force: vec![0], win_permille: 640, losses_if_win_x10: None }],
         }),
     };
     BattleReport {

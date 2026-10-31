@@ -167,6 +167,11 @@ impl Sink {
         }
     }
 
+    /// The plan as the attacker saw it (plan 15 items 1-2).
+    pub fn set_forecast(&mut self, forecast: Option<super::report::FrozenForecast>) {
+        self.log.forecast = forecast;
+    }
+
     pub fn event(&mut self, ev: LogEvent) {
         self.log.events.push(ev);
     }

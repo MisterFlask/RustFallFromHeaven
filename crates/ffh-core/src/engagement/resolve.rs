@@ -212,6 +212,9 @@ pub struct Resolution {
     dealt: Vec<i32>,
     /// Empty when resolved quietly ([`resolve_sampled_quiet`]).
     pub events: Vec<BattleEvent>,
+    /// Only when traced ([`resolve_sampled_traced`]): each side's engaged HP (centi-HP; alive,
+    /// not withdrawn, not sat out) after the opening volleys, then after each round.
+    pub curve: Vec<[i32; 2]>,
 }
 
 impl Resolution {
@@ -338,10 +341,20 @@ pub fn resolve_sampled_quiet(b: &Battle, rng: &mut impl BattleRng) -> Resolution
     Run::new(b, false).run(rng)
 }
 
+/// [`resolve_sampled_quiet`] with each side's HP after the opening volleys and each round
+/// ([`Resolution::curve`]; the same draws and outcome): the preview's runs.
+pub fn resolve_sampled_traced(b: &Battle, rng: &mut impl BattleRng) -> Resolution {
+    let mut run = Run::new(b, false);
+    run.trace = true;
+    run.run(rng)
+}
+
 struct Run<'a> {
     b: &'a Battle,
     n: usize,
     record: bool,
+    trace: bool,
+    curve: Vec<[i32; 2]>,
     hp: Vec<i32>,
     engaged: Vec<bool>,
     rolled: Vec<bool>,
@@ -368,6 +381,8 @@ impl<'a> Run<'a> {
             b,
             n,
             record,
+            trace: false,
+            curve: Vec::new(),
             hp: b.fighters.iter().map(|f| f.hp).collect(),
             engaged: b.fighters.iter().map(|f| !f.sat_out).collect(),
             rolled: vec![false; n],
@@ -444,10 +459,12 @@ impl<'a> Run<'a> {
                 }
             }
         }
+        self.trace_point();
         if result.is_none() {
             for r in 1..=b.params.max_rounds {
                 rounds = r;
                 result = self.round(rng, Phase::Round(r), None);
+                self.trace_point();
                 if result.is_some() {
                     break;
                 }
@@ -465,7 +482,20 @@ impl<'a> Run<'a> {
                 taken: b.fighters[f].hp.max(0) - self.hp[f].max(0),
             })
             .collect();
-        Resolution { result, volley_rounds, rounds, fighters, kills: self.kills, dealt: self.dealt, events: self.events }
+        Resolution { result, volley_rounds, rounds, fighters, kills: self.kills, dealt: self.dealt, events: self.events, curve: self.curve }
+    }
+
+    /// Traced: each side's engaged HP now.
+    fn trace_point(&mut self) {
+        if self.trace {
+            let mut sides = [0i32; 2];
+            for f in 0..self.n {
+                if self.engaged[f] {
+                    sides[self.b.fighters[f].side.index()] += self.hp[f].max(0);
+                }
+            }
+            self.curve.push(sides);
+        }
     }
 
     /// The result if a side has no engaged fighter (nobody on either side: a draw before the
