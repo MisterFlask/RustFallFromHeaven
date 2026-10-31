@@ -304,7 +304,8 @@ has a mark at its banner's end: a small ochre dot while the pressure has no effe
 "!" for unrest, a red "!" in revolt, a red "!!" in a gold ring when close to changing hands.
 **Armies** (`F5`, the menu's Armies; with armies on): every army with its name
 (type to rename), units, place (click: select it on the map), supply, target size (with its units,
-recruits marching and units in training against it), "Upgrade all", "Disband", its
+recruits marching and units in training against it: its requisition orders and the units its
+cities build next for it, as "more wanted" counts them), "Upgrade all", "Disband", its
 **requisition** (the cities it requisitions from, how many more it wants, its orders in
 production with their turns, and "Requisition from…": every city of yours with a checkbox, the
 unit it would train for the army, its production turns and its march to the army; "Release all"),
