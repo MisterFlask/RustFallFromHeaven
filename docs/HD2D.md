@@ -541,9 +541,12 @@ the map (`MapHd2d.setConfig`).
 * **Film**: `node tools/r3d-lab.mjs --gpu --capture out.mp4 --query "scene=hd2d&renderer=hd2d"`
   renders a scripted pan, zoom in, pan with the pointer wandering (the tilt-shift's band follows
   it), zoom out to the far view and back, each frame at its own time, and encodes it with ffmpeg.
-* **Shader compile times**: `r3d-lab/compile.html` (served by `--serve`) compiles every program of
-  the 3D renderer and of the mode, one at a time, and logs each one's link and first-draw times
-  (`?only=terrain`; docs/R3D.md §11.1).
+* **Shader compile times**: `r3d-lab/compile.html` (served by `--serve`) compiles the programs the
+  mode builds for a configuration (`?renderer=hd2d`, the default, or `3d`; `?r3d=` read as the
+  renderer reads it), one at a time or all at once (`&parallel=1`, as a start does), and logs each
+  one's link and first-draw times, drawn into the targets the pipeline draws it into
+  (`?only=terrain`). docs/R3D.md §11.1, "Measuring", says how to compare the compile-time switches
+  (§11) on Direct3D.
 * `tools/r3d-compare.mjs` also saves `hd2d.png`, `hd2d-close.png`, `hd2d-far.png`;
   `tools/r3d-perf.mjs --renderer hd2d` measures the mode (configs: hd2d, no-rays, no-tilt, no-bloom,
   no-mood, no-hd2d-post, plain).
@@ -792,7 +795,8 @@ only, unless 1 or 0 says otherwise) the scene packed into one target (docs/R3D.m
 programs compile at link there; other backends compile at link anyway), `fastStart` (1) the start-up's CPU work done while the programs compile and the sprites
 uploaded from memory (`earlySync` 0 turns off the overlap alone). With all five compile-time switches
 off the mode draws as before them (the lab's stills match bit for bit):
-`?r3d={"noiseTex":0,"terrainLean":0,"lite":0,"packScene":0,"fastStart":0}`.
+`?r3d={"noiseTex":0,"terrainLean":0,"lite":0,"packScene":0,"fastStart":0}`; `r3d-lab/compile.html`
+takes the same `?r3d=` to compare their compile times (§7).
 
 ## 12. Removing it
 

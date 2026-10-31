@@ -83,13 +83,7 @@ export class Map3D {
     }
     this.gl = gl;
     this.glName = glName;
-    this.pipeline = new Pipeline(gl, this.terrainDefines(), {
-      scene: this.sceneDefines(),
-      prop: this.propDefines(),
-      water: this.waterDefines(),
-      riverSplit: this.riverSplit(),
-      packed: this.packedScene(),
-    });
+    this.pipeline = new Pipeline(gl, ...this.pipelineArgs());
     performance.mark("r3d:pipeline");
     /** Whether the programs have compiled (`ready`): the loop draws nothing before. */
     this.compiled = false;
@@ -245,6 +239,12 @@ export class Map3D {
   /** The world's options (world.js World): none for the 3D renderer; a mode may raise banks. */
   worldOpts() {
     return {};
+  }
+
+  /** The Pipeline's arguments from the hooks below (they read only `cfg` and `glName`, so
+   *  r3d-lab/compile.html calls this on a bare object of the mode's class for the same programs). */
+  pipelineArgs() {
+    return [this.terrainDefines(), { scene: this.sceneDefines(), prop: this.propDefines(), water: this.waterDefines(), riverSplit: this.riverSplit(), packed: this.packedScene() }];
   }
 
   /** `#define`s the terrain program is compiled with (shaders.js): none for the 3D renderer; a

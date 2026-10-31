@@ -29,6 +29,43 @@ const SHADOW_SIZE = 2048;
 // shadow on the plain behind only darkens it a little, as a painter would keep it.
 const TERRAIN_SHADOW_SIZE = 1024;
 
+/** Whether float colour targets can be drawn into (enabling the extension that allows it). */
+export function hdrTargets(gl) {
+  return !!gl.getExtension("EXT_color_buffer_float") || !!gl.getExtension("EXT_color_buffer_half_float");
+}
+
+/** The pipeline's programs, `[name, vs, fs, defines]` by key in the order it builds them, for the
+ *  constructor's `terrainDefines` and `opts` (`packed` already checked against `hdrTargets`).
+ *  r3d-lab/compile.html measures the same list. */
+export function pipelinePrograms(terrainDefines = {}, { scene: sceneDefines = {}, prop = {}, water = {}, riverSplit = false, packed = false } = {}) {
+  const C = SH.COMMON;
+  // A scene program: its one packed output, or the three targets.
+  const S = (name, vs, fs, defs = {}) => (packed ? [name, vs, SH.packedScene(fs), { ...defs, SCENE_PACKED: 1 }] : [name, vs, fs, defs]);
+  return {
+    terrain: S("terrain", C + SH.TERRAIN_VS, C + SH.TERRAIN_FS, { ...sceneDefines, ...terrainDefines }),
+    prop: S("prop", C + SH.PROP_VS, C + SH.PROP_FS, { ...sceneDefines, ...prop }),
+    water: S("water", C + SH.WATER_VS, C + SH.WATER_FS, { ...sceneDefines, ...water, ...(riverSplit ? { WATER_SEA: 1 } : {}) }),
+    ...(riverSplit ? { river: S("river", C + SH.WATER_VS, C + SH.WATER_FS, { ...sceneDefines, ...water, WATER_RIVER: 1 }) } : {}),
+    shadowTerrain: ["shadow-terrain", C + SH.SHADOW_TERRAIN_VS, SH.SHADOW_FS],
+    shadowProp: ["shadow-prop", C + SH.PROP_VS, C + SH.PROP_DEPTH_FS],
+    ssao: ["ssao", FULLSCREEN_VS, C + SH.SSAO_FS],
+    aoBlur: ["ao-blur", FULLSCREEN_VS, SH.AO_BLUR_FS],
+    blur: ["blur", FULLSCREEN_VS, SH.BLUR_FS],
+    composite: ["composite", FULLSCREEN_VS, SH.COMPOSITE_FS],
+    tensor: ["tensor", FULLSCREEN_VS, SH.TENSOR_FS],
+    kuwahara: ["kuwahara", FULLSCREEN_VS, SH.KUWAHARA_FS],
+    finish: ["finish", FULLSCREEN_VS, C + SH.FINISH_FS],
+    fxaa: ["fxaa", FULLSCREEN_VS, SH.FXAA_FS],
+    overlay: ["overlay", C + SH.OVERLAY_VS, C + SH.OVERLAY_FS],
+    marker: ["marker", C + SH.MARKER_VS, C + SH.MARKER_FS],
+    ghost: ["ghost", C + SH.PROP_VS, C + SH.GHOST_FS],
+    particle: ["particle", C + SH.PARTICLE_VS, SH.PARTICLE_FS],
+    blit: ["blit", FULLSCREEN_VS, SH.BLIT_FS],
+    // The packed scene into the three targets, and the water's grab of it.
+    ...(packed ? { unpack: ["unpack", FULLSCREEN_VS, SH.UNPACK_FS], unpackCopy: ["unpack-copy", FULLSCREEN_VS, SH.UNPACK_FS, { UNPACK_COPY: 1 }] } : {}),
+  };
+}
+
 export class Pipeline {
   /** `terrainDefines`: the terrain program's `#define`s (a mode's: Map3D.terrainDefines).
    *  `opts` (a mode's choices, Map3D):
@@ -39,42 +76,14 @@ export class Pipeline {
    *  - `packed`: the scene's programs (the rivers' too) write one packed target, unpacked after
    *    (shaders.js SCENE_PACKED; Map3D.packedScene) -- one output each, so ANGLE's Direct3D 11
    *    backend compiles them at link, in parallel and cached, not at their first draw. */
-  constructor(gl, terrainDefines = {}, { scene: sceneDefines = {}, prop = {}, water = {}, riverSplit = false, packed = false } = {}) {
+  constructor(gl, terrainDefines = {}, opts = {}) {
     this.gl = gl;
-    this.hdr = !!gl.getExtension("EXT_color_buffer_float") || !!gl.getExtension("EXT_color_buffer_half_float");
+    this.hdr = hdrTargets(gl);
     gl.getExtension("OES_texture_float_linear");
     this.timer = gl.getExtension("EXT_disjoint_timer_query_webgl2");
     this.fs = fullscreen(gl);
-    const P = (name, vs, fs, defs) => new Program(gl, name, vs, fs, defs);
-    const C = SH.COMMON;
-    this.packed = !!packed && this.hdr;
-    // A scene program: its one packed output, or the three targets.
-    const S = (name, vs, fs, defs = {}) => (this.packed ? P(name, vs, SH.packedScene(fs), { ...defs, SCENE_PACKED: 1 }) : P(name, vs, fs, defs));
-    this.p = {
-      terrain: S("terrain", C + SH.TERRAIN_VS, C + SH.TERRAIN_FS, { ...sceneDefines, ...terrainDefines }),
-      prop: S("prop", C + SH.PROP_VS, C + SH.PROP_FS, { ...sceneDefines, ...prop }),
-      water: S("water", C + SH.WATER_VS, C + SH.WATER_FS, { ...sceneDefines, ...water, ...(riverSplit ? { WATER_SEA: 1 } : {}) }),
-      ...(riverSplit ? { river: S("river", C + SH.WATER_VS, C + SH.WATER_FS, { ...sceneDefines, ...water, WATER_RIVER: 1 }) } : {}),
-      shadowTerrain: P("shadow-terrain", C + SH.SHADOW_TERRAIN_VS, SH.SHADOW_FS),
-      shadowProp: P("shadow-prop", C + SH.PROP_VS, C + SH.PROP_DEPTH_FS),
-      ssao: P("ssao", FULLSCREEN_VS, C + SH.SSAO_FS),
-      aoBlur: P("ao-blur", FULLSCREEN_VS, SH.AO_BLUR_FS),
-      blur: P("blur", FULLSCREEN_VS, SH.BLUR_FS),
-      composite: P("composite", FULLSCREEN_VS, SH.COMPOSITE_FS),
-      tensor: P("tensor", FULLSCREEN_VS, SH.TENSOR_FS),
-      kuwahara: P("kuwahara", FULLSCREEN_VS, SH.KUWAHARA_FS),
-      finish: P("finish", FULLSCREEN_VS, C + SH.FINISH_FS),
-      fxaa: P("fxaa", FULLSCREEN_VS, SH.FXAA_FS),
-      overlay: P("overlay", C + SH.OVERLAY_VS, C + SH.OVERLAY_FS),
-      marker: P("marker", C + SH.MARKER_VS, C + SH.MARKER_FS),
-      ghost: P("ghost", C + SH.PROP_VS, C + SH.GHOST_FS),
-      particle: P("particle", C + SH.PARTICLE_VS, SH.PARTICLE_FS),
-      blit: P("blit", FULLSCREEN_VS, SH.BLIT_FS),
-    };
-    if (this.packed) {
-      this.p.unpack = P("unpack", FULLSCREEN_VS, SH.UNPACK_FS);
-      this.p.unpackCopy = P("unpack-copy", FULLSCREEN_VS, SH.UNPACK_FS, { UNPACK_COPY: 1 });
-    }
+    this.packed = !!opts.packed && this.hdr;
+    this.p = Object.fromEntries(Object.entries(pipelinePrograms(terrainDefines, { ...opts, packed: this.packed })).map(([k, a]) => [k, new Program(gl, ...a)]));
     this.shadowMap = depthTexture(gl, SHADOW_SIZE, SHADOW_SIZE);
     this.shadowFbo = framebuffer(gl, [], this.shadowMap);
     this.shadowMapT = depthTexture(gl, TERRAIN_SHADOW_SIZE, TERRAIN_SHADOW_SIZE);
