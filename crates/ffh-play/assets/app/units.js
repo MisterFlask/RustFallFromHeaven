@@ -359,7 +359,8 @@ export function rightClick(x, y, ev) {
   shiftChain = shiftChain.then(async () => {
     if (!S.sel || unitsKey(S.sel.units) !== unitsKey(units)) return;
     const laying = waypoints && unitsKey(waypoints.units) === unitsKey(units);
-    if (!laying && (await battleNow(x, y))) await moveTo(x, y, { direct: true });
+    // (The attack is not waited for: a war it asks to declare must not hold later clicks.)
+    if (!laying && (await battleNow(x, y))) moveTo(x, y, { direct: true });
     else addWaypoint(x, y);
   }).catch((e) => console.warn("right-click:", e));
 }
