@@ -1035,13 +1035,13 @@ function armyLine() {
   const a = ids.length && ids.every((x) => x === ids[0]) ? armyById(ids[0]) : null;
   if (!a) return null;
   const n = a.units.length;
-  const training = a.requisition?.orders?.length ?? 0;
+  const training = (a.requisition?.orders?.length ?? 0) + (a.requisition?.head_orders ?? 0);
   return h(
     "div.army-line",
     h("b", a.name),
     h("span.dim", ` · ${n} unit${n === 1 ? "" : "s"}${a.target_size ? ` of ${a.target_size}` : ""}`),
     a.marching.length ? h("span.dim", { title: "Recruits marching to it" }, ` · ${a.marching.length} marching to it`) : null,
-    training ? h("span.dim", { title: "Units its requisition has cities train for it" }, ` · ${training} in training`) : null,
+    training ? h("span.dim", { title: "Units cities train for it: its requisition's, and those they build next for it" }, ` · ${training} in training`) : null,
     a.in_supply ? null : h("span.warn", { title: "More than the supply range from your network of cities: its recruits wait" }, " · out of supply"),
     a.disband_to ? h("span.dim", ` · disbanding to ${a.disband_to}`) : null,
     " ",

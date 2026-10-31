@@ -155,7 +155,9 @@ export async function openArmies({ select, centerOn } = {}) {
         centerOn?.(a.x, a.y);
         select?.(a.units);
       };
-      const coming = a.marching.length + a.requisition.orders.length;
+      // (As the shortfall counts them: the requisition's orders and the cities' own next units
+      // bound for the army.)
+      const coming = a.marching.length + a.requisition.orders.length + (a.requisition.head_orders ?? 0);
       const req = requisitionView(a, act);
       if (req && opened.has(a.id)) req.querySelector("details.requisition-pick")?.setAttribute("open", "");
       return h(
@@ -193,7 +195,7 @@ export async function openArmies({ select, centerOn } = {}) {
               onchange: (ev) => act({ c: "army_target", army: a.id, size: Math.max(0, Math.min(99, Number(ev.target.value) || 0)) }),
             }),
           ),
-          a.target_size ? h("span.dim", { title: "Its units, the recruits marching to it and the units in training for it" }, ` ${n + coming}/${a.target_size} with ${coming ? `${coming} coming` : "none coming"}`) : null,
+          a.target_size ? h("span.dim", { title: "Its units, the recruits marching to it and the units in training for it (its requisition's, and the units cities build next for it)" }, ` ${n + coming}/${a.target_size} with ${coming ? `${coming} coming` : "none coming"}`) : null,
           h(
             "button.small",
             { disabled: !a.upgrades, onclick: () => act({ c: "army_upgrade", army: a.id }), title: a.upgrades ? "Upgrade every unit that can, the most experienced first, while the gold lasts" : "No unit of the army has an upgrade" },

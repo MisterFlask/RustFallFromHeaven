@@ -155,8 +155,9 @@ impl Game {
     }
 
     /// The orders bound for army `a` at the head of its owner's cities' queues that are not
-    /// requisitions (the first order behind any requisition orders: what the city builds next).
-    fn army_head_orders(&self, a: ArmyId) -> i32 {
+    /// requisitions (the first order behind any requisition orders: what the city builds next,
+    /// its destination or the city's default naming the army). Part of [`Game::army_shortfall`].
+    pub fn army_head_orders(&self, a: ArmyId) -> i32 {
         let owner = self.armies[a].owner;
         let mut n = 0;
         for &c in &self.players[owner].cities {

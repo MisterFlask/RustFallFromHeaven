@@ -220,6 +220,23 @@ fn a_marching_recruit_shows_its_march_and_refuses_every_order() {
     assert_eq!(view::unit_json(&Viewer::new(&g, H, false), u).get("march"), Some(&Json::Null));
 }
 
+/// A city's own next unit bound for the army (its default destination is the army) counts in the
+/// view as the shortfall counts it (`head_orders`), so the card's "coming" and "more wanted"
+/// agree.
+#[test]
+fn the_view_counts_the_cities_own_next_units_for_the_army() {
+    let (mut g, a, b) = game();
+    let army = army_near(&mut g, a, 2);
+    run(&mut g, &Command::ArmyTarget { army, size: 4 }).unwrap();
+    g.cities[b].recruit_default = Some(RecruitDest::Army(army));
+    g.city_push_order(b, OrderType::ORDER_TRAIN, warrior(&g).idx() as i32, -1, false, false, true, false);
+    let va = view::armies::armies(&Viewer::new(&g, H, false));
+    let r = va.as_arr().unwrap()[0].get("requisition").unwrap().clone();
+    assert!(arr(&r, "orders").is_empty(), "{r}");
+    assert_eq!(int(&r, "head_orders"), 1, "{r}");
+    assert_eq!(int(&r, "shortfall"), 1, "4 wanted, 2 in it, 1 coming: {r}");
+}
+
 #[test]
 fn the_protocol_has_no_feed_mode_nor_reinforce_to() {
     let d = ffh_data::global();

@@ -61,8 +61,10 @@ fn requisition_orders(v: &Viewer, a: ArmyId) -> Vec<(CityId, Json)> {
 }
 
 /// Army `a`'s requisition: the cities it requisitions from (`cities`, in the order picked), its
-/// orders in production (`orders`) and how many it lacks of its target size counting its units,
-/// its marching recruits and the orders for it (`shortfall`; 0 or less: none). With `candidates`
+/// orders in production (`orders`), the other orders bound for it that its cities build next
+/// (`head_orders`: a count; their destination or the city's default names the army) and how many
+/// it lacks of its target size counting its units, its marching recruits and both kinds of orders
+/// (`shortfall`; 0 or less: none). With `candidates`
 /// (the Armies screen), every city of the human's that it may requisition from: whether picked,
 /// governed, the unit it would train there (the rules' choice for the human), its production
 /// turns, its march turns to the army over land (`null`: no way by land), its order in progress.
@@ -73,6 +75,7 @@ fn requisition_json(v: &Viewer, a: ArmyId, candidates: bool) -> Json {
     let mut j = crate::jobj! {
         "cities" => army.requisition.iter().copied().filter(|&c| g.cities.contains(c)).collect::<Vec<_>>(),
         "orders" => Json::Arr(orders.iter().map(|(_, o)| o.clone()).collect()),
+        "head_orders" => g.army_head_orders(a),
         "shortfall" => g.army_shortfall(a),
     };
     if candidates {
