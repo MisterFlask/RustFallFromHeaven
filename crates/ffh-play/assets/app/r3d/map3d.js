@@ -136,22 +136,20 @@ export class Map3D {
    *  browser drawing nothing meanwhile, so the page is told first ("ffh:r3d-compiling", main.js)
    *  and given a moment to show it. */
   async ready(timeoutMs) {
-    // (`fastStart`, the default: the scene is built from the game state -- the world, its textures,
-    // the dressing and its instances, the paint layers, the figures, and the HD-2D mode's sprites
-    // start loading -- while the programs compile, not after: that work is the page's script's, the
-    // compiles are ANGLE's (worker threads for the links, the GPU process for Direct3D's first
-    // draws), so they overlap. `?r3d={"fastStart":0}`: the original order.)
-    const early = this.cfg.fastStart !== 0;
-    if (early) this.prepare();
     await whenCompiled(this.programs(), timeoutMs);
     performance.mark("r3d:linked");
     if (/direct3d|d3d1/i.test(this.glName)) {
       globalThis.dispatchEvent?.(new CustomEvent("ffh:r3d-compiling"));
       await new Promise((r) => setTimeout(r, 100));
     }
+    // (The warm-up issues its first draw, the terrain's, before it first waits.)
     const warm = this.pipeline.warm(this.pipeline.scenePrograms());
-    // (The map may have come since: the first warm draw is issued, its compile under way.)
-    if (early && !this.mapSeen) this.prepare();
+    // (`fastStart`, the default: the scene is built from the game state -- the world, its textures,
+    // the dressing and its instances, the paint layers, the figures, and the HD-2D mode's sprites
+    // start loading -- while the terrain compiles, not after the warm-up: that work is the page's
+    // script's, the compile ANGLE's (the GPU process's, at that first draw on Direct3D: seconds), so
+    // they overlap; the uploads queue behind the compile. `?r3d={"fastStart":0}`: the original order.)
+    if (this.cfg.fastStart !== 0) this.prepare();
     await warm;
     performance.mark("r3d:warmed");
     this.compiled = true;

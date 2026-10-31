@@ -732,10 +732,11 @@ async function boot() {
   // The isometric renderer (docs/ISO.md): an opt-in map renderer with the M7 "HD pixel" sprites.
   // It owns its own projection, so the art/flat switches leave it be.
   // Chosen with `?renderer=iso` or the remembered Tools → Options choice.
-  // (Start-up prototype, fastStart: the HD-2D map starts behind the isometric map and its
-  // interface -- the HD-2D map's own -- so the page shows the map while it compiles, and boots
-  // without the 2D art's interface it would drop when the HD-2D map is ready.)
-  if (rendererChoice() === "iso" || (rendererChoice() === "hd2d" && fastStart())) mapView.useIso(true);
+  if (rendererChoice() === "iso") mapView.useIso(true);
+  // (Start-up prototype, fastStart: a page whose renderer is the HD-2D map boots in that map's
+  // interface, the isometric skin, not in the 2D art's that it dropped when the HD-2D map was ready
+  // -- after building it for a second or two, in the middle of the HD-2D map's start.)
+  hd2dPending = rendererChoice() === "hd2d" && fastStart();
   syncSkin();
   // The experimental 3D renderer (docs/R3D.md) and the HD-2D mode built on it (docs/HD2D.md):
   // loaded on demand; without WebGL2 they fall back.
@@ -791,8 +792,11 @@ function setRenderer(r) {
 /** The interface follows the map: the isometric map's own (isoui.js) while it or the HD-2D map
  *  (which draws the same sprites, full bleed under the floating panels, as its look target) draws,
  *  else the 2D art's (or the plain one). Redraws what the two draw differently. */
+/** An HD-2D map is starting (main.js boot, fastStart): the interface is already its own. */
+let hd2dPending = false;
+
 function syncSkin() {
-  const on = !!mapView.iso || mapView.r3d?.mode === "hd2d";
+  const on = !!mapView.iso || mapView.r3d?.mode === "hd2d" || hd2dPending;
   // The HD-2D map wears a variant of it (iso.css html.hd2d: glass panels, smaller on a desktop).
   document.documentElement.classList.toggle("hd2d", mapView.r3d?.mode === "hd2d");
   // A city screen opened in one interface is not the other's (over the map or with its grid).
@@ -825,6 +829,7 @@ async function use3d(mode = "3d") {
   const slow = setTimeout(say, 1500);
   window.addEventListener("ffh:r3d-compiling", say);
   const ok = await mapView.useR3d(true, mode);
+  hd2dPending = false;
   clearTimeout(slow);
   window.removeEventListener("ffh:r3d-compiling", say);
   syncSkin();
