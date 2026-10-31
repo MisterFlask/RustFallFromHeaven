@@ -403,7 +403,9 @@ out vec4 o;
 vec3 filmic(vec3 x) {
   return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0);
 }
-bool bad(vec3 c) { return any(isnan(c)) || any(isinf(c)); }
+// Non-finite: all the exponent's bits set. Tested on the bits, as Direct3D 11's compiler (FXC) folds
+// isnan and isinf to false.
+bool bad(vec3 c) { return any(equal(floatBitsToUint(c) & uvec3(0x7f800000u), uvec3(0x7f800000u))); }
 void main() {
   vec4 c = texture(uColor, vUv);
   // A guard: a non-finite pixel takes its finite neighbours' mean (the 3D renderer's terrain wrote
@@ -438,8 +440,13 @@ uniform sampler2D uEmit;
 uniform float uThreshold;
 out vec4 o;
 // A stray NaN or infinity in the scene (a lone black pixel after the filmic curve) would spread over
-// the blur into a black block: those pixels give no light.
-vec3 finite(vec3 c) { return any(isnan(c)) || any(isinf(c)) ? vec3(0.0) : min(c, vec3(32.0)); }
+// the blur into a black block: those pixels give no light. Tested on the bits (all the exponent's
+// set), as Direct3D 11's compiler (FXC) folds isnan and isinf to false -- and its min() returns 32
+// for a NaN, a full-strength glow.
+vec3 finite(vec3 c) {
+  bool bad = any(equal(floatBitsToUint(c) & uvec3(0x7f800000u), uvec3(0x7f800000u)));
+  return bad ? vec3(0.0) : min(c, vec3(32.0));
+}
 void main() {
   vec3 c = finite(texture(uColor, vUv).rgb);
   float l = dot(c, vec3(0.2126, 0.7152, 0.0722));

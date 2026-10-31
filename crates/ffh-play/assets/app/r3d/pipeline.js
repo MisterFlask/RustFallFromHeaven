@@ -20,6 +20,7 @@
 // adds its own post passes and composes and presents the frame; without it nothing changes.
 
 import { Program, texture, framebuffer, depthBuffer, depthTexture, fullscreen, gpuIdle, FULLSCREEN_VS } from "./gl.js";
+import { toHalf } from "./math.js";
 import * as SH from "./shaders.js";
 
 const SHADOW_SIZE = 2048;
@@ -28,36 +29,71 @@ const SHADOW_SIZE = 2048;
 // shadow on the plain behind only darkens it a little, as a painter would keep it.
 const TERRAIN_SHADOW_SIZE = 1024;
 
+/** Whether float colour targets can be drawn into (enabling the extension that allows it). */
+export function hdrTargets(gl) {
+  return !!gl.getExtension("EXT_color_buffer_float") || !!gl.getExtension("EXT_color_buffer_half_float");
+}
+
+/** The pipeline's programs, `[name, vs, fs, defines]` by key in the order it builds them, for the
+ *  constructor's `terrainDefines` and `opts` (`packed` already checked against `hdrTargets`, and
+ *  `standin` given only with it). r3d-lab/compile.html measures the same list. */
+export function pipelinePrograms(terrainDefines = {}, { scene: sceneDefines = {}, prop = {}, water = {}, riverSplit = false, packed = false, standin = null } = {}) {
+  const C = SH.COMMON;
+  // A scene program: its one packed output, or the three targets.
+  const S = (name, vs, fs, defs = {}) => (packed ? [name, vs, SH.packedScene(fs), { ...defs, SCENE_PACKED: 1 }] : [name, vs, fs, defs]);
+  const terrain = { ...sceneDefines, ...terrainDefines };
+  return {
+    // (With a stand-in the full terrain dissolves in over it: TERRAIN_DISSOLVE.)
+    terrain: S("terrain", C + SH.TERRAIN_VS, C + SH.TERRAIN_FS, standin ? { ...terrain, TERRAIN_DISSOLVE: 1 } : terrain),
+    ...(standin ? { terrainStandin: S("terrain-standin", C + SH.TERRAIN_VS, C + SH.TERRAIN_FS, { ...terrain, ...standin }) } : {}),
+    prop: S("prop", C + SH.PROP_VS, C + SH.PROP_FS, { ...sceneDefines, ...prop }),
+    water: S("water", C + SH.WATER_VS, C + SH.WATER_FS, { ...sceneDefines, ...water, ...(riverSplit ? { WATER_SEA: 1 } : {}) }),
+    ...(riverSplit ? { river: S("river", C + SH.WATER_VS, C + SH.WATER_FS, { ...sceneDefines, ...water, WATER_RIVER: 1 }) } : {}),
+    shadowTerrain: ["shadow-terrain", C + SH.SHADOW_TERRAIN_VS, SH.SHADOW_FS],
+    shadowProp: ["shadow-prop", C + SH.PROP_VS, C + SH.PROP_DEPTH_FS],
+    ssao: ["ssao", FULLSCREEN_VS, C + SH.SSAO_FS],
+    aoBlur: ["ao-blur", FULLSCREEN_VS, SH.AO_BLUR_FS],
+    blur: ["blur", FULLSCREEN_VS, SH.BLUR_FS],
+    composite: ["composite", FULLSCREEN_VS, SH.COMPOSITE_FS],
+    tensor: ["tensor", FULLSCREEN_VS, SH.TENSOR_FS],
+    kuwahara: ["kuwahara", FULLSCREEN_VS, SH.KUWAHARA_FS],
+    finish: ["finish", FULLSCREEN_VS, C + SH.FINISH_FS],
+    fxaa: ["fxaa", FULLSCREEN_VS, SH.FXAA_FS],
+    overlay: ["overlay", C + SH.OVERLAY_VS, C + SH.OVERLAY_FS],
+    marker: ["marker", C + SH.MARKER_VS, C + SH.MARKER_FS],
+    ghost: ["ghost", C + SH.PROP_VS, C + SH.GHOST_FS],
+    particle: ["particle", C + SH.PARTICLE_VS, SH.PARTICLE_FS],
+    blit: ["blit", FULLSCREEN_VS, SH.BLIT_FS],
+    // The packed scene into the three targets, and the water's grab of it.
+    ...(packed ? { unpack: ["unpack", FULLSCREEN_VS, SH.UNPACK_FS], unpackCopy: ["unpack-copy", FULLSCREEN_VS, SH.UNPACK_FS, { UNPACK_COPY: 1 }] } : {}),
+  };
+}
+
 export class Pipeline {
-  /** `terrainDefines`: the terrain program's `#define`s (a mode's: Map3D.terrainDefines). */
-  constructor(gl, terrainDefines = {}) {
+  /** `terrainDefines`: the terrain program's `#define`s (a mode's: Map3D.terrainDefines).
+   *  `opts` (a mode's choices, Map3D):
+   *  - `scene`: the terrain's, props' and water's `#define`s (Map3D.sceneDefines: NOISE_TEX);
+   *  - `prop`, `water`: the props' and the water's own (Map3D.propDefines, waterDefines);
+   *  - `riverSplit`: the rivers drawn by a program of their own (`p.river`, WATER_RIVER; the sea's
+   *    then WATER_SEA; Map3D.riverSplit);
+   *  - `packed`: the scene's programs (the rivers' too) write one packed target, unpacked after
+   *    (shaders.js SCENE_PACKED; Map3D.packedScene) -- one output each, so ANGLE's Direct3D 11
+   *    backend compiles them at link, in parallel and cached, not at their first draw;
+   *  - `standin`: with `packed`, the `#define`s of a second, much shorter terrain program
+   *    (`p.terrainStandin`, Map3D.standinTerrain) drawn until the full one has compiled
+   *    (`fr.dissolve`, render): the map draws sooner on Direct3D. */
+  constructor(gl, terrainDefines = {}, opts = {}) {
     this.gl = gl;
-    this.hdr = !!gl.getExtension("EXT_color_buffer_float") || !!gl.getExtension("EXT_color_buffer_half_float");
+    this.hdr = hdrTargets(gl);
     gl.getExtension("OES_texture_float_linear");
     this.timer = gl.getExtension("EXT_disjoint_timer_query_webgl2");
     this.fs = fullscreen(gl);
-    const P = (name, vs, fs, defs) => new Program(gl, name, vs, fs, defs);
-    const C = SH.COMMON;
-    this.p = {
-      terrain: P("terrain", C + SH.TERRAIN_VS, C + SH.TERRAIN_FS, terrainDefines),
-      prop: P("prop", C + SH.PROP_VS, C + SH.PROP_FS),
-      water: P("water", C + SH.WATER_VS, C + SH.WATER_FS),
-      shadowTerrain: P("shadow-terrain", C + SH.SHADOW_TERRAIN_VS, SH.SHADOW_FS),
-      shadowProp: P("shadow-prop", C + SH.PROP_VS, C + SH.PROP_DEPTH_FS),
-      ssao: P("ssao", FULLSCREEN_VS, C + SH.SSAO_FS),
-      aoBlur: P("ao-blur", FULLSCREEN_VS, SH.AO_BLUR_FS),
-      blur: P("blur", FULLSCREEN_VS, SH.BLUR_FS),
-      composite: P("composite", FULLSCREEN_VS, SH.COMPOSITE_FS),
-      tensor: P("tensor", FULLSCREEN_VS, SH.TENSOR_FS),
-      kuwahara: P("kuwahara", FULLSCREEN_VS, SH.KUWAHARA_FS),
-      finish: P("finish", FULLSCREEN_VS, C + SH.FINISH_FS),
-      fxaa: P("fxaa", FULLSCREEN_VS, SH.FXAA_FS),
-      overlay: P("overlay", C + SH.OVERLAY_VS, C + SH.OVERLAY_FS),
-      marker: P("marker", C + SH.MARKER_VS, C + SH.MARKER_FS),
-      ghost: P("ghost", C + SH.PROP_VS, C + SH.GHOST_FS),
-      particle: P("particle", C + SH.PARTICLE_VS, SH.PARTICLE_FS),
-      blit: P("blit", FULLSCREEN_VS, SH.BLIT_FS),
-    };
+    this.packed = !!opts.packed && this.hdr;
+    // (Only a packed scene's programs compile at link, where a frame can be drawn before one has;
+    // where the browser does not compile in parallel, every program has linked by the first frame
+    // and the stand-in is not drawn.)
+    const standin = this.packed ? opts.standin ?? null : null;
+    this.p = Object.fromEntries(Object.entries(pipelinePrograms(terrainDefines, { ...opts, packed: this.packed, standin })).map(([k, a]) => [k, new Program(gl, ...a)]));
     this.shadowMap = depthTexture(gl, SHADOW_SIZE, SHADOW_SIZE);
     this.shadowFbo = framebuffer(gl, [], this.shadowMap);
     this.shadowMapT = depthTexture(gl, TERRAIN_SHADOW_SIZE, TERRAIN_SHADOW_SIZE);
@@ -66,6 +102,12 @@ export class Pipeline {
     this.h = 0;
     this.stats = { frames: 0, ms: {}, cpu: 0 };
     this.queries = [];
+    /** The GPU time of the latest frame whose timer query has come back (ms), or null: no timer
+     *  queries, or none back yet. A frame's CPU time says nothing of a slow GPU (WebGL calls return
+     *  before the GPU has done them), so the quality ladder reads this (Map3D.loop). One query a
+     *  frame while not `measure`-ing (the stages' own queries cannot nest in it). */
+    this.gpuFrameMs = null;
+    this.frameQueries = [];
     /** A mode's extra passes (hd2d/passes.js), or null. */
     this.ext = null;
   }
@@ -98,6 +140,8 @@ export class Pipeline {
       sceneCopy: texture(gl, w, h, F),
       ndCopy: texture(gl, w, h, { ...F, filter: gl.NEAREST }),
     };
+    // The packed scene (SCENE_PACKED): one RGBA32UI target for the three.
+    if (this.packed) this.t.packed = texture(gl, w, h, { internal: gl.RGBA32UI, format: gl.RGBA_INTEGER, type: gl.UNSIGNED_INT, filter: gl.NEAREST });
     this.depth = depthBuffer(gl, w, h);
     const t = this.t;
     this.f = {
@@ -117,11 +161,25 @@ export class Pipeline {
       sceneCopy: framebuffer(gl, [t.sceneCopy]),
       ndCopy: framebuffer(gl, [t.ndCopy]),
     };
+    if (this.packed) {
+      // The packed scene, and the same with no colour drawn (the depth prepass: its programs' float
+      // output may not meet the integer target); the unpacked targets; the water's grab.
+      this.f.scenePk = framebuffer(gl, [t.packed], this.depth);
+      this.f.scenePkDepth = framebuffer(gl, [t.packed], this.depth);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, this.f.scenePkDepth);
+      gl.drawBuffers([gl.NONE]);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      this.f.unpack = framebuffer(gl, [t.color, t.nd, t.emit]);
+      this.f.unpackCopy = framebuffer(gl, [t.sceneCopy, t.ndCopy]);
+    }
   }
 
-  /** The programs that draw into the scene's targets (the mode's too). */
+  /** The programs that draw into the scene's targets (the mode's too): none with a packed scene,
+   *  whose programs have one output each (their link compiled them; the unpack passes, which have
+   *  several, are a few instructions). */
   scenePrograms() {
-    return [this.p.terrain, this.p.prop, this.p.water, ...(this.ext?.scenePrograms() ?? [])];
+    if (this.packed) return [];
+    return [this.p.terrain, this.p.prop, this.p.water, ...(this.p.river ? [this.p.river] : []), ...(this.ext?.scenePrograms() ?? [])];
   }
 
   /** Draws each of `programs` once, a task each, into a small framebuffer laid out as the scene's.
@@ -150,6 +208,7 @@ export class Pipeline {
         for (const [k, unit] of Object.entries(p.units)) gl.uniform1i(p.u[k].loc, unit);
         this.fs();
         await gpuIdle(gl);
+        performance.mark(`r3d:warm:${p.name}`);
       }
     } finally {
       if (!gl.isContextLost()) {
@@ -165,6 +224,11 @@ export class Pipeline {
    *  the targets it draws into). */
   grab() {
     const gl = this.gl, W = this.w, H = this.h;
+    if (this.packed) {
+      this.pass(this.p.unpackCopy, this.f.unpackCopy, W, H, { uPacked: this.t.packed });
+      gl.bindFramebuffer(gl.FRAMEBUFFER, this.f.scenePk);
+      return;
+    }
     gl.bindFramebuffer(gl.READ_FRAMEBUFFER, this.f.scene);
     for (const [i, dst] of [[1, this.f.sceneCopy], [2, this.f.ndCopy]]) {
       gl.readBuffer(gl.COLOR_ATTACHMENT0 + i);
@@ -183,15 +247,17 @@ export class Pipeline {
     this.t = this.f = this.depth = null;
   }
 
-  dispose() {
+  /** Deletes the pipeline's GPU objects, but not the programs of `keep` (still compiling: Map3D's
+   *  `releaseLater`). */
+  dispose(keep = []) {
     this.disposeTargets();
-    this.ext?.dispose();
+    this.ext?.dispose(keep);
     const gl = this.gl;
     gl.deleteTexture(this.shadowMap);
     gl.deleteFramebuffer(this.shadowFbo);
     gl.deleteTexture(this.shadowMapT);
     gl.deleteFramebuffer(this.shadowFboT);
-    for (const p of Object.values(this.p)) p.dispose();
+    for (const p of Object.values(this.p)) if (!keep.includes(p)) p.dispose();
   }
 
   /** A full-screen pass of program `prog` into framebuffer `fbo` (null = the canvas). */
@@ -250,6 +316,14 @@ export class Pipeline {
       } else left.push([name, q]);
     }
     this.queries = left;
+    // The whole frames' queries (gpuFrameMs), oldest first; a disjoint result (the GPU's clock
+    // was disturbed) is dropped.
+    const disjoint = this.frameQueries.length && gl.getParameter(this.timer.GPU_DISJOINT_EXT);
+    while (this.frameQueries.length && gl.getQueryParameter(this.frameQueries[0], gl.QUERY_RESULT_AVAILABLE)) {
+      const q = this.frameQueries.shift();
+      if (!disjoint) this.gpuFrameMs = gl.getQueryParameter(q, gl.QUERY_RESULT) / 1e6;
+      gl.deleteQuery(q);
+    }
   }
 
   /** Renders one frame. `fr`: the frame's camera and light (map3d.js `frameState`); `scene`: the
@@ -258,6 +332,9 @@ export class Pipeline {
     const gl = this.gl;
     const W = this.w, H = this.h;
     this.collectTimings();
+    // (At most a few in flight: a GPU that never answers does not pile them up.)
+    const frameQuery = this.timer && !this.measure && this.frameQueries.length < 4 ? gl.createQuery() : null;
+    if (frameQuery) gl.beginQuery(this.timer.TIME_ELAPSED_EXT, frameQuery);
     const U = fr.uniforms;
     gl.disable(gl.CULL_FACE);
     gl.disable(gl.BLEND);
@@ -286,12 +363,19 @@ export class Pipeline {
 
     // --- scene, then the water over it
     const SU = { ...U, uShadowMap: this.shadowMap, uShadowMapT: this.shadowMapT, uShadowOn: cfg.shadows ? 1 : 0 };
+    const pk = this.packed;
     this.timed("scene", () => {
-      gl.bindFramebuffer(gl.FRAMEBUFFER, this.f.scene);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, pk ? this.f.scenePkDepth : this.f.scene);
       gl.viewport(0, 0, W, H);
-      gl.clearBufferfv(gl.COLOR, 1, [...fr.background, 0]);
-      gl.clearBufferfv(gl.COLOR, 2, [0, 0, 1, 0]);
-      gl.clearBufferfv(gl.COLOR, 3, [0, 0, 0, 0]);
+      if (pk) {
+        gl.bindFramebuffer(gl.FRAMEBUFFER, this.f.scenePk);
+        gl.clearBufferuiv(gl.COLOR, 0, packedClear(fr.background));
+        gl.bindFramebuffer(gl.FRAMEBUFFER, this.f.scenePkDepth);
+      } else {
+        gl.clearBufferfv(gl.COLOR, 1, [...fr.background, 0]);
+        gl.clearBufferfv(gl.COLOR, 2, [0, 0, 1, 0]);
+        gl.clearBufferfv(gl.COLOR, 3, [0, 0, 0, 0]);
+      }
       gl.clear(gl.DEPTH_BUFFER_BIT);
       // Depth first (cheap vertex-only passes), then each pixel is shaded once: the ground under
       // a forest is never painted only to be covered. The water is not in it: the sea floor and
@@ -305,9 +389,16 @@ export class Pipeline {
       scene.drawTerrain(this.p.shadowTerrain, U, false);
       scene.drawProps(this.p.shadowProp, { ...U, uSunView: 0, uPlotPx: U.uPx * (fr.scale ?? 1) }, false);
       gl.colorMask(true, true, true, true);
+      if (pk) gl.bindFramebuffer(gl.FRAMEBUFFER, this.f.scenePk);
       gl.depthMask(false);
       gl.depthFunc(gl.LEQUAL);
-      scene.drawTerrain(this.p.terrain, SU, false);
+      // The ground: the stand-in while the full terrain compiles (fr.dissolve 0), the full one
+      // over it while it dissolves in (0 to 1: the stand-in's fragments kept where its quads' hash
+      // is past the progress), the full one alone after (1, the default). Both are depth-tested
+      // against the prepass's depth, which neither writes.
+      const dissolve = this.p.terrainStandin ? fr.dissolve ?? 1 : 1;
+      if (dissolve < 1) scene.drawTerrain(this.p.terrainStandin, SU, false);
+      if (dissolve > 0) scene.drawTerrain(this.p.terrain, { ...SU, uDissolve: dissolve }, false);
       gl.depthFunc(gl.EQUAL);
       scene.drawProps(this.p.prop, SU, false);
       gl.depthFunc(gl.LEQUAL);
@@ -321,7 +412,13 @@ export class Pipeline {
       // Seeing into the water and the mirror read the grabbed view depth, which only a float target
       // holds (an 8-bit one clamps it to 1): without one the water is drawn opaque, unmirrored.
       const hdr = this.hdr ? 1 : 0;
-      scene.drawWater(this.p.water, { ...SU, uSceneColor: this.t.sceneCopy, uSceneND: this.t.ndCopy, uReflect: (cfg.reflections ?? 1) * hdr, uRefract: (cfg.refraction ?? 1) * hdr });
+      scene.drawWater(this.p.water, { ...SU, uSceneColor: this.t.sceneCopy, uSceneND: this.t.ndCopy, uReflect: (cfg.reflections ?? 1) * hdr, uRefract: (cfg.refraction ?? 1) * hdr }, false, this.p.river ?? null);
+      // The packed scene into the three textures the later passes read.
+      if (pk) {
+        gl.disable(gl.DEPTH_TEST);
+        this.pass(this.p.unpack, this.f.unpack, W, H, { uPacked: this.t.packed });
+        gl.enable(gl.DEPTH_TEST);
+      }
     });
     gl.disable(gl.DEPTH_TEST);
     gl.depthMask(false);
@@ -455,6 +552,19 @@ export class Pipeline {
       gl.blitFramebuffer(0, 0, W, H, 0, 0, canvasW, canvasH, gl.COLOR_BUFFER_BIT, W === canvasW && H === canvasH ? gl.NEAREST : gl.LINEAR);
     }
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    if (frameQuery) {
+      gl.endQuery(this.timer.TIME_ELAPSED_EXT);
+      this.frameQueries.push(frameQuery);
+    }
     this.stats.frames++;
   }
+}
+
+/** The packed scene's clear value (shaders.js packScene): the background colour, keep 0, depth 0,
+ *  normal (0, 0, 1), no emission, id 0. */
+function packedClear(bg) {
+  const h2 = (a, b) => (toHalf(a) | (toHalf(b) << 16)) >>> 0;
+  // The normal (0, 0, 1): octahedral (0.5, 0.5) of 510 each.
+  const w = 255 | (255 << 9);
+  return new Uint32Array([h2(bg[0], bg[1]), h2(bg[2], 0), 0, w]);
 }

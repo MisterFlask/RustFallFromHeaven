@@ -68,6 +68,9 @@ export const HD2D = {
   townLight: 0.5,
   townClearing: 0.5,
   townBanners: 0.6,
+  // The lean terrain (TERRAIN_LEAN below; read when the programs are built, so a page-only switch:
+  // `?r3d={"terrainLean":0}` draws the full painting).
+  terrainLean: 1,
 };
 
 export const DEFAULTS_HD2D = { ...DEFAULTS, ...HD2D, preset: "hd2d" };
@@ -91,3 +94,53 @@ export const PANEL_HD2D = [
   ["pitch", "Camera pitch (degrees)", "range", 28, 52, 1],
   ["fov", "Lens (field of view)", "range", 20, 36, 1],
 ];
+
+/** The lean terrain's defines (shaders.js LEAN_*, compiled into the mode's terrain when
+ *  `terrainLean` is on): the parts of the ground's painting the mode shows little of, computed
+ *  from fewer noises -- the terrain shader's instructions 5736 to 3439, its Direct3D compile at the
+ *  first draw about 8.6 s to 3.1 s on an RTX 4060 laptop (estimated: FXC's time grows with the
+ *  square of the length, docs/R3D.md §11.1). Each alone:
+ *  LEAN_BROAD  every open ground's broad masses are the meadow's (one set of noises, not one a
+ *              ground; the masses of the marsh, tundra, snow, desert and hell grounds move);
+ *  LEAN_FBM    the broad masses and the parchment from two octaves, the pools and dunes from three
+ *              (the finest stood at their mean; the hell grounds' crack line keeps four);
+ *  LEAN_POOL   the fields of perdition's pools are the marsh's (one noise for both);
+ *  LEAN_HELL   the hell grounds' live mask from one noise, the pulse from it too, no sparks;
+ *  LEAN_ROAD   the road's edge without its wobble at 19 and 35 a plot (a pixel or less);
+ *  LEAN_CRAG   no crags bumped on the rock (its material's relief is bumped with the ground's);
+ *  LEAN_STRATA no strata banding the rock (a bank is lower than one band; peaks wear snow);
+ *  LEAN_BLANK  the parchment's dabs from the utility layer, not the GLSL dabs;
+ *  LEAN_SHARE  the forest's floor, the flood plain's green, the trodden earth and the rock's tone
+ *              take a noise of about their size already worked out;
+ *  LEAN_SHEEN  the marsh pools' drifting sheen at its mean;
+ *  LEAN_GOLD   the golden grass without its two combed streaks (the straw material is combed). */
+export const TERRAIN_LEAN = {
+  LEAN_BROAD: 1,
+  LEAN_FBM: 1,
+  LEAN_POOL: 1,
+  LEAN_HELL: 1,
+  LEAN_ROAD: 1,
+  LEAN_CRAG: 1,
+  LEAN_STRATA: 1,
+  LEAN_BLANK: 1,
+  LEAN_SHARE: 1,
+  LEAN_SHEEN: 1,
+  LEAN_GOLD: 1,
+};
+
+/** The stand-in ground's defines (shaders.js STANDIN_*, over the mode's own terrain defines): the
+ *  terrain program compiled down to the pixel-art ground under each ground's mean tones, lit,
+ *  shadowed and fogged as the full one, writing the same targets -- drawn while the full terrain
+ *  still compiles (MapHd2d.standinTerrain, docs/R3D.md §11.1 "Two stages"). 1358 instructions
+ *  against the lean terrain's 2742 (glslang + spirv-opt; Direct3D's compile about 0.5 s against
+ *  1.9 s, estimated). Each:
+ *  STANDIN_FLAT   every value noise of the ground's painting at its mean (the masses, the meadow's
+ *                 golden patches, the pools, the warp of the plots' blend, the road edge's wobble,
+ *                 the pigment's drift), no hell marks, dunes, plates or ice cracks;
+ *  STANDIN_RELIEF no relief bump from the materials' heights;
+ *  STANDIN_TAP1   each material at one scale (matPair's one tap, not two). */
+export const TERRAIN_STANDIN = {
+  STANDIN_FLAT: 1,
+  STANDIN_RELIEF: 1,
+  STANDIN_TAP1: 1,
+};

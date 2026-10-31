@@ -6,13 +6,13 @@
 // every screen works without it. While the isometric map's interface is on (isoui.js), the same
 // helpers answer in its look: plain text (in Herald, by CSS), the M7 interface icons, its bars.
 //
-// The map renderer is chosen here too: the isometric 2.5D renderer (`iso.js`, docs/ISO.md) by
-// default, unless the page was opened with `?renderer=art` / `?renderer=flat` or the Tools →
-// Options choice says otherwise ("art" is the 2D pixel art, "flat" the P5 debug renderer).
+// The map renderer is chosen here too: the HD-2D map (`r3d/hd2d/`, docs/HD2D.md) by default, the
+// isometric 2.5D one (`iso.js`, docs/ISO.md) where it cannot run (main.js useHd2d), unless the page
+// was opened with `?renderer=iso` / `?renderer=flat` or the Tools → Options choice says otherwise
+// ("flat" is the sprite-less debug renderer, which wears this art's interface).
 
 import { loadArt } from "../art/art.js";
 import * as UI from "../art/ui/ui.js";
-import { assignHeraldry } from "./stacks.js";
 import { setTextHook, setTypeIconHook } from "./dom.js";
 import { setIconHook } from "./markup.js";
 import { setIlluminate } from "./modals.js";
@@ -26,21 +26,20 @@ export const look = { art: null, error: null, u: 2, dpr: 1, ms: 0, data: null, b
 
 const RENDERER_KEY = "ffh.renderer";
 
-/** The experimental 3D renderer (docs/R3D.md): offered in Tools -> Options and by `?renderer=3d`
- *  while this is true. Off, the client never loads its module. */
-export const EXPERIMENTAL_3D = true;
-
-/** The experimental HD-2D renderer (docs/HD2D.md: the isometric sprites standing in the 3D
- *  renderer's lit world): offered in Tools -> Options and by `?renderer=hd2d` while this is true.
- *  Off, the client never loads its module. */
-export const EXPERIMENTAL_HD2D = true;
-
+/** The map renderers a player can choose. Retired ones -- the 3D renderer's own mode, everything
+ *  modelled (docs/R3D.md: the HD-2D map is built on it), and the 2D pixel-art map (docs/ART.md) --
+ *  ask for the HD-2D map when an old `?renderer=3d` / `art` or a remembered choice names them. */
 function known(r) {
-  return r === "flat" || r === "art" || r === "iso" || (EXPERIMENTAL_3D && r === "3d") || (EXPERIMENTAL_HD2D && r === "hd2d");
+  return r === "hd2d" || r === "iso" || r === "flat";
 }
 
-/** The map renderer asked for: an explicit `?renderer=art` / `?renderer=flat` / `?renderer=iso`,
- *  else the remembered Tools → Options choice, else "iso" (the isometric 2.5D map, docs/ISO.md). */
+function chosen(r) {
+  return r === "3d" || r === "art" ? "hd2d" : known(r) ? r : null;
+}
+
+/** The map renderer asked for: an explicit `?renderer=hd2d` / `iso` / `flat`, else the
+ *  remembered Tools → Options choice, else "hd2d" (the HD-2D map, docs/HD2D.md; main.js falls back
+ *  to the isometric 2.5D map where it cannot run). */
 export function rendererChoice() {
   let q = null;
   try {
@@ -48,14 +47,14 @@ export function rendererChoice() {
   } catch {
     q = null;
   }
-  if (known(q)) return q;
+  if (chosen(q)) return chosen(q);
   try {
     const v = globalThis.localStorage?.getItem(RENDERER_KEY);
-    if (known(v)) return v;
+    if (chosen(v)) return chosen(v);
   } catch {
     /* no storage */
   }
-  return "iso";
+  return "hd2d";
 }
 
 /** Remembers the renderer (Tools → Options). */
@@ -415,25 +414,4 @@ export function bannerEl(civType, { u = 4, title } = {}) {
   c.className = "ui-px banner";
   if (title) c.title = title;
   return c;
-}
-
-// ---------------------------------------------------------------------------------------------
-// Owners: heraldry (docs/ART.md 7.2)
-
-const memo = new Map();
-let memoGame = null;
-
-/** The heraldry of the players the client knows (`[{id, civ (type name), barbarian}]`, yours
- *  first, then by slot), as specs for `stacks.js` `OwnerStyles`: each civilization takes its
- *  tincture plain, or the next free division of it, in the order the players became known; an
- *  assignment is kept for the game (`game`), so meeting another civilization never changes a
- *  banner already seen. A player the client does not know flies the lozenge. */
-export function heraldry(players, game) {
-  const art = look.art;
-  if (!art) return [];
-  if (game !== memoGame) {
-    memo.clear();
-    memoGame = game;
-  }
-  return assignHeraldry(players, memo, (civ) => (civ ? art.resolve("civ", civ)?.opts?.tincture : null) ?? "Argent");
 }

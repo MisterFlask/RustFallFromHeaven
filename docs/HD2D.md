@@ -1,8 +1,10 @@
 # HD2D: pixel-art sprites in the 3D renderer's lit world
 
-**Status: experimental, phase 1, off by default.** A fifth map renderer of the browser client
-(`crates/ffh-play`), beside the flat, 2D pixel art (docs/ART.md), isometric (docs/ISO.md) and 3D
-(docs/R3D.md) ones. It draws the game in the manner of Octopath Traveler and Triangle Strategy: the
+**Status: the default map renderer** (the owner's decision, 2026-10-31), with the isometric 2.5D map
+(docs/ISO.md) as its fallback where it cannot run, beside the flat, sprite-less debug renderer (the
+2D pixel-art map is retired too). It is built on the 3D renderer (docs/R3D.md), whose own mode,
+everything modelled, is retired: no longer offered to players, kept in the r3d lab for the layers
+the two share. It draws the game in the manner of Octopath Traveler and Triangle Strategy: the
 isometric renderer's pixel-art sprites stand as flat cards in the 3D renderer's lit world, seen
 through a perspective camera tilted toward the horizon, with light shafts, glow, a mood for each
 region, glowing borders and a tilt-shift blur. The look target is the owner's reference image,
@@ -23,11 +25,16 @@ Contents: 1 running it · 2 the answer · 3 architecture · 4 what is reused · 
 
 ```
 cargo build --release
-./target/release/ffh-play serve            # open http://127.0.0.1:8642/?renderer=hd2d
+./target/release/ffh-play serve            # open http://127.0.0.1:8642/ (HD-2D is the default)
 ```
 
-* `?renderer=hd2d` for one page, or **Tools → Options → "HD-2D (experimental)"** (remembered by the
-  browser like the other renderer choices). Choosing another renderer there switches back.
+* The plain URL shows it, as does `?renderer=hd2d` (or `?renderer=3d`, the retired mode's address)
+  for one page, or **Tools → Options → "HD-2D"** (remembered by the browser like the other renderer
+  choices). Choosing another renderer there switches away from it.
+* **Its fallback is the isometric map** (main.js `useHd2d`): without WebGL2, with a software one,
+  when its shaders do not compile in time, or when its WebGL context is lost, the client says so in
+  a note and draws the isometric map; the remembered choice stays HD-2D, so the next page tries
+  again.
 * The **HD-2D** button at the map's top-left opens the tuning panel (the 3D renderer's panel with
   the mode's own rows, §11) with the frame time and per-pass GPU times.
 * `?r3d={"tiltShift":0}` (any key of §11) or `?r3d=plain` override the look for one page.
@@ -36,9 +43,8 @@ cargo build --release
   of the scene's programs at its first draw, the browser drawing nothing meanwhile: the lab's HD-2D
   scene starts in about 25 s on an RTX 4060 laptop (38-41 s while each was compiled twice;
   docs/R3D.md §11.1); with `--use-angle=vulkan` the mode starts in about a second (§8).
-* The feature flag is `EXPERIMENTAL_HD2D` in `assets/app/look.js`: false hides the option and
-  ignores `?renderer=hd2d`, and the mode's module (`r3d/hd2d/index.js`) is never loaded. The 3D
-  renderer alone (`?renderer=3d`) never loads it either.
+* The mode's module (`r3d/hd2d/index.js`) is loaded on demand; a page on another renderer never
+  loads it, nor does the 3D renderer alone (the r3d lab's own mode).
 
 ## 2. The answer: the sprites hold up
 
@@ -148,7 +154,7 @@ assets/app/
       art/        the mode's own art: gnd_*.png (ground layers), the prop cards, index.js
                   (written by tools/hd2d/art.py)
 r3d-lab/          scene=hd2d, renderer=hd2d, compile.html (§7)
-tools/            r3d-lab.mjs --capture, r3d-perf.mjs --renderer hd2d, r3d-compare.mjs hd2d shots,
+tools/            r3d-lab.mjs --capture, r3d-perf.mjs, r3d-compare.mjs hd2d shots,
                   hd2d/art.py (the art's post-processing)
 ```
 
@@ -517,6 +523,8 @@ the map (`MapHd2d.setConfig`).
   painted, as in the target. They lie in the air before the land: over a figure, a third as strong.
 * **Wide bloom** (quarter resolution) of the emission and the brightest light, added before the
   filmic curve; non-finite pixels give no light (a lone NaN would otherwise spread into a block).
+  Both guards test the bits, not `isnan`/`isinf`, which Direct3D 11's compiler folds to false (there
+  a NaN then went through `min(c, 32)` as 32: a purple blaze over the Sheaim lake in the lab).
 * **Light beams** over mana nodes (1.5 plots tall), mana resources and mages' towers: soft additive
   columns in the node's school colour (`palette.js` MANA), shimmering.
 * **Glowing borders**: the overlay's border becomes a hot core in the owner's colour, meandering a
@@ -541,12 +549,16 @@ the map (`MapHd2d.setConfig`).
 * **Film**: `node tools/r3d-lab.mjs --gpu --capture out.mp4 --query "scene=hd2d&renderer=hd2d"`
   renders a scripted pan, zoom in, pan with the pointer wandering (the tilt-shift's band follows
   it), zoom out to the far view and back, each frame at its own time, and encodes it with ffmpeg.
-* **Shader compile times**: `r3d-lab/compile.html` (served by `--serve`) compiles every program of
-  the 3D renderer and of the mode, one at a time, and logs each one's link and first-draw times
-  (`?only=terrain`; docs/R3D.md §11.1).
-* `tools/r3d-compare.mjs` also saves `hd2d.png`, `hd2d-close.png`, `hd2d-far.png`;
-  `tools/r3d-perf.mjs --renderer hd2d` measures the mode (configs: hd2d, no-rays, no-tilt, no-bloom,
-  no-mood, no-hd2d-post, plain).
+* **Shader compile times**: `r3d-lab/compile.html` (served by `--serve`) compiles the programs the
+  mode builds for a configuration (`?renderer=hd2d`, the default, or `3d`; `?r3d=` read as the
+  renderer reads it), one at a time or all at once (`&parallel=1`, as a start does), and logs each
+  one's link and first-draw times, drawn into the targets the pipeline draws it into
+  (`?only=terrain`). docs/R3D.md §11.1, "Measuring", says how to compare the compile-time switches
+  (§11) on Direct3D.
+* `tools/r3d-compare.mjs` saves `hd2d.png`, `hd2d-close.png`, `hd2d-far.png` beside the art and
+  isometric shots; `tools/r3d-perf.mjs` measures the mode (configs: hd2d, no-rays, no-tilt,
+  no-bloom, no-mood, no-hd2d-post, plain). Both drew the 3D renderer's own mode too, until it was
+  retired from the client (it was `--renderer hd2d` then).
 * `--gpu` on Windows: `FFH_CHROMIUM_CHANNEL=chrome` (Playwright's own Chromium may be refused:
   "spawn UNKNOWN") and `FFH_ANGLE=vulkan` (§8); `--gpu` now also passes
   `--force_high_performance_gpu`, without which a laptop's integrated GPU draws.
@@ -658,6 +670,80 @@ beside an Intel UHD integrated GPU, headless Chrome 156 (`FFH_CHROMIUM_CHANNEL=c
   meadow's flowers show close up). The brushwork on objects (0.2 ms) stays: the mode's 3D fields and sheaves
   take their texture from it close up. Ambient occlusion (0.25 ms) stays: its shade under the woods
   shows close up. Glow and bloom (0.15 ms each) are cheap.
+* **The lean terrain** (2026-10-31): what Direct3D compiles at the
+  first draw is mostly the terrain shader (docs/R3D.md §11.1), its time about 2.6e-7 s × N² for N
+  instructions. Counted after inlining and optimisation (glslang, spirv-opt; within 5% of FXC's own
+  counts), the mode's terrain was 6308 instructions and 125 value noises. Two steps:
+  * **Exact, both renderers:** the noises several branches took with the same arguments are worked
+    out once a fragment, where one of those branches runs (`gBig`, `gMid`, `gDune`, `gN2`..`gN9`:
+    the coast's masses are the meadow's, the burning sands' dunes the desert's, the fields', the
+    peaks' snow, the beach, the rock, the roads and the floors' small noises): 6308 to 5736 (107
+    noises; the 3D renderer's 6756 to 6184), the five lab stills bit-identical.
+  * **Lean, the mode only** (`TERRAIN_LEAN`, hd2d/config.js `terrainLean`, on by default;
+    `?r3d={"terrainLean":0}` draws the full painting): every open ground's broad masses from the
+    meadow's noises, fewer octaves where only a broad shape depends on them, the perdition's pools
+    from the marsh's noise, the hell marks' mask, pulse and sparks, the road edge's finest wobble,
+    the rock's crags and strata, the parchment's dabs, four noises shared with neighbours of about
+    their size, the marsh's sheen and the golden grass's streaks: 5736 to 3363 instructions (44
+    noises), Direct3D's compile about 10.4 s to 2.9 s on the RTX 4060 laptop (estimated). The
+    stills (SwiftShader, 640 × 400): 0.6-1.4% of the pixels moved by more than 8 at 96-168 px a
+    plot (the woods' floor, the road edges), 3.5% on the showcase (the marsh's masses and the
+    road), 4.8% at 40 px (the hell grounds' masses and cracks, the parchment); the turn-200 game
+    (`r3d-compare`, 800 × 500: hell grounds, a desert, a coast) 1.1-1.5% at 40, 96 and 168 px. The
+    masses moved, the look kept. Tried and dropped: two octaves for the pools and the hell cracks (the cracks
+    widened into blobs), the pigment's drift from the borders' noises (20% of a still a shade
+    lighter, for two noises).
+* **An integrated GPU** (2026-10-31, the owner's laptop: Chrome's default adapter there is the Intel
+  UHD beside the RTX 4080, and WebGL's `powerPreference: "high-performance"` does not switch it on
+  Windows; the turn-200 large-map game at 96 px, a 1600 × 900 page at device-pixel ratio 1.5, so a
+  2400 × 1350 canvas). The same frame that takes the RTX 4080 3-5 ms took the UHD 87-113 ms (the
+  scene pass 55, the rest spread over every pass), and the map animated at rest, so the GPU never
+  rested: the page ran at 4 frames a second with nothing moving and panned at 8. The quality ladder
+  never stepped in: it timed the frame on the CPU (under 1 ms; WebGL calls return before the GPU
+  has done them). The cost is nearly all per pixel (render scale 0.75: 52 ms, 0.5: 30 ms; the rays,
+  ambient occlusion, moods or reflections off each moved nothing measurable). Now the ladder reads
+  the GPU's own time (one timer query a frame, `Pipeline.gpuFrameMs`; without timer queries the
+  loop's call-back gap, which grows once the GPU is behind), has a last step at render scale 0.5,
+  and does not step back up to a level that was slow again within 5 s (`autoFloor`); a map at rest
+  animates at most every other frame's worth of GPU time (`2 × costMs`, at least the 32 ms it had).
+  On the UHD: 138 frames a second at rest (the page's), 19 panning, the ladder at its last step
+  within about 3 s, and the page shows a hint to pick the faster GPU once (main.js,
+  "ffh:r3d-slow"): Windows' Settings → System → Display → Graphics → the browser → High
+  performance, which gives the full map at the RTX's 3-5 ms. On the RTX nothing changes (level 0,
+  30 frames a second at rest).
+* **The props' and the water's programs, compiled smaller** (2026-10-31; `MapHd2d`
+  `propDefines`, `waterDefines`, `riverSplit`, `LITE` in `hd2d/index.js`). After the terrain they
+  were the longest of Direct3D's first-draw compiles (docs/R3D.md §11.1). Instruction counts after
+  inlining and optimisation (glslang, spirv-opt -O, about 0.95 of FXC's own count; FXC's time about
+  2.6e-7 s × N² on the RTX 4060 laptop):
+
+  | program | before | after | FXC, estimated |
+  |---|---|---|---|
+  | props | 2856 | 1045 | 2.1 s -> 0.28 s |
+  | water (sea + rivers) | 3159 | sea 1568 + rivers 1643 | 2.6 s -> 0.64 + 0.70 s |
+
+  In the mode the prop program draws only what no card claims: the banks' boulders, reeds and
+  overhanging grass, the farms' rows, sheaves, barns, fences and carts, bridges, palms, volcanoes; no
+  crown of leaf clusters (its trees, bushes and saplings are cards), no team cloth, no unit.
+  `NO_LEAVES` compiles the leaf clusters' material out (exact: none is drawn); `DABS_1` lays each
+  brush mark from the one plane that carries the face instead of blending three (the weights, the
+  normal's fourth power, give that plane nearly all of every face; a third of the marks' code);
+  `NO_FINE_PIGMENT` drops the fine pigment noise under the marks (a few percent: nothing moved by 8 of
+  255). The strokes themselves stay: compiled out (`NO_STROKES`) the fields' rows and the sheaves turn
+  to smooth plastic close up (3.1% of rivertown's pixels moved by more than 8). The water's rivers
+  are a program of their own (`RIVER_SPLIT`, exact), the sea's normals come from noise gradients
+  (`GRAD_NORMALS`: three noises instead of nine; the rivers keep their finite difference, whose step
+  across the channel is wide enough that gradients moved what they mirror), the body's mottle has
+  two octaves (`BODY_LITE`), and across the fog of war's frontier each drift fades toward its mean
+  instead of being worked out twice, moving and at rest (`CALM_FADE`, about 0.5 s of the two
+  programs' compile): the only change a player could see, a strip along the frontier where the
+  water's strokes and foam calm. Glitter and caustics stay (each another 0.1 s; `NO_GLITTER`
+  loses the sea's and rivers' glints, `NO_CAUSTICS` a faint net seen close up). Against the
+  original programs (SwiftShader, animation frozen) the whole set moves at most 0.28% of a lab
+  still's pixels by more than 8 of 255 (0.5% on a close view of the coast: the sea's ripples) and
+  0.07% of the turn-200 game's HD-2D shots; the 3D renderer's programs are unchanged (identical
+  after preprocessing). `?r3d={"lite":0}` compiles the
+  original programs; `"liteOff"`/`"liteOn"` (comma lists) take names out or add the optional ones.
 
 ## 9. Cities and the camera
 
@@ -725,15 +811,37 @@ distance each closes:
 Its `LIGHT` is the one light. Stored apart from the 3D renderer's look (`ffh.hd2d.config.3`, renamed
 when the look changes enough that a saved panel tuning would mislead); the panel offers the 3D
 switches that apply (not the paint filter, ink, grid or brush dabs, which the mode's terrain is
-compiled without, §8) and the mode's rows.
+compiled without, §8) and the mode's rows. `noiseTex` (page only, read when the programs are built):
+the terrain's, water's and props' value noise from a hash texture (docs/R3D.md §11.1, `NOISE_TEX`;
+about half their compile on Direct3D); `?r3d={"noiseTex":0}` compiles the arithmetic noise, 2 an
+R16F texture instead of R8.
+`lite` (1; not a panel row, read when the programs are built) compiles parts of the props' and the
+water's programs out, `liteOff` and `liteOn` choose which (§8).
+`terrainLean` (1, read when the programs are built) is the lean terrain (§8), `packScene` (on Direct3D
+only, unless 1 or 0 says otherwise) the scene packed into one target (docs/R3D.md §11.1: the scene's
+programs compile at link there; other backends compile at link anyway), `fastStart` (1) the start-up's CPU work done while the programs compile and the sprites
+uploaded from memory (`earlySync` 0 turns off the overlap alone). With all five compile-time switches
+off the mode draws as before them (the lab's stills match bit for bit):
+`?r3d={"noiseTex":0,"terrainLean":0,"lite":0,"packScene":0,"fastStart":0}`; `r3d-lab/compile.html`
+takes the same `?r3d=` to compare their compile times (§7).
+`standin` (1, read when the programs are built; only with the scene packed) draws the ground with a
+stand-in until the full terrain has compiled, which then dissolves in over it (docs/R3D.md §11.1,
+"Two stages"); `?r3d={"standin":0}` waits for the full terrain and draws as before.
+`standinHold` (debug, page-only; unset by default) keeps the full terrain out until the time passed
+to the render reaches that many seconds -- the time since the renderer was made while it animates,
+a lab capture's frame time -- and dissolves it in from there: a film or a test of the swap on a
+machine whose links finish at once, e.g. `r3d-lab.mjs --capture swap.mp4 --query
+'scene=hd2d&renderer=hd2d&r3d={"packScene":1,"standinHold":4}' --fps 15` (the swap at frame 60).
+The render's time stands still while nothing animates (`animate` off), and the hold then never ends.
 
 ## 12. Removing it
 
 Delete `assets/app/r3d/hd2d/` (with its `art/`), `assets/test/hd2d.test.mjs`,
 `r3d-lab/compile.html`, `tools/hd2d/`, this file and `docs/art/hd2d-reference.png`, and the
 `r3d/hd2d/art` folder from `build.rs`; remove the `app/r3d/hd2d/*` lines of `ASSETS` in
-`src/transport/http.rs`, `EXPERIMENTAL_HD2D` and its option in `look.js`/`tools.js`, the `"hd2d"`
-branches in `main.js` and `map.js`, `scene=hd2d`/`renderer=hd2d` in the lab, the `hd2d` shots in
+`src/transport/http.rs`, `"hd2d"` and its option in `look.js`/`tools.js` (with another default
+there), `useHd2d` and the `"hd2d"` branches in `main.js` and `map.js`, `scene=hd2d`/`renderer=hd2d`
+in the lab, the `hd2d` shots in
 `r3d-compare.mjs` and `--renderer` in `r3d-perf.mjs`. The hooks left in the 3D renderer's files are
 its defaults and do no harm.
 

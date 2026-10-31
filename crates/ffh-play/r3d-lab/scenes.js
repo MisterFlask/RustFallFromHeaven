@@ -1,6 +1,6 @@
 // Synthetic scenes for the 3D lab (docs/R3D.md "Lab"): small hand-written maps in the shape of the
 // server's `map` and `view` replies, so recipes and the pipeline can be looked at without a game.
-// Real-game screenshots use the real client (`?renderer=3d`); these are for focused iteration.
+// Real-game screenshots use the real client (`?renderer=hd2d`); these are for focused iteration.
 //
 // Map legend (one char per plot, the first row is the NORTH edge):
 //   ~ ocean   - coast   . grassland   , plains   d desert   t tundra   s snow   m marsh

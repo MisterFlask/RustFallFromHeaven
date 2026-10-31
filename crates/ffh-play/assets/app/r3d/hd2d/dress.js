@@ -103,7 +103,8 @@ export function bannerKey(atlas, css) {
   if (atlas.has(key)) return key;
   const W = 40, H = 150;
   const c = typeof OffscreenCanvas !== "undefined" ? new OffscreenCanvas(W, H) : Object.assign(document.createElement("canvas"), { width: W, height: H });
-  const g = c.getContext("2d");
+  // (In memory where the atlas uploads directly: a 2D canvas on the GPU is read back to upload.)
+  const g = c.getContext("2d", atlas.direct ? { willReadFrequently: true } : {});
   const px = (x, y, w, h, col) => {
     g.fillStyle = col;
     g.fillRect(x, y, w, h);

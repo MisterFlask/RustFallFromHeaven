@@ -1,8 +1,12 @@
-# R3D: the experimental 3D renderer of the map
+# R3D: the 3D renderer of the map, the HD-2D map's base
 
-**Status: experimental, off by default.** A fourth map renderer of the browser client
-(`crates/ffh-play`), beside the flat debug renderer, the 2D pixel art (docs/ART.md) and the
-isometric 2.5D renderer (docs/ISO.md). It draws the same game state as a fully
+**Status: the base of the HD-2D map; its own mode retired** (the owner's decision, 2026-10-31). The
+HD-2D map (docs/HD2D.md), the browser client's default renderer, is this renderer with the
+isometric sprites standing in its world; the isometric 2.5D map (docs/ISO.md) is its fallback, and
+the flat, sprite-less debug renderer remains (the 2D pixel-art map, docs/ART.md, is retired too). The mode described
+here, everything modelled, is no longer offered to players (`?renderer=3d` and a remembered "3d"
+open the HD-2D map); the r3d lab still draws it, to work on the ground, water, light and pipeline
+the two share. It draws the same game state as a fully
 three-dimensional, painterly dark-fantasy world: real terrain relief, forests of procedurally modelled
 trees, settlements with architectural families, 3D figures for units and monsters, water, magic and
 corruption, through a stylised lighting and post-processing pipeline. It is a consumer of the game
@@ -19,11 +23,11 @@ and next steps · 15 provenance · 16 the look target.
 
 ```
 cargo build --release
-./target/release/ffh-play serve            # open http://127.0.0.1:8642/?renderer=3d
+node tools/r3d-lab.mjs --serve             # open /lab/lab.html?scene=showcase
 ```
 
-* `?renderer=3d` for one page, or **Tools → Options → "3D painterly (experimental)"** (remembered by
-  the browser, like the other renderer choices). Choosing another renderer there switches back.
+* The game draws this renderer in its HD-2D mode only (the plain URL, docs/HD2D.md §1). Its own
+  mode is drawn by the r3d lab (§10): `scene=` without `renderer=hd2d`.
 * The **3D** button at the map's top-left opens the tuning panel: the *painterly* and *plain* presets,
   the light (afternoon or day: the map is always in daylight) and a switch or slider for every stage
   of the pipeline (§12), with
@@ -32,14 +36,12 @@ cargo build --release
 * It needs WebGL2 **with GPU acceleration**. Without a WebGL2 context, or when the context is a
   software rasteriser (SwiftShader, llvmpipe, Microsoft Basic Render, a software ANGLE adapter —
   where the painterly pipeline would run at seconds per frame and look like a frozen tab, §14), the
-  client says so and keeps the 2D map. `map3d.js` reads the renderer through
+  client says so and draws the isometric map. `map3d.js` reads the renderer through
   `WEBGL_debug_renderer_info` and refuses a software one; `?force3d=1` overrides the guard (used by
-  the `tools/web-smoke.mjs` 3D step and by the `r3d-lab`/`r3d-compare`/`r3d-perf` tools, which render
-  under software GL on purpose). When the renderer string is hidden by the browser the guard cannot
-  tell and does not block.
-* The feature flag is `EXPERIMENTAL_3D` in `assets/app/look.js`: false hides the option and ignores
-  `?renderer=3d`; the module is then never loaded (it is loaded on demand even when the flag is on).
-* The **HD-2D mode** (docs/HD2D.md, `?renderer=hd2d`) is this renderer with the isometric map's
+  the `tools/web-smoke.mjs` HD-2D step and by the `r3d-lab`/`r3d-compare`/`r3d-perf` tools, which
+  render under software GL on purpose). When the renderer string is hidden by the browser the guard
+  cannot tell and does not block.
+* The **HD-2D mode** (docs/HD2D.md, the default map) is this renderer with the isometric map's
   sprites standing in its world: a subclass of `Map3D` (`r3d/hd2d/index.js`) that sets the mode
   hooks `map3d.js` keeps at their defaults (`loadCfg`, `light`, `dressEnv`, `dressUnitsOf`,
   `setUnits`, `ringOf`, `pitchAt`, `beforeFrame`, ...) and an extension of the pipeline
@@ -363,8 +365,14 @@ under and around it:
   around the pixel. SwiftShader runs a quad in step and never showed them. Now every derivative
   the bumps use is taken where the whole quad runs (at the top of `main` or outside the branches);
   a pixel whose quad the deep floor's return splits goes unbumped (a line of pixels under 0.3 of
-  water). The frame is otherwise unchanged. The HD-2D compose still mends any non-finite pixel, as a
-  guard (docs/HD2D.md §6).
+  water). The frame is otherwise unchanged. On Direct3D 11 the world position's derivatives, though
+  taken at the top of `main`, still came out zero along the deep floor's contour (491 NaN pixels in
+  that lab view; FXC may move them past the return), so `bumpD` leaves a pixel unbumped where its
+  vector has no length (or is NaN) instead of normalising it: 0 non-finite pixels on Direct3D 11
+  and Vulkan. The HD-2D compose still mends any non-finite pixel, as a guard (docs/HD2D.md §6).
+  A shader cannot test for NaN with `isnan`/`isinf` on Direct3D 11 (FXC folds them to false, and
+  its `min`/`max` return the other operand for a NaN): test the bits (`floatBitsToUint`, the
+  exponent's all set), as the HD-2D guards do.
 
 ## 6. Asset recipes
 
@@ -528,10 +536,12 @@ marks the edge of the unexplored as a coast, and remembered water calms (§5.2).
   `node tools/r3d-lab.mjs --out a.png --query "scene=showcase&ts=96"`; `--shots FILE` for many;
   `--serve` to open it in a browser; `--stability` for the panning test (§11);
   `r3d-lab/compile.html` for each program's compile times (§11.1).
-* **Browser smoke test** (`tools/web-smoke.mjs`, run by `tools/web-check.sh --browser`): a
-  `?renderer=3d` step checks the frame is drawn and not blank, that picking through the relief finds
-  every in-view plot under its own screen point, click-select, hover, the zoom steps, pan, the
-  political layer and switching back to the art.
+* **Browser smoke test** (`tools/web-smoke.mjs`, run by `tools/web-check.sh --browser`): the
+  `?renderer=hd2d` step checks the frame is drawn and not blank, that picking through the relief
+  finds every in-view plot under its own screen point (or, where nearer ground such as a peak
+  hides that point under the map's low camera, the ground that hides it), click-select, hover, the zoom steps, pan, the
+  political layer, switching back to the art, and a lost context's fallback to the isometric map;
+  the plain URL's step, the default's start (or, under software GL, its fallback).
 * **Web test** (`tests/web.rs`): every module is embedded and reached (the on-demand import counts).
 * **Node tests** (`assets/test/r3d.test.mjs`, run by `tools/web-check.sh`): the ground is seamless
   across a wrapping map's seam and a pure function of the map; unrevealed plots shape nothing
@@ -749,6 +759,68 @@ comparison alternated old and new):
   one multiply (7108 instructions to 5907, the compile 23% faster), but the programs are built before
   the map is known and would have to be built again for each map size; fewer noises would change
   the look.
+* **The value noise from a texture** (`NOISE_TEX`, `Map3D.sceneDefines`: on in the HD-2D mode's
+  terrain, water and props, `?r3d={"noiseTex":0}` off; the 3D renderer keeps the arithmetic noise
+  unless `?r3d={"noiseTex":1}`). Of `pnoise`'s ~26 instructions only ~11 are the hash: a hash
+  texture read at the four corners (`texelFetch`) saves 3% of the terrain's. One hardware-bilinear
+  fetch with the smoothstep on the coordinate (iq's trick) does the floor, the mod, the four hashes
+  and the mixes; the map's wrap is what one fetch cannot do on its own (a lattice of P cells over the
+  map's width meets column 0 at its seam, the texture's next texel is P mod 256). So the texture
+  (`noise.js noiseHashTexture`, 256 x 256 x 64, R8, 4 MB) has 64 layers, in layer k the columns
+  k (mod 64) a copy of column 0, and the fetch's z is (P + 0.5) / 64: the texture repeats in z, so
+  the coordinate picks layer P mod 64 with no instruction, and every P is seamless. Texel c holds
+  hash12 of the cell c (of c - 256 + 4096 from 192: the arithmetic lattice's negative cells), so
+  inside -64..191 it is the arithmetic noise. The lattice comes from two uniforms (`uNoiseLat`, x
+  wrapped by `fract`, no select); `mstroke`, whose lattice wraps in y too, keeps the arithmetic
+  noise; the brush marks' cells (`dab2`, the props) read their six hashes from an RGBA32F texture
+  (`dabHashTexture`, 2 MB). Instructions (glslang + spirv-opt, the HD-2D lab; FXC's estimated
+  compile on the RTX 4060 laptop at 2.6e-7 s x N^2): terrain 6308 -> 4238 (10.4 -> 4.7 s), water
+  3159 -> 2258 (2.6 -> 1.3 s), props 2856 -> 1957 (2.1 -> 1.0 s). On top of it the map's width as a
+  constant would take the terrain to 3837 (another ~0.9 s) -- not worth building the programs after
+  the map. The patterns: where the lattice's cells fall in -64..191 they are the arithmetic noise's
+  (on a wrapping map, every noise under 64 cells over the map's width; on one that does not wrap,
+  a noise's cells west of x = 0 -- a negative offset -- come out elsewhere); the rest moved, the
+  same noise. Not measured on a GPU: the per-frame cost of ~100 3D-texture fetches against the
+  arithmetic, and the 8-bit precision of the hardware's bilinear weights on the broadest noises
+  (a TEXTURE_2D_ARRAY, its layer an explicit mod, is the fallback: +113 instructions).
+* **Five together** (2026-10-31): the noise texture above, the HD-2D mode's
+  lean terrain and smaller props and water programs (docs/HD2D.md §8: `terrainLean`, `lite`), the
+  scene packed into one target so its programs compile at link (`packScene`, `SCENE_PACKED`) and
+  the start-up's CPU work done while they compile (`fastStart`). The shader savings compound (the
+  lean terrain's 44 noises are each cheaper from the texture; the props' one-plane brush marks read
+  the dab texture), and under the texture the sea's gradient normals take pnoise's slope from it
+  too (`pnoiseDT`: inside a cell the bilinear filter is linear in the smoothstepped coordinate, so a
+  slope is the difference of two fetches on the cell's edges; the sea 1233 instructions, against
+  1250 with the arithmetic gradient and 1317 with the finite differences of the texture noise).
+  The HD-2D scene programs (glslang + spirv-opt, as above; FXC estimated at 2.6e-7 s × N²):
+
+  | program | origin/master | five together (packed) |
+  |---|---|---|
+  | terrain | 6308 (10.4 s) | 2730 (1.9 s) |
+  | water | 3159 (2.6 s) | sea 1287 (0.4 s) + rivers 1293 (0.4 s) |
+  | props | 2856 (2.1 s) | 874 (0.2 s) |
+  | cards | 136 | 191 |
+  | the first draw | 15.1 s, one program after another, the browser frozen | none at the first draw: 3.0 s at link, together on ANGLE's worker threads, the page live (about the terrain's 1.9 s, more with the compiles slowing each other) |
+
+  The HD-2D mode packs on Direct3D only (`packScene` 1 or 0 overrides): other backends compile at
+  link already, and on SwiftShader the packed scene's first complete frame came at 12-13 s against
+  4.3-4.9 s unpacked (lab, alternating runs), its pipelines built in the first full-size frame
+  instead of the warm-up's 4 × 4 draws. With the scene packed there are no warm-up draws, so the start-up's sync overlaps the wait for
+  the links (`Map3D.ready`); otherwise it overlaps the warm-up's first draw. With the five switches
+  off (`?r3d={"noiseTex":0,"terrainLean":0,"lite":0,"packScene":0,"fastStart":0}`) the lab's stills
+  match origin/master's bit for bit.
+* **One noise a `mfbm`, one copy of the frontier's drifts** (2026-10-31, measured with FXC itself:
+  `tools/fxc`, below). FXC unrolls a loop whose length it knows, so every `mfbm` was four noises;
+  its octaves now sum in a loop whose bound it cannot know (`4 + int(min(uMapSize.x, 0.0))`, always
+  4), one noise a call. The water wrote its five drifts out twice for the fog's frontier (moving and
+  at rest); a loop of one or two passes now works them out by one copy each. The same image (the
+  lab's stills, 3D and HD-2D, within 3 of 255 on 0.0006% of the pixels). The 3D renderer, which
+  compiles at the first draw: terrain 6647 -> 5506 instructions (9.3 -> 6.8 s), water 3576 -> 2944
+  (3.4 -> 3.0 s), alternating runs. The HD-2D mode gains little: its lean terrain's broad masses
+  use `mfbm2`/`mfbm3` (3163 -> 3136) and `CALM_FADE` already has one copy of the drifts. Taken
+  further -- every noise of a ground evaluated from a table of offsets and frequencies in one such
+  loop -- 150 noises compiled in 0.23 s against 6.7 s inlined (a test shader: 1061 instructions
+  against 5643); not done.
 
 **Compiling without freezing.** Where the browser offers `KHR_parallel_shader_compile` (Chrome
 does), a `Program` no longer waits for its link: the programs compile together on ANGLE's worker
@@ -757,24 +829,124 @@ first use). `Map3D.ready()` (`gl.js` `whenCompiled`) polls them between frames, 
 draws only once they are done; `MapView.useR3d` awaits it. A start that takes over 1.5 s shows
 "Preparing the 3D map (compiling its shaders)…"; one that takes over `COMPILE_TIMEOUT_MS` (45 s)
 gives up and the client falls back to the isometric map with a message (`slow-shaders`), as for a
-software renderer. The renderer given up leaves its programs and context alone (`Map3D.dispose`):
-ANGLE waits for a compile in progress before it deletes a program or a context, which stalled the
-GPU process until the tab crashed; the context is kept until the page goes. The lab and the GPU
+software renderer. The renderer given up leaves its compiling programs and its context alone
+(`Map3D.dispose`): ANGLE waits for a compile in progress before it deletes a program or a context,
+which stalled the GPU process until the tab crashed. Its other GPU objects (targets, meshes,
+textures, the programs that are done) go at once; the compiling programs, then the context, go once
+they have compiled (`releaseLater`, polled; one that never ends keeps the context until the page
+goes). The lab and the GPU
 bench await `ready()` too, so a slow compile is their error, not a hang. Checked with the old
 shaders on Direct3D 11: the page stays live (its longest stall 0.6 s, the page's load), the message
 shows after 45 s and the isometric map draws. On Direct3D the links are quick now (above) and the
 compiles come in the warm-up draws, which the timeout does not cover: a compile in progress cannot
 be stopped.
 
-**Measuring.** `r3d-lab/compile.html` (`tools/r3d-lab.mjs --serve`) links each program alone, then
-draws it once into the targets it writes, laid out as the pipeline's, and logs both times
-(`?only=terrain` for one); open
-it in Chrome with `--use-angle=d3d11` (headless: `channel: "chrome"`, `--ignore-gpu-blocklist
---enable-gpu --force_high_performance_gpu`). The HLSL ANGLE makes of a shader comes from
-`WEBGL_debug_shaders`' `getTranslatedShaderSource`; given its entry point and compiled with the
-`d3dcompiler_47.dll` Chrome ships (`D3DCompile`, `ps_5_0`, default flags, `ANGLE_ENABLE_LOOP_FLATTEN`
-defined) it takes within a few percent of the browser's time, which is how the terrain shader was
-bisected -- a check worth repeating on a shader change that adds loops or many noise calls.
+**Two stages** (2026-10-31; the HD-2D mode with its scene packed, `MapHd2d.standinTerrain`). With
+the scene packed every program compiles at link, together, and `Program.done` says without waiting
+whether one has. Most of that wait is the terrain's (2742 instructions, Direct3D's compile about
+1.9 s, estimated as above); the sea and the rivers take about 0.4 s each, every other program
+0.2 s or less. So the map draws first with a stand-in ground, and the full terrain comes in when it
+has compiled:
+
+* **The stand-in** is the terrain shader itself (`TERRAIN_FS`) compiled with the defines of
+  hd2d/config.js `TERRAIN_STANDIN`, not a second shader to keep in step: every value noise of the
+  ground's painting stands at its mean (`STANDIN_FLAT`: the compiler folds the masses, the meadow's
+  golden patches, the pools, the drifts, the warp of the plots' blend and the road edge's wobble
+  into each ground's mean tones), no hell marks, dunes, plates or ice cracks, no relief bump from
+  the materials (`STANDIN_RELIEF`), each material at one scale (`STANDIN_TAP1`). What stays: the
+  pixel-art materials blended across the plots, the beaches, rock, snow, river banks, trodden
+  ground, fields and roads, the light (the sun, the cast shadows, the cloud shadows, the cities'
+  pools), the fog of war and the unexplored parchment -- and the same packed outputs, so every
+  later pass is unchanged. **1358 instructions** (glslang + spirv-opt, as above, the lab's packed
+  programs; Direct3D's compile about 0.48 s estimated), against the full terrain's 2742 (2757 with
+  the dissolve below): the size of the sea's and the rivers' programs (1287 and 1293, about 0.43 s
+  each), which compile beside it, so a shorter stand-in would not bring the first frame sooner.
+  Nor could it be much shorter and stay the same shader: without any of the ground's painting the
+  program is still 480 (the plots' lookup and blend, the light, the fog, the packing), and the
+  painting's branches -- one for each ground, feature, decal and the parchment, each folded to a
+  few dozen instructions -- shrink further only by painting from a table of their own tones, a
+  second painting to keep in step.
+* **The start** (`Map3D.ready`) waits for every program but the full terrain (the stand-in among
+  them) and for the sprites the first frame asks for (`MapHd2d.modeReady`, 3 s at most); the
+  full terrain goes on compiling behind the first frames. The loop polls it (a frame for it though
+  nothing else moves) and, once it is in, it dissolves in over the stand-in in 0.4 s
+  (`terrainDissolve`): the stand-in drawn, then the full terrain over it, the 2 x 2 pixel quads
+  whose screen-space hash is past the progress discarded (shaders.js `TERRAIN_DISSOLVE`; the packed
+  integer target cannot blend, a dissolve in screen space holds while the camera moves, and whole
+  quads keep the derivatives defined; with no swap running it is one uniform branch). Where the
+  full terrain is in before a frame has shown the stand-in -- SwiftShader, whose links finish at
+  once, and a cached program -- it simply draws. One that has not compiled within the start's
+  timeout (3 x `COMPILE_TIMEOUT_MS` for a packed scene) or fails is given up, logged once: the
+  stand-in stays and nothing waits on it; a renderer disposed while it compiles keeps only it, and
+  its context, until it has compiled (`Map3D.dispose`, above). A capture waits for it
+  (`whenReady` -> `terrainReady`: the frames after draw the full terrain at once, unless
+  `standinHold` films the swap). The depth prepass and the shadow maps draw the
+  terrain with its vertex-only program (`shadowTerrain`), the same under both.
+* **At boot** (main.js `hd2dPending`, the page's renderer the HD-2D map) MapView draws its
+  backdrop -- the dark fill and the minimap -- instead of the flat map until the HD-2D map draws
+  (`MapView.holdBackdrop`; the flat map after 10 s, so the player can act, the HD-2D map still
+  taking over when ready), and the 3D canvas, hidden until then, shows with its first frame: the
+  HD-2D map is the first map the player sees. (Not faded in: a CSS fade on the canvas waits on the
+  compositor's frames, which a busy GPU process delays; on SwiftShader the 0.3 s fade took 5 s,
+  the labels over black.) A switch to the HD-2D map in play keeps the isometric map drawn
+  until it is ready, as before.
+* **Measured** on SwiftShader, which offers no parallel compile (every program has linked by the
+  first frame, so the stand-in is seen only with `standinHold`): the lab's five stills (640 x 400,
+  packed, animation frozen), stand-in against the full ground: the frame's mean colour within 1.3
+  of 255 in each channel; the tone (9 x 9 pixels averaged) off by more than 8 on 4.5% (the close
+  view) to 28% (the showcase) of the pixels -- where the full ground has its masses, the meadow's
+  golden patches, the marsh's pools and the hell grounds' cracks, which the stand-in leaves at their
+  mean. A lab film of the swap (`r3d-lab.mjs --capture`, `standinHold` 4, 15 fps): over the six
+  frames of the dissolve, the camera at rest, 3% of the pixels move by more than 8 from one frame to
+  the next, the frame's mean value rises evenly, no flash, no black, no seam. The game's boot
+  (the turn-200 save): the backdrop, then the HD-2D map; with the ground's art held back, the flat
+  map 10 s after the game's map came, the HD-2D map over it once the art did. The lab's stills
+  match origin/master's bit for bit, packed or not, with `standin` 1 (the default; packed, the full
+  terrain is in at the first frame there) and 0, and the 3D renderer's.
+
+`?r3d={"standin":0}` builds no stand-in (the start waits for the full terrain, as before);
+`{"standinHold":S}` (debug) keeps the full terrain out until the render's time reaches S seconds
+(docs/HD2D.md §11).
+
+**Measuring.** `r3d-lab/compile.html` (`tools/r3d-lab.mjs --serve`, then `/lab/compile.html`) builds
+the programs a configuration compiles -- the pipeline's and the HD-2D mode's (`pipelinePrograms`,
+`hd2dPrograms`) with the defines and options the mode's hooks give (`Map3D.pipelineArgs`), for
+`?renderer=hd2d` (the default) or `?renderer=3d` and the page's `?r3d=`, read as the renderer reads
+it (over the look the lab's panel saved: same origin). It links each alone, then draws it once into
+the targets the pipeline draws it into (a packed scene's RGBA32UI target, else attachments 1-3; the
+unpack passes' three and two; the shadow map's depth alone; one target), a pixel read waiting for
+it, and logs both times, their totals and the slowest program (`?only=terrain` for one).
+`&parallel=1` creates every program at once, as a start does, waits for all the links, then draws
+them in the warm-up's order (the scene's first), and logs when each linked, each first draw and the
+wall time: the realistic number for a packed scene, whose programs compile at link, together. The
+log opens with the WebGL renderer, the configuration (packed or not) and each program's defines, so
+a pasted log says what it measured. To compare the five switches (above) on Direct3D, open in Chrome
+with `--use-angle=d3d11`
+
+    compile.html?renderer=hd2d
+    compile.html?renderer=hd2d&r3d={"noiseTex":0,"terrainLean":0,"lite":0,"packScene":0,"fastStart":0}
+
+and each with `&parallel=1` (`fastStart` changes no program; `r3d={"packScene":0}` alone takes out
+the packing only), first in a fresh profile (`--user-data-dir` a new folder: the program cache
+empty), then again after a reload in the same profile. The reload also settles whether Chrome keeps
+what a draw compiled: ANGLE's `Context11::triggerDrawCallProgramRecompilation` (ANGLE main)
+refreshes the program's cache entry after a draw-time compile, while the measurement above found a
+reload gained nothing. Headless: `channel: "chrome"`, `--ignore-gpu-blocklist --enable-gpu
+--force_high_performance_gpu`. The HLSL ANGLE makes of a shader comes from `WEBGL_debug_shaders`'
+`getTranslatedShaderSource`; given its entry point and compiled with the `d3dcompiler_47.dll` Chrome
+ships (`D3DCompile`, `ps_5_0`, default flags, `ANGLE_ENABLE_LOOP_FLATTEN` defined) it takes within a
+few percent of the browser's time, which is how the terrain shader was bisected -- a check worth
+repeating on a shader change that adds loops or many noise calls.
+
+Without Windows: `tools/fxc/measure.sh` builds this tree's programs as `compile.html` does
+(`--mode 3d|hd2d`, `--all` for every program, `--tree` another checkout's for an A/B), translates
+them with glslang and SPIRV-Cross, and compiles them with the same `d3dcompiler_47.dll` (taken from
+Electron's Windows build) under wine, printing FXC's time and instruction count for each. Its counts
+come within about 2% of the HLSL ANGLE makes (the HD-2D terrain of 2026-10-30: 6707 against 6621;
+the props 2935 against 2831), and its times grow alike; compare alternating runs on one idle
+machine (single runs vary by 20% or so). FXC's own counts run higher than spirv-opt's above: the
+HD-2D scene packed (2026-10-31, one 2-core machine) is terrain 3136 instructions, about 3.0 s; sea
+1476, about 1.0 s; rivers 1501, about 1.3 s; props 999, 0.4 s -- the links that compile together.
 
 ## 12. Configuration
 
@@ -789,7 +961,9 @@ brush (brush marks and gouache values on objects, §5.1), bands (stepped light),
 shadows), rim, clouds, reflections, refraction and caustics (the water, §5.2), haze, mist, grade,
 grain, vignette, borders, grid, fogWar, particles, animate, renderScale, fxaa (anti-aliasing),
 autoQuality (the measured-frame-time quality ladder: paint filter and the water's reflection march
-off -- it keeps mirroring the sky -- then render scale 0.75). The paint filter (`kuwahara`) is off in
+off -- it keeps mirroring the sky -- then render scale 0.75, then 0.5; the frame time is the GPU's,
+from one timer query a frame where the browser has them, else the loop's call-back gap, since a
+frame's CPU time never sees a slow GPU; docs/HD2D.md §8, "An integrated GPU"). The paint filter (`kuwahara`) is off in
 the painterly preset since the first look-target batch (owner decision, §16), and the ink outlines
 (`outline`) and stepped light (`bands`) since the second, once crowns, rocks and the ground carried
 their own form; the brush marks on objects (`brush`) stay for buildings and rocks. Every switch stays
@@ -797,11 +971,11 @@ in the panel.
 
 ## 13. Removing it
 
-Delete `assets/app/r3d/`, `crates/ffh-play/r3d-lab/`, `tools/r3d-*.mjs`, this file; remove the r3d
-lines of `ASSETS` in `src/transport/http.rs`, `useR3d` and the `r3d` delegation lines in `map.js`,
-`use3d`/the `"3d"` branch in `main.js`, `EXPERIMENTAL_3D` in `look.js` and `tools.js`, the
-`renderer3d` step of `tools/web-smoke.mjs`, `stage corrupt` in `src/stage.rs`/`src/main.rs`, and the
-`await import(` line of `tests/web.rs`'s scanner. Nothing else depends on it.
+The HD-2D map, the default renderer, is built on it: removing it removes that map too (docs/HD2D.md
+§12 first). Then delete `assets/app/r3d/`, `crates/ffh-play/r3d-lab/`, `tools/r3d-*.mjs`, this
+file; remove the r3d lines of `ASSETS` in `src/transport/http.rs`, `useR3d` and the `r3d`
+delegation lines in `map.js`, `stage corrupt` in `src/stage.rs`/`src/main.rs`, and the
+`await import(` line of `tests/web.rs`'s scanner.
 
 ## 14. Limitations and next steps
 

@@ -153,7 +153,7 @@ export async function whenCompiled(programs, timeoutMs = COMPILE_TIMEOUT_MS) {
   while (!programs.every((p) => p.done)) {
     if (performance.now() - t0 > timeoutMs) {
       const slow = programs.filter((p) => !p.done).map((p) => p.name);
-      const err = new Error(`The 3D map's shaders did not compile within ${Math.round(timeoutMs / 1000)} s (${slow.join(", ")}).`);
+      const err = new Error(`The HD-2D map's shaders did not compile within ${Math.round(timeoutMs / 1000)} s (${slow.join(", ")}).`);
       err.code = "slow-shaders";
       throw err;
     }

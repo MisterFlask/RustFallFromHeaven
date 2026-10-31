@@ -4,7 +4,8 @@
 // it in headless Chromium (Playwright) and plays: the engine loads (WebAssembly in a worker; by
 // default the server sends no isolation headers, so the service worker coi-sw.js has to make the
 // page cross-origin isolated, with one reload), a new game starts from the new-game screen (tiny
-// map, fixed seed), the map is drawn with the art, a few turns end through the end-turn gate with
+// map, fixed seed), the default map starts (the HD-2D one, or its isometric fallback), the
+// classic interface draws on the flat map, a few turns end through the end-turn gate with
 // the popups answered, the game is saved, the page is reloaded with `?renderer=iso` (a fresh
 // engine: the save comes back from IndexedDB, in the database the site's web/site.js names) and
 // the save loaded, the isometric renderer draws
@@ -322,14 +323,16 @@ async function newGame() {
   await answerPopups();
 }
 
-/** The map is drawn with the art: the art loaded (its bundle, relative to the page), the view is
- *  drawn in full, the middle of the map is not blank. */
-async function artMap() {
+/** The classic interface on the flat map (the sprite-less debug renderer that wears it): the art
+ *  loaded (its bundle, relative to the page), the interface uses its bitmap type and frames, the
+ *  middle of the map is not blank. */
+async function classicInterface() {
   await until2("!!(window.ffh.look.art || window.ffh.look.error)", "the art to load", 60000);
   const err = await ev("window.ffh.look.error ? String(window.ffh.look.error.message || window.ffh.look.error) : null");
   if (err) throw new Error(`the art did not load: ${err}`);
-  if ((await ev("window.ffh.mapView.renderer()")) !== "art") throw new Error("the map is not drawn with the art");
-  await until2("window.ffh.mapView.art.settled()", "the art map drawn in full", 60000);
+  if ((await ev("window.ffh.mapView.renderer()")) !== "flat") throw new Error("the map is not the flat one");
+  if (!(await ev(`document.documentElement.classList.contains("art") && !!document.querySelector("#btn-techs .ui-ptext")`))) throw new Error("the interface has no bitmap type");
+  await ev("window.ffh.mapView.draw()");
   const colours = await ev(`(() => {
     const c = window.ffh.mapView.canvas;
     const g = c.getContext("2d", { willReadFrequently: true });
@@ -339,9 +342,9 @@ async function artMap() {
     for (let i = 0; i < d.length; i += 4) seen.add((d[i] << 16) | (d[i + 1] << 8) | d[i + 2]);
     return seen.size;
   })()`);
-  if (colours < 8) throw new Error(`the art map is nearly blank (${colours} colours in the middle of the view)`);
-  await shot("art-map");
-  steps.push(`art map: ${colours} colours mid-view`);
+  if (colours < 8) throw new Error(`the flat map is nearly blank (${colours} colours in the middle of the view)`);
+  await shot("flat-map");
+  steps.push(`flat map, classic interface: ${colours} colours mid-view`);
 }
 
 /** Saves the game as `smoke` and waits until the engine has written it to IndexedDB. */
@@ -462,13 +465,17 @@ async function main() {
     await until2("!!window.ffhWeb.build", "web/version.txt", 10000);
 
     await newGame();
-    // The plain URL opens the default renderer, now the isometric 2.5D map (docs/ISO.md, look.js).
-    // Switch to the art client in-page (the in-browser engine keeps the game) for the art check.
-    if ((await ev("window.ffh.mapView.renderer()")) !== "iso") throw new Error("the default renderer is not the isometric 2.5D map");
-    steps.push("the default renderer is the isometric 2.5D map");
-    await ev(`window.ffh.setRenderer("art")`);
-    await until2(`window.ffh.mapView.renderer() === "art"`, "the art renderer (switched from the default)");
-    await artMap();
+    // The plain URL opens the default renderer, the HD-2D map (docs/HD2D.md, look.js) -- or, where
+    // WebGL2 renders in software (this headless browser), its fallback, the isometric 2.5D map.
+    // Switch to the flat map in-page (the in-browser engine keeps the game): the classic interface,
+    // which the turns below drive.
+    await until2(`!window.ffh.mapView.r3dLoading && ["hd2d", "iso"].includes(window.ffh.mapView.renderer())`, "the default renderer (the HD-2D map or its isometric fallback)", 180000);
+    const [dflt, why] = await ev("[window.ffh.mapView.renderer(), window.ffh.mapView.r3dError?.code ?? null]");
+    if (dflt === "iso" && why !== "software-webgl") throw new Error(`the default HD-2D map fell back to the isometric one (${why ?? "no reason given"})`);
+    steps.push(dflt === "hd2d" ? "the default renderer is the HD-2D map" : "the default renderer is the HD-2D map, here (software WebGL2) its isometric fallback");
+    await ev(`window.ffh.setRenderer("flat")`);
+    await until2(`window.ffh.mapView.renderer() === "flat"`, "the flat map (switched from the default)");
+    await classicInterface();
     // Engagement combat's queries reach the in-browser engine as every query does (docs/WEB.md);
     // this game has the option off: no battles, and a battle log is gone.
     const br = await ev(`window.ffh.api.query("battle_reports")`);

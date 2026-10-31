@@ -168,8 +168,8 @@ checksums.
 - **Without isolation** (the fallback above), the advisor answers every blocking decision, and the
   page's requests wait while a turn runs.
 - Needs a current browser: WebAssembly, module workers, `DecompressionStream` (Chrome/Edge,
-  Firefox 113+, Safari 16.4+). The 3D renderer (`?renderer=3d`) needs WebGL2, as on the native
-  server.
+  Firefox 113+, Safari 16.4+). The HD-2D map (the default) needs WebGL2 on a GPU, as on the
+  native server; without, the page draws the isometric map.
 - Only the browser client: `ffh-play agent`, `soak`, `bench` and the other commands are native.
 - **Phones** get the client's small-screen layout and touch controls (docs/HUMAN.md, "Phones and
   touch screens"); the engine runs on the phone, so late-game AI turns take longer there than on

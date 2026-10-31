@@ -783,6 +783,9 @@ html.iso.hd2d #iso-corner canvas.minimap {
   -webkit-backdrop-filter: blur(3px);
   backdrop-filter: blur(3px);
 }
+/* Under the map's canvas until its first frame (r3d/map3d.js): the dark of the backdrop MapView
+   drew meanwhile (map.js holdBackdrop), not the isometric map's sky. */
+html.iso.hd2d #mapwrap { background: #07080a; }
 html.iso.hd2d button:hover:not([disabled]) { background: linear-gradient(180deg, #4a4232, #221e16); background-clip: padding-box; }
 html.iso.hd2d #iso-corner #end-turn:not([disabled]) { background: linear-gradient(180deg, #5a4a22, #2a2210); background-clip: padding-box; }
 html.iso.hd2d #iso-corner #end-turn.end-turn-message:not([disabled]) { background: linear-gradient(180deg, #8a6a24, #4a3810); background-clip: padding-box; }

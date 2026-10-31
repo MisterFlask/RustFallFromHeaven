@@ -1,5 +1,6 @@
-// The experimental 3D renderer of the map (docs/R3D.md): a fourth renderer beside flat, art and
-// iso, chosen with `?renderer=3d` or Tools -> Options. Like the isometric one, MapView delegates
+// The 3D renderer of the map (docs/R3D.md), the base of the HD-2D map (hd2d/, docs/HD2D.md, the
+// default renderer). Its own mode, everything modelled, is no longer offered to players: the r3d
+// lab still draws it, to work on the layers they share. Like the isometric one, MapView delegates
 // draw(), screenToMap(), screenOf() and the drag-pan to it when `mapView.r3d` is set and keeps its
 // own camera (cam.cx, cam.cy: the map point looked at; cam.ts: pixels per plot there), overlays
 // and input; the game state comes from the same `S.map` / `S.view` the others draw.
@@ -13,7 +14,7 @@ import * as T from "../tiles.js";
 import { mul, perspective, lookAt, invert, xform4, ortho, vnorm, clamp, lerp, smoothstep } from "./math.js";
 import { World, SEA } from "./world.js";
 import { Pipeline } from "./pipeline.js";
-import { whenCompiled } from "./gl.js";
+import { whenCompiled, COMPILE_TIMEOUT_MS } from "./gl.js";
 import { Scene, bucketOf } from "./scene.js";
 import { dressStatic, dressUnits, staticEnv, teamColour, standHeight } from "./dress.js";
 import { loadConfig, saveConfig, withPreset, LIGHTING, PANEL } from "./config.js";
@@ -22,6 +23,12 @@ import "./assets/index.js";
 
 const ZOOMS = [28, 40, 56, 72, 96, 128, 168, 220];
 export const DEFAULT_ZOOM = 96;
+/** How many `sync:*` User Timing measures a renderer leaves (`syncMeasure`): the start-up's (its
+ *  timeline reads them: two or three syncs of up to six stages), not a whole session's -- the
+ *  frames' stop too (render). */
+const SYNC_MEASURES = 60;
+/** How long the full terrain takes to dissolve in over the stand-in (s; `terrainDissolve`). */
+const SWAP_S = 0.4;
 
 /** The WebGL2 renderer string and whether it is a software rasteriser (no usable GPU). Browsers
  *  expose the real adapter through WEBGL_debug_renderer_info; software fallbacks (SwiftShader,
@@ -50,18 +57,55 @@ function force3d() {
   }
 }
 
-/** The contexts of renderers disposed while their programs still compiled (Map3D.dispose). */
-const STRANDED = [];
+/** `?r3d={"standinHold":S}` (debug; read from the page, never from the saved look: the hold must
+ *  not outlive the page) -- `terrainDissolve`. Null when not given. */
+function standinHold() {
+  try {
+    const q = new URLSearchParams(globalThis.location?.search ?? "").get("r3d");
+    const s = q && q.startsWith("{") ? Number(JSON.parse(q).standinHold) : NaN;
+    return Number.isFinite(s) ? s : null;
+  } catch {
+    return null;
+  }
+}
+
+/** The contexts of renderers disposed while some of their programs still compiled, kept until
+ *  those have (`releaseLater`). */
+const STRANDED = new Set();
+
+/** Deletes `pending`, the programs of a disposed renderer that were still compiling, and lets its
+ *  context go, once they have compiled (polled): deleting a compiling program, or losing its
+ *  context, would have ANGLE wait for the compile, stalling the GPU process -- and the page --
+ *  until then (docs/R3D.md §11.1). One that never ends keeps its context until the page goes. */
+function releaseLater(gl, pending) {
+  STRANDED.add(gl);
+  const poll = () => {
+    if (!gl.isContextLost() && !pending.every((p) => p.done)) return void setTimeout(poll, 500);
+    try {
+      for (const p of pending) p.dispose();
+    } catch {
+      /* the context may be gone */
+    }
+    gl.getExtension("WEBGL_lose_context")?.loseContext();
+    STRANDED.delete(gl);
+  };
+  setTimeout(poll, 500);
+}
 
 export class Map3D {
   constructor(view) {
     /** "3d", or the mode built on this renderer that draws (the HD-2D mode sets "hd2d"). */
     this.mode = "3d";
+    performance.mark("r3d:ctor");
     this.view = view;
     this.cfg = this.loadCfg();
     this.canvas = document.createElement("canvas");
     this.canvas.className = "map3d";
     Object.assign(this.canvas.style, { position: "absolute", inset: "0", width: "100%", height: "100%", display: "block", pointerEvents: "none" });
+    // Hidden until its first frame (render), which shows at once over the map's backdrop or what
+    // MapView drew. (Not faded in: a CSS fade on this canvas waits on the compositor's frames, which
+    // a busy GPU process delays -- on SwiftShader the 0.3 s fade took 5 s, labels over black.)
+    this.canvas.style.opacity = "0";
     view.canvas.before(this.canvas);
     // The 2D canvas on top now only carries marks: transparent.
     view.canvas.style.background = "transparent";
@@ -76,16 +120,27 @@ export class Map3D {
     const { name: glName, software } = rendererInfo(gl);
     if (software && !force3d()) {
       this.canvas.remove();
-      const err = new Error(`WebGL2 is rendering in software (${glName || "unknown renderer"}); the 3D map needs GPU acceleration.`);
+      const err = new Error(`WebGL2 is rendering in software (${glName || "unknown renderer"}); the HD-2D map needs GPU acceleration.`);
       err.code = "software-webgl";
       throw err;
     }
     this.gl = gl;
     this.glName = glName;
-    this.pipeline = new Pipeline(gl, this.terrainDefines());
+    this.pipeline = new Pipeline(gl, ...this.pipelineArgs());
+    performance.mark("r3d:pipeline");
     /** Whether the programs have compiled (`ready`): the loop draws nothing before. */
     this.compiled = false;
-    this.scene = new Scene(gl);
+    /** The full terrain's way in over the stand-in (`ready`, `terrainDissolve`), or null: none, or
+     *  over. `since`: when the wait began (ms); `timeout`: how long it may take; `shown`: a frame
+     *  drew the stand-in; `at`: when the dissolve began (its clock, s); `off`: given up on. */
+    this.swap = null;
+    this.standinHold = standinHold();
+    this.scene = new Scene(gl, {
+      // (fastStart: the material layers the mode replaces are not painted, replacedMaterials.)
+      skipMaterials: this.cfg.fastStart !== 0 ? this.replacedMaterials() : null,
+      noiseTex: this.sceneDefines().NOISE_TEX ? this.noiseTexFormat() : null,
+    });
+    performance.mark("r3d:scene");
     this.world = null;
     this.mapSeen = null;
     this.viewSeen = null;
@@ -97,19 +152,31 @@ export class Map3D {
     this.dirty = true;
     this.running = true;
     this.frameMs = [];
-    // Quality ladder (docs/R3D.md §11): when the measured frame time stays high, step down (0 full
-    // -> 1 paint filter off -> 2 + render scale 0.75) to keep the map responsive, and step back up
-    // when it is fast again. Off with cfg.autoQuality = 0.
+    // Quality ladder (docs/R3D.md §11): when the measured frame time (frameCost: the GPU's, where
+    // the browser can time it) stays high, step down (0 full -> 1 paint filter off -> 2 + render
+    // scale 0.75 -> 3 render scale 0.5) to keep the map responsive, and step back up when it is
+    // fast again. Off with cfg.autoQuality = 0.
     this.autoLevel = 0;
     this.slowN = 0;
     this.fastN = 0;
+    /** The level the ladder no longer steps up from (one that proved too slow right after a step
+     *  up), when the last step up was (ms), and whether the slow-GPU hint went out (tuneQuality). */
+    this.autoFloor = 0;
+    this.raisedAt = -Infinity;
+    this.slowSaid = false;
+    /** When the last frame was drawn (ms; the next loop measures it, frameCost), and that frame
+     *  cost estimate (ms). */
+    this.renderedAt = null;
+    this.costMs = 0;
     /** The last sync's costs by stage (ms): world, textures, dress, instances, paint, units. */
     this.syncMs = {};
+    /** The `sync:*` measures left so far (syncMeasure). */
+    this.syncMeasures = 0;
     this.raf = requestAnimationFrame(() => this.loop());
     this.panel = null;
     this.addPanelButton();
-    // A lost context (driver reset, too many contexts) drops back to the 2D renderer: main.js
-    // listens for "ffh:r3d-lost" (the stored choice stays 3D, so a reload tries again).
+    // A lost context (driver reset, too many contexts) drops back to the isometric map: main.js
+    // listens for "ffh:r3d-lost" (the stored choice stays the HD-2D map, so a reload tries again).
     this.canvas.addEventListener("webglcontextlost", (ev) => {
       // A disposed renderer loses its context on purpose (dispose): when the other mode of this
       // renderer replaces it, that must not take the new one down.
@@ -119,6 +186,12 @@ export class Map3D {
       this.lost = true;
       setTimeout(() => globalThis.dispatchEvent?.(new CustomEvent("ffh:r3d-lost")), 0);
     });
+  }
+
+  /** The ground's material layers (materials.js MAT) the mode fills with its own art (a Set), so the
+   *  scene does not paint them; null: none. */
+  replacedMaterials() {
+    return null;
   }
 
   /** The programs of the pipeline and of the mode's passes. */
@@ -131,39 +204,178 @@ export class Map3D {
    *  (gl.js, whenCompiled) or do not compile; the caller then disposes the renderer. Then the scene's
    *  programs are drawn once each (Pipeline.warm): on Direct3D that is where they compile, the
    *  browser drawing nothing meanwhile, so the page is told first ("ffh:r3d-compiling", main.js)
-   *  and given a moment to show it. */
+   *  and given a moment to show it. (A packed scene, pipeline.js `packed`, has none: its programs
+   *  compile at link, inside the first wait.) Last, what the mode loads for its first frame
+   *  (`modeReady`): the loop draws nothing until all of it is there. With a stand-in terrain
+   *  (`standinTerrain`) the full terrain is not waited for: it goes on compiling behind the first
+   *  frames, and comes in when done (`terrainDissolve`). */
   async ready(timeoutMs) {
-    await whenCompiled(this.programs(), timeoutMs);
-    if (/direct3d|d3d1/i.test(this.glName)) {
+    // (`fastStart`, the default: the scene is built from the game state -- the world, its textures,
+    // the dressing and its instances, the paint layers, the figures, and the HD-2D mode's sprites
+    // start loading -- while the scene's programs compile, not after them in the first frame: that
+    // work is the page's script's, the compile ANGLE's, so they overlap. Where the scene's programs
+    // compile at their first draw (Direct3D: in the GPU process, seconds, the uploads queueing behind
+    // it) that is during the warm-up's first draw, the terrain's; a packed scene (pipeline.js
+    // `packed`) has no warm-up draws, its programs compiling at link on ANGLE's worker threads, so it
+    // is during the wait for the links. `?r3d={"fastStart":0}`, or `{"earlySync":0}` for this
+    // overlap alone: the original order.)
+    const overlap = this.cfg.fastStart !== 0 && (this.cfg.earlySync ?? 1) > 0;
+    const packed = this.pipeline.packed;
+    // A packed scene's programs compile whole at link, inside this wait: the page is live meanwhile,
+    // so a slow machine is given longer before the renderer gives up.
+    const timeout = timeoutMs ?? (packed ? 3 * COMPILE_TIMEOUT_MS : COMPILE_TIMEOUT_MS);
+    // (With a stand-in, every program but the full terrain: the stand-in draws the ground until it
+    // has compiled, which is the most of the wait on Direct3D. Given the same time, after which the
+    // stand-in stays.)
+    const full = this.pipeline.p.terrainStandin ? this.pipeline.p.terrain : null;
+    if (full) this.swap = { since: performance.now(), timeout, shown: false, at: null, off: false };
+    const linked = whenCompiled(this.programs().filter((p) => p !== full), timeout);
+    if (overlap && packed) await this.prepareWhile(linked);
+    await linked;
+    performance.mark("r3d:linked");
+    // (A packed scene has no warm-up draws, so no frozen browser to announce.)
+    const warmed = this.pipeline.scenePrograms();
+    if (warmed.length && /direct3d|d3d1/i.test(this.glName)) {
       globalThis.dispatchEvent?.(new CustomEvent("ffh:r3d-compiling"));
       await new Promise((r) => setTimeout(r, 100));
     }
-    await this.pipeline.warm(this.pipeline.scenePrograms());
+    // (The warm-up issues its first draw, the terrain's, before it first waits.)
+    const warm = this.pipeline.warm(warmed);
+    if (overlap) await this.prepareWhile(warm);
+    await warm;
+    performance.mark("r3d:warmed");
+    // (It loaded while the programs compiled: the start waits for the later of the two, as before.
+    // Until then the loop draws nothing -- the map MapView still draws keeps the 2D canvas.)
+    await this.modeReady();
     this.compiled = true;
     this.dirty = true;
+  }
+
+  /** The full terrain's share of the ground in this frame (pipeline.js `fr.dissolve`), with a
+   *  stand-in (`swap`): 0 while it compiles, the stand-in drawn; once it is in, rising to 1 over
+   *  SWAP_S on `clock` (s), the stand-in under it; then 1, the stand-in no longer drawn. In before a
+   *  frame showed the stand-in, it simply draws. `standinHold` (a debug switch, page-only) keeps it
+   *  out until the render's time `time` reaches that many seconds, and dissolves it in from there
+   *  on that time: a film or a test of the swap where the links finish at once, also when its
+   *  frames' times start again from 0 (the swap is then never over). */
+  terrainDissolve(time, clock) {
+    const s = this.swap;
+    if (!s) return 1;
+    const hold = this.standinHold;
+    if (s.at === null) {
+      if (s.off || !this.terrainIn()) {
+        s.shown = true;
+        return 0;
+      }
+      if (!s.shown && hold === null) {
+        this.swap = null;
+        return 1;
+      }
+      s.at = clock;
+      performance.mark("r3d:terrain-in");
+    }
+    const k = hold !== null ? (time - hold) / SWAP_S : (clock - s.at) / SWAP_S;
+    if (k >= 1 && hold === null) {
+      this.swap = null;
+      performance.mark("r3d:terrain-swapped");
+    }
+    return clamp(k, 0, 1);
+  }
+
+  /** Whether the full terrain has compiled (it is then finished: its link checked, its uniforms
+   *  read). One that fails, or takes longer than the start's timeout, is given up on (`swap.off`):
+   *  the stand-in stays, which is said once. */
+  terrainIn() {
+    const s = this.swap;
+    const full = this.pipeline.p.terrain;
+    if (!full.done) {
+      if (performance.now() - s.since > s.timeout) {
+        s.off = true;
+        console.warn(`r3d: the terrain shader did not compile within ${Math.round(s.timeout / 1000)} s; the map keeps its stand-in ground`);
+      }
+      return false;
+    }
+    try {
+      full.finish();
+    } catch (e) {
+      s.off = true;
+      console.error("r3d: the terrain shader did not compile; the map keeps its stand-in ground:", e);
+      return false;
+    }
+    return true;
+  }
+
+  /** Whether the ground's swap wants a frame though nothing else changed: the full terrain has
+   *  compiled, or is dissolving in (the loop polls it). Not before the game's map has come: a
+   *  frame then draws no ground, so the swap would never be over. */
+  swapDue() {
+    const s = this.swap;
+    if (!s || s.off || !this.view.map) return false;
+    return s.at === null ? this.pipeline.p.terrain.done : this.standinHold === null;
+  }
+
+  /** Resolves once the full terrain is in, or given up on, a stand-in's dissolve then skipped: the
+   *  frames after draw the full terrain at once (what a capture waits for, `whenReady`). Not with
+   *  `standinHold`: a film of the swap. */
+  async terrainReady() {
+    while (this.swap && this.standinHold === null && !this.swap.off) {
+      if (this.swap.at !== null || this.terrainIn()) {
+        this.swap = null;
+        this.dirty = true;
+        break;
+      }
+      await new Promise((r) => setTimeout(r, 20));
+    }
+  }
+
+  /** Resolves once what the mode's first frame needs beside the programs has loaded (`ready` waits
+   *  for it before the loop draws): nothing for the 3D renderer. */
+  modeReady() {
+    return Promise.resolve();
+  }
+
+  /** The scene brought up to date before the first frame (`ready`); a failure is the first
+   *  frame's to report. */
+  prepare() {
+    try {
+      if (this.sync()) performance.mark("r3d:prepared");
+    } catch (e) {
+      console.error("r3d prepare:", e);
+    }
+  }
+
+  /** `prepare` now, and again while `pending` (the links, or the warm-up) has not settled if the
+   *  game's map has not come yet (the page still booting): prepared as soon as it does. */
+  async prepareWhile(pending) {
+    let settled = false;
+    const end = () => (settled = true);
+    pending.then(end, end);
+    this.prepare();
+    while (!settled && !this.mapSeen) {
+      await new Promise((r) => setTimeout(r, 50));
+      if (!this.mapSeen) this.prepare();
+    }
   }
 
   dispose() {
     this.running = false;
     cancelAnimationFrame(this.raf);
-    // Programs still compiling (`ready` gave up on them) are left alone, with their context: ANGLE
-    // waits for a compile to end before it deletes its program or the context, which would stall
-    // the GPU process -- and the page -- until then (docs/R3D.md §11.1). Kept until the page goes.
-    const compiling = !this.lost && this.programs().some((p) => !p.done);
-    if (compiling) STRANDED.push(this.gl);
-    else {
-      try {
-        this.scene.dispose();
-        this.pipeline.dispose();
-      } catch {
-        /* the context may be gone */
-      }
+    // Programs still compiling (the full terrain behind a stand-in, or ones `ready` gave up on) are
+    // deleted, and the context let go, once they have compiled (`releaseLater`); the rest -- the
+    // targets, meshes, textures and the programs that are done -- goes now.
+    const pending = this.lost ? [] : this.programs().filter((p) => !p.done);
+    try {
+      this.scene.dispose();
+      this.pipeline.dispose(pending);
+    } catch {
+      /* the context may be gone */
     }
     this.canvas.remove();
     this.panelBtn?.remove();
     this.panel?.remove();
     this.view.canvas.style.background = "";
-    if (!compiling) this.gl.getExtension("WEBGL_lose_context")?.loseContext();
+    if (pending.length) releaseLater(this.gl, pending);
+    else this.gl.getExtension("WEBGL_lose_context")?.loseContext();
   }
 
   zooms() {
@@ -182,10 +394,59 @@ export class Map3D {
     return {};
   }
 
+  /** The Pipeline's arguments from the hooks below (they read only `cfg` and `glName`, so
+   *  r3d-lab/compile.html calls this on a bare object of the mode's class for the same programs). */
+  pipelineArgs() {
+    return [this.terrainDefines(), { scene: this.sceneDefines(), prop: this.propDefines(), water: this.waterDefines(), riverSplit: this.riverSplit(), packed: this.packedScene(), standin: this.standinTerrain() }];
+  }
+
   /** `#define`s the terrain program is compiled with (shaders.js): none for the 3D renderer; a
    *  mode may compile parts of the ground's painting out. */
   terrainDefines() {
     return {};
+  }
+
+  /** Whether the scene's programs write one packed target (pipeline.js `packed`, shaders.js
+   *  SCENE_PACKED): not for the 3D renderer; a mode may (on Direct3D their compile then moves from
+   *  the first draw to the link: in parallel, the page live, cached across starts). */
+  packedScene() {
+    return false;
+  }
+
+  /** The `#define`s of a stand-in terrain (pipeline.js `standin`, with a packed scene only): a much
+   *  shorter terrain program drawn until the full one has compiled, which then dissolves in over it
+   *  (`ready`, `terrainDissolve`); null for none. None for the 3D renderer; a mode may (on Direct3D
+   *  the terrain's compile is most of the start's). */
+  standinTerrain() {
+    return null;
+  }
+
+  /** `#define`s of the terrain, water and props: NOISE_TEX reads their value noise from a hash
+   *  texture (shaders.js pnoise; its pattern moves, its look stays), for Direct3D's compile time
+   *  (docs/R3D.md §11.1). Off for the 3D renderer unless `noiseTex` says (?r3d={"noiseTex":1}). */
+  sceneDefines() {
+    return this.cfg.noiseTex ? { NOISE_TEX: 1 } : {};
+  }
+
+  /** The hash texture's format: `noiseTex` 2 is R16F (8 MB), else R8 (4 MB). */
+  noiseTexFormat() {
+    return this.cfg.noiseTex === 2 ? "r16f" : "r8";
+  }
+
+  /** `#define`s the props' and the water's programs are compiled with (shaders.js): none for the 3D
+   *  renderer; a mode may compile parts out (Direct3D's compile time, docs/R3D.md §11.1). */
+  propDefines() {
+    return {};
+  }
+
+  waterDefines() {
+    return {};
+  }
+
+  /** Whether the rivers have a program of their own (the sea's then compiled without them): two
+   *  shorter compiles instead of one long one, on Direct3D. */
+  riverSplit() {
+    return false;
   }
 
   /** How strongly the cities light the ground round them (decals.js rasterLight): 1 for the 3D
@@ -316,10 +577,13 @@ export class Map3D {
     const [o, d] = this.ray(cam, sx, sy);
     if (d[1] >= 0) return null;
     const ground = (p) => Math.max(SEA, world.heightAt(p[0], -p[2]));
-    // From the height of the tallest peaks down to the sea floor.
-    let t = (1.7 - o[1]) / d[1];
+    // From over the tallest peaks down to the sea floor. (Summits reach past 1.7, which the march
+    // once started at: a click high on a tall peak went through it.)
+    let t = (2.4 - o[1]) / d[1];
     const tEnd = (-0.5 - o[1]) / d[1];
-    const step = 0.04;
+    // Fine enough not to step over a sharp summit's tip, which a ray aimed at it crosses briefly
+    // (0.04 did, under the HD-2D map's low camera; a pick costs about 0.1 ms).
+    const step = 0.02;
     let prev = t;
     for (; t < tEnd; t += step) {
       const p = [o[0] + d[0] * t, o[1] + d[1] * t, o[2] + d[2] * t];
@@ -403,6 +667,8 @@ export class Map3D {
         mapChanged = true;
         this.syncMs.world = T1 - T0;
         this.syncMs.textures = performance.now() - T1;
+        this.syncMeasure("world", T0, T1);
+        this.syncMeasure("textures", T1);
       }
       this.mapSeen = map;
     }
@@ -475,6 +741,9 @@ export class Map3D {
       this.syncMs.dress = T3 - T2;
       this.syncMs.instances = T4 - T3;
       this.syncMs.paint = performance.now() - T4;
+      this.syncMeasure("dress", T2, T3);
+      this.syncMeasure("instances", T3, T4);
+      this.syncMeasure("paint", T4);
       this.syncMs.redressed = plots ? plots.length : n;
       this.staticCount = count;
       this.viewSeen = S.view;
@@ -489,6 +758,7 @@ export class Map3D {
       this.unitList = u.list;
       this.setUnits(this.tweened(performance.now()));
       this.syncMs.units = performance.now() - T5;
+      this.syncMeasure("units", T5);
       this.unitCount = u.list.length;
       this.selSeen = selKey;
       this.overlaySeen = "";
@@ -515,6 +785,14 @@ export class Map3D {
       };
     }
     return true;
+  }
+
+  /** A User Timing measure of sync stage `name` (`sync:name`, from `start` to `end` or now): the
+   *  first SYNC_MEASURES only. */
+  syncMeasure(name, start, end) {
+    if (this.syncMeasures >= SYNC_MEASURES) return;
+    this.syncMeasures++;
+    performance.measure(`sync:${name}`, end === undefined ? { start } : { start, end });
   }
 
   nearXMap(mx) {
@@ -604,6 +882,16 @@ export class Map3D {
     if (!this.running) return;
     this.raf = requestAnimationFrame(() => this.loop());
     if (this.lost || !this.compiled) return;
+    const now = performance.now();
+    if (this.renderedAt !== null) {
+      const gap = now - this.renderedAt;
+      this.renderedAt = null;
+      // (A hidden tab's pause is not a slow frame.)
+      if (gap < 1000) {
+        this.costMs = this.frameCost(gap);
+        this.tuneQuality(this.costMs);
+      }
+    }
     const target = this.view.cam.ts;
     if (Math.abs(this.ts - target) > 0.05) {
       this.ts = this.view.reduceMotion() ? target : lerp(this.ts, target, 0.25);
@@ -614,17 +902,29 @@ export class Map3D {
       this.setUnits(this.tweened(performance.now()));
       this.dirty = true;
     }
+    // (The full terrain coming in over the stand-in: drawn though nothing else moves.)
+    if (this.swapDue()) this.dirty = true;
     if (!this.dirty && !animate) return;
-    // Animation at ~30 frames per second is enough for wind and water.
-    const now = performance.now();
-    if (!this.dirty && now - (this.lastFrame ?? 0) < 32) return;
+    // Animation at ~30 frames per second is enough for wind and water. A GPU slower than that (a
+    // laptop's integrated one: 30-100 ms a frame) animates at most every other frame's worth of
+    // its time, so a map at rest leaves it half free and a pan or a click gets its frame at once.
+    if (!this.dirty && now - (this.lastFrame ?? 0) < Math.max(32, 2 * this.costMs)) return;
     this.lastFrame = now;
     this.dirty = false;
     try {
       this.render(animate ? (now - this.t0) / 1000 : this.time);
+      this.renderedAt = now;
     } catch (e) {
       console.error("r3d frame:", e);
     }
+  }
+
+  /** What the frame drawn `gap` ms before this loop cost (ms): its CPU time or, larger on a slow
+   *  GPU, the GPU's time for it (the pipeline's timer query; WebGL calls return before the GPU
+   *  has done them, so the CPU time alone never sees a slow GPU). Without timer queries, the gap
+   *  itself: a browser whose GPU is behind calls the loop back late. */
+  frameCost(gap) {
+    return Math.max(this.frameMs.at(-1) ?? 0, this.pipeline.gpuFrameMs ?? gap);
   }
 
   /** The frame's uniforms and light, for camera `cam`. */
@@ -748,33 +1048,46 @@ export class Map3D {
       for (let k = Math.floor((rect.x0 - 2) / map.w); k <= Math.floor((rect.x1 + 2) / map.w); k++) copies.push(k * map.w);
     } else copies.push(0);
     this.scene.setView(rect, copies, this.ts < 48, this.ts, cam.viewProj);
+    // The ground's swap from a stand-in: on the render's time where it moves (the lab's films
+    // step it), else on the wall clock.
+    const moving = this.cfg.animate && !v.reduceMotion();
+    fr.dissolve = this.terrainDissolve(time, moving ? time : performance.now() / 1000);
     this.beforeFrame(cam, fr);
     this.pipeline.measure = !!this.measuring;
     this.pipeline.render(fr, this.scene, qc, cw, ch);
+    if (!this.frames) {
+      this.canvas.style.opacity = "1";
+      performance.mark("r3d:first-frame");
+    }
     this.cam = cam;
     drawHud(this, cam);
     const ms = performance.now() - t0;
     this.frameMs.push(ms);
     if (this.frameMs.length > 120) this.frameMs.shift();
-    this.tuneQuality(ms);
+    this.frames = (this.frames ?? 0) + 1;
+    if (this.frames <= 3 || (this.frames <= 400 && this.frames % 20 === 0)) performance.measure(`frame:${this.frames}`, { start: t0, detail: { pending: this.sprites?.atlas.pending ?? 0, layers: this.sprites?.atlas.entries.size ?? 0, chunks: this.scene.terrain.chunks.size, budget: this.scene.budget.n } });
   }
 
   /** The config with the quality ladder applied: at level 1 the Kuwahara paint filter (off by
    *  default, but a player may have turned it on) and the water's screen-space reflections go (it
-   *  keeps mirroring the sky and its clouds), at level 2 the render scale drops to 0.75 as well. */
+   *  keeps mirroring the sky and its clouds), at level 2 the render scale drops to 0.75 as well, at
+   *  level 3 to 0.5 (a laptop's integrated GPU: the frame's cost is nearly all per pixel). */
   qualityCfg() {
     if (this.autoLevel <= 0) return this.cfg;
     return {
       ...this.cfg,
       kuwahara: 0,
-      renderScale: this.cfg.renderScale * (this.autoLevel >= 2 ? 0.75 : 1),
+      renderScale: this.cfg.renderScale * [1, 1, 0.75, 0.5][Math.min(3, this.autoLevel)],
       reflections: 0,
     };
   }
 
   /** Steps the quality ladder from the measured frame time (hysteresis: several sustained slow or
-   *  fast frames before a change, so a single hitch does not flip it; a single lab render never
-   *  accumulates enough frames to change it). */
+   *  fast frames before a change, so a single hitch does not flip it; only the loop measures, so a
+   *  lab render never changes it). A level that is slow again within seconds of a step up to it
+   *  is not tried again (autoFloor): the map does not flicker between two resolutions. The first
+   *  time the ladder reaches its last level, "ffh:r3d-slow" tells the page (main.js: the hint to
+   *  pick a faster GPU). */
   tuneQuality(ms) {
     if (!(this.cfg.autoQuality ?? 1)) {
       this.autoLevel = 0;
@@ -790,12 +1103,18 @@ export class Map3D {
       this.slowN = 0;
       this.fastN = 0;
     }
-    if (this.slowN >= 6 && this.autoLevel < 2) {
+    if (this.slowN >= 6 && this.autoLevel < 3) {
+      if (performance.now() - this.raisedAt < 5000) this.autoFloor = this.autoLevel + 1;
       this.autoLevel++;
       this.slowN = 0;
-    } else if (this.fastN >= 24 && this.autoLevel > 0) {
+      if (this.autoLevel === 3 && !this.slowSaid) {
+        this.slowSaid = true;
+        window.dispatchEvent(new CustomEvent("ffh:r3d-slow", { detail: { gpu: this.glName, ms: Math.round(ms) } }));
+      }
+    } else if (this.fastN >= 24 && this.autoLevel > this.autoFloor) {
       this.autoLevel--;
       this.fastN = 0;
+      this.raisedAt = performance.now();
     }
   }
 
