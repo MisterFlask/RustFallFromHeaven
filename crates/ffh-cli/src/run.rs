@@ -188,6 +188,12 @@ impl Controller for CppCitizens {
     fn choose_event(&self, g: &Game, p: PlayerId, t: &EventTriggeredData, options: &[EventType]) -> Option<EventType> {
         self.inner.choose_event(g, p, t, options)
     }
+    fn choose_election(&self, g: &Game, p: PlayerId, vs: &VoteSelectionData) -> Option<usize> {
+        self.inner.choose_election(g, p, vs)
+    }
+    fn diplo_vote(&self, g: &Game, p: PlayerId, vote: &VoteSelectionSubData, source: VoteSourceType) -> PlayerVote {
+        self.inner.diplo_vote(g, p, vote, source)
+    }
     fn consider_offer(&self, g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData], we_give: &[TradeData]) -> bool {
         self.inner.consider_offer(g, p, from, they_give, we_give)
     }
