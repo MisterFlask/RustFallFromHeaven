@@ -218,6 +218,19 @@ function figUnder(x, y) {
   return best;
 }
 
+/** What a click at frame point (x, y) is on: `{b, cell}`, the fighter under it (the frontmost hit
+ *  box) and its cell (of a large unit, the one of its two the point is over), else the cell there
+ *  (`b` null; `cell` null off the grids). */
+function hitAt(x, y) {
+  const G = P.ctx.stage.G;
+  const f = figUnder(x, y);
+  if (!f) return { b: null, cell: cellAt(G, x, y) };
+  const pos = posOf(f.b);
+  const c = cellAt(G, x, y);
+  const lane = f.large && c && c.side === f.side && c.row === pos.row && c.lane === pos.lane + 1 ? pos.lane + 1 : pos.lane;
+  return { b: f.b, cell: { side: f.side, lane, row: pos.row } };
+}
+
 function onMove(ev) {
   if (!P.pv) return;
   const [x, y] = framePoint(ev);
@@ -234,10 +247,8 @@ function onMove(ev) {
 function onClick(ev) {
   if (!P.pv || P.busy) return;
   const [x, y] = framePoint(ev);
-  const f = figUnder(x, y);
-  const pos = f ? posOf(f.b) : null;
-  const cell = f ? { side: f.side, lane: pos.lane, row: pos.row } : cellAt(P.ctx.stage.G, x, y);
-  clickAt(P.ctx, f ? f.b : null, cell);
+  const { b, cell } = hitAt(x, y);
+  clickAt(P.ctx, b, cell);
 }
 
 /** A click on fighter `b` (or null) in `cell` (or null). */
@@ -470,6 +481,22 @@ function clientOf(x, y) {
   return { x: r.left + (x * r.width) / FRAME_W, y: r.top + (y * r.height) / FRAME_H };
 }
 
+/** The client point of the first frame point of `pts` that a real click would take as `want(hit)`
+ *  says: the plan's own pointer test (`hitAt`) over the figures as they stand now, at a point of the
+ *  board no panel covers. Throws when there is none (`what` says what was aimed at). */
+function aim(pts, want, what) {
+  P.figs = scene(performance.now()).figs;
+  for (const [x, y] of pts) {
+    if (x < 0 || y < 0 || x >= FRAME_W || y >= FRAME_H || !want(hitAt(x, y))) continue;
+    const c = clientOf(x, y);
+    if (document.elementFromPoint(c.x, c.y)?.closest?.(".bt-board")) return c;
+  }
+  throw new Error(`battle plan: no point of the board a click takes as ${what}`);
+}
+
+/** Offsets in [-1, 1], from the middle out. */
+const SPREAD = [0, -0.2, 0.2, -0.4, 0.4, -0.6, 0.6, -0.8, 0.8];
+
 export const dev = {
   /** A click on fighter `b` (selects yours, or moves the selection there). */
   click(b) {
@@ -489,18 +516,31 @@ export const dev = {
   attack() {
     return P.ctx && attack(P.ctx);
   },
-  /** Fighter `b`'s feet in client coordinates (for a real mouse), or null. */
+  /** A point in client coordinates where a real mouse clicks fighter `b` (inside its hit box, not
+   *  under a unit in front of it nor a panel), or null when it is not on the board; throws when
+   *  no point of its box is its own. */
   point(b) {
     const pos = P.pv && posOf(b);
     if (!pos) return null;
-    const [x, y] = unitXY(P.ctx.stage.G, P.F[b], pos);
-    return clientOf(x, y - 40);
+    const [fx, fy] = unitXY(P.ctx.stage.G, P.F[b], pos);
+    const box = figBox(P.F[b], fx, fy);
+    const cx = (box.x0 + box.x1) / 2;
+    const cy = fy - 40;
+    const pts = [];
+    for (const v of SPREAD) for (const u of SPREAD) pts.push([cx + (u * (box.x1 - box.x0)) / 2, cy + (v * (box.y1 - box.y0)) / 2]);
+    return aim(pts, (hit) => hit.b === b, `fighter ${b}`);
   },
-  /** Cell (`lane`, `row`) of side `side` in client coordinates. */
+  /** A point in client coordinates where a real mouse clicks cell (`lane`, `row`) of side `side`:
+   *  inside the cell's diamond, on the cell itself or on the unit standing there (of a large unit,
+   *  its half over this cell), not on a unit in front of it nor under a panel. Throws when there
+   *  is none. */
   cellPoint(side, lane, row) {
     if (!P.pv) return null;
-    const [x, y] = cellXY(P.ctx.stage.G, side, lane, row);
-    return clientOf(x, y - 4);
+    const [fx, fy] = cellXY(P.ctx.stage.G, side, lane, row);
+    // the diamond's centre is 2 px above the feet; it is 96 px wide each way and 48 tall
+    const pts = [];
+    for (const v of SPREAD) for (const u of SPREAD) if (Math.abs(u) + Math.abs(v) <= 0.8) pts.push([fx + u * 96, fy - 2 + v * 48]);
+    return aim(pts, (hit) => !!hit.cell && hit.cell.side === side && hit.cell.lane === lane && hit.cell.row === row, `cell (${lane}, ${row}) of side ${side}`);
   },
   get formation() {
     return P.pv ? formation() : null;
