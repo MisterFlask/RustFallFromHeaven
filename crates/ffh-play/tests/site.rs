@@ -25,7 +25,9 @@ fn export_site_writes_the_client_and_the_data_pack() {
     let main = lines.iter().position(|l| l.contains("app/main.js\"")).expect("the client's script");
     assert_eq!(boot + 1, main, "{index}");
     let embedded = ASSETS.iter().find(|(p, _, _)| *p == "index.html").unwrap().2;
-    assert_eq!(index.replacen(&format!("{}\n", lines[boot]), "", 1), embedded, "only the boot line is added");
+    // (The line with its own ending: \r\n where the checkout has them, as site_index keeps.)
+    let boot_line = index.split_inclusive('\n').nth(boot).unwrap();
+    assert_eq!(index.replacen(boot_line, "", 1), embedded, "only the boot line is added");
     // Every client file and the art, as served.
     for (path, _, body) in ASSETS.iter().filter(|(p, _, _)| *p != "index.html") {
         assert_eq!(std::fs::read_to_string(out.join(path)).unwrap(), *body, "{path}");
