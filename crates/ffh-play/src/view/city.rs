@@ -76,7 +76,7 @@ fn queue(v: &Viewer, c: CityId) -> Json {
         if g.armies_on() && o.order_type == OrderType::ORDER_TRAIN && ok(d.units.len()) && g.unit_type_is_army_unit(UnitType::from_usize(k as usize)) {
             j.set("dest", crate::command::recruit_dest_json(o.dest));
             j.set("dest_name", o.dest.map_or_else(|| "the city's default".to_string(), |x| g.recruit_dest_name(x)));
-            j.set("reinforce_to", o.reinforce_to);
+            j.set("requisition", o.requisition);
         }
         j
     });

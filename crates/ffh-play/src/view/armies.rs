@@ -2,23 +2,28 @@
 //! armies, their supply and the reinforcements on their way), the Armies screen (`armies` query)
 //! and the recruitment choices of the city screen.
 
-use ffh_core::army::{RecruitDest, Transit};
+use ffh_core::army::RecruitDest;
 use ffh_core::ids::*;
 
 use crate::command::recruit_dest_json;
 use crate::json::Json;
 use crate::view::{city_name, Viewer};
 
-/// A unit on its way: its type, where it comes from and goes, and how long until it arrives.
-fn transit_json(v: &Viewer, t: &Transit) -> Json {
+/// A marching recruit (shown as the old units on their way, `transit`): its type, where it comes
+/// from and goes, and how long until it arrives (`null`: no way there now).
+fn march_json(v: &Viewer, u: UnitId) -> Json {
     let g = v.g;
+    let m = g.unit_march(u).expect("a marching unit");
     crate::jobj! {
-        "unit" => Json::idx(t.unit_type),
-        "from" => g.cities.contains(t.from_city).then(|| city_name(g, t.from_city)),
-        "dest" => recruit_dest_json(Some(t.dest)),
-        "to" => g.recruit_dest_name(t.dest),
-        "turns_left" => if t.eta < 0 { Json::Null } else { Json::from((t.eta - t.progress).max(0)) },
-        "stalled" => t.stalled,
+        "id" => u,
+        "unit" => Json::idx(g.units[u].unit_type),
+        "from" => g.cities.contains(m.from_city).then(|| city_name(g, m.from_city)),
+        "dest" => recruit_dest_json(Some(m.dest)),
+        "to" => g.recruit_dest_name(m.dest),
+        "x" => g.units[u].x,
+        "y" => g.units[u].y,
+        "turns_left" => g.unit_march_eta(u),
+        "stalled" => m.stalled,
     }
 }
 
@@ -34,7 +39,7 @@ pub fn armies(v: &Viewer) -> Json {
         let army = &g.armies[a];
         let plot = g.army_plot(a);
         let units = g.army_units(a);
-        let transit: Vec<Json> = g.players[h].transit.iter().filter(|t| t.dest == RecruitDest::Army(a)).map(|t| transit_json(v, t)).collect();
+        let transit: Vec<Json> = g.army_marching(a).into_iter().map(|u| march_json(v, u)).collect();
         // Upgrade all: the units with an upgrade (given the gold) and its total price.
         let upgrades: Vec<(UnitId, ffh_data::UnitType)> = units.iter().filter_map(|&u| g.unit_best_upgrade(u, true).map(|t| (u, t))).collect();
         crate::jobj! {
@@ -58,7 +63,8 @@ pub fn armies(v: &Viewer) -> Json {
 /// The units on their way to garrisons.
 pub fn garrison_transit(v: &Viewer) -> Json {
     let g = v.g;
-    Json::Arr(g.players[v.h].transit.iter().filter(|t| matches!(t.dest, RecruitDest::Garrison(_))).map(|t| transit_json(v, t)).collect())
+    let h = v.h;
+    Json::Arr(g.players[h].units.iter().copied().filter(|&u| g.unit_march(u).is_some_and(|m| matches!(m.dest, RecruitDest::Garrison(_)))).map(|u| march_json(v, u)).collect())
 }
 
 /// `armies`: the Armies screen. The armies (as the view's), each city's garrison with the units
@@ -71,7 +77,7 @@ pub fn screen(v: &Viewer) -> Json {
     }
     let h = v.h;
     let garrisons = g.players[h].cities.iter().map(|&c| {
-        let transit: Vec<Json> = g.players[h].transit.iter().filter(|t| t.dest == RecruitDest::Garrison(c)).map(|t| transit_json(v, t)).collect();
+        let transit: Vec<Json> = g.garrison_marching(c).into_iter().map(|u| march_json(v, u)).collect();
         crate::jobj! {
             "city" => c,
             "name" => city_name(g, c),

@@ -191,12 +191,15 @@ impl Game {
 
         // This game's cultural actions: their memories fade.
         self.player_do_culture_memory(p);
-        // This game's armies (docs/ARMIES.md): settled with the groups, then the units in transit
-        // move on.
+        // This game's armies (docs/ARMIES.md): the recruits on their army's plot join it, and the
+        // armies are settled with the groups.
+        self.player_march_join(p);
         self.player_army_sync(p);
-        self.player_do_transit(p);
         // This game's governors (docs/GOVERNORS.md): direct rule, penalties, the bench.
         self.player_governance_turn(p);
+        // This game's armies: the requisition, before the cities produce (a new requisition order
+        // takes this turn's production).
+        self.player_do_requisition(p);
 
         if self.players[p].revolution_timer > 0 {
             self.players[p].revolution_timer -= 1;
@@ -352,6 +355,10 @@ impl Game {
         }
 
         // Interface path finder reset, waypoints/selection/unit info dirty bits: UI.
+
+        // This game's armies (docs/ARMIES.md): the marching recruits march, with the moves their
+        // units' turn just gave them, before the controller plays (it cannot move them).
+        self.player_do_march(p);
 
         // AI: AI_doTurnUnitsPost() (AI promotions, FfH auto-spellcasting of human units with an
         // auto-cast spell, BETTER AI regrouping and mage casting) -- left to the controller.

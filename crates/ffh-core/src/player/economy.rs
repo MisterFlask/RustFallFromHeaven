@@ -312,10 +312,8 @@ impl Game {
             }
         }
 
-        // This game's armies: units in transit pay upkeep too (docs/ARMIES.md).
-        let transit = pl.transit.len() as i32;
-        let paid_units = 0.max(pl.num_units() + transit - free_units);
-        let paid_military_units = 0.max(pl.num_military_units + transit - free_military_units);
+        let paid_units = 0.max(pl.num_units() - free_units);
+        let paid_military_units = 0.max(pl.num_military_units - free_military_units);
 
         let base_unit_cost = paid_units * pl.gold_per_unit;
         let military_cost = paid_military_units * pl.gold_per_military_unit;

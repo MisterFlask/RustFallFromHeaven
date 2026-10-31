@@ -4,10 +4,10 @@
 //! units), so its movement logic drives each army unchanged: a city-attack stack is an army, a
 //! city's defenders are its garrison. What an expert adds is logistics:
 //!
-//! - **Reinforcements by transit.** At war, or preparing one, the cities training attack units
-//!   (attack, city attack, collateral, counter roles) send them to the main field army -- the
-//!   largest army in supply, nearest the enemy on ties -- instead of walking them there: they
-//!   travel off the map and join it. Defenders and everything else stay in their city's garrison.
+//! - **Reinforcements.** At war, or preparing one, the cities training attack units (attack, city
+//!   attack, collateral, counter roles) send them to the main field army -- the largest army in
+//!   supply, nearest the enemy on ties: they march to it (the rules move them) and join it.
+//!   Defenders and everything else stay in their city's garrison.
 //! - **Target size.** The main army's target is the army the war needs
 //!   (`diplomacy::army_needed_for_war`), so its reinforcements show how far it is from it.
 //! - **Defenders in the garrison.** A city defender that walked to another of our cities (an
@@ -38,8 +38,10 @@ pub fn turn(g: &mut Game, p: PlayerId) {
         if in_city && g.armies[a].disband_to.is_none() && !units.is_empty() && units.iter().all(|&u| g.units[u].ai_type == Some(UnitAIType::UNITAI_CITY_DEFENSE)) {
             // What was on its way to the army goes to the garrison it joins.
             if let Some(c) = city {
-                for t in g.players[p].transit.iter_mut().filter(|t| t.dest == RecruitDest::Army(a)) {
-                    t.dest = RecruitDest::Garrison(c);
+                for u in g.army_marching(a) {
+                    if let Some(m) = g.units[u].march.as_mut() {
+                        m.dest = RecruitDest::Garrison(c);
+                    }
                 }
             }
             for u in units {
@@ -111,7 +113,7 @@ pub(crate) fn main_army(g: &Game, p: PlayerId, target: TeamId) -> Option<ArmyId>
 mod tests {
     use super::*;
 
-    /// At war, a city's attack unit goes to the main field army (in transit); a defender stays in
+    /// At war, a city's attack unit goes to the main field army (it marches); a defender stays in
     /// the city's garrison, and the army's target size is the war's.
     #[test]
     fn at_war_attack_units_reinforce_the_main_army() {

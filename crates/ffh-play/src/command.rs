@@ -58,8 +58,8 @@ pub enum Command {
     ArmyTarget { army: ArmyId, size: i32 },
     /// Where city `city`'s trained land combat units go: production order `index`'s, or the
     /// city's default (`index` -1); `dest` `None` = the city's default (for an order) or its own
-    /// garrison (for the city). `reinforce_to` > 0 with an army: repeat the order until the army
-    /// counts that many.
+    /// garrison (for the city). `reinforce_to`: gone with requisition (docs/ARMIES.md); still
+    /// accepted for the protocol's sake, any value above 0 is refused.
     RecruitDest { city: CityId, index: i32, dest: Option<ffh_core::army::RecruitDest>, reinforce_to: i32 },
     /// This game's governors (docs/GOVERNORS.md): rule governed city `city` directly, handing
     /// `instead_of` (directly ruled) to a governor when no slot is free.
@@ -68,7 +68,8 @@ pub enum Command {
     GovernHand { city: CityId },
     /// Governor `governor` governs city `city` (from the bench or another city).
     GovernAssign { city: CityId, governor: GovernorId },
-    /// Governed city `city` feeds army `army` (`None`: it develops).
+    /// Gone with requisition (docs/ARMIES.md): governed cities no longer feed armies; still
+    /// parsed, always refused.
     GovernFeed { city: CityId, army: Option<ArmyId> },
     Research { tech: Option<TechType>, shift: bool },
     /// Merged over the current civics.
@@ -716,6 +717,9 @@ pub struct Ctx<'a> {
     pub events: &'a [TriggeredId],
 }
 
+/// Why `govern_feed` is refused.
+const FEED_GONE: &str = "governed cities no longer feed armies: an army requisitions from the cities you pick on the Armies screen";
+
 fn unit_of(g: &Game, h: PlayerId, u: UnitId) -> Result<(), CmdErr> {
     match g.units.get(u) {
         None => Err(CmdErr::Gone),
@@ -773,13 +777,12 @@ fn apply_army(g: &mut Game, h: PlayerId, c: &Command) -> Result<(), CmdErr> {
         Command::GovernDirect { city, instead_of } => g.player_set_direct_rule(h, *city, *instead_of),
         Command::GovernHand { city } => g.city_hand_to_governor(h, *city),
         Command::GovernAssign { city, governor } => g.city_assign_governor(h, *city, *governor),
-        Command::GovernFeed { city, army } => g.city_set_feed_army(h, *city, *army),
-        Command::RecruitDest { city, index, dest, reinforce_to } => {
+        Command::GovernFeed { .. } => Err(FEED_GONE),
+        Command::RecruitDest { city, index, dest, .. } => {
             if *index < 0 {
                 g.cities[*city].recruit_default = *dest;
             } else if let Some(o) = g.cities[*city].order_queue.get_mut(*index as usize) {
                 o.dest = *dest;
-                o.reinforce_to = (*reinforce_to).max(0);
             }
             Ok(())
         }
@@ -1128,6 +1131,9 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
                 if !is_army_unit {
                     return Err(cannot("only land combat units are recruited to a destination"));
                 }
+                if o.requisition {
+                    return Err(cannot("a requisition order goes to its army"));
+                }
             } else if *index != -1 {
                 return Err(invalid("field `index`: an order's index, or -1 for the city's default"));
             }
@@ -1136,8 +1142,8 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
                     return Err(cannot("no such army or city of yours"));
                 }
             }
-            if *reinforce_to > 0 && !matches!(dest, Some(ffh_core::army::RecruitDest::Army(_))) {
-                return Err(cannot("\"reinforce to\" needs an army"));
+            if *reinforce_to > 0 {
+                return Err(cannot("\"reinforce to\" is gone: an army requisitions from the cities you pick on the Armies screen"));
             }
             Plan::Apply(Action::Army(cmd.clone()))
         }
@@ -1174,17 +1180,9 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             Plan::Apply(Action::Army(cmd.clone()))
         }
 
-        Command::GovernFeed { city, army } => {
+        Command::GovernFeed { city, .. } => {
             city_of(g, h, *city)?;
-            governors_on(g)?;
-            if let Some(a) = army {
-                army_of(g, h, *a)?;
-            }
-            if !g.city_is_governed(*city) {
-                return Err(cannot("the city is ruled directly"));
-            }
-            g.city_check_feed_army(h, *city, *army).map_err(cannot)?;
-            Plan::Apply(Action::Army(cmd.clone()))
+            return Err(cannot(FEED_GONE));
         }
 
         Command::DoTask { city, task, data1, data2, option, alt, shift, ctrl } => {

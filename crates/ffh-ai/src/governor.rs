@@ -2,25 +2,24 @@
 //! "Governors"): what a governor builds, and how the AI runs its own governed cities.
 //!
 //! **Production.** A governed city's production is the governor's, for the human's cities as
-//! for the AI's: the same choice ([`decide`]), reading the city's mode and its governor's
-//! profile. In order: a garrison the city's danger asks for (the city AI's garrison quota, plus
-//! the profile's defenders); feeding its army, when it feeds one that is short of its target size
-//! (the best unit for what the army lacks: a third in siege, the rest attackers; sent in
-//! transit); the first worker and workers to the empire's need; work boats; the best building by
-//! the city AI's value per turn of production, weighted by the profile's flavors against the
+//! for the AI's: the same choice ([`decide`]), reading its governor's profile. In order: a
+//! garrison the city's danger asks for (the city AI's garrison quota, plus the profile's
+//! defenders); the first worker and workers to the empire's need; work boats; the best building
+//! by the city AI's value per turn of production, weighted by the profile's flavors against the
 //! building's; a missionary for a zealot whose religion misses our cities; then the process the
 //! profile prefers. World wonders, rituals, palaces and settlers are not for governed cities (the
-//! rules forbid them).
+//! rules forbid them). An army's requisition (docs/ARMIES.md) goes ahead of the governor's choice:
+//! the unit is [`requisition_unit`], the AI's `Controller::requisition_unit`.
 //!
 //! **The AI's governed cities.** Its direct slots go to its most productive cities (a swap when a
-//! governed city makes half again as much as the weakest direct one, both past their cooldown);
-//! at war or preparing one, the governed cities nearest the enemy feed its main army until it
-//! has the army the war needs, the others develop; a vacant post takes the best-matching
-//! candidate (the rules do it). Cultural channels are the civilization's, not its governors'
-//! (culture.rs plans them in governed cities too).
+//! governed city makes half again as much as the weakest direct one, both past their cooldown); a
+//! vacant post takes the best-matching candidate (the rules do it). Cultural channels are the
+//! civilization's, not its governors' (culture.rs plans them in governed cities too).
 //!
-//! Switch `GOVERNORS` (`FFH_AI_GOVERNORS_OFF`): off, the AI keeps its first cities direct and every
-//! governed city develops.
+//! (The feed mode, in which the governed cities nearest the enemy fed the main army, is gone with
+//! the rules' requisition: which cities the AI's armies requisition from is not decided yet.)
+//!
+//! Switch `GOVERNORS` (`FFH_AI_GOVERNORS_OFF`): off, the AI keeps its first cities direct.
 
 use ffh_core::army::RecruitDest;
 use ffh_core::game::Game;
@@ -68,16 +67,7 @@ pub fn decide(g: &Game, c: CityId) -> Option<(Choice, &'static str, Option<Recru
         }
     }
 
-    // 2. Feeding its army.
-    if let Some(a) = city.feed_army.filter(|&a| g.recruit_dest_valid(p, RecruitDest::Army(a))) {
-        if army_short(g, a) {
-            if let Some((u, role)) = feeding_unit(g, c, a) {
-                return Some((Choice::Train(u, role), "governor_feed", Some(RecruitDest::Army(a))));
-            }
-        }
-    }
-
-    // 3. Workers, while the land needs improving.
+    // 2. Workers, while the land needs improving.
     let workers = prod::count_ai(g, p, UnitAIType::UNITAI_WORKER);
     if safe && prod::has_worker_builds(g, p) && city.population >= 2 && (workers == 0 || workers < prod::worker_target(g, p)) {
         if let Some(u) = prod::best_unit(g, c, Role::Worker) {
@@ -94,7 +84,7 @@ pub fn decide(g: &Game, c: CityId) -> Option<(Choice, &'static str, Option<Recru
         }
     }
 
-    // 4. The best building for the profile.
+    // 3. The best building for the profile.
     let flavors: Vec<FlavorType> = (0..d.reg.count::<FlavorType>()).map(FlavorType::from_usize).collect();
     let mut best: Option<(BuildingType, i64)> = None;
     for b in d.buildings.keys() {
@@ -125,7 +115,7 @@ pub fn decide(g: &Game, c: CityId) -> Option<(Choice, &'static str, Option<Recru
         return Some((Choice::Construct(b), "governor_building", None));
     }
 
-    // 5. A zealot spreads the state religion to our cities without it.
+    // 4. A zealot spreads the state religion to our cities without it.
     if weight("FLAVOR_RELIGION") >= 3 {
         if let Some(r) = g.player_get_state_religion(p) {
             let missing = g.players[p].cities.iter().any(|&o| !g.cities[o].has_religion[r]);
@@ -137,7 +127,7 @@ pub fn decide(g: &Game, c: CityId) -> Option<(Choice, &'static str, Option<Recru
         }
     }
 
-    // 6. The process the profile prefers: research, gold or culture.
+    // 5. The process the profile prefers: research, gold or culture.
     let (w_r, w_g, w_c) = (2 + weight("FLAVOR_SCIENCE"), 2 + weight("FLAVOR_GOLD"), 1 + weight("FLAVOR_CULTURE"));
     let mut best_process: Option<(ProcessType, i32)> = None;
     for pr in d.processes.keys() {
@@ -160,54 +150,23 @@ pub(crate) fn culture_grave(g: &Game, c: CityId) -> bool {
     g.culture_garrison_count(c) < crate::culture::defenders_needed(g, c)
 }
 
-/// Turns within which a unit in production for an army counts toward its target.
-const FEED_HORIZON: i32 = 10;
-
-/// Whether army `a` is short of its target size, the units on their way and those its owner's
-/// cities will finish for it soon counted (no target: it always takes more): a feeding city starts
-/// a unit for it only then, so several feeders do not overshoot, and a slow feeder's unit (a small
-/// frontier city's, due in 30 turns) does not hold the others back.
-pub fn army_short(g: &Game, a: ArmyId) -> bool {
-    let target = g.armies[a].target_size;
-    if target <= 0 {
-        return true;
-    }
-    let owner = g.armies[a].owner;
-    let due = g.players[owner]
-        .cities
-        .iter()
-        .filter(|&&c| {
-            g.cities[c].order_queue.first().is_some_and(|o| o.order_type == OrderType::ORDER_TRAIN && o.dest == Some(RecruitDest::Army(a)))
-                && g.city_production_turns_left(c) <= FEED_HORIZON
-        })
-        .count() as i32;
-    g.army_units(a).len() as i32 + g.army_transit_count(a) + due < target
-}
-
-/// Whether army `a` is short of its target size, the units on their way counted (no target: it
-/// always takes more).
-fn short_on_the_way(g: &Game, a: ArmyId) -> bool {
-    let target = g.armies[a].target_size;
-    target <= 0 || (g.army_units(a).len() as i32 + g.army_transit_count(a)) < target
-}
-
-/// The unit governed city `c` trains for army `a`: siege while it is less than a third of the
-/// army (on its way included), else the best attacker against cities, else any attacker; only
+/// The unit city `c` trains for army `a`'s requisition (the AI's `Controller::requisition_unit`):
+/// siege while it is less than a third of the army (its recruits marching to it and its
+/// requisition orders included), else the best attacker against cities, else any attacker; only
 /// units that serve in armies (a Ranger or an Assassin would stay in the city, and the army would
 /// never fill).
-fn feeding_unit(g: &Game, c: CityId, a: ArmyId) -> Option<(UnitType, UnitAIType)> {
-    let owner = g.armies[a].owner;
+pub fn requisition_unit(g: &Game, c: CityId, a: ArmyId) -> Option<(UnitType, UnitAIType)> {
     let mut siege = 0;
     let mut total = 0;
-    for u in g.army_units(a) {
+    for u in g.army_units(a).into_iter().chain(g.army_marching(a)) {
         total += 1;
         if matches!(g.units[u].ai_type, Some(UnitAIType::UNITAI_ATTACK_CITY) | Some(UnitAIType::UNITAI_COLLATERAL)) {
             siege += 1;
         }
     }
-    for t in g.players[owner].transit.iter().filter(|t| t.dest == RecruitDest::Army(a)) {
+    for (oc, i) in g.army_requisition_orders(a) {
         total += 1;
-        if matches!(t.unit_ai, Some(UnitAIType::UNITAI_ATTACK_CITY) | Some(UnitAIType::UNITAI_COLLATERAL)) {
+        if matches!(opt_from_i32::<UnitAIType>(g.cities[oc].order_queue[i].data2), Some(UnitAIType::UNITAI_ATTACK_CITY) | Some(UnitAIType::UNITAI_COLLATERAL)) {
             siege += 1;
         }
     }
@@ -220,14 +179,12 @@ fn feeding_unit(g: &Game, c: CityId, a: ArmyId) -> Option<(UnitType, UnitAIType)
     prod::best_unit_where(g, c, Role::CityAttack, army_unit).or_else(|| prod::best_unit_where(g, c, Role::Attack, army_unit)).map(|u| (u, UnitAIType::UNITAI_ATTACK))
 }
 
-/// The AI's governed cities, once a turn: the direct slots on its most productive cities, the
-/// feeding cities while it prepares or wages a war.
+/// The AI's governed cities, once a turn: the direct slots on its most productive cities.
 pub fn turn(g: &mut Game, p: PlayerId) {
     if !g.governors_on() || !crate::switches::GOVERNORS.on(g, p) || g.player_is_barbarian(p) {
         return;
     }
     swap_direct(g, p);
-    set_modes(g, p);
 }
 
 /// A governed city making half again as much as the weakest directly ruled city other than the
@@ -250,90 +207,26 @@ fn swap_direct(g: &mut Game, p: PlayerId) {
     }
 }
 
-/// At war or preparing one, with a main army: the governed cities nearest the enemy feed it
-/// while it is short of its target (those a recruit can reach it from: by land, around peaks);
-/// every other governed city develops. A feeder keeps feeding its army through a turn without a
-/// main army (out of supply, at sea) while the war lasts and the army is short, so its queue is
-/// not thrown away and taken up again. The ARMIES switch off sends no unit in transit, so none
-/// feeds.
-fn set_modes(g: &mut Game, p: PlayerId) {
-    let team = g.players[p].team;
-    let target = crate::diplomacy::preparing_target(g, team).or_else(|| g.team_ids().find(|&t| t != team && g.team_is_alive(t) && !g.team_is_barbarian(t) && g.at_war(team, t)));
-    let armies = g.armies_on() && crate::switches::ARMIES.on(g, p);
-    let main = if armies { target.and_then(|t| crate::armies::main_army(g, p, t)) } else { None };
-    let governed: Vec<CityId> = g.players[p].cities.iter().copied().filter(|&c| g.city_is_governed(c)).collect();
-    let reachable: Vec<CityId> = match main.and_then(|a| Some((g.army_plot(a)?, g.army_units(a).first().map(|&u| g.units[u].unit_type)?))) {
-        Some((at, unit_type)) => governed.iter().copied().filter(|&c| g.transit_turns(p, unit_type, g.city_plot(c), at).is_some()).collect(),
-        None => Vec::new(),
-    };
-    let feeders: Vec<CityId> = match (main, target) {
-        // (The units in production not counted: a city training the last one keeps feeding.)
-        (Some(a), Some(t)) if short_on_the_way(g, a) => {
-            // The half of our governed cities nearest the enemy's cities.
-            let mut by_dist: Vec<(i32, CityId)> = reachable
-                .iter()
-                .map(|&c| {
-                    let (x, y) = (g.cities[c].x, g.cities[c].y);
-                    let dist = g
-                        .player_ids()
-                        .filter(|&q| g.players[q].alive && g.players[q].team == t)
-                        .flat_map(|q| g.players[q].cities.iter().map(|&o| g.plot_distance(x, y, g.cities[o].x, g.cities[o].y)).collect::<Vec<_>>())
-                        .min()
-                        .unwrap_or(i32::MAX / 2);
-                    (dist, c)
-                })
-                .collect();
-            by_dist.sort();
-            by_dist.into_iter().take(governed.len().div_ceil(2)).map(|(_, c)| c).collect()
-        }
-        _ => Vec::new(),
-    };
-    for c in governed {
-        let keep = g.cities[c].feed_army.filter(|&a| main.is_none() && armies && target.is_some() && g.recruit_dest_valid(p, RecruitDest::Army(a)) && short_on_the_way(g, a));
-        let want = if feeders.contains(&c) { main } else { keep };
-        if g.cities[c].feed_army != want {
-            let _ = g.city_set_feed_army(p, c, want);
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    /// A governed city feeding an army trains for it while the army (with the units on their way)
-    /// is short of its target size, and develops once it is not.
+    /// The AI's requisition unit for an army: siege while it is short of a third, then
+    /// attackers; only army units.
     #[test]
-    fn feeding_stops_at_the_target_size() {
+    fn requisition_takes_siege_then_attackers() {
         let mut g = crate::testkit::one_landmass_game(4);
         g.setup.options[GameOptionType::GAMEOPTION_ARMIES] = true;
-        g.setup.options[GameOptionType::GAMEOPTION_GOVERNORS] = true;
         let p0 = PlayerId(0);
-        let cities: Vec<CityId> = [3, 6, 9, 12, 15].iter().map(|&x| g.player_init_city(p0, x, 5, true, true)).collect();
-        let fed = cities[4];
-        assert!(g.city_is_governed(fed), "the fifth city is governed");
+        let c = g.player_init_city(p0, 5, 5, true, true);
         let w = g.d.t::<UnitType>("UNIT_WARRIOR");
-        // A garrison that needs nothing more.
-        for _ in 0..3 {
-            g.player_init_unit(p0, w, 15, 5, Some(UnitAIType::UNITAI_CITY_DEFENSE), None);
-        }
-        let units: Vec<UnitId> = (0..2).map(|_| g.player_init_unit(p0, w, 14, 7, Some(UnitAIType::UNITAI_ATTACK), None)).collect();
+        let units: Vec<UnitId> = (0..2).map(|_| g.player_init_unit(p0, w, 8, 5, Some(UnitAIType::UNITAI_ATTACK), None)).collect();
         let a = g.army_form(p0, &units).unwrap();
-        g.army_set_target_size(p0, a, 3).unwrap();
-        g.city_set_feed_army(p0, fed, Some(a)).unwrap();
-        // The mode takes effect at once: the city trains for the army, and that unit counts.
-        let o = g.cities[fed].order_queue.first().expect("an order");
-        assert_eq!((o.order_type, o.dest), (OrderType::ORDER_TRAIN, Some(RecruitDest::Army(a))));
-        // It counts when it is due within the horizon (a slow city's unit does not hold others back).
-        let due = g.city_production_turns_left(fed) <= FEED_HORIZON;
-        assert_eq!(army_short(&g, a), !due, "two, and one in production due: {due}");
-        g.city_clear_order_queue(fed);
-        let (_, why, dest) = decide(&g, fed).expect("a choice");
-        assert_eq!((why, dest), ("governor_feed", Some(RecruitDest::Army(a))));
-        // One on its way: the army has its three.
-        assert!(g.city_send_in_transit(cities[0], w, Some(UnitAIType::UNITAI_ATTACK), RecruitDest::Army(a)));
-        assert!(!army_short(&g, a));
-        let (_, why, _) = decide(&g, fed).expect("a choice");
-        assert_ne!(why, "governor_feed", "the army is full: the city develops");
+        let (u, role) = requisition_unit(&g, c, a).expect("a unit");
+        assert!(g.unit_type_is_army_unit(u));
+        // No siege the city can train at the start: an attacker.
+        if !g.unit_type_is_siege(u) {
+            assert_eq!(role, UnitAIType::UNITAI_ATTACK);
+        }
     }
 }

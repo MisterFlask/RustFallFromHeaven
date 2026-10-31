@@ -36,9 +36,9 @@ pub struct OrderData {
     /// This game's armies (docs/ARMIES.md): where a trained land combat unit goes (`None`: the
     /// city's default, `City::recruit_default`, else its own garrison).
     pub dest: Option<crate::army::RecruitDest>,
-    /// "Reinforce to N": with `dest` an army, the order repeats until the army (and its units on
-    /// their way) counts N; 0 = no such order.
-    pub reinforce_to: i32,
+    /// A requisition order of the army `dest` names (docs/ARMIES.md): at the front of the queue,
+    /// not taken off by hand.
+    pub requisition: bool,
 }
 
 /// C++ `MissionData`: an entry of a selection group's mission queue.

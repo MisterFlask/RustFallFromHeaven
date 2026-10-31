@@ -368,8 +368,6 @@ pub struct Player {
     pub armies: Vec<ArmyId>,
     /// Armies formed so far (names them "Nth Army").
     pub army_count: i32,
-    /// Trained units on their way to their destination.
-    pub transit: Vec<crate::army::Transit>,
     /// This player's governors (docs/GOVERNORS.md), in the order they joined; those without a
     /// city are its bench.
     pub governors: Vec<GovernorId>,
@@ -628,7 +626,6 @@ impl Player {
             culture_memory: IdxVec::from_elem([0, 0], num_players),
             armies: Vec::new(),
             army_count: 0,
-            transit: Vec::new(),
             governors: Vec::new(),
             governor_count: 0,
         }

@@ -54,9 +54,9 @@ persist_newtype!(
 // ---- this game's own rules (docs/CULTURE.md) ----
 
 use crate::culture::CultureChannel;
-use crate::army::{Army, RecruitDest, Transit};
-persist_struct!(Army { id, owner, name, group, target_size, commander, disband_to, formed_turn });
-persist_struct!(Transit { unit_type, unit_ai, from_city, from_plot, dest, progress, eta, stalled, left_turn });
+use crate::army::{Army, March, RecruitDest};
+persist_struct!(Army { id, owner, name, group, target_size, commander, disband_to, formed_turn, requisition });
+persist_struct!(March { dest, stalled, left_turn, from_city, diverted });
 use crate::governors::Governor;
 persist_struct!(Governor { id, owner, name, profile, traits, origin, born_turn, city, since_turn });
 
@@ -86,7 +86,7 @@ persist_struct!(CultureChannel { action, target, religion, since_turn });
 // ---- CvStructs.h ----
 
 persist_struct!(XYCoords { x, y });
-persist_struct!(OrderData { order_type, data1, data2, save, dest, reinforce_to });
+persist_struct!(OrderData { order_type, data1, data2, save, dest, requisition });
 persist_struct!(MissionData { mission_type, data1, data2, flags, push_turn });
 persist_struct!(TradeData { item_type, data, offering, hidden });
 persist_struct!(EventTriggeredData {
@@ -194,7 +194,7 @@ persist_struct!(Unit {
     terrain_double_move_count, feature_double_move_count, extra_terrain_attack_percent,
     extra_terrain_defense_percent, extra_feature_attack_percent, extra_feature_defense_percent,
     extra_unit_combat_modifier, ai_birthmark, ai_type, ai_groupflag, ai_origin_x, ai_origin_y,
-    ai_suicide_summon, ai_allowed_perm_defense, ai_allowed_patrol, ai_allowed_explore, army,
+    ai_suicide_summon, ai_allowed_perm_defense, ai_allowed_patrol, ai_allowed_explore, army, march,
 });
 
 persist_struct!(City {
@@ -239,7 +239,7 @@ persist_struct!(City {
     ai_emphasize_avoid_growth_count, ai_emphasize_great_people_count, ai_emphasize_yield_count,
     ai_emphasize_commerce_count, ai_emphasize_avoid_angry_citizens_count,
     ai_emphasize_avoid_unhealthy_citizens_count, culture_channel, culture_diverted, culture_pressure,
-    culture_revolt_level, recruit_default, direct_rule, rule_changed_turn, governor, feed_army,
+    culture_revolt_level, recruit_default, direct_rule, rule_changed_turn, governor,
     governor_penalty_turns,
 });
 
@@ -295,7 +295,7 @@ persist_struct!(Player {
     score_history, economy_history, industry_history, agriculture_history, power_history,
     culture_history, espionage_history, ai_civic_timer, ai_religion_timer, ai_num_train_ai_units,
     ai_num_ai_units, ai_peacetime_trade_value, ai_peacetime_grant_value, ai_gold_traded_to,
-    ai_attitude_extra, ai_first_contact, ai_memory_count, culture_memory, armies, army_count, transit,
+    ai_attitude_extra, ai_first_contact, ai_memory_count, culture_memory, armies, army_count,
     governors, governor_count,
 });
 

@@ -1597,7 +1597,7 @@ mod tests {
         assert_eq!(g.city_hurry_cost_modifier(c, false), 100);
 
         let process = ProcessType(0);
-        g.cities[c].order_queue.push(OrderData { order_type: OrderType::ORDER_MAINTAIN, data1: process.i(), data2: -1, save: false, dest: None, reinforce_to: 0 });
+        g.cities[c].order_queue.push(OrderData { order_type: OrderType::ORDER_MAINTAIN, data1: process.i(), data2: -1, save: false, dest: None, requisition: false });
         assert!(g.city_is_production(c) && g.city_is_production_process(c));
         assert!(!g.city_is_production_unit(c) && !g.city_is_production_building(c) && !g.city_is_production_project(c));
         assert!(!g.city_is_production_limited(c));
