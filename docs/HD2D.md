@@ -725,7 +725,10 @@ distance each closes:
 Its `LIGHT` is the one light. Stored apart from the 3D renderer's look (`ffh.hd2d.config.3`, renamed
 when the look changes enough that a saved panel tuning would mislead); the panel offers the 3D
 switches that apply (not the paint filter, ink, grid or brush dabs, which the mode's terrain is
-compiled without, §8) and the mode's rows.
+compiled without, §8) and the mode's rows. `noiseTex` (page only, read when the programs are built):
+the terrain's, water's and props' value noise from a hash texture (docs/R3D.md §11.1, `NOISE_TEX`;
+about half their compile on Direct3D); `?r3d={"noiseTex":0}` compiles the arithmetic noise, 2 an
+R16F texture instead of R8.
 
 ## 12. Removing it
 
