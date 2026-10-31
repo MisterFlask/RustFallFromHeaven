@@ -4,10 +4,20 @@
 // command resent with the answer.
 
 import * as api from "./api.js";
-import { S, emit, dname, teamName, gateLines, loadUnitCommand, observing, OBSERVER_COMMANDS } from "./state.js";
+import { S, emit, on, dname, teamName, gateLines, loadUnitCommand, observing, OBSERVER_COMMANDS } from "./state.js";
 import { ask } from "./modals.js";
 import { toast, busy } from "./dom.js";
 import { battleToast } from "./engagements.js";
+
+/** The messages of a command sent while the battle screens are open (the plan's attack): shown
+ *  when they close. The battle's own message is the screens' to show; the others (a city
+ *  captured, a defensive strike) would tell how the battle ends before its replay does. */
+let heldLines = [];
+on("battle-closed", () => {
+  const lines = heldLines;
+  heldLines = [];
+  for (const line of lines) toast(line.text, "log", 7000);
+});
 
 let inFlight = false;
 /** The automatic (`quiet`) command on its way, if any: AutoMoves, a spectated turn, grouping. */
@@ -57,12 +67,14 @@ async function loop(c, quiet) {
     }
     const confirm = reply.r?.confirm;
     if (!confirm) {
+      const battleOpen = document.body.classList.contains("battle-open");
       for (const line of reply.log ?? []) {
         // A battle's message (engagement combat) links its report, unless the battle screens
-        // already show it.
+        // already show it; the others wait for the screens to close.
         if (line.kind === "engagement" && line.report !== undefined) {
-          if (!document.body.classList.contains("battle-open")) battleToast(line);
-        } else toast(line.text, "log", 7000);
+          if (!battleOpen) battleToast(line);
+        } else if (battleOpen) heldLines.push(line);
+        else toast(line.text, "log", 7000);
       }
       emit("applied", next, reply);
       return reply;

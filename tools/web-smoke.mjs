@@ -1427,9 +1427,9 @@ async function closeBattle() {
  *  it is a battle; a right-click opens the battle plan in the rules' auto formation; a unit of the
  *  line is moved by mouse to another row of its lane (the forecast asked again, the engine accepts
  *  the formation); Enter attacks with it (a keep/raze decision over the overlay answered if the
- *  city falls), the combat flash comes from the battle's report, the watch screen plays the
- *  engine's log and the report shows it; the map's marker and the message's link open the battle
- *  again. */
+ *  city falls), the combat flash comes from the battle's report, the attack's messages wait for the
+ *  screens to close, the watch screen plays the engine's log and the report shows it; the map's
+ *  marker and the message's link open the battle again. */
 async function stagedEngagement(bin, saves) {
   const st = await loadStaged(bin, saves, "engagement");
   await selectUnit(st.units[0]);
@@ -1479,6 +1479,9 @@ async function stagedEngagement(bin, saves) {
   await battleScreen("watch", "the battle's watch screen");
   const flashed = await b.eval(`(() => { const n = window.__flashes || 0; window.__unflash(); return n; })()`);
   if (!flashed) throw new Error("no combat flash was shown for the battle");
+  // The attack's messages (a defensive strike, the city captured) wait for the screens to close.
+  const early = await b.eval(`[...document.querySelectorAll("#toasts .toast.log")].map((t) => t.textContent).join("; ")`);
+  if (early) throw new Error(`the attack's messages showed over the battle screens: ${early}`);
   const n = await b.eval(`window.ffh.battle.watch.state().n`);
   if (n < 1) throw new Error("the watch screen's log has no event");
   await b.eval(`(() => { const w = window.ffh.battle.watch; w.pause(); w.seek(Math.floor(w.state().n / 2)); w.step(); })()`);
@@ -1520,7 +1523,7 @@ async function stagedEngagement(bin, saves) {
   await click(link);
   await battleScreen("report", "the battle's report from its message");
   await closeBattle();
-  steps.push(`engagement (stage engagement): the plan (${placed} in the auto formation), a unit moved by mouse with the forecast asked again, the attack with that formation, the flash from the report, the watch and report screens of the engine's log (${n} events); the map's marker and the message's link open it again`);
+  steps.push(`engagement (stage engagement): the plan (${placed} in the auto formation), a unit moved by mouse with the forecast asked again, the attack with that formation, the flash from the report, its messages held until the screens close, the watch and report screens of the engine's log (${n} events); the map's marker and the message's link open it again`);
 }
 
 /** P7, `stage election`: the human secretary general's election popup (deferred, like events
