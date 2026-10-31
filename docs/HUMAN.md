@@ -446,6 +446,30 @@ which trireme); `trade`, a civilization met at peace with gold trading and 100 g
 and then declared war on you (loading it shows both leader moments; it then refuses to talk). It writes only `DIR/KIND.ffhsave` and its sidecar (no journal, no autosaves), so
 `DIR` may be a game's directory. See "Testing the browser client" below for the checklist.
 
+**The battle screens** (engagement combat, phase6_plan 9.3 and 15; the battle UI design). Not
+opened by the game yet: the engine's `engage_preview` and `battle_log` are being built, so the
+screens open only from a dev entry over a fixture, `?battle=strages` (`&viewer=new|some|veteran`
+sets what the page remembers of the lessons). In an overlay over the dimmed map, on one isometric
+board of the two plots: **the plan** (both forces in their ranks, the slots as pips with their sum
+in words, each unit's chance to fall and to pull out, a unit's card on pointing at it with its A or
+Dv by parts, its target order as numbered arrows and its damage per hit; click one of your units
+and then a glowing one to swap them, ◂ ▸ for another stance's pick, a What-if line to adopt that
+plan; the win chance, the rounds, the cost of winning, and the stakes with the doomed struck
+through; Attack or `Enter`), **the battle** (played from the log: targets picked at the round's
+start, the hits as pending white on the bars, every bar dropping together at the bell, withdrawal
+dice, deaths where they fall, the shield band cracking; the strength bars against the plan's
+hollow gold marker, the round track, a caption a round, the hit card dissecting one hit, lessons
+in full the first time, short the second, then as `?` markers; `Space` play/pause, `→` next hit,
+`Shift+→` round, `Ctrl+→` beat, `←` back, `1`-`4` speed, `T` all arrows, `Esc` the report) and
+**the report** (the frozen board, each unit's fate, the beat rounds (a line replays from there),
+the plan checked, what decided it, next time, the rules seen). The modules: `battle.js` (the
+overlay, the keys, the sources), `battle_plan.js`, `battle_watch.js`, `battle_report.js`,
+`battle_stage.js` (the board and figures; the anim-sprint strips in `app/anim/`), and the pure
+`battle_log.js` (the log folded into a script and states, the report's facts; its header lists
+every protocol field the screens read) and `battle_teach.js` (the lessons, their texts by the
+log's codes, the ledger kept in browser storage); `battle_fixture.js` is the fixture, made by the
+design prototype's model of the round rules (not the engine's numbers).
+
 ## Commands
 
 ```
@@ -851,7 +875,8 @@ node tools/web-touch-smoke.mjs           # the same on an emulated phone, with t
 
 * `web-check.sh` needs node (it is skipped without it); the pure modules (map maths and map
   deltas, markup, state and Civ4's group cycle, the hotkeys, the tech tree's layout, the API layer
-  against a fake `fetch`) are tested in `crates/ffh-play/assets/test/*.test.mjs`.
+  against a fake `fetch`, the battle screens' log folding, report facts, lessons and teaching
+  ledger over the battle fixture) are tested in `crates/ffh-play/assets/test/*.test.mjs`.
 * `web-api-smoke.mjs [--turns 20] [--seed 5] [--world WORLDSIZE_TINY] [--opponents 2] [--url URL]
   [--keep] [--verbose]` starts `target/release/ffh-play serve --port 0` (or `--bin`), checks the
   page and its modules are served, plays the turns as the page does (popups, research,

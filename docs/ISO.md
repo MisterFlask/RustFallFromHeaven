@@ -285,6 +285,15 @@ summary and buttons as plaques; the rest of the interface steps aside, and when 
 the camera goes back to where it was. The production popup stays a dialog; the other renderers
 keep the grid.
 
+### The battle screens
+
+The battle plan, the battle and its report (`battle*.js`; docs/HUMAN.md, "The battle screens")
+wear this skin whatever the renderer: an overlay of the design's 1280 x 800 frame over the dimmed
+map (the interface steps aside meanwhile), the two plots as one board of M7 tiles at 1x with the
+units on Azure (yours) and Gules rings, the anim-sprint strips (`app/anim/`, the units that have
+them) for idle, strike, flinch, death and walk, and procedural motion for the rest; the panels,
+buttons and Herald of this section (iso.css, "the battle screens"). Phones are not laid out yet.
+
 ### Phones
 
 On a small screen (dom.js `compactScreen`: up to 760 px wide, or up to 520 px high; iso.css's
