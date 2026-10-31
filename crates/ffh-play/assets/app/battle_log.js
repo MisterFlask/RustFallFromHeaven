@@ -46,8 +46,8 @@
 //      actions: [{kind, n}, {kind, n}, {kind, n}] (in its Front, Middle and Rear rows; kind an ActionKind),
 //      bonus_action (tier 4 or a hero: the +1 in its best row is in `actions`), spell (SpellType: the damage spell
 //      its Spell casts; null: the magic bolt), dodge (points of miss chance added to attacks on it), crit_bonus,
-//      anti_flank, withdraw_pct, combat_limit (100: none), splash (its damaging hits splash the target's
-//      neighbours), first_strikes}
+//      anti_flank, withdraw_pct, combat_limit (100: none), splash (collateral damage: its damaging hits splash
+//      the target's neighbours; a known spell's splash is the spell's, `spell` says it), first_strikes}
 //   ActionKind: "Strike" | "Charge" | "Stab" | "Shoot" | "Spell" | "Bombard" | "Heal" | "None"
 //   events, in order:
 //     the opening (round 0, pass 0):
@@ -301,7 +301,7 @@ export function specials(f, ground, params = null) {
   if (f.crit_bonus) notes.push(`Critical ${f.crit_bonus} points more often.`);
   if (f.withdraw_pct) notes.push(`Withdrawal ${f.withdraw_pct}%: a blow that would kill it is instead escaped ${f.withdraw_pct}% of the time, and it leaves the battle.`);
   if (f.combat_limit !== undefined && f.combat_limit !== null && f.combat_limit < 100) notes.push(`Never takes a target below ${100 - f.combat_limit}% of its HP.`);
-  if (f.splash) notes.push(`Its hits splash the units beside, in front of and behind the target for ${splash !== null ? splashText(splash) : "part of the damage"}.`);
+  if (f.splash) notes.push(`Collateral damage: its hits splash the units beside, in front of and behind the target for ${splash !== null ? splashText(splash) : "part of the damage"}.`);
   if (f.first_strikes) {
     const fs = num("first_strike_speed");
     notes.push(`First strike${f.first_strikes > 1 ? "s" : ""}: ${fs !== null ? `+${fs * f.first_strikes} speed` : `it acts sooner (its speed counts ${f.first_strikes > 1 ? "them" : "it"})`}.`);

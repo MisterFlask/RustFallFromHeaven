@@ -166,7 +166,8 @@ function fighterOf(u, side, b, unit, owner) {
     anti_flank: !!R.guard,
     withdraw_pct: u.wd ?? 0,
     combat_limit: u.lim ?? 100,
-    splash: u.role === "siege" || (u.role === "arcane" && !!u.spell && En.SPELLS[u.spell].shape === "plus"),
+    // collateral damage (the prototype's siege); a caster's spell splashes as the spell (`spell`)
+    splash: u.role === "siege",
     first_strikes: u.fs ?? 0,
   };
 }

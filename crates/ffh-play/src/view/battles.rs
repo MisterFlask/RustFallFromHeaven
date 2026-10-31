@@ -341,8 +341,9 @@ fn fighter_promotions(g: &Game, f: &LogFighter) -> Vec<PromotionType> {
 
 /// A fighter as the screens read it (`b` its index); `owner` the owner to show the viewer. Its A
 /// and Dv against an ordinary opponent are `a_x100` and `dv_x100` (`a` and `dv` their parts);
-/// `bonus_action`: a tier 4 unit or a hero (its extra action is in `actions`); `splash`: its
-/// damaging hits splash the target's neighbours (collateral damage, or a damage spell it casts).
+/// `bonus_action`: a tier 4 unit or a hero (its extra action is in `actions`); `splash`: it has
+/// collateral damage, so its damaging hits splash the target's neighbours (a known damage spell's
+/// splash is the spell's own: `spell` says it, and only its Spell actions splash so).
 fn fighter_json(g: &Game, b: usize, f: &LogFighter, owner: PlayerId) -> Json {
     let d = g.d;
     let name = if f.name.is_empty() { names::display(d, f.unit_type).into_owned() } else { names::text(d, &f.name).to_string() };
@@ -379,7 +380,7 @@ fn fighter_json(g: &Game, b: usize, f: &LogFighter, owner: PlayerId) -> Json {
         "withdraw_pct" => f.withdraw_pct,
         "combat_limit" => f.combat_limit,
         "collateral_limit" => f.collateral_limit,
-        "splash" => f.collateral_limit.is_some() || f.spell.is_some(),
+        "splash" => f.collateral_limit.is_some(),
         "def_strike" => f.def_strike.map(|(c, dmg)| crate::jarr![c, dmg]),
         "immune" => Json::Arr(immune),
         "fear" => f.fear,

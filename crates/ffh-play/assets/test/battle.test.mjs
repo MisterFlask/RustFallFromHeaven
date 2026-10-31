@@ -87,7 +87,9 @@ test("actions and reach in words", () => {
   assert.match(L.specials(adept, field.ground, field.params).join(" "), /magic bolt: 60% of a normal hit/);
   assert.match(L.specials(adept, field.ground, { bolt_pct: 70 }).join(" "), /magic bolt: 70% of a normal hit/);
   assert.match(L.specials(adept, field.ground).join(" "), /magic bolt, weaker than a spell/);
-  assert.match(L.specials(mage, field.ground, field.params).join(" "), /Casts Maelstrom: a full hit on its target and half damage on the target's neighbours/);
+  const mageNotes = L.specials(mage, field.ground, field.params).join(" ");
+  assert.match(mageNotes, /Casts Maelstrom: a full hit on its target and half damage on the target's neighbours/);
+  assert.doesNotMatch(mageNotes, /Collateral damage/, "a caster's spell splashes, not its other hits");
   const quick = { ...champ, first_strikes: 2 };
   assert.match(L.specials(quick, field.ground, field.params).join(" "), /First strikes: \+4 speed/);
   assert.match(L.specials(quick, field.ground, { first_strike_speed: 3 }).join(" "), /First strikes: \+6 speed/);
