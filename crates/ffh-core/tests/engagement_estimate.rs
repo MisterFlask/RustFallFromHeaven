@@ -293,6 +293,42 @@ fn the_assault_carries_the_defense_from_one_engagement_to_the_next() {
     assert_eq!(short.steps.len(), 1);
 }
 
+/// An assault's later engagements meet only the strikes left: a defender gone strikes no more,
+/// and a strike used up in an earlier engagement is not made again that turn (the real fight's
+/// striker keeps `made_attack`), so engagement after engagement of the same attackers, the
+/// expected strikes on the force fall.
+#[test]
+fn the_assault_spends_the_defensive_strikes() {
+    let mut w = world();
+    let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
+    w.g.map.plots[to].feature_type = Some(w.g.d.t::<FeatureType>("FEATURE_FOREST"));
+    let slots = w.g.engage_slots(&HitCtx::new(from, to));
+    let s = slots.def() as usize;
+    // Warriors against axemen and archers on a forest: engagement after engagement, the plot
+    // holds.
+    let pool = w.units(p0, "UNIT_WARRIOR", from, 4 * s);
+    w.units(p1, "UNIT_AXEMAN", to, s);
+    w.units(p1, "UNIT_ARCHER", to, s);
+    let defs = w.on(to);
+    let balanced = w.g.d.default_stance;
+    let a = w.g.engage_estimate_assault(&w.input(Attackers::Pick(&pool, balanced), &defs));
+    assert!(a.steps.len() >= 3, "{} engagements", a.steps.len());
+    let struck = |k: usize| -> i64 { a.steps[k].opening.iter().filter(|(u, _)| a.steps[k].force.contains(u)).map(|e| e.1).sum() };
+    assert!(a.steps[..3].iter().all(|st| st.force.len() == a.steps[0].force.len()));
+    assert!(struck(0) > 0, "the archers strike");
+    for k in 1..3 {
+        assert!(struck(k) < struck(k - 1), "engagement {k}: strikes {} after {}", struck(k), struck(k - 1));
+        // A strike once used up stays used up.
+        for &(u, x) in &a.steps[k - 1].strikes_used {
+            let later = a.steps[k].strikes_used.iter().find(|e| e.0 == u).map_or(0, |e| e.1);
+            assert!(later >= x, "{u:?}: {later} after {x}");
+        }
+    }
+    // The first engagement is the single estimate's.
+    let first = w.g.engage_estimate(&w.input(Attackers::Pick(&pool, balanced), &defs)).unwrap();
+    assert_eq!(a.steps[0], first);
+}
+
 /// The estimate of an attack is of the battle the real engagement fights: the same force, the
 /// same defender's pick, the same HP; and its win chance is near the real one's rate over seeds.
 #[test]

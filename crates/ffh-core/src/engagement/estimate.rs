@@ -24,7 +24,9 @@
 //! **The assault** ([`Game::engage_estimate_assault`]): successive engagements, each committing
 //! the next force from the attackers not used yet, the defenders carrying their expected damage
 //! and alive weight from one to the next ([`MomentStart`]), the reserve its expected collateral,
-//! until the expected defenders left are below one half or no attacker is left.
+//! the strikers their used-up strikes (a striker strikes with the chance it is still on the plot
+//! and has its strike left; a defender gone neither strikes nor takes collateral), until the
+//! expected defenders left are below one half or no attacker is left.
 //!
 //! **A plan that declares war** ([`WarTest::DeclareWar`]): its opening tests war as the real fight
 //! after the declaration does (the strikers, the collateral's targets), so it is the estimate of
@@ -144,6 +146,10 @@ pub struct Estimate {
     /// The expected damage the opening adds (percent x4096), by unit: committed attackers struck
     /// and the defenders' collateral, the reserve's included.
     pub opening: Vec<(UnitId, i64)>,
+    /// Each striker's chance its strike is used up after the opening (1/4096; an assault's
+    /// earlier engagements included): what the next engagement of an assault can still strike
+    /// with.
+    pub strikes_used: Vec<(UnitId, i64)>,
     /// The integrator's result, per fighter in the round model's order (the force, then the
     /// defender's pick).
     pub exp: Expectation,
@@ -212,21 +218,28 @@ const MAX_ASSAULT: usize = 12;
 const GONE: i64 = 41;
 
 /// What the attacker knows of the defense: the defender's candidates, the stance it assumes for
-/// them, the units on the plot its opening reads (strikers, collateral targets) and the war its
+/// them, the units on the plot its opening reads (strikers, collateral targets), the war its
 /// opening assumes (a declare-war plan's: once declared, as the real fight after the declaration
-/// tests it; `None`: the wars now).
+/// tests it; `None`: the wars now), and what an assault's earlier engagements left of the
+/// strikers.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct DefView {
     pub candidates: Vec<UnitId>,
     pub stance: StanceType,
     pub on_plot: Vec<UnitId>,
     pub declared: Option<Declared>,
+    /// An assault's later engagement: each unit's chance it is still on the plot (1/4096; a unit
+    /// not listed: 1) and each striker's chance an earlier engagement used up its strike (not
+    /// listed: 0). Empty for a single engagement.
+    pub alive: Vec<(UnitId, i64)>,
+    pub used: Vec<(UnitId, i64)>,
 }
 
 impl DefView {
-    /// The view of `candidates` under `stance`, the opening over `on_plot` under `declared`.
+    /// The view of `candidates` under `stance`, the opening over `on_plot` under `declared`, no
+    /// earlier engagement.
     pub fn new(candidates: Vec<UnitId>, stance: StanceType, on_plot: Vec<UnitId>, declared: Option<Declared>) -> DefView {
-        DefView { candidates, stance, on_plot, declared }
+        DefView { candidates, stance, on_plot, declared, alive: Vec::new(), used: Vec::new() }
     }
 }
 
@@ -473,7 +486,7 @@ impl Game {
         // damage moment raised.
         let fight: Vec<i64> = fear.iter().map(|&x| ONE - x as i64).collect();
         let ov = UnitOverlay::with_damage(damage, view.declared.as_ref());
-        let opening = self.engage_opening_expected(&setup.units, setup.n_att, &fight, setup.ctx.to, &view.on_plot, &ov);
+        let (opening, strikes_used) = self.engage_opening_expected(&setup.units, setup.n_att, &fight, setup.ctx.to, view, &ov);
         for (i, &u) in setup.units.iter().enumerate() {
             let Some(&(_, x)) = opening.iter().find(|(v, _)| *v == u) else { continue };
             let f = &mut battle.fighters[i];
@@ -508,6 +521,7 @@ impl Game {
             slots: setup.slots,
             start_hp: battle.fighters.iter().map(|f| f.hp).collect(),
             opening,
+            strikes_used,
             exp,
         }
     }
@@ -635,9 +649,15 @@ impl Game {
 
     /// The opening's expected damage (plan 8.2; the module comment) for the committed `units`
     /// (the first `n_att` attack; `fight[i]` the chance fighter `i` fights, 1/4096) on `to`, over
-    /// the units `on_plot` at war as `ov` has it, from the damage fields of `ov`: each unit's
-    /// expected added damage, in percent x4096. No random number is drawn.
-    pub(crate) fn engage_opening_expected(&self, units: &[UnitId], n_att: usize, fight: &[i64], to: PlotIdx, on_plot: &[UnitId], ov: &UnitOverlay) -> Vec<(UnitId, i64)> {
+    /// the units `view.on_plot` at war as `ov` has it, from the damage fields of `ov`: each unit's
+    /// expected added damage, in percent x4096, and each striker's chance its strike is used up
+    /// afterwards ([`Estimate::strikes_used`]). A striker strikes with the chance it is still on
+    /// the plot (`view.alive`) and its strike not used up, by an earlier engagement of an assault
+    /// (`view.used`; the two taken as independent) or by an earlier attacker of this opening. No
+    /// random number is drawn.
+    pub(crate) fn engage_opening_expected(&self, units: &[UnitId], n_att: usize, fight: &[i64], to: PlotIdx, view: &DefView, ov: &UnitOverlay) -> (Vec<(UnitId, i64)>, Vec<(UnitId, i64)>) {
+        let on_plot = &view.on_plot[..];
+        let of = |list: &[(UnitId, i64)], u: UnitId, default: i64| list.iter().find(|(v, _)| *v == u).map_or(default, |e| e.1);
         let mut added: Vec<(UnitId, i64)> = Vec::new();
         let add = |added: &mut Vec<(UnitId, i64)>, u: UnitId, x: i64| match added.iter_mut().find(|(v, _)| *v == u) {
             Some(e) => e.1 += x,
@@ -645,7 +665,10 @@ impl Game {
         };
         let now = |added: &Vec<(UnitId, i64)>, u: UnitId| ov.damage(self, u) as i64 * ONE + added.iter().find(|(v, _)| *v == u).map_or(0, |e| e.1);
         // Defensive strikes: per attacker in slot order, the best success among the strikers.
-        let mut used: Vec<(UnitId, i64)> = Vec::new();
+        // `avail`: a striker's chance it can strike the next attacker (once it has had one);
+        // `struck`: its chance it struck in this opening (Blitz strikers are never used up).
+        let mut avail: Vec<(UnitId, i64)> = Vec::new();
+        let mut struck: Vec<(UnitId, i64)> = Vec::new();
         for i in 0..n_att {
             let a = units[i];
             if fight[i] <= 0 || self.unit_is_immune_to_defensive_strike(a) {
@@ -667,10 +690,12 @@ impl Game {
             let mut none_before = ONE;
             let mut expected = 0i64;
             for &(dmg, _, s) in &strikers {
-                let avail = if self.unit_is_blitz(s) { ONE } else { ONE - used.iter().find(|(v, _)| *v == s).map_or(0, |e| e.1) };
+                let blitz = self.unit_is_blitz(s);
+                let on = of(&view.alive, s, ONE);
+                let can = if blitz { on } else { avail.iter().find(|(v, _)| *v == s).map_or_else(|| on * (ONE - of(&view.used, s, 0)) / ONE, |e| e.1) };
                 let c = self.units[s].defensive_strike_chance.clamp(0, 100) as i64 * ONE / 100;
-                let p_best = fight[i] * none_before / ONE * avail / ONE * c / ONE;
-                none_before = none_before * (ONE - avail * c / ONE) / ONE;
+                let p_best = fight[i] * none_before / ONE * can / ONE * c / ONE;
+                none_before = none_before * (ONE - can * c / ONE) / ONE;
                 if p_best <= 0 {
                     continue;
                 }
@@ -686,11 +711,12 @@ impl Game {
                     }
                 }
                 expected += p_best * e * ONE / (n * n) / ONE;
-                if !self.unit_is_blitz(s) {
-                    match used.iter_mut().find(|(v, _)| *v == s) {
-                        Some(x) => x.1 = (x.1 + p_best).min(ONE),
-                        None => used.push((s, p_best)),
+                if !blitz {
+                    match avail.iter_mut().find(|(v, _)| *v == s) {
+                        Some(x) => x.1 = (x.1 - p_best).max(0),
+                        None => avail.push((s, (can - p_best).max(0))),
                     }
+                    add(&mut struck, s, p_best);
                 }
             }
             if expected > 0 {
@@ -724,7 +750,15 @@ impl Game {
                 }
             }
         }
-        added
+        // The strikes used up: an earlier engagement's, then this opening's.
+        let mut used = view.used.clone();
+        for &(s, x) in &struck {
+            match used.iter_mut().find(|(v, _)| *v == s) {
+                Some(e) => e.1 = (e.1 + x).min(ONE),
+                None => used.push((s, x.min(ONE))),
+            }
+        }
+        (added, used)
     }
 
     /// The expected assault on `inp`'s plot (module comment; plan 8.2, "Assaults"): engagement
@@ -762,8 +796,21 @@ impl Game {
             None => list.push((u, x)),
         };
         let x1000 = |w: i64| ((w * 1000 + ONE / 2) / ONE) as i32;
+        // Each striker's chance its strike is used up (the real fight's strikers stay used up for
+        // the turn, unless Blitz).
+        let mut used: Vec<(UnitId, i64)> = Vec::new();
         while out.steps.len() < MAX_ASSAULT && !left.is_empty() {
-            let view = DefView::new(alive.iter().filter(|e| e.1 >= GONE).map(|e| e.0).collect(), view0.stance, view0.on_plot.clone(), view0.declared.clone());
+            // The units still on the plot strike and take collateral; a striker strikes with the
+            // chance it is there and its strike is not used up.
+            let gone = |u: UnitId| alive.iter().any(|e| e.0 == u && e.1 < GONE);
+            let view = DefView {
+                candidates: alive.iter().filter(|e| e.1 >= GONE).map(|e| e.0).collect(),
+                stance: view0.stance,
+                on_plot: view0.on_plot.iter().copied().filter(|&u| !gone(u)).collect(),
+                declared: view0.declared.clone(),
+                alive: alive.clone(),
+                used: used.clone(),
+            };
             let def_left: i64 = alive.iter().map(|e| e.1).sum();
             if def_left * 2 < ONE || view.candidates.is_empty() {
                 break;
@@ -784,6 +831,7 @@ impl Game {
                 out.first = est.win_permille;
             }
             left.retain(|u| !force.contains(u));
+            used.clone_from(&est.strikes_used);
             let na = est.force.len();
             for (i, &u) in est.force.iter().enumerate() {
                 let fe = &est.exp.fighters[i];

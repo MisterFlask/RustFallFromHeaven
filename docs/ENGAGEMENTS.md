@@ -167,8 +167,11 @@ override it every time.
   per-fighter result.
 - **The assault** (`engage_estimate_assault`): engagements one after another, each committing the
   next proposal from the attackers not used yet, the defenders committed carrying their alive weight
-  and damage moments, the reserve its expected collateral, until the expected defenders left are
-  below one half, no attacker is left, or 12 engagements; shaped like the AI's `combat_sim::Sim`.
+  and damage moments, the reserve its expected collateral, the strikers their used-up strikes (the
+  real fight's striker keeps `made_attack` for the turn: a striker strikes with the chance it is
+  still on the plot and has its strike left; a defender gone neither strikes nor takes collateral;
+  test `the_assault_spends_the_defensive_strikes`), until the expected defenders left are below one
+  half, no attacker is left, or 12 engagements; shaped like the AI's `combat_sim::Sim`.
 - **The plot wrapper** (`engage_estimate_plot`): a player's real pool on the plot it attacks from,
   the force given (checked) or proposed, the defenders its team sees, the defender's stance as its
   team knows it (its own team's: the real one; anyone else's: the default, until phase 7's recon
