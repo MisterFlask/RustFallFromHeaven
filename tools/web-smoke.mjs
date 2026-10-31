@@ -1484,6 +1484,16 @@ async function stagedEngagement(bin, saves) {
   await b.eval(`(() => { const w = window.ffh.battle.watch; w.pause(); w.seek(Math.floor(w.state().n / 2)); w.step(); })()`);
   await new Promise((r) => setTimeout(r, 500));
   await shot("engagement-watch");
+  // The snap (battle_snap.js): the first action with a blow, frozen in its held beat, has its pair
+  // lifted out of the field.
+  const blow = await b.eval(`window.ffh.battle.watch.find((e) => (e.hits && e.hits.length > 0) || !!e.heal)`);
+  if (blow >= 0) {
+    const held = await b.eval(`JSON.stringify(window.ffh.battle.watch.freeze(${blow}, 300))`);
+    const s = JSON.parse(held);
+    if (!s || !s.hold || !Object.keys(s.roles).length) throw new Error(`the watch screen's snap does not stage the battle's first blow: ${held}`);
+    await new Promise((r) => setTimeout(r, 200));
+    await shot("engagement-snap");
+  }
   await b.key("Escape");
   await battleScreen("report", "the battle's report");
   await new Promise((r) => setTimeout(r, 500));

@@ -491,16 +491,27 @@ line"; the pool's other units listed (click one, then a cell); Auto-arrange; the
 of each side and why; the ground's rules in words; the forecast of the formation, asked of the
 engine at each change: each side's expected losses, their line wiped out, the plot falls, yours
 wiped out; Watch or Report after the attack; Attack or `Enter`), **the battle** (the log played
-one action at a time: a strike, flinch and death in the anim-sprint frames where the unit has
-them, a lunge otherwise; arrows, spells and stones in flight; damage, crit, miss and heal
-numbers; knock-backs, escapes; each side's standing units; the log beside it under round and
-pass headers, a unit's speed before its line; play/pause `Space`, step `→`, skip to the report
-`Esc`, speeds 1x-8x `1`-`4`; played through, the report follows) and **the report** (the
-battlefield where the battle ended, whether the plot fell, each side's fallen, escaped and
-standing with their heads, the whole log; Replay, Continue). The modules: `battle.js` (the
-overlay, the keys, the viewer's preferences, the sources), `battle_plan.js`, `battle_watch.js`,
-`battle_report.js`, `battle_stage.js` (the battlefield, the figures and the effects; the
-anim-sprint strips in `app/anim/`), and the pure `battle_log.js` (the protocol's shapes in its
+one action at a time as a snap, the owner's pick of the battle-feel spike, 2026-10-31: every
+unit breathes; on an action's contact frame the pair cuts to its impact poses (the strike strip's
+contact frame and the target's flinch frame where the unit has anim-sprint frames, else the
+sprite leaning in, a little larger, and the target leaning back under a white flash) and slides
+together, lifted above the field with an ink outline, and the slash or the sparks, the number and
+a small shake land; a held beat of 0.5-1.1 s with embers drifting, then a quarter-second ease back.
+Crits hold longer and kills hold, the death playing after the return; on crits and kills only
+the rest of the field drops into a shade round the pair, the camera never zooms; CRITICAL and
+SLAIN under the numbers; a miss is a dodge with a whiff, a heal glows, a shot or a spell arrives
+as a streak while its shooter stays on its cell, splash targets snap together, a knock-back eases
+back a row on the return, an escape leaves after it; no shake under reduced motion; each side's
+standing units; the log beside it under round and pass headers, a unit's speed before its line,
+an action's line on its contact frame; play/pause `Space` (the action freezes where it is), step
+`→`, skip to the report `Esc`, speeds 1x-8x `1`-`4`; played through, the report follows) and
+**the report** (the battlefield where the battle ended, whether the plot fell, each side's
+fallen, escaped and standing with their heads, the whole log; Replay, Continue). The modules:
+`battle.js` (the overlay, the keys, the viewer's preferences, the sources), `battle_plan.js`,
+`battle_watch.js` (the replay's clock and timeline), `battle_snap.js` (the snap: each action's
+timing plan, roles, poses and drawing over the stage), `battle_report.js`, `battle_stage.js` (the
+battlefield, the figures and the effects; the anim-sprint strips in `app/anim/`), and the pure
+`battle_log.js` (the protocol's shapes in its
 header, the formation's editing, the log folded into states and lines, the words of the rules by
 their codes); `battle_fixture.js` is the fixture, made by `assets/test/make_battle_fixtures.mjs`
 from the owner's prototype (`assets/test/fixtures/proto/`: its engine and sample armies, not the
@@ -933,7 +944,8 @@ node tools/web-touch-smoke.mjs           # the same on an emulated phone, with t
 * `web-check.sh` needs node (it is skipped without it); the pure modules (map maths and map
   deltas, markup, state and Civ4's group cycle, the hotkeys, the tech tree's layout, the API layer
   against a fake `fetch`, the battle screens' log folding, log lines, formation editing and the
-  ground's words over the battle fixture) are tested in `crates/ffh-play/assets/test/*.test.mjs`.
+  ground's words over the battle fixture, the watch screen's snap: each action's timing plan,
+  the shade, the roles and their poses) are tested in `crates/ffh-play/assets/test/*.test.mjs`.
 * `web-api-smoke.mjs [--turns 20] [--seed 5] [--world WORLDSIZE_TINY] [--opponents 2] [--url URL]
   [--keep] [--verbose]` starts `target/release/ffh-play serve --port 0` (or `--bin`), checks the
   page and its modules are served, plays the turns as the page does (popups, research,
