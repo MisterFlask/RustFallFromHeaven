@@ -181,7 +181,7 @@ impl Game {
 
     /// Whether a unit the attack meets on `to` is one of its defenders ([`Game::engage_defenders`]):
     /// it can defend there and has a role.
-    fn engage_can_defend(&self, d: UnitId, to: PlotIdx) -> bool {
+    pub(crate) fn engage_can_defend(&self, d: UnitId, to: PlotIdx) -> bool {
         self.unit_can_defend(d, Some(to)) && self.unit_combat_role(d).is_some()
     }
 
@@ -351,13 +351,31 @@ impl Game {
         self.engage_swap_search(pool, stance, slots, ctx, pick)
     }
 
-    /// **Hook for step 7** (plan 15, item 3: the attacker's auto-pick consults the estimate):
-    /// estimate the quota `pick` and each of its single swaps ([`Game::engage_single_swaps`])
-    /// against the defender's likely pick, and keep the best plan. Until the estimator
-    /// (`engage_estimate`) lands it returns the quota pick unchanged. The defender's pick stays
-    /// the blind stance pick (the spec); a held unit is swapped in only by the player.
-    pub fn engage_swap_search(&self, _pool: &[UnitId], _stance: StanceType, _slots: &Slots, _ctx: &HitCtx, pick: Vec<UnitId>) -> Vec<UnitId> {
-        pick
+    /// [`Game::engage_propose_force`] for an attack under `war` (a declare-war preview's: the
+    /// search estimates against the defenders the declaration would bring in).
+    pub(crate) fn engage_propose_force_for(&self, pool: &[UnitId], stance: StanceType, slots: &Slots, ctx: &HitCtx, war: WarTest) -> Vec<UnitId> {
+        let pick = self.engage_auto_pick(pool, stance, slots, Side::Attacker, ctx);
+        self.engage_swap_search_war(pool, stance, slots, ctx, pick, war)
+    }
+
+    /// The swap search (plan 15, item 3: the attacker's auto-pick consults the estimate): from
+    /// the stance's quota `pick`, the best plan of its single swaps
+    /// ([`Game::engage_single_swaps`]) by the moment estimator, against the defender's pick as the
+    /// attacker knows it (its candidates, its stance if its own team's, else the default; the
+    /// defender's pick stays the blind stance pick, the spec). A unit the stance holds is never
+    /// swapped in (only the player commits it). Details: `estimate.rs`,
+    /// `Game::engage_swap_search_in`.
+    pub fn engage_swap_search(&self, pool: &[UnitId], stance: StanceType, slots: &Slots, ctx: &HitCtx, pick: Vec<UnitId>) -> Vec<UnitId> {
+        self.engage_swap_search_war(pool, stance, slots, ctx, pick, WarTest::AtWar)
+    }
+
+    fn engage_swap_search_war(&self, pool: &[UnitId], stance: StanceType, slots: &Slots, ctx: &HitCtx, pick: Vec<UnitId>, war: WarTest) -> Vec<UnitId> {
+        let Some(&first) = pick.first() else { return pick };
+        if pool.len() <= pick.len() {
+            return pick;
+        }
+        let view = self.engage_def_view(self.units[first].owner, ctx.to, &pick, war);
+        self.engage_swap_search_in(pool, stance, slots, ctx, pick, &view, &[], None)
     }
 
     /// The single swaps of the attacker's `pick` (plan 15, item 3; the plan screen's "best

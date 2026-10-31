@@ -30,6 +30,7 @@
 mod apply;
 pub mod battle;
 pub(crate) mod engage;
+pub mod estimate;
 pub mod expect;
 mod phi_table;
 pub mod pick;
@@ -50,6 +51,7 @@ pub(crate) fn damage_with(g: &crate::game::Game, u: crate::ids::UnitId, damage: 
 }
 
 pub use engage::EngageOutcome;
+pub use estimate::{AssaultEstimate, Attackers, Eligible, Estimate, EstimateInput};
 pub use battle::{damage_from_hp, hp_from_damage, Battle, BattleEffect, Fighter, FighterIdx, Pair, Params, Side, TargetClass};
 pub use expect::{resolve_expected, resolve_expected_from, Expectation, FighterExpect, MomentStart};
 pub use pick::{StanceChoice, WarTest};

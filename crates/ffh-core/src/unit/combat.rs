@@ -2320,50 +2320,27 @@ impl Game {
         ov: &mut UnitOverlay,
         rng: &mut impl BattleRng,
     ) -> Vec<(UnitId, i32, i32)> {
-        let d = self.d;
         let mut hit = Vec::new();
-        let air = self.unit_get_domain_type(u) == DomainType::DOMAIN_AIR;
-
-        let base_strength = if air { self.unit_air_base_combat_str(u) } else { self.unit_base_combat_str(u) };
-        let collateral_strength = base_strength * self.unit_collateral_damage(u) / 100;
+        let collateral_strength = self.unit_collateral_strength(u);
         if collateral_strength == 0 {
             return hit;
         }
-
-        // `plot_get_num_visible_enemy_defenders` over `on_plot`.
-        let visible_defenders = if on_plot.is_empty() {
-            0
-        } else {
-            let owner_i = self.units[u].owner.i();
-            let always_hostile = self.unit_is_always_hostile(u, Some(plot)) as i32;
-            on_plot.iter().filter(|&&x| self.puf_can_defend_enemy(x, owner_i, always_hostile) && self.puf_is_visible(x, owner_i, -1)).count() as i32
-        };
-        let possible_targets = (visible_defenders - if engagement { 0 } else { 1 }).min(self.unit_collateral_damage_max_units(u));
+        let possible_targets = self.unit_collateral_target_count(u, plot, on_plot, engagement);
 
         // C++ `std::map<CvUnit*, int> mapUnitDamage`: ordered by heap address in C++, which is
         // not reproducible; plot order here (it only decides exact ties of the rolled values).
-        let team = self.unit_get_team(u);
         let mut unit_damage: Vec<(UnitId, i32)> = Vec::new();
         for &loop_unit in on_plot {
-            if Some(loop_unit) != skip_unit {
-                let loop_team = self.unit_get_team(loop_unit);
-                if self.unit_is_enemy(u, Some(loop_team), Some(plot)) {
-                    if !self.unit_is_invisible(loop_unit, team, true) {
-                        if self.unit_can_defend(loop_unit, None) {
-                            let mut value = 1 + rng.rand(10000, "Collateral Damage");
+            if Some(loop_unit) != skip_unit && self.unit_collateral_can_hit(u, loop_unit, plot) {
+                let mut value = 1 + rng.rand(10000, "Collateral Damage");
 
-                            value *= self.unit_max_hit_points(loop_unit) - ov.damage(self, loop_unit);
+                value *= self.unit_max_hit_points(loop_unit) - ov.damage(self, loop_unit);
 
-                            unit_damage.push((loop_unit, value));
-                        }
-                    }
-                }
+                unit_damage.push((loop_unit, value));
             }
         }
 
-        let city = if air { self.map.plots[plot].plot_city } else { None };
-
-        let unit_combat = self.unit_get_unit_combat_type(u);
+        let city = self.unit_collateral_city(u, plot);
         let mut count = 0;
 
         while count < possible_targets {
@@ -2382,45 +2359,89 @@ impl Game {
             };
             let (best_unit, _) = unit_damage.remove(best_index);
 
-            let immune = unit_combat
-                .is_some_and(|uc| d.units[self.units[best_unit].unit_type].unit_combat_collateral_immune[uc] != 0);
-            if !immune {
-                let their_strength = self.unit_base_combat_str(best_unit);
-
-                let strength_factor = (collateral_strength + their_strength + 1) / 2;
-
-                let mut collateral_damage = (d.defines.collateral_combat_damage * (collateral_strength + strength_factor))
-                    / (their_strength + strength_factor);
-
-                collateral_damage *= 100 + self.units[u].extra_collateral_damage;
-
-                collateral_damage *= 0.max(100 - self.units[best_unit].collateral_damage_protection);
-                collateral_damage /= 100;
-
-                if let Some(c) = city {
-                    collateral_damage *= 100 + self.cities[c].air_modifier;
-                    collateral_damage /= 100;
-                }
-
-                collateral_damage /= 100;
-
-                collateral_damage = 0.max(collateral_damage);
-
-                let limit = self.unit_collateral_damage_limit(u);
-                let max_damage =
-                    limit.min((limit * (collateral_strength + strength_factor)) / (their_strength + strength_factor));
-                let damage = ov.damage(self, best_unit);
-                let new_damage = damage.max((damage + collateral_damage).min(max_damage));
-
-                if damage != new_damage {
-                    ov.set_damage(best_unit, range(new_damage, 0, self.unit_max_hit_points(best_unit)));
-                    hit.push((best_unit, damage, new_damage));
-                }
+            let damage = ov.damage(self, best_unit);
+            let new_damage = self.unit_collateral_new_damage(u, best_unit, damage, collateral_strength, city);
+            if damage != new_damage {
+                ov.set_damage(best_unit, range(new_damage, 0, self.unit_max_hit_points(best_unit)));
+                hit.push((best_unit, damage, new_damage));
             }
 
             count += 1;
         }
         hit
+    }
+
+    /// `u`'s collateral strength (`collateralCombat`): its base strength (air strength for an air
+    /// unit) times its collateral damage percent; 0: no collateral.
+    pub(crate) fn unit_collateral_strength(&self, u: UnitId) -> i32 {
+        let air = self.unit_get_domain_type(u) == DomainType::DOMAIN_AIR;
+        let base_strength = if air { self.unit_air_base_combat_str(u) } else { self.unit_base_combat_str(u) };
+        base_strength * self.unit_collateral_damage(u) / 100
+    }
+
+    /// How many units `u`'s collateral on `plot` hits at most (`collateralCombat`): the visible
+    /// enemy defenders among `on_plot` (`plot_get_num_visible_enemy_defenders` over that list),
+    /// less the duel's own defender unless `engagement`, at most its maximum.
+    pub(crate) fn unit_collateral_target_count(&self, u: UnitId, plot: PlotIdx, on_plot: &[UnitId], engagement: bool) -> i32 {
+        let visible_defenders = if on_plot.is_empty() {
+            0
+        } else {
+            let owner_i = self.units[u].owner.i();
+            let always_hostile = self.unit_is_always_hostile(u, Some(plot)) as i32;
+            on_plot.iter().filter(|&&x| self.puf_can_defend_enemy(x, owner_i, always_hostile) && self.puf_is_visible(x, owner_i, -1)).count() as i32
+        };
+        (visible_defenders - if engagement { 0 } else { 1 }).min(self.unit_collateral_damage_max_units(u))
+    }
+
+    /// Whether `u`'s collateral on `plot` can hit `target` (`collateralCombat`): an enemy, not
+    /// invisible to `u`'s team, able to defend.
+    pub(crate) fn unit_collateral_can_hit(&self, u: UnitId, target: UnitId, plot: PlotIdx) -> bool {
+        self.unit_is_enemy(u, Some(self.unit_get_team(target)), Some(plot)) && !self.unit_is_invisible(target, self.unit_get_team(u), true) && self.unit_can_defend(target, None)
+    }
+
+    /// The city whose air modifier scales `u`'s collateral on `plot`: an air unit's target city.
+    pub(crate) fn unit_collateral_city(&self, u: UnitId, plot: PlotIdx) -> Option<CityId> {
+        if self.unit_get_domain_type(u) == DomainType::DOMAIN_AIR {
+            self.map.plots[plot].plot_city
+        } else {
+            None
+        }
+    }
+
+    /// The damage field `target` (at `damage`) has after one collateral hit of `u` (with
+    /// collateral strength `collateral_strength`; `city`: the air modifier's city), as
+    /// `collateralCombat` computes it: unchanged for a target immune to `u`'s unit combat.
+    pub(crate) fn unit_collateral_new_damage(&self, u: UnitId, target: UnitId, damage: i32, collateral_strength: i32, city: Option<CityId>) -> i32 {
+        let d = self.d;
+        let immune = self
+            .unit_get_unit_combat_type(u)
+            .is_some_and(|uc| d.units[self.units[target].unit_type].unit_combat_collateral_immune[uc] != 0);
+        if immune {
+            return damage;
+        }
+        let their_strength = self.unit_base_combat_str(target);
+
+        let strength_factor = (collateral_strength + their_strength + 1) / 2;
+
+        let mut collateral_damage = (d.defines.collateral_combat_damage * (collateral_strength + strength_factor)) / (their_strength + strength_factor);
+
+        collateral_damage *= 100 + self.units[u].extra_collateral_damage;
+
+        collateral_damage *= 0.max(100 - self.units[target].collateral_damage_protection);
+        collateral_damage /= 100;
+
+        if let Some(c) = city {
+            collateral_damage *= 100 + self.cities[c].air_modifier;
+            collateral_damage /= 100;
+        }
+
+        collateral_damage /= 100;
+
+        collateral_damage = 0.max(collateral_damage);
+
+        let limit = self.unit_collateral_damage_limit(u);
+        let max_damage = limit.min((limit * (collateral_strength + strength_factor)) / (their_strength + strength_factor));
+        damage.max((damage + collateral_damage).min(max_damage))
     }
 
     /// The writes of `u`'s collateral `hit` ([`Game::unit_collateral_rolls`]): each unit's new

@@ -51,6 +51,7 @@ use super::battle::{damage_from_hp, hp_from_damage, Battle, BattleEffect, Fighte
 use super::pick::{StanceChoice, WarTest};
 use super::resolve::{resolve_sampled, resolve_sampled_quiet, targets, BattleRng, EngageResult, TargetState, Targets};
 use super::apply::Post;
+use super::estimate::PairCache;
 use super::report::{BattleLog, BattleReport, CitySnap, Outcome, PlotSnap, ReportSide};
 use super::resolve::{Fate, Resolution};
 use super::sink::Sink;
@@ -267,6 +268,22 @@ impl Game {
     /// the fight's own; they differ in where the force, the candidates and the stance come from.
     /// `Err`: an empty force, or no defender.
     pub(crate) fn engage_setup(&self, ctx: HitCtx, slots: Slots, force: Vec<UnitId>, candidates: Vec<UnitId>, def_stance: StanceType, damage: &[(UnitId, i32)]) -> Result<Setup, &'static str> {
+        self.engage_setup_cached(ctx, slots, force, candidates, def_stance, damage, None)
+    }
+
+    /// [`Game::engage_setup`], the fighters and pairs taken from `cache` where it has them (the
+    /// same values, computed once for many forces).
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn engage_setup_cached(
+        &self,
+        ctx: HitCtx,
+        slots: Slots,
+        force: Vec<UnitId>,
+        candidates: Vec<UnitId>,
+        def_stance: StanceType,
+        damage: &[(UnitId, i32)],
+        cache: Option<&PairCache>,
+    ) -> Result<Setup, &'static str> {
         if force.is_empty() {
             return Err("no unit can attack there");
         }
@@ -288,7 +305,13 @@ impl Game {
         let units: Vec<UnitId> = force.iter().chain(&def_pick).copied().collect();
         let sides: Vec<Side> = (0..units.len()).map(|i| if i < n_att { Side::Attacker } else { Side::Defender }).collect();
         let in_city = self.plot_is_city(ctx.to, false, None);
-        let mut battle = self.engage_battle(&units, &sides, &vec![false; units.len()], in_city, &ctx);
+        let mut battle = match cache {
+            None => self.engage_battle(&units, &sides, &vec![false; units.len()], in_city, &ctx),
+            Some(c) => {
+                let fighters = units.iter().zip(&sides).map(|(&u, &s)| c.fighter(u, s).cloned().unwrap_or_else(|| self.engage_fighter(u, s, in_city))).collect();
+                Battle::new(self.engage_params(), fighters, |h, t| c.pair(units[h], units[t], sides[h]).unwrap_or_else(|| self.engage_hit(units[h], units[t], sides[h], &ctx)))
+            }
+        };
         if !damage.is_empty() {
             for (i, &u) in units.iter().enumerate() {
                 battle.set_start(i, super::damage_with(self, u, damage), false);
@@ -605,7 +628,7 @@ impl Game {
 
     /// The strongest committed unit among `units[range]` with Fear that fights (plan 6.3): by base
     /// strength, then level, then the lowest id.
-    fn engage_fear_source(&self, units: &[UnitId], range: std::ops::Range<usize>, sat_out: &[bool]) -> Option<usize> {
+    pub(crate) fn engage_fear_source(&self, units: &[UnitId], range: std::ops::Range<usize>, sat_out: &[bool]) -> Option<usize> {
         range.filter(|&i| !sat_out[i] && self.unit_is_fear(units[i])).max_by_key(|&i| {
             let u = units[i];
             (self.unit_base_combat_str(u), self.units[u].level, std::cmp::Reverse(u))
