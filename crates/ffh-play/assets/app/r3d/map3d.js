@@ -145,7 +145,8 @@ export class Map3D {
    *  programs are drawn once each (Pipeline.warm): on Direct3D that is where they compile, the
    *  browser drawing nothing meanwhile, so the page is told first ("ffh:r3d-compiling", main.js)
    *  and given a moment to show it. (A packed scene, pipeline.js `packed`, has none: its programs
-   *  compile at link, inside the first wait.) */
+   *  compile at link, inside the first wait.) Last, what the mode loads for its first frame
+   *  (`modeReady`): the loop draws nothing until all of it is there. */
   async ready(timeoutMs) {
     // (`fastStart`, the default: the scene is built from the game state -- the world, its textures,
     // the dressing and its instances, the paint layers, the figures, and the HD-2D mode's sprites
@@ -175,8 +176,17 @@ export class Map3D {
     if (overlap) await this.prepareWhile(warm);
     await warm;
     performance.mark("r3d:warmed");
+    // (It loaded while the programs compiled: the start waits for the later of the two, as before.
+    // Until then the loop draws nothing -- the map MapView still draws keeps the 2D canvas.)
+    await this.modeReady();
     this.compiled = true;
     this.dirty = true;
+  }
+
+  /** Resolves once what the mode's first frame needs beside the programs has loaded (`ready` waits
+   *  for it before the loop draws): nothing for the 3D renderer. */
+  modeReady() {
+    return Promise.resolve();
   }
 
   /** The scene brought up to date before the first frame (`ready`); a failure is the first

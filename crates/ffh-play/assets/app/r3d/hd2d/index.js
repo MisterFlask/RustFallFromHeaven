@@ -143,11 +143,11 @@ export class MapHd2d extends Map3D {
     return new Set(Object.values(GROUND_LAYER));
   }
 
-  /** As the 3D renderer's, and the ground's layers loaded (left clear by the scene, fastStart):
-   *  the first frame never shows them empty. (They load while the programs compile.) */
-  async ready(timeoutMs) {
-    await super.ready(timeoutMs);
-    if (this.cfg.fastStart !== 0) await this.groundReady;
+  /** Resolves once the ground's layers have loaded (left clear by the scene, fastStart): the first
+   *  frame never shows them empty. (They load while the programs compile; Map3D.ready waits for
+   *  them before the loop draws, so the map MapView still draws stays until then.) */
+  modeReady() {
+    return this.cfg.fastStart !== 0 ? this.groundReady : Promise.resolve();
   }
 
   /** Resolves once the sprites asked for and the ground have loaded (a capture waits for it). */
