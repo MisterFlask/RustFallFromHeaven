@@ -447,6 +447,15 @@ pub struct Unit {
     /// A recruit marching to its army or garrison (docs/ARMIES.md): the rules move it, it takes
     /// no orders, it is in no army and no garrison until it arrives.
     pub march: Option<crate::army::March>,
+    // ---- This game's own: engagement combat (GAMEOPTION_ENGAGEMENTS; read only under it) ----
+    /// The promotions' `iCombatPercentDefense` (Q1): Dv's own percentage under engagements, as
+    /// `extra_combat_percent` is A's; kept by `unit_set_has_promotion`, never read by the duel.
+    pub extra_combat_percent_defense: i32,
+    /// Attacks made this turn (engagements, bombards, missile strikes); reset with `made_attack`
+    /// in the unit's turn. Blitz allows one more (plan 5.2).
+    pub attacks_made: i32,
+    /// The game turn of its last post-battle medic heal (-1: never): one a turn (Q12).
+    pub battle_heal_turn: i32,
 }
 
 impl Unit {
@@ -619,6 +628,9 @@ impl Unit {
             ai_allowed_explore: true,
             army: None,
             march: None,
+            extra_combat_percent_defense: 0,
+            attacks_made: 0,
+            battle_heal_turn: -1,
         }
     }
 }

@@ -280,6 +280,9 @@ pub struct City {
     pub governor: Option<GovernorId>,
     /// Turns left of the penalty for replacing its governor.
     pub governor_penalty_turns: i32,
+    /// Engagement combat (plan 5.3): the stance its garrison defends with (and proposes an attack
+    /// from the city with); set with `Game::city_set_garrison_stance`.
+    pub garrison_stance: StanceType,
 }
 
 impl City {
@@ -495,6 +498,7 @@ impl City {
             rule_changed_turn: -1,
             governor: None,
             governor_penalty_turns: 0,
+            garrison_stance: d.default_stance,
         }
     }
 

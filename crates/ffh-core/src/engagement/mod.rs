@@ -20,11 +20,15 @@
 //! The rules (set-up, morale, defensive strikes and collateral, the post-battle steps, the
 //! estimator's inputs) map units onto these types; the calibration battery that makes the win
 //! table is `calibrate` (tests).
+//!
+//! On `Game`: the option and the dispatch rule (which attacks are engagements) and the stances'
+//! commands ([`state`]).
 
 pub mod battle;
 pub mod expect;
 mod phi_table;
 pub mod resolve;
+pub mod state;
 
 #[cfg(test)]
 mod calibrate;
