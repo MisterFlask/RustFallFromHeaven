@@ -69,6 +69,11 @@ test("actions and reach in words", () => {
   assert.match(L.reachText("Charge", { flanking: true, rules: [] }), /anywhere$/);
   assert.match(L.reachText("Charge", { flanking: false }), /no flanking here/);
   assert.match(L.reachText("Shoot"), /back unit/);
+  // Nearby first: every damaging action but a flanking charge (docs/ENGAGEMENTS.md, Targeting).
+  for (const k of ["Strike", "Stab", "Shoot", "Bombard", "Spell"]) assert.match(L.reachText(k), /its own and the next lanes first/, k);
+  assert.match(L.reachText("Charge", { flanking: false }), /its own and the next lanes first/);
+  assert.doesNotMatch(L.reachText("Charge", field.ground), /next lanes/);
+  assert.doesNotMatch(L.reachText("Heal"), /next lanes/);
   // every special of a unit is worded from its own fields, the rule values from the params
   const elephant = field.fighters.find((f) => f.name === "War Elephant");
   const notes = L.specials(elephant, field.ground, field.params).join(" ");

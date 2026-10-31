@@ -194,24 +194,28 @@ export function actionText(f, row) {
   return `${n} ${n > 1 ? K.nouns : K.noun}`;
 }
 
+/** The engine's nearby first in words (docs/ENGAGEMENTS.md, Targeting). */
+const NEAR = "(its own and the next lanes first)";
+
 /** Whom an action of `kind` can hit, in words (`ground`: the battle's, for the charge and its
- *  first-round damage). */
+ *  first-round damage). Every damaging action but a flanking charge looks first at the enemies
+ *  within one lane of its own (`NEAR`: the engine's nearby first, docs/ENGAGEMENTS.md). */
 export function reachText(kind, ground) {
   switch (kindKey(kind)) {
     case "Strike":
-      return "the front unit of any enemy lane";
+      return `the front unit of any enemy lane ${NEAR}`;
     case "Charge": {
-      if (ground?.flanking === false) return "the front unit of any lane (no flanking here)";
+      if (ground?.flanking === false) return `the front unit of any lane ${NEAR}; no flanking here`;
       const c = chargeRule(ground);
       return `the most dangerous enemy for its HP left, anywhere${c ? `; ${damageText(c.pct)} in the first round` : ""}`;
     }
     case "Stab":
-      return "any enemy";
+      return `any enemy ${NEAR}`;
     case "Shoot":
     case "Bombard":
-      return "the back unit of any enemy lane";
+      return `the back unit of any enemy lane ${NEAR}`;
     case "Spell":
-      return "the back unit of any enemy lane; never misses";
+      return `the back unit of any enemy lane ${NEAR}; never misses`;
     case "Heal":
       return "the most hurt ally";
     default:
