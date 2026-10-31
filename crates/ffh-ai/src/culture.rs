@@ -194,12 +194,13 @@ fn defend(g: &mut Game, p: PlayerId, only_governed: bool) {
     }
 }
 
-/// Whether city `c` is training a defender that will stay in it: a city defender whose order
+/// Whether city `c` is training a defender that will stay in it: its own next order (the first
+/// behind any armies' requisition orders: `production::own_order`) is a city defender whose order
 /// leaves it in the city's own garrison (an attacker, or a unit bound for an army, adds no lasting
 /// resistance).
 fn trains_a_defender(g: &Game, c: CityId) -> bool {
-    let Some(o) = g.cities[c].order_queue.first() else { return false };
-    if o.order_type != OrderType::ORDER_TRAIN || g.city_production_unit_ai(c) != Some(UnitAIType::UNITAI_CITY_DEFENSE) {
+    let Some(o) = crate::production::own_order(g, c) else { return false };
+    if o.order_type != OrderType::ORDER_TRAIN || opt_from_i32::<UnitAIType>(o.data2) != Some(UnitAIType::UNITAI_CITY_DEFENSE) {
         return false;
     }
     match o.dest.or(g.cities[c].recruit_default) {
@@ -1106,6 +1107,34 @@ mod tests {
         g.cities[ours].culture_pressure[p1] = 100 * g.d.defines.culture_revolt_flip;
         g.cities[target].culture_pressure[p1] = 0;
         assert!(!flips_against(&g, p0, p1), "never our capital");
+    }
+
+    /// An army's requisition order ahead of the defender (docs/ARMIES.md): the defender behind it
+    /// is still the city's own next unit, so no second one is queued each turn.
+    #[test]
+    fn a_defender_behind_a_requisition_order_still_counts() {
+        let (mut g, _, _, town) = duel();
+        g.setup.options[GameOptionType::GAMEOPTION_ARMIES] = true;
+        let (p0, p1) = (PlayerId(0), PlayerId(1));
+        let target = g.player_init_city(p0, 11, 7, true, true);
+        g.cities[target].revealed[g.players[p1].team] = true;
+        set_rate(&mut g, town, 60);
+        set_rate(&mut g, target, 0);
+        g.city_set_culture_channel(town, Some((revolt(&g), p0, None))).unwrap();
+        defend(&mut g, p0, false);
+        assert!(trains_a_defender(&g, target), "a defender first");
+        // An army requisitions from the city: its order goes ahead of the defender.
+        let w = g.d.t::<UnitType>("UNIT_WARRIOR");
+        let units: Vec<UnitId> = (0..2).map(|_| g.player_init_unit(p0, w, 12, 7, Some(UnitAIType::UNITAI_ATTACK), None)).collect();
+        let a = g.army_form(p0, &units).unwrap();
+        g.army_set_target_size(p0, a, 3).unwrap();
+        g.army_add_requisition(p0, a, target).unwrap();
+        g.player_do_requisition(p0);
+        assert!(g.cities[target].order_queue[0].requisition, "the requisition leads the queue");
+        assert!(trains_a_defender(&g, target), "the defender behind it");
+        let queued = g.cities[target].order_queue.len();
+        defend(&mut g, p0, false);
+        assert_eq!(g.cities[target].order_queue.len(), queued, "no second defender");
     }
 }
 
