@@ -214,8 +214,9 @@ disband (march to the nearest city's garrison), upgrade all (the units, the most
 first, with the total price). A marching recruit (a unit trained for an army or another city's
 garrison, on its way there) can be selected to look at: the panel says "Marching to the 2nd Army
 (3 turns)" (or how long it has waited, or that it has no way there now) and where it came from,
-and offers no orders (the rules move it until it arrives; Group and Split leave it out); it is
-never among the units waiting for orders. On the map its figure carries a small ochre double
+and offers no orders (the rules move it until it arrives; "All", Shift-click on the plot, Group and
+Split leave it out, so a selection of the units there keeps its orders); it is never among the
+units waiting for orders. On the map its figure carries a small ochre double
 chevron in place of the moves pip (the 2D pixel-art map: its state mark), and the plot's tooltip
 says where it marches.
 When a group is done, the next one waiting for orders on the plot it left, then on its plot,

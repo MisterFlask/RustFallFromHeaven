@@ -318,7 +318,7 @@ export function click(x, y, ev) {
       const i = groups.indexOf(currentGroup());
       g = groups[(i + 1) % groups.length];
     }
-    if (ev?.shiftKey) select(own.map((u) => u.id));
+    if (ev?.shiftKey) select(allHere(own));
     else selectGroup(g);
     return;
   }
@@ -509,6 +509,13 @@ export function shiftReleased() {
 /** The units here that take orders: not a marching recruit (this game's armies: the rules move
  *  it until it arrives). */
 const orderable = (units) => units.filter((u) => !u.march);
+
+/** The units "All" and Shift-click select on a plot: those that take orders (a marching recruit
+ *  among them would leave the selection without orders), or all when none does (to look at). */
+const allHere = (units) => {
+  const ready = orderable(units);
+  return (ready.length ? ready : units).map((u) => u.id);
+};
 
 /** The march of the first selected marching recruit (it takes no orders), or null. */
 export function selectionMarch() {
@@ -1149,7 +1156,7 @@ export function renderPanel() {
   const march = selectionMarch();
   const tools = h(
     "div.row",
-    h("button", { onclick: () => select(own.map((u) => u.id)), disabled: own.length < 2, title: "Select every unit here" }, "All"),
+    h("button", { onclick: () => select(allHere(own)), disabled: orderable(own).length < 2, title: "Select every unit here that takes orders (not a marching recruit)" }, "All"),
     h("button", { onclick: groupAll, disabled: orderable(own).length < 2, title: "Join the units here into one group (not a marching recruit)" }, "Group"),
     h("button", { onclick: splitAll, disabled: S.sel.units.filter((id) => !S.units.get(id)?.march).length < 2, title: "Each selected unit its own group" }, "Split"),
     h("button", { onclick: () => selectNext(), title: "Next unit waiting for orders [Tab]" }, "Next"),
