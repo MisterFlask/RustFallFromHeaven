@@ -369,8 +369,9 @@ impl Game {
     /// `MOVE_THROUGH_ENEMY`, the AI's pre-attack spells and bombard-first), then, for an
     /// engagement (`group_engage_applies`), the engagement's preamble and one engagement
     /// (`Game::group_attack_engage`); otherwise today's attack, unchanged. `force`: the units
-    /// to commit (checked against the pool), `None` the stance's proposal. `Err`: refused, nothing
-    /// changed.
+    /// to commit (checked against the pool), `None` the stance's proposal. `Err`: refused, no
+    /// battle; nothing changed but what an AI owner's preamble did (its pre-attack spells, a war
+    /// it declared on the plot's owner, which may have pushed the defenders off the plot).
     pub fn group_attack_force(&mut self, g: GroupId, x: i32, y: i32, flags: i32, force: Option<Vec<UnitId>>) -> Result<(bool, bool), &'static str> {
         let mut dest_plot = self.map.plot_xy(x, y);
 

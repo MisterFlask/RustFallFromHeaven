@@ -1,13 +1,20 @@
 //! Engagement combat scenarios (GAMEOPTION_ENGAGEMENTS, phase 6 step 6; docs/ENGAGEMENTS.md):
 //! whole engagements through the rules' entries (`group_attack`, `unit_attack`) on small staged
 //! worlds: slots, the shield and a city's capture; siege units' caps on either side; defensive
-//! strikes and collateral reaching the reserve; fear and the rout; withdrawals on both sides; the
-//! draw; hidden nationality in the report; an immortal reborn; a conversion once after two kills;
-//! Blitz; a missile strike; the capture of non-combatants; ships keeping the duel; saves.
+//! strikes and collateral reaching the reserve; fear and the rout; withdrawals on both sides; a
+//! marching recruit's; the draw; hidden nationality in the report; the reserve left; an immortal
+//! reborn; a conversion once after two kills; battle XP before the per-kill effects; captures and
+//! slaves outside the army; Hidden's quirk with no free plot; Blitz; Taunt; the AI's preamble; a
+//! missile strike and its kill; the capture of non-combatants; ships keeping the duel; saves.
 //!
 //! The outcomes are random: a test either asserts what holds in every battle, or runs a handful
 //! of seeds and asserts what must happen in at least one (each says which).
 
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Arc;
+
+use ffh_core::army::{March, RecruitDest};
+use ffh_core::controller::{AiHook, Controller};
 use ffh_core::defs::MOVE_DIRECT_ATTACK;
 use ffh_core::engagement::report::{BattleReport, LogEvent, SatOutWhy};
 use ffh_core::engagement::{EngageResult, Fate, Side};
@@ -32,8 +39,13 @@ fn world_with(engagements: bool, war: bool) -> World {
 }
 
 fn world_sized(engagements: bool, war: bool, size: &str) -> World {
+    world_of(engagements, war, size, 2)
+}
+
+/// [`world_sized`] with `players` players (0 and 1 at war when `war`).
+fn world_of(engagements: bool, war: bool, size: &str, players: usize) -> World {
     let d = ffh_data::global();
-    let mut setup = GameSetup::standard(d, 2, size, 5);
+    let mut setup = GameSetup::standard(d, players, size, 5);
     setup.options[GameOptionType::GAMEOPTION_ARMIES] = true;
     setup.options[GameOptionType::GAMEOPTION_ENGAGEMENTS] = engagements;
     let mut g = Game::new(d, setup);
@@ -120,6 +132,23 @@ impl World {
     fn alive(&self, u: UnitId) -> bool {
         self.g.units.contains(u) && !self.g.unit_is_dead(u)
     }
+
+    /// A land plot with no unit and no owner at least `dist` plots from `near`.
+    fn far_plot(&self, near: PlotIdx, dist: i32) -> PlotIdx {
+        let (nx, ny) = self.g.map.xy(near);
+        self.g
+            .map
+            .plot_ids()
+            .find(|&p| {
+                let (x, y) = self.g.map.xy(p);
+                !self.g.plot_is_water(p)
+                    && !self.g.plot_is_peak(p)
+                    && self.g.map.plots[p].owner.is_none()
+                    && self.g.map.plots[p].units.is_empty()
+                    && self.g.plot_distance(x, y, nx, ny) >= dist
+            })
+            .expect("a far plot")
+    }
 }
 
 fn events(r: &BattleReport) -> &[LogEvent] {
@@ -150,6 +179,7 @@ fn axemen_storm_a_walled_city_of_archers() {
         let log = r.log.as_ref().unwrap();
         assert_eq!(log.slots[0].total, 8, "10 a side on open land, two lost to the walls: {:?}", log.slots[0]);
         assert_eq!((r.sides[0].committed, r.sides[1].committed), (8, 4));
+        assert_eq!((r.sides[0].slots, r.sides[1].slots), (8, 10), "the report keeps the slots");
         assert!(r.place.city.is_some());
         // The front (the axeman) shields the archers from the attacking axemen.
         let front = log.fighters.iter().position(|lf| lf.side == Side::Defender && lf.slot.is_some() && lf.pos == ffh_core::engagement::report::Position::Front).unwrap();
@@ -239,6 +269,7 @@ fn the_reserve_strikes_and_takes_collateral() {
         let (_, reports) = f.attack(cat);
         let r = &reports[0];
         assert_eq!(r.sides[1].committed, 10);
+        assert_eq!(r.outcome.defenders_left, 2, "seed {seed}: the two in reserve, whatever became of the ten");
         let log = r.log.as_ref().unwrap();
         for ev in &log.events {
             match ev {
@@ -583,5 +614,286 @@ fn reports_survive_a_save() {
     let log = reports[0].log.as_ref().unwrap();
     let killed = log.fighters.iter().filter(|lf| lf.side == Side::Defender && matches!(lf.fate, Some(Fate::Killed { .. }))).count() as i32;
     assert_eq!(killed, reports[0].sides[1].lost.iter().map(|(_, n)| n).sum::<i32>());
+}
+
+/// A marching recruit on the defended plot defends like any unit there; one that withdraws (outside
+/// a city) flees and still marches, in no army. Every battle.
+#[test]
+fn a_marching_recruit_defends_and_keeps_its_march() {
+    let mut w = world();
+    let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
+    let home = w.far_plot(to, 6);
+    let c = w.city(p1, home, 0);
+    let recruit = w.unit(p1, "UNIT_WARRIOR", to);
+    w.g.unit_change_extra_withdrawal(recruit, 100);
+    let dest = RecruitDest::Garrison(c);
+    w.g.units[recruit].march = Some(March { dest, stalled: 0, left_turn: 0, from_city: c, diverted: false });
+    w.g.player_army_sync(p1);
+    let axemen = w.units(p0, "UNIT_AXEMAN", from, 6);
+    for seed in 0..4 {
+        let mut f = w.fork(seed);
+        let (_, reports) = f.attack(axemen[0]);
+        let r = &reports[0];
+        assert_eq!(r.sides[1].committed, 1, "seed {seed}: the recruit defends");
+        assert_eq!((r.sides[1].withdrew, r.sides[1].fled), (1, 1), "seed {seed}");
+        assert!(f.alive(recruit) && f.g.unit_plot(recruit) != to, "seed {seed}: it fled");
+        assert_eq!(f.g.units[recruit].march.as_ref().map(|m| m.dest), Some(dest), "seed {seed}: it still marches");
+        assert_eq!(f.g.units[recruit].army, None, "seed {seed}");
+    }
+}
+
+/// The report counts the defender's uncommitted units still on the plot, also for a
+/// hidden-nationality attack at peace (the reserve it would have fought). Every battle.
+#[test]
+fn the_report_counts_the_reserve_left() {
+    let mut w = world_with(true, false);
+    let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
+    for d in w.units(p1, "UNIT_WARRIOR", to, 11) {
+        w.g.units[d].damage = 60;
+    }
+    let a = w.units(p0, "UNIT_AXEMAN", from, 4);
+    for &u in &a {
+        w.promote(u, "PROMOTION_HIDDEN_NATIONALITY");
+    }
+    for seed in 0..4 {
+        let mut f = w.fork(seed);
+        let (attacked, reports) = f.attack(a[0]);
+        assert!(attacked);
+        let r = &reports[0];
+        assert_eq!((r.sides[1].slots, r.sides[1].committed), (10, 10));
+        assert_eq!(r.outcome.defenders_left, 1, "seed {seed}: {:?}", r.outcome);
+    }
+}
+
+/// Battle XP is granted before the per-kill effects (as the duel grants it before `combatWon`):
+/// the log's XP of the killer is the battle's alone, its kill's heal and free XP follow, and the
+/// unit ends with both XP. Every battle with a kill.
+#[test]
+fn battle_xp_comes_before_the_per_kill_effects() {
+    let mut w = world();
+    let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
+    w.g.players[p1].human = true;
+    let v = w.unit(p1, "UNIT_WARRIOR", to);
+    w.g.units[v].damage = 90;
+    let killer = w.unit(p0, "UNIT_AXEMAN", from);
+    w.g.units[killer].damage = 50;
+    w.g.units[killer].combat_heal_percent = 30;
+    w.g.players[p0].free_xp_from_combat = 7;
+    let mut kills = 0;
+    for seed in 0..4 {
+        let mut f = w.fork(seed);
+        let before = f.g.units[killer].experience;
+        let (_, reports) = f.attack(killer);
+        let r = &reports[0];
+        if r.sides[1].lost.is_empty() {
+            continue;
+        }
+        kills += 1;
+        let evs = events(r);
+        let xp_at = evs.iter().position(|e| matches!(e, LogEvent::Xp { unit: 0, .. })).expect("the killer's battle XP");
+        let heal_at = evs.iter().position(|e| matches!(e, LogEvent::Heal { unit: 0, .. })).expect("the heal on a kill");
+        assert!(xp_at < heal_at, "seed {seed}: battle XP first");
+        let LogEvent::Xp { amount, .. } = evs[xp_at] else { unreachable!() };
+        assert!(amount >= f.g.d.defines.min_experience_per_combat, "seed {seed}: {amount}");
+        assert_eq!(f.g.units[killer].experience - before, amount + 7, "seed {seed}: the battle's XP, then the kill's free XP");
+    }
+    assert!(kills > 0, "never a kill");
+}
+
+/// Captured and enslaved units appear on the capturer's plot outside the engagement and its army:
+/// in a group of their own and in no army of the capturer's. Every battle with the kill.
+#[test]
+fn captures_and_slaves_are_outside_the_army() {
+    // A captured animal (Subdue Animal captures every animal it kills).
+    let mut w = world();
+    let (p0, from, to) = (w.p0, w.from, w.to);
+    let barbarian = w.g.barbarian_player();
+    let wolf = w.unit(barbarian, "UNIT_WOLF", to);
+    w.g.units[wolf].damage = 95;
+    let tamer = w.unit(p0, "UNIT_AXEMAN", from);
+    w.promote(tamer, "PROMOTION_SUBDUE_ANIMAL");
+    let army = w.g.units[tamer].army;
+    assert!(army.is_some());
+    let wolf_type = w.g.d.t::<UnitType>("UNIT_WOLF");
+    let mut captured = 0;
+    for seed in 0..4 {
+        let mut f = w.fork(seed);
+        let (_, reports) = f.attack(tamer);
+        let r = &reports[0];
+        if r.sides[1].lost.is_empty() {
+            continue;
+        }
+        assert!(f.alive(tamer), "seed {seed}");
+        let ours: Vec<UnitId> = f.g.players[p0].units.iter().copied().filter(|&u| f.g.units[u].unit_type == wolf_type).collect();
+        assert_eq!(ours.len(), 1, "seed {seed}: the wolf is captured");
+        let cu = ours[0];
+        assert_eq!(f.g.unit_plot(cu), from, "seed {seed}: on the capturer's plot (the tamer moved in)");
+        assert_eq!(f.g.unit_plot(tamer), to, "seed {seed}");
+        assert_ne!(f.g.units[cu].group, f.g.units[tamer].group, "seed {seed}");
+        assert_eq!(f.g.units[tamer].army, army, "seed {seed}");
+        assert!(f.g.units[cu].army.is_none() || f.g.units[cu].army != army, "seed {seed}: not in the tamer's army");
+        assert_eq!(r.sides[0].committed, 1, "seed {seed}: not in the engagement");
+        captured += 1;
+    }
+    assert!(captured > 0, "the tamer never took the wolf");
+
+    // A slave (the player's enslavement chance).
+    let mut w = world();
+    let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
+    let v = w.unit(p1, "UNIT_WARRIOR", to);
+    w.g.units[v].damage = 95;
+    let master = w.unit(p0, "UNIT_AXEMAN", from);
+    w.units(p0, "UNIT_AXEMAN", from, 2);
+    w.g.players[p0].enslavement_chance = 100;
+    let slave = opt_from_i32::<UnitType>(w.g.d.defines.slave_unit).expect("a slave unit");
+    let mut enslaved = 0;
+    for seed in 0..4 {
+        let mut f = w.fork(seed);
+        let (_, reports) = f.attack(master);
+        if reports[0].sides[1].lost.is_empty() {
+            continue;
+        }
+        let slaves: Vec<UnitId> = f.g.players[p0].units.iter().copied().filter(|&u| f.g.units[u].unit_type == slave).collect();
+        assert_eq!(slaves.len(), 1, "seed {seed}: one slave");
+        let su = slaves[0];
+        assert_eq!(f.g.unit_plot(su), from, "seed {seed}: on the killer's plot");
+        for a in f.g.players[p0].units.clone() {
+            if a != su && f.alive(a) {
+                assert_ne!(f.g.units[su].group, f.g.units[a].group, "seed {seed}");
+                assert!(f.g.units[su].army.is_none() || f.g.units[su].army != f.g.units[a].army, "seed {seed}");
+            }
+        }
+        enslaved += 1;
+    }
+    assert!(enslaved > 0, "the warrior never fell");
+}
+
+/// A Hidden attacker loses Hidden after the battle (removed by combat); with a visible enemy on its
+/// plot and every plot around it taken, today's quirk kills it there and then. The post-battle
+/// steps after that go on without the unit. Every battle (it always survives the fight).
+#[test]
+fn a_hidden_attacker_with_no_free_plot_dies_after_the_battle() {
+    let mut w = world();
+    let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
+    // Eleven weak warriors: ten fight, one stays in reserve and keeps `to` taken.
+    for d in w.units(p1, "UNIT_WARRIOR", to, 11) {
+        w.g.units[d].damage = 90;
+    }
+    let hidden = w.unit(p0, "UNIT_AXEMAN", from);
+    w.promote(hidden, "PROMOTION_HIDDEN");
+    w.g.units[hidden].extra_combat_percent = 3000;
+    w.g.units[hidden].extra_combat_percent_defense = 3000;
+    assert!(w.g.unit_is_invisible(hidden, w.g.players[p1].team, true));
+    // An enemy on the attacker's own plot (it does not see the Hidden unit) and on every other
+    // land plot around it.
+    let (fx, fy) = w.g.map.xy(from);
+    for dx in -1..=1 {
+        for dy in -1..=1 {
+            if let Some(q) = w.g.map.plot_xy(fx + dx, fy + dy) {
+                if q != to && !w.g.plot_is_water(q) && !w.g.plot_is_peak(q) {
+                    w.unit(p1, "UNIT_WARRIOR", q);
+                }
+            }
+        }
+    }
+    assert!(w.g.map.plots[from].units.iter().any(|&u| w.g.units[u].owner == p1), "an enemy shares the attacker's plot");
+    for seed in 0..4 {
+        let mut f = w.fork(seed);
+        f.g.telemetry = ffh_core::telemetry::Telemetry::new(None);
+        let (attacked, reports) = f.attack(hidden);
+        assert!(attacked);
+        let r = &reports[0];
+        assert_eq!((r.sides[0].committed, r.sides[0].lost.len()), (1, 0), "seed {seed}: it fought and survived");
+        assert_eq!(r.outcome.result, EngageResult::AttackerWon, "seed {seed}");
+        assert!(!r.outcome.plot_taken && r.outcome.defenders_left == 1, "seed {seed}: {:?}", r.outcome);
+        assert!(!f.g.units.contains(hidden), "seed {seed}: no free plot, the quirk killed it");
+        assert!(f.g.players[p0].units.iter().all(|&u| u != hidden));
+        assert!(f.g.players[p0].armies.iter().all(|&a| f.g.armies[a].group.map_or(true, |g| f.g.groups.contains(g))), "seed {seed}: armies settled");
+    }
+}
+
+/// Taunt makes each adjacent enemy attack the caster, one engagement each; once one has killed
+/// the caster the spell ends: one report. Every cast.
+#[test]
+fn taunt_stops_when_the_caster_dies() {
+    let mut w = world();
+    let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
+    let caster = w.unit(p0, "UNIT_HARLEQUIN", from);
+    assert!(w.g.d.unit_roles[w.g.units[caster].unit_type].is_some(), "the Harlequin defends in an engagement");
+    w.g.units[caster].damage = 99;
+    w.g.unit_change_extra_withdrawal(caster, -1000);
+    let taunted = w.units(p1, "UNIT_AXEMAN", to, 3);
+    for &u in &taunted {
+        w.g.units[u].resist = -1000;
+        w.g.units[u].extra_combat_percent = 900;
+    }
+    let taunt = w.g.d.t::<SpellType>("SPELL_TAUNT");
+    for seed in 0..4 {
+        let mut f = w.fork(seed);
+        f.g.unit_cast(caster, taunt);
+        assert!(!f.alive(caster), "seed {seed}: the caster fell");
+        assert_eq!(f.g.battle_reports.len(), 1, "seed {seed}: one engagement, then the spell ends");
+        assert_eq!(f.g.battle_reports[0].sides[0].committed, 1);
+    }
+}
+
+/// Records the AI's pre-attack casting hook.
+struct AttackSpells(AtomicUsize);
+
+impl Controller for AttackSpells {
+    fn hook(&self, _g: &mut Game, h: AiHook) {
+        if matches!(h, AiHook::GroupAttackSpells(_)) {
+            self.0.fetch_add(1, Ordering::SeqCst);
+        }
+    }
+}
+
+/// `group_attack_force` with a force runs today's AI preamble before the engagement: the
+/// pre-attack casting hook, and the war declaration on the third party whose land the enemy
+/// stands in (an AI with a war plan against it; the enemy is at war with it too, so the
+/// declaration does not push it off the plot).
+#[test]
+fn a_forced_ai_attack_runs_the_preamble() {
+    let mut w = world_of(true, true, "WORLDSIZE_TINY", 3);
+    let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
+    let p2 = PlayerId(2);
+    let (t0, t1, t2) = (w.g.players[p0].team, w.g.players[p1].team, w.g.players[p2].team);
+    w.g.team_meet(t0, t2, false);
+    w.g.team_meet(t1, t2, false);
+    w.g.team_declare_war(t1, t2, false, None);
+    w.g.plot_set_owner(to, Some(p2), true, true);
+    w.g.teams[t0].ai_war_plan[t2] = Some(WarPlanType::WARPLAN_LIMITED);
+    assert!(!w.g.teams[t0].at_war[t2] && w.g.team_can_declare_war(t0, t2));
+    let d = w.unit(p1, "UNIT_WARRIOR", to);
+    w.g.units[d].damage = 50;
+    let a = w.unit(p0, "UNIT_AXEMAN", from);
+    w.units(p0, "UNIT_AXEMAN", from, 2);
+    let hook = Arc::new(AttackSpells(AtomicUsize::new(0)));
+    w.g.controllers[p0] = hook.clone();
+    let grp = w.g.units[a].group.unwrap();
+    let (x, y) = w.g.map.xy(to);
+    let r = w.g.group_attack_force(grp, x, y, MOVE_DIRECT_ATTACK, Some(vec![a]));
+    assert_eq!(hook.0.load(Ordering::SeqCst), 1, "the pre-attack casting hook ran once");
+    assert!(w.g.teams[t0].at_war[t2], "the AI declared war on the plot's owner");
+    assert_eq!(r, Ok((true, false)));
+    assert_eq!(w.g.battle_reports.len(), 1);
+    assert_eq!(w.g.battle_reports[0].sides[0].committed, 1, "the force given");
+}
+
+/// A Fireball's kill counts as an engagement's kill does in telemetry (`kill_by`).
+#[test]
+fn a_missile_kill_counts_in_telemetry() {
+    let mut w = world();
+    let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
+    let v = w.unit(p1, "UNIT_WARRIOR", to);
+    w.g.units[v].damage = 99;
+    let fireball = w.unit(p0, "UNIT_FIREBALL", from);
+    let mut f = w.fork(1);
+    f.g.telemetry = ffh_core::telemetry::Telemetry::new(None);
+    let (attacked, _) = f.attack(fireball);
+    assert!(attacked && !f.alive(v), "the fireball killed the warrior");
+    let json = f.g.telemetry_json().expect("telemetry on");
+    assert!(json.contains("\"kill_by\":{\"UNIT_FIREBALL\":[1,"), "{json}");
+    assert!(json.contains("\"engage_missile\":{\"kill\":[1,"), "{json}");
 }
 
