@@ -787,6 +787,12 @@ about half their compile on Direct3D); `?r3d={"noiseTex":0}` compiles the arithm
 R16F texture instead of R8.
 `lite` (1; not a panel row, read when the programs are built) compiles parts of the props' and the
 water's programs out, `liteOff` and `liteOn` choose which (§8).
+`terrainLean` (1, read when the programs are built) is the lean terrain (§8), `packScene` (1) the
+scene packed into one target (docs/R3D.md §11.1: the scene's programs compile at link on
+Direct3D), `fastStart` (1) the start-up's CPU work done while the programs compile and the sprites
+uploaded from memory (`earlySync` 0 turns off the overlap alone). With all five compile-time switches
+off the mode draws as before them (the lab's stills match bit for bit):
+`?r3d={"noiseTex":0,"terrainLean":0,"lite":0,"packScene":0,"fastStart":0}`.
 
 ## 12. Removing it
 

@@ -773,6 +773,29 @@ comparison alternated old and new):
   same noise. Not measured on a GPU: the per-frame cost of ~100 3D-texture fetches against the
   arithmetic, and the 8-bit precision of the hardware's bilinear weights on the broadest noises
   (a TEXTURE_2D_ARRAY, its layer an explicit mod, is the fallback: +113 instructions).
+* **Five together** (prototype branch `proto/combined`): the noise texture above, the HD-2D mode's
+  lean terrain and smaller props and water programs (docs/HD2D.md §8: `terrainLean`, `lite`), the
+  scene packed into one target so its programs compile at link (`packScene`, `SCENE_PACKED`) and
+  the start-up's CPU work done while they compile (`fastStart`). The shader savings compound (the
+  lean terrain's 44 noises are each cheaper from the texture; the props' one-plane brush marks read
+  the dab texture), and under the texture the sea's gradient normals take pnoise's slope from it
+  too (`pnoiseDT`: inside a cell the bilinear filter is linear in the smoothstepped coordinate, so a
+  slope is the difference of two fetches on the cell's edges; the sea 1233 instructions, against
+  1250 with the arithmetic gradient and 1317 with the finite differences of the texture noise).
+  The HD-2D scene programs (glslang + spirv-opt, as above; FXC estimated at 2.6e-7 s × N²):
+
+  | program | origin/master | five together (packed) |
+  |---|---|---|
+  | terrain | 6308 (10.4 s) | 2730 (1.9 s) |
+  | water | 3159 (2.6 s) | sea 1287 (0.4 s) + rivers 1293 (0.4 s) |
+  | props | 2856 (2.1 s) | 874 (0.2 s) |
+  | cards | 136 | 191 |
+  | the first draw | 15.1 s, one program after another, the browser frozen | none at the first draw: 3.0 s at link, together on ANGLE's worker threads, the page live (about the terrain's 1.9 s, more with the compiles slowing each other) |
+
+  With the scene packed there are no warm-up draws, so the start-up's sync overlaps the wait for
+  the links (`Map3D.ready`); otherwise it overlaps the warm-up's first draw. With the five switches
+  off (`?r3d={"noiseTex":0,"terrainLean":0,"lite":0,"packScene":0,"fastStart":0}`) the lab's stills
+  match origin/master's bit for bit.
 
 **Compiling without freezing.** Where the browser offers `KHR_parallel_shader_compile` (Chrome
 does), a `Program` no longer waits for its link: the programs compile together on ANGLE's worker

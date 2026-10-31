@@ -150,7 +150,8 @@ export class Map3D {
    *  (gl.js, whenCompiled) or do not compile; the caller then disposes the renderer. Then the scene's
    *  programs are drawn once each (Pipeline.warm): on Direct3D that is where they compile, the
    *  browser drawing nothing meanwhile, so the page is told first ("ffh:r3d-compiling", main.js)
-   *  and given a moment to show it. */
+   *  and given a moment to show it. (A packed scene, pipeline.js `packed`, has none: its programs
+   *  compile at link, inside the first wait.) */
   async ready(timeoutMs) {
     // (`fastStart`, the default: the scene is built from the game state -- the world, its textures,
     // the dressing and its instances, the paint layers, the figures, and the HD-2D mode's sprites
@@ -169,12 +170,14 @@ export class Map3D {
     if (overlap && packed) await this.prepareWhile(linked);
     await linked;
     performance.mark("r3d:linked");
-    if (/direct3d|d3d1/i.test(this.glName)) {
+    // (A packed scene has no warm-up draws, so no frozen browser to announce.)
+    const warmed = this.pipeline.scenePrograms();
+    if (warmed.length && /direct3d|d3d1/i.test(this.glName)) {
       globalThis.dispatchEvent?.(new CustomEvent("ffh:r3d-compiling"));
       await new Promise((r) => setTimeout(r, 100));
     }
     // (The warm-up issues its first draw, the terrain's, before it first waits.)
-    const warm = this.pipeline.warm(this.pipeline.scenePrograms());
+    const warm = this.pipeline.warm(warmed);
     if (overlap) await this.prepareWhile(warm);
     await warm;
     performance.mark("r3d:warmed");
