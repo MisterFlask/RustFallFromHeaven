@@ -3,73 +3,36 @@
 //! the ground rules G1-G5).
 //!
 //! **Formation battles** (revision 4, the owner's Ogre Battle-style engagements; docs/ENGAGEMENTS.md):
-//! each side's units stand on a grid of three rows by its lanes and act by row, role and speed for
-//! three rounds. Their pure resolver is [`formation`] ([`formation::resolve`]: the fighters on
-//! their grids, the ground, the rounds and passes, the events and the end state; and the rules'
-//! auto formation, [`formation::auto_arrange`]); the rules do not call it yet.
+//! when an army attacks a land plot, each side's units stand on a grid of three rows by its lanes
+//! and act by row, role and speed for three rounds; the plot falls only when no defender is left
+//! on it. Their pure resolver is [`formation`] ([`formation::resolve`]: the fighters on their
+//! grids, the ground, the rounds and passes, the events and the end state; the rules' auto
+//! formation, [`formation::auto_arrange`]), which knows nothing of `Game`.
 //!
-//! The rules still fight the **round model** (phase 6 before revision 4), until they move to
-//! formation battles: when an army attacks a land plot, each side commits up to S units, which
-//! fight in rounds until one side's committed force is destroyed or has withdrawn. At its core is
-//! the pure round model, which knows nothing of `Game`:
-//! - [`Battle`] ([`battle`]): the fighters of both sides in slot order (role flags, target-class
-//!   order, max HP and HP, volleys, withdrawal chance, combat limit, morale), the pair table of A
-//!   and Dv, and the battle-level effects phase 7's in-battle spells will return
-//!   ([`BattleEffect`]).
-//! - [`targets`] and the class table on [`Battle`]: the targeting rules (class order, the shield,
-//!   first-strike immunity in volleys, combat-limit skips), read by both integrators.
-//! - [`resolve_sampled`] ([`resolve`]): the battle as fought, drawing from the RNG passed in
-//!   ([`BattleRng`], backed by the game's sync RNG), with the per-round event log the battle
-//!   report and the battle UI replay ([`BattleEvent`]).
-//! - [`resolve_expected`] ([`expect`]): the estimator's integrator, the same battle in moments with
-//!   no RNG, and its calibrated win chance ([`expect::win_permille`]).
-//!
-//! The rules (set-up, morale, defensive strikes and collateral, the post-battle steps, the
-//! estimator's inputs) map units onto these types; the calibration battery that makes the win
-//! table is `calibrate` (tests).
-//!
-//! On `Game`: the option and the dispatch rule (which attacks are engagements) and the stances'
-//! commands ([`state`]), the battle reports with the battle log the client replays
-//! ([`report`]), the units' roles, HP and A and Dv per hit ([`stats`]), each side's slots
-//! ([`slots`]), who can fight, the stances each side fights with and the pick of its force
-//! ([`pick`]), the engagement itself (`engage`, `apply`, `sink`), the estimator of an engagement
-//! or an assault from explicit inputs, which the attacker's auto-pick consults ([`estimate`]),
-//! and the player's attack preview, sampled on a private RNG ([`preview`]).
+//! On `Game`: the option and the dispatch rule (which attacks are engagements, [`state`]), the
+//! battle reports with the battle log the client replays ([`report`]), the units' roles, HP and A
+//! and Dv per hit ([`stats`]), each side's slots ([`slots`]), who can fight ([`pick`]), where each
+//! side's units stand (the auto formation and an ordered formation's check: [`arrange`]), the
+//! engagement itself (`engage`, `apply`, `sink`), and the player's attack preview, sampled on a
+//! private RNG ([`preview`]).
 
 mod apply;
-pub mod battle;
+pub mod arrange;
 pub(crate) mod engage;
-pub mod estimate;
-pub mod expect;
 pub mod formation;
-mod phi_table;
 pub mod pick;
 pub mod preview;
 pub mod report;
-pub mod resolve;
 mod sink;
 pub mod slots;
 pub mod state;
 pub mod stats;
 
-#[cfg(test)]
-mod calibrate;
-
-/// Unit `u`'s damage field, or its override in `damage` (an estimate's; the last entry of a unit
-/// counts).
-pub(crate) fn damage_with(g: &crate::game::Game, u: crate::ids::UnitId, damage: &[(crate::ids::UnitId, i32)]) -> i32 {
-    damage.iter().rev().find(|(x, _)| *x == u).map_or(g.units[u].damage, |&(_, d)| d)
-}
-
-pub use engage::EngageOutcome;
-pub use estimate::{swap_better, AssaultEstimate, Attackers, Eligible, Estimate, EstimateInput};
-pub use battle::{damage_from_hp, hp_from_damage, Battle, BattleEffect, Fighter, FighterIdx, Pair, Params, RoundRole, Side, TargetClass};
-pub use expect::{resolve_expected, resolve_expected_from, Expectation, FighterExpect, MomentStart};
-pub use pick::{StanceChoice, WarTest};
-pub use preview::{Alternative, DefPick, EngagePreview, Forecast, PreviewFighter, PreviewInput};
+pub use arrange::Place;
+pub use engage::{damage_from_hp, hp_from_damage, BattleEffect, EngageOutcome};
+pub use formation::{BattleRng, FighterIdx, Ground, GroundRule, Pair, Side};
+pub use pick::WarTest;
+pub use preview::{EngagePreview, Forecast, PreviewFighter, PreviewInput};
+pub use report::EngageResult;
 pub use slots::Slots;
 pub use stats::HitCtx;
-pub use resolve::{
-    resolve_sampled, resolve_sampled_quiet, resolve_sampled_traced, targets, BattleEvent, BattleRng, Block, Death, EngageResult, Fate, FighterEnd, Hit, Kill, NoTarget,
-    Phase, Resolution, TargetState, Targets,
-};

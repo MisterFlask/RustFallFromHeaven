@@ -7,7 +7,7 @@
 //! it exhaustively): adding a field to one of these structs breaks the build here until the
 //! field is added to its list (and `FORMAT_VERSION` is bumped).
 
-use super::io::{persist_newtype, persist_struct};
+use super::io::{persist_enum, persist_newtype, persist_struct};
 use super::{LoadError, Persist, Reader, Writer};
 
 use crate::area::Area;
@@ -44,8 +44,11 @@ persist_newtype!(
     TerrainType, TradeableItem, TraitType, UnitAIType, UnitArtStyleType, UnitClassType,
     UnitCombatType, UnitType, UpkeepType, VictoryType, VoteSourceType, VoteType, WarPlanType,
     WorldSizeType, YieldType, CulturalActionType, GovernorProfileType, GovernorTraitType,
-    CombatRoleType, StanceType,
+    CombatRoleType,
 );
+
+persist_enum!(ActionKind { 0 => None, 1 => Strike, 2 => Charge, 3 => Stab, 4 => Shoot, 5 => Spell, 6 => Bombard, 7 => Heal });
+persist_struct!(RowActions { kind, count });
 
 persist_newtype!(
     PlayerId, TeamId, UnitId, CityId, GroupId, AreaId, PlotGroupId, DealId, PlotIdx, TriggeredId, VoteId,
@@ -56,7 +59,7 @@ persist_newtype!(
 
 use crate::culture::CultureChannel;
 use crate::army::{Army, March, RecruitDest};
-persist_struct!(Army { id, owner, name, group, target_size, commander, disband_to, formed_turn, requisition, stance });
+persist_struct!(Army { id, owner, name, group, target_size, commander, disband_to, formed_turn, requisition });
 persist_struct!(March { dest, stalled, left_turn, from_city, diverted });
 use crate::governors::Governor;
 persist_struct!(Governor { id, owner, name, profile, traits, origin, born_turn, city, since_turn });
@@ -242,7 +245,7 @@ persist_struct!(City {
     ai_emphasize_commerce_count, ai_emphasize_avoid_angry_citizens_count,
     ai_emphasize_avoid_unhealthy_citizens_count, culture_channel, culture_diverted, culture_pressure,
     culture_revolt_level, recruit_default, direct_rule, rule_changed_turn, governor,
-    governor_penalty_turns, garrison_stance,
+    governor_penalty_turns,
 });
 
 persist_struct!(Player {

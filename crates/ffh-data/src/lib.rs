@@ -56,8 +56,6 @@ macro_rules! game_data {
             /// Derived at load: the role a unit changes to by promotion, from the role with
             /// `FromRole` (from, promotion, to): a Frontline unit with Formation is a Screen.
             pub screen_role: Option<(CombatRoleType, PromotionType, CombatRoleType)>,
-            /// Derived at load: the `bDefault` stance (new armies and garrisons, units in no army).
-            pub default_stance: StanceType,
         }
 
         /// (xml file, registry class) for every info table, in load order.
@@ -81,7 +79,7 @@ macro_rules! game_data {
                 )*
                 let defines = Defines::from_map(&define_map);
                 // (derived tables are filled by `GameData::derive`)
-                GameData { reg, define_map, defines, text, barks: String::new(), warnings, $( $field, )* combat_mod_promotions: Vec::new(), unit_roles: IdxVec::new(), screen_role: None, default_stance: StanceType::default() }
+                GameData { reg, define_map, defines, text, barks: String::new(), warnings, $( $field, )* combat_mod_promotions: Vec::new(), unit_roles: IdxVec::new(), screen_role: None }
             }
         }
     };
@@ -164,7 +162,6 @@ game_data! {
     governor_traits: GovernorTraitType => GovernorTraitInfo, "Gameinfo/CIV4GovernorTraitInfos.xml", governor::read_governor_trait;
     governor_names: GovernorNameType => GovernorNameInfo, "Gameinfo/CIV4GovernorNameInfos.xml", governor::read_governor_names;
     combat_roles: CombatRoleType => CombatRoleInfo, "Units/CIV4CombatRoleInfos.xml", engagement::read_combat_role;
-    stances: StanceType => StanceInfo, "Units/CIV4StanceInfos.xml", engagement::read_stance;
 }
 
 /// Lists declared in GlobalTypes.xml that are referenced by type name in XML.
@@ -295,8 +292,8 @@ impl GameData {
         self.derive_engagements();
     }
 
-    /// Engagement combat's derived tables (`unit_roles`, `screen_role`, `default_stance`), and the
-    /// checks the resolver relies on (one default role and stance, positive multipliers and HP,
+    /// Engagement combat's derived tables (`unit_roles`, `screen_role`), and the checks the
+    /// resolver relies on (one default role, positive multipliers and HP,
     /// rows that act exactly when they have an action, one auto-pick place per role).
     fn derive_engagements(&mut self) {
         let mut warnings = Vec::new();
@@ -335,11 +332,6 @@ impl GameData {
             let info = &self.combat_roles[to];
             Some((info.from_role?, info.from_promotion?, to))
         });
-        let stances: Vec<StanceType> = self.stances.keys().filter(|&s| self.stances[s].default).collect();
-        if stances.len() != 1 {
-            warnings.push(format!("{} stances have bDefault (one expected)", stances.len()));
-        }
-        self.default_stance = stances.first().copied().unwrap_or_default();
         self.unit_roles =
             IdxVec::from_fn(self.units.len(), |u| if self.type_engages_on_land(u) { self.type_combat_role(u) } else { None });
         self.warnings.extend(warnings);

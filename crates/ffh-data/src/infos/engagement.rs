@@ -1,8 +1,7 @@
 //! This game's own info classes for engagement combat (not FFH2's; phase 6 of the owner's spec,
 //! `GAMEOPTION_ENGAGEMENTS`, docs/ENGAGEMENTS.md): `Units/CIV4CombatRoleInfos.xml` (the roles of
-//! formation battles, revision 4) and `Units/CIV4StanceInfos.xml` (the round model's stances,
-//! which go with it). The role of each unit type is derived at load (`GameData::unit_roles`,
-//! lib.rs).
+//! formation battles, revision 4). The role of each unit type is derived at load
+//! (`GameData::unit_roles`, lib.rs).
 
 use super::InfoBase;
 use crate::define_idx;
@@ -11,8 +10,6 @@ use crate::registry::Rd;
 
 define_idx!(/// An engagement role (`COMBATROLE_*`, Units/CIV4CombatRoleInfos.xml).
 CombatRoleType);
-define_idx!(/// An engagement stance (`STANCE_*`, Units/CIV4StanceInfos.xml).
-StanceType);
 
 /// What a unit does with one action of a formation battle (XML `Action` of a role's rows;
 /// docs/ENGAGEMENTS.md, "Action kinds and reach").
@@ -285,59 +282,4 @@ pub fn read_engage_rows(rd: &Rd, unit_type: &str) -> Option<[RowActions; ROWS]> 
         return None;
     }
     Some(out)
-}
-
-// The round model's stances (phase 6 before revision 4). Formation battles have none: they go
-// with the round model (docs/ENGAGEMENTS.md, "What is left of the round model").
-
-/// One step of a stance's pick (XML `Steps/Step`): take the best units of `roles` until the pick
-/// holds `max(count, ceil(S x percent / 100))` units of those roles, S the side's slots.
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct StanceStep {
-    /// `Roles/Role`.
-    pub roles: Vec<CombatRoleType>,
-    /// `iCount`: at least this many.
-    pub count: i32,
-    /// `iPercent`: at least this share of the slots (100: as many as there are).
-    pub percent: i32,
-}
-
-/// An engagement stance (this game's `StanceInfo`): which units a side commits, by role.
-#[derive(Debug, Clone, Default)]
-pub struct StanceInfo {
-    /// `Description` names the stance, `Help` says what it does.
-    pub base: InfoBase,
-    /// `bDefault`: the stance of new armies and garrisons and of units in no army.
-    pub default: bool,
-    /// `iMaxLevel` (-1: none): units above this level are held (committed only when the slots
-    /// would otherwise go empty).
-    pub max_level: i32,
-    /// `bHoldHeroes`: heroes are held too.
-    pub hold_heroes: bool,
-    /// `Steps/Step`, in order.
-    pub steps: Vec<StanceStep>,
-    /// `Fill/Role`: the order the slots left after the steps are filled in.
-    pub fill: Vec<CombatRoleType>,
-}
-
-pub fn read_stance(rd: &Rd) -> StanceInfo {
-    let base = InfoBase::read(rd);
-    let mut steps = Vec::new();
-    if let Some(list) = rd.child("Steps") {
-        for s in list.children_named("Step") {
-            let step = StanceStep { roles: s.ref_list("Roles"), count: s.int("iCount"), percent: s.int("iPercent") };
-            if step.roles.is_empty() || step.count < 0 || !(0..=100).contains(&step.percent) {
-                rd.cx.warn(format!("{}: bad Step {step:?}", base.type_));
-            }
-            steps.push(step);
-        }
-    }
-    StanceInfo {
-        default: rd.bool("bDefault"),
-        max_level: rd.int_or("iMaxLevel", -1),
-        hold_heroes: rd.bool("bHoldHeroes"),
-        steps,
-        fill: rd.ref_list("Fill"),
-        base,
-    }
 }

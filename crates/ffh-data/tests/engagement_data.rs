@@ -1,6 +1,6 @@
 //! Data spot-checks for engagement combat (this game's own rules, GAMEOPTION_ENGAGEMENTS): the
-//! roles of formation battles (Units/CIV4CombatRoleInfos.xml), the round model's stances
-//! (Units/CIV4StanceInfos.xml), the role each unit type derives, the large units, the casters'
+//! roles of formation battles (Units/CIV4CombatRoleInfos.xml), the role each unit type derives,
+//! the large units, the casters'
 //! damage spells, the plots' slot changes and the ENGAGEMENT_* defines. Expected values are the
 //! owner's (the formation battles spec, revision 4: docs/ENGAGEMENTS.md) and
 //! docs/COMBAT_INVENTORY.md's answers.
@@ -15,19 +15,10 @@ fn role(name: &str) -> CombatRoleType {
     d().t::<CombatRoleType>(name)
 }
 
-fn stance(name: &str) -> &'static StanceInfo {
-    let d = d();
-    &d.stances[d.t::<StanceType>(name)]
-}
-
 /// The derived role of a unit type, as a type name ("-" for none).
 fn unit_role(name: &str) -> &'static str {
     let d = d();
     d.unit_roles[d.t::<UnitType>(name)].map_or("-", |r| d.type_name(r))
-}
-
-fn roles(names: &[&str]) -> Vec<CombatRoleType> {
-    names.iter().map(|n| role(n)).collect()
 }
 
 #[test]
@@ -189,41 +180,6 @@ fn casters_cast_their_strongest_damage_spell() {
     // A unit-class spell: Mary's Contagion, Auric Ascended's greater Snowfall.
     assert_eq!(spell("UNIT_MARY", &[]), Some("SPELL_CONTAGION"));
     assert_eq!(spell("UNIT_AURIC_ASCENDED", &[]), Some("SPELL_SNOWFALL_GREATOR"));
-}
-
-#[test]
-fn the_five_stances() {
-    let d = d();
-    let names: Vec<&str> = d.stances.iter().map(|s| s.base.type_.as_str()).collect();
-    assert_eq!(names, ["STANCE_BALANCED", "STANCE_SHIELD_WALL", "STANCE_RANGED_LINE", "STANCE_MOBILE", "STANCE_PRESERVE_VETERANS"]);
-    assert_eq!(d.default_stance, d.t::<StanceType>("STANCE_BALANCED"));
-    assert_eq!(d.stances.iter().filter(|s| s.default).count(), 1);
-    let step = |r: &[&str], count: i32, percent: i32| StanceStep { roles: roles(r), count, percent };
-    let front = ["COMBATROLE_FRONTLINE", "COMBATROLE_SCREEN"];
-    // the round model's Backline: archers and siege
-    let back = ["COMBATROLE_ARCHER", "COMBATROLE_SIEGE"];
-    let flank = ["COMBATROLE_FLANKER", "COMBATROLE_ASSASSIN"];
-    let balanced = vec![step(&["COMBATROLE_SCREEN"], 1, 0), step(&front, 0, 50), step(&back, 0, 100), step(&flank, 0, 100)];
-    let fill = roles(&[
-        "COMBATROLE_FRONTLINE", "COMBATROLE_SCREEN", "COMBATROLE_FLANKER", "COMBATROLE_ASSASSIN", "COMBATROLE_ARCHER", "COMBATROLE_SIEGE",
-        "COMBATROLE_ARCANE", "COMBATROLE_DIVINE",
-    ]);
-    // (type, steps, max level, holds heroes)
-    let want = [
-        ("STANCE_BALANCED", balanced.clone(), -1, false),
-        ("STANCE_SHIELD_WALL", vec![step(&front, 0, 100), step(&back, 0, 100)], -1, false),
-        // the spec's STANCE_MIN_FRONT = 3
-        ("STANCE_RANGED_LINE", vec![step(&front, 3, 0), step(&back, 0, 100)], -1, false),
-        ("STANCE_MOBILE", vec![step(&flank, 0, 100), step(&front, 0, 100)], -1, false),
-        // the spec's STANCE_VET_LEVEL = 4; heroes are held too
-        ("STANCE_PRESERVE_VETERANS", balanced, 4, true),
-    ];
-    for (name, steps, max_level, hold_heroes) in want {
-        let s = stance(name);
-        assert_eq!((&s.steps, s.max_level, s.hold_heroes, &s.fill), (&steps, max_level, hold_heroes, &fill), "{name}");
-        assert!(d.text.get(&s.base.description) != s.base.description, "{name}: no text");
-        assert!(d.text.get(&s.base.help) != s.base.help, "{name}: no help text");
-    }
 }
 
 #[test]

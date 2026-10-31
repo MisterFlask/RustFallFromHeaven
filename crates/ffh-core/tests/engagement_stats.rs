@@ -167,9 +167,10 @@ fn archer_in_a_walled_hill_city_fortified() {
     assert_eq!(plot_defense, d.defines.hills_extra_defense + city_defense);
     let (attack, back) = w.both_ways(axeman, archer);
 
-    // The archer's Dv: 5 x 60% (Backline) under the plot (hills 25, the city with its walls),
-    // fortification (5 turns x 5), its own city defense (+25) and hills defense (+25).
-    assert_eq!(attack.dv, apply(5 * 60, plot_defense + 25 + 25 + 25));
+    // The archer's Dv: 5 x 60% (Archer) under its own terms only (revision 4: the plot's own
+    // defense, the hills and the city's walls, gives Dv nothing): fortification (5 turns x 5), its
+    // own city defense (+25) and hills defense (+25).
+    assert_eq!(attack.dv, apply(5 * 60, 25 + 25 + 25));
     // The axeman's A: 4 x 100% and its city attack (+10).
     assert_eq!(attack.a, apply(400, 10));
     // Hitting back (G1): the archer has no city or terrain attack; the axeman, the attacker, has
@@ -184,55 +185,56 @@ fn archer_in_a_walled_hill_city_fortified() {
     assert_eq!(stat.total_x100, attack.dv);
     assert_eq!((stat.base_x100, stat.role_pct), (300, 60));
     let srcs: Vec<&TermSource> = stat.terms.iter().map(|t| &t.src).collect();
-    for src in [TermSource::Hills, TermSource::CityDefense, TermSource::Fortify, TermSource::UnitCityDefense, TermSource::UnitHillsDefense] {
+    for src in [TermSource::Fortify, TermSource::UnitCityDefense, TermSource::UnitHillsDefense] {
         assert!(srcs.contains(&&src), "{src:?} in {srcs:?}");
     }
-    assert_eq!(stat.terms.iter().map(|t| t.pct).sum::<i32>(), plot_defense + 75);
+    for src in [TermSource::Hills, TermSource::CityDefense] {
+        assert!(!srcs.contains(&&src), "{src:?} in {srcs:?}: the plot's own defense");
+    }
+    assert_eq!(stat.terms.iter().map(|t| t.pct).sum::<i32>(), 75);
 
     // Job strengths: the archer's Dv against a hitter not known yet is the same here; the
     // axeman's A against the city plot keeps its city attack.
     assert_eq!(w.g.engage_job_defense(archer, &w.ctx()), attack.dv);
     assert_eq!(w.g.engage_job_attack(axeman, &w.ctx()), apply(400, 10));
 
-    // A planned bombard (the estimator's override): the city's defense at 0.
+    // A planned bombard (the city's defense at 0) changes the slots, not Dv.
     let bombarded = HitCtx { city_defense: Some(0), ..w.ctx() };
-    assert_eq!(w.g.engage_hit(axeman, archer, Side::Attacker, &bombarded).dv, apply(300, plot_defense - city_defense + 75));
+    assert_eq!(w.g.engage_hit(axeman, archer, Side::Attacker, &bombarded).dv, attack.dv);
+    assert!(w.g.engage_slots(&bombarded).att() > w.g.engage_slots(&w.ctx()).att());
 }
 
+/// A city's defense (its walls, its culture) costs the attacker slots and gives the defenders' Dv
+/// nothing (revision 4): a unit that ignores building defense, a planned bombard, the defense
+/// knocked down: the same Dv; the slots follow the defense.
 #[test]
-fn a_unit_that_ignores_building_defense_scales_the_planned_bombard() {
+fn a_city_s_defense_costs_slots_and_gives_dv_nothing() {
     let mut w = world();
     let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
     let d = w.g.d;
     let (tx, ty) = w.g.map.xy(to);
     let city = w.g.player_init_city(p1, tx, ty, true, true);
     w.g.city_set_num_real_building(city, d.t::<BuildingType>("BUILDING_WALLS"), 1);
-    // Defense that does not come from buildings (a new city's culture gives none), so what the
-    // cannon faces is not 0 and the scaling shows.
     w.g.players[p1].city_defense_modifier = 20;
     let defender = w.unit(p1, "UNIT_AXEMAN", to);
     let cannon = w.unit(p0, "UNIT_CANNON", from);
+    let axeman = w.unit(p0, "UNIT_AXEMAN", from);
     assert!(w.g.unit_ignore_building_defense(cannon));
     let full = w.g.city_defense_modifier(city, false);
-    let without_walls = w.g.city_defense_modifier(city, true);
-    assert!(without_walls > 0 && full > without_walls, "{without_walls} {full}");
-    // Today's defense: the cannon's hits ignore the walls.
-    let today = w.g.engage_hit(cannon, defender, Side::Attacker, &w.ctx()).dv;
-    assert_eq!(today, apply(400, without_walls));
-    // Half the defense knocked down: half of what is left without the walls.
-    let half = HitCtx { city_defense: Some(full / 2), ..w.ctx() };
-    let scaled = without_walls * (full / 2) / full;
-    assert!(0 < scaled && scaled < without_walls);
-    let bombarded = w.g.engage_hit(cannon, defender, Side::Attacker, &half).dv;
-    assert_eq!(bombarded, apply(400, scaled));
-    assert!(bombarded < today);
-    // The breakdown names the scaled city defense.
-    let stat = w.g.engage_stat(defender, Some(cannon), Side::Defender, false, &half);
-    assert_eq!(stat.total_x100, bombarded);
-    assert!(stat.terms.iter().any(|t| t.src == TermSource::CityDefense && t.pct == scaled), "{:?}", stat.terms);
-    // All of it knocked down: nothing left, walls or not.
-    let razed = HitCtx { city_defense: Some(0), ..w.ctx() };
-    assert_eq!(w.g.engage_hit(cannon, defender, Side::Attacker, &razed).dv, 400);
+    assert!(full >= 25, "{full}");
+    for hitter in [cannon, axeman] {
+        for city_defense in [None, Some(full / 2), Some(0)] {
+            let ctx = HitCtx { city_defense, ..w.ctx() };
+            assert_eq!(w.g.engage_hit(hitter, defender, Side::Attacker, &ctx).dv, 400, "{city_defense:?}");
+            let stat = w.g.engage_stat(defender, Some(hitter), Side::Defender, false, &ctx);
+            assert!(!stat.terms.iter().any(|t| t.src == TermSource::CityDefense && t.pct != 0), "{:?}", stat.terms);
+        }
+    }
+    // The slots: one per 25% of the defense, returned as it is knocked down.
+    let slots = |cd: Option<i32>| w.g.engage_slots(&HitCtx { city_defense: cd, ..w.ctx() }).att();
+    assert_eq!(slots(None), 10 - full / 25);
+    assert_eq!(slots(Some(0)), 10);
+    assert!(slots(Some(full / 2)) > slots(None));
 }
 
 #[test]
@@ -410,22 +412,24 @@ fn the_handicap_keeps_the_duel_ratio_against_barbarians() {
     assert_eq!(duel_ratio, (attack.a, attack.dv));
     // The barbarian hits back: the AI's Dv x 1.25.
     assert_eq!(back, Pair { a: 400, dv: apply(400, -bonus) });
-    // A barbarian attacking an AI city: the city's barbarian defense on the defender's Dv too.
+    // A barbarian attacking an AI city: the handicap's bonus still; the city's defense and its
+    // barbarian defense give Dv nothing (revision 4: defended-plot terms).
     let (fx, fy) = w.g.map.xy(from);
     w.g.unit_kill(ai, false, None);
     let city = w.g.player_init_city(p0, fx, fy, true, true);
     let defender = w.unit(p0, "UNIT_AXEMAN", from);
     let ctx = HitCtx::new(to, from);
-    let city_plot = w.g.plot_defense_modifier(from, Some(t0), false);
     let pair = w.g.engage_hit(barb, defender, Side::Attacker, &ctx);
     assert!(w.g.cities.contains(city));
-    assert_eq!(pair.dv, apply(400, -bonus + city_plot + w.g.d.defines.city_barbarian_defense_modifier));
+    assert!(w.g.d.defines.city_barbarian_defense_modifier != 0);
+    assert_eq!(pair.dv, apply(400, -bonus));
 }
 
 #[test]
 fn each_side_has_only_its_own_terms() {
-    // G1 on a defended plot with every kind of term: the defending side shares the plot's
-    // defense; the attacking side has its attack bonuses against the plot and no defense there.
+    // G1 on a defended plot with every kind of term: the defending side has its own defense
+    // there (revision 4: not the plot's); the attacking side has its attack bonuses against the
+    // plot and no defense there.
     let mut w = world();
     let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
     let d = w.g.d;
@@ -441,11 +445,11 @@ fn each_side_has_only_its_own_terms() {
     let woodsman = &d.promotions[d.t::<PromotionType>("PROMOTION_WOODSMAN1")];
     let (attack_bonus, defense_bonus) = (woodsman.feature_attack_percent[forest], woodsman.feature_defense_percent[forest]);
     assert!(attack_bonus > 0 && defense_bonus > 0);
-    let forest_defense = d.features[forest].defense_modifier;
+    assert!(d.features[forest].defense_modifier > 0);
     let (attack, back) = w.both_ways(attacker, defender);
-    // The attacker's A: its forest attack; the defender's Dv: the forest, its forest defense,
-    // its fortification.
-    assert_eq!(attack, Pair { a: apply(400, attack_bonus), dv: apply(400, forest_defense + defense_bonus + 10) });
+    // The attacker's A: its forest attack; the defender's Dv: its forest defense and its
+    // fortification (the forest's own cover is the ground's rules now, not Dv).
+    assert_eq!(attack, Pair { a: apply(400, attack_bonus), dv: apply(400, defense_bonus + 10) });
     // The defender hitting back: no forest attack; the attacker being hit: no forest, no
     // fortification, though it stands fortified in a forest.
     assert_eq!(back, Pair { a: 400, dv: 400 });

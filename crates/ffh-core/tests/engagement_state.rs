@@ -1,9 +1,9 @@
-//! Engagement combat's state (GAMEOPTION_ENGAGEMENTS, phase 6 step 2): the option and the dispatch
-//! rule, stances and their commands with the split and merge rules, the new unit fields, the
-//! battle reports and what is kept of them, and saves.
+//! Engagement combat's state (GAMEOPTION_ENGAGEMENTS): the option and the dispatch rule, the new
+//! unit fields, the battle reports and what is kept of them, and saves.
 
 use ffh_core::engagement::report::*;
-use ffh_core::engagement::{EngageResult, Fate, Phase, Side};
+use ffh_core::engagement::formation::{Event, Hit};
+use ffh_core::engagement::{EngageResult, Ground, GroundRule, Side};
 use ffh_core::game::Game;
 use ffh_core::ids::*;
 use ffh_core::setup::GameSetup;
@@ -31,10 +31,6 @@ fn game(engagements: bool) -> (Game, CityId) {
 fn warrior(g: &mut Game, x: i32, y: i32) -> UnitId {
     let w = g.d.t::<UnitType>("UNIT_WARRIOR");
     g.player_init_unit(PlayerId(0), w, x, y, None, None)
-}
-
-fn stance(g: &Game, name: &str) -> StanceType {
-    g.d.t::<StanceType>(name)
 }
 
 /// A plot next to city `c` that is land (`land`) or water, outside the city.
@@ -84,80 +80,6 @@ fn the_option_requires_armies_and_applies_to_land_attacks_on_land() {
     let u = warrior(&mut off, x, y);
     assert!(!off.engagements_on());
     assert!(!off.engage_applies(u, land));
-}
-
-#[test]
-fn stance_commands_are_refused_with_the_option_off() {
-    let (mut g, c) = game(false);
-    let p0 = PlayerId(0);
-    let (x, y) = (g.cities[c].x, g.cities[c].y);
-    let units: Vec<UnitId> = (0..2).map(|_| warrior(&mut g, x, y)).collect();
-    let a = g.army_form(p0, &units).unwrap();
-    let mobile = stance(&g, "STANCE_MOBILE");
-    assert!(g.army_set_stance(p0, a, mobile).is_err());
-    assert!(g.city_set_garrison_stance(p0, c, mobile).is_err());
-    assert_eq!(g.armies[a].stance, g.d.default_stance);
-    assert_eq!(g.cities[c].garrison_stance, g.d.default_stance);
-}
-
-#[test]
-fn new_armies_take_the_stance_they_came_from_and_a_merge_keeps_the_receivers() {
-    let (mut g, c) = game(true);
-    let p0 = PlayerId(0);
-    let d = g.d;
-    let (x, y) = (g.cities[c].x, g.cities[c].y);
-    let balanced = stance(&g, "STANCE_BALANCED");
-    let (wall, mobile, ranged) = (stance(&g, "STANCE_SHIELD_WALL"), stance(&g, "STANCE_MOBILE"), stance(&g, "STANCE_RANGED_LINE"));
-    assert_eq!(d.default_stance, balanced);
-    assert_eq!(g.cities[c].garrison_stance, balanced);
-
-    // Commands: an army or city of another player, a stance that does not exist.
-    assert!(g.city_set_garrison_stance(PlayerId(1), c, wall).is_err());
-    assert!(g.city_set_garrison_stance(p0, c, StanceType(d.stances.len() as u16)).is_err());
-    g.city_set_garrison_stance(p0, c, wall).unwrap();
-
-    // An army formed from the garrison takes the garrison's stance.
-    let units: Vec<UnitId> = (0..4).map(|_| warrior(&mut g, x, y)).collect();
-    g.player_army_sync(p0);
-    assert!(units.iter().all(|&u| g.unit_garrison_city(u) == Some(c)));
-    let a = g.army_form(p0, &units).unwrap();
-    assert_eq!(g.armies[a].stance, wall);
-    assert!(g.army_set_stance(PlayerId(1), a, mobile).is_err());
-    g.army_set_stance(p0, a, mobile).unwrap();
-
-    // A split takes its army's stance.
-    let b = g.army_split(p0, &units[..1]).unwrap();
-    assert_ne!(a, b);
-    assert_eq!(g.armies[b].stance, mobile);
-    g.army_set_stance(p0, b, ranged).unwrap();
-
-    // A merge keeps the receiving army's.
-    g.army_merge(p0, b, a).unwrap();
-    assert!(!g.armies.contains(b));
-    assert_eq!(g.armies[a].stance, mobile);
-
-    // A split made by the groups (Civ4's split) takes its army's stance too.
-    g.unit_join_group(units[1], None, true);
-    g.player_army_sync(p0);
-    let c2 = g.units[units[1]].army.unwrap();
-    assert_ne!(c2, a);
-    assert_eq!(g.armies[c2].stance, mobile);
-
-    // Garrison units that march out of the city: the garrison's stance.
-    let (ox, oy) = next_to(&g, c, true).expect("land");
-    let out: Vec<UnitId> = (0..2).map(|_| warrior(&mut g, x, y)).collect();
-    g.player_army_sync(p0);
-    assert!(out.iter().all(|&u| g.unit_garrison_city(u) == Some(c)));
-    g.unit_join_group(out[0], None, true);
-    let grp = g.units[out[0]].group;
-    g.unit_join_group(out[1], grp, false);
-    for &u in &out {
-        g.unit_set_xy(u, ox, oy, true);
-    }
-    g.player_army_sync(p0);
-    let e = g.units[out[0]].army.expect("an army outside the city");
-    assert_eq!(g.units[out[1]].army, Some(e));
-    assert_eq!(g.armies[e].stance, wall);
 }
 
 #[test]
@@ -214,73 +136,83 @@ fn a_bombard_is_an_attack_made_under_the_option() {
 /// A report of `p1` attacking `p2` at the city's plot, with a small log when `logged`.
 fn report(g: &Game, c: CityId, logged: bool) -> BattleReport {
     let plot = g.city_plot(c);
-    let side = |p: u8, stance: StanceType| ReportSide {
+    let side = |p: u8| ReportSide {
         player: PlayerId(p),
         shown_player: PlayerId(p),
         players: vec![PlayerId(p)],
-        army: None,
-        garrison_of: None,
-        stance,
         slots: 10,
+        lanes: 4,
+        used: 1,
         committed: 1,
-        withdrew: 0,
         sat_out: 0,
-        fled: 0,
+        fallen: 0,
+        escaped: 0,
+        standing: 1,
         lost: Vec::new(),
     };
     let stat = |x| Stat { base_x100: x, role_pct: 100, terms: vec![Term { src: TermSource::Fortify, pct: 25 }], total_x100: x * 125 / 100 };
     let warrior = g.d.t::<UnitType>("UNIT_WARRIOR");
-    let fighter = |side: Side, unit: UnitId, fate: Fate| LogFighter {
+    let strike = |count| RowActions { kind: ActionKind::Strike, count };
+    let fighter = |side: Side, unit: UnitId, fate: LogFate| LogFighter {
         unit,
         unit_type: warrior,
         name: String::new(),
         owner: PlayerId(side.index() as u8 + 1),
         shown_owner: PlayerId(side.index() as u8 + 1),
         side,
-        slot: Some(0),
+        place: Some((1, 0)),
+        large: false,
         level: 1,
         xp: 0,
         hero: false,
         role: CombatRoleType(0),
-        pos: Position::Front,
-        screen: false,
-        ignores_shield: false,
-        assassin_profile: false,
-        guardsman: false,
         max_hp: 120,
         hp_start: 12000,
-        volleys: 0,
-        volley_chance: 0,
+        hp_battle: 12000,
+        speed: 4,
+        first_strikes: 0,
+        chance_first_strikes: 0,
+        rolled_first_strikes: 0,
+        actions: [strike(2), strike(1), strike(1)],
+        spell: None,
+        dodge: 0,
+        crit_bonus: 0,
+        anti_flank: false,
+        flanker: false,
         withdraw_pct: 0,
-        def_strike: None,
-        collateral: None,
         combat_limit: 100,
+        collateral_limit: None,
+        def_strike: None,
         immune: Immunities::default(),
         fear: false,
         a: stat(300),
         dv: stat(300),
         fate: Some(fate),
+        dealt: 0,
+        taken: 0,
+        healed: 0,
     };
+    let hit = Hit { target: 1, dmg: 1800, expected: 1777, r: 101, crit: false, miss: false, killed: true, withdrew: false, splash: false };
     let log = BattleLog {
         slots: [0, 1].map(|_| SideSlots { base: 8, changes: vec![SlotChange { src: SlotSource::Hills, delta: -2 }], total: 6, river_only: 0 }),
-        picks: [0, 1].map(|_| SidePick { auto_pick: vec![0], picked_by: Pick::Auto }),
-        fighters: vec![fighter(Side::Attacker, UnitId(1000), Fate::Survived), fighter(Side::Defender, UnitId(1001), Fate::Killed { by: Some(0), phase: Phase::Round(2) })],
-        pairs: vec![LogPair { h: 0, t: 1, a_x100: 300, dv_x100: 375, mean: 888, a_extra: vec![], dv_extra: vec![] }],
+        lanes: [3, 3],
+        ground: Ground { city: false, forest: false, hills: true },
+        rules: vec![GroundRule::HillsAttacker { pct: 75 }, GroundRule::HillsDefenderRanged { pct: 125 }, GroundRule::Charge { pct: 200 }],
+        ordered: [false, false],
+        fighters: vec![fighter(Side::Attacker, UnitId(1000), LogFate::Standing), fighter(Side::Defender, UnitId(1001), LogFate::Fell { by: 0, round: 2 })],
+        pairs: vec![LogPair { h: 0, t: 1, a_x100: 300, dv_x100: 375, mean: 1777, a_extra: vec![], dv_extra: vec![] }],
         events: vec![
-            LogEvent::Stage { stage: Stage::Round(1) },
-            LogEvent::Hit { h: 0, t: 1, rule: TargetRule::FrontFirst, step: 0, blocked: vec![], eligible: vec![1], r: 100, dmg: 888, capped: false },
-            LogEvent::RoundEnd { deaths: vec![LogDeath { b: 1, killer: Some(0), assists: vec![], overkill: 12 }] },
-            LogEvent::End { result: EngageResult::AttackerWon, volley_rounds: 0, rounds: 2 },
+            LogEvent::Stage { stage: Stage::Battle },
+            LogEvent::Action(Event { round: 2, pass: 1, actor: 0, kind: ActionKind::Strike, spell: None, target: Some(1), hits: vec![hit], heal: None, knocked: None, note: None }),
+            LogEvent::End { rounds: 2, down: [false, true] },
         ],
         forecast: Some(FrozenForecast {
-            source: ForecastSource::Expected,
-            win_permille: 640,
-            draw_permille: 0,
-            rounds: (1, 2, 4),
-            losses_if_win_x10: Some(3),
-            per: vec![ForecastFighter { b: 0, fall_pct: 30, withdraw_pct: 0, death_round: None }],
-            curve: [vec![12000, 9000], vec![12000, 0]],
-            alternatives: vec![ForecastAlt { kind: AltKind::StancePick, stance: StanceType(0), force: vec![0], win_permille: 640, losses_if_win_x10: None }],
+            runs: 200,
+            wiped_permille: 640,
+            falls_permille: 600,
+            repulsed_permille: 10,
+            lost_x100: [30, 64],
+            per: vec![ForecastFighter { b: 0, fall_pct: 30, escape_pct: 0 }],
         }),
     };
     BattleReport {
@@ -289,8 +221,8 @@ fn report(g: &Game, c: CityId, logged: bool) -> BattleReport {
         plot,
         from: plot,
         place: PlotSnap { x: g.cities[c].x, y: g.cities[c].y, terrain: g.map.plots[plot].terrain_type, feature: None, hills: false, river_crossing: false, city: None },
-        sides: [side(1, g.d.default_stance), side(2, g.d.default_stance)],
-        outcome: Outcome { result: EngageResult::AttackerWon, volley_rounds: 0, rounds: 2, plot_taken: false, city_captured: None, moved_in: 0, defenders_left: 0 },
+        sides: [side(1), side(2)],
+        outcome: Outcome { result: EngageResult::Taken, rounds: 2, plot_taken: false, city_captured: None, moved_in: 0, defenders_left: 0 },
         log: logged.then(|| Box::new(log)),
     }
 }
@@ -361,15 +293,12 @@ fn reports_keep_logs_for_two_turns_and_the_latest_battles() {
 }
 
 #[test]
-fn stances_reports_and_unit_fields_survive_a_save() {
+fn reports_and_unit_fields_survive_a_save() {
     let (mut g, c) = game(true);
     let p0 = PlayerId(0);
     let (x, y) = (g.cities[c].x, g.cities[c].y);
     let units: Vec<UnitId> = (0..3).map(|_| warrior(&mut g, x, y)).collect();
-    let a = g.army_form(p0, &units).unwrap();
-    let (wall, mobile) = (stance(&g, "STANCE_SHIELD_WALL"), stance(&g, "STANCE_MOBILE"));
-    g.army_set_stance(p0, a, mobile).unwrap();
-    g.city_set_garrison_stance(p0, c, wall).unwrap();
+    g.army_form(p0, &units).unwrap();
     let u = units[0];
     g.unit_set_has_promotion(u, g.d.t::<PromotionType>("PROMOTION_SHIELD_OF_FAITH"), true);
     g.units[u].attacks_made = 1;
@@ -378,8 +307,6 @@ fn stances_reports_and_unit_fields_survive_a_save() {
     g.battle_report_add(report(&g, c, false));
     let bytes = g.save();
     let h = Game::load(g.d, &bytes).unwrap();
-    assert_eq!(h.armies[a].stance, mobile);
-    assert_eq!(h.cities[c].garrison_stance, wall);
     assert_eq!((h.units[u].extra_combat_percent_defense, h.units[u].attacks_made, h.units[u].battle_heal_turn), (30, 1, 7));
     assert_eq!(h.battle_reports, g.battle_reports);
     assert!(h.battle_reports[0].log.is_some() && h.battle_reports[1].log.is_none());

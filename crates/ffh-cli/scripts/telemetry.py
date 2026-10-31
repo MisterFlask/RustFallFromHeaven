@@ -214,10 +214,10 @@ def section_engagements(groups, top):
         return sum(v[0] for v in g.counts['engage'].values())
     rows = [
         ('engagements', lambda g: per(g, n_eng(g))),
-        ('  won %', lambda g: 100 * c(g, 'engage', 'won') / max(1, n_eng(g))),
-        ('  held by the defender %', lambda g: 100 * c(g, 'engage', 'held') / max(1, n_eng(g))),
-        ('  draw %', lambda g: 100 * c(g, 'engage', 'draw') / max(1, n_eng(g))),
-        ('  mutual %', lambda g: 100 * c(g, 'engage', 'mutual') / max(1, n_eng(g))),
+        ('  plot taken %', lambda g: 100 * c(g, 'engage', 'taken') / max(1, n_eng(g))),
+        ('  line cleared, plot held %', lambda g: 100 * c(g, 'engage', 'cleared') / max(1, n_eng(g))),
+        ('  repulsed %', lambda g: 100 * c(g, 'engage', 'repulsed') / max(1, n_eng(g))),
+        ('  both lines held %', lambda g: 100 * c(g, 'engage', 'held') / max(1, n_eng(g))),
         ('  mean rounds', lambda g: sum(v[1] for v in g.counts['engage'].values()) / max(1, n_eng(g))),
         ('  units committed', lambda g: sum(v[1] for v in g.counts['engage_slots'].values()) / max(1, n_eng(g))),
         ('  defenders committed', lambda g: sum(v[1] for v in g.counts['engage_slots_def'].values()) / max(1, n_eng(g))),
@@ -225,25 +225,14 @@ def section_engagements(groups, top):
         ('  defenders withdrew', lambda g: per(g, c(g, 'engage_withdrew', 'def'))),
         ('  sat out (fear)', lambda g: per(g, c(g, 'engage_satout', 'att') + c(g, 'engage_satout', 'def'))),
         ('  with defensive strikes', lambda g: per(g, c(g, 'engage_strike', 'n'))),
-        ('  with collateral', lambda g: per(g, c(g, 'engage_collateral', 'n'))),
         ('missile strikes', lambda g: per(g, sum(v[0] for v in g.counts['engage_missile'].values()))),
         ('defenses (engagements)', lambda g: per(g, sum(v[0] for v in g.counts['engage_def'].values()))),
     ]
     for label, f in rows:
         print('%-32s' % label + ''.join('%14.1f' % f(groups[n]) for n in names))
-    print('\n-- the estimator\'s win chance against the result (calibration): n per game / expected % / won %')
-    keys = sorted({k for g in groups.values() for k in g.counts['engage_est']}, key=lambda k: (['1', '2-3', '4-7', '8+'].index(k.split(':')[0]), k))
-    for k in keys:
-        cells = ''
-        for n in names:
-            g = groups[n]
-            nn, won = g.counts['engage_est'][k]
-            exp = g.counts['engage_est_exp'][k][1]
-            cells += '%14s' % ('%.1f/%2.0f/%2.0f' % (per(g, nn), exp / 10 / max(1, nn), 100 * won / max(1, nn)) if nn else '-')
-        print('  %-30s' % k + cells)
+    top_table(groups, 'rounds fought', lambda g: {k: v[0] for k, v in g.counts['engage_rounds'].items()}, top)
     top_table(groups, 'committed attackers, by role', lambda g: {k: v[0] for k, v in g.counts['engage_force'].items()}, top)
     top_table(groups, 'units lost in engagements, by role', lambda g: {k: v[0] for k, v in g.counts['engage_lost_role'].items()}, top)
-    top_table(groups, 'stances fought with', lambda g: {k: v[0] for k, v in g.counts['engage_stance'].items()}, top)
 
 
 def section_deaths(groups, top):

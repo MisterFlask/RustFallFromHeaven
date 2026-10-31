@@ -322,10 +322,6 @@ pub fn cities(v: &Viewer) -> Json {
                     "religion" => Json::opt_idx(ch.religion),
                 });
             }
-            // Engagement combat: its garrison's stance (docs/ENGAGEMENTS.md).
-            if g.engagements_on() {
-                j.set("garrison_stance", Json::idx(city.garrison_stance));
-            }
         }
         // Revolt pressure on a city the human sees (its banner's mark): its level
         // (`culture::REVOLT_*`) and the unhappiness it causes.

@@ -5987,11 +5987,11 @@ TXT_KEY_EMPHASIZE_PRODUCTION_HELP	Select this to have a city obtain high levels 
 TXT_KEY_EMPHASIZE_RESEARCH	Emphasize Research
 TXT_KEY_EMPHASIZE_RESEARCH_HELP	Select this to have a city focus on achieving the highest amount of research possible. This will activate specialists if they are available to help facilitate the city's tech research.
 TXT_KEY_ENGAGE_HELP_BLITZ	[ICON_BULLET]Blitz: it may fight one more battle in a turn
-TXT_KEY_ENGAGE_HELP_COLLATERAL	[ICON_BULLET]Collateral damage splashes every enemy unit on the plot before the rounds, those that do not fight too; it never kills
-TXT_KEY_ENGAGE_HELP_COMBAT_LIMIT	[ICON_BULLET]Its combat limit holds for each target: on attack it never hits a unit already down to the limit, and leaves the battle when every target is
-TXT_KEY_ENGAGE_HELP_FIRST_STRIKES	[ICON_BULLET]First strikes are opening volleys: it hits before the first round, while the enemy cannot hit back
+TXT_KEY_ENGAGE_HELP_COLLATERAL	[ICON_BULLET]Collateral damage splashes its hits: each one also hits the target's neighbours (beside it, in front and behind) for half, never past its collateral limit
+TXT_KEY_ENGAGE_HELP_COMBAT_LIMIT	[ICON_BULLET]Its combat limit holds for each target: on attack it never takes a unit below the limit, and does not aim at one already there
+TXT_KEY_ENGAGE_HELP_FIRST_STRIKES	[ICON_BULLET]First strikes are speed: each one (and each chance first strike rolled at the battle's start) adds %d1 to its speed, so it acts earlier in each pass
 TXT_KEY_ENGAGE_HELP_HEAD	[COLOR_HIGHLIGHT_TEXT]In a battle (engagements):[COLOR_REVERT]
-TXT_KEY_ENGAGE_HELP_WITHDRAWAL	[ICON_BULLET]Withdrawal is one roll, the first round it ends below %d1%% health: it pulls out alive, or fights on to the end (an attacker, or a defender outside a city)
+TXT_KEY_ENGAGE_HELP_WITHDRAWAL	[ICON_BULLET]Withdrawal is rolled when a hit would kill it: on a success it leaves the battle alive instead (an attacker, or a defender outside a city)
 TXT_KEY_EQUIPMENT_ATHAME	Athame
 TXT_KEY_EQUIPMENT_BLACK_MIRROR	Black Mirror
 TXT_KEY_EQUIPMENT_CROWN_OF_AKHARIEN	Crown of Akharien
@@ -12068,16 +12068,6 @@ TXT_KEY_STACK_COLLATERAL_DAMAGE	%D1%% Collateral Damage
 TXT_KEY_STAGING_ROOM_CIVS_TAG	Civilizations:
 TXT_KEY_STAGING_ROOM_READY	Ready
 TXT_KEY_STAGING_ROOM_TITLE	STAGING ROOM
-TXT_KEY_STANCE_BALANCED	Balanced
-TXT_KEY_STANCE_BALANCED_HELP	About half frontline, at least one screen among them, then the back line, then flankers and assassins.
-TXT_KEY_STANCE_MOBILE	Mobile
-TXT_KEY_STANCE_MOBILE_HELP	Flankers and assassins first, then frontline units.
-TXT_KEY_STANCE_PRESERVE_VETERANS	Preserve Veterans
-TXT_KEY_STANCE_PRESERVE_VETERANS_HELP	Like Balanced, but units above level 4 and heroes fight only when the slots would otherwise go empty.
-TXT_KEY_STANCE_RANGED_LINE	Ranged Line
-TXT_KEY_STANCE_RANGED_LINE_HELP	Three frontline units or screens to hold the line, then as much of the back line as fits.
-TXT_KEY_STANCE_SHIELD_WALL	Shield Wall
-TXT_KEY_STANCE_SHIELD_WALL_HELP	Frontline units and screens first; the back line only in the slots left over.
 TXT_KEY_STOP_SLIDESHOW	Play Game
 TXT_KEY_SUBMIT_VOTE	Submit vote
 TXT_KEY_SWEAT_SHOP	Sweat Shop

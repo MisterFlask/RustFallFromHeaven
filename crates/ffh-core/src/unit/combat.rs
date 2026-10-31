@@ -69,7 +69,7 @@ pub(crate) struct Declared {
 
 /// The unit state a pure defensive strike or collateral roll reads in place of the game's (plan
 /// 15 item 2: an engagement's preview plays many openings on one unchanged game): the damage the
-/// rolls so far dealt (or an estimate's overrides), the strikers they used up, and the war a plan
+/// rolls so far dealt, the strikers they used up, and the war a plan
 /// that declares it assumes made. Empty, it reads the game as it is.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) struct UnitOverlay {
@@ -79,16 +79,6 @@ pub(crate) struct UnitOverlay {
 }
 
 impl UnitOverlay {
-    /// The overlay with the damage fields `damage` (an estimate's overrides; the last entry of a
-    /// unit counts), assuming `declared` made (`None`: the wars as they are).
-    pub fn with_damage(damage: &[(UnitId, i32)], declared: Option<&Declared>) -> UnitOverlay {
-        let mut ov = UnitOverlay::with_declared(declared);
-        for &(u, d) in damage {
-            ov.set_damage(u, d);
-        }
-        ov
-    }
-
     /// The overlay that reads the game as it is but assumes `declared` made (`None`: the wars as
     /// they are).
     pub fn with_declared(declared: Option<&Declared>) -> UnitOverlay {

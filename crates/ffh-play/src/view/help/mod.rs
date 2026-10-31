@@ -65,8 +65,9 @@ pub fn effects_of(d: &GameData, kind: &str, i: usize) -> Option<String> {
 }
 
 /// What a unit's or a promotion's first strikes, withdrawal, collateral damage, Blitz and combat
-/// limit mean in a battle under engagement combat (docs/ENGAGEMENTS.md; phase6_plan 9.3: opening
-/// volleys, one withdrawal roll, one more battle a turn, a limit per target on attack), as lines
+/// limit mean in a formation battle under engagement combat (docs/ENGAGEMENTS.md: speed, a
+/// withdrawal in place of a killing hit, a splash, one more battle a turn, a limit per target on
+/// attack), as lines
 /// the page appends to the entry's `effects` when engagements are on (the data's
 /// `effects_engagement`); None when the entry has none of them.
 pub fn engagement_notes(d: &GameData, kind: &str, i: usize) -> Option<String> {
@@ -85,8 +86,8 @@ pub fn engagement_notes(d: &GameData, kind: &str, i: usize) -> Option<String> {
     };
     let mut lines = Vec::new();
     for (has, key, args) in [
-        (first_strikes, "TXT_KEY_ENGAGE_HELP_FIRST_STRIKES", Vec::new()),
-        (withdrawal, "TXT_KEY_ENGAGE_HELP_WITHDRAWAL", vec![Arg::N(ffh_core::engagement::Params::default().withdraw_hp_pct)]),
+        (first_strikes, "TXT_KEY_ENGAGE_HELP_FIRST_STRIKES", vec![Arg::N(d.defines.engagement_first_strike_speed)]),
+        (withdrawal, "TXT_KEY_ENGAGE_HELP_WITHDRAWAL", Vec::new()),
         (collateral, "TXT_KEY_ENGAGE_HELP_COLLATERAL", Vec::new()),
         (blitz, "TXT_KEY_ENGAGE_HELP_BLITZ", Vec::new()),
         (limit, "TXT_KEY_ENGAGE_HELP_COMBAT_LIMIT", Vec::new()),

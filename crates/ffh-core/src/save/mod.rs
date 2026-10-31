@@ -77,9 +77,9 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 /// - 9: requisition and marching recruits replace transit and the governed cities' feed mode
 ///   (docs/ARMIES.md): `Unit::march`, `Army::requisition`, `OrderData::requisition`; gone:
 ///   `Player::transit`, `City::feed_army`, `OrderData::reinforce_to`.
-/// - 10: engagement combat (phase 6): `Army::stance`, `City::garrison_stance`,
-///   `Unit::extra_combat_percent_defense`, `attacks_made`, `battle_heal_turn`,
-///   `Game::battle_reports` (with their logs, `battle.rs`), `battle_report_next`.
+/// - 10: engagement combat (phase 6): `Unit::extra_combat_percent_defense`, `attacks_made`,
+///   `battle_heal_turn`, `Game::battle_reports` (with their logs, `battle.rs`),
+///   `battle_report_next`.
 pub const FORMAT_VERSION: u32 = 10;
 
 /// Why [`Game::load`] rejected a save.

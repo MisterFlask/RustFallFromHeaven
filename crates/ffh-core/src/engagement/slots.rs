@@ -18,7 +18,7 @@
 //! ([`SideSlots`]): the base, then the changes in the order applied (the plot's, the city's,
 //! the bombardment's, the minimum, the river), so `base + the deltas = total`.
 
-use super::battle::Side;
+use super::formation::Side;
 use super::report::{SideSlots, SlotChange, SlotSource};
 use super::stats::HitCtx;
 use crate::game::Game;

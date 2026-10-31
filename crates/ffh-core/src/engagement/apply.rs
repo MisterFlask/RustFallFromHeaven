@@ -1,4 +1,4 @@
-//! After the battle (plan 6.7, the spec's step 6, G2), in this order:
+//! After the battle (spec 1.9, G2), in this order:
 //!
 //! 1. The survivors' damage is written back (HP to the damage field, plan 4.1); the victims die
 //!    in kill order (`setDamage(max)`, delayed death: the unit-killed event fires here, as for
@@ -7,7 +7,7 @@
 //!    `clamp(xp_value(v) x Dv(v <- h) / A(h -> v), MIN, MAX)` scaled by its share of the damage
 //!    the victim took in the battle (the killer at least the minimum); `xp_value` is the victim's
 //!    defense XP value if it attacked, its attack XP value if it defended (open point 4).
-//!    Withdrawn units and attackers that left at their combat limit get the withdrawal XP.
+//!    Withdrawn units get the withdrawal XP.
 //! 3. **Per kill**, in kill order: the barbarian win counter, war weariness and war success
 //!    ([`Game::engage_kill_bookkeeping`]), then `combatWon`'s per-kill part
 //!    ([`Game::unit_combat_won_as`]: free XP, the global counter, capture and enslavement, gold,
@@ -15,10 +15,10 @@
 //!    lost callbacks). A killer that died in the battle gets only the loser's callback. The
 //!    conversion (`UnitConvertFromCombat`: Wolves, Lions, Baby Spiders, werewolves) is rolled per
 //!    kill until it succeeds and applied once, after the killer's last kill.
-//! 4. **Per engagement**: the promotions removed by combat leave every committed survivor (won,
-//!    withdrawn or drawn: Hidden's quirk may move or kill it, so every later step re-checks);
-//!    `PromotionCombatApply` once per holder that killed (on its victims' plot) or died (on its
-//!    killer); poison: each survivor that took damage from a poison-typed enemy rolls once.
+//! 4. **Per engagement**: the promotions removed by combat leave every committed unit that fought
+//!    and lives (standing or withdrawn: Hidden's quirk may move or kill it, so every later step
+//!    re-checks); `PromotionCombatApply` once per holder that killed (on its victims' plot) or died
+//!    (on its killer); poison: each survivor that took damage from a poison-typed enemy rolls once.
 //! 5. The victims are killed (immortals are reborn); a defending victim's capturing player is set
 //!    first when the attackers will move in. (Phase 7: the writes of the battle's `Cast` records
 //!    go here.)
@@ -27,51 +27,41 @@
 //!    (`Unit::battle_heal_turn`). Then phase 7's post-battle hook
 //!    ([`Game::engage_post_battle_spells`], empty).
 //! 7. Withdrawn defenders (outside cities only) flee to the nearest valid plot (or die with none);
-//!    a marching one keeps its march.
-//! 8. **Rout** (Q8): a won attack outside a city with a surviving committed Fear attacker: each
-//!    enemy unit left on the plot not immune rolls today's check and flees.
-//! 9. **Attack cost**: every committed attacker (sat-out ones included) has made its attack
+//!    a marching one keeps its march. (The round model's Fear rout after a won battle is gone:
+//!    formation battles are not won by damage.)
+//! 8. **Attack cost**: every committed attacker (sat-out ones included) has made its attack
 //!    (`made_attack`, `attacks_made`) and pays today's attack move cost unless it moves in.
-//!    Withdrawn attackers stay in their group and army.
-//! 10. **Advance**: with no visible enemy defender left on the plot, the launcher's group moves in
-//!     (a city is captured as today); only the launcher's group; its mission queue is cleared.
-//!     The report counts the defender's uncommitted candidates still alive on the plot.
-//! 11. The armies of every player involved are settled (`player_army_sync`).
+//!    Withdrawn attackers stay in their group and army; the survivors stay on their plot.
+//! 9. **The result** (spec 1.7): the plot falls only when no defender is left on it (in the line
+//!    or in reserve): then the launcher's group moves in (a city is captured as today), and only
+//!    it; its mission queue is cleared. Otherwise nobody moves.
+//! 10. The armies of every player involved are settled (`player_army_sync`).
 
 use ffh_data::*;
 
-use super::battle::{damage_from_hp, Battle, FighterIdx, Side};
-use super::engage::Eng;
-use super::report::{HealSource, KillKind, LogEvent, Stage, XpSource};
-use super::resolve::{EngageResult, Fate, Resolution};
+use super::engage::{damage_from_hp, Eng, Fought};
+use super::formation::{FighterIdx, Side};
+use super::report::{EngageResult, HealSource, KillKind, LogEvent, Stage, XpSource};
 use super::sink::Sink;
 use crate::game::Game;
 use crate::ids::*;
 use crate::unit::{WonEffect, WonMode};
 
 /// What the post-battle steps did (for the report).
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub(crate) struct Post {
+    pub result: EngageResult,
     pub plot_taken: bool,
     pub city_captured: Option<CityId>,
     pub moved_in: i32,
-    /// Uncommitted defenders still on the plot (the report's `Outcome::defenders_left`).
+    /// The defender's units still on the plot (the report's `Outcome::defenders_left`).
     pub defenders_left: i32,
-    /// Per fighter: the XP it gained after the battle.
+    /// Per committed unit: the XP it gained after the battle.
     pub xp: Vec<i32>,
-    /// Per fighter: its kills.
+    /// Per committed unit: its kills.
     pub kills: Vec<i32>,
-    /// Defenders that fled (withdrawals) and units routed.
+    /// Defenders that fled (withdrawals).
     pub fled: i32,
-    pub routed: i32,
-}
-
-fn killed(r: &Resolution, i: usize) -> bool {
-    matches!(r.fighters[i].fate, Fate::Killed { .. })
-}
-
-fn survived(r: &Resolution, i: usize) -> bool {
-    matches!(r.fighters[i].fate, Fate::Survived | Fate::Withdrew { .. })
 }
 
 impl Game {
@@ -81,11 +71,11 @@ impl Game {
     }
 
     /// The post-battle steps (module comment).
-    pub(crate) fn engage_post(&mut self, e: &mut Eng, b: &Battle, r: &Resolution, sink: &mut Option<Sink>) -> Post {
+    pub(crate) fn engage_post(&mut self, e: &mut Eng, r: &Fought, sink: &mut Option<Sink>) -> Post {
         let d = self.d;
         let n = e.units.len();
         let to = e.to;
-        let mut post = Post { xp: vec![0; n], kills: vec![0; n], ..Post::default() };
+        let mut post = Post { result: EngageResult::Held, plot_taken: false, city_captured: None, moved_in: 0, defenders_left: 0, xp: vec![0; n], kills: vec![0; n], fled: 0 };
         if let Some(s) = sink.as_mut() {
             s.stage(Stage::Post);
         }
@@ -98,18 +88,19 @@ impl Game {
         // 1. Damage written back; the victims die (delayed), in kill order.
         for i in 0..n {
             let u = e.units[i];
-            if killed(r, i) || e.sat_out[i] || !self.units.contains(u) {
+            if r.killed(i) || e.sat_out[i] || !self.units.contains(u) {
                 continue;
             }
-            let dmg = damage_from_hp(r.fighters[i].hp, b.fighters[i].max_hp);
+            let dmg = damage_from_hp(r.hp[i], r.max_hp[i]);
             if dmg != self.units[u].damage {
                 self.unit_set_damage(u, dmg, None);
             }
         }
         let max_hp = d.defines.max_hit_points;
         for k in &r.kills {
-            let v = e.units[k.victim as usize];
-            let by = k.killer.map(|kf| e.units[kf as usize]).filter(|&ku| self.units.contains(ku)).map(|ku| self.units[ku].owner);
+            let v = e.units[k.victim];
+            let ku = e.units[k.killer];
+            let by = self.units.contains(ku).then(|| self.units[ku].owner);
             if self.units.contains(v) {
                 self.unit_set_damage(v, max_hp, by);
             }
@@ -121,7 +112,7 @@ impl Game {
         let mut xp_from: Vec<Vec<XpSource>> = vec![Vec::new(); n];
         let xp_before: Vec<i32> = e.units.iter().map(|&u| if self.units.contains(u) { self.units[u].experience } else { 0 }).collect();
         for k in &r.kills {
-            let vi = k.victim as usize;
+            let vi = k.victim;
             let vu = e.units[vi];
             if !self.units.contains(vu) {
                 continue;
@@ -133,11 +124,11 @@ impl Game {
             for h in e.of(e.side(vi).other()) {
                 let hu = e.units[h];
                 let dealt = r.dealt(h, vi) as i64;
-                let is_killer = k.killer == Some(h as FighterIdx);
-                if killed(r, h) || (dealt <= 0 && !is_killer) || !self.engage_alive(hu) {
+                let is_killer = k.killer == h;
+                if r.killed(h) || (dealt <= 0 && !is_killer) || !self.engage_alive(hu) {
                     continue;
                 }
-                let pr = b.pair(h, vi);
+                let pr = e.setup.pair(h, vi);
                 let full = (xp_value as i64 * pr.dv as i64 / pr.a.max(1) as i64).clamp(min_xp as i64, max_xp.max(min_xp) as i64);
                 let mut xp = if total > 0 { full * dealt / total } else { full };
                 if is_killer {
@@ -154,7 +145,7 @@ impl Game {
         }
         for i in 0..n {
             let u = e.units[i];
-            if !matches!(r.fighters[i].fate, Fate::Withdrew { .. }) || !self.engage_alive(u) {
+            if !r.withdrew(i) || !self.engage_alive(u) {
                 continue;
             }
             let other = e.of(e.side(i).other());
@@ -180,14 +171,12 @@ impl Game {
         let mut convert_ok = vec![false; n];
         let mut last_kill = vec![usize::MAX; n];
         for (ki, k) in r.kills.iter().enumerate() {
-            if let Some(kf) = k.killer {
-                last_kill[kf as usize] = ki;
-            }
+            last_kill[k.killer] = ki;
         }
         for (ki, k) in r.kills.iter().enumerate() {
-            let vi = k.victim as usize;
+            let vi = k.victim;
             let vu = e.units[vi];
-            let Some(kf) = k.killer.map(|x| x as usize) else { continue };
+            let kf = k.killer;
             post.kills[kf] += 1;
             let ku = e.units[kf];
             if !self.units.contains(vu) || !self.units.contains(ku) {
@@ -197,7 +186,7 @@ impl Game {
             if self.telemetry.on() {
                 self.tel_engage_kill(ku, vu);
             }
-            if !killed(r, kf) && !self.unit_is_dead(ku) {
+            if !r.killed(kf) && !self.unit_is_dead(ku) {
                 let mut effects = Vec::new();
                 let roll_convert = !convert_ok[kf];
                 let ok = self.unit_combat_won_as(ku, vu, WonMode::Kill { roll_convert }, sink.is_some().then_some(&mut effects));
@@ -211,7 +200,7 @@ impl Game {
                             WonEffect::Gold(g) => KillKind::Gold(g),
                             WonEffect::Promotion(p) => KillKind::Promotion(p),
                             WonEffect::Heal(pct) => {
-                                s.event(LogEvent::Heal { unit: kf as FighterIdx, amount: pct * b.fighters[kf].max_hp, source: HealSource::OnKill });
+                                s.event(LogEvent::Heal { unit: kf as FighterIdx, amount: pct * r.max_hp[kf], source: HealSource::OnKill });
                                 continue;
                             }
                         };
@@ -236,7 +225,7 @@ impl Game {
 
         // 4. Per engagement: removed by combat, combat-apply promotions, poison.
         for i in 0..n {
-            if !survived(r, i) {
+            if !r.survived(i) {
                 continue;
             }
             let u = e.units[i];
@@ -259,10 +248,10 @@ impl Game {
             if applies.is_empty() {
                 continue;
             }
-            if killed(r, i) {
+            if r.killed(i) {
                 // On its killer (the duel's loser branch).
-                let Fate::Killed { by: Some(kf), .. } = r.fighters[i].fate else { continue };
-                let ku = e.units[kf as usize];
+                let Some(k) = r.kills.iter().find(|k| k.victim == i) else { continue };
+                let ku = e.units[k.killer];
                 for apply in applies {
                     if !self.engage_alive(ku) {
                         break;
@@ -297,7 +286,7 @@ impl Game {
         if let Some(poisoned) = opt_from_i32::<PromotionType>(d.defines.poisoned_promotion) {
             for t in 0..n {
                 let tu = e.units[t];
-                if !survived(r, t) || !self.engage_alive(tu) {
+                if !r.survived(t) || !self.engage_alive(tu) {
                     continue;
                 }
                 let by = e.of(e.side(t).other()).find(|&h| {
@@ -320,14 +309,14 @@ impl Game {
         // 5. The victims are killed; a defending victim is captured when the attackers move in.
         let launcher = e.launcher.filter(|&g| self.groups.contains(g));
         let mover = launcher.and_then(|g| self.groups[g].units.iter().copied().find(|&u| self.engage_alive(u)));
-        let leaving = r.kills.iter().filter(|k| e.side(k.victim as usize) == Side::Defender).count() as i32
-            + e.of(Side::Defender).filter(|&i| matches!(r.fighters[i].fate, Fate::Withdrew { .. }) && !e.in_city).count() as i32;
+        let leaving = r.kills.iter().filter(|k| e.side(k.victim) == Side::Defender).count() as i32
+            + e.of(Side::Defender).filter(|&i| r.withdrew(i) && !e.in_city()).count() as i32;
         let will_advance = mover.is_some_and(|m| self.plot_get_num_visible_enemy_defenders(to, m) - leaving <= 0);
         if will_advance {
             let capture = mover.is_some_and(|m| !self.unit_is_no_capture(m));
             for k in &r.kills {
-                let v = e.units[k.victim as usize];
-                if e.side(k.victim as usize) == Side::Defender && self.units.contains(v) {
+                let v = e.units[k.victim];
+                if e.side(k.victim) == Side::Defender && self.units.contains(v) {
                     if capture || d.units[self.units[v].unit_type].equipment_promotion.is_some() {
                         self.unit_set_capturing_player(v, Some(e.p));
                     }
@@ -335,7 +324,7 @@ impl Game {
             }
         }
         for k in &r.kills {
-            let v = e.units[k.victim as usize];
+            let v = e.units[k.victim];
             if self.units.contains(v) {
                 self.unit_kill(v, false, None);
             }
@@ -346,7 +335,7 @@ impl Game {
         let turn = self.game_turn();
         for i in 0..n {
             let u = e.units[i];
-            if !survived(r, i) || !self.engage_alive(u) || self.units[u].damage <= 0 || self.units[u].battle_heal_turn == turn {
+            if !r.survived(i) || !self.engage_alive(u) || self.units[u].damage <= 0 || self.units[u].battle_heal_turn == turn {
                 continue;
             }
             let Some((heal, medic, adjacent)) = self.engage_medic_heal(u) else { continue };
@@ -356,18 +345,18 @@ impl Game {
             if let Some(s) = sink.as_mut() {
                 let unit_type = self.units[medic].unit_type;
                 let b_medic = s.index_of(medic);
-                s.event(LogEvent::Heal { unit: i as FighterIdx, amount: amount * b.fighters[i].max_hp, source: HealSource::Medic { b: b_medic, unit_type, adjacent } });
+                s.event(LogEvent::Heal { unit: i as FighterIdx, amount: amount * r.max_hp[i], source: HealSource::Medic { b: b_medic, unit_type, adjacent } });
             }
         }
         // Phase 7 hook: the post-battle spells (their `Cast` records' writes would go here).
-        let spells = self.engage_post_battle_spells(b, r);
+        let spells = self.engage_post_battle_spells(&e.setup, r);
         debug_assert!(spells.is_empty(), "post-battle spells are phase 7's: {spells:?}");
 
         // 7. Withdrawn defenders flee (outside cities).
-        if !e.in_city {
+        if !e.in_city() {
             for i in e.of(Side::Defender) {
                 let u = e.units[i];
-                if !matches!(r.fighters[i].fate, Fate::Withdrew { .. }) || !self.engage_alive(u) {
+                if !r.withdrew(i) || !self.engage_alive(u) {
                     continue;
                 }
                 self.unit_join_group(u, None, true);
@@ -381,46 +370,7 @@ impl Game {
             }
         }
 
-        // 8. Rout (Q8).
-        if r.result == EngageResult::AttackerWon && !self.plot_is_city(to, false, None) {
-            let src = e
-                .of(Side::Attacker)
-                .filter(|&i| r.fighters[i].fate == Fate::Survived && self.engage_alive(e.units[i]) && self.unit_is_fear(e.units[i]))
-                .max_by_key(|&i| {
-                    let u = e.units[i];
-                    (self.unit_base_combat_str(u), self.units[u].level, std::cmp::Reverse(u))
-                });
-            if let Some(si) = src {
-                let s_str = self.unit_base_combat_str(e.units[si]);
-                let (mut routed, mut where_to) = (Vec::new(), Vec::new());
-                for lu in self.map.plots[to].units.clone() {
-                    if !self.units.contains(lu) {
-                        continue;
-                    }
-                    if self.unit_is_enemy(lu, Some(e.team), None) && !self.unit_is_immune_to_fear(lu) {
-                        let threshold = s_str + 10 - self.unit_base_combat_str(lu);
-                        if self.soren_rand_num(20, "Im afeared!") <= threshold {
-                            self.unit_join_group(lu, None, true);
-                            self.unit_withdrawl_to_nearest_valid_plot(lu, false);
-                            post.routed += 1;
-                            if let Some(s) = sink.as_mut() {
-                                if let (Some(bi), Some(at)) = (s.index_of(lu), self.unit_plot_opt(lu)) {
-                                    routed.push(bi);
-                                    where_to.push(at);
-                                }
-                            }
-                        }
-                    }
-                }
-                if let Some(s) = sink.as_mut() {
-                    if !routed.is_empty() {
-                        s.event(LogEvent::Rout { units: routed, to: where_to });
-                    }
-                }
-            }
-        }
-
-        // 9. Attack cost; 10. advance.
+        // 8. Attack cost; 9. the launcher moves in when no defender is left.
         let launcher = e.launcher.filter(|&g| self.groups.contains(g));
         let mover = launcher.and_then(|g| self.groups[g].units.iter().copied().find(|&u| self.engage_alive(u)));
         let advance = mover.is_some_and(|m| self.plot_get_num_visible_enemy_defenders(to, m) == 0);
@@ -458,9 +408,19 @@ impl Game {
                 self.group_clear_mission_queue(g);
             }
         }
-        post.defenders_left = e.def_reserve.iter().filter(|&&u| self.engage_alive(u) && self.unit_plot_opt(u) == Some(to)).count() as i32;
+        // 9. The result: the plot fell when none of the defender's units is left on it.
+        post.defenders_left = e.setup.candidates.iter().filter(|&&u| self.engage_alive(u) && self.unit_plot_opt(u) == Some(to)).count() as i32;
+        post.result = if post.defenders_left == 0 {
+            EngageResult::Taken
+        } else if r.down[1] {
+            EngageResult::Cleared
+        } else if r.down[0] {
+            EngageResult::Repulsed
+        } else {
+            EngageResult::Held
+        };
 
-        // 11. Armies.
+        // 10. Armies.
         for p in players {
             self.player_army_sync(p);
         }

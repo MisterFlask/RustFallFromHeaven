@@ -1,54 +1,48 @@
-//! Battle reports and the battle log (plan 9.1, revised by 15.1 and 15.5; the battle UI design's
-//! log, `battle_ui/final/DESIGN.md` section 10): saved state, written by the engagement's
-//! post-battle step and read by the views, never by the rules.
+//! Battle reports and the battle log of formation battles (spec section 2; docs/ENGAGEMENTS.md,
+//! "The battle log"): saved state, written by the engagement's post-battle step and read by the
+//! views, never by the rules.
 //!
 //! **Two layers.** A [`BattleReport`] is kept for each engagement of the current and the previous
 //! game turn and for the last `ENGAGEMENT_REPORTS_KEPT` engagements: where, who fought (a
-//! [`ReportSide`] each, with its real and shown owner), how many each side committed and lost,
-//! and the [`Outcome`]: what the turn report's "Battles" list and the toasts show. Its
-//! [`BattleLog`] is the full record the client replays (fighters with their A and Dv parts, the
-//! pair table, every event with its rolls, the frozen forecast). The engagement writes a log only
-//! for a battle a human could see; the log stays for every report of the current and the previous
-//! turn and for the last `ENGAGEMENT_REPORT_LOGS_KEPT` logged reports, and older reports keep
-//! their summary ([`Game::battle_reports_trim`]). Both caps give way to the two-turn window: a
-//! turn's battles, however many (other players' wars included), never push out the reports or
-//! logs a player's turn report is about to show.
+//! [`ReportSide`] each, with its real and shown owner), how many each side committed, lost, saw
+//! escape and kept standing, and the [`Outcome`] (whether the plot fell). Its [`BattleLog`] is the
+//! full record the client replays: the fighters on their grids, the ground and its rules, the
+//! slots and lanes, every event in order (the morale check and the defensive strikes, every
+//! action of the battle as the resolver fought it, the end, the post-battle steps) and the pairs
+//! that hit. The engagement writes a log only for a battle a human could see; the log stays for
+//! every report of the current and the previous turn and for the last
+//! `ENGAGEMENT_REPORT_LOGS_KEPT` logged reports, and older reports keep their summary
+//! ([`Game::battle_reports_trim`]). Both caps give way to the two-turn window.
 //!
-//! **DESIGN.md's `BattleLog` is the report and its log together**: `id`, `turn`, `plot`, `from`,
-//! `outcome` and each side's players, army, garrison and stance are the report's (they outlive the
-//! log); `slots`, the sides' picks ([`SidePick`]), `fighters`, `pairs`, `events` and `forecast`
-//! are [`BattleLog`]'s. The view joins them. Other differences from DESIGN.md, all of form:
-//! - numbers are `i32` (the engine's; the save's varints keep small ones small), fighter
-//!   references are [`FighterIdx`] (`u16`, room for any stack) and a fighter's `b` is its index in
-//!   [`BattleLog::fighters`] (not stored); sides are [`Side`]; the schema version is the view's;
-//! - the round model's names are taken, so the log's are [`LogFighter`], [`LogPair`],
-//!   [`LogEvent`] and [`LogDeath`], and DESIGN's `Phase` event enum is [`Stage`];
-//! - `stance_known` is the viewer's (the view decides it: own team only in phase 6);
-//! - the round model's [`Fate`] is each fighter's end ([`LogFighter::fate`]), [`LogEvent::End`]
-//!   carries the volley rounds, [`Outcome::moved_in`] is a count (the units are in
-//!   [`LogEvent::MoveIn`]), a capture or enslavement names the unit type it creates, a medic's
-//!   heal names the medic's unit type (it need not be a fighter: adjacent medics heal too), the
-//!   forecast's per-fighter tuple is [`ForecastFighter`], and [`TermSource`] adds `Own`,
-//!   `VsBarbarian`, `VsDomain`, `UnitHillsAttack`, `Improvement` (a fort's defense) and
-//!   `RangeDefense` (terms `unit_combat_terms` can produce).
-//!
-//! **Fighter order.** [`BattleLog::fighters`] holds the committed fighters first, in the round
-//! model's order ([`super::Battle::fighters`]), then the reserves (eligible units on both plots that
-//! were not committed, `slot: None`). So a committed fighter's index is its round-model
-//! [`FighterIdx`], and the round model's references ([`Fate::Killed`]'s `by`, [`super::Death`],
-//! [`super::Hit`]) read as log indices unchanged.
+//! **Fighter order.** [`BattleLog::fighters`] holds the committed units first, in the
+//! engagement's order (the attacker's formation by lane then row, then the defender's), sat-out
+//! units in their place, then the reserves (the other units on both plots the battle met,
+//! `place: None`). The resolver fights the committed units that did not sit out, in that order;
+//! the log's actions ([`LogEvent::Action`]) name fighters by their log index.
 //!
 //! **Hidden nationality (G5).** Every side and fighter keeps its real owner and the owner the
 //! other side saw (`unit_get_visual_owner` at battle time). A viewer gets the real owners of its
-//! own side and the shown ones of the other ([`BattleReport::owner_for`]), so a hidden-nationality
-//! attacker stays the barbarian it looked like.
+//! own side and the shown ones of the other ([`BattleReport::owner_for`]).
 
 use ffh_data::*;
 
-use super::battle::{FighterIdx, Side};
-use super::resolve::{EngageResult, Fate, Phase};
+use super::formation::{Event, FighterIdx, Ground, GroundRule, Side};
 use crate::game::Game;
 use crate::ids::*;
+
+/// How an engagement ended for the plot (spec 1.7; decided after the post-battle steps).
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub enum EngageResult {
+    /// The plot fell: no defender is left on it (the launching group moved in, if it could).
+    Taken,
+    /// The defender's line is gone (every committed defender fell, escaped or sat out), but
+    /// defenders are left on the plot: it holds.
+    Cleared,
+    /// The attacker's line is gone (every committed attacker fell, escaped or sat out).
+    Repulsed,
+    /// Both lines still stand after the last round.
+    Held,
+}
 
 /// One engagement's report (`Game::battle_reports`).
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -69,7 +63,7 @@ pub struct BattleReport {
     pub log: Option<Box<BattleLog>>,
 }
 
-/// A side of a report: who fought, with what stance, and what it lost.
+/// A side of a report: who fought and what became of its units.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ReportSide {
     /// The side's player (the attacker: the launcher's owner; the defender: the city's owner, else
@@ -78,22 +72,20 @@ pub struct ReportSide {
     pub player: PlayerId,
     pub shown_player: PlayerId,
     /// Every real owner of the side's units in the battle (committed or reserve) and, for the
-    /// defender, the city's owner: the players the report is for. Real owners: a view shows the
-    /// other side only `shown_player` (and the fighters' `shown_owner`).
+    /// defender, the city's owner: the players the report is for.
     pub players: Vec<PlayerId>,
-    /// The army whose stance the side fought with, if any, and the city whose garrison it was.
-    pub army: Option<ArmyId>,
-    pub garrison_of: Option<CityId>,
-    /// The stance it fought with (plan 5.3).
-    pub stance: StanceType,
-    /// The most units it could commit: its ordinary and river slots (the log's [`SideSlots`]
-    /// say why; this outlives the log).
+    /// The most slots it could fill (its ordinary and river slots; the log's [`SideSlots`] say
+    /// why), its lanes, and the slots its formation used (a large unit fills two).
     pub slots: i32,
-    /// Units committed (sat-out ones included), withdrawn, sat out, fled after the battle.
+    pub lanes: i32,
+    pub used: i32,
+    /// Units in its formation, then of them: sat out (the morale check), fallen, escaped
+    /// (withdrew) and standing at the end: `committed = sat_out + fallen + escaped + standing`.
     pub committed: i32,
-    pub withdrew: i32,
     pub sat_out: i32,
-    pub fled: i32,
+    pub fallen: i32,
+    pub escaped: i32,
+    pub standing: i32,
     /// Units killed, by unit type (types ascending).
     pub lost: Vec<(UnitType, i32)>,
 }
@@ -118,39 +110,45 @@ pub struct CitySnap {
     pub name: String,
     pub owner: PlayerId,
     pub size: i32,
-    /// Its defence modifier at the battle (after bombardment).
+    /// Its defence modifier at the battle (after bombardment): it cost the attacker slots.
     pub defense_pct: i32,
 }
 
-/// How an engagement ended (DESIGN `Outcome`).
+/// How an engagement ended.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Outcome {
     pub result: EngageResult,
-    pub volley_rounds: i32,
+    /// Rounds begun (0: a side had nobody on the field).
     pub rounds: i32,
     /// The attacker moved in (and took the city, if one).
     pub plot_taken: bool,
     pub city_captured: Option<CityId>,
     /// Units that moved in (they are listed in [`LogEvent::MoveIn`]).
     pub moved_in: i32,
-    /// Uncommitted defenders still on the plot: the defender's candidates the battle did not
-    /// commit that are alive there after the rout.
+    /// The defender's units still on the plot after the battle (its line's survivors that did
+    /// not flee, the units that sat out and its reserve).
     pub defenders_left: i32,
 }
 
-/// The full record of an engagement (DESIGN `BattleLog`, less what the report holds).
+/// The full record of an engagement (spec section 2).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BattleLog {
     /// `[attacker, defender]`.
     pub slots: [SideSlots; 2],
-    pub picks: [SidePick; 2],
-    /// Committed fighters in the round model's order, then the reserves (module comment).
+    pub lanes: [u8; 2],
+    /// The defended plot's ground and the rules of it that apply.
+    pub ground: Ground,
+    pub rules: Vec<GroundRule>,
+    /// The side's formation was its order's (the player's or the AI's own), not the rules' auto
+    /// formation.
+    pub ordered: [bool; 2],
+    /// Committed units in the engagement's order, then the reserves (module comment).
     pub fighters: Vec<LogFighter>,
     /// A and Dv of every (hitter, target) pair that hit.
     pub pairs: Vec<LogPair>,
-    /// In resolution order: the order of the RNG draws (DESIGN 10.1).
+    /// In resolution order: the order of the RNG draws.
     pub events: Vec<LogEvent>,
-    /// What the attacker's plan showed when it attacked.
+    /// What the attacker's plan showed when it attacked (a human attacker's).
     pub forecast: Option<FrozenForecast>,
 }
 
@@ -193,22 +191,20 @@ pub enum SlotSource {
     Summons(i32),
 }
 
-/// How a side's force was picked (DESIGN `SideSnap`'s pick fields).
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct SidePick {
-    /// The stance's own pick.
-    pub auto_pick: Vec<FighterIdx>,
-    pub picked_by: Pick,
+/// What became of a committed unit.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum LogFate {
+    /// On the field at the end.
+    Standing,
+    /// Killed by log fighter `by` in round `round`.
+    Fell { by: FighterIdx, round: u8 },
+    /// Left the battle alive in round `round` (its withdrawal took the place of a killing hit).
+    Withdrew { round: u8 },
+    /// Failed the morale check: it did not fight.
+    SatOut,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Pick {
-    Auto,
-    /// The player swapped units: `(out, in)` pairs.
-    Player { swaps: Vec<(FighterIdx, FighterIdx)> },
-}
-
-/// A unit on either plot (DESIGN `Fighter`).
+/// A unit on either plot (spec section 2's fighter).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct LogFighter {
     /// The unit (ids are never reused; it may be gone).
@@ -220,44 +216,51 @@ pub struct LogFighter {
     pub owner: PlayerId,
     pub shown_owner: PlayerId,
     pub side: Side,
-    /// Its slot; `None`: on the plot, not committed (a reserve).
-    pub slot: Option<i32>,
+    /// Its cell in its side's grid, `(lane, row)` (a large unit: its first lane); `None`: on the
+    /// plot, not in the formation (a reserve).
+    pub place: Option<(u8, u8)>,
+    pub large: bool,
     pub level: i32,
     pub xp: i32,
     pub hero: bool,
     pub role: CombatRoleType,
-    pub pos: Position,
-    pub screen: bool,
-    pub ignores_shield: bool,
-    pub assassin_profile: bool,
-    pub guardsman: bool,
-    /// Max HP, and HP at the start (centi-HP, before the opening).
+    /// Max HP, and HP before the opening and when the rounds begin (centi-HP).
     pub max_hp: i32,
     pub hp_start: i32,
-    /// First strikes and their chance (the roll is a [`LogEvent::VolleyRoll`]).
-    pub volleys: i32,
-    pub volley_chance: i32,
+    pub hp_battle: i32,
+    /// Its speed in the battle (the unit's, with first strikes and the chance first strikes it
+    /// rolled), its first strikes, their chance and what it rolled.
+    pub speed: i32,
+    pub first_strikes: i32,
+    pub chance_first_strikes: i32,
+    pub rolled_first_strikes: i32,
+    /// What it does from each row (front, middle, rear), with its extra actions.
+    pub actions: [RowActions; ROWS],
+    /// The damage spell it casts with SPELL actions (`None`: the magic bolt, or it casts none).
+    pub spell: Option<SpellType>,
+    pub dodge: i32,
+    pub crit_bonus: i32,
+    pub anti_flank: bool,
+    pub flanker: bool,
     /// 0 for defenders in a city (Q3).
     pub withdraw_pct: i32,
+    /// 100 = none (attackers only).
+    pub combat_limit: i32,
+    /// It splashes its hits, never past this damage (percent).
+    pub collateral_limit: Option<i32>,
     /// Defensive strike: (chance, damage percent).
     pub def_strike: Option<(i32, i32)>,
-    /// Collateral: (damage percent, limit percent, max units).
-    pub collateral: Option<(i32, i32, i32)>,
-    /// 100 = none.
-    pub combat_limit: i32,
     pub immune: Immunities,
     pub fear: bool,
     /// Against an ordinary opponent (the card's headline).
     pub a: Stat,
     pub dv: Stat,
-    /// How it ended (the round model's; `None` for a reserve).
-    pub fate: Option<Fate>,
-}
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub enum Position {
-    Front,
-    Back,
+    /// How it ended (`None` for a reserve), and the damage it dealt, took and healed in the
+    /// battle (centi-HP).
+    pub fate: Option<LogFate>,
+    pub dealt: i32,
+    pub taken: i32,
+    pub healed: i32,
 }
 
 /// A bit set of what a fighter is immune to.
@@ -265,10 +268,8 @@ pub enum Position {
 pub struct Immunities(pub u8);
 
 impl Immunities {
-    pub const FIRST_STRIKES: u8 = 1;
     pub const DEF_STRIKE: u8 = 2;
     pub const FEAR: u8 = 4;
-    pub const COLLATERAL: u8 = 8;
 
     pub fn has(self, bit: u8) -> bool {
         self.0 & bit != 0
@@ -298,7 +299,7 @@ pub struct Term {
     pub pct: i32,
 }
 
-/// Every term `unit_combat_terms` can produce (plan 4.2; DESIGN `TermSource`).
+/// Every term `unit_combat_terms` can produce (the duel's and the engagement's; plan 4.2).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum TermSource {
     /// The unit's own combat percentage, when not broken down by promotion.
@@ -348,37 +349,25 @@ pub struct LogPair {
     /// A of `h` against `t`, Dv of `t` against `h` (x100).
     pub a_x100: i32,
     pub dv_x100: i32,
-    /// Centi-HP: `B x A / (A + Dv)`.
+    /// Centi-HP: `ENGAGEMENT_BASE_DAMAGE x A / (A + Dv)`, before the hit's percentages.
     pub mean: i32,
     /// The pair-only terms (against a unit combat, class, promotion).
     pub a_extra: Vec<Term>,
     pub dv_extra: Vec<Term>,
 }
 
-/// A stage of the engagement (DESIGN's `Phase` event enum).
+/// A stage of the engagement.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Stage {
     PreBattle,
     Morale,
     Opening,
-    Volley(i32),
-    Round(i32),
+    /// The rounds (each action names its round and pass).
+    Battle,
     Post,
 }
 
-impl From<Phase> for Stage {
-    fn from(p: Phase) -> Stage {
-        match p {
-            Phase::Opening => Stage::Opening,
-            Phase::Volley(k) => Stage::Volley(k),
-            Phase::Round(n) => Stage::Round(n),
-        }
-    }
-}
-
-/// An event of the log (DESIGN `Event`), in resolution order. HP changes only at `DefStrike`,
-/// `Collateral`, `Cast`, `RoundEnd` and `Heal`; liveness only at `RoundEnd`, `Withdraw` and
-/// `SatOut` (DESIGN 10.1).
+/// An event of the log, in resolution order.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum LogEvent {
     Stage { stage: Stage },
@@ -387,58 +376,21 @@ pub enum LogEvent {
     /// Fear (Q8): the roll out of 40.
     Morale { unit: FighterIdx, source: FighterIdx, chance: i32, roll: i32, passed: bool },
     SatOut { unit: FighterIdx, why: SatOutWhy },
-    /// Only when the volley chance is above 0.
-    VolleyRoll { unit: FighterIdx, chance: i32, roll: i32, total: i32 },
-    /// `rolled`: the strikers that rolled.
+    /// A defensive strike (Q5) on an attacker before the battle. `rolled`: the strikers that
+    /// rolled.
     DefStrike { striker: FighterIdx, target: FighterIdx, rolled: i32, chance: i32, roll: i32, pct: i32, dmg: i32 },
-    Collateral { source: FighterIdx, target: FighterIdx, pct: i32, limit_pct: i32, protection_pct: i32, dmg: i32 },
-    /// `step`: the index in the hitter's target order; `blocked`: the earlier steps and why they
-    /// were passed; `eligible`: the set the target was drawn from; `r` in 80..=120; `capped` by
-    /// the hitter's combat limit.
-    Hit { h: FighterIdx, t: FighterIdx, rule: TargetRule, step: i32, blocked: Vec<(i32, Block)>, eligible: Vec<FighterIdx>, r: i32, dmg: i32, capped: bool },
-    /// The round's hits apply here, all at once.
-    RoundEnd { deaths: Vec<LogDeath> },
-    Withdraw { unit: FighterIdx, hp_pct: i32, chance: i32, roll: i32, ok: bool, fatal: bool, hp_kept: Option<i32> },
-    /// The side's last front-position fighter fell.
-    ShieldDown { side: Side },
-    End { result: EngageResult, volley_rounds: i32, rounds: i32 },
+    /// One action of the battle as the resolver fought it (fighters by log index; a spell by its
+    /// `SpellType` index): `{round, pass, actor, kind, spell, target, hits, heal, knocked, note}`.
+    Action(Event),
+    /// The battle's end: the rounds begun and which lines are gone (attacker, defender).
+    End { rounds: i32, down: [bool; 2] },
     Heal { unit: FighterIdx, amount: i32, source: HealSource },
     Xp { unit: FighterIdx, amount: i32, from: Vec<XpSource> },
     KillEffect { killer: FighterIdx, victim: FighterIdx, kind: KillKind },
     /// A withdrawn defender outside a city.
     Flee { unit: FighterIdx, to: PlotIdx },
-    /// Q8, after a won attack outside a city.
-    Rout { units: Vec<FighterIdx>, to: Vec<PlotIdx> },
     MoveIn { units: Vec<FighterIdx>, city: Option<CityId> },
 }
-
-/// A death at a round's end (DESIGN `Death`).
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct LogDeath {
-    pub b: FighterIdx,
-    pub killer: Option<FighterIdx>,
-    pub assists: Vec<FighterIdx>,
-    /// Damage beyond 0, centi-HP.
-    pub overkill: i32,
-}
-
-/// The step of the hitter's order that chose the target (DESIGN `TargetRule`).
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub enum TargetRule {
-    FrontFirst,
-    FrontRankDown,
-    FlankerScreensFirst,
-    FlankerAround,
-    FlankerFrontLast,
-    AssassinSupportFirst,
-    AssassinBack,
-    AssassinFrontLast,
-    /// Phase 7: a Guardsman draws assassin-profile hitters (Q6).
-    BodyguardFirst,
-}
-
-/// Why a step of the order was passed: the round model's.
-pub use super::resolve::Block;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum CastEffect {
@@ -451,8 +403,6 @@ pub enum CastEffect {
 pub enum SatOutWhy {
     /// Failed its morale check.
     Afraid,
-    /// An attacker with a combat limit whose every target is at it.
-    EveryTargetCapped,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -484,69 +434,29 @@ pub enum KillKind {
     Promotion(PromotionType),
 }
 
-/// The plan as the attacker saw it (DESIGN `FrozenForecast`; frozen from the attack preview,
-/// `Game::engage_preview`, when the attack is made: plan 15 items 1-2).
+/// The plan as the attacker saw it (frozen from the attack preview, `Game::engage_preview`, when
+/// a human attacker attacks).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FrozenForecast {
-    pub source: ForecastSource,
-    /// The attacker's chance to win and to draw (per mille).
-    pub win_permille: i32,
-    pub draw_permille: i32,
-    /// The rounds fought (volley rounds not counted): p10, p50, p90.
-    pub rounds: (i32, i32, i32),
-    /// The attacker's committed units lost when it wins, x10; `None`: it never won (or, from the
-    /// moment integrator, not known).
-    pub losses_if_win_x10: Option<i32>,
+    /// The battles the preview played.
+    pub runs: i32,
+    /// The chance (per mille) the defender's line is wiped out, the plot falls, the attacker's
+    /// line is wiped out.
+    pub wiped_permille: i32,
+    pub falls_permille: i32,
+    pub repulsed_permille: i32,
+    /// Expected units fallen per side (attacker, defender), x100.
+    pub lost_x100: [i32; 2],
     /// Each committed fighter of the plan (both sides).
     pub per: Vec<ForecastFighter>,
-    /// Each side's mean engaged HP (centi-HP) after each step: the opening (its volleys
-    /// included), round 1, ... (empty from the moment integrator).
-    pub curve: [Vec<i32>; 2],
-    /// What the What-if list showed.
-    pub alternatives: Vec<ForecastAlt>,
-}
-
-/// A What-if plan as the list showed it.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ForecastAlt {
-    pub kind: AltKind,
-    /// The stance whose pick it is (a swap: the plan's).
-    pub stance: StanceType,
-    /// Its force, in log fighter indices.
-    pub force: Vec<FighterIdx>,
-    pub win_permille: i32,
-    pub losses_if_win_x10: Option<i32>,
-}
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub enum ForecastSource {
-    /// The player's preview: runs of the real resolver on a private RNG.
-    Sampled { runs: i32 },
-    /// The AI's moment integrator.
-    Expected,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ForecastFighter {
     pub b: FighterIdx,
-    /// The chance it falls and withdraws (percent).
+    /// The chance it falls and escapes (percent).
     pub fall_pct: i32,
-    pub withdraw_pct: i32,
-    /// The round by which it has fallen in half the battles (`None`: it survives more than
-    /// half; 0: in the opening volleys).
-    pub death_round: Option<i32>,
-}
-
-/// What a What-if plan is (DESIGN 2, "the dock"; the client's `kind`).
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub enum AltKind {
-    /// The stance's own pick (its quotas, before the swap search).
-    StancePick,
-    /// One of the best single swaps of the plan's force.
-    Swap,
-    /// Another stance's proposal (what choosing that stance proposes: its pick and the swap
-    /// search).
-    OtherStance,
+    pub escape_pct: i32,
 }
 
 impl BattleReport {

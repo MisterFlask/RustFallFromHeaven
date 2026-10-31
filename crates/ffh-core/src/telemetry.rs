@@ -25,9 +25,9 @@ use std::io::Write;
 
 use ffh_data::*;
 
-use crate::engagement::engage::Eng;
-use crate::engagement::report::BattleReport;
-use crate::engagement::{Battle, EngageResult, Fate, Resolution, Side};
+use crate::engagement::engage::{Eng, Fought};
+use crate::engagement::report::{BattleReport, LogFate};
+use crate::engagement::{EngageResult, Side};
 use crate::game::Game;
 use crate::ids::*;
 use crate::structs::{TradeData, VoteSelectionSubData};
@@ -284,14 +284,9 @@ const SLOT_KEYS: [&str; 25] = [
     "00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24",
 ];
 
-/// `engage_est` keys: the estimator's size bucket (the smaller side: 1, 2-3, 4-7, 8+) and its
-/// predicted win chance (per mille, by hundreds).
-const EST_KEYS: [[&str; 10]; 4] = [
-    ["1:00", "1:10", "1:20", "1:30", "1:40", "1:50", "1:60", "1:70", "1:80", "1:90"],
-    ["2-3:00", "2-3:10", "2-3:20", "2-3:30", "2-3:40", "2-3:50", "2-3:60", "2-3:70", "2-3:80", "2-3:90"],
-    ["4-7:00", "4-7:10", "4-7:20", "4-7:30", "4-7:40", "4-7:50", "4-7:60", "4-7:70", "4-7:80", "4-7:90"],
-    ["8+:00", "8+:10", "8+:20", "8+:30", "8+:40", "8+:50", "8+:60", "8+:70", "8+:80", "8+:90"],
-];
+/// `engage_rounds` keys: the rounds a battle began (formation battles fight at most
+/// `ENGAGEMENT_ROUNDS`, 3).
+const ROUND_KEYS: [&str; 5] = ["0", "1", "2", "3", "4+"];
 
 // ----------------------------------------------------------------------------
 // Recording (rules side)
@@ -728,43 +723,34 @@ impl Game {
 
     /// An engagement (docs/TELEMETRY.md, "Engagements"), after its post-battle steps: today's
     /// per-unit `attack` / `defend` counts for every committed unit (so the duel's reports stay
-    /// comparable), and the engagement's own counts. `estimate`: the moment estimator's win
-    /// chance (per mille) for the battle as fought, for the calibration buckets.
-    pub(crate) fn tel_engagement(&self, r: &BattleReport, e: &Eng, b: &Battle, rl: &Resolution, estimate: Option<i32>) {
+    /// comparable: an attacker that stands or a defender that holds counts as a win), and the
+    /// engagement's own counts.
+    pub(crate) fn tel_engagement(&self, r: &BattleReport, e: &Eng, f: &Fought) {
         let d = self.d;
         let turn = self.game_turn();
         let (pa, pd) = (r.sides[0].player, r.sides[1].player);
-        let won = r.outcome.result == EngageResult::AttackerWon;
         let city = r.place.city.is_some();
         let barb = self.player_is_barbarian(pd);
         let animal = barb && e.of(Side::Defender).all(|i| d.units[e.types[i]].animal);
         let role_of = |i: usize| d.unit_roles[e.types[i]].map_or("none", |ro| d.combat_roles[ro].base.type_.as_str());
-        let (n_att, n_def) = (e.n_att, e.units.len() - e.n_att);
+        let (n_att, n_def) = (e.of(Side::Attacker).len(), e.of(Side::Defender).len());
         let result = match r.outcome.result {
-            EngageResult::AttackerWon => "won",
-            EngageResult::DefenderHeld => "held",
-            EngageResult::Draw => "draw",
-            EngageResult::Mutual => "mutual",
+            EngageResult::Taken => "taken",
+            EngageResult::Cleared => "cleared",
+            EngageResult::Repulsed => "repulsed",
+            EngageResult::Held => "held",
         };
-        let rounds = rl.rounds;
-        let rounds_key = match rounds {
-            0 => "00",
-            1..=5 => "01-05",
-            6..=10 => "06-10",
-            11..=20 => "11-20",
-            r if r < b.params.max_rounds => "21-39",
-            _ => "40",
-        };
-        let lost = |s: usize| r.sides[s].lost.iter().map(|(_, n)| *n as i64).sum::<i64>();
+        let rounds = f.rounds;
+        let rounds_key = ROUND_KEYS[rounds.clamp(0, 4) as usize];
         let (x, y) = (r.place.x, r.place.y);
         self.telemetry.with(|t| {
             for i in 0..e.units.len() {
-                let fate = rl.fighters[i].fate;
+                let fate = f.fate[i];
                 let p = e.owners[i];
-                if i < e.n_att {
+                if e.side(i) == Side::Attacker {
                     let res = match fate {
-                        Fate::Killed { .. } => "loss",
-                        Fate::Survived if won => "win",
+                        LogFate::Fell { .. } => "loss",
+                        LogFate::Standing => "win",
                         _ => "withdraw",
                     };
                     t.count(p, "attack", res, 0);
@@ -772,45 +758,28 @@ impl Game {
                     t.count(p, "engage_force", role_of(i), 0);
                 } else {
                     let res = match fate {
-                        Fate::Killed { .. } => "loss",
-                        Fate::Survived => "win",
-                        _ => "withdraw",
+                        LogFate::Fell { .. } => "loss",
+                        LogFate::Standing | LogFate::SatOut => "win",
+                        LogFate::Withdrew { .. } => "withdraw",
                     };
                     t.count(p, "defend", res, 0);
-                    t.count(p, "defend_in_city", if city { "yes" } else { "no" }, matches!(fate, Fate::Killed { .. }) as i64);
+                    t.count(p, "defend_in_city", if city { "yes" } else { "no" }, matches!(fate, LogFate::Fell { .. }) as i64);
                 }
-                let side = if i < e.n_att { "att" } else { "def" };
+                let side = if e.side(i) == Side::Attacker { "att" } else { "def" };
                 match fate {
-                    Fate::Killed { .. } => t.count(p, "engage_lost_role", role_of(i), 0),
-                    Fate::Withdrew { .. } => t.count(p, "engage_withdrew", side, 0),
-                    Fate::SatOut => t.count(p, "engage_satout", side, 0),
-                    Fate::Survived => {}
+                    LogFate::Fell { .. } => t.count(p, "engage_lost_role", role_of(i), 0),
+                    LogFate::Withdrew { .. } => t.count(p, "engage_withdrew", side, 0),
+                    LogFate::SatOut => t.count(p, "engage_satout", side, 0),
+                    LogFate::Standing => {}
                 }
             }
             t.count(pa, "engage", result, rounds as i64);
             t.count(pd, "engage_def", result, rounds as i64);
             t.count(pa, "engage_rounds", rounds_key, rounds as i64);
-            if r.outcome.result == EngageResult::Draw {
-                t.count(pa, "engage_draw", "n", 0);
-            }
-            t.count(pa, "engage_slots", SLOT_KEYS[(e.slots.max(Side::Attacker).clamp(0, 24)) as usize], n_att as i64);
-            t.count(pd, "engage_slots_def", SLOT_KEYS[(e.slots.def().clamp(0, 24)) as usize], n_def as i64);
-            for (s, p) in [(0, pa), (1, pd)] {
-                let st = &r.sides[s];
-                t.count(p, "engage_stance", d.stances[st.stance].base.type_.as_str(), 0);
-                let by = if st.army.is_some() { "army" } else if st.garrison_of.is_some() { "garrison" } else { "default" };
-                t.count(p, "engage_stance_by", by, 0);
-            }
+            t.count(pa, "engage_slots", SLOT_KEYS[(r.sides[0].slots.clamp(0, 24)) as usize], n_att as i64);
+            t.count(pd, "engage_slots_def", SLOT_KEYS[(r.sides[1].slots.clamp(0, 24)) as usize], n_def as i64);
             if e.strikes > 0 {
                 t.count(pa, "engage_strike", "n", e.strikes as i64);
-            }
-            if e.collateral > 0 {
-                t.count(pa, "engage_collateral", "n", e.collateral as i64);
-            }
-            if let Some(w) = estimate {
-                let key = EST_KEYS[crate::engagement::expect::size_bucket(n_att, n_def)][(w.clamp(0, 999) / 100) as usize];
-                t.count(pa, "engage_est", key, won as i64);
-                t.count(pa, "engage_est_exp", key, w as i64);
             }
             t.event(|| {
                 ev(turn, "engagement", pa)
@@ -819,11 +788,9 @@ impl Game {
                     .s("res", result)
                     .i("att", n_att as i64)
                     .i("def", n_def as i64)
-                    .i("att_lost", lost(0))
-                    .i("def_lost", lost(1))
+                    .i("att_lost", r.sides[0].fallen as i64)
+                    .i("def_lost", r.sides[1].fallen as i64)
                     .i("rounds", rounds as i64)
-                    .i("volleys", rl.volley_rounds as i64)
-                    .opt("est", estimate.map(|w| w as i64))
                     .b("city", city)
                     .b("taken", r.outcome.plot_taken)
                     .i("x", x as i64)

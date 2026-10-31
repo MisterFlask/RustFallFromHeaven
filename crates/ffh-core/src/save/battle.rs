@@ -1,26 +1,34 @@
 //! [`Persist`](super::Persist) for engagement combat's saved state: the battle reports and their
-//! logs (`engagement/report.rs`) and the round model's result types they hold (`Side`,
-//! `EngageResult`, `Phase`, `Fate`). Structs are listed field by field in declaration order and
-//! enums variant by variant with fixed tags (`persist_struct!`, `persist_enum!`), so a new field
-//! or variant fails to compile until it is listed here (and `FORMAT_VERSION` is bumped).
+//! logs (`engagement/report.rs`) and the formation resolver's types they hold (`Side`, `Ground`,
+//! `GroundRule`, the action `Event` with its hits). Structs are listed field by field in
+//! declaration order and enums variant by variant with fixed tags (`persist_struct!`,
+//! `persist_enum!`), so a new field or variant fails to compile until it is listed here (and
+//! `FORMAT_VERSION` is bumped).
 
 use super::io::{persist_enum, persist_newtype, persist_struct};
 
+use crate::engagement::formation::{Event, Ground, GroundRule, Heal, Hit, Knock, Note, Side};
 use crate::engagement::report::*;
-use crate::engagement::{EngageResult, Fate, Phase, Side};
 
 persist_enum!(Side { 0 => Attacker, 1 => Defender });
-persist_enum!(EngageResult { 0 => AttackerWon, 1 => DefenderHeld, 2 => Draw, 3 => Mutual });
-persist_enum!(Phase { 0 => Opening, 1 => Volley(k), 2 => Round(n) });
-persist_enum!(Fate { 0 => Survived, 1 => Killed { by, phase }, 2 => Withdrew { phase, capped }, 3 => SatOut });
+persist_enum!(EngageResult { 0 => Taken, 1 => Cleared, 2 => Repulsed, 3 => Held });
 
 persist_struct!(BattleReport { id, turn, plot, from, place, sides, outcome, log });
-persist_struct!(ReportSide { player, shown_player, players, army, garrison_of, stance, slots, committed, withdrew, sat_out, fled, lost });
+persist_struct!(ReportSide { player, shown_player, players, slots, lanes, used, committed, sat_out, fallen, escaped, standing, lost });
 persist_struct!(PlotSnap { x, y, terrain, feature, hills, river_crossing, city });
 persist_struct!(CitySnap { id, name, owner, size, defense_pct });
-persist_struct!(Outcome { result, volley_rounds, rounds, plot_taken, city_captured, moved_in, defenders_left });
+persist_struct!(Outcome { result, rounds, plot_taken, city_captured, moved_in, defenders_left });
 
-persist_struct!(BattleLog { slots, picks, fighters, pairs, events, forecast });
+persist_struct!(BattleLog { slots, lanes, ground, rules, ordered, fighters, pairs, events, forecast });
+persist_struct!(Ground { city, forest, hills });
+persist_enum!(GroundRule {
+    0 => CityShots { pct },
+    1 => ForestRanged { pct },
+    2 => HillsAttacker { pct },
+    3 => HillsDefenderRanged { pct },
+    4 => Charge { pct },
+    5 => NoFlanking,
+});
 persist_struct!(SideSlots { base, changes, total, river_only });
 persist_struct!(SlotChange { src, delta });
 persist_enum!(SlotSource {
@@ -33,15 +41,14 @@ persist_enum!(SlotSource {
     6 => Minimum,
     7 => Summons(n),
 });
-persist_struct!(SidePick { auto_pick, picked_by });
-persist_enum!(Pick { 0 => Auto, 1 => Player { swaps } });
 
 persist_struct!(LogFighter {
-    unit, unit_type, name, owner, shown_owner, side, slot, level, xp, hero, role, pos, screen,
-    ignores_shield, assassin_profile, guardsman, max_hp, hp_start, volleys, volley_chance,
-    withdraw_pct, def_strike, collateral, combat_limit, immune, fear, a, dv, fate,
+    unit, unit_type, name, owner, shown_owner, side, place, large, level, xp, hero, role, max_hp,
+    hp_start, hp_battle, speed, first_strikes, chance_first_strikes, rolled_first_strikes, actions,
+    spell, dodge, crit_bonus, anti_flank, flanker, withdraw_pct, combat_limit, collateral_limit,
+    def_strike, immune, fear, a, dv, fate, dealt, taken, healed,
 });
-persist_enum!(Position { 0 => Front, 1 => Back });
+persist_enum!(LogFate { 0 => Standing, 1 => Fell { by, round }, 2 => Withdrew { round }, 3 => SatOut });
 persist_newtype!(Immunities);
 persist_struct!(Stat { base_x100, role_pct, terms, total_x100 });
 persist_struct!(Term { src, pct });
@@ -80,42 +87,28 @@ persist_enum!(TermSource {
 });
 persist_struct!(LogPair { h, t, a_x100, dv_x100, mean, a_extra, dv_extra });
 
-persist_enum!(Stage { 0 => PreBattle, 1 => Morale, 2 => Opening, 3 => Volley(k), 4 => Round(n), 5 => Post });
+persist_enum!(Stage { 0 => PreBattle, 1 => Morale, 2 => Opening, 3 => Battle, 4 => Post });
 persist_enum!(LogEvent {
     0 => Stage { stage },
     1 => Cast { caster, spell, targets, effect },
     2 => Morale { unit, source, chance, roll, passed },
     3 => SatOut { unit, why },
-    4 => VolleyRoll { unit, chance, roll, total },
-    5 => DefStrike { striker, target, rolled, chance, roll, pct, dmg },
-    6 => Collateral { source, target, pct, limit_pct, protection_pct, dmg },
-    7 => Hit { h, t, rule, step, blocked, eligible, r, dmg, capped },
-    8 => RoundEnd { deaths },
-    9 => Withdraw { unit, hp_pct, chance, roll, ok, fatal, hp_kept },
-    10 => ShieldDown { side },
-    11 => End { result, volley_rounds, rounds },
-    12 => Heal { unit, amount, source },
-    13 => Xp { unit, amount, from },
-    14 => KillEffect { killer, victim, kind },
-    15 => Flee { unit, to },
-    16 => Rout { units, to },
-    17 => MoveIn { units, city },
+    4 => DefStrike { striker, target, rolled, chance, roll, pct, dmg },
+    5 => Action(ev),
+    6 => End { rounds, down },
+    7 => Heal { unit, amount, source },
+    8 => Xp { unit, amount, from },
+    9 => KillEffect { killer, victim, kind },
+    10 => Flee { unit, to },
+    11 => MoveIn { units, city },
 });
-persist_struct!(LogDeath { b, killer, assists, overkill });
-persist_enum!(TargetRule {
-    0 => FrontFirst,
-    1 => FrontRankDown,
-    2 => FlankerScreensFirst,
-    3 => FlankerAround,
-    4 => FlankerFrontLast,
-    5 => AssassinSupportFirst,
-    6 => AssassinBack,
-    7 => AssassinFrontLast,
-    8 => BodyguardFirst,
-});
-persist_enum!(Block { 0 => Empty, 1 => Shielded, 2 => VolleyImmune, 3 => AtLimit });
+persist_struct!(Event { round, pass, actor, kind, spell, target, hits, heal, knocked, note });
+persist_struct!(Hit { target, dmg, expected, r, crit, miss, killed, withdrew, splash });
+persist_struct!(Heal { target, amount, r });
+persist_struct!(Knock { unit, from, to });
+persist_enum!(Note { 0 => NoTarget, 1 => NoOneHurt });
 persist_enum!(CastEffect { 0 => Mod { a_pct, dv_pct }, 1 => Damage(hits), 2 => Summon(b) });
-persist_enum!(SatOutWhy { 0 => Afraid, 1 => EveryTargetCapped });
+persist_enum!(SatOutWhy { 0 => Afraid });
 persist_enum!(HealSource { 0 => Medic { b, unit_type, adjacent }, 1 => OnKill, 2 => Spell(s) });
 persist_enum!(XpSource { 0 => Kill { victim, share_permille }, 1 => Withdrew, 2 => DefStrike });
 persist_enum!(KillKind {
@@ -128,11 +121,8 @@ persist_enum!(KillKind {
     6 => Promotion(p),
 });
 
-persist_struct!(FrozenForecast { source, win_permille, draw_permille, rounds, losses_if_win_x10, per, curve, alternatives });
-persist_enum!(ForecastSource { 0 => Sampled { runs }, 1 => Expected });
-persist_struct!(ForecastFighter { b, fall_pct, withdraw_pct, death_round });
-persist_struct!(ForecastAlt { kind, stance, force, win_permille, losses_if_win_x10 });
-persist_enum!(AltKind { 0 => StancePick, 1 => Swap, 2 => OtherStance });
+persist_struct!(FrozenForecast { runs, wiped_permille, falls_permille, repulsed_permille, lost_x100, per });
+persist_struct!(ForecastFighter { b, fall_pct, escape_pct });
 
 #[cfg(test)]
 mod tests {
@@ -160,7 +150,8 @@ mod tests {
         }
     }
 
-    fn fighter(side: Side, slot: Option<i32>, fate: Option<Fate>) -> LogFighter {
+    fn fighter(side: Side, place: Option<(u8, u8)>, fate: Option<LogFate>) -> LogFighter {
+        let row = |kind, count| RowActions { kind, count };
         LogFighter {
             unit: UnitId(17),
             unit_type: UnitType(5),
@@ -168,33 +159,42 @@ mod tests {
             owner: PlayerId(1),
             shown_owner: PlayerId(8),
             side,
-            slot,
+            place,
+            large: place.is_some_and(|p| p.0 == 1),
             level: 2,
             xp: 7,
             hero: false,
             role: CombatRoleType(0),
-            pos: Position::Back,
-            screen: false,
-            ignores_shield: true,
-            assassin_profile: false,
-            guardsman: false,
             max_hp: 120,
             hp_start: 9000,
-            volleys: 1,
-            volley_chance: 2,
+            hp_battle: 8000,
+            speed: 6,
+            first_strikes: 1,
+            chance_first_strikes: 2,
+            rolled_first_strikes: 1,
+            actions: [row(ActionKind::Spell, 1), row(ActionKind::Heal, 2), row(ActionKind::None, 0)],
+            spell: Some(SpellType(4)),
+            dodge: 15,
+            crit_bonus: 10,
+            anti_flank: true,
+            flanker: false,
             withdraw_pct: 30,
-            def_strike: Some((20, 10)),
-            collateral: Some((50, 25, 3)),
             combat_limit: 100,
-            immune: Immunities::default().with(Immunities::FEAR, true).with(Immunities::COLLATERAL, true),
+            collateral_limit: Some(50),
+            def_strike: Some((20, 10)),
+            immune: Immunities::default().with(Immunities::FEAR, true).with(Immunities::DEF_STRIKE, true),
             fear: true,
             a: stat(400),
             dv: stat(300),
             fate,
+            dealt: 2400,
+            taken: 1000,
+            healed: 300,
         }
     }
 
-    /// A report whose log holds every event, slot source, term source, rule and kill kind.
+    /// A report whose log holds every event, slot source, term source, ground rule, action kind,
+    /// fate and kill kind.
     fn every_variant() -> BattleReport {
         let terms: Vec<Term> = [
             TermSource::Own,
@@ -248,45 +248,55 @@ mod tests {
             total: 4,
             river_only: 2,
         };
-        let stages = [Stage::PreBattle, Stage::Morale, Stage::Opening, Stage::Volley(1), Stage::Round(3), Stage::Post];
+        let stages = [Stage::PreBattle, Stage::Morale, Stage::Opening, Stage::Battle, Stage::Post];
         let mut events: Vec<LogEvent> = stages.into_iter().map(|stage| LogEvent::Stage { stage }).collect();
+        let hit = |target, dmg, crit, miss, killed, withdrew, splash| Hit { target, dmg, expected: 2000, r: 113, crit, miss, killed, withdrew, splash };
         events.extend([
             LogEvent::Cast { caster: 0, spell: SpellType(4), targets: vec![1, 2], effect: CastEffect::Mod { a_pct: 10, dv_pct: -5 } },
             LogEvent::Cast { caster: 0, spell: SpellType(4), targets: vec![1], effect: CastEffect::Damage(vec![(1, 1200), (2, 600)]) },
             LogEvent::Cast { caster: 0, spell: SpellType(5), targets: vec![], effect: CastEffect::Summon(3) },
             LogEvent::Morale { unit: 1, source: 0, chance: 12, roll: 30, passed: true },
             LogEvent::SatOut { unit: 2, why: SatOutWhy::Afraid },
-            LogEvent::SatOut { unit: 3, why: SatOutWhy::EveryTargetCapped },
-            LogEvent::VolleyRoll { unit: 0, chance: 2, roll: 1, total: 2 },
             LogEvent::DefStrike { striker: 1, target: 0, rolled: 2, chance: 20, roll: 7, pct: 10, dmg: 1000 },
-            LogEvent::Collateral { source: 0, target: 1, pct: 50, limit_pct: 25, protection_pct: 0, dmg: 3000 },
-            LogEvent::Hit {
-                h: 0,
-                t: 1,
-                rule: TargetRule::FlankerAround,
-                step: 1,
-                blocked: vec![(0, Block::Empty), (1, Block::Shielded), (2, Block::VolleyImmune), (3, Block::AtLimit)],
-                eligible: vec![1, 4],
-                r: 117,
-                dmg: 1170,
-                capped: false,
-            },
-            LogEvent::RoundEnd {
-                deaths: vec![LogDeath { b: 1, killer: Some(0), assists: vec![4], overkill: 240 }, LogDeath { b: 4, killer: None, assists: vec![], overkill: 0 }],
-            },
-            LogEvent::Withdraw { unit: 0, hp_pct: 30, chance: 45, roll: 12, ok: true, fatal: true, hp_kept: Some(4000) },
-            LogEvent::Withdraw { unit: 5, hp_pct: 20, chance: 25, roll: 77, ok: false, fatal: false, hp_kept: None },
-            LogEvent::ShieldDown { side: Side::Defender },
-            LogEvent::End { result: EngageResult::Mutual, volley_rounds: 2, rounds: 14 },
+            LogEvent::Action(Event {
+                round: 1,
+                pass: 2,
+                actor: 0,
+                kind: ActionKind::Charge,
+                spell: None,
+                target: Some(1),
+                hits: vec![hit(1, 3000, true, false, true, false, false), hit(4, 0, false, false, false, true, true)],
+                heal: None,
+                knocked: Some(Knock { unit: 1, from: 0, to: 1 }),
+                note: None,
+            }),
+            LogEvent::Action(Event {
+                round: 2,
+                pass: 1,
+                actor: 1,
+                kind: ActionKind::Spell,
+                spell: Some(4),
+                target: Some(0),
+                hits: vec![hit(0, 0, false, true, false, false, false)],
+                heal: None,
+                knocked: None,
+                note: None,
+            }),
+            LogEvent::Action(Event { round: 3, pass: 1, actor: 2, kind: ActionKind::Heal, spell: None, target: Some(3), hits: vec![], heal: Some(Heal { target: 3, amount: 1700, r: 85 }), knocked: None, note: None }),
+            LogEvent::Action(Event { round: 3, pass: 2, actor: 2, kind: ActionKind::Heal, spell: None, target: None, hits: vec![], heal: None, knocked: None, note: Some(Note::NoOneHurt) }),
+            LogEvent::Action(Event { round: 3, pass: 3, actor: 5, kind: ActionKind::Bombard, spell: None, target: None, hits: vec![], heal: None, knocked: None, note: Some(Note::NoTarget) }),
+            LogEvent::End { rounds: 3, down: [false, true] },
             LogEvent::Heal { unit: 0, amount: 1200, source: HealSource::Medic { b: Some(6), unit_type: UnitType(9), adjacent: false } },
             LogEvent::Heal { unit: 0, amount: 2400, source: HealSource::Medic { b: None, unit_type: UnitType(9), adjacent: true } },
             LogEvent::Heal { unit: 0, amount: 1000, source: HealSource::OnKill },
             LogEvent::Heal { unit: 0, amount: 500, source: HealSource::Spell(SpellType(6)) },
             LogEvent::Xp { unit: 0, amount: 4, from: vec![XpSource::Kill { victim: 1, share_permille: 750 }, XpSource::Withdrew, XpSource::DefStrike] },
             LogEvent::Flee { unit: 6, to: PlotIdx(12) },
-            LogEvent::Rout { units: vec![6], to: vec![PlotIdx(13)] },
             LogEvent::MoveIn { units: vec![5], city: Some(CityId(3)) },
         ]);
+        for kind in ActionKind::ALL {
+            events.push(LogEvent::Action(Event { round: 1, pass: 1, actor: 3, kind, spell: None, target: Some(0), hits: vec![], heal: None, knocked: None, note: None }));
+        }
         for kind in [
             KillKind::Capture(UnitType(1)),
             KillKind::Enslave(UnitType(2)),
@@ -298,65 +308,49 @@ mod tests {
         ] {
             events.push(LogEvent::KillEffect { killer: 0, victim: 1, kind });
         }
-        for rule in [
-            TargetRule::FrontFirst,
-            TargetRule::FrontRankDown,
-            TargetRule::FlankerScreensFirst,
-            TargetRule::FlankerFrontLast,
-            TargetRule::AssassinSupportFirst,
-            TargetRule::AssassinBack,
-            TargetRule::AssassinFrontLast,
-            TargetRule::BodyguardFirst,
-        ] {
-            events.push(LogEvent::Hit { h: 1, t: 0, rule, step: 0, blocked: vec![], eligible: vec![0], r: 80, dmg: 1, capped: true });
-        }
         let log = BattleLog {
             slots: [slots, SideSlots { base: 8, changes: vec![], total: 8, river_only: 0 }],
-            picks: [
-                SidePick { auto_pick: vec![0, 2], picked_by: Pick::Player { swaps: vec![(2, 3)] } },
-                SidePick { auto_pick: vec![1], picked_by: Pick::Auto },
+            lanes: [4, 3],
+            ground: Ground { city: true, forest: false, hills: true },
+            rules: vec![
+                GroundRule::CityShots { pct: 50 },
+                GroundRule::ForestRanged { pct: 50 },
+                GroundRule::HillsAttacker { pct: 75 },
+                GroundRule::HillsDefenderRanged { pct: 125 },
+                GroundRule::Charge { pct: 200 },
+                GroundRule::NoFlanking,
             ],
+            ordered: [true, false],
             fighters: vec![
-                fighter(Side::Attacker, Some(0), Some(Fate::Withdrew { phase: Phase::Round(11), capped: false })),
-                fighter(Side::Defender, Some(0), Some(Fate::Killed { by: Some(0), phase: Phase::Volley(1) })),
-                fighter(Side::Attacker, Some(1), Some(Fate::SatOut)),
-                fighter(Side::Attacker, Some(2), Some(Fate::Withdrew { phase: Phase::Opening, capped: true })),
-                fighter(Side::Defender, Some(1), Some(Fate::Killed { by: None, phase: Phase::Opening })),
-                fighter(Side::Attacker, Some(3), Some(Fate::Survived)),
+                fighter(Side::Attacker, Some((0, 0)), Some(LogFate::Withdrew { round: 2 })),
+                fighter(Side::Defender, Some((1, 0)), Some(LogFate::Fell { by: 0, round: 1 })),
+                fighter(Side::Attacker, Some((1, 1)), Some(LogFate::SatOut)),
+                fighter(Side::Attacker, Some((2, 2)), Some(LogFate::Standing)),
                 fighter(Side::Defender, None, None),
             ],
             pairs: vec![LogPair { h: 0, t: 1, a_x100: 440, dv_x100: 660, mean: 800, a_extra: terms, dv_extra: vec![] }],
             events,
             forecast: Some(FrozenForecast {
-                source: ForecastSource::Sampled { runs: 200 },
-                win_permille: 910,
-                draw_permille: 3,
-                rounds: (13, 16, 20),
-                losses_if_win_x10: Some(29),
-                per: vec![
-                    ForecastFighter { b: 0, fall_pct: 75, withdraw_pct: 10, death_round: Some(8) },
-                    ForecastFighter { b: 2, fall_pct: 0, withdraw_pct: 0, death_round: None },
-                ],
-                curve: [vec![60000, 52000, 41000], vec![48000, 39000, 30000]],
-                alternatives: vec![
-                    ForecastAlt { kind: AltKind::StancePick, stance: StanceType(0), force: vec![0, 2], win_permille: 880, losses_if_win_x10: Some(31) },
-                    ForecastAlt { kind: AltKind::Swap, stance: StanceType(0), force: vec![0, 3], win_permille: 870, losses_if_win_x10: None },
-                    ForecastAlt { kind: AltKind::OtherStance, stance: StanceType(3), force: vec![2, 3], win_permille: 700, losses_if_win_x10: Some(40) },
-                ],
+                runs: 200,
+                wiped_permille: 910,
+                falls_permille: 640,
+                repulsed_permille: 3,
+                lost_x100: [130, 420],
+                per: vec![ForecastFighter { b: 0, fall_pct: 75, escape_pct: 10 }, ForecastFighter { b: 2, fall_pct: 0, escape_pct: 0 }],
             }),
         };
-        let side = |player: u8, shown: u8, garrison: Option<CityId>| ReportSide {
+        let side = |player: u8, shown: u8| ReportSide {
             player: PlayerId(player),
             shown_player: PlayerId(shown),
             players: vec![PlayerId(player)],
-            army: garrison.is_none().then_some(ArmyId(4)),
-            garrison_of: garrison,
-            stance: StanceType(1),
             slots: 8,
+            lanes: 4,
+            used: 7,
             committed: 6,
-            withdrew: 1,
             sat_out: 1,
-            fled: 0,
+            fallen: 3,
+            escaped: 1,
+            standing: 1,
             lost: vec![(UnitType(2), 2), (UnitType(7), 1)],
         };
         BattleReport {
@@ -373,16 +367,8 @@ mod tests {
                 river_crossing: true,
                 city: Some(CitySnap { id: CityId(3), name: "Strages".to_string(), owner: PlayerId(2), size: 7, defense_pct: 60 }),
             },
-            sides: [side(1, 8, None), side(2, 2, Some(CityId(3)))],
-            outcome: Outcome {
-                result: EngageResult::AttackerWon,
-                volley_rounds: 2,
-                rounds: 14,
-                plot_taken: true,
-                city_captured: Some(CityId(3)),
-                moved_in: 1,
-                defenders_left: 0,
-            },
+            sides: [side(1, 8), side(2, 2)],
+            outcome: Outcome { result: EngageResult::Taken, rounds: 3, plot_taken: true, city_captured: Some(CityId(3)), moved_in: 1, defenders_left: 0 },
             log: Some(Box::new(log)),
         }
     }
@@ -391,7 +377,7 @@ mod tests {
     fn every_report_variant_round_trips() {
         let r = every_variant();
         round_trip(&r);
-        for result in [EngageResult::AttackerWon, EngageResult::DefenderHeld, EngageResult::Draw, EngageResult::Mutual] {
+        for result in [EngageResult::Taken, EngageResult::Cleared, EngageResult::Repulsed, EngageResult::Held] {
             round_trip(&result);
         }
         // A summary without its log is a few dozen bytes.

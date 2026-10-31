@@ -1,8 +1,8 @@
-//! Engagement combat through the human's protocol (docs/ENGAGEMENTS.md; docs/HUMAN.md, "Engagement
-//! combat"): `ffh-play stage engagement`'s attack fought through `engage`, its report and battle
-//! log in the shapes the battle screens read (the header of `assets/app/battle_log.js` lists every
-//! field), the war an attack declares asked first, the stance commands and the view's fields; and
-//! with the option off, the commands refused and the view without them.
+//! Engagement combat through the human's protocol (docs/ENGAGEMENTS.md, formation battles; docs/HUMAN.md,
+//! "Engagement combat"): `ffh-play stage engagement`'s attack fought through `engage` (in the auto
+//! formation and in one the player orders), its report and battle log in the server's shapes
+//! (`view/battles.rs`), the plan with its forecast, the war an attack declares asked first and
+//! the view's fields; and with the option off, the command refused and the view without them.
 
 mod common;
 
@@ -49,45 +49,44 @@ fn int(j: &Json, key: &str) -> i64 {
     j.get(key).and_then(Json::as_i64).unwrap_or_else(|| panic!("no integer `{key}` in {j:?}"))
 }
 
-// The shapes battle_log.js's header lists.
-const LOG: &[&str] = &["v", "id", "turn", "viewer_side", "plot", "from", "slots", "sides", "fighters", "pairs", "events", "forecast", "outcome", "summary"];
-const SIDE: &[&str] = &["player", "shown_player", "civ", "label", "army", "garrison_of", "stance", "stance_known", "auto_pick", "picked_by"];
+// The shapes of the battle log (`view/battles.rs`).
+const LOG: &[&str] = &["v", "id", "turn", "viewer_side", "plot", "from", "ground", "slots", "lanes", "sides", "fighters", "pairs", "events", "forecast", "outcome", "summary"];
+const SIDE: &[&str] = &["player", "shown_player", "civ", "label", "lanes", "ordered"];
 const FIGHTER: &[&str] = &[
-    "b", "unit", "unit_type", "name", "owner", "side", "slot", "level", "xp", "hero", "role", "pos", "screen", "ignores_shield", "assassin_profile", "guardsman", "targets", "promotions", "max_hp",
-    "hp_start", "volleys", "volley_chance", "withdraw_pct", "def_strike", "collateral", "combat_limit", "immune", "fear", "a", "dv", "fate",
+    "b", "unit", "unit_type", "name", "owner", "side", "lane", "row", "large", "level", "xp", "hero", "role", "promotions", "max_hp", "hp_start", "hp_battle", "speed",
+    "first_strikes", "chance_first_strikes", "rolled_first_strikes", "actions", "spell", "dodge", "crit_bonus", "anti_flank", "flanker", "withdraw_pct", "combat_limit",
+    "collateral_limit", "def_strike", "immune", "fear", "a", "dv", "fate", "dealt", "taken", "healed",
 ];
 const STAT: &[&str] = &["base_x100", "role_pct", "terms", "total_x100"];
 const PAIR: &[&str] = &["h", "t", "a_x100", "dv_x100", "mean", "a_extra", "dv_extra"];
-const OUTCOME: &[&str] = &["result", "volley_rounds", "rounds", "plot_taken", "city_captured", "moved_in", "defenders_left"];
-const SUMMARY: &[&str] = &[
-    "id", "turn", "x", "y", "from", "place", "city", "viewer_side", "result", "volley_rounds", "rounds", "plot_taken", "city_captured", "defenders_left", "has_log", "sides",
+const GROUND: &[&str] = &["city", "forest", "hills", "flanking", "rules"];
+const OUTCOME: &[&str] = &["result", "rounds", "plot_taken", "city_captured", "moved_in", "defenders_left"];
+const SUMMARY: &[&str] = &["id", "turn", "x", "y", "from", "place", "city", "viewer_side", "result", "rounds", "plot_taken", "city_captured", "defenders_left", "has_log", "sides"];
+const SUMMARY_SIDE: &[&str] = &["player", "civ", "label", "slots", "lanes", "used", "committed", "sat_out", "fallen", "lost_types", "escaped", "standing"];
+const PLAN: &[&str] = &[
+    "plot", "from", "ground", "slots", "lanes", "sides", "fighters", "pairs", "formation", "auto", "reserve", "def_formation", "def_reserve", "forecast", "declare_war", "errors",
 ];
-const SUMMARY_SIDE: &[&str] = &["player", "civ", "label", "stance", "slots", "committed", "lost", "lost_types", "withdrew", "sat_out", "fled"];
+const FORECAST: &[&str] = &["runs", "wiped_permille", "falls_permille", "repulsed_permille", "lost_x100", "escaped_x100", "per"];
+const HIT: &[&str] = &["target", "dmg", "expected", "r", "crit", "miss", "killed", "withdrew", "splash"];
 /// Each event kind with its members (`kind` included).
 const EVENTS: &[(&str, &[&str])] = &[
     ("Phase", &["kind", "phase"]),
     ("Morale", &["kind", "unit", "source", "chance", "roll", "passed"]),
     ("SatOut", &["kind", "unit", "why"]),
-    ("VolleyRoll", &["kind", "unit", "chance", "roll", "total"]),
     ("DefStrike", &["kind", "striker", "target", "rolled", "chance", "roll", "pct", "dmg"]),
-    ("Collateral", &["kind", "source", "target", "pct", "limit_pct", "protection_pct", "dmg"]),
-    ("Hit", &["kind", "h", "t", "rule", "step", "blocked", "eligible", "r", "dmg", "capped"]),
-    ("Withdraw", &["kind", "unit", "hp_pct", "chance", "roll", "ok", "fatal", "hp_kept"]),
-    ("RoundEnd", &["kind", "deaths"]),
-    ("ShieldDown", &["kind", "side"]),
-    ("End", &["kind", "result", "volley_rounds", "rounds"]),
+    ("Action", &["kind", "round", "pass", "actor", "action", "spell", "target", "hits", "heal", "knocked", "note"]),
+    ("End", &["kind", "rounds", "down"]),
     ("Heal", &["kind", "unit", "amount", "source"]),
     ("Xp", &["kind", "unit", "amount", "from"]),
     ("KillEffect", &["kind", "killer", "victim", "effect"]),
     ("Flee", &["kind", "unit", "to"]),
-    ("Rout", &["kind", "units", "to"]),
     ("MoveIn", &["kind", "units", "city"]),
     ("Cast", &["kind", "caster", "spell", "targets", "effect"]),
 ];
 
-/// The staged engagement (the smoke test's): the plan, the stances, the attack through `engage`,
-/// its report in the command's reply, the battle list, the message's link and the battle log in
-/// the shapes the screens read.
+/// The staged engagement (the smoke test's): the plan with its forecast, the attack through
+/// `engage`, its report in the command's reply, the battle list, the message's link and the battle
+/// log in the server's shapes.
 #[test]
 fn the_staged_engagement_is_fought_through_engage_and_its_log_has_the_screens_fields() {
     let dir = common::TempDir::new("stage-engagement");
@@ -96,18 +95,16 @@ fn the_staged_engagement_is_fought_through_engage_and_its_log_has_the_screens_fi
     let mut s = load(&st.save);
     let (army, x, y) = (st.army.0, st.x, st.y);
 
-    // The view: engagements on, no battle yet; the army's stance, the cities' garrison stance,
-    // each army unit's role, A, Dv and battle HP.
+    // The view: engagements on, no battle yet; each army unit's role, A, Dv, battle HP, speed and
+    // actions per row.
     let view = q(&s, r#"{"q":"view"}"#);
     assert_eq!(view.get("engagements").and_then(Json::as_bool), Some(true));
     assert_eq!(view.get("battles").and_then(Json::as_arr).map(<[Json]>::len), Some(0));
-    let armies = arr(&view, "armies");
-    let a = armies.iter().find(|a| int(a, "id") == army as i64).expect("the staged army in the view");
-    assert!(a.get("stance").and_then(Json::as_i64).is_some(), "the army's stance");
-    assert!(arr(&view, "cities").iter().filter(|c| c.get("owner").and_then(Json::as_i64) == Some(s.human.0 as i64)).all(|c| c.get("garrison_stance").and_then(Json::as_i64).is_some()));
     for u in arr(&view, "units").iter().filter(|u| st.units.iter().any(|&id| id.0 as i64 == int(u, "id"))) {
         assert!(int(u, "engage_attack") > 0 && int(u, "engage_defense") > 0 && int(u, "engage_max_hp") > 0, "{u:?}");
         assert!(u.get("engage_role").and_then(Json::as_i64).is_some());
+        assert!(int(u, "engage_speed") > 0 && arr(u, "engage_actions").len() == 3, "{u:?}");
+        assert!(u.get("engage_large").and_then(Json::as_bool).is_some());
     }
 
     // The `combat` query: an engagement, its pool and defenders.
@@ -118,28 +115,31 @@ fn the_staged_engagement_is_fought_through_engage_and_its_log_has_the_screens_fi
     assert_eq!(int(&c, "pool"), st.units.len() as i64);
     assert_eq!(int(&c, "defenders"), st.defenders.len() as i64);
 
-    // The plan: the stance's pick and its slots; the estimate not built yet.
+    // The plan: the auto formation in its lanes, the defenders', the forecast.
     let pv = q(&s, &format!(r#"{{"q":"engage_preview","army":{army},"to":{{"x":{x},"y":{y}}}}}"#));
+    assert_eq!(keys(&pv), sorted(PLAN));
     assert!(arr(&pv, "errors").is_empty(), "{pv:?}");
-    assert!(!arr(&pv, "force").is_empty());
+    let formation = arr(&pv, "formation");
+    assert!(!formation.is_empty());
+    assert_eq!(formation, arr(&pv, "auto"), "no formation given: the auto formation");
     assert_eq!(arr(&pv, "fighters").len(), st.units.len() + st.defenders.len());
     assert_eq!(arr(&pv, "slots").len(), 2);
-    assert!(pv.get("forecast").is_some_and(Json::is_null));
-    assert_eq!(pv.get("estimate_pending").and_then(Json::as_bool), Some(true));
-
-    // The stances: the army's and the capital garrison's are set; a stance out of range is not.
-    assert!(matches!(cmd(&mut s, &format!(r#"{{"c":"army_stance","army":{army},"stance":"STANCE_MOBILE"}}"#)), Ok(CmdOk::Applied { .. })));
-    let mobile = ffh_data::global().t::<ffh_data::StanceType>("STANCE_MOBILE");
-    assert_eq!(s.g.armies[st.army].stance, mobile);
-    assert!(matches!(cmd(&mut s, &format!(r#"{{"c":"garrison_stance","city":{},"stance":"STANCE_SHIELD_WALL"}}"#, st.capital.0)), Ok(CmdOk::Applied { .. })));
-    assert_eq!(s.g.cities[st.capital].garrison_stance, ffh_data::global().t::<ffh_data::StanceType>("STANCE_SHIELD_WALL"));
-    assert!(matches!(cmd(&mut s, &format!(r#"{{"c":"army_stance","army":{army},"stance":99}}"#)), Err(CmdErr::Invalid(_))));
-    let pv = q(&s, &format!(r#"{{"q":"engage_preview","army":{army},"to":{{"x":{x},"y":{y}}}}}"#));
-    assert_eq!(pv.get("stance").and_then(Json::as_i64), Some(mobile.0 as i64), "the plan takes the army's stance");
+    assert_eq!(keys(pv.get("ground").unwrap()), sorted(GROUND));
+    let fc = pv.get("forecast").unwrap();
+    assert_eq!(keys(fc), sorted(FORECAST));
+    assert!(int(fc, "runs") > 0 && arr(fc, "per").len() == formation.len() + arr(&pv, "def_formation").len());
+    // A formation that breaks the grid: the plan says why.
+    let u0 = int(&formation[0], "unit");
+    let bad = q(&s, &format!(r#"{{"q":"engage_preview","army":{army},"to":{{"x":{x},"y":{y}}},"formation":[{{"unit":{u0},"lane":9,"row":0}}]}}"#));
+    assert!(!arr(&bad, "errors").is_empty(), "{bad:?}");
 
     // An attack on a plot that is not next to the army is refused, and changes nothing.
     let far = cmd(&mut s, &format!(r#"{{"c":"engage","army":{army},"to":{{"x":{},"y":{y}}}}}"#, x + 3));
     assert!(matches!(far, Err(CmdErr::Cannot(_))), "{far:?}");
+    assert!(s.g.battle_reports.is_empty());
+    // A formation off the grid is refused too.
+    let off = cmd(&mut s, &format!(r#"{{"c":"engage","army":{army},"to":{{"x":{x},"y":{y}}},"formation":[{{"unit":{u0},"lane":9,"row":0}}]}}"#));
+    assert!(matches!(off, Err(CmdErr::Cannot(_))), "{off:?}");
     assert!(s.g.battle_reports.is_empty());
 
     // The attack: its report in the reply, the message tagged with it.
@@ -164,13 +164,14 @@ fn the_staged_engagement_is_fought_through_engage_and_its_log_has_the_screens_fi
     let view = q(&s, r#"{"q":"view"}"#);
     assert_eq!(arr(&view, "battles").len(), 1);
 
-    // The battle log, every member the screens read.
+    // The battle log, every member.
     let l = q(&s, &format!(r#"{{"q":"battle_log","report":{id}}}"#));
     assert_eq!(keys(&l), sorted(LOG));
     assert_eq!(int(&l, "id"), id as i64);
     for side in arr(&l, "sides") {
         assert_eq!(keys(&side), sorted(SIDE));
     }
+    assert_eq!(keys(l.get("ground").unwrap()), sorted(GROUND));
     let fighters = arr(&l, "fighters");
     assert_eq!(fighters.len(), st.units.len() + st.defenders.len(), "every unit of both sides is in the log");
     for (b, f) in fighters.iter().enumerate() {
@@ -203,19 +204,20 @@ fn the_staged_engagement_is_fought_through_engage_and_its_log_has_the_screens_fi
     let n = fighters.len() as i64;
     let in_range = |e: &Json, k: &str| e.get(k).and_then(Json::as_i64).is_none_or(|b| (0..n).contains(&b));
     let events = arr(&l, "events");
-    assert!(events.iter().any(|e| e.get("kind").and_then(Json::as_str) == Some("Hit")), "the battle has hits");
+    assert!(events.iter().any(|e| e.get("kind").and_then(Json::as_str) == Some("Action")), "the battle has actions");
     assert!(events.iter().any(|e| e.get("kind").and_then(Json::as_str) == Some("End")));
     for e in &events {
         let kind = e.get("kind").and_then(Json::as_str).unwrap_or("?");
         let (_, members) = EVENTS.iter().find(|(k, _)| *k == kind).unwrap_or_else(|| panic!("an event kind the screens do not know: {e:?}"));
-        let mut want = sorted(members);
-        // (Phase's `n`: volleys and rounds only.)
-        if kind == "Phase" && e.get("n").is_some() {
-            want = sorted(&["kind", "phase", "n"]);
-        }
-        assert_eq!(keys(e), want, "{e:?}");
-        for k in ["h", "t", "unit", "striker", "target", "source", "killer", "victim", "caster"] {
+        assert_eq!(keys(e), sorted(members), "{e:?}");
+        for k in ["actor", "target", "unit", "striker", "source", "killer", "victim", "caster"] {
             assert!(in_range(e, k), "{k} out of range: {e:?}");
+        }
+        if kind == "Action" {
+            for h in arr(e, "hits") {
+                assert_eq!(keys(&h), sorted(HIT));
+                assert!(in_range(&h, "target"));
+            }
         }
     }
     // A report that is not kept, or not the viewer's, is gone.
@@ -297,32 +299,30 @@ fn the_combat_query_previews_a_battle_on_arrival() {
     assert!(arr(&pv, "errors").iter().any(|e| e.as_str().is_some_and(|t| t.contains("cannot see"))), "{pv:?}");
 }
 
-/// The stance picked in the plan is the attack's: `engage` with a stance and the plan's force
-/// fights with that stance, the battle's log records it (not the army's standing order, which
-/// stays) and the force as that stance's own pick.
+/// The formation ordered in the plan is the attack's: `engage` with the plan's formation (two of
+/// its units' cells swapped) fights it, and the log says it was ordered and where each unit stood.
 #[test]
-fn the_plan_s_stance_is_the_attack_s() {
-    let dir = common::TempDir::new("stage-engagement-stance");
+fn the_plan_s_formation_is_the_attack_s() {
+    let dir = common::TempDir::new("stage-engagement-formation");
     let st = ffh_play::stage::engagement(&dir.0).expect("staged");
     let mut s = load(&st.save);
     let (army, x, y) = (st.army.0, st.x, st.y);
-    let mobile = ffh_data::global().t::<ffh_data::StanceType>("STANCE_MOBILE");
-    let standing = s.g.armies[st.army].stance;
-    assert_ne!(standing, mobile);
-    let pv = q(&s, &format!(r#"{{"q":"engage_preview","army":{army},"to":{{"x":{x},"y":{y}}},"stance":"STANCE_MOBILE"}}"#));
-    assert_eq!(int(&pv, "stance"), mobile.0 as i64);
-    let fighters = arr(&pv, "fighters");
-    let force: Vec<String> = arr(&pv, "force").iter().map(|b| int(&fighters[b.as_i64().unwrap() as usize], "unit").to_string()).collect();
-    let r = cmd(&mut s, &format!(r#"{{"c":"engage","army":{army},"to":{{"x":{x},"y":{y}}},"force":[{}],"stance":"STANCE_MOBILE"}}"#, force.join(","))).unwrap();
+    let pv = q(&s, &format!(r#"{{"q":"engage_preview","army":{army},"to":{{"x":{x},"y":{y}}}}}"#));
+    let mut cells: Vec<(i64, i64, i64)> = arr(&pv, "formation").iter().map(|p| (int(p, "unit"), int(p, "lane"), int(p, "row"))).collect();
+    assert!(cells.len() >= 2);
+    let last = cells.len() - 1;
+    let (a, b) = ((cells[0].1, cells[0].2), (cells[last].1, cells[last].2));
+    (cells[0].1, cells[0].2) = b;
+    (cells[last].1, cells[last].2) = a;
+    let list: Vec<String> = cells.iter().map(|(u, l, r)| format!(r#"{{"unit":{u},"lane":{l},"row":{r}}}"#)).collect();
+    let r = cmd(&mut s, &format!(r#"{{"c":"engage","army":{army},"to":{{"x":{x},"y":{y}}},"formation":[{}]}}"#, list.join(","))).unwrap();
     let CmdOk::Applied { battle: Some(id), .. } = r else { panic!("no battle: {r:?}") };
     let l = q(&s, &format!(r#"{{"q":"battle_log","report":{id}}}"#));
     let side = arr(&l, "sides").into_iter().next().unwrap();
-    assert_eq!(int(&side, "stance"), mobile.0 as i64, "the stance picked is the one recorded: {side:?}");
-    assert_eq!(side.get("picked_by").and_then(|p| p.get("kind")).and_then(Json::as_str), Some("Auto"), "the plan's force is the stance's own pick: {side:?}");
-    let summary = l.get("summary").unwrap();
-    assert_eq!(int(&arr(summary, "sides")[0], "stance"), mobile.0 as i64);
-    if let Some(a) = s.g.armies.get(st.army) {
-        assert_eq!(a.stance, standing, "the army's standing order is unchanged");
+    assert_eq!(side.get("ordered").and_then(Json::as_bool), Some(true), "{side:?}");
+    for (u, lane, row) in cells {
+        let f = arr(&l, "fighters").into_iter().find(|f| int(f, "unit") == u).expect("in the log");
+        assert_eq!((int(&f, "lane"), int(&f, "row")), (lane, row), "{f:?}");
     }
 }
 
@@ -352,8 +352,8 @@ fn an_engage_that_declares_war_asks_first() {
     assert!(s.g.teams[my].at_war[their]);
 }
 
-/// With the option off (armies on, engagements off: `stage armies`), the stance commands and
-/// `engage` are refused, the queries say so, and the view has none of the fields.
+/// With the option off (armies on, engagements off: `stage armies`), `engage` is refused, the
+/// queries say so, and the view has none of the fields.
 #[test]
 fn without_engagements_the_commands_are_refused_and_the_view_has_none_of_it() {
     let dir = common::TempDir::new("stage-no-engagements");
@@ -361,8 +361,6 @@ fn without_engagements_the_commands_are_refused_and_the_view_has_none_of_it() {
     let mut s = load(&st.save);
     assert!(s.g.armies_on() && !s.g.engagements_on());
     let off = |r: Result<CmdOk, CmdErr>| matches!(r, Err(CmdErr::Cannot(ref m)) if m.contains("engagements are off"));
-    assert!(off(cmd(&mut s, &format!(r#"{{"c":"army_stance","army":{},"stance":0}}"#, st.army.0))));
-    assert!(off(cmd(&mut s, &format!(r#"{{"c":"garrison_stance","city":{},"stance":0}}"#, st.capital.0))));
     assert!(off(cmd(&mut s, &format!(r#"{{"c":"engage","army":{},"to":{{"x":0,"y":0}}}}"#, st.army.0))));
     let list = q(&s, r#"{"q":"battle_reports"}"#);
     assert_eq!(list.get("on").and_then(Json::as_bool), Some(false));
@@ -374,12 +372,4 @@ fn without_engagements_the_commands_are_refused_and_the_view_has_none_of_it() {
     for u in arr(&view, "units") {
         assert!(u.get("engage_role").is_none(), "{u:?}");
     }
-    for a in arr(&view, "armies") {
-        assert!(a.get("stance").is_none(), "{a:?}");
-    }
-    for c in arr(&view, "cities") {
-        assert!(c.get("garrison_stance").is_none(), "{c:?}");
-    }
-    let city = q(&s, &format!(r#"{{"q":"city","city":{}}}"#, st.capital.0));
-    assert!(city.get("garrison_stance").is_some_and(Json::is_null));
 }

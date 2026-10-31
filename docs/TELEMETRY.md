@@ -64,16 +64,13 @@ A 300-turn mixed game writes about 0.5 MB of events.
 | `defend` | `win`, `loss`, `withdraw` | – |
 | `defend_in_city` | `yes`, `no` | defenders lost |
 | `kill_by` / `lost_unit` | unit type of the winner / of a combat unit lost (combat, spell, killed) | – |
-| `engage` / `engage_def` | the attacker's / the defender's engagements by result: `won`, `held`, `draw`, `mutual` (engagement combat, docs/ENGAGEMENTS.md) | rounds |
-| `engage_rounds` | rounds fought: `00`, `01-05`, `06-10`, `11-20`, `21-39`, `40` | rounds |
-| `engage_draw` | `n`: engagements that ran the 40 rounds | – |
-| `engage_est` / `engage_est_exp` | the moment estimator's size bucket and win decile for the battle as fought (`1:00` .. `8+:90`) | wins / sum of the estimates (per mille): the calibration in games |
+| `engage` / `engage_def` | the attacker's / the defender's engagements by result: `taken` (the plot fell), `cleared` (the defender's line gone, the plot held), `repulsed` (the attacker's line gone), `held` (both lines stand after the last round) (engagement combat, docs/ENGAGEMENTS.md) | rounds |
+| `engage_rounds` | rounds begun: `0`, `1`, `2`, `3`, `4+` | rounds |
 | `engage_slots` / `engage_slots_def` | a side's slots (`00`..`24`) | units committed |
 | `engage_force` | a committed attacker's role (`COMBATROLE_*`) | – |
 | `engage_lost_role` | a killed fighter's role (its owner's count) | – |
 | `engage_withdrew` / `engage_satout` | `att`, `def`: fighters that withdrew / failed the morale check | – |
-| `engage_stance` / `engage_stance_by` | the stance a side fought with / whose it was: `army`, `garrison`, `default` | – |
-| `engage_strike` / `engage_collateral` | `n`: engagements with defensive strikes that hit / with collateral | strikes that hit / units damaged |
+| `engage_strike` | `n`: engagements with defensive strikes that hit | strikes that hit |
 | `engage_missile` | `hit`, `kill`, `miss`: missile strikes (Fireball, Meteor) | – |
 | `died` | cause | – |
 | `casters` | `unit_turns`, `idle_castable` | – |
@@ -98,13 +95,13 @@ Combat odds are the rules' `getCombatOdds` as the battle begins, after defensive
 the true chance, not the AI's own estimate. Ranged, air and collateral damage are not counted as
 combats.
 
-**Engagements** (`GAMEOPTION_ENGAGEMENTS`, docs/ENGAGEMENTS.md) replace the duel's `combat`
-record for land attacks: `attack`, `attack_vs`, `defend` and `defend_in_city` count every committed
-unit (an attacker that survived a won battle: `win`; killed: `loss`; withdrawn, sat out or after a
-draw: `withdraw`), so the duel's reports stay comparable; `attack_odds` is not counted (an
-engagement has no duel odds: `engage_est` holds the estimator's). Each kill, a missile
-strike's included, counts `kill_by`, the war's kills and a summon's kills, as a duel won does. Ships, air units and every attack with
-the option off keep the duel's `combat` record.
+**Engagements** (`GAMEOPTION_ENGAGEMENTS`, docs/ENGAGEMENTS.md: formation battles) replace the
+duel's `combat` record for land attacks: `attack`, `attack_vs`, `defend` and `defend_in_city` count
+every committed unit (an attacker standing at the end: `win`; killed: `loss`; withdrawn or sat out:
+`withdraw`; a defender standing or sat out: `win`), so the duel's reports stay comparable;
+`attack_odds` is not counted (an engagement has no duel odds). Each kill, a missile strike's
+included, counts `kill_by`, the war's kills and a summon's kills, as a duel won does. Ships, air
+units and every attack with the option off keep the duel's `combat` record.
 
 **Spells** (`players.<p>.spells.<SPELL>`): availability, use and effect, per player and spell.
 
@@ -142,9 +139,9 @@ and **whys** (`whys.<kind>.<rule> = count`) record which rule made it.
 **Events**, in the file. Every event carries `t`, `e` and `p`. The kinds are:
 - `cast` and `cast_result`;
 - `combat`;
-- `engagement` (the attacker's: `vs`, the report `id`, `res`, `att` / `def` committed,
-  `att_lost` / `def_lost`, `rounds`, `volleys`, `est` (the estimator's win chance, per mille),
-  `city`, `taken`, `x`, `y`);
+- `engagement` (the attacker's: `vs`, the report `id`, `res` (`taken`, `cleared`, `repulsed`,
+  `held`), `att` / `def` committed, `att_lost` / `def_lost`, `rounds`, `city`, `taken` (the
+  launcher moved in), `x`, `y`);
 - `war`, `peace` and `war_plan`;
 - `deal`;
 - `found`, `acquire` and `raze`;

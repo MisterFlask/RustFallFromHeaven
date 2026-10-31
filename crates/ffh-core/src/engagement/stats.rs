@@ -4,8 +4,8 @@
 //! **Roles** ([`Game::unit_combat_role`]): the type's role (`GameData::unit_roles`, every land and
 //! immobile type has one), a Frontline unit with Formation being a Screen (Q7).
 //!
-//! **HP** ([`Game::unit_engage_max_hp`]): the type's `iHP`, else its role's; the damage field stays
-//! a percentage of it (G3).
+//! **HP** ([`Game::unit_engage_max_hp`]): the type's `iHP`, else its role's (a large unit's:
+//! `ENGAGEMENT_LARGE_HP_PERCENT` of it); the damage field stays a percentage of it (G3).
 //!
 //! **Formation battles' per-unit values** ([`Game::unit_engage_speed`], `_dodge`, `_crit_bonus`,
 //! `_rows`, `_best_row`, `_actions`, `_flanks`): the type's own (`iEngageSpeed`, `iEngageDodge`,
@@ -25,15 +25,18 @@
 //! | bonuses against the opponent's promotions, unit combat, domain, animals | its own against the target | its own against the hitter |
 //! | unit class | its class attack modifier | its class defence modifier |
 //! | the handicap's animal and barbarian modifiers | no | yes: today's duel puts them on one strength of the pair |
-//! | the defended plot's defence, fortification, city, hills, feature and terrain defence; `CITY_BARBARIAN_DEFENSE_MODIFIER` | no | on the defending side only |
+//! | the defended plot's own defence (its terrain or feature cover, hills, a fort, the city's buildings and culture, FfH's range defence) and `CITY_BARBARIAN_DEFENSE_MODIFIER` | no | **no** (formation battles: the ground's rules replace cover) |
+//! | the unit's own fortification, city defence (`iCityDefense`), hills, feature and terrain defence | no | on the defending side only |
 //! | city attack, hills, feature and terrain attack against the defended plot, `AMPHIB_ATTACK_MODIFIER` | on the attacking side only | no |
 //! | `RIVER_ATTACK_MODIFIER` | removed: the river costs slots (Q9) | |
 //! | kamikaze, free wins against barbarians | not read (FfH sets neither) | |
 //! | an army commander's aura (phase 7) | [`Game::army_aura_pct`] | [`Game::army_aura_pct`] |
 //!
-//! So an attacker being hit has no plot defence, fortification or city defence, and a defender
+//! So an attacker being hit has no fortification or defence of the plot's kind, and a defender
 //! hitting back has no city attack, terrain attack or amphibious term (G1). Every unit of the
-//! defending side fights on the defended plot and shares its terms.
+//! defending side fights on the defended plot and shares its terms. The plot itself gives Dv
+//! nothing (revision 4): a city, a forest or jungle and hills act through the ground's rules of a
+//! formation battle (`formation::Ground`) and the slots.
 //!
 //! **Job strengths** ([`Game::engage_job_attack`], [`Game::engage_job_defense`]): the same stats
 //! against an opponent not known yet, which the auto-pick sorts candidates by (plan 5.4).
@@ -43,7 +46,7 @@
 
 use ffh_data::*;
 
-use super::battle::{Pair, Side};
+use super::formation::{Ground, Pair, Side};
 use super::report::{Stat, TermSource};
 use crate::game::Game;
 use crate::ids::*;
@@ -87,11 +90,12 @@ impl Game {
     /// Units without a role (ships, air units: never in a land engagement) answer the duel's
     /// `MAX_HIT_POINTS`.
     pub fn unit_engage_max_hp(&self, u: UnitId) -> i32 {
-        let hp_override = self.d.units[self.units[u].unit_type].hp_override;
-        if hp_override > 0 {
-            return hp_override;
+        let info = &self.d.units[self.units[u].unit_type];
+        if info.hp_override > 0 {
+            return info.hp_override;
         }
         match self.unit_combat_role(u) {
+            Some(role) if info.large => (self.d.combat_roles[role].max_hp * self.d.defines.engagement_large_hp_percent / 100).max(1),
             Some(role) => self.d.combat_roles[role].max_hp,
             None => self.d.defines.max_hit_points,
         }
@@ -143,6 +147,29 @@ impl Game {
         self.d.engage_flanks(self.units[u].unit_type, self.unit_combat_role(u))
     }
 
+    /// The damage spell unit `u` casts with its SPELL actions (`GameData::engage_damage_spell`:
+    /// the strongest damage spell whose prerequisites it meets): `None` when it knows none (it
+    /// casts the magic bolt) or casts nothing (no row of it has SPELL).
+    pub fn unit_engage_spell(&self, u: UnitId) -> Option<SpellType> {
+        if !self.unit_engage_actions(u).iter().any(|r| r.kind == ActionKind::Spell) {
+            return None;
+        }
+        let unit = &self.units[u];
+        self.d.engage_damage_spell(unit.unit_type, |p| unit.has_promotion[p])
+    }
+
+    /// The defended plot's ground for a formation battle (spec 1.6): a city on it; a forest or
+    /// jungle (a feature that narrows the field: `iEngagementSlotsChange` below 0, the forests and
+    /// the jungle); hills.
+    pub fn engage_ground(&self, to: PlotIdx) -> Ground {
+        let plot = &self.map.plots[to];
+        Ground {
+            city: self.plot_is_city(to, false, None),
+            forest: plot.feature_type.is_some_and(|f| self.d.features[f].engagement_slots_change < 0),
+            hills: self.plot_is_hills(to),
+        }
+    }
+
     /// The A of `hitter` (on side `hitter_side`) against `target` and the Dv of `target` against
     /// `hitter`, x100 (plan 4.2; the module comment's table): the pair table's entry.
     pub fn engage_hit(&self, hitter: UnitId, target: UnitId, hitter_side: Side, ctx: &HitCtx) -> Pair {
@@ -151,16 +178,22 @@ impl Game {
         Pair { a: a.strength(), dv: dv.strength() }
     }
 
-    /// The auto-pick's job strength of an attacker (plan 5.4): its A against the defended plot,
+    /// Unit `u`'s A on side `side` of the attack `ctx` against nobody in particular (its own
+    /// percentage, and on the attacking side its city, terrain and amphibious terms), x100: a
+    /// fighter's "most dangerous" and the auto formation's strength.
+    pub fn engage_a_alone(&self, u: UnitId, side: Side, ctx: &HitCtx) -> i32 {
+        self.engage_combat_terms(u, None, ctx, side, true, &mut TermLog::none()).strength()
+    }
+
+    /// The job strength of an attacker (plan 5.4): its A against the defended plot,
     /// with the terms that do not depend on the target (its own percentage, city attack, terrain
     /// attack, amphibious), x100. A plot with a city or a fort counts as a city.
     pub fn engage_job_attack(&self, u: UnitId, ctx: &HitCtx) -> i32 {
         self.engage_combat_terms(u, None, ctx, Side::Attacker, true, &mut TermLog::none()).strength()
     }
 
-    /// The auto-pick's job strength of a defender (plan 5.4): its Dv on the defended plot against
-    /// a hitter not known yet (its own percentage, the plot's defense with the city's buildings,
-    /// fortification, city defense, its terrain defense), x100.
+    /// The job strength of a defender (plan 5.4): its Dv on the defended plot against a hitter not
+    /// known yet (its own percentage, fortification, its city and terrain defense), x100.
     pub fn engage_job_defense(&self, u: UnitId, ctx: &HitCtx) -> i32 {
         self.engage_combat_terms(u, None, ctx, Side::Defender, false, &mut TermLog::none()).strength()
     }
@@ -227,7 +260,6 @@ impl Game {
         attack: bool,
         log: &mut TermLog,
     ) -> CombatTerms {
-        let d = self.d;
         log.reset(self, u);
         let unit = &self.units[u];
         let base = self.engage_base_x100(u, opponent, attack);
@@ -270,16 +302,12 @@ impl Game {
             if let Some(h) = opponent {
                 modifier += self.combat_handicap_terms(u, h, log);
             }
-            // The defended plot's terms (G1: none for an attacker being hit back).
+            // The unit's own defensive terms on the defended plot (G1: none for an attacker being
+            // hit back). The plot's own defence (cover, hills, a fort, the city's walls and
+            // culture, range defence) and the city's barbarian defence give Dv nothing: the
+            // ground's rules of a formation battle replace them (spec 1.6).
             if side == Side::Defender {
-                let team = self.unit_get_team(u);
-                let ignore_building = opponent.is_some_and(|h| self.unit_ignore_building_defense(h));
-                modifier += self.combat_plot_defense_terms(u, ctx.to, team, ignore_building, ctx.city_defense, log);
-                if let Some(h) = opponent {
-                    if self.unit_is_barbarian(h) && self.plot_is_city(ctx.to, true, Some(team)) {
-                        modifier += term!(log, city_barbarian_defense_modifier, d.defines.city_barbarian_defense_modifier, TermSource::VsBarbarian);
-                    }
-                }
+                modifier += self.engage_own_defense_terms(u, ctx.to, log);
             }
         }
 
@@ -301,6 +329,31 @@ impl Game {
             det.base_combat_str = base / 100;
         });
         CombatTerms { base, modifier }
+    }
+
+    /// The defensive terms that are unit `u`'s own on the defended plot `p` (spec 1.6): its
+    /// fortification, its city defence in a city, its hills defence on hills, its feature defence
+    /// (else its terrain defence). The duel's `combat_plot_defense_terms` less the plot's defence.
+    fn engage_own_defense_terms(&self, u: UnitId, p: PlotIdx, log: &mut TermLog) -> i32 {
+        let team = self.unit_get_team(u);
+        let mut modifier = term!(log, fortify_modifier, self.unit_fortify_modifier(u), TermSource::Fortify);
+        if self.plot_is_city(p, true, Some(team)) {
+            modifier += term!(log, city_defense_modifier, self.unit_city_defense_modifier(u), TermSource::UnitCityDefense);
+        }
+        if self.plot_is_hills(p) {
+            modifier += term!(log, hills_defense_modifier, self.unit_hills_defense_modifier(u), TermSource::UnitHillsDefense);
+        }
+        match self.map.plots[p].feature_type {
+            Some(feature) => {
+                modifier += term!(log, feature_defense_modifier, self.unit_feature_defense_modifier(u, feature), TermSource::UnitFeatureDefense(feature));
+            }
+            None => {
+                if let Some(terrain) = self.map.plots[p].terrain_type {
+                    modifier += term!(log, terrain_defense_modifier, self.unit_terrain_defense_modifier(u, terrain), TermSource::UnitTerrainDefense(terrain));
+                }
+            }
+        }
+        modifier
     }
 
     /// The breakdown of the unit's own percentage `total` (A's or Dv's, Q1): each promotion it

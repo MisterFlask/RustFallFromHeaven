@@ -1,14 +1,13 @@
-//! The battle log sink (plan 15 item 1; the battle UI design's log, DESIGN.md section 10): while
-//! an engagement a human could see resolves, the rules write its [`BattleLog`] here: the
-//! fighters with their A and Dv parts, the picks, the opening's rolls, the round model's events
-//! (the resolver's own log is the source; this formats it), the pair table of the pairs that hit
-//! and the post-battle events. Writing it draws no random number and changes no state: it reads
-//! the game (`&Game`) and values the rules already computed.
+//! The battle log sink (spec section 2): while an engagement a human could see resolves, the rules
+//! write its [`BattleLog`] here: the fighters on their grids with their A and Dv parts and their
+//! values in the battle, the ground and its rules, the slots and lanes, the opening's rolls, every
+//! action of the battle (the resolver's own events, renumbered to log indices), the pair table of
+//! the pairs that hit and the post-battle events. Writing it draws no random number and changes
+//! no state: it reads the game (`&Game`) and values the rules already computed.
 
-use super::battle::{hp_from_damage, Battle, FighterIdx, Side, TargetClass};
-use super::engage::Eng;
-use super::report::{BattleLog, Immunities, LogDeath, LogEvent, LogFighter, LogPair, Pick, Position, SatOutWhy, SidePick, Stage, Term, TargetRule};
-use super::resolve::{BattleEvent, Resolution};
+use super::engage::{hp_from_damage, Eng, Fought};
+use super::formation::{Event, FighterIdx, Formation, Outcome, Side};
+use super::report::{BattleLog, FrozenForecast, Immunities, LogEvent, LogFighter, LogPair, SatOutWhy, Stage, Term};
 use crate::game::Game;
 use crate::ids::*;
 use crate::unit::DefStrikeRoll;
@@ -19,23 +18,6 @@ pub(crate) struct Sink {
     log: BattleLog,
     /// `(unit, side)` of each log fighter.
     index: Vec<(UnitId, Side)>,
-}
-
-/// The step of the hitter's order that chose its target, as the log names it.
-fn rule_of(b: &Battle, h: usize, class: TargetClass, step: u8) -> TargetRule {
-    let f = &b.fighters[h];
-    let flanker = f.order.contains(&TargetClass::Screen);
-    match class {
-        TargetClass::HeroOrSupport => TargetRule::AssassinSupportFirst,
-        TargetClass::Screen => TargetRule::FlankerScreensFirst,
-        TargetClass::Back if flanker => TargetRule::FlankerAround,
-        TargetClass::Back if f.ignores_shield => TargetRule::AssassinBack,
-        TargetClass::Back => TargetRule::FrontRankDown,
-        TargetClass::Front if step == 0 => TargetRule::FrontFirst,
-        TargetClass::Front if flanker => TargetRule::FlankerFrontLast,
-        TargetClass::Front if f.ignores_shield => TargetRule::AssassinFrontLast,
-        TargetClass::Front => TargetRule::FrontFirst,
-    }
 }
 
 /// `terms` less the terms of `headline` (a multiset difference): the pair-only terms.
@@ -53,15 +35,35 @@ fn extra(terms: Vec<Term>, headline: &[Term]) -> Vec<Term> {
         .collect()
 }
 
+/// `ev` with its fighters renumbered by `map` (resolver index to log index).
+fn renumber(mut ev: Event, map: &[usize]) -> Event {
+    let m = |k: FighterIdx| map[k as usize] as FighterIdx;
+    ev.actor = m(ev.actor);
+    ev.target = ev.target.map(m);
+    for h in ev.hits.iter_mut() {
+        h.target = m(h.target);
+    }
+    if let Some(h) = ev.heal.as_mut() {
+        h.target = m(h.target);
+    }
+    if let Some(k) = ev.knocked.as_mut() {
+        k.unit = m(k.unit);
+    }
+    ev
+}
+
 impl Sink {
-    /// A log for engagement `e`: its committed fighters (in the round model's order), then
-    /// `reserves`; the sides' stance picks `auto` and whether the attacker's force is the
-    /// player's own.
-    pub fn new(g: &Game, e: &Eng, reserves: &[(UnitId, Side)], auto: [&[UnitId]; 2], by_player: bool) -> Sink {
-        let mut s = Sink {
+    /// A log for engagement `e`: its committed units (in the engagement's order), then
+    /// `reserves`; `ordered`: each side's formation was its order's.
+    pub fn new(g: &Game, e: &Eng, reserves: &[(UnitId, Side)], ordered: [bool; 2]) -> Sink {
+        let s = &e.setup;
+        let mut sink = Sink {
             log: BattleLog {
-                slots: e.slots.sides.clone(),
-                picks: [SidePick { auto_pick: Vec::new(), picked_by: Pick::Auto }, SidePick { auto_pick: Vec::new(), picked_by: Pick::Auto }],
+                slots: s.slots.sides.clone(),
+                lanes: s.lanes,
+                ground: s.ground,
+                rules: s.ground.rules(&s.params),
+                ordered,
                 fighters: Vec::new(),
                 pairs: Vec::new(),
                 events: Vec::new(),
@@ -69,49 +71,32 @@ impl Sink {
             },
             index: Vec::new(),
         };
-        let mut slot = [0, 0];
         for (i, &u) in e.units.iter().enumerate() {
-            let side = e.side(i);
-            let sl = slot[side.index()];
-            slot[side.index()] += 1;
-            s.push(g, e, u, side, Some(sl), g.units[u].damage);
+            sink.push(g, e, u, e.side(i), Some(s.places[i]));
         }
         for &(u, side) in reserves {
-            s.push(g, e, u, side, None, g.units[u].damage);
+            sink.push(g, e, u, side, None);
         }
-        for side in [Side::Attacker, Side::Defender] {
-            s.log.picks[side.index()].auto_pick = auto[side.index()].iter().filter_map(|&u| s.idx(u, side)).collect();
-        }
-        if by_player {
-            let auto_att: Vec<FighterIdx> = s.log.picks[0].auto_pick.clone();
-            let force: Vec<FighterIdx> = (0..e.n_att as FighterIdx).collect();
-            let outs: Vec<FighterIdx> = auto_att.iter().copied().filter(|b| !force.contains(b)).collect();
-            let ins: Vec<FighterIdx> = force.iter().copied().filter(|b| !auto_att.contains(b)).collect();
-            s.log.picks[0].picked_by = Pick::Player { swaps: outs.into_iter().zip(ins).collect() };
-        }
-        s
+        sink
     }
 
-    fn push(&mut self, g: &Game, e: &Eng, u: UnitId, side: Side, slot: Option<i32>, damage: i32) -> FighterIdx {
+    fn push(&mut self, g: &Game, e: &Eng, u: UnitId, side: Side, place: Option<(u8, u8)>) -> FighterIdx {
         let d = g.d;
         let unit = &g.units[u];
         let role = g.unit_combat_role(u);
-        let info = role.map(|r| super::battle::RoundRole::of(&d.combat_roles[r]));
         let max_hp = g.unit_engage_max_hp(u);
         let other_team = match side {
-            Side::Attacker => e.units.get(e.n_att).map(|&du| g.unit_get_team(du)),
+            Side::Attacker => e.units.get(e.setup.n_att).map(|&du| g.unit_get_team(du)),
             Side::Defender => Some(e.team),
         };
         let withdraw_pct = match side {
             Side::Attacker => g.unit_withdrawal_probability(u),
-            Side::Defender if e.in_city => 0,
+            Side::Defender if e.in_city() => 0,
             Side::Defender => g.unit_get_withdrawl_prob_defensive(u),
         };
-        let immune = Immunities::default()
-            .with(Immunities::FIRST_STRIKES, g.unit_immune_to_first_strikes(u))
-            .with(Immunities::DEF_STRIKE, g.unit_is_immune_to_defensive_strike(u))
-            .with(Immunities::FEAR, g.unit_is_immune_to_fear(u))
-            .with(Immunities::COLLATERAL, unit.collateral_damage_protection >= 100);
+        let immune = Immunities::default().with(Immunities::DEF_STRIKE, g.unit_is_immune_to_defensive_strike(u)).with(Immunities::FEAR, g.unit_is_immune_to_fear(u));
+        let hp = hp_from_damage(unit.damage, max_hp);
+        let first_strikes = g.unit_first_strikes(u);
         let f = LogFighter {
             unit: u,
             unit_type: unit.unit_type,
@@ -119,29 +104,37 @@ impl Sink {
             owner: unit.owner,
             shown_owner: g.unit_get_visual_owner(u, other_team),
             side,
-            slot,
+            place,
+            large: g.unit_engage_large(u),
             level: unit.level,
             xp: unit.experience,
             hero: g.unit_is_hero(u),
             role: role.unwrap_or(CombatRoleType::from_usize(0)),
-            pos: if info.as_ref().is_some_and(|r| r.back) { Position::Back } else { Position::Front },
-            screen: info.as_ref().is_some_and(|r| r.screen),
-            ignores_shield: info.as_ref().is_some_and(|r| r.ignores_shield),
-            assassin_profile: info.as_ref().is_some_and(|r| r.assassin_profile),
-            guardsman: false,
             max_hp,
-            hp_start: hp_from_damage(damage, max_hp),
-            volleys: g.unit_first_strikes(u),
-            volley_chance: g.unit_chance_first_strikes(u),
+            hp_start: hp,
+            hp_battle: hp,
+            speed: g.unit_engage_speed(u) + d.defines.engagement_first_strike_speed * first_strikes.max(0),
+            first_strikes,
+            chance_first_strikes: g.unit_chance_first_strikes(u),
+            rolled_first_strikes: 0,
+            actions: g.unit_engage_actions(u),
+            spell: g.unit_engage_spell(u),
+            dodge: g.unit_engage_dodge(u),
+            crit_bonus: g.unit_engage_crit_bonus(u),
+            anti_flank: role.is_some_and(|r| d.combat_roles[r].anti_flank),
+            flanker: g.unit_engage_flanks(u),
             withdraw_pct,
-            def_strike: (unit.defensive_strike_chance > 0).then_some((unit.defensive_strike_chance, unit.defensive_strike_damage)),
-            collateral: (g.unit_collateral_damage(u) > 0).then(|| (g.unit_collateral_damage(u), g.unit_collateral_damage_limit(u), g.unit_collateral_damage_max_units(u))),
             combat_limit: if side == Side::Attacker { unit.combat_limit } else { 100 },
+            collateral_limit: (g.unit_collateral_damage(u) > 0).then(|| g.unit_collateral_damage_limit(u)),
+            def_strike: (unit.defensive_strike_chance > 0).then_some((unit.defensive_strike_chance, unit.defensive_strike_damage)),
             immune,
             fear: g.unit_is_fear(u),
-            a: g.engage_stat(u, None, side, true, &e.ctx),
-            dv: g.engage_stat(u, None, side, false, &e.ctx),
+            a: g.engage_stat(u, None, side, true, e.ctx()),
+            dv: g.engage_stat(u, None, side, false, e.ctx()),
             fate: None,
+            dealt: 0,
+            taken: 0,
+            healed: 0,
         };
         self.log.fighters.push(f);
         self.index.push((u, side));
@@ -158,17 +151,17 @@ impl Sink {
         self.index.iter().position(|&(x, _)| x == u).map(|i| i as FighterIdx)
     }
 
-    /// The log index of `u`, added as a reserve with damage `damage` at the start if it is not
-    /// in the log yet (a defensive striker or a collateral target not among the candidates).
-    pub fn ensure(&mut self, g: &Game, e: &Eng, u: UnitId, side: Side, damage: i32) -> FighterIdx {
+    /// The log index of `u`, added as a reserve if it is not in the log yet (a defensive striker
+    /// not among the candidates).
+    pub fn ensure(&mut self, g: &Game, e: &Eng, u: UnitId, side: Side) -> FighterIdx {
         match self.idx(u, side) {
             Some(i) => i,
-            None => self.push(g, e, u, side, None, damage),
+            None => self.push(g, e, u, side, None),
         }
     }
 
-    /// The plan as the attacker saw it (plan 15 items 1-2).
-    pub fn set_forecast(&mut self, forecast: Option<super::report::FrozenForecast>) {
+    /// The plan as the attacker saw it.
+    pub fn set_forecast(&mut self, forecast: Option<FrozenForecast>) {
         self.log.forecast = forecast;
     }
 
@@ -180,7 +173,7 @@ impl Sink {
         self.event(LogEvent::Stage { stage });
     }
 
-    /// A morale roll (fighter indices are the round model's); a failure sits the unit out.
+    /// A morale roll (set-up indices: log indices); a failure sits the unit out.
     pub fn morale(&mut self, unit: usize, source: usize, chance: i32, roll: i32, passed: bool) {
         let (unit, source) = (unit as FighterIdx, source as FighterIdx);
         self.event(LogEvent::Morale { unit, source, chance, roll, passed });
@@ -189,117 +182,59 @@ impl Sink {
         }
     }
 
-    /// A defensive strike of log fighter `striker` on attacker `target` (round model index).
+    /// A defensive strike of log fighter `striker` on attacker `target` (set-up index).
     pub fn def_strike(&mut self, striker: FighterIdx, target: usize, roll: &DefStrikeRoll, pct: i32, dmg: i32) {
         self.event(LogEvent::DefStrike { striker, target: target as FighterIdx, rolled: roll.rolled, chance: roll.chance, roll: roll.roll, pct, dmg });
     }
 
-    pub fn collateral(&mut self, source: usize, target: FighterIdx, pct: i32, limit_pct: i32, protection_pct: i32, dmg: i32) {
-        self.event(LogEvent::Collateral { source: source as FighterIdx, target, pct, limit_pct, protection_pct, dmg });
-    }
-
-    /// The round model's events (volley rolls, the volley rounds and rounds with every hit, the
-    /// withdrawals, the deaths, the shield falling, the end) and the pairs that hit.
-    pub fn rounds(&mut self, g: &Game, e: &Eng, b: &Battle, r: &Resolution) {
-        let n = b.len();
-        // The HP each withdrawal roll saw: the next round end's.
-        let mut next_hp: Vec<Option<&Vec<i32>>> = vec![None; r.events.len()];
-        let mut upcoming: Option<&Vec<i32>> = None;
-        for (k, ev) in r.events.iter().enumerate().rev() {
-            if let BattleEvent::RoundEnd { hp, .. } = ev {
-                upcoming = Some(hp);
+    /// The battle as the resolver fought it (`f`, its fighters' log indices `map`, `out`): every
+    /// action, the end, the fighters' values in the battle (HP when it began, speed, the first
+    /// strikes rolled, damage dealt, taken and healed) and the pairs that hit.
+    pub fn battle(&mut self, g: &Game, e: &Eng, f: &Formation, map: &[usize], out: &Outcome) {
+        self.stage(Stage::Battle);
+        let mut pairs: Vec<(usize, usize)> = Vec::new();
+        for ev in &out.events {
+            for h in &ev.hits {
+                let (hk, tk) = (ev.actor as usize, h.target as usize);
+                if !h.miss && f.fighters[hk].side != f.fighters[tk].side && !pairs.contains(&(hk, tk)) {
+                    pairs.push((hk, tk));
+                }
             }
-            next_hp[k] = upcoming;
+            self.event(LogEvent::Action(renumber(ev.clone(), map)));
         }
-        let mut engaged: Vec<bool> = b.fighters.iter().map(|f| !f.sat_out).collect();
-        let mut leaving: Vec<bool> = vec![false; n];
-        let mut pairs: Vec<(FighterIdx, FighterIdx)> = Vec::new();
-        for (k, ev) in r.events.iter().enumerate() {
-            match ev {
-                // Phase 7's opening damage spells (none in phase 6).
-                BattleEvent::Effect { .. } | BattleEvent::NoTarget { .. } => {}
-                BattleEvent::Volleys { fighter, first_strikes, rolled } => {
-                    let f = &b.fighters[*fighter as usize];
-                    if f.chance_first_strikes > 0 {
-                        self.event(LogEvent::VolleyRoll { unit: *fighter, chance: f.chance_first_strikes, roll: *rolled, total: first_strikes + rolled });
-                    }
-                }
-                BattleEvent::RoundStart { phase } => self.stage((*phase).into()),
-                BattleEvent::Hit(h) => {
-                    if !pairs.contains(&(h.hitter, h.target)) {
-                        pairs.push((h.hitter, h.target));
-                    }
-                    self.event(LogEvent::Hit {
-                        h: h.hitter,
-                        t: h.target,
-                        rule: rule_of(b, h.hitter as usize, h.class, h.step),
-                        step: h.step as i32,
-                        blocked: h.blocked.iter().map(|&(s, why)| (s as i32, why)).collect(),
-                        eligible: h.candidates.clone(),
-                        r: h.r,
-                        dmg: h.dmg,
-                        capped: h.capped,
-                    });
-                }
-                BattleEvent::Withdraw { fighter, chance, roll, ok, fatal } => {
-                    let f = *fighter as usize;
-                    let after = next_hp[k].map_or(b.fighters[f].hp, |hp| hp[f]);
-                    let hp_pct = if *fatal { 0 } else { after.max(0) / b.fighters[f].max_hp.max(1) };
-                    if *ok {
-                        leaving[f] = true;
-                    }
-                    self.event(LogEvent::Withdraw { unit: *fighter, hp_pct, chance: *chance, roll: *roll, ok: *ok, fatal: *fatal, hp_kept: (*fatal && *ok).then_some(after) });
-                }
-                BattleEvent::RoundEnd { hp, deaths, left, .. } => {
-                    let front_before = [Side::Attacker, Side::Defender].map(|s| b.front(s).iter().any(|&j| engaged[j as usize]));
-                    let deaths: Vec<LogDeath> = deaths.iter().map(|dth| LogDeath { b: dth.fighter, killer: dth.killer, assists: dth.assists.clone(), overkill: (-hp[dth.fighter as usize]).max(0) }).collect();
-                    for dth in &deaths {
-                        engaged[dth.b as usize] = false;
-                    }
-                    for f in 0..n {
-                        if leaving[f] {
-                            engaged[f] = false;
-                            leaving[f] = false;
-                        }
-                    }
-                    for &l in left {
-                        engaged[l as usize] = false;
-                    }
-                    self.event(LogEvent::RoundEnd { deaths });
-                    for s in [Side::Attacker, Side::Defender] {
-                        if front_before[s.index()] && !b.front(s).iter().any(|&j| engaged[j as usize]) {
-                            self.event(LogEvent::ShieldDown { side: s });
-                        }
-                    }
-                    for &l in left {
-                        self.event(LogEvent::SatOut { unit: l, why: SatOutWhy::EveryTargetCapped });
-                    }
-                }
-                BattleEvent::End { result, volley_rounds, rounds } => self.event(LogEvent::End { result: *result, volley_rounds: *volley_rounds, rounds: *rounds }),
-            }
+        self.event(LogEvent::End { rounds: out.rounds as i32, down: out.down });
+        for (k, end) in out.fighters.iter().enumerate() {
+            let lf = &mut self.log.fighters[map[k]];
+            lf.hp_battle = f.fighters[k].hp;
+            lf.speed = end.speed;
+            lf.rolled_first_strikes = end.rolled_first_strikes;
+            lf.dealt = end.dealt;
+            lf.taken = end.taken;
+            lf.healed = end.healed;
         }
-        for (h, t) in pairs {
-            let (hu, tu) = (h as usize, t as usize);
-            let (side_h, side_t) = (b.fighters[hu].side, b.fighters[tu].side);
-            let pr = b.pair(hu, tu);
-            let a = g.engage_stat(e.units[hu], Some(e.units[tu]), side_h, true, &e.ctx);
-            let dv = g.engage_stat(e.units[tu], Some(e.units[hu]), side_t, false, &e.ctx);
+        for (hk, tk) in pairs {
+            let (h, t) = (map[hk], map[tk]);
+            let (side_h, side_t) = (e.side(h), e.side(t));
+            let pr = f.pair(hk, tk);
+            let a = g.engage_stat(e.units[h], Some(e.units[t]), side_h, true, e.ctx());
+            let dv = g.engage_stat(e.units[t], Some(e.units[h]), side_t, false, e.ctx());
+            let base = e.setup.params.base_damage.max(0) as i64 * 100;
             self.log.pairs.push(LogPair {
-                h,
-                t,
+                h: h as FighterIdx,
+                t: t as FighterIdx,
                 a_x100: pr.a,
                 dv_x100: pr.dv,
-                mean: b.mean_damage(hu, tu),
-                a_extra: extra(a.terms, &self.log.fighters[hu].a.terms),
-                dv_extra: extra(dv.terms, &self.log.fighters[tu].dv.terms),
+                mean: (base * pr.a as i64 / (pr.a as i64 + pr.dv as i64)) as i32,
+                a_extra: extra(a.terms, &self.log.fighters[h].a.terms),
+                dv_extra: extra(dv.terms, &self.log.fighters[t].dv.terms),
             });
         }
     }
 
-    /// The log, with each committed fighter's fate.
-    pub fn finish(mut self, r: &Resolution) -> BattleLog {
-        for (f, end) in self.log.fighters.iter_mut().zip(&r.fighters) {
-            f.fate = Some(end.fate);
+    /// The log, with each committed unit's fate.
+    pub fn finish(mut self, fought: &Fought) -> BattleLog {
+        for (f, fate) in self.log.fighters.iter_mut().zip(&fought.fate) {
+            f.fate = Some(*fate);
         }
         self.log
     }

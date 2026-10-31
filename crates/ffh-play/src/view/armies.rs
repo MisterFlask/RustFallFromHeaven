@@ -129,10 +129,6 @@ fn army_json(v: &Viewer, a: ArmyId, screen: bool) -> Json {
     if screen {
         j.set("recruits", Json::Arr(marching.into_iter().map(|u| recruit_json(v, u)).collect()));
     }
-    // Engagement combat: its stance (docs/ENGAGEMENTS.md; `army_stance` sets it).
-    if g.engagements_on() {
-        j.set("stance", Json::idx(army.stance));
-    }
     j
 }
 
@@ -168,8 +164,6 @@ pub fn screen(v: &Viewer) -> Json {
             "governed" => g.city_is_governed(c),
             "units" => g.city_garrison_units(c),
             "recruits" => Json::Arr(g.garrison_marching(c).into_iter().map(|u| recruit_json(v, u)).collect()),
-            // Engagement combat: the garrison's stance (`garrison_stance` sets it).
-            "stance" => g.engagements_on().then(|| Json::idx(g.cities[c].garrison_stance)),
         }
     });
     crate::jobj! {

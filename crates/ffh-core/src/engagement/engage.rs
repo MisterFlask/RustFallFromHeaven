@@ -1,66 +1,82 @@
-//! The engagement on `Game` (plan section 6): the set-up from the units onto the round model, the
-//! morale check, the opening, the battle on the game's RNG, then the post-battle steps
-//! ([`super::apply`]) and the report. Reached only through `group_attack_force` (every order of
-//! a group into an enemy land plot under the option) and `unit_attack` (Taunt, the Shrine of
-//! Camulos, Gift of Kylorin: a one-unit force).
+//! The engagement on `Game` (spec 1.7 to 1.9; docs/ENGAGEMENTS.md, "The engagement"): the set-up
+//! from the units onto the formation resolver, the morale check, the opening's defensive strikes,
+//! the battle on the game's RNG, then the post-battle steps ([`super::apply`]) and the report.
+//! Reached only through `group_attack_force` (every order of a group into an enemy land plot under
+//! the option) and `unit_attack` (Taunt, the Shrine of Camulos, Gift of Kylorin: a one-unit
+//! force).
 //!
-//! **Order** (plan 6.1 to 6.7; RNG order, plan 7):
-//! 1. *Set-up*: slots, the attacker's pool and force (its stance's proposal, or the force given,
-//!    checked; the stance is the one chosen for the attack, else its own), the defender's
-//!    candidates and its stance's pick. Nothing has changed yet: an
-//!    empty force or no defender is an `Err`. The [`Battle`] value is built here (fighters in
-//!    slot order, attackers first; the pair table from [`Game::engage_hit`], which nothing
-//!    before the rounds changes), and phase 7's pre-battle hook ([`Game::engage_pre_battle`])
-//!    reads it.
-//! 2. *Morale* (Q8): a committed Fear defender (the strongest by base strength, level, then
-//!    the lowest id) makes each committed attacker not immune roll today's check
+//! **Order** (its RNG draws in this order, each with its label):
+//! 1. *Set-up*: slots and lanes, the attacker's pool and formation (the order's, checked, or the
+//!    rules' auto formation), the defender's candidates and its formation (the auto formation).
+//!    Nothing has changed yet: an empty formation or no defender is an `Err`. The [`Setup`] holds
+//!    the committed units in the engagement's order (the attacker's by lane then row, then the
+//!    defender's), each one as a resolver fighter and the pair table of A and Dv
+//!    ([`Game::engage_hit`], which nothing before the rounds changes). Phase 7's pre-battle hook
+//!    ([`Game::engage_pre_battle`]) reads it.
+//! 2. *Morale* (Q8): a committed Fear defender (the strongest by base strength, level, then the
+//!    lowest id) makes each committed attacker not immune roll today's check
 //!    (`rand(40) > max(4, str + 20 + level - str(src) - level(src))`, "Im afeared!"): one that
-//!    fails sits out (its attack is spent, its slot stays empty); then a Fear attacker that did not
-//!    sit out does the same to the committed defenders, which hold the plot but do not fight.
-//! 3. *Opening*: defensive strikes (Q5): for each committed attacker that did not sit out, in slot
-//!    order and not immune, every unit on the plot with a strike chance, at war and not used up
-//!    (committed or not) rolls, and the best success strikes (today's damage, never past 95%);
-//!    collateral (Q4): each committed attacker with `iCollateralDamage` that did not sit out,
-//!    today's formula and limit, against every visible enemy defender on the plot. Neither kills.
-//!    Then phase 7's opening hook ([`Game::engage_opening_spells`]).
-//! 4. *The battle*: the [`Battle`]'s HP from the damage fields after the opening and its
-//!    sat-out fighters from the morale check, the hooks' effects added, resolved by
-//!    [`resolve_sampled`] on `soren_rand` (opening volleys, rounds, withdrawal).
+//!    fails sits out (its attack is spent, its cell stays empty); then a Fear attacker that did not
+//!    sit out does the same to the committed defenders, which stay on the plot but do not fight.
+//! 3. *Opening*: defensive strikes (Q5): for each committed attacker that did not sit out, in the
+//!    engagement's order and not immune, every unit on the plot with a strike chance, at war and
+//!    not used up (committed or not) rolls, and the best success strikes (today's damage, never
+//!    past 95%). It never kills. The round model's collateral step is gone: units with collateral
+//!    damage splash their hits in the battle instead. Then phase 7's opening hook
+//!    ([`Game::engage_opening_spells`]).
+//! 4. *The battle*: the committed units that did not sit out, with their HP after the opening,
+//!    fought by the formation resolver ([`formation::resolve`]) on `soren_rand`: per battle the
+//!    chance first strikes; per pass the coins; per action the miss, the crit, r, a withdrawal,
+//!    the splash's r's and withdrawals (docs/ENGAGEMENTS.md, "RNG").
 //! 5. *Post-battle* ([`super::apply`], with phase 7's post-battle hook,
-//!    [`Game::engage_post_battle_spells`]) and the report ([`super::report`]), telemetry.
+//!    [`Game::engage_post_battle_spells`]) and the report ([`super::report`]), telemetry. The plot
+//!    falls only when no defender is left on it: then the launching group moves in.
 //!
-//! **Phase 7 hooks** (plan 6.2, 14): the three hooks are empty in phase 6. Each reads the
-//! [`Battle`] and returns [`BattleEffect`]s; none writes `Game` or draws a random number, so the
-//! estimator can call the first two on its own `Battle` and see the same in-battle spells. The
-//! writes a cast makes to `Game` come after the battle, through its `Cast` record.
+//! **Phase 7 hooks** (plan 6.2, 14): the three hooks are empty in phase 6. Each reads the set-up
+//! and returns [`BattleEffect`]s; none writes `Game` or draws a random number, so the preview can
+//! call the first two and see the same in-battle spells. A damage effect lowers its fighter's HP
+//! before the battle, a modifier scales its pairs' A and Dv; the writes a cast makes to `Game`
+//! come after the battle, through its `Cast` record.
 //!
 //! It never sets `combat_unit`, `attack_plot` or the combat timers, so `plot_is_fighting` stays
 //! false and nothing is left between calls (plan 6.9).
 //!
-//! **Missiles** (6.11, Q11): a missile (`bSuicide`: Fireball, Meteor) ordered into an enemy plot
-//! does not start an engagement: [`Game::engage_missile_strike`] takes the defender's pick, hits
-//! one of them by the missile's role order (one hit of the round model), then its collateral,
-//! and the missile dies.
+//! **Missiles** (Q11): a missile (`bSuicide`: Fireball, Meteor) ordered into an enemy plot does
+//! not start an engagement: [`Game::engage_missile_strike`] hits one unit of the defender's
+//! formation (`formation::missile_hit`: a strike's reach and choice, from outside the field),
+//! then its collateral (today's), and the missile dies.
 //!
 //! **The battle log** is written through an optional sink ([`super::sink`]) for a battle a human
-//! could see; it draws no random number and changes no state (test
-//! `the_sink_changes_nothing`).
+//! could see; it draws no random number and changes no state (test `the_sink_changes_nothing`).
 
 use ffh_data::*;
 
-use super::battle::{damage_from_hp, hp_from_damage, Battle, BattleEffect, Fighter, Params, RoundRole, Side};
-use super::pick::{StanceChoice, WarTest};
-use super::resolve::{resolve_sampled, resolve_sampled_quiet, targets, BattleRng, EngageResult, TargetState, Targets};
 use super::apply::Post;
-use super::estimate::PairCache;
-use super::report::{BattleLog, BattleReport, CitySnap, Outcome, PlotSnap, ReportSide};
-use super::resolve::{Fate, Resolution};
+use super::arrange::Place;
+use super::formation::{self, missile_hit, Fate, Fighter, Formation, Ground, Outcome, Pair, Params, Side, Spell};
+use super::pick::WarTest;
+use super::report::{BattleLog, BattleReport, CitySnap, EngageResult, LogFate, Outcome as ReportOutcome, PlotSnap, ReportSide};
 use super::sink::Sink;
 use super::slots::Slots;
 use super::stats::HitCtx;
 use crate::game::Game;
 use crate::ids::*;
 use crate::unit::{DefStrikeHit, DefStrikeRoll, UnitOverlay};
+
+/// HP in centi-HP from the damage field (plan 4.1): `(100 - damage) x max_hp`.
+pub fn hp_from_damage(damage: i32, max_hp: i32) -> i32 {
+    (100 - damage.clamp(0, 100)) * max_hp
+}
+
+/// The damage field from centi-HP (plan 4.1): `100 - ceil(hp / max_hp)`, so a fighter with HP
+/// left never shows 100; 100 when `hp <= 0`.
+pub fn damage_from_hp(hp: i32, max_hp: i32) -> i32 {
+    if hp <= 0 || max_hp <= 0 {
+        return 100;
+    }
+    let left = (hp + max_hp - 1) / max_hp;
+    (100 - left).clamp(0, 99)
+}
 
 /// An order to fight an engagement (`group_attack_force`, `unit_attack`).
 #[derive(Clone, Debug)]
@@ -69,18 +85,14 @@ pub(crate) struct EngageOrder {
     pub p: PlayerId,
     pub from: PlotIdx,
     pub to: PlotIdx,
-    /// The group that gave the order: it advances when the plot is cleared.
+    /// The group that gave the order: it advances when the plot falls.
     pub launcher: Option<GroupId>,
-    /// The force chosen (checked against the pool); `None`: the stance's proposal.
-    pub force: Option<Vec<UnitId>>,
-    /// The stance the attacker chose for this attack (the battle plan's picker), in place of
-    /// its own ([`Game::engage_attack_stance`]): it proposes the force when none is given, the
-    /// force is judged against its pick (`picked_by`), and the report records it. `None`: the
-    /// attack's own stance. Not saved: an order lives for the call.
-    pub stance: Option<StanceType>,
-    /// A forced attack (`unit_attack`: Taunt, events): the force is the units given, whatever
-    /// their moves and attacks this turn (as today's `attack`).
-    pub forced: bool,
+    /// The attacker's formation (checked against the pool and the slots); `None`: the rules' auto
+    /// formation. Not saved: an order lives for the call.
+    pub formation: Option<Vec<Place>>,
+    /// A forced attack (`unit_attack`: Taunt, events): these units, auto-arranged, whatever their
+    /// moves and attacks this turn (as today's `attack`); `formation` is not read.
+    pub forced: Option<Vec<UnitId>>,
     /// Write the battle log: `None` decides by whether a human could see the battle.
     pub log: Option<bool>,
 }
@@ -95,6 +107,187 @@ pub struct EngageOutcome {
     pub plot_taken: bool,
 }
 
+/// A phase 7 effect on a battle (plan 14), returned by the hooks; fighters are set-up indices.
+/// None is returned in phase 6.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum BattleEffect {
+    /// A combat percentage on the fighter's A (when it hits) and Dv (when it is hit).
+    Mod { fighter: usize, a_pct: i32, dv_pct: i32 },
+    /// Damage before the battle, in percent of the fighter's max HP (an opening damage spell);
+    /// it never kills.
+    Damage { fighter: usize, pct: i32 },
+    /// A spell cast in the battle (its `SpellType`), for the deferred writes and the report.
+    Cast { caster: usize, spell: SpellType },
+}
+
+/// An engagement's set-up ([`Game::engage_setup`]): what the real fight and the preview share.
+#[derive(Clone, Debug)]
+pub(crate) struct Setup {
+    pub ctx: HitCtx,
+    pub slots: Slots,
+    pub lanes: [u8; 2],
+    pub ground: Ground,
+    pub params: Params,
+    /// The defended plot holds a city (no defensive withdrawal, Q3).
+    pub in_city: bool,
+    /// The defender's candidates (as the attack meets them), and its formation's units.
+    pub candidates: Vec<UnitId>,
+    /// The committed units in the engagement's order (the attacker's formation by lane then row,
+    /// then the defender's), each one's side and cell `(lane, row)`; the number of attackers.
+    pub units: Vec<UnitId>,
+    pub sides: Vec<Side>,
+    pub places: Vec<(u8, u8)>,
+    pub n_att: usize,
+    /// Each committed unit as a fighter (HP from its damage field at the set-up).
+    pub fighters: Vec<Fighter>,
+    /// `n * n`, `[h * n + t]`: the hitter's A against the target and the target's Dv against it
+    /// (cross-side entries only).
+    pub pairs: Vec<Pair>,
+}
+
+impl Setup {
+    /// The committed units of side `s` (indices).
+    pub fn of(&self, s: Side) -> std::ops::Range<usize> {
+        match s {
+            Side::Attacker => 0..self.n_att,
+            Side::Defender => self.n_att..self.units.len(),
+        }
+    }
+
+    /// The candidates the defender does not commit.
+    pub fn def_reserve(&self) -> Vec<UnitId> {
+        let committed = &self.units[self.n_att..];
+        self.candidates.iter().copied().filter(|u| !committed.contains(u)).collect()
+    }
+
+    /// The pair of set-up indices `h` (hitting) and `t`.
+    pub fn pair(&self, h: usize, t: usize) -> Pair {
+        let p = self.pairs[h * self.units.len() + t];
+        Pair { a: p.a.max(1), dv: p.dv.max(1) }
+    }
+
+    /// The side's formation as places.
+    pub fn formation(&self, s: Side) -> Vec<Place> {
+        self.of(s).map(|i| Place { unit: self.units[i], lane: self.places[i].0, row: self.places[i].1 }).collect()
+    }
+
+    /// The battle of the committed units that fight (not `sat_out`), with HP `hp` (centi-HP, by
+    /// set-up index): the resolver's formation, and each fighter's set-up index.
+    pub fn battle(&self, sat_out: &[bool], hp: &[i32]) -> (Formation, Vec<usize>) {
+        let n = self.units.len();
+        let map: Vec<usize> = (0..n).filter(|&i| !sat_out[i]).collect();
+        let fighters = map
+            .iter()
+            .map(|&i| {
+                let mut f = self.fighters[i].clone();
+                f.hp = hp[i];
+                f
+            })
+            .collect();
+        let f = Formation::new(self.params, self.ground, self.lanes, fighters, |h, t| self.pairs[map[h] * n + map[t]]);
+        debug_assert_eq!(f.validate(), Ok(()), "an engagement's formation off its grid");
+        (f, map)
+    }
+
+    /// Phase 7's effects applied: damage lowers `hp` (never below 1 HP), a modifier scales the
+    /// fighter's A when it hits and its Dv when it is hit.
+    pub fn apply_effects(&mut self, effects: &[BattleEffect], hp: &mut [i32]) {
+        let n = self.units.len();
+        for e in effects {
+            match *e {
+                BattleEffect::Mod { fighter, a_pct, dv_pct } => {
+                    for o in 0..n {
+                        let ha = &mut self.pairs[fighter * n + o].a;
+                        *ha = (*ha as i64 * (100 + a_pct).max(0) as i64 / 100) as i32;
+                        let td = &mut self.pairs[o * n + fighter].dv;
+                        *td = (*td as i64 * (100 + dv_pct).max(0) as i64 / 100) as i32;
+                    }
+                }
+                BattleEffect::Damage { fighter, pct } => {
+                    let max = self.fighters[fighter].max_hp;
+                    hp[fighter] = (hp[fighter] - pct.max(0) * max).max(100);
+                }
+                BattleEffect::Cast { .. } => {}
+            }
+        }
+    }
+}
+
+/// A kill of the battle, in set-up indices.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub(crate) struct Kill {
+    pub victim: usize,
+    pub killer: usize,
+    pub round: u8,
+}
+
+/// The battle as fought, in set-up indices (the resolver's [`Outcome`] mapped back).
+#[derive(Clone, Debug)]
+pub(crate) struct Fought {
+    /// Per committed unit: its fate, HP left (centi-HP; a unit that sat out keeps its HP) and max
+    /// HP.
+    pub fate: Vec<LogFate>,
+    pub hp: Vec<i32>,
+    pub max_hp: Vec<i32>,
+    /// In kill order.
+    pub kills: Vec<Kill>,
+    /// `n * n`: damage `h` dealt `t` (centi-HP; battle XP's shares).
+    dealt: Vec<i32>,
+    pub rounds: i32,
+    /// Per side: its line is gone (no unit of it on the field at the end).
+    pub down: [bool; 2],
+}
+
+impl Fought {
+    fn new(setup: &Setup, hp: &[i32], map: &[usize], out: &Outcome) -> Fought {
+        let n = setup.units.len();
+        let mut fate = vec![LogFate::SatOut; n];
+        let mut end_hp = hp.to_vec();
+        for (k, e) in out.fighters.iter().enumerate() {
+            let i = map[k];
+            end_hp[i] = e.hp;
+            fate[i] = match e.fate {
+                Fate::Standing => LogFate::Standing,
+                Fate::Fell { by, round } => LogFate::Fell { by: map[by as usize] as formation::FighterIdx, round },
+                Fate::Withdrew { round } => LogFate::Withdrew { round },
+            };
+        }
+        let mut dealt = vec![0; n * n];
+        for (hk, &h) in map.iter().enumerate() {
+            for (tk, &t) in map.iter().enumerate() {
+                dealt[h * n + t] = out.dealt(hk, tk);
+            }
+        }
+        Fought {
+            fate,
+            hp: end_hp,
+            max_hp: setup.fighters.iter().map(|f| f.max_hp).collect(),
+            kills: out.kills.iter().map(|k| Kill { victim: map[k.victim as usize], killer: map[k.killer as usize], round: k.round }).collect(),
+            dealt,
+            rounds: out.rounds as i32,
+            down: out.down,
+        }
+    }
+
+    /// The damage `h` dealt `t` (set-up indices, centi-HP).
+    pub fn dealt(&self, h: usize, t: usize) -> i32 {
+        self.dealt[h * self.fate.len() + t]
+    }
+
+    pub fn killed(&self, i: usize) -> bool {
+        matches!(self.fate[i], LogFate::Fell { .. })
+    }
+
+    pub fn withdrew(&self, i: usize) -> bool {
+        matches!(self.fate[i], LogFate::Withdrew { .. })
+    }
+
+    /// Standing or withdrawn: it fought and lives.
+    pub fn survived(&self, i: usize) -> bool {
+        matches!(self.fate[i], LogFate::Standing | LogFate::Withdrew { .. })
+    }
+}
+
 /// The engagement's working value (plan 6.1): lives for the call, never saved.
 pub(crate) struct Eng {
     pub p: PlayerId,
@@ -102,80 +295,44 @@ pub(crate) struct Eng {
     pub from: PlotIdx,
     pub to: PlotIdx,
     pub launcher: Option<GroupId>,
-    pub ctx: HitCtx,
-    pub slots: Slots,
-    /// `[attacker, defender]`.
-    pub stances: [StanceChoice; 2],
-    /// The committed units in the round model's order: the force, then the defender's pick.
-    /// A unit converted after its kills (a Wolf into a Wolf Pack) is replaced by the new one.
+    pub setup: Setup,
+    /// The committed units in the set-up's order; a unit converted after its kills (a Wolf into a
+    /// Wolf Pack) is replaced by the new one.
     pub units: Vec<UnitId>,
-    pub n_att: usize,
-    /// Each fighter's side (by index).
-    pub sides: Vec<Side>,
     /// Failed the morale check.
     pub sat_out: Vec<bool>,
-    /// The defended plot holds a city (no defensive withdrawal, Q3).
-    pub in_city: bool,
-    /// Opening counts (telemetry): defensive strikes that hit, units hit by collateral.
+    /// Opening counts (telemetry): defensive strikes that hit.
     pub strikes: i32,
-    pub collateral: i32,
     /// The defended plot as it was.
     pub place: PlotSnap,
     /// Per side: its player, the player the other side saw, every real owner in the battle.
     pub players: [(PlayerId, PlayerId, Vec<PlayerId>); 2],
-    /// Each fighter's unit type and owner at the start.
+    /// Each committed unit's type and owner at the start.
     pub types: Vec<UnitType>,
     pub owners: Vec<PlayerId>,
-    /// The defender's candidates it did not commit (the report's `defenders_left`).
-    pub def_reserve: Vec<UnitId>,
 }
 
 impl Eng {
     pub fn side(&self, i: usize) -> Side {
-        self.sides[i]
+        self.setup.sides[i]
     }
 
-    /// The fighters of side `s` (indices).
+    /// The committed units of side `s` (indices).
     pub fn of(&self, s: Side) -> std::ops::Range<usize> {
-        match s {
-            Side::Attacker => 0..self.n_att,
-            Side::Defender => self.n_att..self.units.len(),
-        }
+        self.setup.of(s)
+    }
+
+    pub fn ctx(&self) -> &HitCtx {
+        &self.setup.ctx
+    }
+
+    pub fn in_city(&self) -> bool {
+        self.setup.in_city
     }
 }
 
-/// An engagement's set-up ([`Game::engage_setup`]): what the real fight, the estimator and the
-/// preview share.
-#[derive(Clone, Debug)]
-pub(crate) struct Setup {
-    pub ctx: HitCtx,
-    pub slots: Slots,
-    /// The attacker's force, the defender's candidates, the stance they are picked with and the
-    /// pick.
-    pub force: Vec<UnitId>,
-    pub candidates: Vec<UnitId>,
-    pub def_stance: StanceType,
-    pub def_pick: Vec<UnitId>,
-    /// The committed units in the round model's order (the force, then the defender's pick),
-    /// each one's side, the number of attackers.
-    pub units: Vec<UnitId>,
-    pub sides: Vec<Side>,
-    pub n_att: usize,
-    /// The defended plot holds a city (no defensive withdrawal, Q3).
-    pub in_city: bool,
-    /// The battle before the morale check and the opening.
-    pub battle: Battle,
-}
-
-impl Setup {
-    /// The candidates the defender does not commit.
-    pub fn def_reserve(&self) -> Vec<UnitId> {
-        self.candidates.iter().copied().filter(|u| !self.def_pick.contains(u)).collect()
-    }
-}
-
-/// One roll of the morale check (plan 6.3; [`Game::engage_morale_rolls`]): fighter `roller`
-/// against the Fear source `src` (round model indices).
+/// One roll of the morale check (plan 6.3; [`Game::engage_morale_rolls`]): set-up index `roller`
+/// against the Fear source `src`.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub(crate) struct MoraleRoll {
     pub roller: usize,
@@ -185,154 +342,111 @@ pub(crate) struct MoraleRoll {
     pub passed: bool,
 }
 
-/// The opening's rolls (plan 6.4 steps 1 and 2; [`Game::engage_opening_rolls`]): per committed
-/// attacker that was struck at, its strike roll and the strike's damage; per committed attacker
-/// with collateral damage, the units it hit with their damage before and after.
+/// The opening's rolls (Q5; [`Game::engage_opening_rolls`]): per committed attacker that was
+/// struck at, its strike roll and the strike's damage.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) struct OpeningRolls {
     pub strikes: Vec<(usize, DefStrikeRoll, DefStrikeHit)>,
-    pub collateral: Vec<(usize, Vec<(UnitId, i32, i32)>)>,
 }
 
 impl Game {
-    /// The round model's constants: r's range from the `ENGAGEMENT_*` defines, the rest its own
-    /// (`Params::default()`: formation battles' `ENGAGEMENT_BASE_DAMAGE` is theirs, and the round
-    /// model's round limit and withdrawal threshold are no longer defines).
-    pub fn engage_params(&self) -> Params {
-        let d = &self.d.defines;
-        Params {
-            rand_min: d.engagement_damage_rand_min,
-            rand_max: d.engagement_damage_rand_max.max(d.engagement_damage_rand_min),
-            ..Params::default()
-        }
-    }
-
-    /// Unit `u` as a fighter of side `side` (plan 6.1): its role's position, screen, shield and
-    /// target order, its HP from the damage field, volleys, withdrawal chance (attackers'
+    /// Unit `u` as a fighter of side `side` in cell `place` (spec 1.2-1.6): its role's values
+    /// through the per-unit accessors (speed, actions with the extra ones, dodge, crit bonus,
+    /// flanker), its role's anti-flank, HP from the damage field (a large unit's more), first
+    /// strikes and their chance, its A against nobody, withdrawal (attackers'
     /// `withdrawalProbability`; defenders' defensive withdrawal outside a city, none in one, Q3),
-    /// combat limit (read for attackers only) and first-strike immunity.
-    pub(crate) fn engage_fighter(&self, u: UnitId, side: Side, in_city: bool) -> Fighter {
+    /// combat limit (attackers only), collateral limit (units with collateral damage splash), its
+    /// spell.
+    pub(crate) fn engage_fighter(&self, u: UnitId, side: Side, place: (u8, u8), in_city: bool, ctx: &HitCtx, params: &Params) -> Fighter {
         let d = self.d;
         let max_hp = self.unit_engage_max_hp(u);
         let mut f = Fighter::new(side, max_hp);
         f.tag = u.0;
-        if let Some(r) = self.unit_combat_role(u) {
-            let role = RoundRole::of(&d.combat_roles[r]);
-            f.back = role.back;
-            f.screen = role.screen;
-            f.ignores_shield = role.ignores_shield;
-            f.order = role.order;
-            // the old Support role: Arcane and Divine
-            f.hero_or_support = self.unit_is_hero(u) || ["COMBATROLE_ARCANE", "COMBATROLE_DIVINE"].iter().any(|&n| d.ty::<CombatRoleType>(n) == Some(r));
-        }
+        (f.lane, f.row) = place;
+        f.large = self.unit_engage_large(u);
         f.hp = hp_from_damage(self.units[u].damage, max_hp);
+        f.speed = self.unit_engage_speed(u);
         f.first_strikes = self.unit_first_strikes(u);
         f.chance_first_strikes = self.unit_chance_first_strikes(u);
-        f.first_strike_immune = self.unit_immune_to_first_strikes(u);
+        f.actions = self.unit_engage_actions(u);
+        f.a = self.engage_a_alone(u, side, ctx);
+        f.dodge = self.unit_engage_dodge(u);
+        f.crit_bonus = self.unit_engage_crit_bonus(u);
+        f.anti_flank = self.unit_combat_role(u).is_some_and(|r| d.combat_roles[r].anti_flank);
+        f.flanker = self.unit_engage_flanks(u);
         f.withdraw_pct = match side {
             Side::Attacker => self.unit_withdrawal_probability(u),
             Side::Defender if in_city => 0,
             Side::Defender => self.unit_get_withdrawl_prob_defensive(u),
         };
         f.combat_limit = if side == Side::Attacker { self.units[u].combat_limit.clamp(0, 100) } else { 100 };
+        f.collateral_limit = (self.unit_collateral_damage(u) > 0).then(|| self.unit_collateral_damage_limit(u));
+        f.spell = match self.unit_engage_spell(u) {
+            Some(s) => Spell::known(s.idx() as u32),
+            None => Spell::bolt(params),
+        };
         f
     }
 
-    /// The [`Battle`] of the committed `units` (sides by `sides`; sat-out fighters by
-    /// `sat_out`) on `ctx`'s plot, the pair table from [`Game::engage_hit`].
-    pub(crate) fn engage_battle(&self, units: &[UnitId], sides: &[Side], sat_out: &[bool], in_city: bool, ctx: &HitCtx) -> Battle {
-        let fighters: Vec<Fighter> = units
-            .iter()
-            .zip(sides)
-            .zip(sat_out)
-            .map(|((&u, &side), &out)| {
-                let mut f = self.engage_fighter(u, side, in_city);
-                f.sat_out = out;
-                f
-            })
-            .collect();
-        Battle::new(self.engage_params(), fighters, |h, t| self.engage_hit(units[h], units[t], sides[h], ctx))
-    }
-
-    /// The set-up of an engagement once the attacker's force is chosen (plan 6.1; module comment,
-    /// step 1): the defender's pick of `candidates` under `def_stance` (with the damage fields
-    /// `damage` in place of the units' own), both sides in the round model's order and the
-    /// [`Battle`] with HP from those damage fields and nobody sat out yet. The real fight
-    /// ([`Game::engage`]), the estimator ([`Game::engage_estimate`]) and the preview
-    /// ([`Game::engage_preview`]) all build their battle here, so its fighters, pairs and HP are
-    /// the fight's own; they differ in where the force, the candidates and the stance come from.
-    /// `Err`: an empty force, or no defender.
-    pub(crate) fn engage_setup(&self, ctx: HitCtx, slots: Slots, force: Vec<UnitId>, candidates: Vec<UnitId>, def_stance: StanceType, damage: &[(UnitId, i32)]) -> Result<Setup, &'static str> {
-        self.engage_setup_cached(ctx, slots, force, candidates, def_stance, damage, None)
-    }
-
-    /// [`Game::engage_setup`], the fighters and pairs taken from `cache` where it has them (the
-    /// same values, computed once for many forces).
-    #[allow(clippy::too_many_arguments)]
-    pub(crate) fn engage_setup_cached(
-        &self,
-        ctx: HitCtx,
-        slots: Slots,
-        force: Vec<UnitId>,
-        candidates: Vec<UnitId>,
-        def_stance: StanceType,
-        damage: &[(UnitId, i32)],
-        cache: Option<&PairCache>,
-    ) -> Result<Setup, &'static str> {
-        if force.is_empty() {
+    /// The set-up of an engagement once the attacker's formation is chosen (module comment, step
+    /// 1): the defender's formation of `candidates`, both sides in the engagement's order, their
+    /// fighters and the pair table. The real fight ([`Game::engage`]) and the preview
+    /// ([`Game::engage_preview`]) both build their battle here, so its fighters and pairs are the
+    /// fight's own. `Err`: an empty formation, or no defender.
+    pub(crate) fn engage_setup(&self, ctx: HitCtx, slots: Slots, att: Vec<Place>, candidates: Vec<UnitId>) -> Result<Setup, &'static str> {
+        if att.is_empty() {
             return Err("no unit can attack there");
         }
         if candidates.is_empty() {
             return Err("there is nobody to fight there");
         }
-        let def_pick = self.engage_auto_pick_with(&candidates, def_stance, &slots, Side::Defender, &ctx, damage);
-        if def_pick.is_empty() {
+        let def = self.engage_defense_formation(&candidates, &slots, &ctx);
+        if def.is_empty() {
             return Err("there is nobody to fight there");
         }
-        debug_assert!(
-            force.len() as i32 <= slots.max(Side::Attacker) && def_pick.len() as i32 <= slots.max(Side::Defender),
-            "an engagement committed {} attackers and {} defenders with {:?}",
-            force.len(),
-            def_pick.len(),
-            slots
-        );
-        let n_att = force.len();
-        let units: Vec<UnitId> = force.iter().chain(&def_pick).copied().collect();
-        let sides: Vec<Side> = (0..units.len()).map(|i| if i < n_att { Side::Attacker } else { Side::Defender }).collect();
+        let params = Params::from_defines(&self.d.defines);
         let in_city = self.plot_is_city(ctx.to, false, None);
-        let mut battle = match cache {
-            None => self.engage_battle(&units, &sides, &vec![false; units.len()], in_city, &ctx),
-            Some(c) => {
-                let fighters = units.iter().zip(&sides).map(|(&u, &s)| c.fighter(u, s).cloned().unwrap_or_else(|| self.engage_fighter(u, s, in_city))).collect();
-                Battle::new(self.engage_params(), fighters, |h, t| c.pair(units[h], units[t], sides[h]).unwrap_or_else(|| self.engage_hit(units[h], units[t], sides[h], &ctx)))
-            }
-        };
-        if !damage.is_empty() {
-            for (i, &u) in units.iter().enumerate() {
-                battle.set_start(i, super::damage_with(self, u, damage), false);
+        let ground = self.engage_ground(ctx.to);
+        let lanes = self.engage_lanes(&slots);
+        let mut att = att;
+        let mut def = def;
+        att.sort_by_key(|p| (p.lane, p.row));
+        def.sort_by_key(|p| (p.lane, p.row));
+        let n_att = att.len();
+        let all: Vec<(Place, Side)> = att.iter().map(|&p| (p, Side::Attacker)).chain(def.iter().map(|&p| (p, Side::Defender))).collect();
+        let units: Vec<UnitId> = all.iter().map(|(p, _)| p.unit).collect();
+        let sides: Vec<Side> = all.iter().map(|&(_, s)| s).collect();
+        let places: Vec<(u8, u8)> = all.iter().map(|(p, _)| (p.lane, p.row)).collect();
+        let fighters: Vec<Fighter> = all.iter().map(|&(p, s)| self.engage_fighter(p.unit, s, (p.lane, p.row), in_city, &ctx, &params)).collect();
+        let n = units.len();
+        let mut pairs = vec![Pair::default(); n * n];
+        for h in 0..n {
+            for t in 0..n {
+                if sides[h] != sides[t] {
+                    pairs[h * n + t] = self.engage_hit(units[h], units[t], sides[h], &ctx);
+                }
             }
         }
-        Ok(Setup { ctx, slots, force, candidates, def_stance, def_pick, units, sides, n_att, in_city, battle })
+        Ok(Setup { ctx, slots, lanes, ground, params, in_city, candidates, units, sides, places, n_att, fighters, pairs })
     }
 
-    /// Phase 7 hook (plan 6.2, 14): the pre-battle spells' effects on battle `b` (its fighters
-    /// committed, before the morale check and the opening), applied to it by both integrators.
+    /// Phase 7 hook (plan 6.2, 14): the pre-battle spells' effects on the battle of `setup` (its
+    /// units committed, before the morale check and the opening). None in phase 6.
+    pub(crate) fn engage_pre_battle(&self, _setup: &Setup) -> Vec<BattleEffect> {
+        Vec::new()
+    }
+
+    /// Phase 7 hook (plan 6.4 step 3, 14): the opening spells' effects on the battle of `setup`
+    /// with its HP `hp` after the defensive strikes (opening damage spells, Q11's missile casts).
     /// None in phase 6.
-    pub(crate) fn engage_pre_battle(&self, _b: &Battle) -> Vec<BattleEffect> {
+    pub(crate) fn engage_opening_spells(&self, _setup: &Setup, _hp: &[i32]) -> Vec<BattleEffect> {
         Vec::new()
     }
 
-    /// Phase 7 hook (plan 6.4 step 3, 14): the opening spells' effects on battle `b` (its HP
-    /// after the defensive strikes and collateral), applied to it before the opening volleys by
-    /// both integrators: opening damage spells, Q11's missile casts. None in phase 6.
-    pub(crate) fn engage_opening_spells(&self, _b: &Battle) -> Vec<BattleEffect> {
-        Vec::new()
-    }
-
-    /// Phase 7 hook (plan 6.7 step 6, 14): the post-battle spells cast after battle `b` as it
-    /// ended (`r`), once the medics have healed: `Cast` records whose writes to `Game` the
+    /// Phase 7 hook (plan 6.7 step 6, 14): the post-battle spells cast after the battle of `setup`
+    /// as it ended (`f`), once the medics have healed: `Cast` records whose writes to `Game` the
     /// post-battle steps make. None in phase 6.
-    pub(crate) fn engage_post_battle_spells(&self, _b: &Battle, _r: &Resolution) -> Vec<BattleEffect> {
+    pub(crate) fn engage_post_battle_spells(&self, _setup: &Setup, _f: &Fought) -> Vec<BattleEffect> {
         Vec::new()
     }
 
@@ -357,89 +471,75 @@ impl Game {
     }
 
     fn engage_inner(&mut self, ord: EngageOrder) -> Result<EngageOutcome, &'static str> {
-        let EngageOrder { p, from, to, launcher, force, stance, forced, log } = ord;
+        let EngageOrder { p, from, to, launcher, formation, forced, log } = ord;
         let ctx = HitCtx::new(from, to);
 
         // 1. Set-up.
         let slots = self.engage_slots(&ctx);
-        let own = self.engage_attack_stance(p, from, launcher);
-        let att_stance = StanceChoice { stance: stance.filter(|s| s.idx() < self.d.stances.len()).unwrap_or(own.stance), ..own };
-        let (pool, force, given) = if forced {
-            let f: Vec<UnitId> = force
-                .unwrap_or_default()
-                .into_iter()
-                .filter(|&u| self.units.contains(u) && !self.unit_is_dead(u) && self.unit_can_attack(u) && self.unit_combat_role(u).is_some())
-                .collect();
-            (f.clone(), f, false)
-        } else {
-            let pool = self.engage_attackers(p, from, to, WarTest::AtWar);
-            match force {
-                Some(f) => {
-                    self.engage_validate_force(&pool, &f, &slots)?;
-                    (pool, f, true)
-                }
-                None => {
-                    let f = self.engage_propose_force(&pool, att_stance.stance, &slots, &ctx);
-                    (pool, f, false)
+        let (pool, att, ordered) = match forced {
+            Some(units) => {
+                let pool: Vec<UnitId> = units
+                    .into_iter()
+                    .filter(|&u| self.units.contains(u) && !self.unit_is_dead(u) && self.unit_can_attack(u) && self.unit_combat_role(u).is_some())
+                    .collect();
+                let f = self.engage_auto_formation(&pool, Side::Attacker, &slots, &ctx);
+                (pool, f, false)
+            }
+            None => {
+                let pool = self.engage_attackers(p, from, to, WarTest::AtWar);
+                match formation {
+                    Some(f) => {
+                        self.engage_validate_formation(&pool, &f, &slots)?;
+                        (pool, f, true)
+                    }
+                    None => {
+                        let f = self.engage_auto_formation(&pool, Side::Attacker, &slots, &ctx);
+                        (pool, f, false)
+                    }
                 }
             }
         };
-        if force.is_empty() {
+        if att.is_empty() {
             return Err("no unit can attack there");
         }
+        let force: Vec<UnitId> = att.iter().map(|q| q.unit).collect();
         let candidates = self.engage_defenders(to, p, &force, WarTest::AtWar);
         if candidates.is_empty() {
             return Err("there is nobody to fight there");
         }
-        let def_stance = self.engage_defense_stance(to, &candidates);
-        let setup = self.engage_setup(ctx, slots, force, candidates, def_stance.stance, &[])?;
-        let Setup { ctx, slots, force, candidates, def_pick, units, sides, n_att, in_city, battle, .. } = setup;
-        let mut battle = battle;
-
+        let setup = self.engage_setup(ctx, slots, att, candidates)?;
+        let n = setup.units.len();
+        let def_units: Vec<UnitId> = setup.units[setup.n_att..].to_vec();
+        let att_units: Vec<UnitId> = setup.units[..setup.n_att].to_vec();
         let mut e = Eng {
             p,
             team: self.players[p].team,
             from,
             to,
             launcher,
-            ctx,
-            slots,
-            stances: [att_stance, def_stance],
-            sat_out: vec![false; units.len()],
-            units,
-            n_att,
-            sides,
-            in_city,
+            units: setup.units.clone(),
+            sat_out: vec![false; n],
             strikes: 0,
-            collateral: 0,
             place: self.engage_place(from, to),
             players: [
-                self.engage_side_players(Side::Attacker, p, to, &force, &pool, &def_pick),
-                self.engage_side_players(Side::Defender, p, to, &def_pick, &candidates, &force),
+                self.engage_side_players(Side::Attacker, p, to, &att_units, &pool, &def_units),
+                self.engage_side_players(Side::Defender, p, to, &def_units, &setup.candidates, &att_units),
             ],
-            types: Vec::new(),
-            owners: Vec::new(),
-            def_reserve: candidates.iter().copied().filter(|u| !def_pick.contains(u)).collect(),
+            types: setup.units.iter().map(|&u| self.units[u].unit_type).collect(),
+            owners: setup.units.iter().map(|&u| self.units[u].owner).collect(),
+            setup,
         };
-        e.types = e.units.iter().map(|&u| self.units[u].unit_type).collect();
-        e.owners = e.units.iter().map(|&u| self.units[u].owner).collect();
         let wants_log = log.unwrap_or_else(|| self.engage_seen_by_human(&e.units, p, to));
         let mut sink = if wants_log {
-            // The attacker's auto-pick is the stance's proposal; a force that differs from it is
-            // the player's (or the AI's) own.
-            let auto = if given { self.engage_propose_force(&pool, att_stance.stance, &e.slots, &e.ctx) } else { force.clone() };
-            let mut sorted = [auto.clone(), force.clone()];
-            sorted.iter_mut().for_each(|v| v.sort());
-            let by_player = sorted[0] != sorted[1];
             let reserves: Vec<(UnitId, Side)> = pool
                 .iter()
                 .filter(|u| !e.units.contains(u))
                 .map(|&u| (u, Side::Attacker))
-                .chain(candidates.iter().filter(|u| !e.units.contains(u)).map(|&u| (u, Side::Defender)))
+                .chain(e.setup.def_reserve().into_iter().map(|u| (u, Side::Defender)))
                 .collect();
-            let mut s = Sink::new(self, &e, &reserves, [&auto, &def_pick], by_player);
-            // The plan as the attacker saw it, before anything changes (plan 15 items 1-2).
-            let forecast = self.engage_forecast_frozen(p, from, to, launcher, &force, att_stance.stance, |u| s.index_of(u));
+            let mut s = Sink::new(self, &e, &reserves, [ordered, false]);
+            // The plan as the attacker saw it, before anything changes.
+            let forecast = self.engage_forecast_frozen(p, from, to, &e.setup.formation(Side::Attacker), |u| s.index_of(u));
             s.set_forecast(forecast);
             Some(s)
         } else {
@@ -447,41 +547,37 @@ impl Game {
         };
 
         // Phase 7's pre-battle effects.
-        let mut effects = self.engage_pre_battle(&battle);
+        let mut effects = self.engage_pre_battle(&e.setup);
 
         // 2. Morale.
         self.engage_morale(&mut e, &mut sink);
 
-        // 3. Opening: defensive strikes, then collateral (neither kills), then phase 7's opening
-        // spells on the battle with its HP after them.
+        // 3. Opening: defensive strikes (never kill), then phase 7's opening spells.
         self.engage_opening(&mut e, &mut sink);
-        for (i, &u) in e.units.iter().enumerate() {
-            battle.set_start(i, self.units[u].damage, e.sat_out[i]);
+        let mut hp: Vec<i32> = (0..n).map(|i| hp_from_damage(self.units[e.units[i]].damage, e.setup.fighters[i].max_hp)).collect();
+        effects.extend(self.engage_opening_spells(&e.setup, &hp));
+        if !effects.is_empty() {
+            e.setup.apply_effects(&effects, &mut hp);
         }
-        // (Checked builds: the opening changed nothing but HP, so the set-up's pair table holds.)
-        debug_assert!(self.engage_battle(&e.units, &e.sides, &e.sat_out, e.in_city, &e.ctx).same_as(&battle), "the opening changed more than HP");
-        effects.extend(self.engage_opening_spells(&battle));
 
         // 4. The battle.
-        if !effects.is_empty() {
-            battle.add_effects(effects);
-        }
-        let estimate = self.telemetry.on().then(|| super::expect::resolve_expected(&battle).win_permille);
-        let rlog = if sink.is_some() { resolve_sampled(&battle, &mut self.soren_rand) } else { resolve_sampled_quiet(&battle, &mut self.soren_rand) };
+        let (f, map) = e.setup.battle(&e.sat_out, &hp);
+        let out = if sink.is_some() { formation::resolve(&f, &mut self.soren_rand) } else { formation::resolve_quiet(&f, &mut self.soren_rand) };
+        let fought = Fought::new(&e.setup, &hp, &map, &out);
         if let Some(s) = sink.as_mut() {
-            s.rounds(self, &e, &battle, &rlog);
+            s.battle(self, &e, &f, &map, &out);
         }
 
         // 5. After the battle, the report, telemetry.
-        let post = self.engage_post(&mut e, &battle, &rlog, &mut sink);
-        let report = self.engage_report(&e, &rlog, &post, sink.map(|s| s.finish(&rlog)));
+        let post = self.engage_post(&mut e, &fought, &mut sink);
+        let report = self.engage_report(&e, &fought, &post, sink.map(|s| s.finish(&fought)));
         let id = self.battle_report_add(report);
         if self.telemetry.on() {
             let r = self.battle_report(id).expect("the report just added").clone();
-            self.tel_engagement(&r, &e, &battle, &rlog, estimate);
+            self.tel_engagement(&r, &e, &fought);
         }
         self.engage_messages(id);
-        Ok(EngageOutcome { report: id, result: rlog.result, plot_taken: post.plot_taken })
+        Ok(EngageOutcome { report: id, result: post.result, plot_taken: post.plot_taken })
     }
 
     /// The defended plot as it is now (the report's `place`).
@@ -528,22 +624,24 @@ impl Game {
         (player, shown, players)
     }
 
-    /// The report of engagement `e` (plan 9.1, 15.5).
-    fn engage_report(&self, e: &Eng, r: &Resolution, post: &Post, log: Option<BattleLog>) -> BattleReport {
+    /// The report of engagement `e` (spec 1.7, 2).
+    fn engage_report(&self, e: &Eng, f: &Fought, post: &Post, log: Option<BattleLog>) -> BattleReport {
         let sides = [Side::Attacker, Side::Defender].map(|s| {
             let (player, shown_player, players) = e.players[s.index()].clone();
-            let stance = e.stances[s.index()];
             let mut lost: Vec<(UnitType, i32)> = Vec::new();
-            let (mut withdrew, mut sat_out) = (0, 0);
+            let (mut sat_out, mut fallen, mut escaped, mut standing) = (0, 0, 0, 0);
             for i in e.of(s) {
-                match r.fighters[i].fate {
-                    Fate::Killed { .. } => match lost.iter_mut().find(|(t, _)| *t == e.types[i]) {
-                        Some((_, n)) => *n += 1,
-                        None => lost.push((e.types[i], 1)),
-                    },
-                    Fate::Withdrew { .. } => withdrew += 1,
-                    Fate::SatOut => sat_out += 1,
-                    Fate::Survived => {}
+                match f.fate[i] {
+                    LogFate::Fell { .. } => {
+                        fallen += 1;
+                        match lost.iter_mut().find(|(t, _)| *t == e.types[i]) {
+                            Some((_, n)) => *n += 1,
+                            None => lost.push((e.types[i], 1)),
+                        }
+                    }
+                    LogFate::Withdrew { .. } => escaped += 1,
+                    LogFate::SatOut => sat_out += 1,
+                    LogFate::Standing => standing += 1,
                 }
             }
             lost.sort();
@@ -551,14 +649,14 @@ impl Game {
                 player,
                 shown_player,
                 players,
-                army: stance.army,
-                garrison_of: stance.garrison_of,
-                stance: stance.stance,
-                slots: e.slots.max(s),
+                slots: e.setup.slots.max(s),
+                lanes: e.setup.lanes[s.index()] as i32,
+                used: e.of(s).map(|i| e.setup.fighters[i].slots()).sum(),
                 committed: e.of(s).len() as i32,
-                withdrew,
                 sat_out,
-                fled: if s == Side::Defender { post.fled + post.routed } else { 0 },
+                fallen,
+                escaped,
+                standing,
                 lost,
             }
         });
@@ -569,10 +667,9 @@ impl Game {
             from: e.from,
             place: e.place.clone(),
             sides,
-            outcome: Outcome {
-                result: r.result,
-                volley_rounds: r.volley_rounds,
-                rounds: r.rounds,
+            outcome: ReportOutcome {
+                result: post.result,
+                rounds: f.rounds,
                 plot_taken: post.plot_taken,
                 city_captured: post.city_captured,
                 moved_in: post.moved_in,
@@ -592,34 +689,33 @@ impl Game {
             Some(c) => c.name.clone(),
             None => format!("({}, {})", r.place.x, r.place.y),
         };
-        let lost = |s: &ReportSide| s.lost.iter().map(|(_, n)| n).sum::<i32>();
         let (att, def) = (&r.sides[0], &r.sides[1]);
         let result = r.outcome.result;
         let took = match (&r.outcome.city_captured, r.outcome.plot_taken) {
-            (Some(_), _) => format!(" and took {place}"),
-            (None, true) => " and moved in".to_string(),
-            _ => String::new(),
+            (Some(_), _) => format!("took {place}"),
+            (None, true) => "took the plot".to_string(),
+            _ => "cleared it".to_string(),
         };
         let mut msgs: Vec<(PlayerId, String)> = Vec::new();
         for &p in &att.players {
             let verb = match result {
-                EngageResult::AttackerWon => format!("won{took}"),
-                EngageResult::DefenderHeld => "were repelled".to_string(),
-                EngageResult::Draw => "fought to a draw".to_string(),
-                EngageResult::Mutual => "both sides were spent".to_string(),
+                EngageResult::Taken => took.clone(),
+                EngageResult::Cleared => "broke their line, but the plot holds".to_string(),
+                EngageResult::Repulsed => "were repulsed".to_string(),
+                EngageResult::Held => "could not break their line".to_string(),
             };
             let them = self.player_get_civilization_adjective(def.shown_player);
-            msgs.push((p, format!("Battle at {place}: your {} attacked {} {them} and {verb}; {} lost, {} killed (report #{id})", att.committed, def.committed, lost(att), lost(def))));
+            msgs.push((p, format!("Battle at {place}: your {} attacked {} {them} and {verb}; {} fell, {} killed (report #{id})", att.committed, def.committed, att.fallen, def.fallen)));
         }
         for &p in &def.players {
             let verb = match result {
-                EngageResult::AttackerWon => "were defeated",
-                EngageResult::DefenderHeld => "held",
-                EngageResult::Draw => "fought them to a draw",
-                EngageResult::Mutual => "fought until both sides were spent",
+                EngageResult::Taken => "were overrun",
+                EngageResult::Cleared => "lost their line, but the plot holds",
+                EngageResult::Repulsed => "drove them off",
+                EngageResult::Held => "held",
             };
             let them = self.player_get_civilization_adjective(att.shown_player);
-            msgs.push((p, format!("Battle at {place}: {} {them} attacked your {}, which {verb}; {} lost, {} killed (report #{id})", att.committed, def.committed, lost(def), lost(att))));
+            msgs.push((p, format!("Battle at {place}: {} {them} attacked your {}, which {verb}; {} fell, {} killed (report #{id})", att.committed, def.committed, def.fallen, att.fallen)));
         }
         for (p, text) in msgs {
             self.log.msg_at(turn, Some(p), at, || text);
@@ -639,7 +735,7 @@ impl Game {
     /// first `n_att` attack), drawing from `rng` ("Im afeared!"): a committed Fear defender makes
     /// each committed attacker not immune roll, then a Fear attacker that did not sit out does the
     /// same to the defenders. Marks the units that fail in `sat_out`. Changes nothing in the game.
-    pub(crate) fn engage_morale_rolls(&self, units: &[UnitId], n_att: usize, sat_out: &mut [bool], rng: &mut impl BattleRng) -> Vec<MoraleRoll> {
+    pub(crate) fn engage_morale_rolls(&self, units: &[UnitId], n_att: usize, sat_out: &mut [bool], rng: &mut impl formation::BattleRng) -> Vec<MoraleRoll> {
         let mut out = Vec::new();
         let n = units.len();
         for (src_side, rollers) in [(n_att..n, 0..n_att), (0..n_att, n_att..n)] {
@@ -669,7 +765,8 @@ impl Game {
         let d = self.d;
         let turn = self.game_turn();
         let at = self.map.xy(e.to);
-        let rolls = self.with_sync_rng(|g, rng| g.engage_morale_rolls(&e.units, e.n_att, &mut e.sat_out, rng));
+        let n_att = e.setup.n_att;
+        let rolls = self.with_sync_rng(|g, rng| g.engage_morale_rolls(&e.units, n_att, &mut e.sat_out, rng));
         if let (Some(s), false) = (sink.as_mut(), rolls.is_empty()) {
             s.stage(super::report::Stage::Morale);
         }
@@ -686,23 +783,12 @@ impl Game {
         }
     }
 
-    /// The opening's rolls (plan 6.4 steps 1 and 2; module comment, step 3) for the committed
-    /// `units` (the first `n_att` attack; those in `sat_out` never close in) on plot `to`, over the
-    /// units `on_plot` (the plot's own for the real fight; what the attacker sees for a preview),
-    /// reading and updating `ov`, drawing from `rng` in the fight's order: each attacker's
-    /// defensive strike (roll, then the strike's damage), then each attacker's collateral. Changes
-    /// nothing in the game.
-    #[allow(clippy::too_many_arguments)]
-    pub(crate) fn engage_opening_rolls(
-        &self,
-        units: &[UnitId],
-        n_att: usize,
-        sat_out: &[bool],
-        to: PlotIdx,
-        on_plot: &[UnitId],
-        ov: &mut UnitOverlay,
-        rng: &mut impl BattleRng,
-    ) -> OpeningRolls {
+    /// The opening's rolls (Q5; module comment, step 3) for the committed `units` (the first
+    /// `n_att` attack; those in `sat_out` never close in), over the units `on_plot` (the plot's
+    /// own for the real fight; what the attacker sees for a preview), reading and updating `ov`,
+    /// drawing from `rng` in the fight's order: each attacker's defensive strike (roll, then the
+    /// strike's damage). Changes nothing in the game.
+    pub(crate) fn engage_opening_rolls(&self, units: &[UnitId], n_att: usize, sat_out: &[bool], on_plot: &[UnitId], ov: &mut UnitOverlay, rng: &mut impl formation::BattleRng) -> OpeningRolls {
         let mut out = OpeningRolls::default();
         for i in 0..n_att {
             let a = units[i];
@@ -722,25 +808,18 @@ impl Game {
                 out.strikes.push((i, roll, hit));
             }
         }
-        for i in 0..n_att {
-            let a = units[i];
-            if sat_out[i] || self.unit_collateral_damage(a) <= 0 {
-                continue;
-            }
-            let hit = self.unit_collateral_rolls(a, to, on_plot, None, true, ov, rng);
-            out.collateral.push((i, hit));
-        }
         out
     }
 
-    /// Plan 6.4 steps 1 and 2 (module comment, step 3): the rolls on the sync RNG, then their
-    /// writes (damage, strikers used up, XP, messages) and log events in the same order.
+    /// Q5 (module comment, step 3): the rolls on the sync RNG, then their writes (damage,
+    /// strikers used up, XP, messages) and log events in the same order.
     fn engage_opening(&mut self, e: &mut Eng, sink: &mut Option<Sink>) {
         if let Some(s) = sink.as_mut() {
             s.stage(super::report::Stage::Opening);
         }
         let on_plot = self.map.plots[e.to].units.clone();
-        let rolls = self.with_sync_rng(|g, rng| g.engage_opening_rolls(&e.units, e.n_att, &e.sat_out, e.to, &on_plot, &mut UnitOverlay::default(), rng));
+        let n_att = e.setup.n_att;
+        let rolls = self.with_sync_rng(|g, rng| g.engage_opening_rolls(&e.units, n_att, &e.sat_out, &on_plot, &mut UnitOverlay::default(), rng));
         for (i, roll, hit) in rolls.strikes {
             let a = e.units[i];
             let Some(best) = roll.best else { continue };
@@ -750,29 +829,15 @@ impl Game {
                 e.strikes += 1;
             }
             if let Some(s) = sink.as_mut() {
-                let damage = self.units[best].damage;
-                let striker = s.ensure(self, e, best, Side::Defender, damage);
-                s.def_strike(striker, i, &roll, pct, pct * self.unit_engage_max_hp(a));
-            }
-        }
-        for (i, hit) in rolls.collateral {
-            let a = e.units[i];
-            self.unit_collateral_write(a, &hit);
-            e.collateral += hit.len() as i32;
-            if let Some(s) = sink.as_mut() {
-                let limit = self.unit_collateral_damage_limit(a);
-                for (t, before, after) in hit {
-                    let ti = s.ensure(self, e, t, Side::Defender, before);
-                    let protection = self.units[t].collateral_damage_protection;
-                    s.collateral(i, ti, after - before, limit, protection, (after - before) * self.unit_engage_max_hp(t));
-                }
+                let striker = s.ensure(self, e, best, Side::Defender);
+                s.def_strike(striker, i, &roll, pct, pct * e.setup.fighters[i].max_hp);
             }
         }
     }
 
-    /// A missile strike (plan 6.11, Q11; module comment): one hit on a unit of the defender's
-    /// pick, by the missile's role order, then its collateral; the missile dies. A kill gives it
-    /// the kill (no advance). `Err`: no defender there, nothing changed.
+    /// A missile strike (Q11; module comment): one hit on a unit of the defender's formation
+    /// (`formation::missile_hit`), then its collateral; the missile dies. A kill gives it the kill
+    /// (no advance). `Err`: no defender there, nothing changed.
     pub(crate) fn engage_missile_strike(&mut self, m: UnitId, to: PlotIdx) -> Result<(), &'static str> {
         if !self.telemetry.on() {
             return self.engage_missile_inner(m, to);
@@ -793,44 +858,23 @@ impl Game {
             return Err("there is nobody to fight there");
         }
         let slots = self.engage_slots(&ctx);
-        let stance = self.engage_defense_stance(to, &candidates);
-        let pick = self.engage_auto_pick(&candidates, stance.stance, &slots, Side::Defender, &ctx);
-        let in_city = self.plot_is_city(to, false, None);
-        let units: Vec<UnitId> = std::iter::once(m).chain(pick.iter().copied()).collect();
-        let sides: Vec<Side> = (0..units.len()).map(|i| if i == 0 { Side::Attacker } else { Side::Defender }).collect();
-        let sat_out = vec![false; units.len()];
-        let b = self.engage_battle(&units, &sides, &sat_out, in_city, &ctx);
-        let engaged = vec![true; units.len()];
-        let hp: Vec<i32> = b.fighters.iter().map(|f| f.hp).collect();
-        let mut cand = Vec::new();
-        let st = TargetState { engaged: &engaged, hp: &hp, pending: &[] };
-        let target = match targets(&b, 0, &st, false, &mut cand, None) {
-            Targets::Class { .. } => {
-                let n = cand.len();
-                let t = if n > 1 { cand[self.soren_rand_num(n as i32, "Engagement target") as usize] } else { cand[0] };
-                Some(t as usize)
-            }
-            Targets::Miss(_) => None,
-        };
+        let setup = self.engage_setup(ctx, slots, vec![Place { unit: m, lane: 0, row: 0 }], candidates)?;
+        let hp: Vec<i32> = setup.fighters.iter().map(|f| f.hp).collect();
+        let (f, map) = setup.battle(&vec![false; setup.units.len()], &hp);
+        let hit = missile_hit(&f, 0, &mut self.soren_rand);
         let turn = self.game_turn();
         let at = self.map.xy(to);
         let mut killed = None;
-        if let Some(t) = target {
-            let prm = b.params;
-            let r = prm.rand_min + self.soren_rand_num(prm.rand_max - prm.rand_min + 1, "Engagement hit");
-            let mut dmg = ((b.mean_damage(0, t) as i64 * r as i64) / 100).max(1).min(i32::MAX as i64) as i32;
-            if let Some(floor) = b.cap_floor(0, t) {
-                dmg = dmg.min((hp[t] - floor).max(0));
-            }
-            let tu = units[t];
-            let left = hp[t] - dmg;
-            let max_hp = b.fighters[t].max_hp;
+        if let Some(h) = &hit {
+            let t = map[h.target as usize];
+            let tu = setup.units[t];
+            let left = hp[t] - h.dmg;
             let (mty, tty) = (self.units[m].unit_type, self.units[tu].unit_type);
             if left <= 0 {
                 self.unit_set_damage(tu, d.defines.max_hit_points, Some(p));
                 killed = Some(tu);
             } else {
-                self.unit_set_damage(tu, damage_from_hp(left, max_hp), None);
+                self.unit_set_damage(tu, damage_from_hp(left, setup.fighters[t].max_hp), None);
             }
             let verb = if left <= 0 { "destroyed" } else { "struck" };
             for owner in [p, self.units[tu].owner] {
@@ -859,7 +903,7 @@ impl Game {
             self.unit_kill(m, true, None);
         }
         if self.telemetry.on() {
-            self.tel_missile_strike(p, target.is_some(), killed.is_some());
+            self.tel_missile_strike(p, hit.is_some(), killed.is_some());
         }
         Ok(())
     }
@@ -907,7 +951,7 @@ impl Game {
         }
         let Some(from) = self.unit_plot_opt(u) else { return true };
         let launcher = self.units[u].group.filter(|&g| self.groups.contains(g));
-        let _ = self.engage(EngageOrder { p, from, to, launcher, force: Some(vec![u]), stance: None, forced: true, log: None });
+        let _ = self.engage(EngageOrder { p, from, to, launcher, formation: None, forced: Some(vec![u]), log: None });
         true
     }
 }
@@ -954,7 +998,7 @@ mod tests {
     }
 
     fn order(from: PlotIdx, to: PlotIdx, log: bool) -> EngageOrder {
-        EngageOrder { p: PlayerId(0), from, to, launcher: None, force: None, stance: None, forced: false, log: Some(log) }
+        EngageOrder { p: PlayerId(0), from, to, launcher: None, formation: None, forced: None, log: Some(log) }
     }
 
     fn clone(g: &Game) -> Game {
@@ -962,12 +1006,12 @@ mod tests {
     }
 
     /// The battle log sink draws no random number and changes no state: the same engagement with
-    /// and without it leaves the same RNG and the same game (plan 15 item 1).
+    /// and without it leaves the same RNG and the same game (spec section 2).
     #[test]
     fn the_sink_changes_nothing() {
         let (g, from, to) = world(
-            &["UNIT_AXEMAN", "UNIT_AXEMAN", "UNIT_ARCHER", "UNIT_HORSEMAN", "UNIT_CATAPULT"],
-            &["UNIT_AXEMAN", "UNIT_ARCHER", "UNIT_ARCHER", "UNIT_WARRIOR"],
+            &["UNIT_AXEMAN", "UNIT_AXEMAN", "UNIT_ARCHER", "UNIT_HORSEMAN", "UNIT_CATAPULT", "UNIT_ADEPT"],
+            &["UNIT_AXEMAN", "UNIT_ARCHER", "UNIT_ARCHER", "UNIT_WARRIOR", "UNIT_DISCIPLE_THE_ORDER"],
         );
         let mut logged = 0;
         for seed in 0..12u32 {
