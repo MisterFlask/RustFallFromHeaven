@@ -249,6 +249,17 @@ fn plots_change_the_slots() {
 }
 
 #[test]
+fn withered_and_puppet_lower_defence_too() {
+    // Q1: the defence percentage applies to Dv in an engagement; Withered and Puppet, which FFH2
+    // gave only an attack penalty, get one on defence as well.
+    let d = d();
+    for (name, pct) in [("PROMOTION_WITHERED", -10), ("PROMOTION_PUPPET", -20)] {
+        let p = &d.promotions[d.t::<PromotionType>(name)];
+        assert_eq!((p.combat_percent, p.combat_percent_defense), (pct, pct), "{name}");
+    }
+}
+
+#[test]
 fn engagement_defines() {
     let x = &d().defines;
     assert_eq!((x.engagement_slots_base, x.engagement_slots_min, x.engagement_slots_hills, x.engagement_slots_river), (8, 3, -2, 2));
