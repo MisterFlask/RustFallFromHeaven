@@ -8,7 +8,8 @@
 //
 // Art: the M7 sprites (`app/iso`, docs/ISO.md) and, for the units that have them, the anim-sprint
 // sets (`app/anim/<unit>_<idle|strike|flinch|death>.png`: strips of 160 x 128 frames, the feet
-// at (80, 126); anim-sprint/ANIMATING_UNITS.md). Pixel art is never scaled.
+// at (80, 126); anim-sprint/ANIMATING_UNITS.md). Pixel art is drawn at 1x, but for the watch
+// screen's breathing (a squash of 2% at most) and its snap (battle_snap.js: a lean, up to 8% larger).
 
 import { SPRITES } from "./iso/sprites.js";
 import { unitSpriteKeys, ISO_TABLES } from "./iso.js";
@@ -323,15 +324,19 @@ export class Stage {
     g.restore();
   }
 
-  /** Draws a scene: `{figs: [Fig], cells: [{side, lane, row, color}], fx: [Fx], bars: true}`.
-   *  Fig `{b, x, y, side, large, pic, flip, alpha, ring (false: none), ringAlpha, sel, glow, tint,
-   *  tintA, dx, dy, fallen, bar: {hp, max} | null, odds: text | null, oddsHot}`; Fx `{type: "proj"
-   *  (kind, from, to, t) | "float" (x, y, text, kind, t) | "burst" (x, y, color, t) | "sparkle" (x,
-   *  y, t)}`, `t` its progress 0..1. */
+  /** Draws a scene: `{figs: [Fig], cells: [{side, lane, row, color}], fx: [Fx], bars: true,
+   *  shake: [dx, dy] | null}` (`shake`: the whole scene drawn that far off; the transform stays for
+   *  what is drawn over it, until the next `draw`). Fig `{b, x, y, side, large, pic (null: its ring
+   *  alone), flip, alpha, ring (false: none), ringAlpha, sel, glow, tint, tintA, dx, dy, sy (a
+   *  vertical squash about the feet: breathing), fallen, bar: {hp, max} | null, odds: text | null,
+   *  oddsHot}`; Fx `{type: "proj" (kind, from, to, t) | "float" (x, y, text, kind, t) | "burst" (x,
+   *  y, color, t) | "sparkle" (x, y, t)}`, `t` its progress 0..1. */
   draw(sc) {
     const g = this.g;
+    g.setTransform(1, 0, 0, 1, 0, 0);
     g.clearRect(0, 0, FRAME_W, FRAME_H);
     if (!this.board) return;
+    if (sc.shake) g.setTransform(1, 0, 0, 1, Math.round(sc.shake[0]), Math.round(sc.shake[1]));
     g.drawImage(this.board, 0, 0);
     for (const c of sc.cells ?? []) {
       const [x, y] = cellXY(this.G, c.side, c.lane, c.row);
@@ -461,8 +466,8 @@ export function deadPic(f, sides) {
 
 const SIL = new Map();
 
-/** The picture's silhouette in `color` (a flash, a glow), cached. */
-function silhouette(p, flip, color) {
+/** The picture's silhouette in `color` (a flash, a glow, an outline), cached. */
+export function silhouette(p, flip, color) {
   const key = `${p.im.src}|${p.sx}|${flip}|${color}`;
   let c = SIL.get(key);
   if (c) return c;
@@ -483,11 +488,21 @@ function silhouette(p, flip, color) {
   return c;
 }
 
-function drawPic(g, p, x, y, { flip = false, alpha = 1, dx = 0, dy = 0, tint = null, tintA = 1, glow = null, glowA = 1 } = {}) {
+function drawPic(g, p, x, y, { flip = false, alpha = 1, dx = 0, dy = 0, sy = 1, tint = null, tintA = 1, glow = null, glowA = 1 } = {}) {
   const X = Math.round(x + dx);
   const Y = Math.round(y + dy);
   const x0 = X - (flip ? p.w - p.ax : p.ax);
   const y0 = Y - p.ay;
+  if (sy !== 1) {
+    // squashed about the feet: the same drawing under a vertical scale
+    g.save();
+    g.translate(0, Y);
+    g.scale(1, sy);
+    g.translate(0, -Y);
+    drawPic(g, p, x, y, { flip, alpha, dx, dy, tint, tintA, glow, glowA });
+    g.restore();
+    return;
+  }
   if (glow) {
     const s = silhouette(p, flip, glow);
     g.save();
@@ -509,6 +524,30 @@ function drawPic(g, p, x, y, { flip = false, alpha = 1, dx = 0, dy = 0, tint = n
     g.drawImage(silhouette(p, flip, tint), x0, y0);
     g.restore();
   }
+}
+
+/** Picture `p` with its feet at (x, y) under a transform about the feet: `scale`, a vertical
+ *  squash `sy`, a `lean` (radians; + leans the way the figure faces), with a `glow` round it and a
+ *  `tint` over it (the watch screen's snap, battle_snap.js). */
+export function drawPicX(g, p, x, y, { flip = false, alpha = 1, tint = null, tintA = 0, glow = null, scale = 1, sy = 1, lean = 0 } = {}) {
+  g.save();
+  g.translate(Math.round(x), Math.round(y));
+  if (lean) g.rotate(flip ? -lean : lean);
+  g.scale(flip ? -scale : scale, scale * sy);
+  const x0 = -p.ax;
+  const y0 = -p.ay;
+  if (glow) {
+    const sil = silhouette(p, false, glow);
+    g.globalAlpha = alpha * 0.95;
+    for (const [ox, oy] of [[-2, 0], [2, 0], [0, -2], [0, 2], [-1, -1], [1, 1], [-1, 1], [1, -1]]) g.drawImage(sil, x0 + ox, y0 + oy);
+  }
+  g.globalAlpha = alpha;
+  g.drawImage(p.im, p.sx, 0, p.w, p.h, x0, y0, p.w, p.h);
+  if (tint && tintA > 0) {
+    g.globalAlpha = tintA * alpha;
+    g.drawImage(silhouette(p, false, tint), x0, y0);
+  }
+  g.restore();
 }
 
 /** A unit with no death frames, fallen: its sprite laid on its side at its feet (falling back,
