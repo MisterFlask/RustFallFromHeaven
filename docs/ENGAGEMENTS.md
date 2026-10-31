@@ -196,7 +196,8 @@ Homeland, Stigmata, the bonuses against the opponent (unit combat, class, promot
 animals), the handicap's on the target, the attacker's city, hills, feature and terrain attack and
 the amphibious term, the river (slots, Q9). A unit's A against nobody in particular
 (`Game::engage_a_alone`) is a fighter's "most dangerous", its ties and the auto formation's
-strength.
+strength. A missile's strike (below) keeps both rows: against it the plot's own defence and the
+city's barbarian defence still count in Dv (`HitCtx::cover`), as before revision 4.
 
 ## Where the units stand
 
@@ -301,7 +302,12 @@ each spends an attack of every committed unit.
 `formation::missile_hit` on the defender's auto formation (a strike's reach and choice from outside
 the field: no nearby first, no miss, no crit, no splash, no withdrawal; r drawn; never past the
 missile's combat limit), then its collateral (today's formula); it dies, with the kill if it killed
-(counted as an engagement's kill is).
+(counted as an engagement's kill is). It strikes at the strength it had before formation battles
+(spec 1.9: missiles unchanged): `ENGAGEMENT_MISSILE_PERCENT` (50) of a hit
+(`Formation::missile_expected`: `ENGAGEMENT_BASE_DAMAGE` doubled to 40 for the battles, so half of
+it is the round model's 20), the defended plot's own defence in its target's Dv
+(`HitCtx::missile`), and none of the ground's rules (it does not fight on the field). Its target's
+choice reads that hit.
 
 **RNG**, in this order and nowhere else: the morale rolls ("Im afeared!", attackers then
 defenders); per committed attacker that did not sit out its defensive strike's roll and damage
@@ -327,7 +333,8 @@ which round; damage dealt, taken, healed), the kills in order, the damage matrix
 battle XP's shares), the rounds begun, which sides were cleared, and the events (`Event`: round,
 pass, actor, kind as fought, spell, target, hits `{target, dmg, expected, r, crit, miss, killed,
 withdrew, splash}`, heal, knock-back, note). `auto_arrange(candidates, lanes, slots, ordinary)` is
-the auto formation; `missile_hit(formation, h, rng)` a missile's hit.
+the auto formation; `missile_hit(formation, h, rng)` a missile's hit (`missile_expected` its
+expected damage).
 
 ## The battle log
 
@@ -418,7 +425,9 @@ The spec (the owner's, revision 4) holds; these were left open and are decided s
   the duel: not the hit on the target, not a known spell's splash. The battle log does not list
   them as values (the fighter's promotions name them).
 - A missile's hit is a strike's choice without nearby first (it comes from outside the field), with
-  no withdrawal (as the round model's missile hit had none).
+  no withdrawal (as the round model's missile hit had none). Its target is the formation's choice,
+  not the round model's random pick by role order. Its strength is the round model's: half a
+  battle's hit, the plot's own defence in Dv, no ground rules.
 - The plan of an AI attacker is not frozen into the log (the moment estimator that made it is gone).
 - Per-kill game-log messages are replaced by one message per side and engagement, naming the report.
 - A medic's heal goes only to a hurt unit, and only then uses its once a turn; the patient's own

@@ -384,6 +384,32 @@ fn the_ground() {
     assert_eq!(b.expected(2, 6, K::Strike, 1, false), 3000);
 }
 
+/// A missile strikes from outside the field at `missile_pct` (50) of a hit whatever the ground,
+/// takes the kill its own hit offers, and looks for no nearby unit.
+#[test]
+fn a_missile_s_strike() {
+    use Side::*;
+    let fs = vec![
+        frontline(Attacker, 0, 0),
+        hurt(frontline(Defender, 0, 0), 1500), // a field strike's kill (2000), not a missile's
+        hurt(frontline(Defender, 3, 0), 900),  // the missile's kill (1000), three lanes off
+        frontline(Defender, 1, 0),
+    ];
+    for g in [OPEN, CITY, FOREST, HILLS] {
+        let b = battle(g, fs.clone());
+        assert_eq!((b.missile_expected(0, 1), b.missile_expected(0, 2)), (EVEN / 2, EVEN / 2), "{g:?}");
+    }
+    let b = battle(OPEN, fs);
+    let s = State::new(&b);
+    let reach = b.reach(&s, 0, K::Strike);
+    assert_eq!(b.choose(&s, 0, K::Strike, 1, &reach), Some(1), "on the field: nearby first, its kill");
+    assert_eq!(b.choose_with(&s, 0, K::Strike, 1, &reach, true), Some(2));
+    let mut rng = rigged(sure);
+    let hit = missile_hit(&b, 0, &mut rng).expect("a target");
+    assert_eq!((hit.target, hit.expected, hit.dmg, hit.killed), (2, EVEN / 2, 900, true));
+    assert_eq!(rng.labels, ["Engagement hit"], "r only");
+}
+
 #[test]
 fn misses_and_crits() {
     use Side::*;

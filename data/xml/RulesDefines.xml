@@ -251,6 +251,13 @@
 		<DefineName>ENGAGEMENT_HEAL_PERCENT</DefineName>
 		<iDefineIntVal>50</iDefineIntVal>
 	</Define>
+	<!-- MISSILE_PERCENT: a missile's strike (Fireball, Meteor: one hit from outside the field, the
+	     plot's own defence in the target's Dv, no ground rules) deals this percent of BASE_DAMAGE's
+	     hit: 50 keeps the strength it had before formation battles doubled BASE_DAMAGE -->
+	<Define>
+		<DefineName>ENGAGEMENT_MISSILE_PERCENT</DefineName>
+		<iDefineIntVal>50</iDefineIntVal>
+	</Define>
 	<!-- The ground (the defended plot's; multiplied together): in a city the attacker's SHOOT deals
 	     CITY_ATTACKER_SHOT_PERCENT; in a forest or jungle SHOOT and BOMBARD deal FOREST_RANGED_PERCENT on
 	     both sides; on hills every attacker hit deals HILLS_ATTACKER_PERCENT and the defender's SHOOT

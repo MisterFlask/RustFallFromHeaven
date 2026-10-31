@@ -163,7 +163,8 @@ side)
   walls, culture) no longer adds to the defenders' strength. The plot falls only when no defender
   is left on it: then the launching group moves in (a city is captured); otherwise nobody moves.
   Kill credit per kill (G2) and the post-battle effects as for a duel's winner; no Fear rout.
-  Stances are gone. Ships and air units keep the duel; missiles strike one unit. Option off,
+  Stances are gone. Ships and air units keep the duel; missiles strike one unit (at half a
+  battle's hit, against the plot's own defence, as before the formation battles). Option off,
   nothing changes. Save format 10.
 
 **Container order and path finding**

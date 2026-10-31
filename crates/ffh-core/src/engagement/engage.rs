@@ -43,8 +43,10 @@
 //!
 //! **Missiles** (Q11): a missile (`bSuicide`: Fireball, Meteor) ordered into an enemy plot does
 //! not start an engagement: [`Game::engage_missile_strike`] hits one unit of the defender's
-//! formation (`formation::missile_hit`: a strike's reach and choice, from outside the field),
-//! then its collateral (today's), and the missile dies.
+//! formation (`formation::missile_hit`: a strike's reach and choice, from outside the field, at
+//! the strength it had before formation battles: `ENGAGEMENT_MISSILE_PERCENT` of a hit, the
+//! plot's own defence in the target's Dv, no ground rules), then its collateral (today's), and
+//! the missile dies.
 //!
 //! **The battle log** is written through an optional sink ([`super::sink`]) for a battle a human
 //! could see; it draws no random number and changes no state (test `the_sink_changes_nothing`).
@@ -850,17 +852,23 @@ impl Game {
         r
     }
 
-    fn engage_missile_inner(&mut self, m: UnitId, to: PlotIdx) -> Result<(), &'static str> {
-        let d = self.d;
+    /// A missile's battle (Q11): missile `m` alone against the defender's auto formation on `to`,
+    /// the plot's own defence in the defenders' Dv ([`HitCtx::missile`]). `Err`: no defender.
+    pub(crate) fn engage_missile_setup(&self, m: UnitId, to: PlotIdx) -> Result<Setup, &'static str> {
         let p = self.units[m].owner;
-        let from = self.unit_plot(m);
-        let ctx = HitCtx::new(from, to);
+        let ctx = HitCtx::missile(self.unit_plot(m), to);
         let candidates = self.engage_defenders(to, p, &[m], WarTest::AtWar);
         if candidates.is_empty() {
             return Err("there is nobody to fight there");
         }
         let slots = self.engage_slots(&ctx);
-        let setup = self.engage_setup(ctx, slots, vec![Place { unit: m, lane: 0, row: 0 }], candidates)?;
+        self.engage_setup(ctx, slots, vec![Place { unit: m, lane: 0, row: 0 }], candidates)
+    }
+
+    fn engage_missile_inner(&mut self, m: UnitId, to: PlotIdx) -> Result<(), &'static str> {
+        let d = self.d;
+        let p = self.units[m].owner;
+        let setup = self.engage_missile_setup(m, to)?;
         let hp: Vec<i32> = setup.fighters.iter().map(|f| f.hp).collect();
         let (f, map) = setup.battle(&vec![false; setup.units.len()], &hp);
         let hit = missile_hit(&f, 0, &mut self.soren_rand);
@@ -1068,5 +1076,36 @@ mod tests {
         let att = g.engage_fighter(catapult, Side::Attacker, (0, 2), false, &ctx, &params);
         let def = g.engage_fighter(axeman, Side::Defender, (0, 0), false, &ctx, &params);
         assert_eq!((att.collateral_extra, def.collateral_protection), (100, 20));
+    }
+
+    /// A missile strikes at the strength it had before formation battles (Q11): half a hit
+    /// (`ENGAGEMENT_MISSILE_PERCENT`), the plot's own defence (here the hills) in its target's Dv,
+    /// and no ground rule (on hills a formation battle's attacker deals 75%).
+    #[test]
+    fn a_missile_strikes_at_its_old_strength() {
+        let (mut g, from, to) = world(&["UNIT_FIREBALL"], &["UNIT_WARRIOR"]);
+        let d = g.d;
+        g.map.plots[to].plot_type = PlotType::PLOT_HILLS;
+        let (fireball, warrior) = (g.map.plots[from].units[0], g.map.plots[to].units[0]);
+        assert_eq!(d.defines.engagement_missile_percent, 50);
+        let setup = g.engage_missile_setup(fireball, to).expect("a defender");
+        assert_eq!(setup.units, [fireball, warrior]);
+        let field = g.engage_hit(fireball, warrior, Side::Attacker, &HitCtx::new(from, to));
+        let pair = setup.pair(0, 1);
+        assert_eq!(pair.a, field.a);
+        let team = g.players[PlayerId(1)].team;
+        let hills = g.plot_defense_modifier(to, Some(team), false);
+        assert!(hills > 0);
+        // The warrior's Dv: its base under the hills' defence (the field's Dv has none of it).
+        assert_eq!(pair.dv, field.dv * (100 + hills) / 100);
+        let hp: Vec<i32> = setup.fighters.iter().map(|f| f.hp).collect();
+        let (f, _) = setup.battle(&[false, false], &hp);
+        let (a, dv) = (pair.a as i64, pair.dv as i64);
+        let expected = (d.defines.engagement_base_damage as i64 * 100 * a / (a + dv) / 2) as i32;
+        assert_eq!(f.missile_expected(0, 1), expected);
+        assert!(f.expected(0, 1, ActionKind::Strike, 1, false) < 2 * expected, "a field strike takes the hills' 75%");
+        let hit = missile_hit(&f, 0, &mut crate::rng::Rng::new(7)).expect("a hit");
+        assert_eq!((hit.target, hit.expected), (1, expected));
+        assert!(hit.dmg >= expected * 80 / 100 && hit.dmg <= expected * 120 / 100, "{hit:?}");
     }
 }

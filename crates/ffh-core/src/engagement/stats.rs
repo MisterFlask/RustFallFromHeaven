@@ -25,7 +25,7 @@
 //! | bonuses against the opponent's promotions, unit combat, domain, animals | its own against the target | its own against the hitter |
 //! | unit class | its class attack modifier | its class defence modifier |
 //! | the handicap's animal and barbarian modifiers | no | yes: today's duel puts them on one strength of the pair |
-//! | the defended plot's own defence (its terrain or feature cover, hills, a fort, the city's buildings and culture, FfH's range defence) and `CITY_BARBARIAN_DEFENSE_MODIFIER` | no | **no** (formation battles: the ground's rules replace cover) |
+//! | the defended plot's own defence (its terrain or feature cover, hills, a fort, the city's buildings and culture, FfH's range defence) and `CITY_BARBARIAN_DEFENSE_MODIFIER` | no | **no** in a formation battle (the ground's rules replace cover); on the defending side against a missile ([`HitCtx::cover`]) |
 //! | the unit's own fortification, city defence (`iCityDefense`), hills, feature and terrain defence | no | on the defending side only |
 //! | city attack, hills, feature and terrain attack against the defended plot, `AMPHIB_ATTACK_MODIFIER` | on the attacking side only | no |
 //! | `RIVER_ATTACK_MODIFIER` | removed: the river costs slots (Q9) | |
@@ -62,12 +62,22 @@ pub struct HitCtx {
     /// for Homeland). `None`: an approach not known (the view's stats): by land, each unit where
     /// it stands.
     pub from: Option<PlotIdx>,
+    /// The defended plot's own defence counts in the defenders' Dv (its cover, hills, a fort,
+    /// the city's walls and culture, range defence, the city's defence against barbarians): a
+    /// missile's strike, which comes from outside the field (Q11, as before formation battles).
+    /// A formation battle has none (the ground's rules replace cover).
+    pub cover: bool,
 }
 
 impl HitCtx {
-    /// An attack from `from` on `to`.
+    /// An attack from `from` on `to`: a formation battle's.
     pub fn new(from: PlotIdx, to: PlotIdx) -> HitCtx {
-        HitCtx { to, from: Some(from) }
+        HitCtx { to, from: Some(from), cover: false }
+    }
+
+    /// A missile's strike from `from` on `to`: the plot's own defence counts.
+    pub fn missile(from: PlotIdx, to: PlotIdx) -> HitCtx {
+        HitCtx { cover: true, ..HitCtx::new(from, to) }
     }
 }
 
@@ -295,9 +305,20 @@ impl Game {
             }
             // The unit's own defensive terms on the defended plot (G1: none for an attacker being
             // hit back). The plot's own defence (cover, hills, a fort, the city's walls and
-            // culture, range defence) and the city's barbarian defence give Dv nothing: the
-            // ground's rules of a formation battle replace them (spec 1.6).
-            if side == Side::Defender {
+            // culture, range defence) and the city's barbarian defence give Dv nothing in a
+            // formation battle: the ground's rules replace them (spec 1.6). Against a missile
+            // (`ctx.cover`) they count, as the duel's.
+            if side == Side::Defender && ctx.cover {
+                let team = self.unit_get_team(u);
+                let ignore_building = opponent.is_some_and(|h| self.unit_ignore_building_defense(h));
+                modifier += self.combat_plot_defense_terms(u, ctx.to, team, ignore_building, log);
+                if let Some(h) = opponent {
+                    if self.unit_is_barbarian(h) && self.plot_is_city(ctx.to, true, Some(team)) {
+                        let pct = self.d.defines.city_barbarian_defense_modifier;
+                        modifier += term!(log, city_barbarian_defense_modifier, pct, TermSource::VsBarbarian);
+                    }
+                }
+            } else if side == Side::Defender {
                 modifier += self.engage_own_defense_terms(u, ctx.to, log);
             }
         }
@@ -368,7 +389,8 @@ mod tests {
     use super::*;
     use crate::unit::{CombatDetails, StrMode};
 
-    /// Over many units, opponents and plots (with and without a known approach): the breakdown's
+    /// Over many units, opponents and plots (with and without a known approach, a missile's
+    /// cover): the breakdown's
     /// parts sum to the modifier and give the pair table's value, and `unit_combat_terms` in the
     /// engagement modes is the same computation.
     #[test]
@@ -377,8 +399,8 @@ mod tests {
         let mut pairs = 0;
         for (i, &h) in units.iter().enumerate() {
             let to = plots[(i * 7) % plots.len()];
-            for from in [Some(g.unit_plot(h)), None] {
-                let ctx = HitCtx { to, from };
+            for (from, cover) in [(Some(g.unit_plot(h)), false), (None, false), (Some(g.unit_plot(h)), true)] {
+                let ctx = HitCtx { to, from, cover };
                 for &t in units.iter().skip(i % 5).step_by(5) {
                     if t == h {
                         continue;

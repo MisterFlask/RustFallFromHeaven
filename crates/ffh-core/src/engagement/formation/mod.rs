@@ -196,6 +196,8 @@ pub struct Params {
     pub bolt_pct: i32,
     /// A heal: `base_damage x heal_pct x r`.
     pub heal_pct: i32,
+    /// A missile's strike ([`missile_hit`]), in percent of a hit.
+    pub missile_pct: i32,
     pub city_attacker_shot_pct: i32,
     pub forest_ranged_pct: i32,
     pub hills_attacker_pct: i32,
@@ -220,6 +222,7 @@ impl Default for Params {
             splash_pct: 50,
             bolt_pct: 60,
             heal_pct: 50,
+            missile_pct: 50,
             city_attacker_shot_pct: 50,
             forest_ranged_pct: 50,
             hills_attacker_pct: 75,
@@ -246,6 +249,7 @@ impl Params {
             splash_pct: d.engagement_splash_percent,
             bolt_pct: d.engagement_bolt_percent,
             heal_pct: d.engagement_heal_percent,
+            missile_pct: d.engagement_missile_percent,
             city_attacker_shot_pct: d.engagement_city_attacker_shot_percent,
             forest_ranged_pct: d.engagement_forest_ranged_percent,
             hills_attacker_pct: d.engagement_hills_attacker_percent,
@@ -506,6 +510,19 @@ impl Formation {
         (x.num / x.den).min(i32::MAX as i128) as i32
     }
 
+    /// The expected damage of a missile's strike by `h` on `t` ([`missile_hit`]), in centi-HP:
+    /// `base_damage x 100 x A / (A + Dv)` times `missile_pct`. The ground's percentages do not
+    /// apply: it strikes from outside the field (the rules put the plot's own defence in its
+    /// target's Dv instead, as before formation battles).
+    pub fn missile_expected(&self, h: usize, t: usize) -> i32 {
+        let p = self.pair(h, t);
+        let (a, dv) = (p.a as i64, p.dv as i64);
+        let mean = self.params.base_damage.max(0) as i64 * 100 * a / (a + dv);
+        let mut x = Pcts { num: mean as i128, den: 1 };
+        x.mul(self.params.missile_pct);
+        (x.num / x.den).min(i32::MAX as i128) as i32
+    }
+
     /// Whether `h`'s hits of `kind` splash as collateral damage: it has collateral damage, and
     /// the hit is not a known spell's (which splashes as the spell: no collateral limit, Barrage
     /// or protection).
@@ -729,14 +746,15 @@ pub fn resolve_quiet(f: &Formation, rng: &mut impl BattleRng) -> Outcome {
 
 /// A missile's strike (Q11: Fireball, Meteor): fighter `h` (alone on its side) hits one enemy
 /// once, as a STRIKE from outside the field: the front unit of an enemy lane, by the normal
-/// choice without nearby first; no miss, no crit, no splash, no withdrawal; r drawn ("Engagement
-/// hit"), never below its combat limit's floor. `None` (nothing drawn): no target in reach.
+/// choice without nearby first, at its own strength ([`Formation::missile_expected`]: no ground
+/// rules); no miss, no crit, no splash, no withdrawal; r drawn ("Engagement hit"), never below its
+/// combat limit's floor. `None` (nothing drawn): no target in reach.
 pub fn missile_hit(f: &Formation, h: usize, rng: &mut impl BattleRng) -> Option<Hit> {
     let s = State::new(f);
     let list = f.reach(&s, h, ActionKind::Strike);
-    let t = f.choose_with(&s, h, ActionKind::Strike, 1, &list, false)?;
+    let t = f.choose_with(&s, h, ActionKind::Strike, 1, &list, true)?;
     let p = &f.params;
-    let expected = f.expected(h, t, ActionKind::Strike, 1, false);
+    let expected = f.missile_expected(h, t);
     let r = p.rand_min + rng.rand(p.rand_max - p.rand_min + 1, "Engagement hit");
     let raw = (expected as i64 * r as i64 / 100).clamp(1, i32::MAX as i64) as i32;
     let dmg = raw.min((s.hp[t] - f.floor(h, t)).max(0));
@@ -825,18 +843,19 @@ impl Formation {
     /// higher A, then lane, then row. The expected damage is capped at what `h`'s combat limit
     /// lets it take (a siege engine kills no one). A splash's centre is chosen so too.
     pub fn choose(&self, s: &State, h: usize, kind: ActionKind, round: i32, list: &[usize]) -> Option<usize> {
-        self.choose_with(s, h, kind, round, list, true)
+        self.choose_with(s, h, kind, round, list, false)
     }
 
-    /// [`Formation::choose`], with nearby first (`nearby`) or not (a missile, which strikes from
-    /// outside the field).
-    pub fn choose_with(&self, s: &State, h: usize, kind: ActionKind, round: i32, list: &[usize], nearby: bool) -> Option<usize> {
+    /// [`Formation::choose`], for a hit on the field or (`missile`) a missile's strike, which
+    /// comes from outside the field: no nearby first, its own expected damage
+    /// ([`Formation::missile_expected`]).
+    pub fn choose_with(&self, s: &State, h: usize, kind: ActionKind, round: i32, list: &[usize], missile: bool) -> Option<usize> {
         use std::cmp::Ordering;
         let mut pool: Vec<usize> = list.to_vec();
         if self.fighters[h].flanker && pool.iter().any(|&t| self.fighters[t].anti_flank) {
             pool.retain(|&t| self.fighters[t].anti_flank);
         }
-        if nearby && !(kind == ActionKind::Charge && self.ground.flanking()) && pool.iter().any(|&t| self.lane_distance(h, t) <= 1) {
+        if !missile && !(kind == ActionKind::Charge && self.ground.flanking()) && pool.iter().any(|&t| self.lane_distance(h, t) <= 1) {
             pool.retain(|&t| self.lane_distance(h, t) <= 1);
         }
         let a = |t: usize| self.fighters[t].a;
@@ -853,7 +872,8 @@ impl Formation {
             .iter()
             .map(|&t| {
                 let floor = self.floor(h, t);
-                let e = (self.expected(h, t, kind, round, false) as i64).min((s.hp[t] - floor).max(0) as i64);
+                let e = if missile { self.missile_expected(h, t) } else { self.expected(h, t, kind, round, false) };
+                let e = (e as i64).min((s.hp[t] - floor).max(0) as i64);
                 (t, e, floor == 0 && e >= s.hp[t] as i64)
             })
             .collect();
