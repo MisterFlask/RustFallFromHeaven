@@ -5,8 +5,8 @@
 //! the city that trained it as any unit is (build effects, experience, promotions, upkeep, unit
 //! class limits) and marches to its destination (`Unit::march`): the rules move it, not its
 //! owner, once a turn at the end of its owner's turn ([`Game::player_do_march`], the start of its
-//! turn processing, before the army sync, the requisition and the cities' production), with the
-//! moves it kept through the turn, along the rules' path to where the destination is after its
+//! turn processing, once the armies are settled with the groups its owner's moves changed, before
+//! the requisition and the cities' production), with the moves it kept through the turn, along the rules' path to where the destination is after its
 //! owner moved (an army's plot, recomputed every turn; a garrison's city). Through the turn it
 //! holds ([`Game::player_march_hold`], as its owner's units get their moves): its owner does not
 //! move it, and it waits for no orders. A recruit trained this turn first moves at the end of the
@@ -171,13 +171,19 @@ impl Game {
     }
 
     /// Player `p`'s marching recruits, once a turn at the end of its turn (the start of its turn
-    /// processing, before the army sync): each marches with the moves it kept, toward where its
+    /// processing): the armies are settled with the groups first (its owner's moves this turn split,
+    /// merged and regrouped them, and an army's group may be gone: its recruits would take the
+    /// army for gone), then each recruit marches with the moves it kept, toward where its
     /// destination is after its owner moved, and arrives on its destination's plot.
     pub fn player_do_march(&mut self, p: PlayerId) {
         if !self.armies_on() {
             return;
         }
         let marching: Vec<UnitId> = self.players[p].units.iter().copied().filter(|&u| self.units[u].march.is_some()).collect();
+        if marching.is_empty() {
+            return;
+        }
+        self.player_army_sync(p);
         for u in marching {
             if self.units.contains(u) && self.units[u].march.is_some() {
                 self.unit_march_step(u);

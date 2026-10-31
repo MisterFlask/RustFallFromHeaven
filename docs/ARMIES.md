@@ -126,17 +126,17 @@ a normal unit (build effects, experience, promotions, upkeep, unit class limits:
 unit) and marches (`Unit::march`: its destination, the turns without progress, the turn it left,
 the city it came from, whether it was diverted): the rules move it, not its owner.
 
-- *Movement*: once a turn at the end of its owner's turn (the start of its turn processing,
-  before the army sync, the requisition and the cities' production), it moves with the moves it
-  kept through the turn along the rules' path (as a go-to order would: terrain, roads, borders,
-  war; recomputed every step) to where its destination is after its owner moved (an army's plot,
-  recomputed every turn; a garrison's city). Through the turn it holds (put on hold again as its
-  owner's units get their moves), so neither the human nor the AI moves it and it waits for no
-  orders. A recruit trained this turn first moves at the end of the next one: as many moving
-  turns as any new unit has. It never attacks and never declares war: a step that would be an
-  attack, or that it cannot simply move into, is not taken, and the path goes around visible enemy
-  units when it can. Deterministic: the units in their owner's order, the path finder's own
-  tie-breaks.
+- *Movement*: once a turn at the end of its owner's turn (the start of its turn processing, once
+  the armies are settled with the groups its owner's moves changed, before the requisition and the
+  cities' production), it moves with the moves it kept through the turn along the rules' path (as
+  a go-to order would: terrain, roads, borders, war; recomputed every step) to where its
+  destination is after its owner moved (an army's plot, recomputed every turn; a garrison's city).
+  Through the turn it holds (put on hold again as its owner's units get their moves), so neither
+  the human nor the AI moves it and it waits for no orders. A recruit trained this turn first
+  moves at the end of the next one: as many moving turns as any new unit has. It never attacks
+  and never declares war: a step that would be an attack, or that it cannot simply move into, is
+  not taken, and the path goes around visible enemy units when it can. Deterministic: the units in
+  their owner's order, the path finder's own tie-breaks.
 - *Arrival*: on its destination's plot it arrives at once: in the destination city it joins the
   garrison (in no army); on the army's plot it joins the army, whose moves this turn are over (an
   army that came to it during the turn takes it as its march begins; a last pass before the army

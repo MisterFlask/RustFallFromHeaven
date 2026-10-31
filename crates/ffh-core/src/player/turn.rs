@@ -191,10 +191,10 @@ impl Game {
 
         // This game's cultural actions: their memories fade.
         self.player_do_culture_memory(p);
-        // This game's armies (docs/ARMIES.md): the marching recruits march, with the moves they
-        // kept through the turn, to where their destinations are after their owner moved, and
-        // join them there (an army's moves this turn are over); then the armies are settled with
-        // the groups.
+        // This game's armies (docs/ARMIES.md): the marching recruits march (the armies settled with
+        // the groups first), with the moves they kept through the turn, to where their
+        // destinations are after their owner moved, and join them there (an army's moves this
+        // turn are over); then the armies are settled with the groups.
         self.player_do_march(p);
         self.player_march_join(p);
         self.player_army_sync(p);

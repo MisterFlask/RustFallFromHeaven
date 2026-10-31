@@ -298,14 +298,39 @@ fn a_recruit_trained_next_to_a_stationary_army_joins_the_next_turn() {
     let units: Vec<UnitId> = (0..2).map(|_| g.player_init_unit(p0, w, 4, 5, None, None)).collect();
     let army = g.army_form(p0, &units).unwrap();
     let u = train_for(&mut g, home, Some(RecruitDest::Army(army)));
-    assert_eq!(g.unit_march_eta(u), Some(1));
     turn_start(&mut g);
     assert!(g.unit_march(u).is_some(), "it holds through the turn");
     assert_eq!(g.unit_plot(u), g.city_plot(home));
+    assert_eq!(g.unit_march_eta(u), Some(1), "with its moves back: there as this turn ends");
     turn_end(&mut g);
     assert!(g.unit_march(u).is_none(), "arrived");
     assert_eq!(g.units[u].army, Some(army));
     assert_eq!(g.army_units(army).len(), 3);
+}
+
+/// Its owner's moves this turn regroup its armies (Civ4's Group button puts the 1st Army's units
+/// into the 2nd's group, and the 1st's group is gone): the march settles the armies with the
+/// groups first, so the recruit follows the merged army instead of taking its own for gone.
+#[test]
+fn the_march_first_settles_the_armies_regrouped_during_the_turn() {
+    let (mut g, a, b) = game();
+    let p0 = PlayerId(0);
+    let (ox, oy) = next_to(&g, b);
+    let first: Vec<UnitId> = (0..2).map(|_| unit_at(&mut g, ox, oy)).collect();
+    let second: Vec<UnitId> = (0..2).map(|_| unit_at(&mut g, ox, oy)).collect();
+    let one = g.army_form(p0, &first).unwrap();
+    let two = g.army_form(p0, &second).unwrap();
+    let u = train_for(&mut g, a, Some(RecruitDest::Army(one)));
+    turn_start(&mut g);
+    let grp = g.armies[two].group.unwrap();
+    for &v in &first {
+        g.unit_join_group(v, Some(grp), false);
+    }
+    turn_end(&mut g);
+    assert!(!g.armies.contains(one), "merged into the 2nd Army");
+    let follows = g.units[u].army == Some(two) || g.unit_march(u).is_some_and(|m| m.dest == RecruitDest::Army(two) && !m.diverted);
+    assert!(follows, "the recruit follows the 2nd Army: {:?}", g.unit_march(u));
+    assert!(!g.log.entries.iter().any(|m| m.text.contains("its army is gone")), "not diverted");
 }
 
 #[test]
