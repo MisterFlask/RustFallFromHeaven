@@ -163,10 +163,11 @@ impl Default for Params {
     }
 }
 
-/// A battle-level effect of a phase 7 hook (plan 6.2, 14): `engage_pre_battle` and
-/// `engage_opening_spells` return them; both integrators apply them the same way, so the
-/// estimator and the preview see in-battle spells without touching the RNG or the game. The
-/// writes to `Game` are deferred to after the battle through the `Cast` records.
+/// A battle-level effect of a phase 7 hook (plan 6.2, 14): `Game::engage_pre_battle` and
+/// `Game::engage_opening_spells` return them and [`Battle::add_effects`] adds them; both
+/// integrators apply them the same way, so the estimator and the preview see in-battle spells
+/// without touching the RNG or the game. The writes to `Game` are deferred to after the battle
+/// through the `Cast` records (`Game::engage_post_battle_spells` returns only those).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum BattleEffect {
     /// A combat percentage on the fighter's A (when it hits) and Dv (when it is hit), added to
@@ -280,6 +281,20 @@ impl Battle {
         let mut b = Battle { params, fighters, effects: Vec::new(), pairs, mean: vec![0; n * n], classes, front, order };
         b.rebuild_mean();
         b
+    }
+
+    /// Fighter `i`'s state at the start of the rounds, once the rules' opening is done: its HP
+    /// from the damage field `damage` (clamped as [`Battle::new`] clamps it) and whether it sat
+    /// out (the morale check). The pair table does not change.
+    pub fn set_start(&mut self, i: usize, damage: i32, sat_out: bool) {
+        let f = &mut self.fighters[i];
+        f.hp = hp_from_damage(damage, f.max_hp).clamp(1, f.max_hp * 100);
+        f.sat_out = sat_out;
+    }
+
+    /// The same fighters, pair table and effects (the integrators' tables follow from them).
+    pub fn same_as(&self, other: &Battle) -> bool {
+        self.params == other.params && self.fighters == other.fighters && self.pairs == other.pairs && self.effects == other.effects
     }
 
     /// Adds battle effects: `Mod`s change the fighters' battle modifiers and the mean damage

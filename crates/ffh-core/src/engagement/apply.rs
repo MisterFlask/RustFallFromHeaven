@@ -20,10 +20,12 @@
 //!    `PromotionCombatApply` once per holder that killed (on its victims' plot) or died (on its
 //!    killer); poison: each survivor that took damage from a poison-typed enemy rolls once.
 //! 5. The victims are killed (immortals are reborn); a defending victim's capturing player is set
-//!    first when the attackers will move in.
+//!    first when the attackers will move in. (Phase 7: the writes of the battle's `Cast` records
+//!    go here.)
 //! 6. **Medics** (Q12): each committed survivor heals the best same-tile heal of its team's units
 //!    on its plot or the best adjacent heal next to it, at most once per unit per game turn
-//!    (`Unit::battle_heal_turn`).
+//!    (`Unit::battle_heal_turn`). Then phase 7's post-battle hook
+//!    ([`Game::engage_post_battle_spells`], empty).
 //! 7. Withdrawn defenders (outside cities only) flee to the nearest valid plot (or die with none);
 //!    a marching one keeps its march.
 //! 8. **Rout** (Q8): a won attack outside a city with a surviving committed Fear attacker: each
@@ -338,6 +340,7 @@ impl Game {
                 self.unit_kill(v, false, None);
             }
         }
+        // Phase 7: the writes of the battle's `Cast` records (`b.effects`) go here.
 
         // 6. Medics (Q12).
         let turn = self.game_turn();
@@ -356,6 +359,9 @@ impl Game {
                 s.event(LogEvent::Heal { unit: i as FighterIdx, amount: amount * b.fighters[i].max_hp, source: HealSource::Medic { b: b_medic, unit_type, adjacent } });
             }
         }
+        // Phase 7 hook: the post-battle spells (their `Cast` records' writes would go here).
+        let spells = self.engage_post_battle_spells(b, r);
+        debug_assert!(spells.is_empty(), "post-battle spells are phase 7's: {spells:?}");
 
         // 7. Withdrawn defenders flee (outside cities).
         if !e.in_city {

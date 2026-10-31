@@ -7,7 +7,10 @@
 //! **Order** (plan 6.1 to 6.7; RNG order, plan 7):
 //! 1. *Set-up*: slots, the attacker's pool and force (its stance's proposal, or the force given,
 //!    checked), the defender's candidates and its stance's pick. Nothing has changed yet: an
-//!    empty force or no defender is an `Err`.
+//!    empty force or no defender is an `Err`. The [`Battle`] value is built here (fighters in
+//!    slot order, attackers first; the pair table from [`Game::engage_hit`], which nothing
+//!    before the rounds changes), and phase 7's pre-battle hook ([`Game::engage_pre_battle`])
+//!    reads it.
 //! 2. *Morale* (Q8): a committed Fear defender (the strongest by base strength, level, then
 //!    the lowest id) makes each committed attacker not immune roll today's check
 //!    (`rand(40) > max(4, str + 20 + level - str(src) - level(src))`, "Im afeared!"): one that
@@ -18,10 +21,17 @@
 //!    (committed or not) rolls, and the best success strikes (today's damage, never past 95%);
 //!    collateral (Q4): each committed attacker with `iCollateralDamage` that did not sit out,
 //!    today's formula and limit, against every visible enemy defender on the plot. Neither kills.
-//! 4. *The battle*: the [`Battle`] value (fighters in slot order, attackers first; the pair table
-//!    from [`Game::engage_hit`]) resolved by [`resolve_sampled`] on `soren_rand` (opening volleys,
-//!    rounds, withdrawal).
-//! 5. *Post-battle* ([`super::apply`]) and the report ([`super::report`]), telemetry.
+//!    Then phase 7's opening hook ([`Game::engage_opening_spells`]).
+//! 4. *The battle*: the [`Battle`]'s HP from the damage fields after the opening and its
+//!    sat-out fighters from the morale check, the hooks' effects added, resolved by
+//!    [`resolve_sampled`] on `soren_rand` (opening volleys, rounds, withdrawal).
+//! 5. *Post-battle* ([`super::apply`], with phase 7's post-battle hook,
+//!    [`Game::engage_post_battle_spells`]) and the report ([`super::report`]), telemetry.
+//!
+//! **Phase 7 hooks** (plan 6.2, 14): the three hooks are empty in phase 6. Each reads the
+//! [`Battle`] and returns [`BattleEffect`]s; none writes `Game` or draws a random number, so the
+//! estimator can call the first two on its own `Battle` and see the same in-battle spells. The
+//! writes a cast makes to `Game` come after the battle, through its `Cast` record.
 //!
 //! It never sets `combat_unit`, `attack_plot` or the combat timers, so `plot_is_fighting` stays
 //! false and nothing is left between calls (plan 6.9).
@@ -37,7 +47,7 @@
 
 use ffh_data::*;
 
-use super::battle::{damage_from_hp, hp_from_damage, Battle, Fighter, Params, Side, TargetClass};
+use super::battle::{damage_from_hp, hp_from_damage, Battle, BattleEffect, Fighter, Params, Side, TargetClass};
 use super::pick::{StanceChoice, WarTest};
 use super::resolve::{resolve_sampled, resolve_sampled_quiet, targets, EngageResult, TargetState, Targets};
 use super::apply::Post;
@@ -197,6 +207,27 @@ impl Game {
         Battle::new(self.engage_params(), fighters, |h, t| self.engage_hit(units[h], units[t], sides[h], ctx))
     }
 
+    /// Phase 7 hook (plan 6.2, 14): the pre-battle spells' effects on battle `b` (its fighters
+    /// committed, before the morale check and the opening), applied to it by both integrators.
+    /// None in phase 6.
+    pub(crate) fn engage_pre_battle(&self, _b: &Battle) -> Vec<BattleEffect> {
+        Vec::new()
+    }
+
+    /// Phase 7 hook (plan 6.4 step 3, 14): the opening spells' effects on battle `b` (its HP
+    /// after the defensive strikes and collateral), applied to it before the opening volleys by
+    /// both integrators: opening damage spells, Q11's missile casts. None in phase 6.
+    pub(crate) fn engage_opening_spells(&self, _b: &Battle) -> Vec<BattleEffect> {
+        Vec::new()
+    }
+
+    /// Phase 7 hook (plan 6.7 step 6, 14): the post-battle spells cast after battle `b` as it
+    /// ended (`r`), once the medics have healed: `Cast` records whose writes to `Game` the
+    /// post-battle steps make. None in phase 6.
+    pub(crate) fn engage_post_battle_spells(&self, _b: &Battle, _r: &RoundLog) -> Vec<BattleEffect> {
+        Vec::new()
+    }
+
     /// Whether a human could see this battle (its log is written): a human fights on either
     /// side, or a human's team sees the defended plot.
     fn engage_seen_by_human(&self, units: &[UnitId], p: PlayerId, to: PlotIdx) -> bool {
@@ -313,14 +344,27 @@ impl Game {
             None
         };
 
+        // The battle value; phase 7's pre-battle effects.
+        let mut battle = self.engage_battle(&e.units, &e.sides, &e.sat_out, e.in_city, &e.ctx);
+        let mut effects = self.engage_pre_battle(&battle);
+
         // 2. Morale.
         self.engage_morale(&mut e, &mut sink);
 
-        // 3. Opening: defensive strikes, then collateral.
+        // 3. Opening: defensive strikes, then collateral (neither kills), then phase 7's opening
+        // spells on the battle with its HP after them.
         self.engage_opening(&mut e, &mut sink);
+        for (i, &u) in e.units.iter().enumerate() {
+            battle.set_start(i, self.units[u].damage, e.sat_out[i]);
+        }
+        // (Checked builds: the opening changed nothing but HP, so the set-up's pair table holds.)
+        debug_assert!(self.engage_battle(&e.units, &e.sides, &e.sat_out, e.in_city, &e.ctx).same_as(&battle), "the opening changed more than HP");
+        effects.extend(self.engage_opening_spells(&battle));
 
         // 4. The battle.
-        let battle = self.engage_battle(&e.units, &e.sides, &e.sat_out, e.in_city, &e.ctx);
+        if !effects.is_empty() {
+            battle.add_effects(effects);
+        }
         let estimate = self.telemetry.on().then(|| super::expect::resolve_expected(&battle).win_permille);
         let rlog = if sink.is_some() { resolve_sampled(&battle, &mut self.soren_rand) } else { resolve_sampled_quiet(&battle, &mut self.soren_rand) };
         if let Some(s) = sink.as_mut() {

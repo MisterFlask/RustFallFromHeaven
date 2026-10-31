@@ -45,7 +45,8 @@ transport counts: an amphibious attack) and `to` is land. The rule is applied at
    the stance's proposal. The defender's candidates: every unit on the plot that can defend, is an
    enemy (hidden nationality as in the duel) and is not invisible to the attacker; its pick: its
    stance's (the garrison's in a city, else the largest army's). An empty force or no defender is a
-   refusal, and nothing has changed.
+   refusal, and nothing has changed. The round model's `Battle` is built here (the pair table of A
+   and Dv does not change before the rounds), and phase 7's pre-battle hook reads it.
 2. **Morale** (Q8, "Im afeared!"): a committed Fear defender makes each committed attacker not
    immune roll today's check; one that fails sits out (its attack spent, its slot empty). Then a
    Fear attacker that did not sit out does the same to the committed defenders, which stay on the
@@ -56,7 +57,7 @@ transport counts: an amphibious attack) and `to` is land. The rule is applied at
    Collateral (Q4): each committed attacker with collateral damage (siege, Berserker, Fire
    Elemental, ...) that did not sit out splashes every visible enemy defender on the plot, reserve
    included, with today's formula and limit (the duel's `- 1` for its own defender is gone).
-   Neither kills.
+   Neither kills. Then phase 7's opening hook, on the battle with its HP after them.
 4. **The battle**: the round model (`battle.rs`, `resolve.rs`) on the game's sync RNG: opening
    volleys (first strikes), then up to 40 rounds; in each, every engaged fighter hits once in the
    interleaved slot order (A0, D0, A1, D1, ...), the target class by its role's order over the
@@ -72,7 +73,7 @@ transport counts: an amphibious attack) and `to` is land. The rule is applied at
    the promotion from combat, the heal on a kill, the Python callbacks; a conversion rolled per kill
    and applied once after the killer's last kill); per engagement the promotions removed by combat,
    the combat-apply promotions and poison; the victims die (immortals are reborn); medics heal once
-   a turn per unit (Q12); withdrawn defenders flee; a Fear attacker that won outside a city routs the
+   a turn per unit (Q12), then phase 7's post-battle hook; withdrawn defenders flee; a Fear attacker that won outside a city routs the
    rest (Q8); every committed attacker has made its attack (one a turn, Blitz one more, counting
    engagements, bombards and missile strikes) and pays the attack's moves unless it moves in; with
    no visible enemy defender left, the launching group moves in (a city is captured as today), and
@@ -148,4 +149,7 @@ open and are decided so:
 - A city whose only defenders are ships in port is attacked with today's duel (ships never defend
   land in an engagement, but nothing else defends there).
 - Phase 7: spells in combat phases, summons in battle, the assassin's and the Guardsman's targeting,
-  commander auras (the hooks are in place: plan section 14).
+  commander auras (the hooks are in place: plan section 14). The three spell hooks,
+  `engage_pre_battle`, `engage_opening_spells` and `engage_post_battle_spells` (`engage.rs`), are
+  called at their places in the sequence and return nothing yet; the first two return
+  `BattleEffect`s added to the `Battle` (both integrators apply them), the third `Cast` records.
