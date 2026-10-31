@@ -45,9 +45,10 @@ export class MapHd2d extends Map3D {
     // The 3D renderer is up (its canvas, loop and panel button): if the mode's own setup fails (a
     // program that does not compile), it goes again, so the caller's fallback finds a clean map.
     try {
+      // (`fastStart` 0, a page-only override `?r3d={"fastStart":0}`: the original start-up.)
       this.sprites = new SpriteLayer(this.gl, () => {
         this.dirty = true;
-      });
+      }, this.cfg.fastStart !== 0);
       this.pipeline.ext = new Hd2dPasses(this.gl, this.pipeline, this.sprites);
     } catch (e) {
       this.dispose();

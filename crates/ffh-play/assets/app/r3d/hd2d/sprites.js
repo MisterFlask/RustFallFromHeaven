@@ -35,11 +35,18 @@ function recoloured(im, css) {
   return c;
 }
 
-/** The sprites in a texture array (premultiplied colour, mipmapped), each loaded on first use. */
+/** The sprites in a texture array (premultiplied colour, mipmapped), each loaded on first use.
+ *  `direct` (config `fastStart`, the default): each sprite goes to the GPU from where it is on the
+ *  CPU -- the decoded image, or a canvas in memory (a recoloured or scaled one) -- into its corner of
+ *  the layer (the rest stays clear: a new array is zeroed). Otherwise (the original) each is drawn
+ *  into a 256-square 2D canvas first: Chrome keeps such a canvas on the GPU, so uploading it reads
+ *  it back, a round trip to the GPU process that waits for all the work queued before it -- a frame
+ *  being drawn, a shader compiling at its first draw on Direct3D (docs/R3D.md §11.1). */
 export class SpriteAtlas {
-  constructor(gl, onload) {
+  constructor(gl, onload, direct = true) {
     this.gl = gl;
     this.onload = onload;
+    this.direct = direct;
     /** key -> { layer, ready, failed, w, h, u, v } */
     this.entries = new Map();
     /** layer -> the 256-square canvas uploaded there (kept for a re-upload when the array grows). */
@@ -102,6 +109,16 @@ export class SpriteAtlas {
     this.drawn.set(key, c);
   }
 
+  /** Room for `n` sprites in all: the array grows once to the next power of two (the original
+   *  doubled as the sprites were asked for, each time a new array and every loaded sprite again). */
+  reserve(n) {
+    if (n <= this.cap) return;
+    const max = this.gl.getParameter(this.gl.MAX_ARRAY_TEXTURE_LAYERS);
+    let cap = this.cap;
+    while (cap < n && cap < max) cap *= 2;
+    this.alloc(Math.min(cap, max));
+  }
+
   /** Sprite `key` in the array: `{ layer, u, v }` (its extent in the layer), or null while it loads
    *  (it starts loading) or when there is no such sprite. */
   get(key) {
@@ -154,6 +171,21 @@ export class SpriteAtlas {
   store(e, im) {
     const w = im.width, h = im.height;
     const k = Math.min(1, LAYER / w, LAYER / h);
+    if (this.direct) {
+      let src = im;
+      if (k < 1) {
+        // (A canvas in memory: willReadFrequently keeps Chrome's 2D canvas off the GPU.)
+        src = canvas(Math.round(w * k), Math.round(h * k));
+        const g = src.getContext("2d", { willReadFrequently: true });
+        g.imageSmoothingEnabled = true;
+        g.drawImage(im, 0, 0, src.width, src.height);
+      }
+      this.sources[e.layer] = src;
+      this.upload(e.layer, src);
+      Object.assign(e, { ready: true, w, h, u: (w * k) / LAYER, v: (h * k) / LAYER });
+      this.mipsDirty = true;
+      return;
+    }
     const c = canvas(LAYER, LAYER);
     const g = c.getContext("2d");
     g.imageSmoothingEnabled = k < 1;
@@ -171,7 +203,9 @@ export class SpriteAtlas {
     // A 2D canvas holds premultiplied colour: kept so, the mipmaps average colour and coverage
     // together (no dark fringe where a sprite meets its transparent surround).
     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
-    gl.texSubImage3D(gl.TEXTURE_2D_ARRAY, 0, 0, 0, layer, LAYER, LAYER, 1, gl.RGBA, gl.UNSIGNED_BYTE, c);
+    // (A direct source covers its own corner of the layer; the original's canvases the whole.)
+    const w = c.naturalWidth || c.width, h = c.naturalHeight || c.height;
+    gl.texSubImage3D(gl.TEXTURE_2D_ARRAY, 0, 0, 0, layer, w, h, 1, gl.RGBA, gl.UNSIGNED_BYTE, c);
     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
   }
 
@@ -205,12 +239,12 @@ export class SpriteAtlas {
  *  the figures and banners of the stacks; `beams`: light columns) packed into instance buffers.
  *  A record whose sprite is still loading is left out until it has loaded (`stale`). */
 export class SpriteLayer {
-  constructor(gl, onload) {
+  constructor(gl, onload, direct = true) {
     this.gl = gl;
     this.atlas = new SpriteAtlas(gl, () => {
       this.stale = true;
       onload();
-    });
+    }, direct);
     this.records = { static: [], units: [], beams: [] };
     this.bufs = {};
     this.stale = false;
@@ -234,6 +268,12 @@ export class SpriteLayer {
   build(name) {
     const gl = this.gl;
     const list = this.records[name];
+    if (this.atlas.direct) {
+      // The array sized once for every sprite these records ask for.
+      const fresh = new Set();
+      for (const r of list) if (r.key && !this.atlas.entries.has(r.key)) fresh.add(r.key);
+      if (fresh.size) this.atlas.reserve(this.atlas.entries.size + fresh.size);
+    }
     const arr = new Float32Array(list.length * FLOATS);
     let n = 0;
     for (const r of list) {
