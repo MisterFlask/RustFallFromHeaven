@@ -6,9 +6,10 @@
 // every screen works without it. While the isometric map's interface is on (isoui.js), the same
 // helpers answer in its look: plain text (in Herald, by CSS), the M7 interface icons, its bars.
 //
-// The map renderer is chosen here too: the isometric 2.5D renderer (`iso.js`, docs/ISO.md) by
-// default, unless the page was opened with `?renderer=art` / `?renderer=flat` or the Tools →
-// Options choice says otherwise ("art" is the 2D pixel art, "flat" the P5 debug renderer).
+// The map renderer is chosen here too: the HD-2D map (`r3d/hd2d/`, docs/HD2D.md) by default, the
+// isometric 2.5D one (`iso.js`, docs/ISO.md) where it cannot run (main.js useHd2d), unless the page
+// was opened with `?renderer=iso` / `?renderer=art` / `?renderer=flat` or the Tools → Options
+// choice says otherwise ("art" is the 2D pixel art, "flat" the sprite-less debug renderer).
 
 import { loadArt } from "../art/art.js";
 import * as UI from "../art/ui/ui.js";
@@ -26,21 +27,20 @@ export const look = { art: null, error: null, u: 2, dpr: 1, ms: 0, data: null, b
 
 const RENDERER_KEY = "ffh.renderer";
 
-/** The experimental 3D renderer (docs/R3D.md): offered in Tools -> Options and by `?renderer=3d`
- *  while this is true. Off, the client never loads its module. */
-export const EXPERIMENTAL_3D = true;
-
-/** The experimental HD-2D renderer (docs/HD2D.md: the isometric sprites standing in the 3D
- *  renderer's lit world): offered in Tools -> Options and by `?renderer=hd2d` while this is true.
- *  Off, the client never loads its module. */
-export const EXPERIMENTAL_HD2D = true;
-
+/** The map renderers a player can choose. The 3D renderer's own mode, everything modelled
+ *  (docs/R3D.md), is retired: the HD-2D map is built on it, and an old `?renderer=3d` or remembered
+ *  "3d" asks for the HD-2D map. */
 function known(r) {
-  return r === "flat" || r === "art" || r === "iso" || (EXPERIMENTAL_3D && r === "3d") || (EXPERIMENTAL_HD2D && r === "hd2d");
+  return r === "hd2d" || r === "iso" || r === "art" || r === "flat";
 }
 
-/** The map renderer asked for: an explicit `?renderer=art` / `?renderer=flat` / `?renderer=iso`,
- *  else the remembered Tools → Options choice, else "iso" (the isometric 2.5D map, docs/ISO.md). */
+function chosen(r) {
+  return r === "3d" ? "hd2d" : known(r) ? r : null;
+}
+
+/** The map renderer asked for: an explicit `?renderer=hd2d` / `iso` / `art` / `flat`, else the
+ *  remembered Tools → Options choice, else "hd2d" (the HD-2D map, docs/HD2D.md; main.js falls back
+ *  to the isometric 2.5D map where it cannot run). */
 export function rendererChoice() {
   let q = null;
   try {
@@ -48,14 +48,14 @@ export function rendererChoice() {
   } catch {
     q = null;
   }
-  if (known(q)) return q;
+  if (chosen(q)) return chosen(q);
   try {
     const v = globalThis.localStorage?.getItem(RENDERER_KEY);
-    if (known(v)) return v;
+    if (chosen(v)) return chosen(v);
   } catch {
     /* no storage */
   }
-  return "iso";
+  return "hd2d";
 }
 
 /** Remembers the renderer (Tools → Options). */

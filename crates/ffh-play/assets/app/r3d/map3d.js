@@ -1,5 +1,6 @@
-// The experimental 3D renderer of the map (docs/R3D.md): a fourth renderer beside flat, art and
-// iso, chosen with `?renderer=3d` or Tools -> Options. Like the isometric one, MapView delegates
+// The 3D renderer of the map (docs/R3D.md), the base of the HD-2D map (hd2d/, docs/HD2D.md, the
+// default renderer). Its own mode, everything modelled, is no longer offered to players: the r3d
+// lab still draws it, to work on the layers they share. Like the isometric one, MapView delegates
 // draw(), screenToMap(), screenOf() and the drag-pan to it when `mapView.r3d` is set and keeps its
 // own camera (cam.cx, cam.cy: the map point looked at; cam.ts: pixels per plot there), overlays
 // and input; the game state comes from the same `S.map` / `S.view` the others draw.
@@ -81,7 +82,7 @@ export class Map3D {
     const { name: glName, software } = rendererInfo(gl);
     if (software && !force3d()) {
       this.canvas.remove();
-      const err = new Error(`WebGL2 is rendering in software (${glName || "unknown renderer"}); the 3D map needs GPU acceleration.`);
+      const err = new Error(`WebGL2 is rendering in software (${glName || "unknown renderer"}); the HD-2D map needs GPU acceleration.`);
       err.code = "software-webgl";
       throw err;
     }
@@ -121,8 +122,8 @@ export class Map3D {
     this.raf = requestAnimationFrame(() => this.loop());
     this.panel = null;
     this.addPanelButton();
-    // A lost context (driver reset, too many contexts) drops back to the 2D renderer: main.js
-    // listens for "ffh:r3d-lost" (the stored choice stays 3D, so a reload tries again).
+    // A lost context (driver reset, too many contexts) drops back to the isometric map: main.js
+    // listens for "ffh:r3d-lost" (the stored choice stays the HD-2D map, so a reload tries again).
     this.canvas.addEventListener("webglcontextlost", (ev) => {
       // A disposed renderer loses its context on purpose (dispose): when the other mode of this
       // renderer replaces it, that must not take the new one down.
@@ -432,10 +433,13 @@ export class Map3D {
     const [o, d] = this.ray(cam, sx, sy);
     if (d[1] >= 0) return null;
     const ground = (p) => Math.max(SEA, world.heightAt(p[0], -p[2]));
-    // From the height of the tallest peaks down to the sea floor.
-    let t = (1.7 - o[1]) / d[1];
+    // From over the tallest peaks down to the sea floor. (Summits reach past 1.7, which the march
+    // once started at: a click high on a tall peak went through it.)
+    let t = (2.4 - o[1]) / d[1];
     const tEnd = (-0.5 - o[1]) / d[1];
-    const step = 0.04;
+    // Fine enough not to step over a sharp summit's tip, which a ray aimed at it crosses briefly
+    // (0.04 did, under the HD-2D map's low camera; a pick costs about 0.1 ms).
+    const step = 0.02;
     let prev = t;
     for (; t < tEnd; t += step) {
       const p = [o[0] + d[0] * t, o[1] + d[1] * t, o[2] + d[2] * t];

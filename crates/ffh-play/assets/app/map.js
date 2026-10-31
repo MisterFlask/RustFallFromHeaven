@@ -115,8 +115,9 @@ export class MapView {
     this.art = null;
     /** The isometric renderer (`IsoMap`, `?renderer=iso`) when it draws the map, else null. */
     this.iso = null;
-    /** The experimental 3D renderer (`r3d/map3d.js`, `?renderer=3d`, docs/R3D.md) when it draws
-     *  the map, else null. Loaded on demand: the page never fetches it otherwise. */
+    /** The 3D renderer (`r3d/map3d.js`, docs/R3D.md) in its HD-2D mode (`r3d/hd2d/`, the default
+     *  map, docs/HD2D.md) when it draws the map, else null. Loaded on demand: the page never
+     *  fetches it otherwise. (Its own mode, everything modelled, is the r3d lab's only.) */
     this.r3d = null;
     /** The error from the last failed `useR3d(true)`, so the caller can report why (e.g. a
      *  software WebGL2 renderer: `code === "software-webgl"`; shaders that did not compile in time:
@@ -128,7 +129,7 @@ export class MapView {
     /** Resolves once a map has been drawn (`request`): a 3D map's start waits for it, briefly,
      *  before its constructor's work (`useR3d`). */
     this.mapDrawn = new Promise((r) => (this.drewMap = r));
-    /** The renderer last asked for (`ask`: "flat", "art", "iso", "3d" or "hd2d"; null before any)
+    /** The renderer last asked for (`ask`: "flat", "art", "iso" or "hd2d"; null before any)
      *  and a count of the asks: a 3D renderer whose start ends after an ask for another renderer
      *  gives way to it (`useR3d`). */
     this.want = { mode: null, gen: 0 };
@@ -771,12 +772,13 @@ export class MapView {
     this.want = { mode, gen: this.want.gen + 1 };
   }
 
-  /** Switches to the experimental 3D renderer (`?renderer=3d`, docs/R3D.md) or back. Its module
-   *  is imported here, on first use; resolves to false when it cannot run (no WebGL2, or its
-   *  shaders do not compile in time), leaving no renderer but the flat one (the caller picks).
+  /** Switches to the 3D renderer in `mode` ("hd2d", the HD-2D map, docs/HD2D.md; the r3d lab also
+   *  draws its own mode, "3d", docs/R3D.md) or back. Its module is imported here, on first use;
+   *  resolves to false when it cannot run (no WebGL2, a software one, or its shaders do not
+   *  compile in time), leaving no renderer but the flat one (the caller picks: the isometric map).
    *  Resolves to true, the renderer disposed, when another renderer was asked for (`ask`) during
    *  its start: the one drawing then is the player's choice. */
-  async useR3d(on, mode = "3d") {
+  async useR3d(on, mode = "hd2d") {
     const asked = this.want.gen;
     const passed = () => this.want.gen !== asked && this.want.mode !== mode;
     // A 3D renderer still compiling its shaders is done (or has failed) first.
@@ -841,7 +843,9 @@ export class MapView {
           this.art = null;
         }
       } catch (e) {
-        console.error("3d map:", e);
+        // (A refusal with a reason -- a software WebGL2, shaders too slow -- is the HD-2D map's
+        // fallback to the isometric one at work, not a fault.)
+        (e.code ? console.warn : console.error)("3d map:", e);
         r3d?.dispose();
         this.r3dError = e;
         return false;

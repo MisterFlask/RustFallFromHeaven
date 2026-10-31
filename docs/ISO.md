@@ -1,8 +1,8 @@
 # ISO.md: the isometric 2.5D map ("M7", HD pixel art)
 
-**Status: playable; the default map renderer.** One of the browser client's map renderers
-(`crates/ffh-play`), beside the 2D pixel art (docs/ART.md), the flat debug renderer and the experimental 3D one
-(docs/R3D.md). It draws the game as a bright, saturated "HD pixel art" diorama on a 2:1 isometric
+**Status: playable; the HD-2D map's fallback.** One of the browser client's map renderers
+(`crates/ffh-play`): the default HD-2D map (docs/HD2D.md) falls back to it where it cannot run, beside
+the 2D pixel art (docs/ART.md) and the flat, sprite-less debug renderer. It draws the game as a bright, saturated "HD pixel art" diorama on a 2:1 isometric
 board, close to the owner's reference screenshot (`tools/m7/ref/reference_full.png`). Units, cities,
 features and terrain are sprites drawn by an image model (OpenAI `gpt-image-2.5-sunburst`) and
 brought to one contract by code: the **M7 art package** in `tools/m7/`. Everything around the
@@ -24,12 +24,12 @@ sprite · 5 drawn by the engine · 6 adding art · 7 the sprites so far · 8 gap
 
 ```
 cargo build --release
-./target/release/ffh-play serve            # open http://127.0.0.1:8642/ (iso is the default)
+./target/release/ffh-play serve            # open http://127.0.0.1:8642/?renderer=iso
 ```
 
-It is the default renderer, so the plain URL shows it; `?renderer=art` switches back to the 2D
-pixel art for one page, and **Tools → Options → "Isometric 2.5D"** / "2D pixel art" is remembered by
-the browser.
+The plain URL shows the HD-2D map, and this one where that cannot run (no WebGL2, a software one,
+shaders too slow, a lost context); `?renderer=iso` shows it for one page, and **Tools → Options →
+"Isometric 2.5D"** is remembered by the browser.
 Zoom (`+` `-`, `Q` `E`, the wheel): 48, 64, 96 (the default), 128, 192 (the art's own size, 1x) and 384 CSS px
 a tile. `--assets crates/ffh-play/assets` serves the client and its sprites from disk, so a new
 export (section 6) shows on reload without a rebuild.

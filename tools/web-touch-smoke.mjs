@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // The phone smoke test of the browser client (docs/HUMAN.md, "Phones and touch screens"): starts
 // `ffh-play serve` with a new game and plays it on an emulated phone (touch only, a coarse
-// pointer, device-pixel ratio 2) with the isometric map and its interface (the default, and the
-// one look phones must support), upright (390x844) and on its side (844x390): the page fits the
+// pointer, device-pixel ratio 2) with the isometric map and its interface (the HD-2D map's
+// fallback, and the one look phones must support), upright (390x844) and on its side (844x390): the page fits the
 // screen (no sideways scroll, End turn and the map in view, the bottom panel folded), the menu
 // button opens the screens and a tap on the map only closes it, a tap selects a unit, a first tap
 // on a plot previews the move (the tooltip says "tap again") and a second tap moves there, a
@@ -82,7 +82,9 @@ async function run(pw, bin, phone) {
       if (!ok) throw new Error(what);
     };
 
-    await page.goto(server.url);
+    // (The isometric map by name: the default HD-2D map falls back to it here anyway, its WebGL2
+    // being software, but would leave its note over the screen being tapped.)
+    await page.goto(`${server.url}/?renderer=iso`);
     await wait(() => window.ffh?.ready && window.ffh.S.view && window.ffh.mapView.iso, null, "the game and the isometric map", 30000);
     await page.waitForTimeout(800);
 

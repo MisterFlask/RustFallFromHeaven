@@ -11,7 +11,7 @@ import { openModal, closeTag } from "./modals.js";
 import { run, sending } from "./commands.js";
 import { rawRequest, loadScreen } from "./screens.js";
 import { plotIndex } from "./tiles.js";
-import { look, setRendererChoice, EXPERIMENTAL_3D, EXPERIMENTAL_HD2D } from "./look.js";
+import { look, setRendererChoice } from "./look.js";
 
 /** The tools menu. */
 export function openTools() {
@@ -487,16 +487,16 @@ export function openOptions() {
       ` ${label}`,
     );
   });
-  // The map's renderer (not a game option: remembered by this browser). The flat one is the P5
-  // renderer, kept for debugging; `?renderer=flat` in the address does the same for one page.
+  // The map's renderer (not a game option: remembered by this browser): the HD-2D map, the
+  // isometric one (its fallback), the 2D pixel art, and the flat P5 renderer, sprite-less, kept for
+  // debugging; `?renderer=flat` in the address does the same for one page.
   const current = globalThis.ffh?.mapView?.renderer?.() ?? "art";
   const artFailed = look.art ? "" : `The art did not load${look.error ? `: ${look.error.message ?? look.error}` : ""}`;
   const renderer = [
+    ["hd2d", "HD-2D", "Pixel-art sprites standing in a lit 3D world (docs/HD2D.md); needs WebGL2 on a GPU"],
+    ["iso", "Isometric 2.5D", "The isometric map in HD pixel art (docs/ISO.md), where the HD-2D map cannot run"],
     ["art", "Pixel art (2D)", artFailed || "The 2D pixel-art map"],
-    ["iso", "Isometric 2.5D", "The isometric map in HD pixel art (docs/ISO.md)"],
-    ["flat", "Flat (debug)", "The flat debugging renderer (colours, glyphs, labels)"],
-    ...(EXPERIMENTAL_3D ? [["3d", "3D painterly (experimental)", "The experimental 3D renderer (docs/R3D.md); needs WebGL2"]] : []),
-    ...(EXPERIMENTAL_HD2D ? [["hd2d", "HD-2D (experimental)", "Pixel-art sprites standing in a lit 3D world (docs/HD2D.md); needs WebGL2"]] : []),
+    ["flat", "Flat (debug)", "The flat debugging renderer, no sprites (colours, glyphs, labels)"],
   ].map(([val, label, title]) =>
     h(
       "label.toggle",

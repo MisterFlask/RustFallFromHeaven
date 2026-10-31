@@ -1,8 +1,12 @@
-# R3D: the experimental 3D renderer of the map
+# R3D: the 3D renderer of the map, the HD-2D map's base
 
-**Status: experimental, off by default.** A fourth map renderer of the browser client
-(`crates/ffh-play`), beside the flat debug renderer, the 2D pixel art (docs/ART.md) and the
-isometric 2.5D renderer (docs/ISO.md). It draws the same game state as a fully
+**Status: the base of the HD-2D map; its own mode retired** (the owner's decision, 2026-10-31). The
+HD-2D map (docs/HD2D.md), the browser client's default renderer, is this renderer with the
+isometric sprites standing in its world; the isometric 2.5D map (docs/ISO.md) is its fallback, and
+the 2D pixel art (docs/ART.md) and the flat, sprite-less debug renderer remain. The mode described
+here, everything modelled, is no longer offered to players (`?renderer=3d` and a remembered "3d"
+open the HD-2D map); the r3d lab still draws it, to work on the ground, water, light and pipeline
+the two share. It draws the same game state as a fully
 three-dimensional, painterly dark-fantasy world: real terrain relief, forests of procedurally modelled
 trees, settlements with architectural families, 3D figures for units and monsters, water, magic and
 corruption, through a stylised lighting and post-processing pipeline. It is a consumer of the game
@@ -19,11 +23,11 @@ and next steps · 15 provenance · 16 the look target.
 
 ```
 cargo build --release
-./target/release/ffh-play serve            # open http://127.0.0.1:8642/?renderer=3d
+node tools/r3d-lab.mjs --serve             # open /lab/lab.html?scene=showcase
 ```
 
-* `?renderer=3d` for one page, or **Tools → Options → "3D painterly (experimental)"** (remembered by
-  the browser, like the other renderer choices). Choosing another renderer there switches back.
+* The game draws this renderer in its HD-2D mode only (the plain URL, docs/HD2D.md §1). Its own
+  mode is drawn by the r3d lab (§10): `scene=` without `renderer=hd2d`.
 * The **3D** button at the map's top-left opens the tuning panel: the *painterly* and *plain* presets,
   the light (afternoon or day: the map is always in daylight) and a switch or slider for every stage
   of the pipeline (§12), with
@@ -32,14 +36,12 @@ cargo build --release
 * It needs WebGL2 **with GPU acceleration**. Without a WebGL2 context, or when the context is a
   software rasteriser (SwiftShader, llvmpipe, Microsoft Basic Render, a software ANGLE adapter —
   where the painterly pipeline would run at seconds per frame and look like a frozen tab, §14), the
-  client says so and keeps the 2D map. `map3d.js` reads the renderer through
+  client says so and draws the isometric map. `map3d.js` reads the renderer through
   `WEBGL_debug_renderer_info` and refuses a software one; `?force3d=1` overrides the guard (used by
-  the `tools/web-smoke.mjs` 3D step and by the `r3d-lab`/`r3d-compare`/`r3d-perf` tools, which render
-  under software GL on purpose). When the renderer string is hidden by the browser the guard cannot
-  tell and does not block.
-* The feature flag is `EXPERIMENTAL_3D` in `assets/app/look.js`: false hides the option and ignores
-  `?renderer=3d`; the module is then never loaded (it is loaded on demand even when the flag is on).
-* The **HD-2D mode** (docs/HD2D.md, `?renderer=hd2d`) is this renderer with the isometric map's
+  the `tools/web-smoke.mjs` HD-2D step and by the `r3d-lab`/`r3d-compare`/`r3d-perf` tools, which
+  render under software GL on purpose). When the renderer string is hidden by the browser the guard
+  cannot tell and does not block.
+* The **HD-2D mode** (docs/HD2D.md, the default map) is this renderer with the isometric map's
   sprites standing in its world: a subclass of `Map3D` (`r3d/hd2d/index.js`) that sets the mode
   hooks `map3d.js` keeps at their defaults (`loadCfg`, `light`, `dressEnv`, `dressUnitsOf`,
   `setUnits`, `ringOf`, `pitchAt`, `beforeFrame`, ...) and an extension of the pipeline
@@ -534,10 +536,12 @@ marks the edge of the unexplored as a coast, and remembered water calms (§5.2).
   `node tools/r3d-lab.mjs --out a.png --query "scene=showcase&ts=96"`; `--shots FILE` for many;
   `--serve` to open it in a browser; `--stability` for the panning test (§11);
   `r3d-lab/compile.html` for each program's compile times (§11.1).
-* **Browser smoke test** (`tools/web-smoke.mjs`, run by `tools/web-check.sh --browser`): a
-  `?renderer=3d` step checks the frame is drawn and not blank, that picking through the relief finds
-  every in-view plot under its own screen point, click-select, hover, the zoom steps, pan, the
-  political layer and switching back to the art.
+* **Browser smoke test** (`tools/web-smoke.mjs`, run by `tools/web-check.sh --browser`): the
+  `?renderer=hd2d` step checks the frame is drawn and not blank, that picking through the relief
+  finds every in-view plot under its own screen point (or, where nearer ground such as a peak
+  hides that point under the map's low camera, the ground that hides it), click-select, hover, the zoom steps, pan, the
+  political layer, switching back to the art, and a lost context's fallback to the isometric map;
+  the plain URL's step, the default's start (or, under software GL, its fallback).
 * **Web test** (`tests/web.rs`): every module is embedded and reached (the on-demand import counts).
 * **Node tests** (`assets/test/r3d.test.mjs`, run by `tools/web-check.sh`): the ground is seamless
   across a wrapping map's seam and a pure function of the map; unrevealed plots shape nothing
@@ -895,11 +899,11 @@ in the panel.
 
 ## 13. Removing it
 
-Delete `assets/app/r3d/`, `crates/ffh-play/r3d-lab/`, `tools/r3d-*.mjs`, this file; remove the r3d
-lines of `ASSETS` in `src/transport/http.rs`, `useR3d` and the `r3d` delegation lines in `map.js`,
-`use3d`/the `"3d"` branch in `main.js`, `EXPERIMENTAL_3D` in `look.js` and `tools.js`, the
-`renderer3d` step of `tools/web-smoke.mjs`, `stage corrupt` in `src/stage.rs`/`src/main.rs`, and the
-`await import(` line of `tests/web.rs`'s scanner. Nothing else depends on it.
+The HD-2D map, the default renderer, is built on it: removing it removes that map too (docs/HD2D.md
+§12 first). Then delete `assets/app/r3d/`, `crates/ffh-play/r3d-lab/`, `tools/r3d-*.mjs`, this
+file; remove the r3d lines of `ASSETS` in `src/transport/http.rs`, `useR3d` and the `r3d`
+delegation lines in `map.js`, `stage corrupt` in `src/stage.rs`/`src/main.rs`, and the
+`await import(` line of `tests/web.rs`'s scanner.
 
 ## 14. Limitations and next steps
 

@@ -2,9 +2,9 @@
 // renderer's lit world, as in Octopath Traveler or Triangle Strategy -- a perspective camera tilted
 // toward the horizon, figures, towns and props as flat cards facing it, the light painted in the
 // sprites matched by a sun from the upper left, light shafts and glow, a mood for each region,
-// glowing borders, and a tilt-shift blur. Chosen with `?renderer=hd2d` or Tools -> Options while
-// look.js EXPERIMENTAL_HD2D is on; this module is loaded on demand (map.js useR3d), so the 3D
-// renderer never loads it.
+// glowing borders, and a tilt-shift blur. The default map (look.js rendererChoice; the isometric
+// map where it cannot run); this module is loaded on demand (map.js useR3d), so the 3D renderer
+// alone (the r3d lab's own mode) never loads it.
 //
 // It is the 3D renderer (../map3d.js Map3D) with its mode hooks set: its own look (hd2d/config.js),
 // the cards' dressing (hd2d/dress.js) in place of the modelled figures, cities, buildings and

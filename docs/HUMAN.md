@@ -104,8 +104,9 @@ part of the map you have not looked at yet shows flat colours for a moment. **Th
 renderer** of P5 (colours, glyphs and labels: lettered dots for resources, boxes for
 improvements, units and cities) is kept for debugging: open the page as
 `http://127.0.0.1:8642/?renderer=flat`, or choose it under Tools → Options → "This browser" (which
-also offers the isometric 2.5D map in HD pixel art, docs/ISO.md, and, experimental and off unless chosen, **a fully 3D painterly
-map**: `?renderer=3d`, docs/R3D.md; it needs WebGL2). The choice is remembered by this browser.
+also offers the HD-2D map, the default, docs/HD2D.md, which needs WebGL2 on a GPU; the isometric
+2.5D map in HD pixel art, docs/ISO.md, its fallback where it cannot run; and the 2D pixel art). The
+choice is remembered by this browser.
 
 **Motion.** The interface moves quietly, in keeping with the manuscript look (docs/ART.md 4.5):
 
@@ -168,8 +169,8 @@ the screen's size: up to 760 px wide, or up to 520 px high). In both looks the m
 ☰ button at the top left, which drops it down as a sheet of labelled buttons (a pick, or a touch
 anywhere else, folds it again; a touch on the map that folds it does nothing else), the turn
 report starts folded (a dot on "Turn report" says a new one waits), dialogs take the whole screen,
-and the city screen is the dialog with its plot grid. The isometric map (the default) is the look
-phones must support (the 3D map is not meant for them); there the
+and the city screen is the dialog with its plot grid. The isometric map (the HD-2D map's fallback) is
+the look phones must support; there the
 top bar is one row (☰, the turn, the empire's numbers scrolling sideways), the advisors join the
 menu's sheet instead of the rail, a bottom bar holds the layers and End turn, the selection's card
 sits on it (upright; a column at the right on its side) and folds with ▾, and the minimap is

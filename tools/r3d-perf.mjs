@@ -1,16 +1,17 @@
 #!/usr/bin/env node
-// Performance of the experimental 3D renderer (docs/R3D.md "Performance") on a real game: starts
-// `ffh-play serve --load SAVE` (debug reveal on, so the whole map is drawn), opens the client with
-// `?renderer=3d` in headless Chromium and measures, for each zoom and pipeline configuration:
+// Performance of the HD-2D map (docs/HD2D.md, on the 3D renderer: docs/R3D.md "Performance") on a
+// real game: starts `ffh-play serve --load SAVE` (debug reveal on, so the whole map is drawn), opens
+// the client with `?renderer=hd2d` in headless Chromium and measures, for each zoom and pipeline
+// configuration:
 // the CPU cost of bringing the scene up to date (world, textures, dressing, instance upload,
 // paint layers), the GPU time of each pass (EXT_disjoint_timer_query_webgl2), the wall time of a
 // complete frame, and what was drawn (draw calls, instances, triangles).
 //
 //   node tools/r3d-perf.mjs --save SAVE [--x X --y Y] [--w 1280 --h 800] [--json OUT] [--runs 3]
-//        [--configs painterly,plain] [--zooms 40,96] [--gpu] [--renderer hd2d]
+//        [--configs hd2d,plain] [--zooms 40,96] [--gpu]
 //
-// --renderer hd2d measures the HD-2D mode (docs/HD2D.md) instead, with its own configurations
-// (hd2d, its passes off one at a time, all of them off, plain).
+// The configurations: hd2d, its passes off one at a time, all of them off, plain. (The 3D
+// renderer's own mode, everything modelled, is retired from the client: the r3d lab draws it.)
 //
 // By default headless Chromium renders WebGL with SwiftShader (software): absolute times are those of
 // a CPU rasteriser, far slower than any GPU; the relative costs of the passes are what carries over.
@@ -22,8 +23,7 @@ import path from "node:path";
 import { createRequire } from "node:module";
 import { ROOT, parseArgs, findBin, tempDir, startServer, chromiumLaunch, webglRenderer } from "./web-lib.mjs";
 
-const args = parseArgs(process.argv.slice(2), { gpu: "flag", save: "v", x: "v", y: "v", w: "v", h: "v", json: "v", bin: "v", runs: "v", configs: "v", zooms: "v", renderer: "v" });
-const RENDERER = args.renderer === "hd2d" ? "hd2d" : "3d";
+const args = parseArgs(process.argv.slice(2), { gpu: "flag", save: "v", x: "v", y: "v", w: "v", h: "v", json: "v", bin: "v", runs: "v", configs: "v", zooms: "v" });
 if (!args.save) {
   console.error("r3d-perf: --save SAVE is required");
   process.exit(2);
@@ -52,28 +52,18 @@ const browser = await pw.chromium.launch(chromiumLaunch(!!args.gpu));
   await p.close();
 }
 const W = Number(args.w ?? 1280), H = Number(args.h ?? 800);
-const CONFIGS = RENDERER === "hd2d"
-  ? [
-      ["hd2d", {}],
-      ["no-rays", { rays: 0 }],
-      ["no-tilt", { tiltShift: 0 }],
-      ["no-bloom", { bloom: 0 }],
-      ["no-mood", { mood: 0 }],
-      ["no-beams", { beams: 0 }],
-      ["no-contact", { contact: 0 }],
-      ["no-border-glow", { borderGlow: 0 }],
-      ["no-hd2d-post", { rays: 0, tiltShift: 0, bloom: 0, mood: 0 }],
-      ["plain", "plain"],
-    ]
-  : [
-      ["painterly", {}],
-      ["no-kuwahara", { kuwahara: 0 }],
-      ["no-ssao", { ssao: 0 }],
-      ["no-dabs", { dabs: 0 }],
-      ["no-shadows", { shadows: false }],
-      ["no-outline+grade", { outline: 0, grade: 0 }],
-      ["plain", "plain"],
-    ];
+const CONFIGS = [
+  ["hd2d", {}],
+  ["no-rays", { rays: 0 }],
+  ["no-tilt", { tiltShift: 0 }],
+  ["no-bloom", { bloom: 0 }],
+  ["no-mood", { mood: 0 }],
+  ["no-beams", { beams: 0 }],
+  ["no-contact", { contact: 0 }],
+  ["no-border-glow", { borderGlow: 0 }],
+  ["no-hd2d-post", { rays: 0, tiltShift: 0, bloom: 0, mood: 0 }],
+  ["plain", "plain"],
+];
 const ZOOMS = args.zooms ? args.zooms.split(",").map(Number) : [40, 96, 168];
 const results = [];
 for (const [name, cfg] of CONFIGS.filter(([n]) => !args.configs || args.configs.split(",").includes(n))) {
@@ -82,7 +72,7 @@ for (const [name, cfg] of CONFIGS.filter(([n]) => !args.configs || args.configs.
   page.on("pageerror", (e) => errors.push(e.message));
   const q = cfg === "plain" ? "plain" : JSON.stringify({ animate: false, ...cfg });
   // force3d=1 bypasses the GPU guard (docs/R3D.md §1): this tool runs under SwiftShader on purpose.
-  await page.goto(`${server.url}/?renderer=${RENDERER}&r3d=${encodeURIComponent(q === "plain" ? "plain" : q)}&force3d=1`);
+  await page.goto(`${server.url}/?renderer=hd2d&r3d=${encodeURIComponent(q === "plain" ? "plain" : q)}&force3d=1`);
   await page.waitForFunction(() => window.ffh?.ready && window.ffh.S.map && window.ffh.mapView.r3d?.cam, null, { timeout: 300000 });
   for (const ts of ZOOMS) {
     const r = await page.evaluate(

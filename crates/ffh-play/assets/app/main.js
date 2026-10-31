@@ -729,21 +729,22 @@ async function boot() {
   units.initUnits(mapView, $("#unit-panel"));
   renderTop();
   renderBottom();
-  // The isometric renderer (docs/ISO.md): an opt-in map renderer with the M7 "HD pixel" sprites.
+  // The isometric renderer (docs/ISO.md), the M7 "HD pixel" sprites on a 2:1 board: the HD-2D
+  // map's fallback, or chosen with `?renderer=iso` or the remembered Tools → Options choice.
   // It owns its own projection, so the art/flat switches leave it be.
-  // Chosen with `?renderer=iso` or the remembered Tools → Options choice.
   if (rendererChoice() === "iso") mapView.useIso(true);
   // (Start-up prototype, fastStart: a page whose renderer is the HD-2D map boots in that map's
   // interface, the isometric skin, not in the 2D art's that it dropped when the HD-2D map was ready
   // -- after building it for a second or two, in the middle of the HD-2D map's start.)
   hd2dPending = rendererChoice() === "hd2d" && fastStart();
-  // The experimental 3D renderer (docs/R3D.md) and the HD-2D mode built on it (docs/HD2D.md):
-  // loaded on demand; without WebGL2 they fall back. (fastStart: its import is asked for before
-  // the interface is dressed, a few hundred ms of script.)
-  const want3d = rendererChoice() === "3d" || rendererChoice() === "hd2d";
-  if (want3d && fastStart()) use3d(rendererChoice());
+  // The HD-2D map (docs/HD2D.md), the default, built on the 3D renderer (docs/R3D.md): loaded on
+  // demand; where it cannot run (no WebGL2, a software one, shaders too slow) the isometric map.
+  // (fastStart: its import is asked for before the interface is dressed, a few hundred ms of
+  // script.)
+  const wantHd2d = rendererChoice() === "hd2d";
+  if (wantHd2d && fastStart()) useHd2d();
   syncSkin();
-  if (want3d && !fastStart()) use3d(rendererChoice());
+  if (wantHd2d && !fastStart()) useHd2d();
   // The art loads beside the data; the page works meanwhile (and without it). lookLoaded() builds
   // the art worker, which bakes in the engine's type ordering (from /api/data) once, so it must run
   // after setLookData(): otherwise, if the static art bundle wins the race against the server-
@@ -774,14 +775,14 @@ function lookLoaded() {
   units.renderPanel();
 }
 
-/** Switches the map's renderer ("art", "iso" or "flat"; Tools → Options). The isometric renderer
- *  owns the map on its own; leaving it turns it off and falls back to art or flat. */
+/** Switches the map's renderer ("hd2d", "iso", "art" or "flat"; Tools → Options). The isometric
+ *  renderer owns the map on its own; leaving it turns it off and falls back to art or flat. */
 function setRenderer(r) {
   // (A 3D map still starting gives way to it, MapView.useR3d.)
   mapView.ask(r);
   if (r !== "hd2d") hd2dPending = false;
-  if (r === "3d" || r === "hd2d") {
-    use3d(r);
+  if (r === "hd2d") {
+    useHd2d();
     return;
   }
   if (mapView.r3d) mapView.useR3d(false);
@@ -818,11 +819,11 @@ function syncSkin() {
   renderCityPanel();
 }
 
-/** Turns the 3D renderer on; when it cannot run, says so and draws with the default renderer (the
- *  isometric map, `rendererChoice`). Not the art: at boot this runs before the art has loaded, and
- *  `lookLoaded` switches to the art only when it was the choice, so the map would stay flat. The
- *  remembered choice stays "3d": the next page tries again. `mode` "hd2d" is the HD-2D mode. */
-async function use3d(mode = "3d") {
+/** Turns the HD-2D map on; when it cannot run, says so and draws with its fallback, the isometric
+ *  map. Not the art: at boot this runs before the art has loaded, and `lookLoaded` switches to the
+ *  art only when it was the choice, so the map would stay flat. The remembered choice stays
+ *  "hd2d": the next page tries again. */
+async function useHd2d() {
   // A slow start is the shaders compiling (seconds on Windows' default Direct3D backend): say so,
   // at once when the renderer says it is about to compile there (r3d/map3d.js ready: the browser
   // draws nothing while it does, so a message due later would only show after).
@@ -832,34 +833,35 @@ async function use3d(mode = "3d") {
     clearTimeout(slow);
     // (fastStart: the message stays until the map is ready -- on Direct3D the screen freezes
     // through each program's compile, and a 6 s message was gone after the first.)
-    if (!said) note = toast("Preparing the 3D map (compiling its shaders)…", "info", fastStart() ? 120000 : 6000);
+    if (!said) note = toast("Preparing the HD-2D map (compiling its shaders)…", "info", fastStart() ? 120000 : 6000);
     said = true;
   };
   const slow = setTimeout(say, 1500);
   window.addEventListener("ffh:r3d-compiling", say);
-  const ok = await mapView.useR3d(true, mode);
+  const ok = await mapView.useR3d(true, "hd2d");
   hd2dPending = false;
   note?.click();
   clearTimeout(slow);
   window.removeEventListener("ffh:r3d-compiling", say);
   syncSkin();
   if (ok) return;
+  // The isometric map is the HD-2D map's fallback: a note, not an error.
   if (mapView.r3dError?.code === "software-webgl") {
-    toast(`${mapView.r3dError.message} Enable hardware acceleration in your browser (or add ?force3d=1 to try anyway); using the isometric map.`, "error", 15000);
+    toast(`${mapView.r3dError.message} Enable hardware acceleration in your browser (or add ?force3d=1 to try anyway); using the isometric map.`, "info", 15000);
   } else if (mapView.r3dError?.code === "slow-shaders") {
-    toast(`${mapView.r3dError.message} Your browser's graphics backend compiles them too slowly; using the isometric map.`, "error", 15000);
+    toast(`${mapView.r3dError.message} Your browser's graphics backend compiles them too slowly; using the isometric map.`, "info", 15000);
   } else {
-    toast("The 3D renderer cannot run in this browser (it needs WebGL2); using the isometric map.", "error");
+    toast("The HD-2D map cannot run in this browser (it needs WebGL2); using the isometric map.", "info", 10000);
   }
   setRenderer("iso");
 }
 
-// The 3D renderer lost its WebGL context (a driver reset): the isometric map (the default, as in
-// use3d) until the page is reloaded.
+// The HD-2D map lost its WebGL context (a driver reset): the isometric map (its fallback, as in
+// useHd2d) until the page is reloaded.
 window.addEventListener("ffh:r3d-lost", () => {
   if (!mapView.r3d) return;
   setRenderer("iso");
-  toast("The 3D renderer lost its graphics context; using the isometric map until the page is reloaded.", "error");
+  toast("The HD-2D map lost its graphics context; using the isometric map until the page is reloaded.", "error");
 });
 
 window.ffh = { S, get mapView() { return mapView; }, units, screens, empire, tools, api, emit, ready: false, tab: currentTab, setLayer, openScreen, look, setRenderer };

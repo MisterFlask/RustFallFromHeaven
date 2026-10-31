@@ -1,8 +1,10 @@
 # HD2D: pixel-art sprites in the 3D renderer's lit world
 
-**Status: experimental, phase 1, off by default.** A fifth map renderer of the browser client
-(`crates/ffh-play`), beside the flat, 2D pixel art (docs/ART.md), isometric (docs/ISO.md) and 3D
-(docs/R3D.md) ones. It draws the game in the manner of Octopath Traveler and Triangle Strategy: the
+**Status: the default map renderer** (the owner's decision, 2026-10-31), with the isometric 2.5D map
+(docs/ISO.md) as its fallback where it cannot run, beside the 2D pixel art (docs/ART.md) and the
+flat, sprite-less debug renderer. It is built on the 3D renderer (docs/R3D.md), whose own mode,
+everything modelled, is retired: no longer offered to players, kept in the r3d lab for the layers
+the two share. It draws the game in the manner of Octopath Traveler and Triangle Strategy: the
 isometric renderer's pixel-art sprites stand as flat cards in the 3D renderer's lit world, seen
 through a perspective camera tilted toward the horizon, with light shafts, glow, a mood for each
 region, glowing borders and a tilt-shift blur. The look target is the owner's reference image,
@@ -23,11 +25,16 @@ Contents: 1 running it · 2 the answer · 3 architecture · 4 what is reused · 
 
 ```
 cargo build --release
-./target/release/ffh-play serve            # open http://127.0.0.1:8642/?renderer=hd2d
+./target/release/ffh-play serve            # open http://127.0.0.1:8642/ (HD-2D is the default)
 ```
 
-* `?renderer=hd2d` for one page, or **Tools → Options → "HD-2D (experimental)"** (remembered by the
-  browser like the other renderer choices). Choosing another renderer there switches back.
+* The plain URL shows it, as does `?renderer=hd2d` (or `?renderer=3d`, the retired mode's address)
+  for one page, or **Tools → Options → "HD-2D"** (remembered by the browser like the other renderer
+  choices). Choosing another renderer there switches away from it.
+* **Its fallback is the isometric map** (main.js `useHd2d`): without WebGL2, with a software one,
+  when its shaders do not compile in time, or when its WebGL context is lost, the client says so in
+  a note and draws the isometric map; the remembered choice stays HD-2D, so the next page tries
+  again.
 * The **HD-2D** button at the map's top-left opens the tuning panel (the 3D renderer's panel with
   the mode's own rows, §11) with the frame time and per-pass GPU times.
 * `?r3d={"tiltShift":0}` (any key of §11) or `?r3d=plain` override the look for one page.
@@ -36,9 +43,8 @@ cargo build --release
   of the scene's programs at its first draw, the browser drawing nothing meanwhile: the lab's HD-2D
   scene starts in about 25 s on an RTX 4060 laptop (38-41 s while each was compiled twice;
   docs/R3D.md §11.1); with `--use-angle=vulkan` the mode starts in about a second (§8).
-* The feature flag is `EXPERIMENTAL_HD2D` in `assets/app/look.js`: false hides the option and
-  ignores `?renderer=hd2d`, and the mode's module (`r3d/hd2d/index.js`) is never loaded. The 3D
-  renderer alone (`?renderer=3d`) never loads it either.
+* The mode's module (`r3d/hd2d/index.js`) is loaded on demand; a page on another renderer never
+  loads it, nor does the 3D renderer alone (the r3d lab's own mode).
 
 ## 2. The answer: the sprites hold up
 
@@ -148,7 +154,7 @@ assets/app/
       art/        the mode's own art: gnd_*.png (ground layers), the prop cards, index.js
                   (written by tools/hd2d/art.py)
 r3d-lab/          scene=hd2d, renderer=hd2d, compile.html (§7)
-tools/            r3d-lab.mjs --capture, r3d-perf.mjs --renderer hd2d, r3d-compare.mjs hd2d shots,
+tools/            r3d-lab.mjs --capture, r3d-perf.mjs, r3d-compare.mjs hd2d shots,
                   hd2d/art.py (the art's post-processing)
 ```
 
@@ -549,9 +555,10 @@ the map (`MapHd2d.setConfig`).
   one's link and first-draw times, drawn into the targets the pipeline draws it into
   (`?only=terrain`). docs/R3D.md §11.1, "Measuring", says how to compare the compile-time switches
   (§11) on Direct3D.
-* `tools/r3d-compare.mjs` also saves `hd2d.png`, `hd2d-close.png`, `hd2d-far.png`;
-  `tools/r3d-perf.mjs --renderer hd2d` measures the mode (configs: hd2d, no-rays, no-tilt, no-bloom,
-  no-mood, no-hd2d-post, plain).
+* `tools/r3d-compare.mjs` saves `hd2d.png`, `hd2d-close.png`, `hd2d-far.png` beside the art and
+  isometric shots; `tools/r3d-perf.mjs` measures the mode (configs: hd2d, no-rays, no-tilt,
+  no-bloom, no-mood, no-hd2d-post, plain). Both drew the 3D renderer's own mode too, until it was
+  retired from the client (it was `--renderer hd2d` then).
 * `--gpu` on Windows: `FFH_CHROMIUM_CHANNEL=chrome` (Playwright's own Chromium may be refused:
   "spawn UNKNOWN") and `FFH_ANGLE=vulkan` (§8); `--gpu` now also passes
   `--force_high_performance_gpu`, without which a laptop's integrated GPU draws.
@@ -805,8 +812,9 @@ takes the same `?r3d=` to compare their compile times (§7).
 Delete `assets/app/r3d/hd2d/` (with its `art/`), `assets/test/hd2d.test.mjs`,
 `r3d-lab/compile.html`, `tools/hd2d/`, this file and `docs/art/hd2d-reference.png`, and the
 `r3d/hd2d/art` folder from `build.rs`; remove the `app/r3d/hd2d/*` lines of `ASSETS` in
-`src/transport/http.rs`, `EXPERIMENTAL_HD2D` and its option in `look.js`/`tools.js`, the `"hd2d"`
-branches in `main.js` and `map.js`, `scene=hd2d`/`renderer=hd2d` in the lab, the `hd2d` shots in
+`src/transport/http.rs`, `"hd2d"` and its option in `look.js`/`tools.js` (with another default
+there), `useHd2d` and the `"hd2d"` branches in `main.js` and `map.js`, `scene=hd2d`/`renderer=hd2d`
+in the lab, the `hd2d` shots in
 `r3d-compare.mjs` and `--renderer` in `r3d-perf.mjs`. The hooks left in the 3D renderer's files are
 its defaults and do no harm.
 

@@ -462,10 +462,13 @@ async function main() {
     await until2("!!window.ffhWeb.build", "web/version.txt", 10000);
 
     await newGame();
-    // The plain URL opens the default renderer, now the isometric 2.5D map (docs/ISO.md, look.js).
+    // The plain URL opens the default renderer, the HD-2D map (docs/HD2D.md, look.js) -- or, where
+    // WebGL2 renders in software (this headless browser), its fallback, the isometric 2.5D map.
     // Switch to the art client in-page (the in-browser engine keeps the game) for the art check.
-    if ((await ev("window.ffh.mapView.renderer()")) !== "iso") throw new Error("the default renderer is not the isometric 2.5D map");
-    steps.push("the default renderer is the isometric 2.5D map");
+    await until2(`!window.ffh.mapView.r3dLoading && ["hd2d", "iso"].includes(window.ffh.mapView.renderer())`, "the default renderer (the HD-2D map or its isometric fallback)", 180000);
+    const [dflt, why] = await ev("[window.ffh.mapView.renderer(), window.ffh.mapView.r3dError?.code ?? null]");
+    if (dflt === "iso" && why !== "software-webgl") throw new Error(`the default HD-2D map fell back to the isometric one (${why ?? "no reason given"})`);
+    steps.push(dflt === "hd2d" ? "the default renderer is the HD-2D map" : "the default renderer is the HD-2D map, here (software WebGL2) its isometric fallback");
     await ev(`window.ffh.setRenderer("art")`);
     await until2(`window.ffh.mapView.renderer() === "art"`, "the art renderer (switched from the default)");
     await artMap();

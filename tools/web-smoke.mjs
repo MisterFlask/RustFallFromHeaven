@@ -16,9 +16,8 @@
 // accepted). The art client: the map drawn with the original pixel art (its worker, the view
 // drawn in full, a frame's time, the zoom steps and the chart, the bitmap type), Tools → Options
 // and `?renderer=flat` for the flat renderer; `?renderer=iso`, the isometric renderer (its sprites,
-// picking a unit by its figure, zoom, layers); `?renderer=3d`, the experimental 3D renderer (picking,
-// selection, zoom, pan, layers); `?renderer=hd2d`, the HD-2D mode built on it (its frame, the cards,
-// switching modes). Phase 7: the automate buttons (`stage automate`: a
+// picking a unit by its figure, zoom, layers); `?renderer=hd2d`, the HD-2D map, the default (its
+// frame, the cards, picking, selection, zoom, pan, layers, a lost context's fallback). Phase 7: the automate buttons (`stage automate`: a
 // worker automated with a click, a scout exploring by its hotkey), this game's armies (`stage
 // armies`: a marching recruit that takes no orders, a city added to an army's requisition on the
 // Armies screen, a requisition order in a city's queue), the secretary general's election
@@ -346,10 +345,13 @@ async function newGame(url, saves) {
   if (games.length !== 1) throw new Error(`a double click on Start made ${games.length} games: ${games}`);
   steps.push(`new game (Start double-clicked: one game): turn ${await S("S.status.turn")}`);
   await shot("first-turn");
-  // The plain URL (fresh, no stored choice) opens the default renderer, now the isometric 2.5D
-  // map (docs/ISO.md, look.js). The checks below drive the art client; switch to it explicitly.
-  if ((await b.eval("window.ffh.mapView.renderer()")) !== "iso") throw new Error("the default renderer is not the isometric 2.5D map");
-  steps.push("the default renderer is the isometric 2.5D map");
+  // The plain URL (fresh, no stored choice) opens the default renderer, the HD-2D map (docs/HD2D.md,
+  // look.js) -- or, where WebGL2 renders in software (here, --disable-gpu), its fallback, the
+  // isometric 2.5D map. The checks below drive the art client; switch to it explicitly.
+  await until2(`!window.ffh.mapView.r3dLoading && ["hd2d", "iso"].includes(window.ffh.mapView.renderer())`, "the default renderer (the HD-2D map or its isometric fallback)", 180000);
+  const [dflt, why] = await b.eval("[window.ffh.mapView.renderer(), window.ffh.mapView.r3dError?.code ?? null]");
+  if (dflt === "iso" && why !== "software-webgl") throw new Error(`the default HD-2D map fell back to the isometric one (${why ?? "no reason given"})`);
+  steps.push(dflt === "hd2d" ? "the default renderer is the HD-2D map" : "the default renderer is the HD-2D map, here (software WebGL2) its isometric fallback");
   await b.goto(`${url}/?renderer=art`);
   await until2("window.ffh && window.ffh.ready", "the client to boot (art)");
 }
@@ -495,101 +497,21 @@ async function rendererIso(url) {
   steps.push(`?renderer=iso: a frame of ${colours} colours, ${clicked ? "a click on a unit's figure selects it, hover, " : ""}zoom ${zooms.join(" ")}, political layer, back to the art`);
 }
 
-/** `?renderer=3d`: the experimental 3D renderer (docs/R3D.md) on the same game: its WebGL frame is
- *  drawn and not blank, picking through the relief finds the plot under every plot's screen
- *  point, a click selects a unit, the hover follows the mouse, the zoom steps and a drag pan, the
- *  political layer, and back to the 2D art. Software rendering is slow, so the frame loop is idle
+/** `?renderer=hd2d`: the HD-2D map (docs/HD2D.md), the default, on the same game: its WebGL frame
+ *  is drawn and not blank, the sprites load and the units stand as cards, picking through the
+ *  relief finds the plot under every plot's screen point, a click selects a unit, the hover follows
+ *  the mouse, the zoom steps and a pan, the political layer, back to the 2D art, and a lost WebGL
+ *  context falls back to the isometric map. Software rendering is slow, so the frame loop is idle
  *  (no animation) and the internal resolution halved. */
-async function renderer3d(url) {
-  const cfg = encodeURIComponent(JSON.stringify({ animate: false, renderScale: 0.5 }));
-  // `--disable-gpu` makes WebGL2 software (SwiftShader), which the renderer now refuses by default
-  // (docs/R3D.md §1); `force3d=1` overrides the guard so the test still exercises 3D.
-  await b.goto(`${url}/?renderer=3d&r3d=${cfg}&force3d=1`);
-  await until2("window.ffh && window.ffh.ready", "the client to boot (3d)");
-  await waitHuman("the game in the 3D renderer");
-  await answerPopups(false);
-  await until2(`window.ffh.mapView.renderer() === "3d" && !!window.ffh.mapView.r3d.cam`, "the 3D renderer's first frame", 180000);
-  const frame = await b.eval(`(() => {
-    const r = window.ffh.mapView.r3d;
-    r.render(1);
-    const gl = r.gl;
-    const w = 48, h = 48, x = (r.canvas.width - w) >> 1, y = (r.canvas.height - h) >> 1;
-    const px = new Uint8Array(w * h * 4);
-    gl.readPixels(x, y, w, h, gl.RGBA, gl.UNSIGNED_BYTE, px);
-    const colours = new Set();
-    for (let i = 0; i < px.length; i += 4) colours.add((px[i] << 16) | (px[i + 1] << 8) | px[i + 2]);
-    return { colours: colours.size, props: r.staticCount, units: r.unitCount };
-  })()`);
-  if (frame.colours < 16) throw new Error(`the 3D frame is nearly blank (${frame.colours} colours mid-view)`);
-  // Picking: the plot under each in-view plot's centre on screen is that plot (the ground's relief
-  // and the camera's perspective do not shift the logical grid).
-  const pick = await b.eval(`(() => {
-    const mv = window.ffh.mapView, r = mv.r3d, S = window.ffh.S;
-    const c = mv.center();
-    let n = 0, bad = [];
-    for (let dy = -3; dy <= 3; dy++) for (let dx = -4; dx <= 4; dx++) {
-      const x = ((c.x + dx) % S.map.w + S.map.w) % S.map.w, y = c.y + dy;
-      if (y < 0 || y >= S.map.h || S.map.vis[y * S.map.w + x] === 0) continue;
-      const p = r.screenOf(x, y);
-      if (p.x < 0 || p.y < 0 || p.x > mv.vw || p.y > mv.vh) continue;
-      const q = r.screenToMap(p.x, p.y);
-      n++;
-      if (!q || q.x !== x || q.y !== y) bad.push([x, y, q && [q.x, q.y]]);
-    }
-    return { n, bad };
-  })()`);
-  if (pick.n < 10 || pick.bad.length) throw new Error(`3D picking: ${pick.bad.length} of ${pick.n} plots picked wrong: ${JSON.stringify(pick.bad.slice(0, 5))}`);
-  // A click on one of our units selects it.
-  const mine = await b.eval(`(() => { const S = window.ffh.S; const u = S.view.units.find((u) => u.owner === S.view.me.player); return u ? { x: u.x, y: u.y } : null; })()`);
-  if (mine) {
-    await b.eval("window.ffh.units.clearSelection && window.ffh.units.clearSelection()");
-    const p = await plotPos(mine.x, mine.y);
-    await b.mouse(p.x, p.y);
-    await until2(`(() => { const s = window.ffh.S.sel; return !!s && s.x === ${mine.x} && s.y === ${mine.y}; })()`, "a click on a unit to select it (3D)");
-    // The hover follows the mouse.
-    await b.move(p.x + 3, p.y + 2);
-    await until2(`(() => { const h = window.ffh.mapView.overlay.hover; return !!h && h.x === ${mine.x} && h.y === ${mine.y}; })()`, "the hover on the unit's plot (3D)");
-  }
-  // The zoom steps (pixels a plot) and back; a drag pans.
-  const zooms = [];
-  for (const k of ["-", "-", "+", "+", "+", "-"]) {
-    await b.key(k);
-    zooms.push(await b.eval("window.ffh.mapView.cam.ts"));
-  }
-  if (JSON.stringify(zooms) !== JSON.stringify([72, 56, 72, 96, 128, 96])) throw new Error(`3D zoom steps: ${zooms}`);
-  const before = await b.eval("[window.ffh.mapView.cam.cx, window.ffh.mapView.cam.cy]");
-  await b.key("ArrowLeft");
-  const after = await b.eval("[window.ffh.mapView.cam.cx, window.ffh.mapView.cam.cy]");
-  if (before[0] === after[0]) throw new Error("the arrow key did not pan the 3D map");
-  await b.eval(`window.ffh.setLayer("political")`);
-  await until2("window.ffh.mapView.r3d.scene.overlayOpts.political === 1", "the political layer in 3D");
-  await b.eval(`window.ffh.setLayer("terrain")`);
-  await b.eval("window.ffh.mapView.r3d.render(1)");
-  await shot("renderer-3d");
-  // Back to the 2D art: the 3D canvas goes.
-  await b.eval(`window.ffh.setRenderer("art")`);
-  await until2(`window.ffh.mapView.renderer() === "art" && !document.querySelector("canvas.map3d")`, "the art renderer after the 3D one");
-  // A lost WebGL context (a driver reset) hands the map to the default renderer, the isometric one;
-  // then back to the art for what follows.
-  await b.eval(`window.ffh.setRenderer("3d")`);
-  await until2(`window.ffh.mapView.renderer() === "3d" && !!window.ffh.mapView.r3d.cam`, "the 3D renderer again", 180000);
-  const canLose = await b.eval(`(() => { const x = window.ffh.mapView.r3d.gl.getExtension("WEBGL_lose_context"); if (x) x.loseContext(); return !!x; })()`);
-  if (canLose) await until2(`window.ffh.mapView.renderer() === "iso" && !document.querySelector("canvas.map3d")`, "the isometric renderer after the 3D context was lost");
-  await b.eval(`window.ffh.setRenderer("art")`);
-  await until2(`window.ffh.mapView.renderer() === "art" && !document.querySelector("canvas.map3d")`, "the art renderer after the 3D one");
-  steps.push(`?renderer=3d: a frame of ${frame.colours} colours mid-view (${frame.props} props, ${frame.units} unit figures), ${pick.n} plots picked right through the relief, click-select, hover, zoom ${zooms.join(" ")}, pan, political layer, back to the art${canLose ? ", a lost WebGL context falls back to the isometric map" : " (no WEBGL_lose_context: context loss not checked)"}`);
-}
-
-/** `?renderer=hd2d`: the HD-2D mode (docs/HD2D.md) on the same game: its frame is drawn and not
- *  blank, the sprites load and the units stand as cards, switching from the 3D renderer to it and
- *  back to the art. As the 3D step, idle and at half resolution (software rendering). */
 async function rendererHd2d(url) {
   const cfg = encodeURIComponent(JSON.stringify({ animate: false, renderScale: 0.5 }));
+  // `--disable-gpu` makes WebGL2 software (SwiftShader), which the renderer refuses by default
+  // (docs/R3D.md §1); `force3d=1` overrides the guard so the test still exercises the HD-2D map.
   await b.goto(`${url}/?renderer=hd2d&r3d=${cfg}&force3d=1`);
   await until2("window.ffh && window.ffh.ready", "the client to boot (hd2d)");
-  await waitHuman("the game in the HD-2D mode");
+  await waitHuman("the game in the HD-2D map");
   await answerPopups(false);
-  await until2(`window.ffh.mapView.renderer() === "hd2d" && !!window.ffh.mapView.r3d.cam`, "the HD-2D mode's first frame", 180000);
+  await until2(`window.ffh.mapView.renderer() === "hd2d" && !!window.ffh.mapView.r3d.cam`, "the HD-2D map's first frame", 180000);
   await until2(`window.ffh.mapView.r3d.sprites.atlas.pending === 0`, "the HD-2D sprites to load", 60000);
   const frame = await b.eval(`(() => {
     const r = window.ffh.mapView.r3d;
@@ -603,17 +525,74 @@ async function rendererHd2d(url) {
     return { colours: colours.size, cards: r.sprites.bufs.units?.n ?? 0, statics: r.sprites.bufs.static?.n ?? 0 };
   })()`);
   if (frame.colours < 16) throw new Error(`the HD-2D frame is nearly blank (${frame.colours} colours mid-view)`);
-  if (frame.cards < 1) throw new Error("the HD-2D mode stands no unit as a card");
+  if (frame.cards < 1) throw new Error("the HD-2D map stands no unit as a card");
+  // Picking: the plot under each in-view plot's centre on screen is that plot (the ground's relief
+  // and the camera's perspective do not shift the logical grid) -- unless nearer ground hides that
+  // centre (a peak in front, under the map's low camera), where the click finds what is seen.
+  const pick = await b.eval(`(() => {
+    const mv = window.ffh.mapView, r = mv.r3d, S = window.ffh.S;
+    const c = mv.center();
+    let n = 0, hidden = 0, bad = [];
+    for (let dy = -3; dy <= 3; dy++) for (let dx = -4; dx <= 4; dx++) {
+      const x = ((c.x + dx) % S.map.w + S.map.w) % S.map.w, y = c.y + dy;
+      if (y < 0 || y >= S.map.h || S.map.vis[y * S.map.w + x] === 0) continue;
+      const p = r.screenOf(x, y);
+      if (p.x < 0 || p.y < 0 || p.x > mv.vw || p.y > mv.vh) continue;
+      const q = r.screenToMap(p.x, p.y);
+      n++;
+      if (q && q.x === x && q.y === y) continue;
+      // How far along the ray the ground was met, against the plot's centre (both on the ray).
+      const [o, d] = r.ray(r.camera(), p.x, p.y), g = r.groundAt(p.x, p.y);
+      const along = (wx, wz) => Math.hypot(wx - o[0], wz - o[2]);
+      if (g && along(g[0], -g[1]) < along(r.nearX(x + 0.5), -(y + 0.5)) - 0.01) hidden++;
+      else bad.push([x, y, q && [q.x, q.y]]);
+    }
+    return { n, hidden, bad };
+  })()`);
+  if (pick.n < 10 || pick.bad.length) throw new Error(`HD-2D picking: ${pick.bad.length} of ${pick.n} plots picked wrong: ${JSON.stringify(pick.bad.slice(0, 5))}`);
+  // A click on one of our units selects it.
+  const mine = await b.eval(`(() => { const S = window.ffh.S; const u = S.view.units.find((u) => u.owner === S.view.me.player); return u ? { x: u.x, y: u.y } : null; })()`);
+  if (mine) {
+    await b.eval("window.ffh.units.clearSelection && window.ffh.units.clearSelection()");
+    const p = await plotPos(mine.x, mine.y);
+    await b.mouse(p.x, p.y);
+    await until2(`(() => { const s = window.ffh.S.sel; return !!s && s.x === ${mine.x} && s.y === ${mine.y}; })()`, "a click on a unit to select it (HD-2D)");
+    // The hover follows the mouse.
+    await b.move(p.x + 3, p.y + 2);
+    await until2(`(() => { const h = window.ffh.mapView.overlay.hover; return !!h && h.x === ${mine.x} && h.y === ${mine.y}; })()`, "the hover on the unit's plot (HD-2D)");
+  }
+  // The zoom steps (pixels a plot) and back, through the renderer's own steps; a key pans.
+  const keys = ["-", "-", "+", "+", "+", "-"];
+  const zs = await b.eval("window.ffh.mapView.zooms()");
+  let ts = await b.eval("window.ffh.mapView.cam.ts");
+  const want = keys.map((k) => (ts = zs[Math.max(0, Math.min(zs.length - 1, zs.indexOf(ts) + (k === "+" ? 1 : -1)))]));
+  const zooms = [];
+  for (const k of keys) {
+    await b.key(k);
+    zooms.push(await b.eval("window.ffh.mapView.cam.ts"));
+  }
+  if (JSON.stringify(zooms) !== JSON.stringify(want)) throw new Error(`HD-2D zoom steps: ${zooms}, not ${want}`);
+  const before = await b.eval("[window.ffh.mapView.cam.cx, window.ffh.mapView.cam.cy]");
+  await b.key("ArrowLeft");
+  const after = await b.eval("[window.ffh.mapView.cam.cx, window.ffh.mapView.cam.cy]");
+  if (before[0] === after[0]) throw new Error("the arrow key did not pan the HD-2D map");
+  await b.eval(`window.ffh.setLayer("political")`);
+  await until2("window.ffh.mapView.r3d.scene.overlayOpts.political === 1", "the political layer in HD-2D");
+  await b.eval(`window.ffh.setLayer("terrain")`);
+  await b.eval("window.ffh.mapView.r3d.render(1)");
   await shot("renderer-hd2d");
-  // From the 3D renderer to the HD-2D mode (the other mode of the same renderer goes first), then
-  // back to the art.
-  await b.eval(`window.ffh.setRenderer("3d")`);
-  await until2(`window.ffh.mapView.renderer() === "3d" && !!window.ffh.mapView.r3d.cam`, "the 3D renderer after the HD-2D mode", 180000);
-  await b.eval(`window.ffh.setRenderer("hd2d")`);
-  await until2(`window.ffh.mapView.renderer() === "hd2d" && !!window.ffh.mapView.r3d.cam && document.querySelectorAll("canvas.map3d").length === 1`, "the HD-2D mode after the 3D renderer", 180000);
+  // Back to the 2D art: the WebGL canvas goes.
   await b.eval(`window.ffh.setRenderer("art")`);
-  await until2(`window.ffh.mapView.renderer() === "art" && !document.querySelector("canvas.map3d")`, "the art renderer after the HD-2D mode");
-  steps.push(`?renderer=hd2d: a frame of ${frame.colours} colours mid-view, ${frame.cards} unit cards and ${frame.statics} other cards, 3D -> HD-2D -> art`);
+  await until2(`window.ffh.mapView.renderer() === "art" && !document.querySelector("canvas.map3d")`, "the art renderer after the HD-2D map");
+  // A lost WebGL context (a driver reset) hands the map to the HD-2D map's fallback, the isometric
+  // one; then back to the art for what follows.
+  await b.eval(`window.ffh.setRenderer("hd2d")`);
+  await until2(`window.ffh.mapView.renderer() === "hd2d" && !!window.ffh.mapView.r3d.cam && document.querySelectorAll("canvas.map3d").length === 1`, "the HD-2D map again", 180000);
+  const canLose = await b.eval(`(() => { const x = window.ffh.mapView.r3d.gl.getExtension("WEBGL_lose_context"); if (x) x.loseContext(); return !!x; })()`);
+  if (canLose) await until2(`window.ffh.mapView.renderer() === "iso" && !document.querySelector("canvas.map3d")`, "the isometric map after the HD-2D map's context was lost");
+  await b.eval(`window.ffh.setRenderer("art")`);
+  await until2(`window.ffh.mapView.renderer() === "art" && !document.querySelector("canvas.map3d")`, "the art renderer after the HD-2D map");
+  steps.push(`?renderer=hd2d: a frame of ${frame.colours} colours mid-view, ${frame.cards} unit cards and ${frame.statics} other cards, ${pick.n} plots picked right through the relief (${pick.hidden} hidden behind nearer ground), click-select, hover, zoom ${zooms.join(" ")}, pan, political layer, back to the art${canLose ? ", a lost WebGL context falls back to the isometric map" : " (no WEBGL_lose_context: context loss not checked)"}`);
 }
 
 /** Records the page's POST bodies in `window.__posts` (from now on). */
@@ -1634,7 +1613,6 @@ async function main() {
     await shiftWaypoints(bin, saves, "goto");
     await flatRenderer(server.url);
     await rendererIso(server.url);
-    await renderer3d(server.url);
     await rendererHd2d(server.url);
     await newGameElsewhere(bin);
     await crashScreen(bin);
