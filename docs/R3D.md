@@ -773,7 +773,7 @@ comparison alternated old and new):
   same noise. Not measured on a GPU: the per-frame cost of ~100 3D-texture fetches against the
   arithmetic, and the 8-bit precision of the hardware's bilinear weights on the broadest noises
   (a TEXTURE_2D_ARRAY, its layer an explicit mod, is the fallback: +113 instructions).
-* **Five together** (prototype branch `proto/combined`): the noise texture above, the HD-2D mode's
+* **Five together** (2026-10-31): the noise texture above, the HD-2D mode's
   lean terrain and smaller props and water programs (docs/HD2D.md §8: `terrainLean`, `lite`), the
   scene packed into one target so its programs compile at link (`packScene`, `SCENE_PACKED`) and
   the start-up's CPU work done while they compile (`fastStart`). The shader savings compound (the

@@ -661,7 +661,7 @@ beside an Intel UHD integrated GPU, headless Chrome 156 (`FFH_CHROMIUM_CHANNEL=c
   meadow's flowers show close up). The brushwork on objects (0.2 ms) stays: the mode's 3D fields and sheaves
   take their texture from it close up. Ambient occlusion (0.25 ms) stays: its shade under the woods
   shows close up. Glow and bloom (0.15 ms each) are cheap.
-* **The lean terrain** (prototype, branch `proto/terrain-ablation`): what Direct3D compiles at the
+* **The lean terrain** (2026-10-31): what Direct3D compiles at the
   first draw is mostly the terrain shader (docs/R3D.md §11.1), its time about 2.6e-7 s × N² for N
   instructions. Counted after inlining and optimisation (glslang, spirv-opt; within 5% of FXC's own
   counts), the mode's terrain was 6308 instructions and 125 value noises. Two steps:
@@ -684,7 +684,7 @@ beside an Intel UHD integrated GPU, headless Chrome 156 (`FFH_CHROMIUM_CHANNEL=c
     masses moved, the look kept. Tried and dropped: two octaves for the pools and the hell cracks (the cracks
     widened into blobs), the pigment's drift from the borders' noises (20% of a still a shade
     lighter, for two noises).
-* **The props' and the water's programs, compiled smaller** (prototype, 2026-10-31; `MapHd2d`
+* **The props' and the water's programs, compiled smaller** (2026-10-31; `MapHd2d`
   `propDefines`, `waterDefines`, `riverSplit`, `LITE` in `hd2d/index.js`). After the terrain they
   were the longest of Direct3D's first-draw compiles (docs/R3D.md §11.1). Instruction counts after
   inlining and optimisation (glslang, spirv-opt -O, about 0.95 of FXC's own count; FXC's time about
