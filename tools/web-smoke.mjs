@@ -1426,8 +1426,9 @@ async function closeBattle() {
  *  to the enemy city shows its role, A, Dv and HP in the unit panel; the tooltip over the city says
  *  it is a battle; a right-click opens the battle plan in the rules' auto formation; a unit of the
  *  line is moved by mouse to another row of its lane (the forecast asked again, the engine accepts
- *  the formation); Enter attacks with it (a keep/raze decision over the overlay answered if the
- *  city falls), the combat flash comes from the battle's report, the attack's messages wait for the
+ *  the formation: no errors, not refused, a forecast); Enter attacks with it (Escape and Cancel do
+ *  not close the plan while the attack is on its way; a keep/raze decision over the overlay
+ *  answered if the city falls), the combat flash comes from the battle's report, the attack's messages wait for the
  *  screens to close, the watch screen plays the engine's log and the report shows it; the map's
  *  marker and the message's link open the battle again. */
 async function stagedEngagement(bin, saves) {
@@ -1468,12 +1469,28 @@ async function stagedEngagement(bin, saves) {
   await battleScreen("plan", "the plan after the move, its forecast asked again");
   await until2(`window.ffh.battle.plan.formation.some((q) => q.unit === ${mv.unit} && q.row === ${mv.row})`, "the unit in its new row");
   if ((await b.eval(`JSON.stringify(window.ffh.battle.plan.formation)`)) === before) throw new Error("moving a unit left the formation as it was");
-  const refused = await b.eval(`[...document.querySelectorAll("#battle .bt-pnl .bad")].map((x) => x.textContent).join("; ")`);
-  if (refused) throw new Error(`the engine refused the moved formation: ${refused}`);
+  const plan = await b.eval(`(() => { const p = window.ffh.battle.plan; return { errors: p.errors, refused: p.refused, forecast: !!p.forecast }; })()`);
+  if (plan.errors.length || plan.refused) throw new Error(`the engine refused the moved formation: ${plan.errors.join("; ") || "it answered in its auto formation"}`);
+  if (!plan.forecast) throw new Error("the moved formation has no forecast");
   await new Promise((r) => setTimeout(r, 600));
   await shot("engagement-plan");
-  // Attack: if the city falls, its keep/raze decision comes over the overlay.
+  // Attack: while it is on its way (held here before the engage command goes) the plan cannot be
+  // closed, by Escape nor by Cancel: the battle's screens take over from it.
+  await b.eval(`(() => {
+    const src = window.ffh.battle.source;
+    const orig = src.attack;
+    window.__attackGate = new Promise((r) => (window.__attackGo = r));
+    src.attack = async (r) => { await window.__attackGate; src.attack = orig; return orig(r); };
+  })()`);
   await b.key("Enter");
+  await until2(`window.ffh.battle.plan.busy`, "the attack on its way");
+  await b.key("Escape");
+  const cancel = await b.eval(`(() => { const c = [...document.querySelectorAll("#battle button")].find((x) => x.textContent.trim() === "Cancel"); if (c) c.click(); return !!c && c.disabled; })()`);
+  await new Promise((r) => setTimeout(r, 300));
+  if (!cancel) throw new Error("the plan's Cancel is not disabled while the attack is on its way");
+  if (!(await b.eval(`!!document.getElementById("battle") && window.ffh.battle.screen === "plan" && window.ffh.battle.plan.busy`))) throw new Error("the plan closed while its attack was on its way");
+  // If the city falls, its keep/raze decision comes over the overlay.
+  await b.eval(`window.__attackGo()`);
   await until(async () => (await modalTitles()).some((t) => /keep|raze/i.test(t)) || (await b.eval(`!!window.ffh.battle && window.ffh.battle.screen === "watch"`)), "the battle (or the keep/raze decision over it)", 60000);
   if ((await modalTitles()).some((t) => /keep|raze/i.test(t))) await click('#modals .modal.decision button.option[data-option="0"]');
   await battleScreen("watch", "the battle's watch screen");
@@ -1523,7 +1540,7 @@ async function stagedEngagement(bin, saves) {
   await click(link);
   await battleScreen("report", "the battle's report from its message");
   await closeBattle();
-  steps.push(`engagement (stage engagement): the plan (${placed} in the auto formation), a unit moved by mouse with the forecast asked again, the attack with that formation, the flash from the report, its messages held until the screens close, the watch and report screens of the engine's log (${n} events); the map's marker and the message's link open it again`);
+  steps.push(`engagement (stage engagement): the plan (${placed} in the auto formation), a unit moved by mouse with the forecast asked again (accepted, with its forecast), the attack with that formation (the plan held open, by Escape and Cancel, while it is on its way), the flash from the report, its messages held until the screens close, the watch and report screens of the engine's log (${n} events); the map's marker and the message's link open it again`);
 }
 
 /** P7, `stage election`: the human secretary general's election popup (deferred, like events

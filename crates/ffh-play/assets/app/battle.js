@@ -20,6 +20,7 @@ import { h, toast } from "./dom.js";
 import { installFrames } from "./isoui.js";
 import { installIsoFont } from "./isofont.js";
 import { formationKey } from "./battle_log.js";
+import { battleToast } from "./engagements.js";
 import { Stage } from "./battle_stage.js";
 import * as planScreen from "./battle_plan.js";
 import * as watchScreen from "./battle_watch.js";
@@ -199,7 +200,16 @@ export function apiSource({ army, units, from, to }) {
         if (reply) toast("No battle was fought.", "info");
         return null;
       }
-      return { log: await api.query("battle_log", { report: id }) };
+      try {
+        return { log: await api.query("battle_log", { report: id }) };
+      } catch (e) {
+        // Fought, but its log cannot be read: back to the map, with the battle's message (and its
+        // links) that the screens were to show (commands.js left it to them).
+        console.warn("battle: the battle's log:", e);
+        closeBattle();
+        for (const line of reply.log ?? []) if (line.kind === "engagement" && line.report === id) battleToast(line);
+        return null;
+      }
     },
   };
 }

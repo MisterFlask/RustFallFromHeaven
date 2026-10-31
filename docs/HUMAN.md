@@ -454,7 +454,8 @@ lanes. In the browser:
   pair, a rough guide). A right-click there (a second tap on a phone) with an army or a stack of
   units that can attack opens **the battle plan** with the rules' auto formation; Attack (or
   `Enter`) sends `engage` with the formation arranged there (an attack that declares war says so
-  on the button), Cancel (`Esc`) leaves the map as it was. Shift+right-click on such a plot
+  on the button), Cancel (`Esc`) leaves the map as it was (not once the attack is on its way:
+  the battle's screens take over from the plan). Shift+right-click on such a plot
   attacks at once in the rules' formation (a `move`); on any other plot it lays a waypoint as
   before. Over a plot further away, or next to units that have used their moves or their attack,
   the tooltip says "Battle on arrival" ("once they can attack") with the selected units that could

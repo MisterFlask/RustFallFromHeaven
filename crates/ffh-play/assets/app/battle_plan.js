@@ -17,12 +17,15 @@ export const NAME = "plan";
 
 // `fc`: the forecast of the formation shown (null: none); `pending`: a preview asked and not yet
 // answered; `refused`: the last answer was for another formation than the one asked (the engine
-// refused it and answered in its auto formation).
-const P = { ctx: null, pv: null, F: null, place: null, def: null, sel: null, hover: null, hoverCell: null, fc: null, pending: false, refused: false, errors: [], declare: null, seq: 0, timer: 0, busy: false, figs: [], flash: null, tip: null };
+// refused it and answered in its auto formation); `busy`: the attack is on its way (the plan stays
+// open until its battle's screens take over); `visit`: counts the plan's openings and leavings (an
+// answer that comes after the plan was left is dropped).
+const P = { ctx: null, pv: null, F: null, place: null, def: null, sel: null, hover: null, hoverCell: null, fc: null, pending: false, refused: false, errors: [], declare: null, seq: 0, timer: 0, busy: false, visit: 0, figs: [], flash: null, tip: null };
 
 const me = 0;
 
 export async function enter(ctx) {
+  const visit = ++P.visit;
   P.ctx = ctx;
   P.sel = null;
   P.hover = null;
@@ -32,6 +35,7 @@ export async function enter(ctx) {
   P.pv = null;
   render(ctx);
   const pv = await ctx.source.preview({});
+  if (visit !== P.visit) return;
   // No plan (the engine answers a plot the player does not see, or one not next to the attackers,
   // with its errors alone): say why and close.
   if (!pv?.fighters) {
@@ -40,6 +44,7 @@ export async function enter(ctx) {
     return;
   }
   await loadArt({ fighters: pv.fighters, plot: pv.plot, from: pv.from, sides: pv.sides });
+  if (visit !== P.visit) return;
   ctx.stage.me = me;
   ctx.stage.setBoard(pv);
   P.pv = pv;
@@ -51,6 +56,7 @@ export async function enter(ctx) {
 }
 
 export function leave() {
+  P.visit++;
   P.seq++;
   clearTimeout(P.timer);
   P.tip?.remove();
@@ -137,8 +143,12 @@ async function autoArrange(ctx) {
   changed(ctx);
 }
 
+/** Attacks with the formation shown. While the attack is on its way (the `engage` command, a
+ *  declaration of war asked, the battle's log) the plan cannot be closed (Escape and Cancel wait):
+ *  the battle's screens take over from it, and its message is theirs to show. */
 async function attack(ctx) {
   if (P.busy || !P.pv || P.errors.length || !P.place.size) return;
+  const visit = P.visit;
   P.busy = true;
   render(ctx);
   let r = null;
@@ -149,6 +159,8 @@ async function attack(ctx) {
   } finally {
     P.busy = false;
   }
+  // The plan was left meanwhile (the overlay closed): nothing to show the battle in.
+  if (visit !== P.visit) return;
   // Not made (refused, a war not declared): the plan stays.
   if (!r?.log) return render(ctx);
   if (ctx.prefs.get("watch", "watch") === "report") ctx.toReport(r.log);
@@ -268,6 +280,8 @@ export function key(ctx, ev) {
     return true;
   }
   if (ev.key === "Escape") {
+    // The attack on its way: the plan stays until the battle's screens take over.
+    if (P.busy) return true;
     if (P.sel !== null) {
       P.sel = null;
       render(ctx);
@@ -460,7 +474,7 @@ function forecastPanel(ctx, { mineIn, theirsIn, theirsOut }) {
     h(
       "div.bt-row",
       { style: { justifyContent: "flex-end", gap: "8px" } },
-      btn("Cancel", { title: "Back to the map [Esc]", onclick: () => ctx.close() }),
+      btn("Cancel", { title: "Back to the map [Esc]", disabled: P.busy, onclick: () => !P.busy && ctx.close() }),
       btn([uiIcon("attack", 16), war ? " Declare war and attack" : " Attack"], {
         cls: "primary",
         key: "attack",
@@ -550,6 +564,21 @@ export const dev = {
   },
   get sel() {
     return P.sel;
+  },
+  /** The last preview's errors (the engine's reasons it refuses the formation or the attack). */
+  get errors() {
+    return P.errors;
+  },
+  /** Whether the engine answered the last formation sent in another (it refused that one). */
+  get refused() {
+    return P.refused;
+  },
+  /** The forecast of the formation shown (null: none, or not yet). */
+  get forecast() {
+    return P.fc;
+  },
+  get busy() {
+    return P.busy;
   },
   get ready() {
     return !!P.pv && !P.busy && !P.pending;
