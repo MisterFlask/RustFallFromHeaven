@@ -433,14 +433,8 @@ pub enum TargetRule {
     BodyguardFirst,
 }
 
-/// Why a step of the order was passed.
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub enum Block {
-    Empty,
-    Shielded,
-    VolleyImmune,
-    AtLimit,
-}
+/// Why a step of the order was passed: the round model's.
+pub use super::resolve::Block;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum CastEffect {
