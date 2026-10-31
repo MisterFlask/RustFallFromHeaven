@@ -69,8 +69,28 @@ function standinHold() {
   }
 }
 
-/** The contexts of renderers disposed while their programs still compiled (Map3D.dispose). */
-const STRANDED = [];
+/** The contexts of renderers disposed while some of their programs still compiled, kept until
+ *  those have (`releaseLater`). */
+const STRANDED = new Set();
+
+/** Deletes `pending`, the programs of a disposed renderer that were still compiling, and lets its
+ *  context go, once they have compiled (polled): deleting a compiling program, or losing its
+ *  context, would have ANGLE wait for the compile, stalling the GPU process -- and the page --
+ *  until then (docs/R3D.md §11.1). One that never ends keeps its context until the page goes. */
+function releaseLater(gl, pending) {
+  STRANDED.add(gl);
+  const poll = () => {
+    if (!gl.isContextLost() && !pending.every((p) => p.done)) return void setTimeout(poll, 500);
+    try {
+      for (const p of pending) p.dispose();
+    } catch {
+      /* the context may be gone */
+    }
+    gl.getExtension("WEBGL_lose_context")?.loseContext();
+    STRANDED.delete(gl);
+  };
+  setTimeout(poll, 500);
+}
 
 export class Map3D {
   constructor(view) {
@@ -274,11 +294,26 @@ export class Map3D {
   }
 
   /** Whether the ground's swap wants a frame though nothing else changed: the full terrain has
-   *  compiled, or is dissolving in (the loop polls it). */
+   *  compiled, or is dissolving in (the loop polls it). Not before the game's map has come: a
+   *  frame then draws no ground, so the swap would never be over. */
   swapDue() {
     const s = this.swap;
-    if (!s || s.off) return false;
+    if (!s || s.off || !this.view.map) return false;
     return s.at === null ? this.pipeline.p.terrain.done : this.standinHold === null;
+  }
+
+  /** Resolves once the full terrain is in, or given up on, a stand-in's dissolve then skipped: the
+   *  frames after draw the full terrain at once (what a capture waits for, `whenReady`). Not with
+   *  `standinHold`: a film of the swap. */
+  async terrainReady() {
+    while (this.swap && this.standinHold === null && !this.swap.off) {
+      if (this.swap.at !== null || this.terrainIn()) {
+        this.swap = null;
+        this.dirty = true;
+        break;
+      }
+      await new Promise((r) => setTimeout(r, 20));
+    }
   }
 
   /** Resolves once what the mode's first frame needs beside the programs has loaded (`ready` waits
@@ -313,24 +348,22 @@ export class Map3D {
   dispose() {
     this.running = false;
     cancelAnimationFrame(this.raf);
-    // Programs still compiling (`ready` gave up on them) are left alone, with their context: ANGLE
-    // waits for a compile to end before it deletes its program or the context, which would stall
-    // the GPU process -- and the page -- until then (docs/R3D.md §11.1). Kept until the page goes.
-    const compiling = !this.lost && this.programs().some((p) => !p.done);
-    if (compiling) STRANDED.push(this.gl);
-    else {
-      try {
-        this.scene.dispose();
-        this.pipeline.dispose();
-      } catch {
-        /* the context may be gone */
-      }
+    // Programs still compiling (the full terrain behind a stand-in, or ones `ready` gave up on) are
+    // deleted, and the context let go, once they have compiled (`releaseLater`); the rest -- the
+    // targets, meshes, textures and the programs that are done -- goes now.
+    const pending = this.lost ? [] : this.programs().filter((p) => !p.done);
+    try {
+      this.scene.dispose();
+      this.pipeline.dispose(pending);
+    } catch {
+      /* the context may be gone */
     }
     this.canvas.remove();
     this.panelBtn?.remove();
     this.panel?.remove();
     this.view.canvas.style.background = "";
-    if (!compiling) this.gl.getExtension("WEBGL_lose_context")?.loseContext();
+    if (pending.length) releaseLater(this.gl, pending);
+    else this.gl.getExtension("WEBGL_lose_context")?.loseContext();
   }
 
   zooms() {

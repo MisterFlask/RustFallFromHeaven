@@ -829,9 +829,12 @@ first use). `Map3D.ready()` (`gl.js` `whenCompiled`) polls them between frames, 
 draws only once they are done; `MapView.useR3d` awaits it. A start that takes over 1.5 s shows
 "Preparing the 3D map (compiling its shaders)…"; one that takes over `COMPILE_TIMEOUT_MS` (45 s)
 gives up and the client falls back to the isometric map with a message (`slow-shaders`), as for a
-software renderer. The renderer given up leaves its programs and context alone (`Map3D.dispose`):
-ANGLE waits for a compile in progress before it deletes a program or a context, which stalled the
-GPU process until the tab crashed; the context is kept until the page goes. The lab and the GPU
+software renderer. The renderer given up leaves its compiling programs and its context alone
+(`Map3D.dispose`): ANGLE waits for a compile in progress before it deletes a program or a context,
+which stalled the GPU process until the tab crashed. Its other GPU objects (targets, meshes,
+textures, the programs that are done) go at once; the compiling programs, then the context, go once
+they have compiled (`releaseLater`, polled; one that never ends keeps the context until the page
+goes). The lab and the GPU
 bench await `ready()` too, so a slow compile is their error, not a hang. Checked with the old
 shaders on Direct3D 11: the page stays live (its longest stall 0.6 s, the page's load), the message
 shows after 45 s and the isometric map draws. On Direct3D the links are quick now (above) and the
@@ -874,8 +877,10 @@ has compiled:
   full terrain is in before a frame has shown the stand-in -- SwiftShader, whose links finish at
   once, and a cached program -- it simply draws. One that has not compiled within the start's
   timeout (3 x `COMPILE_TIMEOUT_MS` for a packed scene) or fails is given up, logged once: the
-  stand-in stays and nothing waits on it; a renderer disposed while it compiles is stranded like
-  any other (`Map3D.programs` lists both terrains). The depth prepass and the shadow maps draw the
+  stand-in stays and nothing waits on it; a renderer disposed while it compiles keeps only it, and
+  its context, until it has compiled (`Map3D.dispose`, above). A capture waits for it
+  (`whenReady` -> `terrainReady`: the frames after draw the full terrain at once, unless
+  `standinHold` films the swap). The depth prepass and the shadow maps draw the
   terrain with its vertex-only program (`shadowTerrain`), the same under both.
 * **At boot** (main.js `hd2dPending`, the page's renderer the HD-2D map) MapView draws its
   backdrop -- the dark fill and the minimap -- instead of the flat map until the HD-2D map draws

@@ -71,9 +71,9 @@ export class Hd2dPasses {
     this.t = this.f = null;
   }
 
-  dispose() {
+  dispose(keep = []) {
     this.disposeTargets();
-    for (const p of Object.values(this.p)) p.dispose();
+    for (const p of Object.values(this.p)) if (!keep.includes(p)) p.dispose();
   }
 
   /** The mode's programs that draw into the scene's targets (Pipeline.scenePrograms). */

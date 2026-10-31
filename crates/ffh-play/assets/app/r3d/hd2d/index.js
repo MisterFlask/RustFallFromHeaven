@@ -159,10 +159,12 @@ export class MapHd2d extends Map3D {
     return Promise.all([this.groundReady, sprites]);
   }
 
-  /** Resolves once the sprites asked for and the ground have loaded (a capture waits for it). */
+  /** Resolves once the sprites asked for, the ground and the full terrain have loaded (a capture
+   *  waits for it: `terrainReady`). */
   async whenReady() {
     await this.groundReady;
     await this.sprites.atlas.whenLoaded();
+    await this.terrainReady();
   }
 
   dispose() {

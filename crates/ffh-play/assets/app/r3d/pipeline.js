@@ -241,15 +241,17 @@ export class Pipeline {
     this.t = this.f = this.depth = null;
   }
 
-  dispose() {
+  /** Deletes the pipeline's GPU objects, but not the programs of `keep` (still compiling: Map3D's
+   *  `releaseLater`). */
+  dispose(keep = []) {
     this.disposeTargets();
-    this.ext?.dispose();
+    this.ext?.dispose(keep);
     const gl = this.gl;
     gl.deleteTexture(this.shadowMap);
     gl.deleteFramebuffer(this.shadowFbo);
     gl.deleteTexture(this.shadowMapT);
     gl.deleteFramebuffer(this.shadowFboT);
-    for (const p of Object.values(this.p)) p.dispose();
+    for (const p of Object.values(this.p)) if (!keep.includes(p)) p.dispose();
   }
 
   /** A full-screen pass of program `prog` into framebuffer `fbo` (null = the canvas). */
