@@ -4,7 +4,7 @@
 // struck through. Swaps, the stance and the What-if lines re-ask the source for a preview: every
 // number here is the engine's (the preview's forecast), none is worked out by the client.
 
-import { h } from "./dom.js";
+import { h, toast } from "./dom.js";
 import { S } from "./state.js";
 import { tyLabel, uname, groupNames, committed, isBack, hitsScreensFirst, x100, pctText, termLabel, termGroup, plotDvTerms, pairOf, slotSum, wallsNote, whatIfLines, stakes, roleKey } from "./battle_log.js";
 import { lessonText, targetsText } from "./battle_teach.js";
@@ -45,6 +45,13 @@ async function load(ctx, req) {
     P.busy = false;
   }
   if (seq !== P.seq) return;
+  // No plan (the engine answers a plot the player does not see, or one not next to the
+  // attackers, with its errors alone): say why and close.
+  if (!preview?.fighters) {
+    toast((preview?.errors ?? []).join("; ") || "There is no battle to plan there.", "info");
+    ctx.close();
+    return;
+  }
   const board = boardFighters(preview);
   await loadArt({ fighters: board, plot: preview.plot, from: preview.from, sides: preview.sides });
   if (seq !== P.seq) return;

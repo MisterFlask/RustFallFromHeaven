@@ -14,7 +14,7 @@ import { look, iconEl, unitIcon, barEl, pix, typeIcon, promotionIcon, uiIcon } f
 import { isoSkin, isoIcon, actionIcon, portrait, isoBar, focusOn } from "./isoui.js";
 import { effectsOf, infoTip } from "./infotips.js";
 import { marchLine } from "./armies.js";
-import { engagementsOn, openPlan, stanceSelect, roleName, flashBattle } from "./engagements.js";
+import { engagementsOn, battleTerrain, openPlan, stanceSelect, roleName, flashBattle } from "./engagements.js";
 
 /** An 8 px icon of the ui set, or the glyph before the art loaded. */
 const icon8 = (name, glyph, title) => iconEl(`icon8/${name}`, { title }) ?? glyph;
@@ -92,9 +92,11 @@ export function initUnits(view, panelEl) {
     // Combat carries no result, so snapshot an attack before it is sent (S.units is pre-combat)
     // and infer the outcome from the diff in viewChanged. The new view can arrive before the
     // command's reply, so the snapshot is taken here, not on "applied". An attack is a move onto
-    // a tile with a foreign unit (the same gate the combat-odds preview uses).
+    // a tile with a foreign unit (the same gate the combat-odds preview uses). Under engagement
+    // combat a land attack on land is a battle, whose flash comes from its report in the reply
+    // ("applied"): no snapshot, or a view that arrives first would flash the HP diff as well.
     pendingCombat = null;
-    if (c?.c === "move" && typeof c.x === "number" && typeof c.y === "number") {
+    if (c?.c === "move" && typeof c.x === "number" && typeof c.y === "number" && !battleTerrain(c.units, c.x, c.y)) {
       const mep = me()?.player;
       const defenders = unitsAt(c.x, c.y).filter((u) => u.owner !== mep);
       if (defenders.length) {
@@ -343,18 +345,27 @@ export function click(x, y, ev) {
 
 /** A right-click on (x, y): move the selection there (Shift: add a waypoint). Under engagement
  *  combat an attack of an army or a stack opens the battle plan first; Shift on a plot next to the
- *  selection that it would attack, with no waypoints laid, attacks at once with the stance's pick. */
+ *  selection where it would fight a battle now (the `combat` query says so), with no waypoints
+ *  laid, attacks at once with the stance's pick. Shift clicks go in order (`shiftChain`): one that
+ *  asks the engine first does not let a later waypoint overtake it. */
 export function rightClick(x, y, ev) {
   if (mode) {
     setMode(null);
     return;
   }
   if (!S.sel || observing()) return;
-  const laying = waypoints && unitsKey(waypoints.units) === unitsKey(S.sel.units);
-  if (ev?.shiftKey && !laying && attackPlot(x, y)) moveTo(x, y, { direct: true });
-  else if (ev?.shiftKey) addWaypoint(x, y);
-  else moveTo(x, y);
+  if (!ev?.shiftKey) return moveTo(x, y);
+  const units = S.sel.units;
+  shiftChain = shiftChain.then(async () => {
+    if (!S.sel || unitsKey(S.sel.units) !== unitsKey(units)) return;
+    const laying = waypoints && unitsKey(waypoints.units) === unitsKey(units);
+    if (!laying && (await battleNow(x, y))) await moveTo(x, y, { direct: true });
+    else addWaypoint(x, y);
+  }).catch((e) => console.warn("right-click:", e));
 }
+
+/** The Shift right-clicks in order (`rightClick`). */
+let shiftChain = Promise.resolve();
 
 /** Moves the selection to (x, y) now, replacing its orders (waypoints not sent yet are
  *  dropped: the move replaces them). Under engagement combat an attack of an army or a stack
@@ -518,7 +529,13 @@ async function pickPlot(x, y, ev) {
  *  mode that added them ends. */
 export function shiftReleased() {
   if (mode?.waypoints) setMode(null);
-  return flushWaypoints();
+  // After the Shift right-clicks still being answered (`rightClick`'s battle check), so their
+  // waypoints go with the others; the sends themselves are not waited for.
+  let flushed;
+  shiftChain = shiftChain.then(() => {
+    flushed = flushWaypoints();
+  });
+  return shiftChain.then(() => flushed);
 }
 
 /** The units here that take orders: not a marching recruit (this game's armies: the rules move
@@ -711,7 +728,7 @@ function showTip() {
   const recent = (S.messages ?? []).filter((m) => Array.isArray(m.at) && m.at[0] === x && m.at[1] === y && m.t >= latestEventTurn());
   for (const m of recent.slice(-4)) lines.push(h(`div.tip-event.ev-${eventKind(m.text)}`, `${m.player !== null && m.player !== undefined ? `${playerName(m.player)}: ` : ""}${m.text}`));
   const c = preview.combat;
-  if (c?.valid) lines.push(combatLines(c));
+  if (c?.valid) lines.push(combatLines(c, { x, y }));
   const path = preview.path;
   if (path && S.sel) {
     if (!path.ok) lines.push(h("div.warn", "No path"));
@@ -771,18 +788,27 @@ function modifierList(d) {
     .map(([k, label]) => `${d[k] > 0 ? "+" : ""}${d[k]}% ${label}`);
 }
 
-/** The attack preview: odds, strengths, the modifiers of both sides. */
-export function combatLines(c) {
+/** The attack preview of plot `at` ({x, y}): odds, strengths, the modifiers of both sides; under
+ *  engagement combat the battle first. */
+export function combatLines(c, at = null) {
   const pct = (v) => `${(v / 10).toFixed(1)}%`;
   const str = (v) => (v / 100).toFixed(2);
   const att = S.units.get(c.attacker);
   const box = h("div.tip-combat");
   if (c.engagement) {
     // Engagement combat: a battle of the units that can attack from here against the defenders
-    // there; the engine's estimate of it comes later (the duel's odds below are the strongest
-    // pair's, a rough guide).
-    box.append(h("div.battle", `Battle: ${c.pool} of yours can fight, against ${c.defenders} defender${c.defenders === 1 ? "" : "s"}`));
-    box.append(h("div.dim.small", mapView?.touch ? "Tap again: the battle plan" : "Right-click: the battle plan · Shift+right-click: attack with the stance's pick"));
+    // there (`on_arrival`: of the selected units that could fight there, once they are next to it
+    // and can attack; the battle is fought with whoever stands there then); the engine's estimate
+    // of it comes later (the duel's odds below are the strongest pair's, a rough guide).
+    const foes = `${c.defenders} defender${c.defenders === 1 ? "" : "s"}`;
+    if (c.on_arrival) {
+      const next = !!(at && S.sel && S.map) && plotDistance(S.map, S.sel.x, S.sel.y, at.x, at.y) === 1;
+      box.append(h("div.battle", `Battle ${next ? "once they can attack" : "on arrival"}: ${c.pool} of yours could fight, against ${foes}`));
+      box.append(h("div.dim.small", `${mapView?.touch ? "Tap again" : "Right-click"}: ${next ? "attack when they can" : "go there and attack"}, with the stance's pick`));
+    } else {
+      box.append(h("div.battle", `Battle: ${c.pool} of yours can fight, against ${foes}`));
+      box.append(h("div.dim.small", mapView?.touch ? "Tap again: the battle plan" : "Right-click: the battle plan · Shift+right-click: attack with the stance's pick"));
+    }
     if (c.odds === undefined || c.odds === null) {
       if (c.declare_war_team !== null && c.declare_war_team !== undefined) box.append(h("div.warn", "Attacking declares war"));
       return box;
@@ -1122,11 +1148,27 @@ function selectionArmy(sel) {
 }
 
 /** Engagement combat: whether (x, y) is a plot next to the selection holding units of others,
- *  in a game with engagements (an attack there may be a battle). */
+ *  where the selection's attack would be a battle (`battleTerrain`: land units on land): an attack
+ *  there may be one. */
 function attackPlot(x, y) {
-  if (!engagementsOn() || !S.sel || !S.map) return false;
+  if (!S.sel || !S.map || !battleTerrain(S.sel.units, x, y)) return false;
   if (plotDistance(S.map, S.sel.x, S.sel.y, x, y) !== 1) return false;
   return unitsAt(x, y).some((u) => u.owner !== me()?.player);
+}
+
+/** Engagement combat: the `combat` query's answer for the selection on (x, y) when moving there
+ *  is a battle the selection can fight now (`engagement`, `valid` and not `on_arrival`: it meets
+ *  defenders it is at war with or would declare war on, and some unit can attack now), else
+ *  null. Asks only for a plot `attackPlot` admits. */
+async function battleNow(x, y) {
+  if (!attackPlot(x, y)) return null;
+  let c;
+  try {
+    c = await api.query("combat", { units: [...S.sel.units], x, y });
+  } catch {
+    return null;
+  }
+  return c?.engagement && c.valid && !c.on_arrival ? c : null;
 }
 
 /** Engagement combat (docs/ENGAGEMENTS.md): when moving the selection onto (x, y) attacks it with
@@ -1134,15 +1176,10 @@ function attackPlot(x, y) {
  *  the battle plan with the stance's pick (Attack sends `engage` with the force) and returns true;
  *  else false (the move goes as it is: a lone unit's attack, a duel, no defender). */
 async function planAttack(x, y) {
-  if (!attackPlot(x, y) || S.status?.phase !== "human") return false;
+  if (S.status?.phase !== "human") return false;
   const sel = { units: [...S.sel.units] };
-  let c;
-  try {
-    c = await api.query("combat", { units: sel.units, x, y });
-  } catch {
-    return false;
-  }
-  if (!c?.engagement || !c.valid) return false;
+  const c = await battleNow(x, y);
+  if (!c) return false;
   const army = selectionArmy(sel);
   if (army === null && (c.pool ?? 0) < 2) return false;
   mapView?.clearHover?.();

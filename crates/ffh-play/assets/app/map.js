@@ -18,6 +18,8 @@ import { IsoMap, ISO_DEFAULT_ZOOM, drawRevoltMark, drawMarchMark, marchMark } fr
 import { artZooms, defaultArtZoom } from "./stacks.js";
 
 const ZOOMS = [12, 16, 24, 32, 48, 64];
+/** The smallest tile (CSS px) the battle markers are drawn and clicked at (`battleMarkerAt`). */
+const BATTLE_MARKER_MIN_TS = 32;
 /** Keyboard scrolling (W A S D, `scrollHold`): the speed is SCROLL_VIEWS of the view's short side a
  *  second, within [SCROLL_MIN, SCROLL_MAX] CSS px; the velocity eases with this time constant (s)
  *  and the view is at rest below SCROLL_REST px a second. */
@@ -1368,25 +1370,33 @@ export class MapView {
     }
   }
 
-  /** Where battle `b`'s marker is (CSS px): the top-right corner of its plot, `{x, y, r}`, or
-   *  null off screen. */
+  /** Where battle `b`'s marker is (CSS px), `{x, y, r}`: a disc inside its plot, toward the plot's
+   *  top-right corner (the square of the flat, art and 3D renderers; the isometric renderer's
+   *  diamond, half as tall, toward its upper-right edge), its radius a share of the tile. Null off
+   *  screen, and below BATTLE_MARKER_MIN_TS px tiles, where a disc readable at a glance would cover
+   *  the plot it marks (a click there selects the units instead) and its neighbours. */
   battleMarkerAt(b) {
     const s = this.screenOf(b.x, b.y);
-    if (!s || s.x < -40 || s.y < -40 || s.x > this.vw + 40 || s.y > this.vh + 40) return null;
-    const r = Math.max(7, Math.min(12, s.ts * 0.16));
-    return { x: s.x + s.ts * 0.32, y: s.y - s.ts * 0.32, r };
+    if (!s || s.ts < BATTLE_MARKER_MIN_TS || s.x < -40 || s.y < -40 || s.x > this.vw + 40 || s.y > this.vh + 40) return null;
+    if (this.iso) return { x: s.x + s.ts * 0.15, y: s.y - s.ts * 0.075, r: Math.min(12, s.ts * 0.085) };
+    return { x: s.x + s.ts * 0.3, y: s.y - s.ts * 0.3, r: Math.min(12, s.ts * 0.16) };
   }
 
-  /** The battle marker under pointer event `ev` (`overlay.battles`), or null. */
+  /** The battle marker under pointer event `ev` (`overlay.battles`), or null: a point on its disc
+   *  (a little margin round it) that is on the battle's own plot (the ground under the pointer), so
+   *  a click on a neighbouring plot never opens it. */
   battleAt(ev) {
     const list = this.overlay.battles;
     if (!list?.length || !this.map) return null;
     const rc = this.canvas.getBoundingClientRect();
     const px = ev.clientX - rc.left;
     const py = ev.clientY - rc.top;
+    let ground;
     for (const b of list) {
       const m = this.battleMarkerAt(b);
-      if (m && (px - m.x) ** 2 + (py - m.y) ** 2 <= (m.r + 3) ** 2) return b;
+      if (!m || (px - m.x) ** 2 + (py - m.y) ** 2 > (m.r + 2) ** 2) continue;
+      ground ??= this.plotAt(ev, { ground: true });
+      if (ground && ground.x === b.x && ground.y === b.y) return b;
     }
     return null;
   }

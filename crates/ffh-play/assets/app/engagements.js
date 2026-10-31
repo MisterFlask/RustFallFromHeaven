@@ -8,12 +8,25 @@
 // A battle's summary (the view's `battles`, the turn report's `engagements`, the `engage` and
 // `move` replies' `battle`): battle_log.js's header lists it.
 
-import { S, dname, info } from "./state.js";
+import { S, dname, info, tname } from "./state.js";
 import { h, toastNode } from "./dom.js";
 import { render as markup, plain } from "./markup.js";
+import { plotIndex } from "./tiles.js";
 
 /** Whether this game has engagement combat (the view says so). */
 export const engagementsOn = () => !!S.view?.engagements;
+
+/** Whether an attack of `units` (ids, the selection: its head decides, as the rules' group test
+ *  does) on plot (x, y) is fought as a battle (the rules' `engage_applies`): the game has
+ *  engagement combat, the units are land units (one carried on a ship too: an amphibious attack)
+ *  and the plot is land. Ships against ships and air units keep the duel. */
+export function battleTerrain(units, x, y) {
+  if (!engagementsOn() || !S.map) return false;
+  const head = S.units?.get(units?.[0]);
+  if (!head || tname("DomainType", info("UnitType", head.type)?.domain) !== "DOMAIN_LAND") return false;
+  const i = plotIndex(S.map, x, y);
+  return i >= 0 && tname("PlotType", S.map.plot_type?.[i]) !== "PLOT_OCEAN";
+}
 
 let battleModule = null;
 /** battle.js, loaded on first use. */

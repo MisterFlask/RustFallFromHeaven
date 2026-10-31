@@ -4,7 +4,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { S } from "../app/state.js";
-import { outcomeFor, battleLine, battleMarkers, battleById } from "../app/engagements.js";
+import { outcomeFor, battleLine, battleMarkers, battleById, battleTerrain } from "../app/engagements.js";
 
 const battle = (extra = {}) => ({
   id: 3,
@@ -53,4 +53,36 @@ test("the map's markers: one per plot, the newest battle there (the view lists n
   assert.equal(battleById(99), null);
   S.view = null;
   assert.deepEqual(battleMarkers(), []);
+});
+
+test("a battle is a land attack on land, with engagements on (the rules' engage_applies)", () => {
+  const saved = { view: S.view, data: S.data, map: S.map, units: S.units };
+  S.data = {
+    tables: {
+      DomainType: [{ type: "DOMAIN_SEA" }, { type: "DOMAIN_AIR" }, { type: "DOMAIN_LAND" }],
+      PlotType: [{ type: "PLOT_PEAK" }, { type: "PLOT_HILLS" }, { type: "PLOT_LAND" }, { type: "PLOT_OCEAN" }],
+      UnitType: [{ type: "UNIT_AXEMAN", domain: 2 }, { type: "UNIT_TRIREME", domain: 0 }, { type: "UNIT_GRIFFON", domain: 1 }],
+    },
+  };
+  // A 3 x 1 map: hills, land, ocean.
+  S.map = { w: 3, h: 1, wrap_x: false, wrap_y: false, plot_type: [1, 2, 3] };
+  S.units = new Map([
+    [1, { id: 1, type: 0 }],
+    [2, { id: 2, type: 1 }],
+    [3, { id: 3, type: 2 }],
+  ]);
+  try {
+    S.view = { engagements: true };
+    assert.equal(battleTerrain([1], 0, 0), true, "land on hills");
+    assert.equal(battleTerrain([1], 1, 0), true, "land on land");
+    assert.equal(battleTerrain([1], 2, 0), false, "land on water");
+    assert.equal(battleTerrain([2], 2, 0), false, "a ship: the duel");
+    assert.equal(battleTerrain([3], 1, 0), false, "air: the duel");
+    assert.equal(battleTerrain([1], 5, 0), false, "off the map");
+    assert.equal(battleTerrain([9], 1, 0), false, "an unknown unit");
+    S.view = { engagements: false };
+    assert.equal(battleTerrain([1], 1, 0), false, "engagements off");
+  } finally {
+    Object.assign(S, saved);
+  }
 });
