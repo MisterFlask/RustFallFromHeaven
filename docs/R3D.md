@@ -816,15 +816,35 @@ shows after 45 s and the isometric map draws. On Direct3D the links are quick no
 compiles come in the warm-up draws, which the timeout does not cover: a compile in progress cannot
 be stopped.
 
-**Measuring.** `r3d-lab/compile.html` (`tools/r3d-lab.mjs --serve`) links each program alone, then
-draws it once into the targets it writes, laid out as the pipeline's, and logs both times
-(`?only=terrain` for one); open
-it in Chrome with `--use-angle=d3d11` (headless: `channel: "chrome"`, `--ignore-gpu-blocklist
---enable-gpu --force_high_performance_gpu`). The HLSL ANGLE makes of a shader comes from
-`WEBGL_debug_shaders`' `getTranslatedShaderSource`; given its entry point and compiled with the
-`d3dcompiler_47.dll` Chrome ships (`D3DCompile`, `ps_5_0`, default flags, `ANGLE_ENABLE_LOOP_FLATTEN`
-defined) it takes within a few percent of the browser's time, which is how the terrain shader was
-bisected -- a check worth repeating on a shader change that adds loops or many noise calls.
+**Measuring.** `r3d-lab/compile.html` (`tools/r3d-lab.mjs --serve`, then `/lab/compile.html`) builds
+the programs a configuration compiles -- the pipeline's and the HD-2D mode's (`pipelinePrograms`,
+`hd2dPrograms`) with the defines and options the mode's hooks give (`Map3D.pipelineArgs`), for
+`?renderer=hd2d` (the default) or `?renderer=3d` and the page's `?r3d=`, read as the renderer reads
+it (over the look the lab's panel saved: same origin). It links each alone, then draws it once into
+the targets the pipeline draws it into (a packed scene's RGBA32UI target, else attachments 1-3; the
+unpack passes' three and two; the shadow map's depth alone; one target), a pixel read waiting for
+it, and logs both times, their totals and the slowest program (`?only=terrain` for one).
+`&parallel=1` creates every program at once, as a start does, waits for all the links, then draws
+them in the warm-up's order (the scene's first), and logs when each linked, each first draw and the
+wall time: the realistic number for a packed scene, whose programs compile at link, together. The
+log opens with the WebGL renderer, the configuration (packed or not) and each program's defines, so
+a pasted log says what it measured. To compare the five switches (above) on Direct3D, open in Chrome
+with `--use-angle=d3d11`
+
+    compile.html?renderer=hd2d
+    compile.html?renderer=hd2d&r3d={"noiseTex":0,"terrainLean":0,"lite":0,"packScene":0,"fastStart":0}
+
+and each with `&parallel=1` (`fastStart` changes no program; `r3d={"packScene":0}` alone takes out
+the packing only), first in a fresh profile (`--user-data-dir` a new folder: the program cache
+empty), then again after a reload in the same profile. The reload also settles whether Chrome keeps
+what a draw compiled: ANGLE's `Context11::triggerDrawCallProgramRecompilation` (ANGLE main)
+refreshes the program's cache entry after a draw-time compile, while the measurement above found a
+reload gained nothing. Headless: `channel: "chrome"`, `--ignore-gpu-blocklist --enable-gpu
+--force_high_performance_gpu`. The HLSL ANGLE makes of a shader comes from `WEBGL_debug_shaders`'
+`getTranslatedShaderSource`; given its entry point and compiled with the `d3dcompiler_47.dll` Chrome
+ships (`D3DCompile`, `ps_5_0`, default flags, `ANGLE_ENABLE_LOOP_FLATTEN` defined) it takes within a
+few percent of the browser's time, which is how the terrain shader was bisected -- a check worth
+repeating on a shader change that adds loops or many noise calls.
 
 ## 12. Configuration
 

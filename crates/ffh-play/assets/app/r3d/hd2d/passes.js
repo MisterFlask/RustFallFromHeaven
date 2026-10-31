@@ -8,27 +8,32 @@ import { Program, texture, framebuffer, FULLSCREEN_VS } from "../gl.js";
 import { COMMON, packedScene } from "../shaders.js";
 import * as H from "./shaders.js";
 
+/** The mode's programs, `[name, vs, fs, defines]` by key in the order they are built (`packed`: the
+ *  pipeline's, Pipeline.packed). r3d-lab/compile.html measures the same list. */
+export function hd2dPrograms(packed) {
+  const C = COMMON;
+  return {
+    // (Into the packed scene when the pipeline packs it: shaders.js SCENE_PACKED.)
+    sprite: packed ? ["hd2d-sprite", C + H.SPRITE_VS, packedScene(C + H.SPRITE_FS), { SCENE_PACKED: 1 }] : ["hd2d-sprite", C + H.SPRITE_VS, C + H.SPRITE_FS],
+    spriteShadow: ["hd2d-sprite-shadow", C + H.SPRITE_VS, C + H.SPRITE_SHADOW_FS],
+    contact: ["hd2d-contact", C + H.SPRITE_VS, C + H.CONTACT_FS],
+    ghost: ["hd2d-ghost", C + H.SPRITE_VS, C + H.SPRITE_GHOST_FS],
+    beam: ["hd2d-beam", C + H.SPRITE_VS, C + H.BEAM_FS],
+    rays: ["hd2d-rays", FULLSCREEN_VS, C + H.RAYS_FS],
+    bright: ["hd2d-bright", FULLSCREEN_VS, H.BRIGHT_FS],
+    compose: ["hd2d-compose", FULLSCREEN_VS, H.COMPOSE_FS],
+    mood: ["hd2d-mood", FULLSCREEN_VS, C + H.MOOD_FS],
+    tilt: ["hd2d-tilt", FULLSCREEN_VS, H.TILT_FS],
+  };
+}
+
 export class Hd2dPasses {
   /** `pipeline`: the 3D pipeline (its targets, programs and timers); `sprites`: the SpriteLayer. */
   constructor(gl, pipeline, sprites) {
     this.gl = gl;
     this.pl = pipeline;
     this.sprites = sprites;
-    const P = (name, vs, fs) => new Program(gl, name, vs, fs);
-    const C = COMMON;
-    this.p = {
-      // (Into the packed scene when the pipeline packs it: shaders.js SCENE_PACKED.)
-      sprite: pipeline.packed ? new Program(gl, "hd2d-sprite", C + H.SPRITE_VS, packedScene(C + H.SPRITE_FS), { SCENE_PACKED: 1 }) : P("hd2d-sprite", C + H.SPRITE_VS, C + H.SPRITE_FS),
-      spriteShadow: P("hd2d-sprite-shadow", C + H.SPRITE_VS, C + H.SPRITE_SHADOW_FS),
-      contact: P("hd2d-contact", C + H.SPRITE_VS, C + H.CONTACT_FS),
-      ghost: P("hd2d-ghost", C + H.SPRITE_VS, C + H.SPRITE_GHOST_FS),
-      beam: P("hd2d-beam", C + H.SPRITE_VS, C + H.BEAM_FS),
-      rays: P("hd2d-rays", FULLSCREEN_VS, C + H.RAYS_FS),
-      bright: P("hd2d-bright", FULLSCREEN_VS, H.BRIGHT_FS),
-      compose: P("hd2d-compose", FULLSCREEN_VS, H.COMPOSE_FS),
-      mood: P("hd2d-mood", FULLSCREEN_VS, C + H.MOOD_FS),
-      tilt: P("hd2d-tilt", FULLSCREEN_VS, H.TILT_FS),
-    };
+    this.p = Object.fromEntries(Object.entries(hd2dPrograms(pipeline.packed)).map(([k, a]) => [k, new Program(gl, ...a)]));
     /** Set by the map before each frame (hd2d/index.js): the config in force, the tilt-shift's focus
      *  (screen uv y) and strength, the far depth, the mood texture and the map's uniforms. */
     this.frame = null;
