@@ -102,7 +102,7 @@ pub static COUNCIL: Switch = Switch::new("COUNCIL");
 pub static MISSIONARY_ABROAD: Switch = Switch::new("MISSIONARY_ABROAD");
 /// Cultural actions (`culture.rs`, docs/CULTURE.md): off, a civilization channels none.
 pub static CULTURE: Switch = Switch::new("CULTURE");
-/// Armies' reinforcements by transit (`armies.rs`, docs/ARMIES.md): off, every unit stays in its
+/// Armies' marching reinforcements (`armies.rs`, docs/ARMIES.md): off, every unit stays in its
 /// city's garrison when trained.
 pub static ARMIES: Switch = Switch::new("ARMIES");
 /// Governed cities (`governor.rs`, docs/GOVERNORS.md): off, the AI keeps its first cities direct

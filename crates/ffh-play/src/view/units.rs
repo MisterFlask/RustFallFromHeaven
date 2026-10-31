@@ -396,21 +396,25 @@ pub fn unit_details(v: &Viewer, u: UnitId) -> Json {
     j
 }
 
-/// `group {units}`: the selected units in detail and the selection's actions.
+/// `group {units}`: the selected units in detail and the selection's actions. A selection with a
+/// marching recruit (this game's armies) has none: the recruit takes no orders until it arrives
+/// (`marching`: why, naming where it goes; each unit's `march` has the rest).
 pub fn group(v: &Viewer, units: &[UnitId]) -> Result<Json, QueryErr> {
     check_selection(v, units)?;
     let g = v.g;
     let plot = selection::plot(g, units);
     let (x, y) = g.map.xy(plot);
     let mirrored = selection::mirrors_group(g, units);
+    let marching = units.iter().find_map(|&u| g.unit_march_refusal(u));
     Ok(crate::jobj! {
         "units" => Json::Arr(units.iter().map(|&u| unit_details(v, u)).collect()),
         "plot" => crate::jarr![x, y],
         "group" => mirrored,
         // The group waits for orders (`pending.ready_groups`).
-        "ready" => mirrored.is_some_and(|grp| g.group_ready_to_move(grp, true) && !crate::decision::is_ai_group(g, grp)),
+        "ready" => mirrored.is_some_and(|grp| crate::decision::is_ready_group(g, grp)),
         "busy" => selection::is_busy(g, units),
-        "actions" => Json::Arr(actions(v, units)),
+        "actions" => Json::Arr(if marching.is_some() { Vec::new() } else { actions(v, units) }),
+        "marching" => marching,
     })
 }
 

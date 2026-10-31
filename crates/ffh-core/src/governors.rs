@@ -9,11 +9,12 @@
 //! are built only in directly ruled cities.
 //!
 //! **Governed cities.** Their production is automated (the controller's production choice, which
-//! reads the governor's profile; ffh-ai `governor.rs`) and cannot be set by hand. Each runs in one
-//! of two modes: *develop* (buildings, workers, local defenders) or *feed* an army (units for it,
-//! sent in transit, until it reaches its target size). The governor's profile weighs the city
-//! AI's flavors and sets the citizens' emphasis; its traits are small modifiers of the city
-//! ([`Game::city_governor_mods`]).
+//! reads the governor's profile; ffh-ai `governor.rs`) and cannot be set by hand: the governor
+//! develops the city (buildings, workers, local defenders), and its units stay in its garrison.
+//! An army may requisition soldiers from it as from any city (docs/ARMIES.md): a requisition order
+//! goes to the front of its queue, ahead of the governor's choice. The governor's profile weighs
+//! the city AI's flavors and sets the citizens' emphasis; its traits are small modifiers of the
+//! city ([`Game::city_governor_mods`]).
 //!
 //! **Governors and the bench.** A governor is a persistent record (`Governor`): name, profile,
 //! traits, origin, tenure. A player's governors without a city are its bench. Below the bench's
@@ -30,7 +31,6 @@ use std::collections::BTreeSet;
 
 use ffh_data::*;
 
-use crate::army::RecruitDest;
 use crate::game::Game;
 use crate::ids::*;
 
@@ -171,7 +171,6 @@ impl Game {
         }
         let p = self.cities[c].owner;
         self.cities[c].governor = None;
-        self.cities[c].feed_army = None;
         self.cities[c].governor_penalty_turns = 0;
         self.cities[c].rule_changed_turn = -1;
         if self.player_is_barbarian(p) {
@@ -241,9 +240,9 @@ impl Game {
         self.city_choose_production(c, None, None, None, false, false);
     }
 
-    /// City `c` just became governed: production automated, its units for its own garrison unless
-    /// its mode says otherwise (the default destination the player gave it under direct rule
-    /// cannot be changed while governed), the best candidate of the bench.
+    /// City `c` just became governed: production automated, its units for its own garrison (the
+    /// default destination the player gave it under direct rule cannot be changed while governed),
+    /// the best candidate of the bench.
     fn city_become_governed(&mut self, c: CityId) {
         let p = self.cities[c].owner;
         self.cities[c].production_automated = true;
@@ -380,7 +379,6 @@ impl Game {
                 gov.city = None;
             }
         }
-        self.cities[c].feed_army = None;
         self.cities[c].governor_penalty_turns = 0;
         self.cities[c].production_automated = false;
         self.city_governor_changed(c);
@@ -429,56 +427,12 @@ impl Game {
         Ok(())
     }
 
-    /// Governed city `c` feeds army `a` (`None`: develops). A new mode takes effect at once: the
-    /// governor chooses the city's production again (what it was building keeps its progress for
-    /// later, as any order taken off a queue); feeding another army only sends its units there.
-    pub fn city_set_feed_army(&mut self, p: PlayerId, c: CityId, a: Option<ArmyId>) -> GovResult {
-        self.city_check_feed_army(p, c, a)?;
-        match (self.cities[c].feed_army, a) {
-            (old, new) if old == new => {}
-            (Some(old), Some(new)) => {
-                self.cities[c].feed_army = a;
-                for o in self.cities[c].order_queue.iter_mut() {
-                    if o.dest == Some(RecruitDest::Army(old)) {
-                        o.dest = Some(RecruitDest::Army(new));
-                    }
-                }
-            }
-            _ => {
-                self.cities[c].feed_army = a;
-                self.city_clear_order_queue(c);
-                self.city_choose_production(c, None, None, None, false, false);
-            }
-        }
-        Ok(())
-    }
-
-    /// Whether `city_set_feed_army(p, c, a)` would be done (else why not).
-    pub fn city_check_feed_army(&self, p: PlayerId, c: CityId, a: Option<ArmyId>) -> GovResult {
-        if !self.governors_on() {
-            return Err("governors are off in this game");
-        }
-        if !self.cities.contains(c) || self.cities[c].owner != p || !self.city_is_governed(c) {
-            return Err("not a governed city of yours");
-        }
-        if let Some(a) = a {
-            if !self.armies_on() {
-                return Err("armies are off in this game");
-            }
-            if !self.recruit_dest_valid(p, RecruitDest::Army(a)) {
-                return Err("no such army of yours (or it is disbanding)");
-            }
-        }
-        Ok(())
-    }
-
     // ---------------------------------------------------------------------------------------
     // The turn
     // ---------------------------------------------------------------------------------------
 
     /// Player `p`'s governance in its turn processing: the capital ruled directly, no more direct
-    /// cities than slots, the replacement penalties wearing off, feeding stopped for armies that
-    /// are gone, the bench drawing candidates, interim cities taking them.
+    /// cities than slots, the bench drawing candidates, interim cities taking them.
     pub fn player_governance_turn(&mut self, p: PlayerId) {
         if !self.governors_on() || self.player_is_barbarian(p) || !self.players[p].alive {
             return;
@@ -486,17 +440,6 @@ impl Game {
         self.player_governance_settle(p);
         let turn = self.game_turn();
         for c in self.players[p].cities.clone() {
-            if let Some(a) = self.cities[c].feed_army {
-                if !self.recruit_dest_valid(p, RecruitDest::Army(a)) {
-                    self.cities[c].feed_army = None;
-                    if self.city_is_governed(c) {
-                        self.city_clear_order_queue(c);
-                        self.city_choose_production(c, None, None, None, false, false);
-                    }
-                    let name = self.d.text.name(&self.cities[c].name).to_string();
-                    self.log.msg(turn, Some(p), || format!("{name} has no army to feed any more: it develops."));
-                }
-            }
             if self.city_is_governed(c) && !self.cities[c].production_automated {
                 self.cities[c].production_automated = true;
             }

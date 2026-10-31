@@ -196,6 +196,8 @@ impl Game {
 
         // This game's cultural actions: the city's channel and those aimed at it end.
         self.city_culture_lost(c);
+        // This game's armies: it leaves every requisition; recruits marching to it go elsewhere.
+        self.city_army_lost(c);
         // This game's governors: its governor leaves the game.
         self.city_governance_lost(c);
 
@@ -619,13 +621,18 @@ impl Game {
     /// C++ `CvCity::pushOrder` (CvCity.cpp:11140-11255): queues an order (`data1` = unit /
     /// building / project / process type, `data2` = UnitAI for `ORDER_TRAIN`, -1 = the unit's
     /// default). Python events `cityBuildingUnit` / `cityBuildingBuilding`.
+    ///
+    /// This game's armies (docs/ARMIES.md): requisition orders stay at the front of the queue. An
+    /// order pushed to the front (`!append`) goes behind them, and `pop` takes off the first order
+    /// behind them (what the city builds next), never a requisition order.
     #[allow(clippy::too_many_arguments)]
     pub fn city_push_order(&mut self, c: CityId, order: OrderType, data1: i32, data2: i32, save: bool, pop: bool, append: bool, force: bool) {
         let d = self.d;
         let mut data2 = data2;
 
+        let lead = self.cities[c].order_queue.iter().take_while(|o| o.requisition).count();
         if pop {
-            self.city_pop_order(c, 0, false, false);
+            self.city_pop_order(c, lead as i32, false, false);
         }
 
         let mut valid = false;
@@ -682,16 +689,21 @@ impl Game {
             return;
         }
 
-        let order_data = OrderData { order_type: order, data1, data2, save, dest: None, reinforce_to: 0 };
+        let order_data = OrderData { order_type: order, data1, data2, save, dest: None, requisition: false };
 
+        // (The Python event above may have changed the queue: count the requisition orders again.)
+        let lead = self.cities[c].order_queue.iter().take_while(|o| o.requisition).count();
+        let front = !append && lead == 0;
         if append {
             self.cities[c].order_queue.push(order_data);
         } else {
-            self.city_stop_head_order(c);
-            self.cities[c].order_queue.insert(0, order_data);
+            if front {
+                self.city_stop_head_order(c);
+            }
+            self.cities[c].order_queue.insert(lead, order_data);
         }
 
-        if !append || self.cities[c].order_queue.len() == 1 {
+        if front || self.cities[c].order_queue.len() == 1 {
             self.city_start_head_order(c);
         }
 
@@ -722,11 +734,11 @@ impl Game {
         if finish && order.save {
             let len = self.cities[c].order_queue.len();
             self.city_push_order(c, order.order_type, order.data1, order.data2, true, false, true, false);
-            // (this game's armies: the repeated order keeps its destination)
+            // (this game's armies: the repeated order keeps its destination; a requisition never
+            // repeats, its army requisitions again while it is short)
             if self.cities[c].order_queue.len() > len {
                 let o = self.cities[c].order_queue.last_mut().expect("pushed");
                 o.dest = order.dest;
-                o.reinforce_to = order.reinforce_to;
             }
         }
 
@@ -764,55 +776,27 @@ impl Game {
                         self.players[owner].gold += production_gold;
                     }
 
-                    // This game's armies (docs/ARMIES.md): the unit goes to its destination,
-                    // in transit unless it is this city's garrison or an army standing here.
-                    let dest = self.city_recruit_dest(c, order.dest, unit);
-                    let in_transit = dest.is_some_and(|to| self.city_send_in_transit(c, unit, opt_from_i32(train_unit_ai), to));
-                    if !in_transit {
-                        let (x, y) = (self.cities[c].x, self.cities[c].y);
-                        let new_unit = self.player_init_unit(owner, unit, x, y, opt_from_i32(train_unit_ai), None);
+                    let (x, y) = (self.cities[c].x, self.cities[c].y);
+                    let new_unit = self.player_init_unit(owner, unit, x, y, opt_from_i32(train_unit_ai), None);
 
-                        // FfH: Modified by Kael 07/05/2008 (finishMoves, production experience, the
-                        // rally plot mission and automation moved into applyBuildEffects)
-                        self.city_apply_build_effects(c, new_unit);
+                    // FfH: Modified by Kael 07/05/2008 (finishMoves, production experience, the
+                    // rally plot mission and automation moved into applyBuildEffects)
+                    self.city_apply_build_effects(c, new_unit);
 
-                        self.ev_unit_built(c, new_unit);
+                    self.ev_unit_built(c, new_unit);
 
-                        if d.units[unit].domain_type == Some(DomainType::DOMAIN_AIR) && self.units.contains(new_unit) {
-                            let team = self.city_team(c);
-                            if self.plot_count_num_air_units(self.city_plot(c), team) > self.city_air_unit_capacity(c, team) {
-                                self.unit_jump_to_nearest_valid_plot(new_unit); // can destroy unit
-                            }
-                        }
-
-                        // An army standing in the city takes the unit at once.
-                        if let Some(crate::army::RecruitDest::Army(a)) = dest {
-                            if self.units.contains(new_unit) {
-                                if let Some(grp) = self.armies.get(a).and_then(|ar| ar.group).filter(|&g| self.groups.contains(g)) {
-                                    if let Some(own) = self.units[new_unit].group {
-                                        self.group_clear_mission_queue(own);
-                                    }
-                                    self.unit_join_group(new_unit, Some(grp), false);
-                                    self.units[new_unit].army = Some(a);
-                                }
-                            }
+                    if d.units[unit].domain_type == Some(DomainType::DOMAIN_AIR) && self.units.contains(new_unit) {
+                        let team = self.city_team(c);
+                        if self.plot_count_num_air_units(self.city_plot(c), team) > self.city_air_unit_capacity(c, team) {
+                            self.unit_jump_to_nearest_valid_plot(new_unit); // can destroy unit
                         }
                     }
 
-                    // "Reinforce to N": the order comes back while the army (with its units on
-                    // their way) is short of N (a repeating order came back already).
-                    if let (Some(crate::army::RecruitDest::Army(a)), true) = (order.dest, order.reinforce_to > 0 && !order.save) {
-                        if self.armies.contains(a) {
-                            let have = self.army_units(a).len() as i32 + self.army_transit_count(a);
-                            if have < order.reinforce_to {
-                                let len = self.cities[c].order_queue.len();
-                                self.city_push_order(c, order.order_type, order.data1, order.data2, false, false, true, false);
-                                if self.cities[c].order_queue.len() > len {
-                                    let o = self.cities[c].order_queue.last_mut().expect("pushed");
-                                    o.dest = order.dest;
-                                    o.reinforce_to = order.reinforce_to;
-                                }
-                            }
+                    // This game's armies (docs/ARMIES.md): a unit bound elsewhere (an army, another
+                    // city's garrison) marches there; an army standing here takes it at once.
+                    if self.units.contains(new_unit) && self.cities.contains(c) {
+                        if let Some(dest) = self.city_recruit_dest(c, order.dest, unit) {
+                            self.unit_recruit_to(new_unit, c, dest);
                         }
                     }
                 }

@@ -173,6 +173,12 @@ impl Controller for Ai {
         production::choose(self, g, c);
     }
 
+    /// The unit a city trains for an army's requisition (docs/ARMIES.md): the governors'
+    /// feeding choice (`governor::requisition_unit`).
+    fn requisition_unit(&self, g: &Game, c: CityId, a: ArmyId) -> Option<(UnitType, UnitAIType)> {
+        governor::requisition_unit(g, c, a)
+    }
+
     fn govern_cities(&self, g: &mut Game, p: PlayerId) {
         // The AI's own cities are its play (`play_turn`); a human's governors act here.
         if g.players[p].human {

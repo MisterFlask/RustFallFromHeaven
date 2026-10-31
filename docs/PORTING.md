@@ -115,18 +115,25 @@ side)
   Foment Revolt, Flip City, Spread Religion, removed on the owner's direction of 2026-10-30).
 - **Armies** (`GAMEOPTION_ARMIES`, docs/ARMIES.md): land combat units (not mages, recon units,
   heroes or summons) serve in named armies, kept one selection group each, or in a city's
-  garrison. A trained land combat unit goes to its order's destination (the city's garrison by
-  default, another city's garrison, or an army): anywhere but its own garrison it travels off the
-  map (paying upkeep, counting for unit class limits) and appears there when its journey is done,
-  advancing only while its army is in supply (within 3 plots of the owner's trade network); it
-  is never lost (a gone destination or a long wait sends it to the nearest garrison). Form,
-  split, join and merge, garrison, rename, disband (march to the nearest garrison), upgrade all,
-  target size, "Reinforce to N". Option off (the default outside the browser's new-game screen),
-  nothing changes. Save format 6.
+  garrison. An army requisitions soldiers from the cities its owner picks for it (any city,
+  directly ruled or governed) while it is short of its target size: an order at the front of the
+  city's queue that interrupts its production (which keeps its progress) and cannot be taken off
+  by hand. A trained land combat unit goes to its order's destination (the city's garrison by
+  default, another city's garrison, or an army): anywhere but its own garrison it is created in
+  the city as any unit and marches there, moved by the rules once a turn before its owner plays
+  (it takes no orders, never attacks, can be attacked and killed), advancing toward an army only
+  while the army is in supply (within 3 plots of the owner's trade network); 5 turns without
+  progress or a destination gone send it to the nearest garrison it can reach. Form, split, join
+  and merge, garrison, rename, disband (march to the nearest garrison), upgrade all, target size,
+  requisition cities. Option off (the default outside the browser's new-game screen), nothing
+  changes. Save format 9 (2026-10-31, the owner's design: requisition and marching recruits
+  replace the invisible transit, "Reinforce to N" and the governed cities' feed mode of formats
+  6-8).
 - **Governors** (`GAMEOPTION_GOVERNORS`, docs/GOVERNORS.md): a player rules four cities directly
   (the capital always); every other city is governed: its production is its governor's (it cannot
-  be set by hand), in one of two modes, developing or feeding an army to its target size. World
-  wonders, palaces, rituals and settlers only in directly ruled cities. Governors come from a
+  be set by hand), developing the city; an army's requisition goes ahead of it (the feed mode,
+  formats 7-8, is gone since format 9, 2026-10-31). World wonders, palaces, rituals and settlers
+  only in directly ruled cities. Governors come from a
   bench drawn toward the leader's flavors, with a profile (the flavors their city's production
   leans toward, its citizens' emphasis) and up to two traits (small modifiers of their city);
   replacing one costs the city 25% of its production and commerce for 5 turns; a lost city's

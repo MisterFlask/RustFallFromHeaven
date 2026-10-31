@@ -361,11 +361,13 @@ pub fn unit_json(v: &Viewer, u: UnitId) -> Json {
         j.set("activity", grp.filter(|&gr| g.groups.contains(gr)).map(|gr| Json::idx(g.groups[gr].activity_type)));
         j.set("transport", unit.transport_unit);
         j.set("summon_turns", (unit.duration > 0).then_some(unit.duration));
-        // This game's armies (docs/ARMIES.md): its army, or the city whose garrison it is in.
+        // This game's armies (docs/ARMIES.md): its army, or the city whose garrison it is in, or
+        // its march (a recruit on its way: it takes no orders until it arrives).
         if g.armies_on() {
             j.set("army", unit.army);
             j.set("garrison", g.unit_garrison_city(u));
             j.set("army_unit", g.unit_is_army_unit(u));
+            j.set("march", if unit.march.is_some() { armies::march_json(v, u) } else { Json::Null });
         }
     }
     j
@@ -392,7 +394,7 @@ pub fn groups(v: &Viewer) -> Json {
             "id" => grp,
             "head" => g.group_get_head_unit(grp),
             "units" => group.units.clone(),
-            "ready" => g.group_ready_to_move(grp, true) && !crate::decision::is_ai_group(g, grp),
+            "ready" => crate::decision::is_ready_group(g, grp),
             // What Civ4's group cycle selects (W, Enter, the next group after a command, the
             // waiting groups on a plot, the nearest group): C++ `readyToSelect()` with its
             // default `bAny = false`, i.e. every unit can move (`canAllMove`), not only one.
@@ -423,10 +425,10 @@ pub fn view(v: &Viewer, ctx: &Ctx) -> Json {
         "cities" => cities(v),
         "units" => units(v),
         "groups" => groups(v),
-        // This game's armies (null without them): the human's armies and the units on their
-        // way to garrisons.
+        // This game's armies (null without them): the human's armies and the recruits marching
+        // to garrisons (unit ids: each unit's `march` says where and how long).
         "armies" => armies::armies(v),
-        "garrison_transit" => if g.armies_on() { armies::garrison_transit(v) } else { Json::Null },
+        "garrison_marching" => if g.armies_on() { armies::garrison_marching(v) } else { Json::Null },
         // C++ `CvPlayer::m_groupCycle`: the order W cycles the waiting groups in
         // (`cycleSelectionGroups`), and whether some group has orders to continue
         // (`hasAutoUnit`: the cycle's wrap then sends AutoMoves).

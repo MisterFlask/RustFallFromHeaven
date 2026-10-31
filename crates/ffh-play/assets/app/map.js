@@ -14,7 +14,7 @@
 import { S, tname, dname, info, me, isBarbarian, ORDER_KINDS, observing } from "./state.js";
 import * as T from "./tiles.js";
 import { ArtMap } from "./artmap.js";
-import { IsoMap, ISO_DEFAULT_ZOOM, drawRevoltMark } from "./iso.js";
+import { IsoMap, ISO_DEFAULT_ZOOM, drawRevoltMark, drawMarchMark, marchMark } from "./iso.js";
 import { artZooms, defaultArtZoom } from "./stacks.js";
 
 const ZOOMS = [12, 16, 24, 32, 48, 64];
@@ -1262,8 +1262,12 @@ export class MapView {
           g.fillStyle = f > 0.6 ? "#4caf50" : f > 0.3 ? "#e0b030" : "#e04030";
           g.fillRect(bx + 2, by + s - 4, (s - 4) * f, 3);
         }
-        // Moves pip (own units): green with moves left, red without, grey when asleep.
-        if (top.owner === mine && s >= 10) {
+        // Moves pip (own units): green with moves left, red without, grey when asleep; a
+        // marching recruit's march mark instead (this game's armies: the rules move it).
+        if (marchMark(top, mine) && s >= 10) {
+          const r = Math.max(3.5, s / 6);
+          drawMarchMark(g, bx + r + 0.5, by + r + 0.5, r, 1);
+        } else if (top.owner === mine && s >= 10) {
           const r = Math.max(2, s / 9);
           const asleep = ASLEEP.includes(tname("ActivityType", top.activity));
           g.fillStyle = asleep ? "#9a9a9a" : top.moves > 0 ? "#3fdc5a" : "#d03a2a";
