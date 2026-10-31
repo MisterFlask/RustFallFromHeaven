@@ -763,7 +763,7 @@ async function boot() {
   if (await art) lookLoaded();
   window.ffh.ready = true;
   // The battle screens' dev entry (docs/HUMAN.md, "The battle screens"): `?battle=<fixture>` opens
-  // the battle plan over a fixture (no rules involved); the game does not open them yet.
+  // the battle plan over a fixture of the formation-battle prototype (no rules involved).
   const battle = pageParam("battle");
   if (battle) devBattle(battle);
 }
@@ -771,7 +771,7 @@ async function boot() {
 /** The battle screens over fixture `name` (battle.js, loaded only then). */
 async function devBattle(name) {
   const m = await import("./battle.js");
-  await m.openDevBattle(name, { viewer: pageParam("viewer") });
+  await m.openDevBattle(name);
 }
 
 /** A parameter of the page's URL, or null. */

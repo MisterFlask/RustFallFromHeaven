@@ -447,21 +447,20 @@ and then declared war on you (loading it shows both leader moments; it then refu
 `DIR` may be a game's directory. See "Testing the browser client" below for the checklist.
 
 **Engagement combat** (docs/ENGAGEMENTS.md; the game options Armies and Engagements). An attack
-by land on a land plot is one battle of each side's committed units. In the browser:
+by land on a land plot is one formation battle: each side's line on a grid of three rows by its
+lanes. In the browser:
 - **Attacking.** The tooltip over an enemy plot next to the selection says it is a battle ("Battle:
-  5 of yours can fight, against 3 defenders"; the odds beside it are still the duel's of the
-  strongest pair until the engine's estimate lands). A right-click there (a second tap on a
-  phone) with an army or a stack of units that can attack opens **the battle plan** with the
-  stance's pick in its slots; Attack (or `Enter`) sends `engage` with that force and the stance
-  picked there (the battle's report records that stance; an attack that declares war says so on
-  the button), Cancel (`Esc`) leaves the map as it was. Shift+right-click on such a plot attacks
-  at once with the stance's pick (a `move`); on any other plot it lays a waypoint as before. Over
-  a plot further away, or next to units that have used their moves or their attack, the tooltip
-  says "Battle on arrival" ("once they can attack") with the selected units that could fight
-  there, and the path's odds chip stays; a right-click sends the move, and the battle on arrival
-  takes the stance's pick of whoever stands next to the plot then. A lone unit's attack, and
-  every attack at sea or by air, goes as before. Until the engine's sampled estimate lands (phase
-  6 step 9, part 2) the plan's forecast says "estimate coming" and its What-if list waits for it.
+  5 of yours can fight, against 3 defenders"; the odds beside it are the duel's of the strongest
+  pair, a rough guide). A right-click there (a second tap on a phone) with an army or a stack of
+  units that can attack opens **the battle plan** with the rules' auto formation; Attack (or
+  `Enter`) sends `engage` with the formation arranged there (an attack that declares war says so
+  on the button), Cancel (`Esc`) leaves the map as it was. Shift+right-click on such a plot
+  attacks at once in the rules' formation (a `move`); on any other plot it lays a waypoint as
+  before. Over a plot further away, or next to units that have used their moves or their attack,
+  the tooltip says "Battle on arrival" ("once they can attack") with the selected units that could
+  fight there, and the path's odds chip stays; a right-click sends the move, and the battle on
+  arrival takes the rules' formation of whoever stands next to the plot then. A lone unit's
+  attack, and every attack at sea or by air, goes as before.
 - **After a battle** the struck plot flashes (from the battle's report: several units may fall
   at once), a toast names the battle with **Watch** and **Report** links (as do the battle's
   message under Messages and the turn report's **Battles** list, your battles since your last
@@ -470,40 +469,52 @@ by land on a land plot is one battle of each side's committed units. In the brow
   repelled; drawn at 32 px tiles and up, inside its plot): a click on it watches it again, a click
   elsewhere on the plot selects as usual. A battle older than the kept logs shows its summary
   only.
-- **Stances.** The unit panel's army line, each army on the Armies screen [F5] and the city
-  screen's garrison (and the Armies screen's garrison list) choose the stance (Balanced, Shield
-  Wall, Ranged Line, Mobile, Preserve Veterans), with its help under the selector: it decides who
-  fights when the army or the city is attacked, and the force an army's attacks propose.
-- **Units.** The unit panel shows the lead unit's role, its A (before the bonuses of the plot it
-  attacks), its Dv where it stands and its HP in a battle; a unit row's role badge has the same
-  in its tooltip. The help of first strikes, withdrawal, collateral damage, Blitz and combat
+- **Units.** The unit panel shows the lead unit's role, its A, Dv and HP in a battle, its speed,
+  whether it is large and its actions in the front, middle and rear rows (the view's `engage_*`);
+  a unit row's role badge has the same in its tooltip. The help of first strikes, withdrawal, collateral damage, Blitz and combat
   limits (units and promotions) adds what they mean in a battle. The Stack attack option is
   ignored (its line says so).
 
-**The battle screens** (engagement combat, phase6_plan 9.3 and 15; the battle UI design). They
-open from the game as above (the plan from an attack, the battle and the report from a battle's
-links and marker), through the engine's `engage_preview`, `engage` and `battle_log`
-(`apiSource` in `battle.js`); a dev entry opens them over a fixture, `?battle=strages`
-(`&viewer=new|some|veteran` sets what the page remembers of the lessons). In an overlay over the dimmed map, on one isometric
-board of the two plots: **the plan** (both forces in their ranks, the slots as pips with their sum
-in words, each unit's chance to fall and to pull out, a unit's card on pointing at it with its A or
-Dv by parts, its target order as numbered arrows and its damage per hit; click one of your units
-and then a glowing one to swap them, ◂ ▸ for another stance's pick, a What-if line to adopt that
-plan; the win chance, the rounds, the cost of winning, and the stakes with the doomed struck
-through; Attack or `Enter`), **the battle** (played from the log: targets picked at the round's
-start, the hits as pending white on the bars, every bar dropping together at the bell, withdrawal
-dice, deaths where they fall, the shield band cracking; the strength bars against the plan's
-hollow gold marker, the round track, a caption a round, the hit card dissecting one hit, lessons
-in full the first time, short the second, then as `?` markers; `Space` play/pause, `→` next hit,
-`Shift+→` round, `Ctrl+→` beat, `←` back, `1`-`4` speed, `T` all arrows, `Esc` the report) and
-**the report** (the frozen board, each unit's fate, the beat rounds (a line replays from there),
-the plan checked, what decided it, next time, the rules seen). The modules: `battle.js` (the
-overlay, the keys, the sources), `battle_plan.js`, `battle_watch.js`, `battle_report.js`,
-`battle_stage.js` (the board and figures; the anim-sprint strips in `app/anim/`), and the pure
-`battle_log.js` (the log folded into a script and states, the report's facts; its header lists
-every protocol field the screens read) and `battle_teach.js` (the lessons, their texts by the
-log's codes, the ledger kept in browser storage); `battle_fixture.js` is the fixture, made by the
-design prototype's model of the round rules (not the engine's numbers).
+**The battle screens** (formation battles, phase 6 revision 4; the owner's prototype's
+battlefield). They open from the game as above (the plan from an attack, the battle and the report
+from a battle's links and marker), through the engine's `engage_preview`, `engage` and `battle_log`
+(`apiSource` in `battle.js`); a dev entry opens them over a fixture, `?battle=field` (or `forest`,
+`hills`, `city`, `raid`: a city that falls). In an overlay over the dimmed map, on one isometric
+battlefield of M7 tiles (six ranks deep, the attacker's rear to the defender's rear, by the lanes;
+the ground's scenery round it: trees round a forest or jungle, the city behind its defenders, hills
+on a hill): **the plan** (both lines, yours in the rules' auto formation, theirs as you know it;
+each unit's HP bar and its chance to fall; a tooltip over a unit says what it is: role, A, Dv, HP,
+speed, its actions in each row and whom they reach, its spell, its specials, its chance to fall;
+click one of your units, then a cell of your grid to move it there or another unit to swap (a
+large unit takes two cells of a row; a unit with nowhere to go leaves the line), "Take out of the
+line"; the pool's other units listed (click one, then a cell); Auto-arrange; the slots and lanes
+of each side and why; the ground's rules in words; the forecast of the formation, asked of the
+engine at each change: each side's expected losses, their line wiped out, the plot falls, yours
+wiped out; Watch or Report after the attack; Attack or `Enter`), **the battle** (the log played
+one action at a time as a snap, the owner's pick of the battle-feel spike, 2026-10-31: every
+unit breathes; on an action's contact frame the pair cuts to its impact poses (the strike strip's
+contact frame and the target's flinch frame where the unit has anim-sprint frames, else the
+sprite leaning in, a little larger, and the target leaning back under a white flash) and slides
+together, lifted above the field with an ink outline, and the slash or the sparks, the number and
+a small shake land; a held beat of 0.5-1.1 s with embers drifting, then a quarter-second ease
+back. Crits hold longer and kills hold, the death playing after the return; on crits and kills only
+the rest of the field drops into a shade round the pair, the camera never zooms; CRITICAL and
+SLAIN under the numbers; a miss is a dodge with a whiff, a heal glows, a shot or a spell arrives
+as a streak while its shooter stays on its cell, splash targets snap together, a knock-back eases
+back a row on the return, an escape leaves after it; no shake under reduced motion; each side's
+standing units; the log beside it under round and pass headers, a unit's speed before its line,
+an action's line on its contact frame; play/pause `Space` (the action freezes where it is), step
+`→`, skip to the report `Esc`, speeds 1x (the default) to 8x `1`-`4`; played through, the report
+follows) and **the report** (the battlefield where the battle ended, whether the plot fell, each
+side's fallen, escaped and standing with their heads, the whole log; Replay, Continue). The
+modules: `battle.js` (the overlay, the keys, the viewer's preferences, the sources),
+`battle_plan.js`, `battle_watch.js` (the replay's clock and timeline), `battle_snap.js` (the
+snap: each action's timing plan, roles, poses and drawing over the stage), `battle_report.js`,
+`battle_stage.js` (the battlefield, the figures and the effects; the anim-sprint strips in
+`app/anim/`), and the pure `battle_log.js` (the protocol's shapes in its header, the formation's
+editing, the log folded into states and lines, the words of the rules by their codes); `battle_fixture.js` is the fixture, made by `assets/test/make_battle_fixtures.mjs`
+from the owner's prototype (`assets/test/fixtures/proto/`: its engine and sample armies, not the
+engine's numbers).
 
 ## Commands
 
@@ -931,8 +942,9 @@ node tools/web-touch-smoke.mjs           # the same on an emulated phone, with t
 
 * `web-check.sh` needs node (it is skipped without it); the pure modules (map maths and map
   deltas, markup, state and Civ4's group cycle, the hotkeys, the tech tree's layout, the API layer
-  against a fake `fetch`, the battle screens' log folding, report facts, lessons and teaching
-  ledger over the battle fixture) are tested in `crates/ffh-play/assets/test/*.test.mjs`.
+  against a fake `fetch`, the battle screens' log folding, log lines, formation editing and the
+  ground's words over the battle fixture, the watch screen's snap: each action's timing plan,
+  the shade, the roles and their poses) are tested in `crates/ffh-play/assets/test/*.test.mjs`.
 * `web-api-smoke.mjs [--turns 20] [--seed 5] [--world WORLDSIZE_TINY] [--opponents 2] [--url URL]
   [--keep] [--verbose]` starts `target/release/ffh-play serve --port 0` (or `--bin`), checks the
   page and its modules are served, plays the turns as the page does (popups, research,
@@ -967,12 +979,12 @@ node tools/web-touch-smoke.mjs           # the same on an emulated phone, with t
   attack (`stage attack`), the keep/raze dialog (`stage capture`), popups set aside and asked
   again after loading the same turn, the transport picker (`stage load`), Shift-right-click
   waypoints and go-to (`G`) Shift-click waypoints held until Shift is released (`stage
-  automoves`), engagement combat (`stage engagement`: the army's role, A, Dv, HP and stance in the
-  unit panel, the battle in the tooltip, a right-click opening the battle plan with the stance's
-  pick, `Enter` attacking with the keep/raze decision over the overlay, the combat flash from the
-  battle's report, the watch screen and the report of the engine's log, the map's battle marker
-  and the message's link opening it again, the army's stance on the Armies screen and the
-  garrison's on the city screen), a game started by another client
+  automoves`), engagement combat (`stage engagement`: the army's role, A, Dv and HP in the unit
+  panel, the battle in the tooltip, a right-click opening the battle plan in the rules' auto
+  formation with its forecast, a unit moved to another cell by mouse (the forecast asked again),
+  `Enter` attacking with that formation and the keep/raze decision over the overlay, the combat
+  flash from the battle's report, the watch screen and the report of the engine's log, the map's
+  battle marker and the message's link opening it again), a game started by another client
   while the page shows the title screen's New game dialog (both go), and the crash screen of a server started with
   `--panic-at`; and (P6) the city screen (a worked plot clicked off and on, the automation), the
   tech tree (`F6`, a click researches), civics (`F3`, a pick and the revolution), religion

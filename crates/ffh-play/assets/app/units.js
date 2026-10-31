@@ -14,7 +14,7 @@ import { look, iconEl, unitIcon, barEl, pix, typeIcon, promotionIcon, uiIcon } f
 import { isoSkin, isoIcon, actionIcon, portrait, isoBar, focusOn } from "./isoui.js";
 import { effectsOf, infoTip } from "./infotips.js";
 import { marchLine } from "./armies.js";
-import { engagementsOn, battleTerrain, openPlan, stanceSelect, roleName, flashBattle } from "./engagements.js";
+import { engagementsOn, battleTerrain, openPlan, roleName, flashBattle, engageNumbers } from "./engagements.js";
 
 /** An 8 px icon of the ui set, or the glyph before the art loaded. */
 const icon8 = (name, glyph, title) => iconEl(`icon8/${name}`, { title }) ?? glyph;
@@ -346,7 +346,7 @@ export function click(x, y, ev) {
 /** A right-click on (x, y): move the selection there (Shift: add a waypoint). Under engagement
  *  combat an attack of an army or a stack opens the battle plan first; Shift on a plot next to the
  *  selection where it would fight a battle now (the `combat` query says so), with no waypoints
- *  laid, attacks at once with the stance's pick. Shift clicks go in order (`shiftChain`): one that
+ *  laid, attacks at once in the rules' formation. Shift clicks go in order (`shiftChain`): one that
  *  asks the engine first does not let a later waypoint overtake it. */
 export function rightClick(x, y, ev) {
   if (mode) {
@@ -370,7 +370,7 @@ let shiftChain = Promise.resolve();
 
 /** Moves the selection to (x, y) now, replacing its orders (waypoints not sent yet are
  *  dropped: the move replaces them). Under engagement combat an attack of an army or a stack
- *  opens the battle plan instead, unless `direct` (the move attacks with the stance's pick). */
+ *  opens the battle plan instead, unless `direct` (the move attacks in the rules' formation). */
 export async function moveTo(x, y, { direct = false } = {}) {
   if (!S.sel) return;
   if (waypoints && unitsKey(waypoints.units) === unitsKey(S.sel.units)) clearWaypoints();
@@ -805,10 +805,10 @@ export function combatLines(c, at = null) {
     if (c.on_arrival) {
       const next = !!(at && S.sel && S.map) && plotDistance(S.map, S.sel.x, S.sel.y, at.x, at.y) === 1;
       box.append(h("div.battle", `Battle ${next ? "once they can attack" : "on arrival"}: ${c.pool} of yours could fight, against ${foes}`));
-      box.append(h("div.dim.small", `${mapView?.touch ? "Tap again" : "Right-click"}: ${next ? "attack when they can" : "go there and attack"}, with the stance's pick`));
+      box.append(h("div.dim.small", `${mapView?.touch ? "Tap again" : "Right-click"}: ${next ? "attack when they can" : "go there and attack"}, in the rules' formation`));
     } else {
       box.append(h("div.battle", `Battle: ${c.pool} of yours can fight, against ${foes}`));
-      box.append(h("div.dim.small", mapView?.touch ? "Tap again: the battle plan" : "Right-click: the battle plan · Shift+right-click: attack with the stance's pick"));
+      box.append(h("div.dim.small", mapView?.touch ? "Tap again: the battle plan" : "Right-click: the battle plan · Shift+right-click: attack in the rules' formation"));
     }
     if (c.odds === undefined || c.odds === null) {
       if (c.declare_war_team !== null && c.declare_war_team !== undefined) box.append(h("div.warn", "Attacking declares war"));
@@ -1094,19 +1094,11 @@ function roleBadge(u) {
   return h("span.badge.role", { "data-role": u.engage_role, title: engageText(u) }, roleName(u.engage_role));
 }
 
-/** A unit's battle numbers: "A 4 · Dv 5 · HP 55/120" (`hp` / `max_hp` are the health percent;
- *  its battle HP scales it to `engage_max_hp`). */
-function engageNumbers(u) {
-  const x100 = (v) => (v % 100 === 0 ? String(v / 100) : (v / 100).toFixed(1));
-  const hp = Math.round(((u.hp ?? 0) / Math.max(1, u.max_hp ?? 100)) * u.engage_max_hp);
-  return `A ${x100(u.engage_attack)} · Dv ${x100(u.engage_defense)} · HP ${hp}/${u.engage_max_hp}`;
-}
-
-/** "Frontline · A 4 · Dv 5 · HP 55/120". */
+/** "Frontline · A 4 · Dv 5 · HP 55/120 · speed 4". */
 const engageText = (u) => `${roleName(u.engage_role)} · ${engageNumbers(u)}`;
 
 const ENGAGE_TITLE =
-  "In a battle (engagement combat): its role decides where it stands and whom it hits; A is its attack before the bonuses of the plot it attacks, Dv its defence where it stands, HP its health in a battle";
+  "In a battle (engagement combat): its role and the row it stands in decide what it does and how many times (front, middle, rear); A is its attack, Dv its defence, HP its health in a battle, speed when it acts (the fastest first)";
 
 /** The lead unit's battle numbers (engagement combat): its role, A, Dv and HP; null without
  *  engagements or a role. */
@@ -1116,7 +1108,7 @@ function engageLine(u) {
 }
 
 /** The selection's army in one line: its size (and target), its recruits marching to it and in
- *  training for it, its supply, its stance (engagement combat); the Armies screen [F5] has the
+ *  training for it, its supply; the Armies screen [F5] has the
  *  rest. Null unless every selected unit is in one army. */
 function armyLine() {
   const ids = (S.sel?.units ?? []).map((id) => S.units.get(id)?.army);
@@ -1134,9 +1126,6 @@ function armyLine() {
     a.disband_to ? h("span.dim", ` · disbanding to ${a.disband_to}`) : null,
     " ",
     h("button.link.small", { onclick: () => emit("open-screen", "armies"), title: "The Armies screen [F5]" }, "armies"),
-    // Engagement combat: the army's stance, which decides who fights when it defends and whom it
-    // proposes when it attacks.
-    a.stance !== undefined && a.stance !== null ? stanceSelect(a.stance, (i) => run({ c: "army_stance", army: a.id, stance: i }), { what: "army" }) : null,
   );
 }
 
@@ -1174,7 +1163,7 @@ async function battleNow(x, y) {
 
 /** Engagement combat (docs/ENGAGEMENTS.md): when moving the selection onto (x, y) attacks it with
  *  a battle and the force is a choice (an army, or several units that can attack there), opens
- *  the battle plan with the stance's pick (Attack sends `engage` with the force) and returns true;
+ *  the battle plan with the rules' auto formation (Attack sends `engage` with the formation) and returns true;
  *  else false (the move goes as it is: a lone unit's attack, a duel, no defender). */
 async function planAttack(x, y) {
   if (S.status?.phase !== "human") return false;

@@ -1,16 +1,16 @@
 // Engagement combat in the client (docs/ENGAGEMENTS.md; docs/HUMAN.md, "Engagement combat"): what
 // the map, the panels and the screens need besides the battle screens themselves (battle.js and
-// its modules, loaded on first use): whether the game has engagements, the stances and their help
-// and a selector for them, the view's battles (`view.battles`) as the map's markers, opening a
-// battle's report or the plan of an attack, the combat flash from a battle's summary, and the
-// toast of a battle's message with its links.
+// its modules, loaded on first use): whether the game has engagements, a unit's battle numbers,
+// the view's battles (`view.battles`) as the map's markers, opening a battle's report or the plan
+// of an attack, the combat flash from a battle's summary, and the toast of a battle's message with
+// its links.
 //
 // A battle's summary (the view's `battles`, the turn report's `engagements`, the `engage` and
 // `move` replies' `battle`): battle_log.js's header lists it.
 
 import { S, dname, info, tname } from "./state.js";
 import { h, toastNode } from "./dom.js";
-import { render as markup, plain } from "./markup.js";
+import { render as markup } from "./markup.js";
 import { plotIndex } from "./tiles.js";
 
 /** Whether this game has engagement combat (the view says so). */
@@ -56,61 +56,21 @@ export async function openReport(id, { report = false } = {}) {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Stances
-
-/** The stances, in the data's order: `[{i, type, name, help}]`. */
-export function stances() {
-  return (S.data?.tables?.StanceType ?? []).map((e, i) => ({ i, type: e.type, name: dname("StanceType", i), help: e.help ?? "" }));
-}
-
-/** Stance `i`'s help as plain text (the selector's tooltip). */
-export function stanceHelp(i) {
-  const help = info("StanceType", i)?.help ?? "";
-  return plain(help);
-}
-
-/** A stance selector: `current` (an index) selected, `onChange(i)` on a change; the stance's help
- *  under it (`help`: false leaves it out) and as the tooltip of each option. `what`: what the
- *  stance is of ("army", "garrison"), for the label. */
-export function stanceSelect(current, onChange, { what = "army", help = true, disabled = false } = {}) {
-  const list = stances();
-  const gloss = h("div.stance-help.dim.small", list[current]?.help ? markup(list[current].help) : "");
-  const sel = h(
-    "select.stance-select",
-    {
-      "aria-label": `${what === "garrison" ? "Garrison" : "Army"} stance`,
-      title: `The ${what}'s stance: which of its units fight when it defends${what === "army" ? " and which it proposes when it attacks" : ""} (engagement combat)`,
-      disabled,
-      "data-stance": current,
-      onchange: (ev) => {
-        const i = Number(ev.target.value);
-        gloss.replaceChildren(...(list[i]?.help ? [markup(list[i].help)] : []));
-        onChange(i);
-      },
-    },
-    list.map((s) => h("option", { value: s.i, selected: s.i === current, title: stanceHelp(s.i) }, s.name)),
-  );
-  return h(`div.stance-row`, h("label", h("span", "Stance "), sel), help ? gloss : null);
-}
-
-// ---------------------------------------------------------------------------------------------
 // Battles of the view
 
-/** How a battle went for the viewer: "won" (its attack took the plot), "lost" (it was taken), "held"
- *  (it held, or its attack was repelled with the enemy losing more), "repelled", "draw". */
+/** How a battle went for the viewer: "won" (its attack took the plot), "repelled" (its attack did
+ *  not: the defenders stay until annihilated), "lost" (its plot was taken), "held" (it held). */
 export function outcomeFor(b) {
   const me = b.viewer_side ?? 0;
-  if (b.result === "Draw" || b.result === "Mutual") return "draw";
-  const attackerWon = b.result === "AttackerWon";
-  if (me === 0) return attackerWon ? "won" : "repelled";
-  return attackerWon ? "lost" : "held";
+  if (me === 0) return b.plot_taken ? "won" : "repelled";
+  return b.plot_taken ? "lost" : "held";
 }
 
 /** One line about battle `b` for people: "Prespur: won, the city taken; 0 lost, 3 of theirs". */
 export function battleLine(b) {
   const me = b.viewer_side ?? 0;
   const place = b.place ?? `(${b.x}, ${b.y})`;
-  const out = { won: b.city_captured !== null && b.city_captured !== undefined ? "won, the city taken" : "won", repelled: "repelled", lost: "lost", held: "held", draw: "a draw" }[outcomeFor(b)];
+  const out = { won: b.city_captured !== null && b.city_captured !== undefined ? "won, the city taken" : "won, the plot taken", repelled: "they hold", lost: "lost", held: "held" }[outcomeFor(b)];
   const mine = b.sides?.[me]?.lost ?? 0;
   const theirs = b.sides?.[1 - me]?.lost ?? 0;
   return `${place}: ${out}; ${mine} lost, ${theirs} of theirs`;
@@ -171,4 +131,32 @@ export function battleToast(line, ms = 9000) {
 /** A role's display name ("Frontline") for a unit's `engage_role`. */
 export function roleName(i) {
   return i === null || i === undefined ? "" : dname("CombatRoleType", i);
+}
+
+const ACT = { Strike: "strike", Charge: "charge", Stab: "stab", Shoot: "shot", Spell: "spell", Bombard: "bombard", Heal: "heal" };
+const ACTS = { Strike: "strikes", Charge: "charges", Stab: "stabs", Shoot: "shots", Spell: "spells", Bombard: "bombards", Heal: "heals" };
+
+/** A unit's actions in its front, middle and rear rows (the view's `engage_actions`):
+ *  "2 strikes / 1 strike / 1 strike" ("—" where it has none), or "". */
+export function actionsLine(acts) {
+  if (!Array.isArray(acts) || acts.length !== 3) return "";
+  return acts
+    .map((a) => {
+      const k = typeof a?.kind === "string" ? a.kind[0].toUpperCase() + a.kind.slice(1).toLowerCase() : "";
+      return a?.n && ACT[k] ? `${a.n} ${a.n > 1 ? ACTS[k] : ACT[k]}` : "—";
+    })
+    .join(" / ");
+}
+
+/** A unit's battle numbers (the view's `engage_*`): "A 4 · Dv 5 · HP 55/120 · speed 4 · large"
+ *  (`hp` / `max_hp` are the health percent; its battle HP scales it to `engage_max_hp`), then its
+ *  actions by row when the view sends them. */
+export function engageNumbers(u) {
+  const x100 = (v) => (v % 100 === 0 ? String(v / 100) : (v / 100).toFixed(1));
+  const hp = Math.round(((u.hp ?? 0) / Math.max(1, u.max_hp ?? 100)) * u.engage_max_hp);
+  const parts = [`A ${x100(u.engage_attack)}`, `Dv ${x100(u.engage_defense)}`, `HP ${hp}/${u.engage_max_hp}`];
+  if (u.engage_speed !== undefined && u.engage_speed !== null) parts.push(`speed ${u.engage_speed}`);
+  if (u.engage_large) parts.push("large");
+  const acts = actionsLine(u.engage_actions);
+  return `${parts.join(" · ")}${acts ? ` · front / middle / rear: ${acts}` : ""}`;
 }

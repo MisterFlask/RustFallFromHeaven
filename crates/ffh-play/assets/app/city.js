@@ -22,7 +22,7 @@ import { look, uiIcon, typeIcon, barEl, pix } from "./look.js";
 import { focusOn, isoSkin, queueIcon, refreshCityPanel } from "./isoui.js";
 import { infoTip } from "./infotips.js";
 import { cultureView } from "./culture.js";
-import { recruitControls, recruitView, requisitionNote, requisitionTag, garrisonStanceView } from "./armies.js";
+import { recruitControls, recruitView, requisitionNote, requisitionTag } from "./armies.js";
 import { governanceView } from "./governors.js";
 
 const GROUPS = [
@@ -316,7 +316,7 @@ function buildingsView(c, reload) {
   return [
     h("div.section", h("h4", `Buildings (${b.length})`), b.length ? h("div.chips", b) : h("p.dim", "None.")),
     r.length ? h("div.section", h("h4", "Religions"), h("div.chips", r)) : null,
-    h("div.section", h("h4", `Garrison (${units.length})`), units.length ? h("div.chips", units) : h("p.dim", "Nobody."), garrisonStanceView(c, reload)),
+    h("div.section", h("h4", `Garrison (${units.length})`), units.length ? h("div.chips", units) : h("p.dim", "Nobody.")),
   ];
 }
 

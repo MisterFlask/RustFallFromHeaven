@@ -1422,19 +1422,19 @@ async function closeBattle() {
   await until2(`!document.getElementById("battle")`, "the battle overlay closed");
 }
 
-/** Engagement combat, `stage engagement` (docs/ENGAGEMENTS.md): the army next to the enemy city
- *  shows its role, A, Dv and HP and its stance in the unit panel; the tooltip over the city says
- *  it is a battle; a right-click opens the battle plan with the stance's pick and its slots (the
- *  estimate "coming"); Enter attacks (the keep/raze decision over the overlay answered), the combat
- *  flash comes from the battle's report, the watch screen plays the engine's log and the report
- *  shows it; the map's marker and the message's link open the battle again; the Armies screen and
- *  the city screen set the army's and the garrison's stances. */
+/** Engagement combat, `stage engagement` (docs/ENGAGEMENTS.md, formation battles): the army next
+ *  to the enemy city shows its role, A, Dv and HP in the unit panel; the tooltip over the city says
+ *  it is a battle; a right-click opens the battle plan in the rules' auto formation; a unit of the
+ *  line is moved by mouse to another row of its lane (the forecast asked again, the engine accepts
+ *  the formation); Enter attacks with it (a keep/raze decision over the overlay answered if the
+ *  city falls), the combat flash comes from the battle's report, the watch screen plays the
+ *  engine's log and the report shows it; the map's marker and the message's link open the battle
+ *  again. */
 async function stagedEngagement(bin, saves) {
   const st = await loadStaged(bin, saves, "engagement");
   await selectUnit(st.units[0]);
   await until2(`window.ffh.S.sel.units.length === ${st.units.length}`, "the army selected");
   await until2(`!!document.querySelector("#unit-panel .badge.role, #unit-panel .engage-line, #unit-panel .value.engage")`, "the unit's battle numbers in the panel");
-  await until2(`!!document.querySelector("#unit-panel select.stance-select")`, "the army's stance in the panel");
   const e = await plotPos(st.x, st.y);
   await b.move(e.x - 3, e.y - 3);
   await b.move(e.x, e.y);
@@ -1447,33 +1447,59 @@ async function stagedEngagement(bin, saves) {
     mv.flashTile = function (...a) { window.__flashes++; return orig.apply(this, a); };
     window.__unflash = () => { if (own) mv.flashTile = orig; else delete mv.flashTile; };
   })()`);
-  // The plan: the stance's pick in its slots, the estimate to come.
+  // The plan: the rules' auto formation and its forecast.
   await b.mouse(e.x, e.y, "right");
   await battleScreen("plan");
-  const force = await b.eval(`window.ffh.battle.plan.preview.force.length`);
-  if (!force) throw new Error("the plan proposes no force");
-  const planText = await b.eval(`document.getElementById("battle").textContent`);
-  if (!/estimate coming/.test(planText)) throw new Error(`the plan's forecast area: ${planText.slice(0, 200)}`);
+  const placed = await b.eval(`window.ffh.battle.plan.formation.length`);
+  if (!placed) throw new Error("the plan's auto formation puts nobody in the line");
+  // A unit of the line (not a large one) to the next row of its lane, by mouse: a move, or a swap.
+  const before = await b.eval(`JSON.stringify(window.ffh.battle.plan.formation)`);
+  const mv = await b.eval(`(() => {
+    const p = window.ffh.battle.plan;
+    const pv = p.preview;
+    const x = p.formation.find((q) => !pv.fighters.find((f) => f.unit === q.unit).large);
+    const f = pv.fighters.find((g) => g.unit === x.unit);
+    return { b: f.b, unit: f.unit, lane: x.lane, row: (x.row + 1) % 3, at: p.point(f.b) };
+  })()`);
+  await b.mouse(mv.at.x, mv.at.y);
+  await until2(`window.ffh.battle.plan.sel === ${mv.b}`, "a unit of the line selected");
+  const cell = await b.eval(`window.ffh.battle.plan.cellPoint(0, ${mv.lane}, ${mv.row})`);
+  await b.mouse(cell.x, cell.y);
+  await battleScreen("plan", "the plan after the move, its forecast asked again");
+  await until2(`window.ffh.battle.plan.formation.some((q) => q.unit === ${mv.unit} && q.row === ${mv.row})`, "the unit in its new row");
+  if ((await b.eval(`JSON.stringify(window.ffh.battle.plan.formation)`)) === before) throw new Error("moving a unit left the formation as it was");
+  const refused = await b.eval(`[...document.querySelectorAll("#battle .bt-pnl .bad")].map((x) => x.textContent).join("; ")`);
+  if (refused) throw new Error(`the engine refused the moved formation: ${refused}`);
   await new Promise((r) => setTimeout(r, 600));
   await shot("engagement-plan");
-  // Attack: the city falls, and its keep/raze decision comes over the overlay.
+  // Attack: if the city falls, its keep/raze decision comes over the overlay.
   await b.key("Enter");
-  await until(async () => (await modalTitles()).some((t) => /keep|raze/i.test(t)), "the keep/raze decision over the battle", 60000);
-  await click('#modals .modal.decision button.option[data-option="0"]');
+  await until(async () => (await modalTitles()).some((t) => /keep|raze/i.test(t)) || (await b.eval(`!!window.ffh.battle && window.ffh.battle.screen === "watch"`)), "the battle (or the keep/raze decision over it)", 60000);
+  if ((await modalTitles()).some((t) => /keep|raze/i.test(t))) await click('#modals .modal.decision button.option[data-option="0"]');
   await battleScreen("watch", "the battle's watch screen");
   const flashed = await b.eval(`(() => { const n = window.__flashes || 0; window.__unflash(); return n; })()`);
   if (!flashed) throw new Error("no combat flash was shown for the battle");
-  const segs = await b.eval(`window.ffh.battle.watch.state().segs`);
-  if (segs < 2) throw new Error(`the watch screen's script has ${segs} segments`);
-  await b.eval(`(() => { const w = window.ffh.battle.watch; w.pause(); w.seek(Math.floor(w.state().segs / 2), 400); })()`);
-  await new Promise((r) => setTimeout(r, 800));
+  const n = await b.eval(`window.ffh.battle.watch.state().n`);
+  if (n < 1) throw new Error("the watch screen's log has no event");
+  await b.eval(`(() => { const w = window.ffh.battle.watch; w.pause(); w.seek(Math.floor(w.state().n / 2)); w.step(); })()`);
+  await new Promise((r) => setTimeout(r, 500));
   await shot("engagement-watch");
+  // The snap (battle_snap.js): the first action with a blow, frozen in its held beat, has its pair
+  // lifted out of the field.
+  const blow = await b.eval(`window.ffh.battle.watch.find((e) => (e.hits && e.hits.length > 0) || !!e.heal)`);
+  if (blow >= 0) {
+    const held = await b.eval(`JSON.stringify(window.ffh.battle.watch.freeze(${blow}, 300))`);
+    const s = JSON.parse(held);
+    if (!s || !s.hold || !Object.keys(s.roles).length) throw new Error(`the watch screen's snap does not stage the battle's first blow: ${held}`);
+    await new Promise((r) => setTimeout(r, 200));
+    await shot("engagement-snap");
+  }
   await b.key("Escape");
   await battleScreen("report", "the battle's report");
   await new Promise((r) => setTimeout(r, 500));
   await shot("engagement-report");
   await closeBattle();
-  // The popups the battle held back (the captured city's production) come now.
+  // The popups the battle held back (a captured city's production) come now.
   await until(async () => (await modalTitles()).length > 0, "the popups held back during the battle", 10000).catch(() => {});
   await answerPopups(false);
   const report = await S(`S.view.battles && S.view.battles[0] && S.view.battles[0].id`);
@@ -1494,26 +1520,7 @@ async function stagedEngagement(bin, saves) {
   await click(link);
   await battleScreen("report", "the battle's report from its message");
   await closeBattle();
-  // The stances: the army's on the Armies screen, the garrison's on the city screen.
-  await b.key("F5");
-  await until(async () => (await modalTitles()).includes("Armies"), "the Armies screen");
-  const sel = `#modals .army-card[data-army="${st.army}"] select.stance-select`;
-  await until2(`!!document.querySelector(${q(sel)})`, "the army's stance on the Armies screen");
-  const mobile = await S(`S.data.tables.StanceType.findIndex((s) => s.type === "STANCE_MOBILE")`);
-  await b.eval(`(() => { const s = document.querySelector(${q(sel)}); s.value = "${mobile}"; s.dispatchEvent(new Event("change")); })()`);
-  await until2(`window.ffh.S.view.armies.find((a) => a.id === ${st.army})?.stance === ${mobile}`, "the army's stance set");
-  await b.key("Escape");
-  await until(async () => !(await modalTitles()).length, "the Armies screen closed");
-  await b.eval(`window.ffh.emit("open-city", ${st.capital})`);
-  const gsel = `${TOP} .garrison-stance select.stance-select`;
-  await until2(`!!document.querySelector(${q(gsel)})`, "the garrison's stance on the city screen");
-  const wall = await S(`S.data.tables.StanceType.findIndex((s) => s.type === "STANCE_SHIELD_WALL")`);
-  await b.eval(`(() => { const s = document.querySelector(${q(gsel)}); s.value = "${wall}"; s.dispatchEvent(new Event("change")); })()`);
-  await until2(`window.ffh.S.view.cities.find((c) => c.id === ${st.capital})?.garrison_stance === ${wall}`, "the garrison's stance set");
-  await shot("engagement-garrison-stance");
-  await b.key("Escape");
-  await until(async () => !(await modalTitles()).length, "the city dialog closed");
-  steps.push(`engagement (stage engagement): the plan (${force} of ${st.units.length} committed, the estimate to come), the attack with the keep/raze decision over it, the flash from the report, the watch and report screens of the engine's log; the map's marker and the message's link open it again; the army's and the garrison's stances set`);
+  steps.push(`engagement (stage engagement): the plan (${placed} in the auto formation), a unit moved by mouse with the forecast asked again, the attack with that formation, the flash from the report, the watch and report screens of the engine's log (${n} events); the map's marker and the message's link open it again`);
 }
 
 /** P7, `stage election`: the human secretary general's election popup (deferred, like events
