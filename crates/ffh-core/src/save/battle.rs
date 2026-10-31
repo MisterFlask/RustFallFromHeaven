@@ -15,7 +15,7 @@ persist_enum!(Phase { 0 => Opening, 1 => Volley(k), 2 => Round(n) });
 persist_enum!(Fate { 0 => Survived, 1 => Killed { by, phase }, 2 => Withdrew { phase, capped }, 3 => SatOut });
 
 persist_struct!(BattleReport { id, turn, plot, from, place, sides, outcome, log });
-persist_struct!(ReportSide { player, shown_player, players, army, garrison_of, stance, committed, withdrew, sat_out, fled, lost });
+persist_struct!(ReportSide { player, shown_player, players, army, garrison_of, stance, slots, committed, withdrew, sat_out, fled, lost });
 persist_struct!(PlotSnap { x, y, terrain, feature, hills, river_crossing, city });
 persist_struct!(CitySnap { id, name, owner, size, defense_pct });
 persist_struct!(Outcome { result, volley_rounds, rounds, plot_taken, city_captured, moved_in, defenders_left });
@@ -347,6 +347,7 @@ mod tests {
             army: garrison.is_none().then_some(ArmyId(4)),
             garrison_of: garrison,
             stance: StanceType(1),
+            slots: 8,
             committed: 6,
             withdrew: 1,
             sat_out: 1,

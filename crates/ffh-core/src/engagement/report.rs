@@ -86,6 +86,9 @@ pub struct ReportSide {
     pub garrison_of: Option<CityId>,
     /// The stance it fought with (plan 5.3).
     pub stance: StanceType,
+    /// The most units it could commit: its ordinary and river slots (the log's [`SideSlots`]
+    /// say why; this outlives the log).
+    pub slots: i32,
     /// Units committed (sat-out ones included), withdrawn, sat out, fled after the battle.
     pub committed: i32,
     pub withdrew: i32,

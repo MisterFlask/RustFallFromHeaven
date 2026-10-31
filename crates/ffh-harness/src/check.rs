@@ -170,8 +170,9 @@ pub fn check(g: &Game) {
 
     // This game's engagement combat (docs/ENGAGEMENTS.md): engagements leave no duel state
     // behind (no unit fighting or attacking between turns, no living unit at full damage), and
-    // every kept report is consistent: no side committed more units than its slots, no battle
-    // ran past the round limit, and every committed fighter is accounted for.
+    // every kept report is consistent: no side committed more units than its slots (every
+    // report, logged or not), no battle ran past the round limit, and every committed fighter is
+    // accounted for.
     if g.engagements_on() {
         let max_hp = g.d.defines.max_hit_points;
         for (u, unit) in g.units.iter() {
@@ -192,12 +193,15 @@ pub fn check(g: &Game) {
                 if lost + s.withdrew + s.sat_out > s.committed || s.committed <= 0 {
                     fail(format!("battle report #{} side {i}: {} committed, {lost} lost, {} withdrew, {} sat out", r.id, s.committed, s.withdrew, s.sat_out));
                 }
+                if s.committed > s.slots {
+                    fail(format!("battle report #{} side {i} committed {} units with {} slots", r.id, s.committed, s.slots));
+                }
             }
             if let Some(log) = &r.log {
                 for (i, s) in r.sides.iter().enumerate() {
                     let slots = &log.slots[i];
-                    if s.committed > slots.total + slots.river_only {
-                        fail(format!("battle report #{} side {i} committed {} units with {} slots", r.id, s.committed, slots.total + slots.river_only));
+                    if s.slots != slots.total + slots.river_only {
+                        fail(format!("battle report #{} side {i} has {} slots, its log {}", r.id, s.slots, slots.total + slots.river_only));
                     }
                     let fighters = log.fighters.iter().filter(|f| f.side.index() == i && f.slot.is_some()).count() as i32;
                     if fighters != s.committed || log.fighters.iter().any(|f| f.slot.is_some() != f.fate.is_some()) {

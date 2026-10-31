@@ -261,6 +261,13 @@ impl Game {
             return Err("there is nobody to fight there");
         }
 
+        debug_assert!(
+            force.len() as i32 <= slots.max(Side::Attacker) && def_pick.len() as i32 <= slots.max(Side::Defender),
+            "an engagement committed {} attackers and {} defenders with {:?}",
+            force.len(),
+            def_pick.len(),
+            slots
+        );
         let n_att = force.len();
         let units: Vec<UnitId> = force.iter().chain(&def_pick).copied().collect();
         let sides: Vec<Side> = (0..units.len()).map(|i| if i < n_att { Side::Attacker } else { Side::Defender }).collect();
@@ -399,6 +406,7 @@ impl Game {
                 army: stance.army,
                 garrison_of: stance.garrison_of,
                 stance: stance.stance,
+                slots: e.slots.max(s),
                 committed: e.of(s).len() as i32,
                 withdrew,
                 sat_out,

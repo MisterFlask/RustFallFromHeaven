@@ -221,6 +221,7 @@ fn report(g: &Game, c: CityId, logged: bool) -> BattleReport {
         army: None,
         garrison_of: None,
         stance,
+        slots: 10,
         committed: 1,
         withdrew: 0,
         sat_out: 0,
