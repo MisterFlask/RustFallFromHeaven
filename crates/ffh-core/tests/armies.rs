@@ -271,13 +271,15 @@ fn a_faster_recruit_catches_up_with_an_army_on_the_move() {
     while g.units[u].march.is_some() {
         turns += 1;
         assert!(turns <= eta + 1, "joined within its estimate and a turn ({eta})");
+        let held = g.unit_plot(u);
         turn_start(&mut g);
         // The army walks on (its owner's move), the recruit holds...
         let before = g.army_plot(army);
         g.group_auto_mission(grp);
         assert_ne!(g.army_plot(army), before, "the army moves every turn");
-        // ...and marches after it as the turn ends.
-        turn_end(&mut g);
+        assert_eq!(g.unit_plot(u), held, "the recruit holds through its owner's turn");
+        // ...and marches after it in the real turn processing as the turn ends.
+        g.player_do_turn(p0);
         assert!(g.army_in_supply(army));
     }
     assert_eq!(g.units[u].army, Some(army), "joined the army");
