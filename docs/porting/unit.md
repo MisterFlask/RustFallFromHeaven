@@ -123,7 +123,7 @@ CvUnit movement: territory/area entry, `canMoveInto`, `move`, paths, loading and
 | `CvUnit::canEnterArea` | CvUnit.cpp:2990-3009 | 20 | `unit_can_enter_area` | ported |
 | `CvUnit::getDeclareWarMove` | CvUnit.cpp:3013-3057 | 45 | `unit_get_declare_war_move` | ported |
 | `CvUnit::willRevealByMove` | CvUnit.cpp:3059-3078 | 20 | `unit_will_reveal_by_move` | ported |
-| `CvUnit::canMoveInto` | CvUnit.cpp:3080-3444 | 365 | `unit_can_move_into` | ported |
+| `CvUnit::canMoveInto` | CvUnit.cpp:3080-3444 | 365 | `unit_can_move_into` (under engagement combat its attack gates are the engagement's: `unit_has_attack_left`, `unit_engage_limit_ok`) | ported |
 | `CvUnit::canMoveOrAttackInto` | CvUnit.cpp:3447-3450 | 4 | `unit_can_move_or_attack_into` | ported |
 | `CvUnit::canMoveThrough` | CvUnit.cpp:3453-3456 | 4 | `unit_can_move_through` | ported |
 | `CvUnit::move` | CvUnit.cpp:3598-3645 | 48 | `unit_move` | ported |
@@ -433,7 +433,7 @@ CvUnit commands and actions: `canDoCommand`/`doCommand`, automation, scrap/gift,
 | `CvUnit::canAirBombAt` | CvUnit.cpp:5284-5337 | 54 | `unit_can_air_bomb_at` | ported |
 | `CvUnit::airBomb` | CvUnit.cpp:5340-5431 | 92 | `unit_air_bomb` | ported |
 | `CvUnit::bombardTarget` | CvUnit.cpp:5434-5470 | 37 | `unit_bombard_target` | ported |
-| `CvUnit::canBombard` | CvUnit.cpp:5473-5496 | 24 | `unit_can_bombard` | ported |
+| `CvUnit::canBombard` | CvUnit.cpp:5473-5496 | 24 | `unit_can_bombard` (under engagement combat a land unit's bombard counts in `attacks_made`) | ported |
 | `CvUnit::bombard` | CvUnit.cpp:5499-5560 | 62 | `unit_bombard` | ported |
 | `CvUnit::canPillage` | CvUnit.cpp:5563-5620 | 58 | `unit_can_pillage` | ported |
 | `CvUnit::pillage` | CvUnit.cpp:5623-5750 | 128 | `unit_pillage` | ported |
