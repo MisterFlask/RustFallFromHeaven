@@ -658,6 +658,29 @@ beside an Intel UHD integrated GPU, headless Chrome 156 (`FFH_CHROMIUM_CHANNEL=c
   meadow's flowers show close up). The brushwork on objects (0.2 ms) stays: the mode's 3D fields and sheaves
   take their texture from it close up. Ambient occlusion (0.25 ms) stays: its shade under the woods
   shows close up. Glow and bloom (0.15 ms each) are cheap.
+* **The lean terrain** (prototype, branch `proto/terrain-ablation`): what Direct3D compiles at the
+  first draw is mostly the terrain shader (docs/R3D.md §11.1), its time about 2.6e-7 s × N² for N
+  instructions. Counted after inlining and optimisation (glslang, spirv-opt; within 5% of FXC's own
+  counts), the mode's terrain was 6308 instructions and 125 value noises. Two steps:
+  * **Exact, both renderers:** the noises several branches took with the same arguments are worked
+    out once a fragment, where one of those branches runs (`gBig`, `gMid`, `gDune`, `gN2`..`gN9`:
+    the coast's masses are the meadow's, the burning sands' dunes the desert's, the fields', the
+    peaks' snow, the beach, the rock, the roads and the floors' small noises): 6308 to 5736 (107
+    noises; the 3D renderer's 6756 to 6184), the five lab stills bit-identical.
+  * **Lean, the mode only** (`TERRAIN_LEAN`, hd2d/config.js `terrainLean`, on by default;
+    `?r3d={"terrainLean":0}` draws the full painting): every open ground's broad masses from the
+    meadow's noises, fewer octaves where only a broad shape depends on them, the perdition's pools
+    from the marsh's noise, the hell marks' mask, pulse and sparks, the road edge's finest wobble,
+    the rock's crags and strata, the parchment's dabs, four noises shared with neighbours of about
+    their size, the marsh's sheen and the golden grass's streaks: 5736 to 3363 instructions (44
+    noises), Direct3D's compile about 10.4 s to 2.9 s on the RTX 4060 laptop (estimated). The
+    stills (SwiftShader, 640 × 400): 0.6-1.4% of the pixels moved by more than 8 at 96-168 px a
+    plot (the woods' floor, the road edges), 3.5% on the showcase (the marsh's masses and the
+    road), 4.8% at 40 px (the hell grounds' masses and cracks, the parchment); the turn-200 game
+    (`r3d-compare`, 800 × 500: hell grounds, a desert, a coast) 1.1-1.5% at 40, 96 and 168 px. The
+    masses moved, the look kept. Tried and dropped: two octaves for the pools and the hell cracks (the cracks
+    widened into blobs), the pigment's drift from the borders' noises (20% of a still a shade
+    lighter, for two noises).
 
 ## 9. Cities and the camera
 

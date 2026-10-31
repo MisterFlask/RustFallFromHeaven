@@ -70,7 +70,7 @@ export const HD2D = {
   townBanners: 0.6,
   // The lean terrain (TERRAIN_LEAN below; read when the programs are built, so a page-only switch:
   // `?r3d={"terrainLean":0}` draws the full painting).
-  terrainLean: 0,
+  terrainLean: 1,
 };
 
 export const DEFAULTS_HD2D = { ...DEFAULTS, ...HD2D, preset: "hd2d" };
