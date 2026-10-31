@@ -136,6 +136,14 @@ export class MapHd2d extends Map3D {
     return { NO_DABS: 1 };
   }
 
+  /** The scene packed into one target (pipeline.js `packed`): on Direct3D 11 the scene's programs
+   *  then compile at link -- on ANGLE's worker threads, the page live, kept in the browser's program
+   *  cache -- instead of at their first draws, one at a time with the browser frozen.
+   *  `?r3d={"packScene":0}` draws the three targets as before. */
+  packedScene() {
+    return (this.cfg.packScene ?? 1) > 0;
+  }
+
   saveCfg(cfg) {
     saveConfig(cfg, STORE);
   }

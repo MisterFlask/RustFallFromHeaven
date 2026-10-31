@@ -20,6 +20,7 @@
 // adds its own post passes and composes and presents the frame; without it nothing changes.
 
 import { Program, texture, framebuffer, depthBuffer, depthTexture, fullscreen, gpuIdle, FULLSCREEN_VS } from "./gl.js";
+import { toHalf } from "./math.js";
 import * as SH from "./shaders.js";
 
 const SHADOW_SIZE = 2048;
@@ -29,8 +30,11 @@ const SHADOW_SIZE = 2048;
 const TERRAIN_SHADOW_SIZE = 1024;
 
 export class Pipeline {
-  /** `terrainDefines`: the terrain program's `#define`s (a mode's: Map3D.terrainDefines). */
-  constructor(gl, terrainDefines = {}) {
+  /** `terrainDefines`: the terrain program's `#define`s (a mode's: Map3D.terrainDefines).
+   *  `packed`: the scene's programs write one packed target, unpacked after (shaders.js
+   *  SCENE_PACKED; a mode's choice: Map3D.packedScene) -- one output each, so ANGLE's Direct3D 11
+   *  backend compiles them at link, in parallel and cached, not at their first draw. */
+  constructor(gl, terrainDefines = {}, packed = false) {
     this.gl = gl;
     this.hdr = !!gl.getExtension("EXT_color_buffer_float") || !!gl.getExtension("EXT_color_buffer_half_float");
     gl.getExtension("OES_texture_float_linear");
@@ -38,10 +42,13 @@ export class Pipeline {
     this.fs = fullscreen(gl);
     const P = (name, vs, fs, defs) => new Program(gl, name, vs, fs, defs);
     const C = SH.COMMON;
+    this.packed = !!packed && this.hdr;
+    // A scene program: its one packed output, or the three targets.
+    const S = (name, vs, fs, defs = {}) => (this.packed ? P(name, vs, SH.packedScene(fs), { ...defs, SCENE_PACKED: 1 }) : P(name, vs, fs, defs));
     this.p = {
-      terrain: P("terrain", C + SH.TERRAIN_VS, C + SH.TERRAIN_FS, terrainDefines),
-      prop: P("prop", C + SH.PROP_VS, C + SH.PROP_FS),
-      water: P("water", C + SH.WATER_VS, C + SH.WATER_FS),
+      terrain: S("terrain", C + SH.TERRAIN_VS, C + SH.TERRAIN_FS, terrainDefines),
+      prop: S("prop", C + SH.PROP_VS, C + SH.PROP_FS),
+      water: S("water", C + SH.WATER_VS, C + SH.WATER_FS),
       shadowTerrain: P("shadow-terrain", C + SH.SHADOW_TERRAIN_VS, SH.SHADOW_FS),
       shadowProp: P("shadow-prop", C + SH.PROP_VS, C + SH.PROP_DEPTH_FS),
       ssao: P("ssao", FULLSCREEN_VS, C + SH.SSAO_FS),
@@ -58,6 +65,10 @@ export class Pipeline {
       particle: P("particle", C + SH.PARTICLE_VS, SH.PARTICLE_FS),
       blit: P("blit", FULLSCREEN_VS, SH.BLIT_FS),
     };
+    if (this.packed) {
+      this.p.unpack = P("unpack", FULLSCREEN_VS, SH.UNPACK_FS);
+      this.p.unpackCopy = P("unpack-copy", FULLSCREEN_VS, SH.UNPACK_FS, { UNPACK_COPY: 1 });
+    }
     this.shadowMap = depthTexture(gl, SHADOW_SIZE, SHADOW_SIZE);
     this.shadowFbo = framebuffer(gl, [], this.shadowMap);
     this.shadowMapT = depthTexture(gl, TERRAIN_SHADOW_SIZE, TERRAIN_SHADOW_SIZE);
@@ -98,6 +109,8 @@ export class Pipeline {
       sceneCopy: texture(gl, w, h, F),
       ndCopy: texture(gl, w, h, { ...F, filter: gl.NEAREST }),
     };
+    // The packed scene (SCENE_PACKED): one RGBA32UI target for the three.
+    if (this.packed) this.t.packed = texture(gl, w, h, { internal: gl.RGBA32UI, format: gl.RGBA_INTEGER, type: gl.UNSIGNED_INT, filter: gl.NEAREST });
     this.depth = depthBuffer(gl, w, h);
     const t = this.t;
     this.f = {
@@ -117,10 +130,24 @@ export class Pipeline {
       sceneCopy: framebuffer(gl, [t.sceneCopy]),
       ndCopy: framebuffer(gl, [t.ndCopy]),
     };
+    if (this.packed) {
+      // The packed scene, and the same with no colour drawn (the depth prepass: its programs' float
+      // output may not meet the integer target); the unpacked targets; the water's grab.
+      this.f.scenePk = framebuffer(gl, [t.packed], this.depth);
+      this.f.scenePkDepth = framebuffer(gl, [t.packed], this.depth);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, this.f.scenePkDepth);
+      gl.drawBuffers([gl.NONE]);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      this.f.unpack = framebuffer(gl, [t.color, t.nd, t.emit]);
+      this.f.unpackCopy = framebuffer(gl, [t.sceneCopy, t.ndCopy]);
+    }
   }
 
-  /** The programs that draw into the scene's targets (the mode's too). */
+  /** The programs that draw into the scene's targets (the mode's too): none with a packed scene,
+   *  whose programs have one output each (their link compiled them; the unpack passes, which have
+   *  several, are a few instructions). */
   scenePrograms() {
+    if (this.packed) return [];
     return [this.p.terrain, this.p.prop, this.p.water, ...(this.ext?.scenePrograms() ?? [])];
   }
 
@@ -165,6 +192,11 @@ export class Pipeline {
    *  the targets it draws into). */
   grab() {
     const gl = this.gl, W = this.w, H = this.h;
+    if (this.packed) {
+      this.pass(this.p.unpackCopy, this.f.unpackCopy, W, H, { uPacked: this.t.packed });
+      gl.bindFramebuffer(gl.FRAMEBUFFER, this.f.scenePk);
+      return;
+    }
     gl.bindFramebuffer(gl.READ_FRAMEBUFFER, this.f.scene);
     for (const [i, dst] of [[1, this.f.sceneCopy], [2, this.f.ndCopy]]) {
       gl.readBuffer(gl.COLOR_ATTACHMENT0 + i);
@@ -286,12 +318,19 @@ export class Pipeline {
 
     // --- scene, then the water over it
     const SU = { ...U, uShadowMap: this.shadowMap, uShadowMapT: this.shadowMapT, uShadowOn: cfg.shadows ? 1 : 0 };
+    const pk = this.packed;
     this.timed("scene", () => {
-      gl.bindFramebuffer(gl.FRAMEBUFFER, this.f.scene);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, pk ? this.f.scenePkDepth : this.f.scene);
       gl.viewport(0, 0, W, H);
-      gl.clearBufferfv(gl.COLOR, 1, [...fr.background, 0]);
-      gl.clearBufferfv(gl.COLOR, 2, [0, 0, 1, 0]);
-      gl.clearBufferfv(gl.COLOR, 3, [0, 0, 0, 0]);
+      if (pk) {
+        gl.bindFramebuffer(gl.FRAMEBUFFER, this.f.scenePk);
+        gl.clearBufferuiv(gl.COLOR, 0, packedClear(fr.background));
+        gl.bindFramebuffer(gl.FRAMEBUFFER, this.f.scenePkDepth);
+      } else {
+        gl.clearBufferfv(gl.COLOR, 1, [...fr.background, 0]);
+        gl.clearBufferfv(gl.COLOR, 2, [0, 0, 1, 0]);
+        gl.clearBufferfv(gl.COLOR, 3, [0, 0, 0, 0]);
+      }
       gl.clear(gl.DEPTH_BUFFER_BIT);
       // Depth first (cheap vertex-only passes), then each pixel is shaded once: the ground under
       // a forest is never painted only to be covered. The water is not in it: the sea floor and
@@ -305,6 +344,7 @@ export class Pipeline {
       scene.drawTerrain(this.p.shadowTerrain, U, false);
       scene.drawProps(this.p.shadowProp, { ...U, uSunView: 0, uPlotPx: U.uPx * (fr.scale ?? 1) }, false);
       gl.colorMask(true, true, true, true);
+      if (pk) gl.bindFramebuffer(gl.FRAMEBUFFER, this.f.scenePk);
       gl.depthMask(false);
       gl.depthFunc(gl.LEQUAL);
       scene.drawTerrain(this.p.terrain, SU, false);
@@ -322,6 +362,12 @@ export class Pipeline {
       // holds (an 8-bit one clamps it to 1): without one the water is drawn opaque, unmirrored.
       const hdr = this.hdr ? 1 : 0;
       scene.drawWater(this.p.water, { ...SU, uSceneColor: this.t.sceneCopy, uSceneND: this.t.ndCopy, uReflect: (cfg.reflections ?? 1) * hdr, uRefract: (cfg.refraction ?? 1) * hdr });
+      // The packed scene into the three textures the later passes read.
+      if (pk) {
+        gl.disable(gl.DEPTH_TEST);
+        this.pass(this.p.unpack, this.f.unpack, W, H, { uPacked: this.t.packed });
+        gl.enable(gl.DEPTH_TEST);
+      }
     });
     gl.disable(gl.DEPTH_TEST);
     gl.depthMask(false);
@@ -457,4 +503,13 @@ export class Pipeline {
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     this.stats.frames++;
   }
+}
+
+/** The packed scene's clear value (shaders.js packScene): the background colour, keep 0, depth 0,
+ *  normal (0, 0, 1), no emission, id 0. */
+function packedClear(bg) {
+  const h2 = (a, b) => (toHalf(a) | (toHalf(b) << 16)) >>> 0;
+  // The normal (0, 0, 1): octahedral (0.5, 0.5) of 510 each.
+  const w = 255 | (255 << 9);
+  return new Uint32Array([h2(bg[0], bg[1]), h2(bg[2], 0), 0, w]);
 }

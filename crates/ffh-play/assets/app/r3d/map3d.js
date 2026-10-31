@@ -82,7 +82,7 @@ export class Map3D {
     }
     this.gl = gl;
     this.glName = glName;
-    this.pipeline = new Pipeline(gl, this.terrainDefines());
+    this.pipeline = new Pipeline(gl, this.terrainDefines(), this.packedScene());
     /** Whether the programs have compiled (`ready`): the loop draws nothing before. */
     this.compiled = false;
     this.scene = new Scene(gl);
@@ -186,6 +186,13 @@ export class Map3D {
    *  mode may compile parts of the ground's painting out. */
   terrainDefines() {
     return {};
+  }
+
+  /** Whether the scene's programs write one packed target (pipeline.js `packed`, shaders.js
+   *  SCENE_PACKED): not for the 3D renderer; a mode may (on Direct3D their compile then moves from
+   *  the first draw to the link: in parallel, the page live, cached across starts). */
+  packedScene() {
+    return false;
   }
 
   /** How strongly the cities light the ground round them (decals.js rasterLight): 1 for the 3D

@@ -434,12 +434,96 @@ vec3 atmosphere(vec3 c, vec3 wp) {
 // compiles a program's pixel shader at link for its lowest output alone, and again for all its
 // outputs at the first draw into them (docs/R3D.md §11.1): with only a constant at the lowest,
 // the link's compile is nothing, and each program is compiled once, not twice.
+//
+// SCENE_PACKED (a mode's choice: Pipeline `packed`, the HD-2D mode's `packScene`): the program writes
+// one output instead, the three packed into one RGBA32UI target (packScene below), which a small
+// full-screen pass unpacks into the three textures every later pass reads (UNPACK_FS). A program with
+// one output, drawn into one target, is compiled by ANGLE's Direct3D 11 backend at link -- on its
+// worker threads, the page live, and kept by the browser's program cache -- not at its first draw.
+// Its main is renamed (sceneMain) and wrapped by SCENE_PACK_MAIN, appended after it (packedScene).
 export const SCENE_OUT = `
+#ifdef SCENE_PACKED
+vec4 oLink, oColor, oND, oEmit;
+layout(location = 0) out highp uvec4 oPacked;
+#define main sceneMain
+#else
 layout(location = 0) out vec4 oLink;
 layout(location = 1) out vec4 oColor;
 layout(location = 2) out vec4 oND;
 layout(location = 3) out vec4 oEmit;
+#endif
 `;
+
+// The scene's three targets in one RGBA32UI texel (SCENE_PACKED):
+//   x  colour r, g        (halves: as the RGBA16F target held them)
+//   y  colour b, depth    (halves: the same)
+//   z  emission r, g, b   (8 bits each, as e / (1 + e)) | keep mask (8 bits)
+//   w  view normal        (octahedral, 9 bits each) | object id (14 bits, signed, x 8191)
+// The colour and depth are as before; the emission, keep mask, normal and id lose a little
+// precision (the emission feeds only the blurred glow and bloom and a soft threshold; the keep mask
+// and id are compared against thresholds coarser than these steps).
+export const SCENE_PACK_MAIN = `
+#ifdef SCENE_PACKED
+#undef main
+uvec4 packScene(vec4 c, vec4 nd, vec4 e) {
+  uint x = packHalf2x16(c.rg);
+  uint y = packHalf2x16(vec2(c.b, nd.w));
+  vec3 em = e.rgb;
+  em = vec3(isnan(em.r) ? 0.0 : em.r, isnan(em.g) ? 0.0 : em.g, isnan(em.b) ? 0.0 : em.b);
+  em = clamp(em, 0.0, 254.0);
+  uvec3 q = uvec3(round(em / (1.0 + em) * 255.0));
+  uint k = uint(round(clamp(c.a, 0.0, 1.0) * 255.0));
+  uint z = q.r | (q.g << 8) | (q.b << 16) | (k << 24);
+  vec3 n = nd.xyz / max(abs(nd.x) + abs(nd.y) + abs(nd.z), 1e-6);
+  vec2 s = vec2(n.x >= 0.0 ? 1.0 : -1.0, n.y >= 0.0 ? 1.0 : -1.0);
+  vec2 o = n.z >= 0.0 ? n.xy : (1.0 - abs(n.yx)) * s;
+  uvec2 on = uvec2(round(clamp(o * 0.5 + 0.5, 0.0, 1.0) * 510.0));
+  int id = int(round(clamp(e.a, -1.0, 1.0) * 8191.0));
+  uint w = on.x | (on.y << 9) | ((uint(id) & 0x3FFFu) << 18);
+  return uvec4(x, y, z, w);
+}
+void main() {
+  oLink = vec4(0.0);
+  oColor = vec4(0.0);
+  oND = vec4(0.0, 0.0, 1.0, 0.0);
+  oEmit = vec4(0.0);
+  sceneMain();
+  oPacked = packScene(oColor, oND, oEmit);
+}
+#endif
+`;
+
+/** A scene program's fragment source for the packed scene (compiled with SCENE_PACKED defined): its
+ *  main wrapped by SCENE_PACK_MAIN. */
+export function packedScene(fs) {
+  return fs + SCENE_PACK_MAIN;
+}
+
+/** The packed scene (SCENE_PACKED) unpacked into the scene's three textures, as the programs would
+ *  have written them (UNPACK_COPY: only the colour and the normal/depth, the water's grab). */
+export const UNPACK_FS = `
+uniform highp usampler2D uPacked;
+layout(location = 0) out vec4 oColor;
+layout(location = 1) out vec4 oND;
+#ifndef UNPACK_COPY
+layout(location = 2) out vec4 oEmit;
+#endif
+void main() {
+  uvec4 p = texelFetch(uPacked, ivec2(gl_FragCoord.xy), 0);
+  vec2 rg = unpackHalf2x16(p.x);
+  vec2 bd = unpackHalf2x16(p.y);
+  vec2 o = vec2(uvec2(p.w, p.w >> 9) & 0x1FFu) / 510.0 * 2.0 - 1.0;
+  vec3 n = vec3(o, 1.0 - abs(o.x) - abs(o.y));
+  if (n.z < 0.0) n.xy = (1.0 - abs(n.yx)) * vec2(n.x >= 0.0 ? 1.0 : -1.0, n.y >= 0.0 ? 1.0 : -1.0);
+  oColor = vec4(rg, bd.x, float(p.z >> 24) / 255.0);
+  oND = vec4(normalize(n), bd.y);
+#ifndef UNPACK_COPY
+  vec3 q = vec3(uvec3(p.z, p.z >> 8, p.z >> 16) & 0xFFu) / 255.0;
+  int id = int(p.w >> 18);
+  id = (id ^ 0x2000) - 0x2000;
+  oEmit = vec4(q / max(1.0 - q, 1.0 / 255.0), float(id) / 8191.0);
+#endif
+}`;
 
 // --------------------------------------------------------------------------------------------
 // Terrain
