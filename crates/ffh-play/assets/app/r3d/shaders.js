@@ -597,6 +597,15 @@ ivec4 plotAt(vec2 cell) {
 vec2 gDx = vec2(0.0), gDy = vec2(0.0);
 float gBias = 0.0;
 float gH = 0.0;
+// Noises that several of the painting's branches take, worked out once a fragment in main (each
+// only where a branch that takes it has weight) rather than once in each branch: every noise
+// inlined is some 35 instructions more for Direct3D's compiler, whose time grows with the square
+// of the shader's length (docs/R3D.md §11.1). gBig, gMid: the meadow's and the coast's broad masses
+// (mfbm(m, 0.45), mnoise(m + 11, 1.6)); gDune: the desert's and the burning sands' dune phase;
+// gN2, gN3, gN4, gN9: mnoise(m, 2), (m, 3), (m, 4), (m, 9), which the features' floors, the beach,
+// the peaks' snow, the fields, the rock, the roads and the frontier take; gPool: the marsh's and
+// the fields of perdition's pools (LEAN_POOL: the marsh's, 2.6 a plot; the fields' own were 2.4).
+float gBig = 0.5, gMid = 0.5, gDune = 0.0, gN2 = 0.5, gN3 = 0.5, gN4 = 0.5, gN9 = 0.5, gPool = 0.5;
 // Layer 'l' at about f tiles a plot -- a whole number of tiles over a wrapping map's width, so no
 // seam -- shifted by 'off', mirrored east-west when 'mir' is -1 (still seamless).
 vec4 matAt(vec2 m, int l, float f, vec2 off, float mir) {
@@ -622,10 +631,12 @@ vec3 matShade(vec4 t, int l, vec3 broadC, float k) {
 }
 
 // A three-tone painted mass: broad, soft shapes of base and dark, the lighter tone where the
-// broad shapes rise, then brush dabs at two sizes lightening or darkening the paint.
+// broad shapes rise, then brush dabs at two sizes lightening or darkening the paint. Its only use,
+// the coast's, is at the meadow's scale: its broad shapes are the meadow's (gBig, gMid, main);
+// 'scale' sizes the dabs.
 vec3 masses(vec2 m, vec3 dark, vec3 base, vec3 light, float scale) {
-  float big = mfbm(m, 0.45 * scale);
-  float mid = mnoise(m + 11.0, 1.6 * scale);
+  float big = gBig;
+  float mid = gMid;
   vec3 c = mix(base, dark, smoothstep(0.52, 0.8, big) * 0.6);
   c = mix(c, light, smoothstep(0.38, 0.78, big) * smoothstep(0.45, 0.8, mid) * 0.5);
   float d1 = mdabs(m, 2.4 * scale) - 0.5;
@@ -634,6 +645,21 @@ vec3 masses(vec2 m, vec3 dark, vec3 base, vec3 light, float scale) {
   c = k > 0.0 ? mix(c, light, k) : mix(c, dark, -k);
   return c;
 }
+
+// mfbm with its finest octave (mfbm3) or two (mfbm2) at their mean, 0.5: the same range and
+// average, only the finest wobble gone. LEAN_FBM (the HD-2D mode's terrain) takes them for the
+// broad masses and the parchment (FBM_BROAD: two octaves) and the pools and dunes (FBM_FINE: three);
+// the hell grounds' crack line keeps all four (it is thin where the noise is steep: fewer octaves
+// widened it into blobs).
+float mfbm2(vec2 m, float f) { return (mnoise(m, f) * 0.5 + mnoise(m + 3.7, f * 2.0) * 0.25 + 0.09375) / 0.9375; }
+float mfbm3(vec2 m, float f) { return (mnoise(m, f) * 0.5 + mnoise(m + 3.7, f * 2.0) * 0.25 + mnoise(m - 5.1, f * 4.0) * 0.125 + 0.03125) / 0.9375; }
+#ifdef LEAN_FBM
+#define FBM_BROAD mfbm2
+#define FBM_FINE mfbm3
+#else
+#define FBM_BROAD mfbm
+#define FBM_FINE mfbm
+#endif
 
 // Plots per pixel at this fragment, set in main before any branch (the ground's marks fade by it).
 float gPpx = 0.0;
@@ -652,8 +678,16 @@ vec3 mass3(vec3 dark, vec3 base, vec3 light, float big, float mid) {
   return mix(c, light, smoothstep(0.38, 0.78, big) * smoothstep(0.45, 0.8, mid) * 0.5);
 }
 vec3 broad(vec2 m, vec3 dark, vec3 base, vec3 light, float scale, out float big) {
+#ifdef LEAN_BROAD
+  // Lean (the HD-2D mode's terrain: MapHd2d.terrainDefines): every open ground's broad shapes are
+  // the meadow's (gBig, gMid: the same noises at 0.7-1.3 times their own size), worked out once a
+  // fragment, not once a ground -- 5 noises a ground, some 1400 instructions in all.
+  big = gBig;
+  return mass3(dark, base, light, big, gMid);
+#else
   big = mfbm(m, 0.45 * scale);
   return mass3(dark, base, light, big, mnoise(m + 11.0, 1.6 * scale));
+#endif
 }
 vec3 drift(vec2 m, vec3 c, vec3 ca, vec3 cb, float a) {
   return mix(c, mix(cb, ca, smoothstep(0.3, 0.7, mnoise(m - 23.0, 0.7))), a * gK());
@@ -687,7 +721,7 @@ vec3 flowers(vec2 m, vec3 c, float amt) {
 // runs a whole number of cycles over a wrapping map's width (no seam).
 float dunePh(vec2 m) {
   float fx = mix(1.146, floor(uMapSize.x * 1.146 + 0.5) / uMapSize.x, wrapX());
-  return m.x * fx + m.y * 1.432 + 1.432 * mfbm(m, 0.8);
+  return m.x * fx + m.y * 1.432 + 1.432 * FBM_FINE(m, 0.8);
 }
 vec2 dunes(float ph) {
   float t = fract(ph - 0.25), e = 2.2 * gPpx;
@@ -718,8 +752,12 @@ vec3 mcellsId(vec2 m, float f) {
 // ground and the frontier both).
 vec3 blankAlbedo(vec2 m) {
   float hatch = smoothstep(0.55, 0.9, mstroke(m, 14.0, 8.0));
-  vec3 c = mix(vec3(0.15, 0.12, 0.10), vec3(0.25, 0.20, 0.15), mfbm(m, 0.5));
+  vec3 c = mix(vec3(0.15, 0.12, 0.10), vec3(0.25, 0.20, 0.15), FBM_BROAD(m, 0.5));
+#ifdef LEAN_BLANK
+  c *= 0.9 + 0.2 * matAt(m, M_NOISE, 0.25, vec2(0.41, 0.17), 1.0).r;
+#else
   c *= 0.9 + 0.2 * mdabs(m, 1.5);
+#endif
   return srgb(c * (1.0 - hatch * 0.22));
 }
 
@@ -730,12 +768,24 @@ vec3 blankAlbedo(vec2 m) {
 float gScorch = 0.0, gLive = 0.0, gCrack = 0.0, gFis = 0.0, gPulse = 0.0, gSpark = 0.0;
 void hellMarks(vec2 m) {
   gScorch = smoothstep(0.5, 0.82, mstroke(m, 3.0, 4.0));
+#ifdef LEAN_HELL
+  // Lean (MapHd2d.terrainDefines): the live mask from one noise, the pulse's phase from the same
+  // noise, no sparks (the mood pass lays its own glowing cracks over the hell grounds).
+  float live = mnoise(m + 3.3, 0.5);
+  gLive = smoothstep(0.42, 0.72, live);
+#else
   gLive = smoothstep(0.42, 0.72, mfbm(m + 3.3, 0.5));
+#endif
   float r1 = 1.0 - abs(mfbm(m + 7.7, 1.2) - 0.5) * 2.0;
   gCrack = smoothstep(0.93, 0.985, r1) * gLive;
   gFis = smoothstep(0.986, 0.998, r1) * gLive;
+#ifdef LEAN_HELL
+  gPulse = 0.72 + 0.28 * sin(uTime * 1.1 + live * 12.0);
+  gSpark = 0.0;
+#else
   gPulse = 0.72 + 0.28 * sin(uTime * 1.1 + mnoise(m, 0.7) * 9.0);
   gSpark = smoothstep(0.965, 0.99, mnoise(m, 14.0));
+#endif
 }
 
 // An open ground's colour ('g' one of the open grounds, the coast or the ocean: main paints the
@@ -768,8 +818,8 @@ vec3 groundAlbedo(int g, vec2 m, float h, inout vec3 emit) {
     float t = mix(0.66, 0.40, gDry);
     dry = smoothstep(t - 0.28, t + 0.28, dn);
     dry = mix(gDry, dry, smoothstep(0.06, 0.6, length(fract(m) - 0.5)));
-    big = mfbm(m, 0.45);
-    float mid = mnoise(m + 11.0, 1.6), mot = mnoise(m + 5.0, 2.4);
+    big = gBig;
+    float mid = gMid, mot = mnoise(m + 5.0, 2.4);
     // Green: yellow-green with darker blue-green mottling at two sizes (the broad shapes and
     // half-plot blotches), drifting slowly between a yellower and a bluer green; as deep as the
     // target's (lighter read as astroturf).
@@ -780,8 +830,10 @@ vec3 groundAlbedo(int g, vec2 m, float h, inout vec3 emit) {
     // Golden: straw over ochre, combed by the wind into lighter and darker streaks; its shade an
     // olive ochre (not russet: the warm sun and the grade's saturation would turn that orange).
     vec3 cd = mass3(vec3(0.37, 0.30, 0.185), vec3(0.50, 0.42, 0.265), vec3(0.62, 0.54, 0.355), big, mid);
+#ifndef LEAN_GOLD
     cd = mix(cd, vec3(0.38, 0.31, 0.185), smoothstep(0.55, 0.8, mstroke(m - 3.0, 5.0, 4.0)) * 0.5);
     cd = mix(cd, vec3(0.64, 0.56, 0.385), smoothstep(0.6, 0.85, mstroke(m + 9.0, 3.5, 5.0)) * 0.3);
+#endif
     cd = mix(cd, vec3(0.43, 0.40, 0.255), smoothstep(0.55, 0.8, mot) * 0.4);
     // The sward's detail is baked (materials.js): tufts of upright blades on the green, long straw
     // combed along the wind on the golden, each over its masses. Where the meadow turns golden each
@@ -806,7 +858,7 @@ vec3 groundAlbedo(int g, vec2 m, float h, inout vec3 emit) {
     // slopes (not the slip faces) over the sand's own grain and fine ripples.
     c = broad(m, vec3(0.58, 0.46, 0.32), vec3(0.71, 0.59, 0.42), vec3(0.82, 0.72, 0.55), 0.8, big);
     c = drift(m, c, vec3(0.78, 0.68, 0.50), vec3(0.60, 0.48, 0.40), 0.15);
-    float ph = dunePh(m);
+    float ph = gDune;
     vec2 dn = dunes(ph);
     c *= 0.91 + 0.12 * dn.x;
     c = mix(c, vec3(0.58, 0.46, 0.40), 0.35 * dn.y);
@@ -836,7 +888,11 @@ vec3 groundAlbedo(int g, vec2 m, float h, inout vec3 emit) {
   } else if (g == G_MARSH) {
     c = broad(m, vec3(0.20, 0.24, 0.17), vec3(0.29, 0.34, 0.21), vec3(0.40, 0.42, 0.26), 1.3, big);
     // Shallow pools among the reeds, catching the sky; a darker muddy rim around each.
-    float pn = mfbm(m + 7.0, 2.6) + 0.03;
+#ifdef LEAN_POOL
+    float pn = gPool;
+#else
+    float pn = FBM_FINE(m + 7.0, 2.6) + 0.03;
+#endif
     rimW = smoothstep(0.56, 0.62, pn) * (1.0 - smoothstep(0.62, 0.66, pn));
     poolW = smoothstep(0.63, 0.67, pn);
     // Reed beds: stiff upright blades in straw-olive, dark sedge, bronze and green over wet peat
@@ -848,7 +904,7 @@ vec3 groundAlbedo(int g, vec2 m, float h, inout vec3 emit) {
     // Corrupted ground, each hell terrain its own material (F3). Burning sands: the desert's hell
     // twin -- the same dunes, lower, with char-dark lee shadows -- in the sand's grain, darkened.
     c = broad(m, vec3(0.26, 0.15, 0.09), vec3(0.40, 0.25, 0.16), vec3(0.56, 0.38, 0.22), 0.9, big);
-    vec2 dn = dunes(dunePh(m));
+    vec2 dn = dunes(gDune);
     c *= 0.94 + 0.08 * dn.x;
     c = mix(c, vec3(0.24, 0.14, 0.10), 0.15 * dn.y);
     vec4 ts = matPair(m, M_SAND, 1.0);
@@ -870,7 +926,11 @@ vec3 groundAlbedo(int g, vec2 m, float h, inout vec3 emit) {
     // Fields of perdition: wine-red with dark festering pools (the marsh pool/rim idiom), the ground
     // between them clotted in round lumps (the tundra's clumps, in its own red).
     c = broad(m, vec3(0.22, 0.10, 0.13), vec3(0.34, 0.15, 0.19), vec3(0.48, 0.24, 0.27), 1.2, big);
-    float pn = mfbm(m + 7.0, 2.4) + 0.03;
+#ifdef LEAN_POOL
+    float pn = gPool;
+#else
+    float pn = FBM_FINE(m + 7.0, 2.4) + 0.03;
+#endif
     rimW = smoothstep(0.56, 0.62, pn) * (1.0 - smoothstep(0.62, 0.66, pn));
     poolW = smoothstep(0.63, 0.67, pn);
     vec4 tl = matPair(m, M_LICHEN, 1.1);
@@ -886,7 +946,11 @@ vec3 groundAlbedo(int g, vec2 m, float h, inout vec3 emit) {
     c = mix(c, c * 0.7, rimW);
     // The pools are peaty, darker and greener than open water (marsh is land), with a faint
     // drifting sheen of the sky.
+#ifdef LEAN_SHEEN
+    float sheen = 0.3;
+#else
     float sheen = smoothstep(0.35, 0.8, mstroke(m + vec2(uTime * 0.02, 0.0), 5.0, 4.0));
+#endif
     vec3 water = mix(vec3(0.15, 0.23, 0.24), vec3(0.34, 0.40, 0.42), sheen * 0.3);
     return srgb(mix(c, water, poolW * 0.85));
   }
@@ -907,30 +971,38 @@ vec3 groundAlbedo(int g, vec2 m, float h, inout vec3 emit) {
 
 // The floor a feature lays over the ground (forest litter, ice, flood silt, ...).
 vec3 featureFloor(int f, vec3 c, vec2 m, inout vec3 emit) {
+#ifdef LEAN_SHARE
+  if (f == F_FOREST || f == F_YOUNG) return mix(c, srgb(mix(vec3(0.17, 0.20, 0.12), vec3(0.30, 0.25, 0.16), gN4)), 0.6);
+#else
   if (f == F_FOREST || f == F_YOUNG) return mix(c, srgb(mix(vec3(0.17, 0.20, 0.12), vec3(0.30, 0.25, 0.16), mnoise(m, 5.0))), 0.6);
+#endif
   if (f == F_JUNGLE) return mix(c, srgb(vec3(0.12, 0.22, 0.12)), 0.6);
-  if (f == F_ANCIENT) return mix(c, srgb(mix(vec3(0.09, 0.20, 0.17), vec3(0.18, 0.32, 0.24), mnoise(m, 3.0))), 0.7);
+  if (f == F_ANCIENT) return mix(c, srgb(mix(vec3(0.09, 0.20, 0.17), vec3(0.18, 0.32, 0.24), gN3)), 0.7);
   if (f == F_BURNT) {
     float ember = smoothstep(0.86, 0.95, mnoise(m, 11.0));
     emit += srgb(vec3(0.9, 0.3, 0.05)) * ember * (0.6 + 0.4 * sin(uTime * 2.0 + m.x * 7.0));
-    return mix(c, srgb(mix(vec3(0.10, 0.09, 0.08), vec3(0.24, 0.21, 0.19), mnoise(m, 4.0))), 0.75);
+    return mix(c, srgb(mix(vec3(0.10, 0.09, 0.08), vec3(0.24, 0.21, 0.19), gN4)), 0.75);
   }
   if (f == F_FLOOD) {
     // Fertile river land, not dry desert scrub (F13): broken patches of fresh green over the silt,
     // vivid where present (about half the tile) with sandy gaps between, and thin dark damp streaks
     // -- no pale silt wash pulling the whole tile back to khaki.
+#ifdef LEAN_SHARE
+    vec3 green = srgb(mix(vec3(0.30, 0.46, 0.17), vec3(0.42, 0.54, 0.22), gN4));
+#else
     vec3 green = srgb(mix(vec3(0.30, 0.46, 0.17), vec3(0.42, 0.54, 0.22), mnoise(m + 5.0, 4.0)));
+#endif
     float grow = smoothstep(0.36, 0.56, mnoise(m, 2.6));
     vec3 col = mix(c, green, grow * 0.92);
     float streak = smoothstep(0.6, 0.82, mstroke(m, 6.0, 5.0));
     col = mix(col, srgb(vec3(0.20, 0.25, 0.14)), streak * 0.3);
     return col;
   }
-  if (f == F_SCRUB) return mix(c, srgb(vec3(0.55, 0.48, 0.30)), smoothstep(0.6, 0.8, mnoise(m, 9.0)) * 0.5);
+  if (f == F_SCRUB) return mix(c, srgb(vec3(0.55, 0.48, 0.30)), smoothstep(0.6, 0.8, gN9) * 0.5);
   if (f == F_ICE) {
     vec2 cl = mcells(m, 1.8);
     float crack = 1.0 - smoothstep(0.01, 0.05, cl.y - cl.x);
-    return srgb(mix(mix(vec3(0.78, 0.86, 0.92), vec3(0.92, 0.95, 0.97), mnoise(m, 2.0)), vec3(0.55, 0.68, 0.78), crack * 0.7));
+    return srgb(mix(mix(vec3(0.78, 0.86, 0.92), vec3(0.92, 0.95, 0.97), gN2), vec3(0.55, 0.68, 0.78), crack * 0.7));
   }
   if (f == F_FLAMES) {
     // Burning land: charred ground with embers glowing in it (the flames themselves are props),
@@ -1028,7 +1100,8 @@ void main() {
   // instead of a board of squares).
   vec2 fc = abs(fract(m) - 0.5);
   float freeW = smoothstep(0.1, 0.42, max(fc.x, fc.y));
-  vec2 warp = (vec2(mnoise(m, 0.45), mnoise(m + 17.3, 0.45)) - 0.5) * 1.3 + (vec2(mnoise(m + 3.3, 1.1), mnoise(m - 4.4, 1.1)) - 0.5) * 0.5;
+  vec4 wn = vec4(mnoise(m, 0.45), mnoise(m + 17.3, 0.45), mnoise(m + 3.3, 1.1), mnoise(m - 4.4, 1.1));
+  vec2 warp = (wn.xy - 0.5) * 1.3 + (wn.zw - 0.5) * 0.5;
   vec2 q = m + warp * freeW + (vec2(mnoise(m + 5.1, 3.2), mnoise(m - 8.7, 3.2)) - 0.5) * 0.2;
   vec2 gq = q - 0.5;
   vec2 c0 = floor(gq);
@@ -1071,18 +1144,50 @@ void main() {
   float hG = 0.0;
   gBias = (mnoise(m + 71.0, 0.6) - 0.5) * 1.2;
   if (hellW > 0.0) hellMarks(m);
-  paintGround(G_GRASS, kindW(G_GRASS, gv, w), m, h, alb, keepG, hG, emit);
-  paintGround(G_DESERT, kindW(G_DESERT, gv, w), m, h, alb, keepG, hG, emit);
-  paintGround(G_TUNDRA, kindW(G_TUNDRA, gv, w), m, h, alb, keepG, hG, emit);
-  paintGround(G_SNOW, kindW(G_SNOW, gv, w), m, h, alb, keepG, hG, emit);
-  paintGround(G_MARSH, kindW(G_MARSH, gv, w), m, h, alb, keepG, hG, emit);
-  paintGround(G_BURNING, kindW(G_BURNING, gv, w), m, h, alb, keepG, hG, emit);
-  paintGround(G_BROKEN, kindW(G_BROKEN, gv, w), m, h, alb, keepG, hG, emit);
-  paintGround(G_PERDITION, kindW(G_PERDITION, gv, w), m, h, alb, keepG, hG, emit);
-  paintGround(G_COAST, kindW(G_SHALLOWS, gv, w) + kindW(G_COAST, gv, w), m, h, alb, keepG, hG, emit);
+  float wGrass = kindW(G_GRASS, gv, w), wDesert = kindW(G_DESERT, gv, w), wTundra = kindW(G_TUNDRA, gv, w);
+  float wSnow = kindW(G_SNOW, gv, w), wMarsh = kindW(G_MARSH, gv, w), wBurning = kindW(G_BURNING, gv, w);
+  float wBroken = kindW(G_BROKEN, gv, w), wPerdition = kindW(G_PERDITION, gv, w);
+  float wCoast = kindW(G_SHALLOWS, gv, w) + kindW(G_COAST, gv, w);
+  int fs[4] = int[](p00.y, p10.y, p01.y, p11.y);
+  ivec4 fv = ivec4(fs[0], fs[1], fs[2], fs[3]);
+  int here = plotAt(m).z;
+  bool known = here != 0;
+  float v = visAt(vWorld);
+  vec4 dec = texture(uDecal, mapUV(m));
+  // The noises several branches take (gBig ...: see their declaration), each where one of them
+  // will run: the conditions are those branches' own (paintGround's weight, the beach's band, ...).
+#ifdef LEAN_BROAD
+  float wBroad = wGrass + wCoast + wDesert + wTundra + wSnow + wMarsh + hellW;
+#else
+  float wBroad = max(wGrass, wCoast);
+#endif
+#ifdef LEAN_SHARE
+  if (wBroad >= 0.004 || known) {
+#else
+  if (wBroad >= 0.004) {
+#endif
+    gBig = FBM_BROAD(m, 0.45);
+    gMid = mnoise(m + 11.0, 1.6);
+  }
+  if (wDesert >= 0.004 || wBurning >= 0.004) gDune = dunePh(m);
+#ifdef LEAN_POOL
+  if (wMarsh >= 0.004 || wPerdition >= 0.004) gPool = FBM_FINE(m + 7.0, 2.6) + 0.03;
+#endif
+  if (known && (h > 0.72 || dec.g > 0.08) || kindW(F_ANCIENT, fv, w) > 0.0) gN3 = mnoise(m, 3.0);
+  if (known && h > -0.05 && h < 0.075 || v < 0.7 || kindW(F_ICE, fv, w) > 0.0) gN2 = mnoise(m, 2.0);
+  if (known || kindW(F_BURNT, fv, w) > 0.0) gN4 = mnoise(m, 4.0);
+  if (known || kindW(F_SCRUB, fv, w) > 0.0) gN9 = mnoise(m, 9.0);
+  paintGround(G_GRASS, wGrass, m, h, alb, keepG, hG, emit);
+  paintGround(G_DESERT, wDesert, m, h, alb, keepG, hG, emit);
+  paintGround(G_TUNDRA, wTundra, m, h, alb, keepG, hG, emit);
+  paintGround(G_SNOW, wSnow, m, h, alb, keepG, hG, emit);
+  paintGround(G_MARSH, wMarsh, m, h, alb, keepG, hG, emit);
+  paintGround(G_BURNING, wBurning, m, h, alb, keepG, hG, emit);
+  paintGround(G_BROKEN, wBroken, m, h, alb, keepG, hG, emit);
+  paintGround(G_PERDITION, wPerdition, m, h, alb, keepG, hG, emit);
+  paintGround(G_COAST, wCoast, m, h, alb, keepG, hG, emit);
   paintGround(G_OCEAN, kindW(G_OCEAN, gv, w), m, h, alb, keepG, hG, emit);
   // The unexplored ground: the blank parchment, painted once for it and for the frontier (below).
-  float v = visAt(vWorld);
   vec3 blank = vec3(0.0);
   if (voidW >= 0.004 || v < 0.7) blank = blankAlbedo(m);
   if (voidW >= 0.004) {
@@ -1091,8 +1196,6 @@ void main() {
   }
   // Features' floors, by the same weights, each kind once in the same way (the young forest's floor
   // is the forest's).
-  int fs[4] = int[](p00.y, p10.y, p01.y, p11.y);
-  ivec4 fv = ivec4(fs[0], fs[1], fs[2], fs[3]);
   float bareW = 0.0;
   for (int k = 0; k < 4; k++) if (!hasFloor(fs[k])) bareW += ws[k];
   vec3 fa = alb * bareW;
@@ -1108,21 +1211,21 @@ void main() {
   paintFeature(F_SOULS, kindW(F_SOULS, fv, w), alb, m, fa, emit);
   paintFeature(F_FALLOUT, kindW(F_FALLOUT, fv, w), alb, m, fa, emit);
   alb = fa;
-  int here = plotAt(m).z;
-  bool known = here != 0;
   // Rock on steep ground (painted below). Its crags: creases of ridged noise across the rock faces
   // catch the light (a bump on the shading normal, world-anchored, close up mostly), finer than the
   // terrain mesh can carry -- their height here, its derivatives outside the branches.
   float rockMask = 0.0, crag = 0.0;
   if (known) {
     float slope = 1.0 - n.y;
-    rockMask = smoothstep(0.24, 0.4, slope + (mnoise(m, 4.0) - 0.5) * 0.14);
+    rockMask = smoothstep(0.24, 0.4, slope + (gN4 - 0.5) * 0.14);
     rockMask = max(rockMask, smoothstep(0.42, 0.62, h) * 0.85);
+#ifndef LEAN_CRAG
     if (rockMask > 0.0) {
       float crease = 1.0 - abs(mnoise(m + 1.7, 2.2) * 2.0 - 1.0);
       float crease2 = 1.0 - abs(mnoise(m - 6.1, 5.3) * 2.0 - 1.0);
       crag = (crease * crease * 0.7 + crease2 * crease2 * 0.3) * rockMask * 0.1 * (0.35 + 0.65 * near);
     }
+#endif
   }
   vec2 dCrag = vec2(dFdx(crag), dFdy(crag));
   if (split > 0.0) dCrag = vec2(0.0);
@@ -1135,19 +1238,31 @@ void main() {
                + (fs[2] == F_ICE ? max(0.0, w.z) : 0.0) + (fs[3] == F_ICE ? max(0.0, w.w) : 0.0);
     float beach = (1.0 - smoothstep(0.02, 0.075, h)) * smoothstep(-0.05, 0.0, h);
     beach *= 1.0 - smoothstep(0.15, 0.5, iceW);
-    beach *= 1.0 - smoothstep(0.3, 0.7, texture(uDecal, mapUV(m)).b); // a river's banks: wet earth
+    beach *= 1.0 - smoothstep(0.3, 0.7, dec.b); // a river's banks: wet earth
     if (beach > 0.0) {
       vec4 tb = matAt(m, M_SAND, 1.3, vec2(0.3, 0.1), 1.0);
-      alb = mix(alb, srgb(matTint(tb, M_SAND, mix(vec3(0.66, 0.57, 0.40), vec3(0.78, 0.70, 0.52), mnoise(m, 2.0)))), beach * 0.85);
+      alb = mix(alb, srgb(matTint(tb, M_SAND, mix(vec3(0.66, 0.57, 0.40), vec3(0.78, 0.70, 0.52), gN2))), beach * 0.85);
       hG = mix(hG, tb.a, beach * 0.85);
     }
     // Rock on steep ground: cliffs and the flanks of the mountains, with strata, its crags catching
     // the light.
     if (rockMask > 0.0) {
+#ifndef LEAN_CRAG
       n = bumpD(n, pDx, pDy, dCrag.x, dCrag.y, 1.0);
+#endif
+#ifdef LEAN_STRATA
+      // Lean: no strata (a bank, the mode's most common rock, is lower than one band).
+      float strata = 0.0;
+#else
       float strata = 0.5 + 0.5 * sin(h * 30.0 + (m.x - m.y) * 1.3 + mnoise(m, 2.5) * 7.0);
       strata *= smoothstep(0.3, 0.7, mnoise(m + 2.0, 1.2));
+#endif
+#ifdef LEAN_SHARE
+      // Lean: the rock's tone is the broad masses' finer noise (gMid, 1.6 a plot; its own was 1.7).
+      float rb = gMid;
+#else
       float rb = mnoise(m + 2.7, 1.7);
+#endif
       vec3 rock = mix(vec3(0.22, 0.21, 0.24), vec3(0.42, 0.40, 0.38), rb);
       rock = mix(rock, mix(vec3(0.09, 0.07, 0.08), vec3(0.2, 0.15, 0.14), rb), hellW);
       rock = mix(rock, vec3(0.16, 0.15, 0.19), strata * 0.22);
@@ -1163,7 +1278,7 @@ void main() {
     // Snow on the summits and caught on the gentler ledges below them, streaked by the wind.
     float snow = 0.0;
     if (h > 0.72) {
-      float sn = mnoise(m, 3.0) - 0.5 + (matAt(m, M_NOISE, 0.83, vec2(0.0), 1.0).r - 0.5) * 0.6;
+      float sn = gN3 - 0.5 + (matAt(m, M_NOISE, 0.83, vec2(0.0), 1.0).r - 0.5) * 0.6;
       snow = smoothstep(0.92, 1.08, h + sn * 0.22) * smoothstep(0.3, 0.75, n.y);
       snow = max(snow, smoothstep(1.15, 1.3, h + sn * 0.1));
     }
@@ -1173,9 +1288,8 @@ void main() {
     // Wet banks along the rivers (decals.js b: full under the water and on the cut bank, fading
     // over the bank tops): lush grass by the river, and the bank itself -- its cut face and the
     // strip at the water's edge -- dark wet earth and moss under the overhanging grass.
-    vec4 dec = texture(uDecal, mapUV(m));
     alb = mix(alb, alb * vec3(0.86, 1.0, 0.76), smoothstep(0.05, 0.6, dec.b) * 0.6);
-    float mudN = mnoise(m, 9.0);
+    float mudN = gN9;
     float mud = smoothstep(0.8 + (mudN - 0.5) * 0.16, 0.95, dec.b);
     alb = mix(alb, srgb(mix(vec3(0.25, 0.2, 0.13), vec3(0.19, 0.23, 0.12), mudN)), mud * 0.9);
     // Settlement ground, fields and roads (rasterised per plot, see decals.js).
@@ -1183,7 +1297,11 @@ void main() {
     float earthW = dec.a * 0.8;
     if (earthW > 0.0) {
       vec4 te = matPair(m + 3.1, M_DIRT, 1.2);
+#ifdef LEAN_SHARE
+      alb = mix(alb, srgb(matTint(te, M_DIRT, mix(vec3(0.36, 0.29, 0.21), vec3(0.47, 0.39, 0.29), gN9))), earthW);
+#else
       alb = mix(alb, srgb(matTint(te, M_DIRT, mix(vec3(0.36, 0.29, 0.21), vec3(0.47, 0.39, 0.29), mnoise(m, 8.0)))), earthW);
+#endif
       hG = mix(hG, te.a, earthW);
     }
     // Fields (decals.js, fields.js): g holds the crop -- 0.2 a paddock's grazed turf, ~0.33 vegetable
@@ -1208,22 +1326,22 @@ void main() {
       if (wV > 0.0) {
         // Vegetable beds: rows of leafy rosettes on dark tilled earth.
         vec4 tv = matAt(m, M_VEG, 1.0, vec2(0.0), 1.0);
-        crop += wV * vec4(matTint(tv, M_VEG, vec3(0.30, 0.38, 0.18) * (0.9 + 0.2 * mnoise(m, 3.0))), tv.a);
+        crop += wV * vec4(matTint(tv, M_VEG, vec3(0.30, 0.38, 0.18) * (0.9 + 0.2 * gN3)), tv.a);
       }
       if (wS > 0.0) {
         // Tilled soil: furrows running east-west, broken into clods.
         vec4 tsl = matAt(m, M_SOIL, 1.0, vec2(0.0), 1.0);
-        crop += wS * vec4(matTint(tsl, M_SOIL, vec3(0.355, 0.295, 0.215) * (0.86 + 0.28 * mnoise(m, 3.0))), tsl.a);
+        crop += wS * vec4(matTint(tsl, M_SOIL, vec3(0.355, 0.295, 0.215) * (0.86 + 0.28 * gN3)), tsl.a);
       }
       if (wG > 0.0) {
         // Ripe grain: rows of stalks crowned with pale ears, running north-south.
         vec4 tgr = matAt(m, M_GRAIN, 1.0, vec2(0.0), 1.0);
-        crop += wG * vec4(matTint(tgr, M_GRAIN, vec3(0.78, 0.58, 0.26) * (0.92 + 0.16 * mnoise(m, 3.0))), tgr.a);
+        crop += wG * vec4(matTint(tgr, M_GRAIN, vec3(0.78, 0.58, 0.26) * (0.92 + 0.16 * gN3)), tgr.a);
       }
       if (wT > 0.0) {
         // Grazed turf: the meadow cropped short -- finer blades, an even, paler green (a straw olive on
         // the prairie), mottled by the hooves.
-        float sward = mnoise(m, 3.0);
+        float sward = gN3;
         vec3 turf = mix(mix(vec3(0.35, 0.42, 0.21), vec3(0.43, 0.48, 0.25), sward), mix(vec3(0.49, 0.44, 0.27), vec3(0.56, 0.5, 0.31), sward), gDry);
         vec4 tt = matAt(m, M_GRASS, 2.3, vec2(0.21, 0.47), -1.0);
         crop += wT * vec4(mix(turf, matTint(tt, M_GRASS, turf), 0.6), tt.a * 0.5);
@@ -1237,7 +1355,11 @@ void main() {
     // darker margins and wheel ruts, and a verge of worn, dry grass beside it.
     float rd = (1.0 - dec.r) * 0.3;
     if (rd < 0.15) {
+#ifdef LEAN_ROAD
+      float hw = 0.07 + (mnoise(m, 7.0) - 0.5) * 0.024;
+#else
       float hw = 0.07 + (mnoise(m, 7.0) - 0.5) * 0.024 + (mnoise(m + 2.3, 19.0) - 0.5) * 0.012 + (mnoise(m + 4.4, 35.0) - 0.5) * 0.016;
+#endif
       float aa = max(gPpx * 0.75, 0.002);
       float on = 1.0 - smoothstep(hw - aa, hw + aa, rd);
       float t = rd / hw;
@@ -1245,7 +1367,7 @@ void main() {
       // curve's shoulder, where mottling would wash out), its margins and ruts broken along the road
       // rather than drawn as unbroken parallel stripes.
       vec4 td = matPair(m, M_DIRT, 1.0);
-      vec3 dirt = matTint(td, M_DIRT, mix(vec3(0.545, 0.435, 0.31), vec3(0.615, 0.505, 0.36), mnoise(m, 4.0)));
+      vec3 dirt = matTint(td, M_DIRT, mix(vec3(0.545, 0.435, 0.31), vec3(0.615, 0.505, 0.36), gN4));
       float broken = smoothstep(0.25, 0.65, mnoise(m + 9.7, 6.0));
       dirt *= mix(vec3(1.0), vec3(0.81, 0.74, 0.69), smoothstep(0.5, 0.95, t) * mix(0.15, 0.4, broken));
       dirt *= mix(vec3(1.0), vec3(0.62, 0.55, 0.51), smoothstep(0.86, 1.0, t) * mix(0.1, 0.3, broken));
@@ -1255,7 +1377,7 @@ void main() {
       // Cobbles where a road runs through a settlement (the utility layer's cells, 24 a plot).
       float cob = smoothstep(0.03, 0.25, matAt(m, M_NOISE, 1.0, vec2(0.0), 1.0).b);
       dirt = mix(dirt, dirt * (0.72 + 0.38 * cob), dec.a);
-      float verge = (1.0 - smoothstep(hw, hw + 0.05, rd)) * smoothstep(0.3, 0.7, mnoise(m, 9.0) + 0.2);
+      float verge = (1.0 - smoothstep(hw, hw + 0.05, rd)) * smoothstep(0.3, 0.7, gN9 + 0.2);
       alb = mix(alb, alb * vec3(1.12, 1.0, 0.7), verge * (1.0 - on) * 0.7);
       alb = mix(alb, srgb(dirt), on);
       hG = mix(hG, td.a, on);
@@ -1268,9 +1390,17 @@ void main() {
   if (known) n = bumpD(n, pDx, pDy, dRel.x, dRel.y, 1.0);
 
   // Painter's pigment: a broad hue/value drift that keeps large areas from reading flat.
+#ifdef LEAN_PIGMENT
+  // The drifts from the borders' broad warp noises (0.45 a plot; their own were 0.35, 0.25): tried
+  // for the lean terrain and not taken -- a fifth of a still a shade lighter, for two noises.
+  float pig = wn.y - 0.5;
+  float warm = wn.x;
+#else
   float pig = mnoise(m, 0.35) - 0.5;
+  float warm = mnoise(m + 50.0, 0.25);
+#endif
   alb *= 1.0 + uPaint * pig * 0.35;
-  alb = mix(alb, alb * vec3(1.05, 0.97, 0.9), uPaint * smoothstep(0.3, 0.8, mnoise(m + 50.0, 0.25)) * 0.6);
+  alb = mix(alb, alb * vec3(1.05, 0.97, 0.9), uPaint * smoothstep(0.3, 0.8, warm) * 0.6);
 
   float ao = 1.0;
   float sun;
@@ -1284,7 +1414,7 @@ void main() {
   // (Only near the unknown: well inside what is seen, v + edgeN cannot fall to the edge.)
   float blankT = 0.0;
   if (v < 0.7) {
-    float edgeN = (matAt(m + 1.7, M_NOISE, 0.5, vec2(0.0), 1.0).r - 0.5) * 0.35 + (mnoise(m, 2.0) - 0.5) * 0.15;
+    float edgeN = (matAt(m + 1.7, M_NOISE, 0.5, vec2(0.0), 1.0).r - 0.5) * 0.35 + (gN2 - 0.5) * 0.15;
     blankT = 1.0 - smoothstep(0.12, 0.4, v + edgeN);
     if (!known) blankT = max(blankT, 1.0 - smoothstep(0.08, 0.3, v + edgeN));
   }
