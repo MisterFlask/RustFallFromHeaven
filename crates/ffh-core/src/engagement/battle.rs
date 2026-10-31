@@ -4,27 +4,12 @@
 //!
 //! Plain values only: the rules map units onto [`Fighter`]s (role, `engage_hit`, slots and picks
 //! live in the rules), so this module depends on nothing in `Game`.
+//!
+//! The round model (phase 6 before revision 4), kept compiling beside formation battles
+//! ([`super::formation`]) until the rules move to them; [`Side`], [`FighterIdx`] and [`Pair`] live
+//! there now.
 
-/// Which side a fighter is on.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum Side {
-    Attacker,
-    Defender,
-}
-
-impl Side {
-    pub fn other(self) -> Side {
-        match self {
-            Side::Attacker => Side::Defender,
-            Side::Defender => Side::Attacker,
-        }
-    }
-
-    /// 0 for the attacker, 1 for the defender.
-    pub fn index(self) -> usize {
-        self as usize
-    }
-}
+pub use super::formation::{FighterIdx, Pair, Side};
 
 /// A target class in a role's priority order (plan 2.1; the rules map ffh-data's role table onto
 /// it). A class is the set of the enemy's engaged fighters of that kind.
@@ -40,9 +25,6 @@ pub enum TargetClass {
     /// Heroes and support units (`Fighter::hero_or_support`): phase 7's assassin profile.
     HeroOrSupport,
 }
-
-/// A fighter's index in [`Battle::fighters`].
-pub type FighterIdx = u16;
 
 /// One committed unit, as the round model sees it.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -132,14 +114,6 @@ impl Fighter {
     pub fn withdraw_threshold(&self, p: &Params) -> i32 {
         p.withdraw_hp_pct * self.max_hp
     }
-}
-
-/// The per-pair strengths: the hitter's A against this target and the target's Dv against this
-/// hitter, both x100 (plan 4.2, `engage_hit`).
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
-pub struct Pair {
-    pub a: i32,
-    pub dv: i32,
 }
 
 /// The rule constants a battle reads (the `ENGAGEMENT_*` defines, plan 2.5).

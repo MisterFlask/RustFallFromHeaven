@@ -2,9 +2,16 @@
 //! owner's spec "Engagement combat"; docs/COMBAT_INVENTORY.md for the owner's answers Q1-Q13 and
 //! the ground rules G1-G5).
 //!
-//! When an army attacks a land plot, each side commits up to S units, which fight in rounds until
-//! one side's committed force is destroyed or has withdrawn. At its core is the **pure round
-//! model**, which knows nothing of `Game`:
+//! **Formation battles** (revision 4, the owner's Ogre Battle-style engagements; docs/ENGAGEMENTS.md):
+//! each side's units stand on a grid of three rows by its lanes and act by row, role and speed for
+//! three rounds. Their pure resolver is [`formation`] ([`formation::resolve`]: the fighters on
+//! their grids, the ground, the rounds and passes, the events and the end state; and the rules'
+//! auto formation, [`formation::auto_arrange`]); the rules do not call it yet.
+//!
+//! The rules still fight the **round model** (phase 6 before revision 4), until they move to
+//! formation battles: when an army attacks a land plot, each side commits up to S units, which
+//! fight in rounds until one side's committed force is destroyed or has withdrawn. At its core is
+//! the pure round model, which knows nothing of `Game`:
 //! - [`Battle`] ([`battle`]): the fighters of both sides in slot order (role flags, target-class
 //!   order, max HP and HP, volleys, withdrawal chance, combat limit, morale), the pair table of A
 //!   and Dv, and the battle-level effects phase 7's in-battle spells will return
@@ -34,6 +41,7 @@ pub mod battle;
 pub(crate) mod engage;
 pub mod estimate;
 pub mod expect;
+pub mod formation;
 mod phi_table;
 pub mod pick;
 pub mod preview;

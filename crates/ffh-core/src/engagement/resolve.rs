@@ -33,20 +33,7 @@
 //! order. Nothing else draws; the log records every roll, never a seed.
 
 use super::battle::{Battle, BattleEffect, FighterIdx, Side, TargetClass};
-use crate::rng::Rng;
-
-/// The synchronized RNG, as the round model draws from it. The rules back it with the game's
-/// `soren_rand` (the same draws as `soren_rand_num`); tests use a seeded [`Rng`].
-pub trait BattleRng {
-    /// A draw in `0..n` (`n >= 1`); `label` names it, as `getSorenRandNum`'s log string.
-    fn rand(&mut self, n: i32, label: &'static str) -> i32;
-}
-
-impl BattleRng for Rng {
-    fn rand(&mut self, n: i32, label: &'static str) -> i32 {
-        self.get_i(n, label)
-    }
-}
+pub use super::formation::BattleRng;
 
 /// How an engagement ended (plan 6.6).
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
@@ -666,6 +653,7 @@ impl<'a> Run<'a> {
 mod tests {
     use super::super::battle::{Fighter, Pair, Params};
     use super::*;
+    use crate::rng::Rng;
 
     const EQUAL: Pair = Pair { a: 400, dv: 400 };
 
