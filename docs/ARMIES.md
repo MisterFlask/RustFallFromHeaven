@@ -257,7 +257,8 @@ is within the seed noise. Most of that seed's losses on the way are one civiliza
 ruled city trained a Warrior almost every turn for its army at war, and 18 of its 24 recruits died
 marching. Most were the city's own units bound for the army (its build destination), which the
 requisition-off game sends as well; the two games' wars diverge, and there that civilization lost
-1 of 12.
+1 of 12. `ffh bench` (exclusive, seeds 1 and 3, two rounds alternating) is no slower than before
+marching: 36 against 43 ms a turn on seed 1, 48 against 51 on seed 3.
 
 ## UI (ffh-play)
 
