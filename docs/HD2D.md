@@ -693,6 +693,24 @@ beside an Intel UHD integrated GPU, headless Chrome 156 (`FFH_CHROMIUM_CHANNEL=c
     masses moved, the look kept. Tried and dropped: two octaves for the pools and the hell cracks (the cracks
     widened into blobs), the pigment's drift from the borders' noises (20% of a still a shade
     lighter, for two noises).
+* **An integrated GPU** (2026-10-31, the owner's laptop: Chrome's default adapter there is the Intel
+  UHD beside the RTX 4080, and WebGL's `powerPreference: "high-performance"` does not switch it on
+  Windows; the turn-200 large-map game at 96 px, a 1600 × 900 page at device-pixel ratio 1.5, so a
+  2400 × 1350 canvas). The same frame that takes the RTX 4080 3-5 ms took the UHD 87-113 ms (the
+  scene pass 55, the rest spread over every pass), and the map animated at rest, so the GPU never
+  rested: the page ran at 4 frames a second with nothing moving and panned at 8. The quality ladder
+  never stepped in: it timed the frame on the CPU (under 1 ms; WebGL calls return before the GPU
+  has done them). The cost is nearly all per pixel (render scale 0.75: 52 ms, 0.5: 30 ms; the rays,
+  ambient occlusion, moods or reflections off each moved nothing measurable). Now the ladder reads
+  the GPU's own time (one timer query a frame, `Pipeline.gpuFrameMs`; without timer queries the
+  loop's call-back gap, which grows once the GPU is behind), has a last step at render scale 0.5,
+  and does not step back up to a level that was slow again within 5 s (`autoFloor`); a map at rest
+  animates at most every other frame's worth of GPU time (`2 × costMs`, at least the 32 ms it had).
+  On the UHD: 138 frames a second at rest (the page's), 19 panning, the ladder at its last step
+  within about 3 s, and the page shows a hint to pick the faster GPU once (main.js,
+  "ffh:r3d-slow"): Windows' Settings → System → Display → Graphics → the browser → High
+  performance, which gives the full map at the RTX's 3-5 ms. On the RTX nothing changes (level 0,
+  30 frames a second at rest).
 * **The props' and the water's programs, compiled smaller** (2026-10-31; `MapHd2d`
   `propDefines`, `waterDefines`, `riverSplit`, `LITE` in `hd2d/index.js`). After the terrain they
   were the longest of Direct3D's first-draw compiles (docs/R3D.md §11.1). Instruction counts after

@@ -869,5 +869,16 @@ window.addEventListener("ffh:r3d-lost", () => {
   toast("The HD-2D map lost its graphics context; using the isometric map until the page is reloaded.", "error");
 });
 
+// The HD-2D map's quality ladder hit its last step (r3d/map3d.js tuneQuality): the GPU is too slow
+// for the full resolution. Most often a laptop's integrated GPU, which browsers on Windows use
+// unless told otherwise (WebGL's "high-performance" preference does not switch it there).
+window.addEventListener("ffh:r3d-slow", (ev) => {
+  // "ANGLE (Intel, Intel(R) UHD Graphics (0x0000A788) Direct3D11 vs_5_0 ps_5_0, D3D11)" -> the device.
+  const name = ev.detail?.gpu ?? "";
+  const device = /^ANGLE \([^,]*,\s*([^,]*?)(?:\s*\(0x[0-9A-Fa-f]+\).*)?,[^,]*\)$/.exec(name)?.[1] ?? name;
+  const gpu = device ? ` (${device})` : "";
+  toast(`The HD-2D map draws slowly on this GPU${gpu}, so it is drawn at half resolution. If this computer has a faster graphics card, set your browser to use it (Windows: Settings → System → Display → Graphics → your browser → High performance), or pick the isometric map in Tools → Options.`, "info", 20000);
+});
+
 window.ffh = { S, get mapView() { return mapView; }, units, screens, empire, tools, api, emit, ready: false, tab: currentTab, setLayer, openScreen, look, setRenderer };
 boot();

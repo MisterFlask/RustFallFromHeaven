@@ -961,7 +961,9 @@ brush (brush marks and gouache values on objects, §5.1), bands (stepped light),
 shadows), rim, clouds, reflections, refraction and caustics (the water, §5.2), haze, mist, grade,
 grain, vignette, borders, grid, fogWar, particles, animate, renderScale, fxaa (anti-aliasing),
 autoQuality (the measured-frame-time quality ladder: paint filter and the water's reflection march
-off -- it keeps mirroring the sky -- then render scale 0.75). The paint filter (`kuwahara`) is off in
+off -- it keeps mirroring the sky -- then render scale 0.75, then 0.5; the frame time is the GPU's,
+from one timer query a frame where the browser has them, else the loop's call-back gap, since a
+frame's CPU time never sees a slow GPU; docs/HD2D.md §8, "An integrated GPU"). The paint filter (`kuwahara`) is off in
 the painterly preset since the first look-target batch (owner decision, §16), and the ink outlines
 (`outline`) and stepped light (`bands`) since the second, once crowns, rocks and the ground carried
 their own form; the brush marks on objects (`brush`) stay for buildings and rocks. Every switch stays

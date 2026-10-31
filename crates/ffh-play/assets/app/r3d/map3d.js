@@ -152,12 +152,22 @@ export class Map3D {
     this.dirty = true;
     this.running = true;
     this.frameMs = [];
-    // Quality ladder (docs/R3D.md §11): when the measured frame time stays high, step down (0 full
-    // -> 1 paint filter off -> 2 + render scale 0.75) to keep the map responsive, and step back up
-    // when it is fast again. Off with cfg.autoQuality = 0.
+    // Quality ladder (docs/R3D.md §11): when the measured frame time (frameCost: the GPU's, where
+    // the browser can time it) stays high, step down (0 full -> 1 paint filter off -> 2 + render
+    // scale 0.75 -> 3 render scale 0.5) to keep the map responsive, and step back up when it is
+    // fast again. Off with cfg.autoQuality = 0.
     this.autoLevel = 0;
     this.slowN = 0;
     this.fastN = 0;
+    /** The level the ladder no longer steps up from (one that proved too slow right after a step
+     *  up), when the last step up was (ms), and whether the slow-GPU hint went out (tuneQuality). */
+    this.autoFloor = 0;
+    this.raisedAt = -Infinity;
+    this.slowSaid = false;
+    /** When the last frame was drawn (ms; the next loop measures it, frameCost), and that frame
+     *  cost estimate (ms). */
+    this.renderedAt = null;
+    this.costMs = 0;
     /** The last sync's costs by stage (ms): world, textures, dress, instances, paint, units. */
     this.syncMs = {};
     /** The `sync:*` measures left so far (syncMeasure). */
@@ -872,6 +882,16 @@ export class Map3D {
     if (!this.running) return;
     this.raf = requestAnimationFrame(() => this.loop());
     if (this.lost || !this.compiled) return;
+    const now = performance.now();
+    if (this.renderedAt !== null) {
+      const gap = now - this.renderedAt;
+      this.renderedAt = null;
+      // (A hidden tab's pause is not a slow frame.)
+      if (gap < 1000) {
+        this.costMs = this.frameCost(gap);
+        this.tuneQuality(this.costMs);
+      }
+    }
     const target = this.view.cam.ts;
     if (Math.abs(this.ts - target) > 0.05) {
       this.ts = this.view.reduceMotion() ? target : lerp(this.ts, target, 0.25);
@@ -885,16 +905,26 @@ export class Map3D {
     // (The full terrain coming in over the stand-in: drawn though nothing else moves.)
     if (this.swapDue()) this.dirty = true;
     if (!this.dirty && !animate) return;
-    // Animation at ~30 frames per second is enough for wind and water.
-    const now = performance.now();
-    if (!this.dirty && now - (this.lastFrame ?? 0) < 32) return;
+    // Animation at ~30 frames per second is enough for wind and water. A GPU slower than that (a
+    // laptop's integrated one: 30-100 ms a frame) animates at most every other frame's worth of
+    // its time, so a map at rest leaves it half free and a pan or a click gets its frame at once.
+    if (!this.dirty && now - (this.lastFrame ?? 0) < Math.max(32, 2 * this.costMs)) return;
     this.lastFrame = now;
     this.dirty = false;
     try {
       this.render(animate ? (now - this.t0) / 1000 : this.time);
+      this.renderedAt = now;
     } catch (e) {
       console.error("r3d frame:", e);
     }
+  }
+
+  /** What the frame drawn `gap` ms before this loop cost (ms): its CPU time or, larger on a slow
+   *  GPU, the GPU's time for it (the pipeline's timer query; WebGL calls return before the GPU
+   *  has done them, so the CPU time alone never sees a slow GPU). Without timer queries, the gap
+   *  itself: a browser whose GPU is behind calls the loop back late. */
+  frameCost(gap) {
+    return Math.max(this.frameMs.at(-1) ?? 0, this.pipeline.gpuFrameMs ?? gap);
   }
 
   /** The frame's uniforms and light, for camera `cam`. */
@@ -1034,27 +1064,30 @@ export class Map3D {
     const ms = performance.now() - t0;
     this.frameMs.push(ms);
     if (this.frameMs.length > 120) this.frameMs.shift();
-    this.tuneQuality(ms);
     this.frames = (this.frames ?? 0) + 1;
     if (this.frames <= 3 || (this.frames <= 400 && this.frames % 20 === 0)) performance.measure(`frame:${this.frames}`, { start: t0, detail: { pending: this.sprites?.atlas.pending ?? 0, layers: this.sprites?.atlas.entries.size ?? 0, chunks: this.scene.terrain.chunks.size, budget: this.scene.budget.n } });
   }
 
   /** The config with the quality ladder applied: at level 1 the Kuwahara paint filter (off by
    *  default, but a player may have turned it on) and the water's screen-space reflections go (it
-   *  keeps mirroring the sky and its clouds), at level 2 the render scale drops to 0.75 as well. */
+   *  keeps mirroring the sky and its clouds), at level 2 the render scale drops to 0.75 as well, at
+   *  level 3 to 0.5 (a laptop's integrated GPU: the frame's cost is nearly all per pixel). */
   qualityCfg() {
     if (this.autoLevel <= 0) return this.cfg;
     return {
       ...this.cfg,
       kuwahara: 0,
-      renderScale: this.cfg.renderScale * (this.autoLevel >= 2 ? 0.75 : 1),
+      renderScale: this.cfg.renderScale * [1, 1, 0.75, 0.5][Math.min(3, this.autoLevel)],
       reflections: 0,
     };
   }
 
   /** Steps the quality ladder from the measured frame time (hysteresis: several sustained slow or
-   *  fast frames before a change, so a single hitch does not flip it; a single lab render never
-   *  accumulates enough frames to change it). */
+   *  fast frames before a change, so a single hitch does not flip it; only the loop measures, so a
+   *  lab render never changes it). A level that is slow again within seconds of a step up to it
+   *  is not tried again (autoFloor): the map does not flicker between two resolutions. The first
+   *  time the ladder reaches its last level, "ffh:r3d-slow" tells the page (main.js: the hint to
+   *  pick a faster GPU). */
   tuneQuality(ms) {
     if (!(this.cfg.autoQuality ?? 1)) {
       this.autoLevel = 0;
@@ -1070,12 +1103,18 @@ export class Map3D {
       this.slowN = 0;
       this.fastN = 0;
     }
-    if (this.slowN >= 6 && this.autoLevel < 2) {
+    if (this.slowN >= 6 && this.autoLevel < 3) {
+      if (performance.now() - this.raisedAt < 5000) this.autoFloor = this.autoLevel + 1;
       this.autoLevel++;
       this.slowN = 0;
-    } else if (this.fastN >= 24 && this.autoLevel > 0) {
+      if (this.autoLevel === 3 && !this.slowSaid) {
+        this.slowSaid = true;
+        window.dispatchEvent(new CustomEvent("ffh:r3d-slow", { detail: { gpu: this.glName, ms: Math.round(ms) } }));
+      }
+    } else if (this.fastN >= 24 && this.autoLevel > this.autoFloor) {
       this.autoLevel--;
       this.fastN = 0;
+      this.raisedAt = performance.now();
     }
   }
 

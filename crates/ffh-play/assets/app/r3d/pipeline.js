@@ -102,6 +102,12 @@ export class Pipeline {
     this.h = 0;
     this.stats = { frames: 0, ms: {}, cpu: 0 };
     this.queries = [];
+    /** The GPU time of the latest frame whose timer query has come back (ms), or null: no timer
+     *  queries, or none back yet. A frame's CPU time says nothing of a slow GPU (WebGL calls return
+     *  before the GPU has done them), so the quality ladder reads this (Map3D.loop). One query a
+     *  frame while not `measure`-ing (the stages' own queries cannot nest in it). */
+    this.gpuFrameMs = null;
+    this.frameQueries = [];
     /** A mode's extra passes (hd2d/passes.js), or null. */
     this.ext = null;
   }
@@ -310,6 +316,14 @@ export class Pipeline {
       } else left.push([name, q]);
     }
     this.queries = left;
+    // The whole frames' queries (gpuFrameMs), oldest first; a disjoint result (the GPU's clock
+    // was disturbed) is dropped.
+    const disjoint = this.frameQueries.length && gl.getParameter(this.timer.GPU_DISJOINT_EXT);
+    while (this.frameQueries.length && gl.getQueryParameter(this.frameQueries[0], gl.QUERY_RESULT_AVAILABLE)) {
+      const q = this.frameQueries.shift();
+      if (!disjoint) this.gpuFrameMs = gl.getQueryParameter(q, gl.QUERY_RESULT) / 1e6;
+      gl.deleteQuery(q);
+    }
   }
 
   /** Renders one frame. `fr`: the frame's camera and light (map3d.js `frameState`); `scene`: the
@@ -318,6 +332,9 @@ export class Pipeline {
     const gl = this.gl;
     const W = this.w, H = this.h;
     this.collectTimings();
+    // (At most a few in flight: a GPU that never answers does not pile them up.)
+    const frameQuery = this.timer && !this.measure && this.frameQueries.length < 4 ? gl.createQuery() : null;
+    if (frameQuery) gl.beginQuery(this.timer.TIME_ELAPSED_EXT, frameQuery);
     const U = fr.uniforms;
     gl.disable(gl.CULL_FACE);
     gl.disable(gl.BLEND);
@@ -535,6 +552,10 @@ export class Pipeline {
       gl.blitFramebuffer(0, 0, W, H, 0, 0, canvasW, canvasH, gl.COLOR_BUFFER_BIT, W === canvasW && H === canvasH ? gl.NEAREST : gl.LINEAR);
     }
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    if (frameQuery) {
+      gl.endQuery(this.timer.TIME_ELAPSED_EXT);
+      this.frameQueries.push(frameQuery);
+    }
     this.stats.frames++;
   }
 }
