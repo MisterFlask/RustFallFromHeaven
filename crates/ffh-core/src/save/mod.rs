@@ -31,10 +31,12 @@
 //! controller that remembers what it already did this turn will not.
 //!
 //! **Adding state.** Every saved struct is written by destructuring it exhaustively
-//! (`persist_struct!` in `state.rs`, the `Game` impl below),
+//! (`persist_struct!` in `state.rs` and, for the battle reports, `battle.rs`; the `Game` impl
+//! below),
 //! so a new field fails to compile until it is saved. Add it to the list in declaration order
 //! and bump [`FORMAT_VERSION`].
 
+mod battle;
 pub(crate) mod io;
 mod state;
 
@@ -76,7 +78,8 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 ///   (docs/ARMIES.md): `Unit::march`, `Army::requisition`, `OrderData::requisition`; gone:
 ///   `Player::transit`, `City::feed_army`, `OrderData::reinforce_to`.
 /// - 10: engagement combat (phase 6): `Army::stance`, `City::garrison_stance`,
-///   `Unit::extra_combat_percent_defense`, `attacks_made`, `battle_heal_turn`.
+///   `Unit::extra_combat_percent_defense`, `attacks_made`, `battle_heal_turn`,
+///   `Game::battle_reports` (with their logs, `battle.rs`), `battle_report_next`.
 pub const FORMAT_VERSION: u32 = 10;
 
 /// Why [`Game::load`] rejected a save.
@@ -216,6 +219,8 @@ fn write_game(g: &Game, w: &mut Writer) {
         deals,
         armies,
         governors,
+        battle_reports,
+        battle_report_next,
         map_rand,
         soren_rand,
         log,
@@ -326,6 +331,8 @@ fn write_game(g: &Game, w: &mut Writer) {
     deals.write(w);
     armies.write(w);
     governors.write(w);
+    battle_reports.write(w);
+    battle_report_next.write(w);
     map_rand.write(w);
     soren_rand.write(w);
     log.write(w);
@@ -434,6 +441,8 @@ fn read_game(d: &'static GameData, r: &mut Reader<'_>) -> Result<Game, LoadError
         deals: Persist::read(r)?,
         armies: Persist::read(r)?,
         governors: Persist::read(r)?,
+        battle_reports: Persist::read(r)?,
+        battle_report_next: Persist::read(r)?,
         map_rand: Persist::read(r)?,
         soren_rand: Persist::read(r)?,
         log: Persist::read(r)?,

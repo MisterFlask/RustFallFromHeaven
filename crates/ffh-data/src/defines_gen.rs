@@ -561,6 +561,7 @@ pub struct Defines {
     pub engagement_auto_min_hp_percent: i32,
     pub engagement_recon_reveal_range: i32,
     pub engagement_reports_kept: i32,
+    pub engagement_report_logs_kept: i32,
     pub bbai_skip_bombard_base_stack_ratio: i32,  // not in XML: C++ reads 0
     pub bbai_skip_bombard_best_attack_odds: i32,  // not in XML: C++ reads 0
     pub bbai_skip_bombard_min_stack_ratio: i32,  // not in XML: C++ reads 0
@@ -1127,6 +1128,7 @@ impl Defines {
             engagement_auto_min_hp_percent: m.int("ENGAGEMENT_AUTO_MIN_HP_PERCENT"),
             engagement_recon_reveal_range: m.int("ENGAGEMENT_RECON_REVEAL_RANGE"),
             engagement_reports_kept: m.int("ENGAGEMENT_REPORTS_KEPT"),
+            engagement_report_logs_kept: m.int("ENGAGEMENT_REPORT_LOGS_KEPT"),
             bbai_skip_bombard_base_stack_ratio: m.int("BBAI_SKIP_BOMBARD_BASE_STACK_RATIO"),
             bbai_skip_bombard_best_attack_odds: m.int("BBAI_SKIP_BOMBARD_BEST_ATTACK_ODDS"),
             bbai_skip_bombard_min_stack_ratio: m.int("BBAI_SKIP_BOMBARD_MIN_STACK_RATIO"),

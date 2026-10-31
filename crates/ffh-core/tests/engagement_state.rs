@@ -1,6 +1,9 @@
 //! Engagement combat's state (GAMEOPTION_ENGAGEMENTS, phase 6 step 2): the option and the dispatch
-//! rule, stances and their commands with the split and merge rules, the new unit fields, and saves.
+//! rule, stances and their commands with the split and merge rules, the new unit fields, the
+//! battle reports and what is kept of them, and saves.
 
+use ffh_core::engagement::report::*;
+use ffh_core::engagement::{EngageResult, Fate, Phase, Side};
 use ffh_core::game::Game;
 use ffh_core::ids::*;
 use ffh_core::setup::GameSetup;
@@ -190,8 +193,141 @@ fn attacks_made_resets_with_made_attack() {
     assert_eq!(g.units[u].battle_heal_turn, 3, "the heal turn is a turn number, not a counter");
 }
 
+/// A report of `p1` attacking `p2` at the city's plot, with a small log when `logged`.
+fn report(g: &Game, c: CityId, logged: bool) -> BattleReport {
+    let plot = g.city_plot(c);
+    let side = |p: u8, stance: StanceType| ReportSide {
+        player: PlayerId(p),
+        shown_player: PlayerId(p),
+        players: vec![PlayerId(p)],
+        army: None,
+        garrison_of: None,
+        stance,
+        committed: 1,
+        withdrew: 0,
+        sat_out: 0,
+        fled: 0,
+        lost: Vec::new(),
+    };
+    let stat = |x| Stat { base_x100: x, role_pct: 100, terms: vec![Term { src: TermSource::Fortify, pct: 25 }], total_x100: x * 125 / 100 };
+    let warrior = g.d.t::<UnitType>("UNIT_WARRIOR");
+    let fighter = |side: Side, unit: UnitId, fate: Fate| LogFighter {
+        unit,
+        unit_type: warrior,
+        name: String::new(),
+        owner: PlayerId(side.index() as u8 + 1),
+        shown_owner: PlayerId(side.index() as u8 + 1),
+        side,
+        slot: Some(0),
+        level: 1,
+        xp: 0,
+        hero: false,
+        role: CombatRoleType(0),
+        pos: Position::Front,
+        screen: false,
+        ignores_shield: false,
+        assassin_profile: false,
+        guardsman: false,
+        max_hp: 120,
+        hp_start: 12000,
+        volleys: 0,
+        volley_chance: 0,
+        withdraw_pct: 0,
+        def_strike: None,
+        collateral: None,
+        combat_limit: 100,
+        immune: Immunities::default(),
+        fear: false,
+        a: stat(300),
+        dv: stat(300),
+        fate: Some(fate),
+    };
+    let log = BattleLog {
+        slots: [0, 1].map(|_| SideSlots { base: 8, changes: vec![SlotChange { src: SlotSource::Hills, delta: -2 }], total: 6, river_only: 0 }),
+        picks: [0, 1].map(|_| SidePick { auto_pick: vec![0], picked_by: Pick::Auto }),
+        fighters: vec![fighter(Side::Attacker, UnitId(1000), Fate::Survived), fighter(Side::Defender, UnitId(1001), Fate::Killed { by: Some(0), phase: Phase::Round(2) })],
+        pairs: vec![LogPair { h: 0, t: 1, a_x100: 300, dv_x100: 375, mean: 888, a_extra: vec![], dv_extra: vec![] }],
+        events: vec![
+            LogEvent::Stage { stage: Stage::Round(1) },
+            LogEvent::Hit { h: 0, t: 1, rule: TargetRule::FrontFirst, step: 0, blocked: vec![], eligible: vec![1], r: 100, dmg: 888, capped: false },
+            LogEvent::RoundEnd { deaths: vec![LogDeath { b: 1, killer: Some(0), assists: vec![], overkill: 12 }] },
+            LogEvent::End { result: EngageResult::AttackerWon, volley_rounds: 0, rounds: 2 },
+        ],
+        forecast: Some(FrozenForecast {
+            source: ForecastSource::Expected,
+            win_permille: 640,
+            draw_permille: 0,
+            rounds: (1, 2, 4),
+            losses_if_win_x10: 3,
+            per: vec![ForecastFighter { b: 0, fall_pct: 30, withdraw_pct: 0, death_round: None }],
+            curve: [vec![12000, 9000], vec![12000, 0]],
+            alternatives: vec![(AltKind::ThisPlan, 640)],
+        }),
+    };
+    BattleReport {
+        id: 0,
+        turn: 0,
+        plot,
+        from: plot,
+        place: PlotSnap { x: g.cities[c].x, y: g.cities[c].y, terrain: g.map.plots[plot].terrain_type, feature: None, hills: false, river_crossing: false, city: None },
+        sides: [side(1, g.d.default_stance), side(2, g.d.default_stance)],
+        outcome: Outcome { result: EngageResult::AttackerWon, volley_rounds: 0, rounds: 2, plot_taken: false, city_captured: None, moved_in: 0, defenders_left: 0 },
+        log: logged.then(|| Box::new(log)),
+    }
+}
+
+/// The next game turn, as `do_turn` starts it (the reports are trimmed there).
+fn next_turn(g: &mut Game) {
+    g.increment_game_turn();
+    g.battle_reports_trim();
+}
+
 #[test]
-fn stances_and_unit_fields_survive_a_save() {
+fn reports_keep_logs_for_two_turns_and_the_latest_battles() {
+    let (mut g, c) = game(true);
+    let logs_kept = g.d.defines.engagement_report_logs_kept as usize;
+    let kept = g.d.defines.engagement_reports_kept as usize;
+    let t0 = g.game_turn();
+    let first: Vec<u32> = (0..5).map(|_| g.battle_report_add(report(&g, c, true))).collect();
+    assert_eq!(first, vec![0, 1, 2, 3, 4]);
+    assert_eq!(g.battle_report(2).map(|r| r.turn), Some(t0));
+    assert_eq!(g.battle_reports_of(PlayerId(1)).count(), 5);
+    assert_eq!(g.battle_reports_of(PlayerId(3)).count(), 0);
+    // Two turns on, the five are still among the latest: kept.
+    next_turn(&mut g);
+    next_turn(&mut g);
+    assert!(g.battle_reports.iter().all(|r| r.log.is_some()));
+    // The latest battles push the older logs out; the summaries stay.
+    for _ in 0..logs_kept - 2 {
+        g.battle_report_add(report(&g, c, true));
+    }
+    let logged: Vec<bool> = g.battle_reports.iter().take(5).map(|r| r.log.is_some()).collect();
+    assert_eq!(logged, vec![false, false, false, true, true]);
+    assert_eq!(g.battle_reports.len(), logs_kept + 3);
+    // A turn's battles keep their logs through the next turn, however many there are.
+    next_turn(&mut g);
+    for _ in 0..logs_kept + 5 {
+        g.battle_report_add(report(&g, c, true));
+    }
+    let recent = g.game_turn() - 1;
+    assert!(g.battle_reports.iter().filter(|r| r.turn >= recent).all(|r| r.log.is_some()));
+    assert!(g.battle_reports.iter().filter(|r| r.turn < recent).all(|r| r.log.is_none()));
+    // Unlogged reports (battles nobody saw) are summaries from the start.
+    let id = g.battle_report_add(report(&g, c, false));
+    assert!(g.battle_report(id).unwrap().log.is_none());
+    // At most ENGAGEMENT_REPORTS_KEPT, the oldest dropped; ids are never reused.
+    while g.battle_reports.len() < kept {
+        g.battle_report_add(report(&g, c, false));
+    }
+    let next = g.battle_report_add(report(&g, c, false));
+    assert_eq!(g.battle_reports.len(), kept);
+    assert!(g.battle_report(0).is_none());
+    assert_eq!(g.battle_report(next).map(|r| r.id), Some(next));
+    assert_eq!(g.battle_report_next, next + 1);
+}
+
+#[test]
+fn stances_reports_and_unit_fields_survive_a_save() {
     let (mut g, c) = game(true);
     let p0 = PlayerId(0);
     let (x, y) = (g.cities[c].x, g.cities[c].y);
@@ -204,11 +340,16 @@ fn stances_and_unit_fields_survive_a_save() {
     g.unit_set_has_promotion(u, g.d.t::<PromotionType>("PROMOTION_SHIELD_OF_FAITH"), true);
     g.units[u].attacks_made = 1;
     g.units[u].battle_heal_turn = 7;
+    g.battle_report_add(report(&g, c, true));
+    g.battle_report_add(report(&g, c, false));
     let bytes = g.save();
     let h = Game::load(g.d, &bytes).unwrap();
     assert_eq!(h.armies[a].stance, mobile);
     assert_eq!(h.cities[c].garrison_stance, wall);
     assert_eq!((h.units[u].extra_combat_percent_defense, h.units[u].attacks_made, h.units[u].battle_heal_turn), (30, 1, 7));
+    assert_eq!(h.battle_reports, g.battle_reports);
+    assert!(h.battle_reports[0].log.is_some() && h.battle_reports[1].log.is_none());
+    assert_eq!(h.battle_report_next, 2);
     assert_eq!(h.save(), bytes);
     assert_eq!(h.calculate_sync_checksum(), g.calculate_sync_checksum());
 }

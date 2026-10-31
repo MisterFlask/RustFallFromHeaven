@@ -200,4 +200,10 @@
 		<DefineName>ENGAGEMENT_REPORTS_KEPT</DefineName>
 		<iDefineIntVal>128</iDefineIntVal>
 	</Define>
+	<!-- battle logs (the full record the client replays) kept: those of the current and the
+	     previous turn's battles, and of this many latest battles; older reports keep their summary -->
+	<Define>
+		<DefineName>ENGAGEMENT_REPORT_LOGS_KEPT</DefineName>
+		<iDefineIntVal>32</iDefineIntVal>
+	</Define>
 </Civ4Defines>

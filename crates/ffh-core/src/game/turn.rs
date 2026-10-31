@@ -124,6 +124,10 @@ impl Game {
         self.increment_game_turn();
         // incrementElapsedGameTurns()
         self.elapsed_game_turns += 1;
+        // Engagement combat: the battle logs older than the previous turn beyond the last kept.
+        if !self.battle_reports.is_empty() {
+            self.battle_reports_trim();
+        }
 
         // MPOPTION_SIMULTANEOUS_TURNS (every alive player starts at once, in a soren-rand
         // shuffled order) is a network option: never set.

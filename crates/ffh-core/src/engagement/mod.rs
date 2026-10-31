@@ -22,11 +22,13 @@
 //! table is `calibrate` (tests).
 //!
 //! On `Game`: the option and the dispatch rule (which attacks are engagements) and the stances'
-//! commands ([`state`]).
+//! commands ([`state`]), and the battle reports with the battle log the client replays
+//! ([`report`]).
 
 pub mod battle;
 pub mod expect;
 mod phi_table;
+pub mod report;
 pub mod resolve;
 pub mod state;
 
