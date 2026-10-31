@@ -40,7 +40,16 @@ const ANIM_FRAME = { w: 160, h: 128, ax: 80, ay: 126 };
 const FACES_LEFT = new Set(["champion"]);
 
 /** A role's icon on its unit's ring (the M7 interface icons). */
-const ROLE_ICON = { frontline: "fortify", screen: "defense", backline: "rangeattack", flanker: "moves", support: "spell", assassin: "attack" };
+const ROLE_ICON = {
+  frontline: "fortify",
+  screen: "defense",
+  flanker: "moves",
+  assassin: "attack",
+  archer: "rangeattack",
+  siege: "rangeattack",
+  arcane: "spell",
+  divine: "spell",
+};
 export const roleIcon = (f) => ROLE_ICON[roleKey(f)] ?? "strength";
 
 export const COLORS = {

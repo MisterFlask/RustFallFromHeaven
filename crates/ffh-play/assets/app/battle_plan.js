@@ -212,7 +212,7 @@ function scene(now) {
     const done = new Set();
     let k = 0;
     for (const cls of hv.targets ?? []) {
-      let set = enemies.filter((e) => (cls === "FRONT" ? !isBack(e) : cls === "BACK" ? isBack(e) : cls === "SCREEN" ? e.screen : roleKey(e) === "support" || e.hero));
+      let set = enemies.filter((e) => (cls === "FRONT" ? !isBack(e) : cls === "BACK" ? isBack(e) : cls === "SCREEN" ? e.screen : ["arcane", "divine"].includes(roleKey(e)) || e.hero));
       set = set.filter((e) => !done.has(e.b));
       if (!set.length) continue;
       k++;

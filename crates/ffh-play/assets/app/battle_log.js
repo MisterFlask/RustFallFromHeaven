@@ -353,8 +353,8 @@ export const tierOf = (dmg) => (dmg >= 1200 ? 2 : dmg >= 600 ? 1 : 0);
 export function motionOf(f, animated = () => false) {
   if (animated(f)) return "anim";
   const r = roleKey(f);
-  if (r === "backline") return "shot";
-  if (r === "support") return "bolt";
+  if (r === "archer" || r === "siege") return "shot";
+  if (r === "arcane" || r === "divine") return "bolt";
   if (r === "flanker" || r === "assassin") return "ride";
   return "lunge";
 }

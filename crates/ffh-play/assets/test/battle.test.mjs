@@ -8,17 +8,21 @@ import assert from "node:assert/strict";
 import * as L from "../app/battle_log.js";
 import * as T from "../app/battle_teach.js";
 import { setData } from "../app/state.js";
+import { roleIcon } from "../app/battle_stage.js";
 
 import { FIXTURES } from "../app/battle_fixture.js";
 
 const fixture = FIXTURES.strages;
 const [won, lost] = fixture.logs.map((x) => x.log);
 
+/** The roles of formation battles, in the data's order (Units/CIV4CombatRoleInfos.xml). */
+const ROLES = ["FRONTLINE", "SCREEN", "FLANKER", "ASSASSIN", "ARCHER", "SIEGE", "ARCANE", "DIVINE"];
+
 setData({
   kinds: ["UnitType", "CombatRoleType", "StanceType", "PromotionType"],
   tables: {
     UnitType: [{ type: "UNIT_AXEMAN", name: "Axeman" }],
-    CombatRoleType: ["FRONTLINE", "SCREEN", "BACKLINE", "FLANKER", "ASSASSIN", "SUPPORT"].map((r) => ({ type: `COMBATROLE_${r}`, name: r[0] + r.slice(1).toLowerCase() })),
+    CombatRoleType: ROLES.map((r) => ({ type: `COMBATROLE_${r}`, name: r[0] + r.slice(1).toLowerCase() })),
     StanceType: [{ type: "STANCE_BALANCED", name: "Balanced" }],
     PromotionType: [{ type: "PROMOTION_FORMATION", name: "Formation" }],
   },
@@ -46,8 +50,33 @@ test("types resolve by index or by name", () => {
   assert.equal(L.tyIdx("UnitType", "UNIT_AXEMAN"), 0);
   assert.equal(L.tyLabel("UnitType", "UNIT_AXEMAN"), "Axeman");
   assert.equal(L.tyLabel("UnitType", "UNIT_WAR_ELEPHANT"), "War Elephant");
-  assert.equal(L.roleKey({ role: 3 }), "flanker");
+  assert.equal(L.roleKey({ role: 2 }), "flanker");
+  assert.equal(L.roleKey({ role: 7 }), "divine");
   assert.equal(L.roleKey({ role: "COMBATROLE_SCREEN" }), "screen");
+});
+
+test("every role has its ring icon and its motion", () => {
+  const want = {
+    FRONTLINE: ["fortify", "lunge"],
+    SCREEN: ["defense", "lunge"],
+    FLANKER: ["moves", "ride"],
+    ASSASSIN: ["attack", "ride"],
+    ARCHER: ["rangeattack", "shot"],
+    SIEGE: ["rangeattack", "shot"],
+    ARCANE: ["spell", "bolt"],
+    DIVINE: ["spell", "bolt"],
+  };
+  ROLES.forEach((r, i) => {
+    for (const role of [i, `COMBATROLE_${r}`]) {
+      assert.deepEqual([roleIcon({ role }), L.motionOf({ role })], want[r], r);
+    }
+  });
+  // The fixture names only roles the data has.
+  for (const fx of Object.values(FIXTURES)) {
+    for (const { log } of fx.logs) {
+      for (const f of log.fighters) assert.ok(ROLES.includes(f.role.replace(/^COMBATROLE_/, "")), f.role);
+    }
+  }
 });
 
 test("names: duplicates by level, sides, plurals", () => {
