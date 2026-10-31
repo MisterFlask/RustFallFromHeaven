@@ -147,6 +147,11 @@ async function capture(browser) {
     r.cfg.autoQuality = 0;
     r.autoLevel = 0;
     r.cfg.animate = true;
+    // The tilt-shift's focus eases from its last step's time: the lab's live frames stepped it on
+    // the wall clock, the film's frames step it on focusClock from 0. Start it afresh, or its first
+    // step is a large negative dt that throws the band far off screen for a run-dependent stretch.
+    r.focus = null;
+    r.focusT = 0;
     window.lab.start = { ...window.lab.view.cam };
   });
   for (let f = 0; f < frames; f++) {
