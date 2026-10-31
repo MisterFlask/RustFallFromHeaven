@@ -806,6 +806,15 @@ uploaded from memory (`earlySync` 0 turns off the overlap alone). With all five 
 off the mode draws as before them (the lab's stills match bit for bit):
 `?r3d={"noiseTex":0,"terrainLean":0,"lite":0,"packScene":0,"fastStart":0}`; `r3d-lab/compile.html`
 takes the same `?r3d=` to compare their compile times (§7).
+`standin` (1, read when the programs are built; only with the scene packed) draws the ground with a
+stand-in until the full terrain has compiled, which then dissolves in over it (docs/R3D.md §11.1,
+"Two stages"); `?r3d={"standin":0}` waits for the full terrain and draws as before.
+`standinHold` (debug, page-only; unset by default) keeps the full terrain out until the time passed
+to the render reaches that many seconds -- the time since the renderer was made while it animates,
+a lab capture's frame time -- and dissolves it in from there: a film or a test of the swap on a
+machine whose links finish at once, e.g. `r3d-lab.mjs --capture swap.mp4 --query
+'scene=hd2d&renderer=hd2d&r3d={"packScene":1,"standinHold":4}' --fps 15` (the swap at frame 60).
+The render's time stands still while nothing animates (`animate` off), and the hold then never ends.
 
 ## 12. Removing it
 

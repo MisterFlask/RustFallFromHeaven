@@ -838,6 +838,69 @@ shows after 45 s and the isometric map draws. On Direct3D the links are quick no
 compiles come in the warm-up draws, which the timeout does not cover: a compile in progress cannot
 be stopped.
 
+**Two stages** (2026-10-31; the HD-2D mode with its scene packed, `MapHd2d.standinTerrain`). With
+the scene packed every program compiles at link, together, and `Program.done` says without waiting
+whether one has. Most of that wait is the terrain's (2742 instructions, Direct3D's compile about
+1.9 s, estimated as above); the sea and the rivers take about 0.4 s each, every other program
+0.2 s or less. So the map draws first with a stand-in ground, and the full terrain comes in when it
+has compiled:
+
+* **The stand-in** is the terrain shader itself (`TERRAIN_FS`) compiled with the defines of
+  hd2d/config.js `TERRAIN_STANDIN`, not a second shader to keep in step: every value noise of the
+  ground's painting stands at its mean (`STANDIN_FLAT`: the compiler folds the masses, the meadow's
+  golden patches, the pools, the drifts, the warp of the plots' blend and the road edge's wobble
+  into each ground's mean tones), no hell marks, dunes, plates or ice cracks, no relief bump from
+  the materials (`STANDIN_RELIEF`), each material at one scale (`STANDIN_TAP1`). What stays: the
+  pixel-art materials blended across the plots, the beaches, rock, snow, river banks, trodden
+  ground, fields and roads, the light (the sun, the cast shadows, the cloud shadows, the cities'
+  pools), the fog of war and the unexplored parchment -- and the same packed outputs, so every
+  later pass is unchanged. **1358 instructions** (glslang + spirv-opt, as above, the lab's packed
+  programs; Direct3D's compile about 0.48 s estimated), against the full terrain's 2742 (2757 with
+  the dissolve below): the size of the sea's and the rivers' programs (1287 and 1293, about 0.43 s
+  each), which compile beside it, so a shorter stand-in would not bring the first frame sooner.
+  Nor could it be much shorter and stay the same shader: without any of the ground's painting the
+  program is still 480 (the plots' lookup and blend, the light, the fog, the packing), and the
+  painting's branches -- one for each ground, feature, decal and the parchment, each folded to a
+  few dozen instructions -- shrink further only by painting from a table of their own tones, a
+  second painting to keep in step.
+* **The start** (`Map3D.ready`) waits for every program but the full terrain (the stand-in among
+  them) and for the sprites the first frame asks for (`MapHd2d.modeReady`, 3 s at most); the
+  full terrain goes on compiling behind the first frames. The loop polls it (a frame for it though
+  nothing else moves) and, once it is in, it dissolves in over the stand-in in 0.4 s
+  (`terrainDissolve`): the stand-in drawn, then the full terrain over it, the 2 x 2 pixel quads
+  whose screen-space hash is past the progress discarded (shaders.js `TERRAIN_DISSOLVE`; the packed
+  integer target cannot blend, a dissolve in screen space holds while the camera moves, and whole
+  quads keep the derivatives defined; with no swap running it is one uniform branch). Where the
+  full terrain is in before a frame has shown the stand-in -- SwiftShader, whose links finish at
+  once, and a cached program -- it simply draws. One that has not compiled within the start's
+  timeout (3 x `COMPILE_TIMEOUT_MS` for a packed scene) or fails is given up, logged once: the
+  stand-in stays and nothing waits on it; a renderer disposed while it compiles is stranded like
+  any other (`Map3D.programs` lists both terrains). The depth prepass and the shadow maps draw the
+  terrain with its vertex-only program (`shadowTerrain`), the same under both.
+* **At boot** (main.js `hd2dPending`, the page's renderer the HD-2D map) MapView draws its
+  backdrop -- the dark fill and the minimap -- instead of the flat map until the HD-2D map draws
+  (`MapView.holdBackdrop`; the flat map after 10 s, so the player can act, the HD-2D map still
+  taking over when ready), and the 3D canvas fades in over 0.3 s on its first frame: the HD-2D map
+  is the first map the player sees. A switch to the HD-2D map in play keeps the isometric map drawn
+  until it is ready, as before.
+* **Measured** on SwiftShader, which offers no parallel compile (every program has linked by the
+  first frame, so the stand-in is seen only with `standinHold`): the lab's five stills (640 x 400,
+  packed, animation frozen), stand-in against the full ground: the frame's mean colour within 1.3
+  of 255 in each channel; the tone (9 x 9 pixels averaged) off by more than 8 on 4.5% (the close
+  view) to 28% (the showcase) of the pixels -- where the full ground has its masses, the meadow's
+  golden patches, the marsh's pools and the hell grounds' cracks, which the stand-in leaves at their
+  mean. A lab film of the swap (`r3d-lab.mjs --capture`, `standinHold` 4, 15 fps): over the six
+  frames of the dissolve, the camera at rest, 3% of the pixels move by more than 8 from one frame to
+  the next, the frame's mean value rises evenly, no flash, no black, no seam. The game's boot
+  (the turn-200 save): the backdrop, then the HD-2D map; with the ground's art held back, the flat
+  map 10 s after the game's map came, the HD-2D map over it once the art did. The lab's stills
+  match origin/master's bit for bit, packed or not, with `standin` 1 (the default; packed, the full
+  terrain is in at the first frame there) and 0, and the 3D renderer's.
+
+`?r3d={"standin":0}` builds no stand-in (the start waits for the full terrain, as before);
+`{"standinHold":S}` (debug) keeps the full terrain out until the render's time reaches S seconds
+(docs/HD2D.md §11).
+
 **Measuring.** `r3d-lab/compile.html` (`tools/r3d-lab.mjs --serve`, then `/lab/compile.html`) builds
 the programs a configuration compiles -- the pipeline's and the HD-2D mode's (`pipelinePrograms`,
 `hd2dPrograms`) with the defines and options the mode's hooks give (`Map3D.pipelineArgs`), for
