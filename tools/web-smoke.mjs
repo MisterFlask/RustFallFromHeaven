@@ -196,7 +196,7 @@ async function cdpBrowser(exe, problems) {
   // Modifiers held with keyDown (8 = Shift), carried by the mouse events meanwhile.
   let held = 0;
   const mouseEvent = (type, x, y, button = "none", clickCount = 0) => send("Input.dispatchMouseEvent", { type, x, y, button, clickCount, modifiers: held, buttons: button === "left" ? 1 : button === "right" ? 2 : 0 });
-  const KEYS = { Enter: [13, "\r"], Escape: [27, ""], Tab: [9, ""], Delete: [46, ""], Home: [36, ""], F1: [112, ""], F2: [113, ""], F3: [114, ""], F4: [115, ""], F6: [117, ""], F7: [118, ""] };
+  const KEYS = { Enter: [13, "\r"], Escape: [27, ""], Tab: [9, ""], Delete: [46, ""], Home: [36, ""], F1: [112, ""], F2: [113, ""], F3: [114, ""], F4: [115, ""], F5: [116, ""], F6: [117, ""], F7: [118, ""], F8: [119, ""], F9: [120, ""], ArrowLeft: [37, ""], ArrowUp: [38, ""], ArrowRight: [39, ""], ArrowDown: [40, ""] };
   const MODIFIERS = { Shift: [16, 8, "ShiftLeft"] };
   return {
     name: `Chromium over the DevTools protocol (${exe})`,
