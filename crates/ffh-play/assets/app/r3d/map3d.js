@@ -57,6 +57,7 @@ export class Map3D {
   constructor(view) {
     /** "3d", or the mode built on this renderer that draws (the HD-2D mode sets "hd2d"). */
     this.mode = "3d";
+    performance.mark("r3d:ctor");
     this.view = view;
     this.cfg = this.loadCfg();
     this.canvas = document.createElement("canvas");
@@ -83,9 +84,12 @@ export class Map3D {
     this.gl = gl;
     this.glName = glName;
     this.pipeline = new Pipeline(gl, this.terrainDefines());
+    performance.mark("r3d:pipeline");
     /** Whether the programs have compiled (`ready`): the loop draws nothing before. */
     this.compiled = false;
-    this.scene = new Scene(gl);
+    // (fastStart: the material layers the mode replaces are not painted, replacedMaterials.)
+    this.scene = new Scene(gl, { skipMaterials: this.cfg.fastStart !== 0 ? this.replacedMaterials() : null });
+    performance.mark("r3d:scene");
     this.world = null;
     this.mapSeen = null;
     this.viewSeen = null;
@@ -121,6 +125,12 @@ export class Map3D {
     });
   }
 
+  /** The ground's material layers (materials.js MAT) the mode fills with its own art (a Set), so the
+   *  scene does not paint them; null: none. */
+  replacedMaterials() {
+    return null;
+  }
+
   /** The programs of the pipeline and of the mode's passes. */
   programs() {
     return [...Object.values(this.pipeline.p), ...Object.values(this.pipeline.ext?.p ?? {})];
@@ -134,13 +144,43 @@ export class Map3D {
    *  and given a moment to show it. */
   async ready(timeoutMs) {
     await whenCompiled(this.programs(), timeoutMs);
+    performance.mark("r3d:linked");
     if (/direct3d|d3d1/i.test(this.glName)) {
       globalThis.dispatchEvent?.(new CustomEvent("ffh:r3d-compiling"));
       await new Promise((r) => setTimeout(r, 100));
     }
-    await this.pipeline.warm(this.pipeline.scenePrograms());
+    // (The warm-up issues its first draw, the terrain's, before it first waits.)
+    const warm = this.pipeline.warm(this.pipeline.scenePrograms());
+    // (`fastStart`, the default: the scene is built from the game state -- the world, its textures,
+    // the dressing and its instances, the paint layers, the figures, and the HD-2D mode's sprites
+    // start loading -- while the terrain compiles, not after the warm-up: that work is the page's
+    // script's, the compile ANGLE's (the GPU process's, at that first draw on Direct3D: seconds), so
+    // they overlap; the uploads queue behind the compile. `?r3d={"fastStart":0}`: the original order.)
+    if (this.cfg.fastStart !== 0) {
+      let warmed = false;
+      const end = () => (warmed = true);
+      warm.then(end, end);
+      this.prepare();
+      // (The game's map may come during the warm-up, the page booting: prepared when it does.)
+      while (!warmed && !this.mapSeen) {
+        await new Promise((r) => setTimeout(r, 50));
+        if (!this.mapSeen) this.prepare();
+      }
+    }
+    await warm;
+    performance.mark("r3d:warmed");
     this.compiled = true;
     this.dirty = true;
+  }
+
+  /** The scene brought up to date before the first frame (`ready`); a failure is the first
+   *  frame's to report. */
+  prepare() {
+    try {
+      if (this.sync()) performance.mark("r3d:prepared");
+    } catch (e) {
+      console.error("r3d prepare:", e);
+    }
   }
 
   dispose() {
@@ -403,6 +443,8 @@ export class Map3D {
         mapChanged = true;
         this.syncMs.world = T1 - T0;
         this.syncMs.textures = performance.now() - T1;
+        performance.measure("sync:world", { start: T0, end: T1 });
+        performance.measure("sync:textures", { start: T1 });
       }
       this.mapSeen = map;
     }
@@ -475,6 +517,9 @@ export class Map3D {
       this.syncMs.dress = T3 - T2;
       this.syncMs.instances = T4 - T3;
       this.syncMs.paint = performance.now() - T4;
+      performance.measure("sync:dress", { start: T2, end: T3 });
+      performance.measure("sync:instances", { start: T3, end: T4 });
+      performance.measure("sync:paint", { start: T4 });
       this.syncMs.redressed = plots ? plots.length : n;
       this.staticCount = count;
       this.viewSeen = S.view;
@@ -489,6 +534,7 @@ export class Map3D {
       this.unitList = u.list;
       this.setUnits(this.tweened(performance.now()));
       this.syncMs.units = performance.now() - T5;
+      performance.measure("sync:units", { start: T5 });
       this.unitCount = u.list.length;
       this.selSeen = selKey;
       this.overlaySeen = "";
@@ -757,6 +803,8 @@ export class Map3D {
     this.frameMs.push(ms);
     if (this.frameMs.length > 120) this.frameMs.shift();
     this.tuneQuality(ms);
+    this.frames = (this.frames ?? 0) + 1;
+    if (this.frames <= 3 || (this.frames <= 400 && this.frames % 20 === 0)) performance.measure(`frame:${this.frames}`, { start: t0, detail: { pending: this.sprites?.atlas.pending ?? 0, layers: this.sprites?.atlas.entries.size ?? 0, chunks: this.scene.terrain.chunks.size, budget: this.scene.budget.n } });
   }
 
   /** The config with the quality ladder applied: at level 1 the Kuwahara paint filter (off by

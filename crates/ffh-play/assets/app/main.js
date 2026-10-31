@@ -13,7 +13,7 @@
 
 import * as api from "./api.js";
 import { S, setData, setView, setMap, on, emit, resetDismissed, clearDismissed, popupQueue, endTurnMessage, cycleCity, observing, eventMarkers } from "./state.js";
-import { MapView } from "./map.js";
+import { MapView, fastStart } from "./map.js";
 import * as units from "./units.js";
 import { openCity, ownCities, stepCityScreen } from "./city.js";
 import * as empire from "./empire.js";
@@ -733,10 +733,17 @@ async function boot() {
   // It owns its own projection, so the art/flat switches leave it be.
   // Chosen with `?renderer=iso` or the remembered Tools → Options choice.
   if (rendererChoice() === "iso") mapView.useIso(true);
-  syncSkin();
+  // (Start-up prototype, fastStart: a page whose renderer is the HD-2D map boots in that map's
+  // interface, the isometric skin, not in the 2D art's that it dropped when the HD-2D map was ready
+  // -- after building it for a second or two, in the middle of the HD-2D map's start.)
+  hd2dPending = rendererChoice() === "hd2d" && fastStart();
   // The experimental 3D renderer (docs/R3D.md) and the HD-2D mode built on it (docs/HD2D.md):
-  // loaded on demand; without WebGL2 they fall back.
-  if (rendererChoice() === "3d" || rendererChoice() === "hd2d") use3d(rendererChoice());
+  // loaded on demand; without WebGL2 they fall back. (fastStart: its import is asked for before
+  // the interface is dressed, a few hundred ms of script.)
+  const want3d = rendererChoice() === "3d" || rendererChoice() === "hd2d";
+  if (want3d && fastStart()) use3d(rendererChoice());
+  syncSkin();
+  if (want3d && !fastStart()) use3d(rendererChoice());
   // The art loads beside the data; the page works meanwhile (and without it). lookLoaded() builds
   // the art worker, which bakes in the engine's type ordering (from /api/data) once, so it must run
   // after setLookData(): otherwise, if the static art bundle wins the race against the server-
@@ -785,11 +792,14 @@ function setRenderer(r) {
   syncSkin();
 }
 
+/** An HD-2D map is starting (main.js boot, fastStart): the interface is already its own. */
+let hd2dPending = false;
+
 /** The interface follows the map: the isometric map's own (isoui.js) while it or the HD-2D map
  *  (which draws the same sprites, full bleed under the floating panels, as its look target) draws,
  *  else the 2D art's (or the plain one). Redraws what the two draw differently. */
 function syncSkin() {
-  const on = !!mapView.iso || mapView.r3d?.mode === "hd2d";
+  const on = !!mapView.iso || mapView.r3d?.mode === "hd2d" || hd2dPending;
   // The HD-2D map wears a variant of it (iso.css html.hd2d: glass panels, smaller on a desktop).
   document.documentElement.classList.toggle("hd2d", mapView.r3d?.mode === "hd2d");
   // A city screen opened in one interface is not the other's (over the map or with its grid).
@@ -814,14 +824,19 @@ async function use3d(mode = "3d") {
   // at once when the renderer says it is about to compile there (r3d/map3d.js ready: the browser
   // draws nothing while it does, so a message due later would only show after).
   let said = false;
+  let note = null;
   const say = () => {
     clearTimeout(slow);
-    if (!said) toast("Preparing the 3D map (compiling its shaders)…", "info", 6000);
+    // (fastStart: the message stays until the map is ready -- on Direct3D the screen freezes
+    // through each program's compile, and a 6 s message was gone after the first.)
+    if (!said) note = toast("Preparing the 3D map (compiling its shaders)…", "info", fastStart() ? 120000 : 6000);
     said = true;
   };
   const slow = setTimeout(say, 1500);
   window.addEventListener("ffh:r3d-compiling", say);
   const ok = await mapView.useR3d(true, mode);
+  hd2dPending = false;
+  note?.click();
   clearTimeout(slow);
   window.removeEventListener("ffh:r3d-compiling", say);
   syncSkin();

@@ -6,7 +6,7 @@
 
 import { ATTR, Mesh, texture, upload, INSTANCE_FLOATS, PROP_LAYOUT } from "./gl.js";
 import { TerrainMeshes, MapTextures, CHUNK, RES, LOW_RES } from "./terrain.js";
-import { materialTexture } from "./materials.js";
+import { materialTexture, bakeMaterials } from "./materials.js";
 import { buildAsset, buildAssetLOD } from "./assets/registry.js";
 import { rasterDecals, rasterLight } from "./decals.js";
 import { SEA, RIVER_HALF, RIVER_WANDER, RIVER_BANK } from "./world.js";
@@ -97,12 +97,13 @@ function packBuckets(list) {
 }
 
 export class Scene {
-  constructor(gl) {
+  /** `skipMaterials`: material layers a mode fills itself (not painted here; Map3D replacedMaterials). */
+  constructor(gl, { skipMaterials = null } = {}) {
     this.gl = gl;
     this.terrain = new TerrainMeshes(gl);
     this.tex = new MapTextures(gl);
     // The ground's material textures (materials.js), painted once: {tex, mean, bakeMs, uploadMs, bytes}.
-    this.materials = materialTexture(gl);
+    this.materials = materialTexture(gl, bakeMaterials(undefined, skipMaterials));
     this.assets = new Map(); // asset key -> AssetBatch
     this.layers = { static: [], units: [] }; // [{batch, chunk: [cx, cy], top, bucket}]
     this.world = null;

@@ -17,6 +17,17 @@ import { ArtMap } from "./artmap.js";
 import { IsoMap, ISO_DEFAULT_ZOOM, drawRevoltMark } from "./iso.js";
 import { artZooms, defaultArtZoom } from "./stacks.js";
 
+/** The start-up prototype's switch (docs/HD2D.md): on unless the page says `?r3d={"fastStart":0}`.
+ *  The 3D renderer's modules read it from their config. */
+export function fastStart() {
+  try {
+    const q = new URLSearchParams(globalThis.location?.search ?? "").get("r3d");
+    return !(q && q.startsWith("{") && JSON.parse(q).fastStart === 0);
+  } catch {
+    return true;
+  }
+}
+
 const ZOOMS = [12, 16, 24, 32, 48, 64];
 /** Keyboard scrolling (W A S D, `scrollHold`): the speed is SCROLL_VIEWS of the view's short side a
  *  second, within [SCROLL_MIN, SCROLL_MAX] CSS px; the velocity eases with this time constant (s)
@@ -762,19 +773,29 @@ export class MapView {
       try {
         // The HD-2D mode (docs/HD2D.md) is the 3D renderer with its sprites and passes: its own
         // module, so the 3D renderer alone never loads it.
+        performance.mark("r3d:import");
         if (mode === "hd2d") mod = await import("./r3d/hd2d/index.js");
         else mod = await import("./r3d/map3d.js");
-        if (this.iso) this.useIso(false);
+        performance.mark("r3d:imported");
+        // (fastStart: the isometric map stays drawn -- and answers -- until the 3D map is ready,
+        // below; the original dropped it here, leaving the flat map through the compile.)
+        if (this.iso && !fastStart()) this.useIso(false);
         if (this.art) {
           this.art.dispose();
           this.art = null;
         }
         r3d = new mod.Map3D(this);
+        performance.mark("r3d:constructed");
         // Its programs compile in parallel where the browser can; the page stays live meanwhile,
         // and a compile that takes too long gives up (r3d/gl.js, whenCompiled).
         this.r3dLoading = r3d.ready();
         await this.r3dLoading;
+        performance.mark("r3d:ready");
         this.r3d = r3d;
+        if (this.iso) {
+          this.iso.dispose?.();
+          this.iso = null;
+        }
       } catch (e) {
         console.error("3d map:", e);
         r3d?.dispose();

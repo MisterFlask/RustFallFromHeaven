@@ -150,6 +150,7 @@ export class Pipeline {
         for (const [k, unit] of Object.entries(p.units)) gl.uniform1i(p.u[k].loc, unit);
         this.fs();
         await gpuIdle(gl);
+        performance.mark(`r3d:warm:${p.name}`);
       }
     } finally {
       if (!gl.isContextLost()) {
