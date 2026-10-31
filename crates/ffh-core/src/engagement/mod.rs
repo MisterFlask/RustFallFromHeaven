@@ -55,7 +55,7 @@ pub(crate) fn damage_with(g: &crate::game::Game, u: crate::ids::UnitId, damage: 
 
 pub use engage::EngageOutcome;
 pub use estimate::{swap_better, AssaultEstimate, Attackers, Eligible, Estimate, EstimateInput};
-pub use battle::{damage_from_hp, hp_from_damage, Battle, BattleEffect, Fighter, FighterIdx, Pair, Params, Side, TargetClass};
+pub use battle::{damage_from_hp, hp_from_damage, Battle, BattleEffect, Fighter, FighterIdx, Pair, Params, RoundRole, Side, TargetClass};
 pub use expect::{resolve_expected, resolve_expected_from, Expectation, FighterExpect, MomentStart};
 pub use pick::{StanceChoice, WarTest};
 pub use preview::{Alternative, DefPick, EngagePreview, Forecast, PreviewFighter, PreviewInput};

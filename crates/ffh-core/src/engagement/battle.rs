@@ -184,6 +184,41 @@ pub enum BattleEffect {
     Cast { caster: FighterIdx, spell: u32 },
 }
 
+/// How the round model reads a role of formation battles (revision 4 dropped the round model's
+/// role fields: position, screen, shield and target order; this view of the new fields keeps the
+/// round model fighting as before until it is removed): a role whose best row shoots, bombards,
+/// casts or heals is back position (the old Backline and Support: Archer, Siege, Arcane, Divine);
+/// an anti-flank role is a screen; a role that charges or stabs ignores the shield, targeting
+/// screens, then the back, then the front (a flanker: it charges) or the back, then the front
+/// (an assassin); the others target the front, then the back.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RoundRole {
+    pub back: bool,
+    pub screen: bool,
+    pub ignores_shield: bool,
+    pub order: Vec<TargetClass>,
+    /// Ignores the shield and does not go for screens first (the old assassin's target profile).
+    pub assassin_profile: bool,
+}
+
+impl RoundRole {
+    pub fn of(info: &ffh_data::CombatRoleInfo) -> RoundRole {
+        use ffh_data::ActionKind as K;
+        let best = info.rows[info.best_row()].kind;
+        let back = matches!(best, K::Shoot | K::Bombard | K::Spell | K::Heal);
+        let flanker = info.flanks();
+        let stabs = info.rows.iter().any(|r| r.kind == K::Stab);
+        let order = if flanker {
+            vec![TargetClass::Screen, TargetClass::Back, TargetClass::Front]
+        } else if stabs {
+            vec![TargetClass::Back, TargetClass::Front]
+        } else {
+            vec![TargetClass::Front, TargetClass::Back]
+        };
+        RoundRole { back, screen: info.anti_flank, ignores_shield: flanker || stabs, order, assassin_profile: stabs && !flanker }
+    }
+}
+
 /// One class of a hitter's order, made disjoint from the classes before it (a flanker's `Front`
 /// holds no screens: they were its `Screen` class), with its static members.
 #[derive(Clone, Debug, PartialEq, Eq)]

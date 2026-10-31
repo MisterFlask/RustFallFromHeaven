@@ -286,6 +286,7 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
         attack_override: _,
         defense_override: _,
         hp_override: _,
+        large: _,
     } = &d.units[u];
     let class = *unit_class_type;
     let mut b = String::new();

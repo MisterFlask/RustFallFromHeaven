@@ -86,7 +86,7 @@ pub fn engagement_notes(d: &GameData, kind: &str, i: usize) -> Option<String> {
     let mut lines = Vec::new();
     for (has, key, args) in [
         (first_strikes, "TXT_KEY_ENGAGE_HELP_FIRST_STRIKES", Vec::new()),
-        (withdrawal, "TXT_KEY_ENGAGE_HELP_WITHDRAWAL", vec![Arg::N(d.defines.engagement_withdraw_hp_percent)]),
+        (withdrawal, "TXT_KEY_ENGAGE_HELP_WITHDRAWAL", vec![Arg::N(ffh_core::engagement::Params::default().withdraw_hp_pct)]),
         (collateral, "TXT_KEY_ENGAGE_HELP_COLLATERAL", Vec::new()),
         (blitz, "TXT_KEY_ENGAGE_HELP_BLITZ", Vec::new()),
         (limit, "TXT_KEY_ENGAGE_HELP_COMBAT_LIMIT", Vec::new()),

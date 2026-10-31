@@ -14,7 +14,11 @@
      skip them and the fill takes them last, only when the slots would otherwise go empty.
 
      The spec's STANCE_MIN_FRONT (3) is Ranged Line's first iCount, STANCE_VET_LEVEL (4) is
-     Preserve Veterans' iMaxLevel. -->
+     Preserve Veterans' iMaxLevel.
+
+     The round model's (phase 6 before revision 4): formation battles have no stances, and these
+     go with the round model. The old Backline is the Archer and Siege roles here, the old Support
+     the Arcane and Divine roles. -->
 <Civ4StanceInfos xmlns="x-schema:CIV4UnitSchema.xml">
 	<StanceInfos>
 		<StanceInfo>
@@ -40,7 +44,8 @@
 				</Step>
 				<Step>
 					<Roles>
-						<Role>COMBATROLE_BACKLINE</Role>
+						<Role>COMBATROLE_ARCHER</Role>
+						<Role>COMBATROLE_SIEGE</Role>
 					</Roles>
 					<iPercent>100</iPercent>
 				</Step>
@@ -57,8 +62,10 @@
 				<Role>COMBATROLE_SCREEN</Role>
 				<Role>COMBATROLE_FLANKER</Role>
 				<Role>COMBATROLE_ASSASSIN</Role>
-				<Role>COMBATROLE_BACKLINE</Role>
-				<Role>COMBATROLE_SUPPORT</Role>
+				<Role>COMBATROLE_ARCHER</Role>
+				<Role>COMBATROLE_SIEGE</Role>
+				<Role>COMBATROLE_ARCANE</Role>
+				<Role>COMBATROLE_DIVINE</Role>
 			</Fill>
 		</StanceInfo>
 		<StanceInfo>
@@ -78,7 +85,8 @@
 				</Step>
 				<Step>
 					<Roles>
-						<Role>COMBATROLE_BACKLINE</Role>
+						<Role>COMBATROLE_ARCHER</Role>
+						<Role>COMBATROLE_SIEGE</Role>
 					</Roles>
 					<iPercent>100</iPercent>
 				</Step>
@@ -88,8 +96,10 @@
 				<Role>COMBATROLE_SCREEN</Role>
 				<Role>COMBATROLE_FLANKER</Role>
 				<Role>COMBATROLE_ASSASSIN</Role>
-				<Role>COMBATROLE_BACKLINE</Role>
-				<Role>COMBATROLE_SUPPORT</Role>
+				<Role>COMBATROLE_ARCHER</Role>
+				<Role>COMBATROLE_SIEGE</Role>
+				<Role>COMBATROLE_ARCANE</Role>
+				<Role>COMBATROLE_DIVINE</Role>
 			</Fill>
 		</StanceInfo>
 		<StanceInfo>
@@ -110,7 +120,8 @@
 				</Step>
 				<Step>
 					<Roles>
-						<Role>COMBATROLE_BACKLINE</Role>
+						<Role>COMBATROLE_ARCHER</Role>
+						<Role>COMBATROLE_SIEGE</Role>
 					</Roles>
 					<iPercent>100</iPercent>
 				</Step>
@@ -120,8 +131,10 @@
 				<Role>COMBATROLE_SCREEN</Role>
 				<Role>COMBATROLE_FLANKER</Role>
 				<Role>COMBATROLE_ASSASSIN</Role>
-				<Role>COMBATROLE_BACKLINE</Role>
-				<Role>COMBATROLE_SUPPORT</Role>
+				<Role>COMBATROLE_ARCHER</Role>
+				<Role>COMBATROLE_SIEGE</Role>
+				<Role>COMBATROLE_ARCANE</Role>
+				<Role>COMBATROLE_DIVINE</Role>
 			</Fill>
 		</StanceInfo>
 		<StanceInfo>
@@ -152,8 +165,10 @@
 				<Role>COMBATROLE_SCREEN</Role>
 				<Role>COMBATROLE_FLANKER</Role>
 				<Role>COMBATROLE_ASSASSIN</Role>
-				<Role>COMBATROLE_BACKLINE</Role>
-				<Role>COMBATROLE_SUPPORT</Role>
+				<Role>COMBATROLE_ARCHER</Role>
+				<Role>COMBATROLE_SIEGE</Role>
+				<Role>COMBATROLE_ARCANE</Role>
+				<Role>COMBATROLE_DIVINE</Role>
 			</Fill>
 		</StanceInfo>
 		<StanceInfo>
@@ -180,7 +195,8 @@
 				</Step>
 				<Step>
 					<Roles>
-						<Role>COMBATROLE_BACKLINE</Role>
+						<Role>COMBATROLE_ARCHER</Role>
+						<Role>COMBATROLE_SIEGE</Role>
 					</Roles>
 					<iPercent>100</iPercent>
 				</Step>
@@ -197,8 +213,10 @@
 				<Role>COMBATROLE_SCREEN</Role>
 				<Role>COMBATROLE_FLANKER</Role>
 				<Role>COMBATROLE_ASSASSIN</Role>
-				<Role>COMBATROLE_BACKLINE</Role>
-				<Role>COMBATROLE_SUPPORT</Role>
+				<Role>COMBATROLE_ARCHER</Role>
+				<Role>COMBATROLE_SIEGE</Role>
+				<Role>COMBATROLE_ARCANE</Role>
+				<Role>COMBATROLE_DIVINE</Role>
 			</Fill>
 		</StanceInfo>
 	</StanceInfos>

@@ -29,7 +29,7 @@
 //! (`alternatives: true`) likewise.
 
 use ffh_core::engagement::report::*;
-use ffh_core::engagement::{EngageResult, Fate, FighterIdx, HitCtx, Phase, Side, WarTest};
+use ffh_core::engagement::{EngageResult, Fate, FighterIdx, HitCtx, Phase, Side, TargetClass, WarTest};
 use ffh_core::game::Game;
 use ffh_core::ids::*;
 use ffh_data::*;
@@ -82,12 +82,12 @@ fn rule_name(r: TargetRule) -> &'static str {
     }
 }
 
-fn class_name(c: ffh_data::TargetClass) -> &'static str {
+fn class_name(c: TargetClass) -> &'static str {
     match c {
-        ffh_data::TargetClass::Front => "FRONT",
-        ffh_data::TargetClass::Back => "BACK",
-        ffh_data::TargetClass::Screen => "SCREEN",
-        ffh_data::TargetClass::HeroOrSupport => "HERO_SUPPORT",
+        TargetClass::Front => "FRONT",
+        TargetClass::Back => "BACK",
+        TargetClass::Screen => "SCREEN",
+        TargetClass::HeroOrSupport => "HERO_SUPPORT",
     }
 }
 
@@ -250,7 +250,7 @@ fn plan_fighter(g: &Game, u: UnitId, side: Side, slot: Option<i32>, in_city: boo
     let d = g.d;
     let unit = &g.units[u];
     let role = g.unit_combat_role(u);
-    let info = role.map(|r| &d.combat_roles[r]);
+    let info = role.map(|r| ffh_core::engagement::RoundRole::of(&d.combat_roles[r]));
     let max_hp = g.unit_engage_max_hp(u);
     let withdraw_pct = match side {
         Side::Attacker => g.unit_withdrawal_probability(u),
@@ -274,10 +274,10 @@ fn plan_fighter(g: &Game, u: UnitId, side: Side, slot: Option<i32>, in_city: boo
         xp: unit.experience,
         hero: g.unit_is_hero(u),
         role: role.unwrap_or(CombatRoleType::from_usize(0)),
-        pos: if info.is_some_and(|r| r.back) { Position::Back } else { Position::Front },
-        screen: info.is_some_and(|r| r.screen),
-        ignores_shield: info.is_some_and(|r| r.ignores_shield),
-        assassin_profile: info.is_some_and(|r| r.ignores_shield && !r.targets.contains(&ffh_data::TargetClass::Screen)),
+        pos: if info.as_ref().is_some_and(|r| r.back) { Position::Back } else { Position::Front },
+        screen: info.as_ref().is_some_and(|r| r.screen),
+        ignores_shield: info.as_ref().is_some_and(|r| r.ignores_shield),
+        assassin_profile: info.as_ref().is_some_and(|r| r.assassin_profile),
         guardsman: false,
         max_hp,
         hp_start: ffh_core::engagement::hp_from_damage(unit.damage, max_hp),
@@ -318,7 +318,8 @@ fn fighter_promotions(g: &Game, f: &LogFighter) -> Vec<PromotionType> {
 fn fighter_json(g: &Game, b: usize, f: &LogFighter, owner: PlayerId) -> Json {
     let d = g.d;
     let name = if f.name.is_empty() { names::display(d, f.unit_type).into_owned() } else { names::text(d, &f.name).to_string() };
-    let targets: Vec<Json> = d.combat_roles.get(f.role).map_or(Vec::new(), |r| r.targets.iter().map(|&c| Json::from(class_name(c))).collect());
+    let targets: Vec<Json> =
+        d.combat_roles.get(f.role).map_or(Vec::new(), |r| ffh_core::engagement::RoundRole::of(r).order.iter().map(|&c| Json::from(class_name(c))).collect());
     let immune: Vec<Json> = [(Immunities::FIRST_STRIKES, "FirstStrikes"), (Immunities::DEF_STRIKE, "DefStrike"), (Immunities::FEAR, "Fear"), (Immunities::COLLATERAL, "Collateral")]
         .into_iter()
         .filter(|&(bit, _)| f.immune.has(bit))

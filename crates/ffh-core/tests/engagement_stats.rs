@@ -88,10 +88,10 @@ fn roles_and_hit_points() {
     let role = |g: &Game, u: UnitId| g.unit_combat_role(u).map(|r| g.d.combat_roles[r].base.type_.clone());
     for (name, expect, hp) in [
         ("UNIT_AXEMAN", "COMBATROLE_FRONTLINE", 120),
-        ("UNIT_ARCHER", "COMBATROLE_BACKLINE", 80),
+        ("UNIT_ARCHER", "COMBATROLE_ARCHER", 80),
         ("UNIT_KNIGHT", "COMBATROLE_FLANKER", 100),
         ("UNIT_ASSASSIN", "COMBATROLE_ASSASSIN", 60),
-        ("UNIT_ADEPT", "COMBATROLE_SUPPORT", 70),
+        ("UNIT_ADEPT", "COMBATROLE_ARCANE", 70),
         ("UNIT_FIRE_ELEMENTAL", "COMBATROLE_FRONTLINE", 120),
     ] {
         let u = w.unit(p0, name, from);
@@ -105,7 +105,7 @@ fn roles_and_hit_points() {
     w.promote(archer, "PROMOTION_FORMATION");
     assert_eq!(role(&w.g, axeman).as_deref(), Some("COMBATROLE_SCREEN"));
     assert_eq!(w.g.unit_engage_max_hp(axeman), 120);
-    assert_eq!(role(&w.g, archer).as_deref(), Some("COMBATROLE_BACKLINE"));
+    assert_eq!(role(&w.g, archer).as_deref(), Some("COMBATROLE_ARCHER"));
 }
 
 #[test]

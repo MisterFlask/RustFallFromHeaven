@@ -1,7 +1,8 @@
 //! This game's own info classes for engagement combat (not FFH2's; phase 6 of the owner's spec,
-//! `GAMEOPTION_ENGAGEMENTS`, docs/COMBAT_INVENTORY.md): `Units/CIV4CombatRoleInfos.xml` and
-//! `Units/CIV4StanceInfos.xml`. The role of each unit type is derived at load
-//! (`GameData::unit_roles`, lib.rs).
+//! `GAMEOPTION_ENGAGEMENTS`, docs/ENGAGEMENTS.md): `Units/CIV4CombatRoleInfos.xml` (the roles of
+//! formation battles, revision 4) and `Units/CIV4StanceInfos.xml` (the round model's stances,
+//! which go with it). The role of each unit type is derived at load (`GameData::unit_roles`,
+//! lib.rs).
 
 use super::InfoBase;
 use crate::define_idx;
@@ -13,45 +14,97 @@ CombatRoleType);
 define_idx!(/// An engagement stance (`STANCE_*`, Units/CIV4StanceInfos.xml).
 StanceType);
 
-/// A class of enemy units a role hits, in its priority order (XML `TargetOrder/Target`).
-/// A class holds the living, committed, not withdrawn enemies of its kind.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum TargetClass {
-    /// `FRONT`: the front-position enemies (every role without `bBack`, screens included).
-    Front,
-    /// `BACK`: the back-position enemies (`bBack`); empty while an enemy front-position unit
-    /// lives, unless the hitter's role ignores the shield.
-    Back,
-    /// `SCREEN`: the enemy screens (`bScreen`).
-    Screen,
-    /// `HERO_SUPPORT`: enemy heroes and support units (the assassin's first class from phase 7 on).
-    HeroOrSupport,
+/// What a unit does with one action of a formation battle (XML `Action` of a role's rows;
+/// docs/ENGAGEMENTS.md, "Action kinds and reach").
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+pub enum ActionKind {
+    /// `NONE`: no action from this row.
+    #[default]
+    None,
+    /// `STRIKE`: melee on the front unit of an enemy lane; a crit knocks back.
+    Strike,
+    /// `CHARGE`: the flanker's charge: where flanking works, anyone on the field (the highest
+    /// threat for its HP left), harder in the first round; elsewhere a strike.
+    Charge,
+    /// `STAB`: any enemy.
+    Stab,
+    /// `SHOOT`: the backmost unit of an enemy lane; misses more.
+    Shoot,
+    /// `SPELL`: the backmost unit of an enemy lane: the caster's strongest damage spell (with a
+    /// splash), else a magic bolt; never misses, never crits.
+    Spell,
+    /// `BOMBARD`: the backmost unit of an enemy lane; misses most, never crits.
+    Bombard,
+    /// `HEAL`: the most hurt ally.
+    Heal,
 }
 
-impl TargetClass {
-    /// The XML token of the class.
+impl ActionKind {
+    pub const ALL: [ActionKind; 8] = [
+        ActionKind::None,
+        ActionKind::Strike,
+        ActionKind::Charge,
+        ActionKind::Stab,
+        ActionKind::Shoot,
+        ActionKind::Spell,
+        ActionKind::Bombard,
+        ActionKind::Heal,
+    ];
+
+    /// The XML token of the kind (also the battle log's).
     pub fn token(self) -> &'static str {
         match self {
-            TargetClass::Front => "FRONT",
-            TargetClass::Back => "BACK",
-            TargetClass::Screen => "SCREEN",
-            TargetClass::HeroOrSupport => "HERO_SUPPORT",
+            ActionKind::None => "NONE",
+            ActionKind::Strike => "STRIKE",
+            ActionKind::Charge => "CHARGE",
+            ActionKind::Stab => "STAB",
+            ActionKind::Shoot => "SHOOT",
+            ActionKind::Spell => "SPELL",
+            ActionKind::Bombard => "BOMBARD",
+            ActionKind::Heal => "HEAL",
         }
     }
 
-    fn parse(s: &str) -> Option<TargetClass> {
-        match s.trim() {
-            "FRONT" => Some(TargetClass::Front),
-            "BACK" => Some(TargetClass::Back),
-            "SCREEN" => Some(TargetClass::Screen),
-            "HERO_SUPPORT" => Some(TargetClass::HeroOrSupport),
-            _ => None,
-        }
+    pub fn parse(s: &str) -> Option<ActionKind> {
+        ActionKind::ALL.into_iter().find(|k| k.token() == s.trim())
+    }
+
+    /// A physical action: it can miss (strike, charge, stab, shoot, bombard).
+    pub fn physical(self) -> bool {
+        matches!(self, ActionKind::Strike | ActionKind::Charge | ActionKind::Stab | ActionKind::Shoot | ActionKind::Bombard)
+    }
+
+    /// A physical single-target action: it can crit (strike, charge, stab, shoot).
+    pub fn can_crit(self) -> bool {
+        matches!(self, ActionKind::Strike | ActionKind::Charge | ActionKind::Stab | ActionKind::Shoot)
+    }
+
+    /// A melee action: its crit knocks the target back (strike, charge).
+    pub fn melee(self) -> bool {
+        matches!(self, ActionKind::Strike | ActionKind::Charge)
+    }
+
+    /// An action that falls on the backmost unit of a lane (shoot, spell, bombard).
+    pub fn ranged(self) -> bool {
+        matches!(self, ActionKind::Shoot | ActionKind::Spell | ActionKind::Bombard)
     }
 }
 
-/// An engagement role (this game's `CombatRoleInfo`): the unit's multipliers, hit points,
-/// position and targets in an engagement.
+/// The rows of a side's formation grid, front (0), middle (1) and rear (2).
+pub const ROWS: usize = 3;
+
+/// The XML tokens of the rows (`HomeRow`), front first.
+pub const ROW_TOKENS: [&str; ROWS] = ["FRONT", "MIDDLE", "REAR"];
+
+/// What a unit of a role does from one row: `count` actions of `kind` each round.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct RowActions {
+    pub kind: ActionKind,
+    pub count: i32,
+}
+
+/// An engagement role (this game's `CombatRoleInfo`): the unit's multipliers, hit points, speed
+/// and what it does from each row of its side's formation (docs/ENGAGEMENTS.md, "Roles").
 #[derive(Debug, Clone, Default)]
 pub struct CombatRoleInfo {
     pub base: InfoBase,
@@ -61,14 +114,23 @@ pub struct CombatRoleInfo {
     pub defense_percent: i32,
     /// `iMaxHP`: the unit's hit points in an engagement (its damage stays a percentage of them).
     pub max_hp: i32,
-    /// `bBack`: back position, shielded by its side's front-position units.
-    pub back: bool,
-    /// `bScreen`: a screen (front position; flankers hit screens first).
-    pub screen: bool,
-    /// `bIgnoresShield`: may hit back-position units while front-position ones live.
-    pub ignores_shield: bool,
-    /// `TargetOrder/Target`: the classes it hits, the first non-empty one first.
-    pub targets: Vec<TargetClass>,
+    /// `iSpeed`: faster units act first in a pass (first strikes add to it).
+    pub speed: i32,
+    /// `iDodge`: points of miss chance added to every physical action on a unit of the role.
+    pub dodge: i32,
+    /// `iCritBonus`: points added to its own crit chance.
+    pub crit_bonus: i32,
+    /// `bAntiFlank`: whatever an enemy flanker can reach, units of this role in its reach are
+    /// taken first.
+    pub anti_flank: bool,
+    /// `FrontRow`, `MiddleRow`, `RearRow` (each an `Action` and its `iActions`): what it does
+    /// from each row, front first.
+    pub rows: [RowActions; ROWS],
+    /// `HomeRow` (`FRONT`, `MIDDLE`, `REAR`): the row the auto formation puts it in.
+    pub home_row: usize,
+    /// `iAutoPick`: the auto formation's role order (lowest first): it takes one unit of each
+    /// role in this order, then the rest in it.
+    pub auto_pick: i32,
     /// `DefaultUnitCombats/UnitCombat`: unit types of these unit combats take this role.
     pub default_unit_combats: Vec<UnitCombatType>,
     /// `DefaultFreePromotion`: ... only when the unit type has this promotion free (such roles
@@ -83,23 +145,69 @@ pub struct CombatRoleInfo {
     pub default: bool,
 }
 
+impl CombatRoleInfo {
+    /// The row with the most actions (the first such): where a tier 4 unit or a hero gets its
+    /// extra action.
+    pub fn best_row(&self) -> usize {
+        let mut best = 0;
+        for (i, r) in self.rows.iter().enumerate() {
+            if r.count > self.rows[best].count {
+                best = i;
+            }
+        }
+        best
+    }
+
+    /// What a unit of the role does from each row, with `extra` more actions in its best row
+    /// (tier 4 units and heroes get `ENGAGEMENT_EXTRA_ACTIONS`); a row without an action stays
+    /// without.
+    pub fn actions(&self, extra: i32) -> [RowActions; ROWS] {
+        let mut rows = self.rows;
+        let best = self.best_row();
+        if rows[best].kind != ActionKind::None {
+            rows[best].count += extra;
+        }
+        rows
+    }
+
+    /// A flanker: one of its rows charges (anti-flank units in its reach are taken first).
+    pub fn flanks(&self) -> bool {
+        self.rows.iter().any(|r| r.kind == ActionKind::Charge)
+    }
+}
+
+fn read_row(rd: &Rd, base: &InfoBase, tag: &str) -> RowActions {
+    let Some(row) = rd.child(tag) else {
+        rd.cx.warn(format!("{}: no {tag}", base.type_));
+        return RowActions::default();
+    };
+    let token = row.string("Action");
+    let kind = ActionKind::parse(&token).unwrap_or_else(|| {
+        rd.cx.warn(format!("{}: {tag}: unknown Action {token:?}", base.type_));
+        ActionKind::None
+    });
+    RowActions { kind, count: row.int("iActions") }
+}
+
 pub fn read_combat_role(rd: &Rd) -> CombatRoleInfo {
     let base = InfoBase::read(rd);
-    let mut targets = Vec::new();
-    for tok in rd.string_list("TargetOrder") {
-        match TargetClass::parse(&tok) {
-            Some(t) => targets.push(t),
-            None => rd.cx.warn(format!("{}: unknown Target {tok:?}", base.type_)),
-        }
-    }
+    let rows = [read_row(rd, &base, "FrontRow"), read_row(rd, &base, "MiddleRow"), read_row(rd, &base, "RearRow")];
+    let home = rd.string("HomeRow");
+    let home_row = ROW_TOKENS.iter().position(|&t| t == home.trim()).unwrap_or_else(|| {
+        rd.cx.warn(format!("{}: unknown HomeRow {home:?}", base.type_));
+        0
+    });
     CombatRoleInfo {
         attack_percent: rd.int("iAttackPercent"),
         defense_percent: rd.int("iDefensePercent"),
         max_hp: rd.int("iMaxHP"),
-        back: rd.bool("bBack"),
-        screen: rd.bool("bScreen"),
-        ignores_shield: rd.bool("bIgnoresShield"),
-        targets,
+        speed: rd.int("iSpeed"),
+        dodge: rd.int("iDodge"),
+        crit_bonus: rd.int("iCritBonus"),
+        anti_flank: rd.bool("bAntiFlank"),
+        rows,
+        home_row,
+        auto_pick: rd.int("iAutoPick"),
         default_unit_combats: rd.ref_list("DefaultUnitCombats"),
         default_free_promotion: rd.rf("DefaultFreePromotion"),
         from_role: rd.rf("FromRole"),
@@ -108,6 +216,9 @@ pub fn read_combat_role(rd: &Rd) -> CombatRoleInfo {
         base,
     }
 }
+
+// The round model's stances (phase 6 before revision 4). Formation battles have none: they go
+// with the round model (docs/ENGAGEMENTS.md, "What is left of the round model").
 
 /// One step of a stance's pick (XML `Steps/Step`): take the best units of `roles` until the pick
 /// holds `max(count, ceil(S x percent / 100))` units of those roles, S the side's slots.

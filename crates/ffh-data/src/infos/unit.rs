@@ -741,6 +741,10 @@ pub struct UnitInfo {
     pub defense_override: i32,
     /// `iHP` (0: none): replaces the role's max HP.
     pub hp_override: i32,
+    /// `bLarge`: a large unit in a formation battle (giants, elephants, dragons, golems,
+    /// treants, ...): it fills two cells side by side in one row and two slots, and has
+    /// `ENGAGEMENT_LARGE_HP_PERCENT` of its role's HP.
+    pub large: bool,
 }
 
 /// C++ `CvUnitInfo::read` + `readPass2` + `readPass3`.
@@ -935,6 +939,7 @@ pub fn read_unit(rd: &Rd) -> UnitInfo {
         attack_override: rd.int("iAttack"),
         defense_override: rd.int("iDefense"),
         hp_override: rd.int("iHP"),
+        large: rd.bool("bLarge"),
         // ---- readPass2 ----
         unit_convert_from_combat: rd.rf::<UnitType>("UnitConvertFromCombat"),
         unit_create_from_combat: rd.rf::<UnitType>("UnitCreateFromCombat"),

@@ -125,9 +125,11 @@
 		<iDefineIntVal>2</iDefineIntVal>
 	</Define>
 	<!-- ==== Engagement combat (GAMEOPTION_ENGAGEMENTS; phase 6 of the owner's spec, whose
-	     parameter names follow each comment; roles: Units/CIV4CombatRoleInfos.xml, stances:
-	     Units/CIV4StanceInfos.xml, plot changes: iEngagementSlotsChange of terrains and features) ==== -->
-	<!-- SLOTS_BASE: units each side commits to an engagement, before the defended plot's changes -->
+	     parameter names follow each comment; roles: Units/CIV4CombatRoleInfos.xml, plot
+	     changes: iEngagementSlotsChange of terrains and features; formation battles, revision 4:
+	     docs/ENGAGEMENTS.md) ==== -->
+	<!-- SLOTS_BASE: units each side commits to an engagement (a large unit counts two), before the
+	     defended plot's changes; a side's grid has 3 rows and max(2, ceil((slots + 2) / 3)) lanes -->
 	<Define>
 		<DefineName>ENGAGEMENT_SLOTS_BASE</DefineName>
 		<iDefineIntVal>8</iDefineIntVal>
@@ -159,12 +161,13 @@
 		<DefineName>ENGAGEMENT_SUMMON_EXTRA_SLOTS</DefineName>
 		<iDefineIntVal>2</iDefineIntVal>
 	</Define>
-	<!-- BASE_DAMAGE: B in a hit's damage B x A / (A + Dv) x r, in HP -->
+	<!-- BASE_DAMAGE: B in a hit's expected damage B x A / (A + Dv), in HP, before the action's
+	     percentages (an even hit takes 20 HP; six of them kill a frontline unit) -->
 	<Define>
 		<DefineName>ENGAGEMENT_BASE_DAMAGE</DefineName>
-		<iDefineIntVal>20</iDefineIntVal>
+		<iDefineIntVal>40</iDefineIntVal>
 	</Define>
-	<!-- r ~ U(0.8, 1.2): the lowest and highest r, in percent -->
+	<!-- r: a hit deals its expected damage x r, r drawn in RAND_MIN..=RAND_MAX percent -->
 	<Define>
 		<DefineName>ENGAGEMENT_DAMAGE_RAND_MIN</DefineName>
 		<iDefineIntVal>80</iDefineIntVal>
@@ -173,16 +176,100 @@
 		<DefineName>ENGAGEMENT_DAMAGE_RAND_MAX</DefineName>
 		<iDefineIntVal>120</iDefineIntVal>
 	</Define>
-	<!-- MAX_ROUNDS: rounds before both sides disengage (a draw: the plot does not change hands) -->
+	<!-- ROUNDS: rounds of a formation battle; in each, every unit acts once per action it has from
+	     its row, one pass per action -->
 	<Define>
-		<DefineName>ENGAGEMENT_MAX_ROUNDS</DefineName>
-		<iDefineIntVal>40</iDefineIntVal>
+		<DefineName>ENGAGEMENT_ROUNDS</DefineName>
+		<iDefineIntVal>3</iDefineIntVal>
 	</Define>
-	<!-- WITHDRAW_HP_PCT: a unit with a withdrawal chance rolls once, the first round it ends below
-	     this percent of its HP -->
+	<!-- LARGE_HP_PERCENT: a large unit's (bLarge) HP, in percent of its role's -->
 	<Define>
-		<DefineName>ENGAGEMENT_WITHDRAW_HP_PERCENT</DefineName>
-		<iDefineIntVal>40</iDefineIntVal>
+		<DefineName>ENGAGEMENT_LARGE_HP_PERCENT</DefineName>
+		<iDefineIntVal>150</iDefineIntVal>
+	</Define>
+	<!-- FIRST_STRIKE_SPEED: speed a first strike adds (a chance first strike, when rolled at the
+	     battle's start) -->
+	<Define>
+		<DefineName>ENGAGEMENT_FIRST_STRIKE_SPEED</DefineName>
+		<iDefineIntVal>2</iDefineIntVal>
+	</Define>
+	<!-- EXTRA_ACTION_TIER: units of this tier and above, and heroes, get EXTRA_ACTIONS more actions
+	     in their role's best row -->
+	<Define>
+		<DefineName>ENGAGEMENT_EXTRA_ACTION_TIER</DefineName>
+		<iDefineIntVal>4</iDefineIntVal>
+	</Define>
+	<Define>
+		<DefineName>ENGAGEMENT_EXTRA_ACTIONS</DefineName>
+		<iDefineIntVal>1</iDefineIntVal>
+	</Define>
+	<!-- MISS_PERCENT: the miss chance of a physical action, plus the kind's (SHOOT, BOMBARD below)
+	     and the target role's iDodge, at most 95 -->
+	<Define>
+		<DefineName>ENGAGEMENT_MISS_PERCENT</DefineName>
+		<iDefineIntVal>10</iDefineIntVal>
+	</Define>
+	<Define>
+		<DefineName>ENGAGEMENT_SHOOT_MISS_PERCENT</DefineName>
+		<iDefineIntVal>10</iDefineIntVal>
+	</Define>
+	<Define>
+		<DefineName>ENGAGEMENT_BOMBARD_MISS_PERCENT</DefineName>
+		<iDefineIntVal>15</iDefineIntVal>
+	</Define>
+	<!-- CRIT_PERCENT: the crit chance of a strike, charge, stab or shoot, plus the hitter role's
+	     iCritBonus, at most 95; a crit deals CRIT_DAMAGE_PERCENT of the hit (a melee crit also knocks
+	     the target back a row when the cells behind it are free) -->
+	<Define>
+		<DefineName>ENGAGEMENT_CRIT_PERCENT</DefineName>
+		<iDefineIntVal>10</iDefineIntVal>
+	</Define>
+	<Define>
+		<DefineName>ENGAGEMENT_CRIT_DAMAGE_PERCENT</DefineName>
+		<iDefineIntVal>150</iDefineIntVal>
+	</Define>
+	<!-- CHARGE_BONUS: percent a flanker's charge adds to its damage in the first round, where
+	     flanking works (no city, no forest or jungle) -->
+	<Define>
+		<DefineName>ENGAGEMENT_CHARGE_BONUS</DefineName>
+		<iDefineIntVal>100</iDefineIntVal>
+	</Define>
+	<!-- SPLASH_PERCENT: a splash (collateral damage, a spell's) hits each of the target's neighbours
+	     for this percent of a hit on it -->
+	<Define>
+		<DefineName>ENGAGEMENT_SPLASH_PERCENT</DefineName>
+		<iDefineIntVal>50</iDefineIntVal>
+	</Define>
+	<!-- BOLT_PERCENT: the power of a caster's magic bolt (one target), when it knows no damage spell
+	     (a damage spell has 100 and splashes) -->
+	<Define>
+		<DefineName>ENGAGEMENT_BOLT_PERCENT</DefineName>
+		<iDefineIntVal>60</iDefineIntVal>
+	</Define>
+	<!-- HEAL_PERCENT: a heal restores BASE_DAMAGE x this percent x r -->
+	<Define>
+		<DefineName>ENGAGEMENT_HEAL_PERCENT</DefineName>
+		<iDefineIntVal>50</iDefineIntVal>
+	</Define>
+	<!-- The ground (the defended plot's; multiplied together): in a city the attacker's SHOOT deals
+	     CITY_ATTACKER_SHOT_PERCENT; in a forest or jungle SHOOT and BOMBARD deal FOREST_RANGED_PERCENT on
+	     both sides; on hills every attacker hit deals HILLS_ATTACKER_PERCENT and the defender's SHOOT
+	     and BOMBARD HILLS_DEFENDER_RANGED_PERCENT -->
+	<Define>
+		<DefineName>ENGAGEMENT_CITY_ATTACKER_SHOT_PERCENT</DefineName>
+		<iDefineIntVal>50</iDefineIntVal>
+	</Define>
+	<Define>
+		<DefineName>ENGAGEMENT_FOREST_RANGED_PERCENT</DefineName>
+		<iDefineIntVal>50</iDefineIntVal>
+	</Define>
+	<Define>
+		<DefineName>ENGAGEMENT_HILLS_ATTACKER_PERCENT</DefineName>
+		<iDefineIntVal>75</iDefineIntVal>
+	</Define>
+	<Define>
+		<DefineName>ENGAGEMENT_HILLS_DEFENDER_RANGED_PERCENT</DefineName>
+		<iDefineIntVal>125</iDefineIntVal>
 	</Define>
 	<!-- AUTO_MIN_HP_PCT: the auto-pick skips units below this percent of their HP while healthier
 	     ones of the role are left -->
@@ -190,7 +277,7 @@
 		<DefineName>ENGAGEMENT_AUTO_MIN_HP_PERCENT</DefineName>
 		<iDefineIntVal>50</iDefineIntVal>
 	</Define>
-	<!-- RECON_REVEAL_RANGE: plots within which a recon unit reveals an army's stance (phase 7) -->
+	<!-- RECON_REVEAL_RANGE: plots within which a recon unit reveals an army's formation (phase 7) -->
 	<Define>
 		<DefineName>ENGAGEMENT_RECON_REVEAL_RANGE</DefineName>
 		<iDefineIntVal>2</iDefineIntVal>
@@ -207,9 +294,8 @@
 		<DefineName>ENGAGEMENT_REPORT_LOGS_KEPT</DefineName>
 		<iDefineIntVal>32</iDefineIntVal>
 	</Define>
-	<!-- PREVIEW_RUNS: battles the attack preview plays on its own RNG for its forecast (the
-	     plan's win chance, rounds, losses, each unit's chance to fall), and as many for each of
-	     its What-if plans -->
+	<!-- PREVIEW_RUNS: battles the attack preview plays on its own RNG for its forecast (each
+	     side's expected losses, the chance the plot falls, each unit's chance to fall) -->
 	<Define>
 		<DefineName>ENGAGEMENT_PREVIEW_RUNS</DefineName>
 		<iDefineIntVal>200</iDefineIntVal>

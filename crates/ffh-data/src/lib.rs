@@ -296,7 +296,8 @@ impl GameData {
     }
 
     /// Engagement combat's derived tables (`unit_roles`, `screen_role`, `default_stance`), and the
-    /// checks the resolver relies on (one default role and stance, positive multipliers and HP).
+    /// checks the resolver relies on (one default role and stance, positive multipliers and HP,
+    /// rows that act exactly when they have an action, one auto-pick place per role).
     fn derive_engagements(&mut self) {
         let mut warnings = Vec::new();
         let defaults: Vec<CombatRoleType> = self.combat_roles.keys().filter(|&r| self.combat_roles[r].default).collect();
@@ -305,14 +306,30 @@ impl GameData {
         }
         for r in self.combat_roles.keys() {
             let info = &self.combat_roles[r];
-            if info.attack_percent <= 0 || info.defense_percent <= 0 || info.max_hp <= 0 || info.targets.is_empty() {
-                warnings.push(format!("{}: iAttackPercent, iDefensePercent and iMaxHP must be above 0 and TargetOrder not empty", info.base.type_));
+            if info.attack_percent <= 0 || info.defense_percent <= 0 || info.max_hp <= 0 || info.speed < 0 {
+                warnings.push(format!("{}: iAttackPercent, iDefensePercent and iMaxHP must be above 0, iSpeed not below", info.base.type_));
+            }
+            if !(0..=95).contains(&info.dodge) || !(0..=95).contains(&info.crit_bonus) {
+                warnings.push(format!("{}: iDodge and iCritBonus must be in 0..=95", info.base.type_));
+            }
+            // A row acts iff it has an action kind; a role acts from some row.
+            if info.rows.iter().any(|row| row.count < 0 || (row.kind == ActionKind::None) != (row.count == 0)) {
+                warnings.push(format!("{}: a row has iActions above 0 exactly when its Action is not NONE", info.base.type_));
+            }
+            if info.rows.iter().all(|row| row.count == 0) {
+                warnings.push(format!("{}: no row has an action", info.base.type_));
             }
             if info.from_role.is_some() != info.from_promotion.is_some() {
                 warnings.push(format!("{}: FromRole and FromPromotion go together", info.base.type_));
             }
         }
         let promoted: Vec<CombatRoleType> = self.combat_roles.keys().filter(|&r| self.combat_roles[r].from_role.is_some()).collect();
+        let mut picks: Vec<i32> = self.combat_roles.iter().map(|info| info.auto_pick).collect();
+        picks.sort_unstable();
+        picks.dedup();
+        if picks.len() != self.combat_roles.len() {
+            warnings.push("two combat roles have the same iAutoPick".to_string());
+        }
         if promoted.len() > 1 {
             warnings.push(format!("{} combat roles have a FromRole (at most one expected)", promoted.len()));
         }
@@ -361,6 +378,29 @@ impl GameData {
             }
         }
         self.combat_roles.keys().find(|&r| self.combat_roles[r].default)
+    }
+
+    /// The damage spell a unit casts in a formation battle (docs/ENGAGEMENTS.md, "Action kinds
+    /// and reach": SPELL): of the spells with `iDamage > 0` whose prerequisites on the caster it
+    /// meets (`PromotionPrereq1` and `PromotionPrereq2` among its promotions, `UnitPrereq`,
+    /// `UnitClassPrereq` and `UnitCombatPrereq` its type's), the strongest: the highest `iDamage`,
+    /// then the lower id. `None`: it casts the magic bolt.
+    pub fn engage_damage_spell(&self, unit_type: UnitType, has_promotion: impl Fn(PromotionType) -> bool) -> Option<SpellType> {
+        let info = &self.units[unit_type];
+        let mut best: Option<SpellType> = None;
+        for s in self.spells.keys() {
+            let spell = &self.spells[s];
+            let meets = spell.damage > 0
+                && spell.promotion_prereq1.map_or(true, &has_promotion)
+                && spell.promotion_prereq2.map_or(true, &has_promotion)
+                && spell.unit_prereq.map_or(true, |t| t == unit_type)
+                && spell.unit_class_prereq.map_or(true, |c| info.unit_class_type == Some(c))
+                && spell.unit_combat_prereq.map_or(true, |c| info.unit_combat_type == Some(c));
+            if meets && best.map_or(true, |b| spell.damage > self.spells[b].damage) {
+                best = Some(s);
+            }
+        }
+        best
     }
 
     /// The change to each side's engagement slots on a plot (added to `ENGAGEMENT_SLOTS_BASE`):

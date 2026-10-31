@@ -48,7 +48,7 @@
 
 use ffh_data::*;
 
-use super::battle::{damage_from_hp, hp_from_damage, Battle, BattleEffect, Fighter, Params, Side, TargetClass};
+use super::battle::{damage_from_hp, hp_from_damage, Battle, BattleEffect, Fighter, Params, RoundRole, Side};
 use super::pick::{StanceChoice, WarTest};
 use super::resolve::{resolve_sampled, resolve_sampled_quiet, targets, BattleRng, EngageResult, TargetState, Targets};
 use super::apply::Post;
@@ -194,26 +194,16 @@ pub(crate) struct OpeningRolls {
     pub collateral: Vec<(usize, Vec<(UnitId, i32, i32)>)>,
 }
 
-/// The battle-model target class of a role's XML class.
-fn class_of(c: ffh_data::TargetClass) -> TargetClass {
-    match c {
-        ffh_data::TargetClass::Front => TargetClass::Front,
-        ffh_data::TargetClass::Back => TargetClass::Back,
-        ffh_data::TargetClass::Screen => TargetClass::Screen,
-        ffh_data::TargetClass::HeroOrSupport => TargetClass::HeroOrSupport,
-    }
-}
-
 impl Game {
-    /// The round model's constants (the `ENGAGEMENT_*` defines).
+    /// The round model's constants: r's range from the `ENGAGEMENT_*` defines, the rest its own
+    /// (`Params::default()`: formation battles' `ENGAGEMENT_BASE_DAMAGE` is theirs, and the round
+    /// model's round limit and withdrawal threshold are no longer defines).
     pub fn engage_params(&self) -> Params {
         let d = &self.d.defines;
         Params {
-            base_damage: d.engagement_base_damage,
             rand_min: d.engagement_damage_rand_min,
             rand_max: d.engagement_damage_rand_max.max(d.engagement_damage_rand_min),
-            max_rounds: d.engagement_max_rounds,
-            withdraw_hp_pct: d.engagement_withdraw_hp_percent,
+            ..Params::default()
         }
     }
 
@@ -227,14 +217,13 @@ impl Game {
         let mut f = Fighter::new(side, max_hp);
         f.tag = u.0;
         if let Some(r) = self.unit_combat_role(u) {
-            let role = &d.combat_roles[r];
+            let role = RoundRole::of(&d.combat_roles[r]);
             f.back = role.back;
             f.screen = role.screen;
             f.ignores_shield = role.ignores_shield;
-            if !role.targets.is_empty() {
-                f.order = role.targets.iter().map(|&c| class_of(c)).collect();
-            }
-            f.hero_or_support = self.unit_is_hero(u) || d.ty::<CombatRoleType>("COMBATROLE_SUPPORT") == Some(r);
+            f.order = role.order;
+            // the old Support role: Arcane and Divine
+            f.hero_or_support = self.unit_is_hero(u) || ["COMBATROLE_ARCANE", "COMBATROLE_DIVINE"].iter().any(|&n| d.ty::<CombatRoleType>(n) == Some(r));
         }
         f.hp = hp_from_damage(self.units[u].damage, max_hp);
         f.first_strikes = self.unit_first_strikes(u);

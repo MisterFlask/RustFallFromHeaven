@@ -5479,18 +5479,22 @@ TXT_KEY_CLIMATE_TROPICAL_HELP	This climate is warmer and wetter so expect to see
 TXT_KEY_COLOR_NEGATIVE	[COLOR_NEGATIVE_TEXT]
 TXT_KEY_COLOR_POSITIVE	[COLOR_POSITIVE_TEXT]
 TXT_KEY_COLOR_REVERT	[COLOR_REVERT]
+TXT_KEY_COMBATROLE_ARCANE	Arcane
+TXT_KEY_COMBATROLE_ARCANE_HELP	Mages fight from the back: from the middle row they cast once a round, from the rear twice, on the backmost unit of an enemy lane. They cast the strongest damage spell they know, which also hits the target's neighbours, or else a weaker magic bolt; spells never miss. Fragile; in the front row they only strike.
+TXT_KEY_COMBATROLE_ARCHER	Archer
+TXT_KEY_COMBATROLE_ARCHER_HELP	Archers shoot the backmost unit of an enemy lane: once a round from the front row, twice from the middle or the rear. Arrows miss more often than blades, and they fly short into a forest or a city.
 TXT_KEY_COMBATROLE_ASSASSIN	Assassin
-TXT_KEY_COMBATROLE_ASSASSIN_HELP	Slips past the front line and its screens to strike the enemy's back line first, then its front line. Hits hard, but is fragile.
-TXT_KEY_COMBATROLE_BACKLINE	Backline
-TXT_KEY_COMBATROLE_BACKLINE_HELP	Archers and siege engines fight behind the front line: enemies reach them only once it has fallen. Strikes the enemy's front line first, then its back line.
+TXT_KEY_COMBATROLE_ASSASSIN_HELP	Slips through the lines to stab any enemy on the field, twice a round from the middle row. Quick, hard to hit and deadly when it lands a critical blow, but fragile.
+TXT_KEY_COMBATROLE_DIVINE	Divine
+TXT_KEY_COMBATROLE_DIVINE_HELP	Priests and disciples heal the most hurt unit of their side: once a round from the middle row, twice from the rear. Fragile; in the front row they only strike.
 TXT_KEY_COMBATROLE_FLANKER	Flanker
-TXT_KEY_COMBATROLE_FLANKER_HELP	Mounted units ride around the front line: they strike the enemy's screens first, then its back line, then its front line.
+TXT_KEY_COMBATROLE_FLANKER_HELP	Mounted units charge twice a round from the front row. In the open field they ride around the line to the most dangerous enemy for its health, and their first charges hit twice as hard; in a city, a forest or a jungle they strike the front like infantry. Screens in their reach must be faced first. Hard to hit.
 TXT_KEY_COMBATROLE_FRONTLINE	Frontline
-TXT_KEY_COMBATROLE_FRONTLINE_HELP	Holds the front and shields the back line. Strikes the enemy's front line first, then its back line.
+TXT_KEY_COMBATROLE_FRONTLINE_HELP	Holds the line: strikes the front unit of an enemy lane, twice a round from the front row, once from further back, and stands in front of the units behind it. A critical blow knocks its target back a row.
 TXT_KEY_COMBATROLE_SCREEN	Screen
-TXT_KEY_COMBATROLE_SCREEN_HELP	A frontline unit trained in Formation: a sturdier front, and the unit enemy flankers must strike first. Strikes the enemy's front line first, then its back line.
-TXT_KEY_COMBATROLE_SUPPORT	Support
-TXT_KEY_COMBATROLE_SUPPORT_HELP	Mages and priests fight behind the front line, which shields them. Fragile; they strike like the back line.
+TXT_KEY_COMBATROLE_SCREEN_HELP	A frontline unit trained in Formation: a sturdier front, and the unit enemy flankers must face first when it is in their reach.
+TXT_KEY_COMBATROLE_SIEGE	Siege
+TXT_KEY_COMBATROLE_SIEGE_HELP	Siege engines bombard the backmost unit of an enemy lane: once a round from the middle row, twice from the rear, and not at all from the front. Slow, and stones miss often; an engine with a combat limit never takes a unit below it.
 TXT_KEY_COMBAT_KAMIKAZE_MOD	[ICON_BULLET]%D1_percent%% for Self-Destruction
 TXT_KEY_COMBAT_MESSAGE_AI_ANIMAL_COMBAT	(AI Animal Combat: %D1%%)
 TXT_KEY_COMBAT_MESSAGE_ANIMAL_COMBAT	(Animal Combat: %D1%%)

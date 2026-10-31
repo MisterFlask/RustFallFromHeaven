@@ -96,7 +96,7 @@ impl Sink {
         let d = g.d;
         let unit = &g.units[u];
         let role = g.unit_combat_role(u);
-        let info = role.map(|r| &d.combat_roles[r]);
+        let info = role.map(|r| super::battle::RoundRole::of(&d.combat_roles[r]));
         let max_hp = g.unit_engage_max_hp(u);
         let other_team = match side {
             Side::Attacker => e.units.get(e.n_att).map(|&du| g.unit_get_team(du)),
@@ -124,10 +124,10 @@ impl Sink {
             xp: unit.experience,
             hero: g.unit_is_hero(u),
             role: role.unwrap_or(CombatRoleType::from_usize(0)),
-            pos: if info.is_some_and(|r| r.back) { Position::Back } else { Position::Front },
-            screen: info.is_some_and(|r| r.screen),
-            ignores_shield: info.is_some_and(|r| r.ignores_shield),
-            assassin_profile: info.is_some_and(|r| r.ignores_shield && !r.targets.contains(&ffh_data::TargetClass::Screen)),
+            pos: if info.as_ref().is_some_and(|r| r.back) { Position::Back } else { Position::Front },
+            screen: info.as_ref().is_some_and(|r| r.screen),
+            ignores_shield: info.as_ref().is_some_and(|r| r.ignores_shield),
+            assassin_profile: info.as_ref().is_some_and(|r| r.assassin_profile),
             guardsman: false,
             max_hp,
             hp_start: hp_from_damage(damage, max_hp),

@@ -183,7 +183,7 @@ pub fn check(g: &Game) {
                 fail(format!("unit {u:?} of player {} is alive at {} damage", unit.owner.0, unit.damage));
             }
         }
-        let max_rounds = g.d.defines.engagement_max_rounds;
+        let max_rounds = g.engage_params().max_rounds;
         for r in &g.battle_reports {
             if r.outcome.rounds > max_rounds {
                 fail(format!("battle report #{} ran {} rounds", r.id, r.outcome.rounds));

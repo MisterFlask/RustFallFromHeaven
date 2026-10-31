@@ -279,7 +279,7 @@ fn each_stance_picks_its_quotas_from_a_mixed_pool() {
     assert_eq!(w.slots().att(), 10);
 
     let roles = |pick: &[UnitId]| {
-        ["COMBATROLE_FRONTLINE", "COMBATROLE_SCREEN", "COMBATROLE_BACKLINE", "COMBATROLE_FLANKER", "COMBATROLE_ASSASSIN", "COMBATROLE_SUPPORT"].map(|r| w.roles(pick, r))
+        ["COMBATROLE_FRONTLINE", "COMBATROLE_SCREEN", "COMBATROLE_ARCHER", "COMBATROLE_FLANKER", "COMBATROLE_ASSASSIN", "COMBATROLE_ARCANE"].map(|r| w.roles(pick, r))
     };
     // Balanced: a screen, the front to half the slots, then the archers fill the rest.
     let pick = w.pick(&pool, "STANCE_BALANCED", Side::Attacker);
@@ -297,7 +297,7 @@ fn each_stance_picks_its_quotas_from_a_mixed_pool() {
     assert_eq!(roles(&pick)[0] + roles(&pick)[1], 4);
     // Support units only come in through the fill: the whole pool on a plot with more slots
     // than units takes them.
-    let small: Vec<UnitId> = pool.iter().copied().filter(|u| w.role(*u) != "COMBATROLE_BACKLINE").collect();
+    let small: Vec<UnitId> = pool.iter().copied().filter(|u| w.role(*u) != "COMBATROLE_ARCHER").collect();
     assert_eq!(small.len(), 15);
     let pick = w.pick(&small[5..], "STANCE_SHIELD_WALL", Side::Attacker);
     assert_eq!(pick.len(), 10, "fewer candidates than slots: all of them");

@@ -1,7 +1,9 @@
 //! Data spot-checks for engagement combat (this game's own rules, GAMEOPTION_ENGAGEMENTS): the
-//! roles (Units/CIV4CombatRoleInfos.xml), the stances (Units/CIV4StanceInfos.xml), the role each
-//! unit type derives, the plots' slot changes and the ENGAGEMENT_* defines. Expected values are
-//! the owner's spec ("Engagement combat", its tuning table) and docs/COMBAT_INVENTORY.md's answers.
+//! roles of formation battles (Units/CIV4CombatRoleInfos.xml), the round model's stances
+//! (Units/CIV4StanceInfos.xml), the role each unit type derives, the large units, the casters'
+//! damage spells, the plots' slot changes and the ENGAGEMENT_* defines. Expected values are the
+//! owner's (the formation battles spec, revision 4: docs/ENGAGEMENTS.md) and
+//! docs/COMBAT_INVENTORY.md's answers.
 
 use ffh_data::*;
 
@@ -36,33 +38,47 @@ fn the_option_is_visible_and_off_by_default() {
     assert_eq!(d().text.get(&o.base.description), "Engagements");
 }
 
+/// A row: `n` actions of `kind`.
+fn row(kind: ActionKind, n: i32) -> RowActions {
+    RowActions { kind, count: n }
+}
+
 #[test]
-fn the_six_roles() {
-    use TargetClass::*;
+fn the_eight_roles() {
+    use ActionKind::*;
     let d = d();
     let names: Vec<&str> = d.combat_roles.iter().map(|r| r.base.type_.as_str()).collect();
     assert_eq!(
         names,
-        ["COMBATROLE_FRONTLINE", "COMBATROLE_SCREEN", "COMBATROLE_BACKLINE", "COMBATROLE_FLANKER", "COMBATROLE_ASSASSIN", "COMBATROLE_SUPPORT"]
+        [
+            "COMBATROLE_FRONTLINE", "COMBATROLE_SCREEN", "COMBATROLE_FLANKER", "COMBATROLE_ASSASSIN", "COMBATROLE_ARCHER", "COMBATROLE_SIEGE",
+            "COMBATROLE_ARCANE", "COMBATROLE_DIVINE",
+        ]
     );
-    // (type, A %, Dv %, max HP, back, screen, ignores shield, targets)
-    let want: [(&str, i32, i32, i32, bool, bool, bool, &[TargetClass]); 6] = [
-        ("COMBATROLE_FRONTLINE", 100, 100, 120, false, false, false, &[Front, Back]),
-        ("COMBATROLE_SCREEN", 100, 110, 120, false, true, false, &[Front, Back]),
-        ("COMBATROLE_BACKLINE", 100, 60, 80, true, false, false, &[Front, Back]),
-        ("COMBATROLE_FLANKER", 110, 80, 100, false, false, true, &[Screen, Back, Front]),
-        ("COMBATROLE_ASSASSIN", 120, 60, 60, false, false, true, &[Back, Front]),
-        ("COMBATROLE_SUPPORT", 100, 50, 70, true, false, false, &[Front, Back]),
+    // The spec's table: (type, A %, Dv %, HP, speed, dodge, crit bonus, anti-flank, rows front
+    // to rear, home row, auto-pick place).
+    type Want = (&'static str, i32, i32, i32, i32, i32, i32, bool, [RowActions; 3], usize, i32);
+    let want: [Want; 8] = [
+        ("COMBATROLE_FRONTLINE", 100, 100, 120, 4, 0, 0, false, [row(Strike, 2), row(Strike, 1), row(Strike, 1)], 0, 2),
+        ("COMBATROLE_SCREEN", 100, 110, 120, 3, 0, 0, true, [row(Strike, 2), row(Strike, 1), row(Strike, 1)], 0, 1),
+        ("COMBATROLE_FLANKER", 110, 80, 100, 6, 10, 0, false, [row(Charge, 2), row(Strike, 1), row(Strike, 1)], 0, 4),
+        ("COMBATROLE_ASSASSIN", 120, 60, 60, 7, 15, 15, false, [row(Stab, 1), row(Stab, 2), row(Stab, 1)], 1, 8),
+        ("COMBATROLE_ARCHER", 100, 60, 80, 4, 0, 0, false, [row(Shoot, 1), row(Shoot, 2), row(Shoot, 2)], 1, 3),
+        ("COMBATROLE_SIEGE", 100, 60, 80, 1, 0, 0, false, [row(None, 0), row(Bombard, 1), row(Bombard, 2)], 2, 7),
+        ("COMBATROLE_ARCANE", 100, 50, 70, 3, 0, 0, false, [row(Strike, 1), row(Spell, 1), row(Spell, 2)], 2, 5),
+        ("COMBATROLE_DIVINE", 100, 50, 70, 3, 0, 0, false, [row(Strike, 1), row(Heal, 1), row(Heal, 2)], 1, 6),
     ];
-    for (name, a, dv, hp, back, screen, ignores, targets) in want {
+    for (name, a, dv, hp, speed, dodge, crit, anti_flank, rows, home, pick) in want {
         let r = &d.combat_roles[role(name)];
         assert_eq!(
-            (r.attack_percent, r.defense_percent, r.max_hp, r.back, r.screen, r.ignores_shield, r.targets.as_slice()),
-            (a, dv, hp, back, screen, ignores, targets),
+            (r.attack_percent, r.defense_percent, r.max_hp, r.speed, r.dodge, r.crit_bonus, r.anti_flank, r.rows, r.home_row, r.auto_pick),
+            (a, dv, hp, speed, dodge, crit, anti_flank, rows, home, pick),
             "{name}"
         );
         assert!(d.text.get(&r.base.description) != r.base.description, "{name}: no text");
         assert!(d.text.get(&r.base.help) != r.base.help, "{name}: no help text");
+        // Only the flanker charges.
+        assert_eq!(r.flanks(), name == "COMBATROLE_FLANKER", "{name}");
     }
     // Defaults by unit combat (the frontline also takes units with none), Marksman for assassins.
     let uc = |n: &str| d.t::<UnitCombatType>(n);
@@ -73,13 +89,106 @@ fn the_six_roles() {
     let assassin = &d.combat_roles[role("COMBATROLE_ASSASSIN")];
     assert_eq!(assassin.default_unit_combats, [uc("UNITCOMBAT_RECON")]);
     assert_eq!(assassin.default_free_promotion, Some(d.t::<PromotionType>("PROMOTION_MARKSMAN")));
-    assert_eq!(d.combat_roles[role("COMBATROLE_BACKLINE")].default_unit_combats, ["UNITCOMBAT_ARCHER", "UNITCOMBAT_SIEGE", "UNITCOMBAT_NAVAL"].map(uc));
+    assert_eq!(d.combat_roles[role("COMBATROLE_ARCHER")].default_unit_combats, ["UNITCOMBAT_ARCHER", "UNITCOMBAT_NAVAL"].map(uc));
+    assert_eq!(d.combat_roles[role("COMBATROLE_SIEGE")].default_unit_combats, [uc("UNITCOMBAT_SIEGE")]);
     assert_eq!(d.combat_roles[role("COMBATROLE_FLANKER")].default_unit_combats, [uc("UNITCOMBAT_MOUNTED")]);
-    assert_eq!(d.combat_roles[role("COMBATROLE_SUPPORT")].default_unit_combats, ["UNITCOMBAT_ADEPT", "UNITCOMBAT_DISCIPLE"].map(uc));
+    assert_eq!(d.combat_roles[role("COMBATROLE_ARCANE")].default_unit_combats, [uc("UNITCOMBAT_ADEPT")]);
+    assert_eq!(d.combat_roles[role("COMBATROLE_DIVINE")].default_unit_combats, [uc("UNITCOMBAT_DISCIPLE")]);
     // Q7: Formation makes a frontline unit a screen.
     let screen = &d.combat_roles[role("COMBATROLE_SCREEN")];
     assert!(screen.default_unit_combats.is_empty());
     assert_eq!(d.screen_role, Some((role("COMBATROLE_FRONTLINE"), d.t::<PromotionType>("PROMOTION_FORMATION"), role("COMBATROLE_SCREEN"))));
+}
+
+#[test]
+fn tier_4_units_and_heroes_act_once_more_in_their_best_row() {
+    use ActionKind::*;
+    let d = d();
+    // (role, best row, its actions with the extra one)
+    for (name, best, rows) in [
+        ("COMBATROLE_FRONTLINE", 0, [row(Strike, 3), row(Strike, 1), row(Strike, 1)]),
+        ("COMBATROLE_SCREEN", 0, [row(Strike, 3), row(Strike, 1), row(Strike, 1)]),
+        ("COMBATROLE_FLANKER", 0, [row(Charge, 3), row(Strike, 1), row(Strike, 1)]),
+        ("COMBATROLE_ASSASSIN", 1, [row(Stab, 1), row(Stab, 3), row(Stab, 1)]),
+        // two rows with two: the first such
+        ("COMBATROLE_ARCHER", 1, [row(Shoot, 1), row(Shoot, 3), row(Shoot, 2)]),
+        // the front row stays without an action
+        ("COMBATROLE_SIEGE", 2, [row(None, 0), row(Bombard, 1), row(Bombard, 3)]),
+        ("COMBATROLE_ARCANE", 2, [row(Strike, 1), row(Spell, 1), row(Spell, 3)]),
+        ("COMBATROLE_DIVINE", 2, [row(Strike, 1), row(Heal, 1), row(Heal, 3)]),
+    ] {
+        let r = &d.combat_roles[role(name)];
+        assert_eq!(r.best_row(), best, "{name}");
+        assert_eq!(r.actions(d.defines.engagement_extra_actions), rows, "{name}");
+        assert_eq!(r.actions(0), r.rows, "{name}");
+    }
+}
+
+#[test]
+fn the_kinds() {
+    use ActionKind::*;
+    for k in ActionKind::ALL {
+        assert_eq!(ActionKind::parse(k.token()), Some(k));
+    }
+    assert_eq!(ActionKind::parse("FRONT"), Option::None);
+    let set = |f: fn(ActionKind) -> bool| ActionKind::ALL.into_iter().filter(|&k| f(k)).collect::<Vec<_>>();
+    assert_eq!(set(ActionKind::physical), [Strike, Charge, Stab, Shoot, Bombard]);
+    assert_eq!(set(ActionKind::can_crit), [Strike, Charge, Stab, Shoot]);
+    assert_eq!(set(ActionKind::melee), [Strike, Charge]);
+    assert_eq!(set(ActionKind::ranged), [Shoot, Spell, Bombard]);
+}
+
+#[test]
+fn the_large_units() {
+    let d = d();
+    let mut large: Vec<&str> = d.units.iter().filter(|u| u.large).map(|u| u.base.type_.as_str()).collect();
+    large.sort_unstable();
+    // The spec's (Hill Giant, the elephants, the dragons, every golem, the Treant) and the units of
+    // that size class: the giant heroes Gurid, Margalard and Wilboman (a frost giant), Barnaxus (a
+    // golem), the War Machine, the Earth Elemental (a golem of rock) and the War Tortoise.
+    assert_eq!(
+        large,
+        [
+            "UNIT_ABASHI", "UNIT_ACHERON", "UNIT_BARNAXUS", "UNIT_BONE_GOLEM", "UNIT_CLOCKWORK_GOLEM", "UNIT_DRIFA", "UNIT_EARTH_ELEMENTAL",
+            "UNIT_ELEPHANT", "UNIT_EURABATRES", "UNIT_FLESH_GOLEM", "UNIT_GURID", "UNIT_HILL_GIANT", "UNIT_IRON_GOLEM", "UNIT_MARGALARD",
+            "UNIT_MITHRIL_GOLEM", "UNIT_MUD_GOLEM", "UNIT_NULLSTONE_GOLEM", "UNIT_TREANT", "UNIT_WAR_ELEPHANT", "UNIT_WAR_MACHINE",
+            "UNIT_WAR_TORTOISE", "UNIT_WILBOMAN", "UNIT_WOOD_GOLEM",
+        ]
+    );
+    // Every golem, every elephant; all of them fight on land.
+    for u in d.units.iter() {
+        let t = u.base.type_.as_str();
+        if t.ends_with("_GOLEM") || t.contains("ELEPHANT") {
+            assert!(u.large, "{t}");
+        }
+        if u.large {
+            assert_eq!(u.domain_type, Some(DomainType::DOMAIN_LAND), "{t}");
+        }
+    }
+}
+
+#[test]
+fn casters_cast_their_strongest_damage_spell() {
+    let d = d();
+    let p = |n: &str| d.t::<PromotionType>(n);
+    let spell = |unit: &str, held: &[&str]| {
+        let held: Vec<PromotionType> = held.iter().map(|n| p(n)).collect();
+        d.engage_damage_spell(d.t::<UnitType>(unit), |x| held.contains(&x)).map(|s| d.type_name(s))
+    };
+    // No damage spell: the magic bolt.
+    assert_eq!(spell("UNIT_ADEPT", &[]), None);
+    assert_eq!(spell("UNIT_ADEPT", &["PROMOTION_AIR1"]), None);
+    assert_eq!(spell("UNIT_MAGE", &["PROMOTION_AIR2"]), Some("SPELL_MAELSTROM"));
+    // The strongest: Snowfall (40) over Maelstrom (15).
+    assert_eq!(spell("UNIT_ARCHMAGE", &["PROMOTION_AIR2", "PROMOTION_ICE3"]), Some("SPELL_SNOWFALL"));
+    // Both promotions of a two-promotion spell: Ring of Flames (15) needs Channeling II and Divine.
+    assert_eq!(spell("UNIT_PRIEST_OF_THE_ORDER", &["PROMOTION_CHANNELING2"]), None);
+    assert_eq!(spell("UNIT_PRIEST_OF_THE_ORDER", &["PROMOTION_CHANNELING2", "PROMOTION_DIVINE"]), Some("SPELL_RING_OF_FLAMES"));
+    // Equal damage: the lower id (Maelstrom before Ring of Flames, both 15).
+    assert_eq!(spell("UNIT_MAGE", &["PROMOTION_AIR2", "PROMOTION_CHANNELING2", "PROMOTION_DIVINE"]), Some("SPELL_MAELSTROM"));
+    // A unit-class spell: Mary's Contagion, Auric Ascended's greater Snowfall.
+    assert_eq!(spell("UNIT_MARY", &[]), Some("SPELL_CONTAGION"));
+    assert_eq!(spell("UNIT_AURIC_ASCENDED", &[]), Some("SPELL_SNOWFALL_GREATOR"));
 }
 
 #[test]
@@ -91,10 +200,14 @@ fn the_five_stances() {
     assert_eq!(d.stances.iter().filter(|s| s.default).count(), 1);
     let step = |r: &[&str], count: i32, percent: i32| StanceStep { roles: roles(r), count, percent };
     let front = ["COMBATROLE_FRONTLINE", "COMBATROLE_SCREEN"];
-    let back = ["COMBATROLE_BACKLINE"];
+    // the round model's Backline: archers and siege
+    let back = ["COMBATROLE_ARCHER", "COMBATROLE_SIEGE"];
     let flank = ["COMBATROLE_FLANKER", "COMBATROLE_ASSASSIN"];
     let balanced = vec![step(&["COMBATROLE_SCREEN"], 1, 0), step(&front, 0, 50), step(&back, 0, 100), step(&flank, 0, 100)];
-    let fill = roles(&["COMBATROLE_FRONTLINE", "COMBATROLE_SCREEN", "COMBATROLE_FLANKER", "COMBATROLE_ASSASSIN", "COMBATROLE_BACKLINE", "COMBATROLE_SUPPORT"]);
+    let fill = roles(&[
+        "COMBATROLE_FRONTLINE", "COMBATROLE_SCREEN", "COMBATROLE_FLANKER", "COMBATROLE_ASSASSIN", "COMBATROLE_ARCHER", "COMBATROLE_SIEGE",
+        "COMBATROLE_ARCANE", "COMBATROLE_DIVINE",
+    ]);
     // (type, steps, max level, holds heroes)
     let want = [
         ("STANCE_BALANCED", balanced.clone(), -1, false),
@@ -117,28 +230,32 @@ fn the_five_stances() {
 fn named_units_take_their_roles() {
     for (unit, want) in [
         ("UNIT_AXEMAN", "COMBATROLE_FRONTLINE"),
-        ("UNIT_ARCHER", "COMBATROLE_BACKLINE"),
+        ("UNIT_ARCHER", "COMBATROLE_ARCHER"),
         ("UNIT_KNIGHT", "COMBATROLE_FLANKER"),
         ("UNIT_ASSASSIN", "COMBATROLE_ASSASSIN"),
-        ("UNIT_ADEPT", "COMBATROLE_SUPPORT"),
+        ("UNIT_ADEPT", "COMBATROLE_ARCANE"),
         ("UNIT_PALADIN", "COMBATROLE_FRONTLINE"),
         ("UNIT_FIRE_ELEMENTAL", "COMBATROLE_FRONTLINE"),
-        // Marksman is free but the unit is an archer, not recon (Q6): backline.
-        ("UNIT_MARKSMAN", "COMBATROLE_BACKLINE"),
+        // Marksman is free but the unit is an archer, not recon (Q6): an archer.
+        ("UNIT_MARKSMAN", "COMBATROLE_ARCHER"),
         // recon fight as frontline (spec)
         ("UNIT_SCOUT", "COMBATROLE_FRONTLINE"),
-        ("UNIT_CATAPULT", "COMBATROLE_BACKLINE"),
+        ("UNIT_CATAPULT", "COMBATROLE_SIEGE"),
+        ("UNIT_TREBUCHET", "COMBATROLE_SIEGE"),
+        ("UNIT_BATTERING_RAM", "COMBATROLE_SIEGE"),
         // more of section 3's table
         ("UNIT_WOLF", "COMBATROLE_FRONTLINE"),
         ("UNIT_HILL_GIANT", "COMBATROLE_FRONTLINE"),
+        ("UNIT_WAR_ELEPHANT", "COMBATROLE_FLANKER"),
         ("UNIT_HORSE_ARCHER", "COMBATROLE_FLANKER"),
         ("UNIT_SHADOW", "COMBATROLE_ASSASSIN"),
         ("UNIT_RATHUS", "COMBATROLE_ASSASSIN"),
-        ("UNIT_PRIEST_OF_LEAVES", "COMBATROLE_SUPPORT"),
-        ("UNIT_DRUID", "COMBATROLE_SUPPORT"),
+        ("UNIT_PRIEST_OF_LEAVES", "COMBATROLE_DIVINE"),
+        ("UNIT_DRUID", "COMBATROLE_DIVINE"),
+        ("UNIT_MAGE", "COMBATROLE_ARCANE"),
         ("UNIT_IRON_GOLEM", "COMBATROLE_FRONTLINE"),
         // the only land unit with UNITCOMBAT_NAVAL
-        ("UNIT_AIRSHIP", "COMBATROLE_BACKLINE"),
+        ("UNIT_AIRSHIP", "COMBATROLE_ARCHER"),
         // defends only, immobile: still frontline
         ("UNIT_GUARDIAN_VINES", "COMBATROLE_FRONTLINE"),
         ("UNIT_MUD_GOLEM", "COMBATROLE_FRONTLINE"),
@@ -151,7 +268,7 @@ fn named_units_take_their_roles() {
         ("UNIT_WORKER", "COMBATROLE_FRONTLINE"),
         ("UNIT_SETTLER", "COMBATROLE_FRONTLINE"),
         ("UNIT_COMMANDER", "COMBATROLE_FRONTLINE"),
-        ("UNIT_CORLINDALE", "COMBATROLE_SUPPORT"),
+        ("UNIT_CORLINDALE", "COMBATROLE_ARCANE"),
         ("EQUIPMENT_GOLDEN_HAMMER", "COMBATROLE_FRONTLINE"),
         ("UNIT_BRIGIT_HELD", "COMBATROLE_FRONTLINE"),
         // no role: sea and air units
@@ -204,10 +321,12 @@ fn every_land_type_has_a_role() {
     let want = [
         (Some("COMBATROLE_FRONTLINE"), 189),
         (Some("COMBATROLE_SCREEN"), 0),
-        (Some("COMBATROLE_BACKLINE"), 21),
         (Some("COMBATROLE_FLANKER"), 38),
         (Some("COMBATROLE_ASSASSIN"), 11),
-        (Some("COMBATROLE_SUPPORT"), 47),
+        (Some("COMBATROLE_ARCHER"), 16),
+        (Some("COMBATROLE_SIEGE"), 5),
+        (Some("COMBATROLE_ARCANE"), 18),
+        (Some("COMBATROLE_DIVINE"), 29),
         (None, 19),
     ];
     for (r, n) in want {
@@ -267,7 +386,19 @@ fn engagement_defines() {
     let x = &d().defines;
     assert_eq!((x.engagement_slots_base, x.engagement_slots_min, x.engagement_slots_hills, x.engagement_slots_river), (8, 3, -2, 2));
     assert_eq!((x.engagement_slots_defense_divisor, x.engagement_summon_extra_slots), (25, 2));
-    assert_eq!((x.engagement_base_damage, x.engagement_damage_rand_min, x.engagement_damage_rand_max), (20, 80, 120));
-    assert_eq!((x.engagement_max_rounds, x.engagement_withdraw_hp_percent, x.engagement_auto_min_hp_percent), (40, 40, 50));
+    // The owner's choice: an even-strength hit takes 20 HP (six kill a frontline unit).
+    assert_eq!((x.engagement_base_damage, x.engagement_damage_rand_min, x.engagement_damage_rand_max), (40, 80, 120));
+    assert_eq!((x.engagement_rounds, x.engagement_large_hp_percent, x.engagement_first_strike_speed), (3, 150, 2));
+    assert_eq!((x.engagement_extra_action_tier, x.engagement_extra_actions), (4, 1));
+    assert_eq!((x.engagement_miss_percent, x.engagement_shoot_miss_percent, x.engagement_bombard_miss_percent), (10, 10, 15));
+    assert_eq!((x.engagement_crit_percent, x.engagement_crit_damage_percent, x.engagement_charge_bonus), (10, 150, 100));
+    assert_eq!((x.engagement_splash_percent, x.engagement_bolt_percent, x.engagement_heal_percent), (50, 60, 50));
+    assert_eq!((x.engagement_city_attacker_shot_percent, x.engagement_forest_ranged_percent), (50, 50));
+    assert_eq!((x.engagement_hills_attacker_percent, x.engagement_hills_defender_ranged_percent), (75, 125));
+    assert_eq!(x.engagement_auto_min_hp_percent, 50);
     assert_eq!((x.engagement_recon_reveal_range, x.engagement_reports_kept, x.engagement_report_logs_kept), (2, 128, 32));
+    // The round model's own constants are no longer defines.
+    for gone in ["ENGAGEMENT_MAX_ROUNDS", "ENGAGEMENT_WITHDRAW_HP_PERCENT"] {
+        assert!(!d().define_map.map.contains_key(gone), "{gone}");
+    }
 }
