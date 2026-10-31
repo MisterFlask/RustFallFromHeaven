@@ -102,8 +102,10 @@ export class Map3D {
     this.canvas = document.createElement("canvas");
     this.canvas.className = "map3d";
     Object.assign(this.canvas.style, { position: "absolute", inset: "0", width: "100%", height: "100%", display: "block", pointerEvents: "none" });
-    // It fades in on its first frame (render), over the map's backdrop or what MapView drew.
-    Object.assign(this.canvas.style, { opacity: "0", transition: view.reduceMotion() ? "none" : "opacity 0.3s" });
+    // Hidden until its first frame (render), which shows at once over the map's backdrop or what
+    // MapView drew. (Not faded in: a CSS fade on this canvas waits on the compositor's frames, which
+    // a busy GPU process delays -- on SwiftShader the 0.3 s fade took 5 s, labels over black.)
+    this.canvas.style.opacity = "0";
     view.canvas.before(this.canvas);
     // The 2D canvas on top now only carries marks: transparent.
     view.canvas.style.background = "transparent";

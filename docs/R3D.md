@@ -885,8 +885,10 @@ has compiled:
 * **At boot** (main.js `hd2dPending`, the page's renderer the HD-2D map) MapView draws its
   backdrop -- the dark fill and the minimap -- instead of the flat map until the HD-2D map draws
   (`MapView.holdBackdrop`; the flat map after 10 s, so the player can act, the HD-2D map still
-  taking over when ready), and the 3D canvas fades in over 0.3 s on its first frame: the HD-2D map
-  is the first map the player sees. A switch to the HD-2D map in play keeps the isometric map drawn
+  taking over when ready), and the 3D canvas, hidden until then, shows with its first frame: the
+  HD-2D map is the first map the player sees. (Not faded in: a CSS fade on the canvas waits on the
+  compositor's frames, which a busy GPU process delays; on SwiftShader the 0.3 s fade took 5 s,
+  the labels over black.) A switch to the HD-2D map in play keeps the isometric map drawn
   until it is ready, as before.
 * **Measured** on SwiftShader, which offers no parallel compile (every program has linked by the
   first frame, so the stand-in is seen only with `standinHold`): the lab's five stills (640 x 400,
