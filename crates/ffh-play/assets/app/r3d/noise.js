@@ -268,21 +268,21 @@ const noiseCell = (c) => (c < 192 ? c : c - 256 + 4096);
 export function noiseHashTexture(gl, format = "r8") {
   const N = NOISE_N, L = NOISE_L;
   const half = format === "r16f";
-  const base = new Float32Array(N * N);
-  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) base[y * N + x] = hash12(noiseCell(x), noiseCell(y));
+  const base = half ? new Float32Array(N * N) : new Uint8Array(N * N);
+  for (let y = 0; y < N; y++) {
+    for (let x = 0; x < N; x++) {
+      const h = hash12(noiseCell(x), noiseCell(y));
+      base[y * N + x] = half ? h : Math.round(h * 255);
+    }
+  }
   const t = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_3D, t);
   gl.texStorage3D(gl.TEXTURE_3D, 1, half ? gl.R16F : gl.R8, N, N, L);
   gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
-  const layer = half ? new Float32Array(N * N) : new Uint8Array(N * N);
+  const layer = base.slice();
   for (let k = 0; k < L; k++) {
-    for (let y = 0; y < N; y++) {
-      const row = y * N;
-      for (let x = 0; x < N; x++) {
-        const v = base[row + (x % L === k && x ? 0 : x)];
-        layer[row + x] = half ? v : Math.round(v * 255);
-      }
-    }
+    layer.set(base);
+    for (let c = k || L; c < N; c += L) for (let y = 0; y < N; y++) layer[y * N + c] = base[y * N];
     gl.texSubImage3D(gl.TEXTURE_3D, 0, 0, 0, k, N, N, 1, gl.RED, half ? gl.FLOAT : gl.UNSIGNED_BYTE, layer);
   }
   for (const [p, v] of [[gl.TEXTURE_MIN_FILTER, gl.LINEAR], [gl.TEXTURE_MAG_FILTER, gl.LINEAR], [gl.TEXTURE_WRAP_S, gl.REPEAT], [gl.TEXTURE_WRAP_T, gl.REPEAT], [gl.TEXTURE_WRAP_R, gl.REPEAT]]) gl.texParameteri(gl.TEXTURE_3D, p, v);
