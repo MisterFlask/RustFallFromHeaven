@@ -149,6 +149,12 @@ fn the_preview_is_a_function_of_its_inputs_and_changes_nothing() {
     assert_eq!(c.force, other);
     assert_eq!(c.auto_pick, a.auto_pick);
     assert!(state(&w.g) == before);
+    // The preview's RNG is its own (seeded from the plan): the game's RNGs elsewhere, the same
+    // numbers.
+    w.g.soren_rand = Rng::new(0x5eed_0001);
+    w.g.map_rand = Rng::new(0x5eed_0002);
+    assert_eq!(w.g.engage_preview(&inp).unwrap(), a, "the preview depends on the game's RNG");
+    assert_eq!(w.g.engage_preview_alternatives(&inp).unwrap(), alts, "the What-if list depends on the game's RNG");
 }
 
 /// The defender's pick as the attacker knows it, a refused force, a declare-war preview.
