@@ -3,7 +3,7 @@
 // the owner's prototype): the log folded into states (the fold's fates are the outcome's counts,
 // nobody acts or is hit off the field, no two units share a cell after a knock-back), the log's
 // lines, the opening's events, the editing of a formation (moves, swaps, large units, the slots),
-// the ground's rules in words, and the replay's pace.
+// the ground's rules in words, and damage in words (the replay's pace is battle_snap.test.mjs's).
 import test from "node:test";
 import assert from "node:assert/strict";
 import * as L from "../app/battle_log.js";
@@ -254,16 +254,9 @@ test("the opening: a defensive strike and a unit afraid", () => {
   assert.equal(text(lines[2]), "Archer strikes Axeman as it comes in 18");
   assert.equal(lines[3].text, "Round 1 · pass 1");
   assert.equal(text(lines[4]), "Longbowman shoots Axeman 23 critical.");
-  assert.equal(L.timingOf(log.events[0]).impact, 300);
-  assert.equal(L.timingOf(log.events[1]).impact, 620);
 });
 
-test("the replay's pace: melee lands with the strike strip's blow, shots later, nothing at once", () => {
-  assert.deepEqual(L.timingOf({ kind: "Strike", hits: [{ target: 1, dmg: 100 }] }), { impact: 430, end: 900 });
-  assert.deepEqual(L.timingOf({ kind: "Charge", hits: [{ target: 1, dmg: 100 }] }), { impact: 430, end: 900 });
-  assert.deepEqual(L.timingOf({ kind: "Spell", hits: [{ target: 1, dmg: 100 }] }), { impact: 620, end: 1000 });
-  assert.deepEqual(L.timingOf({ kind: "Heal", heal: { target: 1, amount: 100 }, hits: [] }), { impact: 300, end: 700 });
-  assert.deepEqual(L.timingOf({ kind: "Strike", hits: [], note: "NoTarget" }), { impact: 150, end: 450 });
+test("damage and HP in words: centi-HP rounded, never a hit of 0 shown for one that hurt", () => {
   assert.equal(L.dmgText(2250), "23");
   assert.equal(L.dmgText(1), "1");
   assert.equal(L.hpOf(30), 1);

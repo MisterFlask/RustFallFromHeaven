@@ -1,20 +1,25 @@
 // Watching a battle (the formation-battle prototype's replay, phase 6 revision 4): the log played
-// on the plan's battlefield one action at a time. Each action winds up (a strike or a lunge, a
-// shot, a spell or a stone in flight, a heal's sparkles), lands (its event is folded into the
-// state then: the numbers float up, crits flash gold, the struck flinch, the fallen die where they
-// stand, those who escape a killing blow leave the field, a crit knocks its target back a row)
-// and settles. The log beside it gets a line an action, under round and pass headers; play, step,
-// skip to the report, speeds 1x to 8x.
+// on the plan's battlefield one action at a time, staged by battle_snap.js (the owner's pick of
+// the battle-feel spike: each action a snap to its contact frame, a held beat, an ease back; the
+// shade on crits and kills). An action's event is folded into the state on its contact frame (the
+// log gets its line then, under round and pass headers, and the HP bars drop); its deaths and
+// escapes show when the pair is back on its cells (the fallen die where they stand, those who
+// escape a killing blow leave the field). Play, step, skip to the report, speeds 1x to 8x.
+//
+// Time: the replay's clock runs at the speed (ms at 1x) and stops while the replay is paused in
+// the middle of an action (the action freezes there); between actions it runs on, so a death
+// started before a pause plays out. The breathing and the idle strips run on the page's clock.
 
 import { h } from "./dom.js";
-import { initialState, applyEvent, logLines, timingOf, kindOf, kindKey, eventTarget, dmgText, viewerSide, resultWords, fates, headOf, uname } from "./battle_log.js";
-import { loadArt, unitXY, cellXY, pic, deadPic, faceFlip, animated, figOf, pixGlyph, GLYPH, btn, add, partsEl, STRIKE_HIT, COLORS } from "./battle_stage.js";
+import { initialState, applyEvent, logLines, viewerSide, resultWords, fates, headOf, uname } from "./battle_log.js";
+import { loadArt, unitXY, cellXY, pic, deadPic, faceFlip, animated, figOf, pixGlyph, GLYPH, btn, add, partsEl } from "./battle_stage.js";
+import { Snap, breath, LEAD } from "./battle_snap.js";
 
 export const NAME = "watch";
 
 const SPEEDS = [1, 2, 4, 8];
 
-const W = { ctx: null, log: null, F: null, me: 0, lines: [], st: null, disp: null, vis: [], fx: [], cur: null, i: 0, playing: true, stepping: false, speed: 2, done: false, doneAt: 0, autoReport: false, ready: false, anim: null, logEl: null, shown: 0 };
+const W = { ctx: null, log: null, F: null, me: 0, lines: [], st: null, disp: null, vis: [], fx: [], pend: [], cur: null, i: 0, clock: 0, wall: 0, snap: null, playing: true, stepping: false, speed: 2, done: false, doneAt: 0, autoReport: false, ready: false, anim: null, logEl: null, shown: 0 };
 
 export async function enter(ctx, log) {
   W.ctx = ctx;
@@ -29,6 +34,9 @@ export async function enter(ctx, log) {
   W.anim = animated(log.sides);
   W.lines = logLines(log);
   W.speed = SPEEDS.includes(ctx.prefs.get("speed", 2)) ? ctx.prefs.get("speed", 2) : 2;
+  W.snap = new Snap(snapEnv(ctx, log));
+  W.clock = 0;
+  W.wall = performance.now();
   reset(0);
   W.playing = true;
   renderUI(ctx);
@@ -39,6 +47,24 @@ export function leave() {
   W.ready = false;
   W.cur = null;
   W.fx = [];
+  W.pend = [];
+  W.snap?.reset();
+}
+
+/** The battle as the snap sees it (battle_snap.js, `Snap`). */
+function snapEnv(ctx, log) {
+  const sides = log.sides;
+  return {
+    feet,
+    onField: (b) => !!W.st.pos[b],
+    large: (b) => !!W.F[b].large,
+    side: (b) => W.F[b].side,
+    pic: (b, anim, ms, loop) => pic(W.F[b], sides, anim, ms, loop),
+    animated: (b) => W.anim(W.F[b]),
+    flip: (b) => faceFlip(W.F[b], sides),
+    bar: (b) => (W.disp.status[b] === "on" ? { hp: W.disp.hp[b], max: W.F[b].max_hp * 100 } : null),
+    reduced: () => ctx.reduced(),
+  };
 }
 
 /** Back to the state after the first `n` events, at once (no motion). */
@@ -47,18 +73,26 @@ function reset(n) {
   for (let k = 0; k < n; k++) applyEvent(W.st, W.log.events[k], W.F);
   W.i = n;
   W.disp = { hp: W.st.hp.slice(), status: W.st.status.slice() };
-  const long = performance.now() - 5000;
+  const long = W.clock - 5000;
   W.vis = W.F.map((_, b) => (W.st.status[b] === "dead" ? { deathAt: long } : W.st.status[b] === "gone" ? { goneAt: long } : {}));
   W.fx = [];
+  W.pend = [];
   W.cur = null;
+  W.stepping = false;
+  W.snap?.reset();
   W.done = n >= W.log.events.length;
-  W.doneAt = W.done ? performance.now() - 5000 : 0;
+  W.doneAt = W.done ? W.wall - 5000 : 0;
   W.autoReport = false;
   W.shown = 0;
 }
 
+/** ms of replay time `ms` as the deaths, escapes and floating words play it: at the replay's
+ *  speed up to 2x, no faster (at 4x and 8x they would not read). */
+const shown = (ms) => (ms * Math.min(W.speed, 2)) / W.speed;
+
 // ---------------------------------------------------------------------------------------------
-// The timeline: each action winds up, lands (the event is folded in then), and settles
+// The timeline: each action is staged (battle_snap.js), lands on its contact frame (the event is
+// folded in then), shows its fates when the pair is back, and rests
 
 /** Fighter `b`'s feet now (its cell after the knock-backs so far), or, for one not in the line
  *  (a defensive strike from the reserve), behind its side's rear row. */
@@ -71,42 +105,22 @@ function feet(b) {
   return cellXY(G, f.side, (lanes - 1) / 2, 2.6);
 }
 
+/** Starts the next action at replay time `now`. */
 function beginEvent(now) {
   const e = W.log.events[W.i];
-  if (!e) return finish(now, true);
-  const sp = W.speed;
-  const t = timingOf(e);
-  W.cur = { e, impact: now + t.impact / sp, end: now + t.end / sp, applied: false };
-  const a = e.actor;
-  const K = e.kind === "DefStrike" ? kindOf("Shoot") : kindOf(e.kind);
-  const tgt = eventTarget(e);
-  if (a === null || a === undefined || e.kind === "Afraid") return;
-  const v = W.vis[a];
-  const [ax, ay] = feet(a);
-  const txy = tgt !== null && tgt !== undefined ? feet(tgt) : null;
-  if (K.melee && !e.note) {
-    v.strikeAt = now;
-    if (!W.anim(W.F[a]) && txy) v.lunge = { at: now, dur: (t.impact * 1.6) / sp, tx: txy[0], ty: txy[1] };
-  } else if (K.ranged && txy && !e.note) {
-    v.castAt = now;
-    const kind = e.kind === "DefStrike" ? "Shoot" : kindKey(e.kind);
-    W.fx.push({ type: "proj", kind, splash: kind === "Spell" && (e.hits?.length ?? 0) > 1, from: [ax, ay - 64], to: [txy[0], txy[1] - 46], at: now + 150 / sp, dur: (t.impact - 150) / sp });
-  } else if (e.heal) {
-    v.castAt = now;
-    W.fx.push({ type: "sparkle", x: txy[0], y: txy[1], at: now, dur: 700 / sp });
-  }
+  if (!e) return finish(W.wall, true);
+  const P = W.snap.begin(e, now, W.i);
+  W.cur = { e, impact: now + P.impact, fates: now + (P.snap ? P.fates : P.impact), end: now + P.end, applied: false };
 }
 
+/** A word floating up from fighter `b` (an action with no blow: afraid, no target). */
 function float(b, text, kind, now) {
   const [x, y] = feet(b);
   W.fx.push({ type: "float", x: x + ((b * 7) % 11) - 5, y: y - 70, text, kind, at: now, dur: 1000 });
 }
 
-function burst(b, color, now) {
-  const [x, y] = feet(b);
-  W.fx.push({ type: "burst", x, y: y - 40, color, at: now, dur: 420 });
-}
-
+/** The contact frame: the event folded into the state, the HP shown, the deaths and escapes held
+ *  until the pair is back (`W.cur.fates`); the snap draws the numbers. */
 function applyImpact(now) {
   const e = W.cur.e;
   const knockFrom = e.knocked && W.st.pos[e.knocked.unit] ? { ...W.st.pos[e.knocked.unit] } : null;
@@ -117,51 +131,58 @@ function applyImpact(now) {
     W.disp.status[e.target] = W.st.status[e.target];
     float(e.target, "afraid", "miss", now);
   }
-  (e.hits ?? []).forEach((x, k) => {
-    const v = W.vis[x.target];
-    if (x.miss) return float(x.target, "miss", "miss", now);
+  for (const x of e.hits ?? []) {
+    if (x.miss) continue;
     if (x.withdrew) {
-      v.goneAt = now;
-      W.disp.status[x.target] = "gone";
-      return float(x.target, "escapes", "miss", now);
+      W.pend.push({ b: x.target, status: "gone", at: W.cur.fates });
+      continue;
     }
     W.disp.hp[x.target] = W.st.hp[x.target];
-    float(x.target, `−${dmgText(x.dmg)}${x.crit ? "!" : ""}`, x.crit ? "crit" : "dmg", now);
-    if (x.killed) {
-      v.deathAt = now;
-      W.disp.status[x.target] = "dead";
-    } else v.flinchAt = now;
-    if (k > 0 || kindKey(e.kind) === "Bombard" || kindKey(e.kind) === "Spell") burst(x.target, kindKey(e.kind) === "Spell" ? "#9feeff" : "#ffd890", now);
-    if (x.crit) burst(x.target, COLORS.goldLt, now);
-  });
-  if (e.heal) {
-    W.disp.hp[e.heal.target] = W.st.hp[e.heal.target];
-    W.vis[e.heal.target].healAt = now;
-    float(e.heal.target, `+${dmgText(e.heal.amount)}`, "heal", now);
+    if (x.killed) W.pend.push({ b: x.target, status: "dead", at: W.cur.fates });
   }
+  if (e.heal) W.disp.hp[e.heal.target] = W.st.hp[e.heal.target];
+  // the snap eases a knocked unit it lifted back during the return; one it did not, eases here
   if (e.knocked && knockFrom) W.vis[e.knocked.unit].knock = { from: knockFrom, at: now };
-  if (e.note || (!e.hits?.length && !e.heal && e.kind !== "Afraid")) float(e.actor, e.note === "NoOneHurt" || kindKey(e.kind) === "Heal" ? "no one to heal" : "no target", "miss", now);
+  if (e.kind !== "Afraid" && !e.hits?.length && !e.heal) float(e.actor, e.note === "NoOneHurt" || e.kind === "Heal" ? "no one to heal" : "no target", "miss", now);
+  settle(now);
   syncLog();
   syncTop();
 }
 
-/** The last event has settled; `auto`: played through (not stepped), so the report follows. */
-function finish(now, auto) {
+/** Shows the deaths and escapes that are due at `now`. */
+function settle(now) {
+  if (!W.pend.length) return;
+  const n = W.pend.length;
+  W.pend = W.pend.filter((p) => {
+    if (p.at > now) return true;
+    W.disp.status[p.b] = p.status;
+    W.vis[p.b][p.status === "dead" ? "deathAt" : "goneAt"] = p.at;
+    return false;
+  });
+  if (W.pend.length !== n) syncTop();
+}
+
+/** The last event has settled (`wall`: the page's time); `auto`: played through (not stepped),
+ *  so the report follows. */
+function finish(wall, auto) {
   if (W.done) return;
   W.done = true;
-  W.doneAt = now;
+  W.doneAt = wall;
   W.autoReport = auto;
   W.playing = false;
   renderControls();
   syncBanner();
 }
 
+/** The timeline at replay time `now`. */
 function tick(now) {
+  settle(now);
   if (!W.cur) {
     if (W.playing && !W.done) beginEvent(now);
     return;
   }
   if (!W.cur.applied && now >= W.cur.impact) applyImpact(now);
+  settle(now);
   if (W.cur?.applied && now >= W.cur.end) {
     W.cur = null;
     const stepped = W.stepping;
@@ -170,14 +191,17 @@ function tick(now) {
       W.stepping = false;
       renderControls();
     }
-    if (W.i >= W.log.events.length) finish(now, !stepped);
+    if (W.i >= W.log.events.length) finish(W.wall, !stepped);
   }
 }
 
-export function frame(ctx, _dt, now) {
+export function frame(ctx, dt, now) {
   if (!W.ready) return;
-  tick(now);
-  draw(ctx, now);
+  W.wall = now;
+  // paused in the middle of an action, the replay stands still there
+  if (W.playing || W.done || !W.cur) W.clock += dt * W.speed;
+  tick(W.clock);
+  draw(ctx, W.clock, now);
   // played through to the end: the report after a moment
   if (W.done && W.autoReport && now - W.doneAt > 2200 / W.speed + 600) {
     W.autoReport = false;
@@ -188,11 +212,12 @@ export function frame(ctx, _dt, now) {
 // ---------------------------------------------------------------------------------------------
 // Drawing
 
-function draw(ctx, now) {
+/** The battlefield at replay time `now` (`wall`: the page's time, for the breathing and the idle
+ *  strips): the stage's figures, those the snap lifts out drawn by it over the rest. */
+function draw(ctx, now, wall) {
   const sides = W.log.sides;
   const G = ctx.stage.G;
   const figs = [];
-  const actor = W.cur && !W.cur.applied ? W.cur.e.actor : null;
   for (const f of W.F) {
     const pos = W.st.pos[f.b];
     if (!pos) continue;
@@ -210,18 +235,18 @@ function draw(ctx, now) {
     }
     const fig = { b: f.b, x, y, side: f.side, large: f.large, flip: faceFlip(f, sides), alpha: 1, bar: null };
     if (status === "gone") {
-      const t = Math.min(1, (now - (v.goneAt ?? 0)) / 600);
+      const t = Math.min(1, shown(now - (v.goneAt ?? -1e9)) / 600);
       fig.alpha = 1 - t;
       fig.dx = (f.side === 0 ? -1 : 1) * 60 * t;
       fig.dy = (f.side === 0 ? -1 : 1) * 30 * t;
       fig.ring = false;
       if (fig.alpha <= 0) continue;
-      fig.pic = pic(f, sides, animd ? "idle" : null, now, true);
+      fig.pic = pic(f, sides, animd ? "idle" : null, wall + f.b * 137, true);
       figs.push(fig);
       continue;
     }
     if (status === "dead") {
-      const since = (now - (v.deathAt ?? -1e9)) * Math.min(W.speed, 2);
+      const since = shown(now - (v.deathAt ?? -1e9));
       fig.ringAlpha = 0.25;
       if (animd) {
         fig.pic = pic(f, sides, "death", since, false) ?? deadPic(f, sides);
@@ -238,61 +263,25 @@ function draw(ctx, now) {
       figs.push(fig);
       continue;
     }
+    fig.sy = breath(f.b, f.side, wall);
     if (status === "afraid") {
-      fig.pic = pic(f, sides, "idle", now + f.b * 137, true);
+      fig.pic = pic(f, sides, "idle", wall + f.b * 137, true);
       fig.alpha = 0.45;
       fig.ringAlpha = 0.3;
       figs.push(fig);
       continue;
     }
-    // The strips play at the replay's speed, so a strike's blow falls on its impact.
-    const sp = W.speed;
-    let p = null;
-    if (animd && v.strikeAt !== undefined && (now - v.strikeAt) * sp < 870) p = pic(f, sides, "strike", (now - v.strikeAt) * sp, false);
-    else if (animd && v.flinchAt !== undefined && (now - v.flinchAt) * sp < 440) p = pic(f, sides, "flinch", (now - v.flinchAt) * sp, false);
-    else p = pic(f, sides, animd ? "idle" : null, now + f.b * 137, true);
-    fig.pic = p;
-    let dx = 0;
-    let dy = 0;
-    if (v.lunge) {
-      const t = (now - v.lunge.at) / v.lunge.dur;
-      if (t >= 0 && t <= 1) {
-        const k = Math.sin(Math.PI * t) * 0.3;
-        dx += (v.lunge.tx - x) * k;
-        dy += (v.lunge.ty - y) * k;
-      }
+    // lifted out by the snap: the stage keeps its ring, the snap draws the rest
+    if (!W.snap.lifts(f.b, now)) {
+      fig.pic = pic(f, sides, animd ? "idle" : null, wall + f.b * 137, true);
+      fig.bar = { hp: W.disp.hp[f.b], max: f.max_hp * 100 };
     }
-    if (v.castAt !== undefined && !animd) {
-      const t = (now - v.castAt) / 260;
-      if (t >= 0 && t <= 1) dy -= Math.sin(Math.PI * t) * 7;
-    }
-    if (v.flinchAt !== undefined && !animd) {
-      const t = (now - v.flinchAt) / 360;
-      if (t >= 0 && t <= 1) {
-        fig.tint = "#ffffff";
-        fig.tintA = 0.75 * (1 - t);
-        dx += Math.sin(t * 30) * 3 * (1 - t);
-      }
-    }
-    if (v.healAt !== undefined) {
-      const t = (now - v.healAt) / 500;
-      if (t >= 0 && t <= 1) {
-        fig.tint = "#7dffb0";
-        fig.tintA = 0.5 * (1 - t);
-      }
-    }
-    fig.dx = dx;
-    fig.dy = dy;
-    if (actor === f.b) {
-      fig.glow = COLORS.goldLt;
-      fig.glowA = 0.8;
-    }
-    fig.bar = { hp: W.disp.hp[f.b], max: f.max_hp * 100 };
     figs.push(fig);
   }
-  W.fx = W.fx.filter((e) => now - e.at < e.dur + 60);
-  const fx = W.fx.map((e) => ({ ...e, t: (now - e.at) / e.dur }));
-  ctx.stage.draw({ figs, fx });
+  W.fx = W.fx.filter((e) => shown(now - e.at) < e.dur + 60);
+  const fx = W.fx.map((e) => ({ ...e, t: shown(now - e.at) / e.dur }));
+  ctx.stage.draw({ figs, fx, shake: W.snap.shake(now) });
+  W.snap.drawOver(ctx.stage, now, wall);
   syncHead();
 }
 
@@ -393,11 +382,11 @@ function syncLog() {
   el.scrollTop = el.scrollHeight;
 }
 
-/** Each side's standing units and their HP. */
+/** Each side's standing units (a death or an escape counts once it shows) and their HP. */
 function syncTop() {
   for (const side of [0, 1]) {
     const inLine = W.F.filter((f) => f.side === side && W.st.status[f.b] !== "out");
-    const up = inLine.filter((f) => W.st.status[f.b] === "on");
+    const up = inLine.filter((f) => W.disp.status[f.b] === "on");
     const max = inLine.reduce((a, f) => a + f.hp_start, 0) || 1;
     const now = up.reduce((a, f) => a + Math.max(0, W.disp.hp[f.b]), 0);
     const n = document.getElementById(`bt-n${side}`);
@@ -452,12 +441,32 @@ export const dev = {
     W.playing = false;
     renderUI(W.ctx);
   },
+  /** The state after the first `n` events with the next one staged and `ms` past its contact
+   *  frame, paused there (the screenshots' moments); what the snap stages then (`snap()`). */
+  freeze(n, ms) {
+    if (!W.ready) return null;
+    reset(Math.max(0, Math.min(n, W.log.events.length)));
+    renderUI(W.ctx);
+    W.playing = true;
+    tick(W.clock);
+    W.playing = false;
+    if (W.cur) {
+      W.clock = W.cur.impact + ms;
+      tick(W.clock);
+    }
+    renderControls();
+    return this.snap();
+  },
+  /** What the snap stages now: `{kind, shade, crit, kill, roles: {b: role}, t, hold}` or null. */
+  snap() {
+    return W.snap?.info(W.clock) ?? null;
+  },
   /** The event index where `pred(e)` first holds, or -1. */
   find(pred) {
     return W.log ? W.log.events.findIndex(pred) : -1;
   },
   state() {
-    return { ready: W.ready, i: W.i, n: W.log?.events.length ?? 0, playing: W.playing, speed: W.speed, done: W.done, acting: W.cur ? W.cur.e.actor : null };
+    return { ready: W.ready, i: W.i, n: W.log?.events.length ?? 0, playing: W.playing, speed: W.speed, done: W.done, acting: W.cur ? W.cur.e.actor : null, clock: W.clock };
   },
   get log() {
     return W.log;
@@ -465,5 +474,5 @@ export const dev = {
   fates: () => (W.log ? fates(W.log, W.st) : null),
   name: (b) => (W.log ? uname(W.log, b) : ""),
   fig: (b) => (W.log ? figOf(W.F[b], W.log.sides) : null),
-  STRIKE_HIT,
+  LEAD,
 };

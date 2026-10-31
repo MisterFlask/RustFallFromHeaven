@@ -721,20 +721,6 @@ export function eventTarget(e) {
 }
 
 // ---------------------------------------------------------------------------------------------
-// The replay's pace (ms at 1x; the watch screen divides by its speed)
-
-/** When event `e` lands (its impact, where the state changes) and when its motion ends. */
-export function timingOf(e) {
-  if (e.kind === "Afraid") return { impact: 300, end: 800 };
-  if (e.kind === "DefStrike") return { impact: 620, end: 1000 };
-  if (e.note || (!e.hits?.length && !e.heal)) return { impact: 150, end: 450 };
-  const K = kindOf(e.kind);
-  if (K.melee) return { impact: 430, end: 900 };
-  if (K.ranged) return { impact: 620, end: 1000 };
-  return { impact: 300, end: 700 };
-}
-
-// ---------------------------------------------------------------------------------------------
 // After the battle
 
 /** XP gained by each fighter after the battle (`after`'s `Xp`). */
