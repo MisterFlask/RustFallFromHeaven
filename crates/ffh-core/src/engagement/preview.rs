@@ -14,7 +14,10 @@
 //! as pure rolls ([`Game::engage_morale_rolls`], [`Game::engage_opening_rolls`]), then the round
 //! model ([`super::resolve_sampled_traced`]), all on an [`Rng`] seeded from the plan (the force,
 //! the plots, the turn, the defender's assumed stance and pick), so the same plan always shows the
-//! same numbers. It gives the win and draw chances, the rounds' p10/p50/p90, the cost of a win,
+//! same numbers. A move that declares war previews the battle after the declaration: the
+//! opening's rolls test war as that fight does (`DefView::declared`), so the plan is the one the
+//! attack freezes once the war is declared. It gives the win and draw chances, the rounds'
+//! p10/p50/p90, the cost of a win,
 //! each committed fighter's chance to fall and to withdraw and the round by which it has fallen in
 //! half the battles, and each side's mean HP after the opening and each round.
 //!
@@ -185,7 +188,7 @@ impl Game {
     pub fn engage_preview(&self, inp: &PreviewInput) -> Result<EngagePreview, &'static str> {
         let plan = self.engage_preview_plan(inp)?;
         let runs = self.d.defines.engagement_preview_runs.max(1);
-        let forecast = self.engage_forecast_sampled(&plan.setup, &plan.view.on_plot, runs);
+        let forecast = self.engage_forecast_sampled(&plan.setup, &plan.view, runs);
         let team = self.players[inp.player].team;
         let known = self.engage_stance_known(team, &plan.view.candidates);
         let def_stance = known.then_some(plan.view.stance);
@@ -284,12 +287,16 @@ impl Game {
     }
 
     /// `runs` battles of `setup` (the real fight's morale check, opening and rounds) on a private
-    /// RNG seeded from the set-up, over the units `on_plot` (what the attacker sees there).
-    pub(crate) fn engage_forecast_sampled(&self, setup: &Setup, on_plot: &[UnitId], runs: i32) -> Forecast {
+    /// RNG seeded from the set-up, the opening over the units `view.on_plot` (what the attacker
+    /// sees there) at war as `view` has it (a declare-war plan's: once declared, so its forecast is
+    /// the one the attack after the declaration freezes).
+    pub(crate) fn engage_forecast_sampled(&self, setup: &Setup, view: &DefView, runs: i32) -> Forecast {
         let n = setup.units.len();
         let n_att = setup.n_att;
+        let on_plot = &view.on_plot[..];
         let mut rng = Rng::new(self.engage_forecast_seed(setup, setup.def_stance));
         let pre = self.engage_pre_battle(&setup.battle);
+        let fresh = UnitOverlay::with_declared(view.declared.as_ref());
         let mut battle = setup.battle.clone();
         let (mut won, mut drawn) = (0i32, 0i32);
         let mut win_losses = 0i64;
@@ -301,7 +308,7 @@ impl Game {
         for _ in 0..runs {
             let mut sat = vec![false; n];
             self.engage_morale_rolls(&setup.units, n_att, &mut sat, &mut rng);
-            let mut ov = UnitOverlay::default();
+            let mut ov = fresh.clone();
             self.engage_opening_rolls(&setup.units, n_att, &sat, setup.ctx.to, on_plot, &mut ov, &mut rng);
             for (i, &u) in setup.units.iter().enumerate() {
                 battle.set_start(i, ov.damage(self, u), sat[i]);
@@ -389,7 +396,7 @@ impl Game {
                 return Some((d.1, d.2));
             }
             let setup = self.engage_setup_cached(plan.ctx, plan.slots.clone(), force.to_vec(), plan.view.candidates.clone(), plan.view.stance, &[], Some(&cache)).ok()?;
-            let f = self.engage_forecast_sampled(&setup, &plan.view.on_plot, runs);
+            let f = self.engage_forecast_sampled(&setup, &plan.view, runs);
             done.push((key, f.win_permille, f.losses_if_win_x10));
             Some((f.win_permille, f.losses_if_win_x10))
         };
@@ -483,7 +490,7 @@ impl Game {
             let inp = PreviewInput { player: p, from, to, launcher, force: Some(force), stance: Some(stance), war: WarTest::AtWar };
             let plan = self.engage_preview_plan(&inp).ok()?;
             let runs = self.d.defines.engagement_preview_runs.max(1);
-            let f = self.engage_forecast_sampled(&plan.setup, &plan.view.on_plot, runs);
+            let f = self.engage_forecast_sampled(&plan.setup, &plan.view, runs);
             let alternatives = self
                 .engage_alternatives(&plan)
                 .into_iter()

@@ -7,7 +7,7 @@ use std::time::Instant;
 
 use ffh_core::defs::MOVE_DIRECT_ATTACK;
 use ffh_core::engagement::report::{AltKind, ForecastSource};
-use ffh_core::engagement::{Attackers, DefPick, EstimateInput, HitCtx, PreviewInput, Side, WarTest};
+use ffh_core::engagement::{Attackers, DefPick, EngagePreview, EstimateInput, HitCtx, PreviewInput, Side, WarTest};
 use ffh_core::game::Game;
 use ffh_core::ids::*;
 use ffh_core::rng::Rng;
@@ -202,6 +202,63 @@ fn the_preview_fields() {
     assert_eq!(c.declare_war, Some(t1));
     assert_eq!(c.assumed_pick.len(), 2);
     let _ = (p0, from);
+}
+
+/// A move that declares war previews the battle its attack fights once the war is declared: the
+/// archers' defensive strikes and the catapults' collateral are in its opening. So its forecast,
+/// What-if list and proposal are those of the preview made after the declaration, its estimate
+/// (the `combat` hover's, and one with explicit inputs) that estimate, and the attack freezes the
+/// numbers the player saw.
+#[test]
+fn a_declare_war_preview_is_the_battle_after_the_declaration() {
+    let mut w = world_with(false);
+    let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
+    w.forest(to);
+    w.g.players[p0].human = true;
+    let cats = w.units(p0, "UNIT_CATAPULT", from, 2);
+    w.units(p0, "UNIT_AXEMAN", from, 6);
+    w.units(p0, "UNIT_HORSEMAN", from, 2);
+    w.units(p1, "UNIT_ARCHER", to, 4);
+    w.units(p1, "UNIT_AXEMAN", to, 3);
+    let (t0, t1) = (w.g.players[p0].team, w.g.players[p1].team);
+    let declare = PreviewInput { launcher: w.launcher(), war: WarTest::DeclareWar(t1), ..w.input() };
+    let proposed = w.g.engage_preview(&declare).expect("a declare-war preview");
+    // The force with the catapults.
+    let s = proposed.slots.att() as usize;
+    let force: Vec<UnitId> = cats.iter().copied().chain(proposed.pool.iter().copied().filter(|u| !cats.contains(u))).take(s).collect();
+    let with_cats = PreviewInput { force: Some(&force), ..declare };
+    let before = w.g.engage_preview(&with_cats).unwrap();
+    let before_alts = w.g.engage_preview_alternatives(&with_cats).unwrap();
+    let before_hover = w.g.engage_estimate_plot(p0, from, to, Some(&force), None, declare.war).unwrap();
+    let defs = w.g.map.plots[to].units.clone();
+    let mut inp = EstimateInput::new(&w.g, p0, to, Some(from), Attackers::Force(&force), &defs);
+    inp.war = declare.war;
+    let before_inp = w.g.engage_estimate(&inp).unwrap();
+    assert_eq!(before.declare_war, Some(t1));
+    assert!(before_hover.opening.iter().any(|(u, x)| force.contains(u) && *x > 0), "defensive strikes: {:?}", before_hover.opening);
+    assert!(before_hover.opening.iter().any(|(u, x)| defs.contains(u) && *x > 0), "collateral: {:?}", before_hover.opening);
+    assert_eq!(before_inp, before_hover);
+
+    // Declared: the same numbers.
+    w.g.team_declare_war(t0, t1, false, None);
+    let at_war = PreviewInput { war: WarTest::AtWar, ..declare };
+    assert_eq!(w.g.engage_preview(&at_war).unwrap().force, proposed.force, "the proposal");
+    let after = w.g.engage_preview(&PreviewInput { force: Some(&force), ..at_war }).unwrap();
+    assert_eq!(EngagePreview { declare_war: None, ..before.clone() }, after);
+    assert_eq!(w.g.engage_preview_alternatives(&PreviewInput { force: Some(&force), ..at_war }).unwrap(), before_alts);
+    assert_eq!(w.g.engage_estimate_plot(p0, from, to, Some(&force), None, WarTest::AtWar).unwrap(), before_hover);
+    inp.war = WarTest::AtWar;
+    assert_eq!(w.g.engage_estimate(&inp).unwrap(), before_inp);
+
+    // The attack freezes the plan the player saw before declaring.
+    let grp = w.g.units[force[0]].group.unwrap();
+    let next = w.g.battle_report_next;
+    let (x, y) = w.g.map.xy(to);
+    w.g.group_attack_force(grp, x, y, MOVE_DIRECT_ATTACK, Some(force.clone())).expect("the attack");
+    let r = w.g.battle_reports.iter().find(|r| r.id >= next).expect("an engagement");
+    let fc = r.log.as_ref().unwrap().forecast.as_ref().expect("the plan is frozen");
+    let f = &before.forecast;
+    assert_eq!((fc.win_permille, fc.draw_permille, fc.rounds, fc.losses_if_win_x10, &fc.curve), (f.win_permille, f.draw_permille, f.rounds, f.losses_if_win_x10, &f.curve));
 }
 
 /// A human's attack freezes the preview it saw into its battle log; an AI's, the moment

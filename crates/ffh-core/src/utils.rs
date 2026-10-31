@@ -1326,6 +1326,12 @@ impl Game {
 
     /// C++ `PUF_isEnemy` (data1 = player, data2 = alwaysHostile flag). FfH: `isAlwaysHostile`.
     pub fn puf_is_enemy(&self, u: UnitId, data1: i32, data2: i32) -> bool {
+        self.puf_is_enemy_with(u, data1, data2, |a, b| self.at_war(a, b))
+    }
+
+    /// [`Game::puf_is_enemy`] with the war test `at_war` in place of the game's (an
+    /// engagement plan that declares war tests its wars once declared).
+    pub(crate) fn puf_is_enemy_with(&self, u: UnitId, data1: i32, data2: i32, at_war: impl Fn(TeamId, TeamId) -> bool) -> bool {
         debug_assert!(data2 != -1, "Invalid data argument, should be >= 0");
         let other_team = self.players[puf_data_player(data1)].team;
 
@@ -1354,7 +1360,7 @@ impl Game {
         if data2 != 0 {
             other_team != our_team
         } else {
-            self.at_war(other_team, our_team)
+            at_war(other_team, our_team)
         }
     }
 

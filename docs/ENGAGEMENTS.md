@@ -157,7 +157,10 @@ override it every time.
   damage, `sum P(i is the best success) x E[damage_i]`, each striker available with the chance an
   earlier attacker did not use it up; collateral with today's formula on the expected damage of the
   healthiest targets, the reserve's included; both folded into the HP. Then the rounds by the moment
-  integrator (`expect.rs`) and its calibrated win table.
+  integrator (`expect.rs`) and its calibrated win table. Under a declare-war test the opening tests
+  war as the fight after the declaration does (a striker strikes, a unit takes collateral, once its
+  team is in the war), so the estimate is the one made after declaring (test
+  `a_declare_war_preview_is_the_battle_after_the_declaration`).
 - **Outputs** (`Estimate`): the win chance (a draw is not a win), expected losses and withdrawals
   per side, HP left, rounds, whether winning takes the plot (the defender commits every candidate),
   the force and the defender's pick, each fighter's HP at the rounds' start and the integrator's
@@ -186,8 +189,11 @@ the war the attack would declare; and the forecast.
   fight makes, then the round model, on a private RNG seeded from the plan (the force and the
   defender's pick, sorted, the plots, the turn, the defender's assumed stance). The attacker's
   stance is not in the seed: the same force is the same battle, whichever stance proposed it. The
-  same plan always shows the same numbers, and the game's RNG is never drawn (test
-  `the_preview_is_a_function_of_its_inputs_and_changes_nothing`). It gives the win and draw
+  same plan always shows the same numbers whatever the game's RNGs hold, and the game's RNG is
+  never drawn (test `the_preview_is_a_function_of_its_inputs_and_changes_nothing`). A move that
+  declares war previews the battle after the declaration: its opening's strikes and collateral test
+  war as that fight does, so the plan, its What-if list and the forecast frozen into the log are the
+  ones made once the war is declared. It gives the win and draw
   chances, the rounds' p10/p50/p90, the units lost when it wins, each committed fighter's chance to
   fall and to withdraw and the round by which it has fallen in half the battles, and each side's
   mean HP after the opening and each round.

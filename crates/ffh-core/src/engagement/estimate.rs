@@ -26,6 +26,10 @@
 //! and alive weight from one to the next ([`MomentStart`]), the reserve its expected collateral,
 //! until the expected defenders left are below one half or no attacker is left.
 //!
+//! **A plan that declares war** ([`WarTest::DeclareWar`]): its opening tests war as the real fight
+//! after the declaration does (the strikers, the collateral's targets), so it is the estimate of
+//! the same battle made once the war is declared.
+//!
 //! **Wrappers.** [`Game::engage_estimate_plot`]: a player's real pool on the plot it attacks
 //! from, the defenders its team sees there, the defender's stance as its team knows it (its own
 //! team's: the real one; anyone else's: the default, until phase 7's recon reveal).
@@ -40,7 +44,7 @@ use super::slots::Slots;
 use super::stats::HitCtx;
 use crate::game::Game;
 use crate::ids::*;
-use crate::unit::UnitOverlay;
+use crate::unit::{Declared, UnitOverlay};
 
 /// The attackers of an estimate.
 #[derive(Copy, Clone, Debug)]
@@ -208,12 +212,22 @@ const MAX_ASSAULT: usize = 12;
 const GONE: i64 = 41;
 
 /// What the attacker knows of the defense: the defender's candidates, the stance it assumes for
-/// them, and the units on the plot its opening reads (strikers, collateral targets).
+/// them, the units on the plot its opening reads (strikers, collateral targets) and the war its
+/// opening assumes (a declare-war plan's: once declared, as the real fight after the declaration
+/// tests it; `None`: the wars now).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct DefView {
     pub candidates: Vec<UnitId>,
     pub stance: StanceType,
     pub on_plot: Vec<UnitId>,
+    pub declared: Option<Declared>,
+}
+
+impl DefView {
+    /// The view of `candidates` under `stance`, the opening over `on_plot` under `declared`.
+    pub fn new(candidates: Vec<UnitId>, stance: StanceType, on_plot: Vec<UnitId>, declared: Option<Declared>) -> DefView {
+        DefView { candidates, stance, on_plot, declared }
+    }
 }
 
 /// The pair table and fighters of a pool against a defender list, computed once: an estimate
@@ -338,7 +352,7 @@ impl Game {
     /// What `p`'s team knows of the defense of `to` against `force` (module comment): the
     /// defender's candidates (as the real fight finds them: invisible units are never
     /// candidates), the stance it assumes (the real one when it is its own team's, else the
-    /// default) and the units on the plot it can see.
+    /// default), the units on the plot it can see and the war `war` assumes.
     pub(crate) fn engage_def_view(&self, p: PlayerId, to: PlotIdx, force: &[UnitId], war: WarTest) -> DefView {
         let team = self.players[p].team;
         let candidates = self.engage_defenders(to, p, force, war);
@@ -346,19 +360,21 @@ impl Game {
         let known = candidates.first().is_some_and(|&u| self.unit_get_team(u) == team);
         let stance = if known { real.stance } else { self.d.default_stance };
         let on_plot = self.map.plots[to].units.iter().copied().filter(|&u| !self.unit_is_invisible(u, team, true)).collect();
-        DefView { candidates, stance, on_plot }
+        DefView::new(candidates, stance, on_plot, self.engage_declaration(team, war))
     }
 
     /// An estimate's view of the defense: the caller's list, its units that can defend there as
-    /// the candidates, the caller's stance.
+    /// the candidates, the caller's stance, the war `inp.war` assumes.
     fn engage_estimate_view(&self, inp: &EstimateInput) -> DefView {
+        let team = self.players[inp.player].team;
         let candidates = inp
             .defenders
             .iter()
             .copied()
-            .filter(|&d| self.units.contains(d) && !self.unit_is_dead(d) && self.unit_get_team(d) != self.players[inp.player].team && self.engage_can_defend(d, inp.to))
+            .filter(|&d| self.units.contains(d) && !self.unit_is_dead(d) && self.unit_get_team(d) != team && self.engage_can_defend(d, inp.to))
             .collect();
-        DefView { candidates, stance: inp.def_stance, on_plot: inp.defenders.iter().copied().filter(|&d| self.units.contains(d)).collect() }
+        let on_plot = inp.defenders.iter().copied().filter(|&d| self.units.contains(d)).collect();
+        DefView::new(candidates, inp.def_stance, on_plot, self.engage_declaration(team, inp.war))
     }
 
     /// Whether unit `u` counts as an attacker of `inp` ([`Eligible`]).
@@ -456,7 +472,7 @@ impl Game {
         // The opening, in expectation: a fresh fighter's HP is lowered by it, a carried one's
         // damage moment raised.
         let fight: Vec<i64> = fear.iter().map(|&x| ONE - x as i64).collect();
-        let ov = UnitOverlay::with_damage(damage);
+        let ov = UnitOverlay::with_damage(damage, view.declared.as_ref());
         let opening = self.engage_opening_expected(&setup.units, setup.n_att, &fight, setup.ctx.to, &view.on_plot, &ov);
         for (i, &u) in setup.units.iter().enumerate() {
             let Some(&(_, x)) = opening.iter().find(|(v, _)| *v == u) else { continue };
@@ -619,8 +635,8 @@ impl Game {
 
     /// The opening's expected damage (plan 8.2; the module comment) for the committed `units`
     /// (the first `n_att` attack; `fight[i]` the chance fighter `i` fights, 1/4096) on `to`, over
-    /// the units `on_plot`, from the damage fields of `ov`: each unit's expected added damage, in
-    /// percent x4096. No random number is drawn.
+    /// the units `on_plot` at war as `ov` has it, from the damage fields of `ov`: each unit's
+    /// expected added damage, in percent x4096. No random number is drawn.
     pub(crate) fn engage_opening_expected(&self, units: &[UnitId], n_att: usize, fight: &[i64], to: PlotIdx, on_plot: &[UnitId], ov: &UnitOverlay) -> Vec<(UnitId, i64)> {
         let mut added: Vec<(UnitId, i64)> = Vec::new();
         let add = |added: &mut Vec<(UnitId, i64)>, u: UnitId, x: i64| match added.iter_mut().find(|(v, _)| *v == u) {
@@ -641,7 +657,7 @@ impl Game {
                 .enumerate()
                 .filter(|&(_, &s)| {
                     let su = &self.units[s];
-                    su.defensive_strike_chance > 0 && su.defensive_strike_damage > 0 && self.at_war(self.unit_get_team(s), team) && (self.unit_is_blitz(s) || !ov.made_attack(self, s))
+                    su.defensive_strike_chance > 0 && su.defensive_strike_damage > 0 && ov.at_war(self, self.unit_get_team(s), team) && (self.unit_is_blitz(s) || !ov.made_attack(self, s))
                 })
                 .map(|(k, &s)| (self.units[s].defensive_strike_damage, k, s))
                 .collect();
@@ -691,11 +707,11 @@ impl Game {
             if strength == 0 {
                 continue;
             }
-            let count = self.unit_collateral_target_count(a, to, on_plot, true).max(0) as usize;
+            let count = self.unit_collateral_target_count(a, to, on_plot, true, ov).max(0) as usize;
             let mut targets: Vec<(i64, usize, UnitId)> = on_plot
                 .iter()
                 .enumerate()
-                .filter(|&(_, &t)| self.unit_collateral_can_hit(a, t, to))
+                .filter(|&(_, &t)| self.unit_collateral_can_hit(a, t, to, ov))
                 .map(|(k, &t)| (now(&added, t), k, t))
                 .collect();
             targets.sort();
@@ -747,7 +763,7 @@ impl Game {
         };
         let x1000 = |w: i64| ((w * 1000 + ONE / 2) / ONE) as i32;
         while out.steps.len() < MAX_ASSAULT && !left.is_empty() {
-            let view = DefView { candidates: alive.iter().filter(|e| e.1 >= GONE).map(|e| e.0).collect(), stance: view0.stance, on_plot: view0.on_plot.clone() };
+            let view = DefView::new(alive.iter().filter(|e| e.1 >= GONE).map(|e| e.0).collect(), view0.stance, view0.on_plot.clone(), view0.declared.clone());
             let def_left: i64 = alive.iter().map(|e| e.1).sum();
             if def_left * 2 < ONE || view.candidates.is_empty() {
                 break;

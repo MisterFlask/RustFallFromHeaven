@@ -41,7 +41,7 @@ use crate::engagement::Side;
 use crate::ids::*;
 use ffh_data::*;
 
-pub(crate) use combat::{apply_combat_modifier, attack_move_cost, DefStrikeHit, DefStrikeRoll, UnitOverlay, WonEffect, WonMode};
+pub(crate) use combat::{apply_combat_modifier, attack_move_cost, Declared, DefStrikeHit, DefStrikeRoll, UnitOverlay, WonEffect, WonMode};
 
 /// Which strength [`Game::unit_combat_terms`](crate::game::Game::unit_combat_terms) computes.
 #[derive(Copy, Clone, Debug)]

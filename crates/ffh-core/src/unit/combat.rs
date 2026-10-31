@@ -58,25 +58,46 @@ pub(crate) struct DefStrikeRoll {
     pub rolled: i32,
 }
 
+/// A declaration of war a pure roll assumes made (a declare-war plan's,
+/// `engagement::WarTest::DeclareWar`): the declaring team and its wars after it
+/// ([`Game::team_wars_after_declaring`]).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct Declared {
+    pub team: TeamId,
+    pub at_war: IdxVec<TeamId, bool>,
+}
+
 /// The unit state a pure defensive strike or collateral roll reads in place of the game's (plan
 /// 15 item 2: an engagement's preview plays many openings on one unchanged game): the damage the
-/// rolls so far dealt (or an estimate's overrides) and the strikers they used up. Empty, it reads
-/// the game as it is.
+/// rolls so far dealt (or an estimate's overrides), the strikers they used up, and the war a plan
+/// that declares it assumes made. Empty, it reads the game as it is.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) struct UnitOverlay {
     damage: Vec<(UnitId, i32)>,
     used: Vec<UnitId>,
+    declared: Option<Declared>,
 }
 
 impl UnitOverlay {
     /// The overlay with the damage fields `damage` (an estimate's overrides; the last entry of a
-    /// unit counts).
-    pub fn with_damage(damage: &[(UnitId, i32)]) -> UnitOverlay {
-        let mut ov = UnitOverlay::default();
+    /// unit counts), assuming `declared` made (`None`: the wars as they are).
+    pub fn with_damage(damage: &[(UnitId, i32)], declared: Option<&Declared>) -> UnitOverlay {
+        let mut ov = UnitOverlay::with_declared(declared);
         for &(u, d) in damage {
             ov.set_damage(u, d);
         }
         ov
+    }
+
+    /// The overlay that reads the game as it is but assumes `declared` made (`None`: the wars as
+    /// they are).
+    pub fn with_declared(declared: Option<&Declared>) -> UnitOverlay {
+        UnitOverlay { declared: declared.cloned(), ..UnitOverlay::default() }
+    }
+
+    /// Whether teams `a` and `b` are at war: now, or once the overlay's declaration is made.
+    pub fn at_war(&self, g: &Game, a: TeamId, b: TeamId) -> bool {
+        g.at_war(a, b) || self.declared.as_ref().is_some_and(|w| (a == w.team && w.at_war[b]) || (b == w.team && w.at_war[a]))
     }
 
     /// `u`'s damage field.
@@ -1939,7 +1960,8 @@ impl Game {
     }
 
     /// [`Game::unit_defensive_strike_roll`] over the units `on_plot` (the plot's, or those an
-    /// attacker sees), reading `ov`, drawing from `rng`. Changes nothing.
+    /// attacker sees), reading `ov` (its damage, its used-up strikers, its wars), drawing from
+    /// `rng`. Changes nothing.
     pub(crate) fn unit_defensive_strike_roll_on(&self, on_plot: &[UnitId], attacker: UnitId, ov: &UnitOverlay, rng: &mut impl BattleRng) -> DefStrikeRoll {
         let mut out = DefStrikeRoll::default();
         let mut best_damage = 0;
@@ -1947,7 +1969,7 @@ impl Game {
 
         for &loop_unit in on_plot {
             if self.units[loop_unit].defensive_strike_chance > 0 {
-                if self.at_war(self.unit_get_team(loop_unit), attacker_team) {
+                if ov.at_war(self, self.unit_get_team(loop_unit), attacker_team) {
                     if self.unit_is_blitz(loop_unit) || !ov.made_attack(self, loop_unit) {
                         let chance = self.units[loop_unit].defensive_strike_chance;
                         out.rolled += 1;
@@ -2325,13 +2347,13 @@ impl Game {
         if collateral_strength == 0 {
             return hit;
         }
-        let possible_targets = self.unit_collateral_target_count(u, plot, on_plot, engagement);
+        let possible_targets = self.unit_collateral_target_count(u, plot, on_plot, engagement, ov);
 
         // C++ `std::map<CvUnit*, int> mapUnitDamage`: ordered by heap address in C++, which is
         // not reproducible; plot order here (it only decides exact ties of the rolled values).
         let mut unit_damage: Vec<(UnitId, i32)> = Vec::new();
         for &loop_unit in on_plot {
-            if Some(loop_unit) != skip_unit && self.unit_collateral_can_hit(u, loop_unit, plot) {
+            if Some(loop_unit) != skip_unit && self.unit_collateral_can_hit(u, loop_unit, plot, ov) {
                 let mut value = 1 + rng.rand(10000, "Collateral Damage");
 
                 value *= self.unit_max_hit_points(loop_unit) - ov.damage(self, loop_unit);
@@ -2381,22 +2403,29 @@ impl Game {
 
     /// How many units `u`'s collateral on `plot` hits at most (`collateralCombat`): the visible
     /// enemy defenders among `on_plot` (`plot_get_num_visible_enemy_defenders` over that list),
-    /// less the duel's own defender unless `engagement`, at most its maximum.
-    pub(crate) fn unit_collateral_target_count(&self, u: UnitId, plot: PlotIdx, on_plot: &[UnitId], engagement: bool) -> i32 {
+    /// less the duel's own defender unless `engagement`, at most its maximum. Enemies at war as
+    /// `ov` has it (a declare-war plan's: once declared).
+    pub(crate) fn unit_collateral_target_count(&self, u: UnitId, plot: PlotIdx, on_plot: &[UnitId], engagement: bool, ov: &UnitOverlay) -> i32 {
         let visible_defenders = if on_plot.is_empty() {
             0
         } else {
             let owner_i = self.units[u].owner.i();
             let always_hostile = self.unit_is_always_hostile(u, Some(plot)) as i32;
-            on_plot.iter().filter(|&&x| self.puf_can_defend_enemy(x, owner_i, always_hostile) && self.puf_is_visible(x, owner_i, -1)).count() as i32
+            // `PUF_canDefendEnemy` with `ov`'s wars.
+            on_plot
+                .iter()
+                .filter(|&&x| self.puf_can_defend(x, owner_i, always_hostile) && self.puf_is_enemy_with(x, owner_i, always_hostile, |a, b| ov.at_war(self, a, b)) && self.puf_is_visible(x, owner_i, -1))
+                .count() as i32
         };
         (visible_defenders - if engagement { 0 } else { 1 }).min(self.unit_collateral_damage_max_units(u))
     }
 
-    /// Whether `u`'s collateral on `plot` can hit `target` (`collateralCombat`): an enemy, not
-    /// invisible to `u`'s team, able to defend.
-    pub(crate) fn unit_collateral_can_hit(&self, u: UnitId, target: UnitId, plot: PlotIdx) -> bool {
-        self.unit_is_enemy(u, Some(self.unit_get_team(target)), Some(plot)) && !self.unit_is_invisible(target, self.unit_get_team(u), true) && self.unit_can_defend(target, None)
+    /// Whether `u`'s collateral on `plot` can hit `target` (`collateralCombat`): an enemy (at war
+    /// as `ov` has it), not invisible to `u`'s team, able to defend.
+    pub(crate) fn unit_collateral_can_hit(&self, u: UnitId, target: UnitId, plot: PlotIdx, ov: &UnitOverlay) -> bool {
+        let (team, target_team) = (self.unit_get_team(u), self.unit_get_team(target));
+        // `isEnemy` is "always hostile, or at war"; `ov` adds only wars.
+        (self.unit_is_enemy(u, Some(target_team), Some(plot)) || ov.at_war(self, team, target_team)) && !self.unit_is_invisible(target, team, true) && self.unit_can_defend(target, None)
     }
 
     /// The city whose air modifier scales `u`'s collateral on `plot`: an air unit's target city.

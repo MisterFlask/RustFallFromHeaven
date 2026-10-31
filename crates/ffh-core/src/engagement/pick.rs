@@ -40,6 +40,7 @@ use super::slots::Slots;
 use super::stats::HitCtx;
 use crate::game::Game;
 use crate::ids::*;
+use crate::unit::Declared;
 
 /// Which war an engagement test assumes (plan 5.2).
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -164,6 +165,13 @@ impl Game {
             WarTest::AtWar => None,
             WarTest::DeclareWar(t) => Some(self.team_wars_after_declaring(team, t)),
         }
+    }
+
+    /// The declaration `team`'s plan under `war` assumes made, for its opening's pure rolls
+    /// (`UnitOverlay`: the defensive strikes and the collateral test war as the real fight after
+    /// the declaration does): `None` for the real fight.
+    pub(crate) fn engage_declaration(&self, team: TeamId, war: WarTest) -> Option<Declared> {
+        self.engage_declared(team, war).map(|at_war| Declared { team, at_war })
     }
 
     /// Whether `team`'s attack with `force` on `to` meets unit `d` there, combatant or not: not
