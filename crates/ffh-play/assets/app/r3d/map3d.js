@@ -13,7 +13,7 @@ import * as T from "../tiles.js";
 import { mul, perspective, lookAt, invert, xform4, ortho, vnorm, clamp, lerp, smoothstep } from "./math.js";
 import { World, SEA } from "./world.js";
 import { Pipeline } from "./pipeline.js";
-import { whenCompiled } from "./gl.js";
+import { whenCompiled, COMPILE_TIMEOUT_MS } from "./gl.js";
 import { Scene, bucketOf } from "./scene.js";
 import { dressStatic, dressUnits, staticEnv, teamColour, standHeight } from "./dress.js";
 import { loadConfig, saveConfig, withPreset, LIGHTING, PANEL } from "./config.js";
@@ -133,7 +133,20 @@ export class Map3D {
    *  browser drawing nothing meanwhile, so the page is told first ("ffh:r3d-compiling", main.js)
    *  and given a moment to show it. */
   async ready(timeoutMs) {
-    await whenCompiled(this.programs(), timeoutMs);
+    // The start-up's own work -- the world, its dressing, the instance buffers and paint layers, the
+    // HD-2D sprites' images asked for -- while the programs compile (on ANGLE's worker threads; on
+    // Direct3D the warm-up draws stall the GPU process, not this page's script), not after them in
+    // the first frame. (`?r3d={"earlySync":0}`: after, as before.)
+    if ((this.cfg.earlySync ?? 1) > 0) {
+      try {
+        this.sync();
+      } catch (e) {
+        console.warn("r3d: early sync:", e);
+      }
+    }
+    // A packed scene's programs compile whole at link (pipeline.js `packed`), inside this wait: the
+    // page is live meanwhile, so a slow machine is given longer before the renderer gives up.
+    await whenCompiled(this.programs(), timeoutMs ?? (this.pipeline.packed ? 3 * COMPILE_TIMEOUT_MS : undefined));
     if (/direct3d|d3d1/i.test(this.glName)) {
       globalThis.dispatchEvent?.(new CustomEvent("ffh:r3d-compiling"));
       await new Promise((r) => setTimeout(r, 100));
