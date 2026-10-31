@@ -886,8 +886,9 @@ fn the_kill_choice_and_its_ties() {
     let s = State::new(&b);
     let reach = b.reach(&s, 0, K::Strike);
     assert_eq!(b.choose(&s, 0, K::Strike, 1, &reach), Some(2));
-    // Ties: the higher A, then the lane, then the row; never the list order.
-    let mut b = battle(OPEN, vec![frontline(Attacker, 0, 0), frontline(Defender, 2, 0), frontline(Defender, 1, 0)]);
+    // Ties: the higher A, then the lane, then the row; never the list order (the hitter in lane
+    // 1: both lanes nearby).
+    let mut b = battle(OPEN, vec![frontline(Attacker, 1, 0), frontline(Defender, 2, 0), frontline(Defender, 1, 0)]);
     let s = State::new(&b);
     assert_eq!(b.choose(&s, 0, K::Strike, 1, &[1, 2]), Some(2));
     assert_eq!(b.choose(&s, 0, K::Strike, 1, &[2, 1]), Some(2));
@@ -895,8 +896,114 @@ fn the_kill_choice_and_its_ties() {
     assert_eq!(b.choose(&s, 0, K::Strike, 1, &[2, 1]), Some(1));
 }
 
+/// Nearby first (spec 1.5, the owner's rule): the enemies in reach within one lane of the hitter
+/// come first, the rest only when none of them is in reach; a large unit's lanes are both its
+/// lanes; a charge where flanking works goes anywhere; a flanker takes anti-flank units first,
+/// then the rule; heals do not follow it; a splash's centre does.
+#[test]
+fn nearby_first() {
+    use Side::*;
+    // A strike from lane 0: the wounded unit in lane 3 would die to it, the units of lanes 0 and 1
+    // would not. The nearby ones come first: the more hurt for its HP of lanes 0 and 1.
+    let b = battle(
+        OPEN,
+        vec![
+            frontline(Attacker, 0, 0),
+            frontline(Defender, 0, 0),             // 1
+            hurt(frontline(Defender, 1, 0), 9000), // 2
+            hurt(frontline(Defender, 3, 0), 1000), // 3: a kill on offer, three lanes away
+        ],
+    );
+    let s = State::new(&b);
+    let reach = b.reach(&s, 0, K::Strike);
+    assert_eq!(reach, [1, 2, 3]);
+    assert_eq!((b.lane_distance(0, 1), b.lane_distance(0, 2), b.lane_distance(0, 3)), (0, 1, 3));
+    assert_eq!(b.choose(&s, 0, K::Strike, 1, &reach), Some(2));
+    // Shots and stabs too; with nobody nearby in reach, the rest: the kill in lane 3.
+    for k in [K::Shoot, K::Stab] {
+        let reach = b.reach(&s, 0, k);
+        assert_eq!(b.choose(&s, 0, k, 1, &reach), Some(2), "{k:?}");
+    }
+    let mut s2 = s.clone();
+    s2.alive[1] = false;
+    s2.alive[2] = false;
+    let reach = b.reach(&s2, 0, K::Strike);
+    assert_eq!(reach, [3]);
+    assert_eq!(b.choose(&s2, 0, K::Strike, 1, &reach), Some(3));
+    // From lane 2 every unit but lane 0's is nearby: the kill on offer in lane 3.
+    let mut b2 = b.clone();
+    b2.fighters[0].lane = 2;
+    let reach = b2.reach(&s, 0, K::Strike);
+    assert_eq!(b2.choose(&s, 0, K::Strike, 1, &reach), Some(3));
+    // A large hitter in lanes 1-2 reaches lanes 0-3 nearby; a large target in lanes 2-3 is one
+    // lane from a hitter in lane 1.
+    let mut b3 = battle(OPEN, vec![large(frontline(Attacker, 1, 0)), frontline(Defender, 0, 0), hurt(frontline(Defender, 3, 0), 1000)]);
+    let s3 = State::new(&b3);
+    assert_eq!((b3.lane_distance(0, 1), b3.lane_distance(0, 2)), (1, 1));
+    let reach = b3.reach(&s3, 0, K::Strike);
+    assert_eq!(b3.choose(&s3, 0, K::Strike, 1, &reach), Some(2), "both lanes nearby: the kill in lane 3");
+    b3.fighters[0].large = false;
+    b3.fighters[0].lane = 0;
+    assert_eq!(b3.choose(&s3, 0, K::Strike, 1, &reach), Some(1), "from lane 0 alone, lane 3 is far");
+    let b4 = battle(OPEN, vec![frontline(Attacker, 1, 0), large(frontline(Defender, 2, 0)), hurt(frontline(Defender, 0, 1), 100)]);
+    assert_eq!(b4.lane_distance(0, 1), 1);
+    // Sides of different lane counts: lanes are numbered the same on both. An attacker in lane 1
+    // of 2 lanes and a defender's lanes 0..3: lanes 0, 1, 2 are nearby.
+    let b5 = Formation::new(
+        Params::default(),
+        OPEN,
+        [2, 4],
+        vec![frontline(Attacker, 1, 0), hurt(frontline(Defender, 3, 0), 1000), frontline(Defender, 2, 0), frontline(Defender, 0, 0)],
+        |_, _| EQ,
+    );
+    assert_eq!(b5.validate(), Ok(()));
+    let s5 = State::new(&b5);
+    let reach = b5.reach(&s5, 0, K::Strike);
+    assert_eq!(reach, [1, 2, 3]);
+    assert_eq!(b5.choose(&s5, 0, K::Strike, 1, &reach), Some(3), "lanes 0 and 2 are nearby, lane 3 (the kill) is not; the tie by lane");
+    // A charge where flanking works keeps going for its target wherever it is: the highest threat
+    // for its HP left, three lanes away. In a forest it is a strike, and nearby first holds.
+    let fs = vec![flanker(Attacker, 0, 0), frontline(Defender, 0, 0), hurt(archer(Defender, 3, 1), 2000)];
+    let b6 = battle(OPEN, fs.clone());
+    let s6 = State::new(&b6);
+    let reach = b6.reach(&s6, 0, K::Charge);
+    assert_eq!(b6.choose(&s6, 0, K::Charge, 1, &reach), Some(2));
+    let b7 = battle(FOREST, vec![flanker(Attacker, 0, 0), frontline(Defender, 0, 0), hurt(frontline(Defender, 3, 0), 1000)]);
+    let s7 = State::new(&b7);
+    let reach = b7.reach(&s7, 0, K::Charge);
+    assert_eq!(reach, [1, 2]);
+    assert_eq!(b7.choose(&s7, 0, K::Charge, 1, &reach), Some(1));
+    // A flanker takes anti-flank units first, wherever, then nearby first among them; its middle
+    // row's strike likewise.
+    let b8 = battle(
+        FOREST,
+        vec![flanker(Attacker, 0, 0), hurt(frontline(Defender, 0, 0), 1000), hurt(screen(Defender, 3, 0), 6000), screen(Defender, 1, 0)],
+    );
+    let s8 = State::new(&b8);
+    let reach = b8.reach(&s8, 0, K::Charge);
+    assert_eq!(reach, [1, 2, 3]);
+    assert_eq!(b8.choose(&s8, 0, K::Charge, 1, &reach), Some(3), "the screens first, and of them the nearby one");
+    let mut s8b = s8.clone();
+    s8b.alive[3] = false;
+    let reach = b8.reach(&s8b, 0, K::Charge);
+    assert_eq!(b8.choose(&s8b, 0, K::Charge, 1, &reach), Some(2), "a screen three lanes away before a kill in its own lane");
+    // Heals do not follow it: the most hurt ally three lanes away.
+    let b9 = battle(OPEN, vec![healer(Attacker, 0, 1), hurt(frontline(Attacker, 1, 0), 11000), hurt(frontline(Attacker, 3, 0), 6000), frontline(Defender, 0, 0)]);
+    assert_eq!(b9.heal_target(&State::new(&b9), 0), Some(2));
+    // A splash's centre: nearby first. A caster in lane 0 with a known spell: the backmost of
+    // lanes 0 and 1 before the lone wounded unit of lane 3.
+    let b10 = battle(
+        OPEN,
+        vec![caster(Attacker, 0, 2, Spell::known(1)), frontline(Defender, 0, 0), frontline(Defender, 1, 0), frontline(Defender, 1, 1), hurt(frontline(Defender, 3, 0), 1000)],
+    );
+    let s10 = State::new(&b10);
+    let reach = b10.reach(&s10, 0, K::Spell);
+    assert_eq!(reach, [1, 3, 4]);
+    assert_eq!(b10.choose(&s10, 0, K::Spell, 1, &reach), Some(1));
+}
+
 fn cand(pick_order: i32, home_row: u8, value: i64) -> Candidate {
-    Candidate { pick_order, home_row, large: false, value, healthy: true }
+    Candidate { pick_order, home_row, large: false, value, healthy: true, river: true }
 }
 
 #[test]
@@ -915,7 +1022,7 @@ fn the_auto_formation() {
     ];
     // 4 slots: one of each role first, in the role order, the strongest of each (the giant, archer
     // 3, flanker 4, siege 5: 5 slots, the siege no longer fits), then the rest in the role order.
-    let p = auto_arrange(&cands, 2, 4);
+    let p = auto_arrange(&cands, 2, 4, 4);
     let units: Vec<usize> = p.iter().map(|x| x.unit).collect();
     assert_eq!(units, [3, 4, 7]);
     // The giant first, in the front row (both lanes of 2); then the archer in its home row (the
@@ -927,7 +1034,7 @@ fn the_auto_formation() {
     assert_eq!(cell(4), Some((1, 1)));
     // 10 slots, 4 lanes: everyone (9 slots), placed the large first, then in the order taken
     // (3, 4, 5, 1, 6, 0, 2); the centre lanes first (1 and 2, then 0 and 3).
-    let p = auto_arrange(&cands, 4, 10);
+    let p = auto_arrange(&cands, 4, 10, 10);
     assert_eq!(p.len(), 8);
     let cell = |u: usize| p.iter().find(|x| x.unit == u).map(|x| (x.lane, x.row));
     assert_eq!(cell(7), Some((1, 0)), "the giant in the centre lanes 1-2");
@@ -949,16 +1056,27 @@ fn the_auto_formation() {
     // Healthy units first within a role: the hurt strong frontline waits for the healthy ones.
     let mut c2 = cands.clone();
     c2[1].healthy = false;
-    let p = auto_arrange(&c2[..3], 4, 2);
+    let p = auto_arrange(&c2[..3], 4, 2, 2);
     assert_eq!(p.iter().map(|x| x.unit).collect::<Vec<_>>(), [0, 2]);
     // Large units are placed first: with 2 lanes a large flanker takes the front row, and the
     // frontline units go behind it.
     let c3 = vec![cand(2, 0, 50), cand(2, 0, 40), Candidate { large: true, ..cand(4, 0, 10) }];
-    let p = auto_arrange(&c3, 2, 4);
+    let p = auto_arrange(&c3, 2, 4, 4);
     assert_eq!(p.iter().map(|x| (x.unit, x.lane, x.row)).collect::<Vec<_>>(), [(0, 0, 1), (1, 1, 1), (2, 0, 0)]);
     // No room: left out (3 slots of large units on 2 lanes x 3 rows: three fit, a fourth does not).
     let c4 = vec![Candidate { large: true, ..cand(2, 0, 50) }; 4];
-    assert_eq!(auto_arrange(&c4, 2, 8).len(), 3);
+    assert_eq!(auto_arrange(&c4, 2, 8, 8).len(), 3);
+    // The river rule: units that cannot cross freely fill at most the ordinary slots; the river
+    // slots go to those that can, whatever their place in the order.
+    let mut c5 = vec![cand(2, 0, 60), cand(2, 0, 50), cand(2, 0, 40), cand(3, 1, 10)];
+    c5[0].river = false;
+    c5[1].river = false;
+    c5[2].river = false;
+    let p = auto_arrange(&c5, 4, 4, 2);
+    assert_eq!(p.iter().map(|x| x.unit).collect::<Vec<_>>(), [0, 1, 3], "two ordinary slots, the river slot to the archer");
+    c5[0].large = true;
+    let p = auto_arrange(&c5, 4, 4, 2);
+    assert_eq!(p.iter().map(|x| x.unit).collect::<Vec<_>>(), [0, 3], "a large unit fills both ordinary slots");
 }
 
 /// A unit of the prototype's scenarios (`scenarios.js`): role, strength, defence, level, tier,
@@ -1046,11 +1164,11 @@ fn proto_scenario(key: &str) -> (Formation, Vec<String>) {
             .iter()
             .map(|u| {
                 let r = &PROTO_ROLES[u.role];
-                Candidate { pick_order: r.8, home_row: r.9, large: u.large, value: (u.str_ * (100 + 10 * (u.level - 1))) as i64, healthy: true }
+                Candidate { pick_order: r.8, home_row: r.9, large: u.large, value: (u.str_ * (100 + 10 * (u.level - 1))) as i64, healthy: true, river: true }
             })
             .collect();
         let tag = if side == Side::Attacker { "att" } else { "def" };
-        for p in auto_arrange(&cands, lanes[side.index()], slots[side.index()]) {
+        for p in auto_arrange(&cands, lanes[side.index()], slots[side.index()], slots[side.index()]) {
             let u = list[p.unit];
             let r = &PROTO_ROLES[u.role];
             shown.push(format!("{tag}:{}@{},{}", p.unit, p.lane, p.row));
@@ -1087,17 +1205,20 @@ fn proto_scenario(key: &str) -> (Formation, Vec<String>) {
 /// charge's first tie-break), with two rules of the spec's: a splash's centre is chosen by the
 /// unit's normal rule (the prototype took the centre with the most damage in all) and a siege
 /// engine takes no kill (its hit cannot kill). With the prototype's two rules instead, every number
-/// below came within 2% (2026-10-31: open 3.63 / 5.22, forest 2.38 / 3.47, city 4.26 / 4.64 dead;
-/// withdrawn within 0.01); with the spec's, open stays within 2%, the forest and the city battle
-/// lose 11% fewer attackers and the city 13% more defenders (focused spells and stones kill sooner).
+/// came within 2% (before nearby first, 2026-10-31: open 3.63 / 5.22, forest 2.38 / 3.47, city
+/// 4.26 / 4.64 dead; withdrawn within 0.01). The numbers below are the prototype's with nearby
+/// first (engine.js `nearFirst`, 2026-10-31); against them, with the spec's two rules, open is
+/// within 2% (2.93 / 5.60 dead), the forest battle loses 12% fewer attackers (2.52 / 2.88) and the
+/// city 7% fewer attackers and 3% more defenders (3.64 / 5.53; focused spells and stones kill
+/// sooner, and a withdrawal more often comes too late).
 #[test]
 fn the_prototypes_scenarios() {
     // (scenario, the prototype's placements, its dead attackers, dead defenders, withdrawn
     // attackers, withdrawn defenders per battle)
     let want = [
-        ("open", "att:6@1,0 att:3@0,0 att:0@3,0 att:4@1,1 att:8@1,2 att:9@2,1 att:10@2,2 att:11@0,1 att:1@3,1 def:2@1,0 def:4@0,0 def:5@1,1 def:8@3,0 def:9@1,2 def:10@2,1 def:0@0,1 def:1@3,1 def:3@2,2", 3.616, 5.238, 0.032, 0.318),
-        ("forest", "att:3@1,0 att:0@0,0 att:4@1,1 att:6@2,0 att:7@1,2 att:8@0,1 def:0@1,0 def:3@1,1 def:5@0,0 def:6@0,1 def:1@2,0 def:2@2,1", 2.402, 3.458, 0.225, 0.353),
-        ("city", "att:3@1,0 att:0@2,0 att:4@1,1 att:6@1,2 att:9@2,1 att:7@2,2 att:10@0,1 att:1@0,0 def:0@1,0 def:3@1,1 def:6@1,2 def:7@2,1 def:1@2,0 def:2@0,0 def:4@0,1 def:5@3,1", 4.301, 4.639, 0.573, 0.0),
+        ("open", "att:6@1,0 att:3@0,0 att:0@3,0 att:4@1,1 att:8@1,2 att:9@2,1 att:10@2,2 att:11@0,1 att:1@3,1 def:2@1,0 def:4@0,0 def:5@1,1 def:8@3,0 def:9@1,2 def:10@2,1 def:0@0,1 def:1@3,1 def:3@2,2", 2.882, 5.622, 0.014, 0.355),
+        ("forest", "att:3@1,0 att:0@0,0 att:4@1,1 att:6@2,0 att:7@1,2 att:8@0,1 def:0@1,0 def:3@1,1 def:5@0,0 def:6@0,1 def:1@2,0 def:2@2,1", 2.856, 2.744, 0.228, 0.321),
+        ("city", "att:3@1,0 att:0@2,0 att:4@1,1 att:6@1,2 att:9@2,1 att:7@2,2 att:10@0,1 att:1@0,0 def:0@1,0 def:3@1,1 def:6@1,2 def:7@2,1 def:1@2,0 def:2@0,0 def:4@0,1 def:5@3,1", 3.912, 5.375, 0.612, 0.0),
     ];
     for (key, placed, dead_a, dead_d, wd_a, wd_d) in want {
         let (b, shown) = proto_scenario(key);

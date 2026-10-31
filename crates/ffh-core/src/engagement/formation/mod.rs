@@ -16,7 +16,9 @@
 //! or at once when a side has no unit left on the field.
 //!
 //! **An action** ([`ActionKind`]): its reach (who it can hit), its target among them
-//! ([`Formation::choose`]), a miss roll for physical kinds, a crit roll for the single-target
+//! ([`Formation::choose`]: a flanker's anti-flank units first, then nearby first, the units within
+//! one lane of the hitter, but for a charge where flanking works; then the kill or the most hurt),
+//! a miss roll for physical kinds, a crit roll for the single-target
 //! physical kinds, the hit (`max(1, expected x r)`, r drawn in `rand_min..=rand_max` percent, a
 //! crit `crit_damage_pct` of it), a splash on the target's neighbours for units with collateral
 //! damage and spells that splash, and a knock-back for a melee crit. A heal restores
@@ -125,6 +127,45 @@ impl Ground {
     pub fn flanking(&self) -> bool {
         !self.city && !self.forest
     }
+
+    /// The ground's rules that apply here, in the order [`GroundRule`] lists them (the battle
+    /// log's and the plan's words).
+    pub fn rules(&self, p: &Params) -> Vec<GroundRule> {
+        let mut out = Vec::new();
+        if self.city {
+            out.push(GroundRule::CityShots { pct: p.city_attacker_shot_pct });
+        }
+        if self.forest {
+            out.push(GroundRule::ForestRanged { pct: p.forest_ranged_pct });
+        }
+        if self.hills {
+            out.push(GroundRule::HillsAttacker { pct: p.hills_attacker_pct });
+            out.push(GroundRule::HillsDefenderRanged { pct: p.hills_defender_ranged_pct });
+        }
+        if self.flanking() {
+            out.push(GroundRule::Charge { pct: 100 + p.charge_bonus });
+        } else {
+            out.push(GroundRule::NoFlanking);
+        }
+        out
+    }
+}
+
+/// A rule of the ground that applies to a battle ([`Ground::rules`]; percentages of a hit).
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub enum GroundRule {
+    /// A city: the attacker's SHOOT deals `pct`.
+    CityShots { pct: i32 },
+    /// A forest or jungle: SHOOT and BOMBARD deal `pct` on both sides.
+    ForestRanged { pct: i32 },
+    /// Hills: every hit of the attacker deals `pct`.
+    HillsAttacker { pct: i32 },
+    /// Hills: the defender's SHOOT and BOMBARD deal `pct`.
+    HillsDefenderRanged { pct: i32 },
+    /// Flanking works: a charge reaches anyone, and its first-round hits deal `pct`.
+    Charge { pct: i32 },
+    /// No flanking (a city, a forest or jungle): a charge is a strike.
+    NoFlanking,
 }
 
 /// The rule constants a battle reads (the `ENGAGEMENT_*` defines; percentages in percent).
@@ -500,7 +541,9 @@ pub struct State {
 }
 
 impl State {
-    fn new(f: &Formation) -> State {
+    /// The battle's start: every fighter on the field in its row with its HP and its speed
+    /// before first strikes.
+    pub fn new(f: &Formation) -> State {
         State {
             hp: f.fighters.iter().map(|x| x.hp).collect(),
             row: f.fighters.iter().map(|x| x.row).collect(),
@@ -661,6 +704,22 @@ pub fn resolve_quiet(f: &Formation, rng: &mut impl BattleRng) -> Outcome {
     Run::new(f, false).run(rng)
 }
 
+/// A missile's strike (Q11: Fireball, Meteor): fighter `h` (alone on its side) hits one enemy
+/// once, as a STRIKE from outside the field: the front unit of an enemy lane, by the normal
+/// choice without nearby first; no miss, no crit, no splash, no withdrawal; r drawn ("Engagement
+/// hit"), never below its combat limit's floor. `None` (nothing drawn): no target in reach.
+pub fn missile_hit(f: &Formation, h: usize, rng: &mut impl BattleRng) -> Option<Hit> {
+    let s = State::new(f);
+    let list = f.reach(&s, h, ActionKind::Strike);
+    let t = f.choose_with(&s, h, ActionKind::Strike, 1, &list, false)?;
+    let p = &f.params;
+    let expected = f.expected(h, t, ActionKind::Strike, 1, false);
+    let r = p.rand_min + rng.rand(p.rand_max - p.rand_min + 1, "Engagement hit");
+    let raw = (expected as i64 * r as i64 / 100).clamp(1, i32::MAX as i64) as i32;
+    let dmg = raw.min((s.hp[t] - f.floor(h, t)).max(0));
+    Some(Hit { target: t as FighterIdx, dmg, expected, r, crit: false, miss: false, killed: dmg >= s.hp[t], withdrew: false, splash: false })
+}
+
 struct Run<'a> {
     f: &'a Formation,
     s: State,
@@ -727,17 +786,35 @@ impl Formation {
         (self.fighters[x].lane, s.row[x], x).cmp(&(self.fighters[y].lane, s.row[y], y))
     }
 
+    /// The lane distance of `x` and `y` (of either side: lanes are numbered the same on both): the
+    /// least over their lanes (a large unit's are both of its lanes).
+    pub fn lane_distance(&self, x: usize, y: usize) -> u8 {
+        let (fx, fy) = (&self.fighters[x], &self.fighters[y]);
+        fx.lanes().flat_map(|a| fy.lanes().map(move |c| a.abs_diff(c))).min().unwrap_or(0)
+    }
+
     /// `h`'s target among `list` for an action of `kind` (as fought) in round `round` (spec 1.5):
-    /// a flanker takes the anti-flank units of the list first; then a charge where flanking works
-    /// takes the highest threat for its HP left; otherwise, if this hit's expected damage would
-    /// kill some, the one with the highest A among them, else the one it hurts most for its HP
-    /// left. Ties by the higher A, then lane, then row. The expected damage is capped at what
-    /// `h`'s combat limit lets it take (a siege engine kills no one).
+    /// a flanker takes the anti-flank units of the list first; then, but for a charge where
+    /// flanking works, the units within one lane of it come first (nearby first: the rest only
+    /// when none of them is in the list); then a charge where flanking works takes the highest
+    /// threat for its HP left; otherwise, if this hit's expected damage would kill some, the one
+    /// with the highest A among them, else the one it hurts most for its HP left. Ties by the
+    /// higher A, then lane, then row. The expected damage is capped at what `h`'s combat limit
+    /// lets it take (a siege engine kills no one). A splash's centre is chosen so too.
     pub fn choose(&self, s: &State, h: usize, kind: ActionKind, round: i32, list: &[usize]) -> Option<usize> {
+        self.choose_with(s, h, kind, round, list, true)
+    }
+
+    /// [`Formation::choose`], with nearby first (`nearby`) or not (a missile, which strikes from
+    /// outside the field).
+    pub fn choose_with(&self, s: &State, h: usize, kind: ActionKind, round: i32, list: &[usize], nearby: bool) -> Option<usize> {
         use std::cmp::Ordering;
         let mut pool: Vec<usize> = list.to_vec();
         if self.fighters[h].flanker && pool.iter().any(|&t| self.fighters[t].anti_flank) {
             pool.retain(|&t| self.fighters[t].anti_flank);
+        }
+        if nearby && !(kind == ActionKind::Charge && self.ground.flanking()) && pool.iter().any(|&t| self.lane_distance(h, t) <= 1) {
+            pool.retain(|&t| self.lane_distance(h, t) <= 1);
         }
         let a = |t: usize| self.fighters[t].a;
         let hp = |t: usize| s.hp[t].max(1) as i64;
@@ -1045,6 +1122,9 @@ pub struct Candidate {
     pub value: i64,
     /// Not below `ENGAGEMENT_AUTO_MIN_HP_PERCENT` of its HP: preferred within its role.
     pub healthy: bool,
+    /// It may fill the river slots (`bRiver`: it crosses rivers freely): only such units fill the
+    /// slots above `ordinary` ([`auto_arrange`]).
+    pub river: bool,
 }
 
 /// Where the auto formation puts a candidate.
@@ -1059,10 +1139,11 @@ pub struct Placement {
 /// The rules' auto formation (the prototype's `autoArrange`): one unit of each role first, in
 /// the roles' pick order, then the rest in that order, each role's healthy units first and the
 /// strongest first (a large unit's value counts double), while the slots last (a large unit
-/// needs 2); then the large units placed first, each unit in its role's home row, the lanes
-/// nearest the centre first (then the lower), else the nearest row with room (behind before in
-/// front). A unit with no room is left out. In candidate order.
-pub fn auto_arrange(cands: &[Candidate], lanes: u8, slots: i32) -> Vec<Placement> {
+/// needs 2; units that cannot fill river slots at most `ordinary` of them: Q9's river rule);
+/// then the large units placed first, each unit in its role's home row, the lanes nearest the
+/// centre first (then the lower), else the nearest row with room (behind before in front). A
+/// unit with no room is left out. In candidate order.
+pub fn auto_arrange(cands: &[Candidate], lanes: u8, slots: i32, ordinary: i32) -> Vec<Placement> {
     let value = |c: &Candidate| c.value * if c.large { 2 } else { 1 };
     let mut order: Vec<usize> = (0..cands.len()).collect();
     order.sort_by(|&x, &y| {
@@ -1078,13 +1159,17 @@ pub fn auto_arrange(cands: &[Candidate], lanes: u8, slots: i32) -> Vec<Placement
             first.push(i);
         }
     }
-    let mut used = 0;
+    let (mut used, mut non_river) = (0, 0);
     let mut chosen: Vec<usize> = Vec::new();
     for i in first.into_iter().chain(rest) {
         let size = 1 + cands[i].large as i32;
-        if used + size <= slots {
+        let river = cands[i].river;
+        if used + size <= slots && (river || non_river + size <= ordinary) {
             chosen.push(i);
             used += size;
+            if !river {
+                non_river += size;
+            }
         }
     }
     let lanes_n = lanes as usize;
