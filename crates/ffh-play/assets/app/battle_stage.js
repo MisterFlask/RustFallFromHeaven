@@ -329,8 +329,8 @@ export class Stage {
    *  what is drawn over it, until the next `draw`). Fig `{b, x, y, side, large, pic (null: its ring
    *  alone), flip, alpha, ring (false: none), ringAlpha, sel, glow, tint, tintA, dx, dy, sy (a
    *  vertical squash about the feet: breathing), fallen, bar: {hp, max} | null, odds: text | null,
-   *  oddsHot}`; Fx `{type: "proj" (kind, from, to, t) | "float" (x, y, text, kind, t) | "burst" (x,
-   *  y, color, t) | "sparkle" (x, y, t)}`, `t` its progress 0..1. */
+   *  oddsHot}`; Fx `{type: "float", x, y, text, kind ("dmg", "crit", "heal", "miss"), t}`, `t` its
+   *  progress 0..1. */
   draw(sc) {
     const g = this.g;
     g.setTransform(1, 0, 0, 1, 0, 0);
@@ -566,76 +566,13 @@ function drawFallen(g, p, x, y, { flip = false, alpha = 0.85, side = 0 } = {}) {
 // ---------------------------------------------------------------------------------------------
 // Effects
 
-/** The point at progress `t` of a projectile's arc (arrows arc low, stones high, spells flat). */
-export function projAt(e, t) {
-  const [x0, y0] = e.from;
-  const [x1, y1] = e.to;
-  const arc = e.kind === "Bombard" ? 150 : e.kind === "Shoot" ? 60 : 30;
-  return [x0 + (x1 - x0) * t, y0 + (y1 - y0) * t - arc * 4 * t * (1 - t)];
-}
-
+/** An effect at its progress `t` (0..1): a word floating up (the watch screen's actions with no
+ *  blow; battle_snap.js draws the blows). */
 function drawFx(g, e) {
   const t = e.t;
   if (t < 0 || t > 1) return;
   g.save();
-  if (e.type === "proj") {
-    const [x, y] = projAt(e, t);
-    if (e.kind === "Shoot") {
-      const [xb, yb] = projAt(e, Math.max(0, t - 0.06));
-      g.strokeStyle = "#3a2410";
-      g.lineWidth = 3;
-      g.beginPath();
-      g.moveTo(xb, yb);
-      g.lineTo(x, y);
-      g.stroke();
-      g.strokeStyle = "#e8d8a8";
-      g.lineWidth = 1.5;
-      g.beginPath();
-      g.moveTo(xb, yb);
-      g.lineTo(x, y);
-      g.stroke();
-    } else if (e.kind === "Bombard") {
-      g.fillStyle = "#3b3530";
-      g.beginPath();
-      g.arc(x, y, 7, 0, Math.PI * 2);
-      g.fill();
-      g.fillStyle = "#6d645a";
-      g.beginPath();
-      g.arc(x - 2, y - 2, 3, 0, Math.PI * 2);
-      g.fill();
-    } else {
-      // a spell: a comet of its colour (the bolt lilac, a spell with a splash cyan)
-      const col = e.splash ? "120, 230, 255" : "210, 170, 255";
-      for (let k = 5; k >= 0; k--) {
-        const [px, py] = projAt(e, Math.max(0, t - k * 0.035));
-        g.fillStyle = `rgba(${col}, ${0.12 + 0.13 * (5 - k)})`;
-        g.beginPath();
-        g.arc(px, py, 3 + (5 - k) * 1.4, 0, Math.PI * 2);
-        g.fill();
-      }
-      g.fillStyle = "#ffffff";
-      g.beginPath();
-      g.arc(x, y, 3, 0, Math.PI * 2);
-      g.fill();
-    }
-  } else if (e.type === "burst") {
-    g.globalAlpha = 1 - t;
-    g.strokeStyle = e.color;
-    g.lineWidth = 3;
-    g.beginPath();
-    g.arc(e.x, e.y, 10 + 34 * t, 0, Math.PI * 2);
-    g.stroke();
-  } else if (e.type === "sparkle") {
-    for (let k = 0; k < 7; k++) {
-      const a = k * 0.9 + t * 3;
-      const r = 18 + 6 * Math.sin(k * 2.1);
-      const x = e.x + Math.cos(a) * r;
-      const y = e.y - 20 - t * 60 - k * 6;
-      g.globalAlpha = (1 - t) * 0.9;
-      g.fillStyle = k % 2 ? "#a8ffcc" : "#ffffff";
-      g.fillRect(Math.round(x), Math.round(y), 3, 3);
-    }
-  } else if (e.type === "float") {
+  if (e.type === "float") {
     const y = e.y - 34 * Math.min(1, t * 1.6);
     const big = e.kind === "crit";
     g.globalAlpha = t < 0.75 ? 1 : 1 - (t - 0.75) / 0.25;

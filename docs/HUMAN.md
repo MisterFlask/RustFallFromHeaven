@@ -496,24 +496,23 @@ unit breathes; on an action's contact frame the pair cuts to its impact poses (t
 contact frame and the target's flinch frame where the unit has anim-sprint frames, else the
 sprite leaning in, a little larger, and the target leaning back under a white flash) and slides
 together, lifted above the field with an ink outline, and the slash or the sparks, the number and
-a small shake land; a held beat of 0.5-1.1 s with embers drifting, then a quarter-second ease back.
-Crits hold longer and kills hold, the death playing after the return; on crits and kills only
+a small shake land; a held beat of 0.5-1.1 s with embers drifting, then a quarter-second ease
+back. Crits hold longer and kills hold, the death playing after the return; on crits and kills only
 the rest of the field drops into a shade round the pair, the camera never zooms; CRITICAL and
 SLAIN under the numbers; a miss is a dodge with a whiff, a heal glows, a shot or a spell arrives
 as a streak while its shooter stays on its cell, splash targets snap together, a knock-back eases
 back a row on the return, an escape leaves after it; no shake under reduced motion; each side's
 standing units; the log beside it under round and pass headers, a unit's speed before its line,
 an action's line on its contact frame; play/pause `Space` (the action freezes where it is), step
-`→`, skip to the report `Esc`, speeds 1x-8x `1`-`4`; played through, the report follows) and
-**the report** (the battlefield where the battle ended, whether the plot fell, each side's
-fallen, escaped and standing with their heads, the whole log; Replay, Continue). The modules:
-`battle.js` (the overlay, the keys, the viewer's preferences, the sources), `battle_plan.js`,
-`battle_watch.js` (the replay's clock and timeline), `battle_snap.js` (the snap: each action's
-timing plan, roles, poses and drawing over the stage), `battle_report.js`, `battle_stage.js` (the
-battlefield, the figures and the effects; the anim-sprint strips in `app/anim/`), and the pure
-`battle_log.js` (the protocol's shapes in its
-header, the formation's editing, the log folded into states and lines, the words of the rules by
-their codes); `battle_fixture.js` is the fixture, made by `assets/test/make_battle_fixtures.mjs`
+`→`, skip to the report `Esc`, speeds 1x (the default) to 8x `1`-`4`; played through, the report
+follows) and **the report** (the battlefield where the battle ended, whether the plot fell, each
+side's fallen, escaped and standing with their heads, the whole log; Replay, Continue). The
+modules: `battle.js` (the overlay, the keys, the viewer's preferences, the sources),
+`battle_plan.js`, `battle_watch.js` (the replay's clock and timeline), `battle_snap.js` (the
+snap: each action's timing plan, roles, poses and drawing over the stage), `battle_report.js`,
+`battle_stage.js` (the battlefield, the figures and the effects; the anim-sprint strips in
+`app/anim/`), and the pure `battle_log.js` (the protocol's shapes in its header, the formation's
+editing, the log folded into states and lines, the words of the rules by their codes); `battle_fixture.js` is the fixture, made by `assets/test/make_battle_fixtures.mjs`
 from the owner's prototype (`assets/test/fixtures/proto/`: its engine and sample armies, not the
 engine's numbers).
 

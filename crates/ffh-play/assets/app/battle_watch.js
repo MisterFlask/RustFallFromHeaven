@@ -33,7 +33,8 @@ export async function enter(ctx, log) {
   ctx.stage.setBoard(log);
   W.anim = animated(log.sides);
   W.lines = logLines(log);
-  W.speed = SPEEDS.includes(ctx.prefs.get("speed", 2)) ? ctx.prefs.get("speed", 2) : 2;
+  // 1x by default: the snap's beats are timed at 1x (the spike the owner chose played at 1x)
+  W.speed = SPEEDS.includes(ctx.prefs.get("speed", 1)) ? ctx.prefs.get("speed", 1) : 1;
   W.snap = new Snap(snapEnv(ctx, log));
   W.clock = 0;
   W.wall = performance.now();
