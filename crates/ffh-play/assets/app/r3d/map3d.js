@@ -13,7 +13,7 @@ import * as T from "../tiles.js";
 import { mul, perspective, lookAt, invert, xform4, ortho, vnorm, clamp, lerp, smoothstep } from "./math.js";
 import { World, SEA } from "./world.js";
 import { Pipeline } from "./pipeline.js";
-import { whenCompiled } from "./gl.js";
+import { whenCompiled, COMPILE_TIMEOUT_MS } from "./gl.js";
 import { Scene, bucketOf } from "./scene.js";
 import { dressStatic, dressUnits, staticEnv, teamColour, standHeight } from "./dress.js";
 import { loadConfig, saveConfig, withPreset, LIGHTING, PANEL } from "./config.js";
@@ -83,7 +83,7 @@ export class Map3D {
     }
     this.gl = gl;
     this.glName = glName;
-    this.pipeline = new Pipeline(gl, this.terrainDefines());
+    this.pipeline = new Pipeline(gl, this.terrainDefines(), this.packedScene());
     performance.mark("r3d:pipeline");
     /** Whether the programs have compiled (`ready`): the loop draws nothing before. */
     this.compiled = false;
@@ -143,7 +143,22 @@ export class Map3D {
    *  browser drawing nothing meanwhile, so the page is told first ("ffh:r3d-compiling", main.js)
    *  and given a moment to show it. */
   async ready(timeoutMs) {
-    await whenCompiled(this.programs(), timeoutMs);
+    // (`fastStart`, the default: the scene is built from the game state -- the world, its textures,
+    // the dressing and its instances, the paint layers, the figures, and the HD-2D mode's sprites
+    // start loading -- while the scene's programs compile, not after them in the first frame: that
+    // work is the page's script's, the compile ANGLE's, so they overlap. Where the scene's programs
+    // compile at their first draw (Direct3D: in the GPU process, seconds, the uploads queueing behind
+    // it) that is during the warm-up's first draw, the terrain's; a packed scene (pipeline.js
+    // `packed`) has no warm-up draws, its programs compiling at link on ANGLE's worker threads, so it
+    // is during the wait for the links. `?r3d={"fastStart":0}`, or `{"earlySync":0}` for this
+    // overlap alone: the original order.)
+    const overlap = this.cfg.fastStart !== 0 && (this.cfg.earlySync ?? 1) > 0;
+    const packed = this.pipeline.packed;
+    // A packed scene's programs compile whole at link, inside this wait: the page is live meanwhile,
+    // so a slow machine is given longer before the renderer gives up.
+    const linked = whenCompiled(this.programs(), timeoutMs ?? (packed ? 3 * COMPILE_TIMEOUT_MS : undefined));
+    if (overlap && packed) await this.prepareWhile(linked);
+    await linked;
     performance.mark("r3d:linked");
     if (/direct3d|d3d1/i.test(this.glName)) {
       globalThis.dispatchEvent?.(new CustomEvent("ffh:r3d-compiling"));
@@ -151,22 +166,7 @@ export class Map3D {
     }
     // (The warm-up issues its first draw, the terrain's, before it first waits.)
     const warm = this.pipeline.warm(this.pipeline.scenePrograms());
-    // (`fastStart`, the default: the scene is built from the game state -- the world, its textures,
-    // the dressing and its instances, the paint layers, the figures, and the HD-2D mode's sprites
-    // start loading -- while the terrain compiles, not after the warm-up: that work is the page's
-    // script's, the compile ANGLE's (the GPU process's, at that first draw on Direct3D: seconds), so
-    // they overlap; the uploads queue behind the compile. `?r3d={"fastStart":0}`: the original order.)
-    if (this.cfg.fastStart !== 0) {
-      let warmed = false;
-      const end = () => (warmed = true);
-      warm.then(end, end);
-      this.prepare();
-      // (The game's map may come during the warm-up, the page booting: prepared when it does.)
-      while (!warmed && !this.mapSeen) {
-        await new Promise((r) => setTimeout(r, 50));
-        if (!this.mapSeen) this.prepare();
-      }
-    }
+    if (overlap) await this.prepareWhile(warm);
     await warm;
     performance.mark("r3d:warmed");
     this.compiled = true;
@@ -180,6 +180,19 @@ export class Map3D {
       if (this.sync()) performance.mark("r3d:prepared");
     } catch (e) {
       console.error("r3d prepare:", e);
+    }
+  }
+
+  /** `prepare` now, and again while `pending` (the links, or the warm-up) has not settled if the
+   *  game's map has not come yet (the page still booting): prepared as soon as it does. */
+  async prepareWhile(pending) {
+    let settled = false;
+    const end = () => (settled = true);
+    pending.then(end, end);
+    this.prepare();
+    while (!settled && !this.mapSeen) {
+      await new Promise((r) => setTimeout(r, 50));
+      if (!this.mapSeen) this.prepare();
     }
   }
 
@@ -226,6 +239,13 @@ export class Map3D {
    *  mode may compile parts of the ground's painting out. */
   terrainDefines() {
     return {};
+  }
+
+  /** Whether the scene's programs write one packed target (pipeline.js `packed`, shaders.js
+   *  SCENE_PACKED): not for the 3D renderer; a mode may (on Direct3D their compile then moves from
+   *  the first draw to the link: in parallel, the page live, cached across starts). */
+  packedScene() {
+    return false;
   }
 
   /** How strongly the cities light the ground round them (decals.js rasterLight): 1 for the 3D

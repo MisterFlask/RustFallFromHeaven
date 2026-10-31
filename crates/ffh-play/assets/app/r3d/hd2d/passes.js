@@ -5,7 +5,7 @@
 // the canvas. Each is timed like the pipeline's own passes (the panel, tools/r3d-perf.mjs).
 
 import { Program, texture, framebuffer, FULLSCREEN_VS } from "../gl.js";
-import { COMMON } from "../shaders.js";
+import { COMMON, packedScene } from "../shaders.js";
 import * as H from "./shaders.js";
 
 export class Hd2dPasses {
@@ -17,7 +17,8 @@ export class Hd2dPasses {
     const P = (name, vs, fs) => new Program(gl, name, vs, fs);
     const C = COMMON;
     this.p = {
-      sprite: P("hd2d-sprite", C + H.SPRITE_VS, C + H.SPRITE_FS),
+      // (Into the packed scene when the pipeline packs it: shaders.js SCENE_PACKED.)
+      sprite: pipeline.packed ? new Program(gl, "hd2d-sprite", C + H.SPRITE_VS, packedScene(C + H.SPRITE_FS), { SCENE_PACKED: 1 }) : P("hd2d-sprite", C + H.SPRITE_VS, C + H.SPRITE_FS),
       spriteShadow: P("hd2d-sprite-shadow", C + H.SPRITE_VS, C + H.SPRITE_SHADOW_FS),
       contact: P("hd2d-contact", C + H.SPRITE_VS, C + H.CONTACT_FS),
       ghost: P("hd2d-ghost", C + H.SPRITE_VS, C + H.SPRITE_GHOST_FS),
@@ -72,7 +73,7 @@ export class Hd2dPasses {
 
   /** The mode's programs that draw into the scene's targets (Pipeline.scenePrograms). */
   scenePrograms() {
-    return [this.p.sprite];
+    return this.pl.packed ? [] : [this.p.sprite];
   }
 
   cardUniforms(U, scene, mode) {
