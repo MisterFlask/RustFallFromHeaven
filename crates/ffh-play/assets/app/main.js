@@ -737,10 +737,13 @@ async function boot() {
   // interface, the isometric skin, not in the 2D art's that it dropped when the HD-2D map was ready
   // -- after building it for a second or two, in the middle of the HD-2D map's start.)
   hd2dPending = rendererChoice() === "hd2d" && fastStart();
-  syncSkin();
   // The experimental 3D renderer (docs/R3D.md) and the HD-2D mode built on it (docs/HD2D.md):
-  // loaded on demand; without WebGL2 they fall back.
-  if (rendererChoice() === "3d" || rendererChoice() === "hd2d") use3d(rendererChoice());
+  // loaded on demand; without WebGL2 they fall back. (fastStart: its import is asked for before
+  // the interface is dressed, a few hundred ms of script.)
+  const want3d = rendererChoice() === "3d" || rendererChoice() === "hd2d";
+  if (want3d && fastStart()) use3d(rendererChoice());
+  syncSkin();
+  if (want3d && !fastStart()) use3d(rendererChoice());
   // The art loads beside the data; the page works meanwhile (and without it). lookLoaded() builds
   // the art worker, which bakes in the engine's type ordering (from /api/data) once, so it must run
   // after setLookData(): otherwise, if the static art bundle wins the race against the server-
@@ -821,15 +824,19 @@ async function use3d(mode = "3d") {
   // at once when the renderer says it is about to compile there (r3d/map3d.js ready: the browser
   // draws nothing while it does, so a message due later would only show after).
   let said = false;
+  let note = null;
   const say = () => {
     clearTimeout(slow);
-    if (!said) toast("Preparing the 3D map (compiling its shaders)…", "info", 6000);
+    // (fastStart: the message stays until the map is ready -- on Direct3D the screen freezes
+    // through each program's compile, and a 6 s message was gone after the first.)
+    if (!said) note = toast("Preparing the 3D map (compiling its shaders)…", "info", fastStart() ? 120000 : 6000);
     said = true;
   };
   const slow = setTimeout(say, 1500);
   window.addEventListener("ffh:r3d-compiling", say);
   const ok = await mapView.useR3d(true, mode);
   hd2dPending = false;
+  note?.click();
   clearTimeout(slow);
   window.removeEventListener("ffh:r3d-compiling", say);
   syncSkin();

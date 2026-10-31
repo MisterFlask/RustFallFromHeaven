@@ -149,7 +149,17 @@ export class Map3D {
     // start loading -- while the terrain compiles, not after the warm-up: that work is the page's
     // script's, the compile ANGLE's (the GPU process's, at that first draw on Direct3D: seconds), so
     // they overlap; the uploads queue behind the compile. `?r3d={"fastStart":0}`: the original order.)
-    if (this.cfg.fastStart !== 0) this.prepare();
+    if (this.cfg.fastStart !== 0) {
+      let warmed = false;
+      const end = () => (warmed = true);
+      warm.then(end, end);
+      this.prepare();
+      // (The game's map may come during the warm-up, the page booting: prepared when it does.)
+      while (!warmed && !this.mapSeen) {
+        await new Promise((r) => setTimeout(r, 50));
+        if (!this.mapSeen) this.prepare();
+      }
+    }
     await warm;
     performance.mark("r3d:warmed");
     this.compiled = true;
