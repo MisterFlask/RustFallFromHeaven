@@ -136,6 +136,12 @@ fn requisition_is_set_and_released_by_commands_and_its_order_cannot_be_removed_b
     assert!(refused(run(&mut g, &Command::RecruitDest { city: b, index: 0, dest: None })).contains("requisition"));
     // The order behind it can still go.
     run(&mut g, &Command::PopOrder { city: b, index: 1 }).unwrap();
+    while g.cities[b].order_queue.len() > 1 {
+        run(&mut g, &Command::PopOrder { city: b, index: 1 }).unwrap();
+    }
+    // Alone in the queue it still names the army (pushing a replacement would not remove it).
+    let why = refused(run(&mut g, &Command::PopOrder { city: b, index: 0 }));
+    assert!(why.contains("requisitioned by the 1st Army"), "{why}");
     // The screen shows the order in progress, on the army and on its city.
     let e = screen_army(&g, army);
     let orders = arr(e.get("requisition").unwrap(), "orders");

@@ -1045,13 +1045,14 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             not_governed(g, *city)?;
             let len = g.cities[*city].order_queue.len();
             in_range("queue index", *index, len)?;
+            // This game's armies: a requisition order is the army's, released on the Armies screen
+            // (the reason to give first: pushing a replacement would not remove it either).
+            g.city_check_remove_order(*city, *index as usize).map_err(cannot)?;
             // selectedCitiesGameNetMessage(GAMEMESSAGE_POP_ORDER): only while the queue has more
             // than one order.
             if len <= 1 {
                 return Err(cannot("the only order cannot be removed: push its replacement instead"));
             }
-            // This game's armies: a requisition order is the army's, released on the Armies screen.
-            g.city_check_remove_order(*city, *index as usize).map_err(cannot)?;
             Plan::Apply(Action::PopOrder { city: *city, index: *index })
         }
 
