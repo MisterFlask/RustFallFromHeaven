@@ -362,7 +362,11 @@ either side, or a human team sees the plot), `report::BattleLog`:
   same seed: the chances the defender's line is wiped out, the plot falls, the attacker's line is
   wiped out, the units lost per side, each fighter's chance to fall and to escape).
 
-The view (`ffh-play`'s `view/battles.rs`) shapes it as JSON. Writing it draws no random number and
+The view (`ffh-play`'s `view/battles.rs`) shapes it as JSON for the battle screens (the contract is
+`crates/ffh-play/assets/app/battle_log.js`'s header; docs/HUMAN.md, `battle_log`): `events` are what
+the battle shows (the opening's units that sat out and defensive strikes at round 0, then the
+actions), `after` the post-battle steps; the stages, the morale rolls that passed and the end are
+left out (the outcome says how it ended). Writing it draws no random number and
 changes no state: the same engagement with and without it leaves the same RNG and the same game
 (test `the_sink_changes_nothing`). Saved: a report keeps its log for the current and previous turn
 and the last `ENGAGEMENT_REPORT_LOGS_KEPT` logged reports, its summary for the last

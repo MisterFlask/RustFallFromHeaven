@@ -505,8 +505,8 @@ pub fn armies(dir: &Path) -> Result<StagedArmies, String> {
 /// with an engagement to fight (docs/ENGAGEMENTS.md): the human's `army` (`units`: two Axemen, an
 /// Archer, a Horseman and a Warrior) stands next to `city` at (`x`, `y`), a size-3 AI city of a
 /// team at war with the human, held by `defenders` (a Warrior, an Archer and a Warrior); the
-/// human's `capital` (its garrison's stance can be set). Moving the army onto the city opens the
-/// battle plan in the browser client; `engage {army, to}` fights it.
+/// human's `capital`. Moving the army onto the city opens the battle plan in the browser client;
+/// `engage {army, to}` fights it.
 pub struct StagedEngagement {
     pub save: PathBuf,
     pub army: ffh_core::ids::ArmyId,
