@@ -799,6 +799,18 @@ comparison alternated old and new):
   the links (`Map3D.ready`); otherwise it overlaps the warm-up's first draw. With the five switches
   off (`?r3d={"noiseTex":0,"terrainLean":0,"lite":0,"packScene":0,"fastStart":0}`) the lab's stills
   match origin/master's bit for bit.
+* **One noise a `mfbm`, one copy of the frontier's drifts** (2026-10-31, measured with FXC itself:
+  `tools/fxc`, below). FXC unrolls a loop whose length it knows, so every `mfbm` was four noises;
+  its octaves now sum in a loop whose bound it cannot know (`4 + int(min(uMapSize.x, 0.0))`, always
+  4), one noise a call. The water wrote its five drifts out twice for the fog's frontier (moving and
+  at rest); a loop of one or two passes now works them out by one copy each. The same image (the
+  lab's stills, 3D and HD-2D, within 3 of 255 on 0.0006% of the pixels). The 3D renderer, which
+  compiles at the first draw: terrain 6647 -> 5506 instructions (9.3 -> 6.8 s), water 3576 -> 2944
+  (3.4 -> 3.0 s), alternating runs. The HD-2D mode gains little: its lean terrain's broad masses
+  use `mfbm2`/`mfbm3` (3163 -> 3136) and `CALM_FADE` already has one copy of the drifts. Taken
+  further -- every noise of a ground evaluated from a table of offsets and frequencies in one such
+  loop -- 150 noises compiled in 0.23 s against 6.7 s inlined (a test shader: 1061 instructions
+  against 5643); not done.
 
 **Compiling without freezing.** Where the browser offers `KHR_parallel_shader_compile` (Chrome
 does), a `Program` no longer waits for its link: the programs compile together on ANGLE's worker
@@ -845,6 +857,16 @@ reload gained nothing. Headless: `channel: "chrome"`, `--ignore-gpu-blocklist --
 ships (`D3DCompile`, `ps_5_0`, default flags, `ANGLE_ENABLE_LOOP_FLATTEN` defined) it takes within a
 few percent of the browser's time, which is how the terrain shader was bisected -- a check worth
 repeating on a shader change that adds loops or many noise calls.
+
+Without Windows: `tools/fxc/measure.sh` builds this tree's programs as `compile.html` does
+(`--mode 3d|hd2d`, `--all` for every program, `--tree` another checkout's for an A/B), translates
+them with glslang and SPIRV-Cross, and compiles them with the same `d3dcompiler_47.dll` (taken from
+Electron's Windows build) under wine, printing FXC's time and instruction count for each. Its counts
+come within about 2% of the HLSL ANGLE makes (the HD-2D terrain of 2026-10-30: 6707 against 6621;
+the props 2935 against 2831), and its times grow alike; compare alternating runs on one idle
+machine (single runs vary by 20% or so). FXC's own counts run higher than spirv-opt's above: the
+HD-2D scene packed (2026-10-31, one 2-core machine) is terrain 3136 instructions, about 3.0 s; sea
+1476, about 1.0 s; rivers 1501, about 1.3 s; props 999, 0.4 s -- the links that compile together.
 
 ## 12. Configuration
 

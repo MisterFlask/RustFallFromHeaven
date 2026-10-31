@@ -162,8 +162,20 @@ float mnoise(vec2 m, float f) {
   return pnoise(l.xy, vec2(l.z, 4096.0));
 }
 
+// Four octaves of mnoise, summed in a loop whose bound the compiler cannot know (always 4: the map's
+// width is never negative), so the shader holds one noise for each mfbm, not four. FXC (Direct3D,
+// docs/R3D.md §11.1) unrolls a loop of known length, and its time grows about with the square of a
+// shader's length. The same octaves, offsets and weights, summed in the same order.
+const vec2 FBM_OFF[4] = vec2[](vec2(0.0), vec2(3.7), vec2(-5.1), vec2(9.3));
 float mfbm(vec2 m, float f) {
-  return (mnoise(m, f) * 0.5 + mnoise(m + 3.7, f * 2.0) * 0.25 + mnoise(m - 5.1, f * 4.0) * 0.125 + mnoise(m + 9.3, f * 8.0) * 0.0625) / 0.9375;
+  float s = 0.0, w = 0.5, fo = f;
+  int n = 4 + int(min(uMapSize.x, 0.0));
+  for (int i = 0; i < n; i++) {
+    s += mnoise(m + FBM_OFF[i], fo) * w;
+    w *= 0.5;
+    fo *= 2.0;
+  }
+  return s / 0.9375;
 }
 
 // Brush-stroke noise: streaks running along the map's diagonal (f across, f / stretch along),
@@ -2079,6 +2091,10 @@ void main() {
 #else
   bool band = live > 0.0 && live < 1.0; // the frontier: the moving and the resting values mixed
 #endif
+  // The drifts below are worked out by one copy of each function, in a loop of one pass, or two on
+  // the frontier (the moving value, then the resting one): written out twice, they made the shader
+  // about a fifth longer, and FXC's time grows about with its square (docs/R3D.md §11.1).
+  int passes = band ? 2 : 1;
   // The sea floor's depth, read through a warp and averaged over a small footprint, so the
   // colour bands of the shelf follow soft, irregular contours instead of the plot grid.
   // Only samples under water count: around a small lake most of the footprint is dry land, which
@@ -2182,8 +2198,9 @@ void main() {
   float dcol = river ? 0.2 + path * 1.5 : depth;
   vec3 body = mix(srgb(vec3(0.15, 0.45, 0.45)), srgb(vec3(0.07, 0.3, 0.4)), smoothstep(0.0, 0.12, dcol));
   body = mix(body, srgb(vec3(0.05, 0.17, 0.34)), smoothstep(0.12, 0.4, dcol));
-  float bm = bodyAt(m, tl);
-  if (band) bm = mix(bodyAt(m, 0.0), bm, live);
+  float bmv[2];
+  for (int k = 0; k < passes; k++) bmv[k] = bodyAt(m, k == 0 ? tl : 0.0);
+  float bm = band ? mix(bmv[1], bmv[0], live) : bmv[0];
 #ifdef CALM_FADE
   bm = mix(1.0, bm, calm);
 #endif
@@ -2195,8 +2212,9 @@ void main() {
     // A river is painted, not seen into: bright turquoise by its banks, through cerulean, to a deep
     // blue down the middle of its channel (riverDeep), lit by the light's value only (the warm sun
     // would turn it green) -- in shade it darkens without losing its blue.
-    float rd = riverDeep(vExtra.x, vExtra.y, vFlow.x, tl);
-    if (band) rd = mix(riverDeep(vExtra.x, vExtra.y, vFlow.x, 0.0), rd, live);
+    float rdv[2];
+    for (int k = 0; k < passes; k++) rdv[k] = riverDeep(vExtra.x, vExtra.y, vFlow.x, k == 0 ? tl : 0.0);
+    float rd = band ? mix(rdv[1], rdv[0], live) : rdv[0];
 #ifdef CALM_FADE
     float u4 = vExtra.x * vExtra.x;
     rd = mix(clamp(1.0 - u4 * u4 - clamp(-vExtra.x * vFlow.x * 0.25, 0.0, 0.5), 0.0, 1.0), rd, calm);
@@ -2239,8 +2257,9 @@ void main() {
   // river.
   float fres = pow(1.0 - max(dot(n, V), 0.0), 3.0);
   vec2 bw = (vec2(mnoise(m, 1.1), mnoise(m + 5.3, 1.1)) - 0.5) * 0.5;
-  float brk = brkAt(m, bw, river, vExtra.xy, tl);
-  if (band) brk = mix(brkAt(m, bw, river, vExtra.xy, 0.0), brk, live);
+  float brv[2];
+  for (int k = 0; k < passes; k++) brv[k] = brkAt(m, bw, river, vExtra.xy, k == 0 ? tl : 0.0);
+  float brk = band ? mix(brv[1], brv[0], live) : brv[0];
 #ifdef CALM_FADE
   brk = mix(0.5, brk, calm);
 #endif
@@ -2296,8 +2315,9 @@ void main() {
   // --- Surf: the swash runs up the beach and draws back (a slow breathing), its foam a lace;
   // rollers come in from offshore and break into it. A river: lace along its banks and flecks
   // carried down mid-channel.
-  float lace = laceAt(m, tl);
-  if (band) lace = mix(laceAt(m, 0.0), lace, live);
+  float lcv[2];
+  for (int k = 0; k < passes; k++) lcv[k] = laceAt(m, k == 0 ? tl : 0.0);
+  float lace = band ? mix(lcv[1], lcv[0], live) : lcv[0];
 #ifdef CALM_FADE
   lace = mix(0.3, lace, calm);
 #endif
@@ -2348,8 +2368,9 @@ void main() {
     // Streaks and swirls carried down the current, white water on the outside of the bends
     // (riverFoam); a broken lace along the banks; a collar round what stands in the stream.
     float rfa = ppx / 0.19; // u across a pixel (u counts RIVER_HALFs, world.js)
-    float rf = riverFoam(vExtra.x, vExtra.y, vFlow.x, tl, rfa);
-    if (band) rf = mix(riverFoam(vExtra.x, vExtra.y, vFlow.x, 0.0, rfa), rf, live);
+    float rfv[2];
+    for (int k = 0; k < passes; k++) rfv[k] = riverFoam(vExtra.x, vExtra.y, vFlow.x, k == 0 ? tl : 0.0, rfa);
+    float rf = band ? mix(rfv[1], rfv[0], live) : rfv[0];
 #ifdef CALM_FADE
     rf *= calm;
 #endif
