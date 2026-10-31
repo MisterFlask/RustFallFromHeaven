@@ -1,9 +1,9 @@
 // The map (design §5.1 "Map"): a canvas, square tiles, north up, the map's wrap honoured.
 //
-// Two renderers draw it. The art renderer (`artmap.js`, the original pixel art of docs/ART.md)
-// is used once the art has loaded; the flat renderer below (the P5 one: flat colours, glyphs and
-// labels) before that, when the art cannot load, and when asked for (`?renderer=flat` or Tools →
-// Options), for debugging.
+// The HD-2D map (`r3d/hd2d/`, docs/HD2D.md), the default, and the isometric one (`iso.js`,
+// docs/ISO.md), its fallback, draw it when they are on (`useR3d`, `useIso`); else the flat renderer
+// below (the P5 one: flat colours, glyphs and labels, no sprites), for debugging (`?renderer=flat`
+// or Tools → Options) and while another starts.
 //
 // Flat: the terrain (everything the `map` arrays hold: terrain, hills, peaks, features, rivers,
 // roads, improvements, bonuses, borders, fog) is drawn into offscreen chunks of CHUNK x CHUNK
@@ -13,9 +13,7 @@
 
 import { S, tname, dname, info, me, isBarbarian, ORDER_KINDS, observing } from "./state.js";
 import * as T from "./tiles.js";
-import { ArtMap } from "./artmap.js";
 import { IsoMap, ISO_DEFAULT_ZOOM, drawRevoltMark, drawMarchMark, marchMark } from "./iso.js";
-import { artZooms, defaultArtZoom } from "./stacks.js";
 
 /** The start-up prototype's switch (docs/HD2D.md): on unless the page says `?r3d={"fastStart":0}`.
  *  The 3D renderer's modules read it from their config. */
@@ -87,7 +85,8 @@ export class MapView {
     this.canvas = wrap.querySelector("canvas.map");
     this.mini = wrap.querySelector("canvas.minimap");
     this.tip = wrap.querySelector(".tooltip");
-    // The art renderer reads parts of the frame back (the vignette, light pools, range marks).
+    // (Set for the retired 2D art map, which read parts of its frame back; the isometric map has
+    // been drawn and measured on it since.)
     this.ctx = this.canvas.getContext("2d", { willReadFrequently: true });
     this.h = handlers;
     this.cam = { cx: 0, cy: 0, ts: 32 };
@@ -111,8 +110,6 @@ export class MapView {
     /** The map's layer (design §5.1 "Layers"): "terrain", "political" (owners' colours) or
      *  "yield" (the visible plots' food, production and commerce). */
     this.layer = "terrain";
-    /** The art renderer (`ArtMap`) when it draws the map, else null (the flat renderer). */
-    this.art = null;
     /** The isometric renderer (`IsoMap`, `?renderer=iso`) when it draws the map, else null. */
     this.iso = null;
     /** The 3D renderer (`r3d/map3d.js`, docs/R3D.md) in its HD-2D mode (`r3d/hd2d/`, the default
@@ -433,13 +430,7 @@ export class MapView {
 
   resize() {
     const r = this.wrap.getBoundingClientRect();
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    if (this.art && dpr !== this.dpr) {
-      // Another device-pixel ratio: the art's zoom steps change with it.
-      this.dpr = dpr;
-      this.snapZoom();
-    }
-    this.dpr = dpr;
+    this.dpr = Math.min(window.devicePixelRatio || 1, 2);
     this.vw = Math.max(1, Math.round(r.width));
     this.vh = Math.max(1, Math.round(r.height));
     this.canvas.width = Math.round(this.vw * this.dpr);
@@ -464,12 +455,11 @@ export class MapView {
     this.mini.style.height = `${Math.round((w * map.h) / map.w) + frame}px`;
   }
 
-  /** The zoom steps (tile sizes in CSS px) of the renderer in use: the art's are whole numbers
-   *  of device pixels per art pixel (docs/ART.md 3.2). */
+  /** The zoom steps (tile sizes in CSS px) of the renderer in use. */
   zooms() {
     if (this.iso) return this.iso.zooms();
     if (this.r3d) return this.r3d.zooms();
-    return this.art ? artZooms(this.dpr) : ZOOMS;
+    return ZOOMS;
   }
 
   zoom(step, sx = this.vw / 2, sy = this.vh / 2) {
@@ -647,8 +637,7 @@ export class MapView {
     });
   }
 
-  /** The combat flashes, in the flat renderer (CSS pixels). The art renderer draws them in
-   *  `ArtMap.drawFlashes`; both read this one list. */
+  /** The combat flashes, in the flat renderer (CSS pixels). */
   drawFlashes(g) {
     if (!this.flashes.length) return;
     const ts = this.cam.ts;
@@ -726,33 +715,10 @@ export class MapView {
   // ------------------------------------------------------------------------------------------
   // Data
 
-  /** Switches to the art renderer (`on`, once the art has loaded) or back to the flat one; the
-   *  zoom moves to the nearest step of the renderer. */
-  useArt(on) {
-    if (!!on === !!this.art) return;
-    if (on) {
-      this.art = new ArtMap(this);
-      if (this.map) this.art.setMap(null, this.map, "all");
-    } else {
-      this.art.dispose();
-      this.art = null;
-    }
-    this.snapZoom(on ? defaultArtZoom(this.dpr) : null);
-    this.chunks.clear();
-    this.pixels = 0;
-    this.miniImage = null;
-    this.request();
-  }
-
-  /** Switches to the isometric renderer (`?renderer=iso`, docs/ISO.md) or back to
-   *  the default renderer. */
+  /** Switches to the isometric renderer (`?renderer=iso`, docs/ISO.md) or back to the flat one. */
   useIso(on) {
     if (!!on === !!this.iso) return;
     if (on) {
-      if (this.art) {
-        this.art.dispose();
-        this.art = null;
-      }
       this.iso = new IsoMap(this);
       this.snapZoom(ISO_DEFAULT_ZOOM);
     } else {
@@ -815,10 +781,6 @@ export class MapView {
         // (fastStart: the isometric map stays drawn -- and answers -- until the 3D map is ready,
         // below; the original dropped it here, leaving the flat map through the compile.)
         if (this.iso && !fastStart()) this.useIso(false);
-        if (this.art) {
-          this.art.dispose();
-          this.art = null;
-        }
         r3d = new mod.Map3D(this);
         performance.mark("r3d:constructed");
         // Its programs compile in parallel where the browser can; the page stays live meanwhile,
@@ -836,11 +798,6 @@ export class MapView {
         if (this.iso) {
           this.iso.dispose?.();
           this.iso = null;
-        }
-        // (An art map made during the start, the art asked for and then the 3D map again.)
-        if (this.art) {
-          this.art.dispose();
-          this.art = null;
         }
       } catch (e) {
         // (A refusal with a reason -- a software WebGL2, shaders too slow -- is the HD-2D map's
@@ -875,16 +832,14 @@ export class MapView {
     this.cam = { ...this.cam, ts: next };
   }
 
-  /** The renderer drawing the map: "art" or "flat". */
+  /** The renderer drawing the map: "hd2d" (or the r3d lab's "3d"), "iso" or "flat". */
   renderer() {
-    return this.r3d ? this.r3d.mode ?? "3d" : this.iso ? "iso" : this.art ? "art" : "flat";
+    return this.r3d ? this.r3d.mode ?? "3d" : this.iso ? "iso" : "flat";
   }
 
   /** A new map (the `map` reply, or the map a delta brought up to date): redraws the chunks
    *  that changed (`changed`: the tile indices a delta listed; else found by comparing). */
   setMap(map, changed = null) {
-    const prev = this.map;
-    this.art?.setMap(prev, map, changed);
     const first = !this.map || this.map.w !== map.w || this.map.h !== map.h;
     const dirty = Array.isArray(changed) && !first ? T.chunksOfTiles(map, changed) : T.dirtyChunks(this.map, map);
     this.map = map;
@@ -951,16 +906,6 @@ export class MapView {
         this.iso.draw();
       } catch (e) {
         console.error("iso map:", e);
-      }
-      this.drawMarkers();
-      this.drawMini();
-      return;
-    }
-    if (this.art) {
-      try {
-        this.art.draw();
-      } catch (e) {
-        console.error("art map:", e);
       }
       this.drawMarkers();
       this.drawMini();
@@ -1517,7 +1462,6 @@ export class MapView {
     g.fillRect(0, 0, c.width, c.height);
     const map = this.map;
     if (!map) return;
-    if (this.art) this.miniImage = this.art.minimap();
     if (!this.miniImage) {
       const img = new ImageData(map.w, map.h);
       const rgb = (css) => {
@@ -1584,7 +1528,7 @@ export class MapView {
     const hh = (this.vh / ts) * sy;
     const x = (this.cam.cx - this.vw / 2 / ts) * sx;
     const y = (map.h - this.cam.cy - this.vh / 2 / ts) * sy;
-    g.strokeStyle = this.art ? this.art.art.css("8") : "#fff";
+    g.strokeStyle = "#fff";
     g.lineWidth = Math.max(1, this.dpr);
     for (const off of map.wrap_x ? [-c.width, 0, c.width] : [0]) g.strokeRect(x + off, y, w, hh);
   }

@@ -66,26 +66,13 @@ bottom right, zoom and the map layers bottom left), the selection panel is on th
 bottom panel has the turn report, the messages by turn and the game's files (directory, journal,
 last autosave).
 
-**The map** is north up and wraps east-west like the game. The ground is drawn flat (colour
-fields with sparse marks, inked coasts, rivers and roads); hills, peaks, forests, improvements,
-landmarks and cities stand upright; resources (only those your techs reveal) are seals at a
-plot's bottom right; borders are stitched ribbons in the owner's colours. Each civilization has a
-tincture and a sigil (docs/ART.md 7: two civilizations of one tincture get a divided field), on
-its borders, city banners and unit standards. Fogged plots are darkened and hatched and show
-what you last saw (dark windows, no foreign units), unexplored ones are black with ragged edges,
-and the view's corners fade. **Cities** are drawn in their civilization's style and by size
-(five tiers), in a pool of their light; the capital's spire carries a finial in the owner's
-colour, walls (Walls or a palisade) show as a curtain wall, a city in disorder goes dark under a
-smoke column; the plaque under it has the size, the name and, for yours, the turns of what it
-builds. A **unit stack** shows its head unit (the selected one, else your unit that can move,
-else the strongest), up to two shadows behind it for more units, and its owner's standard at the
-top left (top right in a city): bright for your stacks that can move or are selected, quiet for
-others, with a vellum pip when it can move and a gilt one with a hero in the stack; the count
-hangs under the standard, a health bar shows when the head unit is hurt (or selected), and a
-mark at the top right says fortified, asleep, sentry, healing, automated or promotion ready.
-Units face east, and west after a move west. Zoom (`+` `-`, `Q` `E`, the wheel) goes by whole art pixels:
-32, 64 (the default), 96 and 128 screen pixels a plot, and two chart steps, 16 and 8 (flat
-colours, owners' washes, city dots, units as small squares). Hovering a plot shows a tooltip
+**The map** is north up and wraps east-west like the game. It is the **HD-2D map**
+(docs/HD2D.md): the pixel-art sprites of units, towns and props standing as cards in a lit 3D
+world, seen through a camera tilted toward the horizon, with light shafts, glow, a mood for each
+region and glowing borders. Where the browser cannot run it (no WebGL2 on a GPU, its shaders too
+slow, a lost graphics context) the page says so and draws the **isometric 2.5D map**
+(docs/ISO.md) instead. Zoom (`+` `-`, `Q` `E`, the wheel) goes through each map's steps.
+Hovering a plot shows a tooltip
 (terrain, resource, improvement, owner, yields and defence while you see it, the city and units
 there, each unit with its strength, level and promotions; with the art, the yields, defence and move cost by their icons; over a unique improvement
 such as Yggdrasil or the Maelstrom, what it does: its yields, defence, happiness and healing, the
@@ -99,14 +86,12 @@ its colour); **Yields** (the ground dimmed, and the food, production and commerc
 sight with their icons; fogged plots show none). The minimap is a pixel a plot in the same
 colours, owned land in its owner's colour, cities as light dots.
 
-The art is drawn in the background (a worker) a few plots at a time, the part in view first: a
-part of the map you have not looked at yet shows flat colours for a moment. **The flat
-renderer** of P5 (colours, glyphs and labels: lettered dots for resources, boxes for
-improvements, units and cities) is kept for debugging: open the page as
-`http://127.0.0.1:8642/?renderer=flat`, or choose it under Tools → Options → "This browser" (which
-also offers the HD-2D map, the default, docs/HD2D.md, which needs WebGL2 on a GPU; the isometric
-2.5D map in HD pixel art, docs/ISO.md, its fallback where it cannot run; and the 2D pixel art). The
-choice is remembered by this browser.
+**The flat renderer** of P5 (colours, glyphs and labels: lettered dots for resources, boxes for
+improvements, units and cities; no sprites) is kept for debugging, in the classic interface of
+docs/ART.md: open the page as `http://127.0.0.1:8642/?renderer=flat`, or choose it under Tools →
+Options → "This browser" (which also offers the HD-2D map, the default, and the isometric 2.5D
+map, its fallback). The choice is remembered by this browser. The 2D pixel-art map that drew the
+map of docs/ART.md, and the 3D renderer's fully modelled map, were retired on 2026-10-31.
 
 **Motion.** The interface moves quietly, in keeping with the manuscript look (docs/ART.md 4.5):
 
@@ -218,7 +203,7 @@ garrison, on its way there) can be selected to look at: the panel says "Marching
 and offers no orders (the rules move it until it arrives; "All", Shift-click on the plot, Group and
 Split leave it out, so a selection of the units there keeps its orders); it is never among the
 units waiting for orders. On the map its figure carries a small ochre double
-chevron in place of the moves pip (the 2D pixel-art map: its state mark), and the plot's tooltip
+chevron in place of the moves pip (the isometric map), and the plot's tooltip
 says where it marches.
 When a group is done, the next one waiting for orders on the plot it left, then on its plot,
 then the next in Civ4's group cycle is selected, as in Civ4 (not with the player option "No
@@ -382,8 +367,7 @@ the owners), commands are refused, and Next turn (Enter) plays one turn. After e
 marks where that turn's fights and captures happened (a crimson ring with a cross: a unit died; a
 dashed amber ring: a retreat; a gold square: a city captured or razed; the hover tooltip and the
 side panel say what), and the minimap shows every stack of 2 or more units as a dot in its
-owner's colour, larger for 5 and for 10 units or more (on the 2D art map's two smallest zoom
-steps the stacks' squares grow the same way). Messages has every civilization's messages with
+owner's colour, larger for 5 and for 10 units or more. Messages has every civilization's messages with
 their sender (a box narrows them to the followed one); combat messages give the attacker's odds,
 and ⌖ shows the plot on the map. The game is over when it is decided (a victory or the turn
 limit: where `ffh autoplay` stops too). Tools → AI autoplay… plays many turns at once (the top
@@ -894,24 +878,14 @@ node tools/web-touch-smoke.mjs           # the same on an emulated phone, with t
   (`F7`), the sliders (top bar and `F2`), diplomacy (`F4`; the trade screen when a player was
   met), the cities list (`F1`), the keys (`?`), the go-to mode (`G`, `Esc`), the map layers, the
   inspector, debug reveal, an AI autoplay turn and a 5,000-turn one stopped from the top bar, the spectator mode (play, pause, step, stop),
-  and the trade screen (`stage trade`: 7 gold offered and accepted); and the art client: the art
-  loads and draws the map (by its worker), the view is drawn in full and is not blank, a frame
-  takes under 60 ms (median of 15), the zoom goes through the chart (8, 16) and the art's steps
-  (32-128) with `+` and `-`, the interface has its bitmap type and icons, Tools → Options switches
-  to the flat renderer and back, and `?renderer=flat` keeps the flat one. Any console error, page
-  error, failed request or HTTP error fails it. The screenshots (`target/web-smoke/*.png`: the art
-  map, the survey zoom and the chart, the flat renderer and every screen above) are for review,
-  not committed.
-* Frame times of the art map (headless Chromium 141, software rendering, 1280x800, a 4-core host
-  shared with other work; `window.ffh.mapView.art.stats`): on a standard map at 2x a frame with
-  everything drawn takes 3-5 ms (the vignette 2-4 ms of it, the units about 1 ms) and a frame of a
-  slow pan 4-9 ms; on a huge map (128x80) with debug reveal, so that every plot is drawn, a frame
-  takes 2.6-4 ms still, 3-8 ms panning (14-20 at most), and a sweep at two plots a frame 3-4 ms
-  (16-36 at most: the worker draws the chunks, the page shows their chart meanwhile); the chart
-  steps take under 1 ms a frame. A jump to an undrawn part of the map is drawn in full within
-  about half a second on a quiet host, 1-2 s with the host's 4 cores loaded 11 deep (single frames
-  of 40-100 ms then show up in any phase). A chunk of 4x4 plots takes the worker 15-100 ms (up to
-  250 ms for the first ones, which fill the sprite atlas).
+  and the trade screen (`stage trade`: 7 gold offered and accepted); and the classic interface on
+  the flat map, which those steps drive: the art loads, the interface has its bitmap type and
+  icons, the map is not blank, a frame takes under 60 ms (median of 15), the zoom goes through
+  the flat map's steps with `+` and `-`, Tools → Options switches to the isometric map and back,
+  and `?renderer=flat` keeps the flat one; then the isometric and HD-2D maps (their steps), and
+  the plain URL's default (the HD-2D map, or its isometric fallback). Any console error, page
+  error, failed request or HTTP error fails it. The screenshots (`target/web-smoke/*.png`: the
+  flat map and every screen above, the isometric and HD-2D maps) are for review, not committed.
 
 **Manual checklist** (a human tester, `ffh-play serve` and a real browser; also try a narrow
 window, and a phone: `ffh-play serve --bind 0.0.0.0` on the same network, or the site):
@@ -986,14 +960,6 @@ did.
 
 ## Known gaps
 
-* The art map: two civilizations of one tincture are told apart by a divided field given in the
-  order this page met them (docs/ART.md 7.2 gives it in slot order at the start, which needs every
-  civilization, also those you have not met); it holds while the page is open, and a reload may
-  give the divisions the other way round. Units face west after a move west this page saw (a
-  reload faces them all east). A holy city's glyph is not on its plaque (the view has no holy-city
-  flag for foreign cities), disorder shows only on your own cities (the view gives it only for
-  them). Animations are limited to the marching path: fire and water frames are drawn once into
-  the cached terrain.
 * Shift-right-click waypoints are sent when Shift is released, not one by one as Civ4 does (it
   holds the automatic moves while Shift is down instead): the end result is the same.
 * Tools → Spectate in a game of your own is the AI autoplay of one turn at a time (FfH's "AI

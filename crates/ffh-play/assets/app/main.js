@@ -158,7 +158,6 @@ function clearGame() {
   lastTurn = null;
   clearDismissed();
   units.clearWaypoints();
-  mapView.art?.setMap(mapView.map, null, "all");
   mapView.map = null;
   mapView.chunks.clear();
   mapView.request();
@@ -764,10 +763,9 @@ async function boot() {
   window.ffh.ready = true;
 }
 
-/** The art has loaded: the map draws with it unless the flat renderer was asked for, and the
- *  interface redraws with its type and icons. */
+/** The art has loaded: the interface (the flat map's: the others wear the isometric one) redraws
+ *  with its type and icons. */
 function lookLoaded() {
-  if (!mapView.iso && rendererChoice() === "art") mapView.useArt(true);
   syncSkin();
   title.titleArt();
   renderTop();
@@ -775,8 +773,8 @@ function lookLoaded() {
   units.renderPanel();
 }
 
-/** Switches the map's renderer ("hd2d", "iso", "art" or "flat"; Tools → Options). The isometric
- *  renderer owns the map on its own; leaving it turns it off and falls back to art or flat. */
+/** Switches the map's renderer ("hd2d", "iso" or "flat"; Tools → Options). The isometric
+ *  renderer owns the map on its own; leaving it turns it off and falls back to the flat one. */
 function setRenderer(r) {
   // (A 3D map still starting gives way to it, MapView.useR3d.)
   mapView.ask(r);
@@ -792,7 +790,6 @@ function setRenderer(r) {
     return;
   }
   if (mapView.iso) mapView.useIso(false);
-  mapView.useArt(r === "art" && !!look.art);
   syncSkin();
 }
 
@@ -820,9 +817,7 @@ function syncSkin() {
 }
 
 /** Turns the HD-2D map on; when it cannot run, says so and draws with its fallback, the isometric
- *  map. Not the art: at boot this runs before the art has loaded, and `lookLoaded` switches to the
- *  art only when it was the choice, so the map would stay flat. The remembered choice stays
- *  "hd2d": the next page tries again. */
+ *  map. The remembered choice stays "hd2d": the next page tries again. */
 async function useHd2d() {
   // A slow start is the shaders compiling (seconds on Windows' default Direct3D backend): say so,
   // at once when the renderer says it is about to compile there (r3d/map3d.js ready: the browser

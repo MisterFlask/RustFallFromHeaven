@@ -76,7 +76,7 @@ fn the_art_is_embedded_as_it_is_on_disk() {
     let want: Vec<String> = art_modules(&art_dir()).unwrap().into_iter().map(|m| format!("art/{m}")).collect();
     let embedded: Vec<String> = ART_MODULES.iter().map(|(p, _)| p.to_string()).collect();
     assert_eq!(embedded, want, "build.rs embeds the art's modules");
-    for need in ["art/art.js", "art/compose.js", "art/library.js", "art/mapping.js", "art/spritefmt.js", "art/ui/ui.js", "art/terrain/ground.js", "art/units/stack.js", "art/cities/citylight.js"] {
+    for need in ["art/art.js", "art/library.js", "art/mapping.js", "art/spritefmt.js", "art/ui/ui.js", "art/terrain/ground.js", "art/units/stack.js", "art/cities/citylight.js"] {
         assert!(want.iter().any(|m| m == need), "{need} is not among the art's modules: {want:?}");
     }
     for (path, body) in ART_MODULES {
@@ -268,8 +268,10 @@ fn client_files_are_served_with_their_types() {
     assert_eq!((r.status, r.content_type), (200, "text/javascript; charset=utf-8"));
     // ... and the art from `DIR/../web/art`.
     let req = |path: &str| HttpRequest { method: "GET".into(), path: path.into(), query: String::new(), headers: Vec::new(), body: Vec::new() };
-    let r = route(&req("/art/compose.js"), &ctx);
+    let r = route(&req("/art/library.js"), &ctx);
     assert_eq!((r.status, r.content_type), (200, "text/javascript; charset=utf-8"));
+    // (Not the map compositor: the client's 2D art map, which used it, is retired.)
+    assert_eq!(route(&req("/art/compose.js"), &ctx).status, 404);
     assert_eq!(route(&req("/art/art.bundle.txt"), &ctx).status, 200);
     assert_eq!(route(&req("/art/tools/validate.mjs"), &ctx).status, 404);
 }

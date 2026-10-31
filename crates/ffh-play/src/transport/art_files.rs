@@ -7,16 +7,18 @@
 // HTTP server (`--assets DIR` serves them from disk): std only, no paths into the crate.
 
 /// The art modules a browser may import, relative to the art directory with `/` separators,
-/// sorted: the toolkit's own (`*.js` in the directory) and each set's (`*.js` in the directories
-/// that `sets.txt` lists, except their `preview.js`). Node tools (`tools/`, `*.mjs`) and the
-/// preview pages are not part of the client.
+/// sorted: the toolkit's own (`*.js` in the directory, except `compose.js`) and each set's (`*.js`
+/// in the directories that `sets.txt` lists, except their `preview.js`). Node tools (`tools/`,
+/// `*.mjs`) and the preview pages are not part of the client, nor is `compose.js`, the map
+/// compositor: only the previews use it since the client's 2D art map was retired.
 pub fn art_modules(dir: &std::path::Path) -> std::io::Result<Vec<String>> {
     let js = |d: &std::path::Path, prefix: &str| -> std::io::Result<Vec<String>> {
         let mut out = Vec::new();
         for e in std::fs::read_dir(d)? {
             let e = e?;
             let name = e.file_name().to_string_lossy().into_owned();
-            if e.file_type()?.is_file() && name.ends_with(".js") && name != "preview.js" {
+            let client = name != "preview.js" && !(prefix.is_empty() && name == "compose.js");
+            if e.file_type()?.is_file() && name.ends_with(".js") && client {
                 out.push(format!("{prefix}{name}"));
             }
         }

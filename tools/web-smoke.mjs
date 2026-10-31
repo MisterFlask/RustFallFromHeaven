@@ -13,9 +13,9 @@
 // bar), diplomacy (F4, the trade screen when a player was met), the cities list (F1), the keys
 // (?), the go-to mode (G, Esc), the map layers, the inspector, debug reveal, AI autoplay and the
 // spectator mode (play, pause, step, stop), and the trade screen (`stage trade`: gold offered and
-// accepted). The art client: the map drawn with the original pixel art (its worker, the view
-// drawn in full, a frame's time, the zoom steps and the chart, the bitmap type), Tools → Options
-// and `?renderer=flat` for the flat renderer; `?renderer=iso`, the isometric renderer (its sprites,
+// accepted). The default map (the HD-2D one, or its isometric fallback); the classic interface on
+// the flat map (the bitmap type, a frame's time, the zoom steps), which the steps above drive, Tools
+// → Options and `?renderer=flat`; `?renderer=iso`, the isometric renderer (its sprites,
 // picking a unit by its figure, zoom, layers); `?renderer=hd2d`, the HD-2D map, the default (its
 // frame, the cards, picking, selection, zoom, pan, layers, a lost context's fallback). Phase 7: the automate buttons (`stage automate`: a
 // worker automated with a click, a scout exploring by its hotkey), this game's armies (`stage
@@ -346,74 +346,71 @@ async function newGame(url, saves) {
   steps.push(`new game (Start double-clicked: one game): turn ${await S("S.status.turn")}`);
   await shot("first-turn");
   // The plain URL (fresh, no stored choice) opens the default renderer, the HD-2D map (docs/HD2D.md,
-  // look.js) -- or, where WebGL2 renders in software (here, --disable-gpu), its fallback, the
-  // isometric 2.5D map. The checks below drive the art client; switch to it explicitly.
+  // look.js) -- or, where WebGL2 renders in software (a browser without a GPU, as on CI), its
+  // fallback, the isometric 2.5D map. The checks below drive the classic interface, on the flat map
+  // that wears it; switch to it explicitly.
   await until2(`!window.ffh.mapView.r3dLoading && ["hd2d", "iso"].includes(window.ffh.mapView.renderer())`, "the default renderer (the HD-2D map or its isometric fallback)", 180000);
   const [dflt, why] = await b.eval("[window.ffh.mapView.renderer(), window.ffh.mapView.r3dError?.code ?? null]");
   if (dflt === "iso" && why !== "software-webgl") throw new Error(`the default HD-2D map fell back to the isometric one (${why ?? "no reason given"})`);
   steps.push(dflt === "hd2d" ? "the default renderer is the HD-2D map" : "the default renderer is the HD-2D map, here (software WebGL2) its isometric fallback");
-  await b.goto(`${url}/?renderer=art`);
-  await until2("window.ffh && window.ffh.ready", "the client to boot (art)");
+  await b.goto(`${url}/?renderer=flat`);
+  await until2("window.ffh && window.ffh.ready", "the client to boot (flat)");
 }
 
-/** The art client (docs/ART.md, look.js, artmap.js): the art loaded and draws the map (in its
- *  worker where there is one), the view is drawn in full, the map is not blank, a frame takes
- *  little time, the zoom goes through the art's steps and the chart, the interface uses the
- *  bitmap type and frames, and Tools → Options switches to the flat renderer and back. */
-async function artClient() {
+/** The classic interface (docs/ART.md, look.js) on the flat map, the sprite-less debug renderer
+ *  that wears it (the HD-2D and isometric maps wear the isometric one): the art loaded, the
+ *  interface uses the bitmap type and frames, the map is not blank, a frame takes little time, the
+ *  zoom goes through the flat map's steps, and Tools → Options switches to the isometric map and
+ *  back (the flat map stays remembered for the steps that follow, which drive this interface). */
+async function classicClient() {
   await until2("!!(window.ffh.look.art || window.ffh.look.error)", "the art to load");
   const err = await b.eval("window.ffh.look.error ? String(window.ffh.look.error.message || window.ffh.look.error) : null");
   if (err) throw new Error(`the art did not load: ${err}`);
-  if ((await b.eval("window.ffh.mapView.renderer()")) !== "art") throw new Error("the map is not drawn with the art");
+  if ((await b.eval("window.ffh.mapView.renderer()")) !== "flat") throw new Error("the map is not the flat one");
   if (!(await b.eval(`document.documentElement.classList.contains("art") && !!document.querySelector("#btn-techs .ui-ptext") && !!document.querySelector("#empire canvas.ui-px")`))) {
     throw new Error("the interface has no bitmap type or icons");
   }
-  await until2("window.ffh.mapView.art.settled()", "the art map drawn in full", 60000);
   const look = await b.eval(`(() => {
     const mv = window.ffh.mapView;
+    const times = [];
+    for (let k = 0; k < 15; k++) { const t = performance.now(); mv.draw(); times.push(performance.now() - t); }
+    times.sort((a, b) => a - b);
     const c = mv.canvas;
     const g = c.getContext("2d", { willReadFrequently: true });
     const w = Math.min(240, c.width >> 1), h = Math.min(240, c.height >> 1);
     const d = g.getImageData((c.width - w) >> 1, (c.height - h) >> 1, w, h).data;
     const colours = new Set();
     for (let i = 0; i < d.length; i += 4) colours.add((d[i] << 16) | (d[i + 1] << 8) | d[i + 2]);
-    const times = [];
-    for (let k = 0; k < 15; k++) { const t = performance.now(); mv.draw(); times.push(performance.now() - t); }
-    times.sort((a, b) => a - b);
-    return { colours: colours.size, median: times[7], worker: !!mv.art.stats.worker, ts: mv.cam.ts };
+    return { colours: colours.size, median: times[7] };
   })()`);
-  if (look.colours < 8) throw new Error(`the art map is nearly blank (${look.colours} colours in the middle of the view)`);
-  if (look.median > 60) throw new Error(`an art frame takes ${look.median.toFixed(1)} ms (median of 15)`);
-  if (look.ts !== 64) throw new Error(`the art's default zoom is ${look.ts} px a plot (want 64)`);
-  await shot("art-map");
-  steps.push(`art map: ${look.colours} colours mid-view, a frame in ${look.median.toFixed(1)} ms (median), chunks drawn ${look.worker ? "by the worker" : "on the page"}`);
-  // The zoom steps: 64 -> 32 (survey) -> 16 -> 8 (the chart) -> 8, then back up to 128 and to 64.
+  if (look.colours < 8) throw new Error(`the flat map is nearly blank (${look.colours} colours in the middle of the view)`);
+  if (look.median > 60) throw new Error(`a flat frame takes ${look.median.toFixed(1)} ms (median of 15)`);
+  await shot("flat-map");
+  steps.push(`flat map, classic interface: ${look.colours} colours mid-view, a frame in ${look.median.toFixed(1)} ms (median)`);
+  // The zoom steps, through the flat map's own, and back.
+  const keys = ["-", "-", "+", "+", "+", "-"];
+  const zs = await b.eval("window.ffh.mapView.zooms()");
+  let ts = await b.eval("window.ffh.mapView.cam.ts");
+  const want = keys.map((k) => (ts = zs[Math.max(0, Math.min(zs.length - 1, zs.indexOf(ts) + (k === "+" ? 1 : -1)))]));
   const zooms = [];
-  for (const k of ["-", "-", "-", "-", "+", "+", "+", "+", "+", "-"]) {
+  for (const k of keys) {
     await b.key(k);
     zooms.push(await b.eval("window.ffh.mapView.cam.ts"));
-    if (zooms.at(-1) === 32 && k === "-") {
-      await until2("window.ffh.mapView.art.settled()", "the survey zoom drawn", 60000);
-      await shot("art-survey");
-    }
-    if (zooms.at(-1) === 16 && k === "-") await shot("art-chart");
   }
-  if (JSON.stringify(zooms) !== JSON.stringify([32, 16, 8, 8, 16, 32, 64, 96, 128, 96])) throw new Error(`the zoom steps: ${zooms}`);
-  await b.key("-");
-  if ((await b.eval("window.ffh.mapView.cam.ts")) !== 64) throw new Error("the zoom did not come back to 64");
-  steps.push(`zoom steps ${zooms.join(" ")} (the chart at 8 and 16, the art at 32-128)`);
-  // Tools → Options: the flat renderer and back.
+  if (JSON.stringify(zooms) !== JSON.stringify(want)) throw new Error(`the flat map's zoom steps: ${zooms}, not ${want}`);
+  steps.push(`zoom steps ${zooms.join(" ")}`);
+  // Tools → Options: the isometric map and back.
   await click("#btn-tools");
   await dialog("Tools");
   await click("#tool-options");
   await dialog("Options");
+  await click("#option-iso-renderer");
+  await until2(`window.ffh.mapView.renderer() === "iso"`, "the isometric map (Options)");
+  await until2(`!!document.querySelector("#option-flat-renderer")`, "the Options dialog after the switch");
   await click("#option-flat-renderer");
-  await until2(`window.ffh.mapView.renderer() === "flat"`, "the flat renderer (Options)");
-  await click("#option-art-renderer");
-  await until2(`window.ffh.mapView.renderer() === "art"`, "the art renderer again (Options)");
+  await until2(`window.ffh.mapView.renderer() === "flat" && document.documentElement.classList.contains("art")`, "the flat map and its interface again (Options)");
   await closeDialog("Options");
-  await until2("window.ffh.mapView.art.settled()", "the art map drawn again", 60000);
-  steps.push("Tools → Options: the flat renderer and back to the art");
+  steps.push("Tools → Options: the isometric map and back to the flat one");
 }
 
 /** `?renderer=flat`: the P5 renderer, kept for debugging, on the same game. */
@@ -429,7 +426,8 @@ async function flatRenderer(url) {
 
 /** `?renderer=iso`: the isometric renderer (docs/ISO.md) on the same game: its sprites load, the
  *  frame is drawn (not blank), a click on a unit's figure (which stands up into the plots behind)
- *  selects it, the hover follows the mouse, the zoom steps, the political layer, and back to the art. */
+ *  selects it, the hover follows the mouse, the zoom steps, the political layer, and back to the flat
+ *  map. */
 async function rendererIso(url) {
   await b.goto(`${url}/?renderer=iso`);
   await until2("window.ffh && window.ffh.ready", "the client to boot (iso)");
@@ -492,15 +490,15 @@ async function rendererIso(url) {
   await shot("renderer-iso");
   // The city screen over the isometric map: its plots worked by clicking them on the map.
   await cityScreen();
-  await b.eval(`window.ffh.setRenderer("art")`);
-  await until2(`window.ffh.mapView.renderer() === "art"`, "the art renderer after the isometric one");
-  steps.push(`?renderer=iso: a frame of ${colours} colours, ${clicked ? "a click on a unit's figure selects it, hover, " : ""}zoom ${zooms.join(" ")}, political layer, back to the art`);
+  await b.eval(`window.ffh.setRenderer("flat")`);
+  await until2(`window.ffh.mapView.renderer() === "flat"`, "the flat map after the isometric one");
+  steps.push(`?renderer=iso: a frame of ${colours} colours, ${clicked ? "a click on a unit's figure selects it, hover, " : ""}zoom ${zooms.join(" ")}, political layer, back to the flat map`);
 }
 
 /** `?renderer=hd2d`: the HD-2D map (docs/HD2D.md), the default, on the same game: its WebGL frame
  *  is drawn and not blank, the sprites load and the units stand as cards, picking through the
  *  relief finds the plot under every plot's screen point, a click selects a unit, the hover follows
- *  the mouse, the zoom steps and a pan, the political layer, back to the 2D art, and a lost WebGL
+ *  the mouse, the zoom steps and a pan, the political layer, back to the flat map, and a lost WebGL
  *  context falls back to the isometric map. Software rendering is slow, so the frame loop is idle
  *  (no animation) and the internal resolution halved. */
 async function rendererHd2d(url) {
@@ -581,18 +579,18 @@ async function rendererHd2d(url) {
   await b.eval(`window.ffh.setLayer("terrain")`);
   await b.eval("window.ffh.mapView.r3d.render(1)");
   await shot("renderer-hd2d");
-  // Back to the 2D art: the WebGL canvas goes.
-  await b.eval(`window.ffh.setRenderer("art")`);
-  await until2(`window.ffh.mapView.renderer() === "art" && !document.querySelector("canvas.map3d")`, "the art renderer after the HD-2D map");
+  // Back to the flat map: the WebGL canvas goes.
+  await b.eval(`window.ffh.setRenderer("flat")`);
+  await until2(`window.ffh.mapView.renderer() === "flat" && !document.querySelector("canvas.map3d")`, "the flat map after the HD-2D map");
   // A lost WebGL context (a driver reset) hands the map to the HD-2D map's fallback, the isometric
-  // one; then back to the art for what follows.
+  // one; then back to the flat map for what follows.
   await b.eval(`window.ffh.setRenderer("hd2d")`);
   await until2(`window.ffh.mapView.renderer() === "hd2d" && !!window.ffh.mapView.r3d.cam && document.querySelectorAll("canvas.map3d").length === 1`, "the HD-2D map again", 180000);
   const canLose = await b.eval(`(() => { const x = window.ffh.mapView.r3d.gl.getExtension("WEBGL_lose_context"); if (x) x.loseContext(); return !!x; })()`);
   if (canLose) await until2(`window.ffh.mapView.renderer() === "iso" && !document.querySelector("canvas.map3d")`, "the isometric map after the HD-2D map's context was lost");
-  await b.eval(`window.ffh.setRenderer("art")`);
-  await until2(`window.ffh.mapView.renderer() === "art" && !document.querySelector("canvas.map3d")`, "the art renderer after the HD-2D map");
-  steps.push(`?renderer=hd2d: a frame of ${frame.colours} colours mid-view, ${frame.cards} unit cards and ${frame.statics} other cards, ${pick.n} plots picked right through the relief (${pick.hidden} hidden behind nearer ground), click-select, hover, zoom ${zooms.join(" ")}, pan, political layer, back to the art${canLose ? ", a lost WebGL context falls back to the isometric map" : " (no WEBGL_lose_context: context loss not checked)"}`);
+  await b.eval(`window.ffh.setRenderer("flat")`);
+  await until2(`window.ffh.mapView.renderer() === "flat" && !document.querySelector("canvas.map3d")`, "the flat map after the HD-2D map");
+  steps.push(`?renderer=hd2d: a frame of ${frame.colours} colours mid-view, ${frame.cards} unit cards and ${frame.statics} other cards, ${pick.n} plots picked right through the relief (${pick.hidden} hidden behind nearer ground), click-select, hover, zoom ${zooms.join(" ")}, pan, political layer, back to the flat map${canLose ? ", a lost WebGL context falls back to the isometric map" : " (no WEBGL_lose_context: context loss not checked)"}`);
 }
 
 /** Records the page's POST bodies in `window.__posts` (from now on). */
@@ -1585,7 +1583,7 @@ async function main() {
     console.log(`web-smoke: ${b.name}; server ${server.url}; screenshots in ${OUT}`);
     const t0 = Date.now();
     await newGame(server.url, saves);
-    await artClient();
+    await classicClient();
     await cycleAll();
     await staleSelection();
     await foundCity();

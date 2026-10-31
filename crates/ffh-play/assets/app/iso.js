@@ -44,8 +44,8 @@ const HERALD = "Herald, Georgia, serif";
 /** Herald's size at tile width `tw`: 2 CSS px a pixel from the default zoom up, else 1. */
 const heraldScale = (tw) => (tw >= 96 ? 2 : 1);
 
-/** The move slide (as artmap.js, docs/ART.md 4.5): about 8 tiles a second, capped; a longer move
- *  jumps. */
+/** The move slide (as the retired 2D art map's, docs/ART.md 4.5): about 8 tiles a second, capped;
+ *  a longer move jumps. */
 const SLIDE_MS_PER_TILE = 125;
 const SLIDE_MAX_MS = 400;
 const SLIDE_MAX_TILES = 4;
@@ -685,7 +685,7 @@ export class IsoMap {
 
   /** Facing and the move slide from the units' moves since the last view: units face right and
    *  are mirrored after a move to the left of the screen; the player's own moves within their turn
-   *  slide (as artmap.js). */
+   *  slide (as the retired 2D art map did). */
   syncView() {
     if (S.view === this.seenView) return;
     this.seenView = S.view;

@@ -2,7 +2,7 @@
 
 **Status: playable; the HD-2D map's fallback.** One of the browser client's map renderers
 (`crates/ffh-play`): the default HD-2D map (docs/HD2D.md) falls back to it where it cannot run, beside
-the 2D pixel art (docs/ART.md) and the flat, sprite-less debug renderer. It draws the game as a bright, saturated "HD pixel art" diorama on a 2:1 isometric
+the flat, sprite-less debug renderer (the 2D pixel-art map, docs/ART.md, is retired). It draws the game as a bright, saturated "HD pixel art" diorama on a 2:1 isometric
 board, close to the owner's reference screenshot (`tools/m7/ref/reference_full.png`). Units, cities,
 features and terrain are sprites drawn by an image model (OpenAI `gpt-image-2.5-sunburst`) and
 brought to one contract by code: the **M7 art package** in `tools/m7/`. Everything around the

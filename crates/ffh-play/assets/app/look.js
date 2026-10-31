@@ -8,12 +8,11 @@
 //
 // The map renderer is chosen here too: the HD-2D map (`r3d/hd2d/`, docs/HD2D.md) by default, the
 // isometric 2.5D one (`iso.js`, docs/ISO.md) where it cannot run (main.js useHd2d), unless the page
-// was opened with `?renderer=iso` / `?renderer=art` / `?renderer=flat` or the Tools → Options
-// choice says otherwise ("art" is the 2D pixel art, "flat" the sprite-less debug renderer).
+// was opened with `?renderer=iso` / `?renderer=flat` or the Tools → Options choice says otherwise
+// ("flat" is the sprite-less debug renderer, which wears this art's interface).
 
 import { loadArt } from "../art/art.js";
 import * as UI from "../art/ui/ui.js";
-import { assignHeraldry } from "./stacks.js";
 import { setTextHook, setTypeIconHook } from "./dom.js";
 import { setIconHook } from "./markup.js";
 import { setIlluminate } from "./modals.js";
@@ -27,18 +26,18 @@ export const look = { art: null, error: null, u: 2, dpr: 1, ms: 0, data: null, b
 
 const RENDERER_KEY = "ffh.renderer";
 
-/** The map renderers a player can choose. The 3D renderer's own mode, everything modelled
- *  (docs/R3D.md), is retired: the HD-2D map is built on it, and an old `?renderer=3d` or remembered
- *  "3d" asks for the HD-2D map. */
+/** The map renderers a player can choose. Retired ones -- the 3D renderer's own mode, everything
+ *  modelled (docs/R3D.md: the HD-2D map is built on it), and the 2D pixel-art map (docs/ART.md) --
+ *  ask for the HD-2D map when an old `?renderer=3d` / `art` or a remembered choice names them. */
 function known(r) {
-  return r === "hd2d" || r === "iso" || r === "art" || r === "flat";
+  return r === "hd2d" || r === "iso" || r === "flat";
 }
 
 function chosen(r) {
-  return r === "3d" ? "hd2d" : known(r) ? r : null;
+  return r === "3d" || r === "art" ? "hd2d" : known(r) ? r : null;
 }
 
-/** The map renderer asked for: an explicit `?renderer=hd2d` / `iso` / `art` / `flat`, else the
+/** The map renderer asked for: an explicit `?renderer=hd2d` / `iso` / `flat`, else the
  *  remembered Tools → Options choice, else "hd2d" (the HD-2D map, docs/HD2D.md; main.js falls back
  *  to the isometric 2.5D map where it cannot run). */
 export function rendererChoice() {
@@ -415,25 +414,4 @@ export function bannerEl(civType, { u = 4, title } = {}) {
   c.className = "ui-px banner";
   if (title) c.title = title;
   return c;
-}
-
-// ---------------------------------------------------------------------------------------------
-// Owners: heraldry (docs/ART.md 7.2)
-
-const memo = new Map();
-let memoGame = null;
-
-/** The heraldry of the players the client knows (`[{id, civ (type name), barbarian}]`, yours
- *  first, then by slot), as specs for `stacks.js` `OwnerStyles`: each civilization takes its
- *  tincture plain, or the next free division of it, in the order the players became known; an
- *  assignment is kept for the game (`game`), so meeting another civilization never changes a
- *  banner already seen. A player the client does not know flies the lozenge. */
-export function heraldry(players, game) {
-  const art = look.art;
-  if (!art) return [];
-  if (game !== memoGame) {
-    memo.clear();
-    memoGame = game;
-  }
-  return assignHeraldry(players, memo, (civ) => (civ ? art.resolve("civ", civ)?.opts?.tincture : null) ?? "Argent");
 }

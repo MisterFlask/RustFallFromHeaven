@@ -3,7 +3,7 @@
 **Status: the base of the HD-2D map; its own mode retired** (the owner's decision, 2026-10-31). The
 HD-2D map (docs/HD2D.md), the browser client's default renderer, is this renderer with the
 isometric sprites standing in its world; the isometric 2.5D map (docs/ISO.md) is its fallback, and
-the 2D pixel art (docs/ART.md) and the flat, sprite-less debug renderer remain. The mode described
+the flat, sprite-less debug renderer remains (the 2D pixel-art map, docs/ART.md, is retired too). The mode described
 here, everything modelled, is no longer offered to players (`?renderer=3d` and a remembered "3d"
 open the HD-2D map); the r3d lab still draws it, to work on the ground, water, light and pipeline
 the two share. It draws the same game state as a fully

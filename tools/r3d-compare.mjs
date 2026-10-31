@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 // Side-by-side captures of one real game scene in the map's renderers (docs/R3D.md
 // "Comparisons"): starts `ffh-play serve --load SAVE` (debug reveal on unless --fog), centres every
-// renderer on the same plot and saves `art.png` (the 2D pixel art), `iso.png` (the isometric
-// 2.5D), then the HD-2D map (docs/HD2D.md, the default) at the gameplay, close and far zooms
-// (`hd2d.png`, `hd2d-close.png`, `hd2d-far.png`). (The 3D renderer's own mode is retired from the
-// client: the r3d lab draws it.)
+// renderer on the same plot and saves `iso.png` (the isometric 2.5D), then the HD-2D map
+// (docs/HD2D.md, the default) at the gameplay, close and far zooms (`hd2d.png`, `hd2d-close.png`,
+// `hd2d-far.png`). (The 2D pixel-art map and the 3D renderer's own mode are retired from the
+// client; the r3d lab draws the latter.)
 //
 //   node tools/r3d-compare.mjs --save SAVE --x X --y Y [--out DIR] [--w 1440 --h 900] [--fog]
 //        [--only hd2d,hd2d-far] [--cfg '{"clouds":0}'] (merged into the HD-2D shots)
@@ -52,8 +52,7 @@ const browser = await pw.chromium.launch(chromiumLaunch(!!args.gpu));
 const W = Number(args.w ?? 1440), H = Number(args.h ?? 900);
 const enc = (o) => encodeURIComponent(typeof o === "string" ? o : JSON.stringify(o));
 const SHOTS = [
-  // The 2D renderers at the HD-2D map's gameplay zoom (96 px a plot): the same piece of the map in each.
-  { name: "art", renderer: "art", ts: 96 },
+  // The isometric map at the HD-2D map's gameplay zoom (96 px a plot): the same piece of the map.
   { name: "iso", renderer: "iso", ts: 96 },
   { name: "hd2d", renderer: "hd2d", ts: 96, cfg: {} },
   { name: "hd2d-close", renderer: "hd2d", ts: 168, cfg: {} },
@@ -88,7 +87,6 @@ for (const s of SHOTS) {
   // The client may have moved the camera meanwhile (it centres on the next unit waiting for
   // orders): centre again just before the capture.
   await page.evaluate(([x, y]) => window.ffh.mapView.centerOn(x, y, { animate: false }), [X, Y]);
-  if (s.renderer === "art") await page.waitForFunction(() => window.ffh.mapView.art?.settled?.() ?? true, null, { timeout: 120000 }).catch(() => {});
   if (!gl3(s.renderer)) await page.waitForTimeout(1500);
   if (gl3(s.renderer)) {
     await page.evaluate(async () => {

@@ -112,12 +112,12 @@ without changing the rules engine:
 - **Browser client.** `crates/ffh-play/assets/` (embedded with `include_str!`, served by
   `ffh-play serve`, and copied into the static site): vanilla ES modules, no build step and no
   external code. It only renders what the engine computes (fog, legal actions, odds, paths,
-  turns) and sends the same commands as the agent. The map has four renderers (Tools → Options,
+  turns) and sends the same commands as the agent. The map has three renderers (Tools → Options,
   or `?renderer=`): the HD-2D map, the default (`r3d/hd2d/` on the WebGL2 3D renderer `r3d/`,
   docs/HD2D.md, docs/R3D.md), loaded on demand, which falls back to the isometric 2.5D map
-  (`iso.js`, docs/ISO.md) where it cannot run; the 2D pixel art; and the flat, sprite-less
-  debugging map, the last two drawn on a `<canvas>` in offscreen chunks redrawn where the map
-  changed. Checked by `tests/web.rs` (files and
+  (`iso.js`, docs/ISO.md) where it cannot run; and the flat, sprite-less debugging map, drawn on a
+  `<canvas>` in offscreen chunks redrawn where the map changed, in the classic interface of the
+  pixel art (docs/ART.md). Checked by `tests/web.rs` (files and
   imports), and with node by `tools/web-check.sh`, `tools/web-api-smoke.mjs`, the
   headless-Chromium `tools/web-smoke.mjs` and `tools/web-touch-smoke.mjs`, and for the static site
   `tools/web-site-smoke.mjs`.

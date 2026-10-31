@@ -279,8 +279,8 @@ marching: 36 against 43 ms a turn on seed 1, 48 against 51 on seed 3.
 - **Marching recruits** can be selected to look at. The unit panel says "Marching to the 2nd Army
   (n turns)" (or that it waits, or has no way there now) and offers no orders; every unit command
   refuses it, naming the destination, and it is never among the units waiting for orders. On the
-  iso, flat and 2D art maps an ochre double chevron replaces its moves pip (the 3D and HD-2D
-  renderers have no mark yet), and the plot tooltip says where it goes.
+  iso and flat maps an ochre double chevron replaces its moves pip (the HD-2D map has no mark
+  yet), and the plot tooltip says where it goes.
 - **Unit panel.** Each unit's row shows its army (amber; red when out of supply) or "garrison".
   With a whole army selected, a line gives its size and target, its recruits on the way and its
   supply, with a link to the Armies screen.

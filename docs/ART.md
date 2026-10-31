@@ -6,6 +6,12 @@ by the client at load time. Every asset is either drawn for this game or cut fro
 owner's own reference sheets (section 10.2); nothing is taken from Civ4 or FfH2. The isometric
 renderer is outside this guide: its art and its rules are the M7 package's (docs/ISO.md).
 
+**Status (2026-10-31): the map this guide describes is retired.** The client's maps are the HD-2D
+map (docs/HD2D.md) and its fallback, the isometric one (docs/ISO.md); the 2D pixel-art map
+(`artmap.js`) is gone. What remains of this guide in the client is the interface (the ui set's
+frames, bitmap type and icons), worn by the flat debug map, and the title screen; its map sections
+(terrain, units, cities on the map) are a record of that renderer.
+
 The direction is **cheerful readability**, in the spirit of the 16-bit tactics games (Shining
 Force, the handheld Fire Emblems): a sunny, saturated world, crisp outlined figures, bold owner
 colours and gold-framed navy panels. It replaced the earlier "Monastic Pixel Noir" (a night-time
