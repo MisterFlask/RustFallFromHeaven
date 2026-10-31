@@ -83,7 +83,13 @@ export class Map3D {
     }
     this.gl = gl;
     this.glName = glName;
-    this.pipeline = new Pipeline(gl, this.terrainDefines(), { scene: this.sceneDefines(), packed: this.packedScene() });
+    this.pipeline = new Pipeline(gl, this.terrainDefines(), {
+      scene: this.sceneDefines(),
+      prop: this.propDefines(),
+      water: this.waterDefines(),
+      riverSplit: this.riverSplit(),
+      packed: this.packedScene(),
+    });
     performance.mark("r3d:pipeline");
     /** Whether the programs have compiled (`ready`): the loop draws nothing before. */
     this.compiled = false;
@@ -261,6 +267,22 @@ export class Map3D {
   /** The hash texture's format: `noiseTex` 2 is R16F (8 MB), else R8 (4 MB). */
   noiseTexFormat() {
     return this.cfg.noiseTex === 2 ? "r16f" : "r8";
+  }
+
+  /** `#define`s the props' and the water's programs are compiled with (shaders.js): none for the 3D
+   *  renderer; a mode may compile parts out (Direct3D's compile time, docs/R3D.md §11.1). */
+  propDefines() {
+    return {};
+  }
+
+  waterDefines() {
+    return {};
+  }
+
+  /** Whether the rivers have a program of their own (the sea's then compiled without them): two
+   *  shorter compiles instead of one long one, on Direct3D. */
+  riverSplit() {
+    return false;
   }
 
   /** How strongly the cities light the ground round them (decals.js rasterLight): 1 for the 3D

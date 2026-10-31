@@ -681,6 +681,39 @@ beside an Intel UHD integrated GPU, headless Chrome 156 (`FFH_CHROMIUM_CHANNEL=c
     masses moved, the look kept. Tried and dropped: two octaves for the pools and the hell cracks (the cracks
     widened into blobs), the pigment's drift from the borders' noises (20% of a still a shade
     lighter, for two noises).
+* **The props' and the water's programs, compiled smaller** (prototype, 2026-10-31; `MapHd2d`
+  `propDefines`, `waterDefines`, `riverSplit`, `LITE` in `hd2d/index.js`). After the terrain they
+  were the longest of Direct3D's first-draw compiles (docs/R3D.md §11.1). Instruction counts after
+  inlining and optimisation (glslang, spirv-opt -O, about 0.95 of FXC's own count; FXC's time about
+  2.6e-7 s × N² on the RTX 4060 laptop):
+
+  | program | before | after | FXC, estimated |
+  |---|---|---|---|
+  | props | 2856 | 1045 | 2.1 s -> 0.28 s |
+  | water (sea + rivers) | 3159 | sea 1568 + rivers 1643 | 2.6 s -> 0.64 + 0.70 s |
+
+  In the mode the prop program draws only what no card claims: the banks' boulders, reeds and
+  overhanging grass, the farms' rows, sheaves, barns, fences and carts, bridges, palms, volcanoes; no
+  crown of leaf clusters (its trees, bushes and saplings are cards), no team cloth, no unit.
+  `NO_LEAVES` compiles the leaf clusters' material out (exact: none is drawn); `DABS_1` lays each
+  brush mark from the one plane that carries the face instead of blending three (the weights, the
+  normal's fourth power, give that plane nearly all of every face; a third of the marks' code);
+  `NO_FINE_PIGMENT` drops the fine pigment noise under the marks (a few percent: nothing moved by 8 of
+  255). The strokes themselves stay: compiled out (`NO_STROKES`) the fields' rows and the sheaves turn
+  to smooth plastic close up (3.1% of rivertown's pixels moved by more than 8). The water's rivers
+  are a program of their own (`RIVER_SPLIT`, exact), the sea's normals come from noise gradients
+  (`GRAD_NORMALS`: three noises instead of nine; the rivers keep their finite difference, whose step
+  across the channel is wide enough that gradients moved what they mirror), the body's mottle has
+  two octaves (`BODY_LITE`), and across the fog of war's frontier each drift fades toward its mean
+  instead of being worked out twice, moving and at rest (`CALM_FADE`, about 0.5 s of the two
+  programs' compile): the only change a player could see, a strip along the frontier where the
+  water's strokes and foam calm. Glitter and caustics stay (each another 0.1 s; `NO_GLITTER`
+  loses the sea's and rivers' glints, `NO_CAUSTICS` a faint net seen close up). Against the
+  original programs (SwiftShader, animation frozen) the whole set moves at most 0.28% of a lab
+  still's pixels by more than 8 of 255 (0.5% on a close view of the coast: the sea's ripples) and
+  0.07% of the turn-200 game's HD-2D shots; the 3D renderer's programs are unchanged (identical
+  after preprocessing). `?r3d={"lite":0}` compiles the
+  original programs; `"liteOff"`/`"liteOn"` (comma lists) take names out or add the optional ones.
 
 ## 9. Cities and the camera
 
@@ -752,6 +785,8 @@ compiled without, §8) and the mode's rows. `noiseTex` (page only, read when the
 the terrain's, water's and props' value noise from a hash texture (docs/R3D.md §11.1, `NOISE_TEX`;
 about half their compile on Direct3D); `?r3d={"noiseTex":0}` compiles the arithmetic noise, 2 an
 R16F texture instead of R8.
+`lite` (1; not a panel row, read when the programs are built) compiles parts of the props' and the
+water's programs out, `liteOff` and `liteOn` choose which (§8).
 
 ## 12. Removing it
 

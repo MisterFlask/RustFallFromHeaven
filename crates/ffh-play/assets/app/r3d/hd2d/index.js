@@ -24,6 +24,23 @@ import { staticEnv } from "../dress.js";
 import { MAT, bakeLayer } from "../materials.js";
 import { GROUNDS } from "./art/index.js";
 
+/** The mode's compile-time savings (MapHd2d.liteDefines; shaders.js). `on`: compiled in by default;
+ *  `opt`: only with `cfg.liteOn`.
+ *  Props: NO_LEAVES -- no crown of leaf clusters stands in the mode (its trees, bushes and saplings
+ *  are cards); DABS_1 -- a brush mark from the one plane that carries the face, not a blend of three;
+ *  NO_FINE_PIGMENT -- the fine pigment noise (under the brush marks, a few percent) left out.
+ *  (NO_STROKES, the brush strokes on matte props, is optional: the fields and sheaves lose their
+ *  texture close up without them.)
+ *  Water: CALM_FADE -- the frontier's drifts fade toward their means instead of being mixed twice;
+ *  BODY_LITE -- the body's mottle in two octaves; GRAD_NORMALS -- the sea's normals from noise
+ *  gradients (GRAD_NORMALS_RIVER the rivers' too: optional, it moves what they mirror). RIVER_SPLIT:
+ *  the rivers a program of their own. */
+const LITE = {
+  prop: { on: ["NO_LEAVES", "DABS_1", "NO_FINE_PIGMENT"], opt: ["NO_STROKES"] },
+  water: { on: ["CALM_FADE", "BODY_LITE", "GRAD_NORMALS"], opt: ["NO_GLITTER", "NO_CAUSTICS", "GRAD_NORMALS_RIVER"] },
+  split: { on: ["RIVER_SPLIT"], opt: [] },
+};
+
 /** The 3D renderer's gameplay zoom: on the full-bleed map (the isometric screen's floating
  *  panels) it shows about fifteen plots across, as the look target does, and its figures are about
  *  the target's share of the screen. */
@@ -187,6 +204,32 @@ export class MapHd2d extends Map3D {
    *  (docs/R3D.md §11.1). `?r3d={"noiseTex":0}` compiles the arithmetic noise. */
   sceneDefines() {
     return this.cfg.noiseTex === 0 ? {} : { NOISE_TEX: 1 };
+  }
+
+  /** What the mode compiles out of the props' and the water's programs, to shorten Direct3D's
+   *  compile of them at the first frame (docs/R3D.md §11.1, docs/HD2D.md §8). `cfg.lite` 0 compiles
+   *  the 3D renderer's programs; `cfg.liteOff` (a comma list of names) leaves those out, `cfg.liteOn`
+   *  adds the optional ones (LITE.opt). */
+  liteDefines(kind) {
+    const L = LITE[kind];
+    if (!(this.cfg.lite ?? 1)) return {};
+    const list = (k) => String(this.cfg[k] ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+    const off = new Set(list("liteOff"));
+    const out = {};
+    for (const n of [...L.on, ...list("liteOn").filter((n) => L.opt.includes(n))]) if (!off.has(n)) out[n] = 1;
+    return out;
+  }
+
+  propDefines() {
+    return this.liteDefines("prop");
+  }
+
+  waterDefines() {
+    return this.liteDefines("water");
+  }
+
+  riverSplit() {
+    return !!this.liteDefines("split").RIVER_SPLIT;
   }
 
   saveCfg(cfg) {
