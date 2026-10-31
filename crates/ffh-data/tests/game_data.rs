@@ -192,12 +192,14 @@ fn game_options() {
     let advanced_start = &d.game_options[GameOptionType::GAMEOPTION_ADVANCED_START];
     assert!(!advanced_start.default && advanced_start.visible);
     // FFH2's options, and this game's own after them (docs/PORTING.md "This game's own systems"):
-    // visible, on by default.
+    // visible, on by default, except engagements while phase 6 is built (it is switched on when the
+    // phase closes).
     let ffh2 = GameOptionType::GAMEOPTION_ALWAYS_RAZE.idx() + 1;
     assert_eq!(d.game_options.iter().take(ffh2).filter(|o| o.default).count(), 1);
     assert_eq!(d.game_options.iter().take(ffh2).filter(|o| o.visible).count(), 52);
-    for o in d.game_options.iter().skip(ffh2) {
-        assert!(o.default && o.visible, "{}", o.base.type_);
+    for (o, info) in d.game_options.iter_enumerated().skip(ffh2) {
+        let default = o != GameOptionType::GAMEOPTION_ENGAGEMENTS;
+        assert!(info.default == default && info.visible, "{}", info.base.type_);
     }
     assert_eq!(d.game_options[GameOptionType::GAMEOPTION_CULTURE_ACTIONS].base.type_, "GAMEOPTION_CULTURE_ACTIONS");
 }

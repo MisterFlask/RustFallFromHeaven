@@ -1,0 +1,205 @@
+<?xml version="1.0"?>
+<!-- Engagement stances (GAMEOPTION_ENGAGEMENTS; this game's own rules, phase 6 of the owner's spec
+     "Engagement combat"). A stance is a standing order of an army or a city's garrison: it picks
+     the units a side commits to an engagement, up to its slots S. The defender's force is picked
+     from its stance; the attacker's is proposed from its army's stance, and the attacker may
+     change it before attacking. bDefault: the stance of new armies and garrisons and of units in
+     no army.
+
+     Steps run in order. A step's target is max(iCount, ceil(S x iPercent / 100)) units of its
+     Roles in the whole pick so far (iPercent 100: as many as there are); it takes the best units
+     of those roles not yet picked until the target is met or they run out. Then Fill takes the
+     units left in its role order until the slots are full.
+     iMaxLevel (-1: none) and bHoldHeroes: units above that level, and heroes, are held: the steps
+     skip them and the fill takes them last, only when the slots would otherwise go empty.
+
+     The spec's STANCE_MIN_FRONT (3) is Ranged Line's first iCount, STANCE_VET_LEVEL (4) is
+     Preserve Veterans' iMaxLevel. -->
+<Civ4StanceInfos xmlns="x-schema:CIV4UnitSchema.xml">
+	<StanceInfos>
+		<StanceInfo>
+			<Type>STANCE_BALANCED</Type>
+			<Description>TXT_KEY_STANCE_BALANCED</Description>
+			<Help>TXT_KEY_STANCE_BALANCED_HELP</Help>
+			<bDefault>1</bDefault>
+			<iMaxLevel>-1</iMaxLevel>
+			<bHoldHeroes>0</bHoldHeroes>
+			<Steps>
+				<Step>
+					<Roles>
+						<Role>COMBATROLE_SCREEN</Role>
+					</Roles>
+					<iCount>1</iCount>
+				</Step>
+				<Step>
+					<Roles>
+						<Role>COMBATROLE_FRONTLINE</Role>
+						<Role>COMBATROLE_SCREEN</Role>
+					</Roles>
+					<iPercent>50</iPercent>
+				</Step>
+				<Step>
+					<Roles>
+						<Role>COMBATROLE_BACKLINE</Role>
+					</Roles>
+					<iPercent>100</iPercent>
+				</Step>
+				<Step>
+					<Roles>
+						<Role>COMBATROLE_FLANKER</Role>
+						<Role>COMBATROLE_ASSASSIN</Role>
+					</Roles>
+					<iPercent>100</iPercent>
+				</Step>
+			</Steps>
+			<Fill>
+				<Role>COMBATROLE_FRONTLINE</Role>
+				<Role>COMBATROLE_SCREEN</Role>
+				<Role>COMBATROLE_FLANKER</Role>
+				<Role>COMBATROLE_ASSASSIN</Role>
+				<Role>COMBATROLE_BACKLINE</Role>
+				<Role>COMBATROLE_SUPPORT</Role>
+			</Fill>
+		</StanceInfo>
+		<StanceInfo>
+			<Type>STANCE_SHIELD_WALL</Type>
+			<Description>TXT_KEY_STANCE_SHIELD_WALL</Description>
+			<Help>TXT_KEY_STANCE_SHIELD_WALL_HELP</Help>
+			<bDefault>0</bDefault>
+			<iMaxLevel>-1</iMaxLevel>
+			<bHoldHeroes>0</bHoldHeroes>
+			<Steps>
+				<Step>
+					<Roles>
+						<Role>COMBATROLE_FRONTLINE</Role>
+						<Role>COMBATROLE_SCREEN</Role>
+					</Roles>
+					<iPercent>100</iPercent>
+				</Step>
+				<Step>
+					<Roles>
+						<Role>COMBATROLE_BACKLINE</Role>
+					</Roles>
+					<iPercent>100</iPercent>
+				</Step>
+			</Steps>
+			<Fill>
+				<Role>COMBATROLE_FRONTLINE</Role>
+				<Role>COMBATROLE_SCREEN</Role>
+				<Role>COMBATROLE_FLANKER</Role>
+				<Role>COMBATROLE_ASSASSIN</Role>
+				<Role>COMBATROLE_BACKLINE</Role>
+				<Role>COMBATROLE_SUPPORT</Role>
+			</Fill>
+		</StanceInfo>
+		<StanceInfo>
+			<Type>STANCE_RANGED_LINE</Type>
+			<Description>TXT_KEY_STANCE_RANGED_LINE</Description>
+			<Help>TXT_KEY_STANCE_RANGED_LINE_HELP</Help>
+			<bDefault>0</bDefault>
+			<iMaxLevel>-1</iMaxLevel>
+			<bHoldHeroes>0</bHoldHeroes>
+			<Steps>
+				<!-- STANCE_MIN_FRONT -->
+				<Step>
+					<Roles>
+						<Role>COMBATROLE_FRONTLINE</Role>
+						<Role>COMBATROLE_SCREEN</Role>
+					</Roles>
+					<iCount>3</iCount>
+				</Step>
+				<Step>
+					<Roles>
+						<Role>COMBATROLE_BACKLINE</Role>
+					</Roles>
+					<iPercent>100</iPercent>
+				</Step>
+			</Steps>
+			<Fill>
+				<Role>COMBATROLE_FRONTLINE</Role>
+				<Role>COMBATROLE_SCREEN</Role>
+				<Role>COMBATROLE_FLANKER</Role>
+				<Role>COMBATROLE_ASSASSIN</Role>
+				<Role>COMBATROLE_BACKLINE</Role>
+				<Role>COMBATROLE_SUPPORT</Role>
+			</Fill>
+		</StanceInfo>
+		<StanceInfo>
+			<Type>STANCE_MOBILE</Type>
+			<Description>TXT_KEY_STANCE_MOBILE</Description>
+			<Help>TXT_KEY_STANCE_MOBILE_HELP</Help>
+			<bDefault>0</bDefault>
+			<iMaxLevel>-1</iMaxLevel>
+			<bHoldHeroes>0</bHoldHeroes>
+			<Steps>
+				<Step>
+					<Roles>
+						<Role>COMBATROLE_FLANKER</Role>
+						<Role>COMBATROLE_ASSASSIN</Role>
+					</Roles>
+					<iPercent>100</iPercent>
+				</Step>
+				<Step>
+					<Roles>
+						<Role>COMBATROLE_FRONTLINE</Role>
+						<Role>COMBATROLE_SCREEN</Role>
+					</Roles>
+					<iPercent>100</iPercent>
+				</Step>
+			</Steps>
+			<Fill>
+				<Role>COMBATROLE_FRONTLINE</Role>
+				<Role>COMBATROLE_SCREEN</Role>
+				<Role>COMBATROLE_FLANKER</Role>
+				<Role>COMBATROLE_ASSASSIN</Role>
+				<Role>COMBATROLE_BACKLINE</Role>
+				<Role>COMBATROLE_SUPPORT</Role>
+			</Fill>
+		</StanceInfo>
+		<StanceInfo>
+			<Type>STANCE_PRESERVE_VETERANS</Type>
+			<Description>TXT_KEY_STANCE_PRESERVE_VETERANS</Description>
+			<Help>TXT_KEY_STANCE_PRESERVE_VETERANS_HELP</Help>
+			<bDefault>0</bDefault>
+			<!-- STANCE_VET_LEVEL -->
+			<iMaxLevel>4</iMaxLevel>
+			<bHoldHeroes>1</bHoldHeroes>
+			<Steps>
+				<Step>
+					<Roles>
+						<Role>COMBATROLE_SCREEN</Role>
+					</Roles>
+					<iCount>1</iCount>
+				</Step>
+				<Step>
+					<Roles>
+						<Role>COMBATROLE_FRONTLINE</Role>
+						<Role>COMBATROLE_SCREEN</Role>
+					</Roles>
+					<iPercent>50</iPercent>
+				</Step>
+				<Step>
+					<Roles>
+						<Role>COMBATROLE_BACKLINE</Role>
+					</Roles>
+					<iPercent>100</iPercent>
+				</Step>
+				<Step>
+					<Roles>
+						<Role>COMBATROLE_FLANKER</Role>
+						<Role>COMBATROLE_ASSASSIN</Role>
+					</Roles>
+					<iPercent>100</iPercent>
+				</Step>
+			</Steps>
+			<Fill>
+				<Role>COMBATROLE_FRONTLINE</Role>
+				<Role>COMBATROLE_SCREEN</Role>
+				<Role>COMBATROLE_FLANKER</Role>
+				<Role>COMBATROLE_ASSASSIN</Role>
+				<Role>COMBATROLE_BACKLINE</Role>
+				<Role>COMBATROLE_SUPPORT</Role>
+			</Fill>
+		</StanceInfo>
+	</StanceInfos>
+</Civ4StanceInfos>

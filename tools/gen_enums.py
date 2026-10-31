@@ -113,6 +113,7 @@ EXTRA_MEMBERS = {
         "GAMEOPTION_CULTURE_ACTIONS",  # docs/CULTURE.md
         "GAMEOPTION_ARMIES",  # docs/ARMIES.md
         "GAMEOPTION_GOVERNORS",  # docs/GOVERNORS.md
+        "GAMEOPTION_ENGAGEMENTS",  # docs/COMBAT_INVENTORY.md (phase 6: engagement combat)
     ],
 }
 

@@ -9,7 +9,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 
 use crate::enums::*;
-use crate::infos::{CulturalActionType, GovernorNameType, GovernorProfileType, GovernorTraitType};
+use crate::infos::{CombatRoleType, CulturalActionType, GovernorNameType, GovernorProfileType, GovernorTraitType, StanceType};
 use crate::idx::{Idx, IdxVec};
 use crate::xml::Elem;
 
@@ -97,6 +97,8 @@ info_ids! {
     GovernorProfileType => "GovernorProfileInfo",
     GovernorTraitType => "GovernorTraitInfo",
     GovernorNameType => "GovernorNameInfo",
+    CombatRoleType => "CombatRoleInfo",
+    StanceType => "StanceInfo",
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

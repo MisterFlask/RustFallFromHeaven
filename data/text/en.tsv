@@ -5479,6 +5479,18 @@ TXT_KEY_CLIMATE_TROPICAL_HELP	This climate is warmer and wetter so expect to see
 TXT_KEY_COLOR_NEGATIVE	[COLOR_NEGATIVE_TEXT]
 TXT_KEY_COLOR_POSITIVE	[COLOR_POSITIVE_TEXT]
 TXT_KEY_COLOR_REVERT	[COLOR_REVERT]
+TXT_KEY_COMBATROLE_ASSASSIN	Assassin
+TXT_KEY_COMBATROLE_ASSASSIN_HELP	Slips past the front line and its screens to strike the enemy's back line first, then its front line. Hits hard, but is fragile.
+TXT_KEY_COMBATROLE_BACKLINE	Backline
+TXT_KEY_COMBATROLE_BACKLINE_HELP	Archers and siege engines fight behind the front line: enemies reach them only once it has fallen. Strikes the enemy's front line first, then its back line.
+TXT_KEY_COMBATROLE_FLANKER	Flanker
+TXT_KEY_COMBATROLE_FLANKER_HELP	Mounted units ride around the front line: they strike the enemy's screens first, then its back line, then its front line.
+TXT_KEY_COMBATROLE_FRONTLINE	Frontline
+TXT_KEY_COMBATROLE_FRONTLINE_HELP	Holds the front and shields the back line. Strikes the enemy's front line first, then its back line.
+TXT_KEY_COMBATROLE_SCREEN	Screen
+TXT_KEY_COMBATROLE_SCREEN_HELP	A frontline unit trained in Formation: a sturdier front, and the unit enemy flankers must strike first. Strikes the enemy's front line first, then its back line.
+TXT_KEY_COMBATROLE_SUPPORT	Support
+TXT_KEY_COMBATROLE_SUPPORT_HELP	Mages and priests fight behind the front line, which shields them. Fragile; they strike like the back line.
 TXT_KEY_COMBAT_KAMIKAZE_MOD	[ICON_BULLET]%D1_percent%% for Self-Destruction
 TXT_KEY_COMBAT_MESSAGE_AI_ANIMAL_COMBAT	(AI Animal Combat: %D1%%)
 TXT_KEY_COMBAT_MESSAGE_ANIMAL_COMBAT	(Animal Combat: %D1%%)
@@ -7898,6 +7910,8 @@ TXT_KEY_GAME_OPTION_DOUBLE_EVENTS	Living World
 TXT_KEY_GAME_OPTION_DOUBLE_EVENTS_HELP	Doubles the frequency of Events
 TXT_KEY_GAME_OPTION_DOUBLE_GLOBAL_COUNTER	Last Days
 TXT_KEY_GAME_OPTION_DOUBLE_GLOBAL_COUNTER_HELP	Doubles any changes to the Armageddon Counter
+TXT_KEY_GAME_OPTION_ENGAGEMENTS	Engagements
+TXT_KEY_GAME_OPTION_ENGAGEMENTS_HELP	Requires Armies. A land attack is an engagement: each side commits as many units as the battlefield allows (fewer in forests, on hills, across a river and against a city's defences) and they fight in rounds until one side is destroyed or has withdrawn. Every unit has a role (frontline, screen, backline, flanker, assassin or support) that sets its attack, defence, hit points and the enemies it strikes; the front line shields the back line. The attacker picks its force; the defender's is picked by the stance its army or garrison holds.
 TXT_KEY_GAME_OPTION_FLEXIBLE_DIFFICULTY	Flexible Difficulty
 TXT_KEY_GAME_OPTION_FLEXIBLE_DIFFICULTY_HELP	If the player is in the top third the game difficulty increases by one. If the player is in the bottom third the game difficulty decreases by one. (single player only)
 TXT_KEY_GAME_OPTION_FLIPPING_AFTER_CONQUEST	City Flipping after Conquest
@@ -12044,6 +12058,16 @@ TXT_KEY_STACK_COLLATERAL_DAMAGE	%D1%% Collateral Damage
 TXT_KEY_STAGING_ROOM_CIVS_TAG	Civilizations:
 TXT_KEY_STAGING_ROOM_READY	Ready
 TXT_KEY_STAGING_ROOM_TITLE	STAGING ROOM
+TXT_KEY_STANCE_BALANCED	Balanced
+TXT_KEY_STANCE_BALANCED_HELP	About half frontline, at least one screen among them, then the back line, then flankers and assassins.
+TXT_KEY_STANCE_MOBILE	Mobile
+TXT_KEY_STANCE_MOBILE_HELP	Flankers and assassins first, then frontline units.
+TXT_KEY_STANCE_PRESERVE_VETERANS	Preserve Veterans
+TXT_KEY_STANCE_PRESERVE_VETERANS_HELP	Like Balanced, but units above level 4 and heroes fight only when the slots would otherwise go empty.
+TXT_KEY_STANCE_RANGED_LINE	Ranged Line
+TXT_KEY_STANCE_RANGED_LINE_HELP	Three frontline units or screens to hold the line, then as much of the back line as fits.
+TXT_KEY_STANCE_SHIELD_WALL	Shield Wall
+TXT_KEY_STANCE_SHIELD_WALL_HELP	Frontline units and screens first; the back line only in the slots left over.
 TXT_KEY_STOP_SLIDESHOW	Play Game
 TXT_KEY_SUBMIT_VOTE	Submit vote
 TXT_KEY_SWEAT_SHOP	Sweat Shop
