@@ -27,13 +27,16 @@ import { GROUNDS } from "./art/index.js";
 /** The mode's compile-time savings (MapHd2d.liteDefines; shaders.js). `on`: compiled in by default;
  *  `opt`: only with `cfg.liteOn`.
  *  Props: NO_LEAVES -- no crown of leaf clusters stands in the mode (its trees, bushes and saplings
- *  are cards); DABS_1 -- a brush mark from the one plane that carries the face, not a blend of three.
+ *  are cards); DABS_1 -- a brush mark from the one plane that carries the face, not a blend of three;
+ *  NO_FINE_PIGMENT -- the fine pigment noise (under the brush marks, a few percent) left out.
+ *  (NO_STROKES, the brush strokes on matte props, is optional: the fields and sheaves lose their
+ *  texture close up without them.)
  *  Water: CALM_FADE -- the frontier's drifts fade toward their means instead of being mixed twice;
  *  BODY_LITE -- the body's mottle in two octaves; GRAD_NORMALS -- the sea's normals from noise
  *  gradients (GRAD_NORMALS_RIVER the rivers' too: optional, it moves what they mirror). RIVER_SPLIT:
  *  the rivers a program of their own. */
 const LITE = {
-  prop: { on: ["NO_LEAVES", "DABS_1"], opt: ["NO_STROKES", "NO_FINE_PIGMENT"] },
+  prop: { on: ["NO_LEAVES", "DABS_1", "NO_FINE_PIGMENT"], opt: ["NO_STROKES"] },
   water: { on: ["CALM_FADE", "BODY_LITE", "GRAD_NORMALS"], opt: ["NO_GLITTER", "NO_CAUSTICS", "GRAD_NORMALS_RIVER"] },
   split: { on: ["RIVER_SPLIT"], opt: [] },
 };
