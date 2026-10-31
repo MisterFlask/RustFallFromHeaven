@@ -1,91 +1,80 @@
-// The battle log and the attack preview as the battle screens read them (docs/HUMAN.md, "The
-// battle screens"; the battle UI design, DESIGN.md section 10; phase6_plan 9.2 and 15), and the
-// pure reading of the log: the script of segments the watch screen plays, the state folded at any
-// moment of it, and what the report derives (fates, the plan checked, the beat lines, what decided
-// it). No DOM here: assets/test/battle.test.mjs tests it in node.
+// Formation battles as the battle screens read them (docs/HUMAN.md, "The battle screens";
+// docs/ENGAGEMENTS.md; the formation-battle prototype, phase 6 revision 4): the protocol's shapes,
+// the names and the words of the rules, the editing of a formation, and the pure reading of a
+// battle log: the state after any number of its events, the lines of the log, each side's fates.
+// No DOM here: assets/test/battle.test.mjs tests it in node.
 //
-// The screens never re-derive a rule: who fought, every A and Dv and their parts, every target
-// choice with its rule and the set it was drawn from, every roll and every death come from the
-// engine. The client only folds, times and words them.
+// The screens never re-derive a rule: who stands where, every action, target, roll, hit, heal,
+// knock-back and death come from the engine. The client only folds, times and words them (the
+// words of a rule are keyed by the codes the engine sends: action kinds, ground rules, notes).
 //
 // ---------------------------------------------------------------------------------------------
 // The protocol fields the screens read (JSON; type-valued fields are indices as everywhere in the
 // protocol, or type names as in the dev fixture: `tyName`/`tyIdx` take either; HP in centi-HP
-// unless named `max_hp`, A and Dv x100, percents and r as integers; `b` is a fighter's index in
-// the reply's `fighters`).
+// unless named `max_hp`; A and Dv x100; percents as integers; `b` is a fighter's index in the
+// reply's `fighters`; a side is 0 (the attacker) or 1 (the defender); rows are 0 Front, 1 Middle,
+// 2 Rear, counted from each side's contact line; lanes from 0).
 //
-// BattleLog (`battle_log {report}`: `report` is the battle report's id, as `id` is the envelope's request id; the
-// `engage` command's reply carries `report` and the report's summary, `battle`):
+// BattleLog (`battle_log {report}`: `report` is the battle report's id, as `id` is the envelope's
+// request id; the `engage` command's reply carries `report` and the report's summary, `battle`):
 //   v, id, turn, viewer_side (0 attacker, 1 defender, null: neither)
 //   plot, from: PlotSnap {x, y, terrain, feature, hills, river_crossing, city: {id, name, owner, size, defense_pct} | null}
 //     (`plot` as it was at the battle, `from` as the viewer sees it now)
+//   ground: {city, forest, hills, flanking (bool each: flanking is false in a city, a forest or a jungle),
+//     rules: [{kind, pct}]} with kind "CityShots" (the attacker's Shoot deals pct), "ForestRanged" (Shoot and
+//     Bombard deal pct on both sides), "HillsAttacker" (every attacker hit deals pct), "HillsDefenderRanged" (the
+//     defender's Shoot and Bombard deal pct); empty: open ground
 //   slots: [SideSlots, SideSlots] (attacker, defender): {base, changes: [SlotChange], total, river_only}
 //     SlotChange {src: "Terrain" (terrain) | "Feature" (feature) | "Hills" | "River" | "CityDefense" (pct, next_at)
-//                 | "Bombarded" (pct) | "Minimum" | "Summons" (n), delta}; the attacker's CityDefense is listed whenever
-//                 the city has a defense, with delta 0 while it costs no slot
-//   sides: [SideSnap, SideSnap]: {player, shown_player, civ, label, army, garrison_of, stance (null: unseen),
-//     stance_known, auto_pick: [b], picked_by: {kind: "Auto"} | {kind: "Player", swaps: [[out b, in b]]}}
-//     (`player`: the real one on the viewer's side, the one the viewer saw on the other: hidden nationality, G5)
-//   fighters: [Fighter] (committed and staying out, both sides):
-//     {b, unit, unit_type, name, owner (as the viewer may see it), side, slot (null: stays out), level, xp, hero, role,
-//      pos ("Front" | "Back"), screen, ignores_shield, assassin_profile, guardsman, targets (its target order: "FRONT" |
-//      "BACK" | "SCREEN" | "HERO_SUPPORT"), promotions, max_hp, hp_start, volleys, volley_chance, withdraw_pct,
-//      def_strike ([chance, dmg] | null), collateral ([dmg %, limit %, max units] | null), combat_limit, immune
-//      (["FirstStrikes", ...]), fear, a, dv: Stat {base_x100, role_pct, terms: [Term], total_x100}, fate (how it ended:
-//      {kind: "Survived"} | {kind: "Killed", by, in} | {kind: "Withdrew", in, capped} | {kind: "SatOut"}, `in` a
-//      {phase: "Opening" | "Volley" | "Round", n?}; null: it stayed out)}
-//     Term {src, pct, and the source's payload: "Own" | "Promotion" (promotion) | "Spell" / "BattleEffect" (spell) |
-//           "Hills" | "Terrain" (terrain) | "Feature" (feature) | "Fortify" | "CityDefense" | "UnitCityDefense" |
-//           "UnitHillsDefense" | "UnitTerrainDefense" (terrain) | "UnitFeatureDefense" (feature) | "CityAttack" |
-//           "UnitTerrainAttack" (terrain) | "UnitFeatureAttack" (feature) | "UnitHillsAttack" | "Amphibious" |
-//           "VsUnitCombat" (unit_combat, promotion?) | "VsUnitClass" (unit_class, promotion?) | "VsPromotion"
-//           (promotion) | "VsAnimal" | "VsBarbarian" | "VsDomain" (domain) | "InBorders" | "GlobalCounter" | "Handicap" |
-//           "Aura" (unit) | "Typed" (damage) | "Improvement" (improvement) | "RangeDefense"}
-//   pairs: [Pair] (every pair that hit): {h, t, a_x100, dv_x100, mean, a_extra: [Term], dv_extra: [Term]}
-//   events, in resolution order, each {kind, ...}:
-//     Phase {phase: "PreBattle" | "Morale" | "Opening" | "Volley" | "Round" | "Post", n (Volley, Round)}
-//     Morale {unit, source, chance, roll, passed}; SatOut {unit, why: "Afraid" | "EveryTargetCapped"}
-//     VolleyRoll {unit, chance, roll, total}
-//     DefStrike {striker, target, rolled, chance, roll, pct, dmg}
-//     Collateral {source, target, pct, limit_pct, protection_pct, dmg}
-//     Hit {h, t, rule, step, blocked: [[step, "Empty" | "Shielded" | "VolleyImmune" | "AtLimit"]], eligible: [b], r, dmg, capped}
-//     Withdraw {unit, hp_pct, chance, roll, ok, fatal, hp_kept}
-//     RoundEnd {deaths: [{b, killer, assists, overkill}], hp?: [every fighter's HP after the round]} (the engine sends
-//       no `hp`: the client folds the round's hits)
-//     ShieldDown {side}; End {result: "AttackerWon" | "DefenderHeld" | "Draw" | "Mutual", volley_rounds, rounds}
-//     Heal {unit, amount, source: {kind: "Medic", b (null: a medic not in the battle), unit_type, adjacent} |
-//       {kind: "OnKill"} | {kind: "Spell", spell}}
-//     Xp {unit, amount, from: [{kind: "Kill", victim, share_permille} | {kind: "Withdrew"} | {kind: "DefStrike"}]}
-//     KillEffect {killer, victim, effect: {kind: "Capture" | "Enslave" | "Convert" | "Create", unit_type} |
-//       {kind: "Gold", amount} | {kind: "Afflict" | "Promotion", promotion}}
-//     Flee {unit, to: {x, y}}; Rout {units, to: [{x, y}]}; MoveIn {units, city (the city as the attacker's: its id
-//       changes with its owner; null: none, or razed)}
-//     (Cast, phase 7: carried through, not drawn yet.) Every Hit of a round comes before that round's Withdraws and
-//     RoundEnd; the client folds a round's Withdraws whether they come before or after its RoundEnd.
-//   forecast: FrozenForecast | null: {source: "Sampled" | "Expected", runs, win_permille, draw_permille,
-//     rounds: {p10, p50, p90}, losses_if_win_x10 (null: never won), per: [{b, fall_pct, withdraw_pct, death_round}],
-//     curve: [[centi-HP after Op, R1, ...], [...]] (each side's mean HP), alternatives: [{kind: "StancePick" | "Swap" |
-//     "OtherStance", stance, force: [b], win_permille, losses_if_win_x10}]}
-//   outcome: {result, volley_rounds, rounds, plot_taken, city_captured, moved_in: [b], defenders_left}
+//                 | "Bombarded" (pct) | "Minimum" | "Summons" (n), delta}
+//   lanes: [attacker's lanes, defender's lanes]
+//   sides: [SideSnap, SideSnap]: {player, shown_player, civ, label, army, garrison_of}
+//     (`player`: the real one on the viewer's side, the one the viewer saw on the other: hidden nationality)
+//   fighters: [Fighter]: both lines, and the units of both sides on the two plots that stayed out of them (the
+//     attacker's pool, the defenders' reserve the viewer sees: `lane` null):
+//     {b, unit, unit_type, name, owner, side, level, hero, promotions, role (CombatRoleType), large (fills two
+//      cells of a row, lanes `lane` and `lane + 1`), lane, row (null: not in the line), max_hp (HP), hp_start,
+//      a_x100, dv_x100 (its attack and defence in this battle, before the terms of a pair), speed,
+//      actions: [{kind, n}, {kind, n}, {kind, n}] (in its Front, Middle and Rear rows; kind an ActionKind),
+//      bonus_action (tier 4 or a hero: the +1 in its best row is in `actions`), spell (SpellType: the damage spell
+//      its Spell casts; null: the magic bolt), dodge (points of miss chance added to attacks on it), crit_bonus,
+//      anti_flank, withdraw_pct, combat_limit (100: none), splash (its damaging hits splash the target's
+//      neighbours), first_strikes}
+//   ActionKind: "Strike" | "Charge" | "Stab" | "Shoot" | "Spell" | "Bombard" | "Heal" | "None"
+//   events, in order:
+//     the opening (round 0, pass 0):
+//       {round: 0, pass: 0, kind: "Afraid", actor (the Fear unit, or null), target}: the target sits out the battle
+//       {round: 0, pass: 0, kind: "DefStrike", actor (a defender, in the line or not), target, hits: [{target, dmg}]}
+//     then the actions, one unit at a time (round 1.., pass 1..):
+//       {round, pass, actor, kind (ActionKind), spell? (SpellType; null: the magic bolt), target (null: none),
+//        hits: [{target, dmg, crit?, miss?, killed?, withdrew?}] (the first on `target`, the rest its splash; `dmg`
+//        what the target lost), heal?: {target, amount}, knocked?: {unit, from, to} (rows), note?: "NoTarget" |
+//        "NoOneHurt"}
+//   outcome: {plot_taken, city_captured (the city as the attacker's: its id changes with its owner; null), rounds
+//     (fought), defenders_left (on the plot after the battle, in the line or not), sides: [{fallen, escaped,
+//     standing} (counts of the units in the line), ...]}
+//   after: [{kind: "Xp", unit, amount} | {kind: "MoveIn", units, city} | {kind: "Flee", unit, to: {x, y}}] (what the
+//     battle did after it: optional, newer kinds are ignored)
 //   summary: the report's summary (below)
 //
 // Battle summary (`battle_reports` -> {on, reports: [summary], newest first}; the view's `battles`, this game turn's
 //   and the last; the turn report's `engagements`; the `engage` reply's `battle`): {id, turn, x, y, from: {x, y}, place
-//   (the city's name, or null), city, viewer_side, result, volley_rounds, rounds, plot_taken, city_captured,
-//   defenders_left, has_log (false: only the summary is kept), sides: [{player, civ, label, stance (null: unseen),
-//   slots, committed, lost, lost_types: [[unit_type, n]], withdrew, sat_out, fled}]}. A game-log message about a
-//   battle carries `kind: "engagement"` and `report` (its id).
+//   (the city's name, or null), city, viewer_side, plot_taken, city_captured, rounds, defenders_left, has_log (false:
+//   only the summary is kept), sides: [{player, civ, label, slots, lanes, committed, lost, lost_types: [[unit_type,
+//   n]], escaped, sat_out, fled, standing}]}. A game-log message about a battle carries `kind: "engagement"` and
+//   `report` (its id).
 //
-// EngagePreview (`engage_preview {army | units | from, to, force?: [unit ids], stance?}`): plot, from, slots, sides
-//   (without auto_pick / picked_by), fighters (the pool and the defenders it sees), pairs (every pool unit with every
-//   defender, both ways), force, auto_pick, reserve: [b], stance (the plan's), army_stance (the attack's own),
-//   defender_pick: {kind: "Known", units: [b]} | {kind: "Likely", sure: [b], maybe: [b]}, forecast (FrozenForecast
-//   without alternatives; null while the engine's estimate is not built: `estimate_pending`), declare_war (the team
-//   the attack declares war on, or null), errors.
-//   `engage_preview {.., alternatives: true}` -> {alternatives: [{kind, stance, force: [unit ids], win_permille,
-//   losses_if_win_x10}]} (the plan's What-if list; a second call so the plan never waits).
-// Static data (`/api/data`): the names of UnitType, PromotionType, CombatRoleType, StanceType (and its help),
-//   TerrainType, FeatureType, UnitCombatType, UnitClassType, SpellType, CivilizationType.
+// EngagePreview (`engage_preview {army | units | from, to, formation?: [{unit, lane, row}]}`): plot, from, ground,
+//   slots, lanes, sides, fighters (the attacker's pool in the formation asked for, checked, else in the rules' auto
+//   formation; the defenders it sees in their formation as it knows it), formation and auto_formation ([{unit, lane,
+//   row}]: the attacker's in `fighters`, and the rules' own), forecast: Forecast | null (with `estimate_pending`:
+//   still being run), declare_war (the team the attack declares war on, or null), errors (why the formation or the
+//   attack is refused). Forecast {runs, lost_x100: [attacker, defender] (units expected to fall, x100),
+//   line_wiped_permille (the defenders' line wiped out), plot_falls_permille, attackers_wiped_permille?,
+//   per: [{b, fall_pct, escape_pct}]}.
+// The `engage` command: {army | units | from, to, formation?, declare_war?}; its reply's `r.report` is the battle's.
+// Static data (`/api/data`): the names of UnitType, PromotionType, CombatRoleType, TerrainType, FeatureType,
+//   SpellType, CivilizationType.
 // ---------------------------------------------------------------------------------------------
 
 import { info, tname, tidx, dname } from "./state.js";
@@ -106,7 +95,7 @@ export function tyIdx(kind, v) {
   return typeof v === "number" ? v : tidx(kind, v);
 }
 
-/** The display name of `v` in `kind` ("Formation"); from the type name when the data lacks it. */
+/** The display name of `v` in `kind` ("Maelstrom"); from the type name when the data lacks it. */
 export function tyLabel(kind, v) {
   const i = tyIdx(kind, v);
   if (i >= 0 && info(kind, i)) return dname(kind, i);
@@ -114,59 +103,140 @@ export function tyLabel(kind, v) {
   return n ? humanize(n) : "-";
 }
 
-/** A role's short key ("flanker" for COMBATROLE_FLANKER), for its icon and motion. */
+// ---------------------------------------------------------------------------------------------
+// Roles, rows, actions
+
+export const ROWS = ["Front", "Middle", "Rear"];
+
+/** The roles' old names (data from before revision 4) as their new keys. */
+const OLD_ROLE = { backline: "archer", support: "arcane" };
+
+/** A role's short key ("flanker" for COMBATROLE_FLANKER), for its icon and its words. */
 export function roleKey(f) {
   const n = tyName("CombatRoleType", f?.role);
-  return n ? n.replace(/^COMBATROLE_/, "").toLowerCase() : "";
+  const k = n ? n.replace(/^COMBATROLE_/, "").toLowerCase() : "";
+  return OLD_ROLE[k] ?? k;
 }
 
-/** Whether fighter `f` is committed (has a slot). */
-export const committed = (f) => f.slot !== null && f.slot !== undefined;
-/** Whether `f` stands in the back rank. */
-export const isBack = (f) => f.pos === "Back";
-/** Whether `f` hits screens first (the flanker's order). */
-export const hitsScreensFirst = (f) => f.targets?.[0] === "SCREEN";
+/** A role's display name ("Frontline"). */
+export function roleLabel(f) {
+  const i = tyIdx("CombatRoleType", f?.role);
+  if (i >= 0 && info("CombatRoleType", i)) return dname("CombatRoleType", i);
+  const k = roleKey(f);
+  return k ? k[0].toUpperCase() + k.slice(1) : "-";
+}
+
+/** Which units a role takes, in words (the tooltip's gloss). */
+export const ROLE_UNITS = {
+  frontline: "melee, beasts, animals, recon",
+  screen: "a frontline unit with Formation",
+  flanker: "mounted",
+  assassin: "recon with Marksman",
+  archer: "archers",
+  siege: "catapults, rams, trebuchets",
+  arcane: "adepts, mages",
+  divine: "disciples, priests",
+};
+
+/** The action kinds: their words, their reach and how they look (`melee`: the unit goes in;
+ *  `ranged`: something flies; `phys`: it can miss and, `crit`, be critical). */
+export const KINDS = {
+  Strike: { verb: "strikes", noun: "strike", nouns: "strikes", reach: "front", melee: true, phys: true, crit: true, knock: true },
+  Charge: { verb: "charges", noun: "charge", nouns: "charges", reach: "flank", melee: true, phys: true, crit: true, knock: true },
+  Stab: { verb: "stabs", noun: "stab", nouns: "stabs", reach: "any", melee: true, phys: true, crit: true },
+  Shoot: { verb: "shoots", noun: "shot", nouns: "shots", reach: "rear", ranged: true, phys: true, crit: true },
+  Spell: { verb: "casts at", noun: "spell", nouns: "spells", reach: "rear", ranged: true, magic: true },
+  Bombard: { verb: "bombards", noun: "bombard", nouns: "bombards", reach: "rear", ranged: true, phys: true },
+  Heal: { verb: "heals", noun: "heal", nouns: "heals", reach: "ally" },
+  None: { verb: "waits", noun: "", nouns: "", reach: "none" },
+};
+
+/** A kind code as the table's key, whatever its case ("STRIKE", "strike" -> "Strike"). */
+export function kindKey(k) {
+  if (typeof k !== "string" || !k) return "None";
+  const n = k[0].toUpperCase() + k.slice(1).toLowerCase();
+  return KINDS[n] ? n : "None";
+}
+
+/** A kind's entry of `KINDS`. */
+export const kindOf = (k) => KINDS[kindKey(k)];
+
+/** Fighter `f`'s action in row `row`: `{kind, n}` (kind a `KINDS` key). */
+export function actionAt(f, row) {
+  const a = f?.actions?.[row];
+  if (!a || !a.n) return { kind: "None", n: 0 };
+  return { kind: kindKey(a.kind), n: a.n };
+}
+
+/** The name of the spell fighter `f` (or event `e`) casts: its damage spell's, or the magic bolt. */
+export function spellName(spell) {
+  return spell === null || spell === undefined ? "Magic bolt" : tyLabel("SpellType", spell);
+}
+
+/** "2 strikes", "1 shot", "2 × maelstrom", "no action": `f`'s actions in `row`. */
+export function actionText(f, row) {
+  const { kind, n } = actionAt(f, row);
+  if (!n || kind === "None") return "no action";
+  if (kind === "Spell") return `${n} × ${spellName(f.spell).toLowerCase()}`;
+  const K = KINDS[kind];
+  return `${n} ${n > 1 ? K.nouns : K.noun}`;
+}
+
+/** Whom an action of `kind` can hit, in words (`ground`: the battle's, for the charge). */
+export function reachText(kind, ground) {
+  switch (kindKey(kind)) {
+    case "Strike":
+      return "the front unit of any enemy lane";
+    case "Charge":
+      return ground?.flanking === false ? "the front unit of any lane (no flanking here)" : "the most dangerous enemy for its HP left, anywhere; double damage in the first round";
+    case "Stab":
+      return "any enemy";
+    case "Shoot":
+    case "Bombard":
+      return "the back unit of any enemy lane";
+    case "Spell":
+      return "the back unit of any enemy lane; never misses";
+    case "Heal":
+      return "the most hurt ally";
+    default:
+      return "";
+  }
+}
+
+// ---------------------------------------------------------------------------------------------
+// Fighters and names
+
+/** Whether fighter `f` stands in the line (has a cell). */
+export const inLine = (f) => f?.lane !== null && f?.lane !== undefined && f?.row !== null && f?.row !== undefined;
+/** The slots fighter `f` takes. */
+export const sizeOf = (f) => (f?.large ? 2 : 1);
+/** The lanes fighter `f` at `pos` ({lane}) fills. */
+export const lanesAt = (f, pos) => (f?.large ? [pos.lane, pos.lane + 1] : [pos.lane]);
 
 /** HP from centi-HP, rounded up (a unit at 0.3 HP still stands). */
 export const hpOf = (centi) => Math.max(0, Math.ceil(centi / 100));
+/** A hit's or a heal's HP as the numbers show it: at least 1 when anything happened. */
+export const dmgText = (centi) => (centi > 0 ? String(Math.max(1, Math.round(centi / 100))) : "0");
 /** A x100 value as a short decimal: 1500 -> "15", 440 -> "4.4". */
 export const x100 = (v) => (v % 100 === 0 ? String(v / 100) : (v / 100).toFixed(1));
 
 /** The side the viewer is on (0 when the log says nothing: an attack of the viewer's). */
 export function viewerSide(log) {
-  return log.viewer_side ?? 0;
+  return log?.viewer_side ?? 0;
 }
 
-// ---------------------------------------------------------------------------------------------
-// Names
-
-/** "Axeman L2" when another unit of its side has its type, else "Axeman" ("Archer L1 (2)" for the
- *  second of a type and level); `side`: with "your" / "their"; `cap`: capitalized. */
+/** Fighter `b`'s name: "Axeman 2" when its side has more than one of that name (numbered in the
+ *  fighters' order), else "Axeman"; `side`: with "your" / "their"; `cap`: capitalized. */
 export function uname(log, b, { side = false, cap = false } = {}) {
   const F = log.fighters;
   const f = F[b];
   if (!f) return "?";
-  const same = F.filter((g) => g.side === f.side && sameType(g.unit_type, f.unit_type));
+  const same = F.filter((g) => g.side === f.side && g.name === f.name);
   let s = f.name;
-  if (same.length > 1) {
-    s += ` L${f.level}`;
-    // two of a type and level: the second and later ones are numbered
-    const twins = same.filter((g) => g.level === f.level);
-    const k = twins.indexOf(f);
-    if (k > 0) s += ` (${k + 1})`;
-  }
+  if (same.length > 1) s += ` ${same.indexOf(f) + 1}`;
   if (side) s = (f.side === viewerSide(log) ? "your " : "their ") + s;
   if (cap) s = s[0].toUpperCase() + s.slice(1);
   return s;
-}
-
-function sameType(a, b) {
-  return a === b || tyName("UnitType", a) === tyName("UnitType", b);
-}
-
-/** "Mounted" -> "Mounted"; "Horseman" -> "Horsemen", "Archer" -> "Archers". */
-export function plural(n) {
-  return n.endsWith("man") ? `${n.slice(0, -3)}men` : n.endsWith("s") ? n : `${n}s`;
 }
 
 /** "a, b and c". */
@@ -174,129 +244,104 @@ export function listNames(names) {
   return names.length <= 1 ? names.join("") : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
 }
 
-/** "the 2 Horsemen and Archer L1": several of a type counted, the rest by name. */
-export function groupNames(log, bs) {
-  const by = new Map();
-  for (const b of bs) {
-    const k = tyName("UnitType", log.fighters[b].unit_type) ?? log.fighters[b].name;
-    by.set(k, [...(by.get(k) ?? []), b]);
+/** "Horseman" -> "Horsemen", "Archer" -> "Archers". */
+export function plural(n) {
+  return n.endsWith("man") ? `${n.slice(0, -3)}men` : n.endsWith("s") ? n : `${n}s`;
+}
+
+/** What makes fighter `f` special, in sentences (the tooltip's notes). `ground`: the battle's;
+ *  `side`: the side it fights on. Nothing here is computed: each line words one of its fields. */
+export function specials(f, ground) {
+  const notes = [];
+  const role = roleKey(f);
+  if (f.large) notes.push("Large: fills two cells side by side and counts two slots; it is the front or back unit of both its lanes; 150% HP.");
+  if (f.anti_flank) notes.push("Anti-flanking: enemy flankers attack it first whenever it is in their reach.");
+  if (role === "flanker" || f.actions?.some((a) => kindKey(a?.kind) === "Charge")) {
+    notes.push(
+      `${ground?.flanking === false ? "No flanking in a city, forest or jungle: its charges hit the front unit of a lane." : "Flanks: its charges ride round the line to the enemy with the highest threat for its HP left, wherever it stands, and its first-round charges deal double damage."} Anti-flanking units in its reach come first.`,
+    );
   }
-  return listNames([...by.values()].map((g) => (g.length > 1 ? `the ${g.length} ${plural(log.fighters[g[0]].name)}` : uname(log, g[0]))));
+  const g = groundNote(f, ground);
+  if (g) notes.push(g);
+  if (f.actions?.some((a) => kindKey(a?.kind) === "Spell")) {
+    notes.push(
+      f.spell !== null && f.spell !== undefined
+        ? `Casts ${spellName(f.spell)}: a full hit on its target and half on the target's neighbours. Spells never miss.`
+        : "Knows no damage spell, so it casts a magic bolt: 60% of a normal hit. Spells never miss.",
+    );
+  }
+  if (f.dodge) notes.push(`Hard to hit: physical attacks on it miss ${f.dodge} points more often.`);
+  if (f.crit_bonus) notes.push(`Critical ${f.crit_bonus} points more often.`);
+  if (f.withdraw_pct) notes.push(`Withdrawal ${f.withdraw_pct}%: a blow that would kill it is instead escaped ${f.withdraw_pct}% of the time, and it leaves the battle.`);
+  if (f.combat_limit !== undefined && f.combat_limit !== null && f.combat_limit < 100) notes.push(`Never takes a target below ${100 - f.combat_limit}% of its HP.`);
+  if (f.splash) notes.push("Its hits splash the units beside, in front of and behind the target for half damage.");
+  if (f.first_strikes) notes.push(`First strike${f.first_strikes > 1 ? "s" : ""}: +${2 * f.first_strikes} speed.`);
+  if (f.bonus_action) notes.push("Tier 4 or a hero: one more action in its best row.");
+  return notes;
 }
 
 // ---------------------------------------------------------------------------------------------
-// Terms (the parts of A and Dv)
+// The ground
 
-/** How a term's source groups in the parts bar: the place, the unit's own bonuses, promotions and
- *  spells, bonuses against a kind of unit, and the rest. */
-const TERM_GROUP = {
-  Hills: "place", Terrain: "place", Feature: "place", Fortify: "place", CityDefense: "place",
-  UnitCityDefense: "unit", UnitHillsDefense: "unit", UnitTerrainDefense: "unit", UnitFeatureDefense: "unit",
-  CityAttack: "unit", UnitTerrainAttack: "unit", UnitFeatureAttack: "unit", Amphibious: "unit",
-  UnitHillsAttack: "unit", Own: "unit", Improvement: "place", RangeDefense: "place",
-  Promotion: "promo", Spell: "promo", BattleEffect: "promo", Aura: "promo",
-  VsUnitCombat: "vs", VsUnitClass: "vs", VsPromotion: "vs", VsAnimal: "vs", VsBarbarian: "vs", VsDomain: "vs", Typed: "vs",
+/** The kinds a ground rule touches, and on which side (null: both). */
+const RULE_REACH = {
+  CityShots: { side: 0, kinds: ["Shoot"] },
+  ForestRanged: { side: null, kinds: ["Shoot", "Bombard"] },
+  HillsAttacker: { side: 0, kinds: null },
+  HillsDefenderRanged: { side: 1, kinds: ["Shoot", "Bombard"] },
 };
-export const termGroup = (t) => TERM_GROUP[t.src] ?? "other";
 
-/** A term's name ("Hills", "Formation vs Mounted", "City Garrison I"). */
-export function termLabel(t) {
-  const from = t.promotion !== undefined && t.promotion !== null ? `${tyLabel("PromotionType", t.promotion)} ` : "";
-  switch (t.src) {
-    case "Promotion":
-      return tyLabel("PromotionType", t.promotion);
-    case "Spell":
-    case "BattleEffect":
-      return tyLabel("SpellType", t.spell);
-    case "Hills":
-      return "Hills";
-    case "Terrain":
-      return tyLabel("TerrainType", t.terrain);
-    case "Feature":
-      return tyLabel("FeatureType", t.feature);
-    case "Fortify":
-      return "Fortified";
-    case "CityDefense":
-      return "Walls";
-    case "UnitCityDefense":
-      return "In a city";
-    case "UnitHillsDefense":
-      return "On hills";
-    case "UnitTerrainDefense":
-      return `On ${tyLabel("TerrainType", t.terrain)}`;
-    case "UnitFeatureDefense":
-      return `In ${tyLabel("FeatureType", t.feature)}`;
-    case "CityAttack":
-      return "City attack";
-    case "UnitTerrainAttack":
-      return `Attacking ${tyLabel("TerrainType", t.terrain)}`;
-    case "UnitFeatureAttack":
-      return `Attacking ${tyLabel("FeatureType", t.feature)}`;
-    case "Amphibious":
-      return "Amphibious";
-    case "VsUnitCombat":
-      return `${from}vs ${tyLabel("UnitCombatType", t.unit_combat)}`;
-    case "VsUnitClass":
-      return `${from}vs ${tyLabel("UnitClassType", t.unit_class)}`;
-    case "VsPromotion":
-      return `vs ${tyLabel("PromotionType", t.promotion)}`;
-    case "VsAnimal":
-      return "vs animals";
-    case "VsBarbarian":
-      return "vs barbarians";
-    case "VsDomain":
-      return `vs ${tyLabel("DomainType", t.domain)}`;
-    case "Own":
-      return "Its own";
-    case "UnitHillsAttack":
-      return "Attacking hills";
-    case "Improvement":
-      return tyLabel("ImprovementType", t.improvement);
-    case "RangeDefense":
-      return "Nearby defenses";
-    case "InBorders":
-      return "In its borders";
-    case "GlobalCounter":
-      return "Armageddon";
-    case "Handicap":
-      return "Difficulty";
-    case "Aura":
-      return "Commander";
-    case "Typed":
-      return humanize(String(t.damage ?? "damage"));
-    default:
-      return humanize(String(t.src ?? "?"));
+/** What the ground's rules make of a hit of `kind` by side `side`, in percent (the rules' own
+ *  percents multiplied). */
+export function groundPct(ground, side, kind) {
+  let pct = 100;
+  const k = kindKey(kind);
+  for (const r of ground?.rules ?? []) {
+    const reach = RULE_REACH[r.kind];
+    if (!reach || (reach.side !== null && reach.side !== side) || (reach.kinds && !reach.kinds.includes(k))) continue;
+    pct = (pct * r.pct) / 100;
   }
+  return Math.round(pct);
 }
 
-/** "+25%" or "-10%". */
-export const pctText = (p) => (p >= 0 ? `+${p}%` : `${p}%`);
-
-/** The defended plot's own Dv parts as its defenders get them (the plan's top bar): the place
- *  terms of the committed defenders, the largest of each source. */
-export function plotDvTerms(fighters, defSide = 1) {
-  const best = new Map();
-  for (const f of fighters) {
-    if (f.side !== defSide) continue;
-    for (const t of f.dv?.terms ?? []) {
-      if (termGroup(t) !== "place") continue;
-      const k = `${t.src}|${t.terrain ?? ""}|${t.feature ?? ""}`;
-      if (!best.has(k) || best.get(k).pct < t.pct) best.set(k, t);
-    }
-  }
-  const order = ["Hills", "Terrain", "Feature", "CityDefense", "Fortify"];
-  return [...best.values()].sort((a, b) => order.indexOf(a.src) - order.indexOf(b.src));
+/** What the ground does to fighter `f`'s damage, in a sentence, or "". */
+export function groundNote(f, ground) {
+  const kinds = [...new Set([0, 1, 2].map((r) => actionAt(f, r).kind))].filter((k) => k !== "None" && k !== "Heal");
+  const parts = kinds.map((k) => ({ k, p: groundPct(ground, f.side, k) })).filter((x) => x.p !== 100);
+  return parts.length ? `Here its ${parts.map((x) => `${KINDS[x.k].nouns} deal ${x.p}%`).join(", ")} of normal damage.` : "";
 }
 
-/** The pair of hitter `h` on target `t` (by `b`), or null. */
-export function pairOf(pairs, h, t) {
-  return pairs.find((p) => p.h === h && p.t === t) ?? null;
+const half = (p) => (p === 50 ? "half damage" : `${p}%`);
+const less = (p) => (p < 100 ? `${100 - p}% less` : `${p - 100}% more`);
+
+/** The ground's rules in words: a sentence each (the plan and the report show them). `plot`:
+ *  the defended plot (its feature's name). */
+export function groundRules(ground, plot) {
+  const rule = (k) => (ground?.rules ?? []).find((r) => r.kind === k);
+  const out = [];
+  const c = rule("CityShots");
+  if (ground?.city || c) out.push(`City: ${c ? `the attackers' arrows deal ${half(c.pct)}` : "no change to damage"}; no flanking.`);
+  const f = rule("ForestRanged");
+  if (ground?.forest || f) {
+    const name = plot?.feature !== null && plot?.feature !== undefined ? tyLabel("FeatureType", plot.feature) : "Forest";
+    out.push(`${name}: ${f ? `arrows and stones deal ${half(f.pct)} on both sides` : "no change to damage"}; no flanking.`);
+  }
+  const ha = rule("HillsAttacker");
+  const hd = rule("HillsDefenderRanged");
+  if (ground?.hills || ha || hd) {
+    const parts = [];
+    if (ha) parts.push(`the attackers deal ${less(ha.pct)} damage`);
+    if (hd) parts.push(`the defenders' arrows and stones deal ${less(hd.pct)}`);
+    out.push(`Hills: ${parts.length ? parts.join("; ") : "no change to damage"}.`);
+  }
+  if (!out.length) out.push(`Open ground: no damage changes; ${ground?.flanking === false ? "no flanking" : "cavalry flanks"}.`);
+  return out;
 }
 
 // ---------------------------------------------------------------------------------------------
-// Slots: the sum in words
+// Slots
 
-/** What a slot change is called in the side header's sum ("for the hill"). */
+/** What a slot change is called in a side's sum ("for the hill"). */
 export function slotChangeText(c) {
   switch (c.src) {
     case "Hills":
@@ -330,555 +375,303 @@ export function slotSum(s) {
   return `${parts.join(" ")} = ${s.total}`;
 }
 
-/** The attacker's city-defense note ("Walls 20%: −1 more at 25%"), or null. */
-export function wallsNote(s) {
-  const c = (s.changes ?? []).find((x) => x.src === "CityDefense");
-  return c && c.next_at ? `Walls ${c.pct}%: −1 more at ${c.next_at}%` : null;
-}
+/** The slots side `s` may fill: its total, and the river's for the units that cross rivers (the
+ *  engine checks which unit fills them). */
+export const slotCap = (s) => (s?.total ?? 0) + (s?.river_only ?? 0);
 
 // ---------------------------------------------------------------------------------------------
-// The script: the log cut into segments (the opening's strikes, each volley round and round, the
-// end, the aftermath), each with its timings, and the state at each segment's start.
+// A formation: where each unit of a side stands (`Map b -> {lane, row}`), and its editing (the
+// prototype's: click a unit, then a cell). The engine checks the formation it is sent.
 
-/** ms: every hitter has picked its target at the start of a round. */
-const PICK = 260;
-/** ms from a hitter's launch to its impact, and to the end of its motion, by kind of motion. */
-const LEAD = { anim: 430, shot: 450, bolt: 420, ride: 380, lunge: 210 };
-const ACT = { anim: 870, shot: 520, bolt: 480, ride: 720, lunge: 430 };
-
-/** A hit's tier: a glance (under 6 HP), a hit (6-11) or heavy (12 and more). */
-export const tierOf = (dmg) => (dmg >= 1200 ? 2 : dmg >= 600 ? 1 : 0);
-
-/** How a fighter strikes: its animation's strike, or an arrow, a bolt, a ride or a lunge. */
-export function motionOf(f, animated = () => false) {
-  if (animated(f)) return "anim";
-  const r = roleKey(f);
-  if (r === "backline") return "shot";
-  if (r === "support") return "bolt";
-  if (r === "flanker" || r === "assassin") return "ride";
-  return "lunge";
+/** The formation of side `side` in `fighters` (their `lane` and `row`). */
+export function placeOf(fighters, side) {
+  const m = new Map();
+  for (const f of fighters) if (f.side === side && inLine(f)) m.set(f.b, { lane: f.lane, row: f.row });
+  return m;
 }
 
-function newSeg(type, extra = {}) {
-  return { type, n: 0, hits: [], wds: [], deaths: [], shieldDowns: [], strikes: [], satOut: [], morale: [], post: [], roundEnd: null, ...extra };
+/** A formation from a protocol list `[{unit, lane, row}]` (unknown units left out). */
+export function placeFromList(fighters, list) {
+  const m = new Map();
+  for (const p of list ?? []) {
+    const f = fighters.find((x) => x.unit === p.unit);
+    if (f) m.set(f.b, { lane: p.lane, row: p.row });
+  }
+  return m;
 }
 
-/** Cuts `log.events` into segments (no timings). */
-export function segments(log) {
-  const segs = [];
-  let cur = null;
-  const opening = () => {
-    if (!cur || cur.type !== "strikes") cur = pushSeg(newSeg("strikes"));
-    return cur;
-  };
-  const round = () => {
-    if (!cur || cur.type !== "round") cur = pushSeg(newSeg("round", { kind: "round", n: 0 }));
-    return cur;
-  };
-  const post = () => {
-    if (!cur || cur.type !== "post") cur = pushSeg(newSeg("post"));
-    return cur;
-  };
-  function pushSeg(s) {
-    segs.push(s);
-    return s;
-  }
-  log.events.forEach((e, i) => {
-    switch (e.kind) {
-      case "Phase":
-        if (e.phase === "Volley" || e.phase === "Round") cur = pushSeg(newSeg("round", { kind: e.phase === "Volley" ? "volley" : "round", n: e.n ?? 0, ev0: i }));
-        else if (e.phase === "Post") cur = pushSeg(newSeg("post", { ev0: i }));
-        else if (e.phase === "Morale") cur = null;
-        break;
-      case "Morale":
-        if (!cur || cur.type !== "morale") cur = pushSeg(newSeg("morale", { ev0: i }));
-        cur.morale.push({ ev: e, i });
-        break;
-      case "SatOut":
-        (cur ?? (cur = pushSeg(newSeg("morale", { ev0: i })))).satOut.push({ ev: e, i });
-        break;
-      case "DefStrike":
-      case "Collateral":
-        opening().strikes.push({ ev: e, i });
-        break;
-      case "Hit":
-        round().hits.push({ ev: e, i, h: e.h, t: e.t, dmg: e.dmg, r: e.r });
-        break;
-      case "Withdraw":
-        round().wds.push({ ev: e, i });
-        break;
-      case "RoundEnd":
-        round().deaths.push(...e.deaths);
-        cur.roundEnd = e;
-        break;
-      case "ShieldDown":
-        round().shieldDowns.push({ side: e.side });
-        break;
-      case "End":
-        cur = pushSeg(newSeg("end", { n: e.rounds, result: e.result, ev0: i }));
-        break;
-      case "Heal":
-      case "Xp":
-      case "KillEffect":
-      case "Flee":
-      case "Rout":
-      case "MoveIn":
-        post().post.push({ ev: e, i });
-        break;
-      default:
-        break; // VolleyRoll, Cast and anything newer: read where they matter, not staged
-    }
-  });
-  return segs;
+/** A formation as the protocol sends it: `[{unit, lane, row}]`, in the fighters' order. */
+export function formationOf(place, fighters) {
+  return [...place.entries()].sort((a, b) => a[0] - b[0]).map(([b, p]) => ({ unit: fighters[b].unit, lane: p.lane, row: p.row }));
 }
 
-/** The state of the fighters before the first event. */
-export function initialState(log) {
-  const F = log.fighters;
-  const front = (s) => F.some((f) => f.side === s && committed(f) && !isBack(f));
-  return {
-    hp: F.map((f) => f.hp_start),
-    dead: F.map(() => false),
-    out: F.map(() => false),
-    sat: F.map(() => false),
-    diedIn: F.map(() => null),
-    wdIn: F.map(() => null),
-    shield: [front(0), front(1)],
-    luck: [
-      [0, 0],
-      [0, 0],
-    ],
-    dealt: [0, 0],
-  };
-}
-
-function cloneState(st) {
-  return {
-    hp: st.hp.slice(),
-    dead: st.dead.slice(),
-    out: st.out.slice(),
-    sat: st.sat.slice(),
-    diedIn: st.diedIn.slice(),
-    wdIn: st.wdIn.slice(),
-    shield: st.shield.slice(),
-    luck: st.luck.map((x) => x.slice()),
-    dealt: st.dealt.slice(),
-  };
-}
-
-/** The round number a segment's events belong to (0: the opening and its volleys). */
-export const roundNo = (s) => (s.type === "round" && s.kind === "round" ? s.n : 0);
-
-/** Folds segment `s`'s effects into `st` up to its local time `t` (Infinity: all of it). */
-export function applySeg(st, s, F, t = Infinity) {
-  if (s.type === "morale") {
-    for (const x of s.satOut) if (t >= (s.satAt ?? 0)) st.sat[x.ev.unit] = true;
-    return;
-  }
-  if (s.type === "strikes") {
-    for (const x of s.strikes) if (t >= (x.impact ?? 0)) st.hp[x.ev.target] = Math.max(0, st.hp[x.ev.target] - x.ev.dmg);
-    return;
-  }
-  if (s.type !== "round") return;
-  if (t >= (s.land ?? 0)) {
-    for (const h of s.hits) {
-      st.hp[h.t] = Math.max(0, st.hp[h.t] - h.dmg);
-      const side = F[h.h].side;
-      st.luck[side][0] += h.r;
-      st.luck[side][1] += 1;
-      st.dealt[side] += h.dmg;
-    }
-  }
-  for (const w of s.wds) {
-    if (t < (w.result ?? 0) || !w.ev.ok) continue;
-    st.out[w.ev.unit] = true;
-    st.wdIn[w.ev.unit] = roundNo(s);
-    if (w.ev.fatal && w.ev.hp_kept !== null && w.ev.hp_kept !== undefined) st.hp[w.ev.unit] = w.ev.hp_kept;
-  }
-  if (t >= (s.deathStart ?? 0)) {
-    for (const d of s.deaths) {
-      st.dead[d.b] = true;
-      st.diedIn[d.b] = roundNo(s);
-    }
-  }
-  for (const sd of s.shieldDowns) if (t >= (sd.start ?? 0)) st.shield[sd.side] = false;
-}
-
-/** Sets a segment's timings (ms from its start) for watch mode `mode` ("full" or "beats"). */
-export function timeSeg(s, F, { mode = "full", animated } = {}) {
-  const fast = mode === "beats";
-  const quiet = fast && !s.beat;
-  if (s.type === "morale") {
-    s.satAt = 400;
-    s.dur = fast ? 1200 : 2000;
-    return;
-  }
-  if (s.type === "strikes") {
-    s.strikes.forEach((x, k) => {
-      x.start = 300 + k * (fast ? 160 : 260);
-      x.impact = x.start + 450;
-    });
-    s.land = Math.max(0, ...s.strikes.map((x) => x.impact)) + 200;
-    s.dur = s.land + (fast ? 500 : 900);
-    return;
-  }
-  if (s.type === "end") {
-    s.dur = fast ? 1500 : 2200;
-    return;
-  }
-  if (s.type === "post") {
-    s.dur = fast ? 1800 : 2600;
-    return;
-  }
-  // Full: every round at the same pace. Beats: quiet rounds at about 0.6 s, beat rounds faster.
-  const sc = quiet ? 0.5 : fast ? 0.7 : 1;
-  const pick = quiet ? 60 : fast ? 150 : PICK;
-  const stag = quiet ? 14 : fast ? 30 : 55;
-  s.pick = pick;
-  s.hits.forEach((h, k) => {
-    h.start = pick + k * stag;
-    h.kind = motionOf(F[h.h], animated);
-    h.scale = sc;
-    h.impact = h.start + LEAD[h.kind] * sc;
-    h.end = h.start + ACT[h.kind] * sc;
-    h.tier = tierOf(h.dmg);
-  });
-  s.land = s.hits.length ? Math.max(...s.hits.map((h) => h.impact)) + (quiet ? 60 : fast ? 120 : 200) : pick;
-  let t = s.land + (quiet ? 60 : fast ? 140 : 260);
-  const k = fast ? 0.6 : 1;
-  for (const w of s.wds) {
-    w.start = t;
-    w.result = t + 700 * k;
-    w.walkEnd = w.result + (w.ev.ok ? 1100 * k : 0);
-    t += (w.ev.ok ? 1500 : 1200) * k;
-  }
-  s.deathStart = t;
-  if (s.deaths.length) t += fast ? 900 : 1150;
-  for (const sd of s.shieldDowns) {
-    sd.start = s.deaths.length ? s.deathStart + 600 : t;
-    t = Math.max(t, sd.start + 800);
-  }
-  s.dur = Math.max(t, s.hits.length ? Math.max(...s.hits.map((h) => h.end)) : 0) + (quiet ? 60 : fast ? 140 : 260);
-}
-
-/**
- * The script the watch screen plays: `{segs, final, me}`. `opts`: `mode` ("full" or "beats"),
- * `animated(f)` (the fighter has strike frames), `rulesSeen` (the rule codes the viewer has seen:
- * the focused hit prefers a new one), `lessons(segs, log)` (battle_teach.js `assignLessons`, which
- * gives segments their lessons before the timings and captions), `caption(seg, log, script)`.
- * Each segment gets `beat` (it changes the situation), `focus` (the index of its focused hit, -1:
- * none), `screenGone`, its timings, `caption`, and `snap` (the state at its start).
- */
-export function buildScript(log, opts = {}) {
-  const F = log.fighters;
-  const me = viewerSide(log);
-  const segs = segments(log);
-  // Their screens are gone: a death leaves the other side with no screen while yours has a flanker.
-  const screensOf = (side) => F.filter((f) => f.side === side && committed(f) && f.screen).map((f) => f.b);
-  const flankers = F.some((f) => f.side === me && committed(f) && hitsScreensFirst(f));
-  const deadSoFar = new Set();
-  for (const s of segs) {
-    for (const d of s.deaths) deadSoFar.add(d.b);
-    s.screenGone =
-      flankers && s.deaths.some((d) => F[d.b].side !== me && F[d.b].screen) && screensOf(1 - me).every((b) => deadSoFar.has(b));
-    s.beat = s.type !== "round" || s.kind === "volley" || s.deaths.length > 0 || s.wds.length > 0 || s.shieldDowns.length > 0;
-  }
-  // The focused hit of each round: the first of yours showing a rule the viewer has not seen, else
-  // a kill of yours, else your biggest hit (else theirs).
-  const seen = new Set(opts.rulesSeen ?? []);
-  for (const s of segs) {
-    s.focus = -1;
-    if (!s.hits.length) continue;
-    const mine = (h) => F[h.h].side === me;
-    let k = s.hits.findIndex((h) => mine(h) && !seen.has(h.ev.rule));
-    if (k < 0) k = s.hits.findIndex((h) => mine(h) && s.deaths.some((d) => d.b === h.t && d.killer === h.h));
-    if (k < 0) k = biggest(s.hits, mine);
-    if (k < 0) k = biggest(s.hits, () => true);
-    s.focus = k;
-    seen.add(s.hits[k].ev.rule);
-  }
-  opts.lessons?.(segs, log);
-  for (const s of segs) timeSeg(s, F, opts);
-  const script = { segs, log, me, final: null };
-  for (const s of segs) s.caption = opts.caption ? opts.caption(s, log, script) : "";
-  const st = initialState(log);
-  for (const s of segs) {
-    s.snap = cloneState(st);
-    applySeg(st, s, F, Infinity);
-  }
-  script.final = st;
-  return script;
-}
-
-function biggest(hits, pred) {
-  let best = -1;
-  hits.forEach((h, j) => {
-    if (pred(h) && (best < 0 || h.dmg > hits[best].dmg)) best = j;
-  });
-  return best;
-}
-
-/** The state at local time `t` of segment `si`. */
-export function stateAt(script, si, t) {
-  const s = script.segs[si];
-  const st = cloneState(s.snap);
-  applySeg(st, s, script.log.fighters, t);
-  return st;
-}
-
-/** The damage of segment `s` still to land on each fighter at time `t` (the white segments). */
-export function pendingAt(s, nF, t) {
-  const pending = new Array(nF).fill(0);
-  if (s.type === "round" && t < s.land) for (const h of s.hits) if (t >= h.impact) pending[h.t] += h.dmg;
-  return pending;
-}
-
-// ---------------------------------------------------------------------------------------------
-// The report
-
-/** Each fighter of side `side`'s fate: `{b, kind: "out" (stayed out) | "dead" | "withdrew" |
- *  "alive", round, killer, roll, chance, hp, xp, untouched}`. */
-export function fates(log, final, side = viewerSide(log)) {
-  const xp = xpBy(log);
-  return log.fighters
-    .filter((f) => f.side === side)
-    .map((f) => {
-      const b = f.b;
-      const w = log.events.find((e) => e.kind === "Withdraw" && e.unit === b);
-      const base = { b, xp: xp[b] ?? 0, hp: final.hp[b], untouched: final.hp[b] === f.hp_start };
-      if (!committed(f)) return { ...base, kind: "out" };
-      if (final.sat[b]) return { ...base, kind: "sat" };
-      if (final.dead[b]) {
-        const d = log.events.flatMap((e) => (e.kind === "RoundEnd" ? e.deaths : [])).find((x) => x.b === b);
-        return { ...base, kind: "dead", round: final.diedIn[b], killer: d?.killer ?? null, roll: w?.roll ?? null, chance: w?.chance ?? null };
-      }
-      if (final.out[b]) return { ...base, kind: "withdrew", round: final.wdIn[b], roll: w?.roll, chance: w?.chance };
-      return { ...base, kind: "alive" };
-    });
-}
-
-/** XP gained by each fighter (`Xp` events). */
-export function xpBy(log) {
-  const xp = {};
-  for (const e of log.events) if (e.kind === "Xp") xp[e.unit] = (xp[e.unit] ?? 0) + e.amount;
-  return xp;
-}
-
-/** A forecast item's verdict from the chance the plan gave what happened: "ok" (as planned, 35%
- *  or more), "luck" (rare but inside the plan, 8-35%), "off" (off plan, under 8%). */
-export function verdict(p) {
-  return p >= 35 ? "ok" : p >= 8 ? "luck" : "off";
-}
-
-/** The plan checked against the battle: rows `{verdict, label, result}` (the viewer attacking). */
-export function planChecks(log, final) {
-  const fc = log.forecast;
-  if (!fc) return [];
-  const F = log.fighters;
-  const me = viewerSide(log);
-  const o = log.outcome;
-  const won = o.result === "AttackerWon";
-  const win = Math.round(fc.win_permille / 10);
-  const rows = [{ verdict: verdict(won ? win : 100 - win), label: `win ${win}%`, result: won ? "won" : o.result === "Draw" ? "drawn" : "lost" }];
-  const inRange = o.rounds >= fc.rounds.p10 && o.rounds <= fc.rounds.p90;
-  rows.push({ verdict: inRange ? "ok" : "luck", label: `${fc.rounds.p10}–${fc.rounds.p90} rounds`, result: String(o.rounds) });
-  const lost = F.filter((f) => f.side === me && committed(f) && final.dead[f.b]).length;
-  if (won && fc.losses_if_win_x10 !== null && fc.losses_if_win_x10 !== undefined) {
-    const exp = fc.losses_if_win_x10 / 10;
-    rows.push({ verdict: Math.abs(lost - exp) <= 1.5 ? "ok" : "luck", label: `~${exp.toFixed(1)} lost if you win`, result: String(lost) });
-  }
-  for (const per of fc.per ?? []) {
-    const f = F[per.b];
-    if (!f || f.side !== me || !committed(f) || (per.fall_pct < 50 && per.withdraw_pct < 20)) continue;
-    const fate = final.dead[f.b] ? "fell" : final.out[f.b] ? "out" : "lived";
-    const p = final.dead[f.b] ? per.fall_pct : final.out[f.b] ? per.withdraw_pct : 100 - per.fall_pct - per.withdraw_pct;
-    rows.push({ verdict: verdict(p), label: `${uname(log, f.b)} falls ${per.fall_pct}%`, result: fate });
-  }
-  return rows;
-}
-
-/** The beat rounds as report lines: `{seg, label ("Op", "R4"), parts: [{text, cls}]}`. */
-export function beatLines(script) {
-  const L = script.log;
-  const F = L.fighters;
-  const me = script.me;
-  const o = L.outcome;
-  const out = [];
-  script.segs.forEach((s, k) => {
-    const label = s.type === "round" && s.kind === "round" ? `R${s.n}` : "Op";
-    const parts = [];
-    if (s.type === "strikes") {
-      // the opening's strikes make a line when one of them hurt (10 HP or more)
-      const hurt = s.strikes.filter((x) => x.ev.dmg >= 1000 && x.ev.kind === "DefStrike");
-      if (hurt.length) parts.push({ text: `the walls' archers hit ${listNames(hurt.map((x) => uname(L, x.ev.target)))}` });
-    }
-    const theirs = s.deaths.filter((d) => F[d.b].side !== me);
-    const yours = s.deaths.filter((d) => F[d.b].side === me);
-    if (theirs.length) {
-      parts.push({ text: `${listNames(theirs.map((d) => uname(L, d.b)))} ${theirs.length > 1 ? "fall" : "falls"}` });
-      const next = script.segs[k + 1];
-      if (next?.type === "end" && o.plot_taken) parts.push({ text: ": " }, { text: "taken", cls: "good b" });
-      else if (s.shieldDowns.some((x) => x.side !== me)) parts.push({ text: ": " }, { text: "shield down", cls: "b" });
-      else if (s.screenGone) parts.push({ text: ": " }, { text: "no screen", cls: "b" });
-    }
-    if (yours.length) {
-      if (parts.length) parts.push({ text: " · " });
-      parts.push({ text: `your ${listNames(yours.map((d) => uname(L, d.b)))}`, cls: "you" }, { text: ` ${yours.length > 1 ? "fall" : "falls"}` });
-    }
-    for (const w of s.wds) {
-      if (parts.length) parts.push({ text: " · " });
-      parts.push({ text: `${uname(L, w.ev.unit)} ${w.ev.ok ? "pulls out" : "stays"} ` }, { text: `(${w.ev.roll}${w.ev.ok ? "<" : "≥"}${w.ev.chance})`, cls: "lilac" });
-    }
-    if (parts.length) out.push({ seg: k, label, parts });
-  });
-  return out;
-}
-
-/** Damage dealt by each fighter in the battle's hits (centi-HP, as rolled). */
-export function dealtBy(log) {
-  const dealt = log.fighters.map(() => 0);
-  for (const e of log.events) if (e.kind === "Hit") dealt[e.h] += e.dmg;
-  return dealt;
-}
-
-/** The facts that decided the battle, as `[{text, ...}]` parts lists (at most three). */
-export function decidingFacts(log, final) {
-  const F = log.fighters;
-  const me = viewerSide(log);
-  const hits = log.events.filter((e) => e.kind === "Hit");
-  const dealt = dealtBy(log);
-  const mine = F.filter((f) => f.side === me && committed(f));
-  const theirs = F.filter((f) => f.side !== me && committed(f));
-  const facts = [];
-  const tot = mine.reduce((a, f) => a + dealt[f.b], 0) || 1;
-  const top = mine.slice().sort((a, b) => dealt[b.b] - dealt[a.b])[0];
-  if (top && dealt[top.b] > 0) {
-    const dvs = log.pairs.filter((p) => p.h === top.b).map((p) => p.dv_x100);
-    const range = dvs.length ? (Math.min(...dvs) === Math.max(...dvs) ? x100(dvs[0]) : `${x100(Math.min(...dvs))}–${x100(Math.max(...dvs))}`) : null;
-    facts.push([
-      { text: `Your ${uname(log, top.b)} did ` },
-      { text: `${Math.round((100 * dealt[top.b]) / tot)}%`, cls: "b" },
-      { text: " of your damage" },
-      ...(range ? [{ text: " (" }, { text: `A ${x100(top.a.total_x100)}`, cls: "amber" }, { text: " vs " }, { text: `Dv ${range}`, cls: "frost" }, { text: ")" }] : []),
-      { text: "." },
-    ]);
-  }
-  const sd = segmentsShieldDown(log, 1 - me);
-  if (sd !== null) {
-    const reach = [...new Set(hits.filter((h) => F[h.h].side === me && isBack(F[h.t]) && h.rule !== "FrontRankDown").map((h) => h.h))];
-    facts.push([
-      { text: "Their front held " },
-      { text: String(sd), cls: "b" },
-      { text: ` rounds${reach.length ? `: only ${groupNames(log, reach)} reached their back rank` : ""}.` },
-    ]);
-  }
-  const backUntouched = mine.filter((f) => isBack(f) && final.hp[f.b] === f.hp_start && !final.dead[f.b]);
-  if (backUntouched.length && !segmentsShieldDownHappened(log, me)) {
-    facts.push([{ text: `Your front never broke: your ${listNames(backUntouched.map((f) => uname(log, f.b)))} took no damage.` }]);
-  }
-  const mults = theirs.map((f) => f.dv.total_x100 / Math.max(1, Math.floor((f.dv.base_x100 * f.dv.role_pct) / 100)));
-  if (mults.length && Math.max(...mults) > 1.05) {
-    const lo = Math.min(...mults).toFixed(1);
-    const hi = Math.max(...mults).toFixed(1);
-    facts.push([{ text: "The place and their bonuses: their Dv " }, { text: lo === hi ? `×${lo}` : `×${lo}–${hi}`, cls: "frost" }, { text: "." }]);
-  }
-  // Luck, only when the result went against a firm forecast.
-  const fc = log.forecast;
-  const won = log.outcome.result === "AttackerWon";
-  if (fc && ((won && fc.win_permille <= 300) || (!won && fc.win_permille >= 700))) {
-    const r = [me, 1 - me].map((s) => {
-      const hs = hits.filter((h) => F[h.h].side === s);
-      return hs.reduce((a, h) => a + h.r, 0) / (hs.length || 1) / 100;
-    });
-    facts.unshift([{ text: "Luck", cls: "lilac" }, { text: `: your hits rolled ×${r[0].toFixed(2)} on average, theirs ×${r[1].toFixed(2)}.` }]);
-  }
-  return facts.slice(0, 3);
-}
-
-/** The round side `side`'s shield went down in (null: it held). */
-function segmentsShieldDown(log, side) {
-  let n = 0;
-  for (const e of log.events) {
-    if (e.kind === "Phase" && e.phase === "Round") n = e.n;
-    if (e.kind === "ShieldDown" && e.side === side) return n;
-  }
-  return null;
-}
-
-function segmentsShieldDownHappened(log, side) {
-  return segmentsShieldDown(log, side) !== null;
-}
-
-// ---------------------------------------------------------------------------------------------
-// The plan (an EngagePreview)
-
-/** A plan's force composition key (type, level and promotions), so plans that pick the same
- *  kinds of units merge in the What-if list. */
-export function compositionKey(fighters, units) {
-  return units
-    .map((id) => {
-      const f = fighters.find((x) => x.unit === id);
-      return f ? `${tyName("UnitType", f.unit_type)}:${f.level}:${(f.promotions ?? []).map((p) => tyName("PromotionType", p)).sort().join("+")}` : `?${id}`;
-    })
+/** A key for a formation (the same units in the same cells, in any order). */
+export function formationKey(list) {
+  return list
+    .map((p) => `${p.unit}:${p.lane}:${p.row}`)
     .sort()
     .join(",");
 }
 
-/** The stance's possessive ("Balanced's", "Ranged Line's", "Preserve Veterans'"). */
-export function possessive(name) {
-  return name.endsWith("s") ? `${name}'` : `${name}'s`;
+/** `grid[row][lane]`: the `b` standing there (a large unit fills two lanes), or null. */
+export function gridOf(place, fighters, lanes) {
+  const g = Array.from({ length: 3 }, () => Array(lanes).fill(null));
+  for (const [b, p] of place) {
+    if (p.row < 0 || p.row > 2) continue;
+    for (const l of lanesAt(fighters[b], p)) if (l >= 0 && l < lanes) g[p.row][l] = b;
+  }
+  return g;
 }
 
-/** The What-if lines: this plan first, then each alternative of a different composition; an
- *  alternative of the same composition as an earlier line is folded into it (`also`, the stances
- *  whose pick it is). `alts`: `[{kind, stance, force: [unit ids], win_permille, losses_if_win_x10}]`. */
-export function whatIfLines(preview, alts, stanceName) {
-  const F = preview.fighters;
-  const force = preview.force.map((b) => F[b].unit);
-  const lines = [{ kind: "Current", label: "This plan", force, stance: preview.stance, win_permille: preview.forecast?.win_permille ?? 0, also: [], key: compositionKey(F, force) }];
-  const name = (id) => {
-    const f = F.find((x) => x.unit === id);
-    return f ? uname(preview, f.b) : "?";
+/** The slots formation `place` uses. */
+export function slotsUsed(place, fighters) {
+  let n = 0;
+  for (const b of place.keys()) n += sizeOf(fighters[b]);
+  return n;
+}
+
+/** The lanes of `row` where `f` fits in `grid`, nearest `nearLane` first. */
+function freeLanes(f, row, nearLane, grid, lanes) {
+  const fits = (l) => (f.large ? l + 1 < lanes && grid[row][l] === null && grid[row][l + 1] === null : grid[row][l] === null);
+  return [...Array(lanes).keys()].filter(fits).sort((a, b) => Math.abs(a - nearLane) - Math.abs(b - nearLane) || a - b);
+}
+
+/**
+ * Puts fighter `b` at (`lane`, `row`) of formation `place` (its side's; `lanes` and `cap`: the
+ * side's lanes and the slots it may fill): whoever stood in the cells it needs moves to where it
+ * stood if they fit there, else out of the line. Returns `{place, out: [b]}` (a new formation and
+ * who left the line), or `{error}` (nothing changed).
+ */
+export function placeUnit(place, fighters, { lanes, cap }, b, lane, row) {
+  const f = fighters[b];
+  if (!f || row < 0 || row > 2 || lane < 0 || lane >= lanes) return { error: "That is not a cell of its side." };
+  if (f.large && lanes < 2) return { error: "There is no room for a large unit here." };
+  const anchor = f.large ? Math.min(lane, lanes - 2) : lane;
+  const from = place.get(b);
+  const next = new Map(place);
+  next.delete(b);
+  const g0 = gridOf(next, fighters, lanes);
+  const cells = f.large ? [anchor, anchor + 1] : [anchor];
+  const displaced = [...new Set(cells.map((l) => g0[row][l]).filter((x) => x !== null))];
+  for (const o of displaced) next.delete(o);
+  next.set(b, { lane: anchor, row });
+  const out = [];
+  for (const o of displaced) {
+    const spot = from ? freeLanes(fighters[o], from.row, from.lane, gridOf(next, fighters, lanes), lanes)[0] : undefined;
+    if (spot !== undefined) next.set(o, { lane: spot, row: from.row });
+    else out.push(o);
+  }
+  if (slotsUsed(next, fighters) > cap) return { error: `The line is full: ${cap} slots here, and a large unit takes two. Click a unit in the line to swap them.` };
+  return { place: next, out };
+}
+
+/** Formation `place` without fighter `b`. */
+export function benchUnit(place, b) {
+  const next = new Map(place);
+  next.delete(b);
+  return next;
+}
+
+// ---------------------------------------------------------------------------------------------
+// The log folded: the state after any number of events
+
+/** The state before the first event: each fighter's HP, status ("on": in the line; "out": not in
+ *  it; "afraid": sat out; "dead"; "gone": escaped) and cell. */
+export function initialState(log) {
+  return {
+    hp: log.fighters.map((f) => f.hp_start),
+    status: log.fighters.map((f) => (inLine(f) ? "on" : "out")),
+    pos: log.fighters.map((f) => (inLine(f) ? { lane: f.lane, row: f.row } : null)),
   };
-  for (const a of alts ?? []) {
-    const key = compositionKey(F, a.force);
-    const dup = lines.find((l) => l.key === key);
-    const st = stanceName(a.stance);
-    if (dup) {
-      if (a.kind !== "Swap") dup.also.push(st);
+}
+
+/** A copy of state `st`. */
+export function cloneState(st) {
+  return { hp: st.hp.slice(), status: st.status.slice(), pos: st.pos.map((p) => (p ? { ...p } : null)) };
+}
+
+/** Folds event `e` into state `st` (in place); `F`: the fighters (for their max HP). */
+export function applyEvent(st, e, F) {
+  if (e.kind === "Afraid") {
+    if (st.status[e.target] === "on") st.status[e.target] = "afraid";
+    return st;
+  }
+  for (const h of e.hits ?? []) {
+    if (h.miss) continue;
+    if (h.withdrew) {
+      st.status[h.target] = "gone";
       continue;
     }
-    let label;
-    if (a.kind === "Swap") {
-      const ins = a.force.filter((x) => !force.includes(x));
-      const outs = force.filter((x) => !a.force.includes(x));
-      label = `${ins.map(name).join(", ")} in, ${outs.map(name).join(", ")} out`;
-    } else if (a.kind === "StancePick") label = `${possessive(st)} own pick`;
-    else label = `${possessive(st)} pick`;
-    lines.push({ ...a, label, also: [], key });
+    st.hp[h.target] = Math.max(0, st.hp[h.target] - (h.dmg ?? 0));
+    if (h.killed) {
+      st.hp[h.target] = 0;
+      st.status[h.target] = "dead";
+    }
   }
-  return lines;
+  if (e.heal) st.hp[e.heal.target] = Math.min(F[e.heal.target].max_hp * 100, st.hp[e.heal.target] + e.heal.amount);
+  if (e.knocked && st.pos[e.knocked.unit]) st.pos[e.knocked.unit] = { ...st.pos[e.knocked.unit], row: e.knocked.to };
+  return st;
 }
 
-/** The stakes of a plan: who dies if you win, if you lose, and who stays out either way. */
-export function stakes(preview) {
-  const F = preview.fighters;
-  const me = viewerSide(preview);
-  const force = preview.force.map((b) => F[b]);
-  const reserve = (preview.reserve ?? []).map((b) => F[b]);
-  const pick = preview.defender_pick ?? { kind: "Known", units: F.filter((f) => f.side !== me).map((f) => f.b) };
-  const defs = (pick.kind === "Known" ? pick.units : [...(pick.sure ?? []), ...(pick.maybe ?? [])]).map((b) => F[b]);
-  const allDefs = F.filter((f) => f.side !== me);
-  const win = Math.round((preview.forecast?.win_permille ?? 0) / 10);
-  const draw = Math.round((preview.forecast?.draw_permille ?? 0) / 10);
+/** The state after the first `n` events. */
+export function stateAfter(log, n) {
+  const st = initialState(log);
+  for (let i = 0; i < Math.min(n, log.events.length); i++) applyEvent(st, log.events[i], log.fighters);
+  return st;
+}
+
+/** The state after the whole battle. */
+export const finalState = (log) => stateAfter(log, log.events.length);
+
+/** Each side's units of the line by fate after state `st`: `[{fallen, escaped, standing, afraid}]`
+ *  (fighter indices), and those that stayed out (`out`). */
+export function fates(log, st) {
+  const out = [0, 1].map(() => ({ fallen: [], escaped: [], standing: [], afraid: [], out: [] }));
+  log.fighters.forEach((f, b) => {
+    const s = out[f.side];
+    if (!s) return;
+    const k = st.status[b];
+    if (k === "dead") s.fallen.push(b);
+    else if (k === "gone") s.escaped.push(b);
+    else if (k === "afraid") s.afraid.push(b);
+    else if (k === "out") s.out.push(b);
+    else s.standing.push(b);
+  });
+  return out;
+}
+
+/** The battle's result for the viewer: `{kind, ribbon, line, good}`: kind "taken" (the plot fell),
+ *  "repulsed" (no attacker stands), "held" (the defenders hold). */
+export function resultWords(log) {
+  const me = viewerSide(log);
+  const o = log.outcome ?? {};
+  const fs = fates(log, finalState(log));
+  const city = log.plot?.city?.name;
+  const where = city ?? "the plot";
+  if (o.plot_taken) {
+    return { kind: "taken", good: me === 0, ribbon: me === 0 ? "VICTORY" : "DEFEAT", line: city ? `${city} falls: no defender is left, and the attackers move in.` : "The plot falls: no defender is left, and the attackers move in." };
+  }
+  if (!fs[0].standing.length) return { kind: "repulsed", good: me === 1, ribbon: me === 0 ? "REPULSED" : "HELD", line: "The attackers are wiped out. The defenders hold." };
+  const left = o.defenders_left ?? fs[1].standing.length;
   return {
-    win,
-    draw,
-    lose: Math.max(0, 100 - win - draw),
-    force,
-    defenders: defs,
-    defendersLeft: allDefs.length - defs.length,
-    withdrawers: force.filter((f) => f.withdraw_pct > 0),
-    reserve,
+    kind: "held",
+    good: me === 1,
+    ribbon: me === 0 ? "THEY HOLD" : "HELD",
+    line: `The defenders hold ${where}: ${left} still stand${left === 1 ? "s" : ""} there. They stay in place until annihilated; the next attack meets what is left.`,
   };
+}
+
+// ---------------------------------------------------------------------------------------------
+// The log in lines
+
+/** "Round 2 · pass 1" (the opening: "Before the battle"). */
+export function headOf(e) {
+  return e.round ? `Round ${e.round} · pass ${e.pass}` : "Before the battle";
+}
+
+/** Each event's line, with a head line before an event that starts a new round or pass:
+ *  `[{i (the event's index), head: true, text} | {i, parts: [{text, cls?, b?}], speed}]`. A part
+ *  with `b` names fighter `b` (its `cls` "you" or "them", the viewer's side or not). */
+export function logLines(log) {
+  const me = viewerSide(log);
+  const F = log.fighters;
+  const who = (b) => ({ text: uname(log, b), b, cls: F[b]?.side === me ? "you" : "them" });
+  const t = (text, cls) => (cls ? { text, cls } : { text });
+  const out = [];
+  let last = null;
+  log.events.forEach((e, i) => {
+    const head = headOf(e);
+    if (head !== last) {
+      out.push({ i, head: true, text: head });
+      last = head;
+    }
+    const parts = [];
+    if (e.kind === "Afraid") {
+      parts.push(who(e.target), t(" is afraid"));
+      if (e.actor !== null && e.actor !== undefined) parts.push(t(" of "), who(e.actor));
+      parts.push(t(" and sits out the battle."));
+      out.push({ i, parts, speed: null });
+      return;
+    }
+    if (e.kind === "DefStrike") {
+      const h = e.hits?.[0];
+      parts.push(who(e.actor), t(" strikes "), who(e.target), t(" as it comes in "), t(dmgText(h?.dmg ?? 0), "bt-n"));
+      out.push({ i, parts, speed: null });
+      return;
+    }
+    const K = kindOf(e.kind);
+    const speed = F[e.actor]?.speed ?? null;
+    if (e.heal) {
+      parts.push(who(e.actor), t(" heals "), who(e.heal.target), t(" "), t(`+${dmgText(e.heal.amount)}`, "bt-n heal"));
+    } else if (e.hits?.length && e.hits[0].miss) {
+      parts.push(who(e.actor), t(` ${K.verb} `), who(e.hits[0].target), t(" and misses", "dim"));
+    } else if (e.hits?.length) {
+      const [first, ...rest] = e.hits;
+      const what = kindKey(e.kind) === "Spell" ? `casts ${spellName(e.spell)} at` : K.verb;
+      parts.push(who(e.actor), t(` ${what} `), who(first.target), t(" "));
+      parts.push(first.withdrew ? t("a killing blow", "dim") : t(dmgText(first.dmg), "bt-n"));
+      if (first.crit) parts.push(t(" critical", "crit"));
+      if (rest.length) {
+        parts.push(t(" splash ", "dim"));
+        rest.forEach((h, k) => {
+          if (k) parts.push(t(", ", "dim"));
+          parts.push(who(h.target), t(` ${h.withdrew ? "escapes" : dmgText(h.dmg)}`, "dim"));
+        });
+      }
+      const fatesText = [];
+      for (const h of e.hits) {
+        if (h.withdrew) fatesText.push([who(h.target), t(" escapes the blow and leaves the field")]);
+        else if (h.killed) fatesText.push([who(h.target), t(" falls")]);
+      }
+      if (e.knocked) fatesText.push([who(e.knocked.unit), t(` is knocked back to the ${ROWS[e.knocked.to].toLowerCase()} row`)]);
+      if (fatesText.length) {
+        parts.push(t(". "));
+        fatesText.forEach((p, k) => {
+          if (k) parts.push(t("; "));
+          parts.push(...p);
+        });
+      }
+      parts.push(t("."));
+    } else {
+      parts.push(who(e.actor), t(` has ${e.note === "NoOneHurt" || kindKey(e.kind) === "Heal" ? "no one to heal" : "no one in reach"}.`, "dim"));
+    }
+    out.push({ i, parts, speed });
+  });
+  return out;
+}
+
+/** The fighter an event acts on first (its target, or the healed), or null. */
+export function eventTarget(e) {
+  if (e.heal) return e.heal.target;
+  if (e.hits?.length) return e.hits[0].target;
+  return e.target ?? null;
+}
+
+// ---------------------------------------------------------------------------------------------
+// The replay's pace (ms at 1x; the watch screen divides by its speed)
+
+/** When event `e` lands (its impact, where the state changes) and when its motion ends. */
+export function timingOf(e) {
+  if (e.kind === "Afraid") return { impact: 300, end: 800 };
+  if (e.kind === "DefStrike") return { impact: 620, end: 1000 };
+  if (e.note || (!e.hits?.length && !e.heal)) return { impact: 150, end: 450 };
+  const K = kindOf(e.kind);
+  if (K.melee) return { impact: 430, end: 900 };
+  if (K.ranged) return { impact: 620, end: 1000 };
+  return { impact: 300, end: 700 };
+}
+
+// ---------------------------------------------------------------------------------------------
+// The plan
+
+/** The forecast's line for fighter `b` of `preview`: `{fall_pct, escape_pct}` (zeros: none). */
+export function perOf(preview, b) {
+  return preview?.forecast?.per?.find((p) => p.b === b) ?? { fall_pct: 0, escape_pct: 0 };
+}
+
+/** XP gained by each fighter after the battle (`after`'s `Xp`). */
+export function xpBy(log) {
+  const xp = {};
+  for (const a of log.after ?? []) if (a.kind === "Xp") xp[a.unit] = (xp[a.unit] ?? 0) + a.amount;
+  return xp;
 }

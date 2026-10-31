@@ -1,9 +1,10 @@
-// The battle stage (the battle UI design, DESIGN.md sections 2-5): the attacker's plot and the
-// defended plot lifted out of the dimmed map as one isometric board of M7 tiles at 1x, the two
-// forces on it in two ranks, the units that stay out off its corners. The same stage serves the
-// plan, the battle and the report. Drawing is a function of a scene description (figures, arrows,
-// rings, sparks ...), so the watch screen can seek and step back freely. Canvas and DOM; the
-// geometry is the design's 1280 x 800 frame (battle.js centres it).
+// The battle stage (the formation-battle prototype's battlefield, phase 6 revision 4): the two
+// lines on one isometric strip of M7 tiles at 1x, six ranks deep (the attacker's rear, middle and
+// front, then the defender's front, middle and rear) by the lanes, ringed by dimmed ground with
+// the ground's scenery (trees round a forest or jungle, the city behind its defenders, hills on a
+// hill). The same stage serves the plan, the battle and the report. Drawing is a function of a
+// scene description (figures, highlighted cells, effects), so the screens own their state. Canvas
+// and DOM; the geometry is the battle overlay's 1280 x 800 frame (battle.js centres it).
 //
 // Art: the M7 sprites (`app/iso`, docs/ISO.md) and, for the units that have them, the anim-sprint
 // sets (`app/anim/<unit>_<idle|strike|flinch|death|walk>.png`: strips of 160 x 128 frames, the feet
@@ -11,16 +12,10 @@
 
 import { SPRITES } from "./iso/sprites.js";
 import { unitSpriteKeys, ISO_TABLES } from "./iso.js";
-import { tyName, tyIdx, roleKey, committed, isBack } from "./battle_log.js";
+import { tyName, tyIdx, roleKey, ROWS } from "./battle_log.js";
 
 export const FRAME_W = 1280;
 export const FRAME_H = 800;
-/** The board's top vertex, and how much the defended plot stands above the other on a hill. */
-const OX = 640;
-const OY = 78;
-const HILL_RAISE = 16;
-/** The board's centre line (the units' rows are spread round it). */
-const CY = 337;
 
 const spriteUrl = (key) => new URL(`./iso/${key}.png`, import.meta.url).href;
 const animUrl = (unit, anim) => new URL(`./anim/${unit}_${anim}.png`, import.meta.url).href;
@@ -35,13 +30,18 @@ export const ANIMS = {
   death: [80, 120, 140, 200, 80, 80, 80, 400],
   walk: [110, 110, 110, 110, 110, 110],
 };
+/** ms from the start of the strike strip to its blow (the frame the hit lands on). */
+export const STRIKE_HIT = 430;
 const ANIM_FRAME = { w: 160, h: 128, ax: 80, ay: 126 };
 /** M7 unit sprites that face lower-left (the rest face lower-right). */
 const FACES_LEFT = new Set(["champion"]);
 
-/** A role's icon on its unit's ring (the M7 interface icons). */
-const ROLE_ICON = { frontline: "fortify", screen: "defense", backline: "rangeattack", flanker: "moves", support: "spell", assassin: "attack" };
-export const roleIcon = (f) => ROLE_ICON[roleKey(f)] ?? "strength";
+/** A role's icon (the M7 interface icons). */
+const ROLE_ICON = { frontline: "fortify", screen: "defense", archer: "rangeattack", flanker: "moves", arcane: "spell", divine: "heal", siege: "bombard", assassin: "attack" };
+export const roleIcon = (f) => {
+  const k = ROLE_ICON[roleKey(f)];
+  return k && SPRITES[`ui_${k}_s`] ? k : "strength";
+};
 
 export const COLORS = {
   you: "#8fb6ff",
@@ -49,8 +49,8 @@ export const COLORS = {
   gold: "#f6c650",
   goldLt: "#ffe58c",
   cyan: "#4fe3ff",
-  azure: ["#3356b6", "#0b4290"],
-  gules: ["#c8272b", "#8f1e1f"],
+  azure: ["#4a74d8", "#17368a"],
+  gules: ["#d4433b", "#8a1c1c"],
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -105,31 +105,8 @@ export function figOf(f, sides) {
   return fig;
 }
 
-/** Whether fighter `f` has an animation set (it strikes with its frames). */
+/** Whether fighter `f` has an animation set (it strikes, flinches and dies with its frames). */
 export const animated = (sides) => (f) => !!figOf(f, sides).anim;
-
-/** Loads the art a battle needs: the board's tiles and overlays, the city, every fighter's sprite
- *  and animation strips, and the role icons. */
-export function loadArt({ fighters, plot, from, sides }) {
-  const jobs = [];
-  for (const p of [plot, from]) {
-    if (!p) continue;
-    const t = tileKey(p.terrain);
-    jobs.push(sprite(t), sprite(`${t}_b`), sprite(hillsKey(p.terrain)));
-    for (const k of featureKeys(p.feature)) jobs.push(sprite(k));
-  }
-  if (plot?.city) jobs.push(sprite(cityKey(plot, sides)));
-  for (const f of fighters) {
-    const fig = figOf(f, sides);
-    jobs.push(sprite(fig.key));
-    if (fig.anim) for (const a of Object.keys(ANIMS)) jobs.push(loadImage(`anim:${fig.anim}:${a}`, animUrl(fig.anim, a)));
-  }
-  for (const n of new Set([...Object.values(ROLE_ICON), "strength"])) jobs.push(sprite(`ui_${n}_s`));
-  return Promise.all(jobs);
-}
-
-// ---------------------------------------------------------------------------------------------
-// The board
 
 const DRY = /PLAINS|DESERT|BURNING_SANDS|BROKEN_LANDS|FIELDS_OF_PERDITION/;
 const COLD = /TUNDRA|SNOW/;
@@ -145,9 +122,9 @@ function hillsKey(terrain) {
   return SPRITES[k] ? k : "ovl_hills";
 }
 
-function featureKeys(feature) {
+function featureKey(feature) {
   const n = tyName("FeatureType", feature);
-  return (n && ISO_TABLES.FEATURE_SPRITES[n]?.filter((k) => SPRITES[k]).slice(0, 1)) || [];
+  return (n && ISO_TABLES.FEATURE_SPRITES[n]?.find((k) => SPRITES[k])) || null;
 }
 
 function cityKey(plot, sides) {
@@ -156,17 +133,80 @@ function cityKey(plot, sides) {
   return ISO_TABLES.citySprites(c.size ?? 4, civ).find((k) => SPRITES[k]) ?? "bld_city";
 }
 
-/** Tile sprites are 192 x 128: the top diamond in rows 0-95 (vertices (96, 0) (192, 48) (96, 96)
- *  (0, 48)), the earth sides below. Tile (i, j) of the board; i > j is the defended plot. */
-function tileXY(ox, oy, i, j) {
-  return [ox + (i - j) * 96 - 96, oy + (i + j) * 48];
+/** Loads the art a battle needs: the board's tiles, overlays and scenery, every fighter's sprite
+ *  and animation strips, and the role icons. */
+export function loadArt({ fighters, plot, from, sides }) {
+  const jobs = [];
+  for (const p of [plot, from]) {
+    if (!p) continue;
+    const t = tileKey(p.terrain);
+    jobs.push(sprite(t), sprite(`${t}_b`), sprite(hillsKey(p.terrain)));
+    const fk = featureKey(p.feature);
+    if (fk) jobs.push(sprite(fk));
+  }
+  if (plot?.city) jobs.push(sprite(cityKey(plot, sides)));
+  for (const f of fighters) {
+    const fig = figOf(f, sides);
+    jobs.push(sprite(fig.key));
+    if (fig.anim) for (const a of Object.keys(ANIMS)) jobs.push(loadImage(`anim:${fig.anim}:${a}`, animUrl(fig.anim, a)));
+  }
+  for (const n of new Set([...Object.values(ROLE_ICON), "strength"])) if (SPRITES[`ui_${n}_s`]) jobs.push(sprite(`ui_${n}_s`));
+  return Promise.all(jobs);
 }
 
-/** The tiles of each plot that show its hills or its feature (round the units' ranks). */
-const HILL_TILES = { def: [[2, 0], [3, 1], [4, 2], [4, 3], [3, 0], [4, 1]], att: [[0, 2], [1, 3], [2, 4], [0, 3], [1, 4]] };
-const FEATURE_TILES = { def: [[1, 0], [4, 3]], att: [[0, 1], [3, 4]] };
+// ---------------------------------------------------------------------------------------------
+// Geometry: depth d (0-2 the attacker's rear to front, 3-5 the defender's front to rear) and lane l
+// of a cell; tiles are 192 x 128 with the top diamond in rows 0-95.
 
-/** The stage: a canvas of the design's frame, the board cached per screen. */
+/** The board's geometry for `lanes` ([attacker's, defender's]): centred in the frame, below the
+ *  top panels. */
+export function geom(lanes) {
+  const L = Math.max(lanes?.[0] ?? 2, lanes?.[1] ?? 2);
+  return { L, lanes: [lanes?.[0] ?? 2, lanes?.[1] ?? 2], ox: 640 - ((5 - (L - 1)) / 2) * 96, oy: 124 + (4 - L) * 24 };
+}
+
+export const depthOf = (side, row) => (side === 0 ? 2 - row : 3 + row);
+const tileTL = (G, d, l) => [G.ox + (d - l) * 96 - 96, G.oy + (d + l) * 48];
+
+/** The feet of a unit standing in cell (`lane`, `row`) of side `side`. */
+export function cellXY(G, side, lane, row) {
+  const d = depthOf(side, row);
+  return [G.ox + (d - lane) * 96, G.oy + (d + lane) * 48 + 50];
+}
+
+/** Where fighter `f` at `pos` ({lane, row}) stands: a large unit between its two cells. */
+export function unitXY(G, f, pos) {
+  const [x, y] = cellXY(G, f.side, pos.lane, pos.row);
+  if (!f.large) return [x, y];
+  const [x2, y2] = cellXY(G, f.side, pos.lane + 1, pos.row);
+  return [(x + x2) / 2, (y + y2) / 2];
+}
+
+/** The cell under frame point (x, y): `{side, lane, row}`, or null. */
+export function cellAt(G, x, y) {
+  const uu = (x - G.ox) / 96;
+  const vv = (y - G.oy - 48) / 48;
+  const d = Math.round((uu + vv) / 2);
+  const l = Math.round((vv - uu) / 2);
+  if (d < 0 || d > 5 || l < 0) return null;
+  const side = d <= 2 ? 0 : 1;
+  const row = side === 0 ? 2 - d : d - 3;
+  if (l >= G.lanes[side]) return null;
+  return { side, lane: l, row };
+}
+
+function diamond(g, x, y) {
+  g.beginPath();
+  g.moveTo(x, y - 48);
+  g.lineTo(x + 96, y);
+  g.lineTo(x, y + 48);
+  g.lineTo(x - 96, y);
+  g.closePath();
+}
+
+// ---------------------------------------------------------------------------------------------
+// The stage
+
 export class Stage {
   constructor(canvas) {
     this.canvas = canvas;
@@ -175,215 +215,244 @@ export class Stage {
     this.g = canvas.getContext("2d");
     this.g.imageSmoothingEnabled = false;
     this.board = null;
-    this.dy = 0;
-    this.raise = 0;
-    this.shake = 0;
-    this.city = null;
-    /** The viewer's side: its rings and band are Azure, the other side's Gules. */
+    this.boardKey = "";
+    this.model = null;
+    this.G = geom([2, 2]);
+    this.scenery = [];
+    /** The viewer's side: its rings and cells are Azure, the other side's Gules. */
     this.me = 0;
   }
 
-  /** The board for `model` ({plot, from, sides}), shifted down by `dy` (the report raises it). */
-  setBoard(model, dy = 0) {
-    const { plot, from, sides } = model;
-    this.dy = dy;
-    this.raise = plot?.hills ? HILL_RAISE : 0;
+  /** The board of `model` ({plot, from, sides, lanes}); kept while the model's ground and lanes
+   *  do not change. */
+  setBoard(model) {
+    this.model = model;
+    this.G = geom(model.lanes);
+    const key = JSON.stringify([model.plot, model.from, model.lanes, this.me]);
+    if (key === this.boardKey && this.board) return;
+    this.boardKey = key;
+    this.board = this.buildBoard();
+    this.scenery = this.buildScenery();
+  }
+
+  buildBoard() {
+    const { plot, from } = this.model;
+    const G = this.G;
     const c = document.createElement("canvas");
     c.width = FRAME_W;
     c.height = FRAME_H;
     const g = c.getContext("2d");
     g.imageSmoothingEnabled = false;
-    const n = 5;
-    const oy = OY + dy;
-    g.fillStyle = "rgba(0, 4, 20, 0.45)";
-    g.beginPath();
-    g.moveTo(OX, oy + 40);
-    g.lineTo(OX + n * 96 + 30, oy + n * 48 + 40);
-    g.lineTo(OX, oy + n * 96 + 64);
-    g.lineTo(OX - n * 96 - 30, oy + n * 48 + 40);
-    g.fill();
-    const defT = tileKey(plot?.terrain);
-    const attT = tileKey(from?.terrain);
-    const overlays = [];
-    if (plot?.hills) for (const [i, j] of HILL_TILES.def) overlays.push([i, j, hillsKey(plot.terrain)]);
-    if (from?.hills) for (const [i, j] of HILL_TILES.att) overlays.push([i, j, hillsKey(from.terrain)]);
-    for (const k of featureKeys(plot?.feature)) for (const [i, j] of FEATURE_TILES.def) overlays.push([i, j, k]);
-    for (const k of featureKeys(from?.feature)) for (const [i, j] of FEATURE_TILES.att) overlays.push([i, j, k]);
-    for (let s = 0; s <= 2 * n - 2; s++) {
-      for (let i = 0; i < n; i++) {
-        const j = s - i;
-        if (j < 0 || j >= n) continue;
-        const def = i > j;
-        let [x, y] = tileXY(OX, oy, i, j);
-        if (def) y -= this.raise;
-        const alt = (i * 31 + j * 17) % 3 === 0;
-        const base = def ? defT : attT;
-        const t = (alt && IMG.get(`${base}_b`)) || IMG.get(base);
-        if (t) g.drawImage(t, x, y);
-        for (const [oi, oj, key] of overlays) {
-          const im = IMG.get(key);
-          if (oi !== i || oj !== j || !im) continue;
-          g.drawImage(im, x, y + (im.height < 128 ? 128 - im.height : 0) - (key.startsWith("feat") ? im.height - 128 : 0));
-        }
+    const tiles = [];
+    for (let d = -1; d <= 6; d++) for (let l = -1; l <= G.L; l++) tiles.push([d, l]);
+    tiles.sort((a, b) => a[0] + a[1] - (b[0] + b[1]) || a[0] - b[0]);
+    const inGrid = (d, l) => d >= 0 && d <= 5 && l >= 0 && l < G.lanes[d <= 2 ? 0 : 1];
+    for (const [d, l] of tiles) {
+      const [x, y] = tileTL(G, d, l);
+      const def = d >= 3;
+      const p = def ? plot : from;
+      const base = tileKey(p?.terrain);
+      const alt = ((d + 9) * 31 + (l + 9) * 17) % 3 === 0;
+      const t = (alt && IMG.get(`${base}_b`)) || IMG.get(base);
+      if (t) g.drawImage(t, x, y);
+      if (p?.hills) {
+        const hl = IMG.get(hillsKey(p.terrain));
+        if (hl) g.drawImage(hl, x, y + (hl.height < 128 ? 128 - hl.height : 0));
       }
+      g.save();
+      diamond(g, x + 96, y + 48);
+      if (!inGrid(d, l)) {
+        g.fillStyle = "rgba(4, 10, 30, 0.5)";
+        g.fill();
+      } else {
+        const mine = (d <= 2 ? 0 : 1) === this.me;
+        g.fillStyle = mine ? "rgba(60, 100, 220, 0.12)" : "rgba(220, 60, 50, 0.12)";
+        g.fill();
+        g.strokeStyle = "rgba(255, 245, 210, 0.3)";
+        g.lineWidth = 1;
+        g.stroke();
+      }
+      g.restore();
     }
-    this.board = c;
-    this.city = plot?.city ? cityKey(plot, sides) : null;
+    // the contact line between the two fronts
+    g.save();
+    g.strokeStyle = "rgba(246, 198, 80, 0.75)";
+    g.lineWidth = 2;
+    g.setLineDash([8, 6]);
+    const [ax, ay] = tileTL(G, 3, 0);
+    const [bx, by] = tileTL(G, 3, G.L);
+    g.beginPath();
+    g.moveTo(ax + 96, ay);
+    g.lineTo(bx + 96, by);
+    g.stroke();
+    g.restore();
+    return c;
   }
 
-  /** Draws a scene: `{figs: [Fig], bands: [{side, alpha}], rings, arrows, numbered, projs, sparks,
-   *  shards, cityFlag}`; Fig `{x, y, pic, flip, alpha, ring (false: none), ringAlpha, side, sel,
-   *  glow, glowA, tint, tintA, dx, dy, fallen, roleIcon, plate}`. */
+  /** Scenery on the ring: trees round a plot with a forest or a jungle, the city behind the
+   *  defenders. */
+  buildScenery() {
+    const { plot, from, sides } = this.model;
+    const G = this.G;
+    const out = [];
+    const tree = (p) => featureKey(p?.feature);
+    const td = tree(plot);
+    if (td) {
+      for (let d = 3; d <= 6; d++) out.push({ key: td, d, l: -1 }, { key: td, d, l: G.L });
+      for (let l = 0; l < G.L; l++) if (!plot.city || l !== Math.floor((G.L - 1) / 2)) out.push({ key: td, d: 6, l });
+    }
+    const ta = tree(from);
+    if (ta) for (let d = -1; d <= 2; d++) out.push({ key: ta, d, l: -1 }, { key: ta, d, l: G.L });
+    if (plot?.city) out.push({ key: cityKey(plot, sides), d: 6, l: Math.floor((G.L - 1) / 2), city: true });
+    return out.map((s) => {
+      const [x, y] = tileTL(G, s.d, s.l);
+      return { ...s, x, y, base: y + 96 };
+    });
+  }
+
+  /** The ranks' names along the upper edge. */
+  labels() {
+    const g = this.g;
+    g.save();
+    g.font = "10px Herald, Georgia, serif";
+    g.textAlign = "center";
+    for (let d = 0; d <= 5; d++) {
+      const side = d <= 2 ? 0 : 1;
+      const row = side === 0 ? 2 - d : d - 3;
+      const [x, y] = tileTL(this.G, d, -1);
+      const lx = x + 96 + 44;
+      const ly = y + 48 - 14;
+      const t = ROWS[row].toUpperCase();
+      g.fillStyle = "rgba(0, 0, 0, 0.7)";
+      g.fillText(t, lx + 1, ly + 1);
+      g.fillStyle = side === this.me ? "#bcd0ff" : "#ffc2b8";
+      g.fillText(t, lx, ly);
+    }
+    g.restore();
+  }
+
+  /** Draws a scene: `{figs: [Fig], cells: [{side, lane, row, color}], fx: [Fx], bars: true}`.
+   *  Fig `{b, x, y, side, large, pic, flip, alpha, ring (false: none), ringAlpha, sel, glow, tint,
+   *  tintA, dx, dy, fallen, bar: {hp, max} | null, odds: text | null, oddsHot}`; Fx `{type: "proj"
+   *  (kind, from, to, t) | "float" (x, y, text, kind, t) | "burst" (x, y, color, t) | "sparkle" (x,
+   *  y, t)}`, `t` its progress 0..1. */
   draw(sc) {
     const g = this.g;
     g.clearRect(0, 0, FRAME_W, FRAME_H);
-    g.save();
-    if (this.shake) g.translate(Math.round((Math.random() - 0.5) * 2 * this.shake), 0);
-    if (this.board) g.drawImage(this.board, 0, 0);
-    for (const b of sc.bands ?? []) this.band(b);
-    for (const r of sc.rings ?? []) targetRing(g, r.x, r.y, r.color ?? COLORS.cyan, r.alpha ?? 1, r.dash ?? true);
-    const items = [];
-    const city = this.city && IMG.get(this.city);
-    if (city) {
-      const [cx, cy] = tileXY(OX, OY + this.dy, 4, 0);
-      const top = cy - this.raise + 128 - city.height;
-      items.push({
-        y: cy - this.raise + 70,
-        draw: () => {
-          g.drawImage(city, cx, top);
-          if (sc.cityFlag) drawFlag(g, cx + 128, top + 6, sc.cityFlag);
-        },
-      });
-    }
-    for (const f of sc.figs ?? []) items.push({ y: f.y + (f.fallen ? -4 : 0), draw: () => this.fig(f) });
-    items.sort((a, b) => a.y - b.y);
-    for (const it of items) it.draw();
-    for (const a of sc.arrows ?? []) arrow(g, a.x0, a.y0, a.x1, a.y1, a);
-    for (const n of sc.numbered ?? []) numberedBadge(g, n.x, n.y, n.n);
-    for (const p of sc.projs ?? []) drawProj(g, p);
-    for (const s of sc.sparks ?? []) drawSpark(g, s);
-    for (const s of sc.shards ?? []) {
-      g.fillStyle = s.color;
-      g.globalAlpha = s.alpha;
-      g.fillRect(Math.round(s.x), Math.round(s.y), 4, 4);
-      g.globalAlpha = 1;
-    }
-    for (const l of sc.lines ?? []) {
+    if (!this.board) return;
+    g.drawImage(this.board, 0, 0);
+    for (const c of sc.cells ?? []) {
+      const [x, y] = cellXY(this.G, c.side, c.lane, c.row);
       g.save();
-      g.strokeStyle = COLORS.goldLt;
-      g.lineWidth = 2;
-      g.setLineDash([4, 4]);
-      g.beginPath();
-      g.moveTo(l.x0, l.y0);
-      g.lineTo(l.x1, l.y1);
+      diamond(g, x, y - 2);
+      g.fillStyle = c.fill ?? "rgba(246, 198, 80, 0.13)";
+      g.fill();
+      g.strokeStyle = c.color ?? "rgba(246, 198, 80, 0.6)";
+      g.lineWidth = 1.5;
       g.stroke();
       g.restore();
     }
+    const figs = sc.figs ?? [];
+    for (const f of figs) if (f.ring !== false) this.ring(f);
+    const items = [...this.scenery.map((s) => ({ s, base: s.base })), ...figs.map((f) => ({ f, base: f.y + (f.fallen ? -4 : 0) }))];
+    items.sort((a, b) => a.base - b.base);
+    for (const it of items) {
+      if (it.s) {
+        const im = IMG.get(it.s.key);
+        if (im) g.drawImage(im, it.s.x, it.s.y + 128 - im.height - (it.s.city ? 10 : 0));
+      } else this.fig(it.f);
+    }
+    this.labels();
+    if (sc.bars !== false) for (const f of figs) this.bar(f);
+    for (const e of sc.fx ?? []) drawFx(g, e);
+  }
+
+  ring(f) {
+    const g = this.g;
+    const [c0, c1] = f.side === this.me ? COLORS.azure : COLORS.gules;
+    const w = f.large ? 70 : 34;
+    const h = f.large ? 30 : 15;
+    const a = f.ringAlpha ?? f.alpha ?? 1;
+    g.save();
+    g.globalAlpha = a * 0.55;
+    g.beginPath();
+    g.ellipse(f.x, f.y, w, h, 0, 0, Math.PI * 2);
+    g.fillStyle = c1;
+    g.fill();
+    g.globalAlpha = a;
+    g.lineWidth = f.sel ? 3 : 2;
+    g.strokeStyle = f.sel ?? c0;
+    g.stroke();
     g.restore();
   }
 
   fig(f) {
     const g = this.g;
-    if (f.ring !== false) ring(g, f.x, f.y, f.side === this.me ? COLORS.azure : COLORS.gules, f.ringAlpha ?? f.alpha ?? 1);
-    if (f.plate) questionPlate(g, f.x, f.y);
-    if (f.sel) selRing(g, f.x, f.y, f.sel);
     if (!f.pic) return;
     if (f.fallen) {
-      drawFallen(g, f.pic, f.x + (f.dx || 0), f.y, { flip: f.flip, alpha: f.alpha ?? 0.85 });
+      drawFallen(g, f.pic, f.x + (f.dx || 0), f.y, { flip: f.flip, alpha: f.alpha ?? 0.85, side: f.side });
       return;
     }
     drawPic(g, f.pic, f.x, f.y, f);
-    const ic = f.roleIcon && IMG.get(`ui_${f.roleIcon}_s`);
-    if (ic) g.drawImage(ic, Math.round(f.x - 34), Math.round(f.y - 9), 16, 16);
   }
 
-  /** The shield band on the ground between a side's ranks. */
-  bandX(side) {
-    return side === 0 ? 462 : 816;
-  }
-
-  bandY(side) {
-    const r = side === 1 ? this.raise : 0;
-    return [196 + this.dy - r, 470 + this.dy - r];
-  }
-
-  band(b) {
-    const [y0, y1] = this.bandY(b.side);
-    shieldBand(this.g, this.bandX(b.side), y0, y1, b.side === this.me ? COLORS.you : COLORS.them, b.alpha ?? 1);
-  }
-
-  /** The band of `side` breaking at progress `t` (0..1): its shards. */
-  shards(side, t) {
-    const x = this.bandX(side);
-    const [y0] = this.bandY(side);
-    const out = [];
-    for (let k = 0; k < 18; k++) {
-      const y = y0 + 10 + k * 15;
-      const vx = (((k * 37) % 11) - 5) * 0.12;
-      const vy = -0.2 - ((k * 13) % 5) * 0.05;
-      out.push({ x: x - 4 + vx * t * 120, y: y + vy * t * 120 + 0.0008 * (t * 400) ** 2, alpha: Math.max(0, 1 - t), color: side === this.me ? COLORS.you : COLORS.them });
+  /** The HP bar over a unit's head, and its chance to fall beside it. */
+  bar(f) {
+    if (!f.bar) return;
+    const g = this.g;
+    const w = f.large ? 48 : 36;
+    const x = Math.round(f.x + (f.dx || 0) - w / 2);
+    const y = Math.round(f.y + (f.dy || 0) - (f.large ? 124 : 108));
+    const k = Math.max(0, Math.min(1, f.bar.hp / Math.max(1, f.bar.max)));
+    g.save();
+    g.globalAlpha = f.alpha ?? 1;
+    g.fillStyle = "rgba(8, 10, 24, 0.85)";
+    g.fillRect(x - 1, y - 1, w + 2, 7);
+    g.fillStyle = hpColor(k);
+    g.fillRect(x, y, Math.round(w * k), 5);
+    g.fillStyle = (f.side === this.me ? COLORS.azure : COLORS.gules)[0];
+    g.fillRect(x, y + 5, w, 1);
+    if (f.odds) {
+      g.font = "10px Herald, Georgia, serif";
+      g.textAlign = "left";
+      g.fillStyle = "rgba(0,0,0,0.8)";
+      g.fillText(f.odds, x + w + 5, y + 7);
+      g.fillStyle = f.oddsHot ? "#ffb4a8" : "#e8ecf6";
+      g.fillText(f.odds, x + w + 4, y + 6);
     }
-    return out;
+    g.restore();
   }
 
-  /** Where the city stands (the report's arrow into it, the flag). */
-  cityPoint() {
-    const [cx, cy] = tileXY(OX, OY + this.dy, 4, 0);
-    return { x: cx + 96, y: cy - this.raise + 40 };
+  /** The figure of a fighter under frame point (x, y) in the last scene `figs` (the frontmost). */
+  static figAt(figs, x, y) {
+    let best = null;
+    for (const f of figs ?? []) {
+      if (!f.box) continue;
+      if (x >= f.box.x0 && x <= f.box.x1 && y >= f.box.y0 && y <= f.box.y1 && (!best || f.y > best.y)) best = f;
+    }
+    return best;
   }
 }
 
-// ---------------------------------------------------------------------------------------------
-// Where everyone stands
-
-/** Feet positions `{b: {x, y, reserve}}` for fighters with display slots: each side's front and
- *  back ranks, the units out of the fight off the board's corners. `raise`: the defended plot's. */
-export function layout(fighters, { dy = 0, squeeze = 1, raise = 0 } = {}) {
-  const pos = {};
-  for (const side of [0, 1]) {
-    const mine = fighters.filter((f) => f.side === side && committed(f)).sort((a, b) => a.slot - b.slot);
-    for (const back of [false, true]) {
-      const r = mine.filter((f) => isBack(f) === back);
-      const n = r.length;
-      const step = n <= 1 ? 0 : n === 2 ? 112 : n === 3 ? 92 : n <= 5 ? 74 : Math.max(36, Math.floor(296 / (n - 1)));
-      r.forEach((f, k) => {
-        const y = CY + (k - (n - 1) / 2) * step;
-        let x;
-        if (side === 0) x = !back ? 548 + (k % 2 ? -28 : 26) : 384 + (k % 2 ? -16 : 12);
-        else x = !back ? 736 + (k % 2 ? 30 : -18) : 890 + (k % 2 ? -20 : 18);
-        pos[f.b] = { x, y: CY + (y - CY) * squeeze - (side === 1 ? raise : 0) + dy };
-      });
-    }
-    const res = fighters.filter((f) => f.side === side && !committed(f));
-    res.forEach((f, k) => {
-      const x = side === 0 ? 92 + (k % 2) * 58 : 1180 - (k % 2) * 58;
-      pos[f.b] = { x, y: CY - 30 + k * Math.min(76, 300 / Math.max(1, res.length)) * squeeze + dy, reserve: true };
-    });
-  }
-  return pos;
-}
-
-/** Where a unit that left the fight ends up: off the board on its side, after its reserves. */
-export function exitPos(f, fighters, k, dy = 0) {
-  const nRes = fighters.filter((g) => g.side === f.side && !committed(g)).length;
-  const i = nRes + k;
-  return { x: f.side === 0 ? 60 + (i % 2) * 70 : 1210 - (i % 2) * 70, y: CY - 30 + i * 70 + dy };
+/** The hit box of a figure at (x, y) (the screens' pointer tests). */
+export function figBox(f, x, y) {
+  return { x0: x - (f.large ? 56 : 30), x1: x + (f.large ? 56 : 30), y0: y - (f.large ? 118 : 100), y1: y + 10 };
 }
 
 // ---------------------------------------------------------------------------------------------
 // Figures: the sprite or an animation frame
 
-/** Whether fighter `f` (of `side`) is drawn flipped to face `toward` ("left", "right"; default:
- *  the enemy). */
+/** Whether fighter `f` is drawn flipped to face the enemy (`toward`: "left" or "right" instead). */
 export function faceFlip(f, sides, toward) {
   const fig = figOf(f, sides);
+  // The attacker stands upper left and faces lower right; the defender faces upper left.
   const wantLeft = toward === "left" || (toward === undefined && f.side === 1);
   return wantLeft !== fig.left;
 }
 
 function frameAt(ms, list, loop) {
   const total = list.reduce((a, b) => a + b, 0);
-  let t = loop ? ((ms % total) + total) % total : Math.min(ms, total - 1);
+  let t = loop ? ((ms % total) + total) % total : Math.min(Math.max(ms, 0), total - 1);
   for (let k = 0; k < list.length; k++) {
     if (t < list[k]) return k;
     t -= list[k];
@@ -396,7 +465,7 @@ export function pic(f, sides, anim = null, ms = 0, loop = false) {
   const fig = figOf(f, sides);
   if (anim && fig.anim) {
     const im = IMG.get(`anim:${fig.anim}:${anim}`);
-    if (im) return { im, sx: frameAt(ms, ANIMS[anim], loop) * ANIM_FRAME.w, w: ANIM_FRAME.w, h: ANIM_FRAME.h, ax: ANIM_FRAME.ax, ay: ANIM_FRAME.ay };
+    if (im) return { im, sx: frameAt(ms, ANIMS[anim], loop) * ANIM_FRAME.w, w: ANIM_FRAME.w, h: ANIM_FRAME.h, ax: ANIM_FRAME.ax, ay: ANIM_FRAME.ay, anim };
   }
   const im = IMG.get(fig.key);
   return im ? { im, sx: 0, w: im.width, h: im.height, ax: im.width / 2, ay: im.height - 2 } : null;
@@ -440,8 +509,8 @@ function drawPic(g, p, x, y, { flip = false, alpha = 1, dx = 0, dy = 0, tint = n
   if (glow) {
     const s = silhouette(p, flip, glow);
     g.save();
-    g.globalAlpha = glowA;
-    for (const [ox, oy] of [[-2, 0], [2, 0], [0, -2], [0, 2], [-2, -2], [2, 2], [-2, 2], [2, -2]]) g.drawImage(s, x0 + ox, y0 + oy);
+    g.globalAlpha = glowA * alpha;
+    for (const [ox, oy] of [[-2, 0], [2, 0], [0, -2], [0, 2], [-1, -1], [1, 1], [-1, 1], [1, -1]]) g.drawImage(s, x0 + ox, y0 + oy);
     g.restore();
   }
   g.save();
@@ -452,268 +521,111 @@ function drawPic(g, p, x, y, { flip = false, alpha = 1, dx = 0, dy = 0, tint = n
     g.drawImage(p.im, p.sx, 0, p.w, p.h, 0, 0, p.w, p.h);
   } else g.drawImage(p.im, p.sx, 0, p.w, p.h, x0, y0, p.w, p.h);
   g.restore();
-  if (tint) {
+  if (tint && tintA > 0) {
     g.save();
-    g.globalAlpha = tintA;
+    g.globalAlpha = tintA * alpha;
     g.drawImage(silhouette(p, flip, tint), x0, y0);
     g.restore();
   }
 }
 
-const FALLEN = new Map();
-
-/** A unit with no death frames, fallen: its sprite tipped a quarter turn and darkened. */
-function drawFallen(g, p, x, y, { flip = false, alpha = 0.85 } = {}) {
-  const key = `${p.im.src}|${p.sx}|${flip}`;
-  let c = FALLEN.get(key);
-  if (!c) {
-    c = document.createElement("canvas");
-    c.width = p.h;
-    c.height = p.w;
-    const cg = c.getContext("2d");
-    cg.imageSmoothingEnabled = false;
-    cg.translate(c.width / 2, c.height / 2);
-    cg.rotate(((flip ? -1 : 1) * Math.PI) / 2);
-    if (flip) cg.scale(-1, 1);
-    cg.drawImage(p.im, p.sx, 0, p.w, p.h, -p.w / 2, -p.h / 2, p.w, p.h);
-    cg.setTransform(1, 0, 0, 1, 0, 0);
-    cg.globalCompositeOperation = "source-atop";
-    cg.fillStyle = "rgba(20, 13, 12, 0.25)";
-    cg.fillRect(0, 0, c.width, c.height);
-    FALLEN.set(key, c);
-  }
+/** A unit with no death frames, fallen: its sprite laid on its side at its feet (falling back,
+ *  away from the enemy) and darkened. */
+function drawFallen(g, p, x, y, { flip = false, alpha = 0.85, side = 0 } = {}) {
   g.save();
   g.globalAlpha = alpha;
-  g.drawImage(c, Math.round(x - c.width / 2), Math.round(y - c.height + 26));
+  g.translate(Math.round(x), Math.round(y - 4));
+  g.rotate(side === 0 ? -Math.PI / 2 : Math.PI / 2);
+  if (flip) g.scale(-1, 1);
+  g.drawImage(p.im, p.sx, 0, p.w, p.h, -p.ax, -p.ay, p.w, p.h);
+  g.drawImage(silhouette(p, false, "rgba(10,8,20,0.55)"), -p.ax, -p.ay);
   g.restore();
 }
 
 // ---------------------------------------------------------------------------------------------
-// Canvas marks
+// Effects
 
-function ring(g, x, y, [f, s], alpha = 1) {
-  g.save();
-  g.globalAlpha = alpha;
-  g.fillStyle = "#140d0c";
-  g.beginPath();
-  g.ellipse(x, y + 1, 29, 11, 0, 0, Math.PI * 2);
-  g.fill();
-  g.fillStyle = s;
-  g.beginPath();
-  g.ellipse(x, y + 1, 27, 9, 0, 0, Math.PI * 2);
-  g.fill();
-  g.fillStyle = f;
-  g.beginPath();
-  g.ellipse(x, y - 1, 27, 8, 0, 0, Math.PI * 2);
-  g.fill();
-  g.fillStyle = "rgba(0,0,0,0.28)";
-  g.beginPath();
-  g.ellipse(x, y - 1, 17, 5, 0, 0, Math.PI * 2);
-  g.fill();
-  g.restore();
+/** The point at progress `t` of a projectile's arc (arrows arc low, stones high, spells flat). */
+export function projAt(e, t) {
+  const [x0, y0] = e.from;
+  const [x1, y1] = e.to;
+  const arc = e.kind === "Bombard" ? 150 : e.kind === "Shoot" ? 60 : 30;
+  return [x0 + (x1 - x0) * t, y0 + (y1 - y0) * t - arc * 4 * t * (1 - t)];
 }
 
-/** A "may fight" plate: a defender the stance may or may not commit (an unseen stance). */
-function questionPlate(g, x, y) {
+function drawFx(g, e) {
+  const t = e.t;
+  if (t < 0 || t > 1) return;
   g.save();
-  g.fillStyle = "#0c0703";
-  g.fillRect(x + 14, y - 12, 18, 18);
-  g.fillStyle = COLORS.gold;
-  g.fillRect(x + 16, y - 10, 14, 14);
-  g.fillStyle = "#1a1205";
-  g.font = "700 20px Herald";
-  g.textAlign = "center";
-  g.textBaseline = "middle";
-  g.fillText("?", x + 23, y - 2);
-  g.restore();
-}
-
-function selRing(g, x, y, color) {
-  g.save();
-  g.lineWidth = 5;
-  g.strokeStyle = "#0c0703";
-  g.beginPath();
-  g.ellipse(x, y + 1, 36, 13, 0, 0, Math.PI * 2);
-  g.stroke();
-  g.lineWidth = 3;
-  g.strokeStyle = color;
-  g.beginPath();
-  g.ellipse(x, y + 1, 36, 13, 0, 0, Math.PI * 2);
-  g.stroke();
-  g.restore();
-}
-
-function targetRing(g, x, y, color, alpha, dash) {
-  g.save();
-  g.globalAlpha = alpha;
-  for (const [w, c, d] of [
-    [5, "#0c0703", []],
-    [3, color, dash ? [7, 5] : []],
-  ]) {
-    g.setLineDash(d);
-    g.lineWidth = w;
-    g.strokeStyle = c;
-    g.beginPath();
-    g.ellipse(x, y + 1, 40, 14, 0, 0, Math.PI * 2);
-    g.stroke();
-  }
-  g.restore();
-}
-
-function numberedBadge(g, x, y, n) {
-  g.save();
-  g.fillStyle = "#0c0703";
-  g.fillRect(x - 11, y - 11, 22, 22);
-  g.fillStyle = COLORS.gold;
-  g.fillRect(x - 9, y - 9, 18, 18);
-  g.fillStyle = "#1a1205";
-  g.font = "700 20px Herald";
-  g.textAlign = "center";
-  g.textBaseline = "middle";
-  g.fillText(String(n), x, y + 1);
-  g.restore();
-}
-
-function drawFlag(g, x, y, color) {
-  g.fillStyle = "#0c0703";
-  g.fillRect(x - 1, y - 2, 4, 42);
-  g.fillStyle = "#e9dbb3";
-  g.fillRect(x, y, 2, 40);
-  g.fillStyle = "#0c0703";
-  g.fillRect(x + 2, y - 1, 26, 18);
-  g.fillStyle = color;
-  g.fillRect(x + 3, y, 24, 16);
-  g.fillStyle = "#fffaec";
-  g.fillRect(x + 12, y + 5, 6, 6);
-}
-
-const SHIELD_PX = ["ooooooo", "o#####o", "o#####o", "o#####o", ".o###o.", "..o#o..", "...o..."];
-
-function shieldBand(g, x, y0, y1, color, alpha = 1) {
-  g.save();
-  g.globalAlpha = 0.22 * alpha;
-  g.fillStyle = color;
-  g.fillRect(x - 7, y0, 14, y1 - y0);
-  g.globalAlpha = alpha;
-  g.setLineDash([6, 6]);
-  g.lineWidth = 2;
-  g.strokeStyle = color;
-  g.beginPath();
-  g.moveTo(x, y0);
-  g.lineTo(x, y1);
-  g.stroke();
-  g.setLineDash([]);
-  for (let y = y0 + 18; y < y1 - 6; y += 54) {
-    SHIELD_PX.forEach((row, ry) =>
-      [...row].forEach((c, rx) => {
-        if (c === ".") return;
-        g.fillStyle = c === "o" ? "#0c0703" : color;
-        g.fillRect(x - 7 + rx * 2, y + ry * 2, 2, 2);
-      }),
-    );
-  }
-  g.restore();
-}
-
-/** An arrow from (x0, y0) to (x1, y1), bending up by `bend`. */
-export function arrow(g, x0, y0, x1, y1, { color = "#9fd0ff", bend = 0, dash = [], width = 3, head = 9, alpha = 1, outline = true } = {}) {
-  const mx = (x0 + x1) / 2;
-  const my = (y0 + y1) / 2 - bend;
-  g.save();
-  g.globalAlpha = alpha;
-  g.lineCap = "round";
-  const path = () => {
-    g.beginPath();
-    g.moveTo(x0, y0);
-    g.quadraticCurveTo(mx, my, x1, y1);
-  };
-  if (outline) {
-    g.setLineDash(dash);
-    g.strokeStyle = "rgba(12,7,3,0.85)";
-    g.lineWidth = width + 3;
-    path();
-    g.stroke();
-  }
-  g.setLineDash(dash);
-  g.strokeStyle = color;
-  g.lineWidth = width;
-  path();
-  g.stroke();
-  g.setLineDash([]);
-  const tx = x1 - mx;
-  const ty = y1 - my;
-  const l = Math.hypot(tx, ty) || 1;
-  const ux = tx / l;
-  const uy = ty / l;
-  const hx = x1 - ux * head;
-  const hy = y1 - uy * head;
-  g.beginPath();
-  g.moveTo(x1 + ux * 2, y1 + uy * 2);
-  g.lineTo(hx - uy * head * 0.6, hy + ux * head * 0.6);
-  g.lineTo(hx + uy * head * 0.6, hy - ux * head * 0.6);
-  g.closePath();
-  if (outline) {
+  if (e.type === "proj") {
+    const [x, y] = projAt(e, t);
+    if (e.kind === "Shoot") {
+      const [xb, yb] = projAt(e, Math.max(0, t - 0.06));
+      g.strokeStyle = "#3a2410";
+      g.lineWidth = 3;
+      g.beginPath();
+      g.moveTo(xb, yb);
+      g.lineTo(x, y);
+      g.stroke();
+      g.strokeStyle = "#e8d8a8";
+      g.lineWidth = 1.5;
+      g.beginPath();
+      g.moveTo(xb, yb);
+      g.lineTo(x, y);
+      g.stroke();
+    } else if (e.kind === "Bombard") {
+      g.fillStyle = "#3b3530";
+      g.beginPath();
+      g.arc(x, y, 7, 0, Math.PI * 2);
+      g.fill();
+      g.fillStyle = "#6d645a";
+      g.beginPath();
+      g.arc(x - 2, y - 2, 3, 0, Math.PI * 2);
+      g.fill();
+    } else {
+      // a spell: a comet of its colour (the bolt lilac, a spell with a splash cyan)
+      const col = e.splash ? "120, 230, 255" : "210, 170, 255";
+      for (let k = 5; k >= 0; k--) {
+        const [px, py] = projAt(e, Math.max(0, t - k * 0.035));
+        g.fillStyle = `rgba(${col}, ${0.12 + 0.13 * (5 - k)})`;
+        g.beginPath();
+        g.arc(px, py, 3 + (5 - k) * 1.4, 0, Math.PI * 2);
+        g.fill();
+      }
+      g.fillStyle = "#ffffff";
+      g.beginPath();
+      g.arc(x, y, 3, 0, Math.PI * 2);
+      g.fill();
+    }
+  } else if (e.type === "burst") {
+    g.globalAlpha = 1 - t;
+    g.strokeStyle = e.color;
     g.lineWidth = 3;
-    g.strokeStyle = "rgba(12,7,3,0.9)";
+    g.beginPath();
+    g.arc(e.x, e.y, 10 + 34 * t, 0, Math.PI * 2);
     g.stroke();
-  }
-  g.fillStyle = color;
-  g.fill();
-  g.restore();
-}
-
-/** The point at `u` (0..1) of the arc from (x0, y0) to (x1, y1) bending up by `bend`, and its
- *  direction. */
-export function arcAt(x0, y0, x1, y1, bend, u) {
-  const mx = (x0 + x1) / 2;
-  const my = (y0 + y1) / 2 - bend;
-  const x = (1 - u) * (1 - u) * x0 + 2 * (1 - u) * u * mx + u * u * x1;
-  const y = (1 - u) * (1 - u) * y0 + 2 * (1 - u) * u * my + u * u * y1;
-  const dx = 2 * (1 - u) * (mx - x0) + 2 * u * (x1 - mx);
-  const dy = 2 * (1 - u) * (my - y0) + 2 * u * (y1 - my);
-  return { x, y, ang: Math.atan2(dy, dx) };
-}
-
-function drawProj(g, { x, y, ang, kind }) {
-  g.save();
-  g.translate(Math.round(x), Math.round(y));
-  if (kind === "bolt") {
-    g.fillStyle = "#0c0703";
-    g.fillRect(-5, -5, 10, 10);
-    g.fillStyle = "#a276da";
-    g.fillRect(-4, -4, 8, 8);
-    g.fillStyle = "#ffe78c";
-    g.fillRect(-2, -2, 4, 4);
-  } else {
-    g.rotate(ang);
-    g.fillStyle = "#0c0703";
-    g.fillRect(-7, -2, 14, 4);
-    g.fillStyle = "#e9dbb3";
-    g.fillRect(-6, -1, 10, 2);
-    g.fillStyle = "#fffaec";
-    g.fillRect(4, -1, 2, 2);
-  }
-  g.restore();
-}
-
-/** An impact spark in three sizes: a glance, a hit, a heavy hit (gold). */
-function drawSpark(g, s) {
-  const r = s.tier === 2 ? 12 : s.tier === 1 ? 8 : 4;
-  const a = Math.max(0, 1 - s.t);
-  const k = Math.round(r * (0.6 + 0.6 * s.t));
-  const X = Math.round(s.x);
-  const Y = Math.round(s.y);
-  g.save();
-  g.globalAlpha = a;
-  g.fillStyle = "#0c0703";
-  g.fillRect(X - k - 1, Y - 2, 2 * k + 2, 4);
-  g.fillRect(X - 2, Y - k - 1, 4, 2 * k + 2);
-  g.fillStyle = s.tier === 2 ? "#ffe78c" : "#fffaec";
-  g.fillRect(X - k, Y - 1, 2 * k, 2);
-  g.fillRect(X - 1, Y - k, 2, 2 * k);
-  if (s.tier) {
-    const d = Math.round(k * 0.6);
-    for (const [ox, oy] of [[-d, -d], [d - 2, -d], [-d, d - 2], [d - 2, d - 2]]) g.fillRect(X + ox, Y + oy, 2, 2);
+  } else if (e.type === "sparkle") {
+    for (let k = 0; k < 7; k++) {
+      const a = k * 0.9 + t * 3;
+      const r = 18 + 6 * Math.sin(k * 2.1);
+      const x = e.x + Math.cos(a) * r;
+      const y = e.y - 20 - t * 60 - k * 6;
+      g.globalAlpha = (1 - t) * 0.9;
+      g.fillStyle = k % 2 ? "#a8ffcc" : "#ffffff";
+      g.fillRect(Math.round(x), Math.round(y), 3, 3);
+    }
+  } else if (e.type === "float") {
+    const y = e.y - 34 * Math.min(1, t * 1.6);
+    const big = e.kind === "crit";
+    g.globalAlpha = t < 0.75 ? 1 : 1 - (t - 0.75) / 0.25;
+    g.font = `700 ${big ? 26 : e.kind === "miss" ? 16 : 20}px Herald, Georgia, serif`;
+    g.textAlign = "center";
+    g.lineJoin = "round";
+    g.lineWidth = 4;
+    g.strokeStyle = "rgba(8, 6, 18, 0.9)";
+    g.strokeText(e.text, e.x, y);
+    g.fillStyle = { crit: COLORS.goldLt, heal: "#8dffb4", miss: "#d6dbe8", dmg: "#ffffff" }[e.kind] ?? "#ffffff";
+    g.fillText(e.text, e.x, y);
   }
   g.restore();
 }
@@ -750,25 +662,83 @@ export function pixGlyph(rows, color, s = 2, outline = "#0c0703") {
 
 export const GLYPH = {
   skull: [".ooooo.", "o#####o", "o#o#o#o", "o#####o", ".o#o#o.", "..ooo.."],
-  shield: SHIELD_PX,
-  die: ["oooooo", "o####o", "o#o##o", "o####o", "o##o#o", "oooooo"],
   play: ["#...", "##..", "###.", "####", "###.", "##..", "#..."],
   pause: ["##.##", "##.##", "##.##", "##.##", "##.##", "##.##", "##.##"],
-  back: ["...#", "..##", ".###", "####", ".###", "..##", "...#"],
+  step: ["#..#", "##.#", "####", "##.#", "#..#"],
   skip: ["#..#..", "##.##.", "######", "##.##.", "#..#.."],
 };
 
-/** A head-and-shoulders crop of fighter `f`'s sprite (a portrait chip at 1x). */
+const HEADS = new Map();
+
+/** Where the head of sprite `im` is: going down from its top, the first three rows whose longest
+ *  run of opaque pixels is 13 or more (a raised sword, spear, staff or bow is narrower, outline
+ *  and all: it is passed over), centred on the third row's run. */
+function headOf(key, im) {
+  let s = HEADS.get(key);
+  if (s) return s;
+  s = { cx: im.width / 2, y0: 0 };
+  try {
+    const c = document.createElement("canvas");
+    c.width = im.width;
+    c.height = im.height;
+    const g = c.getContext("2d");
+    g.drawImage(im, 0, 0);
+    const d = g.getImageData(0, 0, im.width, im.height).data;
+    const W = im.width;
+    const H = im.height;
+    /** The longest run of opaque pixels in row `y`: [start, length]. */
+    const run = (y) => {
+      let best = [0, 0];
+      let start = -1;
+      for (let x = 0; x <= W; x++) {
+        const on = x < W && d[(y * W + x) * 4 + 3] > 64;
+        if (on && start < 0) start = x;
+        if (!on && start >= 0) {
+          if (x - start > best[1]) best = [start, x - start];
+          start = -1;
+        }
+      }
+      return best;
+    };
+    const runs = [];
+    for (let y = 0; y < H; y++) runs.push(run(y));
+    for (let y = 0; y + 3 <= H; y++) {
+      if (runs[y][1] >= 13 && runs[y + 1][1] >= 13 && runs[y + 2][1] >= 13) {
+        const [x0, n] = runs[y + 2];
+        s = { cx: Math.round(x0 + n / 2), y0: Math.max(0, y - 3) };
+        break;
+      }
+    }
+  } catch {
+    /* no pixels to read: the middle of the sprite */
+  }
+  HEADS.set(key, s);
+  return s;
+}
+
+/** A head-and-shoulders crop of fighter `f`'s sprite (a portrait chip at 1x), drawn once the
+ *  sprite has loaded. */
 export function headChip(f, sides, { w = 32, h = 30, dead = false, flip = false } = {}) {
   const key = figOf(f, sides).key;
-  const s = SPRITES[key];
-  const el = document.createElement("span");
-  el.className = `bt-head${dead ? " dead" : ""}`;
-  const [x0, y0, x1] = s?.box ?? [24, 8, 72];
-  const cx = Math.round((x0 + x1) / 2);
-  el.style.cssText = `width:${w}px;height:${h}px;background-image:url(${spriteUrl(key)});background-position:${-(cx - Math.round(w / 2))}px ${-(y0 + 2)}px;${flip ? "transform:scaleX(-1);" : ""}`;
-  el.setAttribute("aria-hidden", "true");
-  return el;
+  const c = document.createElement("canvas");
+  c.className = `bt-head${dead ? " dead" : ""}`;
+  c.width = w;
+  c.height = h;
+  c.style.width = `${w}px`;
+  c.style.height = `${h}px`;
+  c.setAttribute("aria-hidden", "true");
+  sprite(key).then((im) => {
+    if (!im) return;
+    const { cx, y0 } = headOf(key, im);
+    const g = c.getContext("2d");
+    g.imageSmoothingEnabled = false;
+    if (flip) {
+      g.translate(w, 0);
+      g.scale(-1, 1);
+    }
+    g.drawImage(im, Math.round(cx - w / 2), Math.max(0, y0 - 2), w, h, 0, 0, w, h);
+  });
+  return c;
 }
 
 /** The M7 interface icon `ui_<name>_s` as an image of `px` CSS px. */
@@ -784,7 +754,7 @@ export function uiIcon(name, px = 16) {
 }
 
 /** A health colour, as the map's bars. */
-export const hpColor = (p) => (p > 0.6 ? "#45e05c" : p > 0.3 ? "#f2c230" : "#e04030");
+export const hpColor = (p) => (p > 0.5 ? "#5ad16a" : p > 0.25 ? "#f0b040" : "#ee5040");
 
 /** Appends `children` to `el` as dom.js `h` does: arrays flattened, null, undefined and false
  *  skipped, the rest as text. */
@@ -794,15 +764,6 @@ export function add(el, ...children) {
     el.append(c instanceof Node ? c : document.createTextNode(String(c)));
   }
   return el;
-}
-
-/** Places `node` at (x, y) of the frame in `parent` (absolutely). */
-export function at(parent, x, y, node) {
-  node.style.position = "absolute";
-  node.style.left = `${Math.round(x)}px`;
-  node.style.top = `${Math.round(y)}px`;
-  parent.append(node);
-  return node;
 }
 
 /** A button of the battle screens: its label as plain text (no text hook), `on` lit. */
@@ -837,30 +798,15 @@ export function partsEl(parts) {
   return out;
 }
 
-/** A health bar `w` px wide: `hp` of `max` (any unit), `pending` still to land (white), `tick` the
- *  withdrawal line (a fraction). */
-export function hpBar(hp, max, { w = 48, pending = 0, tick = null } = {}) {
+/** A health bar `w` px wide: `hp` of `max` (any unit). */
+export function hpBar(hp, max, { w = 48 } = {}) {
   const bar = document.createElement("span");
   bar.className = "bt-hp";
   bar.style.width = `${w}px`;
-  const p = Math.max(0, hp) / max;
-  const q = Math.max(0, hp - pending) / max;
+  const q = Math.max(0, hp) / Math.max(1, max);
   const v = document.createElement("i");
   v.style.width = `${Math.round(q * w)}px`;
   v.style.background = hpColor(q);
   bar.append(v);
-  if (pending) {
-    const pe = document.createElement("i");
-    pe.className = "pend";
-    pe.style.left = `${Math.round(q * w)}px`;
-    pe.style.width = `${Math.round((p - q) * w)}px`;
-    bar.append(pe);
-  }
-  if (tick !== null) {
-    const t = document.createElement("b");
-    t.className = "tick";
-    t.style.left = `${Math.round(tick * w) - 1}px`;
-    bar.append(t);
-  }
   return bar;
 }
