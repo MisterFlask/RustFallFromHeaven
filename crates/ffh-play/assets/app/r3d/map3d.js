@@ -82,10 +82,10 @@ export class Map3D {
     }
     this.gl = gl;
     this.glName = glName;
-    this.pipeline = new Pipeline(gl, this.terrainDefines());
+    this.pipeline = new Pipeline(gl, this.terrainDefines(), this.sceneDefines());
     /** Whether the programs have compiled (`ready`): the loop draws nothing before. */
     this.compiled = false;
-    this.scene = new Scene(gl);
+    this.scene = new Scene(gl, this.sceneDefines().NOISE_TEX ? this.noiseTexFormat() : null);
     this.world = null;
     this.mapSeen = null;
     this.viewSeen = null;
@@ -186,6 +186,18 @@ export class Map3D {
    *  mode may compile parts of the ground's painting out. */
   terrainDefines() {
     return {};
+  }
+
+  /** `#define`s of the terrain, water and props: NOISE_TEX reads their value noise from a hash
+   *  texture (shaders.js pnoise; its pattern moves, its look stays), for Direct3D's compile time
+   *  (docs/R3D.md §11.1). Off for the 3D renderer unless `noiseTex` says (?r3d={"noiseTex":1}). */
+  sceneDefines() {
+    return this.cfg.noiseTex ? { NOISE_TEX: 1 } : {};
+  }
+
+  /** The hash texture's format: `noiseTex` 2 is R16F (8 MB), else R8 (4 MB). */
+  noiseTexFormat() {
+    return this.cfg.noiseTex === 2 ? "r16f" : "r8";
   }
 
   /** How strongly the cities light the ground round them (decals.js rasterLight): 1 for the 3D

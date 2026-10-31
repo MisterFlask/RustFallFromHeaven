@@ -29,8 +29,9 @@ const SHADOW_SIZE = 2048;
 const TERRAIN_SHADOW_SIZE = 1024;
 
 export class Pipeline {
-  /** `terrainDefines`: the terrain program's `#define`s (a mode's: Map3D.terrainDefines). */
-  constructor(gl, terrainDefines = {}) {
+  /** `terrainDefines`: the terrain program's `#define`s (a mode's: Map3D.terrainDefines);
+   *  `sceneDefines`: the terrain's, water's and props' (Map3D.sceneDefines). */
+  constructor(gl, terrainDefines = {}, sceneDefines = {}) {
     this.gl = gl;
     this.hdr = !!gl.getExtension("EXT_color_buffer_float") || !!gl.getExtension("EXT_color_buffer_half_float");
     gl.getExtension("OES_texture_float_linear");
@@ -39,9 +40,9 @@ export class Pipeline {
     const P = (name, vs, fs, defs) => new Program(gl, name, vs, fs, defs);
     const C = SH.COMMON;
     this.p = {
-      terrain: P("terrain", C + SH.TERRAIN_VS, C + SH.TERRAIN_FS, terrainDefines),
-      prop: P("prop", C + SH.PROP_VS, C + SH.PROP_FS),
-      water: P("water", C + SH.WATER_VS, C + SH.WATER_FS),
+      terrain: P("terrain", C + SH.TERRAIN_VS, C + SH.TERRAIN_FS, { ...sceneDefines, ...terrainDefines }),
+      prop: P("prop", C + SH.PROP_VS, C + SH.PROP_FS, sceneDefines),
+      water: P("water", C + SH.WATER_VS, C + SH.WATER_FS, sceneDefines),
       shadowTerrain: P("shadow-terrain", C + SH.SHADOW_TERRAIN_VS, SH.SHADOW_FS),
       shadowProp: P("shadow-prop", C + SH.PROP_VS, C + SH.PROP_DEPTH_FS),
       ssao: P("ssao", FULLSCREEN_VS, C + SH.SSAO_FS),

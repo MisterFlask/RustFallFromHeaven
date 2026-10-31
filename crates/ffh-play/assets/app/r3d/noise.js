@@ -221,3 +221,107 @@ export function ridged2p(x, y, P, oct = 4, gain = 0.5) {
   }
   return s / n;
 }
+
+// --- The shaders' value noise from a texture (shaders.js NOISE_TEX) ---------------------------
+
+/** The cells of the hash texture across (x and y) and its layers (z), as shaders.js pnoise reads
+ *  them. */
+export const NOISE_N = 256;
+export const NOISE_L = 64;
+
+/** hash12 of shaders.js at integer cell (x, y), in float32 steps as a GPU works it out (to the
+ *  last bits: a GPU may fuse a multiply and an add). */
+export function hash12(x, y) {
+  const f = Math.fround;
+  x = f(x);
+  y = f(y);
+  const fr = (v) => f(v - Math.floor(v));
+  const c = f(0.1031), k = f(33.33);
+  const rx = fr(f(x * c)), ry = fr(f(y * c));
+  const d = f(f(f(rx * f(ry + k)) + f(ry * f(rx + k))) + f(rx * f(rx + k)));
+  const a = f(rx + d), b = f(ry + d);
+  return fr(f(f(a + b) * a));
+}
+
+/** hash22 of shaders.js at (x, y), in float32 steps (as hash12). */
+export function hash22(x, y) {
+  const f = Math.fround;
+  const fr = (v) => f(v - Math.floor(v));
+  x = f(x);
+  y = f(y);
+  const k = f(33.33);
+  const px = fr(f(x * f(0.1031))), py = fr(f(y * f(0.103))), pz = fr(f(x * f(0.0973)));
+  const d = f(f(f(px * f(py + k)) + f(py * f(pz + k))) + f(pz * f(px + k)));
+  const a = f(px + d), b = f(py + d), c = f(pz + d);
+  return [fr(f(f(a + b) * c)), fr(f(f(a + c) * b))];
+}
+
+/** The cell a texel of the hash texture holds, in x or y: the cells -64..191, as the arithmetic
+ *  noise's lattice takes them (mod 4096). */
+const noiseCell = (c) => (c < 192 ? c : c - 256 + 4096);
+
+/** The hash texture of the shaders' value noise (shaders.js NOISE_TEX pnoise): hash12 of the
+ *  cells -64..191 in x and y (noiseCell), repeating, in NOISE_L layers: in layer k the columns
+ *  c = k (mod NOISE_L) repeat column 0, so that a lattice wrapping after P cells (P = k mod
+ *  NOISE_L) meets column 0 at its seam (texel P mod NOISE_N). Linear; `format` "r8" (4 MB) or
+ *  "r16f" (8 MB). */
+export function noiseHashTexture(gl, format = "r8") {
+  const N = NOISE_N, L = NOISE_L;
+  const half = format === "r16f";
+  const base = new Float32Array(N * N);
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) base[y * N + x] = hash12(noiseCell(x), noiseCell(y));
+  const t = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_3D, t);
+  gl.texStorage3D(gl.TEXTURE_3D, 1, half ? gl.R16F : gl.R8, N, N, L);
+  gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+  const layer = half ? new Float32Array(N * N) : new Uint8Array(N * N);
+  for (let k = 0; k < L; k++) {
+    for (let y = 0; y < N; y++) {
+      const row = y * N;
+      for (let x = 0; x < N; x++) {
+        const v = base[row + (x % L === k && x ? 0 : x)];
+        layer[row + x] = half ? v : Math.round(v * 255);
+      }
+    }
+    gl.texSubImage3D(gl.TEXTURE_3D, 0, 0, 0, k, N, N, 1, gl.RED, half ? gl.FLOAT : gl.UNSIGNED_BYTE, layer);
+  }
+  for (const [p, v] of [[gl.TEXTURE_MIN_FILTER, gl.LINEAR], [gl.TEXTURE_MAG_FILTER, gl.LINEAR], [gl.TEXTURE_WRAP_S, gl.REPEAT], [gl.TEXTURE_WRAP_T, gl.REPEAT], [gl.TEXTURE_WRAP_R, gl.REPEAT]]) gl.texParameteri(gl.TEXTURE_3D, p, v);
+  gl.bindTexture(gl.TEXTURE_3D, null);
+  return t;
+}
+
+/** The uniforms of the shaders' texture noise lattice for a world (shaders.js uNoiseLat). */
+export function noiseLattice(world) {
+  const w = world.wrapX ? world.w : 4096;
+  return { uNoiseLat: [w, 1 / w] };
+}
+
+/** The brush marks' cell hashes (shaders.js dab2 under NOISE_TEX): for the cells -64..191 in x and
+ *  y (noiseCell, unwrapped: dab2's lattice does not wrap), texel (x, y) holds hash22 of the cell
+ *  and hash12 of it + 1.3 and + 3.7, texel (x, y + 256) hash12 of it + 6.1 and the mean of those
+ *  of + 9.1 and + 5.3. RGBA32F (2 MB), read with texelFetch. */
+export function dabHashTexture(gl) {
+  const N = NOISE_N;
+  const data = new Float32Array(N * 2 * N * 4);
+  for (let y = 0; y < N; y++) {
+    for (let x = 0; x < N; x++) {
+      const cx = x < 192 ? x : x - 256, cy = y < 192 ? y : y - 256;
+      const a = (y * N + x) * 4, b = ((y + N) * N + x) * 4;
+      const h = hash22(cx, cy);
+      const at = (o) => hash12(Math.fround(cx + Math.fround(o)), Math.fround(cy + Math.fround(o)));
+      data[a] = h[0];
+      data[a + 1] = h[1];
+      data[a + 2] = at(1.3);
+      data[a + 3] = at(3.7);
+      data[b] = at(6.1);
+      data[b + 1] = Math.fround(0.5 * Math.fround(at(9.1) + at(5.3)));
+    }
+  }
+  const t = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, t);
+  gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, N, 2 * N, 0, gl.RGBA, gl.FLOAT, data);
+  for (const [p, v] of [[gl.TEXTURE_MIN_FILTER, gl.NEAREST], [gl.TEXTURE_MAG_FILTER, gl.NEAREST], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, p, v);
+  gl.bindTexture(gl.TEXTURE_2D, null);
+  return t;
+}
