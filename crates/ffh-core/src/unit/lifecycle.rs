@@ -706,6 +706,7 @@ impl Game {
         self.unit_change_immobile_timer(u, -1);
 
         self.units[u].made_attack = false;
+        self.units[u].attacks_made = 0;
         self.units[u].made_interception = false;
 
         self.unit_set_recon_plot(u, None);

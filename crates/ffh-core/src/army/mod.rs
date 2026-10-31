@@ -71,6 +71,9 @@ pub struct Army {
     /// The cities it requisitions units from, in the order its owner picked them (only its
     /// owner's cities: a city lost, traded, razed or flipped leaves every list).
     pub requisition: Vec<CityId>,
+    /// Engagement combat (plan 5.3): its standing order, the stance it defends with and proposes
+    /// its attacks with; set with [`Game::army_set_stance`].
+    pub stance: StanceType,
 }
 
 /// Where a recruited unit goes.
@@ -140,6 +143,11 @@ impl Game {
         !hero_promotion(self.d).is_some_and(|h| unit.has_promotion[h])
     }
 
+    /// Whether unit `u` is a hero (holds `PROMOTION_HERO`).
+    pub fn unit_is_hero(&self, u: UnitId) -> bool {
+        hero_promotion(self.d).is_some_and(|h| self.units[u].has_promotion[h])
+    }
+
     /// The city whose garrison unit `u` is in, if any: an army unit in no army and not marching,
     /// in one of its owner's cities.
     pub fn unit_garrison_city(&self, u: UnitId) -> Option<CityId> {
@@ -170,15 +178,32 @@ impl Game {
         self.group_plot(g)
     }
 
-    /// A new army of `p`, named "Nth Army" with the lowest N none of its armies has.
-    fn army_create(&mut self, p: PlayerId) -> ArmyId {
+    /// A new army of `p` with `stance`, named "Nth Army" with the lowest N none of its armies has.
+    fn army_create(&mut self, p: PlayerId, stance: StanceType) -> ArmyId {
         self.players[p].army_count += 1;
         let taken: BTreeSet<String> = self.players[p].armies.iter().map(|&a| self.armies[a].name.clone()).collect();
         let name = (1..).map(|n| format!("{} Army", ordinal(n))).find(|n| !taken.contains(n)).expect("a free name");
         let turn = self.game_turn();
-        let a = self.armies.insert_with(|id| Army { id, owner: p, name, group: None, target_size: 0, commander: None, disband_to: None, formed_turn: turn, requisition: Vec::new() });
+        let a = self.armies.insert_with(|id| Army { id, owner: p, name, group: None, target_size: 0, commander: None, disband_to: None, formed_turn: turn, requisition: Vec::new(), stance });
         self.players[p].armies.push(a);
         a
+    }
+
+    /// The stance a new army of `p`'s `units` on `plot` starts with (engagement combat, plan
+    /// 5.3): that of the army the first of them came from (a split); units from no army take
+    /// their garrison's (the city on the plot: an army formed from the garrison), else that of
+    /// `p`'s nearest city (a garrison's units that marched out). The default with the option off.
+    fn army_inherited_stance(&self, p: PlayerId, units: &[UnitId], plot: Option<PlotIdx>) -> StanceType {
+        let default = self.d.default_stance;
+        if !self.engagements_on() {
+            return default;
+        }
+        if let Some(a) = units.iter().filter_map(|&u| self.units[u].army).find(|&a| self.armies.contains(a) && self.armies[a].owner == p) {
+            return self.armies[a].stance;
+        }
+        let Some(plot) = plot else { return default };
+        let city = self.map.plots[plot].plot_city.filter(|&c| self.cities.contains(c) && self.cities[c].owner == p).or_else(|| self.army_nearest_city(p, plot));
+        city.map_or(default, |c| self.cities[c].garrison_stance)
     }
 
     /// Army `a` is gone. Its units belong to no army; production orders and city defaults naming
@@ -278,10 +303,14 @@ impl Game {
             if own_city.is_some() && members.iter().all(|&u| self.units[u].army.is_none()) {
                 continue;
             }
-            // Its army: the first not yet claimed among its units', else a new one.
+            // Its army: the first not yet claimed among its units', else a new one (with the
+            // stance of the army or garrison its units came from).
             let a = match members.iter().filter_map(|&u| self.units[u].army).find(|a| self.armies.contains(*a) && !claimed.contains(a)) {
                 Some(a) => a,
-                None => self.army_create(p),
+                None => {
+                    let stance = self.army_inherited_stance(p, &members, Some(plot));
+                    self.army_create(p, stance)
+                }
             };
             claimed.insert(a);
             for &u in &members {
@@ -342,8 +371,9 @@ impl Game {
         if !self.armies_on() {
             return Err("armies are off in this game");
         }
-        self.army_units_plot(p, units)?;
-        let a = self.army_create(p);
+        let plot = self.army_units_plot(p, units)?;
+        let stance = self.army_inherited_stance(p, units, Some(plot));
+        let a = self.army_create(p, stance);
         let first = units[0];
         self.unit_join_group(first, None, true);
         let grp = self.units[first].group.expect("joined a new group");
@@ -358,14 +388,15 @@ impl Game {
         Ok(a)
     }
 
-    /// Splits `units` (of one army) off into a new army.
+    /// Splits `units` (of one army) off into a new army (with that army's stance).
     pub fn army_split(&mut self, p: PlayerId, units: &[UnitId]) -> Result<ArmyId, &'static str> {
         self.army_units_plot(p, units)?;
         self.army_form(p, units)
     }
 
     /// `units` (army units of `p`, from armies or a garrison) join army `into` on their plot. An
-    /// army left without units is gone, and its recruits, requisition and orders follow.
+    /// army left without units is gone, and its recruits, requisition and orders follow; `into`
+    /// keeps its stance.
     pub fn army_join(&mut self, p: PlayerId, units: &[UnitId], into: ArmyId) -> ArmyResult {
         if !self.armies.contains(into) || self.armies[into].owner != p {
             return Err("no such army");

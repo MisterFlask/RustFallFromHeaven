@@ -18,7 +18,12 @@
 //! ("Engagement withdraw"); on a success it leaves alive, and if the round killed it, with its
 //! HP from before the round (the round's hits on it and the kill are cancelled). An attacker with
 //! a combat limit and no target left but ones at its limit leaves at the end of the round (melee
-//! rounds; in a volley round its volley is lost). The battle ends when a side has no engaged
+//! rounds; in a volley round its volley is lost).
+//!
+//! **Overkill** (this game's rule, plan 15 item 4, docs/ENGAGEMENTS.md): the hits of a round are
+//! chosen in the interleaved order with the round's pending damage known, so within its class a
+//! hitter draws among the targets that damage does not already kill, and among all of them only
+//! when every one is doomed. The class itself is still chosen over the round-start state. The battle ends when a side has no engaged
 //! fighter (both at once: mutual), and after `max_rounds` rounds in a draw. Volley rounds have the
 //! same end of round (damage, withdrawal, end) as rounds.
 //!
@@ -91,6 +96,19 @@ pub enum NoTarget {
     None,
 }
 
+/// Why a class of a hitter's order had no target (the battle log's "why him?").
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum Block {
+    /// No engaged enemy of that kind.
+    Empty,
+    /// Behind the shield: back fighters while a front fighter of theirs is engaged.
+    Shielded,
+    /// A volley round, and every one of them is first-strike immune.
+    VolleyImmune,
+    /// Every one of them is at the hitter's combat limit.
+    AtLimit,
+}
+
 /// One hit (the battle UI's "who hit whom, the damage and why").
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Hit {
@@ -98,9 +116,13 @@ pub struct Hit {
     pub phase: Phase,
     pub hitter: FighterIdx,
     pub target: FighterIdx,
-    /// The class of the hitter's order it hit in.
+    /// The class of the hitter's order it hit in, and its index in that order.
     pub class: TargetClass,
-    /// The candidates of that class (the target was drawn uniformly among them).
+    pub step: u8,
+    /// The earlier steps of the order and why each had no target.
+    pub blocked: Vec<(u8, Block)>,
+    /// The candidates of that class (the target was drawn uniformly among them): those this
+    /// round's pending damage does not already kill, or all of them when every one is doomed.
     pub candidates: Vec<FighterIdx>,
     /// Whether the enemy's back fighters were behind the shield for this hitter.
     pub shield_up: bool,
@@ -217,45 +239,79 @@ pub struct TargetState<'a> {
     pub engaged: &'a [bool],
     /// HP (centi-HP), for the combat-limit skip.
     pub hp: &'a [i32],
+    /// The round's damage so far (centi-HP; the overkill rule), or empty: none known.
+    pub pending: &'a [i32],
 }
 
 /// The class and candidates of hitter `h`'s next hit, or why it has none.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Targets {
-    Class(TargetClass),
+    /// The class and its index in the hitter's order.
+    Class { class: TargetClass, step: u8 },
     Miss(NoTarget),
 }
 
 /// Hitter `h`'s targets over the round-start state (plan 6.5 step 1): the first class of its
 /// order (made disjoint, [`Battle`]) holding an available enemy: engaged, not behind the shield
 /// (a back fighter while an enemy front fighter is engaged, unless `h` ignores the shield), not
-/// first-strike immune in a volley round, not at `h`'s combat limit. The candidates go to `out`.
-/// The estimator reads the same class table, shield and limit rules over its weights.
-pub fn targets(b: &Battle, h: usize, st: &TargetState, volley: bool, out: &mut Vec<FighterIdx>) -> Targets {
+/// first-strike immune in a volley round, not at `h`'s combat limit. The candidates go to `out`:
+/// with `st.pending` given, those of the class the round's pending damage does not already kill,
+/// or all of them when every one is doomed (the overkill rule, module comment). `blocked`, when
+/// given, gets each earlier step of the order and why it had no target. The estimator reads the
+/// same class table, shield and limit rules over its weights.
+pub fn targets(b: &Battle, h: usize, st: &TargetState, volley: bool, out: &mut Vec<FighterIdx>, mut blocked: Option<&mut Vec<(u8, Block)>>) -> Targets {
     let enemy = b.fighters[h].side.other();
     let shield_up = !b.fighters[h].ignores_shield && b.front(enemy).iter().any(|&j| st.engaged[j as usize]);
     let (mut saw_capped, mut saw_immune) = (false, false);
-    for entry in b.classes(h) {
+    if let Some(bl) = blocked.as_deref_mut() {
+        bl.clear();
+    }
+    for (step, entry) in b.classes(h).iter().enumerate() {
         out.clear();
+        let (mut shielded, mut immune, mut capped) = (false, false, false);
         for &j in &entry.members {
             let ju = j as usize;
-            if !st.engaged[ju] || (shield_up && b.fighters[ju].back) {
+            if !st.engaged[ju] {
+                continue;
+            }
+            if shield_up && b.fighters[ju].back {
+                shielded = true;
                 continue;
             }
             if volley && b.fighters[ju].first_strike_immune {
-                saw_immune = true;
+                immune = true;
                 continue;
             }
             if let Some(floor) = b.cap_floor(h, ju) {
                 if st.hp[ju] <= floor {
-                    saw_capped = true;
+                    capped = true;
                     continue;
                 }
             }
             out.push(j);
         }
+        saw_capped |= capped;
+        saw_immune |= immune;
         if !out.is_empty() {
-            return Targets::Class(entry.class);
+            if !st.pending.is_empty() {
+                let lives = |j: &FighterIdx| st.hp[*j as usize] - st.pending[*j as usize] > 0;
+                if out.iter().any(lives) {
+                    out.retain(lives);
+                }
+            }
+            return Targets::Class { class: entry.class, step: step as u8 };
+        }
+        if let Some(bl) = blocked.as_deref_mut() {
+            let why = if capped {
+                Block::AtLimit
+            } else if immune {
+                Block::VolleyImmune
+            } else if shielded {
+                Block::Shielded
+            } else {
+                Block::Empty
+            };
+            bl.push((step as u8, why));
         }
     }
     out.clear();
@@ -299,6 +355,7 @@ struct Run<'a> {
     round_hits: Vec<(FighterIdx, FighterIdx, i32)>,
     leaving: Vec<bool>,
     cand: Vec<FighterIdx>,
+    blocked: Vec<(u8, Block)>,
 }
 
 impl<'a> Run<'a> {
@@ -322,6 +379,7 @@ impl<'a> Run<'a> {
             round_hits: Vec::new(),
             leaving: vec![false; n],
             cand: Vec::with_capacity(n),
+            blocked: Vec::new(),
         }
     }
 
@@ -443,9 +501,10 @@ impl<'a> Run<'a> {
             if !self.engaged[hu] || volley.is_some_and(|k| self.volleys[hu] < k) {
                 continue;
             }
-            let st = TargetState { engaged: &self.engaged, hp: &self.hp };
-            let class = match targets(b, hu, &st, volley.is_some(), &mut self.cand) {
-                Targets::Class(c) => c,
+            let st = TargetState { engaged: &self.engaged, hp: &self.hp, pending: &self.pending };
+            let blocked = if self.record { Some(&mut self.blocked) } else { None };
+            let (class, step) = match targets(b, hu, &st, volley.is_some(), &mut self.cand, blocked) {
+                Targets::Class { class, step } => (class, step),
                 Targets::Miss(why) => {
                     if why == NoTarget::Capped && volley.is_none() {
                         self.leaving[hu] = true;
@@ -485,6 +544,8 @@ impl<'a> Run<'a> {
                     hitter: h,
                     target: t,
                     class,
+                    step,
+                    blocked: self.blocked.clone(),
                     candidates: self.cand.clone(),
                     shield_up,
                     a: pr.a,
@@ -709,6 +770,56 @@ mod tests {
             let kills: Vec<(FighterIdx, FighterIdx)> = log.kills.iter().map(|k| (k.killer.unwrap(), k.victim)).collect();
             assert_eq!(lethal, kills);
         }
+    }
+
+    #[test]
+    fn no_pile_on_a_doomed_target() {
+        // Two 1-HP defenders: whichever A0 hits is doomed, so A1 (hitting after A0 and D0) always
+        // takes the other; and with one defender left alive A1 still hits it (no one else).
+        let mut d0 = def(120);
+        d0.hp = 100;
+        let mut d1 = def(120);
+        d1.hp = 100;
+        let b = battle(vec![att(120), d0, att(120), d1]);
+        for seed in 0..100 {
+            let log = resolve_sampled(&b, &mut Rng::new(seed));
+            let round1: Vec<&Hit> = hits(&log).filter(|(h, p)| *p == Phase::Round(1) && h.hitter % 2 == 0).map(|(h, _)| h).collect();
+            assert_eq!(round1.len(), 2);
+            assert_ne!(round1[0].target, round1[1].target, "seed {seed}");
+            assert_eq!(round1[1].candidates.len(), 1);
+            assert_eq!((log.result, log.rounds, log.kills.len()), (EngageResult::AttackerWon, 1, 2));
+        }
+        // Every target doomed: the hitter draws among all of them.
+        let mut d0 = def(120);
+        d0.hp = 100;
+        let b = battle(vec![att(120), d0, att(120)]);
+        let log = resolve_sampled(&b, &mut Rng::new(3));
+        let second = hits(&log).find(|(h, _)| h.hitter == 2).unwrap().0;
+        assert_eq!((second.target, &second.candidates[..]), (1, &[1][..]));
+    }
+
+    #[test]
+    fn blocked_steps_say_why() {
+        // A frontline attacker against a front and a back defender: the back is not reached while
+        // the front stands; a flanker passes an empty screen class.
+        let mut fl = att(100);
+        fl.ignores_shield = true;
+        fl.order = vec![TargetClass::Screen, TargetClass::Back, TargetClass::Front];
+        let b = battle(vec![fl, def(120), back(def(80))]);
+        let log = resolve_sampled(&b, &mut Rng::new(2));
+        let first = hits(&log).find(|(h, _)| h.hitter == 0).unwrap().0;
+        assert_eq!((first.class, first.step, &first.blocked[..]), (TargetClass::Back, 1, &[(0, Block::Empty)][..]));
+        // A catapult whose only target is at its limit: blocked by the limit (it leaves).
+        let mut cat = back(att(80));
+        cat.combat_limit = 75;
+        let mut d = def(120);
+        d.hp = 25 * 120;
+        let b = battle(vec![cat, d]);
+        let mut cand = Vec::new();
+        let mut blocked = Vec::new();
+        let st = TargetState { engaged: &[true, true], hp: &[b.fighters[0].hp, b.fighters[1].hp], pending: &[] };
+        assert_eq!(targets(&b, 0, &st, false, &mut cand, Some(&mut blocked)), Targets::Miss(NoTarget::Capped));
+        assert_eq!(blocked, vec![(0, Block::AtLimit), (1, Block::Empty)]);
     }
 
     #[test]

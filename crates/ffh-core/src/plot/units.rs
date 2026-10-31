@@ -586,18 +586,26 @@ impl Game {
     }
 
     /// C++ `CvPlot::defenseModifier` (`bHelp` dropped: it reads the active team's revealed
-    /// improvement for help text).
+    /// improvement for help text): the sum of [`Game::plot_defense`].
+    #[inline]
     pub fn plot_defense_modifier(&self, p: PlotIdx, defender: Option<TeamId>, ignore_building: bool) -> i32 {
+        self.plot_defense(p, defender, ignore_building).total()
+    }
+
+    /// The parts of the plot's defense modifier for `defender`'s units (C++
+    /// `CvPlot::defenseModifier`; an engagement's breakdown of Dv lists them).
+    pub fn plot_defense(&self, p: PlotIdx, defender: Option<TeamId>, ignore_building: bool) -> PlotDefense {
         let d = self.d;
         let plot = &self.map.plots[p];
+        let mut parts = PlotDefense::default();
 
-        let mut modifier = match plot.feature_type {
+        parts.cover = match plot.feature_type {
             None => d.terrains[assigned_terrain(self, p)].defense_modifier,
             Some(f) => d.features[f].defense_modifier,
         };
 
         if self.plot_is_hills(p) {
-            modifier += d.defines.hills_extra_defense;
+            parts.hills = d.defines.hills_extra_defense;
         }
 
         // (bHelp: the active team's revealed improvement instead)
@@ -607,25 +615,25 @@ impl Game {
             if let Some(defender) = defender {
                 let plot_team = self.plot_get_team(p);
                 if plot_team.is_none() || self.team_is_friendly_territory(defender, plot_team) {
-                    modifier += d.improvements[improvement].defense_modifier;
+                    parts.improvement = d.improvements[improvement].defense_modifier;
                 }
             }
         }
 
         // (C++ `if (!bHelp)`)
         if let Some(city) = plot.plot_city {
-            modifier += self.city_defense_modifier(city, ignore_building);
+            parts.city = self.city_defense_modifier(city, ignore_building);
         }
         //FfH: Added by Kael
         else if let Some(defender) = defender {
             let plot_team = self.plot_get_team(p);
             if plot_team.is_none() || self.team_is_friendly_territory(defender, plot_team) {
-                modifier += self.plot_get_range_defense(p, defender, 3, false, true);
+                parts.range = self.plot_get_range_defense(p, defender, 3, false, true);
             }
         }
         //FfH: End Add
 
-        modifier
+        parts
     }
 
     /// C++ `CvPlot::getRangeDefense` (FFH): best defense/range-defense modifier of friendly
@@ -1596,6 +1604,29 @@ impl Game {
         }
 
         true
+    }
+}
+
+/// The parts of a plot's defense modifier for a team's units ([`Game::plot_defense`]); C++
+/// `CvPlot::defenseModifier` is their sum.
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub struct PlotDefense {
+    /// The feature's defense modifier, else the terrain's.
+    pub cover: i32,
+    /// `HILLS_EXTRA_DEFENSE` on hills.
+    pub hills: i32,
+    /// The improvement's, for a defender in its friendly territory or on unowned land.
+    pub improvement: i32,
+    /// The city's defense modifier (`city_defense_modifier`, after bombardment).
+    pub city: i32,
+    /// FfH: without a city, the best range defense of the defender's improvements nearby.
+    pub range: i32,
+}
+
+impl PlotDefense {
+    #[inline]
+    pub fn total(&self) -> i32 {
+        self.cover + self.hills + self.improvement + self.city + self.range
     }
 }
 

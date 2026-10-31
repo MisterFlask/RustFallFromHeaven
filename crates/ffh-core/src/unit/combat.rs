@@ -18,7 +18,8 @@
 use crate::defs::INVALID_PLOT_COORD;
 use crate::game::Game;
 use crate::ids::*;
-use crate::unit::{CombatDetails, DefenderCombatValues};
+use crate::engagement::report::TermSource;
+use crate::unit::{CombatDetails, CombatTerms, DefenderCombatValues, StrMode, TermLog};
 use crate::utils::{is_world_unit_class, range};
 use ffh_data::*;
 
@@ -41,14 +42,47 @@ fn owns_plot(game: &Game, u: UnitId, plot: PlotIdx) -> bool {
 
 /// C++ `std::max(GC.getMOVE_DENOMINATOR(), pPlot->movementCost(this, plot()))`: the moves an
 /// attack into `plot` costs when the attacker stays where it is.
-fn attack_move_cost(game: &Game, u: UnitId, plot: PlotIdx) -> i32 {
+pub(crate) fn attack_move_cost(game: &Game, u: UnitId, plot: PlotIdx) -> i32 {
     let from = game.unit_plot(u);
     game.d.defines.move_denominator.max(game.plot_movement_cost(plot, u, from))
 }
 
+/// The roll of a defensive strike ([`Game::unit_defensive_strike_roll`]): the striker, if one
+/// succeeded, with its chance and roll; how many units rolled.
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub(crate) struct DefStrikeRoll {
+    pub best: Option<UnitId>,
+    pub chance: i32,
+    pub roll: i32,
+    pub rolled: i32,
+}
+
+/// How [`Game::unit_combat_won_as`] runs: the duel's whole `combatWon`, or an engagement's
+/// per-kill part (plan 6.7), rolling the conversion only when `roll_convert`.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub(crate) enum WonMode {
+    Duel,
+    Kill { roll_convert: bool },
+}
+
+/// What a kill's `combatWon` did (the battle log's kill effects).
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub(crate) enum WonEffect {
+    /// A unit of this type captured from the loser.
+    Capture(UnitType),
+    /// A slave of this type taken.
+    Enslave(UnitType),
+    /// A unit of this type created (`UnitCreateFromCombat`).
+    Create(UnitType),
+    Gold(i32),
+    Promotion(PromotionType),
+    /// Healed on the kill (percent).
+    Heal(i32),
+}
+
 /// The final step of C++ `maxCombatStr` (FfH Defense Str, Kael 08/18/2007): a strength in
 /// hundredths scaled by the total modifier; negative modifiers divide instead of multiply.
-fn apply_combat_modifier(str_x100: i32, modifier: i32) -> i32 {
+pub(crate) fn apply_combat_modifier(str_x100: i32, modifier: i32) -> i32 {
     if modifier > 0 {
         (str_x100 * (modifier + 100)) / 100
     } else {
@@ -905,8 +939,13 @@ impl Game {
     }
 
     /// C++ `CvUnit::attack` (CvUnit.cpp:3459-3467).
-    /// C++ `bQuick` dropped.
+    /// C++ `bQuick` dropped. Under engagement combat (an attack `engage_applies` to, plan section
+    /// 1) a land unit with a defender to fight fights a one-unit engagement and a missile strikes
+    /// (`Game::engage_unit_attack`); with only non-combatants there, today's attack captures them.
     pub fn unit_attack(&mut self, u: UnitId, plot: PlotIdx) {
+        if self.engage_applies(u, plot) && self.engage_unit_attack(u, plot) {
+            return;
+        }
         // (C++ FAssert(canMoveInto(pPlot, true)), FAssert(getCombatTimer() == 0))
         self.unit_set_attack_plot(u, Some(plot), false);
 
@@ -990,7 +1029,7 @@ impl Game {
         self.unit_is_fighting(u) || self.unit_is_attacking(u)
     }
 
-    /// C++ `CvUnit::maxCombatStr` (CvUnit.cpp:8997-9557).
+    /// C++ `CvUnit::maxCombatStr` (CvUnit.cpp:8997-9557): the duel strength x100.
     /// Call configurations (`plot`, `attacker`), see the comment above the C++ function:
     /// (None, None) = this unit attacks; (Some(p), Some(a)) = this unit defends `p` against `a`;
     /// (Some(p), None) = defends `p` against an unknown attacker; (Some(p), Some(u)) with the
@@ -998,6 +1037,8 @@ impl Game {
     /// FfH: (None, Some(d)) = attack strength against defender `d`.
     /// `details` is filled when given (C++ `CombatDetails*`); its `visual_owner` uses
     /// `getVisualOwner()` with the interface team in C++.
+    ///
+    /// The terms are [`Game::unit_combat_terms`] in [`StrMode::Duel`]; this applies them.
     pub fn unit_max_combat_str(
         &self,
         u: UnitId,
@@ -1005,18 +1046,57 @@ impl Game {
         attacker: Option<UnitId>,
         details: Option<&mut CombatDetails>,
     ) -> i32 {
-        let d = self.d;
         let mut details = details;
+        let Some(terms) = self.unit_combat_terms(u, attacker, StrMode::Duel { plot }, details.as_deref_mut()) else {
+            return 0;
+        };
+        let combat = apply_combat_modifier(terms.base, terms.modifier);
 
-        // C++ `if (pCombatDetails != NULL) pCombatDetails->iX = value;`
-        macro_rules! set_detail {
-            ($field:ident, $value:expr) => {
-                if let Some(det) = details.as_deref_mut() {
-                    det.$field = $value;
-                }
-            };
+        if let Some(det) = details {
+            det.combat = combat;
+            det.max_combat_str = 1.max(combat);
+            det.curr_hit_points = self.unit_curr_hit_points(u);
+            det.max_hit_points = self.unit_max_hit_points(u);
+            det.curr_combat_str = (det.max_combat_str * det.curr_hit_points) / det.max_hit_points;
         }
 
+        1.max(combat)
+    }
+
+    /// The terms of a unit's combat strength: its base x100 (typed strength scaled by the
+    /// opponent's resistances) and its summed percentage modifier ([`CombatTerms::strength`]
+    /// applies one to the other). `None`: the unit has no strength for it (the duel's 0).
+    ///
+    /// One function for both kinds of combat, so that each term is written once, in the helpers
+    /// below (`combat_*_terms`), whichever combat reads it:
+    /// - [`StrMode::Duel`]: today's duel strength ([`Game::unit_max_combat_str`]); `opponent` is
+    ///   its `attacker` argument, in its call configurations.
+    /// - [`StrMode::EngageAttack`] / [`StrMode::EngageDefense`]: an engagement's A of the unit
+    ///   hitting `opponent`, or its Dv when `opponent` hits it (plan 4.2, `engagement/stats.rs`:
+    ///   [`Game::engage_hit`]); `opponent` `None` is an opponent not known yet (the auto-pick's job
+    ///   strengths). Always `Some`.
+    ///
+    /// `details` is filled in every mode: in the duel as C++ does (each term as added to this
+    /// unit's strength, so the attacker's bonuses are negated on the defender), under engagements
+    /// with each term as added to the stat computed.
+    pub fn unit_combat_terms(
+        &self,
+        u: UnitId,
+        opponent: Option<UnitId>,
+        mode: StrMode,
+        details: Option<&mut CombatDetails>,
+    ) -> Option<CombatTerms> {
+        let mut log = TermLog { details, terms: None };
+        match mode {
+            StrMode::Duel { plot } => self.duel_combat_terms(u, plot, opponent, &mut log),
+            StrMode::EngageAttack { ctx, side } => Some(self.engage_combat_terms(u, opponent, ctx, side, true, &mut log)),
+            StrMode::EngageDefense { ctx, side } => Some(self.engage_combat_terms(u, opponent, ctx, side, false, &mut log)),
+        }
+    }
+
+    /// [`StrMode::Duel`]: the terms of C++ `CvUnit::maxCombatStr`.
+    fn duel_combat_terms(&self, u: UnitId, plot: Option<PlotIdx>, attacker: Option<UnitId>, log: &mut TermLog) -> Option<CombatTerms> {
+        let d = self.d;
         let mut plot = plot;
         let mut attacker = attacker;
 
@@ -1044,128 +1124,39 @@ impl Game {
             attacked_plot = self.unit_plot_opt(u);
         }
 
-        if let Some(det) = details.as_deref_mut() {
-            *det = CombatDetails {
-                owner: Some(self.units[u].owner),
-                visual_owner: Some(self.unit_get_visual_owner(u, None)),
-                unit_name: self.unit_get_name(u),
-                ..CombatDetails::default()
-            };
-        }
+        log.reset(self, u);
 
         // FfH Defense Str: Modified by Kael 08/18/2007 (attacks use the attack strength,
         // everything else the defense strength)
         // C++ quirk: `pAttacker == this` cannot hold any more here (it was reset above).
-        let mut str_ = if (attacker.is_none() && plot.is_none()) || attacker == Some(u) {
+        let str_ = if (attacker.is_none() && plot.is_none()) || attacker == Some(u) {
             self.unit_base_combat_str(u)
         } else {
             self.unit_base_combat_str_defense(u)
         };
 
         if str_ == 0 {
-            return 0;
+            return None;
         }
         // FfH: End Modify
 
         let team = self.unit_get_team(u);
         let mut modifier = 0;
 
-        let mut extra_modifier = self.unit_get_extra_combat_percent(u);
-        modifier += extra_modifier;
-        set_detail!(extra_combat_percent, extra_modifier);
+        modifier += term!(log, extra_combat_percent, self.unit_get_extra_combat_percent(u), TermSource::Own);
 
         // do modifiers for animals and barbarians (leaving these out for bAttackingUnknownDefender case)
         if let Some(a) = attacker {
-            let handicap = &d.handicaps[self.handicap];
-
-            if self.unit_is_animal(u) {
-                if self.unit_is_human(a) {
-                    extra_modifier = handicap.animal_combat_modifier;
-                    modifier += extra_modifier;
-                    set_detail!(animal_combat_modifier_ta, extra_modifier);
-                } else {
-                    extra_modifier = handicap.ai_animal_combat_modifier;
-                    modifier += extra_modifier;
-                    set_detail!(ai_animal_combat_modifier_ta, extra_modifier);
-                }
-            }
-
-            if self.unit_is_animal(a) {
-                if self.unit_is_human(u) {
-                    extra_modifier = -handicap.animal_combat_modifier;
-                    modifier += extra_modifier;
-                    set_detail!(animal_combat_modifier_aa, extra_modifier);
-                } else {
-                    extra_modifier = -handicap.ai_animal_combat_modifier;
-                    modifier += extra_modifier;
-                    set_detail!(ai_animal_combat_modifier_aa, extra_modifier);
-                }
-            }
-
-            if self.unit_is_barbarian(u) {
-                if self.unit_is_human(a) {
-                    extra_modifier = handicap.barbarian_combat_modifier;
-                    modifier += extra_modifier;
-                    set_detail!(barbarian_combat_modifier_tb, extra_modifier);
-                } else {
-                    extra_modifier = handicap.ai_barbarian_combat_modifier;
-                    modifier += extra_modifier;
-                    set_detail!(ai_barbarian_combat_modifier_tb, extra_modifier);
-                }
-            }
-
-            if self.unit_is_barbarian(a) {
-                if self.unit_is_human(u) {
-                    extra_modifier = -handicap.barbarian_combat_modifier;
-                    modifier += extra_modifier;
-                    set_detail!(barbarian_combat_modifier_ab, extra_modifier);
-                } else {
-                    extra_modifier = -handicap.ai_barbarian_combat_modifier;
-                    modifier += extra_modifier;
-                    // FfH: Modified by Kael 07/31/2008 (was stored in the TB field)
-                    set_detail!(ai_barbarian_combat_modifier_ab, extra_modifier);
-                }
-            }
+            modifier += self.combat_handicap_terms(u, a, log);
         }
 
         // add defensive bonuses (leaving these out for bAttackingUnknownDefender case)
         if let Some(p) = plot {
-            if !self.unit_no_defensive_bonus(u) {
-                let ignore_building = match attacker {
-                    Some(a) => self.unit_ignore_building_defense(a),
-                    None => true,
-                };
-                extra_modifier = self.plot_defense_modifier(p, Some(team), ignore_building);
-                modifier += extra_modifier;
-                set_detail!(plot_defense_modifier, extra_modifier);
-            }
-
-            extra_modifier = self.unit_fortify_modifier(u);
-            modifier += extra_modifier;
-            set_detail!(fortify_modifier, extra_modifier);
-
-            if self.plot_is_city(p, true, Some(team)) {
-                extra_modifier = self.unit_city_defense_modifier(u);
-                modifier += extra_modifier;
-                set_detail!(city_defense_modifier, extra_modifier);
-            }
-
-            if self.plot_is_hills(p) {
-                extra_modifier = self.unit_hills_defense_modifier(u);
-                modifier += extra_modifier;
-                set_detail!(hills_defense_modifier, extra_modifier);
-            }
-
-            if let Some(feature) = self.map.plots[p].feature_type {
-                extra_modifier = self.unit_feature_defense_modifier(u, feature);
-                modifier += extra_modifier;
-                set_detail!(feature_defense_modifier, extra_modifier);
-            } else {
-                let terrain = self.map.plots[p].terrain_type.expect("CvUnit::maxCombatStr: plot without terrain");
-                extra_modifier = self.unit_terrain_defense_modifier(u, terrain);
-                modifier += extra_modifier;
-                set_detail!(terrain_defense_modifier, extra_modifier);
-            }
+            let ignore_building = match attacker {
+                Some(a) => self.unit_ignore_building_defense(a),
+                None => true,
+            };
+            modifier += self.combat_plot_defense_terms(u, p, team, ignore_building, None, log);
         }
 
         // if we are attacking to an plot with an unknown defender, the calc the modifier in reverse
@@ -1178,130 +1169,40 @@ impl Game {
         if let (Some(a), Some(ap)) = (attacker, attacked_plot) {
             let mut temp_modifier = 0;
 
-            if self.plot_is_city(ap, true, Some(team)) {
-                extra_modifier = -self.unit_city_attack_modifier(a);
-                temp_modifier += extra_modifier;
-                set_detail!(city_attack_modifier, extra_modifier);
-
-                if self.unit_is_barbarian(a) {
-                    extra_modifier = d.defines.city_barbarian_defense_modifier;
-                    temp_modifier += extra_modifier;
-                    set_detail!(city_barbarian_defense_modifier, extra_modifier);
-                }
-            }
-
-            if self.plot_is_hills(ap) {
-                extra_modifier = -self.unit_hills_attack_modifier(a);
-                temp_modifier += extra_modifier;
-                set_detail!(hills_attack_modifier, extra_modifier);
-            }
-
-            if let Some(feature) = self.map.plots[ap].feature_type {
-                extra_modifier = -self.unit_feature_attack_modifier(a, feature);
-                temp_modifier += extra_modifier;
-                set_detail!(feature_attack_modifier, extra_modifier);
-            } else {
-                let terrain = self.map.plots[ap].terrain_type.expect("CvUnit::maxCombatStr: plot without terrain");
-                extra_modifier = -self.unit_terrain_attack_modifier(a, terrain);
-                // C++ quirk: added to iModifier, not iTempModifier (never reversed for an unknown
-                // defender).
-                modifier += extra_modifier;
-                set_detail!(terrain_attack_modifier, extra_modifier);
+            // The attacker's bonuses against the attacked plot, as minuses on the defender.
+            let city = self.plot_is_city(ap, true, Some(team));
+            let (plot_terms, terrain_term) = self.combat_attack_plot_terms(a, ap, city, -1, log);
+            temp_modifier += plot_terms;
+            // C++ quirk: the terrain attack is added to iModifier, not iTempModifier (never
+            // reversed for an unknown defender).
+            modifier += terrain_term;
+            if city && self.unit_is_barbarian(a) {
+                temp_modifier += term!(log, city_barbarian_defense_modifier, d.defines.city_barbarian_defense_modifier, TermSource::VsBarbarian);
             }
 
             // only compute comparisions if we are the defender with a known attacker
             if !attacking_unknown_defender {
-                // FfH Promotions: Added by Kael 08/13/2007
-                // (C++ loops over every promotion; only those with `promotion_combat_mod > 0`
-                // change the modifier, and `d.combat_mod_promotions` lists exactly those, in
-                // the same order.)
-                let our_promotions = &self.units[u].has_promotion;
-                let their_promotions = &self.units[a].has_promotion;
-                for &promotion in &d.combat_mod_promotions {
-                    let info = &d.promotions[promotion];
-                    // (C++ reads `isHasPromotion(NO_PROMOTION)` out of bounds for a missing
-                    // combat type; every promotion with a combat mod names one)
-                    if our_promotions[promotion] && info.promotion_combat_mod > 0 {
-                        if info.promotion_combat_type.is_some_and(|t| their_promotions[t]) {
-                            modifier += info.promotion_combat_mod;
-                        }
-                    }
-                    if their_promotions[promotion] && info.promotion_combat_mod > 0 {
-                        if info.promotion_combat_type.is_some_and(|t| our_promotions[t]) {
-                            modifier -= info.promotion_combat_mod;
-                        }
-                    }
-                }
-                let global_counter = self.get_global_counter();
-                if global_counter * self.units[u].combat_percent_global_counter / 100 != 0 {
-                    modifier += global_counter * self.units[u].combat_percent_global_counter / 100;
-                }
-                if global_counter * self.units[a].combat_percent_global_counter / 100 != 0 {
-                    modifier -= global_counter * self.units[a].combat_percent_global_counter / 100;
-                }
-                // FfH: End Add
-
-                extra_modifier = self.unit_unit_class_defense_modifier(u, self.unit_get_unit_class_type(a));
-                temp_modifier += extra_modifier;
-                set_detail!(class_defense_modifier, extra_modifier);
-
-                extra_modifier = -self.unit_unit_class_attack_modifier(a, self.unit_get_unit_class_type(u));
-                temp_modifier += extra_modifier;
-                set_detail!(class_attack_modifier, extra_modifier);
-
-                if let Some(unit_combat) = self.unit_get_unit_combat_type(a) {
-                    extra_modifier = self.unit_unit_combat_modifier(u, unit_combat);
-                    temp_modifier += extra_modifier;
-                    set_detail!(combat_modifier_a, extra_modifier);
-                }
-                if let Some(unit_combat) = self.unit_get_unit_combat_type(u) {
-                    extra_modifier = -self.unit_unit_combat_modifier(a, unit_combat);
-                    temp_modifier += extra_modifier;
-                    set_detail!(combat_modifier_t, extra_modifier);
-                }
-
-                extra_modifier = self.unit_domain_modifier(u, self.unit_get_domain_type(a));
-                temp_modifier += extra_modifier;
-                set_detail!(domain_modifier_a, extra_modifier);
-
-                extra_modifier = -self.unit_domain_modifier(a, self.unit_get_domain_type(u));
-                temp_modifier += extra_modifier;
-                set_detail!(domain_modifier_t, extra_modifier);
-
-                if self.unit_is_animal(a) {
-                    extra_modifier = self.unit_animal_combat_modifier(u);
-                    temp_modifier += extra_modifier;
-                    set_detail!(animal_combat_modifier_a, extra_modifier);
-                }
-
-                if self.unit_is_animal(u) {
-                    extra_modifier = -self.unit_animal_combat_modifier(a);
-                    temp_modifier += extra_modifier;
-                    set_detail!(animal_combat_modifier_t, extra_modifier);
-                }
+                // Our bonuses against the attacker, and its bonuses against us as minuses.
+                modifier += self.combat_vs_terms(u, a, true, 1, log);
+                temp_modifier += self.combat_vs_terms(a, u, false, -1, log);
+                // FfH Promotions: Added by Kael 08/13/2007 (Stigmata)
+                modifier += self.unit_global_counter_modifier(u) - self.unit_global_counter_modifier(a);
             }
 
             let attacker_plot = self.unit_plot(a);
             if !self.unit_is_river(a) {
                 if self.plot_is_river_crossing(attacker_plot, self.direction_xy_plots(attacker_plot, ap)) {
-                    extra_modifier = -d.defines.river_attack_modifier;
-                    temp_modifier += extra_modifier;
-                    set_detail!(river_attack_modifier, extra_modifier);
+                    temp_modifier += term!(log, river_attack_modifier, -d.defines.river_attack_modifier);
                 }
             }
 
-            if !self.unit_is_amphib(a) {
-                if !self.plot_is_water(ap) && self.plot_is_water(attacker_plot) {
-                    extra_modifier = -d.defines.amphib_attack_modifier;
-                    temp_modifier += extra_modifier;
-                    set_detail!(amphib_attack_modifier, extra_modifier);
-                }
+            let amphib = self.unit_amphib_attack_modifier(a, attacker_plot, ap);
+            if amphib != 0 {
+                temp_modifier += term!(log, amphib_attack_modifier, -amphib, TermSource::Amphibious);
             }
 
             if self.units[a].kamikaze_percent != 0 {
-                extra_modifier = self.units[a].kamikaze_percent;
-                temp_modifier += extra_modifier;
-                set_detail!(kamikaze_modifier, extra_modifier);
+                temp_modifier += term!(log, kamikaze_modifier, self.units[a].kamikaze_percent);
             }
 
             // if we are attacking an unknown defender, then use the reverse of the modifier
@@ -1314,10 +1215,12 @@ impl Game {
 
         // FfH Defense Str: Modified by Kael 08/18/2007 (strength in hundredths, damage types
         // reduced by the opponent's resistances)
-        set_detail!(modifier_total, modifier);
-        set_detail!(base_combat_str, str_);
+        log.set(|det| {
+            det.modifier_total = modifier;
+            det.base_combat_str = str_;
+        });
 
-        str_ *= 100;
+        let mut base = str_ * 100;
         // C++ quirk: for an unknown defender `pAttacker` is this unit again, so its own
         // resistances reduce its damage-type strength.
         let our_damage_type_combat = &self.units[u].damage_type_combat;
@@ -1327,25 +1230,242 @@ impl Game {
                 if damage_type_combat != 0 {
                     let resist = self.unit_get_damage_type_resist(opponent, damage_type);
                     if resist != 0 {
-                        str_ -= damage_type_combat * 100;
-                        str_ += damage_type_combat * (100 - resist);
+                        base -= damage_type_combat * 100;
+                        base += damage_type_combat * (100 - resist);
                     }
                 }
             }
         }
-
-        let combat = apply_combat_modifier(str_, modifier);
         // FfH: End Modify
 
-        if let Some(det) = details.as_deref_mut() {
-            det.combat = combat;
-            det.max_combat_str = 1.max(combat);
-            det.curr_hit_points = self.unit_curr_hit_points(u);
-            det.max_hit_points = self.unit_max_hit_points(u);
-            det.curr_combat_str = (det.max_combat_str * det.curr_hit_points) / det.max_hit_points;
+        Some(CombatTerms { base, modifier })
+    }
+
+    // ---- The terms, shared by the duel and engagements (`unit_combat_terms`) ----
+
+    /// The handicap's animal and barbarian modifiers of `u` fighting `opponent` (C++
+    /// `maxCombatStr`'s four cases), as added to `u`'s modifier.
+    pub(crate) fn combat_handicap_terms(&self, u: UnitId, opponent: UnitId, log: &mut TermLog) -> i32 {
+        let handicap = &self.d.handicaps[self.handicap];
+        let a = opponent;
+        let mut modifier = 0;
+
+        if self.unit_is_animal(u) {
+            if self.unit_is_human(a) {
+                modifier += term!(log, animal_combat_modifier_ta, handicap.animal_combat_modifier, TermSource::Handicap);
+            } else {
+                modifier += term!(log, ai_animal_combat_modifier_ta, handicap.ai_animal_combat_modifier, TermSource::Handicap);
+            }
         }
 
-        1.max(combat)
+        if self.unit_is_animal(a) {
+            if self.unit_is_human(u) {
+                modifier += term!(log, animal_combat_modifier_aa, -handicap.animal_combat_modifier, TermSource::Handicap);
+            } else {
+                modifier += term!(log, ai_animal_combat_modifier_aa, -handicap.ai_animal_combat_modifier, TermSource::Handicap);
+            }
+        }
+
+        if self.unit_is_barbarian(u) {
+            if self.unit_is_human(a) {
+                modifier += term!(log, barbarian_combat_modifier_tb, handicap.barbarian_combat_modifier, TermSource::Handicap);
+            } else {
+                modifier += term!(log, ai_barbarian_combat_modifier_tb, handicap.ai_barbarian_combat_modifier, TermSource::Handicap);
+            }
+        }
+
+        if self.unit_is_barbarian(a) {
+            if self.unit_is_human(u) {
+                modifier += term!(log, barbarian_combat_modifier_ab, -handicap.barbarian_combat_modifier, TermSource::Handicap);
+            } else {
+                // FfH: Modified by Kael 07/31/2008 (was stored in the TB field)
+                modifier += term!(log, ai_barbarian_combat_modifier_ab, -handicap.ai_barbarian_combat_modifier, TermSource::Handicap);
+            }
+        }
+
+        modifier
+    }
+
+    /// The defensive bonuses of `u` (of `team`) defending plot `p`: the plot's defense unless the
+    /// unit has no defensive bonus, its fortification, its city defense in a city, its hills,
+    /// feature or terrain defense. `ignore_building`: the opponent ignores building defense.
+    /// `city_defense`: the city's defense modifier to assume (for an opponent that does not
+    /// ignore buildings) in place of its current one (an engagement estimate's planned bombard).
+    pub(crate) fn combat_plot_defense_terms(
+        &self,
+        u: UnitId,
+        p: PlotIdx,
+        team: TeamId,
+        ignore_building: bool,
+        city_defense: Option<i32>,
+        log: &mut TermLog,
+    ) -> i32 {
+        let mut modifier = 0;
+
+        if !self.unit_no_defensive_bonus(u) {
+            let value = if city_defense.is_none() && !log.listing() {
+                self.plot_defense_modifier(p, Some(team), ignore_building)
+            } else {
+                let mut parts = self.plot_defense(p, Some(team), ignore_building);
+                if let (Some(city), Some(with_buildings)) = (self.map.plots[p].plot_city, city_defense) {
+                    parts.city = self.city_defense_modifier_at(city, ignore_building, with_buildings);
+                }
+                if log.listing() {
+                    let cover = match self.map.plots[p].feature_type {
+                        Some(f) => TermSource::Feature(f),
+                        None => TermSource::Terrain(self.map.plots[p].terrain_type.expect("CvUnit::maxCombatStr: plot without terrain")),
+                    };
+                    log.push(parts.cover, || cover);
+                    log.push(parts.hills, || TermSource::Hills);
+                    if let Some(i) = self.map.plots[p].improvement_type {
+                        log.push(parts.improvement, || TermSource::Improvement(i));
+                    }
+                    log.push(parts.city, || TermSource::CityDefense);
+                    log.push(parts.range, || TermSource::RangeDefense);
+                }
+                parts.total()
+            };
+            modifier += term!(log, plot_defense_modifier, value);
+        }
+
+        modifier += term!(log, fortify_modifier, self.unit_fortify_modifier(u), TermSource::Fortify);
+
+        if self.plot_is_city(p, true, Some(team)) {
+            modifier += term!(log, city_defense_modifier, self.unit_city_defense_modifier(u), TermSource::UnitCityDefense);
+        }
+
+        if self.plot_is_hills(p) {
+            modifier += term!(log, hills_defense_modifier, self.unit_hills_defense_modifier(u), TermSource::UnitHillsDefense);
+        }
+
+        if let Some(feature) = self.map.plots[p].feature_type {
+            modifier += term!(log, feature_defense_modifier, self.unit_feature_defense_modifier(u, feature), TermSource::UnitFeatureDefense(feature));
+        } else {
+            let terrain = self.map.plots[p].terrain_type.expect("CvUnit::maxCombatStr: plot without terrain");
+            modifier += term!(log, terrain_defense_modifier, self.unit_terrain_defense_modifier(u, terrain), TermSource::UnitTerrainDefense(terrain));
+        }
+
+        modifier
+    }
+
+    /// City `c`'s defense modifier against a unit that ignores building defense or not, had its
+    /// modifier with buildings been `with_buildings` (a planned bombard): the share of the
+    /// defense left is the same for both.
+    pub(crate) fn city_defense_modifier_at(&self, c: CityId, ignore_building: bool, with_buildings: i32) -> i32 {
+        if !ignore_building {
+            return with_buildings;
+        }
+        let full = self.city_total_defense(c, false);
+        if full == 0 {
+            return 0;
+        }
+        self.city_total_defense(c, true) * with_buildings / full
+    }
+
+    /// Attacker `a`'s bonuses against the plot `ap` it attacks, times `sign` (the duel puts them
+    /// on the defender as minuses): its city attack when `city`, its hills attack on hills, its
+    /// feature attack, else its terrain attack. Returns (the city, hills and feature terms, the
+    /// terrain term): the duel adds the terrain term to another sum.
+    pub(crate) fn combat_attack_plot_terms(&self, a: UnitId, ap: PlotIdx, city: bool, sign: i32, log: &mut TermLog) -> (i32, i32) {
+        let mut plot_terms = 0;
+
+        if city {
+            plot_terms += term!(log, city_attack_modifier, sign * self.unit_city_attack_modifier(a), TermSource::CityAttack);
+        }
+
+        if self.plot_is_hills(ap) {
+            plot_terms += term!(log, hills_attack_modifier, sign * self.unit_hills_attack_modifier(a), TermSource::UnitHillsAttack);
+        }
+
+        let terrain_term;
+        if let Some(feature) = self.map.plots[ap].feature_type {
+            plot_terms += term!(log, feature_attack_modifier, sign * self.unit_feature_attack_modifier(a, feature), TermSource::UnitFeatureAttack(feature));
+            terrain_term = 0;
+        } else {
+            let terrain = self.map.plots[ap].terrain_type.expect("CvUnit::maxCombatStr: plot without terrain");
+            terrain_term = term!(log, terrain_attack_modifier, sign * self.unit_terrain_attack_modifier(a, terrain), TermSource::UnitTerrainAttack(terrain));
+        }
+
+        (plot_terms, terrain_term)
+    }
+
+    /// Unit `me`'s bonuses against `opponent`, times `sign`: FfH's promotion combat mods against a
+    /// promotion the opponent holds, its class, unit combat and domain modifiers against the
+    /// opponent's, and its animal combat modifier against an animal. `defending`: `me` is hit by
+    /// the opponent (its class *defense* modifier; the `_a` detail fields), else it hits the
+    /// opponent (its class *attack* modifier; the `_t` fields).
+    pub(crate) fn combat_vs_terms(&self, me: UnitId, opponent: UnitId, defending: bool, sign: i32, log: &mut TermLog) -> i32 {
+        let d = self.d;
+        let mut modifier = 0;
+
+        // FfH Promotions: Added by Kael 08/13/2007
+        // (C++ loops over every promotion; only those with `promotion_combat_mod > 0` change the
+        // modifier, and `d.combat_mod_promotions` lists exactly those, in the same order.)
+        let ours = &self.units[me].has_promotion;
+        let theirs = &self.units[opponent].has_promotion;
+        for &promotion in &d.combat_mod_promotions {
+            let info = &d.promotions[promotion];
+            // (C++ reads `isHasPromotion(NO_PROMOTION)` out of bounds for a missing combat type;
+            // every promotion with a combat mod names one)
+            if ours[promotion] && info.promotion_combat_mod > 0 {
+                if let Some(t) = info.promotion_combat_type.filter(|&t| theirs[t]) {
+                    modifier += log.push(sign * info.promotion_combat_mod, || TermSource::VsPromotion(t));
+                }
+            }
+        }
+        // FfH: End Add
+
+        let class = self.unit_get_unit_class_type(opponent);
+        modifier += if defending {
+            term!(log, class_defense_modifier, sign * self.unit_unit_class_defense_modifier(me, class), TermSource::VsUnitClass(class))
+        } else {
+            term!(log, class_attack_modifier, sign * self.unit_unit_class_attack_modifier(me, class), TermSource::VsUnitClass(class))
+        };
+
+        if let Some(unit_combat) = self.unit_get_unit_combat_type(opponent) {
+            let value = sign * self.unit_unit_combat_modifier(me, unit_combat);
+            modifier += if defending {
+                term!(log, combat_modifier_a, value, TermSource::VsUnitCombat(unit_combat))
+            } else {
+                term!(log, combat_modifier_t, value, TermSource::VsUnitCombat(unit_combat))
+            };
+        }
+
+        let domain = self.unit_get_domain_type(opponent);
+        let value = sign * self.unit_domain_modifier(me, domain);
+        modifier += if defending {
+            term!(log, domain_modifier_a, value, TermSource::VsDomain(domain))
+        } else {
+            term!(log, domain_modifier_t, value, TermSource::VsDomain(domain))
+        };
+
+        if self.unit_is_animal(opponent) {
+            let value = sign * self.unit_animal_combat_modifier(me);
+            modifier += if defending {
+                term!(log, animal_combat_modifier_a, value, TermSource::VsAnimal)
+            } else {
+                term!(log, animal_combat_modifier_t, value, TermSource::VsAnimal)
+            };
+        }
+
+        modifier
+    }
+
+    /// FfH's Stigmata (`iCombatPercentGlobalCounter`): the unit's percentage from the Armageddon
+    /// counter.
+    pub(crate) fn unit_global_counter_modifier(&self, u: UnitId) -> i32 {
+        self.get_global_counter() * self.units[u].combat_percent_global_counter / 100
+    }
+
+    /// The attack modifier of `a` attacking land plot `to` from water plot `from`
+    /// (`AMPHIB_ATTACK_MODIFIER`, from the attacker's side), 0 when it is amphibious or the
+    /// attack is not from water onto land.
+    pub(crate) fn unit_amphib_attack_modifier(&self, a: UnitId, from: PlotIdx, to: PlotIdx) -> i32 {
+        if !self.unit_is_amphib(a) && !self.plot_is_water(to) && self.plot_is_water(from) {
+            self.d.defines.amphib_attack_modifier
+        } else {
+            0
+        }
     }
 
     /// C++ `CvUnit::currCombatStr` (CvUnit.cpp:9560-9563).
@@ -1736,11 +1856,23 @@ impl Game {
 
     /// C++ `CvUnit::doDefensiveStrike` (CvUnit.cpp:16206-16259).
     /// FfH: `u` is the defender; its stack may strike the attacker before combat.
+    /// Split in two for engagement combat (plan 6.4, Q5: `Game::unit_defensive_strike_roll` and
+    /// `Game::unit_defensive_strike_apply`); the duel calls both, in today's order.
     pub fn unit_do_defensive_strike(&mut self, u: UnitId, attacker: UnitId) {
-        let d = self.d;
-        let mut best_unit: Option<UnitId> = None;
-        let mut best_damage = 0;
         let plot = self.unit_plot(u);
+        let roll = self.unit_defensive_strike_roll(plot, attacker);
+        if let Some(best) = roll.best {
+            self.unit_defensive_strike_apply(best, attacker);
+        }
+    }
+
+    /// The roll part of `doDefensiveStrike`: every unit on `plot` with a strike chance, at war
+    /// with `attacker`'s team and not used up (Blitz, or no attack made) rolls in plot order
+    /// ("Defensive Strike"); the striker is the success with the most strike damage (the first in
+    /// plot order on a tie).
+    pub(crate) fn unit_defensive_strike_roll(&mut self, plot: PlotIdx, attacker: UnitId) -> DefStrikeRoll {
+        let mut out = DefStrikeRoll::default();
+        let mut best_damage = 0;
         let attacker_team = self.unit_get_team(attacker);
 
         for loop_unit in self.map.plots[plot].units.clone() {
@@ -1748,19 +1880,30 @@ impl Game {
                 if self.at_war(self.unit_get_team(loop_unit), attacker_team) {
                     if self.unit_is_blitz(loop_unit) || !self.units[loop_unit].made_attack {
                         let chance = self.units[loop_unit].defensive_strike_chance;
-                        if self.soren_rand_num(100, "Defensive Strike") < chance {
+                        out.rolled += 1;
+                        let roll = self.soren_rand_num(100, "Defensive Strike");
+                        if roll < chance {
                             if self.units[loop_unit].defensive_strike_damage > best_damage {
                                 best_damage = self.units[loop_unit].defensive_strike_damage;
-                                best_unit = Some(loop_unit);
+                                out.best = Some(loop_unit);
+                                out.chance = chance;
+                                out.roll = roll;
                             }
                         }
                     }
                 }
             }
         }
+        out
+    }
 
-        if best_damage > 0 {
-            let best = best_unit.expect("defensive strike damage without a striker");
+    /// The strike part of `doDefensiveStrike`: `best` strikes `attacker` (two rolls of its strike
+    /// damage, less twice the attacker's defense strength and its level, never past 95% damage),
+    /// is used up unless it has Blitz and gains 1 XP. Returns the damage dealt (percent).
+    pub(crate) fn unit_defensive_strike_apply(&mut self, best: UnitId, attacker: UnitId) -> i32 {
+        let d = self.d;
+        let mut dealt = 0;
+        if self.units[best].defensive_strike_damage > 0 {
             if !self.unit_is_blitz(best) {
                 self.units[best].made_attack = true;
             }
@@ -1790,17 +1933,35 @@ impl Game {
                 });
 
                 self.unit_change_experience(best, 1, 100, true, false, false);
+                dealt = damage;
             }
         }
+        dealt
     }
 
     /// C++ `CvUnit::combatWon` (CvUnit.cpp:16306-16560).
     /// FfH post-combat effects (XP, combat-apply promotions, capture/enslave, gold, poison,
     /// create/convert units, `PyPostCombatWon`/`PyPostCombatLost` callbacks in `crate::ffh`).
     pub fn unit_combat_won(&mut self, u: UnitId, loser: UnitId, attacking: bool) {
-        let d = self.d;
         // C++ `bAttacking` only picks the plot of the explosion effect (graphics).
         let _ = attacking;
+        self.unit_combat_won_as(u, loser, WonMode::Duel, None);
+    }
+
+    /// [`Game::unit_combat_won`] in a mode (plan 6.7, G2): the duel's whole `combatWon`, or an
+    /// engagement's per-kill part: the promotions removed by combat, the combat-apply promotions
+    /// and poison are left out (the engagement applies them once per battle), and the conversion
+    /// is only rolled (when `roll_convert`): it returns whether the roll succeeded, and the
+    /// engagement converts the unit once after its last kill. `effects`, when given, gets what
+    /// the kill did (the battle log's kill effects).
+    pub(crate) fn unit_combat_won_as(&mut self, u: UnitId, loser: UnitId, mode: WonMode, mut effects: Option<&mut Vec<WonEffect>>) -> bool {
+        let d = self.d;
+        let duel = mode == WonMode::Duel;
+        let mut effect = |k: WonEffect| {
+            if let Some(e) = effects.as_deref_mut() {
+                e.push(k);
+            }
+        };
 
         let mut convert = false;
         // C++ `iUnit`: the unit type to create from the loser (capture or slave).
@@ -1818,7 +1979,7 @@ impl Game {
                         self.change_global_counter(promotion_info.modify_global_counter_on_combat);
                     }
                 }
-                if promotion_info.removed_by_combat {
+                if duel && promotion_info.removed_by_combat {
                     self.unit_set_has_promotion(u, promotion, false);
                     // C++ quirk: losing an invisible promotion (Hidden is removed by combat) on a
                     // plot with a visible enemy withdraws the winner, and kills it at once when no
@@ -1826,10 +1987,10 @@ impl Game {
                     // `withdrawlToNearestValidPlot(true)` -> `kill(false)`); C++ then goes on using
                     // the deleted unit. Everything left here is about the winner, so it is skipped.
                     if !self.units.contains(u) {
-                        return;
+                        return false;
                     }
                 }
-                if let Some(apply) = promotion_info.promotion_combat_apply {
+                if let Some(apply) = promotion_info.promotion_combat_apply.filter(|_| duel) {
                     let loser_plot = self.unit_plot(loser);
                     for loop_unit in self.map.plots[loser_plot].units.clone() {
                         if !self.units.contains(loop_unit) {
@@ -1865,7 +2026,7 @@ impl Game {
                     }
                 }
             }
-            if self.units[loser].has_promotion[promotion] {
+            if duel && self.units[loser].has_promotion[promotion] {
                 if let Some(apply) = promotion_info.promotion_combat_apply {
                     if !self.units[u].has_promotion[apply] {
                         if self.unit_is_alive(u) || !d.promotions[apply].prereq_alive {
@@ -1897,6 +2058,7 @@ impl Game {
                 }
                 if heal != 0 {
                     self.unit_change_damage(u, -heal, None);
+                    effect(WonEffect::Heal(heal));
                 }
             }
         }
@@ -1917,12 +2079,14 @@ impl Game {
         if let Some(promotion) = info.promotion_from_combat {
             if self.unit_is_alive(loser) {
                 self.unit_set_has_promotion(u, promotion, true);
+                effect(WonEffect::Promotion(promotion));
             }
         }
         if self.units[u].gold_from_combat != 0 {
             if !self.unit_is_animal(loser) {
                 let gold = self.units[u].gold_from_combat;
                 self.players[owner].gold += gold;
+                effect(WonEffect::Gold(gold));
                 let turn = self.game_turn();
                 self.log.msg(turn, Some(owner), || format!("{gold} gold from combat"));
             }
@@ -1930,7 +2094,7 @@ impl Game {
         if self.units[u].duration > 0 {
             self.unit_change_duration(u, info.duration_from_combat);
         }
-        if self.units[loser].damage_type_combat[DamageType::DAMAGE_POISON] > 0 && d.defines.poisoned_promotion != -1 {
+        if duel && self.units[loser].damage_type_combat[DamageType::DAMAGE_POISON] > 0 && d.defines.poisoned_promotion != -1 {
             if self.unit_is_alive(u) && self.units[u].damage > 0 {
                 let resist = self.unit_get_damage_type_resist(u, DamageType::DAMAGE_POISON);
                 if self.soren_rand_num(100, "Poisoned") >= resist {
@@ -1946,6 +2110,7 @@ impl Game {
                 if self.soren_rand_num(100, "Create Unit from Combat") <= info.unit_create_from_combat_chance {
                     let (x, y) = self.map.xy(self.unit_plot(u));
                     let new_unit = self.player_init_unit(owner, create_unit_type, x, y, None, None);
+                    effect(WonEffect::Create(create_unit_type));
                     self.units[new_unit].duration = self.units[u].duration;
                     if self.unit_is_hidden_nationality(u) {
                         // (C++ casts the define unchecked; it always names a promotion)
@@ -1964,6 +2129,7 @@ impl Game {
             {
                 let (x, y) = self.map.xy(self.unit_plot(u));
                 let new_unit = self.player_init_unit(owner, new_type, x, y, None, None);
+                effect(if convert { WonEffect::Capture(new_type) } else { WonEffect::Enslave(new_type) });
                 if self.units[u].duration != 0 {
                     self.units[new_unit].duration = self.units[u].duration;
                 }
@@ -1989,16 +2155,35 @@ impl Game {
             self.py_post_combat_lost(loser, u);
         }
         if !self.units.contains(u) {
-            return;
+            return false;
         }
-        if let Some(convert_unit_type) = info.unit_convert_from_combat {
+        let roll_convert = match mode {
+            WonMode::Duel => true,
+            WonMode::Kill { roll_convert } => roll_convert,
+        };
+        if let Some(convert_unit_type) = info.unit_convert_from_combat.filter(|_| roll_convert) {
             if self.soren_rand_num(100, "Convert Unit from Combat") <= info.unit_convert_from_combat_chance {
+                if !duel {
+                    return true;
+                }
                 let (x, y) = (self.units[u].x, self.units[u].y);
                 let unit_ai = self.units[u].ai_type;
                 let new_unit = self.player_init_unit(owner, convert_unit_type, x, y, unit_ai, None);
                 self.unit_convert(new_unit, u);
             }
         }
+        false
+    }
+
+    /// The conversion of `UnitConvertFromCombat` (a Wolf to a Wolf Pack), once its roll
+    /// succeeded: the new unit takes `u`'s place (and XP). Returns the new unit.
+    pub(crate) fn unit_convert_from_combat(&mut self, u: UnitId) -> Option<UnitId> {
+        let convert_unit_type = self.d.units[self.units[u].unit_type].unit_convert_from_combat?;
+        let (x, y, owner) = (self.units[u].x, self.units[u].y, self.units[u].owner);
+        let unit_ai = self.units[u].ai_type;
+        let new_unit = self.player_init_unit(owner, convert_unit_type, x, y, unit_ai, None);
+        self.unit_convert(new_unit, u);
+        Some(new_unit)
     }
 
     /// C++ `CvUnit::canAdvance` (CvUnit.cpp:17230-17251).
@@ -2022,17 +2207,26 @@ impl Game {
     /// order) and the max-value scan keeps the first maximum in that order; values are
     /// `(1 + rand(10000)) * currHitPoints` so ties are rare. The rand draws happen in plot order.
     pub fn unit_collateral_combat(&mut self, u: UnitId, plot: PlotIdx, skip_unit: Option<UnitId>) {
+        self.unit_collateral_combat_ex(u, plot, skip_unit, false);
+    }
+
+    /// [`Game::unit_collateral_combat`] with engagement combat's count (plan 6.4, Q4): with
+    /// `engagement`, every visible enemy defender on the plot is a possible target (the duel
+    /// leaves out the one it fights: today's `- 1`). Returns each damaged unit with its damage
+    /// before and after, in the order hit.
+    pub(crate) fn unit_collateral_combat_ex(&mut self, u: UnitId, plot: PlotIdx, skip_unit: Option<UnitId>, engagement: bool) -> Vec<(UnitId, i32, i32)> {
         let d = self.d;
+        let mut hit = Vec::new();
         let air = self.unit_get_domain_type(u) == DomainType::DOMAIN_AIR;
 
         let base_strength = if air { self.unit_air_base_combat_str(u) } else { self.unit_base_combat_str(u) };
         let collateral_strength = base_strength * self.unit_collateral_damage(u) / 100;
         if collateral_strength == 0 {
-            return;
+            return hit;
         }
 
-        let possible_targets =
-            (self.plot_get_num_visible_enemy_defenders(plot, u) - 1).min(self.unit_collateral_damage_max_units(u));
+        let possible_targets = (self.plot_get_num_visible_enemy_defenders(plot, u) - if engagement { 0 } else { 1 })
+            .min(self.unit_collateral_damage_max_units(u));
 
         // C++ `std::map<CvUnit*, int> mapUnitDamage`: ordered by heap address in C++, which is
         // not reproducible; plot order here (it only decides exact ties of the rolled values).
@@ -2111,6 +2305,7 @@ impl Game {
                 if damage != new_damage {
                     self.unit_set_damage(best_unit, new_damage, Some(owner));
                     damage_count += 1;
+                    hit.push((best_unit, damage, new_damage));
                 }
             }
 
@@ -2124,6 +2319,7 @@ impl Game {
                 format!("{} inflicted collateral damage on {} units", unit_type_name(d, unit_type), damage_count)
             });
         }
+        hit
     }
 
     /// C++ `CvUnit::flankingStrikeCombat` (CvUnit.cpp:17385-17468).

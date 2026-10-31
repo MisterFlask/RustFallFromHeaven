@@ -79,6 +79,12 @@ pub struct Game {
     pub armies: Slab<ArmyId, crate::army::Army>,
     /// This game's governors (docs/GOVERNORS.md). Owner lists: `Player::governors`.
     pub governors: Slab<GovernorId, crate::governors::Governor>,
+    /// Engagement combat's battle reports, oldest first: those of the current and the previous
+    /// turn and the last `ENGAGEMENT_REPORTS_KEPT` (`engagement/report.rs`; add with
+    /// `battle_report_add`).
+    pub battle_reports: Vec<crate::engagement::report::BattleReport>,
+    /// The next battle report's id (ids are never reused).
+    pub battle_report_next: u32,
     /// C++ `m_mapRand` (map generation).
     pub map_rand: Rng,
     /// C++ `m_sorenRand` (synchronized game randomness).
@@ -331,6 +337,8 @@ impl Game {
             deals: Slab::new(),
             armies: Slab::new(),
             governors: Slab::new(),
+            battle_reports: Vec::new(),
+            battle_report_next: 0,
             map_rand: Rng::new(0),
             soren_rand: Rng::new(0),
             log: GameLog::default(),

@@ -20,18 +20,36 @@
 //! The rules (set-up, morale, defensive strikes and collateral, the post-battle steps, the
 //! estimator's inputs) map units onto these types; the calibration battery that makes the win
 //! table is `calibrate` (tests).
+//!
+//! On `Game`: the option and the dispatch rule (which attacks are engagements) and the stances'
+//! commands ([`state`]), the battle reports with the battle log the client replays
+//! ([`report`]), the units' roles, HP and A and Dv per hit ([`stats`]), each side's slots
+//! ([`slots`]), and who can fight, the stances each side fights with and the pick of its force
+//! ([`pick`]).
 
+mod apply;
 pub mod battle;
+pub(crate) mod engage;
 pub mod expect;
 mod phi_table;
+pub mod pick;
+pub mod report;
 pub mod resolve;
+mod sink;
+pub mod slots;
+pub mod state;
+pub mod stats;
 
 #[cfg(test)]
 mod calibrate;
 
+pub use engage::EngageOutcome;
 pub use battle::{damage_from_hp, hp_from_damage, Battle, BattleEffect, Fighter, FighterIdx, Pair, Params, Side, TargetClass};
 pub use expect::{resolve_expected, resolve_expected_from, Expectation, FighterExpect, MomentStart};
+pub use pick::{StanceChoice, WarTest};
+pub use slots::Slots;
+pub use stats::HitCtx;
 pub use resolve::{
-    resolve_sampled, resolve_sampled_quiet, targets, BattleEvent, BattleLog, BattleRng, Death, EngageResult, Fate, FighterEnd, Hit, Kill, NoTarget,
+    resolve_sampled, resolve_sampled_quiet, targets, BattleEvent, BattleLog, BattleRng, Block, Death, EngageResult, Fate, FighterEnd, Hit, Kill, NoTarget,
     Phase, TargetState, Targets,
 };

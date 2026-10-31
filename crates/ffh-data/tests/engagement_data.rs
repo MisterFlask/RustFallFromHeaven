@@ -269,5 +269,5 @@ fn engagement_defines() {
     assert_eq!((x.engagement_slots_defense_divisor, x.engagement_summon_extra_slots), (25, 2));
     assert_eq!((x.engagement_base_damage, x.engagement_damage_rand_min, x.engagement_damage_rand_max), (20, 80, 120));
     assert_eq!((x.engagement_max_rounds, x.engagement_withdraw_hp_percent, x.engagement_auto_min_hp_percent), (40, 40, 50));
-    assert_eq!((x.engagement_recon_reveal_range, x.engagement_reports_kept), (2, 128));
+    assert_eq!((x.engagement_recon_reveal_range, x.engagement_reports_kept, x.engagement_report_logs_kept), (2, 128, 32));
 }

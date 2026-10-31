@@ -44,6 +44,7 @@ persist_newtype!(
     TerrainType, TradeableItem, TraitType, UnitAIType, UnitArtStyleType, UnitClassType,
     UnitCombatType, UnitType, UpkeepType, VictoryType, VoteSourceType, VoteType, WarPlanType,
     WorldSizeType, YieldType, CulturalActionType, GovernorProfileType, GovernorTraitType,
+    CombatRoleType, StanceType,
 );
 
 persist_newtype!(
@@ -55,7 +56,7 @@ persist_newtype!(
 
 use crate::culture::CultureChannel;
 use crate::army::{Army, March, RecruitDest};
-persist_struct!(Army { id, owner, name, group, target_size, commander, disband_to, formed_turn, requisition });
+persist_struct!(Army { id, owner, name, group, target_size, commander, disband_to, formed_turn, requisition, stance });
 persist_struct!(March { dest, stalled, left_turn, from_city, diverted });
 use crate::governors::Governor;
 persist_struct!(Governor { id, owner, name, profile, traits, origin, born_turn, city, since_turn });
@@ -195,6 +196,7 @@ persist_struct!(Unit {
     extra_terrain_defense_percent, extra_feature_attack_percent, extra_feature_defense_percent,
     extra_unit_combat_modifier, ai_birthmark, ai_type, ai_groupflag, ai_origin_x, ai_origin_y,
     ai_suicide_summon, ai_allowed_perm_defense, ai_allowed_patrol, ai_allowed_explore, army, march,
+    extra_combat_percent_defense, attacks_made, battle_heal_turn,
 });
 
 persist_struct!(City {
@@ -240,7 +242,7 @@ persist_struct!(City {
     ai_emphasize_commerce_count, ai_emphasize_avoid_angry_citizens_count,
     ai_emphasize_avoid_unhealthy_citizens_count, culture_channel, culture_diverted, culture_pressure,
     culture_revolt_level, recruit_default, direct_rule, rule_changed_turn, governor,
-    governor_penalty_turns,
+    governor_penalty_turns, garrison_stance,
 });
 
 persist_struct!(Player {

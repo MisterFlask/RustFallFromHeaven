@@ -182,6 +182,34 @@ macro_rules! persist_newtype {
 }
 pub(crate) use persist_newtype;
 
+/// `Persist` for an enum: a tag byte, then the variant's fields in the order listed. Each variant
+/// is `tag => Variant`, `tag => Variant(a, b)` (tuple fields, named for the macro) or
+/// `tag => Variant { a, b }`; `write` matches exhaustively, so a new variant fails to compile
+/// until it is listed. Tags are the encoding: never reuse one for another variant.
+macro_rules! persist_enum {
+    ($t:ident { $( $tag:literal => $v:ident $( ( $($tf:ident),* ) )? $( { $($sf:ident),* } )? ),* $(,)? }) => {
+        impl $crate::save::Persist for $t {
+            fn write(&self, w: &mut $crate::save::Writer) {
+                match self {
+                    $( $t::$v $( ( $($tf),* ) )? $( { $($sf),* } )? => {
+                        w.u8($tag);
+                        $( $( $crate::save::Persist::write($tf, w); )* )?
+                        $( $( $crate::save::Persist::write($sf, w); )* )?
+                    } )*
+                }
+            }
+            fn read(r: &mut $crate::save::Reader<'_>) -> Result<Self, $crate::save::LoadError> {
+                // Tuple arguments and struct literal fields are evaluated in the order written.
+                match r.u8()? {
+                    $( $tag => Ok($t::$v $( ( $( { let $tf = $crate::save::Persist::read(r)?; $tf } ),* ) )? $( { $($sf: $crate::save::Persist::read(r)?),* } )?), )*
+                    b => Err($crate::save::LoadError::Corrupt(format!("{} tag {b}", stringify!($t)))),
+                }
+            }
+        }
+    };
+}
+pub(crate) use persist_enum;
+
 // ---- primitives ----
 
 impl Persist for u8 {
@@ -293,6 +321,15 @@ impl<T: Persist> Persist for Vec<T> {
             v.push(T::read(r)?);
         }
         Ok(v)
+    }
+}
+
+impl<T: Persist> Persist for Box<T> {
+    fn write(&self, w: &mut Writer) {
+        (**self).write(w);
+    }
+    fn read(r: &mut Reader<'_>) -> Result<Self, LoadError> {
+        Ok(Box::new(T::read(r)?))
     }
 }
 

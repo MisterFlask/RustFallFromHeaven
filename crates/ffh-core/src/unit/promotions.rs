@@ -1416,6 +1416,13 @@ impl Game {
         }
     }
 
+    /// Engagement combat (Q1): the promotions' `iCombatPercentDefense`, the unit's own percentage
+    /// on Dv. `engage_combat_terms` (`engagement/stats.rs`) reads it, with Homeland where the unit
+    /// fights rather than where it stands.
+    pub fn unit_change_extra_combat_percent_defense(&mut self, u: UnitId, change: i32) {
+        self.units[u].extra_combat_percent_defense += change;
+    }
+
     /// C++ `CvUnit::changeExtraCityAttackPercent` (CvUnit.cpp:12311-12319).
     pub fn unit_change_extra_city_attack_percent(&mut self, u: UnitId, change: i32) {
         if change != 0 {
@@ -1762,6 +1769,8 @@ impl Game {
             self.unit_change_same_tile_heal(u, info.same_tile_heal_change * change);
             self.unit_change_adjacent_tile_heal(u, info.adjacent_tile_heal_change * change);
             self.unit_change_extra_combat_percent(u, info.combat_percent * change);
+            // This game's engagement combat (Q1): the defence percentage, never read by the duel.
+            self.unit_change_extra_combat_percent_defense(u, info.combat_percent_defense * change);
             self.unit_change_extra_city_attack_percent(u, info.city_attack_percent * change);
             self.unit_change_extra_city_defense_percent(u, info.city_defense_percent * change);
             self.unit_change_extra_hills_attack_percent(u, info.hills_attack_percent * change);
