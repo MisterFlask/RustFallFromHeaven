@@ -150,7 +150,10 @@ side)
   launching group moves in when the plot is cleared. Ships and air units keep the duel. One rule
   departs from the spec too (2026-10-31, plan revision 3): within its target class a hit avoids the
   units the round's pending damage already kills, unless all of them are (random pile-ons on doomed
-  units read as bad play). Option off, nothing changes. Save format 10.
+  units read as bad play); and the attacker's auto-pick is the stance's quota pick improved by its
+  best single swaps by the estimator, never swapping in a unit the stance holds (plan revision 3,
+  item 3: a default the player need not always override; the defender's pick stays the blind
+  stance pick). Option off, nothing changes. Save format 10.
 
 **Container order and path finding**
 

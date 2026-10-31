@@ -13,8 +13,10 @@ duel with the option on too.
 
 Code: `crates/ffh-core/src/engagement/` (`mod.rs` lists the modules: the round model in
 `battle.rs`, `resolve.rs` and `expect.rs`; the rules in `state.rs`, `stats.rs`, `slots.rs`,
-`pick.rs`, `engage.rs`, `apply.rs`, `sink.rs`, `report.rs`). Scenario tests:
-`crates/ffh-core/tests/engagements.rs`; the round model's tests are in its modules.
+`pick.rs`, `engage.rs`, `apply.rs`, `sink.rs`, `report.rs`; the estimator in `estimate.rs` and the
+attack preview in `preview.rs`). Scenario tests: `crates/ffh-core/tests/engagements.rs`; the
+estimator's and the preview's: `tests/engagement_estimate.rs`, `tests/engagement_preview.rs`; the
+round model's tests are in its modules.
 
 ## Which attacks are engagements
 
@@ -42,7 +44,8 @@ transport counts: an amphibious attack) and `to` is land. The rule is applied at
    city's defense costing the attacker one per 25%, the river's two that only `bRiver` units fill).
    The attacker's pool: every unit of the player on the attacking plot that can attack the plot,
    across its armies, garrison, heroes, mages and recon units; its force: the order's (checked) or
-   the stance's proposal. The defender's candidates: every unit on the plot that can defend, is an
+   the stance's proposal (its quota pick improved by single swaps: "The auto-pick consults the
+   estimate", below). The defender's candidates: every unit on the plot that can defend, is an
    enemy (hidden nationality as in the duel) and is not invisible to the attacker; its pick: its
    stance's (the garrison's in a city, else the largest army's). An empty force or no defender is a
    refusal, and nothing has changed. The round model's `Battle` is built here (the pair table of A
@@ -105,6 +108,114 @@ commander never would). The estimator (`expect.rs`) works in moments and has no 
 its calibration bounds (`estimator_calibration_bounds`) still hold against the sampled resolver
 with the rule.
 
+## The auto-pick consults the estimate (a rule of this game, not of the spec)
+
+The spec has each side commit the stance's quota pick. The attacker's proposal
+(`engage_propose_force`, `pick.rs`; what an attack with no force given fights, the AI's too) starts
+from that pick and keeps its best single swaps by the moment estimator (`engage_swap_search`,
+`estimate.rs`; plan revision 3, item 3). Why: on the battle UI design's test battles the stance's
+own pick won 70% where one swap won 91-94%, so a default taken as is would teach the player to
+override it every time.
+
+- Each round tries every single swap (a committed unit out, a pool unit not committed in, the
+  river slots kept for `bRiver` units), one per pair of kinds the estimate cannot tell apart (the
+  same fighter, pairs, damage and opening stats), and keeps the best if it beats the plan so far
+  and the stance's pick: a higher win chance by more than 5 per mille, or one at most 2 lower with
+  0.05 fewer expected units lost (`swap_better`). At most three rounds. So the proposal is the
+  stance's pick or beats it.
+- The estimate is against the defense as the attacker knows it: the candidates it can see, their
+  stance if it is its own team's, else the default stance (as the preview assumes).
+- A unit the stance holds (Preserve Veterans: above its level, heroes) is never swapped in; only the
+  player commits one.
+- The defender's pick stays the blind stance pick (the spec): it does not look at the attacker's
+  force.
+- Cost (release, `preview_timing`): 1-2.5 ms a proposal for 6-10 a side from a pool of mixed
+  units with a reserve of three, up to 7.5 ms when every unit of the pool differs.
+
+## The estimator
+
+`estimate.rs` (plan 8.2): the expected outcome of an engagement, for the AI's attack decisions
+(step 8, not wired yet) and the swap search. `&self`: no random number drawn, nothing changed (test
+`estimates_draw_nothing_and_change_nothing`). Its battle is built by the real fight's own set-up
+(`engage_setup`), so its fighters, pairs and HP are the fight's (test
+`the_estimate_is_of_the_real_battle`).
+
+- **Inputs** (`EstimateInput`), all explicit, nothing read from the true plot but what anyone sees
+  (its terrain, a city and its defense): the attacking player, the plot and its approach (`None`:
+  no river, by land), the attackers (`Attackers::Pick(pool, stance)`: the proposal from a pool;
+  `Attackers::Force`: the force as given, or what the default stance commits of one too big for the
+  slots), which of them count (`Eligible::Now`: `unit_can_engage`; `Eligible::Hypothetical`: a land
+  unit with a role that can attack, not a missile, the plot passable to it and, with a combat
+  limit, some listed defender below it, not from the water; moves, attacks left and adjacency not
+  asked), the war test, the caller's list of the units on the plot (the AI: what it sees through
+  its fog; the defender's candidates are those of them that can defend, and the opening's strikers
+  and collateral targets come from it too), the defender's assumed stance, damage overrides
+  (planned softening, damage carried between engagements) and a hypothetical city defense (a
+  planned bombard: slots and Dv follow).
+- **What it integrates**: in expectation what the fight rolls. The morale check: each fighter's
+  chance to sit out. The opening: per attacker in slot order, the defensive strikers sorted by
+  damage, `sum P(i is the best success) x E[damage_i]`, each striker available with the chance an
+  earlier attacker did not use it up; collateral with today's formula on the expected damage of the
+  healthiest targets, the reserve's included; both folded into the HP. Then the rounds by the moment
+  integrator (`expect.rs`) and its calibrated win table. Under a declare-war test the opening tests
+  war as the fight after the declaration does (a striker strikes, a unit takes collateral, once its
+  team is in the war), so the estimate is the one made after declaring (test
+  `a_declare_war_preview_is_the_battle_after_the_declaration`).
+- **Outputs** (`Estimate`): the win chance (a draw is not a win), expected losses and withdrawals
+  per side, HP left, rounds, whether winning takes the plot (the defender commits every candidate),
+  the force and the defender's pick, each fighter's HP at the rounds' start and the integrator's
+  per-fighter result.
+- **The assault** (`engage_estimate_assault`): engagements one after another, each committing the
+  next proposal from the attackers not used yet, the defenders committed carrying their alive weight
+  and damage moments, the reserve its expected collateral, the strikers their used-up strikes (the
+  real fight's striker keeps `made_attack` for the turn: a striker strikes with the chance it is
+  still on the plot and has its strike left; a defender gone neither strikes nor takes collateral;
+  test `the_assault_spends_the_defensive_strikes`), until the expected defenders left are below one
+  half, no attacker is left, or 12 engagements; shaped like the AI's `combat_sim::Sim`.
+- **The plot wrapper** (`engage_estimate_plot`): a player's real pool on the plot it attacks from,
+  the force given (checked) or proposed, the defenders its team sees, the defender's stance as its
+  team knows it (its own team's: the real one; anyone else's: the default, until phase 7's recon
+  reveal).
+
+## The attack preview
+
+`preview.rs` (plan revision 3, item 2; the battle UI design's plan screen): what the player sees
+before an attack, pure. `engage_preview` gives the slots, the pool, the force (given and checked,
+or the proposal), the proposal, the reserve and the stance; the defenders the attacker's team sees,
+their stance when known (its own team's only, until phase 7), the stance assumed (else the default)
+and its pick, and the pick as the attacker knows it (`DefPick::Known`, or with more candidates than
+slots and the stance unseen `Likely { sure, maybe }`: committed under every stance, under some);
+the war the attack would declare; and the forecast.
+
+- **The forecast** plays `ENGAGEMENT_PREVIEW_RUNS` (200) battles of the real fight's code on that
+  set-up: the morale check and the opening's strikes and collateral as the same pure rolls the real
+  fight makes, then the round model, on a private RNG seeded from the plan (the force and the
+  defender's pick, sorted, the plots, the turn, the defender's assumed stance). The attacker's
+  stance is not in the seed: the same force is the same battle, whichever stance proposed it. The
+  same plan always shows the same numbers whatever the game's RNGs hold, and the game's RNG is
+  never drawn (test `the_preview_is_a_function_of_its_inputs_and_changes_nothing`). A move that
+  declares war previews the battle after the declaration: its opening's strikes and collateral test
+  war as that fight does, so the plan, its What-if list and the forecast frozen into the log are the
+  ones made once the war is declared. It gives the win and draw
+  chances, the rounds' p10/p50/p90, the units lost when it wins, each committed fighter's chance to
+  fall and to withdraw and the round by which it has fallen in half the battles, and each side's
+  mean HP after the opening and each round.
+- **What if** (`engage_preview_alternatives`, a second call so the plan never waits): the stance's
+  own quota pick, the best three single swaps of the force of different make-ups (every swap ranked
+  by the moment estimator, those three sampled), and the other stances' proposals (what choosing
+  that stance proposes), each forecast like the plan.
+- **Frozen into the log**: when an attack whose battle gets a log is made, a human attacker's
+  preview and its What-if list are recomputed (the same seed: the numbers it saw) into the log's
+  `forecast`; an AI attacker's is the moment estimate (`source: Expected`).
+- **Time** (release, this 4-core shared machine, `preview_timing`): the plan as it opens (its
+  proposal and the forecast) and its What-if list together take 28 ms for 6 v 6, 34 ms for 8 v 8 and
+  43 ms for 10 v 10 with a pool of mixed units and a reserve of three, and 31, 65 and 78 ms when
+  every unit of the pool differs (the swap search's worst case); a re-run after a swap 4-12 ms.
+- **Against the estimator**: on 288 battles of real units near parity (open land, a forest, a 40%
+  city; test `the_preview_against_the_estimator`) the moment estimator's win chance is 44 per mille
+  from the preview's on average, 85 on the 73 contested ones (the preview between 5% and 95%), 237
+  at worst.
+
 ## The battle log
 
 Written through an optional sink (`sink.rs`) only for a battle a human could see (a human fights on
@@ -145,7 +256,14 @@ open and are decided so:
 
 ## Open
 
-- The AI decides its attacks on the duel's odds until step 8 (the estimator is step 7).
+- The AI still decides its attacks on the duel's odds: the estimator is built (step 7), and its
+  wiring into the AI (step 8) waits, as all AI work does while the combat style is in flux (the
+  owner, 2026-10-31). An AI attack with no force given already fights the proposal (the auto-pick
+  is a rule).
+- The battle UI design has the forecast average over the plausible stances when the defender's is
+  unseen and its candidates exceed the slots; the build forecasts against the default stance's pick
+  (the plan's: the AI and the player assume the defender's stance the same way) and shows which
+  units may or may not fight (`DefPick::Likely`).
 - A city whose only defenders are ships in port is attacked with today's duel (ships never defend
   land in an engagement, but nothing else defends there).
 - Phase 7: spells in combat phases, summons in battle, the assassin's and the Guardsman's targeting,

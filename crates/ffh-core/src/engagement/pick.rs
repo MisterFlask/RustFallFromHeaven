@@ -28,9 +28,9 @@
 //! the AI. Candidates sort by (healthy first, job strength, HP, unit id); the stance's steps take
 //! the best of their roles up to each step's target, then its fill takes the rest in its role
 //! order, held units (Preserve Veterans: above the stance's level, heroes) last of all. The
-//! attacker's proposal ([`Game::engage_propose_force`]) starts from that pick; from step 7 on it
-//! also tries the pick's best single swaps by the estimate (plan 15, item 3:
-//! [`Game::engage_swap_search`], which keeps the quota pick until then). A force the attacker
+//! attacker's proposal ([`Game::engage_propose_force`]) starts from that pick and keeps its
+//! best single swaps by the estimate (plan 15, item 3: [`Game::engage_swap_search`], a held unit
+//! never swapped in; the defender's pick stays the blind stance pick). A force the attacker
 //! chooses itself is checked by [`Game::engage_validate_force`].
 
 use ffh_data::*;
@@ -40,6 +40,7 @@ use super::slots::Slots;
 use super::stats::HitCtx;
 use crate::game::Game;
 use crate::ids::*;
+use crate::unit::Declared;
 
 /// Which war an engagement test assumes (plan 5.2).
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -166,6 +167,13 @@ impl Game {
         }
     }
 
+    /// The declaration `team`'s plan under `war` assumes made, for its opening's pure rolls
+    /// (`UnitOverlay`: the defensive strikes and the collateral test war as the real fight after
+    /// the declaration does): `None` for the real fight.
+    pub(crate) fn engage_declaration(&self, team: TeamId, war: WarTest) -> Option<Declared> {
+        self.engage_declared(team, war).map(|at_war| Declared { team, at_war })
+    }
+
     /// Whether `team`'s attack with `force` on `to` meets unit `d` there, combatant or not: not
     /// its own, alive, not invisible to it (G5), and an enemy as `plot_get_best_defender` tests
     /// it (both ways: hidden nationality), or of a team in `declared` ([`Game::engage_declared`]).
@@ -181,7 +189,7 @@ impl Game {
 
     /// Whether a unit the attack meets on `to` is one of its defenders ([`Game::engage_defenders`]):
     /// it can defend there and has a role.
-    fn engage_can_defend(&self, d: UnitId, to: PlotIdx) -> bool {
+    pub(crate) fn engage_can_defend(&self, d: UnitId, to: PlotIdx) -> bool {
         self.unit_can_defend(d, Some(to)) && self.unit_combat_role(d).is_some()
     }
 
@@ -253,6 +261,12 @@ impl Game {
     /// worth of units without `bRiver`). Deterministic, no RNG. `ctx` is the attack (the job
     /// strengths' plot).
     pub fn engage_auto_pick(&self, pool: &[UnitId], stance: StanceType, slots: &Slots, side: Side, ctx: &HitCtx) -> Vec<UnitId> {
+        self.engage_auto_pick_with(pool, stance, slots, side, ctx, &[])
+    }
+
+    /// [`Game::engage_auto_pick`] with the damage fields `damage` in place of the units' own (an
+    /// estimate's overrides: planned softening, damage carried between engagements).
+    pub fn engage_auto_pick_with(&self, pool: &[UnitId], stance: StanceType, slots: &Slots, side: Side, ctx: &HitCtx, damage: &[(UnitId, i32)]) -> Vec<UnitId> {
         let d = self.d;
         let info = &d.stances[stance];
         let s = slots.max(side).max(0) as usize;
@@ -272,7 +286,7 @@ impl Game {
             .iter()
             .filter_map(|&u| {
                 let role = self.unit_combat_role(u)?;
-                let damage = self.units[u].damage;
+                let damage = super::damage_with(self, u, damage);
                 let job = match side {
                     Side::Attacker => self.engage_job_attack(u, ctx),
                     Side::Defender => self.engage_job_defense(u, ctx),
@@ -345,13 +359,31 @@ impl Game {
         self.engage_swap_search(pool, stance, slots, ctx, pick)
     }
 
-    /// **Hook for step 7** (plan 15, item 3: the attacker's auto-pick consults the estimate):
-    /// estimate the quota `pick` and each of its single swaps ([`Game::engage_single_swaps`])
-    /// against the defender's likely pick, and keep the best plan. Until the estimator
-    /// (`engage_estimate`) lands it returns the quota pick unchanged. The defender's pick stays
-    /// the blind stance pick (the spec); a held unit is swapped in only by the player.
-    pub fn engage_swap_search(&self, _pool: &[UnitId], _stance: StanceType, _slots: &Slots, _ctx: &HitCtx, pick: Vec<UnitId>) -> Vec<UnitId> {
-        pick
+    /// [`Game::engage_propose_force`] for an attack under `war` (a declare-war preview's: the
+    /// search estimates against the defenders the declaration would bring in).
+    pub(crate) fn engage_propose_force_for(&self, pool: &[UnitId], stance: StanceType, slots: &Slots, ctx: &HitCtx, war: WarTest) -> Vec<UnitId> {
+        let pick = self.engage_auto_pick(pool, stance, slots, Side::Attacker, ctx);
+        self.engage_swap_search_war(pool, stance, slots, ctx, pick, war)
+    }
+
+    /// The swap search (plan 15, item 3: the attacker's auto-pick consults the estimate): from
+    /// the stance's quota `pick`, the best plan of its single swaps
+    /// ([`Game::engage_single_swaps`]) by the moment estimator, against the defender's pick as the
+    /// attacker knows it (its candidates, its stance if its own team's, else the default; the
+    /// defender's pick stays the blind stance pick, the spec). A unit the stance holds is never
+    /// swapped in (only the player commits it). Details: `estimate.rs`,
+    /// `Game::engage_swap_search_in`.
+    pub fn engage_swap_search(&self, pool: &[UnitId], stance: StanceType, slots: &Slots, ctx: &HitCtx, pick: Vec<UnitId>) -> Vec<UnitId> {
+        self.engage_swap_search_war(pool, stance, slots, ctx, pick, WarTest::AtWar)
+    }
+
+    fn engage_swap_search_war(&self, pool: &[UnitId], stance: StanceType, slots: &Slots, ctx: &HitCtx, pick: Vec<UnitId>, war: WarTest) -> Vec<UnitId> {
+        let Some(&first) = pick.first() else { return pick };
+        if pool.len() <= pick.len() {
+            return pick;
+        }
+        let view = self.engage_def_view(self.units[first].owner, ctx.to, &pick, war);
+        self.engage_swap_search_in(pool, stance, slots, ctx, pick, &view, &[], None)
     }
 
     /// The single swaps of the attacker's `pick` (plan 15, item 3; the plan screen's "best

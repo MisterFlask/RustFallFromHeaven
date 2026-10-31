@@ -19,6 +19,7 @@ use crate::defs::INVALID_PLOT_COORD;
 use crate::game::Game;
 use crate::ids::*;
 use crate::engagement::report::TermSource;
+use crate::engagement::BattleRng;
 use crate::unit::{CombatDetails, CombatTerms, DefenderCombatValues, StrMode, TermLog};
 use crate::utils::{is_world_unit_class, range};
 use ffh_data::*;
@@ -55,6 +56,80 @@ pub(crate) struct DefStrikeRoll {
     pub chance: i32,
     pub roll: i32,
     pub rolled: i32,
+}
+
+/// A declaration of war a pure roll assumes made (a declare-war plan's,
+/// `engagement::WarTest::DeclareWar`): the declaring team and its wars after it
+/// ([`Game::team_wars_after_declaring`]).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct Declared {
+    pub team: TeamId,
+    pub at_war: IdxVec<TeamId, bool>,
+}
+
+/// The unit state a pure defensive strike or collateral roll reads in place of the game's (plan
+/// 15 item 2: an engagement's preview plays many openings on one unchanged game): the damage the
+/// rolls so far dealt (or an estimate's overrides), the strikers they used up, and the war a plan
+/// that declares it assumes made. Empty, it reads the game as it is.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub(crate) struct UnitOverlay {
+    damage: Vec<(UnitId, i32)>,
+    used: Vec<UnitId>,
+    declared: Option<Declared>,
+}
+
+impl UnitOverlay {
+    /// The overlay with the damage fields `damage` (an estimate's overrides; the last entry of a
+    /// unit counts), assuming `declared` made (`None`: the wars as they are).
+    pub fn with_damage(damage: &[(UnitId, i32)], declared: Option<&Declared>) -> UnitOverlay {
+        let mut ov = UnitOverlay::with_declared(declared);
+        for &(u, d) in damage {
+            ov.set_damage(u, d);
+        }
+        ov
+    }
+
+    /// The overlay that reads the game as it is but assumes `declared` made (`None`: the wars as
+    /// they are).
+    pub fn with_declared(declared: Option<&Declared>) -> UnitOverlay {
+        UnitOverlay { declared: declared.cloned(), ..UnitOverlay::default() }
+    }
+
+    /// Whether teams `a` and `b` are at war: now, or once the overlay's declaration is made.
+    pub fn at_war(&self, g: &Game, a: TeamId, b: TeamId) -> bool {
+        g.at_war(a, b) || self.declared.as_ref().is_some_and(|w| (a == w.team && w.at_war[b]) || (b == w.team && w.at_war[a]))
+    }
+
+    /// `u`'s damage field.
+    pub fn damage(&self, g: &Game, u: UnitId) -> i32 {
+        self.damage.iter().find(|(x, _)| *x == u).map_or(g.units[u].damage, |&(_, d)| d)
+    }
+
+    pub fn set_damage(&mut self, u: UnitId, damage: i32) {
+        match self.damage.iter_mut().find(|(x, _)| *x == u) {
+            Some(e) => e.1 = damage,
+            None => self.damage.push((u, damage)),
+        }
+    }
+
+    /// Whether `u` has made an attack (or a strike in this overlay used it up).
+    pub fn made_attack(&self, g: &Game, u: UnitId) -> bool {
+        g.units[u].made_attack || self.used.contains(&u)
+    }
+
+    pub fn use_up(&mut self, u: UnitId) {
+        if !self.used.contains(&u) {
+            self.used.push(u);
+        }
+    }
+}
+
+/// A defensive strike's damage ([`Game::unit_defensive_strike_damage`]): whether the striker is
+/// used up, and the damage dealt (percent; 0: none).
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub(crate) struct DefStrikeHit {
+    pub used_up: bool,
+    pub damage: i32,
 }
 
 /// How [`Game::unit_combat_won_as`] runs: the duel's whole `combatWon`, or an engagement's
@@ -1866,22 +1941,39 @@ impl Game {
         }
     }
 
+    /// Runs `f` on the game with its sync RNG (`soren_rand`) lent out, so a pure roll
+    /// ([`Game::unit_defensive_strike_roll_on`] and the like) draws from it exactly as the
+    /// `&mut` versions do.
+    pub(crate) fn with_sync_rng<T>(&mut self, f: impl FnOnce(&Game, &mut crate::rng::Rng) -> T) -> T {
+        let mut rng = self.soren_rand.clone();
+        let out = f(self, &mut rng);
+        self.soren_rand = rng;
+        out
+    }
+
     /// The roll part of `doDefensiveStrike`: every unit on `plot` with a strike chance, at war
     /// with `attacker`'s team and not used up (Blitz, or no attack made) rolls in plot order
     /// ("Defensive Strike"); the striker is the success with the most strike damage (the first in
     /// plot order on a tie).
     pub(crate) fn unit_defensive_strike_roll(&mut self, plot: PlotIdx, attacker: UnitId) -> DefStrikeRoll {
+        self.with_sync_rng(|g, rng| g.unit_defensive_strike_roll_on(&g.map.plots[plot].units, attacker, &UnitOverlay::default(), rng))
+    }
+
+    /// [`Game::unit_defensive_strike_roll`] over the units `on_plot` (the plot's, or those an
+    /// attacker sees), reading `ov` (its damage, its used-up strikers, its wars), drawing from
+    /// `rng`. Changes nothing.
+    pub(crate) fn unit_defensive_strike_roll_on(&self, on_plot: &[UnitId], attacker: UnitId, ov: &UnitOverlay, rng: &mut impl BattleRng) -> DefStrikeRoll {
         let mut out = DefStrikeRoll::default();
         let mut best_damage = 0;
         let attacker_team = self.unit_get_team(attacker);
 
-        for loop_unit in self.map.plots[plot].units.clone() {
+        for &loop_unit in on_plot {
             if self.units[loop_unit].defensive_strike_chance > 0 {
-                if self.at_war(self.unit_get_team(loop_unit), attacker_team) {
-                    if self.unit_is_blitz(loop_unit) || !self.units[loop_unit].made_attack {
+                if ov.at_war(self, self.unit_get_team(loop_unit), attacker_team) {
+                    if self.unit_is_blitz(loop_unit) || !ov.made_attack(self, loop_unit) {
                         let chance = self.units[loop_unit].defensive_strike_chance;
                         out.rolled += 1;
-                        let roll = self.soren_rand_num(100, "Defensive Strike");
+                        let roll = rng.rand(100, "Defensive Strike");
                         if roll < chance {
                             if self.units[loop_unit].defensive_strike_damage > best_damage {
                                 best_damage = self.units[loop_unit].defensive_strike_damage;
@@ -1901,42 +1993,58 @@ impl Game {
     /// damage, less twice the attacker's defense strength and its level, never past 95% damage),
     /// is used up unless it has Blitz and gains 1 XP. Returns the damage dealt (percent).
     pub(crate) fn unit_defensive_strike_apply(&mut self, best: UnitId, attacker: UnitId) -> i32 {
-        let d = self.d;
-        let mut dealt = 0;
+        let hit = self.with_sync_rng(|g, rng| g.unit_defensive_strike_damage(best, attacker, &UnitOverlay::default(), rng));
+        self.unit_defensive_strike_write(best, attacker, hit);
+        hit.damage
+    }
+
+    /// The rolls of [`Game::unit_defensive_strike_apply`] ("Defensive Strike 1" and "2"),
+    /// reading the attacker's damage from `ov`, drawing from `rng`. Changes nothing.
+    pub(crate) fn unit_defensive_strike_damage(&self, best: UnitId, attacker: UnitId, ov: &UnitOverlay, rng: &mut impl BattleRng) -> DefStrikeHit {
+        let mut out = DefStrikeHit::default();
         if self.units[best].defensive_strike_damage > 0 {
-            if !self.unit_is_blitz(best) {
-                self.units[best].made_attack = true;
-            }
+            out.used_up = !self.unit_is_blitz(best);
             let strike_damage = self.units[best].defensive_strike_damage;
             let mut damage = 0;
-            damage += self.soren_rand_num(strike_damage, "Defensive Strike 1");
-            damage += self.soren_rand_num(strike_damage, "Defensive Strike 2");
+            damage += rng.rand(strike_damage, "Defensive Strike 1");
+            damage += rng.rand(strike_damage, "Defensive Strike 2");
             damage -= self.unit_base_combat_str_defense(attacker) * 2;
             damage -= self.units[attacker].level;
-            if damage + self.units[attacker].damage > 95 {
-                damage = 95 - self.units[attacker].damage;
+            let attacker_damage = ov.damage(self, attacker);
+            if damage + attacker_damage > 95 {
+                damage = 95 - attacker_damage;
             }
-            if damage > 0 {
-                let best_owner = self.units[best].owner;
-                self.unit_change_damage(attacker, damage, Some(best_owner));
-
-                let turn = self.game_turn();
-                let attacker_owner = self.units[attacker].owner;
-                let (attacker_type, best_type) = (self.units[attacker].unit_type, self.units[best].unit_type);
-                self.log.msg(turn, Some(attacker_owner), || {
-                    format!(
-                        "{} hit by a defensive strike from {} ({} damage)",
-                        unit_type_name(d, attacker_type),
-                        unit_type_name(d, best_type),
-                        damage
-                    )
-                });
-
-                self.unit_change_experience(best, 1, 100, true, false, false);
-                dealt = damage;
-            }
+            out.damage = damage.max(0);
         }
-        dealt
+        out
+    }
+
+    /// The writes of strike `hit` of `best` on `attacker` ([`Game::unit_defensive_strike_damage`]):
+    /// the striker used up, the damage, the message, the striker's 1 XP.
+    pub(crate) fn unit_defensive_strike_write(&mut self, best: UnitId, attacker: UnitId, hit: DefStrikeHit) {
+        let d = self.d;
+        if hit.used_up {
+            self.units[best].made_attack = true;
+        }
+        let damage = hit.damage;
+        if damage > 0 {
+            let best_owner = self.units[best].owner;
+            self.unit_change_damage(attacker, damage, Some(best_owner));
+
+            let turn = self.game_turn();
+            let attacker_owner = self.units[attacker].owner;
+            let (attacker_type, best_type) = (self.units[attacker].unit_type, self.units[best].unit_type);
+            self.log.msg(turn, Some(attacker_owner), || {
+                format!(
+                    "{} hit by a defensive strike from {} ({} damage)",
+                    unit_type_name(d, attacker_type),
+                    unit_type_name(d, best_type),
+                    damage
+                )
+            });
+
+            self.unit_change_experience(best, 1, 100, true, false, false);
+        }
     }
 
     /// C++ `CvUnit::combatWon` (CvUnit.cpp:16306-16560).
@@ -2215,45 +2323,46 @@ impl Game {
     /// leaves out the one it fights: today's `- 1`). Returns each damaged unit with its damage
     /// before and after, in the order hit.
     pub(crate) fn unit_collateral_combat_ex(&mut self, u: UnitId, plot: PlotIdx, skip_unit: Option<UnitId>, engagement: bool) -> Vec<(UnitId, i32, i32)> {
-        let d = self.d;
-        let mut hit = Vec::new();
-        let air = self.unit_get_domain_type(u) == DomainType::DOMAIN_AIR;
+        let hit = self.with_sync_rng(|g, rng| g.unit_collateral_rolls(u, plot, &g.map.plots[plot].units, skip_unit, engagement, &mut UnitOverlay::default(), rng));
+        self.unit_collateral_write(u, &hit);
+        hit
+    }
 
-        let base_strength = if air { self.unit_air_base_combat_str(u) } else { self.unit_base_combat_str(u) };
-        let collateral_strength = base_strength * self.unit_collateral_damage(u) / 100;
+    /// The rolls of [`Game::unit_collateral_combat_ex`] over the units `on_plot` (the plot's, or
+    /// those an attacker sees), reading and updating the damage in `ov`, drawing from `rng`
+    /// ("Collateral Damage", one per candidate in `on_plot`'s order). Changes nothing in the game.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn unit_collateral_rolls(
+        &self,
+        u: UnitId,
+        plot: PlotIdx,
+        on_plot: &[UnitId],
+        skip_unit: Option<UnitId>,
+        engagement: bool,
+        ov: &mut UnitOverlay,
+        rng: &mut impl BattleRng,
+    ) -> Vec<(UnitId, i32, i32)> {
+        let mut hit = Vec::new();
+        let collateral_strength = self.unit_collateral_strength(u);
         if collateral_strength == 0 {
             return hit;
         }
-
-        let possible_targets = (self.plot_get_num_visible_enemy_defenders(plot, u) - if engagement { 0 } else { 1 })
-            .min(self.unit_collateral_damage_max_units(u));
+        let possible_targets = self.unit_collateral_target_count(u, plot, on_plot, engagement, ov);
 
         // C++ `std::map<CvUnit*, int> mapUnitDamage`: ordered by heap address in C++, which is
         // not reproducible; plot order here (it only decides exact ties of the rolled values).
-        let team = self.unit_get_team(u);
         let mut unit_damage: Vec<(UnitId, i32)> = Vec::new();
-        for loop_unit in self.map.plots[plot].units.clone() {
-            if Some(loop_unit) != skip_unit {
-                let loop_team = self.unit_get_team(loop_unit);
-                if self.unit_is_enemy(u, Some(loop_team), Some(plot)) {
-                    if !self.unit_is_invisible(loop_unit, team, true) {
-                        if self.unit_can_defend(loop_unit, None) {
-                            let mut value = 1 + self.soren_rand_num(10000, "Collateral Damage");
+        for &loop_unit in on_plot {
+            if Some(loop_unit) != skip_unit && self.unit_collateral_can_hit(u, loop_unit, plot, ov) {
+                let mut value = 1 + rng.rand(10000, "Collateral Damage");
 
-                            value *= self.unit_curr_hit_points(loop_unit);
+                value *= self.unit_max_hit_points(loop_unit) - ov.damage(self, loop_unit);
 
-                            unit_damage.push((loop_unit, value));
-                        }
-                    }
-                }
+                unit_damage.push((loop_unit, value));
             }
         }
 
-        let city = if air { self.map.plots[plot].plot_city } else { None };
-
-        let owner = self.units[u].owner;
-        let unit_combat = self.unit_get_unit_combat_type(u);
-        let mut damage_count = 0;
+        let city = self.unit_collateral_city(u, plot);
         let mut count = 0;
 
         while count < possible_targets {
@@ -2272,46 +2381,107 @@ impl Game {
             };
             let (best_unit, _) = unit_damage.remove(best_index);
 
-            let immune = unit_combat
-                .is_some_and(|uc| d.units[self.units[best_unit].unit_type].unit_combat_collateral_immune[uc] != 0);
-            if !immune {
-                let their_strength = self.unit_base_combat_str(best_unit);
-
-                let strength_factor = (collateral_strength + their_strength + 1) / 2;
-
-                let mut collateral_damage = (d.defines.collateral_combat_damage * (collateral_strength + strength_factor))
-                    / (their_strength + strength_factor);
-
-                collateral_damage *= 100 + self.units[u].extra_collateral_damage;
-
-                collateral_damage *= 0.max(100 - self.units[best_unit].collateral_damage_protection);
-                collateral_damage /= 100;
-
-                if let Some(c) = city {
-                    collateral_damage *= 100 + self.cities[c].air_modifier;
-                    collateral_damage /= 100;
-                }
-
-                collateral_damage /= 100;
-
-                collateral_damage = 0.max(collateral_damage);
-
-                let limit = self.unit_collateral_damage_limit(u);
-                let max_damage =
-                    limit.min((limit * (collateral_strength + strength_factor)) / (their_strength + strength_factor));
-                let damage = self.units[best_unit].damage;
-                let new_damage = damage.max((damage + collateral_damage).min(max_damage));
-
-                if damage != new_damage {
-                    self.unit_set_damage(best_unit, new_damage, Some(owner));
-                    damage_count += 1;
-                    hit.push((best_unit, damage, new_damage));
-                }
+            let damage = ov.damage(self, best_unit);
+            let new_damage = self.unit_collateral_new_damage(u, best_unit, damage, collateral_strength, city);
+            if damage != new_damage {
+                ov.set_damage(best_unit, range(new_damage, 0, self.unit_max_hit_points(best_unit)));
+                hit.push((best_unit, damage, new_damage));
             }
 
             count += 1;
         }
+        hit
+    }
 
+    /// `u`'s collateral strength (`collateralCombat`): its base strength (air strength for an air
+    /// unit) times its collateral damage percent; 0: no collateral.
+    pub(crate) fn unit_collateral_strength(&self, u: UnitId) -> i32 {
+        let air = self.unit_get_domain_type(u) == DomainType::DOMAIN_AIR;
+        let base_strength = if air { self.unit_air_base_combat_str(u) } else { self.unit_base_combat_str(u) };
+        base_strength * self.unit_collateral_damage(u) / 100
+    }
+
+    /// How many units `u`'s collateral on `plot` hits at most (`collateralCombat`): the visible
+    /// enemy defenders among `on_plot` (`plot_get_num_visible_enemy_defenders` over that list),
+    /// less the duel's own defender unless `engagement`, at most its maximum. Enemies at war as
+    /// `ov` has it (a declare-war plan's: once declared).
+    pub(crate) fn unit_collateral_target_count(&self, u: UnitId, plot: PlotIdx, on_plot: &[UnitId], engagement: bool, ov: &UnitOverlay) -> i32 {
+        let visible_defenders = if on_plot.is_empty() {
+            0
+        } else {
+            let owner_i = self.units[u].owner.i();
+            let always_hostile = self.unit_is_always_hostile(u, Some(plot)) as i32;
+            // `PUF_canDefendEnemy` with `ov`'s wars.
+            on_plot
+                .iter()
+                .filter(|&&x| self.puf_can_defend(x, owner_i, always_hostile) && self.puf_is_enemy_with(x, owner_i, always_hostile, |a, b| ov.at_war(self, a, b)) && self.puf_is_visible(x, owner_i, -1))
+                .count() as i32
+        };
+        (visible_defenders - if engagement { 0 } else { 1 }).min(self.unit_collateral_damage_max_units(u))
+    }
+
+    /// Whether `u`'s collateral on `plot` can hit `target` (`collateralCombat`): an enemy (at war
+    /// as `ov` has it), not invisible to `u`'s team, able to defend.
+    pub(crate) fn unit_collateral_can_hit(&self, u: UnitId, target: UnitId, plot: PlotIdx, ov: &UnitOverlay) -> bool {
+        let (team, target_team) = (self.unit_get_team(u), self.unit_get_team(target));
+        // `isEnemy` is "always hostile, or at war"; `ov` adds only wars.
+        (self.unit_is_enemy(u, Some(target_team), Some(plot)) || ov.at_war(self, team, target_team)) && !self.unit_is_invisible(target, team, true) && self.unit_can_defend(target, None)
+    }
+
+    /// The city whose air modifier scales `u`'s collateral on `plot`: an air unit's target city.
+    pub(crate) fn unit_collateral_city(&self, u: UnitId, plot: PlotIdx) -> Option<CityId> {
+        if self.unit_get_domain_type(u) == DomainType::DOMAIN_AIR {
+            self.map.plots[plot].plot_city
+        } else {
+            None
+        }
+    }
+
+    /// The damage field `target` (at `damage`) has after one collateral hit of `u` (with
+    /// collateral strength `collateral_strength`; `city`: the air modifier's city), as
+    /// `collateralCombat` computes it: unchanged for a target immune to `u`'s unit combat.
+    pub(crate) fn unit_collateral_new_damage(&self, u: UnitId, target: UnitId, damage: i32, collateral_strength: i32, city: Option<CityId>) -> i32 {
+        let d = self.d;
+        let immune = self
+            .unit_get_unit_combat_type(u)
+            .is_some_and(|uc| d.units[self.units[target].unit_type].unit_combat_collateral_immune[uc] != 0);
+        if immune {
+            return damage;
+        }
+        let their_strength = self.unit_base_combat_str(target);
+
+        let strength_factor = (collateral_strength + their_strength + 1) / 2;
+
+        let mut collateral_damage = (d.defines.collateral_combat_damage * (collateral_strength + strength_factor)) / (their_strength + strength_factor);
+
+        collateral_damage *= 100 + self.units[u].extra_collateral_damage;
+
+        collateral_damage *= 0.max(100 - self.units[target].collateral_damage_protection);
+        collateral_damage /= 100;
+
+        if let Some(c) = city {
+            collateral_damage *= 100 + self.cities[c].air_modifier;
+            collateral_damage /= 100;
+        }
+
+        collateral_damage /= 100;
+
+        collateral_damage = 0.max(collateral_damage);
+
+        let limit = self.unit_collateral_damage_limit(u);
+        let max_damage = limit.min((limit * (collateral_strength + strength_factor)) / (their_strength + strength_factor));
+        damage.max((damage + collateral_damage).min(max_damage))
+    }
+
+    /// The writes of `u`'s collateral `hit` ([`Game::unit_collateral_rolls`]): each unit's new
+    /// damage, then the message.
+    pub(crate) fn unit_collateral_write(&mut self, u: UnitId, hit: &[(UnitId, i32, i32)]) {
+        let d = self.d;
+        let owner = self.units[u].owner;
+        for &(best_unit, _, new_damage) in hit {
+            self.unit_set_damage(best_unit, new_damage, Some(owner));
+        }
+        let damage_count = hit.len();
         if damage_count > 0 {
             let turn = self.game_turn();
             let unit_type = self.units[u].unit_type;
@@ -2319,7 +2489,6 @@ impl Game {
                 format!("{} inflicted collateral damage on {} units", unit_type_name(d, unit_type), damage_count)
             });
         }
-        hit
     }
 
     /// C++ `CvUnit::flankingStrikeCombat` (CvUnit.cpp:17385-17468).

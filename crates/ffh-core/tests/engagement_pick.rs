@@ -383,7 +383,7 @@ fn preserve_veterans_holds_veterans_and_heroes_back_until_the_slots_would_go_emp
     let swaps = w.g.engage_single_swaps(&pool, &pick, balanced, &w.slots());
     assert_eq!(swaps.len(), 10);
     assert!(swaps.iter().all(|&(out, inn)| inn == vet && pick.contains(&out)));
-    // The proposal is the quota pick until step 7's swap search.
+    // With no swap to make (the only unit left out is held), the proposal is the quota pick.
     assert_eq!(w.g.engage_propose_force(&pool, preserve, &w.slots(), &w.ctx()), pick);
 }
 

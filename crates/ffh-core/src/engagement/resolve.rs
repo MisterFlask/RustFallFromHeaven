@@ -150,7 +150,8 @@ pub struct Death {
     pub assists: Vec<FighterIdx>,
 }
 
-/// The battle log, in resolution order. Every `Hit` of a round comes before that round's
+/// The resolver's event log ([`Resolution::events`]), in resolution order; the battle report's
+/// log ([`super::report::BattleLog`]) is written from it. Every `Hit` of a round comes before that round's
 /// `Withdraw`s and its `RoundEnd`; HP changes only at `Effect` and `RoundEnd`.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum BattleEvent {
@@ -195,9 +196,11 @@ pub struct FighterEnd {
     pub taken: i32,
 }
 
-/// The outcome of [`resolve_sampled`].
+/// The outcome of [`resolve_sampled`]: how the battle resolved, each fighter's end, the kills
+/// and the damage shares, and (unless resolved quietly) its events. (Not the battle report's
+/// log, [`super::report::BattleLog`], which the rules write from it.)
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct BattleLog {
+pub struct Resolution {
     pub result: EngageResult,
     pub volley_rounds: i32,
     pub rounds: i32,
@@ -209,9 +212,12 @@ pub struct BattleLog {
     dealt: Vec<i32>,
     /// Empty when resolved quietly ([`resolve_sampled_quiet`]).
     pub events: Vec<BattleEvent>,
+    /// Only when traced ([`resolve_sampled_traced`]): each side's engaged HP (centi-HP; alive,
+    /// not withdrawn, not sat out) after the opening volleys, then after each round.
+    pub curve: Vec<[i32; 2]>,
 }
 
-impl BattleLog {
+impl Resolution {
     /// The damage `h` dealt `t` in the battle (centi-HP), cancelled hits and overkill excluded.
     pub fn dealt(&self, h: usize, t: usize) -> i32 {
         self.dealt[h * self.fighters.len() + t]
@@ -325,20 +331,30 @@ pub fn targets(b: &Battle, h: usize, st: &TargetState, volley: bool, out: &mut V
 }
 
 /// Resolves the battle with the RNG `rng`, recording every event.
-pub fn resolve_sampled(b: &Battle, rng: &mut impl BattleRng) -> BattleLog {
+pub fn resolve_sampled(b: &Battle, rng: &mut impl BattleRng) -> Resolution {
     Run::new(b, true).run(rng)
 }
 
 /// [`resolve_sampled`] without the event log (the same draws and outcome): the calibration
 /// battery and anything else that only needs the outcome.
-pub fn resolve_sampled_quiet(b: &Battle, rng: &mut impl BattleRng) -> BattleLog {
+pub fn resolve_sampled_quiet(b: &Battle, rng: &mut impl BattleRng) -> Resolution {
     Run::new(b, false).run(rng)
+}
+
+/// [`resolve_sampled_quiet`] with each side's HP after the opening volleys and each round
+/// ([`Resolution::curve`]; the same draws and outcome): the preview's runs.
+pub fn resolve_sampled_traced(b: &Battle, rng: &mut impl BattleRng) -> Resolution {
+    let mut run = Run::new(b, false);
+    run.trace = true;
+    run.run(rng)
 }
 
 struct Run<'a> {
     b: &'a Battle,
     n: usize,
     record: bool,
+    trace: bool,
+    curve: Vec<[i32; 2]>,
     hp: Vec<i32>,
     engaged: Vec<bool>,
     rolled: Vec<bool>,
@@ -365,6 +381,8 @@ impl<'a> Run<'a> {
             b,
             n,
             record,
+            trace: false,
+            curve: Vec::new(),
             hp: b.fighters.iter().map(|f| f.hp).collect(),
             engaged: b.fighters.iter().map(|f| !f.sat_out).collect(),
             rolled: vec![false; n],
@@ -389,7 +407,7 @@ impl<'a> Run<'a> {
         }
     }
 
-    fn run(mut self, rng: &mut impl BattleRng) -> BattleLog {
+    fn run(mut self, rng: &mut impl BattleRng) -> Resolution {
         let b = self.b;
         // Battle effects: damage before the volleys (phase 7's opening spells).
         for (i, e) in b.effects.iter().enumerate() {
@@ -441,10 +459,12 @@ impl<'a> Run<'a> {
                 }
             }
         }
+        self.trace_point();
         if result.is_none() {
             for r in 1..=b.params.max_rounds {
                 rounds = r;
                 result = self.round(rng, Phase::Round(r), None);
+                self.trace_point();
                 if result.is_some() {
                     break;
                 }
@@ -462,7 +482,20 @@ impl<'a> Run<'a> {
                 taken: b.fighters[f].hp.max(0) - self.hp[f].max(0),
             })
             .collect();
-        BattleLog { result, volley_rounds, rounds, fighters, kills: self.kills, dealt: self.dealt, events: self.events }
+        Resolution { result, volley_rounds, rounds, fighters, kills: self.kills, dealt: self.dealt, events: self.events, curve: self.curve }
+    }
+
+    /// Traced: each side's engaged HP now.
+    fn trace_point(&mut self) {
+        if self.trace {
+            let mut sides = [0i32; 2];
+            for f in 0..self.n {
+                if self.engaged[f] {
+                    sides[self.b.fighters[f].side.index()] += self.hp[f].max(0);
+                }
+            }
+            self.curve.push(sides);
+        }
     }
 
     /// The result if a side has no engaged fighter (nobody on either side: a draw before the
@@ -653,7 +686,7 @@ mod tests {
         Battle::new(Params::default(), fs, |_, _| EQUAL)
     }
 
-    fn hits(log: &BattleLog) -> impl Iterator<Item = (&Hit, Phase)> {
+    fn hits(log: &Resolution) -> impl Iterator<Item = (&Hit, Phase)> {
         let mut phase = Phase::Opening;
         log.events.iter().filter_map(move |e| match e {
             BattleEvent::RoundStart { phase: p } => {

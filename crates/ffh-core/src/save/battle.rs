@@ -131,7 +131,8 @@ persist_enum!(KillKind {
 persist_struct!(FrozenForecast { source, win_permille, draw_permille, rounds, losses_if_win_x10, per, curve, alternatives });
 persist_enum!(ForecastSource { 0 => Sampled { runs }, 1 => Expected });
 persist_struct!(ForecastFighter { b, fall_pct, withdraw_pct, death_round });
-persist_enum!(AltKind { 0 => ThisPlan, 1 => StancePick, 2 => Swap { out, add }, 3 => Stance(s) });
+persist_struct!(ForecastAlt { kind, stance, force, win_permille, losses_if_win_x10 });
+persist_enum!(AltKind { 0 => StancePick, 1 => Swap, 2 => OtherStance });
 
 #[cfg(test)]
 mod tests {
@@ -331,13 +332,17 @@ mod tests {
                 win_permille: 910,
                 draw_permille: 3,
                 rounds: (13, 16, 20),
-                losses_if_win_x10: 29,
+                losses_if_win_x10: Some(29),
                 per: vec![
                     ForecastFighter { b: 0, fall_pct: 75, withdraw_pct: 10, death_round: Some(8) },
                     ForecastFighter { b: 2, fall_pct: 0, withdraw_pct: 0, death_round: None },
                 ],
                 curve: [vec![60000, 52000, 41000], vec![48000, 39000, 30000]],
-                alternatives: vec![(AltKind::ThisPlan, 910), (AltKind::StancePick, 880), (AltKind::Swap { out: 2, add: 3 }, 870), (AltKind::Stance(StanceType(3)), 700)],
+                alternatives: vec![
+                    ForecastAlt { kind: AltKind::StancePick, stance: StanceType(0), force: vec![0, 2], win_permille: 880, losses_if_win_x10: Some(31) },
+                    ForecastAlt { kind: AltKind::Swap, stance: StanceType(0), force: vec![0, 3], win_permille: 870, losses_if_win_x10: None },
+                    ForecastAlt { kind: AltKind::OtherStance, stance: StanceType(3), force: vec![2, 3], win_permille: 700, losses_if_win_x10: Some(40) },
+                ],
             }),
         };
         let side = |player: u8, shown: u8, garrison: Option<CityId>| ReportSide {

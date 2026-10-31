@@ -8,7 +8,7 @@
 use super::battle::{hp_from_damage, Battle, FighterIdx, Side, TargetClass};
 use super::engage::Eng;
 use super::report::{BattleLog, Immunities, LogDeath, LogEvent, LogFighter, LogPair, Pick, Position, SatOutWhy, SidePick, Stage, Term, TargetRule};
-use super::resolve::{BattleEvent, BattleLog as RoundLog};
+use super::resolve::{BattleEvent, Resolution};
 use crate::game::Game;
 use crate::ids::*;
 use crate::unit::DefStrikeRoll;
@@ -167,6 +167,11 @@ impl Sink {
         }
     }
 
+    /// The plan as the attacker saw it (plan 15 items 1-2).
+    pub fn set_forecast(&mut self, forecast: Option<super::report::FrozenForecast>) {
+        self.log.forecast = forecast;
+    }
+
     pub fn event(&mut self, ev: LogEvent) {
         self.log.events.push(ev);
     }
@@ -195,7 +200,7 @@ impl Sink {
 
     /// The round model's events (volley rolls, the volley rounds and rounds with every hit, the
     /// withdrawals, the deaths, the shield falling, the end) and the pairs that hit.
-    pub fn rounds(&mut self, g: &Game, e: &Eng, b: &Battle, r: &RoundLog) {
+    pub fn rounds(&mut self, g: &Game, e: &Eng, b: &Battle, r: &Resolution) {
         let n = b.len();
         // The HP each withdrawal roll saw: the next round end's.
         let mut next_hp: Vec<Option<&Vec<i32>>> = vec![None; r.events.len()];
@@ -292,7 +297,7 @@ impl Sink {
     }
 
     /// The log, with each committed fighter's fate.
-    pub fn finish(mut self, r: &RoundLog) -> BattleLog {
+    pub fn finish(mut self, r: &Resolution) -> BattleLog {
         for (f, end) in self.log.fighters.iter_mut().zip(&r.fighters) {
             f.fate = Some(end.fate);
         }
