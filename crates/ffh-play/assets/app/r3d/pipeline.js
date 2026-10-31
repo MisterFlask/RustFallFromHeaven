@@ -29,8 +29,10 @@ const SHADOW_SIZE = 2048;
 const TERRAIN_SHADOW_SIZE = 1024;
 
 export class Pipeline {
-  /** `terrainDefines`: the terrain program's `#define`s (a mode's: Map3D.terrainDefines). */
-  constructor(gl, terrainDefines = {}) {
+  /** `terrainDefines`: the terrain program's `#define`s (a mode's: Map3D.terrainDefines); `defs`
+   *  the props' and the water's (`prop`, `water`: Map3D.propDefines, waterDefines), and `riverSplit`:
+   *  the rivers drawn by a program of their own (WATER_RIVER; the sea's then WATER_SEA). */
+  constructor(gl, terrainDefines = {}, defs = {}) {
     this.gl = gl;
     this.hdr = !!gl.getExtension("EXT_color_buffer_float") || !!gl.getExtension("EXT_color_buffer_half_float");
     gl.getExtension("OES_texture_float_linear");
@@ -40,8 +42,9 @@ export class Pipeline {
     const C = SH.COMMON;
     this.p = {
       terrain: P("terrain", C + SH.TERRAIN_VS, C + SH.TERRAIN_FS, terrainDefines),
-      prop: P("prop", C + SH.PROP_VS, C + SH.PROP_FS),
-      water: P("water", C + SH.WATER_VS, C + SH.WATER_FS),
+      prop: P("prop", C + SH.PROP_VS, C + SH.PROP_FS, defs.prop ?? {}),
+      water: P("water", C + SH.WATER_VS, C + SH.WATER_FS, { ...(defs.water ?? {}), ...(defs.riverSplit ? { WATER_SEA: 1 } : {}) }),
+      ...(defs.riverSplit ? { river: P("river", C + SH.WATER_VS, C + SH.WATER_FS, { ...(defs.water ?? {}), WATER_RIVER: 1 }) } : {}),
       shadowTerrain: P("shadow-terrain", C + SH.SHADOW_TERRAIN_VS, SH.SHADOW_FS),
       shadowProp: P("shadow-prop", C + SH.PROP_VS, C + SH.PROP_DEPTH_FS),
       ssao: P("ssao", FULLSCREEN_VS, C + SH.SSAO_FS),
@@ -121,7 +124,7 @@ export class Pipeline {
 
   /** The programs that draw into the scene's targets (the mode's too). */
   scenePrograms() {
-    return [this.p.terrain, this.p.prop, this.p.water, ...(this.ext?.scenePrograms() ?? [])];
+    return [this.p.terrain, this.p.prop, this.p.water, ...(this.p.river ? [this.p.river] : []), ...(this.ext?.scenePrograms() ?? [])];
   }
 
   /** Draws each of `programs` once, a task each, into a small framebuffer laid out as the scene's.
@@ -321,7 +324,7 @@ export class Pipeline {
       // Seeing into the water and the mirror read the grabbed view depth, which only a float target
       // holds (an 8-bit one clamps it to 1): without one the water is drawn opaque, unmirrored.
       const hdr = this.hdr ? 1 : 0;
-      scene.drawWater(this.p.water, { ...SU, uSceneColor: this.t.sceneCopy, uSceneND: this.t.ndCopy, uReflect: (cfg.reflections ?? 1) * hdr, uRefract: (cfg.refraction ?? 1) * hdr });
+      scene.drawWater(this.p.water, { ...SU, uSceneColor: this.t.sceneCopy, uSceneND: this.t.ndCopy, uReflect: (cfg.reflections ?? 1) * hdr, uRefract: (cfg.refraction ?? 1) * hdr }, false, this.p.river ?? null);
     });
     gl.disable(gl.DEPTH_TEST);
     gl.depthMask(false);

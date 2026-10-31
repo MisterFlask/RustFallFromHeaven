@@ -522,8 +522,25 @@ export class Scene {
     }
   }
 
-  drawWater(prog, U, depthOnly = false) {
+  /** `riverProg`: the rivers' own program (Pipeline `riverSplit`; then the sea of every copy is
+   *  drawn first, then the rivers), else `prog` draws them too. */
+  drawWater(prog, U, depthOnly = false, riverProg = null) {
     if (!this.water) return;
+    if (riverProg) {
+      // Each program its uniforms whole (each has its own texture units).
+      const drawWith = (p, river) => {
+        p.use().set(U);
+        if (!depthOnly) p.set({ ...this.mapUniforms(), uCoarse: this.far ? 1 : 0, uRiverLift: river && this.far ? 0.05 : 0 });
+        for (const copy of this.copies) {
+          p.set({ uCopyX: copy, uRiver: river ? 1 : 0 });
+          (river ? this.rivers : this.water).draw();
+        }
+        if (!depthOnly) p.set({ uRiverLift: 0 });
+      };
+      drawWith(prog, false);
+      if (this.rivers) drawWith(riverProg, true);
+      return;
+    }
     prog.use().set(U);
     // uCoarse: the far zoom's ground is coarse, so the water reads its depth from the height field.
     if (!depthOnly) prog.set({ ...this.mapUniforms(), uCoarse: this.far ? 1 : 0 });

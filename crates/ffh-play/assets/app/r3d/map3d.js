@@ -82,7 +82,7 @@ export class Map3D {
     }
     this.gl = gl;
     this.glName = glName;
-    this.pipeline = new Pipeline(gl, this.terrainDefines());
+    this.pipeline = new Pipeline(gl, this.terrainDefines(), { prop: this.propDefines(), water: this.waterDefines(), riverSplit: this.riverSplit() });
     /** Whether the programs have compiled (`ready`): the loop draws nothing before. */
     this.compiled = false;
     this.scene = new Scene(gl);
@@ -186,6 +186,22 @@ export class Map3D {
    *  mode may compile parts of the ground's painting out. */
   terrainDefines() {
     return {};
+  }
+
+  /** `#define`s the props' and the water's programs are compiled with (shaders.js): none for the 3D
+   *  renderer; a mode may compile parts out (Direct3D's compile time, docs/R3D.md §11.1). */
+  propDefines() {
+    return {};
+  }
+
+  waterDefines() {
+    return {};
+  }
+
+  /** Whether the rivers have a program of their own (the sea's then compiled without them): two
+   *  shorter compiles instead of one long one, on Direct3D. */
+  riverSplit() {
+    return false;
   }
 
   /** How strongly the cities light the ground round them (decals.js rasterLight): 1 for the 3D

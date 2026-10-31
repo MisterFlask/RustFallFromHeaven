@@ -316,6 +316,15 @@ vec2 dab2(vec2 p, float elong, float rad, float aa) {
 // dab2 projected onto a surface from the three axis planes, by the object-space normal (a sharp
 // blend: one plane carries each face). 'f' marks per plot.
 vec2 objDabs(vec3 p, vec3 n, float f, float elong, float rad, float aa) {
+#ifdef DABS_1
+  // (The HD-2D mode's props, Map3D.propDefines.) The plane that carries most of the face alone:
+  // the blend's weights (the normal's fourth power) give it nearly all of every face but where two
+  // planes meet at about 45 degrees, so one dab2 a call instead of up to three -- each a 3 x 3
+  // search Direct3D's shader compiler inlines (docs/R3D.md §11.1).
+  vec3 a = abs(n);
+  vec2 q = a.x >= max(a.y, a.z) ? p.zy * f : a.y >= a.z ? p.xz * f + 17.0 : p.xy * f + 31.0;
+  return dab2(q, elong, rad, aa);
+#else
   vec3 w = abs(n);
   w = w * w;
   w = w * w;
@@ -326,6 +335,7 @@ vec2 objDabs(vec3 p, vec3 n, float f, float elong, float rad, float aa) {
   if (w.y > 0.04) { acc += w.y * dab2(p.xz * f + 17.0, elong, rad, aa); ws += w.y; }
   if (w.z > 0.04) { acc += w.z * dab2(p.xy * f + 31.0, elong, rad, aa); ws += w.z; }
   return acc / ws;
+#endif
 }
 
 // Foliage marks: big leaf clusters (a few to a crown at the gameplay zoom) and smaller ones (close
@@ -1320,7 +1330,13 @@ void main() {
   bool crown = (kind == 1 || kind == 9) && vTeam.a < 0.5;
   // A crown of leaf clusters (MAT.LEAF): each cluster its own small mass with its own normals,
   // its rim cut into leaves by the depth prepass (leafCut, PROP_DEPTH_FS).
+#ifdef NO_LEAVES
+  // (The HD-2D mode, Map3D.propDefines: its trees, bushes and saplings are cards, so no crown of
+  // leaf clusters is modelled there; one would be painted as the other crowns are.)
+  const bool leaves = false;
+#else
   bool leaves = kind == 9 && vTeam.a < 0.5;
+#endif
   vec3 n = normalize(vNormal);
   if (!gl_FrontFacing) n = -n;
   // The surface's side toward the eye (the normal buffer's). A cluster is a shell of leaves: seen
@@ -1341,7 +1357,11 @@ void main() {
   if (kind == 3) alb = srgb(vTeam.rgb) * (0.38 + 1.25 * lum(vColor)) * vTint.rgb;
   // Pigment variation in the object's own space (stays on the object); the brush marks below
   // carry the finer variation, so the fine pigment steps back as they come in.
+#ifdef NO_FINE_PIGMENT
+  const float pg = 0.5;
+#else
   float pg = vnoise3(vLocal * 22.0 + vTint.a * 50.0);
+#endif
   float pg2 = vnoise3(vLocal * 6.0 + vTint.a * 31.0);
   alb *= 1.0 + uPaint * ((pg - 0.5) * 0.22 * (1.0 - 0.6 * uBrush) + (pg2 - 0.5) * 0.3);
   // Marks: leaves on crowns (their material, always on), brush strokes on everything else (the
@@ -1364,7 +1384,11 @@ void main() {
     tone *= tone < 0.0 ? mix(leaves ? 0.35 : 0.25, 1.0, 1.0 - smoothstep(0.4, 0.85, d0)) : mix(leaves ? 0.5 : 0.4, 1.0, smoothstep(0.05, 0.45, d0));
     jit = tone * (leaves ? 0.95 : 0.75);
     alb *= 1.0 + tone * 0.6;
+#ifdef NO_STROKES
+  } else if (false) {
+#else
   } else if (uBrush > 0.0 && kind != 4 && kind != 6) {
+#endif
     tone = strokeMarks(po, nO, dpo) * uBrush * (1.0 - 0.6 * vTeam.a) * (1.0 + matte);
     // On a matte prop a dark mark fades where the plane already turns from the sun, and no mark
     // goes past a bound: the doubled strokes would otherwise sink a tower's shaded flank into a
@@ -1547,6 +1571,59 @@ ${SCENE_OUT}
 // toward the north-north-west.
 const vec2 SWELL = vec2(-0.514, 0.857);
 
+#if defined(GRAD_NORMALS) || defined(GRAD_NORMALS_RIVER)
+// (The HD-2D mode, Map3D.waterDefines.) pnoise with its gradient over p, from the one set of corner
+// hashes: the waves' normals from three noises with their slopes instead of nine noises (each
+// height taken three times, a finite difference): a third of the noise Direct3D's shader compiler
+// inlines for them (docs/R3D.md §11.1). The value is pnoise's.
+vec3 pnoiseD(vec2 p, vec2 P) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  vec2 du = 6.0 * f * (1.0 - f);
+  vec4 c = mod(vec4(i, i + 1.0), P.xyxy);
+  vec4 r = fract(c * 0.1031);
+  vec4 s = r + 33.33;
+  vec4 d = vec4(dot(r.xyx, s.yxx), dot(r.zyz, s.yzz), dot(r.xwx, s.wxx), dot(r.zwz, s.wzz));
+  vec4 x = r.xzxz + d;
+  vec4 h = fract((x + (r.yyww + d)) * x);
+  float k4 = h.x - h.y - h.z + h.w;
+  return vec3(mix(mix(h.x, h.y, u.x), mix(h.z, h.w, u.x), u.y), du * vec2(h.y - h.x + k4 * u.y, h.z - h.x + k4 * u.x));
+}
+// mnoise and mstroke with their gradients over the map point.
+vec3 mnoiseD(vec2 m, float f) {
+  vec3 l = mlattice(m, f);
+  vec3 n = pnoiseD(l.xy, vec2(l.z, 4096.0));
+  return vec3(n.x, n.yz * vec2(mix(f, l.z / uMapSize.x, float(wrapX())), f));
+}
+vec3 mstrokeD(vec2 m, float f, float stretch) {
+  vec2 d = vec2(m.x + m.y * 0.6, m.y - m.x * 0.6);
+  float fa = f / stretch;
+  float fb = f;
+  bvec2 wr = bvec2(wrapX());
+  vec2 P = mix(vec2(4096.0), vec2(max(1.0, floor(uMapSize.x * fa + 0.5)), max(1.0, floor(uMapSize.x * 0.6 * fb + 0.5))), wr);
+  vec2 p = mix(vec2(d.x * fa, d.y * fb), vec2(d.x * P.x / uMapSize.x, d.y * P.y / (uMapSize.x * 0.6)), wr);
+  vec2 k = mix(vec2(fa, fb), vec2(P.x / uMapSize.x, P.y / (uMapSize.x * 0.6)), wr);
+  vec3 n = pnoiseD(p, P);
+  vec2 g = n.yz * k;
+  return vec3(n.x, g.x * vec2(1.0, 0.6) + g.y * vec2(-0.6, 1.0));
+}
+// seaH and its gradient over p.
+vec3 seaHD(vec2 p, float t) {
+  return mstrokeD(p - SWELL * t * 0.08, 2.6, 4.5) * 0.9 + mnoiseD(p + vec2(t * 0.05, t * 0.035), 3.2) * 0.55 + mnoiseD(p + vec2(-t * 0.04, t * 0.06), 7.0) * 0.3;
+}
+#endif
+#ifdef GRAD_NORMALS_RIVER
+// riverH and its gradient over (u, s).
+vec3 riverHD(float u, float s, float t) {
+  float mid = 1.0 - u * u;
+  vec3 a = pnoiseD(vec2(u * 2.2, s * 3.2 - t * 1.6), vec2(4096.0));
+  vec3 b = pnoiseD(vec2(u * 4.5 + 7.0, s * 7.5 - t * 1.1), vec2(4096.0));
+  float wa = 0.3 + 0.5 * mid;
+  return vec3(a.x * wa + b.x * 0.35, a.y * 2.2 * wa - a.x * u + b.y * 4.5 * 0.35, a.z * 3.2 * wa + b.z * 7.5 * 0.35);
+}
+#endif
+
 // The sea's surface height (arbitrary units) at map point p: a slow swell of long crests under two
 // drifting layers of ripples. Map-anchored (periodic over a wrapping map's width), so the waves
 // belong to the world and do not swim under a moving camera.
@@ -1646,13 +1723,29 @@ float laceAt(vec2 m, float t) {
   vec2 cl = mcells(m + vec2(t * 0.02, -t * 0.014), 10.0);
   return 1.0 - smoothstep(0.03, 0.12, cl.y - cl.x);
 }
+#ifdef BODY_LITE
+// (The HD-2D mode, Map3D.waterDefines.) mfbm's two broad octaves; the two fine ones (2% of the
+// body's value between them) at their mean.
+float bodyAt(vec2 m, float t) {
+  vec2 q = m + t * 0.01;
+  return 0.9 + 0.2 * (mnoise(q, 0.5) * 0.5 + mnoise(q + 3.7, 1.0) * 0.25 + 0.09375) / 0.9375;
+}
+#else
 float bodyAt(vec2 m, float t) { return 0.9 + 0.2 * mfbm(m + t * 0.01, 0.5); }
+#endif
 
 void main() {
   oLink = vec4(0.0);
   vec2 m = mapOf(vWorld);
   float v = visAt(vWorld);
+  // (WATER_SEA, WATER_RIVER: the sea and the rivers as programs of their own, Map3D.waterDefines.)
+#if defined(WATER_SEA)
+  const bool river = false;
+#elif defined(WATER_RIVER)
+  const bool river = true;
+#else
   bool river = uRiver > 0.5;
+#endif
   if (!river && v < 0.02) discard;
   float t = uTime;
   // Water in sight moves; remembered water calms: its surface lies flat, without glitter or the
@@ -1661,7 +1754,16 @@ void main() {
   // itself (a time scaled by the fog would shear the waves further every second).
   float live = smoothstep(0.62, 0.97, v);
   float tl = live > 0.0 ? t : 0.0;    // the drifts' time: at rest where remembered
+#ifdef CALM_FADE
+  // (The HD-2D mode, Map3D.waterDefines.) Across the frontier each drift fades toward its mean --
+  // the moving one out of sight, the resting one into the remembered side -- instead of being
+  // mixed with the other: one of each, not two (the drifts are a sixth of the shader Direct3D's
+  // compiler takes, docs/R3D.md §11.1). The frontier's water calms in a narrow strip.
+  const bool band = false;
+  float calm = live > 0.0 ? live : 1.0 - smoothstep(0.52, 0.62, v);
+#else
   bool band = live > 0.0 && live < 1.0; // the frontier: the moving and the resting values mixed
+#endif
   // The sea floor's depth, read through a warp and averaged over a small footprint, so the
   // colour bands of the shelf follow soft, irregular contours instead of the plot grid.
   // Only samples under water count: around a small lake most of the footprint is dry land, which
@@ -1712,14 +1814,27 @@ void main() {
   // The surface normal: the sea's swell and ripples, or a river's current (map y runs along -z).
   vec3 n;
   if (river) {
+#ifdef GRAD_NORMALS_RIVER
+    // (Not by default: across the channel the difference was taken over 0.16 of its half-width,
+    // smoothing the ripples more than their true slope does, and the slopes moved what the river
+    // mirrors.)
+    vec3 hd = riverHD(vExtra.x, vExtra.y, t);
+    vec2 g = flow * hd.z + side * 8.0 * hd.y;
+#else
     float u = vExtra.x, s = vExtra.y, e = 0.02;
     float h0 = riverH(u, s, t);
     vec2 g = flow * (riverH(u, s + e, t) - h0) / e + side * (riverH(u + e * 8.0, s, t) - h0) / e;
+#endif
     n = normalize(vec3(-g.x * 0.03, 1.0, g.y * 0.03));
   } else {
+#ifdef GRAD_NORMALS
+    vec2 g = seaHD(m, t).yz;
+    n = normalize(vec3(-g.x * 0.035, 1.0, g.y * 0.035));
+#else
     float e = 0.025;
     float h0 = seaH(m, t);
     n = normalize(vec3(-(seaH(m + vec2(e, 0.0), t) - h0) / e * 0.035, 1.0, (seaH(m + vec2(0.0, e), t) - h0) / e * 0.035));
+#endif
   }
   n = normalize(mix(vec3(0.0, 1.0, 0.0), n, live));
   vec3 V = normalize(uEye - vWorld);
@@ -1754,6 +1869,9 @@ void main() {
   body = mix(body, srgb(vec3(0.05, 0.17, 0.34)), smoothstep(0.12, 0.4, dcol));
   float bm = bodyAt(m, tl);
   if (band) bm = mix(bodyAt(m, 0.0), bm, live);
+#ifdef CALM_FADE
+  bm = mix(1.0, bm, calm);
+#endif
   body *= bm;
   float sun;
   vec3 Lb = lightAt(vec3(0.0, 1.0, 0.0), vWorld, 1.0, sun);
@@ -1764,6 +1882,10 @@ void main() {
     // would turn it green) -- in shade it darkens without losing its blue.
     float rd = riverDeep(vExtra.x, vExtra.y, vFlow.x, tl);
     if (band) rd = mix(riverDeep(vExtra.x, vExtra.y, vFlow.x, 0.0), rd, live);
+#ifdef CALM_FADE
+    float u4 = vExtra.x * vExtra.x;
+    rd = mix(clamp(1.0 - u4 * u4 - clamp(-vExtra.x * vFlow.x * 0.25, 0.0, 0.5), 0.0, 1.0), rd, calm);
+#endif
     vec3 rc = mix(srgb(vec3(0.34, 0.64, 0.72)), srgb(vec3(0.2, 0.48, 0.62)), smoothstep(0.1, 0.5, rd));
     rc = mix(rc, srgb(vec3(0.11, 0.3, 0.47)), smoothstep(0.55, 0.95, rd));
     body = rc * (lum(Lb) * 0.7 + 0.1) * bm;
@@ -1804,6 +1926,9 @@ void main() {
   vec2 bw = (vec2(mnoise(m, 1.1), mnoise(m + 5.3, 1.1)) - 0.5) * 0.5;
   float brk = brkAt(m, bw, river, vExtra.xy, tl);
   if (band) brk = mix(brkAt(m, bw, river, vExtra.xy, 0.0), brk, live);
+#ifdef CALM_FADE
+  brk = mix(0.5, brk, calm);
+#endif
   // The deep mirrors less, and its own blue tints what it mirrors: ocean must stay darker than the
   // shelf, coast against open sea read by value. A river a little too: it must read darker than
   // its banks.
@@ -1823,7 +1948,11 @@ void main() {
   float share = mix(0.35, 0.5, smoothstep(0.1, 0.25, gaa));
   // Only along the swell's crests, in broad drifting patches.
   float crest = river ? 0.6 : smoothstep(0.5, 0.78, mstroke(m - SWELL * t * 0.08, 2.6, 4.5)) * smoothstep(0.3, 0.6, mnoise(m - SWELL * t * 0.03, 0.35));
+#ifdef NO_GLITTER
+  if (false) {
+#else
   if (glod > 0.0 && sun > 0.05 && live > 0.0 && crest > 0.0) {
+#endif
     vec2 gp = m * 8.0;
     vec2 gi = floor(gp), gfr = fract(gp);
     // Periodic over a wrapping map's width, like every pattern on the map (no seam).
@@ -1854,6 +1983,9 @@ void main() {
   // carried down mid-channel.
   float lace = laceAt(m, tl);
   if (band) lace = mix(laceAt(m, 0.0), lace, live);
+#ifdef CALM_FADE
+  lace = mix(0.3, lace, calm);
+#endif
   float sph = mnoise(m, 1.3) * 6.2831;
   float swash = 0.03 + 0.016 * mix(sin(sph), sin(t * 0.8 + sph), live);
   float shore = 1.0 - smoothstep(swash * 0.35, swash, depth);
@@ -1903,9 +2035,15 @@ void main() {
     float rfa = ppx / 0.19; // u across a pixel (u counts RIVER_HALFs, world.js)
     float rf = riverFoam(vExtra.x, vExtra.y, vFlow.x, tl, rfa);
     if (band) rf = mix(riverFoam(vExtra.x, vExtra.y, vFlow.x, 0.0, rfa), rf, live);
+#ifdef CALM_FADE
+    rf *= calm;
+#endif
     float tr = live > 0.0 ? t : 0.0;
     float bk = pnoise(vec2(vExtra.x * 3.0, vExtra.y * 5.0 - tr * 0.3), vec2(4096.0));
     if (band) bk = mix(pnoise(vec2(vExtra.x * 3.0, vExtra.y * 5.0), vec2(4096.0)), bk, live);
+#ifdef CALM_FADE
+    bk = mix(0.5, bk, calm);
+#endif
     float edgeLace = (1.0 - smoothstep(0.0, 0.1 + 0.08 * bk, inEdge)) * smoothstep(0.35, 0.75, bk) * mix(0.5, 1.0, lace);
     // White water trailing downstream of what stands in the stream (a rock, a reed bed, a pier):
     // looking upstream, a surface at the water's level or just above it, not the bank.
@@ -1929,7 +2067,11 @@ void main() {
   // the net dims once its lines would be hairlines: a close-up detail.
   float cLod = mix(0.3, 1.0, 1.0 - smoothstep(0.006, 0.011, ppx));
   float fadeC = smoothstep(0.004, 0.025, depth) * (1.0 - smoothstep(0.1, 0.25, depth));
+#ifdef NO_CAUSTICS
+  if (false) {
+#else
   if (!river && uCaustics > 0.0 && live > 0.0 && sun > 0.05 && fadeC > 0.0) {
+#endif
     vec2 fm = mapOf(vWorld - V * min(path, 0.6));
     fm += (vec2(mnoise(fm, 1.7), mnoise(fm + 4.1, 1.7)) - 0.5) * 0.3;
     vec2 ca = mcells(fm + vec2(t * 0.05, t * 0.031), 4.2);
