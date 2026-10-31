@@ -792,7 +792,10 @@ comparison alternated old and new):
   | cards | 136 | 191 |
   | the first draw | 15.1 s, one program after another, the browser frozen | none at the first draw: 3.0 s at link, together on ANGLE's worker threads, the page live (about the terrain's 1.9 s, more with the compiles slowing each other) |
 
-  With the scene packed there are no warm-up draws, so the start-up's sync overlaps the wait for
+  The HD-2D mode packs on Direct3D only (`packScene` 1 or 0 overrides): other backends compile at
+  link already, and on SwiftShader the packed scene's first complete frame came at 12-13 s against
+  4.3-4.9 s unpacked (lab, alternating runs), its pipelines built in the first full-size frame
+  instead of the warm-up's 4 × 4 draws. With the scene packed there are no warm-up draws, so the start-up's sync overlaps the wait for
   the links (`Map3D.ready`); otherwise it overlaps the warm-up's first draw. With the five switches
   off (`?r3d={"noiseTex":0,"terrainLean":0,"lite":0,"packScene":0,"fastStart":0}`) the lab's stills
   match origin/master's bit for bit.

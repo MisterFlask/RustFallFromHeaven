@@ -194,9 +194,13 @@ export class MapHd2d extends Map3D {
   /** The scene packed into one target (pipeline.js `packed`): on Direct3D 11 the scene's programs
    *  then compile at link -- on ANGLE's worker threads, the page live, kept in the browser's program
    *  cache -- instead of at their first draws, one at a time with the browser frozen.
-   *  `?r3d={"packScene":0}` draws the three targets as before. */
+   *  Only there by default: other backends compile at link anyway, and on them the packing only adds
+   *  its unpack pass (and on SwiftShader the first complete frame came at 12-13 s packed against
+   *  4.3-4.9 s unpacked, its pipelines compiled in the first frame instead of the warm-up).
+   *  `?r3d={"packScene":0}` draws the three targets everywhere, `{"packScene":1}` packs everywhere. */
   packedScene() {
-    return (this.cfg.packScene ?? 1) > 0;
+    const on = this.cfg.packScene;
+    return on === undefined ? /direct3d|d3d1/i.test(this.glName) : on > 0;
   }
 
   /** The value noise from a hash texture (shaders.js NOISE_TEX): the terrain's, water's and props'
