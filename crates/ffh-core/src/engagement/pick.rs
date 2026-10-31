@@ -7,7 +7,7 @@
 //! bombards and missile strikes) and that the move rules let attack the plot
 //! (`unit_can_move_into` with its attack gates under the option: the attack count, and for a
 //! unit with a combat limit some defender below the limit and no amphibious attack:
-//! [`Game::unit_engage_limit_ok`]). The
+//! `unit_engage_limit_ok`). The
 //! attacker's pool ([`Game::engage_attackers`]) is every such unit of the player on the plot it
 //! attacks from: its armies, its garrison, its heroes, mages and recon units.
 //!
