@@ -186,9 +186,6 @@ pub struct AssaultEstimate {
     pub steps: Vec<Estimate>,
 }
 
-/// Whether the attacker's proposal runs the swap search (off in the commit that adds the
-/// estimator, so that commit plays as before).
-const SWAP_SEARCH: bool = false;
 /// Rounds of the swap search at most (each keeps the best single swap of the plan so far).
 const SWAP_ROUNDS: usize = 3;
 /// A plan beats another by a higher win chance by more than this (per mille), or by a win chance
@@ -199,8 +196,9 @@ const SWAP_TIE: i32 = 2;
 const SWAP_LOSS: i32 = 50;
 
 /// Whether plan `b` beats plan `a` in the swap search (the constants above): the attacker's
-/// proposal is the force most likely to win, and among those about as likely, the cheapest.
-pub(crate) fn swap_better(b: &Estimate, a: &Estimate) -> bool {
+/// proposal is the force most likely to win, and among those about as likely, the cheapest. The
+/// search's result beats the stance's quota pick by this test, or is that pick.
+pub fn swap_better(b: &Estimate, a: &Estimate) -> bool {
     b.win_permille > a.win_permille + SWAP_WIN || (b.win_permille >= a.win_permille - SWAP_TIE && b.att_loss_x1000 + SWAP_LOSS < a.att_loss_x1000)
 }
 
@@ -255,6 +253,15 @@ impl PairCache {
         match side {
             Side::Attacker => Some(self.pairs[self.att_idx(h)? * nd + self.def_idx(t)?].0),
             Side::Defender => Some(self.pairs[self.att_idx(t)? * nd + self.def_idx(h)?].1),
+        }
+    }
+
+    /// Attacker `u`'s pairs against every defender of the cache (empty when it is not in it).
+    pub fn att_row(&self, u: UnitId) -> &[(Pair, Pair)] {
+        let nd = self.def.len();
+        match self.att_idx(u) {
+            Some(i) => &self.pairs[i * nd..(i + 1) * nd],
+            None => &[],
         }
     }
 
@@ -492,8 +499,10 @@ impl Game {
     /// The swap search (plan 15, item 3; [`Game::engage_swap_search`]) against `view`, with the
     /// damage fields `damage`: from `pick`, each round estimates every single swap
     /// ([`Game::engage_single_swaps`]: a reserve unit in, a committed unit out, held units never
-    /// in) and keeps the best if it beats the plan so far ([`swap_better`]), at most
-    /// `SWAP_ROUNDS` rounds. `cache`: the pool's pairs, when the caller has them.
+    /// in; one swap per pair of kinds the estimate cannot tell apart) and keeps the best if it
+    /// beats the plan so far and the start ([`swap_better`]: so tolerated small drops of the win
+    /// chance never add up), at most `SWAP_ROUNDS` rounds. The result is `pick` or beats it.
+    /// `cache`: the pool's pairs, when the caller has them.
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn engage_swap_search_in(
         &self,
@@ -506,7 +515,7 @@ impl Game {
         damage: &[(UnitId, i32)],
         cache: Option<&PairCache>,
     ) -> Vec<UnitId> {
-        if !SWAP_SEARCH || pick.is_empty() || view.candidates.is_empty() || pool.len() <= pick.len() {
+        if pick.is_empty() || view.candidates.is_empty() || pool.len() <= pick.len() {
             return pick;
         }
         if self.engage_single_swaps(pool, &pick, stance, slots).is_empty() {
@@ -521,14 +530,25 @@ impl Game {
             }
         };
         let est = |f: &[UnitId]| self.engage_estimate_with(ctx, slots, f, view, damage, &[], Some(cache)).ok();
+        let kind = self.engage_swap_kinds(pool, cache, damage);
+        let kind_of = |u: UnitId| pool.iter().position(|&x| x == u).map_or(usize::MAX, |i| kind[i]);
         let mut best = pick;
         let Some(mut best_est) = est(&best) else { return best };
+        let start = best_est.clone();
         for _ in 0..SWAP_ROUNDS {
             let mut found: Option<(Vec<UnitId>, Estimate)> = None;
+            let mut tried: Vec<(usize, usize)> = Vec::new();
             for (out, add) in self.engage_single_swaps(pool, &best, stance, slots) {
+                // A swap of two units the battle cannot tell apart changes nothing, and one like a
+                // swap already tried gives its estimate.
+                let k = (kind_of(out), kind_of(add));
+                if k.0 == k.1 || tried.contains(&k) {
+                    continue;
+                }
+                tried.push(k);
                 let f: Vec<UnitId> = best.iter().map(|&u| if u == out { add } else { u }).collect();
                 let Some(e) = est(&f) else { continue };
-                if swap_better(&e, found.as_ref().map_or(&best_est, |x| &x.1)) {
+                if swap_better(&e, found.as_ref().map_or(&best_est, |x| &x.1)) && swap_better(&e, &start) {
                     found = Some((f, e));
                 }
             }
@@ -541,6 +561,35 @@ impl Game {
             }
         }
         best
+    }
+
+    /// For each unit of `pool` (in `cache`), the index of the first unit of the pool the
+    /// estimate cannot tell from it: the same fighter (but its tag), the same pairs against every
+    /// defender, the same damage (or override) and the same stats the expected morale check and
+    /// opening read. Units outside the cache are their own kind.
+    pub(crate) fn engage_swap_kinds(&self, pool: &[UnitId], cache: &PairCache, damage: &[(UnitId, i32)]) -> Vec<usize> {
+        type Sig = (Option<super::Fighter>, Vec<(Pair, Pair)>, [i32; 9], [bool; 3]);
+        let sig = |u: UnitId| -> Sig {
+            let mut f = cache.fighter(u, Side::Attacker).cloned();
+            if let Some(f) = f.as_mut() {
+                f.tag = 0;
+            }
+            let unit = &self.units[u];
+            let stats = [
+                super::damage_with(self, u, damage),
+                unit.level,
+                self.unit_base_combat_str(u),
+                self.unit_base_combat_str_defense(u),
+                self.unit_collateral_damage(u),
+                self.unit_collateral_damage_limit(u),
+                self.unit_collateral_damage_max_units(u),
+                unit.extra_collateral_damage,
+                unit.unit_type.idx() as i32,
+            ];
+            (f, cache.att_row(u).to_vec(), stats, [self.unit_is_fear(u), self.unit_is_immune_to_fear(u), self.unit_is_immune_to_defensive_strike(u)])
+        };
+        let sigs: Vec<Sig> = pool.iter().map(|&u| sig(u)).collect();
+        (0..pool.len()).map(|i| if sigs[i].0.is_none() { i } else { (0..=i).find(|&j| sigs[j] == sigs[i]).unwrap_or(i) }).collect()
     }
 
     /// Each committed fighter's chance to fail the morale check (1/4096; plan 6.3 in

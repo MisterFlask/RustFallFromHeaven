@@ -28,9 +28,9 @@
 //! the AI. Candidates sort by (healthy first, job strength, HP, unit id); the stance's steps take
 //! the best of their roles up to each step's target, then its fill takes the rest in its role
 //! order, held units (Preserve Veterans: above the stance's level, heroes) last of all. The
-//! attacker's proposal ([`Game::engage_propose_force`]) starts from that pick; from step 7 on it
-//! also tries the pick's best single swaps by the estimate (plan 15, item 3:
-//! [`Game::engage_swap_search`], which keeps the quota pick until then). A force the attacker
+//! attacker's proposal ([`Game::engage_propose_force`]) starts from that pick and keeps its
+//! best single swaps by the estimate (plan 15, item 3: [`Game::engage_swap_search`], a held unit
+//! never swapped in; the defender's pick stays the blind stance pick). A force the attacker
 //! chooses itself is checked by [`Game::engage_validate_force`].
 
 use ffh_data::*;
