@@ -21,7 +21,7 @@ import { Hd2dPasses } from "./passes.js";
 import { dressSpriteStatic, dressSpriteUnits } from "./dress.js";
 import { plotMoods, moodEmitters } from "./mood.js";
 import { staticEnv } from "../dress.js";
-import { MAT } from "../materials.js";
+import { MAT, bakeLayer } from "../materials.js";
 import { GROUNDS } from "./art/index.js";
 
 /** The 3D renderer's gameplay zoom: on the full-bleed map (the isometric screen's floating
@@ -65,6 +65,7 @@ export class MapHd2d extends Map3D {
     const gl = this.gl, mats = this.scene.materials;
     const T = gl.TEXTURE_2D_ARRAY;
     let n = 0;
+    const done = new Set();
     await Promise.all(
       GROUNDS.filter((name) => GROUND_LAYER[name] !== undefined).map(async (name) => {
         try {
@@ -92,18 +93,44 @@ export class MapHd2d extends Map3D {
           gl.texSubImage3D(T, 0, 0, 0, GROUND_LAYER[name], 256, 256, 1, gl.RGBA, gl.UNSIGNED_BYTE, im);
           gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, gl.BROWSER_DEFAULT_WEBGL);
           mats.mean.set([r / m, gg / m, b / m], GROUND_LAYER[name] * 3);
+          done.add(GROUND_LAYER[name]);
           n++;
         } catch (e) {
           console.warn(`hd2d: ground ${name} did not load`, e);
         }
       }),
     );
+    // (fastStart: the scene left the replaced layers clear, replacedMaterials; one whose art did
+    // not load is painted now, as the 3D renderer paints it.)
+    if (this.running && this.cfg.fastStart !== 0) {
+      for (const layer of this.replacedMaterials()) {
+        if (done.has(layer)) continue;
+        const b = bakeLayer(layer);
+        gl.bindTexture(T, mats.tex);
+        gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+        gl.texSubImage3D(T, 0, 0, 0, layer, 256, 256, 1, gl.RGBA, gl.UNSIGNED_BYTE, b.data);
+        mats.mean.set(b.mean, layer * 3);
+        n++;
+      }
+    }
     if (n && this.running) {
       gl.bindTexture(T, mats.tex);
       gl.generateMipmap(T);
       gl.bindTexture(T, null);
       this.dirty = true;
     }
+  }
+
+  /** The pixel-art ground's layers: the scene does not paint them (fastStart). */
+  replacedMaterials() {
+    return new Set(Object.values(GROUND_LAYER));
+  }
+
+  /** As the 3D renderer's, and the ground's layers loaded (left clear by the scene, fastStart):
+   *  the first frame never shows them empty. (They load while the programs compile.) */
+  async ready(timeoutMs) {
+    await super.ready(timeoutMs);
+    if (this.cfg.fastStart !== 0) await this.groundReady;
   }
 
   /** Resolves once the sprites asked for and the ground have loaded (a capture waits for it). */

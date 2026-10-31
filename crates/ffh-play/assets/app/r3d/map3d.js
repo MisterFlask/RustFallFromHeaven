@@ -87,7 +87,8 @@ export class Map3D {
     performance.mark("r3d:pipeline");
     /** Whether the programs have compiled (`ready`): the loop draws nothing before. */
     this.compiled = false;
-    this.scene = new Scene(gl);
+    // (fastStart: the material layers the mode replaces are not painted, replacedMaterials.)
+    this.scene = new Scene(gl, { skipMaterials: this.cfg.fastStart !== 0 ? this.replacedMaterials() : null });
     performance.mark("r3d:scene");
     this.world = null;
     this.mapSeen = null;
@@ -122,6 +123,12 @@ export class Map3D {
       this.lost = true;
       setTimeout(() => globalThis.dispatchEvent?.(new CustomEvent("ffh:r3d-lost")), 0);
     });
+  }
+
+  /** The ground's material layers (materials.js MAT) the mode fills with its own art (a Set), so the
+   *  scene does not paint them; null: none. */
+  replacedMaterials() {
+    return null;
   }
 
   /** The programs of the pipeline and of the mode's passes. */
