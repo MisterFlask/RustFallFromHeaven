@@ -544,7 +544,8 @@ pub enum AltKind {
     StancePick,
     /// One of the best single swaps of the plan's force.
     Swap,
-    /// Another stance's pick.
+    /// Another stance's proposal (what choosing that stance proposes: its pick and the swap
+    /// search).
     OtherStance,
 }
 

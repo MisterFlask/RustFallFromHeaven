@@ -21,8 +21,8 @@
 //! **What if** ([`Game::engage_preview_alternatives`], a second call so the plan never waits):
 //! the stance's own pick (its quotas before the swap search), the best single swaps of the force
 //! (all of them ranked by the moment estimator, the best few of a different make-up sampled) and
-//! the other stances' picks, each forecast like the plan (the same force: the same
-//! forecast).
+//! the other stances' proposals (what choosing that stance proposes: its pick and the swap
+//! search), each forecast like the plan (the same force: the same forecast).
 //!
 //! **Frozen** ([`Game::engage_forecast_frozen`]): when an attack whose battle gets a log is made,
 //! its plan is frozen into the log (`report::FrozenForecast`): a human attacker's preview with its
@@ -213,8 +213,8 @@ impl Game {
     }
 
     /// The What-if list of `inp`'s plan (module comment): the stance's own pick, the best single
-    /// swaps of the plan's force, the other stances' picks, each with its sampled win chance and
-    /// cost (as many runs as the plan's).
+    /// swaps of the plan's force, the other stances' proposals, each with its sampled win chance
+    /// and cost (as many runs as the plan's).
     pub fn engage_preview_alternatives(&self, inp: &PreviewInput) -> Result<Vec<Alternative>, &'static str> {
         let plan = self.engage_preview_plan(inp)?;
         Ok(self.engage_alternatives(&plan))
@@ -405,9 +405,18 @@ impl Game {
         // The best single swaps of the plan's force, by the moment estimator; of a different
         // make-up from the force and from each other.
         let force = &plan.setup.force;
+        let kind = self.engage_swap_kinds(&plan.pool, &cache, &[]);
+        let kind_of = |u: UnitId| plan.pool.iter().position(|&x| x == u).map_or(usize::MAX, |i| kind[i]);
+        let mut tried: Vec<(usize, usize)> = Vec::new();
         let mut swaps: Vec<(Vec<UnitId>, Estimate)> = self
             .engage_single_swaps(&plan.pool, force, plan.stance, &plan.slots)
             .into_iter()
+            .filter(|&(o, a)| {
+                let k = (kind_of(o), kind_of(a));
+                let new = k.0 != k.1 && !tried.contains(&k);
+                tried.push(k);
+                new
+            })
             .filter_map(|(o, a)| {
                 let f: Vec<UnitId> = force.iter().map(|&u| if u == o { a } else { u }).collect();
                 let e = self.engage_estimate_with(&plan.ctx, &plan.slots, &f, &plan.view, &[], &[], Some(&cache)).ok()?;
@@ -428,11 +437,13 @@ impl Game {
             kinds.push(k);
             add(&mut out, AltKind::Swap, plan.stance, f);
         }
-        // The other stances' picks.
+        // The other stances' proposals: the plan choosing that stance gives (its quota pick and
+        // the swap search, against the same defense).
         for s in self.d.stances.keys() {
             if s != plan.stance {
                 let pick = self.engage_auto_pick(&plan.pool, s, &plan.slots, Side::Attacker, &plan.ctx);
-                add(&mut out, AltKind::OtherStance, s, pick);
+                let proposal = self.engage_swap_search_in(&plan.pool, s, &plan.slots, &plan.ctx, pick, &plan.view, &[], Some(&cache));
+                add(&mut out, AltKind::OtherStance, s, proposal);
             }
         }
         out

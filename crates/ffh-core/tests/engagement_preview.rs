@@ -339,49 +339,72 @@ fn the_preview_against_the_estimator() {
     assert!(cmean <= 120, "contested mean {cmean}");
 }
 
-/// The time of a preview and of its What-if list, 6 v 6, 8 v 8 and 10 v 10 (a reserve of three
-/// for the swaps). `cargo test --release -p ffh-core --test engagement_preview -- --ignored
-/// --nocapture preview_timing`.
+/// The time of a preview and of its What-if list, 6 v 6, 8 v 8 and 10 v 10, each with a reserve
+/// of three for the swap search and the swaps (the attacker's slots cut to the size by a city's
+/// defense, the defender's at ten so all of its units fight). Two pools: mixed types, where many
+/// units are alike (the search tries one swap per pair of kinds), and one where every unit is
+/// different (each wounded a little differently: no two alike, the search's worst case). Printed:
+/// the plan as it opens (the proposal's swap search and the forecast), the What-if list, the
+/// two together, the plan re-run after a swap (a force given), and the proposal alone (what an
+/// attack with no force given spends). `cargo test --release -p ffh-core --test
+/// engagement_preview -- --ignored --nocapture preview_timing`.
 #[test]
 #[ignore]
 fn preview_timing() {
-    for size in [6usize, 8, 10] {
-        let mut w = world();
-        let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
-        let mix = ["UNIT_AXEMAN", "UNIT_ARCHER", "UNIT_HORSEMAN", "UNIT_SWORDSMAN"];
-        let pool: Vec<UnitId> = (0..size + 3).map(|i| w.unit(p0, mix[i % mix.len()], from)).collect();
-        for i in 0..size {
-            w.unit(p1, mix[(i + 1) % mix.len()], to);
-        }
-        let force: Vec<UnitId> = pool[..size].to_vec();
-        let inp = PreviewInput { force: Some(&force), ..w.input() };
-        let reps = 5;
+    let time = |reps: u32, f: &mut dyn FnMut()| {
         let t = Instant::now();
         for _ in 0..reps {
-            w.g.engage_preview(&inp).unwrap();
+            f();
         }
-        let preview_ms = t.elapsed().as_secs_f64() * 1000.0 / reps as f64;
-        let t = Instant::now();
-        let mut n_alt = 0;
-        for _ in 0..reps {
-            n_alt = w.g.engage_preview_alternatives(&inp).unwrap().len();
+        t.elapsed().as_secs_f64() * 1000.0 / reps as f64
+    };
+    for distinct in [false, true] {
+        for size in [6usize, 8, 10] {
+            let mut w = world();
+            let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
+            let (x, y) = w.g.map.xy(to);
+            let c = w.g.player_init_city(p1, x, y, true, true);
+            let total = w.g.city_total_defense(c, false);
+            w.g.cities[c].building_defense += (10 - size as i32) * 25 - total;
+            let mix = ["UNIT_AXEMAN", "UNIT_ARCHER", "UNIT_HORSEMAN", "UNIT_SWORDSMAN"];
+            let pool: Vec<UnitId> = (0..size + 3).map(|i| w.unit(p0, mix[i % mix.len()], from)).collect();
+            if distinct {
+                for (i, &u) in pool.iter().enumerate() {
+                    w.g.units[u].damage = 2 * i as i32;
+                }
+            }
+            for i in 0..size {
+                w.unit(p1, mix[(i + 1) % mix.len()], to);
+            }
+            let ctx = HitCtx::new(from, to);
+            let slots = w.g.engage_slots(&ctx);
+            assert_eq!((slots.att() as usize, slots.def()), (size, 10));
+            let inp = w.input();
+            let reps = 5;
+            let g = &w.g;
+            let plan_ms = time(reps, &mut || {
+                g.engage_preview(&inp).unwrap();
+            });
+            let mut n_alt = 0;
+            let alt_ms = time(reps, &mut || n_alt = g.engage_preview_alternatives(&inp).unwrap().len());
+            let pv = g.engage_preview(&inp).unwrap();
+            assert_eq!((pv.force.len(), pv.assumed_pick.len()), (size, size));
+            let mut swapped = pv.force.clone();
+            swapped[0] = pv.reserve[0];
+            let swap_inp = PreviewInput { force: Some(&swapped), ..inp };
+            let swap_ms = time(reps, &mut || {
+                g.engage_preview(&swap_inp).unwrap();
+            });
+            let propose_ms = time(reps, &mut || {
+                g.engage_propose_force(&pool, g.d.default_stance, &slots, &ctx);
+            });
+            println!(
+                "{size} v {size} ({}): plan {plan_ms:.1} ms ({} runs), what-if {alt_ms:.1} ms ({n_alt} plans), together {:.1} ms; after a swap {swap_ms:.1} ms; the proposal alone {propose_ms:.1} ms ({} changed)",
+                if distinct { "every unit different" } else { "mixed types" },
+                g.d.defines.engagement_preview_runs,
+                plan_ms + alt_ms,
+                pv.force.iter().filter(|u| !g.engage_auto_pick(&pool, g.d.default_stance, &slots, Side::Attacker, &ctx).contains(u)).count(),
+            );
         }
-        let alt_ms = t.elapsed().as_secs_f64() * 1000.0 / reps as f64;
-        let ctx = HitCtx::new(from, to);
-        let slots = w.g.engage_slots(&ctx);
-        let t = Instant::now();
-        let mut swapped = Vec::new();
-        for _ in 0..reps {
-            let pick = w.g.engage_auto_pick(&pool, w.g.d.default_stance, &slots, Side::Attacker, &ctx);
-            swapped = w.g.engage_swap_search(&pool, w.g.d.default_stance, &slots, &ctx, pick);
-        }
-        let search_ms = t.elapsed().as_secs_f64() * 1000.0 / reps as f64;
-        println!(
-            "{size} v {size}: preview {preview_ms:.1} ms ({} runs), what-if {alt_ms:.1} ms ({n_alt} plans), together {:.1} ms; swap search on {} of {} {search_ms:.1} ms",
-            w.g.d.defines.engagement_preview_runs,
-            preview_ms + alt_ms,
-            swapped.len(),
-            pool.len()
-        );
     }
 }
