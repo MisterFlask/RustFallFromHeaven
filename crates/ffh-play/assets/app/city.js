@@ -22,7 +22,7 @@ import { look, uiIcon, typeIcon, barEl, pix } from "./look.js";
 import { focusOn, isoSkin, queueIcon, refreshCityPanel } from "./isoui.js";
 import { infoTip } from "./infotips.js";
 import { cultureView } from "./culture.js";
-import { recruitControls, recruitView, requisitionNote, requisitionTag } from "./armies.js";
+import { recruitControls, recruitView, requisitionNote, requisitionTag, garrisonStanceView } from "./armies.js";
 import { governanceView } from "./governors.js";
 
 const GROUPS = [
@@ -309,14 +309,14 @@ function statsView(c) {
   );
 }
 
-function buildingsView(c) {
+function buildingsView(c, reload) {
   const b = c.buildings.map((x) => h("span.chip", { tip: infoTip("BuildingType", x.building) }, typeIcon("building", x.building, 8), dname("BuildingType", x.building), x.free && !x.real ? h("span.dim", " (free)") : null));
   const r = c.religions.map((x) => h("span.chip", typeIcon("religion", x.religion, 8), dname("ReligionType", x.religion), x.holy ? h("span.good", " ★ holy city") : null));
   const units = c.garrison.map((u) => h("span.chip", `${dname("UnitType", u.type)}${u.owner !== me()?.player ? ` (${u.owner})` : ""}`));
   return [
     h("div.section", h("h4", `Buildings (${b.length})`), b.length ? h("div.chips", b) : h("p.dim", "None.")),
     r.length ? h("div.section", h("h4", "Religions"), h("div.chips", r)) : null,
-    h("div.section", h("h4", `Garrison (${units.length})`), units.length ? h("div.chips", units) : h("p.dim", "Nobody.")),
+    h("div.section", h("h4", `Garrison (${units.length})`), units.length ? h("div.chips", units) : h("p.dim", "Nobody."), garrisonStanceView(c, reload)),
   ];
 }
 
@@ -436,7 +436,7 @@ function screen(c, { task, choose, remove, popup, overlay, tap, reload }) {
   const plots = overlay ? h("p.dim.city-hint", "Click the city's plots on the map to work them; its own plot hands the choice back to the governor.") : plotGrid(c, task);
   // This game's cultural channel after the city's numbers (its culture among them), above the
   // buildings: the right column's build lists are long.
-  const left = h("div.city-col", plots, specialistsView(c, task), statsView(c), popup ? null : cultureView(c, reload), buildingsView(c));
+  const left = h("div.city-col", plots, specialistsView(c, task), statsView(c), popup ? null : cultureView(c, reload), buildingsView(c, reload));
   const right = h("div.city-col", governanceView(c, reload), manageView(c, task), productionView(c, choose, remove, tap, reload));
   return [head, popup ? h("div.city-cols.popup", right, left) : h("div.city-cols", left, right)];
 }

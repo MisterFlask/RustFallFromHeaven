@@ -373,6 +373,23 @@ impl Game {
     /// battle; nothing changed but what an AI owner's preamble did (its pre-attack spells, a war
     /// it declared on the plot's owner, which may have pushed the defenders off the plot).
     pub fn group_attack_force(&mut self, g: GroupId, x: i32, y: i32, flags: i32, force: Option<Vec<UnitId>>) -> Result<(bool, bool), &'static str> {
+        self.group_attack_plan(g, x, y, flags, force, None)
+    }
+
+    /// [`Game::group_attack_force`] with the stance the attacker chose for this attack (the human's
+    /// battle plan: its stance picker): an engagement proposes the force under `stance` when none
+    /// is given, judges a given force against `stance`'s pick, and records `stance` as the
+    /// attacker's in its report; `None` is the attack's own stance (its army's, ...). A call
+    /// parameter, not state: nothing is saved.
+    pub fn group_attack_plan(
+        &mut self,
+        g: GroupId,
+        x: i32,
+        y: i32,
+        flags: i32,
+        force: Option<Vec<UnitId>>,
+        stance: Option<StanceType>,
+    ) -> Result<(bool, bool), &'static str> {
         let mut dest_plot = self.map.plot_xy(x, y);
 
         if flags & MOVE_THROUGH_ENEMY != 0 {
@@ -453,7 +470,7 @@ impl Game {
                     // Engagement combat: the engagement's preamble and one engagement; with
                     // nobody to fight but non-combatants, today's attack captures them.
                     if self.group_engage_applies(g, dest_plot) {
-                        if let Some(r) = self.group_attack_engage(g, dest_plot, human, force)? {
+                        if let Some(r) = self.group_attack_engage(g, dest_plot, human, force, stance)? {
                             return Ok(r);
                         }
                     }
@@ -537,7 +554,14 @@ impl Game {
     /// declaration as today (a human's is confirmed in the command layer: an attack that would
     /// still need one finds no defender at war); the `doCombat` hook; then a missile strike per
     /// missile for a group of missiles only (plan 6.11), else one engagement launched by `g`.
-    fn group_attack_engage(&mut self, g: GroupId, dest: PlotIdx, human: bool, force: Option<Vec<UnitId>>) -> Result<Option<(bool, bool)>, &'static str> {
+    fn group_attack_engage(
+        &mut self,
+        g: GroupId,
+        dest: PlotIdx,
+        human: bool,
+        force: Option<Vec<UnitId>>,
+        stance: Option<StanceType>,
+    ) -> Result<Option<(bool, bool)>, &'static str> {
         let owner = self.groups[g].owner;
         let Some(from) = self.group_plot(g) else { return Ok(Some((false, false))) };
         let members = units_snapshot(self, g);
@@ -571,7 +595,7 @@ impl Game {
             }
             return Ok(Some((attacked, false)));
         }
-        let order = crate::engagement::engage::EngageOrder { p: owner, from, to: dest, launcher: Some(g), force, forced: false, log: None };
+        let order = crate::engagement::engage::EngageOrder { p: owner, from, to: dest, launcher: Some(g), force, stance, forced: false, log: None };
         self.engage(order)?;
         Ok(Some((true, false)))
     }

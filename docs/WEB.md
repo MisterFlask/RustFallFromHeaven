@@ -44,6 +44,15 @@ and the last autosave can be loaded.
 **Version.** `web/version.txt` holds the commit the site was built from and its date; the page logs
 it (`ffh-web build ...` in the console).
 
+**Engagement combat** (docs/ENGAGEMENTS.md) plays on the site as on the native server: its commands
+(`engage`, `army_stance`, `garrison_stance`) and queries (`engage_preview`, `battle_log`,
+`battle_reports`, the `combat` query's engagement fields; docs/HUMAN.md lists them) go through the
+web host's `POST /api` like every other request, and the battle screens are client files the
+site carries. A battle's log is part of the save (the current and previous turn's battles and the
+last few), so it comes back with an IndexedDB save. The site smoke asks the engine for
+`battle_reports` and a `battle_log` in its game (the option off); the battle screens on a real
+engagement are `tools/web-smoke.mjs`'s (against `ffh-play serve`, the same client and protocol).
+
 ## The site's files
 
 `tools/web-site.sh OUT` writes:
@@ -87,7 +96,8 @@ node tools/web-site-smoke.mjs --site /tmp/ffh-site --serve --port 8000
   workers (isolation) need a secure context.
 - `web-site-smoke.mjs` serves the site below `/RustFallFromHeaven/` as Pages does, with no
   isolation headers, so the service worker has to make the page isolated; then it waits for the
-  engine, starts a new game on a tiny map (seed 5), checks the art draws the map, ends 3 turns
+  engine, starts a new game on a tiny map (seed 5), checks the art draws the map, asks the engine
+  for the engagement queries (`battle_reports`, `battle_log`: the option is off), ends 3 turns
   (popups answered), saves, reloads with `?renderer=iso` (a fresh engine: the save must come
   back from IndexedDB), loads the save, checks the isometric renderer draws, and ends a turn. Any
   page error, console error, failed request or HTTP error fails it; screenshots go to `--out`

@@ -11,6 +11,7 @@
 
 use std::fmt::Write as _;
 
+use ffh_core::engagement::{HitCtx, WarTest};
 use ffh_core::game::Game;
 use ffh_core::ids::*;
 use ffh_core::log::LogEntry;
@@ -61,6 +62,19 @@ pub enum Command {
     ArmyRequisition { army: ArmyId, city: CityId, on: bool },
     /// Army `army` requisitions from `cities` (in that order) and from no other.
     ArmyRequisitionSet { army: ArmyId, cities: Vec<CityId> },
+    /// Engagement combat (docs/ENGAGEMENTS.md): the stance of army `army` (its standing order:
+    /// what it defends with and the force its attacks propose).
+    ArmyStance { army: ArmyId, stance: StanceType },
+    /// Engagement combat: the stance of city `city`'s garrison.
+    GarrisonStance { city: CityId, stance: StanceType },
+    /// Engagement combat: attack plot `to` (next to the attackers) with `force` (checked against
+    /// the pool on the attacking plot), else with the proposal of `stance`, else of the attack's
+    /// own stance (the launcher's army's). `stance` is the one the attack fights with and its
+    /// report records (a force is the player's pick when it is not that stance's own). `by`: an
+    /// army, the selected units
+    /// (either one's group launches the attack and moves in when the plot is cleared) or a plot.
+    /// `declare_war` as `move`'s (`None` asks, `Some(false)` is the popup's "no").
+    Engage { by: EngageBy, to: (i32, i32), force: Option<Vec<UnitId>>, stance: Option<StanceType>, declare_war: Option<bool> },
     /// Where city `city`'s trained land combat units go: production order `index`'s, or the
     /// city's default (`index` -1); `dest` `None` = the city's default (for an order) or its own
     /// garrison (for the city). A unit bound elsewhere marches there.
@@ -91,6 +105,59 @@ pub enum Command {
     EndTurn { force: bool },
     /// FfH `setAIAutoPlay` (a testing aid).
     AutoPlay { turns: i32 },
+}
+
+/// Who launches an `engage` (and whose attack an `engage_preview` plans): an army, the selected
+/// units, or the player's units on a plot (`from`).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum EngageBy {
+    Army(ArmyId),
+    Units(Vec<UnitId>),
+    From(i32, i32),
+}
+
+impl EngageBy {
+    /// Decodes `army`, `units` or `from` (exactly one) of a request.
+    pub fn from_json(j: &Json) -> Result<EngageBy, FieldError> {
+        let army: Option<ArmyId> = j.opt("army")?;
+        let units: Option<Vec<UnitId>> = j.opt("units")?;
+        let from = plot_field(j, "from")?;
+        match (army, units, from) {
+            (Some(a), None, None) => Ok(EngageBy::Army(a)),
+            (None, Some(u), None) => Ok(EngageBy::Units(u)),
+            (None, None, Some((x, y))) => Ok(EngageBy::From(x, y)),
+            _ => Err(FieldError::new("army", "give exactly one of `army`, `units` and `from`")),
+        }
+    }
+
+    /// Adds its member (the canonical form) to `j`.
+    pub fn put(&self, j: Json) -> Json {
+        match self {
+            EngageBy::Army(a) => j.with("army", *a),
+            EngageBy::Units(u) => j.with("units", Json::Arr(u.iter().map(|&x| Json::from(x)).collect())),
+            EngageBy::From(x, y) => j.with("from", plot_json(*x, *y)),
+        }
+    }
+}
+
+/// A plot member: `{"x": x, "y": y}` (or `[x, y]`); `None` when absent or null.
+pub fn plot_field(j: &Json, key: &str) -> Result<Option<(i32, i32)>, FieldError> {
+    let Some(v) = j.opt_value(key)?.filter(|v| !v.is_null()) else { return Ok(None) };
+    let wrong = || FieldError::wrong(key, "a plot {\"x\": x, \"y\": y}", v);
+    let (x, y) = match v.as_arr() {
+        Some([x, y]) => (x.as_i64(), y.as_i64()),
+        Some(_) => return Err(wrong()),
+        None => (v.get("x").and_then(Json::as_i64), v.get("y").and_then(Json::as_i64)),
+    };
+    match (x.and_then(|x| i32::try_from(x).ok()), y.and_then(|y| i32::try_from(y).ok())) {
+        (Some(x), Some(y)) => Ok(Some((x, y))),
+        _ => Err(wrong()),
+    }
+}
+
+/// A plot as the protocol writes it: `{"x": x, "y": y}`.
+pub fn plot_json(x: i32, y: i32) -> Json {
+    crate::jobj! { "x" => x, "y" => y }
 }
 
 /// A confirmation the C++ asks before acting (a popup); the command is resent with its flag.
@@ -130,8 +197,10 @@ impl Confirm {
 /// A command's result.
 #[derive(Clone, Debug, PartialEq)]
 pub enum CmdOk {
-    /// Applied; `log` holds the messages it produced for the human.
-    Applied { log: Vec<LogEntry>, accepted: Option<bool> },
+    /// Applied; `log` holds the messages it produced for the human; `battle`, the report of the
+    /// engagement the human launched with it (`engage`, or a `move` into an enemy plot under
+    /// engagements; the first, if the command led to several).
+    Applied { log: Vec<LogEntry>, accepted: Option<bool>, battle: Option<u32> },
     /// Nothing changed: the C++ would ask first.
     NeedsConfirm(Confirm),
 }
@@ -218,6 +287,9 @@ pub const COMMAND_NAMES: &[&str] = &[
     "army_target",
     "army_requisition",
     "army_requisition_set",
+    "army_stance",
+    "garrison_stance",
+    "engage",
     "recruit_dest",
     "govern_direct",
     "govern_hand",
@@ -260,6 +332,9 @@ pub const COMMAND_FIELDS: &[(&str, &[&str])] = &[
     ("army_target", &["army", "size"]),
     ("army_requisition", &["army", "city", "on"]),
     ("army_requisition_set", &["army", "cities"]),
+    ("army_stance", &["army", "stance"]),
+    ("garrison_stance", &["city", "stance"]),
+    ("engage", &["army", "units", "from", "to", "force", "stance", "declare_war"]),
     ("recruit_dest", &["city", "index", "dest"]),
     ("govern_direct", &["city", "instead_of"]),
     ("govern_hand", &["city"]),
@@ -388,6 +463,9 @@ impl Command {
             Command::ArmyTarget { .. } => "army_target",
             Command::ArmyRequisition { .. } => "army_requisition",
             Command::ArmyRequisitionSet { .. } => "army_requisition_set",
+            Command::ArmyStance { .. } => "army_stance",
+            Command::GarrisonStance { .. } => "garrison_stance",
+            Command::Engage { .. } => "engage",
             Command::RecruitDest { .. } => "recruit_dest",
             Command::GovernDirect { .. } => "govern_direct",
             Command::GovernHand { .. } => "govern_hand",
@@ -483,6 +561,15 @@ impl Command {
             "army_target" => Command::ArmyTarget { army: j.req("army")?, size: j.req("size")? },
             "army_requisition" => Command::ArmyRequisition { army: j.req("army")?, city: j.req("city")?, on: j.req("on")? },
             "army_requisition_set" => Command::ArmyRequisitionSet { army: j.req("army")?, cities: j.req("cities")? },
+            "army_stance" => Command::ArmyStance { army: j.req("army")?, stance: names::field(d, j, "stance")? },
+            "garrison_stance" => Command::GarrisonStance { city: j.req("city")?, stance: names::field(d, j, "stance")? },
+            "engage" => Command::Engage {
+                by: EngageBy::from_json(j)?,
+                to: plot_field(j, "to")?.ok_or_else(|| FieldError::missing("to"))?,
+                force: j.opt("force")?,
+                stance: names::opt_field(d, j, "stance")?,
+                declare_war: j.opt("declare_war")?,
+            },
             "recruit_dest" => Command::RecruitDest { city: j.req("city")?, index: j.get_or("index", -1)?, dest: recruit_dest_field(j)? },
             "govern_direct" => Command::GovernDirect { city: j.req("city")?, instead_of: j.opt("instead_of")? },
             "govern_hand" => Command::GovernHand { city: j.req("city")? },
@@ -564,6 +651,14 @@ impl Command {
             Command::ArmyTarget { army, size } => j.with("army", *army).with("size", *size),
             Command::ArmyRequisition { army, city, on } => j.with("army", *army).with("city", *city).with("on", *on),
             Command::ArmyRequisitionSet { army, cities } => j.with("army", *army).with("cities", Json::Arr(cities.iter().map(|&c| Json::from(c)).collect())),
+            Command::ArmyStance { army, stance } => j.with("army", *army).with("stance", Json::idx(*stance)),
+            Command::GarrisonStance { city, stance } => j.with("city", *city).with("stance", Json::idx(*stance)),
+            Command::Engage { by, to, force, stance, declare_war } => by
+                .put(j)
+                .with("to", plot_json(to.0, to.1))
+                .with("force", force.as_ref().map(|f| ids(f)))
+                .with("stance", Json::opt_idx(*stance))
+                .with("declare_war", *declare_war),
             Command::RecruitDest { city, index, dest } => j.with("city", *city).with("index", *index).with("dest", recruit_dest_json(*dest)),
             Command::GovernDirect { city, instead_of } => j.with("city", *city).with("instead_of", *instead_of),
             Command::GovernHand { city } => j.with("city", *city),
@@ -691,6 +786,9 @@ pub enum Action {
     /// An army or governor command, checked by the rules call itself (they change nothing when
     /// they refuse).
     Army(Command),
+    /// `engage` after the checks: declare war on `war` first, then attack `to` from `from`
+    /// (`group_attack_plan`, launched by `by`'s group).
+    Engage { by: EngageBy, from: PlotIdx, to: PlotIdx, force: Option<Vec<UnitId>>, stance: Option<StanceType>, war: Option<TeamId> },
     Research { tech: Option<TechType>, shift: bool },
     Revolution { civics: IdxVec<CivicOptionType, Option<CivicType>> },
     PercentChange { commerce: CommerceType, change: i32 },
@@ -747,6 +845,15 @@ fn governors_on(g: &Game) -> Result<(), CmdErr> {
     }
 }
 
+/// This game's engagement combat is on (docs/ENGAGEMENTS.md).
+fn engagements_on(g: &Game) -> Result<(), CmdErr> {
+    if g.engagements_on() {
+        Ok(())
+    } else {
+        Err(cannot("engagements are off in this game"))
+    }
+}
+
 /// A governed city's production is its governor's (docs/GOVERNORS.md).
 fn not_governed(g: &Game, c: CityId) -> Result<(), CmdErr> {
     if g.city_is_governed(c) {
@@ -779,6 +886,8 @@ fn apply_army(g: &mut Game, h: PlayerId, c: &Command) -> Result<(), CmdErr> {
         Command::ArmyRequisition { army, city, on: true } => g.army_add_requisition(h, *army, *city),
         Command::ArmyRequisition { army, city, on: false } => g.army_remove_requisition(h, *army, *city),
         Command::ArmyRequisitionSet { army, cities } => g.army_set_requisition(h, *army, cities),
+        Command::ArmyStance { army, stance } => g.army_set_stance(h, *army, *stance),
+        Command::GarrisonStance { city, stance } => g.city_set_garrison_stance(h, *city, *stance),
         Command::GovernDirect { city, instead_of } => g.player_set_direct_rule(h, *city, *instead_of),
         Command::GovernHand { city } => g.city_hand_to_governor(h, *city),
         Command::GovernAssign { city, governor } => g.city_assign_governor(h, *city, *governor),
@@ -1153,6 +1262,75 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             Plan::Apply(Action::Army(cmd.clone()))
         }
 
+        Command::ArmyStance { army, stance } => {
+            army_of(g, h, *army)?;
+            engagements_on(g)?;
+            in_range("stance", stance.idx() as i32, d.stances.len())?;
+            Plan::Apply(Action::Army(cmd.clone()))
+        }
+
+        Command::GarrisonStance { city, stance } => {
+            city_of(g, h, *city)?;
+            engagements_on(g)?;
+            in_range("stance", stance.idx() as i32, d.stances.len())?;
+            Plan::Apply(Action::Army(cmd.clone()))
+        }
+
+        Command::Engage { by, to, force, stance, declare_war } => {
+            engagements_on(g)?;
+            let dest = on_map(g, to.0, to.1)?;
+            let from = match by {
+                EngageBy::Army(a) => {
+                    army_of(g, h, *a)?;
+                    g.army_plot(*a).ok_or_else(|| cannot("the army is not on the map"))?
+                }
+                EngageBy::Units(units) => {
+                    selection_of(g, h, units)?;
+                    g.unit_plot(units[0])
+                }
+                EngageBy::From(x, y) => on_map(g, *x, *y)?,
+            };
+            // The order is given on what the player sees (G5).
+            if !g.plot_is_visible(dest, team) {
+                return Err(cannot("you cannot see that plot"));
+            }
+            let ((fx, fy), (tx, ty)) = (g.map.xy(from), g.map.xy(dest));
+            if g.step_distance(fx, fy, tx, ty) != 1 {
+                return Err(cannot("an attack is on a plot next to the attackers"));
+            }
+            if g.plot_is_water(dest) {
+                return Err(cannot("a battle at sea is a duel: move there instead"));
+            }
+            // selectionListMove's DECLAREWARMOVE: the first unit there whose attack needs a war asks.
+            let rival = g.map.plots[from].units.iter().filter(|&&u| g.units[u].owner == h).find_map(|&u| g.unit_get_declare_war_move(u, dest));
+            let mut war = None;
+            if let Some(rival) = rival {
+                match declare_war {
+                    None => return Ok(Plan::Confirm(Confirm::DeclareWar { team: rival, move_anyway: false })),
+                    Some(true) => war = Some(rival),
+                    Some(false) => return Ok(Plan::Noop),
+                }
+            }
+            let test = war.map_or(WarTest::AtWar, WarTest::DeclareWar);
+            let pool = g.engage_attackers(h, from, dest, test);
+            if pool.is_empty() {
+                return Err(cannot("no unit there can attack that plot now"));
+            }
+            if let Some(f) = force {
+                for &u in f {
+                    unit_of(g, h, u)?;
+                }
+                g.engage_validate_force(&pool, f, &g.engage_slots(&HitCtx::new(from, dest))).map_err(cannot)?;
+            }
+            if let Some(s) = stance {
+                in_range("stance", s.idx() as i32, d.stances.len())?;
+            }
+            if g.engage_defenders(dest, h, force.as_deref().unwrap_or(&pool), test).is_empty() {
+                return Err(cannot("there is nobody to fight there"));
+            }
+            Plan::Apply(Action::Engage { by: by.clone(), from, to: dest, force: force.clone(), stance: *stance, war })
+        }
+
         Command::RecruitDest { city, index, dest } => {
             city_of(g, h, *city)?;
             not_governed(g, *city)?;
@@ -1498,6 +1676,37 @@ fn join_selection(g: &mut Game, units: &[UnitId]) -> Option<GroupId> {
     g.units.get(head)?.group
 }
 
+/// The `engage` command after `validate` (docs/ENGAGEMENTS.md): the war declaration, the
+/// launching group (the army's, the selection's, else the group of the army whose stance the
+/// attack takes, else of its first unit), then one engagement through `group_attack_plan`
+/// (`MOVE_DIRECT_ATTACK`: the plot is next to it; a refusal changes nothing) with the force given
+/// (else the stance's proposal, in the rules) and the stance chosen (else the attack's own): the
+/// report records the stance the player picked, and judges the force against its pick.
+#[allow(clippy::too_many_arguments)]
+fn engage(g: &mut Game, h: PlayerId, by: &EngageBy, from: PlotIdx, to: PlotIdx, force: Option<Vec<UnitId>>, stance: Option<StanceType>, war: Option<TeamId>) {
+    let team = g.players[h].team;
+    if let Some(t) = war {
+        g.team_declare_war(team, t, false, None);
+    }
+    let pool = g.engage_attackers(h, from, to, WarTest::AtWar);
+    let launcher = match by {
+        EngageBy::Army(a) => g.armies.get(*a).and_then(|a| a.group),
+        EngageBy::Units(units) => join_selection(g, units),
+        EngageBy::From(..) => {
+            let army = g.engage_attack_stance(h, from, None).army;
+            let first = force.as_ref().and_then(|f| f.first()).or(pool.first()).copied();
+            army.and_then(|a| g.armies[a].group).or_else(|| first.and_then(|u| g.units[u].group))
+        }
+    };
+    let Some(grp) = launcher.filter(|&gr| g.groups.contains(gr)) else { return };
+    if force.is_none() {
+        // Alertness: an attack ordered on a plot the player sees, as a move's mission records it.
+        g.groups[grp].last_plot_visible = g.plot_is_visible(to, team);
+    }
+    let (x, y) = g.map.xy(to);
+    let _ = g.group_attack_plan(grp, x, y, ffh_core::defs::MOVE_DIRECT_ATTACK, force, stance);
+}
+
 /// Applies a validated action for `h`.
 pub fn apply(g: &mut Game, h: PlayerId, action: &Action) {
     match action {
@@ -1560,6 +1769,7 @@ pub fn apply(g: &mut Game, h: PlayerId, action: &Action) {
         Action::Army(c) => {
             let _ = apply_army(g, h, c);
         }
+        Action::Engage { by, from, to, force, stance, war } => engage(g, h, by, *from, *to, force.clone(), *stance, *war),
         Action::DoTask { city, task, data1, data2, option, alt, shift, ctrl } => {
             g.city_do_task(*city, *task, *data1, *data2, *option, *alt, *shift, *ctrl);
         }
@@ -1637,6 +1847,11 @@ mod tests {
             Command::ArmyRequisition { army: ArmyId(1), city: CityId(4), on: false },
             Command::ArmyRequisitionSet { army: ArmyId(1), cities: vec![CityId(4), CityId(2)] },
             Command::ArmyRequisitionSet { army: ArmyId(1), cities: vec![] },
+            Command::ArmyStance { army: ArmyId(1), stance: StanceType(2) },
+            Command::GarrisonStance { city: CityId(3), stance: StanceType(0) },
+            Command::Engage { by: EngageBy::Army(ArmyId(1)), to: (4, 5), force: None, stance: None, declare_war: None },
+            Command::Engage { by: EngageBy::Units(vec![UnitId(3), UnitId(4)]), to: (4, 5), force: Some(vec![UnitId(4)]), stance: Some(StanceType(1)), declare_war: Some(true) },
+            Command::Engage { by: EngageBy::From(3, 5), to: (4, 5), force: None, stance: None, declare_war: Some(false) },
             Command::RecruitDest { city: CityId(1), index: 0, dest: Some(ffh_core::army::RecruitDest::Army(ArmyId(2))) },
             Command::RecruitDest { city: CityId(1), index: -1, dest: Some(ffh_core::army::RecruitDest::Garrison(CityId(3))) },
             Command::RecruitDest { city: CityId(1), index: -1, dest: None },

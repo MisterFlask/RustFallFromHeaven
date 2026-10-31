@@ -6,7 +6,8 @@
 //!
 //! **Order** (plan 6.1 to 6.7; RNG order, plan 7):
 //! 1. *Set-up*: slots, the attacker's pool and force (its stance's proposal, or the force given,
-//!    checked), the defender's candidates and its stance's pick. Nothing has changed yet: an
+//!    checked; the stance is the one chosen for the attack, else its own), the defender's
+//!    candidates and its stance's pick. Nothing has changed yet: an
 //!    empty force or no defender is an `Err`. The [`Battle`] value is built here (fighters in
 //!    slot order, attackers first; the pair table from [`Game::engage_hit`], which nothing
 //!    before the rounds changes), and phase 7's pre-battle hook ([`Game::engage_pre_battle`])
@@ -72,6 +73,11 @@ pub(crate) struct EngageOrder {
     pub launcher: Option<GroupId>,
     /// The force chosen (checked against the pool); `None`: the stance's proposal.
     pub force: Option<Vec<UnitId>>,
+    /// The stance the attacker chose for this attack (the battle plan's picker), in place of
+    /// its own ([`Game::engage_attack_stance`]): it proposes the force when none is given, the
+    /// force is judged against its pick (`picked_by`), and the report records it. `None`: the
+    /// attack's own stance. Not saved: an order lives for the call.
+    pub stance: Option<StanceType>,
     /// A forced attack (`unit_attack`: Taunt, events): the force is the units given, whatever
     /// their moves and attacks this turn (as today's `attack`).
     pub forced: bool,
@@ -362,12 +368,13 @@ impl Game {
     }
 
     fn engage_inner(&mut self, ord: EngageOrder) -> Result<EngageOutcome, &'static str> {
-        let EngageOrder { p, from, to, launcher, force, forced, log } = ord;
+        let EngageOrder { p, from, to, launcher, force, stance, forced, log } = ord;
         let ctx = HitCtx::new(from, to);
 
         // 1. Set-up.
         let slots = self.engage_slots(&ctx);
-        let att_stance = self.engage_attack_stance(p, from, launcher);
+        let own = self.engage_attack_stance(p, from, launcher);
+        let att_stance = StanceChoice { stance: stance.filter(|s| s.idx() < self.d.stances.len()).unwrap_or(own.stance), ..own };
         let (pool, force, given) = if forced {
             let f: Vec<UnitId> = force
                 .unwrap_or_default()
@@ -911,7 +918,7 @@ impl Game {
         }
         let Some(from) = self.unit_plot_opt(u) else { return true };
         let launcher = self.units[u].group.filter(|&g| self.groups.contains(g));
-        let _ = self.engage(EngageOrder { p, from, to, launcher, force: Some(vec![u]), forced: true, log: None });
+        let _ = self.engage(EngageOrder { p, from, to, launcher, force: Some(vec![u]), stance: None, forced: true, log: None });
         true
     }
 }
@@ -958,7 +965,7 @@ mod tests {
     }
 
     fn order(from: PlotIdx, to: PlotIdx, log: bool) -> EngageOrder {
-        EngageOrder { p: PlayerId(0), from, to, launcher: None, force: None, forced: false, log: Some(log) }
+        EngageOrder { p: PlayerId(0), from, to, launcher: None, force: None, stance: None, forced: false, log: Some(log) }
     }
 
     fn clone(g: &Game) -> Game {

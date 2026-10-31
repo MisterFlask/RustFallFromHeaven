@@ -536,6 +536,8 @@ html.iso .iso-name .coords { font-weight: 400; }
   font: 20px/24px Herald, Georgia, serif; color: var(--b-ink);
   -webkit-font-smoothing: none; user-select: none;
 }
+/* A dialog the battle asks (declaring war) shows over it. */
+body.battle-open #modals .backdrop { z-index: 26; }
 /* The map stays, dimmed; the interface over it steps aside while a battle screen is open. */
 body.battle-open :is(#top, #side, #bottom, #iso-rail, #iso-corner, #iso-city, #mapwrap .minimap, #mapwrap .zoom, #mapwrap .layers, #mapwrap .tooltip),
 body.battle-open :is(#top, #side, #bottom, #iso-rail, #iso-corner, #iso-city) * { visibility: hidden !important; }

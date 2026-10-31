@@ -18,6 +18,7 @@ import { S, dname, turns } from "./state.js";
 import { h } from "./dom.js";
 import { openModal } from "./modals.js";
 import { run } from "./commands.js";
+import { stanceSelect } from "./engagements.js";
 
 /** How far a marching recruit is from its destination: "3 turns away", "arrives", "waiting 2
  *  turns" (no progress: its army out of supply, the way blocked) or "no way there now". `m` is a
@@ -181,6 +182,8 @@ export async function openArmies({ select, centerOn } = {}) {
           a.disband_to ? h("span.dim", ` · disbanded: marching to ${a.disband_to}`) : null,
         ),
         h("div.dim", composition(a.units) || "—"),
+        // Engagement combat: the army's stance (who fights when it defends, whom its attacks propose).
+        a.stance !== undefined && a.stance !== null ? stanceSelect(a.stance, (i) => act({ c: "army_stance", army: a.id, stance: i }), { what: "army" }) : null,
         h(
           "div.row",
           h(
@@ -213,6 +216,8 @@ export async function openArmies({ select, centerOn } = {}) {
         { "data-city": gr.city },
         h("b", gr.name),
         h("span.dim", ` · ${gr.units.length ? composition(gr.units) : "no garrison"}`),
+        // Engagement combat: the garrison's stance (who fights when the city is attacked).
+        gr.stance !== undefined && gr.stance !== null ? stanceSelect(gr.stance, (i) => act({ c: "garrison_stance", city: gr.city, stance: i }), { what: "garrison", help: false }) : null,
         gr.recruits.length ? h("ul.army-transit", gr.recruits.map((t) => recruitLine(t, { go: goUnit }))) : null,
       ),
     );
@@ -278,6 +283,18 @@ export function requisitionNote(c) {
   if (!by.length) return null;
   const names = by.map((a) => `the ${a.name}${a.target_size ? (a.shortfall > 0 ? ` (${a.shortfall} more wanted)` : " (no more wanted now)") : " (no target size)"}`);
   return h("div.requisition-note.dim", { title: "While an army is short of its target size, the city trains a unit for it first. Release the city on the Armies screen [F5]." }, `Requisitioned by ${names.join(", ")}.`);
+}
+
+/** Engagement combat (docs/ENGAGEMENTS.md): the city screen's selector of the garrison's stance
+ *  (which of its units fight when the city is attacked), with the stance's help; null when the
+ *  game has no engagements. */
+export function garrisonStanceView(c, reload) {
+  if (c.garrison_stance === null || c.garrison_stance === undefined) return null;
+  const set = async (stance) => {
+    await run({ c: "garrison_stance", city: c.id, stance });
+    reload();
+  };
+  return h("div.garrison-stance", { title: "When the city is attacked, the garrison's stance picks the units that fight" }, h("span", "Garrison "), stanceSelect(c.garrison_stance, set, { what: "garrison" }));
 }
 
 /** The city's default destination for the land combat units it trains, and its garrison. */

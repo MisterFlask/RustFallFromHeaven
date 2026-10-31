@@ -137,17 +137,35 @@ impl MessageStore {
     }
 
     /// The `log` query: `{from, next, entries: [{i, t, text}]}` (`from` is the index of the
-    /// first entry returned, later than `since` when older messages were dropped).
+    /// first entry returned, later than `since` when older messages were dropped). An
+    /// engagement's message carries `kind: "engagement"` and its `report` ([`tag_battle`]).
     pub fn since_json(&self, since: usize) -> Json {
         let from = since.max(self.first()).min(self.total);
         let entries = self.since(since).iter().enumerate().map(|(k, e)| {
             let j = crate::jobj! { "i" => from + k, "t" => e.turn, "text" => e.text.as_str(), "player" => e.player };
-            match e.at {
+            let j = match e.at {
                 Some((x, y)) => j.with("at", crate::jarr![x, y]),
                 None => j,
-            }
+            };
+            tag_battle(j, &e.text)
         });
         crate::jobj! { "from" => from, "next" => self.total, "entries" => Json::Arr(entries.collect()) }
+    }
+}
+
+/// The battle report an engagement's message names (its last words are `(report #12)`: ffh-core's
+/// `engage_messages`), if any.
+pub fn battle_report_ref(text: &str) -> Option<u32> {
+    let rest = &text[text.rfind("(report #")? + "(report #".len()..];
+    rest[..rest.find(')')?].parse().ok()
+}
+
+/// A message's JSON with `kind: "engagement"` and `report: id` when it names a battle report, so
+/// that a client marks and links it without reading its wording.
+pub fn tag_battle(j: Json, text: &str) -> Json {
+    match battle_report_ref(text) {
+        Some(id) => j.with("kind", "engagement").with("report", id),
+        None => j,
     }
 }
 
@@ -600,6 +618,16 @@ impl Report {
             lines.push(format!("{} plots lost to other borders", borders.len()));
         }
 
+        // Engagement combat: the battles the human fought since its last turn began (its own
+        // attacks of that turn, then those of the others; newest first).
+        let mut engagements = Vec::new();
+        if g.engagements_on() {
+            for r in crate::view::battles::reports_since(v, before.turn) {
+                lines.push(crate::view::battles::report_line(v, r));
+                engagements.push(crate::view::battles::summary_json(v, r));
+            }
+        }
+
         let items = crate::jobj! {
             "units_lost" => Json::Arr(lost),
             "units_gained" => Json::Arr(gained),
@@ -622,6 +650,7 @@ impl Report {
                 "from" => before.armageddon, "to" => counter, "thresholds" => crossed.clone(),
             },
             "borders_lost" => Json::Arr(borders),
+            "engagements" => Json::Arr(engagements),
         };
         Report { from_turn: before.turn, turn: g.game_turn(), items, lines, messages }
     }

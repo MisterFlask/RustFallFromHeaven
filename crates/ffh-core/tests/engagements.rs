@@ -880,6 +880,72 @@ fn a_forced_ai_attack_runs_the_preamble() {
     assert_eq!(w.g.battle_reports[0].sides[0].committed, 1, "the force given");
 }
 
+/// The stance an attack is given (the battle plan's picker, `group_attack_plan`) is the one it
+/// fights with: with no force it proposes the force, the report records it as the attacker's,
+/// and the log judges a given force against its pick, not the army's. An army in Balanced
+/// attacking in Mobile commits all its horsemen and none of its archers (Balanced takes the
+/// archers); the same force sent with the army's own stance is the player's pick. Every battle.
+#[test]
+fn the_stance_chosen_for_an_attack_proposes_its_force_and_is_recorded() {
+    use ffh_core::engagement::report::Pick;
+    let mut w = world();
+    let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
+    w.g.players[p1].human = true; // the battle log is written for a human's battle
+    w.unit(p1, "UNIT_WARRIOR", to);
+    // More units than the slots (8, and 2 more on grassland): Mobile's flankers and front fill
+    // them before its fill reaches the archers.
+    let axemen = w.units(p0, "UNIT_AXEMAN", from, 5);
+    let archers = w.units(p0, "UNIT_ARCHER", from, 4);
+    let horsemen = w.units(p0, "UNIT_HORSEMAN", from, 5);
+    let all: Vec<UnitId> = axemen.iter().chain(&archers).chain(&horsemen).copied().collect();
+    let army = w.g.army_form(p0, &all).expect("an army");
+    let balanced = w.g.d.default_stance;
+    let mobile = w.g.d.t::<StanceType>("STANCE_MOBILE");
+    assert_ne!(balanced, mobile);
+    w.g.armies[army].stance = balanced;
+    let grp = w.g.armies[army].group.expect("the army's group");
+    let (x, y) = w.g.map.xy(to);
+    let committed = |r: &BattleReport| -> Vec<UnitId> {
+        let log = r.log.as_ref().expect("a logged battle");
+        log.fighters.iter().filter(|lf| lf.side == Side::Attacker && lf.slot.is_some()).map(|lf| lf.unit).collect()
+    };
+    let auto_units = |r: &BattleReport| -> Vec<UnitId> {
+        let log = r.log.as_ref().unwrap();
+        let mut v: Vec<UnitId> = log.picks[0].auto_pick.iter().map(|&b| log.fighters[b as usize].unit).collect();
+        v.sort();
+        v
+    };
+
+    // Mobile, no force: Mobile's proposal (the horsemen, then the axemen), recorded as Mobile.
+    let mut f = w.fork(1);
+    f.g.group_attack_plan(grp, x, y, MOVE_DIRECT_ATTACK, None, Some(mobile)).expect("the attack");
+    let r = f.g.battle_reports.last().expect("a report").clone();
+    assert_eq!(r.sides[0].stance, mobile, "the stance chosen is the one recorded");
+    assert_eq!(r.sides[0].army, Some(army), "the army is still the side's");
+    let force = committed(&r);
+    assert_eq!(force.len() as i32, r.sides[0].slots, "the slots filled");
+    assert!(horsemen.iter().all(|u| force.contains(u)) && archers.iter().all(|u| !force.contains(u)), "Mobile's pick: {force:?}");
+    assert_eq!(r.log.as_ref().unwrap().picks[0].picked_by, Pick::Auto);
+    let mut sorted = force.clone();
+    sorted.sort();
+    assert_eq!(auto_units(&r), sorted, "the stance's own pick is Mobile's");
+
+    // The same force with Mobile: the stance's own pick, not the player's.
+    let mut f = w.fork(1);
+    f.g.group_attack_plan(grp, x, y, MOVE_DIRECT_ATTACK, Some(force.clone()), Some(mobile)).expect("the attack");
+    let r = f.g.battle_reports.last().unwrap().clone();
+    assert_eq!(r.sides[0].stance, mobile);
+    assert_eq!(r.log.as_ref().unwrap().picks[0].picked_by, Pick::Auto);
+
+    // The same force with the army's own stance (no stance given): Balanced's pick takes the
+    // archers, so the force is the player's.
+    let mut f = w.fork(1);
+    f.g.group_attack_force(grp, x, y, MOVE_DIRECT_ATTACK, Some(force)).expect("the attack");
+    let r = f.g.battle_reports.last().unwrap().clone();
+    assert_eq!(r.sides[0].stance, balanced);
+    assert!(matches!(&r.log.as_ref().unwrap().picks[0].picked_by, Pick::Player { swaps } if !swaps.is_empty()));
+}
+
 /// A Fireball's kill counts as an engagement's kill does in telemetry (`kill_by`).
 #[test]
 fn a_missile_kill_counts_in_telemetry() {

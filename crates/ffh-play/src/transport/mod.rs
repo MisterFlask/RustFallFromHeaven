@@ -303,7 +303,7 @@ pub fn decision_event(d: &Decision) -> Json {
 
 /// A log entry of a command reply.
 fn log_json(e: &ffh_core::log::LogEntry) -> Json {
-    crate::jobj! { "t" => e.turn, "text" => e.text.as_str() }
+    crate::report::tag_battle(crate::jobj! { "t" => e.turn, "text" => e.text.as_str() }, &e.text)
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -546,13 +546,18 @@ impl Host {
             Err(e) => return (err_reply(id, &e.into()), After::Nothing),
         };
         match s.execute(&cmd) {
-            Ok(CmdOk::Applied { log, accepted }) => {
+            Ok(CmdOk::Applied { log, accepted, battle }) => {
                 // The human may have handed control back (end turn, auto moves) or ended the
                 // game; or, as the exe's next frame does (`updateTestEndTurn`), the AutoMoves
                 // rule continues the queued orders once nothing is left ready: `advance` runs it
                 // and reports the control point after it.
                 let after = if matches!(s.phase(), Phase::Human(_)) && !s.auto_moves_due() { After::Nothing } else { After::Advance };
-                let r = crate::jobj! { "applied" => true, "accepted" => accepted };
+                let mut r = crate::jobj! { "applied" => true, "accepted" => accepted };
+                // An engagement the command launched: its report (`battle_log {id}`) and summary.
+                if let Some(id) = battle {
+                    r.set("report", id);
+                    r.set("battle", crate::view::battles::summary_by_id(&crate::view::Viewer::new(&s.g, s.human, false), id));
+                }
                 let reply = ok_reply(id, r).with("log", Json::Arr(log.iter().map(log_json).collect())).with("status", self.status_after(after));
                 (reply, after)
             }

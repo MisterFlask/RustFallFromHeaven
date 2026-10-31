@@ -5,12 +5,16 @@
 // sources the plan asks for previews and attacks.
 //
 // A source: `{preview({force?: [unit ids], stance?}) -> EngagePreview, alternatives({force, stance})
-// -> [Alternative], attack({force, stance}) -> {log}}` (battle_log.js lists the shapes). For now the
-// screens open only from the dev entry, `?battle=<fixture>` (main.js), over a fixture of
-// battle_fixture.js (docs/HUMAN.md, "The battle screens"); `apiSource` is the protocol's, for when
-// the engine's queries land (phase6_plan step 9).
+// -> [Alternative], attack({force, stance}) -> {log} | null}` (battle_log.js lists the shapes;
+// null: the attack was not made). `apiSource` is the protocol's (`engage_preview`, the `engage`
+// command, `battle_log`): the plan opens when the player orders an army or a stack onto an enemy
+// plot (units.js), a battle's log from its message, the turn report or its marker on the map
+// (`openBattleReport`). The dev entry, `?battle=<fixture>` (main.js), opens a fixture of
+// battle_fixture.js instead (docs/HUMAN.md, "The battle screens").
 
 import * as api from "./api.js";
+import { run } from "./commands.js";
+import { emit } from "./state.js";
 import { h, toast } from "./dom.js";
 import { installFrames } from "./isoui.js";
 import { installIsoFont } from "./isofont.js";
@@ -93,6 +97,8 @@ export function closeBattle() {
   const done = B.onClose;
   B.onClose = null;
   done?.();
+  // The popups the battle held back (a captured city's production, ...) may show now.
+  emit("battle-closed");
 }
 
 function loop(now) {
@@ -107,9 +113,10 @@ function loop(now) {
   B.raf = requestAnimationFrame(loop);
 }
 
-/** The keys while the overlay is open: the screen's, and none reach the map. */
+/** The keys while the overlay is open: the screen's, and none reach the map; a dialog over it
+ *  (a confirmation the attack asks) takes its own. */
 function onKey(ev) {
-  if (!B.root) return;
+  if (!B.root || document.querySelector("#modals .backdrop:not(.under)")) return;
   if (B.screen?.key?.(ctx, ev)) ev.preventDefault();
   ev.stopPropagation();
 }
@@ -131,6 +138,7 @@ export async function openBattlePlan(source, { onClose } = {}) {
 /** Opens a battle's log: watched in the viewer's watch mode, or straight to its report. */
 export function openBattleLog(log, { report = false, onClose } = {}) {
   B.onClose = onClose ?? null;
+  B.ledger ??= new Ledger();
   mount();
   return report || B.ledger.watchMode() === "result" ? show(reportScreen, log) : show(watchScreen, log);
 }
@@ -138,19 +146,47 @@ export function openBattleLog(log, { report = false, onClose } = {}) {
 // ---------------------------------------------------------------------------------------------
 // Sources
 
-/** The protocol's source for an attack of army `army` (or the units on `from`) on plot `to`
- *  (phase6_plan 9.2; not wired until the engine answers these). */
-export function apiSource({ army, from, to }) {
-  const where = army !== undefined ? { army } : { from };
+/** The protocol's source for an attack of army `army` (or the selected `units`, or the units on
+ *  plot `from`: `{x, y}`) on plot `to` (`{x, y}`; phase6_plan 9.2): the plan's previews, the What-if
+ *  plans, and the attack (the `engage` command through commands.js, which asks to declare war when
+ *  the attack would; then the battle's log). */
+export function apiSource({ army, units, from, to }) {
+  const where = army !== undefined && army !== null ? { army } : units ? { units } : { from };
+  const req = (r) => {
+    const out = { ...where, to };
+    if (r?.force) out.force = r.force;
+    if (r?.stance !== undefined && r?.stance !== null) out.stance = r.stance;
+    // The plan said "Attacking declares war" and the player attacked: the confirmation.
+    if (r?.declare_war) out.declare_war = true;
+    return out;
+  };
   return {
-    preview: (req) => api.query("engage_preview", { ...where, to, ...req }),
-    alternatives: async (req) => (await api.query("engage_preview", { ...where, to, ...req, alternatives: true })).alternatives ?? [],
-    attack: async (req) => {
-      const r = await api.cmd("engage", { ...where, to, ...req });
-      const id = r?.report ?? r?.result?.report;
-      return { log: await api.query("battle_log", { id }) };
+    preview: (r) => api.query("engage_preview", req(r)),
+    alternatives: async (r) => (await api.query("engage_preview", { ...req(r), alternatives: true })).alternatives ?? [],
+    attack: async (r) => {
+      const reply = await run({ c: "engage", ...req(r) });
+      const id = reply?.r?.report;
+      if (id === null || id === undefined) {
+        if (reply) toast("No battle was fought.", "info");
+        return null;
+      }
+      return { log: await api.query("battle_log", { report: id }) };
     },
   };
+}
+
+/** Opens battle report `id` (`report`: straight to the report, else watched in the viewer's
+ *  watch mode): its log from the engine. A report kept without its log (older ones) says so. */
+export async function openBattleReport(id, { report = false } = {}) {
+  let log;
+  try {
+    log = await api.query("battle_log", { report: id });
+  } catch (e) {
+    toast(e?.code === "gone" ? `The record of battle #${id} is no longer kept (only the summary of older battles is).` : `Battle #${id}: ${e.detail ?? e.message ?? e}`, "info", 6000);
+    return;
+  }
+  B.ledger ??= new Ledger();
+  await openBattleLog(log, { report });
 }
 
 const sortedKey = (ids) => ids.slice().sort((a, b) => a - b).join(",");
@@ -233,6 +269,7 @@ export async function openDevBattle(name, { viewer } = {}) {
 /** Hooks for the screenshot and smoke scripts (`window.ffh.battle`). */
 export const dev = {
   open: openDevBattle,
+  openReport: openBattleReport,
   close: closeBattle,
   get screen() {
     return B.screen?.NAME ?? null;

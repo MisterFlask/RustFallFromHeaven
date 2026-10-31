@@ -421,6 +421,9 @@ pub fn city(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
         "cultural" => cultural(v, c),
         "recruit" => crate::view::armies::recruit(v, c),
         "governance" => crate::view::governors::city(v, c),
+        // Engagement combat (docs/ENGAGEMENTS.md): the garrison's stance, which picks the units
+        // that fight when the city is attacked (`garrison_stance` sets it); null when off.
+        "garrison_stance" => g.engagements_on().then(|| Json::idx(g.cities[c].garrison_stance)),
     })
 }
 

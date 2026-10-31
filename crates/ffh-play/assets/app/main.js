@@ -19,6 +19,7 @@ import { openCity, ownCities, stepCityScreen } from "./city.js";
 import * as empire from "./empire.js";
 import { openCulture } from "./culture.js";
 import { openArmies } from "./armies.js";
+import { engagementsOn, battleMarkers, openReport } from "./engagements.js";
 import { openGovernors } from "./governors.js";
 import { openDiplomacy, checkMoments, resetMoments } from "./diplo.js";
 import * as tools from "./tools.js";
@@ -264,7 +265,10 @@ function updateMarkers() {
   const watching = tools.spectating() || observing();
   const events = watching ? eventMarkers(S.messages, units.latestEventTurn()) : [];
   const flags = (S.flags ?? []).filter((f) => Array.isArray(f.plot)).map((f) => ({ x: f.plot[0], y: f.plot[1], n: f.flag }));
-  mapView.setOverlay({ events, flags });
+  // Engagement combat: your battles of this turn and the last, a click opens one (not while
+  // observing: the view's battles are the followed player's).
+  const battles = engagementsOn() && !observing() ? battleMarkers() : [];
+  mapView.setOverlay({ events, flags, battles });
 }
 
 function centerOnStart() {
@@ -307,7 +311,8 @@ async function runPopups() {
   try {
     for (;;) {
       // The spectator mode leaves the questions to the AI (it plays every turn).
-      if (S.status?.phase !== "human" || modalOpen() || sending() || tools.spectating()) break;
+      // The battle screens (engagement combat) hold the popups until they close.
+      if (S.status?.phase !== "human" || modalOpen() || sending() || tools.spectating() || document.body.classList.contains("battle-open")) break;
       const q = popupQueue(S.view?.pending, S.dismissed, S.status.turn);
       if (!q.length) break;
       const p = q[0];
@@ -673,6 +678,7 @@ function wire() {
   });
   on("select-ready", () => units.selectNext());
   on("modals-closed", () => S.status?.phase === "human" && runPopups());
+  on("battle-closed", () => S.status?.phase === "human" && runPopups());
   on("open-city", (id) => openCity(id));
   on("open-screen", (name) => openScreen(name));
   on("city-overlay", (o) => mapView.cityOverlay(o));
@@ -720,6 +726,8 @@ async function boot() {
   mapView = new MapView($("#mapwrap"), {
     click: (x, y, ev) => tools.flagClick(x, y) || units.click(x, y, ev),
     rightClick: (x, y, ev) => units.rightClick(x, y, ev),
+    // A battle's marker (engagement combat): its watch screen.
+    battleClick: (b) => openReport(b.id, { report: !b.has_log }),
     hover: (x, y) => units.hoverAt(x, y),
     dblclick: (x, y) => {
       const c = [...S.cities.values()].find((q) => q.x === x && q.y === y && q.owner === me()?.player);

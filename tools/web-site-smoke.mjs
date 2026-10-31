@@ -469,6 +469,13 @@ async function main() {
     await ev(`window.ffh.setRenderer("art")`);
     await until2(`window.ffh.mapView.renderer() === "art"`, "the art renderer (switched from the default)");
     await artMap();
+    // Engagement combat's queries reach the in-browser engine as every query does (docs/WEB.md);
+    // this game has the option off: no battles, and a battle log is gone.
+    const br = await ev(`window.ffh.api.query("battle_reports")`);
+    if (!br || br.on !== false || !Array.isArray(br.reports) || br.reports.length) throw new Error(`battle_reports: ${JSON.stringify(br)}`);
+    const gone = await ev(`window.ffh.api.query("battle_log", { report: 0 }).then(() => "answered", (e) => e.code)`);
+    if (gone !== "gone") throw new Error(`battle_log of no battle: ${gone}`);
+    steps.push("the engine answers the engagement queries (battle_reports, battle_log) with the option off");
     await endTurns(TURNS);
     const turn = await save();
 
