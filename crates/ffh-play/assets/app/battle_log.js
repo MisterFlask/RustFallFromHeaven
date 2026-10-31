@@ -662,12 +662,7 @@ export function timingOf(e) {
 }
 
 // ---------------------------------------------------------------------------------------------
-// The plan
-
-/** The forecast's line for fighter `b` of `preview`: `{fall_pct, escape_pct}` (zeros: none). */
-export function perOf(preview, b) {
-  return preview?.forecast?.per?.find((p) => p.b === b) ?? { fall_pct: 0, escape_pct: 0 };
-}
+// After the battle
 
 /** XP gained by each fighter after the battle (`after`'s `Xp`). */
 export function xpBy(log) {

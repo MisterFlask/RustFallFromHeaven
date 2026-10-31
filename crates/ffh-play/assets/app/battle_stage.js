@@ -7,12 +7,12 @@
 // and DOM; the geometry is the battle overlay's 1280 x 800 frame (battle.js centres it).
 //
 // Art: the M7 sprites (`app/iso`, docs/ISO.md) and, for the units that have them, the anim-sprint
-// sets (`app/anim/<unit>_<idle|strike|flinch|death|walk>.png`: strips of 160 x 128 frames, the feet
+// sets (`app/anim/<unit>_<idle|strike|flinch|death>.png`: strips of 160 x 128 frames, the feet
 // at (80, 126); anim-sprint/ANIMATING_UNITS.md). Pixel art is never scaled.
 
 import { SPRITES } from "./iso/sprites.js";
 import { unitSpriteKeys, ISO_TABLES } from "./iso.js";
-import { tyName, tyIdx, roleKey, ROWS } from "./battle_log.js";
+import { tyName, tyIdx, ROWS } from "./battle_log.js";
 
 export const FRAME_W = 1280;
 export const FRAME_H = 800;
@@ -21,27 +21,20 @@ const spriteUrl = (key) => new URL(`./iso/${key}.png`, import.meta.url).href;
 const animUrl = (unit, anim) => new URL(`./anim/${unit}_${anim}.png`, import.meta.url).href;
 
 /** The anim-sprint sets the client ships (their timings are the sets' manifests'), by the short
- *  name of the M7 sprite they animate; `left`: the set faces lower-left. */
+ *  name of the M7 sprite they animate; `left`: the set faces lower-left. The strips the screens
+ *  draw (the sets' walk strips are not: nobody walks on the battlefield). */
 const ANIM_SETS = { axeman: {}, champion: { left: true }, phalanx: {}, swordsman: {}, warrior: {} };
 export const ANIMS = {
   idle: [250, 250, 250, 250],
   strike: [100, 120, 160, 50, 120, 120, 100, 100],
   flinch: [80, 120, 120, 120],
   death: [80, 120, 140, 200, 80, 80, 80, 400],
-  walk: [110, 110, 110, 110, 110, 110],
 };
 /** ms from the start of the strike strip to its blow (the frame the hit lands on). */
 export const STRIKE_HIT = 430;
 const ANIM_FRAME = { w: 160, h: 128, ax: 80, ay: 126 };
 /** M7 unit sprites that face lower-left (the rest face lower-right). */
 const FACES_LEFT = new Set(["champion"]);
-
-/** A role's icon (the M7 interface icons). */
-const ROLE_ICON = { frontline: "fortify", screen: "defense", archer: "rangeattack", flanker: "moves", arcane: "spell", divine: "heal", siege: "bombard", assassin: "attack" };
-export const roleIcon = (f) => {
-  const k = ROLE_ICON[roleKey(f)];
-  return k && SPRITES[`ui_${k}_s`] ? k : "strength";
-};
 
 export const COLORS = {
   you: "#8fb6ff",
@@ -134,7 +127,7 @@ function cityKey(plot, sides) {
 }
 
 /** Loads the art a battle needs: the board's tiles, overlays and scenery, every fighter's sprite
- *  and animation strips, and the role icons. */
+ *  and the animation strips the screens draw. */
 export function loadArt({ fighters, plot, from, sides }) {
   const jobs = [];
   for (const p of [plot, from]) {
@@ -150,7 +143,6 @@ export function loadArt({ fighters, plot, from, sides }) {
     jobs.push(sprite(fig.key));
     if (fig.anim) for (const a of Object.keys(ANIMS)) jobs.push(loadImage(`anim:${fig.anim}:${a}`, animUrl(fig.anim, a)));
   }
-  for (const n of new Set([...Object.values(ROLE_ICON), "strength"])) if (SPRITES[`ui_${n}_s`]) jobs.push(sprite(`ui_${n}_s`));
   return Promise.all(jobs);
 }
 
@@ -422,16 +414,6 @@ export class Stage {
     }
     g.restore();
   }
-
-  /** The figure of a fighter under frame point (x, y) in the last scene `figs` (the frontmost). */
-  static figAt(figs, x, y) {
-    let best = null;
-    for (const f of figs ?? []) {
-      if (!f.box) continue;
-      if (x >= f.box.x0 && x <= f.box.x1 && y >= f.box.y0 && y <= f.box.y1 && (!best || f.y > best.y)) best = f;
-    }
-    return best;
-  }
 }
 
 /** The hit box of a figure at (x, y) (the screens' pointer tests). */
@@ -661,7 +643,6 @@ export function pixGlyph(rows, color, s = 2, outline = "#0c0703") {
 }
 
 export const GLYPH = {
-  skull: [".ooooo.", "o#####o", "o#o#o#o", "o#####o", ".o#o#o.", "..ooo.."],
   play: ["#...", "##..", "###.", "####", "###.", "##..", "#..."],
   pause: ["##.##", "##.##", "##.##", "##.##", "##.##", "##.##", "##.##"],
   step: ["#..#", "##.#", "####", "##.#", "#..#"],
