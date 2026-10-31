@@ -143,6 +143,11 @@ impl Game {
         !hero_promotion(self.d).is_some_and(|h| unit.has_promotion[h])
     }
 
+    /// Whether unit `u` is a hero (holds `PROMOTION_HERO`).
+    pub fn unit_is_hero(&self, u: UnitId) -> bool {
+        hero_promotion(self.d).is_some_and(|h| self.units[u].has_promotion[h])
+    }
+
     /// The city whose garrison unit `u` is in, if any: an army unit in no army and not marching,
     /// in one of its owner's cities.
     pub fn unit_garrison_city(&self, u: UnitId) -> Option<CityId> {

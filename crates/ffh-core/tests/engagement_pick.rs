@@ -1,8 +1,9 @@
-//! Engagement combat's slots and who can fight (GAMEOPTION_ENGAGEMENTS, phase 6 step 5;
+//! Engagement combat's slots, who can fight and the pick (GAMEOPTION_ENGAGEMENTS, phase 6 step 5;
 //! `engagement/slots.rs`, `engagement/pick.rs`): each side's slots by plot, city defense,
 //! bombardment, the minimum and the river (Q9); the attack count with Blitz and bombards, the
 //! combat limit and marching units in `unit_can_engage` and the gates it shares with
-//! `unit_can_move_into`; the defender's candidates.
+//! `unit_can_move_into`; the defender's candidates; the stances each side fights with; each
+//! stance's pick, wounded units and Preserve Veterans' holds; force validation.
 
 use ffh_core::army::{March, RecruitDest};
 use ffh_core::engagement::report::{SlotChange, SlotSource};
@@ -72,6 +73,10 @@ impl World {
         self.g.player_init_unit(owner, ty, x, y, None, None)
     }
 
+    fn units(&mut self, owner: PlayerId, name: &str, at: PlotIdx, n: usize) -> Vec<UnitId> {
+        (0..n).map(|_| self.unit(owner, name, at)).collect()
+    }
+
     fn promote(&mut self, u: UnitId, name: &str) {
         let p = self.g.d.t::<PromotionType>(name);
         self.g.unit_set_has_promotion(u, p, true);
@@ -85,6 +90,14 @@ impl World {
         self.g.engage_slots(&self.ctx())
     }
 
+    fn stance(&self, name: &str) -> StanceType {
+        self.g.d.t::<StanceType>(name)
+    }
+
+    fn pick(&self, pool: &[UnitId], stance: &str, side: Side) -> Vec<UnitId> {
+        self.g.engage_auto_pick(pool, self.stance(stance), &self.slots(), side, &self.ctx())
+    }
+
     /// A city of `owner` on `at` whose defense modifier (no bombardment) is `pct`.
     fn city(&mut self, owner: PlayerId, at: PlotIdx, pct: i32) -> CityId {
         let (x, y) = self.g.map.xy(at);
@@ -95,6 +108,19 @@ impl World {
         c
     }
 
+    /// How many of `units` are of unit type `name`.
+    fn count(&self, units: &[UnitId], name: &str) -> usize {
+        let ty = self.g.d.t::<UnitType>(name);
+        units.iter().filter(|&&u| self.g.units[u].unit_type == ty).count()
+    }
+
+    fn role(&self, u: UnitId) -> String {
+        self.g.d.combat_roles[self.g.unit_combat_role(u).unwrap()].base.type_.clone()
+    }
+
+    fn roles(&self, units: &[UnitId], role: &str) -> usize {
+        units.iter().filter(|&&u| self.role(u) == role).count()
+    }
 }
 
 /// `base` plus the changes give the total, on both sides.
@@ -172,6 +198,188 @@ fn a_city_costs_the_attacker_slots_a_bombard_returns_them_and_the_minimum_holds(
     check_sums(&s);
     assert_eq!((s.att(), s.def()), (3, 4));
     assert_eq!(src(&s, Side::Attacker).last(), Some(&(SlotSource::Minimum, 1)));
+}
+
+#[test]
+fn a_river_crossing_keeps_slots_for_units_that_cross_rivers() {
+    let mut w = world();
+    let (p0, from, to) = (w.p0, w.from, w.to);
+    w.g.map.plots[from].river_crossing[DirectionType::DIRECTION_EAST.idx()] = true;
+    let s = w.slots();
+    check_sums(&s);
+    assert_eq!((s.att(), s.att_river(), s.def()), (8, 2, 10));
+    assert_eq!(src(&s, Side::Attacker).last(), Some(&(SlotSource::River, -2)));
+    // No approach plot (a hypothetical estimate): no river.
+    assert_eq!(w.g.engage_slots(&HitCtx { from: None, ..w.ctx() }).att(), 10);
+
+    // Ten strong Axemen and three Lizardmen (bRiver): eight Axemen, the river slots to two
+    // Lizardmen.
+    let axemen = w.units(p0, "UNIT_AXEMAN", from, 10);
+    for &a in &axemen {
+        w.promote(a, "PROMOTION_COMBAT1");
+    }
+    let lizards = w.units(p0, "UNIT_LIZARDMAN", from, 3);
+    assert!(w.g.unit_is_river(lizards[0]) && !w.g.unit_is_river(axemen[0]));
+    let pool: Vec<UnitId> = axemen.iter().chain(&lizards).copied().collect();
+    let pick = w.pick(&pool, "STANCE_BALANCED", Side::Attacker);
+    assert_eq!((pick.len(), w.count(&pick, "UNIT_AXEMAN"), w.count(&pick, "UNIT_LIZARDMAN")), (10, 8, 2));
+    assert_eq!(w.g.engage_validate_force(&pool, &pick, &s), Ok(()));
+    // The defender has no river slots.
+    assert_eq!(w.pick(&axemen, "STANCE_BALANCED", Side::Defender).len(), 10);
+
+    // Near the minimum the river takes only what is above it: forested hills, 4 - 1.
+    w.g.map.plots[to].plot_type = PlotType::PLOT_HILLS;
+    w.g.map.plots[to].feature_type = Some(w.g.d.t::<FeatureType>("FEATURE_FOREST"));
+    let s = w.slots();
+    check_sums(&s);
+    assert_eq!((s.att(), s.att_river()), (3, 1));
+}
+
+#[test]
+fn forces_are_validated() {
+    let mut w = world();
+    let (p0, from) = (w.p0, w.from);
+    w.g.map.plots[from].river_crossing[DirectionType::DIRECTION_EAST.idx()] = true;
+    let s = w.slots();
+    let axemen = w.units(p0, "UNIT_AXEMAN", from, 10);
+    let lizard = w.unit(p0, "UNIT_LIZARDMAN", from);
+    let outsider = w.unit(p0, "UNIT_AXEMAN", w.to);
+    let pool: Vec<UnitId> = axemen.iter().copied().chain([lizard]).collect();
+    let v = |force: &[UnitId]| w.g.engage_validate_force(&pool, force, &s);
+    assert!(v(&[]).is_err(), "empty");
+    assert!(v(&[axemen[0], axemen[0]]).is_err(), "twice");
+    assert!(v(&[axemen[0], outsider]).is_err(), "not in the pool");
+    assert!(v(&axemen[..9]).is_err(), "nine without bRiver in eight ordinary slots");
+    assert_eq!(v(&[&axemen[..8], &[lizard]].concat()), Ok(()));
+    let mut more = w.units(p0, "UNIT_LIZARDMAN", from, 2);
+    more.extend(pool.iter().copied());
+    let many: Vec<UnitId> = more.iter().copied().filter(|u| !axemen[8..].contains(u)).collect();
+    assert_eq!(many.len(), 11);
+    assert!(w.g.engage_validate_force(&more, &many, &s).is_err(), "more than the slots");
+}
+
+#[test]
+fn each_stance_picks_its_quotas_from_a_mixed_pool() {
+    let mut w = world();
+    let (p0, from) = (w.p0, w.from);
+    let axemen = w.units(p0, "UNIT_AXEMAN", from, 6);
+    let screen = w.unit(p0, "UNIT_AXEMAN", from);
+    w.promote(screen, "PROMOTION_FORMATION");
+    let archers = w.units(p0, "UNIT_ARCHER", from, 8);
+    let horsemen = w.units(p0, "UNIT_HORSEMAN", from, 4);
+    let assassins = w.units(p0, "UNIT_ASSASSIN", from, 2);
+    let adepts = w.units(p0, "UNIT_ADEPT", from, 2);
+    let pool: Vec<UnitId> = [axemen.clone(), vec![screen], archers, horsemen, assassins, adepts].concat();
+    assert_eq!(w.role(screen), "COMBATROLE_SCREEN");
+    assert_eq!(w.slots().att(), 10);
+
+    let roles = |pick: &[UnitId]| {
+        ["COMBATROLE_FRONTLINE", "COMBATROLE_SCREEN", "COMBATROLE_BACKLINE", "COMBATROLE_FLANKER", "COMBATROLE_ASSASSIN", "COMBATROLE_SUPPORT"].map(|r| w.roles(pick, r))
+    };
+    // Balanced: a screen, the front to half the slots, then the archers fill the rest.
+    let pick = w.pick(&pool, "STANCE_BALANCED", Side::Attacker);
+    assert_eq!(roles(&pick), [4, 1, 5, 0, 0, 0]);
+    assert_eq!(pick[0], screen, "the screen step comes first");
+    // Shield wall: every front unit, then archers.
+    assert_eq!(roles(&w.pick(&pool, "STANCE_SHIELD_WALL", Side::Attacker)), [6, 1, 3, 0, 0, 0]);
+    // Ranged line: three front units, then archers.
+    let pick = w.pick(&pool, "STANCE_RANGED_LINE", Side::Attacker);
+    assert_eq!(roles(&pick)[2], 7);
+    assert_eq!(roles(&pick)[0] + roles(&pick)[1], 3);
+    // Mobile: every flanker and assassin, then the front.
+    let pick = w.pick(&pool, "STANCE_MOBILE", Side::Attacker);
+    assert_eq!(roles(&pick)[2..], [0, 4, 2, 0]);
+    assert_eq!(roles(&pick)[0] + roles(&pick)[1], 4);
+    // Support units only come in through the fill: the whole pool on a plot with more slots
+    // than units takes them.
+    let small: Vec<UnitId> = pool.iter().copied().filter(|u| w.role(*u) != "COMBATROLE_BACKLINE").collect();
+    assert_eq!(small.len(), 15);
+    let pick = w.pick(&small[5..], "STANCE_SHIELD_WALL", Side::Attacker);
+    assert_eq!(pick.len(), 10, "fewer candidates than slots: all of them");
+    assert_eq!(roles(&pick)[5], 2);
+
+    // Deterministic and the same for both sides' counts; no unit twice.
+    for stance in ["STANCE_BALANCED", "STANCE_SHIELD_WALL", "STANCE_RANGED_LINE", "STANCE_MOBILE", "STANCE_PRESERVE_VETERANS"] {
+        for side in [Side::Attacker, Side::Defender] {
+            let a = w.pick(&pool, stance, side);
+            assert_eq!(a, w.pick(&pool, stance, side));
+            assert_eq!(a.len(), 10);
+            let mut sorted = a.clone();
+            sorted.sort();
+            sorted.dedup();
+            assert_eq!(sorted.len(), 10);
+        }
+    }
+}
+
+#[test]
+fn a_wounded_unit_is_taken_only_when_no_healthy_one_of_its_roles_is_left() {
+    let mut w = world();
+    let (p0, from, to) = (w.p0, w.from, w.to);
+    w.g.map.plots[to].feature_type = Some(w.g.d.t::<FeatureType>("FEATURE_FOREST"));
+    assert_eq!(w.slots().att(), 6);
+    let axemen = w.units(p0, "UNIT_AXEMAN", from, 7);
+    let archer = w.unit(p0, "UNIT_ARCHER", from);
+    // The strongest Axeman at 40% HP.
+    let hurt = axemen[0];
+    w.promote(hurt, "PROMOTION_COMBAT1");
+    w.g.units[hurt].damage = 60;
+    let pool: Vec<UnitId> = axemen.iter().copied().chain([archer]).collect();
+    let pick = w.pick(&pool, "STANCE_SHIELD_WALL", Side::Attacker);
+    assert!(!pick.contains(&hurt), "six healthy Axemen fill the front");
+    assert_eq!(w.count(&pick, "UNIT_AXEMAN"), 6);
+    // At exactly half its HP it counts as healthy, and its strength puts it first.
+    w.g.units[hurt].damage = 50;
+    assert_eq!(w.pick(&pool, "STANCE_SHIELD_WALL", Side::Attacker)[0], hurt);
+    // One healthy Axeman fewer: the wounded one is taken before the healthy archer (the front
+    // step is for its roles).
+    w.g.units[hurt].damage = 60;
+    let pool: Vec<UnitId> = axemen[..6].iter().copied().chain([archer]).collect();
+    let pick = w.pick(&pool, "STANCE_SHIELD_WALL", Side::Attacker);
+    assert!(pick.contains(&hurt) && !pick.contains(&archer));
+}
+
+#[test]
+fn preserve_veterans_holds_veterans_and_heroes_back_until_the_slots_would_go_empty() {
+    let mut w = world();
+    let (p0, from) = (w.p0, w.from);
+    let axemen = w.units(p0, "UNIT_AXEMAN", from, 6);
+    let archers = w.units(p0, "UNIT_ARCHER", from, 5);
+    // The army's best Axeman is a level-5 veteran.
+    let vet = axemen[0];
+    w.promote(vet, "PROMOTION_COMBAT1");
+    w.promote(vet, "PROMOTION_COMBAT2");
+    w.g.units[vet].level = 5;
+    let pool: Vec<UnitId> = [axemen.clone(), archers.clone()].concat();
+    assert!(w.pick(&pool, "STANCE_BALANCED", Side::Attacker).contains(&vet));
+    let pick = w.pick(&pool, "STANCE_PRESERVE_VETERANS", Side::Attacker);
+    assert!(!pick.contains(&vet), "a veteran never displaces a non-veteran");
+    assert_eq!(pick.len(), 10);
+    // Ten candidates for ten slots: the veteran comes in last.
+    let pool: Vec<UnitId> = [axemen.clone(), archers[..4].to_vec()].concat();
+    let pick = w.pick(&pool, "STANCE_PRESERVE_VETERANS", Side::Attacker);
+    assert_eq!(pick.len(), 10);
+    assert_eq!(pick.last(), Some(&vet));
+    // A level-2 hero is held too; Balanced commits it.
+    w.g.units[vet].level = 2;
+    w.promote(vet, "PROMOTION_HERO");
+    assert!(w.g.unit_is_hero(vet));
+    let pool: Vec<UnitId> = [axemen.clone(), archers.clone()].concat();
+    assert!(w.g.engage_is_held(vet, w.stance("STANCE_PRESERVE_VETERANS")));
+    assert!(!w.g.engage_is_held(vet, w.stance("STANCE_BALANCED")));
+    assert!(!w.pick(&pool, "STANCE_PRESERVE_VETERANS", Side::Attacker).contains(&vet));
+    assert!(w.pick(&pool, "STANCE_BALANCED", Side::Attacker).contains(&vet));
+    // The single swaps never bring a held unit in.
+    let preserve = w.stance("STANCE_PRESERVE_VETERANS");
+    let pick = w.pick(&pool, "STANCE_PRESERVE_VETERANS", Side::Attacker);
+    let swaps = w.g.engage_single_swaps(&pool, &pick, preserve, &w.slots());
+    assert!(swaps.is_empty(), "{swaps:?}: the only unit left out is the hero");
+    let balanced = w.stance("STANCE_BALANCED");
+    let swaps = w.g.engage_single_swaps(&pool, &pick, balanced, &w.slots());
+    assert_eq!(swaps.len(), 10);
+    assert!(swaps.iter().all(|&(out, inn)| inn == vet && pick.contains(&out)));
+    // The proposal is the quota pick until step 7's swap search.
+    assert_eq!(w.g.engage_propose_force(&pool, preserve, &w.slots(), &w.ctx()), pick);
 }
 
 #[test]
@@ -310,4 +518,57 @@ fn a_declare_war_preview_counts_the_team_it_would_fight() {
     assert!(w.g.unit_can_engage(axeman, to, WarTest::DeclareWar(t1)));
     assert_eq!(w.g.engage_defenders(to, p0, &[axeman], WarTest::DeclareWar(t1)), vec![warrior]);
     assert_eq!(w.g.engage_attackers(p0, from, to, WarTest::DeclareWar(t1)), vec![axeman]);
+}
+
+#[test]
+fn the_stance_each_side_fights_with() {
+    let mut w = world();
+    let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
+    let (mobile, ranged, wall) = (w.stance("STANCE_MOBILE"), w.stance("STANCE_RANGED_LINE"), w.stance("STANCE_SHIELD_WALL"));
+    let default = w.g.d.default_stance;
+
+    // The attacker: the launching group's army.
+    let big = w.units(p0, "UNIT_AXEMAN", from, 3);
+    let small = w.units(p0, "UNIT_AXEMAN", from, 2);
+    let a_big = w.g.army_form(p0, &big).unwrap();
+    let a_small = w.g.army_form(p0, &small).unwrap();
+    w.g.army_set_stance(p0, a_big, ranged).unwrap();
+    w.g.army_set_stance(p0, a_small, wall).unwrap();
+    let grp_small = w.g.units[small[0]].group.unwrap();
+    let s = w.g.engage_attack_stance(p0, from, Some(grp_small));
+    assert_eq!((s.stance, s.army, s.garrison_of), (wall, Some(a_small), None));
+    // A unit in no army (a mage): the largest army on the plot.
+    let adept = w.unit(p0, "UNIT_ADEPT", from);
+    assert!(w.g.units[adept].army.is_none());
+    let s = w.g.engage_attack_stance(p0, from, w.g.units[adept].group);
+    assert_eq!((s.stance, s.army), (ranged, Some(a_big)));
+    assert_eq!(w.g.engage_attack_stance(p0, from, None).stance, ranged);
+    // Barbarians: the default.
+    let barb = w.g.barbarian_player();
+    assert_eq!(w.g.engage_attack_stance(barb, from, None).stance, default);
+
+    // The defender in the field: the largest army among the candidates.
+    let def_big = w.units(p1, "UNIT_WARRIOR", to, 3);
+    let def_small = w.units(p1, "UNIT_WARRIOR", to, 1);
+    let d_big = w.g.army_form(p1, &def_big).unwrap();
+    let d_small = w.g.army_form(p1, &def_small).unwrap();
+    w.g.army_set_stance(p1, d_big, mobile).unwrap();
+    w.g.army_set_stance(p1, d_small, wall).unwrap();
+    let cands = w.g.engage_defenders(to, p0, &big, WarTest::AtWar);
+    assert_eq!(cands.len(), 4);
+    let s = w.g.engage_defense_stance(to, &cands);
+    assert_eq!((s.stance, s.army), (mobile, Some(d_big)));
+    assert_eq!(w.g.engage_defense_stance(to, &[]).stance, default);
+
+    // A city: its garrison's stance, even with field armies in it; an attack from a city by a
+    // garrison unit proposes the garrison's.
+    let c = w.city(p1, to, 0);
+    w.g.city_set_garrison_stance(p1, c, ranged).unwrap();
+    let s = w.g.engage_defense_stance(to, &cands);
+    assert_eq!((s.stance, s.army, s.garrison_of), (ranged, None, Some(c)));
+    let guard = w.unit(p1, "UNIT_WARRIOR", to);
+    w.g.player_army_sync(p1);
+    assert_eq!(w.g.unit_garrison_city(guard), Some(c));
+    let s = w.g.engage_attack_stance(p1, to, w.g.units[guard].group);
+    assert_eq!((s.stance, s.garrison_of), (ranged, Some(c)));
 }

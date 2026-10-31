@@ -24,7 +24,8 @@
 //! On `Game`: the option and the dispatch rule (which attacks are engagements) and the stances'
 //! commands ([`state`]), the battle reports with the battle log the client replays
 //! ([`report`]), the units' roles, HP and A and Dv per hit ([`stats`]), each side's slots
-//! ([`slots`]), and who can fight ([`pick`]).
+//! ([`slots`]), and who can fight, the stances each side fights with and the pick of its force
+//! ([`pick`]).
 
 pub mod battle;
 pub mod expect;
@@ -41,7 +42,7 @@ mod calibrate;
 
 pub use battle::{damage_from_hp, hp_from_damage, Battle, BattleEffect, Fighter, FighterIdx, Pair, Params, Side, TargetClass};
 pub use expect::{resolve_expected, resolve_expected_from, Expectation, FighterExpect, MomentStart};
-pub use pick::WarTest;
+pub use pick::{StanceChoice, WarTest};
 pub use slots::Slots;
 pub use stats::HitCtx;
 pub use resolve::{
