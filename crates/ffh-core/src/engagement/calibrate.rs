@@ -378,16 +378,17 @@ fn engage_calibrate() {
             x.rounds
         );
     }
-    // The end rules: the plan's (0.05, residual counted), the prototype's (0.5, not counted), and
-    // between. Each fits its own table on the calibration battery and is judged on the bounds one.
+    // The variants: the plan's end rule (0.05, residual counted), the prototype's (0.5, not
+    // counted) and between, with and without the presence covariance. Each fits its own table on
+    // the calibration battery and is judged on the bounds one.
     let held = battery(BOUNDS_SEED, 300, 200);
-    for (stop, residual) in [(205, true), (205, false), (1024, true), (1024, false), (2048, true), (2048, false)] {
-        let tu = Tuning { stop, residual };
+    for (stop, residual, presence) in [(205, true, true), (205, true, false), (205, false, true), (1024, true, true), (1024, true, false), (2048, false, false)] {
+        let tu = Tuning { stop, residual, presence };
         let re = |rows: &[Row]| -> Vec<Row> { rows.iter().map(|(b, _, s)| (b.clone(), resolve_expected_tuned(b, &[], &tu), *s)).collect() };
         let (cal, val) = (re(&rows), re(&held));
         let t = fit_table(&cal);
-        report(&format!("stop {stop} residual {residual}: calibration"), &cal, &t);
-        report(&format!("stop {stop} residual {residual}: held out"), &val, &t);
+        report(&format!("stop {stop} residual {residual} presence {presence}: calibration"), &cal, &t);
+        report(&format!("stop {stop} residual {residual} presence {presence}: held out"), &val, &t);
     }
 }
 

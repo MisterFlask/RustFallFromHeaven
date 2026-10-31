@@ -3,8 +3,9 @@
 //! fighter it keeps its alive weight `a` (the chance it is alive and engaged), and the mean `mu`
 //! and variance `v` of the damage it has taken while engaged. Integer only: weights in 1/4096,
 //! damage moments in centi-HP (x4096 fixed point), `Phi` from a table, `sqrt` by `u64::isqrt`,
-//! so native and wasm agree. A float prototype of the method (scratchpad `p6rev/moment2.py`) is
-//! the reference it was checked against (`tests::matches_the_float_prototype`).
+//! so native and wasm agree. The phase 6 plan's float prototype of the method is the reference
+//! it was ported from; `tools/engagement_moments.py` is that prototype with this integrator's
+//! rules, and `tests::matches_the_float_prototype` checks the two agree (within 0.01 units).
 //!
 //! **A round.** Hitter `h`, with weight `a_h` (times `P(volleys >= k)` in volley round k), goes
 //! down its class order ([`Battle`]'s disjoint classes, the same shield and limit rules as
@@ -14,7 +15,12 @@
 //! hits, where `s_t` is 1, or for a fighter behind the shield the chance that the enemy front left
 //! in play is empty (and then only the other back members compete). `mu_t += q E[hit]`,
 //! `v_t += q E[hit^2] - (q E[hit])^2`, with E[hit] and E[hit^2] over r's discrete uniform
-//! (`(41^2 - 1) / 12` = 140 %^2 for 80..=120). An attacker with a combat limit gives nothing to a
+//! (`(41^2 - 1) / 12` = 140 %^2 for 80..=120). (A variant, `Tuning::presence`, measured and not
+//! in use, adds the covariance of `h`'s hits across rounds: an engaged hitter was engaged in every
+//! round before, `Cov(X_k, X_l) = E[X_l] E[X_k | engaged] (1 - a_h,k)`. Without it the damage
+//! distribution is too narrow, so battles near parity end with both sides nearly destroyed where
+//! the real ones split into a win or a loss: 8 v 8 equal loses 7.9 a side, sampled 6.5, with it
+//! 7.1.) An attacker with a combat limit gives nothing to a
 //! target whose expected damage reached its limit and cuts its expected hit at it; in a melee round
 //! it leaves with the chance that it finds no target while the enemy is not all gone.
 //!
@@ -28,7 +34,7 @@
 //!
 //! **The end**: when a side's alive weight is below [`STOP`] (that side lost: its residual weight
 //! counts as lost, since the losing side loses every committed unit that did not withdraw), or
-//! after `max_rounds` rounds (a draw). The margin `M = Pa_end / Pa_start - Pd_end / Pd_start`,
+//! after `max_rounds` rounds. The margin `M = Pa_end / Pa_start - Pd_end / Pd_start`,
 //! with `P = sum a_i x E[hp left]_i x power_i` (power: the fighter's mean damage per hit against
 //! the enemy), is the share of its fighting power each side keeps; [`win_permille`] reads the
 //! calibrated table at it.
@@ -39,17 +45,25 @@ use super::phi_table::{PARTIAL, PHI};
 /// Weights and probabilities: 1/4096.
 pub const ONE: i64 = 4096;
 
-/// The end rule (crate-internal, so the calibration battery can compare variants): a side whose
-/// alive weight is below `stop` has lost, and with `residual` its remaining alive weight counts
-/// as lost.
+/// The model's variants (crate-internal, so the calibration battery can compare them,
+/// `engage_calibrate`): the end rule (a side whose alive weight is below `stop` has lost; with
+/// `residual` its remaining alive weight counts as lost) and `presence`, the covariance of a
+/// hitter's hits across rounds (see the module doc).
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub(crate) struct Tuning {
     pub stop: i64,
     pub residual: bool,
+    pub presence: bool,
 }
 
-/// The end rule in use.
-pub(crate) const TUNING: Tuning = Tuning { stop: STOP, residual: true };
+/// The variant in use: the plan's end rule, without the presence covariance. Measured on the
+/// battery (2026-10-31, `engage_calibrate`): the end rule hardly matters (stop 0.05 or 0.25,
+/// residual counted or not: losses within 0.01 units of each other; the prototype's 0.5 without
+/// the residual is worse, 0.15 against 0.12-0.13 units mean abs); `presence` trims the loss error
+/// (held out 0.117 / 0.126 against 0.123 / 0.129 units, worst 1.4 against 1.6) but loosens the
+/// win chance (41 against 34 per mille held out, 37 against 33 in the calibration battery),
+/// which the attack decisions read first.
+pub(crate) const TUNING: Tuning = Tuning { stop: STOP, residual: true, presence: false };
 
 /// A side whose alive weight is below this (0.05) has lost.
 pub const STOP: i64 = 205;
@@ -117,10 +131,9 @@ pub struct FighterExpect {
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Expectation {
     pub fighters: Vec<FighterExpect>,
+    /// Volley rounds and rounds integrated (until a side's alive weight fell below [`STOP`]).
     pub volley_rounds: i32,
     pub rounds: i32,
-    /// Ran to `max_rounds`.
-    pub draw: bool,
     /// Expected fighters lost and withdrawn per side, x1000.
     pub att_loss_x1000: i32,
     pub def_loss_x1000: i32,
@@ -317,7 +330,7 @@ pub(crate) fn resolve_expected_tuned(b: &Battle, start: &[MomentStart], tu: &Tun
         .map(|(f, _)| f.first_strikes.max(0) + f.chance_first_strikes.max(0))
         .max()
         .unwrap_or(0);
-    let mut scratch = Scratch::new(n);
+    let mut scratch = Scratch::new(n, tu.presence);
     if !stopped {
         for k in 1..=max_v {
             volley_rounds = k;
@@ -342,7 +355,7 @@ pub(crate) fn resolve_expected_tuned(b: &Battle, start: &[MomentStart], tu: &Tun
     let p_end = [power_of(&st, Side::Attacker, false), power_of(&st, Side::Defender, false)];
     let share = |i: usize| if p_start[i] > 0 { (p_end[i] as i128 * ONE as i128 / p_start[i] as i128) as i64 } else { 0 };
     let margin = (share(0) - share(1)).clamp(-ONE, ONE) as i32;
-    let mut out = Expectation { volley_rounds, rounds, draw: !stopped, margin, ..Expectation::default() };
+    let mut out = Expectation { volley_rounds, rounds, margin, ..Expectation::default() };
     // Per side, in 1/4096: lost, withdrawn.
     let mut sums = [[0i64; 2]; 2];
     for (i, s) in st.iter().enumerate() {
@@ -419,11 +432,23 @@ struct Scratch {
     /// `eff[j] == class stamp`: an available member of the class being read.
     eff: Vec<u32>,
     stamp: u32,
+    /// Per pair `[h * n + t]` (empty when off): `sum_k E[hit_k | h engaged] x (1 - a_h,k)` over
+    /// the rounds so far (centi-HP x4096), for the covariance of `h`'s hits across rounds.
+    presence: Vec<i64>,
 }
 
 impl Scratch {
-    fn new(n: usize) -> Scratch {
-        Scratch { inc_mu: vec![0; n], inc_v: vec![0; n], leave: vec![0; n], unlim: vec![false; n], absent: vec![0; n], eff: vec![0; n], stamp: 0 }
+    fn new(n: usize, presence: bool) -> Scratch {
+        Scratch {
+            inc_mu: vec![0; n],
+            inc_v: vec![0; n],
+            leave: vec![0; n],
+            unlim: vec![false; n],
+            absent: vec![0; n],
+            eff: vec![0; n],
+            stamp: 0,
+            presence: if presence { vec![0; n * n] } else { Vec::new() },
+        }
     }
 
     fn next(&mut self) -> u32 {
@@ -535,6 +560,13 @@ fn round(b: &Battle, st: &mut [St], sc: &mut Scratch, volley: Option<i32>, er_mi
                 }
                 sc.inc_mu[t] += e1;
                 sc.inc_v[t] += (e2 - e1 * e1 / ONE).max(0);
+                if !sc.presence.is_empty() {
+                    // h engaged now implies h engaged in every earlier round: its hits on t are
+                    // correlated, Cov(X_k, X_l) = E[X_l] E[X_k | engaged] (1 - a_h,k).
+                    let acc = &mut sc.presence[h * n + t];
+                    sc.inc_v[t] += 2 * e1 * *acc / ONE;
+                    *acc += e1 * (ONE - st[h].a) / st[h].a;
+                }
             }
             // P(class empty): no unshielded member, and no shielded one reachable.
             let e_k = prod_u * (ONE - e_rest_out * (ONE - prod_s) / ONE) / ONE;
@@ -624,38 +656,51 @@ mod tests {
         Battle::new(Params::default(), fs, |h, _| if h < na { Pair { a: ma, dv: 2000 - ma } } else { Pair { a: md, dv: 2000 - md } })
     }
 
-    /// The review's ten cases: (n_att, n_def, attacker's mean hit, defender's, expected losses
-    /// x1000 from the float reference with this integrator's rules (scratchpad
-    /// `p6res/moment3.py`: the prototype `p6rev/moment2.py` with the stop at 0.05 checked after
-    /// each round, r's discrete variance and the loser's residual counted), its rounds, and the
-    /// prototype's own losses x1000 (stop at 0.5, residual not counted)).
-    const CASES: [(usize, usize, i32, i32, i32, i32, i32, i32, i32); 10] = [
-        (4, 4, 1000, 1000, 3899, 3899, 40, 3550, 3550),
-        (8, 8, 1000, 1000, 7882, 7882, 40, 7560, 7560),
-        (8, 6, 1000, 1000, 125, 6000, 12, 120, 5890),
-        (8, 8, 1100, 900, 1794, 8000, 15, 1790, 7940),
-        (8, 4, 1000, 1000, 0, 4000, 8, 0, 3530),
-        (8, 8, 800, 1200, 8000, 309, 13, 7740, 300),
-        (1, 1, 1000, 1000, 1000, 1000, 34, 780, 780),
-        (2, 1, 1000, 1000, 0, 1000, 7, 0, 1000),
-        (8, 8, 1200, 800, 309, 8000, 13, 300, 7740),
-        (6, 3, 700, 1300, 38, 3000, 11, 30, 2800),
+    /// The review's ten cases: (n_att, n_def, attacker's mean hit, defender's), then expected
+    /// losses x1000 per side and rounds from the float reference of this integrator's rules,
+    /// `tools/engagement_moments.py` (the prototype's method with the stop at 0.05 checked after
+    /// each round, r's discrete variance and the loser's residual counted: the variant in use),
+    /// the same with `--presence` (the variant with the presence covariance), and last the
+    /// prototype's own losses x1000 (its stop at 0.5, residual not counted; its review's report).
+    #[rustfmt::skip]
+    const CASES: [(usize, usize, i32, i32, [i32; 3], [i32; 3], [i32; 2]); 10] = [
+        (4, 4, 1000, 1000, [3899, 3899, 40], [3382, 3382, 40], [3550, 3550]),
+        (8, 8, 1000, 1000, [7882, 7882, 40], [7138, 7138, 40], [7560, 7560]),
+        (8, 6, 1000, 1000, [125, 6000, 12], [133, 6000, 12], [120, 5890]),
+        (8, 8, 1100, 900, [1794, 8000, 15], [1847, 8000, 15], [1790, 7940]),
+        (8, 4, 1000, 1000, [0, 4000, 8], [0, 4000, 8], [0, 3530]),
+        (8, 8, 800, 1200, [8000, 309, 13], [8000, 328, 13], [7740, 300]),
+        (1, 1, 1000, 1000, [1000, 1000, 34], [786, 786, 40], [780, 780]),
+        (2, 1, 1000, 1000, [0, 1000, 7], [0, 1000, 7], [0, 1000]),
+        (8, 8, 1200, 800, [309, 8000, 13], [328, 8000, 13], [300, 7740]),
+        (6, 3, 700, 1300, [38, 3000, 11], [40, 3000, 11], [30, 2800]),
     ];
 
     #[test]
     fn matches_the_float_prototype() {
-        let mut worst = (0, 0);
-        for &(na, nd, ma, md, la, ld, rounds, pa, pd) in &CASES {
-            let e = resolve_expected(&uniform(na, nd, ma, md));
-            let d = (e.att_loss_x1000 - la).abs().max((e.def_loss_x1000 - ld).abs());
-            assert!(d <= 25, "{na}v{nd} {ma}/{md}: losses {}/{} against the float {la}/{ld}", e.att_loss_x1000, e.def_loss_x1000);
-            assert!((e.rounds - rounds).abs() <= 1, "{na}v{nd} {ma}/{md}: {} rounds against {rounds}", e.rounds);
-            // The prototype's own end rule (0.5, residual not counted) differs by design; shown.
-            let dp = (e.att_loss_x1000 - pa).abs().max((e.def_loss_x1000 - pd).abs());
-            println!("{na}v{nd} {ma}/{md}: losses {}/{}, float reference {la}/{ld}, prototype {pa}/{pd}", e.att_loss_x1000, e.def_loss_x1000);
-            worst = (worst.0.max(d), worst.1.max(dp));
+        let presence = Tuning { presence: true, ..TUNING };
+        let mut worst = [0; 3];
+        for &(na, nd, ma, md, r3, r4, proto) in &CASES {
+            let b = uniform(na, nd, ma, md);
+            for (k, (tu, r)) in [(TUNING, r3), (presence, r4)].into_iter().enumerate() {
+                let e = resolve_expected_tuned(&b, &[], &tu);
+                let d = (e.att_loss_x1000 - r[0]).abs().max((e.def_loss_x1000 - r[1]).abs());
+                assert!(d <= 25, "{na}v{nd} {ma}/{md} {tu:?}: losses {}/{} against the float {}/{}", e.att_loss_x1000, e.def_loss_x1000, r[0], r[1]);
+                assert!((e.rounds - r[2]).abs() <= 1, "{na}v{nd} {ma}/{md} {tu:?}: {} rounds against {}", e.rounds, r[2]);
+                worst[k] = worst[k].max(d);
+            }
+            let (e, s) = (resolve_expected(&b), sample(&b, 2000, 3));
+            let p = resolve_expected_tuned(&b, &[], &presence);
+            worst[2] = worst[2].max((e.att_loss_x1000 - proto[0]).abs().max((e.def_loss_x1000 - proto[1]).abs()));
+            println!(
+                "{na}v{nd} {ma}/{md}: losses {}/{} (with presence {}/{}), sampled {}/{}, prototype {}/{}",
+                e.att_loss_x1000, e.def_loss_x1000, p.att_loss_x1000, p.def_loss_x1000, s.att_loss, s.def_loss, proto[0], proto[1]
+            );
         }
-        println!("largest difference: {} (x1000) from the float reference, {} from the prototype", worst.0, worst.1);
+        println!(
+            "largest differences (x1000) from the float references: {} in use, {} with presence; {} in use from the prototype's own numbers",
+            worst[0], worst[1], worst[2]
+        );
     }
 
     #[test]
