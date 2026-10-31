@@ -12,8 +12,8 @@ cases were decided, and what is left.
 | Phase (spec) | What | Status |
 |---|---|---|
 | 5 Governors | production audit; direct-rule slots, army target sizes, governors, the bench, the Governors screen | done |
-| Requisition (2026-10-31) | the feed mode gone; armies requisition from any city (docs/ARMIES.md) | rules done; AI and UI next |
-| 6 Engagement combat | stance quotas, which requisition will fill | after the owner's review of the promotion inventory (docs/COMBAT_INVENTORY.md) |
+| Requisition (2026-10-31) | the feed mode gone; armies requisition from any city (docs/ARMIES.md) | done |
+| 6 Engagement combat | stance quotas, which requisition will fill | in progress (docs/COMBAT_INVENTORY.md has the owner's answers) |
 
 Code: rules `crates/ffh-core/src/governors.rs` (hooks: `player_init_city`, `city_kill`, the player
 turn, `player_find_new_capital`, the city's yield, commerce, happiness, health, production and
@@ -21,7 +21,7 @@ experience modifiers, `city_can_train` / `construct` / `create`); data
 `data/xml/Gameinfo/CIV4GovernorProfileInfos.xml`, `CIV4GovernorTraitInfos.xml`,
 `CIV4GovernorNameInfos.xml` (`ffh-data` `infos/governor.rs`), tuning `data/xml/RulesDefines.xml`
 (`GOVERNOR_*`); AI `crates/ffh-ai/src/governor.rs` (the governor's production choice, the AI's
-slots, the unit a requisition takes), `culture.rs` (`govern`: a human's governors' defenders against revolt pressure); UI
+slots), `armies.rs` (which cities the AI's armies requisition from, the unit a requisition takes), `culture.rs` (`govern`: a human's governors' defenders against revolt pressure); UI
 `crates/ffh-play/src/view/governors.rs`, the city query's `governance`, `assets/app/governors.js`.
 Tests: `crates/ffh-core/tests/governors.rs`, `crates/ffh-ai/src/governor.rs`; the harness checks
 that a governed city always has production (`ffh_harness::check`).

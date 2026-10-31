@@ -21,8 +21,8 @@ Code: rules `crates/ffh-core/src/army/` (`mod.rs`: armies, garrisons, the sync, 
 supply, destinations; `requisition.rs`; `march.rs`; hooks: the production queue's train order and
 `city_push_order` in `city/turn.rs`, the player turn and its units' turn in `player/turn.rs`,
 `unit_convert` and `unit_kill` in `unit/lifecycle.rs`, `city_kill`, the controller's
-`requisition_unit`); tuning `data/xml/RulesDefines.xml` (`ARMY_*`); AI `crates/ffh-ai/src/armies.rs`,
-`governor.rs` (`requisition_unit`); UI `crates/ffh-play/src/view/armies.rs`, the unit panel's army
+`requisition_unit`); tuning `data/xml/RulesDefines.xml` (`ARMY_*`); AI `crates/ffh-ai/src/armies.rs` (the main
+army's requisition, `requisition_unit`); UI `crates/ffh-play/src/view/armies.rs`, the unit panel's army
 actions (`view/units.rs`), the city query's `recruit` and its queue's `dest`,
 `assets/app/armies.js`. Tests: `crates/ffh-core/tests/armies.rs`, `crates/ffh-ai/src/armies.rs`;
 the harness checks that a marching unit is in no army and that requisition orders lead their
@@ -116,7 +116,7 @@ every list. Requisition needs a target size: an army with none (0) requisitions 
   unit that can take the city attack role: strength times its city attack bonus), else the
   strongest attacker; only army units the city can train (ties: the cheaper). A picked city that
   can train none is skipped that turn. The AI's: the governors' old feeding choice
-  (`ffh-ai governor::requisition_unit`).
+  (`ffh-ai armies::requisition_unit`).
 
 **Marching recruits** (`army/march.rs`). A unit bound elsewhere is created in the producing city as
 a normal unit (build effects, experience, promotions, upkeep, unit class limits: all as for any
@@ -213,32 +213,53 @@ reinforcement pauses: no attrition in v1 (the spec).
 
 ## AI (summary; docs/AI.md "Armies")
 
-The AI's groups become armies by themselves through the sync, so its movement logic drives each
-army unchanged. What it adds is logistics: at war or preparing one, its cities send the attack
-units they train (the attack, city attack, collateral and counter roles) to its main field army
-(the largest army of at least two units in supply, the nearest to the enemy on ties): they march
-to it. It sets that army's target size to the army the war needs. Defenders and everything else
-stay in their city's garrison; a defender that walked to another of its cities joins that city's
-garrison when it arrives. The unit a city trains for a requisition is the governors' old feeding
-choice (`governor::requisition_unit`). Which cities its armies requisition from, and leaving
-marching recruits alone in its unit play, are next (the AI's part of the 2026-10-31 redesign).
+The AI's groups become armies through the sync, so its movement logic drives each army unchanged.
+What it adds is logistics. At war or preparing one, its main field army is the largest army of two
+or more units in supply; it stays the main one while it is at least two thirds the size of the
+largest, and out of supply there is no main army that turn. Its target size is the army the war
+needs (`diplomacy::army_needed_for_war`), and no other army has one. While the main army is short,
+it requisitions from as many cities as it lacks units: the soonest to deliver (training plus the
+march by land, within 20 turns), governed cities first. A directly ruled city is used only when
+what it would interrupt is worth less: not a wonder, ritual, settler, worker, hero or ship, not the
+last turns of a build, and not an attacker already bound for the army; never a city that needs its
+production for its own defence. At peace there is no requisition. The unit is siege up to a third
+of the army, then the best city attacker (`armies::requisition_unit`, the AI's
+`Controller::requisition_unit`). The directly ruled cities' own attackers march to the main army
+too; the rules count them in its shortfall, so nothing counts twice. Defenders stay in their
+garrison. Marching recruits are the rules' to move: the AI gives them no orders, takes none into
+its stacks, escorts or transports, does not count them as defenders, and keeps requisition orders
+when it clears a queue. Switches: `ARMIES` and `REQUISITION` (`FFH_AI_*_OFF`).
+
+Measured (8 civs, standard map, 400 turns, seeds 1-6, the three options; totals): recruits sent
+1053 (master's transit 1013; requisition off 608), joined 925 in 5.5 turns on average, diverted 111,
+killed on the way 104 (about a tenth, the same share with the requisition off: it comes from
+marching itself); requisition orders placed 953, withdrawn 257 (mostly re-placed the same turn in
+the same city, progress kept); cities taken by conquest 166 against 125 with the requisition off
+on the same binary. `ffh bench` turn times are no slower than master's.
 
 ## UI (ffh-play)
 
-(Before the 2026-10-31 redesign; the requisition and marching recruits come next.)
-
+- **Armies screen** (F5, the menu's Armies): each army has its name (editable), units, place (a
+  click selects it on the map), supply, target size against its units, recruits marching and units
+  in training, Upgrade all and Disband. Its **requisition** lists the cities it requisitions from,
+  how many more it wants and its orders in production. "Requisition from…" has a checkbox per city
+  with the unit the city would train, its training turns and its march to the army
+  (`army_requisition`; "Release all" sends `army_requisition_set` with no cities). Below come the
+  recruits marching to the army: where from, where they are (a click selects one), turns away or
+  how long they have waited; then each garrison with the recruits marching to it.
+- **City screen.** An army's requisition order leads the queue as "Requisitioned by the 2nd Army",
+  with no remove button and no destination selector (`pop_order` refuses it). Other land-unit
+  orders keep their destination selector (the city's default, this city's garrison, another city's
+  garrison, an army with its size). Under the queue: the city's default destination, its garrison
+  and the armies requisitioning from it. Governed cities have no mode selector; F9 shows the armies
+  requisitioning from each city.
+- **Marching recruits** can be selected to look at. The unit panel says "Marching to the 2nd Army
+  (n turns)" (or that it waits, or has no way there now) and offers no orders; every unit command
+  refuses it, naming the destination, and it is never among the units waiting for orders. On the
+  iso, flat and 2D art maps an ochre double chevron replaces its moves pip (the 3D and HD-2D
+  renderers have no mark yet), and the plot tooltip says where it goes.
 - **Unit panel.** Each unit's row shows its army (amber; red when out of supply) or "garrison".
   With a whole army selected, a line gives its size and target, its recruits on the way and its
-  supply, with a link to the Armies screen. The Army section lists the commands above that the
-  selection can take, each with its help.
-- **Armies screen** (F5, the menu's Armies): every army with its name (editable), units, place
-  (a click selects it on the map), supply, target size, Upgrade all and Disband, and the recruits
-  on their way (the view's `transit`, now the marching units: where they come from, how many turns
-  they need, or how long they have waited); then every city's garrison and the recruits on their
-  way to it.
-- **City screen.** Each order for an army unit in the production queue has a destination selector
-  (the city's default, this city's garrison, another city's garrison, an army with its size); a
-  requisition order is flagged (`requisition`). Under the queue, the city's default destination and
-  its garrison.
+  supply, with a link to the Armies screen.
 - **Messages**: a recruit setting out, waiting, diverted, arrived, stopped and killed on the way; a
   requisition placed or withdrawn.
