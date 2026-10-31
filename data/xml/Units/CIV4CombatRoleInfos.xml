@@ -1,0 +1,150 @@
+<?xml version="1.0"?>
+<!-- Engagement roles (GAMEOPTION_ENGAGEMENTS; this game's own rules, phase 6 of the owner's spec
+     "Engagement combat"; docs/COMBAT_INVENTORY.md).
+     Every land unit type has one role. It comes from the unit's CombatRole if set, else from
+     the first role here whose DefaultUnitCombats holds the unit's unit combat and whose
+     DefaultFreePromotion, if any, the unit type has free (roles with a promotion are tried first),
+     else from the bDefault role (monstrous units and summons with no unit combat). A unit of
+     FromRole holding FromPromotion takes the role instead (a Frontline unit with Formation is a
+     Screen). Sea and air units have no role. A type without strength (a Worker, a Settler, a great
+     person) has one too: whether a unit fights is its own strength, which promotions can add to
+     (a Worker that takes the Godslayer is a 3/3 Frontline unit).
+
+     iAttackPercent / iDefensePercent: the unit's attack (iCombat) and defence (iCombatDefense)
+         in an engagement are multiplied by these (100 = 1.0), unless the unit sets iAttack /
+         iDefense; iMaxHP: its hit points in an engagement, unless the unit sets iHP.
+     bBack: back position, shielded: enemies hit it only once no front-position unit of its side
+         lives (unless they ignore the shield). Every role without bBack is front position.
+     bScreen: a screen (front position); bIgnoresShield: may hit back-position units while
+         front-position ones live.
+     TargetOrder: the classes a unit of the role hits, first non-empty class first: FRONT (front
+         position, screens included), BACK (back position), SCREEN (screens), HERO_SUPPORT (heroes
+         and support units; read from phase 7 on). Within a class the target is chosen at random. -->
+<Civ4CombatRoleInfos xmlns="x-schema:CIV4UnitSchema.xml">
+	<CombatRoleInfos>
+		<CombatRoleInfo>
+			<Type>COMBATROLE_FRONTLINE</Type>
+			<Description>TXT_KEY_COMBATROLE_FRONTLINE</Description>
+			<Help>TXT_KEY_COMBATROLE_FRONTLINE_HELP</Help>
+			<iAttackPercent>100</iAttackPercent>
+			<iDefensePercent>100</iDefensePercent>
+			<iMaxHP>120</iMaxHP>
+			<bBack>0</bBack>
+			<bScreen>0</bScreen>
+			<bIgnoresShield>0</bIgnoresShield>
+			<TargetOrder>
+				<Target>FRONT</Target>
+				<Target>BACK</Target>
+			</TargetOrder>
+			<!-- the spec: melee, animals, beasts, monstrous units, summons; recon units fight as frontline -->
+			<DefaultUnitCombats>
+				<UnitCombat>UNITCOMBAT_MELEE</UnitCombat>
+				<UnitCombat>UNITCOMBAT_ANIMAL</UnitCombat>
+				<UnitCombat>UNITCOMBAT_BEAST</UnitCombat>
+				<UnitCombat>UNITCOMBAT_RECON</UnitCombat>
+			</DefaultUnitCombats>
+			<bDefault>1</bDefault>
+		</CombatRoleInfo>
+		<CombatRoleInfo>
+			<Type>COMBATROLE_SCREEN</Type>
+			<Description>TXT_KEY_COMBATROLE_SCREEN</Description>
+			<Help>TXT_KEY_COMBATROLE_SCREEN_HELP</Help>
+			<iAttackPercent>100</iAttackPercent>
+			<iDefensePercent>110</iDefensePercent>
+			<iMaxHP>120</iMaxHP>
+			<bBack>0</bBack>
+			<bScreen>1</bScreen>
+			<bIgnoresShield>0</bIgnoresShield>
+			<TargetOrder>
+				<Target>FRONT</Target>
+				<Target>BACK</Target>
+			</TargetOrder>
+			<!-- the owner's answer Q7: Formation (anti-mounted) makes a frontline unit a screen -->
+			<FromRole>COMBATROLE_FRONTLINE</FromRole>
+			<FromPromotion>PROMOTION_FORMATION</FromPromotion>
+		</CombatRoleInfo>
+		<CombatRoleInfo>
+			<Type>COMBATROLE_BACKLINE</Type>
+			<Description>TXT_KEY_COMBATROLE_BACKLINE</Description>
+			<Help>TXT_KEY_COMBATROLE_BACKLINE_HELP</Help>
+			<iAttackPercent>100</iAttackPercent>
+			<iDefensePercent>60</iDefensePercent>
+			<iMaxHP>80</iMaxHP>
+			<bBack>1</bBack>
+			<bScreen>0</bScreen>
+			<bIgnoresShield>0</bIgnoresShield>
+			<TargetOrder>
+				<Target>FRONT</Target>
+				<Target>BACK</Target>
+			</TargetOrder>
+			<!-- archers, siege, and the Airship (the only land unit with UNITCOMBAT_NAVAL) -->
+			<DefaultUnitCombats>
+				<UnitCombat>UNITCOMBAT_ARCHER</UnitCombat>
+				<UnitCombat>UNITCOMBAT_SIEGE</UnitCombat>
+				<UnitCombat>UNITCOMBAT_NAVAL</UnitCombat>
+			</DefaultUnitCombats>
+		</CombatRoleInfo>
+		<CombatRoleInfo>
+			<Type>COMBATROLE_FLANKER</Type>
+			<Description>TXT_KEY_COMBATROLE_FLANKER</Description>
+			<Help>TXT_KEY_COMBATROLE_FLANKER_HELP</Help>
+			<iAttackPercent>110</iAttackPercent>
+			<iDefensePercent>80</iDefensePercent>
+			<iMaxHP>100</iMaxHP>
+			<bBack>0</bBack>
+			<bScreen>0</bScreen>
+			<bIgnoresShield>1</bIgnoresShield>
+			<TargetOrder>
+				<Target>SCREEN</Target>
+				<Target>BACK</Target>
+				<Target>FRONT</Target>
+			</TargetOrder>
+			<DefaultUnitCombats>
+				<UnitCombat>UNITCOMBAT_MOUNTED</UnitCombat>
+			</DefaultUnitCombats>
+		</CombatRoleInfo>
+		<CombatRoleInfo>
+			<Type>COMBATROLE_ASSASSIN</Type>
+			<Description>TXT_KEY_COMBATROLE_ASSASSIN</Description>
+			<Help>TXT_KEY_COMBATROLE_ASSASSIN_HELP</Help>
+			<iAttackPercent>120</iAttackPercent>
+			<iDefensePercent>60</iDefensePercent>
+			<iMaxHP>60</iMaxHP>
+			<bBack>0</bBack>
+			<bScreen>0</bScreen>
+			<bIgnoresShield>1</bIgnoresShield>
+			<!-- phase 7 puts HERO_SUPPORT first (the spec: support units and heroes, then other
+			     back-position enemies, then front; ignores screens) -->
+			<TargetOrder>
+				<Target>BACK</Target>
+				<Target>FRONT</Target>
+			</TargetOrder>
+			<!-- the owner's answer Q6: recon units with Marksman free (every FfH assassin) -->
+			<DefaultUnitCombats>
+				<UnitCombat>UNITCOMBAT_RECON</UnitCombat>
+			</DefaultUnitCombats>
+			<DefaultFreePromotion>PROMOTION_MARKSMAN</DefaultFreePromotion>
+		</CombatRoleInfo>
+		<CombatRoleInfo>
+			<Type>COMBATROLE_SUPPORT</Type>
+			<Description>TXT_KEY_COMBATROLE_SUPPORT</Description>
+			<Help>TXT_KEY_COMBATROLE_SUPPORT_HELP</Help>
+			<iAttackPercent>100</iAttackPercent>
+			<iDefensePercent>50</iDefensePercent>
+			<iMaxHP>70</iMaxHP>
+			<bBack>1</bBack>
+			<bScreen>0</bScreen>
+			<bIgnoresShield>0</bIgnoresShield>
+			<TargetOrder>
+				<Target>FRONT</Target>
+				<Target>BACK</Target>
+			</TargetOrder>
+			<!-- mages and (the spec's default) disciples; the religions' fighters are Frontline by
+			     their CombatRole -->
+			<DefaultUnitCombats>
+				<UnitCombat>UNITCOMBAT_ADEPT</UnitCombat>
+				<UnitCombat>UNITCOMBAT_DISCIPLE</UnitCombat>
+			</DefaultUnitCombats>
+		</CombatRoleInfo>
+	</CombatRoleInfos>
+</Civ4CombatRoleInfos>

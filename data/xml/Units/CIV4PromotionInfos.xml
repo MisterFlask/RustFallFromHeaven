@@ -4,6 +4,9 @@
 <!-- Copyright Firaxis Games 2005 -->
 <!-- -->
 <!-- Promotion Infos -->
+<!-- This game's change (the owner's answer Q1 of docs/COMBAT_INVENTORY.md): PROMOTION_WITHERED
+     and PROMOTION_PUPPET also lower defence (iCombatPercentDefense -10 and -20), which engagement
+     combat applies to Dv. -->
 <Civ4PromotionInfos xmlns="x-schema:CIV4UnitSchema.xml">
     <PromotionInfos>
         <PromotionInfo>
@@ -5686,6 +5689,7 @@
             <Description>TXT_KEY_PROMOTION_PUPPET</Description>
             <Sound>AS2D_IF_LEVELUP</Sound>
             <iCombatPercent>-20</iCombatPercent>
+            <iCombatPercentDefense>-20</iCombatPercentDefense>
             <Button>Art/Interface/Buttons/Promotions/Puppet.dds</Button>
             <bNotAlive>1</bNotAlive>
             <bRace>1</bRace>
@@ -7293,6 +7297,7 @@
             <iNeutralHealChange>-20</iNeutralHealChange>
             <iFriendlyHealChange>-20</iFriendlyHealChange>
             <iCombatPercent>-10</iCombatPercent>
+            <iCombatPercentDefense>-10</iCombatPercentDefense>
             <iExperiencePercent>-50</iExperiencePercent>
             <UnitCombats>
                 <UnitCombat>

@@ -2,7 +2,7 @@
 <!-- Tuning values of this game's own rules (not FFH2's): read after GlobalDefines.xml,
      GlobalDefinesAlt.xml and PythonCallbackDefines.xml, like them. Each system's doc lists
      its values: docs/CULTURE.md for the CULTURE_* defines, docs/ARMIES.md for the ARMY_* ones, docs/GOVERNORS.md for the
-     GOVERNOR_* ones. Percentages are integers
+     GOVERNOR_* ones; the ENGAGEMENT_* ones are engagement combat's (phase 6). Percentages are integers
      (100 = 1.0). -->
 <Civ4Defines xmlns="x-schema:CIV4GlobalDefinesSchema.xml">
 	<!-- ==== Cultural channels (GAMEOPTION_CULTURE_ACTIONS, docs/CULTURE.md) ==== -->
@@ -123,5 +123,81 @@
 	<Define>
 		<DefineName>GOVERNOR_MAX_TRAITS</DefineName>
 		<iDefineIntVal>2</iDefineIntVal>
+	</Define>
+	<!-- ==== Engagement combat (GAMEOPTION_ENGAGEMENTS; phase 6 of the owner's spec, whose
+	     parameter names follow each comment; roles: Units/CIV4CombatRoleInfos.xml, stances:
+	     Units/CIV4StanceInfos.xml, plot changes: iEngagementSlotsChange of terrains and features) ==== -->
+	<!-- SLOTS_BASE: units each side commits to an engagement, before the defended plot's changes -->
+	<Define>
+		<DefineName>ENGAGEMENT_SLOTS_BASE</DefineName>
+		<iDefineIntVal>8</iDefineIntVal>
+	</Define>
+	<!-- SLOTS_MIN: the fewest slots a side has -->
+	<Define>
+		<DefineName>ENGAGEMENT_SLOTS_MIN</DefineName>
+		<iDefineIntVal>3</iDefineIntVal>
+	</Define>
+	<!-- the slots change of a hills plot (hills are a plot type, not a terrain); a feature's change
+	     adds to it, the terrain's does not -->
+	<Define>
+		<DefineName>ENGAGEMENT_SLOTS_HILLS</DefineName>
+		<iDefineIntVal>-2</iDefineIntVal>
+	</Define>
+	<!-- SLOTS_RIVER: attacker slots lost attacking across a river; units that cross rivers freely
+	     (bRiver) may fill them -->
+	<Define>
+		<DefineName>ENGAGEMENT_SLOTS_RIVER</DefineName>
+		<iDefineIntVal>2</iDefineIntVal>
+	</Define>
+	<!-- SLOTS_DEFENSE_DIVISOR: percent of a city's current defence per attacker slot lost -->
+	<Define>
+		<DefineName>ENGAGEMENT_SLOTS_DEFENSE_DIVISOR</DefineName>
+		<iDefineIntVal>25</iDefineIntVal>
+	</Define>
+	<!-- SUMMON_EXTRA_SLOTS: summons a side may add in battle beyond its slots (phase 7) -->
+	<Define>
+		<DefineName>ENGAGEMENT_SUMMON_EXTRA_SLOTS</DefineName>
+		<iDefineIntVal>2</iDefineIntVal>
+	</Define>
+	<!-- BASE_DAMAGE: B in a hit's damage B x A / (A + Dv) x r, in HP -->
+	<Define>
+		<DefineName>ENGAGEMENT_BASE_DAMAGE</DefineName>
+		<iDefineIntVal>20</iDefineIntVal>
+	</Define>
+	<!-- r ~ U(0.8, 1.2): the lowest and highest r, in percent -->
+	<Define>
+		<DefineName>ENGAGEMENT_DAMAGE_RAND_MIN</DefineName>
+		<iDefineIntVal>80</iDefineIntVal>
+	</Define>
+	<Define>
+		<DefineName>ENGAGEMENT_DAMAGE_RAND_MAX</DefineName>
+		<iDefineIntVal>120</iDefineIntVal>
+	</Define>
+	<!-- MAX_ROUNDS: rounds before both sides disengage (a draw: the plot does not change hands) -->
+	<Define>
+		<DefineName>ENGAGEMENT_MAX_ROUNDS</DefineName>
+		<iDefineIntVal>40</iDefineIntVal>
+	</Define>
+	<!-- WITHDRAW_HP_PCT: a unit with a withdrawal chance rolls once, the first round it ends below
+	     this percent of its HP -->
+	<Define>
+		<DefineName>ENGAGEMENT_WITHDRAW_HP_PERCENT</DefineName>
+		<iDefineIntVal>40</iDefineIntVal>
+	</Define>
+	<!-- AUTO_MIN_HP_PCT: the auto-pick skips units below this percent of their HP while healthier
+	     ones of the role are left -->
+	<Define>
+		<DefineName>ENGAGEMENT_AUTO_MIN_HP_PERCENT</DefineName>
+		<iDefineIntVal>50</iDefineIntVal>
+	</Define>
+	<!-- RECON_REVEAL_RANGE: plots within which a recon unit reveals an army's stance (phase 7) -->
+	<Define>
+		<DefineName>ENGAGEMENT_RECON_REVEAL_RANGE</DefineName>
+		<iDefineIntVal>2</iDefineIntVal>
+	</Define>
+	<!-- battle reports the game keeps (the oldest are dropped) -->
+	<Define>
+		<DefineName>ENGAGEMENT_REPORTS_KEPT</DefineName>
+		<iDefineIntVal>128</iDefineIntVal>
 	</Define>
 </Civ4Defines>

@@ -17,7 +17,7 @@
 
 use crate::enums::*;
 use crate::idx::IdxVec;
-use crate::infos::InfoBase;
+use crate::infos::{CombatRoleType, InfoBase};
 use crate::registry::Rd;
 
 // ---------------------------------------------------------------------------------------------
@@ -729,6 +729,18 @@ pub struct UnitInfo {
     pub ai_block_perm_defense: bool,
     /// C++ `isAIblockPatrol()`.
     pub ai_block_patrol: bool,
+    // ---- This game's own: engagement combat (GAMEOPTION_ENGAGEMENTS) ----
+    /// `CombatRole`: the unit's engagement role in place of the one its unit combat gives it
+    /// (`GameData::type_combat_role`).
+    pub combat_role: Option<CombatRoleType>,
+    /// `iAttack` (0: none): replaces `iCombat` x the role's attack percent as the base of the
+    /// unit's engagement attack A.
+    pub attack_override: i32,
+    /// `iDefense` (0: none): replaces `iCombatDefense` x the role's defence percent as the base
+    /// of its engagement defence Dv.
+    pub defense_override: i32,
+    /// `iHP` (0: none): replaces the role's max HP.
+    pub hp_override: i32,
 }
 
 /// C++ `CvUnitInfo::read` + `readPass2` + `readPass3`.
@@ -918,6 +930,11 @@ pub fn read_unit(rd: &Rd) -> UnitInfo {
         ai_block_explore: rd.bool("bAIblockExplore"),
         ai_block_perm_defense: rd.bool("bAIblockPermDefense"),
         ai_block_patrol: rd.bool("bAIblockPatrol"),
+        // ---- This game's own: engagement combat ----
+        combat_role: rd.rf::<CombatRoleType>("CombatRole"),
+        attack_override: rd.int("iAttack"),
+        defense_override: rd.int("iDefense"),
+        hp_override: rd.int("iHP"),
         // ---- readPass2 ----
         unit_convert_from_combat: rd.rf::<UnitType>("UnitConvertFromCombat"),
         unit_create_from_combat: rd.rf::<UnitType>("UnitCreateFromCombat"),

@@ -45,6 +45,19 @@ macro_rules! game_data {
             /// order. `CvUnit::maxCombatStr` only reads those, so it scans this short list
             /// instead of every promotion.
             pub combat_mod_promotions: Vec<PromotionType>,
+            /// Derived at load (not XML): the engagement role of each unit type
+            /// ([`GameData::type_combat_role`]). Every land and immobile type has one, a type
+            /// without strength too (workers, settlers, great people): whether a unit fights is its
+            /// own strength (C++ `CvUnit::canFight`), which promotions add to (a Worker that takes
+            /// the Godslayer is a 3/3 unit, and Frontline). `None` for sea and air types only, which
+            /// never take part in a land engagement. A unit's own role also depends on its
+            /// promotions ([`Self::screen_role`]).
+            pub unit_roles: IdxVec<UnitType, Option<CombatRoleType>>,
+            /// Derived at load: the role a unit changes to by promotion, from the role with
+            /// `FromRole` (from, promotion, to): a Frontline unit with Formation is a Screen.
+            pub screen_role: Option<(CombatRoleType, PromotionType, CombatRoleType)>,
+            /// Derived at load: the `bDefault` stance (new armies and garrisons, units in no army).
+            pub default_stance: StanceType,
         }
 
         /// (xml file, registry class) for every info table, in load order.
@@ -68,7 +81,7 @@ macro_rules! game_data {
                 )*
                 let defines = Defines::from_map(&define_map);
                 // (derived tables are filled by `GameData::derive`)
-                GameData { reg, define_map, defines, text, barks: String::new(), warnings, $( $field, )* combat_mod_promotions: Vec::new() }
+                GameData { reg, define_map, defines, text, barks: String::new(), warnings, $( $field, )* combat_mod_promotions: Vec::new(), unit_roles: IdxVec::new(), screen_role: None, default_stance: StanceType::default() }
             }
         }
     };
@@ -150,6 +163,8 @@ game_data! {
     governor_profiles: GovernorProfileType => GovernorProfileInfo, "Gameinfo/CIV4GovernorProfileInfos.xml", governor::read_governor_profile;
     governor_traits: GovernorTraitType => GovernorTraitInfo, "Gameinfo/CIV4GovernorTraitInfos.xml", governor::read_governor_trait;
     governor_names: GovernorNameType => GovernorNameInfo, "Gameinfo/CIV4GovernorNameInfos.xml", governor::read_governor_names;
+    combat_roles: CombatRoleType => CombatRoleInfo, "Units/CIV4CombatRoleInfos.xml", engagement::read_combat_role;
+    stances: StanceType => StanceInfo, "Units/CIV4StanceInfos.xml", engagement::read_stance;
 }
 
 /// Lists declared in GlobalTypes.xml that are referenced by type name in XML.
@@ -277,6 +292,91 @@ impl GameData {
                 info.cultural_aggression = (100 + (150 - info.limited_war_rand) / 3 + 2 * flavor).clamp(40, 180);
             }
         }
+        self.derive_engagements();
+    }
+
+    /// Engagement combat's derived tables (`unit_roles`, `screen_role`, `default_stance`), and the
+    /// checks the resolver relies on (one default role and stance, positive multipliers and HP).
+    fn derive_engagements(&mut self) {
+        let mut warnings = Vec::new();
+        let defaults: Vec<CombatRoleType> = self.combat_roles.keys().filter(|&r| self.combat_roles[r].default).collect();
+        if defaults.len() != 1 {
+            warnings.push(format!("{} combat roles have bDefault (one expected)", defaults.len()));
+        }
+        for r in self.combat_roles.keys() {
+            let info = &self.combat_roles[r];
+            if info.attack_percent <= 0 || info.defense_percent <= 0 || info.max_hp <= 0 || info.targets.is_empty() {
+                warnings.push(format!("{}: iAttackPercent, iDefensePercent and iMaxHP must be above 0 and TargetOrder not empty", info.base.type_));
+            }
+            if info.from_role.is_some() != info.from_promotion.is_some() {
+                warnings.push(format!("{}: FromRole and FromPromotion go together", info.base.type_));
+            }
+        }
+        let promoted: Vec<CombatRoleType> = self.combat_roles.keys().filter(|&r| self.combat_roles[r].from_role.is_some()).collect();
+        if promoted.len() > 1 {
+            warnings.push(format!("{} combat roles have a FromRole (at most one expected)", promoted.len()));
+        }
+        self.screen_role = promoted.first().and_then(|&to| {
+            let info = &self.combat_roles[to];
+            Some((info.from_role?, info.from_promotion?, to))
+        });
+        let stances: Vec<StanceType> = self.stances.keys().filter(|&s| self.stances[s].default).collect();
+        if stances.len() != 1 {
+            warnings.push(format!("{} stances have bDefault (one expected)", stances.len()));
+        }
+        self.default_stance = stances.first().copied().unwrap_or_default();
+        self.unit_roles =
+            IdxVec::from_fn(self.units.len(), |u| if self.type_engages_on_land(u) { self.type_combat_role(u) } else { None });
+        self.warnings.extend(warnings);
+    }
+
+    /// Whether units of a type can take part in a land engagement once they have strength: a land
+    /// domain (`DOMAIN_LAND`, or `DOMAIN_IMMOBILE`: Guardian Vines). Ships never defend a land plot
+    /// and air units never engage. The type's own strength is not asked: whether a unit fights is
+    /// decided per unit (C++ `CvUnit::canFight`, on `baseCombatStr` / `baseCombatStrDefense`,
+    /// which promotions raise: equipment, Great Commander, Heroic Strength).
+    pub fn type_engages_on_land(&self, u: UnitType) -> bool {
+        matches!(self.units[u].domain_type, Some(DomainType::DOMAIN_LAND) | Some(DomainType::DOMAIN_IMMOBILE))
+    }
+
+    /// The engagement role a unit type's data gives it, its strength and domain aside: its
+    /// `CombatRole`, else the first role whose `DefaultUnitCombats` holds its unit combat and
+    /// whose `DefaultFreePromotion`, if any, it has free (roles with a promotion are tried first,
+    /// then XML order: a recon unit with Marksman free is an Assassin), else the `bDefault` role.
+    /// [`Self::unit_roles`] holds it for every land and immobile type.
+    pub fn type_combat_role(&self, u: UnitType) -> Option<CombatRoleType> {
+        let info = &self.units[u];
+        if info.combat_role.is_some() {
+            return info.combat_role;
+        }
+        if let Some(uc) = info.unit_combat_type {
+            let claims = |r: CombatRoleType| {
+                let role = &self.combat_roles[r];
+                role.default_unit_combats.contains(&uc) && role.default_free_promotion.map_or(true, |p| info.free_promotions[p])
+            };
+            let with_promotion = self.combat_roles.keys().filter(|&r| self.combat_roles[r].default_free_promotion.is_some());
+            let without = self.combat_roles.keys().filter(|&r| self.combat_roles[r].default_free_promotion.is_none());
+            if let Some(r) = with_promotion.chain(without).find(|&r| claims(r)) {
+                return Some(r);
+            }
+        }
+        self.combat_roles.keys().find(|&r| self.combat_roles[r].default)
+    }
+
+    /// The change to each side's engagement slots on a plot (added to `ENGAGEMENT_SLOTS_BASE`):
+    /// `ENGAGEMENT_SLOTS_HILLS` on hills, plus the feature's `iEngagementSlotsChange` where it is
+    /// non-zero, else, on a flat plot, the terrain's. So the terrain's "open land" change counts only
+    /// on a flat plot without a forest or jungle, and a feature replaces it.
+    pub fn engagement_slots_change(&self, terrain: TerrainType, feature: Option<FeatureType>, hills: bool) -> i32 {
+        let feature_change = feature.map_or(0, |f| self.features[f].engagement_slots_change);
+        let cover = if feature_change != 0 {
+            feature_change
+        } else if hills {
+            0
+        } else {
+            self.terrains[terrain].engagement_slots_change
+        };
+        (if hills { self.defines.engagement_slots_hills } else { 0 }) + cover
     }
 
     /// Verifies that data-defined tables whose order is hard-coded in C++ enums match.
