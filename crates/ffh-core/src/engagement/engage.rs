@@ -49,7 +49,7 @@ use ffh_data::*;
 
 use super::battle::{damage_from_hp, hp_from_damage, Battle, BattleEffect, Fighter, Params, Side, TargetClass};
 use super::pick::{StanceChoice, WarTest};
-use super::resolve::{resolve_sampled, resolve_sampled_quiet, targets, EngageResult, TargetState, Targets};
+use super::resolve::{resolve_sampled, resolve_sampled_quiet, targets, BattleRng, EngageResult, TargetState, Targets};
 use super::apply::Post;
 use super::report::{BattleLog, BattleReport, CitySnap, Outcome, PlotSnap, ReportSide};
 use super::resolve::{Fate, Resolution};
@@ -58,6 +58,7 @@ use super::slots::Slots;
 use super::stats::HitCtx;
 use crate::game::Game;
 use crate::ids::*;
+use crate::unit::{DefStrikeHit, DefStrikeRoll, UnitOverlay};
 
 /// An order to fight an engagement (`group_attack_force`, `unit_attack`).
 #[derive(Clone, Debug)]
@@ -136,6 +137,56 @@ impl Eng {
     }
 }
 
+/// An engagement's set-up ([`Game::engage_setup`]): what the real fight, the estimator and the
+/// preview share.
+#[derive(Clone, Debug)]
+pub(crate) struct Setup {
+    pub ctx: HitCtx,
+    pub slots: Slots,
+    /// The attacker's force, the defender's candidates, the stance they are picked with and the
+    /// pick.
+    pub force: Vec<UnitId>,
+    pub candidates: Vec<UnitId>,
+    pub def_stance: StanceType,
+    pub def_pick: Vec<UnitId>,
+    /// The committed units in the round model's order (the force, then the defender's pick),
+    /// each one's side, the number of attackers.
+    pub units: Vec<UnitId>,
+    pub sides: Vec<Side>,
+    pub n_att: usize,
+    /// The defended plot holds a city (no defensive withdrawal, Q3).
+    pub in_city: bool,
+    /// The battle before the morale check and the opening.
+    pub battle: Battle,
+}
+
+impl Setup {
+    /// The candidates the defender does not commit.
+    pub fn def_reserve(&self) -> Vec<UnitId> {
+        self.candidates.iter().copied().filter(|u| !self.def_pick.contains(u)).collect()
+    }
+}
+
+/// One roll of the morale check (plan 6.3; [`Game::engage_morale_rolls`]): fighter `roller`
+/// against the Fear source `src` (round model indices).
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub(crate) struct MoraleRoll {
+    pub roller: usize,
+    pub src: usize,
+    pub chance: i32,
+    pub roll: i32,
+    pub passed: bool,
+}
+
+/// The opening's rolls (plan 6.4 steps 1 and 2; [`Game::engage_opening_rolls`]): per committed
+/// attacker that was struck at, its strike roll and the strike's damage; per committed attacker
+/// with collateral damage, the units it hit with their damage before and after.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub(crate) struct OpeningRolls {
+    pub strikes: Vec<(usize, DefStrikeRoll, DefStrikeHit)>,
+    pub collateral: Vec<(usize, Vec<(UnitId, i32, i32)>)>,
+}
+
 /// The battle-model target class of a role's XML class.
 fn class_of(c: ffh_data::TargetClass) -> TargetClass {
     match c {
@@ -207,6 +258,45 @@ impl Game {
         Battle::new(self.engage_params(), fighters, |h, t| self.engage_hit(units[h], units[t], sides[h], ctx))
     }
 
+    /// The set-up of an engagement once the attacker's force is chosen (plan 6.1; module comment,
+    /// step 1): the defender's pick of `candidates` under `def_stance` (with the damage fields
+    /// `damage` in place of the units' own), both sides in the round model's order and the
+    /// [`Battle`] with HP from those damage fields and nobody sat out yet. The real fight
+    /// ([`Game::engage`]), the estimator ([`Game::engage_estimate`]) and the preview
+    /// ([`Game::engage_preview`]) all build their battle here, so its fighters, pairs and HP are
+    /// the fight's own; they differ in where the force, the candidates and the stance come from.
+    /// `Err`: an empty force, or no defender.
+    pub(crate) fn engage_setup(&self, ctx: HitCtx, slots: Slots, force: Vec<UnitId>, candidates: Vec<UnitId>, def_stance: StanceType, damage: &[(UnitId, i32)]) -> Result<Setup, &'static str> {
+        if force.is_empty() {
+            return Err("no unit can attack there");
+        }
+        if candidates.is_empty() {
+            return Err("there is nobody to fight there");
+        }
+        let def_pick = self.engage_auto_pick_with(&candidates, def_stance, &slots, Side::Defender, &ctx, damage);
+        if def_pick.is_empty() {
+            return Err("there is nobody to fight there");
+        }
+        debug_assert!(
+            force.len() as i32 <= slots.max(Side::Attacker) && def_pick.len() as i32 <= slots.max(Side::Defender),
+            "an engagement committed {} attackers and {} defenders with {:?}",
+            force.len(),
+            def_pick.len(),
+            slots
+        );
+        let n_att = force.len();
+        let units: Vec<UnitId> = force.iter().chain(&def_pick).copied().collect();
+        let sides: Vec<Side> = (0..units.len()).map(|i| if i < n_att { Side::Attacker } else { Side::Defender }).collect();
+        let in_city = self.plot_is_city(ctx.to, false, None);
+        let mut battle = self.engage_battle(&units, &sides, &vec![false; units.len()], in_city, &ctx);
+        if !damage.is_empty() {
+            for (i, &u) in units.iter().enumerate() {
+                battle.set_start(i, super::damage_with(self, u, damage), false);
+            }
+        }
+        Ok(Setup { ctx, slots, force, candidates, def_stance, def_pick, units, sides, n_att, in_city, battle })
+    }
+
     /// Phase 7 hook (plan 6.2, 14): the pre-battle spells' effects on battle `b` (its fighters
     /// committed, before the morale check and the opening), applied to it by both integrators.
     /// None in phase 6.
@@ -255,29 +345,23 @@ impl Game {
         // 1. Set-up.
         let slots = self.engage_slots(&ctx);
         let att_stance = self.engage_attack_stance(p, from, launcher);
-        let (pool, auto, force, by_player) = if forced {
+        let (pool, force, given) = if forced {
             let f: Vec<UnitId> = force
                 .unwrap_or_default()
                 .into_iter()
                 .filter(|&u| self.units.contains(u) && !self.unit_is_dead(u) && self.unit_can_attack(u) && self.unit_combat_role(u).is_some())
                 .collect();
-            (f.clone(), f.clone(), f, false)
+            (f.clone(), f, false)
         } else {
             let pool = self.engage_attackers(p, from, to, WarTest::AtWar);
-            let auto = self.engage_auto_pick(&pool, att_stance.stance, &slots, Side::Attacker, &ctx);
             match force {
                 Some(f) => {
                     self.engage_validate_force(&pool, &f, &slots)?;
-                    let mut a = auto.clone();
-                    let mut b = f.clone();
-                    a.sort();
-                    b.sort();
-                    let by_player = a != b;
-                    (pool, auto, f, by_player)
+                    (pool, f, true)
                 }
                 None => {
                     let f = self.engage_propose_force(&pool, att_stance.stance, &slots, &ctx);
-                    (pool, auto, f, false)
+                    (pool, f, false)
                 }
             }
         };
@@ -289,21 +373,10 @@ impl Game {
             return Err("there is nobody to fight there");
         }
         let def_stance = self.engage_defense_stance(to, &candidates);
-        let def_pick = self.engage_auto_pick(&candidates, def_stance.stance, &slots, Side::Defender, &ctx);
-        if def_pick.is_empty() {
-            return Err("there is nobody to fight there");
-        }
+        let setup = self.engage_setup(ctx, slots, force, candidates, def_stance.stance, &[])?;
+        let Setup { ctx, slots, force, candidates, def_pick, units, sides, n_att, in_city, battle, .. } = setup;
+        let mut battle = battle;
 
-        debug_assert!(
-            force.len() as i32 <= slots.max(Side::Attacker) && def_pick.len() as i32 <= slots.max(Side::Defender),
-            "an engagement committed {} attackers and {} defenders with {:?}",
-            force.len(),
-            def_pick.len(),
-            slots
-        );
-        let n_att = force.len();
-        let units: Vec<UnitId> = force.iter().chain(&def_pick).copied().collect();
-        let sides: Vec<Side> = (0..units.len()).map(|i| if i < n_att { Side::Attacker } else { Side::Defender }).collect();
         let mut e = Eng {
             p,
             team: self.players[p].team,
@@ -317,7 +390,7 @@ impl Game {
             units,
             n_att,
             sides,
-            in_city: self.plot_is_city(to, false, None),
+            in_city,
             strikes: 0,
             collateral: 0,
             place: self.engage_place(from, to),
@@ -333,6 +406,12 @@ impl Game {
         e.owners = e.units.iter().map(|&u| self.units[u].owner).collect();
         let wants_log = log.unwrap_or_else(|| self.engage_seen_by_human(&e.units, p, to));
         let mut sink = if wants_log {
+            // The attacker's auto-pick is the stance's proposal; a force that differs from it is
+            // the player's (or the AI's) own.
+            let auto = if given { self.engage_propose_force(&pool, att_stance.stance, &e.slots, &e.ctx) } else { force.clone() };
+            let mut sorted = [auto.clone(), force.clone()];
+            sorted.iter_mut().for_each(|v| v.sort());
+            let by_player = sorted[0] != sorted[1];
             let reserves: Vec<(UnitId, Side)> = pool
                 .iter()
                 .filter(|u| !e.units.contains(u))
@@ -344,8 +423,7 @@ impl Game {
             None
         };
 
-        // The battle value; phase 7's pre-battle effects.
-        let mut battle = self.engage_battle(&e.units, &e.sides, &e.sat_out, e.in_city, &e.ctx);
+        // Phase 7's pre-battle effects.
         let mut effects = self.engage_pre_battle(&battle);
 
         // 2. Morale.
@@ -525,81 +603,138 @@ impl Game {
         }
     }
 
-    /// The strongest committed unit of side `s` with Fear that fights (plan 6.3): by base
+    /// The strongest committed unit among `units[range]` with Fear that fights (plan 6.3): by base
     /// strength, then level, then the lowest id.
-    fn engage_fear_source(&self, e: &Eng, s: Side) -> Option<usize> {
-        e.of(s)
-            .filter(|&i| !e.sat_out[i] && self.unit_is_fear(e.units[i]))
-            .max_by_key(|&i| {
-                let u = e.units[i];
-                (self.unit_base_combat_str(u), self.units[u].level, std::cmp::Reverse(u))
-            })
+    fn engage_fear_source(&self, units: &[UnitId], range: std::ops::Range<usize>, sat_out: &[bool]) -> Option<usize> {
+        range.filter(|&i| !sat_out[i] && self.unit_is_fear(units[i])).max_by_key(|&i| {
+            let u = units[i];
+            (self.unit_base_combat_str(u), self.units[u].level, std::cmp::Reverse(u))
+        })
     }
 
-    /// Plan 6.3 (module comment, step 2).
+    /// The morale check's rolls (plan 6.3; module comment, step 2) on the committed `units` (the
+    /// first `n_att` attack), drawing from `rng` ("Im afeared!"): a committed Fear defender makes
+    /// each committed attacker not immune roll, then a Fear attacker that did not sit out does the
+    /// same to the defenders. Marks the units that fail in `sat_out`. Changes nothing in the game.
+    pub(crate) fn engage_morale_rolls(&self, units: &[UnitId], n_att: usize, sat_out: &mut [bool], rng: &mut impl BattleRng) -> Vec<MoraleRoll> {
+        let mut out = Vec::new();
+        let n = units.len();
+        for (src_side, rollers) in [(n_att..n, 0..n_att), (0..n_att, n_att..n)] {
+            let Some(src) = self.engage_fear_source(units, src_side, sat_out) else { continue };
+            let su = units[src];
+            let (src_str, src_level) = (self.unit_base_combat_str(su), self.units[su].level);
+            for i in rollers {
+                let u = units[i];
+                if sat_out[i] || self.unit_is_immune_to_fear(u) {
+                    continue;
+                }
+                let chance = (self.unit_base_combat_str(u) + 20 + self.units[u].level - src_str - src_level).max(4);
+                let roll = rng.rand(40, "Im afeared!");
+                let passed = roll <= chance;
+                if !passed {
+                    sat_out[i] = true;
+                }
+                out.push(MoraleRoll { roller: i, src, chance, roll, passed });
+            }
+        }
+        out
+    }
+
+    /// Plan 6.3 (module comment, step 2): the rolls on the sync RNG, then their messages and
+    /// log events.
     fn engage_morale(&mut self, e: &mut Eng, sink: &mut Option<Sink>) {
         let d = self.d;
         let turn = self.game_turn();
         let at = self.map.xy(e.to);
-        let mut staged = false;
-        for (src_side, rollers) in [(Side::Defender, Side::Attacker), (Side::Attacker, Side::Defender)] {
-            let Some(src) = self.engage_fear_source(e, src_side) else { continue };
-            let su = e.units[src];
-            let (src_str, src_level) = (self.unit_base_combat_str(su), self.units[su].level);
-            for i in e.of(rollers) {
-                let u = e.units[i];
-                if e.sat_out[i] || self.unit_is_immune_to_fear(u) {
-                    continue;
-                }
-                let chance = (self.unit_base_combat_str(u) + 20 + self.units[u].level - src_str - src_level).max(4);
-                let roll = self.soren_rand_num(40, "Im afeared!");
-                let passed = roll <= chance;
-                if let Some(s) = sink.as_mut() {
-                    if !staged {
-                        s.stage(super::report::Stage::Morale);
-                        staged = true;
-                    }
-                    s.morale(i, src, chance, roll, passed);
-                }
-                if !passed {
-                    e.sat_out[i] = true;
-                    let (owner, ty) = (self.units[u].owner, self.units[u].unit_type);
-                    let verb = if rollers == Side::Attacker { "attack" } else { "fight" };
-                    self.log.msg_at(turn, Some(owner), at, || format!("{} is afraid to {verb}", d.text.name(&d.units[ty].base.description)));
-                }
+        let rolls = self.with_sync_rng(|g, rng| g.engage_morale_rolls(&e.units, e.n_att, &mut e.sat_out, rng));
+        if let (Some(s), false) = (sink.as_mut(), rolls.is_empty()) {
+            s.stage(super::report::Stage::Morale);
+        }
+        for r in rolls {
+            if let Some(s) = sink.as_mut() {
+                s.morale(r.roller, r.src, r.chance, r.roll, r.passed);
+            }
+            if !r.passed {
+                let u = e.units[r.roller];
+                let (owner, ty) = (self.units[u].owner, self.units[u].unit_type);
+                let verb = if e.side(r.roller) == Side::Attacker { "attack" } else { "fight" };
+                self.log.msg_at(turn, Some(owner), at, || format!("{} is afraid to {verb}", d.text.name(&d.units[ty].base.description)));
             }
         }
     }
 
-    /// Plan 6.4 steps 1 and 2 (module comment, step 3).
+    /// The opening's rolls (plan 6.4 steps 1 and 2; module comment, step 3) for the committed
+    /// `units` (the first `n_att` attack; those in `sat_out` never close in) on plot `to`, over the
+    /// units `on_plot` (the plot's own for the real fight; what the attacker sees for a preview),
+    /// reading and updating `ov`, drawing from `rng` in the fight's order: each attacker's
+    /// defensive strike (roll, then the strike's damage), then each attacker's collateral. Changes
+    /// nothing in the game.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn engage_opening_rolls(
+        &self,
+        units: &[UnitId],
+        n_att: usize,
+        sat_out: &[bool],
+        to: PlotIdx,
+        on_plot: &[UnitId],
+        ov: &mut UnitOverlay,
+        rng: &mut impl BattleRng,
+    ) -> OpeningRolls {
+        let mut out = OpeningRolls::default();
+        for i in 0..n_att {
+            let a = units[i];
+            if sat_out[i] || self.unit_is_immune_to_defensive_strike(a) {
+                continue;
+            }
+            let roll = self.unit_defensive_strike_roll_on(on_plot, a, ov, rng);
+            if let Some(best) = roll.best {
+                let hit = self.unit_defensive_strike_damage(best, a, ov, rng);
+                if hit.used_up {
+                    ov.use_up(best);
+                }
+                if hit.damage > 0 {
+                    let now = ov.damage(self, a);
+                    ov.set_damage(a, crate::utils::range(now + hit.damage, 0, self.unit_max_hit_points(a)));
+                }
+                out.strikes.push((i, roll, hit));
+            }
+        }
+        for i in 0..n_att {
+            let a = units[i];
+            if sat_out[i] || self.unit_collateral_damage(a) <= 0 {
+                continue;
+            }
+            let hit = self.unit_collateral_rolls(a, to, on_plot, None, true, ov, rng);
+            out.collateral.push((i, hit));
+        }
+        out
+    }
+
+    /// Plan 6.4 steps 1 and 2 (module comment, step 3): the rolls on the sync RNG, then their
+    /// writes (damage, strikers used up, XP, messages) and log events in the same order.
     fn engage_opening(&mut self, e: &mut Eng, sink: &mut Option<Sink>) {
         if let Some(s) = sink.as_mut() {
             s.stage(super::report::Stage::Opening);
         }
-        for i in e.of(Side::Attacker) {
+        let on_plot = self.map.plots[e.to].units.clone();
+        let rolls = self.with_sync_rng(|g, rng| g.engage_opening_rolls(&e.units, e.n_att, &e.sat_out, e.to, &on_plot, &mut UnitOverlay::default(), rng));
+        for (i, roll, hit) in rolls.strikes {
             let a = e.units[i];
-            if e.sat_out[i] || self.unit_is_immune_to_defensive_strike(a) {
-                continue;
+            let Some(best) = roll.best else { continue };
+            self.unit_defensive_strike_write(best, a, hit);
+            let pct = hit.damage;
+            if pct > 0 {
+                e.strikes += 1;
             }
-            let roll = self.unit_defensive_strike_roll(e.to, a);
-            if let Some(best) = roll.best {
-                let pct = self.unit_defensive_strike_apply(best, a);
-                if pct > 0 {
-                    e.strikes += 1;
-                }
-                if let Some(s) = sink.as_mut() {
-                    let damage = self.units[best].damage;
-                    let striker = s.ensure(self, e, best, Side::Defender, damage);
-                    s.def_strike(striker, i, &roll, pct.max(0), pct.max(0) * self.unit_engage_max_hp(a));
-                }
+            if let Some(s) = sink.as_mut() {
+                let damage = self.units[best].damage;
+                let striker = s.ensure(self, e, best, Side::Defender, damage);
+                s.def_strike(striker, i, &roll, pct, pct * self.unit_engage_max_hp(a));
             }
         }
-        for i in e.of(Side::Attacker) {
+        for (i, hit) in rolls.collateral {
             let a = e.units[i];
-            if e.sat_out[i] || self.unit_collateral_damage(a) <= 0 {
-                continue;
-            }
-            let hit = self.unit_collateral_combat_ex(a, e.to, None, true);
+            self.unit_collateral_write(a, &hit);
             e.collateral += hit.len() as i32;
             if let Some(s) = sink.as_mut() {
                 let limit = self.unit_collateral_damage_limit(a);

@@ -43,6 +43,12 @@ pub mod stats;
 #[cfg(test)]
 mod calibrate;
 
+/// Unit `u`'s damage field, or its override in `damage` (an estimate's; the last entry of a unit
+/// counts).
+pub(crate) fn damage_with(g: &crate::game::Game, u: crate::ids::UnitId, damage: &[(crate::ids::UnitId, i32)]) -> i32 {
+    damage.iter().rev().find(|(x, _)| *x == u).map_or(g.units[u].damage, |&(_, d)| d)
+}
+
 pub use engage::EngageOutcome;
 pub use battle::{damage_from_hp, hp_from_damage, Battle, BattleEffect, Fighter, FighterIdx, Pair, Params, Side, TargetClass};
 pub use expect::{resolve_expected, resolve_expected_from, Expectation, FighterExpect, MomentStart};

@@ -253,6 +253,12 @@ impl Game {
     /// worth of units without `bRiver`). Deterministic, no RNG. `ctx` is the attack (the job
     /// strengths' plot).
     pub fn engage_auto_pick(&self, pool: &[UnitId], stance: StanceType, slots: &Slots, side: Side, ctx: &HitCtx) -> Vec<UnitId> {
+        self.engage_auto_pick_with(pool, stance, slots, side, ctx, &[])
+    }
+
+    /// [`Game::engage_auto_pick`] with the damage fields `damage` in place of the units' own (an
+    /// estimate's overrides: planned softening, damage carried between engagements).
+    pub fn engage_auto_pick_with(&self, pool: &[UnitId], stance: StanceType, slots: &Slots, side: Side, ctx: &HitCtx, damage: &[(UnitId, i32)]) -> Vec<UnitId> {
         let d = self.d;
         let info = &d.stances[stance];
         let s = slots.max(side).max(0) as usize;
@@ -272,7 +278,7 @@ impl Game {
             .iter()
             .filter_map(|&u| {
                 let role = self.unit_combat_role(u)?;
-                let damage = self.units[u].damage;
+                let damage = super::damage_with(self, u, damage);
                 let job = match side {
                     Side::Attacker => self.engage_job_attack(u, ctx),
                     Side::Defender => self.engage_job_defense(u, ctx),
