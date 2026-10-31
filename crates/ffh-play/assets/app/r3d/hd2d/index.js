@@ -53,7 +53,8 @@ export class MapHd2d extends Map3D {
       this.dispose();
       throw e;
     }
-    this.groundReady = this.loadGround();
+    performance.mark("hd2d:ctor");
+    this.groundReady = this.loadGround().then(() => performance.mark("hd2d:ground"));
   }
 
   /** The pixel-art ground into the 3D renderer's material layers (this scene's own: the 3D

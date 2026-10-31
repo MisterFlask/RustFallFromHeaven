@@ -762,18 +762,22 @@ export class MapView {
       try {
         // The HD-2D mode (docs/HD2D.md) is the 3D renderer with its sprites and passes: its own
         // module, so the 3D renderer alone never loads it.
+        performance.mark("r3d:import");
         if (mode === "hd2d") mod = await import("./r3d/hd2d/index.js");
         else mod = await import("./r3d/map3d.js");
+        performance.mark("r3d:imported");
         if (this.iso) this.useIso(false);
         if (this.art) {
           this.art.dispose();
           this.art = null;
         }
         r3d = new mod.Map3D(this);
+        performance.mark("r3d:constructed");
         // Its programs compile in parallel where the browser can; the page stays live meanwhile,
         // and a compile that takes too long gives up (r3d/gl.js, whenCompiled).
         this.r3dLoading = r3d.ready();
         await this.r3dLoading;
+        performance.mark("r3d:ready");
         this.r3d = r3d;
       } catch (e) {
         console.error("3d map:", e);

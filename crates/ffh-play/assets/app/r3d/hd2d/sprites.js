@@ -52,6 +52,8 @@ export class SpriteAtlas {
     this.cap = 0;
     this.tex = null;
     this.mipsDirty = false;
+    /** Start-up counters (performance marks). */
+    this.stats = { loads: 0, uploads: 0, allocs: 0, mips: 0, recolours: 0 };
     this.alloc(64);
   }
 
@@ -66,6 +68,7 @@ export class SpriteAtlas {
     gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     this.cap = n;
+    this.stats && this.stats.allocs++;
     this.sources.forEach((c, layer) => c && this.upload(layer, c));
     if (old) gl.deleteTexture(old);
     this.mipsDirty = true;
@@ -127,7 +130,10 @@ export class SpriteAtlas {
   }
 
   load(key, e) {
+    if (this.pending === 0) performance.mark("hd2d:sprites-busy");
     this.pending++;
+    this.stats.loads++;
+    if (this.base.has(key)) this.stats.recolours++;
     const b = this.base.get(key);
     const src = b ? b.key : key;
     const im = new Image();
@@ -160,6 +166,7 @@ export class SpriteAtlas {
 
   upload(layer, c) {
     const gl = this.gl;
+    this.stats && this.stats.uploads++;
     gl.bindTexture(gl.TEXTURE_2D_ARRAY, this.tex);
     // A 2D canvas holds premultiplied colour: kept so, the mipmaps average colour and coverage
     // together (no dark fringe where a sprite meets its transparent surround).
@@ -169,6 +176,7 @@ export class SpriteAtlas {
   }
 
   changed() {
+    if (this.pending === 0) performance.mark("hd2d:sprites-idle", { detail: { ...this.stats, layers: this.entries.size, cap: this.cap } });
     if (this.pending === 0) for (const f of this.waiters.splice(0)) f();
     this.onload();
   }
@@ -184,6 +192,7 @@ export class SpriteAtlas {
     const gl = this.gl;
     gl.bindTexture(gl.TEXTURE_2D_ARRAY, this.tex);
     gl.generateMipmap(gl.TEXTURE_2D_ARRAY);
+    this.stats.mips++;
     this.mipsDirty = false;
   }
 
