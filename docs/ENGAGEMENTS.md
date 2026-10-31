@@ -30,6 +30,12 @@ transport counts: an amphibious attack) and `to` is land. The rule is applied at
   one engagement launched by the group, or for a group of missiles only one missile strike per
   missile. The stack-attack loop, the sacrifice choice and `PLAYEROPTION_STACK_ATTACK` are not used.
   Each order into an enemy plot is one engagement; a follow-up is a new order.
+  `group_attack_plan(g, x, y, flags, force, stance)` is the same entry with the stance the
+  attacker chose for this attack (the human's battle plan and its stance picker, through the
+  `engage` command): that stance proposes the force when none is given, a given force is judged
+  against its pick (the log's `picked_by`), and the report records it as the attacker's stance;
+  `group_attack_force` passes none (the attack's own stance: its army's, ...). A call parameter
+  (`EngageOrder::stance`), not state: nothing is saved.
 - `unit_attack(u, to)` (Taunt, the Shrine of Camulos, Gift of Kylorin): a one-unit engagement,
   forced (whatever the unit's moves and attacks this turn, as today's `attack`), or a missile's
   strike; with only non-combatants there, today's attack.

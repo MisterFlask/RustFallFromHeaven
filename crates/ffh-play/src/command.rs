@@ -68,8 +68,10 @@ pub enum Command {
     /// Engagement combat: the stance of city `city`'s garrison.
     GarrisonStance { city: CityId, stance: StanceType },
     /// Engagement combat: attack plot `to` (next to the attackers) with `force` (checked against
-    /// the pool on the attacking plot), else with the pick of `stance`, else with the proposal
-    /// of the attack's own stance (the launcher's army's). `by`: an army, the selected units
+    /// the pool on the attacking plot), else with the proposal of `stance`, else of the attack's
+    /// own stance (the launcher's army's). `stance` is the one the attack fights with and its
+    /// report records (a force is the player's pick when it is not that stance's own). `by`: an
+    /// army, the selected units
     /// (either one's group launches the attack and moves in when the plot is cleared) or a plot.
     /// `declare_war` as `move`'s (`None` asks, `Some(false)` is the popup's "no").
     Engage { by: EngageBy, to: (i32, i32), force: Option<Vec<UnitId>>, stance: Option<StanceType>, declare_war: Option<bool> },
@@ -785,7 +787,7 @@ pub enum Action {
     /// they refuse).
     Army(Command),
     /// `engage` after the checks: declare war on `war` first, then attack `to` from `from`
-    /// (`group_attack_force`, launched by `by`'s group).
+    /// (`group_attack_plan`, launched by `by`'s group).
     Engage { by: EngageBy, from: PlotIdx, to: PlotIdx, force: Option<Vec<UnitId>>, stance: Option<StanceType>, war: Option<TeamId> },
     Research { tech: Option<TechType>, shift: bool },
     Revolution { civics: IdxVec<CivicOptionType, Option<CivicType>> },
@@ -1674,24 +1676,19 @@ fn join_selection(g: &mut Game, units: &[UnitId]) -> Option<GroupId> {
     g.units.get(head)?.group
 }
 
-/// The `engage` command after `validate` (docs/ENGAGEMENTS.md): the war declaration, the force
-/// (the one given, else `stance`'s proposal, else `None`: the attack's own stance proposes it in
-/// the rules), the launching group (the army's, the selection's, else the group of the army whose
-/// stance the attack takes, else of its first unit), then one engagement through
-/// `group_attack_force` (`MOVE_DIRECT_ATTACK`: the plot is next to it; a refusal changes nothing).
+/// The `engage` command after `validate` (docs/ENGAGEMENTS.md): the war declaration, the
+/// launching group (the army's, the selection's, else the group of the army whose stance the
+/// attack takes, else of its first unit), then one engagement through `group_attack_plan`
+/// (`MOVE_DIRECT_ATTACK`: the plot is next to it; a refusal changes nothing) with the force given
+/// (else the stance's proposal, in the rules) and the stance chosen (else the attack's own): the
+/// report records the stance the player picked, and judges the force against its pick.
 #[allow(clippy::too_many_arguments)]
 fn engage(g: &mut Game, h: PlayerId, by: &EngageBy, from: PlotIdx, to: PlotIdx, force: Option<Vec<UnitId>>, stance: Option<StanceType>, war: Option<TeamId>) {
     let team = g.players[h].team;
     if let Some(t) = war {
         g.team_declare_war(team, t, false, None);
     }
-    let ctx = HitCtx::new(from, to);
     let pool = g.engage_attackers(h, from, to, WarTest::AtWar);
-    let force = match (force, stance) {
-        (Some(f), _) => Some(f),
-        (None, Some(s)) => Some(g.engage_propose_force(&pool, s, &g.engage_slots(&ctx), &ctx)),
-        (None, None) => None,
-    };
     let launcher = match by {
         EngageBy::Army(a) => g.armies.get(*a).and_then(|a| a.group),
         EngageBy::Units(units) => join_selection(g, units),
@@ -1707,7 +1704,7 @@ fn engage(g: &mut Game, h: PlayerId, by: &EngageBy, from: PlotIdx, to: PlotIdx, 
         g.groups[grp].last_plot_visible = g.plot_is_visible(to, team);
     }
     let (x, y) = g.map.xy(to);
-    let _ = g.group_attack_force(grp, x, y, ffh_core::defs::MOVE_DIRECT_ATTACK, force);
+    let _ = g.group_attack_plan(grp, x, y, ffh_core::defs::MOVE_DIRECT_ATTACK, force, stance);
 }
 
 /// Applies a validated action for `h`.
