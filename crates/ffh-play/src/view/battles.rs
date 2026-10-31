@@ -495,12 +495,12 @@ fn opening_json(kind: &str) -> Json {
 /// effects, flight, the move in). The stages, the morale rolls that passed and the battle's end
 /// are the log's bookkeeping (the outcome has the end): left out. Phase 7's casts go with their
 /// stage: before the battle into `events` (round 0), after it into `after`.
-fn log_events(g: &Game, log: &BattleLog) -> (Vec<Json>, Vec<Json>) {
+fn log_events(g: &Game, log: &[LogEvent]) -> (Vec<Json>, Vec<Json>) {
     let (mut events, mut after) = (Vec::new(), Vec::new());
     let mut afraid_of: Vec<(FighterIdx, FighterIdx)> = Vec::new();
     let mut post = false;
     let k = |kind: &str| crate::jobj! { "kind" => kind };
-    for e in &log.events {
+    for e in log {
         match e {
             LogEvent::Stage { stage } => post = matches!(stage, Stage::Post),
             LogEvent::Morale { unit, source, passed, .. } => {
@@ -734,7 +734,7 @@ pub fn battle_log(v: &Viewer, id: u32) -> Result<Json, QueryErr> {
         LogEvent::End { down, .. } => Some(*down),
         _ => None,
     });
-    let (events, after) = log_events(g, log);
+    let (events, after) = log_events(g, &log.events);
     let o = &r.outcome;
     // Each side's line: of the units in it, those that sat out, fell, escaped and stand.
     let line = r.sides.iter().map(|s| crate::jobj! { "committed" => s.committed, "sat_out" => s.sat_out, "fallen" => s.fallen, "escaped" => s.escaped, "standing" => s.standing });
@@ -1013,6 +1013,91 @@ mod tests {
         g.map.plots[hidden].revealed[team] = true;
         let v = Viewer::new(&g, h, false);
         assert!(plot_now(&v, hidden, false).get("terrain").and_then(Json::as_i64).is_some(), "once revealed");
+    }
+
+    /// The log's events as the screens read them, from a hand-built log with every event of the
+    /// opening and after: an afraid unit's actor is the Fear unit of its failed roll (not of
+    /// another unit's, nor of its passed one); a defensive strike that did no harm is a miss; a
+    /// cast before the battle goes to `events` at round 0, one after it to `after`; the stages,
+    /// the passed roll and the end stay out.
+    #[test]
+    fn the_log_events_map_the_opening_and_after() {
+        use ffh_core::engagement::formation::{Heal, Knock};
+        let d = ffh_data::global();
+        let g = Game::new(d, ffh_core::setup::GameSetup::standard(d, 2, "WORLDSIZE_DUEL", 5));
+        let spell = SpellType::from_usize(0);
+        let action = Event {
+            round: 1,
+            pass: 2,
+            actor: 0,
+            kind: ActionKind::Strike,
+            spell: None,
+            target: Some(3),
+            hits: vec![Hit { target: 3, dmg: 1800, expected: 2000, r: 90, crit: true, miss: false, killed: false, withdrew: false, splash: false }],
+            heal: None,
+            knocked: Some(Knock { unit: 3, from: 0, to: 1 }),
+            note: None,
+        };
+        let heal = Event { round: 2, pass: 1, actor: 4, kind: ActionKind::Heal, spell: None, target: Some(0), hits: Vec::new(), heal: Some(Heal { target: 0, amount: 900, r: 110 }), knocked: None, note: None };
+        let log = vec![
+            LogEvent::Stage { stage: Stage::PreBattle },
+            LogEvent::Cast { caster: 4, spell, targets: vec![0, 1], effect: CastEffect::Damage(vec![(0, 500), (1, 700)]) },
+            LogEvent::Stage { stage: Stage::Morale },
+            LogEvent::Morale { unit: 1, source: 5, chance: 20, roll: 30, passed: true },
+            LogEvent::Morale { unit: 2, source: 6, chance: 20, roll: 10, passed: false },
+            LogEvent::SatOut { unit: 2, why: SatOutWhy::Afraid },
+            LogEvent::Morale { unit: 1, source: 7, chance: 20, roll: 5, passed: false },
+            LogEvent::SatOut { unit: 1, why: SatOutWhy::Afraid },
+            LogEvent::Stage { stage: Stage::Opening },
+            LogEvent::DefStrike { striker: 5, target: 0, rolled: 1, chance: 30, roll: 40, pct: 10, dmg: 0 },
+            LogEvent::DefStrike { striker: 6, target: 0, rolled: 2, chance: 30, roll: 10, pct: 10, dmg: 1200 },
+            LogEvent::Stage { stage: Stage::Battle },
+            LogEvent::Action(action),
+            LogEvent::Action(heal),
+            LogEvent::End { rounds: 3, down: [false, true] },
+            LogEvent::Stage { stage: Stage::Post },
+            LogEvent::Cast { caster: 4, spell, targets: vec![4], effect: CastEffect::Mod { a_pct: 10, dv_pct: 0 } },
+            LogEvent::Xp { unit: 0, amount: 3, from: vec![XpSource::Kill { victim: 3, share_permille: 1000 }, XpSource::DefStrike] },
+        ];
+        let (events, after) = log_events(&g, &log);
+        let int = |j: &Json, k: &str| j.get(k).and_then(Json::as_i64);
+        let str_ = |j: &Json, k: &str| j.get(k).and_then(Json::as_str).map(str::to_owned);
+        let kinds: Vec<String> = events.iter().map(|e| str_(e, "kind").unwrap()).collect();
+        assert_eq!(kinds, ["Cast", "Afraid", "Afraid", "DefStrike", "DefStrike", "Strike", "Heal"], "{events:?}");
+        // the cast before the battle: round 0, pass 0, its damage as hits
+        let cast = &events[0];
+        assert_eq!((int(cast, "round"), int(cast, "pass"), int(cast, "actor")), (Some(0), Some(0), Some(4)));
+        assert_eq!(cast.get("hits").and_then(Json::as_arr).map(<[Json]>::len), Some(2));
+        assert_eq!(int(&cast.get("hits").unwrap().as_arr().unwrap()[1], "dmg"), Some(700));
+        // the afraid units, each with the Fear unit of its own failed roll
+        assert_eq!((int(&events[1], "actor"), int(&events[1], "target")), (Some(6), Some(2)));
+        assert_eq!((int(&events[2], "actor"), int(&events[2], "target")), (Some(7), Some(1)));
+        assert_eq!((int(&events[1], "round"), int(&events[1], "pass")), (Some(0), Some(0)));
+        // the defensive strikes: the harmless one a miss, the other its damage
+        let strike = |e: &Json| {
+            let h = &e.get("hits").and_then(Json::as_arr).unwrap()[0];
+            (int(e, "actor"), int(e, "target"), int(h, "target"), int(h, "dmg"), h.get("miss").and_then(Json::as_bool))
+        };
+        assert_eq!(strike(&events[3]), (Some(5), Some(0), Some(0), Some(0), Some(true)));
+        assert_eq!(strike(&events[4]), (Some(6), Some(0), Some(0), Some(1200), Some(false)));
+        assert_eq!((int(&events[4], "chance"), int(&events[4], "roll"), int(&events[4], "pct")), (Some(30), Some(10), Some(10)));
+        // the action as fought
+        let a = &events[5];
+        assert_eq!((int(a, "round"), int(a, "pass"), int(a, "actor"), int(a, "target")), (Some(1), Some(2), Some(0), Some(3)));
+        let hit = &a.get("hits").and_then(Json::as_arr).unwrap()[0];
+        assert_eq!((int(hit, "dmg"), hit.get("crit").and_then(Json::as_bool), hit.get("miss").and_then(Json::as_bool)), (Some(1800), Some(true), Some(false)));
+        assert_eq!(a.get("knocked").map(|k| (int(k, "unit"), int(k, "from"), int(k, "to"))), Some((Some(3), Some(0), Some(1))));
+        assert!(a.get("heal").is_some_and(Json::is_null) && a.get("note").is_some_and(Json::is_null), "{a:?}");
+        let h = &events[6];
+        assert_eq!(h.get("heal").map(|x| (int(x, "target"), int(x, "amount"), int(x, "r"))), Some((Some(0), Some(900), Some(110))));
+        assert_eq!(h.get("hits").and_then(Json::as_arr).map(<[Json]>::len), Some(0));
+        // after the battle: the cast (no round), then the XP
+        let kinds: Vec<String> = after.iter().map(|e| str_(e, "kind").unwrap()).collect();
+        assert_eq!(kinds, ["Cast", "Xp"], "{after:?}");
+        assert!(after[0].get("round").is_none(), "{:?}", after[0]);
+        assert_eq!(after[0].get("effect").and_then(|e| str_(e, "kind")).as_deref(), Some("Mod"));
+        assert_eq!((int(&after[1], "unit"), int(&after[1], "amount")), (Some(0), Some(3)));
+        assert_eq!(after[1].get("from").and_then(Json::as_arr).map(<[Json]>::len), Some(2));
     }
 
     /// The help's engagement wording goes to the units and promotions with the abilities it
