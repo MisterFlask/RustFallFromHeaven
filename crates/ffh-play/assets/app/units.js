@@ -13,6 +13,7 @@ import { render as markup } from "./markup.js";
 import { look, iconEl, unitIcon, barEl, pix, typeIcon, promotionIcon, uiIcon } from "./look.js";
 import { isoSkin, isoIcon, actionIcon, portrait, isoBar, focusOn } from "./isoui.js";
 import { effectsOf, infoTip } from "./infotips.js";
+import { marchLine } from "./armies.js";
 
 /** An 8 px icon of the ui set, or the glyph before the art loaded. */
 const icon8 = (name, glyph, title) => iconEl(`icon8/${name}`, { title }) ?? glyph;
@@ -505,11 +506,26 @@ export function shiftReleased() {
   return flushWaypoints();
 }
 
-/** Merges the selected units into one group (`join_group` of each into the first's). */
+/** The units here that take orders: not a marching recruit (this game's armies: the rules move
+ *  it until it arrives). */
+const orderable = (units) => units.filter((u) => !u.march);
+
+/** The march of the first selected marching recruit (it takes no orders), or null. */
+export function selectionMarch() {
+  for (const id of S.sel?.units ?? []) {
+    const m = S.units.get(id)?.march;
+    if (m) return m;
+  }
+  return null;
+}
+
+/** Merges the units here into one group (`join_group` of each into the first's); marching
+ *  recruits stay out (they take no orders). */
 export async function groupAll() {
   if (!S.sel) return;
-  const own = ownUnitsAt(S.sel.x, S.sel.y);
-  const head = S.sel.units[0];
+  const own = orderable(ownUnitsAt(S.sel.x, S.sel.y));
+  if (!own.length) return;
+  const head = S.sel.units.find((id) => own.some((u) => u.id === id)) ?? own[0].id;
   const headGroup = S.units.get(head)?.group;
   for (const u of own) {
     if (u.group !== headGroup) await run({ c: "join_group", unit: u.id, head }, { quiet: true });
@@ -517,10 +533,12 @@ export async function groupAll() {
   select(own.map((u) => u.id));
 }
 
-/** Splits the selection: each selected unit its own group. */
+/** Splits the selection: each selected unit its own group (a marching recruit is alone in its
+ *  group already). */
 export async function splitAll() {
   if (!S.sel) return;
-  const ids = [...S.sel.units];
+  const ids = S.sel.units.filter((id) => !S.units.get(id)?.march);
+  if (!ids.length) return;
   for (const u of ids) await run({ c: "join_group", unit: u, head: null }, { quiet: true });
   select([ids[0]]);
 }
@@ -561,7 +579,8 @@ async function loadPreview(x, y) {
       api.query("plot", { x, y }).then((r) => still() && (preview.plot = r)).catch(() => {}),
     );
   }
-  if (sel && S.status?.phase === "human" && !(sel.x === x && sel.y === y)) {
+  // (A marching recruit takes no orders: no move to preview.)
+  if (sel && S.status?.phase === "human" && !(sel.x === x && sel.y === y) && !selectionMarch()) {
     jobs.push(
       api.query("path", { units: sel.units, x, y }).then((r) => {
         if (!still()) return;
@@ -658,6 +677,8 @@ function showTip() {
         u.strength !== undefined ? ` ${u.strength}${u.defense_strength !== undefined && u.defense_strength !== u.strength ? `/${u.defense_strength}` : ""}⚔` : "",
         h("span.dim", ` ${playerName(u.owner)}${u.level > 1 ? `, level ${u.level}` : ""}${u.hp < u.max_hp ? `, ${Math.round((100 * u.hp) / u.max_hp)}% health` : ""}`),
         promos.length ? h("div.dim.tip-promos", promos.join(", ")) : null,
+        // This game's armies: a recruit of ours marching to its destination.
+        u.march ? h("div.tip-march", marchLine(u.march)) : null,
       );
     });
     lines.push(...shown);
@@ -995,28 +1016,33 @@ export function armyById(id) {
   return id === null || id === undefined ? null : (S.view?.armies ?? []).find((a) => a.id === id) ?? null;
 }
 
-/** The unit's army (its name; out of supply in warning colours) or "garrison"; null without
- *  armies or for a unit outside them (heroes, mages, recon units, summons, ships, workers). */
+/** The unit's army (its name; out of supply in warning colours), "garrison", or "marching" (a
+ *  recruit on its way, which takes no orders); null without armies or for a unit outside them
+ *  (heroes, mages, recon units, summons, ships, workers). */
 function armyBadge(u) {
+  if (u.march) return h("span.badge.march", { title: `${marchLine(u.march)}: it takes no orders until it arrives` }, "marching");
   const a = armyById(u.army);
-  if (a) return h(`span.badge.army${a.in_supply ? "" : ".warn"}`, { title: `${a.name}${a.in_supply ? "" : ": out of supply (its reinforcements wait)"}` }, a.name);
+  if (a) return h(`span.badge.army${a.in_supply ? "" : ".warn"}`, { title: `${a.name}${a.in_supply ? "" : ": out of supply (its recruits wait)"}` }, a.name);
   if (u.garrison !== null && u.garrison !== undefined) return h("span.badge.garrison", { title: `In the garrison of ${S.cities.get(u.garrison)?.name ?? "the city"}` }, "garrison");
   return null;
 }
 
-/** The selection's army in one line: its size (and target), its reinforcements on the way, its
- *  supply; the Armies screen [F5] has the rest. Null unless every selected unit is in one army. */
+/** The selection's army in one line: its size (and target), its recruits marching to it and in
+ *  training for it, its supply; the Armies screen [F5] has the rest. Null unless every selected
+ *  unit is in one army. */
 function armyLine() {
   const ids = (S.sel?.units ?? []).map((id) => S.units.get(id)?.army);
   const a = ids.length && ids.every((x) => x === ids[0]) ? armyById(ids[0]) : null;
   if (!a) return null;
   const n = a.units.length;
+  const training = a.requisition?.orders?.length ?? 0;
   return h(
     "div.army-line",
     h("b", a.name),
     h("span.dim", ` · ${n} unit${n === 1 ? "" : "s"}${a.target_size ? ` of ${a.target_size}` : ""}`),
-    a.transit.length ? h("span.dim", ` · ${a.transit.length} on the way`) : null,
-    a.in_supply ? null : h("span.warn", { title: "More than the supply range from your network of cities: its reinforcements wait" }, " · out of supply"),
+    a.marching.length ? h("span.dim", { title: "Recruits marching to it" }, ` · ${a.marching.length} marching to it`) : null,
+    training ? h("span.dim", { title: "Units its requisition has cities train for it" }, ` · ${training} in training`) : null,
+    a.in_supply ? null : h("span.warn", { title: "More than the supply range from your network of cities: its recruits wait" }, " · out of supply"),
     a.disband_to ? h("span.dim", ` · disbanding to ${a.disband_to}`) : null,
     " ",
     h("button.link.small", { onclick: () => emit("open-screen", "armies"), title: "The Armies screen [F5]" }, "armies"),
@@ -1120,11 +1146,12 @@ export function renderPanel() {
     for (const c of own.filter((c) => c.transport === u.id)) ordered.push(c);
   }
   const list = h("div.unit-list", ordered.map((u) => unitRow({ ...u, ...(details.get(u.id) ?? {}) }, S.sel.units.includes(u.id))));
+  const march = selectionMarch();
   const tools = h(
     "div.row",
     h("button", { onclick: () => select(own.map((u) => u.id)), disabled: own.length < 2, title: "Select every unit here" }, "All"),
-    h("button", { onclick: groupAll, disabled: own.length < 2, title: "Join the units here into one group" }, "Group"),
-    h("button", { onclick: splitAll, disabled: S.sel.units.length < 2, title: "Each selected unit its own group" }, "Split"),
+    h("button", { onclick: groupAll, disabled: orderable(own).length < 2, title: "Join the units here into one group (not a marching recruit)" }, "Group"),
+    h("button", { onclick: splitAll, disabled: S.sel.units.filter((id) => !S.units.get(id)?.march).length < 2, title: "Each selected unit its own group" }, "Split"),
     h("button", { onclick: () => selectNext(), title: "Next unit waiting for orders [Tab]" }, "Next"),
   );
   if (r?.actions?.some((a) => a.kind === "promotion" && a.enabled)) {
@@ -1135,10 +1162,21 @@ export function renderPanel() {
     tools.append(h("button", { onclick: () => emit("open-city", city.id), title: "Open the city (or double-click it)" }, `Open ${city.name}`));
   }
   const status = [];
+  // This game's armies: a marching recruit goes on its own and takes no orders until it arrives.
+  if (march) {
+    status.push(
+      h(
+        "div.march-line",
+        h("b", marchLine(march)),
+        march.from ? h("span.dim", ` · from ${march.from}`) : null,
+        h("div.dim", "The rules march it there; it takes no orders until it arrives."),
+      ),
+    );
+  }
   const army = armyLine();
   if (army) status.push(army);
   if (grp?.missions?.length) status.push(h("div.dim", `Orders: ${grp.missions.map((m) => dname("MissionType", m.m)).join(", ")}`));
-  if (grp && !grp.ready) status.push(h("div.dim", grp.busy ? "Busy" : "Done for this turn"));
+  if (grp && !grp.ready && !march) status.push(h("div.dim", grp.busy ? "Busy" : "Done for this turn"));
   const actions = [];
   if (r?.error) actions.push(h("p.warn", r.error));
   else if (!r?.actions) actions.push(h("p.dim", "…"));

@@ -74,6 +74,10 @@ test("the head of a stack and its state", () => {
   assert.equal(st.state.mark, "promote");
   st = St.stackState([own[1]], ctx({ automated: () => true }));
   assert.equal(st.state.mark, "auto");
+  // A marching recruit (this game's armies: the rules move it) shows the march mark, before a
+  // promotion waiting.
+  st = St.stackState([{ ...own[0], promo_ready: true, march: { to: "the 1st Army", turns_left: 3, stalled: 0 } }], ctx());
+  assert.equal(st.state.mark, "march");
   // Foreign stacks: the strongest stands in front; no moves, no mark.
   const foreign = [
     { id: 20, owner: 1, type: 1, hp: 100, max_hp: 100 },

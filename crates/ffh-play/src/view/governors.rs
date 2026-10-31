@@ -1,8 +1,8 @@
 //! This game's governors as the human sees them (docs/GOVERNORS.md): the city screen's
-//! `governance` and the Governors screen (`governors` query): direct rule, each city's governor
-//! and mode, the bench.
+//! `governance` and the Governors screen (`governors` query): direct rule, each city's governor,
+//! the bench. (An army's requisition interrupts a governed city as any city: the Armies screen,
+//! `view::armies`.)
 
-use ffh_core::army::RecruitDest;
 use ffh_core::ids::*;
 
 use crate::json::Json;
@@ -39,35 +39,14 @@ fn city_json(v: &Viewer, c: CityId) -> Json {
         "penalty_turns" => city.governor_penalty_turns,
         "production" => g.city_yield_rate(c, ffh_data::YieldType::YIELD_PRODUCTION),
         "population" => city.population,
+        // This game's armies: the armies that requisition from the city (their names).
+        "requisitioned_by" => g.players[v.h].armies.iter().filter(|&&a| g.armies.contains(a) && g.armies[a].requisition.contains(&c)).map(|&a| Json::from(g.armies[a].name.as_str())).collect::<Vec<_>>(),
     }
-}
-
-/// The armies a governed city may feed: the human's armies that take reinforcements.
-fn feedable_armies(v: &Viewer) -> Json {
-    let g = v.g;
-    if !g.armies_on() {
-        return Json::Arr(Vec::new());
-    }
-    Json::Arr(
-        g.players[v.h]
-            .armies
-            .iter()
-            .filter(|&&a| g.armies.contains(a) && g.recruit_dest_valid(v.h, RecruitDest::Army(a)))
-            .map(|&a| {
-                crate::jobj! {
-                    "id" => a,
-                    "name" => g.armies[a].name.as_str(),
-                    "units" => g.army_units(a).len(),
-                    "target_size" => g.armies[a].target_size,
-                }
-            })
-            .collect(),
-    )
 }
 
 /// The city screen's `governance` (null without governors): the city's rule and governor, the
-/// direct slots, the bench with how well each candidate suits the city, the armies it may feed,
-/// the directly ruled cities it may take the slot of.
+/// direct slots, the bench with how well each candidate suits the city, the directly ruled
+/// cities it may take the slot of.
 pub fn city(v: &Viewer, c: CityId) -> Json {
     let g = v.g;
     if !g.governors_on() || g.cities[c].owner != v.h {
@@ -95,12 +74,11 @@ pub fn city(v: &Viewer, c: CityId) -> Json {
     j.set("ready", g.city_rule_change_ready(c));
     j.set("swappable", Json::Arr(swappable));
     j.set("bench", Json::Arr(bench));
-    j.set("armies", feedable_armies(v));
     j
 }
 
 /// `governors`: the Governors screen. Every city of the human's (direct ones first), the bench,
-/// the direct slots, the armies cities may feed.
+/// the direct slots.
 pub fn screen(v: &Viewer) -> Json {
     let g = v.g;
     if !g.governors_on() {
@@ -117,6 +95,5 @@ pub fn screen(v: &Viewer) -> Json {
         "penalty_turns" => g.d.defines.governor_swap_turns,
         "cities" => Json::Arr(cities.iter().map(|&c| city_json(v, c)).collect()),
         "bench" => Json::Arr(g.player_bench(h).into_iter().map(|b| governor_json(v, b)).collect()),
-        "armies" => feedable_armies(v),
     }
 }

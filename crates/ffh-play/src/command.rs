@@ -54,13 +54,17 @@ pub enum Command {
     ArmyDisband { army: ArmyId },
     /// Upgrade the army's units, the most experienced first, while the gold lasts.
     ArmyUpgrade { army: ArmyId },
-    /// The size the army is to be kept at (0: none).
+    /// The size the army is to be kept at (0: none); while it is short of it, it requisitions.
     ArmyTarget { army: ArmyId, size: i32 },
+    /// Army `army` requisitions from city `city` (`on`: last in its list) or no longer does (its
+    /// requisition order there is withdrawn).
+    ArmyRequisition { army: ArmyId, city: CityId, on: bool },
+    /// Army `army` requisitions from `cities` (in that order) and from no other.
+    ArmyRequisitionSet { army: ArmyId, cities: Vec<CityId> },
     /// Where city `city`'s trained land combat units go: production order `index`'s, or the
     /// city's default (`index` -1); `dest` `None` = the city's default (for an order) or its own
-    /// garrison (for the city). `reinforce_to`: gone with requisition (docs/ARMIES.md); still
-    /// accepted for the protocol's sake, any value above 0 is refused.
-    RecruitDest { city: CityId, index: i32, dest: Option<ffh_core::army::RecruitDest>, reinforce_to: i32 },
+    /// garrison (for the city). A unit bound elsewhere marches there.
+    RecruitDest { city: CityId, index: i32, dest: Option<ffh_core::army::RecruitDest> },
     /// This game's governors (docs/GOVERNORS.md): rule governed city `city` directly, handing
     /// `instead_of` (directly ruled) to a governor when no slot is free.
     GovernDirect { city: CityId, instead_of: Option<CityId> },
@@ -68,9 +72,6 @@ pub enum Command {
     GovernHand { city: CityId },
     /// Governor `governor` governs city `city` (from the bench or another city).
     GovernAssign { city: CityId, governor: GovernorId },
-    /// Gone with requisition (docs/ARMIES.md): governed cities no longer feed armies; still
-    /// parsed, always refused.
-    GovernFeed { city: CityId, army: Option<ArmyId> },
     Research { tech: Option<TechType>, shift: bool },
     /// Merged over the current civics.
     UpdateCivics { civics: Vec<CivicType> },
@@ -215,11 +216,12 @@ pub const COMMAND_NAMES: &[&str] = &[
     "army_disband",
     "army_upgrade",
     "army_target",
+    "army_requisition",
+    "army_requisition_set",
     "recruit_dest",
     "govern_direct",
     "govern_hand",
     "govern_assign",
-    "govern_feed",
     "research",
     "update_civics",
     "percent_change",
@@ -256,11 +258,12 @@ pub const COMMAND_FIELDS: &[(&str, &[&str])] = &[
     ("army_disband", &["army"]),
     ("army_upgrade", &["army"]),
     ("army_target", &["army", "size"]),
-    ("recruit_dest", &["city", "index", "dest", "reinforce_to"]),
+    ("army_requisition", &["army", "city", "on"]),
+    ("army_requisition_set", &["army", "cities"]),
+    ("recruit_dest", &["city", "index", "dest"]),
     ("govern_direct", &["city", "instead_of"]),
     ("govern_hand", &["city"]),
     ("govern_assign", &["city", "governor"]),
-    ("govern_feed", &["city", "army"]),
     ("research", &["tech", "shift"]),
     ("update_civics", &["civics"]),
     ("percent_change", &["commerce", "change"]),
@@ -383,11 +386,12 @@ impl Command {
             Command::ArmyDisband { .. } => "army_disband",
             Command::ArmyUpgrade { .. } => "army_upgrade",
             Command::ArmyTarget { .. } => "army_target",
+            Command::ArmyRequisition { .. } => "army_requisition",
+            Command::ArmyRequisitionSet { .. } => "army_requisition_set",
             Command::RecruitDest { .. } => "recruit_dest",
             Command::GovernDirect { .. } => "govern_direct",
             Command::GovernHand { .. } => "govern_hand",
             Command::GovernAssign { .. } => "govern_assign",
-            Command::GovernFeed { .. } => "govern_feed",
             Command::Research { .. } => "research",
             Command::UpdateCivics { .. } => "update_civics",
             Command::PercentChange { .. } => "percent_change",
@@ -477,16 +481,12 @@ impl Command {
             "army_disband" => Command::ArmyDisband { army: j.req("army")? },
             "army_upgrade" => Command::ArmyUpgrade { army: j.req("army")? },
             "army_target" => Command::ArmyTarget { army: j.req("army")?, size: j.req("size")? },
-            "recruit_dest" => Command::RecruitDest {
-                city: j.req("city")?,
-                index: j.get_or("index", -1)?,
-                dest: recruit_dest_field(j)?,
-                reinforce_to: j.get_or("reinforce_to", 0)?,
-            },
+            "army_requisition" => Command::ArmyRequisition { army: j.req("army")?, city: j.req("city")?, on: j.req("on")? },
+            "army_requisition_set" => Command::ArmyRequisitionSet { army: j.req("army")?, cities: j.req("cities")? },
+            "recruit_dest" => Command::RecruitDest { city: j.req("city")?, index: j.get_or("index", -1)?, dest: recruit_dest_field(j)? },
             "govern_direct" => Command::GovernDirect { city: j.req("city")?, instead_of: j.opt("instead_of")? },
             "govern_hand" => Command::GovernHand { city: j.req("city")? },
             "govern_assign" => Command::GovernAssign { city: j.req("city")?, governor: j.req("governor")? },
-            "govern_feed" => Command::GovernFeed { city: j.req("city")?, army: j.opt("army")? },
             "research" => Command::Research { tech: names::opt_field(d, j, "tech")?, shift: flag("shift")? },
             "update_civics" => Command::UpdateCivics { civics: names::list_field(d, j, "civics")? },
             "percent_change" => Command::PercentChange { commerce: names::field(d, j, "commerce")?, change: j.req("change")? },
@@ -562,13 +562,12 @@ impl Command {
             Command::ArmyRename { army, name } => j.with("army", *army).with("name", name.as_str()),
             Command::ArmyDisband { army } | Command::ArmyUpgrade { army } => j.with("army", *army),
             Command::ArmyTarget { army, size } => j.with("army", *army).with("size", *size),
-            Command::RecruitDest { city, index, dest, reinforce_to } => {
-                j.with("city", *city).with("index", *index).with("dest", recruit_dest_json(*dest)).with("reinforce_to", *reinforce_to)
-            }
+            Command::ArmyRequisition { army, city, on } => j.with("army", *army).with("city", *city).with("on", *on),
+            Command::ArmyRequisitionSet { army, cities } => j.with("army", *army).with("cities", Json::Arr(cities.iter().map(|&c| Json::from(c)).collect())),
+            Command::RecruitDest { city, index, dest } => j.with("city", *city).with("index", *index).with("dest", recruit_dest_json(*dest)),
             Command::GovernDirect { city, instead_of } => j.with("city", *city).with("instead_of", *instead_of),
             Command::GovernHand { city } => j.with("city", *city),
             Command::GovernAssign { city, governor } => j.with("city", *city).with("governor", *governor),
-            Command::GovernFeed { city, army } => j.with("city", *city).with("army", *army),
             Command::Research { tech, shift } => j.with("tech", Json::opt_idx(*tech)).with("shift", *shift),
             Command::UpdateCivics { civics } => j.with("civics", Json::Arr(civics.iter().map(|&c| Json::idx(c)).collect())),
             Command::PercentChange { commerce, change } => j.with("commerce", Json::idx(*commerce)).with("change", *change),
@@ -717,14 +716,17 @@ pub struct Ctx<'a> {
     pub events: &'a [TriggeredId],
 }
 
-/// Why `govern_feed` is refused.
-const FEED_GONE: &str = "governed cities no longer feed armies: an army requisitions from the cities you pick on the Armies screen";
-
+/// A unit of the human's that takes orders: a marching recruit (this game's armies,
+/// docs/ARMIES.md) takes none until it arrives, so every unit command, the automations and the
+/// army commands refuse it, naming where it marches.
 fn unit_of(g: &Game, h: PlayerId, u: UnitId) -> Result<(), CmdErr> {
     match g.units.get(u) {
         None => Err(CmdErr::Gone),
         Some(unit) if unit.owner != h => Err(CmdErr::NotOwner),
-        Some(_) => Ok(()),
+        Some(unit) => match g.unit_march_refusal(u) {
+            Some(why) => Err(cannot(format!("the {} is {why}: it takes no orders until it arrives", names::display(g.d, unit.unit_type)))),
+            None => Ok(()),
+        },
     }
 }
 
@@ -774,11 +776,13 @@ fn apply_army(g: &mut Game, h: PlayerId, c: &Command) -> Result<(), CmdErr> {
         Command::ArmyDisband { army } => g.army_disband(h, *army),
         Command::ArmyUpgrade { army } => g.army_upgrade_all(h, *army).map(|_| ()),
         Command::ArmyTarget { army, size } => g.army_set_target_size(h, *army, *size),
+        Command::ArmyRequisition { army, city, on: true } => g.army_add_requisition(h, *army, *city),
+        Command::ArmyRequisition { army, city, on: false } => g.army_remove_requisition(h, *army, *city),
+        Command::ArmyRequisitionSet { army, cities } => g.army_set_requisition(h, *army, cities),
         Command::GovernDirect { city, instead_of } => g.player_set_direct_rule(h, *city, *instead_of),
         Command::GovernHand { city } => g.city_hand_to_governor(h, *city),
         Command::GovernAssign { city, governor } => g.city_assign_governor(h, *city, *governor),
-        Command::GovernFeed { .. } => Err(FEED_GONE),
-        Command::RecruitDest { city, index, dest, .. } => {
+        Command::RecruitDest { city, index, dest } => {
             if *index < 0 {
                 g.cities[*city].recruit_default = *dest;
             } else if let Some(o) = g.cities[*city].order_queue.get_mut(*index as usize) {
@@ -1046,6 +1050,8 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             if len <= 1 {
                 return Err(cannot("the only order cannot be removed: push its replacement instead"));
             }
+            // This game's armies: a requisition order is the army's, released on the Armies screen.
+            g.city_check_remove_order(*city, *index as usize).map_err(cannot)?;
             Plan::Apply(Action::PopOrder { city: *city, index: *index })
         }
 
@@ -1118,7 +1124,35 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             Plan::Apply(Action::Army(cmd.clone()))
         }
 
-        Command::RecruitDest { city, index, dest, reinforce_to } => {
+        Command::ArmyRequisition { army, city, on } => {
+            army_of(g, h, *army)?;
+            city_of(g, h, *city)?;
+            let listed = g.armies[*army].requisition.contains(city);
+            if *on {
+                g.army_check_requisition_city(h, *army, *city).map_err(cannot)?;
+                if listed {
+                    return Err(cannot("the army already requisitions from this city"));
+                }
+            } else if !listed {
+                return Err(cannot("the army does not requisition from this city"));
+            }
+            Plan::Apply(Action::Army(cmd.clone()))
+        }
+
+        Command::ArmyRequisitionSet { army, cities } => {
+            army_of(g, h, *army)?;
+            g.army_check_requisition(h, *army).map_err(cannot)?;
+            for (i, c) in cities.iter().enumerate() {
+                city_of(g, h, *c)?;
+                if cities[..i].contains(c) {
+                    return Err(invalid(format!("field `cities`: city {} twice", c.0)));
+                }
+                g.army_check_requisition_city(h, *army, *c).map_err(cannot)?;
+            }
+            Plan::Apply(Action::Army(cmd.clone()))
+        }
+
+        Command::RecruitDest { city, index, dest } => {
             city_of(g, h, *city)?;
             not_governed(g, *city)?;
             if !g.armies_on() {
@@ -1141,9 +1175,6 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
                 if !g.recruit_dest_valid(h, *dst) {
                     return Err(cannot("no such army or city of yours"));
                 }
-            }
-            if *reinforce_to > 0 {
-                return Err(cannot("\"reinforce to\" is gone: an army requisitions from the cities you pick on the Armies screen"));
             }
             Plan::Apply(Action::Army(cmd.clone()))
         }
@@ -1178,11 +1209,6 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             }
             g.city_check_assign_governor(h, *city, *governor).map_err(cannot)?;
             Plan::Apply(Action::Army(cmd.clone()))
-        }
-
-        Command::GovernFeed { city, .. } => {
-            city_of(g, h, *city)?;
-            return Err(cannot(FEED_GONE));
         }
 
         Command::DoTask { city, task, data1, data2, option, alt, shift, ctrl } => {
@@ -1242,7 +1268,14 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
                 TaskType::TASK_RALLY_PLOT => {
                     on_map(g, *data1, *data2)?;
                 }
-                TaskType::TASK_SET_AUTOMATED_PRODUCTION | TaskType::TASK_CLEAR_ORDERS => not_governed(g, c)?,
+                TaskType::TASK_SET_AUTOMATED_PRODUCTION => not_governed(g, c)?,
+                TaskType::TASK_CLEAR_ORDERS => {
+                    not_governed(g, c)?;
+                    // Clearing the queue would take its requisition orders off too.
+                    for i in 0..g.cities[c].order_queue.len() {
+                        g.city_check_remove_order(c, i).map_err(cannot)?;
+                    }
+                }
                 TaskType::TASK_SET_AUTOMATED_CITIZENS | TaskType::TASK_CLEAR_RALLY_PLOT => {}
                 _ => return Err(invalid("field `task`: unknown task")),
             }
@@ -1494,7 +1527,8 @@ pub fn apply(g: &mut Game, h: PlayerId, action: &Action) {
                     // UNOFFICIAL_PATCH: the type is read before the loop.
                     let unit_type = g.units[u].unit_type;
                     for lu in g.players[h].units.clone() {
-                        if g.units.get(lu).is_some_and(|unit| unit.unit_type == unit_type) {
+                        // (not a marching recruit: it takes no orders, docs/ARMIES.md)
+                        if g.units.get(lu).is_some_and(|unit| unit.unit_type == unit_type && unit.march.is_none()) {
                             g.unit_do_command(lu, *command, *data1, *data2);
                         }
                     }
@@ -1598,15 +1632,17 @@ mod tests {
             Command::ArmyDisband { army: ArmyId(1) },
             Command::ArmyUpgrade { army: ArmyId(1) },
             Command::ArmyTarget { army: ArmyId(1), size: 8 },
-            Command::RecruitDest { city: CityId(1), index: 0, dest: Some(ffh_core::army::RecruitDest::Army(ArmyId(2))), reinforce_to: 6 },
-            Command::RecruitDest { city: CityId(1), index: -1, dest: Some(ffh_core::army::RecruitDest::Garrison(CityId(3))), reinforce_to: 0 },
-            Command::RecruitDest { city: CityId(1), index: -1, dest: None, reinforce_to: 0 },
+            Command::ArmyRequisition { army: ArmyId(1), city: CityId(4), on: true },
+            Command::ArmyRequisition { army: ArmyId(1), city: CityId(4), on: false },
+            Command::ArmyRequisitionSet { army: ArmyId(1), cities: vec![CityId(4), CityId(2)] },
+            Command::ArmyRequisitionSet { army: ArmyId(1), cities: vec![] },
+            Command::RecruitDest { city: CityId(1), index: 0, dest: Some(ffh_core::army::RecruitDest::Army(ArmyId(2))) },
+            Command::RecruitDest { city: CityId(1), index: -1, dest: Some(ffh_core::army::RecruitDest::Garrison(CityId(3))) },
+            Command::RecruitDest { city: CityId(1), index: -1, dest: None },
             Command::GovernDirect { city: CityId(1), instead_of: Some(CityId(2)) },
             Command::GovernDirect { city: CityId(1), instead_of: None },
             Command::GovernHand { city: CityId(3) },
             Command::GovernAssign { city: CityId(3), governor: GovernorId(2) },
-            Command::GovernFeed { city: CityId(3), army: Some(ArmyId(1)) },
-            Command::GovernFeed { city: CityId(3), army: None },
             Command::Research { tech: None, shift: false },
             Command::Research { tech: Some(TechType(3)), shift: true },
             Command::UpdateCivics { civics: vec![CivicType(1), CivicType(5)] },
