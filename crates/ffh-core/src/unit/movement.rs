@@ -219,6 +219,10 @@ impl Game {
 
     /// C++ `CvUnit::canMoveInto` (CvUnit.cpp:3080-3444).
     /// Ends with the `unitCannotMoveInto` Python callback when `USE_UNIT_CANNOT_MOVE_INTO_CALLBACK` is set.
+    /// Engagement combat (an attack `engage_applies` to): the attack gates are the engagement's
+    /// (`Game::unit_has_attack_left`, `unit_engage_limit_ok`; plan 5.2), not the duel's made-attack
+    /// flag and best defender, so the path finder, the AI's attacker choice and `unit_can_engage`
+    /// agree.
     pub fn unit_can_move_into(
         &self,
         u: UnitId,
@@ -376,8 +380,16 @@ impl Game {
             }
         }
 
+        // Engagement combat (plan 5.2): an engagement's attack gates replace the duel's.
+        let engage = attack && self.engage_applies(u, plot);
         if attack {
-            if self.units[u].made_attack && !self.unit_is_blitz(u) {
+            if engage {
+                // One attack a turn, Blitz one more, counting engagements, bombards and missile
+                // strikes.
+                if !self.unit_has_attack_left(u) {
+                    return false;
+                }
+            } else if self.units[u].made_attack && !self.unit_is_blitz(u) {
                 return false;
             }
         }
@@ -405,7 +417,13 @@ impl Game {
                     }
                 }
 
-                if attack {
+                if engage {
+                    // Every defender instead of the best one: some defender below the combat
+                    // limit, no amphibious artillery.
+                    if !self.unit_engage_limit_ok(u, plot, crate::engagement::WarTest::AtWar) {
+                        return false;
+                    }
+                } else if attack {
                     let defender = self.plot_get_best_defender(plot, None, Some(owner), Some(u), true, false, false);
                     if let Some(defender) = defender {
                         if !self.unit_can_attack_unit(u, defender) {
