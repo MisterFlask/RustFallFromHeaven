@@ -34,6 +34,8 @@ pub mod slab;
 pub mod structs;
 pub mod team;
 pub mod telemetry;
+#[cfg(test)]
+mod test_world;
 pub mod unit;
 pub mod utils;
 

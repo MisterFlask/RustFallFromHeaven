@@ -327,6 +327,12 @@ pub enum TermSource {
     /// Phase 7: an army commander's aura.
     Aura(UnitId),
     Typed(DamageType),
+    /// The unit's hills attack bonus (`iHillsAttack`; no FfH unit or promotion has one).
+    UnitHillsAttack,
+    /// The defended plot's improvement (a fort's defense).
+    Improvement(ImprovementType),
+    /// FfH's range defense of friendly improvements near a plot without a city.
+    RangeDefense,
 }
 
 /// A pair that hit (DESIGN `Pair`).

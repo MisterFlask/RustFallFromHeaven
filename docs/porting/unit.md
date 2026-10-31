@@ -205,7 +205,7 @@ CvUnit combat: strength (`maxCombatStr` & co., `isBetterDefenderThan`, attack/de
 | `CvUnit::isAttacking` | CvUnit.cpp:8911-8914 | 4 | `unit_is_attacking` | ported |
 | `CvUnit::isDefending` | CvUnit.cpp:8917-8920 | 4 | `unit_is_defending` | ported |
 | `CvUnit::isCombat` | CvUnit.cpp:8923-8926 | 4 | `unit_is_combat` | ported |
-| `CvUnit::maxCombatStr` | CvUnit.cpp:8997-9557 | 561 | `unit_max_combat_str` | ported |
+| `CvUnit::maxCombatStr` | CvUnit.cpp:8997-9557 | 561 | `unit_max_combat_str` (its terms: `unit_combat_terms`, `StrMode::Duel`, shared with engagement combat) | ported |
 | `CvUnit::currCombatStr` | CvUnit.cpp:9560-9563 | 4 | `unit_curr_combat_str` | ported |
 | `CvUnit::currFirepower` | CvUnit.cpp:9566-9569 | 4 | `unit_curr_firepower` | ported |
 | `CvUnit::currEffectiveStr` | CvUnit.cpp:9574-9582 | 9 | `unit_curr_effective_str` | ported |

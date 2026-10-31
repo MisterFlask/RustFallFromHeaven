@@ -74,6 +74,9 @@ persist_enum!(TermSource {
     25 => Handicap,
     26 => Aura(u),
     27 => Typed(t),
+    28 => UnitHillsAttack,
+    29 => Improvement(i),
+    30 => RangeDefense,
 });
 persist_struct!(LogPair { h, t, a_x100, dv_x100, mean, a_extra, dv_extra });
 
@@ -221,6 +224,9 @@ mod tests {
             TermSource::Handicap,
             TermSource::Aura(UnitId(99)),
             TermSource::Typed(DamageType(1)),
+            TermSource::UnitHillsAttack,
+            TermSource::Improvement(ImprovementType(2)),
+            TermSource::RangeDefense,
         ]
         .into_iter()
         .enumerate()

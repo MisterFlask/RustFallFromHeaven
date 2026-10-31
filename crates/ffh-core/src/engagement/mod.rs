@@ -22,8 +22,8 @@
 //! table is `calibrate` (tests).
 //!
 //! On `Game`: the option and the dispatch rule (which attacks are engagements) and the stances'
-//! commands ([`state`]), and the battle reports with the battle log the client replays
-//! ([`report`]).
+//! commands ([`state`]), the battle reports with the battle log the client replays
+//! ([`report`]), and the units' roles, HP and A and Dv per hit ([`stats`]).
 
 pub mod battle;
 pub mod expect;
@@ -31,12 +31,14 @@ mod phi_table;
 pub mod report;
 pub mod resolve;
 pub mod state;
+pub mod stats;
 
 #[cfg(test)]
 mod calibrate;
 
 pub use battle::{damage_from_hp, hp_from_damage, Battle, BattleEffect, Fighter, FighterIdx, Pair, Params, Side, TargetClass};
 pub use expect::{resolve_expected, resolve_expected_from, Expectation, FighterExpect, MomentStart};
+pub use stats::HitCtx;
 pub use resolve::{
     resolve_sampled, resolve_sampled_quiet, targets, BattleEvent, BattleLog, BattleRng, Death, EngageResult, Fate, FighterEnd, Hit, Kill, NoTarget,
     Phase, TargetState, Targets,

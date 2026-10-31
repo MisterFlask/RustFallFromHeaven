@@ -8,8 +8,26 @@
 //! files below. `docs/porting/unit.md` maps every CvUnit.cpp function (with line ranges) to its
 //! Rust file, method or field.
 
+/// Records a strength term in a [`TermLog`]: `$value` (as added to the modifier) goes to the
+/// `CombatDetails` field `$field` and, when non-zero and a source is given, to the term list as
+/// `$src`. Evaluates to the value.
+macro_rules! term {
+    ($log:expr, $field:ident, $value:expr, $src:expr) => {{
+        let value: i32 = $value;
+        $log.record(value, |det| det.$field = value, || $src)
+    }};
+    ($log:expr, $field:ident, $value:expr) => {{
+        let value: i32 = $value;
+        $log.set(|det| det.$field = value);
+        value
+    }};
+}
+pub(crate) use term;
+
 mod actions;
 mod combat;
+#[cfg(test)]
+mod duel_reference;
 mod ffh;
 mod lifecycle;
 mod missions;
@@ -17,8 +35,100 @@ mod movement;
 mod promotions;
 
 use crate::defs::{GROUPFLAG_NONE, INVALID_PLOT_COORD};
+use crate::engagement::report::{Term, TermSource};
+use crate::engagement::stats::HitCtx;
+use crate::engagement::Side;
 use crate::ids::*;
 use ffh_data::*;
+
+pub(crate) use combat::apply_combat_modifier;
+
+/// Which strength [`Game::unit_combat_terms`](crate::game::Game::unit_combat_terms) computes.
+#[derive(Copy, Clone, Debug)]
+pub enum StrMode<'a> {
+    /// Today's duel strength (C++ `CvUnit::maxCombatStr`), in the call configurations of
+    /// `unit_max_combat_str`: `plot` is its `plot` argument (the opponent is its `attacker`).
+    Duel { plot: Option<PlotIdx> },
+    /// An engagement's attack A of the unit, on side `side`, hitting the opponent (plan 4.2).
+    EngageAttack { ctx: &'a HitCtx, side: Side },
+    /// An engagement's defence Dv of the unit, on side `side`, hit by the opponent.
+    EngageDefense { ctx: &'a HitCtx, side: Side },
+}
+
+/// The terms of a combat strength (`unit_combat_terms`): the base strength x100 (typed strength
+/// scaled by the opponent's resistances; under engagements times the role's percent) and the
+/// summed percentage modifier applied to it.
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub struct CombatTerms {
+    pub base: i32,
+    pub modifier: i32,
+}
+
+impl CombatTerms {
+    /// The strength x100: the modifier applied to the base (positive multiplies, negative
+    /// divides), at least 1. The duel's `maxCombatStr` and an engagement's A and Dv.
+    #[inline]
+    pub fn strength(self) -> i32 {
+        1.max(apply_combat_modifier(self.base, self.modifier))
+    }
+}
+
+/// Where `unit_combat_terms` records the terms of a strength besides summing them: the duel's
+/// [`CombatDetails`] fields, and the term list of an engagement's breakdown (the battle log's A
+/// and Dv parts). Both optional; with neither, nothing is recorded.
+pub(crate) struct TermLog<'a> {
+    pub details: Option<&'a mut CombatDetails>,
+    pub terms: Option<&'a mut Vec<Term>>,
+}
+
+impl<'a> TermLog<'a> {
+    /// Records nothing.
+    pub fn none() -> TermLog<'a> {
+        TermLog { details: None, terms: None }
+    }
+
+    /// C++ `maxCombatStr`'s reset of the details at its start.
+    pub fn reset(&mut self, g: &crate::game::Game, u: UnitId) {
+        if let Some(det) = self.details.as_deref_mut() {
+            *det = CombatDetails {
+                owner: Some(g.units[u].owner),
+                visual_owner: Some(g.unit_get_visual_owner(u, None)),
+                unit_name: g.unit_get_name(u),
+                ..CombatDetails::default()
+            };
+        }
+    }
+
+    #[inline]
+    pub fn set(&mut self, set: impl FnOnce(&mut CombatDetails)) {
+        if let Some(det) = self.details.as_deref_mut() {
+            set(det);
+        }
+    }
+
+    /// Adds a term to the list when it is not 0; returns it.
+    #[inline]
+    pub fn push(&mut self, value: i32, src: impl FnOnce() -> TermSource) -> i32 {
+        if value != 0 {
+            if let Some(terms) = self.terms.as_deref_mut() {
+                terms.push(Term { src: src(), pct: value });
+            }
+        }
+        value
+    }
+
+    #[inline]
+    pub fn record(&mut self, value: i32, set: impl FnOnce(&mut CombatDetails), src: impl FnOnce() -> TermSource) -> i32 {
+        self.set(set);
+        self.push(value, src)
+    }
+
+    /// Whether a term list is kept (the breakdown is wanted).
+    #[inline]
+    pub fn listing(&self) -> bool {
+        self.terms.is_some()
+    }
+}
 
 /// C++ `CombatDetails` (CvUnit.h): the breakdown `maxCombatStr` fills in for combat logs and
 /// odds displays (`Option<&mut CombatDetails>` where C++ passes `CombatDetails*`).

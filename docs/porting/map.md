@@ -420,7 +420,7 @@ are `impl Game` methods.
 | `CvPlot::updateSeeFromSight` | 2140-2165 | 26 | `plot_update_see_from_sight` | ported |
 | `CvPlot::getBestDefender` | 2713-2789 | 77 | `plot_get_best_defender` | ported |
 | `CvPlot::getUnitPower` | 2856-2878 | 23 | `plot_get_unit_power` | ported |
-| `CvPlot::defenseModifier` | 2881-2935 | 55 | `plot_defense_modifier` | ported |
+| `CvPlot::defenseModifier` | 2881-2935 | 55 | `plot_defense_modifier` (the sum of `plot_defense`'s parts) | ported |
 | `CvPlot::movementCost` | 2938-3019 | 82 | `plot_movement_cost` | ported |
 | `CvPlot::getExtraMovePathCost` | 3021-3024 | 4 | `plot_get_extra_move_path_cost` | ported |
 | `CvPlot::changeExtraMovePathCost` | 3027-3030 | 4 | `plot_change_extra_move_path_cost` | ported |
