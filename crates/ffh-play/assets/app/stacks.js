@@ -189,7 +189,9 @@ export function stackState(units, ctx) {
     const promote = units.some((u) => u.owner === ctx.me && u.promo_ready);
     const a = head.activity === null || head.activity === undefined ? null : ctx.activity?.(head.activity);
     const fights = (info(head).combat ?? "NONE") !== "NONE" && (info(head).strength ?? 1) > 0;
-    state.mark = markOf(a, { canFight: fights, automated: !!ctx.automated?.(head.group), promote });
+    // This game's armies: a marching recruit (the rules move it, it takes no orders) shows the
+    // march mark whatever else it is.
+    state.mark = head.march ? "march" : markOf(a, { canFight: fights, automated: !!ctx.automated?.(head.group), promote });
   }
   return { head, state };
 }

@@ -285,9 +285,10 @@ pub fn sortie_ok(g: &Game, p: PlayerId, plot: PlotIdx, u: UnitId) -> bool {
     if !(0..DirectionType::NUM).filter_map(|dir| g.plot_direction(x, y, DirectionType::from_usize(dir))).any(|q| g.plot_is_visible_enemy_unit_for_unit(q, u)) {
         return true;
     }
-    // (As in C++, the sortie unit counts: the strength in the city as it stands. The defenders
-    // the city's quota wants stay whatever happens.)
-    let ours: i64 = g.map.plots[plot].units.iter().filter(|&&o| g.units[o].owner == p).map(|&o| defense_power(g, o) as i64).sum();
+    // (As in C++, the sortie unit counts: the strength in the city as it stands, without the
+    // marching recruits that leave next turn, docs/ARMIES.md. The defenders the city's quota
+    // wants stay whatever happens.)
+    let ours: i64 = g.map.plots[plot].units.iter().filter(|&&o| g.units[o].owner == p && g.units[o].march.is_none()).map(|&o| defense_power(g, o) as i64).sum();
     let mut theirs = 0i64;
     for dx in -2..=2 {
         for dy in -2..=2 {

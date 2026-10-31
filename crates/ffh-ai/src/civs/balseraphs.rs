@@ -107,7 +107,7 @@ fn arena(g: &mut Game, v: &View) {
             continue;
         }
         let plot = g.city_plot(c);
-        let ours: Vec<UnitId> = g.map.plots[plot].units.iter().copied().filter(|&u| g.units[u].owner == p && !g.units[u].has_casted).collect();
+        let ours: Vec<UnitId> = g.map.plots[plot].units.iter().copied().filter(|&u| g.units[u].owner == p && !g.units[u].has_casted && g.units[u].march.is_none()).collect();
         let defenders = ours.iter().filter(|&&u| g.unit_can_defend(u, Some(plot))).count() as i32;
         let spare = defenders > crate::units::garrison_quota(g, v, c);
         let pick = ours

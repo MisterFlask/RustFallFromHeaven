@@ -849,7 +849,8 @@ survey zoom only the chip is drawn. This is the references' "1 Rome" label.
 - **Overlays** (`units/stack.js`), in the corners and on the top edge: the count chip (top-left,
   top-right in a city), a gold hero pip beside it, a 12x1 health bar in a void frame on the top edge
   (only when hurt or selected: cream above 50%, ochre from 25%, crimson below), state marks
-  (fortified, sleeping, sentry, healing, automated, promotion ready) top-right. Moves show on the
+  (fortified, sleeping, sentry, healing, automated, promotion ready; marching, a recruit of this
+  game's armies the rules move: an ochre double chevron, before the others) top-right. Moves show on the
   ring (quiet when your stack is spent); units without a ring show them as a pip bottom-right.
 - **Selection**: a white rim round the figure; **garrisons** show only when selected or moving
   (9.1).

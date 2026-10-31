@@ -72,7 +72,10 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 /// - 8: cultural channels replace the cultural queue (docs/CULTURE.md): `City::culture_channel`,
 ///   `culture_pressure`, `culture_revolt_level` in place of `culture_queue`, `culture_marks`,
 ///   `culture_revolt_turn`; `City::governor_hostile_culture` gone (governors never channel).
-pub const FORMAT_VERSION: u32 = 8;
+/// - 9: requisition and marching recruits replace transit and the governed cities' feed mode
+///   (docs/ARMIES.md): `Unit::march`, `Army::requisition`, `OrderData::requisition`; gone:
+///   `Player::transit`, `City::feed_army`, `OrderData::reinforce_to`.
+pub const FORMAT_VERSION: u32 = 9;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]

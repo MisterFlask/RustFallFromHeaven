@@ -34,7 +34,7 @@ impl CivPlay for Infernal {
         let p = v.p;
         let Some(spell) = g.d.ty::<SpellType>(SPELL) else { return };
         for u in g.players[p].units.clone() {
-            if !g.units.contains(u) || !is_manes(g, u) || !g.unit_can_cast(u, spell, false) {
+            if !g.units.contains(u) || g.unit_march(u).is_some() || !is_manes(g, u) || !g.unit_can_cast(u, spell, false) {
                 continue;
             }
             let here = g.unit_plot(u);

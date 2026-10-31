@@ -357,16 +357,29 @@ impl Game {
         });
     }
 
-    /// A unit in transit (docs/ARMIES.md): `sent` (to an army or a garrison), `arrived`, `diverted`;
-    /// the sum is the journey's turns.
-    pub(crate) fn tel_transit(&self, p: PlayerId, kind: &'static str, to_army: bool, turns: i32) {
+    /// A marching recruit (docs/ARMIES.md): `sent` (to an army or a garrison; turns: the estimated
+    /// march), `arrived`, `diverted`, `stopped` (no city it can reach), `killed` (turns: since it
+    /// set out); counted as `march` by kind, the sum the turns.
+    pub(crate) fn tel_march(&self, p: PlayerId, kind: &'static str, to_army: bool, turns: i32) {
         if !self.telemetry.on() {
             return;
         }
         let turn = self.game_turn();
         self.telemetry.with(|t| {
-            t.count(p, "transit", kind, turns as i64);
-            t.event(|| ev(turn, "transit", p).s("how", kind).b("to_army", to_army).i("turns", turns as i64).end());
+            t.count(p, "march", kind, turns.max(0) as i64);
+            t.event(|| ev(turn, "march", p).s("how", kind).b("to_army", to_army).i("turns", turns as i64).end());
+        });
+    }
+
+    /// A requisition order (docs/ARMIES.md): `placed` or `withdrawn`, counted as `requisition`.
+    pub(crate) fn tel_requisition(&self, p: PlayerId, kind: &'static str) {
+        if !self.telemetry.on() {
+            return;
+        }
+        let turn = self.game_turn();
+        self.telemetry.with(|t| {
+            t.count(p, "requisition", kind, 1);
+            t.event(|| ev(turn, "requisition", p).s("how", kind).end());
         });
     }
 

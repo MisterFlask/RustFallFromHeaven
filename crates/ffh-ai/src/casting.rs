@@ -22,7 +22,8 @@ pub fn end_turn(g: &mut Game, v: &View) {
     // C++ AI_setSummonSuicideMode(true): summons created now attack on their own.
     g.players[p].sum_sui_mode = true;
     for u in g.players[p].units.clone() {
-        if !g.units.contains(u) {
+        // (A marching recruit casts nothing until it arrives: it takes no orders, docs/ARMIES.md.)
+        if !g.units.contains(u) || g.unit_march(u).is_some() {
             continue;
         }
         // What `u` can cast, asked once for the choices below until a cast changes the game (the
@@ -202,7 +203,7 @@ pub fn barrage(g: &mut Game, v: &View) {
     let was = g.players[p].sum_sui_mode;
     g.players[p].sum_sui_mode = true;
     for u in g.players[p].units.clone() {
-        if !g.units.contains(u) || g.units[u].has_casted || g.units[u].death_delay || g.unit_is_cargo(u) {
+        if !g.units.contains(u) || g.unit_march(u).is_some() || g.units[u].has_casted || g.units[u].death_delay || g.unit_is_cargo(u) {
             continue;
         }
         if g.units[u].group.is_some_and(|grp| striking.contains(&grp)) {

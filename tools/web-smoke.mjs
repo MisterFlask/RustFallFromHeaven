@@ -19,7 +19,9 @@
 // picking a unit by its figure, zoom, layers); `?renderer=3d`, the experimental 3D renderer (picking,
 // selection, zoom, pan, layers); `?renderer=hd2d`, the HD-2D mode built on it (its frame, the cards,
 // switching modes). Phase 7: the automate buttons (`stage automate`: a
-// worker automated with a click, a scout exploring by its hotkey), the secretary general's election
+// worker automated with a click, a scout exploring by its hotkey), this game's armies (`stage
+// armies`: a marching recruit that takes no orders, a city added to an army's requisition on the
+// Armies screen, a requisition order in a city's queue), the secretary general's election
 // popup (`stage election`) and the Kuriotates city-or-settlement decision (`stage settlement`). It
 // fails on any console error, page error, failed
 // request or HTTP error, and saves screenshots for review.
@@ -1357,6 +1359,53 @@ async function stagedAutomate(bin, saves) {
   steps.push("automate buttons (stage automate): a worker and a scout (explore) automated with a click");
 }
 
+/** This game's armies, `stage armies` (docs/ARMIES.md): a marching recruit shows its march, no
+ *  orders, is not in the cycle and refuses a move, naming where it goes; the Armies screen's
+ *  picker adds a second city to the army's requisition; the capital's queue shows its
+ *  requisition order ("Requisitioned by the 1st Army") without a remove button, and taking it off
+ *  by hand is refused. */
+async function stagedArmies(bin, saves) {
+  const st = await loadStaged(bin, saves, "armies");
+  // (the army's name: "2nd Army" when the starting units outside the capital formed the 1st)
+  const army = await S(`S.view.armies.find((a) => a.id === ${st.army}).name`);
+  const named = (s) => new RegExp(`${s} the ${army}`, "i");
+  await selectUnit(st.recruit);
+  await until2(`${named("Marching to")}.test(document.querySelector("#unit-panel .march-line")?.textContent ?? "")`, "the recruit's march in the unit panel");
+  const orders = await b.eval(`document.querySelectorAll("#unit-panel button.action").length`);
+  if (orders) throw new Error(`the marching recruit offers ${orders} orders`);
+  const cycle = await S(`(() => { const g = S.groups.get(S.units.get(${st.recruit}).group); return !!g && (g.selectable || g.ready); })()`);
+  if (cycle) throw new Error("the marching recruit waits for orders");
+  await shot("marching-recruit");
+  const at = await S(`[S.units.get(${st.recruit}).x, S.units.get(${st.recruit}).y]`);
+  const move = await b.eval(`window.ffh.api.send({ k: "cmd", c: "move", units: [${st.recruit}], x: ${at[0]}, y: ${at[1] + 1}, append: false }).then((r) => (r.ok ? "applied" : r.detail))`);
+  if (!named("marching to").test(move ?? "")) throw new Error(`a move of the marching recruit: ${move}`);
+  await b.eval(`window.ffh.units.clearSelection()`);
+  // The Armies screen: the army requisitions from the capital; the second city is ticked.
+  await b.key("F5");
+  await until(async () => (await modalTitles()).includes("Armies"), "the Armies screen");
+  const card = `#modals .army-card[data-army="${st.army}"]`;
+  const box = `${card} label.requisition-city[data-city="${st.city}"] input`;
+  await until2(`!!document.querySelector(${q(box)}) && /Requisition from/.test(document.querySelector(${q(card)}).textContent)`, "the requisition picker");
+  await b.eval(`document.querySelector(${q(`${card} details.requisition-pick`)}).open = true`);
+  await click(box);
+  await until2(`!!window.ffh.S.view.armies.find((a) => a.id === ${st.army})?.requisition.cities.includes(${st.city})`, "the city added to the army's requisition");
+  await until2(`!!document.querySelector(${q(`${box}:checked`)})`, "the city ticked on the screen");
+  await shot("armies-requisition");
+  await b.key("Escape");
+  await until(async () => !(await modalTitles()).length, "the Armies screen closed");
+  // The capital's queue: the requisition order first, tagged, without a remove button.
+  await b.eval(`window.ffh.emit("open-city", ${st.capital})`);
+  const first = `${TOP} ol.queue li:first-child`;
+  await until2(`${named("Requisitioned by")}.test(document.querySelector(${q(first)})?.textContent ?? "")`, "the requisition order in the capital's queue");
+  if (await b.eval(`!!document.querySelector(${q(`${first} button[data-index]`)})`)) throw new Error("the requisition order has a remove button");
+  const pop = await b.eval(`window.ffh.api.send({ k: "cmd", c: "pop_order", city: ${st.capital}, index: 0 }).then((r) => (r.ok ? "applied" : r.detail))`);
+  if (!named("requisitioned by").test(pop ?? "")) throw new Error(`taking the requisition order off by hand: ${pop}`);
+  await shot("city-requisition");
+  await b.key("Escape");
+  await until(async () => !(await modalTitles()).length, "the city dialog closed");
+  steps.push("armies (stage armies): a marching recruit shows its march, offers no orders and refuses a move; the Armies screen adds a city to the requisition; the capital's requisition order is tagged and cannot be removed");
+}
+
 /** P7, `stage election`: the human secretary general's election popup (deferred, like events
  *  and votes): a resolution put to the vote. */
 async function stagedElection(bin, saves) {
@@ -1577,6 +1626,7 @@ async function main() {
     await stagedTrade(bin, saves);
     await stagedDiplomacy(bin, saves);
     await stagedAutomate(bin, saves);
+    await stagedArmies(bin, saves);
     await stagedElection(bin, saves);
     await stagedSettlement(bin, saves);
     await stagedLoad(bin, saves);

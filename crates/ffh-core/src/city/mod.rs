@@ -278,8 +278,6 @@ pub struct City {
     pub rule_changed_turn: i32,
     /// Its governor (governed cities; `None`: an interim governor).
     pub governor: Option<GovernorId>,
-    /// The army a governed city feeds (`None`: it develops).
-    pub feed_army: Option<ArmyId>,
     /// Turns left of the penalty for replacing its governor.
     pub governor_penalty_turns: i32,
 }
@@ -496,7 +494,6 @@ impl City {
             direct_rule: true,
             rule_changed_turn: -1,
             governor: None,
-            feed_army: None,
             governor_penalty_turns: 0,
         }
     }

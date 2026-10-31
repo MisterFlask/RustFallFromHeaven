@@ -186,6 +186,7 @@ Notes on `settle` and `EndTurn`:
 | `keep_captured_unit`, `accept_unit` | the human keeps or accepts without asking | `true` |
 | `attitude(&g, p, towards)` | `CvPlayerAI::AI_getAttitude` is computed for humans too | `advisor.attitude` (a pure function of state) |
 | `update_automated_group` | `CvSelectionGroupAI::AI_update` | `advisor.update_automated_group` |
+| `requisition_unit(&g, c, a)` | none (this game's armies, docs/ARMIES.md) | **Fixed**: the rules' default (`Game::requisition_unit_default`); the human picks the cities an army requisitions from, not the unit |
 
 **What the human answers at a control point.** These are derived pending items, each answered with a journaled command:
 

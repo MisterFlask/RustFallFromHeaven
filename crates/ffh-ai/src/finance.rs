@@ -372,7 +372,7 @@ fn least_valued(g: &Game, p: PlayerId) -> Option<UnitId> {
     for &u in &g.players[p].units {
         let unit = &g.units[u];
         let info = &g.d.units[unit.unit_type];
-        if g.unit_has_cargo(u) || !info.military_support || g.unit_is_golden_age(u) || info.production_cost <= 0 {
+        if unit.march.is_some() || g.unit_has_cargo(u) || !info.military_support || g.unit_is_golden_age(u) || info.production_cost <= 0 {
             continue;
         }
         if !g.unit_can_fight(u) || unit.experience > 1 {

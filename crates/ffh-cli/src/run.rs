@@ -84,6 +84,12 @@ impl Controller for Timed {
     fn update_automated_group(&self, g: &mut Game, grp: GroupId) -> bool {
         self.time(|| self.inner.update_automated_group(g, grp))
     }
+    fn requisition_unit(&self, g: &Game, c: CityId, a: ArmyId) -> Option<(UnitType, UnitAIType)> {
+        self.time(|| self.inner.requisition_unit(g, c, a))
+    }
+    fn govern_cities(&self, g: &mut Game, p: PlayerId) {
+        self.time(|| self.inner.govern_cities(g, p))
+    }
 }
 
 pub struct RunConfig {
@@ -182,6 +188,12 @@ impl Controller for CppCitizens {
     fn choose_event(&self, g: &Game, p: PlayerId, t: &EventTriggeredData, options: &[EventType]) -> Option<EventType> {
         self.inner.choose_event(g, p, t, options)
     }
+    fn choose_election(&self, g: &Game, p: PlayerId, vs: &VoteSelectionData) -> Option<usize> {
+        self.inner.choose_election(g, p, vs)
+    }
+    fn diplo_vote(&self, g: &Game, p: PlayerId, vote: &VoteSelectionSubData, source: VoteSourceType) -> PlayerVote {
+        self.inner.diplo_vote(g, p, vote, source)
+    }
     fn consider_offer(&self, g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData], we_give: &[TradeData]) -> bool {
         self.inner.consider_offer(g, p, from, they_give, we_give)
     }
@@ -193,6 +205,12 @@ impl Controller for CppCitizens {
     }
     fn update_automated_group(&self, g: &mut Game, grp: GroupId) -> bool {
         self.inner.update_automated_group(g, grp)
+    }
+    fn requisition_unit(&self, g: &Game, c: CityId, a: ArmyId) -> Option<(UnitType, UnitAIType)> {
+        self.inner.requisition_unit(g, c, a)
+    }
+    fn govern_cities(&self, g: &mut Game, p: PlayerId) {
+        self.inner.govern_cities(g, p)
     }
     fn assign_working_plots(&self, g: &mut Game, c: CityId) -> bool {
         // Barbarian cities keep the rules' governor (the comparison is about the civs).

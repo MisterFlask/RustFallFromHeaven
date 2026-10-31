@@ -1593,7 +1593,8 @@ export class IsoMap {
 
   /** Each stack's count (on its flag; a hidden garrison's on its city's, even when alone), its
    *  health bar when hurt, and for the player's own stacks a pip on the finial: green while it can
-   *  move. Drawn over everything. */
+   *  move; a marching recruit's march mark instead (`marchMark`: the rules move it). Drawn over
+   *  everything. */
   drawUnitBadges(g, f, items) {
     const mine = me()?.player;
     for (const it of items) {
@@ -1614,7 +1615,9 @@ export class IsoMap {
         g.fillStyle = "#fff6d8";
         g.fillText(String(units.length), cx, cy);
       }
-      if (top.owner === mine) {
+      if (marchMark(top, mine)) {
+        drawMarchMark(g, fx + 4.5 * f.s, fy + 3.5 * f.s, Math.max(6.5, 12 * f.s), 1);
+      } else if (top.owner === mine) {
         g.beginPath();
         g.arc(fx + 4.5 * f.s, fy + 3.5 * f.s, Math.max(2.5, 5 * f.s), 0, Math.PI * 2);
         g.fillStyle = (top.moves ?? 0) > 0 ? "#45e05c" : "#d03a2a";
@@ -1706,6 +1709,43 @@ export function drawRevoltMark(g, city, cx, cy, r, u, base) {
     g.fillText(mk.glyph, x, base);
     g.textAlign = align;
   }
+}
+
+/** The map mark of a marching recruit (this game's armies, docs/ARMIES.md; the view's own units
+ *  carry `march`): a stack whose shown unit is one of the viewer's recruits marching to an army or
+ *  a garrison shows a small ochre double chevron in place of its moves pip (the rules move it, it
+ *  takes no orders), the plot's tooltip says where it goes; null for any other stack. The
+ *  isometric and the 2D map draw it (`drawMarchMark`; the 2D art map as its state mark
+ *  `ui/mark_march`, stacks.js). */
+export function marchMark(top, me) {
+  if (!top || top.owner !== me || !top.march) return null;
+  return { title: `Marching to ${top.march.to}` };
+}
+
+/** Draws the march mark (`marchMark`): an ochre disc of radius `r` centred at (`cx`, `cy`), with
+ *  a dark double chevron pointing east; `u` the line unit. */
+export function drawMarchMark(g, cx, cy, r, u = 1) {
+  g.save();
+  g.fillStyle = "#dba63b";
+  g.strokeStyle = "#0c0703";
+  g.lineWidth = Math.max(1, u);
+  g.beginPath();
+  g.arc(cx, cy, r, 0, Math.PI * 2);
+  g.fill();
+  g.stroke();
+  const w = r * 0.4;
+  const hh = r * 0.48;
+  g.lineWidth = Math.max(1.2, r * 0.26);
+  g.lineCap = "round";
+  g.lineJoin = "round";
+  g.beginPath();
+  for (const dx of [-r * 0.3, r * 0.2]) {
+    g.moveTo(cx + dx - w / 2, cy - hh);
+    g.lineTo(cx + dx + w / 2, cy);
+    g.lineTo(cx + dx - w / 2, cy + hh);
+  }
+  g.stroke();
+  g.restore();
 }
 
 /** The lookup tables, for the tests (assets/test/iso.test.mjs). */

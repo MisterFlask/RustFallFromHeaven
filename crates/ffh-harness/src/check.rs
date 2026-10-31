@@ -150,6 +150,17 @@ pub fn check(g: &Game) {
                 if g.armies.get(a).map_or(true, |army| army.owner != p) {
                     fail(format!("unit {u:?} of player {} is in army {a:?}, dead or not its owner's", p.0));
                 }
+                if g.units[u].march.is_some() {
+                    fail(format!("unit {u:?} of player {} marches but is in army {a:?}", p.0));
+                }
+            }
+        }
+        // Requisition orders lead their city's queue.
+        for &c in &g.players[p].cities {
+            let q = &g.cities[c].order_queue;
+            let lead = q.iter().take_while(|o| o.requisition).count();
+            if q[lead..].iter().any(|o| o.requisition) {
+                fail(format!("city {} of player {} has a requisition order behind its own production", g.cities[c].name, p.0));
             }
         }
     }

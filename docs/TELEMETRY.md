@@ -56,7 +56,8 @@ A 300-turn mixed game writes about 0.5 MB of events.
 | `convert` | religion | – |
 | `culture_channel` / `culture_channel_end` / `culture_spread` | cultural action (docs/CULTURE.md): a channel set, ended, a religion spread through one | – |
 | `culture_revolt` | `unrest`, `revolt`, `near_flip`, `calm`, `flip` (a city's revolt level changed by the caster's pressure; counted for the caster) | – |
-| `transit` | `sent`, `arrived`, `diverted` (units in transit: docs/ARMIES.md) | `sent`: ETA turns; `arrived`: turns on the way; `diverted`: progress when diverted |
+| `march` | `sent`, `arrived`, `diverted`, `stopped`, `killed` (marching recruits: docs/ARMIES.md; `stopped`: no city it could reach, an ordinary unit again; `killed`: died on the way) | `sent`: the estimated march in turns; the others: turns since it set out |
+| `requisition` | `placed`, `withdrawn` (an army's requisition orders: docs/ARMIES.md) | – |
 | `attack` | `win`, `loss`, `withdraw`, `undefended` | – |
 | `attack_odds` / `attack_odds_exp` | odds decile `00`..`90` | wins / sum of odds (per mille) |
 | `attack_vs` | `civ`, `barbarian`, `animal` | wins |
@@ -132,8 +133,8 @@ and **whys** (`whys.<kind>.<rule> = count`) record which rule made it.
   the action, the target civilization; docs/CULTURE.md);
 - `revolt` (a city's revolt level changed: `how` unrest / revolt / near_flip / calm / flip, the
   city, its owner; the event's player is the caster);
-- `transit` (a unit in transit: `how` sent / arrived / diverted, `to_army`, `turns`;
-  docs/ARMIES.md);
+- `march` (a marching recruit: `how` sent / arrived / diverted / stopped / killed, `to_army`,
+  `turns`; docs/ARMIES.md) and `requisition` (`how` placed / withdrawn);
 - `intent` and `decision`.
 
 Missions, promotions, improvements and builds are only counted.

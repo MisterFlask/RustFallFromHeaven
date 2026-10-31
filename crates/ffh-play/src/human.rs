@@ -48,6 +48,8 @@ pub const POLICIES: &[(&str, Policy)] = &[
     ("name", Policy::Fixed),
     ("play_turn", Policy::Advisor),
     ("choose_production", Policy::Deferred),
+    // (the rules' default unit for an army's requisition: the human picks the cities, not the unit)
+    ("requisition_unit", Policy::Fixed),
     ("govern_cities", Policy::Advisor),
     ("choose_research", Policy::Deferred),
     ("ai_choose_research", Policy::Advisor),
@@ -310,6 +312,15 @@ impl Controller for HumanController {
                 }
             }
         }
+    }
+
+    /// This game's armies: a requisition's unit, the rules' default for the human (the AI's while
+    /// it plays the human's civilization).
+    fn requisition_unit(&self, g: &Game, c: CityId, a: ArmyId) -> Option<(UnitType, UnitAIType)> {
+        if !g.players[g.cities[c].owner].human {
+            return self.advisor.requisition_unit(g, c, a);
+        }
+        g.requisition_unit_default(c, a)
     }
 
     /// This game's governors: the governors of the human's governed cities act on their own.

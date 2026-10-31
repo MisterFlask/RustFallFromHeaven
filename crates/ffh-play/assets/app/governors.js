@@ -2,11 +2,11 @@
 // the Governors screen (F9).
 //
 // You rule a few cities directly, the capital among them; every other city is run by a governor
-// from your bench, who chooses what it builds. You choose who governs a city and whether it
-// develops itself or feeds one of your armies. The city query's `governance` and the `governors`
-// query list the cities, the bench and the armies; the buttons send `govern_direct`,
-// `govern_hand`, `govern_assign` and `govern_feed`, which the server checks. Cultural channels are
-// the player's alone (culture.js): a governor never sets one.
+// from your bench, who chooses what it builds. You choose who governs a city. An army's
+// requisition interrupts a governed city as any city (you pick the cities on the Armies screen,
+// armies.js). The city query's `governance` and the `governors` query list the cities and the
+// bench; the buttons send `govern_direct`, `govern_hand` and `govern_assign`, which the server
+// checks. Cultural channels are the player's alone (culture.js): a governor never sets one.
 
 import * as api from "./api.js";
 import { dname, info, turns } from "./state.js";
@@ -26,18 +26,10 @@ function governorTitle(gv) {
   return lines.join("\n");
 }
 
-/** The mode selector of governed city `c` (develop, or feed one of `armies`). */
-function modeSelect(c, armies, act) {
-  return h(
-    "select.governor-mode",
-    {
-      "aria-label": "Mode",
-      title: "Develop: buildings, workers and defenders. Feed: units for the army, sent to it, until it reaches its target size.",
-      onchange: (ev) => act({ c: "govern_feed", city: c.city, army: ev.target.value === "" ? null : Number(ev.target.value) }),
-    },
-    h("option", { value: "", selected: c.feed_army === null || c.feed_army === undefined }, "Develop"),
-    armies.map((a) => h("option", { value: String(a.id), selected: c.feed_army === a.id }, `Feed the ${a.name} (${a.units}${a.target_size ? ` of ${a.target_size}` : ""})`)),
-  );
+/** "requisitioned by the 1st Army" for a city some armies requisition from, or null. */
+function requisitionedBy(c) {
+  const by = c.requisitioned_by ?? [];
+  return by.length ? h("span.dim", { title: "While an army is short of its target size, the city trains a unit for it first (the Armies screen [F5])" }, ` · requisitioned by the ${by.join(", the ")}`) : null;
 }
 
 /** The bench as a selector: assign a candidate to city `c` (`bench` with `match` when known). */
@@ -99,12 +91,12 @@ export function governanceView(c, reload) {
       k.governor ? h("span", { title: governorTitle(k.governor) }, `Governed by ${governorLabel(k.governor)}`) : h("span.warn", { title: "No leanings, no traits: assign a governor from the bench" }, "An interim governor runs the city"),
       k.penalty_turns ? h("span.warn", { title: "The cost of replacing a governor" }, ` · new governor: less production and commerce for ${turns(k.penalty_turns)}`) : null,
     ),
-    h("div.row", modeSelect(k, k.armies, act), replaceSelect(k, k.bench, act)),
+    h("div.row", replaceSelect(k, k.bench, act)),
     h("div.row", direct),
   );
 }
 
-/** The Governors screen (F9): every city with its rule, governor and mode, and the bench. */
+/** The Governors screen (F9): every city with its rule and governor, and the bench. */
 export async function openGovernors({ openCity } = {}) {
   const m = openModal({ title: "Governors", body: [h("p.dim", "…")], tag: "governors", wide: true, buttons: [{ label: "Close", value: null }] });
   const load = async () => {
@@ -129,7 +121,7 @@ export async function openGovernors({ openCity } = {}) {
       h(
         "tr",
         { "data-city": c.city },
-        h("td", h("button.link", { onclick: () => (m.close(null), openCity?.(c.city)), title: "Open the city" }, c.name), c.capital ? h("span.dim", " (capital)") : null),
+        h("td", h("button.link", { onclick: () => (m.close(null), openCity?.(c.city)), title: "Open the city" }, c.name), c.capital ? h("span.dim", " (capital)") : null, requisitionedBy(c)),
         h("td", c.governed ? "governed" : "direct", c.cooldown ? h("span.dim", ` · ${turns(c.cooldown)}`) : null),
         h(
           "td",
@@ -140,17 +132,16 @@ export async function openGovernors({ openCity } = {}) {
               : h("span.warn", "interim"),
           c.penalty_turns ? h("span.warn", ` · −${r.penalty}% for ${turns(c.penalty_turns)}`) : null,
         ),
-        // The mode and the replacement stacked: the table fits the dialog with the wide pixel font.
-        h("td", c.governed ? h("div.governor-controls", modeSelect(c, r.armies, act), replaceSelect(c, r.bench, act)) : h("span.dim", "—")),
+        h("td", c.governed ? h("div.governor-controls", replaceSelect(c, r.bench, act)) : h("span.dim", "—")),
         h("td.num", `${c.production}`),
       ),
     );
     m.setBody(
       h(
         "p.dim",
-        `You rule ${direct.length} of ${r.slots} cities directly (the capital always); their status may change again ${turns(r.cooldown)} after a change. A governor chooses what its city builds: it develops, or feeds an army until the army reaches its target size. World wonders, rituals and settlers are built only in directly ruled cities. Replacing a governor costs the city ${r.penalty}% of its production and commerce for ${turns(r.penalty_turns)}.`,
+        `You rule ${direct.length} of ${r.slots} cities directly (the capital always); their status may change again ${turns(r.cooldown)} after a change. A governor chooses what its city builds; an army's requisition goes first (you pick the cities on the Armies screen). World wonders, rituals and settlers are built only in directly ruled cities. Replacing a governor costs the city ${r.penalty}% of its production and commerce for ${turns(r.penalty_turns)}.`,
       ),
-      h("table.governors", h("thead", h("tr", h("th", "City"), h("th", "Rule"), h("th", "Governor"), h("th", "Mode"), h("th", { title: "Production" }, "Prod."))), h("tbody", rows)),
+      h("table.governors", h("thead", h("tr", h("th", "City"), h("th", "Rule"), h("th", "Governor"), h("th", "Replace"), h("th", { title: "Production" }, "Prod."))), h("tbody", rows)),
       h("h4", `The bench (${r.bench.length})`),
       r.bench.length ? h("ul.bench", r.bench.map((b) => h("li", { title: governorTitle(b) }, governorLabel(b)))) : h("p.dim", "Nobody yet: candidates appear now and then while posts are vacant or the bench is short."),
     );

@@ -737,19 +737,33 @@ pub fn ai_groups_waiting(g: &Game, p: PlayerId) -> Vec<GroupId> {
     g.players[p].groups.iter().copied().filter(|&grp| g.group_ready_to_move(grp, true) && is_ai_group(g, grp)).collect()
 }
 
-/// Groups ready for orders: C++ `readyToMove(bAny = true)` (what `hasReadyUnit(true)` and the
-/// end-turn gate count), without the AI-moved groups (C++ moves those in `AI_unitUpdate`).
+/// A group holding a marching recruit (this game's armies, docs/ARMIES.md): the rules move it,
+/// it takes no orders, so it never waits for them (the march holds it for the rest of the turn
+/// anyway; this keeps it out of the cycle whatever its activity).
+pub fn is_marching_group(g: &Game, grp: GroupId) -> bool {
+    g.groups.get(grp).is_some_and(|group| group.units.iter().any(|&u| g.unit_march(u).is_some()))
+}
+
+/// Group `grp` waits for the human's orders: C++ `readyToMove(bAny = true)` (what
+/// `hasReadyUnit(true)` and the end-turn gate count), not an AI-moved group (C++ moves those in
+/// `AI_unitUpdate`) nor a marching recruit's.
+pub fn is_ready_group(g: &Game, grp: GroupId) -> bool {
+    g.group_ready_to_move(grp, true) && !is_ai_group(g, grp) && !is_marching_group(g, grp)
+}
+
+/// Groups ready for orders ([`is_ready_group`]).
 pub fn ready_groups(g: &Game, p: PlayerId) -> Vec<GroupId> {
-    g.players[p].groups.iter().copied().filter(|&grp| g.group_ready_to_move(grp, true) && !is_ai_group(g, grp)).collect()
+    g.players[p].groups.iter().copied().filter(|&grp| is_ready_group(g, grp)).collect()
 }
 
 /// A group Civ4's group cycle selects: C++ `CvSelectionGroup::readyToSelect()` (`bAny = false`:
 /// every unit can move, `canAllMove`), as `CvPlayer::cycleSelectionGroups`, `cyclePlotUnits(..,
-/// bAuto)` and `CvMap::findSelectionGroup` test it, without the AI-moved groups. A stack in
-/// which one unit has moved all its moves is ready (`ready_groups`) but not selectable; only
-/// `updateSelectionList`'s "does the selected group still wait" check uses `readyToSelect(true)`.
+/// bAuto)` and `CvMap::findSelectionGroup` test it, without the AI-moved groups and the marching
+/// recruits'. A stack in which one unit has moved all its moves is ready (`ready_groups`) but not
+/// selectable; only `updateSelectionList`'s "does the selected group still wait" check uses
+/// `readyToSelect(true)`.
 pub fn is_selectable_group(g: &Game, grp: GroupId) -> bool {
-    g.group_ready_to_select(grp, false) && !is_ai_group(g, grp)
+    g.group_ready_to_select(grp, false) && !is_ai_group(g, grp) && !is_marching_group(g, grp)
 }
 
 /// [`Pending`] for `p`, with the open event popups in `events` (the session's launched ones).

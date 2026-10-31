@@ -67,7 +67,7 @@ fn wane(g: &mut Game, v: &View) {
         return;
     }
     for u in g.players[p].units.clone() {
-        if !g.units.contains(u) || g.units[u].level < 6 || !g.unit_can_cast(u, spell, false) {
+        if !g.units.contains(u) || g.unit_march(u).is_some() || g.units[u].level < 6 || !g.unit_can_cast(u, spell, false) {
             continue;
         }
         let info = &d.units[g.units[u].unit_type];

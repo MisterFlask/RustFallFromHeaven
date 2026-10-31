@@ -1,5 +1,5 @@
 //! Staged situations for testing the clients (`ffh-play stage
-//! capture|attack|automoves|load|trade|diplomacy|automate|election|settlement|corrupt DIR`,
+//! capture|attack|automoves|load|trade|diplomacy|automate|armies|election|settlement|corrupt DIR`,
 //! and the transports' tests): a saved game at a human control point arranged with rules calls,
 //! so that a client can be tried on a situation a fresh game reaches only by chance (a captured
 //! city's keep/raze decision, an attack, the AutoMoves rule between commands, the transport
@@ -71,11 +71,17 @@ fn duel_at(dir: &Path, seed: u32, turn: i32) -> Result<Session, String> {
 
 /// [`duel_at`] with the human's civilization (`None`: random).
 fn duel_as(dir: &Path, seed: u32, turn: i32, civ: Option<&str>) -> Result<Session, String> {
+    duel_with(dir, seed, turn, civ, &[])
+}
+
+/// [`duel_as`] with game options on.
+fn duel_with(dir: &Path, seed: u32, turn: i32, civ: Option<&str>, options: &[GameOptionType]) -> Result<Session, String> {
     let d = ffh_data::global();
     let mut ng = NewGame::new(d, seed);
     ng.opponents = 1;
     ng.world = d.t("WORLDSIZE_DUEL");
     ng.civ = civ.map(|c| d.t::<CivilizationType>(c));
+    ng.options.extend_from_slice(options);
     // Only the staged save goes to `dir`: no journal, no autosave ring (which would overwrite and
     // prune the autosaves of a game kept there).
     let opts = SessionOptions { saves_dir: Some(dir.to_path_buf()), autosave_keep: 0, journal: false, ..Default::default() };
@@ -420,6 +426,79 @@ pub fn automate(dir: &Path) -> Result<StagedAutomate, String> {
     let scout = g.player_init_unit(h, d.t::<UnitType>("UNIT_SCOUT"), sx, sy, None, None);
     let paths = s.save("automate").map_err(|e| format!("save: {e:?}"))?;
     Ok(StagedAutomate { save: paths.save, worker, scout, turn: s.g.game_turn() })
+}
+
+/// A saved game at a human control point (turn 4 of a duel, seed 11, armies and governors on)
+/// with this game's armies in play (docs/ARMIES.md): the human's `army` of two warriors next to
+/// its capital `capital` (not its 1st Army when a starting unit outside the capital formed one),
+/// with a target size of 4 and requisitioning from the capital, whose
+/// requisition order leads its queue (ahead of a warrior it was building); a second city `city`
+/// that no army requisitions from; and `recruit`, a warrior `city` trained for the army, marching
+/// to it (the rules move it: it takes no orders until it arrives).
+pub struct StagedArmies {
+    pub save: PathBuf,
+    pub army: ffh_core::ids::ArmyId,
+    pub capital: ffh_core::ids::CityId,
+    pub city: ffh_core::ids::CityId,
+    pub recruit: UnitId,
+    pub turn: i32,
+}
+
+impl StagedArmies {
+    pub fn to_json(&self) -> Json {
+        crate::jobj! {
+            "stage" => "armies", "save" => self.save.display().to_string(), "army" => self.army, "capital" => self.capital,
+            "city" => self.city, "recruit" => self.recruit, "turn" => self.turn,
+        }
+    }
+}
+
+/// Writes a [`StagedArmies`] into `dir` (a game directory).
+pub fn armies(dir: &Path) -> Result<StagedArmies, String> {
+    use ffh_core::army::RecruitDest;
+    let d = ffh_data::global();
+    let mut s = duel_with(dir, 11, 4, None, &[GameOptionType::GAMEOPTION_ARMIES, GameOptionType::GAMEOPTION_GOVERNORS])?;
+    let h = s.human;
+    let g = &mut s.g;
+    let capital = *g.players[h].cities.first().ok_or("no city")?;
+    let (cx, cy) = (g.cities[capital].x, g.cities[capital].y);
+    let area = g.map.plots[g.city_plot(capital)].area;
+    // The second city 5 to 7 plots away on the capital's land: a recruit needs some turns to march.
+    let mut site = None;
+    for q in g.map.plot_ids() {
+        let (x, y) = g.map.xy(q);
+        let dist = g.plot_distance(x, y, cx, cy);
+        if (5..=7).contains(&dist) && g.map.plots[q].area == area && g.player_can_found(h, x, y, false) && g.map.plots[q].units.is_empty() && site.map_or(true, |(b, _, _)| dist < b) {
+            site = Some((dist, x, y));
+        }
+    }
+    let (_, x, y) = site.ok_or("no city site 5 to 7 plots from the capital")?;
+    let city = g.player_init_city(h, x, y, true, true);
+    let w = d.t::<UnitType>("UNIT_WARRIOR");
+    let &(ax, ay) = free_plots_near_capital(g, h)?.first().ok_or("no free plot near the capital")?;
+    let units: Vec<UnitId> = (0..2).map(|_| g.player_init_unit(h, w, ax, ay, None, None)).collect();
+    let army = g.army_form(h, &units)?;
+    g.army_set_target_size(h, army, 4)?;
+    // The second city finishes a warrior for the army: it appears there and marches.
+    g.city_push_order(city, OrderType::ORDER_TRAIN, w.idx() as i32, -1, false, false, false, false);
+    g.cities[city].order_queue[0].dest = Some(RecruitDest::Army(army));
+    g.cities[city].unit_production[w] = g.city_production_needed_unit(city, w);
+    let before = g.players[h].units.clone();
+    g.city_pop_order(city, 0, true, false);
+    let recruit = g.players[h].units.iter().copied().find(|u| !before.contains(u)).ok_or("no recruit")?;
+    if g.unit_march(recruit).is_none() {
+        return Err("the recruit does not march".into());
+    }
+    // The capital builds a warrior; the army's requisition puts its order ahead of it.
+    g.city_push_order(capital, OrderType::ORDER_TRAIN, w.idx() as i32, -1, false, false, true, false);
+    g.army_add_requisition(h, army, capital)?;
+    g.player_do_requisition(h);
+    if !g.cities[capital].order_queue.first().is_some_and(|o| o.requisition) {
+        return Err("no requisition order in the capital".into());
+    }
+    g.player_army_sync(h);
+    let paths = s.save("armies").map_err(|e| format!("save: {e:?}"))?;
+    Ok(StagedArmies { save: paths.save, army, capital, city, recruit, turn: s.g.game_turn() })
 }
 
 /// A saved game at a human control point (turn 3 of a duel, seed 15) where both players run a

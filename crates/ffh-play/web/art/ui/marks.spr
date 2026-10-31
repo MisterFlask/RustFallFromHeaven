@@ -156,6 +156,17 @@ R.
 ...33...
 ........
 
+= ui/mark_march 8x8 0,0
+: note state mark: a recruit marching to its army or garrison (an ochre double chevron: the rules move it)
+00..00..
+0Y0.0Y0.
+.0Y0.0Y0
+..0Y0.0Y
+.0y0.0y0
+0y0.0y0.
+00..00..
+........
+
 = ui/cursor 16x16 0,0
 : note pointer: a bone quill-nib arrow; the anchor is the hotspot
 80..............

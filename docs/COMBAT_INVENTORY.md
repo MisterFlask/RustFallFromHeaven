@@ -5,8 +5,8 @@ combat with engagements: each side commits up to S units, units have roles (fron
 backline, flanker, assassin, support) with attack A, defense Dv and max HP, and a battle runs
 pre-battle spells, opening volleys, rounds, withdrawal and post-battle effects. The spec says:
 "Before implementing, inventory every FfH promotion and ability with a combat effect and propose
-keep, remap or remove for each, for review." This is that inventory. Nothing here is implemented;
-phase 6 (docs/ARMIES.md) waits for the owner's answers.
+keep, remap or remove for each, for review." This is that inventory. Nothing here is implemented yet;
+the owner answered the questions on 2026-10-31 ("The owner's answers", at the end).
 
 **Sources.** Promotions: `data/xml/Units/CIV4PromotionInfos.xml` (261 promotions). Unit abilities:
 `data/xml/Units/CIV4UnitInfos.xml` (325 unit types). Spells: `data/xml/Units/CIV4SpellInfos.xml` (267).
@@ -1273,6 +1273,39 @@ frontline by the spec).
 13. **Q13 Great Commander.** The Commander unit joins a unit as `PROMOTION_GREAT_COMMANDER` (+1 / +1,
     +1 XP per kill). Should that unit also qualify for the army commander slot and aura (phase 7),
     which the spec reserves for heroes?
+
+## The owner's answers (2026-10-31)
+
+"Go with your recommendations on each." Where a question had no recommendation, the proposal in
+this inventory stands; Q10 and Q13 were decided as recommended in the conversation that day. The
+other KEEP / REMAP / REMOVE proposals above stand as written.
+
+1. **Q1:** promotions' defense percentage (`iCombatPercentDefense`) applies to Dv, the attack
+   percentage (`iCombatPercent`) to A; Withered -10 and Puppet -20 on Dv.
+2. **Q2:** typed damage stays FfH's rule: typed points inside A and Dv, scaled per target by its
+   resistance (no flat per-hit constant).
+3. **Q3:** one withdrawal roll per engagement (the first round the unit is below
+   `WITHDRAW_HP_PCT`); defenders outside cities keep FfH's defensive withdrawal.
+4. **Q4:** collateral resolves once per engagement in the opening phase, for every unit with
+   collateral damage, not only siege.
+5. **Q5:** defensive strike stays, as opening strikes from the defending plot, reserve archers
+   included.
+6. **Q6:** Marksman gives the Assassin targeting profile and is the Assassin role's default;
+   Guardsman is a bodyguard that assassin-profile units must hit first.
+7. **Q7:** Formation makes a frontline unit a Screen.
+8. **Q8:** Fear is a pre-battle morale check (failed attackers sit out, failed defenders do not
+   fight) and a rout after a won attack outside cities, with today's rolls.
+9. **Q9:** the river's 2-slot loss replaces the defender's +40% river bonus; river-capable units
+   (`isRiver`) may fill the 2 lost slots.
+10. **Q10:** every committed unit with a whitelisted spell may cast in battle (dragons, the
+    Flagbearer, Myconid, Moroi, heroes), not only support units. Defending casters cast too, once
+    between their own turns, and doing so uses up their next own-turn cast.
+11. **Q11:** Fireball and Meteor resolve as opening-phase strikes (one hit plus collateral, no
+    slot), not as committed strength-0 suicide units.
+12. **Q12:** a medic heals its turn value (10 / 15 / 20) once after a battle, at most once per unit
+    per turn.
+13. **Q13:** a unit with `PROMOTION_GREAT_COMMANDER` qualifies for the army commander slot and
+    aura (phase 7), like a hero.
 
 ---
 

@@ -4,7 +4,8 @@
 // garrison; hurry, draft, emphasis, automated citizens and production; the production queue
 // and the chooser (units, buildings, projects (FfH rituals) and processes with cost and turns):
 // click replaces the current production, Shift-click appends, Ctrl-click inserts at the front
-// (C++ `CvNetPushOrder`'s flags), ✕ removes an order while the queue holds several.
+// (C++ `CvNetPushOrder`'s flags), ✕ removes an order while the queue holds several (not an
+// army's requisition order: "Requisitioned by the 1st Army", released on the Armies screen).
 //
 // Every button sends what the Civ4 city screen sends (`do_task`, `push_order`, `pop_order`), and
 // the server says which are possible (the `city` query: `plus`/`minus` per specialist,
@@ -21,7 +22,7 @@ import { look, uiIcon, typeIcon, barEl, pix } from "./look.js";
 import { focusOn, isoSkin, queueIcon, refreshCityPanel } from "./isoui.js";
 import { infoTip } from "./infotips.js";
 import { cultureView } from "./culture.js";
-import { recruitControls, recruitView } from "./armies.js";
+import { recruitControls, recruitView, requisitionNote, requisitionTag } from "./armies.js";
 import { governanceView } from "./governors.js";
 
 const GROUPS = [
@@ -365,11 +366,13 @@ function productionView(c, choose, remove, [tapMode, setTapMode], reload) {
             "li",
             h("span", orderName(o.order, o.type)),
             h("span.dim", o.turns !== null ? ` ${turns(o.turns)}` : ""),
-            // This game's armies: where a land combat unit goes when trained.
-            locked ? (o.dest_name ? h("span.dim", ` → ${o.dest_name}`) : null) : recruitControls(c, i, o, reload),
+            // This game's armies: where a land combat unit goes when trained; a requisition order
+            // is its army's.
+            o.requisition ? requisitionTag(o) : locked ? (o.dest_name ? h("span.dim", ` → ${o.dest_name}`) : null) : recruitControls(c, i, o, reload),
             // The exe pops an order only while the queue holds more than one (CvGameInterface
-            // `getOrderQueueLength() > 1`); the only order is replaced by choosing another.
-            c.queue.length > 1 && !locked ? h("button.small", { title: "Remove from the queue", "aria-label": "Remove", "data-index": i, onclick: () => remove(i) }, "✕") : null,
+            // `getOrderQueueLength() > 1`); the only order is replaced by choosing another. A
+            // requisition order is released on the Armies screen, not here.
+            c.queue.length > 1 && !locked && !o.requisition ? h("button.small", { title: "Remove from the queue", "aria-label": "Remove", "data-index": i, onclick: () => remove(i) }, "✕") : null,
           ),
         )
       : h("li.dim", locked ? "Nothing yet: the governor chooses when your turn ends." : "Nothing: choose below."),
@@ -412,7 +415,7 @@ function productionView(c, choose, remove, [tapMode, setTapMode], reload) {
         prod.current && prod.needed ? barEl(prod.stored / prod.needed, "production", { w: 50, next: (prod.stored + prod.rate) / prod.needed }) : null,
       ),
       queue,
-      locked ? h("p.dim.governed-note", "The governor chooses what this city builds: set its mode or its governor above.") : recruitView(c, reload),
+      locked ? [h("p.dim.governed-note", "The governor chooses what this city builds: choose its governor above. An army's requisition goes first (the Armies screen [F5])."), requisitionNote(c)] : recruitView(c, reload),
       locked ? null : tapModes(tapMode, [["now", "Build now", "A tap replaces what is being built"], ["queue", "Add to queue", "A tap adds to the end of the queue (Shift-click)"], ["first", "Put first", "A tap puts it first in the queue (Ctrl-click)"]], setTapMode),
     ),
     ...lists,

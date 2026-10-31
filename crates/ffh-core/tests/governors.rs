@@ -276,20 +276,25 @@ fn a_direct_rule_swap_hands_the_freed_governor_to_the_other_city() {
 }
 
 #[test]
-fn merged_armies_keep_their_feeding_cities() {
+fn an_army_requisitions_from_a_governed_city_ahead_of_its_governor() {
     let (mut g, cities) = game(5);
     let p0 = PlayerId(0);
     let c = cities[4];
+    assert!(g.city_is_governed(c));
     let warrior = g.d.t::<UnitType>("UNIT_WARRIOR");
+    // The governor's choice (here, by hand) is in its queue.
+    g.city_push_order(c, OrderType::ORDER_TRAIN, warrior.idx() as i32, -1, false, false, true, false);
+    let before = g.cities[c].order_queue.clone();
     let (x, y) = free_plot(&g);
-    let army = |g: &mut Game| {
-        let units: Vec<UnitId> = (0..2).map(|_| g.player_init_unit(p0, warrior, x, y, None, None)).collect();
-        g.army_form(p0, &units).expect("formed")
-    };
-    let (one, two) = (army(&mut g), army(&mut g));
-    g.city_set_feed_army(p0, c, Some(one)).unwrap();
-    g.army_merge(p0, one, two).unwrap();
-    assert_eq!(g.cities[c].feed_army, Some(two));
+    let units: Vec<UnitId> = (0..2).map(|_| g.player_init_unit(p0, warrior, x, y, None, None)).collect();
+    let army = g.army_form(p0, &units).expect("formed");
+    g.army_set_target_size(p0, army, 3).unwrap();
+    g.army_add_requisition(p0, army, c).unwrap();
+    g.player_do_requisition(p0);
+    let q = &g.cities[c].order_queue;
+    assert!(q[0].requisition, "the requisition first");
+    assert_eq!(q[0].dest, Some(ffh_core::army::RecruitDest::Army(army)));
+    assert_eq!(q[1..].to_vec(), before[..q.len() - 1].to_vec(), "the governor's choice behind it");
 }
 
 #[test]
@@ -302,5 +307,4 @@ fn governor_commands_say_why_they_cannot_be_done() {
     assert!(g.player_check_direct_rule(p0, cities[4], Some(cities[1])).is_ok());
     assert!(g.city_check_hand_to_governor(p0, cities[0]).is_err());
     assert!(g.city_check_hand_to_governor(p0, cities[4]).is_err(), "already governed");
-    assert!(g.city_check_feed_army(p0, cities[1], None).is_err(), "a direct city feeds no army");
 }

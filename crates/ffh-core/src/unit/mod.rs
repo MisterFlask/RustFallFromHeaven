@@ -444,6 +444,9 @@ pub struct Unit {
     // ---- This game's own rules (not FFH2's) ----
     /// The army it is in (docs/ARMIES.md); `None` for a unit in a garrison or outside armies.
     pub army: Option<ArmyId>,
+    /// A recruit marching to its army or garrison (docs/ARMIES.md): the rules move it, it takes
+    /// no orders, it is in no army and no garrison until it arrives.
+    pub march: Option<crate::army::March>,
 }
 
 impl Unit {
@@ -615,6 +618,7 @@ impl Unit {
             ai_allowed_patrol: true,
             ai_allowed_explore: true,
             army: None,
+            march: None,
         }
     }
 }
