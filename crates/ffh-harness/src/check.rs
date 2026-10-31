@@ -168,6 +168,46 @@ pub fn check(g: &Game) {
         fail(format!("{} armies exist but players list {armies}", g.armies.len()));
     }
 
+    // This game's engagement combat (docs/ENGAGEMENTS.md): engagements leave no duel state
+    // behind (no unit fighting or attacking between turns, no living unit at full damage), and
+    // every kept report is consistent: no side committed more units than its slots, no battle
+    // ran past the round limit, and every committed fighter is accounted for.
+    if g.engagements_on() {
+        let max_hp = g.d.defines.max_hit_points;
+        for (u, unit) in g.units.iter() {
+            if unit.combat_unit.is_some() || unit.attack_plot_x != ffh_core::defs::INVALID_PLOT_COORD {
+                fail(format!("unit {u:?} of player {} is still in combat after the turn", unit.owner.0));
+            }
+            if unit.damage >= max_hp && !unit.death_delay {
+                fail(format!("unit {u:?} of player {} is alive at {} damage", unit.owner.0, unit.damage));
+            }
+        }
+        let max_rounds = g.d.defines.engagement_max_rounds;
+        for r in &g.battle_reports {
+            if r.outcome.rounds > max_rounds {
+                fail(format!("battle report #{} ran {} rounds", r.id, r.outcome.rounds));
+            }
+            for (i, s) in r.sides.iter().enumerate() {
+                let lost: i32 = s.lost.iter().map(|(_, n)| n).sum();
+                if lost + s.withdrew + s.sat_out > s.committed || s.committed <= 0 {
+                    fail(format!("battle report #{} side {i}: {} committed, {lost} lost, {} withdrew, {} sat out", r.id, s.committed, s.withdrew, s.sat_out));
+                }
+            }
+            if let Some(log) = &r.log {
+                for (i, s) in r.sides.iter().enumerate() {
+                    let slots = &log.slots[i];
+                    if s.committed > slots.total + slots.river_only {
+                        fail(format!("battle report #{} side {i} committed {} units with {} slots", r.id, s.committed, slots.total + slots.river_only));
+                    }
+                    let fighters = log.fighters.iter().filter(|f| f.side.index() == i && f.slot.is_some()).count() as i32;
+                    if fighters != s.committed || log.fighters.iter().any(|f| f.slot.is_some() != f.fate.is_some()) {
+                        fail(format!("battle report #{} side {i}: {} committed, {fighters} committed fighters in its log", r.id, s.committed));
+                    }
+                }
+            }
+        }
+    }
+
     // This game's governors (docs/GOVERNORS.md): a governed city always has production (an FfH
     // settlement builds nothing at all); a governor is its owner's and holds the city that names
     // it; no more direct cities than slots (the barbarians' cities are all direct).

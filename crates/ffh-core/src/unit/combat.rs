@@ -42,9 +42,42 @@ fn owns_plot(game: &Game, u: UnitId, plot: PlotIdx) -> bool {
 
 /// C++ `std::max(GC.getMOVE_DENOMINATOR(), pPlot->movementCost(this, plot()))`: the moves an
 /// attack into `plot` costs when the attacker stays where it is.
-fn attack_move_cost(game: &Game, u: UnitId, plot: PlotIdx) -> i32 {
+pub(crate) fn attack_move_cost(game: &Game, u: UnitId, plot: PlotIdx) -> i32 {
     let from = game.unit_plot(u);
     game.d.defines.move_denominator.max(game.plot_movement_cost(plot, u, from))
+}
+
+/// The roll of a defensive strike ([`Game::unit_defensive_strike_roll`]): the striker, if one
+/// succeeded, with its chance and roll; how many units rolled.
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub(crate) struct DefStrikeRoll {
+    pub best: Option<UnitId>,
+    pub chance: i32,
+    pub roll: i32,
+    pub rolled: i32,
+}
+
+/// How [`Game::unit_combat_won_as`] runs: the duel's whole `combatWon`, or an engagement's
+/// per-kill part (plan 6.7), rolling the conversion only when `roll_convert`.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub(crate) enum WonMode {
+    Duel,
+    Kill { roll_convert: bool },
+}
+
+/// What a kill's `combatWon` did (the battle log's kill effects).
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub(crate) enum WonEffect {
+    /// A unit of this type captured from the loser.
+    Capture(UnitType),
+    /// A slave of this type taken.
+    Enslave(UnitType),
+    /// A unit of this type created (`UnitCreateFromCombat`).
+    Create(UnitType),
+    Gold(i32),
+    Promotion(PromotionType),
+    /// Healed on the kill (percent).
+    Heal(i32),
 }
 
 /// The final step of C++ `maxCombatStr` (FfH Defense Str, Kael 08/18/2007): a strength in
@@ -906,8 +939,13 @@ impl Game {
     }
 
     /// C++ `CvUnit::attack` (CvUnit.cpp:3459-3467).
-    /// C++ `bQuick` dropped.
+    /// C++ `bQuick` dropped. Under engagement combat (an attack `engage_applies` to, plan section
+    /// 1) a land unit with a defender to fight fights a one-unit engagement and a missile strikes
+    /// (`Game::engage_unit_attack`); with only non-combatants there, today's attack captures them.
     pub fn unit_attack(&mut self, u: UnitId, plot: PlotIdx) {
+        if self.engage_applies(u, plot) && self.engage_unit_attack(u, plot) {
+            return;
+        }
         // (C++ FAssert(canMoveInto(pPlot, true)), FAssert(getCombatTimer() == 0))
         self.unit_set_attack_plot(u, Some(plot), false);
 
@@ -1818,11 +1856,23 @@ impl Game {
 
     /// C++ `CvUnit::doDefensiveStrike` (CvUnit.cpp:16206-16259).
     /// FfH: `u` is the defender; its stack may strike the attacker before combat.
+    /// Split in two for engagement combat (plan 6.4, Q5: `Game::unit_defensive_strike_roll` and
+    /// `Game::unit_defensive_strike_apply`); the duel calls both, in today's order.
     pub fn unit_do_defensive_strike(&mut self, u: UnitId, attacker: UnitId) {
-        let d = self.d;
-        let mut best_unit: Option<UnitId> = None;
-        let mut best_damage = 0;
         let plot = self.unit_plot(u);
+        let roll = self.unit_defensive_strike_roll(plot, attacker);
+        if let Some(best) = roll.best {
+            self.unit_defensive_strike_apply(best, attacker);
+        }
+    }
+
+    /// The roll part of `doDefensiveStrike`: every unit on `plot` with a strike chance, at war
+    /// with `attacker`'s team and not used up (Blitz, or no attack made) rolls in plot order
+    /// ("Defensive Strike"); the striker is the success with the most strike damage (the first in
+    /// plot order on a tie).
+    pub(crate) fn unit_defensive_strike_roll(&mut self, plot: PlotIdx, attacker: UnitId) -> DefStrikeRoll {
+        let mut out = DefStrikeRoll::default();
+        let mut best_damage = 0;
         let attacker_team = self.unit_get_team(attacker);
 
         for loop_unit in self.map.plots[plot].units.clone() {
@@ -1830,19 +1880,30 @@ impl Game {
                 if self.at_war(self.unit_get_team(loop_unit), attacker_team) {
                     if self.unit_is_blitz(loop_unit) || !self.units[loop_unit].made_attack {
                         let chance = self.units[loop_unit].defensive_strike_chance;
-                        if self.soren_rand_num(100, "Defensive Strike") < chance {
+                        out.rolled += 1;
+                        let roll = self.soren_rand_num(100, "Defensive Strike");
+                        if roll < chance {
                             if self.units[loop_unit].defensive_strike_damage > best_damage {
                                 best_damage = self.units[loop_unit].defensive_strike_damage;
-                                best_unit = Some(loop_unit);
+                                out.best = Some(loop_unit);
+                                out.chance = chance;
+                                out.roll = roll;
                             }
                         }
                     }
                 }
             }
         }
+        out
+    }
 
-        if best_damage > 0 {
-            let best = best_unit.expect("defensive strike damage without a striker");
+    /// The strike part of `doDefensiveStrike`: `best` strikes `attacker` (two rolls of its strike
+    /// damage, less twice the attacker's defense strength and its level, never past 95% damage),
+    /// is used up unless it has Blitz and gains 1 XP. Returns the damage dealt (percent).
+    pub(crate) fn unit_defensive_strike_apply(&mut self, best: UnitId, attacker: UnitId) -> i32 {
+        let d = self.d;
+        let mut dealt = 0;
+        if self.units[best].defensive_strike_damage > 0 {
             if !self.unit_is_blitz(best) {
                 self.units[best].made_attack = true;
             }
@@ -1872,17 +1933,35 @@ impl Game {
                 });
 
                 self.unit_change_experience(best, 1, 100, true, false, false);
+                dealt = damage;
             }
         }
+        dealt
     }
 
     /// C++ `CvUnit::combatWon` (CvUnit.cpp:16306-16560).
     /// FfH post-combat effects (XP, combat-apply promotions, capture/enslave, gold, poison,
     /// create/convert units, `PyPostCombatWon`/`PyPostCombatLost` callbacks in `crate::ffh`).
     pub fn unit_combat_won(&mut self, u: UnitId, loser: UnitId, attacking: bool) {
-        let d = self.d;
         // C++ `bAttacking` only picks the plot of the explosion effect (graphics).
         let _ = attacking;
+        self.unit_combat_won_as(u, loser, WonMode::Duel, None);
+    }
+
+    /// [`Game::unit_combat_won`] in a mode (plan 6.7, G2): the duel's whole `combatWon`, or an
+    /// engagement's per-kill part: the promotions removed by combat, the combat-apply promotions
+    /// and poison are left out (the engagement applies them once per battle), and the conversion
+    /// is only rolled (when `roll_convert`): it returns whether the roll succeeded, and the
+    /// engagement converts the unit once after its last kill. `effects`, when given, gets what
+    /// the kill did (the battle log's kill effects).
+    pub(crate) fn unit_combat_won_as(&mut self, u: UnitId, loser: UnitId, mode: WonMode, mut effects: Option<&mut Vec<WonEffect>>) -> bool {
+        let d = self.d;
+        let duel = mode == WonMode::Duel;
+        let mut effect = |k: WonEffect| {
+            if let Some(e) = effects.as_deref_mut() {
+                e.push(k);
+            }
+        };
 
         let mut convert = false;
         // C++ `iUnit`: the unit type to create from the loser (capture or slave).
@@ -1900,7 +1979,7 @@ impl Game {
                         self.change_global_counter(promotion_info.modify_global_counter_on_combat);
                     }
                 }
-                if promotion_info.removed_by_combat {
+                if duel && promotion_info.removed_by_combat {
                     self.unit_set_has_promotion(u, promotion, false);
                     // C++ quirk: losing an invisible promotion (Hidden is removed by combat) on a
                     // plot with a visible enemy withdraws the winner, and kills it at once when no
@@ -1908,10 +1987,10 @@ impl Game {
                     // `withdrawlToNearestValidPlot(true)` -> `kill(false)`); C++ then goes on using
                     // the deleted unit. Everything left here is about the winner, so it is skipped.
                     if !self.units.contains(u) {
-                        return;
+                        return false;
                     }
                 }
-                if let Some(apply) = promotion_info.promotion_combat_apply {
+                if let Some(apply) = promotion_info.promotion_combat_apply.filter(|_| duel) {
                     let loser_plot = self.unit_plot(loser);
                     for loop_unit in self.map.plots[loser_plot].units.clone() {
                         if !self.units.contains(loop_unit) {
@@ -1947,7 +2026,7 @@ impl Game {
                     }
                 }
             }
-            if self.units[loser].has_promotion[promotion] {
+            if duel && self.units[loser].has_promotion[promotion] {
                 if let Some(apply) = promotion_info.promotion_combat_apply {
                     if !self.units[u].has_promotion[apply] {
                         if self.unit_is_alive(u) || !d.promotions[apply].prereq_alive {
@@ -1979,6 +2058,7 @@ impl Game {
                 }
                 if heal != 0 {
                     self.unit_change_damage(u, -heal, None);
+                    effect(WonEffect::Heal(heal));
                 }
             }
         }
@@ -1999,12 +2079,14 @@ impl Game {
         if let Some(promotion) = info.promotion_from_combat {
             if self.unit_is_alive(loser) {
                 self.unit_set_has_promotion(u, promotion, true);
+                effect(WonEffect::Promotion(promotion));
             }
         }
         if self.units[u].gold_from_combat != 0 {
             if !self.unit_is_animal(loser) {
                 let gold = self.units[u].gold_from_combat;
                 self.players[owner].gold += gold;
+                effect(WonEffect::Gold(gold));
                 let turn = self.game_turn();
                 self.log.msg(turn, Some(owner), || format!("{gold} gold from combat"));
             }
@@ -2012,7 +2094,7 @@ impl Game {
         if self.units[u].duration > 0 {
             self.unit_change_duration(u, info.duration_from_combat);
         }
-        if self.units[loser].damage_type_combat[DamageType::DAMAGE_POISON] > 0 && d.defines.poisoned_promotion != -1 {
+        if duel && self.units[loser].damage_type_combat[DamageType::DAMAGE_POISON] > 0 && d.defines.poisoned_promotion != -1 {
             if self.unit_is_alive(u) && self.units[u].damage > 0 {
                 let resist = self.unit_get_damage_type_resist(u, DamageType::DAMAGE_POISON);
                 if self.soren_rand_num(100, "Poisoned") >= resist {
@@ -2028,6 +2110,7 @@ impl Game {
                 if self.soren_rand_num(100, "Create Unit from Combat") <= info.unit_create_from_combat_chance {
                     let (x, y) = self.map.xy(self.unit_plot(u));
                     let new_unit = self.player_init_unit(owner, create_unit_type, x, y, None, None);
+                    effect(WonEffect::Create(create_unit_type));
                     self.units[new_unit].duration = self.units[u].duration;
                     if self.unit_is_hidden_nationality(u) {
                         // (C++ casts the define unchecked; it always names a promotion)
@@ -2046,6 +2129,7 @@ impl Game {
             {
                 let (x, y) = self.map.xy(self.unit_plot(u));
                 let new_unit = self.player_init_unit(owner, new_type, x, y, None, None);
+                effect(if convert { WonEffect::Capture(new_type) } else { WonEffect::Enslave(new_type) });
                 if self.units[u].duration != 0 {
                     self.units[new_unit].duration = self.units[u].duration;
                 }
@@ -2071,16 +2155,35 @@ impl Game {
             self.py_post_combat_lost(loser, u);
         }
         if !self.units.contains(u) {
-            return;
+            return false;
         }
-        if let Some(convert_unit_type) = info.unit_convert_from_combat {
+        let roll_convert = match mode {
+            WonMode::Duel => true,
+            WonMode::Kill { roll_convert } => roll_convert,
+        };
+        if let Some(convert_unit_type) = info.unit_convert_from_combat.filter(|_| roll_convert) {
             if self.soren_rand_num(100, "Convert Unit from Combat") <= info.unit_convert_from_combat_chance {
+                if !duel {
+                    return true;
+                }
                 let (x, y) = (self.units[u].x, self.units[u].y);
                 let unit_ai = self.units[u].ai_type;
                 let new_unit = self.player_init_unit(owner, convert_unit_type, x, y, unit_ai, None);
                 self.unit_convert(new_unit, u);
             }
         }
+        false
+    }
+
+    /// The conversion of `UnitConvertFromCombat` (a Wolf to a Wolf Pack), once its roll
+    /// succeeded: the new unit takes `u`'s place (and XP). Returns the new unit.
+    pub(crate) fn unit_convert_from_combat(&mut self, u: UnitId) -> Option<UnitId> {
+        let convert_unit_type = self.d.units[self.units[u].unit_type].unit_convert_from_combat?;
+        let (x, y, owner) = (self.units[u].x, self.units[u].y, self.units[u].owner);
+        let unit_ai = self.units[u].ai_type;
+        let new_unit = self.player_init_unit(owner, convert_unit_type, x, y, unit_ai, None);
+        self.unit_convert(new_unit, u);
+        Some(new_unit)
     }
 
     /// C++ `CvUnit::canAdvance` (CvUnit.cpp:17230-17251).
@@ -2104,17 +2207,26 @@ impl Game {
     /// order) and the max-value scan keeps the first maximum in that order; values are
     /// `(1 + rand(10000)) * currHitPoints` so ties are rare. The rand draws happen in plot order.
     pub fn unit_collateral_combat(&mut self, u: UnitId, plot: PlotIdx, skip_unit: Option<UnitId>) {
+        self.unit_collateral_combat_ex(u, plot, skip_unit, false);
+    }
+
+    /// [`Game::unit_collateral_combat`] with engagement combat's count (plan 6.4, Q4): with
+    /// `engagement`, every visible enemy defender on the plot is a possible target (the duel
+    /// leaves out the one it fights: today's `- 1`). Returns each damaged unit with its damage
+    /// before and after, in the order hit.
+    pub(crate) fn unit_collateral_combat_ex(&mut self, u: UnitId, plot: PlotIdx, skip_unit: Option<UnitId>, engagement: bool) -> Vec<(UnitId, i32, i32)> {
         let d = self.d;
+        let mut hit = Vec::new();
         let air = self.unit_get_domain_type(u) == DomainType::DOMAIN_AIR;
 
         let base_strength = if air { self.unit_air_base_combat_str(u) } else { self.unit_base_combat_str(u) };
         let collateral_strength = base_strength * self.unit_collateral_damage(u) / 100;
         if collateral_strength == 0 {
-            return;
+            return hit;
         }
 
-        let possible_targets =
-            (self.plot_get_num_visible_enemy_defenders(plot, u) - 1).min(self.unit_collateral_damage_max_units(u));
+        let possible_targets = (self.plot_get_num_visible_enemy_defenders(plot, u) - if engagement { 0 } else { 1 })
+            .min(self.unit_collateral_damage_max_units(u));
 
         // C++ `std::map<CvUnit*, int> mapUnitDamage`: ordered by heap address in C++, which is
         // not reproducible; plot order here (it only decides exact ties of the rolled values).
@@ -2193,6 +2305,7 @@ impl Game {
                 if damage != new_damage {
                     self.unit_set_damage(best_unit, new_damage, Some(owner));
                     damage_count += 1;
+                    hit.push((best_unit, damage, new_damage));
                 }
             }
 
@@ -2206,6 +2319,7 @@ impl Game {
                 format!("{} inflicted collateral damage on {} units", unit_type_name(d, unit_type), damage_count)
             });
         }
+        hit
     }
 
     /// C++ `CvUnit::flankingStrikeCombat` (CvUnit.cpp:17385-17468).

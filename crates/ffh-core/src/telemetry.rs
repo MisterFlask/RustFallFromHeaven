@@ -25,6 +25,9 @@ use std::io::Write;
 
 use ffh_data::*;
 
+use crate::engagement::engage::Eng;
+use crate::engagement::report::BattleReport;
+use crate::engagement::{Battle, BattleLog as RoundLog, EngageResult, Fate, Side};
 use crate::game::Game;
 use crate::ids::*;
 use crate::structs::{TradeData, VoteSelectionSubData};
@@ -275,6 +278,20 @@ fn enum_name(names: &'static [&'static str], i: usize) -> &'static str {
 }
 
 const ODDS_BUCKETS: [&str; 10] = ["00", "10", "20", "30", "40", "50", "60", "70", "80", "90"];
+
+/// `engage_slots` keys: a side's slots.
+const SLOT_KEYS: [&str; 25] = [
+    "00", "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24",
+];
+
+/// `engage_est` keys: the estimator's size bucket (the smaller side: 1, 2-3, 4-7, 8+) and its
+/// predicted win chance (per mille, by hundreds).
+const EST_KEYS: [[&str; 10]; 4] = [
+    ["1:00", "1:10", "1:20", "1:30", "1:40", "1:50", "1:60", "1:70", "1:80", "1:90"],
+    ["2-3:00", "2-3:10", "2-3:20", "2-3:30", "2-3:40", "2-3:50", "2-3:60", "2-3:70", "2-3:80", "2-3:90"],
+    ["4-7:00", "4-7:10", "4-7:20", "4-7:30", "4-7:40", "4-7:50", "4-7:60", "4-7:70", "4-7:80", "4-7:90"],
+    ["8+:00", "8+:10", "8+:20", "8+:30", "8+:40", "8+:50", "8+:60", "8+:70", "8+:80", "8+:90"],
+];
 
 // ----------------------------------------------------------------------------
 // Recording (rules side)
@@ -707,6 +724,136 @@ impl Game {
                     .end()
             });
         });
+    }
+
+    /// An engagement (docs/TELEMETRY.md, "Engagements"), after its post-battle steps: today's
+    /// per-unit `attack` / `defend` counts for every committed unit (so the duel's reports stay
+    /// comparable), and the engagement's own counts. `estimate`: the moment estimator's win
+    /// chance (per mille) for the battle as fought, for the calibration buckets.
+    pub(crate) fn tel_engagement(&self, r: &BattleReport, e: &Eng, b: &Battle, rl: &RoundLog, estimate: Option<i32>) {
+        let d = self.d;
+        let turn = self.game_turn();
+        let (pa, pd) = (r.sides[0].player, r.sides[1].player);
+        let won = r.outcome.result == EngageResult::AttackerWon;
+        let city = r.place.city.is_some();
+        let barb = self.player_is_barbarian(pd);
+        let animal = barb && e.of(Side::Defender).all(|i| d.units[e.types[i]].animal);
+        let role_of = |i: usize| d.unit_roles[e.types[i]].map_or("none", |ro| d.combat_roles[ro].base.type_.as_str());
+        let (n_att, n_def) = (e.n_att, e.units.len() - e.n_att);
+        let result = match r.outcome.result {
+            EngageResult::AttackerWon => "won",
+            EngageResult::DefenderHeld => "held",
+            EngageResult::Draw => "draw",
+            EngageResult::Mutual => "mutual",
+        };
+        let rounds = rl.rounds;
+        let rounds_key = match rounds {
+            0 => "00",
+            1..=5 => "01-05",
+            6..=10 => "06-10",
+            11..=20 => "11-20",
+            r if r < b.params.max_rounds => "21-39",
+            _ => "40",
+        };
+        let lost = |s: usize| r.sides[s].lost.iter().map(|(_, n)| *n as i64).sum::<i64>();
+        let (x, y) = (r.place.x, r.place.y);
+        self.telemetry.with(|t| {
+            for i in 0..e.units.len() {
+                let fate = rl.fighters[i].fate;
+                let p = e.owners[i];
+                if i < e.n_att {
+                    let res = match fate {
+                        Fate::Killed { .. } => "loss",
+                        Fate::Survived if won => "win",
+                        _ => "withdraw",
+                    };
+                    t.count(p, "attack", res, 0);
+                    t.count(p, "attack_vs", if !barb { "civ" } else if animal { "animal" } else { "barbarian" }, (res == "win") as i64);
+                    t.count(p, "engage_force", role_of(i), 0);
+                } else {
+                    let res = match fate {
+                        Fate::Killed { .. } => "loss",
+                        Fate::Survived => "win",
+                        _ => "withdraw",
+                    };
+                    t.count(p, "defend", res, 0);
+                    t.count(p, "defend_in_city", if city { "yes" } else { "no" }, matches!(fate, Fate::Killed { .. }) as i64);
+                }
+                let side = if i < e.n_att { "att" } else { "def" };
+                match fate {
+                    Fate::Killed { .. } => t.count(p, "engage_lost_role", role_of(i), 0),
+                    Fate::Withdrew { .. } => t.count(p, "engage_withdrew", side, 0),
+                    Fate::SatOut => t.count(p, "engage_satout", side, 0),
+                    Fate::Survived => {}
+                }
+            }
+            t.count(pa, "engage", result, rounds as i64);
+            t.count(pd, "engage_def", result, rounds as i64);
+            t.count(pa, "engage_rounds", rounds_key, rounds as i64);
+            if r.outcome.result == EngageResult::Draw {
+                t.count(pa, "engage_draw", "n", 0);
+            }
+            t.count(pa, "engage_slots", SLOT_KEYS[(e.slots.max(Side::Attacker).clamp(0, 24)) as usize], n_att as i64);
+            t.count(pd, "engage_slots_def", SLOT_KEYS[(e.slots.def().clamp(0, 24)) as usize], n_def as i64);
+            for (s, p) in [(0, pa), (1, pd)] {
+                let st = &r.sides[s];
+                t.count(p, "engage_stance", d.stances[st.stance].base.type_.as_str(), 0);
+                let by = if st.army.is_some() { "army" } else if st.garrison_of.is_some() { "garrison" } else { "default" };
+                t.count(p, "engage_stance_by", by, 0);
+            }
+            if e.strikes > 0 {
+                t.count(pa, "engage_strike", "n", e.strikes as i64);
+            }
+            if e.collateral > 0 {
+                t.count(pa, "engage_collateral", "n", e.collateral as i64);
+            }
+            if let Some(w) = estimate {
+                let key = EST_KEYS[crate::engagement::expect::size_bucket(n_att, n_def)][(w.clamp(0, 999) / 100) as usize];
+                t.count(pa, "engage_est", key, won as i64);
+                t.count(pa, "engage_est_exp", key, w as i64);
+            }
+            t.event(|| {
+                ev(turn, "engagement", pa)
+                    .i("vs", pd.0 as i64)
+                    .i("id", r.id as i64)
+                    .s("res", result)
+                    .i("att", n_att as i64)
+                    .i("def", n_def as i64)
+                    .i("att_lost", lost(0))
+                    .i("def_lost", lost(1))
+                    .i("rounds", rounds as i64)
+                    .i("volleys", rl.volley_rounds as i64)
+                    .opt("est", estimate.map(|w| w as i64))
+                    .b("city", city)
+                    .b("taken", r.outcome.plot_taken)
+                    .i("x", x as i64)
+                    .i("y", y as i64)
+                    .end()
+            });
+        });
+    }
+
+    /// A kill in an engagement or a missile strike (G2): who killed with what, the war's kill
+    /// count, a summon's kill.
+    pub(crate) fn tel_engage_kill(&self, killer: UnitId, victim: UnitId) {
+        let (wp, lp) = (self.units[killer].owner, self.units[victim].owner);
+        let (tw, tl) = (self.players[wp].team, self.players[lp].team);
+        let name = self.tel_name_unit(self.units[killer].unit_type);
+        self.telemetry.with(|t| {
+            t.count(wp, "kill_by", name, 0);
+            if let Some(&spell) = t.summons.get(&killer) {
+                t.spells.entry((wp, spell)).or_default().summon_kills += 1;
+            }
+            if let Some((war, side)) = t.war(tw, tl) {
+                war.kills[side] += 1;
+            }
+            t.kill_cause.insert(victim, "combat");
+        });
+    }
+
+    /// A missile strike (plan 6.11): `hit` a unit, `killed` it.
+    pub(crate) fn tel_missile_strike(&self, p: PlayerId, hit: bool, killed: bool) {
+        self.telemetry.with(|t| t.count(p, "engage_missile", if killed { "kill" } else if hit { "hit" } else { "miss" }, 0));
     }
 
     pub(crate) fn tel_improvement(&self, u: UnitId, build: BuildType) {

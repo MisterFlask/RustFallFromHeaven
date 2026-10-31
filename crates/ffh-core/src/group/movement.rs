@@ -359,7 +359,19 @@ impl Game {
     }
 
     /// C++ `CvSelectionGroup::groupAttack`: returns `(attack made, bFailedAlreadyFighting)`.
+    /// [`Game::group_attack_force`] with no force: a refusal is no attack.
     pub fn group_attack(&mut self, g: GroupId, x: i32, y: i32, flags: i32) -> (bool, bool) {
+        self.group_attack_force(g, x, y, flags, None).unwrap_or((false, false))
+    }
+
+    /// C++ `CvSelectionGroup::groupAttack` with a force (plan section 6): the one attack entry
+    /// for every order of a group into an enemy plot. Today's preamble (the path step for
+    /// `MOVE_THROUGH_ENEMY`, the AI's pre-attack spells and bombard-first), then, for an
+    /// engagement (`group_engage_applies`), the engagement's preamble and one engagement
+    /// (`Game::group_attack_engage`); otherwise today's attack, unchanged. `force`: the units
+    /// to commit (checked against the pool), `None` the stance's proposal. `Err`: refused, nothing
+    /// changed.
+    pub fn group_attack_force(&mut self, g: GroupId, x: i32, y: i32, flags: i32, force: Option<Vec<UnitId>>) -> Result<(bool, bool), &'static str> {
         let mut dest_plot = self.map.plot_xy(x, y);
 
         if flags & MOVE_THROUGH_ENEMY != 0 {
@@ -384,7 +396,7 @@ impl Game {
                 }
             }
             if !self.groups.contains(g) {
-                return (false, false);
+                return Ok((false, false));
             }
 
             if let Some(dest) = dest_plot {
@@ -410,7 +422,7 @@ impl Game {
                                 self.unit_finish_moves(head);
                             }
                             // C++ quirk: returns true without assigning bFailedAlreadyFighting.
-                            return (true, false);
+                            return Ok((true, false));
                         }
                     }
                 }
@@ -419,7 +431,7 @@ impl Game {
 
         let Some(dest_plot) = dest_plot else {
             // C++ FAssertMsg(pDestPlot != NULL) and dereferences it below.
-            return (false, false);
+            return Ok((false, false));
         };
 
         let human = self.group_is_human(g);
@@ -437,6 +449,13 @@ impl Game {
                     || flags & MOVE_THROUGH_ENEMY != 0
                     || self.group_plot(g).and_then(|from| self.group_find_path(g, from, dest_plot, flags)).is_some_and(|path| path.first_plot == Some(dest_plot));
                 if can_attack_dest {
+                    // Engagement combat: the engagement's preamble and one engagement; with
+                    // nobody to fight but non-combatants, today's attack captures them.
+                    if self.group_engage_applies(g, dest_plot) {
+                        if let Some(r) = self.group_attack_engage(g, dest_plot, human, force)? {
+                            return Ok(r);
+                        }
+                    }
                     let (best_attack_unit, _) = self.group_ai_get_best_group_attacker(g, dest_plot, true, false, false);
 
                     if let Some(best_attack_unit) = best_attack_unit {
@@ -444,19 +463,19 @@ impl Game {
                         let best_defender =
                             self.plot_get_best_defender(dest_plot, None, Some(owner), Some(best_attack_unit), true, false, false);
                         if best_defender.is_none() {
-                            return (false, false);
+                            return Ok((false, false));
                         }
 
                         // Alertness (Pep, imported by Xienwolf): no accidental attacks into plots that
                         // were not visible when the move mission started.
                         if human && !self.groups[g].last_plot_visible {
-                            return (false, false);
+                            return Ok((false, false));
                         }
 
                         let no_blitz = !self.unit_is_blitz(best_attack_unit) || !self.units[best_attack_unit].made_attack;
 
                         if self.group_declare_war(g, dest_plot, false) {
-                            return (true, false);
+                            return Ok((true, false));
                         }
 
                         loop {
@@ -507,7 +526,53 @@ impl Game {
             }
         }
 
-        (attack, failed_already_fighting)
+        Ok((attack, failed_already_fighting))
+    }
+
+    /// The engagement's part of [`Game::group_attack_force`] (plan section 6, the preamble's
+    /// steps 2 to 5, then the engagement): no candidate defender: `None` (today's attack captures
+    /// the non-combatants there, if any); Alertness for a human order without a force (a human
+    /// force comes from the `engage` command, which requires a visible plot, G5); the AI's war
+    /// declaration as today (a human's is confirmed in the command layer: an attack that would
+    /// still need one finds no defender at war); the `doCombat` hook; then a missile strike per
+    /// missile for a group of missiles only (plan 6.11), else one engagement launched by `g`.
+    fn group_attack_engage(&mut self, g: GroupId, dest: PlotIdx, human: bool, force: Option<Vec<UnitId>>) -> Result<Option<(bool, bool)>, &'static str> {
+        let owner = self.groups[g].owner;
+        let Some(from) = self.group_plot(g) else { return Ok(Some((false, false))) };
+        let members = units_snapshot(self, g);
+        let missiles = !members.is_empty() && members.iter().all(|&u| self.unit_is_suicide(u));
+        let test: Vec<UnitId> = match (&force, missiles) {
+            (Some(f), _) => f.clone(),
+            (None, true) => members.clone(),
+            (None, false) => self.engage_attackers(owner, from, dest, crate::engagement::WarTest::AtWar),
+        };
+        if self.engage_defenders(dest, owner, &test, crate::engagement::WarTest::AtWar).is_empty() {
+            return Ok(None);
+        }
+        if human && force.is_none() && !self.groups[g].last_plot_visible {
+            return Ok(Some((false, false)));
+        }
+        if self.group_declare_war(g, dest, false) {
+            return Ok(Some((true, false)));
+        }
+        if py_do_combat(self, g, dest) {
+            return Ok(Some((true, false)));
+        }
+        if missiles {
+            let mut attacked = false;
+            for u in members {
+                if !self.units.contains(u) || !self.unit_can_move(u) || !self.unit_can_move_into(u, dest, true, false, false) {
+                    continue;
+                }
+                if self.engage_missile_strike(u, dest).is_ok() {
+                    attacked = true;
+                }
+            }
+            return Ok(Some((attacked, false)));
+        }
+        let order = crate::engagement::engage::EngageOrder { p: owner, from, to: dest, launcher: Some(g), force, forced: false, log: None };
+        self.engage(order)?;
+        Ok(Some((true, false)))
     }
 
     /// C++ `CvSelectionGroup::groupMove` (C++ defaults `pCombatUnit = NULL, bEndMove = false`).
