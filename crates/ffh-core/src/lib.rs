@@ -12,6 +12,7 @@ pub mod controller;
 pub mod culture;
 pub mod deal;
 pub mod defs;
+pub mod engagement;
 pub mod ffh;
 pub mod found_value;
 pub mod game;
