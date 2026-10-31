@@ -57,7 +57,7 @@ pub enum Query {
     Governors,
     /// Engagement combat (docs/ENGAGEMENTS.md): the plan of an attack on `to` by `by` in
     /// `formation` (else the rules' auto formation): the pool, both formations, the slots and
-    /// lanes, the ground, the defenders seen, the pairs' A and Dv and the forecast
+    /// lanes, the ground, the defenders seen and their formation, and the forecast
     /// (`view::battles::engage_preview`).
     EngagePreview { by: crate::command::EngageBy, to: (i32, i32), formation: Option<Vec<ffh_core::engagement::Place>> },
     /// A battle report's log (the battle screens replay it), as the human may see it.

@@ -528,7 +528,7 @@ fn details_json(c: &CombatDetails) -> Json {
 /// mille), of retreating (per mille), both current strengths (x100), and each side's strength
 /// breakdown (`CombatDetails` from `maxCombatStr`). Under engagements, an attack of land units
 /// on land adds `engagement: true` and decides `valid` by the pool and the defenders
-/// (`battles::combat_fields`); the duel's odds stay until the engagement forecast lands.
+/// (`battles::combat_fields`); the duel's odds stay beside it (a battle's forecast is the plan's).
 pub fn combat(v: &Viewer, units: &[UnitId], x: i32, y: i32) -> Result<Json, QueryErr> {
     let j = duel_combat(v, units, x, y)?;
     let g = v.g;
