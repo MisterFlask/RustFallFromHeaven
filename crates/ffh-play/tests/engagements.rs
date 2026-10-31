@@ -10,6 +10,7 @@ use std::sync::Arc;
 
 use ffh_play::command::{CmdErr, CmdOk, Command, Confirm};
 use ffh_play::json::Json;
+use ffh_core::ids::UnitId;
 use ffh_play::{Session, SessionOptions};
 
 fn load(save: &std::path::Path) -> Session {
@@ -219,6 +220,110 @@ fn the_staged_engagement_is_fought_through_engage_and_its_log_has_the_screens_fi
     }
     // A report that is not kept, or not the viewer's, is gone.
     assert!(matches!(s.query_json(&Json::parse(r#"{"q":"battle_log","report":4321}"#).unwrap()), Err(ffh_play::query::QueryErr::Gone)));
+}
+
+/// The `combat` query on a battle the selection cannot launch now keeps the duel's answer (the
+/// hover's combat lines and the path's odds chip read `valid` and `odds`) and says it is a battle
+/// on arrival: the city two plots away (a go-to that ends in an attack), and next to the army
+/// once its units have used their moves. `pool` counts the selected units that could fight. And
+/// `engage_preview` on a plot that is not next to the attackers, or that the human does not see,
+/// answers its errors alone: no plot, slots or fighters (G5).
+#[test]
+fn the_combat_query_previews_a_battle_on_arrival() {
+    let dir = common::TempDir::new("stage-engagement-arrival");
+    let st = ffh_play::stage::engagement(&dir.0).expect("staged");
+    let mut s = load(&st.save);
+    let (x, y) = (st.x, st.y);
+    let combat = |s: &Session, units: &[UnitId]| {
+        let ids: Vec<String> = units.iter().map(|u| u.0.to_string()).collect();
+        q(s, &format!(r#"{{"q":"combat","units":[{}],"x":{x},"y":{y}}}"#, ids.join(",")))
+    };
+    let flag = |j: &Json, k: &str| j.get(k).and_then(Json::as_bool).unwrap_or_else(|| panic!("no boolean `{k}` in {j:?}"));
+
+    // Next to the city with moves left: a battle now.
+    let c = combat(&s, &st.units);
+    assert!(flag(&c, "engagement") && flag(&c, "valid") && !flag(&c, "on_arrival"), "{c:?}");
+
+    // Next to it with no moves left: on arrival, the duel's odds kept.
+    let mut spent = load(&st.save);
+    for &u in &st.units {
+        spent.g.unit_finish_moves(u);
+    }
+    let c = combat(&spent, &st.units);
+    assert!(flag(&c, "engagement") && flag(&c, "on_arrival"), "{c:?}");
+    assert!(flag(&c, "valid") && c.get("odds").and_then(Json::as_i64).is_some(), "the duel's odds stay: {c:?}");
+    assert_eq!(int(&c, "pool"), st.units.len() as i64, "every selected unit could fight there");
+
+    // Two plots away (the warrior stays next to the city, so it is still seen): on arrival.
+    let g = &s.g;
+    let at = g.unit_plot(st.units[0]);
+    let (ax, ay) = g.map.xy(at);
+    let city_plot = g.map.plot_xy(x, y).unwrap();
+    let back = (-1..=1)
+        .flat_map(|dx| (-1..=1).map(move |dy| (dx, dy)))
+        .filter_map(|(dx, dy)| g.map.plot_xy(ax + dx, ay + dy))
+        .find(|&p| {
+            let (px, py) = g.map.xy(p);
+            g.step_distance(px, py, x, y) == 2 && !g.plot_is_water(p) && !g.plot_is_impassable(p) && g.map.plots[p].units.is_empty() && g.map.plots[p].plot_city.is_none()
+        })
+        .expect("a plot two steps from the city next to the army");
+    let warrior = ffh_data::global().t::<ffh_data::UnitType>("UNIT_WARRIOR");
+    let moved: Vec<UnitId> = st.units.iter().copied().filter(|&u| s.g.units[u].unit_type != warrior).collect();
+    let (bx, by) = s.g.map.xy(back);
+    for &u in &moved {
+        s.g.unit_set_xy(u, bx, by, false);
+    }
+    assert!(s.g.plot_is_visible(city_plot, s.g.players[s.human].team), "the city is still seen");
+    let c = combat(&s, &moved);
+    assert!(flag(&c, "engagement") && flag(&c, "on_arrival"), "{c:?}");
+    assert!(flag(&c, "valid") && c.get("odds").and_then(Json::as_i64).is_some(), "the duel's odds stay: {c:?}");
+    assert_eq!(int(&c, "pool"), moved.len() as i64);
+    assert_eq!(int(&c, "defenders"), st.defenders.len() as i64);
+
+    // The plan of an attack on a plot that is not next to the attackers: its errors alone.
+    let ids: Vec<String> = moved.iter().map(|u| u.0.to_string()).collect();
+    let pv = q(&s, &format!(r#"{{"q":"engage_preview","units":[{}],"to":{{"x":{x},"y":{y}}}}}"#, ids.join(",")));
+    assert_eq!(keys(&pv), sorted(&["declare_war", "errors"]), "{pv:?}");
+    assert!(!arr(&pv, "errors").is_empty());
+
+    // ... and on a plot the human does not see (from a plot next to it).
+    let team = s.g.players[s.human].team;
+    let unseen = s.g.map.plot_ids().find(|&p| !s.g.plot_is_visible(p, team) && !s.g.plot_is_water(p)).expect("a plot the human does not see");
+    let (ux, uy) = s.g.map.xy(unseen);
+    let from = s.g.map.plot_xy(ux + 1, uy).or_else(|| s.g.map.plot_xy(ux - 1, uy)).expect("a neighbour");
+    let (fx, fy) = s.g.map.xy(from);
+    let pv = q(&s, &format!(r#"{{"q":"engage_preview","from":{{"x":{fx},"y":{fy}}},"to":{{"x":{ux},"y":{uy}}}}}"#));
+    assert_eq!(keys(&pv), sorted(&["declare_war", "errors"]), "{pv:?}");
+    assert!(arr(&pv, "errors").iter().any(|e| e.as_str().is_some_and(|t| t.contains("cannot see"))), "{pv:?}");
+}
+
+/// The stance picked in the plan is the attack's: `engage` with a stance and the plan's force
+/// fights with that stance, the battle's log records it (not the army's standing order, which
+/// stays) and the force as that stance's own pick.
+#[test]
+fn the_plan_s_stance_is_the_attack_s() {
+    let dir = common::TempDir::new("stage-engagement-stance");
+    let st = ffh_play::stage::engagement(&dir.0).expect("staged");
+    let mut s = load(&st.save);
+    let (army, x, y) = (st.army.0, st.x, st.y);
+    let mobile = ffh_data::global().t::<ffh_data::StanceType>("STANCE_MOBILE");
+    let standing = s.g.armies[st.army].stance;
+    assert_ne!(standing, mobile);
+    let pv = q(&s, &format!(r#"{{"q":"engage_preview","army":{army},"to":{{"x":{x},"y":{y}}},"stance":"STANCE_MOBILE"}}"#));
+    assert_eq!(int(&pv, "stance"), mobile.0 as i64);
+    let fighters = arr(&pv, "fighters");
+    let force: Vec<String> = arr(&pv, "force").iter().map(|b| int(&fighters[b.as_i64().unwrap() as usize], "unit").to_string()).collect();
+    let r = cmd(&mut s, &format!(r#"{{"c":"engage","army":{army},"to":{{"x":{x},"y":{y}}},"force":[{}],"stance":"STANCE_MOBILE"}}"#, force.join(","))).unwrap();
+    let CmdOk::Applied { battle: Some(id), .. } = r else { panic!("no battle: {r:?}") };
+    let l = q(&s, &format!(r#"{{"q":"battle_log","report":{id}}}"#));
+    let side = arr(&l, "sides").into_iter().next().unwrap();
+    assert_eq!(int(&side, "stance"), mobile.0 as i64, "the stance picked is the one recorded: {side:?}");
+    assert_eq!(side.get("picked_by").and_then(|p| p.get("kind")).and_then(Json::as_str), Some("Auto"), "the plan's force is the stance's own pick: {side:?}");
+    let summary = l.get("summary").unwrap();
+    assert_eq!(int(&arr(summary, "sides")[0], "stance"), mobile.0 as i64);
+    if let Some(a) = s.g.armies.get(st.army) {
+        assert_eq!(a.stance, standing, "the army's standing order is unchanged");
+    }
 }
 
 /// An attack that would declare war asks first, as `move` does: the confirmation, a "no" that

@@ -209,21 +209,32 @@ fn plot_snap_json(d: &GameData, p: &PlotSnap) -> Json {
     }
 }
 
-/// A plot as it is now, in the log's `PlotSnap` shape (the attacking plot; the plan's plots).
+/// A plot as it is now, in the log's `PlotSnap` shape (the attacking plot; the plan's plots), as
+/// the viewer may know it (the fog rules, `view::fog`): its terrain, feature and hills once
+/// revealed (else null and false), a city the viewer has revealed, its size and defence while
+/// the viewer sees its plot.
 fn plot_now(v: &Viewer, p: PlotIdx, river_crossing: bool) -> Json {
     let g = v.g;
     let plot = &g.map.plots[p];
     let (x, y) = g.map.xy(p);
+    let revealed = v.plot_revealed(p);
     let city = plot.plot_city.filter(|&c| g.cities.contains(c) && v.city_revealed(c)).map(|c| {
         let city = &g.cities[c];
-        crate::jobj! { "id" => c, "name" => city_name(g, c), "owner" => city.owner, "size" => city.population, "defense_pct" => g.city_defense_modifier(c, false) }
+        let seen = v.city_visible(c);
+        crate::jobj! {
+            "id" => c,
+            "name" => city_name(g, c),
+            "owner" => city.owner,
+            "size" => seen.then_some(city.population),
+            "defense_pct" => seen.then(|| g.city_defense_modifier(c, false)),
+        }
     });
     crate::jobj! {
         "x" => x,
         "y" => y,
-        "terrain" => Json::opt_idx(plot.terrain_type),
-        "feature" => Json::opt_idx(v.plot_revealed(p).then_some(plot.feature_type).flatten()),
-        "hills" => g.plot_is_hills(p),
+        "terrain" => Json::opt_idx(plot.terrain_type.filter(|_| revealed)),
+        "feature" => Json::opt_idx(plot.feature_type.filter(|_| revealed)),
+        "hills" => revealed && g.plot_is_hills(p),
         "river_crossing" => river_crossing,
         "city" => city,
     }
@@ -764,7 +775,9 @@ fn defender_pick(g: &Game, candidates: &[UnitId], known: Option<StanceType>, slo
 
 /// `engage_preview`: the plan of an attack on `to` by `by` (module comment). `force`: the units
 /// to commit (checked: `errors` says why not); else `stance`'s pick; else the proposal of the
-/// attack's own stance (the launcher's army's, ...). Pure.
+/// attack's own stance (the launcher's army's, ...). Pure. A plot the viewer does not see, or
+/// one not next to the attackers, has no plan: the reply is its `errors` (and `declare_war`)
+/// alone, so the query tells no more of the fog than the `combat` query does (G5).
 pub fn engage_preview(v: &Viewer, by: &EngageBy, to: (i32, i32), force: Option<&[UnitId]>, stance: Option<StanceType>, alternatives: bool) -> Result<Json, QueryErr> {
     let g = v.g;
     let d = g.d;
@@ -787,6 +800,9 @@ pub fn engage_preview(v: &Viewer, by: &EngageBy, to: (i32, i32), force: Option<&
         errors.push("you cannot see that plot".into());
     }
     let rival = g.map.plots[from].units.iter().filter(|&&u| g.units[u].owner == h).find_map(|&u| g.unit_get_declare_war_move(u, dest));
+    if !errors.is_empty() {
+        return Ok(crate::jobj! { "declare_war" => rival, "errors" => Json::Arr(errors.into_iter().map(Json::from).collect()) });
+    }
     let war = rival.map_or(WarTest::AtWar, WarTest::DeclareWar);
     let ctx = HitCtx::new(from, dest);
     let slots = g.engage_slots(&ctx);
@@ -812,8 +828,8 @@ pub fn engage_preview(v: &Viewer, by: &EngageBy, to: (i32, i32), force: Option<&
     if pool.is_empty() {
         errors.push("no unit here can attack that plot now".into());
     }
-    let candidates = if v.plot_visible(dest) { g.engage_defenders(dest, h, if force.is_empty() { &pool } else { &force }, war) } else { Vec::new() };
-    if candidates.is_empty() && v.plot_visible(dest) {
+    let candidates = g.engage_defenders(dest, h, if force.is_empty() { &pool } else { &force }, war);
+    if candidates.is_empty() {
         errors.push("there is nobody to fight there".into());
     }
     let in_city = g.plot_is_city(dest, false, None);
@@ -915,30 +931,52 @@ pub fn engage_preview(v: &Viewer, by: &EngageBy, to: (i32, i32), force: Option<&
 
 /// The `combat` query under engagements, for an attack of `units` (land units) on `plot` (land),
 /// given the duel's reply `j`: when the plot holds a defender the attack would meet (a
-/// declare-war attack tests the teams it would fight), `engagement: true`, `valid` (the pool on
-/// the attacking plot is not empty: some unit there can attack the plot now), `pool` and
-/// `defenders` (their sizes) and `declare_war_team`; the duel's odds and strengths stay beside
-/// them until the engagement forecast lands (phase 6 step 9 part 2). With no defender there the
-/// attack is today's (it captures non-combatants): the duel's reply unchanged.
+/// declare-war attack tests the teams it would fight), `engagement: true`, `pool` and
+/// `defenders` (their sizes), `declare_war_team` and `on_arrival`:
+/// - an attack the selection can launch now (the plot is next to it and some unit on its plot
+///   can attack the plot now: [`Game::engage_attackers`]): `on_arrival: false`, `valid: true`,
+///   `pool` the pool on the selection's plot (its other units there count: the garrison, other
+///   armies);
+/// - else (a go-to that ends in an attack, units that have used their moves or their attack):
+///   `on_arrival: true`, the duel's `valid` and odds kept, `pool` the selected units that could
+///   fight there once they can attack it ([`could_engage`]); the battle is fought from the plot
+///   the attack is launched from, with whatever stands there then.
+///
+/// The duel's odds and strengths stay beside them until the engagement forecast lands (phase 6
+/// step 9 part 2). With no defender there the attack is today's (it captures non-combatants):
+/// the duel's reply unchanged.
 pub fn combat_fields(v: &Viewer, units: &[UnitId], plot: PlotIdx, mut j: Json) -> Json {
     let g = v.g;
     if !v.plot_visible(plot) {
         return j;
     }
     let from = g.unit_plot(units[0]);
+    let ((fx, fy), (tx, ty)) = (g.map.xy(from), g.map.xy(plot));
     let rival = units.iter().find_map(|&u| g.unit_get_declare_war_move(u, plot));
     let war = rival.map_or(WarTest::AtWar, WarTest::DeclareWar);
-    let pool = g.engage_attackers(v.h, from, plot, war);
-    let defenders = g.engage_defenders(plot, v.h, if pool.is_empty() { units } else { &pool }, war);
+    let pool = if g.step_distance(fx, fy, tx, ty) == 1 { g.engage_attackers(v.h, from, plot, war) } else { Vec::new() };
+    let now = !pool.is_empty();
+    let force: Vec<UnitId> = if now { pool } else { units.iter().copied().filter(|&u| could_engage(g, u, plot)).collect() };
+    let defenders = g.engage_defenders(plot, v.h, if force.is_empty() { units } else { &force }, war);
     if defenders.is_empty() {
         return j;
     }
     j.set("engagement", true);
-    j.set("valid", !pool.is_empty());
-    j.set("pool", pool.len());
+    if now {
+        j.set("valid", true);
+    }
+    j.set("on_arrival", !now);
+    j.set("pool", force.len());
     j.set("defenders", defenders.len());
     j.set("declare_war_team", rival);
     j
+}
+
+/// Whether unit `u` could fight in an attack on `plot` once it is next to it and can attack:
+/// [`Game::unit_can_engage`]'s tests but the place, the moves and the attacks left (a land unit
+/// on a land plot, able to attack, not marching, not a missile).
+fn could_engage(g: &Game, u: UnitId, plot: PlotIdx) -> bool {
+    g.engage_applies(u, plot) && g.units[u].march.is_none() && !g.unit_is_suicide(u) && g.unit_can_attack(u)
 }
 
 /// A unit's engagement fields (the view's units, under engagements): its role, its A before the
@@ -984,6 +1022,27 @@ mod tests {
         assert_eq!(j.get("base_x100").and_then(Json::as_i64), Some(400));
         assert_eq!(j.get("role_pct").and_then(Json::as_i64), Some(110));
         assert_eq!(j.get("total_x100").and_then(Json::as_i64), Some(440));
+    }
+
+    /// A plot the viewer has not revealed tells nothing of itself (the plan's and the log's
+    /// plots): no terrain, feature or hills; a revealed one shows its terrain.
+    #[test]
+    fn an_unrevealed_plot_shows_no_terrain() {
+        let d = ffh_data::global();
+        let mut g = Game::new(d, ffh_core::setup::GameSetup::standard(d, 2, "WORLDSIZE_DUEL", 5));
+        g.game_init();
+        let h = PlayerId(0);
+        let team = g.players[h].team;
+        let hidden = g.map.plot_ids().find(|&p| !g.map.plots[p].revealed[team] && g.map.plots[p].terrain_type.is_some()).expect("an unrevealed plot");
+        let v = Viewer::new(&g, h, false);
+        let j = plot_now(&v, hidden, false);
+        assert!(j.get("terrain").is_some_and(Json::is_null), "{j:?}");
+        assert!(j.get("feature").is_some_and(Json::is_null), "{j:?}");
+        assert_eq!(j.get("hills").and_then(Json::as_bool), Some(false));
+        assert!(plot_now(&Viewer::new(&g, h, true), hidden, false).get("terrain").and_then(Json::as_i64).is_some(), "debug reveal shows it");
+        g.map.plots[hidden].revealed[team] = true;
+        let v = Viewer::new(&g, h, false);
+        assert!(plot_now(&v, hidden, false).get("terrain").and_then(Json::as_i64).is_some(), "once revealed");
     }
 
     /// The help's engagement wording goes to the units and promotions with the abilities it
