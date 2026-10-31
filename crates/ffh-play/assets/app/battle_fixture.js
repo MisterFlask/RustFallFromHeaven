@@ -12,7 +12,8 @@ export const FIXTURES = {
    "viewer_side": 0,
    "plot": {"x":31,"y":18,"terrain":"TERRAIN_GRASS","feature":null,"hills":false,"river_crossing":false,"city":null},
    "from": {"x":30,"y":18,"terrain":"TERRAIN_GRASS","feature":null,"hills":false,"river_crossing":false,"city":null},
-   "ground": {"city":false,"forest":false,"hills":false,"flanking":true,"rules":[]},
+   "ground": {"city":false,"forest":false,"hills":false,"flanking":true,"rules":[{"kind":"ChargeFirstRound","pct":200}]},
+   "params": {"bolt_pct":60,"splash_pct":50,"large_hp_pct":150,"first_strike_speed":2},
    "slots": [
     {"base":8,"changes":[{"src":"Terrain","terrain":"TERRAIN_GRASS","delta":2}],"total":10,"river_only":0},
     {"base":8,"changes":[{"src":"Terrain","terrain":"TERRAIN_GRASS","delta":2}],"total":10,"river_only":0}
@@ -277,7 +278,8 @@ export const FIXTURES = {
      "viewer_side": 0,
      "plot": {"x":31,"y":18,"terrain":"TERRAIN_GRASS","feature":null,"hills":false,"river_crossing":false,"city":null},
      "from": {"x":30,"y":18,"terrain":"TERRAIN_GRASS","feature":null,"hills":false,"river_crossing":false,"city":null},
-     "ground": {"city":false,"forest":false,"hills":false,"flanking":true,"rules":[]},
+     "ground": {"city":false,"forest":false,"hills":false,"flanking":true,"rules":[{"kind":"ChargeFirstRound","pct":200}]},
+     "params": {"bolt_pct":60,"splash_pct":50,"large_hp_pct":150,"first_strike_speed":2},
      "slots": [
       {"base":8,"changes":[{"src":"Terrain","terrain":"TERRAIN_GRASS","delta":2}],"total":10,"river_only":0},
       {"base":8,"changes":[{"src":"Terrain","terrain":"TERRAIN_GRASS","delta":2}],"total":10,"river_only":0}
@@ -432,7 +434,8 @@ export const FIXTURES = {
      "viewer_side": 0,
      "plot": {"x":31,"y":18,"terrain":"TERRAIN_GRASS","feature":null,"hills":false,"river_crossing":false,"city":null},
      "from": {"x":30,"y":18,"terrain":"TERRAIN_GRASS","feature":null,"hills":false,"river_crossing":false,"city":null},
-     "ground": {"city":false,"forest":false,"hills":false,"flanking":true,"rules":[]},
+     "ground": {"city":false,"forest":false,"hills":false,"flanking":true,"rules":[{"kind":"ChargeFirstRound","pct":200}]},
+     "params": {"bolt_pct":60,"splash_pct":50,"large_hp_pct":150,"first_strike_speed":2},
      "slots": [
       {"base":8,"changes":[{"src":"Terrain","terrain":"TERRAIN_GRASS","delta":2}],"total":10,"river_only":0},
       {"base":8,"changes":[{"src":"Terrain","terrain":"TERRAIN_GRASS","delta":2}],"total":10,"river_only":0}
@@ -571,6 +574,7 @@ export const FIXTURES = {
    "plot": {"x":31,"y":18,"terrain":"TERRAIN_GRASS","feature":"FEATURE_FOREST","hills":false,"river_crossing":false,"city":null},
    "from": {"x":30,"y":18,"terrain":"TERRAIN_GRASS","feature":null,"hills":false,"river_crossing":false,"city":null},
    "ground": {"city":false,"forest":true,"hills":false,"flanking":false,"rules":[{"kind":"ForestRanged","pct":50}]},
+   "params": {"bolt_pct":60,"splash_pct":50,"large_hp_pct":150,"first_strike_speed":2},
    "slots": [
     {"base":8,"changes":[{"src":"Feature","feature":"FEATURE_FOREST","delta":-2}],"total":6,"river_only":0},
     {"base":8,"changes":[{"src":"Feature","feature":"FEATURE_FOREST","delta":-2}],"total":6,"river_only":0}
@@ -680,6 +684,7 @@ export const FIXTURES = {
      "plot": {"x":31,"y":18,"terrain":"TERRAIN_GRASS","feature":"FEATURE_FOREST","hills":false,"river_crossing":false,"city":null},
      "from": {"x":30,"y":18,"terrain":"TERRAIN_GRASS","feature":null,"hills":false,"river_crossing":false,"city":null},
      "ground": {"city":false,"forest":true,"hills":false,"flanking":false,"rules":[{"kind":"ForestRanged","pct":50}]},
+     "params": {"bolt_pct":60,"splash_pct":50,"large_hp_pct":150,"first_strike_speed":2},
      "slots": [
       {"base":8,"changes":[{"src":"Feature","feature":"FEATURE_FOREST","delta":-2}],"total":6,"river_only":0},
       {"base":8,"changes":[{"src":"Feature","feature":"FEATURE_FOREST","delta":-2}],"total":6,"river_only":0}
@@ -793,7 +798,18 @@ export const FIXTURES = {
    "viewer_side": 0,
    "plot": {"x":31,"y":18,"terrain":"TERRAIN_PLAINS","feature":null,"hills":true,"river_crossing":false,"city":null},
    "from": {"x":30,"y":18,"terrain":"TERRAIN_GRASS","feature":null,"hills":false,"river_crossing":false,"city":null},
-   "ground": {"city":false,"forest":false,"hills":true,"flanking":true,"rules":[{"kind":"HillsAttacker","pct":75},{"kind":"HillsDefenderRanged","pct":125}]},
+   "ground": {
+    "city": false,
+    "forest": false,
+    "hills": true,
+    "flanking": true,
+    "rules": [
+     {"kind":"HillsAttacker","pct":75},
+     {"kind":"HillsDefenderRanged","pct":125},
+     {"kind":"ChargeFirstRound","pct":200}
+    ]
+   },
+   "params": {"bolt_pct":60,"splash_pct":50,"large_hp_pct":150,"first_strike_speed":2},
    "slots": [
     {"base":8,"changes":[{"src":"Hills","delta":-2}],"total":6,"river_only":0},
     {"base":8,"changes":[{"src":"Hills","delta":-2}],"total":6,"river_only":0}
@@ -902,7 +918,18 @@ export const FIXTURES = {
      "viewer_side": 0,
      "plot": {"x":31,"y":18,"terrain":"TERRAIN_PLAINS","feature":null,"hills":true,"river_crossing":false,"city":null},
      "from": {"x":30,"y":18,"terrain":"TERRAIN_GRASS","feature":null,"hills":false,"river_crossing":false,"city":null},
-     "ground": {"city":false,"forest":false,"hills":true,"flanking":true,"rules":[{"kind":"HillsAttacker","pct":75},{"kind":"HillsDefenderRanged","pct":125}]},
+     "ground": {
+      "city": false,
+      "forest": false,
+      "hills": true,
+      "flanking": true,
+      "rules": [
+       {"kind":"HillsAttacker","pct":75},
+       {"kind":"HillsDefenderRanged","pct":125},
+       {"kind":"ChargeFirstRound","pct":200}
+      ]
+     },
+     "params": {"bolt_pct":60,"splash_pct":50,"large_hp_pct":150,"first_strike_speed":2},
      "slots": [
       {"base":8,"changes":[{"src":"Hills","delta":-2}],"total":6,"river_only":0},
       {"base":8,"changes":[{"src":"Hills","delta":-2}],"total":6,"river_only":0}
@@ -1022,6 +1049,7 @@ export const FIXTURES = {
    },
    "from": {"x":30,"y":18,"terrain":"TERRAIN_GRASS","feature":null,"hills":false,"river_crossing":false,"city":null},
    "ground": {"city":true,"forest":false,"hills":false,"flanking":false,"rules":[{"kind":"CityShots","pct":50}]},
+   "params": {"bolt_pct":60,"splash_pct":50,"large_hp_pct":150,"first_strike_speed":2},
    "slots": [
     {"base":8,"changes":[{"src":"Terrain","terrain":"TERRAIN_PLAINS","delta":2},{"src":"CityDefense","pct":20,"next_at":25,"delta":0}],"total":10,"river_only":0},
     {"base":8,"changes":[{"src":"Terrain","terrain":"TERRAIN_PLAINS","delta":2}],"total":10,"river_only":0}
@@ -1150,6 +1178,7 @@ export const FIXTURES = {
      },
      "from": {"x":30,"y":18,"terrain":"TERRAIN_GRASS","feature":null,"hills":false,"river_crossing":false,"city":null},
      "ground": {"city":true,"forest":false,"hills":false,"flanking":false,"rules":[{"kind":"CityShots","pct":50}]},
+     "params": {"bolt_pct":60,"splash_pct":50,"large_hp_pct":150,"first_strike_speed":2},
      "slots": [
       {"base":8,"changes":[{"src":"Terrain","terrain":"TERRAIN_PLAINS","delta":2},{"src":"CityDefense","pct":20,"next_at":25,"delta":0}],"total":10,"river_only":0},
       {"base":8,"changes":[{"src":"Terrain","terrain":"TERRAIN_PLAINS","delta":2}],"total":10,"river_only":0}
@@ -1248,6 +1277,7 @@ export const FIXTURES = {
    },
    "from": {"x":30,"y":18,"terrain":"TERRAIN_GRASS","feature":null,"hills":false,"river_crossing":false,"city":null},
    "ground": {"city":true,"forest":false,"hills":false,"flanking":false,"rules":[{"kind":"CityShots","pct":50}]},
+   "params": {"bolt_pct":60,"splash_pct":50,"large_hp_pct":150,"first_strike_speed":2},
    "slots": [
     {"base":8,"changes":[{"src":"Terrain","terrain":"TERRAIN_PLAINS","delta":2},{"src":"CityDefense","pct":50,"next_at":75,"delta":-2}],"total":8,"river_only":0},
     {"base":8,"changes":[{"src":"Terrain","terrain":"TERRAIN_PLAINS","delta":2}],"total":10,"river_only":0}
@@ -1381,6 +1411,7 @@ export const FIXTURES = {
      },
      "from": {"x":30,"y":18,"terrain":"TERRAIN_GRASS","feature":null,"hills":false,"river_crossing":false,"city":null},
      "ground": {"city":true,"forest":false,"hills":false,"flanking":false,"rules":[{"kind":"CityShots","pct":50}]},
+     "params": {"bolt_pct":60,"splash_pct":50,"large_hp_pct":150,"first_strike_speed":2},
      "slots": [
       {"base":8,"changes":[{"src":"Terrain","terrain":"TERRAIN_PLAINS","delta":2},{"src":"CityDefense","pct":50,"next_at":75,"delta":-2}],"total":8,"river_only":0},
       {"base":8,"changes":[{"src":"Terrain","terrain":"TERRAIN_PLAINS","delta":2}],"total":10,"river_only":0}

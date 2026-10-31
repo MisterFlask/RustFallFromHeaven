@@ -63,26 +63,54 @@ test("actions and reach in words", () => {
   const champ = field.fighters.find((f) => f.name === "Champion" && f.side === 0);
   assert.equal(L.actionText(champ, 0), "2 strikes");
   assert.equal(L.actionText(champ, 1), "1 strike");
-  assert.match(L.reachText("Charge", { flanking: true }), /anywhere; double damage in the first round/);
+  // the charge's first-round damage is the ground's rule's, worded from its percent
+  assert.match(L.reachText("Charge", field.ground), /anywhere; double damage in the first round$/);
+  assert.match(L.reachText("Charge", { flanking: true, rules: [{ kind: "ChargeFirstRound", pct: 150 }] }), /anywhere; 150% damage in the first round$/);
+  assert.match(L.reachText("Charge", { flanking: true, rules: [] }), /anywhere$/);
   assert.match(L.reachText("Charge", { flanking: false }), /no flanking here/);
   assert.match(L.reachText("Shoot"), /back unit/);
-  // every special of a unit is worded from its own fields
+  // every special of a unit is worded from its own fields, the rule values from the params
   const elephant = field.fighters.find((f) => f.name === "War Elephant");
-  const notes = L.specials(elephant, field.ground).join(" ");
+  const notes = L.specials(elephant, field.ground, field.params).join(" ");
   assert.match(notes, /Large/);
+  assert.match(notes, /150% of its role's HP/);
   assert.match(notes, /Withdrawal 25%/);
-  assert.match(notes, /double damage/);
-  const catNotes = L.specials(cat, field.ground).join(" ");
+  assert.match(notes, /first-round charges deal double damage/);
+  assert.match(L.specials(elephant, { flanking: true, rules: [{ kind: "ChargeFirstRound", pct: 175 }] }, { large_hp_pct: 140 }).join(" "), /140% of its role's HP.*first-round charges deal 175% damage/);
+  const bare = L.specials(elephant, { flanking: true, rules: [] }).join(" ");
+  assert.doesNotMatch(bare, /150%|double|first-round/, "no rule values without the params and the ground's rule");
+  assert.match(bare, /more HP than its role's/);
+  const catNotes = L.specials(cat, field.ground, field.params).join(" ");
   assert.match(catNotes, /Never takes a target below 25% of its HP/);
-  assert.match(catNotes, /splash/);
+  assert.match(catNotes, /splash .* for half damage/);
+  assert.match(L.specials(cat, field.ground, { splash_pct: 40 }).join(" "), /splash .* for 40% of the damage/);
+  assert.match(L.specials(adept, field.ground, field.params).join(" "), /magic bolt: 60% of a normal hit/);
+  assert.match(L.specials(adept, field.ground, { bolt_pct: 70 }).join(" "), /magic bolt: 70% of a normal hit/);
+  assert.match(L.specials(adept, field.ground).join(" "), /magic bolt, weaker than a spell/);
+  assert.match(L.specials(mage, field.ground, field.params).join(" "), /Casts Maelstrom: a full hit on its target and half damage on the target's neighbours/);
+  const quick = { ...champ, first_strikes: 2 };
+  assert.match(L.specials(quick, field.ground, field.params).join(" "), /First strikes: \+4 speed/);
+  assert.match(L.specials(quick, field.ground, { first_strike_speed: 3 }).join(" "), /First strikes: \+6 speed/);
+  assert.match(L.specials(quick, field.ground).join(" "), /First strikes: it acts sooner/);
 });
 
 test("the ground's rules in words, and what they do to a unit's hits", () => {
   const g = (k) => FIXTURES[k].preview.ground;
-  assert.deepEqual(L.groundRules(g("field"), null), ["Open ground: no damage changes; cavalry flanks."]);
+  assert.deepEqual(L.groundRules(g("field"), null), ["Open ground: cavalry flanks, and its first-round charges deal double damage."]);
+  assert.deepEqual(L.groundRules({ city: false, forest: false, hills: false, flanking: true, rules: [] }, null), ["Open ground: no damage changes; cavalry flanks."]);
   assert.deepEqual(L.groundRules(g("city"), FIXTURES.city.preview.plot), ["City: the attackers' arrows deal half damage; no flanking."]);
   assert.deepEqual(L.groundRules(g("forest"), FIXTURES.forest.preview.plot), ["Forest: arrows and stones deal half damage on both sides; no flanking."]);
-  assert.deepEqual(L.groundRules(g("hills"), null), ["Hills: the attackers deal 25% less damage; the defenders' arrows and stones deal 25% more."]);
+  assert.deepEqual(L.groundRules(g("hills"), null), ["Hills: the attackers deal 25% less damage; the defenders' arrows and stones deal 25% more; cavalry flanks, and its first-round charges deal double damage."]);
+  // the charge's rule: only where flanking works, and only in the first round
+  for (const k of ["field", "hills"]) assert.ok(g(k).rules.some((r) => r.kind === "ChargeFirstRound" && r.pct === 200), `${k}: the charge's rule`);
+  for (const k of ["city", "forest", "raid"]) assert.ok(!g(k).rules.some((r) => r.kind === "ChargeFirstRound"), `${k}: no charge's rule`);
+  assert.equal(L.groundPct(g("field"), 0, "Charge"), 100);
+  assert.equal(L.groundPct(g("field"), 1, "Charge", { firstRound: true }), 200);
+  assert.equal(L.groundPct(g("field"), 0, "Strike", { firstRound: true }), 100);
+  assert.equal(L.groundPct(g("hills"), 0, "Charge", { firstRound: true }), 150);
+  const rider = { side: 0, actions: [{ kind: "Charge", n: 2 }, { kind: "Strike", n: 1 }, { kind: "Strike", n: 1 }] };
+  assert.equal(L.groundNote(rider, g("field")), "");
+  assert.equal(L.groundNote(rider, g("hills")), "Here its charges deal 75% (150% in the first round), strikes deal 75% of normal damage.");
   assert.equal(L.groundPct(g("city"), 0, "Shoot"), 50);
   assert.equal(L.groundPct(g("city"), 1, "Shoot"), 100);
   assert.equal(L.groundPct(g("forest"), 1, "Bombard"), 50);

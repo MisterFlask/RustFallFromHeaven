@@ -285,7 +285,7 @@ export function unitInfo(pv, f, { pos, fc } = {}) {
     h("table.bt-rows", h("thead", h("tr", h("th", "Row"), h("th", "Actions"), h("th", "Hits"))), h("tbody", rows)),
     h(
       "ul.bt-notes",
-      specials(f, pv.ground).map((n) => h("li", n)),
+      specials(f, pv.ground, pv.params).map((n) => h("li", n)),
     ),
     per ? h("div.small", "In the forecast it falls in ", h("b", `${per.fall_pct}%`), " of battles", per.escape_pct ? ` and escapes a killing blow in ${per.escape_pct}%` : "", ".") : null,
     pos ? null : h("div.small.dim", f.side === me ? "Not in the line: click it, then a cell, to place it." : "Not in their line: it waits on the plot."),
