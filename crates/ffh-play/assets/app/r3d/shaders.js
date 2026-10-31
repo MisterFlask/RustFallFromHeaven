@@ -1119,7 +1119,12 @@ vec3 bumpD(vec3 n, vec3 dpdx, vec3 dpdy, float dhdx, float dhdy, float k) {
   vec3 r1 = cross(dpdy, n), r2 = cross(n, dpdx);
   float det = dot(dpdx, r1);
   vec3 grad = sign(det) * (dhdx * r1 + dhdy * r2);
-  return normalize(abs(det) * n - k * grad);
+  // Where the surface's derivatives came out zero, there is nothing to normalise: the pixel goes
+  // unbumped, not NaN. Direct3D 11 gives zero ones along the deep floor's contour though main takes
+  // them before its return (its compiler, FXC, may move them past it); a NaN fails the test too.
+  vec3 b = abs(det) * n - k * grad;
+  float l2 = dot(b, b);
+  return l2 > 1e-24 ? b * inversesqrt(l2) : n;
 }
 
 // The summed weight of the plots of one kind (ground or feature) among the four.

@@ -517,6 +517,8 @@ the map (`MapHd2d.setConfig`).
   painted, as in the target. They lie in the air before the land: over a figure, a third as strong.
 * **Wide bloom** (quarter resolution) of the emission and the brightest light, added before the
   filmic curve; non-finite pixels give no light (a lone NaN would otherwise spread into a block).
+  Both guards test the bits, not `isnan`/`isinf`, which Direct3D 11's compiler folds to false (there
+  a NaN then went through `min(c, 32)` as 32: a purple blaze over the Sheaim lake in the lab).
 * **Light beams** over mana nodes (1.5 plots tall), mana resources and mages' towers: soft additive
   columns in the node's school colour (`palette.js` MANA), shimmering.
 * **Glowing borders**: the overlay's border becomes a hot core in the owner's colour, meandering a

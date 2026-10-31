@@ -363,8 +363,14 @@ under and around it:
   around the pixel. SwiftShader runs a quad in step and never showed them. Now every derivative
   the bumps use is taken where the whole quad runs (at the top of `main` or outside the branches);
   a pixel whose quad the deep floor's return splits goes unbumped (a line of pixels under 0.3 of
-  water). The frame is otherwise unchanged. The HD-2D compose still mends any non-finite pixel, as a
-  guard (docs/HD2D.md §6).
+  water). The frame is otherwise unchanged. On Direct3D 11 the world position's derivatives, though
+  taken at the top of `main`, still came out zero along the deep floor's contour (491 NaN pixels in
+  that lab view; FXC may move them past the return), so `bumpD` leaves a pixel unbumped where its
+  vector has no length (or is NaN) instead of normalising it: 0 non-finite pixels on Direct3D 11
+  and Vulkan. The HD-2D compose still mends any non-finite pixel, as a guard (docs/HD2D.md §6).
+  A shader cannot test for NaN with `isnan`/`isinf` on Direct3D 11 (FXC folds them to false, and
+  its `min`/`max` return the other operand for a NaN): test the bits (`floatBitsToUint`, the
+  exponent's all set), as the HD-2D guards do.
 
 ## 6. Asset recipes
 
