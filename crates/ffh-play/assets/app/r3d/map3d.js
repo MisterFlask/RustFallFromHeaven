@@ -22,6 +22,10 @@ import "./assets/index.js";
 
 const ZOOMS = [28, 40, 56, 72, 96, 128, 168, 220];
 export const DEFAULT_ZOOM = 96;
+/** How many `sync:*` User Timing measures a renderer leaves (`syncMeasure`): the start-up's (its
+ *  timeline reads them: two or three syncs of up to six stages), not a whole session's -- the
+ *  frames' stop too (render). */
+const SYNC_MEASURES = 60;
 
 /** The WebGL2 renderer string and whether it is a software rasteriser (no usable GPU). Browsers
  *  expose the real adapter through WEBGL_debug_renderer_info; software fallbacks (SwiftShader,
@@ -112,6 +116,8 @@ export class Map3D {
     this.fastN = 0;
     /** The last sync's costs by stage (ms): world, textures, dress, instances, paint, units. */
     this.syncMs = {};
+    /** The `sync:*` measures left so far (syncMeasure). */
+    this.syncMeasures = 0;
     this.raf = requestAnimationFrame(() => this.loop());
     this.panel = null;
     this.addPanelButton();
@@ -513,8 +519,8 @@ export class Map3D {
         mapChanged = true;
         this.syncMs.world = T1 - T0;
         this.syncMs.textures = performance.now() - T1;
-        performance.measure("sync:world", { start: T0, end: T1 });
-        performance.measure("sync:textures", { start: T1 });
+        this.syncMeasure("world", T0, T1);
+        this.syncMeasure("textures", T1);
       }
       this.mapSeen = map;
     }
@@ -587,9 +593,9 @@ export class Map3D {
       this.syncMs.dress = T3 - T2;
       this.syncMs.instances = T4 - T3;
       this.syncMs.paint = performance.now() - T4;
-      performance.measure("sync:dress", { start: T2, end: T3 });
-      performance.measure("sync:instances", { start: T3, end: T4 });
-      performance.measure("sync:paint", { start: T4 });
+      this.syncMeasure("dress", T2, T3);
+      this.syncMeasure("instances", T3, T4);
+      this.syncMeasure("paint", T4);
       this.syncMs.redressed = plots ? plots.length : n;
       this.staticCount = count;
       this.viewSeen = S.view;
@@ -604,7 +610,7 @@ export class Map3D {
       this.unitList = u.list;
       this.setUnits(this.tweened(performance.now()));
       this.syncMs.units = performance.now() - T5;
-      performance.measure("sync:units", { start: T5 });
+      this.syncMeasure("units", T5);
       this.unitCount = u.list.length;
       this.selSeen = selKey;
       this.overlaySeen = "";
@@ -631,6 +637,14 @@ export class Map3D {
       };
     }
     return true;
+  }
+
+  /** A User Timing measure of sync stage `name` (`sync:name`, from `start` to `end` or now): the
+   *  first SYNC_MEASURES only. */
+  syncMeasure(name, start, end) {
+    if (this.syncMeasures >= SYNC_MEASURES) return;
+    this.syncMeasures++;
+    performance.measure(`sync:${name}`, end === undefined ? { start } : { start, end });
   }
 
   nearXMap(mx) {
