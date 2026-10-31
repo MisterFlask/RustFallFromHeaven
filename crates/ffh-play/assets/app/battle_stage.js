@@ -526,13 +526,20 @@ function drawPic(g, p, x, y, { flip = false, alpha = 1, dx = 0, dy = 0, sy = 1, 
   }
 }
 
+/** The canvas rotation (radians, clockwise on screen: + tips the head right) that leans a figure
+ *  by `lean` (+ the way it faces) when it is drawn mirrored or not (`flip`) and its art faces left
+ *  or right (`left`: figOf's; the Champion's faces left). It faces left as drawn when exactly one
+ *  of the two holds. */
+export const leanTurn = (lean, flip, left = false) => (flip !== left ? -lean : lean);
+
 /** Picture `p` with its feet at (x, y) under a transform about the feet: `scale`, a vertical
- *  squash `sy`, a `lean` (radians; + leans the way the figure faces), with a `glow` round it and a
- *  `tint` over it (the watch screen's snap, battle_snap.js). */
-export function drawPicX(g, p, x, y, { flip = false, alpha = 1, tint = null, tintA = 0, glow = null, scale = 1, sy = 1, lean = 0 } = {}) {
+ *  squash `sy`, a `lean` (radians; + leans the way the figure faces: `left` says which way its art
+ *  faces, `leanTurn`), with a `glow` round it and a `tint` over it (the watch screen's snap,
+ *  battle_snap.js). */
+export function drawPicX(g, p, x, y, { flip = false, left = false, alpha = 1, tint = null, tintA = 0, glow = null, scale = 1, sy = 1, lean = 0 } = {}) {
   g.save();
   g.translate(Math.round(x), Math.round(y));
-  if (lean) g.rotate(flip ? -lean : lean);
+  if (lean) g.rotate(leanTurn(lean, flip, left));
   g.scale(flip ? -scale : scale, scale * sy);
   const x0 = -p.ax;
   const y0 = -p.ay;

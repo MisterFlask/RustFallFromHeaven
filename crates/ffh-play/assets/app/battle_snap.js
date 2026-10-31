@@ -26,7 +26,7 @@
 // canvas.
 
 import { kindOf, kindKey, dmgText } from "./battle_log.js";
-import { drawPicX, silhouette, STRIKE_HIT, FRAME_W, FRAME_H } from "./battle_stage.js";
+import { drawPicX, leanTurn, silhouette, STRIKE_HIT, FRAME_W, FRAME_H } from "./battle_stage.js";
 
 /** ms of stillness before the cut (the snap needs a still frame to contrast with). */
 export const LEAD = 20;
@@ -313,8 +313,9 @@ const FONT = "Herald, Georgia, serif";
 export class Snap {
   /** `env`, the watch screen's battle: `feet(b)` -> [x, y] (its cell now, the knock-backs so far
    *  included), `onField(b)`, `large(b)`, `side(b)`, `pic(b, anim, ms, loop)` -> a picture (its
-   *  sprite when it has no such strip) or null, `animated(b)`, `flip(b)`, `bar(b)` -> `{hp, max}`
-   *  (null: no bar), `reduced()` (reduced motion). */
+   *  sprite when it has no such strip) or null, `animated(b)`, `flip(b)` (drawn mirrored),
+   *  `leftArt(b)` (its art faces left: a lean follows the way it faces as drawn, `leanTurn`),
+   *  `bar(b)` -> `{hp, max}` (null: no bar), `reduced()` (reduced motion). */
   constructor(env) {
     this.env = env;
     this.cur = null;
@@ -416,6 +417,7 @@ export class Snap {
     pic = pic ?? env.pic(b, animd ? "idle" : null, wall + b * 137, true);
     if (!pic) return;
     const flip = env.flip(b);
+    const left = env.leftArt(b);
     const sy = breath(b, env.side(b), wall);
     // a contact shadow once the figure has left its cell
     const moved = Math.hypot(pos[0] - fx, pos[1] - fy);
@@ -428,19 +430,19 @@ export class Snap {
       g.fill();
       g.restore();
     }
-    this.ink(g, pic, pos[0], pos[1], { flip, scale: po.scale, sy, lean: po.lean, alpha: Math.min(1, 0.35 + ph.k) });
-    drawPicX(g, pic, pos[0], pos[1], { flip, scale: po.scale, sy, lean: po.lean, tint: po.tint, tintA: po.tintA, glow: po.glow });
+    this.ink(g, pic, pos[0], pos[1], { flip, left, scale: po.scale, sy, lean: po.lean, alpha: Math.min(1, 0.35 + ph.k) });
+    drawPicX(g, pic, pos[0], pos[1], { flip, left, scale: po.scale, sy, lean: po.lean, tint: po.tint, tintA: po.tintA, glow: po.glow });
     const bar = env.bar(b);
     if (bar) stage.bar({ x: pos[0], y: pos[1], large: r.large, side: env.side(b), bar });
   }
 
   /** A heavy ink line round a lifted figure, so the pair reads as one cut-out against the crowd
    *  (drawPicX's transform). */
-  ink(g, p, x, y, { flip, scale = 1, sy = 1, lean = 0, alpha = 1 }) {
+  ink(g, p, x, y, { flip, left = false, scale = 1, sy = 1, lean = 0, alpha = 1 }) {
     const sil = silhouette(p, false, "#0b0816");
     g.save();
     g.translate(Math.round(x), Math.round(y));
-    if (lean) g.rotate(flip ? -lean : lean);
+    if (lean) g.rotate(leanTurn(lean, flip, left));
     g.scale(flip ? -scale : scale, scale * sy);
     g.globalAlpha = alpha * 0.92;
     for (const [ox, oy] of [[-2, 0], [2, 0], [0, -2], [0, 2], [-2, -1], [2, 1], [-1, 2], [1, -2], [-1, -2], [1, 2]]) g.drawImage(sil, -p.ax + ox, -p.ay + oy);

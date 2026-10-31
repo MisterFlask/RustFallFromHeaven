@@ -63,6 +63,7 @@ function snapEnv(ctx, log) {
     pic: (b, anim, ms, loop) => pic(W.F[b], sides, anim, ms, loop),
     animated: (b) => W.anim(W.F[b]),
     flip: (b) => faceFlip(W.F[b], sides),
+    leftArt: (b) => figOf(W.F[b], sides).left,
     bar: (b) => (W.disp.status[b] === "on" ? { hp: W.disp.hp[b], max: W.F[b].max_hp * 100 } : null),
     reduced: () => ctx.reduced(),
   };

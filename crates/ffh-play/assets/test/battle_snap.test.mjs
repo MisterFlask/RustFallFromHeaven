@@ -5,7 +5,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import * as S from "../app/battle_snap.js";
-import { STRIKE_HIT, ANIMS } from "../app/battle_stage.js";
+import { STRIKE_HIT, ANIMS, figOf, faceFlip, leanTurn, geom, cellXY } from "../app/battle_stage.js";
 import { FIXTURES } from "../app/battle_fixture.js";
 
 const events = Object.values(FIXTURES).flatMap((fx) => fx.logs.flatMap((l) => l.log.events));
@@ -176,6 +176,31 @@ test("the poses each unit snaps to: its strip's contact frames, else its sprite 
   assert.ok(S.poseOf({ kind: "healed", primary: true }, ph(P, 300), false).glow);
   assert.ok(S.poseOf({ kind: "miss", primary: true }, ph(P, 300), true).lean < 0);
   assert.equal(S.poseOf({ kind: "escape", primary: true }, ph(P, 300), true).tint, "#bfe3ff");
+});
+
+test("a lean follows the way the figure faces as drawn: a dodge and a shooter's recoil tip away from the enemy, the Champion's too", () => {
+  // the Champion's art faces left, the others' right: it is mirrored on the other side, and so
+  // must its lean's rotation be
+  const G = geom([3, 3]);
+  const ph = S.phaseOf(S.planOf(ev("Strike", [hit({ dmg: 0, miss: true })])), 300);
+  for (const unit_type of ["UNIT_CHAMPION", "UNIT_SWORDSMAN"]) {
+    for (const side of [0, 1]) {
+      const f = { side, unit_type };
+      // the figure on its side's front row, the enemy's front row across from it
+      const [x] = cellXY(G, side, 1, 0);
+      const [ex] = cellXY(G, 1 - side, 1, 0);
+      const away = Math.sign(x - ex);
+      // the way the head tips on screen (a + rotation is clockwise: the head goes right)
+      const tip = (lean) => Math.sign(Math.sin(leanTurn(lean, faceFlip(f, null), figOf(f, null).left)));
+      const who = `${unit_type} on side ${side}`;
+      assert.equal(tip(S.poseOf({ kind: "miss", primary: true }, ph, true).lean), away, `${who} dodges away`);
+      assert.equal(tip(S.poseOf({ kind: "escape", primary: true }, ph, true).lean), away, `${who} escapes away`);
+      assert.equal(tip(S.poseOf({ kind: "shoot" }, ph, true).lean), away, `${who} recoils away`);
+      assert.equal(tip(S.poseOf({ kind: "melee" }, ph, false).lean), -away, `${who} leans into its blow`);
+      assert.equal(tip(S.poseOf({ kind: "hit", primary: true }, ph, false).lean), away, `${who} reels back`);
+    }
+  }
+  assert.equal(figOf({ side: 0, unit_type: "UNIT_CHAMPION" }, null).left, true, "the Champion's art faces left");
 });
 
 test("the breathing: a slow squash of 2% at most, out of step between units", () => {
