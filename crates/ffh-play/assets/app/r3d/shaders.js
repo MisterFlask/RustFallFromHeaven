@@ -1253,7 +1253,13 @@ void main() {
 #endif
   if (known && (h > 0.72 || dec.g > 0.08) || kindW(F_ANCIENT, fv, w) > 0.0) gN3 = mnoise(m, 3.0);
   if (known && h > -0.05 && h < 0.075 || v < 0.7 || kindW(F_ICE, fv, w) > 0.0) gN2 = mnoise(m, 2.0);
+#ifdef LEAN_SHARE
+  // (Lean: the forest's floor and the flood plain's green take it too -- on an unexplored plot as
+  // well, where a known neighbour's floor reaches over the edge.)
+  if (known || kindW(F_BURNT, fv, w) + kindW(F_FOREST, fv, w) + kindW(F_YOUNG, fv, w) + kindW(F_FLOOD, fv, w) > 0.0) gN4 = mnoise(m, 4.0);
+#else
   if (known || kindW(F_BURNT, fv, w) > 0.0) gN4 = mnoise(m, 4.0);
+#endif
   if (known || kindW(F_SCRUB, fv, w) > 0.0) gN9 = mnoise(m, 9.0);
   paintGround(G_GRASS, wGrass, m, h, alb, keepG, hG, emit);
   paintGround(G_DESERT, wDesert, m, h, alb, keepG, hG, emit);
