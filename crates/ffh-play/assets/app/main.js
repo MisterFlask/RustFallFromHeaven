@@ -13,7 +13,7 @@
 
 import * as api from "./api.js";
 import { S, setData, setView, setMap, on, emit, resetDismissed, clearDismissed, popupQueue, endTurnMessage, cycleCity, observing, eventMarkers } from "./state.js";
-import { MapView } from "./map.js";
+import { MapView, fastStart } from "./map.js";
 import * as units from "./units.js";
 import { openCity, ownCities, stepCityScreen } from "./city.js";
 import * as empire from "./empire.js";
@@ -732,7 +732,10 @@ async function boot() {
   // The isometric renderer (docs/ISO.md): an opt-in map renderer with the M7 "HD pixel" sprites.
   // It owns its own projection, so the art/flat switches leave it be.
   // Chosen with `?renderer=iso` or the remembered Tools → Options choice.
-  if (rendererChoice() === "iso") mapView.useIso(true);
+  // (Start-up prototype, fastStart: the HD-2D map starts behind the isometric map and its
+  // interface -- the HD-2D map's own -- so the page shows the map while it compiles, and boots
+  // without the 2D art's interface it would drop when the HD-2D map is ready.)
+  if (rendererChoice() === "iso" || (rendererChoice() === "hd2d" && fastStart())) mapView.useIso(true);
   syncSkin();
   // The experimental 3D renderer (docs/R3D.md) and the HD-2D mode built on it (docs/HD2D.md):
   // loaded on demand; without WebGL2 they fall back.
