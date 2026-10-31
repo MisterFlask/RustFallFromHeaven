@@ -22,7 +22,7 @@
 //   rows=ffff.aaaa,jjjj.wwww                   a map from legend rows (scenes.js LEGEND, north
 //                                              first), dressed by the real placement; separate the
 //                                              rows with ';' when they hold ',' (plains)
-//        &wrap=1  &hidden=x0,y0,x1,y1          the map wraps east-west; a rectangle unrevealed
+//        &wrap=1  &hidden=x0,y0,x1,y1          the map wraps east-west (any scene); a rectangle unrevealed
 //   &sel=x,y&select=1&hover=x,y&targets=x,y;x,y&path=x,y;x,y&attack=1&layer=political  overlays
 
 import { S, setData, setView, setMap } from "/app/state.js";
@@ -57,6 +57,9 @@ async function main() {
     scene = showcase(data);
   }
   setView(scene.view);
+  // &wrap=1 on any scene: its map wraps east-west (a game's map does, and the ground's noise is
+  // laid out for the wrap, docs/R3D.md §11.1).
+  if (q.get("wrap") === "1") scene.map.wrap_x = true;
   setMap(scene.map);
   const wrap = document.getElementById("mapwrap");
   const canvas = wrap.querySelector("canvas.map");

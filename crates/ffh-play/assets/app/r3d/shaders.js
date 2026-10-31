@@ -84,7 +84,7 @@ float hash13(vec3 p3) {
 // instructions. The noise is inlined some 150 times into the terrain shader, and Direct3D's shader
 // compiler (FXC, under ANGLE: Chrome's default on Windows) takes time growing about with the
 // square of a shader's length (docs/R3D.md §11.1).
-float pnoise(vec2 p, vec2 P) {
+float pnoiseA(vec2 p, vec2 P) {
   vec2 i = floor(p);
   vec2 f = fract(p);
   vec2 u = f * f * (3.0 - 2.0 * f);
@@ -100,16 +100,57 @@ float pnoise(vec2 p, vec2 P) {
   return mix(mix(h.x, h.y, u.x), mix(h.z, h.w, u.x), u.y);
 }
 
+#ifdef NOISE_TEX
+// The same value noise read from a hash texture (NOISE_TEX: the HD-2D mode's terrain, water and
+// props; Map3D.sceneDefines). Direct3D's compiler takes time growing with the square of a shader's
+// length (docs/R3D.md §11.1), and the arithmetic noise above with its lattice was over half the
+// terrain shader's instructions: here the hardware's bilinear filter interpolates the corners, the
+// smoothstep moved onto the coordinate -- one fetch, about a third of the instructions.
+// uNoiseHash (noise.js noiseHashTexture) holds hash12 of the cells -64..191 in x and y (texel c
+// the cell c, or c - 256 mod 4096 from 192 on: the arithmetic noise's cells, negative ones taken
+// mod 4096), so where the cells fall in that range this is the arithmetic noise; it repeats after
+// 256 cells. A lattice wrapping after P.x cells (P.y must not wrap, or be a multiple of 256) needs
+// texel P.x mod 256 to hold column 0's values for the last cell before the seam: layer P.x mod 64
+// has the columns P.x mod 64 (mod 64) so patched, and the coordinate picks the layer (the texture
+// repeats in z). Needs 0 <= p.x <= P.x when P.x wraps (mlattice).
+uniform highp sampler3D uNoiseHash;
+// The brush marks' cell hashes (dab2; noise.js dabHashTexture).
+uniform highp sampler2D uDabHash;
+// The lattice's width in plots and its inverse (mlattice): the map's width when it wraps, else
+// 4096 (a period no map reaches).
+uniform vec2 uNoiseLat;
+float pnoise(vec2 p, vec2 P) {
+  vec2 i = floor(p);
+  vec2 f = p - i;
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  return textureLod(uNoiseHash, (vec3(i + u, P.x) + 0.5) * vec3(1.0 / 256.0, 1.0 / 256.0, 1.0 / 64.0), 0.0).r;
+}
+#else
+float pnoise(vec2 p, vec2 P) { return pnoiseA(p, P); }
+#endif
+
 // The noises pick their lattice before one pnoise (mix with a bool: a select, which ANGLE keeps as
 // one; a '?:' becomes an if/else, and a pnoise in each branch would be two copies of it).
 bool wrapX() { return uWrapX > 0.5; }
 
 // The map point m on a lattice of about f cells a plot (xy) and the lattice's period in x (z): a
 // whole number of cells over a wrapping map's width.
+#ifdef NOISE_TEX
+// (The texture's noise: the lattice from two uniforms, no select, x wrapped into 0..P, as its
+// pnoise needs; the cells, after the cell noises' mod P, the arithmetic lattice's on a wrapping
+// map. P is 0 where a wrapping map is narrower than half a cell -- the noise then constant along
+// x, as one cell made it; the cell noises take at least 1. On a map that does not wrap, x's
+// negative cells come to P - c, not 4096 - c: those of the noise moved.)
+vec3 mlattice(vec2 m, float f) {
+  float P = floor(uNoiseLat.x * f + 0.5);
+  return vec3(vec2(fract(m.x * uNoiseLat.y), m.y) * vec2(P, f), P);
+}
+#else
 vec3 mlattice(vec2 m, float f) {
   float P = mix(4096.0, max(1.0, floor(uMapSize.x * f + 0.5)), wrapX());
   return vec3(mix(m * f, vec2(m.x * P / uMapSize.x, m.y * f), bvec2(wrapX())), P);
 }
+#endif
 
 // Map-anchored noise at about f cycles per plot (0..1), periodic over the map's width on a
 // wrapping map.
@@ -131,23 +172,29 @@ float mstroke(vec2 m, float f, float stretch) {
   bvec2 wr = bvec2(wrapX());
   vec2 P = mix(vec2(4096.0), vec2(max(1.0, floor(uMapSize.x * fa + 0.5)), max(1.0, floor(uMapSize.x * 0.6 * fb + 0.5))), wr);
   vec2 p = mix(vec2(d.x * fa, d.y * fb), vec2(d.x * P.x / uMapSize.x, d.y * P.y / (uMapSize.x * 0.6)), wr);
-  return pnoise(p, P);
+  // (The arithmetic noise: this lattice wraps in y too, which the texture's does not.)
+  return pnoiseA(p, P);
 }
 
 // Strokes running along the map's x -- left to right on the screen, the camera looking north --
 // 'f' across and 'f / stretch' along, periodic like mnoise (water seen at an angle breaks its
 // reflections into such level strokes).
 float mstrokeH(vec2 m, float f, float stretch) {
+#ifdef NOISE_TEX
+  vec3 l = mlattice(vec2(m.x, m.y * stretch), f / stretch);
+  return pnoise(l.xy, vec2(l.z, 4096.0));
+#else
   float fa = f / stretch;
   float P = mix(4096.0, max(1.0, floor(uMapSize.x * fa + 0.5)), wrapX());
   vec2 p = mix(vec2(m.x * fa, m.y * f), vec2(m.x * P / uMapSize.x, m.y * f), bvec2(wrapX()));
   return pnoise(p, vec2(P, 4096.0));
+#endif
 }
 
 // Cellular noise: (distance to nearest, to second nearest) feature point, periodic like mnoise.
 vec2 mcells(vec2 m, float f) {
   vec3 l = mlattice(m, f);
-  float P = l.z;
+  float P = max(1.0, l.z);
   vec2 p = l.xy;
   vec2 i = floor(p);
   vec2 fr = fract(p);
@@ -168,7 +215,7 @@ vec2 mcells(vec2 m, float f) {
 // tone of the dab covering the point, 0..1, and 0.5 between dabs; periodic like mnoise.
 float mdabs(vec2 m, float f) {
   vec3 l = mlattice(m, f);
-  float P = l.z;
+  float P = max(1.0, l.z);
   vec2 p = l.xy;
   vec2 i = floor(p);
   vec2 fr = fract(p);
@@ -297,17 +344,35 @@ vec2 dab2(vec2 p, float elong, float rad, float aa) {
     for (int x = -1; x <= 1; x++) {
       vec2 g = vec2(float(x), float(y));
       vec2 cell = i + g;
+#ifdef NOISE_TEX
+      // (The cell's hashes from a texture, noise.js dabHashTexture: the same values, two fetches.)
+      ivec2 tc = ivec2(cell) & 255;
+      vec4 ha = texelFetch(uDabHash, tc, 0);
+      vec4 hb = texelFetch(uDabHash, tc + ivec2(0, 256), 0);
+      vec2 o = g + ha.xy - fr;
+      float hs = ha.z;
+      float a = 0.3 + ha.w * 0.9;
+#else
       vec2 o = g + hash22(cell) - fr;
       float hs = hash12(cell + 1.3);
       float a = 0.3 + hash12(cell + 3.7) * 0.9;
+#endif
       vec2 r = vec2(cos(a) * o.x + sin(a) * o.y, -sin(a) * o.x + cos(a) * o.y);
+#ifdef NOISE_TEX
+      float el = elong * (0.8 + 0.5 * hb.x);
+#else
       float el = elong * (0.8 + 0.5 * hash12(cell + 6.1));
+#endif
       vec2 q = r / (rad * (0.75 + 0.5 * hs) * vec2(sqrt(el), 1.0 / sqrt(el)));
       float len = length(q);
       float c = q.x / max(len, 1e-4);
       float d = len * (1.0 + 0.2 * (4.0 * c * c * c - 3.0 * c));
       float w = (1.0 - smoothstep(1.0 - soft, 1.0, d)) * (0.55 + 0.45 * hs);
+#ifdef NOISE_TEX
+      if (w > best) { best = w; tone = hb.y; }
+#else
       if (w > best) { best = w; tone = 0.5 * (hash12(cell + 9.1) + hash12(cell + 5.3)); }
+#endif
     }
   }
   return vec2(mix(0.5, tone, best), best);
@@ -704,7 +769,7 @@ vec3 flowers(vec2 m, vec3 c, float amt) {
   float drift = smoothstep(0.5, 0.78, mnoise(m + 19.0, 1.1));
   if (k * drift <= 0.0) return c;
   vec3 l = mlattice(m, f);
-  float P = l.z;
+  float P = max(1.0, l.z);
   vec2 p = l.xy;
   vec2 cell = mod(floor(p), vec2(P, 4096.0));
   vec2 h = hash22(cell + 0.7);
@@ -731,7 +796,7 @@ vec2 dunes(float ph) {
 // mcells with the nearest cell's id (a hash of its wrapped cell, 0..1).
 vec3 mcellsId(vec2 m, float f) {
   vec3 l = mlattice(m, f);
-  float P = l.z;
+  float P = max(1.0, l.z);
   vec2 p = l.xy;
   vec2 i = floor(p);
   vec2 fr = fract(p);

@@ -31,10 +31,12 @@ const TERRAIN_SHADOW_SIZE = 1024;
 
 export class Pipeline {
   /** `terrainDefines`: the terrain program's `#define`s (a mode's: Map3D.terrainDefines).
-   *  `packed`: the scene's programs write one packed target, unpacked after (shaders.js
-   *  SCENE_PACKED; a mode's choice: Map3D.packedScene) -- one output each, so ANGLE's Direct3D 11
-   *  backend compiles them at link, in parallel and cached, not at their first draw. */
-  constructor(gl, terrainDefines = {}, packed = false) {
+   *  `opts` (a mode's choices, Map3D):
+   *  - `scene`: the terrain's, props' and water's `#define`s (Map3D.sceneDefines: NOISE_TEX);
+   *  - `packed`: the scene's programs write one packed target, unpacked after (shaders.js
+   *    SCENE_PACKED; Map3D.packedScene) -- one output each, so ANGLE's Direct3D 11 backend compiles
+   *    them at link, in parallel and cached, not at their first draw. */
+  constructor(gl, terrainDefines = {}, { scene: sceneDefines = {}, packed = false } = {}) {
     this.gl = gl;
     this.hdr = !!gl.getExtension("EXT_color_buffer_float") || !!gl.getExtension("EXT_color_buffer_half_float");
     gl.getExtension("OES_texture_float_linear");
@@ -46,9 +48,9 @@ export class Pipeline {
     // A scene program: its one packed output, or the three targets.
     const S = (name, vs, fs, defs = {}) => (this.packed ? P(name, vs, SH.packedScene(fs), { ...defs, SCENE_PACKED: 1 }) : P(name, vs, fs, defs));
     this.p = {
-      terrain: S("terrain", C + SH.TERRAIN_VS, C + SH.TERRAIN_FS, terrainDefines),
-      prop: S("prop", C + SH.PROP_VS, C + SH.PROP_FS),
-      water: S("water", C + SH.WATER_VS, C + SH.WATER_FS),
+      terrain: S("terrain", C + SH.TERRAIN_VS, C + SH.TERRAIN_FS, { ...sceneDefines, ...terrainDefines }),
+      prop: S("prop", C + SH.PROP_VS, C + SH.PROP_FS, sceneDefines),
+      water: S("water", C + SH.WATER_VS, C + SH.WATER_FS, sceneDefines),
       shadowTerrain: P("shadow-terrain", C + SH.SHADOW_TERRAIN_VS, SH.SHADOW_FS),
       shadowProp: P("shadow-prop", C + SH.PROP_VS, C + SH.PROP_DEPTH_FS),
       ssao: P("ssao", FULLSCREEN_VS, C + SH.SSAO_FS),

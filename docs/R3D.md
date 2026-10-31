@@ -749,6 +749,30 @@ comparison alternated old and new):
   one multiply (7108 instructions to 5907, the compile 23% faster), but the programs are built before
   the map is known and would have to be built again for each map size; fewer noises would change
   the look.
+* **The value noise from a texture** (`NOISE_TEX`, `Map3D.sceneDefines`: on in the HD-2D mode's
+  terrain, water and props, `?r3d={"noiseTex":0}` off; the 3D renderer keeps the arithmetic noise
+  unless `?r3d={"noiseTex":1}`). Of `pnoise`'s ~26 instructions only ~11 are the hash: a hash
+  texture read at the four corners (`texelFetch`) saves 3% of the terrain's. One hardware-bilinear
+  fetch with the smoothstep on the coordinate (iq's trick) does the floor, the mod, the four hashes
+  and the mixes; the map's wrap is what one fetch cannot do on its own (a lattice of P cells over the
+  map's width meets column 0 at its seam, the texture's next texel is P mod 256). So the texture
+  (`noise.js noiseHashTexture`, 256 x 256 x 64, R8, 4 MB) has 64 layers, in layer k the columns
+  k (mod 64) a copy of column 0, and the fetch's z is (P + 0.5) / 64: the texture repeats in z, so
+  the coordinate picks layer P mod 64 with no instruction, and every P is seamless. Texel c holds
+  hash12 of the cell c (of c - 256 + 4096 from 192: the arithmetic lattice's negative cells), so
+  inside -64..191 it is the arithmetic noise. The lattice comes from two uniforms (`uNoiseLat`, x
+  wrapped by `fract`, no select); `mstroke`, whose lattice wraps in y too, keeps the arithmetic
+  noise; the brush marks' cells (`dab2`, the props) read their six hashes from an RGBA32F texture
+  (`dabHashTexture`, 2 MB). Instructions (glslang + spirv-opt, the HD-2D lab; FXC's estimated
+  compile on the RTX 4060 laptop at 2.6e-7 s x N^2): terrain 6308 -> 4238 (10.4 -> 4.7 s), water
+  3159 -> 2258 (2.6 -> 1.3 s), props 2856 -> 1957 (2.1 -> 1.0 s). On top of it the map's width as a
+  constant would take the terrain to 3837 (another ~0.9 s) -- not worth building the programs after
+  the map. The patterns: where the lattice's cells fall in -64..191 they are the arithmetic noise's
+  (on a wrapping map, every noise under 64 cells over the map's width; on one that does not wrap,
+  a noise's cells west of x = 0 -- a negative offset -- come out elsewhere); the rest moved, the
+  same noise. Not measured on a GPU: the per-frame cost of ~100 3D-texture fetches against the
+  arithmetic, and the 8-bit precision of the hardware's bilinear weights on the broadest noises
+  (a TEXTURE_2D_ARRAY, its layer an explicit mod, is the fallback: +113 instructions).
 
 **Compiling without freezing.** Where the browser offers `KHR_parallel_shader_compile` (Chrome
 does), a `Program` no longer waits for its link: the programs compile together on ANGLE's worker

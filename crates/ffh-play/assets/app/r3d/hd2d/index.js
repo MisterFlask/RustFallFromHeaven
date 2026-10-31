@@ -182,6 +182,13 @@ export class MapHd2d extends Map3D {
     return (this.cfg.packScene ?? 1) > 0;
   }
 
+  /** The value noise from a hash texture (shaders.js NOISE_TEX): the terrain's, water's and props'
+   *  noise patterns move, their look stays, and Direct3D compiles them in about half the time
+   *  (docs/R3D.md §11.1). `?r3d={"noiseTex":0}` compiles the arithmetic noise. */
+  sceneDefines() {
+    return this.cfg.noiseTex === 0 ? {} : { NOISE_TEX: 1 };
+  }
+
   saveCfg(cfg) {
     saveConfig(cfg, STORE);
   }

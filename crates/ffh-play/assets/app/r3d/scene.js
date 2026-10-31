@@ -11,7 +11,7 @@ import { buildAsset, buildAssetLOD } from "./assets/registry.js";
 import { rasterDecals, rasterLight } from "./decals.js";
 import { SEA, RIVER_HALF, RIVER_WANDER, RIVER_BANK } from "./world.js";
 import { hexLinear } from "./math.js";
-import { rng } from "./noise.js";
+import { rng, noiseHashTexture, noiseLattice, dabHashTexture } from "./noise.js";
 
 const RIVER_LAYOUT = { aPos: 3, aExtra: 4 };
 /** The sea and the rivers: aExtra (across the river, down it, over the sea), aFlow (the river's
@@ -97,9 +97,13 @@ function packBuckets(list) {
 }
 
 export class Scene {
-  /** `skipMaterials`: material layers a mode fills itself (not painted here; Map3D replacedMaterials). */
-  constructor(gl, { skipMaterials = null } = {}) {
+  /** `skipMaterials`: material layers a mode fills itself (not painted here; Map3D replacedMaterials).
+   *  `noiseTex`: the format of the value noise's hash texture ("r8", "r16f") when the programs are
+   *  compiled with NOISE_TEX (Map3D.sceneDefines), else null. */
+  constructor(gl, { skipMaterials = null, noiseTex = null } = {}) {
     this.gl = gl;
+    this.noiseHash = noiseTex ? noiseHashTexture(gl, noiseTex) : null;
+    this.dabHash = noiseTex ? dabHashTexture(gl) : null;
     this.terrain = new TerrainMeshes(gl);
     this.tex = new MapTextures(gl);
     // The ground's material textures (materials.js), painted once: {tex, mean, bakeMs, uploadMs, bytes}.
@@ -490,6 +494,9 @@ export class Scene {
     return {
       uMapSize: [w.w, w.h],
       uWrapX: w.wrapX ? 1 : 0,
+      uNoiseHash: this.noiseHash,
+      uDabHash: this.dabHash,
+      ...noiseLattice(w),
       uVis: this.tex.vis,
       uLight: this.light,
       uTerrain: this.tex.terrain,
@@ -638,6 +645,7 @@ export class Scene {
 
   dispose() {
     const gl = this.gl;
+    for (const t of [this.noiseHash, this.dabHash]) if (t) gl.deleteTexture(t);
     this.terrain.dispose();
     this.tex.dispose();
     for (const layer of Object.keys(this.layers)) this.setInstances(layer, []);
