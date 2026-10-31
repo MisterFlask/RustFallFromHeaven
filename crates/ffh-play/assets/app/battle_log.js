@@ -14,27 +14,33 @@
 // unless named `max_hp`, A and Dv x100, percents and r as integers; `b` is a fighter's index in
 // the reply's `fighters`).
 //
-// BattleLog (`battle_log {id}`, and what `engage` returns):
+// BattleLog (`battle_log {report}`: `report` is the battle report's id, as `id` is the envelope's request id; the
+// `engage` command's reply carries `report` and the report's summary, `battle`):
 //   v, id, turn, viewer_side (0 attacker, 1 defender, null: neither)
 //   plot, from: PlotSnap {x, y, terrain, feature, hills, river_crossing, city: {id, name, owner, size, defense_pct} | null}
+//     (`plot` as it was at the battle, `from` as the viewer sees it now)
 //   slots: [SideSlots, SideSlots] (attacker, defender): {base, changes: [SlotChange], total, river_only}
 //     SlotChange {src: "Terrain" (terrain) | "Feature" (feature) | "Hills" | "River" | "CityDefense" (pct, next_at)
 //                 | "Bombarded" (pct) | "Minimum" | "Summons" (n), delta}; the attacker's CityDefense is listed whenever
 //                 the city has a defense, with delta 0 while it costs no slot
 //   sides: [SideSnap, SideSnap]: {player, shown_player, civ, label, army, garrison_of, stance (null: unseen),
 //     stance_known, auto_pick: [b], picked_by: {kind: "Auto"} | {kind: "Player", swaps: [[out b, in b]]}}
+//     (`player`: the real one on the viewer's side, the one the viewer saw on the other: hidden nationality, G5)
 //   fighters: [Fighter] (committed and staying out, both sides):
-//     {b, unit, unit_type, name, side, slot (null: stays out), level, xp, hero, role, pos ("Front" | "Back"),
-//      screen, ignores_shield, assassin_profile, guardsman, targets (its target order: "FRONT" | "BACK" | "SCREEN" |
-//      "HERO_SUPPORT"), promotions, max_hp, hp_start, volleys, volley_chance, withdraw_pct, def_strike ([chance, dmg]
-//      | null), collateral ([dmg %, limit %, max units] | null), combat_limit, immune (["FirstStrikes", ...]), fear,
-//      a, dv: Stat {base_x100, role_pct, terms: [Term], total_x100}}
-//     Term {src, pct, and the source's payload: "Promotion" (promotion) | "Spell" / "BattleEffect" (spell) | "Hills" |
-//           "Terrain" (terrain) | "Feature" (feature) | "Fortify" | "CityDefense" | "UnitCityDefense" | "UnitHillsDefense" |
-//           "UnitTerrainDefense" (terrain) | "UnitFeatureDefense" (feature) | "CityAttack" | "UnitTerrainAttack" (terrain) |
-//           "UnitFeatureAttack" (feature) | "Amphibious" | "VsUnitCombat" (unit_combat, promotion?) | "VsUnitClass"
-//           (unit_class, promotion?) | "VsPromotion" (promotion) | "VsAnimal" | "InBorders" | "GlobalCounter" | "Handicap" |
-//           "Aura" (unit) | "Typed" (damage)}
+//     {b, unit, unit_type, name, owner (as the viewer may see it), side, slot (null: stays out), level, xp, hero, role,
+//      pos ("Front" | "Back"), screen, ignores_shield, assassin_profile, guardsman, targets (its target order: "FRONT" |
+//      "BACK" | "SCREEN" | "HERO_SUPPORT"), promotions, max_hp, hp_start, volleys, volley_chance, withdraw_pct,
+//      def_strike ([chance, dmg] | null), collateral ([dmg %, limit %, max units] | null), combat_limit, immune
+//      (["FirstStrikes", ...]), fear, a, dv: Stat {base_x100, role_pct, terms: [Term], total_x100}, fate (how it ended:
+//      {kind: "Survived"} | {kind: "Killed", by, in} | {kind: "Withdrew", in, capped} | {kind: "SatOut"}, `in` a
+//      {phase: "Opening" | "Volley" | "Round", n?}; null: it stayed out)}
+//     Term {src, pct, and the source's payload: "Own" | "Promotion" (promotion) | "Spell" / "BattleEffect" (spell) |
+//           "Hills" | "Terrain" (terrain) | "Feature" (feature) | "Fortify" | "CityDefense" | "UnitCityDefense" |
+//           "UnitHillsDefense" | "UnitTerrainDefense" (terrain) | "UnitFeatureDefense" (feature) | "CityAttack" |
+//           "UnitTerrainAttack" (terrain) | "UnitFeatureAttack" (feature) | "UnitHillsAttack" | "Amphibious" |
+//           "VsUnitCombat" (unit_combat, promotion?) | "VsUnitClass" (unit_class, promotion?) | "VsPromotion"
+//           (promotion) | "VsAnimal" | "VsBarbarian" | "VsDomain" (domain) | "InBorders" | "GlobalCounter" | "Handicap" |
+//           "Aura" (unit) | "Typed" (damage) | "Improvement" (improvement) | "RangeDefense"}
 //   pairs: [Pair] (every pair that hit): {h, t, a_x100, dv_x100, mean, a_extra: [Term], dv_extra: [Term]}
 //   events, in resolution order, each {kind, ...}:
 //     Phase {phase: "PreBattle" | "Morale" | "Opening" | "Volley" | "Round" | "Post", n (Volley, Round)}
@@ -44,22 +50,38 @@
 //     Collateral {source, target, pct, limit_pct, protection_pct, dmg}
 //     Hit {h, t, rule, step, blocked: [[step, "Empty" | "Shielded" | "VolleyImmune" | "AtLimit"]], eligible: [b], r, dmg, capped}
 //     Withdraw {unit, hp_pct, chance, roll, ok, fatal, hp_kept}
-//     RoundEnd {deaths: [{b, killer, assists, overkill}], hp?: [every fighter's HP after the round]}
-//     ShieldDown {side}; End {result: "AttackerWon" | "DefenderHeld" | "Draw" | "Mutual", rounds}
-//     Heal {unit, amount, source}; Xp {unit, amount, from: [{kind: "Kill" (victim) | "Withdrew" | "DefStrike", amount}]}
-//     KillEffect {killer, victim, effect}; Flee {unit, to}; Rout {units, to}; MoveIn {units, city}
+//     RoundEnd {deaths: [{b, killer, assists, overkill}], hp?: [every fighter's HP after the round]} (the engine sends
+//       no `hp`: the client folds the round's hits)
+//     ShieldDown {side}; End {result: "AttackerWon" | "DefenderHeld" | "Draw" | "Mutual", volley_rounds, rounds}
+//     Heal {unit, amount, source: {kind: "Medic", b (null: a medic not in the battle), unit_type, adjacent} |
+//       {kind: "OnKill"} | {kind: "Spell", spell}}
+//     Xp {unit, amount, from: [{kind: "Kill", victim, share_permille} | {kind: "Withdrew"} | {kind: "DefStrike"}]}
+//     KillEffect {killer, victim, effect: {kind: "Capture" | "Enslave" | "Convert" | "Create", unit_type} |
+//       {kind: "Gold", amount} | {kind: "Afflict" | "Promotion", promotion}}
+//     Flee {unit, to: {x, y}}; Rout {units, to: [{x, y}]}; MoveIn {units, city (the city as the attacker's: its id
+//       changes with its owner; null: none, or razed)}
 //     (Cast, phase 7: carried through, not drawn yet.) Every Hit of a round comes before that round's Withdraws and
 //     RoundEnd; the client folds a round's Withdraws whether they come before or after its RoundEnd.
 //   forecast: FrozenForecast | null: {source: "Sampled" | "Expected", runs, win_permille, draw_permille,
 //     rounds: {p10, p50, p90}, losses_if_win_x10 (null: never won), per: [{b, fall_pct, withdraw_pct, death_round}],
 //     curve: [[centi-HP after Op, R1, ...], [...]] (each side's mean HP), alternatives: [{kind: "StancePick" | "Swap" |
 //     "OtherStance", stance, force: [b], win_permille, losses_if_win_x10}]}
-//   outcome: {result, rounds, plot_taken, city_captured, moved_in: [b], defenders_left}
+//   outcome: {result, volley_rounds, rounds, plot_taken, city_captured, moved_in: [b], defenders_left}
+//   summary: the report's summary (below)
 //
-// EngagePreview (`engage_preview {army | from, to, force?: [unit ids], stance?}`): plot, from, slots, sides (without
-//   auto_pick / picked_by), fighters (the army's pool and the defenders it sees), pairs (every pool unit with every
-//   defender, both ways), force, auto_pick, reserve: [b], stance (the plan's), defender_pick: {kind: "Known", units: [b]}
-//   | {kind: "Likely", sure: [b], maybe: [b]}, forecast (FrozenForecast without alternatives), declare_war, errors.
+// Battle summary (`battle_reports` -> {on, reports: [summary], newest first}; the view's `battles`, this game turn's
+//   and the last; the turn report's `engagements`; the `engage` reply's `battle`): {id, turn, x, y, from: {x, y}, place
+//   (the city's name, or null), city, viewer_side, result, volley_rounds, rounds, plot_taken, city_captured,
+//   defenders_left, has_log (false: only the summary is kept), sides: [{player, civ, label, stance (null: unseen),
+//   slots, committed, lost, lost_types: [[unit_type, n]], withdrew, sat_out, fled}]}. A game-log message about a
+//   battle carries `kind: "engagement"` and `report` (its id).
+//
+// EngagePreview (`engage_preview {army | units | from, to, force?: [unit ids], stance?}`): plot, from, slots, sides
+//   (without auto_pick / picked_by), fighters (the pool and the defenders it sees), pairs (every pool unit with every
+//   defender, both ways), force, auto_pick, reserve: [b], stance (the plan's), army_stance (the attack's own),
+//   defender_pick: {kind: "Known", units: [b]} | {kind: "Likely", sure: [b], maybe: [b]}, forecast (FrozenForecast
+//   without alternatives; null while the engine's estimate is not built: `estimate_pending`), declare_war (the team
+//   the attack declares war on, or null), errors.
 //   `engage_preview {.., alternatives: true}` -> {alternatives: [{kind, stance, force: [unit ids], win_permille,
 //   losses_if_win_x10}]} (the plan's What-if list; a second call so the plan never waits).
 // Static data (`/api/data`): the names of UnitType, PromotionType, CombatRoleType, StanceType (and its help),
@@ -171,8 +193,9 @@ const TERM_GROUP = {
   Hills: "place", Terrain: "place", Feature: "place", Fortify: "place", CityDefense: "place",
   UnitCityDefense: "unit", UnitHillsDefense: "unit", UnitTerrainDefense: "unit", UnitFeatureDefense: "unit",
   CityAttack: "unit", UnitTerrainAttack: "unit", UnitFeatureAttack: "unit", Amphibious: "unit",
+  UnitHillsAttack: "unit", Own: "unit", Improvement: "place", RangeDefense: "place",
   Promotion: "promo", Spell: "promo", BattleEffect: "promo", Aura: "promo",
-  VsUnitCombat: "vs", VsUnitClass: "vs", VsPromotion: "vs", VsAnimal: "vs", Typed: "vs",
+  VsUnitCombat: "vs", VsUnitClass: "vs", VsPromotion: "vs", VsAnimal: "vs", VsBarbarian: "vs", VsDomain: "vs", Typed: "vs",
 };
 export const termGroup = (t) => TERM_GROUP[t.src] ?? "other";
 
@@ -219,6 +242,18 @@ export function termLabel(t) {
       return `vs ${tyLabel("PromotionType", t.promotion)}`;
     case "VsAnimal":
       return "vs animals";
+    case "VsBarbarian":
+      return "vs barbarians";
+    case "VsDomain":
+      return `vs ${tyLabel("DomainType", t.domain)}`;
+    case "Own":
+      return "Its own";
+    case "UnitHillsAttack":
+      return "Attacking hills";
+    case "Improvement":
+      return tyLabel("ImprovementType", t.improvement);
+    case "RangeDefense":
+      return "Nearby defenses";
     case "InBorders":
       return "In its borders";
     case "GlobalCounter":

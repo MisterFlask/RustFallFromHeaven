@@ -10,6 +10,7 @@ import { look, pix, pixable, iconEl, uiIcon, barEl } from "./look.js";
 import { openCount } from "./commands.js";
 import { renderSpectatorBar, autoplayBar, flagsView } from "./tools.js";
 import { isoSkin } from "./isoui.js";
+import { battleLine, battleLinks } from "./engagements.js";
 
 /** The parts of `#phase`: the phase line (redrawn each render), the spectator bar and the
  *  autoplay bar (each its own slot; `display: contents`, so #phase lays out their children). */
@@ -328,13 +329,23 @@ function reportView() {
   if (observing()) return h("p.dim", "Observing an AI-only game: every civilization's messages are under Messages (newest turn first); the map marks where this turn's fights and captures happened.");
   const r = S.report;
   if (!r) return h("p.dim", "The turn report appears at the start of each turn.");
-  const lines = r.lines ?? [];
+  // Engagement combat: the battles you fought since your last turn began, each with its links
+  // (their text lines, "battle #12 at ...", are the list's).
+  const battles = r.engagements ?? [];
+  const lines = (r.lines ?? []).filter((l) => !(battles.length && /^battle #\d+ at /.test(l)));
   const msgs = r.messages ?? [];
   return h(
     "div.report",
     h("h4", r.from_turn === r.turn ? `Turn ${r.turn}` : `Turns ${r.from_turn}-${r.turn}`),
-    lines.length ? h("ul", lines.map((l) => h("li", l))) : h("p.dim", "Nothing to report."),
-    msgs.length ? h("div.section", h("h4", "Messages"), h("ul.messages", msgs.map((m) => h("li", markup(m.text))))) : null,
+    lines.length || battles.length ? (lines.length ? h("ul", lines.map((l) => h("li", l))) : null) : h("p.dim", "Nothing to report."),
+    battles.length
+      ? h(
+          "div.section.report-battles",
+          h("h4", `Battles (${battles.length})`),
+          h("ul.battles", battles.map((b) => h("li", { "data-battle": b.id }, h("span", `#${b.id} ${battleLine(b)}`), battleLinks(b.id, { hasLog: b.has_log })))),
+        )
+      : null,
+    msgs.length ? h("div.section", h("h4", "Messages"), h("ul.messages", msgs.map((m) => h("li", markup(m.text), m.kind === "engagement" ? battleLinks(m.report) : null)))) : null,
   );
 }
 
@@ -350,6 +361,8 @@ function messageLine(m) {
     "li",
     who,
     markup(m.text),
+    // A battle's message (engagement combat): its watch and report screens.
+    m.kind === "engagement" && m.report !== undefined && !watching ? battleLinks(m.report) : null,
     at ? " " : null,
     at ? h("button.link.small", { title: `Show (${at[0]}, ${at[1]}) on the map`, onclick: () => (emit("center", at[0], at[1]), emit("flash", at[0], at[1])) }, "⌖") : null,
     at && watching ? h("button.link.small", { title: "Flag this plot for a bug report", onclick: () => emit("flag-plot", at[0], at[1]) }, "⚑") : null,

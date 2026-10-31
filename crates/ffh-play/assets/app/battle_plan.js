@@ -128,14 +128,19 @@ async function attack(ctx) {
   if (P.busy || !P.preview || P.preview.errors?.length) return;
   P.busy = true;
   render(ctx);
+  let r = null;
   try {
-    const { log } = await ctx.source.attack({ force: forceIds(), stance: P.preview.stance });
-    ctx.ledger.recordPlan();
-    if (ctx.ledger.watchMode() === "result") ctx.toReport(log);
-    else ctx.toWatch(log);
+    r = await ctx.source.attack({ force: forceIds(), stance: P.preview.stance, declare_war: P.preview.declare_war !== null && P.preview.declare_war !== undefined });
+  } catch (e) {
+    console.warn("battle plan: the attack:", e);
   } finally {
     P.busy = false;
   }
+  // Not made (refused, a war not declared): the plan stays.
+  if (!r?.log) return render(ctx);
+  ctx.ledger.recordPlan();
+  if (ctx.ledger.watchMode() === "result") ctx.toReport(r.log);
+  else ctx.toWatch(r.log);
 }
 
 /** The stances in the data's order (indices, or names when the preview names them). */
@@ -287,6 +292,7 @@ function render(ctx) {
       { left: "256px", width: "610px", justifyContent: "center" },
       h("span.dim", "Their Dv"),
       plotDvTerms(F, 1 - me).map((t) => h("span.frost", uiIcon(PLACE_ICON[t.src] ?? "defense", 16), ` ${termLabel(t)} ${pctText(t.pct)}`)),
+      plotDvTerms(F, 1 - me).length ? null : h("span.dim", "none from the place"),
     ),
     pnl(
       { left: "872px", right: "0" },
@@ -448,7 +454,8 @@ function dock(ctx, ui, { att, def, res, fc, where }) {
     h("div.dim.small.bt-gloss", plainHelp(help)),
     h("div.bt-h4", "What if"),
   );
-  if (!P.alts) add(left, h("div.dim", "estimating…"));
+  if (!pv.forecast) add(left, h("div.dim.small", "The What-if plans come with the estimate."));
+  else if (!P.alts) add(left, h("div.dim", "estimating…"));
   else {
     const lines = whatIfLines(pv, P.alts, stanceName).slice(0, 4);
     const win = Math.round((fc.win_permille ?? 0) / 10);
@@ -470,16 +477,26 @@ function dock(ctx, ui, { att, def, res, fc, where }) {
   const win = Math.round((fc.win_permille ?? 0) / 10);
   const draw = Math.round((fc.draw_permille ?? 0) / 10);
   const likely = att.filter((f) => ((fc.per ?? []).find((x) => x.b === f.b)?.fall_pct ?? 0) >= 40).sort((a, b) => perOf(fc, b).fall_pct - perOf(fc, a).fall_pct);
-  const mid = h(
-    "div.bt-pnl",
-    { style: { left: "442px", top: "578px", width: "410px", height: "216px" } },
-    h("div.bt-row", h(`span.bt-big.${win >= 70 ? "good" : win >= 40 ? "warn" : "bad"}`, `${win}%`), h("span", pv.plot?.city ? `to take ${where}` : "to win", h("br"), h("span.dim", fc.rounds ? `about ${fc.rounds.p50} rounds (${fc.rounds.p10}–${fc.rounds.p90})` : ""))),
-    h("div.bt-wl", { style: { margin: "4px 0" } }, h("i", { style: { width: `${win}%` } }), draw ? h("i.draw", { style: { left: `${win}%`, width: `${draw}%` } }) : null),
-    h("div", "Cost if you win: ", h("b", fc.losses_if_win_x10 === null || fc.losses_if_win_x10 === undefined ? "–" : `~${(fc.losses_if_win_x10 / 10).toFixed(1)}`), h("span.dim", ` of ${att.length} units`)),
-    likely.length
-      ? h("div.bt-row", { style: { marginTop: "2px" } }, h("span.dim", "Likely to fall"), likely.map((f) => h("span.bt-col", headChip(f, pv.sides), h("span.bt-chip.risk.tiny", `${perOf(fc, f).fall_pct}%`))))
-      : h("div.dim", "No unit is likely to fall."),
-  );
+  const mid = pv.forecast
+    ? h(
+        "div.bt-pnl",
+        { style: { left: "442px", top: "578px", width: "410px", height: "216px" } },
+        h("div.bt-row", h(`span.bt-big.${win >= 70 ? "good" : win >= 40 ? "warn" : "bad"}`, `${win}%`), h("span", pv.plot?.city ? `to take ${where}` : "to win", h("br"), h("span.dim", fc.rounds ? `about ${fc.rounds.p50} rounds (${fc.rounds.p10}–${fc.rounds.p90})` : ""))),
+        h("div.bt-wl", { style: { margin: "4px 0" } }, h("i", { style: { width: `${win}%` } }), draw ? h("i.draw", { style: { left: `${win}%`, width: `${draw}%` } }) : null),
+        h("div", "Cost if you win: ", h("b", fc.losses_if_win_x10 === null || fc.losses_if_win_x10 === undefined ? "–" : `~${(fc.losses_if_win_x10 / 10).toFixed(1)}`), h("span.dim", ` of ${att.length} units`)),
+        likely.length
+          ? h("div.bt-row", { style: { marginTop: "2px" } }, h("span.dim", "Likely to fall"), likely.map((f) => h("span.bt-col", headChip(f, pv.sides), h("span.bt-chip.risk.tiny", `${perOf(fc, f).fall_pct}%`))))
+          : h("div.dim", "No unit is likely to fall."),
+      )
+    : // The engine's forecast (the sampled estimate) is not built yet: the plan shows the force
+      // and the stakes, and says so.
+      h(
+        "div.bt-pnl.bt-estimate-pending",
+        { style: { left: "442px", top: "578px", width: "410px", height: "216px" } },
+        h("div.bt-row", h("span.bt-big.warn", "?"), h("span", pv.plot?.city ? `to take ${where}` : "to win", h("br"), h("span.dim", "estimate coming"))),
+        h("div.small.dim", { style: { margin: "4px 0" } }, "The win chance, the rounds and the cost come with the engine's estimate. Until then, judge by the A and Dv of each pair: point at a unit."),
+        h("div", `${att.length} of yours fight`, h("span.dim", ` (${tyLabel("StanceType", pv.stance)}'s pick)`), ` against ${def.length}${pv.defender_pick?.kind === "Likely" ? " or more" : ""}.`),
+      );
   const force = forceIds();
   const auto = pv.auto_pick.map((b) => pv.fighters[b].unit);
   if (!sameSet(force, auto)) {
@@ -503,16 +520,18 @@ function dock(ctx, ui, { att, def, res, fc, where }) {
     ? `All ${st.defenders.length} defenders die. ${st.defendersLeft} stay out: ${where} holds.`
     : `All ${st.defenders.length} defenders die. ${pv.plot?.city ? `${where} is yours; your army moves in.` : "The plot is yours."}`;
   const lostText = `All ${st.force.length} you send die${st.withdrawers.length ? `; only ${groupNames(pv, st.withdrawers.map((f) => f.b))} may pull out` : ""}.`;
-  add(right, 
-    h("div.bt-stake", h("div.bt-t", h("b.good", `If you win · ${st.win}%`), strike(st.defenders)), h("div.small", wonText)),
-    h("div.bt-stake", h("div.bt-t", h("b.bad", `If you lose · ${st.lose}%`), strike(st.force)), h("div.small", lostText)),
+  const est = !!pv.forecast;
+  const war = pv.declare_war !== null && pv.declare_war !== undefined;
+  add(right,
+    h("div.bt-stake", h("div.bt-t", h("b.good", est ? `If you win · ${st.win}%` : "If you win"), strike(st.defenders)), h("div.small", wonText)),
+    h("div.bt-stake", h("div.bt-t", h("b.bad", est ? `If you lose · ${st.lose}%` : "If you lose"), strike(st.force)), h("div.small", lostText)),
     st.draw > 1 ? h("div.bt-stake", h("div.bt-t", h("b.warn", `A draw · ${st.draw}%`)), h("div.small", "Forty rounds: both sides draw back; nobody's losses are total.")) : null,
     h("div.bt-stake", h("div.bt-t", h("b.you", "Either way"), st.reserve.map((f) => headChip(f, pv.sides, { w: 24, h: 24 }))), h("div.small", st.reserve.length ? `${groupNames(pv, st.reserve.map((f) => f.b))} stay out, unhurt.` : "Everyone fights.")),
     h(
       "div.bt-row",
       { style: { justifyContent: "flex-end", gap: "8px" } },
       btn("Cancel", { title: "Back to the map [Esc]", onclick: () => ctx.close() }),
-      btn([uiIcon("attack", 16), " Attack"], { cls: "primary", title: "Attack with this force [Enter]", disabled: P.busy || !!pv.errors?.length, onclick: () => attack(ctx) }),
+      btn([uiIcon("attack", 16), war ? " Declare war and attack" : " Attack"], { cls: "primary", title: war ? "Declare war and attack with this force [Enter]" : "Attack with this force [Enter]", disabled: P.busy || !!pv.errors?.length, onclick: () => attack(ctx) }),
     ),
   );
   add(ui, left, mid, right);

@@ -7,6 +7,7 @@ import * as api from "./api.js";
 import { S, emit, dname, teamName, gateLines, loadUnitCommand, observing, OBSERVER_COMMANDS } from "./state.js";
 import { ask } from "./modals.js";
 import { toast, busy } from "./dom.js";
+import { battleToast } from "./engagements.js";
 
 let inFlight = false;
 /** The automatic (`quiet`) command on its way, if any: AutoMoves, a spectated turn, grouping. */
@@ -56,7 +57,13 @@ async function loop(c, quiet) {
     }
     const confirm = reply.r?.confirm;
     if (!confirm) {
-      for (const line of reply.log ?? []) toast(line.text, "log", 7000);
+      for (const line of reply.log ?? []) {
+        // A battle's message (engagement combat) links its report, unless the battle screens
+        // already show it.
+        if (line.kind === "engagement" && line.report !== undefined) {
+          if (!document.body.classList.contains("battle-open")) battleToast(line);
+        } else toast(line.text, "log", 7000);
+      }
       emit("applied", next, reply);
       return reply;
     }
@@ -88,6 +95,8 @@ async function answerConfirm(c, confirm) {
       choices.push({ label: "Cancel", value: null });
       const v = await ask("Declare war?", `This move means war with ${teamName(confirm.team)}.`, choices);
       if (!v) return null;
+      // An attack (`engage`, engagement combat) is resent with the answer.
+      if (c.c === "engage") return v === "war" ? { ...c, declare_war: true } : null;
       // The exe answers the DECLAREWARMOVE popup with a move (design §4.5).
       const move = c.c === "move" ? c : { c: "move", units: c.units, x: c.data1, y: c.data2, append: c.append ?? false };
       return { ...move, declare_war: v === "war" };

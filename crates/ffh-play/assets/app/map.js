@@ -224,6 +224,9 @@ export class MapView {
       if (this.overlay.city) return this.cityClick(this.plotAt(ev, { ground: true }));
       const p = this.plotAt(ev);
       if (!p) return;
+      // A battle's marker (engagement combat) opens the battle, not the plot.
+      const b = this.battleAt(ev);
+      if (b && this.h.battleClick) return this.h.battleClick(b);
       if (ev.pointerType === "touch") this.hoverAt(ev);
       this.h.click?.(p.x, p.y, ev);
     });
@@ -1365,16 +1368,71 @@ export class MapView {
     }
   }
 
+  /** Where battle `b`'s marker is (CSS px): the top-right corner of its plot, `{x, y, r}`, or
+   *  null off screen. */
+  battleMarkerAt(b) {
+    const s = this.screenOf(b.x, b.y);
+    if (!s || s.x < -40 || s.y < -40 || s.x > this.vw + 40 || s.y > this.vh + 40) return null;
+    const r = Math.max(7, Math.min(12, s.ts * 0.16));
+    return { x: s.x + s.ts * 0.32, y: s.y - s.ts * 0.32, r };
+  }
+
+  /** The battle marker under pointer event `ev` (`overlay.battles`), or null. */
+  battleAt(ev) {
+    const list = this.overlay.battles;
+    if (!list?.length || !this.map) return null;
+    const rc = this.canvas.getBoundingClientRect();
+    const px = ev.clientX - rc.left;
+    const py = ev.clientY - rc.top;
+    for (const b of list) {
+      const m = this.battleMarkerAt(b);
+      if (m && (px - m.x) ** 2 + (py - m.y) ** 2 <= (m.r + 3) ** 2) return b;
+    }
+    return null;
+  }
+
+  /** The battle markers (engagement combat, `overlay.battles`: the viewer's battles of this turn
+   *  and the last): crossed swords on a disc at the plot's top-right corner, its rim gold for a
+   *  battle won, azure for one held, crimson for one lost or repelled, grey for a draw. A click
+   *  opens the battle (`battleAt`). */
+  drawBattleMarkers(g) {
+    const RIM = { won: "#ffd34d", held: "#6fb4ff", lost: "#e0453a", repelled: "#e0453a", draw: "#bbbbbb" };
+    for (const b of this.overlay.battles ?? []) {
+      const m = this.battleMarkerAt(b);
+      if (!m) continue;
+      const { x, y, r } = m;
+      g.beginPath();
+      g.arc(x, y, r, 0, Math.PI * 2);
+      g.fillStyle = "rgba(20,16,12,0.85)";
+      g.fill();
+      g.lineWidth = 2;
+      g.strokeStyle = RIM[b.kind] ?? RIM.draw;
+      g.stroke();
+      const k = r * 0.55;
+      g.lineWidth = Math.max(1.5, r * 0.18);
+      g.lineCap = "round";
+      g.strokeStyle = "#f2ead8";
+      g.beginPath();
+      g.moveTo(x - k, y + k);
+      g.lineTo(x + k, y - k);
+      g.moveTo(x + k, y + k);
+      g.lineTo(x - k, y - k);
+      g.stroke();
+      g.lineCap = "butt";
+    }
+  }
+
   /** The markers of the spectator mode over any renderer (CSS px, at `screenOf`): where this
    *  turn's combats and captures happened (`overlay.events`: crimson for a unit lost or killed,
    *  amber for a retreat, gold for a city taken or razed) and the flags of this game
    *  (`overlay.flags`, pennants with their number). */
   drawMarkers() {
     const o = this.overlay;
-    if (!this.map || (!o.events?.length && !o.flags?.length)) return;
+    if (!this.map || (!o.events?.length && !o.flags?.length && !o.battles?.length)) return;
     const g = this.ctx;
     g.save();
     g.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    this.drawBattleMarkers(g);
     const COLORS = { loss: "#e0453a", kill: "#e0453a", retreat: "#f0a830", city: "#ffd34d", event: "#d8d8d8" };
     for (const e of o.events ?? []) {
       const s = this.screenOf(e.x, e.y);

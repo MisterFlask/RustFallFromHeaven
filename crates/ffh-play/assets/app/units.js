@@ -14,6 +14,7 @@ import { look, iconEl, unitIcon, barEl, pix, typeIcon, promotionIcon, uiIcon } f
 import { isoSkin, isoIcon, actionIcon, portrait, isoBar, focusOn } from "./isoui.js";
 import { effectsOf, infoTip } from "./infotips.js";
 import { marchLine } from "./armies.js";
+import { engagementsOn, openPlan, stanceSelect, roleName, flashBattle } from "./engagements.js";
 
 /** An 8 px icon of the ui set, or the glyph before the art loaded. */
 const icon8 = (name, glyph, title) => iconEl(`icon8/${name}`, { title }) ?? glyph;
@@ -71,6 +72,13 @@ export function initUnits(view, panelEl) {
   panel = panelEl;
   on("applied", (c, reply) => {
     if (c?.units && S.sel && c.units.some((u) => S.sel.units.includes(u))) advance = { x: S.sel.x, y: S.sel.y };
+    // Engagement combat: the battle the command launched (several units may fall at once, and
+    // the selected ones may not have fought) flashes from its report, not from the HP diff.
+    if (reply?.r?.battle) {
+      pendingCombat = null;
+      flashBattle(mapView, reply.r.battle);
+      return;
+    }
     if (pendingCombat) {
       pendingCombat.applied = true;
       // The view that shows the attack's result is at least this new.
@@ -333,23 +341,30 @@ export function click(x, y, ev) {
   renderPlotInfo(x, y);
 }
 
-/** A right-click on (x, y): move the selection there (Shift: add a waypoint). */
+/** A right-click on (x, y): move the selection there (Shift: add a waypoint). Under engagement
+ *  combat an attack of an army or a stack opens the battle plan first; Shift on a plot next to the
+ *  selection that it would attack, with no waypoints laid, attacks at once with the stance's pick. */
 export function rightClick(x, y, ev) {
   if (mode) {
     setMode(null);
     return;
   }
   if (!S.sel || observing()) return;
-  if (ev?.shiftKey) addWaypoint(x, y);
+  const laying = waypoints && unitsKey(waypoints.units) === unitsKey(S.sel.units);
+  if (ev?.shiftKey && !laying && attackPlot(x, y)) moveTo(x, y, { direct: true });
+  else if (ev?.shiftKey) addWaypoint(x, y);
   else moveTo(x, y);
 }
 
 /** Moves the selection to (x, y) now, replacing its orders (waypoints not sent yet are
- *  dropped: the move replaces them). */
-export async function moveTo(x, y) {
+ *  dropped: the move replaces them). Under engagement combat an attack of an army or a stack
+ *  opens the battle plan instead, unless `direct` (the move attacks with the stance's pick). */
+export async function moveTo(x, y, { direct = false } = {}) {
   if (!S.sel) return;
   if (waypoints && unitsKey(waypoints.units) === unitsKey(S.sel.units)) clearWaypoints();
   if (S.sel.x === x && S.sel.y === y) return;
+  if (!direct && (await planAttack(x, y))) return;
+  if (!S.sel) return;
   await run({ c: "move", units: S.sel.units, x, y, append: false });
 }
 
@@ -762,7 +777,18 @@ export function combatLines(c) {
   const str = (v) => (v / 100).toFixed(2);
   const att = S.units.get(c.attacker);
   const box = h("div.tip-combat");
-  box.append(h(`div.odds${c.odds !== null && c.odds < 500 ? ".bad" : ""}`, c.odds === null ? "Air strike" : `Odds ${pct(c.odds)}`, c.withdraw ? h("span.dim", ` · retreat ${pct(c.withdraw)}`) : null));
+  if (c.engagement) {
+    // Engagement combat: a battle of the units that can attack from here against the defenders
+    // there; the engine's estimate of it comes later (the duel's odds below are the strongest
+    // pair's, a rough guide).
+    box.append(h("div.battle", `Battle: ${c.pool} of yours can fight, against ${c.defenders} defender${c.defenders === 1 ? "" : "s"}`));
+    box.append(h("div.dim.small", mapView?.touch ? "Tap again: the battle plan" : "Right-click: the battle plan · Shift+right-click: attack with the stance's pick"));
+    if (c.odds === undefined || c.odds === null) {
+      if (c.declare_war_team !== null && c.declare_war_team !== undefined) box.append(h("div.warn", "Attacking declares war"));
+      return box;
+    }
+  }
+  box.append(h(`div.odds${c.odds !== null && c.odds < 500 ? ".bad" : ""}`, c.odds === null ? "Air strike" : `${c.engagement ? "Duel odds (strongest pair)" : "Odds"} ${pct(c.odds)}`, c.withdraw ? h("span.dim", ` · retreat ${pct(c.withdraw)}`) : null));
   box.append(h("div", `${att ? dname("UnitType", att.type) : "Attacker"} ${str(c.attacker_strength)} vs ${dname("UnitType", c.defender_type)} ${str(c.defender_strength)}`, h("span.dim", ` (${playerName(c.defender_owner)})`)));
   const a = modifierList(c.attacker_details);
   const d = modifierList(c.defender_details);
@@ -1034,9 +1060,37 @@ function armyBadge(u) {
   return null;
 }
 
+/** Engagement combat (docs/ENGAGEMENTS.md): the unit's role as a badge, its A, Dv and battle HP
+ *  in the tooltip; null without engagements or a role. */
+function roleBadge(u) {
+  if (u.engage_role === undefined || u.engage_role === null) return null;
+  return h("span.badge.role", { "data-role": u.engage_role, title: engageText(u) }, roleName(u.engage_role));
+}
+
+/** A unit's battle numbers: "A 4 · Dv 5 · HP 55/120" (`hp` / `max_hp` are the health percent;
+ *  its battle HP scales it to `engage_max_hp`). */
+function engageNumbers(u) {
+  const x100 = (v) => (v % 100 === 0 ? String(v / 100) : (v / 100).toFixed(1));
+  const hp = Math.round(((u.hp ?? 0) / Math.max(1, u.max_hp ?? 100)) * u.engage_max_hp);
+  return `A ${x100(u.engage_attack)} · Dv ${x100(u.engage_defense)} · HP ${hp}/${u.engage_max_hp}`;
+}
+
+/** "Frontline · A 4 · Dv 5 · HP 55/120". */
+const engageText = (u) => `${roleName(u.engage_role)} · ${engageNumbers(u)}`;
+
+const ENGAGE_TITLE =
+  "In a battle (engagement combat): its role decides where it stands and whom it hits; A is its attack before the bonuses of the plot it attacks, Dv its defence where it stands, HP its health in a battle";
+
+/** The lead unit's battle numbers (engagement combat): its role, A, Dv and HP; null without
+ *  engagements or a role. */
+function engageLine(u) {
+  if (!u || u.engage_role === undefined || u.engage_role === null) return null;
+  return h("div.engage-line", { title: ENGAGE_TITLE }, h("b", roleName(u.engage_role)), h("span.dim", ` · ${engageNumbers(u)}`));
+}
+
 /** The selection's army in one line: its size (and target), its recruits marching to it and in
- *  training for it, its supply; the Armies screen [F5] has the rest. Null unless every selected
- *  unit is in one army. */
+ *  training for it, its supply, its stance (engagement combat); the Armies screen [F5] has the
+ *  rest. Null unless every selected unit is in one army. */
 function armyLine() {
   const ids = (S.sel?.units ?? []).map((id) => S.units.get(id)?.army);
   const a = ids.length && ids.every((x) => x === ids[0]) ? armyById(ids[0]) : null;
@@ -1053,7 +1107,47 @@ function armyLine() {
     a.disband_to ? h("span.dim", ` · disbanding to ${a.disband_to}`) : null,
     " ",
     h("button.link.small", { onclick: () => emit("open-screen", "armies"), title: "The Armies screen [F5]" }, "armies"),
+    // Engagement combat: the army's stance, which decides who fights when it defends and whom it
+    // proposes when it attacks.
+    a.stance !== undefined && a.stance !== null ? stanceSelect(a.stance, (i) => run({ c: "army_stance", army: a.id, stance: i }), { what: "army" }) : null,
   );
+}
+
+/** The selection's army (its id) when the selection is all of one army's units, else null: an
+ *  attack of the selection is then the army's (`engage {army}`). */
+function selectionArmy(sel) {
+  const ids = (sel?.units ?? []).map((id) => S.units.get(id)?.army);
+  const a = ids.length && ids.every((x) => x === ids[0]) ? armyById(ids[0]) : null;
+  return a && a.units.length === sel.units.length && a.units.every((u) => sel.units.includes(u)) ? a.id : null;
+}
+
+/** Engagement combat: whether (x, y) is a plot next to the selection holding units of others,
+ *  in a game with engagements (an attack there may be a battle). */
+function attackPlot(x, y) {
+  if (!engagementsOn() || !S.sel || !S.map) return false;
+  if (plotDistance(S.map, S.sel.x, S.sel.y, x, y) !== 1) return false;
+  return unitsAt(x, y).some((u) => u.owner !== me()?.player);
+}
+
+/** Engagement combat (docs/ENGAGEMENTS.md): when moving the selection onto (x, y) attacks it with
+ *  a battle and the force is a choice (an army, or several units that can attack there), opens
+ *  the battle plan with the stance's pick (Attack sends `engage` with the force) and returns true;
+ *  else false (the move goes as it is: a lone unit's attack, a duel, no defender). */
+async function planAttack(x, y) {
+  if (!attackPlot(x, y) || S.status?.phase !== "human") return false;
+  const sel = { units: [...S.sel.units] };
+  let c;
+  try {
+    c = await api.query("combat", { units: sel.units, x, y });
+  } catch {
+    return false;
+  }
+  if (!c?.engagement || !c.valid) return false;
+  const army = selectionArmy(sel);
+  if (army === null && (c.pool ?? 0) < 2) return false;
+  mapView?.clearHover?.();
+  await openPlan(army !== null ? { army } : { units: sel.units }, { x, y });
+  return true;
 }
 
 function unitRow(u, selected) {
@@ -1082,6 +1176,7 @@ function unitRow(u, selected) {
       u.promo_ready ? h("span.badge.promo", "promote") : null,
       automationBadge(u),
       armyBadge(u),
+      roleBadge(u),
       u.summon_turns ? h("span.badge", { title: "A summoned unit: turns left" }, `${u.summon_turns}t`) : null,
       u.cargo?.length ? h("span.badge", { title: "Units on board" }, `${u.cargo.length} aboard`) : null,
     ),
@@ -1180,6 +1275,9 @@ export function renderPanel() {
       ),
     );
   }
+  // Engagement combat: the lead unit's role, A, Dv and battle HP.
+  const engage = engageLine(lead ? { ...lead, ...(details.get(lead.id) ?? {}) } : null);
+  if (engage && !isoSkin()) status.push(engage);
   const army = armyLine();
   if (army) status.push(army);
   if (grp?.missions?.length) status.push(h("div.dim", `Orders: ${grp.missions.map((m) => dname("MissionType", m.m)).join(", ")}`));
@@ -1226,6 +1324,8 @@ function renderCard({ own, r, details, lead, list, seals, tools, status, hint, w
         d.moves !== undefined ? stat("moves", "Movement", h("span.value", `${moves(d.moves)}/${moves(d.max_moves)}`)) : null,
         d.max_hp ? stat("hp", "Health", isoBar(d.hp / Math.max(1, d.max_hp), { w: 96, kind: d.hp * 4 < d.max_hp ? "low" : "hp" }), `${Math.round((100 * d.hp) / d.max_hp)}% health`) : null,
         d.level !== undefined ? stat("xp", "Level", h("span.value", `${d.level}${d.xp !== undefined && d.xp_needed ? ` (${d.xp}/${d.xp_needed})` : ""}`)) : null,
+        // Engagement combat: its role, A, Dv and battle HP.
+        d.engage_role !== undefined && d.engage_role !== null ? stat("strength", roleName(d.engage_role), h("span.value.engage", engageNumbers(d)), ENGAGE_TITLE) : null,
       )
     : null;
   const tiles = [];

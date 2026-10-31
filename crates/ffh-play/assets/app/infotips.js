@@ -4,7 +4,7 @@
 
 import { h } from "./dom.js";
 import { render as markup } from "./markup.js";
-import { info, dname } from "./state.js";
+import { S, info, dname } from "./state.js";
 
 /** A unit type's numbers as markup: strength (and defence when it differs), moves, its class of
  *  combat (`UnitType` entry `e` of the data). */
@@ -20,7 +20,12 @@ export function unitStats(e) {
 /** What entry `i` of `kind` does, as markup: its generated `effects`, else its XML help; "". */
 export function effectsOf(kind, i) {
   const e = info(kind, i);
-  return e?.effects || e?.help || "";
+  const base = e?.effects || e?.help || "";
+  // Engagement combat (docs/ENGAGEMENTS.md): what a unit's or promotion's first strikes,
+  // withdrawal, collateral, Blitz and combat limit mean in a battle (the data's
+  // `effects_engagement`), in a game with engagements on.
+  const battle = S.view?.engagements ? e?.effects_engagement : null;
+  return battle ? (base ? `${base}[NEWLINE]${battle}` : battle) : base;
 }
 
 /** The rich tooltip (tips.js) of entry `i` of table `kind`: a function making the content when
