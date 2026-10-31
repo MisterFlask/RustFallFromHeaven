@@ -670,6 +670,19 @@ const int F_NONE = 0, F_FOREST = 1, F_JUNGLE = 2, F_ANCIENT = 3, F_BURNT = 4, F_
   F_FLOOD = 7, F_OASIS = 8, F_SCRUB = 9, F_FLAMES = 10, F_VOLCANO = 11, F_OBSIDIAN = 12,
   F_BLIZZARD = 13, F_SOULS = 14, F_FALLOUT = 15;
 
+#ifdef STANDIN_FLAT
+// The stand-in ground (hd2d/config.js TERRAIN_STANDIN; drawn while the full terrain still compiles,
+// docs/R3D.md §11.1 "Two stages"): every value noise of the ground's painting stands at its mean, so
+// the compiler folds the painting's masses, patches and drifts, the warp of the plots' blend and the
+// road edge's wobble down to each ground's mean tones under its material's pixel art. (The light's
+// cloud shadows, defined before this, keep theirs: the props take them too.) What the mean would
+// draw wrongly -- a crack along a noise's middle, straight dunes -- is left out where it is drawn.
+#define mnoise(m, f) 0.5
+#define mfbm(m, f) 0.5
+#define mstroke(m, f, s) 0.5
+#define mdabs(m, f) 0.5
+#endif
+
 ivec4 plotAt(vec2 cell) {
   int w = int(uMapSize.x);
   int h = int(uMapSize.y);
@@ -707,9 +720,14 @@ vec4 matAt(vec2 m, int l, float f, vec2 off, float mir) {
 // the second raised or lowered by gBias: the detail stays crisp (not a washed-out average of two
 // textures) and the tile's repeat is broken up.
 vec4 matPair(vec2 m, int l, float f) {
+#ifdef STANDIN_TAP1
+  // (The stand-in: one scale.)
+  return matAt(m, l, f, vec2(0.0), 1.0);
+#else
   vec4 a = matAt(m, l, f, vec2(0.0), 1.0);
   vec4 b = matAt(m, l, f * 1.37, vec2(0.31, 0.57), -1.0);
   return mix(a, b, smoothstep(-0.08, 0.08, b.a - a.a + gBias));
+#endif
 }
 // A material's albedo scaled to a broad colour: the tile's detail over the painted masses (their
 // light and dark design and slow drifts stay), the tile's mean taken out.
@@ -1005,7 +1023,11 @@ vec3 groundAlbedo(int g, vec2 m, float h, inout vec3 emit) {
     // Broken lands: grey basalt cut into plates by cell edges (the F_ICE idiom), dark seams between
     // them; each plate its own tone, the rock's facets and cracks in it (shifted per plate).
     c = broad(m, vec3(0.20, 0.18, 0.18), vec3(0.30, 0.27, 0.26), vec3(0.42, 0.39, 0.37), 1.1, big);
+#ifdef STANDIN_FLAT
+    vec3 cl = vec3(0.0, 1.0, 0.5);
+#else
     vec3 cl = mcellsId(m, 3.2);
+#endif
     c *= 0.9 + 0.2 * cl.z;
     seam = 1.0 - smoothstep(0.015, 0.06, cl.y - cl.x);
     vec4 tk = matPair(m + cl.z * 3.7, M_ROCK, 1.1);
@@ -1090,7 +1112,11 @@ vec3 featureFloor(int f, vec3 c, vec2 m, inout vec3 emit) {
   }
   if (f == F_SCRUB) return mix(c, srgb(vec3(0.55, 0.48, 0.30)), smoothstep(0.6, 0.8, gN9) * 0.5);
   if (f == F_ICE) {
+#ifdef STANDIN_FLAT
+    vec2 cl = vec2(0.0, 1.0);
+#else
     vec2 cl = mcells(m, 1.8);
+#endif
     float crack = 1.0 - smoothstep(0.01, 0.05, cl.y - cl.x);
     return srgb(mix(mix(vec3(0.78, 0.86, 0.92), vec3(0.92, 0.95, 0.97), gN2), vec3(0.55, 0.68, 0.78), crack * 0.7));
   }
@@ -1238,7 +1264,9 @@ void main() {
   // The relief of the ground's materials, by the same weights.
   float hG = 0.0;
   gBias = (mnoise(m + 71.0, 0.6) - 0.5) * 1.2;
+#ifndef STANDIN_FLAT
   if (hellW > 0.0) hellMarks(m);
+#endif
   float wGrass = kindW(G_GRASS, gv, w), wDesert = kindW(G_DESERT, gv, w), wTundra = kindW(G_TUNDRA, gv, w);
   float wSnow = kindW(G_SNOW, gv, w), wMarsh = kindW(G_MARSH, gv, w), wBurning = kindW(G_BURNING, gv, w);
   float wBroken = kindW(G_BROKEN, gv, w), wPerdition = kindW(G_PERDITION, gv, w);
@@ -1264,7 +1292,9 @@ void main() {
     gBig = FBM_BROAD(m, 0.45);
     gMid = mnoise(m + 11.0, 1.6);
   }
+#ifndef STANDIN_FLAT
   if (wDesert >= 0.004 || wBurning >= 0.004) gDune = dunePh(m);
+#endif
 #ifdef LEAN_POOL
   if (wMarsh >= 0.004 || wPerdition >= 0.004) gPool = FBM_FINE(m + 7.0, 2.6) + 0.03;
 #endif
@@ -1488,7 +1518,9 @@ void main() {
   // The materials' relief, picked out by the light (the mipmaps flatten it with distance).
   vec2 dRel = vec2(dFdx(hG), dFdy(hG)) * 0.004;
   if (split > 0.0) dRel = vec2(0.0);
+#ifndef STANDIN_RELIEF
   if (known) n = bumpD(n, pDx, pDy, dRel.x, dRel.y, 1.0);
+#endif
 
   // Painter's pigment: a broad hue/value drift that keeps large areas from reading flat.
 #ifdef LEAN_PIGMENT

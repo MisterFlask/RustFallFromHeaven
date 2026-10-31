@@ -127,3 +127,20 @@ export const TERRAIN_LEAN = {
   LEAN_SHEEN: 1,
   LEAN_GOLD: 1,
 };
+
+/** The stand-in ground's defines (shaders.js STANDIN_*, over the mode's own terrain defines): the
+ *  terrain program compiled down to the pixel-art ground under each ground's mean tones, lit,
+ *  shadowed and fogged as the full one, writing the same targets -- drawn while the full terrain
+ *  still compiles (MapHd2d.standinTerrain, docs/R3D.md §11.1 "Two stages"). 1358 instructions
+ *  against the lean terrain's 2742 (glslang + spirv-opt; Direct3D's compile about 0.5 s against
+ *  1.9 s, estimated). Each:
+ *  STANDIN_FLAT   every value noise of the ground's painting at its mean (the masses, the meadow's
+ *                 golden patches, the pools, the warp of the plots' blend, the road edge's wobble,
+ *                 the pigment's drift), no hell marks, dunes, plates or ice cracks;
+ *  STANDIN_RELIEF no relief bump from the materials' heights;
+ *  STANDIN_TAP1   each material at one scale (matPair's one tap, not two). */
+export const TERRAIN_STANDIN = {
+  STANDIN_FLAT: 1,
+  STANDIN_RELIEF: 1,
+  STANDIN_TAP1: 1,
+};
