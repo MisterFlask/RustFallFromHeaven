@@ -29,7 +29,8 @@
 //! withdrawal chance) of each newly wounded mass leaves alive (the one roll, the fatal round
 //! included), the rest stays and dies by `S`: engaged `(1 - c) S + c (1 - W)`, withdrawn `c W`,
 //! dead `(1 - c)(1 - S)`; the fighter's weight follows that population, scaled by what left by
-//! its combat limit. Fear: a fighter starts with weight `1 - fear_fail`. Battle effects: `Mod`s
+//! its combat limit. A state carried in from an earlier engagement ([`MomentStart`]) starts with
+//! its dead mass `1 - S` counted as wounded, so only its alive share can withdraw. Fear: a fighter starts with weight `1 - fear_fail`. Battle effects: `Mod`s
 //! are in the pair table, `Damage` lowers HP before the volleys (as in the sampled run).
 //!
 //! **The end**: when a side's alive weight is below [`STOP`] (that side lost: its residual weight
@@ -269,21 +270,24 @@ pub(crate) fn resolve_expected_tuned(b: &Battle, start: &[MomentStart], tu: &Tun
             let (mu_q, v_q) = (s0.mu.max(0) * ONE, s0.var.max(0) * ONE);
             // Survival so far under the carried damage (1 when fresh); the alive weight carried
             // in already counts it, so the rounds scale from here. Every engagement gives its
-            // fighters a new withdrawal roll.
+            // fighters a new withdrawal roll. The carried dead mass `1 - s` counts as wounded
+            // already, so the withdrawers' newly wounded mass is the alive share that falls below
+            // the threshold, and the engaged share starts at `s` (`(1 - c) s + c (1 - wnd)`). A
+            // carried state the damage says is dead (`s = 0`) starts dead.
             let s = if dead { 0 } else { below(hp0[i], mu_q, v_q).0 };
             let c = f.withdraw_pct.clamp(0, 100) as i64 * ONE / 100;
             St {
                 hp: hp0[i],
                 alive0,
                 fight,
-                a: if dead { 0 } else { fight },
+                a: if s <= 0 { 0 } else { fight },
                 w: 0,
                 w_hp: 0,
                 mu_q,
                 v_q,
                 s,
-                wnd: 0,
-                pe: ((ONE - c) * s + c * ONE) / ONE,
+                wnd: ONE - s,
+                pe: s,
                 c,
                 thr: f.withdraw_threshold(p) as i64,
                 unlimited: mu_q > 0 || v_q > 0,
@@ -685,7 +689,8 @@ mod tests {
             for (k, (tu, r)) in [(TUNING, r3), (presence, r4)].into_iter().enumerate() {
                 let e = resolve_expected_tuned(&b, &[], &tu);
                 let d = (e.att_loss_x1000 - r[0]).abs().max((e.def_loss_x1000 - r[1]).abs());
-                assert!(d <= 25, "{na}v{nd} {ma}/{md} {tu:?}: losses {}/{} against the float {}/{}", e.att_loss_x1000, e.def_loss_x1000, r[0], r[1]);
+                // 0.01 units (the module doc); measured: 7 in use, 9 with presence.
+                assert!(d <= 10, "{na}v{nd} {ma}/{md} {tu:?}: losses {}/{} against the float {}/{}", e.att_loss_x1000, e.def_loss_x1000, r[0], r[1]);
                 assert!((e.rounds - r[2]).abs() <= 1, "{na}v{nd} {ma}/{md} {tu:?}: {} rounds against {}", e.rounds, r[2]);
                 worst[k] = worst[k].max(d);
             }
@@ -802,6 +807,32 @@ mod tests {
         let hurt = resolve_expected_from(&b, &[MomentStart::default(); 3].into_iter().chain([MomentStart { alive: 2048, mu: 6000, var: 4_000_000 }; 3]).collect::<Vec<_>>());
         assert!(hurt.att_loss_x1000 < fresh.att_loss_x1000 && hurt.margin > fresh.margin, "{fresh:?} {hurt:?}");
         assert!(hurt.def_loss_x1000 <= 1500, "half a defender each was already lost: {}", hurt.def_loss_x1000);
+    }
+
+    #[test]
+    fn a_carried_withdrawer_withdraws_only_its_alive_share() {
+        // A defender (120 HP, withdrawal 50%) carried in at alive 0.5 with damage N(120 HP,
+        // (20 HP)^2): S0 = 0.5. One round, no new damage (the attacker cannot scratch it).
+        // W = P(D >= 72 HP) = Phi(2.4) = 0.992: of the 0.5 alive, 0.984 are below the threshold
+        // and half of those withdraw, so 0.246 withdrawn and 0.254 still engaged, none lost. (The
+        // carried dead mass counted as alive gave 0.33 withdrawn and 0.17 engaged.)
+        let mut d = Fighter::new(Side::Defender, 120);
+        d.withdraw_pct = 50;
+        let mut p = Params::default();
+        p.max_rounds = 1;
+        let b = Battle::new(p, vec![Fighter::new(Side::Attacker, 120), d], |h, _| if h == 0 { Pair { a: 1, dv: 1_000_000 } } else { Pair { a: 400, dv: 400 } });
+        let e = resolve_expected_from(&b, &[MomentStart::default(), MomentStart { alive: 2048, mu: 12000, var: 4_000_000 }]);
+        let f = e.fighters[1];
+        assert_eq!((e.rounds, f.mu), (1, 12000), "{e:?}");
+        assert!((f.withdrawn - 1007).abs() <= 25, "withdrawn {f:?}");
+        assert!((f.alive - 1041).abs() <= 25, "engaged {f:?}");
+        assert!(f.lost <= 10 && (f.alive + f.withdrawn + f.lost - 2048).abs() <= 4, "{f:?}");
+        // Fresh, the same fighter withdraws nothing in a round without damage.
+        let e = resolve_expected(&b);
+        assert_eq!((e.fighters[1].alive, e.fighters[1].withdrawn), (ONE as i32, 0), "{e:?}");
+        // A carried state the damage says is dead starts dead: lost, never withdrawn.
+        let e = resolve_expected_from(&b, &[MomentStart::default(), MomentStart { alive: 2048, mu: 40000, var: 1_000_000 }]);
+        assert_eq!((e.fighters[1].alive, e.fighters[1].withdrawn, e.fighters[1].lost), (0, 0, 2048), "{e:?}");
     }
 
     /// A random battle with extreme values: 1-20 a side, strengths 1..=10000 (x100), HP 1-200,

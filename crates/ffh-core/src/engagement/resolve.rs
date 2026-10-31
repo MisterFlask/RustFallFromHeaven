@@ -164,10 +164,12 @@ pub struct FighterEnd {
     pub hp: i32,
     pub fate: Fate,
     pub volleys: i32,
-    /// Hits it dealt and the damage they did (centi-HP).
+    /// Hits it dealt and the damage they did (centi-HP, overkill excluded: a hit counts only
+    /// down to the target's 0).
     pub hits: i32,
     pub dealt: i32,
-    /// Damage it took (centi-HP).
+    /// Damage it took (centi-HP, overkill excluded: its HP at the start less its HP left, 0 for
+    /// the dead).
     pub taken: i32,
 }
 
@@ -179,14 +181,16 @@ pub struct BattleLog {
     pub rounds: i32,
     pub fighters: Vec<FighterEnd>,
     pub kills: Vec<Kill>,
-    /// `n * n`: damage dealt by `h` to `t` (centi-HP; the shares for battle XP).
+    /// `n * n`: damage dealt by `h` to `t` (centi-HP; the shares for battle XP), overkill
+    /// excluded: a hit counts only down to the target's 0, so one landing on a target another hit
+    /// of the round already took to 0 counts nothing.
     dealt: Vec<i32>,
     /// Empty when resolved quietly ([`resolve_sampled_quiet`]).
     pub events: Vec<BattleEvent>,
 }
 
 impl BattleLog {
-    /// The damage `h` dealt `t` in the battle (centi-HP), cancelled hits excluded.
+    /// The damage `h` dealt `t` in the battle (centi-HP), cancelled hits and overkill excluded.
     pub fn dealt(&self, h: usize, t: usize) -> i32 {
         self.dealt[h * self.fighters.len() + t]
     }
@@ -291,6 +295,7 @@ struct Run<'a> {
     // Per-round scratch.
     pending: Vec<i32>,
     killer: Vec<Option<(FighterIdx, u32)>>,
+    /// The round's hits: hitter, target, effective damage (overkill excluded).
     round_hits: Vec<(FighterIdx, FighterIdx, i32)>,
     leaving: Vec<bool>,
     cand: Vec<FighterIdx>,
@@ -336,10 +341,10 @@ impl<'a> Run<'a> {
                     continue;
                 }
                 let dmg = (pct.max(0) as i64 * b.fighters[f].max_hp as i64).min(i32::MAX as i64) as i32;
-                self.hp[f] -= dmg;
                 if let Some(h) = by {
-                    self.dealt[h as usize * self.n + f] += dmg;
+                    self.dealt[h as usize * self.n + f] += dmg.min(self.hp[f]);
                 }
+                self.hp[f] -= dmg;
                 self.push(BattleEvent::Effect { effect: i as u16, fighter, dmg, hp: self.hp[f] });
                 if self.hp[f] <= 0 {
                     self.engaged[f] = false;
@@ -396,7 +401,7 @@ impl<'a> Run<'a> {
                 volleys: self.volleys[f],
                 hits: self.hits[f],
                 dealt: (0..self.n).map(|t| self.dealt[f * self.n + t]).sum(),
-                taken: b.fighters[f].hp - self.hp[f],
+                taken: b.fighters[f].hp.max(0) - self.hp[f].max(0),
             })
             .collect();
         BattleLog { result, volley_rounds, rounds, fighters, kills: self.kills, dealt: self.dealt, events: self.events }
@@ -472,7 +477,7 @@ impl<'a> Run<'a> {
             }
             seq += 1;
             self.hits[hu] += 1;
-            self.round_hits.push((h, t, dmg));
+            self.round_hits.push((h, t, dmg.min(before.max(0))));
             if self.record {
                 let pr = b.pair(hu, tu);
                 self.events.push(BattleEvent::Hit(Hit {
@@ -661,6 +666,33 @@ mod tests {
             let deaths: Vec<&Death> = log.events.iter().filter_map(|e| if let BattleEvent::RoundEnd { deaths, .. } = e { Some(deaths) } else { None }).flatten().collect();
             assert_eq!(deaths, vec![&Death { fighter: 1, killer: Some(2), assists: vec![0] }]);
         }
+    }
+
+    #[test]
+    fn overkill_is_not_damage_dealt() {
+        // A 1-HP defender: A0 (first in the order A0, D0, A1) kills it with a 10-HP hit, 1 HP of
+        // which is damage; A1's hit lands on a target already at 0 and counts nothing, so A1 is
+        // no assist and A0 has the whole XP share.
+        let mut d = def(120);
+        d.hp = 100;
+        let b = battle(vec![att(120), d, att(120)]);
+        for seed in 0..20 {
+            let log = resolve_sampled(&b, &mut Rng::new(seed));
+            assert_eq!(log.kills, vec![Kill { victim: 1, killer: Some(0), phase: Phase::Round(1) }]);
+            let on_d: Vec<i32> = hits(&log).filter(|(h, _)| h.target == 1).map(|(h, _)| h.dmg).collect();
+            assert!(on_d.len() == 2 && on_d.iter().all(|&x| x >= 800), "both hits land in full in the log: {on_d:?}");
+            assert_eq!((log.dealt(0, 1), log.dealt(2, 1)), (100, 0));
+            assert_eq!((log.fighters[0].dealt, log.fighters[2].dealt, log.fighters[1].taken), (100, 0, 100));
+            let deaths: Vec<&Death> = log.events.iter().filter_map(|e| if let BattleEvent::RoundEnd { deaths, .. } = e { Some(deaths) } else { None }).flatten().collect();
+            assert_eq!(deaths, vec![&Death { fighter: 1, killer: Some(0), assists: vec![] }]);
+        }
+        // A damage effect counts down to 0 too.
+        let mut d = def(120);
+        d.hp = 100;
+        let mut b = battle(vec![att(120), d]);
+        b.add_effects([BattleEffect::Damage { fighter: 1, pct: 50, by: Some(0) }]);
+        let log = resolve_sampled(&b, &mut Rng::new(1));
+        assert_eq!((log.dealt(0, 1), log.fighters[1].taken), (100, 100));
     }
 
     #[test]
@@ -934,6 +966,10 @@ mod tests {
                 }
             }
             assert_eq!(hp, log.fighters.iter().map(|f| f.hp).collect::<Vec<_>>());
+            // The damage dealt to a fighter, overkill excluded, is the damage it took.
+            for t in 0..b.len() {
+                assert_eq!((0..b.len()).map(|h| log.dealt(h, t)).sum::<i32>(), log.fighters[t].taken, "fighter {t}");
+            }
             // The losing side loses every fighter that did not withdraw.
             let loser = match log.result {
                 EngageResult::AttackerWon => Some(Side::Defender),

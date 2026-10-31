@@ -3,7 +3,7 @@
 //! limits), each fought many times by [`resolve_sampled_quiet`] and once by [`resolve_expected`].
 //!
 //! - `engage_calibrate` (ignored; `cargo test --release -p ffh-core -- --ignored engage_calibrate
-//!   --nocapture`): 2000 battles x 200 runs; prints [`WIN_TABLE`] (the realized win rate per size
+//!   --nocapture`): 4000 battles x 200 runs; prints [`WIN_TABLE`] (the realized win rate per size
 //!   bucket at each knot of the margin) to paste into `expect.rs`, and the estimator's errors.
 //! - `estimator_calibration_bounds`: a different 300-battle battery (200 runs each) against the
 //!   checked-in table: expected losses within 0.25 units mean absolute on each side, the win
