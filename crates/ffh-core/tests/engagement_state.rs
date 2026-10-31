@@ -172,9 +172,8 @@ fn promotions_keep_the_defence_percentage() {
     assert_eq!((g.units[u].extra_combat_percent, g.units[u].extra_combat_percent_defense), (30, 50));
     g.unit_set_has_promotion(u, faith, false);
     assert_eq!((g.units[u].extra_combat_percent, g.units[u].extra_combat_percent_defense), (20, 20));
-    // In its owner's borders the Homeland bonus adds to both.
-    g.units[u].combat_percent_in_borders = 25;
-    assert_eq!((g.unit_get_extra_combat_percent(u), g.unit_get_extra_combat_percent_defense(u)), (45, 45));
+    // Homeland adds to both where the unit fights: tests/engagement_stats.rs,
+    // `homeland_counts_where_the_unit_fights`.
 }
 
 #[test]

@@ -1416,19 +1416,9 @@ impl Game {
         }
     }
 
-    /// Engagement combat (Q1): the unit's own percentage on Dv, `extra_combat_percent_defense`
-    /// plus `combat_percent_in_borders` inside its owner's borders (as
-    /// [`Game::unit_get_extra_combat_percent`] is A's). Read only under engagements.
-    pub fn unit_get_extra_combat_percent_defense(&self, u: UnitId) -> i32 {
-        let unit = &self.units[u];
-        let mut i = unit.extra_combat_percent_defense;
-        if self.map.plots[self.unit_plot(u)].owner == Some(unit.owner) {
-            i += unit.combat_percent_in_borders;
-        }
-        i
-    }
-
-    /// Engagement combat (Q1): the promotions' `iCombatPercentDefense`.
+    /// Engagement combat (Q1): the promotions' `iCombatPercentDefense`, the unit's own percentage
+    /// on Dv. `engage_combat_terms` (`engagement/stats.rs`) reads it, with Homeland where the unit
+    /// fights rather than where it stands.
     pub fn unit_change_extra_combat_percent_defense(&mut self, u: UnitId, change: i32) {
         self.units[u].extra_combat_percent_defense += change;
     }

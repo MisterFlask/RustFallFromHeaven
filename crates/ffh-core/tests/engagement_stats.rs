@@ -170,17 +170,32 @@ fn a_unit_that_ignores_building_defense_scales_the_planned_bombard() {
     let (tx, ty) = w.g.map.xy(to);
     let city = w.g.player_init_city(p1, tx, ty, true, true);
     w.g.city_set_num_real_building(city, d.t::<BuildingType>("BUILDING_WALLS"), 1);
+    // Defense that does not come from buildings (a new city's culture gives none), so what the
+    // cannon faces is not 0 and the scaling shows.
+    w.g.players[p1].city_defense_modifier = 20;
     let defender = w.unit(p1, "UNIT_AXEMAN", to);
     let cannon = w.unit(p0, "UNIT_CANNON", from);
     assert!(w.g.unit_ignore_building_defense(cannon));
     let full = w.g.city_defense_modifier(city, false);
     let without_walls = w.g.city_defense_modifier(city, true);
-    assert!(full > without_walls);
+    assert!(without_walls > 0 && full > without_walls, "{without_walls} {full}");
     // Today's defense: the cannon's hits ignore the walls.
-    assert_eq!(w.g.engage_hit(cannon, defender, Side::Attacker, &w.ctx()).dv, apply(400, without_walls));
+    let today = w.g.engage_hit(cannon, defender, Side::Attacker, &w.ctx()).dv;
+    assert_eq!(today, apply(400, without_walls));
     // Half the defense knocked down: half of what is left without the walls.
     let half = HitCtx { city_defense: Some(full / 2), ..w.ctx() };
-    assert_eq!(w.g.engage_hit(cannon, defender, Side::Attacker, &half).dv, apply(400, without_walls * (full / 2) / full));
+    let scaled = without_walls * (full / 2) / full;
+    assert!(0 < scaled && scaled < without_walls);
+    let bombarded = w.g.engage_hit(cannon, defender, Side::Attacker, &half).dv;
+    assert_eq!(bombarded, apply(400, scaled));
+    assert!(bombarded < today);
+    // The breakdown names the scaled city defense.
+    let stat = w.g.engage_stat(defender, Some(cannon), Side::Defender, false, &half);
+    assert_eq!(stat.total_x100, bombarded);
+    assert!(stat.terms.iter().any(|t| t.src == TermSource::CityDefense && t.pct == scaled), "{:?}", stat.terms);
+    // All of it knocked down: nothing left, walls or not.
+    let razed = HitCtx { city_defense: Some(0), ..w.ctx() };
+    assert_eq!(w.g.engage_hit(cannon, defender, Side::Attacker, &razed).dv, 400);
 }
 
 #[test]

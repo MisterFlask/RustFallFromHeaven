@@ -29,7 +29,8 @@
 //!   [`LogEvent::MoveIn`]), a capture or enslavement names the unit type it creates, a medic's
 //!   heal names the medic's unit type (it need not be a fighter: adjacent medics heal too), the
 //!   forecast's per-fighter tuple is [`ForecastFighter`], and [`TermSource`] adds `Own`,
-//!   `VsBarbarian` and `VsDomain` (terms `unit_combat_terms` can produce).
+//!   `VsBarbarian`, `VsDomain`, `UnitHillsAttack`, `Improvement` (a fort's defense) and
+//!   `RangeDefense` (terms `unit_combat_terms` can produce).
 //!
 //! **Fighter order.** [`BattleLog::fighters`] holds the committed fighters first, in the round
 //! model's order ([`super::Battle::fighters`]), then the reserves (eligible units on both plots that
