@@ -26,15 +26,14 @@ pub enum Choice {
 
 pub fn choose(ai: &Ai, g: &mut Game, c: CityId) {
     let p = g.cities[c].owner;
-    if !g.cities[c].order_queue.is_empty() {
-        // Asked again with an order queued (production made dirty, or the head is a process
-        // the rules re-ask about every turn): a process gives way to a fresh choice; anything
-        // else keeps being built.
-        if g.city_is_production_process(c) {
-            g.city_clear_order_queue(c);
-        } else {
-            return;
-        }
+    // Asked again with an order of its own queued (production made dirty, or the head is a process
+    // the rules re-ask about every turn): a process gives way to a fresh choice; anything else
+    // keeps being built. An army's requisition orders at the front are the army's, not the city's
+    // (docs/ARMIES.md): behind them the city chooses as with an empty queue.
+    match own_order(g, c).map(|o| o.order_type == OrderType::ORDER_MAINTAIN) {
+        Some(true) => clear_own_orders(g, c),
+        Some(false) => return,
+        None => {}
     }
     if g.player_is_barbarian(p) {
         // FfH barbarian cities pick from a fixed list (CustomFunctions.BarbCityProduction).
@@ -48,7 +47,7 @@ pub fn choose(ai: &Ai, g: &mut Game, c: CityId) {
     if !g.player_is_barbarian(p) && garrison(g, p, plot).0 == 0 {
         let spare = g.map.plots[plot].units.iter().copied().find(|&u| {
             let unit = &g.units[u];
-            unit.owner == p && g.d.units[unit.unit_type].combat > 0 && g.unit_get_domain_type(u) == DomainType::DOMAIN_LAND && matches!(unit.ai_type, Some(UnitAIType::UNITAI_ATTACK) | Some(UnitAIType::UNITAI_COUNTER) | Some(UnitAIType::UNITAI_RESERVE))
+            unit.owner == p && unit.march.is_none() && g.d.units[unit.unit_type].combat > 0 && g.unit_get_domain_type(u) == DomainType::DOMAIN_LAND && matches!(unit.ai_type, Some(UnitAIType::UNITAI_ATTACK) | Some(UnitAIType::UNITAI_COUNTER) | Some(UnitAIType::UNITAI_RESERVE))
         });
         if let Some(u) = spare {
             g.unit_ai_set_unit_ai_type(u, UnitAIType::UNITAI_CITY_DEFENSE);
@@ -98,6 +97,27 @@ pub fn choice_name(g: &Game, choice: Choice) -> String {
     }
 }
 
+/// City `c`'s first order that is not an army's requisition: what it builds for itself next (an
+/// army's requisition orders lead the queue, docs/ARMIES.md).
+pub(crate) fn own_order(g: &Game, c: CityId) -> Option<&ffh_core::structs::OrderData> {
+    g.cities[c].order_queue.iter().find(|o| !o.requisition)
+}
+
+/// The unit city `c` trains for itself next ([`own_order`]), if that is a unit.
+fn own_production_unit(g: &Game, c: CityId) -> Option<UnitType> {
+    own_order(g, c).filter(|o| o.order_type == OrderType::ORDER_TRAIN && o.data1 >= 0).map(|o| UnitType::from_usize(o.data1 as usize))
+}
+
+/// City `c`'s own orders are taken off its queue (what was put into them stays with each item, as
+/// the rules keep it): the armies' requisition orders at its front stay, they are the army's to
+/// release (docs/ARMIES.md).
+pub(crate) fn clear_own_orders(g: &mut Game, c: CityId) {
+    let lead = g.cities[c].order_queue.iter().take_while(|o| o.requisition).count();
+    while g.cities.contains(c) && g.cities[c].order_queue.len() > lead {
+        g.city_pop_order(c, lead as i32, false, false);
+    }
+}
+
 pub fn push(g: &mut Game, c: CityId, choice: Choice) {
     match choice {
         Choice::Train(u, unit_ai) => g.city_push_order(c, OrderType::ORDER_TRAIN, u.i(), unit_ai.i(), false, false, false, false),
@@ -134,14 +154,15 @@ pub fn emergency(ai: &Ai, g: &mut Game, p: PlayerId) {
         let plot = g.city_plot(c);
         let threat = local_threat(g, p, plot, 2);
         let (defenders, defense) = garrison(g, p, plot);
-        let building_fighter = g.city_production_unit(c).is_some_and(|u| g.d.units[u].combat > 0);
+        // (A unit an army requisitioned goes to the army: not a fighter for the city.)
+        let building_fighter = own_production_unit(g, c).is_some_and(|u| g.d.units[u].combat > 0);
         if threat == 0 {
             // A long build in a city that should have a second defender by now (decide puts
             // the defender first).
             let exposed = g.game_turn() > 30 && defenders < 2 && second_defender_wanted(g, p, c, plot, defenders, local_threat(g, p, plot, 3), defense);
             if exposed && !building_fighter && g.city_production_turns_left(c) > 3 && !g.player_is_barbarian(p) && best_unit(g, c, Role::Defense).is_some() && switch_gets_fighter(ai, g, c) {
                 crate::trace!(g, p, "{}: second defender first", g.cities[c].name);
-                g.city_clear_order_queue(c);
+                clear_own_orders(g, c);
                 choose(ai, g, c);
             }
             continue;
@@ -154,7 +175,7 @@ pub fn emergency(ai: &Ai, g: &mut Game, p: PlayerId) {
             continue;
         }
         crate::trace!(g, p, "{} under threat {} (defense {}): switching to defense", g.cities[c].name, threat, defense);
-        g.city_clear_order_queue(c);
+        clear_own_orders(g, c);
         choose(ai, g, c);
     }
 }
@@ -233,13 +254,15 @@ fn besieging(g: &Game, p: PlayerId) -> bool {
     })
 }
 
-/// Our units on the city plot able to defend it, and their summed defense power.
+/// Our units on the city plot able to defend it, and their summed defense power. A marching
+/// recruit passing through (or just trained there) is not among them: it leaves next turn
+/// (docs/ARMIES.md).
 pub fn garrison(g: &Game, p: PlayerId, plot: PlotIdx) -> (i32, i32) {
     let mut n = 0;
     let mut power = 0;
     for &u in &g.map.plots[plot].units {
         let unit = &g.units[u];
-        if unit.owner != p {
+        if unit.owner != p || unit.march.is_some() {
             continue;
         }
         let info = &g.d.units[unit.unit_type];
@@ -1085,7 +1108,7 @@ pub fn trouble_rebuild(ai: &Ai, g: &mut Game, p: PlayerId) {
         // Alternatives: what it replaces (turns left), and the ladder step that chose the building.
         let left = g.city_production_turns_left(c) as i64;
         g.tel_decision(p, "production", &d.buildings[b].base.type_, "trouble_rebuild", f.deficit() as i64, || ffh_core::telemetry::tel_alts([(current, left), (why, 0)]));
-        g.city_clear_order_queue(c);
+        clear_own_orders(g, c);
         push(g, c, Choice::Construct(b));
     }
 }

@@ -9,7 +9,8 @@
 //! building's; a missionary for a zealot whose religion misses our cities; then the process the
 //! profile prefers. World wonders, rituals, palaces and settlers are not for governed cities (the
 //! rules forbid them). An army's requisition (docs/ARMIES.md) goes ahead of the governor's choice:
-//! the unit is [`requisition_unit`], the AI's `Controller::requisition_unit`.
+//! the requisition order interrupts what the governor builds, which resumes after it (which cities
+//! the AI's main army draws on, and the unit: `armies.rs`).
 //!
 //! **The AI's governed cities.** Its direct slots go to its most productive cities (a swap when a
 //! governed city makes half again as much as the weakest direct one, both past their cooldown); a
@@ -17,7 +18,8 @@
 //! civilization's, not its governors' (culture.rs plans them in governed cities too).
 //!
 //! (The feed mode, in which the governed cities nearest the enemy fed the main army, is gone with
-//! the rules' requisition: which cities the AI's armies requisition from is not decided yet.)
+//! the rules' requisition, 2026-10-31: the main army requisitions from the governed cities near
+//! the front first, `armies::requisition_cities`.)
 //!
 //! Switch `GOVERNORS` (`FFH_AI_GOVERNORS_OFF`): off, the AI keeps its first cities direct.
 
@@ -150,35 +152,6 @@ pub(crate) fn culture_grave(g: &Game, c: CityId) -> bool {
     g.culture_garrison_count(c) < crate::culture::defenders_needed(g, c)
 }
 
-/// The unit city `c` trains for army `a`'s requisition (the AI's `Controller::requisition_unit`):
-/// siege while it is less than a third of the army (its recruits marching to it and its
-/// requisition orders included), else the best attacker against cities, else any attacker; only
-/// units that serve in armies (a Ranger or an Assassin would stay in the city, and the army would
-/// never fill).
-pub fn requisition_unit(g: &Game, c: CityId, a: ArmyId) -> Option<(UnitType, UnitAIType)> {
-    let mut siege = 0;
-    let mut total = 0;
-    for u in g.army_units(a).into_iter().chain(g.army_marching(a)) {
-        total += 1;
-        if matches!(g.units[u].ai_type, Some(UnitAIType::UNITAI_ATTACK_CITY) | Some(UnitAIType::UNITAI_COLLATERAL)) {
-            siege += 1;
-        }
-    }
-    for (oc, i) in g.army_requisition_orders(a) {
-        total += 1;
-        if matches!(opt_from_i32::<UnitAIType>(g.cities[oc].order_queue[i].data2), Some(UnitAIType::UNITAI_ATTACK_CITY) | Some(UnitAIType::UNITAI_COLLATERAL)) {
-            siege += 1;
-        }
-    }
-    let army_unit = |u: UnitType| g.unit_type_is_army_unit(u);
-    if siege * 3 < total {
-        if let Some(u) = prod::best_unit_where(g, c, Role::Siege, army_unit) {
-            return Some((u, UnitAIType::UNITAI_ATTACK_CITY));
-        }
-    }
-    prod::best_unit_where(g, c, Role::CityAttack, army_unit).or_else(|| prod::best_unit_where(g, c, Role::Attack, army_unit)).map(|u| (u, UnitAIType::UNITAI_ATTACK))
-}
-
 /// The AI's governed cities, once a turn: the direct slots on its most productive cities.
 pub fn turn(g: &mut Game, p: PlayerId) {
     if !g.governors_on() || !crate::switches::GOVERNORS.on(g, p) || g.player_is_barbarian(p) {
@@ -203,30 +176,6 @@ fn swap_direct(g: &mut Game, p: PlayerId) {
             if g.player_set_direct_rule(p, best, Some(w)).is_ok() {
                 crate::trace!(g, p, "governors: {} ruled directly instead of {}", g.d.text.name(&g.cities[best].name), g.d.text.name(&g.cities[w].name));
             }
-        }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    /// The AI's requisition unit for an army: siege while it is short of a third, then
-    /// attackers; only army units.
-    #[test]
-    fn requisition_takes_siege_then_attackers() {
-        let mut g = crate::testkit::one_landmass_game(4);
-        g.setup.options[GameOptionType::GAMEOPTION_ARMIES] = true;
-        let p0 = PlayerId(0);
-        let c = g.player_init_city(p0, 5, 5, true, true);
-        let w = g.d.t::<UnitType>("UNIT_WARRIOR");
-        let units: Vec<UnitId> = (0..2).map(|_| g.player_init_unit(p0, w, 8, 5, Some(UnitAIType::UNITAI_ATTACK), None)).collect();
-        let a = g.army_form(p0, &units).unwrap();
-        let (u, role) = requisition_unit(&g, c, a).expect("a unit");
-        assert!(g.unit_type_is_army_unit(u));
-        // No siege the city can train at the start: an attacker.
-        if !g.unit_type_is_siege(u) {
-            assert_eq!(role, UnitAIType::UNITAI_ATTACK);
         }
     }
 }

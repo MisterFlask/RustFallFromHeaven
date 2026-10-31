@@ -105,6 +105,10 @@ pub static CULTURE: Switch = Switch::new("CULTURE");
 /// Armies' marching reinforcements (`armies.rs`, docs/ARMIES.md): off, every unit stays in its
 /// city's garrison when trained.
 pub static ARMIES: Switch = Switch::new("ARMIES");
+/// The main army's requisition (`armies::requisition_cities`, docs/ARMIES.md): off, the AI's
+/// armies requisition from no city (the directly ruled cities' attackers still go to the main
+/// army).
+pub static REQUISITION: Switch = Switch::new("REQUISITION");
 /// Governed cities (`governor.rs`, docs/GOVERNORS.md): off, the AI keeps its first cities direct
 /// and every governed city develops.
 pub static GOVERNORS: Switch = Switch::new("GOVERNORS");

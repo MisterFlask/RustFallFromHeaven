@@ -146,7 +146,9 @@ pub fn play(ai: &Ai, g: &mut Game, v: &mut View) {
     let all = crate::switches::PROMOTE_ALL.on(g, p);
     if all || !v.barbarian {
         for u in g.players[p].units.clone() {
-            if !g.units.contains(u) {
+            // (A marching recruit takes no orders, promotions and upgrades included, until it
+            // arrives: docs/ARMIES.md.)
+            if !g.units.contains(u) || g.unit_march(u).is_some() {
                 continue;
             }
             let Some(grp) = g.units[u].group else { continue };
@@ -196,6 +198,12 @@ pub fn play(ai: &Ai, g: &mut Game, v: &mut View) {
             && g.group_get_head_unit(grp).is_some_and(|h| !g.unit_is_cargo(h));
         // Units aboard a ship go where the ship takes them (the transport lands them).
         if g.group_get_head_unit(grp).is_some_and(|h| g.unit_is_cargo(h) && g.unit_get_domain_type(h) == DomainType::DOMAIN_LAND) {
+            g.groups[grp].force_update = false;
+            continue;
+        }
+        // A marching recruit goes where the rules take it (docs/ARMIES.md): no orders until it
+        // arrives (the rules keep it alone in its group).
+        if g.groups[grp].units.iter().any(|&u| g.unit_march(u).is_some()) {
             g.groups[grp].force_update = false;
             continue;
         }

@@ -184,7 +184,7 @@ fn defend(g: &mut Game, p: PlayerId, only_governed: bool) {
         let name = g.d.text.name(&g.cities[c].name).to_string();
         if governed {
             crate::trace!(g, p, "culture: the governor of {name} trains defenders against revolt pressure ({have} of {need})");
-            g.city_clear_order_queue(c);
+            crate::production::clear_own_orders(g, c);
             g.city_choose_production(c, None, None, None, false, false);
         } else {
             crate::trace!(g, p, "culture: a defender first in {name} against revolt pressure ({have} of {need})");
