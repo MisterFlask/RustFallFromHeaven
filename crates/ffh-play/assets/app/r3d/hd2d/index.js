@@ -46,6 +46,9 @@ const LITE = {
  *  the target's share of the screen. */
 export const DEFAULT_ZOOM = 96;
 
+/** How long the start waits at most for the sprites its first frame asks for (ms; `modeReady`). */
+const SPRITE_WAIT_MS = 3000;
+
 /** How far the land stands over its water (plots; dry land's base is 0.1 over the sea). */
 export const BANK = 0.04;
 
@@ -144,10 +147,16 @@ export class MapHd2d extends Map3D {
   }
 
   /** Resolves once the ground's layers have loaded (left clear by the scene, fastStart): the first
-   *  frame never shows them empty. (They load while the programs compile; Map3D.ready waits for
-   *  them before the loop draws, so the map MapView still draws stays until then.) */
+   *  frame never shows them empty -- and the sprites the first frame asks for, or SPRITE_WAIT_MS
+   *  have passed: it shows its figures, towns and props, rather than each popping in as it loads.
+   *  (They load while the programs compile, the dressing having asked for them -- `prepare`, asked
+   *  again in case the game's map came after; Map3D.ready waits for them before the loop draws, so
+   *  what MapView draws meanwhile stays until then.) */
   modeReady() {
-    return this.cfg.fastStart !== 0 ? this.groundReady : Promise.resolve();
+    if (this.cfg.fastStart === 0) return Promise.resolve();
+    this.prepare();
+    const sprites = Promise.race([this.sprites.atlas.whenLoaded(), new Promise((r) => setTimeout(r, SPRITE_WAIT_MS))]);
+    return Promise.all([this.groundReady, sprites]);
   }
 
   /** Resolves once the sprites asked for and the ground have loaded (a capture waits for it). */
