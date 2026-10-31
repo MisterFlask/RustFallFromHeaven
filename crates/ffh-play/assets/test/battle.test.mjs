@@ -333,3 +333,26 @@ test("the result and the names are the viewer's: a battle seen by its defender",
   const line = L.logLines(held).find((l) => !l.head && l.parts.some((p) => p.b === giant.b));
   assert.equal(line.parts.find((p) => p.b === giant.b).cls, "you");
 });
+
+test("the result when no attacker is left: worded from the fates (fallen, escaped, afraid)", () => {
+  const fighter = (b, side, name, lane) => ({ b, unit: 900 + b, unit_type: "UNIT_AXEMAN", name, owner: side, side, role: "COMBATROLE_FLANKER", large: false, lane, row: 0, max_hp: 100, hp_start: 10000, speed: 6, actions: [] });
+  const fighters = [fighter(0, 0, "Horseman", 0), fighter(1, 0, "Horseman", 1), fighter(2, 0, "Axeman", 2), fighter(3, 1, "Axeman", 0)];
+  const kill = (t) => ({ round: 1, pass: 1, actor: 3, kind: "Strike", target: t, hits: [{ target: t, dmg: 10000, killed: true }] });
+  const flee = (t) => ({ round: 1, pass: 2, actor: 3, kind: "Strike", target: t, hits: [{ target: t, dmg: 0, withdrew: true }] });
+  const afraid = (t) => ({ round: 0, pass: 0, kind: "Afraid", actor: null, target: t });
+  const log = (events) => ({ viewer_side: 0, plot: { x: 1, y: 1, city: null }, fighters, events, outcome: { plot_taken: false, rounds: 1, defenders_left: 1 } });
+  // the last attacker withdraws: escaped, not wiped out
+  const w = L.resultWords(log([kill(0), kill(2), flee(1)]));
+  assert.equal(w.kind, "repulsed");
+  assert.equal(w.line, "No attacker is left on the field (2 fell, 1 escaped). The defenders hold.");
+  assert.doesNotMatch(w.line, /wiped out/);
+  const fs = L.fates(log([kill(0), kill(2), flee(1)]), L.finalState(log([kill(0), kill(2), flee(1)])));
+  assert.deepEqual([fs[0].fallen.length, fs[0].escaped.length], [2, 1]);
+  // everyone fell: wiped out
+  assert.equal(L.resultWords(log([kill(0), kill(1), kill(2)])).line, "The attackers are wiped out. The defenders hold.");
+  // one sat out afraid, the others fled
+  assert.equal(L.resultWords(log([afraid(2), flee(0), flee(1)])).line, "No attacker is left on the field (2 escaped, 1 sat out afraid). The defenders hold.");
+  // seen by the defender: the same words, its ribbon
+  const d = L.resultWords({ ...log([kill(0), kill(2), flee(1)]), viewer_side: 1 });
+  assert.deepEqual([d.ribbon, d.good, d.line], ["HELD", true, w.line]);
+});

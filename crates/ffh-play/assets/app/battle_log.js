@@ -541,7 +541,8 @@ export function fates(log, st) {
 }
 
 /** The battle's result for the viewer: `{kind, ribbon, line, good}`: kind "taken" (the plot fell),
- *  "repulsed" (no attacker stands), "held" (the defenders hold). */
+ *  "repulsed" (no attacker stands: worded from their fates, as all fallen are not all escaped),
+ *  "held" (the defenders hold). */
 export function resultWords(log) {
   const me = viewerSide(log);
   const o = log.outcome ?? {};
@@ -551,7 +552,13 @@ export function resultWords(log) {
   if (o.plot_taken) {
     return { kind: "taken", good: me === 0, ribbon: me === 0 ? "VICTORY" : "DEFEAT", line: city ? `${city} falls: no defender is left, and the attackers move in.` : "The plot falls: no defender is left, and the attackers move in." };
   }
-  if (!fs[0].standing.length) return { kind: "repulsed", good: me === 1, ribbon: me === 0 ? "REPULSED" : "HELD", line: "The attackers are wiped out. The defenders hold." };
+  if (!fs[0].standing.length) {
+    // Withdrawn attackers stay with their army, afraid ones sat out: only all fallen is wiped out.
+    const a = fs[0];
+    const counts = [a.fallen.length ? `${a.fallen.length} fell` : null, a.escaped.length ? `${a.escaped.length} escaped` : null, a.afraid.length ? `${a.afraid.length} sat out afraid` : null].filter(Boolean);
+    const what = a.escaped.length || a.afraid.length ? `No attacker is left on the field (${counts.join(", ")}).` : "The attackers are wiped out.";
+    return { kind: "repulsed", good: me === 1, ribbon: me === 0 ? "REPULSED" : "HELD", line: `${what} The defenders hold.` };
+  }
   const left = o.defenders_left ?? fs[1].standing.length;
   return {
     kind: "held",
