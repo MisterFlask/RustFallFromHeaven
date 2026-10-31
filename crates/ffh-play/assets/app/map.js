@@ -753,7 +753,7 @@ export class MapView {
 
   /** Whether the backdrop is what is drawn (no other renderer draws the map). */
   backdropDrawn() {
-    return this.backdrop && !this.r3d && !this.iso && !this.art;
+    return this.backdrop && !this.r3d && !this.iso;
   }
 
   /** A renderer is asked for (main.js setRenderer, before it switches): a 3D renderer still
