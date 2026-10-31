@@ -261,7 +261,7 @@ export class Map3D {
   /** The Pipeline's arguments from the hooks below (they read only `cfg` and `glName`, so
    *  r3d-lab/compile.html calls this on a bare object of the mode's class for the same programs). */
   pipelineArgs() {
-    return [this.terrainDefines(), { scene: this.sceneDefines(), prop: this.propDefines(), water: this.waterDefines(), riverSplit: this.riverSplit(), packed: this.packedScene() }];
+    return [this.terrainDefines(), { scene: this.sceneDefines(), prop: this.propDefines(), water: this.waterDefines(), riverSplit: this.riverSplit(), packed: this.packedScene(), standin: this.standinTerrain() }];
   }
 
   /** `#define`s the terrain program is compiled with (shaders.js): none for the 3D renderer; a
@@ -275,6 +275,14 @@ export class Map3D {
    *  the first draw to the link: in parallel, the page live, cached across starts). */
   packedScene() {
     return false;
+  }
+
+  /** The `#define`s of a stand-in terrain (pipeline.js `standin`, with a packed scene only): a much
+   *  shorter terrain program drawn until the full one has compiled, which then dissolves in over it
+   *  (`ready`, `terrainDissolve`); null for none. None for the 3D renderer; a mode may (on Direct3D
+   *  the terrain's compile is most of the start's). */
+  standinTerrain() {
+    return null;
   }
 
   /** `#define`s of the terrain, water and props: NOISE_TEX reads their value noise from a hash

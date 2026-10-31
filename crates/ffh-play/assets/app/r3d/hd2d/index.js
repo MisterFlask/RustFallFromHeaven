@@ -15,7 +15,7 @@
 import { Map3D } from "../map3d.js";
 import { loadConfig, saveConfig, withPreset, PANEL } from "../config.js";
 import { clamp, smoothstep } from "../math.js";
-import { STORE, LIGHT, DEFAULTS_HD2D, PRESETS_HD2D, PANEL_HD2D, TERRAIN_LEAN } from "./config.js";
+import { STORE, LIGHT, DEFAULTS_HD2D, PRESETS_HD2D, PANEL_HD2D, TERRAIN_LEAN, TERRAIN_STANDIN } from "./config.js";
 import { SpriteLayer } from "./sprites.js";
 import { Hd2dPasses } from "./passes.js";
 import { dressSpriteStatic, dressSpriteUnits } from "./dress.js";
@@ -201,6 +201,14 @@ export class MapHd2d extends Map3D {
   packedScene() {
     const on = this.cfg.packScene;
     return on === undefined ? /direct3d|d3d1/i.test(this.glName) : on > 0;
+  }
+
+  /** The stand-in ground (config.js TERRAIN_STANDIN, over terrainDefines' own) where the scene is
+   *  packed: its programs compile at link, and the map draws once all but the full terrain have --
+   *  on Direct3D about half a second in, the terrain's own compile (about 1.9 s) going on behind the
+   *  stand-in (docs/R3D.md §11.1 "Two stages"). `?r3d={"standin":0}` waits for the full terrain. */
+  standinTerrain() {
+    return this.packedScene() && (this.cfg.standin ?? 1) > 0 ? TERRAIN_STANDIN : null;
   }
 
   /** The value noise from a hash texture (shaders.js NOISE_TEX): the terrain's, water's and props'

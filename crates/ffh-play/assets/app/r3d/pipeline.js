@@ -35,14 +35,17 @@ export function hdrTargets(gl) {
 }
 
 /** The pipeline's programs, `[name, vs, fs, defines]` by key in the order it builds them, for the
- *  constructor's `terrainDefines` and `opts` (`packed` already checked against `hdrTargets`).
- *  r3d-lab/compile.html measures the same list. */
-export function pipelinePrograms(terrainDefines = {}, { scene: sceneDefines = {}, prop = {}, water = {}, riverSplit = false, packed = false } = {}) {
+ *  constructor's `terrainDefines` and `opts` (`packed` already checked against `hdrTargets`, and
+ *  `standin` given only with it). r3d-lab/compile.html measures the same list. */
+export function pipelinePrograms(terrainDefines = {}, { scene: sceneDefines = {}, prop = {}, water = {}, riverSplit = false, packed = false, standin = null } = {}) {
   const C = SH.COMMON;
   // A scene program: its one packed output, or the three targets.
   const S = (name, vs, fs, defs = {}) => (packed ? [name, vs, SH.packedScene(fs), { ...defs, SCENE_PACKED: 1 }] : [name, vs, fs, defs]);
+  const terrain = { ...sceneDefines, ...terrainDefines };
   return {
-    terrain: S("terrain", C + SH.TERRAIN_VS, C + SH.TERRAIN_FS, { ...sceneDefines, ...terrainDefines }),
+    // (With a stand-in the full terrain dissolves in over it: TERRAIN_DISSOLVE.)
+    terrain: S("terrain", C + SH.TERRAIN_VS, C + SH.TERRAIN_FS, standin ? { ...terrain, TERRAIN_DISSOLVE: 1 } : terrain),
+    ...(standin ? { terrainStandin: S("terrain-standin", C + SH.TERRAIN_VS, C + SH.TERRAIN_FS, { ...terrain, ...standin }) } : {}),
     prop: S("prop", C + SH.PROP_VS, C + SH.PROP_FS, { ...sceneDefines, ...prop }),
     water: S("water", C + SH.WATER_VS, C + SH.WATER_FS, { ...sceneDefines, ...water, ...(riverSplit ? { WATER_SEA: 1 } : {}) }),
     ...(riverSplit ? { river: S("river", C + SH.WATER_VS, C + SH.WATER_FS, { ...sceneDefines, ...water, WATER_RIVER: 1 }) } : {}),
@@ -75,7 +78,10 @@ export class Pipeline {
    *    then WATER_SEA; Map3D.riverSplit);
    *  - `packed`: the scene's programs (the rivers' too) write one packed target, unpacked after
    *    (shaders.js SCENE_PACKED; Map3D.packedScene) -- one output each, so ANGLE's Direct3D 11
-   *    backend compiles them at link, in parallel and cached, not at their first draw. */
+   *    backend compiles them at link, in parallel and cached, not at their first draw;
+   *  - `standin`: with `packed`, the `#define`s of a second, much shorter terrain program
+   *    (`p.terrainStandin`, Map3D.standinTerrain) drawn until the full one has compiled
+   *    (`fr.dissolve`, render): the map draws sooner on Direct3D. */
   constructor(gl, terrainDefines = {}, opts = {}) {
     this.gl = gl;
     this.hdr = hdrTargets(gl);
@@ -83,7 +89,11 @@ export class Pipeline {
     this.timer = gl.getExtension("EXT_disjoint_timer_query_webgl2");
     this.fs = fullscreen(gl);
     this.packed = !!opts.packed && this.hdr;
-    this.p = Object.fromEntries(Object.entries(pipelinePrograms(terrainDefines, { ...opts, packed: this.packed })).map(([k, a]) => [k, new Program(gl, ...a)]));
+    // (Only a packed scene's programs compile at link, where a frame can be drawn before one has;
+    // where the browser does not compile in parallel, every program has linked by the first frame
+    // and the stand-in is not drawn.)
+    const standin = this.packed ? opts.standin ?? null : null;
+    this.p = Object.fromEntries(Object.entries(pipelinePrograms(terrainDefines, { ...opts, packed: this.packed, standin })).map(([k, a]) => [k, new Program(gl, ...a)]));
     this.shadowMap = depthTexture(gl, SHADOW_SIZE, SHADOW_SIZE);
     this.shadowFbo = framebuffer(gl, [], this.shadowMap);
     this.shadowMapT = depthTexture(gl, TERRAIN_SHADOW_SIZE, TERRAIN_SHADOW_SIZE);
@@ -363,7 +373,13 @@ export class Pipeline {
       if (pk) gl.bindFramebuffer(gl.FRAMEBUFFER, this.f.scenePk);
       gl.depthMask(false);
       gl.depthFunc(gl.LEQUAL);
-      scene.drawTerrain(this.p.terrain, SU, false);
+      // The ground: the stand-in while the full terrain compiles (fr.dissolve 0), the full one
+      // over it while it dissolves in (0 to 1: the stand-in's fragments kept where its quads' hash
+      // is past the progress), the full one alone after (1, the default). Both are depth-tested
+      // against the prepass's depth, which neither writes.
+      const dissolve = this.p.terrainStandin ? fr.dissolve ?? 1 : 1;
+      if (dissolve < 1) scene.drawTerrain(this.p.terrainStandin, SU, false);
+      if (dissolve > 0) scene.drawTerrain(this.p.terrain, { ...SU, uDissolve: dissolve }, false);
       gl.depthFunc(gl.EQUAL);
       scene.drawProps(this.p.prop, SU, false);
       gl.depthFunc(gl.LEQUAL);

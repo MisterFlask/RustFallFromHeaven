@@ -658,6 +658,10 @@ uniform sampler2D uOwner;
 // The ground's materials (materials.js): rgb albedo, a height; and each layer's mean albedo.
 uniform highp sampler2DArray uMat;
 uniform vec3 uMatMean[16];
+#ifdef TERRAIN_DISSOLVE
+// The swap's progress from the stand-in to this terrain (Pipeline.render): 0 to 1, 1 once over.
+uniform float uDissolve;
+#endif
 ${SCENE_OUT}
 const int M_GRASS = ${MAT.GRASS}, M_STRAW = ${MAT.STRAW}, M_DIRT = ${MAT.DIRT}, M_SOIL = ${MAT.SOIL}, M_GRAIN = ${MAT.GRAIN},
   M_VEG = ${MAT.VEG}, M_NOISE = ${MAT.NOISE}, M_SAND = ${MAT.SAND}, M_LICHEN = ${MAT.LICHEN}, M_SNOW = ${MAT.SNOW},
@@ -1182,6 +1186,13 @@ void paintFeature(int f, float wk, vec3 alb, vec2 m, inout vec3 fa, inout vec3 e
 
 void main() {
   oLink = vec4(0.0);
+#ifdef TERRAIN_DISSOLVE
+  // While the stand-in (drawn first, STANDIN_*) gives way to this terrain, the quads whose hash is
+  // past the swap's progress keep the stand-in's colour: the packed target cannot blend, and a
+  // dissolve in screen space holds while the camera moves. A whole 2 x 2 quad at a time, so the
+  // derivatives below stay defined in the quads drawn.
+  if (uDissolve < 1.0 && hash12(floor(gl_FragCoord.xy * 0.5)) >= uDissolve) discard;
+#endif
   vec3 n = normalize(vNormal);
   vec2 m = mapOf(vWorld);
   float h = vWorld.y;
