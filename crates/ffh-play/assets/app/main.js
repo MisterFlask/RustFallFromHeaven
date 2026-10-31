@@ -754,6 +754,25 @@ async function boot() {
   api.watch(onStatus, onDisconnect);
   if (await art) lookLoaded();
   window.ffh.ready = true;
+  // The battle screens' dev entry (docs/HUMAN.md, "The battle screens"): `?battle=<fixture>` opens
+  // the battle plan over a fixture (no rules involved); the game does not open them yet.
+  const battle = pageParam("battle");
+  if (battle) devBattle(battle);
+}
+
+/** The battle screens over fixture `name` (battle.js, loaded only then). */
+async function devBattle(name) {
+  const m = await import("./battle.js");
+  await m.openDevBattle(name, { viewer: pageParam("viewer") });
+}
+
+/** A parameter of the page's URL, or null. */
+function pageParam(name) {
+  try {
+    return new URLSearchParams(globalThis.location?.search ?? "").get(name);
+  } catch {
+    return null;
+  }
 }
 
 /** The art has loaded: the map draws with it unless the flat renderer was asked for, and the

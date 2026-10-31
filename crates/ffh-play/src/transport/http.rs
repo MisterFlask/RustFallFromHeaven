@@ -72,6 +72,14 @@ pub const ASSETS: &[(&str, &str, &str)] = &[
     ("app/isoui.js", JS, include_str!("../../assets/app/isoui.js")),
     ("app/isofont.js", JS, include_str!("../../assets/app/isofont.js")),
     ("app/units.js", JS, include_str!("../../assets/app/units.js")),
+    ("app/battle.js", JS, include_str!("../../assets/app/battle.js")),
+    ("app/battle_fixture.js", JS, include_str!("../../assets/app/battle_fixture.js")),
+    ("app/battle_log.js", JS, include_str!("../../assets/app/battle_log.js")),
+    ("app/battle_teach.js", JS, include_str!("../../assets/app/battle_teach.js")),
+    ("app/battle_stage.js", JS, include_str!("../../assets/app/battle_stage.js")),
+    ("app/battle_plan.js", JS, include_str!("../../assets/app/battle_plan.js")),
+    ("app/battle_watch.js", JS, include_str!("../../assets/app/battle_watch.js")),
+    ("app/battle_report.js", JS, include_str!("../../assets/app/battle_report.js")),
     ("app/city.js", JS, include_str!("../../assets/app/city.js")),
     ("app/armies.js", JS, include_str!("../../assets/app/armies.js")),
     ("app/governors.js", JS, include_str!("../../assets/app/governors.js")),
@@ -127,9 +135,10 @@ pub const ASSETS: &[(&str, &str, &str)] = &[
     ("app/r3d/hd2d/sprites.js", JS, include_str!("../../assets/app/r3d/hd2d/sprites.js")),
 ];
 
-// `ASSET_BYTES`: the binary client files, the isometric renderer's PNG sprites (docs/ISO.md),
-// embedded by `build.rs` from `assets/app/iso/*.png`: `(path, content type, bytes)`, served like
-// [`ASSETS`] but from raw bytes. `tests/web.rs` checks that every file under `assets/app/` is listed.
+// `ASSET_BYTES`: the binary client files, the isometric renderer's PNG sprites (docs/ISO.md) and the
+// battle screens' unit animations, embedded by `build.rs` from `assets/app/iso/*.png` and
+// `assets/app/anim/*.png`: `(path, content type, bytes)`, served like [`ASSETS`] but from raw
+// bytes. `tests/web.rs` checks that every file under `assets/app/` is listed.
 include!(concat!(env!("OUT_DIR"), "/iso_assets.rs"));
 
 // `ART_MODULES`: the art toolkit's modules (`web/art`, docs/ART.md 15-16), embedded by `build.rs`
