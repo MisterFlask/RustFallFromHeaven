@@ -885,7 +885,7 @@ export class MapView {
       this.cam = T.clampCamera(this.cam, map);
       this.resize();
       // (The backdrop's wait runs from here: the map has come.)
-      if (this.backdrop && !prev) this.holdBackdrop(true);
+      if (this.backdrop) this.holdBackdrop(true);
     }
     this.request();
     return first;
