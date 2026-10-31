@@ -220,7 +220,9 @@ reinforcement pauses: no attrition in v1 (the spec).
   matter; widening it to "any plot inside one's borders" is one line if the owner prefers.
 - **A recruit marches alone.** Recruits bound for one army march each on its own path; marching
   together (a convoy that defends itself better) would be a next step if lone recruits are
-  picked off too often.
+  picked off too often. They are, in places: about one in twelve dies on the way, and in one
+  measured game a civilization lost 18 of its 24 recruits, cheap Warriors marching one a turn to an
+  army at war.
 
 ## AI (summary; docs/AI.md "Armies")
 
@@ -241,12 +243,21 @@ garrison. Marching recruits are the rules' to move: the AI gives them no orders,
 its stacks, escorts or transports, does not count them as defenders, and keeps requisition orders
 when it clears a queue. Switches: `ARMIES` and `REQUISITION` (`FFH_AI_*_OFF`).
 
-Measured (8 civs, standard map, 400 turns, seeds 1-6, the three options; totals): recruits sent
-1053 (master's transit 1013; requisition off 608), joined 925 in 5.5 turns on average, diverted 111,
-killed on the way 104 (about a tenth, the same share with the requisition off: it comes from
-marching itself); requisition orders placed 953, withdrawn 257 (mostly re-placed the same turn in
-the same city, progress kept); cities taken by conquest 166 against 125 with the requisition off
-on the same binary. `ffh bench` turn times are no slower than master's.
+Measured (8 civs, standard map, 400 turns, seeds 1-6, the three options; totals; the march at the
+turn's end, against the same binary with `FFH_AI_REQUISITION_OFF=ALL`): recruits sent 1339
+(requisition off 877; the transit before marching 1013), joined 1188 in 4.4 turns on average,
+diverted 123, killed on the way 111 (8%; 6% with the requisition off). Requisition orders placed
+1045, withdrawn 510. In seed 1, 25 of its 41 withdrawals came from the main army changing (its
+losses made another army the largest), and about half of those were placed again the same turn in
+the same city for the new main army, the production kept with the unit type; the rest were orders
+beyond the shortfall (the target size fell, or the army filled up another way). Cities taken by
+the civilizations' conquest: 110, against 121 with the requisition off (84 before marching). The
+difference is seed 1 alone (5 against 22; the other seeds split both ways, from -5 to +10), so it
+is within the seed noise. Most of that seed's losses on the way are one civilization's: a directly
+ruled city trained a Warrior almost every turn for its army at war, and 18 of its 24 recruits died
+marching. Most were the city's own units bound for the army (its build destination), which the
+requisition-off game sends as well; the two games' wars diverge, and there that civilization lost
+1 of 12.
 
 ## UI (ffh-play)
 
