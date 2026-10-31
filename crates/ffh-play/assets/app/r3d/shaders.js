@@ -145,11 +145,14 @@ vec3 mlattice(vec2 m, float f) {
   float P = floor(uNoiseLat.x * f + 0.5);
   return vec3(vec2(fract(m.x * uNoiseLat.y), m.y) * vec2(P, f), P);
 }
+// A cell noise's period (at least 1: see above).
+#define CELL_P(z) max(1.0, z)
 #else
 vec3 mlattice(vec2 m, float f) {
   float P = mix(4096.0, max(1.0, floor(uMapSize.x * f + 0.5)), wrapX());
   return vec3(mix(m * f, vec2(m.x * P / uMapSize.x, m.y * f), bvec2(wrapX())), P);
 }
+#define CELL_P(z) (z)
 #endif
 
 // Map-anchored noise at about f cycles per plot (0..1), periodic over the map's width on a
@@ -194,7 +197,7 @@ float mstrokeH(vec2 m, float f, float stretch) {
 // Cellular noise: (distance to nearest, to second nearest) feature point, periodic like mnoise.
 vec2 mcells(vec2 m, float f) {
   vec3 l = mlattice(m, f);
-  float P = max(1.0, l.z);
+  float P = CELL_P(l.z);
   vec2 p = l.xy;
   vec2 i = floor(p);
   vec2 fr = fract(p);
@@ -215,7 +218,7 @@ vec2 mcells(vec2 m, float f) {
 // tone of the dab covering the point, 0..1, and 0.5 between dabs; periodic like mnoise.
 float mdabs(vec2 m, float f) {
   vec3 l = mlattice(m, f);
-  float P = max(1.0, l.z);
+  float P = CELL_P(l.z);
   vec2 p = l.xy;
   vec2 i = floor(p);
   vec2 fr = fract(p);
@@ -779,7 +782,7 @@ vec3 flowers(vec2 m, vec3 c, float amt) {
   float drift = smoothstep(0.5, 0.78, mnoise(m + 19.0, 1.1));
   if (k * drift <= 0.0) return c;
   vec3 l = mlattice(m, f);
-  float P = max(1.0, l.z);
+  float P = CELL_P(l.z);
   vec2 p = l.xy;
   vec2 cell = mod(floor(p), vec2(P, 4096.0));
   vec2 h = hash22(cell + 0.7);
@@ -806,7 +809,7 @@ vec2 dunes(float ph) {
 // mcells with the nearest cell's id (a hash of its wrapped cell, 0..1).
 vec3 mcellsId(vec2 m, float f) {
   vec3 l = mlattice(m, f);
-  float P = max(1.0, l.z);
+  float P = CELL_P(l.z);
   vec2 p = l.xy;
   vec2 i = floor(p);
   vec2 fr = fract(p);
@@ -1869,11 +1872,38 @@ vec3 pnoiseD(vec2 p, vec2 P) {
   float k4 = h.x - h.y - h.z + h.w;
   return vec3(mix(mix(h.x, h.y, u.x), mix(h.z, h.w, u.x), u.y), du * vec2(h.y - h.x + k4 * u.y, h.z - h.x + k4 * u.x));
 }
-// mnoise and mstroke with their gradients over the map point.
+#ifdef NOISE_TEX
+// The texture's pnoise (NOISE_TEX) with its gradient: inside a cell the hardware's bilinear filter
+// is linear in the smoothstepped coordinate u, so its slope along x is the difference of two
+// fetches on the cell's edges (u.x 0 and 1), along y the same; times the smoothstep's slope. Four
+// fetches, the same texels, layer and wrap as pnoise (its value: the mix of the first two).
+vec3 pnoiseDT(vec2 p, vec2 P) {
+  vec2 i = floor(p);
+  vec2 f = p - i;
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  vec2 du = 6.0 * f * (1.0 - f);
+  const vec3 S = vec3(1.0 / 256.0, 1.0 / 256.0, 1.0 / 64.0);
+  vec3 c = (vec3(i, P.x) + 0.5) * S;
+  float x0 = textureLod(uNoiseHash, c + vec3(0.0, u.y, 0.0) * S, 0.0).r;
+  float x1 = textureLod(uNoiseHash, c + vec3(1.0, u.y, 0.0) * S, 0.0).r;
+  float y0 = textureLod(uNoiseHash, c + vec3(u.x, 0.0, 0.0) * S, 0.0).r;
+  float y1 = textureLod(uNoiseHash, c + vec3(u.x, 1.0, 0.0) * S, 0.0).r;
+  return vec3(mix(x0, x1, u.x), du * vec2(x1 - x0, y1 - y0));
+}
+#define PNOISE_D pnoiseDT
+#else
+#define PNOISE_D pnoiseD
+#endif
+// mnoise and mstroke with their gradients over the map point (mlattice's x scale: P cells over the
+// lattice's width, uNoiseLat under NOISE_TEX, the map's on a wrapping map, else f).
 vec3 mnoiseD(vec2 m, float f) {
   vec3 l = mlattice(m, f);
-  vec3 n = pnoiseD(l.xy, vec2(l.z, 4096.0));
+  vec3 n = PNOISE_D(l.xy, vec2(l.z, 4096.0));
+#ifdef NOISE_TEX
+  return vec3(n.x, n.yz * vec2(l.z * uNoiseLat.y, f));
+#else
   return vec3(n.x, n.yz * vec2(mix(f, l.z / uMapSize.x, float(wrapX())), f));
+#endif
 }
 vec3 mstrokeD(vec2 m, float f, float stretch) {
   vec2 d = vec2(m.x + m.y * 0.6, m.y - m.x * 0.6);
@@ -1896,8 +1926,8 @@ vec3 seaHD(vec2 p, float t) {
 // riverH and its gradient over (u, s).
 vec3 riverHD(float u, float s, float t) {
   float mid = 1.0 - u * u;
-  vec3 a = pnoiseD(vec2(u * 2.2, s * 3.2 - t * 1.6), vec2(4096.0));
-  vec3 b = pnoiseD(vec2(u * 4.5 + 7.0, s * 7.5 - t * 1.1), vec2(4096.0));
+  vec3 a = PNOISE_D(vec2(u * 2.2, s * 3.2 - t * 1.6), vec2(4096.0));
+  vec3 b = PNOISE_D(vec2(u * 4.5 + 7.0, s * 7.5 - t * 1.1), vec2(4096.0));
   float wa = 0.3 + 0.5 * mid;
   return vec3(a.x * wa + b.x * 0.35, a.y * 2.2 * wa - a.x * u + b.y * 4.5 * 0.35, a.z * 3.2 * wa + b.z * 7.5 * 0.35);
 }
