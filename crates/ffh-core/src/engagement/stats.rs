@@ -7,6 +7,10 @@
 //! **HP** ([`Game::unit_engage_max_hp`]): the type's `iHP`, else its role's; the damage field stays
 //! a percentage of it (G3).
 //!
+//! **Formation battles' per-unit values** ([`Game::unit_engage_speed`], `_dodge`, `_crit_bonus`,
+//! `_rows`, `_best_row`, `_actions`, `_flanks`): the type's own (`iEngageSpeed`, `iEngageDodge`,
+//! `iEngageCritBonus`, `EngageRows`), else its role's.
+//!
 //! **A and Dv per hit** ([`Game::engage_hit`], G1, Q1, Q2, Q9). One hit has a hitter and a target.
 //! The hitter's A and the target's Dv are its base (the type's strength times the role's percent,
 //! or the type's `iAttack` / `iDefense`, plus the unit's own flat strength and its typed strength
@@ -91,6 +95,52 @@ impl Game {
             Some(role) => self.d.combat_roles[role].max_hp,
             None => self.d.defines.max_hit_points,
         }
+    }
+
+    // A unit's values in a formation battle (docs/ENGAGEMENTS.md, "Per-unit values"): its type's
+    // own, else its role's (the unit's own role: `unit_combat_role`); `GameData::engage_*`. The
+    // resolver's fighters, the auto formation, the preview, the view and the client read these.
+
+    /// Unit `u`'s speed in a formation battle before first strikes: its type's `iEngageSpeed`,
+    /// else its role's.
+    pub fn unit_engage_speed(&self, u: UnitId) -> i32 {
+        self.d.engage_speed(self.units[u].unit_type, self.unit_combat_role(u))
+    }
+
+    /// Unit `u`'s dodge (points of miss chance on physical actions against it): its type's
+    /// `iEngageDodge`, else its role's.
+    pub fn unit_engage_dodge(&self, u: UnitId) -> i32 {
+        self.d.engage_dodge(self.units[u].unit_type, self.unit_combat_role(u))
+    }
+
+    /// Unit `u`'s crit bonus (points on its own crit chance): its type's `iEngageCritBonus`, else
+    /// its role's.
+    pub fn unit_engage_crit_bonus(&self, u: UnitId) -> i32 {
+        self.d.engage_crit_bonus(self.units[u].unit_type, self.unit_combat_role(u))
+    }
+
+    /// What unit `u` does from each row before its extra actions: its type's `EngageRows`, else
+    /// its role's rows.
+    pub fn unit_engage_rows(&self, u: UnitId) -> [RowActions; ROWS] {
+        self.d.engage_rows(self.units[u].unit_type, self.unit_combat_role(u))
+    }
+
+    /// Unit `u`'s best row (of [`Self::unit_engage_rows`]: the most actions, the first such).
+    pub fn unit_engage_best_row(&self, u: UnitId) -> usize {
+        self.d.engage_best_row(self.units[u].unit_type, self.unit_combat_role(u))
+    }
+
+    /// What unit `u` does from each row in a battle: its rows, with `ENGAGEMENT_EXTRA_ACTIONS`
+    /// more in its best row for a type of tier `ENGAGEMENT_EXTRA_ACTION_TIER` or above and for a
+    /// hero.
+    pub fn unit_engage_actions(&self, u: UnitId) -> [RowActions; ROWS] {
+        self.d.engage_actions(self.units[u].unit_type, self.unit_combat_role(u), self.unit_is_hero(u))
+    }
+
+    /// Whether unit `u` is a flanker (one of its rows charges): anti-flank units in its reach are
+    /// taken first.
+    pub fn unit_engage_flanks(&self, u: UnitId) -> bool {
+        self.d.engage_flanks(self.units[u].unit_type, self.unit_combat_role(u))
     }
 
     /// The A of `hitter` (on side `hitter_side`) against `target` and the Dv of `target` against

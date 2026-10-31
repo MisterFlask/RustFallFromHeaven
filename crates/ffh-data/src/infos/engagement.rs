@@ -147,32 +147,60 @@ pub struct CombatRoleInfo {
 
 impl CombatRoleInfo {
     /// The row with the most actions (the first such): where a tier 4 unit or a hero gets its
-    /// extra action.
+    /// extra action. A unit type with its own `EngageRows` has its own best row
+    /// (`GameData::engage_best_row`).
     pub fn best_row(&self) -> usize {
-        let mut best = 0;
-        for (i, r) in self.rows.iter().enumerate() {
-            if r.count > self.rows[best].count {
-                best = i;
-            }
-        }
-        best
+        rows_best_row(&self.rows)
     }
 
     /// What a unit of the role does from each row, with `extra` more actions in its best row
     /// (tier 4 units and heroes get `ENGAGEMENT_EXTRA_ACTIONS`); a row without an action stays
-    /// without.
+    /// without. A unit type with its own `EngageRows` acts from those (`GameData::engage_actions`).
     pub fn actions(&self, extra: i32) -> [RowActions; ROWS] {
-        let mut rows = self.rows;
-        let best = self.best_row();
-        if rows[best].kind != ActionKind::None {
-            rows[best].count += extra;
-        }
-        rows
+        rows_with_extra_actions(self.rows, extra)
     }
 
     /// A flanker: one of its rows charges (anti-flank units in its reach are taken first).
     pub fn flanks(&self) -> bool {
-        self.rows.iter().any(|r| r.kind == ActionKind::Charge)
+        rows_charge(&self.rows)
+    }
+}
+
+/// The row of `rows` with the most actions (the first such).
+pub fn rows_best_row(rows: &[RowActions; ROWS]) -> usize {
+    let mut best = 0;
+    for (i, r) in rows.iter().enumerate() {
+        if r.count > rows[best].count {
+            best = i;
+        }
+    }
+    best
+}
+
+/// `rows` with `extra` more actions in their best row ([`rows_best_row`]); a row without an action
+/// stays without.
+pub fn rows_with_extra_actions(mut rows: [RowActions; ROWS], extra: i32) -> [RowActions; ROWS] {
+    let best = rows_best_row(&rows);
+    if rows[best].kind != ActionKind::None {
+        rows[best].count += extra;
+    }
+    rows
+}
+
+/// Whether one of `rows` charges: a flanker's rows.
+pub fn rows_charge(rows: &[RowActions; ROWS]) -> bool {
+    rows.iter().any(|r| r.kind == ActionKind::Charge)
+}
+
+/// What is wrong with a role's or a unit type's rows, if anything: every row has a count above 0
+/// exactly when its kind is not NONE, and some row acts.
+pub fn rows_problem(rows: &[RowActions; ROWS]) -> Option<&'static str> {
+    if rows.iter().any(|row| row.count < 0 || (row.kind == ActionKind::None) != (row.count == 0)) {
+        Some("a row has a count above 0 exactly when its Action is not NONE")
+    } else if rows.iter().all(|row| row.count == 0) {
+        Some("no row has an action")
+    } else {
+        None
     }
 }
 
@@ -215,6 +243,48 @@ pub fn read_combat_role(rd: &Rd) -> CombatRoleInfo {
         default: rd.bool("bDefault"),
         base,
     }
+}
+
+/// A unit type's own value in place of its role's (`iEngageSpeed`, `iEngageDodge`,
+/// `iEngageCritBonus` in `CIV4UnitInfos.xml`): `None` at -1, the default (the role's value), else
+/// the value, which must lie in `valid`; one outside both warns and reads as the role's.
+pub fn read_engage_override(rd: &Rd, tag: &str, unit_type: &str, valid: std::ops::RangeInclusive<i32>) -> Option<i32> {
+    let v = rd.int_or(tag, -1);
+    if v == -1 {
+        return None;
+    }
+    if !valid.contains(&v) {
+        rd.cx.warn(format!("{unit_type}: {tag} {v} is neither -1 (the role's) nor in {}..={}", valid.start(), valid.end()));
+        return None;
+    }
+    Some(v)
+}
+
+/// A unit type's `EngageRows` (`CIV4UnitInfos.xml`): three `Row` elements, front, middle and rear,
+/// each an `Action` and its `iCount`, which replace its role's rows. `None` without the tag: the
+/// role's rows. Rows that are not exactly three, an unknown `Action`, or rows the roles' checks
+/// refuse ([`rows_problem`]) warn, and the unit keeps its role's rows.
+pub fn read_engage_rows(rd: &Rd, unit_type: &str) -> Option<[RowActions; ROWS]> {
+    let list = rd.child("EngageRows")?;
+    let rows: Vec<Rd> = list.children_named("Row").collect();
+    if rows.len() != ROWS {
+        rd.cx.warn(format!("{unit_type}: EngageRows has {} Row elements ({ROWS} expected: front, middle, rear)", rows.len()));
+        return None;
+    }
+    let mut out = [RowActions::default(); ROWS];
+    for (i, row) in rows.iter().enumerate() {
+        let token = row.string("Action");
+        let Some(kind) = ActionKind::parse(&token) else {
+            rd.cx.warn(format!("{unit_type}: EngageRows, {} row: unknown Action {token:?}", ROW_TOKENS[i]));
+            return None;
+        };
+        out[i] = RowActions { kind, count: row.int("iCount") };
+    }
+    if let Some(problem) = rows_problem(&out) {
+        rd.cx.warn(format!("{unit_type}: EngageRows: {problem}"));
+        return None;
+    }
+    Some(out)
 }
 
 // The round model's stances (phase 6 before revision 4). Formation battles have none: they go

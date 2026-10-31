@@ -108,6 +108,43 @@ fn roles_and_hit_points() {
     assert_eq!(role(&w.g, archer).as_deref(), Some("COMBATROLE_ARCHER"));
 }
 
+/// Formation battles' per-unit values (`Game::unit_engage_*`): with no unit type setting its own
+/// (the game's data; crates/ffh-data/tests/engagement_overrides.rs loads a fixture that does),
+/// each is the unit's role's, by the unit's own role, with a tier 4 unit's or a hero's extra
+/// action in its best row.
+#[test]
+fn formation_values_by_unit() {
+    use ActionKind::*;
+    let mut w = world();
+    let (p0, from) = (w.p0, w.from);
+    let r = |kind, count| RowActions { kind, count };
+    let values = |g: &Game, u: UnitId| {
+        (g.unit_engage_speed(u), g.unit_engage_dodge(u), g.unit_engage_crit_bonus(u), g.unit_engage_best_row(u), g.unit_engage_flanks(u))
+    };
+    // A tier 4 flanker: the flanker's values, one more charge from the front.
+    let knight = w.unit(p0, "UNIT_KNIGHT", from);
+    assert_eq!(values(&w.g, knight), (6, 10, 0, 0, true));
+    assert_eq!(w.g.unit_engage_rows(knight), [r(Charge, 2), r(Strike, 1), r(Strike, 1)]);
+    assert_eq!(w.g.unit_engage_actions(knight), [r(Charge, 3), r(Strike, 1), r(Strike, 1)]);
+    // An assassin (tier 3): its role's dodge and crit bonus, best from the middle, no extra action.
+    let assassin = w.unit(p0, "UNIT_ASSASSIN", from);
+    assert_eq!(values(&w.g, assassin), (7, 15, 15, 1, false));
+    assert_eq!(w.g.unit_engage_actions(assassin), [r(Stab, 1), r(Stab, 2), r(Stab, 1)]);
+    // An axeman: the frontline's; with Formation the screen's (its own role); a hero acts once
+    // more from its best row.
+    let axeman = w.unit(p0, "UNIT_AXEMAN", from);
+    assert_eq!(values(&w.g, axeman), (4, 0, 0, 0, false));
+    assert_eq!(w.g.unit_engage_actions(axeman), [r(Strike, 2), r(Strike, 1), r(Strike, 1)]);
+    w.promote(axeman, "PROMOTION_FORMATION");
+    assert_eq!(w.g.unit_engage_speed(axeman), 3);
+    w.promote(axeman, "PROMOTION_HERO");
+    assert_eq!(w.g.unit_engage_actions(axeman), [r(Strike, 3), r(Strike, 1), r(Strike, 1)]);
+    // A siege engine's front row stays without an action.
+    let catapult = w.unit(p0, "UNIT_CATAPULT", from);
+    assert_eq!(values(&w.g, catapult), (1, 0, 0, 2, false));
+    assert_eq!(w.g.unit_engage_actions(catapult), [r(None, 0), r(Bombard, 1), r(Bombard, 2)]);
+}
+
 #[test]
 fn archer_in_a_walled_hill_city_fortified() {
     let mut w = world();

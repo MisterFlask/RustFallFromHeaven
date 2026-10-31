@@ -8,7 +8,11 @@
      CombatRole overrides the role a unit takes from its unit combat (the religions' fighters,
      which never cast, are COMBATROLE_FRONTLINE although disciples are support); iAttack, iDefense
      and iHP, when above 0, replace the role's attack base (iCombat x the role's attack %), its
-     defence base (iCombatDefense x its defence %) and its max HP. -->
+     defence base (iCombatDefense x its defence %) and its max HP. bLarge: a large unit in a
+     formation battle (two cells, two slots). iEngageSpeed, iEngageDodge and iEngageCritBonus
+     (-1, the default: the role's) and EngageRows (three Row elements, front, middle, rear, each an
+     Action and its iCount) replace the role's speed, dodge, crit bonus and rows
+     (docs/ENGAGEMENTS.md, "Per-unit values"). -->
 <Civ4UnitInfos xmlns="x-schema:CIV4UnitSchema.xml">
     <UnitInfos>
         <UnitInfo>

@@ -48,11 +48,52 @@ lanes.
 | DIVINE | DISCIPLE | 100 | 50 | 70 | 3 | 1 strike | 1 heal | 2 heal | | middle | 6 |
 
 Units of tier `ENGAGEMENT_EXTRA_ACTION_TIER` (4) and above and heroes get
-`ENGAGEMENT_EXTRA_ACTIONS` (1) more actions in their role's best row, the row with the most (the
-first such: `CombatRoleInfo::actions`). Speed is the role's plus `ENGAGEMENT_FIRST_STRIKE_SPEED` (2)
-per first strike and per chance first strike rolled at the battle's start. A flanker is a role
-with a CHARGE (`CombatRoleInfo::flanks`). The home row and the auto-pick order are the rules' auto
-formation's (`formation::auto_arrange`, the prototype's `autoArrange`).
+`ENGAGEMENT_EXTRA_ACTIONS` (1) more actions in their best row, the row with the most (the first
+such). Speed is the unit's (below) plus `ENGAGEMENT_FIRST_STRIKE_SPEED` (2) per first strike and per
+chance first strike rolled at the battle's start. A flanker is a unit whose rows have a CHARGE. The
+home row and the auto-pick order are the rules' auto formation's (`formation::auto_arrange`, the
+prototype's `autoArrange`), always the role's.
+
+**Per-unit values** (the owner's request, 2026-10-31). A unit type may replace its role's values in
+`CIV4UnitInfos.xml`; each falls back to the role's when absent, and no unit sets them yet (the
+content is the owner's to decide):
+
+| Tag | Replaces | Absent / -1 | Valid |
+|---|---|---|---|
+| `CombatRole` | the role its unit combat gives it | that role | a role |
+| `iAttack`, `iDefense` | the base of A (`iCombat` x the role's A%), of Dv (`iCombatDefense` x Dv%) | 0: the role's | above 0 |
+| `iHP` | the role's max HP | 0: the role's | above 0 |
+| `bLarge` | one cell | 0: one cell | |
+| `iEngageSpeed` | the role's speed | -1: the role's | 0 and above |
+| `iEngageDodge` | the role's dodge | -1: the role's | 0..=95 |
+| `iEngageCritBonus` | the role's crit bonus | -1: the role's | 0..=95 |
+| `EngageRows` | the role's rows | the role's | three `Row`s |
+
+`EngageRows` holds three `Row` elements, front, middle and rear, each an `Action` (STRIKE, CHARGE,
+STAB, SHOOT, SPELL, BOMBARD, HEAL, NONE) and its `iCount` (note: `iCount` here, `iActions` in the
+roles' `FrontRow`, `MiddleRow`, `RearRow`):
+
+```xml
+<EngageRows>
+    <Row><Action>SHOOT</Action><iCount>1</iCount></Row>
+    <Row><Action>STAB</Action><iCount>2</iCount></Row>
+    <Row><Action>NONE</Action><iCount>0</iCount></Row>
+</EngageRows>
+```
+
+The rows' rules are the roles': a count above 0 exactly when the action is not NONE, and some row
+acts. A value outside its range, rows that are not three, an unknown action or rows that break those
+rules warn at load and leave the unit its role's value. The best row (the extra action's), whether
+the unit flanks, and its actions come from its own rows when it has them. The type's values hold
+whichever role the unit has (a Frontline type with Formation is a Screen, with the type's own speed
+if it sets one). One accessor per value resolves the unit type, then the unit's role:
+`Game::unit_engage_speed`, `unit_engage_dodge`, `unit_engage_crit_bonus`, `unit_engage_rows`,
+`unit_engage_best_row`, `unit_engage_actions` (with the extra action), `unit_engage_flanks`,
+`unit_engage_max_hp` (stats.rs), over `GameData::engage_speed`, `engage_dodge`, `engage_crit_bonus`,
+`engage_rows`, `engage_best_row`, `engage_extra_actions`, `engage_actions`, `engage_flanks` (by unit
+type and role); the rules' fighters, the auto formation, the preview, the view and the client read
+these, not the role's fields. Test: `crates/ffh-data/tests/engagement_overrides.rs` (a fixture of the
+game's data with units given overrides, good and bad).
 
 **Action kinds and reach** (`ffh_data::ActionKind`):
 - STRIKE: the front unit of each enemy lane; physical; a crit knocks the target back.
@@ -105,9 +146,9 @@ particular), then lane, then row, never by list order. A splash's centre is chos
 hit 20 HP; six kill a frontline unit), then times the hit's percentages (a spell's power, the
 ground's, the first round's charge, a splash's) over one division. A hit: `max(1, expected x r)`, r
 in `ENGAGEMENT_DAMAGE_RAND_MIN..=MAX` (80..120) %. A physical action misses with
-`ENGAGEMENT_MISS_PERCENT` (10) + the kind's extra + the target role's dodge (at most 95), rolled
+`ENGAGEMENT_MISS_PERCENT` (10) + the kind's extra + the target's dodge (at most 95), rolled
 before the crit and the damage. Strike, charge, stab and shoot crit with `ENGAGEMENT_CRIT_PERCENT`
-(10) + the hitter role's crit bonus (at most 95), for `ENGAGEMENT_CRIT_DAMAGE_PERCENT` (150) % of
+(10) + the hitter's crit bonus (at most 95), for `ENGAGEMENT_CRIT_DAMAGE_PERCENT` (150) % of
 the hit; a strike's or a charge's crit knocks the target back a row when every cell behind it is
 free (it acts from that row then).
 
@@ -137,7 +178,7 @@ physical one's miss ("Engagement miss"), if it lands the crit roll of strike, ch
 heal's r ("Engagement heal"). An action with no target and a heal with no one hurt draw nothing.
 
 **The resolver's API** (`engagement::formation`, pure: nothing of `Game`): `Formation::new(params,
-ground, lanes, fighters, pair)` (each `Fighter`'s side, tag, lane, row, large, max HP and HP, role
+ground, lanes, fighters, pair)` (each `Fighter`'s side, tag, lane, row, large, max HP and HP, its
 speed, first strikes and chance first strikes, actions per row, A against nobody, dodge, crit bonus,
 anti-flank, flanker, withdrawal chance, combat limit, collateral limit, spell; the pair table of A
 and Dv from `pair(h, t)`), `Formation::validate` (inside the grid, one unit a cell), `Params` (the

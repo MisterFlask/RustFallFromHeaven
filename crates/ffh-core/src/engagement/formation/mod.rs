@@ -8,7 +8,7 @@
 //!
 //! **Order.** A battle is `rounds` rounds. In each, pass k (from 1 to the most actions any unit
 //! has from its row at the round's start) lets every unit on the field with at least k actions
-//! from its current row act once. Within a pass the faster act first (speed: the role's, plus
+//! from its current row act once. Within a pass the faster act first (speed: the unit's, plus
 //! `first_strike_speed` per first strike and per chance first strike rolled at the battle's
 //! start); equal speeds by a coin each mover draws at the pass's start. One unit acts at a time
 //! and each hit lands at once: a unit killed (or withdrawn, or knocked back to a row with fewer
@@ -250,23 +250,27 @@ pub struct Fighter {
     pub max_hp: i32,
     /// HP at the start of the battle, in centi-HP; 1..=`max_hp * 100`.
     pub hp: i32,
-    /// The role's speed (first strikes are added by the resolver).
+    /// Its speed before first strikes, which the resolver adds (the rules pass
+    /// `Game::unit_engage_speed`: its type's own, else its role's).
     pub speed: i32,
     pub first_strikes: i32,
     /// Rolled at the battle's start: `0..=chance` more first strikes.
     pub chance_first_strikes: i32,
-    /// What it does from each row (its role's, with a tier 4 unit's or a hero's extra action).
+    /// What it does from each row, with a tier 4 unit's or a hero's extra action
+    /// (`Game::unit_engage_actions`: its type's own rows, else its role's).
     pub actions: [RowActions; ROWS],
     /// Its A against nobody in particular, x100: the kill choice's "most dangerous", the ties and
     /// a charge's threat.
     pub a: i32,
-    /// Its role's dodge: points of miss chance on physical actions against it.
+    /// Its dodge: points of miss chance on physical actions against it
+    /// (`Game::unit_engage_dodge`).
     pub dodge: i32,
-    /// Its role's crit bonus: points on its own crit chance.
+    /// Its crit bonus: points on its own crit chance (`Game::unit_engage_crit_bonus`).
     pub crit_bonus: i32,
     /// Of an anti-flank role: enemy flankers take it first.
     pub anti_flank: bool,
-    /// A flanker (its role charges): it takes anti-flank units in its reach first.
+    /// A flanker (its rows charge: `Game::unit_engage_flanks`): it takes anti-flank units in its
+    /// reach first.
     pub flanker: bool,
     /// Withdrawal chance in percent (a defender in a city never withdraws, whatever this says).
     pub withdraw_pct: i32,
@@ -1034,7 +1038,7 @@ impl<'a> Run<'a> {
 pub struct Candidate {
     /// Its role's `iAutoPick`: the role order (lowest first).
     pub pick_order: i32,
-    /// Its role's home row.
+    /// Its role's home row (always the role's: a unit type's own `EngageRows` do not move it).
     pub home_row: u8,
     pub large: bool,
     /// Its strength with its promotions (any consistent scale; a large unit counts double).

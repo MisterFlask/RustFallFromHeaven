@@ -17,7 +17,7 @@
 
 use crate::enums::*;
 use crate::idx::IdxVec;
-use crate::infos::{CombatRoleType, InfoBase};
+use crate::infos::{read_engage_override, read_engage_rows, CombatRoleType, InfoBase, RowActions, ROWS};
 use crate::registry::Rd;
 
 // ---------------------------------------------------------------------------------------------
@@ -745,6 +745,19 @@ pub struct UnitInfo {
     /// treants, ...): it fills two cells side by side in one row and two slots, and has
     /// `ENGAGEMENT_LARGE_HP_PERCENT` of its role's HP.
     pub large: bool,
+    /// `iEngageSpeed` (-1, `None`: the role's): its speed in a formation battle before first
+    /// strikes, in place of its role's (`GameData::engage_speed`).
+    pub engage_speed: Option<i32>,
+    /// `iEngageDodge` (-1, `None`: the role's; else 0..=95): the points of miss chance on
+    /// physical actions against it, in place of its role's (`GameData::engage_dodge`).
+    pub engage_dodge: Option<i32>,
+    /// `iEngageCritBonus` (-1, `None`: the role's; else 0..=95): the points on its own crit
+    /// chance, in place of its role's (`GameData::engage_crit_bonus`).
+    pub engage_crit_bonus: Option<i32>,
+    /// `EngageRows` (three `Row`s, front, middle, rear, each an `Action` and its `iCount`): what
+    /// it does from each row, in place of its role's rows (`GameData::engage_rows`); `None`: the
+    /// role's.
+    pub engage_rows: Option<[RowActions; ROWS]>,
 }
 
 /// C++ `CvUnitInfo::read` + `readPass2` + `readPass3`.
@@ -940,6 +953,10 @@ pub fn read_unit(rd: &Rd) -> UnitInfo {
         defense_override: rd.int("iDefense"),
         hp_override: rd.int("iHP"),
         large: rd.bool("bLarge"),
+        engage_speed: read_engage_override(rd, "iEngageSpeed", &rd.string("Type"), 0..=i32::MAX),
+        engage_dodge: read_engage_override(rd, "iEngageDodge", &rd.string("Type"), 0..=95),
+        engage_crit_bonus: read_engage_override(rd, "iEngageCritBonus", &rd.string("Type"), 0..=95),
+        engage_rows: read_engage_rows(rd, &rd.string("Type")),
         // ---- readPass2 ----
         unit_convert_from_combat: rd.rf::<UnitType>("UnitConvertFromCombat"),
         unit_create_from_combat: rd.rf::<UnitType>("UnitCreateFromCombat"),

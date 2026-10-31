@@ -312,12 +312,10 @@ impl GameData {
             if !(0..=95).contains(&info.dodge) || !(0..=95).contains(&info.crit_bonus) {
                 warnings.push(format!("{}: iDodge and iCritBonus must be in 0..=95", info.base.type_));
             }
-            // A row acts iff it has an action kind; a role acts from some row.
-            if info.rows.iter().any(|row| row.count < 0 || (row.kind == ActionKind::None) != (row.count == 0)) {
-                warnings.push(format!("{}: a row has iActions above 0 exactly when its Action is not NONE", info.base.type_));
-            }
-            if info.rows.iter().all(|row| row.count == 0) {
-                warnings.push(format!("{}: no row has an action", info.base.type_));
+            // A row acts iff it has an action kind; a role acts from some row (a unit type's own
+            // EngageRows are checked so as they are read).
+            if let Some(problem) = rows_problem(&info.rows) {
+                warnings.push(format!("{}: {problem} (iActions)", info.base.type_));
             }
             if info.from_role.is_some() != info.from_promotion.is_some() {
                 warnings.push(format!("{}: FromRole and FromPromotion go together", info.base.type_));
@@ -401,6 +399,64 @@ impl GameData {
             }
         }
         best
+    }
+
+    // A unit's values in a formation battle: each is its type's own (`iEngageSpeed`,
+    // `iEngageDodge`, `iEngageCritBonus`, `EngageRows` in CIV4UnitInfos.xml), else its role's
+    // (`role`: the unit's own, which promotions can change: `Game::unit_combat_role`), else
+    // nothing (0, no action) for a unit with neither. The rules ask through `Game::unit_engage_*`.
+
+    /// A unit type's speed in a formation battle before first strikes: its `iEngageSpeed`, else
+    /// the role's.
+    pub fn engage_speed(&self, t: UnitType, role: Option<CombatRoleType>) -> i32 {
+        self.units[t].engage_speed.or_else(|| role.map(|r| self.combat_roles[r].speed)).unwrap_or(0)
+    }
+
+    /// A unit type's dodge (points of miss chance on physical actions against it): its
+    /// `iEngageDodge`, else the role's.
+    pub fn engage_dodge(&self, t: UnitType, role: Option<CombatRoleType>) -> i32 {
+        self.units[t].engage_dodge.or_else(|| role.map(|r| self.combat_roles[r].dodge)).unwrap_or(0)
+    }
+
+    /// A unit type's crit bonus (points on its own crit chance): its `iEngageCritBonus`, else the
+    /// role's.
+    pub fn engage_crit_bonus(&self, t: UnitType, role: Option<CombatRoleType>) -> i32 {
+        self.units[t].engage_crit_bonus.or_else(|| role.map(|r| self.combat_roles[r].crit_bonus)).unwrap_or(0)
+    }
+
+    /// What a unit type does from each row, front first, before the extra actions: its
+    /// `EngageRows`, else the role's rows.
+    pub fn engage_rows(&self, t: UnitType, role: Option<CombatRoleType>) -> [RowActions; ROWS] {
+        self.units[t].engage_rows.or_else(|| role.map(|r| self.combat_roles[r].rows)).unwrap_or_default()
+    }
+
+    /// A unit type's best row: the one of its rows ([`Self::engage_rows`]) with the most actions
+    /// (the first such), where a tier 4 unit or a hero gets its extra actions.
+    pub fn engage_best_row(&self, t: UnitType, role: Option<CombatRoleType>) -> usize {
+        rows_best_row(&self.engage_rows(t, role))
+    }
+
+    /// The extra actions in its best row of a unit of type `t`: `ENGAGEMENT_EXTRA_ACTIONS` for a
+    /// type of tier `ENGAGEMENT_EXTRA_ACTION_TIER` or above and for a hero (`hero`: the unit has
+    /// the Hero promotion), else 0.
+    pub fn engage_extra_actions(&self, t: UnitType, hero: bool) -> i32 {
+        if hero || self.units[t].tier >= self.defines.engagement_extra_action_tier {
+            self.defines.engagement_extra_actions
+        } else {
+            0
+        }
+    }
+
+    /// What a unit of type `t` does from each row in a battle: its rows ([`Self::engage_rows`])
+    /// with its extra actions ([`Self::engage_extra_actions`]) in its best row.
+    pub fn engage_actions(&self, t: UnitType, role: Option<CombatRoleType>, hero: bool) -> [RowActions; ROWS] {
+        rows_with_extra_actions(self.engage_rows(t, role), self.engage_extra_actions(t, hero))
+    }
+
+    /// A flanker: one of a unit type's rows ([`Self::engage_rows`]) charges, so anti-flank units
+    /// in its reach are taken first.
+    pub fn engage_flanks(&self, t: UnitType, role: Option<CombatRoleType>) -> bool {
+        rows_charge(&self.engage_rows(t, role))
     }
 
     /// The change to each side's engagement slots on a plot (added to `ENGAGEMENT_SLOTS_BASE`):
