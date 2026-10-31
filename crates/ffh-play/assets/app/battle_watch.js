@@ -330,7 +330,6 @@ function renderUI(ctx) {
 function renderControls() {
   const el = document.getElementById("bt-ctl");
   if (!el) return;
-  const ctx = W.ctx;
   el.replaceChildren();
   add(
     el,
@@ -348,7 +347,6 @@ function renderControls() {
     ),
     h("div.small.dim", { style: { marginTop: "4px" } }, W.done ? "The battle is over." : "One unit acts at a time, the fastest first; its hits land at once."),
   );
-  void ctx;
 }
 
 function setSpeed(s) {

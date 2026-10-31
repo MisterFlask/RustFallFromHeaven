@@ -322,3 +322,14 @@ test("the fixtures hold together: formations fit their grids, forecasts and logs
   assert.equal(L.resultWords(FIXTURES.raid.logs[0].log).ribbon, "VICTORY");
   assert.match(L.resultWords(FIXTURES.city.logs[0].log).line, /^The defenders hold Strages: \d+ still stand/);
 });
+
+test("the result and the names are the viewer's: a battle seen by its defender", () => {
+  const raid = { ...FIXTURES.raid.logs[0].log, viewer_side: 1 };
+  assert.deepEqual([L.resultWords(raid).ribbon, L.resultWords(raid).good], ["DEFEAT", false]);
+  const held = { ...field, viewer_side: 1 };
+  assert.deepEqual([L.resultWords(held).ribbon, L.resultWords(held).good], ["HELD", true]);
+  const giant = held.fighters.find((f) => f.name === "Hill Giant");
+  assert.equal(L.uname(held, giant.b, { side: true }), "your Hill Giant");
+  const line = L.logLines(held).find((l) => !l.head && l.parts.some((p) => p.b === giant.b));
+  assert.equal(line.parts.find((p) => p.b === giant.b).cls, "you");
+});
