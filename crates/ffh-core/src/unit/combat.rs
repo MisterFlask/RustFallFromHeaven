@@ -1221,7 +1221,7 @@ impl Game {
                 Some(a) => self.unit_ignore_building_defense(a),
                 None => true,
             };
-            modifier += self.combat_plot_defense_terms(u, p, team, ignore_building, None, log);
+            modifier += self.combat_plot_defense_terms(u, p, team, ignore_building, log);
         }
 
         // if we are attacking to an plot with an unknown defender, the calc the modifier in reverse
@@ -1354,40 +1354,25 @@ impl Game {
     /// The defensive bonuses of `u` (of `team`) defending plot `p`: the plot's defense unless the
     /// unit has no defensive bonus, its fortification, its city defense in a city, its hills,
     /// feature or terrain defense. `ignore_building`: the opponent ignores building defense.
-    /// `city_defense`: the city's defense modifier to assume (for an opponent that does not
-    /// ignore buildings) in place of its current one (an engagement estimate's planned bombard).
-    pub(crate) fn combat_plot_defense_terms(
-        &self,
-        u: UnitId,
-        p: PlotIdx,
-        team: TeamId,
-        ignore_building: bool,
-        city_defense: Option<i32>,
-        log: &mut TermLog,
-    ) -> i32 {
+    pub(crate) fn combat_plot_defense_terms(&self, u: UnitId, p: PlotIdx, team: TeamId, ignore_building: bool, log: &mut TermLog) -> i32 {
         let mut modifier = 0;
 
         if !self.unit_no_defensive_bonus(u) {
-            let value = if city_defense.is_none() && !log.listing() {
+            let value = if !log.listing() {
                 self.plot_defense_modifier(p, Some(team), ignore_building)
             } else {
-                let mut parts = self.plot_defense(p, Some(team), ignore_building);
-                if let (Some(city), Some(with_buildings)) = (self.map.plots[p].plot_city, city_defense) {
-                    parts.city = self.city_defense_modifier_at(city, ignore_building, with_buildings);
+                let parts = self.plot_defense(p, Some(team), ignore_building);
+                let cover = match self.map.plots[p].feature_type {
+                    Some(f) => TermSource::Feature(f),
+                    None => TermSource::Terrain(self.map.plots[p].terrain_type.expect("CvUnit::maxCombatStr: plot without terrain")),
+                };
+                log.push(parts.cover, || cover);
+                log.push(parts.hills, || TermSource::Hills);
+                if let Some(i) = self.map.plots[p].improvement_type {
+                    log.push(parts.improvement, || TermSource::Improvement(i));
                 }
-                if log.listing() {
-                    let cover = match self.map.plots[p].feature_type {
-                        Some(f) => TermSource::Feature(f),
-                        None => TermSource::Terrain(self.map.plots[p].terrain_type.expect("CvUnit::maxCombatStr: plot without terrain")),
-                    };
-                    log.push(parts.cover, || cover);
-                    log.push(parts.hills, || TermSource::Hills);
-                    if let Some(i) = self.map.plots[p].improvement_type {
-                        log.push(parts.improvement, || TermSource::Improvement(i));
-                    }
-                    log.push(parts.city, || TermSource::CityDefense);
-                    log.push(parts.range, || TermSource::RangeDefense);
-                }
+                log.push(parts.city, || TermSource::CityDefense);
+                log.push(parts.range, || TermSource::RangeDefense);
                 parts.total()
             };
             modifier += term!(log, plot_defense_modifier, value);
@@ -1411,20 +1396,6 @@ impl Game {
         }
 
         modifier
-    }
-
-    /// City `c`'s defense modifier against a unit that ignores building defense or not, had its
-    /// modifier with buildings been `with_buildings` (a planned bombard): the share of the
-    /// defense left is the same for both.
-    pub(crate) fn city_defense_modifier_at(&self, c: CityId, ignore_building: bool, with_buildings: i32) -> i32 {
-        if !ignore_building {
-            return with_buildings;
-        }
-        let full = self.city_total_defense(c, false);
-        if full == 0 {
-            return 0;
-        }
-        self.city_total_defense(c, true) * with_buildings / full
     }
 
     /// Attacker `a`'s bonuses against the plot `ap` it attacks, times `sign` (the duel puts them

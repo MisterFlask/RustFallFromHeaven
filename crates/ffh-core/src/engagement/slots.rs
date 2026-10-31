@@ -66,8 +66,7 @@ impl Slots {
 
 impl Game {
     /// Each side's slots for an attack from `ctx.from` on `ctx.to` (module comment). With no
-    /// approach plot (a hypothetical estimate) there is no river crossing; `ctx.city_defense`
-    /// replaces the defended city's current defense modifier (the estimator's planned bombard).
+    /// approach plot there is no river crossing.
     pub fn engage_slots(&self, ctx: &HitCtx) -> Slots {
         let d = self.d;
         let defs = &d.defines;
@@ -90,7 +89,7 @@ impl Game {
         let mut att_all = s_plot;
         if let Some(c) = self.map.plots[to].plot_city.filter(|&c| self.cities.contains(c)) {
             let div = defs.engagement_slots_defense_divisor.max(1);
-            let current = ctx.city_defense.unwrap_or_else(|| self.city_defense_modifier(c, false)).max(0);
+            let current = self.city_defense_modifier(c, false).max(0);
             // The walls as built (no bombardment), then what the bombardment knocked down.
             let full = if self.city_is_occupation(c) { 0 } else { self.city_total_defense(c, false).max(0) }.max(current);
             if full > 0 {

@@ -193,20 +193,21 @@ fn archer_in_a_walled_hill_city_fortified() {
     }
     assert_eq!(stat.terms.iter().map(|t| t.pct).sum::<i32>(), 75);
 
-    // Job strengths: the archer's Dv against a hitter not known yet is the same here; the
-    // axeman's A against the city plot keeps its city attack.
+    // Against nobody in particular: the archer's Dv against a hitter not known yet is the same
+    // here; the axeman's A against the city plot keeps its city attack.
     assert_eq!(w.g.engage_job_defense(archer, &w.ctx()), attack.dv);
-    assert_eq!(w.g.engage_job_attack(axeman, &w.ctx()), apply(400, 10));
+    assert_eq!(w.g.engage_a_alone(axeman, Side::Attacker, &w.ctx()), apply(400, 10));
 
-    // A planned bombard (the city's defense at 0) changes the slots, not Dv.
-    let bombarded = HitCtx { city_defense: Some(0), ..w.ctx() };
-    assert_eq!(w.g.engage_hit(axeman, archer, Side::Attacker, &bombarded).dv, attack.dv);
-    assert!(w.g.engage_slots(&bombarded).att() > w.g.engage_slots(&w.ctx()).att());
+    // The walls knocked down change the slots, not Dv.
+    let walled = w.g.engage_slots(&w.ctx()).att();
+    w.g.cities[city].defense_damage = d.defines.max_city_defense_damage;
+    assert_eq!(w.g.engage_hit(axeman, archer, Side::Attacker, &w.ctx()).dv, attack.dv);
+    assert!(w.g.engage_slots(&w.ctx()).att() > walled);
 }
 
 /// A city's defense (its walls, its culture) costs the attacker slots and gives the defenders' Dv
-/// nothing (revision 4): a unit that ignores building defense, a planned bombard, the defense
-/// knocked down: the same Dv; the slots follow the defense.
+/// nothing (revision 4): a unit that ignores building defense, the defense half or wholly knocked
+/// down: the same Dv; the slots follow the defense.
 #[test]
 fn a_city_s_defense_costs_slots_and_gives_dv_nothing() {
     let mut w = world();
@@ -222,19 +223,22 @@ fn a_city_s_defense_costs_slots_and_gives_dv_nothing() {
     assert!(w.g.unit_ignore_building_defense(cannon));
     let full = w.g.city_defense_modifier(city, false);
     assert!(full >= 25, "{full}");
-    for hitter in [cannon, axeman] {
-        for city_defense in [None, Some(full / 2), Some(0)] {
-            let ctx = HitCtx { city_defense, ..w.ctx() };
-            assert_eq!(w.g.engage_hit(hitter, defender, Side::Attacker, &ctx).dv, 400, "{city_defense:?}");
+    let max_damage = d.defines.max_city_defense_damage;
+    let mut slots = Vec::new();
+    for defense_damage in [0, max_damage / 2, max_damage] {
+        w.g.cities[city].defense_damage = defense_damage;
+        let ctx = w.ctx();
+        for hitter in [cannon, axeman] {
+            assert_eq!(w.g.engage_hit(hitter, defender, Side::Attacker, &ctx).dv, 400, "{defense_damage}");
             let stat = w.g.engage_stat(defender, Some(hitter), Side::Defender, false, &ctx);
             assert!(!stat.terms.iter().any(|t| t.src == TermSource::CityDefense && t.pct != 0), "{:?}", stat.terms);
         }
+        slots.push(w.g.engage_slots(&ctx).att());
     }
     // The slots: one per 25% of the defense, returned as it is knocked down.
-    let slots = |cd: Option<i32>| w.g.engage_slots(&HitCtx { city_defense: cd, ..w.ctx() }).att();
-    assert_eq!(slots(None), 10 - full / 25);
-    assert_eq!(slots(Some(0)), 10);
-    assert!(slots(Some(full / 2)) > slots(None));
+    assert_eq!(slots[0], 10 - full / 25);
+    assert!(slots[1] > slots[0], "{slots:?}");
+    assert_eq!(slots[2], 10);
 }
 
 #[test]
@@ -332,7 +336,7 @@ fn stigmata_follows_the_armageddon_counter() {
     assert!(pct > 0);
     assert_eq!(w.both_ways(attacker, defender), (Pair { a: apply(400, pct), dv: apply(400, pct) }, Pair { a: apply(400, pct), dv: apply(400, pct) }));
     // The job strengths have it too (it does not depend on the opponent).
-    assert_eq!(w.g.engage_job_attack(attacker, &w.ctx()), apply(400, pct));
+    assert_eq!(w.g.engage_a_alone(attacker, Side::Attacker, &w.ctx()), apply(400, pct));
     assert_eq!(w.g.engage_job_defense(defender, &w.ctx()), apply(400, pct));
 }
 

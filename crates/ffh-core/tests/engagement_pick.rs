@@ -192,11 +192,12 @@ fn a_city_costs_the_attacker_slots_a_bombard_returns_them_and_the_minimum_holds(
     assert_eq!(s.att(), 9);
     assert_eq!(src(&s, Side::Attacker)[2], (SlotSource::Bombarded { pct: 30 }, 1));
 
-    // The estimator's planned bombard replaces the current defense.
-    let planned = |pct| HitCtx { city_defense: Some(pct), ..w.ctx() };
-    assert_eq!(w.g.engage_slots(&planned(0)).att(), 10);
-    assert_eq!(w.g.engage_slots(&planned(24)).att(), 10);
-    assert_eq!(w.g.engage_slots(&planned(25)).att(), 9);
+    // Knocked down further: below 25% both slots are back, at 25% one is still taken.
+    for (damage, defense, att) in [(58, 25, 9), (59, 24, 10), (100, 0, 10)] {
+        w.g.cities[c].defense_damage = damage;
+        assert_eq!(w.g.city_defense_modifier(c, false), defense);
+        assert_eq!(w.slots().att(), att, "{defense}%");
+    }
     w.g.cities[c].defense_damage = 0;
 
     // Forested hills: 4 a side; the walls would leave the attacker 2: raised to SLOTS_MIN (3).

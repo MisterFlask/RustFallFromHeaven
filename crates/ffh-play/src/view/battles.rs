@@ -901,7 +901,7 @@ fn could_engage(g: &Game, u: UnitId, plot: PlotIdx) -> bool {
 pub fn unit_fields(g: &Game, u: UnitId, j: &mut Json) {
     let Some(role) = g.unit_combat_role(u) else { return };
     let Some(at) = g.unit_plot_opt(u) else { return };
-    let ctx = HitCtx { to: at, from: None, city_defense: None };
+    let ctx = HitCtx { to: at, from: None };
     j.set("engage_role", Json::idx(role));
     j.set("engage_attack", g.engage_stat(u, None, Side::Defender, true, &ctx).total_x100);
     j.set("engage_defense", g.engage_job_defense(u, &ctx));

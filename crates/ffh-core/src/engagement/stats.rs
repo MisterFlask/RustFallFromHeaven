@@ -38,8 +38,9 @@
 //! nothing (revision 4): a city, a forest or jungle and hills act through the ground's rules of a
 //! formation battle (`formation::Ground`) and the slots.
 //!
-//! **Job strengths** ([`Game::engage_job_attack`], [`Game::engage_job_defense`]): the same stats
-//! against an opponent not known yet, which the auto-pick sorts candidates by (plan 5.4).
+//! **Against nobody in particular** ([`Game::engage_a_alone`], [`Game::engage_job_defense`]): the
+//! same stats against an opponent not known yet: the auto formation's strength, a charge's threat
+//! and the view's headline.
 //!
 //! **Breakdowns** ([`Game::engage_stat`]): a stat with its parts, for the battle log and the
 //! preview.
@@ -58,18 +59,15 @@ pub struct HitCtx {
     /// The defended plot: where every unit of the defending side fights.
     pub to: PlotIdx,
     /// The plot the attack comes from (the amphibious penalty; where the attacking side fights,
-    /// for Homeland). `None`: an approach not known (a hypothetical estimate): by land, each unit
-    /// where it stands.
+    /// for Homeland). `None`: an approach not known (the view's stats): by land, each unit where
+    /// it stands.
     pub from: Option<PlotIdx>,
-    /// The defended city's defense modifier (with buildings) to assume in place of its current
-    /// one: the estimator's planned bombard. `None`: the city's own.
-    pub city_defense: Option<i32>,
 }
 
 impl HitCtx {
-    /// An attack from `from` on `to`, at the city's current defense.
+    /// An attack from `from` on `to`.
     pub fn new(from: PlotIdx, to: PlotIdx) -> HitCtx {
-        HitCtx { to, from: Some(from), city_defense: None }
+        HitCtx { to, from: Some(from) }
     }
 }
 
@@ -185,15 +183,8 @@ impl Game {
         self.engage_combat_terms(u, None, ctx, side, true, &mut TermLog::none()).strength()
     }
 
-    /// The job strength of an attacker (plan 5.4): its A against the defended plot,
-    /// with the terms that do not depend on the target (its own percentage, city attack, terrain
-    /// attack, amphibious), x100. A plot with a city or a fort counts as a city.
-    pub fn engage_job_attack(&self, u: UnitId, ctx: &HitCtx) -> i32 {
-        self.engage_combat_terms(u, None, ctx, Side::Attacker, true, &mut TermLog::none()).strength()
-    }
-
-    /// The job strength of a defender (plan 5.4): its Dv on the defended plot against a hitter not
-    /// known yet (its own percentage, fortification, its city and terrain defense), x100.
+    /// A defender's Dv on the defended plot against a hitter not known yet (its own percentage,
+    /// fortification, its city and terrain defense), x100: the view's headline.
     pub fn engage_job_defense(&self, u: UnitId, ctx: &HitCtx) -> i32 {
         self.engage_combat_terms(u, None, ctx, Side::Defender, false, &mut TermLog::none()).strength()
     }
@@ -377,7 +368,7 @@ mod tests {
     use super::*;
     use crate::unit::{CombatDetails, StrMode};
 
-    /// Over many units, opponents and plots (with and without a planned bombard): the breakdown's
+    /// Over many units, opponents and plots (with and without a known approach): the breakdown's
     /// parts sum to the modifier and give the pair table's value, and `unit_combat_terms` in the
     /// engagement modes is the same computation.
     #[test]
@@ -386,8 +377,8 @@ mod tests {
         let mut pairs = 0;
         for (i, &h) in units.iter().enumerate() {
             let to = plots[(i * 7) % plots.len()];
-            for city_defense in [None, Some(0), Some(30)] {
-                let ctx = HitCtx { to, from: Some(g.unit_plot(h)), city_defense };
+            for from in [Some(g.unit_plot(h)), None] {
+                let ctx = HitCtx { to, from };
                 for &t in units.iter().skip(i % 5).step_by(5) {
                     if t == h {
                         continue;
