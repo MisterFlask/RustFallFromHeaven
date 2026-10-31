@@ -50,6 +50,6 @@ pub use pick::{StanceChoice, WarTest};
 pub use slots::Slots;
 pub use stats::HitCtx;
 pub use resolve::{
-    resolve_sampled, resolve_sampled_quiet, targets, BattleEvent, BattleLog, BattleRng, Block, Death, EngageResult, Fate, FighterEnd, Hit, Kill, NoTarget,
-    Phase, TargetState, Targets,
+    resolve_sampled, resolve_sampled_quiet, targets, BattleEvent, BattleRng, Block, Death, EngageResult, Fate, FighterEnd, Hit, Kill, NoTarget,
+    Phase, Resolution, TargetState, Targets,
 };

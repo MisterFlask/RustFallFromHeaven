@@ -27,7 +27,7 @@ use ffh_data::*;
 
 use crate::engagement::engage::Eng;
 use crate::engagement::report::BattleReport;
-use crate::engagement::{Battle, BattleLog as RoundLog, EngageResult, Fate, Side};
+use crate::engagement::{Battle, EngageResult, Fate, Resolution, Side};
 use crate::game::Game;
 use crate::ids::*;
 use crate::structs::{TradeData, VoteSelectionSubData};
@@ -730,7 +730,7 @@ impl Game {
     /// per-unit `attack` / `defend` counts for every committed unit (so the duel's reports stay
     /// comparable), and the engagement's own counts. `estimate`: the moment estimator's win
     /// chance (per mille) for the battle as fought, for the calibration buckets.
-    pub(crate) fn tel_engagement(&self, r: &BattleReport, e: &Eng, b: &Battle, rl: &RoundLog, estimate: Option<i32>) {
+    pub(crate) fn tel_engagement(&self, r: &BattleReport, e: &Eng, b: &Battle, rl: &Resolution, estimate: Option<i32>) {
         let d = self.d;
         let turn = self.game_turn();
         let (pa, pd) = (r.sides[0].player, r.sides[1].player);

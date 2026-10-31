@@ -43,7 +43,7 @@ use ffh_data::*;
 use super::battle::{damage_from_hp, Battle, FighterIdx, Side};
 use super::engage::Eng;
 use super::report::{HealSource, KillKind, LogEvent, Stage, XpSource};
-use super::resolve::{BattleLog as RoundLog, EngageResult, Fate};
+use super::resolve::{EngageResult, Fate, Resolution};
 use super::sink::Sink;
 use crate::game::Game;
 use crate::ids::*;
@@ -66,11 +66,11 @@ pub(crate) struct Post {
     pub routed: i32,
 }
 
-fn killed(r: &RoundLog, i: usize) -> bool {
+fn killed(r: &Resolution, i: usize) -> bool {
     matches!(r.fighters[i].fate, Fate::Killed { .. })
 }
 
-fn survived(r: &RoundLog, i: usize) -> bool {
+fn survived(r: &Resolution, i: usize) -> bool {
     matches!(r.fighters[i].fate, Fate::Survived | Fate::Withdrew { .. })
 }
 
@@ -81,7 +81,7 @@ impl Game {
     }
 
     /// The post-battle steps (module comment).
-    pub(crate) fn engage_post(&mut self, e: &mut Eng, b: &Battle, r: &RoundLog, sink: &mut Option<Sink>) -> Post {
+    pub(crate) fn engage_post(&mut self, e: &mut Eng, b: &Battle, r: &Resolution, sink: &mut Option<Sink>) -> Post {
         let d = self.d;
         let n = e.units.len();
         let to = e.to;

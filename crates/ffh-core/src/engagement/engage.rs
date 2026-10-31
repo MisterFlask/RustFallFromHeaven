@@ -52,7 +52,7 @@ use super::pick::{StanceChoice, WarTest};
 use super::resolve::{resolve_sampled, resolve_sampled_quiet, targets, EngageResult, TargetState, Targets};
 use super::apply::Post;
 use super::report::{BattleLog, BattleReport, CitySnap, Outcome, PlotSnap, ReportSide};
-use super::resolve::{BattleLog as RoundLog, Fate};
+use super::resolve::{Fate, Resolution};
 use super::sink::Sink;
 use super::slots::Slots;
 use super::stats::HitCtx;
@@ -224,7 +224,7 @@ impl Game {
     /// Phase 7 hook (plan 6.7 step 6, 14): the post-battle spells cast after battle `b` as it
     /// ended (`r`), once the medics have healed: `Cast` records whose writes to `Game` the
     /// post-battle steps make. None in phase 6.
-    pub(crate) fn engage_post_battle_spells(&self, _b: &Battle, _r: &RoundLog) -> Vec<BattleEffect> {
+    pub(crate) fn engage_post_battle_spells(&self, _b: &Battle, _r: &Resolution) -> Vec<BattleEffect> {
         Vec::new()
     }
 
@@ -428,7 +428,7 @@ impl Game {
     }
 
     /// The report of engagement `e` (plan 9.1, 15.5).
-    fn engage_report(&self, e: &Eng, r: &RoundLog, post: &Post, log: Option<BattleLog>) -> BattleReport {
+    fn engage_report(&self, e: &Eng, r: &Resolution, post: &Post, log: Option<BattleLog>) -> BattleReport {
         let sides = [Side::Attacker, Side::Defender].map(|s| {
             let (player, shown_player, players) = e.players[s.index()].clone();
             let stance = e.stances[s.index()];
