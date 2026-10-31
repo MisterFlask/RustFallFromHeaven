@@ -118,8 +118,8 @@ every list. Requisition needs a target size: an army with none (0) requisitions 
   unit that can take the city attack role: strength times its city attack bonus), else the
   strongest attacker; only army units the city can train, and no world or national unit (a class
   with an instance limit: a hero, a Paladin, a Knight are few, and the player places them; ties:
-  the cheaper). A picked city that can train none is skipped that turn. The AI's: the governors' old feeding choice
-  (`ffh-ai armies::requisition_unit`).
+  the cheaper). A picked city that can train none is skipped that turn. The AI's: the governors'
+  old feeding choice (`ffh-ai armies::requisition_unit`).
 
 **Marching recruits** (`army/march.rs`). A unit bound elsewhere is created in the producing city as
 a normal unit (build effects, experience, promotions, upkeep, unit class limits: all as for any
