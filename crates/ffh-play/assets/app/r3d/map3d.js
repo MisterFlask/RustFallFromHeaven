@@ -82,6 +82,8 @@ export class Map3D {
     this.canvas = document.createElement("canvas");
     this.canvas.className = "map3d";
     Object.assign(this.canvas.style, { position: "absolute", inset: "0", width: "100%", height: "100%", display: "block", pointerEvents: "none" });
+    // It fades in on its first frame (render), over the map's backdrop or what MapView drew.
+    Object.assign(this.canvas.style, { opacity: "0", transition: view.reduceMotion() ? "none" : "opacity 0.3s" });
     view.canvas.before(this.canvas);
     // The 2D canvas on top now only carries marks: transparent.
     view.canvas.style.background = "transparent";
@@ -988,6 +990,10 @@ export class Map3D {
     this.beforeFrame(cam, fr);
     this.pipeline.measure = !!this.measuring;
     this.pipeline.render(fr, this.scene, qc, cw, ch);
+    if (!this.frames) {
+      this.canvas.style.opacity = "1";
+      performance.mark("r3d:first-frame");
+    }
     this.cam = cam;
     drawHud(this, cam);
     const ms = performance.now() - t0;

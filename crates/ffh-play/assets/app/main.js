@@ -736,6 +736,9 @@ async function boot() {
   // interface, the isometric skin, not in the 2D art's that it dropped when the HD-2D map was ready
   // -- after building it for a second or two, in the middle of the HD-2D map's start.)
   hd2dPending = rendererChoice() === "hd2d" && fastStart();
+  // Nor the flat map: the HD-2D map is the first map the player sees, the map's backdrop until then
+  // (MapView.holdBackdrop: the flat map after 10 s, so the player can act).
+  if (hd2dPending) mapView.holdBackdrop(true);
   // The HD-2D map (docs/HD2D.md), the default, built on the 3D renderer (docs/R3D.md): loaded on
   // demand; where it cannot run (no WebGL2, a software one, shaders too slow) the isometric map.
   // (fastStart: its import is asked for before the interface is dressed, a few hundred ms of
@@ -778,7 +781,7 @@ function lookLoaded() {
 function setRenderer(r) {
   // (A 3D map still starting gives way to it, MapView.useR3d.)
   mapView.ask(r);
-  if (r !== "hd2d") hd2dPending = false;
+  if (r !== "hd2d") endHd2dPending();
   if (r === "hd2d") {
     useHd2d();
     return;
@@ -793,8 +796,15 @@ function setRenderer(r) {
   syncSkin();
 }
 
-/** An HD-2D map is starting (main.js boot, fastStart): the interface is already its own. */
+/** An HD-2D map is starting (main.js boot, fastStart): the interface is already its own, and the
+ *  flat map is not drawn meanwhile. */
 let hd2dPending = false;
+
+/** The boot's HD-2D start is over (or given up for another renderer). */
+function endHd2dPending() {
+  hd2dPending = false;
+  mapView.holdBackdrop(false);
+}
 
 /** The interface follows the map: the isometric map's own (isoui.js) while it or the HD-2D map
  *  (which draws the same sprites, full bleed under the floating panels, as its look target) draws,
@@ -834,7 +844,7 @@ async function useHd2d() {
   const slow = setTimeout(say, 1500);
   window.addEventListener("ffh:r3d-compiling", say);
   const ok = await mapView.useR3d(true, "hd2d");
-  hd2dPending = false;
+  endHd2dPending();
   note?.click();
   clearTimeout(slow);
   window.removeEventListener("ffh:r3d-compiling", say);

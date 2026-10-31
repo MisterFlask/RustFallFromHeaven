@@ -35,6 +35,9 @@ const SCROLL_MIN = 480;
 const SCROLL_MAX = 1000;
 const SCROLL_EASE_S = 0.07;
 const SCROLL_REST = 8;
+/** How long after the game's map came the flat renderer draws only its backdrop while the page's
+ *  HD-2D map starts (`holdBackdrop`): then the flat map, so the player can act (ms). */
+const BACKDROP_MS = 10000;
 /** The city screen's panels over the map (iso.css, `.city-overlay`): the CSS px they take at each
  *  side, above and below; the city is framed in what is left (`frameCity`). */
 const CITY_FRAME = { side: 384, top: 150, bottom: 84 };
@@ -130,6 +133,11 @@ export class MapView {
      *  and a count of the asks: a 3D renderer whose start ends after an ask for another renderer
      *  gives way to it (`useR3d`). */
     this.want = { mode: null, gen: 0 };
+    /** While the page's HD-2D map starts (main.js boot, `holdBackdrop`): the flat renderer draws only
+     *  its backdrop -- its dark fill and the minimap -- not the flat map, so the HD-2D map is the
+     *  first map the player sees. */
+    this.backdrop = false;
+    this.backdropTimer = 0;
     this.queued = false;
     /** An in-flight camera glide (`glideTo`): `{ sx, sy, dx, dy, t0, dur }`, else null. Direct
      *  manipulation (drag, zoom, pan) cancels it; `prefers-reduced-motion` skips it. */
@@ -300,7 +308,8 @@ export class MapView {
   /** The plot under pointer event `ev`: a figure drawn there, else the ground (`ground`: the
    *  ground only). */
   plotAt(ev, { ground = false } = {}) {
-    if (!this.map) return null;
+    // (No map drawn under the backdrop: nothing to point at.)
+    if (!this.map || this.backdropDrawn()) return null;
     const r = this.canvas.getBoundingClientRect();
     if (this.iso) return this.iso.screenToMap(ev.clientX - r.left, ev.clientY - r.top, { ground });
     if (this.r3d) return this.r3d.screenToMap(ev.clientX - r.left, ev.clientY - r.top);
@@ -732,6 +741,21 @@ export class MapView {
     this.request();
   }
 
+  /** The flat map held back while the page's HD-2D map starts (main.js boot, `on`) or not: the
+   *  backdrop drawn instead (`backdrop`), until BACKDROP_MS after the game's map came (`setMap`) --
+   *  then the flat map, so the player can act; the HD-2D map still takes over when it is ready. */
+  holdBackdrop(on) {
+    this.backdrop = on;
+    clearTimeout(this.backdropTimer);
+    if (on && this.map) this.backdropTimer = setTimeout(() => this.holdBackdrop(false), BACKDROP_MS);
+    this.request();
+  }
+
+  /** Whether the backdrop is what is drawn (no other renderer draws the map). */
+  backdropDrawn() {
+    return this.backdrop && !this.r3d && !this.iso && !this.art;
+  }
+
   /** A renderer is asked for (main.js setRenderer, before it switches): a 3D renderer still
    *  starting that is not that one gives way to it when its start ends (`useR3d`). */
   ask(mode) {
@@ -860,6 +884,8 @@ export class MapView {
       this.flashes = [];
       this.cam = T.clampCamera(this.cam, map);
       this.resize();
+      // (The backdrop's wait runs from here: the map has come.)
+      if (this.backdrop && !prev) this.holdBackdrop(true);
     }
     this.request();
     return first;
@@ -915,7 +941,7 @@ export class MapView {
     g.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     g.fillStyle = "#07080a";
     g.fillRect(0, 0, this.vw, this.vh);
-    if (!this.map) {
+    if (!this.map || this.backdrop) {
       this.drawMini();
       return;
     }
