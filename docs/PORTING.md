@@ -120,8 +120,9 @@ side)
   city's queue that interrupts its production (which keeps its progress) and cannot be taken off
   by hand. A trained land combat unit goes to its order's destination (the city's garrison by
   default, another city's garrison, or an army): anywhere but its own garrison it is created in
-  the city as any unit and marches there, moved by the rules once a turn before its owner plays
-  (it takes no orders, never attacks, can be attacked and killed), advancing toward an army only
+  the city as any unit and marches there, moved by the rules once a turn at the end of its
+  owner's turn, after its owner moved (it takes no orders, never attacks, can be attacked and
+  killed), advancing toward an army only
   while the army is in supply (within 3 plots of the owner's trade network); 5 turns without
   progress or a destination gone send it to the nearest garrison it can reach. Form, split, join
   and merge, garrison, rename, disband (march to the nearest garrison), upgrade all, target size,

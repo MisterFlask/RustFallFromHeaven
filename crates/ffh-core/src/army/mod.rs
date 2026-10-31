@@ -31,8 +31,8 @@
 //! unit goes to its order's destination (`OrderData::dest`, else the city's default
 //! `City::recruit_default`, else the city's own garrison): to the garrison it stays, as without
 //! armies; to another city's garrison or to an army it is created in the city as any unit and
-//! *marches* there (`Unit::march`): the rules move it once a turn, before its owner plays, and it
-//! takes no orders until it arrives.
+//! *marches* there (`Unit::march`): the rules move it once a turn, at the end of its owner's turn
+//! (after its owner moved, before the cities produce), and it takes no orders until it arrives.
 //!
 //! **Supply.** An army is in supply within `ARMY_SUPPLY_RANGE` plots of a plot connected to one of
 //! its owner's cities (the owner's plot groups, which decide trade and resource connections). Out

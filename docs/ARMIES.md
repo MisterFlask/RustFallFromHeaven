@@ -126,19 +126,22 @@ a normal unit (build effects, experience, promotions, upkeep, unit class limits:
 unit) and marches (`Unit::march`: its destination, the turns without progress, the turn it left,
 the city it came from, whether it was diverted): the rules move it, not its owner.
 
-- *Movement*: once a turn as its owner's turn begins, after its units' turn gave them their moves
-  and before the controller plays (so neither the human nor the AI moves it), it moves with its
-  moves along the rules' path (as a go-to order would: terrain, roads, borders, war; recomputed
-  every step) to where its destination is then (an army's plot, recomputed every turn; a garrison's
-  city). It never attacks and never declares war: a step that would be an attack, or that it
-  cannot simply move into, is not taken, and the path goes around visible enemy units when it
-  can. It then holds for the rest of the turn. Deterministic: the units in their owner's order, the
-  path finder's own tie-breaks.
-- *Arrival*: in the destination city it joins the garrison (in no army). An army takes it when it
-  stands on the army's plot as its march begins (the army came to it) or at the end of its owner's
-  turn processing (before the army sync), so that a recruit that reached the army with its moves
-  spent never holds the army back for the rest of the turn; if the army moved on meanwhile, it
-  marches on. Either way it is an ordinary unit from then on. A message each.
+- *Movement*: once a turn at the end of its owner's turn (the start of its turn processing,
+  before the army sync, the requisition and the cities' production), it moves with the moves it
+  kept through the turn along the rules' path (as a go-to order would: terrain, roads, borders,
+  war; recomputed every step) to where its destination is after its owner moved (an army's plot,
+  recomputed every turn; a garrison's city). Through the turn it holds (put on hold again as its
+  owner's units get their moves), so neither the human nor the AI moves it and it waits for no
+  orders. A recruit trained this turn first moves at the end of the next one: as many moving
+  turns as any new unit has. It never attacks and never declares war: a step that would be an
+  attack, or that it cannot simply move into, is not taken, and the path goes around visible enemy
+  units when it can. Deterministic: the units in their owner's order, the path finder's own
+  tie-breaks.
+- *Arrival*: on its destination's plot it arrives at once: in the destination city it joins the
+  garrison (in no army); on the army's plot it joins the army, whose moves this turn are over (an
+  army that came to it during the turn takes it as its march begins; a last pass before the army
+  sync takes any recruit left on its destination's plot). It is an ordinary unit from then on. A
+  message each.
 - *Supply gates progress*: a recruit bound for an army advances only while the army is in supply;
   otherwise it waits where it is.
 - *No way there*: a turn without progress (the army out of supply, no path, the way blocked, it
@@ -195,9 +198,14 @@ reinforcement pauses: no attrition in v1 (the spec).
 - **One requisition order per city and army.** A city picked by two armies serves both (each order
   at the front, in the order they were placed); an army takes one unit from a city at a time, so a
   fast city does not fill it alone while others stand idle.
-- **A recruit that reaches its army with its moves spent joins at the turn's end.** Joining at once
-  would leave it without moves inside the army's group, and the army's next move this turn would
-  split it off as a new one-unit army (Civ4 moves a group only with the units that can move).
+- **Recruits march at the end of their owner's turn.** They march after their army moved, toward
+  where it stands then, and join it at once on its plot. Marching as the turn began, a recruit
+  stopped on the army's plot of that moment and the army then moved on: an army that moves every
+  turn was never caught, even by a faster recruit or one on roads, until it halted for a whole
+  turn. And a recruit joining with its moves spent mid-turn would hold the army back (Civ4 moves a
+  group only with the units that can move). At the turn's end the army's moves are over, so a
+  recruit joins with nothing held back, and the cities produce after the march (a recruit trained
+  this turn first moves at the end of the next, as any new unit first moves in the next turn).
 - **A diverted recruit stalls once.** A second stall of `ARMY_TRANSIT_STALL_TURNS` turns (or no
   city it can reach) ends its march where it stands: an ordinary unit, its owner's again, rather
   than a recruit hopping between blocked cities out of its owner's hands.

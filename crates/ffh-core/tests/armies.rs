@@ -3,6 +3,7 @@
 use ffh_core::army::RecruitDest;
 use ffh_core::game::Game;
 use ffh_core::ids::*;
+use ffh_core::map::{Map, MapInitData};
 use ffh_core::setup::GameSetup;
 use ffh_data::*;
 
@@ -82,13 +83,61 @@ fn train_for(g: &mut Game, c: CityId, dest: Option<RecruitDest>) -> UnitId {
     *g.players[p0].units.iter().find(|u| !before.contains(u)).expect("a new unit")
 }
 
-/// A turn of player 0's units: their moves back, the marching recruits march (as the turn
-/// begins), then the end-of-turn joining (as its turn processing does).
-fn march_turn(g: &mut Game) {
+/// A duel game with armies on whose map is one flat block of grassland (x 2..=17, y 3..=8) in an
+/// ocean, revealed to both players (as ffh-ai's testkit), its starting units gone and player 0's
+/// turn active (so that a go-to order starts at once).
+fn flat_game() -> Game {
+    let d = ffh_data::global();
+    let mut setup = GameSetup::standard(d, 2, "WORLDSIZE_DUEL", 5);
+    setup.options[GameOptionType::GAMEOPTION_ARMIES] = true;
+    setup.options[GameOptionType::GAMEOPTION_NO_BARBARIANS] = true;
+    let mut g = Game::new(d, setup);
+    g.game_init();
+    g.log.enabled = true;
+    for u in g.players.iter().flat_map(|pl| pl.units.clone()).collect::<Vec<_>>() {
+        if g.units.contains(u) {
+            g.unit_kill(u, false, None);
+        }
+    }
+    let (np, nt) = (g.num_players(), g.num_teams());
+    g.map = Map::new(d, &MapInitData { grid_w: 20, grid_h: 12, ..Default::default() }, np, nt);
+    let (grass, coast) = (d.t::<TerrainType>("TERRAIN_GRASS"), d.t::<TerrainType>("TERRAIN_COAST"));
+    for q in g.map.plot_ids() {
+        let (x, y) = g.map.xy(q);
+        let land = (3..=8).contains(&y) && (2..=17).contains(&x);
+        g.plot_set_plot_type(q, if land { PlotType::PLOT_LAND } else { PlotType::PLOT_OCEAN }, false);
+        g.plot_set_terrain_type(q, if land { grass } else { coast }, false);
+    }
+    g.map_recalculate_areas();
+    g.update_plot_groups();
+    for t in g.team_ids() {
+        for q in g.map.plot_ids() {
+            g.plot_set_revealed(q, t, true, false, None, false);
+        }
+    }
+    g.update_plot_groups();
+    g.players[PlayerId(0)].turn_active = true;
+    g
+}
+
+/// The start of player 0's turn: its units' turn (their moves back; the marching recruits hold).
+fn turn_start(g: &mut Game) {
+    g.player_do_turn_units(PlayerId(0));
+}
+
+/// The end of player 0's turn, as its turn processing begins: the marching recruits march with the
+/// moves they kept and join on their destination's plot, then the armies are settled.
+fn turn_end(g: &mut Game) {
     let p0 = PlayerId(0);
-    g.player_do_turn_units(p0);
+    g.player_do_march(p0);
     g.player_march_join(p0);
     g.player_army_sync(p0);
+}
+
+/// A turn of player 0's without its own moves: [`turn_start`], then [`turn_end`].
+fn march_turn(g: &mut Game) {
+    turn_start(g);
+    turn_end(g);
 }
 
 #[test]
@@ -170,19 +219,93 @@ fn a_recruit_is_a_real_unit_that_marches_to_its_army_and_joins_it() {
     while g.units[u].march.is_some() {
         turns += 1;
         assert!(turns <= 20, "arrived");
-        march_turn(&mut g);
-        // The rules moved it, and it holds for the rest of the turn.
+        // Through its owner's turn it holds where it is (its owner does not move it)...
+        turn_start(&mut g);
+        assert_eq!(g.unit_plot(u), last, "it waits for the turn's end");
+        assert_eq!(g.groups[g.units[u].group.unwrap()].activity_type, ActivityType::ACTIVITY_HOLD);
+        // ...and the rules move it at the turn's end.
+        turn_end(&mut g);
         if g.units[u].march.is_some() {
             assert_ne!(g.unit_plot(u), last, "progress each turn");
             assert_eq!(g.groups[g.units[u].group.unwrap()].activity_type, ActivityType::ACTIVITY_HOLD);
         }
         last = g.unit_plot(u);
     }
+    assert!(turns <= eta, "joined a stationary army within its estimate: {turns} turns, {eta} estimated");
     assert_eq!(g.units[u].army, Some(army), "joined the army");
     assert_eq!(g.army_units(army).len(), units.len() + 1);
     assert_eq!(g.unit_plot(u), g.army_plot(army).unwrap());
     assert_eq!(g.units[u].group, g.armies[army].group, "in its group");
     assert!(g.log.entries.iter().any(|m| m.text.contains("joined the 1st Army")), "told");
+}
+
+/// The march runs at the end of its owner's turn, after the army moved: a recruit faster than an
+/// army on a multi-turn go-to (a Horseman, 3 moves, behind two Warriors walking one plot a turn)
+/// catches up with it on the way, within its estimated arrival and a turn. (Marching as the turn
+/// began, it stopped on the army's plot of that moment and the army walked on: it never joined
+/// while the army moved.)
+#[test]
+fn a_faster_recruit_catches_up_with_an_army_on_the_move() {
+    let mut g = flat_game();
+    let p0 = PlayerId(0);
+    // Cities along the way keep the army in supply (3 plots of a city).
+    let home = g.player_init_city(p0, 3, 4, true, true);
+    for x in [8, 13] {
+        g.player_init_city(p0, x, 4, true, true);
+    }
+    let w = warrior(&g);
+    let units: Vec<UnitId> = (0..2).map(|_| g.player_init_unit(p0, w, 9, 5, None, None)).collect();
+    let army = g.army_form(p0, &units).unwrap();
+    let grp = g.armies[army].group.unwrap();
+    // A go-to seven plots east: it starts at once (this turn's step), then a plot a turn.
+    g.group_push_mission(grp, MissionType::MISSION_MOVE_TO, 16, 5, 0, false, false, None, None, None);
+    assert_eq!(g.army_plot(army), g.map.plot_xy(10, 5));
+    // As the turn ends, the home city trains a Horseman for the army.
+    let horseman = g.d.t::<UnitType>("UNIT_HORSEMAN");
+    assert_eq!(g.d.units[horseman].moves, 3);
+    let u = g.player_init_unit(p0, horseman, 3, 4, None, None);
+    g.unit_recruit_to(u, home, RecruitDest::Army(army));
+    let eta = g.unit_march_eta(u).expect("a way there");
+    assert!(eta >= 2, "a march of some turns: {eta}");
+    let mut turns = 0;
+    while g.units[u].march.is_some() {
+        turns += 1;
+        assert!(turns <= eta + 1, "joined within its estimate and a turn ({eta})");
+        turn_start(&mut g);
+        // The army walks on (its owner's move), the recruit holds...
+        let before = g.army_plot(army);
+        g.group_auto_mission(grp);
+        assert_ne!(g.army_plot(army), before, "the army moves every turn");
+        // ...and marches after it as the turn ends.
+        turn_end(&mut g);
+        assert!(g.army_in_supply(army));
+    }
+    assert_eq!(g.units[u].army, Some(army), "joined the army");
+    assert_eq!(g.units[u].group, Some(grp), "in its group");
+    let (ax, _) = g.map.xy(g.army_plot(army).unwrap());
+    assert!(ax < 16, "on the way, before the army's go-to ended (at x {ax})");
+    assert!(g.log.entries.iter().any(|m| m.text.contains("joined the 1st Army")), "told");
+}
+
+/// A recruit trained next to a stationary army joins it at the end of its owner's next turn, as
+/// soon as it can first move (as before the march moved to the turn's end).
+#[test]
+fn a_recruit_trained_next_to_a_stationary_army_joins_the_next_turn() {
+    let mut g = flat_game();
+    let p0 = PlayerId(0);
+    let home = g.player_init_city(p0, 3, 4, true, true);
+    let w = warrior(&g);
+    let units: Vec<UnitId> = (0..2).map(|_| g.player_init_unit(p0, w, 4, 5, None, None)).collect();
+    let army = g.army_form(p0, &units).unwrap();
+    let u = train_for(&mut g, home, Some(RecruitDest::Army(army)));
+    assert_eq!(g.unit_march_eta(u), Some(1));
+    turn_start(&mut g);
+    assert!(g.unit_march(u).is_some(), "it holds through the turn");
+    assert_eq!(g.unit_plot(u), g.city_plot(home));
+    turn_end(&mut g);
+    assert!(g.unit_march(u).is_none(), "arrived");
+    assert_eq!(g.units[u].army, Some(army));
+    assert_eq!(g.army_units(army).len(), 3);
 }
 
 #[test]

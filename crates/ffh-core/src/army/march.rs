@@ -4,20 +4,23 @@
 //! A finished land combat unit bound elsewhere (an army, another city's garrison) is created in
 //! the city that trained it as any unit is (build effects, experience, promotions, upkeep, unit
 //! class limits) and marches to its destination (`Unit::march`): the rules move it, not its
-//! owner, once a turn as its owner's turn begins ([`Game::player_do_march`], after its units' turn
-//! restored their moves and before the controller plays), with its moves, along the rules' path to
-//! where the destination is then (an army's plot, recomputed every turn; a garrison's city). It
-//! never attacks: a step that would be an attack is not taken, and the path goes around visible
-//! enemy units when it can. It is a real unit on the way (it can be attacked, defends itself, can
-//! die), in no army and no garrison, and it takes no orders: [`Game::unit_march`] says it marches
-//! and [`Game::unit_march_refusal`] why it takes none.
+//! owner, once a turn at the end of its owner's turn ([`Game::player_do_march`], the start of its
+//! turn processing, before the army sync, the requisition and the cities' production), with the
+//! moves it kept through the turn, along the rules' path to where the destination is after its
+//! owner moved (an army's plot, recomputed every turn; a garrison's city). Through the turn it
+//! holds ([`Game::player_march_hold`], as its owner's units get their moves): its owner does not
+//! move it, and it waits for no orders. A recruit trained this turn first moves at the end of the
+//! next, as any new unit first moves in the next turn. It never attacks: a step that would be an
+//! attack is not taken, and the path goes around visible enemy units when it can. It is a real
+//! unit on the way (it can be attacked, defends itself, can die), in no army and no garrison, and
+//! it takes no orders: [`Game::unit_march`] says it marches and [`Game::unit_march_refusal`] why
+//! it takes none.
 //!
-//! - **Arrival.** In the destination city it joins the garrison at once. An army takes it at once
-//!   when it stands on the army's plot as its march begins (the army came to it); one that
-//!   reaches the army with its moves spent waits on the army's plot and joins at the end of its
-//!   owner's turn ([`Game::player_march_join`], before the army sync), so that a recruit without
-//!   moves never holds the army back for the rest of the turn; if the army moved on, it marches
-//!   on next turn.
+//! - **Arrival.** On its destination's plot it arrives at once: the garrison of its city, or the
+//!   army (the army's moves this turn are over, so a recruit that joins with its moves spent holds
+//!   nothing back; with the army moving every turn, a recruit faster than it catches up). An army
+//!   that came to it during the turn takes it as its march begins. [`Game::player_march_join`]
+//!   then takes any recruit left on its destination's plot, before the army sync.
 //! - **Supply gates progress**: toward an army out of supply it waits where it is.
 //! - **Stalls.** A turn without progress (the army out of supply, no path, the way blocked, it
 //!   cannot move) counts; after `ARMY_TRANSIT_STALL_TURNS` such turns in a row it marches to the
@@ -149,8 +152,27 @@ impl Game {
         self.log.msg_at(turn, Some(p), self.map.xy(here), || format!("{name} marches to {to}."));
     }
 
-    /// Player `p`'s marching recruits, once a turn as its turn begins (after its units' turn,
-    /// before its controller plays): each marches with its moves.
+    /// Player `p`'s marching recruits as its turn begins (its units' turn, after their groups'
+    /// turn woke them and gave them their moves): each is alone in its group and holds, so that
+    /// its owner does not move it and it waits for no orders through the turn (it marches at the
+    /// turn's end, [`Game::player_do_march`]).
+    pub fn player_march_hold(&mut self, p: PlayerId) {
+        if !self.armies_on() {
+            return;
+        }
+        for u in self.players[p].units.clone() {
+            if self.units.contains(u) && self.units[u].march.is_some() {
+                self.unit_march_detach(u);
+                if let Some(grp) = self.units[u].group.filter(|&g| self.groups.contains(g)) {
+                    self.group_set_activity_type(grp, ActivityType::ACTIVITY_HOLD);
+                }
+            }
+        }
+    }
+
+    /// Player `p`'s marching recruits, once a turn at the end of its turn (the start of its turn
+    /// processing, before the army sync): each marches with the moves it kept, toward where its
+    /// destination is after its owner moved, and arrives on its destination's plot.
     pub fn player_do_march(&mut self, p: PlayerId) {
         if !self.armies_on() {
             return;
@@ -163,9 +185,9 @@ impl Game {
         }
     }
 
-    /// The end of player `p`'s turn (its turn processing, before the army sync): its recruits
-    /// standing on their destination's plot arrive (one that reached its army with its moves
-    /// spent waited there for the turn's end).
+    /// The end of player `p`'s turn (its turn processing, after the march and before the army
+    /// sync): its recruits standing on their destination's plot arrive (the march's catch-all:
+    /// one that reached it is in already).
     pub fn player_march_join(&mut self, p: PlayerId) {
         if !self.armies_on() {
             return;
@@ -224,8 +246,8 @@ impl Game {
         self.recruit_dest_plot(p, dest)
     }
 
-    /// Marching unit `u`'s turn: it moves toward its destination with its moves (see the module
-    /// comment), and holds for the rest of the turn.
+    /// Marching unit `u`'s march at the end of its owner's turn: it moves toward its destination
+    /// with the moves it kept (see the module comment), arriving there if it gets there.
     fn unit_march_step(&mut self, u: UnitId) {
         let p = self.units[u].owner;
         self.unit_march_detach(u);
@@ -272,11 +294,11 @@ impl Game {
             return;
         }
         let here = self.unit_plot(u);
-        if here == to && matches!(dest, RecruitDest::Garrison(_)) {
+        // There: the garrison, or the army, whose moves this turn are over.
+        if here == to {
             self.unit_march_arrive(u);
             return;
         }
-        // On its army's plot with its moves spent: it joins at the turn's end.
         let moved = here != start;
         let stalled = {
             let m = self.units[u].march.as_mut().expect("marching");
@@ -306,7 +328,7 @@ impl Game {
                 }
             }
         }
-        // The rest of its turn it holds: it is not its owner's to move.
+        // It holds until its owner's next turn wakes it (and `player_march_hold` holds it again).
         if let Some(grp) = self.units.get(u).filter(|x| x.march.is_some()).and_then(|x| x.group).filter(|&g| self.groups.contains(g)) {
             self.group_set_activity_type(grp, ActivityType::ACTIVITY_HOLD);
         }
