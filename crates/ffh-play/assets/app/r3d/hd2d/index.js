@@ -15,7 +15,7 @@
 import { Map3D } from "../map3d.js";
 import { loadConfig, saveConfig, withPreset, PANEL } from "../config.js";
 import { clamp, smoothstep } from "../math.js";
-import { STORE, LIGHT, DEFAULTS_HD2D, PRESETS_HD2D, PANEL_HD2D } from "./config.js";
+import { STORE, LIGHT, DEFAULTS_HD2D, PRESETS_HD2D, PANEL_HD2D, TERRAIN_LEAN } from "./config.js";
 import { SpriteLayer } from "./sprites.js";
 import { Hd2dPasses } from "./passes.js";
 import { dressSpriteStatic, dressSpriteUnits } from "./dress.js";
@@ -133,7 +133,16 @@ export class MapHd2d extends Map3D {
    *  own marks, and they showed only as a few flower flecks at the closest zoom, for 0.5 ms a 1080p
    *  frame and about a second of the start on Direct3D (docs/HD2D.md §8). */
   terrainDefines() {
-    return { NO_DABS: 1 };
+    const d = { NO_DABS: 1 };
+    // The lean terrain (config.js terrainLean; read once, when the programs are built): the parts of
+    // the ground's painting this mode shows little of, computed more cheaply (shaders.js LEAN_*).
+    if ((this.cfg.terrainLean ?? 0) > 0) Object.assign(d, TERRAIN_LEAN);
+    // A development switch, one page's: `?r3d={"terrainDefs":"LEAN_FBM=3,LEAN_POOL"}` adds defines.
+    for (const kv of String(this.cfg.terrainDefs ?? "").split(",").filter(Boolean)) {
+      const [k, v = "1"] = kv.split("=");
+      d[k.trim()] = v.trim();
+    }
+    return d;
   }
 
   saveCfg(cfg) {
