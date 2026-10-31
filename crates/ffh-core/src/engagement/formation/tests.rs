@@ -608,6 +608,64 @@ fn splash() {
     assert_eq!((e.spell, e.target, e.hits.len(), e.hits[0].dmg), (None, Some(2), 1, EVEN * 60 / 100));
 }
 
+/// Barrage's collateral extra and Drill's collateral protection scale a collateral splash (not
+/// the hit on the target, not a known spell's splash); full protection keeps a unit out of it.
+#[test]
+fn barrage_and_drill_scale_the_collateral_splash() {
+    use Side::*;
+    let mut berserker = frontline(Attacker, 0, 0);
+    berserker.speed = 9;
+    berserker.actions[0].count = 1;
+    berserker.collateral_limit = Some(100);
+    berserker.collateral_extra = 100; // Barrage III
+    let mut drilled = frontline(Defender, 0, 0);
+    drilled.collateral_protection = 40; // Drill III and IV
+    let mut proof = frontline(Defender, 2, 0);
+    proof.collateral_protection = 100;
+    let fs = vec![
+        berserker,
+        hurt(frontline(Defender, 1, 0), 11000), // 1: the target (the most hurt)
+        drilled,                                // 2: beside it
+        proof,                                  // 3: beside it
+        frontline(Defender, 1, 1),              // 4: behind it
+    ];
+    let b = one_round(battle(OPEN, fs));
+    assert_eq!(b.expected(0, 1, K::Strike, 1, false), EVEN, "the target's hit is a hit");
+    // A splash: 50%, x 200% (Barrage III); x 60% on the drilled unit; nothing through 100%.
+    assert_eq!(b.expected(0, 4, K::Strike, 1, true), EVEN);
+    assert_eq!(b.expected(0, 2, K::Strike, 1, true), EVEN * 60 / 100);
+    assert_eq!(b.expected(0, 3, K::Strike, 1, true), 0);
+    let mut rng = rigged(sure);
+    let out = play(&b, &mut rng);
+    let e = &out.events[0];
+    assert_eq!(e.target, Some(1));
+    let got: Vec<(FighterIdx, i32, bool)> = e.hits.iter().map(|h| (h.target, h.dmg, h.splash)).collect();
+    assert_eq!(got, [(1, EVEN, false), (2, EVEN * 60 / 100, true), (4, EVEN, true)], "3 is not splashed");
+    // ...and draws nothing for 3: miss, crit, the target's r, two splash r's, then the next
+    // mover's miss.
+    let first: Vec<&str> = rng.labels.iter().copied().skip_while(|&l| l == "Engagement order").take(6).collect();
+    assert_eq!(first, ["Engagement miss", "Engagement crit", "Engagement hit", "Engagement hit", "Engagement hit", "Engagement miss"]);
+    // Without Barrage the plain 50%.
+    let mut plain = b.clone();
+    plain.fighters[0].collateral_extra = 0;
+    assert_eq!(plain.expected(0, 4, K::Strike, 1, true), EVEN / 2);
+    assert_eq!(plain.expected(0, 2, K::Strike, 1, true), EVEN / 2 * 60 / 100);
+    // A known spell splashes as the spell: neither Barrage nor Drill counts, and the protected
+    // unit is splashed too.
+    let mut mage = b.clone();
+    mage.fighters[0] = caster(Attacker, 0, 2, Spell::known(3));
+    mage.fighters[0].collateral_limit = Some(100);
+    mage.fighters[0].collateral_extra = 100;
+    assert!(!mage.collateral_splash(0, K::Spell));
+    assert!(mage.collateral_splash(0, K::Strike), "its strikes splash as collateral");
+    for t in [2, 3, 4] {
+        assert_eq!(mage.expected(0, t, K::Spell, 1, true), EVEN / 2, "{t}");
+    }
+    // The magic bolt of a unit with collateral damage splashes as collateral damage.
+    mage.fighters[0].spell = Spell::bolt(&mage.params);
+    assert!(mage.collateral_splash(0, K::Spell));
+}
+
 #[test]
 fn heals_the_most_hurt_ally() {
     use Side::*;

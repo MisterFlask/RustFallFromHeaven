@@ -115,9 +115,14 @@ client read these, not the role's fields.
 - Splash: a unit with collateral damage (`iCollateralDamage > 0`: siege, Berserker, Fire
   Elemental, ...) splashes its damaging hits (not a miss) on the target's neighbours (beside it in
   its row, in front and behind in its lanes) for `ENGAGEMENT_SPLASH_PERCENT` (50) % of a hit on
-  each, never taking one past its collateral limit (`iCollateralDamageLimit`); a known spell
-  splashes the same way (no limit). Splash hits never crit. This replaces the round model's
-  collateral step before the battle (Q4).
+  each, never taking one past its collateral limit (`iCollateralDamageLimit`). As the duel's
+  collateral damage, that splash is times `100 +` the splasher's extra collateral damage (Barrage
+  I-III's `iCollateralDamageChange`: +40, +60, +100) and times `100 -` the splashed unit's
+  collateral damage protection (Drill III and IV's `iCollateralDamageProtection`: 20 each) percent;
+  a unit with 100 or more protection is not splashed (and draws nothing). A known spell splashes
+  the same 50% as the spell: no limit, no Barrage, no protection (a caster's bolt is not a spell's
+  splash: a unit with collateral damage splashes it as collateral damage). Splash hits never crit.
+  This replaces the round model's collateral step before the battle (Q4).
 - Siege (combat limit below 100, attackers only): its hits never take a target below
   `(100 - limit)%` of its max HP, and such targets are not in its reach.
 - Anti-flank: whatever a flanker can reach (with any of its actions), units of an anti-flank role
@@ -305,14 +310,16 @@ fighter with chance first strikes in fighter order ("Engagement first strikes", 
 pass each mover's coin in fighter order ("Engagement order"); per action a physical one's miss
 ("Engagement miss"), if it lands the crit roll of strike, charge, stab and shoot ("Engagement
 crit"), r ("Engagement hit"), the target's withdrawal if the hit would kill it ("Engagement
-withdraw"), then each splashed neighbour's r and withdrawal in (lane, row) order; a heal's r
+withdraw"), then each splashed neighbour's r and withdrawal in (lane, row) order (not one at its
+floor or fully protected from collateral damage); a heal's r
 ("Engagement heal"); an action with no target and a heal with no one hurt draw nothing; then the
 post-battle steps' (combat-apply, poison, the per-kill effects' own rolls, the flight's plot).
 
 **The resolver's API** (`engagement::formation`, pure: nothing of `Game`): `Formation::new(params,
 ground, lanes, fighters, pair)` (each `Fighter`'s side, tag, lane, row, large, max HP and HP, its
 speed, first strikes and chance first strikes, actions per row, A against nobody, dodge, crit bonus,
-anti-flank, flanker, withdrawal chance, combat limit, collateral limit, spell), `Formation::validate`
+anti-flank, flanker, withdrawal chance, combat limit, collateral limit, extra and protection,
+spell), `Formation::validate`
 (inside the grid, one unit a cell), `Params::from_defines`, `Ground` and `Ground::rules`;
 `resolve(&formation, rng)` / `resolve_quiet` give an `Outcome`: each fighter's `End` (HP, final row,
 speed, the first strikes it rolled, its fate: standing, fell by whom in which round, withdrew in
@@ -407,8 +414,9 @@ The spec (the owner's, revision 4) holds; these were left open and are decided s
   the jungle); the city flag a city on the plot (a fort is not a city here).
 - The auto formation's strength is the unit's A against nobody in particular on its side (its
   attack with its promotions), for both sides.
-- Collateral damage protection (`iCollateralDamageProtection`) does not reduce a splash (the
-  resolver has no such term yet).
+- Barrage's extra collateral damage and Drill's protection scale only a collateral splash, as in
+  the duel: not the hit on the target, not a known spell's splash. The battle log does not list
+  them as values (the fighter's promotions name them).
 - A missile's hit is a strike's choice without nearby first (it comes from outside the field), with
   no withdrawal (as the round model's missile hit had none).
 - The plan of an AI attacker is not frozen into the log (the moment estimator that made it is gone).

@@ -355,8 +355,8 @@ impl Game {
     /// flanker), its role's anti-flank, HP from the damage field (a large unit's more), first
     /// strikes and their chance, its A against nobody, withdrawal (attackers'
     /// `withdrawalProbability`; defenders' defensive withdrawal outside a city, none in one, Q3),
-    /// combat limit (attackers only), collateral limit (units with collateral damage splash), its
-    /// spell.
+    /// combat limit (attackers only), collateral limit (units with collateral damage splash) and
+    /// its extra (Barrage), collateral protection (Drill), its spell.
     pub(crate) fn engage_fighter(&self, u: UnitId, side: Side, place: (u8, u8), in_city: bool, ctx: &HitCtx, params: &Params) -> Fighter {
         let d = self.d;
         let max_hp = self.unit_engage_max_hp(u);
@@ -381,6 +381,8 @@ impl Game {
         };
         f.combat_limit = if side == Side::Attacker { self.units[u].combat_limit.clamp(0, 100) } else { 100 };
         f.collateral_limit = (self.unit_collateral_damage(u) > 0).then(|| self.unit_collateral_damage_limit(u));
+        f.collateral_extra = self.units[u].extra_collateral_damage;
+        f.collateral_protection = self.units[u].collateral_damage_protection;
         f.spell = match self.unit_engage_spell(u) {
             Some(s) => Spell::known(s.idx() as u32),
             None => Spell::bolt(params),
@@ -1047,5 +1049,24 @@ mod tests {
         assert_eq!(ra, rb);
         assert!(a.save() == b.save());
         assert_eq!(a.battle_report(ra.report), b.battle_report(rb.report));
+    }
+
+    /// A fighter carries Barrage's collateral extra and Drill's collateral protection, which
+    /// scale a collateral splash (`formation::Formation::expected`).
+    #[test]
+    fn a_fighter_reads_barrage_and_drill() {
+        let (mut g, from, to) = world(&["UNIT_CATAPULT"], &["UNIT_AXEMAN"]);
+        let d = g.d;
+        let (catapult, axeman) = (g.map.plots[from].units[0], g.map.plots[to].units[0]);
+        let ctx = HitCtx::new(from, to);
+        let params = Params::from_defines(&d.defines);
+        let plain = (g.engage_fighter(catapult, Side::Attacker, (0, 2), false, &ctx, &params), g.engage_fighter(axeman, Side::Defender, (0, 0), false, &ctx, &params));
+        assert_eq!((plain.0.collateral_extra, plain.1.collateral_protection), (0, 0));
+        assert!(plain.0.collateral_limit.is_some(), "a catapult splashes");
+        g.unit_set_has_promotion(catapult, d.t::<PromotionType>("PROMOTION_BARRAGE3"), true);
+        g.unit_set_has_promotion(axeman, d.t::<PromotionType>("PROMOTION_DRILL3"), true);
+        let att = g.engage_fighter(catapult, Side::Attacker, (0, 2), false, &ctx, &params);
+        let def = g.engage_fighter(axeman, Side::Defender, (0, 0), false, &ctx, &params);
+        assert_eq!((att.collateral_extra, def.collateral_protection), (100, 20));
     }
 }

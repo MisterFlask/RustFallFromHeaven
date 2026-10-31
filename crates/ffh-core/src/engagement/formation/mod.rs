@@ -21,7 +21,8 @@
 //! a miss roll for physical kinds, a crit roll for the single-target
 //! physical kinds, the hit (`max(1, expected x r)`, r drawn in `rand_min..=rand_max` percent, a
 //! crit `crit_damage_pct` of it), a splash on the target's neighbours for units with collateral
-//! damage and spells that splash, and a knock-back for a melee crit. A heal restores
+//! damage (stronger with Barrage, weaker on a unit with Drill's protection) and spells that
+//! splash, and a knock-back for a melee crit. A heal restores
 //! `base_damage x heal_pct x r` to the most hurt ally. The expected damage of a hit
 //! ([`Formation::expected`]) is `base_damage x 100 x A / (A + Dv)` centi-HP, then times its
 //! percentages (a spell's power, the ground's, the first round's charge, a splash's) over one
@@ -40,7 +41,8 @@
 //! roll for strike, charge, stab and shoot ("Engagement crit"), then r ("Engagement hit"), the
 //! target's withdrawal if the hit would kill it ("Engagement withdraw"), then for each splashed
 //! neighbour in (lane, row) order its r and its withdrawal; a heal draws its r ("Engagement heal").
-//! An action with no target in reach and a heal with no one hurt draw nothing.
+//! An action with no target in reach, a heal with no one hurt and a neighbour not splashed (at its
+//! floor, or fully protected from collateral damage) draw nothing.
 //!
 //! Integers throughout: HP in centi-HP, A and Dv x100, percentages multiplied in `i128` and
 //! divided once. No map iteration, every sort a total order (ties by fighter index last).
@@ -320,6 +322,12 @@ pub struct Fighter {
     /// Collateral damage: `Some(limit)` splashes its damaging hits on the target's neighbours,
     /// never taking one past `limit`% damage (FfH's `iCollateralDamageLimit`).
     pub collateral_limit: Option<i32>,
+    /// What its collateral splash adds, in percent (Barrage's `iCollateralDamageChange`: FfH's
+    /// `getExtraCollateralDamage`).
+    pub collateral_extra: i32,
+    /// How much less collateral splash it takes, in percent (Drill's
+    /// `iCollateralDamageProtection`); at 100 or more it is never splashed by collateral damage.
+    pub collateral_protection: i32,
     /// What its SPELL actions cast.
     pub spell: Spell,
 }
@@ -349,6 +357,8 @@ impl Fighter {
             withdraw_pct: 0,
             combat_limit: 100,
             collateral_limit: None,
+            collateral_extra: 0,
+            collateral_protection: 0,
             spell: Spell { id: None, power: 60, splash: false },
         }
     }
@@ -472,7 +482,8 @@ impl Formation {
     /// The expected damage of a hit of `kind` (as it is fought: a charge where flanking does not
     /// work is a strike) by `h` on `t` in round `round`, in centi-HP: `base_damage x 100 x A /
     /// (A + Dv)`, then times the spell's power, the ground's percentages, the first round's
-    /// charge bonus and (`splash`) the splash percentage, divided once.
+    /// charge bonus and (`splash`) the splash percentage, for a collateral splash also times
+    /// `100 + h`'s collateral extra and `100 - t`'s collateral protection, divided once.
     pub fn expected(&self, h: usize, t: usize, kind: ActionKind, round: i32, splash: bool) -> i32 {
         let p = self.pair(h, t);
         let (a, dv) = (p.a as i64, p.dv as i64);
@@ -487,8 +498,20 @@ impl Formation {
         }
         if splash {
             x.mul(self.params.splash_pct);
+            if self.collateral_splash(h, kind) {
+                x.mul(100 + self.fighters[h].collateral_extra);
+                x.mul(100 - self.fighters[t].collateral_protection);
+            }
         }
         (x.num / x.den).min(i32::MAX as i128) as i32
+    }
+
+    /// Whether `h`'s hits of `kind` splash as collateral damage: it has collateral damage, and
+    /// the hit is not a known spell's (which splashes as the spell: no collateral limit, Barrage
+    /// or protection).
+    pub fn collateral_splash(&self, h: usize, kind: ActionKind) -> bool {
+        let fh = &self.fighters[h];
+        fh.collateral_limit.is_some() && !(kind == ActionKind::Spell && fh.spell.splash)
     }
 
     /// The HP (centi-HP) `h`'s hits never take `t` below: `(100 - limit)%` of its max HP for a
@@ -1029,15 +1052,15 @@ impl<'a> Run<'a> {
             return;
         }
         let crit = kind.can_crit() && rng.rand(100, "Engagement crit") < f.crit_chance(h);
-        let fh = &f.fighters[h];
-        let spell_splash = kind == ActionKind::Spell && fh.spell.splash;
-        let collateral = fh.collateral_limit.is_some() && !spell_splash;
+        let spell_splash = kind == ActionKind::Spell && f.fighters[h].spell.splash;
+        let collateral = f.collateral_splash(h, kind);
         let around = if spell_splash || collateral { f.neighbours(&self.s, c) } else { Vec::new() };
         let hit = self.hit(h, c, kind, crit, false, f.floor(h, c), rng);
         ev.hits.push(hit);
         for t in around {
             let floor = if collateral { f.splash_floor(h, t) } else { f.floor(h, t) };
-            if self.s.on_field(t) && self.s.hp[t] > floor {
+            let shielded = collateral && f.fighters[t].collateral_protection >= 100;
+            if self.s.on_field(t) && self.s.hp[t] > floor && !shielded {
                 let hit = self.hit(h, t, kind, false, true, floor, rng);
                 ev.hits.push(hit);
             }

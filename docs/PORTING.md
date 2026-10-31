@@ -155,7 +155,8 @@ side)
   every hit landing at once: melee reaches the front of a lane, shots, spells and stones its back,
   stabs anyone, a cavalry charge anyone in the field (twice as hard in the first round), each unit
   takes the units within a lane of it first, then the kill on offer or the most hurt; misses, crits
-  and knock-backs; collateral damage splashes its hits on the target's neighbours; a withdrawal
+  and knock-backs; collateral damage splashes its hits on the target's neighbours (Barrage
+  strengthens it, Drill's protection weakens it); a withdrawal
   replaces a killing hit (never a city's defenders). The ground: a city halves the attacker's
   arrows, a forest or jungle halves arrows and stones and stops flanking, hills weaken the
   attacker's hits and strengthen the defender's arrows; the plot's own defence (cover, hills,
