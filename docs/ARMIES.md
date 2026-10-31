@@ -38,7 +38,9 @@ this runs: no unit has an army or marches, no army requisitions, the save carrie
 ## Rules
 
 **Army units.** Land units with a strength, except mages (`UNITCOMBAT_ADEPT`), recon units
-(`UNITCOMBAT_RECON`), heroes (`PROMOTION_HERO`), summons (a duration) and the barbarians' units.
+(`UNITCOMBAT_RECON`), heroes (`PROMOTION_HERO`: a unit that has it, and so a unit type that gives
+it for free, whose orders have no destination and which no requisition picks), summons (a
+duration) and the barbarians' units.
 Ships, air units, workers, settlers and missionaries are not army units either. The others move on
 their own, or along with an army's group (a hero travelling with an army is not in it: the
 commander slot is phase 6).
@@ -114,8 +116,9 @@ every list. Requisition needs a target size: an army with none (0) requisitions 
   human's: siege (`UNITCOMBAT_SIEGE`) while siege is less than a third of the army (its recruits
   marching to it and its requisition orders counted), else the strongest unit against cities (a
   unit that can take the city attack role: strength times its city attack bonus), else the
-  strongest attacker; only army units the city can train (ties: the cheaper). A picked city that
-  can train none is skipped that turn. The AI's: the governors' old feeding choice
+  strongest attacker; only army units the city can train, and no world or national unit (a class
+  with an instance limit: a hero, a Paladin, a Knight are few, and the player places them; ties:
+  the cheaper). A picked city that can train none is skipped that turn. The AI's: the governors' old feeding choice
   (`ffh-ai armies::requisition_unit`).
 
 **Marching recruits** (`army/march.rs`). A unit bound elsewhere is created in the producing city as

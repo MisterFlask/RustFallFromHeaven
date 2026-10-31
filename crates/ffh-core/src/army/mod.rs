@@ -40,6 +40,7 @@
 
 use std::collections::{BTreeMap, BTreeSet, BinaryHeap};
 use std::cmp::Reverse;
+use std::sync::OnceLock;
 
 use ffh_data::*;
 
@@ -84,6 +85,12 @@ pub enum RecruitDest {
 /// Why an army command is refused.
 pub type ArmyResult = Result<(), &'static str>;
 
+/// `PROMOTION_HERO` (looked up once: the army checks run over every unit type and unit).
+fn hero_promotion(d: &GameData) -> Option<PromotionType> {
+    static HERO: OnceLock<Option<PromotionType>> = OnceLock::new();
+    *HERO.get_or_init(|| d.ty::<PromotionType>("PROMOTION_HERO"))
+}
+
 /// English ordinal ("1st", "2nd", "11th", "23rd").
 fn ordinal(n: i32) -> String {
     let suffix = match (n % 10, n % 100) {
@@ -104,10 +111,14 @@ impl Game {
     }
 
     /// Whether a unit of type `unit_type` is an army unit: a land combat unit that is not a mage
-    /// (arcane unit) or a recon unit.
+    /// (arcane unit), a recon unit or a hero (a type with `PROMOTION_HERO` for free, which no unit
+    /// of it could lose: [`Game::unit_is_army_unit`] refuses every hero).
     pub fn unit_type_is_army_unit(&self, unit_type: UnitType) -> bool {
         let info = &self.d.units[unit_type];
         if info.domain_type != Some(DomainType::DOMAIN_LAND) || info.combat <= 0 {
+            return false;
+        }
+        if hero_promotion(self.d).is_some_and(|h| info.free_promotions[h]) {
             return false;
         }
         match info.unit_combat_type {
@@ -126,12 +137,7 @@ impl Game {
         if self.player_is_barbarian(unit.owner) || unit.duration > 0 || !self.unit_type_is_army_unit(unit.unit_type) || !self.unit_can_fight(u) {
             return false;
         }
-        if let Some(hero) = self.d.ty::<PromotionType>("PROMOTION_HERO") {
-            if unit.has_promotion[hero] {
-                return false;
-            }
-        }
-        true
+        !hero_promotion(self.d).is_some_and(|h| unit.has_promotion[h])
     }
 
     /// The city whose garrison unit `u` is in, if any: an army unit in no army and not marching,

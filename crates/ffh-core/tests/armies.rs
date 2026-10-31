@@ -210,6 +210,42 @@ fn production_for_the_own_garrison_stays_and_an_army_in_the_city_takes_the_unit_
     assert_eq!(g.units[r].army, Some(army));
 }
 
+/// A hero type is no army unit type (no army keeps a hero), so its orders have no destination; the
+/// rules' default requisition takes no world or national unit (their classes have an instance
+/// limit: the player places those).
+#[test]
+fn heroes_stay_home_and_the_default_requisition_takes_no_limited_unit() {
+    let (mut g, a, b) = game();
+    let p0 = PlayerId(0);
+    let d = g.d;
+    let hero = d.t::<PromotionType>("PROMOTION_HERO");
+    let sphener = d.t::<UnitType>("UNIT_SPHENER");
+    assert!(d.units[sphener].free_promotions[hero]);
+    for t in d.units.keys().filter(|&t| d.units[t].free_promotions[hero]) {
+        assert!(!g.unit_type_is_army_unit(t), "{}", d.units[t].base.type_);
+    }
+    let paladin = d.t::<UnitType>("UNIT_PALADIN");
+    assert!(g.unit_type_is_army_unit(paladin) && !g.unit_type_is_requisition_default(paladin), "national: an army unit the requisition leaves alone");
+    let axeman = d.t::<UnitType>("UNIT_AXEMAN");
+    assert!(g.unit_type_is_requisition_default(axeman));
+    let army = army_near(&mut g, b, 1);
+    assert_eq!(g.city_recruit_dest(a, Some(RecruitDest::Army(army)), sphener), None, "a hero stays in its city");
+    assert_eq!(g.city_recruit_dest(a, Some(RecruitDest::Army(army)), axeman), Some(RecruitDest::Army(army)));
+    // Every tech and a Training Yard: national units (a Berserker, a Phalanx, ...) can be trained,
+    // and the default takes none of them.
+    let team = g.players[p0].team;
+    for t in d.techs.keys() {
+        g.team_set_has_tech(team, t, true, Some(p0), false, false);
+    }
+    let civ = g.player_get_civilization_type(p0).expect("a civilization");
+    let yard = d.civ_building(civ, d.t::<BuildingClassType>("BUILDINGCLASS_TRAINING_YARD")).expect("a Training Yard");
+    g.city_set_num_real_building(a, yard, 1);
+    let limited = |g: &Game, t: UnitType| g.unit_type_is_army_unit(t) && !g.unit_type_is_requisition_default(t);
+    assert!(d.units.keys().any(|t| limited(&g, t) && g.city_can_train(a, t, false, false, false, false)), "a national unit to train");
+    let (u, _) = g.requisition_unit_default(a, army).expect("a unit");
+    assert!(g.unit_type_is_requisition_default(u), "{}", d.units[u].base.type_);
+}
+
 #[test]
 fn requisition_puts_front_orders_and_stops_at_the_target_size() {
     let (mut g, a, b) = game();

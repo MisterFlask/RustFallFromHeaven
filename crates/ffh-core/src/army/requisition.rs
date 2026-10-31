@@ -28,8 +28,9 @@
 //! - **The unit** is the controller's decision (`Controller::requisition_unit`); the rules' default
 //!   ([`Game::requisition_unit_default`], the human's): siege while siege is less than a third of
 //!   the army (its marching recruits and requisition orders counted), else the strongest unit
-//!   against cities, else the strongest attacker; only army units the city can train. A picked
-//!   city that can train none is skipped.
+//!   against cities, else the strongest attacker; only army units the city can train (not a hero:
+//!   no army takes one), and no world or national unit. A picked city that can train none is
+//!   skipped.
 
 use std::cmp::Reverse;
 
@@ -207,12 +208,20 @@ impl Game {
         siege.is_some() && self.d.units[unit].unit_combat_type == siege
     }
 
+    /// Whether the rules' default requisition may pick units of `unit_type`: army units whose
+    /// class has no instance limit. A world or national unit (a hero, a Paladin, a Knight: a few
+    /// a civilization or one in the world) is its owner's to place, not the requisition's.
+    pub fn unit_type_is_requisition_default(&self, unit_type: UnitType) -> bool {
+        self.unit_type_is_army_unit(unit_type) && !self.d.units[unit_type].unit_class_type.is_some_and(|k| crate::utils::is_limited_unit_class(self.d, k))
+    }
+
     /// The rules' choice of the unit city `c` trains for army `a`'s requisition (the default of
     /// `Controller::requisition_unit`, the human's): siege while siege is less than a third of the
     /// army (its recruits marching to it and its requisition orders counted), else the strongest
     /// unit against cities (a city attacker), else the strongest attacker; only army units the
-    /// city can train. Strength against cities: strength times its city attack bonus; ties: the
-    /// cheaper, then the first.
+    /// city can train, and no world or national unit
+    /// ([`Game::unit_type_is_requisition_default`]). Strength against cities: strength times its
+    /// city attack bonus; ties: the cheaper, then the first.
     pub fn requisition_unit_default(&self, c: CityId, a: ArmyId) -> Option<(UnitType, UnitAIType)> {
         let d = self.d;
         let mut total = 0;
@@ -226,7 +235,7 @@ impl Game {
             total += 1;
             siege += i32::from(o.data1 >= 0 && (o.data1 as usize) < d.units.len() && self.unit_type_is_siege(UnitType::from_usize(o.data1 as usize)));
         }
-        let candidates: Vec<UnitType> = d.units.keys().filter(|&t| self.unit_type_is_army_unit(t) && self.city_can_train(c, t, false, false, false, false)).collect();
+        let candidates: Vec<UnitType> = d.units.keys().filter(|&t| self.unit_type_is_requisition_default(t) && self.city_can_train(c, t, false, false, false, false)).collect();
         let best = |pred: &dyn Fn(UnitType) -> bool| -> Option<UnitType> {
             candidates
                 .iter()
