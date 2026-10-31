@@ -124,6 +124,10 @@ export class MapView {
     this.r3dError = null;
     /** While a 3D renderer compiles its shaders (`useR3d`): the promise of its being ready. */
     this.r3dLoading = null;
+    /** The renderer last asked for (`ask`: "flat", "art", "iso", "3d" or "hd2d"; null before any)
+     *  and a count of the asks: a 3D renderer whose start ends after an ask for another renderer
+     *  gives way to it (`useR3d`). */
+    this.want = { mode: null, gen: 0 };
     this.queued = false;
     /** An in-flight camera glide (`glideTo`): `{ sx, sy, dx, dy, t0, dur }`, else null. Direct
      *  manipulation (drag, zoom, pan) cancels it; `prefers-reduced-motion` skips it. */
@@ -757,10 +761,20 @@ export class MapView {
     this.request();
   }
 
+  /** A renderer is asked for (main.js setRenderer, before it switches): a 3D renderer still
+   *  starting that is not that one gives way to it when its start ends (`useR3d`). */
+  ask(mode) {
+    this.want = { mode, gen: this.want.gen + 1 };
+  }
+
   /** Switches to the experimental 3D renderer (`?renderer=3d`, docs/R3D.md) or back. Its module
    *  is imported here, on first use; resolves to false when it cannot run (no WebGL2, or its
-   *  shaders do not compile in time), leaving no renderer but the flat one (the caller picks). */
+   *  shaders do not compile in time), leaving no renderer but the flat one (the caller picks).
+   *  Resolves to true, the renderer disposed, when another renderer was asked for (`ask`) during
+   *  its start: the one drawing then is the player's choice. */
   async useR3d(on, mode = "3d") {
+    const asked = this.want.gen;
+    const passed = () => this.want.gen !== asked && this.want.mode !== mode;
     // A 3D renderer still compiling its shaders is done (or has failed) first.
     if (this.r3dLoading) await this.r3dLoading.catch(() => {});
     // Another mode of the 3D renderer is drawing: it goes first.
@@ -791,10 +805,22 @@ export class MapView {
         this.r3dLoading = r3d.ready();
         await this.r3dLoading;
         performance.mark("r3d:ready");
+        // The player picked another renderer meanwhile (with fastStart the isometric map is still
+        // up, so a switch to it changed nothing then): that one stays.
+        if (passed()) {
+          r3d.dispose();
+          this.request();
+          return true;
+        }
         this.r3d = r3d;
         if (this.iso) {
           this.iso.dispose?.();
           this.iso = null;
+        }
+        // (An art map made during the start, the art asked for and then the 3D map again.)
+        if (this.art) {
+          this.art.dispose();
+          this.art = null;
         }
       } catch (e) {
         console.error("3d map:", e);

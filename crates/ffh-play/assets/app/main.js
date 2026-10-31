@@ -777,6 +777,9 @@ function lookLoaded() {
 /** Switches the map's renderer ("art", "iso" or "flat"; Tools → Options). The isometric renderer
  *  owns the map on its own; leaving it turns it off and falls back to art or flat. */
 function setRenderer(r) {
+  // (A 3D map still starting gives way to it, MapView.useR3d.)
+  mapView.ask(r);
+  if (r !== "hd2d") hd2dPending = false;
   if (r === "3d" || r === "hd2d") {
     use3d(r);
     return;
