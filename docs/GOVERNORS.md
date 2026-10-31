@@ -13,7 +13,7 @@ cases were decided, and what is left.
 |---|---|---|
 | 5 Governors | production audit; direct-rule slots, army target sizes, governors, the bench, the Governors screen | done |
 | Requisition (2026-10-31) | the feed mode gone; armies requisition from any city (docs/ARMIES.md) | done |
-| 6 Engagement combat | stance quotas, which requisition will fill | in progress (docs/COMBAT_INVENTORY.md has the owner's answers) |
+| 6 Engagement combat | formation battles (revision 4: no stances, so no stance quotas for requisition) | in progress (docs/ENGAGEMENTS.md) |
 
 Code: rules `crates/ffh-core/src/governors.rs` (hooks: `player_init_city`, `city_kill`, the player
 turn, `player_find_new_capital`, the city's yield, commerce, happiness, health, production and
@@ -125,8 +125,8 @@ revolt pressure aimed at its city.
 
 - **Workers trained by a human's governed cities** are the human's to move (or automate), like any
   other worker; the spec does not say whether governors should automate them.
-- **Stance quotas.** A requisition fills by a simple role mix (a third siege) until phase 6 brings
-  stances.
+- **Role mix.** A requisition fills by a simple role mix (a third siege); formation battles have no
+  stances (revision 4) to fill by.
 - **Conquest.** With governors on, a quarter fewer cities change hands (below), mostly because
   governed cities are better built; the warlike civilizations declare about as many wars. Whether
   their conquest drive should requisition harder with governors is for the tuning phase.

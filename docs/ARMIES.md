@@ -14,7 +14,7 @@ and edge cases were decided, and what is left.
 | 4 Armies and recruitment | armies, garrisons, build destinations, supply, form / split / join / merge / garrison / rename / disband / upgrade all, target size, AI, UI | done |
 | 5 Governors | (the "Feed army" mode, replaced by requisition on 2026-10-31) | done |
 | Requisition and marching recruits (2026-10-31) | rules, saves, AI, UI | done |
-| 6 Engagement combat | stance, commander, S-unit engagements | in progress: the owner answered the inventory (docs/COMBAT_INVENTORY.md, 2026-10-31) |
+| 6 Engagement combat | formation battles (revision 4: no stances), commander | in progress: formation battles in the rules (docs/ENGAGEMENTS.md, 2026-10-31) |
 | 7 FfH layer | Incite Mutiny (cultural action against an army), commander auras | later |
 
 Code: rules `crates/ffh-core/src/army/` (`mod.rs`: armies, garrisons, the sync, the commands,

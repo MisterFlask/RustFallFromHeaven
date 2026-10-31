@@ -142,18 +142,28 @@ side)
   governed city's cultural channel is its owner's, never its governor's (2026-10-30).
   Option off (the default outside the browser's new-game screen), nothing changes. Save format 7.
 - **Engagement combat** (`GAMEOPTION_ENGAGEMENTS`, requires armies; docs/ENGAGEMENTS.md; being
-  built, phase 6 of the spec, off by default): a land attack is an engagement, not a duel: each side
-  commits up to its slots (10 a side on open land, fewer on rough ground and against city
-  defenses) by its stance; Fear sits units out, defensive strikes and collateral open the battle
-  (reserves included), then volleys and rounds of simultaneous hits by role (the front shields the
-  back), one withdrawal roll per unit, kill credit per kill (G2) and the post-battle effects; the
-  launching group moves in when the plot is cleared. Ships and air units keep the duel. One rule
-  departs from the spec too (2026-10-31, plan revision 3): within its target class a hit avoids the
-  units the round's pending damage already kills, unless all of them are (random pile-ons on doomed
-  units read as bad play); and the attacker's auto-pick is the stance's quota pick improved by its
-  best single swaps by the estimator, never swapping in a unit the stance holds (plan revision 3,
-  item 3: a default the player need not always override; the defender's pick stays the blind
-  stance pick). Option off, nothing changes. Save format 10.
+  built, phase 6 of the spec, off by default): a land attack is a **formation battle** (revision 4,
+  the owner's Ogre Battle-style engagements, 2026-10-31), not a duel. Each side has its slots (10 a
+  side on open land, fewer on rough ground and against city defenses) and a grid of three rows by
+  `max(2, ceil((slots + 2) / 3))` lanes; the attacker stands in the formation its order gives (the
+  player's) or the rules' auto formation, the defender in the auto formation; large units (giants,
+  elephants, dragons, golems, treants, ...) fill two cells and have 150% HP. Units take one of eight
+  roles (Frontline, Screen, Flanker, Assassin, Archer, Siege, Arcane, Divine) that say what they do
+  from each row (strike, charge, stab, shoot, bombard, cast, heal) with their speed, dodge and crits;
+  units of tier 4 and heroes act once more. Fear sits units out and defensive strikes open the
+  battle (reserves included), then three rounds of passes, fastest first (first strikes are speed),
+  every hit landing at once: melee reaches the front of a lane, shots, spells and stones its back,
+  stabs anyone, a cavalry charge anyone in the field (twice as hard in the first round), each unit
+  takes the units within a lane of it first, then the kill on offer or the most hurt; misses, crits
+  and knock-backs; collateral damage splashes its hits on the target's neighbours; a withdrawal
+  replaces a killing hit (never a city's defenders). The ground: a city halves the attacker's
+  arrows, a forest or jungle halves arrows and stones and stops flanking, hills weaken the
+  attacker's hits and strengthen the defender's arrows; the plot's own defence (cover, hills,
+  walls, culture) no longer adds to the defenders' strength. The plot falls only when no defender
+  is left on it: then the launching group moves in (a city is captured); otherwise nobody moves.
+  Kill credit per kill (G2) and the post-battle effects as for a duel's winner; no Fear rout.
+  Stances are gone. Ships and air units keep the duel; missiles strike one unit. Option off,
+  nothing changes. Save format 10.
 
 **Container order and path finding**
 

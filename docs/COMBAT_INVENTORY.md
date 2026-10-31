@@ -1,5 +1,15 @@
 # Engagement combat: inventory of FfH combat effects
 
+> **Superseded in part by revision 4** (formation battles, the owner's, 2026-10-31;
+> docs/ENGAGEMENTS.md). The answers below about rounds, opening volleys, stances and their picks,
+> the shield and the role target orders, the assassin's and the flanker's targeting, withdrawal
+> below a share of HP, draws and the Fear rout no longer hold: units stand on a grid by lanes and
+> rows, act by row and speed for three rounds, take the units within a lane of them first, withdraw
+> in place of a killing hit, and the plot falls only when no defender is left. The answers about
+> which abilities are kept (first strikes now as speed, collateral now as a splash, defensive
+> strikes, Fear's morale check, combat limits, withdrawal, medics, kill effects, immortality,
+> captures, poison, missiles) still hold as ENGAGEMENTS.md applies them.
+
 The owner's design spec "FfH Culture Actions & Army Combat" (2026-10-29) replaces Civ4's one-on-one
 combat with engagements: each side commits up to S units, units have roles (frontline, screen,
 backline, flanker, assassin, support) with attack A, defense Dv and max HP, and a battle runs
