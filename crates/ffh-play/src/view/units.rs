@@ -241,9 +241,13 @@ pub fn actions(v: &Viewer, units: &[UnitId]) -> Vec<Json> {
         push("automate", enabled, command_cmd(units, CommandType::COMMAND_AUTOMATE, k, -1), crate::jobj! { "command" => Json::idx(CommandType::COMMAND_AUTOMATE), "automate" => Json::idx(a) });
     }
 
-    // Spells.
+    // Spells. World spells are the empire's, not the selection's: they are cast from the top
+    // bar's world actions ([`world_actions`]).
     for s in d.spells.keys() {
         let k = s.idx() as i32;
+        if d.spells[s].global {
+            continue;
+        }
         if !selection::can_do_command(g, units, CommandType::COMMAND_CAST, k, -1, true) {
             continue;
         }
@@ -287,6 +291,45 @@ pub fn actions(v: &Viewer, units: &[UnitId]) -> Vec<Json> {
     }
 
     out
+}
+
+/// The actions of the whole empire, offered in the top bar rather than on a selection: for now its
+/// world spell (once per game). The rules cast a spell through a unit, so each action names the
+/// unit it is cast through (`caster`): one that can cast it now, preferring one that loses no
+/// promotion by casting (Hidden, Invisible), then the oldest. The world spells' effects reach the
+/// whole empire, whoever casts them (the Basium's and Hyborem's are theirs alone). An action is
+/// listed while some unit could cast it (`canCast` with `bTestVisible`), `enabled` when one can now.
+pub fn world_actions(v: &Viewer) -> Json {
+    let g = v.g;
+    let d = g.d;
+    let cast = CommandType::COMMAND_CAST;
+    let mut out = Vec::new();
+    for s in d.spells.keys() {
+        if !d.spells[s].global {
+            continue;
+        }
+        let k = s.idx() as i32;
+        let can = |u: UnitId, visible: bool| selection::can_do_command(g, &[u], cast, k, -1, visible);
+        let visible: Vec<UnitId> = g.players[v.h].units.iter().copied().filter(|&u| can(u, true)).collect();
+        if visible.is_empty() {
+            continue;
+        }
+        let loses = |u: UnitId| d.promotions.keys().filter(|&p| g.units[u].has_promotion[p] && d.promotions[p].removed_by_casting).count();
+        let caster = visible.iter().copied().filter(|&u| can(u, false)).min_by_key(|&u| (loses(u), u.0));
+        let info = &d.spells[s];
+        let help = crate::names::text(d, &info.base.help);
+        out.push(crate::jobj! {
+            "kind" => "spell",
+            "enabled" => caster.is_some(),
+            "spell" => Json::idx(s),
+            "global" => true,
+            "causes_war" => info.causes_war,
+            "help" => if help == info.base.help { "" } else { help },
+            "caster" => caster,
+            "cmd" => command_cmd(&[caster.unwrap_or(visible[0])], cast, k, -1),
+        });
+    }
+    Json::Arr(out)
 }
 
 /// The army buttons of a selection of army units on `plot` (`army`: the action, `label`, `help`).

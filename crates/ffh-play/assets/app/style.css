@@ -170,6 +170,10 @@ body[data-phase="running"] #phase { animation: breathe 2.8s ease-in-out infinite
 #menu button[hidden], #iso-rail button[hidden] { display: none; }
 /* An advisor with something waiting for an answer (a crusade's call to arms). */
 #menu button.attention { box-shadow: inset 0 -3px 0 var(--warn); }
+/* The empire's own actions (hud.js renderWorldActions): the world spell. */
+#world-actions { display: flex; gap: calc(var(--u) * 2); align-items: center; flex: none; }
+.world-action { display: inline-flex; align-items: center; gap: calc(var(--u) * 2); white-space: nowrap; }
+.world-action:not(:disabled) .icon { color: var(--c-ochre); }
 #phase .turn { font-weight: normal; display: inline-flex; align-items: center; gap: 7px; color: var(--c-vellum); }
 #phase .year { display: inline-flex; align-items: center; }
 .num { color: var(--c-vellum); display: inline-flex; align-items: center; }
@@ -746,6 +750,8 @@ html.art .tap-mode button.on:not(.link):not(.close):not(.cplot):not(.tech):not(.
   #phase .year, body[data-phase="human"] #phase-text { display: none; }
   #empire { flex: 1 1 auto; min-width: 0; flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; }
   #empire::-webkit-scrollbar { display: none; }
+  /* The world spell keeps only its icon (its name is in the tooltip). */
+  .world-action > .label { display: none; }
   #end-turn { flex: none; margin-left: auto; }
   #menu { display: none; }
   body.menu-open #menu {

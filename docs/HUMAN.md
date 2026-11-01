@@ -59,7 +59,10 @@ icons (click it for the sliders), the Armageddon eclipse (its corona reddens at 
 with the counter, mana by sphere, anarchy, golden age, Stasis, idle AI-controlled groups, score
 (your share of the world, docs/SCORE.md, with the fair share in its tooltip); the gold's tooltip
 gives where the gold rate comes from (the cities' commerce, deals; units with the free ones, units
-outside the borders, city maintenance, civic upkeep, inflation);
+outside the borders, city maintenance, civic upkeep, inflation); beside them the empire's own
+actions, a row of buttons that belong to no unit: your world spell while you can cast it (its
+tooltip has its effects and the unit it is cast through, one that can cast it now and loses no
+promotion by casting, picked for you; the unit panel no longer lists world spells);
 below them the menu (Research, Techs, Cities, Civics, Religion, Diplomacy, Tools, Save, Load,
 New, keys `?`, a raw request box `⌘` for testing) and End turn. The map fills the middle (minimap
 bottom right, zoom and the map layers bottom left), the selection panel is on the right, and the

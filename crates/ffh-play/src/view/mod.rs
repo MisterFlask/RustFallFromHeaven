@@ -182,6 +182,8 @@ pub fn me(v: &Viewer) -> Json {
             "research" => pl.disable_research, "production" => pl.disable_production, "spells" => pl.disable_spellcasting,
         },
         "alive" => pl.alive,
+        // The empire's own actions (the top bar's buttons): its world spell.
+        "world_actions" => crate::view::units::world_actions(v),
         // Player options by PlayerOptionType index (`set_option` changes a few of them).
         "options" => pl.options.iter().copied().collect::<Vec<bool>>(),
         "ai_auto_play" => g.ai_auto_play,

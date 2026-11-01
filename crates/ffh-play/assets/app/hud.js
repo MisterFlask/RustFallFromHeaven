@@ -7,9 +7,10 @@ import { playerColor } from "./tiles.js";
 import { h, fill } from "./dom.js";
 import { render as markup } from "./markup.js";
 import { look, pix, pixable, iconEl, uiIcon, barEl } from "./look.js";
-import { openCount } from "./commands.js";
+import { openCount, run } from "./commands.js";
 import { renderSpectatorBar, autoplayBar, flagsView } from "./tools.js";
-import { isoSkin } from "./isoui.js";
+import { isoSkin, isoIcon } from "./isoui.js";
+import { effectsOf } from "./infotips.js";
 import { battleLine, battleLinks } from "./engagements.js";
 
 /** The parts of `#phase`: the phase line (redrawn each render), the spectator bar and the
@@ -239,6 +240,7 @@ export function renderTop() {
     crusades.classList.toggle("attention", calls > 0);
     crusades.title = calls ? `Crusades: ${calls === 1 ? "a call to arms waits" : `${calls} calls to arms wait`} for your answer` : "Crusades: the calls to arms, the units you lent, past crusades";
   }
+  renderWorldActions(m, st);
   if (!m) {
     fill(info);
     return;
@@ -293,6 +295,36 @@ export function renderTop() {
   const scoreTip = [h("div.tip-title", `Score ${scoreText(m.score)}`), h("div", "Your share of the world: the average of your shares of all people, all land and all knowledge."), m.civs_alive ? h("div.tip-hint", `With ${m.civs_alive} civilizations alive, a fair share is ${fairShareText(m.civs_alive)}.`) : null];
   items.push(sep(), h("span.stat.dim.score", { tip: scoreTip }, iso ? iconEl("icon16/score") ?? small("Score") : small("Score"), tweenNum("score", m.score, "", scoreText)));
   fill(info, items);
+}
+
+/** The empire's own actions, a row of buttons beside its numbers (`me.world_actions`): its world
+ *  spell, cast once per game through the unit the server picked (`caster`), after the cast's
+ *  confirmation. */
+function renderWorldActions(m, st) {
+  const box = document.getElementById("world-actions");
+  if (!box) return;
+  const list = m && !observing(st) ? (m.world_actions ?? []) : [];
+  const yours = st.phase === "human";
+  fill(
+    box,
+    list.map((a) => {
+      const name = dname("SpellType", a.spell);
+      const caster = a.caster !== null ? S.units?.get?.(a.caster) : null;
+      const help = effectsOf("SpellType", a.spell) || a.help || "";
+      const tip = [
+        h("div.tip-title", `World spell: ${name}`),
+        h("div", "Cast once per game; it reaches your whole empire."),
+        help ? h("div.tip-effects", markup(help)) : null,
+        a.enabled ? (caster ? h("div.tip-hint", `Cast by your ${dname("UnitType", caster.type)} at (${caster.x}, ${caster.y}).`) : null) : h("div.tip-hint", "No unit of yours can cast it now."),
+      ];
+      return h(
+        "button.world-action",
+        { disabled: !a.enabled || !yours, "data-spell": a.spell, "aria-label": `Cast the world spell ${name}`, tip, onclick: () => run(a.cmd) },
+        isoSkin() ? isoIcon("spell", { px: 32 }) : h("span.icon", "✶"),
+        small(name, ".label"),
+      );
+    }),
+  );
 }
 
 /** The top bar's gold tooltip: the treasury and where the gold rate comes from. */
