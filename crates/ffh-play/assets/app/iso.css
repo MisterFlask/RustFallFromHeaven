@@ -532,7 +532,18 @@ html.iso .modal.city-overlay .city-col { top: calc(var(--iso-top1) + 10px); bott
 html.iso .modal.city-overlay .city-col:first-child { left: var(--iso-gap); }
 html.iso .modal.city-overlay .city-col:last-child { right: var(--iso-gap); top: calc(var(--iso-top) + 10px); }
 html.iso .modal.city-overlay .modal-buttons { bottom: var(--iso-gap); left: 50%; transform: translateX(-50%); padding: 4px 10px; white-space: nowrap; flex-wrap: nowrap; }
-html.iso .modal.city-overlay .city-hint { margin: 2px 0 4px; }
+html.iso .modal.city-overlay .city-summary { flex-direction: column; align-items: stretch; padding: 4px 14px 6px; }
+/* The screen's tokens and slots are not the skin's tiles. */
+html.iso button.cperson, html.iso button.cperson:hover:not([disabled]), html.iso button.cperson:active:not([disabled]), html.iso button.cperson[disabled],
+html.iso button.slot, html.iso button.slot:hover:not([disabled]), html.iso button.slot:active:not([disabled]), html.iso button.slot[disabled] { border-image: none; box-shadow: none; background-clip: border-box; }
+html.iso button.slot { width: 30px; height: 30px; min-width: 0; padding: 0; border-radius: 50%; font: 700 16px/1 system-ui, sans-serif; }
+html.iso button.cperson { border-radius: 6px; min-width: 52px; }
+html.iso button.cperson { background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(240, 204, 102, 0.25); padding: 4px 3px; font-size: 14px; }
+html.iso button.cperson:hover:not([disabled]) { background: rgba(255, 244, 200, 0.08); border: 1px solid #fff4c8; }
+html.iso button.slot.full, html.iso button.slot.full:hover:not([disabled]) { background: #140e08; border: 2px solid #8cbcf0; }
+html.iso button.slot.open, html.iso button.slot.open[disabled] { background: transparent; border: 1.5px dashed #8a7a5a; color: #b9a882; }
+html.iso button.slot.open:hover:not([disabled]) { background: transparent; border: 1.5px dashed #f0cc66; color: #f0cc66; }
+html.iso .modal.city-overlay .gives, html.iso .modal.city-overlay .ccounts, html.iso .modal.city-overlay .locked-line { font-size: 16px; }
 html.iso body:has(.modal.city-overlay) :is(#side, #iso-city, #iso-rail, #bottom, #iso-corner) { display: none; }
 
 /* Titles in the bold, rows and values in the regular weight (the reference's). */

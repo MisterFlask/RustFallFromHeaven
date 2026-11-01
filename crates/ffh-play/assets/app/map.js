@@ -42,7 +42,7 @@ const SCROLL_REST = 8;
 const BACKDROP_MS = 10000;
 /** The city screen's panels over the map (iso.css, `.city-overlay`): the CSS px they take at each
  *  side, above and below; the city is framed in what is left (`frameCity`). */
-const CITY_FRAME = { side: 384, top: 150, bottom: 84 };
+const CITY_FRAME = { side: 384, top: 250, bottom: 84 };
 /** The terrain cache's budget in device pixels (least recently used chunks go first). */
 const PIXEL_BUDGET = 32e6;
 /** Activities drawn as asleep (a grey pip): fortified (C++ sleeps them), sleeping, healing,
@@ -392,6 +392,14 @@ export class MapView {
       const plot = this.cityPlot(this.overlay.hover);
       if (plot && !this.tip.hidden) this.showTip(o.tipOf(plot));
     }
+    this.request();
+  }
+
+  /** Marks plot `p` ({x, y}) of the city screen's city as pointed at (the screen's citizen under
+   *  the pointer: citywork.js lights its plot), or none (null). */
+  cityHover(p) {
+    if (!this.overlay.city) return;
+    this.overlay.hover = p ? { x: p.x, y: p.y } : null;
     this.request();
   }
 

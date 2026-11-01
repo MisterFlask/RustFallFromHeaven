@@ -24,6 +24,14 @@
 
 use ffh_data::*;
 
+/// A citizen the governor would free (`Game::city_worst_citizen`): a specialist of a type, or
+/// the one working a city plot (by its index).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum WorstCitizen {
+    Specialist(SpecialistType),
+    Plot(usize),
+}
+
 /// Relative weights for the three yields and the commerce types (per city emphasis).
 #[derive(Clone, Copy, Debug)]
 pub struct Weights {
@@ -775,6 +783,17 @@ impl Game {
     /// worst specialist that uses population or worked plot, else any specialist); false if
     /// none could be removed.
     pub(crate) fn city_ai_remove_worst_citizen(&mut self, c: CityId, ignore_specialist: Option<SpecialistType>) -> bool {
+        match self.city_worst_citizen(c, ignore_specialist) {
+            Some(WorstCitizen::Specialist(specialist)) => self.city_change_specialist_count(c, specialist, -1),
+            Some(WorstCitizen::Plot(i)) => self.city_set_working_plot(c, i, false),
+            None => return false,
+        }
+        true
+    }
+
+    /// The citizen `city_ai_remove_worst_citizen` would free, without freeing it (the city
+    /// screen says who leaves for a plot the player works).
+    pub fn city_worst_citizen(&self, c: CityId, ignore_specialist: Option<SpecialistType>) -> Option<WorstCitizen> {
         let default_specialist = opt_from_i32::<SpecialistType>(self.d.defines.default_specialist);
 
         // if we are using more specialists than the free ones we get
@@ -784,9 +803,8 @@ impl Game {
                 // do we have at least one more generic citizen than we are forcing?
                 let city = &self.cities[c];
                 if city.specialist_count[default] > city.force_specialist_count[default] {
-                    // remove the extra generic citizen
-                    self.city_change_specialist_count(c, default, -1);
-                    return true;
+                    // the extra generic citizen
+                    return Some(WorstCitizen::Specialist(default));
                 }
             }
         }
@@ -827,11 +845,9 @@ impl Game {
         }
 
         if let Some(specialist) = worst_specialist {
-            self.city_change_specialist_count(c, specialist, -1);
-            return true;
+            return Some(WorstCitizen::Specialist(specialist));
         } else if let Some(i) = worst_plot {
-            self.city_set_working_plot(c, i, false);
-            return true;
+            return Some(WorstCitizen::Plot(i));
         }
 
         // if we still have not removed one, then try again, but do not ignore the one we were
@@ -848,12 +864,7 @@ impl Game {
             }
         }
 
-        if let Some(specialist) = worst_specialist {
-            self.city_change_specialist_count(c, specialist, -1);
-            return true;
-        }
-
-        false
+        worst_specialist.map(WorstCitizen::Specialist)
     }
 
     /// The governor's weights for city `c` (used by the citizen-button stand-ins).

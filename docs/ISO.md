@@ -271,19 +271,34 @@ fills the page and the interface floats over it.
 
 ### The city screen
 
-With the isometric map the city screen is Civ4's city view (`city.js` `overlay`,
-`MapView.cityOverlay`): the map glides to the city at the largest zoom step whose projected work
-area fits between the screen's panels (`CITY_FRAME`), veils the revealed plots outside the radius
-and edges the radius in gilt; each plot shows its yields on a plate (a worked plot's gilt-framed
-and the plot lit in a gilt ring, the others' muted), each worked plot a citizen (half-seen when
-another city works it), plots not yours are tinted and
-the one pointed at is outlined, with what a click does as its tooltip. A click on a plot works it
-or stops working it (`TASK_CHANGE_WORKING_PLOT`, as the grid's buttons do); other clicks on the
-map do nothing meanwhile. The rest of the screen stands in panels at the sides (the citizens, the
-city's numbers and buildings at the left; its orders and production at the right), the title,
-summary and buttons as plaques; the rest of the interface steps aside, and when the screen closes
-the camera goes back to where it was. The production popup stays a dialog; the other renderers
-keep the grid.
+With the isometric map's interface (the HD-2D map and the isometric one) the city screen is Civ4's
+city view (`city.js` `overlay`, `MapView.cityOverlay`): the map glides to the city at the largest
+zoom step whose projected work area fits between the screen's panels (`CITY_FRAME`). Both renderers
+draw the work area with `citywork.js` (iso.js by its diamonds, `r3d/hud.js` by each plot's outline
+sampled on the ground): one citizen token on each plot a citizen works, the same token the panel
+shows for each citizen, so the plots worked and the specialists add up to the city's size at a
+glance. Each plot's rim says what a click does: gilt for a worked plot and the city's own, a dashed
+gilt rim for one free to work, blue and dashed (with a blue token) for another city's, a veil over
+plots that are not yours and over unexplored ones. Over each plot its yields as icons, one per point
+(Civ4's; past five, the icon and the number), on a dark plate: full on the worked plots, faded on
+the others. The plot pointed at is outlined, a free one with a ghost token, and its tooltip says what
+a click does: what the plot gives and who leaves their place for it (`next_worker`: a citizen
+without work, else the one the governor would free, `city_worst_citizen`). A click on a plot works
+it or stops working it (`TASK_CHANGE_WORKING_PLOT`, as the grid's buttons do); other clicks on the
+map do nothing meanwhile.
+
+The rest of the screen stands in panels. At the top, under the title, the yields: the size, food
+(grown less eaten, the growth bar, when the city grows), production (the build's bar and turns),
+then the commerce: the city's commerce, a bar splitting it by the empire's rates, and each
+commerce's total with its parts (the split's share, specialists, buildings, religions, the empire's
+own, processes, the modifier; the `city` query's `commerces`). At the left the citizens (one token
+each: on a plot with its yields, a specialist with what it gives, without work, angry; pointing at
+one lights its plot on the map), the specialist slots by type (filled, open, free; the types no
+building opens yet in one line), mood and health with the room before trouble (how many more
+citizens before unrest or sickness), culture, great people, the city's numbers, its culture
+channel and buildings; at the right its orders and production. The rest of the interface steps
+aside, and when the screen closes the camera goes back to where it was. The production popup stays
+a dialog; the flat renderer keeps the grid.
 
 ### The battle screens
 

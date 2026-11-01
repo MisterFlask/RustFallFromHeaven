@@ -16,10 +16,10 @@ import { S, dname, orderName, info, turns, me, emit, tidx, ORDER_KINDS } from ".
 import { h, signed, setText, tapModes, compactScreen } from "./dom.js";
 import { openModal } from "./modals.js";
 import { run } from "./commands.js";
-import { render as markup, YIELD_ICONS, COMMERCE_ICONS } from "./markup.js";
 import { YIELD_COLORS } from "./tiles.js";
 import { look, uiIcon, typeIcon, barEl, pix } from "./look.js";
-import { focusOn, isoSkin, queueIcon, refreshCityPanel } from "./isoui.js";
+import { focusOn, isoSkin, isoIcon, queueIcon, refreshCityPanel } from "./isoui.js";
+import { plotState } from "./citywork.js";
 import { infoTip } from "./infotips.js";
 import { cultureView } from "./culture.js";
 import { recruitControls, recruitView, requisitionNote, requisitionTag } from "./armies.js";
@@ -123,7 +123,7 @@ export async function openCity(id, { popup = false } = {}) {
     if (overlay) {
       const mine = me()?.player;
       // A click works the plot of the city these plots are of (Previous / Next may have moved on).
-      emit("city-overlay", { id: c.id, x: c.x, y: c.y, owner: c.owner, plots: c.plots, onPlot: (p) => cityId === c.id && workable(p, mine) && task("TASK_CHANGE_WORKING_PLOT", p.i), tipOf: (p) => plotTip(p, mine) });
+      emit("city-overlay", { id: c.id, x: c.x, y: c.y, owner: c.owner, plots: c.plots, onPlot: (p) => cityId === c.id && workable(p, mine) && task("TASK_CHANGE_WORKING_PLOT", p.i), tipOf: (p) => plotTipNodes(p, mine, c) });
     }
   };
   m.setButtons(
@@ -226,87 +226,364 @@ function plotGrid(c, task) {
   return h("div.cgrid", { style: { gridTemplateColumns: `repeat(${2 * r + 1}, 1fr)` } }, rows);
 }
 
-/** What one specialist of type `s` adds: its yields, commerces, great people and experience,
- *  as a small line (markup icons). */
-function specialistYields(s) {
+// --- the screen's icons ----------------------------------------------------------------------
+
+/** The art's yield and commerce icons outside the isometric interface (`uiIcon`). */
+const ART_ICON = { food: ["yield", 0], production: ["yield", 1], commerce: ["yield", 2], gold: ["commerce", 0], research: ["commerce", 1], culture: ["commerce", 2], espionage: ["commerce", 3] };
+const COMMERCE_NAMES = ["gold", "research", "culture", "espionage"];
+
+/** Short stand-ins for the icons the art's interface lacks (the flat debug renderer's). */
+const ICON_WORDS = { population: "●", happy: "☺", unhappy: "☹", health: "♥", unhealthy: "☠", greatpeople: "GP", defense: "⛨", cities: "bld", religion: "rel", civics: "emp" };
+
+/** Interface icon `name` (the isometric interface's `ui_<name>_s`, else the art's), 16 CSS px or
+ *  32 when `big`; a short stand-in when there is no icon. */
+function ic(name, big = false, title = null) {
+  const art = ART_ICON[name];
+  const el = isoSkin() ? isoIcon(name, { px: big ? 32 : 16, title }) : art ? uiIcon(art[0], art[1], big ? 16 : 8, { title }) : null;
+  return el ?? h("span.ic-word", { title }, ICON_WORDS[name] ?? name);
+}
+
+/** A citizen token (citywork.js draws the same on the map): the person, or `inner` (a
+ *  specialist's icon), in a ring; `kind` "" (works a plot), "spec", "free", "idle" or "angry". */
+function token(kind, inner = null) {
+  return h(`span.ctoken${kind ? `.${kind}` : ""}`, inner ?? ic("population"));
+}
+
+/** A plot's yields as icons, one per point (citywork.js `drawPips`), `max` icons a yield at most. */
+function pips(yields, max = 5) {
+  const out = [];
+  (yields ?? []).forEach((v, j) => {
+    if (v <= 0) return;
+    const name = ["food", "production", "commerce"][j];
+    for (let k = 0; k < Math.min(v, max); k++) out.push(ic(name));
+    if (v > max) out.push(h("span.pip-n", String(v)));
+  });
+  return h("span.pips", out);
+}
+
+/** The specialist a citizen taken off a plot becomes (DEFAULT_SPECIALIST), or null. */
+function defaultSpecialist() {
+  const s = S.data?.defines?.default_specialist ?? -1;
+  return s >= 0 ? s : null;
+}
+
+// --- citizens ----------------------------------------------------------------------------------
+
+/** The city's people, one token each, where they are: on the plots they work (the map shows the
+ *  same tokens), in specialist slots, without work, or angry. A click on a plot's citizen takes
+ *  them off it (they become the default specialist); on a specialist, back to the governor's
+ *  choice of plot. Then the specialists by type: their slots, filled and open. */
+function citizensView(c, task) {
+  const worked = c.plots.filter((p) => p.i !== 0 && p.worked);
+  const people = [];
+  const dflt = defaultSpecialist();
+  for (const p of worked) {
+    people.push(
+      h(
+        "button.cperson",
+        {
+          tip: `Works a plot: ${yieldWords(p.yields)}. Click: take them off it${dflt !== null ? ` (they become a ${dname("SpecialistType", dflt)})` : ""}.`,
+          onmouseenter: () => emit("city-hover", { x: p.x, y: p.y }),
+          onmouseleave: () => emit("city-hover", null),
+          onclick: () => task("TASK_CHANGE_WORKING_PLOT", p.i),
+        },
+        token(""),
+        pips(p.yields, 3),
+      ),
+    );
+  }
+  let specialists = 0;
+  for (const s of c.specialists) {
+    for (let k = 0; k < s.count; k++) {
+      specialists++;
+      people.push(
+        h(
+          "button.cperson",
+          { disabled: !s.minus, tip: infoTip("SpecialistType", s.specialist, { hint: s.minus ? "Click: back to work a plot." : null }), onclick: () => task("TASK_CHANGE_SPECIALIST", s.specialist, -1) },
+          token("spec", typeIcon("specialist", s.specialist, 16)),
+          specialistGives(s.specialist),
+        ),
+      );
+    }
+  }
+  const idle = Math.max(0, c.extra_population);
+  for (let k = 0; k < idle; k++) people.push(h("span.cperson", { tip: "Without work: click a plot on the map or an open slot." }, token("idle"), h("span.pips.dim", "idle")));
+  const angry = Math.max(0, c.happiness.angry);
+  for (let k = 0; k < angry; k++) people.push(h("span.cperson", { tip: "Angry: refuses to work. More happiness brings them back." }, token("angry"), h("span.pips.bad", "angry")));
+  const counts = [
+    `${worked.length} on plots`,
+    specialists ? `${specialists} specialist${specialists > 1 ? "s" : ""}` : null,
+    idle ? `${idle} idle` : null,
+    angry ? h("span.bad", `${angry} angry`) : null,
+  ].filter(Boolean);
+  return h(
+    "div.section.citizens",
+    h(
+      "div.sec-head",
+      h("h4", "Citizens"),
+      h(
+        "label.toggle",
+        { tip: "The governor picks the plots and specialists. Click a plot or a slot to choose yourself." },
+        h("input", { type: "checkbox", checked: c.citizens_automated, id: "city-auto-citizens", onchange: (ev) => task("TASK_SET_AUTOMATED_CITIZENS", -1, -1, ev.target.checked) }),
+        " Governor picks",
+      ),
+    ),
+    h("div.cpeople", people),
+    h("div.dim.ccounts", counts.flatMap((x, i) => (i ? [" · ", x] : [x]))),
+    specialistSlots(c, task),
+  );
+}
+
+/** "+3 food, +1 commerce". */
+function yieldWords(y) {
+  return (y ?? []).map((v, j) => (v ? `${signed(v)} ${dname("YieldType", j).toLowerCase()}` : null)).filter(Boolean).join(", ") || "nothing";
+}
+
+/** What one specialist of type `s` gives, as icons and numbers (`sign` -1: what leaving costs). */
+function specialistGives(s, sign = 1) {
   const e = info("SpecialistType", s);
   if (!e) return null;
   const bits = [];
-  (e.yields ?? []).forEach((n, j) => n && bits.push(`${signed(n)}${YIELD_ICONS[j]}`));
-  (e.commerces ?? []).forEach((n, j) => n && bits.push(`${signed(n)}${COMMERCE_ICONS[j]}`));
-  if (e.great_people) bits.push(`${signed(e.great_people)}[ICON_GREATPEOPLE]`);
-  if (e.experience) bits.push(`${signed(e.experience)} XP to new units`);
-  return bits.length ? h("span.spec-yields", " ", markup(bits.join(" "))) : null;
+  (e.yields ?? []).forEach((n, j) => n && bits.push(h("span.give", ic(["food", "production", "commerce"][j]), signed(sign * n))));
+  (e.commerces ?? []).forEach((n, j) => n && bits.push(h("span.give", ic(COMMERCE_NAMES[j]), signed(sign * n))));
+  if (e.great_people) bits.push(h("span.give", ic("greatpeople"), signed(sign * e.great_people)));
+  return bits.length ? h("span.gives", bits) : null;
 }
 
-function specialistsView(c, task) {
-  const rows = c.specialists
-    .filter((s) => s.count > 0 || s.plus || s.minus || s.free > 0)
-    .map((s) =>
+/** The specialists by type: a filled slot per specialist (click: back to a plot), an open slot per
+ *  free place (click: a citizen takes it), the free specialists a building gives in their own
+ *  colour; the types the city cannot employ yet in one line. */
+function specialistSlots(c, task) {
+  const rows = [];
+  const locked = [];
+  for (const s of c.specialists) {
+    const unlimited = s.can_add && s.count >= s.max;
+    if (!s.count && !s.free && !s.max && !s.can_add) {
+      // (The great people who settle in a city are specialists too, but never a slot to open.)
+      if (!/^SPECIALIST_GREAT_/.test(info("SpecialistType", s.specialist)?.type ?? "")) locked.push(h("span.locked", { tip: infoTip("SpecialistType", s.specialist, { hint: "No slot here yet: buildings open them." }) }, typeIcon("specialist", s.specialist, 16) ?? dname("SpecialistType", s.specialist)));
+      continue;
+    }
+    const name = dname("SpecialistType", s.specialist);
+    const slots = [];
+    for (let k = 0; k < s.free; k++) slots.push(h("span.slot.free", { tip: `A free ${name}: a building gives them, not a citizen.` }, typeIcon("specialist", s.specialist, 16)));
+    for (let k = 0; k < s.count; k++) slots.push(h("button.slot.full", { disabled: !s.minus, "aria-label": `${name}: back to a plot`, title: s.minus ? `${name}: click to send back to a plot` : name, onclick: () => task("TASK_CHANGE_SPECIALIST", s.specialist, -1) }, typeIcon("specialist", s.specialist, 16)));
+    const open = unlimited ? 1 : Math.max(0, s.max - s.count);
+    for (let k = 0; k < open; k++) slots.push(h("button.slot.open", { disabled: !s.plus, "aria-label": `Make a citizen a ${name}`, title: s.plus ? `Click: a citizen becomes a ${name}` : `No citizen to spare`, onclick: () => task("TASK_CHANGE_SPECIALIST", s.specialist, 1) }, "+"));
+    rows.push(
       h(
         "div.spec",
         { "data-specialist": s.specialist },
         typeIcon("specialist", s.specialist, 16),
-        // Its help says its yields; without one, the yields say what it gives.
-        h("span.spec-name", { tip: infoTip("SpecialistType", s.specialist, { extra: info("SpecialistType", s.specialist)?.effects ? null : specialistYields(s.specialist) }) }, dname("SpecialistType", s.specialist), specialistYields(s.specialist)),
-        h("span.dim", `${s.count}${s.forced ? ` (${s.forced} set)` : ""}${s.free ? `, ${s.free} free` : ""}${s.max ? ` / ${s.max}` : ""}`),
-        h("button.small.minus", { disabled: !s.minus, title: "One less", onclick: () => task("TASK_CHANGE_SPECIALIST", s.specialist, -1) }, "−"),
-        h("button.small.plus", { disabled: !s.plus, title: "One more", onclick: () => task("TASK_CHANGE_SPECIALIST", s.specialist, 1) }, "+"),
+        h("span.spec-name", { tip: infoTip("SpecialistType", s.specialist) }, name, specialistGives(s.specialist)),
+        h("span.slots", slots),
       ),
     );
-  return h(
-    "div.section",
-    h("h4", "Citizens"),
-    h(
-      "label.toggle",
-      h("input", { type: "checkbox", checked: c.citizens_automated, id: "city-auto-citizens", onchange: (ev) => task("TASK_SET_AUTOMATED_CITIZENS", -1, -1, ev.target.checked) }),
-      " Automate citizens (the governor picks plots and specialists)",
-    ),
-    c.extra_population > 0 ? h("div.dim", `${c.extra_population} citizen${c.extra_population > 1 ? "s" : ""} without work`) : null,
-    rows.length ? h("div.specs", rows) : h("p.dim", "No specialists."),
-  );
+  }
+  return [
+    h("h4.sub", "Specialists"),
+    rows.length ? h("div.specs", rows) : h("p.dim", "No specialist slots."),
+    locked.length ? h("div.locked-line.dim", locked, " opened by buildings") : null,
+  ];
 }
 
-function kv(rows) {
-  return h("table.kv", rows.filter(([, v]) => v !== null && v !== undefined && v !== false).map(([k, v]) => h("tr", h("th", k), h("td", v instanceof Node ? v : String(v)))));
+// --- mood, health and the rest -----------------------------------------------------------------
+
+/** How many more citizens the city takes before trouble (`room`), as a badge: green with room,
+ *  amber at the limit, red past it. */
+function roomBadge(room, tip) {
+  const cls = room > 0 ? "good" : room === 0 ? "zero" : "bad";
+  return h(`span.room.${cls}`, { tip }, ic(room < 0 ? "unhappy" : "population"), room > 0 ? `+${room}` : String(room));
 }
 
-
-/** A city's happiness or health by its parts (the `city` query's `*_parts`: each list sums to its
- *  total): "+4 difficulty, +1 buildings; unhappy: 3 population". */
-function partsLine(good, bad, badWord, notes = []) {
-  const list = (ps) => (ps ?? []).map(([label, n]) => `${n} ${label}`).join(", ");
-  const text = [good?.length ? list(good) : null, bad?.length ? `${badWord}: ${list(bad)}` : null, ...notes].filter(Boolean).join("; ");
-  return h("span.dim.tip-parts", text || "-");
-}
-
-function statsView(c) {
-  const y = (i) => c.yields.find((v) => v.yield === i) ?? { rate: 0 };
-  const commerce = c.commerces.filter((k) => k.rate).map((k) => `${dname("CommerceType", k.commerce)} ${k.rate}`).join(", ");
-  const f = c.food;
+function moodView(c) {
   const hp = c.happiness;
   const he = c.health;
+  const happyRoom = hp.happy - hp.unhappy;
+  const healthRoom = he.good - he.bad;
+  const happyNotes = [hp.hurry_anger_timer ? `hurry anger for ${turns(hp.hurry_anger_timer)}` : null, hp.conscript_anger_timer ? `draft anger for ${turns(hp.conscript_anger_timer)}` : null];
   return h(
-    "div.section",
-    h("h4", "The city"),
-    kv([
-      ["Size", `${c.size}${c.capital ? " (capital)" : ""}${c.disorder ? " — in disorder" : ""}${c.occupation ? ` — occupied ${c.occupation}` : ""}`],
-      ["Food", `${f.stored}/${f.threshold} (${signed(f.difference)}; eats ${f.consumption}) ${f.difference > 0 ? `grows in ${turns(f.turns)}` : f.difference < 0 ? "starving" : "stagnant"}`],
-      ["Production", `${y(1).rate} per turn${y(1).modifier ? ` (+${y(1).modifier}%)` : ""}`],
-      ["Commerce", `${y(2).rate}: ${commerce || "-"}`],
-      ["Happy", `${hp.happy} happy, ${hp.unhappy} unhappy${hp.angry ? ` (${hp.angry} angry: they do not work)` : ""}`],
-      ["", partsLine(hp.happy_parts, hp.unhappy_parts, "unhappy", [hp.hurry_anger_timer ? `hurry anger for ${turns(hp.hurry_anger_timer)}` : null, hp.conscript_anger_timer ? `draft anger for ${turns(hp.conscript_anger_timer)}` : null])],
-      ["Health", `${he.good} healthy, ${he.bad} unhealthy${he.bad > he.good ? ` (${he.bad - he.good} short: −${he.bad - he.good} food a turn)` : ""}`],
-      ["", partsLine(he.good_parts, he.bad_parts, "unhealthy")],
-      ["Culture", `${c.culture}/${c.culture_threshold}${c.culture_level !== null ? ` (${dname("CultureLevelType", c.culture_level)})` : ""}`],
-      ["Great people", `${c.great_people.progress} (+${c.great_people.rate} per turn)`],
-      ["Defence", `${c.defense}%${c.defense_damage ? ` (damaged ${c.defense_damage})` : ""}`],
-      ["Maintenance", `${c.maintenance} gold`],
-      ["Crime", c.crime || null],
-      ["Trade routes", c.trade_routes || null],
-      ["Founded", `turn ${c.founded}`],
-    ]),
+    "div.section.mood",
+    h("h4", "Mood and health"),
+    h(
+      "div.mood-row",
+      { tip: partsText(hp.happy_parts, hp.unhappy_parts, "unhappy", happyNotes) },
+      h("span.count", ic("happy"), String(hp.happy)),
+      h("span.vs", "vs"),
+      h("span.count", ic("unhappy"), String(hp.unhappy)),
+      roomBadge(happyRoom, happyRoom > 0 ? `Room for ${happyRoom} more citizen${happyRoom > 1 ? "s" : ""} before unrest` : happyRoom === 0 ? "At the limit: the next citizen will be unhappy and angry" : `${-happyRoom} angry citizen${happyRoom < -1 ? "s" : ""}: they do not work`),
+    ),
+    h(
+      "div.mood-row",
+      { tip: partsText(he.good_parts, he.bad_parts, "unhealthy") },
+      h("span.count", ic("health"), String(he.good)),
+      h("span.vs", "vs"),
+      h("span.count", ic("unhealthy"), String(he.bad)),
+      roomBadge(healthRoom, healthRoom > 0 ? `Room for ${healthRoom} more citizen${healthRoom > 1 ? "s" : ""} before sickness costs food` : healthRoom === 0 ? "At the limit: the next citizen costs a food a turn" : `Sickness: ${healthRoom} food a turn`),
+    ),
   );
+}
+
+/** A city's happiness or health by its parts, as a tooltip's text. */
+function partsText(good, bad, badWord, notes = []) {
+  const list = (ps) => (ps ?? []).map(([label, n]) => `${n} ${label}`).join(", ");
+  return [good?.length ? list(good) : null, bad?.length ? `${badWord}: ${list(bad)}` : null, ...notes].filter(Boolean).join("; ") || "-";
+}
+
+function growthView(c) {
+  const ct = c.culture_threshold;
+  return h(
+    "div.section.city-growth",
+    h(
+      "div.meter",
+      { tip: `Culture ${c.culture}/${ct}${c.culture_level !== null ? ` (${dname("CultureLevelType", c.culture_level)})` : ""}: it grows the city's borders.` },
+      ic("culture"),
+      ct > 0 ? barEl(c.culture / ct, "culture", { w: 60 }) : null,
+      h("span", `${c.culture}/${ct}`),
+    ),
+    h(
+      "div.meter",
+      { tip: "Great people points: a great person is born when they reach the empire's threshold." },
+      ic("greatpeople"),
+      h("span", `${c.great_people.progress} · ${signed(c.great_people.rate)} a turn`),
+    ),
+    h(
+      "div.chips.stats",
+      h("span.chip", { tip: c.defense_damage ? `Damaged by ${c.defense_damage}` : "Defence against attackers" }, ic("defense"), `${c.defense}%`),
+      h("span.chip", { tip: "Upkeep: gold a turn" }, ic("gold"), c.maintenance ? `−${c.maintenance}` : "0"),
+      c.crime ? h("span.chip", { tip: "Crime" }, `Crime ${c.crime}`) : null,
+      c.trade_routes ? h("span.chip", { tip: "Trade routes" }, `Trade ${c.trade_routes}`) : null,
+      h("span.chip.dim", `Founded turn ${c.founded}`),
+    ),
+  );
+}
+
+// --- the yields at the top ---------------------------------------------------------------------
+
+/** The city's yields at a glance: size, food (grown less eaten, the growth bar, when it grows),
+ *  production (the current build's bar and turns), then where the commerce goes. */
+function summaryView(c) {
+  const f = c.food;
+  const y = (i) => c.yields.find((v) => v.yield === i) ?? { rate: 0 };
+  const prod = c.production;
+  const foodCls = f.difference > 0 ? "good" : f.difference < 0 ? "bad" : "";
+  const grows = f.difference > 0 ? h("span.when", { tip: `Grows to size ${c.size + 1} in ${turns(f.turns)}` }, "→ ", ic("population"), String(c.size + 1), ` in ${turns(f.turns)}`) : f.difference < 0 ? h("span.when.bad", "starving") : h("span.when.dim", "not growing");
+  return h(
+    "div.city-summary",
+    h(
+      "div.cs-row",
+      h(
+        "span.cs-size",
+        { tip: `Size ${c.size}${c.capital ? ", the capital" : ""}` },
+        ic("population", true),
+        h("b", String(c.size)),
+        c.capital ? h("span.capital", { title: "Capital" }, "★") : null,
+        c.disorder ? h("span.bad", " in disorder") : null,
+        c.occupation ? h("span.bad", ` occupied ${c.occupation}`) : null,
+      ),
+      h(
+        "div.cs-gauge",
+        { tip: `Food: ${y(0).rate} grown, ${f.consumption} eaten by the citizens; ${f.stored}/${f.threshold} stored` },
+        h("div.cs-top", ic("food", true), h(`b.cs-big.${foodCls || "even"}`, signed(f.difference)), h("span.cs-sub", String(y(0).rate), ic("food"), " − ", String(f.consumption), ic("population"))),
+        h("div.cs-top", f.threshold > 0 ? barEl(f.stored / f.threshold, "food", { w: 60, next: (f.stored + f.difference) / f.threshold }) : null, grows),
+      ),
+      h(
+        "div.cs-gauge",
+        { tip: prod.current ? `Production: ${prod.rate} a turn; ${prod.stored}/${prod.needed ?? "-"}` : "Nothing is being built" },
+        h("div.cs-top", ic("production", true), h("b.cs-big.prod", String(prod.rate)), h("span.cs-sub", prod.current ? productionName(c) : h("span.bad", "nothing to build"))),
+        prod.current && prod.needed ? h("div.cs-top", barEl(prod.stored / prod.needed, "production", { w: 60, next: (prod.stored + prod.rate) / prod.needed }), h("span.when", c.queue[0]?.turns !== null && c.queue[0]?.turns !== undefined ? `in ${turns(c.queue[0].turns)}` : "")) : null,
+      ),
+    ),
+    commerceView(c),
+  );
+}
+
+function productionName(c) {
+  const o = c.queue[0];
+  return o ? orderName(o.order, o.type) : "";
+}
+
+/** Where the commerce goes: the city's commerce, split by the empire's rates into a bar, then each
+ *  commerce's total with its parts (the split's share, specialists, buildings, religions, the
+ *  empire's own, processes, the modifier). */
+function commerceView(c) {
+  const raw = (c.yields.find((v) => v.yield === 2) ?? { rate: 0 }).rate;
+  // (Espionage only when it counts: with espionage off its parts are culture's, server side.)
+  const ks = c.commerces.filter((k) => (k.commerce === 3 ? k.rate !== 0 : k.rate || k.rates || k.specialists || k.buildings || k.religions || k.empire || k.process || k.percent > 0));
+  const split = ks.filter((k) => k.rates > 0);
+  const total = split.reduce((a, k) => a + k.rates, 0);
+  const bar = h(
+    "div.cs-split",
+    h("div.cs-split-pct", split.map((k) => h("span", { style: { flex: `${k.rates} 1 0` } }, `${k.percent}%`))),
+    h(
+      "div.cs-split-bar",
+      split.length
+        ? split.map((k) => h(`span.seg.${COMMERCE_NAMES[k.commerce]}`, { style: { flex: `${k.rates} 1 0` }, title: `${dname("CommerceType", k.commerce)}: ${k.rates} (${k.percent}%)` }, ic(COMMERCE_NAMES[k.commerce]), String(k.rates)))
+        : h("span.seg.none", "—"),
+    ),
+  );
+  const outs = ks.map((k) => {
+    const name = COMMERCE_NAMES[k.commerce];
+    const parts = [];
+    const add = (n, icon, tip) => n && parts.push(h("span.part", { title: tip }, parts.length ? ` ${n < 0 ? "−" : "+"} ` : n < 0 ? "−" : "", String(Math.abs(n)), icon));
+    add(k.rates, null, `From the city's commerce at ${k.percent}%`);
+    add(k.specialists, ic("population"), "From specialists");
+    add(k.buildings, ic("cities"), "From buildings");
+    add(k.religions, ic("religion"), "From religions");
+    add(k.empire, ic("civics"), "From the empire (its traits and civics)");
+    add(k.process, ic("production"), "Production turned to it");
+    if (k.modifier) parts.push(h("span.part", { title: "Buildings, wonders and the empire's bonuses" }, ` ${k.modifier > 0 ? "+" : "−"}${Math.abs(k.modifier)}%`));
+    return h(
+      `div.cs-out.${name}`,
+      { tip: `${dname("CommerceType", k.commerce)}: ${k.rate} a turn` },
+      h("span.cs-out-top", ic(name, true), h("b", String(k.rate))),
+      h("span.cs-out-parts", parts.length ? parts : "0"),
+    );
+  });
+  return h(
+    "div.cs-row.cs-commerce",
+    h("span.cs-raw", { tip: `Commerce: ${raw} from the city's plots and trade routes, split by the empire's rates` }, ic("commerce", true), h("b.cs-big.com", String(raw))),
+    h("span.cs-arrow", "→"),
+    total || raw ? bar : h("span.dim", "no commerce"),
+    h("span.cs-arrow", "→"),
+    h("div.cs-outs", outs.length ? outs : h("span.dim", "nothing")),
+  );
+}
+
+/** The map's tooltip over city plot `p` (the overlay's `tipOf`): what a click does, what the
+ *  plot gives and, for a plot to work, who leaves their place for it (`next_worker`). */
+function plotTipNodes(p, mine, c) {
+  const line = (...xs) => h("div.ptip-line", xs);
+  const gives = (y, sign = 1) => h("span.gives", (y ?? []).map((v, j) => (v ? h("span.give", ic(["food", "production", "commerce"][j]), signed(sign * v)) : null)));
+  const state = plotState(p, mine);
+  const dflt = defaultSpecialist();
+  switch (state) {
+    case "home":
+      return [h("b", "The city's own plot"), line("Always worked, by nobody: it is free."), p.yields ? line(gives(p.yields)) : null, line(h("span.dim", "Click: the governor picks the citizens."))];
+    case "hidden":
+      return [h("b", "Unexplored")];
+    case "worked":
+      return [
+        h("b", "Worked"),
+        line(gives(p.yields)),
+        line(h("span.dim", "Click: take the citizen off it")),
+        dflt !== null ? line(token("spec", typeIcon("specialist", dflt, 16)), ` a ${dname("SpecialistType", dflt)}`, specialistGives(dflt)) : null,
+      ];
+    case "other":
+      return [h("b", `Worked by ${S.cities.get(p.worked_by)?.name ?? "another city"}`), line(gives(p.yields)), p.owner === mine ? line(h("span.dim", "Click: take it for this city")) : null];
+    case "free": {
+      const w = c.next_worker;
+      let from = null;
+      if (w?.idle) from = line(token("idle"), " a citizen without work takes it");
+      else if (w?.specialist !== undefined) from = line(token("spec", typeIcon("specialist", w.specialist, 16)), ` the ${dname("SpecialistType", w.specialist)} leaves`, specialistGives(w.specialist, -1));
+      else if (w?.plot !== undefined) {
+        const q = c.plots.find((x) => x.i === w.plot);
+        from = line(token(""), " moves off a plot:", gives(q?.yields, -1));
+      } else from = line(h("span.bad", "No citizen to spare"));
+      return [h("b", "Work this plot"), line(token("ghost"), gives(p.yields)), from];
+    }
+    default:
+      return [h("b", p.owner === mine ? "Cannot be worked now" : "Not your plot"), p.yields ? line(gives(p.yields)) : null];
+  }
 }
 
 function buildingsView(c, reload) {
@@ -423,20 +700,12 @@ function productionView(c, choose, remove, [tapMode, setTapMode], reload) {
 }
 
 function screen(c, { task, choose, remove, popup, overlay, tap, reload }) {
-  const f = c.food;
-  const head = h(
-    "div.city-summary",
-    h("b", `Size ${c.size}`),
-    c.capital ? " · capital" : "",
-    c.disorder ? h("span.warn", " · in disorder") : "",
-    c.occupation ? h("span.warn", ` · occupied ${c.occupation}`) : "",
-    ` · food ${signed(c.food.difference)} · production ${c.production.rate}`,
-    (look.art || isoSkin()) && f.threshold > 0 ? h("span.growth", uiIcon("yield", 0, 8), barEl(f.stored / f.threshold, "food", { w: 40, next: (f.stored + f.difference) / f.threshold, title: `${f.stored}/${f.threshold}` })) : null,
-  );
-  const plots = overlay ? h("p.dim.city-hint", "Click the city's plots on the map to work them; its own plot hands the choice back to the governor.") : plotGrid(c, task);
+  // On the map (the isometric interface) the plots are worked there: citywork.js draws the
+  // citizens on them; the dialog shows them as a grid.
+  const plots = overlay ? null : plotGrid(c, task);
   // This game's cultural channel after the city's numbers (its culture among them), above the
   // buildings: the right column's build lists are long.
-  const left = h("div.city-col", plots, specialistsView(c, task), statsView(c), popup ? null : cultureView(c, reload), buildingsView(c, reload));
+  const left = h("div.city-col", plots, citizensView(c, task), moodView(c), growthView(c), popup ? null : cultureView(c, reload), buildingsView(c, reload));
   const right = h("div.city-col", governanceView(c, reload), manageView(c, task), productionView(c, choose, remove, tap, reload));
-  return [head, popup ? h("div.city-cols.popup", right, left) : h("div.city-cols", left, right)];
+  return [summaryView(c), popup ? h("div.city-cols.popup", right, left) : h("div.city-cols", left, right)];
 }

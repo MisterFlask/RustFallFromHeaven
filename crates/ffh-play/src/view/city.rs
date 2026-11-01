@@ -255,6 +255,27 @@ pub fn bad_health_parts(g: &ffh_core::game::Game, c: CityId) -> Vec<Part> {
     out
 }
 
+/// City `c`'s commerce `k` by its sources, times 100 (C++ `getBaseCommerceRateTimes100`,
+/// `updateCommerce`): [from the city's commerce at the owner's rate, specialists, buildings,
+/// religions and corporations, the empire's free commerce, processes].
+fn commerce_parts(g: &ffh_core::game::Game, c: CityId, k: CommerceType) -> [i32; 6] {
+    let i = k.idx();
+    let city = &g.cities[c];
+    let player = &g.players[city.owner];
+    let mut specialists = 100 * city.specialist_commerce[i];
+    for s in g.d.specialists.keys() {
+        specialists += 100 * (city.specialist_count[s] + city.free_specialist_count[s]) * (player.specialist_extra_commerce[i] + player.specialist_type_extra_commerce[s][i]);
+    }
+    [
+        g.city_commerce_from_percent(c, k, g.city_yield_rate(c, YieldType::YIELD_COMMERCE) * 100),
+        specialists,
+        100 * city.building_commerce[i],
+        100 * (city.religion_commerce[i] + city.corporation_commerce[i]),
+        100 * player.free_city_commerce[i],
+        g.city_yield_rate(c, YieldType::YIELD_PRODUCTION) * city.production_to_commerce_modifier[i],
+    ]
+}
+
 /// `city {city}`: the full city screen.
 pub fn city(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
     let g = v.g;
@@ -302,7 +323,42 @@ pub fn city(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
     let yields = all::<YieldType>(YieldType::NUM).map(|y| {
         crate::jobj! { "yield" => Json::idx(y), "rate" => g.city_yield_rate(c, y), "base" => city.base_yield_rate[y.idx()], "modifier" => city.yield_rate_modifier[y.idx()] }
     });
-    let commerces = all::<CommerceType>(CommerceType::NUM).map(|k| crate::jobj! { "commerce" => Json::idx(k), "rate" => g.city_commerce_rate(c, k) });
+    let commerces = all::<CommerceType>(CommerceType::NUM).map(|k| {
+        // Where the commerce comes from (`getBaseCommerceRateTimes100`, `updateCommerce`): the
+        // city's commerce split by the owner's rates, then the specialists', buildings', religions'
+        // and the empire's own, the processes' share of production, all times the modifier. The
+        // parts are whole points (rounded down), so they can fall short of the rate by a point.
+        let mut parts = commerce_parts(g, c, k);
+        if k == CommerceType::COMMERCE_CULTURE && g.is_option(GameOptionType::GAMEOPTION_NO_ESPIONAGE) {
+            let spy = commerce_parts(g, c, CommerceType::COMMERCE_ESPIONAGE);
+            for (a, b) in parts.iter_mut().zip(spy) {
+                *a += b;
+            }
+        }
+        crate::jobj! {
+            "commerce" => Json::idx(k),
+            "rate" => g.city_commerce_rate(c, k),
+            "percent" => g.players[city.owner].commerce_percent[k.idx()],
+            "rates" => parts[0] / 100,
+            "specialists" => parts[1] / 100,
+            "buildings" => parts[2] / 100,
+            "religions" => parts[3] / 100,
+            "empire" => parts[4] / 100,
+            "process" => parts[5] / 100,
+            "modifier" => g.city_total_commerce_rate_modifier(c, k) - 100,
+        }
+    });
+    // What a click on a plot the city does not work takes (`alterWorkingPlot`): a citizen without
+    // work, else the one the governor would free (`city_worst_citizen`).
+    let next_worker = if g.city_extra_population(c) > 0 {
+        crate::jobj! { "idle" => true }
+    } else {
+        match g.city_worst_citizen(c, None) {
+            Some(ffh_core::governor::WorstCitizen::Specialist(s)) => crate::jobj! { "specialist" => Json::idx(s) },
+            Some(ffh_core::governor::WorstCitizen::Plot(i)) => crate::jobj! { "plot" => i },
+            None => Json::Null,
+        }
+    };
     let happiness = crate::jobj! {
         "happy" => g.city_happy_level(c),
         "unhappy" => g.city_unhappy_level(c, 0),
@@ -403,6 +459,7 @@ pub fn city(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
         "citizens_automated" => city.citizens_automated,
         "emphasize" => emphasize,
         "extra_population" => g.city_extra_population(c),
+        "next_worker" => next_worker,
         "yields" => Json::Arr(yields.collect()),
         "commerces" => Json::Arr(commerces.collect()),
         "happiness" => happiness,

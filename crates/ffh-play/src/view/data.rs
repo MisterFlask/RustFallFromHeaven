@@ -214,8 +214,12 @@ fn build(d: &GameData) -> Json {
         "kinds" => Json::Arr(KINDS.iter().map(|k| Json::from(k.kind)).collect()),
         "tables" => tables,
         "interface_modes" => crate::view::hotkeys::interface_modes_json(),
-        // The global defines the screens use (the sliders' step).
-        "defines" => crate::jobj! { "commerce_percent_change_increments" => d.defines.commerce_percent_change_increments },
+        // The global defines the screens use (the sliders' step; the specialist a citizen taken
+        // off a plot becomes, -1 for none).
+        "defines" => crate::jobj! {
+            "commerce_percent_change_increments" => d.defines.commerce_percent_change_increments,
+            "default_specialist" => d.defines.default_specialist,
+        },
     }
 }
 

@@ -581,6 +581,19 @@ async function rendererHd2d(url) {
   await b.eval(`window.ffh.setLayer("terrain")`);
   await b.eval("window.ffh.mapView.r3d.render(1)");
   await shot("renderer-hd2d");
+  // The city screen over the HD-2D map (citywork.js on its HUD): a token per citizen in the panel,
+  // a worked plot clicked off and on on the 3D map.
+  const city = await S("S.view.cities.find((c) => c.owner === S.view.me.player) || null");
+  let cityStep = "no city for the city screen";
+  if (city) {
+    await b.eval(`window.ffh.emit("open-city", ${city.id})`);
+    await dialog(city.name);
+    await until2(`!!document.querySelector(".modal.city-overlay .cpeople")`, "the city screen's citizens (HD-2D)");
+    const tokens = await b.eval(`document.querySelectorAll(".modal.city-overlay .cpeople .cperson").length`);
+    if (tokens !== city.size) throw new Error(`the city screen shows ${tokens} citizen tokens for a city of size ${city.size}`);
+    await cityOverlay(city);
+    cityStep = `the city screen (${tokens} citizen tokens, a plot clicked off and on on the 3D map)`;
+  }
   // Back to the flat map: the WebGL canvas goes.
   await b.eval(`window.ffh.setRenderer("flat")`);
   await until2(`window.ffh.mapView.renderer() === "flat" && !document.querySelector("canvas.map3d")`, "the flat map after the HD-2D map");
@@ -592,7 +605,7 @@ async function rendererHd2d(url) {
   if (canLose) await until2(`window.ffh.mapView.renderer() === "iso" && !document.querySelector("canvas.map3d")`, "the isometric map after the HD-2D map's context was lost");
   await b.eval(`window.ffh.setRenderer("flat")`);
   await until2(`window.ffh.mapView.renderer() === "flat" && !document.querySelector("canvas.map3d")`, "the flat map after the HD-2D map");
-  steps.push(`?renderer=hd2d: a frame of ${frame.colours} colours mid-view, ${frame.cards} unit cards and ${frame.statics} other cards, ${pick.n} plots picked right through the relief (${pick.hidden} hidden behind nearer ground), click-select, hover, zoom ${zooms.join(" ")}, pan, political layer, back to the flat map${canLose ? ", a lost WebGL context falls back to the isometric map" : " (no WEBGL_lose_context: context loss not checked)"}`);
+  steps.push(`?renderer=hd2d: a frame of ${frame.colours} colours mid-view, ${frame.cards} unit cards and ${frame.statics} other cards, ${pick.n} plots picked right through the relief (${pick.hidden} hidden behind nearer ground), click-select, hover, zoom ${zooms.join(" ")}, pan, political layer, ${cityStep}, back to the flat map${canLose ? ", a lost WebGL context falls back to the isometric map" : " (no WEBGL_lose_context: context loss not checked)"}`);
 }
 
 /** Records the page's POST bodies in `window.__posts` (from now on). */
@@ -899,7 +912,7 @@ async function cityScreen() {
   const p = await plotPos(city.x, city.y);
   await b.dblclick(p.x, p.y);
   await dialog(city.name);
-  if (await b.eval("!!window.ffh.mapView.iso")) return cityOverlay(city);
+  if (await b.eval("!!(window.ffh.mapView.iso || window.ffh.mapView.r3d)")) return cityOverlay(city);
   const screen = `${TOP} .modal.city-screen`;
   await until2(`!!document.querySelector(${q(`${screen} .cgrid .cplot.centre`)})`, "the city screen's plots");
   await shot("city-screen");
@@ -910,7 +923,7 @@ async function cityScreen() {
     const sel = `${screen} .cplot[data-i="${worked}"]`;
     await click(sel);
     await until2(`(() => { const e = document.querySelector(${q(sel)}); return e && !e.classList.contains("worked"); })()`, "the plot no longer worked");
-    await until2(`!!document.querySelector(${q(`${screen} .spec`)}) && !document.querySelector("#city-auto-citizens").checked`, "a specialist and the automation off");
+    await until2(`!!document.querySelector(${q(`${screen} .slot.full`)}) && !document.querySelector("#city-auto-citizens").checked`, "a specialist in a slot and the automation off");
     await shot("city-specialist");
     await click(sel);
     await until2(`(() => { const e = document.querySelector(${q(sel)}); return e && e.classList.contains("worked"); })()`, "the plot worked again");
@@ -935,7 +948,7 @@ async function cityOverlay(city) {
     let q = await at();
     await b.mouse(q.x, q.y);
     await until2(`!${isWorked}`, "the plot no longer worked (clicked on the map)");
-    await until2(`!!document.querySelector(".modal.city-overlay .spec") && !document.querySelector("#city-auto-citizens").checked`, "a specialist and the automation off");
+    await until2(`!!document.querySelector(".modal.city-overlay .slot.full") && !document.querySelector("#city-auto-citizens").checked`, "a specialist in a slot and the automation off");
     await shot("city-specialist");
     q = await at();
     await b.mouse(q.x, q.y);

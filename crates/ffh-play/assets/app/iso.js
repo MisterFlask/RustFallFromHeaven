@@ -24,6 +24,7 @@ import { S, me, tname, isBarbarian } from "./state.js";
 import * as T from "./tiles.js";
 import { unitMoves } from "./stacks.js";
 import { SPRITES } from "./iso/sprites.js";
+import { drawCityWork } from "./citywork.js";
 
 /** A tile's width in art pixels: the M7 contract (tiles 192 x 128, the diamond in rows 0-95). */
 const NATIVE = 192;
@@ -788,7 +789,7 @@ export class IsoMap {
       this.drawRoutes(g, f, cells);
       this.drawBorders(g, f, cells, false);
     }
-    // The city screen shows its work area instead of the selection's marks (drawCityArea).
+    // The city screen shows its work area instead of the selection's marks (drawCityWork).
     const city = v.overlay.city;
     if (!city) this.drawGroundMarks(g, f);
 
@@ -814,12 +815,11 @@ export class IsoMap {
     // Borders again over what stands up, faintly, so who owns a forest still shows.
     if (layer === "terrain") this.drawBorders(g, f, cells, false, true);
     this.drawClouds(g, f, cells);
-    if (city) this.drawCityArea(g, f, cells, city);
 
     // The screen's own city is named by its title; its plaque would cover its plots' yields.
     this.drawCityLabels(g, f, city ? cities.filter((x) => x.city.id !== city.id) : cities);
     this.drawUnitBadges(g, f, items.filter((it) => it.stack));
-    if (city) this.drawCityYields(g, f, cells, city);
+    if (city) this.drawCityWork(g, f, cells, city);
     else this.drawPath(g, f);
     this.drawFlashes(g, f);
     if (this.slides.size) {
@@ -1465,130 +1465,26 @@ export class IsoMap {
     }
   }
 
-  /** The city screen's work area (map.js `cityOverlay`, Civ4's city view): the revealed plots
-   *  outside the city's radius under a veil, the radius edged in gilt, its worked plots lit with a
-   *  citizen (dimmed when another city works the plot), the plots that are not the player's tinted,
-   *  the one pointed at outlined. */
-  drawCityArea(g, f, cells, city) {
+  /** The city screen's work area (map.js `cityOverlay`, citywork.js): each plot of the city by
+   *  its diamond, its yields over its centre. */
+  drawCityWork(g, f, cells, city) {
     const map = this.view.map;
-    const plots = new Map(city.plots.map((p) => [T.plotIndex(map, p.x, p.y), p]));
-    const mine = me()?.player;
-    g.fillStyle = "rgba(3,10,32,0.62)";
-    for (const c of cells) {
-      if (map.vis[c.k] === 0 || plots.get(c.k)?.revealed) continue;
-      this.diamond(g, c.sx, c.sy + c.drop, f.TW);
-      g.fill();
-    }
-    const inside = (c, dx, dy) => plots.has(T.plotIndex(map, c.x + dx, c.y + dy));
-    const hover = this.view.overlay.hover;
-    const edges = [];
-    for (const c of cells) {
-      const p = plots.get(c.k);
-      if (!p || !p.revealed) continue;
-      const sy = c.sy + c.drop;
-      if (p.worked && p.i !== 0) {
-        // A worked plot: lit, in a gilt ring.
-        this.diamond(g, c.sx, sy, f.TW, 3 * f.s);
-        g.fillStyle = "rgba(255,218,120,0.42)";
-        g.fill();
-        g.strokeStyle = "#0c0703";
-        g.lineWidth = 4;
-        g.stroke();
-        g.strokeStyle = "#f0b443";
-        g.lineWidth = 2;
-        g.stroke();
-      } else if (p.owner !== mine && p.i !== 0) {
-        this.diamond(g, c.sx, sy, f.TW, 2 * f.s);
-        g.fillStyle = "rgba(190,50,36,0.24)";
-        g.fill();
-      }
-      // The radius's edge: the sides facing a plot outside it (north is up-right, east down-right).
-      const T0 = [c.sx, sy - f.TH / 2];
-      const R = [c.sx + f.TW / 2, sy];
-      const B = [c.sx, sy + f.TH / 2];
-      const L = [c.sx - f.TW / 2, sy];
-      if (!inside(c, 0, 1)) edges.push([T0, R]);
-      if (!inside(c, 1, 0)) edges.push([R, B]);
-      if (!inside(c, 0, -1)) edges.push([B, L]);
-      if (!inside(c, -1, 0)) edges.push([L, T0]);
-      if (hover && hover.x === p.x && hover.y === p.y) {
-        this.diamond(g, c.sx, sy, f.TW, 2 * f.s);
-        g.strokeStyle = "#fff4c2";
-        g.lineWidth = 2;
-        g.stroke();
-      }
-    }
-    for (const [w, col] of [[5, "#0c0703"], [3, "#f0b443"], [1, "#ffe58c"]]) {
-      g.beginPath();
-      for (const [a, b] of edges) {
-        g.moveTo(a[0], a[1]);
-        g.lineTo(b[0], b[1]);
-      }
-      g.strokeStyle = col;
-      g.lineWidth = w;
-      g.stroke();
-    }
-    // The citizens: the interface's figure on each worked plot (half-seen when another city's).
-    const icon = this.sprites.source("ui_population_s");
-    if (!icon) return;
-    const size = f.TW >= 96 ? 32 : 16;
-    g.imageSmoothingEnabled = false;
-    for (const c of cells) {
-      const p = plots.get(c.k);
-      if (!p?.revealed || p.i === 0) continue;
-      const other = p.worked_by !== null && p.worked_by !== undefined;
-      if (!p.worked && !other) continue;
-      g.globalAlpha = p.worked ? 1 : 0.45;
-      g.drawImage(icon, Math.round(c.sx - size / 2), Math.round(c.sy + c.drop - f.TH * 0.42 - size / 2), size, size);
-    }
-    g.globalAlpha = 1;
-    g.imageSmoothingEnabled = true;
-  }
-
-  /** The city's plots' yields, over everything: a navy plate in a gilt rule on each revealed plot
-   *  with the interface's food, production and commerce icons and the amounts in Herald. */
-  drawCityYields(g, f, cells, city) {
-    const map = this.view.map;
-    const plots = new Map(city.plots.map((p) => [T.plotIndex(map, p.x, p.y), p]));
-    const icons = ["ui_food_s", "ui_production_s", "ui_commerce_s"].map((k) => this.sprites.source(k));
-    if (icons.some((im) => !im)) return;
-    // The plates of plots side by side are a tile apart: Herald at 2x only from 128 px tiles.
-    const u = f.TW >= 128 ? 2 : 1;
-    const fs = 10 * u;
-    const isz = 16;
-    g.font = `700 ${fs}px ${HERALD}`;
-    g.textAlign = "left";
-    g.textBaseline = "alphabetic";
-    g.imageSmoothingEnabled = false;
-    for (const c of cells) {
-      const p = plots.get(c.k);
-      if (!p?.revealed || !p.yields) continue;
-      const parts = p.yields.map((v, j) => [v, j]).filter(([v]) => v > 0);
-      if (!parts.length) continue;
-      const widths = parts.map(([v]) => isz + 2 + Math.ceil(g.measureText(String(v)).width));
-      const w = widths.reduce((a, b) => a + b, 0) + 4 * (parts.length - 1) + 8;
-      const h = Math.max(isz, 7 * u) + 6;
-      const x0 = Math.round(c.sx - w / 2);
-      const y0 = Math.round(c.sy + c.drop + f.TH * 0.08);
-      // A worked plot's plate is gilt-framed; the others' are muted, unframed.
-      g.globalAlpha = p.worked ? 1 : 0.62;
-      g.fillStyle = "#0c0703";
-      g.fillRect(x0 - 1, y0 - 1, w + 2, h + 2);
-      g.fillStyle = p.worked ? "#f0b443" : "#0c0703";
-      g.fillRect(x0, y0, w, h);
-      g.fillStyle = p.worked ? "#0a2a6c" : "#04102e";
-      g.fillRect(x0 + 1, y0 + 1, w - 2, h - 2);
-      let x = x0 + 4;
-      const base = y0 + Math.round((h - 7 * u) / 2) + 7 * u;
-      parts.forEach(([v, j], n) => {
-        g.drawImage(icons[j], x, Math.round(y0 + (h - isz) / 2), isz, isz);
-        g.fillStyle = p.worked ? "#ffffff" : "#c9d2e8";
-        g.fillText(String(v), x + isz + 2, base);
-        x += widths[n] + 4;
-      });
-      g.globalAlpha = 1;
-    }
-    g.imageSmoothingEnabled = true;
+    const at = new Map();
+    for (const c of cells) if (!at.has(c.k)) at.set(c.k, c);
+    const cell = (p) => at.get(T.plotIndex(map, p.x, p.y)) ?? null;
+    drawCityWork(g, city, {
+      ts: f.TW,
+      outline: (p) => {
+        const c = cell(p);
+        if (!c) return null;
+        const sy = c.sy + c.drop;
+        return [[c.sx, sy - f.TH / 2], [c.sx + f.TW / 2, sy], [c.sx, sy + f.TH / 2], [c.sx - f.TW / 2, sy]];
+      },
+      anchor: (p) => {
+        const c = cell(p);
+        return c ? { x: c.sx, y: c.sy + c.drop } : null;
+      },
+    }, { hover: this.view.overlay.hover, redraw: () => this.view.request() });
   }
 
   /** Each stack's count (on its flag; a hidden garrison's on its city's, even when alone), its

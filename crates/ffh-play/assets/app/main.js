@@ -687,6 +687,7 @@ function wire() {
   on("open-city", (id) => openCity(id));
   on("open-screen", (name) => openScreen(name));
   on("city-overlay", (o) => mapView.cityOverlay(o));
+  on("city-hover", (p) => mapView.cityHover(p));
   on("center", (x, y) => mapView.centerOn(x, y));
   on("selection", () => {
     if (S.sel) citySel = null;

@@ -6,6 +6,8 @@
 import { S, me, dname, tname } from "../state.js";
 import * as T from "../tiles.js";
 import { CATALOG } from "./assets/catalog.js";
+import { SEA } from "./world.js";
+import { drawCityWork } from "../citywork.js";
 
 const FONT = "system-ui, 'DejaVu Sans', 'Segoe UI', sans-serif";
 
@@ -102,8 +104,11 @@ function drawHudParts(r3d, cam) {
 
   // City plates: under the settlement, toward the camera; over the far-zoom counters (a city's
   // name matters more than the pins crowding round it), under the stack badges.
+  const screenCity = v.overlay.city;
   for (const c of r3d.cities ?? []) {
     const city = c.city;
+    // The city screen's own city is named by its title; its plate would cover its plot's yields.
+    if (screenCity && city.id === screenCity.id) continue;
     // At the plot's front edge, clear of the gate where the garrison stands; in front of the walls
     // of a great city that spills over its plot (the catalog's cityReach).
     const reach = CATALOG.cityReach?.({ size: city.size ?? 1, walls: !!city.walls, capital: !!city.capital }) ?? 0.5;
@@ -211,6 +216,32 @@ function drawHudParts(r3d, cam) {
         }
       }
     }
+  }
+
+  // The city screen's work area (citywork.js): each plot's outline on the ground, sampled along
+  // its edges so it follows the slopes; its yields and citizen over its centre.
+  if (screenCity) {
+    const world = r3d.world;
+    const N = 4;
+    const ground = (mx, my) => Math.max(SEA, world.heightAt(mx, my)) + 0.02;
+    drawCityWork(g, screenCity, {
+      ts,
+      outline: (p) => {
+        const pts = [];
+        const x0 = r3d.nearX(p.x);
+        for (const [ax, ay, bx, by] of [[0, 0, 1, 0], [1, 0, 1, 1], [1, 1, 0, 1], [0, 1, 0, 0]]) {
+          for (let k = 0; k < N; k++) {
+            const u = ax + ((bx - ax) * k) / N;
+            const w = ay + ((by - ay) * k) / N;
+            const q = r3d.project(cam, [x0 + u, ground(p.x + u, p.y + w), -(p.y + w)]);
+            if (!q) return null;
+            pts.push([q.x, q.y]);
+          }
+        }
+        return pts.some(([x, y]) => inView({ x, y }, 0)) ? pts : null;
+      },
+      anchor: (p) => r3d.project(cam, [r3d.nearX(p.x) + 0.5, world.plotHeight(p.x, p.y) + 0.02, -(p.y + 0.5)]),
+    }, { hover: v.overlay.hover, redraw: () => v.request() });
   }
 
   // Stack badges: over the figure's head.

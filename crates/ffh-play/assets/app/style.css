@@ -513,7 +513,92 @@ td.num { text-align: right; font-variant-numeric: lining-nums tabular-nums; }
 .yield-n { display: inline-flex; align-items: center; gap: 1px; }
 .specs { display: flex; flex-direction: column; gap: 2px; }
 .specs > div, .spec { display: flex; align-items: center; gap: 6px; }
-.spec-name { flex: 1; }
+.spec-name { flex: 1; display: flex; flex-wrap: wrap; align-items: center; column-gap: 6px; }
+/* The city screen's people (city.js `citizensView`): one token per citizen, as the map draws them
+   (citywork.js): a figure in a gilt ring on a plot, a specialist's icon in a blue one, a free
+   specialist's in orange, without work dashed, angry in red. */
+.sec-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sec-head h4 { margin: 0; }
+.cpeople { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 2px; }
+.cperson { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 3px; min-width: 52px; background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(240, 204, 102, 0.25); border-radius: 6px; color: inherit; font: inherit; cursor: pointer; }
+span.cperson { cursor: default; }
+.cperson:hover:not([disabled]) { border-color: #fff4c8; background: rgba(255, 244, 200, 0.08); }
+.ctoken { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: #140e08; border: 2px solid #f0cc66; box-shadow: 0 0 0 1px #0a0603; box-sizing: border-box; flex: none; }
+.ctoken img, .ctoken canvas { width: 20px; height: 20px; }
+.ctoken.spec { border-color: #8cbcf0; }
+.ctoken.free { border-color: #f0a03c; }
+.ctoken.idle { border-style: dashed; border-color: #b9a882; }
+.ctoken.angry { border-color: #e8705f; filter: saturate(0.6); }
+.ctoken.ghost { opacity: 0.55; }
+.ctoken.idle > *, .ctoken.angry > * { opacity: 0.7; }
+.pips { display: inline-flex; align-items: center; min-height: 16px; font-size: 12px; line-height: 1; }
+.pips img, .pips canvas { width: 16px; height: 16px; margin-left: -5px; }
+.pips img:first-child, .pips canvas:first-child { margin-left: 0; }
+.pip-n { font-size: 11px; margin-left: 1px; }
+.ccounts { font-size: 13px; }
+.gives { display: inline-flex; flex-wrap: wrap; gap: 6px; font-size: 13px; }
+.give { display: inline-flex; align-items: center; gap: 1px; white-space: nowrap; }
+.give img, .give canvas, .part img, .part canvas, .count img, .meter img, .chip img { width: 16px; height: 16px; vertical-align: -3px; }
+h4.sub { margin: 8px 0 2px; font-size: 0.9em; }
+.slots { display: inline-flex; flex-wrap: wrap; gap: 3px; justify-content: flex-end; }
+.slot { width: 30px; height: 30px; padding: 0; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; background: #140e08; color: #b9a882; font: 700 16px/1 system-ui, sans-serif; cursor: pointer; }
+.slot.full { border: 2px solid #8cbcf0; }
+.slot.free { border: 2px solid #f0a03c; cursor: default; }
+.slot.open { border: 1.5px dashed #8a7a5a; background: transparent; }
+.slot.open:hover:not([disabled]) { border-color: #f0cc66; color: #f0cc66; }
+.slot[disabled] { opacity: 0.45; cursor: default; }
+.slot img, .slot canvas { width: 20px; height: 20px; }
+.locked-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 4px; font-size: 13px; }
+.locked-line .locked { filter: grayscale(1) brightness(0.6); }
+/* Mood and health: the two counts and the room before trouble (city.js `moodView`). */
+.mood-row { display: flex; align-items: center; gap: 8px; padding: 3px 6px; margin: 2px 0; background: rgba(0, 0, 0, 0.22); border-radius: 6px; }
+.mood-row .count { display: inline-flex; align-items: center; gap: 3px; font-weight: 700; }
+.mood-row .count img, .mood-row .count canvas { width: 20px; height: 20px; }
+.mood-row .vs { font-size: 12px; opacity: 0.7; }
+.room { margin-left: auto; display: inline-flex; align-items: center; gap: 2px; padding: 1px 8px 1px 3px; border-radius: 12px; font-weight: 700; }
+.room img, .room canvas { width: 16px; height: 16px; }
+.room.good { background: #2d4a24; color: #dcf5cc; }
+.room.zero { background: #5a4614; color: #fbecc0; }
+.room.bad { background: #5c2620; color: #ffd9d2; }
+.city-growth .meter { display: flex; align-items: center; gap: 6px; margin: 2px 0; }
+.chips.stats { margin-top: 4px; }
+.chips.stats .chip { display: inline-flex; align-items: center; gap: 3px; }
+.ic-word { font-size: 12px; opacity: 0.8; }
+/* The yields at the top (city.js `summaryView`): food and production gauges, then where the
+   commerce goes (raw, split by the rates, each total with its parts). */
+.section.citizens, .section.mood, .section.city-growth { display: flex; flex-direction: column; align-items: stretch; }
+.city-summary { display: flex; flex-direction: column; gap: 4px; }
+.city-summary .cs-row { display: flex; align-items: center; gap: 14px; margin: 0; }
+.cs-size { display: inline-flex; align-items: center; gap: 4px; font-size: 1.2em; }
+.cs-size .capital { color: #f0cc66; }
+.cs-gauge { display: flex; flex-direction: column; gap: 2px; margin: 0; }
+.city-summary .cs-gauge div { margin: 0; }
+.cs-top { display: flex; align-items: center; gap: 6px; }
+.cs-big { font-size: 1.35em; line-height: 1; }
+.cs-big.good { color: #8fe07a; } .cs-big.bad { color: #ff8d6e; } .cs-big.prod { color: #e0a050; } .cs-big.com { color: #f2dc5a; }
+.cs-sub, .when { display: inline-flex; align-items: center; gap: 2px; font-size: 0.8em; opacity: 0.9; }
+.cs-sub img, .when img, .cs-sub canvas, .when canvas { width: 16px; height: 16px; }
+.cs-commerce { border-top: 1px solid rgba(240, 204, 102, 0.25); padding-top: 4px; }
+.cs-raw { display: inline-flex; align-items: center; gap: 4px; }
+.cs-arrow { opacity: 0.7; }
+.cs-split { display: flex; flex-direction: column; gap: 1px; width: 200px; }
+.cs-split-pct { display: flex; font-size: 11px; line-height: 12px; opacity: 0.85; }
+.cs-split-pct span { text-align: center; min-width: 0; }
+.cs-split-bar { display: flex; height: 22px; border: 1px solid rgba(240, 204, 102, 0.5); border-radius: 4px; overflow: hidden; }
+.cs-split-bar .seg { display: inline-flex; align-items: center; justify-content: center; gap: 2px; min-width: 28px; font-size: 13px; font-weight: 700; color: #fff8e4; }
+.cs-split-bar .seg + .seg { border-left: 2px solid #0a0603; }
+.cs-split-bar .seg img, .cs-split-bar .seg canvas { width: 16px; height: 16px; }
+.seg.research { background: #2f5f86; } .seg.gold { background: #7a6418; } .seg.culture { background: #6a3f86; } .seg.espionage { background: #4a4a5a; } .seg.none { background: transparent; }
+.cs-outs { display: flex; gap: 12px; }
+.cs-out { display: flex; flex-direction: column; align-items: center; gap: 0; }
+.cs-out-top { display: inline-flex; align-items: center; gap: 3px; font-size: 1.2em; }
+.cs-out.research b { color: #8cc8f4; } .cs-out.culture b { color: #d6a6ee; } .cs-out.gold b { color: #f2dc5a; }
+.cs-out-parts { display: inline-flex; align-items: center; font-size: 0.7em; opacity: 0.85; white-space: nowrap; }
+.cs-out-parts img, .cs-out-parts canvas { width: 14px; height: 14px; }
+/* The map's tooltip over a city plot (city.js `plotTipNodes`). */
+.ptip-line { display: flex; align-items: center; gap: 6px; margin-top: 3px; }
+.ptip-line .ctoken { width: 22px; height: 22px; }
+.ptip-line .ctoken img, .ptip-line .ctoken canvas { width: 14px; height: 14px; }
 
 /* The tech tree. */
 .modal { min-width: 0; }
