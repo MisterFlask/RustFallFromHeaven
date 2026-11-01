@@ -212,7 +212,10 @@ impl Game {
 
         self.player_do_gold(p);
 
-        self.player_do_research(p);
+        // Not in C++: a crusade Host has no research (docs/CRUSADE.md).
+        if !self.player_is_crusade_host(p) {
+            self.player_do_research(p);
+        }
 
         self.player_do_espionage_points(p);
 
@@ -456,6 +459,10 @@ impl Game {
     /// C++ `CvPlayer::verifyAlive`: kills players without cities (and without units or after
     /// founding, unless GAMEOPTION_COMPLETE_KILLS) or past the city-elimination limit.
     pub fn player_verify_alive(&mut self, p: PlayerId) {
+        // Not in C++: a crusade Host lives until its crusade dissolves (docs/CRUSADE.md).
+        if self.player_is_crusade_host(p) {
+            return;
+        }
         if self.players[p].alive {
             let mut kill = false;
 

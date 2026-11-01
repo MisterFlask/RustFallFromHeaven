@@ -350,6 +350,9 @@ impl Game {
         self.shrine_building_count = 0;
         self.num_culture_victory_cities = 0;
         self.culture_victory_culture_level = None;
+        self.crusades.clear();
+        self.next_crusade_id = 0;
+        self.crusade_reports.clear();
 
         // AI_reset(): CvGameAI::m_iPad = 0 (nothing to port).
     }
@@ -1579,7 +1582,7 @@ impl Game {
     }
 
     /// C++ `CvInitCore::setTeam(eID, eTeam)`: on change, `CvPlayer::updateTeamType`.
-    fn setup_set_team(&mut self, p: PlayerId, team: TeamId) {
+    pub(crate) fn setup_set_team(&mut self, p: PlayerId, team: TeamId) {
         if self.setup.players[p.idx()].team != team {
             self.setup.players[p.idx()].team = team;
             self.player_update_team_type(p);
@@ -1587,7 +1590,7 @@ impl Game {
     }
 
     /// C++ `CvInitCore::setSlotStatus(eID, eSlotStatus)`: on change, `CvPlayer::updateHuman`.
-    fn setup_set_slot_status(&mut self, p: PlayerId, status: SlotStatus) {
+    pub(crate) fn setup_set_slot_status(&mut self, p: PlayerId, status: SlotStatus) {
         if self.setup.players[p.idx()].slot_status != status {
             self.setup.players[p.idx()].slot_status = status;
             self.player_update_human(p);
@@ -1607,7 +1610,8 @@ impl Game {
         } else {
             let mut valid = false;
             for i in self.civ_team_ids() {
-                if !self.team_is_ever_alive(i) && !valid {
+                // (not in C++: crusade Host slots' teams are reserved; docs/CRUSADE.md)
+                if !self.team_is_ever_alive(i) && !valid && !self.player_is_host_slot(PlayerId(i.0)) {
                     new_team = Some(i);
                     valid = true;
                 }

@@ -39,6 +39,11 @@ pub enum DecisionKind {
     Offer { from: PlayerId },
     /// C++ BUTTONPOPUP_FOUND_RELIGION: the options are religions.
     Religion,
+    /// Not in C++ (docs/CRUSADE.md): the human's pick in a crusade's spoils draft; the options
+    /// are the offered cities, then "stop" (take the rest of the budget as wealth).
+    Draft { crusade: u32 },
+    /// Not in C++: an allied loan offered to the human: option 0 accepts, 1 refuses.
+    Loan { from: PlayerId },
 }
 
 impl DecisionKind {
@@ -52,6 +57,8 @@ impl DecisionKind {
             DecisionKind::TakeControl { .. } => "take_control",
             DecisionKind::Offer { .. } => "offer",
             DecisionKind::Religion => "religion",
+            DecisionKind::Draft { .. } => "draft",
+            DecisionKind::Loan { .. } => "loan",
         }
     }
 }
@@ -292,6 +299,59 @@ pub fn offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData], we_
         options: vec![DecisionOption::new("accept", "Accept"), DecisionOption::new("refuse", "Refuse")],
         advisor: Some(if advisor_accepts { 0 } else { 1 }),
         context: DecisionContext { other_player: Some(from), ..Default::default() },
+    }
+}
+
+/// A crusade's spoils draft (docs/CRUSADE.md): one option per offered city (key: the city id),
+/// then `stop`. A city worth more than `budget` is paid for from the treasury (the overdraw).
+pub fn draft(g: &Game, p: PlayerId, crusade: u32, budget: i32, offered: &[(CityId, i32)], advisor: Option<CityId>) -> Decision {
+    let mut options: Vec<DecisionOption> = offered
+        .iter()
+        .map(|&(c, v)| {
+            let over = (v - budget).max(0);
+            let mut o = DecisionOption::new(format!("city_{}", c.0), format!("{} (worth {})", crate::view::city_name(g, c), v));
+            if over > 0 {
+                o.help = format!("costs {over} gold from the treasury");
+                o.enabled = g.players[p].gold >= over;
+            }
+            o
+        })
+        .collect();
+    options.push(DecisionOption::new("stop", "Take the rest as wealth"));
+    Decision {
+        id: 0,
+        player: p,
+        kind: DecisionKind::Draft { crusade },
+        title: "Crusade spoils".into(),
+        text: format!("Your share left: {budget} gold. Pick a city or take the rest as wealth."),
+        advisor: Some(advisor.and_then(|a| offered.iter().position(|&(c, _)| c == a)).unwrap_or(offered.len())),
+        options,
+        context: DecisionContext::default(),
+    }
+}
+
+/// An allied loan offered to the human (docs/CRUSADE.md, "Allied loans").
+pub fn loan(g: &Game, p: PlayerId, proposal: &ffh_core::crusade::loan::LoanProposal, advisor_accepts: bool) -> Decision {
+    let t = &proposal.terms;
+    let items = |v: &[TradeData]| if v.is_empty() { "nothing".to_string() } else { v.iter().map(|x| trade_item_text(g, x)).collect::<Vec<_>>().join(", ") };
+    let role = if t.lender == p { "lend" } else { "borrow" };
+    Decision {
+        id: 0,
+        player: p,
+        kind: DecisionKind::Loan { from: proposal.from },
+        title: format!("Loan proposed by {}", crate::view::player_name(g, proposal.from)),
+        text: format!(
+            "You {role} strength {} for {} turns ({:?}) against team {}. Lender gives: {}. Borrower gives: {}.",
+            t.strength / 100,
+            t.duration,
+            t.mission,
+            t.target.0,
+            items(&proposal.lender_gives),
+            items(&proposal.borrower_gives)
+        ),
+        options: vec![DecisionOption::new("accept", "Accept"), DecisionOption::new("refuse", "Refuse")],
+        advisor: Some(if advisor_accepts { 0 } else { 1 }),
+        context: DecisionContext { other_player: Some(proposal.from), ..Default::default() },
     }
 }
 

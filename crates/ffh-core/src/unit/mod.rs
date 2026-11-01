@@ -441,6 +441,9 @@ pub struct Unit {
     pub ai_allowed_patrol: bool,
     /// C++ `CvUnitAI::m_bAllowedExplore` (`changeAllowedExplore`, exposed to Python).
     pub ai_allowed_explore: bool,
+    /// Not in C++: on a crusade Host's unit, who lent it and its contribution value
+    /// (docs/CRUSADE.md).
+    pub lent: Option<crate::crusade::LentRecord>,
 }
 
 impl Unit {
@@ -611,6 +614,7 @@ impl Unit {
             ai_allowed_perm_defense: true,
             ai_allowed_patrol: true,
             ai_allowed_explore: true,
+            lent: None,
         }
     }
 }

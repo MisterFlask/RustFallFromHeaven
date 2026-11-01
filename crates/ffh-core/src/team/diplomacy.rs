@@ -117,6 +117,11 @@ impl Game {
             return false;
         }
 
+        // Not in C++: a crusade Host's wars are its crusade's only (docs/CRUSADE.md).
+        if self.team_is_crusade_host(t) || self.team_is_crusade_host(other) {
+            return false;
+        }
+
         if !self.team_is_alive(t) || !self.team_is_alive(other) {
             return false;
         }
@@ -162,6 +167,11 @@ impl Game {
     /// C++ `CvTeam::declareWar`. `war_plan = None` is C++ `NO_WARPLAN`.
     pub fn team_declare_war(&mut self, t: TeamId, other: TeamId, new_diplo: bool, war_plan: Option<WarPlanType>) {
         debug_assert!(other != t, "eTeam is not expected to be equal with getID()");
+
+        // Not in C++: no declaration (nor cascade) reaches a crusade Host (docs/CRUSADE.md).
+        if self.team_is_crusade_host(t) || self.team_is_crusade_host(other) {
+            return;
+        }
 
         if !self.teams[t].at_war[other] {
             //FfH: Added by Kael 11/29/2007
@@ -401,6 +411,15 @@ impl Game {
     /// C++ `CvTeam::makePeace` (default `bBumpUnits = true`).
     pub fn team_make_peace(&mut self, t: TeamId, other: TeamId, bump_units: bool) {
         debug_assert!(other != t, "eTeam is not expected to be equal with getID()");
+
+        // Not in C++: a crusade Host never makes peace; its war ends at dissolution.
+        for team in [t, other] {
+            if let Some(i) = self.crusade_of_host_team(team) {
+                if !self.crusades[i].dissolving {
+                    return;
+                }
+            }
+        }
 
         if self.teams[t].at_war[other] {
             for p in self.player_ids() {

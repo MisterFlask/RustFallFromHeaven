@@ -586,18 +586,20 @@ impl Game {
         let team = self.unit_get_team(u);
         let plot_team = self.plot_get_team(plot);
         let unit = &self.units[u];
+        // Not in C++: a crusade Host heals in its lenders' and the victim's lands as at home
+        // (docs/CRUSADE.md).
+        let friendly = self.team_is_friendly_territory(team, plot_team) || (!self.crusades.is_empty() && self.crusade_host_heals_in(team, plot_team));
 
         let mut total_heal = 0;
 
         if self.plot_is_city(plot, true, Some(team)) {
-            total_heal += d.defines.city_heal_rate
-                + if self.team_is_friendly_territory(team, plot_team) { unit.extra_friendly_heal } else { unit.extra_neutral_heal };
+            total_heal += d.defines.city_heal_rate + if friendly { unit.extra_friendly_heal } else { unit.extra_neutral_heal };
             if let Some(c) = city {
                 if !self.city_is_occupation(c) {
                     total_heal += self.cities[c].heal_rate;
                 }
             }
-        } else if !self.team_is_friendly_territory(team, plot_team) {
+        } else if !friendly {
             if self.unit_is_enemy(u, plot_team, Some(plot)) {
                 total_heal += d.defines.enemy_heal_rate + unit.extra_enemy_heal;
 

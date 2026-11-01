@@ -552,6 +552,12 @@ impl Game {
             let unit_type = self.units[u].unit_type;
             let defender_type = self.units[defender].unit_type;
 
+            // Not in C++: lent units fought; a lent winner's kill is credited (docs/CRUSADE.md).
+            if !self.crusades.is_empty() {
+                let (attacker_dead, defender_dead) = (self.unit_is_dead(u), self.unit_is_dead(defender));
+                self.crusade_on_combat(u, defender, attacker_dead, defender_dead);
+            }
+
             if self.unit_is_dead(u) {
                 if self.unit_is_barbarian(u) {
                     self.players[defender_owner].wins_vs_barbs += 1;

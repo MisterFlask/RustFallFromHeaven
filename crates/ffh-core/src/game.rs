@@ -270,6 +270,13 @@ pub struct Game {
     pub num_culture_victory_cities: i32,
     /// C++ `m_eCultureVictoryCultureLevel`.
     pub culture_victory_culture_level: Option<CultureLevelType>,
+    // ---- not in C++: crusades and loans (docs/CRUSADE.md; empty with the ruleset flag off) ----
+    /// Running crusades and loan generals, in creation order.
+    pub crusades: Vec<crate::crusade::Crusade>,
+    /// Next `CrusadeId`.
+    pub next_crusade_id: u32,
+    /// Dissolved crusades (reports for the self-play measures and the log).
+    pub crusade_reports: Vec<crate::crusade::CrusadeReport>,
     // ---- replacements for state C++ keeps outside CvGame ----
     /// Trophies (C++ Python `CvDataStorage`, persistent across games in C++; per game here).
     pub trophies: BTreeMap<String, i32>,
@@ -404,6 +411,9 @@ impl Game {
             shrine_religion: Vec::new(),
             num_culture_victory_cities: 0,
             culture_victory_culture_level: None,
+            crusades: Vec::new(),
+            next_crusade_id: 0,
+            crusade_reports: Vec::new(),
             trophies: BTreeMap::new(),
             map_script: default_map_script(),
             dying: Vec::new(),

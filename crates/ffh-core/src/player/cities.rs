@@ -44,7 +44,8 @@ fn building_class_of(d: &GameData, building: BuildingType) -> BuildingClassType 
 fn ai_conquer_city(g: &mut Game, p: PlayerId, c: CityId) {
     let mut raze = false;
 
-    if g.player_can_raze(p, c) {
+    // Not in C++: a crusade Host keeps what it takes for the draft (docs/CRUSADE.md).
+    if g.player_can_raze(p, c) && !g.player_is_crusade_host(p) {
         // AI: the C++ raze value (elapsed turns, distance to our cities, financial trouble,
         // state religion and shrine, closeness, leader raze probability, traits) and its
         // `getSorenRandNum(100, "AI Raze City")` roll -> `Controller::raze_conquered_city`.
@@ -581,6 +582,11 @@ impl Game {
             if trigger_data.other_player == Some(old_owner) && trigger_data.other_player_city == Some(old_city) {
                 trigger_data.other_player_city = None;
             }
+        }
+
+        // Not in C++: crusade Hosts hand the victim's cities back (docs/CRUSADE.md).
+        if !self.crusades.is_empty() {
+            self.crusade_after_city_acquired(old_owner, p, city_plot, conquest);
         }
     }
 

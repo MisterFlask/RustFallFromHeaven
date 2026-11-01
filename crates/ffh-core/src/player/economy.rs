@@ -429,6 +429,11 @@ impl Game {
     /// C++ `CvPlayer::calculatePreInflatedCosts` (units + supply + maintenance + civic upkeep
     /// + Python `getExtraCost`).
     pub fn player_calculate_pre_inflated_costs(&self, p: PlayerId) -> i32 {
+        // Not in C++: a crusade Host costs no one anything (docs/CRUSADE.md).
+        if self.player_is_crusade_host(p) {
+            return 0;
+        }
+
         // Python getExtraCost(ePlayer): FFH2's CvGameUtils returns 0.
         let extra_cost = 0;
 

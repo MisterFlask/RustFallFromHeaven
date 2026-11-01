@@ -347,14 +347,15 @@ impl Game {
     pub fn is_valid_vote_selection(&self, vote_source: VoteSourceType, data: &VoteSelectionSubData) -> bool {
         let d = self.d;
 
+        // (not in C++: no resolution names a crusade Host; docs/CRUSADE.md)
         if let Some(p) = data.player {
-            if !self.players[p].alive || self.player_is_barbarian(p) || self.player_is_minor_civ(p) {
+            if !self.players[p].alive || self.player_is_barbarian(p) || self.player_is_minor_civ(p) || self.player_is_crusade_host(p) {
                 return false;
             }
         }
 
         if let Some(p) = data.other_player {
-            if !self.players[p].alive || self.player_is_barbarian(p) || self.player_is_minor_civ(p) {
+            if !self.players[p].alive || self.player_is_barbarian(p) || self.player_is_minor_civ(p) || self.player_is_crusade_host(p) {
                 return false;
             }
         }
@@ -765,6 +766,14 @@ impl Game {
             } else if info.force_war {
                 let vote_player = data.vote_option.player.expect("processVote: force war without a player");
                 let team = self.players[vote_player].team;
+
+                // Not in C++: with crusades on, the resolution calls the members to dedicate
+                // forces to a Host instead of declaring war ("dedicate or defy";
+                // docs/CRUSADE.md). Without a free Host slot the BtS declarations stand.
+                if self.crusades_enabled() && self.crusade_call_council(data.vote_source, team).is_some() {
+                    self.set_vote_outcome(data, PlayerVote::NO_PLAYER_VOTE);
+                    return;
+                }
 
                 for p in self.civ_player_ids() {
                     if self.player_is_voting_member(p, data.vote_source) {

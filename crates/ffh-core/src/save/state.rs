@@ -12,6 +12,7 @@ use super::{LoadError, Persist, Reader, Writer};
 
 use crate::area::Area;
 use crate::city::City;
+use crate::crusade::*;
 use crate::deal::Deal;
 use crate::group::SelectionGroup;
 use crate::ids::*;
@@ -101,11 +102,141 @@ impl Persist for SlotStatus {
     }
 }
 
-persist_struct!(PlayerSetup { civ, leader, team, handicap, art_style, slot_status, human, leader_name, civ_description });
+persist_struct!(PlayerSetup { civ, leader, team, handicap, art_style, slot_status, human, leader_name, civ_description, host });
 persist_struct!(GameSetup {
     world_size, climate, sea_level, era, game_speed, calendar, options, victories, game_turn, max_turns,
     target_score, max_city_elimination, num_advanced_start_points, sync_rand_seed, map_rand_seed,
-    map_script, players,
+    map_script, players, crusade,
+});
+
+// ---- crusades (docs/CRUSADE.md) ----
+
+persist_newtype!(CrusadeId);
+persist_struct!(CrusadeRules {
+    enabled, host_slots, term, pledge_deadline, obligation_percent, far_obligation_percent,
+    muster_percent, recover_health_percent, recover_turns, engage_turns, city_pop_gold,
+    city_building_percent, loan_upkeep_gold, loan_max_turns,
+});
+
+impl Persist for CrusadeKind {
+    fn write(&self, w: &mut Writer) {
+        match self {
+            CrusadeKind::Council(vs) => {
+                w.u8(0);
+                vs.write(w);
+            }
+            CrusadeKind::Loan { borrower } => {
+                w.u8(1);
+                borrower.write(w);
+            }
+            CrusadeKind::Direct => w.u8(2),
+        }
+    }
+    fn read(r: &mut Reader<'_>) -> Result<Self, LoadError> {
+        Ok(match r.u8()? {
+            0 => CrusadeKind::Council(Persist::read(r)?),
+            1 => CrusadeKind::Loan { borrower: Persist::read(r)? },
+            2 => CrusadeKind::Direct,
+            b => return Err(LoadError::Corrupt(format!("crusade kind {b}"))),
+        })
+    }
+}
+
+impl Persist for Objective {
+    fn write(&self, w: &mut Writer) {
+        match self {
+            Objective::Term => w.u8(0),
+            Objective::Capture(plots) => {
+                w.u8(1);
+                plots.write(w);
+            }
+            Objective::Recover => w.u8(2),
+        }
+    }
+    fn read(r: &mut Reader<'_>) -> Result<Self, LoadError> {
+        Ok(match r.u8()? {
+            0 => Objective::Term,
+            1 => Objective::Capture(Persist::read(r)?),
+            2 => Objective::Recover,
+            b => return Err(LoadError::Corrupt(format!("crusade objective {b}"))),
+        })
+    }
+}
+
+impl Persist for Pledge {
+    fn write(&self, w: &mut Writer) {
+        match self {
+            Pledge::Refuse => w.u8(0),
+            Pledge::Strength(s) => {
+                w.u8(1);
+                s.write(w);
+            }
+        }
+    }
+    fn read(r: &mut Reader<'_>) -> Result<Self, LoadError> {
+        Ok(match r.u8()? {
+            0 => Pledge::Refuse,
+            1 => Pledge::Strength(Persist::read(r)?),
+            b => return Err(LoadError::Corrupt(format!("pledge {b}"))),
+        })
+    }
+}
+
+impl Persist for HostState {
+    fn write(&self, w: &mut Writer) {
+        w.u8(match self {
+            HostState::Muster => 0,
+            HostState::March => 1,
+            HostState::Engage => 2,
+            HostState::Recover => 3,
+        });
+    }
+    fn read(r: &mut Reader<'_>) -> Result<Self, LoadError> {
+        Ok(match r.u8()? {
+            0 => HostState::Muster,
+            1 => HostState::March,
+            2 => HostState::Engage,
+            3 => HostState::Recover,
+            b => return Err(LoadError::Corrupt(format!("host state {b}"))),
+        })
+    }
+}
+
+impl Persist for Dissolution {
+    fn write(&self, w: &mut Writer) {
+        w.u8(match self {
+            Dissolution::Objective => 0,
+            Dissolution::Term => 1,
+            Dissolution::NoUnits => 2,
+            Dissolution::TargetGone => 3,
+            Dissolution::LoansEnded => 4,
+        });
+    }
+    fn read(r: &mut Reader<'_>) -> Result<Self, LoadError> {
+        Ok(match r.u8()? {
+            0 => Dissolution::Objective,
+            1 => Dissolution::Term,
+            2 => Dissolution::NoUnits,
+            3 => Dissolution::TargetGone,
+            4 => Dissolution::LoansEnded,
+            b => return Err(LoadError::Corrupt(format!("dissolution {b}"))),
+        })
+    }
+}
+
+persist_struct!(Call { player, obligation, answer, settled });
+persist_struct!(Lender {
+    player, delivered, units, credit, first_credit_turn, first_lend_turn, war_from_lending, term_end, credits,
+});
+persist_struct!(HostAi { state, since, rally, goal });
+persist_struct!(Crusade {
+    id, kind, host, target, victim, objective, start_turn, end_turn, deadline_turn, calls, lenders,
+    victim_plots, had_units, dissolving, defend, engaged, ai,
+});
+persist_struct!(LentRecord { crusade, lender, strength, turn, credited, engaged });
+persist_struct!(LenderReport { player, called, obligation, refused, delivered, credit, late_credit, spoils, cities });
+persist_struct!(CrusadeReport {
+    id, kind, target, start_turn, end_turn, reason, pool, wealth, delivered, engaged, refusals, lenders,
 });
 persist_struct!(LogEntry { turn, player, text });
 persist_struct!(GameLog { enabled, entries, cap });
@@ -139,7 +270,7 @@ persist_struct!(Unit {
     terrain_double_move_count, feature_double_move_count, extra_terrain_attack_percent,
     extra_terrain_defense_percent, extra_feature_attack_percent, extra_feature_defense_percent,
     extra_unit_combat_modifier, ai_birthmark, ai_type, ai_groupflag, ai_origin_x, ai_origin_y,
-    ai_suicide_summon, ai_allowed_perm_defense, ai_allowed_patrol, ai_allowed_explore,
+    ai_suicide_summon, ai_allowed_perm_defense, ai_allowed_patrol, ai_allowed_explore, lent,
 });
 
 persist_struct!(City {

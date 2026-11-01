@@ -333,6 +333,11 @@ impl Game {
             self.unit_set_transport_unit(cargo, Some(u));
         }
 
+        // Not in C++: a Host's unit converted into another of its units keeps its loan record.
+        if self.units[from].lent.is_some() {
+            self.crusade_on_convert(u, from);
+        }
+
         self.unit_kill(from, true, None);
     }
 
@@ -348,6 +353,11 @@ impl Game {
         // captured if a capture set its capturing player (docs/PORTING.md, "Changes from FFH2").
         if self.dying.contains(&u) {
             return;
+        }
+
+        // Not in C++: a lent unit's death is credited to its lender (docs/CRUSADE.md).
+        if self.units[u].lent.is_some() {
+            self.crusade_on_unit_killed(u);
         }
 
         // C++ dereferences `plot()` (FAssert non-NULL).
@@ -392,6 +402,10 @@ impl Game {
 
         // FfH: Added by Kael 07/23/2008
         if self.unit_is_immortal(u) {
+            // Not in C++: a lent hero escapes home to its lender, not back to the Host.
+            if self.units[u].lent.is_some() && self.crusade_hero_escape(u) {
+                return;
+            }
             if self.player_get_capital_city(owner).is_some() {
                 self.units[u].death_delay = false;
                 self.unit_do_immortal_rebirth(u);

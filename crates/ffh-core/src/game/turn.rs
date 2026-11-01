@@ -106,6 +106,9 @@ impl Game {
 
         self.do_diplo_vote();
 
+        // Not in C++: crusades and loans (docs/CRUSADE.md; nothing runs with the flag off).
+        self.crusade_do_turn();
+
         // setEndTurnMessage(false), setHasMovedUnit(false): UI.
 
         if self.ai_auto_play > 0 {
@@ -646,7 +649,8 @@ impl Game {
 
     /// C++ `CvGame::countCivPlayersAlive`.
     pub fn count_civ_players_alive(&self) -> i32 {
-        self.civ_player_ids().filter(|&p| self.players[p].alive).count() as i32
+        // Not in C++: crusade Hosts are not civilizations (docs/CRUSADE.md).
+        self.civ_player_ids().filter(|&p| self.players[p].alive && !self.player_is_crusade_host(p)).count() as i32
     }
 
     /// C++ `CvGame::countCivPlayersEverAlive` (players without a parent).
@@ -925,7 +929,8 @@ impl Game {
         let mut shares = vec![[0i64; 3]; num_civ_players];
 
         // S: alive civ players, in id order.
-        let scored: Vec<PlayerId> = self.civ_player_ids().filter(|&p| self.players[p].alive).collect();
+        // (not in C++: crusade Hosts are not scored; docs/CRUSADE.md)
+        let scored: Vec<PlayerId> = self.civ_player_ids().filter(|&p| self.players[p].alive && !self.player_is_crusade_host(p)).collect();
         let n = scored.len() as i64;
         if n == 0 {
             return shares;
@@ -1004,7 +1009,7 @@ impl Game {
     /// game only); `update_score` caches it in `player_score` and the team sums in `team_score`.
     pub fn world_scores(&self) -> Vec<i32> {
         let shares = self.world_score_shares();
-        let alive: Vec<bool> = self.civ_player_ids().map(|p| self.players[p].alive).collect();
+        let alive: Vec<bool> = self.civ_player_ids().map(|p| self.players[p].alive && !self.player_is_crusade_host(p)).collect();
         let u: Vec<i64> = shares.iter().map(|s| s[0] + s[1] + s[2]).collect();
         apportion_score(&u, &alive, SCORE_TOTAL_BP)
     }

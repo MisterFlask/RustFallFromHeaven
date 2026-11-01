@@ -153,6 +153,33 @@ pub trait Controller: Send + Sync {
     fn update_automated_group(&self, _g: &mut Game, _grp: GroupId) -> bool {
         false
     }
+
+    /// Not in C++ (docs/CRUSADE.md): `p` is called to crusade `c`: pledge a strength or refuse.
+    /// Asked every turn until it answers (`None` = not yet; no answer by the deadline counts as
+    /// a refusal). Default: `None`.
+    fn crusade_pledge(&self, _g: &Game, _p: PlayerId, _c: crate::crusade::CrusadeId) -> Option<crate::crusade::Pledge> {
+        None
+    }
+
+    /// Not in C++: `p`'s pick in crusade `c`'s draft, with `budget` gold of its share left, from
+    /// `offered` (city, value): a city (one worth more than the budget is paid for from the
+    /// treasury: the overdraw), or `None` to stop and take the rest as wealth. Default: the most
+    /// valuable city the budget covers.
+    fn crusade_draft_pick(&self, _g: &Game, _p: PlayerId, _c: crate::crusade::CrusadeId, budget: i32, offered: &[(CityId, i32)]) -> Option<CityId> {
+        offered.iter().filter(|&&(_, v)| v <= budget).max_by_key(|&&(c, v)| (v, std::cmp::Reverse(c))).map(|&(c, _)| c)
+    }
+
+    /// Not in C++: `p` is offered loan `proposal` (as lender or borrower): accept, refuse or
+    /// counter. Default: refuse.
+    fn consider_loan(&self, _g: &Game, _p: PlayerId, _proposal: &crate::crusade::loan::LoanProposal) -> crate::crusade::loan::LoanAnswer {
+        crate::crusade::loan::LoanAnswer::Refuse
+    }
+
+    /// Not in C++: lender `p` picks the units of an agreed loan (at least `terms.strength`;
+    /// short of it the rules pick strongest-first). Default: strongest first.
+    fn choose_loan_units(&self, g: &Game, p: PlayerId, terms: &crate::crusade::loan::LoanTerms) -> Vec<UnitId> {
+        g.loan_default_units(p, terms.strength)
+    }
 }
 
 /// The human's answer to BUTTONPOPUP_RAZECITY ([`Controller::conquered_city_choice`]).

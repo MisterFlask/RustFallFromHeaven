@@ -58,7 +58,9 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 /// - 1: first layout.
 /// - 2: score v2 (docs/SCORE.md): `player_score`, `team_score` and `Player::score_history` hold
 ///   shares of the world in basis points instead of FFH2's `calculateScore` (no new fields).
-pub const FORMAT_VERSION: u32 = 2;
+/// - 3: crusades (docs/CRUSADE.md): `GameSetup::crusade`, `PlayerSetup::host`, `Unit::lent`,
+///   `Game::crusades` / `next_crusade_id` / `crusade_reports`.
+pub const FORMAT_VERSION: u32 = 3;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -285,6 +287,9 @@ fn write_game(g: &Game, w: &mut Writer) {
         shrine_religion,
         num_culture_victory_cities,
         culture_victory_culture_level,
+        crusades,
+        next_crusade_id,
+        crusade_reports,
         trophies,
         map_script: _,
         dying: _,
@@ -393,6 +398,9 @@ fn write_game(g: &Game, w: &mut Writer) {
     shrine_religion.write(w);
     num_culture_victory_cities.write(w);
     culture_victory_culture_level.write(w);
+    crusades.write(w);
+    next_crusade_id.write(w);
+    crusade_reports.write(w);
     trophies.write(w);
     path_finder.write(w);
     step_finder.write(w);
@@ -506,6 +514,9 @@ fn read_game(d: &'static GameData, r: &mut Reader<'_>) -> Result<Game, LoadError
         shrine_religion: Persist::read(r)?,
         num_culture_victory_cities: Persist::read(r)?,
         culture_victory_culture_level: Persist::read(r)?,
+        crusades: Persist::read(r)?,
+        next_crusade_id: Persist::read(r)?,
+        crusade_reports: Persist::read(r)?,
         trophies: Persist::read(r)?,
         map_script: default_map_script(),
         dying: Vec::new(),

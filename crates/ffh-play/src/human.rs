@@ -66,6 +66,10 @@ pub const POLICIES: &[(&str, Policy)] = &[
     ("attitude", Policy::Advisor),
     ("take_control", Policy::Blocking),
     ("update_automated_group", Policy::Advisor),
+    ("crusade_pledge", Policy::Deferred),
+    ("crusade_draft_pick", Policy::Blocking),
+    ("consider_loan", Policy::Blocking),
+    ("choose_loan_units", Policy::Advisor),
 ];
 
 /// An answer to a blocking decision.
@@ -481,5 +485,43 @@ impl Controller for HumanController {
 
     fn update_automated_group(&self, g: &mut Game, grp: GroupId) -> bool {
         self.advisor.update_automated_group(g, grp)
+    }
+
+    /// A crusade call (docs/CRUSADE.md): deferred, answered with the `crusade_answer` command;
+    /// no answer by the deadline counts as a refusal.
+    fn crusade_pledge(&self, g: &Game, p: PlayerId, c: ffh_core::crusade::CrusadeId) -> Option<ffh_core::crusade::Pledge> {
+        if !g.players[p].human {
+            return self.advisor.crusade_pledge(g, p, c);
+        }
+        None
+    }
+
+    /// A crusade's spoils draft: blocking, one option per offered city, then "stop".
+    fn crusade_draft_pick(&self, g: &Game, p: PlayerId, c: ffh_core::crusade::CrusadeId, budget: i32, offered: &[(CityId, i32)]) -> Option<CityId> {
+        if !g.players[p].human {
+            return self.advisor.crusade_draft_pick(g, p, c, budget, offered);
+        }
+        let advice = self.suggest(g, |g| self.advisor.crusade_draft_pick(g, p, c, budget, offered));
+        let i = self.block(g, decision::draft(g, p, c.0, budget, offered, advice));
+        offered.get(i).map(|&(city, _)| city)
+    }
+
+    /// An allied loan offered to the human: blocking accept (0) / refuse (1).
+    fn consider_loan(&self, g: &Game, p: PlayerId, proposal: &ffh_core::crusade::loan::LoanProposal) -> ffh_core::crusade::loan::LoanAnswer {
+        use ffh_core::crusade::loan::LoanAnswer;
+        if !g.players[p].human {
+            return self.advisor.consider_loan(g, p, proposal);
+        }
+        let advice = self.suggest(g, |g| self.advisor.consider_loan(g, p, proposal) == LoanAnswer::Accept);
+        if self.block(g, decision::loan(g, p, proposal, advice)) == 0 {
+            LoanAnswer::Accept
+        } else {
+            LoanAnswer::Refuse
+        }
+    }
+
+    /// The units of a loan the human agreed to lend: the advisor picks them.
+    fn choose_loan_units(&self, g: &Game, p: PlayerId, terms: &ffh_core::crusade::loan::LoanTerms) -> Vec<UnitId> {
+        self.advisor.choose_loan_units(g, p, terms)
     }
 }

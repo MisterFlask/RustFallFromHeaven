@@ -86,6 +86,11 @@ impl Game {
             return false;
         }
 
+        // Not in C++: a crusade Host has no diplomacy (docs/CRUSADE.md).
+        if self.player_is_crusade_host(p) || self.player_is_crusade_host(other) {
+            return false;
+        }
+
         let team = self.players[p].team;
         let other_team = self.players[other].team;
 
@@ -589,6 +594,11 @@ impl Game {
             }
 
             TradeableItem::TRADE_PEACE_TREATY => {
+                // Not in C++: no separate peace while one's units serve a Host against the other
+                // (docs/CRUSADE.md).
+                if !self.crusades.is_empty() && (self.crusade_serving_against(p, to_team) || self.crusade_serving_against(who_to, team)) {
+                    return false;
+                }
                 return true;
             }
 

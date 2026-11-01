@@ -239,6 +239,11 @@ impl Game {
             return;
         }
 
+        // Not in C++: no events for crusade Hosts (docs/CRUSADE.md).
+        if self.player_is_crusade_host(p) {
+            return;
+        }
+
         // C++ walks m_mapEventsOccured in key order, erasing the expired entries; neither the
         // check nor the expiry changes the map, so walking a copy of the keys is the same.
         let occured: Vec<EventType> = self.players[p].events_occured.keys().copied().collect();

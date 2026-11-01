@@ -1230,7 +1230,8 @@ impl Game {
 
     /// `getOpenPlayer()`: the first never-alive player slot (`None`: Python -1).
     pub fn cf_get_open_player(&self) -> Option<PlayerId> {
-        self.player_ids().find(|&p| !self.players[p].ever_alive)
+        // (not in Python: crusade Host slots are reserved; docs/CRUSADE.md)
+        self.player_ids().find(|&p| !self.players[p].ever_alive && !self.player_is_host_slot(p))
     }
 
     /// `getUnholyVersion(pUnit)`: the unit type a unit becomes when it turns to evil (by unit
