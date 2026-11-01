@@ -64,5 +64,5 @@ export function openHelp(id = null) {
     article.replaceChildren(...(current ? [h("h3", current.title), ...[current.body()].flat(Infinity).filter(Boolean)] : [h("p.dim", "No help yet.")]));
   };
   draw();
-  return openModal({ title: "Help", tag: "help", wide: true, className: "help", body: [h("div.help", nav, article)], buttons: [{ label: "Close", value: null }] });
+  return openModal({ title: "Help", tag: "help", wide: true, className: "help", body: [h("div.help-layout", nav, article)], buttons: [{ label: "Close", value: null }] });
 }
