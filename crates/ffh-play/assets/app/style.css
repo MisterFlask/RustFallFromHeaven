@@ -283,7 +283,7 @@ body.bottom-closed #bottom-toggle { transform: rotate(180deg); }
   color: var(--dim); background: none; border: 1px solid var(--dim); box-shadow: none;
 }
 .modal-head .info:hover, .modal-head .info.on { color: var(--c-vellum); border-color: var(--c-vellum); }
-.modal-info { padding: 8px 14px; border-bottom: 1px solid var(--c-ash); background: var(--panel-2); font-size: 14px; line-height: 1.45; }
+.modal-info { padding: 8px 14px; border-bottom: 1px solid var(--c-ash); background: var(--panel-2); font-size: 14px; line-height: 1.45; max-height: 32vh; overflow-y: auto; flex: none; }
 .modal-info[hidden] { display: none; }
 .modal-info ul { margin: 0; padding-left: 18px; }
 .modal-info li + li { margin-top: 3px; }
