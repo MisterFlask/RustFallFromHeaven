@@ -377,6 +377,11 @@ pub fn unit_json(v: &Viewer, u: UnitId) -> Json {
     if g.engagements_on() {
         battles::unit_fields(g, u, &mut j);
     }
+    // A crusade Host's unit (docs/CRUSADE.md): who lent it (the lender's banner is public, as the
+    // Host's own owner is).
+    if let Some(rec) = unit.lent.as_ref().filter(|_| v.unit_owner(u) == unit.owner) {
+        j.set("lent_by", rec.lender);
+    }
     j
 }
 
@@ -440,6 +445,8 @@ pub fn view(v: &Viewer, ctx: &Ctx) -> Json {
         // the last (null when off).
         "engagements" => g.engagements_on(),
         "battles" => battles::recent(v),
+        // The crusade ruleset (docs/CRUSADE.md): on (the `crusades` query has the details).
+        "crusades" => g.crusades_enabled(),
         // C++ `CvPlayer::m_groupCycle`: the order W cycles the waiting groups in
         // (`cycleSelectionGroups`), and whether some group has orders to continue
         // (`hasAutoUnit`: the cycle's wrap then sends AutoMoves).

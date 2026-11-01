@@ -1,7 +1,8 @@
 //! The `crusades` query (docs/CRUSADE.md): the running crusades and loan generals, the human's
 //! part in each (its call, what it delivered and earned, whether it may lend), the units it
 //! could lend, and its past crusades. Crusades are public (a council's call, a general's war);
-//! the Host's units are counted, not located (the map shows the ones in view).
+//! the Host's units are counted, and located only where the human sees them (`host_at`: its
+//! largest stack in view, for the map to show).
 
 use ffh_core::crusade::{CrusadeKind, Objective, Pledge};
 
@@ -67,10 +68,35 @@ pub fn crusades(v: &Viewer) -> Json {
                 Err(e) => Json::from(format!("{e:?}")),
             };
             let host_units = g.players[c.host].units.iter().filter(|&&u| g.units.contains(u) && !g.units[u].death_delay).count();
+            // The Host's largest stack in view, and the target's city nearest the human's
+            // capital among those it has revealed (where the map centres for "Show").
+            let mut stacks: Vec<(ffh_core::ids::PlotIdx, usize)> = Vec::new();
+            for &u in &g.players[c.host].units {
+                if g.units.contains(u) && !g.units[u].death_delay && v.unit_visible(u) {
+                    let q = g.unit_plot(u);
+                    match stacks.iter_mut().find(|s| s.0 == q) {
+                        Some(s) => s.1 += 1,
+                        None => stacks.push((q, 1)),
+                    }
+                }
+            }
+            let host_at = stacks.iter().max_by_key(|&&(q, n)| (n, std::cmp::Reverse(q))).map(|&(q, _)| {
+                let (x, y) = g.map.xy(q);
+                crate::jarr![x, y]
+            });
+            let home = g.players[h].capital_city.filter(|&cc| g.cities.contains(cc)).map(|cc| (g.cities[cc].x, g.cities[cc].y));
+            let target_at = g
+                .player_ids()
+                .filter(|&q| g.players[q].alive && g.players[q].team == c.target)
+                .flat_map(|q| g.players[q].cities.iter().copied())
+                .filter(|&cc| v.reveal || g.map.plots[g.city_plot(cc)].revealed[v.team])
+                .min_by_key(|&cc| (home.map_or(0, |(hx, hy)| g.plot_distance(hx, hy, g.cities[cc].x, g.cities[cc].y)), cc))
+                .map(|cc| crate::jarr![g.cities[cc].x, g.cities[cc].y]);
             crate::jobj! {
                 "id" => c.id.0,
                 "kind" => kind_json(c.kind),
                 "host" => c.host,
+                "host_name" => crate::view::player_name(g, c.host),
                 "target" => c.target,
                 "victim" => c.victim,
                 "defend" => c.defend,
@@ -88,6 +114,8 @@ pub fn crusades(v: &Viewer) -> Json {
                 "at_war_with_target" => g.at_war(v.team, c.target),
                 "can_lend" => can_lend,
                 "host_units" => host_units,
+                "host_at" => host_at,
+                "target_at" => target_at,
                 "lenders" => Json::Arr(c.lenders.iter().map(|l| crate::jobj! { "player" => l.player, "delivered" => l.delivered, "credit" => l.credit }).collect()),
             }
         })

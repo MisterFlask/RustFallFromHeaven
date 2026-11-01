@@ -218,3 +218,54 @@ fn crusade_commands_are_refused_without_the_ruleset() {
     let q = s.query(&Query::Crusades).unwrap();
     assert_eq!(q.req::<bool>("enabled"), Ok(false));
 }
+
+/// Lending from the map (docs/CRUSADE.md, "Human play"): the selection's `group` actions offer
+/// "Lend to the crusade against ..." with the selected units that can be lent; its command, sent
+/// as is, asks for the war first, then lends; the view's Host units name their lender, and the
+/// `crusades` query locates the Host's stack in view.
+#[test]
+fn the_selection_offers_the_lend_order() {
+    let mut s = game(6);
+    let h = s.human;
+    let mine = warriors(&mut s, h, 2);
+    assert_eq!(s.query(&Query::View).unwrap().req::<bool>("crusades"), Ok(true));
+    let group = |s: &Session, units: &[UnitId]| -> Vec<ffh_play::json::Json> {
+        let r = s.query(&Query::Group { units: units.to_vec() }).unwrap();
+        r.req_arr("actions").unwrap().iter().filter(|a| a.req_str("kind") == Ok("crusade")).cloned().collect()
+    };
+    assert!(group(&s, &mine).is_empty(), "no crusade, no lend order");
+    let id = call(&mut s, CrusadeKind::Direct, 5);
+    let acts = group(&s, &mine);
+    assert_eq!(acts.len(), 1, "{acts:?}");
+    let a = &acts[0];
+    assert_eq!(a.req::<u32>("crusade"), Ok(id.0));
+    assert_eq!(a.req::<bool>("enabled"), Ok(true));
+    assert!(a.req_str("label").is_ok_and(|l| l.starts_with("Lend to the crusade against")), "{a}");
+    assert!(a.req_str("help").is_ok_and(|t| t.contains("Lending means war")), "{a}");
+    // A settler cannot be lent: the order is there, disabled.
+    let settlers: Vec<UnitId> = s.g.players[h].units.iter().copied().filter(|&u| !s.g.crusade_unit_lendable(u)).collect();
+    if let Some(&settler) = settlers.first() {
+        if s.g.units[settler].x == s.g.units[mine[0]].x && s.g.units[settler].y == s.g.units[mine[0]].y {
+            let off = group(&s, &[settler]);
+            assert_eq!(off.len(), 1);
+            assert_eq!(off[0].req::<bool>("enabled"), Ok(false));
+        }
+    }
+    // Its command as sent: the war confirmation, then the lend.
+    let cmd = Command::from_json(s.g.d, a.req_value("cmd").unwrap()).unwrap();
+    match s.execute(&cmd) {
+        Ok(CmdOk::NeedsConfirm(Confirm::LendWar { .. })) => {}
+        other => panic!("{other:?}"),
+    }
+    let Command::CrusadeLend { crusade, units, .. } = cmd else { panic!("{cmd:?}") };
+    assert_eq!(units, mine);
+    applied(&mut s, Command::CrusadeLend { crusade, units, declare_war: true });
+    let view = s.query(&Query::View).unwrap();
+    let lent: Vec<_> = view.req_arr("units").unwrap().iter().filter(|u| u.req::<PlayerId>("lent_by") == Ok(h)).collect();
+    assert_eq!(lent.len(), 2, "the Host's units name their lender");
+    let q = s.query(&Query::Crusades).unwrap();
+    let cr = &q.req_arr("crusades").unwrap()[0];
+    let (x, y) = (s.g.units[s.g.players[s.g.crusade(id).unwrap().host].units[0]].x, s.g.units[s.g.players[s.g.crusade(id).unwrap().host].units[0]].y);
+    assert_eq!(cr.req::<Vec<i32>>("host_at"), Ok(vec![x, y]), "{cr}");
+    assert!(cr.req_str("host_name").is_ok_and(|n| n.starts_with("Crusade against")), "{cr}");
+}

@@ -903,6 +903,7 @@ function actionLabel(a) {
     case "promotion":
       return dname("PromotionType", a.promotion);
     case "army":
+    case "crusade":
       return a.label;
     case "upgrade": {
       const u = info("UnitType", a.unit);
@@ -938,6 +939,9 @@ const SECTIONS = [
   ["Religion", (a) => RELIGION.includes(typeOf(a))],
   ["Cargo", (a) => a.kind === "load" || CARGO.includes(typeOf(a))],
   ["Army", (a) => a.kind === "army"],
+  // Lending the selection to a crusade (docs/CRUSADE.md): one order per crusade (on the
+  // isometric and HD-2D card a tile in the orders row, the crossed swords).
+  ["Crusade", (a) => a.kind === "crusade"],
   ["Automation", (a) => a.kind === "automate"],
   ["Spells", (a) => a.kind === "spell"],
   ["Promotions", (a) => a.kind === "promotion"],
@@ -960,7 +964,7 @@ function helpOf(a) {
   if (a.kind === "spell") return effectsOf("SpellType", a.spell) || a.help || "";
   if (a.kind === "promotion") return effectsOf("PromotionType", a.promotion);
   if (a.kind === "upgrade") return effectsOf("UnitType", a.unit);
-  if (a.kind === "army") return a.help ?? "";
+  if (a.kind === "army" || a.kind === "crusade") return a.help ?? "";
   if (a.kind === "mission" && tname("MissionType", a.mission) === "MISSION_BUILD") return info("BuildType", a.data1)?.help ?? "";
   if (a.kind === "mission") return info("MissionType", a.mission)?.help ?? "";
   if (a.kind === "command") return info("CommandType", a.command)?.help ?? "";
@@ -968,7 +972,7 @@ function helpOf(a) {
 }
 
 const actionType = (a) =>
-  a.kind === "mission" ? tname("MissionType", a.mission) : a.kind === "target" ? a.mode : a.kind === "command" || a.kind === "load" ? tname("CommandType", a.command) : a.kind === "automate" ? tname("AutomateType", a.automate) : a.kind === "spell" ? tname("SpellType", a.spell) : a.kind === "promotion" ? tname("PromotionType", a.promotion) : a.kind === "upgrade" ? tname("UnitType", a.unit) : a.kind === "army" ? a.army : "";
+  a.kind === "mission" ? tname("MissionType", a.mission) : a.kind === "target" ? a.mode : a.kind === "command" || a.kind === "load" ? tname("CommandType", a.command) : a.kind === "automate" ? tname("AutomateType", a.automate) : a.kind === "spell" ? tname("SpellType", a.spell) : a.kind === "promotion" ? tname("PromotionType", a.promotion) : a.kind === "upgrade" ? tname("UnitType", a.unit) : a.kind === "army" ? a.army : a.kind === "crusade" ? `crusade-${a.crusade}` : "";
 
 /** The kinds the isometric card lists as labelled buttons rather than icon tiles (their icons
  *  would all look alike), with the icon each label carries. */
@@ -1320,7 +1324,7 @@ export function renderPanel() {
       actions.push(h("div.section", h("h4", title, more ? " " : null, more), h("div.actions", list.map(actionButton))));
     }
   }
-  const others = foreign.length ? h("div.section", h("h4", "Others here"), foreign.map((u) => h("div.dim", `${dname("UnitType", u.type)} (${playerName(u.owner)})`))) : null;
+  const others = foreign.length ? h("div.section", h("h4", "Others here"), foreign.map((u) => h("div.dim", `${dname("UnitType", u.type)} (${ownerText(u)})`))) : null;
   const pick = touchy() ? (isGoTo(mode?.action) ? "Tap a plot to go there." : `Tap a plot: ${mode && actionLabel(mode.action)}.`) : isGoTo(mode?.action) ? "Click a plot to go there (Shift: add waypoints; Esc cancels)." : `Pick a plot: ${mode && actionLabel(mode.action)} (Esc cancels).`;
   // One hint at a time: waypoints being laid say more than the go-to mode they are laid in.
   const way = waypoints && unitsKey(waypoints.units) === unitsKey(S.sel.units)
@@ -1452,6 +1456,12 @@ export function openSpells() {
 }
 
 /** The side panel for a plot without units of ours. */
+/** A unit's owner for people; a crusade Host's unit also names who lent it (docs/CRUSADE.md). */
+function ownerText(u) {
+  const lent = u.lent_by !== null && u.lent_by !== undefined ? `, lent by ${u.lent_by === me()?.player ? "you" : playerName(u.lent_by)}` : "";
+  return `${playerName(u.owner)}${lent}`;
+}
+
 async function renderPlotInfo(x, y) {
   panel.dataset.plot = `${x},${y}`;
   fill(panel, h("div.panel-head", h("h3", `Plot (${x}, ${y})`)), h("p.dim", "…"));
@@ -1480,7 +1490,7 @@ async function renderPlotInfo(x, y) {
   const units = list.map((u) =>
     h(
       "div.plot-unit",
-      `${dname("UnitType", u.type)} (${playerName(u.owner)}) ⚔${u.strength} ${Math.round((100 * u.hp) / u.max_hp)}%`,
+      `${dname("UnitType", u.type)} (${ownerText(u)}) ⚔${u.strength} ${Math.round((100 * u.hp) / u.max_hp)}%`,
       u.level > 1 ? h("span.dim", ` L${u.level}`) : null,
       role(u) || orders(u) ? h("div.dim.small", [role(u) ? `AI: ${role(u)}` : null, orders(u) ? `orders: ${orders(u)}` : null].filter(Boolean).join(" · "), ` · #${u.id}${u.group !== undefined && u.group !== null ? ` g${u.group}` : ""}`) : null,
     ),

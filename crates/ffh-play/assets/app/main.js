@@ -395,6 +395,8 @@ function openScreen(name) {
       return openArmies({ select: (ids) => units.select(ids), centerOn: (x, y) => mapView.centerOn(x, y) });
     case "research":
       return screens.openResearch();
+    case "crusades":
+      return crusade.openCrusades();
   }
 }
 
@@ -605,6 +607,8 @@ function wire() {
   click("btn-armies", () => openScreen("armies"));
   click("btn-governors", () => openScreen("governors"));
   click("btn-diplo", () => openScreen("diplomacy"));
+  click("btn-crusades", () => openScreen("crusades"));
+  crusade.init({ centerOn: (x, y) => mapView.centerOn(x, y) });
   click("btn-tools", () => tools.openTools());
   click("btn-save", () => S.view && screens.saveDialog());
   click("btn-load", () => screens.loadScreen());

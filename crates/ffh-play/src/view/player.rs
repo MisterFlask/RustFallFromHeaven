@@ -263,6 +263,8 @@ pub fn players(v: &Viewer) -> Json {
             .collect();
         j.set("deals", Json::Arr(deals));
         j.set("can_declare_war", t != v.team && g.team_can_declare_war(v.team, t));
+        // A crusade's Host (docs/CRUSADE.md): an army, not a civilization to talk to.
+        j.set("crusade_host", g.player_is_crusade_host(p));
     }
     crate::jobj! { "me" => v.h, "players" => Json::Arr(list) }
 }

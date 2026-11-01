@@ -180,10 +180,16 @@ of the browser's new-game screen); the commands `crusade_answer` (pledge or refu
 `crusade_lend` (lend units; at peace with the target it asks to declare the war first) and
 `propose_loan` (borrow or lend, with paired trade items; the AI accepts, refuses or counters);
 calls wait in `pending.crusade_calls` and count in the end-turn gate; the `crusades` query; the
-draft pick and loan offers are blocking decisions. In the browser a call is a popup (pledge,
-refuse, then the lend dialog), Foreign affairs has a *Crusades* screen (calls, lending, past
-crusades) and a *Loan* form per player. `ffh-play stage crusade DIR` saves a game with a call
-waiting, for trying it.
+draft pick and loan offers are blocking decisions. The browser's crusade UI is made for the
+HD-2D map, the default, and its floating interface (the classic interface shares it): a call is
+a popup with the target's leader (pledge, refuse, then the lend dialog); the advisors' rail has a
+*Crusades* button in a game with crusades, marked while a call waits (calls, lending, past
+crusades, the Host's banner colour, *Show the Host* / *Show the target* bringing the camera
+there); selected units' card offers *Lend to the crusade against …* (the `group` query's
+`crusade` action), so units are lent from the map where they stand; Foreign affairs has a *Loan*
+form per player, before that leader, who answers each proposal; a Host's units name their lender
+in the plot and stack lists. `ffh-play stage crusade DIR` saves a game with a call waiting, for
+trying it; `tools/web-smoke.mjs` drives it in the classic interface and in the HD-2D map.
 
 ## Self-play measures
 

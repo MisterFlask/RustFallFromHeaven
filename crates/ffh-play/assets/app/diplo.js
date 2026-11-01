@@ -19,7 +19,7 @@ import { openModal, ask } from "./modals.js";
 import { infoTip } from "./infotips.js";
 import { render as markup } from "./markup.js";
 import { run } from "./commands.js";
-import { openCrusades, openLoan } from "./crusade.js";
+import { openLoan } from "./crusade.js";
 import { leaderPortrait, playerPortrait, PORTRAIT } from "./portraits.js";
 
 /** The players screen. */
@@ -27,10 +27,10 @@ export async function openDiplomacy() {
   const m = openModal({ title: "Foreign affairs", body: [h("p.dim", "…")], tag: "diplomacy", wide: true, buttons: [{ label: "Close", value: null }] });
   const load = async () => {
     let r;
-    let crusades = false;
+    // The crusade ruleset (docs/CRUSADE.md): allied loans are proposed from here.
+    const crusades = !!S.view?.crusades;
     try {
       r = await api.query("players");
-      crusades = (await api.query("crusades")).enabled;
     } catch (e) {
       return m.setBody(h("p.warn", e.detail ?? e.message));
     }
@@ -38,7 +38,7 @@ export async function openDiplomacy() {
     const rows = r.players
       .filter((p) => !p.barbarian)
       .map((p) => {
-        const relation = [p.war ? h("span.warn", "war") : "peace", p.open_borders ? "open borders" : null, p.defensive_pact ? "defensive pact" : null, p.vassal_of_us ? "your vassal" : null, p.our_master ? "your master" : null].filter(Boolean);
+        const relation = [p.crusade_host ? h("b", "a crusade's Host") : null, p.war ? h("span.warn", "war") : "peace", p.open_borders ? "open borders" : null, p.defensive_pact ? "defensive pact" : null, p.vassal_of_us ? "your vassal" : null, p.our_master ? "your master" : null].filter(Boolean);
         const deals = p.deals.map((d) => `${d.we_give.map(tradeItemLabel).join(", ") || "nothing"} ⇄ ${d.they_give.map(tradeItemLabel).join(", ") || "nothing"} (since turn ${d.turn})`);
         return h(
           "tr",
@@ -50,7 +50,9 @@ export async function openDiplomacy() {
           h("td.num", scoreText(p.score)),
           h(
             "td.actions",
-            p.alive && p.contact ? h("button.small", { "data-trade": p.id, onclick: () => openTrade(p.id, p.name).then(load) }, "Trade…") : h("span.dim", p.alive ? "no contact" : "dead"),
+            p.alive && p.contact
+              ? h("button.small", { "data-trade": p.id, onclick: () => openTrade(p.id, p.name).then(load) }, "Trade…")
+              : h("span.dim", !p.alive ? "dead" : p.crusade_host ? "fights its crusade only (the Crusades advisor)" : "no contact"),
             p.can_declare_war && !p.war ? h("button.small.danger", { "data-war": p.team, onclick: () => declareWar(p).then(load) }, "Declare war") : null,
             crusades && p.alive && p.contact && !p.war ? h("button.small", { "data-loan": p.id, onclick: () => openLoan(p).then(load) }, "Loan…") : null,
           ),
@@ -66,7 +68,6 @@ export async function openDiplomacy() {
       : null;
     m.setBody(
       you,
-      crusades ? h("p", h("button.small", { id: "btn-crusades", onclick: () => openCrusades().then(load) }, "Crusades…"), h("span.dim", " calls, lent units, past crusades")) : null,
       rows.length
         ? h("table.scores.diplo", h("tr", h("th", "Leader"), h("th", "Relations"), h("th", "Attitude"), h("th", "Alignment"), h("th", "Score"), h("th", ""), h("th", "Deals")), rows)
         : h("p.dim", "You have not met anyone yet."),
@@ -98,7 +99,7 @@ const SAY = {
 /** What player `p`'s leader says (the `speech` query): for `comment` (an AI_DIPLOCOMMENT_* name),
  *  or with none what it says when you contact it, its greeting or its refusal to talk. Returns
  *  `{comment, text}`, or null when the query fails. */
-async function speech(p, comment = null) {
+export async function speech(p, comment = null) {
   try {
     return await api.query("speech", { with: p, comment, salt: Math.floor(Math.random() * 2 ** 31) });
   } catch {
@@ -108,7 +109,7 @@ async function speech(p, comment = null) {
 
 /** A leader speaking: the large portrait, name, civilization and mood, and the line in quotes;
  *  `say(text)` changes the line. */
-function leaderHead(p, text) {
+export function leaderHead(p, text) {
   const pl = S.players.get(p);
   const quote = h("blockquote.leader-says", text ?? "…");
   const mood = pl && pl.attitude !== null && pl.attitude !== undefined ? ` · ${dname("AttitudeType", pl.attitude)}` : "";

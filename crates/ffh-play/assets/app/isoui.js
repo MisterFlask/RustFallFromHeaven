@@ -173,6 +173,7 @@ export function actionIcon(a, px = 40) {
   }
   else if (a.kind === "automate") name = AUTOMATE_ICONS[tname("AutomateType", a.automate)] ?? "automate";
   else if (a.kind === "spell") name = "spell";
+  else if (a.kind === "crusade") name = "attack";
   else if (a.kind === "promotion") name = "promote";
   else if (a.kind === "upgrade") {
     const key = unitKeyOf(a.unit, me()?.player);
@@ -399,6 +400,8 @@ const RAIL = [
   ["btn-armies", "units"],
   ["btn-governors", "cities"],
   ["btn-diplo", "diplomacy"],
+  // Only in a game with the crusade ruleset (hud.js shows it).
+  ["btn-crusades", "attack"],
 ];
 const SYSTEM = [
   ["btn-tools", "settings"],

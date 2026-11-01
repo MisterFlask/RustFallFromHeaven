@@ -754,6 +754,9 @@ a healthy warrior is 200), as the `crusades` query counts them.
   of your combat land units, not summoned, not aboard or carrying units; called or not). Lending
   is war: while you are at peace with the target it answers `confirm lend_war {team}`; resend
   with `"declare_war": true`. Lent units cannot be recalled; they come home when the crusade ends.
+  The `group` query offers it as an action of the selection (kind `crusade`: `crusade`, `label`,
+  `help`), one per crusade you may lend to now, carrying the selected units that can be lent
+  (disabled when none can); the view's units of a Host carry `lent_by`, their lender.
 * `propose_loan {"to": 2, "lend": false, "target": 1, "mission": "attack", "strength": 600,
   "duration": 10, "give": [{"item": "TRADE_GOLD", "data": 50}], "get": [], "units": []}` offers an
   allied loan: you borrow from (or, with `"lend": true`, lend to) player `to` a strength against
@@ -766,8 +769,18 @@ a healthy warrior is 200), as the `crusades` query counts them.
   fought in ends you pick your cities of the spoils (blocking decision `draft`: one option per
   city, then `stop` to take the rest of your share as gold).
 * The `crusades` query lists the running crusades and loan generals (your call, what you
-  delivered, your units serving, your credit, whether you may lend), the units you can lend, the
-  known wars, and your past crusades with their spoils; `text` mentions your calls and crusades.
+  delivered, your units serving, your credit, whether you may lend, the Host's name, its largest
+  stack in view `host_at` and the target's city nearest your capital `target_at`), the units you
+  can lend, the known wars, and your past crusades with their spoils; `text` mentions your calls
+  and crusades. The view says whether the game has crusades (`crusades`); the `players` query
+  marks a Host (`crusade_host`: no contact, no war to declare; it fights its crusade only).
+* In the browser (made for the HD-2D map's floating interface, which the classic one shares): a
+  call is a popup with the target's leader (pledge, refuse, then the lend dialog or later); the
+  advisors' rail has a *Crusades* button in a game with crusades (marked while a call waits):
+  each crusade with its Host's banner colour, your part, *Lend units…* and *Show the Host* /
+  *Show the target*, which close it and bring the camera there; selected units' card offers
+  *Lend to the crusade against …*; Foreign affairs has a *Loan…* form per player, before that
+  leader, who answers each proposal.
 
 ### Queries
 

@@ -1,13 +1,35 @@
-// Crusades and allied loans (docs/CRUSADE.md, "Human play"): the call popup (a deferred popup:
-// `pending.crusade_calls`), the lend dialog, the Crusades screen (from Foreign affairs), and the
-// loan proposal. Strengths are the rules' (combat strength x100, scaled by health), shown as
-// combat strength: a healthy warrior is 2.
+// Crusades and allied loans (docs/CRUSADE.md, "Human play"), drawn for the default HD-2D map
+// and its floating interface (isoui.js), which the classic interface shares:
+//
+// - the call to arms: a deferred popup (`pending.crusade_calls`) with the target's leader,
+//   pledge or refuse;
+// - lending from the map: the selection's card offers "Lend to the crusade against ..." (a
+//   `crusade` action of the `group` query), the way to lend units standing where the Host needs
+//   them; the lend dialog picks them from a list instead (the Crusades screen, the call);
+// - the Crusades advisor (the rail's crossed swords, shown only in a game with crusades, marked
+//   while a call waits): each crusade with its Host's banner colour, your part in it, and "Show"
+//   buttons that close the screen and bring the HD-2D camera to the Host's army or the target;
+// - the loan proposal from Foreign affairs, before the other leader as the trade screen is.
+//
+// Strengths are the rules' (combat strength x100, scaled by health), shown as combat strength: a
+// healthy warrior is 2.
 
 import * as api from "./api.js";
 import { S, dname, teamName, tidx, me } from "./state.js";
 import { h, toast } from "./dom.js";
 import { openModal, ask } from "./modals.js";
 import { run } from "./commands.js";
+import { playerPortrait, PORTRAIT } from "./portraits.js";
+import { isoSkin, unlockIcon } from "./isoui.js";
+import { playerColor } from "./tiles.js";
+import { leaderHead, speech } from "./diplo.js";
+
+/** The map hooks (main.js `init`): `centerOn(x, y)` brings the camera to a plot. */
+const hooks = { centerOn: null };
+
+export function init({ centerOn } = {}) {
+  hooks.centerOn = centerOn ?? null;
+}
 
 /** A strength for people (the rules count x100). */
 export function strengthLabel(s) {
@@ -18,6 +40,24 @@ export function strengthLabel(s) {
 /** Who called crusade `kind` (`crusades` query `kind` object, or a pending call's `source`). */
 function callerName(source) {
   return source !== null && source !== undefined ? dname("VoteSourceType", source) : "An ally";
+}
+
+/** The leader of team `t` among the players met (the first alive), or null. */
+function teamLeader(t) {
+  const players = [...S.players.values()].filter((p) => p.team === t);
+  return players.find((p) => p.alive) ?? players[0] ?? null;
+}
+
+/** A Host's banner colour, as the map flies it. */
+function hostSwatch(host) {
+  return h("span.swatch.host-swatch", { style: { background: playerColor(host) }, title: "The Host's colour on the map" });
+}
+
+/** Closes dialog `m` and brings the map to `at` (`[x, y]`). */
+function show(m, at) {
+  if (!at) return;
+  m.close(null);
+  hooks.centerOn?.(at[0], at[1]);
 }
 
 /** A crusade call (`pending.crusade_calls[]`): pledge a strength or refuse. Resolves "chosen",
@@ -32,24 +72,39 @@ export async function openCall(call) {
     result = "chosen";
     m.close("chosen");
     if (strength !== null) {
-      const now = await ask("Lend units now?", "Pledged forces count once you lend the units, before the deadline.", [
-        { label: "Choose units", value: true, primary: true },
-        { label: "Later", value: null },
-      ]);
+      const now = await ask(
+        "Lend units now?",
+        isoSkin()
+          ? "Pledged forces count once you lend them, before the deadline: choose them from a list now, or later select units on the map and give them the order Lend to the crusade."
+          : "Pledged forces count once you lend the units, before the deadline.",
+        [
+          { label: "Choose units", value: true, primary: true },
+          { label: "Later", value: null },
+        ],
+      );
       if (now) openLend(call.crusade);
     }
   };
   const t = teamName(call.target);
+  const enemy = teamLeader(call.target);
+  const portrait = enemy ? playerPortrait(enemy.id, { size: PORTRAIT.medium }) : null;
   const m = openModal({
     title: `Crusade against ${t}`,
     body: [
       h(
-        "p.page-text",
-        `${callerName(call.source)} calls you to commit forces against ${t}. Lent units serve the crusade's Host until it ends (turn ${call.end}) and earn you a share of the spoils once they kill or die; lending means war with ${t}.`,
-      ),
-      h(
-        "p",
-        `Your obligation: strength ${strengthLabel(call.obligation)} by turn ${call.deadline} (you can lend ${strengthLabel(call.lendable)}). Refusing, or delivering nothing by then, costs your standing with the caller; delivering less costs part of it.`,
+        "div.crusade-call",
+        portrait ? h("figure.crusade-enemy", portrait, h("figcaption.dim", enemy.name)) : null,
+        h(
+          "div.crusade-call-text",
+          h(
+            "p.page-text",
+            `${callerName(call.source)} calls you to commit forces against ${t}. Lent units serve the crusade's Host until it ends (turn ${call.end}) and earn you a share of the spoils once they kill or die; lending means war with ${t}.`,
+          ),
+          h(
+            "p",
+            `Your obligation: strength ${strengthLabel(call.obligation)} by turn ${call.deadline} (you can lend ${strengthLabel(call.lendable)}). Refusing, or delivering nothing by then, costs your standing with the caller; delivering less costs part of it.`,
+          ),
+        ),
       ),
       h("label.field", h("span", "Pledge strength"), input),
       h(
@@ -60,13 +115,14 @@ export async function openCall(call) {
     ],
     buttons: [{ label: "Later", value: "later", title: "No answer by the deadline counts as a refusal" }],
     tag: "crusade",
-    className: "event",
+    className: "event crusade",
   });
   const r = await m.done;
   return result ?? r;
 }
 
-/** The lend dialog for crusade `id`: the units we can lend, with checkboxes. */
+/** The lend dialog for crusade `id`: the units we can lend, with checkboxes (in the HD-2D
+ *  interface each with its map figure). */
 export async function openLend(id) {
   const m = openModal({ title: "Lend units", body: [h("p.dim", "…")], tag: "crusade-lend", wide: true, buttons: [{ label: "Close", value: null }] });
   let q;
@@ -108,10 +164,14 @@ export async function openLend(id) {
     "Lend",
   );
   update();
+  const figure = (u) => (isoSkin() ? unlockIcon("units", u.type) : null);
   m.setBody(
-    h("p", `The crusade against ${teamName(c.target)} (until turn ${c.end}). Lent units cannot be recalled; they come home when it ends.`),
+    h("p", hostSwatch(c.host), `The Host fights ${teamName(c.target)} until turn ${c.end}. Lent units cannot be recalled; they come home when it ends.`),
     units.length
-      ? h("div.checks", units.map((u, i) => h("label.check", { "data-unit": u.unit }, boxes[i], ` ${dname("UnitType", u.type)} (${u.unit}) · strength ${strengthLabel(u.strength)} · at ${u.x}, ${u.y}`)))
+      ? h(
+          "div.checks.lend-units",
+          units.map((u, i) => h("label.check", { "data-unit": u.unit }, boxes[i], figure(u), ` ${dname("UnitType", u.type)} · strength ${strengthLabel(u.strength)} · at (${u.x}, ${u.y})`)),
+        )
       : h("p.dim", "None of your units can be lent (combat land units only, not summoned, not aboard a ship or carrying units)."),
     total,
     units.length ? lend : null,
@@ -125,8 +185,9 @@ function kindLabel(k) {
   return "Crusade";
 }
 
-/** The Crusades screen: running crusades and loan generals, our part in each, our past
- *  crusades. */
+/** The Crusades screen (the rail's advisor): running crusades and loan generals, our part in
+ *  each, our past crusades. "Show" closes it and brings the map to the Host's army or the
+ *  target. */
 export async function openCrusades() {
   const m = openModal({ title: "Crusades", body: [h("p.dim", "…")], tag: "crusades", wide: true, buttons: [{ label: "Close", value: null }] });
   const load = async () => {
@@ -156,14 +217,23 @@ export async function openCrusades() {
         );
       }
       if (c.can_lend === true) actions.push(h("button.small", { "data-lend": c.id, onclick: () => openLend(c.id).then(load) }, "Lend units…"));
+      if (c.host_at) actions.push(h("button.small", { "data-show-host": c.id, title: `The Host's largest stack in view, at (${c.host_at[0]}, ${c.host_at[1]})`, onclick: () => show(m, c.host_at) }, "Show the Host"));
+      if (c.target_at) actions.push(h("button.small", { "data-show-target": c.id, title: `The target's city nearest your capital, at (${c.target_at[0]}, ${c.target_at[1]})`, onclick: () => show(m, c.target_at) }, "Show the target"));
+      const enemy = teamLeader(c.target);
       return h(
         "tr",
         { "data-crusade": c.id },
-        h("td", h("b", kindLabel(c.kind)), h("div.dim", `against ${teamName(c.target)} · until turn ${c.end} · ${c.state}`)),
-        h("td", call ? `obligation ${strengthLabel(call.obligation)}, ${answer} (deadline turn ${c.deadline})` : answer),
-        h("td.num", `${strengthLabel(c.delivered)} (${c.serving} serving)`),
-        h("td.num", strengthLabel(c.credit)),
-        h("td.actions", actions),
+        h(
+          "td",
+          h(
+            "div.leader-cell",
+            enemy ? playerPortrait(enemy.id, { size: PORTRAIT.small }) : null,
+            h("div.crusade-name", h("b", hostSwatch(c.host), kindLabel(c.kind)), h("div.dim", `against ${teamName(c.target)} until turn ${c.end} · ${c.state} · ${c.host_units} in the Host`)),
+          ),
+          actions.length ? h("div.actions.crusade-actions", actions) : null,
+        ),
+        h("td", call ? [h("div", `obligation ${strengthLabel(call.obligation)} by turn ${c.deadline}`), h("div.dim", answer)] : h("span.dim", answer)),
+        h("td.num", h("div", `${strengthLabel(c.delivered)} · ${c.serving} serving`), h("div.dim", `credit ${strengthLabel(c.credit)}`)),
       );
     });
     const past = q.reports.map((r) =>
@@ -171,8 +241,9 @@ export async function openCrusades() {
     );
     m.setBody(
       rows.length
-        ? h("table.scores.crusades", h("tr", h("th", "Crusade"), h("th", "Your call"), h("th", "Delivered"), h("th", "Credit"), h("th", "")), rows)
+        ? h("table.scores.crusades", h("tr", h("th", "Crusade"), h("th", "Your call"), h("th", "Delivered")), rows)
         : h("p.dim", "No crusade is running."),
+      rows.length ? h("p.dim", isoSkin() ? "To lend units where they stand, select them on the map: their card offers Lend to the crusade." : "To lend units where they stand, select them: their actions offer Lend to the crusade.") : null,
       past.length ? h("details", h("summary", "Your past crusades"), h("ul", past)) : null,
     );
   };
@@ -180,8 +251,9 @@ export async function openCrusades() {
   return m.done;
 }
 
-/** Propose an allied loan to player `p` (`players` query row): lend or borrow a strength against
- *  a team at war with the borrower. */
+/** Propose an allied loan to player `p` (`players` query row), before its leader (as the trade
+ *  screen): lend or borrow a strength against a team at war with the borrower. The leader
+ *  answers each proposal; the form stays open for another. */
 export async function openLoan(p) {
   let q;
   try {
@@ -203,27 +275,31 @@ export async function openLoan(p) {
   const strength = h("input", { type: "number", id: "loan-strength", min: 0.5, step: 0.5, value: "4" });
   const duration = h("input", { type: "number", id: "loan-duration", min: 1, max: q.rules.loan_max_turns, value: String(Math.min(10, q.rules.loan_max_turns)) });
   const pay = h("input", { type: "number", id: "loan-gold", min: 0, value: "0" });
-  const err = h("p.error");
+  const status = h("p.dim");
   const field = (label, el) => h("label.field", h("span", label), el);
   const gold = (n) => (n > 0 ? [{ item: tidx("TradeableItem", "TRADE_GOLD"), data: n }] : []);
+  const leader = leaderHead(p.id, null);
+  speech(p.id).then((r) => !m.closed && leader.say(r?.text));
   const m = openModal({
     title: `Loan with ${p.name}`,
     body: [
+      leader.el,
       h(
         "p.dim",
         `Lent units serve a general dedicated to the borrower's war until the loan ends; lending means war with the enemy. The borrower pays ${q.rules.loan_upkeep_gold} gold per lent unit per turn. When you lend, your advisor picks the units.`,
       ),
       h("div.fields", field("Loan", role), field("Against", target), field("Mission", mission), field("Strength", strength), field(`Turns (up to ${q.rules.loan_max_turns})`, duration), field("Gold paid with it", pay)),
-      err,
+      status,
     ],
     buttons: [
       {
         label: "Propose",
         primary: true,
         value: "propose",
-        onClick: async (dialog) => {
+        onClick: async () => {
           if (!target.value) {
-            err.textContent = "Choose an enemy of the borrower.";
+            status.textContent = "Choose an enemy of the borrower.";
+            status.className = "error";
             return;
           }
           const lend = role.value === "lend";
@@ -243,13 +319,19 @@ export async function openLoan(p) {
           };
           const reply = await run(cmd);
           if (!reply) return;
-          toast(reply.r?.accepted ? `${p.name} agreed to the loan` : `${p.name} refused the loan`, reply.r?.accepted ? "info" : "error");
-          dialog.close(reply.r?.accepted ? "agreed" : "refused");
+          // The leader answers (Civ4's lines for a deal accepted or refused).
+          const accepted = !!reply.r?.accepted;
+          status.textContent = accepted ? `${p.name} agreed to the loan.` : `${p.name} refused the loan.`;
+          status.className = accepted ? "good" : "warn";
+          status.dataset.answer = accepted ? "agreed" : "refused";
+          const r = await speech(p.id, accepted ? "AI_DIPLOCOMMENT_ACCEPT" : "AI_DIPLOCOMMENT_NO_DEAL");
+          if (!m.closed) leader.say(r?.text);
         },
       },
-      { label: "Cancel", value: null },
+      { label: "Close", value: null },
     ],
     tag: "loan",
+    className: "loan",
   });
   return m.done;
 }
