@@ -180,6 +180,7 @@ pub fn trade(v: &Viewer, with: PlayerId) -> Result<Json, QueryErr> {
     }
     let can = contact(g, v.h, with);
     let (ours, theirs) = if can.is_ok() { (trade_table(g, v.h, with), trade_table(g, with, v.h)) } else { (Vec::new(), Vec::new()) };
+    let troops = if can.is_ok() { troops(v, with) } else { Json::Null };
     Ok(crate::jobj! {
         "with" => with,
         "contact" => can.is_ok(),
@@ -187,7 +188,54 @@ pub fn trade(v: &Viewer, with: PlayerId) -> Result<Json, QueryErr> {
         "war" => g.at_war(v.team, g.players[with].team),
         "we_give" => Json::Arr(ours.iter().map(|t| item_json(g, v.h, with, t)).collect()),
         "they_give" => Json::Arr(theirs.iter().map(|t| item_json(g, with, v.h, t)).collect()),
+        "troops" => troops,
     })
+}
+
+/// Troops (docs/CRUSADE.md, "Allied loans"), the crusade ruleset's item of the deal: a loan of
+/// units, sent as `propose_loan` with the rest of the deal as its `give` / `get`. Each way --
+/// `lend` (the human lends to `with`) and `borrow` (`with` lends to the human) -- the teams the
+/// loan could be against (the borrower's enemies the lender may fight), or `why_not` when there
+/// are none; `lend` lists the human's units that can be lent. How much `with` can spare is its
+/// own business: its answer says. Null without the crusade ruleset.
+fn troops(v: &Viewer, with: PlayerId) -> Json {
+    use ffh_core::crusade::loan::{LoanError, LoanMission, LoanTerms};
+    let g = v.g;
+    if !g.crusades_enabled() {
+        return Json::Null;
+    }
+    let way = |lender: PlayerId, borrower: PlayerId| -> Json {
+        let mut targets = Vec::new();
+        let mut why: Option<LoanError> = None;
+        for t in g.civ_team_ids() {
+            let terms = LoanTerms { lender, borrower, target: t, mission: LoanMission::Attack, strength: 1, duration: 1 };
+            match g.loan_check(&terms) {
+                Ok(()) | Err(LoanError::NotEnoughUnits) => targets.push(t),
+                Err(LoanError::NotAtWar | LoanError::BadTerms) => {}
+                Err(e) => why = why.or(Some(e)),
+            }
+        }
+        let why_not = if !targets.is_empty() {
+            None
+        } else {
+            Some(why.map_or_else(|| "the borrower is at war with no one the lender may fight".to_string(), crate::command::loan_error))
+        };
+        crate::jobj! { "targets" => targets, "why_not" => why_not }
+    };
+    let mut lend = way(v.h, with);
+    let units: Vec<Json> = g.players[v.h]
+        .units
+        .iter()
+        .copied()
+        .filter(|&u| g.units.contains(u) && g.crusade_unit_lendable(u))
+        .map(|u| crate::jobj! { "unit" => u, "type" => Json::idx(g.units[u].unit_type), "strength" => g.crusade_unit_strength(u), "x" => g.units[u].x, "y" => g.units[u].y })
+        .collect();
+    lend.set("units", Json::Arr(units));
+    crate::jobj! {
+        "lend" => lend,
+        "borrow" => way(with, v.h),
+        "max_turns" => ffh_core::crusade::speed_turns(g, g.crusade_rules().loan_max_turns),
+    }
 }
 
 /// The deal checks of `propose_deal` (the diplomacy screen only offers these): `to` can be

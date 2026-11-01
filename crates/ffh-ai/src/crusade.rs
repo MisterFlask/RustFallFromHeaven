@@ -358,9 +358,32 @@ pub fn draft_pick(g: &Game, p: PlayerId, budget: i32, offered: &[(CityId, i32)])
 // Loans
 // ----------------------------------------------------------------------------
 
-fn gold_of(items: &[TradeData]) -> i64 {
+/// What `items`, received by `p` from `other` as part of a loan of `duration` turns, are worth to
+/// `p` in gold: the AI's trade valuation (`trade::deal_val`: technologies, resources, gold), with
+/// gold per turn counted for the turns it is paid (a loan's ongoing payment runs as long as the
+/// loan).
+fn loan_items_val(g: &Game, p: PlayerId, other: PlayerId, items: &[TradeData], duration: i32) -> i64 {
+    let once: Vec<TradeData> = items.iter().filter(|t| t.item_type != TradeableItem::TRADE_GOLD_PER_TURN).cloned().collect();
+    let per_turn: i64 = items.iter().filter(|t| t.item_type == TradeableItem::TRADE_GOLD_PER_TURN).map(|t| t.data.max(0) as i64).sum();
+    crate::trade::deal_val(g, p, other, &once, false, 1) as i64 + per_turn * duration.max(0) as i64 * crate::trade::gold_trade_value_percent(g, p) as i64 / 100
+}
+
+/// The gold `items` take from their giver over a loan of `duration` turns (gold, and gold per
+/// turn for the loan's turns).
+fn payment_gold(items: &[TradeData], duration: i32) -> i64 {
     items.iter().filter(|t| t.item_type == TradeableItem::TRADE_GOLD).map(|t| t.data.max(0) as i64).sum::<i64>()
-        + items.iter().filter(|t| t.item_type == TradeableItem::TRADE_GOLD_PER_TURN).map(|t| t.data.max(0) as i64 * 10).sum::<i64>()
+        + items.iter().filter(|t| t.item_type == TradeableItem::TRADE_GOLD_PER_TURN).map(|t| t.data.max(0) as i64 * duration.max(0) as i64).sum::<i64>()
+}
+
+/// `items` with `extra` more of item kind `kind` (gold or gold per turn), merged into an existing
+/// entry.
+fn with_more(items: &[TradeData], kind: TradeableItem, extra: i32) -> Vec<TradeData> {
+    let mut out = items.to_vec();
+    match out.iter_mut().find(|x| x.item_type == kind) {
+        Some(x) => x.data += extra,
+        None => out.push(TradeData { item_type: kind, data: extra, offering: false, hidden: false }),
+    }
+    out
 }
 
 /// What lending `t.strength` costs `lender` (losses and risk) less what helping the borrower and
@@ -397,17 +420,28 @@ pub fn consider_loan(g: &Game, p: PlayerId, prop: &LoanProposal) -> LoanAnswer {
             return LoanAnswer::Refuse;
         }
         let cost = loan_cost(g, p, t);
-        let paid = gold_of(&prop.borrower_gives) - gold_of(&prop.lender_gives);
+        // The price is whatever the deal carries (valued as any trade), less what we give with it.
+        let paid = loan_items_val(g, p, t.borrower, &prop.borrower_gives, t.duration) - loan_items_val(g, t.borrower, p, &prop.lender_gives, t.duration);
         crate::trace!(g, p, "loan to {} of strength {} for {}: cost {} paid {} (borrower gold {})", t.borrower.0, t.strength, t.duration, cost, paid, g.players[t.borrower].gold);
         if paid >= cost {
             return LoanAnswer::Accept;
         }
-        let want = (cost - gold_of(&prop.lender_gives)).max(1);
-        if want <= g.players[t.borrower].gold as i64 {
-            let mut counter = prop.clone();
-            counter.from = p;
-            counter.borrower_gives.retain(|x| x.item_type != TradeableItem::TRADE_GOLD);
-            counter.borrower_gives.push(TradeData { item_type: TradeableItem::TRADE_GOLD, data: want as i32, offering: false, hidden: false });
+        // Counter with the shortfall in gold, or spread over the loan's turns as gold per turn
+        // when the borrower's treasury cannot pay it at once.
+        let pct = crate::trade::gold_trade_value_percent(g, p).max(1) as i64;
+        let short = ((cost - paid).max(1) * 100 + pct - 1) / pct;
+        let have = payment_gold(&prop.borrower_gives, 0);
+        let mut counter = prop.clone();
+        counter.from = p;
+        if have + short <= g.players[t.borrower].gold as i64 {
+            counter.borrower_gives = with_more(&prop.borrower_gives, TradeableItem::TRADE_GOLD, short as i32);
+            return LoanAnswer::Counter(counter);
+        }
+        let turns = t.duration.max(1) as i64;
+        let per_turn = ((short + turns - 1) / turns) as i32;
+        counter.borrower_gives = with_more(&prop.borrower_gives, TradeableItem::TRADE_GOLD_PER_TURN, per_turn);
+        let item = counter.borrower_gives.iter().find(|x| x.item_type == TradeableItem::TRADE_GOLD_PER_TURN).expect("added").clone();
+        if g.player_can_trade_item(t.borrower, p, &item, false) && g.player_calculate_gold_rate(t.borrower) + g.players[t.borrower].gold / t.duration.max(1) >= item.data {
             return LoanAnswer::Counter(counter);
         }
         LoanAnswer::Refuse
@@ -415,7 +449,7 @@ pub fn consider_loan(g: &Game, p: PlayerId, prop: &LoanProposal) -> LoanAnswer {
         // An offer to lend to us: worth it while we fight a stronger enemy, for what we can spare.
         let us = team_strength(g, g.players[p].team);
         let them = team_strength(g, t.target);
-        let price = gold_of(&prop.borrower_gives) - gold_of(&prop.lender_gives);
+        let price = payment_gold(&prop.borrower_gives, t.duration) - loan_items_val(g, p, t.lender, &prop.lender_gives, t.duration);
         if them * 100 >= us * 110 && price <= (g.players[p].gold / 3) as i64 {
             LoanAnswer::Accept
         } else {
@@ -452,15 +486,10 @@ pub fn ask_for_loans(g: &mut Game, p: PlayerId) {
             }
             let ours_in_danger = g.players[p].cities.iter().any(|&c| g.map.plots[g.city_plot(c)].units.iter().any(|&u| g.unit_get_team(u) == enemy));
             let mission = if ours_in_danger { LoanMission::Defend } else { LoanMission::Attack };
-            // The borrower pays the upkeep each turn: borrow only what it can keep paying.
+            // Ten turns (or the longest loan), paying a quarter of our gold; the lender may ask
+            // for more (its counter-offer).
             let offer = (g.players[p].gold / 4).max(0);
-            let per_unit = g.crusade_rules().loan_upkeep_gold.max(1);
-            let unit_strength = (lendable_strength(g, l) / spare_units(g, l).len().max(1) as i64).max(1);
-            let units = (strength as i64 / unit_strength).max(1);
-            let duration = ((g.players[p].gold - offer) as i64 / (units * per_unit as i64)).min(10) as i32;
-            if duration < 4 {
-                continue;
-            }
+            let duration = ffh_core::crusade::speed_turns(g, g.crusade_rules().loan_max_turns).min(10);
             let terms = LoanTerms { lender: l, borrower: p, target: enemy, mission, strength, duration };
             if let Err(e) = g.loan_check(&terms) {
                 crate::trace!(g, p, "loans: {} cannot lend {}: {:?}", l.0, strength, e);
@@ -474,7 +503,7 @@ pub fn ask_for_loans(g: &mut Game, p: PlayerId) {
                     return;
                 }
                 Ok((LoanAnswer::Counter(c), _)) => {
-                    if gold_of(&c.borrower_gives) <= (g.players[p].gold / 2) as i64 && g.loan_agree(&c).is_ok() {
+                    if payment_gold(&c.borrower_gives, duration) <= (g.players[p].gold / 2) as i64 + g.player_calculate_gold_rate(p).max(0) as i64 * duration as i64 / 2 && g.loan_agree(&c).is_ok() {
                         crate::trace!(g, p, "loan from {} against team {} agreed on its counter", l.0, enemy.0);
                     }
                     return;

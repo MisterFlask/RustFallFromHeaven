@@ -151,7 +151,7 @@ persist_newtype!(CrusadeId);
 persist_struct!(CrusadeRules {
     enabled, host_slots, term, pledge_deadline, obligation_percent, far_obligation_percent,
     muster_percent, recover_health_percent, recover_turns, engage_turns, city_pop_gold,
-    city_building_percent, loan_upkeep_gold, loan_max_turns,
+    city_building_percent, loan_max_turns,
 });
 
 impl Persist for CrusadeKind {
@@ -262,7 +262,7 @@ impl Persist for Dissolution {
 
 persist_struct!(Call { player, obligation, answer, settled });
 persist_struct!(Lender {
-    player, delivered, units, credit, first_credit_turn, first_lend_turn, war_from_lending, term_end, credits,
+    player, delivered, units, credit, first_credit_turn, first_lend_turn, war_from_lending, term_end, credits, deals,
 });
 persist_struct!(HostAi { state, since, rally, goal });
 persist_struct!(Crusade {

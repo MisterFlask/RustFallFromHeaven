@@ -903,7 +903,6 @@ function actionLabel(a) {
     case "promotion":
       return dname("PromotionType", a.promotion);
     case "army":
-    case "crusade":
       return a.label;
     case "upgrade": {
       const u = info("UnitType", a.unit);
@@ -939,9 +938,6 @@ const SECTIONS = [
   ["Religion", (a) => RELIGION.includes(typeOf(a))],
   ["Cargo", (a) => a.kind === "load" || CARGO.includes(typeOf(a))],
   ["Army", (a) => a.kind === "army"],
-  // Lending the selection to a crusade (docs/CRUSADE.md): one order per crusade (on the
-  // isometric and HD-2D card a tile in the orders row, the crossed swords).
-  ["Crusade", (a) => a.kind === "crusade"],
   ["Automation", (a) => a.kind === "automate"],
   ["Spells", (a) => a.kind === "spell"],
   ["Promotions", (a) => a.kind === "promotion"],
@@ -964,7 +960,7 @@ function helpOf(a) {
   if (a.kind === "spell") return effectsOf("SpellType", a.spell) || a.help || "";
   if (a.kind === "promotion") return effectsOf("PromotionType", a.promotion);
   if (a.kind === "upgrade") return effectsOf("UnitType", a.unit);
-  if (a.kind === "army" || a.kind === "crusade") return a.help ?? "";
+  if (a.kind === "army") return a.help ?? "";
   if (a.kind === "mission" && tname("MissionType", a.mission) === "MISSION_BUILD") return info("BuildType", a.data1)?.help ?? "";
   if (a.kind === "mission") return info("MissionType", a.mission)?.help ?? "";
   if (a.kind === "command") return info("CommandType", a.command)?.help ?? "";
@@ -972,7 +968,7 @@ function helpOf(a) {
 }
 
 const actionType = (a) =>
-  a.kind === "mission" ? tname("MissionType", a.mission) : a.kind === "target" ? a.mode : a.kind === "command" || a.kind === "load" ? tname("CommandType", a.command) : a.kind === "automate" ? tname("AutomateType", a.automate) : a.kind === "spell" ? tname("SpellType", a.spell) : a.kind === "promotion" ? tname("PromotionType", a.promotion) : a.kind === "upgrade" ? tname("UnitType", a.unit) : a.kind === "army" ? a.army : a.kind === "crusade" ? `crusade-${a.crusade}` : "";
+  a.kind === "mission" ? tname("MissionType", a.mission) : a.kind === "target" ? a.mode : a.kind === "command" || a.kind === "load" ? tname("CommandType", a.command) : a.kind === "automate" ? tname("AutomateType", a.automate) : a.kind === "spell" ? tname("SpellType", a.spell) : a.kind === "promotion" ? tname("PromotionType", a.promotion) : a.kind === "upgrade" ? tname("UnitType", a.unit) : a.kind === "army" ? a.army : "";
 
 /** The kinds the isometric card lists as labelled buttons rather than icon tiles (their icons
  *  would all look alike), with the icon each label carries. */

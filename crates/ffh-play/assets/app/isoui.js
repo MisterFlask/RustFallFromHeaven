@@ -173,7 +173,6 @@ export function actionIcon(a, px = 40) {
   }
   else if (a.kind === "automate") name = AUTOMATE_ICONS[tname("AutomateType", a.automate)] ?? "automate";
   else if (a.kind === "spell") name = "spell";
-  else if (a.kind === "crusade") name = "attack";
   else if (a.kind === "promotion") name = "promote";
   else if (a.kind === "upgrade") {
     const key = unitKeyOf(a.unit, me()?.player);

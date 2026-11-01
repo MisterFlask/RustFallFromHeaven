@@ -754,17 +754,20 @@ a healthy warrior is 200), as the `crusades` query counts them.
   of your combat land units, not summoned, not aboard or carrying units; called or not). Lending
   is war: while you are at peace with the target it answers `confirm lend_war {team}`; resend
   with `"declare_war": true`. Lent units cannot be recalled; they come home when the crusade ends.
-  The `group` query offers it as an action of the selection (kind `crusade`: `crusade`, `label`,
-  `help`), one per crusade you may lend to now, carrying the selected units that can be lent
-  (disabled when none can); the view's units of a Host carry `lent_by`, their lender.
+  The view's units of a Host carry `lent_by`, their lender.
 * `propose_loan {"to": 2, "lend": false, "target": 1, "mission": "attack", "strength": 600,
   "duration": 10, "give": [{"item": "TRADE_GOLD", "data": 50}], "get": [], "units": []}` offers an
   allied loan: you borrow from (or, with `"lend": true`, lend to) player `to` a strength against
   a team the borrower is at war with, for `duration` turns, to attack it or (`"mission":
-  "defend"`) to defend the borrower; `give` / `get` are trade items paired with it (Deals rules:
-  gold once a team knows its tech), `units` the units you lend (empty: your advisor picks). The
-  AI answers at once: `accepted: true` makes the loan, `accepted: false` changes nothing, or
-  `confirm loan_counter {cmd}`: the terms it would take, as the `propose_loan` to resend.
+  "defend"`) to defend the borrower; `give` / `get` are the rest of the deal, its price (any trade
+  items, Deals rules: gold once a team knows its tech; an ongoing item, gold per turn or a
+  resource, runs as long as the loan, and cancelling it ends the loan), `units` the units you
+  lend (empty: your advisor picks). The AI answers at once: `accepted: true` makes the loan,
+  `accepted: false` changes nothing, or `confirm loan_counter {cmd}`: the terms it would take
+  (more gold, or gold per turn), as the `propose_loan` to resend (with your units while they
+  still cover its strength). The `trade` query's `troops` offers it each way: `lend` and `borrow`
+  with the `targets` the loan could be against (or `why_not`), `lend.units` your lendable units,
+  `max_turns`; null without the crusade ruleset or contact.
 * An AI may offer you a loan (blocking decision `loan`: accept or refuse), and when a crusade you
   fought in ends you pick your cities of the spoils (blocking decision `draft`: one option per
   city, then `stop` to take the rest of your share as gold).
@@ -778,9 +781,11 @@ a healthy warrior is 200), as the `crusades` query counts them.
   call is a popup with the target's leader (pledge, refuse, then the lend dialog or later); the
   advisors' rail has a *Crusades* button in a game with crusades (marked while a call waits):
   each crusade with its Host's banner colour, your part, *Lend units…* and *Show the Host* /
-  *Show the target*, which close it and bring the camera there; selected units' card offers
-  *Lend to the crusade against …*; Foreign affairs has a *Loan…* form per player, before that
-  leader, who answers each proposal.
+  *Show the target*, which close it and bring the camera there. Troops are an item of the trade
+  screen, each side ("Troops: lend your units…", "Troops: borrow theirs…"): adding it opens the
+  troops screen (the enemy, the mission, the turns, and the units you send, picked there, or the
+  strength you ask for), the rest of the deal its price; the leader answers the proposal as for
+  any deal. Units are lent only from these screens, never as an order of the unit itself.
 
 ### Queries
 
@@ -815,7 +820,7 @@ Errors: `invalid`, `not_owner`, `gone`, `busy`.
 | `inspect {kind,oid}` | `{:#?}` of your unit, group, city, player, team, deal, or of an info entry (`UnitType`, `units`, ...) with id or index `oid`; any object, and plots, under debug reveal (a plot holds every team's data: use `plot`) |
 | `data` | the static tables (every kind: type, name, texts, the main gameplay fields; missions, commands and builds with their Civ4 hotkeys `keys` and button order `order`), the interface modes' hotkeys, a few global defines |
 | `setup`, `saves` | the new-game lists; the saves of the game's directory |
-| `crusades` | crusades and loans (see Crusades): `enabled`, `wars`, `rules`, `military_strength`, `lendable`, `crusades`, `reports` |
+| `crusades` | crusades and loans (see Crusades): `enabled`, `wars`, `rules`, `military_strength`, `lendable`, `crusades`, `reports` (the `trade` query's `troops` offers loans) |
 
 What you see is what Civ4 shows the player: your units, and others only on plots you see and
 when they are not invisible to you (hidden-nationality units show as barbarians; the cargo of a

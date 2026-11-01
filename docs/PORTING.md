@@ -365,9 +365,10 @@ could never run them.
   `VOTE_FORCE_WAR` calls the voting members to pledge forces instead of declaring war for them
   ("dedicate or defy": refusing defies the resolution at the deadline), lending declares war on the
   target, lent units earn their lender contribution when they kill or die, and dissolution drafts
-  the Host's cities and gold by contribution. Allied loans are small, agreed, time-limited crusades.
-  With the flag off nothing of this runs and games are identical to the faithful port (per-turn
-  sync checksums checked against the binary before it). Save format 3.
+  the Host's cities and gold by contribution. Allied loans are small, agreed, time-limited crusades,
+  priced freely by the rest of the deal (an ongoing payment runs as long as the loan). With the
+  flag off nothing of this runs and games are identical to the faithful port (per-turn sync
+  checksums checked against the binary before it). Save formats 11 and 12.
 
 **Human play (ffh-play; docs/PLAY_DESIGN.md §10)**
 

@@ -158,7 +158,6 @@ pub fn crusades(v: &Viewer) -> Json {
         "wars" => Json::Arr(wars),
         "rules" => crate::jobj! {
             "loan_max_turns" => ffh_core::crusade::speed_turns(g, rules.loan_max_turns),
-            "loan_upkeep_gold" => rules.loan_upkeep_gold,
             "obligation_percent" => rules.obligation_percent,
         },
         "military_strength" => g.crusade_military_strength(h),

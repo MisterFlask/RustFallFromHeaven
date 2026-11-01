@@ -60,8 +60,6 @@ pub struct CrusadeRules {
     pub city_pop_gold: i32,
     /// Draft city value: percent of the buildings' production cost counted as gold.
     pub city_building_percent: i32,
-    /// Loans: gold the borrower pays per lent unit per turn (upkeep).
-    pub loan_upkeep_gold: i32,
     /// Loans: longest duration.
     pub loan_max_turns: i32,
 }
@@ -81,7 +79,6 @@ impl Default for CrusadeRules {
             engage_turns: 10,
             city_pop_gold: 30,
             city_building_percent: 100,
-            loan_upkeep_gold: 1,
             loan_max_turns: 30,
         }
     }
@@ -157,6 +154,9 @@ pub struct Lender {
     pub term_end: i32,
     /// Credits as (turn the unit was lent, strength): the bandwagon measure.
     pub credits: Vec<(i32, i32)>,
+    /// Loans: the deals carrying this lender's ongoing payment (gold per turn, resources, ...),
+    /// which run as long as the loan: they end with it, and a payment cancelled ends it.
+    pub deals: Vec<DealId>,
 }
 
 /// Host AI state (the suggested state machine of docs/CRUSADE.md; written by the Host's

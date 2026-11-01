@@ -135,10 +135,15 @@ in its own right rather than a new `TradeableItem` (that enum mirrors the C++ on
 diplomacy screen and AI trade valuation index it): the payment and anything else rides along as
 normal trade items. One general per borrower and target; each lender's units leave when its own
 term ends. Captures go to the borrower at once (no draft); at the end its gold and any city go to
-the borrower. Open loan questions: **upkeep** is paid by the borrower, `loan_upkeep_gold` (1) per
-lent unit per turn, and a borrower that cannot pay ends that loan; **return at expiry**: straight
-home; **lender's war after expiry**: as War end above. Ends early when the borrower makes peace
-with the target, the target is gone, or lender and borrower go to war.
+the borrower. **Price**: whatever the two sides put in the deal, as in any trade (gold, gold per
+turn, technologies, resources, ...); there is no fixed upkeep (an earlier version charged the
+borrower 1 gold per lent unit per turn: the owner's call, 2026-11-01, to price loans freely). An
+ongoing item (gold per turn, a resource, open borders) runs as long as the loan: its deal is
+recorded on the lender (`Lender::deals`), ended with the loan, and a payment cancelled (by either
+side, or by the rules when it can no longer be paid) ends the loan. **Return at expiry**:
+straight home; **lender's war after expiry**: as War end above. Ends early when the borrower
+makes peace with the target, the target is gone, lender and borrower go to war, or the payment
+is cancelled.
 
 ## AI (`ffh-ai/src/crusade.rs`)
 
@@ -165,11 +170,14 @@ with the target, the target is gone, or lender and borrower go to war.
   is still owed.
 - **Draft** (`draft_pick`): a city on our landmass within 20 plots of our cities, the nearest
   worth most; overdraw up to half our treasury for a city within 10 plots; otherwise wealth.
-- **Loans**: a lender accepts when the payment covers losses and risk less what helping a friend
-  (and fighting its own enemy) is worth, and otherwise counters with the gold it would need; a
-  civ at war with a team 20% stronger asks one friendly civ every 5 turns, paying a quarter of its
-  gold and borrowing only what it can keep paying upkeep for; a civ that borrowed against an enemy
-  does not seek peace with it while the general serves.
+- **Loans**: a lender accepts when the deal's other items, valued as the AI values any trade
+  (`trade::deal_val`; gold per turn counted for the loan's turns), cover its losses and risk less
+  what helping a friend (and fighting its own enemy) is worth, and otherwise counters with the
+  shortfall in gold, or as gold per turn over the loan when the borrower's treasury cannot pay it
+  at once; a civ at war with a team 20% stronger asks one friendly civ every 5 turns for a
+  ten-turn loan, paying a quarter of its gold, and takes a counter-offer costing at most half its
+  gold plus half its income over the loan; a civ that borrowed against an enemy does not seek
+  peace with it while the general serves.
 - Other AIs need nothing: the target sees the Host's army as an enemy's (it is at war with it), and
   lent units no longer count as their lenders' (they are the Host's).
 
@@ -185,10 +193,11 @@ HD-2D map, the default, and its floating interface (the classic interface shares
 a popup with the target's leader (pledge, refuse, then the lend dialog); the advisors' rail has a
 *Crusades* button in a game with crusades, marked while a call waits (calls, lending, past
 crusades, the Host's banner colour, *Show the Host* / *Show the target* bringing the camera
-there); selected units' card offers *Lend to the crusade against …* (the `group` query's
-`crusade` action), so units are lent from the map where they stand; Foreign affairs has a *Loan*
-form per player, before that leader, who answers each proposal; a Host's units name their lender
-in the plot and stack lists. `ffh-play stage crusade DIR` saves a game with a call waiting, for
+there); troops are an item of the trade screen (the `trade` query's `troops`), each side, and
+adding them opens the troops screen where you pick the units you send (or the strength you ask
+for), the rest of the deal their price, the leader answering as for any deal. Units are lent
+only from these screens (the lend dialog, the troops screen), never as an order of the unit (the
+owner's call, 2026-11-01). A Host's units name their lender in the plot and stack lists. `ffh-play stage crusade DIR` saves a game with a call waiting, for
 trying it; `tools/web-smoke.mjs` drives it in the classic interface and in the HD-2D map.
 
 ## Self-play measures
@@ -197,20 +206,28 @@ trying it; `tools/web-smoke.mjs` drives it in the classic interface and in the H
 --free-rider 1` (6 civs, small maps; council crusades injected against the leading civ at turns
 120 and 200, player 1 pledging the minimum):
 
+Measured 2026-11-01, after merging master (its armies, governors, culture and engagement rules
+change the games themselves) and with loans priced freely (no fixed upkeep); the first
+measures (before both) are in git history.
+
 | measure | result |
 |---|---|
-| crusades | 24 council crusades, 8 loan generals in 12 games |
-| engagement (delivered strength that fought within `engage_turns`, 10, of delivery) | council 40%, loans 12% |
-| bandwagon leak (spoils going to strength lent in a crusade's final quarter) | 0% of 1,236 gold-equivalent of spoils |
-| free-rider probe (player 1 pledges strength 1, so lends one unit) | 7% of the spoils of its 19 calls, for 10% of the delivered strength (an equal split among the lenders would have given it 68%) |
-| refusals | 78 of 119 calls (the target is the leading civ: the homeland-risk term weighs heavily) |
-| drafted cities | none: the Hosts took few cities and lost them or had them retaken before dissolution; the pools were plunder and pillage gold |
-| dissolutions | council: 13 term, 11 no units left; loans: 7 ended (borrower's peace, term, upkeep), 1 no units |
+| crusades | 24 council crusades, 9 loan generals in 12 games |
+| engagement (delivered strength that fought within `engage_turns`, 10, of delivery) | council 21%, loans 43% (12% under the upkeep rule) |
+| bandwagon leak (spoils going to strength lent in a crusade's final quarter) | 0% of 425 gold-equivalent of spoils |
+| free-rider probe (player 1 pledges strength 1, so lends one unit) | its 15 calls' crusades yielded no spoils (0 of 0); its units were 13% of the delivered strength there but earned 33% of the credit |
+| refusals | 80 of 113 calls (the target is the leading civ: the homeland-risk term weighs heavily) |
+| drafted cities | one crusade's draft gave out a city; the other pools were plunder and pillage gold |
+| dissolutions | council: 12 term, 12 no units left; loans: 8 ended (term, the borrower's peace, a payment cancelled), 1 no units |
 
-The contribution gate does what the spec wants of it: late or token strength earns in proportion
-to what actually fought, never to what was merely handed over. The free rider's one unit was its
-weakest, and it usually fought, so its share is small but not zero; "close to zero"
-holds as the other pledges grow (with these small crusades one unit is a tenth of the force).
+The bandwagon gate holds (late strength earned nothing). **The free-rider gate does not, in this
+run**: credit comes on a lent unit's first kill *or death*, and the free rider's one weak unit
+usually fought and died, while much of the larger contributions never fought, so a token pledge
+earned a third of the credit. These crusades produced no spoils, so it gained nothing here, but
+with spoils it would take far more than its share (the first measures had it at 7% of the spoils
+for 10% of the strength). The gate needs the death credit weighed (e.g. only deaths in combat
+against the crusade's enemies, or a share of the handover strength) -- an open question for the
+design, not fixed here.
 
 Host competence (`cargo test --release -p ffh-ai --test crusade -- --ignored --nocapture`): the
 Host against a defender that sits fortified in its city, 8 attackers of one type (axemen,

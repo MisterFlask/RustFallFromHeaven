@@ -3,26 +3,24 @@
 //
 // - the call to arms: a deferred popup (`pending.crusade_calls`) with the target's leader,
 //   pledge or refuse;
-// - lending from the map: the selection's card offers "Lend to the crusade against ..." (a
-//   `crusade` action of the `group` query), the way to lend units standing where the Host needs
-//   them; the lend dialog picks them from a list instead (the Crusades screen, the call);
+// - lending to a crusade: the lend dialog, from the call or the Crusades screen, picks the units;
 // - the Crusades advisor (the rail's crossed swords, shown only in a game with crusades, marked
 //   while a call waits): each crusade with its Host's banner colour, your part in it, and "Show"
 //   buttons that close the screen and bring the HD-2D camera to the Host's army or the target;
-// - the loan proposal from Foreign affairs, before the other leader as the trade screen is.
+// - allied loans: troops are an item of the trade screen (diplo.js), priced by the rest of the
+//   deal; adding them opens the troops screen, where you pick the units you lend.
 //
 // Strengths are the rules' (combat strength x100, scaled by health), shown as combat strength: a
 // healthy warrior is 2.
 
 import * as api from "./api.js";
-import { S, dname, teamName, tidx, me } from "./state.js";
+import { S, dname, teamName } from "./state.js";
 import { h, toast } from "./dom.js";
 import { openModal, ask } from "./modals.js";
 import { run } from "./commands.js";
 import { playerPortrait, PORTRAIT } from "./portraits.js";
 import { isoSkin, unlockIcon } from "./isoui.js";
 import { playerColor } from "./tiles.js";
-import { leaderHead, speech } from "./diplo.js";
 
 /** The map hooks (main.js `init`): `centerOn(x, y)` brings the camera to a plot. */
 const hooks = { centerOn: null };
@@ -74,9 +72,7 @@ export async function openCall(call) {
     if (strength !== null) {
       const now = await ask(
         "Lend units now?",
-        isoSkin()
-          ? "Pledged forces count once you lend them, before the deadline: choose them from a list now, or later select units on the map and give them the order Lend to the crusade."
-          : "Pledged forces count once you lend the units, before the deadline.",
+        "Pledged forces count once you lend them, before the deadline: choose them now, or later from the Crusades advisor.",
         [
           { label: "Choose units", value: true, primary: true },
           { label: "Later", value: null },
@@ -243,7 +239,6 @@ export async function openCrusades() {
       rows.length
         ? h("table.scores.crusades", h("tr", h("th", "Crusade"), h("th", "Your call"), h("th", "Delivered")), rows)
         : h("p.dim", "No crusade is running."),
-      rows.length ? h("p.dim", isoSkin() ? "To lend units where they stand, select them on the map: their card offers Lend to the crusade." : "To lend units where they stand, select them: their actions offer Lend to the crusade.") : null,
       past.length ? h("details", h("summary", "Your past crusades"), h("ul", past)) : null,
     );
   };
@@ -251,87 +246,91 @@ export async function openCrusades() {
   return m.done;
 }
 
-/** Propose an allied loan to player `p` (`players` query row), before its leader (as the trade
- *  screen): lend or borrow a strength against a team at war with the borrower. The leader
- *  answers each proposal; the form stays open for another. */
-export async function openLoan(p) {
-  let q;
-  try {
-    q = await api.query("crusades");
-  } catch (e) {
-    return toast(e.detail ?? e.message, "error");
-  }
-  const myTeam = me()?.team;
-  const enemiesOf = (team) => q.wars.flatMap(([a, b]) => (a === team ? [b] : b === team ? [a] : [])).filter((t) => t !== myTeam && t !== p.team);
-  const role = h("select", { id: "loan-role" }, h("option", { value: "borrow" }, `Borrow from ${p.name}`), h("option", { value: "lend" }, `Lend to ${p.name}`));
-  const target = h("select", { id: "loan-target" });
-  const fillTargets = () => {
-    const teams = enemiesOf(role.value === "borrow" ? myTeam : p.team);
-    target.replaceChildren(...(teams.length ? teams.map((t) => h("option", { value: String(t) }, teamName(t))) : [h("option", { value: "" }, "(the borrower is at war with no one)")]));
-  };
-  role.addEventListener("change", fillTargets);
-  fillTargets();
-  const mission = h("select", { id: "loan-mission" }, h("option", { value: "attack" }, "Attack the enemy"), h("option", { value: "defend" }, "Defend the borrower"));
-  const strength = h("input", { type: "number", id: "loan-strength", min: 0.5, step: 0.5, value: "4" });
-  const duration = h("input", { type: "number", id: "loan-duration", min: 1, max: q.rules.loan_max_turns, value: String(Math.min(10, q.rules.loan_max_turns)) });
-  const pay = h("input", { type: "number", id: "loan-gold", min: 0, value: "0" });
-  const status = h("p.dim");
+/** A loan of troops as the trade screen shows it in the deal. */
+export function troopsLabel(k) {
+  const who = k.lend ? `${k.units.length} of your units` : "their troops";
+  return `Troops: ${who}, strength ${strengthLabel(k.strength)}, ${k.mission === "defend" ? "defending the borrower against" : "attacking"} ${teamName(k.target)} for ${k.duration} turns`;
+}
+
+/** The troops screen, opened from the trade screen's Troops item: the terms of a loan of troops
+ *  in the deal -- the enemy it is against, the mission, the turns, and (lending) the units you
+ *  send, picked here, or (borrowing) the strength you ask for. `way` is the `trade` query's
+ *  `troops.lend` or `troops.borrow`; `current`, the terms already in the deal. Resolves with the
+ *  terms `{lend, target, mission, duration, strength, units}`, or null. */
+export async function openTroops({ lend, other, way, maxTurns, current = null }) {
+  const name = S.players.get(other)?.name ?? `player ${other}`;
+  const target = h("select", { id: "troops-target" }, way.targets.map((t) => h("option", { value: String(t), selected: current?.target === t }, teamName(t))));
+  const mission = h(
+    "select",
+    { id: "troops-mission" },
+    h("option", { value: "attack", selected: current?.mission !== "defend" }, "Attack the enemy"),
+    h("option", { value: "defend", selected: current?.mission === "defend" }, "Defend the borrower"),
+  );
+  const duration = h("input", { type: "number", id: "troops-turns", min: 1, max: maxTurns, value: String(current?.duration ?? Math.min(10, maxTurns)) });
+  const err = h("p.error");
   const field = (label, el) => h("label.field", h("span", label), el);
-  const gold = (n) => (n > 0 ? [{ item: tidx("TradeableItem", "TRADE_GOLD"), data: n }] : []);
-  const leader = leaderHead(p.id, null);
-  speech(p.id).then((r) => !m.closed && leader.say(r?.text));
+  let units = [];
+  let boxes = [];
+  let strength = null;
+  const total = h("p.dim");
+  if (lend) {
+    units = [...way.units].sort((a, b) => b.strength - a.strength || a.unit - b.unit);
+    boxes = units.map((u) => h("input", { type: "checkbox", value: String(u.unit), "data-strength": String(u.strength), checked: !!current?.units?.includes(u.unit) }));
+    const update = () => {
+      const s = boxes.filter((b) => b.checked).reduce((a, b) => a + Number(b.dataset.strength), 0);
+      total.textContent = `Selected: strength ${strengthLabel(s)}.`;
+    };
+    for (const b of boxes) b.addEventListener("change", update);
+    update();
+  } else {
+    strength = h("input", { type: "number", id: "troops-strength", min: 0.5, step: 0.5, value: current ? strengthLabel(current.strength) : "4" });
+  }
+  const figure = (u) => (isoSkin() ? unlockIcon("units", u.type) : null);
   const m = openModal({
-    title: `Loan with ${p.name}`,
+    title: lend ? `Lend troops to ${name}` : `Ask ${name} for troops`,
     body: [
-      leader.el,
       h(
         "p.dim",
-        `Lent units serve a general dedicated to the borrower's war until the loan ends; lending means war with the enemy. The borrower pays ${q.rules.loan_upkeep_gold} gold per lent unit per turn. When you lend, your advisor picks the units.`,
+        `The units serve a general dedicated to the borrower's war, which neither of you controls, until the loan ends; they cannot be recalled and come home then. Lending means war with the enemy. The price is the rest of the deal: anything paid every turn runs as long as the loan, and cancelling it ends the loan.${lend ? "" : ` ${name} picks the units it sends.`}`,
       ),
-      h("div.fields", field("Loan", role), field("Against", target), field("Mission", mission), field("Strength", strength), field(`Turns (up to ${q.rules.loan_max_turns})`, duration), field("Gold paid with it", pay)),
-      status,
+      h("div.fields", field("Against", target), field("Mission", mission), field(`Turns (up to ${maxTurns})`, duration), lend ? null : field("Strength", strength)),
+      lend
+        ? units.length
+          ? h(
+              "div.checks.lend-units",
+              units.map((u, i) => h("label.check", { "data-unit": u.unit }, boxes[i], figure(u), ` ${dname("UnitType", u.type)} · strength ${strengthLabel(u.strength)} · at (${u.x}, ${u.y})`)),
+            )
+          : h("p.dim", "None of your units can be lent (combat land units only, not summoned, not aboard a ship or carrying units).")
+        : null,
+      lend ? total : null,
+      err,
     ],
     buttons: [
       {
-        label: "Propose",
+        label: "Put in the deal",
         primary: true,
-        value: "propose",
-        onClick: async () => {
-          if (!target.value) {
-            status.textContent = "Choose an enemy of the borrower.";
-            status.className = "error";
-            return;
+        value: "ok",
+        onClick: async (dialog) => {
+          const turns = Math.max(1, Math.min(maxTurns, Math.round(Number(duration.value) || 1)));
+          let terms;
+          if (lend) {
+            const chosen = boxes.filter((b) => b.checked);
+            if (!chosen.length) {
+              err.textContent = "Choose the units to lend.";
+              return;
+            }
+            terms = { lend, target: Number(target.value), mission: mission.value, duration: turns, units: chosen.map((b) => Number(b.value)), strength: chosen.reduce((a, b) => a + Number(b.dataset.strength), 0) };
+          } else {
+            terms = { lend, target: Number(target.value), mission: mission.value, duration: turns, units: [], strength: Math.max(1, Math.round(Number(strength.value) * 100)) };
           }
-          const lend = role.value === "lend";
-          const g = Math.max(0, Math.round(Number(pay.value)));
-          const cmd = {
-            c: "propose_loan",
-            to: p.id,
-            lend,
-            target: Number(target.value),
-            mission: mission.value,
-            strength: Math.max(1, Math.round(Number(strength.value) * 100)),
-            duration: Math.max(1, Math.round(Number(duration.value))),
-            // The gold goes from the borrower to the lender.
-            give: lend ? [] : gold(g),
-            get: lend ? gold(g) : [],
-            units: [],
-          };
-          const reply = await run(cmd);
-          if (!reply) return;
-          // The leader answers (Civ4's lines for a deal accepted or refused).
-          const accepted = !!reply.r?.accepted;
-          status.textContent = accepted ? `${p.name} agreed to the loan.` : `${p.name} refused the loan.`;
-          status.className = accepted ? "good" : "warn";
-          status.dataset.answer = accepted ? "agreed" : "refused";
-          const r = await speech(p.id, accepted ? "AI_DIPLOCOMMENT_ACCEPT" : "AI_DIPLOCOMMENT_NO_DEAL");
-          if (!m.closed) leader.say(r?.text);
+          dialog.close(terms);
         },
       },
-      { label: "Close", value: null },
+      { label: "Cancel", value: null },
     ],
-    tag: "loan",
-    className: "loan",
+    tag: "troops",
+    className: "troops",
+    wide: lend,
   });
   return m.done;
 }

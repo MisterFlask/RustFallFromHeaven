@@ -1544,7 +1544,7 @@ async function stagedElection(bin, saves) {
 
 /** Crusades (docs/CRUSADE.md, `stage crusade`), in the classic interface: the call popup
  *  (pledged), the lend dialog and its war confirmation (a unit lent), the Crusades advisor (the
- *  menu's button), a loan proposed to the ally from Foreign affairs (agreed, refused or
+ *  menu's button), troops lent to the ally as a deal from the trade screen (agreed, refused or
  *  countered and declined). [`crusadeHd2d`] drives the same in the HD-2D map. */
 async function stagedCrusade(bin, saves) {
   const st = await loadStaged(bin, saves, "crusade", { answer: false });
@@ -1580,21 +1580,32 @@ async function stagedCrusade(bin, saves) {
   await shot("crusades");
   await closeDialog("Crusades");
   await proposeLoan(st, "loan");
-  steps.push("crusades (stage crusade): a call pledged, a unit lent after the war confirmation, the Crusades advisor, a loan proposed");
+  steps.push("crusades (stage crusade): a call pledged, a unit lent after the war confirmation, the Crusades advisor, troops lent as a deal from the trade screen");
   await answerPopups(false);
 }
 
-/** From Foreign affairs, a loan proposed to the staged ally (lending against its enemy) and
- *  answered: agreed or refused (the leader's answer in the form), or countered (declined). */
+/** From Foreign affairs, the trade screen with the staged ally: troops lent (the Troops item
+ *  opens the troops screen, where a unit is picked) and proposed as the deal, answered (accepted,
+ *  declined, or countered and the counter declined). */
 async function proposeLoan(st, name) {
   await b.key("F4");
   await dialog("Foreign affairs");
-  const loan = `${TOP} button[data-loan="${st.ally}"]`;
-  await until2(`!!document.querySelector(${q(loan)})`, "the Loan button");
-  await click(loan);
-  await dialog(/^Loan with/);
-  await b.eval(`(() => { const r = document.querySelector("#loan-role"); r.value = "lend"; r.dispatchEvent(new Event("change")); })()`);
-  await until2(`!!document.querySelector("#loan-target") && document.querySelector("#loan-target").value !== ""`, "an enemy of the ally to lend against");
+  const trade = `${TOP} button[data-trade="${st.ally}"]`;
+  await until2(`!!document.querySelector(${q(trade)})`, "the Trade button");
+  await click(trade);
+  await dialog(/^Trade with/);
+  const add = `${TOP} .trade-item.troops[data-side="give"] button.small:not([disabled])`;
+  await until2(`!!document.querySelector(${q(add)})`, "the Troops item (lend)");
+  await click(add);
+  await dialog(/^Lend troops to/);
+  const boxes = `${TOP} .lend-units input[type=checkbox]`;
+  await until2(`document.querySelectorAll(${q(boxes)}).length > 0`, "the units to lend in the troops screen");
+  await b.eval(`(() => { const b = document.querySelector(${q(boxes)}); b.checked = true; b.dispatchEvent(new Event("change")); })()`);
+  await shot(`${name}-troops`);
+  await click(`${TOP} .modal-buttons button.primary`);
+  await until(async () => !(await modalTitles()).some((t) => /^Lend troops to/.test(t)), "the troops screen closed");
+  await until2(`!!document.querySelector(${q(`${TOP} .trade-item.troops.on`)})`, "the troops in the deal");
+  await shot(name);
   await click(`${TOP} .modal-buttons button.primary`);
   let countered = false;
   await until(async () => {
@@ -1604,18 +1615,17 @@ async function proposeLoan(st, name) {
       await click(`${TOP} .modal-buttons button[data-value="null"]`);
       return false;
     }
-    return countered ? !t.includes("Counter-offer") : b.eval(`!!document.querySelector("#modals .modal[data-tag=loan] p[data-answer]")`);
+    return countered ? !t.includes("Counter-offer") : b.eval(`!!document.querySelector("#modals .modal[data-tag=trade] p[data-answer]")`);
   }, "the loan answered");
-  await shot(name);
-  await closeDialog(await b.eval(`document.querySelector("#modals .modal[data-tag=loan] h2").textContent`));
+  await closeDialog(await b.eval(`document.querySelector("#modals .modal[data-tag=trade] h2").textContent`));
   await closeDialog("Foreign affairs");
 }
 
 /** Crusades in the HD-2D map (the default; docs/CRUSADE.md, "Human play"), on a fresh `stage
  *  crusade`: the rail's Crusades advisor marked while the call waits, the call popup over the
- *  map, the units lent from the map through their card's order (after the war confirmation), the
- *  Crusades advisor with its Show button bringing the camera to the Host, the loan form before
- *  the ally's leader; then back to the flat map. */
+ *  map, the units lent from the call's lend dialog (after the war confirmation), the Crusades
+ *  advisor with its Show button bringing the camera to the Host, troops lent to the ally from
+ *  the trade screen; then back to the flat map. */
 async function crusadeHd2d(url, bin, saves) {
   const cfg = encodeURIComponent(JSON.stringify({ animate: false, renderScale: 0.5 }));
   await b.goto(`${url}/?renderer=hd2d&r3d=${cfg}&force3d=1`);
@@ -1637,11 +1647,8 @@ async function crusadeHd2d(url, bin, saves) {
   await shot("hd2d-crusade-call");
   await click(pledge);
   await until(async () => (await modalTitles()).some((t) => /Lend units now/.test(t)), "the lend question (HD-2D)");
-  await click(`${TOP} .modal-buttons button[data-value="null"]`);
   await until2(`!document.querySelector("#iso-rail #btn-crusades").classList.contains("attention")`, "the advisor's mark gone with the answer");
-  // (The popups after it: research.)
-  await answerPopups(false);
-  // The staged warriors in the capital, selected on the map: their card offers the lend order.
+  // The staged warriors in the capital, picked in the lend dialog (with their map figures).
   const pick = await S(`(() => {
     const me = S.view.me.player, cap = S.view.cities.find((c) => c.owner === me);
     const ids = S.view.units.filter((u) => u.owner === me && u.x === cap.x && u.y === cap.y && S.data.tables.UnitType[u.type].combat > 0).map((u) => u.id);
@@ -1650,17 +1657,16 @@ async function crusadeHd2d(url, bin, saves) {
   const ids = pick.ids;
   if (ids.length < 3) throw new Error(`the staged warriors are not in the capital: ${JSON.stringify(pick)}`);
   const at = { x: pick.x, y: pick.y };
-  await plotPos(at.x, at.y);
-  await b.eval(`window.ffh.units.select(${JSON.stringify(ids)})`);
-  const order = `#side button.action[data-kind="crusade"][data-type="crusade-${st.crusade}"]:not([disabled])`;
-  await until2(`!!document.querySelector(${q(order)})`, "the card's Lend to the crusade order");
-  await b.eval(`document.querySelector(${q(order)}).dispatchEvent(new MouseEvent("mouseenter"))`);
+  await click(`${TOP} .modal-buttons button.primary`);
+  await dialog("Lend units");
+  await until2(`document.querySelectorAll(${q(`${TOP} .lend-units label.check .iso-sprite`)}).length > 0`, "the lendable units with their figures");
+  await b.eval(`(() => { for (const id of ${JSON.stringify(ids)}) { const b = document.querySelector(${q(`${TOP} .lend-units label.check`)} + "[data-unit='" + id + "'] input"); b.checked = true; b.dispatchEvent(new Event("change")); } })()`);
   await b.eval("window.ffh.mapView.r3d.render(1)");
-  await shot("hd2d-crusade-card");
-  await click(order);
+  await shot("hd2d-crusade-lend");
+  await click(`${TOP} #crusade-lend`);
   await until(async () => (await modalTitles()).some((t) => /Declare war/.test(t)), "the war confirmation (HD-2D)");
   await click(`${TOP} .modal-buttons button.primary`);
-  await until2(`window.ffh.S.view.units.filter((u) => u.lent_by === window.ffh.S.view.me.player).length === ${ids.length}`, "the units lent from their card");
+  await until2(`window.ffh.S.view.units.filter((u) => u.lent_by === window.ffh.S.view.me.player).length === ${ids.length}`, "the units lent");
   await answerPopups(false);
   await click("#iso-rail #btn-crusades");
   await dialog("Crusades");
@@ -1682,7 +1688,7 @@ async function crusadeHd2d(url, bin, saves) {
   await proposeLoan(st, "hd2d-loan");
   await b.eval(`window.ffh.setRenderer("flat")`);
   await until2(`window.ffh.mapView.renderer() === "flat" && !document.querySelector("canvas.map3d")`, "the flat map after the HD-2D crusade");
-  steps.push(`crusades in the HD-2D map (stage crusade): the rail's advisor marked while the call waited, the call popup with the target's leader, ${ids.length} units lent through their card's order after the war confirmation, Show the Host from the Crusades advisor, a loan proposed before the ally's leader`);
+  steps.push(`crusades in the HD-2D map (stage crusade): the rail's advisor marked while the call waited, the call popup with the target's leader, ${ids.length} units lent from the lend dialog after the war confirmation, Show the Host from the Crusades advisor, troops lent to the ally as a deal from the trade screen`);
 }
 
 /** P7, `stage settlement`: a Kuriotates settler founds a city below the city limit: the

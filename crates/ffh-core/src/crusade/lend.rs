@@ -107,6 +107,7 @@ impl Game {
                 war_from_lending,
                 term_end: -1,
                 credits: Vec::new(),
+                deals: Vec::new(),
             });
         }
         let mut total = 0;

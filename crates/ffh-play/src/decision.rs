@@ -375,20 +375,26 @@ pub fn draft(g: &Game, p: PlayerId, crusade: u32, budget: i32, offered: &[(CityI
 pub fn loan(g: &Game, p: PlayerId, proposal: &ffh_core::crusade::loan::LoanProposal, advisor_accepts: bool) -> Decision {
     let t = &proposal.terms;
     let items = |v: &[TradeData]| if v.is_empty() { "nothing".to_string() } else { v.iter().map(|x| trade_item_text(g, x)).collect::<Vec<_>>().join(", ") };
-    let role = if t.lender == p { "lend" } else { "borrow" };
+    let lends = t.lender == p;
+    let enemy = g.team_get_leader_id(t.target).map_or_else(|| format!("team {}", t.target.0), |l| crate::view::player_name(g, l));
+    let mission = match t.mission {
+        ffh_core::crusade::loan::LoanMission::Attack => format!("attack {enemy}"),
+        ffh_core::crusade::loan::LoanMission::Defend => format!("defend the borrower against {enemy}"),
+    };
+    let (give, get) = if lends { (&proposal.lender_gives, &proposal.borrower_gives) } else { (&proposal.borrower_gives, &proposal.lender_gives) };
     Decision {
         id: 0,
         player: p,
         kind: DecisionKind::Loan { from: proposal.from },
-        title: format!("Loan proposed by {}", crate::view::player_name(g, proposal.from)),
+        title: format!("Troops: {} proposes a loan", crate::view::player_name(g, proposal.from)),
         text: format!(
-            "You {role} strength {} for {} turns ({:?}) against team {}. Lender gives: {}. Borrower gives: {}.",
-            t.strength / 100,
+            "You {} troops of strength {} for {} turns, to {mission}. You give: {}. You get: {}. Anything paid each turn runs as long as the loan.{}",
+            if lends { "lend" } else { "borrow" },
+            ffh_core::crusade::strength_text(t.strength),
             t.duration,
-            t.mission,
-            t.target.0,
-            items(&proposal.lender_gives),
-            items(&proposal.borrower_gives)
+            items(give),
+            items(get),
+            if lends { " Your advisor picks the units you send." } else { "" }
         ),
         options: vec![DecisionOption::new("accept", "Accept"), DecisionOption::new("refuse", "Refuse")],
         advisor: Some(if advisor_accepts { 0 } else { 1 }),

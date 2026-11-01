@@ -197,9 +197,10 @@ impl Game {
             self.crusade_send_home(u);
         }
 
-        // 6. The lenders' crusade wars end.
+        // 6. The lenders' crusade wars end (and a loan's ongoing payments with them).
         let lenders = self.crusades[idx].lenders.clone();
         for l in &lenders {
+            self.loan_end_payments(idx, l.player);
             if l.war_from_lending {
                 self.crusade_end_lender_war(idx, l.player);
             }

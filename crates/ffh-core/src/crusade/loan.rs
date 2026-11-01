@@ -15,10 +15,12 @@
 //!   at the end the survivors go straight home with their promotions (the lender's war, if it
 //!   began with the loan, ends with a peace treaty).
 //! - Unlike a crusade: no draft (the general's captures go to the borrower at once, its gold at
-//!   the end; the lender is paid through the deal), and the borrower pays the lent units' upkeep
-//!   each turn (`loan_upkeep_gold` per unit; a borrower that cannot pay ends that loan).
-//! - **Ending early**: the borrower makes peace with the target, the target is eliminated, or the
-//!   lender and the borrower go to war with each other.
+//!   the end). The price is whatever the two sides put in the deal, as in any trade: gold, gold
+//!   per turn, technologies, resources, ... An ongoing payment (gold per turn, a resource) runs
+//!   as long as the loan: its deal ends when the loan does ([`Lender::deals`]).
+//! - **Ending early**: the borrower makes peace with the target, the target is eliminated, the
+//!   lender and the borrower go to war with each other, or the ongoing payment is cancelled (its
+//!   deal ended by either side, or by the rules when it can no longer be paid).
 
 use super::lend::LendError;
 use super::*;
@@ -239,6 +241,7 @@ impl Game {
                 war_from_lending,
                 term_end: end,
                 credits: Vec::new(),
+                deals: Vec::new(),
             }),
         }
         if t.mission == LoanMission::Defend {
@@ -252,7 +255,16 @@ impl Game {
             return Err(LoanError::CannotLend(e));
         }
         if !proposal.lender_gives.is_empty() || !proposal.borrower_gives.is_empty() {
+            // Deal ids are never reused: the deal still standing after the items are implemented
+            // that was not there before carries the ongoing payment (one-off items leave none).
+            let before = self.deals.ids();
             self.implement_deal(t.lender, t.borrower, &proposal.lender_gives, &proposal.borrower_gives, false);
+            let new: Vec<DealId> = self.deals.ids().into_iter().filter(|d| !before.contains(d)).collect();
+            if let Some(idx) = self.crusade_index(id) {
+                if let Some(l) = self.crusades[idx].lenders.iter_mut().find(|l| l.player == t.lender) {
+                    l.deals.extend(new);
+                }
+            }
         }
         self.log.msg(turn, Some(t.borrower), || format!("Loan: player {} lends strength {} for {} turns against team {}", t.lender, strength_text(chosen), t.duration, t.target));
         Ok(id)
@@ -263,36 +275,41 @@ impl Game {
         self.crusade(id).is_some_and(|c| c.defend)
     }
 
-    /// A loan general's turn: upkeep, and lenders whose term ended (or whose loan ended early)
-    /// take their units home.
+    /// A loan general's turn: lenders whose term ended (or whose loan ended early: war between
+    /// them, the payment cancelled) take their units home.
     pub(crate) fn loan_do_turn(&mut self, idx: usize) {
         let CrusadeKind::Loan { borrower } = self.crusades[idx].kind else { return };
         let turn = self.game_turn();
         let bt = self.players[borrower].team;
-        let upkeep = self.crusade_rules().loan_upkeep_gold;
         for i in 0..self.crusades[idx].lenders.len() {
             let l = self.crusades[idx].lenders[i].clone();
             if l.term_end < turn && self.crusade_lent_units(idx, Some(l.player)).is_empty() {
                 continue; // already over
             }
             let lt = self.players[l.player].team;
-            let mut ended = l.term_end < turn || !self.players[l.player].alive || self.at_war(lt, bt);
-            let units = self.crusade_lent_units(idx, Some(l.player));
-            if !ended && !units.is_empty() {
-                let cost = units.len() as i32 * upkeep;
-                if self.players[borrower].gold >= cost {
-                    self.players[borrower].gold -= cost;
-                } else {
-                    ended = true;
+            let unpaid = l.deals.iter().any(|&d| !self.deals.contains(d));
+            if l.term_end < turn || !self.players[l.player].alive || self.at_war(lt, bt) || unpaid {
+                if unpaid {
+                    let id = self.crusades[idx].id;
+                    self.log.msg(turn, Some(l.player), || format!("Loan to general {}: the payment was cancelled, the loan ends", id.0));
                 }
-            }
-            if ended {
                 self.loan_end(idx, l.player);
             }
         }
     }
 
-    /// Loan of `lender` under general `idx` ends: its units go home, its loan war ends.
+    /// The ongoing payment of `lender`'s loan under general `idx` ends with the loan.
+    pub(crate) fn loan_end_payments(&mut self, idx: usize, lender: PlayerId) {
+        let Some(l) = self.crusades[idx].lenders.iter_mut().find(|l| l.player == lender) else { return };
+        for d in std::mem::take(&mut l.deals) {
+            if self.deals.contains(d) {
+                self.deal_kill(d, true);
+            }
+        }
+    }
+
+    /// Loan of `lender` under general `idx` ends: its units go home, its payment stops, its loan
+    /// war ends.
     fn loan_end(&mut self, idx: usize, lender: PlayerId) {
         let turn = self.game_turn();
         for u in self.crusade_lent_units(idx, Some(lender)) {
@@ -300,6 +317,7 @@ impl Game {
                 self.crusade_send_home(u);
             }
         }
+        self.loan_end_payments(idx, lender);
         let l = self.crusades[idx].lenders.iter_mut().find(|l| l.player == lender).expect("lender");
         l.term_end = l.term_end.min(turn - 1);
         let war_from_lending = l.war_from_lending;

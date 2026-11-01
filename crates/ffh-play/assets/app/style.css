@@ -578,7 +578,9 @@ figure.crusade-enemy { margin: 4px 0 0; flex: none; text-align: center; }
 figure.crusade-enemy figcaption { font-size: 12px; margin-top: 2px; }
 .swatch.host-swatch { width: 10px; height: 10px; margin-right: 6px; }
 .lend-units label.check { display: flex; align-items: center; gap: 6px; }
-.modal.loan .fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 4px 14px; }
+.modal.troops .fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 4px 14px; }
+.trade-item.troops > span { flex: 1; min-width: 0; }
+.trade-item.troops .link { margin-left: 4px; flex: none; }
 table.crusades td { vertical-align: top; }
 table.crusades .crusade-name { white-space: normal; }
 .crusade-actions { margin-top: 6px; }

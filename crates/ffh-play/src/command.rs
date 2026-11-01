@@ -213,7 +213,7 @@ pub enum Confirm {
     LendWar { team: TeamId },
     /// Not in C++: the other side's counter-offer to a `propose_loan`: resend the `propose_loan`
     /// with these terms ([`Confirm::to_json`] gives the command as `cmd`) to accept it.
-    LoanCounter { to: PlayerId, lend: bool, target: TeamId, defend: bool, strength: i32, duration: i32, give: Vec<TradeData>, get: Vec<TradeData> },
+    LoanCounter { to: PlayerId, lend: bool, target: TeamId, defend: bool, strength: i32, duration: i32, give: Vec<TradeData>, get: Vec<TradeData>, units: Vec<UnitId> },
 }
 
 impl Confirm {
@@ -229,7 +229,7 @@ impl Confirm {
                 "crusade_calls" => *crusade_calls,
             },
             Confirm::LendWar { team } => crate::jobj! { "kind" => "lend_war", "team" => *team },
-            Confirm::LoanCounter { to, lend, target, defend, strength, duration, give, get } => {
+            Confirm::LoanCounter { to, lend, target, defend, strength, duration, give, get, units } => {
                 let cmd = Command::ProposeLoan {
                     to: *to,
                     lend: *lend,
@@ -239,7 +239,7 @@ impl Confirm {
                     duration: *duration,
                     give: give.clone(),
                     get: get.clone(),
-                    units: Vec::new(),
+                    units: units.clone(),
                 };
                 crate::jobj! { "kind" => "loan_counter", "cmd" => cmd.to_json() }
             }
@@ -1766,6 +1766,9 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
                 LoanAnswer::Counter(c) => {
                     let human_lends = c.terms.lender == h;
                     let (give, get) = if human_lends { (c.lender_gives, c.borrower_gives) } else { (c.borrower_gives, c.lender_gives) };
+                    // The units the human picked, while they still cover the strength asked.
+                    let picked: i32 = units.iter().map(|&u| g.crusade_unit_strength(u)).sum();
+                    let units = if human_lends && picked >= c.terms.strength { units.clone() } else { Vec::new() };
                     Plan::Confirm(Confirm::LoanCounter {
                         to: *to,
                         lend: human_lends,
@@ -1775,6 +1778,7 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
                         duration: c.terms.duration,
                         give,
                         get,
+                        units,
                     })
                 }
             }
@@ -1813,7 +1817,7 @@ fn lend_error(e: LendError) -> String {
 }
 
 /// Why a loan cannot be made, for people.
-fn loan_error(e: LoanError) -> String {
+pub(crate) fn loan_error(e: LoanError) -> String {
     match e {
         LoanError::Off => "crusades and loans are off in this game".into(),
         LoanError::NotAllowed => "no loan between these two (same team, a Host, no contact, or at war with each other)".into(),

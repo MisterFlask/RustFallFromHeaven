@@ -540,13 +540,11 @@ fn loan_survivors_return_home_with_promotions_when_the_term_ends() {
     let hu = g.players[host].units[0];
     let promo = g.d.t::<PromotionType>("PROMOTION_COMBAT1");
     g.unit_set_has_promotion(hu, promo, true);
-    let gold = g.players[B].gold;
     let end = g.crusade(id).unwrap().lenders[0].term_end;
     for turn in g.game_turn() + 1..=end + 1 {
         g.set_game_turn(turn);
         g.crusade_do_turn();
     }
-    assert!(g.players[B].gold < gold, "the borrower paid the upkeep");
     assert!(g.crusade(id).is_none(), "the general dissolved when its only loan ended");
     let back = g.players[A].units[0];
     assert!(g.units[back].has_promotion[promo]);
@@ -663,4 +661,56 @@ fn a_crusade_called_between_turns_does_not_start_the_hosts_turn_out_of_order() {
     let host = host_of(&g, id);
     assert!(!g.players[host].turn_active, "the Host waits for its slot");
     assert_eq!(g.num_game_turn_active, 0);
+}
+
+/// A loan is priced like any trade: an ongoing payment (here gold per turn) runs as long as the
+/// loan -- its deal ends with the loan -- and a payment cancelled ends the loan early.
+#[test]
+fn a_loans_ongoing_payment_runs_as_long_as_the_loan() {
+    let (mut g, _) = loan_game();
+    let d = g.d;
+    let tech = d.techs.keys().find(|&t| d.techs[t].gold_trading).expect("a gold-trading tech");
+    for p in [A, B] {
+        let t = g.players[p].team;
+        g.team_set_has_tech(t, tech, true, None, false, false);
+    }
+    let target = g.players[T].team;
+    // (At war already: a loan war ends in a peace treaty, which would bar the second loan.)
+    let ta = g.players[A].team;
+    g.team_declare_war(ta, target, false, None);
+    let gpt = ffh_core::structs::TradeData { item_type: TradeableItem::TRADE_GOLD_PER_TURN, data: 2, offering: false, hidden: false };
+    let loan = |g: &mut Game| {
+        unit(g, A, "UNIT_WARRIOR", 3, 4);
+        let one = g.crusade_unit_strength(*g.players[A].units.last().unwrap());
+        let terms = LoanTerms { lender: A, borrower: B, target, mission: LoanMission::Attack, strength: one, duration: 4 };
+        let p = LoanProposal { terms, from: B, lender_gives: vec![], borrower_gives: vec![gpt.clone()] };
+        let (answer, id) = g.loan_propose(&p).expect("valid loan");
+        assert_eq!(answer, LoanAnswer::Accept);
+        let id = id.expect("loan made");
+        let deals = g.crusade(id).unwrap().lenders[0].deals.clone();
+        assert_eq!(deals.len(), 1, "the gold per turn stands as a deal tied to the loan");
+        assert!(g.deals.contains(deals[0]));
+        (id, deals[0])
+    };
+
+    // The term runs out: the payment stops with the loan.
+    let (id, deal) = loan(&mut g);
+    let end = g.crusade(id).unwrap().lenders[0].term_end;
+    for turn in g.game_turn() + 1..=end + 1 {
+        g.set_game_turn(turn);
+        g.crusade_do_turn();
+    }
+    assert!(g.crusade(id).is_none(), "the loan ended");
+    assert!(!g.deals.contains(deal), "its payment ended with it");
+
+    // The payment cancelled: the loan ends early, the units go home.
+    let (id, deal) = loan(&mut g);
+    let host = host_of(&g, id);
+    assert_eq!(g.players[host].units.len(), 1);
+    g.deal_kill(deal, true);
+    let turn = g.game_turn() + 1;
+    g.set_game_turn(turn);
+    g.crusade_do_turn();
+    assert!(g.crusade(id).is_none_or(|c| c.lenders.iter().all(|l| l.term_end < turn)), "the loan ended early");
+    assert!(g.players[host].units.is_empty() || !g.players[host].alive, "its units went home");
 }

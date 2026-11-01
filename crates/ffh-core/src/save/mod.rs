@@ -82,7 +82,9 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 ///   `battle_report_next`.
 /// - 11: crusades (docs/CRUSADE.md): `GameSetup::crusade`, `PlayerSetup::host`, `Unit::lent`,
 ///   `Game::crusades` / `next_crusade_id` / `crusade_reports`.
-pub const FORMAT_VERSION: u32 = 11;
+/// - 12: loans priced freely (docs/CRUSADE.md): `CrusadeRules::loan_upkeep_gold` gone,
+///   `Lender::deals`.
+pub const FORMAT_VERSION: u32 = 12;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]

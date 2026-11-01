@@ -68,7 +68,7 @@ fn command_cmd(units: &[UnitId], c: CommandType, data1: i32, data2: i32) -> Json
 /// one: build, spread, join, construct, lead), `target` (an interface mode, `mode`, whose
 /// mission needs a plot: `targets` lists the valid plots in range, or `any` for go-to and
 /// route-to), `command`, `spell`, `promotion`, `upgrade` (with `price`), `load` (with the
-/// `transports`), `army` (this game's armies), `crusade` (lend to a crusade, docs/CRUSADE.md).
+/// `transports`), `army` (this game's armies).
 ///
 /// A `target` action's `cmd` carries its first listed target, or the selection's own plot as a
 /// placeholder (with `any`, or when no target is in range): the client puts the picked plot in
@@ -286,77 +286,6 @@ pub fn actions(v: &Viewer, units: &[UnitId]) -> Vec<Json> {
         }
     }
 
-    // Crusades (docs/CRUSADE.md): lend the selection to each crusade the human may lend to.
-    for (enabled, cmd, extra) in crusade_actions(v, units) {
-        push("crusade", enabled, cmd, extra);
-    }
-    out
-}
-
-/// The lend buttons of a selection (`crusade`: its id, `label`, `help`): one per running crusade
-/// or loan general the human may lend to now (`crusade_can_lend`), carrying the selected units
-/// that can be lent (disabled when none can). Sent as is, a lend that would declare war answers
-/// with the `lend_war` confirmation.
-fn crusade_actions(v: &Viewer, units: &[UnitId]) -> Vec<(bool, Json, Json)> {
-    use ffh_core::crusade::{strength_text, CrusadeKind, Pledge};
-    let g = v.g;
-    let h = v.h;
-    let mut out = Vec::new();
-    if !g.crusades_enabled() {
-        return out;
-    }
-    let lendable: Vec<UnitId> = units.iter().copied().filter(|&u| g.crusade_unit_lendable(u)).collect();
-    let strength: i32 = lendable.iter().map(|&u| g.crusade_unit_strength(u)).sum();
-    for c in &g.crusades {
-        if g.crusade_can_lend(c.id, h).is_err() {
-            continue;
-        }
-        // (Named by their leaders, as the client names teams.)
-        let enemy = g.team_get_leader_id(c.target).map_or_else(|| format!("team {}", c.target.0), |p| crate::view::player_name(g, p));
-        let label = match c.kind {
-            CrusadeKind::Loan { borrower } => format!("Lend to {}'s general", crate::view::player_name(g, borrower)),
-            _ => format!("Lend to the crusade against {enemy}"),
-        };
-        let n = lendable.len();
-        let mut help = if n == 0 {
-            "None of the selected units can be lent: only combat land units, not summoned, not aboard a ship or carrying units.".to_string()
-        } else {
-            let (who, s) = match n {
-                1 if units.len() == 1 => ("The unit".to_string(), ["joins", "it stands", "comes", "it cannot"]),
-                1 => ("1 of the selected units".to_string(), ["joins", "it stands", "comes", "it cannot"]),
-                _ if n < units.len() => (format!("{n} of the selected units"), ["join", "they stand", "come", "they cannot"]),
-                _ => (format!("The {n} units"), ["join", "they stand", "come", "they cannot"]),
-            };
-            format!(
-                "{who} (strength {}) {} the Host where {} until it ends (turn {}), then {} home; {} be recalled. Lent units that kill or die earn you a share of the spoils.",
-                strength_text(strength),
-                s[0],
-                s[1],
-                c.end_turn,
-                s[2],
-                s[3]
-            )
-        };
-        if !g.at_war(v.team, c.target) {
-            help.push_str(&format!(" Lending means war with {enemy}."));
-        }
-        if let Some(call) = c.calls.iter().find(|x| x.player == h && !x.settled) {
-            let delivered = c.lenders.iter().find(|l| l.player == h).map_or(0, |l| l.delivered);
-            let pledged = match call.answer {
-                Some(Pledge::Strength(s)) => format!("you pledged {}", strength_text(s)),
-                Some(Pledge::Refuse) => "you refused".to_string(),
-                None => "you have not answered".to_string(),
-            };
-            help.push_str(&format!(
-                " Your obligation: {} by turn {} ({pledged}; delivered {}).",
-                strength_text(call.obligation),
-                c.deadline_turn,
-                strength_text(delivered)
-            ));
-        }
-        let cmd = Command::CrusadeLend { crusade: c.id.0, units: lendable.clone(), declare_war: false };
-        out.push((n > 0, cmd.to_json(), crate::jobj! { "crusade" => c.id.0, "label" => label, "help" => help }));
-    }
     out
 }
 

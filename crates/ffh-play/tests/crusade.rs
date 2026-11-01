@@ -219,53 +219,46 @@ fn crusade_commands_are_refused_without_the_ruleset() {
     assert_eq!(q.req::<bool>("enabled"), Ok(false));
 }
 
-/// Lending from the map (docs/CRUSADE.md, "Human play"): the selection's `group` actions offer
-/// "Lend to the crusade against ..." with the selected units that can be lent; its command, sent
-/// as is, asks for the war first, then lends; the view's Host units name their lender, and the
-/// `crusades` query locates the Host's stack in view.
+/// Troops in the trade screen (docs/CRUSADE.md, "Allied loans"): the `trade` query offers a
+/// loan each way against the borrower's enemies, with the human's lendable units; the selection
+/// has no lend order (lending is done from a screen: a crusade's lend dialog, or a loan in a
+/// deal); a loan proposed with the units picked lends exactly those, priced by the rest of the
+/// deal.
 #[test]
-fn the_selection_offers_the_lend_order() {
+fn troops_are_an_item_of_the_trade_screen() {
     let mut s = game(6);
     let h = s.human;
     let mine = warriors(&mut s, h, 2);
-    assert_eq!(s.query(&Query::View).unwrap().req::<bool>("crusades"), Ok(true));
-    let group = |s: &Session, units: &[UnitId]| -> Vec<ffh_play::json::Json> {
-        let r = s.query(&Query::Group { units: units.to_vec() }).unwrap();
-        r.req_arr("actions").unwrap().iter().filter(|a| a.req_str("kind") == Ok("crusade")).cloned().collect()
-    };
-    assert!(group(&s, &mine).is_empty(), "no crusade, no lend order");
-    let id = call(&mut s, CrusadeKind::Direct, 5);
-    let acts = group(&s, &mine);
-    assert_eq!(acts.len(), 1, "{acts:?}");
-    let a = &acts[0];
-    assert_eq!(a.req::<u32>("crusade"), Ok(id.0));
-    assert_eq!(a.req::<bool>("enabled"), Ok(true));
-    assert!(a.req_str("label").is_ok_and(|l| l.starts_with("Lend to the crusade against")), "{a}");
-    assert!(a.req_str("help").is_ok_and(|t| t.contains("Lending means war")), "{a}");
-    // A settler cannot be lent: the order is there, disabled.
-    let settlers: Vec<UnitId> = s.g.players[h].units.iter().copied().filter(|&u| !s.g.crusade_unit_lendable(u)).collect();
-    if let Some(&settler) = settlers.first() {
-        if s.g.units[settler].x == s.g.units[mine[0]].x && s.g.units[settler].y == s.g.units[mine[0]].y {
-            let off = group(&s, &[settler]);
-            assert_eq!(off.len(), 1);
-            assert_eq!(off[0].req::<bool>("enabled"), Ok(false));
+    let (target, ally) = (s.g.players[TARGET].team, s.g.players[ALLY].team);
+    s.g.team_declare_war(ally, target, false, None);
+    let t = s.query(&Query::Trade { with: ALLY }).unwrap();
+    let troops = t.req_value("troops").unwrap();
+    let lend = troops.req_value("lend").unwrap();
+    assert_eq!(lend.req::<Vec<TeamId>>("targets"), Ok(vec![target]), "{troops}");
+    let units: Vec<UnitId> = lend.req_arr("units").unwrap().iter().map(|u| u.req::<UnitId>("unit").unwrap()).collect();
+    assert!(mine.iter().all(|u| units.contains(u)), "{troops}");
+    let borrow = troops.req_value("borrow").unwrap();
+    assert!(borrow.req::<Vec<TeamId>>("targets").unwrap().is_empty(), "the human is at war with no one: {troops}");
+    assert!(borrow.req_str("why_not").is_ok(), "{troops}");
+    // No lend order on the selection.
+    let r = s.query(&Query::Group { units: mine.clone() }).unwrap();
+    assert!(r.req_arr("actions").unwrap().iter().all(|a| a.req_str("kind") != Ok("crusade")));
+    // The loan as the trade screen sends it: our units picked, a gift with it.
+    let one = s.g.crusade_unit_strength(mine[0]);
+    let cmd = Command::ProposeLoan { to: ALLY, lend: true, target, defend: false, strength: 2 * one, duration: 5, give: vec![], get: vec![], units: mine.clone() };
+    let accepted = match s.execute(&cmd) {
+        Ok(CmdOk::Applied { accepted, .. }) => accepted,
+        Ok(CmdOk::NeedsConfirm(c @ Confirm::LoanCounter { .. })) => {
+            let cmd = Command::from_json(s.g.d, c.to_json().req_value("cmd").unwrap()).unwrap();
+            applied(&mut s, cmd)
         }
-    }
-    // Its command as sent: the war confirmation, then the lend.
-    let cmd = Command::from_json(s.g.d, a.req_value("cmd").unwrap()).unwrap();
-    match s.execute(&cmd) {
-        Ok(CmdOk::NeedsConfirm(Confirm::LendWar { .. })) => {}
         other => panic!("{other:?}"),
+    };
+    if accepted == Some(true) {
+        let id = s.g.loan_general(ALLY, target).expect("the general");
+        let host = s.g.crusade(id).unwrap().host;
+        let lent: Vec<UnitId> = s.g.players[host].units.clone();
+        assert_eq!(lent.len(), 2, "exactly the picked units serve");
+        assert!(lent.iter().all(|&u| s.g.units[u].lent.as_ref().is_some_and(|r| r.lender == h)));
     }
-    let Command::CrusadeLend { crusade, units, .. } = cmd else { panic!("{cmd:?}") };
-    assert_eq!(units, mine);
-    applied(&mut s, Command::CrusadeLend { crusade, units, declare_war: true });
-    let view = s.query(&Query::View).unwrap();
-    let lent: Vec<_> = view.req_arr("units").unwrap().iter().filter(|u| u.req::<PlayerId>("lent_by") == Ok(h)).collect();
-    assert_eq!(lent.len(), 2, "the Host's units name their lender");
-    let q = s.query(&Query::Crusades).unwrap();
-    let cr = &q.req_arr("crusades").unwrap()[0];
-    let (x, y) = (s.g.units[s.g.players[s.g.crusade(id).unwrap().host].units[0]].x, s.g.units[s.g.players[s.g.crusade(id).unwrap().host].units[0]].y);
-    assert_eq!(cr.req::<Vec<i32>>("host_at"), Ok(vec![x, y]), "{cr}");
-    assert!(cr.req_str("host_name").is_ok_and(|n| n.starts_with("Crusade against")), "{cr}");
 }

@@ -19,7 +19,7 @@ import { openModal, ask } from "./modals.js";
 import { infoTip } from "./infotips.js";
 import { render as markup } from "./markup.js";
 import { run } from "./commands.js";
-import { openLoan } from "./crusade.js";
+import { openTroops, troopsLabel } from "./crusade.js";
 import { leaderPortrait, playerPortrait, PORTRAIT } from "./portraits.js";
 
 /** The players screen. */
@@ -27,8 +27,6 @@ export async function openDiplomacy() {
   const m = openModal({ title: "Foreign affairs", body: [h("p.dim", "…")], tag: "diplomacy", wide: true, buttons: [{ label: "Close", value: null }] });
   const load = async () => {
     let r;
-    // The crusade ruleset (docs/CRUSADE.md): allied loans are proposed from here.
-    const crusades = !!S.view?.crusades;
     try {
       r = await api.query("players");
     } catch (e) {
@@ -54,7 +52,6 @@ export async function openDiplomacy() {
               ? h("button.small", { "data-trade": p.id, onclick: () => openTrade(p.id, p.name).then(load) }, "Trade…")
               : h("span.dim", !p.alive ? "dead" : p.crusade_host ? "fights its crusade only (the Crusades advisor)" : "no contact"),
             p.can_declare_war && !p.war ? h("button.small.danger", { "data-war": p.team, onclick: () => declareWar(p).then(load) }, "Declare war") : null,
-            crusades && p.alive && p.contact && !p.war ? h("button.small", { "data-loan": p.id, onclick: () => openLoan(p).then(load) }, "Loan…") : null,
           ),
           deals.length ? h("td.dim", deals.map((d) => h("div", d))) : h("td"),
         );
@@ -267,8 +264,10 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
   } catch {
     /* the tips go without */
   }
-  // The deal: per side, the chosen items by key (gold: the amount typed).
-  const deal = { give: new Map(), get: new Map() };
+  // The deal: per side, the chosen items by key (gold: the amount typed); `troops`, a loan of
+  // troops (the crusade ruleset, docs/CRUSADE.md: `{lend, target, mission, duration, strength,
+  // units}`, lent by you when `lend`), at most one.
+  const deal = { give: new Map(), get: new Map(), troops: null };
   const keyOf = (it) => `${it.item}:${it.data}`;
   const isDual = (it) => DUAL_ITEMS.includes(tname("TradeableItem", it.item));
   const isGold = (it) => ["TRADE_GOLD", "TRADE_GOLD_PER_TURN"].includes(tname("TradeableItem", it.item));
@@ -323,7 +322,45 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
               return row;
             })
           : h("p.dim", "Nothing."),
+        troopsRow(mapKey),
       );
+    // Troops (the crusade ruleset): a loan of units, each way; adding it opens the troops screen
+    // (the enemy, the mission, the turns, the units you send), the rest of the deal its price.
+    const troopsRow = (mapKey) => {
+      const lend = mapKey === "give";
+      const way = lend ? t.troops?.lend : t.troops?.borrow;
+      if (!way || t.war) return null;
+      const on = !!deal.troops && deal.troops.lend === lend;
+      const denied = !way.targets.length;
+      const edit = async () => {
+        const terms = await openTroops({ lend, other: withPlayer, way, maxTurns: t.troops.max_turns, current: on ? deal.troops : null });
+        if (terms && !m.closed) {
+          deal.troops = terms;
+          draw();
+        }
+      };
+      return h(
+        "div.trade-item.troops",
+        { class: on ? "on" : "", "data-item": "TROOPS", "data-side": mapKey },
+        h(
+          "button.small",
+          {
+            disabled: denied,
+            title: denied ? `Not now (${way.why_not})` : on ? "Take the troops out of the deal" : "Add troops to the deal…",
+            onclick: () => {
+              if (on) {
+                deal.troops = null;
+                draw();
+              } else edit();
+            },
+          },
+          on ? "✓" : "+",
+        ),
+        h("span", on ? troopsLabel(deal.troops) : lend ? "Troops: lend your units…" : "Troops: borrow theirs…"),
+        on ? h("button.link.small", { "data-troops-edit": mapKey, onclick: edit }, "change") : null,
+        denied ? h("span.dim", ` (${way.why_not})`) : null,
+      );
+    };
     m.setBody(
       leader.el,
       t.war ? h("p.warn", "You are at war: a deal makes peace, so it must hold the peace treaty (or a capitulation).") : null,
@@ -338,15 +375,21 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
       onClick: async () => {
         const give = [...deal.give.values()];
         const get = [...deal.get.values()];
-        if (!give.length && !get.length) {
+        const k = deal.troops;
+        if (!give.length && !get.length && !k) {
           status.textContent = "Put something into the deal first.";
           return;
         }
-        const reply = await run({ c: "propose_deal", to: withPlayer, give, get });
+        // With troops in it the deal is a loan, the other items its price (`propose_loan`).
+        const reply = k
+          ? await run({ c: "propose_loan", to: withPlayer, lend: k.lend, target: k.target, mission: k.mission, strength: k.strength, duration: k.duration, give, get, units: k.units })
+          : await run({ c: "propose_deal", to: withPlayer, give, get });
         if (!reply) return;
         // The leader answers (Civ4's lines for a deal: peace, a gift, a demand, a trade).
         const accepted = !!reply.r?.accepted;
-        const comment = accepted ? (t.war ? "AI_DIPLOCOMMENT_PEACE" : get.length ? "AI_DIPLOCOMMENT_ACCEPT" : "AI_DIPLOCOMMENT_THANKS") : t.war ? "AI_DIPLOCOMMENT_NO_PEACE" : give.length ? "AI_DIPLOCOMMENT_NO_DEAL" : "AI_DIPLOCOMMENT_REJECT";
+        const weGet = get.length || (k && !k.lend);
+        const weGive = give.length || (k && k.lend);
+        const comment = accepted ? (t.war ? "AI_DIPLOCOMMENT_PEACE" : weGet ? "AI_DIPLOCOMMENT_ACCEPT" : "AI_DIPLOCOMMENT_THANKS") : t.war ? "AI_DIPLOCOMMENT_NO_PEACE" : weGive ? "AI_DIPLOCOMMENT_NO_DEAL" : "AI_DIPLOCOMMENT_REJECT";
         if (accepted) {
           // The tables change with the deal (gold spent, peace made): read them again.
           try {
@@ -356,6 +399,7 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
           }
           deal.give.clear();
           deal.get.clear();
+          deal.troops = null;
           draw();
           status.textContent = "They accepted the deal.";
           status.className = "good";
