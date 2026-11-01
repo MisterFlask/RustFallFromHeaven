@@ -1658,6 +1658,13 @@ share score (docs/SCORE.md) averages 10000/N whatever the AI does.
 - `--option GAMEOPTION_X` (repeatable) turns game options on for any of these commands (for
   example `GAMEOPTION_ADVANCED_START`).
 
+## Crusades and loans (`crusade.rs`)
+
+Only with the crusade ruleset on (docs/CRUSADE.md, which describes the Host's state machine, the
+pledge valuation, delivery, draft picks and loans, and the self-play measures). The Host strikes
+through `campaign::strike`; a borrower does not seek peace (`diplomacy::want_peace`) with an enemy
+its loan general is fighting. None of this runs in the default game, so it moves no win rate there.
+
 ## Known gaps (future work)
 
 - Naval: amphibious invasions now ship an army across water to take an overseas enemy city

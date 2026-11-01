@@ -648,3 +648,19 @@ fn a_passed_council_war_resolution_calls_members_to_dedicate_instead_of_declarin
     let tt = g.players[T].team;
     assert!(!g.at_war(g.players[A].team, tt) && !g.at_war(g.players[B].team, tt), "nobody declared: they dedicate forces or defy");
 }
+
+#[test]
+fn a_crusade_called_between_turns_does_not_start_the_hosts_turn_out_of_order() {
+    let mut g = game(Arc::new(Script::default()), true);
+    // (as at the start of a game turn, when the council votes are counted)
+    for p in g.player_ids() {
+        if g.players[p].turn_active {
+            g.player_set_turn_active(p, false, false);
+        }
+    }
+    assert_eq!(g.num_game_turn_active, 0);
+    let id = call(&mut g, &[A]);
+    let host = host_of(&g, id);
+    assert!(!g.players[host].turn_active, "the Host waits for its slot");
+    assert_eq!(g.num_game_turn_active, 0);
+}

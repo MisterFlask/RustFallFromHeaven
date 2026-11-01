@@ -22,6 +22,7 @@ pub mod automation;
 pub mod campaign;
 pub mod casting;
 pub mod civs;
+pub mod crusade;
 pub mod diplomacy;
 pub mod economy;
 pub mod empire;
@@ -96,6 +97,11 @@ impl Controller for Ai {
         if !g.players[p].alive {
             return;
         }
+        // A crusade Host (docs/CRUSADE.md) plays only its war.
+        if g.player_is_crusade_host(p) {
+            crusade::host_turn(g, p);
+            return;
+        }
         // C++ setTurnActive -> AI_doAdvancedStart while the player still has start points.
         if g.players[p].advanced_start_points >= 0 && !g.players[p].human && !g.player_is_barbarian(p) {
             advanced_start::run(g, p);
@@ -125,6 +131,11 @@ impl Controller for Ai {
             expansion::prepare_escorts(g, p); // early-expansion
             diplomacy::manage(g, &v);
             offers::to_humans(g, &v); // ai-offers: deals offered to human players
+            if g.crusades_enabled() {
+                // Crusades and loans (docs/CRUSADE.md): pledged units leave before ours move.
+                crusade::deliver(g, p);
+                crusade::ask_for_loans(g, p);
+            }
             // War declarations change the picture.
             v = view::View::new(g, p);
             civs::turn(self, g, &mut v); // civ-mechanics
@@ -136,6 +147,10 @@ impl Controller for Ai {
     }
 
     fn choose_production(&self, g: &mut Game, c: CityId) {
+        // A crusade Host has no economy: its cities build nothing.
+        if g.player_is_crusade_host(g.cities[c].owner) {
+            return;
+        }
         production::choose(self, g, c);
     }
 
@@ -163,5 +178,21 @@ impl Controller for Ai {
 
     fn choose_religion(&self, g: &Game, p: PlayerId) -> Option<ReligionType> {
         g.players[p].personality_type.and_then(|l| g.d.leader_heads[l].favorite_religion)
+    }
+
+    fn crusade_pledge(&self, g: &Game, p: PlayerId, c: ffh_core::crusade::CrusadeId) -> Option<ffh_core::crusade::Pledge> {
+        crusade::pledge(g, p, c)
+    }
+
+    fn crusade_draft_pick(&self, g: &Game, p: PlayerId, _c: ffh_core::crusade::CrusadeId, budget: i32, offered: &[(CityId, i32)]) -> Option<CityId> {
+        crusade::draft_pick(g, p, budget, offered)
+    }
+
+    fn consider_loan(&self, g: &Game, p: PlayerId, proposal: &ffh_core::crusade::loan::LoanProposal) -> ffh_core::crusade::loan::LoanAnswer {
+        crusade::consider_loan(g, p, proposal)
+    }
+
+    fn choose_loan_units(&self, g: &Game, p: PlayerId, terms: &ffh_core::crusade::loan::LoanTerms) -> Vec<UnitId> {
+        crusade::pick_units(g, p, terms.strength as i64)
     }
 }

@@ -809,6 +809,10 @@ pub(crate) fn want_peace(g: &Game, team: TeamId, enemy: TeamId, plan: &crate::vi
     if counter < 10 {
         return false;
     }
+    // A loan general we borrowed fights this war for us (docs/CRUSADE.md): see it through.
+    if !g.crusades.is_empty() && g.player_ids().any(|p| g.players[p].alive && g.players[p].team == team && g.loan_general(p, enemy).is_some()) {
+        return false;
+    }
     let ours = g.team_get_power(team, true).max(1) as i64;
     let theirs = g.team_get_power(enemy, true).max(1) as i64;
     let success = g.teams[team].ai_war_success[enemy] as i64;

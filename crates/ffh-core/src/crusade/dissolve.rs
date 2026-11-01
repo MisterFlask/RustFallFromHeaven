@@ -69,9 +69,6 @@ impl Game {
     pub fn crusade_dissolution_due(&self, idx: usize) -> Option<Dissolution> {
         let c = &self.crusades[idx];
         let turn = self.game_turn();
-        if !self.team_is_alive(c.target) {
-            return Some(Dissolution::TargetGone);
-        }
         if let CrusadeKind::Loan { borrower } = c.kind {
             let bt = self.players[borrower].team;
             if !self.players[borrower].alive || !self.at_war(bt, c.target) || !c.lenders.iter().any(|l| l.term_end >= turn) {
@@ -88,6 +85,9 @@ impl Game {
         };
         if met {
             return Some(Dissolution::Objective);
+        }
+        if !self.team_is_alive(c.target) {
+            return Some(Dissolution::TargetGone);
         }
         if turn > c.end_turn {
             return Some(Dissolution::Term);

@@ -970,7 +970,7 @@ pub fn act(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId, early: bool) -> 
 /// else the unit that is cheapest to lose for its strength (C++ `AI_getBestGroupSacrifice`
 /// does the same in a stack attack). Each attacker is taken out of its stack first, as a human
 /// selects a single unit: a stack whose other units have attacked cannot start a move.
-fn strike(g: &mut Game, v: &mut View, op: &Op) {
+pub(crate) fn strike(g: &mut Game, v: &mut View, op: &Op) {
     let p = v.p;
     let team = v.team;
     let tp = op.plot;

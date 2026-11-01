@@ -442,7 +442,8 @@ impl Game {
 
                 // endMPDiplomacy / endDiplomacy / closeSlot: UI and network.
 
-                if self.elapsed_game_turns > 0 && !self.player_is_barbarian(p) {
+                // (not in C++: a crusade Host slot freed at dissolution is no civilization's end)
+                if self.elapsed_game_turns > 0 && !self.player_is_barbarian(p) && !self.player_is_host_slot(p) {
                     // TXT_KEY_MISC_CIV_DESTROYED message to every alive player + replay message.
                     if self.log.enabled {
                         let turn = self.game_turn();

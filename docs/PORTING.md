@@ -238,6 +238,17 @@ the differences; it does not ask for them to be undone.
   off panicked on the deleted unit at turn 495: a city flipped to the Infernals by culture with an
   Ashen Veil worker inside.
 
+**Crusades and allied loans (a ruleset flag, off by default; docs/CRUSADE.md)**
+
+- Not FFH2: with `GameSetup::crusade.enabled`, `CrusadeRules::host_slots` player slots are reserved
+  for crusade Hosts (temporary AI players that own lent units and fight one war), a passed
+  `VOTE_FORCE_WAR` calls the voting members to pledge forces instead of declaring war for them
+  ("dedicate or defy": refusing defies the resolution at the deadline), lending declares war on the
+  target, lent units earn their lender contribution when they kill or die, and dissolution drafts
+  the Host's cities and gold by contribution. Allied loans are small, agreed, time-limited crusades.
+  With the flag off nothing of this runs and games are identical to the faithful port (per-turn
+  sync checksums checked against the binary before it). Save format 3.
+
 **Human play (ffh-play; docs/PLAY_DESIGN.md §10)**
 
 - Human popups whose rules answer can be deferred are answered at the next control point, as in

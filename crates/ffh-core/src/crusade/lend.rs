@@ -3,7 +3,8 @@
 //!
 //! - **Lending** hands units over where they stand: each becomes the Host's (`initUnit` +
 //!   `convert`, keeping its name, experience, level and promotions) and remembers its lender and
-//!   its strength at handover ([`LentRecord`] on the unit). A civ's first transfer declares war on
+//!   its strength at handover ([`LentRecord`] on the unit); the Host learns the lender's map. A
+//!   civ's first transfer declares war on
 //!   the target through the normal declaration path; a civ that could not legally declare that
 //!   war cannot lend. Lent units cannot be recalled.
 //! - **Credit**: a lent unit adds its handover strength to its lender's contribution on its first
@@ -86,6 +87,15 @@ impl Game {
         let idx = self.crusade_index(id).expect("crusade still running");
         self.crusade_grant_passage(idx, team);
 
+        // The Host knows what its lenders know (the map they have revealed).
+        let host_team = self.players[self.crusades[idx].host].team;
+        if self.crusades[idx].lenders.iter().all(|l| l.player != p || l.units == 0) {
+            for plot in self.map.plot_ids() {
+                if self.map.plots[plot].revealed[team] && !self.map.plots[plot].revealed[host_team] {
+                    self.plot_set_revealed(plot, host_team, true, false, None, false);
+                }
+            }
+        }
         if !self.crusades[idx].lenders.iter().any(|l| l.player == p) {
             self.crusades[idx].lenders.push(Lender {
                 player: p,

@@ -84,6 +84,18 @@ impl Controller for Timed {
     fn update_automated_group(&self, g: &mut Game, grp: GroupId) -> bool {
         self.time(|| self.inner.update_automated_group(g, grp))
     }
+    fn crusade_pledge(&self, g: &Game, p: PlayerId, c: ffh_core::crusade::CrusadeId) -> Option<ffh_core::crusade::Pledge> {
+        self.time(|| self.inner.crusade_pledge(g, p, c))
+    }
+    fn crusade_draft_pick(&self, g: &Game, p: PlayerId, c: ffh_core::crusade::CrusadeId, budget: i32, offered: &[(CityId, i32)]) -> Option<CityId> {
+        self.time(|| self.inner.crusade_draft_pick(g, p, c, budget, offered))
+    }
+    fn consider_loan(&self, g: &Game, p: PlayerId, proposal: &ffh_core::crusade::loan::LoanProposal) -> ffh_core::crusade::loan::LoanAnswer {
+        self.time(|| self.inner.consider_loan(g, p, proposal))
+    }
+    fn choose_loan_units(&self, g: &Game, p: PlayerId, terms: &ffh_core::crusade::loan::LoanTerms) -> Vec<UnitId> {
+        self.time(|| self.inner.choose_loan_units(g, p, terms))
+    }
 }
 
 pub struct RunConfig {
@@ -104,6 +116,14 @@ pub struct RunConfig {
     pub force_civs: Vec<String>,
     /// `ffh stats`: also record per-player counts of unit, building and project types.
     pub detail: bool,
+    /// Turn the crusade ruleset on (docs/CRUSADE.md).
+    pub crusades: bool,
+    /// Self-play measures (docs/CRUSADE.md): at the start of these turns, a council crusade is
+    /// called against the leading civ, every other civ called (AI councils rarely pass war
+    /// resolutions on their own).
+    pub crusade_calls: Vec<i32>,
+    /// Free-rider probe: this player always pledges the minimum (strength 1).
+    pub free_rider: Option<u8>,
 }
 
 impl Default for RunConfig {
@@ -119,6 +139,9 @@ impl Default for RunConfig {
             until_supremacy: false,
             force_civs: Vec::new(),
             detail: false,
+            crusades: false,
+            crusade_calls: Vec::new(),
+            free_rider: None,
         }
     }
 }
@@ -137,6 +160,9 @@ pub fn new_game(cfg: &RunConfig) -> (Game, Arc<Timed>) {
     let d = ffh_data::global();
     let mut o = ffh_core::setup::SetupOptions::new(d, cfg.civs, &cfg.world, cfg.seed);
     o.options = cfg.options.iter().map(|name| d.t::<GameOptionType>(name)).collect();
+    if cfg.crusades {
+        o.crusade = ffh_core::crusade::CrusadeRules::on();
+    }
     let mut setup = ffh_core::setup::GameSetup::from_options(d, &o);
     assert!(cfg.force_civs.len() <= cfg.civs, "more forced civilizations than civ slots");
     for (slot, name) in cfg.force_civs.iter().enumerate() {
@@ -155,6 +181,9 @@ pub fn new_game(cfg: &RunConfig) -> (Game, Arc<Timed>) {
     let ai: ControllerRef = timed.clone();
     for p in g.player_ids() {
         g.controllers[p] = ai.clone();
+    }
+    if let Some(f) = cfg.free_rider {
+        g.controllers[PlayerId(f)] = Arc::new(FreeRider { inner: ai.clone() });
     }
     g.autorun = true;
     // FFH_LOG=1 (all players) or FFH_LOG=<player id>: print the game log as it is written.
@@ -225,7 +254,7 @@ pub fn team_scores(g: &Game) -> Vec<(TeamId, i64)> {
     let mut out: Vec<(TeamId, i64)> = Vec::new();
     for p in g.civ_player_ids() {
         let pl = &g.players[p];
-        if !pl.alive || pl.team == barb {
+        if !pl.alive || pl.team == barb || g.player_is_crusade_host(p) {
             continue;
         }
         let score = scores[p.idx()] as i64;
@@ -297,6 +326,9 @@ pub fn play(g: &mut Game, cfg: &RunConfig, mut on_turn: impl FnMut(&Game, &TurnS
                     eprintln!("LOG t{} p{:?}: {}", e.turn, e.player, e.text);
                 }
             }
+        }
+        if g.game_turn() != turn && cfg.crusade_calls.contains(&g.game_turn()) {
+            inject_crusade_call(g);
         }
         if g.game_turn() != turn {
             let stat = TurnStat { turn, elapsed: t0.elapsed(), checksum: g.calculate_sync_checksum(), units: g.units.len(), cities: g.cities.len() };
@@ -741,4 +773,106 @@ pub fn inspect(g: &Game, p: PlayerId) -> String {
     }
     out
 
+}
+
+/// One dissolved crusade as a JSON line (`ffh autoplay --crusades`; the self-play measures of
+/// docs/CRUSADE.md are computed from these by `scripts/crusade_metrics.py`).
+pub fn crusade_report_json(r: &ffh_core::crusade::CrusadeReport) -> String {
+    let lenders: Vec<String> = r
+        .lenders
+        .iter()
+        .map(|l| {
+            format!(
+                "{{\"player\":{},\"called\":{},\"obligation\":{},\"refused\":{},\"delivered\":{},\"credit\":{},\"late_credit\":{},\"spoils\":{},\"cities\":{}}}",
+                l.player.0, l.called, l.obligation, l.refused, l.delivered, l.credit, l.late_credit, l.spoils, l.cities
+            )
+        })
+        .collect();
+    let kind = match r.kind {
+        ffh_core::crusade::CrusadeKind::Council(_) => "council",
+        ffh_core::crusade::CrusadeKind::Loan { .. } => "loan",
+        ffh_core::crusade::CrusadeKind::Direct => "direct",
+    };
+    format!(
+        "crusade {{\"id\":{},\"kind\":\"{}\",\"target\":{},\"start\":{},\"end\":{},\"reason\":\"{:?}\",\"pool\":{},\"wealth\":{},\"delivered\":{},\"engaged\":{},\"refusals\":{},\"lenders\":[{}]}}",
+        r.id.0, kind, r.target.0, r.start_turn, r.end_turn, r.reason, r.pool, r.wealth, r.delivered, r.engaged, r.refusals, lenders.join(",")
+    )
+}
+
+/// A council crusade against the civ team with the largest share of the world, every other
+/// alive civ called (the `--crusade-call` measure harness).
+fn inject_crusade_call(g: &mut Game) {
+    let scores = team_scores(g);
+    let Some(&(target, _)) = scores.iter().max_by_key(|&&(t, s)| (s, std::cmp::Reverse(t))) else { return };
+    if scores.len() < 3 {
+        return;
+    }
+    let called: Vec<PlayerId> = g.civ_player_ids().filter(|&p| g.players[p].alive && g.players[p].team != target && !g.player_is_crusade_host(p)).collect();
+    let rules = g.crusade_rules().clone();
+    let (term, deadline) = (ffh_core::crusade::speed_turns(g, rules.term), ffh_core::crusade::speed_turns(g, rules.pledge_deadline));
+    let vs = VoteSourceType(0);
+    let id = g.crusade_call(ffh_core::crusade::CrusadeKind::Council(vs), target, None, ffh_core::crusade::Objective::Term, term, deadline, &called);
+    if std::env::var("FFH_CRUSADE_TRACE").is_ok() {
+        eprintln!("t{} crusade call against team {}: {:?}", g.game_turn(), target.0, id);
+    }
+}
+
+/// The free-rider probe: the AI, but it pledges the minimum to every crusade call.
+struct FreeRider {
+    inner: ControllerRef,
+}
+
+impl Controller for FreeRider {
+    fn name(&self) -> &str {
+        "free-rider"
+    }
+    fn play_turn(&self, g: &mut Game, p: PlayerId) {
+        self.inner.play_turn(g, p)
+    }
+    fn choose_production(&self, g: &mut Game, c: CityId) {
+        self.inner.choose_production(g, c)
+    }
+    fn choose_research(&self, g: &Game, p: PlayerId) -> Option<TechType> {
+        self.inner.choose_research(g, p)
+    }
+    fn choose_free_tech(&self, g: &Game, p: PlayerId) -> Option<TechType> {
+        self.inner.choose_free_tech(g, p)
+    }
+    fn raze_conquered_city(&self, g: &Game, p: PlayerId, c: CityId) -> bool {
+        self.inner.raze_conquered_city(g, p, c)
+    }
+    fn choose_event(&self, g: &Game, p: PlayerId, t: &EventTriggeredData, options: &[EventType]) -> Option<EventType> {
+        self.inner.choose_event(g, p, t, options)
+    }
+    fn choose_election(&self, g: &Game, p: PlayerId, vs: &VoteSelectionData) -> Option<usize> {
+        self.inner.choose_election(g, p, vs)
+    }
+    fn diplo_vote(&self, g: &Game, p: PlayerId, vote: &VoteSelectionSubData, source: VoteSourceType) -> PlayerVote {
+        self.inner.diplo_vote(g, p, vote, source)
+    }
+    fn consider_offer(&self, g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData], we_give: &[TradeData]) -> bool {
+        self.inner.consider_offer(g, p, from, they_give, we_give)
+    }
+    fn choose_religion(&self, g: &Game, p: PlayerId) -> Option<ReligionType> {
+        self.inner.choose_religion(g, p)
+    }
+    fn attitude(&self, g: &Game, p: PlayerId, towards: PlayerId) -> AttitudeType {
+        self.inner.attitude(g, p, towards)
+    }
+    fn update_automated_group(&self, g: &mut Game, grp: GroupId) -> bool {
+        self.inner.update_automated_group(g, grp)
+    }
+    fn crusade_pledge(&self, g: &Game, p: PlayerId, c: ffh_core::crusade::CrusadeId) -> Option<ffh_core::crusade::Pledge> {
+        let _ = (g, p, c);
+        Some(ffh_core::crusade::Pledge::Strength(1))
+    }
+    fn crusade_draft_pick(&self, g: &Game, p: PlayerId, c: ffh_core::crusade::CrusadeId, budget: i32, offered: &[(CityId, i32)]) -> Option<CityId> {
+        self.inner.crusade_draft_pick(g, p, c, budget, offered)
+    }
+    fn consider_loan(&self, g: &Game, p: PlayerId, proposal: &ffh_core::crusade::loan::LoanProposal) -> ffh_core::crusade::loan::LoanAnswer {
+        self.inner.consider_loan(g, p, proposal)
+    }
+    fn choose_loan_units(&self, g: &Game, p: PlayerId, terms: &ffh_core::crusade::loan::LoanTerms) -> Vec<UnitId> {
+        self.inner.choose_loan_units(g, p, terms)
+    }
 }

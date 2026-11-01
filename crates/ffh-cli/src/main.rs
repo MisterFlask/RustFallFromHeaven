@@ -15,7 +15,10 @@
 //! last civ standing, or one team holding 1.5x the runner-up's score -- share of the world --
 //! for 30 turns, counted from turn 200; `--turns` stays the cap)  --civ CIVILIZATION_X
 //! (repeatable: force the first civ slots to these civilizations, leader picked by the seed)
-//! --detail (`stats`: per-player counts of unit, building and project types)
+//! --detail (`stats`: per-player counts of unit, building and project types)  --crusades (the
+//! crusade ruleset on, docs/CRUSADE.md; `autoplay` then prints each dissolved crusade)
+//! --crusade-call T1,T2,.. (with --crusades: a council crusade against the leading civ at these
+//! turns, every other civ called)  --free-rider P (player P always pledges the minimum)
 
 mod run;
 mod stats;
@@ -23,7 +26,7 @@ mod stats;
 use std::time::Instant;
 
 fn usage() -> ! {
-    eprintln!("usage: ffh <data|lookup TYPE|autoplay|bench|stats> [--seed N] [--civs N] [--size WORLDSIZE_X] [--turns N] [--report N] [--option GAMEOPTION_X] [--until-supremacy] [--civ CIVILIZATION_X] [--detail] [--at T1,T2,..] [--every N]");
+    eprintln!("usage: ffh <data|lookup TYPE|autoplay|bench|stats> [--seed N] [--civs N] [--size WORLDSIZE_X] [--turns N] [--report N] [--option GAMEOPTION_X] [--until-supremacy] [--civ CIVILIZATION_X] [--detail] [--crusades] [--at T1,T2,..] [--every N]");
     std::process::exit(2)
 }
 
@@ -56,8 +59,15 @@ fn parse_run_config_at(args: &[String]) -> (run::RunConfig, Vec<i32>) {
                 i += 1;
                 continue;
             }
+            "--crusades" => {
+                cfg.crusades = true;
+                i += 1;
+                continue;
+            }
             "--report" => cfg.report_every = val(i).parse().unwrap_or_else(|_| usage()),
             "--at" => at = val(i).split(',').map(|t| t.parse().unwrap_or_else(|_| usage())).collect(),
+            "--crusade-call" => cfg.crusade_calls = val(i).split(',').map(|t| t.parse().unwrap_or_else(|_| usage())).collect(),
+            "--free-rider" => cfg.free_rider = Some(val(i).parse().unwrap_or_else(|_| usage())),
             "--every" => every = val(i).parse().unwrap_or_else(|_| usage()),
             _ => usage(),
         }
@@ -100,6 +110,9 @@ fn cmd_autoplay(args: &[String], verbose: bool) {
         println!("final checksum {:08x} at turn {}", last.checksum as u32, last.turn);
     }
     println!("outcome: {}", run::describe_outcome(&g, &played.outcome));
+    for r in &g.crusade_reports {
+        println!("{}", run::crusade_report_json(r));
+    }
     if verbose {
         print!("{}", run::summary(&g));
     }

@@ -274,7 +274,7 @@ pub struct CrusadeReport {
 }
 
 /// Scale a normal-speed turn count to the game speed.
-pub(crate) fn speed_turns(g: &Game, turns: i32) -> i32 {
+pub fn speed_turns(g: &Game, turns: i32) -> i32 {
     let percent = g.d.game_speeds[g.game_speed_type()].growth_percent;
     (turns * percent / 100).max(1)
 }
