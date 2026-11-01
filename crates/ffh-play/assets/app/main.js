@@ -18,6 +18,7 @@ import * as units from "./units.js";
 import { openCity, ownCities, stepCityScreen } from "./city.js";
 import * as empire from "./empire.js";
 import { openDiplomacy } from "./diplo.js";
+import * as crusade from "./crusade.js";
 import * as tools from "./tools.js";
 import { applyMapDelta, plotDistance } from "./tiles.js";
 import * as K from "./hotkeys.js";
@@ -160,7 +161,7 @@ function clearGame() {
 
 /** The dialogs that belong to one game (closed when another game arrives); the load, options,
  *  tools and crash dialogs stay. */
-const GAME_DIALOGS = ["city", "decision", "election", "event", "research", "vote", "promotions", "spells", "trade", "diplomacy", "cities", "civics", "finance", "religion", "techtree", "inspect", "gate", "over", "stuck", "takeover", "save"];
+const GAME_DIALOGS = ["city", "decision", "election", "event", "research", "vote", "promotions", "spells", "trade", "diplomacy", "cities", "civics", "finance", "religion", "techtree", "inspect", "gate", "over", "stuck", "takeover", "save", "crusade", "crusade-lend", "crusades", "loan"];
 
 /** Fetches the view (and the map when its revision changed) when the status says it changed. */
 async function refreshView(st) {
@@ -269,8 +270,8 @@ async function onControl(st) {
   runPopups();
 }
 
-/** Shows the deferred popups one at a time, in C++ order (events, votes, elections, research,
- *  idle cities); "Later" sets one aside for the turn. */
+/** Shows the deferred popups one at a time, in C++ order (events, votes, elections, then the
+ *  crusade calls, research, idle cities); "Later" sets one aside for the turn. */
 async function runPopups() {
   if (popupsRunning) return;
   popupsRunning = true;
@@ -286,6 +287,7 @@ async function runPopups() {
       if (p.kind === "event") await screens.openEvent(p.event);
       else if (p.kind === "vote") await screens.openVote(p.vote);
       else if (p.kind === "election") await screens.openElection(p.election);
+      else if (p.kind === "crusade") await crusade.openCall(p.call);
       else if (p.kind === "research") await screens.openResearch({ popup: true });
       else {
         mapView.reveal(S.cities.get(p.city)?.x ?? 0, S.cities.get(p.city)?.y ?? 0);

@@ -82,6 +82,32 @@ pub fn text(v: &Viewer, ctx: &Ctx) -> Json {
     if !p.ai_groups_idle.is_empty() {
         let _ = writeln!(s, "{} automated or AI-controlled groups wait for the AI's moves", p.ai_groups_idle.len());
     }
+    for c in &p.crusade_calls {
+        let _ = writeln!(
+            s,
+            "Crusade {} call against team {}: obligation {} (you can lend {}), deadline turn {}; answer with crusade_answer",
+            c.crusade, c.target.0, c.obligation, c.lendable, c.deadline
+        );
+    }
+    for c in &g.crusades {
+        let mine = c.lenders.iter().find(|l| l.player == h);
+        let pledged = c.calls.iter().find(|x| x.player == h).and_then(|x| match x.answer {
+            Some(ffh_core::crusade::Pledge::Strength(s)) => Some(s),
+            _ => None,
+        });
+        if mine.is_some() || pledged.is_some() {
+            let _ = writeln!(
+                s,
+                "Crusade {} against team {} (until turn {}): pledged {}, delivered {}, credit {}",
+                c.id.0,
+                c.target.0,
+                c.end_turn,
+                pledged.unwrap_or(0),
+                mine.map_or(0, |l| l.delivered),
+                mine.map_or(0, |l| l.credit)
+            );
+        }
+    }
     let _ = writeln!(s, "Ready groups ({}):", p.ready_groups.len());
     for &grp in &p.ready_groups {
         let group = &g.groups[grp];

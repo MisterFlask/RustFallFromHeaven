@@ -72,6 +72,7 @@ pub const ASSETS: &[(&str, &str, &str)] = &[
     ("app/hotkeys.js", JS, include_str!("../../assets/app/hotkeys.js")),
     ("app/empire.js", JS, include_str!("../../assets/app/empire.js")),
     ("app/diplo.js", JS, include_str!("../../assets/app/diplo.js")),
+    ("app/crusade.js", JS, include_str!("../../assets/app/crusade.js")),
     ("app/tools.js", JS, include_str!("../../assets/app/tools.js")),
     ("app/look.js", JS, include_str!("../../assets/app/look.js")),
     ("app/artmap.js", JS, include_str!("../../assets/app/artmap.js")),

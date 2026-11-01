@@ -175,10 +175,15 @@ with the target, the target is gone, or lender and borrower go to war.
 
 ## Human play
 
-`ffh-play`: the draft pick and loan offers are blocking decisions (`draft`, `loan`); a crusade
-call is deferred (the advisor answers for non-human slots), and `choose_loan_units` is the
-advisor's. There is no command yet for a human to answer a call or lend units, so a human called
-to a crusade defies it at the deadline (gap below).
+`ffh-play` (docs/HUMAN.md, "Crusades"): the new-game setup's `crusades` flag (the *Crusades* box
+of the browser's new-game screen); the commands `crusade_answer` (pledge or refuse a call),
+`crusade_lend` (lend units; at peace with the target it asks to declare the war first) and
+`propose_loan` (borrow or lend, with paired trade items; the AI accepts, refuses or counters);
+calls wait in `pending.crusade_calls` and count in the end-turn gate; the `crusades` query; the
+draft pick and loan offers are blocking decisions. In the browser a call is a popup (pledge,
+refuse, then the lend dialog), Foreign affairs has a *Crusades* screen (calls, lending, past
+crusades) and a *Loan* form per player. `ffh-play stage crusade DIR` saves a game with a call
+waiting, for trying it.
 
 ## Self-play measures
 
@@ -226,8 +231,6 @@ Host used the civ AI's strike it took 11/40 at 3x (it judged each stack alone).
   leading civ's cities; most crusades end with a small pool. Pledges, the obligation share and
   the risk term are first guesses: tune them (and measure win rates) before relying on the
   mechanic in play.
-- Human play cannot answer a call or lend units yet (protocol commands to add: answer a call,
-  lend units to a crusade, propose a loan).
 - League defence (a call source with a victim) is a separate spec; the victim machinery is here
   and exercised by the tests and loans.
 - With warbands (not in the game) the warband would be the unit of credit.

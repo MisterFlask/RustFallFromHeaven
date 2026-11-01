@@ -9,14 +9,17 @@ import { S, dname, tname, teamName, tradeItemLabel, tradeRefusal, DUAL_ITEMS } f
 import { h, toast } from "./dom.js";
 import { openModal, ask, closeTag } from "./modals.js";
 import { run } from "./commands.js";
+import { openCrusades, openLoan } from "./crusade.js";
 
 /** The players screen. */
 export async function openDiplomacy() {
   const m = openModal({ title: "Foreign affairs", body: [h("p.dim", "…")], tag: "diplomacy", wide: true, buttons: [{ label: "Close", value: null }] });
   const load = async () => {
     let r;
+    let crusades = false;
     try {
       r = await api.query("players");
+      crusades = (await api.query("crusades")).enabled;
     } catch (e) {
       return m.setBody(h("p.warn", e.detail ?? e.message));
     }
@@ -37,11 +40,13 @@ export async function openDiplomacy() {
             "td.actions",
             p.alive && p.contact ? h("button.small", { "data-trade": p.id, onclick: () => openTrade(p.id, p.name).then(load) }, "Trade…") : h("span.dim", p.alive ? "no contact" : "dead"),
             p.can_declare_war && !p.war ? h("button.small.danger", { "data-war": p.team, onclick: () => declareWar(p).then(load) }, "Declare war") : null,
+            crusades && p.alive && p.contact && !p.war ? h("button.small", { "data-loan": p.id, onclick: () => openLoan(p).then(load) }, "Loan…") : null,
           ),
           deals.length ? h("td.dim", deals.map((d) => h("div", d))) : h("td"),
         );
       });
     m.setBody(
+      crusades ? h("p", h("button.small", { id: "btn-crusades", onclick: () => openCrusades().then(load) }, "Crusades…"), h("span.dim", " calls, lent units, past crusades")) : null,
       rows.length
         ? h("table.scores.diplo", h("tr", h("th", "Leader"), h("th", "Relations"), h("th", "Attitude"), h("th", "Score"), h("th", ""), h("th", "Deals")), rows)
         : h("p.dim", "You have not met anyone yet."),

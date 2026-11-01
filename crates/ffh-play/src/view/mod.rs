@@ -8,9 +8,11 @@
 //! * [`view`] and [`status`] here; [`map`] (map arrays, `plot`), [`units`] (`group` with its
 //!   actions, `path`, `combat`), [`city`] (the city screen), [`player`] (`techs`, `civics`,
 //!   `religions`, `players`), [`diplo`] (`trade` and the deal checks of `propose_deal`),
+//!   [`crusade`] (`crusades`: calls, lending, loans; docs/CRUSADE.md),
 //!   [`data`] (the static tables), [`text`] (`text`, `ascii`, `inspect`).
 
 pub mod city;
+pub mod crusade;
 pub mod data;
 pub mod diplo;
 pub mod fog;

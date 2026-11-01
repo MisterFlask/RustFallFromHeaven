@@ -4,7 +4,7 @@
 // command resent with the answer.
 
 import * as api from "./api.js";
-import { S, emit, dname, teamName, gateLines, loadUnitCommand } from "./state.js";
+import { S, emit, dname, teamName, gateLines, loadUnitCommand, tradeItemLabel } from "./state.js";
 import { ask } from "./modals.js";
 import { toast, busy } from "./dom.js";
 
@@ -123,7 +123,7 @@ async function answerConfirm(c, confirm) {
     case "end_turn": {
       const lines = gateLines(confirm);
       const choices = [];
-      if (confirm.events || confirm.votes || confirm.research) choices.push({ label: "Answer them", value: "popups", primary: true });
+      if (confirm.events || confirm.votes || confirm.elections || confirm.research || confirm.crusade_calls) choices.push({ label: "Answer them", value: "popups", primary: true });
       if (confirm.ready_units) choices.push({ label: "Select a unit", value: "units", primary: !choices.length });
       choices.push({ label: "End turn anyway", value: "force" });
       const v = await ask("End the turn?", lines.map((l) => `• ${l[0].toUpperCase()}${l.slice(1)}.`), choices, { tag: "gate" });
@@ -131,6 +131,28 @@ async function answerConfirm(c, confirm) {
       if (v === "popups") emit("reopen-popups");
       if (v === "units") emit("select-ready");
       return null;
+    }
+    case "lend_war": {
+      const v = await ask("Declare war?", `Lending to this crusade means war with ${teamName(confirm.team)}.`, [
+        { label: "Lend and declare war", value: true, primary: true },
+        { label: "Cancel", value: null },
+      ]);
+      return v ? { ...c, declare_war: true } : null;
+    }
+    case "loan_counter": {
+      // The other side's terms, as a `propose_loan` to resend (docs/CRUSADE.md).
+      const k = confirm.cmd;
+      const items = (v) => (v?.length ? v.map(tradeItemLabel).join(", ") : "nothing");
+      const who = S.players.get(k.to)?.name ?? `Player ${k.to}`;
+      const text = [
+        `${who} would agree to: ${k.lend ? "you lend" : "they lend"} strength ${k.strength / 100} for ${k.duration} turns, to ${k.mission === "defend" ? "defend the borrower against" : "attack"} ${teamName(k.target)}.`,
+        `You give: ${items(k.give)}. You get: ${items(k.get)}.`,
+      ];
+      const v = await ask("Counter-offer", text, [
+        { label: "Accept", value: true, primary: true },
+        { label: "Decline", value: null },
+      ]);
+      return v ? { ...k } : null;
     }
     default:
       toast(`Unknown confirmation ${confirm.kind}`, "error");
@@ -155,5 +177,5 @@ export function endTurn(force = false) {
 export function openCount() {
   const p = S.view?.pending;
   if (!p) return 0;
-  return (p.events?.length ?? 0) + (p.votes?.length ?? 0) + (p.research_needed ? 1 : 0);
+  return (p.events?.length ?? 0) + (p.votes?.length ?? 0) + (p.crusade_calls?.length ?? 0) + (p.research_needed ? 1 : 0);
 }

@@ -181,6 +181,13 @@ impl Game {
     /// choice, at least the agreed strength), the general (joined if one serves this borrower
     /// against this target).
     pub fn loan_agree(&mut self, proposal: &LoanProposal) -> Result<CrusadeId, LoanError> {
+        self.loan_agree_with(proposal, None)
+    }
+
+    /// [`Game::loan_agree`] with the lender's units named (a human lender picks them; at least
+    /// the agreed strength, all lendable, else `NotEnoughUnits`). `None` asks the lender's
+    /// controller.
+    pub fn loan_agree_with(&mut self, proposal: &LoanProposal, named: Option<&[UnitId]>) -> Result<CrusadeId, LoanError> {
         let t = proposal.terms.clone();
         self.loan_check(&t)?;
         for item in &proposal.lender_gives {
@@ -193,11 +200,15 @@ impl Game {
                 return Err(LoanError::BadPayment);
             }
         }
-        let mut units: Vec<UnitId> = self.controller(t.lender).choose_loan_units(self, t.lender, &t);
+        let mut units: Vec<UnitId> = match named {
+            Some(v) => v.to_vec(),
+            None => self.controller(t.lender).choose_loan_units(self, t.lender, &t),
+        };
         units.retain(|&u| self.units.contains(u) && self.units[u].owner == t.lender && self.crusade_unit_lendable(u));
+        units.sort();
         units.dedup();
         let chosen: i32 = units.iter().map(|&u| self.crusade_unit_strength(u)).sum();
-        if chosen < t.strength {
+        if chosen < t.strength && named.is_none() {
             units = self.loan_default_units(t.lender, t.strength);
         }
         let chosen: i32 = units.iter().map(|&u| self.crusade_unit_strength(u)).sum();
@@ -243,7 +254,7 @@ impl Game {
         if !proposal.lender_gives.is_empty() || !proposal.borrower_gives.is_empty() {
             self.implement_deal(t.lender, t.borrower, &proposal.lender_gives, &proposal.borrower_gives, false);
         }
-        self.log.msg(turn, Some(t.borrower), || format!("Loan: player {} lends strength {} for {} turns against team {}", t.lender, chosen, t.duration, t.target));
+        self.log.msg(turn, Some(t.borrower), || format!("Loan: player {} lends strength {} for {} turns against team {}", t.lender, strength_text(chosen), t.duration, t.target));
         Ok(id)
     }
 

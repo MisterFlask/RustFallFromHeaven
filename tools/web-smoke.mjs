@@ -19,7 +19,9 @@
 // picking a unit by its figure, zoom, layers); `?renderer=3d`, the experimental 3D renderer (picking,
 // selection, zoom, pan, layers). Phase 7: the automate buttons (`stage automate`: a
 // worker automated with a click, a scout exploring by its hotkey), the secretary general's election
-// popup (`stage election`) and the Kuriotates city-or-settlement decision (`stage settlement`). It
+// popup (`stage election`) and the Kuriotates city-or-settlement decision (`stage settlement`);
+// crusades (`stage crusade`: the call popup, lending with the war confirmation, the Crusades
+// screen, a loan proposed). It
 // fails on any console error, page error, failed
 // request or HTTP error, and saves screenshots for review.
 //
@@ -1117,6 +1119,62 @@ async function stagedElection(bin, saves) {
   await answerPopups(false);
 }
 
+/** Crusades (docs/CRUSADE.md, `stage crusade`): the call popup (pledged), the lend dialog and its
+ *  war confirmation (a unit lent), the Crusades screen from Foreign affairs, a loan proposed to
+ *  the ally (agreed, refused or countered: any answer closes the form). */
+async function stagedCrusade(bin, saves) {
+  const st = await loadStaged(bin, saves, "crusade", { answer: false });
+  const pledge = `${TOP} .modal button.option[data-pledge="yes"]`;
+  // The popups before it in order (events, votes, elections) are answered first.
+  for (let k = 0; k < 20 && !(await b.eval(`!!document.querySelector(${q(pledge)})`)); k++) {
+    const other = `${TOP} .modal button.option:not([disabled])`;
+    if (await b.eval(`!!document.querySelector(${q(other)})`)) await click(other);
+    await new Promise((r) => setTimeout(r, 400));
+  }
+  await until2(`!!document.querySelector(${q(pledge)})`, "the crusade call popup", 30000);
+  await shot("crusade-call");
+  await click(pledge);
+  await until2(`(window.ffh.S.view.pending.crusade_calls ?? []).every((c) => c.crusade !== ${st.crusade})`, "the call answered");
+  await until(async () => (await modalTitles()).some((t) => /Lend units now/.test(t)), "the lend question");
+  await click(`${TOP} .modal-buttons button.primary`);
+  await dialog("Lend units");
+  const boxes = `${TOP} .checks input[type=checkbox]`;
+  await until2(`document.querySelectorAll(${q(boxes)}).length > 0`, "the lendable units");
+  await b.eval(`(() => { const b = document.querySelector(${q(boxes)}); b.checked = true; b.dispatchEvent(new Event("change")); })()`);
+  await shot("crusade-lend");
+  await click(`${TOP} #crusade-lend`);
+  // Lending is war: the confirmation, then the units serve the Host.
+  await until(async () => (await modalTitles()).some((t) => /Declare war/.test(t)), "the war confirmation");
+  await click(`${TOP} .modal-buttons button.primary`);
+  await until(async () => !(await modalTitles()).includes("Lend units"), "the unit lent");
+  await answerPopups(false);
+  await b.key("F4");
+  await dialog("Foreign affairs");
+  await until2(`!!document.querySelector(${q(`${TOP} #btn-crusades`)})`, "the Crusades button");
+  await click(`${TOP} #btn-crusades`);
+  await dialog("Crusades");
+  const row = `${TOP} tr[data-crusade="${st.crusade}"]`;
+  await until2(`!!document.querySelector(${q(row)}) && /1 serving/.test(document.querySelector(${q(row)}).textContent)`, "the crusade with our lent unit");
+  await shot("crusades");
+  await closeDialog("Crusades");
+  const loan = `${TOP} button[data-loan="${st.ally}"]`;
+  await until2(`!!document.querySelector(${q(loan)})`, "the Loan button");
+  await click(loan);
+  await dialog(/^Loan with/);
+  await b.eval(`(() => { const r = document.querySelector("#loan-role"); r.value = "lend"; r.dispatchEvent(new Event("change")); })()`);
+  await until2(`!!document.querySelector("#loan-target") && document.querySelector("#loan-target").value !== ""`, "an enemy of the ally to lend against");
+  await shot("loan");
+  await click(`${TOP} .modal-buttons button.primary`);
+  await until(async () => {
+    const t = await modalTitles();
+    if (t.includes("Counter-offer")) await click(`${TOP} .modal-buttons button[data-value="null"]`);
+    return !t.some((x) => x.startsWith("Loan with")) && !t.includes("Counter-offer");
+  }, "the loan answered");
+  await closeDialog("Foreign affairs");
+  steps.push("crusades (stage crusade): a call pledged, a unit lent after the war confirmation, the Crusades screen, a loan proposed");
+  await answerPopups(false);
+}
+
 /** P7, `stage settlement`: a Kuriotates settler founds a city below the city limit: the
  *  city-or-settlement decision (BUTTONPOPUP_CONFIRMSETTLEMENT), answered "settlement". */
 async function stagedSettlement(bin, saves) {
@@ -1313,6 +1371,7 @@ async function main() {
     await stagedAutomate(bin, saves);
     await stagedElection(bin, saves);
     await stagedSettlement(bin, saves);
+    await stagedCrusade(bin, saves);
     await stagedLoad(bin, saves);
     await shiftWaypoints(bin, saves);
     await shiftWaypoints(bin, saves, "goto");

@@ -11,6 +11,9 @@
 
 use std::fmt::Write as _;
 
+use ffh_core::crusade::lend::LendError;
+use ffh_core::crusade::loan::{LoanAnswer, LoanError, LoanMission, LoanProposal, LoanTerms};
+use ffh_core::crusade::{CrusadeId, Pledge};
 use ffh_core::game::Game;
 use ffh_core::ids::*;
 use ffh_core::log::LogEntry;
@@ -55,6 +58,18 @@ pub enum Command {
     EndTurn { force: bool },
     /// FfH `setAIAutoPlay` (a testing aid).
     AutoPlay { turns: i32 },
+    /// Not in C++ (docs/CRUSADE.md): answer crusade `crusade`'s call: pledge `strength`
+    /// (combat strength x100, as the `crusades` query counts it), or refuse (`None`).
+    CrusadeAnswer { crusade: u32, strength: Option<i32> },
+    /// Not in C++: lend `units` to crusade `crusade` (each becomes its Host's where it stands).
+    /// Lending is war: when not at war with the target yet, `declare_war` must be set (else a
+    /// confirmation comes back).
+    CrusadeLend { crusade: u32, units: Vec<UnitId>, declare_war: bool },
+    /// Not in C++: propose an allied loan to `to`: the human lends (`lend`) or borrows
+    /// `strength` against team `target` for `duration` turns, to attack it or (`defend`) to
+    /// defend the borrower; `give` / `get` are trade items the human gives / asks with it;
+    /// `units`: the units the human lends (empty: the advisor picks them).
+    ProposeLoan { to: PlayerId, lend: bool, target: TeamId, defend: bool, strength: i32, duration: i32, give: Vec<TradeData>, get: Vec<TradeData>, units: Vec<UnitId> },
 }
 
 /// A confirmation the C++ asks before acting (a popup); the command is resent with its flag.
@@ -73,7 +88,13 @@ pub enum Confirm {
     /// owner and `data2` = its id.
     LoadUnit { transports: Vec<UnitId> },
     /// The end-turn gate (§2.3): resend with `force: true`.
-    EndTurn { events: usize, votes: usize, elections: usize, research: bool, ready_units: usize },
+    EndTurn { events: usize, votes: usize, elections: usize, research: bool, ready_units: usize, crusade_calls: usize },
+    /// Not in C++: lending to a crusade declares war on its target `team`: resend
+    /// `crusade_lend` with `declare_war: true`.
+    LendWar { team: TeamId },
+    /// Not in C++: the other side's counter-offer to a `propose_loan`: resend the `propose_loan`
+    /// with these terms ([`Confirm::to_json`] gives the command as `cmd`) to accept it.
+    LoanCounter { to: PlayerId, lend: bool, target: TeamId, defend: bool, strength: i32, duration: i32, give: Vec<TradeData>, get: Vec<TradeData> },
 }
 
 impl Confirm {
@@ -84,9 +105,25 @@ impl Confirm {
             Confirm::CastGlobal { spell } => crate::jobj! { "kind" => "cast_global", "spell" => Json::idx(*spell) },
             Confirm::CastWar { spell, team } => crate::jobj! { "kind" => "cast_war", "spell" => Json::idx(*spell), "team" => *team },
             Confirm::LoadUnit { transports } => crate::jobj! { "kind" => "load_unit", "transports" => transports.clone() },
-            Confirm::EndTurn { events, votes, elections, research, ready_units } => crate::jobj! {
+            Confirm::EndTurn { events, votes, elections, research, ready_units, crusade_calls } => crate::jobj! {
                 "kind" => "end_turn", "events" => *events, "votes" => *votes, "elections" => *elections, "research" => *research, "ready_units" => *ready_units,
+                "crusade_calls" => *crusade_calls,
             },
+            Confirm::LendWar { team } => crate::jobj! { "kind" => "lend_war", "team" => *team },
+            Confirm::LoanCounter { to, lend, target, defend, strength, duration, give, get } => {
+                let cmd = Command::ProposeLoan {
+                    to: *to,
+                    lend: *lend,
+                    target: *target,
+                    defend: *defend,
+                    strength: *strength,
+                    duration: *duration,
+                    give: give.clone(),
+                    get: get.clone(),
+                    units: Vec::new(),
+                };
+                crate::jobj! { "kind" => "loan_counter", "cmd" => cmd.to_json() }
+            }
         }
     }
 }
@@ -184,6 +221,9 @@ pub const COMMAND_NAMES: &[&str] = &[
     "auto_moves",
     "end_turn",
     "autoplay",
+    "crusade_answer",
+    "crusade_lend",
+    "propose_loan",
 ];
 
 /// The members of each command besides `c` (in the order of [`COMMAND_NAMES`]). A request
@@ -211,6 +251,9 @@ pub const COMMAND_FIELDS: &[(&str, &[&str])] = &[
     ("auto_moves", &[]),
     ("end_turn", &["force"]),
     ("autoplay", &["turns"]),
+    ("crusade_answer", &["crusade", "strength"]),
+    ("crusade_lend", &["crusade", "units", "declare_war"]),
+    ("propose_loan", &["to", "lend", "target", "mission", "strength", "duration", "give", "get", "units"]),
 ];
 
 /// The envelope's members a command or query object may carry (`transport::Request`).
@@ -227,6 +270,14 @@ fn typed_data<T: names::Named>(d: &GameData, j: &Json, key: &str) -> Result<i32,
         Some(Json::Str(_)) => names::field::<T>(d, j, key).map(|t| t.idx() as i32),
         Some(_) => j.req::<i32>(key),
     }
+}
+
+/// A list of trade items (`propose_deal`, `propose_loan`); absent = none.
+fn trade_items(d: &GameData, j: &Json, key: &str) -> Result<Vec<TradeData>, FieldError> {
+    j.opt_value(key)?.map_or(Ok(Vec::new()), |v| {
+        let list = v.as_arr().ok_or_else(|| FieldError::wrong(key, "an array of trade items", v))?;
+        list.iter().map(|t| crate::view::diplo::trade_item_from_json(d, t).map_err(|e| FieldError::new(key, e.to_string()))).collect()
+    })
 }
 
 /// `data1` of a mission: a type name is accepted where the mission's data is a type.
@@ -297,6 +348,9 @@ impl Command {
             Command::AutoMoves => "auto_moves",
             Command::EndTurn { .. } => "end_turn",
             Command::AutoPlay { .. } => "autoplay",
+            Command::CrusadeAnswer { .. } => "crusade_answer",
+            Command::CrusadeLend { .. } => "crusade_lend",
+            Command::ProposeLoan { .. } => "propose_loan",
         }
     }
 
@@ -374,15 +428,30 @@ impl Command {
             "auto_moves" => Command::AutoMoves,
             "end_turn" => Command::EndTurn { force: flag("force")? },
             "autoplay" => Command::AutoPlay { turns: j.req("turns")? },
-            "propose_deal" => {
-                let items = |key: &str| -> Result<Vec<TradeData>, FieldError> {
-                    j.opt_value(key)?
-                        .map_or(Ok(Vec::new()), |v| {
-                            let list = v.as_arr().ok_or_else(|| FieldError::wrong(key, "an array of trade items", v))?;
-                            list.iter().map(|t| crate::view::diplo::trade_item_from_json(d, t).map_err(|e| FieldError::new(key, e.to_string()))).collect()
-                        })
+            "propose_deal" => Command::ProposeDeal { to: j.req("to")?, give: trade_items(d, j, "give")?, get: trade_items(d, j, "get")? },
+            "crusade_answer" => Command::CrusadeAnswer {
+                crusade: j.req("crusade")?,
+                // Present: a strength, or null to refuse (a missing answer is not a refusal).
+                strength: if j.req_value("strength")?.is_null() { None } else { Some(j.req("strength")?) },
+            },
+            "crusade_lend" => Command::CrusadeLend { crusade: j.req("crusade")?, units: j.req("units")?, declare_war: flag("declare_war")? },
+            "propose_loan" => {
+                let defend = match j.opt_str("mission")? {
+                    None | Some("attack") => false,
+                    Some("defend") => true,
+                    Some(other) => return Err(invalid(format!("field `mission`: attack or defend, got {other:?}"))),
                 };
-                Command::ProposeDeal { to: j.req("to")?, give: items("give")?, get: items("get")? }
+                Command::ProposeLoan {
+                    to: j.req("to")?,
+                    lend: j.req("lend")?,
+                    target: j.req("target")?,
+                    defend,
+                    strength: j.req("strength")?,
+                    duration: j.req("duration")?,
+                    give: trade_items(d, j, "give")?,
+                    get: trade_items(d, j, "get")?,
+                    units: j.get_or("units", Vec::new())?,
+                }
             }
             other => return Err(invalid(format!("unknown command {other:?}"))),
         })
@@ -442,6 +511,20 @@ impl Command {
             Command::AutoMoves => j,
             Command::EndTurn { force } => j.with("force", *force),
             Command::AutoPlay { turns } => j.with("turns", *turns),
+            Command::CrusadeAnswer { crusade, strength } => j.with("crusade", *crusade).with("strength", *strength),
+            Command::CrusadeLend { crusade, units, declare_war } => j.with("crusade", *crusade).with("units", ids(units)).with("declare_war", *declare_war),
+            Command::ProposeLoan { to, lend, target, defend, strength, duration, give, get, units } => {
+                let items = |v: &[TradeData]| Json::Arr(v.iter().map(crate::view::diplo::trade_item_json).collect());
+                j.with("to", *to)
+                    .with("lend", *lend)
+                    .with("target", *target)
+                    .with("mission", if *defend { "defend" } else { "attack" })
+                    .with("strength", *strength)
+                    .with("duration", *duration)
+                    .with("give", items(give))
+                    .with("get", items(get))
+                    .with("units", ids(units))
+            }
         }
     }
 
@@ -477,6 +560,26 @@ impl Command {
                 let items = |v: &[TradeData]| v.iter().map(|t| format!("{} {}", names::name(d, t.item_type), t.data)).collect::<Vec<_>>().join(", ");
                 format!("offer player {}: give [{}] for [{}]", to.0, items(give), items(get))
             }
+            Command::CrusadeAnswer { crusade, strength } => match strength {
+                Some(s) => format!("crusade {crusade}: pledge strength {s}"),
+                None => format!("crusade {crusade}: refuse the call"),
+            },
+            Command::CrusadeLend { crusade, units, declare_war } => {
+                format!("crusade {crusade}: lend {units:?}{}", if *declare_war { " declaring war" } else { "" })
+            }
+            Command::ProposeLoan { to, lend, target, defend, strength, duration, give, get, units } => {
+                let items = |v: &[TradeData]| v.iter().map(|t| format!("{} {}", names::name(d, t.item_type), t.data)).collect::<Vec<_>>().join(", ");
+                format!(
+                    "loan with player {}: {} strength {strength} for {duration} turns to {} team {}, give [{}] for [{}]{}",
+                    to.0,
+                    if *lend { "lend" } else { "borrow" },
+                    if *defend { "defend against" } else { "attack" },
+                    target.0,
+                    items(give),
+                    items(get),
+                    if units.is_empty() { String::new() } else { format!(", units {units:?}") }
+                )
+            }
             other => other.to_json().to_string(),
         }
     }
@@ -497,6 +600,9 @@ pub fn names_in(d: &GameData, setup: &Json) -> String {
             let mut s = format!("seed {} with {} opponents, {}, {}, {}", ng.seed, ng.opponents, names::name(d, ng.world), names::name(d, ng.speed), names::name(d, ng.handicap));
             if let Some(c) = ng.civ {
                 let _ = write!(s, ", {}", names::name(d, c));
+            }
+            if ng.crusades {
+                s += ", crusades";
             }
             s
         }
@@ -552,6 +658,12 @@ pub enum Action {
     /// the open election popups (no resolution, as the popup's "none").
     EndTurn { drop_events: bool, close_elections: Vec<VoteId> },
     AutoPlay { turns: i32 },
+    /// `Game::crusade_answer`.
+    CrusadeAnswer { crusade: CrusadeId, pledge: Pledge },
+    /// `Game::crusade_lend` (its war declaration included).
+    CrusadeLend { crusade: CrusadeId, units: Vec<UnitId> },
+    /// The other side accepted: `Game::loan_agree_with` (the human's named units, if lending).
+    AgreeLoan { proposal: LoanProposal, units: Vec<UnitId> },
 }
 
 /// What validation needs from the session.
@@ -1025,6 +1137,7 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
                     elections: p.elections.len(),
                     research: p.research_needed,
                     ready_units: ready,
+                    crusade_calls: p.crusade_calls.len(),
                 }));
             }
             Plan::Apply(Action::EndTurn { drop_events: !p.events.is_empty(), close_elections: p.elections.iter().map(|e| e.selection).collect() })
@@ -1037,7 +1150,125 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             }
             Plan::Apply(Action::AutoPlay { turns: *turns })
         }
+
+        Command::CrusadeAnswer { crusade, strength } => {
+            let id = CrusadeId(*crusade);
+            let Some(c) = g.crusade(id) else { return Err(CmdErr::Gone) };
+            let Some(call) = c.calls.iter().find(|x| x.player == h) else { return Err(cannot("you were not called to this crusade")) };
+            if call.answer.is_some() || call.settled {
+                return Err(cannot("this call is answered already"));
+            }
+            let pledge = match strength {
+                None => Pledge::Refuse,
+                Some(s) if *s >= 1 => Pledge::Strength(*s),
+                Some(s) => return Err(invalid(format!("field `strength`: at least 1, or null to refuse, got {s}"))),
+            };
+            Plan::Apply(Action::CrusadeAnswer { crusade: id, pledge })
+        }
+
+        Command::CrusadeLend { crusade, units, declare_war } => {
+            let id = CrusadeId(*crusade);
+            let Some(c) = g.crusade(id) else { return Err(CmdErr::Gone) };
+            lendable_units(g, h, units)?;
+            g.crusade_can_lend(id, h).map_err(|e| cannot(lend_error(e)))?;
+            if !g.at_war(team, c.target) && !declare_war {
+                return Ok(Plan::Confirm(Confirm::LendWar { team: c.target }));
+            }
+            Plan::Apply(Action::CrusadeLend { crusade: id, units: units.clone() })
+        }
+
+        Command::ProposeLoan { to, lend, target, defend, strength, duration, give, get, units } => {
+            in_range("player", to.0 as i32, g.num_civ_players())?;
+            in_range("team", target.0 as i32, g.num_teams())?;
+            if *to == h {
+                return Err(invalid("field `to`: yourself"));
+            }
+            if !g.player_can_contact(h, *to) {
+                return Err(cannot(format!("no contact with player {}", to.0)));
+            }
+            let (lender, borrower) = if *lend { (h, *to) } else { (*to, h) };
+            let mission = if *defend { LoanMission::Defend } else { LoanMission::Attack };
+            let terms = LoanTerms { lender, borrower, target: *target, mission, strength: *strength, duration: *duration };
+            g.loan_check(&terms).map_err(|e| cannot(loan_error(e)))?;
+            if !give.is_empty() || !get.is_empty() {
+                crate::view::diplo::check_deal(g, h, *to, give, get)?;
+            }
+            if !units.is_empty() {
+                if !lend {
+                    return Err(invalid("field `units`: only when you lend"));
+                }
+                lendable_units(g, h, units)?;
+                let sum: i32 = units.iter().map(|&u| g.crusade_unit_strength(u)).sum();
+                if sum < *strength {
+                    return Err(cannot(format!("the units' strength is {sum}, short of the {strength} agreed")));
+                }
+            }
+            let (lender_gives, borrower_gives) = if *lend { (give.clone(), get.clone()) } else { (get.clone(), give.clone()) };
+            let proposal = LoanProposal { terms, from: h, lender_gives, borrower_gives };
+            match g.controller(*to).consider_loan(g, *to, &proposal) {
+                LoanAnswer::Accept => Plan::Apply(Action::AgreeLoan { proposal, units: units.clone() }),
+                LoanAnswer::Refuse => Plan::Declined,
+                LoanAnswer::Counter(c) => {
+                    let human_lends = c.terms.lender == h;
+                    let (give, get) = if human_lends { (c.lender_gives, c.borrower_gives) } else { (c.borrower_gives, c.lender_gives) };
+                    Plan::Confirm(Confirm::LoanCounter {
+                        to: *to,
+                        lend: human_lends,
+                        target: c.terms.target,
+                        defend: c.terms.mission == LoanMission::Defend,
+                        strength: c.terms.strength,
+                        duration: c.terms.duration,
+                        give,
+                        get,
+                    })
+                }
+            }
+        }
     })
+}
+
+/// Units the human lends: given, distinct, its own, each lendable.
+fn lendable_units(g: &Game, h: PlayerId, units: &[UnitId]) -> Result<(), CmdErr> {
+    if units.is_empty() {
+        return Err(invalid("field `units`: no unit"));
+    }
+    for (i, &u) in units.iter().enumerate() {
+        unit_of(g, h, u)?;
+        if units[..i].contains(&u) {
+            return Err(invalid(format!("field `units`: unit {} twice", u.0)));
+        }
+        if !g.crusade_unit_lendable(u) {
+            return Err(cannot(format!("unit {} cannot be lent (only combat land units, not summoned, not aboard a ship or carrying units)", u.0)));
+        }
+    }
+    Ok(())
+}
+
+/// Why lending is refused, for people.
+fn lend_error(e: LendError) -> String {
+    match e {
+        LendError::NoSuchCrusade => "no such crusade".into(),
+        LendError::Dissolving => "the crusade is ending".into(),
+        LendError::NotAllowed => "you cannot lend to this crusade (you are its target, its target's vassal or master, or a Host)".into(),
+        LendError::CannotDeclareWar => "you could not declare war on its target (a peace treaty, or no contact)".into(),
+        LendError::NotALoanLender => "a loan's general takes units only through an agreed loan".into(),
+        LendError::NotLendable(u) => format!("unit {} cannot be lent", u.0),
+        LendError::NoUnits => "no unit".into(),
+    }
+}
+
+/// Why a loan cannot be made, for people.
+fn loan_error(e: LoanError) -> String {
+    match e {
+        LoanError::Off => "crusades and loans are off in this game".into(),
+        LoanError::NotAllowed => "no loan between these two (same team, a Host, no contact, or at war with each other)".into(),
+        LoanError::NotAtWar => "the borrower is not at war with that team".into(),
+        LoanError::BadTerms => "terms out of range (strength, duration or target)".into(),
+        LoanError::CannotLend(l) => format!("the lender cannot lend against that team: {}", lend_error(l)),
+        LoanError::NotEnoughUnits => "the lender has not that much strength to spare".into(),
+        LoanError::BadPayment => "a payment item cannot be traded".into(),
+        LoanError::NoGeneral => "no player slot is free for a new general".into(),
+    }
 }
 
 /// The city screen's specialist buttons for `s` in city `c` (CvMainInterface.py
@@ -1203,6 +1434,17 @@ pub fn apply(g: &mut Game, h: PlayerId, action: &Action) {
             g.player_set_end_turn(h, true)
         }
         Action::AutoPlay { turns } => g.set_ai_auto_play(*turns),
+        Action::CrusadeAnswer { crusade, pledge } => {
+            g.crusade_answer(*crusade, h, *pledge);
+        }
+        Action::CrusadeLend { crusade, units } => {
+            // (validated: the rules refuse nothing here)
+            let _ = g.crusade_lend(*crusade, h, units);
+        }
+        Action::AgreeLoan { proposal, units } => {
+            let named = (!units.is_empty()).then_some(units.as_slice());
+            let _ = g.loan_agree_with(proposal, named);
+        }
     }
 }
 
@@ -1246,6 +1488,20 @@ mod tests {
             Command::AutoMoves,
             Command::EndTurn { force: true },
             Command::AutoPlay { turns: 3 },
+            Command::CrusadeAnswer { crusade: 2, strength: Some(800) },
+            Command::CrusadeAnswer { crusade: 2, strength: None },
+            Command::CrusadeLend { crusade: 0, units: vec![UnitId(4), UnitId(7)], declare_war: true },
+            Command::ProposeLoan {
+                to: PlayerId(1),
+                lend: false,
+                target: TeamId(2),
+                defend: true,
+                strength: 600,
+                duration: 10,
+                give: vec![TradeData { item_type: TradeableItem::TRADE_GOLD, data: 40, offering: false, hidden: false }],
+                get: vec![],
+                units: vec![],
+            },
         ];
         let mut seen: Vec<&str> = Vec::new();
         for c in &cmds {
@@ -1294,6 +1550,13 @@ mod tests {
         assert!(matches!(Command::from_json(d, &j), Err(CmdErr::Invalid(s)) if s.contains("field `forse`: unknown field")));
         let j = Json::parse(r#"{"id":"x","k":"cmd","c":"end_turn","force":true}"#).unwrap();
         assert_eq!(Command::from_json(d, &j), Ok(Command::EndTurn { force: true }));
+        // A crusade answer names its strength, or null to refuse; leaving it out is an error.
+        let j = Json::parse(r#"{"c":"crusade_answer","crusade":1}"#).unwrap();
+        assert!(matches!(Command::from_json(d, &j), Err(CmdErr::Invalid(s)) if s.contains("field `strength`")));
+        let j = Json::parse(r#"{"c":"crusade_answer","crusade":1,"strength":null}"#).unwrap();
+        assert_eq!(Command::from_json(d, &j), Ok(Command::CrusadeAnswer { crusade: 1, strength: None }));
+        let j = Json::parse(r#"{"c":"propose_loan","to":1,"lend":true,"target":2,"mission":"siege","strength":5,"duration":3}"#).unwrap();
+        assert!(matches!(Command::from_json(d, &j), Err(CmdErr::Invalid(s)) if s.contains("field `mission`")));
         let names: Vec<&str> = COMMAND_FIELDS.iter().map(|(n, _)| *n).collect();
         assert_eq!(names, COMMAND_NAMES);
     }

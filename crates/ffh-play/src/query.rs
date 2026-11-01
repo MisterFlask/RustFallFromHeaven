@@ -68,6 +68,9 @@ pub enum Query {
     Setup,
     /// The saves of the game's directory.
     Saves,
+    /// Not in C++ (docs/CRUSADE.md): running crusades and loans, the human's part in them, the
+    /// units it could lend.
+    Crusades,
 }
 
 /// The layers of the ASCII map.
@@ -99,7 +102,7 @@ impl Layer {
 /// Every query name (`q`).
 pub const QUERY_NAMES: &[&str] = &[
     "status", "pending", "view", "map", "plot", "group", "path", "combat", "city", "techs", "civics", "religions", "players", "trade", "log",
-    "report", "inspect", "text", "ascii", "data", "setup", "saves",
+    "report", "inspect", "text", "ascii", "data", "setup", "saves", "crusades",
 ];
 
 /// Why a query was refused.
@@ -178,6 +181,7 @@ impl Query {
             Query::Data => "data",
             Query::Setup => "setup",
             Query::Saves => "saves",
+            Query::Crusades => "crusades",
         }
     }
 
@@ -215,6 +219,7 @@ impl Query {
             "data" => Query::Data,
             "setup" => Query::Setup,
             "saves" => Query::Saves,
+            "crusades" => Query::Crusades,
             other => return Err(invalid(format!("unknown query {other:?}"))),
         })
     }
@@ -351,6 +356,7 @@ pub fn run(g: &Game, ctx: &Ctx, q: &Query) -> Result<Json, QueryErr> {
             }
             crate::save::list_json(ctx.saves_dir)
         }
+        Query::Crusades => view::crusade::crusades(&v),
     };
     Ok(out)
 }
@@ -387,6 +393,7 @@ mod tests {
             Query::Data,
             Query::Setup,
             Query::Saves,
+            Query::Crusades,
         ];
         let mut seen: Vec<&str> = Vec::new();
         for q in &qs {

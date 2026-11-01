@@ -217,6 +217,7 @@ export function newGame({ dismissible = true } = {}) {
     st.victories.map((v) => h("label", h("input", { type: "checkbox", value: v.type, checked: !d.disabled_victories.includes(v.id) }), ` ${v.name}`)),
   );
   const spectate = h("input", { type: "checkbox", id: "ng-spectate" });
+  const crusades = h("input", { type: "checkbox", id: "ng-crusades", checked: !!d.crusades });
   const err = h("p.error");
   const field = (label, el, extra = null) => h("label.field", h("span", label), el, extra);
   const form = h(
@@ -243,6 +244,12 @@ export function newGame({ dismissible = true } = {}) {
       spectate,
       " Spectate: watch the AI play",
     ),
+    h(
+      "label.check",
+      { title: "A rules variant (not FFH2): a council's war resolution calls its members to lend units to a crusade's own AI army instead of merely declaring war, and civs can lend units to an ally's war" },
+      crusades,
+      " Crusades: committed wars and allied loans",
+    ),
     err,
   );
   const start = async (m) => {
@@ -257,6 +264,7 @@ export function newGame({ dismissible = true } = {}) {
       sea_level: sea.value,
       options: [...options.querySelectorAll("input:checked")].map((i) => i.value),
       disabled_victories: [...victories.querySelectorAll("input:not(:checked)")].map((i) => i.value),
+      crusades: crusades.checked,
     };
     if (civ.value) setup.civ = civ.value;
     if (leader.value) setup.leader = leader.value;

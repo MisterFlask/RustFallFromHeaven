@@ -273,6 +273,16 @@ pub struct CrusadeReport {
     pub lenders: Vec<LenderReport>,
 }
 
+/// A strength for messages: the combat strength it stands for (strengths are x100).
+pub fn strength_text(s: i32) -> String {
+    let s = s.max(0);
+    if s % 100 == 0 {
+        format!("{}", s / 100)
+    } else {
+        format!("{}.{}", s / 100, (s % 100) / 10)
+    }
+}
+
 /// Scale a normal-speed turn count to the game speed.
 pub fn speed_turns(g: &Game, turns: i32) -> i32 {
     let percent = g.d.game_speeds[g.game_speed_type()].growth_percent;

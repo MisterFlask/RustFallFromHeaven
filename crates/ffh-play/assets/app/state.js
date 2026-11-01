@@ -304,7 +304,7 @@ export function option(name) {
 
 // ---------------------------------------------------------------------------------------------
 // Deferred popups (design §2.3, §5.1): what the player answers at a control point, in C++
-// order: events, votes, elections, research, idle cities. A popup set aside ("Later") stays aside for the
+// order: events, votes, elections, crusade calls (not C++), research, idle cities. A popup set aside ("Later") stays aside for the
 // rest of the turn; the end-turn gate still counts it.
 
 /** Keys of the deferred popups. */
@@ -316,6 +316,8 @@ export function popupKey(p, turn) {
       return `vote:${p.vote.vote}`;
     case "election":
       return `election:${p.election.selection}`;
+    case "crusade":
+      return `crusade:${p.call.crusade}`;
     case "research":
       return `research:${turn}`;
     case "city":
@@ -331,6 +333,7 @@ export function popupQueue(pending, dismissed, turn) {
   for (const e of pending.events ?? []) out.push({ kind: "event", event: e });
   for (const v of pending.votes ?? []) out.push({ kind: "vote", vote: v });
   for (const e of pending.elections ?? []) out.push({ kind: "election", election: e });
+  for (const c of pending.crusade_calls ?? []) out.push({ kind: "crusade", call: c });
   if (pending.research_needed) out.push({ kind: "research" });
   for (const c of pending.idle_cities ?? []) out.push({ kind: "city", city: c });
   return out.map((p) => ({ ...p, key: popupKey(p, turn) })).filter((p) => !dismissed.has(p.key));
@@ -434,6 +437,7 @@ export function gateLines(c) {
   if (c.events) out.push(n(c.events, "an event is waiting for your answer", "% events are waiting for your answer"));
   if (c.votes) out.push(n(c.votes, "a vote is open", "% votes are open"));
   if (c.elections) out.push(n(c.elections, "an election waits for your choice", "% elections wait for your choice"));
+  if (c.crusade_calls) out.push(n(c.crusade_calls, "a crusade call waits for your answer", "% crusade calls wait for your answer"));
   if (c.research) out.push("no research is chosen");
   if (c.ready_units) out.push(n(c.ready_units, "a unit is waiting for orders", "% units are waiting for orders"));
   return out;

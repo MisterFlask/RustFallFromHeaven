@@ -32,6 +32,9 @@ pub struct NewGame {
     pub max_turns: i32,
     pub civ: Option<CivilizationType>,
     pub leader: Option<LeaderHeadType>,
+    /// The crusade ruleset (docs/CRUSADE.md): council war resolutions call for committed forces,
+    /// and civs may lend units to an ally's war. Off by default.
+    pub crusades: bool,
 }
 
 impl NewGame {
@@ -53,12 +56,13 @@ impl NewGame {
             max_turns: 0,
             civ: None,
             leader: None,
+            crusades: false,
         }
     }
 
     /// The members of a `setup` object.
     pub const FIELDS: &'static [&'static str] =
-        &["seed", "opponents", "world", "speed", "handicap", "era", "climate", "sea_level", "options", "disabled_victories", "max_turns", "civ", "leader"];
+        &["seed", "opponents", "world", "speed", "handicap", "era", "climate", "sea_level", "options", "disabled_victories", "max_turns", "civ", "leader", "crusades"];
 
     /// Decodes a `setup` object (every member optional; types by name or index; an unknown
     /// member is an error, so a typo cannot start a game with a default instead).
@@ -93,6 +97,7 @@ impl NewGame {
         ng.max_turns = j.get_or("max_turns", 0i32)?;
         ng.civ = names::opt_field(d, j, "civ")?;
         ng.leader = names::opt_field(d, j, "leader")?;
+        ng.crusades = j.get_or("crusades", false)?;
         Ok(ng)
     }
 
@@ -112,6 +117,7 @@ impl NewGame {
             "max_turns" => self.max_turns,
             "civ" => Json::opt_idx(self.civ),
             "leader" => Json::opt_idx(self.leader),
+            "crusades" => self.crusades,
         }
     }
 
@@ -174,6 +180,9 @@ pub fn build_game(d: &'static GameData, ng: &NewGame) -> Result<Game, String> {
     o.options = ng.options.clone();
     o.disabled_victories = ng.disabled_victories.clone();
     o.max_turns = ng.max_turns;
+    if ng.crusades {
+        o.crusade = ffh_core::crusade::CrusadeRules::on();
+    }
     let mut setup = GameSetup::from_options(d, &o);
     let slot = &mut setup.players[HUMAN_SLOT.idx()];
     slot.human = true;
@@ -276,6 +285,11 @@ mod tests {
         assert_eq!(civ, Some(d.t("CIVILIZATION_BANNOR")));
         assert!(d.civilizations[civ.unwrap()].leaders[leader.unwrap()]);
         assert_eq!(NewGame::from_json(d, &ng.to_json()).unwrap(), ng);
+        // The crusade ruleset (off unless asked for) reaches the game setup.
+        let ng = NewGame::from_json(d, &Json::parse(r#"{"seed":3,"crusades":true}"#).unwrap()).unwrap();
+        assert!(ng.crusades && NewGame::from_json(d, &ng.to_json()).unwrap().crusades);
+        assert!(build_game(d, &ng).unwrap().crusades_enabled());
+        assert!(!build_game(d, &NewGame::new(d, 3)).unwrap().crusades_enabled());
         let err = NewGame::from_json(d, &Json::parse(r#"{"world":"TECH_X"}"#).unwrap()).unwrap_err();
         assert_eq!(err.key, "world");
         // A misspelt member is an error, not a default game (P4 review).

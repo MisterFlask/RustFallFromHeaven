@@ -558,12 +558,57 @@ pub struct Pending {
     /// for orders ([`ai_groups_waiting`]). The session moves them before the human has control,
     /// so this is empty at a control point (kept for clients and the soak's invariants).
     pub ai_groups_idle: Vec<GroupId>,
+    /// Not in C++ (docs/CRUSADE.md): crusade calls waiting for the human's answer
+    /// (`crusade_answer`; unanswered at the deadline, a call counts as refused).
+    pub crusade_calls: Vec<PendingCall>,
+}
+
+/// A crusade call waiting for the human's answer.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PendingCall {
+    pub crusade: u32,
+    /// The council that called it (`None`: called otherwise).
+    pub source: Option<VoteSourceType>,
+    pub target: TeamId,
+    /// Strength the human is expected to deliver by the deadline.
+    pub obligation: i32,
+    /// Strength the human can lend now.
+    pub lendable: i32,
+    /// Pledges are settled at the start of this turn.
+    pub deadline: i32,
+    /// Last turn of the crusade.
+    pub end: i32,
+}
+
+/// The crusade calls waiting for `p`'s answer.
+pub fn pending_crusade_calls(g: &Game, p: PlayerId) -> Vec<PendingCall> {
+    let mut out = Vec::new();
+    for c in &g.crusades {
+        if c.dissolving {
+            continue;
+        }
+        if let Some(call) = c.calls.iter().find(|x| x.player == p && x.answer.is_none() && !x.settled) {
+            out.push(PendingCall {
+                crusade: c.id.0,
+                source: match c.kind {
+                    ffh_core::crusade::CrusadeKind::Council(vs) => Some(vs),
+                    _ => None,
+                },
+                target: c.target,
+                obligation: call.obligation,
+                lendable: g.crusade_military_strength(p),
+                deadline: c.deadline_turn,
+                end: c.end_turn,
+            });
+        }
+    }
+    out
 }
 
 impl Pending {
     /// Deferred popups still open (the end-turn gate's events, votes, elections and research).
     pub fn popups(&self) -> usize {
-        self.events.len() + self.votes.len() + self.elections.len() + self.research_needed as usize
+        self.events.len() + self.votes.len() + self.elections.len() + self.research_needed as usize + self.crusade_calls.len()
     }
 
     pub fn to_json(&self) -> Json {
@@ -601,6 +646,15 @@ impl Pending {
             "promotions_ready" => self.promotions_ready.clone(),
             "ready_groups" => self.ready_groups.clone(),
             "ai_groups_idle" => self.ai_groups_idle.clone(),
+            "crusade_calls" => Json::Arr(self.crusade_calls.iter().map(|c| crate::jobj! {
+                "crusade" => c.crusade,
+                "source" => c.source.map(Json::idx),
+                "target" => c.target,
+                "obligation" => c.obligation,
+                "lendable" => c.lendable,
+                "deadline" => c.deadline,
+                "end" => c.end,
+            }).collect()),
         }
     }
 }
@@ -773,5 +827,6 @@ pub fn pending(g: &Game, p: PlayerId, events: &[TriggeredId]) -> Pending {
         promotions_ready: pl.units.iter().copied().filter(|&u| g.units[u].promotion_ready).collect(),
         ready_groups: ready_groups(g, p),
         ai_groups_idle: ai_groups_waiting(g, p),
+        crusade_calls: pending_crusade_calls(g, p),
     }
 }

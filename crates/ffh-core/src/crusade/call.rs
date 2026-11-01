@@ -154,7 +154,10 @@ impl Game {
             a => a,
         };
         call.answer = Some(answer);
-        self.log.msg(turn, Some(p), || format!("Crusade {}: {:?}", id.0, answer));
+        self.log.msg(turn, Some(p), || match answer {
+            Pledge::Strength(s) => format!("Crusade {}: pledged strength {}", id.0, strength_text(s)),
+            Pledge::Refuse => format!("Crusade {}: refused the call", id.0),
+        });
         true
     }
 
@@ -206,7 +209,7 @@ impl Game {
                     }
                 }
             }
-            self.log.msg(turn, Some(p), || format!("Crusade {}: fell short of its obligation ({} per mille)", id.0, permille));
+            self.log.msg(turn, Some(p), || format!("Crusade {}: fell short of its obligation by {}%", id.0, permille / 10));
         }
     }
 

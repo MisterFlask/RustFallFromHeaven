@@ -1,5 +1,5 @@
 //! Staged situations for testing the clients (`ffh-play stage
-//! capture|attack|automoves|load|trade|automate|election|settlement|corrupt DIR`,
+//! capture|attack|automoves|load|trade|automate|election|settlement|corrupt|crusade DIR`,
 //! and the transports' tests): a saved game at a human control point arranged with rules calls,
 //! so that a client can be tried on a situation a fresh game reaches only by chance (a captured
 //! city's keep/raze decision, an attack, the AutoMoves rule between commands, the transport
@@ -332,6 +332,79 @@ pub fn trade(dir: &Path) -> Result<StagedTrade, String> {
     g.players[with].gold = 100;
     let paths = s.save("trade").map_err(|e| format!("save: {e:?}"))?;
     Ok(StagedTrade { save: paths.save, with, turn: s.g.game_turn() })
+}
+
+/// A saved game with crusades on (docs/CRUSADE.md) at a human control point: a crusade against
+/// AI player 1 (`target`) waits for the human's answer (`crusade`), the human has warriors to
+/// lend in its capital, and AI player 2 (`ally`) is at war with the target (a loan can be
+/// offered to it). Gold trading is known (loan payments).
+pub struct StagedCrusade {
+    pub save: PathBuf,
+    pub crusade: u32,
+    pub target: PlayerId,
+    pub ally: PlayerId,
+    pub turn: i32,
+}
+
+impl StagedCrusade {
+    pub fn to_json(&self) -> Json {
+        crate::jobj! { "stage" => "crusade", "save" => self.save.display().to_string(), "crusade" => self.crusade, "target" => self.target, "ally" => self.ally, "turn" => self.turn }
+    }
+}
+
+/// Writes a [`StagedCrusade`] into `dir` (a game directory).
+pub fn crusade(dir: &Path) -> Result<StagedCrusade, String> {
+    let d = ffh_data::global();
+    let mut ng = NewGame::new(d, 12);
+    ng.opponents = 2;
+    ng.world = d.t("WORLDSIZE_TINY");
+    ng.crusades = true;
+    ng.options.push(GameOptionType::GAMEOPTION_NO_BARBARIANS);
+    let opts = SessionOptions { saves_dir: Some(dir.to_path_buf()), autosave_keep: 0, journal: false, ..Default::default() };
+    let mut s = Session::new_game(&ng, Arc::new(AdvisorAnswerer), opts).map_err(|e| format!("new game: {e:?}"))?;
+    let advance = |s: &mut Session| match s.advance(&mut |_| {}) {
+        Stop::Human => Ok(()),
+        other => Err(format!("the game stopped: {other:?}")),
+    };
+    advance(&mut s)?;
+    let h = s.human;
+    let settler = s.g.players[h].units.iter().copied().find(|&u| d.units[s.g.units[u].unit_type].found).ok_or("no settler")?;
+    match s.execute(&Command::Mission { units: vec![settler], mission: MissionType::MISSION_FOUND, data1: -1, data2: -1, flags: 0, append: false }) {
+        Ok(CmdOk::Applied { .. }) => {}
+        other => return Err(format!("found -> {other:?}")),
+    }
+    for _ in 0..2 {
+        match s.execute(&Command::EndTurn { force: true }) {
+            Ok(CmdOk::Applied { .. }) => advance(&mut s)?,
+            other => return Err(format!("end turn -> {other:?}")),
+        }
+    }
+    let (target, ally) = (PlayerId(1), PlayerId(2));
+    let g = &mut s.g;
+    let teams: Vec<_> = [h, target, ally].iter().map(|&p| g.players[p].team).collect();
+    for &a in &teams {
+        for &b in &teams {
+            if a != b {
+                g.team_meet(a, b, false);
+            }
+        }
+    }
+    let currency = d.techs.keys().find(|&t| d.techs[t].gold_trading).ok_or("no gold-trading tech")?;
+    for &t in &teams {
+        g.team_set_has_tech(t, currency, true, None, false, false);
+    }
+    g.players[h].gold = 300;
+    g.players[ally].gold = 300;
+    g.team_declare_war(teams[2], teams[1], false, None);
+    let capital = *g.players[h].cities.first().ok_or("no capital")?;
+    let (cx, cy) = (g.cities[capital].x, g.cities[capital].y);
+    let warrior = d.t::<UnitType>("UNIT_WARRIOR");
+    for _ in 0..3 {
+        g.player_init_unit(h, warrior, cx, cy, Some(UnitAIType::UNITAI_ATTACK), None);
+    }
+    let id = g.crusade_call(ffh_core::crusade::CrusadeKind::Council(VoteSourceType(0)), teams[1], None, ffh_core::crusade::Objective::Term, 30, 5, &[h, ally]).ok_or("no Host slot")?;
+    let paths = s.save("crusade").map_err(|e| format!("save: {e:?}"))?;
+    Ok(StagedCrusade { save: paths.save, crusade: id.0, target, ally, turn: s.g.game_turn() })
 }
 
 /// Free land plots around the human's capital (nearest first), for staged units.

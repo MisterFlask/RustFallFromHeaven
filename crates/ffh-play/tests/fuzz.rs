@@ -169,6 +169,9 @@ impl Fuzz {
             "event" => &["triggered", "event"],
             "vote" => &["vote", "choice"],
             "set_option" => &["option", "value"],
+            "crusade_answer" => &["crusade", "strength"],
+            "crusade_lend" => &["crusade", "units", "declare_war"],
+            "propose_loan" => &["to", "lend", "target", "mission", "strength", "duration", "give", "get", "units"],
             _ => &[],
         };
         for &f in fields {
@@ -181,11 +184,13 @@ impl Fuzz {
                 "city" => self.city(s),
                 "mission" | "command" | "order" | "task" | "tech" | "commerce" | "religion" | "event" | "option" => self.type_ref(),
                 "data" | "data1" if self.chance(30) => self.type_ref(),
-                "append" | "declare_war" | "alt" | "confirmed" | "shift" | "ctrl" | "value" => self.flag(),
+                "append" | "declare_war" | "alt" | "confirmed" | "shift" | "ctrl" | "value" | "lend" => self.flag(),
+                "crusade" => Json::Int(self.n(4) as i64 - 1),
+                "strength" if self.chance(20) => Json::Null,
                 "civics" => Json::Arr((0..self.n(3)).map(|_| self.type_ref()).collect()),
                 "give" | "get" => Json::Arr((0..self.n(3)).map(|_| self.item()).collect()),
                 "choice" => self.pick(&[Json::from("YES"), Json::from("ABSTAIN"), Json::Int(-1), Json::Int(-6), Json::Int(3), Json::Int(i32::MAX as i64)]),
-                "to" | "team" => Json::Int(self.n(12) as i64 - 1),
+                "to" | "team" | "target" => Json::Int(self.n(12) as i64 - 1),
                 "x" | "y" => {
                     if self.chance(60) {
                         Json::Int(self.n(80) as i64 - 5)
@@ -314,9 +319,10 @@ impl Fuzz {
 fn t7_fuzzed_commands_are_refused_cleanly() {
     let ng = new_game(7);
     let (mut s, mut b) = bot_session(&ng, None);
-    // The fuzz kills the human in about half of its games (deleted units, random wars); 7011
-    // plays all 100 turns (7007 did before the P3 review changed the action lists).
-    let mut f = Fuzz { rng: Rng::new(7011), t: Tally::default() };
+    // The fuzz kills the human in about half of its games (deleted units, random wars); 7013
+    // plays all 100 turns (7007 did before the P3 review changed the action lists, 7011 before
+    // the crusade commands lengthened the command list).
+    let mut f = Fuzz { rng: Rng::new(7013), t: Tally::default() };
     let until = s.g.game_turn() + 100;
     let mut last_checked = -1;
     let stop = bot::run(&mut s, &mut b, until, |s, _| {

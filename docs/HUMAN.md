@@ -393,7 +393,8 @@ loop {
 
 `move`, `mission`, `do_command`, `join_group`, `auto_mission`, `push_order`, `pop_order`,
 `do_task`, `research`, `update_civics`, `percent_change`, `convert`, `declare_war`,
-`propose_deal`, `event`, `vote`, `set_option`, `auto_moves`, `end_turn`, `autoplay`. Each is
+`propose_deal`, `event`, `vote`, `set_option`, `auto_moves`, `end_turn`, `autoplay`, and with
+the crusade ruleset (see Crusades below) `crusade_answer`, `crusade_lend`, `propose_loan`. Each is
 the port of what Civ4 sends for that input; design §4.5 and the "As built" notes of P1 and P3 in
 §7 list the rules calls and checks. The `group` query lists the actions of a selection with the
 command that performs each, ready to send, except a `target` action's plot: its command carries
@@ -425,6 +426,39 @@ The AI answers at once: `accepted: false` changes nothing; `accepted: true` sign
 AI (ffh-ai's `consider_offer`) accepts gifts, peace after 10 turns of war unless it is clearly
 winning, open borders when it likes you, and a fair tech swap, and refuses anything else.
 
+### Crusades
+
+Not Civ4 (docs/CRUSADE.md): a rules variant, on when the new game says `"crusades": true` (the
+new-game screen's *Crusades* box). A council's war resolution then calls its members to lend
+units to a crusade's own AI player (its Host) instead of declaring war for them, and civs can
+lend units to an ally's war (allied loans). Strengths are combat strength x100 (scaled by health:
+a healthy warrior is 200), as the `crusades` query counts them.
+
+* A call waits in `pending.crusade_calls` (`crusade`, `source`: the council, `target` team,
+  `obligation`, what you can lend, `deadline`, `end`), counts in the end-turn gate
+  (`confirm end_turn` has `crusade_calls`), and is answered with
+  `crusade_answer {"crusade": 0, "strength": 600}` (`"strength": null` refuses). No answer by the
+  deadline counts as a refusal; at the deadline what you lent is weighed against the obligation
+  (nothing: you defy the council; less: part of the defiance anger).
+* `crusade_lend {"crusade": 0, "units": [12, 15]}` hands units to the Host where they stand (any
+  of your combat land units, not summoned, not aboard or carrying units; called or not). Lending
+  is war: while you are at peace with the target it answers `confirm lend_war {team}`; resend
+  with `"declare_war": true`. Lent units cannot be recalled; they come home when the crusade ends.
+* `propose_loan {"to": 2, "lend": false, "target": 1, "mission": "attack", "strength": 600,
+  "duration": 10, "give": [{"item": "TRADE_GOLD", "data": 50}], "get": [], "units": []}` offers an
+  allied loan: you borrow from (or, with `"lend": true`, lend to) player `to` a strength against
+  a team the borrower is at war with, for `duration` turns, to attack it or (`"mission":
+  "defend"`) to defend the borrower; `give` / `get` are trade items paired with it (Deals rules:
+  gold once a team knows its tech), `units` the units you lend (empty: your advisor picks). The
+  AI answers at once: `accepted: true` makes the loan, `accepted: false` changes nothing, or
+  `confirm loan_counter {cmd}`: the terms it would take, as the `propose_loan` to resend.
+* An AI may offer you a loan (blocking decision `loan`: accept or refuse), and when a crusade you
+  fought in ends you pick your cities of the spoils (blocking decision `draft`: one option per
+  city, then `stop` to take the rest of your share as gold).
+* The `crusades` query lists the running crusades and loan generals (your call, what you
+  delivered, your units serving, your credit, whether you may lend), the units you can lend, the
+  known wars, and your past crusades with their spoils; `text` mentions your calls and crusades.
+
 ### Queries
 
 Requests are `{"q": "<name>", ..}`; replies are JSON with type indices (`data` names them).
@@ -433,7 +467,7 @@ Errors: `invalid`, `not_owner`, `gone`, `busy`.
 | `q` | Reply |
 |---|---|
 | `status` | phase (`human`, `running`, `decision`, `over`; over the transports also `stuck`, `no_game`, `crashed` with the report), turn, year, you, the active players, the open decision, the winner, `view_version` (changes whenever the view does: a command, a decision opening or closing, debug reveal), `ai_auto_play` (the AI autoplay's turns left, 0 when off), and over the transports `game {dir, journal, autosave}` |
-| `pending` | open events (with each option's effects), votes, research needed, idle cities, promotions, ready groups, idle AI-controlled groups |
+| `pending` | open events (with each option's effects), votes, research needed, idle cities, promotions, ready groups, idle AI-controlled groups, crusade calls |
 | `view` | `me` (gold and rate, research, sliders, civics, score, Armageddon counter, mana, Stasis, the player options, AI autoplay), the players you met, the cities you revealed, the units you see, your groups (`ready`: some unit can move, as `pending.ready_groups`; `selectable`: every unit can, what Civ4's cycle selects), `group_cycle` (your groups in Civ4's cycle order) and `has_auto_unit`, `pending`, `log_next` |
 | `map` | flat arrays `y * w + x`: `vis` (0 unrevealed, 1 fogged, 2 visible), `plot_type`, `terrain`, `feature`, `bonus`, `improvement`, `route`, `owner`, `river` (bit 0 river on the south edge, bit 1 on the east edge, bits 2-4 north/south flow + 1, bits 5-7 west/east flow + 1), `city`, `yield` (`food \| production << 8 \| commerce << 16`, visible plots only), `map_rev`, and `epoch` and `rev`. `map {since: R, epoch: E}` answers only the tiles changed since revision `R` (`full: false`, `tiles` = their indices, each array the values of those tiles), or the full map (`full: true`) when `E` is not the current epoch, `R` is unknown or much of the map changed |
 | `plot {x,y}` | a plot as you know it; while visible also yields, defence, culture and the units |
@@ -450,6 +484,7 @@ Errors: `invalid`, `not_owner`, `gone`, `busy`.
 | `inspect {kind,oid}` | `{:#?}` of your unit, group, city, player, team, deal, or of an info entry (`UnitType`, `units`, ...) with id or index `oid`; any object, and plots, under debug reveal (a plot holds every team's data: use `plot`) |
 | `data` | the static tables (every kind: type, name, texts, the main gameplay fields; missions, commands and builds with their Civ4 hotkeys `keys` and button order `order`), the interface modes' hotkeys, a few global defines |
 | `setup`, `saves` | the new-game lists; the saves of the game's directory |
+| `crusades` | crusades and loans (see Crusades): `enabled`, `wars`, `rules`, `military_strength`, `lendable`, `crusades`, `reports` |
 
 What you see is what Civ4 shows the player: your units, and others only on plots you see and
 when they are not invisible to you (hidden-nationality units show as barbarians; the cargo of a
@@ -743,7 +778,8 @@ did.
 * The autosave at each turn boundary adds about half to the time of an AI turn on a standard
   map (`ffh-play bench`: `Game::save` and the file write, about 7-8 ms a turn against 17 ms of
   `update()`); it is the session's largest cost (its other work is about 0.2%).
-* AI players never offer you deals or ask anything (ffh-ai); you propose. The trade screen shows
+* AI players never offer you deals or ask anything (ffh-ai) except allied loans (crusade games);
+  you propose. The trade screen shows
   an AI's whole gold and gold rate as what it can give (Civ4's AI caps it; that AI code is not
   ported), and Civ4's AI refusals ("we don't want to trade that") are mostly not ported either.
 * A path preview for part of a stack uses the whole stack's speed (`approximate: true`).

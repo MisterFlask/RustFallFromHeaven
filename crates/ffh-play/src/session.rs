@@ -389,7 +389,7 @@ impl Session {
                 // records the episode's state as the uninterrupted run has it.
                 self.auto_moves_tried = false;
                 let mut ok = self.apply_journaled(h, cmd, &action);
-                if let (Action::ImplementDeal { .. }, CmdOk::Applied { accepted, .. }) = (&action, &mut ok) {
+                if let (Action::ImplementDeal { .. } | Action::AgreeLoan { .. }, CmdOk::Applied { accepted, .. }) = (&action, &mut ok) {
                     *accepted = Some(true);
                 }
                 Ok(ok)

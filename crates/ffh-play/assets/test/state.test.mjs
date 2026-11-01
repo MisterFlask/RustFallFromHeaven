@@ -235,6 +235,10 @@ test("deferred popups in C++ order, and set aside per turn", () => {
   // A new turn asks again for research and cities.
   assert.equal(St.popupQueue(pending, new Set(["research:12"]), 13).filter((p) => p.kind === "research").length, 1);
   assert.deepEqual(St.popupQueue(null, new Set(), 1), []);
+  // Crusade calls (docs/CRUSADE.md) come after the elections, keyed by crusade.
+  const calls = St.popupQueue({ ...pending, crusade_calls: [{ crusade: 3 }] }, new Set(), 12);
+  assert.deepEqual(calls.map((p) => p.key).slice(2, 5), ["election:7", "crusade:3", "research:12"]);
+  assert.equal(calls[3].call.crusade, 3);
   St.resetDismissed(3);
   St.S.dismissed.add("x");
   St.resetDismissed(3);
@@ -262,6 +266,7 @@ test("vote choices, the end-turn gate, moves and turns", () => {
   ]);
   assert.deepEqual(St.gateLines({ events: 0, votes: 1, research: false, ready_units: 0 }), ["a vote is open"]);
   assert.deepEqual(St.gateLines({ events: 0, votes: 0, elections: 2, research: false, ready_units: 0 }), ["2 elections wait for your choice"]);
+  assert.deepEqual(St.gateLines({ events: 0, votes: 0, research: false, ready_units: 0, crusade_calls: 1 }), ["a crusade call waits for your answer"]);
   assert.equal(St.moves(120), "2");
   assert.equal(St.moves(80), "1 1/3");
   assert.equal(St.moves(40), "2/3");

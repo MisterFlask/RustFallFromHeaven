@@ -123,7 +123,7 @@ impl Game {
         lender.units += units.len() as i32;
         self.crusades[idx].had_units = true;
         let n = units.len();
-        self.log.msg(turn, Some(p), || format!("Crusade {}: lent {} units (strength {})", id.0, n, total));
+        self.log.msg(turn, Some(p), || format!("Crusade {}: lent {} unit{} (strength {})", id.0, n, if n == 1 { "" } else { "s" }, strength_text(total)));
         Ok(total)
     }
 
