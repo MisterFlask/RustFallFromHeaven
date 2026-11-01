@@ -193,6 +193,9 @@ const TREE = 0.58;
  *  stones, fences, haystacks) are small art drawn for about one art pixel a screen pixel at the
  *  gameplay zoom (96 px a plot): their scale against PX.prop. */
 const FINE = 2.6;
+/** Open ground's grass tufts, smaller than the other small props: they say what the ground is
+ *  without standing out of it (at FINE they read as dark stumps under the grade). */
+const TUFT = FINE * 0.7;
 const HELLISH = new Set([GROUND.BURNING_SANDS, GROUND.BROKEN_LANDS, GROUND.PERDITION]);
 
 /** The trees of a wooded plot, by its feature and ground: [kind, weight, scale]. */
@@ -206,28 +209,27 @@ function woodOf(feat, ground, hills) {
   return hills ? [["tree_pine", 2, 1], ["tree_oak", 1, 1]] : [["tree_oak", 3, 1], ["tree_pine", 1, 1]];
 }
 
-/** What scatters over open ground, by its ground and mood: [kind, how many (expected), scale]. The
- *  look target fills every plot with small things, in clumps: a lone tree with bushes and grass
- *  round it, a rock among pebbles. */
+/** What scatters over open ground, by its ground and mood: [kind, how many (expected), scale].
+ *  Only what says what the ground is: green tufts and flowers on grassland, dry tufts on plains,
+ *  reeds on marsh, moss on tundra, pebbles on the barren grounds, rocks on hills and peaks, the
+ *  regions' own things (lava rocks, crystals, ...). No lone trees, bushes, boulders, ruins or
+ *  standing stones on open ground: they made grassland and plains read as woods, hills or a site
+ *  (the owner's call, 2026-11-01). */
 function clutterOf(kind, ground, mood) {
   const out = [];
-  if (HELLISH.has(ground)) out.push(["lava_rock", 1.3, 1], ["tree_dead", 0.35, 0.75], ["pebbles", 1.5, FINE]);
-  else if (ground === GROUND.SNOW) out.push(["tree_pine_snow", 0.6, 0.75], ["rock", 0.5, 1], ["pebbles", 1.0, FINE]);
-  else if (ground === GROUND.TUNDRA) out.push(["tree_pine", 0.6, 0.75], ["rock", 0.7, 1], ["bush", 0.6, 0.85], ["grass", 2.0, FINE], ["pebbles", 1.0, FINE]);
-  else if (ground === GROUND.DESERT) out.push(["rock", 0.6, 1], ["pebbles", 1.5, FINE], ["grass_3", 1.2, FINE]);
-  else if (ground === GROUND.MARSH) out.push(["bush", 1.4, 0.9], ["reeds", 3.0, FINE], ["grass", 2.0, FINE]);
-  else {
-    const lush = ground === GROUND.GRASS;
-    out.push(["bush", 1.6, 0.85], ["flowers", lush ? 1.6 : 0.7, 0.9], ["tree_oak", 0.7, 0.7], ["rock", 0.35, 0.8], ["grass", lush ? 4.5 : 3.0, FINE], ["pebbles", 0.8, FINE], ["stones", 0.05, FINE]);
-    if (!lush) out.push(["grass_3", 1.5, FINE]);
-  }
+  if (HELLISH.has(ground)) out.push(["lava_rock", 1.3, 1], ["pebbles", 1.5, FINE]);
+  else if (ground === GROUND.SNOW) out.push(["pebbles", 0.8, FINE]);
+  else if (ground === GROUND.TUNDRA) out.push(["grass", 1.5, TUFT], ["pebbles", 1.0, FINE]);
+  else if (ground === GROUND.DESERT) out.push(["pebbles", 1.5, FINE]);
+  else if (ground === GROUND.MARSH) out.push(["reeds", 3.5, FINE], ["grass", 1.0, TUFT]);
+  else if (ground === GROUND.GRASS) out.push(["grass", 3.0, TUFT], ["flowers", 1.2, 0.9]);
+  else out.push(["grass_3", 3.5, TUFT]);
   if (kind === KIND.HILLS) out.push(["rock", 1.2, 1.0], ["pebbles", 1.5, FINE]);
   if (kind === KIND.PEAK) out.push(["rock", 2.2, 1.2], ["pebbles", 2.0, FINE]);
   // Each region's own things (the moods, hd2d/mood.js: [hell, corruption, lush, gloom]).
   if (HELLISH.has(ground)) out.push(["bones", 0.4, FINE], ["vent", 0.35, FINE]);
   if (mood && mood[1] >= 0.5 && !HELLISH.has(ground)) out.push(["crystal", 1.0, 0.9], ["obelisk", 0.14, FINE], ["altar", 0.06, FINE]);
   if (mood && mood[2] >= 0.5) out.push(["lantern", 0.14, FINE]);
-  if (!HELLISH.has(ground) && ground !== GROUND.SNOW) out.push(["ruin", 0.025, FINE], ["shrine", 0.02, FINE]);
   return out;
 }
 

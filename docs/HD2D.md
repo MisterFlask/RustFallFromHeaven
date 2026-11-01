@@ -264,8 +264,9 @@ does for the isometric sprites. No unit art changed.
   behind (species by feature and ground: oaks and pines,
   pines and snowy pines in the cold, jungle trees, an ancient wood's one or two giants among oaks,
   dead trees in burnt woods and hell), thinned where a stack or an improvement holds the plot; **open
-  ground** scatters bushes, flowers, a lone tree, boulders (more on hills and peaks), crystals on
-  corrupted land and lava rocks on hell ground. They keep off rivers, roads, a town's footprint and
+  ground** carries only what says what it is (since 2026-11-01, below): grass tufts, flowers,
+  reeds, pebbles, rocks on hills and peaks, crystals on corrupted land and lava rocks on hell
+  ground. They keep off rivers, roads, a town's footprint and
   the spot a stack stands on; they cast their outline into the sun's shadow map and a contact
   shadow, so a wood is dark beneath. What they replace is **claimed** from the 3D dressing
   (`claims.trees`, `.flora`, `.rocks`): no modelled tree, plant or rock stands in the mode.
@@ -275,14 +276,24 @@ does for the isometric sprites. No unit art changed.
   the cards' dark outline, written as art cards (`art.py index` lists them). Small enough that code
   draws them well; anything with a design (a hut, a ruin) is left to the image model.
 * **Density** (batch 3): woods are five by five trees a plot (four by four before) at 0.58 of a
-  lone prop's scale, with grass at their sunny edge; open ground carries about a dozen props, most
-  gathered round one or two clumps a plot (a lone tree with bushes, flowers and grass round it, a
-  rock among pebbles), now and then a ring of standing stones; farms, pastures, cottages and the
-    land round a town add fences and haystacks.
+  lone prop's scale, with grass at their sunny edge; open ground's props gather round one or two
+  clumps a plot; farms, pastures, cottages and the land round a town add fences and haystacks.
+* **Open ground says what it is** (the owner's call, 2026-11-01: unimproved grassland and plains
+  were hard to tell from woods, hills and each other). `clutterOf` keeps only the props that name
+  the ground: small green tufts and flowers on grassland, small dry tufts on plains (`TUFT`, 0.7 of
+  the other small props' scale: at full size they read as dark stumps), reeds on marsh, moss tufts
+  and pebbles on tundra, pebbles on desert and snow, rocks on hills and peaks, and the regions' own
+  things (lava rocks, bones and vents in hell, crystals, obelisks and altars on corrupted land,
+  lanterns in the elven lands). The lone trees, bushes, boulders, ruins, shrines and standing
+  stones that had stood on every open plot are gone: they made open land read as a thin wood. The
+  meadow's ground (shaders.js `G_GRASS`) no longer mixes the two either: a grassland stays green
+  and a plains golden, their patches interleaving only where they meet (they had been a tenth
+  and three quarters golden).
 * **Designed props drawn by code** (batch 4, until the image model draws better ones): thatched and
   stone huts (a window lit from within), a well, ruins, gardens; the corrupted land's obelisks (violet
   runes) and altars, hell's bones and smouldering vents, the elven lands' lanterns -- each region's
-  own, by the moods (`clutterOf`), now and then a ruin anywhere. What carries a light (`GLOWS`: runes,
+  own, by the moods (`clutterOf`); the ruins and shrines that once stood anywhere are gone
+  (2026-11-01, above). What carries a light (`GLOWS`: runes,
     lamps, embers, hut windows) feeds the bloom.
 * **The image model's versions** (`tools/hd2d/props.json`, `tools/hd2d/local_props.py`): every
   designed prop as one entry -- the card it replaces (a numbered new name joins its kind's

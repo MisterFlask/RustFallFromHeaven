@@ -919,15 +919,16 @@ vec3 groundAlbedo(int g, vec2 m, float h, inout vec3 emit) {
     // The meadow: grassland and prairie painted as one ground (main folds the prairie in), green
     // grass broken by golden dry grass. Where it lies golden: organic patches (about 1, 0.5 and 0.3
     // plots, the finest drawn out along the map's diagonal) that ignore the plot grid, the prairie's
-    // share of the point (gDry) tipping the balance -- about a tenth of a grassland lies golden (and
-    // as much again olive round it), three quarters of a prairie, and no broader noise than a plot,
-    // so a whole region never flips -- only in a plot's rim: its centre (about a fifth of a plot
-    // round it) is pinned to its own ground, easing out to the rim (grassland and plains differ in
-    // yield, so a player must read it there), while the grid no longer shows in the grass.
+    // share of the point (gDry) tipping the balance -- a grassland stays green (a rare golden fleck)
+    // and a prairie golden (a rare green one), so the two read apart at a glance (they differ in
+    // yield; the owner's call, 2026-11-01: they had been a tenth and three quarters golden, and
+    // looked alike); the patches mix only where the two meet, and no broader noise than a plot, so
+    // a whole region never flips. A plot's centre (about a fifth of a plot round it) is pinned to
+    // its own ground, easing out to the rim, while the grid no longer shows in the grass.
     // A patch meets the green in a broad blend (about a quarter of a plot, as in the target), not a
     // cut: dry runs over a wide band of the noise and the two grasses interleave over its middle.
     float dn = mnoise(m + 61.0, 0.85) * 0.35 + mnoise(m - 27.0, 1.9) * 0.4 + mstroke(m + 13.0, 3.6, 2.5) * 0.25;
-    float t = mix(0.66, 0.40, gDry);
+    float t = mix(0.92, 0.10, gDry);
     dry = smoothstep(t - 0.28, t + 0.28, dn);
     dry = mix(gDry, dry, smoothstep(0.06, 0.6, length(fract(m) - 0.5)));
     big = gBig;
