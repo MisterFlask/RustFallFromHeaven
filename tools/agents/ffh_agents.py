@@ -606,6 +606,14 @@ def build_in(wsd, i, tree, profile, label, key, missing, test, test_args, full_s
     state.update(src_manifest=manifest, label=label, last_used=time.time())
     atomic_write(os.path.join(wsd, 'state.json'), json.dumps(state).encode())
     env = cargo_env(target, profile)
+    # The commit ffh-play reports (`BUILD_COMMIT`, quoted by bug reports): the workspace is not a
+    # git repository. A worktree's files may differ from its HEAD: "+worktree".
+    if label.startswith('rev '):
+        env['FFH_BUILD_COMMIT'] = label[4:]
+    elif label.startswith('tree '):
+        head = git(label[5:], 'rev-parse', '--short=12', 'HEAD', check=False).strip()
+        if head:
+            env['FFH_BUILD_COMMIT'] = head + '+worktree'
     jflag = ['-j', str(jobs)] if jobs else []
 
     def record(ok):
@@ -830,7 +838,8 @@ def slot_summary():
 # run cache
 
 def cache_enabled():
-    return os.path.isdir(ROOT) and not os.environ.get('FFH2_NO_CACHE')
+    # FFH_TELEMETRY_FILE: the run writes a file, which a replayed stdout would not.
+    return os.path.isdir(ROOT) and not os.environ.get('FFH2_NO_CACHE') and not os.environ.get('FFH_TELEMETRY_FILE')
 
 
 PATH_BYTES = set(b'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-+@~/')

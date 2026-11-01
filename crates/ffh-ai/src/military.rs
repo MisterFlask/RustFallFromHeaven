@@ -32,10 +32,15 @@ pub struct Target {
     pub lair: bool,
 }
 
+/// A field unit of ours the AI's stacks command (attack, city attack, collateral, counter, reserve
+/// and pillage roles, on land): not a marching recruit, which goes where the rules take it
+/// (docs/ARMIES.md), so no stack takes it in, no transport loads it and no count of our stacks has
+/// it.
 pub fn is_army_unit(g: &Game, u: UnitId) -> bool {
     let unit = &g.units[u];
     let info = &g.d.units[unit.unit_type];
-    info.combat > 0
+    unit.march.is_none()
+        && info.combat > 0
         && !info.found
         && g.unit_get_domain_type(u) == DomainType::DOMAIN_LAND
         && matches!(
@@ -44,9 +49,10 @@ pub fn is_army_unit(g: &Game, u: UnitId) -> bool {
         )
 }
 
-/// Units of the group able to attack now.
+/// Units of the group able to attack now (not the casters that march with it without fighting
+/// for it, `magic::spared_caster`).
 fn attackers(g: &Game, grp: GroupId) -> Vec<UnitId> {
-    g.groups[grp].units.iter().copied().filter(|&u| attack_power(g, u) > 0 && g.unit_can_attack(u) && g.unit_moves_left(u) > 0).collect()
+    g.groups[grp].units.iter().copied().filter(|&u| crate::campaign::fights(g, u) && g.unit_moves_left(u) > 0).collect()
 }
 
 /// Fight estimate against a plot.
@@ -98,16 +104,77 @@ pub(crate) fn assess(g: &Game, grp: GroupId, q: PlotIdx) -> Option<Assessment> {
     Some(Assessment { best, n_def: n_def.max(1), n_att: atts.len() as i32, effective })
 }
 
-/// Is an assault worth it?
-pub fn attack_ok(a: &Assessment, city: bool) -> bool {
-    if a.best >= 650 {
+/// The group attack of `grp` on plot `q` played in expected values as the rules will fight it
+/// (`combat_sim::simulate`, [`Order::Group`](crate::combat_sim::Order::Group)): the attackers
+/// that can attack there, against the defenders we see. Raiders on our land
+/// or within three plots of one of our cities (any enemy but animals, which stay out of our
+/// borders) count four times what they are worth: left alone they take the city. (Valued at face
+/// value, the stacks let them be, and more of our cities fell to the barbarians: docs/AI.md,
+/// round 7g.)
+pub(crate) fn field_sim(g: &Game, grp: GroupId, q: PlotIdx) -> Option<crate::combat_sim::Sim> {
+    let atts: Vec<UnitId> = attackers(g, grp).into_iter().filter(|&u| g.unit_can_move_or_attack_into(u, q, false)).collect();
+    if atts.is_empty() {
+        return None;
+    }
+    let p = g.groups[grp].owner;
+    let team = g.players[p].team;
+    let defs = crate::combat_sim::visible_defenders(g, team, q);
+    let animals = !defs.is_empty() && defs.iter().all(|&d| g.d.units[g.units[d].unit_type].animal);
+    let ours = g.map.plots[q].owner.is_some_and(|o| g.players[o].team == team);
+    let (x, y) = g.map.xy(q);
+    let near_city = ours || g.players[p].cities.iter().any(|&c| g.plot_distance(x, y, g.cities[c].x, g.cities[c].y) <= 3);
+    let kill_pct = if !animals && near_city { 400 } else { 100 };
+    Some(crate::combat_sim::simulate(g, q, &defs, &atts, 0, crate::combat_sim::Order::Group, kill_pct, 200))
+}
+
+/// Is the group attack [`field_sim`] played worth starting (or, `fought`, going on with)? As an
+/// expert decides, on the simulation's numbers. Nothing to fight (a worker to capture, our own
+/// units there): yes. The attacker the rules send has good odds (65%; 75% for a `hurt` stack):
+/// yes -- a raider, an animal, a shot at a barbarian town's garrison. Wearing the defenders down
+/// at worse odds: only when the stack clears the plot (every defender 80% sure to fall) and the
+/// kills are worth more than the losses (`gain`). A city to `capture` (an opportune capture, a
+/// landing): when it falls; once the fighting has started, also on good odds or a winning trade.
+/// (Before round 7g -- switch `FIELD_SIM` off, removed once kept -- `attack_ok`, which counted a
+/// third of a kill for every lost fight whatever the odds,
+/// the defender's strength or its first strikes -- it sent four Warriors at a Griffon at 1% -- and
+/// took the odds against a defender at full health for each attacker. Measured first as a pure
+/// trade of what kills and losses are worth, the stacks traded lone units at 35-50% odds and the
+/// player fell behind in units by turn 100: docs/AI.md, round 7g.)
+pub(crate) fn field_go(s: &crate::combat_sim::Sim, city: bool, capture: bool, fought: bool, hurt: bool) -> bool {
+    if s.n_def == 0 {
         return true;
     }
-    let need = a.n_def * 1000 + if city { 300 } else { 0 };
-    if a.best < 100 {
-        return false;
+    let falls = s.used.is_some();
+    if city && capture && !fought {
+        return falls;
     }
-    a.effective >= need && (a.best >= 300 || a.n_att >= a.n_def + 2)
+    let good = s.first >= if hurt { 750 } else { 650 };
+    good || falls && s.gain > 0
+}
+
+/// The attacker the rules would send from `grp` into `q` (`AI_getBestGroupAttacker`, which already
+/// puts heroes, veterans and war wizards last) is a hero or a veteran below its odds (switch
+/// `PRECIOUS`, `campaign::precious_bar`), or a caster marching with the stack below war wizard
+/// odds (switch `CASTER_STACKS`, `magic::spared_caster`): `(unit, odds, bar)`. The others are worse still, so the stack does
+/// not attack there -- and does not pick the target either: a Balseraph stack whose best attacker
+/// was a level-5 Warrior at 35% stood next to the same raider for 12 turns (docs/AI.md, "Forks of
+/// the hero gate").
+fn precious_holds(g: &Game, grp: GroupId, q: PlotIdx) -> Option<(UnitId, i32, i32)> {
+    let p = g.units[g.group_get_head_unit(grp)?].owner;
+    let precious = crate::switches::PRECIOUS.on(g, p);
+    if !precious && !crate::switches::CASTER_STACKS.on(g, p) {
+        return None;
+    }
+    let b = g.group_ai_get_best_group_attacker(grp, q, false, false, false).0?;
+    // A caster that marches with the stack (`magic::spared_caster`): the rules send it below war
+    // wizard odds only when no other unit of the stack can attack; then the stack stops too.
+    let caster_bar = if crate::magic::spared_caster(g, b) { crate::magic::SPARED_CASTER_ODDS } else { 0 };
+    let bar = if precious { crate::campaign::precious_bar(g, b) } else { 0 }.max(caster_bar);
+    if bar == 0 {
+        return None;
+    }
+    let odds = g.plot_get_best_defender(q, None, Some(p), Some(b), false, false, false).map_or(1000, |d| g.get_combat_odds(b, d));
+    (odds < bar).then_some((b, odds, bar))
 }
 
 /// Attack plot `q` with the group until it falls or the odds turn bad. True if we fought.
@@ -115,11 +182,10 @@ pub fn assault(g: &mut Game, v: &View, grp: GroupId, q: PlotIdx) -> bool {
     let mut fought = false;
     let city = g.map.plots[q].plot_city.is_some();
     // Casters of ours around the target cast first when the assault goes ahead (magic.rs).
-    if let Some(a) = assess(g, grp, q) {
-        if a.n_def > 0 && attack_ok(&a, city) {
-            let atts = attackers(g, grp);
-            crate::magic::before_attack(g, v, q, &atts);
-        }
+    let goes = field_sim(g, grp, q).is_some_and(|s| field_go(&s, city, false, false, false));
+    if goes {
+        let atts = attackers(g, grp);
+        crate::magic::before_attack(g, v, q, &atts);
     }
     for _ in 0..12 {
         if !alive(g, grp) {
@@ -131,10 +197,20 @@ pub fn assault(g: &mut Game, v: &View, grp: GroupId, q: PlotIdx) -> bool {
         }
         let Some(a) = assess(g, grp, q) else { break };
         let (n_def, n_att) = (a.n_def, a.n_att);
+        crate::trace!(g, v.p, "  assault {:?} on {:?}: {:?}", grp, g.map.xy(q), a);
         if n_def == 0 {
             break;
         }
-        if !attack_ok(&a, city) {
+        let s = field_sim(g, grp, q);
+        crate::trace!(g, v.p, "  assault {:?} on {:?} simulated: {:?} go {}", grp, g.map.xy(q), s, s.is_some_and(|s| field_go(&s, city, false, fought, false)));
+        if !s.is_some_and(|s| field_go(&s, city, false, fought, false)) {
+            break;
+        }
+        // The attacker the rules would send is a hero or a veteran below its odds: the stack stops
+        // here.
+        if let Some((b, odds, bar)) = precious_holds(g, grp, q) {
+            crate::trace!(g, v.p, "stack {:?} holds: its next attacker {} has odds {} (wants {})", grp, g.d.units[g.units[b].unit_type].base.type_, odds, bar);
+            g.tel_decision(v.p, "military", "precious_held", "assault", 1, String::new);
             break;
         }
         g.groups[grp].ai_group_attack = false;
@@ -286,7 +362,7 @@ pub fn report_exposure(g: &Game, v: &View, p: PlayerId) {
     }
 }
 
-pub fn army(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
+pub fn army(g: &mut Game, v: &mut View, mut grp: GroupId, mut u: UnitId) {
     let p = v.p;
     let here = g.unit_plot(u);
     if v.barbarian {
@@ -320,6 +396,10 @@ pub fn army(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
     }
 
     merge_here(g, v, grp, here);
+    crate::traits::before_army(g, v, grp); // trait-play
+    if !alive(g, grp) {
+        return;
+    }
 
     // Heal before anything but a sure kill.
     let max_hp = g.d.defines.max_hit_points.max(1);
@@ -327,6 +407,12 @@ pub fn army(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
 
     // Adjacent targets first (the operation's target city is left to its strike).
     crate::campaign::plan(g, v);
+    // An enemy city next to us that is empty, or that this stack clearly takes: take it, plan or
+    // not (C++ `AI_stackAttackCity(1, 160)`).
+    if crate::switches::CAPTURE.on(g, p) && opportune(g, v, grp, u) {
+        finish(g, grp);
+        return;
+    }
     let op_target = v.campaign.ops.first().map(|o| o.plot);
     if let Some(q) = best_adjacent(g, grp, here, hurt, op_target) {
         assault(g, v, grp, q);
@@ -338,10 +424,11 @@ pub fn army(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
     }
     // (Not a stack about to strike: the strike estimate counts its wounds, and the city's
     // defenders heal faster than we do.)
-    if hurt && !crate::campaign::striking(g, v, grp) && v.danger_at(here) * 2 < g.groups[grp].units.iter().map(|&o| defense_power(g, o)).sum::<i32>().max(1) * 3 {
-        if g.group_can_start_mission(grp, MissionType::MISSION_HEAL, -1, -1, None, false) {
-            crate::units::push(g, grp, MissionType::MISSION_HEAL, -1, -1, 0, false);
-            return;
+    match heal(g, v, grp, u) {
+        Healed::Done => return,
+        Healed::Continue(ng, nu) => {
+            grp = ng;
+            u = nu;
         }
     }
 
@@ -392,12 +479,17 @@ pub fn army(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
         return;
     }
 
+    // A Raiders leader's spare stack raids the enemy's improvements (traits.rs).
+    if crate::traits::raid(g, v, grp, u) { return; } // trait-play
+
     // Peacetime campaign against a barbarian city (campaign.rs).
     if crate::campaign::act(g, v, grp, u, false) {
         return;
     }
 
     // Gather: join the nearest other stack within a few turns, else hold in the nearest city.
+    // (Posting lone units here to block barbarian spawns near our cities was tried and reverted:
+    // the units held in cities fight for them. docs/AI_LOG.md, "Fog-busting posts".)
     if g.groups[grp].units.len() < MAX_STACK {
         let reach = v.flood.run(g, u, 3, false);
         let mut best: Option<(PlotIdx, i32)> = None;
@@ -436,6 +528,128 @@ pub fn army(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) {
     }
 }
 
+/// What [`heal`] did: the stack's turn is spent, or a stack (perhaps the healthy part of it,
+/// with a new head) goes on with its turn.
+enum Healed {
+    Done,
+    Continue(GroupId, UnitId),
+}
+
+/// A unit counts as hurt from this much damage (percent): in a field stack (most of it hurt sends
+/// the stack to heal) and in one of our cities (it splits off and heals there). One threshold for
+/// both, so a stack leaves a city only in a state the field rule accepts: with More Naval AI's 30%
+/// in cities (`AI_heal(30, 1)`), units healed to 21-30% walked out and the next turn's field rule
+/// sent them back, turn after turn (a fork of seed 26006, turn 239: docs/AI.md, "Forks of the
+/// healing rule").
+const HURT_PCT: i32 = 20;
+/// A lone unit stops to heal from this much damage (the old rule for every stack).
+const ALONE_PCT: i32 = 35;
+
+/// Healing as More Naval AI's stacks do (`CvUnitAI::AI_heal`), fitted to our small stacks: in one
+/// of our cities the wounded split off and heal while the rest go on; in the field a stack
+/// committed to a siege stops only when more than half of it is hurt, and only where healing is
+/// better than 10% a turn (our land, a city: not enemy or neutral land, where it heals at 5-10%
+/// beside defenders that heal faster), else it walks into a city of ours within two turns or onto
+/// our land within one, else it carries on; a loose stack (a few units hunting raiders) heals where
+/// it stands for one badly hurt unit, as before. A stack about to strike never stops. (Before: one unit over 35% damage
+/// halted the whole stack wherever it stood, committed stacks next to their target included. More
+/// Naval AI's rule for every stack -- stop only when most of it is hurt -- lost units and cities
+/// here: our loose stacks are two to four units, and a badly hurt one is a large part of them.)
+fn heal(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> Healed {
+    let p = v.p;
+    if crate::campaign::striking(g, v, grp) {
+        return Healed::Continue(grp, u);
+    }
+    let here = g.unit_plot(u);
+    let max_hp = g.d.defines.max_hit_points.max(1);
+    let pct = |g: &Game, o: UnitId| g.units[o].damage * 100 / max_hp;
+    let units = g.groups[grp].units.clone();
+    let safe = |g: &Game, v: &View| v.danger_at(here) * 2 < g.groups[grp].units.iter().map(|&o| defense_power(g, o)).sum::<i32>().max(1) * 3;
+    let can_heal = |g: &Game, grp: GroupId| g.group_can_start_mission(grp, MissionType::MISSION_HEAL, -1, -1, None, false);
+    let our_city = g.map.plots[here].plot_city.is_some_and(|c| g.cities[c].owner == p);
+    if our_city {
+        // The wounded (that can still heal this turn: they have not moved) split off and heal.
+        let wounded: Vec<UnitId> = units.iter().copied().filter(|&o| pct(g, o) >= HURT_PCT && !g.unit_has_moved(o)).collect();
+        if wounded.is_empty() {
+            return Healed::Continue(grp, u);
+        }
+        if wounded.len() == units.len() {
+            if can_heal(g, grp) {
+                crate::trace!(g, p, "stack {:?} ({} units) heals in {:?}", grp, units.len(), g.map.xy(here));
+                g.tel_decision(p, "military", "heal_city", "heal", units.len() as i64, String::new);
+                crate::units::push(g, grp, MissionType::MISSION_HEAL, -1, -1, 0, false);
+                return Healed::Done;
+            }
+            return Healed::Continue(grp, u);
+        }
+        // Move one part into a new group without taking the head out of the old one (a head
+        // leaving its group marks the group for separation, and it would take no more units).
+        let head_wounded = wounded.contains(&u);
+        let leave: Vec<UnitId> = if head_wounded { units.iter().copied().filter(|o| !wounded.contains(o)).collect() } else { wounded.clone() };
+        let first = leave[0];
+        g.unit_join_group(first, None, true);
+        let Some(ng) = g.units[first].group else { return Healed::Continue(grp, u) };
+        for &o in &leave[1..] {
+            g.unit_join_group(o, Some(ng), true);
+        }
+        let (heal_grp, go_grp, go_head) = if head_wounded { (grp, ng, first) } else { (ng, grp, u) };
+        crate::trace!(g, p, "stack {:?}: {} wounded split off to heal in {:?}", grp, wounded.len(), g.map.xy(here));
+        g.tel_decision(p, "military", "heal_split", "heal", wounded.len() as i64, String::new);
+        if alive(g, heal_grp) && can_heal(g, heal_grp) {
+            crate::units::push(g, heal_grp, MissionType::MISSION_HEAL, -1, -1, 0, false);
+        }
+        if alive(g, go_grp) && g.units.contains(go_head) && g.units[go_head].group == Some(go_grp) && g.group_ready_to_move(go_grp, false) {
+            return Healed::Continue(go_grp, go_head);
+        }
+        return Healed::Done;
+    }
+    // In the field.
+    let n = units.len();
+    let badly = units.iter().any(|&o| pct(g, o) > ALONE_PCT);
+    let most = units.iter().filter(|&&o| pct(g, o) >= HURT_PCT).count() * 2 > n;
+    // A loose stack (a few units hunting raiders near home) heals where it stands as soon as one
+    // unit is badly hurt, as before this rule: making it walk home, or wait for most of it to be
+    // hurt, let raiders run and lost cities to the barbarians (+29-43% on fresh seeds).
+    let marching = crate::campaign::on_the_move(v, grp);
+    if !marching {
+        if badly && safe(g, v) && can_heal(g, grp) {
+            crate::trace!(g, p, "stack {:?} ({} units) heals at {:?}", grp, n, g.map.xy(here));
+            g.tel_decision(p, "military", "heal_stack", "heal", n as i64, String::new);
+            crate::units::push(g, grp, MissionType::MISSION_HEAL, -1, -1, 0, false);
+            return Healed::Done;
+        }
+        return Healed::Continue(grp, u);
+    }
+    // A stack committed to a siege past gathering stops only when most of it is hurt (C++).
+    if !most {
+        if badly && safe(g, v) {
+            crate::trace!(g, p, "stack {:?} ({} units) marches on with its wounded at {:?}", grp, n, g.map.xy(here));
+            g.tel_decision(p, "military", "heal_skipped", "few_hurt", 1, String::new);
+        }
+        return Healed::Continue(grp, u);
+    }
+    if g.unit_heal_rate(u, here) > 10 && safe(g, v) && can_heal(g, grp) {
+        crate::trace!(g, p, "stack {:?} ({} units) heals at {:?}", grp, n, g.map.xy(here));
+        g.tel_decision(p, "military", "heal_stack", "heal", n as i64, String::new);
+        crate::units::push(g, grp, MissionType::MISSION_HEAL, -1, -1, 0, false);
+        return Healed::Done;
+    }
+    // Poor healing here: into a city of ours within two turns, else onto our land within one.
+    let ours = |g: &Game, q: PlotIdx| g.map.plots[q].plot_city.is_some_and(|c| g.cities[c].owner == p);
+    let reach = v.flood.run(g, u, 2, false);
+    let city = reach.iter().filter(|r| ours(g, r.plot)).min_by_key(|r| (r.turns, r.plot)).copied();
+    let land = || reach.iter().filter(|r| r.turns <= 1 && g.map.plots[r.plot].owner == Some(p) && v.danger_at(r.plot) == 0).min_by_key(|r| (r.turns, std::cmp::Reverse(g.plot_defense_modifier(r.plot, Some(v.team), true)), r.plot)).copied();
+    if let Some(r) = city.or_else(land) {
+        crate::trace!(g, p, "stack {:?} ({} units) goes to heal at {:?}", grp, n, g.map.xy(r.plot));
+        g.tel_decision(p, "military", "heal_retreat", "heal", n as i64, String::new);
+        move_to(g, grp, r.plot, 0);
+        finish(g, grp);
+        return Healed::Done;
+    }
+    g.tel_decision(p, "military", "heal_skipped", "poor_healing", 1, String::new);
+    Healed::Continue(grp, u)
+}
+
 /// Make sure the group's turn ends.
 fn finish(g: &mut Game, grp: GroupId) {
     if alive(g, grp) && g.group_ready_to_move(grp, true) {
@@ -443,11 +657,84 @@ fn finish(g: &mut Game, grp: GroupId) {
     }
 }
 
+/// Opportunistic captures (switch `CAPTURE`): an enemy city at war (a civ's or the barbarians')
+/// that the stack can walk into this turn because it is empty, or one next to it whose defenders
+/// it takes when the simulation of the group attack says the city falls ([`field_go`]) -- even
+/// when no operation targets it (the targets of our operations are left to their strikes). An
+/// expert takes the city the enemy has left open, wherever his army stands. Before, a stack next
+/// to an empty enemy city walked on: the plan named another city, and the hunt only went for
+/// visible units. True if the stack acted.
+fn opportune(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
+    let p = v.p;
+    let team = v.team;
+    let here = g.unit_plot(u);
+    let (x, y) = g.map.xy(here);
+    if g.unit_moves_left(u) <= 0 {
+        return false;
+    }
+    // Enemy cities around (two plots: as far as a unit with two moves gets this turn).
+    let mut cities: Vec<(i32, CityId, PlotIdx)> = Vec::new();
+    for dx in -2..=2 {
+        for dy in -2..=2 {
+            let Some(q) = g.plot_xy(x, y, dx, dy) else { continue };
+            let Some(c) = g.map.plots[q].plot_city else { continue };
+            let owner_team = g.players[g.cities[c].owner].team;
+            if owner_team == team || !g.at_war(team, owner_team) || !crate::view::sees_units(g, team, q) || v.campaign.ops.iter().any(|o| o.plot == q) {
+                continue;
+            }
+            let (qx, qy) = g.map.xy(q);
+            cities.push((g.plot_distance(x, y, qx, qy), c, q));
+        }
+    }
+    if cities.is_empty() {
+        return false;
+    }
+    cities.sort();
+    let mut reach: Option<Vec<crate::reach::Reached>> = None;
+    for (d, c, q) in cities {
+        let defs = crate::combat_sim::visible_defenders(g, team, q);
+        let name = g.cities[c].name.clone();
+        if defs.is_empty() {
+            // Walk in, if we get there this turn.
+            let arrives = d == 1 && g.group_can_move_into(grp, q, false) || {
+                let r = reach.get_or_insert_with(|| v.flood.run(g, u, 1, false));
+                r.iter().any(|r| r.plot == q && r.turns == 0)
+            };
+            if !arrives {
+                continue;
+            }
+            crate::trace!(g, p, "stack {:?} ({} units) walks into the empty city {}", grp, g.groups[grp].units.len(), name);
+            g.tel_decision(p, "military", "capture_empty", "capture", 1, String::new);
+            move_to(g, grp, q, 0);
+            return true;
+        }
+        if d != 1 {
+            continue;
+        }
+        // When the simulation of the group attack says the city falls (`field_go` with
+        // `capture`; before round 7g, the siege estimate with a reserve and odds the assault goes
+        // on with).
+        let units = g.groups[grp].units.clone();
+        let takes = field_sim(g, grp, q).is_some_and(|s| field_go(&s, true, true, false, false));
+        if !takes {
+            continue;
+        }
+        crate::trace!(g, p, "stack {:?} ({} units) takes its chance on {} ({} defenders)", grp, units.len(), name, defs.len());
+        g.tel_decision(p, "military", "capture_attack", "capture", defs.len() as i64, String::new);
+        assault(g, v, grp, q);
+        if !g.cities.contains(c) || g.cities[c].owner == p {
+            g.tel_decision(p, "military", "capture_taken", "capture", 1, String::new);
+        }
+        return true;
+    }
+    false
+}
+
 /// Best adjacent enemy plot worth attacking now.
 fn best_adjacent(g: &Game, grp: GroupId, here: PlotIdx, hurt: bool, skip: Option<PlotIdx>) -> Option<PlotIdx> {
     let head = g.group_get_head_unit(grp)?;
     let (x, y) = g.map.xy(here);
-    let mut best: Option<(PlotIdx, i32)> = None;
+    let mut best: Option<(PlotIdx, i64)> = None;
     for dir in 0..DirectionType::NUM {
         let Some(q) = g.plot_direction(x, y, DirectionType::from_usize(dir)) else { continue };
         if !g.plot_is_visible_enemy_unit_for_unit(q, head) || skip == Some(q) {
@@ -458,12 +745,11 @@ fn best_adjacent(g: &Game, grp: GroupId, here: PlotIdx, hurt: bool, skip: Option
         if city.is_some_and(|c| !g.player_is_barbarian(g.cities[c].owner)) {
             continue;
         }
-        let Some(a) = assess(g, grp, q) else { continue };
-        let ok = if hurt { a.best >= 750 } else { attack_ok(&a, city.is_some()) };
-        if !ok {
+        let Some(s) = field_sim(g, grp, q) else { continue };
+        let (ok, score) = (field_go(&s, city.is_some(), false, false, hurt), if city.is_some() { 1_000_000 + s.best as i64 } else { s.gain });
+        if !ok || precious_holds(g, grp, q).is_some() {
             continue;
         }
-        let score = a.best + if city.is_some() { 300 } else { 0 };
         if best.map_or(true, |(_, s)| score > s) {
             best = Some((q, score));
         }
@@ -498,7 +784,9 @@ fn hunt(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
         if their > 0 && their * t.units.max(1) > power * 2 {
             continue;
         }
-        if t.city && n_att < 3 {
+        // (An empty city needs no army: whoever gets there takes it, if it is still empty; not
+        // worth a long march.)
+        if t.city && n_att < 3 && t.units > 0 || t.city && t.units == 0 && r.turns > 2 {
             continue;
         }
         let score = t.value * 10 / (r.turns + 2);
@@ -509,9 +797,11 @@ fn hunt(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
         let t = v.targets[i];
         // Exact check where it matters: the best odds against what stands there.
         if t.units > 0 {
-            match assess(g, grp, t.plot) {
-                Some(a) if attack_ok(&a, t.city) || a.best >= 300 && a.n_att >= 2 => {}
-                _ => continue,
+            if !field_sim(g, grp, t.plot).is_some_and(|s| field_go(&s, t.city, false, false, false)) {
+                continue;
+            }
+            if precious_holds(g, grp, t.plot).is_some() {
+                continue;
             }
         }
         v.target_claims.push((t.plot, grp));
@@ -521,6 +811,9 @@ fn hunt(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
         if g.plot_distance(x, y, tx, ty) <= 1 && t.units > 0 {
             assault(g, v, grp, t.plot);
         } else if t.units == 0 {
+            if t.city {
+                g.tel_decision(v.p, "military", "capture_empty_hunt", "capture", 1, String::new);
+            }
             move_to(g, grp, t.plot, 0);
         } else {
             // Next to it, on the best defensive ground we reach first.
@@ -563,7 +856,7 @@ pub fn find_targets(g: &Game, v: &View) -> Vec<Target> {
         for &e in &opl.units {
             let unit = &g.units[e];
             let Some(q) = g.map.plot_xy(unit.x, unit.y) else { continue };
-            if !g.plot_is_visible(q, v.team) || g.plot_is_water(q) {
+            if !crate::view::sees_units(g, v.team, q) || g.unit_is_invisible(e, v.team, false) || g.plot_is_water(q) {
                 continue;
             }
             if out.iter().any(|t| t.plot == q) {
@@ -590,6 +883,25 @@ pub fn find_targets(g: &Game, v: &View) -> Vec<Target> {
                 value += 700;
             }
             out.push(Target { plot: q, value, units: n, city: city.is_some(), lair });
+        }
+    }
+    // Empty enemy cities near our lands (switch `CAPTURE`): a stack walks in (`hunt`).
+    if crate::switches::CAPTURE.on(g, p) {
+        for opl in g.players.iter() {
+            if !opl.alive || !v.enemies.contains(&opl.team) {
+                continue;
+            }
+            for &c in &opl.cities {
+                let q = g.city_plot(c);
+                let (x, y) = (g.cities[c].x, g.cities[c].y);
+                if !crate::view::sees_units(g, v.team, q) || out.iter().any(|t| t.plot == q) || !near(x, y, 10) {
+                    continue;
+                }
+                if !crate::combat_sim::visible_defenders(g, v.team, q).is_empty() {
+                    continue;
+                }
+                out.push(Target { plot: q, value: 900 + 100 * g.cities[c].population, units: 0, city: true, lair: false });
+            }
         }
     }
     // Empty lairs near our lands.

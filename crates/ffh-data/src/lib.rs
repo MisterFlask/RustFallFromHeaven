@@ -35,9 +35,27 @@ macro_rules! game_data {
             pub define_map: DefineMap,
             pub defines: Defines,
             pub text: Text,
+            /// The lines each civilization's leaders have for each other civilization
+            /// (`text/barks.md`, Markdown; empty when absent). Presentation only: ffh-play reads it.
+            pub barks: String,
             /// Non-fatal data problems found while loading (unknown types etc.).
             pub warnings: Vec<String>,
             $( pub $field: IdxVec<$id, $info>, )*
+            /// Derived at load (not XML): the promotions with `promotion_combat_mod > 0`, in id
+            /// order. `CvUnit::maxCombatStr` only reads those, so it scans this short list
+            /// instead of every promotion.
+            pub combat_mod_promotions: Vec<PromotionType>,
+            /// Derived at load (not XML): the engagement role of each unit type
+            /// ([`GameData::type_combat_role`]). Every land and immobile type has one, a type
+            /// without strength too (workers, settlers, great people): whether a unit fights is its
+            /// own strength (C++ `CvUnit::canFight`), which promotions add to (a Worker that takes
+            /// the Godslayer is a 3/3 unit, and Frontline). `None` for sea and air types only, which
+            /// never take part in a land engagement. A unit's own role also depends on its
+            /// promotions ([`Self::screen_role`]).
+            pub unit_roles: IdxVec<UnitType, Option<CombatRoleType>>,
+            /// Derived at load: the role a unit changes to by promotion, from the role with
+            /// `FromRole` (from, promotion, to): a Frontline unit with Formation is a Screen.
+            pub screen_role: Option<(CombatRoleType, PromotionType, CombatRoleType)>,
         }
 
         /// (xml file, registry class) for every info table, in load order.
@@ -60,7 +78,8 @@ macro_rules! game_data {
                     };
                 )*
                 let defines = Defines::from_map(&define_map);
-                GameData { reg, define_map, defines, text, warnings, $( $field, )* }
+                // (derived tables are filled by `GameData::derive`)
+                GameData { reg, define_map, defines, text, barks: String::new(), warnings, $( $field, )* combat_mod_promotions: Vec::new(), unit_roles: IdxVec::new(), screen_role: None }
             }
         }
     };
@@ -123,6 +142,7 @@ game_data! {
     traits: TraitType => TraitInfo, "Civilizations/CIV4TraitInfos.xml", civ::read_trait;
     civilizations: CivilizationType => CivilizationInfo, "Civilizations/CIV4CivilizationInfos.xml", civ::read_civilization;
     leader_heads: LeaderHeadType => LeaderHeadInfo, "Civilizations/CIV4LeaderHeadInfos.xml", civ::read_leader_head;
+    diplomacies: DiploCommentType => DiplomacyInfo, "Gameinfo/CIV4DiplomacyInfos.xml", game::read_diplomacy;
     // ---- Units ----
     special_units: SpecialUnitType => SpecialUnitInfo, "Units/CIV4SpecialUnitInfos.xml", unit::read_special_unit;
     unit_classes: UnitClassType => UnitClassInfo, "Units/CIV4UnitClassInfos.xml", unit::read_unit_class;
@@ -136,6 +156,12 @@ game_data! {
     // ---- Events ----
     events: EventType => EventInfo, "Events/CIV4EventInfos.xml", event::read_event;
     event_triggers: EventTriggerType => EventTriggerInfo, "Events/CIV4EventTriggerInfos.xml", event::read_event_trigger;
+    // ---- This game's own rules (not FFH2's) ----
+    cultural_actions: CulturalActionType => CulturalActionInfo, "Gameinfo/CIV4CulturalActionInfos.xml", culture::read_cultural_action;
+    governor_profiles: GovernorProfileType => GovernorProfileInfo, "Gameinfo/CIV4GovernorProfileInfos.xml", governor::read_governor_profile;
+    governor_traits: GovernorTraitType => GovernorTraitInfo, "Gameinfo/CIV4GovernorTraitInfos.xml", governor::read_governor_trait;
+    governor_names: GovernorNameType => GovernorNameInfo, "Gameinfo/CIV4GovernorNameInfos.xml", governor::read_governor_names;
+    combat_roles: CombatRoleType => CombatRoleInfo, "Units/CIV4CombatRoleInfos.xml", engagement::read_combat_role;
 }
 
 /// Lists declared in GlobalTypes.xml that are referenced by type name in XML.
@@ -230,7 +256,7 @@ impl GameData {
 
         // Defines (text defines resolve through the registry).
         let mut define_map = DefineMap::default();
-        for f in ["GlobalDefines.xml", "GlobalDefinesAlt.xml", "PythonCallbackDefines.xml"] {
+        for f in ["GlobalDefines.xml", "GlobalDefinesAlt.xml", "PythonCallbackDefines.xml", "RulesDefines.xml"] {
             define_map.read_file(&read_doc(&xml_dir, f)?, &reg);
         }
 
@@ -241,11 +267,204 @@ impl GameData {
 
         // Pass 2: typed tables.
         let mut gd = GameData::load_tables(&docs, reg, define_map, text);
+        gd.barks = std::fs::read_to_string(data_dir.join("text").join("barks.md")).unwrap_or_default();
         for (name, a, b) in &gd.reg.duplicates {
             gd.warnings.push(format!("type {name} registered as both {a} and {b}"));
         }
         gd.check_enum_orders();
+        gd.derive();
         Ok(gd)
+    }
+
+    /// Fills the derived (non-XML) tables from the loaded ones.
+    fn derive(&mut self) {
+        self.combat_mod_promotions =
+            self.promotions.keys().filter(|&p| self.promotions[p].promotion_combat_mod > 0).collect();
+        // A leader without `iCulturalAggression`: 100, more for a war-eager leader (FfH's
+        // iLimitedWarRand runs from 60, eager, to 300, peaceful) and for a culture lover.
+        let culture_flavor = self.reg.lookup::<FlavorType>("FLAVOR_CULTURE");
+        for info in self.leader_heads.iter_mut() {
+            if info.cultural_aggression < 0 {
+                let flavor = culture_flavor.map_or(0, |f| info.flavor_value.get(f).copied().unwrap_or(0));
+                info.cultural_aggression = (100 + (150 - info.limited_war_rand) / 3 + 2 * flavor).clamp(40, 180);
+            }
+        }
+        self.derive_engagements();
+    }
+
+    /// Engagement combat's derived tables (`unit_roles`, `screen_role`), and the checks the
+    /// resolver relies on (one default role, positive multipliers and HP,
+    /// rows that act exactly when they have an action, one auto-pick place per role).
+    fn derive_engagements(&mut self) {
+        let mut warnings = Vec::new();
+        let defaults: Vec<CombatRoleType> = self.combat_roles.keys().filter(|&r| self.combat_roles[r].default).collect();
+        if defaults.len() != 1 {
+            warnings.push(format!("{} combat roles have bDefault (one expected)", defaults.len()));
+        }
+        for r in self.combat_roles.keys() {
+            let info = &self.combat_roles[r];
+            if info.attack_percent <= 0 || info.defense_percent <= 0 || info.max_hp <= 0 || info.speed < 0 {
+                warnings.push(format!("{}: iAttackPercent, iDefensePercent and iMaxHP must be above 0, iSpeed not below", info.base.type_));
+            }
+            if !(0..=95).contains(&info.dodge) || !(0..=95).contains(&info.crit_bonus) {
+                warnings.push(format!("{}: iDodge and iCritBonus must be in 0..=95", info.base.type_));
+            }
+            // A row acts iff it has an action kind; a role acts from some row (a unit type's own
+            // EngageRows are checked so as they are read).
+            if let Some(problem) = rows_problem(&info.rows) {
+                warnings.push(format!("{}: {problem} (iActions)", info.base.type_));
+            }
+            if info.from_role.is_some() != info.from_promotion.is_some() {
+                warnings.push(format!("{}: FromRole and FromPromotion go together", info.base.type_));
+            }
+        }
+        let promoted: Vec<CombatRoleType> = self.combat_roles.keys().filter(|&r| self.combat_roles[r].from_role.is_some()).collect();
+        let mut picks: Vec<i32> = self.combat_roles.iter().map(|info| info.auto_pick).collect();
+        picks.sort_unstable();
+        picks.dedup();
+        if picks.len() != self.combat_roles.len() {
+            warnings.push("two combat roles have the same iAutoPick".to_string());
+        }
+        if promoted.len() > 1 {
+            warnings.push(format!("{} combat roles have a FromRole (at most one expected)", promoted.len()));
+        }
+        self.screen_role = promoted.first().and_then(|&to| {
+            let info = &self.combat_roles[to];
+            Some((info.from_role?, info.from_promotion?, to))
+        });
+        self.unit_roles =
+            IdxVec::from_fn(self.units.len(), |u| if self.type_engages_on_land(u) { self.type_combat_role(u) } else { None });
+        self.warnings.extend(warnings);
+    }
+
+    /// Whether units of a type can take part in a land engagement once they have strength: a land
+    /// domain (`DOMAIN_LAND`, or `DOMAIN_IMMOBILE`: Guardian Vines). Ships never defend a land plot
+    /// and air units never engage. The type's own strength is not asked: whether a unit fights is
+    /// decided per unit (C++ `CvUnit::canFight`, on `baseCombatStr` / `baseCombatStrDefense`,
+    /// which promotions raise: equipment, Great Commander, Heroic Strength).
+    pub fn type_engages_on_land(&self, u: UnitType) -> bool {
+        matches!(self.units[u].domain_type, Some(DomainType::DOMAIN_LAND) | Some(DomainType::DOMAIN_IMMOBILE))
+    }
+
+    /// The engagement role a unit type's data gives it, its strength and domain aside: its
+    /// `CombatRole`, else the first role whose `DefaultUnitCombats` holds its unit combat and
+    /// whose `DefaultFreePromotion`, if any, it has free (roles with a promotion are tried first,
+    /// then XML order: a recon unit with Marksman free is an Assassin), else the `bDefault` role.
+    /// [`Self::unit_roles`] holds it for every land and immobile type.
+    pub fn type_combat_role(&self, u: UnitType) -> Option<CombatRoleType> {
+        let info = &self.units[u];
+        if info.combat_role.is_some() {
+            return info.combat_role;
+        }
+        if let Some(uc) = info.unit_combat_type {
+            let claims = |r: CombatRoleType| {
+                let role = &self.combat_roles[r];
+                role.default_unit_combats.contains(&uc) && role.default_free_promotion.map_or(true, |p| info.free_promotions[p])
+            };
+            let with_promotion = self.combat_roles.keys().filter(|&r| self.combat_roles[r].default_free_promotion.is_some());
+            let without = self.combat_roles.keys().filter(|&r| self.combat_roles[r].default_free_promotion.is_none());
+            if let Some(r) = with_promotion.chain(without).find(|&r| claims(r)) {
+                return Some(r);
+            }
+        }
+        self.combat_roles.keys().find(|&r| self.combat_roles[r].default)
+    }
+
+    /// The damage spell a unit casts in a formation battle (docs/ENGAGEMENTS.md, "Action kinds
+    /// and reach": SPELL): of the spells with `iDamage > 0` whose prerequisites on the caster it
+    /// meets (`PromotionPrereq1` and `PromotionPrereq2` among its promotions, `UnitPrereq`,
+    /// `UnitClassPrereq` and `UnitCombatPrereq` its type's), the strongest: the highest `iDamage`,
+    /// then the lower id. `None`: it casts the magic bolt.
+    pub fn engage_damage_spell(&self, unit_type: UnitType, has_promotion: impl Fn(PromotionType) -> bool) -> Option<SpellType> {
+        let info = &self.units[unit_type];
+        let mut best: Option<SpellType> = None;
+        for s in self.spells.keys() {
+            let spell = &self.spells[s];
+            let meets = spell.damage > 0
+                && spell.promotion_prereq1.map_or(true, &has_promotion)
+                && spell.promotion_prereq2.map_or(true, &has_promotion)
+                && spell.unit_prereq.map_or(true, |t| t == unit_type)
+                && spell.unit_class_prereq.map_or(true, |c| info.unit_class_type == Some(c))
+                && spell.unit_combat_prereq.map_or(true, |c| info.unit_combat_type == Some(c));
+            if meets && best.map_or(true, |b| spell.damage > self.spells[b].damage) {
+                best = Some(s);
+            }
+        }
+        best
+    }
+
+    // A unit's values in a formation battle: each is its type's own (`iEngageSpeed`,
+    // `iEngageDodge`, `iEngageCritBonus`, `EngageRows` in CIV4UnitInfos.xml), else its role's
+    // (`role`: the unit's own, which promotions can change: `Game::unit_combat_role`), else
+    // nothing (0, no action) for a unit with neither. The rules ask through `Game::unit_engage_*`.
+
+    /// A unit type's speed in a formation battle before first strikes: its `iEngageSpeed`, else
+    /// the role's.
+    pub fn engage_speed(&self, t: UnitType, role: Option<CombatRoleType>) -> i32 {
+        self.units[t].engage_speed.or_else(|| role.map(|r| self.combat_roles[r].speed)).unwrap_or(0)
+    }
+
+    /// A unit type's dodge (points of miss chance on physical actions against it): its
+    /// `iEngageDodge`, else the role's.
+    pub fn engage_dodge(&self, t: UnitType, role: Option<CombatRoleType>) -> i32 {
+        self.units[t].engage_dodge.or_else(|| role.map(|r| self.combat_roles[r].dodge)).unwrap_or(0)
+    }
+
+    /// A unit type's crit bonus (points on its own crit chance): its `iEngageCritBonus`, else the
+    /// role's.
+    pub fn engage_crit_bonus(&self, t: UnitType, role: Option<CombatRoleType>) -> i32 {
+        self.units[t].engage_crit_bonus.or_else(|| role.map(|r| self.combat_roles[r].crit_bonus)).unwrap_or(0)
+    }
+
+    /// What a unit type does from each row, front first, before the extra actions: its
+    /// `EngageRows`, else the role's rows.
+    pub fn engage_rows(&self, t: UnitType, role: Option<CombatRoleType>) -> [RowActions; ROWS] {
+        self.units[t].engage_rows.or_else(|| role.map(|r| self.combat_roles[r].rows)).unwrap_or_default()
+    }
+
+    /// A unit type's best row: the one of its rows ([`Self::engage_rows`]) with the most actions
+    /// (the first such), where a tier 4 unit or a hero gets its extra actions.
+    pub fn engage_best_row(&self, t: UnitType, role: Option<CombatRoleType>) -> usize {
+        rows_best_row(&self.engage_rows(t, role))
+    }
+
+    /// The extra actions in its best row of a unit of type `t`: `ENGAGEMENT_EXTRA_ACTIONS` for a
+    /// type of tier `ENGAGEMENT_EXTRA_ACTION_TIER` or above and for a hero (`hero`: the unit has
+    /// the Hero promotion), else 0.
+    pub fn engage_extra_actions(&self, t: UnitType, hero: bool) -> i32 {
+        if hero || self.units[t].tier >= self.defines.engagement_extra_action_tier {
+            self.defines.engagement_extra_actions
+        } else {
+            0
+        }
+    }
+
+    /// What a unit of type `t` does from each row in a battle: its rows ([`Self::engage_rows`])
+    /// with its extra actions ([`Self::engage_extra_actions`]) in its best row.
+    pub fn engage_actions(&self, t: UnitType, role: Option<CombatRoleType>, hero: bool) -> [RowActions; ROWS] {
+        rows_with_extra_actions(self.engage_rows(t, role), self.engage_extra_actions(t, hero))
+    }
+
+    /// A flanker: one of a unit type's rows ([`Self::engage_rows`]) charges, so anti-flank units
+    /// in its reach are taken first.
+    pub fn engage_flanks(&self, t: UnitType, role: Option<CombatRoleType>) -> bool {
+        rows_charge(&self.engage_rows(t, role))
+    }
+
+    /// The change to each side's engagement slots on a plot (added to `ENGAGEMENT_SLOTS_BASE`):
+    /// `ENGAGEMENT_SLOTS_HILLS` on hills, plus the feature's `iEngagementSlotsChange` where it is
+    /// non-zero, else, on a flat plot, the terrain's. So the terrain's "open land" change counts only
+    /// on a flat plot without a forest or jungle, and a feature replaces it.
+    pub fn engagement_slots_change(&self, terrain: TerrainType, feature: Option<FeatureType>, hills: bool) -> i32 {
+        let feature_change = feature.map_or(0, |f| self.features[f].engagement_slots_change);
+        let cover = if feature_change != 0 {
+            feature_change
+        } else if hills {
+            0
+        } else {
+            self.terrains[terrain].engagement_slots_change
+        };
+        (if hills { self.defines.engagement_slots_hills } else { 0 }) + cover
     }
 
     /// Verifies that data-defined tables whose order is hard-coded in C++ enums match.

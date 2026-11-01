@@ -1,0 +1,288 @@
+# Armies (`GAMEOPTION_ARMIES`)
+
+This game's own rules, not FFH2's: the second system of the owner's design spec "FfH Culture
+Actions & Army Combat" (2026-10-29), "Armies and recruitment", with the owner's redesign of
+recruitment (2026-10-31): "armies (as directed by the player) requisition soldiers from cities,
+which interrupts normal production", and the recruits "just appear as normal but are
+uncontrollable: they just go that direction". Land combat units serve in named armies or in a
+city's garrison; an army requisitions soldiers from the cities its owner picks for it, and a unit
+bound elsewhere marches there on the map. This file says what was built, how the spec's open points
+and edge cases were decided, and what is left.
+
+| Phase (spec) | What | Status |
+|---|---|---|
+| 4 Armies and recruitment | armies, garrisons, build destinations, supply, form / split / join / merge / garrison / rename / disband / upgrade all, target size, AI, UI | done |
+| 5 Governors | (the "Feed army" mode, replaced by requisition on 2026-10-31) | done |
+| Requisition and marching recruits (2026-10-31) | rules, saves, AI, UI | done |
+| 6 Engagement combat | formation battles (revision 4: no stances), commander | in progress: formation battles in the rules (docs/ENGAGEMENTS.md, 2026-10-31) |
+| 7 FfH layer | Incite Mutiny (cultural action against an army), commander auras | later |
+
+Code: rules `crates/ffh-core/src/army/` (`mod.rs`: armies, garrisons, the sync, the commands,
+supply, destinations; `requisition.rs`; `march.rs`; hooks: the production queue's train order and
+`city_push_order` in `city/turn.rs`, the player turn and its units' turn in `player/turn.rs`,
+`unit_convert` and `unit_kill` in `unit/lifecycle.rs`, `city_kill`, the controller's
+`requisition_unit`); tuning `data/xml/RulesDefines.xml` (`ARMY_*`); AI `crates/ffh-ai/src/armies.rs` (the main
+army's requisition, `requisition_unit`); UI `crates/ffh-play/src/view/armies.rs`, the unit panel's army
+actions (`view/units.rs`), the city query's `recruit` and its queue's `dest`,
+`assets/app/armies.js`. Tests: `crates/ffh-core/tests/armies.rs`, `crates/ffh-ai/src/armies.rs`;
+the harness checks that a marching unit is in no army and that requisition orders lead their
+queue (`ffh_harness::check`).
+
+## The option
+
+`GAMEOPTION_ARMIES` is a visible game option with `bDefault` 1, like the cultural actions: the
+browser's new-game screen starts with it ticked, and everything else (`ffh autoplay`, `ffh stats`,
+the AI batches, soaks) plays without it unless asked (`--option GAMEOPTION_ARMIES`). Off, nothing of
+this runs: no unit has an army or marches, no army requisitions, the save carries empty lists.
+
+## Rules
+
+**Army units.** Land units with a strength, except mages (`UNITCOMBAT_ADEPT`), recon units
+(`UNITCOMBAT_RECON`), heroes (`PROMOTION_HERO`: a unit that has it, and so a unit type that gives
+it for free, whose orders have no destination and which no requisition picks), summons (a
+duration) and the barbarians' units.
+Ships, air units, workers, settlers and missionaries are not army units either. The others move on
+their own, or along with an army's group (a hero travelling with an army is not in it: the
+commander slot is phase 6).
+
+**Armies.** An army is a persistent, named container (`Army`, `Unit::army`): "1st Army", "2nd
+Army", ... (the lowest free number), renamed at will. Its units are kept in one selection group, so
+it moves as one at the speed of its slowest member, as a Civ4 group does; several armies may share
+a plot. An army unit on its own outside a city (after a split, a move out of a city) is a one-unit
+army.
+
+**Garrisons.** An army unit in one of its owner's cities, in no army and not marching, is in that
+city's garrison. The garrison and every army on the plot defend the city together (Civ4 already
+picks the defender among every unit on the plot; a marching recruit on the plot defends too).
+
+**The army sync.** Units change groups for many reasons (the human's Group and Split buttons, a
+unit's move, the AI's grouping), so after every human command, after each army command and in each
+player's turn processing (Civ4's doTurn) the armies are settled with the groups: each group of army
+units has one army; the oldest group holding units of an army keeps that army, so a part that split
+off becomes a new army; a group whose units had none gets a new one (a garrison group stays the
+garrison); an army without units is gone. Marching recruits are left out: they are in no army
+until they arrive.
+
+**Commands** (the unit panel's Army section; each one click):
+
+- *Form a new army* of the selected units (from armies or a garrison).
+- *Split into a new army*: some units of one army.
+- *Join the N-th Army*: the selected units join an army on their plot (garrison units included);
+  *Merge into* when the whole army is selected. The merged army's recruits on the way, its
+  requisition (its cities join the other's list) and production orders, and the cities' defaults
+  naming it go to the army it joined.
+- *Join the garrison* of the city they stand in.
+- *Disband*: the units march to the nearest city (a go-to order) and join its garrison when they
+  arrive; its recruits on the way go to that garrison, its requisition ends (its orders are
+  withdrawn). In a city it is *Join the garrison*.
+- *Upgrade all*: each unit takes its best upgrade (the strongest, then the dearest), the most
+  experienced first, while the gold lasts.
+- *Rename*, *Target size* and *Requisition from* (the Armies screen): the size the army is meant
+  to have, the cities it requisitions from.
+
+**Recruitment.** Every production order for an army unit has a destination (`OrderData::dest`):
+the city's default (`City::recruit_default`, itself by default the city's own garrison), the
+city's garrison, another city's garrison, or an army. To the city's own garrison the unit stays, as
+without armies. Otherwise it is created in the city as any unit and marches there (below). An army
+standing in the producing city takes the unit at once. Governed cities' units stay in their
+garrison (docs/GOVERNORS.md); their only orders bound elsewhere are requisitions.
+
+**Requisition** (`army/requisition.rs`). An army requisitions soldiers from the cities its owner
+picks for it (`Army::requisition`, in the order they were added): any of the owner's cities,
+directly ruled or governed, the capital included. A city lost, traded, razed or flipped leaves
+every list. Requisition needs a target size: an army with none (0) requisitions nothing.
+
+- *The shortfall*: the target size less the army's units, its recruits marching to it, its
+  requisition orders in production and the other orders bound for it at the head of a city's queue
+  (the first order that is not a requisition: what the city builds next, its destination or the
+  city's default naming the army).
+- *Once a turn*, in the owner's turn processing before its cities produce (so a new requisition
+  takes this turn's production): orders without a reason any more (the army gone or disbanding,
+  the city released) are withdrawn; then for each army, in formation order, while its shortfall is
+  positive, a picked city without a requisition order for it gets one, one unit per city at a
+  time, the city whose unit would join soonest first (its production turns there plus its march,
+  estimated over land; a city out of reach by land last; ties: the order the cities were picked
+  in). Orders beyond the shortfall (the army filled up another way, the target lowered) are
+  withdrawn, those that would join last first. What was put into a withdrawn order stays with the
+  unit type, as for any order taken off a queue.
+- *The order* is a train order at the front of the city's queue, flagged as a requisition
+  (`OrderData::requisition`, its destination the army): it interrupts what the city was building,
+  which keeps its progress and resumes after it. Requisition orders stay at the front: an order
+  pushed to the front goes behind them, and replacing what a city builds replaces the first order
+  behind them. The player cannot take a requisition order off the queue by hand (the city screen
+  says why: release the city from the army's requisition on the Armies screen); a governed city's
+  queue is the governor's anyway, and the requisition goes ahead of the governor's choice.
+- *The unit* is a controller decision (`Controller::requisition_unit`); the rules' default, the
+  human's: siege (`UNITCOMBAT_SIEGE`) while siege is less than a third of the army (its recruits
+  marching to it and its requisition orders counted), else the strongest unit against cities (a
+  unit that can take the city attack role: strength times its city attack bonus), else the
+  strongest attacker; only army units the city can train, and no world or national unit (a class
+  with an instance limit: a hero, a Paladin, a Knight are few, and the player places them; ties:
+  the cheaper). A picked city that can train none is skipped that turn. The AI's: the governors'
+  old feeding choice (`ffh-ai armies::requisition_unit`).
+
+**Marching recruits** (`army/march.rs`). A unit bound elsewhere is created in the producing city as
+a normal unit (build effects, experience, promotions, upkeep, unit class limits: all as for any
+unit) and marches (`Unit::march`: its destination, the turns without progress, the turn it left,
+the city it came from, whether it was diverted): the rules move it, not its owner.
+
+- *Movement*: once a turn at the end of its owner's turn (the start of its turn processing, once
+  the armies are settled with the groups its owner's moves changed, before the requisition and the
+  cities' production), it moves with the moves it kept through the turn along the rules' path (as
+  a go-to order would: terrain, roads, borders, war; recomputed every step) to where its
+  destination is after its owner moved (an army's plot, recomputed every turn; a garrison's city).
+  Through the turn it holds (put on hold again as its owner's units get their moves), so neither
+  the human nor the AI moves it and it waits for no orders. A recruit trained this turn first
+  moves at the end of the next one: as many moving turns as any new unit has. It never attacks
+  and never declares war: a step that would be an attack, or that it cannot simply move into, is
+  not taken, and the path goes around visible enemy units when it can. Deterministic: the units in
+  their owner's order, the path finder's own tie-breaks.
+- *Arrival*: on its destination's plot it arrives at once: in the destination city it joins the
+  garrison (in no army); on the army's plot it joins the army, whose moves this turn are over (an
+  army that came to it during the turn takes it as its march begins; a last pass before the army
+  sync takes any recruit left on its destination's plot). It is an ordinary unit from then on. A
+  message each.
+- *Supply gates progress*: a recruit bound for an army advances only while the army is in supply;
+  otherwise it waits where it is.
+- *No way there*: a turn without progress (the army out of supply, no path, the way blocked, it
+  cannot move) counts; after `ARMY_TRANSIT_STALL_TURNS` (5) such turns in a row it marches to the
+  nearest city of its owner it can reach by the rules' path (not the garrison it stalled on) and
+  joins its garrison on arrival. A recruit already diverted once that stalls again for as long, or
+  one with no city it can reach, stops marching where it stands and is an ordinary unit again
+  (a message), so no recruit stays out of its owner's hands for ever.
+- *Destination gone*: the army destroyed (or emptied into a garrison) → at once to the nearest
+  garrison it can reach; the army disbanded → to the city the army marches to; the army merged
+  into another → to that army; the destination city lost → the nearest other garrison.
+- *A real unit*: it can be attacked and defends itself; it can die on the way (a message, the
+  telemetry counts it); an upgrade or a conversion that keeps its owner keeps its march. It is in no
+  army and no garrison while marching (the army sync leaves it out, army commands refuse it).
+- *Uncontrollable*: the rules say so (`Game::unit_march`, `unit_march_refusal`: "marching to the
+  2nd Army"); the human's command layer refuses its orders and the AI leaves it alone. It can be
+  selected to look at.
+- Messages: setting out ("Ithralia's Axeman marches to the 2nd Army."), waiting (the first turn of a
+  stall, with why), diverted, arrived, stopped, killed on the way. Telemetry: `march` (`sent`,
+  `arrived` with the turns, `diverted`, `stopped`, `killed`) and `requisition` (`placed`,
+  `withdrawn`), docs/TELEMETRY.md.
+
+**Supply.** An army is in supply within `ARMY_SUPPLY_RANGE` (3) plots of a plot of its owner's
+plot groups that holds one of its cities: Civ4's trade network (roads, rivers, coasts once known;
+inside one's borders a plot needs a road or a river, as for resources). So supply follows the road
+network: building roads behind an advance extends it, pillaging them or taking a city cuts it, and
+enemy territory is never part of one's network (war cuts trade there). Out of supply only
+reinforcement pauses: no attrition in v1 (the spec).
+
+## Edge cases decided (beyond the spec's text)
+
+- **The garrison does not move, but its units do.** The spec's garrison "cannot move"; here a
+  garrison unit the human moves out of its city leaves the garrison and forms (or with others,
+  joins) an army as it leaves. Forbidding the move would only add a click (Form army, then move):
+  the move is the transfer.
+- **An army entering a city stays an army.** It does not dissolve into the garrison (armies pass
+  through cities); *Join the garrison* is one click.
+- **Armies are their groups.** Civ4's own Group, Split and Ctrl-click selections still work and
+  keep the armies consistent through the sync: grouping two armies merges them (the older army
+  keeps its name and takes the other's recruits, requisition and orders), splitting a group splits
+  its army. So no unit is ever in two places, and nothing a Civ4 player is used to stops working.
+- **No path to an army is a wait, not a loss.** An army aboard ships has no land path for a few
+  turns, and diverting at once would throw away every recruit at each crossing; so every stall
+  waits `ARMY_TRANSIT_STALL_TURNS` turns, for an army or a garrison alike.
+- **A destroyed army's orders fall back** to their city's default (and a city default naming it
+  to the city's own garrison), so a city never trains for an army that is gone; its requisition
+  orders are withdrawn.
+- **Repeat and requisition.** Civ4's repeat flag (`save`) keeps an order's destination when it
+  comes back; a requisition order never repeats (the army requisitions again while it is short).
+- **Requisition orders lead the queue**, whatever pushes orders: the C++ "push to the front" and
+  "replace what is built" (`pushOrder`'s `bAppend` false and `bPop`) act behind them, so neither
+  the player's city screen nor an AI's or governor's choice displaces one; only the requisition
+  withdraws them.
+- **One requisition order per city and army.** A city picked by two armies serves both (each order
+  at the front, in the order they were placed); an army takes one unit from a city at a time, so a
+  fast city does not fill it alone while others stand idle.
+- **Recruits march at the end of their owner's turn.** They march after their army moved, toward
+  where it stands then, and join it at once on its plot. Marching as the turn began, a recruit
+  stopped on the army's plot of that moment and the army then moved on: an army that moves every
+  turn was never caught, even by a faster recruit or one on roads, until it halted for a whole
+  turn. And a recruit joining with its moves spent mid-turn would hold the army back (Civ4 moves a
+  group only with the units that can move). At the turn's end the army's moves are over, so a
+  recruit joins with nothing held back, and the cities produce after the march (a recruit trained
+  this turn first moves at the end of the next, as any new unit first moves in the next turn).
+- **A diverted recruit stalls once.** A second stall of `ARMY_TRANSIT_STALL_TURNS` turns (or no
+  city it can reach) ends its march where it stands: an ordinary unit, its owner's again, rather
+  than a recruit hopping between blocked cities out of its owner's hands.
+- **Upgrades and conversions keep the march** when the unit keeps its owner; a unit that changes
+  hands (an FfH domination) is lost on the way (counted as killed).
+
+## Open points for the owner
+
+- **Supply follows roads.** Civ4's plot groups need a road or a river even inside one's borders,
+  so an army three plots beyond the last road is out of supply in its own territory. That is what
+  the spec's "connected to one of its owner's cities" means in Civ4 terms, and it makes roads
+  matter; widening it to "any plot inside one's borders" is one line if the owner prefers.
+- **A recruit marches alone.** Recruits bound for one army march each on its own path; marching
+  together (a convoy that defends itself better) would be a next step if lone recruits are
+  picked off too often. They are, in places: about one in twelve dies on the way, and in one
+  measured game a civilization lost 18 of its 24 recruits, cheap Warriors marching one a turn to an
+  army at war.
+
+## AI (summary; docs/AI.md "Armies")
+
+The AI's groups become armies through the sync, so its movement logic drives each army unchanged.
+What it adds is logistics. At war or preparing one, its main field army is the largest army of two
+or more units in supply; it stays the main one while it is at least two thirds the size of the
+largest, and out of supply there is no main army that turn. Its target size is the army the war
+needs (`diplomacy::army_needed_for_war`), and no other army has one. While the main army is short,
+it requisitions from as many cities as it lacks units: the soonest to deliver (training plus the
+march by land, within 20 turns), governed cities first. A directly ruled city is used only when
+what it would interrupt is worth less: not a wonder, ritual, settler, worker, hero or ship, not the
+last turns of a build, and not an attacker already bound for the army; never a city that needs its
+production for its own defence. At peace there is no requisition. The unit is siege up to a third
+of the army, then the best city attacker (`armies::requisition_unit`, the AI's
+`Controller::requisition_unit`). The directly ruled cities' own attackers march to the main army
+too; the rules count them in its shortfall, so nothing counts twice. Defenders stay in their
+garrison. Marching recruits are the rules' to move: the AI gives them no orders, takes none into
+its stacks, escorts or transports, does not count them as defenders, and keeps requisition orders
+when it clears a queue. Switches: `ARMIES` and `REQUISITION` (`FFH_AI_*_OFF`).
+
+Measured (8 civs, standard map, 400 turns, seeds 1-6, the three options; totals; the march at the
+turn's end, against the same binary with `FFH_AI_REQUISITION_OFF=ALL`): recruits sent 1339
+(requisition off 877; the transit before marching 1013), joined 1188 in 4.4 turns on average,
+diverted 123, killed on the way 111 (8%; 6% with the requisition off). Requisition orders placed
+1045, withdrawn 510. In seed 1, 25 of its 41 withdrawals came from the main army changing (its
+losses made another army the largest), and about half of those were placed again the same turn in
+the same city for the new main army, the production kept with the unit type; the rest were orders
+beyond the shortfall (the target size fell, or the army filled up another way). Cities taken by
+the civilizations' conquest: 110, against 121 with the requisition off (84 before marching). The
+difference is seed 1 alone (5 against 22; the other seeds split both ways, from -5 to +10), so it
+is within the seed noise. Most of that seed's losses on the way are one civilization's: a directly
+ruled city trained a Warrior almost every turn for its army at war, and 18 of its 24 recruits died
+marching. Most were the city's own units bound for the army (its build destination), which the
+requisition-off game sends as well; the two games' wars diverge, and there that civilization lost
+1 of 12. `ffh bench` (exclusive, seeds 1 and 3, two rounds alternating) is no slower than before
+marching: 36 against 43 ms a turn on seed 1, 48 against 51 on seed 3.
+
+## UI (ffh-play)
+
+- **Armies screen** (F5, the menu's Armies): each army has its name (editable), units, place (a
+  click selects it on the map), supply, target size against its units, recruits marching and units
+  in training, Upgrade all and Disband. Its **requisition** lists the cities it requisitions from,
+  how many more it wants and its orders in production. "Requisition from…" has a checkbox per city
+  with the unit the city would train, its training turns and its march to the army
+  (`army_requisition`; "Release all" sends `army_requisition_set` with no cities). Below come the
+  recruits marching to the army: where from, where they are (a click selects one), turns away or
+  how long they have waited; then each garrison with the recruits marching to it.
+- **City screen.** An army's requisition order leads the queue as "Requisitioned by the 2nd Army",
+  with no remove button and no destination selector (`pop_order` refuses it). Other land-unit
+  orders keep their destination selector (the city's default, this city's garrison, another city's
+  garrison, an army with its size). Under the queue: the city's default destination, its garrison
+  and the armies requisitioning from it. Governed cities have no mode selector; F9 shows the armies
+  requisitioning from each city.
+- **Marching recruits** can be selected to look at. The unit panel says "Marching to the 2nd Army
+  (n turns)" (or that it waits, or has no way there now) and offers no orders; every unit command
+  refuses it, naming the destination, and it is never among the units waiting for orders. On the
+  iso and flat maps an ochre double chevron replaces its moves pip (the HD-2D map has no mark
+  yet), and the plot tooltip says where it goes.
+- **Unit panel.** Each unit's row shows its army (amber; red when out of supply) or "garrison".
+  With a whole army selected, a line gives its size and target, its recruits on the way and its
+  supply, with a link to the Armies screen.
+- **Messages**: a recruit setting out, waiting, diverted, arrived, stopped and killed on the way; a
+  requisition placed or withdrawn.

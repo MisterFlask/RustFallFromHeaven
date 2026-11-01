@@ -26,7 +26,6 @@ use ffh_core::structs::*;
 use ffh_data::*;
 
 use crate::decision::{self, Decision};
-use crate::guard::QueryGuard;
 use crate::journal::{Journal, Line, Stamp};
 use crate::json::Json;
 use crate::query::{Ctx, Query, QueryErr, UiState};
@@ -49,6 +48,9 @@ pub const POLICIES: &[(&str, Policy)] = &[
     ("name", Policy::Fixed),
     ("play_turn", Policy::Advisor),
     ("choose_production", Policy::Deferred),
+    // (the rules' default unit for an army's requisition: the human picks the cities, not the unit)
+    ("requisition_unit", Policy::Fixed),
+    ("govern_cities", Policy::Advisor),
     ("choose_research", Policy::Deferred),
     ("ai_choose_research", Policy::Advisor),
     ("choose_free_tech", Policy::Blocking),
@@ -70,6 +72,8 @@ pub const POLICIES: &[(&str, Policy)] = &[
     ("crusade_draft_pick", Policy::Blocking),
     ("consider_loan", Policy::Blocking),
     ("choose_loan_units", Policy::Advisor),
+    ("hook", Policy::Advisor),
+    ("assign_working_plots", Policy::Advisor),
 ];
 
 /// An answer to a blocking decision.
@@ -84,7 +88,7 @@ pub enum Answer {
 /// Answers blocking decisions (design §2.4).
 pub trait Answerer: Send + Sync {
     /// On the game thread, inside a rules call, with the `&Game` the rules handed the
-    /// controller (under a `QueryGuard`: reads are free).
+    /// controller (reads of `&Game` have no side effects).
     fn ask(&self, g: &Game, d: &Decision) -> Answer;
 
     /// [`Answerer::ask`] with a reader that also answers the protocol's queries, as a client
@@ -95,8 +99,7 @@ pub trait Answerer: Send + Sync {
     }
 }
 
-/// What an [`Answerer`] can read while a blocking decision is open: the game (under the
-/// decision's `QueryGuard`) and the queries of the protocol, from the deciding player's side.
+/// What an [`Answerer`] can read while a blocking decision is open: the game and the queries of the protocol, from the deciding player's side.
 /// The message log, the turn report and the saves list are not available inside a rules call
 /// (`busy`); a query that panics is caught (design §2.4) and answered `busy`.
 pub struct DecisionReader<'a> {
@@ -107,7 +110,7 @@ pub struct DecisionReader<'a> {
 }
 
 impl DecisionReader<'_> {
-    /// The game, as the rules handed it to the controller (guarded).
+    /// The game, as the rules handed it to the controller.
     pub fn game(&self) -> &Game {
         self.g
     }
@@ -128,6 +131,7 @@ impl DecisionReader<'_> {
             in_decision: true,
             saves_dir: None,
             ui: self.ui,
+            observe: None,
         };
         std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| crate::query::run(self.g, &ctx, q)))
             .unwrap_or_else(|_| Err(QueryErr::Busy(format!("the {} query failed during the decision (see the panic message)", q.name()))))
@@ -268,8 +272,7 @@ impl HumanController {
         // the decision): the decision's view is a new one, and so is the view after it.
         UiState::lock(&self.ui).view_version += 1;
         let answer = {
-            let guard = QueryGuard::new(g);
-            let reader = DecisionReader { g: &guard, shared: &self.shared, ui: &self.ui, decision: &d };
+            let reader = DecisionReader { g, shared: &self.shared, ui: &self.ui, decision: &d };
             self.answerer.ask_with(&reader, &d)
         };
         *self.shared.open_decision.lock().unwrap() = None;
@@ -288,11 +291,10 @@ impl HumanController {
         option
     }
 
-    /// An advisor computation shown to the human as a suggestion: run under a guard, so it is
+    /// An advisor computation shown to the human as a suggestion: a read of `&Game`, so it is
     /// free of side effects on the game (C++ never computes it for a human).
     fn suggest<R>(&self, g: &Game, f: impl FnOnce(&Game) -> R) -> R {
-        let guard = QueryGuard::new(g);
-        f(&guard)
+        f(g)
     }
 }
 
@@ -314,6 +316,20 @@ impl Controller for HumanController {
                 }
             }
         }
+    }
+
+    /// This game's armies: a requisition's unit, the rules' default for the human (the AI's while
+    /// it plays the human's civilization).
+    fn requisition_unit(&self, g: &Game, c: CityId, a: ArmyId) -> Option<(UnitType, UnitAIType)> {
+        if !g.players[g.cities[c].owner].human {
+            return self.advisor.requisition_unit(g, c, a);
+        }
+        g.requisition_unit_default(c, a)
+    }
+
+    /// This game's governors: the governors of the human's governed cities act on their own.
+    fn govern_cities(&self, g: &mut Game, p: PlayerId) {
+        self.advisor.govern_cities(g, p);
     }
 
     /// C++ BUTTONPOPUP_CHOOSEPRODUCTION (deferred: the empty queue is `pending.idle_cities`);
@@ -523,5 +539,13 @@ impl Controller for HumanController {
     /// The units of a loan the human agreed to lend: the advisor picks them.
     fn choose_loan_units(&self, g: &Game, p: PlayerId, terms: &ffh_core::crusade::loan::LoanTerms) -> Vec<UnitId> {
         self.advisor.choose_loan_units(g, p, terms)
+    }
+
+    fn hook(&self, g: &mut Game, h: ffh_core::controller::AiHook) {
+        self.advisor.hook(g, h)
+    }
+
+    fn assign_working_plots(&self, g: &mut Game, c: CityId) -> bool {
+        self.advisor.assign_working_plots(g, c)
     }
 }

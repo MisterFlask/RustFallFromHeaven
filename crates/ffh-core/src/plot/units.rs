@@ -5,6 +5,8 @@
 use super::{ConstPlotUnitFunc, PlotUnitFunc};
 use crate::game::Game;
 use crate::ids::*;
+use crate::defs::INVALID_PLOT_COORD;
+use crate::map::coord_range;
 use crate::utils::{final_improvement_upgrade, get_sign};
 use ffh_data::*;
 
@@ -317,6 +319,10 @@ impl Game {
 
     /// C++ `CvPlot::isVisibleEnemyDefender`.
     pub fn plot_is_visible_enemy_defender(&self, p: PlotIdx, unit: UnitId) -> bool {
+        // (No unit to check: skip the side-effect-free `isAlwaysHostile` argument.)
+        if self.map.plots[p].units.is_empty() {
+            return false;
+        }
         let owner = self.units[unit].owner.i();
         let always_hostile = self.unit_is_always_hostile(unit, Some(p)) as i32;
         self.plot_plot_check(p, Game::puf_can_defend_enemy, owner, always_hostile, None, None, Some(Game::puf_is_visible), owner, -1)
@@ -335,6 +341,10 @@ impl Game {
 
     /// C++ `CvPlot::getNumVisibleEnemyDefenders`.
     pub fn plot_get_num_visible_enemy_defenders(&self, p: PlotIdx, unit: UnitId) -> i32 {
+        // (No unit to count: skip the side-effect-free `isAlwaysHostile` argument.)
+        if self.map.plots[p].units.is_empty() {
+            return 0;
+        }
         let owner = self.units[unit].owner.i();
         let always_hostile = self.unit_is_always_hostile(unit, Some(p)) as i32;
         self.plot_plot_count(p, Some(Game::puf_can_defend_enemy), owner, always_hostile, None, None, Some(Game::puf_is_visible), owner, -1)
@@ -342,6 +352,10 @@ impl Game {
 
     /// C++ `CvPlot::getNumVisiblePotentialEnemyDefenders`.
     pub fn plot_get_num_visible_potential_enemy_defenders(&self, p: PlotIdx, unit: UnitId) -> i32 {
+        // (No unit to count: skip the side-effect-free `isAlwaysHostile` argument.)
+        if self.map.plots[p].units.is_empty() {
+            return 0;
+        }
         let owner = self.units[unit].owner.i();
         let always_hostile = self.unit_is_always_hostile(unit, Some(p)) as i32;
         self.plot_plot_count(
@@ -365,6 +379,10 @@ impl Game {
 
     /// C++ `CvPlot::isVisibleEnemyUnit(const CvUnit*)`.
     pub fn plot_is_visible_enemy_unit_for_unit(&self, p: PlotIdx, unit: UnitId) -> bool {
+        // (No unit to check: skip the side-effect-free `isAlwaysHostile` argument.)
+        if self.map.plots[p].units.is_empty() {
+            return false;
+        }
         let owner = self.units[unit].owner.i();
         let always_hostile = self.unit_is_always_hostile(unit, Some(p)) as i32;
         self.plot_plot_check(p, Game::puf_is_enemy, owner, always_hostile, None, None, Some(Game::puf_is_visible), owner, -1).is_some()
@@ -455,7 +473,8 @@ impl Game {
     /// C++ `CvPlot::isValidRoute`.
     pub fn plot_is_valid_route(&self, p: PlotIdx, unit: UnitId) -> bool {
         if self.plot_is_route(p) {
-            if !self.unit_is_enemy(unit, self.plot_get_team(p), Some(p)) || self.unit_is_enemy_route(unit) {
+            // (C++ tests `!isEnemy(..) || isEnemyRoute()`; both are pure, the cheap one goes first.)
+            if self.unit_is_enemy_route(unit) || !self.unit_is_enemy(unit, self.plot_get_team(p), Some(p)) {
                 return true;
             }
         }
@@ -529,7 +548,9 @@ impl Game {
         let route_cost;
         let route_flat_cost;
         let unit_team = self.unit_get_team(unit);
-        let valid_routes = self.plot_is_valid_route(from_plot, unit)
+        // `isValidRoute(pToPlot)` needs a route on it: test that first (pure checks, same result).
+        let valid_routes = self.map.plots[p].route_type.is_some()
+            && self.plot_is_valid_route(from_plot, unit)
             && self.plot_is_valid_route(p, unit)
             && (self.team_is_bridge_building(unit_team)
                 || !self.plot_is_river_crossing(from_plot, self.direction_xy_plots(from_plot, p)));
@@ -565,18 +586,26 @@ impl Game {
     }
 
     /// C++ `CvPlot::defenseModifier` (`bHelp` dropped: it reads the active team's revealed
-    /// improvement for help text).
+    /// improvement for help text): the sum of [`Game::plot_defense`].
+    #[inline]
     pub fn plot_defense_modifier(&self, p: PlotIdx, defender: Option<TeamId>, ignore_building: bool) -> i32 {
+        self.plot_defense(p, defender, ignore_building).total()
+    }
+
+    /// The parts of the plot's defense modifier for `defender`'s units (C++
+    /// `CvPlot::defenseModifier`; an engagement's breakdown of Dv lists them).
+    pub fn plot_defense(&self, p: PlotIdx, defender: Option<TeamId>, ignore_building: bool) -> PlotDefense {
         let d = self.d;
         let plot = &self.map.plots[p];
+        let mut parts = PlotDefense::default();
 
-        let mut modifier = match plot.feature_type {
+        parts.cover = match plot.feature_type {
             None => d.terrains[assigned_terrain(self, p)].defense_modifier,
             Some(f) => d.features[f].defense_modifier,
         };
 
         if self.plot_is_hills(p) {
-            modifier += d.defines.hills_extra_defense;
+            parts.hills = d.defines.hills_extra_defense;
         }
 
         // (bHelp: the active team's revealed improvement instead)
@@ -586,30 +615,128 @@ impl Game {
             if let Some(defender) = defender {
                 let plot_team = self.plot_get_team(p);
                 if plot_team.is_none() || self.team_is_friendly_territory(defender, plot_team) {
-                    modifier += d.improvements[improvement].defense_modifier;
+                    parts.improvement = d.improvements[improvement].defense_modifier;
                 }
             }
         }
 
         // (C++ `if (!bHelp)`)
         if let Some(city) = plot.plot_city {
-            modifier += self.city_defense_modifier(city, ignore_building);
+            parts.city = self.city_defense_modifier(city, ignore_building);
         }
         //FfH: Added by Kael
         else if let Some(defender) = defender {
             let plot_team = self.plot_get_team(p);
             if plot_team.is_none() || self.team_is_friendly_territory(defender, plot_team) {
-                modifier += self.plot_get_range_defense(p, defender, 3, false, true);
+                parts.range = self.plot_get_range_defense(p, defender, 3, false, true);
             }
         }
         //FfH: End Add
 
-        modifier
+        parts
     }
 
     /// C++ `CvPlot::getRangeDefense` (FFH): best defense/range-defense modifier of friendly
     /// improvements within `range` (`final_` = C++ `bFinal`: use final upgrades).
+    ///
+    /// The result is the largest candidate modifier among the window's plots that pass the
+    /// checks (owned by `defender`'s team, improved, no enemy unit), or 0. Every check is a pure
+    /// read, so the order of the visits and skipping checks do not change it: this walks the
+    /// window row by row (rows are contiguous in `map.plots`), computes the wrapped columns and
+    /// rows once (`Map::plot_xy` wraps and bounds each axis on its own), and skips the team and
+    /// unit checks of a plot whose candidate modifier cannot raise the best one.
     pub fn plot_get_range_defense(&self, p: PlotIdx, defender: TeamId, range: i32, final_: bool, exclude_center: bool) -> i32 {
+        const MAX_FAST_RANGE: i32 = 3;
+        const WINDOW: usize = (2 * MAX_FAST_RANGE + 1) as usize;
+        if !(0..=MAX_FAST_RANGE).contains(&range) {
+            return self.plot_get_range_defense_cpp(p, defender, range, final_, exclude_center);
+        }
+
+        let d = self.d;
+        let map = &self.map;
+        let mut best_modifier = 0;
+        let (x, y) = map.xy(p);
+        let n = (2 * range + 1) as usize;
+
+        // Map x and row start (map y * width) of each offset, -1 off the map: the two axes of
+        // `Map::plot_xy(x + dx, y + dy)`.
+        let mut cols = [-1i32; WINDOW];
+        let mut rows = [-1i32; WINDOW];
+        for i in 0..n {
+            let delta = i as i32 - range;
+            let (cx, cy) = (x + delta, y + delta);
+            if cx != INVALID_PLOT_COORD {
+                let mx = coord_range(cx, map.grid_width, map.wrap_x);
+                if mx >= 0 && mx < map.grid_width {
+                    cols[i] = mx;
+                }
+            }
+            if cy != INVALID_PLOT_COORD {
+                let my = coord_range(cy, map.grid_height, map.wrap_y);
+                if my >= 0 && my < map.grid_height {
+                    rows[i] = my * map.grid_width;
+                }
+            }
+        }
+
+        for (j, &row) in rows[..n].iter().enumerate() {
+            if row < 0 {
+                continue;
+            }
+            let dy = j as i32 - range;
+            for (i, &col) in cols[..n].iter().enumerate() {
+                if col < 0 {
+                    continue;
+                }
+                let dx = i as i32 - range;
+                let loop_plot = PlotIdx((row + col) as u32);
+                let plot = &map.plots[loop_plot];
+                let Some(mut improvement) = plot.improvement_type else {
+                    continue;
+                };
+                let Some(loop_owner) = plot.owner else {
+                    continue;
+                };
+
+                if final_ {
+                    if let Some(final_improvement) = final_improvement_upgrade(d, improvement, 0) {
+                        improvement = final_improvement;
+                    }
+                }
+
+                let info = &d.improvements[improvement];
+                let modifier = if dx == 0 && dy == 0 {
+                    if exclude_center {
+                        0
+                    } else {
+                        info.defense_modifier
+                    }
+                } else if dx.abs() <= info.range && dy.abs() <= info.range {
+                    info.range_defense_modifier
+                } else {
+                    0
+                };
+                if modifier <= best_modifier {
+                    continue;
+                }
+
+                // `getTeam() == eDefender` (the plot is owned), then no enemy unit on it.
+                if self.players[loop_owner].team == defender
+                    && self
+                        .plot_plot_check(loop_plot, Game::puf_is_enemy, loop_owner.i(), false as i32, None, None, None, -1, -1)
+                        .is_none()
+                {
+                    best_modifier = modifier;
+                }
+            }
+        }
+
+        best_modifier
+    }
+
+    /// The C++ `CvPlot::getRangeDefense` loop as written, for ranges outside the fixed window of
+    /// [`Game::plot_get_range_defense`] (0..=3; every caller passes 3).
+    fn plot_get_range_defense_cpp(&self, p: PlotIdx, defender: TeamId, range: i32, final_: bool, exclude_center: bool) -> i32 {
         let d = self.d;
         let mut best_modifier = 0;
         let (x, y) = self.map.xy(p);
@@ -1477,6 +1604,29 @@ impl Game {
         }
 
         true
+    }
+}
+
+/// The parts of a plot's defense modifier for a team's units ([`Game::plot_defense`]); C++
+/// `CvPlot::defenseModifier` is their sum.
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub struct PlotDefense {
+    /// The feature's defense modifier, else the terrain's.
+    pub cover: i32,
+    /// `HILLS_EXTRA_DEFENSE` on hills.
+    pub hills: i32,
+    /// The improvement's, for a defender in its friendly territory or on unowned land.
+    pub improvement: i32,
+    /// The city's defense modifier (`city_defense_modifier`, after bombardment).
+    pub city: i32,
+    /// FfH: without a city, the best range defense of the defender's improvements nearby.
+    pub range: i32,
+}
+
+impl PlotDefense {
+    #[inline]
+    pub fn total(&self) -> i32 {
+        self.cover + self.hills + self.improvement + self.city + self.range
     }
 }
 

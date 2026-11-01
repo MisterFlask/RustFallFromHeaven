@@ -1,0 +1,9 @@
+[package]
+name = "ffh-harness"
+description = "Shared machinery of the game runners (ffh-stress, ffh-play soak): child processes with a timeout, a worker pool, panic capture, the rules' invariant checks"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+ffh-core = { path = "../ffh-core" }

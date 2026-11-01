@@ -7,7 +7,7 @@
 //! it exhaustively): adding a field to one of these structs breaks the build here until the
 //! field is added to its list (and `FORMAT_VERSION` is bumped).
 
-use super::io::{persist_newtype, persist_struct};
+use super::io::{persist_enum, persist_newtype, persist_struct};
 use super::{LoadError, Persist, Reader, Writer};
 
 use crate::area::Area;
@@ -44,18 +44,54 @@ persist_newtype!(
     SpecialBuildingType, SpecialUnitType, SpecialistType, SpellType, TaskType, TechType,
     TerrainType, TradeableItem, TraitType, UnitAIType, UnitArtStyleType, UnitClassType,
     UnitCombatType, UnitType, UpkeepType, VictoryType, VoteSourceType, VoteType, WarPlanType,
-    WorldSizeType, YieldType,
+    WorldSizeType, YieldType, CulturalActionType, GovernorProfileType, GovernorTraitType,
+    CombatRoleType,
 );
+
+persist_enum!(ActionKind { 0 => None, 1 => Strike, 2 => Charge, 3 => Stab, 4 => Shoot, 5 => Spell, 6 => Bombard, 7 => Heal });
+persist_struct!(RowActions { kind, count });
 
 persist_newtype!(
     PlayerId, TeamId, UnitId, CityId, GroupId, AreaId, PlotGroupId, DealId, PlotIdx, TriggeredId, VoteId,
-    PlayerVote,
+    PlayerVote, ArmyId, GovernorId,
 );
+
+// ---- this game's own rules (docs/CULTURE.md) ----
+
+use crate::culture::CultureChannel;
+use crate::army::{Army, March, RecruitDest};
+persist_struct!(Army { id, owner, name, group, target_size, commander, disband_to, formed_turn, requisition });
+persist_struct!(March { dest, stalled, left_turn, from_city, diverted });
+use crate::governors::Governor;
+persist_struct!(Governor { id, owner, name, profile, traits, origin, born_turn, city, since_turn });
+
+impl Persist for RecruitDest {
+    fn write(&self, w: &mut Writer) {
+        match self {
+            RecruitDest::Garrison(c) => {
+                0u8.write(w);
+                c.write(w);
+            }
+            RecruitDest::Army(a) => {
+                1u8.write(w);
+                a.write(w);
+            }
+        }
+    }
+    fn read(r: &mut Reader<'_>) -> Result<Self, LoadError> {
+        match u8::read(r)? {
+            0 => Ok(RecruitDest::Garrison(CityId::read(r)?)),
+            1 => Ok(RecruitDest::Army(ArmyId::read(r)?)),
+            t => Err(LoadError::Corrupt(format!("recruit destination tag {t}"))),
+        }
+    }
+}
+persist_struct!(CultureChannel { action, target, religion, since_turn });
 
 // ---- CvStructs.h ----
 
 persist_struct!(XYCoords { x, y });
-persist_struct!(OrderData { order_type, data1, data2, save });
+persist_struct!(OrderData { order_type, data1, data2, save, dest, requisition });
 persist_struct!(MissionData { mission_type, data1, data2, flags, push_turn });
 persist_struct!(TradeData { item_type, data, offering, hidden });
 persist_struct!(EventTriggeredData {
@@ -238,8 +274,31 @@ persist_struct!(LenderReport { player, called, obligation, refused, delivered, c
 persist_struct!(CrusadeReport {
     id, kind, target, start_turn, end_turn, reason, pool, wealth, delivered, engaged, refusals, lenders,
 });
-persist_struct!(LogEntry { turn, player, text });
-persist_struct!(GameLog { enabled, entries, cap });
+// `LogEntry::at` is presentation only and not saved (the format is unchanged: it reads back as
+// `None`), so it is written by hand rather than with `persist_struct!`.
+impl Persist for LogEntry {
+    fn write(&self, w: &mut Writer) {
+        let LogEntry { turn, player, text, at: _ } = self;
+        turn.write(w);
+        player.write(w);
+        text.write(w);
+    }
+    fn read(r: &mut Reader<'_>) -> Result<Self, LoadError> {
+        Ok(LogEntry { turn: Persist::read(r)?, player: Persist::read(r)?, text: Persist::read(r)?, at: None })
+    }
+}
+// `GameLog::diplo` is presentation only and not saved (as `LogEntry::at`).
+impl Persist for GameLog {
+    fn write(&self, w: &mut Writer) {
+        let GameLog { enabled, entries, cap, diplo: _ } = self;
+        enabled.write(w);
+        entries.write(w);
+        cap.write(w);
+    }
+    fn read(r: &mut Reader<'_>) -> Result<Self, LoadError> {
+        Ok(GameLog { enabled: Persist::read(r)?, entries: Persist::read(r)?, cap: Persist::read(r)?, diplo: Vec::new() })
+    }
+}
 
 // ---- game objects ----
 
@@ -270,7 +329,8 @@ persist_struct!(Unit {
     terrain_double_move_count, feature_double_move_count, extra_terrain_attack_percent,
     extra_terrain_defense_percent, extra_feature_attack_percent, extra_feature_defense_percent,
     extra_unit_combat_modifier, ai_birthmark, ai_type, ai_groupflag, ai_origin_x, ai_origin_y,
-    ai_suicide_summon, ai_allowed_perm_defense, ai_allowed_patrol, ai_allowed_explore, lent,
+    ai_suicide_summon, ai_allowed_perm_defense, ai_allowed_patrol, ai_allowed_explore, army, march,
+    extra_combat_percent_defense, attacks_made, battle_heal_turn, lent,
 });
 
 persist_struct!(City {
@@ -311,12 +371,12 @@ persist_struct!(City {
     state_religion_happiness, unit_combat_free_experience, free_promotion_count,
     num_real_building, num_free_building, working_plot, has_religion, has_corporation,
     trade_cities, order_queue, events_occured, building_yield_change, building_commerce_change,
-    building_happy_change, building_health_change, population_rank, population_rank_valid,
-    base_yield_rank, base_yield_rank_valid, yield_rank, yield_rank_valid, commerce_rank,
-    commerce_rank_valid, ai_assign_work_dirty, ai_choose_production_dirty, ai_emphasize,
+    building_happy_change, building_health_change, ai_assign_work_dirty, ai_choose_production_dirty, ai_emphasize,
     ai_emphasize_avoid_growth_count, ai_emphasize_great_people_count, ai_emphasize_yield_count,
     ai_emphasize_commerce_count, ai_emphasize_avoid_angry_citizens_count,
-    ai_emphasize_avoid_unhealthy_citizens_count,
+    ai_emphasize_avoid_unhealthy_citizens_count, culture_channel, culture_diverted, culture_pressure,
+    culture_revolt_level, recruit_default, direct_rule, rule_changed_turn, governor,
+    governor_penalty_turns,
 });
 
 persist_struct!(Player {
@@ -371,7 +431,8 @@ persist_struct!(Player {
     score_history, economy_history, industry_history, agriculture_history, power_history,
     culture_history, espionage_history, ai_civic_timer, ai_religion_timer, ai_num_train_ai_units,
     ai_num_ai_units, ai_peacetime_trade_value, ai_peacetime_grant_value, ai_gold_traded_to,
-    ai_attitude_extra, ai_first_contact, ai_memory_count, ai_bonus_value,
+    ai_attitude_extra, ai_first_contact, ai_memory_count, culture_memory, armies, army_count,
+    governors, governor_count,
 });
 
 persist_struct!(Team {

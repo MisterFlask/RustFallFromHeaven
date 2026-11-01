@@ -20,7 +20,6 @@
 //! `team_get_research_progress` (accept NO_TECH), `team_is_alive`, `team_set_war_weariness`
 //! (clamps), `team_ai_set_war_plan`.
 
-#![allow(unused_imports)]
 use crate::game::Game;
 use crate::ids::*;
 use ffh_data::*;

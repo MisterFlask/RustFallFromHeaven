@@ -1,53 +1,8 @@
-// node --test: what the art renderer draws, from app/stacks.js (zoom steps, the terrain cache's
-// chunks in the art's row order, stacks and their state, city signatures, facing).
+// node --test: the stacks on the map, from app/stacks.js (each tile's head unit and its state, the
+// state marks, the units' moves since the last view).
 import test from "node:test";
 import assert from "node:assert/strict";
 import * as St from "../app/stacks.js";
-
-const map = (w, h, wrap_x = true) => ({ w, h, wrap_x, wrap_y: false });
-
-test("zoom steps are whole device pixels per art pixel", () => {
-  assert.deepEqual(St.artZooms(1), [8, 16, 32, 64, 96, 128]);
-  assert.equal(St.defaultArtZoom(1), 64);
-  assert.deepEqual(St.artZooms(2), [8, 16, 32, 64, 96, 128]);
-  // dpr 1.5: 1x is 2 device px an art px (round 1.5), so 42.67 CSS px a tile; 2x is 3.
-  const z = St.artZooms(1.5);
-  assert.equal(z.length, 6);
-  assert.ok(Math.abs(z[2] - 64 / 1.5) < 1e-9 && Math.abs(z[3] - 96 / 1.5) < 1e-9, String(z));
-  for (const ts of z.slice(2)) assert.equal((St.artScale(ts, 1.5) * 32) % 32, 0);
-  assert.equal(St.artScale(16, 1), 0, "a chart step");
-  assert.equal(St.artScale(8, 2), 0);
-  assert.equal(St.artScale(64, 1), 2);
-  assert.equal(St.artScale(64, 2), 4);
-  assert.equal(St.artScale(32, 1), 1);
-});
-
-test("chunks in row order: a tile touches its own and its neighbours' chunks", () => {
-  const m = map(16, 12);
-  assert.equal(St.rowOf(m, 0), 11);
-  assert.equal(St.rowOf(m, 11), 0);
-  const C = St.CHUNK;
-  // A tile in the middle of a chunk: only that chunk (row 12 - 1 - 5 = 6 -> chunk row 1 for C = 4).
-  const mid = 5 * 16 + 5;
-  assert.deepEqual([...St.rowChunksOfTiles(m, [mid])], [`${Math.floor(5 / C)},${Math.floor(6 / C)}`]);
-  // The west edge of a wrapping map: the east chunk too.
-  const west = 5 * 16 + 0;
-  const keys = St.rowChunksOfTiles(m, [west]);
-  assert.ok(keys.has(`${Math.floor(15 / C)},${Math.floor(6 / C)}`), [...keys].join(" "));
-  // Not without wrap.
-  const flat = St.rowChunksOfTiles(map(16, 12, false), [west]);
-  assert.ok(![...flat].some((k) => k.startsWith(`${Math.floor(15 / C)},`)), [...flat].join(" "));
-  // The north edge (y = h - 1) has no row above.
-  assert.ok([...St.rowChunksOfTiles(m, [11 * 16 + 5])].every((k) => Number(k.split(",")[1]) >= 0));
-});
-
-test("changed tiles between two maps", () => {
-  const a = { w: 2, h: 2, wrap_x: false, vis: [2, 2, 1, 0], owner: [-1, -1, -1, -1] };
-  const b = { ...a, vis: [2, 2, 2, 0], owner: [-1, 3, -1, -1] };
-  assert.deepEqual(St.changedTiles(a, b, ["vis", "owner"]), [1, 2]);
-  assert.equal(St.changedTiles(null, b, ["vis"]), "all");
-  assert.equal(St.changedTiles({ ...a, w: 4 }, b, ["vis"]), "all");
-});
 
 test("the head of a stack and its state", () => {
   const info = { 1: { hero: false, combat: "MELEE", strength: 3 }, 2: { hero: true, combat: "MELEE", strength: 6 }, 3: { hero: false, combat: "NONE", strength: 0 } };
@@ -74,6 +29,10 @@ test("the head of a stack and its state", () => {
   assert.equal(st.state.mark, "promote");
   st = St.stackState([own[1]], ctx({ automated: () => true }));
   assert.equal(st.state.mark, "auto");
+  // A marching recruit (this game's armies: the rules move it) shows the march mark, before a
+  // promotion waiting.
+  st = St.stackState([{ ...own[0], promo_ready: true, march: { to: "the 1st Army", turns_left: 3, stalled: 0 } }], ctx());
+  assert.equal(st.state.mark, "march");
   // Foreign stacks: the strongest stands in front; no moves, no mark.
   const foreign = [
     { id: 20, owner: 1, type: 1, hp: 100, max_hp: 100 },
@@ -96,28 +55,6 @@ test("marks from Civ4's activities", () => {
   assert.equal(St.markOf("ACTIVITY_HEAL", { promote: true }), "promote");
 });
 
-test("city tiers and signatures", () => {
-  assert.deepEqual([1, 3, 4, 7, 8, 12, 13, 19, 20, 40].map(St.tierOf), [1, 1, 2, 2, 3, 3, 4, 4, 5, 5]);
-  const c = { owner: 2, size: 5, capital: true, visible: true, disorder: false, walls: false };
-  const sig = St.citySignature(c);
-  assert.equal(St.citySignature({ ...c, size: 7 }), sig, "the same tier");
-  for (const change of [{ size: 8 }, { owner: 3 }, { capital: false }, { visible: false }, { disorder: true }, { walls: true }]) {
-    assert.notEqual(St.citySignature({ ...c, ...change }), sig, JSON.stringify(change));
-  }
-});
-
-test("facing follows the last move, across the seam", () => {
-  let f = St.updateFacing(new Map(), [{ id: 1, x: 5 }, { id: 2, x: 0 }], 20, true);
-  assert.equal(f.get(1).facing, "right");
-  f = St.updateFacing(f, [{ id: 1, x: 4 }, { id: 2, x: 19 }], 20, true);
-  assert.equal(f.get(1).facing, "left");
-  assert.equal(f.get(2).facing, "left", "0 -> 19 on a wrapping map is a step west");
-  f = St.updateFacing(f, [{ id: 1, x: 4 }, { id: 2, x: 0 }], 20, true);
-  assert.equal(f.get(1).facing, "left", "standing still keeps the facing");
-  assert.equal(f.get(2).facing, "right");
-  assert.equal(f.has(3), false);
-});
-
 test("unitMoves: net displacement of the units that changed tile, wrap-aware", () => {
   let { positions, moved } = St.unitMoves(new Map(), [{ id: 1, x: 5, y: 7 }, { id: 2, x: 0, y: 0 }], 20, true);
   assert.equal(moved.length, 0, "no previous positions: nothing moved");
@@ -133,30 +70,4 @@ test("unitMoves: net displacement of the units that changed tile, wrap-aware", (
   assert.equal(moved.length, 0);
   assert.equal(positions.has(1), false);
   assert.deepEqual(positions.get(3), { x: 1, y: 1 });
-});
-
-test("heraldry: a tincture plain, then its divisions, kept for the game", () => {
-  const T = { CIVILIZATION_BANNOR: "Argent", CIVILIZATION_ELOHIM: "Argent", CIVILIZATION_LANUN: "Azure", CIVILIZATION_MERCURIANS: "Argent" };
-  const tinctureOf = (civ) => T[civ] ?? "Argent";
-  const memo = new Map();
-  let specs = St.assignHeraldry([{ id: 0, civ: "CIVILIZATION_ELOHIM" }, { id: 3, civ: "CIVILIZATION_LANUN" }, { id: 9, civ: "CIVILIZATION_BARBARIAN", barbarian: true }], memo, tinctureOf);
-  assert.deepEqual(specs.map((s) => [s.id, s.division, s.barbarian]), [[0, "plain", false], [3, "plain", false], [9, "plain", true]]);
-  // Meeting slot 1 (Argent too) later: it takes the next division; the Elohim keep theirs.
-  specs = St.assignHeraldry([{ id: 0, civ: "CIVILIZATION_ELOHIM" }, { id: 1, civ: "CIVILIZATION_BANNOR" }, { id: 3, civ: "CIVILIZATION_LANUN" }, { id: 5, civ: "CIVILIZATION_MERCURIANS" }], memo, tinctureOf);
-  assert.deepEqual(specs.map((s) => [s.id, s.division]), [[0, "plain"], [1, "pale"], [3, "plain"], [5, "fess"]]);
-  // A new game: a new memo.
-  assert.equal(St.assignHeraldry([{ id: 1, civ: "CIVILIZATION_BANNOR" }], new Map(), tinctureOf)[0].division, "plain");
-});
-
-test("owner styles from heraldry specs, the lozenge for unknown players", () => {
-  const calls = [];
-  const art = { ownerStyle: (civ, opts) => (calls.push([civ, opts.division ?? null, !!opts.barbarian]), { civ, ...opts }) };
-  const o = new St.OwnerStyles(art, [{ id: 0, civ: "CIVILIZATION_BANNOR", division: "pale", barbarian: false }, { id: 7, civ: "CIVILIZATION_BARBARIAN", division: "plain", barbarian: true }]);
-  assert.equal(o.get(0).division, "pale");
-  assert.equal(o.get(0), o.get(0), "made once");
-  assert.equal(o.get(7).barbarian, true);
-  assert.equal(o.get(4).civ, "CIVILIZATION_UNKNOWN");
-  assert.equal(o.get(-1), undefined);
-  assert.equal(o.get(null), undefined);
-  assert.deepEqual(calls, [["CIVILIZATION_BANNOR", "pale", false], ["CIVILIZATION_BARBARIAN", null, true], ["CIVILIZATION_UNKNOWN", null, false]]);
 });

@@ -151,6 +151,10 @@ impl Game {
         if self.cities[c].settlement {
             return false;
         }
+        // This game's governors: settlers only in directly ruled cities (docs/GOVERNORS.md).
+        if self.d.units[unit].found && self.city_is_governed(c) {
+            return false;
+        }
         // Changed from FFH2: `canUpgrade` checks a unit with `UpgradeCiv` only against that
         // civilization's line, so that a Centaur in anyone's hands upgrades to a Centaur Archer.
         // As a training check that let any city train other civilizations' unique units; a
@@ -256,6 +260,12 @@ impl Game {
 
         // FfH: Modified by Kael 08/24/2007
         if city.settlement {
+            return false;
+        }
+
+        // This game's governors: world wonders and palaces only in directly ruled cities
+        // (docs/GOVERNORS.md).
+        if (info.capital || is_world_wonder_class(d, building_class_of(d, building))) && self.city_is_governed(c) {
             return false;
         }
 
@@ -433,6 +443,10 @@ impl Game {
         if self.cities[c].settlement {
             return false;
         }
+        // This game's governors: rituals only in directly ruled cities (docs/GOVERNORS.md).
+        if self.city_is_governed(c) {
+            return false;
+        }
         if let Some(prereq_civ) = info.prereq_civilization {
             if prereq_civ != self.city_civilization_type(c) {
                 return false;
@@ -537,6 +551,10 @@ impl Game {
 
         let mut experience = city.free_experience;
         experience += player.free_experience;
+        // This game's governors: the traits (docs/GOVERNORS.md).
+        if self.governors_on() {
+            experience += self.city_governor_mods(c).experience;
+        }
 
         if let Some(unit) = unit {
             if let Some(unit_combat) = d.units[unit].unit_combat_type {
@@ -847,6 +865,11 @@ impl Game {
             }
         }
 
+        // This game's governors: the traits (docs/GOVERNORS.md).
+        if self.governors_on() {
+            multiplier += self.city_governor_mods(c).unit_production;
+        }
+
         // FfH: Modified by Kael 02/11/2009 (was `std::max(0, iMultiplier)`)
         multiplier
     }
@@ -868,6 +891,11 @@ impl Game {
             if city.has_religion[state_religion] {
                 multiplier += self.players[city.owner].state_religion_building_production_modifier;
             }
+        }
+
+        // This game's governors: the traits (docs/GOVERNORS.md).
+        if self.governors_on() {
+            multiplier += self.city_governor_mods(c).building_production;
         }
 
         multiplier.max(0)
@@ -1052,6 +1080,9 @@ impl Game {
         let hurry_gold = self.city_hurry_gold(c, hurry);
         let hurry_population = self.city_hurry_population(c, hurry);
         let hurry_anger_length = self.city_hurry_anger_length(c, hurry);
+        if self.telemetry.on() {
+            self.tel_hurry(c, hurry, hurry_gold, hurry_population);
+        }
 
         let production = self.city_hurry_production(c, hurry);
         self.city_change_production(c, production);
@@ -1566,7 +1597,7 @@ mod tests {
         assert_eq!(g.city_hurry_cost_modifier(c, false), 100);
 
         let process = ProcessType(0);
-        g.cities[c].order_queue.push(OrderData { order_type: OrderType::ORDER_MAINTAIN, data1: process.i(), data2: -1, save: false });
+        g.cities[c].order_queue.push(OrderData { order_type: OrderType::ORDER_MAINTAIN, data1: process.i(), data2: -1, save: false, dest: None, requisition: false });
         assert!(g.city_is_production(c) && g.city_is_production_process(c));
         assert!(!g.city_is_production_unit(c) && !g.city_is_production_building(c) && !g.city_is_production_project(c));
         assert!(!g.city_is_production_limited(c));

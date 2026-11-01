@@ -1,5 +1,6 @@
 //! Sheaim: both leaders are Summoner (Tebryn also Arcane), the palace gives Death, Chaos and Fire
-//! mana, and the Training Yard is blocked (no tier-3 melee). No civilization-specific play.
+//! mana, and the Training Yard is blocked (no tier-3 melee). No civilization-specific play
+//! but FfH's research beelines (`tech_goals`).
 //!
 //! Tried, not kept (round 5, commit 4f00cf1; docs/AI_LOG.md): adepts need a Mage Guild in the
 //! training city, which no AI builds (value about 0), so no Sheaim ever had a caster. Once
@@ -16,8 +17,16 @@
 //! (docs/AI_LOG.md, "Spellcasting"); adepts for Raise Skeleton, an army unit a turn while at war,
 //! are untried (docs/AI.md, "Known gaps").
 
+use ffh_core::game::Game;
+use ffh_core::ids::*;
+
 use super::CivPlay;
 
 pub struct Sheaim;
 
-impl CivPlay for Sheaim {}
+impl CivPlay for Sheaim {
+    /// FfH's `AI_chooseTech` research plan (`tech_plan::goals`).
+    fn tech_goals(&self, _g: &Game, _p: PlayerId) -> super::TechGoals {
+        super::TechGoals { beelines: vec!["TECH_CORRUPTION_OF_SPIRIT", "TECH_NECROMANCY", "TECH_SORCERY"], ..Default::default() }
+    }
+}

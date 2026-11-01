@@ -54,20 +54,39 @@ const PNG: &str = "image/png";
 pub const ASSETS: &[(&str, &str, &str)] = &[
     ("index.html", HTML, include_str!("../../assets/index.html")),
     ("app/style.css", CSS, include_str!("../../assets/app/style.css")),
+    ("app/iso.css", CSS, include_str!("../../assets/app/iso.css")),
     ("app/main.js", JS, include_str!("../../assets/app/main.js")),
     ("app/api.js", JS, include_str!("../../assets/app/api.js")),
     ("app/state.js", JS, include_str!("../../assets/app/state.js")),
     ("app/tiles.js", JS, include_str!("../../assets/app/tiles.js")),
     ("app/markup.js", JS, include_str!("../../assets/app/markup.js")),
     ("app/dom.js", JS, include_str!("../../assets/app/dom.js")),
+    ("app/tips.js", JS, include_str!("../../assets/app/tips.js")),
+    ("app/infotips.js", JS, include_str!("../../assets/app/infotips.js")),
     ("app/modals.js", JS, include_str!("../../assets/app/modals.js")),
+    ("app/portraits.js", JS, include_str!("../../assets/app/portraits.js")),
     ("app/commands.js", JS, include_str!("../../assets/app/commands.js")),
     ("app/map.js", JS, include_str!("../../assets/app/map.js")),
     ("app/iso.js", JS, include_str!("../../assets/app/iso.js")),
     ("app/iso/sprites.js", JS, include_str!("../../assets/app/iso/sprites.js")),
+    ("app/isoui.js", JS, include_str!("../../assets/app/isoui.js")),
+    ("app/isofont.js", JS, include_str!("../../assets/app/isofont.js")),
     ("app/units.js", JS, include_str!("../../assets/app/units.js")),
+    ("app/engagements.js", JS, include_str!("../../assets/app/engagements.js")),
+    ("app/battle.js", JS, include_str!("../../assets/app/battle.js")),
+    ("app/battle_fixture.js", JS, include_str!("../../assets/app/battle_fixture.js")),
+    ("app/battle_log.js", JS, include_str!("../../assets/app/battle_log.js")),
+    ("app/battle_stage.js", JS, include_str!("../../assets/app/battle_stage.js")),
+    ("app/battle_plan.js", JS, include_str!("../../assets/app/battle_plan.js")),
+    ("app/battle_watch.js", JS, include_str!("../../assets/app/battle_watch.js")),
+    ("app/battle_snap.js", JS, include_str!("../../assets/app/battle_snap.js")),
+    ("app/battle_report.js", JS, include_str!("../../assets/app/battle_report.js")),
     ("app/city.js", JS, include_str!("../../assets/app/city.js")),
+    ("app/armies.js", JS, include_str!("../../assets/app/armies.js")),
+    ("app/governors.js", JS, include_str!("../../assets/app/governors.js")),
+    ("app/culture.js", JS, include_str!("../../assets/app/culture.js")),
     ("app/screens.js", JS, include_str!("../../assets/app/screens.js")),
+    ("app/title.js", JS, include_str!("../../assets/app/title.js")),
     ("app/hud.js", JS, include_str!("../../assets/app/hud.js")),
     ("app/hotkeys.js", JS, include_str!("../../assets/app/hotkeys.js")),
     ("app/empire.js", JS, include_str!("../../assets/app/empire.js")),
@@ -75,10 +94,7 @@ pub const ASSETS: &[(&str, &str, &str)] = &[
     ("app/crusade.js", JS, include_str!("../../assets/app/crusade.js")),
     ("app/tools.js", JS, include_str!("../../assets/app/tools.js")),
     ("app/look.js", JS, include_str!("../../assets/app/look.js")),
-    ("app/artmap.js", JS, include_str!("../../assets/app/artmap.js")),
     ("app/stacks.js", JS, include_str!("../../assets/app/stacks.js")),
-    ("app/chunks.js", JS, include_str!("../../assets/app/chunks.js")),
-    ("app/artworker.js", JS, include_str!("../../assets/app/artworker.js")),
     // The experimental 3D renderer (docs/R3D.md), loaded by the client only when chosen.
     ("app/r3d/config.js", JS, include_str!("../../assets/app/r3d/config.js")),
     ("app/r3d/decals.js", JS, include_str!("../../assets/app/r3d/decals.js")),
@@ -107,11 +123,21 @@ pub const ASSETS: &[(&str, &str, &str)] = &[
     ("app/r3d/assets/registry.js", JS, include_str!("../../assets/app/r3d/assets/registry.js")),
     ("app/r3d/assets/units.js", JS, include_str!("../../assets/app/r3d/assets/units.js")),
     ("app/r3d/assets/vegetation.js", JS, include_str!("../../assets/app/r3d/assets/vegetation.js")),
+    // The HD-2D mode built on it (docs/HD2D.md), loaded only when chosen.
+    ("app/r3d/hd2d/art/index.js", JS, include_str!("../../assets/app/r3d/hd2d/art/index.js")),
+    ("app/r3d/hd2d/config.js", JS, include_str!("../../assets/app/r3d/hd2d/config.js")),
+    ("app/r3d/hd2d/dress.js", JS, include_str!("../../assets/app/r3d/hd2d/dress.js")),
+    ("app/r3d/hd2d/index.js", JS, include_str!("../../assets/app/r3d/hd2d/index.js")),
+    ("app/r3d/hd2d/mood.js", JS, include_str!("../../assets/app/r3d/hd2d/mood.js")),
+    ("app/r3d/hd2d/passes.js", JS, include_str!("../../assets/app/r3d/hd2d/passes.js")),
+    ("app/r3d/hd2d/shaders.js", JS, include_str!("../../assets/app/r3d/hd2d/shaders.js")),
+    ("app/r3d/hd2d/sprites.js", JS, include_str!("../../assets/app/r3d/hd2d/sprites.js")),
 ];
 
-// `ASSET_BYTES`: the binary client files, the isometric renderer's PNG sprites (docs/ISO.md),
-// embedded by `build.rs` from `assets/app/iso/*.png`: `(path, content type, bytes)`, served like
-// [`ASSETS`] but from raw bytes. `tests/web.rs` checks that every file under `assets/app/` is listed.
+// `ASSET_BYTES`: the binary client files, the isometric renderer's PNG sprites (docs/ISO.md) and the
+// battle screens' unit animations, embedded by `build.rs` from `assets/app/iso/*.png` and
+// `assets/app/anim/*.png`: `(path, content type, bytes)`, served like [`ASSETS`] but from raw
+// bytes. `tests/web.rs` checks that every file under `assets/app/` is listed.
 include!(concat!(env!("OUT_DIR"), "/iso_assets.rs"));
 
 // `ART_MODULES`: the art toolkit's modules (`web/art`, docs/ART.md 15-16), embedded by `build.rs`
@@ -552,14 +578,14 @@ fn post_api(req: &HttpRequest, ctx: &HttpCtx) -> Response {
     }
 }
 
-/// A client file: embedded, or from `--assets DIR`. Paths are 1-4 parts of `[A-Za-z0-9_.-]`
+/// A client file: embedded, or from `--assets DIR`. Paths are 1-5 parts of `[A-Za-z0-9_.-]`
 /// not starting with a dot, so a request cannot leave the directory. The art (`art/..`) comes
 /// from `DIR/../web/art` with `--assets DIR` when that directory exists (the repository's
 /// layout: `crates/ffh-play/assets` and `crates/ffh-play/web/art`), else from the binary; only
 /// the art's modules and its bundle are served, not its tools or previews.
 fn asset(path: &str, ctx: &HttpCtx) -> Response {
     let parts: Vec<&str> = path.split('/').collect();
-    let ok = (1..=4).contains(&parts.len()) && parts.iter().all(|p| crate::save::sanitize_name(p).is_ok());
+    let ok = (1..=5).contains(&parts.len()) && parts.iter().all(|p| crate::save::sanitize_name(p).is_ok());
     if !ok {
         return Response::error(404, "not_found", format!("no /{path}"));
     }

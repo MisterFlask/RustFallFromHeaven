@@ -1,0 +1,110 @@
+{
+ "name": "skeleton",
+ "sprite": "m7/roster/units/unit_skeleton.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Skeleton warrior, an animated skeleton with ivory-cream bones, a skull with glowing turquoise eye sockets, a ragged brown cloth loincloth, a notched bronze-and-steel sword with an orange-brown blade in his RIGHT hand and a round brown wooden shield with an orange rim and a rusty boss on his LEFT arm",
+ "hands": "the sword stays in his right hand on the screen-left side and the shield on his left arm on the screen-right side",
+ "guide_style": "grey",
+ "scale": 0.94,
+ "head_r": 12,
+ "limb": 0.9,
+ "joints": {
+  "head": [
+   82,
+   56
+  ],
+  "neck": [
+   82,
+   66
+  ],
+  "chest": [
+   82,
+   76
+  ],
+  "pelvis": [
+   83,
+   88
+  ],
+  "r_sh": [
+   71,
+   69
+  ],
+  "r_el": [
+   65,
+   78
+  ],
+  "r_ha": [
+   59,
+   82
+  ],
+  "tip": [
+   44,
+   41
+  ],
+  "l_sh": [
+   95,
+   69
+  ],
+  "l_el": [
+   97,
+   80
+  ],
+  "l_ha": [
+   101,
+   90
+  ],
+  "shield": [
+   105,
+   87,
+   12,
+   18
+  ],
+  "r_hip": [
+   78,
+   94
+  ],
+  "r_kn": [
+   68,
+   105
+  ],
+  "r_ft": [
+   68,
+   118
+  ],
+  "l_hip": [
+   90,
+   94
+  ],
+  "l_kn": [
+   95,
+   107
+  ],
+  "l_ft": [
+   101,
+   121
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back toward the upper-left, the sword is lifted beside the head with its tip pointing up and back",
+   "2": "wind-up extreme: body coiled back and crouched, the sword hand behind the head and the sword hanging back and down behind the shoulders to the left, shield tucked across the belly",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips round, the sword arm sweeps across in front of the chest and the sword is level, its tip pointing to the right",
+   "4": "contact: sword arm fully extended toward the lower-right, the sword's tip striking down-right, front knee bent, body low and leaning in, shield arm swung back behind the shoulders for balance",
+   "5": "follow-through: the sword carries on down until its tip nearly touches the ground at the lower-right, torso twisted, the ragged loincloth trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the sword comes back up on the near side toward the ready angle, shield tucked across the belly"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, the jaw snapping open, torso jolts back, both arms jerk outward (sword arm thrown up and out to the left, shield flung out to the right)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the sword dipping, shield still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, sword arm flung up, shield drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the sword lowering",
+   "3": "kneeling: on both knees, slumped forward, the sword's tip resting on the ground at the lower-right, shield arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the sword slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left; the sword lies on the ground at the lower-right; the shield lies flat beside him",
+   "7": "corpse: lying flat and still on his back, the glow in the eye sockets gone dark, sword and shield on the ground beside him"
+  }
+ }
+}

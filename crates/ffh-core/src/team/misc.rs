@@ -4,6 +4,7 @@
 //! merging on a permanent alliance (`addTeam`, `shareCounters`).
 
 use super::{civ_team_ids, is_option};
+use crate::controller::AiHook;
 use crate::game::Game;
 use crate::ids::*;
 use crate::utils::{is_team_project, is_team_unit_class, is_team_wonder_class};
@@ -243,6 +244,7 @@ impl Game {
         self.team_ai_update_worst_enemy(t);
 
         // AI: AI_updateAreaStragies() (area AI types, AI-only state).
+        self.ai_hook_team(t, AiHook::TeamAreaStrategies(t));
 
         self.update_score(true);
     }

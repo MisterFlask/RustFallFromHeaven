@@ -11,7 +11,7 @@ use crate::area::Area;
 use crate::defs::*;
 use crate::game::Game;
 use crate::ids::*;
-use crate::path::{FinderCtx, PathNode, ASNL_ADDCLOSED};
+use crate::path::{FinderCtx, FinderKind, PathNode, ASNL_ADDCLOSED};
 use crate::plot::Plot;
 use crate::slab::Slab;
 use crate::structs::XYCoords;
@@ -397,10 +397,7 @@ impl Game {
         let geom = self.map_geom();
         self.path_finder.get_mut().initialize(geom);
         self.step_finder.get_mut().initialize(geom);
-        self.route_finder.get_mut().initialize(geom);
         self.border_finder.get_mut().initialize(geom);
-        self.area_finder.get_mut().initialize(geom);
-        self.plot_group_finder.get_mut().initialize(geom);
     }
 
     /// C++ `CvMap::rebuild` (world builder / Python): sets world size, climate and sea level
@@ -802,26 +799,22 @@ impl Game {
     // Path distance (C++ step finder)
     // ------------------------------------------------------------------
 
-    /// C++ `CvMap::resetPathDistance`: clears the step finder cache.
-    pub fn map_reset_path_distance(&mut self) {
-        self.step_finder.get_mut().force_reset();
-    }
-
     /// C++ `CvMap::calculatePathDistance`: step-finder path length, -1 if unreachable (C++
     /// also returns -1 for NULL plots; all callers pass real plots).
-    pub fn map_calculate_path_distance(&mut self, source: PlotIdx, dest: PlotIdx) -> i32 {
+    pub fn map_calculate_path_distance(&self, source: PlotIdx, dest: PlotIdx) -> i32 {
         let (sx, sy) = self.map.xy(source);
         let (dx, dy) = self.map.xy(dest);
 
         let g: &Game = self;
-        let mut finder = g.step_finder.borrow_mut();
-        if finder.generate_path(g, sx, sy, dx, dy, false, 0, true) {
-            if let Some(node) = finder.last_node() {
-                return node.data1;
+        g.with_finder(FinderKind::Step, |finder| {
+            if finder.generate_path(g, sx, sy, dx, dy, false, 0) {
+                if let Some(node) = finder.last_node() {
+                    return node.data1;
+                }
             }
-        }
 
-        -1 // no passable path exists
+            -1 // no passable path exists
+        })
     }
 
     // ------------------------------------------------------------------
@@ -1091,10 +1084,8 @@ pub(crate) mod tests {
         g.map_setup();
         let geom = g.map_geom();
         assert_eq!(g.step_finder.borrow().geom, geom);
-        assert_eq!(g.area_finder.borrow().nodes.len(), 6);
-        assert_eq!(g.plot_group_finder.borrow().geom, geom);
-        g.map_reset_path_distance();
-        assert!(g.step_finder.borrow().last_node.is_none());
+        assert_eq!(g.path_finder.borrow().nodes.len(), 6);
+        assert_eq!(g.border_finder.borrow().geom, geom);
     }
 
     fn map(w: i32, h: i32, wrap_x: bool, wrap_y: bool) -> Map {

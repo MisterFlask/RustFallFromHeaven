@@ -45,17 +45,16 @@
 //! SE, S, SW, W, NW; cardinal: N, E, S, W). Paths of equal cost may therefore differ from the
 //! exe's.
 //!
-//! **Reuse (`bReuse`).** With `reuse` and the same start, info, cardinal flag and (path finder)
-//! selection group as the kept search, the search tree is kept: a destination that is already
-//! closed returns at once; otherwise the kept nodes get their heuristic recomputed for the new
-//! destination, the node where the previous search stopped (closed, not yet expanded) is
-//! expanded, and the search continues, so the result equals a fresh search up to tie-breaking.
-//! As in C++, the kept tree is not refreshed when the game changes; callers reset it
-//! (`ForceReset`: `CvMap::resetPathDistance`, `CvSelectionGroup::resetPath`).
+//! **No reuse.** Every search starts from scratch (not in C++: FAStar's `bReuse` continued the
+//! previous search tree, which was not refreshed when the game changed, and the selection group
+//! read "the last path generated" from the global finder afterwards). A finder is scratch
+//! storage: its result is read right after the search that produced it, it is not game state
+//! and it is not saved, so no `&Game` read can change a later result through it.
 //!
 //! Efficiency: node storage is allocated once per map (`initialize`); a search only resets the
 //! nodes the previous search touched; the open list is a binary heap with lazy deletion.
 
+use std::cell::{Cell, RefCell};
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 
@@ -196,16 +195,6 @@ impl PartialOrd for OpenEntry {
     }
 }
 
-/// What a kept search tree was built for (C++ `bReuse` only continues the same search).
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-struct SearchKey {
-    start_x: i32,
-    start_y: i32,
-    info: i32,
-    cardinal_only: bool,
-    group: Option<GroupId>,
-}
-
 /// The FAStar callbacks of one finder (C++ `Initialize(.., DestValidFunc, HeuristicFunc,
 /// CostFunc, ValidFunc, NotifyChildFunc, NotifyListFunc, pData)`). The defaults are this port's
 /// NULL-callback behaviour (see the module docs). NotifyList callbacks are applied by the
@@ -260,10 +249,52 @@ pub struct PathFinder {
     closed_order: Vec<u32>,
     /// C++ `m_pStack`: nodes whose lower known cost is being propagated to their children.
     stack: Vec<u32>,
-    /// The search the nodes hold (for `reuse`); None after a reset.
-    search_key: Option<SearchKey>,
-    /// The destination where the kept search stopped: closed but not yet expanded.
-    unexpanded: Option<u32>,
+    /// Scratch for the path finder's callbacks (see [`DefenseMemo`]); not saved.
+    defense_memo: DefenseMemo,
+}
+
+/// `pathCost`'s `CvPlot::defenseModifier(team, bIgnoreBuilding = false)` values within one
+/// `generate_path` call. `plot_defense_modifier` reaches none of the state a `&Game` call can
+/// write (the path finders, `Player::ai_bonus_value`, the city rank caches), so the game it
+/// reads cannot change during the call and a value computed once per (plot, team) is the value
+/// every later call would compute. (A change that lets it reach such state must drop this
+/// memo.) Entries are stamped with the call they were computed in, and entries of an earlier
+/// call are ignored (its game state may differ, also when the call continues a kept search).
+/// Pure scratch: it never changes a result, so it is not saved (a loaded finder starts empty).
+#[derive(Clone, Debug, Default)]
+pub(crate) struct DefenseMemo {
+    stamp: u32,
+    /// Per plot index: (stamp, team, modifier).
+    entries: Vec<(u32, TeamId, i32)>,
+}
+
+impl DefenseMemo {
+    /// Starts a new `generate_path` call on a map of `num_plots` plots.
+    fn begin(&mut self, num_plots: usize) {
+        if self.entries.len() != num_plots {
+            self.entries = vec![(0, TeamId(0), 0); num_plots];
+            self.stamp = 0;
+        }
+        self.stamp = self.stamp.wrapping_add(1);
+        if self.stamp == 0 {
+            self.entries.iter_mut().for_each(|e| e.0 = 0);
+            self.stamp = 1;
+        }
+    }
+
+    fn get(&self, plot: PlotIdx, team: TeamId) -> Option<i32> {
+        match self.entries.get(plot.idx()) {
+            Some(&(stamp, t, value)) if stamp == self.stamp && t == team => Some(value),
+            _ => None,
+        }
+    }
+
+    fn set(&mut self, plot: PlotIdx, team: TeamId, value: i32) {
+        let stamp = self.stamp;
+        if let Some(e) = self.entries.get_mut(plot.idx()) {
+            *e = (stamp, team, value);
+        }
+    }
 }
 
 impl PathFinder {
@@ -283,8 +314,7 @@ impl PathFinder {
             touched: Vec::new(),
             closed_order: Vec::new(),
             stack: Vec::new(),
-            search_key: None,
-            unexpanded: None,
+            defense_memo: DefenseMemo::default(),
         }
     }
 
@@ -302,8 +332,6 @@ impl PathFinder {
         self.touched.clear();
         self.closed_order.clear();
         self.stack.clear();
-        self.search_key = None;
-        self.unexpanded = None;
         self.last_node = None;
     }
 
@@ -314,7 +342,6 @@ impl PathFinder {
 
     /// C++ `FAStar::GeneratePath(iXstart, iYstart, iXdest, iYdest, bCardinalOnly, iInfo, bReuse)`
     /// with this finder's callbacks. A destination of (-1, -1) floods everything reachable.
-    /// `reuse` keeps the previous search tree when start, info and data are unchanged.
     #[allow(clippy::too_many_arguments)]
     pub fn generate_path(
         &mut self,
@@ -325,7 +352,6 @@ impl PathFinder {
         dest_y: i32,
         cardinal_only: bool,
         info: i32,
-        reuse: bool,
     ) -> bool {
         let geom = g.map_geom();
         if self.geom != geom || self.nodes.len() != geom.num_plots().max(0) as usize {
@@ -336,24 +362,25 @@ impl PathFinder {
             FinderKind::Path => {
                 // C++ dereferences the SetData pointer in every callback.
                 let group = self.group.expect("FAStar path finder: SetData (selection group) not set");
-                self.search(&PathCallbacks { g, group }, start_x, start_y, dest_x, dest_y, cardinal_only, info, reuse, Some(group))
+                let sea = g.group_get_domain_type(group) == Some(DomainType::DOMAIN_SEA);
+                let mut memo = std::mem::take(&mut self.defense_memo);
+                memo.begin(self.nodes.len());
+                let cb = PathCallbacks { g, group, sea, from_memo: Cell::new(None), defense_memo: RefCell::new(memo) };
+                let found = self.search(&cb, start_x, start_y, dest_x, dest_y, cardinal_only, info);
+                self.defense_memo = cb.defense_memo.into_inner();
+                found
             }
-            FinderKind::Step => self.search(&StepCallbacks { g }, start_x, start_y, dest_x, dest_y, cardinal_only, info, reuse, None),
-            FinderKind::Route => self.search(&RouteCallbacks { g }, start_x, start_y, dest_x, dest_y, cardinal_only, info, reuse, None),
-            FinderKind::Border => self.search(&BorderCallbacks { g }, start_x, start_y, dest_x, dest_y, cardinal_only, info, reuse, None),
-            FinderKind::Area => self.search(&AreaCallbacks { g }, start_x, start_y, dest_x, dest_y, cardinal_only, info, reuse, None),
+            FinderKind::Step => self.search(&StepCallbacks { g }, start_x, start_y, dest_x, dest_y, cardinal_only, info),
+            FinderKind::Route => self.search(&RouteCallbacks { g }, start_x, start_y, dest_x, dest_y, cardinal_only, info),
+            FinderKind::Border => self.search(&BorderCallbacks { g }, start_x, start_y, dest_x, dest_y, cardinal_only, info),
+            FinderKind::Area => self.search(&AreaCallbacks { g }, start_x, start_y, dest_x, dest_y, cardinal_only, info),
             FinderKind::PlotGroup => {
-                self.search(&PlotGroupCallbacks { g }, start_x, start_y, dest_x, dest_y, cardinal_only, info, reuse, None)
+                self.search(&PlotGroupCallbacks { g }, start_x, start_y, dest_x, dest_y, cardinal_only, info)
             }
             FinderKind::Irrigation => {
-                self.search(&IrrigationCallbacks { g }, start_x, start_y, dest_x, dest_y, cardinal_only, info, reuse, None)
+                self.search(&IrrigationCallbacks { g }, start_x, start_y, dest_x, dest_y, cardinal_only, info)
             }
         }
-    }
-
-    /// C++ `FAStar::ForceReset`.
-    pub fn force_reset(&mut self) {
-        self.clear_search();
     }
 
     /// C++ `FAStar::GetLastNode`.
@@ -432,13 +459,10 @@ impl PathFinder {
         self.closed_order.clear();
         self.stack.clear();
         self.next_seq = 0;
-        self.search_key = None;
-        self.unexpanded = None;
         self.last_node = None;
     }
 
-    /// `FAStar::GeneratePath` over the callbacks `cb` (see the module docs). `group` is the
-    /// path finder's `SetData` (part of the reuse key).
+    /// `FAStar::GeneratePath` over the callbacks `cb` (see the module docs).
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn search<C: FinderCallbacks>(
         &mut self,
@@ -449,15 +473,9 @@ impl PathFinder {
         dest_y: i32,
         cardinal_only: bool,
         info: i32,
-        reuse: bool,
-        group: Option<GroupId>,
     ) -> bool {
         debug_assert!(self.geom.is_plot(start_x, start_y), "GeneratePath: start ({start_x}, {start_y}) off the map");
-        let key = SearchKey { start_x, start_y, info, cardinal_only, group };
-        let reusing = reuse && self.search_key == Some(key);
-        if !reusing {
-            self.clear_search();
-        }
+        self.clear_search();
 
         self.ctx = FinderCtx { start_x, start_y, dest_x, dest_y, info };
         self.cardinal_only = cardinal_only;
@@ -474,36 +492,21 @@ impl PathFinder {
             return false;
         }
 
-        if reusing {
-            if let Some(d) = dest {
-                if self.nodes[d as usize].list == Some(PathListType::Closed) {
-                    self.last_node = Some(d);
-                    return true;
-                }
-            }
-            self.retarget(cb, dest.map(|_| (dest_x, dest_y)));
-            // The previous search stopped at its destination without expanding it.
-            if let Some(n) = self.unexpanded.take() {
-                self.expand(cb, n, dest.is_some());
-            }
-        } else {
-            let s = self.geom.plot_num(start_x, start_y) as u32;
-            if !cb.valid(&self.ctx, None, &self.nodes[s as usize]) {
-                return false;
-            }
-            let h = if dest.is_some() { cb.heuristic(start_x, start_y, dest_x, dest_y) } else { 0 };
-            {
-                let node = &mut self.nodes[s as usize];
-                node.known_cost = 0;
-                node.heuristic_cost = h;
-                node.total_cost = h;
-                node.list = Some(PathListType::Open);
-            }
-            self.touched.push(s);
-            self.notify(cb, None, s, ASNC_INITIALADD);
-            self.push_open(s);
-            self.search_key = Some(key);
+        let s = self.geom.plot_num(start_x, start_y) as u32;
+        if !cb.valid(&self.ctx, None, &self.nodes[s as usize]) {
+            return false;
         }
+        let h = if dest.is_some() { cb.heuristic(start_x, start_y, dest_x, dest_y) } else { 0 };
+        {
+            let node = &mut self.nodes[s as usize];
+            node.known_cost = 0;
+            node.heuristic_cost = h;
+            node.total_cost = h;
+            node.list = Some(PathListType::Open);
+        }
+        self.touched.push(s);
+        self.notify(cb, None, s, ASNC_INITIALADD);
+        self.push_open(s);
 
         while let Some(n) = self.pop_open() {
             self.nodes[n as usize].list = Some(PathListType::Closed);
@@ -511,7 +514,6 @@ impl PathFinder {
 
             if Some(n) == dest {
                 self.last_node = Some(n);
-                self.unexpanded = Some(n);
                 return true;
             }
 
@@ -519,24 +521,6 @@ impl PathFinder {
         }
 
         false
-    }
-
-    /// Reuse with a new destination (`None` = flood): recompute the heuristic of the kept nodes
-    /// and rebuild the open list (the open nodes keep their relative order among equal totals).
-    fn retarget<C: FinderCallbacks>(&mut self, cb: &C, dest: Option<(i32, i32)>) {
-        self.open.clear();
-        for i in 0..self.touched.len() {
-            let n = self.touched[i] as usize;
-            let node = &mut self.nodes[n];
-            node.heuristic_cost = match dest {
-                Some((dest_x, dest_y)) => cb.heuristic(node.x, node.y, dest_x, dest_y),
-                None => 0,
-            };
-            node.total_cost = node.known_cost.wrapping_add(node.heuristic_cost);
-            if node.list == Some(PathListType::Open) {
-                self.open.push(OpenEntry { total_cost: node.total_cost, seq: self.open_seq[n], node: n as u32 });
-            }
-        }
     }
 
     /// C++ `CreateChildren`: link every valid neighbour of `n`.
@@ -699,6 +683,21 @@ fn parent_and_child(nodes: &mut [PathNode], p: usize, c: usize) -> (&PathNode, &
 struct PathCallbacks<'a> {
     g: &'a Game,
     group: GroupId,
+    /// The last [`Game::path_valid_from`] result, keyed by the parent's (x, y, data1, data2).
+    /// `expand` asks `Valid(parent, child)` for the up to 8 children of one parent in a row, and
+    /// that part of pathValid reads only the parent's plot, `data1` and `data2` (which change
+    /// when a node is re-parented: hence the key), the group, the finder info and the game. The
+    /// group and the info are fixed for one `generate_path`, and the game cannot change during
+    /// it: `path_valid_from` reaches none of the state a `&Game` call can write (the path
+    /// finders, `Player::ai_bonus_value`, the city rank caches; a change that lets it must drop
+    /// this memo). A new `PathCallbacks` is built for every `generate_path`, so nothing is kept
+    /// across searches.
+    from_memo: Cell<Option<((i32, i32, i32, i32), bool)>>,
+    /// `group_get_domain_type(group) == DOMAIN_SEA` (fixed during one search): only sea groups
+    /// have a step test ([`Game::path_valid_step`] is true for the others).
+    sea: bool,
+    /// `pathCost`'s defense modifiers within this call (see [`DefenseMemo`]).
+    defense_memo: RefCell<DefenseMemo>,
 }
 
 impl FinderCallbacks for PathCallbacks<'_> {
@@ -711,11 +710,26 @@ impl FinderCallbacks for PathCallbacks<'_> {
     }
 
     fn cost(&self, ctx: &FinderCtx, parent: &PathNode, node: &PathNode) -> i32 {
-        self.g.path_cost(parent, node, 0, self.group, ctx)
+        self.g.path_cost_memo(parent, node, 0, self.group, ctx, Some(&self.defense_memo))
     }
 
     fn valid(&self, ctx: &FinderCtx, parent: Option<&PathNode>, node: &PathNode) -> bool {
-        self.g.path_valid(parent, node, 0, self.group, ctx)
+        // `Game::path_valid`, with its parent-only part memoized (see `from_memo`).
+        let Some(parent) = parent else {
+            return true;
+        };
+        if self.sea && !self.g.path_valid_step(parent, node, self.group) {
+            return false;
+        }
+        let key = (parent.x, parent.y, parent.data1, parent.data2);
+        if let Some((k, v)) = self.from_memo.get() {
+            if k == key {
+                return v;
+            }
+        }
+        let v = self.g.path_valid_from(parent, self.group, ctx);
+        self.from_memo.set(Some((key, v)));
+        v
     }
 
     fn notify_child(&self, ctx: &FinderCtx, parent: Option<&PathNode>, node: &mut PathNode, data: i32) {
@@ -985,7 +999,32 @@ impl Game {
     }
 
     /// C++ `pathCost(parent, node, data, pointer = group, finder)`.
-    pub fn path_cost(&self, parent: &PathNode, node: &PathNode, _data: i32, group: GroupId, finder: &FinderCtx) -> i32 {
+    pub fn path_cost(&self, parent: &PathNode, node: &PathNode, data: i32, group: GroupId, finder: &FinderCtx) -> i32 {
+        self.path_cost_memo(parent, node, data, group, finder, None)
+    }
+
+    /// [`Game::path_cost`] with the path finder's per-call memo of the defense modifiers.
+    pub(crate) fn path_cost_memo(
+        &self,
+        parent: &PathNode,
+        node: &PathNode,
+        _data: i32,
+        group: GroupId,
+        finder: &FinderCtx,
+        memo: Option<&RefCell<DefenseMemo>>,
+    ) -> i32 {
+        // `CvPlot::defenseModifier(eTeam, false)`: pure, so the memo returns what it computes.
+        let defense_modifier = |plot: PlotIdx, team: TeamId| -> i32 {
+            let Some(memo) = memo else {
+                return self.plot_defense_modifier(plot, Some(team), false);
+            };
+            if let Some(value) = memo.borrow().get(plot, team) {
+                return value;
+            }
+            let value = self.plot_defense_modifier(plot, Some(team), false);
+            memo.borrow_mut().set(plot, team, value);
+            value
+        };
         let d = self.d;
         let from_plot = self.map.plot_soren(parent.x, parent.y).expect("pathCost: FromPlot");
         let to_plot = self.map.plot_soren(node.x, node.y).expect("pathCost: ToPlot");
@@ -1037,7 +1076,7 @@ impl Game {
                         let no_defensive_bonus = self.unit_no_defensive_bonus(loop_unit);
 
                         if moves_left == 0 {
-                            let defense = if no_defensive_bonus { 0 } else { self.plot_defense_modifier(to_plot, Some(unit_team), false) };
+                            let defense = if no_defensive_bonus { 0 } else { defense_modifier(to_plot, unit_team) };
                             cost += PATH_DEFENSE_WEIGHT * 0.max(200 - defense);
                         }
 
@@ -1045,11 +1084,7 @@ impl Game {
                             if self.unit_can_attack(loop_unit) {
                                 if is_path_dest {
                                     if self.plot_is_visible_enemy_defender(to_plot, loop_unit) {
-                                        let defense = if no_defensive_bonus {
-                                            0
-                                        } else {
-                                            self.plot_defense_modifier(from_plot, Some(unit_team), false)
-                                        };
+                                        let defense = if no_defensive_bonus { 0 } else { defense_modifier(from_plot, unit_team) };
                                         cost += PATH_DEFENSE_WEIGHT * 0.max(200 - defense);
 
                                         if self.map.plots[from_plot].plot_city.is_none() {
@@ -1092,11 +1127,18 @@ impl Game {
     }
 
     /// C++ `pathValid(parent, node, data, pointer = group, finder)` (`parent` NULL = start node).
+    /// Split in two pure halves: [`Self::path_valid_step`] (the only test that reads `node`) and
+    /// [`Self::path_valid_from`] (everything else, a function of the parent alone), so the path
+    /// finder can evaluate the second once per expanded parent.
     pub fn path_valid(&self, parent: Option<&PathNode>, node: &PathNode, _data: i32, group: GroupId, finder: &FinderCtx) -> bool {
         let Some(parent) = parent else {
             return true;
         };
+        self.path_valid_step(parent, node, group) && self.path_valid_from(parent, group, finder)
+    }
 
+    /// The step test of C++ `pathValid`: sea groups cannot cut a diagonal between two land plots.
+    pub fn path_valid_step(&self, parent: &PathNode, node: &PathNode, group: GroupId) -> bool {
         let from_plot = self.map.plot_soren(parent.x, parent.y).expect("pathValid: FromPlot");
         let to_plot = self.map.plot_soren(node.x, node.y).expect("pathValid: ToPlot");
 
@@ -1110,6 +1152,13 @@ impl Game {
                 }
             }
         }
+        true
+    }
+
+    /// The rest of C++ `pathValid` (after the step test): leaving the parent's plot (danger,
+    /// territory flags, moving through it). Reads only `parent` (plot, `data1`, `data2`).
+    pub fn path_valid_from(&self, parent: &PathNode, group: GroupId, finder: &FinderCtx) -> bool {
+        let from_plot = self.map.plot_soren(parent.x, parent.y).expect("pathValid: FromPlot");
 
         if self.group_at_plot(group, Some(from_plot)) {
             return true;
@@ -1313,7 +1362,12 @@ impl Game {
         let old_plot = self.map.plot_soren(parent.x, parent.y).expect("plotGroupValid: OldPlot");
         let new_plot = self.map.plot_soren(node.x, node.y).expect("plotGroupValid: NewPlot");
 
-        let player = finder_player(finder);
+        self.plot_group_valid_step(old_plot, new_plot, finder_player(finder))
+    }
+
+    /// [`Game::plot_group_valid`] for the step `old_plot` -> `new_plot` of `player`'s plot group
+    /// finder (the plots the nodes stand for).
+    pub fn plot_group_valid_step(&self, old_plot: PlotIdx, new_plot: PlotIdx, player: PlayerId) -> bool {
         let team = self.players[player].team;
 
         if self.plot_get_plot_group(old_plot, player) == self.plot_get_plot_group(new_plot, player) {
@@ -1366,11 +1420,6 @@ fn finder_player(finder: &FinderCtx) -> PlayerId {
     PlayerId(finder.info as u8)
 }
 
-/// Saved-game support for [`PathFinder`] (a child module so it can read the private search
-/// state; the code lives with the rest of the save format in `src/save/`).
-#[path = "save/path_finder.rs"]
-mod persist;
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1401,8 +1450,7 @@ mod tests {
         g.last_node = Some(0);
         assert_eq!(g.path_first_xy(), Some((0, 0)));
         assert_eq!(g.path_end_turn_xy(), Some((0, 0)));
-        g.force_reset();
-        assert_eq!(g.last_node(), None);
+        g.last_node = None;
         assert_eq!(g.path_first_xy(), None);
     }
 
@@ -1455,8 +1503,8 @@ mod tests {
             f
         }
 
-        fn run(&self, f: &mut PathFinder, start: (i32, i32), dest: (i32, i32), cardinal: bool, reuse: bool) -> bool {
-            f.search(self, start.0, start.1, dest.0, dest.1, cardinal, 0, reuse, None)
+        fn run(&self, f: &mut PathFinder, start: (i32, i32), dest: (i32, i32), cardinal: bool) -> bool {
+            f.search(self, start.0, start.1, dest.0, dest.1, cardinal, 0)
         }
     }
 
@@ -1518,7 +1566,7 @@ mod tests {
     fn astar_finds_cheapest_path_around_walls() {
         let grid = Grid::new(&["....#....", ".##.#.##.", ".#..#..#.", ".#.###.#.", "........."], false);
         let mut f = grid.finder();
-        assert!(grid.run(&mut f, (3, 0), (5, 0), false, false));
+        assert!(grid.run(&mut f, (3, 0), (5, 0), false));
         let p = path(&f);
         assert_eq!(p.first(), Some(&(3, 0)));
         assert_eq!(p.last(), Some(&(5, 0)));
@@ -1569,14 +1617,14 @@ mod tests {
         // Going straight through the 9s is longer than around them (7 steps of cost 1).
         let grid = Grid::new(&["......", ".9999.", ".9..9.", ".9999.", "......"], false);
         let mut f = grid.finder();
-        assert!(grid.run(&mut f, (0, 2), (5, 2), false, false));
+        assert!(grid.run(&mut f, (0, 2), (5, 2), false));
         assert_eq!(known_cost(&f), 7);
         assert!(path(&f).iter().all(|&(x, y)| grid.cell(x, y) != b'9'));
 
         // Unreachable destination (enclosed): the search closes the start's whole region.
         let grid = Grid::new(&[".....", ".###.", ".#.#.", ".###.", "....."], false);
         let mut f = grid.finder();
-        assert!(!grid.run(&mut f, (0, 0), (2, 2), false, false));
+        assert!(!grid.run(&mut f, (0, 0), (2, 2), false));
         assert_eq!(f.last_node(), None);
         assert_eq!(f.closed_nodes().count(), 16);
 
@@ -1584,14 +1632,14 @@ mod tests {
         let mut grid = Grid::new(&["...", "..."], false);
         grid.dest_ok = false;
         let mut f = grid.finder();
-        assert!(!grid.run(&mut f, (0, 0), (2, 1), false, false));
+        assert!(!grid.run(&mut f, (0, 0), (2, 1), false));
         assert_eq!(f.closed_nodes().count(), 0);
         assert_eq!(grid.valid_calls.get(), 0);
 
         // Start == destination: the start node itself, no parent, INITIALADD data.
         let grid = Grid::new(&["...", "..."], false);
         let mut f = grid.finder();
-        assert!(grid.run(&mut f, (1, 1), (1, 1), false, false));
+        assert!(grid.run(&mut f, (1, 1), (1, 1), false));
         assert_eq!(path(&f), vec![(1, 1)]);
         assert_eq!(f.path_first_xy(), Some((1, 1)));
         assert_eq!(f.last_node().unwrap().data1, 0);
@@ -1601,22 +1649,22 @@ mod tests {
     fn astar_cardinal_and_wrapping() {
         let grid = Grid::new(&["....", "....", "...."], false);
         let mut f = grid.finder();
-        assert!(grid.run(&mut f, (0, 0), (2, 2), true, false));
+        assert!(grid.run(&mut f, (0, 0), (2, 2), true));
         assert_eq!(known_cost(&f), 4);
         for w in path(&f).windows(2) {
             assert!(w[0].0 == w[1].0 || w[0].1 == w[1].1, "diagonal step with bCardinalOnly");
         }
-        assert!(grid.run(&mut f, (0, 0), (2, 2), false, false));
+        assert!(grid.run(&mut f, (0, 0), (2, 2), false));
         assert_eq!(known_cost(&f), 2);
 
         // Wrapping in x: (0, 0) -> (5, 0) is one step west across the seam.
         let grid = Grid::new(&["......", "......"], true);
         let mut f = grid.finder();
-        assert!(grid.run(&mut f, (0, 0), (5, 0), false, false));
+        assert!(grid.run(&mut f, (0, 0), (5, 0), false));
         assert_eq!(path(&f), vec![(0, 0), (5, 0)]);
         let grid = Grid::new(&["......", "......"], false);
         let mut f = grid.finder();
-        assert!(grid.run(&mut f, (0, 0), (5, 0), false, false));
+        assert!(grid.run(&mut f, (0, 0), (5, 0), false));
         assert_eq!(known_cost(&f), 5);
     }
 
@@ -1624,55 +1672,18 @@ mod tests {
     fn astar_flood_fill_closes_reachable_region() {
         let grid = Grid::new(&["..#..", "..#..", "###..", "....."], false);
         let mut f = grid.finder();
-        assert!(!grid.run(&mut f, (0, 0), (-1, -1), false, false));
+        assert!(!grid.run(&mut f, (0, 0), (-1, -1), false));
         let mut closed: Vec<(i32, i32)> = f.closed_nodes().map(|n| (n.x, n.y)).collect();
         assert_eq!(closed[0], (0, 0), "the start is closed first");
         closed.sort();
         assert_eq!(closed, vec![(0, 0), (0, 1), (1, 0), (1, 1)]);
         assert!(f.nodes.iter().filter(|n| n.list == Some(PathListType::Closed)).count() == 4);
         // The other region (cardinal moves connect it too) is separate.
-        assert!(!grid.run(&mut f, (4, 3), (-1, -1), true, false));
+        assert!(!grid.run(&mut f, (4, 3), (-1, -1), true));
         assert_eq!(f.closed_nodes().count(), 11);
         // Nodes of the previous search were reset.
         assert!(f.nodes.iter().filter(|n| n.list.is_some()).all(|n| n.x >= 2 || n.y >= 2));
         assert_eq!(f.nodes[0], PathNode { x: 0, y: 0, ..PathNode::default() });
-    }
-
-    #[test]
-    fn astar_reuse_matches_fresh_search() {
-        let rows = ["..........", ".####.###.", ".#......#.", ".#.####.#.", "...#..#...", ".#.#.##.#.", "...#......"];
-        let grid = Grid::new(&rows, false);
-        let mut reused = grid.finder();
-        let start = (0, 0);
-        let mut targets = Vec::new();
-        for y in 0..rows.len() as i32 {
-            for x in 0..10 {
-                if grid.cell(x, y) != b'#' {
-                    targets.push((x, y));
-                }
-            }
-        }
-        targets.reverse();
-        for &t in &targets {
-            let mut fresh = grid.finder();
-            let ok_fresh = grid.run(&mut fresh, start, t, false, false);
-            let ok_reused = grid.run(&mut reused, start, t, false, true);
-            assert_eq!(ok_fresh, ok_reused, "target {t:?}");
-            assert_eq!(ok_fresh, bfs_distance(&grid, start, t, false).is_some());
-            if ok_fresh {
-                assert_eq!(known_cost(&fresh), known_cost(&reused), "target {t:?}");
-                assert_eq!(fresh.last_node().unwrap().data1, reused.last_node().unwrap().data1);
-                assert_eq!(known_cost(&fresh), bfs_distance(&grid, start, t, false).unwrap());
-            }
-        }
-        // A different start resets the kept tree even with reuse.
-        assert!(grid.run(&mut reused, (9, 6), (0, 0), false, true));
-        assert_eq!(path(&reused).first(), Some(&(9, 6)));
-        // ForceReset: the next reuse search starts over.
-        reused.force_reset();
-        assert_eq!(reused.closed_nodes().count(), 0);
-        assert!(grid.run(&mut reused, (9, 6), (0, 0), false, true));
-        assert_eq!(known_cost(&reused), bfs_distance(&grid, (9, 6), (0, 0), false).unwrap());
     }
 
     #[test]
@@ -1682,8 +1693,8 @@ mod tests {
         let grid = Grid::new(&["......", "......", "......", "......"], false);
         let mut f1 = grid.finder();
         let mut f2 = grid.finder();
-        assert!(grid.run(&mut f1, (0, 0), (5, 2), false, false));
-        assert!(grid.run(&mut f2, (0, 0), (5, 2), false, false));
+        assert!(grid.run(&mut f1, (0, 0), (5, 2), false));
+        assert!(grid.run(&mut f2, (0, 0), (5, 2), false));
         assert_eq!(path(&f1), path(&f2));
         assert_eq!(known_cost(&f1), 5);
         let order1: Vec<_> = f1.closed_nodes().map(|n| (n.x, n.y)).collect();
@@ -1702,7 +1713,7 @@ mod tests {
         grid.h_weight = 0;
         grid.h_bonus = Some(((1, 0), 100));
         let mut f = grid.finder();
-        assert!(grid.run(&mut f, (0, 0), (3, 2), true, false));
+        assert!(grid.run(&mut f, (0, 0), (3, 2), true));
         assert_eq!(known_cost(&f), 204);
         assert_eq!(f.last_node().unwrap().data1, 5);
         let closed: Vec<(i32, i32)> = f.closed_nodes().map(|n| (n.x, n.y)).collect();
@@ -1721,7 +1732,7 @@ mod tests {
         assert_eq!(node(3, 0).parent, Some(grid.geom.plot_num(2, 0) as u32));
 
         // Without a destination there is no heuristic: a plain uniform-cost flood.
-        assert!(!grid.run(&mut f, (0, 0), (-1, -1), true, false));
+        assert!(!grid.run(&mut f, (0, 0), (-1, -1), true));
         assert_eq!(node_cost(&f, &grid, 2, 0), 2);
         assert!(f.closed_nodes().all(|n| n.data2 == 0), "no re-parenting needed");
     }
@@ -1764,31 +1775,30 @@ mod tests {
         let g = test_game(&["......", ".^^^^.", "......", "~~~..."]);
         let mut f = g.step_finder.borrow_mut();
 
-        // CvMap::calculatePathDistance: GeneratePath(.., false, 0, bReuse = true), m_iData1.
-        assert!(f.generate_path(&g, 2, 0, 2, 2, false, 0, true));
+        // CvMap::calculatePathDistance: GeneratePath(.., false, 0), m_iData1.
+        assert!(f.generate_path(&g, 2, 0, 2, 2, false, 0));
         assert_eq!(f.last_node().unwrap().data1, 4, "around the peaks at x = 0");
         assert_eq!(f.geom, g.map_geom(), "initialized from the map on first use");
-        // Reuse from the same start; a target the first search did not close (via (5, 1)).
-        assert!(f.generate_path(&g, 2, 0, 5, 3, false, 0, true));
+        // Another target from the same start (via (5, 1)).
+        assert!(f.generate_path(&g, 2, 0, 5, 3, false, 0));
         assert_eq!(f.last_node().unwrap().data1, 5);
         assert_eq!(f.path_first_xy(), Some((3, 0)));
         // Other area (water): stepDestValid fails.
-        assert!(!f.generate_path(&g, 2, 0, 0, 3, false, 0, true));
+        assert!(!f.generate_path(&g, 2, 0, 0, 3, false, 0));
         assert_eq!(f.last_node(), None);
         // The start itself.
-        assert!(f.generate_path(&g, 2, 0, 2, 0, false, 0, true));
+        assert!(f.generate_path(&g, 2, 0, 2, 0, false, 0));
         assert_eq!(f.last_node().unwrap().data1, 0);
 
         // A peak is impassable, also as a destination in the same area: no path.
-        f.force_reset();
-        assert!(!f.generate_path(&g, 2, 0, 2, 1, false, 0, true));
+        assert!(!f.generate_path(&g, 2, 0, 2, 1, false, 0));
     }
 
     #[test]
     fn area_finder_floods_land_and_cardinal_water() {
         // Water connected only diagonally; land likewise.
         let g = test_game(&["~.~", ".~.", "~.~"]);
-        let mut f = g.area_finder.borrow_mut();
+        let mut f = PathFinder::new(FinderKind::Area);
         let closed = |f: &PathFinder| {
             let mut v: Vec<(i32, i32)> = f.closed_nodes().map(|n| (n.x, n.y)).collect();
             v.sort();
@@ -1796,12 +1806,12 @@ mod tests {
         };
 
         // CvMap::calculateAreas: GeneratePath(x, y, -1, -1, bCardinalOnly = isWater(), iArea).
-        assert!(!f.generate_path(&g, 1, 1, -1, -1, true, 7, false));
+        assert!(!f.generate_path(&g, 1, 1, -1, -1, true, 7));
         assert_eq!(closed(&f), vec![(1, 1)]);
         assert_eq!(f.ctx.info, 7);
-        assert!(!f.generate_path(&g, 1, 1, -1, -1, false, 7, false));
+        assert!(!f.generate_path(&g, 1, 1, -1, -1, false, 7));
         assert_eq!(closed(&f), vec![(0, 0), (0, 2), (1, 1), (2, 0), (2, 2)]);
-        assert!(!f.generate_path(&g, 1, 0, -1, -1, false, 8, false));
+        assert!(!f.generate_path(&g, 1, 0, -1, -1, false, 8));
         assert_eq!(closed(&f), vec![(0, 1), (1, 0), (1, 2), (2, 1)]);
     }
 }

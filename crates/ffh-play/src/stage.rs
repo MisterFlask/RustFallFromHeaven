@@ -1,9 +1,9 @@
 //! Staged situations for testing the clients (`ffh-play stage
-//! capture|attack|automoves|load|trade|automate|election|settlement|corrupt|crusade DIR`,
+//! capture|attack|automoves|load|trade|diplomacy|automate|armies|engagement|election|settlement|corrupt|crusade DIR`,
 //! and the transports' tests): a saved game at a human control point arranged with rules calls,
 //! so that a client can be tried on a situation a fresh game reaches only by chance (a captured
 //! city's keep/raze decision, an attack, the AutoMoves rule between commands, the transport
-//! picker, a trade with a civilization met). Each writes only `DIR/KIND.ffhsave` and its sidecar: the staged game is played with
+//! picker, a trade with a civilization met, a leader's first contact and war declaration). Each writes only `DIR/KIND.ffhsave` and its sidecar: the staged game is played with
 //! no journal and no autosaves, so a `DIR` that is also a game's directory keeps its journal and
 //! autosaves (P5 review). Nothing here is used in play.
 
@@ -71,11 +71,17 @@ fn duel_at(dir: &Path, seed: u32, turn: i32) -> Result<Session, String> {
 
 /// [`duel_at`] with the human's civilization (`None`: random).
 fn duel_as(dir: &Path, seed: u32, turn: i32, civ: Option<&str>) -> Result<Session, String> {
+    duel_with(dir, seed, turn, civ, &[])
+}
+
+/// [`duel_as`] with game options on.
+fn duel_with(dir: &Path, seed: u32, turn: i32, civ: Option<&str>, options: &[GameOptionType]) -> Result<Session, String> {
     let d = ffh_data::global();
     let mut ng = NewGame::new(d, seed);
     ng.opponents = 1;
     ng.world = d.t("WORLDSIZE_DUEL");
     ng.civ = civ.map(|c| d.t::<CivilizationType>(c));
+    ng.options.extend_from_slice(options);
     // Only the staged save goes to `dir`: no journal, no autosave ring (which would overwrite and
     // prune the autosaves of a game kept there).
     let opts = SessionOptions { saves_dir: Some(dir.to_path_buf()), autosave_keep: 0, journal: false, ..Default::default() };
@@ -219,7 +225,7 @@ pub fn auto_moves(dir: &Path) -> Result<StagedAutoMoves, String> {
             for (dx, dy) in [(r, 0), (-r, 0), (0, r), (0, -r), (r, r), (-r, -r), (r, -r), (-r, r)] {
                 let Some(p) = g.plot_xy(x, y, dx, dy) else { continue };
                 let (tx, ty) = (g.map.plots[p].x, g.map.plots[p].y);
-                if finder.generate_path(g, x, y, tx, ty, false, 0, false) && finder.path_turns().is_some_and(|t| t >= 2) {
+                if finder.generate_path(g, x, y, tx, ty, false, 0) && finder.path_turns().is_some_and(|t| t >= 2) {
                     target = Some((grp, tx, ty));
                     break 'search;
                 }
@@ -332,6 +338,43 @@ pub fn trade(dir: &Path) -> Result<StagedTrade, String> {
     g.players[with].gold = 100;
     let paths = s.save("trade").map_err(|e| format!("save: {e:?}"))?;
     Ok(StagedTrade { save: paths.save, with, turn: s.g.game_turn() })
+}
+
+/// A saved game at a human control point (turn 4 of a duel, seed 11) in which the AI player
+/// `with` has just met the human and then declared war on it: its leader's two moments (first
+/// contact, then the declaration, `AI_DIPLOCOMMENT_FIRST_CONTACT` and `_DECLARE_WAR`) are in the
+/// sidecar, so a client that loads the save shows them; at war since this turn, it refuses to
+/// talk.
+pub struct StagedDiplomacy {
+    pub save: PathBuf,
+    pub with: PlayerId,
+    pub turn: i32,
+}
+
+impl StagedDiplomacy {
+    pub fn to_json(&self) -> Json {
+        crate::jobj! { "stage" => "diplomacy", "save" => self.save.display().to_string(), "with" => self.with, "turn" => self.turn }
+    }
+}
+
+/// Writes a [`StagedDiplomacy`] into `dir` (a game directory).
+pub fn diplomacy(dir: &Path) -> Result<StagedDiplomacy, String> {
+    let mut s = duel_at(dir, 11, 4)?;
+    let h = s.human;
+    let with = s.g.civ_player_ids().find(|&p| p != h && s.g.players[p].alive).ok_or("no AI player")?;
+    let (my, their) = (s.g.players[h].team, s.g.players[with].team);
+    if s.g.teams[my].has_met[their] {
+        return Err("the human has met the AI already".into());
+    }
+    // As a unit of theirs coming into view would (`bNewDiplo`): the AI leader opens the screen.
+    s.g.team_meet(their, my, true);
+    s.g.team_declare_war(their, my, true, None);
+    s.drain_log();
+    if s.message_store().moments_total() != 2 {
+        return Err(format!("{} leader moments, expected 2", s.message_store().moments_total()));
+    }
+    let paths = s.save("diplomacy").map_err(|e| format!("save: {e:?}"))?;
+    Ok(StagedDiplomacy { save: paths.save, with, turn: s.g.game_turn() })
 }
 
 /// A saved game with crusades on (docs/CRUSADE.md) at a human control point: a crusade against
@@ -458,6 +501,150 @@ pub fn automate(dir: &Path) -> Result<StagedAutomate, String> {
     Ok(StagedAutomate { save: paths.save, worker, scout, turn: s.g.game_turn() })
 }
 
+/// A saved game at a human control point (turn 4 of a duel, seed 11, armies and governors on)
+/// with this game's armies in play (docs/ARMIES.md): the human's `army` of two warriors next to
+/// its capital `capital` (not its 1st Army when a starting unit outside the capital formed one),
+/// with a target size of 4 and requisitioning from the capital, whose
+/// requisition order leads its queue (ahead of a warrior it was building); a second city `city`
+/// that no army requisitions from; and `recruit`, a warrior `city` trained for the army, marching
+/// to it (the rules move it: it takes no orders until it arrives).
+pub struct StagedArmies {
+    pub save: PathBuf,
+    pub army: ffh_core::ids::ArmyId,
+    pub capital: ffh_core::ids::CityId,
+    pub city: ffh_core::ids::CityId,
+    pub recruit: UnitId,
+    pub turn: i32,
+}
+
+impl StagedArmies {
+    pub fn to_json(&self) -> Json {
+        crate::jobj! {
+            "stage" => "armies", "save" => self.save.display().to_string(), "army" => self.army, "capital" => self.capital,
+            "city" => self.city, "recruit" => self.recruit, "turn" => self.turn,
+        }
+    }
+}
+
+/// Writes a [`StagedArmies`] into `dir` (a game directory).
+pub fn armies(dir: &Path) -> Result<StagedArmies, String> {
+    use ffh_core::army::RecruitDest;
+    let d = ffh_data::global();
+    let mut s = duel_with(dir, 11, 4, None, &[GameOptionType::GAMEOPTION_ARMIES, GameOptionType::GAMEOPTION_GOVERNORS])?;
+    let h = s.human;
+    let g = &mut s.g;
+    let capital = *g.players[h].cities.first().ok_or("no city")?;
+    let (cx, cy) = (g.cities[capital].x, g.cities[capital].y);
+    let area = g.map.plots[g.city_plot(capital)].area;
+    // The second city 5 to 7 plots away on the capital's land: a recruit needs some turns to march.
+    let mut site = None;
+    for q in g.map.plot_ids() {
+        let (x, y) = g.map.xy(q);
+        let dist = g.plot_distance(x, y, cx, cy);
+        if (5..=7).contains(&dist) && g.map.plots[q].area == area && g.player_can_found(h, x, y, false) && g.map.plots[q].units.is_empty() && site.map_or(true, |(b, _, _)| dist < b) {
+            site = Some((dist, x, y));
+        }
+    }
+    let (_, x, y) = site.ok_or("no city site 5 to 7 plots from the capital")?;
+    let city = g.player_init_city(h, x, y, true, true);
+    let w = d.t::<UnitType>("UNIT_WARRIOR");
+    let &(ax, ay) = free_plots_near_capital(g, h)?.first().ok_or("no free plot near the capital")?;
+    let units: Vec<UnitId> = (0..2).map(|_| g.player_init_unit(h, w, ax, ay, None, None)).collect();
+    let army = g.army_form(h, &units)?;
+    g.army_set_target_size(h, army, 4)?;
+    // The second city finishes a warrior for the army: it appears there and marches.
+    g.city_push_order(city, OrderType::ORDER_TRAIN, w.idx() as i32, -1, false, false, false, false);
+    g.cities[city].order_queue[0].dest = Some(RecruitDest::Army(army));
+    g.cities[city].unit_production[w] = g.city_production_needed_unit(city, w);
+    let before = g.players[h].units.clone();
+    g.city_pop_order(city, 0, true, false);
+    let recruit = g.players[h].units.iter().copied().find(|u| !before.contains(u)).ok_or("no recruit")?;
+    if g.unit_march(recruit).is_none() {
+        return Err("the recruit does not march".into());
+    }
+    // The capital builds a warrior; the army's requisition puts its order ahead of it.
+    g.city_push_order(capital, OrderType::ORDER_TRAIN, w.idx() as i32, -1, false, false, true, false);
+    g.army_add_requisition(h, army, capital)?;
+    g.player_do_requisition(h);
+    if !g.cities[capital].order_queue.first().is_some_and(|o| o.requisition) {
+        return Err("no requisition order in the capital".into());
+    }
+    g.player_army_sync(h);
+    let paths = s.save("armies").map_err(|e| format!("save: {e:?}"))?;
+    Ok(StagedArmies { save: paths.save, army, capital, city, recruit, turn: s.g.game_turn() })
+}
+
+/// A saved game at a human control point (turn 4 of a duel, seed 11, armies and engagements on)
+/// with an engagement to fight (docs/ENGAGEMENTS.md): the human's `army` (`units`: two Axemen, an
+/// Archer, a Horseman and a Warrior) stands next to `city` at (`x`, `y`), a size-3 AI city of a
+/// team at war with the human, held by `defenders` (a Warrior, an Archer and a Warrior); the
+/// human's `capital`. Moving the army onto the city opens the battle plan in the browser client;
+/// `engage {army, to}` fights it.
+pub struct StagedEngagement {
+    pub save: PathBuf,
+    pub army: ffh_core::ids::ArmyId,
+    pub units: Vec<UnitId>,
+    pub city: ffh_core::ids::CityId,
+    pub x: i32,
+    pub y: i32,
+    pub defenders: Vec<UnitId>,
+    pub capital: ffh_core::ids::CityId,
+    pub turn: i32,
+}
+
+impl StagedEngagement {
+    pub fn to_json(&self) -> Json {
+        crate::jobj! {
+            "stage" => "engagement", "save" => self.save.display().to_string(), "army" => self.army, "units" => self.units.clone(),
+            "city" => self.city, "x" => self.x, "y" => self.y, "defenders" => self.defenders.clone(), "capital" => self.capital, "turn" => self.turn,
+        }
+    }
+}
+
+/// Writes a [`StagedEngagement`] into `dir` (a game directory).
+pub fn engagement(dir: &Path) -> Result<StagedEngagement, String> {
+    use ffh_core::engagement::WarTest;
+    let d = ffh_data::global();
+    let mut s = duel_with(dir, 11, 4, None, &[GameOptionType::GAMEOPTION_ARMIES, GameOptionType::GAMEOPTION_ENGAGEMENTS])?;
+    let h = s.human;
+    let g = &mut s.g;
+    if !g.engagements_on() {
+        return Err("engagements are not on".into());
+    }
+    let capital = *g.players[h].cities.first().ok_or("no city of the human's")?;
+    let (city, owner) = g.cities.iter().find(|(_, c)| c.owner != h).map(|(id, c)| (id, c.owner)).ok_or("no AI city")?;
+    g.city_set_population(city, 3);
+    let city_plot = g.city_plot(city);
+    for u in g.map.plots[city_plot].units.clone() {
+        g.unit_kill(u, false, None);
+    }
+    let (my, their) = (g.players[h].team, g.players[owner].team);
+    g.team_meet(my, their, false);
+    g.team_declare_war(my, their, false, None);
+    let (cx, cy) = (g.cities[city].x, g.cities[city].y);
+    let ty = |n: &str| d.t::<UnitType>(n);
+    let defenders: Vec<UnitId> = ["UNIT_WARRIOR", "UNIT_ARCHER", "UNIT_WARRIOR"].iter().map(|n| g.player_init_unit(owner, ty(n), cx, cy, None, None)).collect();
+    let kinds = ["UNIT_AXEMAN", "UNIT_AXEMAN", "UNIT_ARCHER", "UNIT_HORSEMAN", "UNIT_WARRIOR"];
+    for (dx, dy) in [(-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (1, 1), (-1, 1), (1, -1)] {
+        let Some(p) = g.plot_xy(cx, cy, dx, dy) else { continue };
+        if g.plot_is_water(p) || g.plot_is_impassable(p) || !g.map.plots[p].units.is_empty() || g.map.plots[p].plot_city.is_some() {
+            continue;
+        }
+        let (px, py) = (g.map.plots[p].x, g.map.plots[p].y);
+        let units: Vec<UnitId> = kinds.iter().map(|n| g.player_init_unit(h, ty(n), px, py, None, None)).collect();
+        if g.engage_attackers(h, p, city_plot, WarTest::AtWar).len() == units.len() && !g.engage_defenders(city_plot, h, &units, WarTest::AtWar).is_empty() {
+            let army = g.army_form(h, &units)?;
+            g.player_army_sync(h);
+            let paths = s.save("engagement").map_err(|e| format!("save: {e:?}"))?;
+            return Ok(StagedEngagement { save: paths.save, army, units, city, x: cx, y: cy, defenders, capital, turn: s.g.game_turn() });
+        }
+        for u in units {
+            g.unit_kill(u, false, None);
+        }
+    }
+    Err("no plot to attack the city from".into())
+}
+
 /// A saved game at a human control point (turn 3 of a duel, seed 15) where both players run a
 /// council's civic, the human's team is its secretary general, and the secretary's election
 /// (BUTTONPOPUP_CHOOSEELECTION) waits for the human: `pending.elections` holds `selection` (P7).
@@ -550,7 +737,8 @@ pub fn settlement(dir: &Path) -> Result<StagedSettlement, String> {
 }
 
 /// A saved game at a human control point in a real mid-game world, for the 3D renderer's vertical
-/// slice (docs/R3D.md): seed 11, a standard map at low sea level, the human playing the Ljosalfar
+/// slice (docs/R3D.md): seed 11 (or the next seed, up to 30, while an AI change leaves no evil
+/// civilization holding a capital at turn 200), a standard map at low sea level, the human playing the Ljosalfar
 /// against six AI civilizations, 200 turns of AI autoplay; then the heartland of the evil
 /// civilization with the most cities is corrupted by FfH2's own hell rule -- every land plot it
 /// owns within two plots of its capital takes the plot counter an Infernal owner gives its plots
@@ -565,17 +753,35 @@ pub struct StagedCorrupt {
     /// Plots whose counter was raised.
     pub plots: usize,
     pub turn: i32,
+    /// The game's seed (11 unless that seed had no evil civilization with a capital).
+    pub seed: u32,
 }
 
 impl StagedCorrupt {
     pub fn to_json(&self) -> Json {
-        crate::jobj! { "stage" => "corrupt", "save" => self.save.display().to_string(), "player" => self.player.0 as i64, "x" => self.x, "y" => self.y, "plots" => self.plots as i64, "turn" => self.turn }
+        crate::jobj! { "stage" => "corrupt", "save" => self.save.display().to_string(), "player" => self.player.0 as i64, "x" => self.x, "y" => self.y, "plots" => self.plots as i64, "turn" => self.turn, "seed" => self.seed as i64 }
     }
 }
 
 pub fn corrupt(dir: &Path) -> Result<StagedCorrupt, String> {
+    // The AI decides which civilizations live to turn 200: when an AI change leaves seed 11 with no
+    // evil civilization holding a capital, the next seed that has one is staged instead.
+    let mut last = String::new();
+    for seed in 11..=30 {
+        match corrupt_seed(dir, seed) {
+            Ok(s) => return Ok(s),
+            Err(e) if e == NO_EVIL => last = e,
+            Err(e) => return Err(e),
+        }
+    }
+    Err(format!("{last} (seeds 11-30)"))
+}
+
+const NO_EVIL: &str = "no evil civilization with a capital";
+
+fn corrupt_seed(dir: &Path, seed: u32) -> Result<StagedCorrupt, String> {
     let d = ffh_data::global();
-    let mut ng = NewGame::new(d, 11);
+    let mut ng = NewGame::new(d, seed);
     ng.opponents = 6;
     ng.world = d.t("WORLDSIZE_STANDARD");
     ng.sea_level = d.t("SEALEVEL_LOW");
@@ -598,7 +804,7 @@ pub fn corrupt(dir: &Path) -> Result<StagedCorrupt, String> {
         .player_ids()
         .filter(|&p| g.players[p].alive && g.players[p].alignment == Some(evil) && g.player_get_capital_city(p).is_some())
         .max_by_key(|&p| (g.players[p].cities.len(), std::cmp::Reverse(p.0)))
-        .ok_or("no evil civilization with a capital")?;
+        .ok_or(NO_EVIL.to_string())?;
     let capital = g.player_get_capital_city(player).ok_or("no capital")?;
     let (cx, cy) = (g.cities[capital].x, g.cities[capital].y);
     let mut plots = 0;
@@ -611,5 +817,5 @@ pub fn corrupt(dir: &Path) -> Result<StagedCorrupt, String> {
     }
     let turn = s.g.game_turn();
     let paths = s.save("corrupt").map_err(|e| format!("save: {e:?}"))?;
-    Ok(StagedCorrupt { save: paths.save, player, x: cx, y: cy, plots, turn })
+    Ok(StagedCorrupt { save: paths.save, player, x: cx, y: cy, plots, turn, seed })
 }

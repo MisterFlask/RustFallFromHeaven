@@ -22,6 +22,11 @@ use crate::Ai;
 pub struct Lanun;
 
 impl CivPlay for Lanun {
+    /// FfH's `AI_chooseTech` research plan (`tech_plan::goals`).
+    fn tech_goals(&self, _g: &Game, _p: PlayerId) -> super::TechGoals {
+        super::TechGoals { beelines: vec!["TECH_IRON_WORKING"], ..Default::default() }
+    }
+
     fn production(&self, _ai: &Ai, g: &Game, c: CityId, threat: i32) -> Option<Choice> {
         cove_boat(g, c, threat)
     }
@@ -62,6 +67,7 @@ fn sea_worker(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
     let here = g.unit_plot(u);
     if cove_site(g, here, p) && g.unit_can_cast(u, spell, false) {
         crate::trace!(g, p, "work boat {:?}: pirate cove at {:?}", u, g.map.xy(here));
+        g.tel_cast_reason(u, "pirate_cove", 0);
         g.unit_cast(u, spell);
         if alive(g, grp) && g.group_ready_to_move(grp, true) {
             skip(g, grp);
@@ -105,6 +111,7 @@ fn sea_worker(g: &mut Game, v: &mut View, grp: GroupId, u: UnitId) -> bool {
         return true;
     }
     if g.unit_plot(u) == plot && g.unit_can_cast(u, spell, false) {
+        g.tel_cast_reason(u, "pirate_cove", 0);
         g.unit_cast(u, spell);
     }
     if alive(g, grp) && g.group_ready_to_move(grp, true) {

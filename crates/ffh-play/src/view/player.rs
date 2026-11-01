@@ -32,8 +32,15 @@ pub fn tech_depths(d: &GameData) -> Vec<i32> {
     memo
 }
 
+/// A list of type indices.
+fn ids<I: Idx + Copy>(v: &[I]) -> Json {
+    Json::Arr(v.iter().map(|&i| Json::idx(i)).collect())
+}
+
 /// `techs`: every tech with the human's state (has, can research, progress, cost, turns),
-/// its prerequisites and its depth.
+/// its prerequisites, its depth, its help (what it brings the human) and, unless the human has it,
+/// what it unlocks as type indices (`unlocks`: the help's units, buildings, builds, civics and
+/// religions; the screens draw them as icons).
 pub fn techs(v: &Viewer) -> Json {
     let g = v.g;
     let d = g.d;
@@ -44,6 +51,7 @@ pub fn techs(v: &Viewer) -> Json {
         let info = &d.techs[t];
         let has = g.teams[v.team].has_tech[t];
         let can = g.player_can_research(h, t, false);
+        let un = crate::view::help::tech::unlocks(g, h, t);
         crate::jobj! {
             "tech" => Json::idx(t),
             "has" => has,
@@ -58,6 +66,20 @@ pub fn techs(v: &Viewer) -> Json {
             "or" => Json::Arr(info.prereq_or_techs.iter().map(|&p| Json::idx(p)).collect()),
             "depth" => depths[t.idx()],
             "disabled" => info.disable,
+            // What it brings the human (C++ `setTechHelp`), for the research screens' tooltips.
+            "help" => crate::view::help::tech::tech_help_with(g, h, t, &un),
+            "unlocks" => if has {
+                Json::Null
+            } else {
+                crate::jobj! {
+                    "units" => ids(&un.units),
+                    "buildings" => ids(&un.buildings),
+                    "builds" => ids(&un.builds),
+                    "civics" => ids(&un.civics),
+                    // With "pick religion" the founder chooses which (the help says "a Religion").
+                    "religions" => if g.is_option(GameOptionType::GAMEOPTION_PICK_RELIGION) { Json::Arr(Vec::new()) } else { ids(&un.religions) },
+                }
+            },
         }
     });
     crate::jobj! {
@@ -119,10 +141,16 @@ fn civics_screen(v: &Viewer) -> Json {
         let civics = d.civics.keys().filter(|&c| d.civics[c].civic_option_type == Some(o)).map(|c| {
             let mut changed = pl.civics.clone();
             changed[o] = Some(c);
+            let available = g.player_can_do_civics(h, Some(c));
             crate::jobj! {
                 "civic" => Json::idx(c),
                 "current" => pl.civics[o] == Some(c),
-                "available" => g.player_can_do_civics(h, Some(c)),
+                "available" => available,
+                // Why it cannot be adopted (the checks of C++ `canDoCivics`), as text.
+                "requires" => if available { Json::Arr(Vec::new()) } else { Json::Arr(civic_requires(g, h, c).into_iter().map(Json::from).collect()) },
+                // What it does, without the requirements `requires` says (the data's `effects`
+                // has them all).
+                "help" => crate::view::help::civic::effects_without_requirements(d, c),
                 "upkeep" => g.player_get_single_civic_upkeep(h, Some(c), false),
                 "anarchy" => if pl.civics[o] == Some(c) { 0 } else { g.player_get_civic_anarchy_length(h, &changed) },
             }
@@ -136,6 +164,47 @@ fn civics_screen(v: &Viewer) -> Json {
         "anarchy" => pl.anarchy_turns,
         "upkeep" => g.player_get_civic_upkeep(h, None, false),
     }
+}
+
+/// Why player `p` cannot adopt civic `c`: the checks of C++ `CvPlayer::canDoCivics` that fail,
+/// in its order, as sentences ("Requires Code of Laws", "Only while at war", ...); a check the
+/// rules' Python makes says "Not possible now".
+pub fn civic_requires(g: &ffh_core::game::Game, p: PlayerId, c: CivicType) -> Vec<String> {
+    use crate::names::display;
+    let d = g.d;
+    let info = &d.civics[c];
+    let pl = &g.players[p];
+    let mut out = Vec::new();
+    if let Some(o) = info.civic_option_type {
+        if g.player_is_full_member(p, VoteSourceType(0)) && g.is_force_civic_option(o) && !g.is_force_civic(c) {
+            out.push("A resolution of the council forces another civic".to_string());
+            return out;
+        }
+        if !g.player_is_has_civic_option(p, o) && !g.team_is_has_tech(pl.team, info.tech_prereq) {
+            if let Some(t) = info.tech_prereq {
+                out.push(format!("Requires {}", display(d, t)));
+            }
+        }
+    }
+    if info.prereq_war && g.team_get_at_war_count(pl.team, true) == 0 {
+        out.push("Only while at war".to_string());
+    }
+    if let Some(a) = info.block_alignment.filter(|&a| pl.alignment == Some(a)) {
+        out.push(format!("Not for {} civilizations", display(d, a)));
+    }
+    if let Some(a) = info.prereq_alignment.filter(|&a| pl.alignment != Some(a)) {
+        out.push(format!("Only for {} civilizations", display(d, a)));
+    }
+    if let Some(civ) = info.prereq_civilization.filter(|&x| g.player_get_civilization_type(p) != Some(x)) {
+        out.push(format!("Only for the {}", display(d, civ)));
+    }
+    if let Some(r) = info.prereq_religion.filter(|&r| g.player_get_state_religion(p) != Some(r)) {
+        out.push(format!("Requires {} as state religion", display(d, r)));
+    }
+    if out.is_empty() {
+        out.push("Not possible now".to_string());
+    }
+    out
 }
 
 /// `religions`: the state religion, conversion, and every religion's founding and holy city (as

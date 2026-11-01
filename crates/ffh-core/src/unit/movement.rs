@@ -55,31 +55,10 @@ fn py_unit_cannot_move_into(_g: &Game, _player: PlayerId, _u: UnitId, _x: i32, _
 }
 
 impl Game {
-    /// C++ `CvUnit::getPathEndTurnPlot` (CvUnit.cpp:2914-2917).
-    /// C++ `getGroup()->getPathEndTurnPlot()` (last path generated for the group).
-    pub fn unit_get_path_end_turn_plot(&self, u: UnitId) -> Option<PlotIdx> {
-        self.group_get_path_end_turn_plot(group_of(self, u))
-    }
-
-    /// C++ `CvUnit::generatePath` (CvUnit.cpp:2920-2923).
-    /// C++ `getGroup()->generatePath(plot(), pToPlot, iFlags, bReuse, piPathTurns)`; `flags` are `MOVE_*`.
-    pub fn unit_generate_path(
-        &self,
-        u: UnitId,
-        to: PlotIdx,
-        flags: i32,
-        reuse: bool,
-        path_turns: Option<&mut i32>,
-    ) -> bool {
-        let from = self.unit_plot(u);
-        let result = self.group_generate_path(group_of(self, u), from, to, flags, reuse);
-
-        // C++ `CvSelectionGroup::generatePath`: `*piPathTurns = MAX_INT` unless a path was found.
-        if let Some(path_turns) = path_turns {
-            *path_turns = result.unwrap_or(MAX_INT);
-        }
-
-        result.is_some()
+    /// C++ `CvUnit::generatePath` (CvUnit.cpp:2920-2923): `getGroup()->generatePath(plot(),
+    /// pToPlot, iFlags)`; `flags` are `MOVE_*`. See [`Game::group_find_path`].
+    pub fn unit_find_path(&self, u: UnitId, to: PlotIdx, flags: i32) -> Option<crate::group::GroupPath> {
+        self.group_find_path(group_of(self, u), self.unit_plot(u), to, flags)
     }
 
     /// C++ `CvUnit::canEnterTerritory` (CvUnit.cpp:2926-2987).
@@ -240,6 +219,10 @@ impl Game {
 
     /// C++ `CvUnit::canMoveInto` (CvUnit.cpp:3080-3444).
     /// Ends with the `unitCannotMoveInto` Python callback when `USE_UNIT_CANNOT_MOVE_INTO_CALLBACK` is set.
+    /// Engagement combat (an attack `engage_applies` to): the attack gates are the engagement's
+    /// (`Game::unit_has_attack_left`, `unit_engage_limit_ok`; plan 5.2), not the duel's made-attack
+    /// flag and best defender, so the path finder, the AI's attacker choice and `unit_can_engage`
+    /// agree.
     pub fn unit_can_move_into(
         &self,
         u: UnitId,
@@ -397,8 +380,16 @@ impl Game {
             }
         }
 
+        // Engagement combat (plan 5.2): an engagement's attack gates replace the duel's.
+        let engage = attack && self.engage_applies(u, plot);
         if attack {
-            if self.units[u].made_attack && !self.unit_is_blitz(u) {
+            if engage {
+                // One attack a turn, Blitz one more, counting engagements, bombards and missile
+                // strikes.
+                if !self.unit_has_attack_left(u) {
+                    return false;
+                }
+            } else if self.units[u].made_attack && !self.unit_is_blitz(u) {
                 return false;
             }
         }
@@ -426,7 +417,13 @@ impl Game {
                     }
                 }
 
-                if attack {
+                if engage {
+                    // Every defender instead of the best one: some defender below the combat
+                    // limit, no amphibious artillery.
+                    if !self.unit_engage_limit_ok(u, plot, crate::engagement::WarTest::AtWar) {
+                        return false;
+                    }
+                } else if attack {
                     let defender = self.plot_get_best_defender(plot, None, Some(owner), Some(u), true, false, false);
                     if let Some(defender) = defender {
                         if !self.unit_can_attack_unit(u, defender) {
@@ -1283,6 +1280,7 @@ impl Game {
             // (setInfoBarDirty: interface)
             if self.unit_get_immobile_timer(u) == 0 {
                 if let Some(spell) = self.units[u].delayed_spell {
+                    self.tel_cast_reason(u, "delayed", 0);
                     self.unit_cast(u, spell);
                 }
             }
@@ -1464,17 +1462,20 @@ impl Game {
     /// `plot` `None` = the unit's own plot (C++ default NULL).
     pub fn unit_is_enemy(&self, u: UnitId, team: Option<TeamId>, plot: Option<PlotIdx>) -> bool {
         let plot = plot.or_else(|| self.unit_plot_opt(u));
+        let our_team = self.unit_get_team(u);
 
         //FfH: Added by Kael 10/26/2007 (to prevent spinlocks when always hostile units attack barbarian allied teams)
         if self.unit_is_always_hostile(u, plot) {
-            if Some(self.unit_get_team(u)) != team {
+            if Some(our_team) != team {
                 return true;
             }
         }
         //FfH: End Add
 
-        let combat_owner = self.unit_get_combat_owner(u, team, plot);
-        self.at_war_opt(Some(self.players[combat_owner].team), team)
+        // C++ `atWar(GET_PLAYER(getCombatOwner(eTeam, pPlot)).getTeam(), eTeam)`. Here
+        // `getCombatOwner` is always the owner: it differs only for an always-hostile unit
+        // (`isAlwaysHostile(pPlot)`) seen by another team, which returned above.
+        self.at_war_opt(Some(our_team), team)
     }
 
     /// C++ `CvUnit::isPotentialEnemy` (CvUnit.cpp:18031-18039).

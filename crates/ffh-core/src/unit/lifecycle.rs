@@ -6,6 +6,7 @@
 //! ranges; all of them are ported. AI-only parts are omitted with `// AI:` notes; call sites
 //! whose callee signature does not fit the C++ are marked `// SIGNATURE:`.
 
+use crate::controller::AiHook;
 use crate::defs::*;
 use crate::game::Game;
 use crate::group::SelectionGroup;
@@ -190,6 +191,13 @@ impl Game {
     /// `from` is C++ `pUnit` (the unit being replaced; it is killed with delay at the end).
     pub fn unit_convert(&mut self, u: UnitId, from: UnitId) {
         let d = self.d;
+        // This game's armies: the new unit takes the old one's place in its army or march (not
+        // when it changes hands: a dominated unit joins no army of its old owner's, and the
+        // recruit is lost on the way).
+        if self.units[u].owner == self.units[from].owner {
+            self.units[u].army = self.units[from].army;
+            self.units[u].march = self.units[from].march.take();
+        }
         let info = &d.units[self.units[u].unit_type];
         // C++ `CvPlot* pPlot = plot();` (only dereferenced for the hidden nationality check).
         let plot = self.unit_plot_opt(u);
@@ -354,6 +362,9 @@ impl Game {
         if self.dying.contains(&u) {
             return;
         }
+        if self.telemetry.on() {
+            self.tel_kill_mark(u, player);
+        }
 
         // Not in C++: a lent unit's death is credited to its lender (docs/CRUSADE.md).
         if self.units[u].lent.is_some() {
@@ -408,9 +419,19 @@ impl Game {
             }
             if self.player_get_capital_city(owner).is_some() {
                 self.units[u].death_delay = false;
+                if self.telemetry.on() {
+                    self.tel_unit_reborn(u);
+                }
                 self.unit_do_immortal_rebirth(u);
                 return;
             }
+        }
+        if self.telemetry.on() {
+            self.tel_unit_died(u);
+        }
+        // This game's armies: a recruit killed on its way.
+        if self.units[u].march.is_some() {
+            self.unit_march_lost(u);
         }
         self.change_global_counter(-info.modify_global_counter);
         for promotion in d.promotions.keys() {
@@ -656,7 +677,9 @@ impl Game {
                 if self.unit_is_immortal(u) {
                     self.unit_change_immortal(u, -1);
                 }
+                self.tel_ctx_push("expired");
                 self.unit_kill(u, true, None);
+                self.tel_ctx_pop();
             }
         }
         if self.plot_is_city(plot, false, None) {
@@ -697,6 +720,7 @@ impl Game {
         self.unit_change_immobile_timer(u, -1);
 
         self.units[u].made_attack = false;
+        self.units[u].attacks_made = 0;
         self.units[u].made_interception = false;
 
         self.unit_set_recon_plot(u, None);
@@ -705,7 +729,11 @@ impl Game {
         self.units[u].moves = 0;
 
         // AI: BETTER AI `AI_chooseGroupflag()` for non-human, non-barbarian units whose group flag
-        // is GROUPFLAG_NONE (AI bookkeeping; omitted).
+        // is GROUPFLAG_NONE (AI bookkeeping; the controller's).
+        let owner = self.units[u].owner;
+        if !self.players[owner].human && !self.unit_is_barbarian(u) && self.units[u].ai_groupflag == GROUPFLAG_NONE {
+            self.ai_hook(owner, AiHook::ChooseGroupflag(u));
+        }
     }
 
     /// C++ `CvUnit::isInGroup` (CvUnit.cpp:10724-10727).

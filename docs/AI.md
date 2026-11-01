@@ -1,7 +1,15 @@
 # AI design (ffh-ai)
 
 Before changing the AI, read `docs/AI_LOG.md`: the changes that did not move the win rate, why,
-and what that implies (CLAUDE.md, "AI changes").
+and what that implies (CLAUDE.md, "AI changes"). `docs/ENTITIES.md` inventories, entity by entity,
+how far this AI uses every unit, building and spell, and the gaps that recur.
+
+**It plays the way an expert human would** (the owner's decision, 2026-10-21; CLAUDE.md, "AI
+changes"). Each behaviour starts from what a strong player would see, want and do in that
+position, and should read as sound strategy or tactics to one, unless flavor or fun dictates
+otherwise. Win-rate A/Bs tune the thresholds, weights and timing of such behaviours and catch
+implementations that misfire. They do not decide whether a sound behaviour exists: when one
+costs win rate, the games say why.
 
 The C++ AI (CvPlayerAI/CvCityAI/CvUnitAI/CvTeamAI, ~60k lines, plus the Python AI hooks
 in CvGameUtils.py such as `AI_chooseTech`/`AI_chooseProduction`) is not ported. It is the
@@ -27,6 +35,64 @@ and determinism -- and a standing cost preference:
   rules call again within a turn only while some unit is moving, i.e. has spent moves). So a
   game saved and resumed with a new controller plays on exactly (`tests/save_resume.rs`).
 
+## Fog of war
+
+The owner's decisions (2026-10-24): the AI **sees units through fog of war, for its defense and
+for its attacks, never through stealth** (attacks too: conflict is much of what makes the game
+fun). Unrevealed land stays unknown. Honest inference about unseen
+units would need a memory of what was last seen (saved per-team state, decay, scouting to
+refresh it); the C++ AI never had one either -- `CvPlayerAI::AI_getPlotDanger`,
+`CvPlot::getNumVisibleEnemyDefenders` and `AI_findTargetCity` read through fog and skip only
+units whose invisibility type hides them (`CvUnit::isInvisible`).
+
+- **Threats to us: fog included** (`view::known_threat`, switch `FOG_SIGHT`): the danger map
+  (`View::danger`: settler and escort risk, workers fleeing, healing, explorers, casters,
+  assembly plots), a city's local threat (`production::local_threat`: cities in peril,
+  emergency defenders, the garrison quota, settlers held at home, units kept from disbanding),
+  barbarians and civ enemies near a city (`production::barbarians_near`, `civ_enemy_near`),
+  sorties (`defense::sortie_ok`), the peril that times defensive world spells
+  (`world_spells::city_in_peril`) and the enemy's forces near our cities when weighing peace
+  (`diplomacy::front_forces`). FfH's hidden units (the Hidden and Invisible promotions,
+  assassins, shadows, hidden nationality) stay hidden: stealth is how those units and
+  civilizations play.
+- **What we attack: fog included** (`view::sees_units`, switch `FOG_ATTACK`): a city's garrison
+  on any revealed plot (`combat_sim::visible_defenders`, the siege and amphibious planners, the
+  war gate's `diplomacy::city_best_defense`), hunting targets (`military::find_targets`),
+  opportune and empty-city captures (`military::opportune`, `CAPTURE`); stealthed units left
+  out. With the switch off, only what is visible: in the fog the siege and amphibious planners
+  assume a defender count (2 + population/5 for a civ city, 1 + age/25 for a barbarian town)
+  and the war gate assumes the best defender the owner can train (`best_trainable_defense`).
+  The pathing checks (`plot_is_visible_enemy_unit_for_unit`) are the rules' and unchanged.
+
+Map knowledge is unchanged: city sites, paths and exploration use revealed plots only.
+
+Measured (6 civs, standard map, 300 turns). Development seeds 1-24 against master `77495f2`:
+legacy +4.8%, research +7.7%, land +4.7% (|t| <= 1.5), wars declared -55% (t -4.4),
+eliminations -54% (t -2.1). Fresh seeds 6101-6148, one binary, each against both switches off
+(paired t):
+
+| | `FOG_SIGHT` only | honest attacks only | both |
+|---|---|---|---|
+| legacy score | +3.3% (1.4) | +4.0% (2.7) | +7.3% (3.3) |
+| research | +5.5% (1.4) | +9.7% (3.0) | +12.1% (2.9) |
+| techs | +1.1% (0.4) | +3.3% (2.2) | +5.7% (2.3) |
+| cities / land | +2.9% / +2.5% | +0.1% / +2.8% | +4.8% / +4.6% (2.0) |
+| power | +7.9% (1.8) | +0.9% (0.2) | +6.6% (1.7) |
+| civ cities captured | +28% (2.1) | -21% (-1.6) | -11% (-0.7) |
+| wars declared | +15% (1.5) | -52% (-6.1) | -48% (-4.6) |
+
+Seeing threats in the fog makes civs safer and their wars more effective; the honest war gate
+halves the wars (the fogged estimate, the best defender the owner can train, is pessimistic:
+real garrisons lag the tech) while captures fall far less, and the economy gains. That table
+measured the first version, where attacks used only what was visible (then switch
+`FOG_HONEST`); the owner chose attacks through fog instead, for the conflict.
+
+`FOG_ATTACK` (fresh seeds 6201-6248, one binary, on against off, paired t): wars declared +105%
+(5.1), civ cities captured +84% (3.2) -- the extra wars take cities --, civ cities lost to
+barbarians -26% (-1.4), military +5% (1.4); legacy -2.8% (-1.4), research -5.3% (-1.4), techs
+-3.3% (-1.6): war costs some economy. Against master before any fog change (`77495f2`, seeds
+1-24), both switches on: legacy +0.5%, research +2.9%, captures +13%, wars -13% (all |t| < 1.3).
+
 ## Where the rules call the AI
 
 `Ai` implements `ffh_core::Controller`; the rules call it where the C++ calls the AI:
@@ -40,7 +106,8 @@ and determinism -- and a standing cost preference:
 | `CvPlayerAI::AI_considerOffer` | `consider_offer` | `diplomacy.rs` |
 | `CvPlayerAI::AI_doAdvancedStart` (from `CvPlayer::setTurnActive`) | `play_turn` while start points remain | `advanced_start.rs` |
 | `CvPlayerAI::AI_chooseEvent` | `choose_event` | `events.rs` |
-| elections, votes, captured/gifted units | defaults in `controller.rs` | -- |
+| `CvTeamAI::AI_chooseElection` / `CvPlayerAI::AI_diploVote` | `choose_election` / `diplo_vote` | `council.rs` |
+| captured/gifted units | defaults in `controller.rs` | -- |
 | `CvCityAI::AI_assignWorkingPlots` (citizens) | `Game::city_assign_working_plots` | `ffh-core/src/governor.rs` |
 
 `CvPlayerAI::AI_foundValue` (and its bonus valuation) is ported faithfully into the rules
@@ -61,34 +128,68 @@ counters, war success, war plans) that the diplomacy below reads.
 1. **Empire** (`empire.rs`): research when the queue is empty (a broke empire first
    researches its way out, see Finance; the victory goal's techs beeline, see Victory pursuit);
    civics every 10 turns when the summed gain in civic value exceeds a flat 100 (the anarchy's
-   length is not weighed; sooner under a structural deficit);
+   length is not weighed; sooner under a structural deficit; a Spiritual leader every 2 turns at
+   40, see "Leader traits");
    state religion; the culture slider a cultural victory wants, then the highest research
-   slider that keeps the treasury from running dry; unit support that holds research below its
-   target is cut first (see Finance); a bankrupt empire (slider at the bottom, still losing
-   gold) scraps surplus garrison units, never below what production wants in that city; an
-   empire paying unit support with research at a fifth or less disbands its weakest field
-   units (never heroes) down to a mobile force of 1 + cities/4 while at peace.
+   slider that keeps the treasury from running dry; units it cannot pay for go by More Naval
+   AI's rule (see Finance, "Unit support"): at peace, while costs take more than 60% of the
+   commerce, the military unit of least value (field units outside our borders first, city
+   defenders last, never one with experience); idle workers beyond the need while support holds
+   research below its target.
 2. **Emergency production** (`production::emergency`): a city whose visible threat exceeds
    its garrison switches to a defender (the rules keep the hammers); a capital or a city near
-   barbarians that has only one defender after turn 30 puts a second one first.
+   barbarians that has only one defender after turn 30 puts a second one first. Either switch
+   happens only when `decide` would then put a fighter first (switch `EMERGENCY_DECIDE`): the two
+   rules disagreed for a city whose garrison `decide` finds full (`needed + 2` defenders), which was
+   switched every turn and re-chose a building, often another one -- an Illian city under a threat
+   three times its defense alternated a Courthouse and an Elder Council 21 times in 30 turns, now it
+   builds the Courthouse. Whether a full garrison should still grow under such a threat is a
+   question for `decide`'s rule, unchanged. Measured with the contact fix ("Generic gaps"), every AI with both
+   against every AI without (`EMERGENCY_DECIDE`, `CONTACT`): legacy at turns 300 / 400 1080 / 1585
+   -> 1076 / 1598 (seeds 1-32) and 1090 / 1605 -> 1084 / 1609 (fresh 44001-44048); peace treaties
+   437 -> 395 and 569 -> 538 (no deals with a Crusader or a player that cannot be contacted),
+   eliminations 35 -> 39 and 59 -> 55: neutral, as a bug fix should be. Then, while the
+   empire cannot research at its target share, cities re-decide long builds for the economy
+   building they need (`production::trouble_rebuild`, see Finance), and a top city finishing a
+   world wonder at peace emphasizes production (`production::wonder_emphasis`, see Citizens).
 3. **Diplomacy** (`diplomacy.rs`), see below.
 4. **View** (`view.rs`): enemies, a *danger map* (each visible enemy unit's attack power
    added to the plots it can reach next turn; animals only on unowned plots since they cannot
    enter owned land; city garrisons ignored), field-army targets, cities in peril, the road
-   plan, escort requests. O(enemy units x reach^2 + our cities).
-5. **Units** (`units.rs`): promotions and upgrades first (also for fortified garrisons that
-   get no orders), then every group that needs orders gets one decision by its head unit's
-   role (`Unit::ai_type`, set when the city trains it):
+   plan, escort requests. O(enemy units x reach^2 + our cities). Built after diplomacy, since
+   war declarations change it; steps 1-3 read only its header (`View::header`: who we are at
+   war with), so the turn analyses it once (`View::analyze`).
+5. **Units** (`units.rs`): promotions and upgrades first, for every unit (switch
+   `PROMOTE_ALL`, as C++ `AI_doTurnUnitsPost` promotes every unit; before it only a group's head,
+   before it acted, and units that get no orders, so a unit inside a marching stack waited for its
+   promotions until a strike took it out of the stack; measured on fresh seeds 9501-9540 against
+   the same binary with it off: unspent promotions 0.27 -> 0.10 per player and 50-turn
+   checkpoint, every game changed, win rate 16.7% on both sides, share@end +29 (t 0.30), players
+   alive at the end 0.85 -> 0.80 (per player -0.04, t -1.6; eliminations 37 -> 48, cities the
+   barbarians took 156 -> 162)), then every group that needs orders gets one decision by its head
+   unit's role (`Unit::ai_type`, set when the city trains it):
    - **settlers** (`expansion.rs`, see "Settlers and escorts" below) go with an escort to the
      best reachable site whose danger the escort covers; the first city is founded in place
      unless a clearly better site is reachable this turn; with no site left on its landmass a
      settler goes overseas (see Naval);
    - **workers** (`workers.rs`), see below;
-   - **garrisons** fill each city's quota;
+   - **garrisons** fill each city's quota (the rival civilizations near the city included, see
+     "City defense against rival civilizations"); one beyond it attacks out of its city only while
+     our strength there is 175% of the enemy's within two plots;
    - **field armies** (`military.rs`), see below;
-   - **explorers** reveal the nearest unknown area and goody huts, then join the army;
-   - **great people** discover, join as specialists or start a golden age;
-   - **missionaries** go to our cities without the state religion; **casters** go with the
+   - **explorers** reveal the nearest unknown area and goody huts, one turn at a time to a plot
+     no enemy they see can reach (a multi-turn move gets no orders until it ends, and explorers
+     walked on into the animals their first steps revealed); with nothing safe in reach while a
+     fifth of the home landmass is unknown (before turn 150) they wait in a city, then join the
+     army (joining at once had production train another explorer);
+   - **great people** build a shrine they can construct in a holy city of ours (a gold a turn for
+     every city in the world with the religion, culture, a free mana: Great Prophets, and the
+     Bard's, Sage's and Merchant's shrines), Great Engineers rush a wonder one of our cities is
+     building when two thirds of the rush go into it; otherwise they discover, join as
+     specialists or start a golden age;
+   - **missionaries** go to our cities without the state religion, and, once the shrine of our
+     state religion stands, to foreign cities whose borders are open to us (cities without a
+     religion first; see Diplomacy, "Missionaries abroad"); **casters** go with the
      stack nearest an operation's target, to the units their blessings are for, the cities
      their city spells are for or the land they terraform (`magic::caster_target`), else to
      the most threatened city; barbarians and animals attack what they can beat,
@@ -125,11 +226,19 @@ counters, war success, war plans) that the diplomacy below reads.
 6. FfH tier-2 units need a building in the training city (Archery Range for archers,
    Training Yard for axemen, ...): when one would open a defender or attacker a third
    stronger, about half the cities build it;
-7. extra defenders up to the quota (capital, threat, nearby barbarians, war, leader);
+7. extra defenders up to the quota (capital, threat, nearby barbarians, the rival civilizations
+   near the city, leader; barbarians an interior city's garrison holds add none once units
+   cost gold, see Finance, "Unit support");
 8. a small mobile force (1 + cities/2) for barbarians and animals; more workers as worked
    plots need improving; the victory goal's items (`victory::production`: towers, culture in
    the cities nearest legendary; before expansion, item 4, when the goal is 30 turns away);
-   heroes (not at the cost of the first expansion);
+   at peace, a **wonder slot** in the top third of our cities by production (More Naval AI's
+   quick wonder, `production::wonder_slot`, switch `WONDER_SLOT`): the world wonder of most
+   value per turn that the city finishes within 2 x cities + 1 turns (four times that in a
+   city of size 6+ making more than three hammers a citizen), not while growing toward a
+   settler; heroes (not at the cost of the first expansion), only in the top third of the
+   cities by production that can train them (switch `TOP_CITIES`: the rules let one city at
+   a time build a hero, so the first empty queue used to lock it in);
 9. the siege operation's force (`campaign::army_choice`, from `needed_force`: about two
    attackers per defender of its target, siege engines -- or the Siege Workshop that trains
    them -- for walls or 3+ defenders; city attackers only if they have at least half the
@@ -141,13 +250,132 @@ counters, war success, war plans) that the diplomacy below reads.
    buildings alternate;
 10. buildings by marginal value per production turn (yields, commerce, culture for a new
     city, happiness and health when capped, maintenance savings, specialists, experience,
-    ...); casters; missionaries; projects that do not need dedicated logic; a process.
+    ...; a world wonder outside the top third of our cities by production only if it is done
+    within the wonder slot's 2 x cities + 1 turns, `TOP_CITIES`); casters; missionaries;
+    projects that do not need dedicated logic; a process.
 
 Nothing left to build: workers, then field units (never garrisons a broke treasury would
 scrap); when no more units are affordable, the strongest one whatever it costs (support is
-the same for any unit and the weakest are disbanded first, so idle hammers buy quality).
+the same for any unit and the cheapest are disbanded first, so idle hammers buy quality).
 Units are chosen by power squared per production turn, so stronger units win unless much
 dearer.
+
+**Effects in the rules' code** (`code_effects.rs`, switch `CODE_EFFECTS`). FfH 0.41 gives a
+building's plain effects in the XML, which the value above reads, and its special ones in Python,
+ported to Rust in `ffh_core::ffh` (`events.rs`). Those were invisible to the AI: a building whose
+worth lies there was valued by its XML alone, often 0, so it was never or rarely built. FfH's own
+AI had the same blind spot (`CvCityAI::AI_buildingValue` sees them only through `iAIWeight`, 0
+for all of them). A table now says what each such effect does, and the value adds it on the same
+scale (one hammer a turn = 150):
+- on units finished in the city: the Warrens' copies (half the city's production, as the Clan's
+  module valued them before); experience (Cave of Ancestors, one per mana resource, for adepts at
+  double weight; Brewery for dwarves and Demon's Altar for demons, 2) as the XML's free
+  experience is valued; promotions (Chancel of Guardians, 20% Defensive; the Luchuirp golem
+  workshops) as 15% of what the city puts into such units. These count the share of our units the
+  effect covers, concentrated in the cities that can train them (adepts come from Mage Guild
+  cities);
+- the Planar Gate's creatures: each creature of the city's buildings (half for the ones it can
+  build now) worth its hammers over 50 turns, below the rules' cap per gate; with a gate, the
+  enabling buildings (Gambling House, Carnival, Public Baths, Mage Guild, ...) gain their
+  creature. A summoned unit's hammers: its strength's (squared x 10 / 3) or its tier's mean cost;
+- city defense in code (Citadel of Light's fire, Hall of Mirrors' copies, Mokka's Cauldron, Soul
+  Forge): a fixed worth when threatened; in a frontier city (a met rival civilization's city
+  within 8 plots: an expert builds it there before the war) half at war and a quarter at peace;
+  elsewhere a quarter at war and a tenth at peace;
+- the Mercurian Gate: the units the Mercurians bring to our team (Basium, six Angels, a settler,
+  two workers), each worth its hammers over 50 turns;
+- the Eyes and Ears Network's free techs (by the open borders we have), the Temple of the Hand's
+  snow (the yields of the land within 2, from the terrain data: snow is 2/0/0 for the Illians),
+  the towers' Strong promotion and free elemental, the Infernal Grimoire's 20% barbarian Balor
+  (negative).
+Not covered: the Asylum (10% Crazed, which makes a unit Enraged: +20% attack, -20% defense, and it
+fights on its own: a wash), buildings that only open a spell (Arena, Demon's Altar: the spells'
+own logic, "Spells FfH kept from its AI" below), the Dwarven Vaults (set by the rules; the Khazad's
+finance keeps their gold, "Civilization-specific"). `FFH_AI_CODE_EFFECTS_OFF` leaves the table out
+but for the Warrens. Buildings that need a mana resource are also worth that much to the mana node
+that opens them (`mana::node_value`, switch `MANA_BUILDINGS`): the Luchuirp's Blasting Workshop
+(Fire), Pallens Engine (Sun) and Adularia Chamber (Shadow), never built before, come once a caster
+makes the node.
+
+**Spells FfH kept from its AI** (`unflagged.rs`). 57 of the 267 spells lack `bAllowAI`, and C++
+refused them to every AI player: the old AI could not value them. The rules no longer do
+(docs/PORTING.md, "Changes from FFH2"); the generic casting keeps them out
+(`casting::castable_spells`), and four are cast by logic of their own:
+- Sacrifice Altar: a unit we disband anyway (finance, bankruptcy) standing in a Demon's Altar
+  city is sacrificed first, for 10 + level squared research (switch `SACRIFICE`);
+- Arena Battle (Balseraphs): an Arena city with an unhappy citizen and no games running sends a
+  slave, else a spare tier-1 melee or recon unit: +1 happiness for 3 turns, and the unit dies or
+  gains 1-6 experience (a slave becomes a Warrior);
+- Wane (Sidar): at peace with no war prepared, one level-6+ unit a turn that its city's garrison
+  can spare (not heroes, limited classes or casters, whose levels are their spheres) becomes a
+  Shade, which then joins a city as a great person;
+- Kidnap (Svartalfar): a recon unit of strength 4+ goes into a city with settled great people of
+  the team we prepare a war against, once that war is near, and takes one (8% a strength point);
+  failing, it dies or goes home and the war starts, which it would anyway. The AIs settle great
+  people rarely (they discover techs), so it fires against humans more than against AIs; a test
+  covers it (`a_shadow_kidnaps_as_the_war_opens`).
+
+Measured (2026-10-27, with the Khazad's vault policy, "Civilization-specific"; full games, fresh
+seeds). The four civilizations' own logic (Khazad vaults, Balseraphs' Arena, Sidar's Wane,
+Svartalfar's Kidnap) against the same binary with it off (`civ_ab.py --off-base`, seeds
+43001-43048, 192 pairs): win 14.1% -> 20.3% (23 / 11, p 0.058), share@end +183 (t 2.01); Khazad
++244 (t 1.19), Balseraphs +172, Sidar +222 (t 1.51), Svartalfar +93. The whole batch against master,
+nine civilizations forced (seeds 43101-43148, 432 pairs): win 14.8% -> 13.0% (25 / 33), share@end
+-78 (t -1.41) -- the stronger Khazad: in the 179 games of the other eight with a Khazad opponent
+they won 33 -> 20, in the 205 without one 22 -> 23 (share@end -43, t -1.07). The generic parts
+(frontier defense, the Mercurian Gate, mana buildings, sacrifices) are neutral there: the
+Mercurians join slot 0's team in 37 -> 34 games, Malakim Citadels 1 -> 16 (dev), Luchuirp
+workshops 1 -> 8 (dev). A first fresh run (seeds 42001-42148) had a bug in the slider's saving
+clause (every civilization refused small deficits; found from the first turn its games left
+master's) and is not counted.
+
+Measured as one civilization's edge (`civ_ab.py --base-env FFH_AI_CODE_EFFECTS_OFF=ALL --new-env
+FFH_AI_CODE_EFFECTS_ONLY={civ}`, full games): the buildings now come -- Planar Gates 0 -> 2.6 a
+Sheaim game (dev) and 3.8 (fresh), with Mage Guilds 2.2 -> 4.2, Public Baths and Gambling Houses
+in the gate cities and about a dozen creatures a game (Mobius Witches 2.4, Chaos Marauders 2.3,
+Tar Demons 2.1, Revelers 1.9, Succubi 1.8, Manticores 1.4); Cave of Ancestors 0 -> 0.5, Hall of
+Mirrors 0.1 -> 0.7, Temple of the Hand 3.0 -> 4.2, the Citadel of Light 0.4 -> 0.8 (when the
+Malakim have Sorcery), Breweries earlier for the dwarves. Development (seeds 1-32, Sheaim,
+Amurites, Elohim, Luchuirp, Khazad, Illians, Balseraphs, Malakim, Clan of Embers; 288 pairs): win
+17.0% -> 17.7% (6 / 4), share@300 +11.8 (t 1.66), share@end -21.9 (t -0.80). Fresh (seeds
+41001-41048, the same civilizations but the Clan; 384 pairs): win 18.8% -> 19.0% (10 / 9),
+share@300 +4.9 (t 0.96), share@end -0.6 (t -0.02); by civilization share@end from Luchuirp +93 and
+Amurites +90 to Khazad -78 and Illians -125 (|t| < 1.2 for all; the Sheaim, Luchuirp and
+Illians changed sign between the two sets, the Khazad and Balseraphs were below on both). Forks at the firings (`ai-branch.sh`): a Sheaim gate
+city has 2 Mobius Witches and 2 Succubi 80 turns on, none without; the Illians' Temple of the Hand
+takes a city's food surplus from +4 to +6 for one hammer; a Khazad capital that builds a Brewery
+instead of a Granary at turn 49 (its Ale clears the unhappiness that held the city back) has 7
+cities to 6 at turn 148; a Luchuirp capital that builds one instead of Walls, 7 to 5 at turn 202.
+
+**The standing army against rival civilizations** (`defense.rs`, round 7e): how
+many defenders beyond the barbarian and capital quotas our cities hold, and where.
+- *In peacetime, deterrence* (`defense::deterrence`): an expert keeps enough army that no
+  neighbour who can reach him and would fight him sees an easy target, and puts it where that
+  neighbour's army would land. Every AI here starts a war of expansion through the same gate
+  (`diplomacy::territory_check`): its power, with the power of the civs already at war with the
+  target, at least its leader's need ratio (85-180% by temperament, +30 when broke) of the
+  target's defensive power; the target's cities within 16 plots; the target's weakest city
+  takeable by its best attacker; a cautious leader sparing a civ it likes. For each neighbour that
+  passes the other tests (met, not a vassal or master, not already at war with us), the
+  defensive power that keeps its ratio under its bar with a 10% margin. The largest shortfall
+  against our defensive power, divided by the power of the best defender we can train, is the
+  number of extra defenders, placed in the cities facing that neighbour (on its landmass, within
+  16 plots of its cities), nearest first, one a city per round, at most three a city. No
+  neighbour that would see an easy target: no extra defender, however close or hostile it is.
+  (In a traced game, most civs need none or one to three; a civ beside a much stronger Khazad
+  needed 11-22 across its border.) More army also raises our own power against others' defense,
+  so wars of expansion rise a little with it (+9% declared, Round 7e).
+- *At war* (or preparing one) the flat defender every city used to add is a pool of one per city
+  shared out by each city's share of the war threat (More Naval AI's `CvCityAI::AI_cityThreat`
+  and floating defenders): each enemy's closeness (its cities on the landmass within 12 plots,
+  `(20 + both populations) x (13 - distance) / 13`, the nearest in full and the rest a quarter)
+  times its hostility (at war 3, our war in preparation 1.8) times its power over ours when it is
+  the stronger (up to 3). The front holds two or three, the interior none, at the old cost.
+- Production, the defenders' placement (`units::garrison_quota`: spare defenders walk from the
+  interior to the border) and the upkeep scrapping read the same number. Sorties
+  (`defense::sortie_ok`, More Naval AI's `AI_leaveAttack(1, 70, 175)`): a defender beyond its
+  city's quota attacks out at 80% odds only while our strength in the city is 175% of the enemy's
+  within two plots.
 
 **Unit support** (`economy.rs`): FfH units beyond the free ones (handicap, civics,
 population) cost gold every turn. Every optional unit (extra defenders beyond one per city
@@ -169,7 +397,22 @@ commerce follows the sliders and is worth up to twice as much when the research 
 been pushed down to pay the bills, or when the costs measured from the rules would leave
 less than 60% for research (3 points of weight per point of shortfall in percent of the
 commerce; merchants and scientists gain with it over poor tiles); a culture-starved new city
-values culture.
+values culture. While a city in the top third of ours by production pushes a world wonder home at
+peace (done within the wonder slot's horizon, Production item 8), the AI sets the player's
+`EMPHASIZE_PRODUCTION` on it (`production::wonder_emphasis`, switch `WONDER_SLOT`; the governor
+weighs hammers 1.5x under it, as More Naval AI's special yield multiplier does while building a
+wonder) and clears it when the wonder is done, switched or at war; no change to the governor. On
+every wonder for the whole build, as More Naval AI does, it cost growth and commerce for few
+hammers (round 7d).
+
+The growth target is at least the food that grows the city in 12 turns (3 at size 5, 4 at size
+8), and specialist jobs worth a citizen (3+ yields and commerce) count as room to grow. Before,
+the target fell to 2 at size 5 whatever the size, and a big city with happy room sat at +1 food:
+on the same city states (ffh-ai games at turns 120, 200 and 300, every city assigned by both
+governors) the C++ AI's `AI_assignWorkingPlots` kept cities of size 8+ at +2-3 food where ours
+kept +1. Measured (300 turns): seeds 1-24 population +3.6 a civ (t 2.4), research flat; fresh
+seeds 425-472 population +0.3, techs +0.4, legacy +12, every |t| < 1. Kept as the growth an
+expert keeps going while there is room, not for a measured gain.
 
 ## Finance (`finance.rs`)
 
@@ -195,12 +438,43 @@ single hook tagged `bankruptcy-guard`:
   the cities' actual distance and number-of-cities parts; Aristocracy is charged for the
   cottages FfH's AI-only `canBuild` bans under it once Education is near; a structural
   deficit re-checks civics outside the 10-turn cadence when a cheaper civic would win.
-- **Unit support** (`empire::disband`): while support takes a tenth of the commerce and keeps
-  research below its target (at peace), up to two units a turn go, obsolete ones first
-  (weakest relative to what we can train now): field units beyond 1 + cities/4, garrison
-  units beyond one per city (two in the capital and near barbarians) where no threat is in
-  sight, idle workers beyond twice the need. Disbanding more (from 5% of the commerce) lost
-  more cities to barbarians.
+- **Unit support** (`empire::disband`, `finance::disband_military`; once switch `KEEP_UNITS`): built
+  units are kept, by More Naval AI's rule (C++ `CvPlayerAI::AI_doMilitary` /
+  `AI_disbandUnit`), brought back by the owner's decision. At peace, while costs take more than
+  60% of the commerce (its "funded percent" below 40) and units cost gold, the military unit of
+  least value goes, one at a time until that clears: only combat units with at most 1
+  experience; value by cost, experience and level, three times in our territory, six times
+  defending a city, city defenders six times and field units twice an untyped unit; never a
+  city's last two units that keep it content, a hero, a unit that would defect, a summon.
+  Nothing reads the threats in sight: what was trained is kept and research pays for it. Idle
+  workers beyond twice the need go while support keeps research below its target
+  (`finance::disband_workers`). Kept alone it cost research around turn 200 (more units paid
+  for), and the build side was changed to match (`production::garrison_holds`): an interior city
+  (no other civilization's city within 8 plots, no enemy civilization's unit in sight) whose
+  garrison holds the barbarians it sees (their weighted attack no more than its defense) trains
+  no extra defender for them once units cost gold, since that defender would be kept for good;
+  border cities still do, because the defenders trained against raiders are also the ones that
+  hold them when a neighbour attacks (round 7d; docs/AI_LOG.md, "More Naval AI's disband rule").
+  The previous rule (the switch off, removed once this was kept): while support takes a tenth
+  of the commerce and keeps research below its target (at peace), up to two units a turn go,
+  obsolete ones first (weakest relative to what we can train now): field units beyond
+  1 + cities/4, garrison units beyond one per city (two in the capital and near barbarians) where no threat is in sight, idle workers
+  beyond twice the need; a bankrupt empire scraps surplus garrisons and field units. That rule and
+  the build rules both read the moment, so a raider walking in and out of range had cities train
+  defenders the treasury scrapped a few turns later; holding defenders by a quota instead lost
+  (docs/AI_LOG.md, "Young units never scrapped", "Garrison quota from lasting threats only",
+  "Garrison quota from a record of threats seen").
+- **Production re-decided** (`production::trouble_rebuild`, switch `TROUBLE_REBUILD`): More
+  Naval AI clears every city's production when the empire runs into financial trouble
+  (`CvPlayerAI::AI_doCheckFinancialTrouble`), keeping items within 3 turns of done, wonders,
+  world projects and heroes (`CvCityAI::AI_chooseProduction`). Here, while the empire cannot
+  research at its target share (`Finance::deficit`), a city in the middle of a longer build
+  re-runs the production ladder every fifth turn and switches only when the ladder now picks an
+  economy building -- one whose value is mostly commerce, research, specialists, trade or
+  maintenance savings (Market, Library, Elder Council, Courthouse): the building it needs now.
+  Kept: items within 3 turns of done, world and national wonders, projects, heroes, units
+  without combat (settlers, workers, great people), a fighter for a city without defenders or
+  under threat, every fighter at war, an economy building already under way.
 - **Citizens**: the governor's commerce weight above.
 - `finance::city_affordable` (a new city's maintenance and upkeep against the gold left at
   the target share) is for the settler logic and not wired in. Wired into `settler_choice`
@@ -280,7 +554,9 @@ beelines (Amurites Bowyers/Sorcery, Bannor Fanaticism, Calabim Feudalism, Hippus
 Kuriotates Stirrups, Sheaim Corruption of Spirit/Necromancy/Sorcery, Sidar and Svartalfar
 Poisons, Luchuirp Construction then Elementalism/Sorcery, Elohim and Malakim Priesthood, Iron
 Working for the Khazad, Clan of Embers, Doviello, Lanun, Grigori, Illians and Balseraphs, then
-Medicine for the Grigori); the magic spheres once tier 3 and economy tier 2 are reached. The
+Medicine for the Grigori; each civilization's in its module, `CivPlay::tech_goals`, with its
+default military tech and lore religion, so `FFH_AI_CIV_OFF` covers them); the magic spheres
+once tier 3 and economy tier 2 are reached. The
 religion is the first unfounded one of the player's preferences, most preferred first: the
 civ's own (Runes of Kilmorph for the Khazad, Fellowship of Leaves for the elves), the leader's
 favorite early and favorite religions (data; FfH leaves these unset), then -- data-driven from
@@ -440,10 +716,14 @@ techs at turn 300 19.6 -> 19.8; each part matters (without the forced wait captu
 Tried and dropped (same seeds): two settlers at a time for one or two cities, sites within 5
 plots of our cities, the capital giving up its second defender as an escort, settlers at size
 2 or before the first worker, deferring buildings while a city grows toward a settler, and
-chopping forests while a settler is built (C++ `bChop`). The fastest mix had 2.4-2.5 cities
+chopping forests while a settler is built (C++ `bChop`; the workers now chop for settlers,
+measured flat, "Chops" under Workers). The fastest mix had 2.4-2.5 cities
 per civ at turn 100 (4th city at turn 131 instead of 150) but 0.8-1.4 fewer techs and fewer
 points at turn 300, the same number of cities by then, and more cities lost to barbarians,
-also on top of the finance and research changes. The rules couple barbarian cities to ours:
+also on top of the finance and research changes. Re-measured 2026-10-21 with a per-civilization
+switch, everyone and one civilization against the rest (held threats no longer stopping settler
+production, a settler per city, fewer capital defenders, no buildings while growing toward a
+settler): no gain either way; docs/AI_LOG.md, "Expansion: the expert opening". The rules couple barbarian cities to ours:
 `createBarbarianCities` starts once civs average two cities and its target grows with the
 number of civ cities, so faster expansion brings more barbarian cities sooner.
 
@@ -475,23 +755,66 @@ Training workers only once an improvement is buildable (no early idle workers: -
 worker-turns) measured flat to negative on the same seeds (legacy -1.0%, full games power -10.6%
 at turn 300) and was not kept.
 
-## Field armies (`military.rs`, `campaign.rs`)
+**Chops.** A plain Remove Forest or Remove Jungle is valued only when its hammers go to a city
+building a settler, a worker or a world wonder (a chop's 20 hammers count as 10 turns of
+production on the plot), less the feature's yields on a worked plot. Kept: the Ancient Forest, a
+feature a civic of ours makes happy (the elves' forests are maintained anyway), a healthy feature
+in a city with at most one health to spare, and a city's last three forests. A worker with
+nothing to build within 8 turns looks up to 25 turns away (the newer cities) before it waits:
+from turn 200 most idle workers had improved everything within 8 turns. Seeds 1-4 at 300 turns:
+113 chops (4.7 a civ), 29 more lumber mills, 73 fewer farms. Measured with the governor change
+above: seeds 1-24 research +10 (t 1.3), but fresh seeds 401-472 flat (population +0.4,
+research +3.6, legacy -5, every |t| < 1; workers alone also flat). Kept as an expert's use of
+the forests, not for a measured gain. Valuing every improvement on a feature by the clearing
+(the feature's lost yields, its hammers) cost research (docs/AI_LOG.md, "Workers and citizens").
+
+## Field armies (`military.rs`, `campaign.rs`, `combat_sim.rs`)
 
 Each army group is a stack; per decision, in order:
 
 1. follow through a group attack the rules queued (`ai_group_attack`);
 2. become the garrison of an undefended city of ours it stands in;
 3. merge the army units on its plot (up to 8; only units with full moves);
-4. attack an adjacent target worth it (never a civ city outside a war plan, nor the target of
+4. take an enemy city at war, plan or not, that it reaches this turn and finds empty, or that is
+   next to it and that it clearly takes: the siege estimate with the march reserve and odds the
+   assault goes on with (`opportune`, switch `CAPTURE`; More Naval AI's `AI_stackAttackCity(1,
+   160)`; the targets of our operations are left to their strikes);
+5. attack an adjacent target worth it (never a civ city outside a war plan, nor the target of
    our siege operation, which is left to its strike);
-5. heal when hurt and safe (not a stack about to strike);
-6. defend a city of ours in peril within 5 turns (not a stack marching on a siege);
-7. escort a settler that asks for one (single units);
-8. its siege operation (below), if the stack is committed to one: at war (or while preparing
+6. heal (`heal`, round 7f; More Naval AI's `AI_heal`, fitted to our small stacks; before it, a
+   stack healed where it stood when one unit was over 35% damage and it was safe): in one of
+   our cities the wounded (20%+ damage, the field rule's threshold, so a stack leaves a city only
+   in a state the field rule accepts: with More Naval AI's 30% it walked out and back each turn,
+   "Forks of the healing rule" below) split off and heal while the rest go on; in the field
+   a stack committed to a siege stops only when more than half of it is hurt (20%+ damage), and
+   only where healing is better than 10% a turn (our land or a city, not neutral or enemy land),
+   else it walks into a city of ours within two turns or onto our land within one, else it
+   carries on; a loose stack heals where it stands for one unit over 35%, as before (walking it
+   home let raiders run: Round 7b); never a stack about to strike;
+7. defend a city of ours in peril within 5 turns (not a stack marching on a siege);
+8. escort a settler that asks for one (single units);
+9. its siege operation (below), if the stack is committed to one: at war (or while preparing
    one) always; against a barbarian city once the force is gathered, or to step back from it;
-9. hunt the best barbarian/animal/lair target within 6 turns it can take (entering an empty
-   lair destroys it);
-10. join a bigger stack within 3 turns, else hold in the nearest city.
+10. hunt the best barbarian/animal/lair target within 6 turns it can take (entering an empty
+   lair destroys it; an empty enemy city at war within 2 turns is walked into, `CAPTURE`);
+11. join a bigger stack within 3 turns, else hold in the nearest city.
+
+**Deciding an attack** (round 7g). Every attack in steps 1, 4, 5 and 10 and a landing's
+assault (`naval.rs`) is decided on the simulation of the group attack
+(`military::field_sim`: `combat_sim::simulate` in the rules' own attacker order,
+`AI_getBestGroupAttacker` with its `AI_attackOdds`, against the defenders we see) as an expert
+decides (`military::field_go`): attack when the attacker the rules send has good odds (65%, 75%
+for a hurt stack); wear the defenders down at worse odds only when the stack clears the plot
+(every defender 80% sure to fall) and the kills are worth more than the expected losses
+(`gain`: `combat_sim::worth` = cost or 15 hammers a strength point, whichever is more, plus a tenth
+per experience point; raiders -- any enemy but animals -- on our land or within three plots of one
+of our cities count four times their worth, since left alone they take the city); a city to
+capture (an opportune capture, a landing) when it falls. Before: `assess`/`attack_ok`, the best odds of 65%, or every attacker's
+odds against the best defender at full health plus a third of a kill for each lost fight,
+whatever the defender's strength or first strikes -- it sent four Warriors at a Griffon at 1% and
+six units at an Elephant at 0.2%. A pure trade rule (attack whenever the kills are worth more)
+lost units early, and the same rule with raiders at face value lost cities to the barbarians;
+both were replaced (docs/AI_LOG.md, round 7g).
 
 **Siege operations** (`campaign.rs`): one per player, rebuilt from the game state on the first
 army decision of each `play_turn` call (nothing outside `Game` is remembered).
@@ -505,15 +828,18 @@ army decision of each `play_turn` call (nothing outside `Game` is remembered).
   resources, a barbarian town near our cities) for its cost (the force it needs, the
   distance). Without that stickiness the target changed whenever a stack came close enough to
   see a garrison, and stacks walked back and forth between two or three cities.
-- *Force*: the strike is played out in expected values with the rules' odds (fortification,
-  city defense, first strikes, the attacker's health): collateral attackers first, then the
-  strongest; a lost fight still wounds (the rounds won before dying), collateral damage hits
-  the other defenders, siege engines that can bring the walls down in three turns count as
-  having done so. The force covers the city when the defenders fall; committing to *march* wants
-  a fifth of the attackers (at least one) to spare (so stacks do not advance understrength), but a
-  committed force already positioned next to or beside the city *strikes at acceptable odds* -- it
-  expects to clear the defenders without keeping that reserve -- rather than retreating to muster
-  an overwhelming force against a target that only hardens while it waits (a lone unit still never
+- *Force* (`combat_sim::simulate`, round 7g): the strike is played out in expected values with
+  the rules' odds (fortification, city defense, first strikes, the attacker's health) as it will
+  be fought: the attackers in the strike's own order, each against the defender the rules put up
+  against it; a lost fight still wounds (the rounds won before dying, first strikes counted),
+  a siege engine's win leaves the defender at its combat limit, collateral damage hits the
+  other defenders, siege engines that can bring the walls down in three turns count as having
+  done so. The force covers the city when every defender is 70% sure to be dead (60% for the
+  conquerors, `BOLD_STRIKE`); committing to *march* wants a reserve, every defender 90% sure
+  (so stacks do not advance understrength), but a committed force already positioned next to
+  or beside the city *strikes at acceptable odds* -- it expects to clear the defenders without
+  keeping that reserve (round 7h) -- rather than retreating to muster an overwhelming force
+  against a target that only hardens while it waits (a lone unit still never
   qualifies: it cannot clear a city). Unseen cities: 2 + population/5 defenders for a civ,
   1 + age/25 for a barbarian town -- but the force needed to *approach and reveal* an unseen
   target is capped at a scouting-sized stack (not that growing assumption, which otherwise made
@@ -534,10 +860,30 @@ army decision of each `play_turn` call (nothing outside `Game` is remembered).
   attacks in the same turn -- siege engines bombard, collateral attackers first while several
   defenders stand, then units summoned for good (skeletons and the like, `magic::raised`: free
   to replace, they wear the defenders down as siege fodder; the owner's call, 2026-10-20), then
-  the best odds when 68%+, else the unit cheapest to lose for its strength (C++
-  `AI_getBestGroupSacrifice`) -- while the attackers left still cover the
+  the best odds when 68%+, else the unit cheapest to lose for the damage it is expected to deal
+  (C++ `AI_getBestGroupSacrifice` weighs strength; round 7f), never one that would
+  deal under a tenth of a defender's hit points -- while the attackers left still cover the
   defenders left (or the defenders are down to half their health and outnumbered). Up to three
-  units follow the victor into the city.
+  units follow the victor into the city. The expected damage of a lost fight, in the strike's
+  simulation and its sacrifices, counts first strikes (`fight`, round 7f): in the rounds a
+  side has first strikes left it cannot be hurt. Heroes and veterans (switch `PRECIOUS`; More
+  Naval AI's `AI_getBestGroupAttacker`) below their odds -- a hero's 85% plus 1%
+  a level, a unit above level 4 at 70% plus 3% a level (at most 95%) -- attack last in a strike:
+  while another unit can attack, and only in a strike expected to take the city, never to wear
+  the defenders down; they count in the force that takes it. (Held out of strikes altogether,
+  they turned captures into stalls: "Forks of the hero gate" below.) A group assault
+  (`military::assault`) stops when the rules would send one below its odds, and a stack does not
+  pick such a target, adjacent or hunted.
+- *A second operation* (switch `SECOND_OP`; More Naval AI's `AI_pickTargetCity` passes over a
+  city already targeted by more than max(6, 3 x its defenders) units): when the stacks committed
+  at war hold more than twice what the first target (seen) needs, it keeps the stacks already
+  ordered against it and the nearest others up to twice its need (six units at least), and the
+  rest go for a second enemy city on the landmass that they cover on their own with the march
+  reserve, the best value for its cost (`campaign::split`). The assignment sticks through the
+  stacks' mission AI: a stack ordered against the second city stays with it while the second
+  force still takes it at acceptable odds and the first keeps its need; otherwise everyone goes
+  back to the first. (A first version rebuilt the split each turn from distances; the targets
+  swapped every turn as cities fell or needs moved, and stacks walked between them.)
 - Campaign moves go one turn at a time (the rest of the path is dropped once the moves are
   spent): an AI group on a multi-turn mission gets no orders until it ends, and stacks walked on
   to plots chosen for an earlier phase.
@@ -615,10 +961,22 @@ plot falls or the odds turn bad, and moves in.
   strike, instead of scattering across the city's approaches and never massing. One transport trip
   still carries only the ship's cargo capacity, so with early, small transports the force builds up
   over several trips; bigger invasions wait for better ships.
+- **The assault fleet** (`naval::fleet_waits`, switch `FLEET`; More Naval AI's
+  `AI_assaultSeaMove`, which waits in port until the cargo reaches the invasion size and sails
+  escorted): a transport with an army aboard waits in port while what the transports there carry,
+  with what has already landed next to the target, falls short of the force the target needs;
+  then the loaded transports in port and our idle warships there sail as one stack and land
+  together (the escorts sail with them; back in port, empty, the ships part again). Before, each
+  transport sailed as soon as one fighter was aboard -- a Trireme or a Caravel carries one -- and
+  the army landed a unit at a time next to a defended city, where the landed units assaulted it
+  piecemeal.
 
 ## Diplomacy (`diplomacy.rs`)
 
-Relations come from alignment, state religion, war history and open borders. One war at a
+Relations come from alignment, state religion, war history, open borders and the Trust spell
+(+2 towards a player who has cast it: the spell only sets a feat, and FfH's C++ AI read it as
++4 attitude, `AI_getTrustAttitude`; before 2026-10-23 nothing read it, so Trust did nothing in
+this game, docs/ENTITIES.md). One war at a
 time; war is **greedy expansion**, not a dice roll: when free to start one (checked every 5
 turns from turn 50, with 2+ cities), a civ prepares war on the met, land-reachable (within 16
 plots) rival whose weakest known city its best trainable attacker can take (siege engines
@@ -641,12 +999,27 @@ gate, so it only re-ranks viable targets and never sends a civ at a rival it can
 reachable (inert where they are across the water), with captures and economy slightly up, not
 traded -- a secondary bias that does not cost the primary. The
 war plan starts as `WARPLAN_PREPARING_*` (production builds the army,
-stacks gather on the rally city) and is declared when the army is ready (or after 40 turns).
+stacks gather on the rally city) and is declared when the army is ready and two thirds of it
+stands within 3 plots of our city nearest to the target (or after 40 turns): an expert declares
+with the army at the border, so the war's first turns (and the ten before peace is possible) are
+spent fighting, not marching. Before (2026-10-21) the declaration came while the army was still
+at home: in 24 full games 22% of our declared wars saw no combat, and a war sold for tribute at
+turn 11 often had its army still on the road (traced: 19 plots, never arrived). Measured
+(`FFH_AI_WAR_STAGING_OFF=ALL` against on), full games: everyone, seeds 1-24, wars 448 -> 312,
+cities taken 423 -> 397 (a city per war 0.94 -> 1.27); fresh seeds 9701-9724, wars 409 -> 236
+(t -4.4), cities taken 358 -> 307 (0.88 -> 1.30 a war), games decided before the time limit 8 ->
+11 of 24, population +4.3 and research +9 at turn 450 (t 1.8, 1.2); one civilization against the
+rest, seeds 1-6 (114 pairs) wins 22.8% -> 22.8%, share@end +22, fresh seeds 9601-9612 (228
+pairs) wins 14.5% -> 14.0% (8 / 9), share@end +15 (t 0.4). Not selling a war for tribute before
+it has taken a city or lasted 30 turns cost wins (docs/AI_LOG.md, "Wars").
 Peace is sought when the war goes badly (war success and power), or drags on without gains;
 it is offered as a real peace-treaty deal the other AI must accept. Every 5 turns an AI swaps
 technologies one for one at similar cost (once `TECH_TRADE` allows it) and signs open borders
 with civs it likes; `consider_offer` accepts tech swaps worth at least 80% of what it gives,
-never with the civ it prepares a war against.
+never with the civ it prepares a war against, and both obey the tech-trade discipline below.
+Peace weighs the forces at the front, quiet wars end, a target's other wars count toward our
+edge, and a prepared war is re-checked before it is declared (the paragraphs after "Hire a war
+ally").
 
 **Defensive pacts (`pacts.rs`).** A weaker civ's check against a stronger, warlike neighbour.
 A civ is threatened when a team within 16 plots by land has at least 120% of its defensive power
@@ -667,6 +1040,62 @@ limit 12 -> 13; eliminations in the changed games 42 -> 42. Mechanically working
 but not yet a measurable protection: the gating (late Honor, peace with everyone) keeps most
 threatened civs from signing. Levers if it should bite: research Honor when threatened, or a
 rules change to the trading prerequisite.
+
+**Vassal states (`vassals.rs`).** The owner's decision, 2026-10-21 (CLAUDE.md, "AI changes"):
+what an expert does once the game has gone against it. The rules (Feudalism for the master; a
+vassal joins its master's wars and the master its vassal's, a capitulation makes peace) were
+ported; the judgement is here. Only what a human could see is read.
+
+- **Hopelessly behind** a neighbour (cities within 14 plots): the neighbour has 3x our power, knows
+  6 more technologies and 40% more than we do, and our share of the world is under half an
+  average civilization's. Then we offer to become its vassal, if the two are at least decently
+  aligned: no good/evil opposition, and an attitude at or above the leader's
+  `iVassalRefuseAttitudeThreshold`. That threshold is one step more willing than FfH's AI, which
+  refuses at it, so pride still varies by leader. We never pick a neighbour whose wars would set
+  us against a stronger civ next door. Checked every 5 turns; the strongest such neighbour is
+  asked first.
+- **Crushed in a war:** at war for 10 turns, the enemy has twice our power, and its war success
+  exceeds ours by three captured cities' worth (two when we have three cities or fewer left).
+  Then we capitulate to the enemy doing the most damage, whatever we think of it. This comes
+  after the peace offer that turn failed.
+- **Asked** to become someone's vassal (by a human or an AI): we agree when the same tests hold.
+- **As the master:** a vassal is taken unless its wars would drag us into one against a stronger
+  civ, a friend or a treaty partner. A capitulation is taken unless the loser has two cities or
+  fewer and we can press the conquest; then we take the cities instead.
+- **Humans:** asked on the leader's contact cadence. A human can't be an AI's vassal (rules).
+
+Measured with `FFH_AI_VASSAL_OFF` (the switch), full games of ffh-ai only. The switch is a
+civilization switch like the others (`switches::VASSAL`): `FFH_AI_VASSAL_OFF=ALL` (or `1`, as
+before) turns vassal play off for everyone, `FFH_AI_VASSAL_OFF=X,..` / `FFH_AI_VASSAL_ONLY=X,..`
+for the players of those civilizations, each deciding for itself (it neither seeks nor agrees to
+vassalage, and as the master takes a vassal only when the deal costs it nothing).
+
+| | Development seeds 1-12 | | Fresh seeds 201-224 | |
+|---|---|---|---|---|
+| | off | on | off | on |
+| Vassalages (capitulations / peaceful) | – | 15 / 3 | – | 22 / 3 |
+| Civs eliminated | 18 | 11 | 38 | 30 |
+| Supremacy | 8 | 7 | 12 | 16 |
+| Cultural victory | 3 | 1 | 10 | 5 |
+| Conquest victory | 0 | 1 | 0 | 2 |
+| Time limit | 1 | 3 | 2 | 1 |
+| Average decision turn | 519 | 492 | 496 | 455 |
+
+Capitulations fall between turns 290 and 625. On the fresh seeds, 260 capitulation offers from
+civs with two cities or fewer were refused (the conqueror took them).
+
+Fewer civilizations die. Games are decided sooner and more often by supremacy or conquest, less
+often by culture. The mechanism: score v2 credits a master with half its vassals' people and land
+(docs/SCORE.md), and conquest counts vassals as conquered. So a leader with vassals reaches clear
+supremacy before the culture race ends, as Civ4's vassal empires snowball. This is a sound
+behaviour, kept under the expert-play rule; the shift in outcomes is the game's balance, worth
+the owner's eye.
+
+Peaceful vassalage stays rare. About one civ per game meets the three "hopeless" tests against
+the strongest civ after turn 300 (12 development games: 13 of 219 civ-snapshots), and the
+technology gap is the binding test. A vassal never leaves its master on its own initiative, even
+after it recovers. One vassal was released in the 24 fresh games; telemetry records releases as
+`vassal.freed`.
 
 **Resources and gold (`trade.rs`).** The AI also trades resources (bonuses) and gold -- a port of
 the base game's `CvPlayerAI` trade valuation (`AI_bonusTradeVal`, `AI_bonusTrade`, `AI_dealVal`,
@@ -775,6 +1204,346 @@ when the payment is worth over three quarters of the price) -- in practice the b
 cities to 2 and the briber-side winner closes out by domination 64 turns early). No new saved state;
 no RNG.
 
+**Peace by the forces at the front (`end_war_val_seen`, `front_forces`; switch `PEACE_FORCES`).**
+More Naval AI divides the value of peace by our attackers en route against theirs in our land
+(`CvTeamAI::AI_endWarVal`, x200 / range(ratio, 200, 600)). Here the same scale applies to
+`end_war_val` wherever this AI weighs peace (its own offers, `consider_offer`, the offers to
+humans, its council votes): our units able to attack within 2 plots of their city where we have
+the most (their next city) against theirs within 2 plots of ours that we can see, at least 2.
+Nothing at the front: x1; four times their number: x1/2; six times or more: x1/3. A winner's
+cash-out (peace for tribute) then goes ahead only when the tribute pays for what the army at
+their gates is worth to us (the drop in our want for peace; nothing when no army is near), and a
+bare peace offer is refused while our army stands there with three times theirs. That is the
+expert's test the 30-turn rule lacked (docs/AI_LOG.md, "Wars"): sell the war when the next city
+is out of reach, fight on when it is close.
+
+**Quiet wars end (`quiet_war`; switch `QUIET_PEACE`).** More Naval AI makes peace in a war of
+10+ turns where nothing happens and no stack is moving (`AI_doWar`). Here: past 15 turns, less
+than two attacks' worth of war success on both sides, no army of ours near their cities nor of
+theirs (that we see) near ours, and no stack of ours marching on them (the campaign's
+`MISSIONAI_ASSAULT` tag) -- we offer peace, with tribute either way as the war values say.
+
+**Dogpiles (`dogpile_power`; switch `DOGPILE`).** In the war-of-expansion gate the power of a
+target's current enemies counts with ours (More Naval AI's `AI_doWar` dogpile power; an enemy that
+shares no landmass with it counts half): a civ busy on another front is a weaker target than its
+defensive power says, and the runaway leader, at war with a neighbour, becomes reachable for the
+civs around it. The rest of the gate (reachable, takeable, the leader's bar) is unchanged, and the
+declaration's re-check (below) drops the war if the other front has closed since.
+
+**Re-check before declaring (`still_a_target`; switch `WAR_RECHECK`).** More Naval AI's "last
+chance to change our mind" (`AI_doWar`): when a prepared war is about to be declared (the army
+staged, or the 40-turn fallback), the target must still pass a gate that would choose it now --
+the victory plan's, or the war of expansion's with 10% slack on the power bar and per-unit parity
+for takeability (the army is massed at the border; the 120% margin selects wars, it does not
+re-judge them). A target with new pacts behind it, a friend since, or cities our best attacker no
+longer matches is dropped, the army kept for the next choice (`war_drop` decisions: power,
+not_takeable, unreachable).
+
+**Tech-trade discipline (`tech_denial`, `TechCtx`; switch `TECH_DISCIPLINE`).** More Naval AI's
+`CvTeamAI::AI_techTrade`, in the form an expert would keep: no technology to our victory rival; a
+swap with the world's clear leader (a share 1.5x the runner-up's) only when we get at least 125% of
+what we give (by research cost; 80% for anyone else, as before); no military technology (one
+opening a unit of the recipient's civilization at 60% of the world's best land unit) to anyone
+while we prepare or fight a war (it can be passed on); and, to anyone we are not friendly with,
+no monopoly worth keeping: the technology of a world wonder, world unit or world project one of
+our cities is building (More Naval AI's DENIAL_MYSTERY), or a military technology a land
+neighbour (within 16 plots) would gain while most civs we have met lack it. `trade()` asks only for
+a technology the partner's own discipline lets go (the trade screen shows a refusal) and offers
+the closest-in-cost one ours lets go; `consider_offer` and the offers to humans apply the same
+rules. A first version kept every technology worth More Naval AI's monopoly value of 50 (an
+unbuilt wonder, strong units) while most civs lacked it, and refused the clear leader outright:
+1,000 swaps withheld in 24 full games, the world 4.5% behind in technologies at turn 300, and one
+civilization with it against the rest won 18.4% of its games against 21.1% (seeds 1-4, 76 pairs):
+a civ that refuses a swap forgoes the technology it would have received while the others trade
+on.
+
+**Councils (`council.rs`; switch `COUNCIL`).** The Overcouncil (the Overcouncil civic, good and
+neutral civs) and Undercouncil (evil and neutral) meet every 10 and 15 turns once two civs run
+their civic; members elect a head councilor, who proposes one resolution a session, and half the
+population-weighted votes pass it. Before, every AI abstained and never proposed, so both were
+inert. Now a member votes by what the resolution does to it (`council::value`): a war declared on
+our enemy, or on a civ our own gate would attack, is welcome, one on us or a neighbour we would
+not choose is not; a forced peace is judged like the peace it makes (`want_peace`, the war
+values), stopping a winning front-runner and sparing a losing friend; an embargo against an
+enemy or a disliked civ; a mana ban hurts those who hold the mana and helps against the
+enemies who do; a forced civic against our own civic values; trade routes (More Naval AI: a
+large empire gains little), free trade, free units we can pay for, open borders and pacts by who
+they bind us to; Fund Dissidents against the Overcouncil members we fight or dislike; crime
+counts against. Positive: yes; negative: no; nothing at stake: abstain. A resolution worth -300
+or less (war on us, one of our cities given away) is defied (the rules' veto: unrest, and the
+loyal membership lost). For head councilor we vote for ourselves when we stand, else our master,
+else the candidate we like best that is neither our victory rival nor the clear leader. The head
+councilor proposes the resolution that gains it most among those its model of the members' votes
+(our AI's members by the same values, humans and other AIs abstaining) says will pass -- or, for
+one in force that hurts it, will fail and so be repealed; nothing when none does. Deterministic:
+none of the C++ AI's defiance or proposal dice. Telemetry counts the results (`vote_passed`,
+`vote_failed`) and the AI's `vote` and `election` decisions.
+
+**Missionaries abroad (`units::missionary`, `production.rs`; switch `MISSIONARY_ABROAD`).** More
+Naval AI's missionary strategy: once the holy city of our state religion is ours and has its
+shrine (a gold a turn for every city in the world with the religion), a missionary with no city of
+ours to convert goes to a foreign city it may enter -- a civ at peace whose borders are open to us,
+whose civics let the religion in -- cities without a religion first (the spread is then almost
+sure), within 15 turns. Production weighs one such missionary like a building worth the shrine's
+gold (`MISSIONARY_ABROAD_VALUE`, 60 of `building_value`'s 80 a gold, for the odds of failing on
+the way) against the best building, while such a city lies within 15 plots on the landmass. It
+almost never fires: the shrine comes late (after turn 300, a Great Prophet's work), open borders
+are rare by then, and a building nearly always outscores a gold a turn.
+
+## Cultural actions (`culture.rs`)
+
+This game's own system (`GAMEOPTION_CULTURE_ACTIONS`, docs/CULTURE.md): a city may channel half
+its culture into one standing order aimed at a civilization, Foment Revolt or Spread Religion,
+until its owner changes it. Once a turn, after the diplomacy (so the war state is current) and the
+governors' production, what an expert does with the channels:
+
+- **Hold off revolt pressure.** Each defender resists 2 a turn, so the garrison is the answer.
+  From the channels aimed at us now (they are public), `defenders_needed` is how many keep the
+  pressure, as it would settle (net inflow over the fade), short of disorder, at most six: past it
+  the city makes no culture (disorder stops its commerce), only its garrison resists, and the
+  pressure runs on to the flip. A directly ruled city short of them (unless it is already training
+  a defender that stays) trains one first; a governed city's governor chooses again
+  (`governor::decide` puts them first, for a human's governed cities too). A rival whose pressure is
+  two thirds of the way to taking one of our cities provokes the war logic (`flips_against`, read by
+  `territory_check`: no friend spared, 85% of the usual power edge, +40 to the target's score).
+- **Foment revolt where it pays.** Cities whose culture is worth spending channel revolt at a
+  rival: the cities carrying a cultural victory we pursue spend none, and a point of culture counts
+  in full while the city's borders still grow to its working radius (below `CULTURELEVEL_FLEDGLING`),
+  half after. Per target city, the pressure our channels would build is simulated over 40 turns as
+  the rules run it (our inflow, `ChannelReach.amount`, less the city's resistance, faded 5%; the
+  other casters' pressure as it is; from the turn after disorder only the garrison resists). The
+  resistance counts the city's culture and its *stationed* defenders, those that did not move last
+  turn: in the first traced games a city whose stack came
+  and went every turn (12 defenders, then 4) had a channel set and ended in turn. Outcomes: a city
+  taken (never a capital) is worth `150 + 50·pop + 20·buildings + 150·wonders + 200·holy cities`
+  points, amortized over the turns it takes and five more; disorder costs the city its production
+  and commerce a turn; unrest half a commerce a point. Only what our channels change counts (a
+  city another caster already holds in revolt gains nothing from us). The rival's lost output counts
+  in full at war, while we prepare one, against the barbarians or the civilization racing us to a
+  victory; at peace 60% if we are Annoyed or Furious with them, 40% if Cautious; a city taken at
+  peace three quarters (it invites war). Against that, the culture spent and, at peace, a
+  diplomatic cost a turn for each channel (the target remembers a point every 5 turns of it), by
+  what they think of us: 2.5 commerce while they are Cautious or better, 1 Annoyed, 0.5 Furious or
+  while we prepare war, none at war. A city that channels nothing this turn (in disorder, in
+  anarchy) costs nothing and keeps its channel. Spared: civilizations we are Pleased or Friendly with, vassals and masters, defensive pact
+  partners, and at peace any whose defensive power exceeds 125% of ours (150% for a channel that
+  stands). The leader's lean scales a revolt's value: halfway from 100% to its `iCulturalAggression`
+  (40-180, derived from war eagerness and the culture flavor where the XML has none), a quarter
+  more for a conqueror (Aggressive leaders, the Clan of Embers, the Doviello, the Bannor). Our
+  channels at one civilization add up, so each target is weighed with the group of our cities that
+  would channel at it, the strongest first, at most `CULTURE_AI_MAX_HOSTILE_PER_TARGET` (2), twice
+  that at war or against the barbarians; groups are chosen greedily, the best net first.
+- **Spread our religion.** A city spreads our state religion, or a religion whose shrine we hold,
+  into a civilization whose cities lack it, worth the rules' chance a turn times what a spread is
+  worth, against the culture spent: in our own city our state religion's happiness and buildings
+  (`40 + 6·pop`), a shrine's gold a turn (25); abroad, a civilization without a state religion
+  drawn toward ours (the AI adopts the religion most of its cities have: the first city of ours
+  there 50, later ones 20), a co-religionist pleased (15: it remembers the spread as friendship);
+  into a civilization with another state religion only where we dislike it, and then the spread is
+  remembered as hostile (only a shrine pays for it). Our own cities come first by these numbers;
+  the chance's cap (25%) makes a smaller city the better spreader.
+- **Stability.** Stopping a revolt lets the pressure it built fade, so a channel that stands is
+  kept while it is worth 70% of what it costs (the weakest member of a group dropped first, the rest
+  weighed again), and a new channel must be worth a quarter more than its cost (at least a
+  commerce); a city spreading a religion moves to another channel only when that is better by half
+  its cost.
+- **Governors never channel** (the owner's decision, 2026-10-30): a channel is the civilization's
+  own decision, so the AI plans every one of its cities, governed or not, and a human's governors
+  (`govern`, through `Controller::govern_cities`) set none; they only train defenders against
+  revolt pressure (above).
+- **Memory.** Their cultural acts against us are in the attitude (`relation_parts`): "cultural
+  hostility" −1 per 2 points (to −3), "cultural friendship" +1 per 2 points (to +2), fading a
+  point every 10 turns.
+
+Switch `CULTURE` (`FFH_AI_CULTURE_OFF`): off, a civilization channels nothing and its cultural
+defence is only its governors'. Telemetry: the decisions of kind `culture` (the action, or `stop`
+or `garrison`; why: `revolt_flip`, `revolt_disorder`, `revolt_unrest`, `religion_home`,
+`religion_abroad`, `religion_hostile`; `worthless`, `friend`, `stronger`, `keep_culture`...;
+`defend`), with the rules' counts `culture_channel`, `culture_channel_end`,
+`culture_spread` and `culture_revolt`; `FFH_AI_TRACE` lines `culture:` name the city, the target
+civilization and, for a revolt, each target city's resistance, stationed defenders, pressure,
+inflow and simulated outcome.
+
+First games (8 civs, standard map, 350 turns, `GAMEOPTION_CULTURE_ACTIONS`, `GAMEOPTION_ARMIES`
+and `GAMEOPTION_GOVERNORS`, seeds 1-4, telemetry): revolt channels set 11 / 31 / 28 / 7 a game,
+religion channels 17 / 14 / 19 / 27; the religion spread 12 / 8 / 16 / 20 times, nearly all into
+our own cities (0-2 channels a game abroad: a spread abroad seldom beats half a city's culture
+without a shrine); cities driven into revolt (disorder) 1 / 6 / 7 / 2, cities taken 0 / 3 / 4 / 0,
+all but one after turn 300 (revolt channels start around turns 200-290, when cities make 20
+culture and more); defenders trained first against revolt pressure 0 / 11 / 11 / 2 times. With
+the switch off on the same seeds nothing is channelled. Wars between civilizations declared from
+turn 250: 42 with the AI's channels, 25 without, but only 6 of the 42 between a civilization
+fomenting revolt and its target (the games diverge from the first channel: not a measurement of
+the channels' diplomatic cost). Turn times unchanged within the noise. Checked-build stress games
+(`ffh-stress`, 400 turns, seeds 1-3, the three options): no invariant failure.
+
+Measured as one civilization's edge (`civ_ab.py --base-env FFH_AI_CULTURE_OFF={civ}`, the three
+options, full games; Elohim, Bannor, Kuriotates, Sheaim forced into slot 0). Development seeds 1-12
+(48 pairs, before the review fixes of 2026-10-30): win 10.4% -> 12.5% (3 / 2 seeds won by one side
+only), share@end +139 (t 1.18), legacy@end +357 (t 2.69), alive at the end +0.1 (t 2.45); the
+Bannor the most (share@end +786, t 2.73). Fresh seeds 7001-7012 (48 pairs, the final code): win
+8.3% -> 6.2% (0 / 1), share@end +86 (t 0.83), legacy@end +132 (t 1.10); Elohim +322 (t 2.63),
+Bannor +398 (t 1.52), Kuriotates +13, Sheaim -390 (t -2.00; +26 on the development seeds): to look
+into. Revolt flips, 12 games of 400 turns (8 civs): 60 cities in all, 0-14 a game, nearly all by
+one strong cultural civilization a game (the Hippus 13 in one, the Amurites 10 in another), its
+weak neighbours losing most of their cities at peace although they trained the defenders asked
+for (docs/CULTURE.md, "Open points for the owner").
+
+Seen in the traces and not fixed here: channels end and start again when the cultural-victory plan
+flickers (its carrier cities keep their culture; seed 3, turns 321-322: the culture a group of
+channels poured into one city fell from 48 a turn to 18 and the group was dropped). And a city in
+revolt makes no culture, so a civilization that foments revolt against one fomenting back loses
+its channels' strength in the cities it throws into revolt.
+
+## Armies (`armies.rs`)
+
+This game's own system (`GAMEOPTION_ARMIES`, docs/ARMIES.md). The rules' army sync gives every
+group of army units an army, so the AI's movement logic (`military.rs`, `campaign.rs`) drives each
+army unchanged: a city-attack stack is an army, a city's defenders are its garrison. What an
+expert adds is logistics, once a turn before the governed cities and the cultural actions. Since
+the owner's redesign of 2026-10-31 (docs/ARMIES.md, "Requisition", "Marching recruits") the
+reinforcements are requisitioned and march on the map; before, the governed cities nearest the
+enemy fed the main army and every reinforcement travelled off the map.
+
+- **The main army and its target size.** At war, or preparing one, the main field army is the
+  largest army of at least two units in supply and not disbanding (the nearest to the enemy's
+  cities on ties); its target size is the army the war needs (`diplomacy::army_needed_for_war`),
+  and no other army has one (at peace, none). The main army so far stays the main one while it is
+  at least two thirds the size of the largest; out of supply it is no main army for the turn
+  (rather than a pair of units at home), unless an army in supply is as large by that measure.
+  Switching whenever another stack was a unit larger (the AI's stacks split for strikes and merge
+  again) withdrew 35% of the requisition orders placed in the first six games, 27% with the rule
+  (most of them re-placed at once in the same cities for the same unit, whose progress the rules
+  keep with the unit type).
+- **Requisition** (`requisition_cities`). While the main army is short of its target (the rules'
+  shortfall: its units, the recruits marching to it, its requisition orders and the orders bound
+  for it at the head of a queue counted), it requisitions from as many cities as it lacks units,
+  the ones an expert draws on: the city whose unit would join soonest (its production turns there
+  plus its march by land, within 20 turns; a guess from the distance ranks them, the land path
+  confirms the first ones), governed cities first (their production is the governor's
+  development), a directly ruled city only when what it would interrupt is worth less (not a
+  wonder, a ritual, a settler, a worker, a hero or a ship, not the last 3 turns of a building, not
+  an attacker already bound for the army, which counts toward the target as it is). Never a city
+  that needs its production for itself: one without a defender, under a threat its garrison would
+  not hold (`production::emergency`'s test), short of the defenders against revolt pressure, or
+  training a defender of its own; a city in that state is released, its order withdrawn. A city
+  whose order is under way keeps it while it can spare it; through a turn without a main army
+  while the war lasts, the orders under way stay where the city can still spare them and no new
+  ones are placed. The unit
+  (`requisition_unit`, the AI's `Controller::requisition_unit`, the governors' old feeding
+  choice): siege while siege is less than a third of the army (its recruits and requisition
+  orders counted), then the best attacker against cities; only army units.
+- **Directly ruled cities' attackers.** The attack units the directly ruled cities choose to train
+  (attack, city attack, collateral, counter roles) go to the main army too: they march to it.
+  The rules count such an order at the head of a queue against the army's shortfall, and a city
+  training one is not requisitioned on top of it, so the two never count twice; a requisition
+  beyond the shortfall is withdrawn by the rules. Defenders and everything else stay in their
+  city's garrison.
+- **Marching recruits are the rules' to move.** `units::play` gives a group with a marching unit
+  no orders (checked before the force-update re-plan, which would wake the rules' held marchers),
+  `military::is_army_unit`
+  leaves them out of the stacks, the transports and every count of our stacks (`campaign.rs`,
+  `naval.rs`), `production::garrison` and the sortie test do not count them among the defenders of
+  the city they stand in, and no escort, disbanding, cast (end-of-turn spells, barrage, world
+  spells, the Sidar's Wane, the Balseraphs' Arena, the Infernals' Manes, the Bannor's Recruit),
+  promotion or upgrade takes one. The empire-wide counts of units (the armed forces, the staged
+  army before a declaration) still include them.
+- **Requisition orders are the army's.** Where the AI clears a city's queue (the emergency switch
+  to a defender, the rebuild in financial trouble, the governor's defence against revolt
+  pressure, a process giving way) it keeps the requisition orders at the front
+  (`production::clear_own_orders`); a city with only requisition orders queued chooses what comes
+  after them; a requisition unit is not the city's own fighter for the emergency switch nor its
+  emergency for a hurry.
+- **Defenders in the garrison.** A city defender that walked to another of its cities was an army
+  of one there (the rules keep an army that enters a city an army); it joins that city's garrison,
+  so the garrison shows what holds the city and the Armies screen only the field armies (a taken-over
+  turn-180 game had 10 armies of one unit, most of them defenders in cities). Units on their way to
+  such an army go to that garrison.
+
+Switch `ARMIES` (`FFH_AI_ARMIES_OFF`): off, every unit stays in its city's garrison when trained
+and no army requisitions (the armies still form from the groups). Switch `REQUISITION`
+(`FFH_AI_REQUISITION_OFF`): off, no army requisitions; the directly ruled cities' attackers still
+march to the main army. The `ffh` runner's controller wrappers (`Timed`, `CppCitizens` in
+`ffh-cli/src/run.rs`) now forward `requisition_unit` (and `govern_cities`): without it every
+`ffh stats` / `ffh autoplay` game took the rules' default unit, not the AI's.
+
+Measured (2026-10-31; 8 civs, standard map, 400 turns, seeds 1-6, armies, governors and cultural
+actions on; telemetry `march` / `transit` and `requisition`, totals over the six games):
+
+| | sent | arrived (turns) | diverted | stopped | killed | requisitions placed / withdrawn | cities taken by conquest | civ cities changing hands | wars declared |
+|---|---|---|---|---|---|---|---|---|---|
+| master 5a91f5a (feed mode, transit off the map) | 1013 | 982 (5.2) | 72 | 0 | 0 | - | 98 | 143 | 87 |
+| rules only (no AI requisition, the AI moving marchers) | 541 | 483 (5.1) | 70 | 0 | 45 | 0 / 0 | 132 | 165 | 78 |
+| this AI | 1053 | 925 (5.5) | 111 | 3 | 104 | 953 / 257 | 166 | 150 | 78 |
+| this AI, `REQUISITION` off | 608 | 529 (5.1) | 54 | 0 | 68 | 0 / 0 | 125 | 165 | 79 |
+
+The requisition brings the reinforcements back to the feed mode's volume (1053 recruits against
+1013 sent off the map; without it 608, the directly ruled cities' attackers alone), and more of
+the wars end in conquests (166 cities taken against 125 with it off on the same binary). The
+march costs what transit did not: a tenth of the recruits die on the way (104 of 1053; 68 of 608
+with the requisition off, the same share), mostly in their last turns near the front, where the
+army fights (killed 4.7 turns after setting out on average, against 5.5 for an arrival). In one
+game with the event stream (seed 3), 228 recruits marched to an army: 186 joined it (3.8 turns on
+average, 4.2 estimated), 26 were diverted to a garrison after waiting 5 turns, 11 were killed on
+the way. Turn times (`ffh bench`, all CPU slots, two rounds alternating): seed 1 33.3 / 34.9 ms
+a turn on master, 32.2 / 30.3 with the requisition; seed 3 44.2 / 43.7 and 40.4 / 38.2 (other
+games, so only "no slower"). Not yet measured for win rate (the spec's tuning phase).
+
+Firings (seed 3, `FFH_AI_TRACE`), each forked there (`tools/ai-branch.sh --switch REQUISITION`):
+
+- Turn 125, the Luchuirp prepare a war: their 1st Army (2 of 9) requisitions from the directly
+  ruled Ithralia (a Warrior in 2 turns, 2 to march), at turn 129 from Mutanbo (4 + 4); by turn 138
+  it has 9 and takes one more from Ithralia; at turn 154 it is full and requisitions from none.
+  Forked: 16-17 field units at turns 133-135 against 14-15 without, the war declared at turn 139
+  (141 without), two cities taken by turn 151 against one, peace at turn 153.
+- Turn 138, the Hippus prepare a war: their 1st Army (2 of 10) requisitions from the governed
+  Conrond Mor (9 + 3), Gaene (9 + 4) and Feiss Mabdon (9 + 7) and the directly ruled Urgortheth
+  (4 + 0); a turn later Urgortheth, now threatened, is released and the governed Clar Marrachir
+  (3 + 6) takes its place. Forked: 22-23 field units from turn 147 against 18-20 without, but a
+  second city is lost at turn 151 (kept without), peace comes at turn 152 (154 without), and once
+  at peace the larger army's upkeep puts them in financial trouble: 14 units disbanded at turn
+  157 (3 in the whole branch without). A war the requisition fed but did not win.
+
+## Governors (`governor.rs`)
+
+This game's own system (`GAMEOPTION_GOVERNORS`, docs/GOVERNORS.md). Two things: what a governor
+builds in a governed city (the human's as well as the AI's), and how the AI runs its own governed
+cities.
+
+- **The governor's production** (`decide`, called by `production::choose` for a governed city): the
+  garrison the city's danger asks for (the AI's own quota, plus a Marshal's defender); workers and
+  work boats while the land needs them; the best building by `building_value` per turn of
+  production, up to half again for the profile's flavors; a Zealot's missionary; the profile's
+  process. It never builds settlers, wonders or rituals (the rules forbid them in governed
+  cities). Against revolt pressure aimed at the city, the defenders that hold it off come first
+  (`culture::defenders_needed`; the cultural defence, `culture::defend`, has a threatened governed
+  city's governor choose again). An army's requisition goes ahead of all of it: the requisition
+  order interrupts what the governor builds, which resumes after it (`armies.rs` decides which
+  cities the AI's main army draws on: governed ones first). The AI's emergency switch to a
+  defender and its rebuild in financial trouble judge a governed city by this choice, not the
+  direct-rule ladder's, and keep the requisition orders; the wonder emphasis and the
+  Philosophical great-people emphasis keep to directly ruled cities (a governed city's emphasis is
+  its profile's).
+- **Direct rule.** The AI's first four cities are direct; later a governed city making half again
+  as much production as the weakest direct one (and at least 6) takes its slot when both are past
+  their cooldown, so its settlers and wonders come from its best cities.
+- **No modes** (2026-10-31). The governed cities' feed mode is gone with the rules' requisition:
+  every governed city develops, and at war the main army requisitions soldiers from those near the
+  front (docs/AI.md, "Armies"); the feeding step of `decide`, `set_modes`, `army_short` and
+  `short_on_the_way` went with it, and the feeding unit became the AI's requisition unit
+  (`armies::requisition_unit`).
+- **Governors.** The rules give a vacant post the best-matching candidate; the AI replaces nobody
+  (a replacement costs the city). Cultural channels are the civilization's, not the governors'
+  (docs/CULTURE.md): its cultural play sets them in governed cities too.
+- **A human's governors** (`culture::govern`, through `Controller::govern_cities`): defenders
+  against revolt pressure; never a cultural channel.
+
+Switch `GOVERNORS` (`FFH_AI_GOVERNORS_OFF`): off, the AI keeps its first cities direct. The
+production audit the spec asks for (governors on against off, AI autoplay, 24 seeds; measured with
+the feed mode, before the requisition) is in docs/GOVERNORS.md: the governed empires grow, produce
+and research more (+8% population, +13% production and research) and a quarter fewer cities change
+hands, mostly because the profiles' production emphasis builds better cities.
+
 ## Random events (`events.rs`)
 
 The rules offer an AI player the trigger's events it can do, in trigger order (`player_trigger_data`).
@@ -838,7 +1607,8 @@ turn, to move casters and to promote them:
   can reach us (summons attack as FfH's do, `casting::summons_attack`: of the enemies next to the
   plots they reach with moves left this turn, the one where their odds are best, at 5% or better,
   never a stack of temporary summons; a summon is worth the fight it would take, nothing when it
-  would take none); lasting blessings on our units that lack them; short ones by what
+  would take none; one about to expire also takes worse odds, below); lasting blessings on our
+  units that lack them; short ones by what
   they add to our defense in the enemies' turn, before they wear off (in full where an enemy we see
   can strike, a quarter elsewhere: Dance of Blades' first strike; Haste's move adds nothing);
   healing; terraforming; city spells. World spells, abilities (equipment, crews, cages) and
@@ -854,22 +1624,120 @@ turn, to move casters and to promote them:
   spells or terraforming are worth most for the turns it takes. A city spell's building goes when no
   unit in the city can cast it (`bRequiresCaster`, C++ `CvCity::doTurn`): the caster that keeps one
   stays unless twice as much waits elsewhere (without this rule casters recast Inspiration a hundred
-  times a game).
+  times a game). Adepts and better move by their role in the corps (below): the node builder,
+  the terraformer and the city mages to their work, the war wizards as above.
+- **The caster school** (2026-10-27): how the rules raise an arcane caster decides how to use it.
+  An Adept gains experience by itself, each turn with chance (spellcaster XP - experience)%
+  (bFreeXP: 20 with Channeling I, more with Channeling II and III and with Potency), not by casting
+  or by where it stands; at level 4 with Sorcery it becomes a Mage (Channeling II: Fireball,
+  Maelstrom, the Spectre, Pit Beast and Ice Elemental), at level 6 with Strength of Will an
+  Archmage (the elementals). No Channeling I spell summons a fighter or does damage, so an Adept
+  adds little at the front, and its worth is its age: lost there (strength 3, two times in three
+  alone on the way), it took the 30 to 70 turns it had studied. So: an **apprentice** (an arcane
+  caster without Channeling II that can still become a Mage, not a hero -- at any level: an Adept
+  of level 4 casts an Adept's spells until the tech and the gold make it a Mage) works at home --
+  city spells, blessings and terraforming in our land where no enemy we see can reach -- and
+  otherwise waits in the city of ours it stands in, or goes to the nearest quiet one
+  (`magic::study_city`; first versions sent it to the least threatened city, and apprentices
+  shuttled between two cities as the danger moved and died on the open ground between); **every
+  caster** moves toward its target only onto plots where it is sheltered (`magic::safe_step`: our
+  city, a plot no enemy we see can reach outside an enemy's land, or beside a unit of ours at least
+  as strong, not another caster), waiting at the last one when the next step is not, and goes to
+  study when it can reach none (the same steps take a caster with nothing to do to the most
+  threatened city); a player with an apprentice a level short of its upgrade
+  researches the upgrade's tech (+300 for each such apprentice, up to five, and +100 on the techs
+  on the way: `magic::school_tech_value`) and pays for the upgrade with a defender's gold reserve
+  (`units::upgrade`).
+- **Casters in the stacks** (`CASTER_STACKS`, 2026-10-27): a caster going to an operation
+  (`magic::strike_target`) joins a committed stack of it with four fighters or more where it
+  stands, before or after its sheltered step, and marches with it from then on
+  (`magic::stack_to_join`, `join_stack`): the stack guards it and carries it to the city at the
+  stack's pace (on its own it waited at the last sheltered plot while the stack went on). Joining
+  any committed group, a third of the joins went to groups of one to three units -- stragglers and
+  reinforcements on their way -- and the casters lost rose by a quarter: they shared those groups'
+  fate. It joins as a war wizard, the AI type FfH's group attack
+  sends below 95% odds only when no other unit can attack (`AI_getBestGroupAttacker`, Sephi's
+  block), and it does not fight for the stack: below those odds the strike leaves it out, a stack's
+  assault holds rather than send it (`military::precious_holds`), the campaign's force estimates do
+  not count it (`campaign::fights`), and a captured city is entered by fighters first. It leaves the
+  stack (`magic::leave_stack`) once the stack is out of our operations or fewer than two fighters
+  are left in it (a strike takes the attackers out of their stacks, a battle kills them), and takes
+  its own orders at once; a group a
+  caster heads splits at the start of the turn. Inside a stack it never heads, it gets
+  its promotions at the start of the turn (`units::play`, also without `PROMOTE_ALL`). A stack
+  moves at its slowest unit's pace: a caster slows a mounted stack.
 - **Promotions** (`units::promotion_value`): a sphere is worth the spells it opens, plus half of
   those the next promotion of the sphere opens (a quarter for an adept, which gets Channeling II only
   as a mage): Fire I for Fireball, Enchantment I for Enchanted Blade.
-- **No caster production**: casters come from FfH's own sources (heroes, priests and other units
-  with spells, the Catacomb Libralus' guilds and production's caster step, the Tower of Mastery's
-  mana nodes). Training adepts and building the Mage Guild for them by what their spells are worth
-  in a fight was tried and lost wins (docs/AI_LOG.md, "Spellcasting").
+- **Summons spent** (`casting::summon_target`, `SUMMON_SPEND`; More Naval AI's
+  `AI_summonAttackMove`, which attacks at any odds): a temporary summon that will be gone before it
+  could act again (duration 1: every summon but a Summoner's on the turn it is cast, a Summoner's
+  on its second turn, which now attacks before our other units move instead of wandering as an army
+  unit) attacks below 5% odds too, ranked by the hit points the fight takes (5 or more, by
+  `magic::summon_fight`), a 5% target still first. Two exceptions an expert sees: it stays when it
+  is its stack's cover (an enemy can strike the plot next turn and the lasting units it stands with
+  defend worse: the Balseraphs' Loki lost his health to a Spectre his puppet had left him alone
+  with, docs/AI_LOG.md, "Spellcasting"), and at the end of our turn it leaves cities alone, whose
+  defenders heal before anything of ours could use the damage (a Summoner's summon at the start of
+  our turn may weaken a city our stacks then strike). Permanent summons are never spent. The
+  end-of-turn value of a summon spell counts the same fights.
+- **Govannon** (the Amurites' hero; `casters::govannon`, `TEACH_SPELLS`; More Naval AI's
+  `AI_Govannonmove`): Teach Spellcasting gives every unit of ours on his plot (not animals or
+  birds) his first-level spheres and Channeling I; its value is the spells those spheres open for
+  each unit
+  (`magic::teach_value`, `promotion_value`'s scale), so he casts it where he stands when that is
+  worth 40, else walks alone to the stack or city of ours worth most for the turns it takes (within
+  10, on our land, no enemy in sight there). FfH's own value for the spell is 0 (its effect is all
+  Python), and no AI ever cast it.
+- **Mana nodes** (`mana.rs`, `MANA_NODES`; More Naval AI's `AI_upgrademanaMove` and its mana
+  valuation): raw mana in our cities' radius is worth nothing until a caster builds a node on it,
+  and a node is for good (it cannot become another type). A node type is worth, on
+  `building_value`'s scale for the whole empire, the bonus's own effects in every city, read from
+  the bonus data (Mind +3% research, Law -5% maintenance, Spirit +5% great people, Enchantment +1
+  happiness and Life +1 health -- again for every node, `bModifierPerBonus` --, Body healing, Earth
+  discoveries), plus, for the first node of a type, three times the spells its sphere opens: half
+  its first promotion's worth to each caster of ours that lacks it, in full to one we could train
+  (`magic::sphere_value`), plus the affinities of our units. A caster with no strike to join and
+  no city spell to keep goes to build the node worth most for the turns it takes (within 12, on a
+  plot no enemy can reach next turn); production trains one caster for nodes when none of ours can
+  build them and the jobs are worth 300 (the Mage Guild first, in a city with half our best city's
+  production or more, when no city of ours can train an adept); research values the techs that
+  open node types by the gain over the types we can already build, for each raw node of ours
+  (`research::builds_value`). Before, only the Tower of Mastery goal built nodes, and it is never
+  ours: no civilization converted its raw mana. In 24 full games the nodes built were two thirds
+  Enchantment (a happy face in every city per node), then Entropy and Mind (round 7a).
+- **The caster corps** (`casters.rs`, round 7a; More Naval AI's adept roles): each caster
+  (an adept or better, not a hero) has a role kept in its unit AI type, so it is saved with the
+  unit: the node builder (`UNITAI_MANA_UPGRADE`, one while there are node jobs), the terraformer
+  (`UNITAI_TERRAFORMER`, one while a caster knows Spring, Scorch or Vitalize and our worked land
+  has plots it would improve), city mages (`UNITAI_MAGE`, one for every four cities, each in a city
+  of its own, the most threatened first, then the capital, then the largest, where they keep their
+  city spells and bless and defend the garrison at the end of the turn) and war wizards
+  (`UNITAI_WARWIZARD`, the rest, with the stacks as above). Production keeps the corps -- the city
+  mages, and at war or preparing one a war wizard and one more for every ten attackers, five in
+  all at most -- while our mana gives a fresh adept a first-level sphere worth 60 or more
+  (`magic::sphere_value`: Enchanted Blade, Rust, Slow, Bless, Raise Skeleton with Spectre, Wall
+  of Stone with Stoneskin, Inspiration with Charm), after the workers and before heroes, the army
+  and buildings, in a safe city that can afford it; the Mage Guild where no city trains adepts.
+  More Naval AI keeps a mage in every city and more; an expert's corps is smaller and pays in the
+  economy first. Three earlier attempts at training casters for their fight spells alone lost
+  wins (docs/AI_LOG.md, "Spellcasting", "Casters through a Mage Guild").
 
 `FFH_AI_MAGIC_OFF=CIVILIZATION_X,..|X|all` makes those civilizations cast by FfH's terms
-(`casting.rs`; their summons attack as everyone's do: the measurement switch); `FFH_AI_TRACE_CAST=1`
-prints every AI cast (turn, player, civilization, unit, spell, where, value). Tests:
+(`casting.rs`; their summons attack as everyone's do: the measurement switch);
+the switches `CASTER_SCHOOL` and `CASTER_STACKS` (`switches.rs`: `FFH_AI_CASTER_SCHOOL_OFF`,
+`FFH_AI_CASTER_STACKS_OFF`, `.._ONLY`) turn the caster school and the casters in the stacks off
+(the stacks need the school; with each off the same games result as before it);
+`FFH_AI_TRACE_CAST=1` prints every AI cast (turn, player, civilization, unit, spell, where,
+value), every strike (our arcane casters within two plots of the city, Mages anywhere) and every
+caster joining or leaving a stack. Tests:
 `crates/ffh-ai/tests/magic.rs` (a mage Fireballs a city before the stack attacks; an adept
 blesses its stack with Enchanted Blade, and values Haste at nothing on a quiet turn; a fresh
 summon attacks a Warrior but not a Champion; a Spectre walks two plots to a wounded Warrior, and
-is worth nothing next to a city it cannot hurt) and `magic::tests` (the worth table's order).
+is worth nothing next to a city it cannot hurt; an apprentice stays home, and a Mage steps only
+beside our units), `magic::tests` (the worth table's order) and
+`campaign::tests::a_mage_in_the_stack_does_not_attack` (the strike takes the city without the
+Mage in its stack, and a stack whose only unit left to attack is the Mage holds).
 
 Measured: each civilization forced into slot 0, its spellcasting on against the same binary with
 `FFH_AI_MAGIC_OFF` for it (every other civilization casting by `magic.rs`), full games (6 civs,
@@ -905,6 +1773,114 @@ skeleton attacks in two replays where the old order made 1 and 8. Calabim forced
 8501-8520 (7 of 20 games changed): win 10% -> 15% (1 / 0), share@end +22 (t 0.37), legacy@end -2.5
 (t -0.02).
 
+### Magic civilizations (2026-10-28)
+
+In 37 games with a magic civilization forced into slot 0 (Amurites, Sheaim, Svartalfar,
+Balseraphs; seeds 1-10, full games), the AI had no arcane caster at turn 200 in all but one:
+Knowledge of the Ether came as the 11th to 24th tech, at turns 170-250, the Mage Guild 20-50 turns
+later, the first Adept at turns 250-350 -- and many of these games are decided by turns 230-500.
+Where Wizards existed they spent most turns on Haste (FfH's free cast), fired Fireballs at units
+immune to fire, and their damage at the end of the turn came after every attack decision of ours:
+in seed 10 the Amurites' Wizards fireballed the stack at a city's gates turn after turn while the
+city fell. Seven behaviours, each with a switch (`switches.rs`); the versions that failed and the ideas
+that did not hold (spheres chosen by the caster's role, mana bought for its sphere, Mages sent to
+threatened cities) are in docs/AI_LOG.md, "Magic civilizations":
+
+- **The arcane path** (`ARCANE_PATH`, `traits::arcane_path`, `tech_plan`): an Arcane or Summoner
+  leader heads for Sorcery once the economy's tier 2 is in, with Knowledge of the Ether and a
+  sphere tech on the way (the one whose nodes our raw mana makes worth most, Necromancy first among
+  equals for a Summoner); the Amurites' own plan did so, the other magic leaders reached Sorcery by
+  the plain scores. Earlier versions opened the school right after the first essentials and
+  Sorcery right after Writing: casters at turn 200 rose from 0.06 to 0.9, but they were Adepts a
+  century before their Mages, and the economy fell behind when the games are decided (fresh seeds:
+  win 16% -> 9-10%; docs/AI_LOG.md).
+- **The barrage** (`BARRAGE`, `casting::barrage`): at the start of our turn, before any unit moves,
+  a caster whose best end-of-turn cast is damage or a temporary summon casts it (a cast uses no
+  moves). Our units then decide their attacks on enemies already hurt: an expert fireballs the
+  stack at his gates, then sorties against the survivors. Casters in a stack of our operations
+  keep their cast for the strike, spells with an FfH weight of their own (the Balseraphs' puppets)
+  keep their time, and the summons spend themselves on a city only as at the end of the turn. A
+  summon's estimated fight counts the defender's resistance to its damage types
+  (`magic::summon_fight`): a Fireball is all fire, and was sent at Fire Elementals.
+- **Casters in the force** (`CASTER_FORCE`, `magic::planned_soften`, `campaign::covers_with`): the
+  estimates that decide when an operation's stacks march, step in and strike count the hit points
+  the casters marching with them should take from the defenders (each its best damage spell or
+  temporary summon, each cast on the defenders as the casts before left them). They can make a
+  strike decisive, never a marginal one go a turn before the reinforcements: the strike phase they
+  alone open is a probe (`Op::probe`) -- the casters cast, and the stacks attack only if the city is
+  still covered with a reserve. (Counted in the marginal strike too, they sent a ring into a city
+  a turn early, defenders at 84 hit points, and it bounced with five units lost; the probe holds
+  that turn and takes the city the next.)
+- **A mage army** (`MAGE_ARMY`, `traits::mage_army`): once its Adepts can become Mages (Sorcery),
+  a magic leader keeps a caster for every four field units (at least its corps), on top of its
+  army, and trains its casters while a raider the garrison holds is in sight (before, any threat
+  in sight stopped them).
+- **City spells under threat** (`CITY_SPELL_THREAT`, `magic::city_spell_threat`): a city spell's
+  building is valued against the enemies in sight of the city, so a Wall of Stone (+25% defense)
+  goes up in a besieged city; valued as if the city were quiet, it was worth 3 and never cast.
+
+- **War with Mages** (`MAGIC_WAR`, `diplomacy::can_take_cities_at`): the war of expansion's test
+  that a neighbour's weakest city can be taken counts our casters' damage on its defender: 10% of
+  its health for each caster of ours whose spells hurt (a Mage's Fireball, not an Adept's Haste),
+  40% at most. Without it a magic civilization judged its targets by its swords alone, and its
+  Mages saw few strikes (one of seven strikes in a traced Amurite game with ten Mages had one near).
+  Forked at its firings: Amurites seed 10 went to war on a weak neighbour at turn 325 and had 12
+  cities to 10 forty turns later; Sheaim seed 6 took a city at turn 262 that the branch without it
+  left alone.
+
+- **Haste on the march** (`HASTE_MARCH`, `magic::haste_march`, 2026-10-28): a caster in a stack of
+  our operations that has further to go than this turn (to its rally city, the assembly ring or
+  the plot next to the city) casts Haste on it before it moves, when every unit with the fewest
+  moves left gains a move -- a siege engine, which Haste does not reach, holds the stack back --
+  and its best cast at the end of the turn is worth less than 30. Haste was FfH's free cast at the
+  end of the turn, after the stack had moved, and worth nothing. Fork (Amurites seed 10, turn
+  357): the hasted stack stepped in a turn earlier and took a barbarian city. It fires about 10
+  times a game where a Mage with Body marches with a stack without siege engines. Measured on for
+  the forced civilization only, the rest of the package on both sides: development seeds
+  52001-52040, win 15.6% on both sides (1 / 1), share@end +18 (t 0.91), 144 of 160 games
+  unchanged; fresh seeds 55001-55040, win 10.6% -> 11.9% (2 / 0; Amurites 0 -> 2), share@end +57
+  (t 2.07), legacy@end +69 (t 2.20), rank -0.1 (t -2.06), 140 of 160 games unchanged.
+
+`FFH_AI_TRACE` shows the casters' count in the force (`casters count on ...`, with the planned
+damage) and the probes (`strike on ...: 0 attacks, holds`); `FFH_AI_TRACE_CAST` shows the barrage
+(`ctx=barrage`) and the Haste on the march (`ctx=march`), and `magic war: our casters make ... cities takeable` the war gate. Tests: `crates/ffh-ai/tests/magic.rs` (a Fireball does nothing to a Fire
+Elemental; the barrage softens the stack at our gates before our units move; the force estimate
+counts a Mage's Fireball once; a besieged city gets its Wall of Stone; a Mage hastes its marching stack unless a catapult holds it back).
+
+Measured with each of the four civilizations forced into slot 0, full games, the same binary on
+both sides, the switches on for the forced civilization only (`FFH_AI_<NAME>_ONLY={civ}`) against
+them off; "one side only" counts the seeds won by one side only. Development seeds 1-30 (120
+pairs), each switch against the others as they then were:
+
+| switch | win (one side only) | share@300 | share@end | other |
+|---|---|---|---|---|
+| `BARRAGE` | 12.5% -> 11.7% (0 / 1) | -1 (t -0.68) | -2 (t -0.06) | alive at the end +0.1 (t 2.50); 82 games unchanged |
+| `CASTER_FORCE` | 12.5% -> 12.5% (1 / 1) | 0 | -21 (t -1.37) | 96 games unchanged; in the others more cities taken, and some more lost |
+| `MAGE_ARMY` (before the Sorcery timing) | 12.5% -> 10.8% (4 / 6) | +27 (t 0.75) | +20 (t 0.27) | legacy@end +137 (t 1.74), alive +0.1 (t 2.03); arcane casters made 5.0 -> 9.0 a game; spell damage 108 -> 227 a game |
+
+Seeds 52001-52040 (160 pairs; a first validation that the first package failed, development since):
+
+| side | win (one side only) | share@200 | share@400 | share@end | magic |
+|---|---|---|---|---|---|
+| package without `MAGIC_WAR` against all off | 16.2% -> 13.8% (6 / 10) | +5 (t 0.92) | +41 (t 0.85) | -10 (t -0.14) | Mages at turn 400 2.6 -> 3.7, spell damage 72 -> 136 a game, summon kills 9.5 -> 12.9 |
+| `MAGIC_WAR` on top of it | 13.8% -> 15.0% (8 / 6) | 0 | +20 (t 0.90) | +96 (t 1.70) | legacy@end +72 (t 1.42); Amurites 2 -> 5 wins, Sheaim 3 -> 5 |
+
+Validation, fresh seeds 54001-54040 (160 pairs), all six switches on for the forced civilization
+against all off: win 13.1% -> 12.5% (8 / 9 seeds won by one side only), share@400 +44 (t 1.61),
+share@end +30 (t 0.49), legacy@end +59 (t 0.87); Amurites 3 -> 4 wins, Sheaim 3 -> 2, Svartalfar
+5 -> 3, Balseraphs 10 -> 11. What the casters did, a game: Mages at turn 300 0.45 -> 0.79 and at
+turn 400 2.3 -> 3.8, the first Mage (median) at turn 450 -> 400, arcane casters made 5.6 -> 8.6
+and lost 1.6 -> 1.9, spell damage 53 -> 94, summons' kills 9.3 -> 12.8, casts before strikes 4.5
+-> 5.9, barrage casts 8; cities taken 3.09 -> 3.30, lost 2.99 -> 2.76. (Seeds 52001-52040 and
+53001-53040 were spent on the versions that failed: docs/AI_LOG.md.)
+
+Forks at their firings (`tools/ai-branch.sh`): the barrage (seed 10, Amurites, turn 421) let a
+stack of 8 attack five barbarian Disciples of Acheron the Fireballs had hurt -- four killed for a
+Horse Archer -- where without it the simulation said no; at seed 7 turn 332 the branch with it had
+14 cities to 13 and 45 more power ten turns later. The probe (seed 7, turn 329) held the strike the
+casters alone opened, cast, and took Elohim's city the next turn, a turn before the branch without
+it.
+
 ## Civilization-specific (`civs/`)
 
 Each civilization has a module in `crates/ffh-ai/src/civs/` implementing `CivPlay`, whose
@@ -913,12 +1889,16 @@ stub naming what was tried. The generic AI calls the hooks at fixed points (mark
 `// civ-mechanics`): `production` (after the settler step), `turn` (once per turn before units
 move), `unit` (a group's orders before its role logic), `sea_worker`, `spell_value` (the
 end-of-turn spell choice; 0 = not cast there), `building_value`, `tech_value`, `promotion_value`,
-`civic_value` and `site_value`. Every hook dispatches on `civs::civ`, so a game without a
+`civic_value`, `site_value` and `tech_goals` (the research plan's civilization part:
+`tech_plan.rs`). Every hook dispatches on `civs::civ`, so a game without a
 civilization that has logic plays exactly as before (same checksum), and
 `FFH_AI_CIV_OFF=CIVILIZATION_X` (comma-separated, `X` alone, or `all`) makes a civilization play
 as a generic one: the measurement switch. `civs/world_spell.rs` holds a world spell for a chosen
 moment (`spell_value` returns 0 for it and the `turn` hook casts it once the rules and the AI's
-default timing allow it). The older research flavours in `tech_plan.rs` are outside the switch.
+default timing allow it). The research flavours of `tech_plan.rs` (FfH's per-civilization
+beelines) are hooks too (`tech_goals`), under the switch since 2026-10-28; what remains outside
+`civs/` mirrors the rules (the Doviello's and Illians' snow kept from Scorch, the rules' own
+AI-only `reqScorch`) or is a flavor drive (`campaign::conqueror`).
 
 **Unique mechanics are used** (the owner's decision, 2026-10-20): a civilization's own units,
 spells and abilities are part of how it plays, so its AI uses them whether or not the games show a
@@ -1004,7 +1984,8 @@ Unique content the base AI never used in those games: the Amurites' Arcane Lacun
 Ancestors, the Clan's Warrens, the Sheaim's Worldbreak (Planar Gate 1/40), the Luchuirp's
 Blasting Workshop, Pallens Engine and Adularia Chamber, the heroes Corlindale (Elohim), Wilboman
 (Illians), War Machine (Doviello) and Eurabatres (Kuriotates), and every civ's adepts (no AI
-built a Mage Guild: 29 adepts in 3408 civ positions at turn 300).
+built a Mage Guild: 29 adepts in 3408 civ positions at turn 300). Since 2026-10-27 the
+buildings among them whose effects are in the rules' code are valued (`code_effects.rs`, "Cities").
 
 ### Kept
 
@@ -1029,7 +2010,8 @@ built a Mage Guild: 29 adepts in 3408 civ positions at turn 300).
   with a civ at peace with us.
 - **Clan of Embers**: Warrens (Masonry, 180 hammers: every unit finished in the city that is not
   a world, national, siege or naval unit gets a free copy; Python only, so valued 0 and never
-  built) are valued as the hammers the copies add (half the city's production): 3.4 a game by
+  built) are valued as the hammers the copies add (half the city's production; since 2026-10-27
+  in `code_effects.rs` with the other buildings whose effects are in code, "Cities"): 3.4 a game by
   turn 300, 7.6 by the end. Rantine casts Convert City in a barbarian city whose units are no
   stronger than him -- the Clan is at peace with the barbarians (`TRAIT_BARBARIAN`), so no army
   ever went there -- walking to the nearest such city within 15 turns while no civ war is on:
@@ -1064,6 +2046,18 @@ built a Mage Guild: 29 adepts in 3408 civ positions at turn 300).
   take higher, so the garrison warriors took nearly every hammer (seeds 1-16: 59 takes, 13
   gives); units in our own cities now leave it, and the hammer gives itself (round 4, the 47 games
   where Luchuirp cast Gifts: production +11.8% at turn 300, t 2.5, great people +47%).
+- **Khazad** (2026-10-27): the Dwarven Vaults. The rules set every Khazad city's vault by the
+  treasury's gold per city: -2 happiness under 50, -1 under 100, +1 from 150, +2 and +10%
+  production from 200, +2 and +25% from 300, +3 and +40% from 500. The generic AI spent its
+  treasury down, so the cities sat in the Empty vault (8.3 a game). Now the treasury saves toward
+  the highest level whose happiness (where cities are near their cap) and production repay the
+  missing gold within 30 turns (15 at war), the slider keeping a gold rate that reaches it in about
+  20 turns (never below 30% research for it); the current level is a floor that hurrying,
+  upgrades, gold in deals, council costs and deficits leave (`civs/khazad.rs`, `civs::gold_target`
+  / `gold_floor`). Vaults at the end: Empty 8.3 -> 0, Full 4.2, Overflowing 2.0 a game. Forks from
+  turn 80: power at turn 229 +11-24%, research equal or better after an early dip. Fresh seeds
+  43001-43048 against its logic off: win 27.1% -> 31.2% (7 / 5), share@end +244 (t 1.19),
+  legacy@end +418 (t 1.75); its neighbours pay for it (see "Spells FfH kept from its AI").
 - **Sidar**: Into the Mist (every unit gets `PROMOTION_HIDDEN`: invisible to other teams outside
   our cities and +1 first strike, until it fights or casts; units trained later do not get it)
   was cast the first turn the default timing (40 units) allowed, usually at peace, and the army
@@ -1166,7 +2160,8 @@ built a Mage Guild: 29 adepts in 3408 civ positions at turn 300).
   barbarians, the other civilizations 0.3-2.2 workers; Moroi garrisons upgraded to Brujahs
   (strength 11, defense 5) and Vampires stay garrisons (57% and 49% of their turns); research
   never plans a path to a late unique unit (Warhorses: Hornguard, Herne, Magnadine); Govannon
-  never casts Teach Spellcasting; the Bannor train a Flagbearer in 18% of the games they could
+  never cast Teach Spellcasting (he does since round 7a); the Bannor train a Flagbearer in 18% of
+  the games they could
   (56%), though one in a stack casts Morale every turn.
 
 ### Measured over the games they join (Infernals, Mercurians)
@@ -1202,7 +2197,8 @@ Night lost already in development; the Khazad's, Luchuirp's and Lanun's `PrereqB
 Grigori Medics, Elohim's Sanctuary hold, more Ljosalfar workers and the Kuriotates variants (no
 settlements, extra defenders) were flat or worse. Older civilization notes kept for the record: the
 Khazad's Dwarven Vault target (round 3: saving gold for the vault level cost more research than the
-happiness repaid, score -5 +- 37 over 40 games) and the elves' forests (`MaintainFeatures` keeps the
+happiness repaid, score -5 +- 37 over 40 games; back since 2026-10-27 counting the vaults'
+production, "Kept") and the elves' forests (`MaintainFeatures` keeps the
 forest under every improvement they build on their own plots; `FFH_LOG` shows no forest cleared by
 them).
 
@@ -1246,6 +2242,32 @@ had none). Several almost never hold, so their spell is never cast: Arcane Lacun
 Worldbreak (about 3%, near the end), Raging Seas (5 of 40, around turn 590), March of the Trees and
 Sanctuary (16 and 15 of 40, late).
 
+**Expert moments** (`world_spells::expert_moment`, 2026-10-21; the owner's rule that
+civilizations use their own mechanics): three spells FfH's condition almost never let the AI
+cast. Arcane Lacuna (Amurites) at war with a civilization, instead of 7 typed mana nodes on the
+map (0 casts in 24 full games); Worldbreak (Sheaim) at war once the Armageddon counter is 20,
+instead of 50 (0 casts); Religious Fervor (Malakim) with the state religion in five cities, or
+in three that are two thirds of ours (a small Malakim empire never had five). Measured with the
+civilization forced, against the same binary with FfH's conditions (`FFH_AI_WS_TIMING_OFF=ALL`),
+full games: development seeds 1-24, casts Amurites 0 -> 14 games, Sheaim 0 -> 6, Malakim 16 ->
+14; fresh seeds 9601-9624, casts 0 -> 13, 0 -> 10, 13 -> 17, share@end +7, +24, +47 (every |t| <
+0.3), wins 1 / 1, 0 / 2, 0 / 1 pairs. Earlier For the Horde (a dozen orcs) and Ardor (the
+third great person) cost and were dropped (docs/AI_LOG.md).
+
+**A losing war** (`world_spells::losing_war`, `city_in_peril`; off by default, the switch
+`WS_LOSING_WAR` with `FFH_AI_WS_LOSING_WAR_ONLY=ALL` turns it on, 2026-10-22): Sanctuary
+(Elohim) and March of the Trees (Ljosalfar) would wait, instead of FfH's two wars at once, for
+More Naval AI's gate -- the civilizations at war with us have 1.5 times our power -- and an
+invasion at the gates: the capital or two cities, each with four or more units of a civilization
+at war with us within three plots whose attack exceeds the city's garrison at 1.5 times its
+defense (barbarians do not count). Every version measured (the ratio alone, with one city
+threatened, with four units there, with two cities or the capital) cost the Elohim share at the
+end on development seeds (-127 to -162, t -1.1 to -1.7; the Ljosalfar -34, t -0.3): the one-shot
+spell went on the first raid of a stronger neighbour, which the city held anyway (seed 21, turn
+141; the invasion that took nine cities came seventy turns later, where FfH's condition had cast
+it), or after cities had already fallen (seed 7). FfH's condition stays the default
+(docs/AI_LOG.md, "Sanctuary and March of the Trees at a losing war").
+
 **Moments of their own** (an experiment, not merged: `world_spells::turn`, once a turn before units
 move, commit `0e4945b`, reachable from the `fanout/ws-*` job branches; measured with the
 civilization forced against the same binary with FfH's condition, `FFH_AI_WS_DEFAULT=SPELL_X`,
@@ -1288,13 +2310,15 @@ earlier cast is the first thing to measure.
   (`casting::end_turn`: the best spell, then a buff, then a summon); FfH's casting before a stack
   attacks was omitted, so damage spells and summons rarely fell in a fight and casters filled their
   turns with buffs (docs/AI_LOG.md).
-- **`PrereqBuilding` units**: specific buildings that open units -- the Siege Workshop
-  (Trebuchet, Dwarven Cannon, War Tortoise, War Machine), the Stable (Hornguard, Bison Rider),
-  the Sculptor's Studio (golems, Gargoyle) -- are never built by the generic production
-  (`enabler_building` and `campaign::siege_building` read only `PrereqBuildingClass`), and
-  `research::unit_available` skips such units, so research never values Warhorses for the
-  Hornguard or Engineering for the Gargoyle. The Mage Guild (all adepts) is the
-  `PrereqBuildingClass` case with a value of 0.
+- **`PrereqBuilding` units** (fixed by `b6faa0a`): specific buildings that open units -- the
+  Siege Workshop (Trebuchet, Dwarven Cannon, War Tortoise, War Machine), the Stable (Hornguard,
+  Bison Rider), the Sculptor's Studio (golems, Gargoyle) -- were never built by the generic
+  production (`enabler_building` and `campaign::siege_building` read only `PrereqBuildingClass`),
+  and `research::unit_available` skipped such units. Now `production::unit_building` gives both
+  the unit's `PrereqBuilding` or its civilization's building of the `PrereqBuildingClass`, and
+  `unit_available` counts such units unless the building needs a religion. Still open: the Mage
+  Guild (all adepts) has a value of 0 and `enabler_building` takes only defenders and attackers,
+  so only `civs::unique_casters` builds one (docs/ENTITIES.md).
 - **Foreign units through `UpgradeCiv`** (fixed; the owner's decision: a bug, closed in the
   rules). FfH's `canTrain` checks a unit with `UpgradeCiv` (Kuriotates Centaurs, the Clan's Ogres,
   Goblins and Wolf Riders, Calabim Vampires and Brujah, the Infernal Balor) only against that
@@ -1330,13 +2354,20 @@ earlier cast is the first thing to measure.
   danger map, but `MISSION_MOVE_TO` with `MOVE_SAFE_TERRITORY` is refused by the rules' AI path
   finder (`AI_getPlotDanger`) and the worker retries every turn (a Lanun work boat at (42,23),
   seed 7, turns 200-239). The flee code passes `MOVE_IGNORE_DANGER` for this reason; the build
-  move does not.
+  move does not. Taking the next best job on a refused move cost a little production and
+  research (docs/AI_LOG.md, "Stuck workers take their next best job"): the repeats are rare
+  (6-19 worker-turns in a 200-turn game) and usually a passing danger.
 - **Allied barbarians count as a threat**: the Clan of Embers and the Doviello's Charadon are at
   peace with the barbarians, but the garrison and research counts (`production::barbarians_near`)
-  treat nearby barbarians as a threat all the same.
-- **AI-to-AI deals ignore `player_can_contact`** (`diplomacy::manage`, `implement_deal`), so a
-  Crusading Bannor (`bNoDiplomacyWithEnemies`) still makes peace with its enemies; only
-  `offers.rs` (deals with humans) checks it.
+  treat nearby barbarians as a threat all the same. Dropping them cost the Clan cities to its
+  rivals and wins (docs/AI_LOG.md, "Allied barbarians no longer counted as a threat"): the term
+  stands in for a missing rival-civilization term in the garrison quota.
+- **AI-to-AI deals ignored `player_can_contact`** (fixed 2026-10-28, `diplomacy::can_talk`,
+  switch `CONTACT`): a Crusading Bannor (`bNoDiplomacyWithEnemies`) still made peace with its
+  enemies, and deals went to players FfH had just created (the temporary-player timer), vassals
+  making their own peace and teams in a permanent war or peace. Peace, gifts, war bribes, trades,
+  open borders and pacts now need both sides' `canContact`, and so do the offers to humans (C++
+  `AI_doDiplo` asks only the proposer's, so a Crusader's enemy could still offer it peace).
 - **Rules questions**: Wane and Kidnap (Sidar, Svartalfar) lack `bAllowAI`, so the AI can never
   cast them; `GAMEOPTION_NO_BARBARIANS` does not stop barbarians spawned by FfH's Python (a
   barbarian city holding the Dragon's Horde keeps sending units); C++ `AI_foundValue`'s
@@ -1345,6 +2376,108 @@ earlier cast is the first thing to measure.
   raw and panicked on a dangling id (the Clan's conversions; now `player_get_capital_city`), and
   `unit_convert` could leave a converted unit as its own transport (an Airship, a stack overflow;
   a rules fix, docs/PORTING.md).
+
+## Leader traits (`traits.rs`)
+
+The rules apply every trait's effect by themselves (free promotions, cheaper civics, more health,
+...), and the generic AI already profits where it reads numbers a trait changes: wonder turns
+(Industrious), civic upkeep (Organized), upgrade prices (Ingenuity), combat odds (the free
+promotions). What it did not do was play to them. `traits.rs` adds the decisions a trait calls for
+(the owner's decision, 2026-10-26: this is flavour as much as strength, so a trait's play is kept
+whatever the win rate does, and a drop is investigated as a flaw to fix). The hooks are marked
+`// trait-play`:
+
+| trait | leaders | play |
+|---|---|---|
+| Raiders (pillaged gold +100%, Commando) | Decius, Basium, Amelanchier, Hannah, Tasunke, Mahala, Weevil, Faeryl, Sallos | an army stack at war pillages the improved enemy plot it stands on with one unit (taken out of the stack and back), before its orders when that costs no march (no operation needs the stack and no city of ours is in peril, or every unit has a move to spare) and after them while it holds; a stack no operation needs raids the best enemy improvement within two turns whose danger is under two thirds of its defense and that is not next to an enemy city; the land within two plots of the city our war operation is taking is spared (it is ours once the city falls). The generic AI never pillages. |
+| Spiritual (no anarchy) | Capria, Varn, Arendel, Jonas, Hyborem, Lethe | civics every 2 turns at a summed gain of 40 (others every 10 at 100); keeping the state religion weighs 5 instead of 15 |
+| Arcane (adepts +20% experience) | Thessa, Valledia, Dain, Tya, Perpentach, Faeryl, Tebryn | a caster corps of (cities + 2) / 3, or with Sorcery one for every four field units if more (`MAGE_ARMY`), trained in the most productive city whose garrison holds, its Mage Guild first (`civs::casters_up_to`, the civilizations' unique casters' helper); research toward Sorcery once the economy's tier 2 is in (`ARCANE_PATH`; "Spellcasting", "Magic civilizations") |
+| Summoner (summons +1 turn, Combat I) | Keelyn, Tebryn, Os-Gabella, Malchavic, Hyborem | a bigger caster corps, (cities + 2) / 2, or with Sorcery one for every four field units if more, and the Arcane leaders' research path ("Magic civilizations"); research toward its Adepts (the techs the Adept and its Mage Guild need, Knowledge of the Ether: +1500 once researchable, +500 on the way); its casters value a summoning sphere (a mana sphere opening a summon any civilization may cast: Death I-III, Fire II-III, Air/Earth/Water III, ...) at 1.5x + 60, a temporary summon at 1.5x (it lasts a turn longer), and raise lasting summons (Raise Skeleton) at peace too while the army is short of its peacetime target and a unit is affordable (others only at war); without a mana whose Mage-level spell summons a creature (Death: Spectre, Entropy: Pit Beast, Law: Einherjar, Ice: Ice Elemental; Keelyn's Balseraphs start with Mind, Chaos and Air), it goes for one first (switch `SUMMON_MANA`, 2026-10-28): its node on our raw mana is worth 3000 more (`mana::node_value`; nodes run 1000-3000), so research takes the node's tech first and the first node goes to it; it is worth 20 more in a trade (two happy resources on `AI_bonusVal`'s scale: the AI pays its own valuation in gold); and its casters value the sphere's first promotion (Entropy I before Entropy II) like a summoning one |
+| Philosophical (great people +100%) | Einion, Cardith, Cassiel, Koun, Dain, Alexis, Judecca, Gosea | the great-people emphasis (`EMPHASIZE_GREAT_PEOPLE`) on its best great-people cities, 1 + cities / 8, size 4+, only cities that can employ a specialist making great people; a city is replaced only by one half as good again |
+| Financial (+1 commerce on plots with 2+) | Garrim, Beeri, Kandros, Hannah, Rhoanna, Flauros, Dumannios | workers count the extra commerce an improvement brings at the threshold (`plot_calculate_improvement_yield_change` leaves it out), on an unimproved plot a city of ours works, weighted as the yields are (the improvement 1, its grown form 2) |
+| Industrious (limited wonders +50% production) | Capria, Tethira, Beeri, Arturus, Sandalphon, Cassiel, Os-Gabella, Statius | limited wonders (world, team and national) are worth 1.5x |
+| Aggressive (Combat I) | Basium, Kandros, Tasunke, Charadon, Duin, Weevil, Sheelba, Hafgan, Volanna, Alexis, Mahon, Averax, Ouzza | once its home landmass is full (`naval::home_is_full`), the war bar counts the free Combat I: the power edge it needs over a target is divided by 1.2 and its best trainable attacker counts 20% stronger against a city's defenders (the power rating and a unit type's strength leave the promotion out) |
+| Ingenuity (upgrades at half price) | Basium, Arturus, Kandros, Mahala | upgrades keep half the gold reserve |
+| Tolerant (Assimilation) | Ethne, Einion | never razes a conquered city |
+| Expansive (+3 health a city) | Cardith, Thessa, Falamar, Rhoanna, Melisandre, Jonas, Meresin | one more settler at a time |
+
+Passive (nothing to decide; their effect reaches every decision that reads the game):
+Charismatic, Creative, Defender, Organized, Magic Resistant. Played elsewhere: Adaptive (the
+trait choice, `events.rs`), Agnostic and Barbarian (`tech_plan.rs`), Fallow (`workers.rs`),
+Sprawling (`civs/kuriotates.rs`).
+
+`FFH_AI_TRAIT_OFF=TRAIT_X,..` (or `X`, or `all`) turns traits' play off and
+`FFH_AI_TRAIT_CIVS=CIVILIZATION_X,..` keeps it only for those civilizations' players; with every
+trait off the games are the same as without the module. `crates/ffh-cli/scripts/trait_ab.py
+--base off.json --new on.json` pairs every player of two `ai_metrics.py` runs of the same seeds
+and reports per trait (the leader's traits at the start; the Infernals and Mercurians, who join
+mid-game and share the wins of the team they join, only with `--joiners`).
+
+**How it was measured.** Full games (6 civs, standard map, to a decision or turn 690), the same
+binary with every trait's play on against `FFH_AI_TRAIT_OFF=all`, read per trait with
+`trait_ab.py`; development on seeds 1-40 (and 41-129 for Financial), validation on fresh seeds
+7401-7496. Reading a trait's numbers needs care: a trait's play re-draws every game its leaders
+are in, so on 40 seeds a group's win rate moves by 10 points on chaos alone -- a group that won
+more than its share falls back and one that won less rises, whatever the change (in runs where
+only Industrious or Spiritual was played, the Summoner leaders went 0% -> 14% with their own play
+off). A drop was therefore checked with the trait played alone (the other traits off, so only its
+leaders' games change), and three of them were flaws, fixed (docs/AI_LOG.md, "Leader traits"):
+Raiders pillaged the land of the city they were taking, Financial workers built cottages nobody
+worked, Aggressive leaders went to war while land was still free.
+
+Fresh seeds 7401-7496, every trait on against off (578 players; "one side only" = seeds the
+player won with the play and not without / without and not with):
+
+| trait | players | win, off -> on | one side only | share@300 | share@end |
+|---|---|---|---|---|---|
+| Raiders | 110 | 6.4% -> 10.0% | 5 / 1 | -11 (t -0.23) | -55 (t -0.52) |
+| Spiritual | 63 | 28.6% -> 22.2% | 4 / 8 | -95 (t -1.31) | -228 (t -1.73) |
+| Arcane | 95 | 11.6% -> 15.8% | 10 / 6 | +20 (t 0.28) | +186 (t 1.79) |
+| Summoner | 49 | 14.3% -> 12.2% | 2 / 3 | +133 (t 1.36) | +298 (t 2.30) |
+| Philosophical | 89 | 7.9% -> 4.5% | 3 / 6 | +22 (t 0.38) | -74 (t -0.58) |
+| Financial | 91 | 19.8% -> 26.4% | 15 / 9 | +81 (t 1.18) | +120 (t 0.76) |
+| Industrious | 110 | 12.7% -> 13.6% | 9 / 8 | -33 (t -0.63) | -5 (t -0.04) |
+| Aggressive | 85 | 21.2% -> 15.3% | 7 / 12 | +40 (t 0.80) | +3 (t 0.02) |
+| Ingenuity | 45 | 20.0% -> 24.4% | 6 / 4 | -41 (t -0.62) | +93 (t 0.56) |
+| Tolerant | 40 | 10.0% -> 12.5% | 3 / 2 | -96 (t -1.24) | -236 (t -1.16) |
+| Expansive | 78 | 28.2% -> 23.1% | 5 / 9 | -12 (t -0.15) | -146 (t -1.06) |
+
+No trait's difference is significant (sign tests p >= 0.22). (The Summoner row is the first
+version, before the bigger corps and the summoning changes; the kept one is measured below.) The two lower win rates were played
+alone on the same seeds: Aggressive (the kept version) 21.2% -> 23.5% (5 / 3), share@end +30,
+cities taken +0.8 (t 1.7); Spiritual 28.6% -> 30.2% (5 / 4), share@end -141 (t -0.95) -- their
+leaders lose in the pooled games to what their neighbours' traits do, not to their own play.
+Financial alone on 60 seeds with a Financial leader: 18.4% -> 17.2% (6 / 7), share@end -39
+(t -0.33); Industrious alone (seeds 1-40): 10.9% -> 10.9%, world wonders 2.1 -> 2.9 (t 1.9).
+What the play does in the games: Summoner leaders keep casters and summon. Over 40 fresh seeds
+with a Summoner leader (7501-7604, 48 Summoner players, `FFH_AI_TRACE_CAST`), the kept version
+against all traits off: 16.4 Raise Skeleton / Summon casts a game instead of 2.4 (Tebryn 35.1,
+Os-Gabella 20.9; the first version of the trait play cast 10.3: Tebryn 27.1, Os-Gabella 7.8),
+12.2 Fireballs instead of 0.2, 2.3 casters at the end instead of 0.1; Keelyn's Balseraphs take no
+summoning sphere and their casters make puppets instead, 652 a game (48 without the play, 425 with
+the first version). Summons come in fights (a temporary one with an enemy in its reach, a lasting
+one at war, or at peace while the army is short), so they bunch in the wars. Win rate 16.7% ->
+12.5% (0 / 2), share@end +14 (t 0.13): neutral. Raiders pillage (Hannah, seed 2: 28 improvements in 210
+turns, 10-66 gold each); Industrious leaders build more wonders; Aggressive ones take more
+cities once their land is full.
+
+**A summon mana first (2026-10-28, the owner's proposal; switch `SUMMON_MANA`).** Keelyn's
+Balseraphs had no mana whose Mage-level spell summons a creature, so their casters never summoned
+above Raise Skeleton. With the switch, seed 7502: Necromancy at turn 291 instead of 321, Entropy
+nodes planned on all four raw mana plots, the first node Entropy (it was Enchantment). Measured
+with the Balseraphs forced into slot 0 on seeds led by Keelyn, the same binary with
+`FFH_AI_SUMMON_MANA_OFF=all` on the base side. Fresh seeds (40 of 47081-47160): Pit Beast,
+Spectre, Einherjar and Ice Elemental casts 22 -> 213, games with one 6 -> 12, the first at turn
+479 -> 428 (median); Raise Skeleton 42 -> 24 and Archmage summons 38 -> 26 (the first node went to
+Entropy rather than Death or Air), all summons 102 -> 263; win 32.5% -> 35.0% (1 / 0), share@end
++50 (t 1.02). Development seeds (40 of 47001-47080): 28 -> 136, 10 -> 15 games, win 30% on both
+sides. What still limits them: half the games never see a Mage of hers (20 of 40), and summons come
+only in fights.
+
+The games are decided sooner: final turn 527 -> 490 (t -2.48), clear supremacy 37 -> 52 of 96
+games and 12 instead of 5 decided by turn 250 -- the leaders whose traits snowball (Financial,
+Expansive) win earlier. In the games still running at turn 300 on both sides the world develops
+the same (techs -1.3%, population -0.8%, research 0.0%, all |t| < 1).
 
 ## Measured together
 
@@ -1385,6 +2518,506 @@ Tried and not kept: stacks committed to a barbarian town turn back for our citie
 unless they strike this turn (`campaign::on_the_move` at war only). Seeds 331-378 and 1-12,
 41-52: score (dead as 0) +15 (t 2.0), 16% fewer civ cities lost to barbarians; seeds 379-426:
 -7, 4% more lost; all 120 seeds: +6 (t 1.2), techs +0.2 (t 1.7), eliminations unchanged.
+
+### Round 7h (2026-10-25): striking at the strike phase's odds; bolder conquerors
+
+The test of whether the AI is too timid in sieges (the owner's request, after round 7g). A siege
+entered its strike phase when the adjacent ring took the city every defender 70% sure to fall, but
+`strike` started only at 90% (with a reserve): stacks stood next to cities, the phase saying
+strike and the strike holding. `STRIKE_AT_PHASE` starts the strike at the phase's own odds;
+`BOLD_STRIKE` also lowers the phase's bar to 60%. Both fire rarely (3 bold starts in four traced
+games). Forks: the Khazad took a six-defender Doviello city at once (the reserve rule never took
+it in 12 turns; power 419 against 394 at turn 300); a Calabim lone unit struck a barbarian town
+at 75%, lost, and missed the town the reserve rule took a turn later with a second unit.
+
+As one player's edge (fresh seeds 40001-40016, 304 paired games, 300 turns): `STRIKE_AT_PHASE`
+win rate 14.1% -> 14.5% (1 / 0), share +0.5% (t 1.5), 264 games identical; `BOLD_STRIKE` win
+14.1% -> 12.8% (0 / 4, p 0.13), share +0.6% (t 1.2), 238 identical. Across all players (seeds
+41001-41096): `STRIKE_AT_PHASE` civ cities taken +2.7%; `BOLD_STRIKE` civ cities +8.2% (t 1.8),
+barbarian towns +7.5%, civs eliminated +30% (t 2.8), techs -1.7% (t -2.2). Neither makes a
+player win more: the AI is not too timid in sieges, and fewer cities changing hands under the
+faithful simulation (round 7g) is a matter of flavor. Kept: `STRIKE_AT_PHASE` for every
+civilization (a consistency fix, neutral), `BOLD_STRIKE` for the conquerors only
+(`campaign::conqueror`: the Clan of Embers, the Doviello, the Bannor, Aggressive leaders;
+CLAUDE.md, "Conquest and domination are a flavor drive").
+
+### Round 7g (2026-10-25): the simulation for every attack
+
+The owner's request: fix the strike simulation and run it for every attack. Two switches, both
+on (the code and its forks: "Siege operations" and "Deciding an attack" under Field armies).
+- `SIM_FAITHFUL` (`campaign::simulate_in_order`, `Order::Strike`): the strike played as it will
+  be fought -- the attackers in the strike's own order, each against the defender the rules put
+  up against it (strength against that attacker, first strikes, a world unit halved); a siege
+  engine's win leaves the defender at its combat limit; a lost fight deals at most a round short
+  of a kill; a defender has fallen when it is 90% sure to be dead (70% once positioned), in place
+  of an eighth of its expected health and a reserve fifth of the force. Fork (seed 26001, saved
+  at turn 221 from the game with the switch off): the old estimate expected four attackers to
+  take a barbarian town; the Sheaim struck with six, lost five and the town held; with the switch
+  the six held back (expected losses 3.5, a defender likely standing) and kept all 13 army units.
+- `FIELD_SIM` (`military::field_sim`, `field_go`): every field attack decided on the simulation
+  of the group attack in the rules' own order (`AI_getBestGroupAttacker` with its
+  `AI_attackOdds`). Forks: the Kuriotates killed a barbarian Warrior two turns sooner, a
+  one-city Elohim killed a Gargoyle beside its capital (off, the Gargoyle killed a Warrior of
+  theirs); it no longer grinds four Warriors into a Griffon at 1%. Two versions were replaced on
+  the way (docs/AI_LOG.md, round 7g): a pure trade of kill and loss values lost units early;
+  good odds or a clearing grind with raiders at face value lost cities to the barbarians.
+- Bugs the simulation's own traces turned up before any measurement: wounded defenders counted
+  as already dead, follow-up attacks never played (a defender's blended expected health read as
+  dead while it was alive half the time; fallen is now by the chance it is alive), the rules'
+  attacker picked by the exact odds where the rules use their own estimate.
+
+Measured as one player's edge (`civ_ab.py --civ all`, 304 paired games a set, 300 turns), the
+kept version: `FIELD_SIM` on seeds 33001-33016 win 12.2% -> 13.8%, share -1.0% (t -0.5);
+35001-35016 win 17.1% -> 13.8%, share -0.2%; fresh 37001-37016 win 16.8% -> 15.8%, share +0.9%,
+legacy +2.1% (t 1.0). `SIM_FAITHFUL` alone: 33001-33016 win 12.2% -> 12.8%, share 0.0%;
+35001-35016 win 17.1% -> 16.1%, share -0.9%. Both, fresh 37001-37016 (sureness 95% / 80%): win
+16.8% -> 15.8%, share +0.8%; fresh 39001-39016 (the kept 90% / 70%): win 19.1% -> 20.7% (22 / 17),
+share -2.0% (t -0.9), legacy -1.4% (t -0.6). Neutral on every set. Time per turn unchanged (25.90
+-> 25.88 ms, all AIs, seeds 38001-38096). With every AI using both (38001-38096): legacy -1.4% (t
+-0.9), civ cities captured -14% (t -1.8; -23% at 95% / 80%), barbarian towns taken -11%, wars
+declared -11% (t -1.7): fewer cities change hands (Known gaps).
+
+### Round 7f (2026-10-24): healing and the hero gate at their firings
+
+The first use of forks (Tools, "Forks first") on the two military behaviours then off by default
+(round 7): each forked at a few of its firings (seeds 26001-26006), the switch on against off
+from the same save. Both proved locally helpful where they fired as meant, and each had a misfire
+the win rate could not have named; both misfires are fixed, and a third flaw the forks turned up
+(the strike's damage estimate) with them. All three are on.
+
+**Forks of the healing rule** (`HEAL`). What it should change: a committed stack with one badly
+wounded unit no longer stops whole; it reaches its target sooner and strikes earlier.
+- Seed 26006, turn 282 (Elohim, 8-unit stack 558, "marches on with its wounded"): on, it reached
+  the barbarian-founded city at (63,33) and took it at t285 in 10 attacks; off, it healed in
+  place two turns, and its strike at t287 held after 11 attacks, the city falling at t288 after 4
+  more. Ten turns on: one city more, army 31 against 28, power 314 against 291.
+- Seed 26001, turn 266 (Hippus, 7 Horsemen, stack 771): on, the stack was next to its target
+  (52,29) at t271, three turns before off (where it healed in place t267-271); the strike held
+  for lack of margin (the simulation needed all 8 attackers), a fifth defender came, then peace.
+  Neither took the city; nothing was lost by marching.
+- Seed 26006, turn 239 (Luchuirp, stack 696, the misfire): the stack walked into a city to heal,
+  walked out, and was sent back the next turn, five times in twelve turns. In our cities a unit
+  split off to heal only over 30% damage (More Naval AI's `AI_heal(30, 1)`), while the field rule
+  sends a stack back when most of it is 20%+ hurt: units healed to 21-30% left, and the field rule
+  returned them. The city threshold is now the field rule's (20%); replayed from the same save
+  (`ai-branch.sh --save`), the stack healed in the city through t247 and then marched one plot a
+  turn to its target.
+
+**Forks of the hero gate** (`PRECIOUS`). What it should change: a hero or high-level veteran does
+not attack at odds it may well lose; captures should not suffer.
+- Seed 26001, turn 246 (Elohim strike on a Sheaim city, the misfire): on, the two veterans were
+  held out of the strike, the other seven units attacked three times, the simulation without the
+  veterans no longer covered, and the strike stopped: three units lost, the city untaken, the
+  siege back to gathering. Off, the city fell in six attacks and the war ended. The gate had also
+  kept them out of the operation's force count. Now precious units attack last below their odds
+  (while another unit can attack, and only in a strike expected to take the city, never to wear
+  defenders down) and count in the force; replayed from the same save, the city fell in seven
+  attacks, the veterans unhurt, two more Archers spent than off.
+- Seed 26003, turn 127 (Balseraphs, a three-unit stack whose best attacker was a level-5 Warrior
+  at 35%): on, it kept the Warrior (off threw it in and lost it, then a second unit), but stood
+  next to the same raider for twelve turns, the hold repeated each turn. Now a stack does not pick
+  a target the gate would hold (adjacent or hunted); replayed, it hunted elsewhere and ended
+  army 18 against 16.
+- Seed 26004, turn 239 (Hippus strike on a barbarian city with two veterans present): the same in
+  both branches -- two Horsemen at 81% took it, the veterans never needed.
+
+**Forks of the strike's damage estimate** (`STRIKE_DAMAGE`). Seed 26002, turn 274 (Calabim)
+showed a strike flaw of its own, with the gate on or off: Moroi and Bloodpets went at a barbarian
+city at odds 0, turn after turn, and left all five defenders at full health. The defender was
+Acheron (strength 19 in the city, four first strikes, against a Moroi's 7). While a side has first
+strikes left it cannot be hurt, so a Moroi died in rounds where it could not land a blow; the
+expected damage of a lost fight (`campaign::fight`) ignored first strikes and credited each Moroi
+with 12 of Acheron's hit points, and the strike's simulation, built on the same figure, expected
+twelve attackers to take the city. Now first strikes count (the side with more has that many
+rounds in which only the other is hurt; a chance first strike counts half), a sacrifice is the
+unit whose expected damage, not strength, is cheapest for its cost, and none is sent that would
+deal under a tenth of a defender's hit points.
+- Seed 26002, turn 274 replayed: the Calabim left Acheron's city alone and took another barbarian
+  city at t279 in five attacks (off: their first city at t284, after the failed strikes); army 54
+  against 46 at t288.
+- Seed 26005, saved at turn 191 from the game with the switch off (Lanun, eight Warriors next to
+  a barbarian city of three Archers, one first strike each): off, they struck at 2-6% odds, lost
+  six, the city held, and fell at t202 to a second force; on, the estimate said the force was
+  short, they waited three turns for eleven units and took it at t195 in one strike (army 34
+  against 30 at t204).
+- Seed 26005, turn 105: the force needed for an Archer-held barbarian city rose from 4 to 5 units;
+  nothing else changed in 25 turns.
+
+**Measured** (fresh seeds, the same build, each switch forced on against all three off). Over every
+AI (`FFH_AI_<NAME>_ONLY=ALL`, 30001-30192, 300 turns): healing legacy -1.2% (t -1.3; +1.2% on the
+first 96 seeds, -3.6% on the next), captures of civ cities +12%, power -2.6%; the hero gate -0.3%,
+cities +1.6% (t 2.3); the damage estimate -0.3%, civ cities captured +8%, cities destroyed +18%
+(t 2.7); all three -1.1% (t -1.0), civs eliminated +26%. Full games, all three (31001-31096):
+legacy -1.1% / -2.0% / -2.1% / -2.2% at turns 200 / 300 / 400 / 500 (|t| < 1.5), civs eliminated
+0.95 -> 1.20 a game (t 2.05), victories before the turn limit 14 -> 19 of 96. The per-seed loss
+followed the eliminations (correlation -0.57 for healing), not weaker play: every AI got better at
+taking cities, and a dead civilization counts 0 in the mean (Tools, "A behaviour every AI gets is
+not a player's win rate"). Given to one player against opponents without it (`civ_ab.py --civ all
+--new-env FFH_AI_<NAME>_ONLY={civ}`, 32001-32016, 304 paired games, 300 turns):
+
+| switch | win rate | share at 300 | legacy at 300 |
+|---|---|---|---|
+| healing (`HEAL`) | 13.5% -> 15.8% (13 seeds won only with it, 6 only without; p 0.17) | +3.4% (t 1.67) | +2.7% (t 1.44) |
+| hero gate (`PRECIOUS`) | 13.5% -> 14.5% (10 / 7) | +3.3% (t 2.04) | +3.0% (t 1.90) |
+| damage estimate (`STRIKE_DAMAGE`) | 13.5% -> 15.1% (7 / 2; p 0.18) | +1.2% (t 1.29) | +0.5% |
+
+### Round 7e (2026-10-24): the standing army by deterrence
+
+`RIVAL_DEFENSE` turned on by default (the owner's request), its peacetime defenders sized by
+deterrence instead of a threat threshold ("The standing army against rival civilizations"; the
+old rule and why it went: docs/AI_LOG.md, "Peacetime defenders by a rival-threat threshold").
+Re-measured on seeds 26001-26192 (300 turns) once `HEAL` and `PRECIOUS` were off, the old rule
+was neutral against the switch off (legacy -0.4%, t -0.55), as was each of its parts; its round-7
+cost (-3.2%) came with the other two on. Deterrence against off, same seeds: legacy -0.3% (t
+-0.4), research -2.4% (t -1.3), military +4.0% (t 2.8), wars declared +9% (t 2.0: our own power
+counts in our war bar too), civs eliminated -11% (t -1.3).
+
+Validated on fresh seeds, the final build with the switch on against off. At turn 300 (28001-28192,
+192 games): legacy -0.6% (t -0.7), research -2.3% (t -1.4), military +1.6%, civ cities taken
+-12% (t -2.1). Full games (28201-28296, 96): legacy +0.2% / +1.8% / +1.8% / +0.6% at turns 200 /
+300 / 400 / 500 (t 0.3-1.4), techs +2.5% at turn 300 (t 1.9), military +4.6% / +6.3% at 300 / 400
+(t 2.7 / 2.1); civs eliminated 1.31 -> 1.01 a game (t -2.6), civ cities taken -14.5% (t -1.7),
+cities lost to the barbarians -19.5% (t -1.5); supremacy 58 -> 62, other victories 38 -> 34 of 96.
+Fewer civilizations die and fewer cities change hands, at no cost to the score. After merging
+master's fog of war for the AI, a check on 96 more seeds (29001-29096, 300 turns) read legacy
+-2.1% (t -1.8), techs -2.4% (t -1.7): the three 300-turn sets lean slightly negative (pooled
+about -0.8%, none significant) while the full games lean positive. Worth a full-game check under
+fog of war.
+
+### Round 7 (2026-10-22): More Naval AI's ideas, the four rounds together
+
+The behaviours of rounds 7a-7d, each measured alone in its round, were merged and validated
+together against master (before round 7) on fresh seeds 24001-24192 (300 turns) and 24201-24296
+(full games). Neutral to positive, nothing falling: at turn 300 (192 games) legacy +0.7% (t 0.5),
+research +7.5% (t 3.3), population +2.6% (t 1.6), military +4.2% (t 2.1); in full games legacy
++0.2% / -0.2% / -0.4% / +1.8% at turns 200 / 300 / 400 / 500 (all |t| < 0.6), research +27.9% and
+military +13.5% at turn 500 (31 games, t 3.6 and 2.6), victories 38 -> 43 and supremacies 58 ->
+53 of 96, civ cities taken -10% and cities lost to the barbarians +29% (|t| < 1.3). Inside the
+merged build, two behaviours were checked again alone (seeds 24001-24096 and 24201-24248):
+`KEEP_UNITS` gained early (legacy +2.0% and research +6.2% at turn 300, t 1.4 and 2.5) and cost
+late (research -7.5% at turn 400, t -1.6; legacy -2.0% at 500); `HEAL` cost late (legacy -2.3% /
+-5.6% at turns 400 / 500, t -0.7 / -1.95) and lost 29-43% more cities to the barbarians, which led
+to loose stacks healing where they stand again (Field armies, step 6). Refined, on new fresh seeds
+25001-25096 / 25201-25248: legacy -1.2% at turn 300 (t -1.1), civ cities taken +20% (t 1.9; sieges
+go on instead of stopping beside the target), and -1.6% / -3.2% / +1.0% at turns 300 / 400 / 500
+in full games (|t| < 1.2): a small cost left (Known gaps).
+
+Merged again with master (2026-10-23) and measured against it on seeds 26001-26192 (300 turns),
+the package lost: legacy -3.1% at turn 300 (t -2.6), techs -4.9% (t -3.5). Switching each round
+off inside the merged build put the whole cost on round 7b, and switching its behaviours off one
+at a time on three: `RIVAL_DEFENSE` (legacy -3.2%, t -3.8; research -7.2%), `PRECIOUS` (-2.0%, t
+-2.6; research -5.1%) and `HEAL` (-2.1%, t -2.1); `CAPTURE`, `SECOND_OP` and `FLEET` were neutral.
+Those three were turned off by default (`RIVAL_DEFENSE` came back on in round 7e, `HEAL` and
+`PRECIOUS` in round 7f, each once its cost was found). The final configuration
+against master on fresh seeds 27001-27192 (300 turns) and 27201-27296 (full games): legacy -0.5%
+at turn 300 (t -0.5), research +3.6% (t 1.9), military +3.5% (t 2.3); in full games legacy +1.5% /
++0.4% / -1.1% / +3.4% at turns 200 / 300 / 400 / 500 (|t| < 1.8), research +28.3% at turn 500
+(t 5.3), techs +6.2% (t 1.75); cities -4.8% at turn 400 (t -3.0), civs eliminated 1.23 -> 1.02 a
+game.
+
+### Round 7a (2026-10-22): magic, casters, summons
+
+Five behaviours borrowed from More Naval AI's magic ("More Naval AI compared" below) in the form an
+expert would play them, each behind its own switch (`switches.rs`) and described where its area
+is ("Spellcasting", "World spells: AI timing"): mana nodes (`MANA_NODES`), the caster corps
+(`CASTER_ROLES`), summons spent before they expire (`SUMMON_SPEND`), Govannon's Teach
+Spellcasting (`TEACH_SPELLS`) and Sanctuary and March of the Trees at a losing war
+(`WS_LOSING_WAR`, off by default). Each was measured alone: the same binary with its switch off
+(`FFH_AI_<NAME>_OFF=ALL`) against everything on, 6 civilizations on a standard map, development
+seeds 1-48 (300 turns) and 1-24 (full games, `--until-supremacy`), then fresh seeds 20001-20192
+(300 turns) and 20201-20296 (full games), never used to choose anything. Percentages are the change
+of the per-civilization mean (dead civilizations as 0), t the paired t over seeds; a checkpoint
+counts the games still running. The development runs used the build before the last world-spell
+change (`WS_LOSING_WAR` then on, which changes only games with the Elohim or the Ljosalfar); the
+fresh runs, the final build.
+
+**What fired** (24 development full games, final build, `FFH_TELEMETRY=1`; four of them traced):
+182 mana nodes built (Enchantment 122, Entropy 31, Mind 11, Life 5, Fire 5, Earth 3, Law 2, Death,
+Metamagic, Water), the raw mana left unconverted in our lands falling from 0.76 a civilization at
+turn 300 to 0.14 at turn 500 on fresh seeds (mana types 3.3 -> 4.1); 678 adepts and 62 Shamans
+trained (on fresh seeds about two adepts a civilization at turn 400, two and a half at 500), 143
+Mage Guilds; role assignments
+(changes) node builder 146, terraformer 53, city mage 225, war wizard 275; Teach Spellcasting cast
+89 times by 6 Govannons (in 4 games; he walks to stacks worth 800-2000 on `promotion_value`'s
+scale, Enchanted Blade for a stack); summons spent at worse than 5% 5-45 times a game (four traced
+games: Loki's puppets 26, Pit Beasts 13, Einherjar 10, Fireballs 9; half below 1%); Sanctuary 1
+and March of the Trees 4 casts (FfH's condition).
+
+| behaviour | development, 300 turns (48) | development, full games (24) | fresh, 300 turns (192) | fresh, full games (96) |
+|---|---|---|---|---|
+| mana nodes | legacy +0.3% (t 0.6), pop +1.3% (t 1.9), prod +1.8% (t 1.3) at 300 | at 300: legacy +1.0% (t 1.8), pop +2.1% (t 2.8), prod +3.7% (t 2.6); research +10.9% at 400 (t 2.0); power +9.9% at 500 (t 2.3) | at 300: legacy +0.5% (t 1.7), research +2.3% (t 2.4), pop +1.1% (t 2.7), prod +0.9% (t 1.4) | at 300: research +2.6% (t 1.9), pop +1.8% (t 2.6), power +1.9% (t 2.2); at 400: legacy +1.5% (t 1.5), pop +4.1% (t 2.2); at 500: legacy +2.3% (t 2.6), techs +2.4% (t 1.6), research +6.9% (t 1.8); civ cities taken 16.5 -> 15.3 a game (t -1.7) |
+| caster corps | at 300: legacy -0.2% (t -0.5), techs -0.7% (t -1.2), prod +2.4% (t 2.7) | techs -1.5% at 300 (t -1.6), prod +2.6% (t 2.2); research +10.4% (t 1.7) and pop +5.7% (t 1.9) at 400; power +4.9% at 500 (t 1.3) | at 300: legacy +0.1% (t 0.4), techs +0.6% (t 1.3), research -0.5% (t -0.4), power +2.4% (t 3.1) | legacy +0.6% / +1.6% / +1.8% at 300 / 400 / 500 (t 1.3, 1.3, 1.2), research +2.4% at 300 (t 1.2), techs +3.0% at 500 (t 1.7); production -4.5% and power -3.4% at 500 (t -1.1); civ cities taken 16.8 -> 15.3 (t -1.8) |
+| summons spent | flat (every \|t\| < 1.1 at 300); barbarian towns taken 3.21 -> 2.79 (t -2.0) | flat to 400; power -5.0% at 500 (t -1.5) | at 300: legacy +0.7% (t 1.4), techs +0.9% (t 1.3), research +1.5% (t 1.2), pop +0.6% (t 1.3); 78 of 192 games unchanged | at 300: legacy +1.7% (t 2.6), techs +2.0% (t 2.3), pop +2.2% (t 2.3), prod +2.4% (t 2.1); at 500 legacy +2.9% (t 2.0); victories 35 -> 43, supremacy 61 -> 53 of 96 |
+| Teach Spellcasting | (no Govannon before turn 300) | 4 of 24 games changed; every \|t\| < 1.7 | -- | 10 of 96 games changed (each one with the Amurites' Govannon); every \|t\| < 1.5; those Amurites' share at the end 1842 -> 1944 (9 games) |
+
+- **Mana nodes** pay from turn 300 in every set: an Enchantment node is a happy face in every
+  city, and the cities grow (population +1-4%), research following. Fewer civilization cities
+  change hands in fresh full games (-7%, t -1.7). Kept.
+- **The caster corps** loses nothing on either fresh set and leans positive in full games, without
+  the costs the three earlier caster attempts measured (a fifth of the Luchuirp's research, the
+  Amurites' -22 beakers, docs/AI_LOG.md): it is trained only while our mana gives an adept a sphere
+  worth having, and pays in nodes, terraforming and city spells first. The cost to watch: by turn
+  500 production -4.5% and power -3.4% (t -1.1), and civilization cities taken 9% fewer (t -1.8):
+  late in the game the war wizards and city mages take hammers from the army. Kept; the next lever
+  is the number of war wizards against what their spells add to a strike.
+- **Summons spent**: flat in development, positive on both fresh sets (legacy +0.7% at turn 300,
+  t 1.4, and +1.7% in full games, t 2.6). Most games diverge after the first spent summon, so part
+  of this is chance; neither set
+  shows the loss of the earlier any-odds attempt, which the cover rule and the cities left alone
+  at the end of the turn were for (in four traced games 26 of 64 spent summons were Loki's
+  puppets). Kept.
+- **Teach Spellcasting**: Govannon is the Amurites' hero and comes late (Arcane Lore), in 4 of 24
+  and 10 of 96 games: too few to measure. One development game shows a cost: in seed 22 Govannon
+  left the Amurites' war to teach elsewhere, and they took 2 cities instead of 4 between turns 400
+  and 500 (share at the end 3871 -> 1978). An expert teaches the stack he fights with while at war
+  and walks to others in peace; not done. Kept (the Amurites use their hero).
+- **A losing war**: off by default (above, "World spells: AI timing"; docs/AI_LOG.md).
+
+### Round 7b (2026-10-22): military
+
+Six behaviours from the More Naval AI comparison, each behind its own switch and described where
+its area is ("City defense against rival civilizations", "Field armies", "Siege operations",
+"The assault fleet"): defense weighed by rival civilizations (`RIVAL_DEFENSE`), healing
+(`HEAL`), opportunistic captures (`CAPTURE`), a second operation (`SECOND_OP`), heroes and
+veterans at good odds (`PRECIOUS`), the assault fleet (`FLEET`). Each was measured alone on
+development seeds 1-48 (300 turns), the same binary with its switch off against everything on;
+the numbers below come from the builds before the last refinements, and the full-game and fresh
+runs of this round were cut short (fresh numbers for the round are those of the four rounds
+together, below).
+
+**What fired** (seeds 1-12, 300 turns, telemetry): 158 defenders trained for the rival term (445
+for the rest of the quota), 349 sorties held back by the strength check; 157 wounded split off to
+heal in our cities, 239 stack heals, 199 stacks walked back to heal, 337 times the old rule would
+have stopped the whole stack; 12 opportunistic assault turns taking 3 cities (no enemy city was
+ever found empty); 54 turns with a second operation (traced: two cities taken the same turn, seed
+13); 16 strikes with a hero or veteran present, 30 of them held back; 23 fleet waits.
+
+| behaviour | development, 300 turns (48), at turn 300 |
+|---|---|
+| rival defense | first version (thresholds in place of the war +1): legacy -2.6% (t -1.5), power -5.6% (t -2.4), civ cities lost +23% (t 1.7); kept (a pool of one defender per city at war, shared by war threat): legacy +0.2%, military +1.9%, civ cities lost +3% (t 0.25) |
+| healing | More Naval AI's rule as is: civ cities lost +41% (t 2.7), military -6.4% (t -2.1) (docs/AI_LOG.md, "Healing only when most of the stack is hurt"); kept version: legacy -3.7% (t -1.1), research -9.7% (t -2.1), cities -5.2% (t -1.7), no single part of it the cause |
+| captures | legacy +1.3% (t 2.3), cities +1.0% (t 2.5), pop +1.4% (t 2.8) |
+| second operation | legacy +0.4%, civ cities lost -16% (t -1.8), civ cities captured 4.38 -> 3.92 a game (t -2.2) |
+| heroes and veterans | legacy +2.5% (t 1.9), pop +3.2% (t 1.95), civ cities lost -25% (t -2.2), civ cities captured -18% (t -1.9) |
+| assault fleet | 44 of 48 games identical, no effect at 300 turns; a full game traced (seed 6): futile landed assaults 23 -> 2 |
+
+Integrating the four rounds exposed a deadlock in the fleet: with no room aboard and no transport
+coming it still waited for half the force, so a port whose only transport carries one unit never
+sailed. It now waits only while waiting can grow the load and otherwise ferries what it carries.
+
+### Round 7c (2026-10-22): wars, diplomacy, councils, missionaries
+
+Seven behaviours read from More Naval AI (Diplomacy above: peace by the forces at the front,
+quiet wars end, dogpiles, the re-check before declaring, tech-trade discipline, councils,
+missionaries abroad), each behind its switch and measured alone: the same binary with
+`FFH_AI_<NAME>_OFF=ALL` against all on. Development: seeds 1-24 full games and 1-48 at 300 turns;
+validation: fresh seeds 22201-22296 (full games, `--until-supremacy`) and 22001-22192 (300 turns;
+22001-22096 for the dogpile, the discipline, the peace terms and all seven), never used to choose
+anything. The development measurements ran on the build before the kept tech-trade discipline
+(the same binary on both sides of each comparison). The dogpile and the tech-trade discipline are relative edges and
+were also measured as one civilization with the behaviour against the rest without it
+(`civ_ab.py --civ all`, seeds 1-4 and 22201-22204, 76 pairs each). Two first versions were
+replaced (docs/AI_LOG.md, "Round 7c"). Legacy score and techs are per-civ means, t the paired t.
+
+How often they fired, 96 fresh full games (telemetry): 280 of 1,160 war preparations were
+dogpiles (the target's other enemies counted; 160 dogpile wars declared); 147 prepared wars
+were dropped at the re-check (82 no longer takeable at parity, 63 on the power bar); 170
+cash-outs were refused while our army stood at their next city and 120 quiet wars ended in peace
+(against 307 cash-outs and 250 peaces wanted); tech swaps were withheld or refused for the
+leader's 125% (3,010 checks, nearly all of the leader's swaps), the victory rival (814), a
+wonder we were building (545), military technology at war (396) and military monopolies to
+neighbours (83); one missionary went abroad.
+
+Councils, same 96 games: the Overcouncil met in 51 games, the Undercouncil in 42; 1,362 yes
+votes, 180 no, 35 abstentions, no defiance; every proposal but two passed (the head councilor
+proposes only what its model of the votes says will pass), two were repeals. Resolutions passed:
+forced war 91 (Overcouncil) and 39 (Undercouncil) in 30 and 23 games -- the head councilor
+recruiting the council into the war it fights (the average gain of a forced-war proposal is
+180: a war we are in counts 200) -- embargoes 48, forced peace 17, defensive pacts between all
+members 25, open borders 11, the three mana bans 111 (Death 40, Entropy 35, Shadow 36), Liberty
+42, Single Currency 46, Free Trade 46, Develop Secret Codes 35, Enlist the Nightwatch 25, Fund
+Dissidents 30, Smuggling Ring 27, Gambling Ring 17; the head councilor seat 164 and 87 times.
+With councils active, wars rise (below) and supremacy is rarer: a balance question for the owner,
+since the councils now gang up on whoever they fight.
+
+| switch (off -> on) | development, full games 1-24 | fresh full games 22201-22296 | fresh 300 turns 22001-22192 |
+|---|---|---|---|
+| all seven | legacy -4.0%/-4.8%/-4.6% at 300/400/500 (t -3.0/-2.9/-2.0), techs -4.4% at 300; wars +37% (t 3.6), captures +23% (with the first tech-trade discipline) | legacy +0.9%/+2.3%/+1.3% at 300/400/500 (t 1.2/2.0/1.0), techs +3.9% at 500 (t 2.1); wars +15% (t 2.2), captures -2%; supremacy 50 -> 52, cultural 35 -> 36, conquest 4 -> 2, domination 2 -> 1, time 5 -> 5 | 96 games: legacy +0.1%/+0.2% at 200/300 (\|t\| < 0.5); wars -13% (t -3.3), captures -3% |
+| `PEACE_FORCES` | legacy -0.5%/-1.9%/-1.3% (t -1.8/-1.9/-1.1); wars -8%, captures +3% | legacy +0.4%/+1.0%/-0.6% (t 1.5/1.1/-0.6), techs +0.5% at 300 (t 2.5); wars -4%, captures -4% (t -1.3); supremacy 58 -> 52, cultural 29 -> 36 | 96 games: legacy -0.5% at 300 (t -1.9); wars -5% (t -2.1), captures +1% |
+| `QUIET_PEACE` | legacy -0.1%/-1.1%/-3.2% (t -1.4/-1.3/-2.2); wars +4%, captures +5% | legacy +0.4%/-0.1%/-1.2% (t 1.8/-0.3/-1.6), techs -1.5% at 500 (t -1.5); wars +3%, captures -2% | (not run: 45 of 48 development games identical at turn 300) |
+| `DOGPILE` | legacy -0.6%/-1.0%/+0.4% (\|t\| < 1), techs +3.2% at 500 (t 1.8); wars +20% (t 1.8), captures +3% | legacy -0.3%/+0.2%/-0.8% (\|t\| < 1); wars +13% (t 2.3), captures +4% (t 1.1); decided 13 turns later (t 2.2), supremacy 57 -> 52 | 96 games (81 identical): legacy -0.1% (t -0.2); wars +6% (t 2.3), captures +2% |
+| `TECH_DISCIPLINE` | first version: legacy -3.7% at 300 (t -2.7), techs -4.5% (t -3.0) (AI_LOG) | legacy -0.1%/-0.4%/-0.4% (\|t\| < 1), techs -1.4% at 400 (t -2.3), +1.0% at 500; wars +10% (t 1.8); decided 11 turns later (t 1.8) | 96 games: legacy -0.1%/-0.3% at 200/300 (t -1.6/-1.6), techs -0.4% at 300 (t -2.0) |
+| `WAR_RECHECK` | legacy -0.7%/+3.4%/+1.0% (t -0.5/1.5/0.4), techs +5.7% at 400 (t 1.6); wars +3% | legacy +0.5%/+0.8%/+0.7% (t 1.3/1.1/1.2), techs +2.0% at 500 (t 1.6); wars -19% (t -3.2), captures -11% (t -2.9; a city per war 1.11 -> 1.21); decided 15 turns sooner (t -1.7), time limit 8 -> 5 | 192 games: legacy +0.5% at 300 (t 1.2); wars -15% (t -5.5), captures -6% (t -2.2) |
+| `COUNCIL` | legacy -0.9% at 400 (t -1.6), +0.1% at 500; wars +31% (t 3.6); supremacy 15 -> 10 of 24 | legacy +0.0%/+0.1%/+0.9% (\|t\| <= 1); wars +14% (t 3.3), captures -1%; supremacy 58 -> 52, cultural 31 -> 36 | (inert before turn 300) |
+| `MISSIONARY_ABROAD` | 23 of 24 games identical | 1 missionary abroad in 96 games | -- |
+
+One civilization with the behaviour against the rest without it (76 pairs each):
+
+| | seeds 1-4 | fresh seeds 22201-22204 |
+|---|---|---|
+| `DOGPILE` | wins 15.8% -> 17.1% (1 / 0), share@end +22 (t 0.6) | wins 11.8% -> 11.8% (0 / 0), share@end -2 (t -0.1); 68 of 76 games identical |
+| `TECH_DISCIPLINE` (kept version) | wins 18.4% -> 15.8% (0 / 2), share@end -77 (t -1.2) | wins 11.8% -> 10.5% (0 / 1), share@end -2 (t -0.1), legacy@end -30 (t -0.9) |
+
+What the round shows. The bundle is neutral to slightly positive for the world on fresh seeds
+(legacy +2.3% at turn 400, techs +3.9% at turn 500) and makes the full game more warlike (wars
++15%; before turn 300, when the councils have not met, 13% fewer): the councils' forced wars and
+the dogpiles add wars, the re-check removes the ones that would not take a city. The first tech-trade discipline cost the whole world 4-5% of its technologies by
+turn 300 and the civ using it its games; the kept version is flat for the world, and for the
+civ using it 3 discordant games went to the base (p 0.25 over both sets), share at the end flat
+on fresh seeds: a small, unproven cost of not feeding the runaway leader. Quiet wars ending costs a
+little late (legacy at turn 500 -3.2%, t -2.2, development; -1.2%, t -1.6, fresh; Known gaps).
+The re-check makes wars fewer and more decisive (a city per war 1.11 -> 1.21) and games end sooner. The peace terms
+weigh the front without a measurable effect on the economy; they shift outcomes from supremacy
+toward culture (58 -> 52 supremacy). Missionaries abroad almost never fire (shrines come late,
+open borders are rare by then, a building outscores a gold a turn); the councils, inert before,
+now meet in about half the games and pass nearly everything their head councilor proposes.
+
+### Round 7d (2026-10-22): production and finance
+
+Four behaviours from the More Naval AI comparison, each behind its own switch
+(`crates/ffh-ai/src/switches.rs`; `FFH_AI_<NAME>_OFF=ALL` turns one off) and measured alone: the
+same binary with all four on against it with that one off, development seeds 1-48 at 300 turns
+(KEEP_UNITS on 1-96) and 1-24 full games (`--until-supremacy`), then fresh seeds used for nothing
+else: 300 turns from 23001 (192 games for KEEP_UNITS, 96 for the others) and full games from
+23201 (96 games, 48 for TOP_CITIES). Percentages are the change from switching the behaviour on;
+t is the paired t over seeds (shown for the larger ones).
+
+- **KEEP_UNITS** (Finance, "Unit support"): More Naval AI's disband rule, brought back by the
+  owner's decision after it was reverted the same day, and an interior city that holds the
+  barbarians it sees no longer trains another defender for them once units cost gold. The rule
+  alone kept 5% more military at turn 200 and cost 3.9% of the research there; the build-side
+  variants tried for that cost, and why the others were dropped, are in docs/AI_LOG.md ("More
+  Naval AI's disband rule", point 4).
+- **TOP_CITIES** (Cities, items 8 and 10): heroes only from the top third of our cities by
+  production, a world wonder outside it only when quick.
+- **WONDER_SLOT** (Cities, item 8; Citizens): the quick-wonder slot and the production emphasis
+  on a top city's final push.
+- **TROUBLE_REBUILD** (Finance): long builds give way to the economy building a city needs while
+  the empire cannot research at its target share.
+
+How often they fired (seeds 1-16, 300 turns, `FFH_TELEMETRY`, all four on against all four off):
+military units disbanded 859 -> 258 (and 22 idle workers), defenders trained for the quota
+1249 -> 1006 and second defenders 826 -> 552, while defenders trained for an overwhelmed garrison
+rose 309 -> 467; player-turns with unit support above a tenth of the commerce and research below
+target 849 -> 1504; 71 wonder-slot picks and world wonders built 51 -> 71; hero picks 47 -> 39;
+344 long builds switched to an economy building in financial trouble (seed 3: Markets, Elder
+Councils and Courthouses in place of Archery Ranges, Warrens, Granaries and army units).
+
+Development seeds (KEEP_UNITS on 1-96; the others 1-48; full games 1-24). These were measured with
+the production emphasis on every wonder; the emphasis was then cut to a top city's final push
+(below), and the fresh seeds measure the final code.
+
+| at turn 200 / 300 | KEEP_UNITS | TOP_CITIES | WONDER_SLOT | TROUBLE_REBUILD |
+|---|---|---|---|---|
+| legacy score | -0.9% (t -1.2) / -1.1% | -0.8% / +0.2% | -0.6% (t -2.6) / +1.1% | +0.5% / +0.4% |
+| techs | -0.9% / -1.4% | -0.9% / -0.3% | -0.3% / +0.2% | +0.2% / +0.1% |
+| research | +0.7% / -1.7% | -1.2% / -2.7% | -0.7% / -4.3% (t -1.5) | +0.3% / -2.2% |
+| world wonders | | +3.3% / -2.0% | +14.8% / +45.1% (t 5.0) | |
+| military / unit support | -1.0% / +1.6%; -1.0% / +0.9% | | -2.1% / -1.7% | -0.4% / 0.0% |
+| full games, turn 300 / 400 | legacy -0.6% / -1.8%, research -4.3% / -5.2% | heroes -11% / -12%, culture -10% / -17% (\|t\| < 1.5) | wonders +37% / +26% (t 2.8 / 4.7), research -9.4% (t -2.5) / -5.2% | legacy +1.1% / +0.8%, techs +1.9% / +2.8% |
+| full games, outcomes | cultural 10 -> 8, supremacy 12 -> 14 of 24; decided 9 turns earlier | cultural 5 -> 8; decided 42 turns later (t 1.7) | cultural 10 -> 8 | cultural 12 -> 8; decided 15 turns earlier |
+
+On the code before KEEP_UNITS' build side (round 7d's first binary, seeds 1-48),
+TROUBLE_REBUILD had measured research +4.1% (t 1.6), slider +5.4% (t 2.3), gold +11% (t 2.3) at
+turn 300; on the final base the slider was -4.2% (t -1.7). The two disagree within noise.
+
+**The production emphasis.** As More Naval AI does it, on every world wonder for the whole build,
+it cost growth and commerce (seeds 1-48: population -1.3% (t -2.6) and commerce -1.3% (t -2.4) at
+turn 200, research -4.3% at turn 300) for few hammers: the slot without the emphasis built as
+many wonders (+43%) for population -0.1%, commerce -0.2%, research -1.4%. Only for a top city's
+final push (the wonder done within the slot's horizon) it built the most (+46% at turn 300; full
+games +48% at turn 300, t 3.9) with research -3.9% / -3.6% at turn 300 (300-turn / full games),
+against -9.4% for the emphasis on every wonder in full games. The research the slot still costs
+is the hammers that went into wonders instead of libraries (buildings -1.0% to -1.7%).
+
+Fresh seeds, the final code:
+
+| 300-turn games, at turn 200 / 300 | KEEP_UNITS | TOP_CITIES | WONDER_SLOT | TROUBLE_REBUILD |
+|---|---|---|---|---|
+| legacy score | -0.5% / +0.4% | +0.7% (t 1.9) / +1.1% | +0.4% (t 1.7) / +0.8% | +0.1% / +1.0% |
+| techs | -0.4% / +0.7% | +1.0% (t 1.9) / +0.6% | +0.2% / +0.5% | +0.2% / +1.0% |
+| research | +0.6% / +1.8% | +2.9% (t 1.7) / -0.4% | -0.2% / +1.3% | +0.1% / +3.0% (t 1.5) |
+| world wonders | | -15.4% (t -2.1) / -3.8% | +10.0% / +47.8% (t 8.9) | -0.3% / -0.1% |
+| military | +0.4% / +0.2% | +0.7% / +3.8% (t 2.1) | -0.5% / +1.4% | +0.8% / +2.6% (t 1.7) |
+| cities | -0.7% / -0.2% | -0.4% / +1.1% | +0.2% / +1.1% | -0.1% / +1.7% (t 2.1) |
+
+| full games, at turn 200 / 300 / 400 | KEEP_UNITS | TOP_CITIES | WONDER_SLOT | TROUBLE_REBUILD |
+|---|---|---|---|---|
+| legacy score | +0.3% / +0.7% / +1.9% | -0.7% / -0.4% / -0.2% | -0.3% / -0.3% / -0.6% | -0.5% / +0.2% / +1.3% |
+| techs | +0.6% / +1.3% / +1.4% | -0.5% / -2.3% / -1.7% | -0.2% / +0.1% / +3.0% (t 1.8) | -0.9% (t -1.9) / +1.1% / +0.4% |
+| research | +4.1% (t 1.7) / +2.4% / -1.2% | -1.3% / +0.9% / -3.8% | -1.7% (t -2.2) / -1.8% / -4.2% | -0.8% / -0.6% / +4.0% |
+| world wonders | | -39% (t -3.4) / +8% / -5% | +4% / +36% (t 6.2) / +24% (t 6.8) | |
+| other | military -1.4% / +0.5% / +6.9% (t 1.9) | heroes 0 / +0.5% / +12.6% | buildings -1.3% / -2.3% (t -2.1) / -7.3% (t -4.4); cities -4.2% at turn 400 (t -3.2) | gold +2% / +7% (t 1.7) / +8% |
+| outcomes (off -> on) | cultural 34 -> 31, supremacy 54 -> 53, time limit 6 -> 10; decided 8 turns later | cultural 15 -> 15, supremacy 29 -> 29; decided 23 turns later | cultural 27 -> 31, supremacy 58 -> 53; decided 25 turns later (t 2.1) | cultural 26 -> 31, supremacy 55 -> 53, conquest 5 -> 2; decided 24 turns later (t 1.6) |
+
+What the four cost, from the games:
+
+- **KEEP_UNITS** no longer costs research where the rule alone did (turn 200: +4.1% in full games
+  instead of -3.9%). Its cost is late: research -5.7% at turn 500 (t -1.3, the 40 games still
+  running), slider -7.8% (t -1.8), following the wars the kept armies start (civs at war at turn
+  400 +50%, t 2.1; military +6.9%, unit support +8.6%); more civ cities change hands (+11%) and
+  more fall to the barbarians (+20%), and 4 more games reach the time limit. docs/AI_LOG.md ("More
+  Naval AI's disband rule", point 4) has the variants tried and where the lever is (the war gate,
+  peace terms, a garrison term for rival civilizations).
+- **WONDER_SLOT**'s research cost in the development full games (-9.4% at turn 300, t -2.5) was the
+  emphasis on every wonder, now cut to a top city's final push; on fresh seeds research is -1.8% at
+  turn 300 and -4.2% at turn 400 (\|t\| < 1.3) for a third more wonders, the hammers going into
+  wonders instead of buildings (-7.3% at turn 400, t -4.4) and, late, cities (-4.2% at turn 400,
+  t -3.2; not traced). Cultural victories 27 -> 31 of 96.
+- **TOP_CITIES** moves wonders from slow cities to fast ones: fewer early (-15% at turn 200 in
+  300-turn games, -39% in full games) as the slow cities stop starting them, as many by turn 300;
+  heroes were not fewer on fresh seeds (development full games: -8% to -12%, \|t\| < 1.5).
+- **TROUBLE_REBUILD** is cheap and mildly positive at turn 300 (research +3.0%, cities +1.7%);
+  in full games gold +7-8% and five more cultural victories, flat otherwise.
+
+All four delay the decision by 8-25 turns (supremacy to culture). Not measured together against
+the AI before them.
+
+### Round 6 (2026-10-21): great people, explorers
+
+Six fixes for play a good player would not make, found by tracing seeds 1-18; two kept, the rest
+reverted (settlers under a held threat, allied barbarians, worker demand and stuck workers, and
+after review the 20-turn scrapping rule and garrison quotas from lasting threats and from a
+per-city record of the threats seen:
+docs/AI_LOG.md, "Low-hanging fixes"). Each was measured alone against the same binary with it
+off (seeds 1-48, 300 turns; the great people also in full games, seeds 1-24):
+
+- **Great people** (`units::great_person_build`): before, every great person that could
+  lightbulbed, and no AI ever built a shrine (0 in 16 games, 28 holy cities at turn 300; in three
+  games to turn 520, 10 of 13 Great Prophets were born to a civ holding 1-3 holy cities). Now 65
+  shrines in 24 full games; development: research +3% and culture +5% from turn 300, power +8%
+  at turn 500 (t 2.1), techs -0.6 to -1.3% (|t| < 1). Engineers rushed a wonder 3 times of 10 in
+  a traced game (the others found none in progress).
+- **Explorers** (`units::explore`, `safe_step`): 10-21 explorers a 300-turn game were trained
+  and nearly as many scouts killed, mostly by animals a few turns out; an explorer with nothing
+  in reach turned itself into an army unit and production trained another. Seeds 1-6, 150
+  turns: scouts trained 87 -> 65, killed 94 -> 82. Development: legacy +4.1% at turn 200 (t 1.8),
+  techs +5.0% (t 2.3), +2.7% at turn 300 (t 1.0).
+
+With the 20-turn scrapping rule (since removed), the three together against the same binary
+with them off:
+
+| | 300 turns, seeds 10001-10096 (96 games) | full games, seeds 10101-10148 (48) |
+|---|---|---|
+| legacy score | -0.7% at turn 200, -1.1% at turn 300 (t -0.5) | -3.7% at turn 200 (t -1.3), +0.2% at 300, +2.9% at 400, +8.1% at 500 (t 1.6) |
+| techs | -0.5%, -2.0% (t -0.8) | -2.1% at 200, +3.7% at 400, +12.1% at 500 (t 1.9) |
+| research / production | -4.3% / -2.6% at turn 200 (t -1.1 / -1.0); +0.6% / -0.2% at 300 | research +8.5% at turn 300 (t 1.6); production -5.7% at 400 (t -1.0) |
+| power | -0.3% at turn 300 | -7.1% at turn 200 (t -2.0), +7.2% at 400 (t 1.0) |
+| outcomes | | supremacy 22 -> 30, cultural 26 -> 18; decided 38 turns earlier (t -1.4); civ cities captured -23% (t -1.7) |
+
+The two alone against master, on fresh seeds again:
+
+| | 300 turns, seeds 11001-11096 (96 games) | full games, seeds 11101-11148 (48) |
+|---|---|---|
+| legacy score | -1.2%, -1.3%, -1.8% at turns 100/200/300 (\|t\| < 1.5) | +3.4%, +5.5%, +6.8% at turns 200/300/400 (t 1.3-2.0); -4.1% at 500 (t -1.3, 18 games) |
+| techs / research | -1.9% / -1.7% at turn 200, -1.2% / -2.5% at 300 | research +13.8% at turn 200 (t 2.2); techs +9.6% at 400 (t 2.4); research -12.4% at 500 (t -2.1) |
+| power / military | -2.6% / -3.1% at turn 300 (t -0.9 / -1.2) | power +15.1% at turn 400 (t 2.9), military +11% at 300-400 (t 2.1-2.5) |
+| outcomes | | supremacy 26 -> 21, cultural 22 -> 27; decided 15 turns later (t 0.6) |
+
+Neutral: the 300-turn games are flat, the full games lean positive to turn 400 and negative at
+turn 500 (only the 18 games still undecided), and the two sets disagree at turns 200-300 within
+noise. Kept as play that is plainly right (a holy city's shrine, an engineer's hammers in a
+wonder, a scout that does not walk into the animals it has just seen), not as a measured gain.
 
 ### Round 4 (2026-10-18): event choice, Conquest, settler, hammers, worker flee, transport
 
@@ -1459,6 +3092,13 @@ turns each civ needs for each condition of `CvGame::testVictory` (`CIV4VictoryIn
   stages) stands, the final altar's research and hammers.
 - Religious, score (no target score) and time victories are not pursued.
 
+**Not pursued** (the owner's decision, 2026-10-21): the Tower of Mastery and the Altar of the
+Luonnotar are never our goal -- boring solitaire victories, and the Tower needs a huge territory
+anyway. Their estimates stay, so a rival about to win one is still a *rival* (below) and gets
+stopped. Play is unchanged: 24 of 24 full games (seeds 1-24, 6 civs, standard map,
+`--until-supremacy`) identical to the build before it (same checksums), and the planner never
+picked either in 48 full games against the C++ AI.
+
 **Plan** (`plan`, `plan_ours`): from turn 200 (scaled to the game's length; from 100 when the team
 holds 1.5x the next team's share of the world) the condition with the fewest turns that fits
 before the time limit; a cultural victory only for the front-runner (no other civ's estimate
@@ -1488,6 +3128,19 @@ another civ whose own best estimate is within 60 turns and shorter than ours.
   goal against the weakest civ we can reach, prepared without the leader's roll or grudge; the
   rival's victory cities (those nearest legendary, those with towers) are worth 3000 more to the
   siege campaign; these wars end only when lost (or after 80 turns).
+
+**Flavor drive (the owner's decision, 2026-10-21; not implemented yet).** Conquest and domination
+are a *drive* of the warlike, not a victory goal pursued once in reach: the Clan of Embers, the
+Doviello, the Bannor, any other canonically warlike civilization, and every leader with
+`TRAIT_AGGRESSIVE` (in the data: Charadon of the Doviello, Sheelba of the Clan, Tasunke of the
+Hippus, Alexis of the Calabim, Kandros of the Khazad, Basium of the Mercurians, and the minor
+leaders Duin, Weevil, Hafgan, Volanna, Mahon, Averax, Ouzza) keep asking what the easiest next
+growth is -- a settler site, or the cities of a weaker civ nearby -- and take it, over and over,
+whether or not it raises their win rate (the win-rate rule decides how well they do it, not
+whether). Today the planner is civ-agnostic and in practice picks culture or nothing (conquest
+needs twice all rivals' power, domination 66% of the land: neither qualifies before it is nearly
+won), so this is an ongoing comparison of settling against conquering a weaker neighbour, from
+the early game on, not a bias on the victory estimates.
 
 Measured on full games (seeds 1-24, 6 civs, standard map, normal speed, to the rules' end;
 `victory_check.py`); economy per alive civ, at turns 400 / 500 (one game was over by 500):
@@ -1569,10 +3222,75 @@ Each of these gained on seeds 1-96 and was re-measured on reserved seeds (801-94
   turn on average (four games in parallel on four cores), two thirds of it inside the
   controller (including the moves it orders).
 
+**The caster school (2026-10-27).** Measured for what the casters do, not for wins (the owner's
+question: are the mages used better?), with `caster_ab.py --common` (each seed's two games up to
+the last checkpoint both reached), the same binary with `FFH_AI_CASTER_SCHOOL_OFF=all` on the base
+side, every civilization's arcane casters. Fresh seeds 7901-7940 (17950 game turns a side, 35 of 40
+games changed): casters lost per 1000 caster-turns 4.6 -> 1.8 (lost alone 3.1 -> 0.5; in all 231
+-> 96, the levels they took with them 972 -> 500), upgrades 177 -> 237, caster-turns +10%
+(fewer trained, 485 -> 414: fewer die to be replaced), Mage-turns +29% (Archmage-turns even),
+Adepts at a Mage's level waiting for the upgrade -14%, casts +15%, Channeling II and III summons
+and damage per 1000 caster-turns 30.5 -> 35.5. Casts before strikes did not follow: 300 -> 277,
+0.80 -> 0.66 per city the casters' civilizations took (375 -> 421); they come from a few war
+games (two games that conquered less on the new side, 65 -> 35 and 88 -> 31; three others 0-7 ->
+22-27), and a stack that marches on leaves the caster at the last sheltered plot behind it (seed
+7930: the Amurite Wizards stood 5 or more plots from their strike target on 111 of 403 turns).
+Development seeds 7501-7520 (two fixes found there: Adepts at level 4 without Sorcery went to the
+front as Mages, and apprentices shuttled between cities): lost per 1000 caster-turns 7.8 -> 1.6,
+Mage-turns +79%, Channeling II+ summons and damage 25.4 -> 62.5 per 1000 caster-turns, casts
+before strikes 90 -> 195 (0.57 -> 1.01 per city taken). For context only: players with arcane
+casters won 21.8% -> 21.8% (8 / 8 seeds won by one side only), share@end +130 (t 1.14), on the
+fresh seeds; 12.5% -> 18.8% (4 / 1), share@end +269 (t 1.90) on the development seeds.
+(Measured before master's caster corps, `casters.rs`, was merged in.)
+
+**Casters in the stacks (2026-10-27).** The owner's proposal for the gap above: casters march in
+the attacking stack's group and are almost never its attackers. Measured with `caster_ab.py
+--common --base-env FFH_AI_CASTER_STACKS_OFF=all` (the same binary, the school on both sides).
+Fresh seeds 9401-9440 (16950 game turns a side, 30 of 40 games changed): casters joined stacks
+613 times; strikes by a player with a Mage had one within two plots in 33% -> 49% of them; casts
+before attacks 145 -> 262 (per such strike 0.90 -> 1.47, per city the caster civilizations took
+0.23 -> 0.39); Channeling II and III summons and damage per 1000 caster-turns 13.3 -> 21.5;
+casters lost 114 -> 128 (per player +0.05, t 1.12; lost alone 43 -> 44), the Amurites, whose
+Wizards march most, 4 -> 15 (t 1.96 over 16 players); upgrades 359 -> 377. Development seeds
+9301-9340, where the first version (joining any committed group) lost casters a quarter more
+often (144 -> 186) and the version kept did not (151 -> 153): a Mage within range 28% -> 42%,
+casts before attacks per strike 1.37 -> 1.81, Channeling II+ summons and damage +35%; seeds
+7501-7530 (the first version) 44% -> 53%. For context only: players with arcane casters won
+22.2% -> 22.2% (9 / 9 seeds won by one side only), share@end -12 (t -0.34), on the fresh seeds.
+
 ## Tools
 
 For A/B tests compare `legacy_score`, techs, cities, research and the like, not `score`: the
 share score (docs/SCORE.md) averages 10000/N whatever the AI does.
+
+**A behaviour every AI gets is not a player's win rate.** `ai_metrics.py` with a switch on for all
+(`FFH_AI_<NAME>_ONLY=ALL`) averages legacy over every civilization, the dead ones as 0; a change
+that makes every AI a better conqueror kills more civilizations and lowers that mean even when each
+civilization plays better (round 7f: the fixed healing read -1.2% on 192 seeds, and its per-seed
+change correlated -0.57 with the change in eliminations; the 35 seeds with more eliminations
+averaged -139). Read eliminations and captures beside it, and measure a general behaviour as one
+player's edge too: `civ_ab.py --civ all --new-env FFH_AI_<NAME>_ONLY={civ}` gives it to player 0
+only, against opponents without it, and reports that player's wins and share.
+
+**Forks first** (CLAUDE.md, "AI changes"): a behaviour is judged first at its firings.
+- `tools/ai-branch.sh --bin $B --seed S --turn T --switch NAME [--turns N] [--trace P] -- WATCH..`
+  plays seed S (as `ffh stats` does; run options after the script's own) to the start of turn T
+  with the behaviour on, saves it, and resumes the save twice for N turns, the switch forced on
+  (`FFH_AI_<NAME>_ONLY=ALL`) and off (`FFH_AI_<NAME>_OFF=ALL`). It prints the watched facts turn by
+  turn for both, `*` marking the lines that differ, and with `--trace P` keeps player P's decision
+  trace of each branch. Watches (`ffh resume --watch`): `city:X,Y` (owner, size, defenders and
+  their health, defense damage), `player:P` (cities, units, army, power, research, gold, wars),
+  `area:X,Y,R` (each player's units within R plots: count, health, types), `unit:ID`.
+- Pick T a turn or two before the firing (the trace line's turn), the watches on what the
+  behaviour should change (the stack's area, the city it besieges, the hero's id), N the
+  behaviour's horizon. Combat is random and the dice part ways at the fork, so one fork can be
+  luck: look at a few firings, and read the traces for why each branch went as it did.
+- After a fix, `--save DIR/fork.ffhsave` (an earlier fork's save) replays the same position with
+  the new binary, instead of playing to turn T again (the game before the fork changes with the
+  fix when the behaviour fired earlier in it).
+- Underneath: `ffh save FILE --to-turn T [run options]` and `ffh resume FILE --turns N
+  [--watch SPEC]..` (`crates/ffh-cli/src/branch.rs`); a resumed save plays on exactly as the
+  game it was saved from (same checksums).
 
 - `ffh stats --seed N --at T1,T2,.. [--every N]` plays one game and prints one JSON line:
   per-civ snapshots after the given numbers of turns played (and always at the end), game-wide
@@ -1580,7 +3298,7 @@ share score (docs/SCORE.md) averages 10000/N whatever the AI does.
   eliminations), the outcome and the turn each civ died. Snapshots only read the game (the sync
   checksum is the same with or without them). Fields of a snapshot row (one per ever-alive
   player, barbarians included; all computed from game state at the end of that turn):
-  - identity: `p` player id, `team`, `civ`, `leader`, `alignment`, `barb`, `alive`, `elim_turn`
+  - identity: `p` player id, `ctrl` (controller name: `ffh-ai`, `cppai`), `team`, `civ`, `leader`, `alignment`, `barb`, `alive`, `elim_turn`
     (turns played when found dead), `era`, `religion` (state religion), `vassal`;
   - size: `cities`, `pop`, `land` (plots owned), `land_scored`, `area_tiles`, `area_civs`
     (other civs on the capital's landmass), `overseas` cities;
@@ -1603,7 +3321,16 @@ share score (docs/SCORE.md) averages 10000/N whatever the AI does.
     (other buildings), `projects` (team project count), `holy_cities`, `gp_created`,
     `gg_created`, `gp_units` (great-person units alive), `gp_settled` (settled great specialists);
   - units: `units`, `mil`, `workers`, `settlers`, `animals`, `ships`, `heroes` (PROMOTION_HERO),
-    `world_units`, `summons`, `casters` (adept + disciple units), `ucombat` (count by unit combat
+    `world_units`, `summons`, `casters` (adept + disciple units), `promo_ready` (units with a
+    promotion they have not taken), arcane casters (unit combat
+    Adept, summons left out: Adepts, Mages, Archmages and their variants) `arcane` alive,
+    `arcane_mages` (Channeling II), `arcane_archmages` (Channeling III), `arcane_levels`, and
+    cumulative `arcane_made`, `arcane_lost` (while the owner lives), `arcane_lost_alone` (of those,
+    the ones that had ended the turn before outside our cities with no other unit of ours that
+    fights), `arcane_lost_levels`, `arcane_lost_with_owner`, `arcane_upgraded` (a new caster of ours
+    on its plot, of a type it upgrades to, with at least its experience), and caster-turns
+    `arcane_turns`, `arcane_ready_turns` (no Channeling II at level 4 or more, not heroes: waiting
+    for the upgrade), `arcane_mage_turns`, `arcane_archmage_turns`; `ucombat` (count by unit combat
     type, `NONE` for workers/settlers/great people), `levels` and `xp` (summed over fighting
     units); `mil_str` = sum over non-naval units that can fight of max(attack, defence) base
     strength x (100 + promotion combat %) / 100 x hit-point fraction, `mil_best` (strongest
@@ -1644,19 +3371,130 @@ share score (docs/SCORE.md) averages 10000/N whatever the AI does.
   game's last value carried forward) with the paired t, survival, rank, world-spell use, the games
   that are identical on both sides and the per-type counts that differ; `--off-base` makes the
   base side the same binary with `FFH_AI_CIV_OFF` for that civilization (identical opponents).
+- `crates/ffh-cli/scripts/caster_ab.py --bin DIR --seeds S --out-dir D [--base-bin DIR]
+  [--base-env K=V ..] [--new-env K=V ..] [--common] [--civ] [--load]` plays the seeds on two sides
+  (by default the same binary with `FFH_AI_CASTER_SCHOOL_OFF=all` on the base side) with the cast
+  trace and reports how every civilization used its arcane casters: the `arcane_*` counters above,
+  their casts by Channeling tier, context (before a strike, end of turn) and kind, and the rates
+  per 1000 caster-turns; `--common` compares each seed's games up to the last 50-turn checkpoint
+  both reached (a longer game has more caster-turns, and more casters lost with an eliminated
+  owner).
+  Generic behaviours have switches of their own (`switches.rs`): `FFH_AI_<NAME>_OFF=X,..|ALL`
+  plays without it, `FFH_AI_<NAME>_ONLY=X,..` only for those civilizations (`ALL` or `1`: every
+  one; names with or without `CIVILIZATION_`, any case). The module switches `FFH_AI_MAGIC_OFF`,
+  `FFH_AI_CIV_OFF`, `FFH_AI_VASSAL_OFF` and `FFH_AI_TRAIT_CIVS` are read the same way
+  (`switches::env_list`; `_ONLY` works for the first three too), and `FFH_AI_TRAIT_OFF` lists
+  traits in the same form.
+  **Implementation forks do not stay.** A switch whose off side is the algorithm a change
+  replaced (not merely the behaviour absent) is removed, with the old algorithm, the round after
+  the change is kept: later comparisons with the old version run against an older revision
+  (`tools/agents/ab.sh --base <rev>`, `civ_ab.py --base-bin`), not a switch nobody plays and no
+  test exercises. Feature toggles (off = the behaviour absent), flavor switches and default-off
+  experiments stay. Removed so (2026-10-28): `KEEP_UNITS` (7d), `CASTER_ROLES` (7a),
+  `RIVAL_DEFENSE` (7e), `HEAL` and `STRIKE_DAMAGE` (7f), `SIM_FAITHFUL` and `FIELD_SIM` (7g),
+  `STRIKE_AT_PHASE` (7h); the rounds below name them as they were measured. A contest between
+  civilizations (a land race, a war) is measured as one civilization with the behaviour against
+  opponents without it: `civ_ab.py --civ all --base-env FFH_AI_<NAME>_OFF=ALL --new-env
+  FFH_AI_<NAME>_ONLY={civ}` (the same binary on both sides; `{civ}` is the forced civilization).
+  Measuring only with every civilization on can mislead either way: a faster opening for everyone
+  cost research, and for one civilization against the rest it still gained nothing.
 - `crates/ffh-cli/scripts/victory_check.py --seeds 1-24 [--out games.json | --load games.json]
   [--compare base.json] [--min-share 0.5]` plays full games (to turn 690 or an earlier
   victory) and reports the share decided before the time limit, per victory type, the decision
   turn, and the economy at turns 300-600; `--min-share` makes it a pass/fail check. A short
   version is the ignored test `run::tests::full_games_end_in_victories` (`cargo test --release
   -p ffh-cli -- --ignored`).
+- **Head to head against the FFH2 C++ AI** (docs/CPPAI.md): `FFH_CPPAI=even|odd|all|<p>,..`
+  makes those players play with the port of the original DLL AI (`crates/ffh-cppai`);
+  `crates/ffh-cppai/scripts/h2h.py --bin $B/ffh --seeds S --turns 690 --until-supremacy
+  [--handicap-ffh HANDICAP_X]` plays each seed with the seats swapped and reports both sides
+  (snapshot rows carry `ctrl`, the controller that played the player).
+- **Telemetry** (docs/TELEMETRY.md): `FFH_TELEMETRY=1` adds to `ffh stats` what each player
+  did (missions, casts, hurries, upgrades, deals, wars, combats by odds, deaths by cause), which
+  spells its units knew, could cast, left idle and cast with what effect, and why the AI acted
+  (plans as they change, decisions with the rule that made them and the alternatives);
+  `FFH_TELEMETRY_FILE=f.jsonl` writes every event. `crates/ffh-cli/scripts/telemetry.py`
+  summarizes it per AI, civilization or player; `h2h.py --telemetry` adds it per side. The AI
+  side reports through `Game::tel_intent`, `tel_decision`, `tel_cast_reason` and
+  `tel_war_reason`; play is identical with telemetry on or off.
 - `ffh autoplay --report T` prints, per civ, costs, unit roles, improvements, civics and every
   city's yields, trade, happiness and production; `ffh inspect <player>` shows each city's
   plots (worked, yields, improvements).
 - `FFH_AI_TRACE=all|<player>` traces AI decisions to stderr; `FFH_LOG=all|<player>` prints the
   game log.
+- **Spectators' flags.** Someone watching the AI in the browser (an observed game: docs/HUMAN.md,
+  "Watching the AI") flags play that looks wrong; the flag's text has the build, the turn, the
+  plot, the units there (ids, the AI's role, orders) and three ways to replay that turn with the
+  trace on: `ffh-play observe --setup '<settings>' --to-turn T --plot X,Y` (from the settings),
+  `ffh-play observe --load <pinned save> --to-turn T` (from the start of turn T: one turn of
+  work), and the same game in `ffh autoplay ... --turns T+1`. Check out the flag's build first:
+  the same seed plays another game once the AI changes. The trace lines of that turn are tagged
+  `[tT pP]`; `observe` prints the checksum of each turn (the flag's is the last) and the units at
+  the plot, so a fix can be checked on the same situation from the pinned save.
+- `--speed GAMESPEED_X`, `--handicap HANDICAP_X` (the game handicap: the AIs' bonuses),
+  `--era ERA_X`, `--climate CLIMATE_X`, `--sea-level SEALEVEL_X`, `--max-turns N`,
+  `--no-victory VICTORY_X` (repeatable) and `--leader LEADER_X` (the first slot's leader) give
+  `ffh autoplay` / `stats` / `bench` the rest of a custom game's settings, so every game a
+  spectator watches plays here too.
 - `--option GAMEOPTION_X` (repeatable) turns game options on for any of these commands (for
   example `GAMEOPTION_ADVANCED_START`).
+
+## More Naval AI compared (2026-10-22)
+
+More Naval AI (Tholal's FfH2 AI: FfH 0.41's C++ AI plus Better BTS AI, parts of K-Mod and
+Tholal's own changes; source at sourceforge.net/p/tholalsffhaimod/code, r1832) was read area by
+area against this AI. Its disband rule was tried and reverted, then brought back by the owner's
+decision with a build side to match (round 7d; docs/AI_LOG.md, "More Naval AI's disband rule"),
+and fog-busting, which it does not do, failed here ("Fog-busting posts").
+
+Where this AI is ahead, with measurements: victory planning (MNAI's culture victory is switched
+off, "the AI doesnt know how to pursue a culture victory"; its conquest stages are weighted dice),
+research (goals and lookahead against MNAI's depth-3 value plus a random 500), production
+allocation and finance (MNAI's treasury floor sets research to 0 below about 100 gold, the spiral
+our finance module prevents), the one-operation war campaign, war staging and reparations,
+spellcasting and the civilization mechanics (MNAI special-cases a handful of heroes and spells),
+exploration. Not to borrow (tried here and lost, or worse here): a unit-spending cap, gold
+reserves for upgrades, two escorts per settler, random war rolls, the Tower and Altar pursuit (the
+owner's decision), the power ratio alone for Sanctuary and March of the Trees (round 7a). Its
+caster roles, summons spent at any odds, mana nodes and Govannon's teaching were borrowed in
+round 7a, each in the form an expert would play (a smaller corps, summons that keep covering and
+leave cities' defenders that heal before we strike).
+
+Where MNAI does something this AI does not, ranked by expected worth (each untried unless noted):
+1. **Mana nodes as an economy** (done, round 7a: `mana.rs`). One adept per civ builds nodes on
+   our raw mana (`CvUnitAI::AI_upgrademanaMove`), the type chosen by the bonus's effects and the
+   spells its sphere opens; research values node techs by the raw mana we own.
+2. **Defense weighed by rival civilizations.** `CvCityAI::AI_cityThreat` scores each rival's
+   closeness to the city times war/war plan/attitude times its power over ours, and spreads a
+   pool of floating defenders by it; sorties need 175% of the enemy's local strength
+   (`AI_leaveAttack`). Here the quotas read units in sight only; ffh-ai lost 12 cities a game to
+   civs against the C++ AI's 7 (docs/CPPAI.md), and AI_LOG's Clan entry names this term. Measure
+   one civ against the rest (`civ_ab.py`); the garrison entries in AI_LOG warn about the cost.
+   *Done in round 7b* ("City defense against rival civilizations"; Round 7b below).
+3. **Peace terms that weigh our forces** (`CvTeamAI::AI_endWarVal`: the value of peace divided
+   by our attackers en route against theirs, down to a third; a war with nothing moving ends).
+   AI_LOG "Wars" names this lever: sell the war when the next city is out of reach. Done in round
+   7c (Diplomacy, "Peace by the forces at the front", "Quiet wars end").
+4. **Healing.** MNAI's `AI_heal` stops a stack in the field only when over half of it is hurt,
+   and only where healing is above 10% (not in enemy or neutral land); wounded units in our
+   cities split off. Here one unit over 35% damage halts the whole stack where it stands
+   (`military::army`), committed stacks included, next to defenders that heal faster.
+   *Done in round 7b*, fitted to our small stacks (Field armies, step 6).
+5. **Heroes and wonders in the best cities.** MNAI builds world wonders and heroes only in the
+   top third of cities by production. Done (round 7d): heroes there only, world wonders outside
+   them only when quick, and MNAI's quick-wonder slot ("Cities", items 8 and 10).
+6. **Council votes.** MNAI votes and proposes (`AI_diploVote`, `AI_chooseElection`); this AI
+   abstained on every vote and never proposed, so the Overcouncil and Undercouncil were inert.
+   Done in round 7c (`council.rs`; Diplomacy, "Councils"); a balance question too.
+7. Smaller, all done: re-deciding production when the empire enters financial trouble (round 7d,
+   Finance); dogpile wars on a civ already at war, `AI_doWar`; no tech trades with the victory
+   rival, no military techs while preparing a war, keep monopolies, `AI_techTrade`; missionaries
+   abroad once the shrine stands (round 7c); a stack next to an empty or weak enemy city outside
+   the plan takes it, `AI_stackAttackCity`; a second operation for a clear surplus; assault
+   fleets wait for the landing force and sail escorted, `AI_assaultSeaMove`; heroes and veterans
+   attack only at their odds, `AI_getBestGroupAttacker` (round 7b); Govannon's Teach
+   Spellcasting (round 7a). Sanctuary and March of the Trees at 1.5x the enemy's power: tried,
+   off by default (round 7a).
 
 ## Crusades and loans (`crusade.rs`)
 
@@ -1667,10 +3505,41 @@ its loan general is fighting. None of this runs in the default game, so it moves
 
 ## Known gaps (future work)
 
+- Leader traits (`traits.rs`): Charismatic, Creative, Defender, Organized and Magic Resistant have
+  no play of their own (their effects reach every decision that reads the game). Candidates if
+  they should: Defender stacks counterattacking inside our borders (Homeland), Creative leaders
+  leaning to the cultural victory, Charismatic ones promoting for the faster levels. Raiders
+  pillage where they stand and raid nearby; they do not yet send fast units deep into enemy land.
+- **Fewer cities change hands with the faithful simulation (round 7g).** With `SIM_FAITHFUL` and
+  `FIELD_SIM` every civilization took 14% fewer civ cities (t -1.8) and 11% fewer barbarian towns
+  in 300 turns, and declared 11% fewer wars, at no cost to anyone's win rate: the AI no longer
+  strikes on an estimate that was optimistic, and waits for a force that takes the city. Round 7h
+  recovers part of it (strikes at the strike phase's odds for all; 60% for the conquerors, whose
+  bolder bar took 8% more cities when every civilization had it); striking at lower odds did not
+  make a player win more, so the rest is a flavor choice. Faster force building for the
+  conquerors is the other lever.
+
+- **Councils gang up (round 7c).** With `council.rs` the councils meet in about half the games
+  and pass nearly every proposal; a head councilor at war has the council declare war on its
+  enemy (in 96 full games, 91 forced-war resolutions passed in 30 games of the Overcouncil, 39
+  in 23 of the Undercouncil), and supremacy is rarer (58 -> 52 of 96
+  against councils off). The AI plays the rules as they are; whether forced wars should be this
+  cheap to pass is the owner's balance question. Not done: a member that would be dragged into a
+  war it cannot fight leaving the council (changing its membership civic) before the vote.
+- **Quiet wars end, then a new one is prepared (round 7c).** `QUIET_PEACE` ends wars where
+  nothing happens; late in full games the economy is a little lower with it (legacy at turn 500
+  -3.2%, t -2.2, on development seeds; -1.2%, t -1.6, on fresh ones). Untested hypothesis: the
+  peace frees the one-war-at-a-time gate, and the civ prepares (builds an army for) another war
+  where the phony one cost it nothing.
+- **Vassals never leave.** A vassal that has recovered stays one. FfH's AI cancels the agreement
+  when `AI_vassalTrade` would now refuse it. Masters do nothing for their vassals beyond the war
+  joining the rules impose (Diplomacy, "Vassal states").
+
 - Naval: amphibious invasions now ship an army across water to take an overseas enemy city
-  (see Naval), but there is no naval combat, no escorts and no blockades (the transport sails
-  undefended), and one trip lands only the ship's cargo capacity, so invasions are small until
-  good transports arrive late in the tech tree. Overseas settling still sends one settler at a time.
+  (see Naval), but there is no naval combat and no blockade, escorts are only the idle warships
+  that happen to be in the port (none are built for the fleet), and early transports carry one
+  unit each, so the fleet waits in port until enough of them are built and invasions are slow
+  until good transports arrive late in the tech tree. Overseas settling still sends one settler at a time.
   The trickle no longer scatters and no longer under-ships: each trip lands on the reachable plot
   already holding the most of our army (they pile onto one plot and strike), and the staging port
   builds a fleet big enough to carry the force in one wave. Traced water-isolated civs that used to
@@ -1716,7 +3585,7 @@ its loan general is fighting. None of this runs in the default game, so it moves
   to per-unit parity PLUS a numbers requirement (the force we will field overwhelms the softest
   revealed city's defender *count* with a reserve, via the campaign's own `rough_need`/`margin`),
   and a new DECLARE backstop that commits a prepared war only when the *real gathered army*
-  decisively covers a visible target city -- reusing `campaign::covers`/`force_on`, the exact
+  decisively covers a visible target city -- reusing `combat_sim::covers`/`campaign::force_on`, the exact
   predicate the march logic uses, so a declared war is one the army would actually march on. This is
   the numbers-aware, truthfully-computed gate v1 lacked. It also measured net-negative (16-seed A/B):
   wars +15% but captures-per-war -19% (wars LESS decisive, not more), economy -8% at t300 worsening
@@ -1736,10 +3605,12 @@ its loan general is fighting. None of this runs in the default game, so it moves
   land; expansion is slow because settlers wait until no enemy is near their city. Letting
   them go out under a held threat founded more cities but lost many more to the barbarians
   (measured), so the gate stays.
-- Expansion is slow everywhere in the first 100 turns (about two cities; second city at
-  turn 70, third at 110): settlers cost 220 hammers on normal speed (120 + the new-city
-  production value) and cities wait for size 3-4 and for the barbarians to leave. Faster
-  openings were measured and cost research by turn 300 (see "Settlers and escorts").
+- Expansion is slow in the first 100 turns (about two cities; second city at turn 70, third at
+  105): a settler costs 120 food and hammers, 6-9 a turn from a size-3 capital, and cities wait
+  for size 3-4 and for the barbarians to leave. Faster openings cost research by turn 300, for
+  everyone and for one civilization against the rest (measured again 2026-10-21, an expert
+  opening in four parts: docs/AI_LOG.md, "Expansion: the expert opening"); the levers left are
+  commerce per new city and clearing the lairs that block expansion.
 - Economy: research at about two thirds of the commerce by turn 300 (145 beakers a turn, 29
   techs); maintenance and civic upkeep take a quarter of the commerce. The first 100 turns are
   slow whatever the research order (6-7 techs at turn 100 with two cities).
@@ -1762,9 +3633,14 @@ its loan general is fighting. None of this runs in the default game, so it moves
   net territory and eliminations flat. A broader variant (gate on any economy building, no finance
   condition) gave more research (+12%) but cut captures ~25% and shrank the top empire -- it
   dampened healthy conquerors, so the upkeep-strained condition was kept.
-- Sieges: one operation at a time; armies are small (at war the operation spends half its turns
-  gathering, typically 2-3 units against a need of 4-6), so a barbarian town of 5+ archers is
-  out of reach and is left alone; casters cast before the strike but do not attack
+- Sieges: one operation at a time. At the declaration the army is large (23 units against a
+  computed need of 10, 24 full games, 2026-10-21) and the committed stacks stay together (3-6
+  stacks, striking together, in the traced wars), but a war we declare takes a city 38% of the
+  time; about 40% of them end in our own peace for tribute at turn 11, which pays better than
+  fighting on (refusing it cost wins, docs/AI_LOG.md, "Wars"). The lever left was the operation's
+  own estimate: sell the war when the next city is out of reach, fight on when it is close (round
+  7c weighs the army at their next city, Diplomacy, "Peace by the forces at the front"). A
+  barbarian town of 5+ archers is out of reach and is left alone; casters cast before the strike but do not attack
   ("Spellcasting"); a city emptied of defenders is entered even when a counterattack will retake
   it. Tried and dropped (no measurable effect on seeds 1-48): raiding (pillaging) while a war
   operation gathers, a "can we hold it" check before the strike, every unit following the victor
@@ -1805,9 +3681,8 @@ its loan general is fighting. None of this runs in the default game, so it moves
   hit. Reverted; the `FFH_AI_EXPOSURE` counter is kept as observation tooling. A fix that helped
   would have to avoid *creating* the exposure -- danger-aware movement that ends each turn on a
   safe plot -- without making stacks passive, which is a pathfinding change, not a retreat rule.
-- No hurrying beyond the civic-gated gold/population hurries, no wonder racing, no vassals or
-  defensive pacts; the vote sources (Overcouncil / Undercouncil) use the defaults: every AI
-  abstains and an AI secretary never picks a resolution, so both councils are inert.
+- No hurrying beyond the civic-gated gold/population hurries and chops for settlers, workers and
+  world wonders, no wonder racing.
 - Speed: path finding is about 30% of late-game time.
 - Measured on branches never merged (built on the master of 2026-10-15, not re-measured on fresh
   seeds; expect conflicts): `origin/handoff/ai3b-siege-estimate` (exact strike odds over the
@@ -1817,18 +3692,28 @@ its loan general is fighting. None of this runs in the default game, so it moves
   (Kuriotates settlements without the research collapse: +54 legacy score, t 2.3, over 80 games;
   possibly superseded by `civs/kuriotates.rs`).
 - Victories: nearly every decided game is a cultural victory. The Tower of Mastery needs 16
-  manas and the AI neither trades resources nor conquers for mana, so the estimate is out of
-  reach in every measured game; Great Prophets lightbulb instead of building the six altar
+  manas, which the AI neither seeks in trades nor conquers for (and it does not pursue the Tower
+  any more, the owner's decision); Great Prophets lightbulb instead of building the six altar
   stages; domination needs two thirds of the land and the siege operations take about one city
   per war; the religious victory (80% of the world's people) is not pursued.
-- Casters ("Spellcasting"): the AI casts with the casters it has but trains almost none (no AI
-  builds a Mage Guild unless the Catacomb Libralus gives it one); training them for their fight
-  spells cost wins in three attempts (docs/AI_LOG.md). Not tried: casters for a lasting summon (the
-  Sheaim's Raise Skeleton, an army unit a turn while at war), and magic earlier in the game
-  (research values the first caster unit with a flat bonus, not by the spells our mana would give
-  it, and Knowledge of the Ether comes around turn 230). Nothing goes after the mana a sphere needs
-  (no trade for mana, mana nodes only for the Tower of Mastery). Summons attack only next to the
-  caster; a lasting summon is an army unit with no plan of its own; world spells keep their own
-  timing (`world_spells.rs`). Civilization mechanics handled and tried: "Civilization-specific"
-  and docs/AI_LOG.md (Sheaim planar gates, Infernal and Mercurian projects, Khazad vaults and
-  Armageddon rituals have no logic).
+- Casters ("Spellcasting"): a small corps by role and mana nodes on our raw mana (round 7a).
+  Magic leaders beeline Sorcery after the economy's tier 2, keep a caster for every four field
+  units once they have it, and count their Mages in their wars ("Magic civilizations"); opening
+  the school earlier cost them the economy (docs/AI_LOG.md). Other civilizations still value
+  Knowledge of the Ether with a flat bonus and get it around turn 230. Not tried: casters for a lasting summon (the Sheaim's Raise Skeleton, an
+  army unit a turn while at war), a caster's sphere chosen for its role (a terraformer is a caster
+  that happens to know Spring or Scorch), trading for the mana a sphere needs, and a Mage sent to
+  the city whose siege it would turn (sending it to the threatened city killed the casters with
+  the cities: docs/AI_LOG.md, "Magic civilizations"). Most of a Mage's turns at peace still go to
+  FfH's free cast (Haste, Dance of Blades), and the barrage fires about 8 times a game: the casts
+  that matter come at the end of the turn and in strikes. A
+  lasting summon is an army unit with no plan of its own; world spells keep their own timing
+  (`world_spells.rs`), and the defensive ones (Sanctuary, March of the Trees) wait for FfH's two
+  wars: a losing war was the wrong moment without an estimate of the invasion coming
+  (docs/AI_LOG.md). Civilization mechanics handled and tried: "Civilization-specific"
+  and docs/AI_LOG.md (Infernal and Mercurian projects, Khazad vaults and Armageddon rituals have
+  no logic; the Sheaim's Planar Gates are valued by their creatures, "Cities", effects in the
+  rules' code).
+  Casters march to the front in the stacks (`CASTER_STACKS`); a player with two operations at once
+  spreads them over both, and a stack too small to join leaves them on their own, so half the
+  strikes still find no Mage within range.

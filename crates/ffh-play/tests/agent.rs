@@ -298,7 +298,8 @@ fn t11_a_panic_is_reported_with_its_repro() {
     assert!(crashed.req_str("location").unwrap().contains("transport"));
     let autosave = crashed.req_str("autosave").unwrap().to_string();
     let journal = crashed.req_str("journal").unwrap().to_string();
-    assert!(autosave.contains("/auto/T0") && std::path::Path::new(&autosave).is_file(), "{autosave}");
+    // (Windows writes the path with backslashes.)
+    assert!(autosave.replace('\\', "/").contains("/auto/T0") && std::path::Path::new(&autosave).is_file(), "{autosave}");
     assert_eq!(crashed.req_str("repro"), Ok(format!("ffh-play replay {journal} --from {autosave}").as_str()));
     let (code, _) = a.finish();
     assert_eq!(code, 3);

@@ -20,6 +20,11 @@ use crate::Ai;
 pub struct Amurites;
 
 impl CivPlay for Amurites {
+    /// FfH's `AI_chooseTech` research plan (`tech_plan::goals`).
+    fn tech_goals(&self, _g: &Game, _p: PlayerId) -> super::TechGoals {
+        super::TechGoals { beelines: vec!["TECH_BOWYERS", "TECH_SORCERY"], ..Default::default() }
+    }
+
     fn production(&self, _ai: &Ai, g: &Game, c: CityId, threat: i32) -> Option<Choice> {
         super::unique_casters(g, c, threat)
     }

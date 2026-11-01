@@ -68,13 +68,12 @@ impl Game {
         let d = self.d;
         let mut count = 0;
 
+        // (The building's own fields are tested before the pure `getNumActiveBuilding`.)
         for building in d.buildings.keys() {
-            if self.city_num_active_building(c, building) > 0 {
-                let info = &d.buildings[building];
-                if info.power_bonus == Some(bonus) {
-                    if info.dirty_power == dirty {
-                        count += self.city_num_active_building(c, building);
-                    }
+            let info = &d.buildings[building];
+            if info.power_bonus == Some(bonus) && info.dirty_power == dirty {
+                if self.city_num_active_building(c, building) > 0 {
+                    count += self.city_num_active_building(c, building);
                 }
             }
         }
@@ -89,7 +88,11 @@ impl Game {
         let mut modifier = 0;
 
         for building in d.buildings.keys() {
-            modifier += self.city_num_active_building(c, building) * d.buildings[building].bonus_yield_modifier[bonus][yield_type.idx()];
+            // A zero modifier adds nothing: skip the (pure) `getNumActiveBuilding`.
+            let building_modifier = d.buildings[building].bonus_yield_modifier[bonus][yield_type.idx()];
+            if building_modifier != 0 {
+                modifier += self.city_num_active_building(c, building) * building_modifier;
+            }
         }
 
         modifier
@@ -105,8 +108,14 @@ impl Game {
         let mut good_value = value.max(0);
         let mut bad_value = value.min(0);
 
+        // (Buildings without a change for this bonus add 0 to `good_value`: skipped, together
+        // with their pure `getNumActiveBuilding`; same in the happiness loop below.)
         for building in d.buildings.keys() {
-            let value = d.buildings[building].bonus_health_changes[bonus] * self.city_num_active_building(c, building);
+            let health_change = d.buildings[building].bonus_health_changes[bonus];
+            if health_change == 0 {
+                continue;
+            }
+            let value = health_change * self.city_num_active_building(c, building);
 
             if value >= 0 {
                 good_value += value;
@@ -123,7 +132,11 @@ impl Game {
         let mut bad_value = value.min(0);
 
         for building in d.buildings.keys() {
-            let value = self.city_num_active_building(c, building) * d.buildings[building].bonus_happiness_changes[bonus];
+            let happiness_change = d.buildings[building].bonus_happiness_changes[bonus];
+            if happiness_change == 0 {
+                continue;
+            }
+            let value = self.city_num_active_building(c, building) * happiness_change;
 
             if value >= 0 {
                 good_value += value;
@@ -227,9 +240,9 @@ impl Game {
                 self.city_change_free_bonus(c, bonus, num_free_bonuses * change);
             }
 
-            // C++ quirk: not multiplied by `iChange`, so removing (or re-processing) the
-            // building moves the global counter the same way as adding it.
-            self.change_global_counter(info.modify_global_counter);
+            // Not in C++ (2026-10-28): multiplied by `change`, so removing the building undoes it
+            // (C++ moved the counter the same way again).
+            self.change_global_counter(info.modify_global_counter * change);
             if info.resist_magic != 0 {
                 // changeResistMagic
                 self.cities[c].resist_magic += info.resist_magic * change;
@@ -238,7 +251,10 @@ impl Game {
                 if change > 0 {
                     self.city_set_plot_radius(c, info.plot_radius);
                 } else {
-                    self.city_set_plot_radius(c, 2);
+                    // Not in C++ (2026-10-28): back to the radius the city has without the
+                    // building (C++ set 2, shrinking a full Kuriotates city).
+                    let base = self.city_base_plot_radius(c);
+                    self.city_set_plot_radius(c, base);
                 }
             }
             // FfH: End Add
@@ -786,9 +802,6 @@ impl Game {
             }
 
             if old_power != self.city_is_power(c) {
-                let owner = self.cities[c].owner;
-                self.player_invalidate_yield_rank_cache(owner, None);
-
                 self.city_update_commerces(c);
 
                 // UI: setInfoDirty for the active team.

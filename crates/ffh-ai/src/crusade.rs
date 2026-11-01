@@ -545,11 +545,11 @@ fn objective(g: &Game, idx: usize, from: PlotIdx) -> Option<PlotIdx> {
         if !g.plot_is_visible(q, host_team) {
             return false;
         }
-        let defs = crate::campaign::visible_defenders(g, host_team, q);
-        crate::campaign::simulate(g, q, &defs, &host_units, 0).used.is_some()
+        let defs = crate::combat_sim::visible_defenders(g, host_team, q);
+        crate::combat_sim::simulate(g, q, &defs, &host_units, 0, crate::combat_sim::Order::Strike, 100, 100).used.is_some()
     };
     let defense = |q: PlotIdx| -> i64 {
-        crate::campaign::visible_defenders(g, host_team, q).iter().map(|&u| crate::view::defense_power(g, u) as i64).sum::<i64>()
+        crate::combat_sim::visible_defenders(g, host_team, q).iter().map(|&u| crate::view::defense_power(g, u) as i64).sum::<i64>()
             * (100 + g.map.plots[q].plot_city.map_or(0, |x| g.city_defense_modifier(x, false)) as i64)
             / 100
     };
@@ -787,6 +787,7 @@ pub fn host_turn(g: &mut Game, p: PlayerId) {
                 at_war: true,
                 need: 0,
                 have: next.iter().map(|&grp| g.groups[grp].units.len() as i32).sum(),
+                probe: false,
             };
             let mut v2 = View::new(g, p);
             crate::campaign::strike(g, &mut v2, &op);

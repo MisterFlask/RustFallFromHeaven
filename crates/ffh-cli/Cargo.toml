@@ -13,3 +13,8 @@ path = "src/main.rs"
 ffh-data = { path = "../ffh-data" }
 ffh-core = { path = "../ffh-core" }
 ffh-ai = { path = "../ffh-ai" }
+ffh-cppai = { path = "../ffh-cppai" }
+
+[dev-dependencies]
+# The observed games of ffh-play are ffh autoplay games (`run::tests`).
+ffh-play = { path = "../ffh-play" }

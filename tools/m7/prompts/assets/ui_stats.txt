@@ -1,0 +1,17 @@
+The attached image is cut from a screenshot of my fantasy strategy game's interface. Draw a sheet of 16 NEW interface icons in exactly the same art style as the small icons in its panels (the gold coin, the wheat sheaf, the hammer, the blue flask, the purple music note, the boot, the open book, the trophy, the gear, the helmet, the castle): bright saturated HD pixel art, crisp chunky square pixels (each icon is built from roughly 20 x 20 big pixel blocks), a dark coloured outline (deep brown or navy, not thin black lines), simple shading with strong light from the upper-left, a cheerful 16-bit SNES-era look, a bold readable silhouette that still reads when shrunk to 24 pixels. Arrange them in a 4 x 4 grid: four rows of four icons, each icon centred in its own equal square cell, every icon the same size and filling about 65% of its cell, with wide empty space between neighbours so no two icons touch. No frames, no buttons or plates behind the icons, no text, no letters or numbers unless an icon below asks for them, no labels, no grid lines. Background: flat solid pure magenta #FF00FF filling the whole image, with no gradient. The icons, row by row, left to right:
+1. a single shiny gold coin seen from the front, like the screenshot's gold icon
+2. a bound golden wheat sheaf, like the screenshot's food icon
+3. a hammer with a steel head and a wooden handle, like the screenshot's production icon
+4. a round blue glass flask with bubbling blue liquid, like the screenshot's research icon
+5. a purple double musical note, like the screenshot's culture icon
+6. a small brown leather coin purse with two gold coins spilling from it
+7. a round golden smiling face
+8. a round red frowning face
+9. a shiny red apple with a green leaf
+10. a dark green glass poison bottle with a cork and green bubbles rising
+11. a small golden figure of a standing person, like the screenshot's population icon
+12. a golden trophy cup with two handles, like the screenshot's trophy icon
+13. a glowing violet magic crystal cluster
+14. a black eclipsed sun ringed by a fiery red corona
+15. a golden star inside a green laurel wreath
+16. a steel sword pointing straight up, with a gold crossguard

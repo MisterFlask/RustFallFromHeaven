@@ -100,8 +100,8 @@ take-control offers, the citizen governor, trade denials, end of turn, war-plan 
 AI's queued follow-up attack, automation and wake-ups, `AI_isDeclareWar` (AI units enter closed
 borders or declare war when moving only with a war plan ready; inert because `ffh-ai` declares war
 explicitly). Three events give a human the AI's answer because the port has no popup hook for them:
-Heroic Gesture 2, Great Mediator 2 (`ffh/random_events_b.rs:1136/1169`) and Wedding Feud 3
-(`random_events_a.rs:2844`).
+Heroic Gesture 2, Great Mediator 2 (`ffh/random_events_b.rs`: `do_heroic_gesture2`, `do_great_mediator2`) and Wedding Feud 3
+(`random_events_a.rs`: `do_wedding_feud3`).
 
 ## D. Data flags
 
@@ -111,7 +111,11 @@ Heroic Gesture 2, Great Mediator 2 (`ffh/random_events_b.rs:1136/1169`) and Wedd
   Consume Soul, Create Battering Ram, Enter Portal, Herald's Call, Hide, Impersonate Leader, Kidnap,
   Mask, Open Chest, Promote Settlement, Read the Grimoire, Reveal, Sacrifice Altar, Sacrifice Pyre,
   Sing, Slave Trade Buy, Slave Trade Sell, Sprint, Taunt, Tsunami, Wane. These are capabilities the
-  old AI could not value: opening one needs AI logic for it (the lairs go with A4).
+  old AI could not value: opening one needs AI logic for it (the lairs go with A4). **Moved** (2026-10-27): the
+  rules no longer check `bAllowAI` (docs/PORTING.md, "Changes from FFH2"); ffh-ai keeps the 57 out
+  of its generic casting and casts Arena Battle, Sacrifice Altar, Wane and Kidnap by logic of their
+  own (`unflagged.rs`); the C++ AI port keeps the check. Opening another one is now an ffh-ai
+  change alone.
 - Trigger `bOtherPlayerAI` (Saundra, Switch Civs never pick a human as the other player),
   civilization `bAIPlayable` (equal to `bPlayable` for every civilization), promotion `bAIControl`
   (Enraged: the unit acts on its own, for a human too): legitimate.

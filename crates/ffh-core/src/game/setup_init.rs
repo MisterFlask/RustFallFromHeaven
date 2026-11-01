@@ -8,9 +8,10 @@
 //! Start normalization (`normalizeAddExtras`) needs `CvPlayerAI::AI_foundValue(x, y, -1, true)`
 //! (`Game::player_ai_found_value`, found_value.rs).
 
-use std::cmp::{max, min};
+use std::cmp::max;
 
 use crate::defs::*;
+use crate::controller::AiHook;
 use crate::game::Game;
 use crate::ids::*;
 use crate::setup::SlotStatus;
@@ -380,6 +381,11 @@ impl Game {
 
         // AI: CvPlayerAI::AI_updateFoundValues() for every alive player (refreshes the AI
         // found-value caches of plots and areas; no rules effect).
+        for p in self.player_ids() {
+            if self.players[p].alive {
+                self.ai_hook(p, AiHook::UpdateFoundValues(p));
+            }
+        }
     }
 
     /// C++ `CvGame::regenerateMap` (pre-game "regenerate map": kill units/cities/deals, clear
@@ -1546,6 +1552,11 @@ impl Game {
                 self.map_update_irrigated();
 
                 // AI: CvTeamAI::AI_updateAreaStragies() for every alive team.
+                for t in self.team_ids() {
+                    if self.team_is_alive(t) {
+                        self.ai_hook_team(t, AiHook::TeamAreaStrategies(t));
+                    }
+                }
             }
         }
     }

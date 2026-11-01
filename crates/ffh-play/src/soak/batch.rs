@@ -2,11 +2,7 @@
 //! `ffh-play soak run` process with a timeout, so panics, aborts, stack overflows and hangs are
 //! all reported, with the command that reproduces each failure.
 
-use std::io::Read;
 use std::path::{Path, PathBuf};
-use std::process::Stdio;
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use ffh_data::*;
@@ -127,40 +123,25 @@ pub struct BatchOptions {
 pub fn run_all(d: &GameData, exe: &Path, games: Vec<SoakGame>, o: &BatchOptions) -> Vec<Done> {
     let n = games.len();
     eprintln!("{n} soak games, {} jobs, timeout {} s", o.jobs, o.timeout.as_secs());
-    let games = Arc::new(games);
-    let next = Arc::new(AtomicUsize::new(0));
-    let results: Arc<Mutex<Vec<Option<Done>>>> = Arc::new(Mutex::new(vec![None; n]));
     let t0 = Instant::now();
-    std::thread::scope(|scope| {
-        for _ in 0..o.jobs.max(1) {
-            let (games, next, results) = (games.clone(), next.clone(), results.clone());
-            scope.spawn(move || loop {
-                let i = next.fetch_add(1, Ordering::SeqCst);
-                if i >= games.len() {
-                    break;
-                }
-                let done = run_child(d, exe, &games[i], o);
-                eprintln!(
-                    "[{:4}/{n} {:6.0}s] {:7} turn {:>4} {:>6.1}s  {}  {}",
-                    i + 1,
-                    t0.elapsed().as_secs_f64(),
-                    done.status,
-                    done.turn,
-                    done.secs,
-                    done.game.describe(d),
-                    if done.status == "ok" { format!("{} {}", done.end, done.stats) } else { done.detail.lines().next().unwrap_or("").to_string() }
-                );
-                results.lock().unwrap_or_else(|e| e.into_inner())[i] = Some(done);
-            });
-        }
-    });
-    let mut results = results.lock().unwrap_or_else(|e| e.into_inner());
-    results.drain(..).map(|r| r.expect("every game ran")).collect()
+    ffh_harness::pool::run_all(&games, o.jobs, |i, game| {
+        let done = run_child(d, exe, game, o);
+        eprintln!(
+            "[{:4}/{n} {:6.0}s] {:7} turn {:>4} {:>6.1}s  {}  {}",
+            i + 1,
+            t0.elapsed().as_secs_f64(),
+            done.status,
+            done.turn,
+            done.secs,
+            done.game.describe(d),
+            if done.status == "ok" { format!("{} {}", done.end, done.stats) } else { done.detail.lines().next().unwrap_or("").to_string() }
+        );
+        done
+    })
 }
 
 /// One `soak run` child with a timeout.
 fn run_child(d: &GameData, exe: &Path, game: &SoakGame, o: &BatchOptions) -> Done {
-    let t = Instant::now();
     // The game and the run options that decide its checks: the repro has both.
     let run_args: Vec<String> = game.to_args(d).into_iter().chain(o.extra.iter().cloned()).collect();
     let mut args: Vec<String> = vec!["soak".into(), "run".into()];
@@ -183,48 +164,18 @@ fn run_child(d: &GameData, exe: &Path, game: &SoakGame, o: &BatchOptions) -> Don
         secs: 0.0,
         repro: format!("ffh-play soak run {}", run_args.join(" ")),
     };
-    let child = std::process::Command::new(exe).args(&args).env("RUST_BACKTRACE", "0").stdout(Stdio::piped()).stderr(Stdio::piped()).spawn();
-    let mut child = match child {
-        Ok(c) => c,
+    let run = match ffh_harness::child::run(std::process::Command::new(exe).args(&args), o.timeout) {
+        Ok(run) => run,
         Err(e) => {
             done.status = "error".into();
             done.detail = format!("spawn {}: {e}", exe.display());
             return done;
         }
     };
-    let mut stdout = child.stdout.take().expect("piped stdout");
-    let mut stderr = child.stderr.take().expect("piped stderr");
-    let out_thread = std::thread::spawn(move || {
-        let mut v = String::new();
-        let _ = stdout.read_to_string(&mut v);
-        v
-    });
-    let err_thread = std::thread::spawn(move || {
-        let mut v = String::new();
-        let _ = stderr.read_to_string(&mut v);
-        v
-    });
-    let mut timed_out = false;
-    let status = loop {
-        match child.try_wait() {
-            Ok(Some(st)) => break Some(st),
-            Ok(None) => {}
-            Err(_) => break None,
-        }
-        if t.elapsed() > o.timeout {
-            let _ = child.kill();
-            timed_out = true;
-            break child.wait().ok();
-        }
-        std::thread::sleep(Duration::from_millis(50));
-    };
-    let out = out_thread.join().unwrap_or_default();
-    let err = err_thread.join().unwrap_or_default();
-    done.secs = t.elapsed().as_secs_f64();
+    done.secs = run.secs;
     let mut panic_lines = Vec::new();
     let mut progress = String::new();
-    for line in out.lines() {
-        let (k, v) = line.split_once('\t').unwrap_or((line, ""));
+    for (k, v) in run.lines() {
         match k {
             "TURN" => done.turn = v.to_string(),
             "PROGRESS" => progress = v.to_string(),
@@ -242,19 +193,18 @@ fn run_child(d: &GameData, exe: &Path, game: &SoakGame, o: &BatchOptions) -> Don
     if done.turn == "?" && !progress.is_empty() {
         done.turn = progress;
     }
-    let ok_exit = status.is_some_and(|s| s.success());
-    done.status = if timed_out {
+    let has = |key: &str| run.lines().any(|(k, _)| k == key);
+    done.status = if run.timed_out {
         done.detail = format!("killed after {} s", o.timeout.as_secs());
         "timeout"
-    } else if out.lines().any(|l| l.starts_with("PANIC\t")) {
+    } else if has("PANIC") {
         "panic"
-    } else if out.lines().any(|l| l.starts_with("STUCK\t")) {
+    } else if has("STUCK") {
         "stuck"
-    } else if out.lines().any(|l| l.starts_with("ERROR\t")) {
+    } else if has("ERROR") {
         "error"
-    } else if !ok_exit {
-        let tail: Vec<&str> = err.lines().rev().take(6).collect();
-        done.detail = format!("{}: {}", status.map_or("?".to_string(), |s| s.to_string()), tail.into_iter().rev().collect::<Vec<_>>().join(" | "));
+    } else if !run.success() {
+        done.detail = run.crash_detail();
         "crash"
     } else {
         "ok"

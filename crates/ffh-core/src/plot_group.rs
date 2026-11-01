@@ -13,7 +13,6 @@
 
 use crate::game::Game;
 use crate::ids::*;
-use crate::path::{count_plot_group, FinderCtx, ASNL_ADDCLOSED};
 use crate::structs::XYCoords;
 use ffh_data::*;
 
@@ -78,18 +77,15 @@ impl Game {
         if let Some(&head) = self.plot_groups[pg].plots.first() {
             let plot = self.map.plot_soren(head.x, head.y).expect("plot group plot");
 
-            let mut count = 0;
-
             // SetData(&GC.getPlotGroupFinder(), &iCount) +
-            // GeneratePath(&GC.getPlotGroupFinder(), x, y, -1, -1, false, eOwner)
-            let ctx = FinderCtx { start_x: head.x, start_y: head.y, dest_x: -1, dest_y: -1, info: owner.i() };
-            let closed = self.map_flood_fill(plot, false, |g, parent, node| {
-                let parent = parent.map(|q| g.finder_node(q));
-                g.plot_group_valid(parent.as_ref(), &g.finder_node(node), 0, &ctx)
+            // GeneratePath(&GC.getPlotGroupFinder(), x, y, -1, -1, false, eOwner): `plotGroupValid`
+            // on the plots the nodes stand for (`plot_group_valid_step`; the start node is
+            // valid), and `countPlotGroup` counts the closed nodes.
+            let closed = self.map_flood_fill(plot, false, |g, parent, node| match parent {
+                None => true,
+                Some(old_plot) => g.plot_group_valid_step(old_plot, node, owner),
             });
-            for q in closed {
-                count_plot_group(&self.finder_node(q), ASNL_ADDCLOSED, &mut count);
-            }
+            let count = closed.len() as i32;
 
             if count == self.plot_groups[pg].plots.len() as i32 {
                 return;

@@ -4,6 +4,9 @@
 <!-- Copyright Firaxis Games 2005 -->
 <!-- -->
 <!-- Terrain Infos -->
+<!-- iEngagementSlotsChange is this game's own (GAMEOPTION_ENGAGEMENTS): it changes each side's
+     engagement slots on a flat plot without a feature that sets its own change (open land +2);
+     hills use the define ENGAGEMENT_SLOTS_HILLS instead. -->
 <Civ4TerrainInfos xmlns="x-schema:CIV4TerrainSchema.xml">
 	<TerrainInfos>
 		<TerrainInfo>
@@ -32,6 +35,7 @@
 			<iSeeThrough>1</iSeeThrough>
 			<iBuildModifier>0</iBuildModifier>
 			<iDefense>0</iDefense>
+			<iEngagementSlotsChange>2</iEngagementSlotsChange>
 			<Button>Art/Interface\Buttons\WorldBuilder\Terrain_Grass.dds</Button>
 			<FootstepSounds>
 				<FootstepSound>
@@ -193,6 +197,7 @@
 			<iSeeThrough>1</iSeeThrough>
 			<iBuildModifier>0</iBuildModifier>
 			<iDefense>0</iDefense>
+			<iEngagementSlotsChange>2</iEngagementSlotsChange>
 			<Button>Art/Interface\Buttons\WorldBuilder\Terrain_Plains.dds</Button>
 			<FootstepSounds>
 				<FootstepSound>
@@ -350,6 +355,7 @@
 			<iSeeThrough>1</iSeeThrough>
 			<iBuildModifier>25</iBuildModifier>
 			<iDefense>-25</iDefense>
+			<iEngagementSlotsChange>2</iEngagementSlotsChange>
 			<Button>Art/Interface\Buttons\WorldBuilder\Terrain_Desert.dds</Button>
 			<FootstepSounds>
 				<FootstepSound>
@@ -630,6 +636,7 @@
 			<iSeeThrough>1</iSeeThrough>
 			<iBuildModifier>25</iBuildModifier>
 			<iDefense>0</iDefense>
+			<iEngagementSlotsChange>2</iEngagementSlotsChange>
 			<Button>Art/Interface\Buttons\WorldBuilder\Terrain_Tundra.dds</Button>
 			<FootstepSounds>
 				<FootstepSound>
@@ -783,6 +790,7 @@
 			<iSeeThrough>1</iSeeThrough>
 			<iBuildModifier>50</iBuildModifier>
 			<iDefense>0</iDefense>
+			<iEngagementSlotsChange>2</iEngagementSlotsChange>
 			<Button>Art/Interface\Buttons\WorldBuilder\Terrain_Ice.dds</Button>
 			<FootstepSounds>
 				<FootstepSound>
@@ -946,6 +954,7 @@
 			<iSeeThrough>1</iSeeThrough>
 			<iBuildModifier>25</iBuildModifier>
 			<iDefense>-25</iDefense>
+			<iEngagementSlotsChange>2</iEngagementSlotsChange>
 			<Button>Art/Interface\Buttons\WorldBuilder\Terrain_Desert.dds</Button>
 			<FootstepSounds>
 				<FootstepSound>
@@ -1252,6 +1261,7 @@
 			<iSeeThrough>1</iSeeThrough>
 			<iBuildModifier>0</iBuildModifier>
 			<iDefense>0</iDefense>
+			<iEngagementSlotsChange>2</iEngagementSlotsChange>
 			<Button>Art/Interface\Buttons\WorldBuilder\Terrain_Plains.dds</Button>
 			<FootstepSounds>
 				<FootstepSound>

@@ -1,5 +1,6 @@
 // wasi.js: a Rust program (wasi_prog.rs) built for wasm32-wasip1 runs on the in-memory file
-// system and prints what the same program prints natively in a real directory; plus direct
+// system and prints what the same program prints natively in a real directory (on Linux, the
+// reference; elsewhere the WASI run is checked alone); plus direct
 // checks of fd_readdir's cookies and of errno values. The program's part is skipped when rustc
 // or its wasm32-wasip1 target is missing.
 //   node --test crates/ffh-web/site/test/
@@ -45,19 +46,25 @@ test("a Rust std program runs on wasi.js as it does natively", { timeout: 120000
   const dir = mkdtempSync(join(tmpdir(), "ffh-wasi-"));
   try {
     rustc(["--target", "wasm32-wasip1", prog, "-o", join(dir, "prog.wasm")]);
-    rustc([prog, "-o", join(dir, "prog-native")]);
-    const work = join(dir, "work");
-    spawnSync("mkdir", ["-p", work]);
-    const native = spawnSync(join(dir, "prog-native"), [], { encoding: "utf8", env: { PROG_DIR: work, PROG_GREETING: "hi" } });
-    assert.equal(native.status, 0, native.stderr);
-    const nativeOut = native.stdout.trimEnd().split("\n");
+    // The native run is the reference only on Linux (wasi_prog.rs: std::fs as Rust sees it there;
+    // Windows renames, deletes open files and numbers its errors otherwise): elsewhere the WASI
+    // run is checked without it.
+    let nativeOut = null;
+    if (process.platform === "linux") {
+      rustc([prog, "-o", join(dir, "prog-native")]);
+      const work = join(dir, "work");
+      spawnSync("mkdir", ["-p", work]);
+      const native = spawnSync(join(dir, "prog-native"), [], { encoding: "utf8", env: { PROG_DIR: work, PROG_GREETING: "hi" } });
+      assert.equal(native.status, 0, native.stderr);
+      nativeOut = native.stdout.trimEnd().split("\n");
+    }
 
     const bytes = readFileSync(join(dir, "prog.wasm"));
     const a = await runWasm(bytes, { PROG_DIR: "/work", PROG_GREETING: "hi" });
     assert.equal(a.code, 0, a.err.join("\n"));
     // Everything but the checksum line's value is compared; then the checksum too (it covers
     // the same lines).
-    assert.deepEqual(a.out, nativeOut);
+    if (nativeOut) assert.deepEqual(a.out, nativeOut);
     assert.match(a.out.at(-1), /^checksum [0-9a-f]{16} over \d+ lines$/);
     // stderr: line buffered, the last line without a newline flushed at exit.
     assert.equal(a.err.length, 2, a.err.join("\n"));
@@ -72,7 +79,7 @@ test("a Rust std program runs on wasi.js as it does natively", { timeout: 120000
     const dirty = a.fs.takeDirty();
     // (a directory renamed is reported by its old and new paths, not its files')
     assert.ok(dirty.has("/work/a/b2") && dirty.has("/work/a/b") && dirty.has("/work/many") && dirty.has("/work/a/copy.txt"), `${dirty.size} paths`);
-    t.diagnostic(`${a.out.length} lines match the native run; ${a.out.at(-1)}`);
+    t.diagnostic(`${a.out.length} lines ${nativeOut ? "match the native run" : `(not compared: no native reference on ${process.platform})`}; ${a.out.at(-1)}`);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

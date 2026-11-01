@@ -130,7 +130,7 @@ fn t12_http_end_to_end() {
     let index = c.get("/");
     assert_eq!(index.status, 200);
     assert!(index.header("Content-Type").unwrap().starts_with("text/html"));
-    assert!(String::from_utf8_lossy(&index.body).contains("<title>ffh-play</title>"));
+    assert!(String::from_utf8_lossy(&index.body).contains("<title>Fall from Heaven</title>"));
     let data = c.get("/api/data");
     assert_eq!(data.status, 200);
     assert!(data.json().get("tables").and_then(|t| t.get("UnitType")).is_some());

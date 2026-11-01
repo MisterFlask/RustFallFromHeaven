@@ -1,0 +1,128 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>r3d shader compile times</title>
+<pre id="log"></pre>
+<script type="module">
+// Compiles the programs a configuration of the renderer builds -- the pipeline's and the HD-2D
+// mode's (pipeline.js pipelinePrograms, hd2d/passes.js hd2dPrograms) with the defines and options
+// the mode's hooks give (Map3D.pipelineArgs), for `?renderer=3d|hd2d` (hd2d by default) and the
+// page's `?r3d=` override, read as the renderer reads it -- and logs how long each takes to link
+// and then to draw once into the targets the pipeline draws it into (docs/R3D.md §11.1, "Direct3D":
+// ANGLE's Direct3D 11 backend links a program for its lowest output only and compiles it again at
+// its first draw into all of them; the scene's programs put a constant at the lowest, so their link
+// is quick and the first draw is where they compile, unless the scene is packed: one output each,
+// compiled at link). One program at a time; `?parallel=1` creates them all at once, as a start
+// does, waits for every link, then draws them in the warm-up's order. `?only=terrain` takes one.
+import { Program, FULLSCREEN_VS, texture, framebuffer, depthBuffer, depthTexture } from "/app/r3d/gl.js";
+import { pipelinePrograms, hdrTargets } from "/app/r3d/pipeline.js";
+import { hd2dPrograms } from "/app/r3d/hd2d/passes.js";
+import { Map3D, rendererInfo } from "/app/r3d/map3d.js";
+import { MapHd2d } from "/app/r3d/hd2d/index.js";
+const q = new URLSearchParams(location.search);
+const pre = document.getElementById("log");
+const log = (s) => {
+  console.log(s);
+  pre.textContent += s + "\n";
+};
+const ms = (t) => `${t.toFixed(0)} ms`;
+const gl = document.createElement("canvas").getContext("webgl2", { powerPreference: "high-performance" });
+const hdr = hdrTargets(gl);
+// The mode's hooks read only its config and the renderer string: a bare object of its class.
+const mode = q.get("renderer") === "3d" ? "3d" : "hd2d";
+const m = Object.assign(Object.create((mode === "3d" ? Map3D : MapHd2d).prototype), { glName: rendererInfo(gl).name });
+m.cfg = m.loadCfg();
+const [terrainDefines, opts] = m.pipelineArgs();
+const packed = !!opts.packed && hdr;
+const parallel = q.get("parallel") === "1";
+const only = q.get("only");
+// [name, vs, fs, defines]
+const list = [...Object.values(pipelinePrograms(terrainDefines, { ...opts, packed, standin: packed ? opts.standin : null })), ...(mode === "hd2d" ? Object.values(hd2dPrograms(packed)) : [])].filter(([n]) => !only || n === only);
+log(`WebGL renderer: ${m.glName || "(hidden)"}${gl.getExtension("KHR_parallel_shader_compile") ? "" : " (no KHR_parallel_shader_compile)"}`);
+log(`config: renderer=${mode} r3d=${q.get("r3d") ?? "(none)"}: scene ${packed ? "packed" : "unpacked"}; ${parallel ? "all at once" : "one at a time"}`);
+log(`defines: ${list.filter(([, , , d]) => d && Object.keys(d).length).map(([n, , , d]) => `${n} ${Object.keys(d).join(",")}`).join("; ") || "none"}`);
+
+// Where the pipeline first draws each program (pipeline.js `resize`, `render`): the scene's into
+// the packed target (RGBA32UI at location 0) or attachments 1-3 (attachment 0 NONE), the unpack
+// passes into three and two targets, the depth passes into the shadow map (no colour), every other
+// into one target.
+const SCENE = ["terrain", "terrain-standin", "prop", "water", "river", "hd2d-sprite"];
+const DEPTH = ["shadow-terrain", "shadow-prop", "hd2d-sprite-shadow"];
+const targetOf = (n) => (SCENE.includes(n) ? (packed ? "packed" : "scene") : DEPTH.includes(n) ? "depth" : { unpack: 3, "unpack-copy": 2 }[n] ?? 1);
+const F = hdr ? { internal: gl.RGBA16F, format: gl.RGBA, type: gl.HALF_FLOAT } : {};
+const t = () => texture(gl, 4, 4, F);
+const depth = depthBuffer(gl, 4, 4);
+const fbo = {
+  packed: framebuffer(gl, [texture(gl, 4, 4, { internal: gl.RGBA32UI, format: gl.RGBA_INTEGER, type: gl.UNSIGNED_INT, filter: gl.NEAREST })], depth),
+  scene: framebuffer(gl, [null, t(), t(), t()], depth),
+  depth: framebuffer(gl, [], depthTexture(gl, 4, 4)),
+  1: framebuffer(gl, [t()]),
+  2: framebuffer(gl, [t(), t()]),
+  3: framebuffer(gl, [t(), t(), t()]),
+};
+const sync = framebuffer(gl, [texture(gl, 1, 1)]);
+// (Unbound, so no program samples a target it draws into: that draw would be skipped.)
+gl.bindTexture(gl.TEXTURE_2D, null);
+const px = new Uint8Array(4);
+// One draw (no vertices to speak of: what counts is the shader the draw needs), each sampler on its
+// own unit (two sampler types on one unit would make the draw invalid, and skip it), then a pixel
+// read to wait for it. Returns the time and a GL error, if any.
+function draw(p) {
+  const t0 = performance.now();
+  gl.bindFramebuffer(gl.FRAMEBUFFER, fbo[targetOf(p.name)]);
+  gl.viewport(0, 0, 4, 4);
+  p.use();
+  for (const [k, unit] of Object.entries(p.units)) gl.uniform1i(p.u[k].loc, unit);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, sync);
+  gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+  const err = gl.getError();
+  return [performance.now() - t0, err ? ` (GL error ${err})` : ""];
+}
+// A throwaway program first, so the first measured one does not pay for what a first compile sets up.
+draw(new Program(gl, "warm-up", FULLSCREEN_VS, "out vec4 o;\nvoid main() { o = vec4(1.0); }").finish());
+
+const rows = []; // [name, link (or linked at), first draw]
+if (!parallel) {
+  for (const [name, ...src] of list) {
+    try {
+      const t0 = performance.now();
+      const p = new Program(gl, name, ...src).finish();
+      const link = performance.now() - t0;
+      const [first, err] = draw(p);
+      rows.push([name, link, first]);
+      log(`compiled ${name} ${ms(link)}, first draw ${ms(first)}${err}`);
+    } catch (e) {
+      log(`failed ${name}: ${String(e.message).slice(0, 200)}`);
+    }
+    await new Promise((r) => setTimeout(r, 0));
+  }
+  const slow = rows.reduce((a, r) => (r[1] + r[2] > a[1] + a[2] ? r : a), rows[0] ?? ["-", 0, 0]);
+  log(`total: link ${ms(rows.reduce((a, r) => a + r[1], 0))}, first draw ${ms(rows.reduce((a, r) => a + r[2], 0))}; slowest ${slow[0]} (${ms(slow[1])} + ${ms(slow[2])})`);
+} else {
+  const t0 = performance.now();
+  const progs = list.map(([name, ...src]) => new Program(gl, name, ...src));
+  const linked = new Map();
+  while (linked.size < progs.length) {
+    for (const p of progs) if (!linked.has(p) && p.done) linked.set(p, performance.now() - t0);
+    if (linked.size < progs.length) await new Promise((r) => setTimeout(r, 1));
+  }
+  const tLinked = performance.now() - t0;
+  const ok = progs.filter((p) => {
+    try {
+      return p.finish();
+    } catch (e) {
+      log(`failed ${p.name}: ${String(e.message).slice(0, 200)}`);
+    }
+  });
+  // The warm-up's order (Pipeline.warm: the scene's programs), then the rest as built.
+  for (const p of [...ok.filter((p) => SCENE.includes(p.name)), ...ok.filter((p) => !SCENE.includes(p.name))]) {
+    const [first, err] = draw(p);
+    rows.push([p.name, linked.get(p), first]);
+    log(`compiled ${p.name} linked at ${ms(linked.get(p))}, first draw ${ms(first)}${err}`);
+  }
+  const last = rows.reduce((a, r) => (r[1] > a[1] ? r : a), rows[0] ?? ["-", 0, 0]);
+  const slow = rows.reduce((a, r) => (r[2] > a[2] ? r : a), rows[0] ?? ["-", 0, 0]);
+  log(`total: all linked ${ms(tLinked)} (last ${last[0]}), first draws ${ms(rows.reduce((a, r) => a + r[2], 0))} (slowest ${slow[0]} ${ms(slow[2])}); wall ${ms(performance.now() - t0)}`);
+}
+log("done");
+</script>

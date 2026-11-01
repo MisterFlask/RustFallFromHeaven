@@ -13,6 +13,7 @@ re-read against the original in the audit wave (see "Audit and stress testing" b
 | Module | Classes | Status |
 |---|---|---|
 | infos/game.rs | Commerce, GameSpeed, World, Climate, SeaLevel, Era, Handicap, GameOption, Goody, Hurry, Upkeep, CultureLevel, Victory, Process, Emphasize | done, audited |
+| infos/game.rs | Diplomacy (+ DiplomacyResponse): the leaders' lines, presentation only (ffh-play `view/speech.rs`) | done |
 | infos/civics.rs | Specialist, Religion, Corporation, CivicOption, Civic, Vote, VoteSource, EspionageMission, Project, Tech | done, audited |
 | infos/unit.rs | Unit, UnitClass, Promotion, Spell, Build, SpecialUnit, Automate, Command, Mission | done, audited |
 | infos/building.rs, civ.rs | Building, BuildingClass, SpecialBuilding, Trait, Civilization, LeaderHead | done, audited |
@@ -47,7 +48,7 @@ re-read against the original in the audit wave (see "Audit and stress testing" b
 | CvEventManager.py (rules handlers) | done, audited (events.rs) |
 | CustomFunctions.py | done, audited (custom.rs; AI war policy and UI functions excluded) |
 | CvGameUtils.py (enabled callbacks: cannotDoCivic, cannotConstruct, cannotResearch, getBuildingCostMod, canBuild, cannotTrain, ...) | done, audited (game_utils.rs) |
-| CvRandomEventInterface.py | done, audited (random_events_a.rs, random_events_b.rs) |
+| CvRandomEventInterface.py | done, audited (random_events_a.rs, random_events_b.rs; the callbacks no XML references were removed, see "Changes from FFH2") |
 | ScenarioFunctions.py | out of scope (scenarios are not the base game) |
 
 ## Audit and stress testing
@@ -81,14 +82,90 @@ each time a unit drops it in a city; found by the `ffh-play soak` human games).
 
 - C++ AI (CvUnitAI, CvCityAI, CvPlayerAI, CvTeamAI, CvSelectionGroupAI, CvGameAI) and
   the Python AI hooks (`AI_chooseTech`, `AI_chooseProduction`, `AI_MageTurn`,
-  `CustomFunctions.warScript`, ...): replaced by the new AI in `ffh-ai`.
-- UI, graphics, sound, networking, Python screens, worldbuilder, replays.
+  `CustomFunctions.warScript`, ...): replaced by the new AI in `ffh-ai`. A port of them for
+  head-to-head comparison lives in `crates/ffh-cppai` (docs/CPPAI.md; not the game's AI).
+- UI, graphics, sound, networking, Python screens, worldbuilder, replays. The help texts of
+  `CvGameTextMgr` are ported for the human client, in ffh-play (`src/view/help/`, docs/HUMAN.md
+  "Help.").
 
 ## Changes from FFH2
 
 Every way the port's rules differ from FFH2 0.41, so the starting point can be reconstructed.
 Matching FFH2 is not a requirement (CLAUDE.md, "FFH2 is the starting point"): this list records
 the differences; it does not ask for them to be undone.
+
+The rules as they stood before the first sweeping rules change are the tag `classic-1`, which
+stays playable at https://misterflask.github.io/RustFallFromHeaven/classic/ (docs/WEB.md, "The
+classic site"); the changes below up to that tag are its differences from FFH2.
+
+**This game's own systems** (after `classic-1`: the owner's design spec "FfH Culture Actions &
+Army Combat", 2026-10-29; each behind its own game option, so FFH2's rules stay playable side by
+side)
+
+- **Cultural channels** (`GAMEOPTION_CULTURE_ACTIONS`, docs/CULTURE.md): a city may channel half its
+  culture (that culture reaches neither the city's culture, its plots nor the culture victory) into
+  one standing order aimed at a civilization, until its owner changes it: Foment Revolt (revolt
+  pressure on the target's cities: unhappiness, disorder, then the city joins the caster; never a
+  capital) or Spread Religion (a chance a turn to spread a religion of the city to one of the
+  target's cities). The effect falls with the square of the distance; a city resists revolt with
+  part of its own culture and its garrison. Not acts of war; the target's leader remembers them.
+  Every channel is public to the civilizations that have met the caster. Option off (the default
+  outside the browser's new-game screen), nothing changes. Save format 8 (it replaced the cultural
+  queue of timed actions of formats 4-5: Festival, Trade Fair, Incite Unrest, Siphon Knowledge,
+  Foment Revolt, Flip City, Spread Religion, removed on the owner's direction of 2026-10-30).
+- **Armies** (`GAMEOPTION_ARMIES`, docs/ARMIES.md): land combat units (not mages, recon units,
+  heroes or summons) serve in named armies, kept one selection group each, or in a city's
+  garrison. An army requisitions soldiers from the cities its owner picks for it (any city,
+  directly ruled or governed) while it is short of its target size: an order at the front of the
+  city's queue that interrupts its production (which keeps its progress) and cannot be taken off
+  by hand. A trained land combat unit goes to its order's destination (the city's garrison by
+  default, another city's garrison, or an army): anywhere but its own garrison it is created in
+  the city as any unit and marches there, moved by the rules once a turn at the end of its
+  owner's turn, after its owner moved (it takes no orders, never attacks, can be attacked and
+  killed), advancing toward an army only
+  while the army is in supply (within 3 plots of the owner's trade network); 5 turns without
+  progress or a destination gone send it to the nearest garrison it can reach. Form, split, join
+  and merge, garrison, rename, disband (march to the nearest garrison), upgrade all, target size,
+  requisition cities. Option off (the default outside the browser's new-game screen), nothing
+  changes. Save format 9 (2026-10-31, the owner's design: requisition and marching recruits
+  replace the invisible transit, "Reinforce to N" and the governed cities' feed mode of formats
+  6-8).
+- **Governors** (`GAMEOPTION_GOVERNORS`, docs/GOVERNORS.md): a player rules four cities directly
+  (the capital always); every other city is governed: its production is its governor's (it cannot
+  be set by hand), developing the city; an army's requisition goes ahead of it (the feed mode,
+  formats 7-8, is gone since format 9, 2026-10-31). World wonders, palaces, rituals and settlers
+  only in directly ruled cities. Governors come from a
+  bench drawn toward the leader's flavors, with a profile (the flavors their city's production
+  leans toward, its citizens' emphasis) and up to two traits (small modifiers of their city);
+  replacing one costs the city 25% of its production and commerce for 5 turns; a lost city's
+  governor leaves the game. Swapping a city in or out of direct rule locks it for 10 turns. A
+  governed city's cultural channel is its owner's, never its governor's (2026-10-30).
+  Option off (the default outside the browser's new-game screen), nothing changes. Save format 7.
+- **Engagement combat** (`GAMEOPTION_ENGAGEMENTS`, requires armies; docs/ENGAGEMENTS.md; being
+  built, phase 6 of the spec, off by default): a land attack is a **formation battle** (revision 4,
+  the owner's Ogre Battle-style engagements, 2026-10-31), not a duel. Each side has its slots (10 a
+  side on open land, fewer on rough ground and against city defenses) and a grid of three rows by
+  `max(2, ceil((slots + 2) / 3))` lanes; the attacker stands in the formation its order gives (the
+  player's) or the rules' auto formation, the defender in the auto formation; large units (giants,
+  elephants, dragons, golems, treants, ...) fill two cells and have 150% HP. Units take one of eight
+  roles (Frontline, Screen, Flanker, Assassin, Archer, Siege, Arcane, Divine) that say what they do
+  from each row (strike, charge, stab, shoot, bombard, cast, heal) with their speed, dodge and crits;
+  units of tier 4 and heroes act once more. Fear sits units out and defensive strikes open the
+  battle (reserves included), then three rounds of passes, fastest first (first strikes are speed),
+  every hit landing at once: melee reaches the front of a lane, shots, spells and stones its back,
+  stabs anyone, a cavalry charge anyone in the field (twice as hard in the first round), each unit
+  takes the units within a lane of it first, then the kill on offer or the most hurt; misses, crits
+  and knock-backs; collateral damage splashes its hits on the target's neighbours (Barrage
+  strengthens it, Drill's protection weakens it); a withdrawal
+  replaces a killing hit (never a city's defenders). The ground: a city halves the attacker's
+  arrows, a forest or jungle halves arrows and stones and stops flanking, hills weaken the
+  attacker's hits and strengthen the defender's arrows; the plot's own defence (cover, hills,
+  walls, culture) no longer adds to the defenders' strength. The plot falls only when no defender
+  is left on it: then the launching group moves in (a city is captured); otherwise nobody moves.
+  Kill credit per kill (G2) and the post-battle effects as for a duel's winner; no Fear rout.
+  Stances are gone. Ships and air units keep the duel; missiles strike one unit (at half a
+  battle's hit, against the plot's own defence, as before the formation battles). Option off,
+  nothing changes. Save format 10.
 
 **Container order and path finding**
 
@@ -107,8 +184,43 @@ the differences; it does not ask for them to be undone.
   over the DLL's own callbacks. Its tie-breaking is deterministic but cannot match the exe: lowest
   total cost first, ties to the most recently opened node, children in `DirectionType` order;
   finders with NULL callbacks cost 1 per step with a `stepDistance`/0 heuristic (only
-  reachability and the closed set are used); `bReuse` keeps the tree only when start, info,
-  cardinal flag and group match. Details in the `path.rs` module comment.
+  reachability and the closed set are used). Details in the `path.rs` module comment.
+
+**No rules caches written by reads** (2026-10-28: C++ fidelity is no longer a goal in itself; `&self`
+now means read-only, so a read can never change a later result or the save bytes)
+
+- **Every path search is fresh.** C++ `FAStar`'s `bReuse` continued the previous search tree
+  (not refreshed when the game changed), and `CvSelectionGroup::getPathFirstPlot` /
+  `getPathEndTurnPlot` read "the last path generated by any group" back from the global finder.
+  Here a group search returns its path (`Game::group_find_path` -> `GroupPath`), and the
+  finders are scratch storage, not saved. Results can differ from a reused search only in ties
+  between equal-cost paths. `CvPlayer::countUnimprovedBonuses` floods the border finder once
+  instead of searching per plot (same answers).
+- **`AI_baseBonusVal` is computed when asked** (C++ cached it per player until the next
+  `AI_updateBonusValue`, each turn, so a value could lag behind the player's cities and techs, and
+  the first read in a turn decided what later reads saw). Feeds `AI_foundValue` (start plots,
+  barbarian cities, the AI's sites).
+- **City ranks are computed when asked** (`findPopulationRank`, `findBaseYieldRateRank`,
+  `findYieldRateRank`, `findCommerceRateRank`; C++ cached them in `mutable` members cleared by
+  `invalidate*RankCache`, and a cache could be stale). They feed `getLargestCityHappiness` and
+  the great-person city choice. Save format 3.
+
+**Add and remove are symmetric** (2026-10-28; `crates/ffh-core/tests/add_remove.rs` adds and
+removes every promotion and building and compares the saves)
+
+- **A building's Armageddon-counter and magic-resistance effects are undone when it goes**
+  (`iModifyGlobalCounter`, `iGlobalResistModify`, `iGlobalResistEnemyModify`). C++ applied them
+  again on removal, so a captured or destroyed wonder (Tower of Alteration, the counter wonders)
+  doubled its effect instead of ending it.
+- **A radius building's city goes back to its own radius when the building goes** (3 for a full
+  Kuriotates city, else 2); C++ set 2.
+- **A city whose radius shrinks stops working the plots outside it.** C++ compared the radii after
+  assigning the new one, so its loop never ran and the city kept citizens on plots it no longer had.
+
+**Unreachable content removed** (2026-10-28): the 138 random-event callbacks of
+CvRandomEventInterface.py that no FFH2 XML references (stock BtS events: Gold Rush, Influenza,
+the Crusade, Blessed Sea, Holy Mountain, Tsunami, ...) were ported and are now deleted; the rules
+could never run them.
 - **`getCombatOdds`** uses IEEE single precision with the same operations as the source types; the
   original ran on the x87 FPU, so rounding at a 0.5/1000 edge could differ in rare cases (it only
   feeds AI pillage decisions and the combat log).
@@ -159,6 +271,14 @@ the differences; it does not ask for them to be undone.
   its once-a-game spell, not rules: the port drops them from the rules, and ffh-ai applies the
   same conditions as its default timing (`world_spells::ready`), so the move alone changes no AI
   game. Hyborem's Whisper had none.
+- **A spell's `bAllowAI` is the AIs' to apply** (user decision, 2026-10-27). C++ `CvUnit::canCast`
+  refuses a spell without `bAllowAI` (57 of the 267) to every AI player. That is the old AI's
+  policy -- spells it could not value -- not a rule, so `unit_can_cast` no longer checks it: the
+  rule is the same for every player. Each AI applies it: ffh-ai's generic casting keeps such
+  spells out (`casting::castable_spells`) and casts only those it has logic for (Arena Battle,
+  Sacrifice Altar, Wane, Kidnap: `ffh-ai/src/unflagged.rs`); the C++ AI port keeps C++'s check
+  (`ffh-cppai`, `ai_can_cast`). With the other 53 kept out, no AI game changes until a spell's
+  logic is added.
 - **AI-only branches in the other spells' requirements are kept** (for now). Unlike CvGameUtils,
   the `isHuman() == False` checks in the other CvSpellInterface `req*` functions are ported as
   written: they decide whether a spell is castable at all for AI players. They are AI policy like
@@ -250,6 +370,10 @@ the differences; it does not ask for them to be undone.
   sync checksums checked against the binary before it). Save format 3.
 
 **Human play (ffh-play; docs/PLAY_DESIGN.md §10)**
+
+- Leaders have lines for each civilization they speak to (`data/text/barks.md`, new writing, not
+  FFH2's), mixed with FFH2's own diplomacy lines; the new-game screen's "Vanilla experience" keeps
+  FFH2's alone. Presentation only.
 
 - Human popups whose rules answer can be deferred are answered at the next control point, as in
   C++: production, events, diplomatic votes, the research popup.

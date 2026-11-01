@@ -276,6 +276,99 @@ pub fn actions(v: &Viewer, units: &[UnitId]) -> Vec<Json> {
             push("upgrade", enabled, command_cmd(units, CommandType::COMMAND_UPGRADE, k, -1), crate::jobj! { "unit" => Json::idx(t), "price" => price });
         }
     }
+
+    // This game's armies (docs/ARMIES.md): form, split, join or merge, garrison, disband,
+    // upgrade all. Only for a selection of army units (heroes, mages, recon units and summons
+    // move on their own).
+    if g.armies_on() && g.army_units_plot(v.h, units).is_ok() {
+        for (enabled, cmd, extra) in army_actions(v, units, plot) {
+            push("army", enabled, cmd, extra);
+        }
+    }
+    out
+}
+
+/// The army buttons of a selection of army units on `plot` (`army`: the action, `label`, `help`).
+fn army_actions(v: &Viewer, units: &[UnitId], plot: PlotIdx) -> Vec<(bool, Json, Json)> {
+    let g = v.g;
+    let h = v.h;
+    let mut out = Vec::new();
+    let mut add = |enabled: bool, cmd: Command, action: &str, label: String, help: &str| {
+        out.push((enabled, cmd.to_json(), crate::jobj! { "army" => action, "label" => label, "help" => help }));
+    };
+    let first = g.units[units[0]].army;
+    // The army all the selected units are in, if one.
+    let one = first.filter(|_| units.iter().all(|&u| g.units[u].army == first));
+    let whole = one.is_some_and(|a| g.army_units(a).len() == units.len());
+    let city = g.map.plots[plot].plot_city.filter(|&c| g.cities[c].owner == h);
+    match one {
+        Some(_) if !whole => add(
+            true,
+            Command::ArmySplit { units: units.to_vec() },
+            "split",
+            "Split into a new army".into(),
+            "The selected units leave their army and form a new one here.",
+        ),
+        Some(_) => {}
+        None => add(
+            true,
+            Command::ArmyForm { units: units.to_vec() },
+            "form",
+            "Form a new army".into(),
+            "The selected units leave their armies or garrison and form a new army, which moves as one.",
+        ),
+    }
+    for &b in &g.players[h].armies {
+        if !g.armies.contains(b) || Some(b) == one || g.army_plot(b) != Some(plot) {
+            continue;
+        }
+        let name = &g.armies[b].name;
+        let (label, help) = if whole {
+            (format!("Merge into the {name}"), "The whole army joins the other; the units on their way to it follow.")
+        } else {
+            (format!("Join the {name}"), "The selected units join that army.")
+        };
+        add(true, Command::ArmyJoin { units: units.to_vec(), army: b }, "join", label, help);
+    }
+    if let Some(c) = city {
+        if units.iter().any(|&u| g.units[u].army.is_some()) {
+            add(
+                true,
+                Command::ArmyGarrison { units: units.to_vec() },
+                "garrison",
+                format!("Join the garrison of {}", crate::view::city_name(g, c)),
+                "The selected units stay in the city as its garrison; a garrison unit that leaves the city forms an army again.",
+            );
+        }
+    }
+    if let (Some(a), true) = (one, whole) {
+        if city.is_none() {
+            let to = g.army_nearest_city(h, plot);
+            add(
+                to.is_some(),
+                Command::ArmyDisband { army: a },
+                "disband",
+                match to {
+                    Some(c) => format!("Disband: march to {}", crate::view::city_name(g, c)),
+                    None => "Disband (no city to go to)".into(),
+                },
+                "The army's units march to the nearest of your cities and join its garrison there; its reinforcements go to that garrison.",
+            );
+        }
+        // Upgrade all: the units with an upgrade (with the gold), the most experienced first.
+        let plan: Vec<(UnitId, UnitType)> = g.army_upgrade_order(a).into_iter().filter_map(|u| g.unit_best_upgrade(u, true).map(|t| (u, t))).collect();
+        if !plan.is_empty() {
+            let price: i32 = plan.iter().map(|&(u, t)| g.unit_upgrade_price(u, t)).sum();
+            let now = plan.iter().any(|&(u, _)| g.unit_best_upgrade(u, false).is_some());
+            add(
+                now,
+                Command::ArmyUpgrade { army: a },
+                "upgrade",
+                format!("Upgrade all: {} unit{} ({price} gold)", plan.len(), if plan.len() == 1 { "" } else { "s" }),
+                "Each unit takes its best upgrade, the most experienced first, while the gold lasts.",
+            );
+        }
+    }
     out
 }
 
@@ -303,21 +396,25 @@ pub fn unit_details(v: &Viewer, u: UnitId) -> Json {
     j
 }
 
-/// `group {units}`: the selected units in detail and the selection's actions.
+/// `group {units}`: the selected units in detail and the selection's actions. A selection with a
+/// marching recruit (this game's armies) has none: the recruit takes no orders until it arrives
+/// (`marching`: why, naming where it goes; each unit's `march` has the rest).
 pub fn group(v: &Viewer, units: &[UnitId]) -> Result<Json, QueryErr> {
     check_selection(v, units)?;
     let g = v.g;
     let plot = selection::plot(g, units);
     let (x, y) = g.map.xy(plot);
     let mirrored = selection::mirrors_group(g, units);
+    let marching = units.iter().find_map(|&u| g.unit_march_refusal(u));
     Ok(crate::jobj! {
         "units" => Json::Arr(units.iter().map(|&u| unit_details(v, u)).collect()),
         "plot" => crate::jarr![x, y],
         "group" => mirrored,
         // The group waits for orders (`pending.ready_groups`).
-        "ready" => mirrored.is_some_and(|grp| g.group_ready_to_move(grp, true) && !crate::decision::is_ai_group(g, grp)),
+        "ready" => mirrored.is_some_and(|grp| crate::decision::is_ready_group(g, grp)),
         "busy" => selection::is_busy(g, units),
-        "actions" => Json::Arr(actions(v, units)),
+        "actions" => Json::Arr(if marching.is_some() { Vec::new() } else { actions(v, units) }),
+        "marching" => marching,
     })
 }
 
@@ -334,7 +431,7 @@ pub fn path(v: &Viewer, finder: &mut PathFinder, units: &[UnitId], x: i32, y: i3
     let from = selection::plot(g, units);
     let (fx, fy) = g.map.xy(from);
     finder.set_group(Some(grp));
-    let ok = finder.generate_path(g, fx, fy, x, y, false, flags, false);
+    let ok = finder.generate_path(g, fx, fy, x, y, false, flags);
     let mut nodes = Vec::new();
     if ok {
         let mut node = finder.last_node().cloned();
@@ -429,8 +526,21 @@ fn details_json(c: &CombatDetails) -> Json {
 /// `combat {units,x,y}`: the attack preview of C++ `setCombatPlotHelp` on a plot the human sees:
 /// the attacker the selection would send, the defender it would meet, the odds of winning (per
 /// mille), of retreating (per mille), both current strengths (x100), and each side's strength
-/// breakdown (`CombatDetails` from `maxCombatStr`).
+/// breakdown (`CombatDetails` from `maxCombatStr`). Under engagements, an attack of land units
+/// on land adds `engagement: true` and decides `valid` by the pool and the defenders
+/// (`battles::combat_fields`); the duel's odds stay beside it (a battle's forecast is the plan's).
 pub fn combat(v: &Viewer, units: &[UnitId], x: i32, y: i32) -> Result<Json, QueryErr> {
+    let j = duel_combat(v, units, x, y)?;
+    let g = v.g;
+    let plot = plot_at(v, x, y)?;
+    if g.engagements_on() && g.engage_applies(units[0], plot) {
+        return Ok(crate::view::battles::combat_fields(v, units, plot, j));
+    }
+    Ok(j)
+}
+
+/// The duel's `combat` preview (C++ `setCombatPlotHelp`).
+fn duel_combat(v: &Viewer, units: &[UnitId], x: i32, y: i32) -> Result<Json, QueryErr> {
     check_selection(v, units)?;
     let plot = plot_at(v, x, y)?;
     let g = v.g;

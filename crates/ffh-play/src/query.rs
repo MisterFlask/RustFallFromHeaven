@@ -1,6 +1,6 @@
-//! Queries (design §3, §4.6): what a client reads. Every query is pure: it runs on the game under
-//! a [`QueryGuard`](crate::guard::QueryGuard), keeps to the allow-list of §2.5 (no game path
-//! finder, no AI valuations), and sees the game from the human's side only (the fog rules of
+//! Queries (design §3, §4.6): what a client reads. Every query is pure: it reads `&Game` (which
+//! has no side effects: ffh-core keeps no caches written by reads), keeps to the allow-list of
+//! §2.5 (no game path finder, no AI valuations), and sees the game from the human's side only (the fog rules of
 //! [`crate::view::fog`]), unless debug reveal is on.
 //!
 //! A query is decoded from the protocol ([`Query::from_json`]) and answered by [`run`] with a
@@ -14,11 +14,10 @@ use std::sync::{Mutex, MutexGuard, PoisonError};
 
 use ffh_core::game::Game;
 use ffh_core::ids::*;
-use ffh_data::CivicType;
+use ffh_data::{CivicType, DiploCommentType};
 use ffh_core::path::{FinderKind, PathFinder};
 
 use crate::decision::Decision;
-use crate::guard::QueryGuard;
 use crate::json::{FieldError, Json};
 use crate::report::{MessageStore, Report};
 use crate::view::map::MapTracker;
@@ -48,10 +47,33 @@ pub enum Query {
     Civics { with: Vec<CivicType> },
     Religions,
     Players,
+    /// The Cultural Pressure panel (docs/CULTURE.md): the public cultural channels.
+    Culture,
+    /// The Armies screen (docs/ARMIES.md): the human's armies and garrisons, with the units on
+    /// their way to each.
+    Armies,
+    /// The Governors screen (docs/GOVERNORS.md): direct rule, each city's governor and mode,
+    /// the bench.
+    Governors,
+    /// Engagement combat (docs/ENGAGEMENTS.md): the plan of an attack on `to` by `by` in
+    /// `formation` (else the rules' auto formation): the pool, both formations, the slots and
+    /// lanes, the ground, the defenders seen and their formation, and the forecast
+    /// (`view::battles::engage_preview`).
+    EngagePreview { by: crate::command::EngageBy, to: (i32, i32), formation: Option<Vec<ffh_core::engagement::Place>> },
+    /// A battle report's log (the battle screens replay it), as the human may see it.
+    BattleLog { report: u32 },
+    /// The human's kept battle reports (summaries, newest first).
+    BattleReports,
     /// What can be traded with `with`, both ways (C++ `buildTradeTable`), with denials.
     Trade { with: PlayerId },
     /// Messages from index `since` (`view.log_next` is the next index).
     Log { since: usize },
+    /// What the leader of `with` says to the human: for `comment` (an `AI_DIPLOCOMMENT_*`), or
+    /// when the human contacts it (`None`: its greeting, or its refusal to talk). `salt` picks
+    /// among its lines (C++ uses the interface's random numbers).
+    Speech { with: PlayerId, comment: Option<DiploCommentType>, salt: i64 },
+    /// The leader moments from index `since` (`view.moments_next` is the next index).
+    Moments { since: usize },
     /// The turn report of the last turn.
     Report,
     /// `{:#?}` of a game object (`unit`, `group`, `city`, `plot`, `player`, `team`, `deal`) or
@@ -101,8 +123,9 @@ impl Layer {
 
 /// Every query name (`q`).
 pub const QUERY_NAMES: &[&str] = &[
-    "status", "pending", "view", "map", "plot", "group", "path", "combat", "city", "techs", "civics", "religions", "players", "trade", "log",
-    "report", "inspect", "text", "ascii", "data", "setup", "saves", "crusades",
+    "status", "pending", "view", "map", "plot", "group", "path", "combat", "city", "techs", "civics", "religions", "players", "culture", "armies", "governors", "engage_preview",
+    "battle_log", "battle_reports", "trade", "log",
+    "speech", "moments", "report", "inspect", "text", "ascii", "data", "setup", "saves", "crusades",
 ];
 
 /// Why a query was refused.
@@ -172,8 +195,16 @@ impl Query {
             Query::Civics { .. } => "civics",
             Query::Religions => "religions",
             Query::Players => "players",
+            Query::Culture => "culture",
+            Query::Armies => "armies",
+            Query::Governors => "governors",
+            Query::EngagePreview { .. } => "engage_preview",
+            Query::BattleLog { .. } => "battle_log",
+            Query::BattleReports => "battle_reports",
             Query::Trade { .. } => "trade",
             Query::Log { .. } => "log",
+            Query::Speech { .. } => "speech",
+            Query::Moments { .. } => "moments",
             Query::Report => "report",
             Query::Inspect { .. } => "inspect",
             Query::Text => "text",
@@ -204,8 +235,25 @@ impl Query {
             },
             "religions" => Query::Religions,
             "players" => Query::Players,
+            "culture" => Query::Culture,
+            "armies" => Query::Armies,
+            "governors" => Query::Governors,
+            "engage_preview" => Query::EngagePreview {
+                by: crate::command::EngageBy::from_json(j)?,
+                to: crate::command::plot_field(j, "to")?.ok_or_else(|| FieldError::missing("to"))?,
+                formation: crate::command::formation_field(j, "formation")?,
+            },
+            // `report`, not `id`: `id` is the envelope's request id (as `inspect`'s `oid`).
+            "battle_log" => Query::BattleLog { report: j.req("report")? },
+            "battle_reports" => Query::BattleReports,
             "trade" => Query::Trade { with: j.req("with")? },
             "log" => Query::Log { since: j.get_or("since", 0)? },
+            "speech" => Query::Speech {
+                with: j.req("with")?,
+                comment: crate::names::opt_field(ffh_data::global(), j, "comment")?,
+                salt: j.get_or("salt", 0)?,
+            },
+            "moments" => Query::Moments { since: j.get_or("since", 0)? },
             "report" => Query::Report,
             "inspect" => Query::Inspect { kind: j.req("kind")?, oid: j.req("oid")? },
             "text" => Query::Text,
@@ -236,8 +284,14 @@ impl Query {
             Query::Path { units, x, y, flags } => j.with("units", ids(units)).with("x", *x).with("y", *y).with("flags", *flags),
             Query::Combat { units, x, y } => j.with("units", ids(units)).with("x", *x).with("y", *y),
             Query::City { city } => j.with("city", *city),
+            Query::EngagePreview { by, to, formation } => {
+                by.put(j).with("to", crate::command::plot_json(to.0, to.1)).with("formation", formation.as_deref().map(crate::command::formation_json))
+            }
+            Query::BattleLog { report } => j.with("report", *report),
             Query::Trade { with } => j.with("with", *with),
             Query::Log { since } => j.with("since", *since),
+            Query::Speech { with, comment, salt } => j.with("with", *with).with("comment", Json::opt_idx(*comment)).with("salt", *salt),
+            Query::Moments { since } => j.with("since", *since),
             Query::Inspect { kind, oid } => j.with("kind", kind.as_str()).with("oid", *oid),
             Query::Ascii { x, y, w, h, layer } => j.with("x", *x).with("y", *y).with("w", *w).with("h", *h).with("layer", layer.name()),
             _ => j,
@@ -256,11 +310,13 @@ pub struct UiState {
     pub view_version: u64,
     /// The map as the `map` query last answered it, for the tile deltas (`map {since}`).
     pub map: MapTracker,
+    /// The game's vanilla experience (`NewGame::vanilla`): leaders speak only FfH2's lines.
+    pub vanilla: bool,
 }
 
 impl Default for UiState {
     fn default() -> UiState {
-        UiState { reveal: false, finder: PathFinder::new(FinderKind::Path), view_version: 0, map: MapTracker::default() }
+        UiState { reveal: false, finder: PathFinder::new(FinderKind::Path), view_version: 0, map: MapTracker::default(), vanilla: false }
     }
 }
 
@@ -290,17 +346,18 @@ pub struct Ctx<'a> {
     /// The game's saves directory.
     pub saves_dir: Option<&'a Path>,
     pub ui: &'a Mutex<UiState>,
+    /// An observed session: `Some(turns left to play)` (`Session::observe_state`).
+    pub observe: Option<i32>,
 }
 
-/// Answers `q` from `g` for `ctx.h` (under a `QueryGuard`).
+/// Answers `q` from `g` for `ctx.h`.
 pub fn run(g: &Game, ctx: &Ctx, q: &Query) -> Result<Json, QueryErr> {
-    let guard = QueryGuard::new(g);
     let reveal = UiState::lock(ctx.ui).reveal;
-    let v = Viewer::new(&guard, ctx.h, reveal);
+    let v = Viewer::new(g, ctx.h, reveal);
     let busy = |what: &str| QueryErr::Busy(format!("{what} is not available during a decision"));
-    let finders = || if guard.finders_busy() { Err(QueryErr::Busy("a rules call holds the path finders".into())) } else { Ok(()) };
     let out = match q {
         Query::Status => view::status(&v, ctx),
+        Query::Pending if ctx.observe.is_some() => crate::decision::Pending::default().to_json(),
         Query::Pending => crate::decision::pending(v.g, ctx.h, ctx.events).to_json(),
         Query::View => view::view(&v, ctx),
         Query::Map { since, epoch } => {
@@ -312,12 +369,8 @@ pub fn run(g: &Game, ctx: &Ctx, q: &Query) -> Result<Json, QueryErr> {
             ui.map.reply(*since, epoch.as_deref())
         }
         Query::Plot { x, y } => view::map::plot(&v, *x, *y)?,
-        Query::Group { units } => {
-            finders()?;
-            view::units::group(&v, units)?
-        }
+        Query::Group { units } => view::units::group(&v, units)?,
         Query::Path { units, x, y, flags } => {
-            finders()?;
             // The search runs without the lock: the finder is taken out and put back (a fresh
             // one stays if the search panics, which is harmless for a cache).
             let mut finder = std::mem::replace(&mut UiState::lock(ctx.ui).finder, PathFinder::new(FinderKind::Path));
@@ -325,19 +378,27 @@ pub fn run(g: &Game, ctx: &Ctx, q: &Query) -> Result<Json, QueryErr> {
             UiState::lock(ctx.ui).finder = finder;
             r?
         }
-        Query::Combat { units, x, y } => {
-            finders()?;
-            view::units::combat(&v, units, *x, *y)?
-        }
+        Query::Combat { units, x, y } => view::units::combat(&v, units, *x, *y)?,
         Query::City { city } => view::city::city(&v, *city)?,
         Query::Techs => view::player::techs(&v),
         Query::Civics { with } => view::player::civics(&v, with),
         Query::Religions => view::player::religions(&v),
         Query::Players => view::player::players(&v),
+        Query::Culture => view::culture::culture(&v),
+        Query::Armies => view::armies::screen(&v),
+        Query::Governors => view::governors::screen(&v),
+        Query::EngagePreview { by, to, formation } => view::battles::engage_preview(&v, by, *to, formation.as_deref())?,
+        Query::BattleLog { report } => view::battles::battle_log(&v, *report)?,
+        Query::BattleReports => view::battles::battle_reports(&v),
         Query::Trade { with } => view::diplo::trade(&v, *with)?,
         Query::Log { since } => match ctx.messages {
             Some(m) => m.since_json(*since),
             None => return Err(busy("the message log")),
+        },
+        Query::Speech { with, comment, salt } => view::speech::speech(&v, *with, *comment, *salt, !UiState::lock(ctx.ui).vanilla)?,
+        Query::Moments { since } => match ctx.messages {
+            Some(m) => m.moments_json(*since),
+            None => return Err(busy("the leader moments")),
         },
         Query::Report => {
             if ctx.in_decision {
@@ -384,8 +445,23 @@ mod tests {
             Query::Civics { with: vec![CivicType::from_usize(2)] },
             Query::Religions,
             Query::Players,
+            Query::Culture,
+            Query::Armies,
+            Query::Governors,
+            Query::EngagePreview { by: crate::command::EngageBy::Army(ArmyId(2)), to: (3, 4), formation: None },
+            Query::EngagePreview {
+                by: crate::command::EngageBy::Units(vec![UnitId(1)]),
+                to: (3, 4),
+                formation: Some(vec![ffh_core::engagement::Place { unit: UnitId(1), lane: 2, row: 1 }]),
+            },
+            Query::EngagePreview { by: crate::command::EngageBy::From(2, 4), to: (3, 4), formation: None },
+            Query::BattleLog { report: 7 },
+            Query::BattleReports,
             Query::Trade { with: PlayerId(2) },
             Query::Log { since: 10 },
+            Query::Speech { with: PlayerId(1), comment: None, salt: 0 },
+            Query::Speech { with: PlayerId(1), comment: Some(ffh_data::DiploCommentType::from_usize(3)), salt: -5 },
+            Query::Moments { since: 2 },
             Query::Report,
             Query::Inspect { kind: "unit".into(), oid: 4 },
             Query::Text,

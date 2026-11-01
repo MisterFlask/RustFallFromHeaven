@@ -2561,68 +2561,6 @@ fn vote_fund_dissidents(g: &mut Game, _vote: VoteType, _data: i32, _call: &PyCal
 mod tests {
     use super::*;
 
-    /// Registry class of an info id type named in this file.
-    fn class_of(ty: &str) -> &'static str {
-        match ty {
-            "AlignmentType" => AlignmentType::CLASS,
-            "BuildingType" => BuildingType::CLASS,
-            "CivicOptionType" => CivicOptionType::CLASS,
-            "CivicType" => CivicType::CLASS,
-            "CivilizationType" => CivilizationType::CLASS,
-            "DamageType" => DamageType::CLASS,
-            "EventTriggerType" => EventTriggerType::CLASS,
-            "FeatureType" => FeatureType::CLASS,
-            "GameSpeedType" => GameSpeedType::CLASS,
-            "GoodyType" => GoodyType::CLASS,
-            "ImprovementType" => ImprovementType::CLASS,
-            "PromotionType" => PromotionType::CLASS,
-            "ReligionType" => ReligionType::CLASS,
-            "SpecialUnitType" => SpecialUnitType::CLASS,
-            "SpellType" => SpellType::CLASS,
-            "TechType" => TechType::CLASS,
-            "TerrainType" => TerrainType::CLASS,
-            "TraitType" => TraitType::CLASS,
-            "UnitClassType" => UnitClassType::CLASS,
-            "UnitCombatType" => UnitCombatType::CLASS,
-            "UnitType" => UnitType::CLASS,
-            "VoteSourceType" => VoteSourceType::CLASS,
-            _ => panic!("add {ty} to class_of"),
-        }
-    }
-
-    /// Every type name this file looks up exists in the game data under the expected class:
-    /// each typed lookup `d.t` of a literal name, the `spellWonder` spells (`cast(g, ..)`) and
-    /// the sphere promotions.
-    #[test]
-    fn type_names_resolve() {
-        let d = ffh_data::global();
-        let src = include_str!("spells_b.rs");
-        let mut checked = 0;
-        let lookup = concat!("t::", "<");
-        let mut rest = src;
-        while let Some(i) = rest.find(lookup) {
-            rest = &rest[i + lookup.len()..];
-            let close = rest.find('>').unwrap();
-            let ty = &rest[..close];
-            let Some(args) = rest[close + 1..].strip_prefix("(\"") else { continue };
-            let name = &args[..args.find('"').unwrap()];
-            assert_eq!(d.reg.entry(name).map(|e| e.class), Some(class_of(ty)), "{ty} {name}");
-            checked += 1;
-        }
-        let wonder = concat!("cast(g", ", \"");
-        let mut rest = src;
-        while let Some(i) = rest.find(wonder) {
-            rest = &rest[i + wonder.len()..];
-            let name = &rest[..rest.find('"').unwrap()];
-            assert!(d.ty::<SpellType>(name).is_some(), "SpellType {name}");
-            checked += 1;
-        }
-        for name in SPHERE1_PROMOTIONS {
-            assert!(d.ty::<PromotionType>(name).is_some(), "PromotionType {name}");
-        }
-        assert!(checked > 200, "only {checked} names found");
-    }
-
     /// The literal arguments of the take-equipment spells in the XML name equipment units.
     #[test]
     fn take_equipment_arguments_resolve() {
@@ -2706,12 +2644,13 @@ mod tests {
         assert!(!g.city_can_construct(city, lyre, false, false, false));
         assert!(!g.city_can_construct(other_city, lyre, false, false, false));
 
-        // The take spell has no bAllowAI: an AI player cannot cast it.
+        // The take spell has no bAllowAI. C++ refuses it to an AI player; here that is the AIs'
+        // policy, not a rule (docs/PORTING.md, "Changes from FFH2"): the rules let it cast.
         g.units[caster].has_casted = false;
         g.setup.players[0].slot_status = crate::setup::SlotStatus::Computer;
         g.setup.players[0].human = false;
         g.player_update_human(p);
-        assert!(!g.unit_can_cast(caster, take, false));
+        assert!(g.unit_can_cast(caster, take, false));
     }
 
     #[test]

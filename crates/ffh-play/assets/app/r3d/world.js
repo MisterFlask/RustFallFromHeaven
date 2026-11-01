@@ -116,8 +116,11 @@ export function isHell(g) {
 }
 
 export class World {
-  /** `map`: the `map` reply (S.map shape). */
-  constructor(map) {
+  /** `map`: the `map` reply (S.map shape). `opts.bank`: how far dry land stands over its water
+   *  (0, the 3D renderer: the shore slopes gently into the sea; the HD-2D map raises a low bank, as
+   *  its look target's land stands over its water). */
+  constructor(map, opts = {}) {
+    this.bank = opts.bank ?? 0;
     this.w = map.w;
     this.h = map.h;
     this.wrapX = !!map.wrap_x;
@@ -299,6 +302,9 @@ export class World {
       h += dry * this.summits(mx, my) * (0.75 + 0.35 * r2);
     }
     if (voidW > 0) h = h * (1 - voidW) + BASE[KIND.VOID] * voidW;
+    // A raised bank: the dry land lifted, all but a narrow strip just over the waterline, so the
+    // shore climbs in a short steep step (the terrain shader draws steep ground as rock).
+    if (this.bank > 0 && h > 0) h += this.bank * smoothstep(0, 0.03, h);
     // Rivers carve their channel (`carve` false: the ground the river runs over, uncut).
     if (carve && this.riverCells.size) {
       const d = this.riverDist(mx, my);

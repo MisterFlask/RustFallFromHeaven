@@ -18,6 +18,15 @@ Beyond the Sword 3.19. The inherited files vendored here:
   (90/1 and 120/3).
 - `GlobalDefines.xml`, reconstructed (below).
 
+FFH2's `Gameinfo/CIV4DiplomacyInfos.xml` (the leaders' lines for each diplomacy moment, by leader,
+attitude and relative power; presentation only) names lines from FFH2's own text and from the stock
+`CIV4DiplomacyText.xml` files, so `data/text/en.tsv` merges each text layer's
+`CIV4DiplomacyText*.xml` before its `CIV4GameText*.xml` (`tools/vendor_xml.py`).
+
+`data/text/barks.md` is not vendored: it is the port's own writing, the lines each civilization's
+leaders have for each other civilization at eleven diplomacy moments (ffh-play
+`view/speech.rs`, `Barks`; off in a game started with the vanilla experience).
+
 ## GlobalDefines.xml reconstruction
 
 The reference repo's BTS `GlobalDefines.xml` was edited by that repo's mod. For

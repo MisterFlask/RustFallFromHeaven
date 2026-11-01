@@ -26,8 +26,12 @@ fn hurry(g: &mut Game, p: PlayerId) {
         return;
     }
     let reserve = 30 + 5 * g.players[p].cities.len() as i32;
+    // Gold a civilization keeps (the Khazad's vault level) is not spent.
+    let reserve = reserve + crate::civs::gold_floor(g, p);
     for c in g.players[p].cities.clone() {
-        let urgent = match g.city_production_unit(c) {
+        // (A unit an army requisitioned goes to the army: not the city's emergency.)
+        let requisition = g.cities[c].order_queue.first().is_some_and(|o| o.requisition);
+        let urgent = match g.city_production_unit(c).filter(|_| !requisition) {
             Some(u) => {
                 let info = &d.units[u];
                 let plot = g.city_plot(c);
@@ -64,109 +68,17 @@ fn hurry(g: &mut Game, p: PlayerId) {
     }
 }
 
-/// A bankrupt empire (research slider at the bottom and still losing gold) disbands its
-/// weakest surplus garrison units: never a city's last defender (two in the capital), never a
-/// unit that would defect to the barbarians, at most two per turn.
+/// Units the empire cannot pay for: idle workers while support keeps research below its target
+/// (`finance::disband_workers`), military units only by More Naval AI's rule
+/// (`finance::disband_military`; docs/AI.md, "Finance"). (The rule it replaced, surplus and
+/// obsolete units scrapped for their upkeep, was switch `KEEP_UNITS` off, removed once kept:
+/// docs/AI_LOG.md, "More Naval AI's disband rule".)
 fn disband(g: &mut Game, p: PlayerId) {
     if !g.player_is_commerce_flexible(p, CommerceType::COMMERCE_RESEARCH) || g.player_calculate_unit_cost(p) == 0 {
         return;
     }
-    if crate::finance::disband(g, p) { return; } // bankruptcy-guard
-    let pct = crate::economy::spend_pct(g, p);
-    // Field units go first, as soon as research has dropped to a fifth.
-    if pct > 10 && pct <= 20 {
-        disband_field_units(g, p, 1);
-        return;
-    }
-    if pct > 10 {
-        return;
-    }
-    if g.player_calculate_gold_rate(p) >= 0 && g.players[p].gold > 30 {
-        disband_field_units(g, p, 1);
-        return;
-    }
-    let mut done = 0;
-    for c in g.players[p].cities.clone() {
-        if done >= 2 {
-            break;
-        }
-        let plot = g.city_plot(c);
-        if crate::production::local_threat(g, p, plot, 3) > 0 {
-            continue;
-        }
-        // As many as production wants there (see production::decide).
-        let keep = if g.city_is_capital(c) || crate::production::barbarians_near(g, p, plot, 4) { 2 } else { 1 };
-        let mut garrison: Vec<UnitId> = g.map.plots[plot]
-            .units
-            .iter()
-            .copied()
-            .filter(|&u| {
-                let unit = &g.units[u];
-                unit.owner == p
-                    && matches!(unit.ai_type, Some(UnitAIType::UNITAI_CITY_DEFENSE) | Some(UnitAIType::UNITAI_CITY_COUNTER))
-                    && g.d.units[unit.unit_type].combat > 0
-            })
-            .collect();
-        if garrison.len() as i32 <= keep {
-            continue;
-        }
-        garrison.sort_by_key(|&u| (crate::view::defense_power(g, u), u));
-        let u = garrison[0];
-        let betrays = g.d.promotions.keys().any(|pr| g.units[u].has_promotion[pr] && g.d.promotions[pr].betrayal_chance != 0);
-        if betrays || !g.unit_can_scrap(u) {
-            continue;
-        }
-        crate::trace!(g, p, "bankrupt: disbanding {} in {}", g.d.units[g.units[u].unit_type].base.type_, g.cities[c].name);
-        g.unit_scrap(u);
-        done += 1;
-    }
-    disband_field_units(g, p, 2 - done);
-}
-
-/// Field units beyond a small mobile force (1 + cities / 4) when the empire cannot pay for
-/// them and is at peace: the weakest, least experienced first, never heroes or units that
-/// would defect.
-fn disband_field_units(g: &mut Game, p: PlayerId, max: i32) {
-    if max <= 0 || g.player_calculate_unit_cost(p) == 0 {
-        return;
-    }
-    let team = g.players[p].team;
-    let at_war = g.teams.keys().any(|t| t != team && t != g.barbarian_team() && g.teams[t].alive_count > 0 && g.at_war(team, t))
-        || crate::diplomacy::preparing_target(g, team).is_some();
-    if at_war {
-        return;
-    }
-    let field = |g: &Game, u: UnitId| {
-        let unit = &g.units[u];
-        matches!(unit.ai_type, Some(UnitAIType::UNITAI_ATTACK) | Some(UnitAIType::UNITAI_RESERVE) | Some(UnitAIType::UNITAI_COUNTER) | Some(UnitAIType::UNITAI_ATTACK_CITY) | Some(UnitAIType::UNITAI_COLLATERAL))
-            && g.d.units[unit.unit_type].combat > 0
-            && g.unit_get_domain_type(u) == DomainType::DOMAIN_LAND
-    };
-    let mut units: Vec<UnitId> = g.players[p].units.iter().copied().filter(|&u| field(g, u)).collect();
-    let keep = 1 + g.players[p].cities.len() as i32 / 4;
-    if units.len() as i32 <= keep {
-        return;
-    }
-    units.sort_by_key(|&u| (crate::view::attack_power(g, u) + 50 * g.units[u].experience, u));
-    let mut done = 0;
-    for u in units {
-        if done >= max || !g.units.contains(u) {
-            break;
-        }
-        let n = g.players[p].units.iter().filter(|&&o| field(g, o)).count() as i32;
-        if n <= keep {
-            break;
-        }
-        let info = &g.d.units[g.units[u].unit_type];
-        let hero = info.default_unit_ai_type == Some(UnitAIType::UNITAI_HERO) || info.unit_class_type.is_some_and(|c| g.d.unit_classes[c].max_global_instances > 0 || g.d.unit_classes[c].max_player_instances > 0);
-        let betrays = g.d.promotions.keys().any(|pr| g.units[u].has_promotion[pr] && g.d.promotions[pr].betrayal_chance != 0);
-        if hero || betrays || g.units[u].duration > 0 || !g.unit_can_scrap(u) {
-            continue;
-        }
-        crate::trace!(g, p, "cannot pay: disbanding field unit {}", info.base.type_);
-        g.unit_scrap(u);
-        done += 1;
-    }
+    crate::finance::disband_workers(g, p); // bankruptcy-guard
+    crate::finance::disband_military(g, p);
 }
 
 fn research(g: &mut Game, p: PlayerId) {
@@ -252,7 +164,8 @@ fn civics(g: &mut Game, p: PlayerId) {
         return;
     }
     // Re-evaluate at most every 10 turns per player (staggered), as revolutions cost anarchy.
-    if (g.game_turn() + p.0 as i32) % 10 != 0 && !crate::finance::civics_due(g, p) { // bankruptcy-guard
+    let (period, min_gain) = crate::traits::civic_cadence(g, p); // trait-play
+    if (g.game_turn() + p.0 as i32) % period != 0 && !crate::finance::civics_due(g, p) { // bankruptcy-guard
         return;
     }
     let d = g.d;
@@ -278,7 +191,11 @@ fn civics(g: &mut Game, p: PlayerId) {
             }
         }
     }
-    if new != current && gain > 100 && g.player_can_revolution(p, Some(&new)) {
+    if new != current && gain > min_gain && g.player_can_revolution(p, Some(&new)) {
+        if crate::trace_on(p) {
+            let names = |cs: &IdxVec<CivicOptionType, Option<CivicType>>| cs.iter().zip(current.iter()).filter(|(n, o)| n != o).map(|(n, _)| n.map_or("-", |c| d.civics[c].base.type_.as_str())).collect::<Vec<_>>().join(",");
+            crate::trace!(g, p, "civics: {} (gain {}, gold {}, research {}%)", names(&new), gain, g.players[p].gold, g.players[p].commerce_percent[CommerceType::COMMERCE_RESEARCH.idx()]);
+        }
         g.player_revolution(p, &new, false);
     }
 }
@@ -304,7 +221,7 @@ fn religion(g: &mut Game, p: PlayerId) {
             v += 20;
         }
         if current == Some(r) {
-            v += 15; // conversion costs anarchy
+            v += crate::traits::religion_stickiness(g, p); // conversion costs anarchy (trait-play)
         }
         if best.map_or(true, |(_, b)| v > b) {
             best = Some((r, v));
@@ -319,13 +236,19 @@ fn religion(g: &mut Game, p: PlayerId) {
 
 /// Highest research rate that keeps the treasury from running dry. A cultural victory first
 /// sets the culture slider (`victory::culture_slider`), lowered in steps when even no research
-/// leaves the treasury short.
+/// leaves the treasury short. Saving gold to upgrade the army at war was measured and reverted
+/// (docs/AI_LOG.md, "Unit choices and an upgrade reserve").
 fn sliders(g: &mut Game, p: PlayerId) {
     if !g.player_is_commerce_flexible(p, CommerceType::COMMERCE_RESEARCH) {
         return;
     }
     let gold = g.players[p].gold;
-    let reserve = 20 + 5 * g.players[p].cities.len() as i32;
+    // Gold a civilization keeps (the Khazad's vault level) does not pay a deficit either.
+    let reserve = 20 + 5 * g.players[p].cities.len() as i32 + crate::civs::gold_floor(g, p);
+    // A civilization that saves (the Khazad's vaults) keeps a gold rate that reaches its target
+    // in about 20 turns, but never below 30% research for it.
+    let target = crate::civs::gold_target(g, p);
+    let saving = if target > gold { (target - gold + 19) / 20 } else { 0 };
     let mut culture = crate::victory::culture_slider(g, p); // victory-pursuit
     loop {
         if g.players[p].commerce_percent[CommerceType::COMMERCE_CULTURE.idx()] != culture {
@@ -338,7 +261,7 @@ fn sliders(g: &mut Game, p: PlayerId) {
                 g.player_set_commerce_percent(p, CommerceType::COMMERCE_RESEARCH, pct);
             }
             let rate = g.player_calculate_gold_rate(p);
-            if rate >= 0 || gold + rate * 10 > reserve {
+            if (rate >= 0 || gold + rate * 10 > reserve) && (saving == 0 || rate >= saving || pct <= 30) {
                 paid = true;
                 break;
             }

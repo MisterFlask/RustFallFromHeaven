@@ -29,20 +29,76 @@ use crate::view::Viewer;
 /// Messages kept for the human (the oldest are dropped beyond this).
 pub const MESSAGES_KEPT: usize = 10_000;
 
+/// Leader moments kept (the oldest are dropped beyond this).
+pub const MOMENTS_KEPT: usize = 100;
+
+/// A leader moment: an AI leader opened the diplomacy screen with the human (`comment`:
+/// `AI_DIPLOCOMMENT_FIRST_CONTACT`, `AI_DIPLOCOMMENT_DECLARE_WAR`) and said `text`
+/// ([`crate::view::speech`]), chosen when it happened.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Moment {
+    pub turn: i32,
+    pub player: PlayerId,
+    pub comment: DiploCommentType,
+    pub text: String,
+}
+
+impl Moment {
+    pub fn to_json(&self) -> Json {
+        crate::jobj! { "t" => self.turn, "player" => self.player, "comment" => Json::idx(self.comment), "text" => self.text.as_str() }
+    }
+
+    pub fn from_json(d: &GameData, j: &Json) -> Result<Moment, FieldError> {
+        Ok(Moment { turn: j.req("t")?, player: j.req("player")?, comment: crate::names::field(d, j, "comment")?, text: j.req("text")? })
+    }
+}
+
 /// The human's messages, oldest first. Each message has an index (0 for the first message of the
-/// session); the store keeps the last [`MESSAGES_KEPT`].
+/// session); the store keeps the last [`MESSAGES_KEPT`]. The leader moments are numbered and
+/// kept the same way.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct MessageStore {
     entries: Vec<LogEntry>,
     /// Messages ever added (the index of the next one).
     total: usize,
+    moments: Vec<Moment>,
+    /// Moments ever added (the index of the next one).
+    moments_total: usize,
 }
 
 impl MessageStore {
-    /// A store holding `tail` (a loaded sidecar's latest messages) as messages `0..tail.len()`.
-    pub fn from_tail(tail: Vec<LogEntry>) -> MessageStore {
-        let total = tail.len();
-        MessageStore { entries: tail, total }
+    /// A store holding `tail` (a loaded sidecar's latest messages) as messages `0..tail.len()`,
+    /// and `moments` as moments `0..moments.len()`.
+    pub fn from_tail(tail: Vec<LogEntry>, moments: Vec<Moment>) -> MessageStore {
+        let (total, moments_total) = (tail.len(), moments.len());
+        MessageStore { entries: tail, total, moments, moments_total }
+    }
+
+    pub fn push_moment(&mut self, m: Moment) {
+        self.moments.push(m);
+        self.moments_total += 1;
+        if self.moments.len() > MOMENTS_KEPT {
+            self.moments.remove(0);
+        }
+    }
+
+    /// The index the next moment will get (`view.moments_next`).
+    pub fn moments_total(&self) -> usize {
+        self.moments_total
+    }
+
+    /// The last `n` moments.
+    pub fn moments_tail(&self, n: usize) -> Vec<Moment> {
+        self.moments[self.moments.len().saturating_sub(n)..].to_vec()
+    }
+
+    /// The `moments` query: `{from, next, entries: [{i, t, player, comment, text}]}`, the kept
+    /// moments from index `since` (as `since_json`).
+    pub fn moments_json(&self, since: usize) -> Json {
+        let first = self.moments_total - self.moments.len();
+        let from = since.max(first).min(self.moments_total);
+        let entries = self.moments[from - first..].iter().enumerate().map(|(k, m)| m.to_json().with("i", from + k));
+        crate::jobj! { "from" => from, "next" => self.moments_total, "entries" => Json::Arr(entries.collect()) }
     }
 
     pub fn push(&mut self, e: LogEntry) {
@@ -81,11 +137,35 @@ impl MessageStore {
     }
 
     /// The `log` query: `{from, next, entries: [{i, t, text}]}` (`from` is the index of the
-    /// first entry returned, later than `since` when older messages were dropped).
+    /// first entry returned, later than `since` when older messages were dropped). An
+    /// engagement's message carries `kind: "engagement"` and its `report` ([`tag_battle`]).
     pub fn since_json(&self, since: usize) -> Json {
         let from = since.max(self.first()).min(self.total);
-        let entries = self.since(since).iter().enumerate().map(|(k, e)| crate::jobj! { "i" => from + k, "t" => e.turn, "text" => e.text.as_str() });
+        let entries = self.since(since).iter().enumerate().map(|(k, e)| {
+            let j = crate::jobj! { "i" => from + k, "t" => e.turn, "text" => e.text.as_str(), "player" => e.player };
+            let j = match e.at {
+                Some((x, y)) => j.with("at", crate::jarr![x, y]),
+                None => j,
+            };
+            tag_battle(j, &e.text)
+        });
         crate::jobj! { "from" => from, "next" => self.total, "entries" => Json::Arr(entries.collect()) }
+    }
+}
+
+/// The battle report an engagement's message names (its last words are `(report #12)`: ffh-core's
+/// `engage_messages`), if any.
+pub fn battle_report_ref(text: &str) -> Option<u32> {
+    let rest = &text[text.rfind("(report #")? + "(report #".len()..];
+    rest[..rest.find(')')?].parse().ok()
+}
+
+/// A message's JSON with `kind: "engagement"` and `report: id` when it names a battle report, so
+/// that a client marks and links it without reading its wording.
+pub fn tag_battle(j: Json, text: &str) -> Json {
+    match battle_report_ref(text) {
+        Some(id) => j.with("kind", "engagement").with("report", id),
+        None => j,
     }
 }
 
@@ -538,6 +618,16 @@ impl Report {
             lines.push(format!("{} plots lost to other borders", borders.len()));
         }
 
+        // Engagement combat: the battles the human fought since its last turn began (its own
+        // attacks of that turn, then those of the others; newest first).
+        let mut engagements = Vec::new();
+        if g.engagements_on() {
+            for r in crate::view::battles::reports_since(v, before.turn) {
+                lines.push(crate::view::battles::report_line(v, r));
+                engagements.push(crate::view::battles::summary_json(v, r));
+            }
+        }
+
         let items = crate::jobj! {
             "units_lost" => Json::Arr(lost),
             "units_gained" => Json::Arr(gained),
@@ -560,6 +650,7 @@ impl Report {
                 "from" => before.armageddon, "to" => counter, "thresholds" => crossed.clone(),
             },
             "borders_lost" => Json::Arr(borders),
+            "engagements" => Json::Arr(engagements),
         };
         Report { from_turn: before.turn, turn: g.game_turn(), items, lines, messages }
     }
@@ -581,16 +672,16 @@ impl Report {
             .req_arr("messages")
             .ok()?
             .iter()
-            .map(|m| Some(LogEntry { turn: m.req("t").ok()?, player: m.opt("player").ok()?, text: m.req("text").ok()? }))
+            .map(|m| Some(LogEntry::new(m.req("t").ok()?, m.opt("player").ok()?, m.req("text").ok()?)))
             .collect::<Option<Vec<_>>>()?;
         let items = Json::Obj(j.as_obj()?.iter().filter(|(k, _)| !matches!(k.as_str(), "from_turn" | "turn" | "lines" | "messages")).cloned().collect());
         Some(Report { from_turn: j.req("from_turn").ok()?, turn: j.req("turn").ok()?, items, lines: j.req("lines").ok()?, messages })
     }
 }
 
-/// [`Snapshot::take`] under a guard, for the session.
+/// [`Snapshot::take`], for the session.
 pub fn snapshot(g: &Game, h: PlayerId, log_mark: usize) -> Snapshot {
-    crate::guard::read(g, |g| Snapshot::take(&Viewer::new(g, h, false), log_mark))
+    Snapshot::take(&Viewer::new(g, h, false), log_mark)
 }
 
 #[cfg(test)]
@@ -599,7 +690,7 @@ mod tests {
 
     #[test]
     fn message_store_indices() {
-        let e = |i: i32| LogEntry { turn: i, player: None, text: format!("m{i}") };
+        let e = |i: i32| LogEntry::new(i, None, format!("m{i}"));
         let mut m = MessageStore::default();
         for i in 0..5 {
             m.push(e(i));
@@ -611,7 +702,7 @@ mod tests {
         assert_eq!(j.get("from"), Some(&Json::Int(3)));
         assert_eq!(j.get("next"), Some(&Json::Int(5)));
         assert_eq!(j.get("entries").unwrap().as_arr().unwrap()[0].get("text"), Some(&Json::from("m3")));
-        let mut big = MessageStore::from_tail(vec![e(0)]);
+        let mut big = MessageStore::from_tail(vec![e(0)], Vec::new());
         for i in 1..(MESSAGES_KEPT as i32 + 10) {
             big.push(e(i));
         }

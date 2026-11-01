@@ -1,0 +1,110 @@
+{
+ "name": "warrior",
+ "sprite": "m7/roster/units/unit_warrior.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Warrior, a barbarian clubman: shaggy brown hair under an orange headband, bare muscular tan arms, a brown fur-trimmed leather tunic with a cream fur strap across the chest, a brown belt with a round silver buckle, a ragged cream-fur loincloth skirt, fur-wrapped brown leather boots, a big wooden club studded with cream bone spikes in his RIGHT hand and a round wooden shield with a cream fur rim on his LEFT arm",
+ "hands": "the club stays in his right hand on the screen-left side and the shield on his left arm on the screen-right side",
+ "guide_style": "grey",
+ "scale": 0.95,
+ "head_r": 13,
+ "limb": 1.15,
+ "joints": {
+  "head": [
+   82,
+   56
+  ],
+  "neck": [
+   80,
+   68
+  ],
+  "chest": [
+   83,
+   76
+  ],
+  "pelvis": [
+   83,
+   88
+  ],
+  "r_sh": [
+   67,
+   73
+  ],
+  "r_el": [
+   65,
+   81
+  ],
+  "r_ha": [
+   59,
+   75
+  ],
+  "tip": [
+   52,
+   38
+  ],
+  "l_sh": [
+   96,
+   73
+  ],
+  "l_el": [
+   98,
+   84
+  ],
+  "l_ha": [
+   103,
+   92
+  ],
+  "shield": [
+   108,
+   91,
+   11,
+   16
+  ],
+  "r_hip": [
+   76,
+   95
+  ],
+  "r_kn": [
+   70,
+   105
+  ],
+  "r_ft": [
+   66,
+   117
+  ],
+  "l_hip": [
+   89,
+   95
+  ],
+  "l_kn": [
+   93,
+   106
+  ],
+  "l_ft": [
+   99,
+   119
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back toward the upper-left, the club is lifted beside the head with its spiked head pointing up and back",
+   "2": "wind-up extreme: body coiled back and crouched, the club hand behind the head and the spiked club hanging down behind the shoulders to the left, shield tucked across the belly",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips round, the club arm sweeps across in front of the chest and the club is level, its spiked head pointing to the right",
+   "4": "contact: club arm fully extended toward the lower-right, the spiked club smashing down-right, front knee bent, body low and leaning in, shield arm swung back behind the shoulders for balance",
+   "5": "follow-through: the club carries on down until its spiked head nearly touches the ground at the lower-right, torso twisted, hair trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the club comes back up on the near side toward the ready angle, shield tucked across the belly"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (club arm thrown up and out to the left, shield flung out to the right)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the club dipping, shield still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, club arm flung up, shield drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the club lowering",
+   "3": "kneeling: on both knees, slumped forward, the club's spiked head resting on the ground at the lower-right, shield arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the club slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left; the club lies on the ground at the lower-right; the shield lies flat beside him",
+   "7": "corpse: lying flat and still on his back, eyes closed, club and shield on the ground beside him"
+  }
+ }
+}

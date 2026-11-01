@@ -15,9 +15,13 @@
 //!   cast by the end-of-turn spell choice);
 //! - [`building_value`]: `production::building_value` (what production, research and spells use);
 //! - [`tech_value`]: `research::tech_value`;
+//! - [`tech_goals`]: `tech_plan::goals`, the civilization's research plan (FfH's
+//!   `AI_chooseTech` beelines);
 //! - [`promotion_value`]: `units::best_promotion`, the value of each promotion a unit can take;
 //! - [`civic_value`]: `empire::civic_value` (civics, the finance guard and research use it);
-//! - [`site_value`]: `sites::compute`, the value of a city site.
+//! - [`site_value`]: `sites::compute`, the value of a city site;
+//! - [`gold_target`], [`gold_floor`]: `empire::sliders` saves toward the target, and the gold
+//!   spenders (hurrying, upgrades, deals, council costs) leave the floor.
 //!
 //! What each civilization does is described in its module (docs/AI.md, "Civilization-specific").
 
@@ -103,23 +107,18 @@ const NAMES: [(&str, Civ); 21] = [
 ];
 
 /// Per civilization type: the [`Civ`] whose logic it plays (`Civ::Other` when it has none or is
-/// listed in `FFH_AI_CIV_OFF`). Built once from the game data and the environment.
+/// turned off by `FFH_AI_CIV_OFF`, [`crate::switches::CIV`]). Built once from the game data and
+/// the environment.
 fn table(d: &GameData) -> &'static [Civ] {
     static TABLE: std::sync::OnceLock<Vec<Civ>> = std::sync::OnceLock::new();
     TABLE.get_or_init(|| {
-        let off: Vec<String> = std::env::var("FFH_AI_CIV_OFF")
-            .unwrap_or_default()
-            .split(',')
-            .map(|s| s.trim().trim_start_matches("CIVILIZATION_").to_ascii_uppercase())
-            .filter(|s| !s.is_empty())
-            .collect();
         d.civilizations
             .keys()
             .map(|c| {
-                let name = d.civilizations[c].base.type_.trim_start_matches("CIVILIZATION_");
-                if off.iter().any(|o| o == "ALL" || o == name) {
+                if !crate::switches::CIV.civ_on(d, c) {
                     return Civ::Other;
                 }
+                let name = d.civilizations[c].base.type_.trim_start_matches("CIVILIZATION_");
                 NAMES.iter().find(|(n, _)| *n == name).map_or(Civ::Other, |&(_, civ)| civ)
             })
             .collect()
@@ -134,12 +133,25 @@ pub fn civ(g: &Game, p: PlayerId) -> Civ {
 
 /// False when the player's civilization-specific play is turned off: `FFH_AI_CIV_OFF` lists
 /// civilizations (`CIVILIZATION_KHAZAD` or `KHAZAD`, comma-separated, or `all`) that play as
-/// generic civs. A measurement switch (civ X with and without its logic, against the same
-/// opponents, in one binary); it is read once and never changes during a game, so play stays
-/// deterministic, and the run cache keys runs by every `FFH_*` variable. The research flavours
-/// of `tech_plan.rs` (older, per-civilization beelines) are not covered.
+/// generic civs (`FFH_AI_CIV_ONLY`: the only ones that do not; [`crate::switches::CIV`]). A
+/// measurement switch (civ X with and without its logic, against the same opponents, in one
+/// binary); it is read once and never changes during a game, so play stays deterministic, and the
+/// run cache keys runs by every `FFH_*` variable. It covers the civilizations' research plans
+/// ([`tech_goals`]) too.
 pub fn enabled(g: &Game, p: PlayerId) -> bool {
     civ(g, p) != Civ::Other
+}
+
+/// A civilization's research plan (`tech_plan::goals`, from FfH's `AI_chooseTech`).
+#[derive(Clone, Debug, Default)]
+pub struct TechGoals {
+    /// The early military tech it heads for before Bronze Working when its leader has no
+    /// favorite; knowing it counts as having reached `AI_chooseTech`'s military tier 2.
+    pub early_military: Option<&'static str>,
+    /// The religion tech of its lore, preferred over every other early religion.
+    pub religion: Option<&'static str>,
+    /// `AI_chooseTech`'s "Civ Specific" beelines, in order.
+    pub beelines: Vec<&'static str>,
 }
 
 /// A civilization's own play. Every method defaults to "nothing special".
@@ -168,6 +180,10 @@ pub trait CivPlay: Sync {
     fn building_value(&self, g: &Game, c: CityId, b: BuildingType, value: i32) -> i32 {
         value
     }
+    /// The civilization's research plan (`tech_plan::goals`).
+    fn tech_goals(&self, g: &Game, p: PlayerId) -> TechGoals {
+        TechGoals::default()
+    }
     /// What researching `t` is worth (`value` is the generic estimate, before cost).
     fn tech_value(&self, g: &Game, p: PlayerId, t: TechType, value: i32) -> i32 {
         value
@@ -184,6 +200,16 @@ pub trait CivPlay: Sync {
     /// What a city site at `q` is worth to `p` (`value` is `AI_foundValue`; 0 or less: no site).
     fn site_value(&self, g: &Game, p: PlayerId, q: PlotIdx, value: i32) -> i32 {
         value
+    }
+    /// Gold the treasury saves toward (`empire::sliders` keeps a gold rate that reaches it in
+    /// about 20 turns); 0: none.
+    fn gold_target(&self, g: &Game, p: PlayerId) -> i32 {
+        0
+    }
+    /// Gold that spending (hurrying, upgrades, gold in deals, council costs) leaves in the
+    /// treasury; 0: none.
+    fn gold_floor(&self, g: &Game, p: PlayerId) -> i32 {
+        0
     }
 }
 
@@ -263,24 +289,43 @@ pub fn tech_value(g: &Game, p: PlayerId, t: TechType, value: i32) -> i32 {
 /// `magic.rs` and upgrade by the generic upgrade. The owner's rule: civilizations use their unique
 /// units (CLAUDE.md "AI changes"); the Amurites' round-5 version is in docs/AI_LOG.md.
 pub(crate) fn unique_casters(g: &Game, c: CityId, threat: i32) -> Option<Choice> {
+    let n = g.players[g.cities[c].owner].cities.len() as i32;
+    casters_up_to(g, c, threat, (n + 2) / 2)
+}
+
+/// [`unique_casters`] up to `target` casters (also the Arcane and Summoner leaders' corps,
+/// `traits::production`). The training city is the most productive one, or a city that already
+/// has the building the Adepts need when it makes at least two thirds as many hammers (the most
+/// productive city changes as cities grow, and each change built another Mage Guild).
+pub(crate) fn casters_up_to(g: &Game, c: CityId, threat: i32, target: i32) -> Option<Choice> {
     let d = g.d;
     let p = g.cities[c].owner;
     let pl = &g.players[p];
-    if threat > 0 {
+    // A magic leader's army has its casters (`MAGE_ARMY`): one for every four field units at
+    // least, trained also while a raider the garrison holds is in sight.
+    let mage_army = crate::traits::mage_army(g, p);
+    if threat > 0 && !(mage_army && threat * 2 <= crate::production::garrison(g, p, g.city_plot(c)).1) {
         return None;
     }
+    let target = if mage_army { target.max(crate::traits::mage_army_casters(g, p)) } else { target };
+    let civ = g.player_get_civilization_type(p)?;
+    let adept = d.civ_unit(civ, d.ty::<UnitClassType>("UNITCLASS_ADEPT")?)?;
+    let needs = crate::production::unit_building(d, civ, &d.units[adept]).and_then(|b| d.buildings[b].building_class_type);
     let prod = |o: CityId| g.city_yield_rate(o, YieldType::YIELD_PRODUCTION);
-    let best = pl.cities.iter().copied().max_by_key(|&o| (prod(o), std::cmp::Reverse(o)))?;
+    let mut best = pl.cities.iter().copied().max_by_key(|&o| (prod(o), std::cmp::Reverse(o)))?;
+    if let Some(bc) = needs {
+        let built = pl.cities.iter().copied().filter(|&o| g.city_is_has_building_class(o, bc)).max_by_key(|&o| (prod(o), std::cmp::Reverse(o)));
+        if let Some(o) = built.filter(|&o| prod(o) * 3 >= prod(best) * 2) {
+            best = o;
+        }
+    }
     if best != c {
         return None;
     }
-    let n = pl.cities.len() as i32;
     let casters = crate::production::count_ai(g, p, UnitAIType::UNITAI_MAGE) + crate::production::count_ai(g, p, UnitAIType::UNITAI_WARWIZARD);
-    if casters >= (n + 2) / 2 {
+    if casters >= target {
         return None;
     }
-    let civ = g.player_get_civilization_type(p)?;
-    let adept = d.civ_unit(civ, d.ty::<UnitClassType>("UNITCLASS_ADEPT")?)?;
     if !g.player_can_train(p, adept, false, false, false) {
         return None;
     }
@@ -290,7 +335,7 @@ pub(crate) fn unique_casters(g: &Game, c: CityId, threat: i32) -> Option<Choice>
         return None;
     }
     if let Some(b) = crate::production::unit_building(d, civ, &d.units[adept]) {
-        let bc = d.buildings[b].building_class_type?;
+        let bc = needs?;
         if !g.city_is_has_building_class(c, bc) {
             if !g.city_can_construct(c, b, false, false, false) {
                 return None;
@@ -300,7 +345,7 @@ pub(crate) fn unique_casters(g: &Game, c: CityId, threat: i32) -> Option<Choice>
         }
     }
     let u = crate::production::best_unit(g, c, crate::production::Role::Mage)?;
-    crate::trace!(g, p, "{}: caster {} ({} of {})", g.cities[c].name, d.units[u].base.type_, casters, (n + 2) / 2);
+    crate::trace!(g, p, "{}: caster {} ({} of {})", g.cities[c].name, d.units[u].base.type_, casters, target);
     Some(Choice::Train(u, UnitAIType::UNITAI_MAGE))
 }
 
@@ -352,6 +397,10 @@ fn unique_unit_tech_value(g: &Game, p: PlayerId, t: TechType) -> i32 {
     value
 }
 
+pub fn tech_goals(g: &Game, p: PlayerId) -> TechGoals {
+    of(g, p).tech_goals(g, p)
+}
+
 pub fn promotion_value(g: &Game, u: UnitId, promo: PromotionType, value: i32) -> i32 {
     of(g, g.units[u].owner).promotion_value(g, u, promo, value)
 }
@@ -362,6 +411,14 @@ pub fn civic_value(g: &Game, p: PlayerId, civic: CivicType, value: i32) -> i32 {
 
 pub fn site_value(g: &Game, p: PlayerId, q: PlotIdx, value: i32) -> i32 {
     of(g, p).site_value(g, p, q, value)
+}
+
+pub fn gold_target(g: &Game, p: PlayerId) -> i32 {
+    of(g, p).gold_target(g, p)
+}
+
+pub fn gold_floor(g: &Game, p: PlayerId) -> i32 {
+    of(g, p).gold_floor(g, p)
 }
 
 #[cfg(test)]

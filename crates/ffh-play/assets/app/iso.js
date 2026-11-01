@@ -38,8 +38,14 @@ const UNIT_DY = 6;
 const GATE_DX = 40;
 const GATE_DY = 26;
 
-/** The move slide (as artmap.js, docs/ART.md 4.5): about 8 tiles a second, capped; a longer move
- *  jumps. */
+/** The map's lettering: Herald, the interface's pixel serif (isofont.js), at whole multiples of its
+ *  grid so it stays crisp (Georgia until it has loaded). */
+const HERALD = "Herald, Georgia, serif";
+/** Herald's size at tile width `tw`: 2 CSS px a pixel from the default zoom up, else 1. */
+const heraldScale = (tw) => (tw >= 96 ? 2 : 1);
+
+/** The move slide (as the retired 2D art map's, docs/ART.md 4.5): about 8 tiles a second, capped;
+ *  a longer move jumps. */
 const SLIDE_MS_PER_TILE = 125;
 const SLIDE_MAX_MS = 400;
 const SLIDE_MAX_TILES = 4;
@@ -135,12 +141,14 @@ function resourceSprite(t) {
   return "res_goods"; // silk, dye, incense, cotton, ale, fine clothes, reagents, toads, razorweed
 }
 
-/** A city's settlement sprite by size, then the others; the 2x2 city (`bld_city`) last, drawn at
- *  half size since a city holds one plot. */
-function citySprites(size) {
-  const tiers = ["bld_city_village", "bld_city_town", "bld_city_castle"];
+/** A city's settlement sprite by size, then the others; each tier its civilization's look
+ *  (`bld_city_<civ>_town`) before the shared one; the 2x2 city (`bld_city`) last, drawn at half
+ *  size since a city holds one plot. */
+function citySprites(size, civ) {
+  const tiers = ["village", "town", "castle"];
   const i = size <= 3 ? 0 : size <= 8 ? 1 : 2;
-  return [tiers[i], ...tiers.filter((_, j) => j !== i).sort((a, b) => Math.abs(tiers.indexOf(a) - i) - Math.abs(tiers.indexOf(b) - i)), "bld_city"];
+  const order = [i, ...[0, 1, 2].filter((j) => j !== i).sort((a, b) => Math.abs(a - i) - Math.abs(b - i))];
+  return [...order.flatMap((j) => [...(civ ? [`bld_city_${civ}_${tiers[j]}`] : []), `bld_city_${tiers[j]}`]), "bld_city"];
 }
 
 /** A unit type or class (its name without UNIT_ / UNITCLASS_, lower case) -> the sprites that
@@ -176,7 +184,7 @@ const UNIT_ALIASES = {
   wraith: ["spectre"], shade: ["spectre"], ghost: ["spectre"], mistform: ["spectre"], severed_soul: ["spectre"],
   divided_soul: ["spectre"], eidolon: ["spectre"], diseased_corpse: ["skeleton"], pyre_zombie: ["skeleton"],
   drown: ["skeleton"], ogre: ["ogre_embers"], ogre_warchief: ["ogre_embers"], stoneskin_ogre: ["ogre_embers"],
-  minotaur: ["ogre_embers"],
+  minotaur: ["ogre_embers"], brigit_held: ["brigit"], rosier_oathtaker: ["rosier"],
 };
 
 /** The last resorts by combat type and domain. */
@@ -198,6 +206,32 @@ function ownerColor(p) {
 
 function shortName(type, prefix) {
   return type?.startsWith(prefix) ? type.slice(prefix.length).toLowerCase() : null;
+}
+
+/** The short name of `owner`'s civilization (`clan_of_embers`), the prefix of its own sprites. */
+export function civShortName(owner) {
+  const civIdx = owner === me()?.player ? me()?.civ : S.players.get(owner)?.civ;
+  return shortName(tname("CivilizationType", civIdx), "CIVILIZATION_");
+}
+
+/** The sprites that may stand in for unit type `type` of civilization `civ` (its short name), best
+ *  first: `unit_<civ>_<type>`, `unit_<civ>_<class>`, the type and its aliases, the class and its
+ *  aliases, settler or worker by ability, the combat type's and the domain's stand-ins, then the
+ *  swordsman. The first that exists is the unit's sprite (also the HD-2D map's, docs/HD2D.md). */
+export function unitSpriteKeys(type, civ) {
+  const info = S.data?.tables?.UnitType?.[type] ?? {};
+  const t = shortName(info.type, "UNIT_");
+  const c = shortName(tname("UnitClassType", info.class), "UNITCLASS_");
+  const names = [];
+  if (civ && t) names.push(`${civ}_${t}`);
+  if (civ && c) names.push(`${civ}_${c}`);
+  for (const n of [t, c]) if (n) names.push(n, ...(UNIT_ALIASES[n] ?? []));
+  if (info.found) names.push("settler");
+  if (info.worker) names.push("worker");
+  const combat = COMBAT_SPRITES[tname("UnitCombatType", info.unit_combat)];
+  const domain = DOMAIN_SPRITES[tname("DomainType", info.domain)];
+  for (const n of [combat, domain, "swordsman"]) if (n) names.push(n, ...(UNIT_ALIASES[n] ?? []));
+  return names.map((n) => `unit_${n}`);
 }
 
 function canvas(w, h) {
@@ -301,6 +335,24 @@ function fromHsl(h, s, l) {
   return [Math.round(f(0) * 255), Math.round(f(8) * 255), Math.round(f(4) * 255)];
 }
 
+/** The owner-colour band of the art (docs/ISO.md §7): its stock saturated mid-blue (hue 195-252,
+ *  saturation 35% and up: the settlements' roofs, spires and flags) in the RGBA pixels `p` turned to
+ *  the owner's colour `css`, in place, keeping each pixel's lightness (a grey owner's colour takes
+ *  its lightness half way). Also the HD-2D towns' (r3d/hd2d/sprites.js). */
+export function ownerBand(p, css) {
+  const [oh, os, ol] = toHsl(...rgbOf(css));
+  const grey = os < 0.2;
+  for (let i = 0; i < p.length; i += 4) {
+    if (p[i + 3] === 0) continue;
+    const [h, s, l] = toHsl(p[i], p[i + 1], p[i + 2]);
+    if (h < 195 || h > 252 || s < 0.35) continue;
+    const rgb = fromHsl(oh, grey ? os : s * 0.4 + os * 0.6, grey ? l * 0.5 + ol * 0.5 : l);
+    p[i] = rgb[0];
+    p[i + 1] = rgb[1];
+    p[i + 2] = rgb[2];
+  }
+}
+
 /** The sprites: the PNGs of `iso/` (listed in iso/sprites.js, loaded on first use) and the ones
  *  drawn here (banners), each at the device scales of the frame. A scale that is a whole number
  *  draws the native image (or its variant) by nearest neighbour; others are scaled once and cached,
@@ -349,19 +401,8 @@ class SpriteStore {
     const c = canvas(src.width, src.height);
     const g = c.getContext("2d", { willReadFrequently: true });
     g.drawImage(src, 0, 0);
-    const [oh, os, ol] = toHsl(...rgbOf(css));
-    const grey = os < 0.2;
     const d = g.getImageData(0, 0, c.width, c.height);
-    const p = d.data;
-    for (let i = 0; i < p.length; i += 4) {
-      if (p[i + 3] === 0) continue;
-      const [h, s, l] = toHsl(p[i], p[i + 1], p[i + 2]);
-      if (h < 195 || h > 252 || s < 0.35) continue;
-      const rgb = fromHsl(oh, grey ? os : s * 0.4 + os * 0.6, grey ? l * 0.5 + ol * 0.5 : l);
-      p[i] = rgb[0];
-      p[i + 1] = rgb[1];
-      p[i + 2] = rgb[2];
-    }
+    ownerBand(d.data, css);
     g.putImageData(d, 0, 0);
     this.drawn.set(id, c);
     this.base.set(id, key);
@@ -512,11 +553,11 @@ export class IsoMap {
   }
 
   /** The plot under screen point (sx, sy): a unit or city drawn there (front-most first), else the
-   *  ground; null off the map. */
-  screenToMap(sx, sy) {
+   *  ground (`ground`: the ground only); null off the map. */
+  screenToMap(sx, sy, { ground = false } = {}) {
     const { cam, vw, vh, map } = this.view;
     if (!map) return null;
-    for (let i = this.hits.length - 1; i >= 0; i--) {
+    for (let i = ground ? -1 : this.hits.length - 1; i >= 0; i--) {
       const h = this.hits[i];
       if (sx < h.x0 || sx >= h.x1 || sy < h.y0 || sy >= h.y1) continue;
       for (const p of h.parts) {
@@ -615,25 +656,17 @@ export class IsoMap {
     return hash32(k) & 1 && this.sprites.has(alt) ? alt : key;
   }
 
+  /** The short name of `owner`'s civilization (`clan_of_embers`), the prefix of its own sprites. */
+  civKey(owner) {
+    return civShortName(owner);
+  }
+
   /** The sprite standing in for unit type `type` owned by `owner` (memoised). */
   unitKey(type, owner) {
-    const civIdx = owner === me()?.player ? me()?.civ : S.players.get(owner)?.civ;
-    const civ = shortName(tname("CivilizationType", civIdx), "CIVILIZATION_");
+    const civ = this.civKey(owner);
     const memo = `${type}|${civ}`;
     if (this.unitKeys.has(memo)) return this.unitKeys.get(memo);
-    const info = S.data?.tables?.UnitType?.[type] ?? {};
-    const t = shortName(info.type, "UNIT_");
-    const c = shortName(tname("UnitClassType", info.class), "UNITCLASS_");
-    const names = [];
-    if (civ && t) names.push(`${civ}_${t}`);
-    if (civ && c) names.push(`${civ}_${c}`);
-    for (const n of [t, c]) if (n) names.push(n, ...(UNIT_ALIASES[n] ?? []));
-    if (info.found) names.push("settler");
-    if (info.worker) names.push("worker");
-    const combat = COMBAT_SPRITES[tname("UnitCombatType", info.unit_combat)];
-    const domain = DOMAIN_SPRITES[tname("DomainType", info.domain)];
-    for (const n of [combat, domain, "swordsman"]) if (n) names.push(n, ...(UNIT_ALIASES[n] ?? []));
-    const key = this.pick(names.map((n) => `unit_${n}`));
+    const key = this.pick(unitSpriteKeys(type, civ));
     this.unitKeys.set(memo, key);
     return key;
   }
@@ -652,7 +685,7 @@ export class IsoMap {
 
   /** Facing and the move slide from the units' moves since the last view: units face right and
    *  are mirrored after a move to the left of the screen; the player's own moves within their turn
-   *  slide (as artmap.js). */
+   *  slide (as the retired 2D art map did). */
   syncView() {
     if (S.view === this.seenView) return;
     this.seenView = S.view;
@@ -705,7 +738,14 @@ export class IsoMap {
     const g = v.ctx;
     const map = v.map;
     g.setTransform(1, 0, 0, 1, 0, 0);
-    g.fillStyle = "#0b1220";
+    // The world floats in a summer sky (the reference's), the unexplored edge in its clouds.
+    if (this.skyH !== v.canvas.height) {
+      this.skyH = v.canvas.height;
+      this.sky = g.createLinearGradient(0, 0, 0, v.canvas.height);
+      this.sky.addColorStop(0, "#5aa7e4");
+      this.sky.addColorStop(1, "#a9d5f4");
+    }
+    g.fillStyle = this.sky;
     g.fillRect(0, 0, v.canvas.width, v.canvas.height);
     this.hits = [];
     if (!map) return;
@@ -748,7 +788,9 @@ export class IsoMap {
       this.drawRoutes(g, f, cells);
       this.drawBorders(g, f, cells, false);
     }
-    this.drawGroundMarks(g, f);
+    // The city screen shows its work area instead of the selection's marks (drawCityArea).
+    const city = v.overlay.city;
+    if (!city) this.drawGroundMarks(g, f);
 
     const byPlot = new Map();
     for (const c of cells) byPlot.set(c.k, [...(byPlot.get(c.k) ?? []), c]);
@@ -772,10 +814,13 @@ export class IsoMap {
     // Borders again over what stands up, faintly, so who owns a forest still shows.
     if (layer === "terrain") this.drawBorders(g, f, cells, false, true);
     this.drawClouds(g, f, cells);
+    if (city) this.drawCityArea(g, f, cells, city);
 
-    this.drawCityLabels(g, f, cities);
+    // The screen's own city is named by its title; its plaque would cover its plots' yields.
+    this.drawCityLabels(g, f, city ? cities.filter((x) => x.city.id !== city.id) : cities);
     this.drawUnitBadges(g, f, items.filter((it) => it.stack));
-    this.drawPath(g, f);
+    if (city) this.drawCityYields(g, f, cells, city);
+    else this.drawPath(g, f);
     this.drawFlashes(g, f);
     if (this.slides.size) {
       const now = performance.now();
@@ -875,7 +920,7 @@ export class IsoMap {
     this.cityFlags = new Map();
     for (const { city, c } of cities) {
       if (city.size !== null && city.size !== undefined) this.lastSize.set(city.id, city.size);
-      const base = this.pick(citySprites(city.size ?? this.lastSize.get(city.id) ?? 1));
+      const base = this.pick(citySprites(city.size ?? this.lastSize.get(city.id) ?? 1, this.civKey(city.owner)));
       const banner = this.bannerKey(city.owner);
       const bottom = c.sy + f.TH / 2;
       items.push({
@@ -1219,7 +1264,7 @@ export class IsoMap {
       g.fill();
     }
     if (f.TW < 48) return; // too small for legible numbers
-    g.font = `bold ${Math.max(10, Math.round(f.TW * 0.16))}px system-ui, sans-serif`;
+    g.font = `700 ${10 * heraldScale(f.TW)}px ${HERALD}`;
     g.textAlign = "center";
     g.textBaseline = "middle";
     for (const c of cells) {
@@ -1290,10 +1335,10 @@ export class IsoMap {
     g.arc(x, y, r, 0, Math.PI * 2);
     g.fill();
     g.fillStyle = "#111";
-    g.font = `bold ${Math.round(r * 1.1)}px system-ui, sans-serif`;
+    g.font = `700 ${10 * heraldScale(this.view.cam.ts)}px ${HERALD}`;
     g.textAlign = "center";
     g.textBaseline = "middle";
-    g.fillText(text, x, y + 0.5);
+    g.fillText(text, Math.round(x), Math.round(y));
   }
 
   /** The planned path of the selection (overlay.path): a line from plot to plot, unwrapped from
@@ -1363,57 +1408,193 @@ export class IsoMap {
    *  for the player's own cities the turns left on what it builds; a gold star over a capital. */
   drawCityLabels(g, f, cities) {
     const mine = me()?.player;
+    // A plaque in the interface's look: a navy plate in a gilt frame on the 2 px grid (1 px when
+    // zoomed out), the size on the owner's colour at its left, the name (and, for your own, the
+    // turns left on its build) in Herald.
+    const u = heraldScale(f.TW);
+    const fs = 10 * u;
+    g.font = `700 ${fs}px ${HERALD}`;
+    g.textAlign = "left";
+    g.textBaseline = "alphabetic";
     for (const { city, c } of cities) {
       const col = ownerColor(city.owner);
-      const fs = Math.max(10, Math.round(f.TW * 0.12));
-      const y = c.sy + f.TH / 4;
       const size = city.size === null || city.size === undefined ? "?" : String(city.size);
       const turns = city.owner === mine ? city.production?.turns : null;
       const label = f.TW >= 64 ? `${city.name ?? ""}${turns !== null && turns !== undefined ? `  ${turns}` : ""}` : "";
-      g.font = `600 ${fs}px Georgia, "Times New Roman", serif`;
-      const tw = label ? g.measureText(label).width : 0;
-      const r = fs * 0.75;
-      const h = fs + 8;
-      const w = tw + (label ? fs * 1.2 : 0) + r * 2 + 6;
-      const x0 = c.sx - w / 2;
-      g.fillStyle = "rgba(17,27,52,0.9)";
-      roundRect(g, x0, y, w, h, 4);
-      g.fill();
-      g.strokeStyle = "#d4a845";
-      g.lineWidth = 1.5;
-      g.stroke();
-      g.beginPath();
-      g.arc(x0 + 3 + r, y + h / 2, r, 0, Math.PI * 2);
+      const tw = label ? Math.ceil(g.measureText(label).width) : 0;
+      const sw = Math.ceil(g.measureText(size).width);
+      const h = 15 * u;
+      const chip = Math.max(sw + 6 * u, h - 4 * u);
+      const w = 4 * u + chip + (label ? 4 * u + tw + 4 * u : 0);
+      const x0 = Math.round(c.sx - w / 2);
+      const y0 = Math.round(c.sy + f.TH / 4);
+      g.fillStyle = "#0c0703";
+      g.fillRect(x0 - u, y0 - u, w + 2 * u, h + 2 * u);
+      g.fillStyle = "#f0b443";
+      g.fillRect(x0, y0, w, h);
+      g.fillStyle = "#ffe58c";
+      g.fillRect(x0, y0, w, u);
+      g.fillRect(x0, y0, u, h);
+      g.fillStyle = "#a86d1c";
+      g.fillRect(x0, y0 + h - u, w, u);
+      g.fillStyle = "#0c0703";
+      g.fillRect(x0 + u, y0 + u, w - 2 * u, h - 2 * u);
+      g.fillStyle = "#06205a";
+      g.fillRect(x0 + 2 * u, y0 + 2 * u, w - 4 * u, h - 4 * u);
       g.fillStyle = col;
-      g.fill();
-      g.strokeStyle = "rgba(0,0,0,0.6)";
-      g.lineWidth = 1;
-      g.stroke();
-      g.fillStyle = "#fff";
-      g.font = `bold ${Math.round(fs * 0.9)}px system-ui, sans-serif`;
-      g.textAlign = "center";
-      g.textBaseline = "middle";
-      g.fillText(size, x0 + 3 + r, y + h / 2 + 0.5);
+      g.fillRect(x0 + 2 * u, y0 + 2 * u, chip, h - 4 * u);
+      const base = y0 + 2 * u + Math.round((h - 4 * u - 7 * u) / 2) + 7 * u;
+      g.fillStyle = "#0c0703";
+      g.fillText(size, x0 + 2 * u + Math.round((chip - sw) / 2) + u, base + u);
+      g.fillStyle = "#ffffff";
+      g.fillText(size, x0 + 2 * u + Math.round((chip - sw) / 2), base);
       if (label) {
-        g.font = `600 ${fs}px Georgia, "Times New Roman", serif`;
-        g.textAlign = "left";
         g.fillStyle = city.owner === mine ? "#ffe9a8" : "#f2ecdc";
-        g.fillText(label, x0 + 6 + r * 2 + fs * 0.4, y + h / 2 + 0.5);
+        g.fillText(label, x0 + 6 * u + chip, base);
       }
       if (city.capital) {
         g.fillStyle = "#ffdd55";
-        g.strokeStyle = "rgba(10,10,12,0.7)";
+        g.strokeStyle = "rgba(10,10,12,0.8)";
         g.lineWidth = 1;
-        star(g, x0 - 2, y + 1, 5, Math.max(4, fs * 0.55), Math.max(2, fs * 0.24));
+        star(g, x0 - 2, y0 + 1, 5, Math.max(4, 6 * u), Math.max(2, 2.6 * u));
         g.fill();
         g.stroke();
       }
+      // Revolt pressure (docs/CULTURE.md): a mark at the plaque's right end by its level.
+      drawRevoltMark(g, city, x0 + w + Math.max(4, 5 * u) - u, y0 + h / 2, Math.max(4, 5 * u), u, base);
     }
+  }
+
+  /** The city screen's work area (map.js `cityOverlay`, Civ4's city view): the revealed plots
+   *  outside the city's radius under a veil, the radius edged in gilt, its worked plots lit with a
+   *  citizen (dimmed when another city works the plot), the plots that are not the player's tinted,
+   *  the one pointed at outlined. */
+  drawCityArea(g, f, cells, city) {
+    const map = this.view.map;
+    const plots = new Map(city.plots.map((p) => [T.plotIndex(map, p.x, p.y), p]));
+    const mine = me()?.player;
+    g.fillStyle = "rgba(3,10,32,0.62)";
+    for (const c of cells) {
+      if (map.vis[c.k] === 0 || plots.get(c.k)?.revealed) continue;
+      this.diamond(g, c.sx, c.sy + c.drop, f.TW);
+      g.fill();
+    }
+    const inside = (c, dx, dy) => plots.has(T.plotIndex(map, c.x + dx, c.y + dy));
+    const hover = this.view.overlay.hover;
+    const edges = [];
+    for (const c of cells) {
+      const p = plots.get(c.k);
+      if (!p || !p.revealed) continue;
+      const sy = c.sy + c.drop;
+      if (p.worked && p.i !== 0) {
+        // A worked plot: lit, in a gilt ring.
+        this.diamond(g, c.sx, sy, f.TW, 3 * f.s);
+        g.fillStyle = "rgba(255,218,120,0.42)";
+        g.fill();
+        g.strokeStyle = "#0c0703";
+        g.lineWidth = 4;
+        g.stroke();
+        g.strokeStyle = "#f0b443";
+        g.lineWidth = 2;
+        g.stroke();
+      } else if (p.owner !== mine && p.i !== 0) {
+        this.diamond(g, c.sx, sy, f.TW, 2 * f.s);
+        g.fillStyle = "rgba(190,50,36,0.24)";
+        g.fill();
+      }
+      // The radius's edge: the sides facing a plot outside it (north is up-right, east down-right).
+      const T0 = [c.sx, sy - f.TH / 2];
+      const R = [c.sx + f.TW / 2, sy];
+      const B = [c.sx, sy + f.TH / 2];
+      const L = [c.sx - f.TW / 2, sy];
+      if (!inside(c, 0, 1)) edges.push([T0, R]);
+      if (!inside(c, 1, 0)) edges.push([R, B]);
+      if (!inside(c, 0, -1)) edges.push([B, L]);
+      if (!inside(c, -1, 0)) edges.push([L, T0]);
+      if (hover && hover.x === p.x && hover.y === p.y) {
+        this.diamond(g, c.sx, sy, f.TW, 2 * f.s);
+        g.strokeStyle = "#fff4c2";
+        g.lineWidth = 2;
+        g.stroke();
+      }
+    }
+    for (const [w, col] of [[5, "#0c0703"], [3, "#f0b443"], [1, "#ffe58c"]]) {
+      g.beginPath();
+      for (const [a, b] of edges) {
+        g.moveTo(a[0], a[1]);
+        g.lineTo(b[0], b[1]);
+      }
+      g.strokeStyle = col;
+      g.lineWidth = w;
+      g.stroke();
+    }
+    // The citizens: the interface's figure on each worked plot (half-seen when another city's).
+    const icon = this.sprites.source("ui_population_s");
+    if (!icon) return;
+    const size = f.TW >= 96 ? 32 : 16;
+    g.imageSmoothingEnabled = false;
+    for (const c of cells) {
+      const p = plots.get(c.k);
+      if (!p?.revealed || p.i === 0) continue;
+      const other = p.worked_by !== null && p.worked_by !== undefined;
+      if (!p.worked && !other) continue;
+      g.globalAlpha = p.worked ? 1 : 0.45;
+      g.drawImage(icon, Math.round(c.sx - size / 2), Math.round(c.sy + c.drop - f.TH * 0.42 - size / 2), size, size);
+    }
+    g.globalAlpha = 1;
+    g.imageSmoothingEnabled = true;
+  }
+
+  /** The city's plots' yields, over everything: a navy plate in a gilt rule on each revealed plot
+   *  with the interface's food, production and commerce icons and the amounts in Herald. */
+  drawCityYields(g, f, cells, city) {
+    const map = this.view.map;
+    const plots = new Map(city.plots.map((p) => [T.plotIndex(map, p.x, p.y), p]));
+    const icons = ["ui_food_s", "ui_production_s", "ui_commerce_s"].map((k) => this.sprites.source(k));
+    if (icons.some((im) => !im)) return;
+    // The plates of plots side by side are a tile apart: Herald at 2x only from 128 px tiles.
+    const u = f.TW >= 128 ? 2 : 1;
+    const fs = 10 * u;
+    const isz = 16;
+    g.font = `700 ${fs}px ${HERALD}`;
+    g.textAlign = "left";
+    g.textBaseline = "alphabetic";
+    g.imageSmoothingEnabled = false;
+    for (const c of cells) {
+      const p = plots.get(c.k);
+      if (!p?.revealed || !p.yields) continue;
+      const parts = p.yields.map((v, j) => [v, j]).filter(([v]) => v > 0);
+      if (!parts.length) continue;
+      const widths = parts.map(([v]) => isz + 2 + Math.ceil(g.measureText(String(v)).width));
+      const w = widths.reduce((a, b) => a + b, 0) + 4 * (parts.length - 1) + 8;
+      const h = Math.max(isz, 7 * u) + 6;
+      const x0 = Math.round(c.sx - w / 2);
+      const y0 = Math.round(c.sy + c.drop + f.TH * 0.08);
+      // A worked plot's plate is gilt-framed; the others' are muted, unframed.
+      g.globalAlpha = p.worked ? 1 : 0.62;
+      g.fillStyle = "#0c0703";
+      g.fillRect(x0 - 1, y0 - 1, w + 2, h + 2);
+      g.fillStyle = p.worked ? "#f0b443" : "#0c0703";
+      g.fillRect(x0, y0, w, h);
+      g.fillStyle = p.worked ? "#0a2a6c" : "#04102e";
+      g.fillRect(x0 + 1, y0 + 1, w - 2, h - 2);
+      let x = x0 + 4;
+      const base = y0 + Math.round((h - 7 * u) / 2) + 7 * u;
+      parts.forEach(([v, j], n) => {
+        g.drawImage(icons[j], x, Math.round(y0 + (h - isz) / 2), isz, isz);
+        g.fillStyle = p.worked ? "#ffffff" : "#c9d2e8";
+        g.fillText(String(v), x + isz + 2, base);
+        x += widths[n] + 4;
+      });
+      g.globalAlpha = 1;
+    }
+    g.imageSmoothingEnabled = true;
   }
 
   /** Each stack's count (on its flag; a hidden garrison's on its city's, even when alone), its
    *  health bar when hurt, and for the player's own stacks a pip on the finial: green while it can
-   *  move. Drawn over everything. */
+   *  move; a marching recruit's march mark instead (`marchMark`: the rules move it). Drawn over
+   *  everything. */
   drawUnitBadges(g, f, items) {
     const mine = me()?.player;
     for (const it of items) {
@@ -1423,19 +1604,20 @@ export class IsoMap {
       const fx = flag.x0;
       const fy = flag.y0;
       if (units.length > 1 || !figure) {
-        const fs = Math.max(9, Math.round(20 * f.s));
-        g.font = `bold ${fs}px system-ui, sans-serif`;
+        g.font = `700 ${10 * heraldScale(f.TW)}px ${HERALD}`;
         g.textAlign = "center";
         g.textBaseline = "middle";
-        const cx = fx + 22 * f.s;
-        const cy = fy + 30 * f.s;
+        const cx = Math.round(fx + 22 * f.s);
+        const cy = Math.round(fy + 30 * f.s);
         g.lineWidth = 3;
         g.strokeStyle = "rgba(0,0,0,0.75)";
         g.strokeText(String(units.length), cx, cy);
         g.fillStyle = "#fff6d8";
         g.fillText(String(units.length), cx, cy);
       }
-      if (top.owner === mine) {
+      if (marchMark(top, mine)) {
+        drawMarchMark(g, fx + 4.5 * f.s, fy + 3.5 * f.s, Math.max(6.5, 12 * f.s), 1);
+      } else if (top.owner === mine) {
         g.beginPath();
         g.arc(fx + 4.5 * f.s, fy + 3.5 * f.s, Math.max(2.5, 5 * f.s), 0, Math.PI * 2);
         g.fillStyle = (top.moves ?? 0) > 0 ? "#45e05c" : "#d03a2a";
@@ -1469,16 +1651,6 @@ function union(a, b) {
   return { x0: Math.min(a.x0, b.x0), y0: Math.min(a.y0, b.y0), x1: Math.max(a.x1, b.x1), y1: Math.max(a.y1, b.y1), parts: [a.part, b.part] };
 }
 
-function roundRect(g, x, y, w, h, r) {
-  g.beginPath();
-  g.moveTo(x + r, y);
-  g.arcTo(x + w, y, x + w, y + h, r);
-  g.arcTo(x + w, y + h, x, y + h, r);
-  g.arcTo(x, y + h, x, y, r);
-  g.arcTo(x, y, x + w, y, r);
-  g.closePath();
-}
-
 /** A well-mixed 32-bit hash of an integer: stable per-plot choices (tile variants). */
 function hash32(n) {
   let h = Math.imul(n ^ 0x9e3779b9, 0x85ebca6b);
@@ -1499,6 +1671,81 @@ function star(g, cx, cy, points, ro, ri) {
     i === 0 ? g.moveTo(x, y) : g.lineTo(x, y);
   }
   g.closePath();
+}
+
+/** The map mark of a city under revolt pressure (docs/CULTURE.md; the view's cities carry
+ *  `revolt`, the level, and `unrest` for the cities you see under pressure): null for none, else
+ *  its fill, rim, glyph, ink and a title by level: 0 pressure building (no effect yet, a small
+ *  ochre dot), 1 unrest (amber "!"), 2 revolt (red "!"), 3 close to changing hands (red "!!" in a
+ *  gold ring). The isometric and the 2D map draw it (`drawRevoltMark`). */
+export function revoltMark(city) {
+  const lvl = city?.revolt;
+  if (lvl === null || lvl === undefined) return null;
+  if (lvl <= 0) return { level: 0, fill: "#c9a24a", rim: "#0c0703", glyph: "", ink: "#0c0703", title: "Revolt pressure is building" };
+  if (lvl === 1) return { level: 1, fill: "#f0a020", rim: "#0c0703", glyph: "!", ink: "#0c0703", title: `Unrest from revolt pressure${city.unrest ? ` (−${city.unrest} happy)` : ""}` };
+  if (lvl === 2) return { level: 2, fill: "#c0241c", rim: "#0c0703", glyph: "!", ink: "#ffffff", title: "In revolt from revolt pressure" };
+  return { level: 3, fill: "#c0241c", rim: "#ffe58c", glyph: "!!", ink: "#ffffff", title: "Close to changing hands from revolt pressure" };
+}
+
+/** Draws city `city`'s revolt mark (`revoltMark`), if any, as a disc of radius `r` centred at
+ *  (`cx`, `cy`), its glyph on baseline `base` in the current font; `u` the line unit. */
+export function drawRevoltMark(g, city, cx, cy, r, u, base) {
+  const mk = revoltMark(city);
+  if (!mk) return;
+  const rr = mk.level === 0 ? Math.max(2.5, r * 0.55) : mk.level === 3 ? r * 1.2 : r;
+  const x = mk.glyph.length > 1 ? cx + rr * 0.15 : cx;
+  g.fillStyle = mk.fill;
+  g.strokeStyle = mk.rim;
+  g.lineWidth = Math.max(1, u) * (mk.level === 3 ? 1.5 : 1);
+  g.beginPath();
+  if (mk.glyph.length > 1) g.ellipse(x, cy, rr * 1.25, rr, 0, 0, Math.PI * 2);
+  else g.arc(x, cy, rr, 0, Math.PI * 2);
+  g.fill();
+  g.stroke();
+  if (mk.glyph) {
+    const align = g.textAlign;
+    g.fillStyle = mk.ink;
+    g.textAlign = "center";
+    g.fillText(mk.glyph, x, base);
+    g.textAlign = align;
+  }
+}
+
+/** The map mark of a marching recruit (this game's armies, docs/ARMIES.md; the view's own units
+ *  carry `march`): a stack whose shown unit is one of the viewer's recruits marching to an army or
+ *  a garrison shows a small ochre double chevron in place of its moves pip (the rules move it, it
+ *  takes no orders), the plot's tooltip says where it goes; null for any other stack. The
+ *  isometric and the 2D map draw it (`drawMarchMark`; the 2D art map as its state mark
+ *  `ui/mark_march`, stacks.js). */
+export function marchMark(top, me) {
+  if (!top || top.owner !== me || !top.march) return null;
+  return { title: `Marching to ${top.march.to}` };
+}
+
+/** Draws the march mark (`marchMark`): an ochre disc of radius `r` centred at (`cx`, `cy`), with
+ *  a dark double chevron pointing east; `u` the line unit. */
+export function drawMarchMark(g, cx, cy, r, u = 1) {
+  g.save();
+  g.fillStyle = "#dba63b";
+  g.strokeStyle = "#0c0703";
+  g.lineWidth = Math.max(1, u);
+  g.beginPath();
+  g.arc(cx, cy, r, 0, Math.PI * 2);
+  g.fill();
+  g.stroke();
+  const w = r * 0.4;
+  const hh = r * 0.48;
+  g.lineWidth = Math.max(1.2, r * 0.26);
+  g.lineCap = "round";
+  g.lineJoin = "round";
+  g.beginPath();
+  for (const dx of [-r * 0.3, r * 0.2]) {
+    g.moveTo(cx + dx - w / 2, cy - hh);
+    g.lineTo(cx + dx + w / 2, cy);
+    g.lineTo(cx + dx - w / 2, cy + hh);
+  }
+  g.stroke();
+  g.restore();
 }
 
 /** The lookup tables, for the tests (assets/test/iso.test.mjs). */

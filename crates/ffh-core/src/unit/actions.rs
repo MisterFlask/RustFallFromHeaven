@@ -206,6 +206,7 @@ impl Game {
                 // FfH Spell System: Added by Kael 07/23/2007
                 CommandType::COMMAND_CAST => {
                     let spell = command_spell(self, data1).expect("CvUnit::doCommand: COMMAND_CAST with an invalid spell");
+                    self.tel_cast_reason(u, "command", 0);
                     self.unit_cast(u, spell);
                 }
 
@@ -321,6 +322,15 @@ impl Game {
 
     /// C++ `CvUnit::scrap` (CvUnit.cpp:3953-3974).
     pub fn unit_scrap(&mut self, u: UnitId) {
+        if !self.telemetry.on() {
+            return self.unit_scrap_inner(u);
+        }
+        self.tel_ctx_push("scrap");
+        self.unit_scrap_inner(u);
+        self.tel_ctx_pop();
+    }
+
+    fn unit_scrap_inner(&mut self, u: UnitId) {
         if !self.unit_can_scrap(u) {
             return;
         }
@@ -1267,13 +1277,20 @@ impl Game {
         best_city
     }
 
-    /// C++ `CvUnit::canBombard` (CvUnit.cpp:5473-5496).
+    /// C++ `CvUnit::canBombard` (CvUnit.cpp:5473-5496). Under engagement combat a land unit's
+    /// bombard is one of its attacks this turn (one, Blitz one more: plan 5.2).
     pub fn unit_can_bombard(&self, u: UnitId, plot: PlotIdx) -> bool {
         if self.unit_bombard_rate(u) <= 0 {
             return false;
         }
 
-        if self.units[u].made_attack {
+        if self.engagements_on() && self.unit_get_domain_type(u) == DomainType::DOMAIN_LAND {
+            // Engagement combat (plan 5.2): a bombard is one of the turn's attacks (one a turn,
+            // Blitz one more). Ships keep the duel's rule.
+            if !self.unit_has_attack_left(u) {
+                return false;
+            }
+        } else if self.units[u].made_attack {
             return false;
         }
 
@@ -1320,6 +1337,10 @@ impl Game {
         self.city_change_defense_modifier(bombard_city, change);
 
         self.units[u].made_attack = true;
+        // Engagement combat: a bombard is one of the turn's attacks (plan 5.2).
+        if self.engagements_on() {
+            self.units[u].attacks_made += 1;
+        }
         self.unit_change_moves(u, self.d.defines.move_denominator);
 
         // UI: TXT_KEY_MISC_DEFENSES_IN_CITY_REDUCED_TO to the city owner and

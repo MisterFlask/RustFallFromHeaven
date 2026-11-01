@@ -1,0 +1,105 @@
+{
+ "name": "guybrush",
+ "sprite": "m7/roster/units/unit_guybrush.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "Guybrush, a young blond pirate: spiky blond hair tied in a ponytail with a red ribbon, a cheeky grin, a navy-blue long coat with gold buttons and gold trim over a white open-necked shirt with white cuffs, a red sash at the waist, dark grey trousers, brown folded-top boots, and a thin steel rapier with a gold basket hilt in his LEFT hand",
+ "hands": "the rapier stays in his left hand on the screen-right side and his right hand is an empty fist on his hip on the screen-left side",
+ "guide_style": "grey",
+ "scale": 1.07,
+ "head_r": 11,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   63,
+   46
+  ],
+  "neck": [
+   62,
+   57
+  ],
+  "chest": [
+   62,
+   67
+  ],
+  "pelvis": [
+   62,
+   80
+  ],
+  "r_sh": [
+   75,
+   63
+  ],
+  "r_el": [
+   85,
+   68
+  ],
+  "r_ha": [
+   92,
+   71
+  ],
+  "tip": [
+   122,
+   46
+  ],
+  "l_sh": [
+   48,
+   64
+  ],
+  "l_el": [
+   42,
+   72
+  ],
+  "l_ha": [
+   48,
+   78
+  ],
+  "r_hip": [
+   69,
+   90
+  ],
+  "r_kn": [
+   74,
+   104
+  ],
+  "r_ft": [
+   79,
+   120
+  ],
+  "l_hip": [
+   56,
+   90
+  ],
+  "l_kn": [
+   54,
+   104
+  ],
+  "l_ft": [
+   46,
+   120
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the rapier is lifted up over the head with its tip pointing up and back",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the rapier cocked behind the head with its thin blade hanging down behind the shoulders, the empty right fist tucked in",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the arm sweeps over the head and the thin blade is level, pointing to the lower-right",
+   "4": "contact: rapier arm fully extended toward the lower-right, the thin blade slashing down-right, front knee bent, body low and leaning in, the empty right fist swung back for balance",
+   "5": "follow-through: the thin blade carries on down until its tip nearly touches the ground at the lower-right, torso twisted, the blond ponytail and coat tails trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the rapier lifts back toward the ready angle"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (the empty right fist flung out to the left, rapier arm thrown up and out)",
+   "1": "recoil extreme: leaning back further, knees bent, the rapier dipping, the empty right fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, rapier arm flung up, the empty right fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the rapier lowering",
+   "3": "kneeling: on both knees, slumped forward, the rapier's tip resting on the ground, the empty right fist hanging",
+   "4": "falling back: torso tips back toward the upper-left, the rapier slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left; the rapier lies on the ground at the lower-right",
+   "6": "bounce: head and shoulders lift slightly off the ground, the blond ponytail flops",
+   "7": "corpse: lying flat and still on his back, eyes closed, the rapier on the ground beside him"
+  }
+ }
+}

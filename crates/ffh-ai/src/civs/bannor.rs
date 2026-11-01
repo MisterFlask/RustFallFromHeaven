@@ -11,6 +11,7 @@
 //! measurable (share@end +10, t 0.16; see docs/AI_LOG.md), so it was not kept.
 
 use ffh_core::game::Game;
+use ffh_core::ids::PlayerId;
 use ffh_data::*;
 
 use super::CivPlay;
@@ -20,10 +21,15 @@ use crate::Ai;
 pub struct Bannor;
 
 impl CivPlay for Bannor {
+    /// FfH's `AI_chooseTech` research plan (`tech_plan::goals`).
+    fn tech_goals(&self, _g: &Game, _p: PlayerId) -> super::TechGoals {
+        super::TechGoals { beelines: vec!["TECH_FANATICISM"], ..Default::default() }
+    }
+
     fn turn(&self, _ai: &Ai, g: &mut Game, v: &mut View) {
         let Some(recruit) = g.d.ty::<SpellType>("SPELL_RECRUIT") else { return };
         for u in g.players[v.p].units.clone() {
-            if g.units.contains(u) && g.unit_can_cast(u, recruit, false) {
+            if g.units.contains(u) && g.unit_march(u).is_none() && g.unit_can_cast(u, recruit, false) {
                 let value = crate::magic::recruit_value(g, u);
                 if value > 0 {
                     crate::magic::cast(g, u, recruit, "civ", value);
@@ -38,7 +44,7 @@ mod tests {
     use ffh_core::ids::*;
 
     use super::*;
-    use crate::campaign::tests::one_landmass_game;
+    use crate::testkit::one_landmass_game;
 
     #[test]
     fn donal_recruits_before_he_moves() {

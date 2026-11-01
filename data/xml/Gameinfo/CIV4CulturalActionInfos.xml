@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<!-- Cultural channels (GAMEOPTION_CULTURE_ACTIONS; this game's own rules, docs/CULTURE.md).
+     A city may channel half its culture (CULTURE_CHANNEL_PERCENT) into one of these, aimed at a
+     civilization, until its owner changes it. The channelled culture reaches neither the city's
+     culture nor its plots; its effect on each of the target's cities falls with the square of
+     the distance (CULTURE_CHANNEL_FULL_RANGE, CULTURE_CHANNEL_RANGE).
+
+     Hostile: NEVER, ALWAYS, or DIFFERENT_STATE_RELIGION (only when the target has a state
+              religion other than the one spread). Hostile channels are not acts of war; the
+              target's leader remembers them.
+     Effect:  FOMENT_REVOLT (revolt pressure on the target's cities: unhappiness, disorder, then
+              the city joins the caster) or SPREAD_RELIGION (a chance a turn that a religion of
+              the channelling city spreads to one of the target's cities); the magnitudes are the
+              CULTURE_* defines of RulesDefines.xml -->
+<Civ4CulturalActionInfos xmlns="x-schema:CIV4GameInfoSchema.xml">
+	<CulturalActionInfos>
+		<CulturalActionInfo>
+			<Type>CULTURALACTION_FOMENT_REVOLT</Type>
+			<Description>TXT_KEY_CULTURALACTION_FOMENT_REVOLT</Description>
+			<Help>TXT_KEY_CULTURALACTION_FOMENT_REVOLT_HELP</Help>
+			<Hostile>ALWAYS</Hostile>
+			<Effect>FOMENT_REVOLT</Effect>
+		</CulturalActionInfo>
+		<CulturalActionInfo>
+			<Type>CULTURALACTION_SPREAD_RELIGION</Type>
+			<Description>TXT_KEY_CULTURALACTION_SPREAD_RELIGION</Description>
+			<Help>TXT_KEY_CULTURALACTION_SPREAD_RELIGION_HELP</Help>
+			<Hostile>DIFFERENT_STATE_RELIGION</Hostile>
+			<Effect>SPREAD_RELIGION</Effect>
+		</CulturalActionInfo>
+	</CulturalActionInfos>
+</Civ4CulturalActionInfos>

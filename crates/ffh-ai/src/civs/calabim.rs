@@ -31,6 +31,11 @@ use crate::Ai;
 pub struct Calabim;
 
 impl CivPlay for Calabim {
+    /// FfH's `AI_chooseTech` research plan (`tech_plan::goals`).
+    fn tech_goals(&self, _g: &Game, _p: PlayerId) -> super::TechGoals {
+        super::TechGoals { beelines: vec!["TECH_FEUDALISM"], ..Default::default() }
+    }
+
     fn turn(&self, _ai: &Ai, g: &mut Game, v: &mut View) {
         let feasting = UnitAIType::UNITAI_FEASTING;
         for u in g.players[v.p].units.clone() {

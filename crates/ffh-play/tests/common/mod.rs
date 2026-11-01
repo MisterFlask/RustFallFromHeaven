@@ -8,9 +8,9 @@ use ffh_data::*;
 use ffh_play::bot::Bot;
 use ffh_play::{NewGame, Session, SessionOptions};
 
-/// ffh-stress's invariant checks, reused without editing ffh-stress (design F20).
-#[path = "../../../ffh-stress/src/check.rs"]
-pub mod check;
+/// The rules' invariant checks (ffh-harness, shared with ffh-stress and the soak).
+#[allow(unused_imports)] // not every test file runs the checks
+pub use ffh_harness::check;
 
 /// The T1 game: small map, 3 AI opponents.
 pub fn new_game(seed: u32) -> NewGame {

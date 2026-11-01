@@ -1,0 +1,110 @@
+{
+ "name": "lizardman",
+ "sprite": "m7/roster/units/unit_lizardman.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Lizardman warrior, an upright green reptile with a red crest of spines, a long snout, yellow eyes and a yellow belly, a necklace of bone fangs, a brown leather loincloth hung with bone fangs, a long green tail, a long wooden spear with a bone spearhead in his RIGHT hand and a round shield painted red and cream with an iron boss on his LEFT arm",
+ "hands": "the spear stays in his right hand on the screen-left side and the shield on his left arm on the screen-right side",
+ "guide_style": "grey",
+ "scale": 0.9,
+ "head_r": 11,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   86,
+   55
+  ],
+  "neck": [
+   82,
+   66
+  ],
+  "chest": [
+   84,
+   76
+  ],
+  "pelvis": [
+   84,
+   88
+  ],
+  "r_sh": [
+   73,
+   70
+  ],
+  "r_el": [
+   67,
+   74
+  ],
+  "r_ha": [
+   60,
+   77
+  ],
+  "tip": [
+   47,
+   33
+  ],
+  "l_sh": [
+   91,
+   70
+  ],
+  "l_el": [
+   96,
+   80
+  ],
+  "l_ha": [
+   101,
+   87
+  ],
+  "shield": [
+   104,
+   86,
+   10,
+   17
+  ],
+  "r_hip": [
+   77,
+   97
+  ],
+  "r_kn": [
+   70,
+   108
+  ],
+  "r_ft": [
+   65,
+   120
+  ],
+  "l_hip": [
+   87,
+   98
+  ],
+  "l_kn": [
+   93,
+   108
+  ],
+  "l_ft": [
+   100,
+   118
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back toward the upper-left, the spear is lifted beside the head with its spearhead pointing up and back",
+   "2": "wind-up extreme: body coiled back and crouched, the spear hand behind the head and the spear hanging back and down behind the shoulders to the left, shield tucked across the belly",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips round, the spear arm sweeps across in front of the chest and the spear is level, its spearhead pointing to the right",
+   "4": "contact: spear arm fully extended toward the lower-right, the spear's spearhead striking down-right, front knee bent, body low and leaning in, shield arm swung back behind the shoulders for balance",
+   "5": "follow-through: the spear carries on down until its spearhead nearly touches the ground at the lower-right, torso twisted, the red crest and the tail trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the spear comes back up on the near side toward the ready angle, shield tucked across the belly"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (spear arm thrown up and out to the left, shield flung out to the right)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the spear dipping, shield still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, spear arm flung up, shield drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the spear lowering",
+   "3": "kneeling: on both knees, slumped forward, the spear's spearhead resting on the ground at the lower-right, shield arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the spear slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left; the spear lies on the ground at the lower-right; the shield lies flat beside him",
+   "7": "corpse: lying flat and still on his back, eyes closed, spear and shield on the ground beside him"
+  }
+ }
+}

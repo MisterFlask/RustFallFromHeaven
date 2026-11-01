@@ -84,7 +84,7 @@ pub fn seek(g: &mut Game, p: PlayerId) {
         if other == p || !op.alive || op.human || ot == team || ot == foe || g.player_is_barbarian(other) || !is_team_leader(g, other) {
             continue;
         }
-        if !g.teams[team].has_met[ot] || g.teams[team].defensive_pact[ot] || relation(g, p, other) < 0 || pacts(g, ot) >= MAX_PACTS {
+        if !g.teams[team].has_met[ot] || g.teams[team].defensive_pact[ot] || relation(g, p, other) < 0 || pacts(g, ot) >= MAX_PACTS || !crate::diplomacy::can_talk(g, p, other) {
             continue;
         }
         if !g.player_can_trade_item(p, other, &pact_item(), true) || !g.player_can_trade_item(other, p, &pact_item(), true) {

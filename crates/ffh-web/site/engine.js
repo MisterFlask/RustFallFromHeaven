@@ -3,8 +3,8 @@
 // saves (from IndexedDB) at /saves in wasi.js's in-memory file system, starts the engine
 // (`_initialize`, `ffh_init`) and serves the page's HTTP requests one at a time with
 // `ffh_request`. After each batch of requests (the worker idle) the files under /saves that
-// changed are written to IndexedDB (database `ffh-play`, store `saves`, key = the path under
-// /saves).
+// changed are written to IndexedDB (the database the page names, site.js `SAVES_DB`, `ffh-play`
+// by default; store `saves`, key = the path under /saves).
 //
 // Requests arrive through a SharedArrayBuffer queue when the page is cross-origin isolated
 // (`RequestQueue`: the page produces, this worker consumes; a postMessage "kick" wakes the worker
@@ -370,9 +370,10 @@ function describe(e) {
 }
 
 /** Runs the worker. `env`: `post(msg, transfer)`, `listen(handler)` (the page's messages, the
- *  message itself), and optionally `fetch`, `openStore()` (the saves store; IndexedDB when the
- *  worker has it, else memory), `console`, `fetchInit` (passed to fetch: the browser revalidates
- *  the engine and the data with `cache: "no-cache"`). */
+ *  message itself), and optionally `fetch`, `openStore(db)` (the saves store, given the database
+ *  the page names in `init`; IndexedDB when the worker has it, else memory), `console`,
+ *  `fetchInit` (passed to fetch: the browser revalidates the engine and the data with
+ *  `cache: "no-cache"`). */
 export function workerMain(env) {
   const post = env.post;
   const log = env.console ?? console;
@@ -441,9 +442,10 @@ export function workerMain(env) {
     state = "loading";
     queue = msg.queue ? new RequestQueue(msg.queue) : null;
     fs = new MemFS();
-    const openStore = env.openStore ?? (() => (globalThis.indexedDB ? idbStore() : memoryStore()));
+    // The page names the saves database (site.js `SAVES_DB`); idbStore's default without one.
+    const openStore = env.openStore ?? ((db) => (globalThis.indexedDB ? idbStore(db) : memoryStore()));
     const storeP = Promise.resolve()
-      .then(openStore)
+      .then(() => openStore(msg.savesDb))
       .then(async (store) => {
         const p = new SavesPersister(fs, "/saves", store);
         await p.load();

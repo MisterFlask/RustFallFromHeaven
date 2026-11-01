@@ -4,6 +4,15 @@
 <!-- Copyright Firaxis Games 2005 -->
 <!-- -->
 <!-- Unit Infos -->
+<!-- This game's own fields (GAMEOPTION_ENGAGEMENTS, Units/CIV4CombatRoleInfos.xml):
+     CombatRole overrides the role a unit takes from its unit combat (the religions' fighters,
+     which never cast, are COMBATROLE_FRONTLINE although disciples are support); iAttack, iDefense
+     and iHP, when above 0, replace the role's attack base (iCombat x the role's attack %), its
+     defence base (iCombatDefense x its defence %) and its max HP. bLarge: a large unit in a
+     formation battle (two cells, two slots). iEngageSpeed, iEngageDodge and iEngageCritBonus
+     (-1, the default: the role's) and EngageRows (three Row elements, front, middle, rear, each an
+     Action and its iCount) replace the role's speed, dodge, crit bonus and rows
+     (docs/ENGAGEMENTS.md, "Per-unit values"). -->
 <Civ4UnitInfos xmlns="x-schema:CIV4UnitSchema.xml">
     <UnitInfos>
         <UnitInfo>
@@ -4929,6 +4938,7 @@
             <Special>NONE</Special>
             <Capture>NONE</Capture>
             <Combat>UNITCOMBAT_BEAST</Combat>
+            <bLarge>1</bLarge>
             <Domain>DOMAIN_LAND</Domain>
             <DefaultUnitAI>UNITAI_HERO</DefaultUnitAI>
             <Invisible>NONE</Invisible>
@@ -5159,6 +5169,7 @@
             <Special>NONE</Special>
             <Capture>NONE</Capture>
             <Combat>UNITCOMBAT_BEAST</Combat>
+            <bLarge>1</bLarge>
             <Domain>DOMAIN_LAND</Domain>
             <DefaultUnitAI>UNITAI_CITY_DEFENSE</DefaultUnitAI>
             <Invisible>NONE</Invisible>
@@ -13403,6 +13414,7 @@
             <Special>NONE</Special>
             <Capture>NONE</Capture>
             <Combat>NONE</Combat>
+            <bLarge>1</bLarge>
             <Domain>DOMAIN_LAND</Domain>
             <DefaultUnitAI>UNITAI_ATTACK</DefaultUnitAI>
             <Invisible>NONE</Invisible>
@@ -14314,6 +14326,7 @@
             <Special>NONE</Special>
             <Capture>NONE</Capture>
             <Combat>UNITCOMBAT_MELEE</Combat>
+            <bLarge>1</bLarge>
             <Domain>DOMAIN_LAND</Domain>
             <DefaultUnitAI>UNITAI_HERO</DefaultUnitAI>
             <Invisible>NONE</Invisible>
@@ -17410,6 +17423,7 @@
             <Special>NONE</Special>
             <Capture>NONE</Capture>
             <Combat>NONE</Combat>
+            <bLarge>1</bLarge>
             <Domain>DOMAIN_LAND</Domain>
             <DefaultUnitAI>UNITAI_ATTACK</DefaultUnitAI>
             <Invisible>NONE</Invisible>
@@ -20877,6 +20891,7 @@
             <Special>NONE</Special>
             <Capture>NONE</Capture>
             <Combat>NONE</Combat>
+            <bLarge>1</bLarge>
             <Domain>DOMAIN_LAND</Domain>
             <DefaultUnitAI>UNITAI_ATTACK</DefaultUnitAI>
             <Invisible>NONE</Invisible>
@@ -23864,6 +23879,7 @@
             <Special>NONE</Special>
             <Capture>NONE</Capture>
             <Combat>UNITCOMBAT_DISCIPLE</Combat>
+            <CombatRole>COMBATROLE_FRONTLINE</CombatRole>
             <Domain>DOMAIN_LAND</Domain>
             <DefaultUnitAI>UNITAI_ATTACK</DefaultUnitAI>
             <Invisible>NONE</Invisible>
@@ -26743,6 +26759,7 @@
             <Special>NONE</Special>
             <Capture>NONE</Capture>
             <Combat>UNITCOMBAT_BEAST</Combat>
+            <bLarge>1</bLarge>
             <Domain>DOMAIN_LAND</Domain>
             <DefaultUnitAI>UNITAI_HERO</DefaultUnitAI>
             <Invisible>NONE</Invisible>
@@ -28651,6 +28668,7 @@
             <Special>NONE</Special>
             <Capture>NONE</Capture>
             <Combat>NONE</Combat>
+            <bLarge>1</bLarge>
             <Domain>DOMAIN_LAND</Domain>
             <DefaultUnitAI>UNITAI_ATTACK</DefaultUnitAI>
             <Invisible>NONE</Invisible>
@@ -28870,6 +28888,7 @@
             <Special>NONE</Special>
             <Capture>NONE</Capture>
             <Combat>UNITCOMBAT_DISCIPLE</Combat>
+            <CombatRole>COMBATROLE_FRONTLINE</CombatRole>
             <Domain>DOMAIN_LAND</Domain>
             <DefaultUnitAI>UNITAI_ATTACK</DefaultUnitAI>
             <Invisible>NONE</Invisible>
@@ -29107,6 +29126,7 @@
             <Special>NONE</Special>
             <Capture>NONE</Capture>
             <Combat>UNITCOMBAT_DISCIPLE</Combat>
+            <CombatRole>COMBATROLE_FRONTLINE</CombatRole>
             <Domain>DOMAIN_LAND</Domain>
             <DefaultUnitAI>UNITAI_ATTACK</DefaultUnitAI>
             <Invisible>NONE</Invisible>
@@ -29327,6 +29347,7 @@
             <Special>NONE</Special>
             <Capture>NONE</Capture>
             <Combat>UNITCOMBAT_ANIMAL</Combat>
+            <bLarge>1</bLarge>
             <Domain>DOMAIN_LAND</Domain>
             <DefaultUnitAI>UNITAI_ANIMAL</DefaultUnitAI>
             <Invisible>NONE</Invisible>
@@ -29782,6 +29803,7 @@
             <Special>NONE</Special>
             <Capture>NONE</Capture>
             <Combat>UNITCOMBAT_BEAST</Combat>
+            <bLarge>1</bLarge>
             <Domain>DOMAIN_LAND</Domain>
             <DefaultUnitAI>UNITAI_HERO</DefaultUnitAI>
             <Invisible>NONE</Invisible>
@@ -31117,6 +31139,7 @@
             <Special>NONE</Special>
             <Capture>NONE</Capture>
             <Combat>NONE</Combat>
+            <bLarge>1</bLarge>
             <Domain>DOMAIN_LAND</Domain>
             <DefaultUnitAI>UNITAI_ATTACK</DefaultUnitAI>
             <Invisible>NONE</Invisible>
@@ -35501,6 +35524,7 @@
             <Special>NONE</Special>
             <Capture>NONE</Capture>
             <Combat>UNITCOMBAT_BEAST</Combat>
+            <bLarge>1</bLarge>
             <Domain>DOMAIN_LAND</Domain>
             <DefaultUnitAI>UNITAI_ATTACK</DefaultUnitAI>
             <Invisible>NONE</Invisible>
@@ -38650,6 +38674,7 @@
             <Special>NONE</Special>
             <Capture>NONE</Capture>
             <Combat>UNITCOMBAT_BEAST</Combat>
+            <bLarge>1</bLarge>
             <Domain>DOMAIN_LAND</Domain>
             <DefaultUnitAI>UNITAI_ANIMAL</DefaultUnitAI>
             <Invisible>NONE</Invisible>
@@ -42479,6 +42504,7 @@
             <Special>NONE</Special>
             <Capture>NONE</Capture>
             <Combat>NONE</Combat>
+            <bLarge>1</bLarge>
             <Domain>DOMAIN_LAND</Domain>
             <DefaultUnitAI>UNITAI_ATTACK</DefaultUnitAI>
             <Invisible>NONE</Invisible>
@@ -45160,6 +45186,7 @@
             <Special>NONE</Special>
             <Capture>NONE</Capture>
             <Combat>UNITCOMBAT_MOUNTED</Combat>
+            <bLarge>1</bLarge>
             <Domain>DOMAIN_LAND</Domain>
             <DefaultUnitAI>UNITAI_ATTACK</DefaultUnitAI>
             <Invisible>NONE</Invisible>
@@ -50656,6 +50683,7 @@
             <Special>NONE</Special>
             <Capture>NONE</Capture>
             <Combat>UNITCOMBAT_BEAST</Combat>
+            <bLarge>1</bLarge>
             <Domain>DOMAIN_LAND</Domain>
             <DefaultUnitAI>UNITAI_ATTACK</DefaultUnitAI>
             <Invisible>NONE</Invisible>
@@ -53100,6 +53128,7 @@
             <Special>NONE</Special>
             <Capture>NONE</Capture>
             <Combat>NONE</Combat>
+            <bLarge>1</bLarge>
             <Domain>DOMAIN_LAND</Domain>
             <DefaultUnitAI>UNITAI_HERO</DefaultUnitAI>
             <Invisible>NONE</Invisible>
@@ -53843,6 +53872,7 @@
             <Special>NONE</Special>
             <Capture>NONE</Capture>
             <Combat>UNITCOMBAT_DISCIPLE</Combat>
+            <CombatRole>COMBATROLE_FRONTLINE</CombatRole>
             <Domain>DOMAIN_LAND</Domain>
             <DefaultUnitAI>UNITAI_COUNTER</DefaultUnitAI>
             <Invisible>NONE</Invisible>
@@ -55008,6 +55038,7 @@
             <Special>NONE</Special>
             <Capture>NONE</Capture>
             <Combat>UNITCOMBAT_DISCIPLE</Combat>
+            <CombatRole>COMBATROLE_FRONTLINE</CombatRole>
             <Domain>DOMAIN_LAND</Domain>
             <DefaultUnitAI>UNITAI_ATTACK</DefaultUnitAI>
             <Invisible>NONE</Invisible>
@@ -55252,6 +55283,7 @@
             <Special>NONE</Special>
             <Capture>NONE</Capture>
             <Combat>UNITCOMBAT_DISCIPLE</Combat>
+            <CombatRole>COMBATROLE_FRONTLINE</CombatRole>
             <Domain>DOMAIN_LAND</Domain>
             <DefaultUnitAI>UNITAI_COUNTER</DefaultUnitAI>
             <Invisible>NONE</Invisible>
@@ -55478,6 +55510,7 @@
             <Special>NONE</Special>
             <Capture>NONE</Capture>
             <Combat>NONE</Combat>
+            <bLarge>1</bLarge>
             <Domain>DOMAIN_LAND</Domain>
             <DefaultUnitAI>UNITAI_CITY_DEFENSE</DefaultUnitAI>
             <Invisible>NONE</Invisible>
@@ -69194,6 +69227,7 @@
             <Special>NONE</Special>
             <Capture>NONE</Capture>
             <Combat>UNITCOMBAT_DISCIPLE</Combat>
+            <CombatRole>COMBATROLE_FRONTLINE</CombatRole>
             <Domain>DOMAIN_LAND</Domain>
             <DefaultUnitAI>UNITAI_ATTACK</DefaultUnitAI>
             <Invisible>NONE</Invisible>
@@ -69872,6 +69906,7 @@
             <Special>NONE</Special>
             <Capture>NONE</Capture>
             <Combat>NONE</Combat>
+            <bLarge>1</bLarge>
             <Domain>DOMAIN_LAND</Domain>
             <DefaultUnitAI>UNITAI_ATTACK</DefaultUnitAI>
             <Invisible>NONE</Invisible>
@@ -71012,6 +71047,7 @@
             <Special>NONE</Special>
             <Capture>NONE</Capture>
             <Combat>UNITCOMBAT_MOUNTED</Combat>
+            <bLarge>1</bLarge>
             <Domain>DOMAIN_LAND</Domain>
             <DefaultUnitAI>UNITAI_ATTACK</DefaultUnitAI>
             <Invisible>NONE</Invisible>
@@ -71226,6 +71262,7 @@
             <Special>NONE</Special>
             <Capture>NONE</Capture>
             <Combat>UNITCOMBAT_MOUNTED</Combat>
+            <bLarge>1</bLarge>
             <Domain>DOMAIN_LAND</Domain>
             <DefaultUnitAI>UNITAI_ATTACK</DefaultUnitAI>
             <Invisible>NONE</Invisible>
@@ -72561,6 +72598,7 @@
             <Special>NONE</Special>
             <Capture>NONE</Capture>
             <Combat>UNITCOMBAT_MELEE</Combat>
+            <bLarge>1</bLarge>
             <Domain>DOMAIN_LAND</Domain>
             <DefaultUnitAI>UNITAI_ATTACK</DefaultUnitAI>
             <Invisible>NONE</Invisible>
@@ -73459,6 +73497,7 @@
             <Special>NONE</Special>
             <Capture>NONE</Capture>
             <Combat>NONE</Combat>
+            <bLarge>1</bLarge>
             <Domain>DOMAIN_LAND</Domain>
             <DefaultUnitAI>UNITAI_WORKER</DefaultUnitAI>
             <Invisible>NONE</Invisible>

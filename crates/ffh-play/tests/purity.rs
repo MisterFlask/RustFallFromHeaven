@@ -90,9 +90,8 @@ fn t10_the_noisy_client_changes_nothing() {
     assert!(quiet.save == noisy.save, "final saves differ");
 }
 
-/// A city screen reads happiness, which fills the city rank caches (F11); the query leaves the
-/// save bytes as they were. The same reads without the guard do change them (the test is not
-/// vacuous). Pattern A: [`peaceful_game`] (`GAMEOPTION_ALWAYS_PEACE` + `GAMEOPTION_NO_BARBARIANS`)
+/// A city screen reads happiness and ranks (which C++ cached from const code, F11; ffh-core
+/// computes them when asked): the query leaves the save bytes as they were. Pattern A: [`peaceful_game`] (`GAMEOPTION_ALWAYS_PEACE` + `GAMEOPTION_NO_BARBARIANS`)
 /// so the bot game reaches the until-turn with `Stop::Human` for any seed, and the peaceful bot
 /// keeps the capital it founds early -- the city screen we probe has a city by construction, not
 /// by a seed-specific outcome.
@@ -107,24 +106,14 @@ fn a_city_screen_leaves_the_save_unchanged() {
     let h = s.human;
     let cities = s.g.players[h].cities.clone();
     assert!(!cities.is_empty(), "a peaceful bot founds and keeps at least one city to open a city screen on");
-    let invalidate = |s: &Session| {
-        for (_, c) in s.g.cities.iter() {
-            c.population_rank_valid.set(false);
-            for v in c.base_yield_rank_valid.iter().chain(&c.yield_rank_valid).chain(&c.commerce_rank_valid) {
-                v.set(false);
-            }
-        }
-    };
-    invalidate(&s);
     let before = s.g.save();
     for &c in &cities {
         s.query(&Query::City { city: c }).unwrap();
     }
     s.query(&Query::View).unwrap();
     s.query(&Query::Text).unwrap();
-    assert!(before == s.g.save(), "a city screen changed the save");
     for &c in &cities {
         let _ = s.g.city_largest_city_happiness(c);
     }
-    assert!(before != s.g.save(), "unguarded happiness reads should fill the rank caches");
+    assert!(before == s.g.save(), "a city screen changed the save");
 }

@@ -1,0 +1,209 @@
+<?xml version="1.0"?>
+<!-- Engagement roles (GAMEOPTION_ENGAGEMENTS; this game's own rules, phase 6 of the owner's spec
+     "Engagement combat", revision 4: formation battles; docs/ENGAGEMENTS.md).
+     Every land unit type has one role. It comes from the unit's CombatRole if set, else from
+     the first role here whose DefaultUnitCombats holds the unit's unit combat and whose
+     DefaultFreePromotion, if any, the unit type has free (roles with a promotion are tried first),
+     else from the bDefault role (monstrous units and summons with no unit combat). A unit of
+     FromRole holding FromPromotion takes the role instead (a Frontline unit with Formation is a
+     Screen). Sea and air units have no role. A type without strength (a Worker, a Settler, a great
+     person) has one too: whether a unit fights is its own strength, which promotions can add to
+     (a Worker that takes the Godslayer is a 3/3 Frontline unit).
+
+     iAttackPercent / iDefensePercent: the unit's attack (iCombat) and defence (iCombatDefense)
+         in an engagement are multiplied by these (100 = 1.0), unless the unit sets iAttack /
+         iDefense; iMaxHP: its hit points in an engagement, unless the unit sets iHP (a bLarge
+         unit has ENGAGEMENT_LARGE_HP_PERCENT of them).
+     iSpeed: faster units act first in each pass of a round (each first strike adds
+         ENGAGEMENT_FIRST_STRIKE_SPEED, and each chance first strike rolled at the battle's start).
+     iDodge: points of miss chance added to physical actions on a unit of the role; iCritBonus:
+         points added to its own crit chance (ENGAGEMENT_CRIT_PERCENT).
+     bAntiFlank: whatever an enemy flanker (a role with a CHARGE) can reach, units of this role in
+         its reach are taken first.
+     FrontRow / MiddleRow / RearRow: what a unit of the role does from that row of its side's
+         grid: iActions actions of its Action each round (one per pass); tier 4 units and heroes get
+         ENGAGEMENT_EXTRA_ACTIONS more in the row with the most (the first such).
+         Action: STRIKE (melee on the front unit of an enemy lane; a crit knocks it back a row),
+         CHARGE (where flanking works, anyone on the field, the highest threat for its HP left,
+         harder in the first round; elsewhere a strike), STAB (any enemy), SHOOT (the backmost
+         unit of an enemy lane), SPELL (the backmost unit of an enemy lane: the strongest damage
+         spell the unit knows, with a splash, else a magic bolt), BOMBARD (the backmost unit of
+         an enemy lane), HEAL (the most hurt ally), NONE (iActions 0).
+     HomeRow (FRONT, MIDDLE, REAR): the row the auto formation puts a unit of the role in;
+     iAutoPick: the auto formation's role order (it takes one unit of each role in this order,
+         then the rest in it). -->
+<Civ4CombatRoleInfos xmlns="x-schema:CIV4UnitSchema.xml">
+	<CombatRoleInfos>
+		<CombatRoleInfo>
+			<Type>COMBATROLE_FRONTLINE</Type>
+			<Description>TXT_KEY_COMBATROLE_FRONTLINE</Description>
+			<Help>TXT_KEY_COMBATROLE_FRONTLINE_HELP</Help>
+			<iAttackPercent>100</iAttackPercent>
+			<iDefensePercent>100</iDefensePercent>
+			<iMaxHP>120</iMaxHP>
+			<iSpeed>4</iSpeed>
+			<iDodge>0</iDodge>
+			<iCritBonus>0</iCritBonus>
+			<bAntiFlank>0</bAntiFlank>
+			<FrontRow><Action>STRIKE</Action><iActions>2</iActions></FrontRow>
+			<MiddleRow><Action>STRIKE</Action><iActions>1</iActions></MiddleRow>
+			<RearRow><Action>STRIKE</Action><iActions>1</iActions></RearRow>
+			<HomeRow>FRONT</HomeRow>
+			<iAutoPick>2</iAutoPick>
+			<!-- the spec: melee, animals, beasts, monstrous units, summons; recon units fight as frontline -->
+			<DefaultUnitCombats>
+				<UnitCombat>UNITCOMBAT_MELEE</UnitCombat>
+				<UnitCombat>UNITCOMBAT_ANIMAL</UnitCombat>
+				<UnitCombat>UNITCOMBAT_BEAST</UnitCombat>
+				<UnitCombat>UNITCOMBAT_RECON</UnitCombat>
+			</DefaultUnitCombats>
+			<bDefault>1</bDefault>
+		</CombatRoleInfo>
+		<CombatRoleInfo>
+			<Type>COMBATROLE_SCREEN</Type>
+			<Description>TXT_KEY_COMBATROLE_SCREEN</Description>
+			<Help>TXT_KEY_COMBATROLE_SCREEN_HELP</Help>
+			<iAttackPercent>100</iAttackPercent>
+			<iDefensePercent>110</iDefensePercent>
+			<iMaxHP>120</iMaxHP>
+			<iSpeed>3</iSpeed>
+			<iDodge>0</iDodge>
+			<iCritBonus>0</iCritBonus>
+			<bAntiFlank>1</bAntiFlank>
+			<FrontRow><Action>STRIKE</Action><iActions>2</iActions></FrontRow>
+			<MiddleRow><Action>STRIKE</Action><iActions>1</iActions></MiddleRow>
+			<RearRow><Action>STRIKE</Action><iActions>1</iActions></RearRow>
+			<HomeRow>FRONT</HomeRow>
+			<iAutoPick>1</iAutoPick>
+			<!-- the owner's answer Q7: Formation (anti-mounted) makes a frontline unit a screen -->
+			<FromRole>COMBATROLE_FRONTLINE</FromRole>
+			<FromPromotion>PROMOTION_FORMATION</FromPromotion>
+		</CombatRoleInfo>
+		<CombatRoleInfo>
+			<Type>COMBATROLE_FLANKER</Type>
+			<Description>TXT_KEY_COMBATROLE_FLANKER</Description>
+			<Help>TXT_KEY_COMBATROLE_FLANKER_HELP</Help>
+			<iAttackPercent>110</iAttackPercent>
+			<iDefensePercent>80</iDefensePercent>
+			<iMaxHP>100</iMaxHP>
+			<iSpeed>6</iSpeed>
+			<iDodge>10</iDodge>
+			<iCritBonus>0</iCritBonus>
+			<bAntiFlank>0</bAntiFlank>
+			<FrontRow><Action>CHARGE</Action><iActions>2</iActions></FrontRow>
+			<MiddleRow><Action>STRIKE</Action><iActions>1</iActions></MiddleRow>
+			<RearRow><Action>STRIKE</Action><iActions>1</iActions></RearRow>
+			<HomeRow>FRONT</HomeRow>
+			<iAutoPick>4</iAutoPick>
+			<DefaultUnitCombats>
+				<UnitCombat>UNITCOMBAT_MOUNTED</UnitCombat>
+			</DefaultUnitCombats>
+		</CombatRoleInfo>
+		<CombatRoleInfo>
+			<Type>COMBATROLE_ASSASSIN</Type>
+			<Description>TXT_KEY_COMBATROLE_ASSASSIN</Description>
+			<Help>TXT_KEY_COMBATROLE_ASSASSIN_HELP</Help>
+			<iAttackPercent>120</iAttackPercent>
+			<iDefensePercent>60</iDefensePercent>
+			<iMaxHP>60</iMaxHP>
+			<iSpeed>7</iSpeed>
+			<iDodge>15</iDodge>
+			<iCritBonus>15</iCritBonus>
+			<bAntiFlank>0</bAntiFlank>
+			<FrontRow><Action>STAB</Action><iActions>1</iActions></FrontRow>
+			<MiddleRow><Action>STAB</Action><iActions>2</iActions></MiddleRow>
+			<RearRow><Action>STAB</Action><iActions>1</iActions></RearRow>
+			<HomeRow>MIDDLE</HomeRow>
+			<iAutoPick>8</iAutoPick>
+			<!-- the owner's answer Q6: recon units with Marksman free (every FfH assassin) -->
+			<DefaultUnitCombats>
+				<UnitCombat>UNITCOMBAT_RECON</UnitCombat>
+			</DefaultUnitCombats>
+			<DefaultFreePromotion>PROMOTION_MARKSMAN</DefaultFreePromotion>
+		</CombatRoleInfo>
+		<CombatRoleInfo>
+			<Type>COMBATROLE_ARCHER</Type>
+			<Description>TXT_KEY_COMBATROLE_ARCHER</Description>
+			<Help>TXT_KEY_COMBATROLE_ARCHER_HELP</Help>
+			<iAttackPercent>100</iAttackPercent>
+			<iDefensePercent>60</iDefensePercent>
+			<iMaxHP>80</iMaxHP>
+			<iSpeed>4</iSpeed>
+			<iDodge>0</iDodge>
+			<iCritBonus>0</iCritBonus>
+			<bAntiFlank>0</bAntiFlank>
+			<FrontRow><Action>SHOOT</Action><iActions>1</iActions></FrontRow>
+			<MiddleRow><Action>SHOOT</Action><iActions>2</iActions></MiddleRow>
+			<RearRow><Action>SHOOT</Action><iActions>2</iActions></RearRow>
+			<HomeRow>MIDDLE</HomeRow>
+			<iAutoPick>3</iAutoPick>
+			<!-- archers, and the Airship (the only land unit with UNITCOMBAT_NAVAL) -->
+			<DefaultUnitCombats>
+				<UnitCombat>UNITCOMBAT_ARCHER</UnitCombat>
+				<UnitCombat>UNITCOMBAT_NAVAL</UnitCombat>
+			</DefaultUnitCombats>
+		</CombatRoleInfo>
+		<CombatRoleInfo>
+			<Type>COMBATROLE_SIEGE</Type>
+			<Description>TXT_KEY_COMBATROLE_SIEGE</Description>
+			<Help>TXT_KEY_COMBATROLE_SIEGE_HELP</Help>
+			<iAttackPercent>100</iAttackPercent>
+			<iDefensePercent>60</iDefensePercent>
+			<iMaxHP>80</iMaxHP>
+			<iSpeed>1</iSpeed>
+			<iDodge>0</iDodge>
+			<iCritBonus>0</iCritBonus>
+			<bAntiFlank>0</bAntiFlank>
+			<FrontRow><Action>NONE</Action><iActions>0</iActions></FrontRow>
+			<MiddleRow><Action>BOMBARD</Action><iActions>1</iActions></MiddleRow>
+			<RearRow><Action>BOMBARD</Action><iActions>2</iActions></RearRow>
+			<HomeRow>REAR</HomeRow>
+			<iAutoPick>7</iAutoPick>
+			<DefaultUnitCombats>
+				<UnitCombat>UNITCOMBAT_SIEGE</UnitCombat>
+			</DefaultUnitCombats>
+		</CombatRoleInfo>
+		<CombatRoleInfo>
+			<Type>COMBATROLE_ARCANE</Type>
+			<Description>TXT_KEY_COMBATROLE_ARCANE</Description>
+			<Help>TXT_KEY_COMBATROLE_ARCANE_HELP</Help>
+			<iAttackPercent>100</iAttackPercent>
+			<iDefensePercent>50</iDefensePercent>
+			<iMaxHP>70</iMaxHP>
+			<iSpeed>3</iSpeed>
+			<iDodge>0</iDodge>
+			<iCritBonus>0</iCritBonus>
+			<bAntiFlank>0</bAntiFlank>
+			<FrontRow><Action>STRIKE</Action><iActions>1</iActions></FrontRow>
+			<MiddleRow><Action>SPELL</Action><iActions>1</iActions></MiddleRow>
+			<RearRow><Action>SPELL</Action><iActions>2</iActions></RearRow>
+			<HomeRow>REAR</HomeRow>
+			<iAutoPick>5</iAutoPick>
+			<!-- mages; the religions' fighters are Frontline by their CombatRole -->
+			<DefaultUnitCombats>
+				<UnitCombat>UNITCOMBAT_ADEPT</UnitCombat>
+			</DefaultUnitCombats>
+		</CombatRoleInfo>
+		<CombatRoleInfo>
+			<Type>COMBATROLE_DIVINE</Type>
+			<Description>TXT_KEY_COMBATROLE_DIVINE</Description>
+			<Help>TXT_KEY_COMBATROLE_DIVINE_HELP</Help>
+			<iAttackPercent>100</iAttackPercent>
+			<iDefensePercent>50</iDefensePercent>
+			<iMaxHP>70</iMaxHP>
+			<iSpeed>3</iSpeed>
+			<iDodge>0</iDodge>
+			<iCritBonus>0</iCritBonus>
+			<bAntiFlank>0</bAntiFlank>
+			<FrontRow><Action>STRIKE</Action><iActions>1</iActions></FrontRow>
+			<MiddleRow><Action>HEAL</Action><iActions>1</iActions></MiddleRow>
+			<RearRow><Action>HEAL</Action><iActions>2</iActions></RearRow>
+			<HomeRow>MIDDLE</HomeRow>
+			<iAutoPick>6</iAutoPick>
+			<!-- priests and disciples; the religions' fighters are Frontline by their CombatRole -->
+			<DefaultUnitCombats>
+				<UnitCombat>UNITCOMBAT_DISCIPLE</UnitCombat>
+			</DefaultUnitCombats>
+		</CombatRoleInfo>
+	</CombatRoleInfos>
+</Civ4CombatRoleInfos>

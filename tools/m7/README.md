@@ -58,6 +58,26 @@ draws). Changes made here since the package arrived:
   `_b` tile is paired.
 - `budget.json` caps this folder's spend; `spend.jsonl` is committed, so the caps count every call
   made for the game so far.
+- **Interface art** (`ui.py`, docs/ISO.md section 9): icon sheets of sixteen in a 4 x 4 grid
+  (`ui.py sheet --name <list>`, the list in `prompts/ui/<list>.txt`, the style in
+  `prompts/style_ui_icons.txt`, anchored on `anchors/anchor_ui.png`, the reference's panels), cut
+  per cell to 24 and 16 blocks of 2 px (`ui.py cut`, a review sheet per round), accepted as
+  `roster/ui/ui_<key>.png` and `ui_<key>_s.png` (`ui.py accept`, `--only` / `--skip` to mix
+  variants); `ui.py backdrop` re-grids the painting behind the unit portrait. The budget tag is
+  `ui`.
+- **Leader portraits** (`leaders.py`, docs/ISO.md section 9): a head-and-shoulders bust of every
+  leader a game can have (each civilization's leaders, the barbarian, one hooded stranger for the
+  random choices), described in `prompts/leaders/<key>.txt` (the model knows none of them) after
+  `prompts/style_leader.txt`, on `anchors/anchor_ui.png` and `anchors/anchor_portrait.png` (the
+  reference's worker portrait, 3x). Each description opens with a `VIBE:` line: one specific moment
+  taken from the leader's lore (Civilopedia, diplomacy lines, scenario texts), and the paragraph
+  under it makes the expression, gaze, hands, light, colour and background all serve it; the
+  style prompt asks for exactly that. `leaders.py gen --keys a,b,c --n 4` makes 4 variants a leader
+  in one call (about $0.15; the API allows about 20 images a minute, so `--jobs 3`), `cut --review` reduces each to 80
+  art px in 2 px blocks (160 x 160) and writes a review sheet, `accept --key k --variant v` stores
+  `roster/leaders/leader_<key>.png` and `prompts/assets/leader_<key>.txt`; `m7.py export` ships
+  them with the sprites. The budget tag is `ui/leaders`. FfH's scenario-only leaders (in
+  CIV4LeaderHeadInfos.xml but in no civilization) have none.
 
 ## Setup
 

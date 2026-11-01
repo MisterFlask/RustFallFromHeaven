@@ -9,6 +9,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 
 use crate::enums::*;
+use crate::infos::{CombatRoleType, CulturalActionType, GovernorNameType, GovernorProfileType, GovernorTraitType};
 use crate::idx::{Idx, IdxVec};
 use crate::xml::Elem;
 
@@ -41,6 +42,7 @@ info_ids! {
     SpecialBuildingType => "SpecialBuildingInfo",
     CivilizationType => "CivilizationInfo",
     LeaderHeadType => "LeaderHeadInfo",
+    DiploCommentType => "DiplomacyInfo",
     TraitType => "TraitInfo",
     EventType => "EventInfo",
     EventTriggerType => "EventTriggerInfo",
@@ -91,6 +93,11 @@ info_ids! {
     ContactType => "ContactTypes",
     DiplomacyPowerType => "DiplomacyPowerTypes",
     DirectionType => "DirectionTypes",
+    CulturalActionType => "CulturalActionInfo",
+    GovernorProfileType => "GovernorProfileInfo",
+    GovernorTraitType => "GovernorTraitInfo",
+    GovernorNameType => "GovernorNameInfo",
+    CombatRoleType => "CombatRoleInfo",
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -160,6 +167,13 @@ impl Registry {
         self.names.get(T::CLASS).and_then(|v| v.get(t.idx())).map(|s| s.as_str()).unwrap_or("?")
     }
 
+    /// Every registered class, sorted.
+    pub fn classes(&self) -> Vec<&'static str> {
+        let mut v: Vec<&'static str> = self.names.keys().copied().collect();
+        v.sort_unstable();
+        v
+    }
+
     pub fn names_of(&self, class: &str) -> &[String] {
         self.names.get(class).map(|v| v.as_slice()).unwrap_or(&[])
     }
@@ -225,7 +239,7 @@ impl<'a> Rd<'a> {
 
     pub fn children_named(&self, tag: &'a str) -> impl Iterator<Item = Rd<'a>> + 'a {
         let cx = self.cx;
-        self.e.children().filter(move |c| c.name() == tag).map(move |e| Rd { e, cx })
+        self.e.children_named(tag).map(move |e| Rd { e, cx })
     }
 
     pub fn text(&self) -> &'a str {

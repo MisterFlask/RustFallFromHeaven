@@ -123,7 +123,7 @@ CvUnit movement: territory/area entry, `canMoveInto`, `move`, paths, loading and
 | `CvUnit::canEnterArea` | CvUnit.cpp:2990-3009 | 20 | `unit_can_enter_area` | ported |
 | `CvUnit::getDeclareWarMove` | CvUnit.cpp:3013-3057 | 45 | `unit_get_declare_war_move` | ported |
 | `CvUnit::willRevealByMove` | CvUnit.cpp:3059-3078 | 20 | `unit_will_reveal_by_move` | ported |
-| `CvUnit::canMoveInto` | CvUnit.cpp:3080-3444 | 365 | `unit_can_move_into` | ported |
+| `CvUnit::canMoveInto` | CvUnit.cpp:3080-3444 | 365 | `unit_can_move_into` (under engagement combat its attack gates are the engagement's: `unit_has_attack_left`, `unit_engage_limit_ok`) | ported |
 | `CvUnit::canMoveOrAttackInto` | CvUnit.cpp:3447-3450 | 4 | `unit_can_move_or_attack_into` | ported |
 | `CvUnit::canMoveThrough` | CvUnit.cpp:3453-3456 | 4 | `unit_can_move_through` | ported |
 | `CvUnit::move` | CvUnit.cpp:3598-3645 | 48 | `unit_move` | ported |
@@ -198,14 +198,14 @@ CvUnit combat: strength (`maxCombatStr` & co., `isBetterDefenderThan`, attack/de
 | `CvUnit::resolveCombat` | CvUnit.cpp:1584-1783 | 200 | `unit_resolve_combat` | ported |
 | `CvUnit::updateCombat` | CvUnit.cpp:1786-2251 | 466 | `unit_update_combat` | ported |
 | `CvUnit::isBetterDefenderThan` | CvUnit.cpp:2479-2646 | 168 | `unit_is_better_defender_than` | ported |
-| `CvUnit::attack` | CvUnit.cpp:3459-3467 | 9 | `unit_attack` | ported |
+| `CvUnit::attack` | CvUnit.cpp:3459-3467 | 9 | `unit_attack` | ported; under engagement combat a land attack is a one-unit engagement or a missile strike (`engage_unit_attack`, docs/ENGAGEMENTS.md) |
 | `CvUnit::fightInterceptor` | CvUnit.cpp:3469-3476 | 8 | `unit_fight_interceptor` | ported |
 | `CvUnit::attackForDamage` | CvUnit.cpp:3478-3595 | 118 | `unit_attack_for_damage` | ported |
 | `CvUnit::isFighting` | CvUnit.cpp:8905-8908 | 4 | `unit_is_fighting` | ported |
 | `CvUnit::isAttacking` | CvUnit.cpp:8911-8914 | 4 | `unit_is_attacking` | ported |
 | `CvUnit::isDefending` | CvUnit.cpp:8917-8920 | 4 | `unit_is_defending` | ported |
 | `CvUnit::isCombat` | CvUnit.cpp:8923-8926 | 4 | `unit_is_combat` | ported |
-| `CvUnit::maxCombatStr` | CvUnit.cpp:8997-9557 | 561 | `unit_max_combat_str` | ported |
+| `CvUnit::maxCombatStr` | CvUnit.cpp:8997-9557 | 561 | `unit_max_combat_str` (its terms: `unit_combat_terms`, `StrMode::Duel`, shared with engagement combat) | ported |
 | `CvUnit::currCombatStr` | CvUnit.cpp:9560-9563 | 4 | `unit_curr_combat_str` | ported |
 | `CvUnit::currFirepower` | CvUnit.cpp:9566-9569 | 4 | `unit_curr_firepower` | ported |
 | `CvUnit::currEffectiveStr` | CvUnit.cpp:9574-9582 | 9 | `unit_curr_effective_str` | ported |
@@ -229,10 +229,10 @@ CvUnit combat: strength (`maxCombatStr` & co., `isBetterDefenderThan`, attack/de
 | `CvUnit::changeCombatTimer` | CvUnit.cpp:11945-11948 | 4 | `unit_change_combat_timer` | ported |
 | `CvUnit::changeCombatFirstStrikes` | CvUnit.cpp:11961-11964 | 4 | `unit_change_combat_first_strikes` | ported |
 | `CvUnit::setCombatUnit` | CvUnit.cpp:12838-12909 | 72 | `unit_set_combat_unit` | ported |
-| `CvUnit::doDefensiveStrike` | CvUnit.cpp:16206-16259 | 54 | `unit_do_defensive_strike` | ported |
-| `CvUnit::combatWon` | CvUnit.cpp:16306-16560 | 255 | `unit_combat_won` | ported |
+| `CvUnit::doDefensiveStrike` | CvUnit.cpp:16206-16259 | 54 | `unit_do_defensive_strike` | ported; split into `unit_defensive_strike_roll` and `_apply` (an engagement's opening strikes) |
+| `CvUnit::combatWon` | CvUnit.cpp:16306-16560 | 255 | `unit_combat_won` | ported; `unit_combat_won_as` runs it whole (the duel) or as an engagement's per-kill part (no removed-by-combat, combat-apply or poison, the conversion only rolled) |
 | `CvUnit::canAdvance` | CvUnit.cpp:17230-17251 | 22 | `unit_can_advance` | ported |
-| `CvUnit::collateralCombat` | CvUnit.cpp:17254-17382 | 129 | `unit_collateral_combat` | ported |
+| `CvUnit::collateralCombat` | CvUnit.cpp:17254-17382 | 129 | `unit_collateral_combat` | ported; `unit_collateral_combat_ex` with an engagement's target count (no `- 1`) and the units hit |
 | `CvUnit::flankingStrikeCombat` | CvUnit.cpp:17385-17468 | 84 | `unit_flanking_strike_combat` | ported |
 | `CvUnit::interceptTest` | CvUnit.cpp:17472-17490 | 19 | `unit_intercept_test` | ported |
 | `CvUnit::airStrikeTarget` | CvUnit.cpp:17493-17511 | 19 | `unit_air_strike_target` | ported |
@@ -433,7 +433,7 @@ CvUnit commands and actions: `canDoCommand`/`doCommand`, automation, scrap/gift,
 | `CvUnit::canAirBombAt` | CvUnit.cpp:5284-5337 | 54 | `unit_can_air_bomb_at` | ported |
 | `CvUnit::airBomb` | CvUnit.cpp:5340-5431 | 92 | `unit_air_bomb` | ported |
 | `CvUnit::bombardTarget` | CvUnit.cpp:5434-5470 | 37 | `unit_bombard_target` | ported |
-| `CvUnit::canBombard` | CvUnit.cpp:5473-5496 | 24 | `unit_can_bombard` | ported |
+| `CvUnit::canBombard` | CvUnit.cpp:5473-5496 | 24 | `unit_can_bombard` (under engagement combat a land unit's bombard counts in `attacks_made`) | ported |
 | `CvUnit::bombard` | CvUnit.cpp:5499-5560 | 62 | `unit_bombard` | ported |
 | `CvUnit::canPillage` | CvUnit.cpp:5563-5620 | 58 | `unit_can_pillage` | ported |
 | `CvUnit::pillage` | CvUnit.cpp:5623-5750 | 128 | `unit_pillage` | ported |

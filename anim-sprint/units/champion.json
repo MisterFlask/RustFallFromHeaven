@@ -1,0 +1,105 @@
+{
+ "name": "champion",
+ "sprite": "m7/roster/units/unit_champion.png",
+ "facing": "lower-left",
+ "tag": "anim/units",
+ "description": "a Champion, a knight in full polished silver steel plate armour with gold trim: a closed great helm with a gold cross on the visor and a tall cream-white feather plume, large gold-trimmed pauldrons, a brown leather belt with a gold buckle over a blue-and-gold tabard strip, steel greaves and sabatons, and a long steel longsword with a gold crossguard, held upright in front of his chest, gripped in his RIGHT hand",
+ "hands": "the longsword stays in his right hand on the screen-left side; at rest his left hand on the screen-right side also grips the hilt below it, but during the action it lets go and is an empty steel-gauntleted fist",
+ "guide_style": "grey",
+ "scale": 0.95,
+ "head_r": 12,
+ "limb": 1.2,
+ "joints": {
+  "head": [
+   80,
+   51
+  ],
+  "neck": [
+   80,
+   60
+  ],
+  "chest": [
+   80,
+   70
+  ],
+  "pelvis": [
+   80,
+   84
+  ],
+  "r_sh": [
+   69,
+   62
+  ],
+  "r_el": [
+   58,
+   75
+  ],
+  "r_ha": [
+   66,
+   70
+  ],
+  "tip": [
+   64,
+   16
+  ],
+  "l_sh": [
+   89,
+   63
+  ],
+  "l_el": [
+   89,
+   77
+  ],
+  "l_ha": [
+   74,
+   77
+  ],
+  "r_hip": [
+   73,
+   88
+  ],
+  "r_kn": [
+   68,
+   100
+  ],
+  "r_ft": [
+   67,
+   116
+  ],
+  "l_hip": [
+   87,
+   88
+  ],
+  "l_kn": [
+   92,
+   105
+  ],
+  "l_ft": [
+   93,
+   117
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the left hand lets go of the hilt, the longsword is lifted up over the head with the tip pointing up and back",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the longsword cocked behind the head with the blade hanging down behind the shoulders, the left hand an empty gauntleted fist tucked in",
+   "3": "swing: the front foot steps toward the lower-left, the torso whips forward, the arm sweeps over the head and the longsword's blade is level, pointing to the lower-left, the left hand an empty fist",
+   "4": "contact: sword arm fully extended toward the lower-left, the longsword slashing down-left, front knee bent, body low and leaning in, the empty left fist swung back for balance",
+   "5": "follow-through: the longsword carries on down until its tip nearly touches the ground at the lower-left, torso twisted, the helmet plume trailing back, the empty left fist out behind",
+   "6": "recover: body rises, front foot pulls back halfway, the longsword lifts back toward the upright ready angle, the left hand reaching for the hilt"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-left; the helmeted head snaps back toward the upper-right, torso jolts back, both arms jerk outward (the empty left fist flung out to the right, sword arm thrown up and out)",
+   "1": "recoil extreme: leaning back further, knees bent, the longsword dipping, the empty left fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, sword arm flung up, the empty left fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, helmet droops, the longsword lowering, the empty left fist hanging",
+   "3": "kneeling: on both knees, slumped forward, the longsword's tip resting on the ground, the empty left arm hanging",
+   "4": "falling back: torso tips back toward the upper-right, the longsword slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-left and helmeted head toward the upper-right, the plume on the ground; the longsword lies on the ground at the lower-left",
+   "6": "bounce: head and shoulders lift slightly off the ground, the plume flops",
+   "7": "corpse: lying flat and still on his back, the closed helmet still on, the longsword on the ground beside him"
+  }
+ }
+}

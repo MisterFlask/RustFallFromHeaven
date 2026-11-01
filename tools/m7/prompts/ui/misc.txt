@@ -1,0 +1,16 @@
+moves: a brown leather boot, like the screenshot's movement icon
+defense: a round grey stone watchtower with battlements
+hp: a red heart
+xp: a golden five-pointed star
+cancel: a red circle with a diagonal slash through it
+road: a short straight stretch of grey cobblestone road, seen from above at an angle
+rangeattack: a wooden longbow with an arrow nocked
+bombard: a big round grey boulder flying, with motion lines behind it
+spread: an open holy book with golden light rising from its pages
+goldenage: a radiant golden sun with rays
+greatwork: a golden lyre
+terrain: a green hill with a small pine tree on it
+political: a parchment map divided into red, blue and green territories
+yields: a wicker basket holding wheat, red apples and a gold coin
+zoomin: a magnifying glass with a plus sign in its lens
+zoomout: a magnifying glass with a minus sign in its lens

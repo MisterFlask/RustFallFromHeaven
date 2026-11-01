@@ -1,0 +1,16 @@
+pedia: an open brown leather book, like the screenshot's book icon
+settings: a steel cogwheel, like the screenshot's gear icon
+techs: a rolled parchment scroll tied with a ribbon and a blue wax seal
+cities: a small white stone castle with blue pointed roofs, like the screenshot's castle icon
+units: a steel knight's helmet with a visor, like the screenshot's helmet icon
+map: a folded parchment map, like the screenshot's scroll icon
+civics: a golden royal crown with red jewels
+religion: a small white marble temple with columns and a golden dome
+diplomacy: two hands clasped in a handshake, one in a blue sleeve and one in a red sleeve
+finance: a golden balance scale with two pans
+save: a white feather quill pen standing in a dark ink pot
+load: an open wooden treasure chest full of rolled parchment scrolls
+newgame: a world globe on a brass stand
+help: a large golden question mark
+endturn: a golden hourglass with blue sand running down
+messages: a folded letter sealed with a red wax seal

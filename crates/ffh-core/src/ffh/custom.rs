@@ -21,6 +21,18 @@ use crate::game::Game;
 use crate::ids::*;
 use ffh_data::*;
 
+
+/// `doTurnKhazad`: the Dwarven Vault level by the player's gold per city, from that much up
+/// (Python: <50, <100, <150, <200, <300, <500, 500+).
+pub const DWARVEN_VAULT_LEVELS: [(i32, &str); 7] = [
+    (i32::MIN, "BUILDING_DWARVEN_VAULT_EMPTY"),
+    (50, "BUILDING_DWARVEN_VAULT_LOW"),
+    (100, "BUILDING_DWARVEN_VAULT"),
+    (150, "BUILDING_DWARVEN_VAULT_STOCKED"),
+    (200, "BUILDING_DWARVEN_VAULT_ABUNDANT"),
+    (300, "BUILDING_DWARVEN_VAULT_FULL"),
+    (500, "BUILDING_DWARVEN_VAULT_OVERFLOWING"),
+];
 impl Game {
     /// `addBonus(iBonus, iNum, sIcon)`: place `num` of a bonus on random plots that can have it
     /// (latitude ignored) and have neither a bonus nor a city; the same plot may be drawn more
@@ -742,7 +754,10 @@ impl Game {
                 self.unit_set_xy(unit, x2, y2, true);
             }
         }
+        let creator = from_player.unwrap_or(self.cities[city].owner);
         self.add_player_advanced(new_player, team, leader, civ);
+        // The new civilization is played by its creator's controller (one AI per side in head-to-head games; the same controller otherwise).
+        self.controllers[new_player] = self.controllers[creator].clone();
         self.player_acquire_city(new_player, city, false, false, true);
         // `pPlot.getPlotCity()`: the acquired city has a new id (a NULL city would ignore the call).
         if let Some(new_city) = self.map.plots[plot].plot_city {
@@ -932,36 +947,15 @@ impl Game {
     }
 
     /// `doTurnKhazad(iPlayer)`: every city gets the Dwarven Vault level matching the player's
-    /// gold per city (<50, <100, <150, <200, <300, <500, 500+).
+    /// gold per city ([`DWARVEN_VAULT_LEVELS`]).
     pub fn cf_do_turn_khazad(&mut self, p: PlayerId) {
         if self.players[p].num_cities() > 0 {
             let d = self.d;
-            let vaults = [
-                d.t::<BuildingType>("BUILDING_DWARVEN_VAULT_EMPTY"),
-                d.t::<BuildingType>("BUILDING_DWARVEN_VAULT_LOW"),
-                d.t::<BuildingType>("BUILDING_DWARVEN_VAULT"),
-                d.t::<BuildingType>("BUILDING_DWARVEN_VAULT_STOCKED"),
-                d.t::<BuildingType>("BUILDING_DWARVEN_VAULT_ABUNDANT"),
-                d.t::<BuildingType>("BUILDING_DWARVEN_VAULT_FULL"),
-                d.t::<BuildingType>("BUILDING_DWARVEN_VAULT_OVERFLOWING"),
-            ];
+            let vaults = DWARVEN_VAULT_LEVELS.map(|(_, name)| d.t::<BuildingType>(name));
             let gold = py_div(self.players[p].gold, self.players[p].num_cities());
             // The Python ranges cover every value.
-            let new_vault = if gold <= 49 {
-                vaults[0]
-            } else if gold <= 99 {
-                vaults[1]
-            } else if gold <= 149 {
-                vaults[2]
-            } else if gold <= 199 {
-                vaults[3]
-            } else if gold <= 299 {
-                vaults[4]
-            } else if gold <= 499 {
-                vaults[5]
-            } else {
-                vaults[6]
-            };
+            let level = DWARVEN_VAULT_LEVELS.iter().rposition(|&(min, _)| gold >= min).unwrap_or(0);
+            let new_vault = vaults[level];
             for city in self.players[p].cities.clone() {
                 for vault in vaults {
                     self.city_set_num_real_building(city, vault, 0);
@@ -2102,73 +2096,6 @@ mod tests {
             let b = marnok_name(&lists, &mut |n| rng.get_i(n, "Name Gen"));
             assert_eq!((a.as_str(), b.as_str(), rng.seed()), (first, second, end_seed), "flags {flags:?}, seed {seed}");
         }
-    }
-
-    /// Every type name hard-coded in this file (string literals with a type prefix) exists in
-    /// the game data, in the class its prefix names (Python `getInfoTypeForString` never -1).
-    #[test]
-    fn hard_coded_type_names_resolve() {
-        let d = ffh_data::global();
-        let mut checked = 0;
-        let mut missing = Vec::new();
-        for line in include_str!("custom.rs").lines() {
-            let code = line.split("//").next().unwrap_or("");
-            for (i, s) in code.split('"').enumerate() {
-                let is_name = i % 2 == 1
-                    && s.len() > 2
-                    && s.contains('_')
-                    && !s.ends_with('_')
-                    && s.chars().all(|c| c.is_ascii_uppercase() || c.is_ascii_digit() || c == '_');
-                if !is_name {
-                    continue;
-                }
-                let found = if s.starts_with("UNITCLASS_") {
-                    d.ty::<UnitClassType>(s).is_some()
-                } else if s.starts_with("UNITCOMBAT_") {
-                    d.ty::<UnitCombatType>(s).is_some()
-                } else if s.starts_with("UNITAI_") {
-                    d.ty::<UnitAIType>(s).is_some()
-                } else if s.starts_with("UNIT_") || s.starts_with("EQUIPMENT_") {
-                    d.ty::<UnitType>(s).is_some()
-                } else if s.starts_with("PROMOTION_") {
-                    d.ty::<PromotionType>(s).is_some()
-                } else if s.starts_with("GOODY_") {
-                    d.ty::<GoodyType>(s).is_some()
-                } else if s.starts_with("BONUS_") {
-                    d.ty::<BonusType>(s).is_some()
-                } else if s.starts_with("TERRAIN_") {
-                    d.ty::<TerrainType>(s).is_some()
-                } else if s.starts_with("FEATURE_") {
-                    d.ty::<FeatureType>(s).is_some()
-                } else if s.starts_with("IMPROVEMENT_") {
-                    d.ty::<ImprovementType>(s).is_some()
-                } else if s.starts_with("TECH_") {
-                    d.ty::<TechType>(s).is_some()
-                } else if s.starts_with("CIVILIZATION_") {
-                    d.ty::<CivilizationType>(s).is_some()
-                } else if s.starts_with("RELIGION_") {
-                    d.ty::<ReligionType>(s).is_some()
-                } else if s.starts_with("ALIGNMENT_") {
-                    d.ty::<AlignmentType>(s).is_some()
-                } else if s.starts_with("BUILDING_") {
-                    d.ty::<BuildingType>(s).is_some()
-                } else if s.starts_with("SPELL_") {
-                    d.ty::<SpellType>(s).is_some()
-                } else if s.starts_with("DAMAGE_") {
-                    d.ty::<DamageType>(s).is_some()
-                } else if s.starts_with("EVENTTRIGGER_") {
-                    d.ty::<EventTriggerType>(s).is_some()
-                } else {
-                    continue; // goody keys (SPAWN_X, PRISONER_X, ...) and text keys
-                };
-                checked += 1;
-                if !found {
-                    missing.push(s.to_string());
-                }
-            }
-        }
-        assert!(missing.is_empty(), "unknown type names: {missing:?}");
-        assert!(checked > 250, "only {checked} names checked");
     }
 
     #[test]

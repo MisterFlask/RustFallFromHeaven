@@ -1,9 +1,10 @@
 //! Global defines (C++ `GC.getDefineINT` / `getDefineFLOAT` / `getDefineSTRING`).
 //!
 //! Files are read in C++ order -- GlobalDefines.xml, GlobalDefinesAlt.xml,
-//! PythonCallbackDefines.xml -- later files overriding earlier ones. Text values
-//! of the defines listed in [`POST_GLOBALS_TEXT_DEFINES`] resolve to the named type's
-//! index (C++ `SetPostGlobalsGlobalDefines`); every other text define stays a string.
+//! PythonCallbackDefines.xml, then this game's RulesDefines.xml -- later files
+//! overriding earlier ones. Text values of the defines listed in
+//! [`POST_GLOBALS_TEXT_DEFINES`] resolve to the named type's index (C++
+//! `SetPostGlobalsGlobalDefines`); every other text define stays a string.
 //! Prefer the typed [`crate::Defines`] struct (generated) in game code.
 
 use std::collections::HashMap;
@@ -90,6 +91,9 @@ pub const POST_GLOBALS_TEXT_DEFINES: &[&str] = &[
     "UNIT_VAMPIRE",
     "UNIT_VAMPIRE_LORD",
     "UNITCLASS_SCOUT",
+    // This game's own rules (RulesDefines.xml)
+    "CULTURE_TIER2_LEVEL",
+    "CULTURE_TIER3_LEVEL",
 ];
 
 #[derive(Debug, Clone)]

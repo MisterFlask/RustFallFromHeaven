@@ -1,0 +1,17 @@
+The attached image is cut from a screenshot of my fantasy strategy game's interface. Draw a sheet of 16 NEW interface icons in exactly the same art style as the small icons in its panels (the gold coin, the wheat sheaf, the hammer, the blue flask, the purple music note, the boot, the open book, the trophy, the gear, the helmet, the castle): bright saturated HD pixel art, crisp chunky square pixels (each icon is built from roughly 20 x 20 big pixel blocks), a dark coloured outline (deep brown or navy, not thin black lines), simple shading with strong light from the upper-left, a cheerful 16-bit SNES-era look, a bold readable silhouette that still reads when shrunk to 24 pixels. Arrange them in a 4 x 4 grid: four rows of four icons, each icon centred in its own equal square cell, every icon the same size and filling about 65% of its cell, with wide empty space between neighbours so no two icons touch. No frames, no buttons or plates behind the icons, no text, no letters or numbers unless an icon below asks for them, no labels, no grid lines. Background: flat solid pure magenta #FF00FF filling the whole image, with no gradient. The icons, row by row, left to right:
+1. the white letters "zZ" with a dark blue outline, like the screenshot's sleep icon
+2. a large steel kite shield with a gold rim
+3. a wide-open watchful eye with a blue iris
+4. a golden arrow curving up and over to the right
+5. a red pennant flag on a short wooden pole
+6. a steel sword broken in two pieces
+7. a red heart with a white bandage cross on it
+8. a burning wooden torch with orange flames
+9. a white canvas tent with a small blue pennant on top
+10. a brass spyglass telescope
+11. a brass cogwheel with a green circular arrow around it
+12. a gold star medal hanging from a red ribbon
+13. a bold green arrow pointing up
+14. a purple magic wand with a glowing star at its tip and sparkles
+15. a small wooden sailing ship with a white sail
+16. two crossed steel swords

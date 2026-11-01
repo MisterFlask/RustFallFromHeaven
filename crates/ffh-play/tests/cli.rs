@@ -111,10 +111,11 @@ fn soak_run_report_and_batch() {
     let (code, out) = run(&[&["soak", "run"][..], &game, &["--saves", saves.to_str().unwrap(), "--panic-at", "9"]].concat());
     assert_eq!(code, 101, "{out}");
     assert_eq!(field(&out, "TURN"), Some("9"));
-    assert!(field(&out, "PANIC").unwrap().starts_with("soak self-test: a deliberate panic at turn 9 at crates/ffh-play/src/soak.rs:"), "{out}");
+    // (Windows writes the path with backslashes.)
+    assert!(field(&out, "PANIC").unwrap().replace('\\', "/").starts_with("soak self-test: a deliberate panic at turn 9 at crates/ffh-play/src/soak.rs:"), "{out}");
     assert!(field(&out, "BT").unwrap().starts_with("ffh_play::soak::run "), "{out}");
     let repro = field(&out, "REPRO").unwrap();
-    let autosave = saves.join("auto/T0008.ffhsave");
+    let autosave = saves.join("auto").join("T0008.ffhsave");
     assert_eq!(
         repro,
         format!("ffh-play soak run --seed 5 --size WORLDSIZE_DUEL --civ CIVILIZATION_SHEAIM --turns 16 --resume {}", autosave.display())
@@ -162,7 +163,7 @@ fn soak_repro_keeps_the_checks_and_arguments_are_checked_first() {
     let (code, out) =
         run(&["soak", "run", "--size", "duel", "--turns", "6", "--check-every", "1", "--save-check-every", "2", "--panic-at", "4", "--saves", saves.to_str().unwrap()]);
     assert_eq!(code, 101, "{out}");
-    let expected = format!("ffh-play soak run --seed 1 --size WORLDSIZE_DUEL --turns 6 --check-every 1 --save-check-every 2 --resume {}", saves.join("auto/T0003.ffhsave").display());
+    let expected = format!("ffh-play soak run --seed 1 --size WORLDSIZE_DUEL --turns 6 --check-every 1 --save-check-every 2 --resume {}", saves.join("auto").join("T0003.ffhsave").display());
     assert_eq!(field(&out, "REPRO"), Some(expected.as_str()), "{out}");
     // Numbers out of their range are refused, not wrapped.
     for bad in [&["--turns", "4294967297"][..], &["--seed", "-1"], &["--check-every", "x"], &["--save-check-every", "-1"]] {

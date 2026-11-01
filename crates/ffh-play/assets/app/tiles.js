@@ -101,6 +101,18 @@ export function zoomAt(cam, vw, vh, ts, sx, sy) {
   return { cx: fx - (sx - vw / 2) / ts, cy: fy + (sy - vh / 2) / ts, ts };
 }
 
+/** The zoom step (of `zooms`, tile sizes ascending) a pinch asks for: the step nearest, in scale,
+ *  to the zoom the pinch started at (`ts0`) times the change of the fingers' distance (`ratio`).
+ *  The step shown (`current`) is kept until another is clearly nearer, so fingers held near the
+ *  middle between two steps do not make the map flicker between them. */
+export function pinchStep(zooms, ts0, ratio, current) {
+  const want = Math.log(ts0 * ratio);
+  const off = (z) => Math.abs(Math.log(z) - want);
+  let best = zooms[0];
+  for (const z of zooms) if (off(z) < off(best)) best = z;
+  return zooms.includes(current) && off(current) <= off(best) + 0.08 ? current : best;
+}
+
 /** The `river` value of a plot (design §4.4): a river on the south edge (`n_of_river`), on the
  *  east edge (`w_of_river`), and the flows (CardinalDirectionType index, -1 none). */
 export function riverEdges(v) {

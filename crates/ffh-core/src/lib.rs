@@ -5,11 +5,15 @@
 //! See `CLAUDE.md` for porting conventions.
 
 pub mod area;
+pub mod army;
+pub mod governors;
 pub mod city;
 pub mod controller;
+pub mod culture;
 pub mod crusade;
 pub mod deal;
 pub mod defs;
+pub mod engagement;
 pub mod ffh;
 pub mod found_value;
 pub mod game;
@@ -30,10 +34,13 @@ pub mod setup;
 pub mod slab;
 pub mod structs;
 pub mod team;
+pub mod telemetry;
+#[cfg(test)]
+mod test_world;
 pub mod unit;
 pub mod utils;
 
-pub use controller::{Controller, ControllerRef, NullController};
+pub use controller::{AiHook, Controller, ControllerRef, NullController};
 pub use game::Game;
 pub use ids::*;
 pub use setup::{GameSetup, PlayerSetup, SlotStatus};

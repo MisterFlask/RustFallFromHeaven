@@ -173,3 +173,31 @@ export function srgbToLinear(c) {
 export function cmix(a, b, t) {
   return vlerp(a, b, t);
 }
+
+const F32 = new Float32Array(1);
+const U32 = new Uint32Array(F32.buffer);
+
+/** A number as the bits of an IEEE half float (round to nearest even), as GLSL packHalf2x16. */
+export function toHalf(x) {
+  F32[0] = x;
+  const b = U32[0];
+  const sign = (b >>> 16) & 0x8000;
+  const e = (b >>> 23) & 0xff;
+  let m = b & 0x7fffff;
+  if (e === 0xff) return sign | 0x7c00 | (m ? 0x200 : 0);
+  const he = e - 127 + 15;
+  if (he >= 0x1f) return sign | 0x7c00;
+  if (he <= 0) {
+    if (he < -10) return sign;
+    m |= 0x800000;
+    const shift = 14 - he;
+    let h = m >>> shift;
+    const rem = m & ((1 << shift) - 1), half = 1 << (shift - 1);
+    if (rem > half || (rem === half && h & 1)) h++;
+    return sign | h;
+  }
+  let h = (he << 10) | (m >>> 13);
+  const rem = m & 0x1fff;
+  if (rem > 0x1000 || (rem === 0x1000 && h & 1)) h++;
+  return sign | h;
+}

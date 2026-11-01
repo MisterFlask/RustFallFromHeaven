@@ -12,7 +12,6 @@
 //! `cannotFoundCity` / `canFoundCitiesOnWater` (disabled by USE_CANNOT_FOUND_CITY_CALLBACK /
 //! USE_CAN_FOUND_CITIES_ON_WATER_CALLBACK = 0, and they return False anyway).
 
-#![allow(unused_imports)]
 
 use crate::city::City;
 use crate::controller::ConqueredCityChoice;
@@ -188,6 +187,11 @@ impl Game {
 
     /// C++ `CvPlayer::initCity(iX, iY, bBumpUnits, bUpdatePlotGroups)`: creates and inits a city.
     pub fn player_init_city(&mut self, p: PlayerId, x: i32, y: i32, bump_units: bool, update_plot_groups: bool) -> CityId {
+        self.player_init_city_as(p, x, y, bump_units, update_plot_groups, false)
+    }
+
+    /// `player_init_city` for a new city (`acquired` false) or one changing hands.
+    fn player_init_city_as(&mut self, p: PlayerId, x: i32, y: i32, bump_units: bool, update_plot_groups: bool, acquired: bool) -> CityId {
         // addCity(): the new slot holds a default (reset) city until `init` re-runs `reset`.
         // Both "Crime" draws of the C++ (constructor + init) are made by `city_init`.
         let id = self.cities.next_id();
@@ -201,6 +205,9 @@ impl Game {
         );
 
         self.city_init(city, p, x, y, bump_units, update_plot_groups);
+        // This game's governors (docs/GOVERNORS.md): a direct slot or a governor. A city that
+        // changed hands takes its governor when its owner's turn ends (`player_governance_turn`).
+        self.city_governance_init(city, !acquired);
 
         city
     }
@@ -218,6 +225,9 @@ impl Game {
         // nothing below changes them before the old city is killed).
         let old_owner = self.cities[old_city].owner;
         let original_owner = self.cities[old_city].original_owner;
+        if self.telemetry.on() {
+            self.tel_acquire(p, old_city, conquest, trade);
+        }
 
         // C++ copies the plot's unit list first (`oldUnits`).
         let old_units = self.map.plots[city_plot].units.clone();
@@ -284,8 +294,9 @@ impl Game {
                 let name = city_name(self, old_city).to_string();
                 let old_owner_name = self.player_get_name(old_owner);
                 let civ = self.player_get_civilization_description(p);
-                self.log.msg(turn, Some(p), || format!("You have captured {name}!"));
-                self.log.msg(turn, None, || format!("{name} ({old_owner_name}) was captured by the {civ}"));
+                let at = (self.cities[old_city].x, self.cities[old_city].y);
+                self.log.msg_at(turn, Some(p), at, || format!("You have captured {name}!"));
+                self.log.msg_at(turn, None, at, || format!("{name} ({old_owner_name}) was captured by the {civ}"));
             }
         }
 
@@ -393,7 +404,7 @@ impl Game {
             }
         }
 
-        let new_city = self.player_init_city(p, city_x, city_y, !conquest, false);
+        let new_city = self.player_init_city_as(p, city_x, city_y, !conquest, false, true);
 
         self.cities[new_city].previous_owner = Some(old_owner);
         self.cities[new_city].original_owner = original_owner;
@@ -577,6 +588,10 @@ impl Game {
             }
         }
 
+        // This game's governors: a governed city has production at once, and its owner a word on
+        // who runs it (a city razed at once is gone: it took no governor).
+        self.city_governance_acquired(new_city);
+
         // Forcing events that deal with the old city not to expire just because we conquered that city
         for trigger_data in self.players[p].events_occured.values_mut() {
             if trigger_data.other_player == Some(old_owner) && trigger_data.other_player_city == Some(old_city) {
@@ -708,6 +723,9 @@ impl Game {
         }
 
         let city = self.player_init_city(p, x, y, true, true);
+        if self.telemetry.on() {
+            self.tel_found(p, city);
+        }
 
         if self.player_is_barbarian(p) {
             // AI: C++ `pCity->AI_bestUnitAI(UNITAI_CITY_DEFENSE)`, else
@@ -798,6 +816,9 @@ impl Game {
         }
 
         debug_assert!(self.cities[city].owner == p);
+        if self.telemetry.on() {
+            self.tel_raze(p, city);
+        }
 
         let team = self.players[p].team;
 
@@ -825,8 +846,9 @@ impl Game {
             let turn = self.game_turn();
             let name = city_name(self, city).to_string();
             let civ = self.player_get_civilization_description(p);
-            self.log.msg(turn, Some(p), || format!("You have destroyed {name}!"));
-            self.log.msg(turn, None, || format!("{name} was razed by the {civ}"));
+            let at = (self.cities[city].x, self.cities[city].y);
+            self.log.msg_at(turn, Some(p), at, || format!("You have destroyed {name}!"));
+            self.log.msg_at(turn, None, at, || format!("{name} was razed by the {civ}"));
         }
 
         //FfH Global Counter: Added by Kael 08/11/2007
@@ -1104,6 +1126,8 @@ impl Game {
                 "(pBestCity->getNumRealBuilding(eCapitalBuilding)) did not return false as expected"
             );
             self.city_set_num_real_building(best_city, capital_building, 1);
+            // This game's governors: the new capital is ruled directly.
+            self.player_governance_settle(p);
         }
     }
 

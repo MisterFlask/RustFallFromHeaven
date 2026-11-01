@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // The headless-Chromium smoke test of the browser client (docs/PLAY_DESIGN.md §7 P5, F21):
 // starts `ffh-play serve`, loads the page in headless Chromium and plays through the UI with the
-// mouse and keyboard: the new-game screen (Start double-clicked), W over the waiting groups,
+// mouse and keyboard: the new-game screen (Start double-clicked), Tab over the waiting groups, W A S D,
 // hotkeys right after a selection change, founding a city, the research and production popups,
 // the city queue, selecting a unit, the path preview, moving with a right-click, ending turns
 // through the end-turn gate, the turn report, saving and loading; then staged saves (`ffh-play
@@ -13,12 +13,14 @@
 // bar), diplomacy (F4, the trade screen when a player was met), the cities list (F1), the keys
 // (?), the go-to mode (G, Esc), the map layers, the inspector, debug reveal, AI autoplay and the
 // spectator mode (play, pause, step, stop), and the trade screen (`stage trade`: gold offered and
-// accepted). The art client: the map drawn with the original pixel art (its worker, the view
-// drawn in full, a frame's time, the zoom steps and the chart, the bitmap type), Tools → Options
-// and `?renderer=flat` for the flat renderer; `?renderer=iso`, the isometric renderer (its sprites,
-// picking a unit by its figure, zoom, layers); `?renderer=3d`, the experimental 3D renderer (picking,
-// selection, zoom, pan, layers). Phase 7: the automate buttons (`stage automate`: a
-// worker automated with a click, a scout exploring by its hotkey), the secretary general's election
+// accepted). The default map (the HD-2D one, or its isometric fallback); the classic interface on
+// the flat map (the bitmap type, a frame's time, the zoom steps), which the steps above drive, Tools
+// → Options and `?renderer=flat`; `?renderer=iso`, the isometric renderer (its sprites,
+// picking a unit by its figure, zoom, layers); `?renderer=hd2d`, the HD-2D map, the default (its
+// frame, the cards, picking, selection, zoom, pan, layers, a lost context's fallback). Phase 7: the automate buttons (`stage automate`: a
+// worker automated with a click, a scout exploring by its hotkey), this game's armies (`stage
+// armies`: a marching recruit that takes no orders, a city added to an army's requisition on the
+// Armies screen, a requisition order in a city's queue), the secretary general's election
 // popup (`stage election`) and the Kuriotates city-or-settlement decision (`stage settlement`);
 // crusades (`stage crusade`: the call popup, lending with the war confirmation, the Crusades
 // screen, a loan proposed). It
@@ -31,7 +33,8 @@
 // The browser: the `playwright` package (resolved normally, then in node's global modules),
 // else Chromium driven directly over the DevTools protocol (`--cdp` forces that): the
 // executable from $CHROME, or the Playwright browsers in $PLAYWRIGHT_BROWSERS_PATH (or
-// /opt/pw-browsers, ~/.cache/ms-playwright). Without a browser the test is skipped (exit 0).
+// /opt/pw-browsers, ~/.cache/ms-playwright). Without a browser the test is SKIPPED: exit 0, or 1
+// when $CI is set.
 // Screenshots go to --out (default target/web-smoke, not committed). Exit 1 on a failure.
 
 import { spawn } from "node:child_process";
@@ -39,7 +42,7 @@ import { createRequire } from "node:module";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { ROOT, parseArgs, findBin, tempDir, startServer, stage, until } from "./web-lib.mjs";
+import { ROOT, parseArgs, findBin, tempDir, startServer, stage, until, skipped } from "./web-lib.mjs";
 
 let args;
 try {
@@ -78,7 +81,8 @@ async function loadPlaywright() {
 
 /** Playwright's Chromium as the smoke test's browser. */
 async function playwrightBrowser(pw, problems) {
-  const browser = await pw.chromium.launch({ headless: !args.headed });
+  // FFH_CHROMIUM_CHANNEL=chrome: the installed Chrome (as the r3d tools, web-lib.mjs chromiumLaunch).
+  const browser = await pw.chromium.launch({ headless: !args.headed, ...(process.env.FFH_CHROMIUM_CHANNEL ? { channel: process.env.FFH_CHROMIUM_CHANNEL } : {}) });
   const page = await browser.newPage({ viewport: VIEW });
   page.on("console", (m) => m.type() === "error" && problems.push(`console: ${m.text()}`));
   page.on("pageerror", (e) => problems.push(`page error: ${e.message}`));
@@ -93,6 +97,12 @@ async function playwrightBrowser(pw, problems) {
     dblclick: (x, y) => page.mouse.dblclick(x, y),
     move: (x, y) => page.mouse.move(x, y),
     key: (key, shift = false) => page.keyboard.press(shift ? `Shift+${key}` : key),
+    // A letter held for `ms` (W A S D scroll the map while held).
+    hold: async (key, ms) => {
+      await page.keyboard.down(key);
+      await new Promise((r) => setTimeout(r, ms));
+      await page.keyboard.up(key);
+    },
     // A held key (Shift): the mouse events meanwhile carry it.
     keyDown: (key) => page.keyboard.down(key),
     keyUp: (key) => page.keyboard.up(key),
@@ -188,7 +198,7 @@ async function cdpBrowser(exe, problems) {
   // Modifiers held with keyDown (8 = Shift), carried by the mouse events meanwhile.
   let held = 0;
   const mouseEvent = (type, x, y, button = "none", clickCount = 0) => send("Input.dispatchMouseEvent", { type, x, y, button, clickCount, modifiers: held, buttons: button === "left" ? 1 : button === "right" ? 2 : 0 });
-  const KEYS = { Enter: [13, "\r"], Escape: [27, ""], Tab: [9, ""], Delete: [46, ""], Home: [36, ""], F1: [112, ""], F2: [113, ""], F3: [114, ""], F4: [115, ""], F6: [117, ""], F7: [118, ""] };
+  const KEYS = { Enter: [13, "\r"], Escape: [27, ""], Tab: [9, ""], Delete: [46, ""], Home: [36, ""], F1: [112, ""], F2: [113, ""], F3: [114, ""], F4: [115, ""], F5: [116, ""], F6: [117, ""], F7: [118, ""], F8: [119, ""], F9: [120, ""], ArrowLeft: [37, ""], ArrowUp: [38, ""], ArrowRight: [39, ""], ArrowDown: [40, ""] };
   const MODIFIERS = { Shift: [16, 8, "ShiftLeft"] };
   return {
     name: `Chromium over the DevTools protocol (${exe})`,
@@ -215,6 +225,12 @@ async function cdpBrowser(exe, problems) {
       const [code, text] = KEYS[key] ?? [key.toUpperCase().charCodeAt(0), key];
       const base = { key, windowsVirtualKeyCode: code, modifiers: shift ? 8 : 0 };
       await send("Input.dispatchKeyEvent", { type: text ? "keyDown" : "rawKeyDown", text: text || undefined, ...base });
+      await send("Input.dispatchKeyEvent", { type: "keyUp", ...base });
+    },
+    hold: async (key, ms) => {
+      const base = { key, code: `Key${key.toUpperCase()}`, windowsVirtualKeyCode: key.toUpperCase().charCodeAt(0), modifiers: held };
+      await send("Input.dispatchKeyEvent", { type: "keyDown", text: key, ...base });
+      await new Promise((r) => setTimeout(r, ms));
       await send("Input.dispatchKeyEvent", { type: "keyUp", ...base });
     },
     keyDown: async (key) => {
@@ -305,7 +321,18 @@ async function answerPopups(log = true) {
 async function newGame(url, saves) {
   await b.goto(url);
   await until2("window.ffh && window.ffh.ready", "the client to boot");
+  // No game: the title screen, its island drawn, its menu up (New game: the new-game screen).
+  await until2(`!document.getElementById("title-screen").hidden && !!document.getElementById("title-new")`, "the title screen");
+  await until2(`(() => { const c = document.querySelector("#title-screen canvas.title-backdrop"); return !!c && c.width > 1; })()`, "the title screen's island");
+  await new Promise((r) => setTimeout(r, 400));
+  await shot("title");
+  steps.push("the title screen with its menu");
+  await click("#title-new");
   await until(async () => (await modalTitles()).includes("New game"), "the new-game screen");
+  // The civilizations' list drives the form; picking one shows its leaders' cards.
+  await click('#modals button.civ-item[data-civ="CIVILIZATION_BANNOR"]');
+  await until2(`!!document.querySelector("#modals button.leader-card[data-leader]:not([data-leader=''])")`, "the Bannor's leaders");
+  await click('#modals button.civ-item[data-civ=""]');
   await shot("new-game");
   await b.eval(`(() => {
     const set = (id, v) => { const e = document.getElementById(id); e.value = v; e.dispatchEvent(new Event("change")); };
@@ -315,76 +342,77 @@ async function newGame(url, saves) {
   const start = await b.eval(`(() => { const r = document.querySelector("#modals .modal-buttons button.primary").getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; })()`);
   await b.dblclick(start.x, start.y);
   await waitHuman("the first turn");
+  await until2(`document.getElementById("title-screen").hidden`, "the title screen to go");
   const games = fs.readdirSync(saves).filter((f) => fs.statSync(path.join(saves, f)).isDirectory());
   if (games.length !== 1) throw new Error(`a double click on Start made ${games.length} games: ${games}`);
   steps.push(`new game (Start double-clicked: one game): turn ${await S("S.status.turn")}`);
   await shot("first-turn");
-  // The plain URL (fresh, no stored choice) opens the default renderer, now the isometric 2.5D
-  // map (docs/ISO.md, look.js). The checks below drive the art client; switch to it explicitly.
-  if ((await b.eval("window.ffh.mapView.renderer()")) !== "iso") throw new Error("the default renderer is not the isometric 2.5D map");
-  steps.push("the default renderer is the isometric 2.5D map");
-  await b.goto(`${url}/?renderer=art`);
-  await until2("window.ffh && window.ffh.ready", "the client to boot (art)");
+  // The plain URL (fresh, no stored choice) opens the default renderer, the HD-2D map (docs/HD2D.md,
+  // look.js) -- or, where WebGL2 renders in software (a browser without a GPU, as on CI), its
+  // fallback, the isometric 2.5D map. The checks below drive the classic interface, on the flat map
+  // that wears it; switch to it explicitly.
+  await until2(`!window.ffh.mapView.r3dLoading && ["hd2d", "iso"].includes(window.ffh.mapView.renderer())`, "the default renderer (the HD-2D map or its isometric fallback)", 180000);
+  const [dflt, why] = await b.eval("[window.ffh.mapView.renderer(), window.ffh.mapView.r3dError?.code ?? null]");
+  if (dflt === "iso" && why !== "software-webgl") throw new Error(`the default HD-2D map fell back to the isometric one (${why ?? "no reason given"})`);
+  steps.push(dflt === "hd2d" ? "the default renderer is the HD-2D map" : "the default renderer is the HD-2D map, here (software WebGL2) its isometric fallback");
+  await b.goto(`${url}/?renderer=flat`);
+  await until2("window.ffh && window.ffh.ready", "the client to boot (flat)");
 }
 
-/** The art client (docs/ART.md, look.js, artmap.js): the art loaded and draws the map (in its
- *  worker where there is one), the view is drawn in full, the map is not blank, a frame takes
- *  little time, the zoom goes through the art's steps and the chart, the interface uses the
- *  bitmap type and frames, and Tools → Options switches to the flat renderer and back. */
-async function artClient() {
+/** The classic interface (docs/ART.md, look.js) on the flat map, the sprite-less debug renderer
+ *  that wears it (the HD-2D and isometric maps wear the isometric one): the art loaded, the
+ *  interface uses the bitmap type and frames, the map is not blank, a frame takes little time, the
+ *  zoom goes through the flat map's steps, and Tools → Options switches to the isometric map and
+ *  back (the flat map stays remembered for the steps that follow, which drive this interface). */
+async function classicClient() {
   await until2("!!(window.ffh.look.art || window.ffh.look.error)", "the art to load");
   const err = await b.eval("window.ffh.look.error ? String(window.ffh.look.error.message || window.ffh.look.error) : null");
   if (err) throw new Error(`the art did not load: ${err}`);
-  if ((await b.eval("window.ffh.mapView.renderer()")) !== "art") throw new Error("the map is not drawn with the art");
+  if ((await b.eval("window.ffh.mapView.renderer()")) !== "flat") throw new Error("the map is not the flat one");
   if (!(await b.eval(`document.documentElement.classList.contains("art") && !!document.querySelector("#btn-techs .ui-ptext") && !!document.querySelector("#empire canvas.ui-px")`))) {
     throw new Error("the interface has no bitmap type or icons");
   }
-  await until2("window.ffh.mapView.art.settled()", "the art map drawn in full", 60000);
   const look = await b.eval(`(() => {
     const mv = window.ffh.mapView;
+    const times = [];
+    for (let k = 0; k < 15; k++) { const t = performance.now(); mv.draw(); times.push(performance.now() - t); }
+    times.sort((a, b) => a - b);
     const c = mv.canvas;
     const g = c.getContext("2d", { willReadFrequently: true });
     const w = Math.min(240, c.width >> 1), h = Math.min(240, c.height >> 1);
     const d = g.getImageData((c.width - w) >> 1, (c.height - h) >> 1, w, h).data;
     const colours = new Set();
     for (let i = 0; i < d.length; i += 4) colours.add((d[i] << 16) | (d[i + 1] << 8) | d[i + 2]);
-    const times = [];
-    for (let k = 0; k < 15; k++) { const t = performance.now(); mv.draw(); times.push(performance.now() - t); }
-    times.sort((a, b) => a - b);
-    return { colours: colours.size, median: times[7], worker: !!mv.art.stats.worker, ts: mv.cam.ts };
+    return { colours: colours.size, median: times[7] };
   })()`);
-  if (look.colours < 8) throw new Error(`the art map is nearly blank (${look.colours} colours in the middle of the view)`);
-  if (look.median > 60) throw new Error(`an art frame takes ${look.median.toFixed(1)} ms (median of 15)`);
-  if (look.ts !== 64) throw new Error(`the art's default zoom is ${look.ts} px a plot (want 64)`);
-  await shot("art-map");
-  steps.push(`art map: ${look.colours} colours mid-view, a frame in ${look.median.toFixed(1)} ms (median), chunks drawn ${look.worker ? "by the worker" : "on the page"}`);
-  // The zoom steps: 64 -> 32 (survey) -> 16 -> 8 (the chart) -> 8, then back up to 128 and to 64.
+  if (look.colours < 8) throw new Error(`the flat map is nearly blank (${look.colours} colours in the middle of the view)`);
+  if (look.median > 60) throw new Error(`a flat frame takes ${look.median.toFixed(1)} ms (median of 15)`);
+  await shot("flat-map");
+  steps.push(`flat map, classic interface: ${look.colours} colours mid-view, a frame in ${look.median.toFixed(1)} ms (median)`);
+  // The zoom steps, through the flat map's own, and back.
+  const keys = ["-", "-", "+", "+", "+", "-"];
+  const zs = await b.eval("window.ffh.mapView.zooms()");
+  let ts = await b.eval("window.ffh.mapView.cam.ts");
+  const want = keys.map((k) => (ts = zs[Math.max(0, Math.min(zs.length - 1, zs.indexOf(ts) + (k === "+" ? 1 : -1)))]));
   const zooms = [];
-  for (const k of ["-", "-", "-", "-", "+", "+", "+", "+", "+", "-"]) {
+  for (const k of keys) {
     await b.key(k);
     zooms.push(await b.eval("window.ffh.mapView.cam.ts"));
-    if (zooms.at(-1) === 32 && k === "-") {
-      await until2("window.ffh.mapView.art.settled()", "the survey zoom drawn", 60000);
-      await shot("art-survey");
-    }
-    if (zooms.at(-1) === 16 && k === "-") await shot("art-chart");
   }
-  if (JSON.stringify(zooms) !== JSON.stringify([32, 16, 8, 8, 16, 32, 64, 96, 128, 96])) throw new Error(`the zoom steps: ${zooms}`);
-  await b.key("-");
-  if ((await b.eval("window.ffh.mapView.cam.ts")) !== 64) throw new Error("the zoom did not come back to 64");
-  steps.push(`zoom steps ${zooms.join(" ")} (the chart at 8 and 16, the art at 32-128)`);
-  // Tools → Options: the flat renderer and back.
+  if (JSON.stringify(zooms) !== JSON.stringify(want)) throw new Error(`the flat map's zoom steps: ${zooms}, not ${want}`);
+  steps.push(`zoom steps ${zooms.join(" ")}`);
+  // Tools → Options: the isometric map and back.
   await click("#btn-tools");
   await dialog("Tools");
   await click("#tool-options");
   await dialog("Options");
+  await click("#option-iso-renderer");
+  await until2(`window.ffh.mapView.renderer() === "iso"`, "the isometric map (Options)");
+  await until2(`!!document.querySelector("#option-flat-renderer")`, "the Options dialog after the switch");
   await click("#option-flat-renderer");
-  await until2(`window.ffh.mapView.renderer() === "flat"`, "the flat renderer (Options)");
-  await click("#option-art-renderer");
-  await until2(`window.ffh.mapView.renderer() === "art"`, "the art renderer again (Options)");
+  await until2(`window.ffh.mapView.renderer() === "flat" && document.documentElement.classList.contains("art")`, "the flat map and its interface again (Options)");
   await closeDialog("Options");
-  await until2("window.ffh.mapView.art.settled()", "the art map drawn again", 60000);
-  steps.push("Tools → Options: the flat renderer and back to the art");
+  steps.push("Tools → Options: the isometric map and back to the flat one");
 }
 
 /** `?renderer=flat`: the P5 renderer, kept for debugging, on the same game. */
@@ -400,7 +428,8 @@ async function flatRenderer(url) {
 
 /** `?renderer=iso`: the isometric renderer (docs/ISO.md) on the same game: its sprites load, the
  *  frame is drawn (not blank), a click on a unit's figure (which stands up into the plots behind)
- *  selects it, the hover follows the mouse, the zoom steps, the political layer, and back to the art. */
+ *  selects it, the hover follows the mouse, the zoom steps, the political layer, and back to the flat
+ *  map. */
 async function rendererIso(url) {
   await b.goto(`${url}/?renderer=iso`);
   await until2("window.ffh && window.ffh.ready", "the client to boot (iso)");
@@ -461,25 +490,29 @@ async function rendererIso(url) {
   await b.eval(`window.ffh.setLayer("terrain")`);
   await b.eval("window.ffh.mapView.draw()");
   await shot("renderer-iso");
-  await b.eval(`window.ffh.setRenderer("art")`);
-  await until2(`window.ffh.mapView.renderer() === "art"`, "the art renderer after the isometric one");
-  steps.push(`?renderer=iso: a frame of ${colours} colours, ${clicked ? "a click on a unit's figure selects it, hover, " : ""}zoom ${zooms.join(" ")}, political layer, back to the art`);
+  // The city screen over the isometric map: its plots worked by clicking them on the map.
+  await cityScreen();
+  await b.eval(`window.ffh.setRenderer("flat")`);
+  await until2(`window.ffh.mapView.renderer() === "flat"`, "the flat map after the isometric one");
+  steps.push(`?renderer=iso: a frame of ${colours} colours, ${clicked ? "a click on a unit's figure selects it, hover, " : ""}zoom ${zooms.join(" ")}, political layer, back to the flat map`);
 }
 
-/** `?renderer=3d`: the experimental 3D renderer (docs/R3D.md) on the same game: its WebGL frame is
- *  drawn and not blank, picking through the relief finds the plot under every plot's screen
- *  point, a click selects a unit, the hover follows the mouse, the zoom steps and a drag pan, the
- *  political layer, and back to the 2D art. Software rendering is slow, so the frame loop is idle
+/** `?renderer=hd2d`: the HD-2D map (docs/HD2D.md), the default, on the same game: its WebGL frame
+ *  is drawn and not blank, the sprites load and the units stand as cards, picking through the
+ *  relief finds the plot under every plot's screen point, a click selects a unit, the hover follows
+ *  the mouse, the zoom steps and a pan, the political layer, back to the flat map, and a lost WebGL
+ *  context falls back to the isometric map. Software rendering is slow, so the frame loop is idle
  *  (no animation) and the internal resolution halved. */
-async function renderer3d(url) {
+async function rendererHd2d(url) {
   const cfg = encodeURIComponent(JSON.stringify({ animate: false, renderScale: 0.5 }));
-  // `--disable-gpu` makes WebGL2 software (SwiftShader), which the renderer now refuses by default
-  // (docs/R3D.md §1); `force3d=1` overrides the guard so the test still exercises 3D.
-  await b.goto(`${url}/?renderer=3d&r3d=${cfg}&force3d=1`);
-  await until2("window.ffh && window.ffh.ready", "the client to boot (3d)");
-  await waitHuman("the game in the 3D renderer");
+  // `--disable-gpu` makes WebGL2 software (SwiftShader), which the renderer refuses by default
+  // (docs/R3D.md §1); `force3d=1` overrides the guard so the test still exercises the HD-2D map.
+  await b.goto(`${url}/?renderer=hd2d&r3d=${cfg}&force3d=1`);
+  await until2("window.ffh && window.ffh.ready", "the client to boot (hd2d)");
+  await waitHuman("the game in the HD-2D map");
   await answerPopups(false);
-  await until2(`window.ffh.mapView.renderer() === "3d" && !!window.ffh.mapView.r3d.cam`, "the 3D renderer's first frame", 180000);
+  await until2(`window.ffh.mapView.renderer() === "hd2d" && !!window.ffh.mapView.r3d.cam`, "the HD-2D map's first frame", 180000);
+  await until2(`window.ffh.mapView.r3d.sprites.atlas.pending === 0`, "the HD-2D sprites to load", 60000);
   const frame = await b.eval(`(() => {
     const r = window.ffh.mapView.r3d;
     r.render(1);
@@ -489,15 +522,17 @@ async function renderer3d(url) {
     gl.readPixels(x, y, w, h, gl.RGBA, gl.UNSIGNED_BYTE, px);
     const colours = new Set();
     for (let i = 0; i < px.length; i += 4) colours.add((px[i] << 16) | (px[i + 1] << 8) | px[i + 2]);
-    return { colours: colours.size, props: r.staticCount, units: r.unitCount };
+    return { colours: colours.size, cards: r.sprites.bufs.units?.n ?? 0, statics: r.sprites.bufs.static?.n ?? 0 };
   })()`);
-  if (frame.colours < 16) throw new Error(`the 3D frame is nearly blank (${frame.colours} colours mid-view)`);
+  if (frame.colours < 16) throw new Error(`the HD-2D frame is nearly blank (${frame.colours} colours mid-view)`);
+  if (frame.cards < 1) throw new Error("the HD-2D map stands no unit as a card");
   // Picking: the plot under each in-view plot's centre on screen is that plot (the ground's relief
-  // and the camera's perspective do not shift the logical grid).
+  // and the camera's perspective do not shift the logical grid) -- unless nearer ground hides that
+  // centre (a peak in front, under the map's low camera), where the click finds what is seen.
   const pick = await b.eval(`(() => {
     const mv = window.ffh.mapView, r = mv.r3d, S = window.ffh.S;
     const c = mv.center();
-    let n = 0, bad = [];
+    let n = 0, hidden = 0, bad = [];
     for (let dy = -3; dy <= 3; dy++) for (let dx = -4; dx <= 4; dx++) {
       const x = ((c.x + dx) % S.map.w + S.map.w) % S.map.w, y = c.y + dy;
       if (y < 0 || y >= S.map.h || S.map.vis[y * S.map.w + x] === 0) continue;
@@ -505,48 +540,59 @@ async function renderer3d(url) {
       if (p.x < 0 || p.y < 0 || p.x > mv.vw || p.y > mv.vh) continue;
       const q = r.screenToMap(p.x, p.y);
       n++;
-      if (!q || q.x !== x || q.y !== y) bad.push([x, y, q && [q.x, q.y]]);
+      if (q && q.x === x && q.y === y) continue;
+      // How far along the ray the ground was met, against the plot's centre (both on the ray).
+      const [o, d] = r.ray(r.camera(), p.x, p.y), g = r.groundAt(p.x, p.y);
+      const along = (wx, wz) => Math.hypot(wx - o[0], wz - o[2]);
+      if (g && along(g[0], -g[1]) < along(r.nearX(x + 0.5), -(y + 0.5)) - 0.01) hidden++;
+      else bad.push([x, y, q && [q.x, q.y]]);
     }
-    return { n, bad };
+    return { n, hidden, bad };
   })()`);
-  if (pick.n < 10 || pick.bad.length) throw new Error(`3D picking: ${pick.bad.length} of ${pick.n} plots picked wrong: ${JSON.stringify(pick.bad.slice(0, 5))}`);
+  if (pick.n < 10 || pick.bad.length) throw new Error(`HD-2D picking: ${pick.bad.length} of ${pick.n} plots picked wrong: ${JSON.stringify(pick.bad.slice(0, 5))}`);
   // A click on one of our units selects it.
   const mine = await b.eval(`(() => { const S = window.ffh.S; const u = S.view.units.find((u) => u.owner === S.view.me.player); return u ? { x: u.x, y: u.y } : null; })()`);
   if (mine) {
     await b.eval("window.ffh.units.clearSelection && window.ffh.units.clearSelection()");
     const p = await plotPos(mine.x, mine.y);
     await b.mouse(p.x, p.y);
-    await until2(`(() => { const s = window.ffh.S.sel; return !!s && s.x === ${mine.x} && s.y === ${mine.y}; })()`, "a click on a unit to select it (3D)");
+    await until2(`(() => { const s = window.ffh.S.sel; return !!s && s.x === ${mine.x} && s.y === ${mine.y}; })()`, "a click on a unit to select it (HD-2D)");
     // The hover follows the mouse.
     await b.move(p.x + 3, p.y + 2);
-    await until2(`(() => { const h = window.ffh.mapView.overlay.hover; return !!h && h.x === ${mine.x} && h.y === ${mine.y}; })()`, "the hover on the unit's plot (3D)");
+    await until2(`(() => { const h = window.ffh.mapView.overlay.hover; return !!h && h.x === ${mine.x} && h.y === ${mine.y}; })()`, "the hover on the unit's plot (HD-2D)");
   }
-  // The zoom steps (pixels a plot) and back; a drag pans.
+  // The zoom steps (pixels a plot) and back, through the renderer's own steps; a key pans.
+  const keys = ["-", "-", "+", "+", "+", "-"];
+  const zs = await b.eval("window.ffh.mapView.zooms()");
+  let ts = await b.eval("window.ffh.mapView.cam.ts");
+  const want = keys.map((k) => (ts = zs[Math.max(0, Math.min(zs.length - 1, zs.indexOf(ts) + (k === "+" ? 1 : -1)))]));
   const zooms = [];
-  for (const k of ["-", "-", "+", "+", "+", "-"]) {
+  for (const k of keys) {
     await b.key(k);
     zooms.push(await b.eval("window.ffh.mapView.cam.ts"));
   }
-  if (JSON.stringify(zooms) !== JSON.stringify([72, 56, 72, 96, 128, 96])) throw new Error(`3D zoom steps: ${zooms}`);
+  if (JSON.stringify(zooms) !== JSON.stringify(want)) throw new Error(`HD-2D zoom steps: ${zooms}, not ${want}`);
   const before = await b.eval("[window.ffh.mapView.cam.cx, window.ffh.mapView.cam.cy]");
   await b.key("ArrowLeft");
   const after = await b.eval("[window.ffh.mapView.cam.cx, window.ffh.mapView.cam.cy]");
-  if (before[0] === after[0]) throw new Error("the arrow key did not pan the 3D map");
+  if (before[0] === after[0]) throw new Error("the arrow key did not pan the HD-2D map");
   await b.eval(`window.ffh.setLayer("political")`);
-  await until2("window.ffh.mapView.r3d.scene.overlayOpts.political === 1", "the political layer in 3D");
+  await until2("window.ffh.mapView.r3d.scene.overlayOpts.political === 1", "the political layer in HD-2D");
   await b.eval(`window.ffh.setLayer("terrain")`);
   await b.eval("window.ffh.mapView.r3d.render(1)");
-  await shot("renderer-3d");
-  // Back to the 2D art: the 3D canvas goes.
-  await b.eval(`window.ffh.setRenderer("art")`);
-  await until2(`window.ffh.mapView.renderer() === "art" && !document.querySelector("canvas.map3d")`, "the art renderer after the 3D one");
-  // A lost WebGL context (a driver reset) hands the map back to the 2D art.
-  await b.eval(`window.ffh.setRenderer("3d")`);
-  await until2(`window.ffh.mapView.renderer() === "3d" && !!window.ffh.mapView.r3d.cam`, "the 3D renderer again", 180000);
+  await shot("renderer-hd2d");
+  // Back to the flat map: the WebGL canvas goes.
+  await b.eval(`window.ffh.setRenderer("flat")`);
+  await until2(`window.ffh.mapView.renderer() === "flat" && !document.querySelector("canvas.map3d")`, "the flat map after the HD-2D map");
+  // A lost WebGL context (a driver reset) hands the map to the HD-2D map's fallback, the isometric
+  // one; then back to the flat map for what follows.
+  await b.eval(`window.ffh.setRenderer("hd2d")`);
+  await until2(`window.ffh.mapView.renderer() === "hd2d" && !!window.ffh.mapView.r3d.cam && document.querySelectorAll("canvas.map3d").length === 1`, "the HD-2D map again", 180000);
   const canLose = await b.eval(`(() => { const x = window.ffh.mapView.r3d.gl.getExtension("WEBGL_lose_context"); if (x) x.loseContext(); return !!x; })()`);
-  if (canLose) await until2(`window.ffh.mapView.renderer() === "art" && !document.querySelector("canvas.map3d")`, "the art renderer after the 3D context was lost");
-  else await b.eval(`window.ffh.setRenderer("art")`);
-  steps.push(`?renderer=3d: a frame of ${frame.colours} colours mid-view (${frame.props} props, ${frame.units} unit figures), ${pick.n} plots picked right through the relief, click-select, hover, zoom ${zooms.join(" ")}, pan, political layer, back to the art${canLose ? ", a lost WebGL context falls back to the art" : " (no WEBGL_lose_context: context loss not checked)"}`);
+  if (canLose) await until2(`window.ffh.mapView.renderer() === "iso" && !document.querySelector("canvas.map3d")`, "the isometric map after the HD-2D map's context was lost");
+  await b.eval(`window.ffh.setRenderer("flat")`);
+  await until2(`window.ffh.mapView.renderer() === "flat" && !document.querySelector("canvas.map3d")`, "the flat map after the HD-2D map");
+  steps.push(`?renderer=hd2d: a frame of ${frame.colours} colours mid-view, ${frame.cards} unit cards and ${frame.statics} other cards, ${pick.n} plots picked right through the relief (${pick.hidden} hidden behind nearer ground), click-select, hover, zoom ${zooms.join(" ")}, pan, political layer, back to the flat map${canLose ? ", a lost WebGL context falls back to the isometric map" : " (no WEBGL_lose_context: context loss not checked)"}`);
 }
 
 /** Records the page's POST bodies in `window.__posts` (from now on). */
@@ -565,20 +611,20 @@ async function recordPosts() {
 }
 const posted = () => b.eval(`window.__posts.filter((p) => p.k === "cmd")`);
 
-/** W (and Tab, "Next") reaches every group the cycle selects (`selectable`: C++
+/** Tab (Civ4's W; "Next") reaches every group the cycle selects (`selectable`: C++
  *  `readyToSelect()`), not just the two nearest each other (P5 review). */
 async function cycleAll() {
   const ready = await S("S.view.groups.filter((g) => g.selectable).map((g) => g.id)");
-  if (ready.length < 2) return steps.push(`W: ${ready.length} group waiting, nothing to cycle`);
+  if (ready.length < 2) return steps.push(`Tab: ${ready.length} group waiting, nothing to cycle`);
   const seen = new Set([await S("S.sel ? S.units.get(S.sel.units[0]).group : null")]);
   for (let k = 0; k < 2 * ready.length; k++) {
-    await b.key("w");
+    await b.key("Tab");
     await new Promise((r) => setTimeout(r, 120));
     seen.add(await S("S.sel ? S.units.get(S.sel.units[0]).group : null"));
   }
   const missed = ready.filter((g) => !seen.has(g));
-  if (missed.length) throw new Error(`W never selected groups ${missed} of ${ready}`);
-  steps.push(`W selected all ${ready.length} waiting groups`);
+  if (missed.length) throw new Error(`Tab never selected groups ${missed} of ${ready}`);
+  steps.push(`Tab selected all ${ready.length} waiting groups`);
 }
 
 /** A hotkey pressed right after the selection changed acts on the new selection, never with the
@@ -661,6 +707,111 @@ async function cityQueue() {
   steps.push("city queue: appended with Shift, removed with ✕, no ✕ on the only order");
 }
 
+/** This game's cultural channels (docs/CULTURE.md; the new-game screen starts with them on): the
+ *  city screen's Culture section has the channel chooser (a button for each action; for each, the
+ *  civilizations it could aim at with a preview, or why there are none) and the revolt pressure on
+ *  the city. A channel the game allows is set through it, shown as the city's channel, and stopped;
+ *  F8 opens the Cultural pressure panel. The smoke game is early and small: when nothing is in
+ *  reach (or the AI's cities are unseen), only the controls and the empty states are checked. */
+async function cultureUi() {
+  const city = await S("S.view.cities.find((c) => c.owner === S.view.me.player)");
+  await b.eval(`window.ffh.emit("open-city", ${city.id})`);
+  const sec = `#modals .backdrop:not(.under) .section.culture`;
+  const has = (sel) => b.eval(`!!document.querySelector(${q(`${sec} ${sel}`)})`);
+  await until2(`!!document.querySelector(${q(`${sec} .culture-under`)})`, "the city's Culture section with its revolt pressure");
+  if (!(await has("details.culture-choose[open]"))) throw new Error("the channel chooser is not open on a city without a channel");
+  if (await has(".culture-channel")) throw new Error("a new city has a channel");
+  const n = await b.eval(`window.ffh.S.data.tables.CulturalActionType.length`);
+  const shown = await b.eval(`document.querySelectorAll(${q(`${sec} .culture-actions button`)}).length`);
+  if (shown !== n) throw new Error(`the Culture section offers ${shown} actions of ${n}`);
+  // Each action: the civilizations it could aim at, or why there are none.
+  let ok = null;
+  for (let a = 0; a < n; a++) {
+    await click(`${sec} .culture-actions button[data-action="${a}"]`);
+    await until2(`!!document.querySelector(${q(`${sec} .culture-actions button[data-action="${a}"].on`)})`, `action ${a} picked`);
+    const targets = await b.eval(`document.querySelectorAll(${q(`${sec} button.culture-target`)}).length`);
+    if (!targets && !(await has("p.culture-none"))) throw new Error(`action ${a}: neither civilizations nor why there are none`);
+    if (targets && !(await has(".culture-commit button.culture-set"))) throw new Error(`action ${a}: no button to set the picked channel`);
+    if (!ok && (await has("button.culture-target:not(.refused)"))) ok = a;
+  }
+  let what = "nothing in reach to channel into";
+  if (ok !== null) {
+    await click(`${sec} .culture-actions button[data-action="${ok}"]`);
+    await click(`${sec} button.culture-target:not(.refused)`);
+    await until2(`!!document.querySelector(${q(`${sec} .culture-preview`)}) && !document.querySelector(${q(`${sec} button.culture-set[disabled]`)})`, "the preview of the picked channel");
+    await shot("culture-preview");
+    await click(`${sec} button.culture-set`);
+    await until2(`!!document.querySelector(${q(`${sec} .culture-channel .culture-stop`)})`, "the channel set");
+    await until2(`window.ffh.S.view.cities.some((c) => c.id === ${city.id} && !!c.channel)`, "the view's city with its channel");
+    await shot("culture-channel");
+    await click(`${sec} .culture-channel .culture-stop`);
+    await until2(`!document.querySelector(${q(`${sec} .culture-channel`)}) && !!document.querySelector(${q(`${sec} details.culture-choose[open]`)})`, "the channel stopped");
+    what = `a ${await b.eval(`window.ffh.S.data.tables.CulturalActionType[${ok}].name`)} channel set and stopped`;
+  } else {
+    await shot("culture-section");
+  }
+  await b.key("Escape");
+  await until(async () => !(await modalTitles()).length, "the city dialog closed");
+  await b.key("F8");
+  await until(async () => (await modalTitles()).includes("Cultural pressure"), "the Cultural pressure panel");
+  await until2(`[...document.querySelectorAll("#modals .modal[data-tag=culture] h4")].some((e) => /Your channels/.test(e.textContent))`, "the panel's sections");
+  await shot("culture-panel");
+  await b.key("Escape");
+  await until(async () => !(await modalTitles()).length, "the panel closed");
+  steps.push(`culture: the city screen offers the ${n} cultural actions (${what}); F8 opens the pressure panel`);
+}
+
+/** This game's armies (docs/ARMIES.md; the new-game screen starts with them on): an army unit's
+ *  panel has the Army section, F5 opens the Armies screen (an army renamed there), and the city
+ *  screen has the recruitment destination. */
+async function armiesUi() {
+  const unit = await S(`(() => { const S = window.ffh.S; const me = S.view.me.player; return S.view.units.find((u) => u.owner === me && u.army_unit) || null; })()`);
+  if (!unit) return steps.push("armies: no army unit to try");
+  await b.eval(`window.ffh.units.select([${unit.id}])`);
+  await until2(`!!document.querySelector('#unit-panel button.action[data-kind="army"]')`, "the unit panel's army actions");
+  await shot("army-actions");
+  await b.eval(`window.ffh.units.clearSelection()`);
+  await b.key("F5");
+  await until(async () => (await modalTitles()).includes("Armies"), "the Armies screen");
+  const armies = await S("window.ffh.S.view.armies.length");
+  await until2(`document.querySelectorAll("#modals .army-card").length === ${armies} && !!document.querySelector("#modals ul.garrisons")`, "every army and the garrisons listed");
+  let renamed = "";
+  if (armies) {
+    await b.eval(`(() => { const i = document.querySelector("#modals .army-card input.army-name"); i.value = "Smoke Host"; i.dispatchEvent(new Event("change")); })()`);
+    await until2(`window.ffh.S.view.armies.some((a) => a.name === "Smoke Host")`, "the army renamed");
+    renamed = ", an army renamed";
+  }
+  await shot("armies-screen");
+  await b.key("Escape");
+  await until(async () => !(await modalTitles()).length, "the Armies screen closed");
+  const city = await S("S.view.cities.find((c) => c.owner === S.view.me.player)");
+  await b.eval(`window.ffh.emit("open-city", ${city.id})`);
+  await until2(`!!document.querySelector("#modals .backdrop:not(.under) select.recruit-default-dest")`, "the city's recruitment default");
+  await b.key("Escape");
+  await until(async () => !(await modalTitles()).length, "the city dialog closed");
+  steps.push(`armies: the panel's army actions, F5 lists ${armies} arm${armies === 1 ? "y" : "ies"}${renamed}; the city's recruitment`);
+}
+
+/** This game's governors (docs/GOVERNORS.md; the new-game screen starts with them on): the city
+ *  screen's Governance section and F9's Governors screen. */
+async function governorsUi() {
+  const city = await S("S.view.cities.find((c) => c.owner === S.view.me.player)");
+  await b.eval(`window.ffh.emit("open-city", ${city.id})`);
+  await until2(`!!document.querySelector("#modals .backdrop:not(.under) .section.governance")`, "the city's Governance section");
+  const text = await b.eval(`document.querySelector("#modals .backdrop:not(.under) .section.governance").textContent`);
+  if (!/Ruled directly/.test(text)) throw new Error(`the capital is not ruled directly: ${text}`);
+  await b.key("Escape");
+  await until(async () => !(await modalTitles()).length, "the city dialog closed");
+  await b.key("F9");
+  await until(async () => (await modalTitles()).includes("Governors"), "the Governors screen");
+  const n = await S("S.view.cities.filter((c) => c.owner === S.view.me.player).length");
+  await until2(`document.querySelectorAll("#modals table.governors tbody tr").length === ${n}`, "every city listed");
+  await shot("governors-screen");
+  await b.key("Escape");
+  await until(async () => !(await modalTitles()).length, "the Governors screen closed");
+  steps.push(`governors: the capital ruled directly; F9 lists ${n} cit${n === 1 ? "y" : "ies"}`);
+}
+
 async function moveUnit() {
   const unit = await S(`(() => { const S = window.ffh.S; const me = S.view.me.player; return S.view.units.find((u) => u.owner === me && u.moves > 0 && S.data.tables.UnitType[u.type].combat > 0) || null; })()`);
   if (!unit) return steps.push("no unit to move");
@@ -740,13 +891,15 @@ async function closeDialog(title) {
 }
 
 /** The city screen (P6): a worked plot clicked stops being worked (a specialist instead, the
- *  citizens' automation off), clicked again it is worked; the automation back on. */
+ *  citizens' automation off), clicked again it is worked; the automation back on. With the
+ *  isometric map the plots are clicked on the map, which frames the city (Civ4's city view). */
 async function cityScreen() {
   const city = await S("S.view.cities.find((c) => c.owner === S.view.me.player) || null");
   if (!city) return steps.push("no city for the city screen");
   const p = await plotPos(city.x, city.y);
   await b.dblclick(p.x, p.y);
   await dialog(city.name);
+  if (await b.eval("!!window.ffh.mapView.iso")) return cityOverlay(city);
   const screen = `${TOP} .modal.city-screen`;
   await until2(`!!document.querySelector(${q(`${screen} .cgrid .cplot.centre`)})`, "the city screen's plots");
   await shot("city-screen");
@@ -766,6 +919,33 @@ async function cityScreen() {
     steps.push(`city screen: plot ${worked} clicked off (a specialist) and on, the automation off and on`);
   }
   await closeDialog(city.name);
+}
+
+/** The city screen over the isometric map: the city's plots worked by clicking them on the map. */
+async function cityOverlay(city) {
+  const o = "window.ffh.mapView.overlay.city";
+  await until2(`!!${o} && ${o}.id === ${city.id} && !window.ffh.mapView.anim`, "the city's plots on the map");
+  await shot("city-screen");
+  const worked = await b.eval(`(() => { const q = ${o}.plots.find((p) => p.worked && p.i !== 0); return q ? { i: q.i, x: q.x, y: q.y } : null; })()`);
+  if (!worked) {
+    steps.push("city screen (map): no worked plot to click");
+  } else {
+    const at = () => b.eval(`(() => { const m = window.ffh.mapView; const p = m.screenOf(${worked.x}, ${worked.y}); const r = document.querySelector("canvas.map").getBoundingClientRect(); return { x: p.x + r.left, y: p.y + r.top }; })()`);
+    const isWorked = `(() => { const c = ${o}; return !!c && c.plots.find((p) => p.i === ${worked.i}).worked; })()`;
+    let q = await at();
+    await b.mouse(q.x, q.y);
+    await until2(`!${isWorked}`, "the plot no longer worked (clicked on the map)");
+    await until2(`!!document.querySelector(".modal.city-overlay .spec") && !document.querySelector("#city-auto-citizens").checked`, "a specialist and the automation off");
+    await shot("city-specialist");
+    q = await at();
+    await b.mouse(q.x, q.y);
+    await until2(isWorked, "the plot worked again");
+    await click("#city-auto-citizens");
+    await until2(`document.querySelector("#city-auto-citizens").checked`, "the automation back on");
+    steps.push(`city screen (map): plot ${worked.i} clicked off (a specialist) and on on the map, the automation off and on`);
+  }
+  await closeDialog(city.name);
+  await until2(`!${o}`, "the map back from the city");
 }
 
 /** The empire screens (P6) through their keys: the tech tree, civics, religion, the sliders,
@@ -852,7 +1032,7 @@ async function keysAndLayers() {
   await b.key("?");
   await dialog("Keys");
   await closeDialog("Keys");
-  if (!(await S("!!S.sel"))) await b.key("w");
+  if (!(await S("!!S.sel"))) await b.key("Tab");
   if (await S("!!S.sel")) {
     await until2(`window.ffh.units.currentActions().length > 0`, "the selection's actions");
     if (await b.eval(`window.ffh.units.currentActions().some((a) => a.kind === "target" && a.mode === "INTERFACEMODE_GO_TO" && a.enabled)`)) {
@@ -863,6 +1043,19 @@ async function keysAndLayers() {
       steps.push("G: the go-to mode, Esc leaves it");
     }
   }
+  // W A S D held scroll the map smoothly and leave the selection as it is (W no longer cycles).
+  const view = () => b.eval(`(() => { const v = window.ffh.mapView; const S = window.ffh.S; return { cx: v.cam.cx, w: v.map.w, sel: S.sel ? S.sel.units.join() : "" }; })()`);
+  // The east-west move, the short way round a wrapping map.
+  const east = (v0, v1) => ((((v1.cx - v0.cx) % v0.w) + v0.w * 1.5) % v0.w) - v0.w / 2;
+  for (const [k, sign] of [["d", 1], ["a", -1]]) {
+    const v0 = await view();
+    await b.hold(k, 350);
+    await new Promise((r) => setTimeout(r, 300));
+    const v1 = await view();
+    if (!(sign * east(v0, v1) > 0.3)) throw new Error(`${k.toUpperCase()} held did not scroll the map: ${JSON.stringify([v0, v1])}`);
+    if (v1.sel !== v0.sel) throw new Error(`${k.toUpperCase()} changed the selection: ${v0.sel} -> ${v1.sel}`);
+  }
+  steps.push("W A S D: the map scrolls while D and A are held, the selection stays");
   for (const layer of ["political", "yield", "terrain"]) {
     await click(`#mapwrap .layers button[data-layer="${layer}"]`);
     await until2(`window.ffh.mapView.layer === "${layer}" && document.querySelector('#mapwrap .layers button[data-layer="${layer}"]').classList.contains("active")`, `the ${layer} layer`);
@@ -1014,11 +1207,20 @@ async function stagedAttack(bin, saves) {
   const odds = await b.eval(`document.querySelector("#mapwrap .tooltip .tip-combat").textContent`);
   if (!/Odds \d+(\.\d)?%/.test(odds)) throw new Error(`the odds tooltip: ${odds}`);
   await shot("attack-odds");
-  // Watch for the combat flash (units.js flashCombat -> mapView.flashTile) across the resolution.
-  await b.eval(`(() => { window.__fmax = 0; window.__fi = setInterval(() => { const f = window.ffh.mapView.flashes; if (Array.isArray(f) && f.length > window.__fmax) window.__fmax = f.length; }, 16); })()`);
+  // Watch for the combat flash (units.js flashCombat -> mapView.flashTile) across the resolution:
+  // count the calls. Polling `mapView.flashes` missed it when a slow software-rendered frame held
+  // the page past the flash's 460-620 ms.
+  await b.eval(`(() => {
+    const mv = window.ffh.mapView;
+    const own = Object.prototype.hasOwnProperty.call(mv, "flashTile");
+    const orig = mv.flashTile;
+    window.__flashes = 0;
+    mv.flashTile = function (...a) { window.__flashes++; return orig.apply(this, a); };
+    window.__unflash = () => { if (own) mv.flashTile = orig; else delete mv.flashTile; };
+  })()`);
   await b.mouse(e.x, e.y, "right");
   await until2(`(() => { const S = window.ffh.S; const me = S.units.get(${st.unit}); return !S.units.has(${st.enemy}) || !me || me.hp < me.max_hp; })()`, "the combat");
-  const flashed = await b.eval(`(() => { clearInterval(window.__fi); const f = window.ffh.mapView.flashes; return Math.max(window.__fmax || 0, Array.isArray(f) ? f.length : 0); })()`);
+  const flashed = await b.eval(`(() => { const n = window.__flashes || 0; window.__unflash(); return n; })()`);
   if (!flashed) throw new Error("no combat flash was shown on the attack");
   const won = await S(`!S.units.has(${st.enemy})`);
   steps.push(`attacked from the odds tooltip (${odds.replace(/\s+/g, " ").slice(0, 40)}…): ${won ? "won" : "lost or damaged"}; combat flash shown`);
@@ -1045,7 +1247,8 @@ async function stagedCapture(bin, saves) {
 }
 
 /** The trade screen (P6, `stage trade`: a civilization met at peace, gold trading): F4, Trade…,
- *  the tables, 7 gold put into the deal, Propose: accepted, the gold gone. */
+ *  the leader's greeting, the tables, 7 gold put into the deal, Propose: accepted with the
+ *  leader's thanks, the gold gone. */
 async function stagedTrade(bin, saves) {
   await loadStaged(bin, saves, "trade");
   const gold = await S("S.view.me.gold");
@@ -1055,16 +1258,51 @@ async function stagedTrade(bin, saves) {
   await click(`${TOP} button[data-trade]`);
   await dialog(/^Trade with/);
   await until2(`document.querySelectorAll(${q(`${TOP} .trade .trade-side`)}).length === 2`, "the trade tables");
+  const says = `${TOP} .leader-head blockquote.leader-says`;
+  await until2(`(() => { const e = document.querySelector(${q(says)}); return !!e && e.textContent.length > 3 && !/\\[|…/.test(e.textContent); })()`, "the leader's greeting");
+  const greeting = await b.eval(`document.querySelector(${q(says)}).textContent`);
   const ours = `${TOP} .trade .trade-side:first-child .trade-item[data-item="TRADE_GOLD"]`;
   await click(`${ours} button`);
   await until2(`!!document.querySelector(${q(`${ours}.on input.amount`)})`, "the gold amount");
   await b.eval(`(() => { const i = document.querySelector(${q(`${ours} input.amount`)}); i.value = "7"; i.dispatchEvent(new Event("input")); })()`);
   await shot("trade");
   await click(`${TOP} .modal-buttons button.primary`);
-  await until(async () => !(await modalTitles()).some((t) => t.startsWith("Trade with")), "the deal accepted (the trade screen closes)");
+  await until2(`document.querySelector(${q(`${TOP} p[data-answer]`)})?.dataset.answer === "accepted"`, "the deal accepted");
+  await until2(`(() => { const e = document.querySelector(${q(says)}); return !!e && e.textContent !== ${q(greeting)} && e.textContent.length > 3 && !/\\[|…/.test(e.textContent); })()`, "the leader's thanks");
   await until2(`window.ffh.S.view.me.gold === ${gold - 7}`, "7 gold given");
+  await shot("trade-thanks");
+  await closeDialog(await b.eval(`document.querySelector(${q(`${TOP} .modal-head h2`)}).textContent`));
   await closeDialog("Foreign affairs");
-  steps.push("trade screen (stage trade): 7 gold offered and accepted");
+  steps.push("trade screen (stage trade): the leader's greeting; 7 gold offered, accepted with thanks");
+}
+
+/** The leader moments (`stage diplomacy`: an AI leader met the human, then declared war): loading
+ *  the save, the leader's first contact speaks, "Farewell"; then its war declaration, "So be it";
+ *  F4, Trade…: at war since this turn, the leader refuses to talk. */
+async function stagedDiplomacy(bin, saves) {
+  await loadStaged(bin, saves, "diplomacy", { answer: false });
+  const leader = (comment) => `${TOP} .modal.leader[data-comment="${comment}"]`;
+  const spoken = (comment) => `(() => { const e = document.querySelector(${q(`${leader(comment)} blockquote.leader-says`)}); return !!e && e.textContent.length > 3 && !/\\[/.test(e.textContent); })()`;
+  await until2(spoken("AI_DIPLOCOMMENT_FIRST_CONTACT"), "the leader's first contact");
+  await shot("leader-first-contact");
+  await click(`${leader("AI_DIPLOCOMMENT_FIRST_CONTACT")} button.reply[data-reply="exit"]`);
+  await until2(spoken("AI_DIPLOCOMMENT_DECLARE_WAR"), "the leader's war declaration");
+  await shot("leader-declares-war");
+  await click(`${leader("AI_DIPLOCOMMENT_DECLARE_WAR")} button.reply`);
+  await until2(`!document.querySelector("#modals .modal.leader")`, "the leader screens closed");
+  // The popups held back while the leader spoke (the research chooser) come next.
+  await answerPopups(false);
+  await b.key("F4");
+  await dialog("Foreign affairs");
+  await until2(`!!document.querySelector(${q(`${TOP} button[data-trade]`)})`, "the Trade button");
+  await click(`${TOP} button[data-trade]`);
+  await dialog(/^Trade with/);
+  const says = `${TOP} .leader-head blockquote.leader-says`;
+  await until2(`(() => { const e = document.querySelector(${q(says)}); return !!e && e.textContent.length > 3 && !/\\[|…/.test(e.textContent); })() && /refuses to talk/.test(document.querySelector(${q(`${TOP} p.warn`)})?.textContent ?? "")`, "the leader's refusal to talk");
+  await shot("leader-refuses");
+  await closeDialog(await b.eval(`document.querySelector(${q(`${TOP} .modal-head h2`)}).textContent`));
+  await closeDialog("Foreign affairs");
+  steps.push("leader moments (stage diplomacy): first contact, war declared, then a refusal to talk");
 }
 
 /** Selects the group of unit `u` with a click on its plot. */
@@ -1078,8 +1316,8 @@ async function selectUnit(u) {
 const automated = (u) => `(() => { const S = window.ffh.S; const u = S.units.get(${u}); const g = u && S.groups.get(u.group); return !!g && g.automated !== null && g.automated !== undefined; })()`;
 
 /** P7, `stage automate`: the worker's Automation section; a click automates it and the AI gives
- *  it orders at once (it waits for none); the scout explores by the hotkey E; the unit panel
- *  marks automated units. */
+ *  it orders at once (it waits for none); the scout explores by its button (E zooms the map); the
+ *  unit panel marks automated units. */
 async function stagedAutomate(bin, saves) {
   const st = await loadStaged(bin, saves, "automate");
   await selectUnit(st.worker);
@@ -1090,13 +1328,198 @@ async function stagedAutomate(bin, saves) {
   await until2(automated(st.worker), "the worker automated");
   await until2(`(() => { const S = window.ffh.S; const u = S.units.get(${st.worker}); const g = u && S.groups.get(u.group); return !!g && (g.missions.length > 0 || !g.ready); })()`, "the automated worker's orders");
   await selectUnit(st.scout);
-  await until2(`!!document.querySelector('#unit-panel button.action[data-kind="automate"][data-type="AUTOMATE_EXPLORE"]')`, "the scout's explore button");
-  await b.key("e");
+  const explore = '#unit-panel button.action[data-kind="automate"][data-type="AUTOMATE_EXPLORE"]';
+  await until2(`!!document.querySelector(${q(explore)})`, "the scout's explore button");
+  await click(explore);
   await until2(automated(st.scout), "the scout exploring");
   await selectUnit(st.worker);
   await until2(`!!document.querySelector("#unit-panel .badge.auto")`, "the automated badge");
   await shot("automated");
-  steps.push("automate buttons (stage automate): a worker automated with a click, a scout exploring with E");
+  steps.push("automate buttons (stage automate): a worker and a scout (explore) automated with a click");
+}
+
+/** This game's armies, `stage armies` (docs/ARMIES.md): a marching recruit shows its march, no
+ *  orders, is not in the cycle and refuses a move, naming where it goes; the Armies screen's
+ *  picker adds a second city to the army's requisition; the capital's queue shows its
+ *  requisition order ("Requisitioned by the 1st Army") without a remove button, and taking it off
+ *  by hand is refused. */
+async function stagedArmies(bin, saves) {
+  const st = await loadStaged(bin, saves, "armies");
+  // (the army's name: "2nd Army" when the starting units outside the capital formed the 1st)
+  const army = await S(`S.view.armies.find((a) => a.id === ${st.army}).name`);
+  const named = (s) => new RegExp(`${s} the ${army}`, "i");
+  await selectUnit(st.recruit);
+  await until2(`${named("Marching to")}.test(document.querySelector("#unit-panel .march-line")?.textContent ?? "")`, "the recruit's march in the unit panel");
+  const orders = await b.eval(`document.querySelectorAll("#unit-panel button.action").length`);
+  if (orders) throw new Error(`the marching recruit offers ${orders} orders`);
+  const cycle = await S(`(() => { const g = S.groups.get(S.units.get(${st.recruit}).group); return !!g && (g.selectable || g.ready); })()`);
+  if (cycle) throw new Error("the marching recruit waits for orders");
+  await shot("marching-recruit");
+  const at = await S(`[S.units.get(${st.recruit}).x, S.units.get(${st.recruit}).y]`);
+  const move = await b.eval(`window.ffh.api.send({ k: "cmd", c: "move", units: [${st.recruit}], x: ${at[0]}, y: ${at[1] + 1}, append: false }).then((r) => (r.ok ? "applied" : r.detail))`);
+  if (!named("marching to").test(move ?? "")) throw new Error(`a move of the marching recruit: ${move}`);
+  await b.eval(`window.ffh.units.clearSelection()`);
+  // The Armies screen: the army requisitions from the capital; the second city is ticked.
+  await b.key("F5");
+  await until(async () => (await modalTitles()).includes("Armies"), "the Armies screen");
+  const card = `#modals .army-card[data-army="${st.army}"]`;
+  const box = `${card} label.requisition-city[data-city="${st.city}"] input`;
+  await until2(`!!document.querySelector(${q(box)}) && /Requisition from/.test(document.querySelector(${q(card)}).textContent)`, "the requisition picker");
+  await b.eval(`document.querySelector(${q(`${card} details.requisition-pick`)}).open = true`);
+  await click(box);
+  await until2(`!!window.ffh.S.view.armies.find((a) => a.id === ${st.army})?.requisition.cities.includes(${st.city})`, "the city added to the army's requisition");
+  await until2(`!!document.querySelector(${q(`${box}:checked`)})`, "the city ticked on the screen");
+  await shot("armies-requisition");
+  await b.key("Escape");
+  await until(async () => !(await modalTitles()).length, "the Armies screen closed");
+  // The capital's queue: the requisition order first, tagged, without a remove button.
+  await b.eval(`window.ffh.emit("open-city", ${st.capital})`);
+  const first = `${TOP} ol.queue li:first-child`;
+  await until2(`${named("Requisitioned by")}.test(document.querySelector(${q(first)})?.textContent ?? "")`, "the requisition order in the capital's queue");
+  if (await b.eval(`!!document.querySelector(${q(`${first} button[data-index]`)})`)) throw new Error("the requisition order has a remove button");
+  const pop = await b.eval(`window.ffh.api.send({ k: "cmd", c: "pop_order", city: ${st.capital}, index: 0 }).then((r) => (r.ok ? "applied" : r.detail))`);
+  if (!named("requisitioned by").test(pop ?? "")) throw new Error(`taking the requisition order off by hand: ${pop}`);
+  await shot("city-requisition");
+  await b.key("Escape");
+  await until(async () => !(await modalTitles()).length, "the city dialog closed");
+  steps.push("armies (stage armies): a marching recruit shows its march, offers no orders and refuses a move; the Armies screen adds a city to the requisition; the capital's requisition order is tagged and cannot be removed");
+}
+
+/** Waits until the battle overlay shows screen `name` and it is ready. */
+async function battleScreen(name, what = `the battle ${name} screen`) {
+  const ready = { plan: "window.ffh.battle.plan.ready", watch: "window.ffh.battle.watch.state().ready", report: "window.ffh.battle.report.ready" }[name];
+  await until2(`!!window.ffh.battle && window.ffh.battle.screen === ${q(name)} && ${ready}`, what, 30000);
+}
+
+/** Closes the battle overlay from whichever screen shows (Esc: the watch screen goes to the
+ *  report, the report and the plan close). */
+async function closeBattle() {
+  for (let k = 0; k < 3 && (await b.eval(`!!window.ffh.battle && !!window.ffh.battle.screen`)); k++) {
+    await b.key("Escape");
+    await new Promise((r) => setTimeout(r, 300));
+  }
+  await until2(`!document.getElementById("battle")`, "the battle overlay closed");
+}
+
+/** Engagement combat, `stage engagement` (docs/ENGAGEMENTS.md, formation battles): the army next
+ *  to the enemy city shows its role, A, Dv and HP in the unit panel; the tooltip over the city says
+ *  it is a battle; a right-click opens the battle plan in the rules' auto formation; a unit of the
+ *  line is moved by mouse to another row of its lane (the forecast asked again, the engine accepts
+ *  the formation: no errors, not refused, a forecast); Enter attacks with it (Escape and Cancel do
+ *  not close the plan while the attack is on its way; a keep/raze decision over the overlay
+ *  answered if the city falls), the combat flash comes from the battle's report, the attack's messages wait for the
+ *  screens to close, the watch screen plays the engine's log and the report shows it; the map's
+ *  marker and the message's link open the battle again. */
+async function stagedEngagement(bin, saves) {
+  const st = await loadStaged(bin, saves, "engagement");
+  await selectUnit(st.units[0]);
+  await until2(`window.ffh.S.sel.units.length === ${st.units.length}`, "the army selected");
+  await until2(`!!document.querySelector("#unit-panel .badge.role, #unit-panel .engage-line, #unit-panel .value.engage")`, "the unit's battle numbers in the panel");
+  const e = await plotPos(st.x, st.y);
+  await b.move(e.x - 3, e.y - 3);
+  await b.move(e.x, e.y);
+  await until2(`/Battle: \\d+ of yours can fight/.test(document.querySelector("#mapwrap .tooltip .tip-combat")?.textContent ?? "")`, "the battle in the tooltip");
+  await b.eval(`(() => {
+    const mv = window.ffh.mapView;
+    const own = Object.prototype.hasOwnProperty.call(mv, "flashTile");
+    const orig = mv.flashTile;
+    window.__flashes = 0;
+    mv.flashTile = function (...a) { window.__flashes++; return orig.apply(this, a); };
+    window.__unflash = () => { if (own) mv.flashTile = orig; else delete mv.flashTile; };
+  })()`);
+  // The plan: the rules' auto formation and its forecast.
+  await b.mouse(e.x, e.y, "right");
+  await battleScreen("plan");
+  const placed = await b.eval(`window.ffh.battle.plan.formation.length`);
+  if (!placed) throw new Error("the plan's auto formation puts nobody in the line");
+  // A unit of the line (not a large one) to the next row of its lane, by mouse: a move, or a swap.
+  const before = await b.eval(`JSON.stringify(window.ffh.battle.plan.formation)`);
+  const mv = await b.eval(`(() => {
+    const p = window.ffh.battle.plan;
+    const pv = p.preview;
+    const x = p.formation.find((q) => !pv.fighters.find((f) => f.unit === q.unit).large);
+    const f = pv.fighters.find((g) => g.unit === x.unit);
+    return { b: f.b, unit: f.unit, lane: x.lane, row: (x.row + 1) % 3, at: p.point(f.b) };
+  })()`);
+  await b.mouse(mv.at.x, mv.at.y);
+  await until2(`window.ffh.battle.plan.sel === ${mv.b}`, "a unit of the line selected");
+  const cell = await b.eval(`window.ffh.battle.plan.cellPoint(0, ${mv.lane}, ${mv.row})`);
+  await b.mouse(cell.x, cell.y);
+  await battleScreen("plan", "the plan after the move, its forecast asked again");
+  await until2(`window.ffh.battle.plan.formation.some((q) => q.unit === ${mv.unit} && q.row === ${mv.row})`, "the unit in its new row");
+  if ((await b.eval(`JSON.stringify(window.ffh.battle.plan.formation)`)) === before) throw new Error("moving a unit left the formation as it was");
+  const plan = await b.eval(`(() => { const p = window.ffh.battle.plan; return { errors: p.errors, refused: p.refused, forecast: !!p.forecast }; })()`);
+  if (plan.errors.length || plan.refused) throw new Error(`the engine refused the moved formation: ${plan.errors.join("; ") || "it answered in its auto formation"}`);
+  if (!plan.forecast) throw new Error("the moved formation has no forecast");
+  await new Promise((r) => setTimeout(r, 600));
+  await shot("engagement-plan");
+  // Attack: while it is on its way (held here before the engage command goes) the plan cannot be
+  // closed, by Escape nor by Cancel: the battle's screens take over from it.
+  await b.eval(`(() => {
+    const src = window.ffh.battle.source;
+    const orig = src.attack;
+    window.__attackGate = new Promise((r) => (window.__attackGo = r));
+    src.attack = async (r) => { await window.__attackGate; src.attack = orig; return orig(r); };
+  })()`);
+  await b.key("Enter");
+  await until2(`window.ffh.battle.plan.busy`, "the attack on its way");
+  await b.key("Escape");
+  const cancel = await b.eval(`(() => { const c = [...document.querySelectorAll("#battle button")].find((x) => x.textContent.trim() === "Cancel"); if (c) c.click(); return !!c && c.disabled; })()`);
+  await new Promise((r) => setTimeout(r, 300));
+  if (!cancel) throw new Error("the plan's Cancel is not disabled while the attack is on its way");
+  if (!(await b.eval(`!!document.getElementById("battle") && window.ffh.battle.screen === "plan" && window.ffh.battle.plan.busy`))) throw new Error("the plan closed while its attack was on its way");
+  // If the city falls, its keep/raze decision comes over the overlay.
+  await b.eval(`window.__attackGo()`);
+  await until(async () => (await modalTitles()).some((t) => /keep|raze/i.test(t)) || (await b.eval(`!!window.ffh.battle && window.ffh.battle.screen === "watch"`)), "the battle (or the keep/raze decision over it)", 60000);
+  if ((await modalTitles()).some((t) => /keep|raze/i.test(t))) await click('#modals .modal.decision button.option[data-option="0"]');
+  await battleScreen("watch", "the battle's watch screen");
+  const flashed = await b.eval(`(() => { const n = window.__flashes || 0; window.__unflash(); return n; })()`);
+  if (!flashed) throw new Error("no combat flash was shown for the battle");
+  // The attack's messages (a defensive strike, the city captured) wait for the screens to close.
+  const early = await b.eval(`[...document.querySelectorAll("#toasts .toast.log")].map((t) => t.textContent).join("; ")`);
+  if (early) throw new Error(`the attack's messages showed over the battle screens: ${early}`);
+  const n = await b.eval(`window.ffh.battle.watch.state().n`);
+  if (n < 1) throw new Error("the watch screen's log has no event");
+  await b.eval(`(() => { const w = window.ffh.battle.watch; w.pause(); w.seek(Math.floor(w.state().n / 2)); w.step(); })()`);
+  await new Promise((r) => setTimeout(r, 500));
+  await shot("engagement-watch");
+  // The snap (battle_snap.js): the first action with a blow, frozen in its held beat, has its pair
+  // lifted out of the field.
+  const blow = await b.eval(`window.ffh.battle.watch.find((e) => (e.hits && e.hits.length > 0) || !!e.heal)`);
+  if (blow >= 0) {
+    const held = await b.eval(`JSON.stringify(window.ffh.battle.watch.freeze(${blow}, 300))`);
+    const s = JSON.parse(held);
+    if (!s || !s.hold || !Object.keys(s.roles).length) throw new Error(`the watch screen's snap does not stage the battle's first blow: ${held}`);
+    await new Promise((r) => setTimeout(r, 200));
+    await shot("engagement-snap");
+  }
+  await b.key("Escape");
+  await battleScreen("report", "the battle's report");
+  await new Promise((r) => setTimeout(r, 500));
+  await shot("engagement-report");
+  await closeBattle();
+  // The popups the battle held back (a captured city's production) come now.
+  await until(async () => (await modalTitles()).length > 0, "the popups held back during the battle", 10000).catch(() => {});
+  await answerPopups(false);
+  const report = await S(`S.view.battles && S.view.battles[0] && S.view.battles[0].id`);
+  if (report === null || report === undefined) throw new Error("the view lists no battle");
+  // The map's marker opens the battle again (watched).
+  await until2(`(window.ffh.mapView.overlay.battles || []).length === 1`, "the battle's marker on the map");
+  await b.eval(`window.ffh.mapView.reveal(${st.x}, ${st.y})`);
+  await until2(`!window.ffh.mapView.anim`, "the camera to settle");
+  const mk = await b.eval(`(() => { const mv = window.ffh.mapView; const p = mv.battleMarkerAt(mv.overlay.battles[0]); const r = document.querySelector("canvas.map").getBoundingClientRect(); return p && { x: p.x + r.left, y: p.y + r.top }; })()`);
+  if (!mk) throw new Error("the battle's marker is off screen");
+  await b.mouse(mk.x, mk.y);
+  await battleScreen("watch", "the battle watched from its marker");
+  await closeBattle();
+  // The message's link opens its report.
+  await b.eval(`window.ffh.setTab ? window.ffh.setTab("messages") : document.querySelector('#bottom-tabs button[data-tab="messages"]').click()`);
+  const link = `#bottom-body button[data-battle="${report}"][data-open="report"]`;
+  await until2(`!!document.querySelector(${q(link)})`, "the battle's link in the messages");
+  await click(link);
+  await battleScreen("report", "the battle's report from its message");
+  await closeBattle();
+  steps.push(`engagement (stage engagement): the plan (${placed} in the auto formation), a unit moved by mouse with the forecast asked again (accepted, with its forecast), the attack with that formation (the plan held open, by Escape and Cancel, while it is on its way), the flash from the report, its messages held until the screens close, the watch and report screens of the engine's log (${n} events); the map's marker and the message's link open it again`);
 }
 
 /** P7, `stage election`: the human secretary general's election popup (deferred, like events
@@ -1287,15 +1710,17 @@ async function stagedLoad(bin, saves) {
   steps.push(`loaded the warrior into trireme ${pick} through the transport picker`);
 }
 
-/** A game started by another client while the page shows the no-game New game dialog (which
- *  cannot be closed): the dialog goes (P5 review). */
+/** A game started by another client while the page shows the title screen with the New game
+ *  dialog open: both go (P5 review). */
 async function newGameElsewhere(bin) {
   const saves = tempDir("smoke-elsewhere");
   const server = await startServer({ bin, saves, extra: ASSETS });
   try {
     await b.goto(server.url);
     await until2("window.ffh && window.ffh.ready", "the client to boot");
-    await until(async () => (await modalTitles()).includes("New game"), "the no-game New game dialog");
+    await until2(`!document.getElementById("title-screen").hidden && !!document.getElementById("title-new")`, "the title screen");
+    await click("#title-new");
+    await until(async () => (await modalTitles()).includes("New game"), "the New game dialog");
     const r = await fetch(`${server.url}/api`, {
       method: "POST",
       headers: { "X-FFH": "1", "Content-Type": "application/json" },
@@ -1303,8 +1728,9 @@ async function newGameElsewhere(bin) {
     });
     if (!(await r.json()).ok) throw new Error("another client could not start a game");
     await waitHuman("the game another client started");
+    await until2(`document.getElementById("title-screen").hidden`, "the title screen to go", 10000);
     await until(async () => !(await modalTitles()).includes("New game"), "the New game dialog to close", 10000);
-    steps.push("the no-game dialog closed when another client started a game");
+    steps.push("the title screen and its New game dialog went when another client started a game");
   } finally {
     await b.goto("about:blank");
     await server.stop();
@@ -1340,8 +1766,7 @@ async function main() {
   const pw = await loadPlaywright();
   const chrome = pw ? null : findChrome();
   if (!pw && !chrome) {
-    console.log("web-smoke: no browser (neither the playwright package nor a Chromium executable); skipped");
-    return 0;
+    return skipped("web-smoke", "no browser: neither the playwright package nor a Chromium executable");
   }
   const bin = findBin(args.bin);
   fs.mkdirSync(OUT, { recursive: true });
@@ -1353,11 +1778,14 @@ async function main() {
     console.log(`web-smoke: ${b.name}; server ${server.url}; screenshots in ${OUT}`);
     const t0 = Date.now();
     await newGame(server.url, saves);
-    await artClient();
+    await classicClient();
     await cycleAll();
     await staleSelection();
     await foundCity();
     await cityQueue();
+    await cultureUi();
+    await armiesUi();
+    await governorsUi();
     await moveUnit();
     await endTurns(TURNS);
     await cityScreen();
@@ -1368,7 +1796,10 @@ async function main() {
     await stagedAttack(bin, saves);
     await stagedCapture(bin, saves);
     await stagedTrade(bin, saves);
+    await stagedDiplomacy(bin, saves);
     await stagedAutomate(bin, saves);
+    await stagedArmies(bin, saves);
+    await stagedEngagement(bin, saves);
     await stagedElection(bin, saves);
     await stagedSettlement(bin, saves);
     await stagedCrusade(bin, saves);
@@ -1377,7 +1808,7 @@ async function main() {
     await shiftWaypoints(bin, saves, "goto");
     await flatRenderer(server.url);
     await rendererIso(server.url);
-    await renderer3d(server.url);
+    await rendererHd2d(server.url);
     await newGameElsewhere(bin);
     await crashScreen(bin);
     console.log(`web-smoke: ${steps.length} steps in ${((Date.now() - t0) / 1000).toFixed(1)} s`);

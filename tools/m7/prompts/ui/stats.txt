@@ -1,0 +1,16 @@
+gold: a single shiny gold coin seen from the front, like the screenshot's gold icon
+food: a bound golden wheat sheaf, like the screenshot's food icon
+production: a hammer with a steel head and a wooden handle, like the screenshot's production icon
+research: a round blue glass flask with bubbling blue liquid, like the screenshot's research icon
+culture: a purple double musical note, like the screenshot's culture icon
+commerce: a small brown leather coin purse with two gold coins spilling from it
+happy: a round golden smiling face
+unhappy: a round red frowning face
+health: a shiny red apple with a green leaf
+unhealthy: a dark green glass poison bottle with a cork and green bubbles rising
+population: a small golden figure of a standing person, like the screenshot's population icon
+score: a golden trophy cup with two handles, like the screenshot's trophy icon
+mana: a glowing violet magic crystal cluster
+armageddon: a black eclipsed sun ringed by a fiery red corona
+greatpeople: a golden star inside a green laurel wreath
+strength: a steel sword pointing straight up, with a gold crossguard

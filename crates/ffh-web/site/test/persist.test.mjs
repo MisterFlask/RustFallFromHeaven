@@ -1,11 +1,12 @@
 // engine.js `SavesPersister`: what reaches the saves store (IndexedDB in the page; a fake here)
 // after the engine changed files under /saves: new, rewritten, appended, renamed (also over
 // another file, and whole directories), removed; nothing when nothing changed; a failed write
-// retried; and a fresh file system loaded from the store has the same tree.
+// retried; and a fresh file system loaded from the store has the same tree. Also: the worker opens
+// the saves database the page names (two sites on one origin keep their saves apart).
 import test from "node:test";
 import assert from "node:assert/strict";
 import { MemFS } from "../wasi.js";
-import { SavesPersister, memoryStore, mountPack, parsePack } from "../engine.js";
+import { SavesPersister, memoryStore, mountPack, parsePack, workerMain } from "../engine.js";
 
 const enc = new TextEncoder();
 const dec = new TextDecoder();
@@ -190,4 +191,26 @@ test("the data pack mounts under /data", () => {
   assert.throws(() => parsePack(enc.encode("FFHPAK1\nxml/a\n10\nabc")), /cut/);
   assert.throws(() => parsePack(enc.encode("FFHPAK1\n../a\n1\nx")), /bad path/);
   assert.throws(() => parsePack(enc.encode("FFHPAK1\na\nx1\nx")), /bad length/);
+});
+
+test("the worker opens the saves database the page names", async () => {
+  const opened = [];
+  const posts = [];
+  let handler = null;
+  workerMain({
+    post: (m) => posts.push(m),
+    listen: (h) => (handler = h),
+    openStore: (db) => {
+      opened.push(db);
+      return memoryStore();
+    },
+    fetch: async () => {
+      throw new Error("no engine here");
+    },
+    console: { log() {}, warn() {}, error() {} },
+  });
+  handler({ t: "init", wasm: "http://page.test/web/ffh.wasm.gz", data: "http://page.test/web/data.pak.gz", savesDb: "ffh-play-classic", queue: null });
+  for (let i = 0; i < 100 && !posts.some((m) => m.t === "fail"); i++) await new Promise((r) => setTimeout(r, 5));
+  assert.deepEqual(opened, ["ffh-play-classic"]);
+  assert.match(posts.find((m) => m.t === "fail")?.message ?? "", /no engine here/);
 });

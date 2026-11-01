@@ -18,10 +18,18 @@ use ffh_core::structs::*;
 use ffh_data::*;
 
 pub mod advanced_start;
+pub mod armies;
+pub mod governor;
 pub mod automation;
 pub mod campaign;
+pub mod casters;
 pub mod casting;
+pub mod combat_sim;
 pub mod civs;
+pub mod code_effects;
+pub mod council;
+pub mod culture;
+pub mod defense;
 pub mod crusade;
 pub mod diplomacy;
 pub mod economy;
@@ -30,6 +38,7 @@ pub mod events;
 pub mod expansion;
 pub mod finance;
 pub mod magic;
+pub mod mana;
 pub mod military;
 pub mod naval;
 pub mod offers;
@@ -38,10 +47,16 @@ pub mod production;
 pub mod reach;
 pub mod research;
 pub mod sites;
+pub mod switches;
 pub mod tech_plan;
+#[cfg(test)]
+pub(crate) mod testkit;
 pub mod trade;
+pub mod traits;
+pub mod unflagged;
 pub mod units;
 pub mod values;
+pub mod vassals;
 pub mod victory;
 pub mod view;
 pub mod workers;
@@ -113,7 +128,13 @@ impl Controller for Ai {
         // some unit is still moving, i.e. has spent moves this turn.
         let seen = self.played.lock().unwrap().insert(p, turn) == Some(turn);
         let first_call = !seen && !g.players[p].units.iter().any(|&u| g.units.contains(u) && g.unit_has_moved(u));
-        let mut v = view::View::new(g, p);
+        // The first call's empire decisions read only the view's header (diplomacy, offers, the
+        // exposure diagnostic), and the view is rebuilt after them: analyse it now only when the
+        // units play on it (a later call, or the barbarians).
+        let mut v = view::View::header(g, p);
+        if !first_call || v.barbarian {
+            v.analyze(g);
+        }
         if first_call && !v.barbarian {
             military::report_exposure(g, &v, p);
         }
@@ -126,8 +147,13 @@ impl Controller for Ai {
             if trace_on(p) {
                 trace!(g, p, "{}", victory::describe(g, p, &victory::plan(g, p)));
             }
+            if g.telemetry.on() {
+                telemetry_intents(g, p);
+            }
             empire::manage(g, p);
             production::emergency(self, g, p);
+            production::trouble_rebuild(self, g, p);
+            production::wonder_emphasis(g, p);
             expansion::prepare_escorts(g, p); // early-expansion
             diplomacy::manage(g, &v);
             offers::to_humans(g, &v); // ai-offers: deals offered to human players
@@ -139,6 +165,14 @@ impl Controller for Ai {
             // War declarations change the picture.
             v = view::View::new(g, p);
             civs::turn(self, g, &mut v); // civ-mechanics
+            traits::turn(g, &v); // trait-play
+            armies::turn(g, p); // armies' reinforcements (docs/ARMIES.md)
+            governor::turn(g, p); // governed cities (docs/GOVERNORS.md)
+            culture::turn(g, p); // cultural channels (docs/CULTURE.md), after the governors' production
+        }
+        if !v.barbarian {
+            campaign::plan(g, &mut v);
+            casting::barrage(g, &v);
         }
         units::play(self, g, &mut v);
         casting::end_turn(g, &v);
@@ -152,6 +186,19 @@ impl Controller for Ai {
             return;
         }
         production::choose(self, g, c);
+    }
+
+    /// The unit a city trains for an army's requisition (docs/ARMIES.md): siege up to a third
+    /// of the army, then the best attacker against cities (`armies::requisition_unit`).
+    fn requisition_unit(&self, g: &Game, c: CityId, a: ArmyId) -> Option<(UnitType, UnitAIType)> {
+        armies::requisition_unit(g, c, a)
+    }
+
+    fn govern_cities(&self, g: &mut Game, p: PlayerId) {
+        // The AI's own cities are its play (`play_turn`); a human's governors act here.
+        if g.players[p].human {
+            culture::govern(g, p);
+        }
     }
 
     fn choose_research(&self, g: &Game, p: PlayerId) -> Option<TechType> {
@@ -176,6 +223,14 @@ impl Controller for Ai {
         events::choose(g, p, t, options)
     }
 
+    fn choose_election(&self, g: &Game, p: PlayerId, vs: &VoteSelectionData) -> Option<usize> {
+        council::choose_election(g, p, vs)
+    }
+
+    fn diplo_vote(&self, g: &Game, p: PlayerId, vote: &VoteSelectionSubData, source: VoteSourceType) -> PlayerVote {
+        council::diplo_vote(g, p, vote, source)
+    }
+
     fn choose_religion(&self, g: &Game, p: PlayerId) -> Option<ReligionType> {
         g.players[p].personality_type.and_then(|l| g.d.leader_heads[l].favorite_religion)
     }
@@ -195,4 +250,24 @@ impl Controller for Ai {
     fn choose_loan_units(&self, g: &Game, p: PlayerId, terms: &ffh_core::crusade::loan::LoanTerms) -> Vec<UnitId> {
         crusade::pick_units(g, p, terms.strength as i64)
     }
+}
+
+/// The plans telemetry follows as they change (ffh_core::telemetry, docs/TELEMETRY.md): the victory
+/// goal, the finances, the war being prepared.
+fn telemetry_intents(g: &Game, p: PlayerId) {
+    let plan = victory::plan_ours(g, p);
+    g.tel_intent(p, "goal", || plan.goal().map_or_else(|| "none".to_string(), |goal| format!("{goal:?}")));
+    let f = finance::state(g, p);
+    let finance = if f.structural() {
+        "structural_deficit"
+    } else if f.support_heavy() {
+        "support_heavy"
+    } else if f.rate < 0 {
+        "losing_gold"
+    } else {
+        "ok"
+    };
+    g.tel_intent(p, "finance", || finance.to_string());
+    let team = g.players[p].team;
+    g.tel_intent(p, "war_prep", || diplomacy::preparing_target(g, team).map_or_else(|| "none".to_string(), |t| format!("team {}", t.0)));
 }

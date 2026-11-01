@@ -4,9 +4,11 @@
 // it in headless Chromium (Playwright) and plays: the engine loads (WebAssembly in a worker; by
 // default the server sends no isolation headers, so the service worker coi-sw.js has to make the
 // page cross-origin isolated, with one reload), a new game starts from the new-game screen (tiny
-// map, fixed seed), the map is drawn with the art, a few turns end through the end-turn gate with
+// map, fixed seed), the default map starts (the HD-2D one, or its isometric fallback), the
+// classic interface draws on the flat map, a few turns end through the end-turn gate with
 // the popups answered, the game is saved, the page is reloaded with `?renderer=iso` (a fresh
-// engine: the save comes back from IndexedDB) and the save loaded, the isometric renderer draws
+// engine: the save comes back from IndexedDB, in the database the site's web/site.js names) and
+// the save loaded, the isometric renderer draws
 // it, and one more turn ends. Fails on any page error, console error, failed request or HTTP
 // error; screenshots go to --out.
 //
@@ -46,6 +48,16 @@ try {
 const SITE = path.resolve(args.site);
 const BASE = args.base ?? "/RustFallFromHeaven/";
 const PORT = Number(args.port ?? 0);
+/** The site's saves database (web/site.js `SAVES_DB`, tools/web-site.sh --saves), or null when
+ *  the site has no web/site.js (reported as a problem in main). */
+function sitesSavesDb() {
+  try {
+    return /^export const SAVES_DB = "([^"]+)";$/m.exec(fs.readFileSync(path.join(SITE, "web", "site.js"), "utf8"))?.[1] ?? null;
+  } catch {
+    return null;
+  }
+}
+const SAVES_DB = sitesSavesDb();
 const TURNS = Number(args.turns ?? 3);
 const SEED = Number(args.seed ?? 5);
 const OUT = path.resolve(args.out ?? path.join(ROOT, "target", "web-site-smoke"));
@@ -290,7 +302,14 @@ async function endTurns(n) {
   }
 }
 
+/** The title screen (no game): its menu, then `id`'s button. */
+async function fromTitle(id, ms = 60000) {
+  await until(() => ev(`!document.getElementById("title-screen").hidden && !!document.getElementById(${JSON.stringify(id)})`), "the title screen", ms);
+  await click(`#${id}`);
+}
+
 async function newGame() {
+  await fromTitle("title-new");
   await dialog("New game", 60000);
   await shot("new-game");
   await ev(`(() => {
@@ -304,14 +323,16 @@ async function newGame() {
   await answerPopups();
 }
 
-/** The map is drawn with the art: the art loaded (its bundle, relative to the page), the view is
- *  drawn in full, the middle of the map is not blank. */
-async function artMap() {
+/** The classic interface on the flat map (the sprite-less debug renderer that wears it): the art
+ *  loaded (its bundle, relative to the page), the interface uses its bitmap type and frames, the
+ *  middle of the map is not blank. */
+async function classicInterface() {
   await until2("!!(window.ffh.look.art || window.ffh.look.error)", "the art to load", 60000);
   const err = await ev("window.ffh.look.error ? String(window.ffh.look.error.message || window.ffh.look.error) : null");
   if (err) throw new Error(`the art did not load: ${err}`);
-  if ((await ev("window.ffh.mapView.renderer()")) !== "art") throw new Error("the map is not drawn with the art");
-  await until2("window.ffh.mapView.art.settled()", "the art map drawn in full", 60000);
+  if ((await ev("window.ffh.mapView.renderer()")) !== "flat") throw new Error("the map is not the flat one");
+  if (!(await ev(`document.documentElement.classList.contains("art") && !!document.querySelector("#btn-techs .ui-ptext")`))) throw new Error("the interface has no bitmap type");
+  await ev("window.ffh.mapView.draw()");
   const colours = await ev(`(() => {
     const c = window.ffh.mapView.canvas;
     const g = c.getContext("2d", { willReadFrequently: true });
@@ -321,9 +342,9 @@ async function artMap() {
     for (let i = 0; i < d.length; i += 4) seen.add((d[i] << 16) | (d[i + 1] << 8) | d[i + 2]);
     return seen.size;
   })()`);
-  if (colours < 8) throw new Error(`the art map is nearly blank (${colours} colours in the middle of the view)`);
-  await shot("art-map");
-  steps.push(`art map: ${colours} colours mid-view`);
+  if (colours < 8) throw new Error(`the flat map is nearly blank (${colours} colours in the middle of the view)`);
+  await shot("flat-map");
+  steps.push(`flat map, classic interface: ${colours} colours mid-view`);
 }
 
 /** Saves the game as `smoke` and waits until the engine has written it to IndexedDB. */
@@ -336,9 +357,9 @@ async function save() {
   await until2(`[...document.querySelectorAll("#toasts .toast")].some((t) => t.textContent.startsWith("Saved"))`, "the saved toast");
   const turn = await S("S.status.turn");
   await ev("window.ffhWeb.flush()");
-  // The engine's IndexedDB (database ffh-play, store saves, keys: paths under /saves).
+  // The engine's IndexedDB (the site's saves database, store saves, keys: paths under /saves).
   const keys = await ev(`new Promise((resolve, reject) => {
-    const open = indexedDB.open("ffh-play");
+    const open = indexedDB.open(${JSON.stringify(SAVES_DB)});
     open.onerror = () => reject(open.error);
     open.onsuccess = () => {
       const db = open.result;
@@ -348,15 +369,14 @@ async function save() {
       rq.onsuccess = () => (db.close(), resolve(rq.result.map(String)));
     };
   })`);
-  if (!keys.some((k) => /(^|\/)smoke(\.[^/]*)?$/.test(k))) throw new Error(`the save is not in IndexedDB: ${JSON.stringify(keys)}`);
-  steps.push(`saved as smoke at turn ${turn} (${keys.length} files in IndexedDB)`);
+  if (!keys.some((k) => /(^|\/)smoke(\.[^/]*)?$/.test(k))) throw new Error(`the save is not in IndexedDB ${SAVES_DB}: ${JSON.stringify(keys)}`);
+  steps.push(`saved as smoke at turn ${turn} (${keys.length} files in IndexedDB ${SAVES_DB})`);
   return turn;
 }
 
-/** After a reload (a fresh engine, no game): loads `smoke` from the new-game screen. */
+/** After a reload (a fresh engine, no game): loads `smoke` from the title screen's Load game. */
 async function loadSmoke(turn) {
-  await dialog("New game", 60000);
-  await clickButton("Load a game…");
+  await fromTitle("title-load");
   const sel = `#modals button.save[data-save$="/smoke"]`;
   await until2(`!!document.querySelector(${JSON.stringify(sel)})`, "the save in the load screen (from IndexedDB)", 30000);
   await shot("load-screen");
@@ -395,9 +415,10 @@ async function main() {
     console.error(`web-site-smoke: no site at ${SITE} (no index.html): build it with tools/web-site.sh ${args.site}`);
     return 1;
   }
-  for (const f of ["web/boot.js", "web/engine.js", "web/wasi.js", "web/ffh.wasm.gz", "web/data.pak.gz", "coi-sw.js"]) {
+  for (const f of ["web/boot.js", "web/engine.js", "web/wasi.js", "web/site.js", "web/ffh.wasm.gz", "web/data.pak.gz", "coi-sw.js"]) {
     if (!fs.existsSync(path.join(SITE, f))) problems.push(`the site has no ${f}`);
   }
+  if (fs.existsSync(path.join(SITE, "web", "site.js")) && !SAVES_DB) problems.push("web/site.js does not name the saves database (export const SAVES_DB)");
   const server = await serveSite({ dir: SITE, base: BASE, port: PORT, isolated: !!args.isolated });
   if (args.serve) {
     console.log(`web-site-smoke: serving ${SITE} at ${server.url}${args.isolated ? " (with COOP/COEP)" : ""}; Ctrl-C stops`);
@@ -444,13 +465,24 @@ async function main() {
     await until2("!!window.ffhWeb.build", "web/version.txt", 10000);
 
     await newGame();
-    // The plain URL opens the default renderer, now the isometric 2.5D map (docs/ISO.md, look.js).
-    // Switch to the art client in-page (the in-browser engine keeps the game) for the art check.
-    if ((await ev("window.ffh.mapView.renderer()")) !== "iso") throw new Error("the default renderer is not the isometric 2.5D map");
-    steps.push("the default renderer is the isometric 2.5D map");
-    await ev(`window.ffh.setRenderer("art")`);
-    await until2(`window.ffh.mapView.renderer() === "art"`, "the art renderer (switched from the default)");
-    await artMap();
+    // The plain URL opens the default renderer, the HD-2D map (docs/HD2D.md, look.js) -- or, where
+    // WebGL2 renders in software (this headless browser), its fallback, the isometric 2.5D map.
+    // Switch to the flat map in-page (the in-browser engine keeps the game): the classic interface,
+    // which the turns below drive.
+    await until2(`!window.ffh.mapView.r3dLoading && ["hd2d", "iso"].includes(window.ffh.mapView.renderer())`, "the default renderer (the HD-2D map or its isometric fallback)", 180000);
+    const [dflt, why] = await ev("[window.ffh.mapView.renderer(), window.ffh.mapView.r3dError?.code ?? null]");
+    if (dflt === "iso" && why !== "software-webgl") throw new Error(`the default HD-2D map fell back to the isometric one (${why ?? "no reason given"})`);
+    steps.push(dflt === "hd2d" ? "the default renderer is the HD-2D map" : "the default renderer is the HD-2D map, here (software WebGL2) its isometric fallback");
+    await ev(`window.ffh.setRenderer("flat")`);
+    await until2(`window.ffh.mapView.renderer() === "flat"`, "the flat map (switched from the default)");
+    await classicInterface();
+    // Engagement combat's queries reach the in-browser engine as every query does (docs/WEB.md);
+    // this game has the option off: no battles, and a battle log is gone.
+    const br = await ev(`window.ffh.api.query("battle_reports")`);
+    if (!br || br.on !== false || !Array.isArray(br.reports) || br.reports.length) throw new Error(`battle_reports: ${JSON.stringify(br)}`);
+    const gone = await ev(`window.ffh.api.query("battle_log", { report: 0 }).then(() => "answered", (e) => e.code)`);
+    if (gone !== "gone") throw new Error(`battle_log of no battle: ${gone}`);
+    steps.push("the engine answers the engagement queries (battle_reports, battle_log) with the option off");
     await endTurns(TURNS);
     const turn = await save();
 

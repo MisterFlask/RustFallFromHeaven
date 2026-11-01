@@ -187,3 +187,17 @@ test("map deltas: the changed tiles on a copy, or the whole map", () => {
   const chunks = T.chunksOfTiles(map, [2]);
   assert.ok(chunks.has("0,0"));
 });
+
+test("a pinch picks the zoom step nearest its scale, and holds it near the middle", () => {
+  const zs = [48, 64, 96, 128, 192, 384];
+  assert.equal(T.pinchStep(zs, 96, 1, 96), 96);
+  assert.equal(T.pinchStep(zs, 96, 1.4, 96), 128);
+  assert.equal(T.pinchStep(zs, 96, 0.5, 96), 48);
+  assert.equal(T.pinchStep(zs, 96, 10, 96), 384);
+  assert.equal(T.pinchStep(zs, 96, 0.1, 96), 48);
+  // Just past the middle of 96 and 128 (in scale, 110.9): the step shown stays.
+  assert.equal(T.pinchStep(zs, 96, 113 / 96, 96), 96);
+  assert.equal(T.pinchStep(zs, 96, 113 / 96, 128), 128);
+  // A step that is not one of the renderer's (another renderer's camera) gives way at once.
+  assert.equal(T.pinchStep(zs, 32, 1, 32), 48);
+});

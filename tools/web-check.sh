@@ -2,14 +2,16 @@
 # Checks the browser client of ffh-play (docs/PLAY_DESIGN.md §8 item 14): `node --check` of every
 # module and tool script, then the pure-module tests (`node --test crates/ffh-play/assets/test/*.test.mjs`
 # and the static site's page side, `crates/ffh-web/site/test/*.test.mjs`, docs/WEB.md).
-# Skipped (exit 0) when node is not installed. Not part of `cargo test`.
+# SKIPPED when node is not installed: exit 0, or 1 when $CI is set (a skipped check must not pass
+# for a passed one there). Not part of `cargo test`.
 #
 #   tools/web-check.sh              syntax and unit tests
 #   tools/web-check.sh --smoke      also the node smoke client: 20 turns against `ffh-play serve`
 #                                   (tools/web-api-smoke.mjs; builds nothing, needs
 #                                   target/release/ffh-play)
-#   tools/web-check.sh --browser    also the headless-Chromium smoke test (tools/web-smoke.mjs;
-#                                   skipped when no browser is found)
+#   tools/web-check.sh --browser    also the headless-Chromium smoke tests (tools/web-smoke.mjs and,
+#                                   on an emulated phone, tools/web-touch-smoke.mjs; SKIPPED when no
+#                                   browser is found, a failure when $CI is set)
 #
 # NODE=/path/to/node overrides the node binary.
 set -euo pipefail
@@ -20,7 +22,11 @@ node="${NODE:-}"
 if [ -z "$node" ]; then node="$(command -v node || true)"; fi
 if [ -z "$node" ] && [ -x /opt/node22/bin/node ]; then node=/opt/node22/bin/node; fi
 if [ -z "$node" ]; then
-  echo "web-check: node not found; skipped"
+  if [ -n "${CI:-}" ]; then
+    echo "web-check: SKIPPED (node not found); failing because CI is set" >&2
+    exit 1
+  fi
+  echo "web-check: SKIPPED (node not found)"
   exit 0
 fi
 
@@ -38,7 +44,7 @@ n=0
 # The client's .js files are ES modules, but no package.json says so, and `node --check FILE.js`
 # then accepts a module with a syntax error (Node 22 falls back without parsing it as a module):
 # they are checked as modules from stdin.
-for f in "$assets"/app/*.js "$assets"/app/r3d/*.js "$assets"/app/r3d/assets/*.js "$root"/crates/ffh-play/r3d-lab/*.js; do
+for f in "$assets"/app/*.js "$assets"/app/r3d/*.js "$assets"/app/r3d/assets/*.js "$assets"/app/r3d/hd2d/*.js "$assets"/app/r3d/hd2d/art/*.js "$root"/crates/ffh-play/r3d-lab/*.js; do
   if ! out="$("$node" --input-type=module --check < "$f" 2>&1)"; then
     echo "web-check: $f does not parse:" >&2
     echo "$out" >&2
@@ -48,7 +54,7 @@ for f in "$assets"/app/*.js "$assets"/app/r3d/*.js "$assets"/app/r3d/assets/*.js
 done
 # The static site's page side (docs/WEB.md): modules, and the service worker (a classic script).
 site="$root/crates/ffh-web/site"
-for f in "$site"/boot.js "$site"/engine.js "$site"/wasi.js; do
+for f in "$site"/boot.js "$site"/engine.js "$site"/wasi.js "$site"/site.js; do
   if ! out="$("$node" --input-type=module --check < "$f" 2>&1)"; then
     echo "web-check: $f does not parse:" >&2
     echo "$out" >&2
@@ -69,4 +75,5 @@ if [ "$smoke" = 1 ]; then
 fi
 if [ "$browser" = 1 ]; then
   "$node" "$root/tools/web-smoke.mjs"
+  "$node" "$root/tools/web-touch-smoke.mjs"
 fi

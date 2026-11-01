@@ -23,6 +23,7 @@
 // No DOM is touched on import outside a page; the node tests drive `EngineClient` directly.
 
 import { RequestQueue, QUEUE_BYTES } from "./engine.js";
+import { SAVES_DB } from "./site.js";
 
 export const JSON_TYPE = "application/json; charset=utf-8";
 /** The largest request body (`http::MAX_BODY`). */
@@ -117,11 +118,13 @@ function idOf(body) {
  *  terminate()}`. `ui` (optional): `progress(msg)`, `ready(msg)`, `fail(message)`,
  *  `note(message)`, `crashed(report)`, `restarting()`. */
 export class EngineClient {
-  constructor({ spawn, isolated = false, wasmUrl, dataUrl, autosaveKeep = 20, ui = {}, now = () => performance.now(), queueBytes = QUEUE_BYTES, maxRestarts = 3 }) {
+  constructor({ spawn, isolated = false, wasmUrl, dataUrl, savesDb, autosaveKeep = 20, ui = {}, now = () => performance.now(), queueBytes = QUEUE_BYTES, maxRestarts = 3 }) {
     this.spawn = spawn;
     this.isolated = isolated;
     this.wasmUrl = String(wasmUrl);
     this.dataUrl = String(dataUrl);
+    /** The saves' IndexedDB database (site.js `SAVES_DB`; the worker's default when unset). */
+    this.savesDb = savesDb;
     this.autosaveKeep = autosaveKeep;
     this.ui = ui;
     this.now = now;
@@ -166,7 +169,7 @@ export class EngineClient {
       if (this.state === "ready") this.#dead({ error: message });
       else this.#fail(message);
     });
-    w.post({ t: "init", wasm: this.wasmUrl, data: this.dataUrl, queue: this.queue?.sab ?? null, autosaveKeep: this.autosaveKeep });
+    w.post({ t: "init", wasm: this.wasmUrl, data: this.dataUrl, savesDb: this.savesDb, queue: this.queue?.sab ?? null, autosaveKeep: this.autosaveKeep });
     this.#pump();
   }
 
@@ -466,8 +469,9 @@ function mb(n) {
   return (n / 1048576).toFixed(1);
 }
 
-/** The loading overlay (a small card in the middle of the page, gone once the engine is ready)
- *  and the notes (a line at the left, above the client's bottom panel, that goes by itself).
+/** The loading overlay (a small card low in the middle of the page, under the client's title
+ *  screen's menu; gone once the engine is ready) and the notes (a line at the left, above the
+ *  client's bottom panel, that goes by itself).
  *  Plain DOM, styled inline with the client's palette variables (with fallbacks, for before its
  *  stylesheet loads). */
 class Overlay {
@@ -484,7 +488,7 @@ class Overlay {
     el.setAttribute("role", "status");
     el.setAttribute("aria-live", "polite");
     el.style.cssText =
-      "position:fixed;left:50%;top:42%;transform:translate(-50%,-50%);z-index:1000;box-sizing:border-box;" +
+      "position:fixed;left:50%;bottom:64px;transform:translateX(-50%);z-index:1000;box-sizing:border-box;" +
       "width:min(360px,calc(100vw - 32px));padding:14px 18px;background:var(--c-soot,#14223e);color:var(--c-bone,#e9dbb3);" +
       "border:1px solid var(--c-ochre,#dba63b);box-shadow:0 0 0 1px var(--c-void,#140d0c),0 10px 30px rgba(0,0,0,.45);" +
       "font:14px/1.4 var(--font,Georgia,serif);transition:opacity .3s ease;pointer-events:none";
@@ -652,6 +656,7 @@ function main() {
     isolated,
     wasmUrl: new URL("ffh.wasm.gz", import.meta.url),
     dataUrl: new URL("data.pak.gz", import.meta.url),
+    savesDb: SAVES_DB,
     ui: {
       progress: (m) => ui.progress(m),
       ready: (m) => {
@@ -704,9 +709,10 @@ function main() {
     }
     // One tab at a time: each tab's engine keeps its own copy of the saves and writes it back,
     // so two tabs would overwrite each other's games. (Asked after the isolation reload, which
-    // would otherwise hold it across the reload.)
+    // would otherwise hold it across the reload.) One lock per saves database: a tab of the
+    // classic site does not share the main site's saves.
     navigator.locks
-      ?.request("ffh-web-saves", { ifAvailable: true }, (lock) => {
+      ?.request(`ffh-web-saves:${SAVES_DB}`, { ifAvailable: true }, (lock) => {
         if (!lock) {
           ui.note("The game is open in another tab too: saves made in both tabs may overwrite each other. Close one of them.", 30000);
           return null;

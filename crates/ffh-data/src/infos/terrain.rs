@@ -110,6 +110,10 @@ pub struct TerrainInfo {
     pub yield_: [i32; YieldType::NUM],
     pub river_yield_change: [i32; YieldType::NUM],
     pub hills_yield_change: [i32; YieldType::NUM],
+    // ---- This game's own: engagement combat (GAMEOPTION_ENGAGEMENTS) ----
+    /// `iEngagementSlotsChange`: each side's engagement slots on a flat plot of this terrain
+    /// without a feature that sets its own change (`GameData::engagement_slots_change`).
+    pub engagement_slots_change: i32,
 }
 
 /// C++ `CvTerrainInfo::read` + `readPass2` (`TerrainDown`/`TerrainUp`) + `readPass3`
@@ -137,6 +141,7 @@ pub fn read_terrain(rd: &Rd) -> TerrainInfo {
         yield_: rd.yields("Yields"),
         river_yield_change: rd.yields("RiverYieldChange"),
         hills_yield_change: rd.yields("HillsYieldChange"),
+        engagement_slots_change: rd.int("iEngagementSlotsChange"),
     }
 }
 
@@ -196,6 +201,10 @@ pub struct FeatureInfo {
     pub hills_yield_change: [i32; YieldType::NUM],
     /// `isTerrain(i)` (`TerrainBooleans`): terrains the feature may be placed on.
     pub terrain: IdxVec<TerrainType, bool>,
+    // ---- This game's own: engagement combat (GAMEOPTION_ENGAGEMENTS) ----
+    /// `iEngagementSlotsChange`: each side's engagement slots on a plot with this feature,
+    /// replacing the terrain's where non-zero (`GameData::engagement_slots_change`).
+    pub engagement_slots_change: i32,
 }
 
 /// C++ `CvFeatureInfo::read` + `readPass2` (`FeatureUpgrade`).
@@ -232,6 +241,7 @@ pub fn read_feature(rd: &Rd) -> FeatureInfo {
         river_yield_change: rd.yields("RiverYieldChange"),
         hills_yield_change: rd.yields("HillsYieldChange"),
         terrain: rd.pairs_bool("TerrainBooleans"),
+        engagement_slots_change: rd.int("iEngagementSlotsChange"),
     }
 }
 

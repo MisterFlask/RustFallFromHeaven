@@ -76,7 +76,7 @@ fn the_art_is_embedded_as_it_is_on_disk() {
     let want: Vec<String> = art_modules(&art_dir()).unwrap().into_iter().map(|m| format!("art/{m}")).collect();
     let embedded: Vec<String> = ART_MODULES.iter().map(|(p, _)| p.to_string()).collect();
     assert_eq!(embedded, want, "build.rs embeds the art's modules");
-    for need in ["art/art.js", "art/compose.js", "art/library.js", "art/mapping.js", "art/spritefmt.js", "art/ui/ui.js", "art/terrain/ground.js", "art/units/stack.js", "art/cities/citylight.js"] {
+    for need in ["art/art.js", "art/library.js", "art/mapping.js", "art/spritefmt.js", "art/ui/ui.js", "art/terrain/ground.js", "art/units/stack.js", "art/cities/citylight.js"] {
         assert!(want.iter().any(|m| m == need), "{need} is not among the art's modules: {want:?}");
     }
     for (path, body) in ART_MODULES {
@@ -268,8 +268,10 @@ fn client_files_are_served_with_their_types() {
     assert_eq!((r.status, r.content_type), (200, "text/javascript; charset=utf-8"));
     // ... and the art from `DIR/../web/art`.
     let req = |path: &str| HttpRequest { method: "GET".into(), path: path.into(), query: String::new(), headers: Vec::new(), body: Vec::new() };
-    let r = route(&req("/art/compose.js"), &ctx);
+    let r = route(&req("/art/library.js"), &ctx);
     assert_eq!((r.status, r.content_type), (200, "text/javascript; charset=utf-8"));
+    // (Not the map compositor: the client's 2D art map, which used it, is retired.)
+    assert_eq!(route(&req("/art/compose.js"), &ctx).status, 404);
     assert_eq!(route(&req("/art/art.bundle.txt"), &ctx).status, 200);
     assert_eq!(route(&req("/art/tools/validate.mjs"), &ctx).status, 404);
 }
@@ -320,6 +322,71 @@ fn the_staged_trade_has_gold_both_ways() {
     }
     assert_eq!(s.g.players[s.human].gold, before - 7);
     assert_eq!(st.to_json().req_str("stage"), Ok("trade"));
+}
+
+/// The leaders speak (view/speech.rs): the staged first contact and war declaration reach the
+/// human as leader moments, kept in the sidecar; the AI then refuses to talk, and a leader at
+/// peace greets the human and answers a gift.
+#[test]
+fn leaders_speak_at_first_contact_war_and_greeting() {
+    let d = ffh_data::global();
+    let tmp = TempDir::new("web-stage-diplomacy");
+    let st = ffh_play::stage::diplomacy(&tmp.0).expect("staged diplomacy");
+    let (bytes, sidecar) = ffh_play::save::read_bundle(&st.save).unwrap();
+    let s = Session::load(&bytes, sidecar.as_ref(), Arc::new(ffh_play::human::AdvisorAnswerer), SessionOptions { journal: false, ..SessionOptions::default() }).unwrap();
+    let view = s.query_json(&ffh_play::jobj! { "q" => "view" }).unwrap();
+    assert_eq!(view.req::<i64>("moments_next"), Ok(2));
+    let m = s.query_json(&ffh_play::jobj! { "q" => "moments", "since" => 0 }).unwrap();
+    let entries = m.req_arr("entries").unwrap();
+    let comment = |e: &Json| d.reg.type_name(ffh_data::DiploCommentType(e.req::<i64>("comment").unwrap() as u16)).to_string();
+    assert_eq!(entries.iter().map(comment).collect::<Vec<_>>(), ["AI_DIPLOCOMMENT_FIRST_CONTACT", "AI_DIPLOCOMMENT_DECLARE_WAR"], "{m}");
+    for e in entries {
+        let text = e.req_str("text").unwrap();
+        assert_eq!(e.req::<i64>("player"), Ok(st.with.0 as i64));
+        assert!(!text.is_empty() && !text.contains("[CT_") && !text.contains("[OUR_") && !text.contains("AI_DIPLO"), "{e}");
+    }
+    // From the moment on: `since` past the first.
+    let m1 = s.query_json(&ffh_play::jobj! { "q" => "moments", "since" => 1 }).unwrap();
+    assert_eq!(m1.req_arr("entries").unwrap().len(), 1);
+    // Just at war: it refuses to talk (the greeting query says so).
+    let r = s.query_json(&ffh_play::jobj! { "q" => "speech", "with" => st.with }).unwrap();
+    assert_eq!(d.reg.type_name(ffh_data::DiploCommentType(r.req::<i64>("comment").unwrap() as u16)), "AI_DIPLOCOMMENT_REFUSE_TO_TALK", "{r}");
+    assert!(r.req_str("text").is_ok_and(|t| !t.is_empty()), "{r}");
+    assert!(s.query_json(&ffh_play::jobj! { "q" => "speech", "with" => s.human }).is_err());
+
+    // At peace: a greeting (or one of AI_getGreeting's other openings), and thanks for a gift.
+    let tmp = TempDir::new("web-stage-trade-speech");
+    let st = ffh_play::stage::trade(&tmp.0).expect("staged trade");
+    let (bytes, sidecar) = ffh_play::save::read_bundle(&st.save).unwrap();
+    let s = Session::load(&bytes, sidecar.as_ref(), Arc::new(ffh_play::human::AdvisorAnswerer), SessionOptions { journal: false, ..SessionOptions::default() }).unwrap();
+    for salt in 0..8 {
+        let r = s.query_json(&ffh_play::jobj! { "q" => "speech", "with" => st.with, "salt" => salt }).unwrap();
+        let c = d.reg.type_name(ffh_data::DiploCommentType(r.req::<i64>("comment").unwrap() as u16)).to_string();
+        assert!(["AI_DIPLOCOMMENT_GREETINGS", "AI_DIPLOCOMMENT_WORST_ENEMY", "AI_DIPLOCOMMENT_WORST_ENEMY_TRADING", "AI_DIPLOCOMMENT_UNIT_BRAG"].contains(&c.as_str()), "{r}");
+        assert!(r.req_str("text").is_ok_and(|t| !t.is_empty() && !t.contains('[')), "{r}");
+    }
+    let r = s.query_json(&ffh_play::jobj! { "q" => "speech", "with" => st.with, "comment" => "AI_DIPLOCOMMENT_THANKS" }).unwrap();
+    assert!(r.req_str("text").is_ok_and(|t| !t.is_empty()), "{r}");
+    // The view of a game without moments.
+    assert_eq!(s.query_json(&ffh_play::jobj! { "q" => "view" }).unwrap().req::<i64>("moments_next"), Ok(0));
+
+    // The vanilla experience: FfH2's lines only; else the civilizations' own lines join them.
+    let distinct = |s: &Session| {
+        let mut texts: Vec<String> = (0..40)
+            .filter_map(|salt| s.query_json(&ffh_play::jobj! { "q" => "speech", "with" => st.with, "comment" => "AI_DIPLOCOMMENT_ACCEPT", "salt" => salt }).ok())
+            .filter_map(|r| r.req_str("text").ok().map(str::to_string))
+            .collect();
+        texts.sort();
+        texts.dedup();
+        texts.len()
+    };
+    let own = distinct(&s);
+    ffh_play::query::UiState::lock(&s.ui).vanilla = true;
+    let vanilla = distinct(&s);
+    assert!(own >= 3 && vanilla < own, "own lines {own}, vanilla {vanilla}");
+    let mut ng = ffh_play::setup::NewGame::new(d, 3);
+    ng.vanilla = true;
+    assert!(ffh_play::setup::NewGame::from_json(d, &ng.to_json()).unwrap().vanilla);
 }
 
 /// The files a directory holds, relative, sorted.

@@ -6,12 +6,12 @@
 
 import { ATTR, Mesh, texture, upload, INSTANCE_FLOATS, PROP_LAYOUT } from "./gl.js";
 import { TerrainMeshes, MapTextures, CHUNK, RES, LOW_RES } from "./terrain.js";
-import { materialTexture } from "./materials.js";
+import { materialTexture, bakeMaterials } from "./materials.js";
 import { buildAsset, buildAssetLOD } from "./assets/registry.js";
 import { rasterDecals, rasterLight } from "./decals.js";
 import { SEA, RIVER_HALF, RIVER_WANDER, RIVER_BANK } from "./world.js";
 import { hexLinear } from "./math.js";
-import { rng } from "./noise.js";
+import { rng, noiseHashTexture, noiseLattice, dabHashTexture } from "./noise.js";
 
 const RIVER_LAYOUT = { aPos: 3, aExtra: 4 };
 /** The sea and the rivers: aExtra (across the river, down it, over the sea), aFlow (the river's
@@ -97,12 +97,17 @@ function packBuckets(list) {
 }
 
 export class Scene {
-  constructor(gl) {
+  /** `skipMaterials`: material layers a mode fills itself (not painted here; Map3D replacedMaterials).
+   *  `noiseTex`: the format of the value noise's hash texture ("r8", "r16f") when the programs are
+   *  compiled with NOISE_TEX (Map3D.sceneDefines), else null. */
+  constructor(gl, { skipMaterials = null, noiseTex = null } = {}) {
     this.gl = gl;
+    this.noiseHash = noiseTex ? noiseHashTexture(gl, noiseTex) : null;
+    this.dabHash = noiseTex ? dabHashTexture(gl) : null;
     this.terrain = new TerrainMeshes(gl);
     this.tex = new MapTextures(gl);
     // The ground's material textures (materials.js), painted once: {tex, mean, bakeMs, uploadMs, bytes}.
-    this.materials = materialTexture(gl);
+    this.materials = materialTexture(gl, bakeMaterials(undefined, skipMaterials));
     this.assets = new Map(); // asset key -> AssetBatch
     this.layers = { static: [], units: [] }; // [{batch, chunk: [cx, cy], top, bucket}]
     this.world = null;
@@ -134,10 +139,10 @@ export class Scene {
   }
 
   /** The decal and light textures (after the cities are known). */
-  setPaint(world, map, cities, lightStrength) {
+  setPaint(world, map, cities, lightStrength, cityLight = 1) {
     const gl = this.gl;
     const d = rasterDecals(world, map, cities);
-    const l = rasterLight(world, map, cities, lightStrength);
+    const l = rasterLight(world, map, cities, lightStrength, cityLight);
     const wrap = world.wrapX ? gl.REPEAT : gl.CLAMP_TO_EDGE;
     if (!this.decal || this.decal.w !== d.w || this.decal.h !== d.h) {
       if (this.decal) gl.deleteTexture(this.decal);
@@ -489,6 +494,9 @@ export class Scene {
     return {
       uMapSize: [w.w, w.h],
       uWrapX: w.wrapX ? 1 : 0,
+      uNoiseHash: this.noiseHash,
+      uDabHash: this.dabHash,
+      ...noiseLattice(w),
       uVis: this.tex.vis,
       uLight: this.light,
       uTerrain: this.tex.terrain,
@@ -522,8 +530,25 @@ export class Scene {
     }
   }
 
-  drawWater(prog, U, depthOnly = false) {
+  /** `riverProg`: the rivers' own program (Pipeline `riverSplit`; then the sea of every copy is
+   *  drawn first, then the rivers), else `prog` draws them too. */
+  drawWater(prog, U, depthOnly = false, riverProg = null) {
     if (!this.water) return;
+    if (riverProg) {
+      // Each program its uniforms whole (each has its own texture units).
+      const drawWith = (p, river) => {
+        p.use().set(U);
+        if (!depthOnly) p.set({ ...this.mapUniforms(), uCoarse: this.far ? 1 : 0, uRiverLift: river && this.far ? 0.05 : 0 });
+        for (const copy of this.copies) {
+          p.set({ uCopyX: copy, uRiver: river ? 1 : 0 });
+          (river ? this.rivers : this.water).draw();
+        }
+        if (!depthOnly) p.set({ uRiverLift: 0 });
+      };
+      drawWith(prog, false);
+      if (this.rivers) drawWith(riverProg, true);
+      return;
+    }
     prog.use().set(U);
     // uCoarse: the far zoom's ground is coarse, so the water reads its depth from the height field.
     if (!depthOnly) prog.set({ ...this.mapUniforms(), uCoarse: this.far ? 1 : 0 });
@@ -637,6 +662,7 @@ export class Scene {
 
   dispose() {
     const gl = this.gl;
+    for (const t of [this.noiseHash, this.dabHash]) if (t) gl.deleteTexture(t);
     this.terrain.dispose();
     this.tex.dispose();
     for (const layer of Object.keys(this.layers)) this.setInstances(layer, []);

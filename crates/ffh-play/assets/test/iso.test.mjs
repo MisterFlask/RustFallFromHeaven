@@ -36,6 +36,12 @@ test("every improvement and bonus maps to sprites that exist", () => {
   for (const size of [1, 4, 9, 20]) assert.deepEqual(missing(T.citySprites(size)), []);
 });
 
+test("a city takes its civilization's settlement for its size first, then the shared one", () => {
+  const T = ISO_TABLES;
+  assert.deepEqual(T.citySprites(5, "khazad").slice(0, 4), ["bld_city_khazad_town", "bld_city_town", "bld_city_khazad_village", "bld_city_village"]);
+  assert.deepEqual(T.citySprites(12).slice(0, 2), ["bld_city_castle", "bld_city_town"]);
+});
+
 test("every unit stand-in exists", () => {
   const T = ISO_TABLES;
   const names = [...Object.values(T.UNIT_ALIASES).flat(), ...Object.values(T.COMBAT_SPRITES), ...Object.values(T.DOMAIN_SPRITES), "swordsman", "settler", "worker"];

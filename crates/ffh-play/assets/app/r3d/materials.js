@@ -611,13 +611,18 @@ const RECIPES = [
 /** Paints every layer: {size, layers, data (RGBA8, layer after layer), mean (rgb a layer, the
  *  albedo's mean: the shader scales a material by its broad colour over this), ms, times (ms a
  *  layer)}. */
-export function bakeMaterials(size = MAT_SIZE) {
+export function bakeMaterials(size = MAT_SIZE, skip = null) {
   const t0 = performance.now();
   const layers = RECIPES.length;
   const data = new Uint8Array(size * size * 4 * layers);
   const mean = new Float32Array(layers * 3);
   const times = [];
   for (const [layer, paint] of RECIPES) {
+    // (`skip`: layers a mode fills itself -- the HD-2D mode's pixel-art ground -- left clear.)
+    if (skip?.has(layer)) {
+      times.push(0);
+      continue;
+    }
     const tl = performance.now();
     const t = new Tile(size);
     paint(t, rng(1000 + layer));
@@ -636,6 +641,24 @@ export function bakeMaterials(size = MAT_SIZE) {
     times.push(performance.now() - tl);
   }
   return { size, layers, data, mean, ms: performance.now() - t0, times };
+}
+
+/** Layer `layer` painted alone, as `bakeMaterials` paints it: {data (RGBA8), mean (rgb)}. */
+export function bakeLayer(layer, size = MAT_SIZE) {
+  const paint = RECIPES.find(([l]) => l === layer)?.[1];
+  const t = new Tile(size);
+  paint(t, rng(1000 + layer));
+  const p = t.p;
+  let mr = 0, mg = 0, mb = 0;
+  for (let k = 0; k < p.length; k += 4) {
+    mr += p[k];
+    mg += p[k + 1];
+    mb += p[k + 2];
+  }
+  const data = new Uint8ClampedArray(p.length);
+  for (let k = 0; k < p.length; k++) data[k] = p[k] * 255;
+  const nn = size * size;
+  return { data: new Uint8Array(data.buffer), mean: [mr / nn, mg / nn, mb / nn] };
 }
 
 /** The layers on the GPU: a TEXTURE_2D_ARRAY (RGBA8, REPEAT, trilinear, mipmapped, a little

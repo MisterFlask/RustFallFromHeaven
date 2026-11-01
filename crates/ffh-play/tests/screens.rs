@@ -7,7 +7,7 @@ mod common;
 
 use std::sync::Arc;
 
-use common::{apply_map, assert_same_map, bot_session, new_game};
+use common::{apply_map, assert_same_map, bot_session, new_game, peaceful_game};
 use ffh_core::ids::*;
 use ffh_data::*;
 use ffh_play::command::{CmdErr, CmdOk, Command};
@@ -55,7 +55,13 @@ fn map_deltas_keep_a_client_up_to_date() {
     });
     assert_eq!(stop, Stop::Human);
     assert!(deltas >= 15, "{deltas} deltas, {fulls} full maps");
+    // `bot::run` returns without a last callback: the bot's last turn and the AIs' after it may
+    // have changed the map since (whether they do is the game's story, not the protocol's), so
+    // the client catches up once before the revision checks.
     let c = client.unwrap();
+    let reply = map_query(&s, Some(c.req::<i64>("rev").unwrap()), Some(c.req_str("epoch").unwrap()));
+    let c = apply_map(&c, &reply);
+    assert_same_map(&c, &map_query(&s, None, None), "after the run");
     // Out of range, another epoch, none: the full map.
     let rev = c.req::<i64>("rev").unwrap();
     let epoch = c.req_str("epoch").unwrap();
@@ -333,4 +339,90 @@ fn the_advance_profile_splits_update_own_work_and_autosave() {
     assert_eq!((sum3, turn3), (sum, turn));
     let p = p.unwrap();
     assert!(p.autosave > std::time::Duration::ZERO, "three turn boundaries autosaved: {p:?}");
+}
+
+/// The city screen's happiness and health come with their parts (the `city` query's
+/// `happy_parts`, `unhappy_parts`, `good_parts`, `bad_parts`): in every city of a game, AI cities
+/// too, each list adds up to the total the rules compute.
+#[test]
+fn the_city_screen_parts_add_up_to_the_totals() {
+    use ffh_play::view::city::{bad_health_parts, good_health_parts, happy_parts, unhappy_parts};
+    // A peaceful game reaches the turn whatever the AI does (common::peaceful_game); with
+    // governors, whose traits add happiness and health.
+    let mut ng = peaceful_game(11);
+    ng.options.push(GameOptionType::GAMEOPTION_GOVERNORS);
+    let (mut s, mut b) = bot_session(&ng, None);
+    let until = s.g.game_turn() + 120;
+    let mut checked = 0;
+    let mut nonzero = [0; 4];
+    let stop = bot::run(&mut s, &mut b, until, |s, _| {
+        if s.g.game_turn() % 10 != 0 {
+            return;
+        }
+        let g = &s.g;
+        let sum = |v: Vec<(String, i32)>| -> i32 { v.iter().map(|p| p.1).sum() };
+        for (c, city) in g.cities.iter() {
+            let at = format!("turn {}, city {} (size {})", g.game_turn(), c, city.population);
+            let totals = [g.city_happy_level(c), g.city_unhappy_level(c, 0), g.city_good_health(c), g.city_bad_health(c, false, 0)];
+            let sums = [sum(happy_parts(g, c)), sum(unhappy_parts(g, c)), sum(good_health_parts(g, c)), sum(bad_health_parts(g, c))];
+            assert_eq!(sums, totals, "{at}: happy, unhappy, healthy, unhealthy");
+            for i in 0..4 {
+                nonzero[i] += (totals[i] > 0) as i32;
+            }
+            checked += 1;
+        }
+    });
+    assert_eq!(stop, Stop::Human);
+    assert!(checked >= 50 && nonzero.iter().all(|&n| n > 0), "{checked} cities checked, {nonzero:?} with each total above 0");
+}
+
+/// A governor's happiness and health traits are among the city screen's parts, which still add
+/// up to the totals (set up through the rules: a governed city given a Beloved and Hygienic, then
+/// a Harsh governor).
+#[test]
+fn a_governors_traits_are_among_the_city_screens_parts() {
+    use ffh_play::view::city::{bad_health_parts, good_health_parts, happy_parts, unhappy_parts};
+    let d = ffh_data::global();
+    let mut setup = ffh_core::setup::GameSetup::standard(d, 2, "WORLDSIZE_SMALL", 7);
+    setup.options[GameOptionType::GAMEOPTION_GOVERNORS] = true;
+    let mut g = ffh_core::game::Game::new(d, setup);
+    g.game_init();
+    let p0 = PlayerId(0);
+    let mut cities: Vec<CityId> = Vec::new();
+    for q in g.map.plot_ids().collect::<Vec<_>>() {
+        if cities.len() == 5 {
+            break;
+        }
+        let (x, y) = g.map.xy(q);
+        let free = !g.plot_is_water(q) && !g.plot_is_impassable(q) && g.map.plots[q].owner.is_none() && g.map.plots[q].plot_city.is_none();
+        if free && cities.iter().all(|&c| g.plot_distance(x, y, g.cities[c].x, g.cities[c].y) >= 4) {
+            cities.push(g.player_init_city(p0, x, y, true, true));
+        }
+    }
+    let c = cities[4];
+    assert!(g.city_is_governed(c));
+    let t = |name: &str| g.d.t::<GovernorTraitType>(name);
+    let (beloved, hygienic, harsh) = (t("GOVERNORTRAIT_BELOVED"), t("GOVERNORTRAIT_HYGIENIC"), t("GOVERNORTRAIT_HARSH"));
+    let part = |parts: Vec<(String, i32)>| parts.iter().find(|p| p.0 == "governor").map_or(0, |p| p.1);
+    let sum = |parts: Vec<(String, i32)>| -> i32 { parts.iter().map(|p| p.1).sum() };
+    let check = |g: &ffh_core::game::Game| {
+        assert_eq!(sum(happy_parts(g, c)), g.city_happy_level(c));
+        assert_eq!(sum(unhappy_parts(g, c)), g.city_unhappy_level(c, 0));
+        assert_eq!(sum(good_health_parts(g, c)), g.city_good_health(c));
+        assert_eq!(sum(bad_health_parts(g, c)), g.city_bad_health(c, false, 0));
+    };
+    let first = g.governor_generate(p0);
+    g.governors[first].traits = vec![beloved, hygienic];
+    g.city_assign_governor(p0, c, first).unwrap();
+    check(&g);
+    assert_eq!((part(happy_parts(&g, c)), part(good_health_parts(&g, c))), (1, 1));
+    let second = g.governor_generate(p0);
+    g.governors[second].traits = vec![harsh];
+    g.city_assign_governor(p0, c, second).unwrap();
+    check(&g);
+    assert_eq!(part(happy_parts(&g, c)), 0);
+    // (a size-1 city may have no unhappiness at all to show the harsh governor's face in)
+    if !g.city_is_no_unhappiness(c) {
+        assert_eq!(part(unhappy_parts(&g, c)), 1);
+    }
 }

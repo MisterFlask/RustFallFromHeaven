@@ -2,7 +2,7 @@
 // keep it. `tokenize` and `plain` are pure (tested); `render` builds DOM nodes. Nothing in a
 // text becomes HTML: only the tags below are recognized, everything else stays literal text.
 //
-// Tags: [NEWLINE], [PARAGRAPH:n], [TAB], [ICON_X], [LINK=target]..[\LINK], [COLOR_X]..
+// Tags: [NEWLINE], [PARAGRAPH:n], [TAB], [SPACE], [ICON_X], [LINK=target]..[\LINK], [COLOR_X]..
 // [COLOR_REVERT] (also [\COLOR]), [BOLD]..[\BOLD], [H1]..[\H1].
 
 /** Icon glyphs; an unknown icon shows its humanized name in brackets. */
@@ -33,6 +33,10 @@ export const ICONS = {
   ICON_OCCUPATION: "⚑",
   ICON_MANA: "✦",
 };
+
+/** The markup icon of each yield and each commerce, by index (C++ `getChar()` of their infos). */
+export const YIELD_ICONS = ["[ICON_FOOD]", "[ICON_PRODUCTION]", "[ICON_COMMERCE]"];
+export const COMMERCE_ICONS = ["[ICON_GOLD]", "[ICON_RESEARCH]", "[ICON_CULTURE]", "[ICON_ESPIONAGE]"];
 
 const TAG = /\[([\\/]?[A-Z][A-Z0-9_]*)(?:[=:]([^\]]*))?\]/g;
 
@@ -67,6 +71,8 @@ function tagToken(name, arg) {
       return { t: "para" };
     case "TAB":
       return { t: "tab" };
+    case "SPACE":
+      return { t: "text", s: " " };
     case "BOLD":
       return { t: "bold" };
     case "\\BOLD":

@@ -67,6 +67,8 @@ the idle frame-0 bounding box. Big units need a taller canvas than 128 px (Hybor
   (`units/swordsman_judged.json`), which strike away from where he looks, as do the method sets in `arms/`;
   `final_hyborem_v1/`: the sprint's Hyborem set (`units/hyborem_v1.json`), which keeps the rule.
 - `final_swordsman/`, `final_hyborem/`, `final_ogre/` (+ `_nofx`): sets made after it (`units/*.json`).
+  `UNITS.md` says which of the 56 roster units are done, which have only an idle so far and why, and which cannot
+  be done with this method yet; `animate_batch.sh` runs the paid steps for the prepared ones.
 - `poses_near.json` (from `lib/poses_near_src.py`): the pose set for units that look lower-right with the weapon in
   the near (screen-left) hand and, mirrored, for lower-left units with it in the screen-right hand.
 - `judging/`: judge JSON, keys, `scores.json`, `verify_scores.json`. Packets are regenerable and not committed.

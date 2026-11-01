@@ -4,6 +4,9 @@
 <!-- Copyright Firaxis Games 2005 -->
 <!-- -->
 <!-- Feature -->
+<!-- iEngagementSlotsChange is this game's own (GAMEOPTION_ENGAGEMENTS): it changes each side's
+     engagement slots on the plot and replaces the terrain's change where non-zero (forest and
+     jungle -2). -->
 <Civ4FeatureInfos xmlns="x-schema:CIV4TerrainSchema.xml">
 	<FeatureInfos>
 		<FeatureInfo>
@@ -139,6 +142,7 @@
 			<iSeeThrough>1</iSeeThrough>
 			<iHealthPercent>-25</iHealthPercent>
 			<iDefense>25</iDefense>
+			<iEngagementSlotsChange>-2</iEngagementSlotsChange>
 			<iAppearance>0</iAppearance>
 			<iDisappearance>0</iDisappearance>
 			<iGrowth>16</iGrowth>
@@ -500,6 +504,7 @@
 			<iSeeThrough>1</iSeeThrough>
 			<iHealthPercent>50</iHealthPercent>
 			<iDefense>25</iDefense>
+			<iEngagementSlotsChange>-2</iEngagementSlotsChange>
 			<iAppearance>0</iAppearance>
 			<iDisappearance>0</iDisappearance>
 			<iGrowth>8</iGrowth>
@@ -740,6 +745,7 @@
 			<iSeeThrough>1</iSeeThrough>
 			<iHealthPercent>25</iHealthPercent>
 			<iDefense>0</iDefense>
+			<iEngagementSlotsChange>-2</iEngagementSlotsChange>
 			<iAppearance>0</iAppearance>
 			<iDisappearance>0</iDisappearance>
 			<iGrowth>8</iGrowth>
@@ -991,6 +997,7 @@
 			<iSeeThrough>1</iSeeThrough>
 			<iHealthPercent>50</iHealthPercent>
 			<iDefense>50</iDefense>
+			<iEngagementSlotsChange>-2</iEngagementSlotsChange>
 			<iAppearance>0</iAppearance>
 			<iDisappearance>0</iDisappearance>
 			<iGrowth>0</iGrowth>

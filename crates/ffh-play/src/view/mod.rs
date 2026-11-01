@@ -9,16 +9,25 @@
 //!   actions, `path`, `combat`), [`city`] (the city screen), [`player`] (`techs`, `civics`,
 //!   `religions`, `players`), [`diplo`] (`trade` and the deal checks of `propose_deal`),
 //!   [`crusade`] (`crusades`: calls, lending, loans; docs/CRUSADE.md),
-//!   [`data`] (the static tables), [`text`] (`text`, `ascii`, `inspect`).
+//!   [`speech`] (what a leader says: `speech`, the leader moments),
+//!   [`data`] (the static tables, with [`improvement_help`]), [`text`] (`text`, `ascii`,
+//!   `inspect`); [`help`] writes the help texts (what a tech, a building, ... does).
 
+pub mod armies;
+pub mod battles;
+pub mod governors;
 pub mod city;
 pub mod crusade;
+pub mod culture;
 pub mod data;
 pub mod diplo;
 pub mod fog;
+pub mod help;
 pub mod hotkeys;
+pub mod improvement_help;
 pub mod map;
 pub mod player;
+pub mod speech;
 pub mod text;
 pub mod units;
 
@@ -85,11 +94,15 @@ pub const MANA: [&str; 18] = [
 ];
 
 /// The phase word of `status` (`decision` while a blocking decision is open).
-pub fn phase_name(g: &Game, h: PlayerId, decision: bool) -> &'static str {
+pub fn phase_name(g: &Game, h: PlayerId, decision: bool, observe: Option<i32>) -> &'static str {
     if decision {
         return "decision";
     }
-    match phase(g, h) {
+    let phase = match observe {
+        Some(to_play) => crate::session::observed_phase(g, h, to_play),
+        None => phase(g, h),
+    };
+    match phase {
         Phase::Human(_) => "human",
         Phase::Running => "running",
         Phase::Over => "over",
@@ -99,9 +112,11 @@ pub fn phase_name(g: &Game, h: PlayerId, decision: bool) -> &'static str {
 /// `status` (design §4.3; the transport adds `version`, `ms_in_phase` and the crash report).
 pub fn status(v: &Viewer, ctx: &Ctx) -> Json {
     let g = v.g;
-    let over = (g.game_state == GameStateType::GAMESTATE_OVER).then(|| crate::jobj! { "winner_team" => g.winner, "victory" => Json::opt_idx(g.victory) });
+    // Observed (autorun), a victory leaves the game EXTENDED: it is over for the observer.
+    let decided = g.game_state == GameStateType::GAMESTATE_OVER || (ctx.observe.is_some() && g.game_state != GameStateType::GAMESTATE_ON);
+    let over = decided.then(|| crate::jobj! { "winner_team" => g.winner, "victory" => Json::opt_idx(g.victory) });
     crate::jobj! {
-        "phase" => phase_name(g, v.h, ctx.decision.is_some()),
+        "phase" => phase_name(g, v.h, ctx.decision.is_some(), ctx.observe),
         "turn" => g.game_turn(),
         "year" => g.game_turn_year(),
         "human" => v.h,
@@ -110,8 +125,12 @@ pub fn status(v: &Viewer, ctx: &Ctx) -> Json {
         "decision" => ctx.decision.map(|d| d.to_json()),
         "over" => over,
         "reveal" => v.reveal,
-        // The AI autoplay's turns left (`autoplay`; the client offers to stop it while it runs).
-        "ai_auto_play" => g.ai_auto_play,
+        // The AI autoplay's turns left (`autoplay`; the client offers to stop it while it runs);
+        // observed, the turns left to play.
+        "ai_auto_play" => ctx.observe.unwrap_or(g.ai_auto_play),
+        // An AI-only game watched by an observer (`human` is the player the view follows).
+        "observe" => ctx.observe.is_some(),
+        "build" => crate::BUILD_COMMIT,
     }
 }
 
@@ -138,6 +157,10 @@ pub fn me(v: &Viewer) -> Json {
     crate::jobj! {
         "player" => h,
         "team" => v.team,
+        "alignment" => Json::opt_idx(pl.alignment),
+        // The alive civilizations (barbarians aside): the score's fair share is 100% / this.
+        "civs_alive" => g.player_ids().filter(|&q| g.players[q].alive && !g.player_is_barbarian(q)).count(),
+        "gold_parts" => gold_parts(g, h),
         "name" => crate::view::player_name(g, h),
         "civ" => Json::opt_idx(g.player_get_civilization_type(h)),
         "leader" => Json::opt_idx(g.player_get_leader_type(h)),
@@ -165,6 +188,53 @@ pub fn me(v: &Viewer) -> Json {
     }
 }
 
+/// Where the gold rate comes from (the financial advisor): the gold of the cities' commerce and of
+/// deals, and the costs C++ `calculateInflatedCosts` takes: units (with the free ones), units
+/// outside the borders, city maintenance, civic upkeep and the inflation on those. `income +
+/// deals - units - supply - maintenance - civics - inflation` is `calculateBaseNetGold`, the gold
+/// rate while research is flexible (else `research_fixed`: the rules take the shortfall of both).
+pub fn gold_parts(g: &Game, h: PlayerId) -> Json {
+    let pl = &g.players[h];
+    let units = g.player_calculate_unit_cost(h);
+    let supply = g.player_calculate_unit_supply(h);
+    let maintenance = g.player_get_total_maintenance(h);
+    let civics = g.player_get_civic_upkeep(h, None, false);
+    let inflated = g.player_calculate_inflated_costs(h);
+    let ub = g.player_calculate_unit_cost_breakdown(h);
+    crate::jobj! {
+        "income" => g.player_get_commerce_rate(h, CommerceType::COMMERCE_GOLD),
+        "deals" => pl.gold_per_turn,
+        "units" => units,
+        "units_count" => pl.num_units(),
+        "units_free" => ub.free_units,
+        "military_count" => pl.num_military_units,
+        "military_free" => ub.free_military_units,
+        "supply" => supply,
+        "supply_units" => g.player_calculate_unit_supply_breakdown(h).paid_units,
+        "maintenance" => maintenance,
+        "civics" => civics,
+        "inflation" => inflated - (units + supply + maintenance + civics),
+        "inflation_rate" => g.player_calculate_inflation_rate(h),
+        "research_fixed" => !g.player_is_commerce_flexible(h, CommerceType::COMMERCE_RESEARCH),
+    }
+}
+
+/// Player `p`'s attitude towards the human with its reasons: `[[reason, n]]` summing to the score
+/// the AI turns into an attitude (ffh-ai's `attitude_parts`), and the score of the next better
+/// attitude (null at Friendly). A teammate or a master's vassal is Friendly whatever the score.
+fn attitude_json(g: &Game, p: PlayerId, h: PlayerId) -> (Json, Json, Json) {
+    let (tp, th) = (g.players[p].team, g.players[h].team);
+    if tp == th || (g.teams[tp].vassal[th] && !g.teams[tp].capitulated) {
+        let why = if tp == th { "same team" } else { "your vassal" };
+        return (Json::Arr(vec![crate::jarr![why, 0]]), Json::Null, Json::Null);
+    }
+    let parts = ffh_ai::diplomacy::attitude_parts(g, p, h);
+    let score: i32 = parts.iter().map(|t| t.1).sum();
+    let now = ffh_ai::diplomacy::attitude_of_score(score);
+    let next = (score + 1..score + 12).find(|&r| ffh_ai::diplomacy::attitude_of_score(r) != now).filter(|_| now != AttitudeType::ATTITUDE_FRIENDLY);
+    (Json::Arr(parts.iter().map(|(w, n)| crate::jarr![*w, *n]).collect()), Json::from(score), Json::from(next))
+}
+
 /// The players the human knows, from its side (the `view`'s list).
 pub fn players_brief(v: &Viewer) -> Json {
     let g = v.g;
@@ -175,9 +245,15 @@ pub fn players_brief(v: &Viewer) -> Json {
         }
         let pl = &g.players[p];
         let t = pl.team;
+        let (attitude_parts, attitude_score, attitude_next) = if pl.alive && !g.player_is_barbarian(p) { attitude_json(g, p, v.h) } else { (Json::Null, Json::Null, Json::Null) };
         out.push(crate::jobj! {
             "id" => p,
             "name" => crate::view::player_name(g, p),
+            "alignment" => Json::opt_idx(pl.alignment),
+            "state_religion" => Json::opt_idx(g.player_get_state_religion(p)),
+            "attitude_parts" => attitude_parts,
+            "attitude_score" => attitude_score,
+            "attitude_next" => attitude_next,
             "leader" => Json::opt_idx(g.player_get_leader_type(p)),
             "civ" => Json::opt_idx(g.player_get_civilization_type(p)),
             "team" => t,
@@ -240,6 +316,23 @@ pub fn cities(v: &Viewer) -> Json {
             j.set("automated_production", city.production_automated);
             j.set("food_turns", g.city_food_turns_left(c));
             j.set("disorder", g.city_is_disorder(c));
+            // This game's cultural channel: what the city channels (docs/CULTURE.md).
+            if let Some(ch) = &city.culture_channel {
+                j.set("channel", crate::jobj! {
+                    "action" => Json::idx(ch.action),
+                    "target" => ch.target,
+                    "religion" => Json::opt_idx(ch.religion),
+                });
+            }
+        }
+        // Revolt pressure on a city the human sees (its banner's mark): its level
+        // (`culture::REVOLT_*`) and the unhappiness it causes.
+        if g.culture_actions_on() && (visible || own) {
+            let level = g.cities[c].culture_revolt_level;
+            if level > 0 || g.city_revolt_pressure(c) > 0 {
+                j.set("revolt", level);
+                j.set("unrest", g.city_culture_unhappiness(c));
+            }
         }
         out.push(j);
     }
@@ -271,6 +364,18 @@ pub fn unit_json(v: &Viewer, u: UnitId) -> Json {
         j.set("activity", grp.filter(|&gr| g.groups.contains(gr)).map(|gr| Json::idx(g.groups[gr].activity_type)));
         j.set("transport", unit.transport_unit);
         j.set("summon_turns", (unit.duration > 0).then_some(unit.duration));
+        // This game's armies (docs/ARMIES.md): its army, or the city whose garrison it is in, or
+        // its march (a recruit on its way: it takes no orders until it arrives).
+        if g.armies_on() {
+            j.set("army", unit.army);
+            j.set("garrison", g.unit_garrison_city(u));
+            j.set("army_unit", g.unit_is_army_unit(u));
+            j.set("march", if unit.march.is_some() { armies::march_json(v, u) } else { Json::Null });
+        }
+    }
+    // Engagement combat: its role, A, Dv and max HP (`hp` / `max_hp` stay the duel's percent).
+    if g.engagements_on() {
+        battles::unit_fields(g, u, &mut j);
     }
     j
 }
@@ -296,7 +401,7 @@ pub fn groups(v: &Viewer) -> Json {
             "id" => grp,
             "head" => g.group_get_head_unit(grp),
             "units" => group.units.clone(),
-            "ready" => g.group_ready_to_move(grp, true) && !crate::decision::is_ai_group(g, grp),
+            "ready" => crate::decision::is_ready_group(g, grp),
             // What Civ4's group cycle selects (W, Enter, the next group after a command, the
             // waiting groups on a plot, the nearest group): C++ `readyToSelect()` with its
             // default `bAny = false`, i.e. every unit can move (`canAllMove`), not only one.
@@ -327,12 +432,23 @@ pub fn view(v: &Viewer, ctx: &Ctx) -> Json {
         "cities" => cities(v),
         "units" => units(v),
         "groups" => groups(v),
+        // This game's armies (null without them): the human's armies and the recruits marching
+        // to garrisons (unit ids: each unit's `march` says where and how long).
+        "armies" => armies::armies(v),
+        "garrison_marching" => if g.armies_on() { armies::garrison_marching(v) } else { Json::Null },
+        // Engagement combat (docs/ENGAGEMENTS.md): on, and the human's battles of this turn and
+        // the last (null when off).
+        "engagements" => g.engagements_on(),
+        "battles" => battles::recent(v),
         // C++ `CvPlayer::m_groupCycle`: the order W cycles the waiting groups in
         // (`cycleSelectionGroups`), and whether some group has orders to continue
         // (`hasAutoUnit`: the cycle's wrap then sends AutoMoves).
         "group_cycle" => g.players[v.h].group_cycle.iter().filter(|&&grp| g.groups.contains(grp)).copied().collect::<Vec<_>>(),
         "has_auto_unit" => g.player_has_auto_unit(v.h),
-        "pending" => crate::decision::pending(g, v.h, ctx.events).to_json(),
+        // Observed, nothing waits: the AI answers its own players.
+        "pending" => if ctx.observe.is_some() { crate::decision::Pending::default() } else { crate::decision::pending(g, v.h, ctx.events) }.to_json(),
         "log_next" => ctx.messages.map(|m| m.total()),
+        // The leader moments (a leader opening the diplomacy screen): the next index (`moments`).
+        "moments_next" => ctx.messages.map(|m| m.moments_total()),
     }
 }

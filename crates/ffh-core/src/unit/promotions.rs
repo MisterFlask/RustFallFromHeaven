@@ -107,6 +107,9 @@ impl Game {
         if !self.unit_can_promote(u, promotion, leader_unit) {
             return;
         }
+        if let (true, Some(promotion)) = (self.telemetry.on(), promotion) {
+            self.tel_promote(u, promotion);
+        }
 
         if let Some(leader_id) = leader_unit {
             if let Some(warlord) = owner_unit(self, u, leader_id) {
@@ -620,7 +623,7 @@ impl Game {
                                 let y_dist = city_y - y;
                                 if (x_dist * x_dist) + (y_dist * y_dist) < 10 {
                                     let city_plot = self.city_plot(loop_city);
-                                    if !self.unit_generate_path(u, city_plot, 0, true, None) {
+                                    if self.unit_find_path(u, city_plot, 0).is_none() {
                                         value *= 16;
                                     }
                                 } else {
@@ -672,6 +675,15 @@ impl Game {
 
     /// C++ `CvUnit::upgrade` (CvUnit.cpp:8430-8470).
     pub fn unit_upgrade(&mut self, u: UnitId, unit_type: Option<UnitType>) {
+        if !self.telemetry.on() {
+            return self.unit_upgrade_inner(u, unit_type);
+        }
+        self.tel_ctx_push("upgraded");
+        self.unit_upgrade_inner(u, unit_type);
+        self.tel_ctx_pop();
+    }
+
+    fn unit_upgrade_inner(&mut self, u: UnitId, unit_type: Option<UnitType>) {
         if !self.unit_can_upgrade(u, unit_type, false) {
             return;
         }
@@ -682,6 +694,9 @@ impl Game {
 
         let owner = self.units[u].owner;
         let price = self.unit_upgrade_price(u, unit_type);
+        if self.telemetry.on() {
+            self.tel_upgrade(u, unit_type, price);
+        }
         // `changeGold(-(upgradePrice(eUnit)))` (the rest of setGold is interface updates).
         self.players[owner].gold += -price;
 
@@ -1401,6 +1416,13 @@ impl Game {
         }
     }
 
+    /// Engagement combat (Q1): the promotions' `iCombatPercentDefense`, the unit's own percentage
+    /// on Dv. `engage_combat_terms` (`engagement/stats.rs`) reads it, with Homeland where the unit
+    /// fights rather than where it stands.
+    pub fn unit_change_extra_combat_percent_defense(&mut self, u: UnitId, change: i32) {
+        self.units[u].extra_combat_percent_defense += change;
+    }
+
     /// C++ `CvUnit::changeExtraCityAttackPercent` (CvUnit.cpp:12311-12319).
     pub fn unit_change_extra_city_attack_percent(&mut self, u: UnitId, change: i32) {
         if change != 0 {
@@ -1747,6 +1769,8 @@ impl Game {
             self.unit_change_same_tile_heal(u, info.same_tile_heal_change * change);
             self.unit_change_adjacent_tile_heal(u, info.adjacent_tile_heal_change * change);
             self.unit_change_extra_combat_percent(u, info.combat_percent * change);
+            // This game's engagement combat (Q1): the defence percentage, never read by the duel.
+            self.unit_change_extra_combat_percent_defense(u, info.combat_percent_defense * change);
             self.unit_change_extra_city_attack_percent(u, info.city_attack_percent * change);
             self.unit_change_extra_city_defense_percent(u, info.city_defense_percent * change);
             self.unit_change_extra_hills_attack_percent(u, info.hills_attack_percent * change);

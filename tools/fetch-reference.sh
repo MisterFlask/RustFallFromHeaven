@@ -31,6 +31,8 @@ if [ ! -d "$BTS/.git" ]; then
 fi
 ( cd "$BTS" && git checkout -q 7bb2280 -- \
     sid-meiers-civilization-iv-beyond-the-sword/Beyond-the-Sword/Assets/XML \
+    sid-meiers-civilization-iv-beyond-the-sword/Assets/XML/Text \
+    sid-meiers-civilization-iv-beyond-the-sword/Warlords/Assets/XML/Text \
     sid-meiers-civilization-iv-beyond-the-sword/Assets/XML/Terrain/CIV4YieldInfos.xml \
     sid-meiers-civilization-iv-beyond-the-sword/Assets/XML/GameInfo/CIV4UpKeepInfo.xml \
     sid-meiers-civilization-iv-beyond-the-sword/Assets/XML/GameInfo/CIV4ClimateInfo.xml \

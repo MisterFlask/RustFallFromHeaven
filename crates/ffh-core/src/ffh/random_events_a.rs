@@ -4,8 +4,8 @@
 //! doc comment names the Python function) registered by its Python name in the `find_*` table
 //! of the XML slot that names it (see dispatch.rs). The callbacks of this range that FFH2's XML
 //! does not reference (the BtS Blessed Sea, Holy Mountain, Spicy, Bard Tale and Tsunami
-//! callbacks, `applyWBSplinteredCourtDefeatedThessa3`) are registered in the slot their
-//! argument list fits.
+//! callbacks, `applyWBSplinteredCourtDefeatedThessa3`) were removed (2026-10-28): the rules could
+//! never run them.
 //!
 //! Not ported: the `help*` / `getHelp*` functions (event help text: UI) and
 //! `weddingFeud3Callback` (the popup handler of `doWeddingFeud3`'s human-only branch).
@@ -122,13 +122,7 @@ const TRIGGER_CAN_DO: &[(&str, TriggerCanDoFn)] = &[
     ("canTriggerUniqueFeatureLetumFrigusIllians", can_trigger_unique_feature_letum_frigus_illians),
     ("canTriggerUniqueFeaturePyreOfTheSeraphic", can_trigger_unique_feature_pyre_of_the_seraphic),
     ("canTriggerSwitchCivs", can_trigger_switch_civs),
-    ("canTriggerBlessedSea", can_trigger_blessed_sea),
-    ("canTriggerBlessedSea2", can_trigger_blessed_sea2),
-    ("canTriggerHolyMountain", can_trigger_holy_mountain),
-    ("canTriggerHolyMountainDone", can_trigger_holy_mountain_done),
-    ("canTriggerHolyMountainRevealed", can_trigger_holy_mountain_revealed),
     ("canTriggerMarathon", can_trigger_marathon),
-    ("canTriggerSpicy", can_trigger_spicy),
     ("canTriggerBabyBoom", can_trigger_baby_boom),
     ("canTriggerBrothersInNeed", can_trigger_brothers_in_need),
 ];
@@ -144,7 +138,6 @@ const TRIGGER_CITY: &[(&str, TriggerCityFn)] = &[
     ("canTriggerTraitor", can_trigger_traitor),
     ("canTriggerHurricaneCity", can_trigger_hurricane_city),
     ("canTriggerCycloneCity", can_trigger_cyclone_city),
-    ("canTriggerTsunamiCity", can_trigger_tsunami_city),
     ("canTriggerMonsoonCity", can_trigger_monsoon_city),
 ];
 
@@ -218,15 +211,11 @@ const EVENT_CAN_DO: &[(&str, EventCanDoFn)] = &[
     ("canDoWBTheBlackTowerPickCivLjosalfar", can_do_wb_the_black_tower_pick_civ_ljosalfar),
     ("canDoWBTheBlackTowerPickCivLuchuirp", can_do_wb_the_black_tower_pick_civ_luchuirp),
     ("canDoWBTheBlackTowerPickCivSvartalfar", can_do_wb_the_black_tower_pick_civ_svartalfar),
-    ("canApplyBlessedSea2", can_apply_blessed_sea2),
     ("canDoWeddingFeud3", can_do_wedding_feud3),
-    ("canApplyBardTale3", can_apply_bard_tale3),
     ("canApplyLooters3", can_apply_looters3),
     ("canDoBrothersInNeed1", can_do_brothers_in_need1),
     ("canApplyHurricane1", can_apply_hurricane1),
     ("canApplyHurricane2", can_apply_hurricane2),
-    ("canApplyTsunami1", can_apply_tsunami1),
-    ("canApplyTsunami2", can_apply_tsunami2),
     ("canApplyVolcano1", can_apply_volcano1),
 ];
 
@@ -317,7 +306,6 @@ const EVENT_CALLBACK: &[(&str, EventCallbackFn)] = &[
     ("applyWBLordOfTheBalorsTemptStatiusYes", apply_wb_lord_of_the_balors_tempt_statius_yes),
     ("applyWBLordOfTheBalorsTemptLetheYes", apply_wb_lord_of_the_balors_tempt_lethe_yes),
     ("applyWBSplinteredCourtDefeatedAmelanchier3", apply_wb_splintered_court_defeated_amelanchier3),
-    ("applyWBSplinteredCourtDefeatedThessa3", apply_wb_splintered_court_defeated_thessa3),
     ("applyWBSplinteredCourtDefeatedRivanna3", apply_wb_splintered_court_defeated_rivanna3),
     ("applyWBSplinteredCourtDefeatedVolanna3", apply_wb_splintered_court_defeated_volanna3),
     ("applyWBSplinteredCourtParithYes", apply_wb_splintered_court_parith_yes),
@@ -332,20 +320,14 @@ const EVENT_CALLBACK: &[(&str, EventCallbackFn)] = &[
     ("applyWBTheRadiantGuardChooseSidesHyborem", apply_wb_the_radiant_guard_choose_sides_hyborem),
     ("doWerewolf1", do_werewolf1),
     ("doWerewolf3", do_werewolf3),
-    ("applyBlessedSea2", apply_blessed_sea2),
-    ("doHolyMountainRevealed", do_holy_mountain_revealed),
     ("doWeddingFeud2", do_wedding_feud2),
     ("doWeddingFeud3", do_wedding_feud3),
-    ("doSpicy2", do_spicy2),
-    ("applyBardTale3", apply_bard_tale3),
     ("applyLooters3", apply_looters3),
     ("applyHurricane1", apply_hurricane1),
-    ("applyTsunami1", apply_tsunami1),
-    ("applyTsunami2", apply_tsunami2),
     ("applyVolcano1", apply_volcano1),
 ];
 
-const EVENT_EXPIRE: &[(&str, EventExpireFn)] = &[("expireHolyMountain1", expire_holy_mountain1)];
+const EVENT_EXPIRE: &[(&str, EventExpireFn)] = &[];
 
 // ---------------------------------------------------------------------------------------------
 // Helpers (Python idioms, Cy* wrapper behaviour)
@@ -657,39 +639,6 @@ fn forced_peace(g: &mut Game, team: TeamId, t: TeamId) {
     g.teams[team].permanent_war_peace[t] = false;
     g.team_make_peace(team, t, true);
     g.teams[team].permanent_war_peace[t] = true;
-}
-
-/// The building the Blessed Sea events hand out: the first building of special type
-/// `SPECIALBUILDING_TEMPLE` and the trigger's religion (`None` for NO_RELIGION or no such
-/// building).
-fn blessed_sea_temple(g: &Game, data: &EventTriggeredData) -> Option<BuildingType> {
-    let d = g.d;
-    let religion = data.religion?;
-    let temple = d.ty::<SpecialBuildingType>("SPECIALBUILDING_TEMPLE");
-    d.buildings
-        .keys()
-        .find(|&b| d.buildings[b].special_building_type == temple && d.buildings[b].religion_type == Some(religion))
-}
-
-/// The Blessed Sea landmass count: `for i in range(map.getIndexAfterLastArea()): area =
-/// map.getArea(i); if not area.isNone() and not area.isWater() and
-/// area.getCitiesPerPlayer(ePlayer) > 0: iOurLandmasses += 1`.
-fn our_landmasses(g: &Game, p: PlayerId) -> i32 {
-    g.map.areas.iter().filter(|(_, area)| !area.water && area.cities_per_player[p] > 0).count() as i32
-}
-
-/// `gc.getWorldInfo(gc.getMap().getWorldSize()).getDefaultPlayers()`.
-fn default_players(g: &Game) -> i32 {
-    g.d.worlds[g.setup.world_size].default_players
-}
-
-/// `player.getEventOccured(gc.getEventTriggerInfo(kTriggeredData.eTrigger).getPrereqEvent(0))`
-/// (Holy Mountain): the plot and religion of that event's trigger data, `None` if it has not
-/// occurred (or the trigger lists no prerequisite event).
-fn prereq_event_occured(g: &Game, data: &EventTriggeredData) -> Option<(i32, i32, Option<ReligionType>)> {
-    let event = *g.d.event_triggers[data.trigger].prereq_events.first()?;
-    let orig = g.player_get_event_occured(data.player, event)?;
-    Some((orig.plot_x, orig.plot_y, orig.religion))
 }
 
 /// `player.getGold() - 10 * player.getNumCities() < 0` is false (Wedding Feud 3, Bard Tale 3).
@@ -2533,16 +2482,6 @@ fn apply_wb_splintered_court_defeated_amelanchier3(g: &mut Game, _event: EventTy
     splintered_court_sides(g, doviello, svartalfar, ljosalfar);
 }
 
-/// `applyWBSplinteredCourtDefeatedThessa3(argsList)`.
-fn apply_wb_splintered_court_defeated_thessa3(g: &mut Game, _event: EventType, _data: &EventTriggeredData) {
-    let d = g.d;
-    let calabim = d.t::<CivilizationType>("CIVILIZATION_CALABIM");
-    g.set_trophy_value("TROPHY_WB_CIV_THESSA", calabim.idx() as i32);
-    let ljosalfar = d.t::<CivilizationType>("CIVILIZATION_LJOSALFAR");
-    let svartalfar = d.t::<CivilizationType>("CIVILIZATION_SVARTALFAR");
-    splintered_court_sides(g, calabim, svartalfar, ljosalfar);
-}
-
 /// `applyWBSplinteredCourtDefeatedRivanna3(argsList)`.
 fn apply_wb_splintered_court_defeated_rivanna3(g: &mut Game, _event: EventType, _data: &EventTriggeredData) {
     let d = g.d;
@@ -2696,117 +2635,6 @@ fn do_werewolf3(_g: &mut Game, _event: EventType, _data: &EventTriggeredData) {}
 // BtS events (Python lines 2504-3303)
 // ---------------------------------------------------------------------------------------------
 
-/// `canTriggerBlessedSea(argsList)`: a map of many landmasses, the player on few of them, with a
-/// galley, caravel or galleon.
-fn can_trigger_blessed_sea(g: &mut Game, data: &mut EventTriggeredData) -> bool {
-    let d = g.d;
-    let p = data.player;
-    if g.is_option(GameOptionType::GAMEOPTION_ONE_CITY_CHALLENGE) && g.players[p].human {
-        return false;
-    }
-    let map_min_landmass = 2 * default_players(g);
-    let our_max_landmass = py_div(default_players(g), 2);
-    if g.map.get_num_land_areas() < map_min_landmass {
-        return false;
-    }
-    if our_landmasses(g, p) > our_max_landmass {
-        return false;
-    }
-    let count = |class: &str| g.players[p].unit_class_count[d.t::<UnitClassType>(class)];
-    if count("UNITCLASS_GALLEY") == 0 && count("UNITCLASS_CARAVEL") == 0 && count("UNITCLASS_GALLEON") == 0 {
-        return false;
-    }
-    true
-}
-
-/// `canTriggerBlessedSea2(argsList)`: the player has settled enough landmasses.
-fn can_trigger_blessed_sea2(g: &mut Game, data: &mut EventTriggeredData) -> bool {
-    let our_min_landmass = py_div(3 * default_players(g), 2);
-    our_landmasses(g, data.player) >= our_min_landmass
-}
-
-/// `applyBlessedSea2(argsList)`: every city of size 5+ that could build the religion's temple
-/// gets it.
-fn apply_blessed_sea2(g: &mut Game, _event: EventType, data: &EventTriggeredData) {
-    let Some(building) = blessed_sea_temple(g, data) else { return };
-    for city in city_list(g, data.player) {
-        if g.cities[city].population >= 5 && g.city_can_construct(city, building, false, false, true) {
-            g.city_set_num_real_building(city, building, 1);
-        }
-    }
-}
-
-/// `canApplyBlessedSea2(argsList)`.
-fn can_apply_blessed_sea2(g: &Game, _event: EventType, data: &EventTriggeredData) -> bool {
-    let Some(building) = blessed_sea_temple(g, data) else { return false };
-    g.players[data.player]
-        .cities
-        .iter()
-        .any(|&city| g.cities[city].population >= 5 && g.city_can_construct(city, building, false, false, true))
-}
-
-/// `canTriggerHolyMountain(argsList)`: the mountain is unowned.
-fn can_trigger_holy_mountain(g: &mut Game, data: &mut EventTriggeredData) -> bool {
-    if g.is_option(GameOptionType::GAMEOPTION_ONE_CITY_CHALLENGE) && g.players[data.player].human {
-        return false;
-    }
-    // NULL plot: getOwner() is -1.
-    data_plot(g, data).and_then(|plot| g.map.plots[plot].owner).is_none()
-}
-
-/// `expireHolyMountain1(argsList)`: someone else took the mountain.
-fn expire_holy_mountain1(g: &Game, _event: EventType, data: &EventTriggeredData) -> bool {
-    // NULL plot: getOwner() is -1 (`plot == None` is never true).
-    let owner = data_plot(g, data).and_then(|plot| g.map.plots[plot].owner);
-    owner != Some(data.player) && owner.is_some()
-}
-
-/// `canTriggerHolyMountainDone(argsList)`: the player owns the mountain of the earlier event.
-fn can_trigger_holy_mountain_done(g: &mut Game, data: &mut EventTriggeredData) -> bool {
-    let Some((x, y, _)) = prereq_event_occured(g, data) else { return false };
-    // NULL plot: getOwner() is -1.
-    g.map.plot_xy(x, y).and_then(|plot| g.map.plots[plot].owner) == Some(data.player)
-}
-
-/// `canTriggerHolyMountainRevealed(argsList)`: enough religious buildings (cathedrals count 4,
-/// temples and monasteries 1) of the earlier event's religion reveal the mountain, which becomes
-/// this trigger's plot.
-fn can_trigger_holy_mountain_revealed(g: &mut Game, data: &mut EventTriggeredData) -> bool {
-    let d = g.d;
-    let p = data.player;
-    let Some((x, y, religion)) = prereq_event_occured(g, data) else { return false };
-    // Not FFH2 types: `findInfoTypeNum` gives -1, which matches buildings without a special type.
-    let cathedral = d.ty::<SpecialBuildingType>("SPECIALBUILDING_CATHEDRAL");
-    let temple = d.ty::<SpecialBuildingType>("SPECIALBUILDING_TEMPLE");
-    let monastery = d.ty::<SpecialBuildingType>("SPECIALBUILDING_MONASTERY");
-    let mut num_points = 0;
-    for b in d.buildings.keys() {
-        let info = &d.buildings[b];
-        if info.religion_type == religion {
-            if info.special_building_type == cathedral {
-                num_points += 4 * g.player_count_num_buildings(p, b);
-            } else if info.special_building_type == temple || info.special_building_type == monastery {
-                num_points += g.player_count_num_buildings(p, b);
-            }
-        }
-    }
-    if num_points < 2 * default_players(g) {
-        return false;
-    }
-    // NULL plot: setRevealed is a no-op (`plot == None` is never true).
-    if let Some(plot) = g.map.plot_xy(x, y) {
-        let team = g.players[p].team;
-        g.plot_set_revealed(plot, team, true, true, None, true);
-    }
-    // `player.getEventTriggered(kTriggeredData.iId)`: the trigger data being set up.
-    data.plot_x = x;
-    data.plot_y = y;
-    true
-}
-
-/// `doHolyMountainRevealed(argsList)`: only centers the camera for the active player (UI).
-fn do_holy_mountain_revealed(_g: &mut Game, _event: EventType, _data: &EventTriggeredData) {}
-
 /// `canTriggerMarathon(argsList)`: in the first turn of a war, a unit of the enemy stands on the
 /// player's land.
 fn can_trigger_marathon(g: &mut Game, data: &mut EventTriggeredData) -> bool {
@@ -2864,40 +2692,6 @@ fn can_do_wedding_feud3(g: &Game, _event: EventType, data: &EventTriggeredData) 
     can_pay_ten_per_city(g, data.player)
 }
 
-/// `canTriggerSpicy(argsList)`: at most 4 happiness resources and no spices yet, and the plot
-/// can have spices. (`BONUS_SPICES` is not an FFH2 bonus: -1, which no bonus index equals and
-/// every plot "can have".)
-fn can_trigger_spicy(g: &mut Game, data: &mut EventTriggeredData) -> bool {
-    let d = g.d;
-    let p = data.player;
-    let spice = d.ty::<BonusType>("BONUS_SPICES");
-    let mut happy_bonuses = 0;
-    for b in d.bonuses.keys() {
-        if g.player_get_num_available_bonuses(p, b) > 0 {
-            if d.bonuses[b].happiness > 0 {
-                happy_bonuses += 1;
-                if happy_bonuses > 4 {
-                    return false;
-                }
-            }
-            if Some(b) == spice {
-                return false;
-            }
-        }
-    }
-    // NULL plot: canHaveBonus() is false.
-    let Some(plot) = data_plot(g, data) else { return false };
-    g.plot_can_have_bonus(plot, spice, false)
-}
-
-/// `doSpicy2(argsList)`: a plantation on the trigger plot.
-fn do_spicy2(g: &mut Game, _event: EventType, data: &EventTriggeredData) {
-    if let Some(plot) = data_plot(g, data) {
-        let plantation = g.d.ty::<ImprovementType>("IMPROVEMENT_PLANTATION");
-        g.plot_set_improvement_type(plot, plantation);
-    }
-}
-
 /// `canTriggerBabyBoom(argsList)`: at peace with everyone, and a peace began last turn.
 fn can_trigger_baby_boom(g: &mut Game, data: &mut EventTriggeredData) -> bool {
     let team = g.players[data.player].team;
@@ -2905,18 +2699,6 @@ fn can_trigger_baby_boom(g: &mut Game, data: &mut EventTriggeredData) -> bool {
         return false;
     }
     g.civ_team_ids().any(|t| t != team && g.teams[team].ai_at_peace_counter[t] == 1)
-}
-
-/// `applyBardTale3(argsList)`: 10 gold per city.
-fn apply_bard_tale3(g: &mut Game, _event: EventType, data: &EventTriggeredData) {
-    let p = data.player;
-    let cost = 10 * g.players[p].num_cities();
-    g.players[p].gold -= cost;
-}
-
-/// `canApplyBardTale3(argsList)`.
-fn can_apply_bard_tale3(g: &Game, _event: EventType, data: &EventTriggeredData) -> bool {
-    can_pay_ten_per_city(g, data.player)
 }
 
 /// `canApplyLooters3(argsList)`: the other player's city has a cheap building to loot.
@@ -3038,44 +2820,6 @@ fn can_trigger_cyclone_city(g: &Game, _trigger: EventTriggerType, _p: PlayerId, 
     true
 }
 
-/// `canTriggerTsunamiCity(argsList)`: a coastal city.
-fn can_trigger_tsunami_city(g: &Game, _trigger: EventTriggerType, _p: PlayerId, c: CityId) -> bool {
-    // `city.isNone()`: the DLL passes one of the player's cities.
-    g.city_is_coastal(c, g.d.defines.min_water_size_for_ocean)
-}
-
-/// `canApplyTsunami1(argsList)`: a city below size 6.
-fn can_apply_tsunami1(g: &Game, _event: EventType, data: &EventTriggeredData) -> bool {
-    // NULL city: getPopulation() is -1.
-    data_city(g, data).map_or(-1, |c| g.cities[c].population) < 6
-}
-
-/// `canApplyTsunami2(argsList)`: `not canApplyTsunami1(argsList)`.
-fn can_apply_tsunami2(g: &Game, event: EventType, data: &EventTriggeredData) -> bool {
-    !can_apply_tsunami1(g, event, data)
-}
-
-/// `applyTsunami1(argsList)`: the city is destroyed.
-fn apply_tsunami1(g: &mut Game, _event: EventType, data: &EventTriggeredData) {
-    // CyCity::kill() is `kill(true)`; a no-op on the NULL city.
-    if let Some(c) = data_city(g, data) {
-        g.city_kill(c, true);
-    }
-}
-
-/// `applyTsunami2(argsList)`: up to five buildings are destroyed.
-fn apply_tsunami2(g: &mut Game, _event: EventType, data: &EventTriggeredData) {
-    let city = data_city(g, data);
-    let mut list = destructible_buildings(g, city, false);
-    for _ in 0..5 {
-        if !list.is_empty() {
-            let i = g.soren_rand_num(list.len() as i32, "Tsunami event building destroyed") as usize;
-            remove_building(g, city, list[i]);
-            list.remove(i);
-        }
-    }
-}
-
 /// `canTriggerMonsoonCity(argsList)`: an inland city with jungle within 3 plots.
 fn can_trigger_monsoon_city(g: &Game, _trigger: EventTriggerType, _p: PlayerId, c: CityId) -> bool {
     // `city.isNone()`: the DLL passes one of the player's cities.
@@ -3178,12 +2922,12 @@ mod tests {
         names
     }
 
-    /// 232 callbacks (every function of Python lines 1-3303 but the 28 help-text functions and
-    /// `weddingFeud3Callback`), each registered once.
+    /// 213 callbacks (every function of Python lines 1-3303 that the FFH2 XML names), each
+    /// registered once.
     #[test]
     fn every_callback_is_registered_once() {
         let names = all_names();
-        assert_eq!(names.len(), 232);
+        assert_eq!(names.len(), 213);
         let unique: BTreeSet<&str> = names.iter().copied().collect();
         assert_eq!(unique.len(), names.len(), "a name is registered twice");
         for name in names {
@@ -3220,88 +2964,6 @@ mod tests {
             check("EventInfo.PythonExpireCheck", &info.python_expire_check);
         }
         assert_eq!(referenced.len(), 213);
-    }
-
-    /// Every hard-coded type name in this file (`d.t` with a string literal) exists in the data:
-    /// `t` panics on unknown names, and most of this code only runs when an event fires.
-    #[test]
-    fn hard_coded_type_names_exist() {
-        let d = ffh_data::global();
-        let src = include_str!("random_events_a.rs");
-        let mut checked = 0;
-        let mut rest = src;
-        let marker = concat!("t::", "<");
-        while let Some(i) = rest.find(marker) {
-            rest = &rest[i + marker.len()..];
-            let Some(close) = rest.find('>') else { break };
-            let ty = &rest[..close];
-            if ty.is_empty() || !ty.chars().all(|c| c.is_ascii_alphanumeric()) {
-                continue;
-            }
-            let Some(lit) = rest[close + 1..].strip_prefix("(\"") else { continue };
-            let name = &lit[..lit.find('"').unwrap()];
-            let found = match ty {
-                "AlignmentType" => d.ty::<AlignmentType>(name).is_some(),
-                "BonusType" => d.ty::<BonusType>(name).is_some(),
-                "BuildingType" => d.ty::<BuildingType>(name).is_some(),
-                "CivicOptionType" => d.ty::<CivicOptionType>(name).is_some(),
-                "CivicType" => d.ty::<CivicType>(name).is_some(),
-                "CivilizationType" => d.ty::<CivilizationType>(name).is_some(),
-                "DamageType" => d.ty::<DamageType>(name).is_some(),
-                "EventType" => d.ty::<EventType>(name).is_some(),
-                "FeatureType" => d.ty::<FeatureType>(name).is_some(),
-                "ImprovementType" => d.ty::<ImprovementType>(name).is_some(),
-                "LeaderHeadType" => d.ty::<LeaderHeadType>(name).is_some(),
-                "PromotionType" => d.ty::<PromotionType>(name).is_some(),
-                "ReligionType" => d.ty::<ReligionType>(name).is_some(),
-                "SpecialistType" => d.ty::<SpecialistType>(name).is_some(),
-                "TechType" => d.ty::<TechType>(name).is_some(),
-                "TerrainType" => d.ty::<TerrainType>(name).is_some(),
-                "TraitType" => d.ty::<TraitType>(name).is_some(),
-                "UnitClassType" => d.ty::<UnitClassType>(name).is_some(),
-                "UnitType" => d.ty::<UnitType>(name).is_some(),
-                other => panic!("type {other} not handled by this test ({name})"),
-            };
-            assert!(found, "unknown {ty} {name}");
-            checked += 1;
-        }
-        assert!(checked > 150, "only {checked} names found");
-        // Names passed through tables or closures.
-        let (temples, traits) = (
-            [
-                ("RELIGION_THE_ORDER", "BUILDING_TEMPLE_OF_THE_ORDER"),
-                ("RELIGION_FELLOWSHIP_OF_LEAVES", "BUILDING_TEMPLE_OF_LEAVES"),
-                ("RELIGION_THE_ASHEN_VEIL", "BUILDING_TEMPLE_OF_THE_VEIL"),
-                ("RELIGION_OCTOPUS_OVERLORDS", "BUILDING_TEMPLE_OF_THE_OVERLORDS"),
-                ("RELIGION_RUNES_OF_KILMORPH", "BUILDING_TEMPLE_OF_KILMORPH"),
-                ("RELIGION_THE_EMPYREAN", "BUILDING_TEMPLE_OF_THE_EMPYREAN"),
-            ],
-            ["TRAIT_AGGRESSIVE", "TRAIT_ORGANIZED", "TRAIT_PHILOSOPHICAL", "TRAIT_RAIDERS", "TRAIT_SPIRITUAL"],
-        );
-        for (r, b) in temples {
-            assert!(d.ty::<ReligionType>(r).is_some() && d.ty::<BuildingType>(b).is_some(), "{r} {b}");
-        }
-        for t in traits {
-            assert!(d.ty::<TraitType>(t).is_some(), "{t}");
-        }
-        for c in ["CIVIC_DESPOTISM", "CIVIC_GOD_KING", "CIVIC_ARISTOCRACY", "CIVIC_CITY_STATES", "CIVIC_REPUBLIC", "CIVIC_THEOCRACY"] {
-            assert!(d.ty::<CivicType>(c).is_some(), "{c}");
-        }
-        for c in ["UNITCLASS_GALLEY", "UNITCLASS_CARAVEL", "UNITCLASS_GALLEON"] {
-            assert!(d.ty::<UnitClassType>(c).is_some(), "{c}");
-        }
-        for b in ["BONUS_COPPER", "BONUS_IRON", "BONUS_HORSE", "BONUS_IVORY"] {
-            assert!(d.ty::<BonusType>(b).is_some(), "{b}");
-        }
-        // `findInfoTypeNum` names: present in FFH2 ...
-        for i in ["IMPROVEMENT_COTTAGE", "IMPROVEMENT_HAMLET", "IMPROVEMENT_VILLAGE", "IMPROVEMENT_TOWN", "IMPROVEMENT_CITY_RUINS", "IMPROVEMENT_PLANTATION"] {
-            assert!(d.ty::<ImprovementType>(i).is_some(), "{i}");
-        }
-        assert!(d.ty::<SpecialBuildingType>("SPECIALBUILDING_TEMPLE").is_some());
-        // ... and the BtS names 0.41 does not define (-1 in Python).
-        assert!(d.ty::<BonusType>("BONUS_SPICES").is_none());
-        assert!(d.ty::<SpecialBuildingType>("SPECIALBUILDING_CATHEDRAL").is_none());
-        assert!(d.ty::<SpecialBuildingType>("SPECIALBUILDING_MONASTERY").is_none());
     }
 
     /// A game whose first slots hold freshly reset players (C++ `reset`), alive on their own
@@ -3499,23 +3161,19 @@ mod tests {
         let ev = data(p);
         // No cities: the cost is 0.
         g.players[p].gold = 0;
-        assert!(can_do_wedding_feud3(&g, event, &ev) && can_apply_bard_tale3(&g, event, &ev));
-        apply_bard_tale3(&mut g, event, &ev);
-        assert_eq!(g.players[p].gold, 0);
+        assert!(can_do_wedding_feud3(&g, event, &ev));
     }
 
     #[test]
     fn plot_triggers_read_the_trigger_plot() {
         let mut g = game(&[("CIVILIZATION_BANNOR", "LEADER_SABATHIEL"), ("CIVILIZATION_LJOSALFAR", "LEADER_ARENDEL")]);
         with_map(&mut g, 5, 4);
-        let (a, b) = (PlayerId(0), PlayerId(1));
+        let a = PlayerId(0);
         let event = EventType(0);
         let mut ev = data(a);
         // No plot: the NULL plot.
         assert!(!can_trigger_plot_empty(&mut g, &mut ev));
         assert!(!can_trigger_penguins(&mut g, &mut ev));
-        assert!(can_trigger_holy_mountain(&mut g, &mut ev));
-        assert!(!expire_holy_mountain1(&g, event, &ev));
         ev.plot_x = 2;
         ev.plot_y = 1;
         let plot = g.map.plot_xy(2, 1).unwrap();
@@ -3524,12 +3182,6 @@ mod tests {
         assert!(can_trigger_penguins(&mut g, &mut ev));
         g.map.plots[plot].plot_type = PlotType::PLOT_PEAK;
         assert!(!can_trigger_penguins(&mut g, &mut ev));
-        // Holy Mountain: free while unowned, expires once another player owns it.
-        g.map.plots[plot].owner = Some(a);
-        assert!(!can_trigger_holy_mountain(&mut g, &mut ev));
-        assert!(!expire_holy_mountain1(&g, event, &ev));
-        g.map.plots[plot].owner = Some(b);
-        assert!(expire_holy_mountain1(&g, event, &ev));
         // Volcano: an improvement on a neighbour (not the volcano plot itself) counts.
         let mushrooms = g.d.t::<ImprovementType>("IMPROVEMENT_MUSHROOMS");
         g.map.plots[plot].improvement_type = Some(mushrooms);

@@ -19,6 +19,16 @@ use super::CivPlay;
 pub struct Luchuirp;
 
 impl CivPlay for Luchuirp {
+    /// FfH's `AI_chooseTech` research plan (`tech_plan::goals`): Construction early (it counts
+    /// as the military tier 2), then Elementalism and Sorcery once Trade is known.
+    fn tech_goals(&self, g: &Game, p: PlayerId) -> super::TechGoals {
+        let mut beelines = vec!["TECH_CONSTRUCTION"];
+        if g.d.ty::<TechType>("TECH_TRADE").is_some_and(|t| g.team_is_has_tech(g.players[p].team, Some(t))) {
+            beelines.extend(["TECH_ELEMENTALISM", "TECH_SORCERY"]);
+        }
+        super::TechGoals { early_military: Some("TECH_CONSTRUCTION"), beelines, ..Default::default() }
+    }
+
     fn spell_value(&self, g: &Game, u: UnitId, spell: SpellType, value: i32) -> i32 {
         let here = g.unit_plot(u);
         let in_own_city = g.map.plots[here].plot_city.is_some_and(|c| g.cities[c].owner == g.units[u].owner);

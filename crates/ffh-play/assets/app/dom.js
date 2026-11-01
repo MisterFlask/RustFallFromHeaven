@@ -1,5 +1,7 @@
 // DOM helpers shared by the screens: an element builder, toasts, and the busy indicator.
 
+import { tip } from "./tips.js";
+
 /** How the short texts of buttons and headings are drawn: `null` (plain text), or a function
  *  `(tagName, text, el) => Node | string` that look.js sets once the art has loaded (the bitmap
  *  fonts of docs/ART.md 11.6; the text stays the element's `textContent`). */
@@ -32,9 +34,9 @@ export function setText(el, text) {
 
 /** `h("button.primary#end", {onclick, title}, "End turn", child...)`: an element with classes
  *  and id from the tag string, properties or attributes from `props` (`on*` are listeners,
- *  `data-*` and `aria-*` attributes, `style` an object), and text or node children (null and
- *  false are skipped, arrays flattened). The text children of buttons and headings go through
- *  the text hook (`setTextHook`). */
+ *  `data-*` and `aria-*` attributes, `style` an object, `tip` a rich tooltip: tips.js), and text
+ *  or node children (null and false are skipped, arrays flattened). The text children of buttons
+ *  and headings go through the text hook (`setTextHook`). */
 export function h(tag, props = {}, ...children) {
   const m = /^([a-z0-9]+)?((?:[.#][\w-]+)*)$/i.exec(tag);
   const el = document.createElement(m?.[1] || "div");
@@ -50,6 +52,7 @@ export function h(tag, props = {}, ...children) {
     if (v === undefined || v === null || v === false) continue;
     if (k.startsWith("on") && typeof v === "function") el.addEventListener(k.slice(2), v);
     else if (k === "style" && typeof v === "object") Object.assign(el.style, v);
+    else if (k === "tip") tip(el, v);
     else if (k === "class") el.className += ` ${v}`;
     else if (k.startsWith("data-") || k.startsWith("aria-") || k === "role" || k === "for") el.setAttribute(k, v === true ? "" : v);
     else el[k] = v;
@@ -73,6 +76,33 @@ function append(el, children) {
 
 export const $ = (sel, root = document) => root.querySelector(sel);
 
+/** Whether the device's main pointer is a finger (`pointer: coarse`): the screens then offer
+ *  on-screen choices for what Shift and Ctrl do with a mouse. */
+export function coarse() {
+  return globalThis.matchMedia?.("(pointer: coarse)").matches ?? false;
+}
+
+/** The small-screen layout's media query (style.css, iso.css): a phone upright (narrow) or on
+ *  its side (short). */
+export const COMPACT = "(max-width: 760px), (max-height: 520px)";
+
+/** Whether the page has the small-screen layout (a phone). */
+export function compactScreen() {
+  return globalThis.matchMedia?.(COMPACT).matches ?? false;
+}
+
+/** A row of toggle buttons choosing what a tap does, for touch screens (shown only there, by
+ *  style.css: `.tap-mode`): `options` are `[value, label, title]`; `set(value)` is called with the
+ *  one picked. */
+export function tapModes(current, options, set) {
+  return h(
+    "div.tap-mode",
+    { role: "group", "aria-label": "What a tap does" },
+    h("span.dim", "A tap:"),
+    options.map(([v, label, title]) => h("button.small", { class: v === current ? "on" : "", "aria-pressed": String(v === current), "data-tap": v, title, onclick: () => set(v) }, label)),
+  );
+}
+
 /** Replaces an element's children. */
 export function fill(el, ...children) {
   el.replaceChildren();
@@ -80,20 +110,32 @@ export function fill(el, ...children) {
   return el;
 }
 
-/** A transient message at the bottom right: `kind` is "info", "error" or "log". */
+/** The most toasts shown at once (the oldest goes first). */
+const TOASTS_SHOWN = 4;
+
+/** A transient message at the top right of the map: `kind` is "info", "error" or "log". A
+ *  click dismisses it. */
 export function toast(text, kind = "info", ms = 4500) {
+  return toastNode(h(`div.toast.${kind}`, { role: kind === "error" ? "alert" : "status", title: "Click to dismiss" }, text), ms);
+}
+
+/** Shows a built toast element (`div.toast`) for `ms`; returns it. */
+export function toastNode(el, ms = 4500) {
   const box = $("#toasts");
-  if (!box) return;
-  const el = h(`div.toast.${kind}`, { role: kind === "error" ? "alert" : "status" }, text);
+  if (!box) return null;
   box.appendChild(el);
-  while (box.children.length > 6) box.firstChild.remove();
+  while (box.children.length > TOASTS_SHOWN) box.firstChild.remove();
   // Fade out before removing (CSS transition on `.leaving`); a fallback removes it even when no
   // transition runs (reduced motion, a hidden tab).
-  setTimeout(() => {
+  const leave = () => {
+    if (el.classList.contains("leaving")) return;
     el.classList.add("leaving");
     el.addEventListener("transitionend", () => el.remove(), { once: true });
     setTimeout(() => el.remove(), 400);
-  }, ms);
+  };
+  el.addEventListener("click", leave);
+  setTimeout(leave, ms);
+  return el;
 }
 
 let busyCount = 0;

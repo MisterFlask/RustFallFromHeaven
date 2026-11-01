@@ -106,6 +106,18 @@ WANT = {
 }
 
 
+# Members this game adds after a C++ enum's own (rules of its own, not FFH2's; docs/PORTING.md
+# "Changes from FFH2"). They follow the C++ members in this order, so the XML lists them last.
+EXTRA_MEMBERS = {
+    "GameOptionTypes": [
+        "GAMEOPTION_CULTURE_ACTIONS",  # docs/CULTURE.md
+        "GAMEOPTION_ARMIES",  # docs/ARMIES.md
+        "GAMEOPTION_GOVERNORS",  # docs/GOVERNORS.md
+        "GAMEOPTION_ENGAGEMENTS",  # docs/COMBAT_INVENTORY.md (phase 6: engagement combat)
+    ],
+}
+
+
 def strip_comments(s):
     s = re.sub(r"/\*.*?\*/", "", s, flags=re.S)
     s = re.sub(r"//[^\n]*", "", s)
@@ -182,6 +194,10 @@ def main():
             if v < 0:
                 continue
             consts.append((n, v))
+        for n in EXTRA_MEMBERS.get(cname, []):
+            consts.append((n, consts[-1][1] + 1 if consts else 0))
+        if num and cname in EXTRA_MEMBERS:
+            num = (num[0], num[1] + len(EXTRA_MEMBERS[cname]))
         if consts or num:
             out.append(f"impl {rname} {{")
             for n, v in consts:

@@ -20,10 +20,9 @@
 //!     (`g.controllers[p] = ..`), exactly as after `Game::new`;
 //!   * `map_script`: only used while generating the map (`game_init`); a loaded game gets the
 //!     default script;
-//!   * `dying`: empty outside `unit_kill`.
-//!
-//!   Rules caches are saved as they are (`Player::ai_bonus_value`, the city rank caches, the
-//!   path finders' kept search trees), so nothing has to be recomputed after loading.
+//!   * `dying`: empty outside `unit_kill`;
+//!   * `telemetry`: observation only; a loaded game has it off;
+//!   * the path finders: scratch storage for searches, holding nothing between them.
 //!
 //! **Turn boundaries.** Save between two `update()` calls while no player's turn is active
 //! (`num_game_turn_active == 0`, see [`Game::at_turn_boundary`]): the next `update()` then starts
@@ -32,21 +31,25 @@
 //! controller that remembers what it already did this turn will not.
 //!
 //! **Adding state.** Every saved struct is written by destructuring it exhaustively
-//! (`persist_struct!` in `state.rs`, the `Game` impl below, `PathFinder` in `path_finder.rs`),
+//! (`persist_struct!` in `state.rs` and, for the battle reports, `battle.rs`; the `Game` impl
+//! below),
 //! so a new field fails to compile until it is saved. Add it to the list in declaration order
 //! and bump [`FORMAT_VERSION`].
 
+mod battle;
 pub(crate) mod io;
 mod state;
 
 pub use io::{Persist, Reader, Writer};
 
+use std::cell::RefCell;
 use std::fmt;
 
 use crate::controller::null_controller;
 use crate::defs::NUM_CITY_PLOTS;
 use crate::game::Game;
 use crate::mapgen::default_map_script;
+use crate::path::{FinderKind, PathFinder};
 use ffh_data::*;
 
 /// First bytes of every save.
@@ -58,9 +61,28 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 /// - 1: first layout.
 /// - 2: score v2 (docs/SCORE.md): `player_score`, `team_score` and `Player::score_history` hold
 ///   shares of the world in basis points instead of FFH2's `calculateScore` (no new fields).
-/// - 3: crusades (docs/CRUSADE.md): `GameSetup::crusade`, `PlayerSetup::host`, `Unit::lent`,
+/// - 3: no rules caches: the path finders, `Player::ai_bonus_value` and the city rank caches
+///   are gone (computed when needed).
+/// - 4: cultural actions (docs/CULTURE.md): `City::culture_queue`, `culture_diverted`,
+///   `culture_marks`, `Player::culture_memory`.
+/// - 5: Foment Revolt and Flip City: `City::culture_revolt_turn`.
+/// - 6: armies (docs/ARMIES.md): `Game::armies`, `Unit::army`, `Player::armies`, `army_count`,
+///   `transit`, `City::recruit_default`, `OrderData::dest` and `reinforce_to`.
+/// - 7: governors (docs/GOVERNORS.md): `Game::governors`, `Player::governors`, `governor_count`,
+///   `City::direct_rule`, `rule_changed_turn`, `governor`, `feed_army`, `governor_penalty_turns`,
+///   `governor_hostile_culture`.
+/// - 8: cultural channels replace the cultural queue (docs/CULTURE.md): `City::culture_channel`,
+///   `culture_pressure`, `culture_revolt_level` in place of `culture_queue`, `culture_marks`,
+///   `culture_revolt_turn`; `City::governor_hostile_culture` gone (governors never channel).
+/// - 9: requisition and marching recruits replace transit and the governed cities' feed mode
+///   (docs/ARMIES.md): `Unit::march`, `Army::requisition`, `OrderData::requisition`; gone:
+///   `Player::transit`, `City::feed_army`, `OrderData::reinforce_to`.
+/// - 10: engagement combat (phase 6): `Unit::extra_combat_percent_defense`, `attacks_made`,
+///   `battle_heal_turn`, `Game::battle_reports` (with their logs, `battle.rs`),
+///   `battle_report_next`.
+/// - 11: crusades (docs/CRUSADE.md): `GameSetup::crusade`, `PlayerSetup::host`, `Unit::lent`,
 ///   `Game::crusades` / `next_crusade_id` / `crusade_reports`.
-pub const FORMAT_VERSION: u32 = 3;
+pub const FORMAT_VERSION: u32 = 11;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -197,6 +219,10 @@ fn write_game(g: &Game, w: &mut Writer) {
         groups,
         plot_groups,
         deals,
+        armies,
+        governors,
+        battle_reports,
+        battle_report_next,
         map_rand,
         soren_rand,
         log,
@@ -293,12 +319,11 @@ fn write_game(g: &Game, w: &mut Writer) {
         trophies,
         map_script: _,
         dying: _,
-        path_finder,
-        step_finder,
-        route_finder,
-        border_finder,
-        area_finder,
-        plot_group_finder,
+        telemetry: _,
+        // Scratch storage for searches (path.rs, "No reuse"): not saved.
+        path_finder: _,
+        step_finder: _,
+        border_finder: _,
     } = g;
     setup.write(w);
     map.write(w);
@@ -309,6 +334,10 @@ fn write_game(g: &Game, w: &mut Writer) {
     groups.write(w);
     plot_groups.write(w);
     deals.write(w);
+    armies.write(w);
+    governors.write(w);
+    battle_reports.write(w);
+    battle_report_next.write(w);
     map_rand.write(w);
     soren_rand.write(w);
     log.write(w);
@@ -402,12 +431,6 @@ fn write_game(g: &Game, w: &mut Writer) {
     next_crusade_id.write(w);
     crusade_reports.write(w);
     trophies.write(w);
-    path_finder.write(w);
-    step_finder.write(w);
-    route_finder.write(w);
-    border_finder.write(w);
-    area_finder.write(w);
-    plot_group_finder.write(w);
 }
 
 /// Reads the fields `write_game` wrote, in the same order (struct literal fields are evaluated
@@ -424,6 +447,10 @@ fn read_game(d: &'static GameData, r: &mut Reader<'_>) -> Result<Game, LoadError
         groups: Persist::read(r)?,
         plot_groups: Persist::read(r)?,
         deals: Persist::read(r)?,
+        armies: Persist::read(r)?,
+        governors: Persist::read(r)?,
+        battle_reports: Persist::read(r)?,
+        battle_report_next: Persist::read(r)?,
         map_rand: Persist::read(r)?,
         soren_rand: Persist::read(r)?,
         log: Persist::read(r)?,
@@ -520,12 +547,10 @@ fn read_game(d: &'static GameData, r: &mut Reader<'_>) -> Result<Game, LoadError
         trophies: Persist::read(r)?,
         map_script: default_map_script(),
         dying: Vec::new(),
-        path_finder: Persist::read(r)?,
-        step_finder: Persist::read(r)?,
-        route_finder: Persist::read(r)?,
-        border_finder: Persist::read(r)?,
-        area_finder: Persist::read(r)?,
-        plot_group_finder: Persist::read(r)?,
+        telemetry: crate::telemetry::Telemetry::off(),
+        path_finder: RefCell::new(PathFinder::new(FinderKind::Path)),
+        step_finder: RefCell::new(PathFinder::new(FinderKind::Step)),
+        border_finder: RefCell::new(PathFinder::new(FinderKind::Border)),
     };
     if g.players.is_empty() || g.teams.len() != g.players.len() {
         return Err(LoadError::Corrupt(format!("{} players and {} teams", g.players.len(), g.teams.len())));

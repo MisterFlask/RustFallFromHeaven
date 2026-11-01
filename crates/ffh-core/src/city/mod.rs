@@ -22,8 +22,6 @@
 //! `city_update_commerces`). Trivial accessors are field accesses (see "Trivial accessors" in
 //! `docs/porting/city.md`).
 
-#![allow(unused_imports)]
-use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
 
 use crate::defs::*;
 use crate::game::Game;
@@ -42,10 +40,6 @@ pub mod yields_culture;
 /// Field names follow the C++ members (`m_iFooBar` -> `foo_bar`). Pure graphics/UI members
 /// (`m_bWallOverride`, `m_bInfoDirty`, `m_bLayoutDirty`, `m_kWallOverridePoints`,
 /// `m_iCitySizeBoost`) are omitted.
-///
-/// C++ `mutable` rank caches (written from `const` methods such as `findPopulationRank`) are
-/// [`CacheI32`] / [`CacheBool`] cells so those methods keep `&self`; they are real state (a
-/// stale cache is observable).
 #[derive(Clone, Debug)]
 pub struct City {
     /// C++ `m_iID`; the key of this city in `Game::cities`.
@@ -248,16 +242,6 @@ pub struct City {
     pub building_happy_change: BuildingChangeArray,
     pub building_health_change: BuildingChangeArray,
 
-    // ---- C++ rank caches (mutable in C++) ----
-    pub population_rank: CacheI32,
-    pub population_rank_valid: CacheBool,
-    pub base_yield_rank: [CacheI32; YieldType::NUM],
-    pub base_yield_rank_valid: [CacheBool; YieldType::NUM],
-    pub yield_rank: [CacheI32; YieldType::NUM],
-    pub yield_rank_valid: [CacheBool; YieldType::NUM],
-    pub commerce_rank: [CacheI32; CommerceType::NUM],
-    pub commerce_rank_valid: [CacheBool; CommerceType::NUM],
-
     // ---- CvCityAI bookkeeping read/written by rules code ----
     /// C++ `CvCityAI::m_bAssignWorkDirty` (`AI_setAssignWorkDirty`): citizens must be
     /// reassigned (by the governor) before they are next used.
@@ -275,6 +259,27 @@ pub struct City {
     pub ai_emphasize_avoid_angry_citizens_count: i32,
     /// FFH2 GrowthControl (`m_iEmphasizeAvoidUnhealthyCitizensCount`).
     pub ai_emphasize_avoid_unhealthy_citizens_count: i32,
+    // ---- This game's own rules (not FFH2's) ----
+    /// The city's standing cultural channel (docs/CULTURE.md); change it through
+    /// `Game::city_set_culture_channel`.
+    pub culture_channel: Option<crate::culture::CultureChannel>,
+    /// Culture the channel diverted in the city's last turn (0 when nothing channelled).
+    pub culture_diverted: i32,
+    /// Revolt pressure on this city from each caster's Foment Revolt, in hundredths of culture.
+    pub culture_pressure: IdxVec<PlayerId, i32>,
+    /// How far the revolt pressure has gone (`culture::REVOLT_*`), for the news of its changes.
+    pub culture_revolt_level: i32,
+    /// Where the city's trained land combat units go when their order names no destination
+    /// (docs/ARMIES.md); `None`: its own garrison.
+    pub recruit_default: Option<crate::army::RecruitDest>,
+    /// This game's governors (docs/GOVERNORS.md): ruled directly (else governed).
+    pub direct_rule: bool,
+    /// The turn its rule last changed by choice (-1: never); a cooldown runs from it.
+    pub rule_changed_turn: i32,
+    /// Its governor (governed cities; `None`: an interim governor).
+    pub governor: Option<GovernorId>,
+    /// Turns left of the penalty for replacing its governor.
+    pub governor_penalty_turns: i32,
 }
 
 impl City {
@@ -471,14 +476,6 @@ impl City {
             building_happy_change: Vec::new(),
             building_health_change: Vec::new(),
 
-            population_rank: CacheI32::new(-1),
-            population_rank_valid: CacheBool::new(false),
-            base_yield_rank: std::array::from_fn(|_| CacheI32::new(-1)),
-            base_yield_rank_valid: std::array::from_fn(|_| CacheBool::new(false)),
-            yield_rank: std::array::from_fn(|_| CacheI32::new(-1)),
-            yield_rank_valid: std::array::from_fn(|_| CacheBool::new(false)),
-            commerce_rank: std::array::from_fn(|_| CacheI32::new(-1)),
-            commerce_rank_valid: std::array::from_fn(|_| CacheBool::new(false)),
 
             ai_assign_work_dirty: false,
             ai_choose_production_dirty: false,
@@ -489,6 +486,15 @@ impl City {
             ai_emphasize_commerce_count: [0; CommerceType::NUM],
             ai_emphasize_avoid_angry_citizens_count: 0,
             ai_emphasize_avoid_unhealthy_citizens_count: 0,
+            culture_channel: None,
+            culture_diverted: 0,
+            culture_pressure: IdxVec::from_elem(0, num_players),
+            culture_revolt_level: 0,
+            recruit_default: None,
+            direct_rule: true,
+            rule_changed_turn: -1,
+            governor: None,
+            governor_penalty_turns: 0,
         }
     }
 
@@ -566,68 +572,6 @@ fn ai_reset(city: &mut City) {
     city.ai_emphasize.fill(false);
 }
 
-/// A C++ `mutable int` cache slot, written from `&self` methods (`Cell`-like). Backed by a
-/// relaxed atomic rather than `Cell` so `City` (and `Game`) stay `Sync`: the simulation is
-/// single-threaded, and readers sharing a `&Game` can only race to store the same value.
-#[derive(Default)]
-pub struct CacheI32(AtomicI32);
-
-impl CacheI32 {
-    pub const fn new(v: i32) -> Self {
-        CacheI32(AtomicI32::new(v))
-    }
-    #[inline]
-    pub fn get(&self) -> i32 {
-        self.0.load(Ordering::Relaxed)
-    }
-    #[inline]
-    pub fn set(&self, v: i32) {
-        self.0.store(v, Ordering::Relaxed)
-    }
-}
-
-impl Clone for CacheI32 {
-    fn clone(&self) -> Self {
-        CacheI32::new(self.get())
-    }
-}
-
-impl std::fmt::Debug for CacheI32 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.get().fmt(f)
-    }
-}
-
-/// A C++ `mutable bool` cache slot; see [`CacheI32`].
-#[derive(Default)]
-pub struct CacheBool(AtomicBool);
-
-impl CacheBool {
-    pub const fn new(v: bool) -> Self {
-        CacheBool(AtomicBool::new(v))
-    }
-    #[inline]
-    pub fn get(&self) -> bool {
-        self.0.load(Ordering::Relaxed)
-    }
-    #[inline]
-    pub fn set(&self, v: bool) {
-        self.0.store(v, Ordering::Relaxed)
-    }
-}
-
-impl Clone for CacheBool {
-    fn clone(&self) -> Self {
-        CacheBool::new(self.get())
-    }
-}
-
-impl std::fmt::Debug for CacheBool {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.get().fmt(f)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -657,23 +601,6 @@ mod tests {
         assert_eq!(c.ai_emphasize.len(), d.emphasizes.len());
         assert_eq!(c.trade_cities.len(), d.defines.max_trade_routes as usize);
         assert!(c.order_queue.is_empty() && c.head_order().is_none());
-        assert_eq!(c.population_rank.get(), -1);
-        assert!(!c.yield_rank_valid[1].get());
-    }
-
-    #[test]
-    fn rank_caches_are_interior_mutable() {
-        let d = ffh_data::global();
-        let c = City::new(d, 2, 2, CityId(0), PlayerId(0), 0, 0, 0);
-        c.population_rank.set(3);
-        c.population_rank_valid.set(true);
-        let copy = c.clone();
-        assert_eq!(copy.population_rank.get(), 3);
-        assert!(copy.population_rank_valid.get());
-        c.population_rank_valid.set(false);
-        assert!(copy.population_rank_valid.get(), "clones do not share the cache");
-        fn send_sync<T: Send + Sync>() {}
-        send_sync::<City>();
     }
 
     #[test]

@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 // Side-by-side captures of one real game scene in the map's renderers (docs/R3D.md
 // "Comparisons"): starts `ffh-play serve --load SAVE` (debug reveal on unless --fog), centres every
-// renderer on the same plot and saves `art.png` (the 2D pixel art), `iso.png` (the isometric
-// 2.5D), `3d-plain.png` (the 3D renderer with every stylisation off: an ordinary real-time render
-// of the same geometry), `3d-painterly.png` (the art-directed pipeline) and the painterly 3D at
-// the close and far zooms (`3d-close.png`, `3d-far.png`).
+// renderer on the same plot and saves `iso.png` (the isometric 2.5D), then the HD-2D map
+// (docs/HD2D.md, the default) at the gameplay, close and far zooms (`hd2d.png`, `hd2d-close.png`,
+// `hd2d-far.png`). (The 2D pixel-art map and the 3D renderer's own mode are retired from the
+// client; the r3d lab draws the latter.)
 //
 //   node tools/r3d-compare.mjs --save SAVE --x X --y Y [--out DIR] [--w 1440 --h 900] [--fog]
-//        [--only 3d-painterly,3d-far] [--cfg '{"clouds":0}'] (merged into the painterly shots)
+//        [--only hd2d,hd2d-far] [--cfg '{"clouds":0}'] (merged into the HD-2D shots)
 //        [--gpu] (draw with the machine's GPU instead of software SwiftShader)
 //
 // The page's side and bottom panels stay (this is the game's screen); the bottom panel is folded.
@@ -52,14 +52,13 @@ const browser = await pw.chromium.launch(chromiumLaunch(!!args.gpu));
 const W = Number(args.w ?? 1440), H = Number(args.h ?? 900);
 const enc = (o) => encodeURIComponent(typeof o === "string" ? o : JSON.stringify(o));
 const SHOTS = [
-  // The 2D renderers at the 3D's gameplay zoom (96 px a plot): the same piece of the map in each.
-  { name: "art", renderer: "art", ts: 96 },
+  // The isometric map at the HD-2D map's gameplay zoom (96 px a plot): the same piece of the map.
   { name: "iso", renderer: "iso", ts: 96 },
-  { name: "3d-plain", renderer: "3d", ts: 96, cfg: "plain" },
-  { name: "3d-painterly", renderer: "3d", ts: 96, cfg: {} },
-  { name: "3d-close", renderer: "3d", ts: 168, cfg: {} },
-  { name: "3d-far", renderer: "3d", ts: 40, cfg: {} },
+  { name: "hd2d", renderer: "hd2d", ts: 96, cfg: {} },
+  { name: "hd2d-close", renderer: "hd2d", ts: 168, cfg: {} },
+  { name: "hd2d-far", renderer: "hd2d", ts: 40, cfg: {} },
 ];
+const gl3 = (r) => r === "hd2d";
 const only = args.only ? new Set(args.only.split(",")) : null;
 for (const s of SHOTS) {
   if (only && !only.has(s.name)) continue;
@@ -69,14 +68,14 @@ for (const s of SHOTS) {
   page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
   const cfg = s.cfg === "plain" ? "plain" : s.cfg ? { animate: false, ...s.cfg, ...JSON.parse(args.cfg ?? "{}") } : null;
   // force3d=1 bypasses the GPU guard for the 3D shots (docs/R3D.md §1): SwiftShader on purpose.
-  await page.goto(`${server.url}/?renderer=${s.renderer}${cfg ? `&r3d=${enc(cfg)}` : ""}${s.renderer === "3d" ? "&force3d=1" : ""}`);
+  await page.goto(`${server.url}/?renderer=${s.renderer}${cfg ? `&r3d=${enc(cfg)}` : ""}${gl3(s.renderer) ? "&force3d=1" : ""}`);
   await page.waitForFunction(() => window.ffh?.ready && window.ffh.S.map, null, { timeout: 300000 });
   await page.evaluate(() => {
     document.body.classList.add("bottom-closed");
     for (const m of document.querySelectorAll("#modals > *")) m.remove();
   });
   await page.waitForTimeout(500);
-  if (s.renderer === "3d") await page.waitForFunction(() => window.ffh.mapView.r3d?.cam, null, { timeout: 300000 });
+  if (gl3(s.renderer)) await page.waitForFunction(() => window.ffh.mapView.r3d?.cam, null, { timeout: 300000 });
   await page.evaluate(([x, y, ts]) => {
     const mv = window.ffh.mapView;
     mv.cam = { ...mv.cam, ts };
@@ -84,14 +83,13 @@ for (const s of SHOTS) {
     mv.centerOn(x, y, { animate: false });
     mv.resize();
   }, [X, Y, s.ts]);
-  await page.waitForTimeout(s.renderer === "3d" ? 300 : 2500);
+  await page.waitForTimeout(gl3(s.renderer) ? 300 : 2500);
   // The client may have moved the camera meanwhile (it centres on the next unit waiting for
   // orders): centre again just before the capture.
   await page.evaluate(([x, y]) => window.ffh.mapView.centerOn(x, y, { animate: false }), [X, Y]);
-  if (s.renderer === "art") await page.waitForFunction(() => window.ffh.mapView.art?.settled?.() ?? true, null, { timeout: 120000 }).catch(() => {});
-  if (s.renderer !== "3d") await page.waitForTimeout(1500);
-  if (s.renderer === "3d") {
-    await page.evaluate(() => {
+  if (!gl3(s.renderer)) await page.waitForTimeout(1500);
+  if (gl3(s.renderer)) {
+    await page.evaluate(async () => {
       const r = window.ffh.mapView.r3d;
       r.running = false;
       cancelAnimationFrame(r.raf);
@@ -99,7 +97,11 @@ for (const s of SHOTS) {
       r.cfg.autoQuality = 0;
       r.autoLevel = 0;
       const px = new Uint8Array(4);
-      for (let k = 0; k < 3; k++) {
+      // The HD-2D mode's sprites load as images; its low camera sees more terrain chunks (built a
+      // few a frame), so it renders more frames.
+      r.render(1.5);
+      await r.whenReady?.();
+      for (let k = 0; k < (r.sprites ? 10 : 3); k++) {
         r.render(1.5);
         r.gl.readPixels(0, 0, 1, 1, r.gl.RGBA, r.gl.UNSIGNED_BYTE, px);
       }

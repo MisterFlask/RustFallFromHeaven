@@ -24,7 +24,6 @@
 //! `setMissionTimer()` / `changeMissionTimer()` -> `mission_timer`, `AI_getMissionAIType()` ->
 //! `ai_mission_ai_type`, `AI_isForceSeparate()` / `AI_makeForceSeparate()` -> `ai_force_separate`.
 
-#![allow(unused_imports)]
 use crate::defs::*;
 use crate::game::Game;
 use crate::ids::*;
@@ -34,6 +33,8 @@ use ffh_data::*;
 pub mod misc;
 pub mod missions;
 pub mod movement;
+
+pub use movement::GroupPath;
 
 /// C++ `CvSelectionGroup` (+ `CvSelectionGroupAI` members, prefixed `ai_`).
 ///

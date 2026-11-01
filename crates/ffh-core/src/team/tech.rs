@@ -3,10 +3,9 @@
 //! water work, extra water sight, improvement yields, building effects, turn processing
 //! and circumnavigation.
 
-#![allow(unused_variables)]
-#![allow(unused_imports)]
-use super::{civ_team_ids, is_option};
+use super::civ_team_ids;
 use crate::defs::*;
+use crate::controller::AiHook;
 use crate::game::Game;
 use crate::ids::*;
 use crate::utils::get_tech_score;
@@ -133,6 +132,7 @@ impl Game {
         // AI: AI_updateAreaStragies(false) (area AI types, AI-only state).
         // AI: AI_doWar() for non-human, non-barbarian, non-minor teams: war decisions are the
         // controller's (taken in its `play_turn`).
+        self.ai_hook_team(t, AiHook::TeamTurnPost(t));
     }
 
     /// C++ `CvTeam::updateYield` (updates every alive member player).
@@ -376,6 +376,9 @@ impl Game {
         let d = self.d;
 
         if self.team_is_has_tech(t, Some(tech)) != value {
+            if value && self.telemetry.on() {
+                self.tel_tech(t, tech);
+            }
             // C++ resolves NO_PLAYER to getLeaderID() before this test (a pure read) and uses
             // ePlayer unchecked from here on.
             let player = player.or_else(|| self.team_get_leader_id(t)).expect("CvTeam::setHasTech: team without a player");
@@ -539,8 +542,8 @@ impl Game {
 
                         // AI: AI_nowHasTech(eIndex) (non-human players re-choose production at most
                         // every 10 turns; production is the controller's decision).
+                        self.ai_hook(p, AiHook::NowHasTech(p, tech));
 
-                        self.player_invalidate_yield_rank_cache(p, None);
                     }
                 }
 
@@ -848,14 +851,6 @@ impl Game {
                         }
                     }
                 }
-            }
-        }
-
-        // AI_updateBonusValue() for every alive member player of `other` (the bonus value cache
-        // read by AI_foundValue).
-        for p in self.player_ids() {
-            if self.players[p].alive && self.players[p].team == other {
-                self.player_ai_update_bonus_value(p);
             }
         }
     }

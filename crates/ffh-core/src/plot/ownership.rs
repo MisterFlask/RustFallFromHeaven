@@ -946,6 +946,18 @@ impl Game {
         }
 
         let team = self.players[player].team;
+
+        if !recalculate {
+            // Without `recalculate` the first block below only re-reads the plot's group, which
+            // is used only if the plot is in the trade network: test that first (the passes of
+            // `player_update_plot_groups` call this for every plot).
+            if self.plot_is_trade_network(p, team) {
+                let plot_group = self.plot_get_plot_group(p, player);
+                self.plot_update_plot_group_join(p, player, team, plot_group);
+            }
+            return;
+        }
+
         let mut plot_group = self.plot_get_plot_group(p, player);
 
         if let Some(group) = plot_group {
@@ -981,31 +993,37 @@ impl Game {
         }
 
         if self.plot_is_trade_network(p, team) {
-            for adj in adjacent_plots(self, p).into_iter().flatten() {
-                // Re-read every time: combining groups changes the neighbours' groups.
-                let Some(adjacent_group) = self.plot_get_plot_group(adj, player) else {
-                    continue;
-                };
-                if Some(adjacent_group) != plot_group && self.plot_is_trade_network_connected(p, adj, team) {
-                    match plot_group {
-                        None => {
-                            self.plot_group_add_plot(adjacent_group, p);
-                            plot_group = Some(adjacent_group);
-                            debug_assert_eq!(self.plot_get_plot_group(p, player), plot_group);
-                        }
-                        Some(group) => {
-                            debug_assert_eq!(self.plot_get_plot_group(p, player), plot_group);
-                            self.map_combine_plot_groups(player, group, adjacent_group);
-                            plot_group = self.plot_get_plot_group(p, player);
-                            debug_assert!(plot_group.is_some(), "PlotGroup is not assigned a valid value");
-                        }
+            self.plot_update_plot_group_join(p, player, team, plot_group);
+        }
+    }
+
+    /// The trade-network part of `plot_update_plot_group_player`: joins (or combines) the
+    /// connected neighbours' groups, or starts a new group. `plot_group` is the plot's group.
+    fn plot_update_plot_group_join(&mut self, p: PlotIdx, player: PlayerId, team: TeamId, mut plot_group: Option<PlotGroupId>) {
+        for adj in adjacent_plots(self, p).into_iter().flatten() {
+            // Re-read every time: combining groups changes the neighbours' groups.
+            let Some(adjacent_group) = self.plot_get_plot_group(adj, player) else {
+                continue;
+            };
+            if Some(adjacent_group) != plot_group && self.plot_is_trade_network_connected(p, adj, team) {
+                match plot_group {
+                    None => {
+                        self.plot_group_add_plot(adjacent_group, p);
+                        plot_group = Some(adjacent_group);
+                        debug_assert_eq!(self.plot_get_plot_group(p, player), plot_group);
+                    }
+                    Some(group) => {
+                        debug_assert_eq!(self.plot_get_plot_group(p, player), plot_group);
+                        self.map_combine_plot_groups(player, group, adjacent_group);
+                        plot_group = self.plot_get_plot_group(p, player);
+                        debug_assert!(plot_group.is_some(), "PlotGroup is not assigned a valid value");
                     }
                 }
             }
+        }
 
-            if plot_group.is_none() {
-                self.player_init_plot_group(player, p);
-            }
+        if plot_group.is_none() {
+            self.player_init_plot_group(player, p);
         }
     }
 
@@ -1145,12 +1163,18 @@ impl Game {
     }
 
     /// C++ `CvPlot::isTradeNetwork`.
+    ///
+    /// The C++ tests war, blockade, impassability, revealed and then the bonus network; the
+    /// result is the conjunction of these pure tests, so they are reordered to read the plot's
+    /// own fields and the team's first and the per-team arrays of the plot (`revealed`,
+    /// `blockaded_count`, separate allocations) last: the per-player passes of
+    /// `player_update_plot_groups` call this for every plot.
     pub fn plot_is_trade_network(&self, p: PlotIdx, team: TeamId) -> bool {
         if self.at_war_opt(Some(team), self.plot_get_team(p)) {
             return false;
         }
 
-        if self.map.plots[p].blockaded_count[team] > 0 {
+        if !self.plot_is_bonus_network(p, team) {
             return false;
         }
 
@@ -1162,7 +1186,7 @@ impl Game {
             return false;
         }
 
-        self.plot_is_bonus_network(p, team)
+        self.map.plots[p].blockaded_count[team] <= 0
     }
 
     /// C++ `CvPlot::isTradeNetworkConnected`.

@@ -1,4 +1,4 @@
-//! Hippus. No civilization-specific play.
+//! Hippus. No civilization-specific play but FfH's research beeline (`tech_goals`).
 //!
 //! Tried, not kept (round 5, commit ebb1427; docs/AI_LOG.md): Warcry (world spell: every unit with
 //! a unit combat gets +1 strength, +1 defense, +1 move and Blitz, about 20 turns; AI gate: at war
@@ -9,8 +9,16 @@
 //! logic) win 14.1% -> 10.9% (1/3), share at turn 300 -1 (t -0.06), at the end -6 (t -0.07). Also
 //! tried: Blitz units attacking again in a campaign strike (flat).
 
+use ffh_core::game::Game;
+use ffh_core::ids::*;
+
 use super::CivPlay;
 
 pub struct Hippus;
 
-impl CivPlay for Hippus {}
+impl CivPlay for Hippus {
+    /// FfH's `AI_chooseTech` research plan (`tech_plan::goals`).
+    fn tech_goals(&self, _g: &Game, _p: PlayerId) -> super::TechGoals {
+        super::TechGoals { beelines: vec!["TECH_STIRRUPS"], ..Default::default() }
+    }
+}

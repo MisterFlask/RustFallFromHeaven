@@ -1,10 +1,7 @@
 //! Plays one game (the minimal construction of `ffh-cli`'s `run::new_game`/`autoplay`, with
 //! custom settings) and catches a panic.
 
-use std::backtrace::Backtrace;
-use std::panic::{self, AssertUnwindSafe};
-use std::sync::atomic::{AtomicI32, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::time::Instant;
 
 use ffh_core::controller::ControllerRef;
@@ -13,12 +10,9 @@ use ffh_core::ids::*;
 use ffh_core::mapscript::FractalMapScript;
 use ffh_data::*;
 
-use crate::settings::Settings;
+use ffh_harness::panic::{self as harness_panic, set_turn};
 
-/// Game turn reached (read after a caught panic).
-static TURN: AtomicI32 = AtomicI32::new(-1);
-/// Message, location and ffh backtrace frames of the last panic.
-static PANIC: Mutex<Option<(String, String, Vec<String>)>> = Mutex::new(None);
+use crate::settings::Settings;
 
 pub struct Outcome {
     pub turn: i32,
@@ -41,51 +35,6 @@ impl Outcome {
         }
         s
     }
-}
-
-/// Keeps the frames of the workspace crates from a backtrace (`fn` + `file:line`), skipping
-/// the panic machinery.
-fn ffh_frames(bt: &Backtrace) -> Vec<String> {
-    let text = bt.to_string();
-    let mut frames = Vec::new();
-    let mut lines = text.lines().peekable();
-    while let Some(l) = lines.next() {
-        let l = l.trim();
-        let Some((_, sym)) = l.split_once(": ") else { continue };
-        let at = match lines.peek() {
-            Some(n) if n.trim().starts_with("at ") => lines.next().unwrap().trim().trim_start_matches("at ").to_string(),
-            _ => String::new(),
-        };
-        if (sym.starts_with("ffh_core") || sym.starts_with("ffh_ai") || sym.starts_with("ffh_data") || sym.starts_with("<ffh"))
-            && !sym.contains("ffh_stress")
-        {
-            let at = at.rsplit_once("/crates/").map_or(at.clone(), |(_, r)| r.to_string());
-            let sym: String = sym.rsplit_once("::h").filter(|(_, h)| h.len() == 16).map_or(sym, |(s, _)| s).to_string();
-            frames.push(format!("{sym} ({at})"));
-        }
-    }
-    frames.truncate(14);
-    frames
-}
-
-fn install_hook() {
-    panic::set_hook(Box::new(|info| {
-        let msg = if let Some(s) = info.payload().downcast_ref::<&str>() {
-            s.to_string()
-        } else if let Some(s) = info.payload().downcast_ref::<String>() {
-            s.clone()
-        } else {
-            "<non-string panic>".to_string()
-        };
-        let loc = info.location().map_or("?".to_string(), |l| {
-            let f = l.file();
-            let f = f.rsplit_once("/crates/").map_or(f.to_string(), |(_, r)| r.to_string());
-            format!("{f}:{}", l.line())
-        });
-        let bt = ffh_frames(&Backtrace::force_capture());
-        eprintln!("panic at turn {}: {msg} at {loc}", TURN.load(Ordering::Relaxed));
-        *PANIC.lock().unwrap_or_else(|e| e.into_inner()) = Some((msg, loc, bt));
-    }));
 }
 
 /// Name of a team for reports: its members' civilizations.
@@ -172,7 +121,7 @@ fn grant_victory_buildings(g: &mut Game, v: VictoryType) {
 fn play(s: &Settings, g: &mut Game) {
     let end_turn = g.game_turn() + s.turns;
     let mut turn = g.game_turn();
-    TURN.store(turn, Ordering::Relaxed);
+    set_turn(turn);
     let mut updates_this_turn = 0u64;
     // After a victory under autorun the game goes on (`GAMESTATE_EXTENDED`, as in C++): play
     // up to `EXTENDED_TURNS` more turns of it.
@@ -199,11 +148,11 @@ fn play(s: &Settings, g: &mut Game) {
         updates_this_turn += 1;
         if g.game_turn() != turn {
             turn = g.game_turn();
-            TURN.store(turn, Ordering::Relaxed);
+            set_turn(turn);
             println!("PROGRESS\t{turn}");
             flush_log(g);
             if check_every > 0 && turn % check_every == 0 {
-                crate::check::check(g);
+                ffh_harness::check::check(g);
             }
             updates_this_turn = 0;
         } else if updates_this_turn > 100_000 {
@@ -235,21 +184,20 @@ fn check_end(g: &Game) {
 }
 
 pub fn run_caught(s: &Settings) -> Outcome {
-    install_hook();
     let t = Instant::now();
     let mut start_turn = 0;
-    let r = panic::catch_unwind(AssertUnwindSafe(|| -> Result<(String, i32), String> {
+    let r = harness_panic::catch("ffh_stress::play::run_caught", || -> Result<(String, i32), String> {
         let mut g = new_game(s)?;
         start_turn = g.game_turn();
-        TURN.store(start_turn, Ordering::Relaxed);
+        set_turn(start_turn);
         play(s, &mut g);
         Ok((end_state(&g), g.calculate_sync_checksum()))
-    }));
-    let turn = TURN.load(Ordering::Relaxed);
+    });
+    let turn = harness_panic::turn();
     let (end, checksum, panic) = match r {
         Ok(Ok((end, cs))) => (end, cs, None),
         Ok(Err(e)) => ("SETTINGS-ERROR".to_string(), 0, Some((e, "settings".to_string(), Vec::new()))),
-        Err(_) => ("PANIC".to_string(), 0, PANIC.lock().unwrap_or_else(|e| e.into_inner()).take().or(Some(("?".into(), "?".into(), Vec::new())))),
+        Err(c) => ("PANIC".to_string(), 0, Some((c.message, c.location, c.frames))),
     };
     Outcome { turn, turns_played: (turn - start_turn).max(0), end, panic, secs: t.elapsed().as_secs_f64(), checksum }
 }

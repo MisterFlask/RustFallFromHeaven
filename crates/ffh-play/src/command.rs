@@ -4,7 +4,7 @@
 //! `selectionListGameNetMessage`, `cityPushOrder`, the `handleAction` confirmations, the
 //! DECLAREWARMOVE / LOADUNIT / DIPLOVOTE / EVENT popups).
 //!
-//! Validation runs before any rules call and is pure (`&Game`, under a `QueryGuard`): ids exist
+//! Validation runs before any rules call and is pure (`&Game`): ids exist
 //! and belong to the human, type indices are in range, and the rules' own `can*` gates pass, as
 //! the exe only offers legal actions. A command that would need a C++ confirmation popup returns
 //! [`Confirm`] (nothing changes); the client resends it with the confirmation flag.
@@ -14,6 +14,7 @@ use std::fmt::Write as _;
 use ffh_core::crusade::lend::LendError;
 use ffh_core::crusade::loan::{LoanAnswer, LoanError, LoanMission, LoanProposal, LoanTerms};
 use ffh_core::crusade::{CrusadeId, Pledge};
+use ffh_core::engagement::{HitCtx, Place, WarTest};
 use ffh_core::game::Game;
 use ffh_core::ids::*;
 use ffh_core::log::LogEntry;
@@ -39,6 +40,48 @@ pub enum Command {
     PushOrder { city: CityId, order: OrderType, data: i32, alt: bool, shift: bool, ctrl: bool },
     PopOrder { city: CityId, index: i32 },
     DoTask { city: CityId, task: TaskType, data1: i32, data2: i32, option: bool, alt: bool, shift: bool, ctrl: bool },
+    /// This game's cultural channel (docs/CULTURE.md): city `city` channels `action` (with
+    /// `religion` for Spread Religion) into civilization `target` from now on; no `action`: it
+    /// channels nothing.
+    CultureChannel { city: CityId, action: Option<CulturalActionType>, target: Option<PlayerId>, religion: Option<ReligionType> },
+    /// This game's armies (docs/ARMIES.md): form a new army of the units (on one plot).
+    ArmyForm { units: Vec<UnitId> },
+    /// Split the units off their army into a new one.
+    ArmySplit { units: Vec<UnitId> },
+    /// The units (army units on one plot, from armies or a garrison) join army `army` there; a
+    /// whole army joining another is a merge.
+    ArmyJoin { units: Vec<UnitId>, army: ArmyId },
+    /// The units (in one of the human's cities) join its garrison.
+    ArmyGarrison { units: Vec<UnitId> },
+    ArmyRename { army: ArmyId, name: String },
+    /// The army's units join the garrison of the nearest city (they march there).
+    ArmyDisband { army: ArmyId },
+    /// Upgrade the army's units, the most experienced first, while the gold lasts.
+    ArmyUpgrade { army: ArmyId },
+    /// The size the army is to be kept at (0: none); while it is short of it, it requisitions.
+    ArmyTarget { army: ArmyId, size: i32 },
+    /// Army `army` requisitions from city `city` (`on`: last in its list) or no longer does (its
+    /// requisition order there is withdrawn).
+    ArmyRequisition { army: ArmyId, city: CityId, on: bool },
+    /// Army `army` requisitions from `cities` (in that order) and from no other.
+    ArmyRequisitionSet { army: ArmyId, cities: Vec<CityId> },
+    /// Engagement combat (docs/ENGAGEMENTS.md): attack plot `to` (next to the attackers) in
+    /// `formation` (`[{unit, lane, row}]`, checked against the pool on the attacking plot and the
+    /// slots), else in the rules' auto formation. `by`: an army, the selected units (either one's
+    /// group launches the attack and moves in when the plot falls) or a plot. `declare_war` as
+    /// `move`'s (`None` asks, `Some(false)` is the popup's "no").
+    Engage { by: EngageBy, to: (i32, i32), formation: Option<Vec<Place>>, declare_war: Option<bool> },
+    /// Where city `city`'s trained land combat units go: production order `index`'s, or the
+    /// city's default (`index` -1); `dest` `None` = the city's default (for an order) or its own
+    /// garrison (for the city). A unit bound elsewhere marches there.
+    RecruitDest { city: CityId, index: i32, dest: Option<ffh_core::army::RecruitDest> },
+    /// This game's governors (docs/GOVERNORS.md): rule governed city `city` directly, handing
+    /// `instead_of` (directly ruled) to a governor when no slot is free.
+    GovernDirect { city: CityId, instead_of: Option<CityId> },
+    /// Hand directly ruled city `city` to a governor.
+    GovernHand { city: CityId },
+    /// Governor `governor` governs city `city` (from the bench or another city).
+    GovernAssign { city: CityId, governor: GovernorId },
     Research { tech: Option<TechType>, shift: bool },
     /// Merged over the current civics.
     UpdateCivics { civics: Vec<CivicType> },
@@ -70,6 +113,82 @@ pub enum Command {
     /// defend the borrower; `give` / `get` are trade items the human gives / asks with it;
     /// `units`: the units the human lends (empty: the advisor picks them).
     ProposeLoan { to: PlayerId, lend: bool, target: TeamId, defend: bool, strength: i32, duration: i32, give: Vec<TradeData>, get: Vec<TradeData>, units: Vec<UnitId> },
+}
+
+/// Who launches an `engage` (and whose attack an `engage_preview` plans): an army, the selected
+/// units, or the player's units on a plot (`from`).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum EngageBy {
+    Army(ArmyId),
+    Units(Vec<UnitId>),
+    From(i32, i32),
+}
+
+impl EngageBy {
+    /// Decodes `army`, `units` or `from` (exactly one) of a request.
+    pub fn from_json(j: &Json) -> Result<EngageBy, FieldError> {
+        let army: Option<ArmyId> = j.opt("army")?;
+        let units: Option<Vec<UnitId>> = j.opt("units")?;
+        let from = plot_field(j, "from")?;
+        match (army, units, from) {
+            (Some(a), None, None) => Ok(EngageBy::Army(a)),
+            (None, Some(u), None) => Ok(EngageBy::Units(u)),
+            (None, None, Some((x, y))) => Ok(EngageBy::From(x, y)),
+            _ => Err(FieldError::new("army", "give exactly one of `army`, `units` and `from`")),
+        }
+    }
+
+    /// Adds its member (the canonical form) to `j`.
+    pub fn put(&self, j: Json) -> Json {
+        match self {
+            EngageBy::Army(a) => j.with("army", *a),
+            EngageBy::Units(u) => j.with("units", Json::Arr(u.iter().map(|&x| Json::from(x)).collect())),
+            EngageBy::From(x, y) => j.with("from", plot_json(*x, *y)),
+        }
+    }
+}
+
+/// A formation member: `[{"unit": u, "lane": l, "row": r}, ...]`; `None` when absent or null.
+pub fn formation_field(j: &Json, key: &str) -> Result<Option<Vec<Place>>, FieldError> {
+    let Some(v) = j.opt_value(key)?.filter(|v| !v.is_null()) else { return Ok(None) };
+    let wrong = || FieldError::wrong(key, "a formation [{\"unit\": u, \"lane\": l, \"row\": r}, ...]", v);
+    let list = v.as_arr().ok_or_else(wrong)?;
+    let mut out = Vec::with_capacity(list.len());
+    for p in list {
+        let unit = p.get("unit").and_then(Json::as_i64).and_then(|u| u32::try_from(u).ok());
+        let lane = p.get("lane").and_then(Json::as_i64).and_then(|l| u8::try_from(l).ok());
+        let row = p.get("row").and_then(Json::as_i64).and_then(|r| u8::try_from(r).ok());
+        match (unit, lane, row) {
+            (Some(u), Some(lane), Some(row)) => out.push(Place { unit: UnitId(u), lane, row }),
+            _ => return Err(wrong()),
+        }
+    }
+    Ok(Some(out))
+}
+
+/// A formation as the protocol writes it: `[{"unit": u, "lane": l, "row": r}, ...]`.
+pub fn formation_json(f: &[Place]) -> Json {
+    Json::Arr(f.iter().map(|p| crate::jobj! { "unit" => p.unit, "lane" => p.lane as i32, "row" => p.row as i32 }).collect())
+}
+
+/// A plot member: `{"x": x, "y": y}` (or `[x, y]`); `None` when absent or null.
+pub fn plot_field(j: &Json, key: &str) -> Result<Option<(i32, i32)>, FieldError> {
+    let Some(v) = j.opt_value(key)?.filter(|v| !v.is_null()) else { return Ok(None) };
+    let wrong = || FieldError::wrong(key, "a plot {\"x\": x, \"y\": y}", v);
+    let (x, y) = match v.as_arr() {
+        Some([x, y]) => (x.as_i64(), y.as_i64()),
+        Some(_) => return Err(wrong()),
+        None => (v.get("x").and_then(Json::as_i64), v.get("y").and_then(Json::as_i64)),
+    };
+    match (x.and_then(|x| i32::try_from(x).ok()), y.and_then(|y| i32::try_from(y).ok())) {
+        (Some(x), Some(y)) => Ok(Some((x, y))),
+        _ => Err(wrong()),
+    }
+}
+
+/// A plot as the protocol writes it: `{"x": x, "y": y}`.
+pub fn plot_json(x: i32, y: i32) -> Json {
+    crate::jobj! { "x" => x, "y" => y }
 }
 
 /// A confirmation the C++ asks before acting (a popup); the command is resent with its flag.
@@ -131,8 +250,10 @@ impl Confirm {
 /// A command's result.
 #[derive(Clone, Debug, PartialEq)]
 pub enum CmdOk {
-    /// Applied; `log` holds the messages it produced for the human.
-    Applied { log: Vec<LogEntry>, accepted: Option<bool> },
+    /// Applied; `log` holds the messages it produced for the human; `battle`, the report of the
+    /// engagement the human launched with it (`engage`, or a `move` into an enemy plot under
+    /// engagements; the first, if the command led to several).
+    Applied { log: Vec<LogEntry>, accepted: Option<bool>, battle: Option<u32> },
     /// Nothing changed: the C++ would ask first.
     NeedsConfirm(Confirm),
 }
@@ -208,6 +329,22 @@ pub const COMMAND_NAMES: &[&str] = &[
     "push_order",
     "pop_order",
     "do_task",
+    "culture_channel",
+    "army_form",
+    "army_split",
+    "army_join",
+    "army_garrison",
+    "army_rename",
+    "army_disband",
+    "army_upgrade",
+    "army_target",
+    "army_requisition",
+    "army_requisition_set",
+    "engage",
+    "recruit_dest",
+    "govern_direct",
+    "govern_hand",
+    "govern_assign",
     "research",
     "update_civics",
     "percent_change",
@@ -238,6 +375,22 @@ pub const COMMAND_FIELDS: &[(&str, &[&str])] = &[
     ("push_order", &["city", "order", "data", "alt", "shift", "ctrl"]),
     ("pop_order", &["city", "index"]),
     ("do_task", &["city", "task", "data1", "data2", "option", "alt", "shift", "ctrl"]),
+    ("culture_channel", &["city", "action", "target", "religion"]),
+    ("army_form", &["units"]),
+    ("army_split", &["units"]),
+    ("army_join", &["units", "army"]),
+    ("army_garrison", &["units"]),
+    ("army_rename", &["army", "name"]),
+    ("army_disband", &["army"]),
+    ("army_upgrade", &["army"]),
+    ("army_target", &["army", "size"]),
+    ("army_requisition", &["army", "city", "on"]),
+    ("army_requisition_set", &["army", "cities"]),
+    ("engage", &["army", "units", "from", "to", "formation", "declare_war"]),
+    ("recruit_dest", &["city", "index", "dest"]),
+    ("govern_direct", &["city", "instead_of"]),
+    ("govern_hand", &["city"]),
+    ("govern_assign", &["city", "governor"]),
     ("research", &["tech", "shift"]),
     ("update_civics", &["civics"]),
     ("percent_change", &["commerce", "change"]),
@@ -312,6 +465,33 @@ fn order_data(d: &GameData, j: &Json, o: OrderType) -> Result<i32, FieldError> {
     }
 }
 
+/// `{"garrison": city}`, `{"army": id}` or null (this game's armies).
+pub fn recruit_dest_json(dest: Option<ffh_core::army::RecruitDest>) -> Json {
+    use ffh_core::army::RecruitDest;
+    match dest {
+        None => Json::Null,
+        Some(RecruitDest::Garrison(c)) => crate::jobj! { "garrison" => c },
+        Some(RecruitDest::Army(a)) => crate::jobj! { "army" => a },
+    }
+}
+
+/// The `dest` field of `recruit_dest` ([`recruit_dest_json`]'s form).
+fn recruit_dest_field(j: &Json) -> Result<Option<ffh_core::army::RecruitDest>, FieldError> {
+    use ffh_core::army::RecruitDest;
+    match j.opt_value("dest")? {
+        None | Some(Json::Null) => Ok(None),
+        Some(v) => {
+            if let Some(c) = v.opt::<CityId>("garrison")? {
+                Ok(Some(RecruitDest::Garrison(c)))
+            } else if let Some(a) = v.opt::<ArmyId>("army")? {
+                Ok(Some(RecruitDest::Army(a)))
+            } else {
+                Err(FieldError::wrong("dest", "{\"garrison\": city} or {\"army\": id} or null", v))
+            }
+        }
+    }
+}
+
 fn task_data1(d: &GameData, j: &Json, t: TaskType) -> Result<i32, FieldError> {
     match t {
         TaskType::TASK_HURRY => typed_data::<HurryType>(d, j, "data1"),
@@ -335,6 +515,22 @@ impl Command {
             Command::PushOrder { .. } => "push_order",
             Command::PopOrder { .. } => "pop_order",
             Command::DoTask { .. } => "do_task",
+            Command::CultureChannel { .. } => "culture_channel",
+            Command::ArmyForm { .. } => "army_form",
+            Command::ArmySplit { .. } => "army_split",
+            Command::ArmyJoin { .. } => "army_join",
+            Command::ArmyGarrison { .. } => "army_garrison",
+            Command::ArmyRename { .. } => "army_rename",
+            Command::ArmyDisband { .. } => "army_disband",
+            Command::ArmyUpgrade { .. } => "army_upgrade",
+            Command::ArmyTarget { .. } => "army_target",
+            Command::ArmyRequisition { .. } => "army_requisition",
+            Command::ArmyRequisitionSet { .. } => "army_requisition_set",
+            Command::Engage { .. } => "engage",
+            Command::RecruitDest { .. } => "recruit_dest",
+            Command::GovernDirect { .. } => "govern_direct",
+            Command::GovernHand { .. } => "govern_hand",
+            Command::GovernAssign { .. } => "govern_assign",
             Command::Research { .. } => "research",
             Command::UpdateCivics { .. } => "update_civics",
             Command::PercentChange { .. } => "percent_change",
@@ -413,6 +609,32 @@ impl Command {
                     ctrl: flag("ctrl")?,
                 }
             }
+            "culture_channel" => Command::CultureChannel {
+                city: j.req("city")?,
+                action: names::opt_field(d, j, "action")?,
+                target: j.opt("target")?,
+                religion: names::opt_field(d, j, "religion")?,
+            },
+            "army_form" => Command::ArmyForm { units: j.req("units")? },
+            "army_split" => Command::ArmySplit { units: j.req("units")? },
+            "army_join" => Command::ArmyJoin { units: j.req("units")?, army: j.req("army")? },
+            "army_garrison" => Command::ArmyGarrison { units: j.req("units")? },
+            "army_rename" => Command::ArmyRename { army: j.req("army")?, name: j.req("name")? },
+            "army_disband" => Command::ArmyDisband { army: j.req("army")? },
+            "army_upgrade" => Command::ArmyUpgrade { army: j.req("army")? },
+            "army_target" => Command::ArmyTarget { army: j.req("army")?, size: j.req("size")? },
+            "army_requisition" => Command::ArmyRequisition { army: j.req("army")?, city: j.req("city")?, on: j.req("on")? },
+            "army_requisition_set" => Command::ArmyRequisitionSet { army: j.req("army")?, cities: j.req("cities")? },
+            "engage" => Command::Engage {
+                by: EngageBy::from_json(j)?,
+                to: plot_field(j, "to")?.ok_or_else(|| FieldError::missing("to"))?,
+                formation: formation_field(j, "formation")?,
+                declare_war: j.opt("declare_war")?,
+            },
+            "recruit_dest" => Command::RecruitDest { city: j.req("city")?, index: j.get_or("index", -1)?, dest: recruit_dest_field(j)? },
+            "govern_direct" => Command::GovernDirect { city: j.req("city")?, instead_of: j.opt("instead_of")? },
+            "govern_hand" => Command::GovernHand { city: j.req("city")? },
+            "govern_assign" => Command::GovernAssign { city: j.req("city")?, governor: j.req("governor")? },
             "research" => Command::Research { tech: names::opt_field(d, j, "tech")?, shift: flag("shift")? },
             "update_civics" => Command::UpdateCivics { civics: names::list_field(d, j, "civics")? },
             "percent_change" => Command::PercentChange { commerce: names::field(d, j, "commerce")?, change: j.req("change")? },
@@ -495,6 +717,25 @@ impl Command {
                 .with("alt", *alt)
                 .with("shift", *shift)
                 .with("ctrl", *ctrl),
+            Command::CultureChannel { city, action, target, religion } => {
+                j.with("city", *city).with("action", Json::opt_idx(*action)).with("target", *target).with("religion", Json::opt_idx(*religion))
+            }
+            Command::ArmyForm { units } | Command::ArmySplit { units } | Command::ArmyGarrison { units } => j.with("units", ids(units)),
+            Command::ArmyJoin { units, army } => j.with("units", ids(units)).with("army", *army),
+            Command::ArmyRename { army, name } => j.with("army", *army).with("name", name.as_str()),
+            Command::ArmyDisband { army } | Command::ArmyUpgrade { army } => j.with("army", *army),
+            Command::ArmyTarget { army, size } => j.with("army", *army).with("size", *size),
+            Command::ArmyRequisition { army, city, on } => j.with("army", *army).with("city", *city).with("on", *on),
+            Command::ArmyRequisitionSet { army, cities } => j.with("army", *army).with("cities", Json::Arr(cities.iter().map(|&c| Json::from(c)).collect())),
+            Command::Engage { by, to, formation, declare_war } => by
+                .put(j)
+                .with("to", plot_json(to.0, to.1))
+                .with("formation", formation.as_deref().map(formation_json))
+                .with("declare_war", *declare_war),
+            Command::RecruitDest { city, index, dest } => j.with("city", *city).with("index", *index).with("dest", recruit_dest_json(*dest)),
+            Command::GovernDirect { city, instead_of } => j.with("city", *city).with("instead_of", *instead_of),
+            Command::GovernHand { city } => j.with("city", *city),
+            Command::GovernAssign { city, governor } => j.with("city", *city).with("governor", *governor),
             Command::Research { tech, shift } => j.with("tech", Json::opt_idx(*tech)).with("shift", *shift),
             Command::UpdateCivics { civics } => j.with("civics", Json::Arr(civics.iter().map(|&c| Json::idx(c)).collect())),
             Command::PercentChange { commerce, change } => j.with("commerce", Json::idx(*commerce)).with("change", *change),
@@ -544,6 +785,16 @@ impl Command {
             }
             Command::PushOrder { city, order, data, .. } => format!("city {} {} {}", city.0, names::name(d, *order), data),
             Command::DoTask { city, task, data1, data2, option, .. } => format!("city {} {} ({data1}, {data2}, {option})", city.0, names::name(d, *task)),
+            Command::CultureChannel { city, action, target, religion } => match (action, target) {
+                (Some(a), Some(t)) => format!(
+                    "city {} channels {} into player {}{}",
+                    city.0,
+                    names::name(d, *a),
+                    t.0,
+                    religion.map_or(String::new(), |r| format!(" ({})", names::name(d, r)))
+                ),
+                _ => format!("city {} channels nothing", city.0),
+            },
             Command::Research { tech, shift } => {
                 format!("research {}{}", tech.map_or("none".to_string(), |t| names::name(d, t).to_string()), if *shift { " (queue)" } else { "" })
             }
@@ -641,6 +892,13 @@ pub enum Action {
     PushOrder { city: CityId, order: OrderType, data: i32, save: bool, pop: bool, append: bool },
     PopOrder { city: CityId, index: i32 },
     DoTask { city: CityId, task: TaskType, data1: i32, data2: i32, option: bool, alt: bool, shift: bool, ctrl: bool },
+    CultureChannel { city: CityId, order: Option<(CulturalActionType, PlayerId, Option<ReligionType>)> },
+    /// An army or governor command, checked by the rules call itself (they change nothing when
+    /// they refuse).
+    Army(Command),
+    /// `engage` after the checks: declare war on `war` first, then attack `to` from `from`
+    /// (`group_attack_force`, launched by `by`'s group).
+    Engage { by: EngageBy, from: PlotIdx, to: PlotIdx, formation: Option<Vec<Place>>, war: Option<TeamId> },
     Research { tech: Option<TechType>, shift: bool },
     Revolution { civics: IdxVec<CivicOptionType, Option<CivicType>> },
     PercentChange { commerce: CommerceType, change: i32 },
@@ -672,11 +930,17 @@ pub struct Ctx<'a> {
     pub events: &'a [TriggeredId],
 }
 
+/// A unit of the human's that takes orders: a marching recruit (this game's armies,
+/// docs/ARMIES.md) takes none until it arrives, so every unit command, the automations and the
+/// army commands refuse it, naming where it marches.
 fn unit_of(g: &Game, h: PlayerId, u: UnitId) -> Result<(), CmdErr> {
     match g.units.get(u) {
         None => Err(CmdErr::Gone),
         Some(unit) if unit.owner != h => Err(CmdErr::NotOwner),
-        Some(_) => Ok(()),
+        Some(unit) => match g.unit_march_refusal(u) {
+            Some(why) => Err(cannot(format!("the {} is {why}: it takes no orders until it arrives", names::display(g.d, unit.unit_type)))),
+            None => Ok(()),
+        },
     }
 }
 
@@ -686,6 +950,72 @@ fn city_of(g: &Game, h: PlayerId, c: CityId) -> Result<(), CmdErr> {
         Some(city) if city.owner != h => Err(CmdErr::NotOwner),
         Some(_) => Ok(()),
     }
+}
+
+/// This game's governors are on.
+fn governors_on(g: &Game) -> Result<(), CmdErr> {
+    if g.governors_on() {
+        Ok(())
+    } else {
+        Err(cannot("governors are off in this game"))
+    }
+}
+
+/// This game's engagement combat is on (docs/ENGAGEMENTS.md).
+fn engagements_on(g: &Game) -> Result<(), CmdErr> {
+    if g.engagements_on() {
+        Ok(())
+    } else {
+        Err(cannot("engagements are off in this game"))
+    }
+}
+
+/// A governed city's production is its governor's (docs/GOVERNORS.md).
+fn not_governed(g: &Game, c: CityId) -> Result<(), CmdErr> {
+    if g.city_is_governed(c) {
+        Err(cannot("a governed city's production is its governor's"))
+    } else {
+        Ok(())
+    }
+}
+
+/// An army of the human's.
+fn army_of(g: &Game, h: PlayerId, a: ArmyId) -> Result<(), CmdErr> {
+    match g.armies.get(a) {
+        None => Err(CmdErr::Gone),
+        Some(army) if army.owner != h => Err(CmdErr::NotOwner),
+        Some(_) => Ok(()),
+    }
+}
+
+/// Applies an army command (the rules check it too; a refusal changes nothing).
+fn apply_army(g: &mut Game, h: PlayerId, c: &Command) -> Result<(), CmdErr> {
+    let r: Result<(), &'static str> = match c {
+        Command::ArmyForm { units } => g.army_form(h, units).map(|_| ()),
+        Command::ArmySplit { units } => g.army_split(h, units).map(|_| ()),
+        Command::ArmyJoin { units, army } => g.army_join(h, units, *army),
+        Command::ArmyGarrison { units } => g.army_to_garrison(h, units),
+        Command::ArmyRename { army, name } => g.army_rename(h, *army, name),
+        Command::ArmyDisband { army } => g.army_disband(h, *army),
+        Command::ArmyUpgrade { army } => g.army_upgrade_all(h, *army).map(|_| ()),
+        Command::ArmyTarget { army, size } => g.army_set_target_size(h, *army, *size),
+        Command::ArmyRequisition { army, city, on: true } => g.army_add_requisition(h, *army, *city),
+        Command::ArmyRequisition { army, city, on: false } => g.army_remove_requisition(h, *army, *city),
+        Command::ArmyRequisitionSet { army, cities } => g.army_set_requisition(h, *army, cities),
+        Command::GovernDirect { city, instead_of } => g.player_set_direct_rule(h, *city, *instead_of),
+        Command::GovernHand { city } => g.city_hand_to_governor(h, *city),
+        Command::GovernAssign { city, governor } => g.city_assign_governor(h, *city, *governor),
+        Command::RecruitDest { city, index, dest } => {
+            if *index < 0 {
+                g.cities[*city].recruit_default = *dest;
+            } else if let Some(o) = g.cities[*city].order_queue.get_mut(*index as usize) {
+                o.dest = *dest;
+            }
+            Ok(())
+        }
+        _ => Ok(()),
+    };
+    r.map_err(cannot)
 }
 
 /// The selection: non-empty, distinct, the human's, on one plot (the exe selects on one plot).
@@ -906,6 +1236,7 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
 
         Command::PushOrder { city, order, data, alt, shift, ctrl } => {
             city_of(g, h, *city)?;
+            not_governed(g, *city)?;
             let c = *city;
             let ok = match *order {
                 OrderType::ORDER_TRAIN => {
@@ -934,14 +1265,230 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
 
         Command::PopOrder { city, index } => {
             city_of(g, h, *city)?;
+            not_governed(g, *city)?;
             let len = g.cities[*city].order_queue.len();
             in_range("queue index", *index, len)?;
+            // This game's armies: a requisition order is the army's, released on the Armies screen
+            // (the reason to give first: pushing a replacement would not remove it either).
+            g.city_check_remove_order(*city, *index as usize).map_err(cannot)?;
             // selectedCitiesGameNetMessage(GAMEMESSAGE_POP_ORDER): only while the queue has more
             // than one order.
             if len <= 1 {
                 return Err(cannot("the only order cannot be removed: push its replacement instead"));
             }
             Plan::Apply(Action::PopOrder { city: *city, index: *index })
+        }
+
+        Command::CultureChannel { city, action, target, religion } => {
+            city_of(g, h, *city)?;
+            if !g.culture_actions_on() {
+                return Err(cannot("cultural actions are off in this game"));
+            }
+            let order = match (action, target) {
+                (None, _) => None,
+                (Some(_), None) => return Err(invalid("field `target`: a channel needs a civilization")),
+                (Some(a), Some(t)) => {
+                    in_range("cultural action", a.idx() as i32, d.cultural_actions.len())?;
+                    in_range("player", t.0 as i32, g.num_players())?;
+                    if let Some(r) = religion {
+                        in_range("religion", r.idx() as i32, d.religions.len())?;
+                    }
+                    g.culture_channel_check(*city, *a, *t, *religion).map_err(|r| cannot(r.describe()))?;
+                    Some((*a, *t, *religion))
+                }
+            };
+            Plan::Apply(Action::CultureChannel { city: *city, order })
+        }
+
+        Command::ArmyForm { units } | Command::ArmySplit { units } | Command::ArmyGarrison { units } => {
+            if !g.armies_on() {
+                return Err(cannot("armies are off in this game"));
+            }
+            if units.is_empty() {
+                return Err(invalid("field `units`: none"));
+            }
+            for &u in units {
+                unit_of(g, h, u)?;
+            }
+            let plot = g.army_units_plot(h, units).map_err(cannot)?;
+            if matches!(cmd, Command::ArmyGarrison { .. }) && !g.map.plots[plot].plot_city.is_some_and(|c| g.cities.contains(c) && g.cities[c].owner == h) {
+                return Err(cannot("not in one of your cities"));
+            }
+            Plan::Apply(Action::Army(cmd.clone()))
+        }
+
+        Command::ArmyJoin { units, army } => {
+            army_of(g, h, *army)?;
+            if units.is_empty() {
+                return Err(invalid("field `units`: none"));
+            }
+            for &u in units {
+                unit_of(g, h, u)?;
+            }
+            let plot = g.army_units_plot(h, units).map_err(cannot)?;
+            if g.army_plot(*army) != Some(plot) {
+                return Err(cannot("the army is not on their plot"));
+            }
+            Plan::Apply(Action::Army(cmd.clone()))
+        }
+
+        Command::ArmyRename { army, name } => {
+            army_of(g, h, *army)?;
+            if name.trim().is_empty() || name.trim().chars().count() > 40 {
+                return Err(cannot("a name of 1 to 40 characters"));
+            }
+            Plan::Apply(Action::Army(cmd.clone()))
+        }
+
+        Command::ArmyDisband { army } | Command::ArmyUpgrade { army } | Command::ArmyTarget { army, .. } => {
+            army_of(g, h, *army)?;
+            if matches!(cmd, Command::ArmyDisband { .. }) && (g.army_plot(*army).is_none() || g.players[h].cities.is_empty()) {
+                return Err(cannot("you have no city for its units"));
+            }
+            Plan::Apply(Action::Army(cmd.clone()))
+        }
+
+        Command::ArmyRequisition { army, city, on } => {
+            army_of(g, h, *army)?;
+            city_of(g, h, *city)?;
+            let listed = g.armies[*army].requisition.contains(city);
+            if *on {
+                g.army_check_requisition_city(h, *army, *city).map_err(cannot)?;
+                if listed {
+                    return Err(cannot("the army already requisitions from this city"));
+                }
+            } else if !listed {
+                return Err(cannot("the army does not requisition from this city"));
+            }
+            Plan::Apply(Action::Army(cmd.clone()))
+        }
+
+        Command::ArmyRequisitionSet { army, cities } => {
+            army_of(g, h, *army)?;
+            g.army_check_requisition(h, *army).map_err(cannot)?;
+            for (i, c) in cities.iter().enumerate() {
+                city_of(g, h, *c)?;
+                if cities[..i].contains(c) {
+                    return Err(invalid(format!("field `cities`: city {} twice", c.0)));
+                }
+                g.army_check_requisition_city(h, *army, *c).map_err(cannot)?;
+            }
+            Plan::Apply(Action::Army(cmd.clone()))
+        }
+
+        Command::Engage { by, to, formation, declare_war } => {
+            engagements_on(g)?;
+            let dest = on_map(g, to.0, to.1)?;
+            let from = match by {
+                EngageBy::Army(a) => {
+                    army_of(g, h, *a)?;
+                    g.army_plot(*a).ok_or_else(|| cannot("the army is not on the map"))?
+                }
+                EngageBy::Units(units) => {
+                    selection_of(g, h, units)?;
+                    g.unit_plot(units[0])
+                }
+                EngageBy::From(x, y) => on_map(g, *x, *y)?,
+            };
+            // The order is given on what the player sees (G5).
+            if !g.plot_is_visible(dest, team) {
+                return Err(cannot("you cannot see that plot"));
+            }
+            let ((fx, fy), (tx, ty)) = (g.map.xy(from), g.map.xy(dest));
+            if g.step_distance(fx, fy, tx, ty) != 1 {
+                return Err(cannot("an attack is on a plot next to the attackers"));
+            }
+            if g.plot_is_water(dest) {
+                return Err(cannot("a battle at sea is a duel: move there instead"));
+            }
+            // selectionListMove's DECLAREWARMOVE: the first unit there whose attack needs a war asks.
+            let rival = g.map.plots[from].units.iter().filter(|&&u| g.units[u].owner == h).find_map(|&u| g.unit_get_declare_war_move(u, dest));
+            let mut war = None;
+            if let Some(rival) = rival {
+                match declare_war {
+                    None => return Ok(Plan::Confirm(Confirm::DeclareWar { team: rival, move_anyway: false })),
+                    Some(true) => war = Some(rival),
+                    Some(false) => return Ok(Plan::Noop),
+                }
+            }
+            let test = war.map_or(WarTest::AtWar, WarTest::DeclareWar);
+            let pool = g.engage_attackers(h, from, dest, test);
+            if pool.is_empty() {
+                return Err(cannot("no unit there can attack that plot now"));
+            }
+            let force: Vec<UnitId> = match formation {
+                Some(f) => {
+                    for p in f {
+                        unit_of(g, h, p.unit)?;
+                    }
+                    g.engage_validate_formation(&pool, f, &g.engage_slots(&HitCtx::new(from, dest))).map_err(cannot)?;
+                    f.iter().map(|p| p.unit).collect()
+                }
+                None => pool.clone(),
+            };
+            if g.engage_defenders(dest, h, &force, test).is_empty() {
+                return Err(cannot("there is nobody to fight there"));
+            }
+            Plan::Apply(Action::Engage { by: by.clone(), from, to: dest, formation: formation.clone(), war })
+        }
+
+        Command::RecruitDest { city, index, dest } => {
+            city_of(g, h, *city)?;
+            not_governed(g, *city)?;
+            if !g.armies_on() {
+                return Err(cannot("armies are off in this game"));
+            }
+            if *index >= 0 {
+                let i = in_range("queue index", *index, g.cities[*city].order_queue.len())?;
+                let o = &g.cities[*city].order_queue[i];
+                let is_army_unit = o.order_type == OrderType::ORDER_TRAIN && (o.data1 as usize) < d.units.len() && g.unit_type_is_army_unit(UnitType::from_usize(o.data1 as usize));
+                if !is_army_unit {
+                    return Err(cannot("only land combat units are recruited to a destination"));
+                }
+                if o.requisition {
+                    return Err(cannot("a requisition order goes to its army"));
+                }
+            } else if *index != -1 {
+                return Err(invalid("field `index`: an order's index, or -1 for the city's default"));
+            }
+            if let Some(dst) = dest {
+                if !g.recruit_dest_valid(h, *dst) {
+                    return Err(cannot("no such army or city of yours"));
+                }
+            }
+            Plan::Apply(Action::Army(cmd.clone()))
+        }
+
+        Command::GovernDirect { city, instead_of } => {
+            city_of(g, h, *city)?;
+            if let Some(o) = instead_of {
+                city_of(g, h, *o)?;
+            }
+            governors_on(g)?;
+            g.player_check_direct_rule(h, *city, *instead_of).map_err(cannot)?;
+            Plan::Apply(Action::Army(cmd.clone()))
+        }
+
+        Command::GovernHand { city } => {
+            city_of(g, h, *city)?;
+            governors_on(g)?;
+            g.city_check_hand_to_governor(h, *city).map_err(cannot)?;
+            Plan::Apply(Action::Army(cmd.clone()))
+        }
+
+        Command::GovernAssign { city, governor } => {
+            city_of(g, h, *city)?;
+            governors_on(g)?;
+            match g.governors.get(*governor) {
+                None => return Err(CmdErr::Gone),
+                Some(gov) if gov.owner != h => return Err(CmdErr::NotOwner),
+                Some(_) => {}
+            }
+            if !g.city_is_governed(*city) {
+                return Err(cannot("the city is ruled directly"));
+            }
+            g.city_check_assign_governor(h, *city, *governor).map_err(cannot)?;
+            Plan::Apply(Action::Army(cmd.clone()))
         }
 
         Command::DoTask { city, task, data1, data2, option, alt, shift, ctrl } => {
@@ -964,6 +1511,9 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
                 }
                 TaskType::TASK_SET_EMPHASIZE => {
                     in_range("emphasize", *data1, d.emphasizes.len())?;
+                    if g.city_is_governed(c) {
+                        return Err(cannot("a governed city's emphasis is its governor's"));
+                    }
                 }
                 TaskType::TASK_CHANGE_SPECIALIST => {
                     // The city screen's specialist +/- buttons (WIDGET_CHANGE_SPECIALIST with
@@ -998,10 +1548,15 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
                 TaskType::TASK_RALLY_PLOT => {
                     on_map(g, *data1, *data2)?;
                 }
-                TaskType::TASK_SET_AUTOMATED_CITIZENS
-                | TaskType::TASK_SET_AUTOMATED_PRODUCTION
-                | TaskType::TASK_CLEAR_ORDERS
-                | TaskType::TASK_CLEAR_RALLY_PLOT => {}
+                TaskType::TASK_SET_AUTOMATED_PRODUCTION => not_governed(g, c)?,
+                TaskType::TASK_CLEAR_ORDERS => {
+                    not_governed(g, c)?;
+                    // Clearing the queue would take its requisition orders off too.
+                    for i in 0..g.cities[c].order_queue.len() {
+                        g.city_check_remove_order(c, i).map_err(cannot)?;
+                    }
+                }
+                TaskType::TASK_SET_AUTOMATED_CITIZENS | TaskType::TASK_CLEAR_RALLY_PLOT => {}
                 _ => return Err(invalid("field `task`: unknown task")),
             }
             Plan::Apply(Action::DoTask { city: c, task: *task, data1: *data1, data2: *data2, option: *option, alt: *alt, shift: *shift, ctrl: *ctrl })
@@ -1341,6 +1896,48 @@ fn join_selection(g: &mut Game, units: &[UnitId]) -> Option<GroupId> {
     g.units.get(head)?.group
 }
 
+/// The largest army of `h` on `plot` (most units there, then the lowest id), if any.
+fn largest_army_on(g: &Game, h: PlayerId, plot: PlotIdx) -> Option<ArmyId> {
+    let mut counts: Vec<(ArmyId, i32)> = Vec::new();
+    for &u in &g.map.plots[plot].units {
+        let Some(a) = g.units[u].army.filter(|&a| g.units[u].owner == h && g.armies.contains(a) && g.armies[a].owner == h) else { continue };
+        match counts.iter_mut().find(|(b, _)| *b == a) {
+            Some((_, n)) => *n += 1,
+            None => counts.push((a, 1)),
+        }
+    }
+    counts.into_iter().max_by(|(a, n), (b, m)| n.cmp(m).then(b.cmp(a))).map(|(a, _)| a)
+}
+
+/// The `engage` command after `validate` (docs/ENGAGEMENTS.md): the war declaration, the
+/// launching group (the army's, the selection's, else the group of the largest army on the plot,
+/// else of the formation's first unit or the pool's), then one engagement through
+/// `group_attack_force` (`MOVE_DIRECT_ATTACK`: the plot is next to it; a refusal changes nothing)
+/// in the formation given (else the rules' auto formation).
+fn engage(g: &mut Game, h: PlayerId, by: &EngageBy, from: PlotIdx, to: PlotIdx, formation: Option<Vec<Place>>, war: Option<TeamId>) {
+    let team = g.players[h].team;
+    if let Some(t) = war {
+        g.team_declare_war(team, t, false, None);
+    }
+    let pool = g.engage_attackers(h, from, to, WarTest::AtWar);
+    let launcher = match by {
+        EngageBy::Army(a) => g.armies.get(*a).and_then(|a| a.group),
+        EngageBy::Units(units) => join_selection(g, units),
+        EngageBy::From(..) => {
+            let army = largest_army_on(g, h, from);
+            let first = formation.as_ref().and_then(|f| f.first()).map(|p| p.unit).or(pool.first().copied());
+            army.and_then(|a| g.armies[a].group).or_else(|| first.and_then(|u| g.units[u].group))
+        }
+    };
+    let Some(grp) = launcher.filter(|&gr| g.groups.contains(gr)) else { return };
+    if formation.is_none() {
+        // Alertness: an attack ordered on a plot the player sees, as a move's mission records it.
+        g.groups[grp].last_plot_visible = g.plot_is_visible(to, team);
+    }
+    let (x, y) = g.map.xy(to);
+    let _ = g.group_attack_force(grp, x, y, ffh_core::defs::MOVE_DIRECT_ATTACK, formation);
+}
+
 /// Applies a validated action for `h`.
 pub fn apply(g: &mut Game, h: PlayerId, action: &Action) {
     match action {
@@ -1371,7 +1968,8 @@ pub fn apply(g: &mut Game, h: PlayerId, action: &Action) {
                     // UNOFFICIAL_PATCH: the type is read before the loop.
                     let unit_type = g.units[u].unit_type;
                     for lu in g.players[h].units.clone() {
-                        if g.units.get(lu).is_some_and(|unit| unit.unit_type == unit_type) {
+                        // (not a marching recruit: it takes no orders, docs/ARMIES.md)
+                        if g.units.get(lu).is_some_and(|unit| unit.unit_type == unit_type && unit.march.is_none()) {
                             g.unit_do_command(lu, *command, *data1, *data2);
                         }
                     }
@@ -1394,6 +1992,15 @@ pub fn apply(g: &mut Game, h: PlayerId, action: &Action) {
             g.city_push_order(*city, *order, *data, -1, *save, *pop, *append, false);
         }
         Action::PopOrder { city, index } => g.city_pop_order(*city, *index, false, false),
+        Action::CultureChannel { city, order } => {
+            // Validated just before: the check passed.
+            let _ = g.city_set_culture_channel(*city, *order);
+        }
+        // Validated just before (`validate`); a refusal in the rules would change nothing.
+        Action::Army(c) => {
+            let _ = apply_army(g, h, c);
+        }
+        Action::Engage { by, from, to, formation, war } => engage(g, h, by, *from, *to, formation.clone(), *war),
         Action::DoTask { city, task, data1, data2, option, alt, shift, ctrl } => {
             g.city_do_task(*city, *task, *data1, *data2, *option, *alt, *shift, *ctrl);
         }
@@ -1446,6 +2053,8 @@ pub fn apply(g: &mut Game, h: PlayerId, action: &Action) {
             let _ = g.loan_agree_with(proposal, named);
         }
     }
+    // This game's armies follow the groups the command changed (docs/ARMIES.md).
+    g.player_army_sync(h);
 }
 
 #[cfg(test)]
@@ -1465,6 +2074,36 @@ mod tests {
             Command::PushOrder { city: CityId(1), order: OrderType::ORDER_TRAIN, data: 4, alt: false, shift: true, ctrl: false },
             Command::PopOrder { city: CityId(1), index: 0 },
             Command::DoTask { city: CityId(1), task: TaskType::TASK_HURRY, data1: 0, data2: -1, option: false, alt: false, shift: false, ctrl: false },
+            Command::CultureChannel { city: CityId(1), action: Some(CulturalActionType(1)), target: Some(PlayerId(2)), religion: Some(ReligionType(1)) },
+            Command::CultureChannel { city: CityId(1), action: Some(CulturalActionType(0)), target: Some(PlayerId(3)), religion: None },
+            Command::CultureChannel { city: CityId(1), action: None, target: None, religion: None },
+            Command::ArmyForm { units: vec![UnitId(3), UnitId(4)] },
+            Command::ArmySplit { units: vec![UnitId(3)] },
+            Command::ArmyJoin { units: vec![UnitId(3)], army: ArmyId(2) },
+            Command::ArmyGarrison { units: vec![UnitId(5)] },
+            Command::ArmyRename { army: ArmyId(1), name: "The Iron Host".into() },
+            Command::ArmyDisband { army: ArmyId(1) },
+            Command::ArmyUpgrade { army: ArmyId(1) },
+            Command::ArmyTarget { army: ArmyId(1), size: 8 },
+            Command::ArmyRequisition { army: ArmyId(1), city: CityId(4), on: true },
+            Command::ArmyRequisition { army: ArmyId(1), city: CityId(4), on: false },
+            Command::ArmyRequisitionSet { army: ArmyId(1), cities: vec![CityId(4), CityId(2)] },
+            Command::ArmyRequisitionSet { army: ArmyId(1), cities: vec![] },
+            Command::Engage { by: EngageBy::Army(ArmyId(1)), to: (4, 5), formation: None, declare_war: None },
+            Command::Engage {
+                by: EngageBy::Units(vec![UnitId(3), UnitId(4)]),
+                to: (4, 5),
+                formation: Some(vec![Place { unit: UnitId(4), lane: 1, row: 0 }, Place { unit: UnitId(3), lane: 0, row: 2 }]),
+                declare_war: Some(true),
+            },
+            Command::Engage { by: EngageBy::From(3, 5), to: (4, 5), formation: None, declare_war: Some(false) },
+            Command::RecruitDest { city: CityId(1), index: 0, dest: Some(ffh_core::army::RecruitDest::Army(ArmyId(2))) },
+            Command::RecruitDest { city: CityId(1), index: -1, dest: Some(ffh_core::army::RecruitDest::Garrison(CityId(3))) },
+            Command::RecruitDest { city: CityId(1), index: -1, dest: None },
+            Command::GovernDirect { city: CityId(1), instead_of: Some(CityId(2)) },
+            Command::GovernDirect { city: CityId(1), instead_of: None },
+            Command::GovernHand { city: CityId(3) },
+            Command::GovernAssign { city: CityId(3), governor: GovernorId(2) },
             Command::Research { tech: None, shift: false },
             Command::Research { tech: Some(TechType(3)), shift: true },
             Command::UpdateCivics { civics: vec![CivicType(1), CivicType(5)] },

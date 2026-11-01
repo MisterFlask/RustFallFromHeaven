@@ -16,7 +16,9 @@ version = "0.1.0"
 dependencies = [
  "ffh-ai",
  "ffh-core",
+ "ffh-cppai",
  "ffh-data",
+ "ffh-play",
 ]
 
 [[package]]
@@ -27,8 +29,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "ffh-cppai"
+version = "0.1.0"
+dependencies = [
+ "ffh-ai",
+ "ffh-core",
+ "ffh-data",
+]
+
+[[package]]
 name = "ffh-data"
 version = "0.1.0"
+
+[[package]]
+name = "ffh-harness"
+version = "0.1.0"
+dependencies = [
+ "ffh-core",
+]
 
 [[package]]
 name = "ffh-play"
@@ -37,6 +55,7 @@ dependencies = [
  "ffh-ai",
  "ffh-core",
  "ffh-data",
+ "ffh-harness",
 ]
 
 [[package]]
@@ -46,6 +65,7 @@ dependencies = [
  "ffh-ai",
  "ffh-core",
  "ffh-data",
+ "ffh-harness",
 ]
 
 [[package]]

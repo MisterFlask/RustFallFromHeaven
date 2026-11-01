@@ -20,7 +20,6 @@
 //! - `diplomacy_trade.rs`  contact, trade items, deals, bonuses, espionage
 //! - `events.rs`           random events and quests
 
-#![allow(unused_imports)]
 
 pub mod civics_religion;
 pub mod cities;
@@ -361,11 +360,19 @@ pub struct Player {
     pub ai_first_contact: IdxVec<PlayerId, bool>,
     /// C++ `CvPlayerAI::m_aaiMemoryCount` (`AI_get/changeMemoryCount`): `[other][memory]`.
     pub ai_memory_count: IdxVec<PlayerId, IdxVec<MemoryType, i32>>,
-    /// C++ `CvPlayerAI::m_aiBonusValue`: the `AI_baseBonusVal` cache by bonus (-1 = not
-    /// computed). Filled from const code in C++, hence `Cell`; reset by
-    /// `player_ai_update_bonus_value` (each turn, team merge, empire split). Rules read it
-    /// through `AI_foundValue` (start plots, barbarian cities).
-    pub ai_bonus_value: Vec<std::cell::Cell<i32>>,
+    // ---- This game's own rules (not FFH2's) ----
+    /// What this player remembers of each player's cultural actions against it
+    /// (docs/CULTURE.md): `[hostility, friendship]` points, capped and decaying.
+    pub culture_memory: IdxVec<PlayerId, [i32; 2]>,
+    /// This player's armies (docs/ARMIES.md), in formation order.
+    pub armies: Vec<ArmyId>,
+    /// Armies formed so far (names them "Nth Army").
+    pub army_count: i32,
+    /// This player's governors (docs/GOVERNORS.md), in the order they joined; those without a
+    /// city are its bench.
+    pub governors: Vec<GovernorId>,
+    /// Governors drawn so far.
+    pub governor_count: i32,
 }
 
 impl Player {
@@ -616,7 +623,11 @@ impl Player {
             ai_attitude_extra: IdxVec::from_elem(0, num_players),
             ai_first_contact: IdxVec::from_elem(false, num_players),
             ai_memory_count: IdxVec::from_fn(num_players, |_| IdxVec::from_elem(0, MemoryType::NUM)),
-            ai_bonus_value: (0..d.bonuses.len()).map(|_| std::cell::Cell::new(-1)).collect(),
+            culture_memory: IdxVec::from_elem([0, 0], num_players),
+            armies: Vec::new(),
+            army_count: 0,
+            governors: Vec::new(),
+            governor_count: 0,
         }
     }
 
@@ -853,10 +864,8 @@ fn ai_reset(g: &mut Game, p: PlayerId) {
         for memory in pl.ai_memory_count.iter_mut() {
             memory.fill(0);
         }
+        pl.culture_memory.fill([0, 0]);
     }
-    // m_aiBonusValue: re-allocated with every entry -1 (the AI_baseBonusVal cache).
-    g.player_ai_update_bonus_value(p);
-
     for other in g.player_ids() {
         let o = &mut g.players[other];
         if let Some(v) = o.ai_peacetime_trade_value.get_mut(p) {
@@ -876,6 +885,9 @@ fn ai_reset(g: &mut Game, p: PlayerId) {
         }
         if let Some(memory) = o.ai_memory_count.get_mut(p) {
             memory.fill(0);
+        }
+        if let Some(memory) = o.culture_memory.get_mut(p) {
+            *memory = [0, 0];
         }
     }
 }

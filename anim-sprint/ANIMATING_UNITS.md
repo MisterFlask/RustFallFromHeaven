@@ -55,8 +55,9 @@ For a unit `<unit>` you write `units/<unit>.json` and get two folders:
 
 | Folder | Contents |
 |---|---|
-| `final_<unit>/` | the shipping look: a white hit flash on frame 0 of flinch and death; on the strike, an impact spark on the hit frame at the outermost point of the largest steel-coloured patch in it (a blade, a club's spikes, or light steel armour if that is the largest patch), and a smear arc on the swing frame and on the hit frame, each only when a steel-coloured blade at least 20 px long shows in that frame and the one before it. A dark weapon such as Hyborem's flaming blade gets neither. |
-| `final_<unit>_nofx/` | the same frames without effects, for engines that draw their own effects |
+| `final_<unit>/` | the shipping look: a white hit flash on frame 0 of flinch and death; on the strike, an impact spark on the hit frame at the outermost point of the largest steel-coloured patch in it (a blade, a club's spikes, or steel armour if that is the largest patch: the axeman's spark lands on his mail shirt,
+behind him; use `_nofx` or re-place it by hand for armoured units), and a smear arc on the swing frame and on the hit frame, each only when a steel-coloured blade at least 20 px long shows in that frame and the one before it. A dark weapon such as Hyborem's flaming blade gets neither. |
+| `final_<unit>_nofx/` | the same frames without effects, for engines that draw their own effects (the HD-2D map should: see "Combat presentation and spell effects") |
 
 Each holds, per animation `idle`, `strike`, `flinch`, `death`:
 
@@ -152,7 +153,8 @@ same side of the body, wherever they are on screen; `l_` is the other arm and le
 head, so that `r_ha` to `tip` runs along the whole weapon; the other hand is `l_ha`. The poses swing one-handed, so say
 in `hands` that the other hand holds the shaft lower down at rest and lets go during the action, and describe it as an
 empty fist in every override that mentions it (strike 2–5, flinch 0–1, death 1–3), or the model gets a text and a guide
-that disagree. No two-handed unit has been generated yet, so check its strike closely in step 3:
+that disagree. Two two-handed units have been generated this way (`axeman`, `maros`; both struck cleanly, the free hand
+letting go as the poses ask); still check the strike closely in step 3:
 
 | Joint | Where |
 |---|---|
@@ -227,6 +229,17 @@ This sends three sheet calls in parallel (strike, flinch, death), with two varia
 model calls (longer if the API rate-limits) plus a few seconds to cut, warp and assemble, for about $0.23. It writes
 `final_<unit>/` and `final_<unit>_nofx/`. Raws, templates and diagnostics go to `work/final_<unit>/`, which is not
 committed.
+
+**Without image credit (or to refresh only the idle):** `--rebuild --anims idle` builds the idle from the sprite with
+no API call. Without `--rebuild`, `--anims idle` still enters the generation step with zero calls and crashes
+(`max_workers must be greater than 0`). If an image call fails (an empty OpenAI balance answers every call with
+`429 credit_balance_exhausted`, billed at $0), the recipe ends with a `TypeError` in `build`; read the `error` fields in
+the JSON printed just above it. `UNITS.md` lists which units are done and which wait; `./animate_batch.sh` runs the
+paid steps for the prepared ones.
+
+**Sprites.** Unit files point to `m7/roster/units/unit_<name>.png` inside `anim-sprint/`, which holds only the sprites
+animated so far. The full roster is `tools/m7/roster/units/`: copy the unit's PNG into `anim-sprint/m7/roster/units/`
+first (they are identical copies).
 
 ## Step 3: pick the variants by eye
 
@@ -310,7 +323,8 @@ sequence and vignette files and the preview stills) and `final_<unit>_nofx/` (fr
 `lib/walk.py` applies the same method to a 6-frame walk, toward the unit's facing (rule 1):
 ```bash
 python3 lib/walk.py --unit units/<unit>.json --out final_<unit> --check-guides     # walk guides, free
-python3 lib/walk.py --unit units/<unit>.json --out final_<unit>                    # 1 call, about $0.08
+python3 lib/walk.py --unit units/<unit>.json --out final_<unit>                    # 1 call, about $0.08; after recipe.py
+                                                                                   # (it needs final_<unit>/idle/)
 python3 lib/walk.py --unit units/<unit>.json --out final_<unit> --rebuild --pick 2 # re-cut with a variant, free
 ```
 The poses come from a planted-foot walk rig on the unit's frame-0 skeleton: each foot travels along the facing's ground
@@ -326,6 +340,64 @@ heights with the sprite: one variant's height bounced 9 px between frames.
 Tried once, on the swordsman (`final_swordsman/walk/`, variant 2), and not judged. Its frames are 2–6 px taller than the
 idle, a small pop when he starts or stops, and two pairs of frames (2–3, 5–0) are near-twins, a slight hold at each
 footfall.
+
+## Combat presentation and spell effects (spike)
+
+On 31 October 2026 a spike tried ways of staging an attack, and of drawing its effects, next to these sprites: the
+archmage (`tools/m7/roster/units/unit_archmage.png` from the repository root) casting a fire spell at the skeleton,
+with three ways of delivering the spell and five ways of drawing the particles, all on one shared timeline. It was not
+judged blind: the owner watched it, and an agent compared stills. Treat it as a direction, not a tested method. Every
+variant plays side by side in `fx_spike/wizard_cast_spike.html`, which is self-contained: open it in a browser. It
+also has synthesized sound.
+
+**Impact-only staging, the default for most attacks.** No travelling projectile and no walk to the target: the attacker
+plays its action, and at its `hit` event the effect appears on the defender, who plays its flinch (Darkest Dungeon's
+staging). The spike compared it with a fireball that crosses the gap in 0.35 s (dead time in a turn-based fight) and
+one that crosses it in 0.1 s (the eye sees only a streak and a flash). Impact-only puts all of the effect where the
+eye already is, and it needs nothing this recipe does not make: the strike's `hit` event is when the defender reacts.
+What carried the hit, in every variant, more than any number of particles:
+- **hit-stop:** the whole scene frozen for about 70 ms on the hit;
+- **a white flash** on the defender for about 6 frames, counting the hit-stop (the flinch's frame 0);
+- **screen shake** of 2 px, dying away over 0.2 s;
+- **a lunge:** attacker and defender each slide about 10 px toward the other for the action, then back;
+- **a hit pose** for the defender. One image-model edit of the skeleton's static sprite gave a usable recoil. Write the
+  direction from where the sprite looks ("thrown back, away from where it looks"), not screen left or right: the
+  spike's first prompt said "to the right" and the model drew the recoil the other way round (rule 1's problem again).
+- **a camera punch-in, only in whole-pixel steps:** one sprite pixel goes from K to K+1 screen pixels, so 3× → 4× is a
+  1.33× zoom and 4× → 5× is 1.25×. At 2× the only step is 1.5×, which pushed the defender off screen. A smooth zoom
+  resamples the pixel art unevenly. In the 3D map the camera can zoom freely, but the sprite cards then resample too;
+  untested there.
+
+**Effects: matter on the pixel grid, light off it.**
+- **Things** (sparks, embers, smoke, debris, a fireball's body, a fire pillar) are pixel art at the sprite's pixel size
+  and palette: effect sprites for the big shapes, and small pixel stamps for particles (3–9 px, a few frames each,
+  shaded like the sprites). That means twinkling stars, two-tone embers, and shaded smoke puffs that break up in an
+  ordered dither instead of fading by alpha.
+- **Light** (a charged staff's glow, the cast flash, fire lighting the ground and the target) is smooth, additive and at
+  full resolution, kept soft and under the pixel detail. In the HD-2D map that would be emission into the existing glow
+  and bloom passes (`crates/ffh-play/assets/app/r3d/pipeline.js`, `r3d/hd2d/passes.js`); untested there.
+- **The big shapes do the work.** A fireball, an explosion and a fire pillar from `gpt-image-2.5-sunburst` were the
+  best-looking elements of every variant. Each took one call at 1024×1024 asking for "chunky square pixels on a coarse
+  grid, limited palette, no anti-aliasing, no soft glow or bloom", on "a flat solid pure black background", then was
+  shrunk to the sprite's pixel size and keyed on black. Particles are the secondary motion around them. The model
+  refuses `background: transparent`, and without "no soft glow" it paints a haze around the effect.
+- **What failed:** screen-resolution particles (soft sparks and smoke moving by sub-pixels) look pasted in from another
+  game and turn to white haze on bright ground. One-pixel particles on the grid are consistent but read as noise.
+  Smooth particles snapped to a palette with a Bayer dither are a workable fallback, but they break thin shapes (a shock
+  ring) into dotted lines, and moving glows crawl through the dither, which is fixed to the screen.
+- `final_<unit>/` keeps its baked flash, spark and smear. For the HD-2D map use `final_<unit>_nofx/` and draw the
+  effects in the engine as above.
+
+**A caster's cast without poses.** The archmage's cast came from one `gpt-image-2.5-sunburst` edit call at 1536×1024.
+The reference was the sprite at 6× on magenta, and the prompt asked for "a horizontal sprite sheet animation strip ...
+exactly 4 frames": wind-up pulling the staff back, charging with it overhead, thrusting it toward the facing,
+follow-through. Both tries kept the scale and the costume across the frames. One of the two swapped the staff into
+the other hand in frame 2. One call per pose instead gave good poses, each at a different scale. The frames were cut
+from the strip at the gaps, scaled by the height of the hair and beard, and snapped to a 48-colour palette from the
+sprite.
+They never went through this recipe's canvas, anchor, slicer or checks. It is a starting point for the caster poses in
+"Known limits", close to the sprint's "sheet, no pose guides" arm (7.60 in the strike, 3.80 in the idle), not a
+replacement for the recipe.
 
 ## Known limits
 
@@ -348,8 +420,9 @@ footfall.
   schema, written for the set that `--show-beats` names for the unit (the recipe mirrors it as needed), pointed to by
   the unit file's `poses_from`, with all 16 beat texts overridden and the shot or cast aimed toward the facing (rule 1).
   Do not edit `lib/poses_src.py`, `lib/poses_near_src.py` or `lib/beats.py` for this: every melee unit uses them. This
-  is untested; if you were not asked to build it, say so rather than animating a caster with the sword swing. Mounted
-  units, animals and ships are untested.
+  is untested; if you were not asked to build it, say so rather than animating a caster with the sword swing. A spike
+  drew one caster's cast with a single unguided image call instead ("Combat presentation and spell effects"); it has not
+  been through this recipe. Mounted units, animals and ships are untested.
 - **Facing.** Lower-left and lower-right only (see the engine contract).
 - **The near set** (`poses_near.json`: lower-right with the weapon in the near hand, or mirrored) was written after the
   sprint for the strike-direction rule and has not been through a bake-off like the far set; it has been judged only as

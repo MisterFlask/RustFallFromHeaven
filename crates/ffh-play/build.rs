@@ -3,7 +3,11 @@
 // modules, each by `include_str!`), which `src/transport/http.rs` includes. The file lists come
 // from `src/transport/art_files.rs`, which the server also uses for `--assets DIR`.
 // Also embeds the isometric renderer's sprites (`assets/app/iso/*.png`, docs/ISO.md, written by
-// `tools/m7/m7.py export`): `$OUT_DIR/iso_assets.rs`, every PNG there by `include_bytes!`.
+// `tools/m7/m7.py export`), the battle screens' unit animations (`assets/app/anim/*.png`: the
+// anim-sprint sets' strips, anim-sprint/ANIMATING_UNITS.md) and the HD-2D mode's own art
+// (`assets/app/r3d/hd2d/art/*.png`, its ground and prop cards, docs/HD2D.md):
+// `$OUT_DIR/iso_assets.rs`, every PNG there by `include_bytes!`.
+// And sets `FFH_BUILD_COMMIT` (`crate::BUILD_COMMIT`): the commit being built, for bug reports.
 
 use std::path::{Path, PathBuf};
 
@@ -31,21 +35,63 @@ fn main() {
     rs.push_str("];\n");
     write_if_changed(&out.join("art_assets.rs"), &rs);
 
-    let iso = manifest.join("assets").join("app").join("iso");
-    println!("cargo:rerun-if-changed=assets/app/iso");
-    let mut pngs: Vec<String> = std::fs::read_dir(&iso)
-        .unwrap_or_else(|e| panic!("{}: {e}", iso.display()))
-        .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
-        .filter(|n| n.ends_with(".png"))
-        .collect();
-    pngs.sort();
-    let mut rs = String::from("/// The isometric renderer's sprites (`assets/app/iso/*.png`, docs/ISO.md): `(path, content type, bytes)`.\n");
+    let mut rs = String::from("/// The isometric renderer's sprites (`assets/app/iso/*.png`, docs/ISO.md), the battle screens' unit\n/// animations (`assets/app/anim/*.png`, anim-sprint) and the HD-2D mode's art (`assets/app/r3d/hd2d/art/*.png`,\n/// docs/HD2D.md): `(path, content type, bytes)`.\n");
     rs.push_str("pub const ASSET_BYTES: &[(&str, &str, &[u8])] = &[\n");
-    for n in &pngs {
-        rs.push_str(&format!("    ({:?}, PNG, include_bytes!({:?})),\n", format!("app/iso/{n}"), iso.join(n).to_string_lossy()));
+    for sub in ["iso", "anim", "r3d/hd2d/art"] {
+        let dir = sub.split('/').fold(manifest.join("assets").join("app"), |d, s| d.join(s));
+        println!("cargo:rerun-if-changed=assets/app/{sub}");
+        let mut pngs: Vec<String> = std::fs::read_dir(&dir)
+            .unwrap_or_else(|e| panic!("{}: {e}", dir.display()))
+            .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
+            .filter(|n| n.ends_with(".png"))
+            .collect();
+        pngs.sort();
+        for n in &pngs {
+            rs.push_str(&format!("    ({:?}, PNG, include_bytes!({:?})),\n", format!("app/{sub}/{n}"), dir.join(n).to_string_lossy()));
+        }
     }
     rs.push_str("];\n");
     write_if_changed(&out.join("iso_assets.rs"), &rs);
+
+    build_commit(&manifest);
+}
+
+/// `cargo:rustc-env=FFH_BUILD_COMMIT`: `$FFH_BUILD_COMMIT` when set, else the short hash of git's
+/// HEAD, else "unknown"; the script reruns when HEAD moves (its file and the branch it names).
+fn build_commit(manifest: &Path) {
+    println!("cargo:rerun-if-env-changed=FFH_BUILD_COMMIT");
+    let git = |args: &[&str]| -> Option<String> {
+        let out = std::process::Command::new("git").args(args).current_dir(manifest).output().ok()?;
+        let s = String::from_utf8_lossy(&out.stdout).trim().to_string();
+        (out.status.success() && !s.is_empty()).then_some(s)
+    };
+    let commit = std::env::var("FFH_BUILD_COMMIT").ok().filter(|s| !s.is_empty()).or_else(|| git(&["rev-parse", "--short=12", "HEAD"]));
+    println!("cargo:rustc-env=FFH_BUILD_COMMIT={}", commit.as_deref().unwrap_or("unknown"));
+    let abs = |p: String| {
+        let p = PathBuf::from(p);
+        if p.is_absolute() {
+            p
+        } else {
+            manifest.join(p)
+        }
+    };
+    let mut watch = Vec::new();
+    if let Some(dir) = git(&["rev-parse", "--git-dir"]) {
+        let dir = abs(dir);
+        // HEAD's reflog moves with every commit, checkout and pull, also when the branch's ref
+        // is packed (no loose ref file to watch).
+        watch.push(dir.join("logs").join("HEAD"));
+        watch.push(dir.join("HEAD"));
+    }
+    if let (Some(common), Some(branch)) = (git(&["rev-parse", "--git-common-dir"]), git(&["symbolic-ref", "-q", "HEAD"])) {
+        let common = abs(common);
+        watch.push(common.join(branch));
+        watch.push(common.join("packed-refs"));
+    }
+    // A path that does not exist would rerun the script on every build.
+    for p in watch.into_iter().filter(|p| p.exists()) {
+        println!("cargo:rerun-if-changed={}", p.display());
+    }
 }
 
 fn write_if_changed(path: &Path, text: &str) {

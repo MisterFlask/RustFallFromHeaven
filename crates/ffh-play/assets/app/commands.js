@@ -4,9 +4,20 @@
 // command resent with the answer.
 
 import * as api from "./api.js";
-import { S, emit, dname, teamName, gateLines, loadUnitCommand, tradeItemLabel } from "./state.js";
+import { S, emit, on, dname, teamName, gateLines, loadUnitCommand, tradeItemLabel, observing, OBSERVER_COMMANDS } from "./state.js";
 import { ask } from "./modals.js";
 import { toast, busy } from "./dom.js";
+import { battleToast } from "./engagements.js";
+
+/** The messages of a command sent while the battle screens are open (the plan's attack): shown
+ *  when they close. The battle's own message is the screens' to show; the others (a city
+ *  captured, a defensive strike) would tell how the battle ends before its replay does. */
+let heldLines = [];
+on("battle-closed", () => {
+  const lines = heldLines;
+  heldLines = [];
+  for (const line of lines) toast(line.text, "log", 7000);
+});
 
 let inFlight = false;
 /** The automatic (`quiet`) command on its way, if any: AutoMoves, a spectated turn, grouping. */
@@ -24,6 +35,11 @@ export function sending() {
  *  sends when it comes round) waits for it rather than being dropped; a second click while the
  *  player's own command is on its way is still dropped (one request per click). */
 export async function run(c, { quiet = false } = {}) {
+  // An observed game is the AI's: only turns are played (the server refuses the rest too).
+  if (observing() && !OBSERVER_COMMANDS.includes(c.c)) {
+    if (!quiet) toast("Observing: the AI plays every civilization (nothing can be ordered).", "error");
+    return null;
+  }
   if (inFlight && automatic && !quiet) await automatic.catch(() => {});
   if (inFlight) return null;
   inFlight = true;
@@ -41,6 +57,7 @@ async function loop(c, quiet) {
   let next = c;
   for (let round = 0; round < 4 && next; round++) {
     let reply;
+    emit("sending", next);
     try {
       reply = await api.cmd(next.c, strip(next));
     } catch (e) {
@@ -50,7 +67,15 @@ async function loop(c, quiet) {
     }
     const confirm = reply.r?.confirm;
     if (!confirm) {
-      for (const line of reply.log ?? []) toast(line.text, "log", 7000);
+      const battleOpen = document.body.classList.contains("battle-open");
+      for (const line of reply.log ?? []) {
+        // A battle's message (engagement combat) links its report, unless the battle screens
+        // already show it; the others wait for the screens to close.
+        if (line.kind === "engagement" && line.report !== undefined) {
+          if (!battleOpen) battleToast(line);
+        } else if (battleOpen) heldLines.push(line);
+        else toast(line.text, "log", 7000);
+      }
       emit("applied", next, reply);
       return reply;
     }
@@ -82,6 +107,8 @@ async function answerConfirm(c, confirm) {
       choices.push({ label: "Cancel", value: null });
       const v = await ask("Declare war?", `This move means war with ${teamName(confirm.team)}.`, choices);
       if (!v) return null;
+      // An attack (`engage`, engagement combat) is resent with the answer.
+      if (c.c === "engage") return v === "war" ? { ...c, declare_war: true } : null;
       // The exe answers the DECLAREWARMOVE popup with a move (design §4.5).
       const move = c.c === "move" ? c : { c: "move", units: c.units, x: c.data1, y: c.data2, append: c.append ?? false };
       return { ...move, declare_war: v === "war" };
