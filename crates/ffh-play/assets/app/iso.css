@@ -381,6 +381,12 @@ html.iso .modal-head {
 html.iso .modal-head h2 { text-align: center; }
 html.iso .modal-head .close { position: absolute; right: 6px; top: 2px; color: var(--iso-gold); font: 700 20px/24px var(--iso-font); }
 html.iso .modal-head .close:hover { color: #fff; background: none; }
+html.iso .modal-head .info {
+  position: absolute; right: 34px; top: 4px; width: 22px; height: 22px; margin: 0; border-radius: 0;
+  font: 700 16px/18px var(--iso-font); color: var(--iso-gold); border: 2px solid #a86d1c; background: rgba(0, 0, 0, 0.35);
+}
+html.iso .modal-head .info:hover, html.iso .modal-head .info.on { color: #fff; border-color: #ffe58c; }
+html.iso .modal-info { margin: 4px 14px 0; padding: 8px 12px; border: 2px solid #a86d1c; border-bottom-width: 2px; background: rgba(0, 0, 0, 0.35); color: var(--iso-ink); font-size: 16px; line-height: 1.4; }
 html.iso .modal-body { padding: 8px 14px; }
 html.iso .modal-buttons { border-top: 0; background: none; padding: 8px 14px 6px; }
 html.iso .page-text { font-size: 20px; line-height: 24px; }

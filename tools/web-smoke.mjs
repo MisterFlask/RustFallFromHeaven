@@ -1645,6 +1645,14 @@ async function crusadeHd2d(url, bin, saves) {
   await until2(`!!document.querySelector(${q(pledge)}) && !!document.querySelector("#modals .modal.crusade .leader-portrait")`, "the call popup with the target's leader (HD-2D)", 30000);
   await b.eval("window.ffh.mapView.r3d.render(1)");
   await shot("hd2d-crusade-call");
+  // The rules sit behind the title bar's (i): a click pins them under the title, another hides them.
+  const info = `${TOP} .modal.crusade .modal-head button.info`;
+  await click(info);
+  await until2(`(() => { const e = document.querySelector(${q(`${TOP} .modal.crusade .modal-info`)}); return !!e && !e.hidden && /Lending means war/.test(e.textContent); })()`, "the call's rules pinned by its (i)");
+  await b.eval("window.ffh.mapView.r3d.render(1)");
+  await shot("hd2d-crusade-call-info");
+  await click(info);
+  await until2(`document.querySelector(${q(`${TOP} .modal.crusade .modal-info`)}).hidden`, "the call's rules hidden again");
   await click(pledge);
   await until(async () => (await modalTitles()).some((t) => /Lend units now/.test(t)), "the lend question (HD-2D)");
   await until2(`!document.querySelector("#iso-rail #btn-crusades").classList.contains("attention")`, "the advisor's mark gone with the answer");
@@ -1688,7 +1696,7 @@ async function crusadeHd2d(url, bin, saves) {
   await proposeLoan(st, "hd2d-loan");
   await b.eval(`window.ffh.setRenderer("flat")`);
   await until2(`window.ffh.mapView.renderer() === "flat" && !document.querySelector("canvas.map3d")`, "the flat map after the HD-2D crusade");
-  steps.push(`crusades in the HD-2D map (stage crusade): the rail's advisor marked while the call waited, the call popup with the target's leader, ${ids.length} units lent from the lend dialog after the war confirmation, Show the Host from the Crusades advisor, troops lent to the ally as a deal from the trade screen`);
+  steps.push(`crusades in the HD-2D map (stage crusade): the rail's advisor marked while the call waited, the call popup with the target's leader and its rules behind the (i), ${ids.length} units lent from the lend dialog after the war confirmation, Show the Host from the Crusades advisor, troops lent to the ally as a deal from the trade screen`);
 }
 
 /** P7, `stage settlement`: a Kuriotates settler founds a city below the city limit: the

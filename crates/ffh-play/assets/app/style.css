@@ -275,6 +275,19 @@ body.bottom-closed #bottom-toggle { transform: rotate(180deg); }
 .modal-head { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px 8px; background: var(--c-coal); border-bottom: 1px solid var(--c-ash); }
 .modal-head .close { background: none; border: none; font-size: 20px; line-height: 1; padding: 0 4px; color: var(--dim); box-shadow: none; }
 .modal-head .close:hover { color: var(--c-vellum); }
+/* A dialog's rules explanation (modals.js `info`): an (i) button beside the close button, the
+   explanation pinned under the title when it is clicked. */
+.modal-head .info {
+  margin-left: auto; margin-right: 8px; width: 22px; height: 22px; padding: 0; border-radius: 50%;
+  font: italic 700 14px/20px Georgia, serif; text-align: center; justify-content: center;
+  color: var(--dim); background: none; border: 1px solid var(--dim); box-shadow: none;
+}
+.modal-head .info:hover, .modal-head .info.on { color: var(--c-vellum); border-color: var(--c-vellum); }
+.modal-info { padding: 8px 14px; border-bottom: 1px solid var(--c-ash); background: var(--panel-2); font-size: 14px; line-height: 1.45; }
+.modal-info[hidden] { display: none; }
+.modal-info ul { margin: 0; padding-left: 18px; }
+.modal-info li + li { margin-top: 3px; }
+.modal-info p { margin: 0 0 4px; }
 .modal-body { padding: 10px 14px; overflow: auto; }
 .modal-body p { margin: 4px 0 8px; }
 .modal-buttons { display: flex; gap: 8px; justify-content: flex-end; padding: 10px 14px; border-top: 1px solid var(--c-iron); flex-wrap: wrap; }
@@ -580,7 +593,7 @@ figure.crusade-enemy figcaption { font-size: 12px; margin-top: 2px; }
 .lend-units label.check { display: flex; align-items: center; gap: 6px; }
 .modal.troops .fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 4px 14px; }
 .trade-item.troops > span { flex: 1; min-width: 0; }
-.trade-item.troops .link { margin-left: 4px; flex: none; }
+.trade-item.troops .link { margin-left: 4px; flex: none; width: auto; }
 table.crusades td { vertical-align: top; }
 table.crusades .crusade-name { white-space: normal; }
 .crusade-actions { margin-top: 6px; }

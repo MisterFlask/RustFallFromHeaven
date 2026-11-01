@@ -197,7 +197,9 @@ there); troops are an item of the trade screen (the `trade` query's `troops`), e
 adding them opens the troops screen where you pick the units you send (or the strength you ask
 for), the rest of the deal their price, the leader answering as for any deal. Units are lent
 only from these screens (the lend dialog, the troops screen), never as an order of the unit (the
-owner's call, 2026-11-01). A Host's units name their lender in the plot and stack lists. `ffh-play stage crusade DIR` saves a game with a call waiting, for
+owner's call, 2026-11-01). The dialogs keep their rules explanations behind an (i) in the title
+bar (modals.js `info`: a tip on hover, pinned under the title on a click), so their bodies hold
+only the decision at hand. A Host's units name their lender in the plot and stack lists. `ffh-play stage crusade DIR` saves a game with a call waiting, for
 trying it; `tools/web-smoke.mjs` drives it in the classic interface and in the HD-2D map.
 
 ## Self-play measures

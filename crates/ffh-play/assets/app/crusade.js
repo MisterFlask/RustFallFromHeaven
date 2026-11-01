@@ -58,6 +58,30 @@ function show(m, at) {
   hooks.centerOn?.(at[0], at[1]);
 }
 
+// ---- the rules, behind each dialog's (i) button (modals.js `info`) ------------------------------
+
+/** How lending to a crusade works (the call, the lend dialog). */
+function lendRules(t, end) {
+  return [
+    h("li", `Lent units serve the crusade's Host, an AI army no civilization controls, until the crusade ends${end ? ` (turn ${end})` : ""}. They cannot be recalled; survivors come home with their experience, a hero who falls escapes home.`),
+    h("li", `Lending means war with ${t}.`),
+    h("li", "The spoils (the Host's conquests and gold) are shared by credit: a lent unit earns its strength as credit when it first kills an enemy of the crusade, or dies."),
+    h("li", "Only combat land units can be lent: not summoned, not aboard a ship, not carrying units."),
+  ];
+}
+
+/** What a call asks and what not answering costs. */
+function callRules(t, end) {
+  return [
+    h(
+      "ul",
+      h("li", "Your obligation is a share of your army, smaller the farther you are from the target. Only the units you lend count, not the pledge: lend them before the deadline."),
+      h("li", "At the deadline, what you lent is weighed against the obligation. A refusal, or nothing lent, defies the council: unhappiness in your cities for a time, and you lose your loyal membership until you next comply. Lending less than asked costs the shortfall's share of that unhappiness."),
+      lendRules(t, end),
+    ),
+  ];
+}
+
 /** A crusade call (`pending.crusade_calls[]`): pledge a strength or refuse. Resolves "chosen",
  *  "later" or null. */
 export async function openCall(call) {
@@ -72,7 +96,7 @@ export async function openCall(call) {
     if (strength !== null) {
       const now = await ask(
         "Lend units now?",
-        "Pledged forces count once you lend them, before the deadline: choose them now, or later from the Crusades advisor.",
+        `Choose the units now, or later from the Crusades advisor (before turn ${call.deadline}).`,
         [
           { label: "Choose units", value: true, primary: true },
           { label: "Later", value: null },
@@ -92,26 +116,21 @@ export async function openCall(call) {
         portrait ? h("figure.crusade-enemy", portrait, h("figcaption.dim", enemy.name)) : null,
         h(
           "div.crusade-call-text",
-          h(
-            "p.page-text",
-            `${callerName(call.source)} calls you to commit forces against ${t}. Lent units serve the crusade's Host until it ends (turn ${call.end}) and earn you a share of the spoils once they kill or die; lending means war with ${t}.`,
-          ),
-          h(
-            "p",
-            `Your obligation: strength ${strengthLabel(call.obligation)} by turn ${call.deadline} (you can lend ${strengthLabel(call.lendable)}). Refusing, or delivering nothing by then, costs your standing with the caller; delivering less costs part of it.`,
-          ),
+          h("p.page-text", `${callerName(call.source)} calls you to send strength ${strengthLabel(call.obligation)} against ${t} by turn ${call.deadline}, to serve until turn ${call.end}.`),
+          h("p.dim", `You can lend up to ${strengthLabel(call.lendable)}.`),
         ),
       ),
       h("label.field", h("span", "Pledge strength"), input),
       h(
         "div.options",
         h("button.option", { "data-pledge": "yes", onclick: () => send(Math.max(1, Math.round(Number(input.value) * 100))) }, "Pledge"),
-        h("button.option", { "data-pledge": "refuse", onclick: () => send(null) }, "Refuse"),
+        h("button.option", { "data-pledge": "refuse", title: "Defies the council: unhappiness in your cities, and your loyal membership lost", onclick: () => send(null) }, "Refuse"),
       ),
     ],
     buttons: [{ label: "Later", value: "later", title: "No answer by the deadline counts as a refusal" }],
     tag: "crusade",
     className: "event crusade",
+    info: () => callRules(t, call.end),
   });
   const r = await m.done;
   return result ?? r;
@@ -120,7 +139,8 @@ export async function openCall(call) {
 /** The lend dialog for crusade `id`: the units we can lend, with checkboxes (in the HD-2D
  *  interface each with its map figure). */
 export async function openLend(id) {
-  const m = openModal({ title: "Lend units", body: [h("p.dim", "…")], tag: "crusade-lend", wide: true, buttons: [{ label: "Close", value: null }] });
+  let rules = () => h("ul", lendRules("the target", null));
+  const m = openModal({ title: "Lend units", body: [h("p.dim", "…")], tag: "crusade-lend", wide: true, buttons: [{ label: "Close", value: null }], info: () => rules() });
   let q;
   try {
     q = await api.query("crusades");
@@ -129,6 +149,7 @@ export async function openLend(id) {
     return m.done;
   }
   const c = q.crusades.find((x) => x.id === id);
+  if (c) rules = () => h("ul", lendRules(teamName(c.target), c.end));
   if (!c) {
     m.setBody(h("p.warn", "This crusade has ended."));
     return m.done;
@@ -162,13 +183,13 @@ export async function openLend(id) {
   update();
   const figure = (u) => (isoSkin() ? unlockIcon("units", u.type) : null);
   m.setBody(
-    h("p", hostSwatch(c.host), `The Host fights ${teamName(c.target)} until turn ${c.end}. Lent units cannot be recalled; they come home when it ends.`),
+    h("p", hostSwatch(c.host), `The Host fights ${teamName(c.target)} until turn ${c.end}.`),
     units.length
       ? h(
           "div.checks.lend-units",
           units.map((u, i) => h("label.check", { "data-unit": u.unit }, boxes[i], figure(u), ` ${dname("UnitType", u.type)} · strength ${strengthLabel(u.strength)} · at (${u.x}, ${u.y})`)),
         )
-      : h("p.dim", "None of your units can be lent (combat land units only, not summoned, not aboard a ship or carrying units)."),
+      : h("p.dim", "None of your units can be lent now."),
     total,
     units.length ? lend : null,
   );
@@ -185,7 +206,21 @@ function kindLabel(k) {
  *  each, our past crusades. "Show" closes it and brings the map to the Host's army or the
  *  target. */
 export async function openCrusades() {
-  const m = openModal({ title: "Crusades", body: [h("p.dim", "…")], tag: "crusades", wide: true, buttons: [{ label: "Close", value: null }] });
+  const m = openModal({
+    title: "Crusades",
+    body: [h("p.dim", "…")],
+    tag: "crusades",
+    wide: true,
+    buttons: [{ label: "Close", value: null }],
+    info: () =>
+      h(
+        "ul",
+        h("li", "A crusade is fought by its Host, an AI army made of the units its members lend, under the colour shown beside its name. A loan general is a small one serving one civilization's war."),
+        h("li", "The Host musters at the friendly city nearest its objective, marches, besieges, and falls back to heal; its state is shown under each crusade."),
+        h("li", "Delivered: the strength you lent and how many of your units still serve. Credit: the strength of your lent units that have fought (a first kill or a death), by which the spoils are shared."),
+        h("li", "Show the Host / Show the target close this screen and bring the camera to the Host's largest stack you can see, or to the target's city nearest your capital."),
+      ),
+  });
   const load = async () => {
     let q;
     try {
@@ -288,11 +323,16 @@ export async function openTroops({ lend, other, way, maxTurns, current = null })
   const figure = (u) => (isoSkin() ? unlockIcon("units", u.type) : null);
   const m = openModal({
     title: lend ? `Lend troops to ${name}` : `Ask ${name} for troops`,
-    body: [
+    info: () =>
       h(
-        "p.dim",
-        `The units serve a general dedicated to the borrower's war, which neither of you controls, until the loan ends; they cannot be recalled and come home then. Lending means war with the enemy. The price is the rest of the deal: anything paid every turn runs as long as the loan, and cancelling it ends the loan.${lend ? "" : ` ${name} picks the units it sends.`}`,
+        "ul",
+        h("li", "The units serve a general dedicated to the borrower's war, which neither of you controls, until the loan ends. They cannot be recalled; they come home then."),
+        h("li", "Lending means war with the enemy."),
+        h("li", "The price is the rest of the deal. Anything paid every turn runs as long as the loan, and cancelling it ends the loan."),
+        h("li", "The loan also ends early when the borrower makes peace with the enemy, the enemy is gone, or the two of you go to war."),
       ),
+    body: [
+      lend ? null : h("p.dim", `${name} picks the units it sends.`),
       h("div.fields", field("Against", target), field("Mission", mission), field(`Turns (up to ${maxTurns})`, duration), lend ? null : field("Strength", strength)),
       lend
         ? units.length
@@ -300,7 +340,7 @@ export async function openTroops({ lend, other, way, maxTurns, current = null })
               "div.checks.lend-units",
               units.map((u, i) => h("label.check", { "data-unit": u.unit }, boxes[i], figure(u), ` ${dname("UnitType", u.type)} · strength ${strengthLabel(u.strength)} · at (${u.x}, ${u.y})`)),
             )
-          : h("p.dim", "None of your units can be lent (combat land units only, not summoned, not aboard a ship or carrying units).")
+          : h("p.dim", "None of your units can be lent now.")
         : null,
       lend ? total : null,
       err,
