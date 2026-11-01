@@ -308,8 +308,9 @@ fn autoplay(s: &mut Session, turns: i32) -> Stop {
 
 /// `turns` of autoplay from save `start` through the session (a callback per slice, as a
 /// transport has; with `saves`, the journal and the autosaves in a scratch directory, else the
-/// journal in memory and no autosave). Returns the time, the final checksum and turn, and where
-/// `advance` spent its time.
+/// journal in memory and no autosave). Returns the time, the checksum and turn where the game
+/// stopped running (where [`raw_run`] stops: past it the session goes on to the human's pending
+/// decisions, which the advisor answers), and where `advance` spent its time.
 fn session_run(start: &[u8], sidecar: &crate::save::Sidecar, turns: i32, saves: bool) -> (Duration, i32, i32, AdvanceProfile) {
     let scratch = Scratch::new("overhead");
     let mut s = Session::load(start, Some(sidecar), Arc::new(AdvisorAnswerer), opts(saves.then_some(scratch.0.as_path()))).expect("load");
@@ -317,12 +318,16 @@ fn session_run(start: &[u8], sidecar: &crate::save::Sidecar, turns: i32, saves: 
     let t0 = Watch::start();
     let ok = s.execute(&Command::AutoPlay { turns });
     assert!(matches!(ok, Ok(CmdOk::Applied { .. })), "autoplay: {ok:?}");
+    let mut end = None;
     let stop = s.advance(&mut |s| {
-        std::hint::black_box(s.g.game_turn());
+        if end.is_none() && !matches!(phase(&s.g, s.human), Phase::Running) {
+            end = Some((s.g.calculate_sync_checksum(), s.g.game_turn()));
+        }
     });
     let time = t0.elapsed();
     assert!(matches!(stop, Stop::Human | Stop::Over), "autoplay: {stop:?}");
-    (time, s.g.calculate_sync_checksum(), s.g.game_turn(), s.profile.unwrap_or_default())
+    let (sum, turn) = end.unwrap_or_else(|| (s.g.calculate_sync_checksum(), s.g.game_turn()));
+    (time, sum, turn, s.profile.unwrap_or_default())
 }
 
 /// The same as a bare update loop: the same controllers (the human slot's HumanController

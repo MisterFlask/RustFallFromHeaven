@@ -211,11 +211,17 @@ fn propose_deal_follows_the_trade_tables_and_the_ai_answer() {
     assert!(before == s.g.save());
     assert_eq!(s.journal_lines().unwrap().len(), lines);
     assert!(s.g.at_war(my, their));
-    // After ten turns of war it takes peace (ffh-ai's judgement).
+    // After ten turns of war it takes peace once ffh-ai's judgement says so (when depends on the
+    // game, so the offer is repeated each turn).
     while s.g.teams[their].ai_at_war_counter[my] < 10 {
         next_turn(&mut s);
     }
-    assert_eq!(applied(&mut s, deal(peace(), peace())), Some(true));
+    let mut turns = 0;
+    while applied(&mut s, deal(peace(), peace())) != Some(true) {
+        turns += 1;
+        assert!(turns <= 50, "no peace after {turns} more turns of war");
+        next_turn(&mut s);
+    }
     assert!(!s.g.at_war(my, their));
     let lines = s.journal_lines().unwrap();
     assert!(lines.iter().any(|l| l.contains("\"c\":\"propose_deal\"")), "the accepted deal is journaled");

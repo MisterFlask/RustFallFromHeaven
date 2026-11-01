@@ -167,6 +167,19 @@ side)
   battle's hit, against the plot's own defence, as before the formation battles). Option off,
   nothing changes. Save format 10.
 
+**Balance** (after `classic-1`, each the owner's decision)
+
+- **The palace gives +3 production instead of +1** (all 21 civilization palaces, `CIV4BuildingInfos.xml`;
+  2026-11-01). Meant to speed up the early game without a second starting settler. Measured on
+  seeds 1-24 (6 AIs, standard map, 300 turns) against the old palace: production +46% at turn 25;
+  cities per civ 2.2 -> 2.7 at turn 100, 5.1 -> 6.1 at turn 200 and 7.0 -> 7.35 at turn 300;
+  population +13% and FFH2 score +10% at turn 300. The AI spends the early hammers on units before
+  settlers, so cities at turn 50 barely move (1.01 -> 1.06). Wars are more frequent (2.8 -> 4.0
+  per game) and cities taken from other civs about double (3.2 -> 6.25 per game). Two starting
+  settlers were also tried and reached about the same end state. They brought barbarian cities from
+  turn 1 (`createBarbarianCities` starts once civs average two cities), and civs lost 21 cities to
+  barbarians by turn 100 instead of 12.
+
 **Container order and path finding**
 
 - **Per-owner object lists iterate in creation order.** C++ keeps units, cities, selection groups

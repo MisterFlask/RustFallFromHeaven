@@ -133,7 +133,8 @@ fn palace_sidar_yields_free_bonuses_and_2d_arrays() {
     assert_eq!(b.production_cost, 160);
     assert_eq!(b.hurry_cost_modifier, 50);
     assert_eq!(b.num_cities_prereq, 4);
-    assert_eq!(b.yield_change, [0, 1, 8]);
+    // +3 production, FFH2's +1 (docs/PORTING.md, "Changes from FFH2").
+    assert_eq!(b.yield_change, [0, 3, 8]);
     assert_eq!(b.obsolete_safe_commerce_change, [0, 0, 2, 0]);
     assert_eq!(b.happiness, 1);
     assert_eq!(b.crime, -10);
