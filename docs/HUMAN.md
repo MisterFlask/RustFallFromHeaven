@@ -785,9 +785,10 @@ a healthy warrior is 200), as the `crusades` query counts them.
   screen, each side ("Troops: lend your units…", "Troops: borrow theirs…"): adding it opens the
   troops screen (the enemy, the mission, the turns, and the units you send, picked there, or the
   strength you ask for), the rest of the deal its price; the leader answers the proposal as for
-  any deal. Units are lent only from these screens, never as an order of the unit itself. Each
-  of these dialogs keeps its rules explanation behind an (i) in its title bar (a tip on hover; a
-  click or tap pins it under the title), so the body holds only the decision.
+  any deal. Units are lent only from these screens, never as an order of the unit itself. The
+  rules are in the help display (help.js, the top bar's ?: topics at the left, the article at the
+  right; Keys, then the crusade topics), not in the dialogs: each dialog's (i), in its title bar,
+  opens the help at its topic over the dialog, so the body holds only the decision.
 
 ### Queries
 

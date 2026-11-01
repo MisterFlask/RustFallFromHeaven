@@ -17,6 +17,7 @@ import * as api from "./api.js";
 import { S, dname, teamName } from "./state.js";
 import { h, toast } from "./dom.js";
 import { openModal, ask } from "./modals.js";
+import { addHelp } from "./help.js";
 import { run } from "./commands.js";
 import { playerPortrait, PORTRAIT } from "./portraits.js";
 import { isoSkin, unlockIcon } from "./isoui.js";
@@ -58,29 +59,92 @@ function show(m, at) {
   hooks.centerOn?.(at[0], at[1]);
 }
 
-// ---- the rules, behind each dialog's (i) button (modals.js `info`) ------------------------------
+// ---- the rules, in the help display (help.js; each dialog's (i) opens its topic) --------------
 
-/** How lending to a crusade works (the call, the lend dialog). */
-function lendRules(t, end) {
-  return [
-    h("li", `Lent units serve the crusade's Host, an AI army no civilization controls, until the crusade ends${end ? ` (turn ${end})` : ""}. They cannot be recalled; survivors come home with their experience, a hero who falls escapes home.`),
-    h("li", `Lending means war with ${t}.`),
-    h("li", "The spoils (the Host's conquests and gold) are shared by credit: a lent unit earns its strength as credit when it first kills an enemy of the crusade, or dies."),
-    h("li", "Only combat land units can be lent: not summoned, not aboard a ship, not carrying units."),
-  ];
-}
+const GROUP = "Crusades (a rules variant)";
+const li = (...parts) => h("li", ...parts);
 
-/** What a call asks and what not answering costs. */
-function callRules(t, end) {
-  return [
+addHelp({
+  id: "crusades",
+  group: GROUP,
+  title: "Crusades and the call to arms",
+  body: () => [
+    h("p", "With the new game's Crusades box on, a council's war resolution does not drag its members into the war. It raises a crusade: an army of its own, the Host, made of the units its members lend, which fights the target until the crusade ends."),
+    h("h4", "The call"),
     h(
       "ul",
-      h("li", "Your obligation is a share of your army, smaller the farther you are from the target. Only the units you lend count, not the pledge: lend them before the deadline."),
-      h("li", "At the deadline, what you lent is weighed against the obligation. A refusal, or nothing lent, defies the council: unhappiness in your cities for a time, and you lose your loyal membership until you next comply. Lending less than asked costs the shortfall's share of that unhappiness."),
-      lendRules(t, end),
+      li("Each member able to fight the war is called, with an obligation: a share of its army, smaller the farther it is from the target."),
+      li("You answer with a pledge or a refusal. A pledge is a promise: only the units you lend count, and you have until the deadline to lend them (the Crusades advisor, or the lend dialog after you pledge)."),
+      li("No answer by the deadline counts as a refusal."),
     ),
-  ];
-}
+    h("h4", "At the deadline"),
+    h(
+      "ul",
+      li("What you lent is weighed against your obligation."),
+      li("A refusal, or nothing lent, defies the council: unhappiness in your cities for some 20 turns (at normal speed), and you lose your loyal membership until you next comply with one of its resolutions."),
+      li("Lending less than asked costs the shortfall's share of that unhappiness. Meeting the obligation keeps you a loyal member."),
+    ),
+  ],
+});
+
+addHelp({
+  id: "crusades.lending",
+  group: GROUP,
+  title: "Lending units and the spoils",
+  body: () => [
+    h(
+      "ul",
+      li("Lending means war with the crusade's target (you are asked to confirm the declaration)."),
+      li("Lent units join the Host where they stand. They cannot be recalled; when the crusade ends the survivors come home with their experience and promotions. A lent hero who falls escapes home instead of dying."),
+      li("Only combat land units can be lent: not summoned units, not units aboard a ship or carrying others."),
+      li("While lent, a unit's upkeep is the Host's, not yours."),
+    ),
+    h("h4", "Credit and the spoils"),
+    h(
+      "ul",
+      li("A lent unit earns its strength (at handover) as your credit when it first kills an enemy of the crusade, or when it dies. Units that never fight earn nothing."),
+      li("When the crusade ends, its spoils (the cities the Host took and the gold it gathered) are shared by credit: each lender drafts cities up to its share, or takes it as gold."),
+    ),
+  ],
+});
+
+addHelp({
+  id: "crusades.host",
+  group: GROUP,
+  title: "The Host and the Crusades advisor",
+  body: () => [
+    h(
+      "ul",
+      li("The Host is an AI player of its own, flying its own colour (the swatch beside a crusade's name). No civilization controls it."),
+      li("It musters at the friendly city nearest its objective, marches, besieges and takes cities, and falls back to heal; its state is shown under each crusade."),
+      li("It heals in its lenders' and the victim's lands, and fights only the crusade's war."),
+    ),
+    h("h4", "The Crusades advisor"),
+    h(
+      "ul",
+      li("Delivered: the strength you lent, and how many of your units still serve."),
+      li("Credit: the strength of your lent units that have fought, by which the spoils are shared."),
+      li("Show the Host / Show the target: close the screen and bring the camera to the Host's largest stack you can see, or to the target's city nearest your capital."),
+    ),
+  ],
+});
+
+addHelp({
+  id: "loans",
+  group: GROUP,
+  title: "Allied loans of troops",
+  body: () => [
+    h("p", "A loan is a small crusade made by agreement: one civilization lends units to another's war. Troops are an item of the trade screen, on either side of the deal."),
+    h(
+      "ul",
+      li("The units serve a general dedicated to the borrower's war, which neither side controls, until the loan ends. They cannot be recalled, and come home then."),
+      li("Lending means war with the enemy the loan is against."),
+      li("The price is the rest of the deal: gold, gold per turn, technologies, resources. Anything paid every turn runs as long as the loan; cancelling it ends the loan."),
+      li("A loan also ends early when the borrower makes peace with the enemy, the enemy is gone, or lender and borrower go to war."),
+      li("The general's captures go to the borrower. When an AI asks you to lend, your advisor picks the units."),
+    ),
+  ],
+});
 
 /** A crusade call (`pending.crusade_calls[]`): pledge a strength or refuse. Resolves "chosen",
  *  "later" or null. */
@@ -130,7 +194,7 @@ export async function openCall(call) {
     buttons: [{ label: "Later", value: "later", title: "No answer by the deadline counts as a refusal" }],
     tag: "crusade",
     className: "event crusade",
-    info: () => callRules(t, call.end),
+    help: "crusades",
   });
   const r = await m.done;
   return result ?? r;
@@ -139,8 +203,7 @@ export async function openCall(call) {
 /** The lend dialog for crusade `id`: the units we can lend, with checkboxes (in the HD-2D
  *  interface each with its map figure). */
 export async function openLend(id) {
-  let rules = () => h("ul", lendRules("the target", null));
-  const m = openModal({ title: "Lend units", body: [h("p.dim", "…")], tag: "crusade-lend", wide: true, buttons: [{ label: "Close", value: null }], info: () => rules() });
+  const m = openModal({ title: "Lend units", body: [h("p.dim", "…")], tag: "crusade-lend", wide: true, buttons: [{ label: "Close", value: null }], help: "crusades.lending" });
   let q;
   try {
     q = await api.query("crusades");
@@ -149,7 +212,6 @@ export async function openLend(id) {
     return m.done;
   }
   const c = q.crusades.find((x) => x.id === id);
-  if (c) rules = () => h("ul", lendRules(teamName(c.target), c.end));
   if (!c) {
     m.setBody(h("p.warn", "This crusade has ended."));
     return m.done;
@@ -212,14 +274,7 @@ export async function openCrusades() {
     tag: "crusades",
     wide: true,
     buttons: [{ label: "Close", value: null }],
-    info: () =>
-      h(
-        "ul",
-        h("li", "A crusade is fought by its Host, an AI army made of the units its members lend, under the colour shown beside its name. A loan general is a small one serving one civilization's war."),
-        h("li", "The Host musters at the friendly city nearest its objective, marches, besieges, and falls back to heal; its state is shown under each crusade."),
-        h("li", "Delivered: the strength you lent and how many of your units still serve. Credit: the strength of your lent units that have fought (a first kill or a death), by which the spoils are shared."),
-        h("li", "Show the Host / Show the target close this screen and bring the camera to the Host's largest stack you can see, or to the target's city nearest your capital."),
-      ),
+    help: "crusades.host",
   });
   const load = async () => {
     let q;
@@ -323,14 +378,7 @@ export async function openTroops({ lend, other, way, maxTurns, current = null })
   const figure = (u) => (isoSkin() ? unlockIcon("units", u.type) : null);
   const m = openModal({
     title: lend ? `Lend troops to ${name}` : `Ask ${name} for troops`,
-    info: () =>
-      h(
-        "ul",
-        h("li", "The units serve a general dedicated to the borrower's war, which neither of you controls, until the loan ends. They cannot be recalled; they come home then."),
-        h("li", "Lending means war with the enemy."),
-        h("li", "The price is the rest of the deal. Anything paid every turn runs as long as the loan, and cancelling it ends the loan."),
-        h("li", "The loan also ends early when the borrower makes peace with the enemy, the enemy is gone, or the two of you go to war."),
-      ),
+    help: "loans",
     body: [
       lend ? null : h("p.dim", `${name} picks the units it sends.`),
       h("div.fields", field("Against", target), field("Mission", mission), field(`Turns (up to ${maxTurns})`, duration), lend ? null : field("Strength", strength)),

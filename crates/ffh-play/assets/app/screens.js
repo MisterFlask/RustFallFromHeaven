@@ -7,6 +7,7 @@ import { S, emit, dname, tname, turns, voteChoiceLabel, teamName, me, saveNameOf
 import { h, fill, toast, tapModes, coarse } from "./dom.js";
 import { tip } from "./tips.js";
 import { openModal } from "./modals.js";
+import { addHelp, openHelp } from "./help.js";
 import { run } from "./commands.js";
 import { render as markup, plain } from "./markup.js";
 import { illuminate, bannerEl } from "./look.js";
@@ -587,7 +588,7 @@ export function stuckScreen(st) {
 // Help and testing tools.
 
 /** The keys: Civ4's (the action hotkeys come from the game's XML, as each button's tooltip shows). */
-export function keysHelp() {
+function keysTable() {
   const touch = [
     ["Touch", ""],
     ["Tap", "select units (again: the next group there), open your city, show a plot"],
@@ -634,12 +635,14 @@ export function keysHelp() {
     ["Ctrl+1 / 2 / 3", "map layer: terrain / political / yields (ffh-play's)"],
     ["?", "this list (ffh-play's)"],
   ];
-  return openModal({
-    title: coarse() ? "Controls" : "Keys",
-    tag: "keys",
-    body: [h("table.kv", keys.map(([k, v]) => (v ? h("tr", h("th", k), h("td", v)) : h("tr", h("th.group", { colspan: 2 }, k)))))],
-    buttons: [{ label: "Close", value: null }],
-  });
+  return h("table.kv", keys.map(([k, v]) => (v ? h("tr", h("th", k), h("td", v)) : h("tr", h("th.group", { colspan: 2 }, k)))));
+}
+
+addHelp({ id: "keys", group: "Playing", title: coarse() ? "Controls" : "Keys", order: 0, body: () => keysTable() });
+
+/** The help display at the keys (the ? button and key). */
+export function keysHelp() {
+  return openHelp("keys");
 }
 
 /** A box for raw protocol requests (design §5.1 "Rules-testing tools"). */

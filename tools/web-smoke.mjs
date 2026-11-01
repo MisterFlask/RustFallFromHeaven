@@ -1027,11 +1027,12 @@ async function empireScreens() {
   steps.push("empire screens: F6 tech tree, F3 civics, F7 religion, F2 sliders, F4 diplomacy, F1 cities");
 }
 
-/** The keys list (?), the go-to mode (G, then Esc), the map layers. */
+/** The help display at the keys (?), the go-to mode (G, then Esc), the map layers. */
 async function keysAndLayers() {
   await b.key("?");
-  await dialog("Keys");
-  await closeDialog("Keys");
+  await dialog("Help");
+  await until2(`!!document.querySelector('#modals .help-article[data-topic="keys"]') && !!document.querySelector('#modals .help-topic.on[data-topic="keys"]')`, "the help at the keys");
+  await closeDialog("Help");
   if (!(await S("!!S.sel"))) await b.key("Tab");
   if (await S("!!S.sel")) {
     await until2(`window.ffh.units.currentActions().length > 0`, "the selection's actions");
@@ -1645,14 +1646,17 @@ async function crusadeHd2d(url, bin, saves) {
   await until2(`!!document.querySelector(${q(pledge)}) && !!document.querySelector("#modals .modal.crusade .leader-portrait")`, "the call popup with the target's leader (HD-2D)", 30000);
   await b.eval("window.ffh.mapView.r3d.render(1)");
   await shot("hd2d-crusade-call");
-  // The rules sit behind the title bar's (i): a click pins them under the title, another hides them.
-  const info = `${TOP} .modal.crusade .modal-head button.info`;
-  await click(info);
-  await until2(`(() => { const e = document.querySelector(${q(`${TOP} .modal.crusade .modal-info`)}); return !!e && !e.hidden && /Lending means war/.test(e.textContent); })()`, "the call's rules pinned by its (i)");
+  // The rules are in the help display: the title bar's (i) opens it at the crusade topic, over the
+  // call; another topic is a click away; closing it gives the call back.
+  await click(`${TOP} .modal.crusade .modal-head button.info`);
+  await dialog("Help");
+  await until2(`!!document.querySelector('#modals .help-article[data-topic="crusades"]')`, "the help at the crusade topic");
+  await click(`${TOP} .help-topic[data-topic="crusades.lending"]`);
+  await until2(`/Credit and the spoils/.test(document.querySelector('#modals .help-article[data-topic="crusades.lending"]')?.textContent ?? "")`, "the lending topic");
   await b.eval("window.ffh.mapView.r3d.render(1)");
-  await shot("hd2d-crusade-call-info");
-  await click(info);
-  await until2(`document.querySelector(${q(`${TOP} .modal.crusade .modal-info`)}).hidden`, "the call's rules hidden again");
+  await shot("hd2d-crusade-help");
+  await closeDialog("Help");
+  await until2(`!!document.querySelector(${q(pledge)})`, "the call again after the help");
   await click(pledge);
   await until(async () => (await modalTitles()).some((t) => /Lend units now/.test(t)), "the lend question (HD-2D)");
   await until2(`!document.querySelector("#iso-rail #btn-crusades").classList.contains("attention")`, "the advisor's mark gone with the answer");
@@ -1696,7 +1700,7 @@ async function crusadeHd2d(url, bin, saves) {
   await proposeLoan(st, "hd2d-loan");
   await b.eval(`window.ffh.setRenderer("flat")`);
   await until2(`window.ffh.mapView.renderer() === "flat" && !document.querySelector("canvas.map3d")`, "the flat map after the HD-2D crusade");
-  steps.push(`crusades in the HD-2D map (stage crusade): the rail's advisor marked while the call waited, the call popup with the target's leader and its rules behind the (i), ${ids.length} units lent from the lend dialog after the war confirmation, Show the Host from the Crusades advisor, troops lent to the ally as a deal from the trade screen`);
+  steps.push(`crusades in the HD-2D map (stage crusade): the rail's advisor marked while the call waited, the call popup with the target's leader and its (i) opening the help display, ${ids.length} units lent from the lend dialog after the war confirmation, Show the Host from the Crusades advisor, troops lent to the ally as a deal from the trade screen`);
 }
 
 /** P7, `stage settlement`: a Kuriotates settler founds a city below the city limit: the

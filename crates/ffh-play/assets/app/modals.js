@@ -2,7 +2,7 @@
 // takes input, confirmations as promises, and the blocking decision modal.
 
 import { h, $ } from "./dom.js";
-import { hide as hideTip } from "./tips.js";
+import { openHelp, helpTitle } from "./help.js";
 import { render as markup } from "./markup.js";
 import { emit } from "./state.js";
 import { playerPortrait, PORTRAIT } from "./portraits.js";
@@ -29,40 +29,20 @@ export function openTags() {
 /** Opens a dialog. `body`: nodes; `buttons`: `[{label, primary?, disabled?, title?, value?,
  *  onClick?}]` (a button without `onClick` closes the dialog with its `value`); `dismissible`:
  *  Escape and the close button close it with `null`; `tag`: a name (one dialog per tag: a
- *  second opening replaces the first); `wide`: a large panel; `info`: a function making the
- *  dialog's rules explanation (nodes or markup), kept out of its body: an (i) button in the title
- *  bar shows it as a tip on hover and pins it under the title on a click or tap. Returns `{el,
- *  close(value), setBody(nodes), done}`; `done` resolves with the value it closed with. */
-export function openModal({ title, body = [], buttons = [], dismissible = true, tag = null, wide = false, className = "", info = null }) {
+ *  second opening replaces the first); `wide`: a large panel; `help`: the help topic explaining
+ *  the dialog's rules (help.js), kept out of its body: an (i) in the title bar opens the help
+ *  display there, over the dialog. Returns `{el, close(value), setBody(nodes), done}`; `done`
+ *  resolves with the value it closed with. */
+export function openModal({ title, body = [], buttons = [], dismissible = true, tag = null, wide = false, className = "", help = null }) {
   if (tag) closeTag(tag);
   let resolve;
   const done = new Promise((r) => (resolve = r));
   const bodyEl = h("div.modal-body");
   const btnRow = h("div.modal-buttons");
-  // The rules, made afresh for the tip and for the pinned panel (a node has one parent).
-  const make = info ? () => [info()].flat(Infinity).map((x) => (typeof x === "string" ? markup(x) : x)) : null;
-  const infoBox = make ? h("div.modal-info", { hidden: true }) : null;
-  const infoBtn = make
-    ? h(
-        "button.info",
-        {
-          type: "button",
-          "aria-label": "How this works",
-          "aria-expanded": "false",
-          tip: make,
-          onclick: () => {
-            if (infoBox.hidden) infoBox.replaceChildren(...make());
-            infoBox.hidden = !infoBox.hidden;
-            infoBtn.setAttribute("aria-expanded", String(!infoBox.hidden));
-            infoBtn.classList.toggle("on", !infoBox.hidden);
-            hideTip();
-          },
-        },
-        "i",
-      )
-    : null;
-  const head = h("div.modal-head", h("h2", title ?? ""), infoBtn, dismissible ? h("button.close", { title: "Close (Esc)", "aria-label": "Close", onclick: () => m.close(null) }, "×") : null);
-  const box = h(`div.modal${wide ? ".wide" : ""}${make ? ".has-info" : ""}`, { role: "dialog", "aria-modal": "true", "aria-label": title ?? "", class: className, "data-tag": tag }, head, infoBox, bodyEl, btnRow);
+  const helpLabel = help ? `Help: ${helpTitle(help) ?? "how this works"}` : null;
+  const helpBtn = help ? h("button.info", { type: "button", title: helpLabel, "aria-label": helpLabel, "data-help": help, onclick: () => openHelp(help) }, "i") : null;
+  const head = h("div.modal-head", h("h2", title ?? ""), helpBtn, dismissible ? h("button.close", { title: "Close (Esc)", "aria-label": "Close", onclick: () => m.close(null) }, "×") : null);
+  const box = h(`div.modal${wide ? ".wide" : ""}`, { role: "dialog", "aria-modal": "true", "aria-label": title ?? "", class: className, "data-tag": tag }, head, bodyEl, btnRow);
   const backdrop = h("div.backdrop", box);
   const m = {
     el: box,

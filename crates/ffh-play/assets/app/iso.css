@@ -385,8 +385,13 @@ html.iso .modal-head .info {
   position: absolute; right: 34px; top: 4px; width: 22px; height: 22px; margin: 0; border-radius: 0;
   font: 700 16px/18px var(--iso-font); color: var(--iso-gold); border: 2px solid #a86d1c; background: rgba(0, 0, 0, 0.35);
 }
-html.iso .modal-head .info:hover, html.iso .modal-head .info.on { color: #fff; border-color: #ffe58c; }
-html.iso .modal-info { margin: 4px 14px 0; padding: 8px 12px; border: 2px solid #a86d1c; border-bottom-width: 2px; background: rgba(0, 0, 0, 0.35); color: var(--iso-ink); font-size: 16px; line-height: 1.4; }
+html.iso .modal-head .info:hover { color: #fff; border-color: #ffe58c; }
+html.iso .help-topics { border-right: 2px solid rgba(240, 180, 67, 0.35); }
+html.iso .help-group-name { color: var(--iso-gold); }
+html.iso .help-topic { color: var(--iso-ink); border: 2px solid transparent; }
+html.iso .help-topic:hover { border-color: #a86d1c; background: rgba(240, 180, 67, 0.08); }
+html.iso .help-topic.on { color: #fff; border-color: #f0b443; background: rgba(240, 180, 67, 0.16); }
+html.iso .help-article h3 { color: var(--iso-gold); }
 html.iso .modal-body { padding: 8px 14px; }
 html.iso .modal-buttons { border-top: 0; background: none; padding: 8px 14px 6px; }
 html.iso .page-text { font-size: 20px; line-height: 24px; }
