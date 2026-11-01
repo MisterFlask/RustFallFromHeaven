@@ -1456,6 +1456,9 @@ redraw only changed tiles (3.1).
    and is edited by hand. New units from an atlas sheet go through `tools/atlas/` (10.2).
 4. Run `tools/check.sh`, then look: `node tools/screenshot.mjs /tmp/art` and read the set's sheet,
    `coverage.png` and `scene.png` at 1x and 2x. Review against section 14.
+5. Generating new raster art (units, props, items, icons, effect and particle textures) with the
+   local FLUX 3 Klein model: use the house-style pixel-art LoRA, trigger word `pxlhd2d`. Where it
+   lives, how to call it and how it was trained: [art/PIXEL_LORA.md](art/PIXEL_LORA.md).
 
 
 ---

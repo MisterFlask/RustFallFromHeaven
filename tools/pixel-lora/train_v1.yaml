@@ -1,0 +1,68 @@
+﻿---
+# Full pixel-art style LoRA run (~2 h on the RTX 4080 Laptop at ~2.6 s/step + sampling)
+job: extension
+config:
+  name: "pxlhd2d_v1"
+  process:
+    - type: 'sd_trainer'
+      training_folder: "C:\\ai-lora\\pixel_hd2d\\output"
+      device: cuda:0
+      trigger_word: "pxlhd2d"
+      performance_log_every: 250
+      network:
+        type: "lora"
+        linear: 32
+        linear_alpha: 32
+      save:
+        dtype: float16
+        save_every: 250
+        max_step_saves_to_keep: 10
+      datasets:
+        - folder_path: "C:\\ai-lora\\pixel_hd2d\\dataset"
+          caption_ext: "txt"
+          caption_dropout_rate: 0.05
+          cache_latents_to_disk: true
+          resolution: [ 512, 768 ]
+      train:
+        batch_size: 1
+        steps: 2500
+        gradient_accumulation_steps: 1
+        train_unet: true
+        train_text_encoder: false
+        gradient_checkpointing: true
+        noise_scheduler: "flowmatch"
+        timestep_type: "shift"
+        optimizer: "adamw8bit"
+        lr: 1e-4
+        cache_text_embeddings: true
+        skip_first_sample: true
+        dtype: bf16
+      model:
+        arch: "flux3"
+        name_or_path: "C:\\ai-lora\\models\\flux-3-image-klein-base"
+        quantize: true
+        qtype: "convrot8"
+        quantize_te: true
+        qtype_te: "convrot8"
+        low_vram: true
+        model_kwargs:
+          match_target_res: true
+      sample:
+        sampler: "flowmatch"
+        sample_every: 250
+        width: 1024
+        height: 1024
+        prompts:
+          - "[trigger], a fire mage casting a spell, full body game unit sprite on a plain white background"
+          - "[trigger], a dwarven blacksmith with a hammer, full body game unit sprite on a plain white background"
+          - "[trigger], a mushroom-roofed cottage, isolated game sprite on a plain white background"
+          - "[trigger], a swirling green poison vortex spell effect, on a plain black background"
+          - "[trigger], small orange spark and ember particle textures arranged in a grid, on a plain black background"
+        neg: ""  # ai-toolkit defaults this to False, which crashes the FLUX 3 text encoder
+        seed: 42
+        guidance_scale: 3.5
+        sample_steps: 28
+meta:
+  name: "[name]"
+  version: '1.0'
+
