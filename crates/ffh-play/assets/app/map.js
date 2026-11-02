@@ -45,6 +45,9 @@ const BACKDROP_MS = 10000;
 const CITY_FRAME = { side: 384, top: 250, bottom: 84 };
 /** The terrain cache's budget in device pixels (least recently used chunks go first). */
 const PIXEL_BUDGET = 32e6;
+/** A pen press held this long (ms) is the browser's long press, its context-menu gesture: it
+ *  moves (`contextmenu`), it does not also click. */
+const LONG_PRESS_MS = 450;
 /** Activities drawn as asleep (a grey pip): fortified (C++ sleeps them), sleeping, healing,
  *  on sentry. */
 const ASLEEP = ["ACTIVITY_SLEEP", "ACTIVITY_HEAL", "ACTIVITY_SENTRY"];
@@ -162,9 +165,10 @@ export class MapView {
   // ------------------------------------------------------------------------------------------
   // Input
 
-  /** Mouse and pen: drag pans, a click selects, a right-click moves, the wheel zooms, hovering
-   *  previews. Touch (no hover, no right button): one finger drags to pan; two pinch to zoom
-   *  (through the renderer's steps) and pan; a tap shows the plot's preview (tooltip, path, odds)
+  /** Mouse and pen: drag pans, a click selects (or, with units selected, moves them: units.js
+   *  `clickMove`), a right-click moves, the wheel zooms, hovering previews. Touch (no hover, no
+   *  right button): one finger drags to pan; two pinch to zoom (through the renderer's steps) and
+   *  pan; a tap shows the plot's preview (tooltip, path, odds)
    *  where the mouse would hover, then goes to the click handler with the pointer event, whose
    *  `pointerType` the handler reads (units.js: a second tap on a plot moves there). A long press
    *  (the browser's contextmenu) and the double tap do nothing on touch. `this.touch` says whether
@@ -196,7 +200,8 @@ export class MapView {
         }
       }
       if (ev.button !== 0 && ev.button !== 1) return;
-      down = { x: ev.clientX, y: ev.clientY, cx: this.cam.cx, cy: this.cam.cy, dragged: false, button: ev.button, id: ev.pointerId };
+      // `menu`: the browser made this press its context-menu gesture (`contextmenu` below).
+      down = { x: ev.clientX, y: ev.clientY, cx: this.cam.cx, cy: this.cam.cy, dragged: false, button: ev.button, id: ev.pointerId, t: ev.timeStamp, type: ev.pointerType, menu: false };
       c.setPointerCapture(ev.pointerId);
     });
     c.addEventListener("pointermove", (ev) => {
@@ -242,12 +247,18 @@ export class MapView {
       const [id, f] = [...fingers.entries()][0] ?? [];
       down = f ? { x: f.x, y: f.y, cx: this.cam.cx, cy: this.cam.cy, dragged: true, button: 0, id } : null;
     };
+    // One press, one action. With a mouse or a pen the move is the `contextmenu` event: a right
+    // click, but also Ctrl+click on a Mac and a pen's long press, which are primary presses as
+    // well. Their release must not also click: the click would deselect the units, or open the
+    // city they were sent into.
     c.addEventListener("pointerup", (ev) => {
       lift(ev);
       const d = down;
       if (d?.id !== ev.pointerId) return;
       down = null;
-      if (d.dragged || ev.button !== 0) return;
+      if (d.dragged || d.menu || ev.button !== 0) return;
+      // A pen's long press: Windows fires its contextmenu after the release.
+      if (d.type === "pen" && ev.timeStamp - d.t >= LONG_PRESS_MS) return;
       if (this.overlay.city) return this.cityClick(this.plotAt(ev, { ground: true }));
       const p = this.plotAt(ev);
       if (!p) return;
@@ -264,6 +275,7 @@ export class MapView {
     c.addEventListener("contextmenu", (ev) => {
       ev.preventDefault();
       if (this.overlay.city || this.touch) return;
+      if (down) down.menu = true;
       const p = this.plotAt(ev);
       if (p) this.h.rightClick?.(p.x, p.y, ev);
     });

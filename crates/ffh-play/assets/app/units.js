@@ -56,6 +56,16 @@ let armed = null;
 let hover = null;
 let hoverTimer = null;
 let preview = { path: null, combat: null, plot: null };
+/** Click to move (`clickMove`, mouse and pen): the clicks so far (a later click, or a double
+ *  click on a city, supersedes one still asking for its path), the move into the player's own
+ *  city held for the double-click time (`{units, timer}`: a double click opens the city instead),
+ *  and the last move order (`{x, y, t}`, `moveTo`). */
+let clickSeq = 0;
+let cityClick = null;
+let lastOrder = null;
+/** Two clicks this close (ms) are one double click; a second move order to the same plot this
+ *  soon after the first is the same gesture. */
+const DOUBLE_CLICK_MS = 350;
 
 /** A selection's units as a key. */
 function unitsKey(units) {
@@ -288,11 +298,12 @@ export function viewChanged() {
 }
 
 /** A click on plot (x, y): picks the plot in an interface mode, else selects the units there
- *  (again on the same plot: the next group there), else opens the city or shows the plot. A tap
- *  (`ev.pointerType` "touch", after the map showed the plot's preview) with units selected on a
- *  plot without units of ours is the right-click's move, in two taps: the first shows the way
- *  (path, turns, attack odds: the tooltip), a second tap on the same plot goes. */
-export function click(x, y, ev) {
+ *  (again on the same plot: the next group there), else moves the selected units there (click to
+ *  move, `clickMove`), else opens the city or shows the plot. A tap (`ev.pointerType` "touch",
+ *  after the map showed the plot's preview) with units selected on a plot without units of ours
+ *  is the right-click's move, in two taps: the first shows the way (path, turns, attack odds: the
+ *  tooltip), a second tap on the same plot goes. */
+export async function click(x, y, ev) {
   const touch = ev?.pointerType === "touch";
   if (mode) {
     pickPlot(x, y, ev);
@@ -307,6 +318,8 @@ export function click(x, y, ev) {
     renderPlotInfo(x, y);
     return;
   }
+  const seq = ++clickSeq;
+  cancelCityClick();
   const own = ownUnitsAt(x, y);
   if (touch && S.sel && !own.length) {
     const key = `${unitsKey(S.sel.units)}@${x},${y}`;
@@ -332,6 +345,8 @@ export function click(x, y, ev) {
     else selectGroup(g);
     return;
   }
+  if (S.sel && (await clickMove(x, y, ev, seq))) return;
+  if (seq !== clickSeq) return;
   const city = cityAt(x, y);
   if (city && city.owner === me()?.player) {
     emit("open-city", city.id);
@@ -341,6 +356,59 @@ export function click(x, y, ev) {
   syncOverlay();
   emit("selection");
   renderPlotInfo(x, y);
+}
+
+/** Click to move (mouse and pen; a finger has its two taps, `click`): with units selected, a
+ *  click on a plot without units of ours moves them there as a right click does (Shift: a
+ *  waypoint), when the path query finds a way that neither attacks nor declares war. A click is
+ *  also how a plot is looked at, so fights and wars stay with the right click, and a plot out of
+ *  reach is shown as before. Into the player's own city the move waits for the double-click time,
+ *  so that a double click opens the city instead (`dblclick`). Resolves with whether the click was
+ *  taken (as a move, or dropped because a later click superseded it). */
+async function clickMove(x, y, ev, seq) {
+  if (S.status?.phase !== "human") return false;
+  const key = unitsKey(S.sel.units);
+  let path;
+  try {
+    path = await api.query("path", { units: [...S.sel.units], x, y });
+  } catch {
+    return false;
+  }
+  if (seq !== clickSeq) return true;
+  if (!path?.ok || path.attack || (path.declare_war_team !== null && path.declare_war_team !== undefined)) return false;
+  // The selection changed while the path was on its way (the view moved it on): no move.
+  if (unitsKey(S.sel?.units) !== key) return true;
+  const go = ev?.shiftKey ? () => rightClick(x, y, { shiftKey: true }) : () => moveTo(x, y);
+  const city = cityAt(x, y);
+  if (city && city.owner === me()?.player) {
+    cityClick = {
+      units: key,
+      timer: setTimeout(() => {
+        const c = cityClick;
+        cityClick = null;
+        if (c && unitsKey(S.sel?.units) === c.units) go();
+      }, DOUBLE_CLICK_MS),
+    };
+    return true;
+  }
+  go();
+  return true;
+}
+
+/** Drops a click-to-move into the player's own city that waits for the double-click time. */
+function cancelCityClick() {
+  if (cityClick) clearTimeout(cityClick.timer);
+  cityClick = null;
+}
+
+/** A double click on (x, y): opens the player's own city there (its clicks' move into it, if
+ *  any, is dropped). */
+export function dblclick(x, y) {
+  const city = cityAt(x, y);
+  if (!city || city.owner !== me()?.player) return;
+  clickSeq++;
+  cancelCityClick();
+  emit("open-city", city.id);
 }
 
 /** A right-click on (x, y): move the selection there (Shift: add a waypoint). Under engagement
@@ -354,6 +422,8 @@ export function rightClick(x, y, ev) {
     return;
   }
   if (!S.sel || observing()) return;
+  clickSeq++;
+  cancelCityClick();
   if (!ev?.shiftKey) return moveTo(x, y);
   const units = S.sel.units;
   shiftChain = shiftChain.then(async () => {
@@ -370,11 +440,17 @@ let shiftChain = Promise.resolve();
 
 /** Moves the selection to (x, y) now, replacing its orders (waypoints not sent yet are
  *  dropped: the move replaces them). Under engagement combat an attack of an army or a stack
- *  opens the battle plan instead, unless `direct` (the move attacks in the rules' formation). */
+ *  opens the battle plan instead, unless `direct` (the move attacks in the rules' formation).
+ *  A second order to the plot an order went to a moment ago is the same gesture (the second
+ *  click of a double click, a press that was both a click and a context menu): it is not sent,
+ *  since the selection may have moved on to the next group by then. */
 export async function moveTo(x, y, { direct = false } = {}) {
   if (!S.sel) return;
   if (waypoints && unitsKey(waypoints.units) === unitsKey(S.sel.units)) clearWaypoints();
   if (S.sel.x === x && S.sel.y === y) return;
+  const now = performance.now();
+  if (lastOrder && lastOrder.x === x && lastOrder.y === y && now - lastOrder.t < DOUBLE_CLICK_MS) return;
+  lastOrder = { x, y, t: now };
   if (!direct && (await planAttack(x, y))) return;
   if (!S.sel) return;
   await run({ c: "move", units: S.sel.units, x, y, append: false });
@@ -738,7 +814,10 @@ function showTip() {
       if (path.attack) bits.push("attack");
       if (path.declare_war_team !== null) bits.push("declares war");
       if (path.approximate) bits.push("approximate");
-      lines.push(h("div.tip-path", `Move: ${bits.join(", ")} · ${mapView.touch ? "tap again" : "right-click"} to go`));
+      // What a click does here (`clickMove`): fights, wars and moves onto our own units (a click
+      // selects those) take the right click.
+      const clickGoes = !path.attack && path.declare_war_team === null && ownUnitsAt(x, y).length === 0;
+      lines.push(h("div.tip-path", `Move: ${bits.join(", ")} · ${mapView.touch ? "tap again" : clickGoes ? "click" : "right-click"} to go`));
     }
   }
   mapView.showTip(lines);
@@ -1244,7 +1323,7 @@ export function renderPanel() {
         ? `${touchy() ? "Tap" : "Click"} a plot to see its stack (the AI's role and orders of each unit) and this turn's fights there; ⚑ flags it for a bug report.`
         : touchy()
           ? "Tap a unit or a city. With units selected, tap a plot to see the way there; tap it again to go."
-          : "Select a unit or a city. Right-click moves the selected units.";
+          : "Select a unit or a city. Click (or right-click) a plot to move the selected units there.";
       fill(panel, isoSkin() ? [] : h("p.dim", hint));
     }
     return;
@@ -1379,7 +1458,7 @@ function renderCard({ own, r, details, lead, list, seals, tools, status, hint, w
   let state = [hint, way, ...[status].flat()].filter(Boolean);
   // On a touch screen the box holds only the selection's state (a plot pick, done for the turn).
   const touch = coarse();
-  if (!state.length && !touch) state = [h("div.iso-desc-text.dim", "Point at an order to read it. Right-click a plot to move there.")];
+  if (!state.length && !touch) state = [h("div.iso-desc-text.dim", "Point at an order to read it. Click (or right-click) a plot to move there.")];
   const desc = state.length ? h("div.iso-desc", h("div.iso-desc-one.shown", state), [...descs.values()]) : null;
   const name = own.length === 1 ? dname("UnitType", own[0].type) : `${S.sel.units.length} of ${own.length} units`;
   fill(

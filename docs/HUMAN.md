@@ -124,12 +124,12 @@ XML (each button shows its key), and the global keys are Civ4's controls
 
 | | |
 |---|---|
-| left click | select your units on a plot (again: the next group there; Shift: all of them), open your city, or show a plot |
-| right click | move or attack with the selection; with Shift held, each right click adds a waypoint (numbered on the map), and releasing Shift sends them (`Esc` drops them) |
+| left click | select your units on a plot (again: the next group there; Shift: all of them). ffh-play's own, click to move: with units selected, a click on a plot without your units moves them there as a right click does (Shift: a waypoint), when they get there without a fight or declaring war (the tooltip says "click to go"); into your own city too (a double click opens it instead). Otherwise: open your city, or show the plot |
+| right click | move or attack with the selection; with Shift held, each right click adds a waypoint (numbered on the map), and releasing Shift sends them (`Esc` drops them). Ctrl+click on a Mac and a pen's long press are right clicks too (the press does not also count as a left click) |
 | drag, wheel, arrows, `+` `-` | pan and zoom; click or drag the minimap to jump |
 | `W` `A` `S` `D` (held) | ffh-play's own: scroll the map smoothly up, left, down, right (by the keys' place, so `Z` `Q` `S` `D` on AZERTY); Civ4's plain `W`, `A`, `S` and `D` orders (cycle, automate, sentry, destroy) are on their buttons and `Tab` / `Enter` |
 | `Q` / `E` | ffh-play's own: zoom out / in (by the keys' place, so `A` / `E` on AZERTY); Civ4's plain `Q` and `E` orders (quarry, explore) are on their buttons |
-| double click | open your city |
+| double click | open your city (also with units selected) |
 | `Enter` | the next group waiting for orders, as `Tab`; when none waits (Civ4's "end of turn" state: the End turn button glows), end the turn |
 | `Shift+Enter` | end the turn whatever waits, without the checks |
 | `Space` | with a unit selected: skip its turn; with none, end the turn when no group waits |

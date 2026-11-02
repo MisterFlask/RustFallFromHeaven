@@ -637,7 +637,8 @@ Size is about 1–1.5 MB, cached by ETag.
 
 **Units**
 * Click to select; stack list with multi-select; group and split (`join_group`).
-* Right-click, or `M` then click, to move.
+* Right-click, or `M` then click, to move; with units selected, a left click on a plot they reach
+  without a fight or a war moves them too (click to move).
 * **Path preview** with per-turn markers; Shift adds a waypoint (append).
 * **Hovering an enemy** shows odds plus the CombatDetails breakdown.
 * **Actions panel** from the `group` query, covering:

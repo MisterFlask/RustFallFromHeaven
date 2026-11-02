@@ -600,7 +600,7 @@ function keysTable() {
   const keys = [
     ...(coarse() ? touch : []),
     ["Mouse", ""],
-    ["Left click", "select units (again: the next group there), open your city, show a plot"],
+    ["Left click", "select units (again: the next group there); with units selected, move them to a plot they reach without a fight (\"click to go\"); else open your city, show a plot"],
     ["Right click", "move or attack with the selection; with Shift held, add waypoints (sent when Shift is released)"],
     ["Drag, wheel, arrows, + −", "pan and zoom the map; the minimap centres"],
     ["W A S D (held)", "scroll the map smoothly (ffh-play's: Civ4's W, A, S and D orders are on their buttons)"],
