@@ -1,0 +1,105 @@
+{
+ "name": "orthus",
+ "sprite": "m7/roster/units/unit_orthus.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "Orthus, the orc warlord hero (Fall from Heaven), a hulking green orc with jutting tusks, red eyes, a scarred brow and a black topknot tied with red, a black spiked iron pauldron on his screen-left shoulder, a black spiked bracer on his screen-left forearm, a necklace of teeth, a brown leather harness, a belt hung with three bone skulls over a red loincloth, spiked iron knee guards and brown boots, and a huge double-bitted steel battle axe on a red-wrapped haft held near the haft's end in his LEFT hand (screen-right), resting across his shoulders with the axe head behind him at the upper-left",
+ "hands": "the battle axe stays in his left hand on the screen-right side and his right hand is an empty fist hanging at his side on the screen-left side",
+ "guide_style": "grey",
+ "scale": 0.94,
+ "head_r": 10,
+ "limb": 1.35,
+ "joints": {
+  "head": [
+   89,
+   57
+  ],
+  "neck": [
+   88,
+   67
+  ],
+  "chest": [
+   87,
+   77
+  ],
+  "pelvis": [
+   86,
+   90
+  ],
+  "r_sh": [
+   99,
+   66
+  ],
+  "r_el": [
+   108,
+   78
+  ],
+  "r_ha": [
+   110,
+   60
+  ],
+  "tip": [
+   55,
+   40
+  ],
+  "l_sh": [
+   64,
+   66
+  ],
+  "l_el": [
+   56,
+   83
+  ],
+  "l_ha": [
+   57,
+   97
+  ],
+  "r_hip": [
+   95,
+   92
+  ],
+  "r_kn": [
+   101,
+   104
+  ],
+  "r_ft": [
+   101,
+   117
+  ],
+  "l_hip": [
+   77,
+   92
+  ],
+  "l_kn": [
+   68,
+   104
+  ],
+  "l_ft": [
+   66,
+   117
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the battle axe is lifted up over the head with its double-bitted steel head pointing up and back",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the battle axe cocked behind the head with its steel head hanging down behind the shoulders to the left, his empty right fist tucked in",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the axe arm sweeps over the head and the battle axe is level, its steel head pointing to the lower-right",
+   "4": "contact: axe arm fully extended toward the lower-right, the battle axe's steel blade chopping down-right, front knee bent, body low and leaning in, his empty right fist swung back for balance",
+   "5": "follow-through: the battle axe carries on down until its steel head nearly touches the ground at the lower-right, torso twisted, the black topknot trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the battle axe lifts back up toward his shoulder"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (his empty right fist flung out to the left, the axe arm thrown up and out to the right)",
+   "1": "recoil extreme: leaning back further, knees bent, the battle axe dipping, his empty right fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, the axe arm flung up, his empty right fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the battle axe lowering",
+   "3": "kneeling: on both knees, slumped forward, the battle axe's steel head resting on the ground, his empty right arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the battle axe slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left; the battle axe lies on the ground at the lower-right",
+   "6": "bounce: head and shoulders lift slightly off the ground, the black topknot settles",
+   "7": "corpse: lying flat and still on his back, eyes closed, the battle axe on the ground beside him"
+  }
+ }
+}

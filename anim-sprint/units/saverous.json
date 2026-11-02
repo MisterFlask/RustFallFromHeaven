@@ -1,0 +1,106 @@
+{
+ "name": "saverous",
+ "sprite": "m7/roster/units/unit_saverous.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "Saverous (Fall from Heaven), the Octopus Overlords' champion, a hulking bald brute: purple-grey skin covered in glowing teal rune tattoos, glowing teal eyes, a red scar across the bald scalp, a fanged snarl, spiked iron pauldrons on both shoulders, iron shackles on both wrists with broken chain ends dangling, a tattered dark green loincloth with an iron ring at the belt, bare feet, and a heavy spiked iron ball on a chain (a flail) hanging from his LEFT fist",
+ "hands": "the chain of the spiked iron flail stays gripped in his left fist on the screen-right side and his right hand is an empty fist on the screen-left side, a broken chain dangling from its shackle",
+ "guide_style": "grey",
+ "scale": 1.27,
+ "head_r": 11,
+ "limb": 1.5,
+ "joints": {
+  "head": [
+   82,
+   29
+  ],
+  "neck": [
+   81,
+   41
+  ],
+  "chest": [
+   78,
+   51
+  ],
+  "pelvis": [
+   76,
+   68
+  ],
+  "r_sh": [
+   95,
+   42
+  ],
+  "r_el": [
+   99,
+   59
+  ],
+  "r_ha": [
+   113,
+   62
+  ],
+  "tip": [
+   123,
+   97
+  ],
+  "l_sh": [
+   57,
+   40
+  ],
+  "l_el": [
+   36,
+   64
+  ],
+  "l_ha": [
+   39,
+   84
+  ],
+  "r_hip": [
+   85,
+   71
+  ],
+  "r_kn": [
+   90,
+   92
+  ],
+  "r_ft": [
+   94,
+   116
+  ],
+  "l_hip": [
+   66,
+   71
+  ],
+  "l_kn": [
+   46,
+   92
+  ],
+  "l_ft": [
+   41,
+   117
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the left fist lifts the chain flail up over the head, the spiked iron ball swinging up and back on its chain",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the chain flail cocked behind the head with the spiked iron ball hanging down behind the shoulders, the empty right fist tucked in, its broken shackle chain swinging",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the arm sweeps over the head and the flail's chain pulls taut, the spiked iron ball flying level toward the lower-right",
+   "4": "contact: flail arm fully extended toward the lower-right, the spiked iron ball smashing down-right at the end of its taut chain, front knee bent, body low and leaning in, the empty right fist swung back for balance",
+   "5": "follow-through: the spiked iron ball carries on down on its chain until it nearly touches the ground at the lower-right, torso twisted, the tattered green loincloth trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the spiked iron ball swings back on its chain and hangs down from the left fist again"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; the bald head snaps back toward the upper-left, the glowing eyes squeezed shut, torso jolts back, both arms jerk outward (the empty right fist flung out to the left with its broken shackle chain flying, the flail arm thrown up and out with the spiked iron ball swinging on its chain)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the spiked iron ball dangling low on its chain, the empty right fist still held out to the left",
+   "2": "recovering: halfway back to the ready pose, the spiked iron ball hanging from his left fist on its chain"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, the flail arm flung up with the spiked iron ball swinging on its chain, the empty right fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, the bald head droops, the spiked iron ball lowering on its chain",
+   "3": "kneeling: on both knees, slumped forward, the spiked iron ball resting on the ground at the lower-right with its chain still in his left fist, the empty right arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the flail's chain slips out of the left fist, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, bare feet toward the lower-right and bald head toward the upper-left; the spiked iron ball and its chain lie on the ground at the lower-right; the tattered green loincloth over his thighs",
+   "6": "bounce: head and shoulders lift slightly off the ground, the broken chains on his wrist shackles settle",
+   "7": "corpse: lying flat and still on his back, eyes closed and dark, the spiked iron flail on the ground beside him"
+  }
+ }
+}

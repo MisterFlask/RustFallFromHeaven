@@ -1,0 +1,32 @@
+{
+ "name": "horseman",
+ "sprite": "m7/roster/units/unit_horseman.png",
+ "body_plan": "mounted",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Horseman, a light cavalryman in a steel kettle helmet, steel shoulder plates over a brown leather jerkin, a round wooden shield with a steel boss on his RIGHT arm and a steel-tipped spear in his LEFT hand, riding a chestnut horse with a white blaze, a dark mane and tail and dark hooves",
+ "hands": "the spear stays in the rider's left hand on the screen-right side and the round shield on his right arm on the screen-left side",
+ "guide_style": "grey",
+ "rider_action": "swing",
+ "head_r": 8,
+ "limb": 0.85,
+ "dims": {"body_r": 10, "head_r": 6, "neck_r": 6, "snout_w": 6, "leg_w": 4, "paw_r": 2.5, "tail_w": 4},
+ "words": {"mount": "horse", "rider": "rider", "weapon": "spear", "feet": "hooves", "shield": "round shield"},
+ "joints": {
+  "mount": {
+   "head": [106, 70], "snout": [116, 84], "jaw": [112, 86], "neck": [96, 76],
+   "withers": [91, 88], "spine": [76, 88], "hips": [57, 86],
+   "tail_base": [50, 81], "tail_mid": [46, 92], "tail_tip": [44, 104],
+   "fn_top": [90, 96], "fn_knee": [90, 107], "fn_paw": [93, 120],
+   "ff_top": [98, 93], "ff_knee": [104, 103], "ff_paw": [99, 112],
+   "hn_top": [57, 95], "hn_knee": [55, 106], "hn_paw": [57, 117],
+   "hf_top": [70, 96], "hf_knee": [72, 106], "hf_paw": [76, 113]
+  },
+  "rider": {
+   "head": [78, 47], "neck": [79, 55], "chest": [78, 63], "pelvis": [78, 75],
+   "r_sh": [85, 58], "r_el": [88, 65], "r_ha": [90, 63], "tip": [114, 27],
+   "l_sh": [70, 58], "l_el": [66, 64], "l_ha": [64, 69], "shield": [63, 69, 7.5, 10],
+   "leg_kn": [67, 86], "leg_ft": [70, 98]
+  }
+ }
+}

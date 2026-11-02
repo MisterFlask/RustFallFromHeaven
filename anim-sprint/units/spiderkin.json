@@ -1,0 +1,54 @@
+{
+ "name": "spiderkin",
+ "sprite": "m7/roster/units/unit_spiderkin.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Spiderkin (Fall from Heaven), a pale purple-skinned spider-man in a ragged brown hood showing a red multi-eyed spider face with white fangs, black chitin armour plates with a red hourglass mark on the chest, bone-white wrappings on the forearms, a tattered brown loincloth, black boots, four long black spider legs with orange joints arching up from his back, and a long barbed steel spear held upright in his LEFT hand",
+ "hands": "the barbed spear stays upright in his left hand on the screen-right side and his right hand on the screen-left side is an empty clawed fist",
+ "guide_style": "grey",
+ "scale": 0.86,
+ "head_r": 10,
+ "limb": 1.15,
+ "joints": {
+  "head": [80, 62],
+  "neck": [79, 71],
+  "chest": [78, 80],
+  "pelvis": [77, 92],
+  "r_sh": [87, 74],
+  "r_el": [91, 84],
+  "r_ha": [102, 89],
+  "tip": [122, 40],
+  "l_sh": [63, 70],
+  "l_el": [55, 84],
+  "l_ha": [55, 98],
+  "r_hip": [84, 95],
+  "r_kn": [88, 103],
+  "r_ft": [88, 117],
+  "l_hip": [70, 95],
+  "l_kn": [66, 104],
+  "l_ft": [60, 118]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the barbed spear is lifted up over the head with its spearhead pointing up and back, the spider legs on his back rising",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the spear cocked behind the head with the barbed spearhead hanging down behind the shoulders, the empty clawed right hand tucked in",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the arm sweeps over the head and the barbed spear is level, its spearhead pointing to the lower-right",
+   "4": "contact: spear arm fully extended toward the lower-right, the barbed spearhead stabbing down-right, front knee bent, body low and leaning in, the empty clawed right hand swung back for balance",
+   "5": "follow-through: the spear carries on down until its barbed spearhead nearly touches the ground at the lower-right, torso twisted, the spider legs on his back trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the barbed spear lifts back toward the ready angle"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; the hooded head snaps back toward the upper-left, the red eyes squeezed shut, torso jolts back, the spider legs on his back splaying, both arms jerk outward (the empty clawed right hand flung out to the left, spear arm thrown up and out)",
+   "1": "recoil extreme: leaning back further, knees bent, the barbed spear dipping, the empty clawed right hand still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, spear arm flung up, the empty clawed right hand drooping, the spider legs on his back flailing",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, the hooded head droops, the barbed spear lowering",
+   "3": "kneeling: on both knees, slumped forward, the barbed spearhead resting on the ground, the empty right arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the barbed spear slips out of the hand, legs slide forward, the spider legs on his back crumpling",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left; the barbed spear lies on the ground at the lower-right; the four spider legs from his back curled up beside him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the spider legs twitch",
+   "7": "corpse: lying flat and still on his back, the red eyes dark, the four spider legs curled up and still, the barbed spear on the ground beside him"
+  }
+ }
+}

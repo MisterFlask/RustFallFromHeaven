@@ -1,0 +1,71 @@
+{
+ "unit": "queen_of_the_line",
+ "facing": "lower-right",
+ "arm": "final_queen_of_the_line",
+ "anim": "strike",
+ "canvas": [
+  160,
+  128
+ ],
+ "anchor": [
+  80,
+  126
+ ],
+ "loop": false,
+ "hold_last": false,
+ "frames": [
+  {
+   "file": "frame_00.png",
+   "ms": 100,
+   "events": []
+  },
+  {
+   "file": "frame_01.png",
+   "ms": 120,
+   "events": []
+  },
+  {
+   "file": "frame_02.png",
+   "ms": 160,
+   "events": []
+  },
+  {
+   "file": "frame_03.png",
+   "ms": 50,
+   "events": []
+  },
+  {
+   "file": "frame_04.png",
+   "ms": 120,
+   "events": [
+    "hit"
+   ]
+  },
+  {
+   "file": "frame_05.png",
+   "ms": 120,
+   "events": []
+  },
+  {
+   "file": "frame_06.png",
+   "ms": 100,
+   "events": []
+  },
+  {
+   "file": "frame_07.png",
+   "ms": 100,
+   "events": []
+  }
+ ],
+ "note": "procedural (ship): lib/procedural.py",
+ "warnings": [
+  "frame 0 leaves the safe region x (16, 144): bbox (12, 1, 147, 126)",
+  "frame 1 leaves the safe region x (16, 144): bbox (10, 0, 145, 125)",
+  "frame 2 leaves the safe region x (16, 144): bbox (8, 0, 144, 125)",
+  "frame 3 leaves the safe region x (16, 144): bbox (16, 0, 152, 126)",
+  "frame 4 leaves the safe region x (16, 144): bbox (21, 0, 156, 127)",
+  "frame 5 leaves the safe region x (16, 144): bbox (20, 0, 155, 127)",
+  "frame 6 leaves the safe region x (16, 144): bbox (15, 0, 150, 126)",
+  "frame 7 leaves the safe region x (16, 144): bbox (12, 0, 147, 125)"
+ ]
+}

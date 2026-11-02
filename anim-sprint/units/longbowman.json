@@ -1,0 +1,98 @@
+{
+ "name": "longbowman",
+ "sprite": "m7/roster/units/unit_longbowman.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "body_plan": "ranged",
+ "description": "a Longbowman (Fall from Heaven), a human soldier: a round steel kettle helmet over a grey mail coif, a green tunic with cream trim, a brown leather belt and baldric, tan trousers and brown leather boots, a quiver of white-fletched arrows on his back at the screen-left, and a tall wooden longbow held out in his LEFT hand (screen-right) with an arrow nocked and drawn to his cheek by his RIGHT hand (screen-left)",
+ "hands": "the longbow stays in his left hand on the screen-right side, held out at arm's length; his right hand on the screen-left side draws the string and arrow back to his cheek",
+ "guide_style": "grey",
+ "scale": 0.77,
+ "head_r": 9,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   71,
+   67
+  ],
+  "neck": [
+   71,
+   74
+  ],
+  "chest": [
+   72,
+   82
+  ],
+  "pelvis": [
+   73,
+   92
+  ],
+  "r_sh": [
+   83,
+   77
+  ],
+  "r_el": [
+   91,
+   80
+  ],
+  "r_ha": [
+   101,
+   80
+  ],
+  "tip": [
+   91,
+   34
+  ],
+  "l_sh": [
+   64,
+   77
+  ],
+  "l_el": [
+   59,
+   81
+  ],
+  "l_ha": [
+   77,
+   77
+  ],
+  "r_hip": [
+   78,
+   96
+  ],
+  "r_kn": [
+   79,
+   107
+  ],
+  "r_ft": [
+   82,
+   119
+  ],
+  "l_hip": [
+   67,
+   96
+  ],
+  "l_kn": [
+   63,
+   108
+  ],
+  "l_ft": [
+   60,
+   119
+  ]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk (the right hand jolted off the string to the chest, its elbow out to the left, still clutching the arrow; the bow arm jerked out to the right with the longbow upright and raised)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the longbow tipping forward with its top leaning out to the right, the right hand still at the chest with the arrow"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, bow arm flung up with the longbow upright, the arrow falling from the right hand",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the longbow lowering",
+   "3": "kneeling: on both knees, slumped forward, one end of the longbow resting on the ground at the lower-right, the right arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the longbow slips out of the hand, legs slide forward, the kettle helmet tipping",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the kettle helmet still on; the longbow lies on the ground at the lower-right; the quiver under his shoulders, a few arrows spilled",
+   "6": "bounce: head and shoulders lift slightly off the ground, the kettle helmet stays on",
+   "7": "corpse: lying flat and still on his back, eyes closed, the longbow on the ground beside him"
+  }
+ }
+}

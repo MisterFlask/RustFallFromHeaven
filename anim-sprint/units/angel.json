@@ -1,0 +1,104 @@
+{
+ "name": "angel",
+ "sprite": "m7/roster/units/unit_angel.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "an Angel (Fall from Heaven), a blonde female warrior with long golden hair and a gold circlet, two big white feathered wings spread up behind her shoulders, shining gold plate armour (breastplate, pauldrons, gauntlets, greaves and sabatons) over a short white skirt, a long straight steel sword with a gold crossguard in her RIGHT hand and a round gold shield on her LEFT arm",
+ "hands": "the sword stays in her right hand on the screen-left side and the gold shield on her left arm on the screen-right side",
+ "guide_style": "grey",
+ "scale": 0.94,
+ "head_r": 10,
+ "limb": 1.05,
+ "joints": {
+  "head": [
+   80,
+   54
+  ],
+  "neck": [
+   79,
+   65
+  ],
+  "chest": [
+   80,
+   72
+  ],
+  "pelvis": [
+   79,
+   84
+  ],
+  "r_sh": [
+   70,
+   70
+  ],
+  "r_el": [
+   62,
+   76
+  ],
+  "r_ha": [
+   54,
+   77
+  ],
+  "tip": [
+   41,
+   38
+  ],
+  "l_sh": [
+   88,
+   68
+  ],
+  "l_el": [
+   92,
+   77
+  ],
+  "l_ha": [
+   94,
+   84
+  ],
+  "shield": [
+   96,
+   85,
+   7,
+   12
+  ],
+  "r_hip": [
+   71,
+   89
+  ],
+  "r_kn": [
+   64,
+   101
+  ],
+  "r_ft": [
+   62,
+   116
+  ],
+  "l_hip": [
+   86,
+   89
+  ],
+  "l_kn": [
+   86,
+   102
+  ],
+  "l_ft": [
+   94,
+   117
+  ]
+ },
+ "beats": {
+  "strike": {
+   "5": "follow-through: the blade carries on down until its tip nearly touches the ground at the lower-right, torso twisted, long golden hair and white wings trailing back"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, white wings flaring, both arms jerk outward (sword arm thrown up and out to the left, the gold shield flung out to the right)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, sword dipping, the gold shield still held out, wings half folded"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, sword arm flung up, the gold shield drooping, wings flaring",
+   "4": "falling back: torso tips back toward the upper-left, the sword slips out of the hand, legs slide forward, the white wings crumpling",
+   "5": "hits the ground: lying on her back along the ground, feet toward the lower-right and head toward the upper-left, her white wings spread flat on the ground under her; the sword lies on the ground at the lower-right; the gold shield lies flat beside her",
+   "6": "bounce: head and shoulders lift slightly off the ground, the wings settle, the gold shield rocks",
+   "7": "corpse: lying flat and still on her back, eyes closed, white wings limp on the ground, the sword and the gold shield on the ground beside her"
+  }
+ }
+}

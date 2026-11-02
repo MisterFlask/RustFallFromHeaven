@@ -1,0 +1,39 @@
+{
+ "unit": "trireme",
+ "facing": "lower-right",
+ "arm": "final_trireme",
+ "anim": "idle",
+ "canvas": [
+  160,
+  128
+ ],
+ "anchor": [
+  80,
+  126
+ ],
+ "loop": true,
+ "hold_last": false,
+ "frames": [
+  {
+   "file": "frame_00.png",
+   "ms": 250,
+   "events": []
+  },
+  {
+   "file": "frame_01.png",
+   "ms": 250,
+   "events": []
+  },
+  {
+   "file": "frame_02.png",
+   "ms": 250,
+   "events": []
+  },
+  {
+   "file": "frame_03.png",
+   "ms": 250,
+   "events": []
+  }
+ ],
+ "note": "procedural (ship): lib/procedural.py"
+}

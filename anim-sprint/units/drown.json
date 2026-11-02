@@ -1,0 +1,54 @@
+{
+ "name": "drown",
+ "sprite": "m7/roster/units/unit_drown.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Drown, a drowned undead risen from the sea: pale blue-grey skin, blank white eyes and a gaping mouth, long tangled black hair hung with green seaweed and small pale shells, an orange starfish stuck to his right shoulder (screen-left), a ragged dark blue tunic with a white V collar, a brown rope belt, torn grey-brown trousers, bare pale blue feet, strands of green seaweed hanging from his body and his trident, a few blue water drops dripping off him, and a long wooden-shafted trident with three rusty iron prongs, gripped at the lower end of its shaft in his RIGHT hand (screen-left), the prongs raised to the upper-right",
+ "hands": "the trident stays in his right hand at the lower end of the shaft on the screen-left side; at rest his left hand on the screen-right side also holds the shaft higher up, and during the action it lets go and is an empty fist",
+ "guide_style": "grey",
+ "scale": 0.98,
+ "head_r": 10,
+ "limb": 1.0,
+ "joints": {
+  "head": [76, 52],
+  "neck": [76, 62],
+  "chest": [72, 72],
+  "pelvis": [70, 86],
+  "r_sh": [54, 68],
+  "r_el": [50, 84],
+  "r_ha": [56, 95],
+  "tip": [120, 59],
+  "l_sh": [84, 67],
+  "l_el": [80, 78],
+  "l_ha": [89, 80],
+  "r_hip": [64, 92],
+  "r_kn": [58, 104],
+  "r_ft": [54, 117],
+  "l_hip": [78, 92],
+  "l_kn": [82, 104],
+  "l_ft": [83, 116]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back toward the upper-left, the left hand lets go of the shaft, the trident is lifted high beside the head with its prongs pointing up",
+   "2": "wind-up extreme: body coiled back and crouched, the trident hand behind the head and the trident's prongs hanging down behind the shoulders to the left, the left hand an empty fist tucked across the belly",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips round, the trident arm sweeps across in front of the chest and the trident is level, its prongs pointing to the right, the left hand an empty fist",
+   "4": "contact: trident arm fully extended toward the lower-right, the trident's three prongs stabbing down-right, front knee bent, body low and leaning in, the empty left fist swung back behind the shoulders for balance",
+   "5": "follow-through: the trident carries on down until its prongs nearly touch the ground at the lower-right, torso twisted, the seaweed-tangled hair trailing back, the empty left fist trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the trident comes back up on the near side toward the ready angle with its prongs raised to the right, the left hand reaching for the shaft"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (trident arm thrown up and out to the left, the empty left fist flung out to the right), water drops flying",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the trident dipping, the empty left fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, trident arm flung up, the empty left fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the trident lowering, the empty left fist hanging",
+   "3": "kneeling: on both knees, slumped forward, the trident's prongs resting on the ground at the lower-right, the empty left arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the trident slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the seaweed-tangled hair spread on the ground; the trident lies on the ground at the lower-right",
+   "6": "bounce: head and shoulders lift slightly off the ground, the seaweed settles",
+   "7": "corpse: lying flat and still on his back, eyes blank, the trident on the ground beside him"
+  }
+ }
+}

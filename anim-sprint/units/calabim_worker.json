@@ -1,0 +1,105 @@
+{
+ "name": "calabim_worker",
+ "sprite": "m7/roster/units/unit_calabim_worker.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Calabim Worker, a pale vampire peasant: red eyes and black hair under a wide grey brimmed hat, a white shirt with grey rolled sleeves, a ragged red vest and red tunic with a dark belt, grey trousers and black boots, and a long wooden hoe with a steel blade, gripped by the end of its shaft in his RIGHT hand",
+ "hands": "the hoe's shaft end stays in his right hand on the screen-left side; at rest his left hand on the screen-right side also holds the shaft lower down, but during the action it lets go and is an empty fist",
+ "guide_style": "grey",
+ "scale": 0.88,
+ "head_r": 10,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   77,
+   59
+  ],
+  "neck": [
+   76,
+   68
+  ],
+  "chest": [
+   75,
+   77
+  ],
+  "pelvis": [
+   72,
+   88
+  ],
+  "r_sh": [
+   59,
+   70
+  ],
+  "r_el": [
+   51,
+   77
+  ],
+  "r_ha": [
+   63,
+   84
+  ],
+  "tip": [
+   107,
+   108
+  ],
+  "l_sh": [
+   84,
+   72
+  ],
+  "l_el": [
+   85,
+   84
+  ],
+  "l_ha": [
+   90,
+   97
+  ],
+  "r_hip": [
+   65,
+   92
+  ],
+  "r_kn": [
+   55,
+   106
+  ],
+  "r_ft": [
+   51,
+   120
+  ],
+  "l_hip": [
+   79,
+   92
+  ],
+  "l_kn": [
+   77,
+   107
+  ],
+  "l_ft": [
+   80,
+   120
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back toward the upper-left, the left hand lets go of the shaft, the hoe is lifted up over the hat and held level, its steel blade out to the right",
+   "2": "wind-up extreme: body coiled back and crouched, the hoe hand behind the head and the hoe's steel blade hanging down behind the shoulders to the left, the left hand an empty fist tucked across the belly",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips round, the hoe arm sweeps across in front of the chest and the hoe is level, its steel blade pointing to the right, the left hand an empty fist",
+   "4": "contact: hoe arm fully extended toward the lower-right, the hoe's steel blade chopping down-right, front knee bent, body low and leaning in, the empty left fist swung back behind the shoulders for balance",
+   "5": "follow-through: the hoe carries on down until its steel blade nearly touches the ground at the lower-right, torso twisted, the empty left fist trailing back, the wide hat still on his head",
+   "6": "recover: body rises, front foot pulls back halfway, the hoe comes back to its working angle with the steel blade low at the lower-right, the left hand reaching for the shaft"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left under the wide hat, eyes squeezed shut, torso jolts back, both arms jerk outward (the hoe arm thrown up and out to the left with the hoe held level, the empty left fist flung out to the right)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the hoe dipping across the body, the empty left fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, the hoe arm flung up with the hoe slanting down across the body, the empty left fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops under the wide hat, the hoe lowering, the empty left fist hanging",
+   "3": "kneeling: on both knees, slumped forward, the hoe's steel blade resting on the ground at the lower-right, the empty left arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the hoe slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the wide grey hat still on his head; the hoe lies on the ground at the lower-right",
+   "6": "bounce: head and shoulders lift slightly off the ground, the ragged red vest settles",
+   "7": "corpse: lying flat and still on his back, eyes closed, the hoe on the ground beside him"
+  }
+ }
+}

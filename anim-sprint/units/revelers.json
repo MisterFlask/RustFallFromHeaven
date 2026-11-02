@@ -1,0 +1,105 @@
+{
+ "name": "revelers",
+ "sprite": "m7/roster/units/unit_revelers.png",
+ "facing": "lower-left",
+ "tag": "anim/units",
+ "description": "Revelers (Fall from Heaven), a small dancing jester in purple, pink and gold harlequin motley with gold bells on the points of his jacket, a three-pointed purple, pink and gold jester hat with gold bells, a black blindfold whose knotted tails trail behind his head, a wide grin with red lips, a white ruff collar, curled gold-and-purple shoes, one leg kicked up behind him, a gold masquerade mask on a stick in his RIGHT hand (screen-left) and a curved steel dagger in his LEFT hand (screen-right)",
+ "hands": "the curved dagger stays in his left hand on the screen-right side and the gold masquerade mask on its stick stays in his right hand on the screen-left side",
+ "guide_style": "grey",
+ "scale": 0.83,
+ "head_r": 8,
+ "limb": 0.9,
+ "joints": {
+  "head": [
+   78,
+   64
+  ],
+  "neck": [
+   79,
+   73
+  ],
+  "chest": [
+   81,
+   81
+  ],
+  "pelvis": [
+   82,
+   89
+  ],
+  "r_sh": [
+   90,
+   77
+  ],
+  "r_el": [
+   94,
+   86
+  ],
+  "r_ha": [
+   102,
+   90
+  ],
+  "tip": [
+   114,
+   70
+  ],
+  "l_sh": [
+   70,
+   77
+  ],
+  "l_el": [
+   65,
+   85
+  ],
+  "l_ha": [
+   60,
+   82
+  ],
+  "r_hip": [
+   87,
+   93
+  ],
+  "r_kn": [
+   85,
+   103
+  ],
+  "r_ft": [
+   84,
+   110
+  ],
+  "l_hip": [
+   75,
+   93
+  ],
+  "l_kn": [
+   74,
+   106
+  ],
+  "l_ft": [
+   76,
+   117
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back toward the upper-right, the curved dagger is lifted beside the head with its tip pointing up and back, the bells of the jester hat swinging",
+   "2": "wind-up extreme: body coiled back and crouched, the dagger hand behind the head and the curved blade hanging down behind the shoulders to the right, the gold mask on its stick tucked across the belly",
+   "3": "swing: the front foot steps toward the lower-left, the torso whips round, the dagger arm sweeps across in front of the chest and the curved blade is level, pointing to the left",
+   "4": "contact: dagger arm fully extended toward the lower-left, the curved dagger slashing down-left, front knee bent, body low and leaning in, the gold mask on its stick swung back behind the shoulders for balance",
+   "5": "follow-through: the curved dagger carries on down until its tip nearly touches the ground at the lower-left, torso twisted, the points of the jester hat and the blindfold tails trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the curved dagger comes back up on the near side toward the ready angle, the gold mask on its stick held across the belly"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-left; head snaps back toward the upper-right, the grin twisted into a grimace under the blindfold, torso jolts back, both arms jerk outward (the dagger arm thrown up and out to the right, the gold mask on its stick flung out to the left)",
+   "1": "recoil extreme: leaning back further toward the upper-right, knees bent, the curved dagger dipping, the gold mask on its stick still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-right, body thrown back, the dagger arm flung up, the gold mask on its stick drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the points of the jester hat flopping, the curved dagger lowering",
+   "3": "kneeling: on both knees, slumped forward, the tip of the curved dagger resting on the ground at the lower-left, the arm with the gold mask hanging",
+   "4": "falling back: torso tips back toward the upper-right, the curved dagger slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-left and head toward the upper-right; the curved dagger lies on the ground at the lower-left; the gold mask on its stick lies beside him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the bells of the hat settle",
+   "7": "corpse: lying flat and still on his back, the blindfold still on, the grin slack, the curved dagger and the gold mask on its stick on the ground beside him"
+  }
+ }
+}

@@ -1,0 +1,47 @@
+{
+ "name": "gilden",
+ "sprite": "m7/roster/units/unit_gilden.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "body_plan": "ranged",
+ "description": "Gilden Silveric (Fall from Heaven), the Ljosalfar elf ranger hero: long straight white hair and pointed elf ears, a green tunic with a leaf-shaped hem and a dark green cape behind him, brown leather bracers, belt and knee-high boots with gold straps, a quiver of white-fletched arrows on his back, a tall golden-brown longbow held upright in his LEFT hand at arm's length, and a short curved steel knife in his RIGHT hand",
+ "hands": "the longbow stays in his left hand on the screen-right side, held upright at arm's length; his right hand on the screen-left side holds the curved knife low, blade pointing down",
+ "guide_style": "grey",
+ "scale": 0.9,
+ "head_r": 9,
+ "limb": 1.0,
+ "joints": {
+  "head": [82, 57],
+  "neck": [82, 66],
+  "chest": [80, 74],
+  "pelvis": [79, 85],
+  "r_sh": [93, 72],
+  "r_el": [103, 75],
+  "r_ha": [114, 76],
+  "tip": [104, 33],
+  "l_sh": [70, 71],
+  "l_el": [60, 76],
+  "l_ha": [56, 84],
+  "r_hip": [86, 88],
+  "r_kn": [95, 105],
+  "r_ft": [100, 117],
+  "l_hip": [74, 88],
+  "l_kn": [66, 104],
+  "l_ft": [65, 115]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, the long white hair flying, torso jolts back, both arms jerk outward (the knife hand flung out to the left, the bow arm thrown up and out with the longbow held upright)",
+   "1": "recoil extreme: leaning back further, knees bent, the longbow tilting, the knife hand still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, the bow arm flung up with the longbow, the knife hand drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the longbow lowering",
+   "3": "kneeling: on both knees, slumped forward, one end of the longbow resting on the ground, the knife arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the longbow slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left; the longbow lies on the ground at the lower-right; the green cape and the white hair spread under him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the cape settles",
+   "7": "corpse: lying flat and still on his back, eyes closed, the longbow and the curved knife on the ground beside him"
+  }
+ }
+}

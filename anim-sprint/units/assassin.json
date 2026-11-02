@@ -1,0 +1,106 @@
+{
+ "name": "assassin",
+ "sprite": "m7/roster/units/unit_assassin.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "an Assassin (Fall from Heaven), a lean hooded killer in a low crouched stance: a deep charcoal-grey hood, a black cloth mask over the nose and mouth leaving only a strip of tan skin and dark eyes showing, dark blue-grey leather armour with steel-grey shoulder plates, brown leather straps across the chest, brown leather bracers and gloves, a red sash at the waist with long red ends hanging down the front, dark grey trousers with brown knee bands, black boots, and a short steel dagger in EACH hand: the one in his LEFT hand angled down to the right, the one in his RIGHT hand angled down to the left",
+ "hands": "the striking dagger stays in his left hand on the screen-right side and the second dagger stays in his right hand on the screen-left side",
+ "guide_style": "grey",
+ "scale": 0.88,
+ "head_r": 11,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   84,
+   56
+  ],
+  "neck": [
+   80,
+   68
+  ],
+  "chest": [
+   78,
+   75
+  ],
+  "pelvis": [
+   76,
+   84
+  ],
+  "r_sh": [
+   90,
+   70
+  ],
+  "r_el": [
+   95,
+   80
+  ],
+  "r_ha": [
+   101,
+   88
+  ],
+  "tip": [
+   117,
+   101
+  ],
+  "l_sh": [
+   66,
+   68
+  ],
+  "l_el": [
+   57,
+   78
+  ],
+  "l_ha": [
+   52,
+   89
+  ],
+  "r_hip": [
+   84,
+   88
+  ],
+  "r_kn": [
+   92,
+   106
+  ],
+  "r_ft": [
+   94,
+   119
+  ],
+  "l_hip": [
+   68,
+   88
+  ],
+  "l_kn": [
+   58,
+   104
+  ],
+  "l_ft": [
+   54,
+   119
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the left hand lifts its dagger up over the head with the blade pointing up and back, the right hand's dagger held low",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the left hand's dagger cocked behind the head with the blade hanging down behind the shoulders, the right hand's dagger tucked in at the hip",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the left arm sweeps over the head and the dagger blade is level, pointing to the lower-right, the right hand's dagger held low",
+   "4": "contact: dagger arm fully extended toward the lower-right, the left hand's dagger stabbing down-right, front knee bent, body low and leaning in, the right arm swung back for balance with its second dagger",
+   "5": "follow-through: the dagger arm carries on down until the blade points at the ground at the lower-right, torso twisted, the hood and the red sash ends trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the left hand's dagger comes back toward the ready angle, the right hand's dagger held low"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (the right hand's dagger flung out to the left, the left dagger arm thrown up and out)",
+   "1": "recoil extreme: leaning back further, knees bent, the left hand's dagger dipping, the right hand's dagger still held out",
+   "2": "recovering: halfway back to the crouched ready pose, a dagger in each hand"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, the left dagger arm flung up, the right hand's dagger drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, the hooded head droops, the left hand's dagger lowering",
+   "3": "kneeling: on both knees, slumped forward, the left hand's dagger point resting on the ground, the right arm hanging with its dagger",
+   "4": "falling back: torso tips back toward the upper-left, both daggers slip out of his hands, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the hood still over his head; the two daggers lie on the ground at the lower-right; the red sash ends spread on the ground",
+   "6": "bounce: head and shoulders lift slightly off the ground, the hood and the red sash settle",
+   "7": "corpse: lying flat and still on his back, eyes closed above the black mask, the two daggers on the ground beside him"
+  }
+ }
+}

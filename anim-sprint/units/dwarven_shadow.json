@@ -1,0 +1,105 @@
+{
+ "name": "dwarven_shadow",
+ "sprite": "m7/roster/units/unit_dwarven_shadow.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Dwarven Shadow, a stocky dwarf assassin in a deep dark grey hood and cloak, two small glowing orange eyes in the shadow of the hood, a long white braided beard, brown leather bracers and boots with straps, a blue sash hanging from a brown belt with pouches, dark grey trousers, and a short steel dagger held point-down in EACH hand: he strikes with the dagger in his LEFT hand on the screen-right side, and the other dagger stays in his RIGHT hand on the screen-left side",
+ "hands": "the striking dagger stays in his left hand on the screen-right side and the second dagger stays in his right hand on the screen-left side",
+ "guide_style": "grey",
+ "scale": 0.8,
+ "head_r": 9,
+ "limb": 1.2,
+ "joints": {
+  "head": [
+   88,
+   64
+  ],
+  "neck": [
+   87,
+   76
+  ],
+  "chest": [
+   86,
+   84
+  ],
+  "pelvis": [
+   85,
+   95
+  ],
+  "r_sh": [
+   97,
+   77
+  ],
+  "r_el": [
+   100,
+   81
+  ],
+  "r_ha": [
+   108,
+   88
+  ],
+  "tip": [
+   120,
+   106
+  ],
+  "l_sh": [
+   73,
+   77
+  ],
+  "l_el": [
+   58,
+   82
+  ],
+  "l_ha": [
+   51,
+   92
+  ],
+  "r_hip": [
+   92,
+   98
+  ],
+  "r_kn": [
+   100,
+   104
+  ],
+  "r_ft": [
+   103,
+   113
+  ],
+  "l_hip": [
+   78,
+   98
+  ],
+  "l_kn": [
+   67,
+   106
+  ],
+  "l_ft": [
+   63,
+   115
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the dagger in his left hand is lifted up over the head with its point up and back",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the dagger hand cocked behind the head with the short blade pointing back behind the shoulders, the other dagger tucked in at his side in his right hand",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the arm sweeps over the head and the dagger is level, its point to the lower-right",
+   "4": "contact: dagger arm fully extended toward the lower-right, the short steel dagger stabbing down-right, front knee bent, body low and leaning in, the other dagger arm swung back for balance",
+   "5": "follow-through: the dagger carries on down until its point nearly touches the ground at the lower-right, torso twisted, hood and cloak trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the dagger lifts back toward the ready angle"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; hooded head snaps back toward the upper-left, glowing eyes squeezed to slits, torso jolts back, both arms jerk outward (the dagger in his right hand flung out to the left, the left dagger arm thrown up and out)",
+   "1": "recoil extreme: leaning back further, knees bent, the left-hand dagger dipping, the other dagger still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, the dagger arm flung up, the other dagger arm drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, hooded head droops, the dagger lowering",
+   "3": "kneeling: on both knees, slumped forward, the dagger's point resting on the ground, the other arm hanging with its dagger still in hand",
+   "4": "falling back: torso tips back toward the upper-left, the dagger slips out of his left hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left; one dagger lies on the ground at the lower-right; the dark grey cloak spread under him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the cloak settles",
+   "7": "corpse: lying flat and still on his back, the glow gone from his eyes, white beard on his chest, his two daggers on the ground beside him"
+  }
+ }
+}

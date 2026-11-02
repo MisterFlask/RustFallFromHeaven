@@ -1,0 +1,111 @@
+{
+ "name": "khazad_warrior",
+ "sprite": "m7/roster/units/unit_khazad_warrior.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Khazad Warrior, a stocky dwarf: a steel helmet with gold trim and two curved horns, a braided orange beard, bare muscular tan arms, a yellow-ochre tunic with a brown belt and a gold buckle, a brown leather kilt, brown boots, a wooden club studded with steel studs raised in his RIGHT hand and a round wooden shield with a steel rim and a gold boss on his LEFT arm",
+ "hands": "the studded club stays in his right hand on the screen-left side and the round shield on his left arm on the screen-right side",
+ "guide_style": "grey",
+ "scale": 0.74,
+ "head_r": 10,
+ "limb": 1.3,
+ "joints": {
+  "head": [
+   86,
+   70
+  ],
+  "neck": [
+   86,
+   79
+  ],
+  "chest": [
+   85,
+   86
+  ],
+  "pelvis": [
+   82,
+   96
+  ],
+  "r_sh": [
+   71,
+   79
+  ],
+  "r_el": [
+   62,
+   87
+  ],
+  "r_ha": [
+   58,
+   77
+  ],
+  "tip": [
+   48,
+   48
+  ],
+  "l_sh": [
+   97,
+   80
+  ],
+  "l_el": [
+   101,
+   91
+  ],
+  "l_ha": [
+   106,
+   97
+  ],
+  "shield": [
+   107,
+   99,
+   11,
+   15
+  ],
+  "r_hip": [
+   75,
+   100
+  ],
+  "r_kn": [
+   68,
+   108
+  ],
+  "r_ft": [
+   66,
+   118
+  ],
+  "l_hip": [
+   89,
+   100
+  ],
+  "l_kn": [
+   93,
+   108
+  ],
+  "l_ft": [
+   96,
+   118
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back toward the upper-left, the studded club is lifted beside the head with its heavy end pointing up and back",
+   "2": "wind-up extreme: body coiled back and crouched, the club hand behind the head and the studded club hanging down behind the shoulders to the left, the round shield tucked across the belly",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips round, the club arm sweeps across in front of the chest and the studded club is level, its heavy end pointing to the right",
+   "4": "contact: club arm fully extended toward the lower-right, the studded club smashing down-right, front knee bent, body low and leaning in, the round shield swung back behind the shoulders for balance",
+   "5": "follow-through: the club carries on down until its studded end nearly touches the ground at the lower-right, torso twisted, the braided beard swinging back",
+   "6": "recover: body rises, front foot pulls back halfway, the studded club comes back up on the near side toward the ready angle, the round shield tucked across the belly"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; horned helmet and head snap back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (club arm thrown up and out to the left, the round shield flung out to the right)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the studded club still held up, the round shield still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, club arm flung up, the round shield drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, helmeted head droops, the studded club lowering",
+   "3": "kneeling: on both knees, slumped forward, the club's studded end resting on the ground at the lower-right, the shield arm hanging with the round shield",
+   "4": "falling back: torso tips back toward the upper-left, the studded club slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the horned helmet on his head; the studded club lies on the ground at the lower-right; the round shield lies flat beside him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the round shield rocks",
+   "7": "corpse: lying flat and still on his back, eyes closed, the braided beard on his chest, the studded club and the round shield on the ground beside him"
+  }
+ }
+}

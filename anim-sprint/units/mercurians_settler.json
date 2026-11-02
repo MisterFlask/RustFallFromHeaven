@@ -1,0 +1,105 @@
+{
+ "name": "mercurians_settler",
+ "sprite": "m7/roster/units/unit_mercurians_settler.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Mercurian Settler (Fall from Heaven), an angelic young pilgrim: spiky blond hair, a gold halo floating above the head, small white feathered wings behind the shoulders, a blue-and-white tunic with gold trim and a white scarf collar, a brown belt with a gold buckle and a brown pouch, white leggings, silver greaves and boots, a big cream backpack on his back (screen-left) topped by a rolled blue bedroll with gold straps and a tin pot hanging from the pack on the screen-left, and a tall wooden walking staff topped by a gold star in his LEFT hand (screen-right)",
+ "hands": "the star-topped walking staff stays in his left hand on the screen-right side and his right hand on the screen-left side holds the backpack strap at his chest, an empty fist",
+ "guide_style": "grey",
+ "scale": 0.89,
+ "head_r": 10,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   84,
+   57
+  ],
+  "neck": [
+   85,
+   68
+  ],
+  "chest": [
+   85,
+   77
+  ],
+  "pelvis": [
+   85,
+   87
+  ],
+  "r_sh": [
+   94,
+   72
+  ],
+  "r_el": [
+   98,
+   83
+  ],
+  "r_ha": [
+   108,
+   77
+  ],
+  "tip": [
+   109,
+   45
+  ],
+  "l_sh": [
+   72,
+   72
+  ],
+  "l_el": [
+   66,
+   83
+  ],
+  "l_ha": [
+   76,
+   77
+  ],
+  "r_hip": [
+   90,
+   93
+  ],
+  "r_kn": [
+   91,
+   105
+  ],
+  "r_ft": [
+   92,
+   117
+  ],
+  "l_hip": [
+   77,
+   93
+  ],
+  "l_kn": [
+   73,
+   105
+  ],
+  "l_ft": [
+   70,
+   116
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the walking staff is lifted up over the head with its gold-star top pointing up and back, the big backpack still on his back",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the walking staff cocked behind the head with its gold-star top hanging down behind the shoulders, the right hand an empty fist tucked in at the chest",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the arm sweeps over the head and the walking staff is level, its gold-star top pointing to the lower-right",
+   "4": "contact: staff arm fully extended toward the lower-right, the star-topped walking staff whacking down-right, front knee bent, body low and leaning in, the empty right fist swung back for balance",
+   "5": "follow-through: the walking staff carries on down until its gold-star top nearly touches the ground at the lower-right, torso twisted, the blond hair and the small wings trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the walking staff lifts back toward its upright ready angle"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (the empty right fist flung out to the left, the staff arm thrown up and out), the heavy backpack lurching",
+   "1": "recoil extreme: leaning back further, knees bent, the star-topped walking staff dipping, the empty right fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, the staff arm flung up, the empty right hand drooping, the backpack pulling him back",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the walking staff lowering",
+   "3": "kneeling: on both knees, slumped forward, the gold-star top of the walking staff resting on the ground, the empty right arm hanging",
+   "4": "falling back: torso tips back toward the upper-left onto the backpack, the walking staff slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the big backpack and the blue bedroll under his shoulders; the star-topped walking staff lies on the ground at the lower-right",
+   "6": "bounce: head and shoulders lift slightly off the ground, the small wings settle",
+   "7": "corpse: lying flat and still on his back, eyes closed, the star-topped walking staff on the ground beside him, the backpack under his shoulders"
+  }
+ }
+}

@@ -1,0 +1,47 @@
+{
+ "name": "priest_of_winter",
+ "sprite": "m7/roster/units/unit_priest_of_winter.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "body_plan": "caster",
+ "description": "a Priest of Winter (Fall from Heaven), an old cleric of the winter god: swept-back white hair and a long white beard, a heavy white robe with a thick cream fur collar and mantle, pale-blue trim and a pale-blue front panel with a white snowflake emblem, a grey sash with a round silver clasp, grey boots, and a tall silver staff topped with a glowing ice-blue crystal in his LEFT hand",
+ "hands": "the crystal-topped silver staff stays upright in his left hand on the screen-right side, gripped at chest height; his right hand on the screen-left side is an empty fist at his side",
+ "guide_style": "grey",
+ "scale": 0.87,
+ "head_r": 10,
+ "limb": 1.0,
+ "joints": {
+  "head": [79, 59],
+  "neck": [81, 71],
+  "chest": [81, 78],
+  "pelvis": [82, 86],
+  "r_sh": [91, 71],
+  "r_el": [92, 83],
+  "r_ha": [98, 80],
+  "tip": [103, 37],
+  "l_sh": [63, 69],
+  "l_el": [60, 83],
+  "l_ha": [68, 93],
+  "r_hip": [87, 90],
+  "r_kn": [88, 105],
+  "r_ft": [88, 119],
+  "l_hip": [75, 90],
+  "l_kn": [70, 105],
+  "l_ft": [65, 119]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (his empty right fist flung out to the left, the crystal-topped silver staff thrown up and out in his left hand), the white beard and fur collar jolting",
+   "1": "recoil extreme: leaning back further, knees bent, the crystal-topped staff tilting back, his empty right fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, staff arm flung up holding the crystal-topped silver staff high, his empty right fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, white-haired head droops, the crystal-topped staff lowering",
+   "3": "kneeling: on both knees in the white robe, slumped forward, the crystal end of the silver staff resting on the ground, his empty right hand hanging",
+   "4": "falling back: torso tips back toward the upper-left, the silver staff slips out of the hand, legs slide forward, the white robe flaring",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the white beard on his chest; the crystal-topped silver staff lies on the ground at the lower-right; the white fur robe spread under him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the white fur robe settles",
+   "7": "corpse: lying flat and still on his back, eyes closed, the crystal-topped silver staff on the ground beside him, its crystal dimmed"
+  }
+ }
+}

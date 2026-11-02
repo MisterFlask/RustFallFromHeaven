@@ -1,0 +1,98 @@
+{
+ "name": "priest_of_the_empyrean",
+ "sprite": "m7/roster/units/unit_priest_of_the_empyrean.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "body_plan": "caster",
+ "description": "a Priest of the Empyrean, a bearded cleric of Lugus with thick swept brown hair and a full brown beard, a long blue robe with gold trim and gold shoulder pieces, a white tabard with a gold sun emblem on the chest, a brown belt, white cuffs, brown boots, a tall golden crook staff with a lit brass lantern hanging from its curled top, the flame solid bright yellow and white pixels, in his LEFT hand, and his RIGHT hand an empty fist at his side",
+ "hands": "the golden crook staff stays in his left hand on the screen-right side with the lit lantern hanging from its curled top, and his right hand on the screen-left side is an empty fist",
+ "guide_style": "grey",
+ "scale": 0.93,
+ "head_r": 10,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   75,
+   54
+  ],
+  "neck": [
+   76,
+   65
+  ],
+  "chest": [
+   76,
+   76
+  ],
+  "pelvis": [
+   76,
+   86
+  ],
+  "r_sh": [
+   84,
+   69
+  ],
+  "r_el": [
+   89,
+   84
+  ],
+  "r_ha": [
+   94,
+   75
+  ],
+  "tip": [
+   94,
+   38
+  ],
+  "l_sh": [
+   62,
+   69
+  ],
+  "l_el": [
+   57,
+   81
+  ],
+  "l_ha": [
+   59,
+   92
+  ],
+  "r_hip": [
+   81,
+   90
+  ],
+  "r_kn": [
+   84,
+   104
+  ],
+  "r_ft": [
+   86,
+   116
+  ],
+  "l_hip": [
+   70,
+   90
+  ],
+  "l_kn": [
+   64,
+   105
+  ],
+  "l_ft": [
+   59,
+   119
+  ]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (the empty right fist flung out to the left, the golden crook staff thrown up and out, the lit lantern swinging on its hook)",
+   "1": "recoil extreme: leaning back further, knees bent, the crook staff dipping, the lantern swinging, the empty right fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, the crook staff flung up with the lantern swinging, the empty right fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the crook staff lowering, the lantern swinging",
+   "3": "kneeling: on both knees, slumped forward, the crook staff tipped down with its curled top and the brass lantern resting on the ground, the right arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the crook staff slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left; the golden crook staff lies on the ground at the lower-right, the brass lantern on its side, its flame dimmed; the blue robe spread around his legs",
+   "6": "bounce: head and shoulders lift slightly off the ground, the blue robe settles",
+   "7": "corpse: lying flat and still on his back, eyes closed, the crook staff on the ground beside him, the lantern's flame out"
+  }
+ }
+}

@@ -7,13 +7,14 @@
 // and DOM; the geometry is the battle overlay's 1280 x 800 frame (battle.js centres it).
 //
 // Art: the M7 sprites (`app/iso`, docs/ISO.md) and, for the units that have them, the anim-sprint
-// sets (`app/anim/<unit>_<idle|strike|flinch|death>.png`: strips of 160 x 128 frames, the feet
-// at (80, 126); anim-sprint/ANIMATING_UNITS.md). Pixel art is drawn at 1x, but for the watch
+// sets (`app/anim/<unit>_<idle|strike|flinch|death>.png`: strips of 160 x 128 frames, larger for big units, the
+// feet 2 px above the bottom, centred; anim-sprint/ANIMATING_UNITS.md). Pixel art is drawn at 1x, but for the watch
 // screen's breathing (a squash of 2% at most) and its snap (battle_snap.js: a lean, up to 8% larger).
 
 import { SPRITES } from "./iso/sprites.js";
 import { unitSpriteKeys, ISO_TABLES } from "./iso.js";
 import { tyName, tyIdx, ROWS } from "./battle_log.js";
+import { ANIM_SETS, FACES_LEFT } from "./anim_sets.js";
 
 export const FRAME_W = 1280;
 export const FRAME_H = 800;
@@ -21,10 +22,10 @@ export const FRAME_H = 800;
 const spriteUrl = (key) => new URL(`./iso/${key}.png`, import.meta.url).href;
 const animUrl = (unit, anim) => new URL(`./anim/${unit}_${anim}.png`, import.meta.url).href;
 
-/** The anim-sprint sets the client ships (their timings are the sets' manifests'), by the short
- *  name of the M7 sprite they animate; `left`: the set faces lower-left. The strips the screens
- *  draw (the sets' walk strips are not: nobody walks on the battlefield). */
-const ANIM_SETS = { axeman: {}, champion: { left: true }, phalanx: {}, swordsman: {}, warrior: {} };
+// The anim-sprint sets the client ships (their timings are the sets' manifests'), by the short name
+// of the M7 sprite they animate, and the M7 sprites that face lower-left (the rest face lower-right):
+// generated with the strips by anim-sprint/lib/export_game.py. The screens draw idle, strike, flinch
+// and death (nobody walks on the battlefield).
 export const ANIMS = {
   idle: [250, 250, 250, 250],
   strike: [100, 120, 160, 50, 120, 120, 100, 100],
@@ -33,9 +34,6 @@ export const ANIMS = {
 };
 /** ms from the start of the strike strip to its blow (the frame the hit lands on). */
 export const STRIKE_HIT = 430;
-const ANIM_FRAME = { w: 160, h: 128, ax: 80, ay: 126 };
-/** M7 unit sprites that face lower-left (the rest face lower-right). */
-const FACES_LEFT = new Set(["champion"]);
 
 export const COLORS = {
   you: "#8fb6ff",
@@ -452,7 +450,12 @@ export function pic(f, sides, anim = null, ms = 0, loop = false) {
   const fig = figOf(f, sides);
   if (anim && fig.anim) {
     const im = IMG.get(`anim:${fig.anim}:${anim}`);
-    if (im) return { im, sx: frameAt(ms, ANIMS[anim], loop) * ANIM_FRAME.w, w: ANIM_FRAME.w, h: ANIM_FRAME.h, ax: ANIM_FRAME.ax, ay: ANIM_FRAME.ay, anim };
+    if (im) {
+      // A strip's frames are its width over its frame count (160 x 128 for most; big units' are taller or wider),
+      // the feet 2 px above the bottom, centred.
+      const w = im.width / ANIMS[anim].length;
+      return { im, sx: frameAt(ms, ANIMS[anim], loop) * w, w, h: im.height, ax: w / 2, ay: im.height - 2, anim };
+    }
   }
   const im = IMG.get(fig.key);
   return im ? { im, sx: 0, w: im.width, h: im.height, ax: im.width / 2, ay: im.height - 2 } : null;

@@ -1,0 +1,106 @@
+{
+ "name": "scientist",
+ "sprite": "m7/roster/units/unit_scientist.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Great Scientist (Fall from Heaven great person), an old scholar: white hair and a short white beard and moustache, round wire spectacles, a floppy blue beret, a long blue scholar's robe with wide sleeves and white trim, a brown belt with a steel buckle and a brown leather pouch at the hip, brown boots, a brass telescope held pointing up and forward in his LEFT hand, and a small round glass flask of bubbling green potion in his RIGHT hand; he carries no weapon, so he fights with the brass telescope",
+ "hands": "the brass telescope stays in his left hand on the screen-right side and the green potion flask stays in his right hand on the screen-left side",
+ "guide_style": "grey",
+ "scale": 0.9,
+ "head_r": 10,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   75,
+   57
+  ],
+  "neck": [
+   74,
+   68
+  ],
+  "chest": [
+   75,
+   76
+  ],
+  "pelvis": [
+   75,
+   91
+  ],
+  "r_sh": [
+   85,
+   69
+  ],
+  "r_el": [
+   93,
+   87
+  ],
+  "r_ha": [
+   93,
+   77
+  ],
+  "tip": [
+   106,
+   62
+  ],
+  "l_sh": [
+   57,
+   70
+  ],
+  "l_el": [
+   54,
+   84
+  ],
+  "l_ha": [
+   65,
+   83
+  ],
+  "r_hip": [
+   80,
+   93
+  ],
+  "r_kn": [
+   84,
+   106
+  ],
+  "r_ft": [
+   86,
+   119
+  ],
+  "l_hip": [
+   70,
+   93
+  ],
+  "l_kn": [
+   65,
+   106
+  ],
+  "l_ft": [
+   59,
+   119
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the brass telescope is lifted up over the head with its lens end pointing up and back, the green potion flask held close in the right hand",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the brass telescope cocked behind the head like a club with its lens end hanging down behind the shoulders, the right hand with the potion flask tucked in",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the arm sweeps over the head and the brass telescope is level, its lens end pointing to the lower-right, the blue robe swirling",
+   "4": "contact: the telescope arm swung forward toward the lower-right, elbow bent, the brass telescope bashing down-right like a club, front knee bent, body low and leaning in, the right hand with the potion flask swung back for balance",
+   "5": "follow-through: the brass telescope carries on down, its lens end pointing down to the lower-right, torso twisted, the white hair and the wide blue sleeves trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the brass telescope lifts back toward its ready angle, pointing up and forward"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut behind the spectacles, the blue beret jolting, torso jolts back, both arms jerk outward (the right hand with the potion flask flung out to the left, the telescope arm thrown up and out)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent under the robe, the brass telescope dipping, the potion flask still held out to the left",
+   "2": "recovering: halfway back to the ready pose, the brass telescope coming back up in his left hand, the potion flask in his right"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, the telescope arm flung up holding the brass telescope high, the right hand with the potion flask drooping",
+   "2": "knees buckle: hips drop, knees fold forward under the blue robe, torso slumps forward, head droops, the brass telescope lowering",
+   "3": "kneeling: on both knees, slumped forward, the lens end of the brass telescope resting on the ground at the lower-right, the right arm hanging with the potion flask",
+   "4": "falling back: torso tips back toward the upper-left, the brass telescope slips out of the left hand and the potion flask drops from the right, legs slide forward under the robe",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the blue beret and spectacles still on; the brass telescope lies on the ground at the lower-right; the blue robe spread around him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the blue robe and wide sleeves settle",
+   "7": "corpse: lying flat and still on his back, eyes closed behind the spectacles, the brass telescope on the ground beside him"
+  }
+ }
+}

@@ -1,0 +1,45 @@
+{
+ "unit": "queen_of_the_line",
+ "facing": "lower-right",
+ "arm": "final_queen_of_the_line_nofx",
+ "anim": "idle",
+ "canvas": [
+  160,
+  128
+ ],
+ "anchor": [
+  80,
+  126
+ ],
+ "loop": true,
+ "hold_last": false,
+ "frames": [
+  {
+   "file": "frame_00.png",
+   "ms": 250,
+   "events": []
+  },
+  {
+   "file": "frame_01.png",
+   "ms": 250,
+   "events": []
+  },
+  {
+   "file": "frame_02.png",
+   "ms": 250,
+   "events": []
+  },
+  {
+   "file": "frame_03.png",
+   "ms": 250,
+   "events": []
+  }
+ ],
+ "note": "procedural (ship): lib/procedural.py",
+ "warnings": [
+  "frame 0 leaves the safe region x (16, 144): bbox (12, 1, 147, 126)",
+  "frame 1 leaves the safe region x (16, 144): bbox (13, 1, 148, 127)",
+  "frame 2 leaves the safe region x (16, 144): bbox (12, 2, 147, 127)",
+  "frame 3 leaves the safe region x (16, 144): bbox (11, 1, 146, 126)"
+ ]
+}

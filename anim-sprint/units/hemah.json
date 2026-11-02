@@ -1,0 +1,47 @@
+{
+ "name": "hemah",
+ "sprite": "m7/roster/units/unit_hemah.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "body_plan": "caster",
+ "description": "Hemah, the Octopus Overlords' sea priestess hero: a pale grey-skinned woman with long dark green hair, wearing a living teal octopus as a headdress (one big amber eye on its crown, its tentacles curling down over both her shoulders and arms), a pearl necklace, long flowing teal robes with gold trim, a round gold brooch and gold buttons down the front, brown boots, and a branching staff of twisted brown coral topped with a glowing pale pearl orb in her RIGHT hand",
+ "hands": "the coral staff stays upright in her right hand on the screen-left side and her left hand is an open empty hand on the screen-right side",
+ "guide_style": "grey",
+ "scale": 0.92,
+ "head_r": 9,
+ "limb": 1.0,
+ "joints": {
+  "head": [86, 56],
+  "neck": [84, 67],
+  "chest": [84, 77],
+  "pelvis": [84, 87],
+  "r_sh": [73, 72],
+  "r_el": [68, 85],
+  "r_ha": [61, 79],
+  "tip": [52, 36],
+  "l_sh": [91, 72],
+  "l_el": [101, 86],
+  "l_ha": [110, 81],
+  "r_hip": [79, 92],
+  "r_kn": [76, 104],
+  "r_ft": [73, 117],
+  "l_hip": [89, 92],
+  "l_kn": [93, 104],
+  "l_ft": [97, 117]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, her right hand jerks down to her hip still gripping the coral staff, which stands upright beside her head on the left, and her empty left hand is flung out to the right, the octopus tentacles whipping back",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the coral staff held low in her right hand and slanting up behind her body toward her shoulder, her empty left hand still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, staff arm flung up holding the pearl-topped coral staff high, her empty left hand drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the coral staff lowering",
+   "3": "kneeling: on both knees, slumped forward, the pearl end of the coral staff resting on the ground at the lower-right, her empty left arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the coral staff slips out of her hand, legs slide forward, the teal robe flaring",
+   "5": "hits the ground: lying on her back along the ground, feet toward the lower-right and head toward the upper-left, the octopus headdress and its tentacles spread on the ground; the coral staff lies on the ground at the lower-right",
+   "6": "bounce: head and shoulders lift slightly off the ground, the teal robe and the octopus tentacles settle",
+   "7": "corpse: lying flat and still on her back, eyes closed, the octopus headdress limp, the coral staff on the ground beside her, its pearl orb dimmed"
+  }
+ }
+}

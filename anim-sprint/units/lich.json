@@ -1,0 +1,98 @@
+{
+ "name": "lich",
+ "sprite": "m7/roster/units/unit_lich.png",
+ "facing": "lower-left",
+ "tag": "anim/units",
+ "body_plan": "caster",
+ "description": "a Lich (Fall from Heaven), an undead skeletal sorcerer: a bare skull with glowing green eye sockets under a deep purple hood, a tall spiked gold crown with a purple gem, gold shoulder plates, an exposed bone ribcage, a gold belt with a small skull buckle, long tattered purple-and-black robes with gold trim, a glowing green soul gem held up in his bony RIGHT hand, and a gnarled wooden staff topped with a green-eyed skull in his LEFT hand",
+ "hands": "the skull-topped staff stays upright in his left hand on the screen-right side and his bony right hand on the screen-left side holds up the glowing green soul gem",
+ "guide_style": "grey",
+ "scale": 0.8,
+ "head_r": 9,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   74,
+   63
+  ],
+  "neck": [
+   76,
+   70
+  ],
+  "chest": [
+   78,
+   77
+  ],
+  "pelvis": [
+   80,
+   88
+  ],
+  "r_sh": [
+   88,
+   72
+  ],
+  "r_el": [
+   92,
+   82
+  ],
+  "r_ha": [
+   100,
+   84
+  ],
+  "tip": [
+   104,
+   43
+  ],
+  "l_sh": [
+   66,
+   72
+  ],
+  "l_el": [
+   57,
+   78
+  ],
+  "l_ha": [
+   53,
+   68
+  ],
+  "r_hip": [
+   85,
+   92
+  ],
+  "r_kn": [
+   87,
+   106
+  ],
+  "r_ft": [
+   89,
+   120
+  ],
+  "l_hip": [
+   73,
+   92
+  ],
+  "l_kn": [
+   66,
+   106
+  ],
+  "l_ft": [
+   62,
+   120
+  ]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-left; the skull snaps back toward the upper-right, the green eye glow flaring, torso jolts back, both arms jerk up (his right hand flung up and out to the left still clutching the glowing green soul gem; his left arm yanked up behind his back, the skull staff still in that hand and standing upright behind his head), the crown and the tattered robes jolting back",
+   "1": "recoil extreme: leaning back further toward the upper-right, knees bent under the robes, the skull staff still held upright behind his head, the soul gem hand still raised beside his face"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-right, body thrown back, staff arm flung up holding the skull staff high, the soul gem hand drooping",
+   "2": "knees buckle: hips drop, knees fold forward under the robes, torso slumps forward, the skull droops, the skull staff lowering",
+   "3": "kneeling: on both knees, slumped forward, the skull end of the staff resting on the ground at the lower-left, the soul gem hand hanging, its glow fading",
+   "4": "falling back: torso tips back toward the upper-right, the skull staff slips out of the hand, the soul gem drops, legs slide forward, the tattered robes flaring",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-left and head toward the upper-right, the spiked crown still on the skull; the skull staff lies on the ground at the lower-left; the dim soul gem beside his hand; the tattered robes spread under him",
+   "6": "bounce: the skull and shoulders lift slightly off the ground, the tattered robes settle",
+   "7": "corpse: lying flat and still on his back, the eye sockets dark, the skull staff on the ground beside him, the soul gem dull"
+  }
+ }
+}

@@ -1,0 +1,105 @@
+{
+ "name": "engineer",
+ "sprite": "m7/roster/units/unit_engineer.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "an Engineer (Fall from Heaven great person), a bearded man with shaggy brown hair: brass goggles with blue lenses pushed up on his forehead, a long orange-red coat with gold-yellow trim and wide sleeves with white cuffs, a white collar, a brown leather apron with a rolled white scroll and a leather pouch at the belt, brown boots; a pair of brass drafting dividers (a two-legged pointed compass) held points-down in his RIGHT hand, and a golden cog wheel held up in his LEFT hand",
+ "hands": "the brass dividers stay in his right hand on the screen-left side, held points-down like a dagger; his left hand on the screen-right side holds up the golden cog wheel and never lets go of it",
+ "guide_style": "grey",
+ "scale": 0.99,
+ "head_r": 11,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   78,
+   52
+  ],
+  "neck": [
+   79,
+   64
+  ],
+  "chest": [
+   79,
+   74
+  ],
+  "pelvis": [
+   78,
+   92
+  ],
+  "r_sh": [
+   65,
+   68
+  ],
+  "r_el": [
+   57,
+   78
+  ],
+  "r_ha": [
+   68,
+   81
+  ],
+  "tip": [
+   78,
+   92
+  ],
+  "l_sh": [
+   92,
+   68
+  ],
+  "l_el": [
+   95,
+   85
+  ],
+  "l_ha": [
+   99,
+   74
+  ],
+  "r_hip": [
+   71,
+   95
+  ],
+  "r_kn": [
+   64,
+   106
+  ],
+  "r_ft": [
+   61,
+   115
+  ],
+  "l_hip": [
+   85,
+   95
+  ],
+  "l_kn": [
+   88,
+   106
+  ],
+  "l_ft": [
+   89,
+   116
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back toward the upper-left, the brass dividers are lifted beside the head with their points up and back, the golden cog held in his left hand",
+   "2": "wind-up extreme: body coiled back and crouched, the dividers hand behind the head and the points of the brass dividers hanging down behind the shoulders to the left, the golden cog in his left hand tucked across the belly",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips round, the dividers arm sweeps across in front of the chest and the brass dividers are level, their points to the right, the long coat swinging",
+   "4": "contact: dividers arm fully extended toward the lower-right, the points of the brass dividers stabbing down-right, front knee bent, body low and leaning in, the left arm with the golden cog swung back behind the shoulders for balance",
+   "5": "follow-through: the brass dividers carry on down until their points nearly touch the ground at the lower-right, torso twisted, the long coat flaring back",
+   "6": "recover: body rises, front foot pulls back halfway, the brass dividers come back up on the near side toward the ready angle, the golden cog tucked across the belly"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (the dividers arm thrown up and out to the left, the golden cog flung out to the right in his left hand)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the brass dividers dipping, the golden cog still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, the dividers arm flung up, the golden cog drooping in his left hand",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the brass dividers lowering",
+   "3": "kneeling: on both knees, slumped forward, the points of the brass dividers resting on the ground at the lower-right, the cog arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the brass dividers slip out of the hand, legs slide forward, the goggles still on his forehead",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the long orange coat spread under him; the brass dividers lie on the ground at the lower-right; the golden cog lies flat beside him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the golden cog rocks",
+   "7": "corpse: lying flat and still on his back, eyes closed, the brass dividers and the golden cog on the ground beside him"
+  }
+ }
+}

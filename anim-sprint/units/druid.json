@@ -1,0 +1,98 @@
+{
+ "name": "druid",
+ "sprite": "m7/roster/units/unit_druid.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "body_plan": "caster",
+ "description": "a Druid, an old man with a long grey beard and a grey-brown hood, a headdress of brown antlers sprouting green leaves, a brown hooded cloak over a green robe with cream trim, a brown belt with leather pouches, brown boots, and a tall gnarled brown wooden staff with green leaves and a curled spiral top in his LEFT hand on the screen-right side, his RIGHT hand resting at his chest",
+ "hands": "the leafy wooden staff stays in his left hand on the screen-right side and his right hand is an empty hand at his chest on the screen-left side",
+ "guide_style": "grey",
+ "scale": 0.88,
+ "head_r": 9,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   72,
+   57
+  ],
+  "neck": [
+   75,
+   68
+  ],
+  "chest": [
+   76,
+   78
+  ],
+  "pelvis": [
+   75,
+   90
+  ],
+  "r_sh": [
+   86,
+   74
+  ],
+  "r_el": [
+   90,
+   88
+  ],
+  "r_ha": [
+   98,
+   80
+  ],
+  "tip": [
+   102,
+   40
+  ],
+  "l_sh": [
+   59,
+   74
+  ],
+  "l_el": [
+   56,
+   89
+  ],
+  "l_ha": [
+   67,
+   84
+  ],
+  "r_hip": [
+   82,
+   93
+  ],
+  "r_kn": [
+   83,
+   106
+  ],
+  "r_ft": [
+   84,
+   118
+  ],
+  "l_hip": [
+   68,
+   93
+  ],
+  "l_kn": [
+   61,
+   106
+  ],
+  "l_ft": [
+   58,
+   118
+  ]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, grey beard flying, torso jolts back, both arms jerk outward (his empty right hand flung out to the left, the staff arm thrown up and out, the leafy wooden staff still in his left hand)",
+   "1": "recoil extreme: leaning back further, knees bent, the leafy wooden staff dipping, his empty right hand still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, the staff arm flung up with the leafy wooden staff, his empty right arm drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head and grey beard droop, the wooden staff lowering",
+   "3": "kneeling: on both knees, slumped forward, the leafy top of the wooden staff tipped down onto the ground, his right arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the wooden staff slips out of his hand, legs slide forward, the antler headdress still on his head",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the antler headdress on the ground; the leafy wooden staff lies on the ground at the lower-right; the brown cloak spread under him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the brown cloak settles",
+   "7": "corpse: lying flat and still on his back, eyes closed, grey beard on his chest, the leafy wooden staff on the ground beside him"
+  }
+ }
+}

@@ -1,0 +1,98 @@
+{
+ "name": "imp",
+ "sprite": "m7/roster/units/unit_imp.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "body_plan": "caster",
+ "description": "an Imp, a small wiry red-skinned demon: two curved dark brown horns, big pointed ears, glowing yellow eyes and a fanged grin, a dark grey loincloth, thin clawed hands and clawed red feet, small red bat wings on its back showing on the screen-left side, a barbed red tail curling out at the lower-left, and a blazing orange-yellow fireball held up in its LEFT hand",
+ "hands": "the fireball stays in its left hand on the screen-right side and its right hand on the screen-left side is an empty clawed fist",
+ "guide_style": "grey",
+ "scale": 0.69,
+ "head_r": 10,
+ "limb": 0.8,
+ "joints": {
+  "head": [
+   86,
+   76
+  ],
+  "neck": [
+   85,
+   87
+  ],
+  "chest": [
+   84,
+   93
+  ],
+  "pelvis": [
+   84,
+   103
+  ],
+  "r_sh": [
+   91,
+   89
+  ],
+  "r_el": [
+   96,
+   95
+  ],
+  "r_ha": [
+   101,
+   89
+  ],
+  "tip": [
+   108,
+   78
+  ],
+  "l_sh": [
+   77,
+   89
+  ],
+  "l_el": [
+   68,
+   97
+  ],
+  "l_ha": [
+   63,
+   106
+  ],
+  "r_hip": [
+   87,
+   104
+  ],
+  "r_kn": [
+   90,
+   110
+  ],
+  "r_ft": [
+   93,
+   118
+  ],
+  "l_hip": [
+   79,
+   104
+  ],
+  "l_kn": [
+   74,
+   111
+  ],
+  "l_ft": [
+   69,
+   120
+  ]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-right; the horned head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, the small bat wings flare, both arms jerk outward (the empty clawed right fist flung out to the left, the fireball arm thrown up and out with the blazing fireball still in its left hand)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the fireball dipping and flickering in its left hand, the empty clawed right fist still held out, the tail lashing"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, the fireball arm flung up holding the fireball high, the empty clawed right fist drooping, the small wings flaring",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, the horned head droops, the fireball arm lowering, the fireball shrinking",
+   "3": "kneeling: on both knees, slumped forward, the left hand low with the fireball shrunk to a small flame near the ground, the empty clawed right arm hanging, the small wings drooping",
+   "4": "falling back: torso tips back toward the upper-left, the fireball spills from the hand as a streak of fading flame, legs slide forward, the wings folding",
+   "5": "hits the ground: lying on its back along the ground, clawed feet toward the lower-right and head toward the upper-left, horns on the ground; a thin streak of fading flame from the spilled fireball lies on the ground at the lower-right; the small bat wings spread flat under it, the tail limp",
+   "6": "bounce: head and shoulders lift slightly off the ground, the small bat wings settle, the spilled flame flickers",
+   "7": "corpse: lying flat and still on its back, yellow eyes dark, a last dying streak of flame on the ground beside it, the small bat wings limp under it"
+  }
+ }
+}

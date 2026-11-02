@@ -1,0 +1,98 @@
+{
+ "name": "corlindale",
+ "sprite": "m7/roster/units/unit_corlindale.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "body_plan": "caster",
+ "description": "Corlindale, the young Amurite archmage hero: spiky blond hair, a white robe with blue trim and wide white sleeves, a blue cloak over the shoulders with a round silver clasp, a brown belt with a brown pouch, brown boots, an open brown spellbook with a blue gem on its cover in his RIGHT hand, and a short silver wand with a blue knob in his LEFT hand, throwing a glowing pale-blue ring of magic from its tip",
+ "hands": "the wand stays in his left hand on the screen-right side and the open spellbook in his right hand on the screen-left side",
+ "guide_style": "grey",
+ "scale": 1.01,
+ "head_r": 12,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   70,
+   51
+  ],
+  "neck": [
+   70,
+   63
+  ],
+  "chest": [
+   70,
+   72
+  ],
+  "pelvis": [
+   70,
+   84
+  ],
+  "r_sh": [
+   81,
+   68
+  ],
+  "r_el": [
+   91,
+   79
+  ],
+  "r_ha": [
+   100,
+   66
+  ],
+  "tip": [
+   108,
+   52
+  ],
+  "l_sh": [
+   60,
+   68
+  ],
+  "l_el": [
+   55,
+   80
+  ],
+  "l_ha": [
+   47,
+   81
+  ],
+  "r_hip": [
+   76,
+   89
+  ],
+  "r_kn": [
+   84,
+   103
+  ],
+  "r_ft": [
+   88,
+   117
+  ],
+  "l_hip": [
+   64,
+   89
+  ],
+  "l_kn": [
+   58,
+   103
+  ],
+  "l_ft": [
+   53,
+   116
+  ]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (the open spellbook flung out to the left, the wand arm thrown up and out), the white robe and blue cloak swinging",
+   "1": "recoil extreme: leaning back further, knees bent, the wand dipping, the spellbook still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, the wand arm flung up, the spellbook drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the wand lowering, its magic ring fading out",
+   "3": "kneeling: on both knees, slumped forward, the wand's tip dipping toward the ground at the lower-right, the spellbook arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the wand slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left; the wand lies on the ground at the lower-right; the open spellbook lies flat beside him; the blue cloak spread under him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the spellbook's pages flutter",
+   "7": "corpse: lying flat and still on his back, eyes closed, the wand and the spellbook on the ground beside him"
+  }
+ }
+}

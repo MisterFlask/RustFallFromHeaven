@@ -1,0 +1,105 @@
+{
+ "name": "minotaur",
+ "sprite": "m7/roster/units/unit_minotaur.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Minotaur (Fall from Heaven), a huge muscular bull-headed warrior: brown hide with tan-orange muscles, long curved cream-white horns, glowing red eyes, a gold ring through his nose, black spiked pauldrons with gold trim and studs, black gold-studded bracers, a studded brown leather belt with a round gold buckle over a studded leather kilt, bare legs ending in black cloven hooves, and a double-bladed steel battle axe on a wooden haft gripped by the end of its haft in his RIGHT hand",
+ "hands": "the axe's haft end stays in his right hand on the screen-left side; at rest his left hand on the screen-right side also holds the haft higher up just below the axe head, but during the action it lets go and is an empty fist",
+ "guide_style": "grey",
+ "scale": 1.13,
+ "head_r": 11,
+ "limb": 1.4,
+ "joints": {
+  "head": [
+   74,
+   39
+  ],
+  "neck": [
+   72,
+   53
+  ],
+  "chest": [
+   70,
+   61
+  ],
+  "pelvis": [
+   71,
+   78
+  ],
+  "r_sh": [
+   46,
+   54
+  ],
+  "r_el": [
+   37,
+   69
+  ],
+  "r_ha": [
+   53,
+   84
+  ],
+  "tip": [
+   106,
+   60
+  ],
+  "l_sh": [
+   87,
+   54
+  ],
+  "l_el": [
+   94,
+   63
+  ],
+  "l_ha": [
+   88,
+   72
+  ],
+  "r_hip": [
+   60,
+   85
+  ],
+  "r_kn": [
+   44,
+   99
+  ],
+  "r_ft": [
+   40,
+   116
+  ],
+  "l_hip": [
+   80,
+   85
+  ],
+  "l_kn": [
+   85,
+   102
+  ],
+  "l_ft": [
+   86,
+   116
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back toward the upper-left, the left hand lets go of the haft, the battle axe is lifted beside the horned bull head in the right hand with its double-bladed head pointing up and back",
+   "2": "wind-up extreme: body coiled back and crouched, the axe hand behind the horned head and the battle axe hanging back and down behind the shoulders to the left, the left hand an empty fist tucked across the belly",
+   "3": "swing: the front hoof steps toward the lower-right, the torso whips round, the axe arm sweeps across in front of the chest and the battle axe is level, its double-bladed head pointing to the right, the left hand an empty fist",
+   "4": "contact: axe arm fully extended toward the lower-right, the double-bladed axe head chopping down-right, front knee bent, body low and leaning in, the empty left fist swung back behind the shoulders for balance",
+   "5": "follow-through: the battle axe carries on down until its double-bladed head nearly touches the ground at the lower-right, torso twisted, horns lowered, the empty left fist trailing back",
+   "6": "recover: body rises, front hoof pulls back halfway, the battle axe comes back up on the near side toward the ready angle, the left hand reaching back toward the haft"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; the bull head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (axe arm thrown up and out to the left with the battle axe, the empty left fist flung out to the right)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the battle axe dipping, the empty left fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, axe arm flung up holding the battle axe, the empty left fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, the horned bull head droops, the battle axe lowering, the empty left fist hanging",
+   "3": "kneeling: on both knees, slumped forward, the battle axe's double-bladed head resting on the ground at the lower-right, the empty left fist hanging",
+   "4": "falling back: torso tips back toward the upper-left, the battle axe slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the horns on the ground; the battle axe lies on the ground at the lower-right",
+   "6": "bounce: head and shoulders lift slightly off the ground, the horns rock",
+   "7": "corpse: lying flat and still on his back, eyes closed, the double-bladed battle axe on the ground beside him"
+  }
+ }
+}

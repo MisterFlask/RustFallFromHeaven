@@ -1,0 +1,105 @@
+{
+ "name": "muirin",
+ "sprite": "m7/roster/units/unit_muirin.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "Muirin (Fall from Heaven), a drowned undead sea hero: a gaunt hunched figure with pale blue-grey skin, dark eye sockets with tiny pale-cyan eye points, long black dreadlocks tangled with green seaweed, ragged dark teal rags and seaweed strips, a brown leather harness with a sack on his back, bare blue-grey feet, a few opaque pale-cyan water drops, and a rusty bronze trident, gripped near the butt of its shaft in his LEFT hand",
+ "hands": "the trident's shaft end stays in his left hand on the screen-right side, low at the hip; at rest his right hand on the screen-left side also holds the shaft higher up, near the prongs, but during the action it lets go and is an empty fist",
+ "guide_style": "grey",
+ "scale": 1.0,
+ "head_r": 10,
+ "limb": 0.9,
+ "joints": {
+  "head": [
+   104,
+   53
+  ],
+  "neck": [
+   96,
+   63
+  ],
+  "chest": [
+   93,
+   72
+  ],
+  "pelvis": [
+   90,
+   82
+  ],
+  "r_sh": [
+   101,
+   69
+  ],
+  "r_el": [
+   106,
+   83
+  ],
+  "r_ha": [
+   92,
+   88
+  ],
+  "tip": [
+   47,
+   37
+  ],
+  "l_sh": [
+   83,
+   63
+  ],
+  "l_el": [
+   78,
+   71
+  ],
+  "l_ha": [
+   71,
+   72
+  ],
+  "r_hip": [
+   98,
+   90
+  ],
+  "r_kn": [
+   105,
+   105
+  ],
+  "r_ft": [
+   109,
+   117
+  ],
+  "l_hip": [
+   83,
+   90
+  ],
+  "l_kn": [
+   78,
+   104
+  ],
+  "l_ft": [
+   75,
+   117
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the right hand lets go of the shaft, the trident is lifted up over the head with its prongs pointing up and back",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the trident cocked behind the head with its prongs hanging down behind the shoulders, the right hand an empty fist tucked in",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the arm sweeps over the head and the trident is level, its prongs pointing to the lower-right, the right hand an empty fist",
+   "4": "contact: trident arm fully extended toward the lower-right, the trident's three prongs stabbing down-right, front knee bent, body low and leaning in, the empty right fist swung back for balance",
+   "5": "follow-through: the trident carries on down until its prongs nearly touch the ground at the lower-right, torso twisted, the seaweed dreadlocks trailing back, the empty right fist trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the trident lifts back toward the ready angle with its prongs up at the upper-left, the right hand reaching for the shaft"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, the seaweed dreadlocks whipping, torso jolts back, both arms jerk outward (the empty right fist flung out to the left, the trident arm thrown up and out with the prongs up)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the trident held upright with its prongs up, the empty right fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, trident arm flung up, the empty right fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops with the dreadlocks hanging, the trident lowering, the empty right fist hanging",
+   "3": "kneeling: on both knees, slumped forward, the trident's prongs resting on the ground at the lower-right, the empty right arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the trident slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the seaweed dreadlocks spread on the ground and the sack under his shoulders; the trident lies on the ground at the lower-right",
+   "6": "bounce: head and shoulders lift slightly off the ground, the dreadlocks and rags settle",
+   "7": "corpse: lying flat and still on his back, the eye sockets dark, the trident on the ground beside him"
+  }
+ }
+}

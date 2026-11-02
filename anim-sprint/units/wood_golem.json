@@ -1,0 +1,105 @@
+{
+ "name": "wood_golem",
+ "sprite": "m7/roster/units/unit_wood_golem.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Wood Golem, the Luchuirp's first golem (Fall from Heaven): a bulky construct of carved pale golden wood planks with bronze-gold bands and rivets, a blocky wooden head with a few jagged wooden points on top, two round glowing teal-green gem eyes, a teal rune carved on its chest, a small sprig of green leaves growing from the back of its head, massive rounded wooden shoulders, thick wooden legs and big wooden feet, and a big battle axe with a wooden haft and a curved bronze-gold blade, the lower end of the haft gripped in its RIGHT hand low in front of its belly",
+ "hands": "the lower end of the axe haft stays in its right hand on the screen-left side, low in front of its belly; at rest its left hand on the screen-right side also grips the haft higher up, just below the axe head, but during the action it lets go and is an empty wooden fist",
+ "guide_style": "grey",
+ "scale": 1.05,
+ "head_r": 11,
+ "limb": 1.4,
+ "joints": {
+  "head": [
+   72,
+   47
+  ],
+  "neck": [
+   74,
+   59
+  ],
+  "chest": [
+   75,
+   68
+  ],
+  "pelvis": [
+   73,
+   87
+  ],
+  "r_sh": [
+   56,
+   62
+  ],
+  "r_el": [
+   52,
+   80
+  ],
+  "r_ha": [
+   70,
+   88
+  ],
+  "tip": [
+   103,
+   54
+  ],
+  "l_sh": [
+   87,
+   60
+  ],
+  "l_el": [
+   94,
+   81
+  ],
+  "l_ha": [
+   92,
+   71
+  ],
+  "r_hip": [
+   64,
+   92
+  ],
+  "r_kn": [
+   55,
+   104
+  ],
+  "r_ft": [
+   52,
+   117
+  ],
+  "l_hip": [
+   80,
+   92
+  ],
+  "l_kn": [
+   84,
+   104
+  ],
+  "l_ft": [
+   90,
+   117
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, the wooden torso leans back toward the upper-left, the left hand lets go of the haft, the battle axe is lifted high above the head with its bronze head pointing straight up",
+   "2": "wind-up extreme: body coiled back and crouched, the axe hand behind the head and the battle axe hanging down behind the shoulders to the left, its bronze blade low behind the golem, the left hand an empty wooden fist tucked across the belly",
+   "3": "swing: the front foot steps toward the lower-right, the wooden torso whips round, the axe arm sweeps across in front of the chest and the battle axe is level, its bronze blade pointing to the right, the left hand an empty wooden fist",
+   "4": "contact: axe arm fully extended toward the lower-right, the bronze axe head chopping down-right, front knee bent, body low and leaning in, the empty left wooden fist swung back behind the shoulders for balance",
+   "5": "follow-through: the battle axe carries on down until its bronze head nearly touches the ground at the lower-right, torso twisted, the leafy sprig on its head trailing back, the empty left wooden fist trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the battle axe comes back up on the near side toward its resting angle with the bronze axe head raised at the right, the left hand reaching for the haft"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, the gem eyes flickering, the wooden torso jolts back, both arms jerk outward (axe arm thrown up and out to the left with the battle axe, the empty left wooden fist flung out to the right)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the battle axe pulled in upright in front of the chest, the empty left wooden fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, the axe arm flung up with the battle axe, the empty left wooden fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, the wooden torso slumps forward, head droops, the battle axe lowering, the empty left wooden fist hanging",
+   "3": "kneeling: on both knees, slumped forward, the axe's bronze head resting on the ground at the lower-right, the empty left wooden arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the battle axe slips out of the hand, legs slide forward, the gem eyes dimming",
+   "5": "hits the ground: lying on its back along the ground, feet toward the lower-right and head toward the upper-left, the leafy sprig on the ground; the battle axe lies on the ground at the lower-right",
+   "6": "bounce: head and shoulders lift slightly off the ground, the heavy wooden limbs settle",
+   "7": "corpse: lying flat and still on its back, the gem eyes dark, the battle axe on the ground beside it"
+  }
+ }
+}

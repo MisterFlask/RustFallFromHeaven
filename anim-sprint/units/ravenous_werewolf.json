@@ -1,0 +1,105 @@
+{
+ "name": "ravenous_werewolf",
+ "sprite": "m7/roster/units/unit_ravenous_werewolf.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Ravenous Werewolf (Fall from Heaven), a gaunt, starved, hunched wolf-man with shaggy rust-orange fur, pale skin stretched over visible ribs and bony shoulders, a wolf head with pointed ears, a glaring yellow eye, an open drooling muzzle full of white fangs, a tattered brown rag around the waist, long thin arms and clawed wolf feet, and no weapon: he attacks with the long ivory claws of his LEFT hand (screen-right), reaching forward, and his RIGHT hand (screen-left) is an empty clawed hand hanging low",
+ "hands": "his weapon is the clawed left hand on the screen-right side, reaching forward with its long claws spread, and his right hand on the screen-left side is an empty clawed hand hanging low at his side",
+ "guide_style": "grey",
+ "scale": 1.05,
+ "head_r": 11,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   95,
+   49
+  ],
+  "neck": [
+   77,
+   55
+  ],
+  "chest": [
+   73,
+   63
+  ],
+  "pelvis": [
+   70,
+   76
+  ],
+  "r_sh": [
+   87,
+   61
+  ],
+  "r_el": [
+   92,
+   75
+  ],
+  "r_ha": [
+   112,
+   84
+  ],
+  "tip": [
+   119,
+   92
+  ],
+  "l_sh": [
+   66,
+   52
+  ],
+  "l_el": [
+   48,
+   66
+  ],
+  "l_ha": [
+   44,
+   85
+  ],
+  "r_hip": [
+   78,
+   80
+  ],
+  "r_kn": [
+   95,
+   94
+  ],
+  "r_ft": [
+   89,
+   111
+  ],
+  "l_hip": [
+   62,
+   80
+  ],
+  "l_kn": [
+   59,
+   96
+  ],
+  "l_ft": [
+   48,
+   114
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, the hunched torso leans back, the clawed left hand is raised up over the head with its long claws pointing up and back",
+   "2": "wind-up extreme: body coiled back and crouched, the clawed left hand cocked behind the head with its claws hanging down behind the shoulders, the empty clawed right hand tucked in, jaws snarling",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the left arm sweeps over the head and the clawed hand reaches out level, its long claws pointing to the lower-right",
+   "4": "contact: the left arm fully extended toward the lower-right, the long claws raking down-right, front knee bent, body low and leaning in, the empty clawed right hand swung back for balance, drool flying from the open jaws",
+   "5": "follow-through: the clawed left hand carries on down until its claws nearly touch the ground at the lower-right, torso twisted, the shaggy fur bristling",
+   "6": "recover: body rises, front foot pulls back halfway, the clawed left hand lifts back to reach forward again"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; the wolf head snaps back toward the upper-left, yellow eye squeezed shut, jaws gaping, torso jolts back, both arms jerk outward (the empty clawed right hand flung out to the left, the clawed left arm jerked out to the right with its long claws splayed)",
+   "1": "recoil extreme: leaning back further, knees bent, the clawed left hand dipping, the empty clawed right hand still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, the clawed left arm flung up, the empty clawed right hand drooping",
+   "2": "knees buckle: hips drop, knees fold forward, the gaunt torso slumps forward, head and muzzle droop, the clawed hands lowering",
+   "3": "kneeling: on both knees, slumped forward, the claws of the left hand resting on the ground, the right arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the clawed arms go limp, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, muzzle pointing up, the clawed hands limp and empty, the ribs showing, the tattered brown rag still round his waist",
+   "6": "bounce: head and shoulders lift slightly off the ground, the shaggy fur settles",
+   "7": "corpse: lying flat and still on his back, eye closed, jaws slack, the clawed hands limp on the ground beside him"
+  }
+ }
+}

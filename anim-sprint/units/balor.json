@@ -1,0 +1,105 @@
+{
+ "name": "balor",
+ "sprite": "m7/roster/units/unit_balor.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Balor, a huge hunched demon: red skin cracked with glowing yellow lava veins, two big curved dark horns, glowing yellow eyes and a snarling fanged mouth, a shaggy black fur mane over the shoulders and back, a belt of bone teeth and a ragged dark loincloth, furry goat legs with cloven hooves, a broken iron shackle with a long hooked chain hanging from his RIGHT wrist on the screen-left side, and a heavy short-handled iron warhammer with a blocky dark head in his LEFT hand on the screen-right side",
+ "hands": "the iron warhammer stays in his left hand on the screen-right side and his right hand is a big empty fist on the screen-left side, a hooked chain hanging from its wrist",
+ "guide_style": "grey",
+ "scale": 1.03,
+ "head_r": 10,
+ "limb": 1.45,
+ "joints": {
+  "head": [
+   104,
+   45
+  ],
+  "neck": [
+   100,
+   55
+  ],
+  "chest": [
+   90,
+   60
+  ],
+  "pelvis": [
+   84,
+   75
+  ],
+  "r_sh": [
+   106,
+   56
+  ],
+  "r_el": [
+   113,
+   67
+  ],
+  "r_ha": [
+   117,
+   84
+  ],
+  "tip": [
+   127,
+   91
+  ],
+  "l_sh": [
+   68,
+   47
+  ],
+  "l_el": [
+   53,
+   66
+  ],
+  "l_ha": [
+   58,
+   90
+  ],
+  "r_hip": [
+   92,
+   76
+  ],
+  "r_kn": [
+   97,
+   94
+  ],
+  "r_ft": [
+   102,
+   114
+  ],
+  "l_hip": [
+   76,
+   76
+  ],
+  "l_kn": [
+   70,
+   94
+  ],
+  "l_ft": [
+   60,
+   115
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the iron warhammer is lifted up over the head with its blocky head pointing up and back",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the warhammer cocked behind the head with its blocky iron head hanging down behind the shoulders, the empty right fist with its hanging chain tucked in",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the arm sweeps over the head and the warhammer is level, its iron head pointing to the lower-right",
+   "4": "contact: hammer arm fully extended toward the lower-right, the iron warhammer smashing down-right, front knee bent, body low and leaning in, the empty right fist with its hanging chain swung back for balance",
+   "5": "follow-through: the warhammer carries on down until its iron head nearly touches the ground at the lower-right, torso twisted, the black fur mane trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the warhammer lifts back toward the ready angle"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (the empty right fist with its hanging chain flung out to the left, the hammer arm thrown out to the right)",
+   "1": "recoil extreme: leaning back further, knees bent, the warhammer dipping, the empty right fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, hammer arm flung up, the empty right fist and its chain drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the warhammer lowering",
+   "3": "kneeling: on both knees, slumped forward, the warhammer's iron head resting on the ground, the right arm hanging with its chain",
+   "4": "falling back: torso tips back toward the upper-left, the warhammer slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, hooves toward the lower-right and head toward the upper-left, horns on the ground; the iron warhammer lies on the ground at the lower-right; the hooked chain sprawled beside him, the fur mane spread under him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the fur mane settles",
+   "7": "corpse: lying flat and still on his back, eyes dark, the lava cracks dimmed, the warhammer on the ground beside him"
+  }
+ }
+}

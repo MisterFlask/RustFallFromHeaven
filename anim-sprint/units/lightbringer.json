@@ -1,0 +1,98 @@
+{
+ "name": "lightbringer",
+ "sprite": "m7/roster/units/unit_lightbringer.png",
+ "facing": "lower-left",
+ "tag": "anim/units",
+ "body_plan": "caster",
+ "description": "a Lightbringer (Fall from Heaven), a bearded brown-skinned priest of the Order: a white-and-gold turban with a turquoise jewel at the front and its tail hanging down behind his head on the screen-right side, a black beard, long white robes with a broad turquoise sash down the front, a gold mantle and short gold cape over the shoulders, a round gold medallion on the chest, brown boots, and a tall golden staff topped with a glowing golden lantern in his RIGHT hand",
+ "hands": "the lantern staff stays upright in his right hand on the screen-left side, its foot near the ground; his left hand is an empty clenched fist at his side on the screen-right side",
+ "guide_style": "grey",
+ "scale": 0.83,
+ "head_r": 10,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   83,
+   60
+  ],
+  "neck": [
+   83,
+   70
+  ],
+  "chest": [
+   83,
+   79
+  ],
+  "pelvis": [
+   82,
+   90
+  ],
+  "r_sh": [
+   73,
+   74
+  ],
+  "r_el": [
+   70,
+   83
+  ],
+  "r_ha": [
+   64,
+   74
+  ],
+  "tip": [
+   62,
+   38
+  ],
+  "l_sh": [
+   93,
+   74
+  ],
+  "l_el": [
+   98,
+   81
+  ],
+  "l_ha": [
+   100,
+   89
+  ],
+  "r_hip": [
+   77,
+   92
+  ],
+  "r_kn": [
+   75,
+   106
+  ],
+  "r_ft": [
+   73,
+   120
+  ],
+  "l_hip": [
+   88,
+   92
+  ],
+  "l_kn": [
+   91,
+   106
+  ],
+  "l_ft": [
+   95,
+   120
+  ]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-left; head snaps back toward the upper-right, eyes squeezed shut, torso jolts back, both arms jerk outward (his empty left fist flung out to the right, the lantern staff thrown up and out in his right hand), the turban tail swinging",
+   "1": "recoil extreme: leaning back further, knees bent under the white robes, the lantern staff tilting back, his empty left fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, staff arm flung up holding the lantern staff high, his empty left fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward under the white robes, torso slumps forward, head droops, the lantern staff lowering",
+   "3": "kneeling: on both knees, slumped forward, the lantern end of the staff resting on the ground, his empty left hand hanging, the lantern's glow dimming",
+   "4": "falling back: torso tips back toward the upper-right, the lantern staff slips out of the hand, legs slide forward, the gold cape flaring",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-left and head toward the upper-right, the turban still on his head; the lantern staff lies on the ground at the lower-left; the white robes and gold cape spread under him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the robes and the turban tail settle",
+   "7": "corpse: lying flat and still on his back, eyes closed, the lantern staff on the ground beside him, its lantern dark"
+  }
+ }
+}

@@ -1,0 +1,105 @@
+{
+ "name": "harlequin",
+ "sprite": "m7/roster/units/unit_harlequin.png",
+ "facing": "lower-left",
+ "tag": "anim/units",
+ "description": "a Harlequin, a lean crouching jester-assassin: a tight bodysuit in violet, gold-yellow and black diamond checks, a three-pointed violet, black and gold jester hat with gold bells on its tips, a frilled white ruff collar, a chalk-white mask face with black-ringed gold eyes and a manic red grin, white gloves, a violet and gold skirt of points with gold bells, black curly-toed shoes with gold bells, a curved steel dagger raised high in his RIGHT hand and a second curved steel dagger held low in his LEFT hand",
+ "hands": "the raised curved dagger stays in his right hand on the screen-left side and the second curved dagger stays in his left hand, held low on the screen-right side",
+ "guide_style": "grey",
+ "scale": 0.85,
+ "head_r": 9,
+ "limb": 0.9,
+ "joints": {
+  "head": [
+   76,
+   63
+  ],
+  "neck": [
+   78,
+   73
+  ],
+  "chest": [
+   79,
+   78
+  ],
+  "pelvis": [
+   79,
+   85
+  ],
+  "r_sh": [
+   68,
+   71
+  ],
+  "r_el": [
+   54,
+   74
+  ],
+  "r_ha": [
+   47,
+   62
+  ],
+  "tip": [
+   56,
+   39
+  ],
+  "l_sh": [
+   85,
+   72
+  ],
+  "l_el": [
+   97,
+   80
+  ],
+  "l_ha": [
+   103,
+   89
+  ],
+  "r_hip": [
+   74,
+   90
+  ],
+  "r_kn": [
+   63,
+   98
+  ],
+  "r_ft": [
+   66,
+   113
+  ],
+  "l_hip": [
+   86,
+   90
+  ],
+  "l_kn": [
+   91,
+   104
+  ],
+  "l_ft": [
+   98,
+   116
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the curved dagger in his right hand is lifted up over the head with its point up and back, the jester hat's bells swinging",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the curved dagger cocked behind the head with its blade hanging back behind the shoulders, the second curved dagger tucked in low in his left hand",
+   "3": "swing: the front foot steps toward the lower-left, the torso whips forward, the arm sweeps over the head and the curved dagger is level, its point to the lower-left",
+   "4": "contact: dagger arm fully extended toward the lower-left, the curved dagger slashing down-left, front knee bent, body low and leaning in, the left arm with the second dagger swung back for balance",
+   "5": "follow-through: the curved dagger carries on down until its point nearly touches the ground at the lower-left, torso twisted, the jester hat's points and bells trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the curved dagger lifts back toward the raised ready angle"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-left; head snaps back toward the upper-right, eyes squeezed shut, torso jolts back, both arms jerk outward (the left hand with the second curved dagger flung out to the right, the right dagger arm thrown up and out), the hat's bells jangling",
+   "1": "recoil extreme: leaning back further, knees bent, the raised curved dagger dipping, the second dagger still held out to the right"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, the dagger arm flung up, the left arm with the second dagger drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the curved dagger lowering",
+   "3": "kneeling: on both knees, slumped forward, the curved dagger hanging point-down toward the ground at the lower-left, the left arm hanging with the second dagger",
+   "4": "falling back: torso tips back toward the upper-right, the curved dagger slips out of the right hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-left and head toward the upper-right, the jester hat's points spread on the ground; the curved dagger lies on the ground at the lower-left; the second dagger loose by his left hand",
+   "6": "bounce: head and shoulders lift slightly off the ground, the hat's bells jingle",
+   "7": "corpse: lying flat and still on his back, eyes closed, the jester hat flat on the ground, the curved dagger on the ground beside him and the second dagger by his left hand"
+  }
+ }
+}

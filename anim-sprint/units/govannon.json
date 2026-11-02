@@ -1,0 +1,47 @@
+{
+ "name": "govannon",
+ "sprite": "m7/roster/units/unit_govannon.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "body_plan": "caster",
+ "description": "Govannon (Fall from Heaven), the Luchuirp sage hero: a bald old man with a white fringe of hair and a full white beard, deep-blue wizard robes trimmed in white and silver with white star motifs over a pale-blue under-robe, a silver belt clasp, brown boots, a tall silver staff topped with a glowing blue four-pointed star in his RIGHT hand, and an open brown spellbook with blue sparkles in his LEFT hand",
+ "hands": "the star-topped staff stays in his right hand on the screen-left side, held upright; his left hand on the screen-right side holds the open spellbook in front of him",
+ "guide_style": "grey",
+ "scale": 0.97,
+ "head_r": 9,
+ "limb": 1.0,
+ "joints": {
+  "head": [77, 51],
+  "neck": [77, 61],
+  "chest": [78, 70],
+  "pelvis": [77, 82],
+  "r_sh": [66, 65],
+  "r_el": [60, 77],
+  "r_ha": [51, 69],
+  "tip": [51, 34],
+  "l_sh": [90, 66],
+  "l_el": [96, 84],
+  "l_ha": [100, 82],
+  "r_hip": [71, 86],
+  "r_kn": [67, 101],
+  "r_ft": [63, 117],
+  "l_hip": [84, 86],
+  "l_kn": [88, 101],
+  "l_ft": [92, 118]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-right; the bald head snaps back toward the upper-left, eyes squeezed shut, the white beard flying, torso jolts back, both arms jerk (the staff hand knocked down to hip height on the left, the star-topped staff tipping in to slant up behind his shoulder; the spellbook hand jerked in against the hip, still clutching the open spellbook)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent under the blue robe, the staff hand still low on the left with the star-topped staff slanting behind him, the open spellbook still clutched at the hip"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, the staff arm flung up with the star-topped staff, the spellbook drooping",
+   "2": "knees buckle: hips drop, knees fold forward under the robe, torso slumps forward, the bald head droops, the staff lowering, its blue star dimming",
+   "3": "kneeling: on both knees, slumped forward, the star-topped end of the staff resting on the ground at the lower-right, the spellbook arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the staff slips out of his hand, the spellbook falls, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left; the star-topped staff lies on the ground at the lower-right; the open spellbook lies beside him, the blue robe spread under him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the robe settles",
+   "7": "corpse: lying flat and still on his back, eyes closed, the white beard on his chest, the staff with its dimmed star and the spellbook on the ground beside him"
+  }
+ }
+}

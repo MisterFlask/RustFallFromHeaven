@@ -1,0 +1,48 @@
+{
+ "name": "sphener",
+ "sprite": "m7/roster/units/unit_sphener.png",
+ "facing": "lower-left",
+ "tag": "anim/units",
+ "description": "Sphener (Fall from Heaven), an angel with short spiky golden hair and a young face, two big white feathered wings raised high behind his shoulders, polished silver-white plate armour with gold trim (pauldrons, gauntlets, knee guards and sabatons), a long white tabard with a gold border hanging from a gold belt, a long straight steel sword with a gold crossguard held upright in his RIGHT hand, and a white kite shield with a gold sun-cross on his LEFT arm",
+ "hands": "the sword stays in his right hand on the screen-left side and the white kite shield on his left arm on the screen-right side",
+ "guide_style": "grey",
+ "scale": 1.02,
+ "head_r": 9,
+ "limb": 1.1,
+ "joints": {
+  "head": [76, 45],
+  "neck": [76, 55],
+  "chest": [76, 63],
+  "pelvis": [75, 80],
+  "r_sh": [64, 61],
+  "r_el": [58, 72],
+  "r_ha": [49, 71],
+  "tip": [40, 19],
+  "l_sh": [88, 60],
+  "l_el": [91, 72],
+  "l_ha": [95, 80],
+  "shield": [95, 80, 12, 24],
+  "r_hip": [69, 83],
+  "r_kn": [61, 97],
+  "r_ft": [60, 116],
+  "l_hip": [83, 83],
+  "l_kn": [87, 98],
+  "l_ft": [90, 118]
+ },
+ "beats": {
+  "strike": {
+   "5": "follow-through: the blade carries on down until its tip nearly touches the ground at the lower-left, torso twisted, golden hair and white wings swept back"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-left; head snaps back toward the upper-right, eyes squeezed shut, torso jolts back, the white wings flaring, both arms jerk outward (the white kite shield flung out to the right, sword arm thrown up and out)",
+   "1": "recoil extreme: leaning back further toward the upper-right, knees bent, sword dipping, the white kite shield still held out, wings half folded"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back toward the upper-right, sword arm flung up, the white kite shield drooping, wings flaring",
+   "4": "falling back: torso tips back toward the upper-right, the sword slips out of the hand, legs slide forward, the white wings crumpling",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-left and head toward the upper-right, his white wings spread flat on the ground under him; the sword lies on the ground at the lower-left; the white kite shield lies flat beside him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the wings settle, the kite shield rocks",
+   "7": "corpse: lying flat and still on his back, eyes closed, white wings limp on the ground, the sword and the white kite shield on the ground beside him"
+  }
+ }
+}

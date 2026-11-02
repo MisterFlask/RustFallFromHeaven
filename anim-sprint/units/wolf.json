@@ -1,0 +1,21 @@
+{
+ "name": "wolf",
+ "sprite": "m7/roster/units/unit_wolf.png",
+ "body_plan": "quadruped",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Wolf, a lean grey wolf in a low crouch, head lowered and snarling with bared white fangs and a red mouth, yellow eyes, a shaggy grey coat with charcoal along the back and a cream belly, chest and legs, dark paws and a bushy grey tail",
+ "hands": "it has no weapon: it fights with its fangs and claws",
+ "guide_style": "grey",
+ "dims": {"body_r": 12, "head_r": 9, "neck_r": 7, "snout_w": 8, "leg_w": 5.5, "paw_r": 3.5, "tail_w": 6},
+ "words": {"animal": "wolf", "jaws": "fanged jaws", "claws": "claws", "tail": "bushy tail"},
+ "joints": {
+  "head": [110, 92], "snout": [126, 101], "jaw": [119, 111], "neck": [99, 90],
+  "withers": [90, 85], "spine": [71, 85], "hips": [55, 86],
+  "tail_base": [44, 84], "tail_mid": [38, 93], "tail_tip": [35, 104],
+  "fn_top": [88, 96], "fn_knee": [95, 108], "fn_paw": [100, 118],
+  "ff_top": [96, 94], "ff_knee": [104, 104], "ff_paw": [108, 114],
+  "hn_top": [58, 92], "hn_knee": [52, 104], "hn_paw": [50, 114],
+  "hf_top": [70, 94], "hf_knee": [74, 104], "hf_paw": [77, 113]
+ }
+}

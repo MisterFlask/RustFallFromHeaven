@@ -1,0 +1,105 @@
+{
+ "name": "crusader",
+ "sprite": "m7/roster/units/unit_crusader.png",
+ "facing": "lower-left",
+ "tag": "anim/units",
+ "description": "a Crusader, a stout bearded warrior-monk of the Order: a steel open-faced kettle helmet with a gold band and a gold cross, a grey chain-mail coif and hauberk, a long white surcoat with a big golden sun emblem and a red border, a brown belt, a long white cape edged in red hanging behind him on both sides, brown boots, a heavy steel flanged mace on a brown wooden handle raised high in his LEFT hand, and a brown leather holy book with a gold cross and a small white bandage bag with a red cross hanging at his right hip, his RIGHT hand gripping their strap",
+ "hands": "the flanged mace stays in his left hand on the screen-right side; his right hand on the screen-left side grips the strap of the holy book and bandage bag at his hip at rest and lets go, an empty fist, during the action",
+ "guide_style": "grey",
+ "scale": 0.86,
+ "head_r": 10,
+ "limb": 1.1,
+ "joints": {
+  "head": [
+   81,
+   60
+  ],
+  "neck": [
+   82,
+   70
+  ],
+  "chest": [
+   84,
+   80
+  ],
+  "pelvis": [
+   83,
+   92
+  ],
+  "r_sh": [
+   93,
+   70
+  ],
+  "r_el": [
+   100,
+   75
+  ],
+  "r_ha": [
+   102,
+   62
+  ],
+  "tip": [
+   92,
+   38
+  ],
+  "l_sh": [
+   69,
+   73
+  ],
+  "l_el": [
+   64,
+   82
+  ],
+  "l_ha": [
+   70,
+   89
+  ],
+  "r_hip": [
+   89,
+   94
+  ],
+  "r_kn": [
+   96,
+   106
+  ],
+  "r_ft": [
+   97,
+   118
+  ],
+  "l_hip": [
+   76,
+   94
+  ],
+  "l_kn": [
+   69,
+   107
+  ],
+  "l_ft": [
+   66,
+   118
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back toward the upper-right, the steel mace is lifted high beside the head with its flanged head pointing up and back",
+   "2": "wind-up extreme: body coiled back and crouched, the mace hand behind the head and the flanged mace head hanging down behind the shoulders to the right, empty right fist tucked across the belly",
+   "3": "swing: the front foot steps toward the lower-left, the torso whips round, the mace arm sweeps across in front of the chest and the mace is level, its flanged head pointing to the left, the white cape swinging out behind",
+   "4": "contact: mace arm fully extended toward the lower-left, the flanged steel mace head smashing down-left, front knee bent, body low and leaning in, empty right fist swung back behind the shoulders for balance",
+   "5": "follow-through: the mace carries on down until its flanged head nearly touches the ground at the lower-left, torso twisted, the white cape trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the mace comes back up on the near side toward the raised ready angle, right fist back by the strap at the hip"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-left; head snaps back toward the upper-right, eyes squeezed shut, torso jolts back, both arms jerk outward (mace arm thrown up and out to the right, empty right fist flung out to the left)",
+   "1": "recoil extreme: leaning back further toward the upper-right, knees bent, the mace dipping, right fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-right, body thrown back, mace arm flung up, right arm drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, helmeted head droops, the mace lowering",
+   "3": "kneeling: on both knees, slumped forward, the mace's flanged head resting on the ground at the lower-left, right arm hanging",
+   "4": "falling back: torso tips back toward the upper-right, the mace slips out of the hand, legs slide forward, the white cape billowing",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-left and head toward the upper-right, helmet on the ground; the steel mace lies on the ground at the lower-left; the white red-edged cape spread under him, the holy book and bandage bag beside his hip",
+   "6": "bounce: head and shoulders lift slightly off the ground, the white cape settles",
+   "7": "corpse: lying flat and still on his back, eyes closed, the flanged mace on the ground beside him, the white cape spread under him"
+  }
+ }
+}

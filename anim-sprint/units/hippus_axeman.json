@@ -1,0 +1,105 @@
+{
+ "name": "hippus_axeman",
+ "sprite": "m7/roster/units/unit_hippus_axeman.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Hippus Axeman, a tanned steppe warrior with a drooping black moustache and long black braids, a pointed bronze helmet with an orange horsehair plume trailing back, bronze lamellar armour over a burnt-orange gambeson with cream cuffs, an orange-and-bronze armoured skirt, brown boots, and a big battle axe with a wooden haft and a broad crescent steel blade with a bronze edge, gripped by the end of its haft in his RIGHT hand",
+ "hands": "the axe's haft end stays in his right hand on the screen-left side, held across his belly; at rest his left hand on the screen-right side also holds the haft higher up, near the blade, but during the action it lets go and is an empty fist",
+ "guide_style": "grey",
+ "scale": 0.84,
+ "head_r": 10,
+ "limb": 1.15,
+ "joints": {
+  "head": [
+   72,
+   59
+  ],
+  "neck": [
+   72,
+   68
+  ],
+  "chest": [
+   72,
+   78
+  ],
+  "pelvis": [
+   72,
+   96
+  ],
+  "r_sh": [
+   57,
+   72
+  ],
+  "r_el": [
+   57,
+   87
+  ],
+  "r_ha": [
+   74,
+   92
+  ],
+  "tip": [
+   100,
+   59
+  ],
+  "l_sh": [
+   83,
+   70
+  ],
+  "l_el": [
+   92,
+   85
+  ],
+  "l_ha": [
+   89,
+   76
+  ],
+  "r_hip": [
+   64,
+   99
+  ],
+  "r_kn": [
+   59,
+   110
+  ],
+  "r_ft": [
+   56,
+   118
+  ],
+  "l_hip": [
+   81,
+   99
+  ],
+  "l_kn": [
+   85,
+   110
+  ],
+  "l_ft": [
+   87,
+   118
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back toward the upper-left, the left hand lets go of the haft, the battle axe is lifted beside the head with its blade pointing up and back",
+   "2": "wind-up extreme: body coiled back and crouched, the axe hand behind the head and the battle axe's blade hanging down behind the shoulders to the left, the left hand an empty fist tucked across the belly",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips round, the axe arm sweeps across in front of the chest and the battle axe is level, its blade pointing to the right, the left hand an empty fist",
+   "4": "contact: axe arm fully extended toward the lower-right, the battle axe's blade chopping down-right, front knee bent, body low and leaning in, the empty left fist swung back behind the shoulders for balance",
+   "5": "follow-through: the battle axe carries on down until its blade nearly touches the ground at the lower-right, torso twisted, the orange plume, the braids and the empty left fist trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the battle axe comes back up on the near side toward the ready angle, the left hand reaching for the haft"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (axe arm thrown up and out to the left with the battle axe, the empty left fist flung out to the right)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the battle axe dipping, the empty left fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, axe arm flung up with the battle axe, the empty left fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the battle axe lowering, the empty left fist hanging",
+   "3": "kneeling: on both knees, slumped forward, the battle axe's blade resting on the ground at the lower-right, the empty left arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the battle axe slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the bronze helmet with its orange plume on his head; the battle axe lies on the ground at the lower-right",
+   "6": "bounce: head and shoulders lift slightly off the ground, the helmet stays on and the plume settles",
+   "7": "corpse: lying flat and still on his back, eyes closed, the battle axe on the ground beside him"
+  }
+ }
+}

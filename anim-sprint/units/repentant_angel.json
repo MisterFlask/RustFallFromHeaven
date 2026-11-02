@@ -1,0 +1,105 @@
+{
+ "name": "repentant_angel",
+ "sprite": "m7/roster/units/unit_repentant_angel.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Repentant Angel (Fall from Heaven), a fallen angel with a bowed head, long lank grey hair hiding most of her face, a tarnished bronze halo above her head, two big ragged grey feathered wings folded behind her, battered dark steel plate armour (pauldrons, gauntlets, greaves) over a torn, stained white tunic, rusty chains wrapped around her arms and body, and a long rust-spotted steel longsword held point-down in front of her, its hilt under her crossed gauntleted fists, her LEFT hand (screen-right) on the grip and her RIGHT hand (screen-left) resting on top",
+ "hands": "the longsword's grip is in her left hand on the screen-right side, the blade pointing down to the ground; at rest her right hand on the screen-left side rests crossed over the hilt, and during the action it lets go and is an empty gauntleted fist",
+ "guide_style": "grey",
+ "scale": 1.03,
+ "head_r": 9,
+ "limb": 1.1,
+ "joints": {
+  "head": [
+   86,
+   45
+  ],
+  "neck": [
+   86,
+   57
+  ],
+  "chest": [
+   86,
+   65
+  ],
+  "pelvis": [
+   86,
+   84
+  ],
+  "r_sh": [
+   96,
+   56
+  ],
+  "r_el": [
+   99,
+   68
+  ],
+  "r_ha": [
+   93,
+   80
+  ],
+  "tip": [
+   94,
+   123
+  ],
+  "l_sh": [
+   75,
+   55
+  ],
+  "l_el": [
+   72,
+   68
+  ],
+  "l_ha": [
+   84,
+   76
+  ],
+  "r_hip": [
+   92,
+   88
+  ],
+  "r_kn": [
+   96,
+   102
+  ],
+  "r_ft": [
+   99,
+   115
+  ],
+  "l_hip": [
+   79,
+   88
+  ],
+  "l_kn": [
+   74,
+   102
+  ],
+  "l_ft": [
+   73,
+   116
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the rusty longsword is swung up from its point-down rest and lifted over the head with its tip pointing up and back, the ragged grey wings half-raised",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the rusty longsword cocked behind the head with the blade hanging down behind the shoulders, the right hand an empty gauntleted fist tucked in, the ragged wings spread",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the sword arm sweeps over the head and the rusty blade is level, pointing to the lower-right, the right hand an empty gauntleted fist",
+   "4": "contact: sword arm fully extended toward the lower-right, the rusty longsword slashing down-right, front knee bent, body low and leaning in, the empty gauntleted right fist swung back for balance, the ragged grey wings flared",
+   "5": "follow-through: the rusty blade carries on down until its tip nearly touches the ground at the lower-right, torso twisted, the long grey hair and the rusty chains trailing back, the right hand an empty gauntleted fist",
+   "6": "recover: body rises, front foot pulls back halfway, the rusty longsword comes back down to its rest, point down in front of her, the wings folding"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; the bowed head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, the ragged wings jerk open, both arms jerk outward (the empty gauntleted right fist flung out to the left, the sword arm jerked out to the right with the rusty longsword still pointing down)",
+   "1": "recoil extreme: leaning back further, knees bent, the point of the longsword dipping toward the ground, the empty gauntleted right fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, the sword arm flung up with the rusty longsword held upright, the empty gauntleted right fist drooping, the wings spread",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the rusty longsword lowering, the empty right fist hanging, the wings sagging",
+   "3": "kneeling: on both knees, slumped forward, the tip of the longsword resting on the ground, the empty gauntleted right fist hanging, the wings drooping",
+   "4": "falling back: torso tips back toward the upper-left, the rusty longsword slips out of the hand, legs slide forward, the tarnished halo tilting",
+   "5": "hits the ground: lying on her back along the ground, feet toward the lower-right and head toward the upper-left; the rusty longsword lies on the ground at the lower-right; the ragged grey wings spread flat under her",
+   "6": "bounce: head and shoulders lift slightly off the ground, the wings settle",
+   "7": "corpse: lying flat and still on her back, eyes closed, the rusty longsword on the ground beside her, the grey wings spread limp, the tarnished halo fallen beside her head"
+  }
+ }
+}

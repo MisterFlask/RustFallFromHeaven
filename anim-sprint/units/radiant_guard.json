@@ -1,0 +1,54 @@
+{
+ "name": "radiant_guard",
+ "sprite": "m7/roster/units/unit_radiant_guard.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Radiant Guard (Fall from Heaven), a holy knight in polished silver plate armour with gold trim: a closed silver great helm with a gold-trimmed T-shaped visor crowned by a golden sunburst crest, gold-rimmed pauldrons, a blue tabard with a golden sun emblem, a brown belt, a white cape hanging behind him on the screen-left, steel greaves and gold-trimmed sabatons, and a short halberd in his LEFT hand: a brown wooden shaft with a golden sun finial and two crescent steel axe blades",
+ "hands": "the halberd stays in his left hand on the screen-right side, gripped round the shaft at waist height with the axe head up; his right hand on the screen-left side is an empty gauntleted fist at his side",
+ "guide_style": "grey",
+ "scale": 0.87,
+ "head_r": 10,
+ "limb": 1.1,
+ "joints": {
+  "head": [74, 60],
+  "neck": [73, 71],
+  "chest": [76, 78],
+  "pelvis": [76, 88],
+  "r_sh": [85, 71],
+  "r_el": [87, 82],
+  "r_ha": [95, 82],
+  "tip": [103, 56],
+  "l_sh": [60, 73],
+  "l_el": [57, 86],
+  "l_ha": [60, 96],
+  "r_hip": [82, 92],
+  "r_kn": [86, 104],
+  "r_ft": [89, 117],
+  "l_hip": [70, 92],
+  "l_kn": [64, 104],
+  "l_ft": [59, 118]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the halberd is lifted up over the head with its axe head pointing up and back",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the halberd cocked behind the head with the axe head hanging down behind the shoulders, the empty right fist tucked in",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the arm sweeps over the head and the halberd is level, its axe head pointing to the lower-right",
+   "4": "contact: halberd arm fully extended toward the lower-right, the steel axe blade chopping down-right, front knee bent, body low and leaning in, the empty right fist swung back for balance",
+   "5": "follow-through: the halberd carries on down until its axe head nearly touches the ground at the lower-right, torso twisted, the white cape trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the halberd lifts back toward its upright ready angle"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; the helmed head snaps back toward the upper-left, torso jolts back, both arms jerk outward (the empty gauntleted right fist flung out to the left, the halberd arm thrown up and out), the white cape swinging",
+   "1": "recoil extreme: leaning back further, knees bent, the halberd dipping, the empty right fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, halberd arm flung up, the empty right fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, the helmed head droops, the halberd lowering",
+   "3": "kneeling: on both knees, slumped forward, the halberd's axe head resting on the ground, the right arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the halberd slips out of the hand, legs slide forward, the white cape flaring",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the golden sunburst crest on the ground; the halberd lies on the ground at the lower-right; the white cape spread under him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the white cape settles",
+   "7": "corpse: lying flat and still on his back, the visor dark, the halberd on the ground beside him"
+  }
+ }
+}

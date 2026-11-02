@@ -1,0 +1,105 @@
+{
+ "name": "illians_settler",
+ "sprite": "m7/roster/units/unit_illians_settler.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "an Illians Settler, a northern pioneer: a white fur hooded parka with the hood up around his face, a blue coat with a round white toggle at the collar, a brown belt with a steel buckle and brown leather pouches, white fur trim at the hem, blue-grey trousers, thick white fur leg wraps and grey fur boots, a huge brown backpack on his back with a rolled white bedroll on top and a steel cooking pot hanging from it, and a long gnarled grey wooden walking staff held upright in his LEFT hand",
+ "hands": "the walking staff stays in his left hand on the screen-right side and his right hand on the screen-left side is an empty fist held at his chest by the backpack strap",
+ "guide_style": "grey",
+ "scale": 0.87,
+ "head_r": 10,
+ "limb": 1.05,
+ "joints": {
+  "head": [
+   86,
+   59
+  ],
+  "neck": [
+   86,
+   70
+  ],
+  "chest": [
+   84,
+   79
+  ],
+  "pelvis": [
+   85,
+   88
+  ],
+  "r_sh": [
+   96,
+   73
+  ],
+  "r_el": [
+   100,
+   81
+  ],
+  "r_ha": [
+   106,
+   79
+  ],
+  "tip": [
+   108,
+   50
+  ],
+  "l_sh": [
+   70,
+   73
+  ],
+  "l_el": [
+   68,
+   82
+  ],
+  "l_ha": [
+   77,
+   80
+  ],
+  "r_hip": [
+   89,
+   95
+  ],
+  "r_kn": [
+   90,
+   106
+  ],
+  "r_ft": [
+   91,
+   118
+  ],
+  "l_hip": [
+   77,
+   95
+  ],
+  "l_kn": [
+   72,
+   106
+  ],
+  "l_ft": [
+   69,
+   118
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the walking staff is lifted up over the hooded head with its top end pointing up and back, the big backpack on his back",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the walking staff cocked behind the hooded head with its top end hanging down behind the shoulders, the empty right fist tucked in at the chest",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the staff arm sweeps over the head and the walking staff is level, its top end pointing to the lower-right",
+   "4": "contact: staff arm fully extended toward the lower-right, the top end of the walking staff striking down-right, front knee bent, body low and leaning in, the empty right fist swung back for balance",
+   "5": "follow-through: the walking staff carries on down until its top end nearly touches the ground at the lower-right, torso twisted, the fur hood staying up, the backpack swinging",
+   "6": "recover: body rises, front foot pulls back halfway, the walking staff lifts back toward its upright ready angle, the empty right fist back at the chest"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; the hooded head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (the empty right fist flung out to the left, staff arm thrown up and out holding the walking staff)",
+   "1": "recoil extreme: leaning back further, knees bent, the walking staff dipping, the empty right fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, staff arm flung up holding the walking staff high, the empty right fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, the hooded head droops, the walking staff lowering, the heavy backpack dragging at his shoulders",
+   "3": "kneeling: on both knees, slumped forward, the top end of the walking staff resting on the ground, the empty right arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the walking staff slips out of the hand, legs slide forward, the backpack still strapped on",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the fur hood still up and the big backpack under his shoulders; the walking staff lies on the ground at the lower-right",
+   "6": "bounce: head and shoulders lift slightly off the ground, the bedroll and the cooking pot settle",
+   "7": "corpse: lying flat and still on his back over the backpack, eyes closed, the hood still up, the walking staff on the ground beside him"
+  }
+ }
+}

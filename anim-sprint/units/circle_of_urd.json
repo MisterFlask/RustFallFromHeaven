@@ -1,0 +1,105 @@
+{
+ "name": "circle_of_urd",
+ "sprite": "m7/roster/units/unit_circle_of_urd.png",
+ "facing": "lower-left",
+ "tag": "anim/units",
+ "description": "the Circle of Urd, a Doviello berserker: a burly bare-chested barbarian with tanned skin, red war-paint stripes across his eyes, arms and chest, a shaggy blond beard and an open roaring mouth, a grey wolf-pelt hood with the wolf's head on top and a ragged grey wolf-pelt cloak hanging down his back on the screen-right, grey fur cuffs on his arms, a belt of white fangs over a brown fur loincloth, fur-topped brown boots and a wooden club slung at his left hip; his weapon is a big round grey throwing boulder, held in his RIGHT hand (at rest lifted over his head in both hands)",
+ "hands": "the boulder stays in his right hand on the screen-left side; at rest his left hand on the screen-right side also grips the boulder from the other side over his head, but during the action it lets go and is an empty fist held up high; the wooden club stays slung at his left hip",
+ "guide_style": "grey",
+ "scale": 0.8,
+ "head_r": 9,
+ "limb": 1.25,
+ "joints": {
+  "head": [
+   73,
+   67
+  ],
+  "neck": [
+   77,
+   77
+  ],
+  "chest": [
+   82,
+   84
+  ],
+  "pelvis": [
+   80,
+   93
+  ],
+  "r_sh": [
+   65,
+   72
+  ],
+  "r_el": [
+   55,
+   63
+  ],
+  "r_ha": [
+   59,
+   48
+  ],
+  "tip": [
+   81,
+   39
+  ],
+  "l_sh": [
+   90,
+   73
+  ],
+  "l_el": [
+   95,
+   58
+  ],
+  "l_ha": [
+   86,
+   44
+  ],
+  "r_hip": [
+   72,
+   97
+  ],
+  "r_kn": [
+   66,
+   104
+  ],
+  "r_ft": [
+   64,
+   117
+  ],
+  "l_hip": [
+   88,
+   97
+  ],
+  "l_kn": [
+   94,
+   106
+  ],
+  "l_ft": [
+   97,
+   119
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the left hand lets go and the boulder is hoisted high over the head in the right hand, pulled back toward the upper-right, the empty left fist raised",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the boulder cocked back behind the head in the right hand, hanging down behind the shoulders, the empty left fist raised high",
+   "3": "swing: the front foot steps toward the lower-left, the torso whips forward, the right arm sweeps over the head and swings the boulder out level toward the lower-left at arm's length, the empty left fist up",
+   "4": "contact: the right arm fully extended toward the lower-left, the boulder smashing down-left, front knee bent, body low and leaning in, the empty left fist raised high behind for balance",
+   "5": "follow-through: the boulder carries on down toward the lower-left, torso twisted, the wolf-pelt cloak trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the boulder lifts back up over the head toward the ready pose, the left hand reaching up for it"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-left; head snaps back toward the upper-right, eyes squeezed shut, torso jolts back, both arms jerk up and outward (the boulder in the right hand thrown up and out, the empty left fist flung up to the right)",
+   "1": "recoil extreme: leaning back further, knees bent, the boulder wavering high in the right hand, the empty left fist still raised"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, the boulder arm flung up, the empty left fist raised",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the boulder sagging out to the left in the right hand, the empty left arm still up",
+   "3": "kneeling: on both knees, slumped forward, the boulder slipping down at the lower-left, the empty left arm raised limply",
+   "4": "falling back: torso tips back toward the upper-right, the boulder drops out of the hand onto the ground at the lower-left, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-left and head toward the upper-right; the boulder lies on the ground at the lower-left; the wolf-pelt cloak spread under him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the wolf-pelt cloak settles",
+   "7": "corpse: lying flat and still on his back, eyes closed, the boulder on the ground beside him, the club still at his hip"
+  }
+ }
+}

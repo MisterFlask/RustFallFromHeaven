@@ -1,0 +1,98 @@
+{
+ "name": "high_priest_of_the_order",
+ "sprite": "m7/roster/units/unit_high_priest_of_the_order.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "body_plan": "caster",
+ "description": "a High Priest of the Order (Fall from Heaven), an old cleric with white hair and a white beard, a tall white mitre with a red sun emblem and gold trim, a red-and-gold cope with gold crosses over long white robes, a gold chain with a gold sun medallion on his chest, brown shoes, and a tall golden crosier topped by a golden sunburst with a gold orb in his RIGHT hand (screen-left); his LEFT hand (screen-right) is raised empty in blessing",
+ "hands": "the golden sunburst crosier stays upright in his right hand on the screen-left side and his left hand is an empty open hand raised in blessing on the screen-right side",
+ "guide_style": "grey",
+ "scale": 0.86,
+ "head_r": 9,
+ "limb": 1.1,
+ "joints": {
+  "head": [
+   87,
+   59
+  ],
+  "neck": [
+   86,
+   66
+  ],
+  "chest": [
+   87,
+   75
+  ],
+  "pelvis": [
+   87,
+   88
+  ],
+  "r_sh": [
+   75,
+   68
+  ],
+  "r_el": [
+   68,
+   81
+  ],
+  "r_ha": [
+   62,
+   75
+  ],
+  "tip": [
+   59,
+   31
+  ],
+  "l_sh": [
+   101,
+   68
+  ],
+  "l_el": [
+   108,
+   73
+  ],
+  "l_ha": [
+   110,
+   57
+  ],
+  "r_hip": [
+   80,
+   92
+  ],
+  "r_kn": [
+   78,
+   106
+  ],
+  "r_ft": [
+   76,
+   119
+  ],
+  "l_hip": [
+   93,
+   92
+  ],
+  "l_kn": [
+   98,
+   105
+  ],
+  "l_ft": [
+   100,
+   116
+  ]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, the tall white mitre jolting, torso jolts back, the arms jerk (the crosier arm yanked down to his hip on the screen-left side, still gripping the golden sunburst crosier, which tips back so its sunburst rises beside his head; his empty open left hand thrown up on the screen-right side)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the crosier hand low at his hip on the screen-left side, the golden sunburst crosier still in it and slanting across his body toward his head, his empty open left hand still raised on the screen-right side"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, the crosier arm flung up holding the golden sunburst crosier high, his empty left hand drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head with its white mitre droops, the golden crosier lowering",
+   "3": "kneeling: on both knees, slumped forward, the sunburst end of the golden crosier resting on the ground at the lower-right, his empty left arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the golden crosier slips out of the hand, legs slide forward, the red-and-gold cope flaring",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the white mitre still on his head; the golden sunburst crosier lies on the ground at the lower-right; the red-and-gold cope spread under him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the red-and-gold cope settles",
+   "7": "corpse: lying flat and still on his back, eyes closed, the golden sunburst crosier on the ground beside him"
+  }
+ }
+}

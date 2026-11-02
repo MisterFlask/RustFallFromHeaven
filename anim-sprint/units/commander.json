@@ -1,0 +1,105 @@
+{
+ "name": "commander",
+ "sprite": "m7/roster/units/unit_commander.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Great Commander, a bearded human general: brown hair crowned with a golden laurel wreath, a short brown beard, polished steel plate armour with gold trim and round steel pauldrons, a red tunic under the breastplate, a brown belt with a gold buckle, steel knee guards and brown leather boots, a long red cape hanging behind him on both sides, and a short gold-knobbed scepter in his LEFT hand, held out pointing forward; his right hand is empty",
+ "hands": "the gold-knobbed scepter stays in his left hand on the screen-right side; his right hand on the screen-left side is empty and rests on his hip by the belt, elbow out",
+ "guide_style": "grey",
+ "scale": 1.01,
+ "head_r": 11,
+ "limb": 1.05,
+ "joints": {
+  "head": [
+   67,
+   51
+  ],
+  "neck": [
+   68,
+   61
+  ],
+  "chest": [
+   67,
+   71
+  ],
+  "pelvis": [
+   66,
+   85
+  ],
+  "r_sh": [
+   80,
+   63
+  ],
+  "r_el": [
+   90,
+   63
+  ],
+  "r_ha": [
+   100,
+   62
+  ],
+  "tip": [
+   114,
+   49
+  ],
+  "l_sh": [
+   54,
+   66
+  ],
+  "l_el": [
+   48,
+   78
+  ],
+  "l_ha": [
+   58,
+   84
+  ],
+  "r_hip": [
+   73,
+   89
+  ],
+  "r_kn": [
+   79,
+   106
+  ],
+  "r_ft": [
+   83,
+   119
+  ],
+  "l_hip": [
+   60,
+   89
+  ],
+  "l_kn": [
+   55,
+   104
+  ],
+  "l_ft": [
+   52,
+   118
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the scepter is lifted up over the head with its gold knob pointing up and back, the red cape swaying",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the scepter cocked behind the head with its gold knob hanging down behind the shoulders, his free right hand on his hip",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the scepter arm sweeps over the head and the scepter is level, its gold knob pointing to the lower-right",
+   "4": "contact: scepter arm fully extended toward the lower-right, the gold-knobbed scepter smashing down-right, front knee bent, body low and leaning in, his free right hand still on his hip, the red cape flaring behind",
+   "5": "follow-through: the scepter carries on down until its gold knob nearly touches the ground at the lower-right, torso twisted, the red cape and hair trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the scepter lifts back toward the ready angle"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, the scepter arm thrown up and out, his free right hand still on his hip with the elbow out to the left, the red cape flaring",
+   "1": "recoil extreme: leaning back further, knees bent, the scepter dipping a little, his free right hand on his hip"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, the scepter arm flung up, his free right hand at his hip",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the scepter lowering",
+   "3": "kneeling: on both knees, slumped forward, the scepter's gold knob dipping toward the ground at the lower-right, the right arm hanging, the red cape draped over his back",
+   "4": "falling back: torso tips back toward the upper-left, the scepter slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the laurel wreath still on his head; the gold-knobbed scepter lies on the ground at the lower-right; the red cape spread under him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the red cape settles",
+   "7": "corpse: lying flat and still on his back, eyes closed, the scepter on the ground beside him, the red cape spread under him"
+  }
+ }
+}

@@ -1,0 +1,105 @@
+{
+ "name": "bone_golem",
+ "sprite": "m7/roster/units/unit_bone_golem.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Bone Golem, a hulking construct of carved ivory-coloured bones bound with gold bands set with round blue gems: an elephant skull for a head with a curled trunk, two curved tusks and small glowing blue eyes, a ribcage torso with a blue gem in the middle, thick bone arms with big bone fists and thick bone legs; a huge bone club (a giant thighbone with a gold band) raised in his LEFT fist",
+ "hands": "the bone club stays in his left fist on the screen-right side and his right hand is an empty bone fist hanging low on the screen-left side",
+ "guide_style": "grey",
+ "scale": 1.13,
+ "head_r": 14,
+ "limb": 1.5,
+ "joints": {
+  "head": [
+   72,
+   44
+  ],
+  "neck": [
+   70,
+   56
+  ],
+  "chest": [
+   70,
+   68
+  ],
+  "pelvis": [
+   70,
+   86
+  ],
+  "r_sh": [
+   86,
+   64
+  ],
+  "r_el": [
+   92,
+   80
+  ],
+  "r_ha": [
+   104,
+   78
+  ],
+  "tip": [
+   120,
+   26
+  ],
+  "l_sh": [
+   52,
+   60
+  ],
+  "l_el": [
+   34,
+   72
+  ],
+  "l_ha": [
+   36,
+   96
+  ],
+  "r_hip": [
+   80,
+   88
+  ],
+  "r_kn": [
+   86,
+   99
+  ],
+  "r_ft": [
+   88,
+   117
+  ],
+  "l_hip": [
+   60,
+   88
+  ],
+  "l_kn": [
+   52,
+   100
+  ],
+  "l_ft": [
+   47,
+   117
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the bone club is lifted up over the head with its knobbed end pointing up and back",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the bone club cocked behind the skull with its knobbed end hanging down behind the shoulders, the empty right bone fist tucked in",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the arm sweeps over the head and the bone club is level, its knobbed end pointing to the lower-right",
+   "4": "contact: club arm fully extended toward the lower-right, the bone club smashing down-right, front knee bent, body low and leaning in, the empty right bone fist swung back for balance",
+   "5": "follow-through: the bone club carries on down until its knobbed end nearly touches the ground at the lower-right, torso twisted, the trunk and tusks swinging",
+   "6": "recover: body rises, front foot pulls back halfway, the bone club lifts back toward the ready angle"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; the elephant skull snaps back toward the upper-left, its blue eye-lights flickering, the ribcage jolts back, both arms jerk outward (the empty right bone fist flung out to the left, club arm thrown up and out)",
+   "1": "recoil extreme: leaning back further, knees bent, the bone club dipping, the empty right bone fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, club arm flung up, the empty right bone fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, the skull droops, the bone club lowering",
+   "3": "kneeling: on both knees, slumped forward, the bone club's knobbed end resting on the ground, the empty right bone arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the bone club slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and the elephant skull toward the upper-left, tusks pointing up; the bone club lies on the ground at the lower-right",
+   "6": "bounce: the skull and shoulders lift slightly off the ground, the gold bands rattle",
+   "7": "corpse: lying flat and still on his back, the blue eye-lights dark, the bone club on the ground beside him"
+  }
+ }
+}

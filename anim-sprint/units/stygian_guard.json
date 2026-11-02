@@ -1,0 +1,55 @@
+{
+ "name": "stygian_guard",
+ "sprite": "m7/roster/units/unit_stygian_guard.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Stygian Guard (Fall from Heaven), an octopus-headed warrior: a green octopus head with barnacles on its mantle, glowing cyan eyes and a beard of pale green tentacles hanging over the chest, dark green scaled armour with gold trim and barnacled pauldrons, a gold belt with a round buckle, armoured green boots, a tall golden trident held upright in his LEFT hand, and a round green spiral-shell shield on his RIGHT arm",
+ "hands": "the golden trident stays upright in his left hand on the screen-right side and the spiral-shell shield on his right arm on the screen-left side",
+ "guide_style": "grey",
+ "scale": 0.91,
+ "head_r": 10,
+ "limb": 1.15,
+ "joints": {
+  "head": [79, 56],
+  "neck": [79, 68],
+  "chest": [79, 77],
+  "pelvis": [78, 90],
+  "r_sh": [90, 74],
+  "r_el": [94, 86],
+  "r_ha": [101, 81],
+  "tip": [106, 35],
+  "l_sh": [64, 72],
+  "l_el": [59, 84],
+  "l_ha": [56, 95],
+  "shield": [56, 96, 11, 15],
+  "r_hip": [85, 93],
+  "r_kn": [88, 103],
+  "r_ft": [91, 117],
+  "l_hip": [72, 93],
+  "l_kn": [67, 105],
+  "l_ft": [61, 118]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the golden trident is lifted up over the head with its prongs pointing up and back",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the golden trident cocked behind the head with its prongs hanging down behind the shoulders, the spiral-shell shield tucked in",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the arm sweeps over the head and the golden trident is level, its prongs pointing to the lower-right",
+   "4": "contact: trident arm fully extended toward the lower-right, the golden trident's prongs stabbing down-right, front knee bent, body low and leaning in, the spiral-shell shield arm swung back for balance",
+   "5": "follow-through: the golden trident carries on down until its prongs nearly touch the ground at the lower-right, torso twisted, the face tentacles trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the golden trident lifts back toward the ready angle"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; the octopus head snaps back toward the upper-left, the glowing eyes squeezed shut, the face tentacles flying, torso jolts back, both arms jerk outward (the spiral-shell shield flung out to the left, trident arm thrown up and out)",
+   "1": "recoil extreme: leaning back further, knees bent, the golden trident dipping, the spiral-shell shield still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, trident arm flung up, the spiral-shell shield drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, the octopus head droops, the golden trident lowering",
+   "3": "kneeling: on both knees, slumped forward, the golden trident's prongs resting on the ground, the shield arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the golden trident slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the face tentacles spread over his chest; the golden trident lies on the ground at the lower-right; the spiral-shell shield lies flat beside him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the tentacles flop, the spiral-shell shield rocks",
+   "7": "corpse: lying flat and still on his back, the cyan eyes dark, the tentacles limp, the golden trident and the spiral-shell shield on the ground beside him"
+  }
+ }
+}

@@ -1,0 +1,105 @@
+{
+ "name": "herald",
+ "sprite": "m7/roster/units/unit_herald.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Herald (Fall from Heaven), a young man with brown hair under a wide blue plumed hat with a white feather, a blue-and-yellow quartered doublet with white puffed sleeves, a brown belt, blue hose and brown boots, a short sword sheathed at his screen-left hip, and a long gold brass trumpet with a blue banner bearing a gold lion hanging from it in his LEFT hand (screen-right), held to his lips",
+ "hands": "the long brass trumpet stays in his left hand on the screen-right side and his right hand on the screen-left side rests as an empty fist on the hilt of his sheathed sword",
+ "guide_style": "grey",
+ "scale": 0.8,
+ "head_r": 9,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   65,
+   62
+  ],
+  "neck": [
+   66,
+   72
+  ],
+  "chest": [
+   67,
+   80
+  ],
+  "pelvis": [
+   67,
+   91
+  ],
+  "r_sh": [
+   75,
+   73
+  ],
+  "r_el": [
+   85,
+   75
+  ],
+  "r_ha": [
+   82,
+   67
+  ],
+  "tip": [
+   110,
+   50
+  ],
+  "l_sh": [
+   57,
+   75
+  ],
+  "l_el": [
+   51,
+   86
+  ],
+  "l_ha": [
+   57,
+   91
+  ],
+  "r_hip": [
+   71,
+   93
+  ],
+  "r_kn": [
+   75,
+   107
+  ],
+  "r_ft": [
+   78,
+   118
+  ],
+  "l_hip": [
+   62,
+   93
+  ],
+  "l_kn": [
+   58,
+   107
+  ],
+  "l_ft": [
+   55,
+   118
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: the trumpet comes away from his lips, weight shifts back onto the rear leg, torso leans back, the long brass trumpet is lifted up over the head with its bell pointing up and back, the blue banner swinging",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the brass trumpet cocked behind the head like a club with its bell hanging down behind the shoulders, the empty right fist tucked in",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the arm sweeps over the head and the brass trumpet is level, its bell pointing to the lower-right, the blue banner streaming",
+   "4": "contact: trumpet arm fully extended toward the lower-right, the brass bell of the trumpet bashing down-right like a club, front knee bent, body low and leaning in, the empty right fist swung back for balance",
+   "5": "follow-through: the trumpet carries on down until its bell nearly touches the ground at the lower-right, torso twisted, the white hat feather trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the brass trumpet lifts back toward the ready angle"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, the trumpet jerked away from his lips, torso jolts back, both arms jerk outward (the empty right fist flung out to the left, the trumpet arm thrown up and out)",
+   "1": "recoil extreme: leaning back further, knees bent, the brass trumpet dipping, the empty right fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, the trumpet arm flung up, the empty right fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the brass trumpet lowering",
+   "3": "kneeling: on both knees, slumped forward, the bell of the brass trumpet resting on the ground, the empty right arm hanging at his side",
+   "4": "falling back: torso tips back toward the upper-left, the brass trumpet slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the plumed blue hat still on his head; the brass trumpet with its blue banner lies on the ground at the lower-right",
+   "6": "bounce: head and shoulders lift slightly off the ground, the white hat feather settles",
+   "7": "corpse: lying flat and still on his back, eyes closed, the brass trumpet and its blue banner on the ground beside him"
+  }
+ }
+}

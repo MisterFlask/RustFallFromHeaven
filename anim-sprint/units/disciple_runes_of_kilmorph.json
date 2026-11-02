@@ -1,0 +1,98 @@
+{
+ "name": "disciple_runes_of_kilmorph",
+ "sprite": "m7/roster/units/unit_disciple_runes_of_kilmorph.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "body_plan": "caster",
+ "description": "a Disciple of the Runes of Kilmorph, a stout red-bearded dwarf priest in a brown hooded robe with wide sleeves, a leather belt with an iron buckle, a grey stone apron with a gold rune, brown boots; his LEFT hand grips the end of a stone-headed war hammer that rests over his shoulder with its grey head behind him, and his RIGHT hand holds out a grey rune-stone tablet carved with a gold rune",
+ "hands": "the stone war hammer stays in his left hand on the screen-right side and his right hand, on the screen-left side, holds the grey rune-stone tablet",
+ "guide_style": "grey",
+ "scale": 0.88,
+ "head_r": 11,
+ "limb": 1.3,
+ "joints": {
+  "head": [
+   80,
+   60
+  ],
+  "neck": [
+   81,
+   70
+  ],
+  "chest": [
+   81,
+   78
+  ],
+  "pelvis": [
+   82,
+   89
+  ],
+  "r_sh": [
+   92,
+   70
+  ],
+  "r_el": [
+   97,
+   84
+  ],
+  "r_ha": [
+   103,
+   74
+  ],
+  "tip": [
+   69,
+   57
+  ],
+  "l_sh": [
+   68,
+   72
+  ],
+  "l_el": [
+   63,
+   84
+  ],
+  "l_ha": [
+   59,
+   91
+  ],
+  "r_hip": [
+   89,
+   93
+  ],
+  "r_kn": [
+   91,
+   106
+  ],
+  "r_ft": [
+   93,
+   118
+  ],
+  "l_hip": [
+   75,
+   93
+  ],
+  "l_kn": [
+   70,
+   106
+  ],
+  "l_ft": [
+   66,
+   118
+  ]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut above the red beard, torso jolts back, both arms jerk outward (the rune-stone tablet flung out to the left, the hammer arm thrown up and out with the stone war hammer)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the stone war hammer raised upright in his fist, the rune-stone tablet still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, the hammer arm flung up with the stone war hammer, the arm with the rune-stone tablet drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the red beard on his chest, the war hammer lowering",
+   "3": "kneeling: on both knees, slumped forward, the grey stone hammer head resting on the ground, the rune-stone tablet hanging in the other hand",
+   "4": "falling back: torso tips back toward the upper-left, the war hammer and the rune-stone tablet slip out of his hands, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left; the stone war hammer lies on the ground at the lower-right; the grey rune-stone tablet lies flat beside him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the red beard settles",
+   "7": "corpse: lying flat and still on his back, eyes closed, the stone war hammer and the rune-stone tablet on the ground beside him"
+  }
+ }
+}

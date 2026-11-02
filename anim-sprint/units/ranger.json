@@ -1,0 +1,54 @@
+{
+ "name": "ranger",
+ "sprite": "m7/roster/units/unit_ranger.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Ranger (Fall from Heaven), a bearded, pointy-eared woodsman with brown hair: a green hooded cloak worn up over his head, a cream fur mantle on his shoulders, a brown leather jerkin crossed by straps with a round silver buckle, brown trousers and brown boots, a wooden longbow slung on his back behind his screen-left shoulder, a brown hawk with spread wings perched on his gloved LEFT forearm (screen-right), and a short steel hunting dagger at his belt that he draws and stabs with in his RIGHT fist (screen-left)",
+ "hands": "his left forearm stays raised on the screen-right side as the hawk's perch, its gloved hand an empty fist; at rest his right hand on the screen-left side hangs empty beside the dagger at his belt, and during the action it holds the drawn hunting dagger",
+ "guide_style": "grey",
+ "scale": 0.88,
+ "head_r": 9,
+ "limb": 1.0,
+ "joints": {
+  "head": [69, 59],
+  "neck": [70, 69],
+  "chest": [71, 78],
+  "pelvis": [72, 88],
+  "r_sh": [57, 74],
+  "r_el": [54, 85],
+  "r_ha": [55, 96],
+  "tip": [56, 103],
+  "l_sh": [82, 71],
+  "l_el": [84, 80],
+  "l_ha": [94, 73],
+  "r_hip": [66, 92],
+  "r_kn": [60, 105],
+  "r_ft": [58, 118],
+  "l_hip": [76, 92],
+  "l_kn": [78, 105],
+  "l_ft": [82, 119]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back toward the upper-left, the hunting dagger drawn from his belt and lifted beside the head in his right fist, its point up and back, the hawk still on his left forearm",
+   "2": "wind-up extreme: body coiled back and crouched, the dagger hand behind the head and the short steel blade pointing down behind the shoulders to the left, the left forearm tucked across the belly, the hawk flapping up off it",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips round, the dagger arm sweeps across in front of the chest and the short steel blade is level, pointing to the right, the hawk flying above",
+   "4": "contact: dagger arm fully extended toward the lower-right, the steel dagger stabbing down-right, front knee bent, body low and leaning in, the empty gloved left fist swung back behind the shoulders for balance, the hawk flapping above",
+   "5": "follow-through: the dagger carries on down until its point nearly touches the ground at the lower-right, torso twisted, the green cloak trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the dagger comes back up on the near side toward the belt, the left forearm raised again as the hawk lands on it"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (his empty right fist thrown up and out to the left, the left forearm flung out to the right with the hawk clinging to it, wings flapping)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the empty right fist dipping, the left forearm still held out with the hawk on it"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, the empty right arm flung up, the left forearm drooping as the hawk flaps up off it",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, the hooded head droops, the empty right fist lowering, the hawk flying away above",
+   "3": "kneeling: on both knees, slumped forward, the right knuckles resting on the ground at the lower-right, the left arm hanging, the longbow still slung on his back",
+   "4": "falling back: torso tips back toward the upper-left, the longbow slips off his back, legs slide forward, the green cloak flaring",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the green hood still on; the longbow lies on the ground at the lower-right; the green cloak spread under him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the green cloak settles",
+   "7": "corpse: lying flat and still on his back, eyes closed, the longbow on the ground beside him"
+  }
+ }
+}

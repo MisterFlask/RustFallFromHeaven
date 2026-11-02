@@ -1,0 +1,105 @@
+{
+ "name": "shadow",
+ "sprite": "m7/roster/units/unit_shadow.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "the Shadow (Fall from Heaven), a hooded wraith-assassin: a ragged black-and-purple hooded cloak of smoky cloth that trails into wisps behind it, a pointed hood with only two glowing white eyes in its dark opening, smoky tendril sleeves, and two curved daggers with green-glowing poisoned blades dripping green venom, one raised forward in his LEFT hand and the other held low in his RIGHT hand",
+ "hands": "the raised poison dagger stays in his left hand on the screen-right side and his right hand on the screen-left side keeps holding the second poison dagger low, blade pointing down",
+ "guide_style": "grey",
+ "scale": 0.85,
+ "head_r": 9,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   90,
+   68
+  ],
+  "neck": [
+   88,
+   78
+  ],
+  "chest": [
+   85,
+   86
+  ],
+  "pelvis": [
+   83,
+   98
+  ],
+  "r_sh": [
+   97,
+   78
+  ],
+  "r_el": [
+   104,
+   87
+  ],
+  "r_ha": [
+   110,
+   88
+  ],
+  "tip": [
+   122,
+   67
+  ],
+  "l_sh": [
+   73,
+   79
+  ],
+  "l_el": [
+   63,
+   89
+  ],
+  "l_ha": [
+   55,
+   99
+  ],
+  "r_hip": [
+   90,
+   100
+  ],
+  "r_kn": [
+   96,
+   109
+  ],
+  "r_ft": [
+   98,
+   117
+  ],
+  "l_hip": [
+   76,
+   100
+  ],
+  "l_kn": [
+   70,
+   109
+  ],
+  "l_ft": [
+   66,
+   118
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the poison dagger is lifted up over the hood with its curved green blade pointing up and back, the second dagger held low in his other hand",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the dagger cocked behind the hood with its curved green blade hanging down behind the shoulders, the second dagger tucked in low, the smoky cloak wisps flaring",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the arm sweeps over the hood and the curved dagger is level, its green blade pointing to the lower-right",
+   "4": "contact: dagger arm fully extended toward the lower-right, the curved green poison blade slashing down-right and flicking green venom drops, front knee bent, body low and leaning in, the other arm with the second dagger swung back for balance",
+   "5": "follow-through: the curved dagger carries on down until its green blade nearly touches the ground at the lower-right, torso twisted, the ragged peak of the hood and the smoky wisps trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the dagger lifts back toward the ready angle, the second dagger still held low"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; the hooded head snaps back toward the upper-left, the glowing eyes narrowed to slits, torso jolts back, both arms jerk outward (the second dagger flung out to the left, the dagger arm thrown up and out), the smoky cloak wisps billowing",
+   "1": "recoil extreme: leaning back further, knees bent, the curved dagger dipping, the other arm with the second dagger still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, dagger arm flung up, the other arm with the second dagger drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, the hood droops, both curved daggers lowering",
+   "3": "kneeling: on both knees, slumped forward, the tip of the curved dagger resting on the ground, the other arm hanging with the second dagger, the smoky wisps thinning",
+   "4": "falling back: torso tips back toward the upper-left, the dagger slips out of the hand, legs slide forward, the ragged cloak flaring",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and hooded head toward the upper-left; one curved dagger lies on the ground at the lower-right and the other beside him; the ragged smoky cloak spread under him",
+   "6": "bounce: hood and shoulders lift slightly off the ground, the smoky cloak wisps settle",
+   "7": "corpse: lying flat and still on his back, the glowing eyes gone dark in the hood, both poison daggers on the ground beside him, a few wisps of smoke fading"
+  }
+ }
+}

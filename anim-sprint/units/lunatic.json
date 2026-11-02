@@ -1,0 +1,105 @@
+{
+ "name": "lunatic",
+ "sprite": "m7/roster/units/unit_lunatic.png",
+ "facing": "lower-left",
+ "tag": "anim/units",
+ "description": "a Lunatic, a wiry bald madman: a scarred bald head with wild white hair tufts over the ears, one huge bulging eye and a manic toothy grin, a torn blood-stained cream straitjacket with brown leather straps and buckles and loose straps dangling, ragged grey trousers torn at the knees, bare feet, a bloody steel meat cleaver raised high in his LEFT hand, and a broken iron chain dangling from his RIGHT fist",
+ "hands": "the bloody cleaver stays in his left hand on the screen-right side and his right fist on the screen-left side clutches a broken iron chain that dangles from it",
+ "guide_style": "grey",
+ "scale": 0.79,
+ "head_r": 10,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   80,
+   67
+  ],
+  "neck": [
+   81,
+   79
+  ],
+  "chest": [
+   81,
+   86
+  ],
+  "pelvis": [
+   82,
+   95
+  ],
+  "r_sh": [
+   90,
+   80
+  ],
+  "r_el": [
+   97,
+   72
+  ],
+  "r_ha": [
+   103,
+   62
+  ],
+  "tip": [
+   88,
+   44
+  ],
+  "l_sh": [
+   73,
+   81
+  ],
+  "l_el": [
+   67,
+   86
+  ],
+  "l_ha": [
+   60,
+   88
+  ],
+  "r_hip": [
+   89,
+   98
+  ],
+  "r_kn": [
+   92,
+   106
+  ],
+  "r_ft": [
+   92,
+   117
+  ],
+  "l_hip": [
+   74,
+   98
+  ],
+  "l_kn": [
+   70,
+   106
+  ],
+  "l_ft": [
+   66,
+   119
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back toward the upper-right, the bloody cleaver is lifted beside the head with its blade pointing up and back",
+   "2": "wind-up extreme: body coiled back and crouched, the cleaver hand behind the head and the bloody cleaver's blade hanging down behind the shoulders to the right, the right fist with the broken chain tucked across the belly",
+   "3": "swing: the front foot steps toward the lower-left, the torso whips round, the cleaver arm sweeps across in front of the chest and the bloody cleaver is level, its blade pointing to the left",
+   "4": "contact: cleaver arm fully extended toward the lower-left, the bloody cleaver hacking down-left, front knee bent, body low and leaning in, the right fist with the dangling chain swung back behind the shoulders for balance",
+   "5": "follow-through: the bloody cleaver carries on down until its blade nearly touches the ground at the lower-left, torso twisted, the wild white hair tufts trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the bloody cleaver comes back up on the near side toward its raised ready angle, the right fist with the chain tucked across the belly"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-left; head snaps back toward the upper-right, the bulging eye squeezed shut, torso jolts back, both arms jerk outward (cleaver arm thrown up and out to the right, the right fist with the broken chain flung out to the left)",
+   "1": "recoil extreme: leaning back further toward the upper-right, knees bent, the bloody cleaver held up beside his head, the right fist with the chain still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-right, body thrown back, cleaver arm flung up, the right fist with the chain drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, the bald head droops, the bloody cleaver lowering",
+   "3": "kneeling: on both knees, slumped forward, the blade of the bloody cleaver resting on the ground at the lower-left, the right arm hanging with the chain trailing on the ground",
+   "4": "falling back: torso tips back toward the upper-right, the bloody cleaver slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-left and head toward the upper-right, the straitjacket straps loose; the bloody cleaver lies on the ground at the lower-left; the broken chain lies beside him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the loose straps and the chain settle",
+   "7": "corpse: lying flat and still on his back, eye closed, the bloody cleaver and the broken chain on the ground beside him"
+  }
+ }
+}

@@ -1,0 +1,98 @@
+{
+ "name": "disciple",
+ "sprite": "m7/roster/units/unit_disciple.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "body_plan": "caster",
+ "description": "a Disciple, a young religious acolyte: short tousled brown hair, a white robe with gold trim and a short gold-edged white shoulder cape, a gold rope belt, brown sandals, a small brass censer swinging on a short chain from his LEFT hand with a few small solid grey-white smoke puffs, and a thick brown leather holy book with gold corners pressed to his chest in his RIGHT arm",
+ "hands": "the censer's chain stays in his left hand on the screen-right side and his right arm on the screen-left side keeps hold of the holy book",
+ "guide_style": "grey",
+ "scale": 0.99,
+ "head_r": 12,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   71,
+   54
+  ],
+  "neck": [
+   73,
+   66
+  ],
+  "chest": [
+   73,
+   76
+  ],
+  "pelvis": [
+   73,
+   88
+  ],
+  "r_sh": [
+   84,
+   71
+  ],
+  "r_el": [
+   86,
+   85
+  ],
+  "r_ha": [
+   95,
+   77
+  ],
+  "tip": [
+   100,
+   104
+  ],
+  "l_sh": [
+   57,
+   71
+  ],
+  "l_el": [
+   53,
+   86
+  ],
+  "l_ha": [
+   62,
+   86
+  ],
+  "r_hip": [
+   79,
+   90
+  ],
+  "r_kn": [
+   80,
+   104
+  ],
+  "r_ft": [
+   82,
+   119
+  ],
+  "l_hip": [
+   68,
+   90
+  ],
+  "l_kn": [
+   62,
+   104
+  ],
+  "l_ft": [
+   55,
+   119
+  ]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (the holy book flung out to the left in his right hand, the censer arm thrown up and out, the brass censer swinging on its chain)",
+   "1": "recoil extreme: leaning back further, knees bent, the censer dipping on its chain, the holy book still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, censer arm flung up, the brass censer dangling on its chain, the arm with the holy book drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the censer lowering on its chain",
+   "3": "kneeling: on both knees, slumped forward, the brass censer resting on the ground, the arm with the holy book hanging",
+   "4": "falling back: torso tips back toward the upper-left, the censer chain slips out of the hand, the holy book falls, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left; the brass censer lies on the ground at the lower-right with one small grey smoke puff; the holy book lies flat beside him; the white robe spread around his legs",
+   "6": "bounce: head and shoulders lift slightly off the ground, the white robe settles",
+   "7": "corpse: lying flat and still on his back, eyes closed, the brass censer and the holy book on the ground beside him"
+  }
+ }
+}

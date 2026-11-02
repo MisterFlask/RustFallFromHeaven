@@ -1,0 +1,98 @@
+{
+ "name": "hippus_adept",
+ "sprite": "m7/roster/units/unit_hippus_adept.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "body_plan": "caster",
+ "description": "a Hippus Adept, a sun-tanned steppe shaman with a drooping black moustache, a black beard and braids, a rust-brown hooded robe with a bronze-studded mantle, a burnt-orange sash with bronze discs, a brown leather satchel at his right hip, brown boots, and a tall wooden staff topped with a white horse skull, orange horsehair tassels and an amber crystal in his LEFT hand",
+ "hands": "the horse-skull staff stays upright in his left hand on the screen-right side and his right hand on the screen-left side is an empty fist resting at his belt",
+ "guide_style": "grey",
+ "scale": 0.86,
+ "head_r": 9,
+ "limb": 1.05,
+ "joints": {
+  "head": [
+   74,
+   62
+  ],
+  "neck": [
+   74,
+   71
+  ],
+  "chest": [
+   74,
+   80
+  ],
+  "pelvis": [
+   74,
+   95
+  ],
+  "r_sh": [
+   88,
+   76
+  ],
+  "r_el": [
+   91,
+   89
+  ],
+  "r_ha": [
+   95,
+   82
+  ],
+  "tip": [
+   101,
+   42
+  ],
+  "l_sh": [
+   60,
+   76
+  ],
+  "l_el": [
+   56,
+   87
+  ],
+  "l_ha": [
+   63,
+   89
+  ],
+  "r_hip": [
+   80,
+   97
+  ],
+  "r_kn": [
+   83,
+   108
+  ],
+  "r_ft": [
+   85,
+   120
+  ],
+  "l_hip": [
+   67,
+   97
+  ],
+  "l_kn": [
+   62,
+   108
+  ],
+  "l_ft": [
+   58,
+   120
+  ]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, the hood and braids jolting, torso jolts back, both arms jerk outward (the empty right fist flung out to the left, the staff arm thrown up and out with the horse-skull staff)",
+   "1": "recoil extreme: leaning back further, knees bent, the horse-skull staff dipping, its orange tassels swinging, the empty right fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, the staff arm flung up with the horse-skull staff, the empty right fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, the hooded head droops, the horse-skull staff lowering",
+   "3": "kneeling: on both knees, slumped forward, the horse-skull staff slanting down with its skull resting on the ground, the right arm hanging, the satchel against his hip",
+   "4": "falling back: torso tips back toward the upper-left, the horse-skull staff slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the hood around his head; the horse-skull staff lies on the ground at the lower-right; the rust-brown robe spread under him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the hood and the orange tassels settle",
+   "7": "corpse: lying flat and still on his back, eyes closed, the horse-skull staff on the ground beside him"
+  }
+ }
+}

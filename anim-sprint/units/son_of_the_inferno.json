@@ -1,0 +1,48 @@
+{
+ "name": "son_of_the_inferno",
+ "sprite": "m7/roster/units/unit_son_of_the_inferno.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "body_plan": "caster",
+ "description": "a Son of the Inferno (Fall from Heaven), a fire mage with charcoal-black skin cracked with glowing orange lava veins and one burning eye, a deep hood shaped like a horned red dragon skull with curled horns, long layered red-and-black robes with wide sleeves, gold trim and orange flame patterns, a gold gem clasp at the belt, black boots with gold trim, a dark twisted staff topped with a red spiral of claws around a blazing orange fire orb held upright in his RIGHT hand, and a blazing fireball floating above the open palm of his raised LEFT hand",
+ "hands": "the fire-orb staff stays upright in his right hand on the screen-left side and his left hand on the screen-right side is an open palm raised with a fireball blazing above it",
+ "guide_style": "grey",
+ "scale": 0.97,
+ "head_r": 9,
+ "limb": 1.05,
+ "joints": {
+  "head": [83, 53],
+  "neck": [82, 63],
+  "chest": [81, 71],
+  "pelvis": [80, 85],
+  "r_sh": [68, 66],
+  "r_el": [59, 77],
+  "r_ha": [51, 76],
+  "tip": [44, 42],
+  "l_sh": [95, 65],
+  "l_el": [108, 77],
+  "l_ha": [116, 59],
+  "r_hip": [73, 89],
+  "r_kn": [67, 104],
+  "r_ft": [61, 120],
+  "l_hip": [88, 89],
+  "l_kn": [96, 104],
+  "l_ft": [102, 120]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, the burning eye squeezed shut, torso jolts back, both arms jerk outward (the staff arm thrown up and out to the left with the fire-orb staff tilting, the open left hand with its fireball flung up and out to the right), the dragon-skull hood and wide red sleeves flying",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent under the robe, the fire-orb staff dipping, the open left hand still held out to the right, its fireball flickering",
+   "2": "recovering: halfway back to the ready pose, the fire-orb staff coming back upright in his right hand, the fireball steadying above his open left palm"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, the staff arm flung up holding the fire-orb staff high, the open left hand drooping, its fireball shrinking",
+   "2": "knees buckle: hips drop, knees fold forward under the red robe, torso slumps forward, the dragon-skull hood droops, the fire-orb staff lowering, the fireball gone out",
+   "3": "kneeling: on both knees, slumped forward, the dark staff slanting down with its fire orb resting on the ground at the lower-right, the orb's flames dying, the empty left arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the fire-orb staff slips out of the right hand, legs slide forward under the red robe",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the horned dragon-skull hood still on his head; the dark staff lies on the ground at the lower-right, its orb only smouldering; the red-and-black robe spread around him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the hood, the wide sleeves and the robe settle",
+   "7": "corpse: lying flat and still on his back, the burning eye gone dark, the lava cracks in his skin dimmed, the dark staff with its dead orb on the ground beside him"
+  }
+ }
+}

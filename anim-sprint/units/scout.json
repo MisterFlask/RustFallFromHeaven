@@ -1,0 +1,106 @@
+{
+ "name": "scout",
+ "sprite": "m7/roster/units/unit_scout.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Scout (Fall from Heaven), a young recon soldier: brown hair under the raised hood of a long green cloak that hangs to his calves on both sides, a cream shirt with rolled white sleeves, a brown leather vest with crossed straps and a gold belt buckle, brown trousers and tall brown boots, a small sheathed dagger at his screen-left hip, and a brass spyglass held to his eye in his LEFT hand, pointing forward; his RIGHT hand rests on the dagger's hilt. He fights with the brass spyglass",
+ "hands": "the brass spyglass stays in his left hand on the screen-right side; at rest his right hand on the screen-left side rests on the hilt of his sheathed dagger, and during the action it lets go and is an empty fist, the dagger staying in its sheath",
+ "guide_style": "grey",
+ "scale": 0.88,
+ "head_r": 10,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   73,
+   58
+  ],
+  "neck": [
+   74,
+   68
+  ],
+  "chest": [
+   74,
+   77
+  ],
+  "pelvis": [
+   74,
+   87
+  ],
+  "r_sh": [
+   83,
+   71
+  ],
+  "r_el": [
+   96,
+   73
+  ],
+  "r_ha": [
+   92,
+   61
+  ],
+  "tip": [
+   112,
+   57
+  ],
+  "l_sh": [
+   59,
+   74
+  ],
+  "l_el": [
+   54,
+   84
+  ],
+  "l_ha": [
+   61,
+   89
+  ],
+  "r_hip": [
+   79,
+   92
+  ],
+  "r_kn": [
+   81,
+   107
+  ],
+  "r_ft": [
+   85,
+   120
+  ],
+  "l_hip": [
+   69,
+   92
+  ],
+  "l_kn": [
+   61,
+   107
+  ],
+  "l_ft": [
+   57,
+   120
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: the spyglass comes away from his eye, weight shifts back onto the rear leg, torso leans back, the brass spyglass is lifted up over the head with its lens end pointing up and back, the right hand lets go of the dagger hilt as an empty fist",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the brass spyglass cocked behind the head like a club with its lens end hanging down behind the shoulders, the empty right fist tucked in, the green cloak swinging",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the arm sweeps over the head and the brass spyglass is level, its lens end pointing to the lower-right, the green cloak flaring",
+   "4": "contact: the spyglass arm swung forward toward the lower-right, elbow bent, the brass spyglass bashing down-right like a club, front knee bent, body low and leaning in, the empty right fist swung back for balance",
+   "5": "follow-through: the brass spyglass carries on down, its lens end pointing down to the lower-right, torso twisted, the green hood and cloak trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the brass spyglass comes back up level beside his eye"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left inside the green hood, eyes squeezed shut, torso jolts back, both arms jerk outward (the empty right fist flung out to the left, the spyglass arm thrown up and out, the spyglass jerked away from his eye)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the brass spyglass held out level at head height, away from his eye, the empty right fist still held out to the left, the green cloak swinging",
+   "2": "recovering: halfway back to the ready pose, the brass spyglass coming back up toward his eye"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, the spyglass arm flung up holding the brass spyglass high, the empty right fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, the hooded head droops, the brass spyglass lowering",
+   "3": "kneeling: on both knees, slumped forward, the lens end of the brass spyglass resting on the ground at the lower-right, the empty right arm hanging, the green cloak pooling around him",
+   "4": "falling back: torso tips back toward the upper-left, the brass spyglass slips out of the left hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, boots toward the lower-right and hooded head toward the upper-left; the brass spyglass lies on the ground at the lower-right; the green cloak spread under him, the dagger still sheathed at his hip",
+   "6": "bounce: head and shoulders lift slightly off the ground, the green cloak settles",
+   "7": "corpse: lying flat and still on his back, eyes closed, the green hood still up, the brass spyglass on the ground beside him"
+  }
+ }
+}

@@ -1,0 +1,98 @@
+{
+ "name": "hunter",
+ "sprite": "m7/roster/units/unit_hunter.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "body_plan": "ranged",
+ "description": "a Hunter (Fall from Heaven), a bearded woodsman with shaggy brown hair: a shaggy fur mantle over his shoulders, a green tunic crossed by a brown leather strap, a brown belt with a grey buckle, leather bracers, brown trousers and fur-topped brown boots, a quiver of white-fletched arrows on his back at the upper-left, two dead rabbits hanging from his belt on the screen-left side and a knife at his hip, and a wooden recurve bow held lowered in his LEFT hand",
+ "hands": "the recurve bow stays in his left hand on the screen-right side, held low at his hip; his right hand is an empty fist hanging by the rabbits on the screen-left side",
+ "guide_style": "grey",
+ "scale": 0.96,
+ "head_r": 9,
+ "limb": 1.05,
+ "joints": {
+  "head": [
+   78,
+   54
+  ],
+  "neck": [
+   79,
+   63
+  ],
+  "chest": [
+   78,
+   73
+  ],
+  "pelvis": [
+   78,
+   86
+  ],
+  "r_sh": [
+   87,
+   70
+  ],
+  "r_el": [
+   89,
+   80
+  ],
+  "r_ha": [
+   102,
+   91
+  ],
+  "tip": [
+   109,
+   61
+  ],
+  "l_sh": [
+   64,
+   70
+  ],
+  "l_el": [
+   58,
+   81
+  ],
+  "l_ha": [
+   57,
+   91
+  ],
+  "r_hip": [
+   84,
+   92
+  ],
+  "r_kn": [
+   84,
+   106
+  ],
+  "r_ft": [
+   86,
+   119
+  ],
+  "l_hip": [
+   71,
+   92
+  ],
+  "l_kn": [
+   63,
+   107
+  ],
+  "l_ft": [
+   60,
+   119
+  ]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (the empty right fist flung out to the left, the bow arm thrown up and out with the recurve bow upright)",
+   "1": "recoil extreme: leaning back further, knees bent, the recurve bow dipping, the empty right fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, bow arm flung up holding the recurve bow high, the empty right fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the recurve bow lowering",
+   "3": "kneeling: on both knees, slumped forward, the lower end of the recurve bow resting on the ground, the right arm hanging by the rabbits",
+   "4": "falling back: torso tips back toward the upper-left, the recurve bow slips out of the hand, legs slide forward, the fur mantle flaring",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left; the recurve bow lies on the ground at the lower-right; the quiver under his shoulders, a few arrows spilled, the rabbits still at his belt",
+   "6": "bounce: head and shoulders lift slightly off the ground, the fur mantle settles",
+   "7": "corpse: lying flat and still on his back, eyes closed, the recurve bow on the ground beside him"
+  }
+ }
+}

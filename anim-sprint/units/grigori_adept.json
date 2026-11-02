@@ -1,0 +1,47 @@
+{
+ "name": "grigori_adept",
+ "sprite": "m7/roster/units/unit_grigori_adept.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "body_plan": "caster",
+ "description": "a Grigori Adept, a young mage: tousled brown hair under a pointed teal hood, a teal scarf wound round the neck, a long teal coat, a brown leather vest crossed by brown belts and straps with a brass buckle, a brown leather satchel stuffed with scrolls hanging at his screen-left hip, brown boots, and a wooden staff topped with a glowing pale-blue crystal in his LEFT hand",
+ "hands": "the crystal-topped staff stays upright in his left hand on the screen-right side and his right hand on the screen-left side is an empty fist resting on the satchel strap",
+ "guide_style": "grey",
+ "scale": 0.9,
+ "head_r": 11,
+ "limb": 1.0,
+ "joints": {
+  "head": [77, 57],
+  "neck": [77, 68],
+  "chest": [77, 77],
+  "pelvis": [77, 88],
+  "r_sh": [87, 70],
+  "r_el": [89, 81],
+  "r_ha": [97, 76],
+  "tip": [102, 42],
+  "l_sh": [63, 71],
+  "l_el": [57, 80],
+  "l_ha": [66, 84],
+  "r_hip": [82, 94],
+  "r_kn": [84, 105],
+  "r_ft": [85, 116],
+  "l_hip": [71, 94],
+  "l_kn": [67, 105],
+  "l_ft": [61, 116]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (his empty right fist flung out to the left, the crystal-topped staff thrown up and out in his left hand), the teal hood jolting back",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the crystal-topped staff tilting out to the right, his empty right fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, staff arm flung up holding the crystal-topped staff high, his empty right fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops inside the teal hood, the crystal-topped staff lowering",
+   "3": "kneeling: on both knees, slumped forward, the crystal end of the staff resting on the ground at the lower-right, his empty right hand hanging by the satchel",
+   "4": "falling back: torso tips back toward the upper-left, the crystal-topped staff slips out of the hand, legs slide forward, the long teal coat flaring",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the teal hood under his head; the crystal-topped staff lies on the ground at the lower-right; the satchel of scrolls lies flat beside him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the teal hood, scarf and coat settle",
+   "7": "corpse: lying flat and still on his back, eyes closed, the crystal-topped staff on the ground beside him, its crystal dim"
+  }
+ }
+}

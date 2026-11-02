@@ -1,0 +1,98 @@
+{
+ "name": "disciple_of_acheron",
+ "sprite": "m7/roster/units/unit_disciple_of_acheron.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "body_plan": "caster",
+ "description": "a Disciple of Acheron, a wiry fire cultist with wild spiky black hair, tanned burn-scarred bare arms, a ragged charcoal sleeveless robe with a red and orange tabard, a rope belt and a torn hem, rope bindings and iron cuffs on both wrists, brown boots, a tall gnarled wooden staff bound with iron bands and topped with a big flame in his RIGHT hand, and a small flame burning in his raised open LEFT palm",
+ "hands": "the burning staff stays in his right hand on the screen-left side and his left hand, on the screen-right side, is an open palm holding a small flame",
+ "guide_style": "grey",
+ "scale": 0.84,
+ "head_r": 10,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   83,
+   66
+  ],
+  "neck": [
+   82,
+   75
+  ],
+  "chest": [
+   82,
+   82
+  ],
+  "pelvis": [
+   82,
+   91
+  ],
+  "r_sh": [
+   73,
+   77
+  ],
+  "r_el": [
+   67,
+   84
+  ],
+  "r_ha": [
+   58,
+   83
+  ],
+  "tip": [
+   55,
+   55
+  ],
+  "l_sh": [
+   92,
+   77
+  ],
+  "l_el": [
+   97,
+   88
+  ],
+  "l_ha": [
+   106,
+   80
+  ],
+  "r_hip": [
+   76,
+   96
+  ],
+  "r_kn": [
+   74,
+   107
+  ],
+  "r_ft": [
+   71,
+   118
+  ],
+  "l_hip": [
+   89,
+   96
+  ],
+  "l_kn": [
+   96,
+   105
+  ],
+  "l_ft": [
+   99,
+   119
+  ]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, wild black hair flying, eyes squeezed shut, torso jolts back, both arms jerk outward (the staff arm thrown up and out to the left with the burning staff, the open left hand with its small flame flung out to the right)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the burning staff dipping, the flame hand still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, the staff arm flung up with the burning staff, the flame hand drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the burning staff lowering",
+   "3": "kneeling: on both knees, slumped forward, the burning staff slanting down with one end resting on the ground at the lower-right, the other arm hanging, the small flame in its palm gone out",
+   "4": "falling back: torso tips back toward the upper-left, the burning staff slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left; the iron-bound wooden staff lies on the ground at the lower-right, its flame dying; the ragged robe spread under him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the wild black hair settles",
+   "7": "corpse: lying flat and still on his back, eyes closed, the wooden staff on the ground beside him with only a few small embers left on it"
+  }
+ }
+}

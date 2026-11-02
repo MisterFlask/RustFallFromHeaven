@@ -1,0 +1,54 @@
+{
+ "name": "sons_of_asena",
+ "sprite": "m7/roster/units/unit_sons_of_asena.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Sons of Asena warrior (Fall from Heaven), a bearded barbarian wearing a grey wolf pelt as a cloak with the wolf's head as a hood over his brown hair, a band of blue war paint across his eyes, a necklace of white fangs, a dark grey chain-mail shirt, bare tan arms tattooed with blue stripes, a brown leather belt, dark trousers, fur-trimmed brown leather boots, and a big battle axe with a wooden shaft and a broad crescent steel blade, gripped by the end of its shaft in his RIGHT hand",
+ "hands": "the axe's shaft end stays in his right hand at the belt on the screen-left side; at rest his left hand on the screen-right side also holds the shaft higher up below the blade, but during the action it lets go and is an empty fist",
+ "guide_style": "grey",
+ "scale": 0.88,
+ "head_r": 9,
+ "limb": 1.15,
+ "joints": {
+  "head": [74, 58],
+  "neck": [74, 67],
+  "chest": [74, 77],
+  "pelvis": [74, 94],
+  "r_sh": [58, 68],
+  "r_el": [60, 81],
+  "r_ha": [73, 91],
+  "tip": [101, 57],
+  "l_sh": [86, 69],
+  "l_el": [94, 82],
+  "l_ha": [89, 74],
+  "r_hip": [66, 97],
+  "r_kn": [61, 106],
+  "r_ft": [55, 119],
+  "l_hip": [82, 97],
+  "l_kn": [88, 106],
+  "l_ft": [90, 119]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back toward the upper-left, the left hand lets go of the shaft, the battle axe is lifted beside the head with its steel blade pointing up and back",
+   "2": "wind-up extreme: body coiled back and crouched, the axe hand behind the head and the battle axe's blade hanging down behind the shoulders to the left, the left hand an empty fist tucked across the belly",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips round, the axe arm sweeps across in front of the chest and the battle axe is level, its steel blade pointing to the right, the left hand an empty fist",
+   "4": "contact: axe arm fully extended toward the lower-right, the battle axe's blade chopping down-right, front knee bent, body low and leaning in, the empty left fist swung back behind the shoulders for balance",
+   "5": "follow-through: the battle axe carries on down until its blade nearly touches the ground at the lower-right, torso twisted, the wolf-pelt cloak and the empty left fist trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the battle axe comes back up on the near side toward the ready angle, the left hand reaching for the shaft"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, the wolf-head hood jerking, both arms jerk outward (axe arm thrown up and out to the left, the empty left fist flung out to the right)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the battle axe dipping, the empty left fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, axe arm flung up, the empty left fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the battle axe lowering, the empty left fist hanging",
+   "3": "kneeling: on both knees, slumped forward, the battle axe's blade resting on the ground at the lower-right, the empty left arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the battle axe slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the wolf-head hood still on his head; the battle axe lies on the ground at the lower-right; the grey wolf pelt spread under him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the wolf pelt settles",
+   "7": "corpse: lying flat and still on his back, eyes closed, the wolf-head hood on his head, the battle axe on the ground beside him"
+  }
+ }
+}

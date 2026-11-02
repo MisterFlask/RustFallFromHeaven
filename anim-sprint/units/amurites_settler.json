@@ -1,0 +1,105 @@
+{
+ "name": "amurites_settler",
+ "sprite": "m7/roster/units/unit_amurites_settler.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "an Amurite Settler, a young traveller: short black hair under a deep blue hood, a blue hooded robe with white star motifs and a silver brooch, a brown belt with pouches, brown boots, a huge backpack topped with a rolled blue bedroll with a tin bucket hanging on his screen-left side, and a gnarled wooden walking staff in his LEFT hand",
+ "hands": "the walking staff stays in his left hand on the screen-right side and his right hand is an empty fist gripping the pack strap at his chest",
+ "guide_style": "grey",
+ "scale": 0.87,
+ "head_r": 10,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   86,
+   58
+  ],
+  "neck": [
+   85,
+   69
+  ],
+  "chest": [
+   85,
+   78
+  ],
+  "pelvis": [
+   86,
+   87
+  ],
+  "r_sh": [
+   93,
+   72
+  ],
+  "r_el": [
+   99,
+   84
+  ],
+  "r_ha": [
+   107,
+   78
+  ],
+  "tip": [
+   106,
+   48
+  ],
+  "l_sh": [
+   72,
+   72
+  ],
+  "l_el": [
+   67,
+   82
+  ],
+  "l_ha": [
+   75,
+   81
+  ],
+  "r_hip": [
+   90,
+   93
+  ],
+  "r_kn": [
+   88,
+   105
+  ],
+  "r_ft": [
+   89,
+   118
+  ],
+  "l_hip": [
+   79,
+   93
+  ],
+  "l_kn": [
+   71,
+   105
+  ],
+  "l_ft": [
+   70,
+   118
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the walking staff is lifted up over the head with its gnarled top pointing up and back, his right fist on the pack strap",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the walking staff cocked behind the head with its gnarled top hanging down behind the shoulders and the backpack, his empty right fist tucked in at the pack strap",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the arm sweeps over the head and the walking staff is level, its gnarled top pointing to the lower-right",
+   "4": "contact: staff arm fully extended toward the lower-right, the gnarled top of the walking staff whacking down-right, front knee bent, body low and leaning in, his empty right fist swung back for balance, the bucket swinging on the pack",
+   "5": "follow-through: the walking staff carries on down until its gnarled top nearly touches the ground at the lower-right, torso twisted, the backpack and bucket swaying",
+   "6": "recover: body rises, front foot pulls back halfway, the walking staff lifts back toward the upright ready angle, his right fist returning to the pack strap"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (his empty right fist flung out to the left, the walking staff thrown up and out in his left hand), the backpack and bucket jolting",
+   "1": "recoil extreme: leaning back further, knees bent, the walking staff tilting back, his empty right fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back under the heavy backpack, staff arm flung up holding the walking staff high, his empty right fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, hooded head droops, the walking staff lowering",
+   "3": "kneeling: on both knees, slumped forward under the backpack, the gnarled top of the walking staff resting on the ground, his right arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the walking staff slips out of the hand, legs slide forward, the backpack hitting the ground first",
+   "5": "hits the ground: lying on his back on top of his backpack along the ground, feet toward the lower-right and head toward the upper-left; the walking staff lies on the ground at the lower-right; the bedroll and the bucket beside his shoulders",
+   "6": "bounce: head and shoulders lift slightly off the ground, the bucket tips over",
+   "7": "corpse: lying flat and still on his back on the backpack, eyes closed, the walking staff on the ground beside him"
+  }
+ }
+}

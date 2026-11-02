@@ -1,0 +1,101 @@
+{
+ "name": "adventurer",
+ "sprite": "m7/roster/units/unit_adventurer.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "an Adventurer, a young explorer: tousled spiky brown hair, a blue scarf with its tail trailing behind him, a brown leather jacket over an orange shirt, a belt with a round steel buckle and a sheathed knife, brown trousers and boots, a big backpack with a rolled red bedroll and a coil of rope, a short steel sword in his LEFT hand and a brass lantern hanging from his RIGHT hand",
+ "hands": "the short sword stays in his left hand on the screen-right side and the brass lantern hangs from his right hand on the screen-left side",
+ "guide_style": "grey",
+ "scale": 0.95,
+ "head_r": 12,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   86,
+   54
+  ],
+  "neck": [
+   85,
+   67
+  ],
+  "chest": [
+   84,
+   77
+  ],
+  "pelvis": [
+   84,
+   88
+  ],
+  "r_sh": [
+   92,
+   71
+  ],
+  "r_el": [
+   97,
+   84
+  ],
+  "r_ha": [
+   104,
+   91
+  ],
+  "tip": [
+   116,
+   68
+  ],
+  "l_sh": [
+   73,
+   73
+  ],
+  "l_el": [
+   64,
+   81
+  ],
+  "l_ha": [
+   58,
+   88
+  ],
+  "r_hip": [
+   89,
+   93
+  ],
+  "r_kn": [
+   94,
+   106
+  ],
+  "r_ft": [
+   97,
+   117
+  ],
+  "l_hip": [
+   78,
+   93
+  ],
+  "l_kn": [
+   73,
+   106
+  ],
+  "l_ft": [
+   70,
+   118
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the short sword is lifted up over the head with the tip pointing up and back, the lantern hanging at his side",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the short sword cocked behind the head with the blade hanging down behind the shoulders, the lantern held in close at his hip",
+   "4": "contact: sword arm fully extended toward the lower-right, the short sword slashing down-right, front knee bent, body low and leaning in, lantern arm swung back for balance with the lantern swinging",
+   "5": "follow-through: the blade carries on down until its tip nearly touches the ground at the lower-right, torso twisted, hair and blue scarf trailing back"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (the lantern flung out to the left, sword arm thrown up and out), the blue scarf flapping",
+   "1": "recoil extreme: leaning back further, knees bent, short sword dipping, the lantern still held out and swinging"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, sword arm flung up, lantern arm drooping",
+   "3": "kneeling: on both knees, slumped forward, sword tip resting on the ground, lantern arm hanging with the lantern resting on the ground",
+   "5": "hits the ground: lying on his back on his backpack along the ground, feet toward the lower-right and head toward the upper-left; the short sword lies on the ground at the lower-right; the lantern lies on its side beside him; the blue scarf spread under him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the lantern rocks, the scarf settles",
+   "7": "corpse: lying flat and still on his back, eyes closed, the short sword and the lantern on the ground beside him"
+  }
+ }
+}

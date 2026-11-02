@@ -1,0 +1,67 @@
+{
+ "unit": "man_o_war",
+ "facing": "lower-right",
+ "arm": "final_man_o_war_nofx",
+ "anim": "strike",
+ "canvas": [
+  160,
+  128
+ ],
+ "anchor": [
+  80,
+  126
+ ],
+ "loop": false,
+ "hold_last": false,
+ "frames": [
+  {
+   "file": "frame_00.png",
+   "ms": 100,
+   "events": []
+  },
+  {
+   "file": "frame_01.png",
+   "ms": 120,
+   "events": []
+  },
+  {
+   "file": "frame_02.png",
+   "ms": 160,
+   "events": []
+  },
+  {
+   "file": "frame_03.png",
+   "ms": 50,
+   "events": []
+  },
+  {
+   "file": "frame_04.png",
+   "ms": 120,
+   "events": [
+    "hit"
+   ]
+  },
+  {
+   "file": "frame_05.png",
+   "ms": 120,
+   "events": []
+  },
+  {
+   "file": "frame_06.png",
+   "ms": 100,
+   "events": []
+  },
+  {
+   "file": "frame_07.png",
+   "ms": 100,
+   "events": []
+  }
+ ],
+ "note": "procedural (ship): lib/procedural.py",
+ "warnings": [
+  "frame 2 leaves the safe region x (16, 144): bbox (14, 4, 136, 122)",
+  "frame 3 leaves the safe region x (16, 144): bbox (24, 4, 145, 126)",
+  "frame 4 leaves the safe region x (16, 144): bbox (30, 3, 150, 127)",
+  "frame 5 leaves the safe region x (16, 144): bbox (26, 4, 147, 127)"
+ ]
+}

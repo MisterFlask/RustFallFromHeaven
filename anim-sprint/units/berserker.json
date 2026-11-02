@@ -1,0 +1,105 @@
+{
+ "name": "berserker",
+ "sprite": "m7/roster/units/unit_berserker.png",
+ "facing": "lower-left",
+ "tag": "anim/units",
+ "description": "a Berserker, a roaring red-bearded barbarian warrior: a brown bear pelt worn as a cloak with the bear's head as a hood over his head, a bare muscular tan torso with blue war-paint stripes, a round steel buckle on a leather belt, a fur loincloth, fur-wrapped arms and fur-wrapped boots; a steel hand axe with a short wooden haft raised high in his LEFT hand and a second steel hand axe held low and out in his RIGHT hand",
+ "hands": "the raised hand axe stays in his left hand on the screen-right side and the second hand axe stays in his right hand, held low on the screen-left side",
+ "guide_style": "grey",
+ "scale": 0.93,
+ "head_r": 11,
+ "limb": 1.2,
+ "joints": {
+  "head": [
+   79,
+   60
+  ],
+  "neck": [
+   82,
+   71
+  ],
+  "chest": [
+   82,
+   80
+  ],
+  "pelvis": [
+   82,
+   94
+  ],
+  "r_sh": [
+   96,
+   71
+  ],
+  "r_el": [
+   104,
+   73
+  ],
+  "r_ha": [
+   108,
+   60
+  ],
+  "tip": [
+   104,
+   47
+  ],
+  "l_sh": [
+   64,
+   76
+  ],
+  "l_el": [
+   58,
+   88
+  ],
+  "l_ha": [
+   56,
+   100
+  ],
+  "r_hip": [
+   90,
+   96
+  ],
+  "r_kn": [
+   99,
+   107
+  ],
+  "r_ft": [
+   104,
+   119
+  ],
+  "l_hip": [
+   73,
+   96
+  ],
+  "l_kn": [
+   67,
+   108
+  ],
+  "l_ft": [
+   66,
+   119
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back toward the upper-right, the raised hand axe is lifted beside the head with its steel head pointing up and back, the second hand axe held low in his right hand",
+   "2": "wind-up extreme: body coiled back and crouched, the axe hand behind the head and the hand axe's steel head hanging down behind the shoulders to the right, the second hand axe in his right hand tucked across the belly",
+   "3": "swing: the front foot steps toward the lower-left, the torso whips round, the axe arm sweeps across in front of the chest and the hand axe is level, its steel head pointing to the left, the second hand axe still in his right hand",
+   "4": "contact: axe arm fully extended toward the lower-left, the hand axe chopping down-left, front knee bent, body low and leaning in, the right arm with the second hand axe swung back behind the shoulders for balance",
+   "5": "follow-through: the hand axe carries on down until its steel head nearly touches the ground at the lower-left, torso twisted, the bear-pelt cloak and red beard trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the hand axe comes back up on the near side toward the ready angle, the second hand axe in his right hand tucked across the belly"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-left; head snaps back toward the upper-right, eyes squeezed shut, torso jolts back, both arms jerk outward (the raised axe's arm thrown up and out to the right, the second hand axe in his right hand flung out to the left)",
+   "1": "recoil extreme: leaning back further toward the upper-right, knees bent, the raised hand axe dipping, the second hand axe still held out in his right hand"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-right, body thrown back, the left arm with its hand axe flung up, the second hand axe drooping in his right hand",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, both hand axes lowering",
+   "3": "kneeling: on both knees, slumped forward, the steel head of the hand axe in his left hand resting on the ground at the lower-left, the right arm with the second hand axe hanging",
+   "4": "falling back: torso tips back toward the upper-right, the hand axe slips out of his left hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-left and head toward the upper-right, the bear-head hood still on his head; one hand axe lies on the ground at the lower-left and the second hand axe lies beside his right hand; the bear pelt spread under him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the bear pelt settles",
+   "7": "corpse: lying flat and still on his back, eyes closed, both hand axes on the ground beside him"
+  }
+ }
+}

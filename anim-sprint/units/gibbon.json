@@ -1,0 +1,54 @@
+{
+ "name": "gibbon",
+ "sprite": "m7/roster/units/unit_gibbon.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "Gibbon Goetia (Fall from Heaven), a thin sly hooded hero: a long charcoal-grey and black hooded robe reaching his shins, with crimson lining and gold trim, a smiling white porcelain mask for a face inside the deep hood, his right arm bound across his chest in a crimson sling, a grey frowning mask and a brown pouch hanging at his belt, dark boots, and a thin curved steel dagger held low in his LEFT hand",
+ "hands": "the curved dagger stays in his left hand on the screen-right side; his right arm on the screen-left side stays bound across his chest in its crimson sling, its hand an empty fist",
+ "guide_style": "grey",
+ "scale": 0.98,
+ "head_r": 9,
+ "limb": 1.0,
+ "joints": {
+  "head": [82, 52],
+  "neck": [80, 61],
+  "chest": [77, 70],
+  "pelvis": [74, 85],
+  "r_sh": [89, 63],
+  "r_el": [92, 75],
+  "r_ha": [95, 86],
+  "tip": [109, 99],
+  "l_sh": [62, 61],
+  "l_el": [57, 72],
+  "l_ha": [66, 70],
+  "r_hip": [80, 88],
+  "r_kn": [84, 103],
+  "r_ft": [85, 117],
+  "l_hip": [67, 88],
+  "l_kn": [61, 103],
+  "l_ft": [58, 118]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the curved dagger is lifted up over the hood with its point up and back, the slung right arm stays across his chest",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the dagger hand cocked behind the hood with the short curved dagger pointing back over the shoulders, the right arm still bound across his chest in its crimson sling",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the dagger arm sweeps over the hood and the curved dagger is level, pointing to the lower-right, the slung right arm hugged to his chest",
+   "4": "contact: dagger arm fully extended toward the lower-right, the curved dagger slashing down-right, front knee bent, body low and leaning in, the long robe swinging, the slung right arm pulled in against his chest",
+   "5": "follow-through: the curved dagger carries on down until its point nearly touches the ground at the lower-right, torso twisted, the hood and the robe trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the curved dagger comes back toward its low ready angle"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; the hooded head snaps back toward the upper-left, the white porcelain mask tilting up, torso jolts back, both arms jerk (the slung right arm jolts out to the left inside its crimson sling, the dagger arm thrown out and up)",
+   "1": "recoil extreme: leaning back further, knees bent under the long robe, the curved dagger dipping, the slung right arm still across his chest"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, the dagger arm flung up, the slung right arm drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, the hooded head droops, the curved dagger lowering",
+   "3": "kneeling: on both knees, slumped forward in his long robe, the point of the curved dagger resting on the ground, the slung right arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the curved dagger slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the white porcelain mask facing up inside the hood; the curved dagger lies on the ground at the lower-right; the dark robe spread under him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the robe settles",
+   "7": "corpse: lying flat and still on his back, the white mask facing up, the right arm still in its crimson sling, the curved dagger on the ground beside him"
+  }
+ }
+}

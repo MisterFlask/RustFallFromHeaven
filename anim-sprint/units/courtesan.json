@@ -1,0 +1,105 @@
+{
+ "name": "courtesan",
+ "sprite": "m7/roster/units/unit_courtesan.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Courtesan, a slender Balseraph spy and assassin: voluminous piled-up red hair with a small gold ornament, a gold masquerade mask over the eyes, red lips, an off-shoulder purple and gold gown with a black corset and a high slit, long black gloves, a small steel dagger held point-down in her RIGHT hand and a black lace fan raised beside her face in her LEFT hand",
+ "hands": "the dagger stays in her right hand on the screen-left side and the black lace fan in her left hand on the screen-right side",
+ "guide_style": "grey",
+ "scale": 0.94,
+ "head_r": 10,
+ "limb": 0.85,
+ "joints": {
+  "head": [
+   84,
+   56
+  ],
+  "neck": [
+   84,
+   67
+  ],
+  "chest": [
+   83,
+   77
+  ],
+  "pelvis": [
+   82,
+   90
+  ],
+  "r_sh": [
+   76,
+   73
+  ],
+  "r_el": [
+   72,
+   86
+  ],
+  "r_ha": [
+   67,
+   95
+  ],
+  "tip": [
+   58,
+   106
+  ],
+  "l_sh": [
+   90,
+   71
+  ],
+  "l_el": [
+   96,
+   82
+  ],
+  "l_ha": [
+   94,
+   66
+  ],
+  "r_hip": [
+   78,
+   93
+  ],
+  "r_kn": [
+   77,
+   108
+  ],
+  "r_ft": [
+   76,
+   122
+  ],
+  "l_hip": [
+   87,
+   93
+  ],
+  "l_kn": [
+   88,
+   108
+  ],
+  "l_ft": [
+   90,
+   121
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back toward the upper-left, the dagger is lifted beside the head with its point toward the back, the black lace fan still held by her face",
+   "2": "wind-up extreme: body coiled back and crouched, the dagger hand behind the head with the dagger's point sticking out back to the upper-left, the fan hand raised in front of her chest",
+   "3": "swing: the front foot steps toward the lower-right under the purple gown, the torso whips round, the dagger arm sweeps across in front of the chest and the dagger is level, its point to the right",
+   "4": "contact: dagger arm fully extended toward the lower-right, the small dagger stabbing down-right, front knee bent, body low and leaning in, the fan arm swung back behind the shoulders for balance",
+   "5": "follow-through: the dagger carries on down until its point nearly reaches the ground at the lower-right, torso twisted, the piled red hair swaying back",
+   "6": "recover: body rises, front foot pulls back halfway, the dagger comes back down beside her near hip, point down and back as at rest, the fan hand held out in front of her at chest height"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut behind the gold mask, torso jolts back, the dagger arm thrown out to the left, the black lace fan jerked up beside her face",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent under the gown, the dagger dipping low at her side, the fan still held up by her face"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, the dagger arm flung up, the fan arm raised",
+   "2": "knees buckle: hips drop, knees fold forward under the purple gown, torso slumps forward, head droops, the dagger lowering",
+   "3": "kneeling: on both knees with the purple gown pooled around her, slumped forward, the dagger's point resting on the ground at the lower-right, the fan arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the dagger slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on her back along the ground, feet toward the lower-right and head toward the upper-left, the red hair spread out; the dagger lies on the ground at the lower-right; the black lace fan lies beside her",
+   "6": "bounce: head and shoulders lift slightly off the ground, the purple gown settles",
+   "7": "corpse: lying flat and still on her back, eyes closed behind the gold mask, the dagger and the fan on the ground beside her"
+  }
+ }
+}

@@ -1,0 +1,99 @@
+{
+ "name": "arquebus",
+ "sprite": "m7/roster/units/unit_arquebus.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "body_plan": "ranged",
+ "description": "an Arquebus (Fall from Heaven), an arquebusier: a young soldier with dark brown hair under a polished steel morion helmet with an upturned brim, a crest and small gold rivets; red-and-yellow striped puffed slashed sleeves and puffed red-and-yellow pantaloons, white cuffs, a polished steel breastplate, a brown leather bandolier hung with small wooden powder flasks, brown leather boots; he aims a long matchlock arquebus with a dark steel barrel and a wooden stock to the right, its stock gripped in his RIGHT hand and tucked under his right arm, the butt sticking out behind his hip, the barrel laid in the fork of a tall wooden musket rest that his LEFT hand holds upright, a small glowing orange slow-match on the lock",
+ "hands": "the arquebus stays in his right hand gripping the stock on the screen-left side, the stock tucked under his right arm; his left hand on the screen-right side holds the tall forked wooden musket rest under the barrel and keeps hold of it until he falls",
+ "guide_style": "grey",
+ "scale": 0.85,
+ "head_r": 10,
+ "limb": 1.1,
+ "joints": {
+  "head": [
+   67,
+   62
+  ],
+  "neck": [
+   66,
+   72
+  ],
+  "chest": [
+   67,
+   82
+  ],
+  "pelvis": [
+   66,
+   95
+  ],
+  "r_sh": [
+   51,
+   73
+  ],
+  "r_el": [
+   45,
+   82
+  ],
+  "r_ha": [
+   59,
+   81
+  ],
+  "tip": [
+   119,
+   73
+  ],
+  "l_sh": [
+   75,
+   77
+  ],
+  "l_el": [
+   81,
+   85
+  ],
+  "l_ha": [
+   93,
+   88
+  ],
+  "r_hip": [
+   60,
+   97
+  ],
+  "r_kn": [
+   52,
+   108
+  ],
+  "r_ft": [
+   50,
+   118
+  ],
+  "l_hip": [
+   72,
+   97
+  ],
+  "l_kn": [
+   78,
+   108
+  ],
+  "l_ft": [
+   80,
+   118
+  ]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, the arms jerk (the arquebus jolted in his right hand but still pointing to the right, its muzzle dipping; the left hand still clutching the forked musket rest)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the arquebus held level at his waist, still pointing to the right, the forked musket rest still held in the left hand",
+   "2": "recovering: halfway back to the aiming pose, the arquebus level and pointing to the right, its barrel coming back up toward the forked musket rest in his left hand"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, the right hand jerks the arquebus up to helmet height, still pointing to the right, the forked musket rest toppling out of the drooping left hand",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, the helmeted head droops, the arquebus sagging to waist height, still pointing to the right, the empty left hand hanging",
+   "3": "kneeling: on both knees, slumped forward, the arquebus's muzzle resting on the ground at the lower-right, the empty left arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the arquebus slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the morion helmet still on his head; the arquebus lies on the ground at the lower-right, the forked musket rest on the ground beside him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the morion helmet rocks",
+   "7": "corpse: lying flat and still on his back, eyes closed, the arquebus and the forked musket rest on the ground beside him"
+  }
+ }
+}

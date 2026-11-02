@@ -1,0 +1,105 @@
+{
+ "name": "monk",
+ "sprite": "m7/roster/units/unit_monk.png",
+ "facing": "lower-left",
+ "tag": "anim/units",
+ "description": "a Monk (Fall from Heaven), a lean bald man with tan skin, a necklace of large wooden prayer beads, a dark grey sleeveless robe-vest over a white shirt, a light-blue sash hanging from the waist, baggy white trousers, white cloth wraps on both forearms and brown sandals, and a long plain wooden quarterstaff held diagonally across his body, gripped low in his RIGHT hand",
+ "hands": "the quarterstaff stays in his right hand on the screen-left side; at rest his left hand on the screen-right side also holds the staff higher up near its upper end, but during the action it lets go and is an empty fist",
+ "guide_style": "grey",
+ "scale": 1.02,
+ "head_r": 10,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   81,
+   47
+  ],
+  "neck": [
+   82,
+   58
+  ],
+  "chest": [
+   82,
+   68
+  ],
+  "pelvis": [
+   82,
+   81
+  ],
+  "r_sh": [
+   70,
+   64
+  ],
+  "r_el": [
+   62,
+   77
+  ],
+  "r_ha": [
+   64,
+   91
+  ],
+  "tip": [
+   122,
+   45
+  ],
+  "l_sh": [
+   96,
+   60
+  ],
+  "l_el": [
+   108,
+   72
+  ],
+  "l_ha": [
+   107,
+   58
+  ],
+  "r_hip": [
+   75,
+   86
+  ],
+  "r_kn": [
+   64,
+   104
+  ],
+  "r_ft": [
+   58,
+   117
+  ],
+  "l_hip": [
+   90,
+   86
+  ],
+  "l_kn": [
+   100,
+   102
+  ],
+  "l_ft": [
+   101,
+   114
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the left hand lets go of the staff, the long quarterstaff is lifted up over the bald head in the right hand with its far end pointing up and back",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the quarterstaff cocked behind the bald head with its far end hanging down behind the shoulders, the left hand an empty fist tucked in",
+   "3": "swing: the front foot steps toward the lower-left, the torso whips forward, the staff arm sweeps over the head and the quarterstaff is level, its end pointing to the lower-left, the left hand an empty fist",
+   "4": "contact: staff arm fully extended toward the lower-left, the end of the quarterstaff smashing down-left, front knee bent, body low and leaning in, the empty left fist swung back for balance",
+   "5": "follow-through: the quarterstaff carries on down until its end nearly touches the ground at the lower-left, torso twisted, the prayer-bead necklace swinging",
+   "6": "recover: body rises, front foot pulls back halfway, the quarterstaff lifts back toward the ready angle, the left hand reaching for the staff"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-left; the bald head snaps back toward the upper-right, eyes squeezed shut, torso jolts back, both arms jerk outward (the empty left fist flung out to the right, the staff arm thrown up and out with the quarterstaff)",
+   "1": "recoil extreme: leaning back further, knees bent, the quarterstaff dipping, the empty left fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, the staff arm flung up holding the quarterstaff, the empty left fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, the bald head droops, the quarterstaff lowering, the empty left fist hanging",
+   "3": "kneeling: on both knees, slumped forward, the end of the quarterstaff resting on the ground at the lower-left, the empty left arm hanging",
+   "4": "falling back: torso tips back toward the upper-right, the quarterstaff slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-left and head toward the upper-right, the prayer beads on his chest; the quarterstaff lies on the ground at the lower-left",
+   "6": "bounce: head and shoulders lift slightly off the ground, the prayer beads settle",
+   "7": "corpse: lying flat and still on his back, eyes closed, the wooden quarterstaff on the ground beside him"
+  }
+ }
+}

@@ -1,0 +1,105 @@
+{
+ "name": "mercurians_axeman",
+ "sprite": "m7/roster/units/unit_mercurians_axeman.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Mercurian Axeman (Fall from Heaven), an angel warrior: a gold halo floating above the head, a rounded silver helm with a gold crest strip and gold nose guard, long blonde hair, white feathered wings behind both shoulders, a blue tabard with gold trim over silver plate armour, silver pauldrons over white sleeves, silver gauntlets, silver greaves and sabatons with gold bands, and a great battle axe with a long wooden shaft and a broad double-curved steel blade edged in gold, gripped by the lower end of its shaft in his RIGHT hand (screen-left)",
+ "hands": "the great axe's shaft end stays in his right hand on the screen-left side; at rest his left hand on the screen-right side also holds the shaft higher up, near the blade, but during the action it lets go and is an empty fist",
+ "guide_style": "grey",
+ "scale": 0.9,
+ "head_r": 10,
+ "limb": 1.15,
+ "joints": {
+  "head": [
+   74,
+   58
+  ],
+  "neck": [
+   75,
+   69
+  ],
+  "chest": [
+   74,
+   76
+  ],
+  "pelvis": [
+   75,
+   89
+  ],
+  "r_sh": [
+   59,
+   73
+  ],
+  "r_el": [
+   63,
+   84
+  ],
+  "r_ha": [
+   76,
+   86
+  ],
+  "tip": [
+   99,
+   56
+  ],
+  "l_sh": [
+   85,
+   69
+  ],
+  "l_el": [
+   94,
+   80
+  ],
+  "l_ha": [
+   90,
+   71
+  ],
+  "r_hip": [
+   66,
+   92
+  ],
+  "r_kn": [
+   61,
+   106
+  ],
+  "r_ft": [
+   56,
+   118
+  ],
+  "l_hip": [
+   82,
+   92
+  ],
+  "l_kn": [
+   86,
+   106
+  ],
+  "l_ft": [
+   91,
+   118
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back toward the upper-left, the left hand lets go of the shaft, the great axe is lifted beside the head with its double-curved steel blade pointing up and back",
+   "2": "wind-up extreme: body coiled back and crouched, the axe hand behind the head and the great axe's blade hanging down behind the shoulders to the left, the left hand an empty fist tucked across the belly",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips round, the axe arm sweeps across in front of the chest and the great axe is level, its steel blade pointing to the right, the left hand an empty fist",
+   "4": "contact: axe arm fully extended toward the lower-right, the great axe's blade chopping down-right, front knee bent, body low and leaning in, the empty left fist swung back behind the shoulders for balance, the white wings spread",
+   "5": "follow-through: the great axe carries on down until its blade nearly touches the ground at the lower-right, torso twisted, the blonde hair and the white wings trailing back, the empty left fist trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the great axe comes back up on the near side toward the ready angle, the left hand reaching for the shaft"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left under the silver helm, eyes squeezed shut, torso jolts back, the white wings flare, both arms jerk outward (axe arm thrown up and out to the left, the empty left fist flung out to the right)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the great axe held upright across the body, the empty left fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, axe arm flung up, the empty left fist drooping, the white wings flaring",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the great axe lowering, the empty left fist hanging",
+   "3": "kneeling: on both knees, slumped forward, the great axe's blade resting on the ground at the lower-right, the empty left arm hanging, the wings drooping",
+   "4": "falling back: torso tips back toward the upper-left, the great axe slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the silver helm on his head and the white wings spread under him; the great axe lies on the ground at the lower-right",
+   "6": "bounce: head and shoulders lift slightly off the ground, the helm stays on, the white wings settle",
+   "7": "corpse: lying flat and still on his back, eyes closed, the white wings limp under him, the halo dim, the great axe on the ground beside him"
+  }
+ }
+}

@@ -1,0 +1,98 @@
+{
+ "name": "priest_of_kilmorph",
+ "sprite": "m7/roster/units/unit_priest_of_kilmorph.png",
+ "facing": "lower-left",
+ "tag": "anim/units",
+ "body_plan": "caster",
+ "description": "a Priest of Kilmorph (Fall from Heaven), a stocky dwarf stonewarden with a long brown beard and brown hair, a long earth-brown robe with amber runes along the hem and a cream-trimmed front panel with an amber rune, a slate-grey stone mantle over the shoulders with amber runes and bronze clasps, brown boots, and a thick wooden staff topped with a carved grey rune-stone bearing an amber rune held upright in his LEFT hand (screen-right); his RIGHT hand (screen-left) is an empty fist at his waist",
+ "hands": "the rune-stone staff stays upright in his left hand on the screen-right side and his right hand is an empty fist at his waist on the screen-left side",
+ "guide_style": "grey",
+ "scale": 0.92,
+ "head_r": 11,
+ "limb": 1.2,
+ "joints": {
+  "head": [
+   72,
+   58
+  ],
+  "neck": [
+   72,
+   68
+  ],
+  "chest": [
+   72,
+   78
+  ],
+  "pelvis": [
+   72,
+   93
+  ],
+  "r_sh": [
+   87,
+   71
+  ],
+  "r_el": [
+   92,
+   89
+  ],
+  "r_ha": [
+   99,
+   81
+  ],
+  "tip": [
+   105,
+   46
+  ],
+  "l_sh": [
+   55,
+   73
+  ],
+  "l_el": [
+   51,
+   85
+  ],
+  "l_ha": [
+   60,
+   90
+  ],
+  "r_hip": [
+   80,
+   96
+  ],
+  "r_kn": [
+   84,
+   108
+  ],
+  "r_ft": [
+   88,
+   119
+  ],
+  "l_hip": [
+   64,
+   96
+  ],
+  "l_kn": [
+   60,
+   108
+  ],
+  "l_ft": [
+   54,
+   120
+  ]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-left; head snaps back toward the upper-right, eyes squeezed shut, torso jolts back, both arms jerk in tight (the staff arm drops straight down at his side, still gripping the rune-stone staff upright, his empty right fist clenched in front of his belly), the long beard swinging",
+   "1": "recoil extreme: leaning back further toward the upper-right, knees bent, the rune-stone staff tilting across his body, its rune-stone top near his shoulder, his empty right fist still clenched at his belly"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-right, body thrown back, the staff arm flung up holding the rune-stone staff, his empty right fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the rune-stone staff lowering",
+   "3": "kneeling: on both knees, slumped forward, the staff tilted with its grey rune-stone top resting on the ground at the lower-left, his empty right arm hanging",
+   "4": "falling back: torso tips back toward the upper-right, the rune-stone staff slips out of the hand, legs slide forward, the brown robe flaring",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-left and head toward the upper-right, the stone mantle on his shoulders; the rune-stone staff lies on the ground at the lower-left",
+   "6": "bounce: head and shoulders lift slightly off the ground, the long beard and the robe settle",
+   "7": "corpse: lying flat and still on his back, eyes closed, the rune-stone staff on the ground beside him, its amber rune dimmed"
+  }
+ }
+}

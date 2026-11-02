@@ -1,0 +1,98 @@
+{
+ "name": "mercurians_adept",
+ "sprite": "m7/roster/units/unit_mercurians_adept.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "body_plan": "caster",
+ "description": "a Mercurian Adept (Fall from Heaven), an angelic young mage: blonde hair and blue eyes under a white hood, a gold halo floating above the head, small white feathered wings behind both shoulders (the bigger one on the screen-left), a long blue robe with gold trim and a gold sash, a brown leather satchel stuffed with scrolls on a strap across the chest hanging at the screen-left hip, white shoes, and a tall gold staff topped by a glowing pale-yellow crystal in his LEFT hand (screen-right)",
+ "hands": "the crystal-topped gold staff stays in his left hand on the screen-right side and his right hand on the screen-left side holds the satchel strap at his hip, an empty fist",
+ "guide_style": "grey",
+ "scale": 0.86,
+ "head_r": 10,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   79,
+   60
+  ],
+  "neck": [
+   79,
+   71
+  ],
+  "chest": [
+   80,
+   79
+  ],
+  "pelvis": [
+   79,
+   88
+  ],
+  "r_sh": [
+   89,
+   73
+  ],
+  "r_el": [
+   91,
+   84
+  ],
+  "r_ha": [
+   99,
+   76
+  ],
+  "tip": [
+   102,
+   44
+  ],
+  "l_sh": [
+   66,
+   73
+  ],
+  "l_el": [
+   61,
+   81
+  ],
+  "l_ha": [
+   70,
+   82
+  ],
+  "r_hip": [
+   85,
+   92
+  ],
+  "r_kn": [
+   87,
+   105
+  ],
+  "r_ft": [
+   89,
+   118
+  ],
+  "l_hip": [
+   73,
+   92
+  ],
+  "l_kn": [
+   68,
+   105
+  ],
+  "l_ft": [
+   63,
+   118
+  ]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left inside the white hood, eyes squeezed shut, torso jolts back, the small wings flare, both arms jerk outward (the empty right fist flung out to the left, the arm with the crystal-topped gold staff thrown up and out)",
+   "1": "recoil extreme: leaning back further, knees bent, the crystal-topped gold staff dipping, the empty right fist still held out, the satchel swinging"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, the staff arm flung up, the empty right hand drooping, the small wings flaring",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the crystal-topped gold staff lowering",
+   "3": "kneeling: on both knees, slumped forward, the crystal top of the gold staff resting on the ground, the empty right arm hanging, the wings drooping",
+   "4": "falling back: torso tips back toward the upper-left, the gold staff slips out of the hand, legs slide forward, the blue robe flaring",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the white hood still around his head and the small white wings folded under him; the crystal-topped gold staff lies on the ground at the lower-right; the satchel lies flat beside him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the blue robe settles",
+   "7": "corpse: lying flat and still on his back, eyes closed, the halo faded, the crystal-topped gold staff on the ground beside him, its glow gone"
+  }
+ }
+}

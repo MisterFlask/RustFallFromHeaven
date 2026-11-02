@@ -1,0 +1,105 @@
+{
+ "name": "lucian",
+ "sprite": "m7/roster/units/unit_lucian.png",
+ "facing": "lower-left",
+ "tag": "anim/units",
+ "description": "Lucian, the Doviello chieftain hero, a broad muscular barbarian: a shaggy brown beard, blue war-paint stripes under his eyes, a grey wolf pelt worn with the wolf's head as a hood and a long grey wolf-fur cloak hanging down his screen-left side to the knees, blue tattoo bands on his tanned bare arms, a round steel amulet on his bare chest, a brown leather and fur kilt, fur-trimmed brown boots, and a huge steel double-bladed battle axe on a long wooden shaft, gripped by the end of its shaft in his RIGHT hand",
+ "hands": "the battle axe's shaft end stays in his right hand on the screen-left side; at rest his left hand on the screen-right side also holds the shaft higher up near the axe head, but during the action it lets go and is an empty fist",
+ "guide_style": "grey",
+ "scale": 0.95,
+ "head_r": 10,
+ "limb": 1.3,
+ "joints": {
+  "head": [
+   70,
+   53
+  ],
+  "neck": [
+   72,
+   62
+  ],
+  "chest": [
+   73,
+   72
+  ],
+  "pelvis": [
+   74,
+   90
+  ],
+  "r_sh": [
+   59,
+   65
+  ],
+  "r_el": [
+   56,
+   79
+  ],
+  "r_ha": [
+   68,
+   89
+  ],
+  "tip": [
+   110,
+   65
+  ],
+  "l_sh": [
+   87,
+   64
+  ],
+  "l_el": [
+   86,
+   73
+  ],
+  "l_ha": [
+   94,
+   75
+  ],
+  "r_hip": [
+   66,
+   94
+  ],
+  "r_kn": [
+   55,
+   102
+  ],
+  "r_ft": [
+   50,
+   116
+  ],
+  "l_hip": [
+   82,
+   94
+  ],
+  "l_kn": [
+   90,
+   100
+  ],
+  "l_ft": [
+   92,
+   113
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the left hand lets go of the shaft, the battle axe is lifted up over the head with its double steel blade pointing up and back",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the battle axe cocked behind the head with its double steel blade hanging down behind the shoulders and the wolf-pelt hood, the empty left fist tucked in",
+   "3": "swing: the front foot steps toward the lower-left, the torso whips forward, the arm sweeps over the head and the battle axe is level, its double steel blade pointing to the lower-left, the left hand an empty fist",
+   "4": "contact: axe arm fully extended toward the lower-left, the battle axe's double steel blade chopping down-left, front knee bent, body low and leaning in, the empty left fist swung back for balance",
+   "5": "follow-through: the battle axe carries on down until its blade nearly touches the ground at the lower-left, torso twisted, the wolf-fur cloak trailing back, the empty left fist out behind",
+   "6": "recover: body rises, front foot pulls back halfway, the battle axe lifts back toward its ready angle across the body, the left hand reaching for the shaft"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-left; head snaps back toward the upper-right, eyes squeezed shut, torso jolts back, both arms jerk outward (the empty left fist flung out to the right, the axe arm flung out low to the left with the battle axe slanting up behind his body)",
+   "1": "recoil extreme: leaning back further toward the upper-right, knees bent, the battle axe held upright at his side on the screen-left, the empty left fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-right, body thrown back, axe arm flung up holding the battle axe high, the empty left fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the battle axe lowering, the empty left fist hanging",
+   "3": "kneeling: on both knees, slumped forward, the battle axe's blade resting on the ground at the lower-left, the empty left arm hanging",
+   "4": "falling back: torso tips back toward the upper-right, the battle axe slips out of the hand, legs slide forward, the wolf-fur cloak flaring",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-left and head toward the upper-right, the wolf-head hood still on his head; the battle axe lies on the ground at the lower-left; the grey wolf-fur cloak spread under him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the wolf-fur cloak settles",
+   "7": "corpse: lying flat and still on his back, eyes closed, the battle axe on the ground beside him"
+  }
+ }
+}

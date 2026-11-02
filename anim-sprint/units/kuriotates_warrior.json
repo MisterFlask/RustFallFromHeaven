@@ -1,0 +1,110 @@
+{
+ "name": "kuriotates_warrior",
+ "sprite": "m7/roster/units/unit_kuriotates_warrior.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Kuriotates Warrior, a young brown-haired man: tousled brown hair crowned with a gold laurel wreath, bare tan arms and legs, a green sleeveless tunic with gold trim and a gold strap across the chest, a brown leather belt with a round gold buckle, brown leather boots with bronze bands, a big wooden club studded with round brass studs raised in his RIGHT hand (screen-left), and a round green shield with a gold rim and a gold sun boss on his LEFT arm (screen-right)",
+ "hands": "the studded club stays in his right hand on the screen-left side and the round shield on his left arm on the screen-right side",
+ "guide_style": "grey",
+ "scale": 0.94,
+ "head_r": 11,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   83,
+   59
+  ],
+  "neck": [
+   84,
+   70
+  ],
+  "chest": [
+   85,
+   80
+  ],
+  "pelvis": [
+   84,
+   89
+  ],
+  "r_sh": [
+   76,
+   73
+  ],
+  "r_el": [
+   69,
+   73
+  ],
+  "r_ha": [
+   62,
+   73
+  ],
+  "tip": [
+   53,
+   39
+  ],
+  "l_sh": [
+   94,
+   74
+  ],
+  "l_el": [
+   99,
+   84
+  ],
+  "l_ha": [
+   104,
+   90
+  ],
+  "shield": [
+   107,
+   92,
+   11,
+   15
+  ],
+  "r_hip": [
+   77,
+   95
+  ],
+  "r_kn": [
+   69,
+   104
+  ],
+  "r_ft": [
+   63,
+   116
+  ],
+  "l_hip": [
+   90,
+   95
+  ],
+  "l_kn": [
+   96,
+   107
+  ],
+  "l_ft": [
+   102,
+   120
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back toward the upper-left, the studded club is lifted beside the head with its heavy studded end pointing up and back",
+   "2": "wind-up extreme: body coiled back and crouched, the club hand behind the head and the studded club hanging down behind the shoulders to the left, the green sun shield tucked across the belly",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips round, the club arm sweeps across in front of the chest and the studded club is level, its heavy end pointing to the right",
+   "4": "contact: club arm fully extended toward the lower-right, the studded club smashing down-right, front knee bent, body low and leaning in, the green sun shield swung back behind the shoulders for balance",
+   "5": "follow-through: the club carries on down until its studded end nearly touches the ground at the lower-right, torso twisted, hair trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the studded club comes back up on the near side toward the ready angle, the green sun shield tucked across the belly"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (club arm thrown up and out to the left, the green sun shield flung out to the right)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the studded club dipping, the green sun shield still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, club arm flung up, the green sun shield drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the studded club lowering",
+   "3": "kneeling: on both knees, slumped forward, the club's studded end resting on the ground at the lower-right, shield arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the studded club slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the laurel wreath on his hair; the studded club lies on the ground at the lower-right; the round green shield lies flat beside him",
+   "7": "corpse: lying flat and still on his back, eyes closed, the studded club and the green sun shield on the ground beside him"
+  }
+ }
+}

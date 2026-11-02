@@ -1,0 +1,98 @@
+{
+ "name": "crossbowman",
+ "sprite": "m7/roster/units/unit_crossbowman.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "body_plan": "ranged",
+ "description": "a Crossbowman, a bearded human soldier: a wide-brimmed steel kettle helmet, a brown beard, a grey chain-mail shirt over a brown leather jerkin with rolled-up sleeves and bare tan forearms, a brown belt with a square steel buckle, a quiver of white-fletched bolts and a brown pouch at his hip on the screen-left side, brown trousers and tall brown leather boots, aiming a wooden crossbow with a curved steel prod to the right, its stock under his cheek gripped in his RIGHT hand and its fore-end held in his LEFT hand",
+ "hands": "the crossbow's stock stays in his right hand on the screen-left side; at rest his left hand on the screen-right side also holds the fore-end under the prod, but during the action it lets go and is an empty fist",
+ "guide_style": "grey",
+ "scale": 0.93,
+ "head_r": 11,
+ "limb": 1.1,
+ "joints": {
+  "head": [
+   64,
+   56
+  ],
+  "neck": [
+   64,
+   66
+  ],
+  "chest": [
+   64,
+   76
+  ],
+  "pelvis": [
+   65,
+   88
+  ],
+  "r_sh": [
+   53,
+   68
+  ],
+  "r_el": [
+   48,
+   77
+  ],
+  "r_ha": [
+   66,
+   74
+  ],
+  "tip": [
+   118,
+   72
+  ],
+  "l_sh": [
+   78,
+   67
+  ],
+  "l_el": [
+   84,
+   80
+  ],
+  "l_ha": [
+   91,
+   77
+  ],
+  "r_hip": [
+   59,
+   92
+  ],
+  "r_kn": [
+   54,
+   105
+  ],
+  "r_ft": [
+   51,
+   118
+  ],
+  "l_hip": [
+   72,
+   92
+  ],
+  "l_kn": [
+   76,
+   106
+  ],
+  "l_ft": [
+   80,
+   118
+  ]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut under the kettle helmet, torso jolts back; the crossbow stays gripped by its stock in his right hand at his chest, jolted so its front end dips a little, still pointing to the right; the left hand lets go of the fore-end and is pulled in against his belly as an empty fist",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the crossbow still held across his chest in the right hand, pointing to the right and dipping a little, the empty left fist held in against his belly"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, the crossbow arm flung up, the empty left fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops under the kettle helmet, the crossbow lowering, the empty left fist hanging",
+   "3": "kneeling: on both knees, slumped forward, the crossbow's front end resting on the ground at the lower-right, the empty left arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the crossbow slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the kettle helmet on his head; the crossbow lies on the ground at the lower-right",
+   "6": "bounce: head and shoulders lift slightly off the ground, the helmet stays on",
+   "7": "corpse: lying flat and still on his back, eyes closed, the crossbow on the ground beside him"
+  }
+ }
+}

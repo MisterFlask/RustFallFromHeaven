@@ -1,0 +1,105 @@
+{
+ "name": "infernal_settler",
+ "sprite": "m7/roster/units/unit_infernal_settler.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "an Infernal Settler, a red-skinned demon pioneer: a red face with yellow eyes and a grin inside a dark grey hood with two curved horns poking through it, a ragged dark grey cloak, a red loincloth with a brown pouch at the belt, red legs with dark wraps and black clawed feet, a huge brown backpack on his back topped with a black-and-red striped bedroll and a flaming lantern hanging from it on the screen-left side, a red devil's tail curling out at the left, and a tall gnarled dark wooden walking staff held upright in his LEFT hand",
+ "hands": "the gnarled walking staff stays upright in his left hand on the screen-right side and his right hand on the screen-left side is an empty fist at the backpack strap",
+ "guide_style": "grey",
+ "scale": 0.85,
+ "head_r": 11,
+ "limb": 1.1,
+ "joints": {
+  "head": [
+   89,
+   62
+  ],
+  "neck": [
+   88,
+   71
+  ],
+  "chest": [
+   87,
+   80
+  ],
+  "pelvis": [
+   84,
+   94
+  ],
+  "r_sh": [
+   96,
+   73
+  ],
+  "r_el": [
+   98,
+   82
+  ],
+  "r_ha": [
+   107,
+   80
+  ],
+  "tip": [
+   111,
+   48
+  ],
+  "l_sh": [
+   78,
+   73
+  ],
+  "l_el": [
+   72,
+   81
+  ],
+  "l_ha": [
+   66,
+   80
+  ],
+  "r_hip": [
+   90,
+   98
+  ],
+  "r_kn": [
+   92,
+   108
+  ],
+  "r_ft": [
+   92,
+   119
+  ],
+  "l_hip": [
+   78,
+   98
+  ],
+  "l_kn": [
+   73,
+   108
+  ],
+  "l_ft": [
+   70,
+   119
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the gnarled walking staff is lifted up over the head with its top end pointing up and back, the big backpack on his back",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the gnarled staff cocked behind the hooded head with its top end hanging down behind the shoulders, the empty right fist tucked in at the backpack strap",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the arm sweeps over the head and the gnarled staff is level, its top end pointing to the lower-right",
+   "4": "contact: staff arm fully extended toward the lower-right, the top end of the gnarled staff smashing down-right, front knee bent, body low and leaning in, the empty right fist swung back for balance",
+   "5": "follow-through: the gnarled staff carries on down until its top end nearly touches the ground at the lower-right, torso twisted, the ragged cloak and the red tail trailing back, the lantern swinging",
+   "6": "recover: body rises, front foot pulls back halfway, the gnarled staff lifts back toward its upright ready angle"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; the hooded head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (the empty right fist flung out to the left, the staff arm thrown up and out with the gnarled staff tilted up)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the gnarled staff dipping, the empty right fist still held out, the lantern swinging"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, staff arm flung up holding the gnarled staff high, the empty right fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, the hooded head droops, the gnarled staff lowering, the heavy backpack dragging at his shoulders",
+   "3": "kneeling: on both knees, slumped forward, the top end of the gnarled staff resting on the ground at the lower-right, the empty right arm hanging",
+   "4": "falling back: torso tips back toward the upper-left onto the big backpack, the gnarled staff slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the big backpack under his shoulders and the lantern on its side beside it; the gnarled walking staff lies on the ground at the lower-right",
+   "6": "bounce: head and shoulders lift slightly off the ground, the bedroll and the lantern settle",
+   "7": "corpse: lying flat and still on his back over the backpack, eyes dark, the lantern's flame low, the gnarled staff on the ground beside him"
+  }
+ }
+}

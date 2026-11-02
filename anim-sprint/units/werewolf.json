@@ -1,0 +1,54 @@
+{
+ "name": "werewolf",
+ "sprite": "m7/roster/units/unit_werewolf.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Werewolf (Fall from Heaven), a hulking hunched wolf-man: shaggy grey fur with darker grey shading, a pale tan chest and belly, big muscular shoulders, a wolf head with a long muzzle, a yellow eye, pointed ears with pink insides, a snarling open red mouth with white fangs, a ragged brown loincloth, digitigrade wolf legs and clawed wolf feet with white claws; no weapon: he attacks with the long white claws of his LEFT hand (screen-right), raised in front of him, and his RIGHT hand (screen-left) is an empty clawed hand hanging at his side",
+ "hands": "his weapon is the clawed left hand on the screen-right side, raised forward at chest height with its white claws hooked down, and his right hand on the screen-left side is an empty clawed hand hanging low at his side",
+ "guide_style": "grey",
+ "scale": 1.12,
+ "head_r": 12,
+ "limb": 1.4,
+ "joints": {
+  "head": [89, 40],
+  "neck": [82, 52],
+  "chest": [77, 62],
+  "pelvis": [77, 79],
+  "r_sh": [93, 58],
+  "r_el": [102, 68],
+  "r_ha": [113, 77],
+  "tip": [117, 86],
+  "l_sh": [56, 54],
+  "l_el": [43, 64],
+  "l_ha": [48, 78],
+  "r_hip": [86, 82],
+  "r_kn": [94, 95],
+  "r_ft": [90, 113],
+  "l_hip": [68, 82],
+  "l_kn": [62, 95],
+  "l_ft": [53, 115]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, the hunched torso leans back, the clawed left hand is raised up over the head with its long white claws pointing up and back",
+   "2": "wind-up extreme: body coiled back and crouched, the clawed left hand cocked behind the head with its claws hanging down behind the shoulders, the empty clawed right hand tucked in, jaws snarling",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the left arm sweeps over the head and the clawed hand reaches out level, its white claws pointing to the lower-right",
+   "4": "contact: the left arm fully extended toward the lower-right, the white claws raking down-right, front knee bent, body low and leaning in, the empty clawed right hand swung back for balance",
+   "5": "follow-through: the clawed left hand carries on down until its claws nearly touch the ground at the lower-right, torso twisted, the shaggy grey fur trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the clawed left hand lifts back to its raised ready pose"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, the yellow eye squeezed shut, jaws gaping, torso jolts back, both arms jerk outward (the empty clawed right hand flung out to the left, the clawed left arm thrown out to the right with its white claws splayed)",
+   "1": "recoil extreme: leaning back further, knees bent, the clawed left hand dipping, the empty clawed right hand still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, the clawed left arm flung up, the empty clawed right hand drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head and muzzle droop, the clawed hands lowering",
+   "3": "kneeling: on both knees, slumped forward, the claws of the left hand resting on the ground, the right arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the clawed arms go limp, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, muzzle pointing up, the clawed hands limp and empty, the left arm flung out toward the lower-right; the grey fur spread under him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the shaggy fur settles",
+   "7": "corpse: lying flat and still on his back, eye closed, jaws slack, the clawed hands limp on the ground beside him"
+  }
+ }
+}

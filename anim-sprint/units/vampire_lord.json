@@ -1,0 +1,54 @@
+{
+ "name": "vampire_lord",
+ "sprite": "m7/roster/units/unit_vampire_lord.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Vampire Lord (Fall from Heaven), a pale aristocratic vampire: swept-back silver-white hair, glowing red eyes, a sharp pale face, a tall stiff black collar lined in red, a white lace cravat with a red ruby brooch, a red waistcoat with gold buttons, a long black gold-trimmed frock coat with white cuffs, a long black cape lined in red flaring behind his legs, black trousers and black gold-cuffed boots; a slim silver rapier with a gold basket hilt in his LEFT hand (screen-right), and his RIGHT hand (screen-left) raised open with long clawed fingers",
+ "hands": "the rapier stays in his left hand on the screen-right side, thrust out forward with the blade pointing up to the right, and his right hand on the screen-left side is an empty open hand with clawed fingers, raised beside his shoulder",
+ "guide_style": "grey",
+ "scale": 1.06,
+ "head_r": 11,
+ "limb": 1.0,
+ "joints": {
+  "head": [68, 46],
+  "neck": [66, 56],
+  "chest": [67, 66],
+  "pelvis": [67, 87],
+  "r_sh": [78, 61],
+  "r_el": [85, 69],
+  "r_ha": [96, 74],
+  "tip": [131, 49],
+  "l_sh": [57, 61],
+  "l_el": [50, 74],
+  "l_ha": [40, 62],
+  "r_hip": [73, 89],
+  "r_kn": [76, 101],
+  "r_ft": [81, 115],
+  "l_hip": [61, 89],
+  "l_kn": [56, 102],
+  "l_ft": [52, 116]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the rapier is lifted up over the head with its slim tip pointing up and back",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the rapier cocked behind the head with its slim blade hanging down behind the shoulders, the empty clawed right hand tucked in",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the arm sweeps over the head and the rapier's slim blade is level, pointing to the lower-right, the cape swirling",
+   "4": "contact: rapier arm fully extended toward the lower-right, the slim blade slashing down-right, front knee bent, body low and leaning in, the empty clawed right hand swung back for balance",
+   "5": "follow-through: the rapier carries on down until its tip nearly touches the ground at the lower-right, torso twisted, white hair and cape trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the rapier lifts back toward the ready angle, thrust out forward"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, red eyes squeezed shut, torso jolts back, both arms jerk outward (the empty clawed right hand flung out to the left, the rapier arm thrown up and out), the cape flaring",
+   "1": "recoil extreme: leaning back further, knees bent, the rapier dipping, the empty clawed right hand still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, the rapier arm flung up, the empty clawed right hand drooping, the cape swirling",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the rapier lowering",
+   "3": "kneeling: on both knees, slumped forward, the rapier's tip resting on the ground, the empty right arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the rapier slips out of the hand, legs slide forward, the cape flaring",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left; the rapier lies on the ground at the lower-right; the black-and-red cape spread under him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the cape settles",
+   "7": "corpse: lying flat and still on his back, eyes closed, the rapier on the ground beside him, the cape spread under him"
+  }
+ }
+}

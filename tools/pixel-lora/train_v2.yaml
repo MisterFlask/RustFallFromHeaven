@@ -1,0 +1,98 @@
+---
+# Pixel-art LoRA v2: the v1 house style plus poses (docs/art/PIXEL_LORA.md, "v2: poses"). An edit LoRA: the pose
+# triples (tools/pixel-lora/build_pose_dataset.py) teach Klein to redraw the unit from reference 1 in the pose of the
+# grey mannequin in reference 2; the v1 set keeps the text-to-image style. Samples are held-out units (warrior,
+# lizardman) the pose set leaves out.
+job: extension
+config:
+  name: "pxlhd2d_v2"
+  process:
+    - type: 'sd_trainer'
+      training_folder: "C:/ai-lora/pixel_hd2d/output"
+      device: cuda:0
+      trigger_word: "pxlhd2d"
+      performance_log_every: 100
+      network:
+        type: "lora"
+        linear: 32
+        linear_alpha: 32
+      save:
+        dtype: float16
+        save_every: 250
+        max_step_saves_to_keep: 16
+      datasets:
+        - folder_path: "C:/ai-lora/pixel_hd2d/dataset_pose/target"
+          control_path:
+            - "C:/ai-lora/pixel_hd2d/dataset_pose/ref_sprite"
+            - "C:/ai-lora/pixel_hd2d/dataset_pose/ref_guide"
+          caption_ext: "txt"
+          caption_dropout_rate: 0.05
+          cache_latents_to_disk: true
+          resolution: [ 640 ]
+        - folder_path: "C:/ai-lora/pixel_hd2d/dataset"
+          caption_ext: "txt"
+          caption_dropout_rate: 0.05
+          cache_latents_to_disk: true
+          resolution: [ 512, 768 ]
+      train:
+        batch_size: 1
+        steps: 3000
+        gradient_accumulation_steps: 1
+        train_unet: true
+        train_text_encoder: false
+        gradient_checkpointing: true
+        noise_scheduler: "flowmatch"
+        timestep_type: "shift"
+        optimizer: "adamw8bit"
+        lr: 1e-4
+        cache_text_embeddings: true
+        skip_first_sample: true
+        dtype: bf16
+      model:
+        arch: "flux3"
+        name_or_path: "C:/ai-lora/models/flux-3-image-klein-base"
+        quantize: true
+        qtype: "convrot8"
+        quantize_te: true
+        qtype_te: "convrot8"
+        low_vram: true
+        model_kwargs:
+          match_target_res: true
+      sample:
+        sampler: "flowmatch"
+        sample_every: 500
+        width: 640
+        height: 512
+        samples:
+          - prompt: "pxlhd2d, the character from the first image redrawn in exactly the pose and position of the grey mannequin in the second image, frame 2 of a strike animation: wind-up extreme: body coiled back and crouched, the club hand behind the head and the spiked club hanging down behind the shoulders to the left, shield tucked across the belly. Same face, hair, outfit, colours, weapon, size and dark outlines as the first image; the mannequin is only a pose guide. Full body game unit sprite, 16-bit pixel art, on a flat magenta background."
+            ctrl_img: "C:/ai-lora/pixel_hd2d/samples_v2/warrior_sprite.png"
+            ctrl_img_2: "C:/ai-lora/pixel_hd2d/samples_v2/warrior_strike2_guide.png"
+            width: 640
+            height: 512
+          - prompt: "pxlhd2d, the character from the first image redrawn in exactly the pose and position of the grey mannequin in the second image, frame 4 of a strike animation: contact: club arm fully extended toward the lower-right, the spiked club smashing down-right, front knee bent, body low and leaning in, shield arm swung back behind the shoulders for balance. Same face, hair, outfit, colours, weapon, size and dark outlines as the first image; the mannequin is only a pose guide. Full body game unit sprite, 16-bit pixel art, on a flat magenta background."
+            ctrl_img: "C:/ai-lora/pixel_hd2d/samples_v2/warrior_sprite.png"
+            ctrl_img_2: "C:/ai-lora/pixel_hd2d/samples_v2/warrior_strike4_guide.png"
+            width: 640
+            height: 512
+          - prompt: "pxlhd2d, the character from the first image redrawn in exactly the pose and position of the grey mannequin in the second image, frame 6 of a death animation: bounce: head and shoulders lift slightly off the ground, the shield rocks. Same face, hair, outfit, colours, weapon, size and dark outlines as the first image; the mannequin is only a pose guide. Full body game unit sprite, 16-bit pixel art, on a flat magenta background."
+            ctrl_img: "C:/ai-lora/pixel_hd2d/samples_v2/warrior_sprite.png"
+            ctrl_img_2: "C:/ai-lora/pixel_hd2d/samples_v2/warrior_death6_guide.png"
+            width: 640
+            height: 512
+          - prompt: "pxlhd2d, the character from the first image redrawn in exactly the pose and position of the grey mannequin in the second image, frame 4 of a strike animation: contact: spear arm fully extended toward the lower-right, the spear's spearhead striking down-right, front knee bent, body low and leaning in, shield arm swung back behind the shoulders for balance. Same face, hair, outfit, colours, weapon, size and dark outlines as the first image; the mannequin is only a pose guide. Full body game unit sprite, 16-bit pixel art, on a flat magenta background."
+            ctrl_img: "C:/ai-lora/pixel_hd2d/samples_v2/lizardman_sprite.png"
+            ctrl_img_2: "C:/ai-lora/pixel_hd2d/samples_v2/lizardman_strike4_guide.png"
+            width: 640
+            height: 512
+          - prompt: "pxlhd2d, the character from the first image redrawn in exactly the pose and position of the grey mannequin in the second image, frame 1 of a hit reaction animation: recoil extreme: leaning back further toward the upper-left, knees bent, the spear dipping, shield still held out. Same face, hair, outfit, colours, weapon, size and dark outlines as the first image; the mannequin is only a pose guide. Full body game unit sprite, 16-bit pixel art, on a flat magenta background."
+            ctrl_img: "C:/ai-lora/pixel_hd2d/samples_v2/lizardman_sprite.png"
+            ctrl_img_2: "C:/ai-lora/pixel_hd2d/samples_v2/lizardman_flinch1_guide.png"
+            width: 640
+            height: 512
+        neg: ""  # ai-toolkit defaults this to False, which crashes the FLUX 3 text encoder
+        seed: 42
+        guidance_scale: 3.5
+        sample_steps: 28
+meta:
+  name: "[name]"
+  version: '2.0'

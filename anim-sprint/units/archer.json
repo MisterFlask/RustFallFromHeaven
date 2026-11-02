@@ -1,0 +1,98 @@
+{
+ "name": "archer",
+ "sprite": "m7/roster/units/unit_archer.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "body_plan": "ranged",
+ "description": "an Archer (Fall from Heaven), a bearded brown-haired woodsman: a floppy brown leather cap, a tan and brown leather tunic with cream cuffs and a cream fringed hem, a brown belt with a grey buckle, brown leather boots, a quiver of white-fletched arrows on his back, and a tall wooden longbow in his LEFT hand with an arrow nocked and drawn by his RIGHT hand",
+ "hands": "the longbow stays in his left hand on the screen-right side, held out at arm's length; his right hand on the screen-left side draws the string and arrow back to his cheek",
+ "guide_style": "grey",
+ "scale": 0.85,
+ "head_r": 9,
+ "limb": 1.05,
+ "joints": {
+  "head": [
+   68,
+   62
+  ],
+  "neck": [
+   68,
+   71
+  ],
+  "chest": [
+   68,
+   78
+  ],
+  "pelvis": [
+   67,
+   91
+  ],
+  "r_sh": [
+   78,
+   76
+  ],
+  "r_el": [
+   88,
+   78
+  ],
+  "r_ha": [
+   103,
+   77
+  ],
+  "tip": [
+   91,
+   38
+  ],
+  "l_sh": [
+   59,
+   76
+  ],
+  "l_el": [
+   50,
+   78
+  ],
+  "l_ha": [
+   71,
+   74
+  ],
+  "r_hip": [
+   74,
+   95
+  ],
+  "r_kn": [
+   81,
+   104
+  ],
+  "r_ft": [
+   82,
+   116
+  ],
+  "l_hip": [
+   62,
+   95
+  ],
+  "l_kn": [
+   56,
+   105
+  ],
+  "l_ft": [
+   53,
+   116
+  ]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (the right hand flung out to the left, still clutching the arrow, the bow arm thrown up and out with the longbow upright)",
+   "1": "recoil extreme: leaning back further, knees bent, the longbow dipping, the right hand still held out with the arrow"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, bow arm flung up with the longbow upright, the arrow falling from the right hand",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the longbow lowering",
+   "3": "kneeling: on both knees, slumped forward, one end of the longbow resting on the ground at the lower-right, the right arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the longbow slips out of the hand, legs slide forward, the floppy cap tipping",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left; the longbow lies on the ground at the lower-right; the quiver under his shoulders, a few arrows spilled",
+   "6": "bounce: head and shoulders lift slightly off the ground, the floppy cap stays on",
+   "7": "corpse: lying flat and still on his back, eyes closed, the longbow on the ground beside him"
+  }
+ }
+}

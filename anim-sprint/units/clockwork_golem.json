@@ -1,0 +1,105 @@
+{
+ "name": "clockwork_golem",
+ "sprite": "m7/roster/units/unit_clockwork_golem.png",
+ "facing": "lower-left",
+ "tag": "anim/units",
+ "description": "a Clockwork Golem, a bulky Luchuirp automaton of polished gold-brass plates: a domed brass head with a small knob on top and two round blue glass lens-eyes, big round blue pauldrons and blue thigh plates each bearing a gold gear emblem, a round chest window showing gears, grey coiled-spring joints at the shoulders, elbows and shins, huge round brass feet, a big brass wind-up key sticking out of its back at the upper-right, and a spiked brass mace-ball for a fist on EACH arm; it strikes with the spiked mace-ball fist of its RIGHT arm",
+ "hands": "the striking spiked mace-ball fist is on its right arm on the screen-left side; its left arm on the screen-right side ends in an identical spiked mace-ball fist; both mace-balls are its fists and never come off the arms",
+ "guide_style": "grey",
+ "scale": 1.07,
+ "head_r": 10,
+ "limb": 1.45,
+ "joints": {
+  "head": [
+   81,
+   43
+  ],
+  "neck": [
+   81,
+   52
+  ],
+  "chest": [
+   79,
+   66
+  ],
+  "pelvis": [
+   80,
+   83
+  ],
+  "r_sh": [
+   61,
+   54
+  ],
+  "r_el": [
+   56,
+   67
+  ],
+  "r_ha": [
+   49,
+   79
+  ],
+  "tip": [
+   35,
+   95
+  ],
+  "l_sh": [
+   101,
+   57
+  ],
+  "l_el": [
+   107,
+   72
+  ],
+  "l_ha": [
+   113,
+   85
+  ],
+  "r_hip": [
+   72,
+   87
+  ],
+  "r_kn": [
+   67,
+   98
+  ],
+  "r_ft": [
+   67,
+   114
+  ],
+  "l_hip": [
+   90,
+   87
+  ],
+  "l_kn": [
+   96,
+   100
+  ],
+  "l_ft": [
+   101,
+   116
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the right arm is lifted up over the domed head with its spiked mace-ball fist up and back",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the right arm cocked behind the head with its spiked mace-ball fist hanging down behind the shoulders, the left mace-ball fist tucked in",
+   "3": "swing: the front foot steps toward the lower-left, the torso whips forward, the right arm sweeps over the head and is level, its spiked mace-ball fist pointing to the lower-left",
+   "4": "contact: right arm fully extended toward the lower-left, the spiked mace-ball fist smashing down-left, front knee bent, body low and leaning in, the left mace-ball arm swung back for balance",
+   "5": "follow-through: the right arm carries on down until its spiked mace-ball fist nearly touches the ground at the lower-left, torso twisted, the wind-up key on its back tilting",
+   "6": "recover: body rises, front foot pulls back halfway, the right arm lifts its spiked mace-ball fist back toward the ready angle"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-left; the domed head snaps back toward the upper-right, the blue lens-eyes flicker, torso jolts back, both arms jerk outward (left mace-ball fist swung out to the right, right mace-ball arm thrown out to the left)",
+   "1": "recoil extreme: leaning back further, knees bent, the right mace-ball fist dipping, the left mace-ball arm still out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, the right mace-ball arm flung up, the left mace-ball arm drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, the domed head droops, the right mace-ball fist lowering",
+   "3": "kneeling: on both knees, slumped forward, the right arm's spiked mace-ball fist resting on the ground, the left mace-ball arm hanging",
+   "4": "falling back: torso tips back toward the upper-right, the right arm flung up limply with its spiked mace-ball fist still attached, legs slide forward",
+   "5": "hits the ground: lying on its back along the ground, feet toward the lower-left and head toward the upper-right; both arms sprawled on the ground with their spiked mace-ball fists still attached; the wind-up key jutting out beside its shoulders",
+   "6": "bounce: the domed head and shoulders lift slightly off the ground, the mace-ball fists rock",
+   "7": "corpse: lying flat and still on its back, the blue lens-eyes dark, both spiked mace-ball fists on the ground beside it, still on its arms"
+  }
+ }
+}

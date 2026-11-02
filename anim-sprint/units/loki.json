@@ -1,0 +1,105 @@
+{
+ "name": "loki",
+ "sprite": "m7/roster/units/unit_loki.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "Loki (Fall from Heaven), a grinning red-haired elf trickster with long pointed ears: a belled jester hat in green and purple with gold bells, a purple-and-gold harlequin costume with a green collar and green bell cuffs, a brown belt, purple-and-gold hose, curled green-and-purple jester shoes with gold bells, a purple cape lined in green flowing behind him on the screen-left, a curved steel dagger held low in his RIGHT hand (screen-left), and a white grinning comedy mask raised in his LEFT hand (screen-right) with a few small gold sparkles around it",
+ "hands": "the curved dagger stays in his right hand on the screen-left side and the white comedy mask in his left hand on the screen-right side",
+ "guide_style": "grey",
+ "scale": 0.85,
+ "head_r": 10,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   85,
+   61
+  ],
+  "neck": [
+   83,
+   71
+  ],
+  "chest": [
+   79,
+   77
+  ],
+  "pelvis": [
+   77,
+   86
+  ],
+  "r_sh": [
+   70,
+   73
+  ],
+  "r_el": [
+   62,
+   81
+  ],
+  "r_ha": [
+   53,
+   91
+  ],
+  "tip": [
+   39,
+   77
+  ],
+  "l_sh": [
+   89,
+   74
+  ],
+  "l_el": [
+   94,
+   84
+  ],
+  "l_ha": [
+   104,
+   79
+  ],
+  "r_hip": [
+   72,
+   89
+  ],
+  "r_kn": [
+   68,
+   105
+  ],
+  "r_ft": [
+   65,
+   115
+  ],
+  "l_hip": [
+   82,
+   89
+  ],
+  "l_kn": [
+   91,
+   101
+  ],
+  "l_ft": [
+   87,
+   113
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back toward the upper-left, the curved dagger is lifted beside the head with its blade pointing up and back, the white comedy mask held in the left hand",
+   "2": "wind-up extreme: body coiled back and crouched, the dagger hand behind the head and the curved blade hanging down behind the shoulders to the left, the left hand with the white mask lowered at his side",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips round, the dagger arm sweeps across in front of the chest and the curved blade is level, pointing to the right",
+   "4": "contact: dagger arm fully extended toward the lower-right, the curved dagger slashing down-right, front knee bent, body low and leaning in, the left hand with the white mask swung back behind the shoulders for balance",
+   "5": "follow-through: the dagger arm carries on down until the curved blade's tip nearly reaches the ground at the lower-right, torso twisted, the jester hat's belled points and the purple cape trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the curved dagger comes back up on the near side toward the ready angle, the left hand with the white mask lowered at his side"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (dagger arm thrown up and out to the left, the left hand with the white comedy mask flung out to the right)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the curved dagger dipping, the white mask still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, dagger arm flung up, the hand with the white mask drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the jester hat's bells dangling, the curved dagger lowering",
+   "3": "kneeling: on both knees, slumped forward, the curved dagger's tip resting on the ground at the lower-right, the mask arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the dagger and the white mask slip out of the hands, legs slide forward, the jester hat tipping",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the purple cape spread under him; the curved dagger lies on the ground at the lower-right; the white comedy mask lies on the ground beside him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the jester hat's bells and the cape settle",
+   "7": "corpse: lying flat and still on his back, eyes closed, the jester hat askew, the curved dagger and the white mask on the ground beside him, no sparkles left"
+  }
+ }
+}

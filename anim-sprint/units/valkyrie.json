@@ -1,0 +1,55 @@
+{
+ "name": "valkyrie",
+ "sprite": "m7/roster/units/unit_valkyrie.png",
+ "facing": "lower-left",
+ "tag": "anim/units",
+ "description": "a Valkyrie (Fall from Heaven), a young blonde warrior maiden: long wavy golden hair under a silver helmet with two white feathered wings on its sides, a big blue eye, a silver breastplate with gold trim and silver pauldrons, a blue skirt with a white hem, a long blue cape, white fur-topped brown boots, and two large white feathered wings spread behind her shoulders; a long spear with a silver leaf-shaped point held upright in her LEFT hand (screen-right), and a round blue-and-white shield with a gold rim and a silver boss on her RIGHT arm (screen-left)",
+ "hands": "the spear stays in her left hand on the screen-right side, held upright by the middle of the shaft with the point high, and the round blue-and-white shield stays strapped to her right arm on the screen-left side",
+ "guide_style": "grey",
+ "scale": 0.82,
+ "head_r": 10,
+ "limb": 1.0,
+ "joints": {
+  "head": [84, 64],
+  "neck": [85, 72],
+  "chest": [86, 80],
+  "pelvis": [85, 89],
+  "r_sh": [92, 75],
+  "r_el": [97, 80],
+  "r_ha": [103, 76],
+  "tip": [114, 35],
+  "l_sh": [78, 76],
+  "l_el": [72, 84],
+  "l_ha": [66, 91],
+  "shield": [65, 92, 10, 14],
+  "r_hip": [90, 91],
+  "r_kn": [93, 104],
+  "r_ft": [96, 115],
+  "l_hip": [80, 91],
+  "l_kn": [76, 104],
+  "l_ft": [71, 116]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back toward the upper-right, the spear is lifted beside the head with its silver point pointing up and back, wings half raised",
+   "2": "wind-up extreme: body coiled back and crouched, the spear hand behind the head and the spear's silver point hanging down behind the shoulders to the right, the round blue-and-white shield tucked across the belly",
+   "3": "swing: the front foot steps toward the lower-left, the torso whips round, the spear arm sweeps across in front of the chest and the spear is level, its silver point thrusting to the left",
+   "4": "contact: spear arm fully extended toward the lower-left, the silver spear point stabbing down-left, front knee bent, body low and leaning in, the shield arm swung back behind the shoulders for balance, wings flared",
+   "5": "follow-through: the spear carries on down until its silver point nearly touches the ground at the lower-left, torso twisted, golden hair and blue cape trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the spear comes back up on the near side toward its upright ready angle, the round shield tucked across the belly"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-left; head snaps back toward the upper-right, eyes squeezed shut, torso jolts back, wings jolting open, both arms jerk outward (the spear arm thrown up and out to the right, the round blue-and-white shield flung out to the left)",
+   "1": "recoil extreme: leaning back further toward the upper-right, knees bent, the spear dipping, the round shield still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-right, body thrown back, the spear arm flung up, the round shield drooping, wings sagging",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, the winged helmet droops, the spear lowering",
+   "3": "kneeling: on both knees, slumped forward, the spear's silver point resting on the ground at the lower-left, the shield arm hanging, wings drooping",
+   "4": "falling back: torso tips back toward the upper-right, the spear slips out of the hand, legs slide forward, wings crumpling",
+   "5": "hits the ground: lying on her back along the ground, feet toward the lower-left and head toward the upper-right, the winged helmet still on her head; the spear lies on the ground at the lower-left; the round blue-and-white shield lies flat beside her; the white wings and blue cape spread under her",
+   "6": "bounce: head and shoulders lift slightly off the ground, the round shield rocks, the wings settle",
+   "7": "corpse: lying flat and still on her back, eyes closed, white wings spread limp, the spear and the round shield on the ground beside her"
+  }
+ }
+}

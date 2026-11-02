@@ -8,7 +8,7 @@ prompt skeleton for sheet-based arms.
 Every call is logged by imggen to spend.jsonl (full prompt + ordered images). Defaults: gpt-image-2.5-sunburst,
 medium quality, 1536x1024 (overridable; P1 calibration fixes the contract in CONTRACT below).
 """
-import json, subprocess, sys
+import json, os, subprocess, sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -22,8 +22,16 @@ CONTRACT = {"model": "gpt-image-2.5-sunburst", "quality": "medium", "size": "153
             "input_fidelity": None, "guide_style": "colour"}
 
 
+# The backend: "klein" (default since 2026-11-01) is the local FLUX 3 Image Klein with the house pixel-art LoRA
+# (lib/klein.py: free, on this PC's GPU); "openai" is the sprint's gpt-image path through m7/lib/imggen.py.
+BACKEND = os.environ.get("ANIM_BACKEND", "klein")
+
+
 def edit(tag, images, prompt, out, model=None, quality=None, size=None, n=None, input_fidelity=None, mask=None,
          prompt_file=None):
+    if BACKEND == "klein":
+        import klein
+        return klein.edit(tag=tag, images=images, prompt=prompt, out=out, n=n or CONTRACT["n"])
     model = model or CONTRACT["model"]
     quality = quality or CONTRACT["quality"]
     size = size or CONTRACT["size"]

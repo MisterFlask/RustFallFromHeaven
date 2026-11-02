@@ -1,0 +1,111 @@
+{
+ "name": "illians_warrior",
+ "sprite": "m7/roster/units/unit_illians_warrior.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "an Illians Warrior, a frost-pale northern barbarian: wild white hair and a white beard, bare chest and arms under a white wolf-fur pelt slung over the shoulder, ice-blue wraps on the wrists and shins, a blue belt with a steel stud over a ragged white fur kilt, grey fur boots, a pale grey club studded with ice-blue crystals raised in his RIGHT hand, and a round white shield with a studded steel rim and a blue snowflake on his LEFT arm",
+ "hands": "the ice-studded club stays in his right hand on the screen-left side and the round snowflake shield on his left arm on the screen-right side",
+ "guide_style": "grey",
+ "scale": 0.9,
+ "head_r": 11,
+ "limb": 1.1,
+ "joints": {
+  "head": [
+   84,
+   58
+  ],
+  "neck": [
+   82,
+   67
+  ],
+  "chest": [
+   81,
+   75
+  ],
+  "pelvis": [
+   80,
+   87
+  ],
+  "r_sh": [
+   74,
+   69
+  ],
+  "r_el": [
+   61,
+   81
+  ],
+  "r_ha": [
+   59,
+   72
+  ],
+  "tip": [
+   49,
+   39
+  ],
+  "l_sh": [
+   93,
+   72
+  ],
+  "l_el": [
+   98,
+   82
+  ],
+  "l_ha": [
+   101,
+   89
+  ],
+  "shield": [
+   107,
+   90,
+   11,
+   16
+  ],
+  "r_hip": [
+   73,
+   92
+  ],
+  "r_kn": [
+   69,
+   104
+  ],
+  "r_ft": [
+   64,
+   117
+  ],
+  "l_hip": [
+   88,
+   92
+  ],
+  "l_kn": [
+   93,
+   104
+  ],
+  "l_ft": [
+   96,
+   118
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back toward the upper-left, the ice-studded club is lifted beside the head with its crystal-studded head pointing up and back",
+   "2": "wind-up extreme: body coiled back and crouched, the club hand behind the head and the club's crystal-studded head hanging down behind the shoulders to the left, the round snowflake shield tucked across the belly",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips round, the club arm sweeps across in front of the chest and the club is level, its crystal-studded head pointing to the right",
+   "4": "contact: club arm fully extended toward the lower-right, the club's crystal-studded head smashing down-right, front knee bent, body low and leaning in, shield arm swung back behind the shoulders for balance",
+   "5": "follow-through: the club carries on down until its crystal-studded head nearly touches the ground at the lower-right, torso twisted, the wild white hair and beard trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the club comes back up on the near side toward the ready angle, the round snowflake shield tucked across the belly"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (club arm thrown up and out to the left, the round snowflake shield flung out to the right)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the club held up at the left, the round snowflake shield still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, club arm flung up, the round snowflake shield drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the club lowering",
+   "3": "kneeling: on both knees, slumped forward, the club's crystal-studded head resting on the ground at the lower-right, shield arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the club slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the white wolf fur under him; the ice-studded club lies on the ground at the lower-right; the round snowflake shield lies flat beside him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the round shield rocks, the white hair settles",
+   "7": "corpse: lying flat and still on his back, eyes closed, the ice-studded club and the round snowflake shield on the ground beside him"
+  }
+ }
+}

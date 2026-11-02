@@ -1,0 +1,105 @@
+{
+ "name": "angel_of_death",
+ "sprite": "m7/roster/units/unit_angel_of_death.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "the Angel of Death (Fall from Heaven), a hooded reaper: a deep dark grey hood over a white skull face, a long dark grey robe with pale silver trim that hides the legs down to the ground, huge dark purple-black feathered wings spread on both sides, bony white hands, and a long scythe with a slim dark blue-grey shaft and a curved pale steel blade held upright in his LEFT hand",
+ "hands": "the scythe stays in his left hand on the screen-right side and his right hand on the screen-left side is an empty bony claw",
+ "guide_style": "grey",
+ "scale": 0.95,
+ "head_r": 10,
+ "limb": 1.1,
+ "joints": {
+  "head": [
+   78,
+   56
+  ],
+  "neck": [
+   78,
+   65
+  ],
+  "chest": [
+   77,
+   73
+  ],
+  "pelvis": [
+   78,
+   86
+  ],
+  "r_sh": [
+   86,
+   67
+  ],
+  "r_el": [
+   88,
+   78
+  ],
+  "r_ha": [
+   93,
+   70
+  ],
+  "tip": [
+   94,
+   35
+  ],
+  "l_sh": [
+   69,
+   68
+  ],
+  "l_el": [
+   64,
+   76
+  ],
+  "l_ha": [
+   61,
+   84
+  ],
+  "r_hip": [
+   84,
+   88
+  ],
+  "r_kn": [
+   88,
+   104
+  ],
+  "r_ft": [
+   91,
+   118
+  ],
+  "l_hip": [
+   72,
+   88
+  ],
+  "l_kn": [
+   66,
+   104
+  ],
+  "l_ft": [
+   62,
+   118
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the scythe is lifted up over the head with its curved blade at the top of the long shaft pointing up and back",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the scythe cocked behind the head with its curved blade hanging down behind the shoulders, the bony right claw tucked in, wings raised",
+   "3": "swing: the front foot steps toward the lower-right under the swirling robe, the torso whips forward, the arm sweeps over the head and the scythe's shaft is level, its curved blade pointing to the lower-right",
+   "4": "contact: scythe arm fully extended toward the lower-right, the curved scythe blade reaping down-right, front knee bent under the robe, body low and leaning in, the bony right claw swung back for balance, wings flared",
+   "5": "follow-through: the scythe carries on down until its curved blade nearly touches the ground at the lower-right, torso twisted, hood and robe trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the scythe lifts back toward its upright ready angle"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; the hooded skull snaps back toward the upper-left, torso jolts back, wings flaring, both arms jerk outward (the bony right claw flung out to the left, the scythe arm thrown up and out)",
+   "1": "recoil extreme: leaning back further, knees bent under the robe, the scythe dipping, the bony right claw still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, scythe arm flung up, the bony right claw drooping",
+   "2": "knees buckle: hips drop, knees fold forward under the robe, torso slumps forward, the hooded head droops, the scythe lowering",
+   "3": "kneeling: on both knees, slumped forward, the scythe's curved blade resting on the ground at the lower-right, the bony right arm hanging, wings drooping",
+   "4": "falling back: torso tips back toward the upper-left, the scythe slips out of the hand, the robe's hem slides forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left; the scythe lies on the ground at the lower-right; the dark wings spread flat under him",
+   "6": "bounce: the hooded head and shoulders lift slightly off the ground, the wings settle",
+   "7": "corpse: lying flat and still on his back, the skull face still, the dark wings spread limp, the scythe on the ground beside him"
+  }
+ }
+}

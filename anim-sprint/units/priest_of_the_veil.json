@@ -1,0 +1,99 @@
+{
+ "name": "priest_of_the_veil",
+ "sprite": "m7/roster/units/unit_priest_of_the_veil.png",
+ "facing": "lower-left",
+ "tag": "anim/units",
+ "body_plan": "caster",
+ "prop": "curved dagger",
+ "description": "a Priest of the Veil, a gaunt bald cultist of the Ashen Veil with a red sigil tattooed on his pale scalp, a red glowing eye and a skull-like face, a tattered pale-grey shawl over a long black robe with red-lined sleeves and a red hem, a rope belt hung with a small skull and bones, brown boots, an iron censer of glowing red-orange coals hanging on a dark chain from his raised RIGHT hand, and a curved dark-steel dagger with a gold grip held low in his LEFT hand",
+ "hands": "the curved dagger stays in his left hand on the screen-right side, and his right hand on the screen-left side holds the iron censer up by its chain",
+ "guide_style": "grey",
+ "scale": 1.06,
+ "head_r": 9,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   83,
+   45
+  ],
+  "neck": [
+   84,
+   58
+  ],
+  "chest": [
+   84,
+   68
+  ],
+  "pelvis": [
+   85,
+   80
+  ],
+  "r_sh": [
+   96,
+   64
+  ],
+  "r_el": [
+   99,
+   79
+  ],
+  "r_ha": [
+   107,
+   84
+  ],
+  "tip": [
+   116,
+   59
+  ],
+  "l_sh": [
+   68,
+   58
+  ],
+  "l_el": [
+   61,
+   58
+  ],
+  "l_ha": [
+   52,
+   49
+  ],
+  "r_hip": [
+   90,
+   84
+  ],
+  "r_kn": [
+   95,
+   102
+  ],
+  "r_ft": [
+   100,
+   118
+  ],
+  "l_hip": [
+   79,
+   84
+  ],
+  "l_kn": [
+   71,
+   102
+  ],
+  "l_ft": [
+   65,
+   119
+  ]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-left; bald head snaps back toward the upper-right, eyes squeezed shut, torso jolts back, both arms jerk outward (the curved dagger arm thrown up and out to the right, the iron censer flung out to the left, swinging on its chain), the tattered shawl jolting",
+   "1": "recoil extreme: leaning back further toward the upper-right, knees bent, the curved dagger dipping, the censer still held out on its chain"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-right, body thrown back, the dagger arm flung up, the arm with the censer drooping, the censer swinging on its chain",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, bald head droops, the curved dagger lowering, the censer swinging low",
+   "3": "kneeling: on both knees, slumped forward, the curved dagger's point resting on the ground at the lower-left, the censer arm hanging with the iron censer on the ground",
+   "4": "falling back: torso tips back toward the upper-right, the curved dagger slips out of the hand, the censer chain slips from the other hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-left and head toward the upper-right; the curved dagger lies on the ground at the lower-left; the iron censer lies on its side beside him, a few glowing coals spilled; the black robe spread under him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the tattered shawl settles",
+   "7": "corpse: lying flat and still on his back, eyes closed, the curved dagger and the iron censer on the ground beside him, the coals dimmed"
+  }
+ }
+}

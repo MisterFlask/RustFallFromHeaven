@@ -1,0 +1,105 @@
+{
+ "name": "bambur",
+ "sprite": "m7/roster/units/unit_bambur.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "Bambur, the Khazad stone-dwarf hero: short, very broad and massive, his skin, head and great beard made of grey rock boulders, small glowing amber eyes, huge round rocky shoulders, bronze armour plates and bronze bracers, a brown leather apron with a bronze ring at the belt, bronze-and-leather boots, and a big rune-carved warhammer with a grey stone head marked with glowing gold runes on a short wooden haft, gripped by the end of its haft in his RIGHT stone fist",
+ "hands": "the warhammer's haft end stays in his right stone fist on the screen-left side; at rest his left stone fist on the screen-right side also holds the haft near the hammer head, but during the action it lets go and is an empty stone fist",
+ "guide_style": "grey",
+ "scale": 1.03,
+ "head_r": 12,
+ "limb": 1.5,
+ "joints": {
+  "head": [
+   70,
+   50
+  ],
+  "neck": [
+   70,
+   63
+  ],
+  "chest": [
+   68,
+   76
+  ],
+  "pelvis": [
+   66,
+   94
+  ],
+  "r_sh": [
+   46,
+   68
+  ],
+  "r_el": [
+   42,
+   82
+  ],
+  "r_ha": [
+   55,
+   89
+  ],
+  "tip": [
+   100,
+   90
+  ],
+  "l_sh": [
+   85,
+   68
+  ],
+  "l_el": [
+   90,
+   80
+  ],
+  "l_ha": [
+   91,
+   92
+  ],
+  "r_hip": [
+   56,
+   98
+  ],
+  "r_kn": [
+   46,
+   106
+  ],
+  "r_ft": [
+   46,
+   118
+  ],
+  "l_hip": [
+   76,
+   98
+  ],
+  "l_kn": [
+   82,
+   106
+  ],
+  "l_ft": [
+   85,
+   118
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back toward the upper-left, the left stone fist lets go of the haft, the warhammer is lifted above the head with its haft level over the head and the rune-carved stone head out at the right",
+   "2": "wind-up extreme: body coiled back and crouched, the hammer fist behind the head and the warhammer's stone head hanging down behind the shoulders to the left, the left hand an empty stone fist tucked across the belly",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips round, the hammer arm sweeps across in front of the chest and the warhammer is level, its rune-carved stone head pointing to the right, the left hand an empty stone fist",
+   "4": "contact: hammer arm fully extended toward the lower-right, the warhammer's stone head smashing down-right, front knee bent, body low and leaning in, the empty left stone fist swung back behind the shoulders for balance",
+   "5": "follow-through: the warhammer carries on down until its stone head nearly touches the ground at the lower-right, torso twisted, the rock beard swinging, the empty left stone fist trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the warhammer comes back up to its resting angle held across the belly with the stone head out at the right, the left fist reaching for the haft"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, the glowing eyes squeezed to slits, torso jolts back, both arms jerk outward (hammer arm thrown out to the left with the warhammer swung across in front of the face, its stone head out to the right; the empty left stone fist flung out to the right)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the warhammer held slanting up across the chest, the empty left stone fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, hammer arm flung up with the warhammer across in front of the face, the empty left stone fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the warhammer lowering, the empty left stone fist hanging",
+   "3": "kneeling: on both knees, slumped forward, the warhammer's stone head resting on the ground at the lower-right, the empty left arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the warhammer slips out of the stone fist, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the rock beard on his chest; the warhammer lies on the ground at the lower-right",
+   "6": "bounce: head and shoulders lift slightly off the ground, small grey rock chips fall off",
+   "7": "corpse: lying flat and still on his back like a heap of grey boulders, the amber eyes dark, the warhammer on the ground beside him"
+  }
+ }
+}

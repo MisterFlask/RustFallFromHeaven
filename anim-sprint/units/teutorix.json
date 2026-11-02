@@ -1,0 +1,48 @@
+{
+ "name": "teutorix",
+ "sprite": "m7/roster/units/unit_teutorix.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "body_plan": "ranged",
+ "description": "Teutorix (Fall from Heaven), a Malakim desert hero: dark skin, a white turban with a turquoise-and-gold jewel at the front and a long tail hanging down his back, a white face veil over his mouth and chin, layered white and sand-beige robes with a turquoise sash and turquoise-trimmed hems, a brown leather bandolier, a curved dagger and a white powder horn at the belt, white pantaloons and tan boots; he holds a long dark-wood arquebus with brass bands across his body in both hands, its butt at his right hip, his RIGHT hand on the grip by the brass lock and his LEFT hand under the forestock, the muzzle pointing to the right",
+ "hands": "the arquebus stays in his right hand gripping the stock by the brass lock on the screen-left side, its butt at his hip; his left hand on the screen-right side holds the forestock under the barrel at rest and lets go of it when he is hit, becoming an empty hand",
+ "guide_style": "grey",
+ "scale": 1.0,
+ "head_r": 10,
+ "limb": 1.1,
+ "joints": {
+  "head": [66, 46],
+  "neck": [66, 56],
+  "chest": [67, 68],
+  "pelvis": [66, 84],
+  "r_sh": [54, 61],
+  "r_el": [50, 74],
+  "r_ha": [64, 74],
+  "tip": [120, 59],
+  "l_sh": [78, 61],
+  "l_el": [86, 79],
+  "l_ha": [84, 70],
+  "r_hip": [60, 88],
+  "r_kn": [54, 102],
+  "r_ft": [52, 115],
+  "l_hip": [72, 88],
+  "l_kn": [79, 104],
+  "l_ft": [82, 117]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut above the white veil, torso jolts back, the arquebus jolted in his right hand but still held level across his body with its muzzle to the right, the empty left hand jerked off the forestock and dropped to his side, the turban tail swinging",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent under the robes, the arquebus still level across his body with its muzzle to the right, the empty left hand still down at his side",
+   "2": "recovering: halfway back to the ready pose, the arquebus held level across his body with its muzzle to the right, the left hand reaching back toward the forestock"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, the arquebus flung up in the right hand, the empty left hand drooping, the robes and turban tail swinging",
+   "2": "knees buckle: hips drop, knees fold forward under the robes, torso slumps forward, the turbaned head droops, the arquebus lowering, still across his body with its muzzle to the right, the empty left hand hanging",
+   "3": "kneeling: on both knees, slumped forward, the arquebus's muzzle resting on the ground at the lower-right, the empty left arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the arquebus slips out of the hand, legs slide forward, the robes flaring",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the white turban still on his head and its tail spread on the ground; the arquebus lies on the ground at the lower-right; the robes spread under him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the robes and turban tail settle",
+   "7": "corpse: lying flat and still on his back, eyes closed above the veil, the arquebus on the ground beside him"
+  }
+ }
+}

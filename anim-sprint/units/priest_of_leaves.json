@@ -1,0 +1,98 @@
+{
+ "name": "priest_of_leaves",
+ "sprite": "m7/roster/units/unit_priest_of_leaves.png",
+ "facing": "lower-left",
+ "tag": "anim/units",
+ "body_plan": "caster",
+ "description": "a Priest of Leaves, a druid of the Fellowship of Leaves: a young face under a deep green hood with two small twig antlers and leaves on it, a mantle of bright green leaves over the shoulders, a long green robe with wide sleeves and lime-green trim over a brown under-robe, a brown belt with a silver buckle and a pouch, a green leaf pendant, brown boots, a tall gnarled wooden staff twined with leaves and topped by a glowing green orb in his LEFT hand, and his RIGHT hand held out with the palm open and empty",
+ "hands": "the gnarled leafy staff stays in his left hand on the screen-right side and his right hand on the screen-left side is held out open and empty",
+ "guide_style": "grey",
+ "scale": 0.84,
+ "head_r": 10,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   69,
+   63
+  ],
+  "neck": [
+   70,
+   73
+  ],
+  "chest": [
+   72,
+   81
+  ],
+  "pelvis": [
+   75,
+   89
+  ],
+  "r_sh": [
+   85,
+   77
+  ],
+  "r_el": [
+   92,
+   88
+  ],
+  "r_ha": [
+   99,
+   80
+  ],
+  "tip": [
+   104,
+   48
+  ],
+  "l_sh": [
+   62,
+   78
+  ],
+  "l_el": [
+   59,
+   89
+  ],
+  "l_ha": [
+   49,
+   88
+  ],
+  "r_hip": [
+   80,
+   92
+  ],
+  "r_kn": [
+   82,
+   106
+  ],
+  "r_ft": [
+   83,
+   119
+  ],
+  "l_hip": [
+   70,
+   92
+  ],
+  "l_kn": [
+   63,
+   106
+  ],
+  "l_ft": [
+   58,
+   119
+  ]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-left; hooded head snaps back toward the upper-right, eyes squeezed shut, torso jolts back, both arms jerk outward (the leafy staff arm thrown up and out to the right, the open empty right hand flung out to the left), the leaf mantle jolting",
+   "1": "recoil extreme: leaning back further toward the upper-right, knees bent under the green robe, the leafy staff dipping, the open hand still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-right, body thrown back, the staff arm flung up with the leafy staff and its green orb high, the open empty hand drooping",
+   "2": "knees buckle: hips drop, knees fold forward under the green robe, torso slumps forward, hooded head droops, the leafy staff lowering",
+   "3": "kneeling: on both knees, slumped forward, the gnarled staff tipped down with its leafy orb top resting on the ground at the lower-left, the empty right hand hanging",
+   "4": "falling back: torso tips back toward the upper-right, the leafy staff slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-left and head toward the upper-right, the green hood and its twig antlers on the ground; the gnarled leafy staff lies on the ground at the lower-left, its green orb dimmed; the green robe and leaf mantle spread under him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the leaf mantle and green robe settle",
+   "7": "corpse: lying flat and still on his back, eyes closed, the leafy staff on the ground beside him, its orb dark"
+  }
+ }
+}

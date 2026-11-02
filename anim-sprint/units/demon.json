@@ -1,0 +1,105 @@
+{
+ "name": "demon",
+ "sprite": "m7/roster/units/unit_demon.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Demon, the big infernal demon of Fall from Heaven (Chaos Marauders, Balors): a muscular bare red-skinned demon with two curved bone-coloured horns, pointed ears, yellow eyes and a fanged jaw, large dark red bat wings spread on both sides, a barbed arrow-tipped tail curling at the screen-left, a black loincloth on a black belt with gold studs, spiked black wristbands, black cloven hooves, and a big jagged black serrated blade with dull red edges held upright in its LEFT hand",
+ "hands": "the jagged black blade stays in its left hand on the screen-right side and its right hand is an empty clawed fist on the screen-left side",
+ "guide_style": "grey",
+ "scale": 0.98,
+ "head_r": 10,
+ "limb": 1.3,
+ "joints": {
+  "head": [
+   85,
+   49
+  ],
+  "neck": [
+   84,
+   58
+  ],
+  "chest": [
+   81,
+   66
+  ],
+  "pelvis": [
+   82,
+   83
+  ],
+  "r_sh": [
+   95,
+   58
+  ],
+  "r_el": [
+   98,
+   72
+  ],
+  "r_ha": [
+   110,
+   85
+  ],
+  "tip": [
+   123,
+   37
+  ],
+  "l_sh": [
+   64,
+   57
+  ],
+  "l_el": [
+   55,
+   70
+  ],
+  "l_ha": [
+   57,
+   85
+  ],
+  "r_hip": [
+   90,
+   86
+  ],
+  "r_kn": [
+   92,
+   103
+  ],
+  "r_ft": [
+   95,
+   118
+  ],
+  "l_hip": [
+   74,
+   86
+  ],
+  "l_kn": [
+   61,
+   103
+  ],
+  "l_ft": [
+   59,
+   118
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, wings flare, the jagged black blade is lifted up over the head with its tip pointing up and back",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the jagged blade cocked behind the horned head with the blade hanging down behind the shoulders, clawed right fist tucked in",
+   "3": "swing: the front hoof steps toward the lower-right, the torso whips forward, the arm sweeps over the head and the jagged black blade is level, pointing to the lower-right, wings spread wide",
+   "4": "contact: blade arm fully extended toward the lower-right, the jagged black blade slashing down-right, front knee bent, body low and leaning in, clawed right fist swung back for balance",
+   "5": "follow-through: the jagged blade carries on down until its tip nearly touches the ground at the lower-right, torso twisted, wings and tail trailing back",
+   "6": "recover: body rises, front hoof pulls back halfway, the jagged blade lifts back toward the upright ready angle"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; horned head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, wings jerk open, both arms jerk outward (clawed right fist flung out to the left, blade arm thrown up and out)",
+   "1": "recoil extreme: leaning back further, knees bent, the jagged blade dipping, clawed fist still held out, wings half spread"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near hoof, body thrown back, blade arm flung up, clawed right arm drooping, wings sagging",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, horned head droops, the jagged blade lowering, wings drooping",
+   "3": "kneeling: on both knees, slumped forward, the jagged blade's tip resting on the ground, clawed arm hanging, wing tips touching the ground",
+   "4": "falling back: torso tips back toward the upper-left, the jagged blade slips out of the hand, legs slide forward, wings folding",
+   "5": "hits the ground: lying on its back along the ground, hooves toward the lower-right and head toward the upper-left, horns on the ground; the jagged black blade lies on the ground at the lower-right; the red bat wings spread flat under it, the tail limp",
+   "6": "bounce: head and shoulders lift slightly off the ground, the wings settle",
+   "7": "corpse: lying flat and still on its back, yellow eyes dark, the jagged blade on the ground beside it, the bat wings spread limp under it"
+  }
+ }
+}

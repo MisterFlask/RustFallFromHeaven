@@ -1,0 +1,105 @@
+{
+ "name": "lizardman_beastmaster",
+ "sprite": "m7/roster/units/unit_lizardman_beastmaster.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Lizardman Beastmaster (Fall from Heaven), a green-scaled lizardman with a long snout, a spiky orange crest fanning back from his head, a necklace of white bone teeth, a leopard-skin mantle over one shoulder, a brown and orange tribal skirt, leather leg wraps, clawed green feet, a green tail curling out behind him at the lower-left, a spear with a jagged white bone head and orange feathers in his RIGHT hand, a red hawk perched on his brown-gloved LEFT fist, and a small brown weasel companion climbing at his screen-right foot",
+ "hands": "the bone-headed spear stays in his right hand on the screen-left side, held upright with its butt near the ground; his left hand on the screen-right side is a brown-gloved fist with the red hawk perched on it, and it stays a fist with the hawk on it",
+ "guide_style": "grey",
+ "scale": 0.98,
+ "head_r": 9,
+ "limb": 1.15,
+ "joints": {
+  "head": [
+   79,
+   47
+  ],
+  "neck": [
+   77,
+   57
+  ],
+  "chest": [
+   76,
+   66
+  ],
+  "pelvis": [
+   75,
+   84
+  ],
+  "r_sh": [
+   62,
+   63
+  ],
+  "r_el": [
+   62,
+   75
+  ],
+  "r_ha": [
+   52,
+   74
+  ],
+  "tip": [
+   42,
+   30
+  ],
+  "l_sh": [
+   91,
+   61
+  ],
+  "l_el": [
+   94,
+   72
+  ],
+  "l_ha": [
+   102,
+   64
+  ],
+  "r_hip": [
+   69,
+   88
+  ],
+  "r_kn": [
+   66,
+   105
+  ],
+  "r_ft": [
+   61,
+   119
+  ],
+  "l_hip": [
+   82,
+   88
+  ],
+  "l_kn": [
+   88,
+   104
+  ],
+  "l_ft": [
+   92,
+   119
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back toward the upper-left, the spear is lifted beside the head with the bone spearhead pointing up and back, the red hawk still perched on his gloved left fist",
+   "2": "wind-up extreme: body coiled back and crouched, the spear hand behind the head and the bone spearhead hanging down behind the shoulders to the left, his gloved left fist with the red hawk on it tucked in front of the belly",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips round, the spear arm sweeps across in front of the chest and the spear is level, its bone head pointing to the right",
+   "4": "contact: spear arm fully extended toward the lower-right, the bone spearhead stabbing down-right, front knee bent, body low and leaning in, his gloved left fist swung back behind the shoulders for balance with the red hawk flaring its wings on it",
+   "5": "follow-through: the spear carries on down until its bone head nearly touches the ground at the lower-right, torso twisted, orange crest trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the spear comes back up on the near side toward the upright ready angle, the gloved left fist with the red hawk tucked in"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (spear arm thrown up and out to the left, his gloved left fist flung out to the right with the red hawk flapping on it)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the spear dipping, the gloved left fist with the red hawk still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, spear arm flung up, the gloved left fist drooping as the red hawk beats its wings and lifts off it",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the spear lowering, the red hawk flapping just above him",
+   "3": "kneeling: on both knees, slumped forward, the bone spearhead resting on the ground at the lower-right, the gloved left arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the spear slips out of the hand, legs slide forward, the tail sweeping out along the ground",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the orange crest flat on the ground; the spear lies on the ground at the lower-right; the leopard-skin mantle spread under him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the leopard-skin mantle settles",
+   "7": "corpse: lying flat and still on his back, eyes closed, the bone-headed spear on the ground beside him, the red hawk standing on the ground by his head and the weasel crouched by his feet"
+  }
+ }
+}

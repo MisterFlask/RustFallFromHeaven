@@ -1,0 +1,105 @@
+{
+ "name": "myconid",
+ "sprite": "m7/roster/units/unit_myconid.png",
+ "facing": "lower-left",
+ "tag": "anim/units",
+ "description": "a Myconid (Fall from Heaven), a squat walking mushroom man: a huge domed rust-red mushroom cap with big cream spots and pale gills underneath for a head, two small round glowing yellow eyes under the cap rim and no mouth, a thick pale beige fibrous stalk body, lumpy root-like arms with root-claw fingers, stubby root feet, little clusters of teal-glowing mushrooms on both shoulders, a few solid round pale yellow-green spore balls touching the cap edge, and a heavy knobbly club of pale petrified mushroom stalk in his RIGHT hand",
+ "hands": "the knobbly club stays in his right hand on the screen-left side and his left hand is an empty root-claw fist on the screen-right side",
+ "guide_style": "grey",
+ "scale": 1.0,
+ "head_r": 13,
+ "limb": 1.4,
+ "joints": {
+  "head": [
+   87,
+   64
+  ],
+  "neck": [
+   87,
+   77
+  ],
+  "chest": [
+   87,
+   86
+  ],
+  "pelvis": [
+   87,
+   100
+  ],
+  "r_sh": [
+   74,
+   85
+  ],
+  "r_el": [
+   65,
+   92
+  ],
+  "r_ha": [
+   56,
+   97
+  ],
+  "tip": [
+   40,
+   54
+  ],
+  "l_sh": [
+   100,
+   86
+  ],
+  "l_el": [
+   110,
+   95
+  ],
+  "l_ha": [
+   110,
+   107
+  ],
+  "r_hip": [
+   78,
+   104
+  ],
+  "r_kn": [
+   75,
+   111
+  ],
+  "r_ft": [
+   73,
+   117
+  ],
+  "l_hip": [
+   96,
+   104
+  ],
+  "l_kn": [
+   99,
+   113
+  ],
+  "l_ft": [
+   100,
+   121
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, the stalk body leans back, the knobbly club is lifted up beside the mushroom cap with its knobbed head pointing up and back",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the club cocked behind the cap with its knobbly head hanging down behind the shoulders, the left root-claw hand tucked in",
+   "3": "swing: the front foot steps toward the lower-left, the stalk body whips forward, the arm sweeps over and the club is level, its knobbly head pointing to the lower-left",
+   "4": "contact: club arm fully extended toward the lower-left, the knobbly club head smashing down-left, front knee bent, body low and leaning in, the left root-claw hand swung back for balance",
+   "5": "follow-through: the club carries on down until its knobbly head nearly touches the ground at the lower-left, the stalk body twisted, the mushroom cap tilting",
+   "6": "recover: body rises, front foot pulls back halfway, the club lifts back toward the ready angle"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-left; the mushroom cap snaps back toward the upper-right, the yellow eyes squeezed shut, the stalk body jolts back, both arms jerk outward (the left root-claw hand flung out to the right, the club arm thrown up and out)",
+   "1": "recoil extreme: leaning back further, knees bent, the club dipping, the left root-claw hand still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, club arm flung up, the left root-claw hand drooping",
+   "2": "knees buckle: hips drop, knees fold forward, the stalk body slumps forward, the mushroom cap droops, the club lowering",
+   "3": "kneeling: on both knees, slumped forward, the club's knobbly head resting on the ground, the left root-claw arm hanging",
+   "4": "falling back: the stalk body tips back toward the upper-right, the club slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-left and head toward the upper-right, the big spotted mushroom cap resting on the ground behind him; the knobbly club lies on the ground at the lower-left",
+   "6": "bounce: the cap and shoulders lift slightly off the ground, the teal shoulder mushrooms settle",
+   "7": "corpse: lying flat and still on his back, the yellow eyes closed, the spotted cap on the ground, the knobbly club on the ground beside him"
+  }
+ }
+}

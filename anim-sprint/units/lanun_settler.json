@@ -1,0 +1,105 @@
+{
+ "name": "lanun_settler",
+ "sprite": "m7/roster/units/unit_lanun_settler.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Lanun Settler (Fall from Heaven), a dark-skinned pirate colonist: a navy-blue tricorn hat with gold trim over a red bandana whose tails hang at the back of his head, a gold earring, a navy-blue coat with gold buttons, a white shirt, a red sash with a gold belt buckle, blue breeches and brown boots, a huge pack on his back with a red-and-white striped bedroll on top, coiled rope and a wooden bucket hanging at its screen-left side, and a crooked wooden walking staff in his LEFT hand",
+ "hands": "the crooked walking staff stays upright in his left hand on the screen-right side and his right hand is an empty fist gripping the pack strap on the screen-left side",
+ "guide_style": "grey",
+ "scale": 0.85,
+ "head_r": 10,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   86,
+   61
+  ],
+  "neck": [
+   84,
+   70
+  ],
+  "chest": [
+   84,
+   78
+  ],
+  "pelvis": [
+   84,
+   89
+  ],
+  "r_sh": [
+   93,
+   74
+  ],
+  "r_el": [
+   96,
+   83
+  ],
+  "r_ha": [
+   104,
+   80
+  ],
+  "tip": [
+   106,
+   50
+  ],
+  "l_sh": [
+   74,
+   73
+  ],
+  "l_el": [
+   64,
+   80
+  ],
+  "l_ha": [
+   71,
+   83
+  ],
+  "r_hip": [
+   89,
+   92
+  ],
+  "r_kn": [
+   90,
+   104
+  ],
+  "r_ft": [
+   91,
+   118
+  ],
+  "l_hip": [
+   77,
+   92
+  ],
+  "l_kn": [
+   70,
+   104
+  ],
+  "l_ft": [
+   68,
+   118
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the walking staff is lifted up over the head with its knobbed top end pointing up and back, the big pack still on his back",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the walking staff cocked behind the head with its top end hanging down behind the shoulders past the pack, his empty right fist tucked in at the pack strap",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the arm sweeps over the head and the walking staff is level, its knobbed top end pointing to the lower-right",
+   "4": "contact: staff arm fully extended toward the lower-right, the knobbed top end of the walking staff cracking down-right, front knee bent, body low and leaning in, his empty right fist swung back for balance",
+   "5": "follow-through: the walking staff carries on down until its top end nearly touches the ground at the lower-right, torso twisted, the tricorn hat tilting, the big pack swaying",
+   "6": "recover: body rises, front foot pulls back halfway, the walking staff lifts back toward its upright resting angle"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (his empty right fist flung out to the left, the staff arm thrown up and out holding the walking staff), the tricorn hat jolting back",
+   "1": "recoil extreme: leaning back further under the big pack, knees bent, the walking staff dipping, his empty right fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back under the weight of the pack, staff arm flung up holding the walking staff, his empty right fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the walking staff lowering",
+   "3": "kneeling: on both knees, slumped forward under the pack, the top end of the walking staff resting on the ground, his empty right arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the walking staff slips out of the hand, legs slide forward, the tricorn hat tipping",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the big pack with the striped bedroll squashed under his shoulders, the tricorn hat still on his head; the walking staff lies on the ground at the lower-right",
+   "6": "bounce: head and shoulders lift slightly off the pack, the tricorn hat settles",
+   "7": "corpse: lying flat and still on his back on the pack, eyes closed, the tricorn hat on his head, the walking staff on the ground beside him"
+  }
+ }
+}

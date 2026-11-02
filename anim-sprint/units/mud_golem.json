@@ -1,0 +1,105 @@
+{
+ "name": "mud_golem",
+ "sprite": "m7/roster/units/unit_mud_golem.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Mud Golem (Fall from Heaven), the Luchuirp worker golem: a big hunched humanoid construct of packed brown mud and ochre clay with a few embedded grey pebbles and bits of straw, thick round arms and stumpy legs, bronze bands round the upper arms, a bronze belt with brass rivets, a small round head with a riveted brass plate on the forehead and two round teal glass eyes, no mouth, and a long-handled hoe with a wooden handle and a broad bronze blade, gripped by the end of its handle in its RIGHT hand",
+ "hands": "the hoe's handle end stays in its right hand on the screen-left side, at the belly; at rest its left hand on the screen-right side also holds the handle lower down, near the bronze blade, but during the action it lets go and is an empty fist",
+ "guide_style": "grey",
+ "scale": 1.01,
+ "head_r": 11,
+ "limb": 1.5,
+ "joints": {
+  "head": [
+   83,
+   48
+  ],
+  "neck": [
+   78,
+   60
+  ],
+  "chest": [
+   73,
+   67
+  ],
+  "pelvis": [
+   74,
+   77
+  ],
+  "r_sh": [
+   52,
+   58
+  ],
+  "r_el": [
+   45,
+   76
+  ],
+  "r_ha": [
+   64,
+   83
+  ],
+  "tip": [
+   117,
+   107
+  ],
+  "l_sh": [
+   93,
+   64
+  ],
+  "l_el": [
+   99,
+   84
+  ],
+  "l_ha": [
+   96,
+   97
+  ],
+  "r_hip": [
+   60,
+   89
+  ],
+  "r_kn": [
+   51,
+   104
+  ],
+  "r_ft": [
+   48,
+   116
+  ],
+  "l_hip": [
+   83,
+   89
+  ],
+  "l_kn": [
+   82,
+   104
+  ],
+  "l_ft": [
+   82,
+   116
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, the mud body leans back toward the upper-left, the left hand lets go of the handle, the hoe is lifted high beside the head with its handle level and its bronze blade out to the right",
+   "2": "wind-up extreme: body coiled back and crouched, the hoe hand behind the head and the hoe hanging down behind the shoulders to the left, its bronze blade low behind the golem, the left hand an empty fist tucked across the bronze belt",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips round, the hoe arm sweeps across in front of the chest and the hoe is level, its bronze blade pointing to the right, the left hand an empty fist",
+   "4": "contact: hoe arm fully extended toward the lower-right, the hoe's bronze blade chopping down-right, front knee bent, body low and leaning in, the empty left fist swung back behind the shoulders for balance",
+   "5": "follow-through: the hoe carries on down until its bronze blade nearly touches the ground at the lower-right, torso twisted, the empty left fist trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the hoe comes back toward its resting angle with the bronze blade low at the lower-right, the left hand reaching for the handle"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; the small head snaps back toward the upper-left, the mud torso jolts back, both arms jerk outward (hoe arm thrown up and out to the left with the hoe swinging across level, the empty left fist flung out to the right)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the hoe held across the body, the empty left fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, hoe arm flung up, the empty left fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, the mud torso slumps forward, the head droops, the hoe lowering, the empty left fist hanging",
+   "3": "kneeling: on both knees, slumped forward, the hoe's bronze blade resting on the ground at the lower-right, the empty left arm hanging",
+   "4": "falling back: the heavy mud torso tips back toward the upper-left, the hoe slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on its back along the ground, feet toward the lower-right and head toward the upper-left, the brass plate still on its forehead; the hoe lies on the ground at the lower-right",
+   "6": "bounce: head and shoulders lift slightly off the ground, the heavy mud body settles",
+   "7": "corpse: lying flat and still on its back, the teal glass eyes dark, the hoe on the ground beside it"
+  }
+ }
+}

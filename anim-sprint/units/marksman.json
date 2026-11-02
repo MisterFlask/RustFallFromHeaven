@@ -1,0 +1,99 @@
+{
+ "name": "marksman",
+ "sprite": "m7/roster/units/unit_marksman.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "body_plan": "ranged",
+ "description": "a Marksman (Fall from Heaven), an elite crossbow sniper: a young soldier in a wide-brimmed steel kettle helmet with a brass rivet, brown hair, a dark green hooded cloak, a brown leather jerkin with a studded belt and pouches, puffed tan sleeves, tan trousers and tall brown boots, a quiver of bolts at his hip on the screen-left side, aiming a heavy steel-and-wood crossbow with gold fittings level to the right, its stock at his cheek in his RIGHT hand and its fore-end held in his LEFT hand",
+ "hands": "the crossbow's stock stays in his right hand on the screen-left side; at rest his left hand on the screen-right side also holds the fore-end under the prod, but during the action it lets go and is an empty fist",
+ "guide_style": "grey",
+ "scale": 0.93,
+ "head_r": 10,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   62,
+   55
+  ],
+  "neck": [
+   63,
+   66
+  ],
+  "chest": [
+   65,
+   77
+  ],
+  "pelvis": [
+   66,
+   88
+  ],
+  "r_sh": [
+   53,
+   69
+  ],
+  "r_el": [
+   54,
+   78
+  ],
+  "r_ha": [
+   67,
+   71
+  ],
+  "tip": [
+   126,
+   69
+  ],
+  "l_sh": [
+   75,
+   69
+  ],
+  "l_el": [
+   80,
+   79
+  ],
+  "l_ha": [
+   86,
+   76
+  ],
+  "r_hip": [
+   58,
+   94
+  ],
+  "r_kn": [
+   53,
+   108
+  ],
+  "r_ft": [
+   51,
+   119
+  ],
+  "l_hip": [
+   73,
+   94
+  ],
+  "l_kn": [
+   75,
+   109
+  ],
+  "l_ft": [
+   78,
+   119
+  ]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back; the right hand stays up by the chin gripping the crossbow's stock, the crossbow jolted so its front end dips toward the lower-right, the left hand knocked off the fore-end and now an empty fist just below it",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the crossbow still held by its stock in the right hand at chest height, its front end dipping to the right, the empty left fist below it",
+   "2": "recovering: halfway back to the aiming pose, the crossbow coming back up to level, the left hand reaching back toward the fore-end"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, the crossbow swung up to head height beside the kettle helmet, held by its stock in the right hand and pointing to the right, the empty left fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops under the kettle helmet, the crossbow dropped to waist height, still roughly level and pointing to the right, the empty left fist hanging",
+   "3": "kneeling: on both knees, slumped forward, the crossbow's front end resting on the ground at the lower-right, the empty left arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the crossbow slips out of the hand, legs slide forward, the green cloak flaring",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the kettle helmet on his head; the crossbow lies on the ground at the lower-right; the green cloak spread under him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the helmet stays on",
+   "7": "corpse: lying flat and still on his back, eyes closed, the crossbow on the ground beside him, the green cloak spread under him"
+  }
+ }
+}

@@ -1,0 +1,98 @@
+{
+ "name": "firebow",
+ "sprite": "m7/roster/units/unit_firebow.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "body_plan": "ranged",
+ "description": "a Firebow (the Amurites' longbowman in Fall from Heaven), a slim archer: a deep blue hooded tunic with white trim and a pale emblem on the chest, a blue cloth mask over the lower face, grey sleeves with brown leather bracers, a brown belt and baldric, brown boots, a quiver of white-fletched arrows on his back on the screen-left side, and a tall wooden longbow in his LEFT hand with a flaming arrow nocked and drawn back to his cheek by his RIGHT hand",
+ "hands": "the longbow stays in his left hand on the screen-right side, held out at arm's length; his right hand on the screen-left side draws the string and the flaming arrow back to his cheek",
+ "guide_style": "grey",
+ "scale": 0.84,
+ "head_r": 10,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   67,
+   62
+  ],
+  "neck": [
+   68,
+   71
+  ],
+  "chest": [
+   66,
+   80
+  ],
+  "pelvis": [
+   67,
+   89
+  ],
+  "r_sh": [
+   74,
+   75
+  ],
+  "r_el": [
+   86,
+   77
+  ],
+  "r_ha": [
+   97,
+   74
+  ],
+  "tip": [
+   86,
+   37
+  ],
+  "l_sh": [
+   56,
+   77
+  ],
+  "l_el": [
+   43,
+   74
+  ],
+  "l_ha": [
+   63,
+   71
+  ],
+  "r_hip": [
+   72,
+   94
+  ],
+  "r_kn": [
+   76,
+   105
+  ],
+  "r_ft": [
+   79,
+   116
+  ],
+  "l_hip": [
+   61,
+   94
+  ],
+  "l_kn": [
+   55,
+   105
+  ],
+  "l_ft": [
+   51,
+   116
+  ]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-right; the hooded head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (the right hand, now empty, flung out to the left, the bow arm thrown up and out holding the longbow upright), no arrow on the string",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the longbow tilting in his left hand, the empty right hand still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, the bow arm flung up holding the longbow high, the empty right hand drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, the hooded head droops, the longbow lowering in his left hand",
+   "3": "kneeling: on both knees, slumped forward, one end of the longbow resting on the ground at the lower-right, the empty right arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the longbow slips out of the hand, legs slide forward, the blue hood staying on",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the blue hood and mask still on; the longbow lies on the ground at the lower-right; the quiver under him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the blue hood settles",
+   "7": "corpse: lying flat and still on his back, eyes closed, the longbow on the ground beside him"
+  }
+ }
+}

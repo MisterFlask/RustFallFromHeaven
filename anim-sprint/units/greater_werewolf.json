@@ -1,0 +1,54 @@
+{
+ "name": "greater_werewolf",
+ "sprite": "m7/roster/units/unit_greater_werewolf.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Greater Werewolf, a huge hunched wolf-man: charcoal-grey fur with a spiky white mane running down his back and the back of his right arm, glowing red eyes, a long wolf muzzle with snarling open jaws and white fangs, pointed ears, a broken iron chain collar round his neck, torn brown trousers held by a rope belt, bare clawed wolf feet, and no weapon: he attacks with the long ivory claws of his LEFT hand (screen-right), and his RIGHT hand (screen-left) is an empty clawed hand",
+ "hands": "his weapon is the clawed left hand on the screen-right side, reaching forward with its ivory claws spread, and his right hand on the screen-left side is an empty clawed hand hanging low at his side",
+ "guide_style": "grey",
+ "scale": 1.15,
+ "head_r": 12,
+ "limb": 1.4,
+ "joints": {
+  "head": [97, 36],
+  "neck": [88, 50],
+  "chest": [77, 59],
+  "pelvis": [78, 74],
+  "r_sh": [92, 54],
+  "r_el": [104, 66],
+  "r_ha": [119, 70],
+  "tip": [127, 81],
+  "l_sh": [52, 48],
+  "l_el": [41, 68],
+  "l_ha": [40, 87],
+  "r_hip": [88, 78],
+  "r_kn": [97, 95],
+  "r_ft": [100, 114],
+  "l_hip": [67, 78],
+  "l_kn": [56, 96],
+  "l_ft": [47, 114]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, the hunched torso leans back, the clawed left hand is raised up over the head with its long ivory claws pointing up and back",
+   "2": "wind-up extreme: body coiled back and crouched, the clawed left hand cocked behind the head with its claws hanging down behind the shoulders, the empty clawed right hand tucked in, jaws snarling",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the left arm sweeps over the head and the clawed hand reaches out level, its ivory claws pointing to the lower-right",
+   "4": "contact: the left arm fully extended toward the lower-right, the ivory claws raking down-right, front knee bent, body low and leaning in, the empty clawed right hand swung back for balance",
+   "5": "follow-through: the clawed left hand carries on down and through to the lower-right, low beside the hip with its ivory claws pointing down toward the ground, torso twisted, the white mane trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the clawed left hand lifts back to reach forward again"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, red eyes squeezed shut, jaws gaping, torso jolts back, both arms jerk outward (the empty clawed right hand flung out to the left, the clawed left arm jerked out stiff with its ivory claws splayed)",
+   "1": "recoil extreme: leaning back further, knees bent, the clawed left hand dipping, the empty clawed right hand still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, the clawed left arm flung up, the empty clawed right hand drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head and muzzle droop, the clawed hands lowering",
+   "3": "kneeling: on both knees, slumped forward, the claws of the left hand resting on the ground, the right arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the clawed arms go limp and a length of broken iron chain slips from his collar, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, muzzle pointing up, clawed hands limp and empty; the length of broken iron chain lies on the ground at the lower-right; the white mane spread under him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the white mane settles",
+   "7": "corpse: lying flat and still on his back, eyes closed, jaws slack, the clawed hands limp, the broken iron chain on the ground beside him"
+  }
+ }
+}

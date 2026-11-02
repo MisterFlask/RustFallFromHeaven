@@ -1,0 +1,98 @@
+{
+ "name": "shaman",
+ "sprite": "m7/roster/units/unit_shaman.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "body_plan": "caster",
+ "description": "a Shaman (Fall from Heaven), a hunched tribal spirit-caller: his face hidden under a bleached horned animal-skull mask with a glowing orange eye, a shaggy grey-brown fur hood and mane, a layered ragged hide-and-fur robe, a necklace of bone fangs and blue beads, a hide pouch at his screen-left hip, brown boots, a few orange embers drifting by the mask, and a crooked wooden totem staff topped with a horned animal skull, blue beads and a white feather in his LEFT hand",
+ "hands": "the skull-topped totem staff stays upright in his left hand on the screen-right side and his right hand is an empty fist resting on top of the hide pouch at his hip on the screen-left side",
+ "guide_style": "grey",
+ "scale": 0.85,
+ "head_r": 10,
+ "limb": 1.1,
+ "joints": {
+  "head": [
+   77,
+   63
+  ],
+  "neck": [
+   76,
+   75
+  ],
+  "chest": [
+   75,
+   84
+  ],
+  "pelvis": [
+   74,
+   96
+  ],
+  "r_sh": [
+   81,
+   77
+  ],
+  "r_el": [
+   86,
+   88
+  ],
+  "r_ha": [
+   93,
+   82
+  ],
+  "tip": [
+   96,
+   45
+  ],
+  "l_sh": [
+   65,
+   77
+  ],
+  "l_el": [
+   58,
+   88
+  ],
+  "l_ha": [
+   63,
+   92
+  ],
+  "r_hip": [
+   80,
+   98
+  ],
+  "r_kn": [
+   82,
+   108
+  ],
+  "r_ft": [
+   84,
+   118
+  ],
+  "l_hip": [
+   68,
+   98
+  ],
+  "l_kn": [
+   61,
+   108
+  ],
+  "l_ft": [
+   56,
+   118
+  ]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-right; the skull-masked head snaps back toward the upper-left, torso jolts back, both arms jerk outward (his empty right fist flung out to the left, the skull-topped totem staff thrown up and out in his left hand), the fur hood and robe jolting",
+   "1": "recoil extreme: leaning back further, knees bent, the totem staff tilting back, his empty right fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, staff arm flung up holding the skull-topped totem staff high, his empty right fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, the skull-masked head droops, the totem staff lowering",
+   "3": "kneeling: on both knees, slumped forward, the skull end of the totem staff resting on the ground, his empty right hand hanging by the hide pouch",
+   "4": "falling back: torso tips back toward the upper-left, the totem staff slips out of the hand, legs slide forward, the fur robe flaring",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the skull mask facing up; the totem staff lies on the ground at the lower-right; the shaggy fur hood spread under him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the fur hood and robe settle",
+   "7": "corpse: lying flat and still on his back, the eye of the skull mask gone dark, the totem staff on the ground beside him"
+  }
+ }
+}

@@ -1,0 +1,98 @@
+{
+ "name": "high_priest_of_the_veil",
+ "sprite": "m7/roster/units/unit_high_priest_of_the_veil.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "body_plan": "caster",
+ "description": "a High Priest of the Veil, a hooded cultist: a black hood crowned with two large curved red-and-black horns and a silver band with a red gem, a pale face with a red eye and white hair under the hood, a high flared red collar, grey skull pauldrons, layered red-and-black robes with cream trim and a belt with a red gem buckle, red shoes, and a black iron staff topped with a glowing red eye held in black claws in his RIGHT hand",
+ "hands": "the iron staff stays upright in his right hand on the screen-left side and his left hand on the screen-right side is open, palm up",
+ "guide_style": "grey",
+ "scale": 0.86,
+ "head_r": 10,
+ "limb": 1.05,
+ "joints": {
+  "head": [
+   88,
+   57
+  ],
+  "neck": [
+   87,
+   67
+  ],
+  "chest": [
+   86,
+   76
+  ],
+  "pelvis": [
+   84,
+   94
+  ],
+  "r_sh": [
+   73,
+   72
+  ],
+  "r_el": [
+   67,
+   87
+  ],
+  "r_ha": [
+   61,
+   79
+  ],
+  "tip": [
+   58,
+   36
+  ],
+  "l_sh": [
+   101,
+   71
+  ],
+  "l_el": [
+   104,
+   89
+  ],
+  "l_ha": [
+   109,
+   82
+  ],
+  "r_hip": [
+   78,
+   96
+  ],
+  "r_kn": [
+   75,
+   108
+  ],
+  "r_ft": [
+   72,
+   120
+  ],
+  "l_hip": [
+   92,
+   96
+  ],
+  "l_kn": [
+   97,
+   108
+  ],
+  "l_ft": [
+   101,
+   121
+  ]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, the horned hood jolting, torso jolts back, both arms jerk outward (the staff arm thrown up and out to the left with the iron staff, the open left hand flung out to the right)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the iron staff dipping, the open left hand still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, the staff arm flung up with the iron staff, the open left hand drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, the horned hood droops forward, the iron staff lowering",
+   "3": "kneeling: on both knees, slumped forward, the iron staff slanting down with its clawed red-eye head resting on the ground at the lower-right, the left arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the iron staff slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the horned hood on the ground; the iron staff lies on the ground at the lower-right; the red-and-black robe spread under him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the robe and its long drape settle",
+   "7": "corpse: lying flat and still on his back, eyes closed, the iron staff on the ground beside him, its red eye dimmed"
+  }
+ }
+}

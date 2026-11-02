@@ -1,0 +1,111 @@
+{
+ "name": "infernal_warrior",
+ "sprite": "m7/roster/units/unit_infernal_warrior.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "an Infernal Warrior, a red-skinned demon brute: two curved black horns, pointed ears, glowing yellow eyes and a small fang, a bare muscular red torso with a brown strap across the chest, a black spiked pauldron on his left shoulder, a brown belt and a ragged black loincloth, clawed red feet with black claws, a red devil's tail with an arrow tip curling out on the screen-left side, a wooden club studded with steel spikes raised in his RIGHT hand, and a round black shield with steel studs and an orange trident emblem on his LEFT arm",
+ "hands": "the spiked club stays in his right hand on the screen-left side and the shield on his left arm on the screen-right side",
+ "guide_style": "grey",
+ "scale": 0.87,
+ "head_r": 11,
+ "limb": 1.15,
+ "joints": {
+  "head": [
+   84,
+   57
+  ],
+  "neck": [
+   83,
+   66
+  ],
+  "chest": [
+   81,
+   74
+  ],
+  "pelvis": [
+   80,
+   88
+  ],
+  "r_sh": [
+   71,
+   68
+  ],
+  "r_el": [
+   63,
+   79
+  ],
+  "r_ha": [
+   57,
+   67
+  ],
+  "tip": [
+   48,
+   38
+  ],
+  "l_sh": [
+   94,
+   68
+  ],
+  "l_el": [
+   98,
+   80
+  ],
+  "l_ha": [
+   104,
+   87
+  ],
+  "shield": [
+   107,
+   88,
+   12,
+   16
+  ],
+  "r_hip": [
+   73,
+   92
+  ],
+  "r_kn": [
+   67,
+   105
+  ],
+  "r_ft": [
+   62,
+   117
+  ],
+  "l_hip": [
+   88,
+   92
+  ],
+  "l_kn": [
+   97,
+   106
+  ],
+  "l_ft": [
+   103,
+   118
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back toward the upper-left, the spiked club is lifted beside the horned head with its heavy end pointing up and back",
+   "2": "wind-up extreme: body coiled back and crouched, the club hand behind the head and the spiked club hanging down behind the shoulders to the left, the round black shield tucked across the belly",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips round, the club arm sweeps across in front of the chest and the spiked club is level, its heavy end pointing to the right",
+   "4": "contact: club arm fully extended toward the lower-right, the spiked club smashing down-right, front knee bent, body low and leaning in, the round black shield swung back behind the shoulders for balance",
+   "5": "follow-through: the club carries on down until its spiked end nearly touches the ground at the lower-right, torso twisted, the red tail trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the spiked club comes back up on the near side toward the ready angle, the round black shield tucked across the belly"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; the horned head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (club arm thrown up and out to the left, the round black shield flung out to the right)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the spiked club dipping, the round black shield still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, club arm flung up, the round black shield drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, the horned head droops, the spiked club lowering",
+   "3": "kneeling: on both knees, slumped forward, the club's spiked end resting on the ground at the lower-right, shield arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the spiked club slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, horns on the ground; the spiked club lies on the ground at the lower-right; the round black shield with the orange trident lies flat beside him, the red tail limp",
+   "6": "bounce: head and shoulders lift slightly off the ground, the round black shield rocks",
+   "7": "corpse: lying flat and still on his back, yellow eyes dark, the spiked club and the round black shield on the ground beside him"
+  }
+ }
+}

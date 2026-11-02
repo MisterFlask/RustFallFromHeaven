@@ -1,0 +1,105 @@
+{
+ "name": "gargoyle",
+ "sprite": "m7/roster/units/unit_gargoyle.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Gargoyle (Fall from Heaven), a squat crouching living statue of carved grey stone with chisel marks and small cracks, two curled ram horns, pointed ears, solid amber eyes and a wide toothy demonic grin, a royal-blue collar with a square bronze rune brooch on its chest, two big stone bat wings raised behind it on the screen-left, a long stone tail curled by its feet, clawed stone feet, its right hand a big stone claw resting on the ground on the screen-left, and its LEFT hand an empty clawed stone hand reaching forward on the screen-right; it carries no weapon",
+ "hands": "it carries no weapon: its left hand on the screen-right side is an empty clawed stone hand that strikes claws first, and its right hand on the screen-left side is an empty stone claw that rests on the ground at rest and lifts off during the action",
+ "guide_style": "grey",
+ "scale": 0.78,
+ "head_r": 11,
+ "limb": 1.3,
+ "joints": {
+  "head": [
+   104,
+   72
+  ],
+  "neck": [
+   98,
+   80
+  ],
+  "chest": [
+   92,
+   86
+  ],
+  "pelvis": [
+   94,
+   98
+  ],
+  "r_sh": [
+   104,
+   84
+  ],
+  "r_el": [
+   112,
+   94
+  ],
+  "r_ha": [
+   118,
+   101
+  ],
+  "tip": [
+   121,
+   108
+  ],
+  "l_sh": [
+   80,
+   80
+  ],
+  "l_el": [
+   78,
+   98
+  ],
+  "l_ha": [
+   88,
+   113
+  ],
+  "r_hip": [
+   98,
+   100
+  ],
+  "r_kn": [
+   102,
+   106
+  ],
+  "r_ft": [
+   106,
+   116
+  ],
+  "l_hip": [
+   88,
+   100
+  ],
+  "l_kn": [
+   76,
+   106
+  ],
+  "l_ft": [
+   68,
+   117
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the empty clawed left hand is lifted up over the head with its stone claws pointing up and back, the wings raised",
+   "2": "wind-up extreme: body coiled back and crouched, the clawed left hand cocked behind the head with its claws spread, the right claw tucked low, the stone wings raised",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the arm sweeps over the head and the clawed left hand slashes level, its claws pointing to the lower-right",
+   "4": "contact: claw arm fully extended toward the lower-right, the stone claws of the empty left hand raking down-right, front knee bent, body low and leaning in, the right claw swung back for balance, the wings spread",
+   "5": "follow-through: the clawed left hand carries on down until its claws nearly touch the ground at the lower-right, torso twisted, the tail and wings trailing back",
+   "6": "recover: body sinks back into its crouch, front foot pulls back halfway, the clawed left hand comes back toward its forward-reaching rest"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (the right claw flung out to the left, the clawed left hand thrown up and out), the stone wings jolting",
+   "1": "recoil extreme: leaning back further, knees bent, the clawed left hand dipping, the right claw still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, the clawed left hand flung up, the right claw drooping, the wings sagging",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the clawed left hand lowering",
+   "3": "kneeling: on both knees, slumped forward, the claws of the left hand resting on the ground, the right arm hanging, the wings drooping",
+   "4": "falling back: torso tips back toward the upper-left, the left arm flops out with its empty claws open, legs slide forward, the wings folding",
+   "5": "hits the ground: lying on its back along the ground, feet toward the lower-right and head toward the upper-left; the empty clawed left hand lies open on the ground at the lower-right; the stone wings crumpled under it, the tail limp",
+   "6": "bounce: head and shoulders lift slightly off the ground, the stone wings settle",
+   "7": "corpse: lying flat and still on its back, the amber eyes dark, the cracked grey stone body, wings and tail limp on the ground"
+  }
+ }
+}

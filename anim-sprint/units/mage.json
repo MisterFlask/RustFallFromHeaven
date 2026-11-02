@@ -1,0 +1,98 @@
+{
+ "name": "mage",
+ "sprite": "m7/roster/units/unit_mage.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "body_plan": "caster",
+ "description": "a Mage (Fall from Heaven), a bearded wizard: brown hair and a full brown beard, a tall floppy pointed royal-blue hat with gold stars and a gold band, a long royal-blue robe with gold stars and gold trim, a brown leather belt with a gold buckle and a small brown pouch, brown boots, and a gnarled wooden staff topped with a glowing white-blue orb in his LEFT hand; his RIGHT hand is open, palm up, in a casting gesture",
+ "hands": "the orb-topped staff stays upright in his left hand on the screen-right side and his right hand is an empty open hand held up at chest height on the screen-left side",
+ "guide_style": "grey",
+ "scale": 0.81,
+ "head_r": 10,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   73,
+   65
+  ],
+  "neck": [
+   73,
+   75
+  ],
+  "chest": [
+   74,
+   82
+  ],
+  "pelvis": [
+   75,
+   89
+  ],
+  "r_sh": [
+   85,
+   77
+  ],
+  "r_el": [
+   89,
+   88
+  ],
+  "r_ha": [
+   96,
+   81
+  ],
+  "tip": [
+   100,
+   48
+  ],
+  "l_sh": [
+   62,
+   77
+  ],
+  "l_el": [
+   54,
+   89
+  ],
+  "l_ha": [
+   59,
+   82
+  ],
+  "r_hip": [
+   80,
+   95
+  ],
+  "r_kn": [
+   82,
+   106
+  ],
+  "r_ft": [
+   83,
+   116
+  ],
+  "l_hip": [
+   69,
+   95
+  ],
+  "l_kn": [
+   63,
+   106
+  ],
+  "l_ft": [
+   56,
+   116
+  ]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, the tall pointed hat jolting, torso jolts back, both arms jerk outward (his empty open right hand flung out to the left, the orb-topped staff thrown up and out in his left hand)",
+   "1": "recoil extreme: leaning back further, knees bent, the orb-topped staff tilting back, his empty right hand still held out, the hat tip flopping"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, staff arm flung up holding the orb-topped staff high, his empty right hand drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops under the pointed hat, the orb-topped staff lowering",
+   "3": "kneeling: on both knees, slumped forward, the staff slanting down with its orb end resting on the ground at the lower-right, his empty right hand hanging",
+   "4": "falling back: torso tips back toward the upper-left, the orb-topped staff slips out of the hand, legs slide forward, the blue robe flaring",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the pointed blue hat still on his head; the orb-topped staff lies on the ground at the lower-right; the starry robe spread under him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the blue robe and the hat tip settle",
+   "7": "corpse: lying flat and still on his back, eyes closed, the orb-topped staff on the ground beside him"
+  }
+ }
+}

@@ -1,0 +1,105 @@
+{
+ "name": "freak",
+ "sprite": "m7/roster/units/unit_freak.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Freak (Fall from Heaven), a hulking hunched stitched mutant with mottled pale green-grey skin covered in red-brown stitches, a bald lumpy head with one narrow yellow eye and a lopsided jaw full of jagged teeth, a huge swollen hump on his right shoulder with a big round yellow extra eye and bony horn growths, a thin right arm with a rusty shackle and a dangling broken chain on the wrist, ragged brown rags with a rope belt, mud-brown boots, and his LEFT arm hugely swollen into a giant rust-orange crab claw studded with bony knobs",
+ "hands": "the giant crab claw is his left arm on the screen-right side and stays part of that arm in every frame; his right arm on the screen-left side is thin, ending in an empty clawed hand with the rusty shackle and broken chain hanging from its wrist",
+ "guide_style": "grey",
+ "scale": 1.03,
+ "head_r": 12,
+ "limb": 1.35,
+ "joints": {
+  "head": [
+   94,
+   52
+  ],
+  "neck": [
+   88,
+   64
+  ],
+  "chest": [
+   80,
+   70
+  ],
+  "pelvis": [
+   80,
+   85
+  ],
+  "r_sh": [
+   101,
+   62
+  ],
+  "r_el": [
+   106,
+   74
+  ],
+  "r_ha": [
+   109,
+   87
+  ],
+  "tip": [
+   116,
+   112
+  ],
+  "l_sh": [
+   60,
+   62
+  ],
+  "l_el": [
+   52,
+   76
+  ],
+  "l_ha": [
+   52,
+   96
+  ],
+  "r_hip": [
+   88,
+   90
+  ],
+  "r_kn": [
+   91,
+   100
+  ],
+  "r_ft": [
+   95,
+   114
+  ],
+  "l_hip": [
+   71,
+   90
+  ],
+  "l_kn": [
+   66,
+   100
+  ],
+  "l_ft": [
+   62,
+   117
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the crab-claw arm is lifted up over the head with the claw's pincers pointing up and back",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the crab claw cocked behind the head with its pincers hanging down behind the shoulders, the thin right hand an empty clawed fist tucked in, the chain swinging",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the claw arm sweeps over the head and the crab claw is level, its pincers pointing to the lower-right",
+   "4": "contact: claw arm fully extended toward the lower-right, the crab claw's pincers smashing down-right, front knee bent, body low and leaning in, the thin right arm with its chain swung back for balance",
+   "5": "follow-through: the crab claw carries on down until its pincers nearly touch the ground at the lower-right, torso twisted, the shoulder hump rolling forward",
+   "6": "recover: body rises, front foot pulls back halfway, the crab claw swings back toward its hanging rest beside the body"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, the eye squeezed shut, torso jolts back, both arms jerk outward (the thin right arm with its chain flung out to the left, the crab-claw arm thrown out to the right)",
+   "1": "recoil extreme: leaning back further, knees bent, the crab claw dipping, the thin right arm and its chain still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, the crab-claw arm flung up, the thin right arm drooping, the chain swinging",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the crab claw lowering",
+   "3": "kneeling: on both knees, slumped forward, the crab claw's pincers resting on the ground, the thin right arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the crab-claw arm falls limp toward the ground at the lower-right, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left; the crab-claw arm lies limp on the ground on the lower-right side, still part of his left arm; the shoulder hump squashed under him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the chain rattles",
+   "7": "corpse: lying flat and still on his back, the eye closed, the crab-claw arm limp on the ground beside him"
+  }
+ }
+}

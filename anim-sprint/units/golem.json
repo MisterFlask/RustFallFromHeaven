@@ -1,0 +1,54 @@
+{
+ "name": "golem",
+ "sprite": "m7/roster/units/unit_golem.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "an Iron Golem (Fall from Heaven), a massive hulking construct of dark riveted steel plates with rust streaks, bound by riveted bronze-gold bands: a round domed iron head with a bronze crest and a glowing orange visor slit for eyes, huge rounded shoulder plates, a bronze belt with a round gold buckle, thick armoured legs on big iron feet, and two huge clenched iron fists; it carries no weapon and strikes with its LEFT fist",
+ "hands": "no weapon: its left fist on the screen-right side is the striking fist, and its right fist on the screen-left side stays an empty clenched iron fist",
+ "guide_style": "grey",
+ "scale": 1.2,
+ "head_r": 12,
+ "limb": 1.8,
+ "joints": {
+  "head": [84, 34],
+  "neck": [85, 48],
+  "chest": [85, 60],
+  "pelvis": [85, 80],
+  "r_sh": [104, 48],
+  "r_el": [108, 70],
+  "r_ha": [119, 90],
+  "tip": [124, 101],
+  "l_sh": [60, 46],
+  "l_el": [44, 66],
+  "l_ha": [46, 92],
+  "r_hip": [95, 86],
+  "r_kn": [97, 98],
+  "r_ft": [100, 113],
+  "l_hip": [73, 86],
+  "l_kn": [63, 97],
+  "l_ft": [60, 114]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, the massive torso leans back, the left arm is lifted up over the domed head with the huge iron fist high",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the left iron fist cocked behind the domed head, the right fist tucked in",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the left arm sweeps up and over toward the lower-right with the huge iron fist high, about to come down",
+   "4": "contact: the left arm fully extended toward the lower-right, the huge iron fist smashing down-right, front knee bent, body low and leaning in, the right fist swung back for balance",
+   "5": "follow-through: the iron fist carries on down until it nearly touches the ground at the lower-right, the massive torso twisted, the shoulder plates rolling forward",
+   "6": "recover: body rises, front foot pulls back halfway, the left iron fist comes back up to hang at its side"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; the domed iron head snaps back toward the upper-left, the orange visor glow flickering, the heavy torso jolts back, both arms jerk outward (the right fist flung out to the left, the left fist thrown up and out)",
+   "1": "recoil extreme: leaning back further, knees bent, the left iron fist dipping, the right arm still out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, the massive body thrown back, the left iron fist flung up, the right arm drooping",
+   "2": "knees buckle: hips drop, knees fold forward, the torso slumps forward, the domed head droops, the visor glow dimming, the left fist lowering",
+   "3": "kneeling: on both knees, slumped forward, the left iron fist resting on the ground, the right arm hanging",
+   "4": "falling back: the torso tips back toward the upper-left, both iron arms going limp, legs slide forward",
+   "5": "hits the ground: lying on its back along the ground, feet toward the lower-right and head toward the upper-left; the heavy iron arms flung out at its sides, nothing in its fists",
+   "6": "bounce: the domed head and the shoulders lift slightly off the ground, the heavy plates rock",
+   "7": "corpse: lying flat and still on its back, the visor slit dark and cold, the iron fists open on the ground beside it"
+  }
+ }
+}

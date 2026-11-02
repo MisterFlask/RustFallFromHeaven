@@ -1,0 +1,105 @@
+{
+ "name": "amurites_worker",
+ "sprite": "m7/roster/units/unit_amurites_worker.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "an Amurite Worker (Fall from Heaven), a young human labourer: short black hair under a wide royal-blue wizard hat with a silver star, a royal-blue vest with white trim over a white rolled-sleeve shirt, bare tan forearms, a brown belt, blue trousers and brown leather boots, and a long wooden hoe with a grey iron blade, gripped by the end of its handle in his RIGHT hand",
+ "hands": "the hoe's handle end stays in his right hand on the screen-left side; at rest his left hand on the screen-right side also holds the handle lower down, but during the action it lets go and is an empty fist",
+ "guide_style": "grey",
+ "scale": 0.8,
+ "head_r": 10,
+ "limb": 1.05,
+ "joints": {
+  "head": [
+   78,
+   64
+  ],
+  "neck": [
+   79,
+   72
+  ],
+  "chest": [
+   78,
+   79
+  ],
+  "pelvis": [
+   77,
+   87
+  ],
+  "r_sh": [
+   62,
+   73
+  ],
+  "r_el": [
+   56,
+   80
+  ],
+  "r_ha": [
+   62,
+   85
+  ],
+  "tip": [
+   106,
+   109
+  ],
+  "l_sh": [
+   85,
+   74
+  ],
+  "l_el": [
+   87,
+   86
+  ],
+  "l_ha": [
+   89,
+   97
+  ],
+  "r_hip": [
+   70,
+   92
+  ],
+  "r_kn": [
+   58,
+   104
+  ],
+  "r_ft": [
+   54,
+   117
+  ],
+  "l_hip": [
+   83,
+   92
+  ],
+  "l_kn": [
+   80,
+   105
+  ],
+  "l_ft": [
+   80,
+   118
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back toward the upper-left, the left hand lets go of the handle, the hoe is raised above the head with its handle held across the top of the hat and the iron blade out past the hat brim on the right",
+   "2": "wind-up extreme: body coiled back and crouched, the hoe hand behind the head and the hoe's handle hanging down behind the shoulders to the left, the iron blade at its lower end, the left hand an empty fist tucked across the belly",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips round, the hoe arm sweeps across in front of the chest and the hoe's handle is level, its iron blade at the far end pointing to the right, the left hand an empty fist",
+   "4": "contact: hoe arm fully extended toward the lower-right, the hoe's iron blade chopping down-right, front knee bent, body low and leaning in, the empty left fist swung back behind the shoulders for balance",
+   "5": "follow-through: the hoe carries on down until its iron blade nearly touches the ground at the lower-right, torso twisted, the wide hat brim tilting, the empty left fist trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the hoe comes back toward its resting angle, held low in front with the iron blade near the ground at the lower-right, the left hand reaching for the handle"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (the hoe hand thrown out to the left with the hoe's handle swung level across the chest, the empty left fist flung out to the right)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the hoe held across the body with its blade end tilted up to the right, the empty left fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, hoe arm flung up with the hoe slanting down across the body, the empty left fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the hoe lowering, the empty left fist hanging",
+   "3": "kneeling: on both knees, slumped forward, the hoe's iron blade resting on the ground at the lower-right, the empty left arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the hoe slips out of the hand, the wide blue hat tipping, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the wide blue hat still on his head; the hoe lies on the ground at the lower-right",
+   "6": "bounce: head and shoulders lift slightly off the ground, the wide blue hat stays on",
+   "7": "corpse: lying flat and still on his back, eyes closed, the hoe on the ground beside him"
+  }
+ }
+}

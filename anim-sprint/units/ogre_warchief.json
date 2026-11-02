@@ -1,0 +1,105 @@
+{
+ "name": "ogre_warchief",
+ "sprite": "m7/roster/units/unit_ogre_warchief.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "an Ogre Warchief (Fall from Heaven), a huge hulking green ogre with jutting lower tusks, red war-paint stripes on his face, chest and arms, a dark iron horned helmet with two curved bone horns, a small skull on the brow and a black plume, a necklace of bone fangs with a skull pendant, a black spiked iron pauldron and a shaggy brown fur mantle on his screen-left shoulder, a tattered orange cape hanging behind him on the screen-left, fur bracers studded with bone fangs, a round iron belt buckle over a brown fur kilt with an orange loincloth, fur leg wraps and bare green feet, and a giant wooden club studded with iron spikes held by its handle in his LEFT hand (screen-right), resting across his shoulders with the spiked head behind him at the upper-left",
+ "hands": "the spiked club stays in his left hand on the screen-right side and his right hand is an empty fist hanging at his side on the screen-left side",
+ "guide_style": "grey",
+ "scale": 1.17,
+ "head_r": 12,
+ "limb": 1.4,
+ "joints": {
+  "head": [
+   86,
+   37
+  ],
+  "neck": [
+   87,
+   50
+  ],
+  "chest": [
+   87,
+   62
+  ],
+  "pelvis": [
+   87,
+   80
+  ],
+  "r_sh": [
+   103,
+   47
+  ],
+  "r_el": [
+   120,
+   64
+  ],
+  "r_ha": [
+   116,
+   41
+  ],
+  "tip": [
+   32,
+   16
+  ],
+  "l_sh": [
+   52,
+   52
+  ],
+  "l_el": [
+   46,
+   71
+  ],
+  "l_ha": [
+   47,
+   89
+  ],
+  "r_hip": [
+   98,
+   84
+  ],
+  "r_kn": [
+   105,
+   98
+  ],
+  "r_ft": [
+   107,
+   115
+  ],
+  "l_hip": [
+   75,
+   84
+  ],
+  "l_kn": [
+   63,
+   99
+  ],
+  "l_ft": [
+   57,
+   115
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the spiked club is lifted up over the head with its spiked head pointing up and back",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the spiked club cocked behind the head with its spiked head hanging down behind the shoulders to the left, his empty right fist tucked in",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the club arm sweeps over the head and the spiked club is level, its spiked head pointing to the lower-right",
+   "4": "contact: club arm fully extended toward the lower-right, the spiked club head smashing down-right, front knee bent, body low and leaning in, his empty right fist swung back for balance",
+   "5": "follow-through: the spiked club carries on down until its spiked head nearly touches the ground at the lower-right, torso twisted, the black plume and the orange cape trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the spiked club lifts back up toward his shoulder"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (his empty right fist flung out to the left, the club arm thrown up and out to the right)",
+   "1": "recoil extreme: leaning back further, knees bent, the spiked club dipping, his empty right fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, the club arm flung up, his empty right fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the spiked club lowering",
+   "3": "kneeling: on both knees, slumped forward, the club's spiked head resting on the ground, his empty right arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the spiked club slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the horned helmet still on his head; the spiked club lies on the ground at the lower-right; the orange cape spread under him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the orange cape and the fur mantle settle",
+   "7": "corpse: lying flat and still on his back, eyes closed, the spiked club on the ground beside him"
+  }
+ }
+}

@@ -1,0 +1,105 @@
+{
+ "name": "barnaxus",
+ "sprite": "m7/roster/units/unit_barnaxus.png",
+ "facing": "lower-left",
+ "tag": "anim/units",
+ "description": "Barnaxus, the Luchuirp golem hero: a tall clockwork construct of bronze-gold plates with green patina and gear-shaped joints, glowing blue eyes in a narrow helm-like face, a green crest fin on top of the head, a sapphire set in the chest plate, a blue cloth sash hanging down the front, a big grey stone warhammer with gold bands and a gear emblem on a long bronze haft held upright in his LEFT hand, and a rolled parchment scroll in his RIGHT hand",
+ "hands": "the warhammer stays in his left hand on the screen-right side, gripped round the middle of its haft, and the rolled scroll stays in his right fist on the screen-left side",
+ "guide_style": "grey",
+ "scale": 1.19,
+ "head_r": 10,
+ "limb": 1.35,
+ "joints": {
+  "head": [
+   75,
+   30
+  ],
+  "neck": [
+   75,
+   41
+  ],
+  "chest": [
+   77,
+   52
+  ],
+  "pelvis": [
+   74,
+   75
+  ],
+  "r_sh": [
+   90,
+   46
+  ],
+  "r_el": [
+   89,
+   61
+  ],
+  "r_ha": [
+   102,
+   61
+  ],
+  "tip": [
+   106,
+   41
+  ],
+  "l_sh": [
+   57,
+   46
+  ],
+  "l_el": [
+   55,
+   60
+  ],
+  "l_ha": [
+   43,
+   63
+  ],
+  "r_hip": [
+   84,
+   79
+  ],
+  "r_kn": [
+   86,
+   96
+  ],
+  "r_ft": [
+   88,
+   111
+  ],
+  "l_hip": [
+   64,
+   79
+  ],
+  "l_kn": [
+   60,
+   95
+  ],
+  "l_ft": [
+   56,
+   112
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back toward the upper-right, the warhammer is lifted high above the head with its stone head pointing up",
+   "2": "wind-up extreme: body coiled back and crouched, the hammer hand behind the head and the warhammer's stone head hanging down behind the shoulders to the right, the scroll held in the right fist tucked across the belly",
+   "3": "swing: the front foot steps toward the lower-left, the torso whips round, the hammer arm sweeps across in front of the chest and the warhammer is level, its stone head pointing to the left",
+   "4": "contact: hammer arm fully extended toward the lower-left, the warhammer's stone head smashing down-left, front knee bent, body low and leaning in, the scroll arm swung back behind the shoulders for balance with the scroll still in the right fist",
+   "5": "follow-through: the warhammer carries on down until its stone head nearly touches the ground at the lower-left, torso twisted, the green head crest leaning back",
+   "6": "recover: body rises, front foot pulls back halfway, the warhammer comes back up on the near side toward its upright ready angle, the scroll held across the belly"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-left; head snaps back toward the upper-right, the glowing blue eyes flare, torso jolts back, both arms jerk outward (hammer arm thrown up and out to the right, the scroll hand flung out to the left)",
+   "1": "recoil extreme: leaning back further toward the upper-right, knees bent, the warhammer dipping, the scroll hand still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-right, body thrown back, hammer arm flung up, the scroll arm drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the warhammer lowering, the scroll hanging from the right hand",
+   "3": "kneeling: on both knees, slumped forward, the warhammer's stone head resting on the ground at the lower-left, the scroll arm hanging",
+   "4": "falling back: torso tips back toward the upper-right, the warhammer slips out of the hand, the scroll drops, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-left and head toward the upper-right, the green head crest on the ground; the warhammer lies on the ground at the lower-left; the scroll lies beside him",
+   "6": "bounce: head and shoulders lift slightly off the ground with a clank, the blue sash settles",
+   "7": "corpse: lying flat and still on his back, the eyes dark and unlit, the warhammer and the scroll on the ground beside him"
+  }
+ }
+}

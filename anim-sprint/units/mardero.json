@@ -1,0 +1,98 @@
+{
+ "name": "mardero",
+ "sprite": "m7/roster/units/unit_mardero.png",
+ "facing": "lower-left",
+ "tag": "anim/units",
+ "body_plan": "caster",
+ "description": "Mardero (Fall from Heaven), the Calabim vampire hero and disciple: a tall grey-skinned vampire with two big curved dark horns, long black hair, a pale face with glowing red eyes, large dark-red bat wings spread behind him on both sides, a spiked black collar and spiked black pauldrons, black and crimson robes with a long red front panel and a bone-white belt buckle, black spiked boots; a crackling magenta-and-green magic orb held up in his RIGHT hand on the screen-left side and a jagged black sword with a red edge pointing down in his LEFT hand on the screen-right side",
+ "hands": "the magenta magic orb stays in his right hand on the screen-left side and the jagged black sword stays in his left hand on the screen-right side, its point toward the ground",
+ "guide_style": "grey",
+ "scale": 1.17,
+ "head_r": 10,
+ "limb": 1.1,
+ "joints": {
+  "head": [
+   72,
+   35
+  ],
+  "neck": [
+   74,
+   44
+  ],
+  "chest": [
+   75,
+   52
+  ],
+  "pelvis": [
+   77,
+   69
+  ],
+  "r_sh": [
+   60,
+   49
+  ],
+  "r_el": [
+   58,
+   59
+  ],
+  "r_ha": [
+   46,
+   61
+  ],
+  "tip": [
+   44,
+   44
+  ],
+  "l_sh": [
+   92,
+   49
+  ],
+  "l_el": [
+   95,
+   63
+  ],
+  "l_ha": [
+   104,
+   78
+  ],
+  "r_hip": [
+   70,
+   75
+  ],
+  "r_kn": [
+   61,
+   99
+  ],
+  "r_ft": [
+   56,
+   116
+  ],
+  "l_hip": [
+   85,
+   75
+  ],
+  "l_kn": [
+   88,
+   100
+  ],
+  "l_ft": [
+   90,
+   115
+  ]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-left; head snaps back toward the upper-right, red eyes squeezed shut, torso jolts back, both arms jerk outward (the black sword in his left hand flung out to the right, the right hand thrown up and out to the left with the magenta orb flaring in it), the bat wings jolting open",
+   "1": "recoil extreme: leaning back further, knees bent, the magenta orb dipping in the right hand, the black sword still held out in the left hand, wings half spread"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, the right hand flung up with the magenta orb flickering in it, the black sword drooping in the left hand, wings flaring",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, the horned head droops, the orb dimming and lowering in the right hand, wings sagging",
+   "3": "kneeling: on both knees, slumped forward, the dim orb held low in front of him in the right hand, the black sword hanging from the left hand with its point on the ground, wings drooping",
+   "4": "falling back: torso tips back toward the upper-right, the dim orb rolls out of the right hand and the black sword slips from the left hand, legs slide forward, wings crumpling",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-left and head toward the upper-right, horns on the ground; the dark orb and the black sword lie on the ground at the lower-left; the bat wings spread flat under him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the wings settle",
+   "7": "corpse: lying flat and still on his back, eyes closed, the burnt-out dark orb and the black sword on the ground beside him, the bat wings spread flat"
+  }
+ }
+}

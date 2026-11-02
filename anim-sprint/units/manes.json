@@ -1,0 +1,105 @@
+{
+ "name": "manes",
+ "sprite": "m7/roster/units/unit_manes.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Manes (Fall from Heaven), the lowest of demons: a gaunt, hunched, yellow-green creature with two small curved horns, big pointed ears with orange insides, glowing yellow eyes, a fanged underbite, a pot belly, long dangling arms ending in bony clawed hands, a ragged brown loincloth, bare clawed feet, and a barbed tail with a brown arrowhead tip curling out behind him on the screen-left side; he has no weapon and strikes with the claws of his LEFT hand",
+ "hands": "he has no weapon: his clawed left hand on the screen-right side is the one that strikes, its claws just past the fist, and his clawed right hand on the screen-left side is an empty clawed hand hanging low",
+ "guide_style": "grey",
+ "scale": 0.72,
+ "head_r": 12,
+ "limb": 0.9,
+ "joints": {
+  "head": [
+   95,
+   74
+  ],
+  "neck": [
+   87,
+   85
+  ],
+  "chest": [
+   82,
+   93
+  ],
+  "pelvis": [
+   81,
+   101
+  ],
+  "r_sh": [
+   92,
+   88
+  ],
+  "r_el": [
+   102,
+   99
+  ],
+  "r_ha": [
+   104,
+   108
+  ],
+  "tip": [
+   106,
+   115
+  ],
+  "l_sh": [
+   73,
+   84
+  ],
+  "l_el": [
+   67,
+   96
+  ],
+  "l_ha": [
+   76,
+   110
+  ],
+  "r_hip": [
+   86,
+   102
+  ],
+  "r_kn": [
+   90,
+   111
+  ],
+  "r_ft": [
+   93,
+   119
+  ],
+  "l_hip": [
+   75,
+   102
+  ],
+  "l_kn": [
+   67,
+   111
+  ],
+  "l_ft": [
+   67,
+   120
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the clawed left hand is raised up over the horned head, its claws pointing up and back",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the clawed left hand cocked back behind the head with its claws spread, the empty clawed right hand tucked in low",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the clawed left arm sweeps over the head and is level, its claws pointing to the lower-right",
+   "4": "contact: the clawed left arm fully extended toward the lower-right, its claws raking down-right, front knee bent, body low and leaning in, the empty clawed right hand swung back for balance",
+   "5": "follow-through: the clawed left hand carries on down until its claws nearly touch the ground at the lower-right, torso twisted, the pointed ears and the barbed tail trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the clawed left hand swings back toward its low hanging rest"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, glowing yellow eyes squeezed shut, fangs bared, torso jolts back, both clawed arms jerk outward (the empty clawed right hand flung out to the left, the clawed left hand thrown out to the right), the barbed tail lashing",
+   "1": "recoil extreme: leaning back further, knees bent, the clawed left hand dipping, the clawed right hand still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, the clawed left hand flung up, the empty clawed right hand drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, the horned head droops, the clawed left hand lowering",
+   "3": "kneeling: on both knees, slumped forward, the claws of the left hand resting on the ground, the empty clawed right arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, both clawed hands go limp and empty, legs slide forward, the barbed tail flailing",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, horns and ears on the ground; both clawed hands lie limp and empty; the barbed tail stretched out on the ground",
+   "6": "bounce: head and shoulders lift slightly off the ground, the tail twitches",
+   "7": "corpse: lying flat and still on his back, eyes closed and dark, clawed hands limp at his sides, the barbed tail lying still beside him"
+  }
+ }
+}

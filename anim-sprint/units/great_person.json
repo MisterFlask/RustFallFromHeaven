@@ -1,0 +1,54 @@
+{
+ "name": "great_person",
+ "sprite": "m7/roster/units/unit_great_person.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Great Person (Fall from Heaven), a grey-bearded old scholar with grey hair: a long purple robe with gold trim and a broad gold sash, a purple cap with a gold band, a small brown pouch at the belt, brown boots, a long white quill pen raised in his RIGHT hand and an open parchment scroll in his LEFT hand; he carries no weapon, so he fights with the quill",
+ "hands": "the white quill stays in his right hand on the screen-left side, held like a little dagger; his left hand on the screen-right side keeps hold of the parchment scroll",
+ "guide_style": "grey",
+ "scale": 0.9,
+ "head_r": 9,
+ "limb": 1.0,
+ "joints": {
+  "head": [75, 56],
+  "neck": [76, 65],
+  "chest": [77, 74],
+  "pelvis": [76, 84],
+  "r_sh": [64, 66],
+  "r_el": [56, 79],
+  "r_ha": [55, 68],
+  "tip": [45, 46],
+  "l_sh": [88, 68],
+  "l_el": [93, 84],
+  "l_ha": [106, 79],
+  "r_hip": [70, 88],
+  "r_kn": [65, 102],
+  "r_ft": [60, 116],
+  "l_hip": [82, 88],
+  "l_kn": [85, 102],
+  "l_ft": [86, 116]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back toward the upper-left, the long white quill is lifted beside the head with its feathered end pointing up and back",
+   "2": "wind-up extreme: body coiled back and crouched, the quill hand behind the head and the white quill hanging down behind the shoulders to the left, the scroll held across the belly in the left hand",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips round, the quill arm sweeps across in front of the chest and the long white quill is level, pointing to the right",
+   "4": "contact: quill arm fully extended toward the lower-right, the white quill swiping down-right with a flourish, front knee bent, body low and leaning in, the scroll arm swung back behind the shoulders for balance",
+   "5": "follow-through: the quill carries on down until its feathered end nearly touches the ground at the lower-right, torso twisted, the grey beard and the robe trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the quill comes back up on the near side toward the ready angle, the scroll held across the belly"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (the quill arm thrown up and out to the left, the scroll flung out to the right)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent under the purple robe, the quill dipping, the scroll still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, the quill arm flung up, the scroll arm drooping",
+   "2": "knees buckle: hips drop, knees fold forward under the robe, torso slumps forward, head droops, the quill lowering",
+   "3": "kneeling: on both knees, slumped forward, the feathered end of the quill resting on the ground at the lower-right, the scroll arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the quill slips out of the hand, the scroll falls, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left; the white quill lies on the ground at the lower-right; the parchment scroll lies beside him, the purple robe spread under him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the robe settles",
+   "7": "corpse: lying flat and still on his back, eyes closed, the grey beard on his chest, the quill and the scroll on the ground beside him"
+  }
+ }
+}

@@ -1,0 +1,54 @@
+{
+ "name": "grigori_settler",
+ "sprite": "m7/roster/units/unit_grigori_settler.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Grigori Settler, a young human pioneer: tousled brown hair, a teal scarf, a teal tunic under a brown leather jerkin with straps, a brass buckle and pouches at the belt, brown trousers and brown boots, a big tan canvas backpack on his back topped with a rolled teal bedroll, a coil of rope on its side and a brass lantern hanging from it at the screen-left, and a tall crooked wooden walking staff in his LEFT hand",
+ "hands": "the walking staff stays upright in his left hand on the screen-right side and his right hand on the screen-left side grips the backpack strap at his chest as an empty fist",
+ "guide_style": "grey",
+ "scale": 0.94,
+ "head_r": 10,
+ "limb": 1.05,
+ "joints": {
+  "head": [85, 56],
+  "neck": [83, 67],
+  "chest": [81, 77],
+  "pelvis": [80, 88],
+  "r_sh": [93, 70],
+  "r_el": [97, 80],
+  "r_ha": [105, 78],
+  "tip": [108, 50],
+  "l_sh": [72, 70],
+  "l_el": [63, 80],
+  "l_ha": [70, 79],
+  "r_hip": [86, 94],
+  "r_kn": [89, 104],
+  "r_ft": [89, 116],
+  "l_hip": [74, 94],
+  "l_kn": [69, 104],
+  "l_ft": [65, 116]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the walking staff is lifted up over the head with its crooked top end pointing up and back, the big backpack on his back",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the walking staff cocked behind the head with its crooked top end hanging down behind the shoulders, the empty right fist tucked in at the backpack strap",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the arm sweeps over the head and the walking staff is level, its crooked top end pointing to the lower-right",
+   "4": "contact: staff arm fully extended toward the lower-right, the crooked top end of the walking staff smashing down-right, front knee bent, body low and leaning in, the empty right fist swung back for balance",
+   "5": "follow-through: the walking staff carries on down until its crooked top end nearly touches the ground at the lower-right, torso twisted, hair trailing back, the backpack and the lantern swinging",
+   "6": "recover: body rises, front foot pulls back halfway, the walking staff lifts back toward its upright ready angle"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (the empty right fist flung out to the left, the staff arm thrown up and out with the walking staff tilted up)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the walking staff tilting out to the right, the empty right fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, staff arm flung up holding the walking staff high, the empty right fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the walking staff lowering, the heavy backpack dragging at his shoulders",
+   "3": "kneeling: on both knees, slumped forward, the crooked top end of the walking staff resting on the ground at the lower-right, the empty right arm hanging",
+   "4": "falling back: torso tips back toward the upper-left onto the big backpack, the walking staff slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the big backpack under his shoulders; the walking staff lies on the ground at the lower-right",
+   "6": "bounce: head and shoulders lift slightly off the ground, the teal bedroll and the lantern settle",
+   "7": "corpse: lying flat and still on his back over the backpack, eyes closed, the walking staff on the ground beside him"
+  }
+ }
+}

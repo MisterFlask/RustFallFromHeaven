@@ -1,0 +1,111 @@
+{
+ "name": "beastman",
+ "sprite": "m7/roster/units/unit_beastman.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Beastman, a hunched wolf-headed warrior: shaggy grey-brown fur and a wild mane, a wolf's snout with bared white teeth and a red open mouth, a yellow eye, a pointed ear, blue war-paint stripes on the face and chest, a necklace of teeth, a fur loincloth hung with bone fangs, fur-wrapped forearms and shins, clawed feet, a big wooden club studded with bone spikes raised in his RIGHT hand and a round wooden shield with a brown hide centre and a wooden rim on his LEFT arm",
+ "hands": "the club stays in his right hand on the screen-left side and the shield on his left arm on the screen-right side",
+ "guide_style": "grey",
+ "scale": 0.87,
+ "head_r": 11,
+ "limb": 1.25,
+ "joints": {
+  "head": [
+   87,
+   65
+  ],
+  "neck": [
+   84,
+   75
+  ],
+  "chest": [
+   82,
+   81
+  ],
+  "pelvis": [
+   83,
+   93
+  ],
+  "r_sh": [
+   72,
+   68
+  ],
+  "r_el": [
+   59,
+   77
+  ],
+  "r_ha": [
+   61,
+   64
+  ],
+  "tip": [
+   51,
+   36
+  ],
+  "l_sh": [
+   94,
+   76
+  ],
+  "l_el": [
+   97,
+   86
+  ],
+  "l_ha": [
+   101,
+   92
+  ],
+  "r_hip": [
+   75,
+   95
+  ],
+  "r_kn": [
+   65,
+   103
+  ],
+  "r_ft": [
+   60,
+   114
+  ],
+  "l_hip": [
+   90,
+   96
+  ],
+  "l_kn": [
+   95,
+   106
+  ],
+  "l_ft": [
+   99,
+   116
+  ],
+  "shield": [
+   105,
+   91,
+   9,
+   15
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back toward the upper-left, the club is lifted high beside the head with its spiked head pointing up and back",
+   "2": "wind-up extreme: body coiled back and crouched, the club hand behind the head and the spiked club hanging down behind the shoulders to the left, shield tucked across the belly",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips round, the club arm sweeps across in front of the chest and the club is level, its spiked head pointing to the right",
+   "4": "contact: club arm fully extended toward the lower-right, the spiked club smashing down-right, front knee bent, body low and leaning in, shield arm swung back behind the shoulders for balance",
+   "5": "follow-through: the club carries on down until its spiked head nearly touches the ground at the lower-right, torso twisted, the shaggy mane trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the club comes back up on the near side toward its raised ready angle, shield tucked across the belly"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; the wolf head snaps back toward the upper-left, eyes squeezed shut, jaws open, torso jolts back, both arms jerk outward (club arm thrown up and out to the left, shield flung out to the right)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the club still held up to the upper-left, shield still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, club arm flung up, shield drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, the wolf head droops, the club lowering",
+   "3": "kneeling: on both knees, slumped forward, the club's spiked head resting on the ground at the lower-right, shield arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the club slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the shaggy mane spread on the ground; the club lies on the ground at the lower-right; the shield lies flat beside him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the shield rocks, the mane settles",
+   "7": "corpse: lying flat and still on his back, eyes closed, jaws slack, club and shield on the ground beside him"
+  }
+ }
+}

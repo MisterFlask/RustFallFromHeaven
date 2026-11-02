@@ -1,0 +1,105 @@
+{
+ "name": "demagog",
+ "sprite": "m7/roster/units/unit_demagog.png",
+ "facing": "lower-left",
+ "tag": "anim/units",
+ "description": "a Demagog, a fanatical rabble-rousing zealot of a holy crusade: wild messy brown hair and a scraggly beard, wild eyes and an open shouting mouth, a dirty off-white tattered robe torn over a grey chain-mail shirt, a bright red armband on his left arm and a red rope sash, bare legs and brown sandals, a spiked wooden club studded with steel raised high in his LEFT hand, and a crude wooden holy cross on a beaded cord clutched in his RIGHT hand",
+ "hands": "the spiked club stays in his left hand on the screen-right side and his right hand on the screen-left side keeps clutching the wooden holy cross on its cord",
+ "guide_style": "grey",
+ "scale": 0.83,
+ "head_r": 10,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   77,
+   66
+  ],
+  "neck": [
+   80,
+   78
+  ],
+  "chest": [
+   80,
+   87
+  ],
+  "pelvis": [
+   80,
+   96
+  ],
+  "r_sh": [
+   92,
+   73
+  ],
+  "r_el": [
+   99,
+   74
+  ],
+  "r_ha": [
+   106,
+   60
+  ],
+  "tip": [
+   90,
+   38
+  ],
+  "l_sh": [
+   69,
+   82
+  ],
+  "l_el": [
+   62,
+   87
+  ],
+  "l_ha": [
+   58,
+   78
+  ],
+  "r_hip": [
+   86,
+   98
+  ],
+  "r_kn": [
+   92,
+   108
+  ],
+  "r_ft": [
+   95,
+   119
+  ],
+  "l_hip": [
+   74,
+   98
+  ],
+  "l_kn": [
+   70,
+   108
+  ],
+  "l_ft": [
+   67,
+   119
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back toward the upper-right, the spiked wooden club is lifted beside the head with its studded head pointing up and back, mouth open in a shout",
+   "2": "wind-up extreme: body coiled back and crouched, the club hand behind the head and the studded club head hanging down behind the shoulders to the right, the right fist with the wooden cross tucked across the belly",
+   "3": "swing: the front foot steps toward the lower-left, the torso whips round, the club arm sweeps across in front of the chest and the club is level, its studded head pointing to the left",
+   "4": "contact: club arm fully extended toward the lower-left, the spiked club head smashing down-left, front knee bent, body low and leaning in, the right fist with the wooden cross swung back behind the shoulders for balance",
+   "5": "follow-through: the club carries on down until its studded head nearly touches the ground at the lower-left, torso twisted, wild hair and torn robe trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the club comes back up on the near side toward the raised ready angle, the wooden cross held out in the right fist"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-left; head snaps back toward the upper-right, eyes squeezed shut, torso jolts back, both arms jerk outward (club arm thrown up and out to the right, the right fist with the wooden cross flung out to the left)",
+   "1": "recoil extreme: leaning back further toward the upper-right, knees bent, the club dipping, the wooden cross still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-right, body thrown back, club arm flung up, the arm with the wooden cross drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the club lowering",
+   "3": "kneeling: on both knees, slumped forward, the club's studded head resting on the ground at the lower-left, the arm with the wooden cross hanging",
+   "4": "falling back: torso tips back toward the upper-right, the club slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-left and head toward the upper-right; the spiked club lies on the ground at the lower-left; the wooden cross on its cord lies beside him; the torn robe spread around him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the torn robe settles",
+   "7": "corpse: lying flat and still on his back, eyes closed, the spiked club and the wooden cross on the ground beside him"
+  }
+ }
+}

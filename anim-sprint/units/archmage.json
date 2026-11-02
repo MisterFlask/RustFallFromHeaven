@@ -1,0 +1,99 @@
+{
+ "name": "archmage",
+ "sprite": "m7/roster/units/unit_archmage.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "body_plan": "caster",
+ "description": "an Archmage (Fall from Heaven), an old wizard with long flowing white hair, bushy white eyebrows and a long white beard down to his belt, deep red robes with wide sleeves, gold trim and gold key-pattern borders, a high gold-trimmed collar, a gold sash with a square buckle at the waist, brown shoes, and a tall golden staff with a twisted shaft and a crescent head cradling a glowing yellow orb with a few yellow sparkles, held upright in his LEFT hand; his RIGHT hand is open and empty, raised in front of his chest",
+ "hands": "the golden orb staff stays upright in his left hand on the screen-right side and his right hand is an empty open hand on the screen-left side",
+ "guide_style": "grey",
+ "scale": 0.92,
+ "head_r": 10,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   73,
+   55
+  ],
+  "neck": [
+   74,
+   65
+  ],
+  "chest": [
+   75,
+   74
+  ],
+  "pelvis": [
+   76,
+   84
+  ],
+  "r_sh": [
+   86,
+   67
+  ],
+  "r_el": [
+   92,
+   82
+  ],
+  "r_ha": [
+   98,
+   74
+  ],
+  "tip": [
+   101,
+   42
+  ],
+  "l_sh": [
+   60,
+   67
+  ],
+  "l_el": [
+   55,
+   83
+  ],
+  "l_ha": [
+   63,
+   78
+  ],
+  "r_hip": [
+   81,
+   88
+  ],
+  "r_kn": [
+   82,
+   104
+  ],
+  "r_ft": [
+   83,
+   120
+  ],
+  "l_hip": [
+   70,
+   88
+  ],
+  "l_kn": [
+   63,
+   104
+  ],
+  "l_ft": [
+   57,
+   120
+  ]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (the empty right hand flung out to the left, the staff arm thrown up and out with the golden orb staff tilting), the white beard and wide red sleeves flying",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent under the robe, the golden orb staff dipping, the empty right hand still held out to the left",
+   "2": "recovering: halfway back to the ready pose, the golden orb staff coming back upright in his left hand"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, the staff arm flung up holding the golden orb staff high, the empty right hand drooping",
+   "2": "knees buckle: hips drop, knees fold forward under the red robe, torso slumps forward, head and white beard droop, the golden orb staff lowering",
+   "3": "kneeling: on both knees, slumped forward, the golden staff slanting down with its orb head resting on the ground at the lower-right, the orb's glow fading, the empty right arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the golden orb staff slips out of the left hand, legs slide forward under the red robe",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the white beard on his chest; the golden staff lies on the ground at the lower-right, its orb dark; the red robe spread around him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the white hair, beard and red robe settle",
+   "7": "corpse: lying flat and still on his back, eyes closed, the white beard on his chest, the golden staff with its dark orb on the ground beside him"
+  }
+ }
+}

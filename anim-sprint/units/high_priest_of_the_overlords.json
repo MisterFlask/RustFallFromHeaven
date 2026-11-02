@@ -1,0 +1,98 @@
+{
+ "name": "high_priest_of_the_overlords",
+ "sprite": "m7/roster/units/unit_high_priest_of_the_overlords.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "body_plan": "caster",
+ "description": "a High Priest of the Overlords, an octopus-headed priest: a tall teal octopus head curling back at the top, glowing pale-cyan eyes, a beard of teal tentacles hanging over his chest, a high teal collar, flowing purple-and-teal robes with cream swirl trim and wide sleeves, a bead necklace with a red coral pendant and a cream pearl, and a branching red coral staff topped with a big cyan eye in his RIGHT hand",
+ "hands": "the coral staff stays upright in his right hand on the screen-left side and his left hand on the screen-right side is open, palm up, in a casting gesture",
+ "guide_style": "grey",
+ "scale": 1.0,
+ "head_r": 12,
+ "limb": 1.05,
+ "joints": {
+  "head": [
+   85,
+   50
+  ],
+  "neck": [
+   85,
+   63
+  ],
+  "chest": [
+   85,
+   75
+  ],
+  "pelvis": [
+   85,
+   93
+  ],
+  "r_sh": [
+   71,
+   68
+  ],
+  "r_el": [
+   65,
+   86
+  ],
+  "r_ha": [
+   60,
+   77
+  ],
+  "tip": [
+   59,
+   32
+  ],
+  "l_sh": [
+   99,
+   67
+  ],
+  "l_el": [
+   103,
+   88
+  ],
+  "l_ha": [
+   110,
+   80
+  ],
+  "r_hip": [
+   78,
+   96
+  ],
+  "r_kn": [
+   74,
+   108
+  ],
+  "r_ft": [
+   70,
+   120
+  ],
+  "l_hip": [
+   92,
+   96
+  ],
+  "l_kn": [
+   98,
+   108
+  ],
+  "l_ft": [
+   104,
+   120
+  ]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, glowing eyes squeezed shut, the face tentacles swinging, torso jolts back, both arms jerk outward (the staff arm thrown up and out to the left with the red coral staff, the open left hand flung out to the right)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the coral staff dipping, the open left hand still held out, the face tentacles swinging"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, the staff arm flung up with the red coral staff, the open left hand drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, the octopus head droops, the face tentacles hanging, the coral staff lowering",
+   "3": "kneeling: on both knees, slumped forward, the coral staff slanting down with its eye-topped head resting on the ground at the lower-right, the left arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the coral staff slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the octopus head on the ground; the red coral staff lies on the ground at the lower-right; the purple-and-teal robe spread under him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the face tentacles and the robe settle",
+   "7": "corpse: lying flat and still on his back, eyes dark, the face tentacles limp, the red coral staff on the ground beside him"
+  }
+ }
+}

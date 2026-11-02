@@ -1,0 +1,98 @@
+{
+ "name": "nightwatch",
+ "sprite": "m7/roster/units/unit_nightwatch.png",
+ "facing": "lower-left",
+ "tag": "anim/units",
+ "body_plan": "ranged",
+ "description": "a Nightwatch (Fall from Heaven), a secret cloaked watchman of the Council of Esus: a deep charcoal-grey hooded cloak with the hood up, a little orange hair and the eyes showing under the hood, a deep crimson scarf over the lower face with long crimson tails hanging down the front, a small silver mask-shaped badge pinned on the cloak, dark leather armour with brown straps and belt, brown leather bracers, black-and-brown boots, a small brass hooded lantern with a bright amber window raised in his RIGHT hand, and a recurved wooden shortbow with an arrow nocked, held low in his LEFT hand with the arrow pointing to the right",
+ "hands": "the shortbow, with an arrow nocked, stays in his left hand on the screen-right side, held low at his hip; his right hand on the screen-left side holds the brass lantern up beside him",
+ "guide_style": "grey",
+ "scale": 0.94,
+ "head_r": 10,
+ "limb": 1.05,
+ "joints": {
+  "head": [
+   65,
+   58
+  ],
+  "neck": [
+   68,
+   69
+  ],
+  "chest": [
+   71,
+   77
+  ],
+  "pelvis": [
+   74,
+   89
+  ],
+  "r_sh": [
+   84,
+   73
+  ],
+  "r_el": [
+   88,
+   84
+  ],
+  "r_ha": [
+   99,
+   91
+  ],
+  "tip": [
+   107,
+   66
+  ],
+  "l_sh": [
+   63,
+   72
+  ],
+  "l_el": [
+   55,
+   80
+  ],
+  "l_ha": [
+   45,
+   75
+  ],
+  "r_hip": [
+   83,
+   95
+  ],
+  "r_kn": [
+   90,
+   108
+  ],
+  "r_ft": [
+   93,
+   119
+  ],
+  "l_hip": [
+   66,
+   95
+  ],
+  "l_kn": [
+   60,
+   107
+  ],
+  "l_ft": [
+   57,
+   119
+  ]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-left; the hooded head snaps back toward the upper-right, eyes squeezed shut, torso jolts back, both arms jerk (the brass lantern flung out to the left in the right hand; the bow hand jerked in to the belt, the shortbow upright behind the body with the arrow still nocked)",
+   "1": "recoil extreme: leaning back further toward the upper-right, knees bent, the bow hand still at the belt and the shortbow tilting back behind the body, the lantern still held out to the left"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-right, body thrown back, the bow arm flung up with the shortbow upright, the lantern drooping in the right hand",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, the hooded head droops, the shortbow lowering, the lantern hanging from the right hand",
+   "3": "kneeling: on both knees, slumped forward, one end of the shortbow resting on the ground at the lower-left, the lantern hanging from the right hand",
+   "4": "falling back: torso tips back toward the upper-right, the shortbow slips out of the hand, the lantern drops beside him, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-left and head toward the upper-right, the hood still up and the crimson scarf over his face, the grey cloak spread under him; the shortbow lies on the ground at the lower-left; the brass lantern lies on its side beside him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the grey cloak settles",
+   "7": "corpse: lying flat and still on his back, eyes closed under the hood, the shortbow on the ground beside him and the brass lantern on its side"
+  }
+ }
+}

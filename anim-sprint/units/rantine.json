@@ -1,0 +1,111 @@
+{
+ "name": "rantine",
+ "sprite": "m7/roster/units/unit_rantine.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "Rantine (Fall from Heaven), a burly orc warlord: green skin, a dark brown mohawk with a grey streak, a scarred face with small tusks, a spiked steel pauldron on his right shoulder, an orange sash across a dark leather tunic, an orange loincloth, a steel knee guard, brown leather boots, a broad notched curved steel sword (falchion) held up in his LEFT hand (screen-right) and a round wooden shield with a steel rim and boss on his RIGHT arm (screen-left)",
+ "hands": "the curved sword stays in his left hand on the screen-right side and the round wooden shield stays on his right arm on the screen-left side",
+ "guide_style": "grey",
+ "scale": 1.1,
+ "head_r": 10,
+ "limb": 1.25,
+ "joints": {
+  "head": [
+   77,
+   43
+  ],
+  "neck": [
+   78,
+   54
+  ],
+  "chest": [
+   78,
+   64
+  ],
+  "pelvis": [
+   77,
+   80
+  ],
+  "r_sh": [
+   89,
+   58
+  ],
+  "r_el": [
+   95,
+   70
+  ],
+  "r_ha": [
+   101,
+   83
+  ],
+  "tip": [
+   122,
+   41
+  ],
+  "l_sh": [
+   58,
+   56
+  ],
+  "l_el": [
+   54,
+   68
+  ],
+  "l_ha": [
+   51,
+   80
+  ],
+  "shield": [
+   44,
+   84,
+   10,
+   16
+  ],
+  "r_hip": [
+   87,
+   88
+  ],
+  "r_kn": [
+   93,
+   103
+  ],
+  "r_ft": [
+   93,
+   114
+  ],
+  "l_hip": [
+   66,
+   88
+  ],
+  "l_kn": [
+   58,
+   104
+  ],
+  "l_ft": [
+   53,
+   115
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the curved sword is lifted up over the head with its notched tip pointing up and back",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the curved sword cocked behind the head with the broad blade hanging down behind the shoulders, the round wooden shield tucked in",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the arm sweeps over the head and the broad curved blade is level, pointing to the lower-right",
+   "4": "contact: sword arm fully extended toward the lower-right, the broad curved blade slashing down-right, front knee bent, body low and leaning in, the round wooden shield swung back for balance",
+   "5": "follow-through: the curved blade carries on down until its tip nearly touches the ground at the lower-right, torso twisted, the mohawk trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the curved sword lifts back toward the ready angle, the round wooden shield coming forward again"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, tusked jaw clenched, torso jolts back, both arms jerk outward (the round wooden shield flung out to the left, the curved sword arm thrown up and out)",
+   "1": "recoil extreme: leaning back further, knees bent, the curved sword dipping, the round wooden shield still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, the curved sword arm flung up, the round wooden shield drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the curved sword lowering",
+   "3": "kneeling: on both knees, slumped forward, the tip of the curved sword resting on the ground, the shield arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the curved sword slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left; the curved sword lies on the ground at the lower-right; the round wooden shield lies flat beside him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the round wooden shield rocks",
+   "7": "corpse: lying flat and still on his back, eyes closed, the curved sword and the round wooden shield on the ground beside him"
+  }
+ }
+}

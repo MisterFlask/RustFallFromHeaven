@@ -1,0 +1,98 @@
+{
+ "name": "high_priest_of_the_empyrean",
+ "sprite": "m7/roster/units/unit_high_priest_of_the_empyrean.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "body_plan": "caster",
+ "description": "a High Priest of the Empyrean (Fall from Heaven), an old priest with white hair and a white beard, a large golden sunburst crown rising like a halo behind his head, white and royal-blue robes with wide white sleeves and heavy gold trim, a gold sun emblem on the chest, a gold belt, brown shoes, and a tall golden staff topped with a glowing sun-shaped lantern held upright in his LEFT hand (screen-right); his RIGHT hand (screen-left) is held out open in a blessing",
+ "hands": "the golden sun-lantern staff stays upright in his left hand on the screen-right side and his right hand is an empty open hand held out in blessing on the screen-left side",
+ "guide_style": "grey",
+ "scale": 0.83,
+ "head_r": 9,
+ "limb": 1.1,
+ "joints": {
+  "head": [
+   77,
+   61
+  ],
+  "neck": [
+   77,
+   68
+  ],
+  "chest": [
+   78,
+   76
+  ],
+  "pelvis": [
+   77,
+   86
+  ],
+  "r_sh": [
+   87,
+   69
+  ],
+  "r_el": [
+   93,
+   80
+  ],
+  "r_ha": [
+   99,
+   77
+  ],
+  "tip": [
+   100,
+   32
+  ],
+  "l_sh": [
+   66,
+   70
+  ],
+  "l_el": [
+   58,
+   80
+  ],
+  "l_ha": [
+   53,
+   82
+  ],
+  "r_hip": [
+   83,
+   90
+  ],
+  "r_kn": [
+   86,
+   104
+  ],
+  "r_ft": [
+   87,
+   116
+  ],
+  "l_hip": [
+   71,
+   90
+  ],
+  "l_kn": [
+   67,
+   104
+  ],
+  "l_ft": [
+   63,
+   118
+  ]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, the golden sunburst crown jolting, torso jolts back, both arms jerk outward (his empty open right hand flung out to the left, the staff arm thrown up and out holding the golden sun-lantern staff)",
+   "1": "recoil extreme: leaning back further, knees bent, the golden sun-lantern staff tilting, his empty right hand still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, the staff arm flung up holding the golden sun-lantern staff high, his empty right hand drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head with its sunburst crown droops, the golden staff lowering",
+   "3": "kneeling: on both knees, slumped forward, the lantern end of the golden staff resting on the ground, his empty right arm hanging in its wide white sleeve",
+   "4": "falling back: torso tips back toward the upper-left, the golden staff slips out of the hand, legs slide forward, the white-and-blue robes flaring",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the golden sunburst crown still on his head; the golden sun-lantern staff lies on the ground at the lower-right; the white and blue robes spread under him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the wide white sleeves and robes settle",
+   "7": "corpse: lying flat and still on his back, eyes closed, the golden sun-lantern staff on the ground beside him"
+  }
+ }
+}

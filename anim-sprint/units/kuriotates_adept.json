@@ -1,0 +1,98 @@
+{
+ "name": "kuriotates_adept",
+ "sprite": "m7/roster/units/unit_kuriotates_adept.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "body_plan": "caster",
+ "description": "a Kuriotates Adept, a young mage: brown hair under a deep green hood crowned with a gold laurel wreath, a long green hooded robe with gold trim and wide sleeves, a white rope belt with long hanging ends, a brown leather satchel on a strap across the chest at his screen-left hip, brown boots, and a wooden staff topped with a glowing green crystal in his LEFT hand",
+ "hands": "the crystal-topped staff stays upright in his left hand on the screen-right side and his right hand is an empty fist held at his waist above the satchel on the screen-left side",
+ "guide_style": "grey",
+ "scale": 0.92,
+ "head_r": 10,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   74,
+   58
+  ],
+  "neck": [
+   75,
+   70
+  ],
+  "chest": [
+   75,
+   79
+  ],
+  "pelvis": [
+   76,
+   88
+  ],
+  "r_sh": [
+   87,
+   73
+  ],
+  "r_el": [
+   90,
+   84
+  ],
+  "r_ha": [
+   98,
+   76
+  ],
+  "tip": [
+   100,
+   39
+  ],
+  "l_sh": [
+   63,
+   74
+  ],
+  "l_el": [
+   58,
+   83
+  ],
+  "l_ha": [
+   65,
+   84
+  ],
+  "r_hip": [
+   82,
+   93
+  ],
+  "r_kn": [
+   85,
+   106
+  ],
+  "r_ft": [
+   88,
+   120
+  ],
+  "l_hip": [
+   70,
+   93
+  ],
+  "l_kn": [
+   65,
+   106
+  ],
+  "l_ft": [
+   58,
+   120
+  ]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (his empty right fist flung out to the left, the crystal-topped staff thrown up and out in his left hand), the green hood jolting back",
+   "1": "recoil extreme: leaning back further, knees bent, the crystal-topped staff tilting back, his empty right fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, staff arm flung up holding the crystal-topped staff high, his empty right fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, the hooded head droops, the crystal-topped staff lowering",
+   "3": "kneeling: on both knees, slumped forward, the crystal end of the staff resting on the ground at the lower-right, his empty right hand hanging by the satchel",
+   "4": "falling back: torso tips back toward the upper-left, the crystal-topped staff slips out of the hand, legs slide forward, the green robe flaring",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the green hood still on his head; the crystal-topped staff lies on the ground at the lower-right; the satchel lies flat beside him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the green hood and the robe settle",
+   "7": "corpse: lying flat and still on his back, eyes closed, the green hood on his head, the crystal-topped staff on the ground beside him"
+  }
+ }
+}

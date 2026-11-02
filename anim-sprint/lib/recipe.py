@@ -41,7 +41,12 @@ import beats, finish, gen, guides, metrics, rig, sheet  # noqa: E402
 
 ROOT = ak.ROOT
 FACINGS = ("lower-left", "lower-right")
-SETS = {"far": "poses.json", "near": "poses_near.json"}
+SETS = {"far": "poses.json", "near": "poses_near.json", "cast": "poses_cast.json", "shot": "poses_shot.json"}
+# Body plans whose strike is not the melee swing: a unit file's "body_plan" picks the set (lib/poses_cast_src.py,
+# lib/poses_shot_src.py: each the far set's idle, flinch and death with its own strike, looking lower-left), mirrored for
+# a unit that looks lower-right; "prop" (and "missile" for a shot) name the unit's own staff, wand, bow or gun in the
+# set's strike texts (lib/beats_cast.py, lib/beats_shot.py).
+BODY_SETS = {"caster": "cast", "ranged": "shot"}
 JOINTS = ("head", "neck", "chest", "pelvis", "r_sh", "r_el", "r_ha", "tip", "l_sh", "l_el", "l_ha",
           "r_hip", "r_kn", "r_ft", "l_hip", "l_kn", "l_ft")
 WEAPON_CHAIN = {("r_sh", "r_el"), ("r_el", "r_ha"), ("r_ha", "tip")}
@@ -53,8 +58,38 @@ TREE = [("pelvis", "chest"), ("chest", "neck"), ("neck", "head"), ("chest", "r_s
 
 
 # ---------------------------------------------------------------- unit + poses
+RIGS = ("quadruped", "mounted")  # body plans with their own rig (lib/quad.py): animals, riders on mounts, centaurs
+
+
+def is_quad(u):
+    return u.get("body_plan") in RIGS
+
+
+def render_guide(u, pose, style):
+    """The grey pose guide of one frame: the biped mannequin (lib/guides.py) or the quadruped / mounted one."""
+    if is_quad(u):
+        import quad
+        return quad.render_guide(pose, style)
+    return guides.render_guide(pose, style)
+
+
+def standing(u):
+    """The drawn frames whose figure should be the sprite's height (perframe's size check). An animal's pounce is low
+    and long on purpose, so its strike frames are left out."""
+    return {f for f in STANDING if f[0] != "strike"} if is_quad(u) else STANDING
+
+
 def load_unit(path):
     u = json.loads(Path(path).read_text())
+    if is_quad(u):
+        import quad
+        u = quad.load_unit(path)
+        u["pose_set"] = u["body_plan"]
+        sp = u["sprite_img"]
+        if sp.height > ak.H or sp.width > ak.SAFE_X[1] - ak.SAFE_X[0]:
+            raise SystemExit(f"{u['sprite']} is {sp.width}x{sp.height}; the animation canvas is {ak.W}x{ak.H} "
+                             "(ANIMATING_UNITS.md, 'Known limits').")
+        return u
     for k in ("name", "sprite", "description", "joints"):
         if k not in u:
             raise SystemExit(f"unit file {path} is missing '{k}' (see ANIMATING_UNITS.md, step 1)")
@@ -86,6 +121,8 @@ def pose_set(u):
     """(source set, mirror) for this unit, so that the strike goes the way the sprite looks: the far set looks
     lower-left with the weapon in the far (screen-left) hand, the near set looks lower-right with the weapon in the
     near (screen-left) hand, and a mirrored set swaps both the facing and the weapon's screen side."""
+    if u.get("body_plan") in BODY_SETS:
+        return BODY_SETS[u["body_plan"]], u["facing"] == "lower-right"
     weapon_left = u["joints"]["r_sh"][0] <= u["joints"]["l_sh"][0]
     if weapon_left:
         return ("far" if u["facing"] == "lower-left" else "near"), False
@@ -104,6 +141,8 @@ def wrong_way(u):
 
 def smear_direction(u):
     """Which way the strike's blade turns on screen (finish.smear), from the source set, flipped when mirrored."""
+    if is_quad(u):
+        return "cw" if u["mirror"] else "ccw"
     d = json.loads((ROOT / SETS[u["pose_set"]]).read_text()).get("smear", "ccw")
     return {"ccw": "cw", "cw": "ccw"}.get(d, d) if u["mirror"] else d
 
@@ -196,6 +235,9 @@ def _pose_tail(u, src_pose, out):
 
 
 def unit_poses(u):
+    if is_quad(u):
+        import quad
+        return quad.unit_poses(u)
     src = json.loads((ROOT / u.get("poses_from", SETS[u["pose_set"]])).read_text())["anims"]
     if u["mirror"]:
         src = {a: [guides.mirror_pose(p) for p in fr] for a, fr in src.items()}
@@ -212,10 +254,20 @@ def unit_poses(u):
 
 def beat_text(u, anim, i):
     """The unit's own override (written for its real facing), else the source set's text, mirrored with its poses."""
+    if is_quad(u):
+        import quad
+        return quad.beat_text(u, anim, i)
     own = u.get("beats", {}).get(anim, {}).get(str(i))
     if own:
         return own
-    t = (beats.BEATS_NEAR if u["pose_set"] == "near" else beats.BEATS)[anim][i]["text"]
+    if u["pose_set"] in ("cast", "shot") and anim == "strike":
+        import beats_cast, beats_shot
+        if u["pose_set"] == "cast":
+            t = beats_cast.strike_beats(u.get("prop", "staff"))[str(i)]
+        else:
+            t = beats_shot.strike_beats(u.get("prop", "bow"), u.get("missile", "arrow"))[str(i)]
+    else:
+        t = (beats.BEATS_NEAR if u["pose_set"] == "near" else beats.BEATS)[anim][i]["text"]
     return beats.swap_sides(t) if u["mirror"] else t
 
 
@@ -251,7 +303,7 @@ LABEL = {"strike": "a STRIKE animation", "flinch": "a FLINCH (hit reaction) anim
 
 def make_sheet(u, poses, name, wdir, style):
     base = base_canvas(u)
-    cells = [base] + [guides.render_guide(poses[a][i], style) for a, i in SHEETS[name]]
+    cells = [base] + [render_guide(u, poses[a][i], style) for a, i in SHEETS[name]]
     geom = sheet.make_template(cells, out=wdir / f"template_{name}.png")
     texts = [(k + 2, beat_text(u, a, i)) for k, (a, i) in enumerate(SHEETS[name])]
     return geom, prompt(u, LABEL[name], texts, style)
@@ -275,6 +327,9 @@ def candidates(name, fr, base):
 
 
 def generate(u, out, anims, style, n=2):
+    if gen.BACKEND == "klein":  # the local model draws one frame per call (lib/perframe.py), into the same sheets
+        import perframe
+        return perframe.generate(u, out, anims, style, n=n)
     wdir = ROOT / "work" / out
     wdir.mkdir(parents=True, exist_ok=True)
     poses = unit_poses(u)
@@ -353,7 +408,7 @@ def prepare(u, name, fr, poses, style, base):
             f = finish.defringe(f, interior=not legacy)
         an, i = SHEETS[name][k - 1]
         if not legacy and (an, i) in STANDING:
-            f, dx, _ = x_snap(f, guides.render_guide(poses[an][i], style))
+            f, dx, _ = x_snap(f, render_guide(u, poses[an][i], style))
             if dx:
                 moved[f"{an} {i}"] = dx
         out.append(f)
@@ -397,7 +452,11 @@ def build(u, out, anims, style, picks=None, fx=True, snap=False):
         if fl:
             report[f"{name}_{k}"]["floating"] = fl
             print(f"warning: {name} variant {k} has frames above the ground: {fl}", file=sys.stderr)
-    warp = lambda p: rig.warp_to_pose(base, rest, p, sharpen=u.get("sharpen", 3.0))
+    if is_quad(u):
+        import quad
+        warp = lambda p: quad.warp_to_pose(base, rest, p, sharpen=u.get("sharpen", 3.0))
+    else:
+        warp = lambda p: rig.warp_to_pose(base, rest, p, sharpen=u.get("sharpen", 3.0))
     frames = {}
     if "idle" in anims:
         frames["idle"] = [base] + [warp(p) for p in poses["idle"][1:]]
@@ -421,7 +480,7 @@ def build(u, out, anims, style, picks=None, fx=True, snap=False):
         for a, fr in frames.items():
             fr2 = list(fr)
             if with_fx:
-                if a == "strike":
+                if a == "strike" and not is_quad(u):  # fur and hide pass for steel: no spark or smear on animals
                     fr2 = finish.apply_strike_fx(fr2, direction=smear_direction(u),
                                                  min_blade=0 if u.get("legacy") else 20)
                 if a in ("flinch", "death"):
@@ -478,6 +537,12 @@ def review_sheet(wdir, name, base, u, poses, style):
 
 
 def check_guides(u, out):
+    if is_quad(u):
+        import quad
+        png = ROOT / "work" / out / "guides_check.png"
+        png.parent.mkdir(parents=True, exist_ok=True)
+        quad.check_guides(u, png)
+        return png
     """work/<out>/guides_check.png, no API calls: row 1 = the frame-0 skeleton over the sprite (bones red, the weapon
     arm and weapon yellow, joints white), then the strike guides 1-6; row 2 = the frame-0 blockout over the sprite,
     then the flinch guides 0-2; row 3 = the death guides 1-7. Every cell is labelled. Use it to check the joint
@@ -563,6 +628,8 @@ if __name__ == "__main__":
     ap.add_argument("--rebuild", action="store_true"); ap.add_argument("--snap", action="store_true")
     ap.add_argument("--no-fx", action="store_true")
     ap.add_argument("--pick", nargs="*", default=[], help="sheet=variant, e.g. strike=2")
+    ap.add_argument("--reroll", default="", help="local model only: redraw just these frames, e.g. 'strike 5,death 3' "
+                    "(their earlier variants are set aside; every other frame keeps its own), then rebuild")
     ap.add_argument("--check-guides", action="store_true", help="only render work/<out>/guides_check.png (no API calls)")
     ap.add_argument("--show-beats", action="store_true", help="only print the facing, pose set and the beat text each "
                     "sheet cell will get, marking texts that name a shield, sword or blade (no API calls)")
@@ -593,7 +660,11 @@ if __name__ == "__main__":
                 print(f"{an:6} {i}  {own}{('[' + props + '] ') if props else ''}{t}")
         sys.exit(0)
     t0 = time.time()
-    if not a.rebuild:
+    if a.reroll:
+        import perframe
+        want = {(f.split()[0], int(f.split()[1])) for f in a.reroll.split(",") if f.strip()}
+        print(json.dumps(perframe.generate(u, a.out, a.anims, style, reroll=want)))
+    elif not a.rebuild:
         print(json.dumps(generate(u, a.out, a.anims, style)))
     picks = {p.split("=")[0]: int(p.split("=")[1]) for p in a.pick}
     print(json.dumps(build(u, a.out, a.anims, style, picks, fx=not a.no_fx, snap=a.snap), indent=1))

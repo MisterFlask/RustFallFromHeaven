@@ -1,0 +1,105 @@
+{
+ "name": "beastmaster",
+ "sprite": "m7/roster/units/unit_beastmaster.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "the Beastmaster, a bearded hunter with his beasts: a brown bear-head pelt worn as a hood with the bear's snout over his brow and the pelt hanging down his back as a cloak, a brown beard, green tattoos on his bare tan arms, a necklace of white fangs, a brown leather tunic with a round silver buckle, a green kilt, fur-trimmed brown boots, a tall wooden spear with a steel spearhead in his RIGHT hand, a brown hawk perched on his raised left forearm, and a grey wolf standing at his left side facing lower-right",
+ "hands": "the spear stays in his right hand on the screen-left side, held round the middle of the shaft; his left forearm is held out on the screen-right side as the hawk's perch, its hand an empty fist",
+ "guide_style": "grey",
+ "scale": 0.95,
+ "head_r": 10,
+ "limb": 1.15,
+ "joints": {
+  "head": [
+   77,
+   54
+  ],
+  "neck": [
+   77,
+   64
+  ],
+  "chest": [
+   76,
+   72
+  ],
+  "pelvis": [
+   76,
+   88
+  ],
+  "r_sh": [
+   62,
+   63
+  ],
+  "r_el": [
+   56,
+   75
+  ],
+  "r_ha": [
+   50,
+   82
+  ],
+  "tip": [
+   38,
+   38
+  ],
+  "l_sh": [
+   88,
+   63
+  ],
+  "l_el": [
+   98,
+   70
+  ],
+  "l_ha": [
+   110,
+   70
+  ],
+  "r_hip": [
+   68,
+   91
+  ],
+  "r_kn": [
+   64,
+   104
+  ],
+  "r_ft": [
+   62,
+   116
+  ],
+  "l_hip": [
+   84,
+   92
+  ],
+  "l_kn": [
+   86,
+   104
+  ],
+  "l_ft": [
+   88,
+   116
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back toward the upper-left, the spear is lifted beside the head with its steel point pointing up and back, the hawk still on the left forearm, the grey wolf at his side",
+   "2": "wind-up extreme: body coiled back and crouched, the spear hand behind the head and the spear's steel point hanging down behind the shoulders to the left, the left fist tucked across the belly, the hawk flapping up off the arm, the grey wolf still standing at his side",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips round, the spear arm sweeps across in front of the chest and the spear is level, its steel point pointing to the right, the grey wolf still standing at his side",
+   "4": "contact: spear arm fully extended toward the lower-right, the spear's steel point striking down-right, front knee bent, body low and leaning in, the empty left fist swung back behind the shoulders for balance, the hawk flapping above",
+   "5": "follow-through: the spear carries on down until its steel point nearly touches the ground at the lower-right, torso twisted, the bear pelt trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the spear comes back up on the near side toward its upright ready angle, the left forearm raised again as the hawk's perch"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (spear arm thrown up and out to the left, the left arm flung out to the right with the hawk flapping off it)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the spear still held up to the left, the left arm still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, spear arm flung up, the empty left fist drooping, the hawk flying off",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the spear lowering",
+   "3": "kneeling: on both knees, slumped forward, the spear's steel point resting on the ground at the lower-right, the left arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the spear slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the bear-pelt hood on his head and its cloak spread under him; the spear lies on the ground at the lower-right",
+   "6": "bounce: head and shoulders lift slightly off the ground, the bear pelt settles",
+   "7": "corpse: lying flat and still on his back, eyes closed, the spear on the ground beside him"
+  }
+ }
+}

@@ -1,0 +1,100 @@
+{
+ "name": "mobius_witch",
+ "sprite": "m7/roster/units/unit_mobius_witch.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "body_plan": "caster",
+ "prop": "wand",
+ "description": "a Mobius Witch (Fall from Heaven), a young sorceress: long flowing white hair, a gold circlet with a small pink gem, a tall crooked purple witch hat with a gold-trimmed brim and a pink band with a gold gem, purple-and-black robes with wide sleeves lined in pink, gold trim, a pink sash with a gold buckle, small dark shoes, a twisted dark wand tipped with a pink gem held low in her RIGHT hand, and her LEFT palm raised open under a floating golden mobius ring (a twisted figure-eight band, pink on the inside)",
+ "hands": "the pink-gem wand stays in her right hand on the screen-left side and her left hand on the screen-right side is an empty open palm raised under the floating golden mobius ring",
+ "guide_style": "grey",
+ "scale": 0.78,
+ "head_r": 8,
+ "limb": 0.9,
+ "joints": {
+  "head": [
+   78,
+   64
+  ],
+  "neck": [
+   77,
+   72
+  ],
+  "chest": [
+   77,
+   79
+  ],
+  "pelvis": [
+   76,
+   88
+  ],
+  "r_sh": [
+   69,
+   77
+  ],
+  "r_el": [
+   63,
+   86
+  ],
+  "r_ha": [
+   56,
+   91
+  ],
+  "tip": [
+   42,
+   75
+  ],
+  "l_sh": [
+   88,
+   76
+  ],
+  "l_el": [
+   97,
+   87
+  ],
+  "l_ha": [
+   105,
+   69
+  ],
+  "r_hip": [
+   72,
+   93
+  ],
+  "r_kn": [
+   68,
+   107
+  ],
+  "r_ft": [
+   66,
+   120
+  ],
+  "l_hip": [
+   81,
+   93
+  ],
+  "l_kn": [
+   88,
+   107
+  ],
+  "l_ft": [
+   93,
+   120
+  ]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, the witch hat tipping back, torso jolts back, both arms jerk outward (the wand arm thrown up and out to the left with the pink-gem wand, the empty open left hand flung out to the right), the long white hair and wide sleeves flying, the golden mobius ring wobbling in the air",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent under the robe, the pink-gem wand dipping, the empty left hand still held out, the golden mobius ring drifting",
+   "2": "recovering: halfway back to the ready pose, the pink-gem wand coming back down in her right hand, the left palm rising back under the golden mobius ring"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, the wand arm flung up holding the pink-gem wand high, the empty left hand drooping, the golden mobius ring tumbling out of the air",
+   "2": "knees buckle: hips drop, knees fold forward under the robe, torso slumps forward, head and witch hat droop, the pink-gem wand lowering, the empty left hand hanging",
+   "3": "kneeling: on both knees, slumped forward, the wand's pink-gem tip resting on the ground at the lower-right, the empty left hand hanging, the white hair falling forward",
+   "4": "falling back: torso tips back toward the upper-left, the pink-gem wand slips out of the hand, legs slide forward under the robe",
+   "5": "hits the ground: lying on her back along the ground, feet toward the lower-right and head toward the upper-left, the purple witch hat still on her head and the long white hair spread out; the pink-gem wand lies on the ground at the lower-right; the golden mobius ring lies on the ground beside her",
+   "6": "bounce: head and shoulders lift slightly off the ground, the white hair, wide sleeves and robe settle",
+   "7": "corpse: lying flat and still on her back, eyes closed, the white hair spread out, the pink-gem wand and the golden mobius ring on the ground beside her"
+  }
+ }
+}

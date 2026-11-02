@@ -1,0 +1,23 @@
+{
+ "name": "griffon",
+ "sprite": "m7/roster/units/unit_griffon.png",
+ "body_plan": "quadruped",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Griffon, a white-headed eagle with a hooked yellow beak and yellow eyes on a golden lion's body, yellow taloned eagle forelegs, lion hind legs and a tufted lion tail curled up behind, and two big brown-and-cream feathered wings raised high",
+ "hands": "it has no weapon: it fights with its hooked beak and talons",
+ "guide_style": "grey",
+ "dims": {"body_r": 11, "head_r": 8, "neck_r": 8, "snout_w": 6, "leg_w": 5, "paw_r": 3.5, "tail_w": 4, "tail_tuft": 4, "ear": 0, "wing_w": 3},
+ "words": {"animal": "griffon", "jaws": "hooked beak", "claws": "talons", "paws": "talons", "tail": "tufted tail", "ears": "head feathers"},
+ "joints": {
+  "head": [98, 61], "snout": [110, 66], "jaw": [106, 70], "neck": [94, 78],
+  "withers": [90, 92], "spine": [72, 94], "hips": [56, 94],
+  "tail_base": [50, 94], "tail_mid": [38, 102], "tail_tip": [42, 84],
+  "fn_top": [92, 100], "fn_knee": [88, 110], "fn_paw": [88, 118],
+  "ff_top": [98, 98], "ff_knee": [106, 104], "ff_paw": [113, 112],
+  "hn_top": [58, 100], "hn_knee": [54, 110], "hn_paw": [52, 118],
+  "hf_top": [68, 100], "hf_knee": [72, 108], "hf_paw": [74, 116],
+  "wn_root": [80, 72], "wn_wrist": [62, 40], "wn_tip": [40, 30],
+  "wf_root": [98, 70], "wf_wrist": [112, 38], "wf_tip": [122, 28]
+ }
+}

@@ -1,0 +1,105 @@
+{
+ "name": "eidolon",
+ "sprite": "m7/roster/units/unit_eidolon.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "an Eidolon, a dark knight in black plate armour with gold trim and spiked black pauldrons, a closed black helm with two large curved brown horns and a glowing red cross-shaped visor, a red glowing cross on the chest, a tattered red tabard and red cloth strips flaring at the hips, black armoured boots, a tall black halberd with a steel crescent axe blade, a spear spike on top and a red cross on the blade, held upright in his LEFT hand on the screen-right side, and an open black clawed gauntlet with a red rune raised in his RIGHT hand on the screen-left side",
+ "hands": "the halberd stays in his left hand on the screen-right side and his right hand is an empty open gauntlet on the screen-left side",
+ "guide_style": "grey",
+ "scale": 0.93,
+ "head_r": 9,
+ "limb": 1.15,
+ "joints": {
+  "head": [
+   76,
+   56
+  ],
+  "neck": [
+   77,
+   64
+  ],
+  "chest": [
+   78,
+   71
+  ],
+  "pelvis": [
+   79,
+   83
+  ],
+  "r_sh": [
+   89,
+   64
+  ],
+  "r_el": [
+   89,
+   76
+  ],
+  "r_ha": [
+   99,
+   71
+  ],
+  "tip": [
+   101,
+   46
+  ],
+  "l_sh": [
+   65,
+   63
+  ],
+  "l_el": [
+   60,
+   78
+  ],
+  "l_ha": [
+   49,
+   68
+  ],
+  "r_hip": [
+   84,
+   88
+  ],
+  "r_kn": [
+   86,
+   102
+  ],
+  "r_ft": [
+   86,
+   115
+  ],
+  "l_hip": [
+   73,
+   88
+  ],
+  "l_kn": [
+   63,
+   102
+  ],
+  "l_ft": [
+   60,
+   117
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the halberd is lifted up over the head with its crescent axe blade and spike pointing up and back",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the halberd cocked behind the head with its axe head hanging down behind the shoulders, the open right gauntlet tucked in",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the arm sweeps over the head and the halberd is level, its axe head pointing to the lower-right",
+   "4": "contact: halberd arm fully extended toward the lower-right, the crescent axe blade chopping down-right, front knee bent, body low and leaning in, the open gauntlet arm swung back for balance",
+   "5": "follow-through: the halberd carries on down until its axe head nearly touches the ground at the lower-right, torso twisted, red tabard strips trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the halberd lifts back toward the upright ready angle"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; the horned helm snaps back toward the upper-left, the red visor flaring, torso jolts back, both arms jerk outward (the open right gauntlet flung out to the left, the halberd arm thrown up and out)",
+   "1": "recoil extreme: leaning back further, knees bent, the halberd dipping, the open gauntlet still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, halberd arm flung up, the open gauntlet drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, the horned helm droops, the halberd lowering",
+   "3": "kneeling: on both knees, slumped forward, the halberd's axe head resting on the ground, the gauntlet arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the halberd slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, horns on the ground; the halberd lies on the ground at the lower-right; the red tabard spread under him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the red tabard settles",
+   "7": "corpse: lying flat and still on his back, the red visor gone dark, the halberd on the ground beside him"
+  }
+ }
+}

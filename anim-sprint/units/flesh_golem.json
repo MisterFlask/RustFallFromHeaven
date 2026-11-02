@@ -1,0 +1,105 @@
+{
+ "name": "flesh_golem",
+ "sprite": "m7/roster/units/unit_flesh_golem.png",
+ "facing": "lower-left",
+ "tag": "anim/units",
+ "description": "a Flesh Golem (Fall from Heaven), a bald, hulking brute stitched together from a patchwork of pink, tan, pale-cream and purple skin joined by black stitches and iron staples, iron bolts in the neck and temple, small glowing yellow eyes, a ragged brown loincloth with a wide brown belt, big bare feet; his LEFT arm (screen-right) is enormous, stitched from pale cream flesh, with an iron band at the wrist and a giant fist; he strikes with the bare fist of his smaller RIGHT arm (screen-left), which has an iron wrist band; he holds no weapon",
+ "hands": "his right hand on the screen-left side is the striking bare fist, with no weapon in it; his enormous left arm on the screen-right side ends in a giant empty fist and stays low at his side",
+ "guide_style": "grey",
+ "scale": 1.22,
+ "head_r": 11,
+ "limb": 1.5,
+ "joints": {
+  "head": [
+   67,
+   31
+  ],
+  "neck": [
+   70,
+   44
+  ],
+  "chest": [
+   76,
+   53
+  ],
+  "pelvis": [
+   78,
+   72
+  ],
+  "r_sh": [
+   52,
+   42
+  ],
+  "r_el": [
+   44,
+   60
+  ],
+  "r_ha": [
+   36,
+   84
+  ],
+  "tip": [
+   33,
+   94
+  ],
+  "l_sh": [
+   100,
+   32
+  ],
+  "l_el": [
+   117,
+   64
+  ],
+  "l_ha": [
+   112,
+   102
+  ],
+  "r_hip": [
+   67,
+   76
+  ],
+  "r_kn": [
+   59,
+   95
+  ],
+  "r_ft": [
+   57,
+   112
+  ],
+  "l_hip": [
+   88,
+   76
+  ],
+  "l_kn": [
+   93,
+   96
+  ],
+  "l_ft": [
+   99,
+   113
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the right arm is lifted up over the bald stitched head with its bare fist clenched high, the giant left arm hanging at his side",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the right arm cocked high behind the head with its bare fist drawn back, the giant left fist hanging low at his side",
+   "3": "swing: the front foot steps toward the lower-left, the torso whips forward, the right arm swings up over the head, its bare fist high and about to come down toward the lower-left",
+   "4": "contact: right arm fully extended toward the lower-left, the bare right fist smashing down-left, front knee bent, body low and leaning in, the giant left arm swung back for balance",
+   "5": "follow-through: the bare right fist carries on down until it nearly touches the ground at the lower-left, torso twisted, the giant left arm swinging",
+   "6": "recover: body rises, front foot pulls back halfway, the right fist lifts back toward its resting place at his side"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-left; the bald stitched head snaps back toward the upper-right, yellow eyes squeezed shut, torso jolts back, both arms jerk outward (the giant left fist swung out to the right, the bare right fist thrown out to the side)",
+   "1": "recoil extreme: leaning back further, knees bent, the bare right fist dipping, the giant left arm still out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, the bare right fist flung up, the giant left arm drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, the bald head droops, the bare right fist lowering",
+   "3": "kneeling: on both knees, slumped forward, the bare right fist resting on the ground, the giant left arm hanging",
+   "4": "falling back: torso tips back toward the upper-right, the right arm flung out limply, legs slide forward, the giant left arm dragging",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-left and head toward the upper-right, the giant stitched left arm sprawled beside him; both fists empty",
+   "6": "bounce: head and shoulders lift slightly off the ground, the huge stitched arm settles",
+   "7": "corpse: lying flat and still on his back, yellow eyes dark, both empty fists on the ground"
+  }
+ }
+}

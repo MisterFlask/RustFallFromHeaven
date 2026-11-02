@@ -1,0 +1,105 @@
+{
+ "name": "luchuirp_settler",
+ "sprite": "m7/roster/units/unit_luchuirp_settler.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Luchuirp Settler, a stout red-bearded gnome pioneer: a big bushy red beard, brass goggles with blue lenses pushed up on his ginger hair, a teal tunic, a brown leather apron hung with a hammer and a wrench, brown boots, a huge brown leather backpack on his back topped with a rolled red bedroll, a tin pot and a brass cog hanging from its screen-left side, and a long wooden walking staff with a hooked top in his LEFT hand",
+ "hands": "the walking staff stays in his left hand on the screen-right side and his right hand on the screen-left side grips the backpack strap at his chest as an empty fist",
+ "guide_style": "grey",
+ "scale": 0.77,
+ "head_r": 10,
+ "limb": 1.15,
+ "joints": {
+  "head": [
+   86,
+   69
+  ],
+  "neck": [
+   84,
+   81
+  ],
+  "chest": [
+   85,
+   89
+  ],
+  "pelvis": [
+   84,
+   99
+  ],
+  "r_sh": [
+   96,
+   84
+  ],
+  "r_el": [
+   99,
+   92
+  ],
+  "r_ha": [
+   107,
+   89
+  ],
+  "tip": [
+   111,
+   63
+  ],
+  "l_sh": [
+   69,
+   83
+  ],
+  "l_el": [
+   65,
+   90
+  ],
+  "l_ha": [
+   75,
+   89
+  ],
+  "r_hip": [
+   89,
+   102
+  ],
+  "r_kn": [
+   91,
+   110
+  ],
+  "r_ft": [
+   94,
+   118
+  ],
+  "l_hip": [
+   78,
+   102
+  ],
+  "l_kn": [
+   73,
+   110
+  ],
+  "l_ft": [
+   70,
+   119
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the walking staff is lifted up over the head with its hooked top pointing up and back, the big backpack on his back",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the walking staff cocked behind the head with its hooked top hanging down behind the backpack, the empty right fist tucked in at the pack strap",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the arm sweeps over the head and the walking staff is level, its hooked top pointing to the lower-right",
+   "4": "contact: staff arm fully extended toward the lower-right, the hooked top of the walking staff smashing down-right, front knee bent, body low and leaning in, the empty right fist swung back for balance",
+   "5": "follow-through: the walking staff carries on down until its hooked top nearly touches the ground at the lower-right, torso twisted, the red beard trailing back, the backpack swinging",
+   "6": "recover: body rises, front foot pulls back halfway, the walking staff lifts back toward its upright ready angle"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (the empty right fist flung out to the left, the staff arm thrown up and out with the walking staff tilted up)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the walking staff dipping, the empty right fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, staff arm flung up holding the walking staff high, the empty right fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops into the red beard, the walking staff lowering, the heavy backpack dragging at his shoulders",
+   "3": "kneeling: on both knees, slumped forward, the hooked top of the walking staff resting on the ground at the lower-right, the empty right arm hanging",
+   "4": "falling back: torso tips back toward the upper-left onto the big backpack, the walking staff slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the big backpack and red bedroll under his shoulders, the goggles still on his head; the walking staff lies on the ground at the lower-right",
+   "6": "bounce: head and shoulders lift slightly off the ground, the bedroll and the tin pot settle",
+   "7": "corpse: lying flat and still on his back over the backpack, eyes closed, the walking staff on the ground beside him"
+  }
+ }
+}

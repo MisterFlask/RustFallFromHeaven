@@ -1,0 +1,111 @@
+{
+ "name": "chaos_marauder",
+ "sprite": "m7/roster/units/unit_chaos_marauder.png",
+ "facing": "lower-left",
+ "tag": "anim/units",
+ "description": "a Chaos Marauder, a hulking red-skinned demon warrior: two horns (a small one on the left and a huge curved black horn with pink runes on the right), glowing yellow eyes, fangs, glowing pink rune marks on the skin, black-and-orange spiked armour with a huge spiked pauldron on his left shoulder, a skull belt buckle with hanging chains, a ragged purple loincloth, armoured red boots, a huge jagged curved rune cleaver with a pink rune on its blade in his LEFT hand, and a round black spiked shield with a glowing pink rune on his RIGHT arm",
+ "hands": "the rune cleaver stays in his left hand on the screen-right side and the round spiked shield on his right arm on the screen-left side",
+ "guide_style": "grey",
+ "scale": 0.92,
+ "head_r": 10,
+ "limb": 1.35,
+ "joints": {
+  "head": [
+   69,
+   56
+  ],
+  "neck": [
+   72,
+   65
+  ],
+  "chest": [
+   73,
+   72
+  ],
+  "pelvis": [
+   71,
+   85
+  ],
+  "r_sh": [
+   90,
+   64
+  ],
+  "r_el": [
+   96,
+   80
+  ],
+  "r_ha": [
+   103,
+   101
+  ],
+  "tip": [
+   123,
+   64
+  ],
+  "l_sh": [
+   57,
+   64
+  ],
+  "l_el": [
+   50,
+   78
+  ],
+  "l_ha": [
+   43,
+   86
+  ],
+  "shield": [
+   40,
+   86,
+   12,
+   16
+  ],
+  "r_hip": [
+   80,
+   89
+  ],
+  "r_kn": [
+   88,
+   106
+  ],
+  "r_ft": [
+   90,
+   120
+  ],
+  "l_hip": [
+   62,
+   89
+  ],
+  "l_kn": [
+   53,
+   106
+  ],
+  "l_ft": [
+   50,
+   120
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back toward the upper-right, the rune cleaver is lifted high beside the head with its jagged blade pointing up and back, the spiked shield held in front",
+   "2": "wind-up extreme: body coiled back and crouched, the cleaver hand behind the head and the rune cleaver's jagged blade hanging down behind the shoulders to the right, the spiked shield tucked across the belly",
+   "3": "swing: the front foot steps toward the lower-left, the torso whips round, the cleaver arm sweeps across in front of the chest and the rune cleaver is level, its jagged blade pointing to the left",
+   "4": "contact: cleaver arm fully extended toward the lower-left, the rune cleaver's jagged blade hacking down-left, front knee bent, body low and leaning in, the spiked shield arm swung back behind the shoulders for balance",
+   "5": "follow-through: the rune cleaver carries on down until its jagged blade nearly touches the ground at the lower-left, torso twisted, horned head low",
+   "6": "recover: body rises, front foot pulls back halfway, the rune cleaver comes back up on the near side toward the ready angle, the spiked shield tucked across the belly"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-left; horned head snaps back toward the upper-right, yellow eyes squeezed shut, torso jolts back, both arms jerk outward (cleaver arm thrown up and out to the right, the spiked shield flung out to the left)",
+   "1": "recoil extreme: leaning back further toward the upper-right, knees bent, the rune cleaver dipping, the spiked shield still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-right, body thrown back, cleaver arm flung up, the spiked shield drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, horned head droops, the rune cleaver lowering",
+   "3": "kneeling: on both knees, slumped forward, the rune cleaver's jagged blade resting on the ground at the lower-left, the shield arm hanging",
+   "4": "falling back: torso tips back toward the upper-right, the rune cleaver slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-left and head toward the upper-right, the horns against the ground; the rune cleaver lies on the ground at the lower-left; the spiked shield lies flat beside him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the spiked shield rocks",
+   "7": "corpse: lying flat and still on his back, eyes dark, the rune cleaver and the spiked shield on the ground beside him"
+  }
+ }
+}

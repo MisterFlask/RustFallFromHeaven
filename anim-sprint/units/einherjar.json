@@ -1,0 +1,111 @@
+{
+ "name": "einherjar",
+ "sprite": "m7/roster/units/unit_einherjar.png",
+ "facing": "lower-left",
+ "tag": "anim/units",
+ "description": "the Einherjar, a ghostly spectral viking warrior drawn entirely in pale icy blues and white with dark navy outlines: a round winged helmet with a nasal guard and two small white wings, a long braided white beard, a mail shirt under plate pauldrons, a belt with a round buckle, armoured boots, a short pale-blue cape hanging behind him on the screen-right, a large round shield with a central boss on his RIGHT arm (screen-left) and a bearded battle axe with a short haft and a broad crescent blade in his LEFT hand (screen-right)",
+ "hands": "the battle axe stays in his left hand on the screen-right side and the round shield on his right arm on the screen-left side",
+ "guide_style": "grey",
+ "scale": 0.87,
+ "head_r": 10,
+ "limb": 1.2,
+ "joints": {
+  "head": [
+   71,
+   56
+  ],
+  "neck": [
+   72,
+   67
+  ],
+  "chest": [
+   74,
+   79
+  ],
+  "pelvis": [
+   74,
+   89
+  ],
+  "r_sh": [
+   86,
+   72
+  ],
+  "r_el": [
+   90,
+   84
+  ],
+  "r_ha": [
+   99,
+   83
+  ],
+  "tip": [
+   102,
+   57
+  ],
+  "l_sh": [
+   59,
+   72
+  ],
+  "l_el": [
+   60,
+   84
+  ],
+  "l_ha": [
+   53,
+   89
+  ],
+  "shield": [
+   51,
+   91,
+   11,
+   17
+  ],
+  "r_hip": [
+   82,
+   96
+  ],
+  "r_kn": [
+   86,
+   105
+  ],
+  "r_ft": [
+   90,
+   119
+  ],
+  "l_hip": [
+   66,
+   96
+  ],
+  "l_kn": [
+   63,
+   105
+  ],
+  "l_ft": [
+   60,
+   119
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back toward the upper-right, the battle axe is lifted beside the head with its crescent blade pointing up and back, the round shield held on the screen-left",
+   "2": "wind-up extreme: body coiled back and crouched, the axe hand behind the head and the battle axe's blade hanging down behind the shoulders to the right, the round shield tucked across the belly, the cape swinging",
+   "3": "swing: the front foot steps toward the lower-left, the torso whips round, the axe arm sweeps across in front of the chest and the battle axe is level, its crescent blade pointing to the left",
+   "4": "contact: axe arm fully extended toward the lower-left, the battle axe's crescent blade chopping down-left, front knee bent, body low and leaning in, the round shield swung back behind the shoulders for balance",
+   "5": "follow-through: the battle axe carries on down until its blade nearly touches the ground at the lower-left, torso twisted, the braided beard and the cape trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the battle axe comes back up on the near side toward the ready angle, the round shield tucked across the belly"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-left; head snaps back toward the upper-right, eyes squeezed shut, torso jolts back, both arms jerk outward (axe arm thrown up and out to the right, the round shield flung out to the left)",
+   "1": "recoil extreme: leaning back further toward the upper-right, knees bent, the battle axe dipping, the round shield still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-right, body thrown back, axe arm flung up, the round shield drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the battle axe lowering",
+   "3": "kneeling: on both knees, slumped forward, the battle axe's blade resting on the ground at the lower-left, shield arm hanging",
+   "4": "falling back: torso tips back toward the upper-right, the battle axe slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-left and head toward the upper-right, the winged helmet still on his head; the battle axe lies on the ground at the lower-left; the round shield lies flat beside him; the cape spread under him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the round shield rocks, the winged helmet and the beard stay on",
+   "7": "corpse: lying flat and still on his back, eyes closed, the battle axe and the round shield on the ground beside him"
+  }
+ }
+}

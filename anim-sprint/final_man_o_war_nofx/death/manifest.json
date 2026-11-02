@@ -1,0 +1,69 @@
+{
+ "unit": "man_o_war",
+ "facing": "lower-right",
+ "arm": "final_man_o_war_nofx",
+ "anim": "death",
+ "canvas": [
+  160,
+  128
+ ],
+ "anchor": [
+  80,
+  126
+ ],
+ "loop": false,
+ "hold_last": true,
+ "frames": [
+  {
+   "file": "frame_00.png",
+   "ms": 80,
+   "events": []
+  },
+  {
+   "file": "frame_01.png",
+   "ms": 120,
+   "events": []
+  },
+  {
+   "file": "frame_02.png",
+   "ms": 140,
+   "events": []
+  },
+  {
+   "file": "frame_03.png",
+   "ms": 200,
+   "events": []
+  },
+  {
+   "file": "frame_04.png",
+   "ms": 80,
+   "events": []
+  },
+  {
+   "file": "frame_05.png",
+   "ms": 80,
+   "events": []
+  },
+  {
+   "file": "frame_06.png",
+   "ms": 80,
+   "events": []
+  },
+  {
+   "file": "frame_07.png",
+   "ms": 400,
+   "events": []
+  }
+ ],
+ "note": "procedural (ship): lib/procedural.py",
+ "warnings": [
+  "frame 0 leaves the safe region x (16, 144): bbox (12, 4, 135, 121)",
+  "frame 1 leaves the safe region x (16, 144): bbox (12, 8, 135, 124)",
+  "frame 2 leaves the safe region x (16, 144): bbox (8, 14, 135, 127)",
+  "frame 3 leaves the safe region x (16, 144): bbox (4, 24, 133, 127)",
+  "frame 4 leaves the safe region x (16, 144): bbox (0, 39, 133, 127)",
+  "frame 5 leaves the safe region x (16, 144): bbox (0, 56, 133, 127)",
+  "frame 6 leaves the safe region x (16, 144): bbox (0, 72, 133, 127)",
+  "frame 7 leaves the safe region x (16, 144): bbox (0, 87, 133, 127)"
+ ]
+}

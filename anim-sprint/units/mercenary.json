@@ -1,0 +1,105 @@
+{
+ "name": "mercenary",
+ "sprite": "m7/roster/units/unit_mercenary.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Mercenary (Fall from Heaven), a burly bald sellsword: a black topknot tied with a red band, a red scar over his brow and eye, a thick black moustache, a fur-trimmed brown cloak hanging behind him on the screen-left side, a steel pauldron on his right shoulder, a brown leather jerkin with steel studs, a red sash with a gold medallion, a gold-clasped coin pouch, olive trousers and brown boots, and a curved steel scimitar with a gold guard in his LEFT hand, its blade resting back over his shoulders",
+ "hands": "the scimitar stays in his left hand on the screen-right side and his right hand on the screen-left side is an empty fist",
+ "guide_style": "grey",
+ "scale": 0.9,
+ "head_r": 9,
+ "limb": 1.15,
+ "joints": {
+  "head": [
+   83,
+   57
+  ],
+  "neck": [
+   84,
+   68
+  ],
+  "chest": [
+   84,
+   78
+  ],
+  "pelvis": [
+   84,
+   91
+  ],
+  "r_sh": [
+   93,
+   70
+  ],
+  "r_el": [
+   102,
+   79
+  ],
+  "r_ha": [
+   106,
+   66
+  ],
+  "tip": [
+   43,
+   60
+  ],
+  "l_sh": [
+   66,
+   71
+  ],
+  "l_el": [
+   61,
+   84
+  ],
+  "l_ha": [
+   63,
+   97
+  ],
+  "r_hip": [
+   90,
+   96
+  ],
+  "r_kn": [
+   93,
+   106
+  ],
+  "r_ft": [
+   96,
+   118
+  ],
+  "l_hip": [
+   76,
+   96
+  ],
+  "l_kn": [
+   71,
+   107
+  ],
+  "l_ft": [
+   70,
+   120
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the scimitar is lifted up over the head with its curved tip pointing up and back",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the scimitar cocked behind the head with the curved blade hanging down behind the shoulders, the empty right fist tucked in",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the arm sweeps over the head and the curved blade is level, pointing to the lower-right",
+   "4": "contact: scimitar arm fully extended toward the lower-right, the curved blade slashing down-right, front knee bent, body low and leaning in, the empty right fist swung back for balance",
+   "5": "follow-through: the curved blade carries on down until its tip nearly touches the ground at the lower-right, torso twisted, the black topknot trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the scimitar lifts back toward its resting angle over the shoulder"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (the empty right fist flung out to the left, the scimitar arm jerked up with the curved blade swinging up over his head toward the upper-left)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the scimitar jerked upright above his left shoulder, the empty right fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, the scimitar arm flung up, the empty right fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, the bald head droops, the scimitar held out to the right at chest height, its curved blade slanting up",
+   "3": "kneeling: on both knees, slumped forward, the scimitar's curved tip resting on the ground at the lower-right, the empty right arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the scimitar slips out of the hand, legs slide forward, the fur-trimmed cloak flaring",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left; the scimitar lies on the ground at the lower-right; the brown cloak spread under him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the cloak settles",
+   "7": "corpse: lying flat and still on his back, eyes closed, the scimitar on the ground beside him"
+  }
+ }
+}

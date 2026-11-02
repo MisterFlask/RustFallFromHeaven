@@ -1,0 +1,105 @@
+{
+ "name": "duin",
+ "sprite": "m7/roster/units/unit_duin.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "Baron Duin Halfmorn, a huge hulking hunched werewolf lord: charcoal-black fur, a shaggy silver-grey mane, pointed ears, a long wolf snout with open fanged jaws and yellow eyes, a small gold crown, a torn crimson baron's coat with gold trim and gold buttons, a gold chain with a round gold medallion on his grey-furred chest, tattered crimson coat tails, big clawed black feet; he carries no weapon: he strikes with the long black claws of his LEFT hand on the screen-right side, and holds a big cream gnawed bone in his RIGHT hand on the screen-left side",
+ "hands": "his left hand on the screen-right side is an empty clawed hand that strikes with its black claws, and his right hand on the screen-left side keeps hold of the gnawed bone",
+ "guide_style": "grey",
+ "scale": 1.2,
+ "head_r": 12,
+ "limb": 1.4,
+ "joints": {
+  "head": [
+   95,
+   35
+  ],
+  "neck": [
+   88,
+   48
+  ],
+  "chest": [
+   84,
+   62
+  ],
+  "pelvis": [
+   70,
+   88
+  ],
+  "r_sh": [
+   102,
+   52
+  ],
+  "r_el": [
+   112,
+   70
+  ],
+  "r_ha": [
+   124,
+   46
+  ],
+  "tip": [
+   119,
+   31
+  ],
+  "l_sh": [
+   56,
+   54
+  ],
+  "l_el": [
+   44,
+   74
+  ],
+  "l_ha": [
+   40,
+   90
+  ],
+  "r_hip": [
+   80,
+   90
+  ],
+  "r_kn": [
+   94,
+   102
+  ],
+  "r_ft": [
+   104,
+   116
+  ],
+  "l_hip": [
+   60,
+   90
+  ],
+  "l_kn": [
+   52,
+   104
+  ],
+  "l_ft": [
+   48,
+   117
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the empty clawed left hand is raised up over the head with its black claws pointing up and back",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the clawed left hand drawn back above and behind the head with its black claws pointing back, the gnawed bone held low in his right hand",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the clawed left arm sweeps forward high and reaches out to the right, black claws spread toward the lower-right",
+   "4": "contact: the clawed left arm lunges out to the right at head height, the black claws raking down toward the lower-right, front knee bent, body low and leaning in, the bone arm swung back for balance",
+   "5": "follow-through: the clawed left hand pulls through to the right at chest height, black claws curled, torso twisted, silver mane and crimson coat tails trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the clawed left hand lifts back up to the raised ready pose"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; wolf head snaps back toward the upper-left, yellow eyes squeezed shut, jaws open, torso jolts back, both arms jerk outward (the gnawed bone in his right hand flung out to the left, the clawed left hand thrown up and out)",
+   "1": "recoil extreme: leaning back further, knees bent, the clawed left hand dipping, the bone still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, clawed left arm flung up, the bone arm drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, wolf head droops, the clawed left hand lowering",
+   "3": "kneeling: on both knees, slumped forward, the clawed left hand hanging limp out to the right, the bone arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the gnawed bone slips out of his hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, clawed hands limp; the gnawed bone lies on the ground at the lower-right; the torn crimson coat spread under him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the crimson coat tails settle",
+   "7": "corpse: lying flat and still on his back, eyes closed, jaws slack, the gnawed bone on the ground beside him"
+  }
+ }
+}

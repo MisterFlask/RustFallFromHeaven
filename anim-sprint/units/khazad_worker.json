@@ -1,0 +1,105 @@
+{
+ "name": "khazad_worker",
+ "sprite": "m7/roster/units/unit_khazad_worker.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Khazad Worker, a stout dwarf labourer: a round steel helmet with gold bands and gold cheek guards, a huge bushy braided red-orange beard covering his chest, a golden-yellow tunic with cream rolled-up sleeves, brown leather gloves, a brown leather apron, dark knee bands, heavy brown leather boots, and a pickaxe with a long wooden shaft and a curved double-pointed steel head, gripped by the end of its shaft in his RIGHT hand",
+ "hands": "the pickaxe's shaft end stays in his right hand on the screen-left side; at rest his left hand on the screen-right side also holds the shaft lower down, near the steel head, but during the action it lets go and is an empty fist",
+ "guide_style": "grey",
+ "scale": 0.76,
+ "head_r": 11,
+ "limb": 1.3,
+ "joints": {
+  "head": [
+   77,
+   69
+  ],
+  "neck": [
+   77,
+   78
+  ],
+  "chest": [
+   76,
+   86
+  ],
+  "pelvis": [
+   72,
+   98
+  ],
+  "r_sh": [
+   61,
+   79
+  ],
+  "r_el": [
+   54,
+   85
+  ],
+  "r_ha": [
+   65,
+   91
+  ],
+  "tip": [
+   104,
+   110
+  ],
+  "l_sh": [
+   87,
+   81
+  ],
+  "l_el": [
+   91,
+   89
+  ],
+  "l_ha": [
+   90,
+   101
+  ],
+  "r_hip": [
+   63,
+   99
+  ],
+  "r_kn": [
+   57,
+   108
+  ],
+  "r_ft": [
+   55,
+   120
+  ],
+  "l_hip": [
+   81,
+   99
+  ],
+  "l_kn": [
+   83,
+   109
+  ],
+  "l_ft": [
+   85,
+   120
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back toward the upper-left, the left hand lets go of the shaft, the pickaxe is lifted high beside the helmet with its shaft level and its steel head out to the right",
+   "2": "wind-up extreme: body coiled back and crouched, the pickaxe hand behind the helmet and the pickaxe hanging down behind the shoulders to the left, its steel head low behind him, the left hand an empty fist tucked across the beard",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips round, the pickaxe arm sweeps across in front of the chest and the pickaxe is level, its steel head pointing to the right, the left hand an empty fist",
+   "4": "contact: pickaxe arm fully extended toward the lower-right, the pickaxe's steel point striking down-right, front knee bent, body low and leaning in, the empty left fist swung back behind the shoulders for balance",
+   "5": "follow-through: the pickaxe carries on down until its steel head nearly touches the ground at the lower-right, torso twisted, the braided beard swinging, the empty left fist trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the pickaxe comes back toward its resting angle with the steel head low at the lower-right, the left hand reaching for the shaft"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (pickaxe arm thrown up and out to the left with the pickaxe swinging across level, the empty left fist flung out to the right), the beard jolting",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the pickaxe held across the body, the empty left fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, pickaxe arm flung up, the empty left fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, the helmeted head droops onto the beard, the pickaxe lowering, the empty left fist hanging",
+   "3": "kneeling: on both knees, slumped forward, the pickaxe's steel head resting on the ground at the lower-right, the empty left arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the pickaxe slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the steel helmet on his head and the beard spread over his chest; the pickaxe lies on the ground at the lower-right",
+   "6": "bounce: head and shoulders lift slightly off the ground, the helmet and the beard stay on",
+   "7": "corpse: lying flat and still on his back, eyes closed, the helmet on his head, the pickaxe on the ground beside him"
+  }
+ }
+}

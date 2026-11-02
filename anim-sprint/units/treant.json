@@ -1,0 +1,54 @@
+{
+ "name": "treant",
+ "sprite": "m7/roster/units/unit_treant.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Treant (Fall from Heaven), a tall walking tree: a brown gnarled bark body, a craggy bark face with a long nose ridge, glowing amber eyes and a leafy green beard, a bushy green leaf crown on its head, green leaves sprouting along its shoulders and long gnarled branch arms, each arm ending in a hand of long twig claws, and thick spreading root feet; no weapon: it attacks with the long twig claws of its LEFT hand (screen-right), and its RIGHT hand (screen-left) is an empty twig-clawed hand",
+ "hands": "its weapon is the twig-clawed left hand on the screen-right side, hanging low with its long twig claws spread, and its right hand on the screen-left side is an empty twig-clawed hand hanging low at its side",
+ "guide_style": "grey",
+ "scale": 1.35,
+ "head_r": 12,
+ "limb": 1.4,
+ "joints": {
+  "head": [83, 35],
+  "neck": [82, 50],
+  "chest": [79, 63],
+  "pelvis": [80, 83],
+  "r_sh": [94, 54],
+  "r_el": [106, 69],
+  "r_ha": [112, 85],
+  "tip": [115, 99],
+  "l_sh": [58, 50],
+  "l_el": [51, 68],
+  "l_ha": [50, 80],
+  "r_hip": [88, 84],
+  "r_kn": [94, 96],
+  "r_ft": [96, 108],
+  "l_hip": [72, 86],
+  "l_kn": [67, 95],
+  "l_ft": [67, 110]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear root leg, the trunk leans back, the twig-clawed left hand is lifted up over the head with its long twig claws pointing up and back",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the twig-clawed left hand cocked behind the head with its twig claws hanging down behind the leafy shoulders, the empty twig-clawed right hand tucked in",
+   "3": "swing: the front root foot steps toward the lower-right, the trunk whips forward, the left branch arm sweeps over the head and the twig-clawed hand reaches out level, its long twig claws pointing to the lower-right",
+   "4": "contact: the left branch arm fully extended toward the lower-right, the long twig claws raking down-right, front knee bent, body low and leaning in, the empty twig-clawed right hand swung back for balance",
+   "5": "follow-through: the twig-clawed left hand carries on down until its claws nearly touch the ground at the lower-right, the trunk twisted, the leaf crown shaking",
+   "6": "recover: body rises, front root foot pulls back halfway, the twig-clawed left hand lifts back toward its low hanging rest"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; the bark head snaps back toward the upper-left, amber eyes squeezed shut, the trunk jolts back, both branch arms jerk outward (the empty twig-clawed right hand flung out to the left, the twig-clawed left arm thrown out with its claws splayed), a few leaves shaken loose",
+   "1": "recoil extreme: leaning back further, knees bent, the twig-clawed left hand dipping, the empty twig-clawed right hand still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near root foot, body thrown back, the twig-clawed left arm flung up, the empty twig-clawed right hand drooping, leaves falling",
+   "2": "knees buckle: hips drop, knees fold forward, the trunk slumps forward, the bark head droops, the twig-clawed hands lowering",
+   "3": "kneeling: on both knees, slumped forward, the twig claws of the left hand resting on the ground, the right branch arm hanging",
+   "4": "falling back: the trunk tips back toward the upper-left, the branch arms go limp and a twig snaps off the left hand, legs slide forward, leaves scattering",
+   "5": "hits the ground: lying on its back along the ground, root feet toward the lower-right and the leafy head toward the upper-left, the branch arms sprawled limp; the snapped-off twig and fallen leaves lie on the ground at the lower-right; the leaf crown spread under its head",
+   "6": "bounce: head and shoulders lift slightly off the ground, the leaf crown and loose leaves settle",
+   "7": "corpse: lying flat and still on its back, the amber eyes dark, the branch arms limp, the snapped-off twig and fallen leaves on the ground beside it"
+  }
+ }
+}

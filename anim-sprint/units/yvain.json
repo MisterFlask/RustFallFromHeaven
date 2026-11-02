@@ -1,0 +1,99 @@
+{
+ "name": "yvain",
+ "sprite": "m7/roster/units/unit_yvain.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "body_plan": "caster",
+ "description": "Yvain, the Fellowship of Leaves hero (Fall from Heaven): a barefoot young man with long wavy brown hair and a crown of green leaves and white blossoms, a smiling face, a tunic of overlapping green leaves with a brown cord belt over a ragged brown hide kilt, a dappled fawn skin hanging over his screen-left shoulder, a leaf anklet on each ankle, and a tall gnarled wooden branch staff sprouting green leaves and white blossoms at its top, held upright in his RIGHT hand; his LEFT hand is open and empty, held out to the side palm up",
+ "hands": "the leafy branch staff stays upright in his right hand on the screen-left side and his left hand is an empty open hand held out on the screen-right side",
+ "guide_style": "grey",
+ "scale": 0.91,
+ "head_r": 10,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   86,
+   55
+  ],
+  "neck": [
+   84,
+   64
+  ],
+  "chest": [
+   85,
+   74
+  ],
+  "pelvis": [
+   85,
+   85
+  ],
+  "r_sh": [
+   75,
+   67
+  ],
+  "r_el": [
+   66,
+   79
+  ],
+  "r_ha": [
+   58,
+   73
+  ],
+  "tip": [
+   57,
+   40
+  ],
+  "l_sh": [
+   95,
+   67
+  ],
+  "l_el": [
+   102,
+   74
+  ],
+  "l_ha": [
+   112,
+   74
+  ],
+  "r_hip": [
+   79,
+   91
+  ],
+  "r_kn": [
+   78,
+   104
+  ],
+  "r_ft": [
+   78,
+   114
+  ],
+  "l_hip": [
+   90,
+   91
+  ],
+  "l_kn": [
+   97,
+   103
+  ],
+  "l_ft": [
+   100,
+   115
+  ]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, long brown hair flying, torso jolts back, both arms jerk outward (the staff arm flung out to the left with the leafy branch staff jolting back, the empty open left hand flung out to the right)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the leafy branch staff dipping low at his side, the empty open left hand still held out",
+   "2": "recovering: halfway back to the ready pose, the leafy branch staff coming back upright in his right hand"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, the staff arm flung up holding the leafy branch staff high above his head, the empty left hand drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head and long hair droop, the staff arm dropping out to the side, the leafy branch staff lowering",
+   "3": "kneeling: on both knees, slumped forward, the branch staff slanting down at his side with its leafy, blossoming top touching the ground, the empty left arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the leafy branch staff slips out of his right hand, bare legs slide forward, the leaf crown still on his head",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the long brown hair and leaf crown spread on the ground; the leafy branch staff lies on the ground at the lower-right; the fawn skin spread under him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the long hair and the fawn skin settle",
+   "7": "corpse: lying flat and still on his back, eyes closed, the leaf crown on his head, the leafy branch staff on the ground beside him"
+  }
+ }
+}

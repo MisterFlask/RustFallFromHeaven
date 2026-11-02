@@ -1,0 +1,105 @@
+{
+ "name": "succubus",
+ "sprite": "m7/roster/units/unit_succubus.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "the Succubus (Fall from Heaven), a female demon: pale lavender skin, long flowing purple hair, two dark curved horns, pink-red eyes and pointed ears, a black armoured bodysuit with magenta-pink plates and thigh-high armoured boots, a pair of magenta bat wings spread from her back on both sides, a spade-tipped devil tail curling on the screen-left side, and a long thorny dark whip with pink thorns and a pink spade tip in her LEFT hand (screen-right), its lash hanging in a loose coil down to the ground",
+ "hands": "the thorny whip stays in her left hand on the screen-right side and her right hand on the screen-left side is an empty fist at her hip",
+ "guide_style": "grey",
+ "scale": 0.95,
+ "head_r": 10,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   76,
+   55
+  ],
+  "neck": [
+   77,
+   66
+  ],
+  "chest": [
+   77,
+   76
+  ],
+  "pelvis": [
+   78,
+   89
+  ],
+  "r_sh": [
+   86,
+   68
+  ],
+  "r_el": [
+   87,
+   78
+  ],
+  "r_ha": [
+   96,
+   83
+  ],
+  "tip": [
+   108,
+   119
+  ],
+  "l_sh": [
+   66,
+   68
+  ],
+  "l_el": [
+   63,
+   80
+  ],
+  "l_ha": [
+   59,
+   91
+  ],
+  "r_hip": [
+   83,
+   92
+  ],
+  "r_kn": [
+   82,
+   104
+  ],
+  "r_ft": [
+   84,
+   120
+  ],
+  "l_hip": [
+   71,
+   92
+  ],
+  "l_kn": [
+   67,
+   104
+  ],
+  "l_ft": [
+   60,
+   120
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the whip is lifted up over the head with its thorny lash trailing up and back, the bat wings raised",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the whip hand cocked behind the head with the thorny lash hanging down behind the shoulders, the empty right fist tucked in",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the whip arm sweeps over the head and the thorny lash flies out straight and level, its spade tip pointing to the lower-right",
+   "4": "contact: whip arm fully extended toward the lower-right, the thorny lash snapping out straight and cracking down-right, front knee bent, body low and leaning in, the empty right fist swung back for balance, the bat wings flared",
+   "5": "follow-through: the whip lash carries on down until its spade tip nearly touches the ground at the lower-right, torso twisted, purple hair and devil tail trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the whip hand comes back toward its resting place, the thorny lash hanging loose toward the ground"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (the empty right fist flung out to the left, the whip arm thrown out with the thorny lash dangling), the bat wings jolting open",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the whip lash dipping, the empty right fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, whip arm flung up, the empty right fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the whip lowering, the bat wings sagging",
+   "3": "kneeling: on both knees, slumped forward, the whip's spade tip resting on the ground, the empty right arm hanging, the bat wings drooping",
+   "4": "falling back: torso tips back toward the upper-left, the whip slips out of the hand, legs slide forward, the bat wings folding",
+   "5": "hits the ground: lying on her back along the ground, feet toward the lower-right and head toward the upper-left, horns and purple hair on the ground; the thorny whip lies on the ground at the lower-right; the bat wings spread under her",
+   "6": "bounce: head and shoulders lift slightly off the ground, the bat wings and the devil tail settle",
+   "7": "corpse: lying flat and still on her back, eyes closed, the bat wings spread limp under her, the thorny whip on the ground beside her"
+  }
+ }
+}

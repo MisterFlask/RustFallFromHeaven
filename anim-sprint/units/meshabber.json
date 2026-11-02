@@ -1,0 +1,105 @@
+{
+ "name": "meshabber",
+ "sprite": "m7/roster/units/unit_meshabber.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "Meshabber of Dis (Fall from Heaven), a huge demon: dark charcoal-grey skin split by glowing orange lava cracks, two curled tan ram horns, small glowing orange eyes, two big tattered red-brown bat wings spread behind his shoulders, black spiked pauldrons and greaves with bone-white spikes, a chain belt with a horned skull buckle over a red loincloth, a jagged black sword with orange flames along its edge held up in his LEFT hand, and a long black chain flail with glowing orange links and a spiked ball hanging from his RIGHT hand",
+ "hands": "the flaming black sword stays in his left hand on the screen-right side and his right hand on the screen-left side keeps hold of the end of the spiked chain flail, which hangs loose from it",
+ "guide_style": "grey",
+ "scale": 1.08,
+ "head_r": 9,
+ "limb": 1.4,
+ "joints": {
+  "head": [
+   80,
+   42
+  ],
+  "neck": [
+   81,
+   50
+  ],
+  "chest": [
+   81,
+   59
+  ],
+  "pelvis": [
+   83,
+   77
+  ],
+  "r_sh": [
+   95,
+   55
+  ],
+  "r_el": [
+   98,
+   68
+  ],
+  "r_ha": [
+   112,
+   80
+  ],
+  "tip": [
+   136,
+   22
+  ],
+  "l_sh": [
+   62,
+   57
+  ],
+  "l_el": [
+   47,
+   69
+  ],
+  "l_ha": [
+   37,
+   79
+  ],
+  "r_hip": [
+   92,
+   83
+  ],
+  "r_kn": [
+   97,
+   101
+  ],
+  "r_ft": [
+   100,
+   114
+  ],
+  "l_hip": [
+   73,
+   83
+  ],
+  "l_kn": [
+   62,
+   100
+  ],
+  "l_ft": [
+   55,
+   117
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back toward the upper-left, the flaming black sword is lifted up over the horned head with its burning tip pointing up and back, the bat wings rising",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the flaming black sword cocked behind the horned head with its burning blade hanging down behind the shoulders, the other hand tucked in with the spiked chain flail hanging from it",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the sword arm sweeps over the head and the flaming black blade is level, pointing to the lower-right, the bat wings flaring",
+   "4": "contact: sword arm fully extended toward the lower-right, the flaming black blade slashing down-right, front knee bent, body low and leaning in, the flail arm swung back for balance with the spiked chain flail swinging",
+   "5": "follow-through: the flaming black blade carries on down until its burning tip nearly touches the ground at the lower-right, torso twisted, the bat wings trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the flaming black sword lifts back toward the ready angle, the spiked chain flail hanging from the other hand"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; the horned head snaps back toward the upper-left, glowing eyes squeezed shut, torso jolts back, both arms jerk outward (the flail hand flung out to the left with the spiked chain flail swinging, the sword arm thrown up and out with the flaming black sword), the bat wings jolting open",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the flaming black sword dipping, the flail hand still held out with the chain flail dangling"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot toward the upper-left, body thrown back, the sword arm flung up holding the flaming black sword, the flail hand drooping, the bat wings flailing",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, the horned head droops, the flaming black sword lowering, the chain flail dragging on the ground",
+   "3": "kneeling: on both knees, slumped forward, the black sword's tip resting on the ground at the lower-right with its flames dying down, the flail arm hanging with the chain flail coiled on the ground, the bat wings drooping",
+   "4": "falling back: torso tips back toward the upper-left, the black sword slips out of the hand and the chain flail slips loose, legs slide forward, the bat wings folding",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, horns on the ground; the black sword lies on the ground at the lower-right; the bat wings crumpled under him, the chain flail beside him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the bat wings settle",
+   "7": "corpse: lying flat and still on his back, eyes dark, the black sword with only a few small embers left and the spiked chain flail on the ground beside him"
+  }
+ }
+}
