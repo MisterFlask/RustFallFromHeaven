@@ -35,6 +35,24 @@ fn combat_unit_of(game: &Game, u: UnitId) -> Option<UnitId> {
     game.units[u].combat_unit.filter(|&c| game.units.contains(c))
 }
 
+/// Not in C++: the fight of `u` against `defender` on `plot` as it starts (`Game::combat_notes`).
+fn combat_note(game: &Game, u: UnitId, defender: UnitId, plot: PlotIdx) -> crate::log::CombatNote {
+    let stack = |at: PlotIdx, of: UnitId| {
+        let team = game.unit_get_team(of);
+        game.map.plots[at].units.iter().filter(|&&x| game.units.contains(x) && game.unit_get_team(x) == team && game.unit_can_fight(x)).count() as i32
+    };
+    crate::log::CombatNote {
+        turn: game.game_turn(),
+        attacker: u,
+        defender,
+        attacker_owner: game.units[u].owner,
+        defender_owner: game.units[defender].owner,
+        plot,
+        attacker_stack: stack(game.unit_plot(u), u),
+        defender_stack: stack(plot, defender),
+    }
+}
+
 /// C++ `pPlot->getOwnerINLINE() == getOwnerINLINE()`: the `bInBorders` argument of the
 /// `changeExperience` calls after a combat on `plot`.
 fn owns_plot(game: &Game, u: UnitId, plot: PlotIdx) -> bool {
@@ -643,6 +661,14 @@ impl Game {
                 self.group_clear_mission_queue(defender_group);
 
                 // UI: combat focus camera or "units under attack" message to the defender.
+
+                // Not in C++: the fight noted for tools (off by default; reads only).
+                if self.combat_notes.is_some() {
+                    let note = combat_note(self, u, defender, plot);
+                    if let Some(notes) = self.combat_notes.as_mut() {
+                        notes.push(note);
+                    }
+                }
             }
 
             if !self.unit_can_defend(defender, None) {

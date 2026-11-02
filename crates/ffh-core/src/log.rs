@@ -3,6 +3,9 @@
 //! Disabled by default (benchmarks); enable for debugging and UIs. Use the
 //! closure form so formatting costs nothing when disabled:
 //! `g.log.msg(turn, Some(p), || format!("..."))`.
+//!
+//! [`CombatNote`]s are a separate, structured record of the fights (`Game::combat_notes`),
+//! for tools that look for a kind of fight (ffh-play's war start).
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct LogEntry {
@@ -73,4 +76,23 @@ impl GameLog {
             e.at = Some(at);
         }
     }
+}
+
+/// One fight as it starts, recorded while `Game::combat_notes` is `Some` (off by default; not game
+/// state, not saved). A duel (`unit_update_combat`, once the attack is set up and before it is
+/// resolved): the stacks are the units that can fight (`unit_can_fight`) of the attacker's team on
+/// the attacker's plot and of the defender's team on the attacked plot, the two units included. An
+/// engagement (`engage`, once both sides are committed): the stacks are the committed units, and
+/// `attacker` / `defender` the first of each side.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CombatNote {
+    pub turn: i32,
+    pub attacker: crate::ids::UnitId,
+    pub defender: crate::ids::UnitId,
+    pub attacker_owner: crate::ids::PlayerId,
+    pub defender_owner: crate::ids::PlayerId,
+    /// The attacked plot.
+    pub plot: crate::ids::PlotIdx,
+    pub attacker_stack: i32,
+    pub defender_stack: i32,
 }

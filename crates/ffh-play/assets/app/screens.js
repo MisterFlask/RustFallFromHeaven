@@ -201,7 +201,9 @@ function civSummary(pedia) {
 /** The new-game screen (design §5.1): the civilization (a list with its banners; the chosen one's
  *  summary and what it brings) and its leader (cards with their portraits; the chosen one's
  *  portrait and traits), or random; then the world: opponents, size, speed, difficulty, era,
- *  climate, sea level, seed and the game's name; the game options and victories. */
+ *  climate, sea level, seed and the game's name; the game options and victories. And the debug
+ *  start at war (`session war_start`: these settings, an AI-only game played until a battle, the
+ *  attacked civilization yours just before it). */
 export function newGame({ dismissible = true, noGame = false } = {}) {
   const st = S.setup;
   if (!st) return null;
@@ -303,6 +305,7 @@ export function newGame({ dismissible = true, noGame = false } = {}) {
   const crusades = h("input", { type: "checkbox", id: "ng-crusades", checked: !!d.crusades });
   const vanilla = h("input", { type: "checkbox", id: "ng-vanilla", checked: !!d.vanilla });
   const err = h("p.error");
+  const note = h("p.dim#ng-war-note");
   const field = (label, el, extra = null) => h("label.field", h("span", label), el, extra);
   const form = h(
     "div.newgame",
@@ -344,9 +347,10 @@ export function newGame({ dismissible = true, noGame = false } = {}) {
       " Crusades: committed wars and allied loans",
     ),
     err,
+    note,
   );
   pickCiv(civ.value);
-  const start = async (m) => {
+  const setupOf = () => {
     const setup = {
       seed: Number(seed.value),
       opponents: Number(opponents.value),
@@ -362,15 +366,42 @@ export function newGame({ dismissible = true, noGame = false } = {}) {
     };
     if (civ.value) setup.civ = civ.value;
     if (leader.value) setup.leader = leader.value;
+    if (vanilla.checked) setup.vanilla = true;
+    return setup;
+  };
+  const start = async (m) => {
+    const setup = setupOf();
     err.textContent = "";
     try {
       if (spectate.checked) setup.observe = true;
-      if (vanilla.checked) setup.vanilla = true;
       await api.session("new", name.value ? { setup, name: name.value } : { setup });
       m.close("started");
       emit("game-started", { spectate: spectate.checked });
     } catch (e) {
       err.textContent = e.detail ?? e.message;
+    }
+  };
+  // The war start plays an AI-only game for a few hundred turns: seconds, up to a minute on a big
+  // map; its turn comes in the status (`war_search`) meanwhile. It is always played, never
+  // spectated.
+  const warStart = async (m) => {
+    const setup = setupOf();
+    const what = "Playing an AI game until two civilizations at war fight with 3 or more units a side";
+    err.textContent = "";
+    note.textContent = `${what}…`;
+    const timer = setInterval(() => {
+      const t = S.status?.war_search?.turn;
+      if (t !== undefined && t !== null) note.textContent = `${what}: turn ${t}…`;
+    }, 250);
+    try {
+      const reply = await api.session("war_start", name.value ? { setup, name: name.value } : { setup });
+      m.close("started");
+      emit("game-started", { war: reply.r.war });
+    } catch (e) {
+      err.textContent = e.detail ?? e.message;
+    } finally {
+      clearInterval(timer);
+      note.textContent = "";
     }
   };
   return openModal({
@@ -382,6 +413,12 @@ export function newGame({ dismissible = true, noGame = false } = {}) {
     dismissible,
     buttons: [
       { label: "Load a game…", onClick: () => loadScreen() },
+      {
+        label: "Start at war (debug)",
+        value: "war",
+        title: "An AI game of these settings is played until two civilizations at war fight a battle with 3 or more units a side; you take over the attacked one just before the attack (the civilization: yours if chosen, else whichever is attacked)",
+        onClick: warStart,
+      },
       { label: "Start", primary: true, onClick: start },
     ],
   });

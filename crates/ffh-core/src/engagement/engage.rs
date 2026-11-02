@@ -533,6 +533,23 @@ impl Game {
             owners: setup.units.iter().map(|&u| self.units[u].owner).collect(),
             setup,
         };
+        // The engagement noted for tools (`Game::combat_notes`, off by default; reads only): its
+        // stacks are the units committed on each side.
+        if let (true, Some(&attacker), Some(&defender)) = (self.combat_notes.is_some(), att_units.first(), def_units.first()) {
+            let note = crate::log::CombatNote {
+                turn: self.game_turn(),
+                attacker,
+                defender,
+                attacker_owner: p,
+                defender_owner: self.units[defender].owner,
+                plot: to,
+                attacker_stack: att_units.len() as i32,
+                defender_stack: def_units.len() as i32,
+            };
+            if let Some(notes) = self.combat_notes.as_mut() {
+                notes.push(note);
+            }
+        }
         let wants_log = log.unwrap_or_else(|| self.engage_seen_by_human(&e.units, p, to));
         let mut sink = if wants_log {
             let reserves: Vec<(UnitId, Side)> = pool

@@ -37,9 +37,26 @@ options and victory conditions, each choice's description as its tooltip, and "V
 every other civilization, `data/text/barks.md`). The load screen has a
 card per game (the current one first, then the most recently saved) and a row per save with its
 turn and when it was written, the older autosaves folded away. Each game gets a directory in `./saves` (`--saves DIR` to change it).
+
 `serve` takes the GAME flags too (`--seed 3 --world WORLDSIZE_SMALL --new` starts a game at once,
 `--load saves/game-3/auto/T0040.ffhsave` resumes one). Use a current Chrome, Firefox or Safari;
 nothing is fetched from the internet.
+
+**Start at war (debug).** The new-game screen's "Start at war (debug)" button starts a game in the
+middle of a war, for trying combat and the war screens without playing there: an AI-only game of the screen's
+settings is played until two civilizations at war fight a battle with 3 or more fighting units
+on each side (the attacking stack and the attacked one; with Engagements on, the units each side
+commits), and you take over the attacked
+civilization at its last turn before the attack (`crates/ffh-play/src/war_start.rs`). Turns are
+sequential, so that is the turn of the battle when the attacker moves after you, else the turn
+before. Since your civilization no longer plays as the AI did, each candidate is checked by
+playing on with you idle, and kept only if a battle of that size against you comes within two of
+your turns. The view opens on your threatened stack and a message names the attacker. The search
+takes a few seconds on a small map (big battles come late: turn 250 or so) and up to a minute on a
+large one (the screen shows the AI game's turn meanwhile); the same settings give the same start.
+With "Random" any attacked civilization will do; a chosen one plays slot 0 and only battles against
+it count. The game's directory is `war-<seed>`, and its `war-start` save is the start (load it to
+play it again).
 
 **The look.** The client draws with the game's own pixel art (docs/ART.md, "cheerful
 readability", embedded in the binary like the rest of the page): a bright daylight map in the
@@ -888,6 +905,7 @@ Session operations (`op`):
 | `op` | |
 |---|---|
 | `new {setup, name?}` | a new game (`setup` as `--setup`; `name`: its directory, default `game-<seed>`; not `auto`, which names autosaves) |
+| `war_start {setup, name?}` | the debug start at war (see "Start at war" above; `name` default `war-<seed>`): answered once the search found a start, `{game, war: {player, turn, battle, confirmed, rejected, attacker_name, player_name}}` (`battle`: the AI game's, `confirmed`: the check's, each `{turn, attacker, defender, x, y, attacker_stack, defender_stack}`), or `cannot` when no battle came in 500 turns; meanwhile the published status carries `war_search: {turn}` |
 | `load {name}` | a save by name: `NAME`, `auto/NAME` or `flags/NAME` in the current game's directory, `GAME/NAME`, `GAME/auto/NAME` or `GAME/flags/NAME` in another game's (as the `saves` query and operation list them); nothing outside the saves directory. An AI-only save is observed |
 | `take_over {player, name}` | take over slot `player` of an AI-only save (debugging) |
 | `save {name}` | save the game in its directory (`[A-Za-z0-9_.-]`, 1-64, not starting with a dot) |

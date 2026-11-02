@@ -24,6 +24,8 @@
 //! * [`transport`]: the JSON envelope over stdio (`ffh-play agent`) and HTTP (`ffh-play serve`),
 //!   which also serves the browser client (`assets/`, P5).
 //! * [`stage`]: saves at staged situations for testing the clients (`ffh-play stage`).
+//! * [`war_start`]: the debug start at war (an AI-only game played until a battle, the attacked
+//!   civilization taken over just before it; session op `war_start`).
 //! * [`site`]: the static site's client files and data pack (`ffh-play export-site`; the engine
 //!   runs in the page: [`transport::web`], `crates/ffh-web`).
 
@@ -47,6 +49,7 @@ pub mod soak;
 pub mod stage;
 pub mod transport;
 pub mod view;
+pub mod war_start;
 
 /// The commit this binary was built from (`git rev-parse --short=12 HEAD` at build time, or the
 /// `FFH_BUILD_COMMIT` environment variable; "unknown" without either): the status's `build`

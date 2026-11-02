@@ -15,7 +15,7 @@
 //! `{"id", "ok": false, "error": code, "detail": text}`.
 //!
 //! [`Host`] is the game-thread state of a transport: the session (or none), its game directory,
-//! and the session operations (new, load, save, take over, debug, quit, saves). A blocking
+//! and the session operations (new, war start, load, save, take over, debug, quit, saves). A blocking
 //! decision raised inside a rules call is answered by the transport's `Answerer`, which reads the
 //! next requests itself ([`decision_reply`]): queries are answered from the decision's side,
 //! commands and session operations get `decision_pending`, an `answer` closes it.
@@ -91,6 +91,9 @@ pub enum SessionOp {
     /// A new game (`setup`: the new-game settings, every member optional; `name`: the game's
     /// directory under the saves root, default `game-<seed>`).
     New { setup: Json, name: Option<String> },
+    /// The debug start at war ([`crate::war_start`]): `setup` as `New`'s; `name`: the game's
+    /// directory, default `war-<seed>`. Answered once the search is done (seconds).
+    WarStart { setup: Json, name: Option<String> },
     /// Loads a save of the saves root by name (see [`Host::resolve_save`]).
     Load { name: String },
     /// Saves the game as `name` in its directory.
@@ -171,24 +174,25 @@ impl Request {
             "session" => {
                 let op = j.req_str("op")?;
                 let fields: &[&str] = match op {
-                    "new" => &["op", "setup", "name"],
+                    "new" | "war_start" => &["op", "setup", "name"],
                     "load" | "save" => &["op", "name"],
                     "take_over" => &["op", "player", "name"],
                     "debug" => &["op", "reveal"],
                     "follow" => &["op", "player"],
                     "flag" => &["op", "x", "y", "note"],
                     "quit" | "saves" | "flags" => &["op"],
-                    other => return Err(ProtoErr::invalid(format!("unknown session op {other:?} (new, load, save, take_over, debug, follow, flag, flags, quit, saves)"))),
+                    other => return Err(ProtoErr::invalid(format!("unknown session op {other:?} (new, war_start, load, save, take_over, debug, follow, flag, flags, quit, saves)"))),
                 };
                 only(fields)?;
                 Request::Session(match op {
-                    "new" => {
+                    "new" | "war_start" => {
                         let setup = match j.opt_value("setup")? {
                             None | Some(Json::Null) => Json::obj(),
                             Some(s) if s.as_obj().is_some() => s.clone(),
                             Some(s) => return Err(FieldError::wrong("setup", "an object", s).into()),
                         };
-                        SessionOp::New { setup, name: j.opt("name")? }
+                        let name = j.opt("name")?;
+                        if op == "new" { SessionOp::New { setup, name } } else { SessionOp::WarStart { setup, name } }
                     }
                     "load" => SessionOp::Load { name: j.req("name")? },
                     "save" => SessionOp::Save { name: j.req("name")? },
@@ -439,12 +443,26 @@ pub struct Host {
     /// The crash report after a panic dropped the session: the status is `crashed` until a game
     /// is started or loaded.
     crash: Option<Json>,
+    /// Where a long session operation publishes its progress (the status with a member such as
+    /// `war_search`), when the transport publishes statuses ([`Host::set_publisher`]).
+    publisher: Option<Publisher>,
 }
+
+/// Publishes a status (the HTTP server's and the web host's `Shared::publish`).
+pub type Publisher = Arc<dyn Fn(Json) + Send + Sync>;
+
+/// A long session operation's progress, at most this often.
+const PROGRESS_EVERY: std::time::Duration = std::time::Duration::from_millis(250);
 
 impl Host {
     /// A host whose sessions answer blocking decisions with `answerer` (the transport's).
     pub fn new(opts: HostOptions, answerer: Arc<dyn Answerer>) -> Host {
-        Host { session: None, opts, answerer, game_dir: None, stuck: None, origin: None, crash: None }
+        Host { session: None, opts, answerer, game_dir: None, stuck: None, origin: None, crash: None, publisher: None }
+    }
+
+    /// Long session operations (the war start's search) publish their progress through `p`.
+    pub fn set_publisher(&mut self, p: Publisher) {
+        self.publisher = Some(p);
     }
 
     pub fn session(&self) -> Option<&Session> {
@@ -668,6 +686,7 @@ impl Host {
                 let dir = self.new_game(&setup, name.as_deref())?;
                 Ok((crate::jobj! { "game" => dir.map(|d| d.display().to_string()) }, After::Advance))
             }
+            SessionOp::WarStart { setup, name } => self.war_start(&setup, name.as_deref()),
             SessionOp::Load { name } => {
                 let (path, dir) = self.resolve_save(&name)?;
                 let (bytes, sidecar) = read_save(&path)?;
@@ -714,25 +733,76 @@ impl Host {
         }
     }
 
+    /// A new game's directory name: `name`, else `default`.
+    fn game_name(name: Option<&str>, default: String) -> Result<String, ProtoErr> {
+        match name {
+            // `auto/NAME` names the current game's autosaves (and `flags/NAME` its flags' saves): a
+            // game called `auto` could not be loaded from by name.
+            Some(n) if n.eq_ignore_ascii_case(AUTO) || n.eq_ignore_ascii_case(crate::flag::FLAGS_DIR) => {
+                Err(ProtoErr::invalid(format!("game name {n:?}: reserved (auto/NAME and flags/NAME name a game's autosaves and flags' saves)")))
+            }
+            Some(n) => Ok(save::sanitize_name(n).map_err(ProtoErr::invalid)?.to_string()),
+            None => Ok(default),
+        }
+    }
+
+    /// A new game directory `<root>/<base>` (`-2`, `-3`, .. appended when taken); none without
+    /// a saves root.
+    fn make_game_dir(&self, base: &str) -> Result<Option<PathBuf>, ProtoErr> {
+        match &self.opts.saves {
+            None => Ok(None),
+            Some(root) => Ok(Some(unused_dir(root, base).map_err(|e| ProtoErr::new("cannot", format!("{}: {e}", root.display())))?)),
+        }
+    }
+
+    /// The war start ([`crate::war_start`]) of `setup` in a new directory `<root>/<name>`
+    /// (`war-<seed>` by default), made once the search found a start; the start is saved there
+    /// as `war-start` (load it to play it again), and the session is that save loaded.
+    fn war_start(&mut self, setup: &Json, name: Option<&str>) -> Result<(Json, After), ProtoErr> {
+        let d = ffh_data::global();
+        let ng = NewGame::from_json(d, setup)?;
+        ng.validate(d).map_err(ProtoErr::invalid)?;
+        let base = Host::game_name(name, format!("war-{}", ng.seed))?;
+        // While it searches the status is the current one with `war_search: {turn}` (the AI-only
+        // game's turn).
+        let status = self.status();
+        let publisher = self.publisher.clone();
+        let mut last: Option<std::time::Instant> = None;
+        let mut progress = |turn: i32| {
+            if let Some(p) = &publisher {
+                if last.is_none_or(|t| t.elapsed() >= PROGRESS_EVERY) {
+                    last = Some(std::time::Instant::now());
+                    p(status.clone().with("war_search", crate::jobj! { "turn" => turn }));
+                }
+            }
+        };
+        let ws = crate::war_start::find(&ng, &crate::war_start::WarStartOptions::default(), &mut progress).map_err(|e| ProtoErr::new("cannot", e))?;
+        let dir = self.make_game_dir(&base)?;
+        // The sidecar says who plays and the game's settings (played, not observed).
+        let played = NewGame { observe: false, ..ng };
+        let sidecar = save::Sidecar { human: ws.player, setup: Some(played.to_json_names(d)), ..save::Sidecar::default() };
+        let origin = match &dir {
+            None => None,
+            Some(dir) => {
+                let paths = save::write_bundle(dir, WAR_START_SAVE, &ws.save, &sidecar).map_err(|e| ProtoErr::new("cannot", format!("{}: {e}", dir.display())))?;
+                Some(paths.save)
+            }
+        };
+        // The old session goes first (its journal is closed).
+        self.session = None;
+        let s = Session::load(&ws.save, Some(&sidecar), self.answerer.clone(), self.session_options(dir.clone())).map_err(play_err)?;
+        self.install(s, dir.clone(), origin);
+        Ok((crate::jobj! { "game" => dir.map(|d| d.display().to_string()), "war" => ws.to_json() }, After::Advance))
+    }
+
     /// A new game in a new directory `<root>/<name>` (`game-<seed>` by default; `-2`, `-3`, ..
     /// appended when taken). The settings are checked before the directory is made.
     fn new_game(&mut self, setup: &Json, name: Option<&str>) -> Result<Option<PathBuf>, ProtoErr> {
         let d = ffh_data::global();
         let ng = NewGame::from_json(d, setup)?;
         ng.validate(d).map_err(ProtoErr::invalid)?;
-        let base = match name {
-            // `auto/NAME` names the current game's autosaves: a game called `auto` could not be
-            // loaded from by name.
-            Some(n) if n.eq_ignore_ascii_case(AUTO) || n.eq_ignore_ascii_case(crate::flag::FLAGS_DIR) => {
-                return Err(ProtoErr::invalid(format!("game name {n:?}: reserved (auto/NAME and flags/NAME name a game's autosaves and flags' saves)")))
-            }
-            Some(n) => save::sanitize_name(n).map_err(ProtoErr::invalid)?.to_string(),
-            None => format!("game-{}", ng.seed),
-        };
-        let dir = match &self.opts.saves {
-            None => None,
-            Some(root) => Some(unused_dir(root, &base).map_err(|e| ProtoErr::new("cannot", format!("{}: {e}", root.display())))?),
-        };
+        let base = Host::game_name(name, format!("game-{}", ng.seed))?;
+        let dir = self.make_game_dir(&base)?;
         // The old session goes first (its journal is closed).
         self.session = None;
         let s = Session::new_game(&ng, self.answerer.clone(), self.session_options(dir.clone())).map_err(play_err)?;
@@ -810,6 +880,9 @@ fn read_save(path: &Path) -> Result<(Vec<u8>, Option<save::Sidecar>), ProtoErr> 
 /// The autosaves' subdirectory of a game directory (and the save-name prefix that names them).
 const AUTO: &str = "auto";
 
+/// The save of a war start's game directory: the start itself (`GAME/war-start` loads it again).
+pub const WAR_START_SAVE: &str = "war-start";
+
 /// The game directory of a save: its directory, or the one above for an autosave in `auto/` or a
 /// flag's save in `flags/`.
 pub fn game_dir_of(save: &Path) -> PathBuf {
@@ -851,6 +924,10 @@ mod tests {
         assert_eq!(r, Ok(Request::Answer { decision: 3, answer: Answer::Option(1) }));
         assert_eq!(Request::parse(r#"{"k":"answer","decision":3,"advisor":true}"#).1, Ok(Request::Answer { decision: 3, answer: Answer::Advisor }));
         assert_eq!(Request::parse(r#"{"k":"session","op":"new"}"#).1, Ok(Request::Session(SessionOp::New { setup: Json::obj(), name: None })));
+        assert_eq!(
+            Request::parse(r#"{"k":"session","op":"war_start","setup":{"seed":4},"name":"w"}"#).1,
+            Ok(Request::Session(SessionOp::WarStart { setup: crate::jobj! { "seed" => 4 }, name: Some("w".into()) }))
+        );
         assert_eq!(
             Request::parse(r#"{"k":"session","op":"take_over","player":2,"name":"g/auto/T0010"}"#).1,
             Ok(Request::Session(SessionOp::TakeOver { player: PlayerId(2), name: "g/auto/T0010".into() }))
@@ -957,6 +1034,54 @@ mod tests {
         let (_, after) = host.handle(Json::Null, Request::Session(SessionOp::New { setup, name: None }));
         assert_eq!(after, After::Advance);
         assert!(host.crash().is_none());
+        drop(host);
+        std::fs::remove_dir_all(&root).unwrap();
+    }
+
+    /// The war start on a tiny map: the session is the attacked civilization at the start's turn
+    /// boundary, the start is saved in the game's directory and loads again, the search published
+    /// its progress. The AI decides when big battles come: the seeds are tried in turn, and if
+    /// none gives one in 500 turns any more, pick seeds that do (`war_start` through
+    /// `ffh-play agent --no-game`).
+    #[test]
+    fn war_start_takes_over_the_attacked_civ() {
+        let root = std::env::temp_dir().join(format!("ffh-play-host-war-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        let mut host = Host::new(HostOptions { saves: Some(root.clone()), autosave_keep: 2, panic_at: None }, Arc::new(AdvisorAnswerer));
+        let published = Arc::new(std::sync::Mutex::new(Vec::new()));
+        let sink = published.clone();
+        host.set_publisher(Arc::new(move |st: Json| sink.lock().unwrap().push(st)));
+        let (r, after) = [5, 6, 7]
+            .into_iter()
+            .map(|seed| {
+                let setup = crate::jobj! { "seed" => seed, "world" => "WORLDSIZE_TINY" };
+                host.handle(Json::Null, Request::Session(SessionOp::WarStart { setup, name: Some(format!("w{seed}")) }))
+            })
+            .find(|(r, _)| r.req::<bool>("ok") == Ok(true))
+            .expect("a war start on one of the seeds");
+        assert_eq!(after, After::Advance);
+        let war = r.get("r").and_then(|r| r.get("war")).cloned().unwrap();
+        let player: u8 = war.req("player").unwrap();
+        let turn: i32 = war.req("turn").unwrap();
+        let confirmed = war.get("confirmed").unwrap();
+        assert!(confirmed.req::<i32>("attacker_stack").unwrap() >= 3 && confirmed.req::<i32>("defender_stack").unwrap() >= 3, "{war}");
+        assert!(confirmed.req::<i32>("turn").unwrap() > turn, "{war}");
+        assert!(published.lock().unwrap().iter().any(|st| st.get("war_search").is_some()));
+        // The session: the attacked civilization, at its first control point after the start.
+        let ev = host.advance(&mut |_| {});
+        assert_eq!((ev.req_str("ev"), ev.req::<u8>("human"), ev.req::<i32>("turn")), (Ok("control"), Ok(player), Ok(turn + 1)), "{ev}");
+        // The start's save: at the boundary, that civilization human; it loads by name.
+        let dir = PathBuf::from(r.get("r").unwrap().req_str("game").unwrap());
+        let (bytes, sidecar) = save::read_bundle(&dir.join(format!("{WAR_START_SAVE}.ffhsave"))).unwrap();
+        let g = ffh_core::game::Game::load(ffh_data::global(), &bytes).unwrap();
+        assert!(g.at_turn_boundary());
+        assert_eq!(g.game_turn(), turn);
+        assert_eq!(g.num_human_players(), 1);
+        assert!(g.setup.players[player as usize].human);
+        assert_eq!(sidecar.map(|s| s.human), Some(PlayerId(player)));
+        let game = dir.file_name().unwrap().to_string_lossy().into_owned();
+        let (r, after) = host.handle(Json::Null, Request::Session(SessionOp::Load { name: format!("{game}/{WAR_START_SAVE}") }));
+        assert_eq!((r.req::<bool>("ok"), after), (Ok(true), After::Advance), "{r}");
         drop(host);
         std::fs::remove_dir_all(&root).unwrap();
     }

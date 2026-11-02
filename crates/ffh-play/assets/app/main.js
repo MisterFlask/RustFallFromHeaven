@@ -48,6 +48,8 @@ let popupsRunning = false;
 let overShown = null;
 let stuckShown = null;
 let connected = true;
+/** Where the next new game's view opens instead of the capital (a war start's battle). */
+let startAt = null;
 
 // ---------------------------------------------------------------------------------------------
 // Status and refresh
@@ -272,6 +274,11 @@ function updateMarkers() {
 }
 
 function centerOnStart() {
+  if (startAt) {
+    mapView.centerOn(startAt.x, startAt.y, { animate: false });
+    startAt = null;
+    return;
+  }
   const m = me();
   const cap = [...S.cities.values()].find((c) => c.owner === m?.player && c.capital);
   const u = S.view?.units.find((x) => x.owner === m?.player);
@@ -668,6 +675,11 @@ function wire() {
   on("game-started", (opts) => {
     title.titleSavesChanged();
     title.hideTitle();
+    // A war start opens on the plot the enemy attacks, and says who comes.
+    const war = opts?.war;
+    const b = war?.confirmed;
+    startAt = b ? { x: b.x, y: b.y } : null;
+    if (b) toast(`You are ${war.player_name}. A stack of ${b.attacker_stack} units of ${war.attacker_name} is about to attack your ${b.defender_stack} units at (${b.x}, ${b.y}).`, "info", 15000);
     if (opts?.spectate) tools.startSpectating({ newGame: true });
     else if (tools.spectating()) tools.dropSpectating();
     closeAll();

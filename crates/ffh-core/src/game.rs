@@ -296,6 +296,9 @@ pub struct Game {
     /// Not in C++: what the players did and why, for analysis (`telemetry.rs`); off unless the
     /// runner turns it on, never read by the rules, not saved.
     pub telemetry: crate::telemetry::Telemetry,
+    /// Not in C++: when `Some`, every fight is noted here as it starts (`log::CombatNote`; a
+    /// debugging aid for tools, `None` by default). Not game state: not saved, `None` after a load.
+    pub combat_notes: Option<Vec<crate::log::CombatNote>>,
     /// C++ `GC.getPathFinder()`: scratch storage for path searches (path.rs, "No reuse"); not
     /// game state, not saved. Use [`Game::with_finder`].
     pub path_finder: RefCell<PathFinder>,
@@ -444,6 +447,7 @@ impl Game {
             map_script: default_map_script(),
             dying: Vec::new(),
             telemetry: crate::telemetry::Telemetry::off(),
+            combat_notes: None,
             path_finder: RefCell::new(PathFinder::new(FinderKind::Path)),
             step_finder: RefCell::new(PathFinder::new(FinderKind::Step)),
             border_finder: RefCell::new(PathFinder::new(FinderKind::Border)),

@@ -250,6 +250,8 @@ fn game_thread(host: HostOptions, start: Start, rx: Arc<Mutex<Receiver<Envelope>
     install_panic_hook();
     let answerer = Arc::new(ChannelAnswerer { rx: rx.clone(), shared: shared.clone() });
     let mut gt = GameThread { host: Host::new(host, answerer), rx, shared };
+    let publish_to = gt.shared.clone();
+    gt.host.set_publisher(Arc::new(move |st| publish_to.publish(st)));
     let mut ok = false;
     gt.guarded(|gt| {
         match gt.host.start(&start) {

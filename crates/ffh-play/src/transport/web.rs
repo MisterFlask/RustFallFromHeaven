@@ -285,6 +285,11 @@ impl WebGame {
         let out = Arc::new(Out { shared: Arc::new(Shared::new()), io, blocking: opts.blocking });
         let answerer = Arc::new(WebAnswerer { out: out.clone() });
         let mut g = WebGame { host: Host::new(opts.host, answerer), out, quit: false };
+        let publish_to = g.out.clone();
+        g.host.set_publisher(Arc::new(move |st| {
+            publish_to.shared.publish(st);
+            publish_to.published();
+        }));
         g.refresh(After::Nothing);
         g
     }

@@ -22,6 +22,7 @@
 //!     default script;
 //!   * `dying`: empty outside `unit_kill`;
 //!   * `telemetry`: observation only; a loaded game has it off;
+//!   * `combat_notes`: a debugging record of fights, off (`None`) in a loaded game;
 //!   * the path finders: scratch storage for searches, holding nothing between them.
 //!
 //! **Turn boundaries.** Save between two `update()` calls while no player's turn is active
@@ -322,6 +323,7 @@ fn write_game(g: &Game, w: &mut Writer) {
         map_script: _,
         dying: _,
         telemetry: _,
+        combat_notes: _,
         // Scratch storage for searches (path.rs, "No reuse"): not saved.
         path_finder: _,
         step_finder: _,
@@ -550,6 +552,7 @@ fn read_game(d: &'static GameData, r: &mut Reader<'_>) -> Result<Game, LoadError
         map_script: default_map_script(),
         dying: Vec::new(),
         telemetry: crate::telemetry::Telemetry::off(),
+        combat_notes: None,
         path_finder: RefCell::new(PathFinder::new(FinderKind::Path)),
         step_finder: RefCell::new(PathFinder::new(FinderKind::Step)),
         border_finder: RefCell::new(PathFinder::new(FinderKind::Border)),

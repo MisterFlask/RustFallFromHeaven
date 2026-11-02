@@ -23,7 +23,8 @@
 // Armies screen, a requisition order in a city's queue), the secretary general's election
 // popup (`stage election`) and the Kuriotates city-or-settlement decision (`stage settlement`);
 // crusades (`stage crusade`: the call popup, lending with the war confirmation, the Crusades
-// screen, a loan proposed). It
+// screen, a loan proposed). The debug start at war (its progress, the game at the attacked
+// civilization, the message, the start's save). It
 // fails on any console error, page error, failed
 // request or HTTP error, and saves screenshots for review.
 //
@@ -1828,6 +1829,38 @@ async function stagedLoad(bin, saves) {
   steps.push(`loaded the warrior into trireme ${pick} through the transport picker`);
 }
 
+/** "Start at war (debug)" on the new-game screen: the search's progress shows, then the game
+ *  opens at the attacked civilization with a message naming the attacker, and the start is saved
+ *  as `war-start` in the game's directory. */
+async function warStart(bin) {
+  const saves = tempDir("smoke-war");
+  const server = await startServer({ bin, saves, extra: ASSETS });
+  try {
+    await b.goto(server.url);
+    await until2("window.ffh && window.ffh.ready", "the client to boot");
+    await until2(`!document.getElementById("title-screen").hidden && !!document.getElementById("title-new")`, "the title screen");
+    await click("#title-new");
+    await until(async () => (await modalTitles()).includes("New game"), "the New game dialog");
+    await b.eval(`(() => {
+      const set = (id, v) => { const e = document.getElementById(id); e.value = v; e.dispatchEvent(new Event("change")); };
+      set("ng-world", "WORLDSIZE_TINY"); set("ng-seed", "5");
+    })()`);
+    await click('#modals .modal-buttons button[data-value="war"]');
+    await until2(`/turn \\d+/.test(document.getElementById("ng-war-note")?.textContent ?? "")`, "the search's progress", 60000);
+    await waitHuman("the war start", 120000);
+    await until2(`document.getElementById("title-screen").hidden`, "the title screen to go");
+    await until2(`[...document.querySelectorAll("#toasts .toast")].some((t) => /is about to attack your/.test(t.textContent))`, "the war start's message");
+    const dirs = fs.readdirSync(saves).filter((f) => fs.existsSync(path.join(saves, f, "war-start.ffhsave")));
+    if (dirs.length !== 1) throw new Error(`the war start's save: ${fs.readdirSync(saves)}`);
+    await shot("war-start");
+    steps.push(`start at war: player ${await S("S.status.human")} at turn ${await S("S.status.turn")} (${dirs[0]}/war-start)`);
+  } finally {
+    await b.goto("about:blank");
+    await server.stop();
+    fs.rmSync(saves, { recursive: true, force: true });
+  }
+}
+
 /** A game started by another client while the page shows the title screen with the New game
  *  dialog open: both go (P5 review). */
 async function newGameElsewhere(bin) {
@@ -1928,6 +1961,7 @@ async function main() {
     await rendererIso(server.url);
     await rendererHd2d(server.url);
     await crusadeHd2d(server.url, bin, saves);
+    await warStart(bin);
     await newGameElsewhere(bin);
     await crashScreen(bin);
     console.log(`web-smoke: ${steps.length} steps in ${((Date.now() - t0) / 1000).toFixed(1)} s`);
