@@ -1,0 +1,21 @@
+{
+ "name": "lion",
+ "sprite": "m7/roster/units/unit_lion.png",
+ "body_plan": "quadruped",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Lion, a big golden-tan male lion with a thick shaggy dark-orange and brown mane, roaring with an open red mouth and white fangs, yellow eyes, a cream belly and chest, pale cream paws, and a long thin tail with a dark brown tuft raised behind",
+ "hands": "it has no weapon: it fights with its fanged jaws and claws",
+ "guide_style": "grey",
+ "dims": {"body_r": 11, "head_r": 9, "neck_r": 10, "snout_w": 8, "leg_w": 7, "paw_r": 4.5, "tail_w": 3, "tail_tuft": 5, "ear": 0.6},
+ "words": {"animal": "lion", "jaws": "fanged jaws", "claws": "claws", "paws": "paws", "tail": "tufted tail", "ears": "ears"},
+ "joints": {
+  "head": [103, 72], "snout": [119, 79], "jaw": [114, 91], "neck": [95, 84],
+  "withers": [88, 91], "spine": [72, 90], "hips": [60, 91],
+  "tail_base": [55, 87], "tail_mid": [40, 97], "tail_tip": [44, 75],
+  "fn_top": [86, 100], "fn_knee": [89, 111], "fn_paw": [91, 119],
+  "ff_top": [101, 99], "ff_knee": [106, 110], "ff_paw": [113, 116],
+  "hn_top": [59, 99], "hn_knee": [52, 109], "hn_paw": [50, 116],
+  "hf_top": [70, 101], "hf_knee": [71, 110], "hf_paw": [75, 116]
+ }
+}

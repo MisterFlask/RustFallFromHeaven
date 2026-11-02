@@ -1,0 +1,32 @@
+{
+ "name": "balseraphs_horseman",
+ "sprite": "m7/roster/units/unit_balseraphs_horseman.png",
+ "body_plan": "mounted",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Balseraph Horseman, a jester-knight in a steel helmet with a green-and-gold jester-cap plume tipped with gold bells, a black domino mask and auburn hair, a violet, gold and green diamond-motley tabard over steel mail with gold bells, a long steel-tipped spear with a violet-and-gold pennant in his LEFT hand on the screen-right side and a round violet-and-gold diamond shield with a steel boss on his RIGHT arm on the screen-left side, riding a glossy black horse with an emerald saddle cloth patterned with gold diamonds and a brown bridle",
+ "hands": "the pennant spear stays in the rider's left hand on the screen-right side and the round violet-and-gold shield on his right arm on the screen-left side",
+ "guide_style": "grey",
+ "rider_action": "thrust",
+ "head_r": 7.5,
+ "limb": 0.85,
+ "dims": {"body_r": 10, "head_r": 6, "neck_r": 6, "snout_w": 6, "leg_w": 4.5, "paw_r": 2.5, "tail_w": 4},
+ "words": {"mount": "black horse", "rider": "jester-knight", "weapon": "pennant spear", "feet": "hooves", "shield": "violet-and-gold shield"},
+ "joints": {
+  "mount": {
+   "head": [106, 72], "snout": [111, 84], "jaw": [108, 86], "neck": [96, 79],
+   "withers": [95, 91], "spine": [78, 92], "hips": [57, 89],
+   "tail_base": [50, 80], "tail_mid": [45, 92], "tail_tip": [46, 104],
+   "fn_top": [91, 100], "fn_knee": [91, 111], "fn_paw": [94, 122],
+   "ff_top": [98, 97], "ff_knee": [105, 102], "ff_paw": [99, 111],
+   "hn_top": [57, 100], "hn_knee": [54, 111], "hn_paw": [57, 119],
+   "hf_top": [70, 98], "hf_knee": [72, 107], "hf_paw": [78, 116]
+  },
+  "rider": {
+   "head": [79, 49], "neck": [79, 56], "chest": [79, 64], "pelvis": [78, 79],
+   "r_sh": [86, 61], "r_el": [87, 68], "r_ha": [91, 63], "tip": [111, 27],
+   "l_sh": [71, 61], "l_el": [66, 67], "l_ha": [71, 75], "shield": [65, 70, 7.5, 10],
+   "leg_kn": [76, 86], "leg_ft": [78, 97]
+  }
+ }
+}

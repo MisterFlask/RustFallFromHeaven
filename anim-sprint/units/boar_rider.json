@@ -1,0 +1,33 @@
+{
+ "name": "boar_rider",
+ "sprite": "m7/roster/units/unit_boar_rider.png",
+ "body_plan": "mounted",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Boar Rider, a stocky dwarf with a long braided orange beard in a steel helmet with gold bands, steel shoulder plates and grey mail over a brown leather coat, a round wooden shield with a gold rim and a steel boss on his RIGHT arm and a steel-tipped wooden spear held upright in his LEFT hand, riding a big brown bristly war boar with a dark bristle mane, small eyes, curved white tusks, a pink snout, a leather harness with gold studs and dark hooves",
+ "hands": "the spear stays in the dwarf's left hand on the screen-right side and the round shield on his right arm on the screen-left side",
+ "guide_style": "grey",
+ "rider_action": "swing",
+ "mount_action": "surge",
+ "head_r": 8.5,
+ "limb": 1.0,
+ "dims": {"body_r": 13, "head_r": 8, "neck_r": 8, "snout_w": 7, "leg_w": 5, "paw_r": 3, "tail_w": 2.5, "ear": 0.6},
+ "words": {"mount": "boar", "rider": "dwarf", "weapon": "spear", "feet": "hooves", "shield": "round shield"},
+ "joints": {
+  "mount": {
+   "head": [100, 90], "snout": [116, 101], "jaw": [107, 106], "neck": [91, 86],
+   "withers": [87, 89], "spine": [70, 93], "hips": [52, 93],
+   "tail_base": [45, 91], "tail_tip": [42, 98],
+   "fn_top": [82, 100], "fn_knee": [84, 110], "fn_paw": [87, 121],
+   "ff_top": [95, 100], "ff_knee": [99, 108], "ff_paw": [96, 116],
+   "hn_top": [52, 100], "hn_knee": [48, 108], "hn_paw": [47, 118],
+   "hf_top": [62, 100], "hf_knee": [63, 109], "hf_paw": [67, 118]
+  },
+  "rider": {
+   "head": [74, 56], "neck": [74, 64], "chest": [73, 71], "pelvis": [72, 82],
+   "r_sh": [82, 65], "r_el": [84, 73], "r_ha": [87, 69], "tip": [109, 38],
+   "l_sh": [64, 63], "l_el": [60, 71], "l_ha": [64, 80], "shield": [57.5, 74.5, 8, 10],
+   "leg_kn": [68, 86], "leg_ft": [67, 97]
+  }
+ }
+}

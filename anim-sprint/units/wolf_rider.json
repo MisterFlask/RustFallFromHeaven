@@ -1,0 +1,190 @@
+{
+ "name": "wolf_rider",
+ "sprite": "m7/roster/units/unit_wolf_rider.png",
+ "body_plan": "mounted",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Wolf Rider, a green goblin with big pointed ears in a steel helmet and an orange tunic, a round wooden shield with a steel boss on his RIGHT arm and a steel-tipped wooden spear in his LEFT hand, riding a large grey-brown wolf with a cream muzzle and chest, yellow eyes, snarling white fangs in a red mouth, dark paws and a bushy tail",
+ "hands": "the spear stays in the goblin's left hand on the screen-right side and the round shield on his right arm on the screen-left side; the wolf fights with its fanged jaws",
+ "guide_style": "grey",
+ "rider_action": "thrust",
+ "mount_action": "surge",
+ "head_r": 7,
+ "limb": 0.8,
+ "dims": {
+  "body_r": 11,
+  "head_r": 7,
+  "neck_r": 7,
+  "snout_w": 7,
+  "leg_w": 5,
+  "paw_r": 3,
+  "tail_w": 6,
+  "ear": 1
+ },
+ "words": {
+  "mount": "wolf",
+  "rider": "goblin",
+  "weapon": "spear",
+  "feet": "paws",
+  "shield": "round shield"
+ },
+ "joints": {
+  "mount": {
+   "head": [
+    108,
+    84
+   ],
+   "snout": [
+    122,
+    91
+   ],
+   "jaw": [
+    117,
+    101
+   ],
+   "neck": [
+    98,
+    88
+   ],
+   "withers": [
+    92,
+    90
+   ],
+   "spine": [
+    75,
+    93
+   ],
+   "hips": [
+    56,
+    92
+   ],
+   "tail_base": [
+    48,
+    89
+   ],
+   "tail_mid": [
+    42,
+    89
+   ],
+   "tail_tip": [
+    36,
+    89
+   ],
+   "fn_top": [
+    92,
+    100
+   ],
+   "fn_knee": [
+    96,
+    112
+   ],
+   "fn_paw": [
+    101,
+    122
+   ],
+   "ff_top": [
+    100,
+    98
+   ],
+   "ff_knee": [
+    108,
+    108
+   ],
+   "ff_paw": [
+    113,
+    115
+   ],
+   "hn_top": [
+    56,
+    100
+   ],
+   "hn_knee": [
+    50,
+    108
+   ],
+   "hn_paw": [
+    52,
+    115
+   ],
+   "hf_top": [
+    70,
+    100
+   ],
+   "hf_knee": [
+    74,
+    108
+   ],
+   "hf_paw": [
+    78,
+    116
+   ]
+  },
+  "rider": {
+   "head": [
+    79,
+    52
+   ],
+   "neck": [
+    78,
+    59
+   ],
+   "chest": [
+    76,
+    67
+   ],
+   "pelvis": [
+    76,
+    80
+   ],
+   "r_sh": [
+    85,
+    61
+   ],
+   "r_el": [
+    88,
+    68
+   ],
+   "r_ha": [
+    92,
+    64
+   ],
+   "tip": [
+    114,
+    28
+   ],
+   "l_sh": [
+    70,
+    61
+   ],
+   "l_el": [
+    65,
+    69
+   ],
+   "l_ha": [
+    66,
+    78
+   ],
+   "shield": [
+    60,
+    72,
+    8,
+    11
+   ],
+   "leg_kn": [
+    70,
+    86
+   ],
+   "leg_ft": [
+    72,
+    96
+   ]
+  }
+ },
+ "beats": {
+  "strike": {
+   "3": "swing: the goblin drives the spear forward, its point toward the lower-right, the round shield held at his side; the wolf springs forward toward the lower-right, forelegs reaching off the ground, its fanged jaws opening; both face the lower-right",
+   "4": "contact: the goblin leans far forward over the wolf's neck with his weapon arm fully extended, the spear thrust out along a line to the lower-right, its point the farthest point of the figure; the wolf lunges far forward toward the lower-right, low, its neck stretched out and its fanged jaws snapping wide open, hind legs driving; both face the lower-right",
+   "5": "follow-through: the goblin holds the thrust, the point of the spear dipping a little; the wolf holds the lunge, front paws planted ahead, jaws still open in a snarl; both face the lower-right"
+  }
+ }
+}

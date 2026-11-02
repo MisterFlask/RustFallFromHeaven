@@ -1,0 +1,187 @@
+{
+ "name": "shadowrider",
+ "sprite": "m7/roster/units/unit_shadowrider.png",
+ "body_plan": "mounted",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Shadowrider (Fall from Heaven), a hooded rider with a featureless pale silver mask under a deep dark indigo-blue hood, a long billowing dark indigo-navy cloak, black leather armour with dark steel plates and pauldrons, a long curved dark steel sabre raised in his RIGHT hand on the screen-left side and the reins in his left hand, riding a lean black horse with a dark grey mane and tail and brown studded leather tack",
+ "hands": "the curved sabre stays in the rider's right hand on the screen-left side and his left hand holds the reins on the screen-right side",
+ "guide_style": "grey",
+ "rider_action": "swing",
+ "head_r": 8,
+ "limb": 0.85,
+ "dims": {
+  "body_r": 10,
+  "head_r": 6,
+  "neck_r": 6,
+  "snout_w": 6,
+  "leg_w": 4,
+  "paw_r": 2.5,
+  "tail_w": 4
+ },
+ "words": {
+  "mount": "black horse",
+  "rider": "masked rider",
+  "weapon": "curved sabre",
+  "feet": "hooves"
+ },
+ "joints": {
+  "mount": {
+   "head": [
+    110,
+    57
+   ],
+   "snout": [
+    121,
+    68
+   ],
+   "jaw": [
+    116,
+    72
+   ],
+   "neck": [
+    100,
+    66
+   ],
+   "withers": [
+    96,
+    80
+   ],
+   "spine": [
+    78,
+    86
+   ],
+   "hips": [
+    60,
+    84
+   ],
+   "tail_base": [
+    52,
+    80
+   ],
+   "tail_mid": [
+    46,
+    92
+   ],
+   "tail_tip": [
+    46,
+    104
+   ],
+   "fn_top": [
+    94,
+    94
+   ],
+   "fn_knee": [
+    96,
+    108
+   ],
+   "fn_paw": [
+    100,
+    121
+   ],
+   "ff_top": [
+    102,
+    90
+   ],
+   "ff_knee": [
+    114,
+    100
+   ],
+   "ff_paw": [
+    108,
+    112
+   ],
+   "hn_top": [
+    60,
+    94
+   ],
+   "hn_knee": [
+    57,
+    106
+   ],
+   "hn_paw": [
+    58,
+    119
+   ],
+   "hf_top": [
+    74,
+    94
+   ],
+   "hf_knee": [
+    78,
+    106
+   ],
+   "hf_paw": [
+    83,
+    116
+   ]
+  },
+  "rider": {
+   "head": [
+    81,
+    38
+   ],
+   "neck": [
+    80,
+    46
+   ],
+   "chest": [
+    79,
+    55
+   ],
+   "pelvis": [
+    79,
+    70
+   ],
+   "r_sh": [
+    70,
+    48
+   ],
+   "r_el": [
+    62,
+    54
+   ],
+   "r_ha": [
+    57,
+    57
+   ],
+   "tip": [
+    38,
+    22
+   ],
+   "l_sh": [
+    90,
+    50
+   ],
+   "l_el": [
+    92,
+    58
+   ],
+   "l_ha": [
+    95,
+    62
+   ],
+   "leg_kn": [
+    82,
+    77
+   ],
+   "leg_ft": [
+    80,
+    92
+   ]
+  }
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-right; the black horse throws its head up and shies back toward the upper-left, its front hooves off the ground; the masked rider jolts back in the saddle, his silver-masked head snapping back inside the hood, arms flung out, the curved sabre thrown up, the indigo cloak flaring"
+  },
+  "death": {
+   "1": "stagger: the black horse rears back toward the upper-left, head thrown back; the masked rider is thrown back in the saddle, arms flung up, the silver-masked head lolling back in the hood, the indigo cloak flaring",
+   "2": "the black horse's forelegs fold and it drops onto its knees, head sinking; the masked rider pitches back in the saddle, arms up, the masked head lolling",
+   "3": "the black horse sinks down onto its chest, head sinking, eyes shut; the masked rider sags in the saddle, arms dropping, the hooded masked head drooping",
+   "4": "the black horse sinks fully onto its belly with its legs folded under it, its neck lowering forward toward the lower-right; the masked rider, still in the saddle, slumps forward over its neck, the curved sabre slipping from his hand, the hood falling over the mask",
+   "5": "the black horse lying collapsed on its belly, legs folded under it, its head lying on the ground toward the lower-right, eyes shut; the masked rider slumped forward over the neck, arms hanging down, the hood and indigo cloak draped over him, the curved sabre on the ground beside the black horse's head",
+   "7": "corpses: the black horse lying still, collapsed on its belly with its head on the ground, the masked rider slumped forward over its neck, the indigo cloak draped over him, the curved sabre on the ground beside the head"
+  }
+ }
+}

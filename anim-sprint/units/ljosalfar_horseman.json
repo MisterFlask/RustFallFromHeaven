@@ -1,0 +1,32 @@
+{
+ "name": "ljosalfar_horseman",
+ "sprite": "m7/roster/units/unit_ljosalfar_horseman.png",
+ "body_plan": "mounted",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Ljosalfar Horseman, an elven light cavalryman with long flowing blonde hair and pointed ears, a green tunic and green cloak with a silver shoulder plate and brown boots, a round green shield with a silver leaf emblem on his RIGHT arm and a steel-tipped wooden spear in his LEFT hand, riding a white horse with a grey mane and tail, a brown leather bridle and a green leaf-edged caparison",
+ "hands": "the spear stays in the elf's left hand on the screen-right side and the round green shield on his right arm on the screen-left side",
+ "guide_style": "grey",
+ "rider_action": "thrust",
+ "head_r": 7,
+ "limb": 0.85,
+ "dims": {"body_r": 10, "head_r": 6, "neck_r": 6, "snout_w": 6, "leg_w": 4, "paw_r": 2.5, "tail_w": 5},
+ "words": {"mount": "white horse", "rider": "elf", "weapon": "spear", "feet": "hooves", "shield": "round green shield"},
+ "joints": {
+  "mount": {
+   "head": [109, 67], "snout": [116, 79], "jaw": [113, 82], "neck": [97, 79],
+   "withers": [93, 88], "spine": [77, 89], "hips": [58, 89],
+   "tail_base": [52, 81], "tail_mid": [45, 91], "tail_tip": [45, 104],
+   "fn_top": [89, 95], "fn_knee": [90, 108], "fn_paw": [93, 121],
+   "ff_top": [99, 95], "ff_knee": [106, 103], "ff_paw": [100, 112],
+   "hn_top": [59, 92], "hn_knee": [54, 105], "hn_paw": [56, 118],
+   "hf_top": [70, 96], "hf_knee": [74, 108], "hf_paw": [76, 117]
+  },
+  "rider": {
+   "head": [77, 42], "neck": [78, 49], "chest": [78, 57], "pelvis": [79, 74],
+   "r_sh": [80, 53], "r_el": [82, 61], "r_ha": [91, 60], "tip": [116, 26],
+   "l_sh": [69, 52], "l_el": [66, 62], "l_ha": [69, 70], "shield": [64, 66, 8, 10],
+   "leg_kn": [77, 82], "leg_ft": [75, 95]
+  }
+ }
+}

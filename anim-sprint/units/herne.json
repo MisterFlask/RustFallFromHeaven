@@ -1,0 +1,202 @@
+{
+ "name": "herne",
+ "sprite": "m7/roster/units/unit_herne.png",
+ "body_plan": "mounted",
+ "fused": true,
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "Herne, a stag-antlered centaur hunter: a bearded man's torso with long brown hair and great golden-brown stag antlers, a green cloak with gold trim over his shoulders and draped over the horse back, a brown leather belt with a gold buckle and a quiver of white-fletched arrows on his back, growing from a tawny horse body with a long brown tail and dark hooves; he holds a golden longbow in his LEFT hand on the screen-right side and draws the string with his RIGHT hand",
+ "hands": "the longbow stays in his left hand on the screen-right side, held out toward the lower-right, and his right hand on the screen-left side draws the string and the arrow",
+ "guide_style": "grey",
+ "rider_action": "shoot",
+ "head_r": 7,
+ "limb": 1.0,
+ "dims": {
+  "body_r": 11,
+  "head_r": 2.5,
+  "neck_r": 6,
+  "snout_w": 2,
+  "leg_w": 4.5,
+  "paw_r": 3,
+  "tail_w": 5,
+  "ear": 0
+ },
+ "words": {
+  "mount": "horse body",
+  "rider": "Herne",
+  "weapon": "longbow",
+  "feet": "hooves",
+  "his": "his",
+  "him": "him"
+ },
+ "joints": {
+  "mount": {
+   "head": [
+    86,
+    77
+   ],
+   "snout": [
+    88,
+    79
+   ],
+   "jaw": [
+    87,
+    80
+   ],
+   "neck": [
+    84,
+    82
+   ],
+   "withers": [
+    85,
+    90
+   ],
+   "spine": [
+    71,
+    88
+   ],
+   "hips": [
+    57,
+    88
+   ],
+   "tail_base": [
+    50,
+    77
+   ],
+   "tail_mid": [
+    39,
+    89
+   ],
+   "tail_tip": [
+    40,
+    104
+   ],
+   "fn_top": [
+    80,
+    95
+   ],
+   "fn_knee": [
+    82,
+    108
+   ],
+   "fn_paw": [
+    86,
+    122
+   ],
+   "ff_top": [
+    90,
+    92
+   ],
+   "ff_knee": [
+    97,
+    101
+   ],
+   "ff_paw": [
+    93,
+    112
+   ],
+   "hn_top": [
+    52,
+    95
+   ],
+   "hn_knee": [
+    47,
+    108
+   ],
+   "hn_paw": [
+    51,
+    120
+   ],
+   "hf_top": [
+    63,
+    94
+   ],
+   "hf_knee": [
+    65,
+    107
+   ],
+   "hf_paw": [
+    69,
+    116
+   ]
+  },
+  "rider": {
+   "head": [
+    80,
+    47
+   ],
+   "neck": [
+    82,
+    56
+   ],
+   "chest": [
+    83,
+    64
+   ],
+   "pelvis": [
+    84,
+    76
+   ],
+   "r_sh": [
+    90,
+    59
+   ],
+   "r_el": [
+    101,
+    63
+   ],
+   "r_ha": [
+    112,
+    63
+   ],
+   "tip": [
+    103,
+    32
+   ],
+   "l_sh": [
+    72,
+    58
+   ],
+   "l_el": [
+    66,
+    64
+   ],
+   "l_ha": [
+    83,
+    62
+   ],
+   "leg_kn": [
+    82,
+    86
+   ],
+   "leg_ft": [
+    82,
+    94
+   ]
+  }
+ },
+ "beats": {
+  "strike": {
+   "1": "nock: Herne raises the longbow upright in front of his chest and sets an arrow on the string; his horse body stands still; he faces the lower-right",
+   "2": "full draw, the wind-up extreme: Herne leans back with his bow arm pushed out to the right and a little up, the string pulled back to his jaw, the draw elbow high and back; his horse body stands still, its weight shifted back a little; he faces the lower-right",
+   "3": "aim: Herne brings the aim down onto the target at the lower-right, still at full draw; his horse body stands, leaning a little forward; he faces the lower-right",
+   "4": "release: Herne's bow arm locked straight toward the lower-right, the arrow gone, the draw hand flung back past his ear toward the upper-left; his horse body stands steady; he faces the lower-right",
+   "5": "recoil: the longbow rolls forward and dips, the draw hand still out behind; his horse body stands steady; he faces the lower-right",
+   "6": "recover: Herne lowers the longbow back to the ready angle; his horse body stands still; he faces the lower-right"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; the centaur shies back toward the upper-left, his front hooves off the ground; his man's torso jolts back from the horse chest, eyes squeezed shut, arms flung out, the longbow still in his left hand",
+   "1": "recoil extreme: the centaur half-rears back toward the upper-left, his torso leaning back and his antlered head tossed",
+   "2": "recovering: the centaur's front hooves come back down; his torso straightens, halfway back to the ready pose"
+  },
+  "death": {
+   "1": "stagger: the centaur rears back toward the upper-left, his man's torso thrown back, arms flung up, eyes shut",
+   "2": "the centaur's forelegs fold and he drops onto his front knees, his torso pitching back, arms up, eyes shut",
+   "3": "the centaur sinks down onto his horse chest, his torso sagging, arms dropping, eyes shut",
+   "4": "the centaur's horse body sinks fully onto its belly with its legs folded under it; his man's torso slumps forward toward the lower-right over the front of the horse body, the longbow slipping from his hand, eyes shut",
+   "5": "the centaur lying collapsed on his horse belly, legs folded under it, his man's torso slumped forward over the front of the horse body, his antlered head and arms hanging down to the ground at the lower-right, eyes shut, the longbow on the ground beside him",
+   "6": "bounce: his shoulders and antlered head lift a hair off the ground",
+   "7": "corpse: the centaur lying still, collapsed on his horse belly with his legs folded under him, his torso slumped forward over the front of the horse body, his antlered head on the ground at the lower-right, eyes closed, the longbow on the ground beside him"
+  }
+ }
+}

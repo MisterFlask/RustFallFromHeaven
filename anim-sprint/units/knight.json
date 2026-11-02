@@ -1,0 +1,197 @@
+{
+ "name": "knight",
+ "sprite": "m7/roster/units/unit_knight.png",
+ "body_plan": "mounted",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Knight, a rider in full shining steel plate armour and a closed steel great helm with a short white plume, a long wooden lance with a steel head couched under his RIGHT arm and a steel kite shield on his LEFT arm, riding a grey war horse with a steel chanfron on its face, brown leather reins and a long cream caparison with a grey border draped over its body, brown legs and dark hooves",
+ "hands": "the lance stays couched in the knight's right hand on the screen-left side, pointing forward past the horse's head, and the kite shield stays on his left arm on the screen-right side",
+ "guide_style": "grey",
+ "rider_action": "thrust",
+ "head_r": 7,
+ "limb": 1.1,
+ "dims": {
+  "body_r": 12,
+  "head_r": 6,
+  "neck_r": 7,
+  "snout_w": 6,
+  "leg_w": 4.5,
+  "paw_r": 3,
+  "tail_w": 4
+ },
+ "words": {
+  "mount": "war horse",
+  "rider": "knight",
+  "weapon": "lance",
+  "feet": "hooves",
+  "shield": "kite shield"
+ },
+ "joints": {
+  "mount": {
+   "head": [
+    101,
+    57
+   ],
+   "snout": [
+    111,
+    72
+   ],
+   "jaw": [
+    106,
+    76
+   ],
+   "neck": [
+    90,
+    71
+   ],
+   "withers": [
+    85,
+    80
+   ],
+   "spine": [
+    66,
+    86
+   ],
+   "hips": [
+    46,
+    86
+   ],
+   "tail_base": [
+    40,
+    80
+   ],
+   "tail_mid": [
+    34,
+    88
+   ],
+   "tail_tip": [
+    31,
+    97
+   ],
+   "fn_top": [
+    80,
+    98
+   ],
+   "fn_knee": [
+    79,
+    110
+   ],
+   "fn_paw": [
+    80,
+    120
+   ],
+   "ff_top": [
+    99,
+    94
+   ],
+   "ff_knee": [
+    102,
+    103
+   ],
+   "ff_paw": [
+    96,
+    111
+   ],
+   "hn_top": [
+    44,
+    96
+   ],
+   "hn_knee": [
+    42,
+    106
+   ],
+   "hn_paw": [
+    43,
+    117
+   ],
+   "hf_top": [
+    60,
+    94
+   ],
+   "hf_knee": [
+    61,
+    104
+   ],
+   "hf_paw": [
+    63,
+    113
+   ]
+  },
+  "rider": {
+   "head": [
+    65,
+    36
+   ],
+   "neck": [
+    65,
+    44
+   ],
+   "chest": [
+    64,
+    52
+   ],
+   "pelvis": [
+    63,
+    66
+   ],
+   "r_sh": [
+    55,
+    45
+   ],
+   "r_el": [
+    51,
+    53
+   ],
+   "r_ha": [
+    56,
+    57
+   ],
+   "tip": [
+    131,
+    28
+   ],
+   "l_sh": [
+    73,
+    45
+   ],
+   "l_el": [
+    76,
+    53
+   ],
+   "l_ha": [
+    81,
+    53
+   ],
+   "shield": [
+    76,
+    49,
+    4,
+    8
+   ],
+   "leg_kn": [
+    62,
+    75
+   ],
+   "leg_ft": [
+    64,
+    89
+   ]
+  }
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: the knight levels the couched lance, pointing forward to the lower-right, tucked under his right arm, the kite shield on his left arm; the war horse sinks back onto its haunches; both face the lower-right"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; the war horse throws its head up and shies back toward the upper-left, its front hooves off the ground; the knight jolts back in the saddle, his helmed head snapping back, arms flung out"
+  },
+  "death": {
+   "1": "stagger: the war horse rears back toward the upper-left, head thrown back; the knight is thrown back in the saddle, arms flung up, his helmed head lolling back",
+   "2": "the war horse's forelegs fold and it drops onto its knees, head sinking; the knight pitches back in the saddle, arms up, his helmed head lolling",
+   "3": "the war horse sinks down onto its chest, head sinking, eyes shut; the knight sags in the saddle, arms dropping, his helmed head drooping",
+   "4": "the war horse sinks fully onto its belly with its legs folded under it, its neck lowering forward toward the lower-right; the knight, still in the saddle, slumps forward over its neck, the lance slipping from his hand, his helmed head hanging",
+   "5": "the war horse lying collapsed on its belly, legs folded under it, its head lying on the ground toward the lower-right, eyes shut; the knight slumped forward over the neck, arms hanging down, his helmed head hanging limp, the lance on the ground beside the war horse's head",
+   "7": "corpses: the war horse lying still, collapsed on its belly with its head on the ground, eyes closed, the knight slumped motionless forward over its neck in his steel plate, the lance on the ground beside the head"
+  }
+ }
+}

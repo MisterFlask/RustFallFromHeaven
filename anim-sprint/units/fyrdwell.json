@@ -1,0 +1,32 @@
+{
+ "name": "fyrdwell",
+ "sprite": "m7/roster/units/unit_fyrdwell.png",
+ "body_plan": "mounted",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Fyrdwell, a blonde elf archer with pointed ears in a green hood, a green-and-gold tunic and tabard, white fur cuffs and brown boots, a quiver of white-fletched arrows on his back, drawing a tall wooden longbow held out in his LEFT hand with an arrow nocked, riding a big spotted tawny stag with wide branching antlers, a white throat, a white tail and dark hooves",
+ "hands": "the longbow stays in the rider's left hand held out on the screen-right side, and his right hand on the screen-left side draws the string back to his cheek",
+ "guide_style": "grey",
+ "rider_action": "shoot",
+ "head_r": 7,
+ "limb": 0.8,
+ "dims": {"body_r": 10, "head_r": 6, "neck_r": 5.5, "snout_w": 5, "leg_w": 3.5, "paw_r": 2.2, "tail_w": 4, "ear": 0.8},
+ "words": {"mount": "stag", "rider": "elf archer", "weapon": "longbow", "feet": "hooves", "his": "his", "him": "him"},
+ "joints": {
+  "mount": {
+   "head": [103, 66], "snout": [113, 72], "jaw": [109, 76], "neck": [94, 78],
+   "withers": [90, 86], "spine": [70, 88], "hips": [50, 86],
+   "tail_base": [45, 81], "tail_tip": [41, 87],
+   "fn_top": [82, 96], "fn_knee": [81, 107], "fn_paw": [84, 121],
+   "ff_top": [94, 94], "ff_knee": [100, 106], "ff_paw": [96, 115],
+   "hn_top": [48, 94], "hn_knee": [42, 106], "hn_paw": [45, 120],
+   "hf_top": [60, 96], "hf_knee": [62, 107], "hf_paw": [67, 119]
+  },
+  "rider": {
+   "head": [62, 45], "neck": [64, 53], "chest": [64, 61], "pelvis": [64, 73],
+   "r_sh": [68, 56], "r_el": [76, 55], "r_ha": [85, 51], "tip": [75, 23],
+   "l_sh": [59, 56], "l_el": [53, 55], "l_ha": [61, 51],
+   "leg_kn": [69, 80], "leg_ft": [75, 94]
+  }
+ }
+}

@@ -1,0 +1,124 @@
+{
+ "name": "pit_beast",
+ "sprite": "m7/roster/units/unit_pit_beast.png",
+ "body_plan": "quadruped",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Pit Beast, a hulking demonic hound with red-and-orange skin and patches of dark grey hide pinned with steel staples, a row of pale bone spikes along its back, a curved dark horn rising behind its head, a cluster of glowing orange eyes, a huge open maw lined with pale fangs and fire glowing inside, four thick legs ending in pale claws, and a long red tail curling up behind",
+ "hands": "it has no weapon: it fights with its fanged maw and claws",
+ "guide_style": "grey",
+ "dims": {
+  "body_r": 15,
+  "head_r": 11,
+  "neck_r": 10,
+  "snout_w": 11,
+  "leg_w": 8,
+  "paw_r": 5,
+  "tail_w": 6,
+  "ear": 0
+ },
+ "words": {
+  "animal": "pit beast",
+  "jaws": "fanged maw",
+  "claws": "claws",
+  "paws": "clawed paws",
+  "tail": "long red tail",
+  "ears": "horn"
+ },
+ "joints": {
+  "head": [
+   112,
+   68
+  ],
+  "snout": [
+   131,
+   80
+  ],
+  "jaw": [
+   123,
+   95
+  ],
+  "neck": [
+   102,
+   72
+  ],
+  "withers": [
+   96,
+   74
+  ],
+  "spine": [
+   72,
+   72
+  ],
+  "hips": [
+   46,
+   74
+  ],
+  "tail_base": [
+   39,
+   71
+  ],
+  "tail_mid": [
+   22,
+   64
+  ],
+  "tail_tip": [
+   31,
+   46
+  ],
+  "fn_top": [
+   78,
+   86
+  ],
+  "fn_knee": [
+   76,
+   102
+  ],
+  "fn_paw": [
+   83,
+   118
+  ],
+  "ff_top": [
+   106,
+   92
+  ],
+  "ff_knee": [
+   112,
+   106
+  ],
+  "ff_paw": [
+   125,
+   117
+  ],
+  "hn_top": [
+   40,
+   82
+  ],
+  "hn_knee": [
+   34,
+   98
+  ],
+  "hn_paw": [
+   28,
+   118
+  ],
+  "hf_top": [
+   56,
+   88
+  ],
+  "hf_knee": [
+   51,
+   102
+  ],
+  "hf_paw": [
+   57,
+   114
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "crouch: the weight shifts back onto the hind legs and the body sinks lower, the head drops level with the shoulders and aims at the lower-right, all four clawed paws planted, the fanged maw gaping with fire glowing inside",
+   "2": "coil, the wind-up extreme: the body drawn back toward the upper-left and pressed low over the folded hind legs, the chest close to the ground, the head low and aimed at the lower-right, the long red tail held stiff out behind, the fanged maw gaping; the face looks to the lower-right"
+  }
+ }
+}

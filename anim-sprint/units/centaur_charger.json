@@ -1,0 +1,81 @@
+{
+ "name": "centaur_charger",
+ "sprite": "m7/roster/units/unit_centaur_charger.png",
+ "body_plan": "mounted",
+ "fused": true,
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Centaur Charger, a centaur: a bearded man's torso in gold scale armour with gold shoulder plates, a gold crested helmet and a long brown ponytail, a green sash across his chest, growing from the chest of a chestnut horse body with a green-and-gold cloth over its back, a flowing dark brown tail and dark hooves, a quiver of steel-tipped javelins on his back, swinging a long wooden-poled glaive with a huge curved golden blade raised overhead in his RIGHT hand on the screen-left side, the blade out over the screen-right",
+ "hands": "the glaive stays in the centaur's right hand on the screen-left side and his left hand is an empty fist held across his chest on the screen-right side; he has no saddle and no rider's legs: his waist grows from the horse body's chest",
+ "guide_style": "grey",
+ "rider_action": "swing",
+ "head_r": 8,
+ "limb": 0.95,
+ "dims": {"body_r": 11, "head_r": 1, "neck_r": 1.5, "snout_w": 1, "ear": 0, "leg_w": 4.5, "paw_r": 2.5, "tail_w": 6},
+ "words": {"mount": "horse body", "rider": "centaur", "weapon": "glaive", "feet": "hooves", "his": "his", "him": "him"},
+ "joints": {
+  "mount": {
+   "head": [84, 70],
+   "snout": [86, 69],
+   "jaw": [85, 71],
+   "neck": [85, 78],
+   "withers": [90, 90],
+   "spine": [72, 92],
+   "hips": [54, 88],
+   "tail_base": [46, 82],
+   "tail_mid": [36, 86],
+   "tail_tip": [28, 96],
+   "fn_top": [89, 98],
+   "fn_knee": [92, 107],
+   "fn_paw": [100, 116],
+   "ff_top": [99, 94],
+   "ff_knee": [110, 99],
+   "ff_paw": [113, 107],
+   "hn_top": [53, 97],
+   "hn_knee": [46, 108],
+   "hn_paw": [39, 119],
+   "hf_top": [64, 98],
+   "hf_knee": [63, 108],
+   "hf_paw": [76, 121]
+  },
+  "rider": {
+   "head": [84, 50],
+   "neck": [84, 57],
+   "chest": [85, 66],
+   "pelvis": [85, 78],
+   "r_sh": [75, 58],
+   "r_el": [61, 55],
+   "r_ha": [66, 41],
+   "tip": [103, 27],
+   "l_sh": [93, 58],
+   "l_el": [94, 65],
+   "l_ha": [83, 62],
+   "leg_kn": [84, 90],
+   "leg_ft": [84, 96]
+  }
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: the centaur lifts the glaive up over his head in his right hand, its golden blade up and back, his left hand an empty fist at his chest; his horse body gathers its weight back onto its haunches; both face the lower-right",
+   "2": "wind-up extreme: the centaur's man's torso leans back from the waist with the glaive cocked behind his head, its golden blade hanging down behind his shoulders; his horse body rears up high on its hind legs, forelegs folded in the air; both face the lower-right",
+   "3": "swing: the centaur whips his torso forward and sweeps the glaive over the top, level and pointing to the lower-right; his horse body plunges forward and down, its forelegs reaching toward the lower-right; both face the lower-right",
+   "4": "contact: the centaur leans far forward from the waist, his right arm fully extended toward the lower-right and the glaive's golden blade driving down at the lower-right in front of his horse body's chest; the horse body's front hooves land ahead at the lower-right, its forehand low; both face the lower-right",
+   "5": "follow-through: the centaur follows through, the glaive carrying on down at the lower-right; his horse body stands with its weight on its forehand; both face the lower-right",
+   "6": "recover: the centaur straightens his torso and brings the glaive back up toward the ready angle over his head; his horse body steps back halfway toward where it stood; both face the lower-right"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; the centaur's horse body shies back toward the upper-left, its front hooves off the ground; his man's torso jolts back from the waist, eyes squeezed shut, arms flung out, the glaive still in his right hand",
+   "1": "recoil extreme: the horse body half-rears back toward the upper-left; the centaur's man's torso leans far back from the waist, arms out, the glaive still in his right hand",
+   "2": "recovering: the horse body's front hooves come back down; the centaur's torso straightens up, halfway back to the ready pose, the glaive still in his right hand"
+  },
+  "death": {
+   "1": "stagger: hit from the lower-right; the centaur's horse body rears back toward the upper-left; his man's torso is thrown back from the waist, arms flung up, eyes shut, the glaive still in his right hand",
+   "2": "the horse body's forelegs fold and it drops onto its knees; the centaur's man's torso sways back from the waist, arms up, eyes shut, the glaive still in his right hand",
+   "3": "the horse body sinks down onto its chest; the centaur's man's torso sags forward from the waist, arms dropping, eyes shut",
+   "4": "the horse body sinks fully onto its belly with its legs folded under it; the centaur's man's torso slumps forward over the horse body's chest toward the lower-right, the glaive slipping from his hand, eyes shut",
+   "5": "the centaur collapsed: his horse body lying on its belly, legs folded under it; his man's torso slumped forward over the front of the horse body, head and arms hanging down to the ground at the lower-right, eyes shut, the glaive on the ground beside his head",
+   "6": "bounce: the centaur's slumped shoulders and head lift a hair off the ground",
+   "7": "corpse: the centaur lying still, his horse body collapsed on its belly with its legs folded, his man's torso slumped forward over its chest with his head on the ground, eyes closed, the glaive on the ground beside his head"
+  }
+ }
+}

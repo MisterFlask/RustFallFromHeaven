@@ -1,0 +1,183 @@
+{
+ "name": "frostling_wolf_rider",
+ "sprite": "m7/roster/units/unit_frostling_wolf_rider.png",
+ "body_plan": "mounted",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Frostling Wolf Rider, a small blue-skinned frost goblin with wild spiky white hair, big pointed ears, a toothy grin, a cream fur mantle, round icy-blue shoulder and knee pads and brown leather straps, an ice-crystal-tipped spear with a brown wooden shaft in his LEFT hand, riding a huge snarling white wolf with a shaggy white-and-pale-blue coat, icy blue eyes, bared white fangs, a black nose, brown leather reins and a bushy white tail",
+ "hands": "the ice-tipped spear stays in the goblin's left hand on the screen-right side, angled up toward the upper-right, and his right hand holds the wolf's reins on the screen-left side; the wolf has no weapon: it fights with its fangs",
+ "guide_style": "grey",
+ "rider_action": "thrust",
+ "head_r": 6,
+ "limb": 0.75,
+ "dims": {
+  "body_r": 12,
+  "head_r": 8,
+  "neck_r": 7,
+  "snout_w": 7,
+  "leg_w": 6,
+  "paw_r": 3.5,
+  "tail_w": 7,
+  "ear": 1
+ },
+ "words": {
+  "mount": "white wolf",
+  "rider": "goblin",
+  "weapon": "ice-tipped spear",
+  "feet": "paws"
+ },
+ "beats": {
+  "strike": {
+   "4": "contact: the goblin leans far forward over the white wolf's neck with his weapon arm fully extended, the ice-tipped spear thrust out along a line to the lower-right, its point the farthest point of the figure; the white wolf lunges far forward toward the lower-right, low, its neck stretched out, jaws open with fangs bared, hind legs driving; both face the lower-right"
+  },
+  "flinch": {
+   "1": "recoil extreme: the white wolf rears back onto its haunches toward the upper-left, head tossed up, snarling; the goblin leans back, still astride the wolf"
+  }
+ },
+ "joints": {
+  "mount": {
+   "head": [
+    104,
+    82
+   ],
+   "snout": [
+    118,
+    90
+   ],
+   "jaw": [
+    113,
+    97
+   ],
+   "neck": [
+    93,
+    88
+   ],
+   "withers": [
+    88,
+    94
+   ],
+   "spine": [
+    70,
+    96
+   ],
+   "hips": [
+    53,
+    94
+   ],
+   "tail_base": [
+    48,
+    86
+   ],
+   "tail_mid": [
+    40,
+    88
+   ],
+   "tail_tip": [
+    36,
+    98
+   ],
+   "fn_top": [
+    86,
+    98
+   ],
+   "fn_knee": [
+    91,
+    110
+   ],
+   "fn_paw": [
+    96,
+    121
+   ],
+   "ff_top": [
+    100,
+    100
+   ],
+   "ff_knee": [
+    106,
+    108
+   ],
+   "ff_paw": [
+    109,
+    116
+   ],
+   "hn_top": [
+    52,
+    96
+   ],
+   "hn_knee": [
+    47,
+    106
+   ],
+   "hn_paw": [
+    49,
+    117
+   ],
+   "hf_top": [
+    66,
+    98
+   ],
+   "hf_knee": [
+    67,
+    108
+   ],
+   "hf_paw": [
+    71,
+    117
+   ]
+  },
+  "rider": {
+   "head": [
+    79,
+    49
+   ],
+   "neck": [
+    78,
+    57
+   ],
+   "chest": [
+    76,
+    67
+   ],
+   "pelvis": [
+    74,
+    84
+   ],
+   "r_sh": [
+    84,
+    61
+   ],
+   "r_el": [
+    86,
+    67
+   ],
+   "r_ha": [
+    90,
+    62
+   ],
+   "tip": [
+    123,
+    40
+   ],
+   "l_sh": [
+    68,
+    62
+   ],
+   "l_el": [
+    66,
+    70
+   ],
+   "l_ha": [
+    70,
+    77
+   ],
+   "leg_kn": [
+    67,
+    88
+   ],
+   "leg_ft": [
+    70,
+    98
+   ]
+  }
+ }
+}

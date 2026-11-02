@@ -1,0 +1,33 @@
+{
+ "name": "valin",
+ "sprite": "m7/roster/units/unit_valin.png",
+ "body_plan": "mounted",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "Valin, a mounted paladin hero: a young man with tousled brown hair in white-and-gold plate armour with big gold-trimmed pauldrons, a white tabard bearing a gold sun and a blue cape, a golden spiked morning star on a short brown haft in his RIGHT hand (screen-left) and a round white shield with a gold sun and gold rim on his LEFT arm (screen-right), riding a white horse with a gold bridle, a white caparison with a gold sun emblem and gold trim, a cream mane and tail and dark hooves",
+ "hands": "the morning star stays in Valin's right hand on the screen-left side and the round sun shield on his left arm on the screen-right side",
+ "guide_style": "grey",
+ "rider_action": "swing",
+ "mount_action": "rear",
+ "head_r": 9,
+ "limb": 1.0,
+ "dims": {"body_r": 12, "head_r": 6, "neck_r": 6.5, "snout_w": 6, "leg_w": 4.5, "paw_r": 3, "tail_w": 5},
+ "words": {"mount": "white horse", "rider": "paladin", "weapon": "morning star", "feet": "hooves", "shield": "round sun shield"},
+ "joints": {
+  "mount": {
+   "head": [110, 55], "snout": [120, 69], "jaw": [116, 74], "neck": [100, 74],
+   "withers": [96, 84], "spine": [76, 86], "hips": [56, 86],
+   "tail_base": [47, 75], "tail_mid": [42, 87], "tail_tip": [41, 100],
+   "fn_top": [93, 95], "fn_knee": [93, 107], "fn_paw": [96, 121],
+   "ff_top": [104, 93], "ff_knee": [114, 101], "ff_paw": [107, 113],
+   "hn_top": [55, 95], "hn_knee": [50, 106], "hn_paw": [51, 118],
+   "hf_top": [73, 95], "hf_knee": [74, 106], "hf_paw": [77, 117]
+  },
+  "rider": {
+   "head": [80, 31], "neck": [81, 40], "chest": [81, 49], "pelvis": [79, 63],
+   "r_sh": [69, 42], "r_el": [61, 50], "r_ha": [55, 47], "tip": [46, 30],
+   "l_sh": [90, 43], "l_el": [93, 51], "l_ha": [96, 56], "shield": [97, 56, 7.5, 12],
+   "leg_kn": [81, 72], "leg_ft": [80, 91]
+  }
+ }
+}

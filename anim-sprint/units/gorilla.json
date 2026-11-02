@@ -1,0 +1,132 @@
+{
+ "name": "gorilla",
+ "sprite": "m7/roster/units/unit_gorilla.png",
+ "body_plan": "quadruped",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Gorilla, a huge blue-black silverback ape with a pale silver-grey back and shoulders, a high crested head, small orange eyes under a heavy brow, a roaring red mouth with white fangs, long massive arms knuckle-walking on big dark fists and short bowed hind legs, no tail",
+ "hands": "it has no weapon: it fights with its fanged jaws and its huge fists",
+ "guide_style": "grey",
+ "dims": {
+  "body_r": 14,
+  "head_r": 9,
+  "neck_r": 9,
+  "snout_w": 7,
+  "leg_w": 6.5,
+  "paw_r": 4.5,
+  "tail_w": 0,
+  "tail_tuft": 0,
+  "ear": 0
+ },
+ "words": {
+  "animal": "gorilla",
+  "jaws": "fanged jaws",
+  "claws": "fists",
+  "paws": "knuckles",
+  "tail": "hindquarters",
+  "ears": "crest"
+ },
+ "joints": {
+  "head": [
+   96,
+   70
+  ],
+  "snout": [
+   102,
+   77
+  ],
+  "jaw": [
+   99,
+   85
+  ],
+  "neck": [
+   88,
+   77
+  ],
+  "withers": [
+   82,
+   83
+  ],
+  "spine": [
+   68,
+   85
+  ],
+  "hips": [
+   55,
+   89
+  ],
+  "tail_base": [
+   47,
+   92
+  ],
+  "tail_tip": [
+   46,
+   93
+  ],
+  "fn_top": [
+   76,
+   90
+  ],
+  "fn_knee": [
+   79,
+   104
+  ],
+  "fn_paw": [
+   86,
+   119
+  ],
+  "ff_top": [
+   102,
+   88
+  ],
+  "ff_knee": [
+   108,
+   102
+  ],
+  "ff_paw": [
+   111,
+   116
+  ],
+  "hn_top": [
+   52,
+   98
+  ],
+  "hn_knee": [
+   46,
+   107
+  ],
+  "hn_paw": [
+   49,
+   118
+  ],
+  "hf_top": [
+   64,
+   98
+  ],
+  "hf_knee": [
+   67,
+   106
+  ],
+  "hf_paw": [
+   70,
+   115
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "crouch: the weight shifts back onto the short hind legs and the body sinks lower, the head drops level with the shoulders and aims at the lower-right, both fists and both feet planted, the fanged jaws closed",
+   "2": "coil, the wind-up extreme: the body drawn back toward the upper-left and pressed low over the folded hind legs, the chest close to the ground, the head low and aimed at the lower-right, the long arms braced on the knuckles, the fanged jaws closed; the face looks to the lower-right",
+   "3": "launch: the hind legs drive and the body springs forward and up toward the lower-right, stretched out, both long arms lifted off the ground and swinging forward, the fanged jaws opening in a roar; the hind feet still on the ground",
+   "4": "contact: the body fully stretched out low toward the lower-right, the head the farthest point of the figure with the fanged jaws wide open roaring and biting at the lower-right, both huge fists reaching out and smashing toward the lower-right, the hind feet still planted",
+   "5": "follow-through: the big fists slam down on the ground ahead at the lower-right, the head bites down low with the fanged jaws closing, the hind legs drawn up under the body"
+  },
+  "flinch": {
+   "1": "recoil extreme: half-rearing back toward the upper-left on the short hind legs, the head still thrown back, the long arms flung up"
+  },
+  "death": {
+   "1": "stagger back: thrown up and back onto the short hind legs toward the upper-left, the long arms dangling, the head thrown back, eyes shut",
+   "4": "rolls over onto its side: the body goes down flat, the long arms and short legs swing out stiff and straight, the head flops onto the ground, eyes shut",
+   "5": "hits the ground: lying on its side along the ground, its long arms stretched out stiff and straight forward and its short legs back, the head lying flat on the ground with the jaw slack, eyes shut"
+  }
+ }
+}

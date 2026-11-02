@@ -1,0 +1,32 @@
+{
+ "name": "horse_archer",
+ "sprite": "m7/roster/units/unit_horse_archer.png",
+ "body_plan": "mounted",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Horse Archer, a dark-haired rider in a blue padded tunic with white fur trim and a red sash, a tall blue pointed cap with a white fur brim and a red tassel, a quiver of white-fletched arrows at the saddle behind him, drawing a wooden recurve bow held in his LEFT hand with the arrow drawn back by his RIGHT hand, riding a light-brown horse with a dark-brown mane and tail, a white blaze, a red saddle cloth and dark hooves",
+ "hands": "the bow stays in the rider's left hand on the screen-right side and his right hand on the screen-left side draws the string and the arrow",
+ "guide_style": "grey",
+ "rider_action": "shoot",
+ "head_r": 7,
+ "limb": 0.85,
+ "dims": {"body_r": 10, "head_r": 6, "neck_r": 6, "snout_w": 6, "leg_w": 4, "paw_r": 2.5, "tail_w": 5},
+ "words": {"mount": "horse", "rider": "archer", "weapon": "bow", "feet": "hooves"},
+ "joints": {
+  "mount": {
+   "head": [109, 70], "snout": [120, 82], "jaw": [116, 86], "neck": [97, 79],
+   "withers": [93, 89], "spine": [77, 90], "hips": [60, 89],
+   "tail_base": [55, 80], "tail_mid": [45, 85], "tail_tip": [41, 100],
+   "fn_top": [92, 97], "fn_knee": [96, 108], "fn_paw": [100, 120],
+   "ff_top": [100, 94], "ff_knee": [109, 101], "ff_paw": [105, 112],
+   "hn_top": [60, 97], "hn_knee": [53, 108], "hn_paw": [56, 118],
+   "hf_top": [72, 97], "hf_knee": [74, 107], "hf_paw": [78, 117]
+  },
+  "rider": {
+   "head": [73, 43], "neck": [73, 52], "chest": [74, 60], "pelvis": [74, 76],
+   "r_sh": [79, 55], "r_el": [91, 54], "r_ha": [104, 52], "tip": [95, 28],
+   "l_sh": [67, 56], "l_el": [57, 50], "l_ha": [70, 49],
+   "leg_kn": [77, 85], "leg_ft": [75, 95]
+  }
+ }
+}

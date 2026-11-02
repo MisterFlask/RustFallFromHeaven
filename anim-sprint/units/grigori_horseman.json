@@ -1,0 +1,35 @@
+{
+ "name": "grigori_horseman",
+ "sprite": "m7/roster/units/unit_grigori_horseman.png",
+ "body_plan": "mounted",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Grigori Horseman, a young rider with curly brown hair under a steel kettle helmet with a gold band, a teal scarf blowing back from his neck, brown leather armour with gold studs and a leather saddlebag, a round teal-and-gold shield with a gold boss on his RIGHT arm and a steel-tipped wooden spear held upright in his LEFT hand, riding a brown horse with a white blaze, a black mane and tail, a brown leather bridle with gold fittings and dark hooves",
+ "hands": "the spear stays in the rider's left hand on the screen-right side and the round teal-and-gold shield on his right arm on the screen-left side",
+ "guide_style": "grey",
+ "rider_action": "swing",
+ "head_r": 8,
+ "limb": 0.85,
+ "dims": {"body_r": 10, "head_r": 6, "neck_r": 6, "snout_w": 6, "leg_w": 4, "paw_r": 2.5, "tail_w": 4},
+ "words": {"mount": "horse", "rider": "rider", "weapon": "spear", "feet": "hooves", "shield": "round shield"},
+ "beats": {
+  "strike": {"3": "swing: the rider whips forward and brings the spear over the top in an overhand stab, its steel point leading toward the lower-right; the horse plunges forward and down, its forelegs reaching toward the lower-right; both face the lower-right"}
+ },
+ "joints": {
+  "mount": {
+   "head": [110, 67], "snout": [117, 80], "jaw": [114, 83], "neck": [97, 79],
+   "withers": [94, 90], "spine": [76, 89], "hips": [58, 89],
+   "tail_base": [53, 77], "tail_mid": [45, 89], "tail_tip": [42, 104],
+   "fn_top": [92, 96], "fn_knee": [93, 109], "fn_paw": [96, 122],
+   "ff_top": [99, 94], "ff_knee": [106, 104], "ff_paw": [101, 112],
+   "hn_top": [57, 96], "hn_knee": [51, 109], "hn_paw": [55, 119],
+   "hf_top": [68, 98], "hf_knee": [72, 108], "hf_paw": [76, 116]
+  },
+  "rider": {
+   "head": [79, 43], "neck": [78, 52], "chest": [78, 59], "pelvis": [78, 70],
+   "r_sh": [86, 55], "r_el": [88, 62], "r_ha": [93, 60], "tip": [118, 27],
+   "l_sh": [68, 53], "l_el": [65, 62], "l_ha": [68, 70], "shield": [62, 65, 8, 10.5],
+   "leg_kn": [80, 79], "leg_ft": [79, 92]
+  }
+ }
+}

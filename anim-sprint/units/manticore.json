@@ -1,0 +1,23 @@
+{
+ "name": "manticore",
+ "sprite": "m7/roster/units/unit_manticore.png",
+ "body_plan": "quadruped",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Manticore, a lion-bodied beast with tawny golden fur, a huge shaggy red mane around a grinning fanged lion face with yellow eyes, two large red bat wings raised high behind it, a long segmented red scorpion tail with black spikes and a stinger curling up over its back, and four big clawed golden paws",
+ "hands": "it has no weapon: it fights with its fanged jaws and clawed paws, its scorpion tail arched over its back",
+ "guide_style": "grey",
+ "dims": {"body_r": 10, "head_r": 8, "neck_r": 9, "snout_w": 6, "leg_w": 6, "paw_r": 4, "tail_w": 7, "tail_tuft": 0, "ear": 0.5, "wing_w": 3},
+ "words": {"animal": "manticore", "jaws": "fanged jaws", "claws": "claws", "paws": "clawed paws", "tail": "scorpion tail", "ears": "ears"},
+ "joints": {
+  "head": [109, 74], "snout": [115, 80], "jaw": [113, 88], "neck": [98, 82],
+  "withers": [92, 86], "spine": [72, 84], "hips": [55, 84],
+  "tail_base": [46, 72], "tail_mid": [36, 34], "tail_tip": [63, 36],
+  "fn_top": [87, 88], "fn_knee": [90, 106], "fn_paw": [95, 119],
+  "ff_top": [106, 94], "ff_knee": [112, 107], "ff_paw": [122, 116],
+  "hn_top": [56, 88], "hn_knee": [47, 103], "hn_paw": [47, 115],
+  "hf_top": [69, 90], "hf_knee": [75, 106], "hf_paw": [79, 114],
+  "wn_root": [78, 66], "wn_wrist": [82, 27], "wn_tip": [47, 78],
+  "wf_root": [95, 62], "wf_wrist": [102, 28], "wf_tip": [131, 75]
+ }
+}

@@ -1,0 +1,32 @@
+{
+ "name": "ars",
+ "sprite": "m7/roster/units/unit_ars.png",
+ "body_plan": "mounted",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "Ars, a horseman of the apocalypse: a hooded skeletal reaper with a bare skull face and glowing cyan eyes, in a black hood, black spiked armour with bone-white trim and a long tattered black cloak that drapes over his mount's flanks, a great scythe with a dark wooden shaft and a long curved steel blade in his RIGHT bony hand on the screen-left side, the reins in his LEFT hand on the screen-right side, riding a skeletal bone-white horse with a horse skull, glowing cyan eyes, a black mane and spiked black barding",
+ "hands": "the scythe stays in the reaper's right bony hand on the screen-left side and his left hand holds the reins on the screen-right side",
+ "guide_style": "grey",
+ "rider_action": "swing",
+ "head_r": 8,
+ "limb": 0.9,
+ "dims": {"body_r": 11, "head_r": 6, "neck_r": 6.5, "snout_w": 6, "leg_w": 4, "paw_r": 2.5, "tail_w": 4},
+ "words": {"mount": "skeletal horse", "rider": "skeletal reaper", "weapon": "scythe", "feet": "bone hooves"},
+ "joints": {
+  "mount": {
+   "head": [110, 69], "snout": [118, 78], "jaw": [117, 81], "neck": [98, 77],
+   "withers": [96, 88], "spine": [80, 88], "hips": [62, 88],
+   "tail_base": [56, 82], "tail_mid": [48, 88], "tail_tip": [43, 95],
+   "fn_top": [91, 97], "fn_knee": [93, 108], "fn_paw": [96, 122],
+   "ff_top": [104, 96], "ff_knee": [112, 104], "ff_paw": [107, 116],
+   "hn_top": [63, 95], "hn_knee": [57, 106], "hn_paw": [58, 119],
+   "hf_top": [70, 96], "hf_knee": [74, 108], "hf_paw": [78, 117]
+  },
+  "rider": {
+   "head": [79, 45], "neck": [79, 52], "chest": [78, 60], "pelvis": [77, 74],
+   "r_sh": [67, 53], "r_el": [61, 58], "r_ha": [57, 54], "tip": [67, 18],
+   "l_sh": [88, 54], "l_el": [91, 59], "l_ha": [91, 65],
+   "leg_kn": [83, 84], "leg_ft": [85, 96]
+  }
+ }
+}

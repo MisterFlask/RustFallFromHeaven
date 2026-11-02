@@ -1,0 +1,73 @@
+{
+ "name": "centaur_archer",
+ "sprite": "m7/roster/units/unit_centaur_archer.png",
+ "body_plan": "mounted",
+ "fused": true,
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Centaur Archer, a centaur: a bearded man's bare torso with long brown hair tied in a ponytail and a green-and-gold sash across his chest, growing from the chest of a chestnut horse body with a green cloth trimmed in gold over its back, a dark brown tail and dark hooves, a quiver of arrows on his back, drawing a big golden recurve longbow held out in his LEFT hand on the screen-right side, the string pulled back to his jaw by his RIGHT hand on the screen-left side, the arrow pointing to the lower-right",
+ "hands": "the longbow stays in the centaur's left hand on the screen-right side and his right hand draws the string on the screen-left side; he has no saddle and no rider's legs: his waist grows from the horse body's chest",
+ "guide_style": "grey",
+ "rider_action": "shoot",
+ "head_r": 8,
+ "limb": 0.9,
+ "dims": {"body_r": 11, "head_r": 1, "neck_r": 1.5, "snout_w": 1, "ear": 0, "leg_w": 4, "paw_r": 2.5, "tail_w": 5},
+ "words": {"mount": "horse body", "rider": "centaur", "weapon": "longbow", "feet": "hooves", "his": "his", "him": "him"},
+ "joints": {
+  "mount": {
+   "head": [79, 69],
+   "snout": [81, 68],
+   "jaw": [80, 70],
+   "neck": [80, 76],
+   "withers": [84, 86],
+   "spine": [68, 88],
+   "hips": [50, 86],
+   "tail_base": [42, 80],
+   "tail_mid": [36, 92],
+   "tail_tip": [38, 106],
+   "fn_top": [84, 96],
+   "fn_knee": [84, 108],
+   "fn_paw": [87, 121],
+   "ff_top": [91, 94],
+   "ff_knee": [98, 101],
+   "ff_paw": [93, 109],
+   "hn_top": [53, 96],
+   "hn_knee": [49, 107],
+   "hn_paw": [51, 116],
+   "hf_top": [63, 98],
+   "hf_knee": [64, 106],
+   "hf_paw": [70, 113]
+  },
+  "rider": {
+   "head": [75, 42],
+   "neck": [77, 50],
+   "chest": [78, 61],
+   "pelvis": [79, 74],
+   "r_sh": [85, 56],
+   "r_el": [98, 57],
+   "r_ha": [111, 56],
+   "tip": [101, 24],
+   "l_sh": [69, 55],
+   "l_el": [57, 53],
+   "l_ha": [84, 53],
+   "leg_kn": [78, 86],
+   "leg_ft": [78, 92]
+  }
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-right; the centaur's horse body shies back toward the upper-left, its front hooves off the ground; his man's torso jolts back from the waist, eyes squeezed shut, arms flung out, the longbow still in his left hand",
+   "1": "recoil extreme: the horse body half-rears back toward the upper-left; the centaur's man's torso leans far back from the waist, arms out, the longbow still in his left hand",
+   "2": "recovering: the horse body's front hooves come back down; the centaur's torso straightens up, halfway back to the ready pose, the longbow still in his left hand"
+  },
+  "death": {
+   "1": "stagger: hit from the lower-right; the centaur's horse body rears back toward the upper-left; his man's torso is thrown back from the waist, arms flung up, eyes shut, the longbow still in his left hand",
+   "2": "the horse body's forelegs fold and it drops onto its knees; the centaur's man's torso sways back from the waist, arms up, eyes shut, the longbow still in his hand",
+   "3": "the horse body sinks down onto its chest; the centaur's man's torso sags forward from the waist, arms dropping, eyes shut",
+   "4": "the horse body sinks fully onto its belly with its legs folded under it; the centaur's man's torso slumps forward over the horse body's chest toward the lower-right, the longbow slipping from his hand, eyes shut",
+   "5": "the centaur collapsed: his horse body lying on its belly, legs folded under it; his man's torso slumped forward over the front of the horse body, head and arms hanging down to the ground at the lower-right, eyes shut, the longbow on the ground beside his head",
+   "6": "bounce: the centaur's slumped shoulders and head lift a hair off the ground",
+   "7": "corpse: the centaur lying still, his horse body collapsed on its belly with its legs folded, his man's torso slumped forward over its chest with his head on the ground, eyes closed, the longbow on the ground beside his head"
+  }
+ }
+}

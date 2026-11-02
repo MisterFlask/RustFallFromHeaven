@@ -1,0 +1,189 @@
+{
+ "name": "buboes",
+ "sprite": "m7/roster/units/unit_buboes.png",
+ "body_plan": "mounted",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "Buboes, the Warbringer, Horseman of War: a rider in black spiked plate with crimson plates and bone-white spikes, a horned black closed helm with a glowing red T-shaped visor slit and a tattered black cloak streaming behind him, raising a huge notched blood-red greatsword high in his RIGHT hand on the screen-left side, riding a dark red war horse with a glowing red eye, a fiery red mane and tail, dark hooves and ragged black barding trimmed in crimson",
+ "hands": "the red greatsword stays in the rider's right hand on the screen-left side and his left hand holds the reins on the screen-right side",
+ "guide_style": "grey",
+ "rider_action": "swing",
+ "head_r": 7.5,
+ "limb": 1.0,
+ "dims": {
+  "body_r": 12,
+  "head_r": 6,
+  "neck_r": 6,
+  "snout_w": 6,
+  "leg_w": 4.5,
+  "paw_r": 3,
+  "tail_w": 4
+ },
+ "words": {
+  "mount": "red war horse",
+  "rider": "black-armoured rider",
+  "weapon": "red greatsword",
+  "feet": "hooves",
+  "his": "his",
+  "him": "him"
+ },
+ "joints": {
+  "mount": {
+   "head": [
+    106,
+    70
+   ],
+   "snout": [
+    116,
+    80
+   ],
+   "jaw": [
+    112,
+    84
+   ],
+   "neck": [
+    97,
+    77
+   ],
+   "withers": [
+    92,
+    85
+   ],
+   "spine": [
+    78,
+    88
+   ],
+   "hips": [
+    60,
+    86
+   ],
+   "tail_base": [
+    54,
+    84
+   ],
+   "tail_mid": [
+    50,
+    94
+   ],
+   "tail_tip": [
+    50,
+    104
+   ],
+   "fn_top": [
+    93,
+    96
+   ],
+   "fn_knee": [
+    94,
+    110
+   ],
+   "fn_paw": [
+    96,
+    123
+   ],
+   "ff_top": [
+    101,
+    94
+   ],
+   "ff_knee": [
+    107,
+    104
+   ],
+   "ff_paw": [
+    105,
+    114
+   ],
+   "hn_top": [
+    58,
+    96
+   ],
+   "hn_knee": [
+    56,
+    110
+   ],
+   "hn_paw": [
+    58,
+    121
+   ],
+   "hf_top": [
+    72,
+    98
+   ],
+   "hf_knee": [
+    74,
+    108
+   ],
+   "hf_paw": [
+    77,
+    118
+   ]
+  },
+  "rider": {
+   "head": [
+    78,
+    50
+   ],
+   "neck": [
+    79,
+    58
+   ],
+   "chest": [
+    79,
+    67
+   ],
+   "pelvis": [
+    77,
+    79
+   ],
+   "r_sh": [
+    67,
+    58
+   ],
+   "r_el": [
+    57,
+    62
+   ],
+   "r_ha": [
+    49,
+    55
+   ],
+   "tip": [
+    70,
+    16
+   ],
+   "l_sh": [
+    89,
+    58
+   ],
+   "l_el": [
+    90,
+    66
+   ],
+   "l_ha": [
+    93,
+    74
+   ],
+   "leg_kn": [
+    68,
+    88
+   ],
+   "leg_ft": [
+    70,
+    100
+   ]
+  }
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-right; the red war horse throws its head up and shies back toward the upper-left, its front hooves off the ground; the black-armoured rider jolts back in the saddle, his horned helm snapping back, arms flung out, the red greatsword still in his right hand"
+  },
+  "death": {
+   "1": "stagger: the red war horse rears back toward the upper-left, head thrown back; the black-armoured rider is thrown back in the saddle, arms flung up, the red glow of his visor flickering",
+   "2": "the red war horse's forelegs fold and it drops onto its knees, head sinking; the black-armoured rider pitches back in the saddle, arms up, his horned helm tipped back",
+   "3": "the red war horse sinks down onto its chest, head sinking, its red eye dimming; the black-armoured rider sags in the saddle, arms dropping, his visor's red glow dimming",
+   "4": "the red war horse sinks fully onto its belly with its legs folded under it, its neck lowering forward toward the lower-right; the black-armoured rider, still in the saddle, slumps forward over its neck, the red greatsword slipping from his hand, his visor gone dark",
+   "5": "the red war horse lying collapsed on its belly, legs folded under it, its head lying on the ground toward the lower-right, its eye dark; the black-armoured rider slumped forward over the neck, arms hanging down, his horned helm bowed and its visor dark, the red greatsword on the ground beside the red war horse's head",
+   "7": "corpses: the red war horse lying still, collapsed on its belly with its head on the ground, the black-armoured rider slumped forward over its neck, his visor dark, the red greatsword on the ground beside the head"
+  }
+ }
+}

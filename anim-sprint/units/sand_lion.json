@@ -1,0 +1,21 @@
+{
+ "name": "sand_lion",
+ "sprite": "m7/roster/units/unit_sand_lion.png",
+ "body_plan": "quadruped",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Sand Lion, a prowling lion made of golden swirling sand with tawny stripes along its body, a big windswept sandy mane, turquoise eyes, an open mouth with white fangs, a gold collar set with turquoise gems around its neck, and a long tail curled up behind it, loose grains of sand drifting around it",
+ "hands": "it has no weapon: it fights with its fangs and sandy claws",
+ "guide_style": "grey",
+ "dims": {"body_r": 12, "head_r": 9, "neck_r": 8, "snout_w": 8, "leg_w": 6, "paw_r": 4, "tail_w": 4, "tail_tuft": 3.5, "ear": 0.5},
+ "words": {"animal": "sand lion", "jaws": "fanged jaws", "claws": "sandy claws", "paws": "paws", "tail": "curled tail", "ears": "ears and sandy mane"},
+ "joints": {
+  "head": [107, 79], "snout": [120, 85], "jaw": [114, 94], "neck": [97, 88],
+  "withers": [93, 92], "spine": [76, 89], "hips": [59, 91],
+  "tail_base": [57, 81], "tail_mid": [44, 73], "tail_tip": [58, 60],
+  "fn_top": [93, 99], "fn_knee": [100, 112], "fn_paw": [106, 122],
+  "ff_top": [104, 100], "ff_knee": [111, 106], "ff_paw": [112, 114],
+  "hn_top": [59, 96], "hn_knee": [50, 104], "hn_paw": [54, 112],
+  "hf_top": [74, 97], "hf_knee": [77, 106], "hf_paw": [80, 114]
+ }
+}

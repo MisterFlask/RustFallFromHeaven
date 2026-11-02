@@ -1,0 +1,32 @@
+{
+ "name": "lanun_horseman",
+ "sprite": "m7/roster/units/unit_lanun_horseman.png",
+ "body_plan": "mounted",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Lanun Horseman, a tanned pirate rider with a long dark ponytail under a gold-trimmed blue tricorn hat, a blue coat with gold trim over a white shirt, a red sash and red breeches with dark boots, a steel-tipped wooden spear held upright in his LEFT hand and a round blue-and-white shield with a gold anchor emblem on his RIGHT arm, riding a brown horse with a white blaze, a black mane and tail and dark hooves",
+ "hands": "the spear stays in the rider's left hand on the screen-right side and the round anchor shield on his right arm on the screen-left side",
+ "guide_style": "grey",
+ "rider_action": "swing",
+ "head_r": 8,
+ "limb": 0.9,
+ "dims": {"body_r": 11, "head_r": 6, "neck_r": 6, "snout_w": 6, "leg_w": 4.5, "paw_r": 2.5, "tail_w": 5},
+ "words": {"mount": "horse", "rider": "rider", "weapon": "spear", "feet": "hooves", "shield": "round anchor shield"},
+ "joints": {
+  "mount": {
+   "head": [106, 70], "snout": [114, 83], "jaw": [110, 85], "neck": [94, 80],
+   "withers": [90, 88], "spine": [73, 92], "hips": [57, 90],
+   "tail_base": [54, 84], "tail_mid": [48, 94], "tail_tip": [46, 104],
+   "fn_top": [90, 98], "fn_knee": [89, 110], "fn_paw": [91, 120],
+   "ff_top": [99, 95], "ff_knee": [105, 104], "ff_paw": [99, 113],
+   "hn_top": [58, 98], "hn_knee": [54, 108], "hn_paw": [56, 117],
+   "hf_top": [68, 96], "hf_knee": [70, 106], "hf_paw": [75, 114]
+  },
+  "rider": {
+   "head": [76, 49], "neck": [77, 57], "chest": [77, 64], "pelvis": [77, 78],
+   "r_sh": [84, 58], "r_el": [85, 67], "r_ha": [88, 62], "tip": [114, 34],
+   "l_sh": [70, 58], "l_el": [68, 68], "l_ha": [67, 75], "shield": [62, 69, 8, 11],
+   "leg_kn": [73, 87], "leg_ft": [78, 96]
+  }
+ }
+}

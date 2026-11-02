@@ -1,0 +1,32 @@
+{
+ "name": "illians_horseman",
+ "sprite": "m7/roster/units/unit_illians_horseman.png",
+ "body_plan": "mounted",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "an Illians Horseman, an old rider with a long white beard in a white fur hood and a white fur cloak over blue-white steel armour and brown boots, a round white shield with a blue snowflake emblem on his RIGHT arm and a steel-tipped spear with a brown wooden shaft in his LEFT hand, riding a white horse with a white mane and tail, a grey-blue harness and grey-blue hooves",
+ "hands": "the spear stays in the rider's left hand on the screen-right side and the round snowflake shield on his right arm on the screen-left side",
+ "guide_style": "grey",
+ "rider_action": "thrust",
+ "head_r": 7,
+ "limb": 0.85,
+ "dims": {"body_r": 10, "head_r": 6, "neck_r": 6, "snout_w": 6, "leg_w": 4, "paw_r": 2.5, "tail_w": 6},
+ "words": {"mount": "white horse", "rider": "rider", "weapon": "spear", "feet": "hooves"},
+ "joints": {
+  "mount": {
+   "head": [107, 70], "snout": [117, 82], "jaw": [113, 88], "neck": [98, 79],
+   "withers": [94, 89], "spine": [78, 92], "hips": [60, 91],
+   "tail_base": [55, 86], "tail_mid": [46, 95], "tail_tip": [45, 107],
+   "fn_top": [93, 98], "fn_knee": [95, 110], "fn_paw": [97, 121],
+   "ff_top": [101, 96], "ff_knee": [110, 104], "ff_paw": [106, 114],
+   "hn_top": [60, 98], "hn_knee": [54, 110], "hn_paw": [58, 121],
+   "hf_top": [72, 99], "hf_knee": [74, 109], "hf_paw": [77, 119]
+  },
+  "rider": {
+   "head": [79, 46], "neck": [80, 54], "chest": [80, 62], "pelvis": [79, 78],
+   "r_sh": [85, 57], "r_el": [87, 65], "r_ha": [90, 60], "tip": [117, 27],
+   "l_sh": [73, 57], "l_el": [68, 67], "l_ha": [72, 78], "shield": [66, 72, 8.5, 10.5],
+   "leg_kn": [79, 85], "leg_ft": [77, 95]
+  }
+ }
+}

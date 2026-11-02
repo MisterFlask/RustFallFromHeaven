@@ -1,0 +1,32 @@
+{
+ "name": "doviello_horseman",
+ "sprite": "m7/roster/units/unit_doviello_horseman.png",
+ "body_plan": "mounted",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Doviello Horseman, a wild northern rider wearing a grey wolf-pelt headdress with the wolf's snout over his brow and a shaggy grey-and-white fur cloak over brown leather, long brown hair and blue warpaint on his face, a round hide shield with a blue wolf emblem on his RIGHT arm and a feathered spear with a pale stone point and blue-grey feathers in his LEFT hand, riding a dark-maned bay horse with a brown coat, a near-black mane and tail and dark hooves",
+ "hands": "the feathered spear stays in the rider's left hand on the screen-right side and the round wolf-emblem shield on his right arm on the screen-left side",
+ "guide_style": "grey",
+ "rider_action": "swing",
+ "head_r": 7,
+ "limb": 0.9,
+ "dims": {"body_r": 11, "head_r": 6, "neck_r": 6, "snout_w": 6, "leg_w": 4.5, "paw_r": 2.5, "tail_w": 5},
+ "words": {"mount": "horse", "rider": "rider", "weapon": "feathered spear", "feet": "hooves"},
+ "joints": {
+  "mount": {
+   "head": [105, 73], "snout": [113, 85], "jaw": [109, 88], "neck": [94, 82],
+   "withers": [91, 90], "spine": [75, 94], "hips": [58, 92],
+   "tail_base": [52, 86], "tail_mid": [46, 95], "tail_tip": [47, 104],
+   "fn_top": [90, 98], "fn_knee": [91, 110], "fn_paw": [93, 122],
+   "ff_top": [98, 96], "ff_knee": [104, 104], "ff_paw": [99, 112],
+   "hn_top": [59, 98], "hn_knee": [57, 107], "hn_paw": [58, 118],
+   "hf_top": [71, 98], "hf_knee": [73, 107], "hf_paw": [76, 116]
+  },
+  "rider": {
+   "head": [79, 49], "neck": [80, 57], "chest": [80, 66], "pelvis": [80, 81],
+   "r_sh": [88, 60], "r_el": [90, 68], "r_ha": [94, 62], "tip": [114, 27],
+   "l_sh": [72, 60], "l_el": [70, 68], "l_ha": [72, 75], "shield": [65, 70, 8, 11],
+   "leg_kn": [78, 89], "leg_ft": [82, 99]
+  }
+ }
+}

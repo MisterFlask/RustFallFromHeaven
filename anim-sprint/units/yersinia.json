@@ -1,0 +1,195 @@
+{
+ "name": "yersinia",
+ "sprite": "m7/roster/units/unit_yersinia.png",
+ "body_plan": "mounted",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "Yersinia, the plague horseman: a rider in a tattered dark olive hooded cloak with a bone-white plague-doctor beak mask and glowing green goggle eyes, brown leather armour and boots, a golden censer on a chain held high in his RIGHT hand puffing green plague smoke, the reins in his left hand, riding a rotting olive-green undead horse with small horns, a glowing green eye, a dark mane and a torn olive caparison",
+ "hands": "the censer's chain stays in the rider's right fist on the screen-left side, raised high at rest with the censer hanging below it, and his left hand holds the reins on the screen-right side",
+ "guide_style": "grey",
+ "rider_action": "swing",
+ "head_r": 9,
+ "limb": 0.9,
+ "dims": {
+  "body_r": 11,
+  "head_r": 6,
+  "neck_r": 6,
+  "snout_w": 6,
+  "leg_w": 4.5,
+  "paw_r": 3,
+  "tail_w": 4
+ },
+ "words": {
+  "mount": "undead horse",
+  "rider": "plague rider",
+  "weapon": "censer",
+  "feet": "hooves"
+ },
+ "joints": {
+  "mount": {
+   "head": [
+    116,
+    56
+   ],
+   "snout": [
+    127,
+    70
+   ],
+   "jaw": [
+    123,
+    74
+   ],
+   "neck": [
+    104,
+    70
+   ],
+   "withers": [
+    100,
+    78
+   ],
+   "spine": [
+    80,
+    84
+   ],
+   "hips": [
+    60,
+    84
+   ],
+   "tail_base": [
+    52,
+    80
+   ],
+   "tail_mid": [
+    48,
+    88
+   ],
+   "tail_tip": [
+    46,
+    97
+   ],
+   "fn_top": [
+    98,
+    92
+   ],
+   "fn_knee": [
+    100,
+    105
+   ],
+   "fn_paw": [
+    102,
+    120
+   ],
+   "ff_top": [
+    108,
+    88
+   ],
+   "ff_knee": [
+    116,
+    104
+   ],
+   "ff_paw": [
+    117,
+    115
+   ],
+   "hn_top": [
+    60,
+    92
+   ],
+   "hn_knee": [
+    58,
+    104
+   ],
+   "hn_paw": [
+    59,
+    117
+   ],
+   "hf_top": [
+    78,
+    92
+   ],
+   "hf_knee": [
+    82,
+    104
+   ],
+   "hf_paw": [
+    84,
+    115
+   ]
+  },
+  "rider": {
+   "head": [
+    88,
+    27
+   ],
+   "neck": [
+    88,
+    36
+   ],
+   "chest": [
+    86,
+    44
+   ],
+   "pelvis": [
+    86,
+    57
+   ],
+   "r_sh": [
+    78,
+    37
+   ],
+   "r_el": [
+    78,
+    45
+   ],
+   "r_ha": [
+    75,
+    50
+   ],
+   "tip": [
+    48,
+    55
+   ],
+   "l_sh": [
+    95,
+    36
+   ],
+   "l_el": [
+    97,
+    46
+   ],
+   "l_ha": [
+    93,
+    53
+   ],
+   "leg_kn": [
+    87,
+    67
+   ],
+   "leg_ft": [
+    87,
+    82
+   ]
+  }
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: the plague rider swings the golden censer up and back over his head on its chain, a trail of green smoke behind it; the undead horse gathers its weight back onto its haunches and lifts its head; both face the lower-right",
+   "2": "wind-up extreme: the plague rider leans back in the saddle with the censer swung behind his head, hanging down on its chain behind his shoulders, puffing green smoke; the undead horse rears up high on its hind legs, forelegs folded in the air, head up; both face the lower-right",
+   "3": "swing: the plague rider whips his right arm forward and flings the censer over the top on its chain, level and pointing to the lower-right, green smoke streaming behind it; the undead horse plunges forward and down, its forelegs reaching toward the lower-right; both face the lower-right",
+   "4": "contact: the plague rider leans forward over the undead horse's neck, his right arm thrust forward toward the lower-right and the golden censer swinging down on its chain at the lower-right past the horse's head in a burst of green plague smoke; the undead horse's front hooves land ahead at the lower-right, its forehand low and its head stretched forward; both face the lower-right",
+   "5": "follow-through: the censer carries on down at the lower-right on its chain, trailing green smoke; the undead horse stands with its weight on its forehand, head low; both face the lower-right",
+   "6": "recover: the plague rider sits up and swings the censer back up on its chain toward his raised right fist; the undead horse steps back halfway toward where it stood; both face the lower-right"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; the undead horse throws its head up and shies back toward the upper-left, its front hooves off the ground; the plague rider jolts back in the saddle, his beaked mask snapping back, arms flung out, the censer still on its chain in his right hand"
+  },
+  "death": {
+   "1": "stagger: the undead horse rears back toward the upper-left, head thrown back, its green eye fading; the plague rider is thrown back in the saddle, arms flung up, his beaked mask tipped back",
+   "2": "the undead horse's forelegs fold and it drops onto its knees, head sinking; the plague rider pitches back in the saddle, arms up, his hood falling back",
+   "3": "the undead horse sinks down onto its chest, head sinking, its green eye dark; the plague rider sags in the saddle, arms dropping, his beaked mask drooping",
+   "4": "the undead horse sinks fully onto its belly with its legs folded under it, its neck lowering forward toward the lower-right; the plague rider, still in the saddle, slumps forward over its neck, the censer and its chain slipping from his hand, his goggles gone dark",
+   "5": "the undead horse lying collapsed on its belly, legs folded under it, its head lying on the ground toward the lower-right, its eye dark; the plague rider slumped forward over the neck, arms hanging down, his beaked mask lowered, the golden censer on its chain on the ground beside the horse's head, goggles dark",
+   "7": "corpses: the undead horse lying still, collapsed on its belly with its head on the ground, the plague rider slumped forward over its neck, his hood and beaked mask lowered, goggles dark, the golden censer on its chain on the ground beside the head"
+  }
+ }
+}

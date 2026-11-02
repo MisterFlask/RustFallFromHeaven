@@ -1,0 +1,82 @@
+{
+ "name": "centaur_lancer",
+ "sprite": "m7/roster/units/unit_centaur_lancer.png",
+ "body_plan": "mounted",
+ "fused": true,
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Centaur Lancer, a centaur: a man's torso in gold and bronze armour with round gold shoulder plates over a green cloth skirt, a gold Corinthian helmet with a tall green crest, growing from the chest of a chestnut horse body with a green cloth trimmed in gold over its back, a dark brown tail and dark hooves, a long wooden lance with a steel point and a green-and-gold pennant couched level and pointing to the lower-right, gripped low in his RIGHT hand on the screen-left side, and a gold kite shield with a green field on his LEFT arm on the screen-right side",
+ "hands": "the lance stays in the centaur's right hand on the screen-left side and the kite shield on his left arm on the screen-right side; he has no saddle and no rider's legs: his waist grows from the horse body's chest",
+ "guide_style": "grey",
+ "rider_action": "thrust",
+ "head_r": 8,
+ "limb": 1.0,
+ "dims": {"body_r": 12, "head_r": 1, "neck_r": 1.5, "snout_w": 1, "ear": 0, "leg_w": 4.5, "paw_r": 2.5, "tail_w": 6},
+ "words": {"mount": "horse body", "rider": "centaur", "weapon": "lance", "feet": "hooves", "his": "his", "him": "him", "shield": "kite shield"},
+ "joints": {
+  "mount": {
+   "head": [72, 64],
+   "snout": [74, 63],
+   "jaw": [73, 65],
+   "neck": [74, 74],
+   "withers": [80, 86],
+   "spine": [60, 84],
+   "hips": [42, 82],
+   "tail_base": [34, 72],
+   "tail_mid": [26, 86],
+   "tail_tip": [24, 102],
+   "fn_top": [74, 96],
+   "fn_knee": [74, 108],
+   "fn_paw": [79, 120],
+   "ff_top": [88, 94],
+   "ff_knee": [94, 101],
+   "ff_paw": [86, 108],
+   "hn_top": [42, 96],
+   "hn_knee": [40, 106],
+   "hn_paw": [40, 116],
+   "hf_top": [56, 96],
+   "hf_knee": [56, 105],
+   "hf_paw": [61, 111]
+  },
+  "rider": {
+   "head": [73, 36],
+   "neck": [74, 45],
+   "chest": [72, 56],
+   "pelvis": [72, 71],
+   "r_sh": [60, 47],
+   "r_el": [50, 54],
+   "r_ha": [57, 59],
+   "tip": [136, 47],
+   "l_sh": [85, 47],
+   "l_el": [90, 56],
+   "l_ha": [89, 60],
+   "shield": [90, 59, 8, 18],
+   "leg_kn": [72, 86],
+   "leg_ft": [72, 92]
+  }
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: the centaur lowers the lance level in his right hand, its steel point and green pennant forward to the lower-right, the kite shield on his left arm; his horse body sinks back onto its haunches; both face the lower-right",
+   "2": "wind-up extreme: the centaur draws the lance back, still level, leaning his torso in behind the kite shield; his horse body coils back, crouched on its hind legs, ready to spring; both face the lower-right",
+   "3": "swing: the centaur drives the lance forward, its steel point toward the lower-right; his horse body springs forward toward the lower-right, forelegs reaching off the ground; both face the lower-right",
+   "4": "contact: the centaur leans far forward from the waist with his right arm fully extended, the lance thrust out along a line to the lower-right, its steel point the farthest point of the figure, the kite shield on his left arm; his horse body lunges far forward toward the lower-right, low, hind legs driving; both face the lower-right",
+   "5": "follow-through: the centaur holds the thrust, the steel point of the lance dipping a little; his horse body holds the lunge, front hooves planted ahead; both face the lower-right",
+   "6": "recover: the centaur straightens his torso and raises the lance back toward the ready angle, level; his horse body steps back halfway toward where it stood; both face the lower-right"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; the centaur's horse body shies back toward the upper-left, its front hooves off the ground; his man's torso jolts back from the waist, eyes squeezed shut, arms flung out, the lance still in his right hand, the kite shield still on his left arm",
+   "1": "recoil extreme: the horse body half-rears back toward the upper-left; the centaur's man's torso leans far back from the waist, arms out, the lance still in his right hand, the kite shield still on his left arm",
+   "2": "recovering: the horse body's front hooves come back down; the centaur's torso straightens up, halfway back to the ready pose, the lance still in his right hand, the kite shield still on his left arm"
+  },
+  "death": {
+   "1": "stagger: hit from the lower-right; the centaur's horse body rears back toward the upper-left; his man's torso is thrown back from the waist, arms flung up, eyes shut, the lance still in his right hand, the kite shield still on his left arm",
+   "2": "the horse body's forelegs fold and it drops onto its knees; the centaur's man's torso sways back from the waist, arms up, eyes shut, the lance still in his right hand, the kite shield still on his left arm",
+   "3": "the horse body sinks down onto its chest; the centaur's man's torso sags forward from the waist, arms dropping, eyes shut, the kite shield still on his left arm",
+   "4": "the horse body sinks fully onto its belly with its legs folded under it; the centaur's man's torso slumps forward over the horse body's chest toward the lower-right, the lance slipping from his hand, eyes shut, the kite shield still on his left arm",
+   "5": "the centaur collapsed: his horse body lying on its belly, legs folded under it; his man's torso slumped forward over the front of the horse body, head and arms hanging down to the ground at the lower-right, eyes shut, the lance on the ground beside his head, the kite shield still on his left arm",
+   "6": "bounce: the centaur's slumped shoulders and head lift a hair off the ground",
+   "7": "corpse: the centaur lying still, his horse body collapsed on its belly with its legs folded, his man's torso slumped forward over its chest with his head on the ground, eyes closed, the lance on the ground beside his head, the kite shield still on his left arm"
+  }
+ }
+}

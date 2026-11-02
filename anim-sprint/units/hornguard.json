@@ -1,0 +1,35 @@
+{
+ "name": "hornguard",
+ "sprite": "m7/roster/units/unit_hornguard.png",
+ "body_plan": "mounted",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Hornguard, a stocky red-bearded dwarf in a steel nasal helmet with gold bands and steel plate armour with brown leather straps, a long wooden lance with a steel head couched under his RIGHT arm and pointing forward to the upper-right, riding a big grey war rhinoceros with two steel-capped horns, a steel-and-gold chamfron and steel barding over a brown leather harness with gold rivets, and pale toenails",
+ "hands": "the lance stays couched under the dwarf's right arm on the screen-left side, gripped in his right fist, its steel point forward past the rhino's horns; his left hand holds the reins on the screen-right side",
+ "guide_style": "grey",
+ "rider_action": "thrust",
+ "head_r": 7,
+ "limb": 1.1,
+ "dims": {"body_r": 16, "head_r": 9, "neck_r": 10, "snout_w": 8, "leg_w": 7, "paw_r": 4.5, "tail_w": 2, "ear": 0.6},
+ "words": {"mount": "rhino", "rider": "dwarf", "weapon": "lance", "feet": "feet"},
+ "beats": {
+  "strike": {"4": "contact: the dwarf leans far forward over the rhino's neck with his weapon arm fully extended, the lance thrust out along a line to the lower-right, its point the farthest point of the figure; the rhino lunges far forward toward the lower-right, low, its horned head stretched out and its horns leading, hind legs driving; both face the lower-right"}
+ },
+ "joints": {
+  "mount": {
+   "head": [104, 82], "snout": [120, 97], "jaw": [117, 101], "neck": [90, 79],
+   "withers": [82, 85], "spine": [63, 82], "hips": [42, 81],
+   "tail_base": [29, 80], "tail_mid": [26, 87], "tail_tip": [25, 94],
+   "fn_top": [83, 99], "fn_knee": [86, 110], "fn_paw": [88, 121],
+   "ff_top": [103, 103], "ff_knee": [106, 110], "ff_paw": [107, 116],
+   "hn_top": [33, 97], "hn_knee": [30, 107], "hn_paw": [31, 114],
+   "hf_top": [61, 99], "hf_knee": [61, 109], "hf_paw": [63, 114]
+  },
+  "rider": {
+   "head": [64, 31], "neck": [64, 41], "chest": [64, 48], "pelvis": [61, 60],
+   "r_sh": [51, 41], "r_el": [51, 51], "r_ha": [60, 55], "tip": [136, 35],
+   "l_sh": [76, 42], "l_el": [79, 50], "l_ha": [73, 55],
+   "leg_kn": [57, 67], "leg_ft": [55, 77]
+  }
+ }
+}

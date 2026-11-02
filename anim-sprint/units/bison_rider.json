@@ -1,0 +1,32 @@
+{
+ "name": "bison_rider",
+ "sprite": "m7/roster/units/unit_bison_rider.png",
+ "body_plan": "mounted",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Doviello Bison Rider, a barbarian in a grey wolf-head pelt hood and a shaggy grey-and-cream fur cloak with a bone-tooth necklace, blue war paint over his eye and leather wraps, a round wooden shield slung on his back and a long wooden spear with a steel head and white feather tassels couched in his RIGHT hand, riding a huge shaggy dark-brown bison with a hump, curved cream horns, a rope halter and dark hooves",
+ "hands": "the long spear stays couched in the rider's right hand on the screen-left side, its point far out to the right; his left hand is hidden behind the bison's hump and the shield stays slung on his back",
+ "guide_style": "grey",
+ "rider_action": "thrust",
+ "head_r": 9,
+ "limb": 1.05,
+ "dims": {"body_r": 17, "head_r": 9, "neck_r": 11, "snout_w": 8, "leg_w": 6, "paw_r": 3.5, "tail_w": 3, "ear": 0.5},
+ "words": {"mount": "bison", "rider": "rider", "weapon": "spear", "feet": "hooves"},
+ "joints": {
+  "mount": {
+   "head": [106, 88], "snout": [113, 101], "jaw": [109, 105], "neck": [98, 77],
+   "withers": [90, 69], "spine": [67, 81], "hips": [42, 85],
+   "tail_base": [27, 82], "tail_tip": [25, 94],
+   "fn_top": [80, 98], "fn_knee": [81, 109], "fn_paw": [84, 120],
+   "ff_top": [100, 98], "ff_knee": [102, 108], "ff_paw": [104, 117],
+   "hn_top": [33, 92], "hn_knee": [31, 106], "hn_paw": [34, 117],
+   "hf_top": [50, 98], "hf_knee": [52, 106], "hf_paw": [56, 114]
+  },
+  "rider": {
+   "head": [66, 30], "neck": [66, 39], "chest": [64, 48], "pelvis": [61, 62],
+   "r_sh": [56, 42], "r_el": [50, 49], "r_ha": [59, 54], "tip": [135, 27],
+   "l_sh": [73, 42], "l_el": [76, 50], "l_ha": [76, 56],
+   "leg_kn": [59, 70], "leg_ft": [58, 92]
+  }
+ }
+}

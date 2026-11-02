@@ -1,0 +1,153 @@
+{
+ "name": "giant_spider",
+ "sprite": "m7/roster/units/unit_giant_spider.png",
+ "body_plan": "quadruped",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Giant Spider, a huge black-and-steel-blue spider with a big round glossy black abdomen marked with a bright red hourglass and zigzag pattern, a small black head with a cluster of glowing red eyes and two long pale ivory fangs, and eight long jointed blue-black legs with brown joints",
+ "hands": "it has no weapon: it fights with its two ivory fangs and its long front legs",
+ "guide_style": "grey",
+ "dims": {
+  "body_r": 12,
+  "head_r": 7,
+  "neck_r": 7,
+  "snout_w": 5,
+  "leg_w": 3.5,
+  "paw_r": 2,
+  "tail_w": 0,
+  "tail_tuft": 0,
+  "ear": 0
+ },
+ "words": {
+  "animal": "spider",
+  "jaws": "ivory fangs",
+  "claws": "leg tips",
+  "paws": "leg tips",
+  "tail": "abdomen",
+  "ears": "eye cluster"
+ },
+ "extra_legs": {
+  "m1n": 0.33,
+  "m2n": 0.67
+ },
+ "joints": {
+  "head": [
+   92,
+   90
+  ],
+  "snout": [
+   97,
+   97
+  ],
+  "jaw": [
+   94,
+   99
+  ],
+  "neck": [
+   86,
+   86
+  ],
+  "withers": [
+   83,
+   84
+  ],
+  "spine": [
+   75,
+   78
+  ],
+  "hips": [
+   68,
+   69
+  ],
+  "tail_base": [
+   60,
+   62
+  ],
+  "tail_tip": [
+   59,
+   61
+  ],
+  "fn_top": [
+   80,
+   89
+  ],
+  "fn_knee": [
+   81,
+   100
+  ],
+  "fn_paw": [
+   86,
+   123
+  ],
+  "m1n_top": [
+   73,
+   85
+  ],
+  "m1n_knee": [
+   67,
+   94
+  ],
+  "m1n_paw": [
+   62,
+   119
+  ],
+  "m2n_top": [
+   67,
+   81
+  ],
+  "m2n_knee": [
+   55,
+   87
+  ],
+  "m2n_paw": [
+   48,
+   114
+  ],
+  "hn_top": [
+   62,
+   78
+  ],
+  "hn_knee": [
+   46,
+   81
+  ],
+  "hn_paw": [
+   36,
+   102
+  ],
+  "ff_top": [
+   94,
+   85
+  ],
+  "ff_knee": [
+   106,
+   87
+  ],
+  "ff_paw": [
+   114,
+   118
+  ],
+  "hf_top": [
+   88,
+   80
+  ],
+  "hf_knee": [
+   100,
+   69
+  ],
+  "hf_paw": [
+   123,
+   110
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "crouch: the weight shifts back onto the hind legs and the body sinks lower, the head drops level with the front legs and aims at the lower-right, all eight leg tips planted, the ivory fangs closed",
+   "4": "contact: the body fully stretched out low toward the lower-right, the head the farthest point of the figure with the ivory fangs spread wide and biting at the lower-right, both long front legs reaching out toward the lower-right, the hind leg tips still planted, the big round abdomen trailing behind"
+  },
+  "death": {
+   "4": "rolls over onto its side: the body goes down flat, the long legs swing out stiff and straight, the head flops onto the ground, the red eyes dull",
+   "5": "hits the ground: lying on its side along the ground, its long legs stretched out stiff and straight (front legs forward, hind legs back), the head lying flat on the ground with the ivory fangs slack, the big round abdomen lying flat behind, the red eyes dull"
+  }
+ }
+}

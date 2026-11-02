@@ -1,0 +1,32 @@
+{
+ "name": "malakim_horseman",
+ "sprite": "m7/roster/units/unit_malakim_horseman.png",
+ "body_plan": "mounted",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Malakim Horseman, a desert rider with a long white beard and dark skin, a cream turban with a teal band and a gold jewel, flowing cream robes with a teal sash and brown boots, a round bronze shield with a teal rim and a gold boss on his RIGHT arm and a steel-tipped wooden spear in his LEFT hand, riding a palomino horse with a cream mane and tail, a brown bridle and a teal saddle cloth hung with gold tassels",
+ "hands": "the spear stays in the rider's left hand on the screen-right side and the round bronze shield on his right arm on the screen-left side",
+ "guide_style": "grey",
+ "rider_action": "thrust",
+ "head_r": 7,
+ "limb": 0.9,
+ "dims": {"body_r": 10, "head_r": 6, "neck_r": 6, "snout_w": 6, "leg_w": 4.5, "paw_r": 2.5, "tail_w": 5},
+ "words": {"mount": "palomino horse", "rider": "rider", "weapon": "spear", "feet": "hooves", "shield": "round bronze shield"},
+ "joints": {
+  "mount": {
+   "head": [109, 70], "snout": [118, 82], "jaw": [114, 86], "neck": [96, 82],
+   "withers": [93, 90], "spine": [77, 92], "hips": [57, 92],
+   "tail_base": [52, 83], "tail_mid": [44, 93], "tail_tip": [44, 106],
+   "fn_top": [91, 100], "fn_knee": [93, 113], "fn_paw": [95, 123],
+   "ff_top": [100, 100], "ff_knee": [106, 105], "ff_paw": [100, 112],
+   "hn_top": [56, 92], "hn_knee": [52, 108], "hn_paw": [55, 121],
+   "hf_top": [67, 101], "hf_knee": [72, 112], "hf_paw": [76, 120]
+  },
+  "rider": {
+   "head": [77, 42], "neck": [77, 51], "chest": [78, 58], "pelvis": [79, 74],
+   "r_sh": [84, 55], "r_el": [85, 62], "r_ha": [89, 63], "tip": [119, 28],
+   "l_sh": [68, 53], "l_el": [64, 63], "l_ha": [66, 74], "shield": [59, 69, 8.5, 11],
+   "leg_kn": [77, 83], "leg_ft": [75, 98]
+  }
+ }
+}

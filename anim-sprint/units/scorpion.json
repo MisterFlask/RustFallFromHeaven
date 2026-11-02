@@ -1,0 +1,199 @@
+{
+ "name": "scorpion",
+ "sprite": "m7/roster/units/unit_scorpion.png",
+ "body_plan": "quadruped",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Scorpion (Fall from Heaven), a giant scorpion with a glossy amber-orange armoured carapace and dark brown back plates, eight jointed orange legs, two big orange pincers held forward to the lower-right, and a segmented orange-and-brown tail curled up and over its back ending in a dark curved stinger dripping green venom",
+ "hands": "it has no weapon: it fights with its two big pincers and the venomous stinger on its curled tail",
+ "guide_style": "grey",
+ "scale": 0.8,
+ "dims": {
+  "body_r": 8,
+  "head_r": 5,
+  "neck_r": 5,
+  "snout_w": 4,
+  "leg_w": 2.5,
+  "paw_r": 2.2,
+  "tail_w": 6,
+  "tail_tuft": 3,
+  "ear": 0
+ },
+ "words": {
+  "animal": "scorpion",
+  "jaws": "mandibles",
+  "claws": "pincers",
+  "paws": "leg tips",
+  "tail": "curled stinger tail",
+  "ears": "feelers"
+ },
+ "extra_legs": {
+  "m1n": 0.4,
+  "m1f": 0.4,
+  "m2n": 0.7,
+  "m2f": 0.7
+ },
+ "joints": {
+  "head": [
+   89,
+   103
+  ],
+  "snout": [
+   95,
+   106
+  ],
+  "jaw": [
+   93,
+   109
+  ],
+  "neck": [
+   86,
+   102
+  ],
+  "withers": [
+   82,
+   100
+  ],
+  "spine": [
+   74,
+   96
+  ],
+  "hips": [
+   66,
+   92
+  ],
+  "tail_base": [
+   63,
+   89
+  ],
+  "tail_mid": [
+   63,
+   68
+  ],
+  "tail_tip": [
+   82,
+   80
+  ],
+  "fn_top": [
+   80,
+   105
+  ],
+  "fn_knee": [
+   75,
+   112
+  ],
+  "fn_paw": [
+   87,
+   119
+  ],
+  "ff_top": [
+   90,
+   99
+  ],
+  "ff_knee": [
+   100,
+   98
+  ],
+  "ff_paw": [
+   108,
+   108
+  ],
+  "m1n_top": [
+   70,
+   103
+  ],
+  "m1n_knee": [
+   64,
+   111
+  ],
+  "m1n_paw": [
+   66,
+   123
+  ],
+  "m2n_top": [
+   66,
+   100
+  ],
+  "m2n_knee": [
+   57,
+   104
+  ],
+  "m2n_paw": [
+   53,
+   118
+  ],
+  "hn_top": [
+   64,
+   97
+  ],
+  "hn_knee": [
+   52,
+   97
+  ],
+  "hn_paw": [
+   46,
+   111
+  ],
+  "m1f_top": [
+   84,
+   99
+  ],
+  "m1f_knee": [
+   94,
+   102
+  ],
+  "m1f_paw": [
+   97,
+   116
+  ],
+  "m2f_top": [
+   78,
+   95
+  ],
+  "m2f_knee": [
+   88,
+   92
+  ],
+  "m2f_paw": [
+   93,
+   104
+  ],
+  "hf_top": [
+   72,
+   92
+  ],
+  "hf_knee": [
+   82,
+   88
+  ],
+  "hf_paw": [
+   88,
+   96
+  ]
+ },
+ "notes": "8-legged arthropod on the quadruped rig: the pincers are the front legs (fn near, ff far), the rear walking pair is hn/hf, two more walking pairs are extra legs m1 (0.4) and m2 (0.7); the curled tail is tail_base/tail_mid (top of the arc)/tail_tip (stinger). lib quad.load_unit ignores a unit's dims (it updates the scaled defaults with themselves), so scale 0.8 is set to thicken the mannequin.",
+ "beats": {
+  "strike": {
+   "1": "crouch: the scorpion sinks low on its eight legs and draws its body back a little, the two big pincers raised and opened toward the lower-right, the segmented tail arched high over its back with the green-dripping stinger poised",
+   "2": "coil, the wind-up extreme: the body pulled back toward the upper-left and pressed low to the ground on its bent legs, both pincers held wide open and aimed at the lower-right, the tail cocked tight over its back with the stinger drawn back",
+   "3": "lunge: the legs drive and the armoured body darts forward toward the lower-right, stretched out low, both pincers thrust far out ahead toward the lower-right, wide open, the tail arched over its back",
+   "4": "contact: the body stretched out low toward the lower-right, both big pincers reaching out at full length toward the lower-right and snapping shut on the target, the farthest point of the figure, the tail arched over its back with the stinger stabbing forward toward the lower-right",
+   "5": "follow-through: the pincers clamp down low at the lower-right, the legs planted wide, the tail still arched forward over the back with the stinger jabbing down",
+   "6": "recover: the body pulls back halfway toward where it stood, the pincers drawing back and opening, the tail rising back into its high curl over the back"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; the armoured body jolts back toward the upper-left, the front legs and both pincers jerk up off the ground and fling apart, the tail rears up and back",
+   "1": "recoil extreme: reared back toward the upper-left on its rear legs, the pincers raised high and open in defence, the tail flung up stiff",
+   "2": "recovering: the front legs back on the ground, the pincers lowering, halfway back to the ready pose with the tail curling back over the back"
+  },
+  "death": {
+   "1": "stagger back: reared up and back toward the upper-left on its rear legs, the pincers flailing in the air, the tail lashing up stiff",
+   "2": "legs buckle: the front legs and pincers come down and fold, the body sags toward the ground, the tail drooping",
+   "3": "collapse: the armoured body drops flat on the ground with the legs crumpling under it, the pincers sagging onto the ground at the lower-right, the tail sinking",
+   "4": "rolls over onto its side: the body tips over flat, the legs curl in and stick out stiff, the pincers flop onto the ground, the tail falls limp and stretches out behind along the ground toward the upper-left",
+   "5": "hits the ground: lying on its side along the ground, its eight legs curled and stiff, the pincers lying open on the ground at the lower-right, the segmented tail lying limp and straight behind it along the ground",
+   "6": "bounce: the body and the stiff legs lift a little off the ground, the tail twitches",
+   "7": "corpse: lying still on its side, legs curled and stiff, pincers open on the ground, the tail lying limp behind it, the stinger still"
+  }
+ }
+}

@@ -1,0 +1,21 @@
+{
+ "name": "lion_pride",
+ "sprite": "m7/roster/units/unit_lion_pride.png",
+ "body_plan": "quadruped",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Lion Pride, three lions moving as one group: in the middle a big roaring male lion with a shaggy dark-orange and brown mane, an open red mouth and white fangs, and at his sides two maneless tawny golden lionesses with cream muzzles, bellies and paws, all three with long thin tails ending in dark brown tufts; the male leads and the two lionesses follow his every move",
+ "hands": "they have no weapons: the lions fight with their fanged jaws and claws, the male in the middle leading and a lioness close at each side",
+ "guide_style": "grey",
+ "dims": {"body_r": 10, "head_r": 8, "neck_r": 10, "snout_w": 7, "leg_w": 6, "paw_r": 4, "tail_w": 3, "tail_tuft": 4, "ear": 0.6},
+ "words": {"animal": "lion pride", "jaws": "fanged jaws", "claws": "claws", "paws": "paws", "tail": "tufted tail", "ears": "ears"},
+ "joints": {
+  "head": [89, 72], "snout": [103, 79], "jaw": [98, 91], "neck": [85, 82],
+  "withers": [81, 91], "spine": [70, 87], "hips": [60, 84],
+  "tail_base": [58, 76], "tail_mid": [51, 66], "tail_tip": [59, 52],
+  "fn_top": [72, 96], "fn_knee": [75, 110], "fn_paw": [79, 119],
+  "ff_top": [92, 97], "ff_knee": [98, 108], "ff_paw": [102, 117],
+  "hn_top": [60, 92], "hn_knee": [57, 104], "hn_paw": [55, 113],
+  "hf_top": [66, 92], "hf_knee": [66, 104], "hf_paw": [67, 112]
+ }
+}

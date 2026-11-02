@@ -1,0 +1,52 @@
+{
+ "name": "stephanos",
+ "sprite": "m7/roster/units/unit_stephanos.png",
+ "body_plan": "mounted",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "Stephanos, a Horseman of the Apocalypse: a faceless rider in a deep black hood with two glowing yellow eyes in the darkness and a spiked gold crown on top, black plate armour with gold trim and spiked gold pauldrons, a long tattered black cloak streaming behind, a black recurve bow with gold bands in his LEFT hand, riding a pale white-grey horse with a white mane, its body covered in black barding trimmed in gold with gold studs",
+ "hands": "the black recurve bow stays in the rider's left hand on the screen-right side; his right hand on the screen-left side draws the string",
+ "guide_style": "grey",
+ "rider_action": "shoot",
+ "head_r": 8,
+ "limb": 1.0,
+ "dims": {"body_r": 11, "head_r": 6, "neck_r": 6, "snout_w": 6, "leg_w": 4, "paw_r": 2.5, "tail_w": 4},
+ "words": {"mount": "pale horse", "rider": "hooded rider", "weapon": "black bow", "feet": "hooves"},
+ "beats": {
+  "strike": {
+   "1": "nock: the hooded rider holds the black bow upright, raised high and out to the right, and sets an arrow on the string with his other hand; the pale horse stands still; both face the lower-right",
+   "2": "full draw, the wind-up extreme: the hooded rider leans back with the black bow arm raised high and pushed out to the right, the bow upright above the pale horse's head, the string pulled back to his hood, the draw elbow high and back; the pale horse stands still, its weight shifted back a little; both face the lower-right",
+   "3": "aim: the hooded rider, still at full draw with the black bow held high and out to the right, sights down the arrow at the target at the lower-right; the pale horse stands, leaning a little forward; both face the lower-right",
+   "4": "release: the hooded rider's black bow arm locked straight out high toward the right, the bow upright, the arrow gone toward the lower-right, the draw hand flung back up past his hood toward the upper-left; the pale horse stands steady; both face the lower-right",
+   "5": "recoil: the black bow rolls forward and dips a little toward the lower-right, still held high, the draw hand still out behind; the pale horse stands steady; both face the lower-right"
+  },
+  "death": {
+   "1": "stagger: the pale horse rears back toward the upper-left, head thrown back; the hooded rider is thrown back in the saddle, arms flung up, the yellow eyes in the hood dimming",
+   "2": "the pale horse's forelegs fold and it drops onto its knees, head sinking; the hooded rider pitches back in the saddle, arms up, the yellow eyes in the hood dim",
+   "3": "the pale horse sinks down onto its chest, head sinking, eyes shut; the hooded rider sags in the saddle, arms dropping, the hood dark and empty",
+   "4": "the pale horse sinks fully onto its belly with its legs folded under it, its neck lowering forward toward the lower-right; the hooded rider, still in the saddle, slumps forward over its neck, the black bow slipping from his hand, the hood dark",
+   "5": "the pale horse lying collapsed on its belly, legs folded under it, its head lying on the ground toward the lower-right, eyes shut; the hooded rider slumped forward over the neck, arms hanging down, the black bow on the ground beside the pale horse's head, the hood dark with no eyes",
+   "7": "corpses: the pale horse lying still, collapsed on its belly with its head on the ground, the hooded rider slumped forward over its neck, the hood dark with no glowing eyes, the black bow on the ground beside the head"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; the pale horse throws its head up and shies back toward the upper-left, its front hooves off the ground; the hooded rider jolts back in the saddle, the yellow eyes narrowed to slits, arms flung out"
+  }
+ },
+ "joints": {
+  "mount": {
+   "head": [108, 67], "snout": [116, 77], "jaw": [113, 80], "neck": [99, 76],
+   "withers": [93, 84], "spine": [77, 88], "hips": [59, 88],
+   "tail_base": [53, 86], "tail_mid": [48, 96], "tail_tip": [46, 104],
+   "fn_top": [92, 98], "fn_knee": [93, 108], "fn_paw": [94, 123],
+   "ff_top": [101, 96], "ff_knee": [106, 104], "ff_paw": [100, 112],
+   "hn_top": [58, 93], "hn_knee": [54, 104], "hn_paw": [55, 118],
+   "hf_top": [69, 97], "hf_knee": [70, 107], "hf_paw": [73, 118]
+  },
+  "rider": {
+   "head": [78, 45], "neck": [78, 53], "chest": [79, 61], "pelvis": [80, 78],
+   "r_sh": [87, 54], "r_el": [93, 52], "r_ha": [99, 45], "tip": [89, 17],
+   "l_sh": [68, 54], "l_el": [65, 62], "l_ha": [70, 68],
+   "leg_kn": [74, 86], "leg_ft": [78, 95]
+  }
+ }
+}

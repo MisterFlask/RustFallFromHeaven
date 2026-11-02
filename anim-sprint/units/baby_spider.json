@@ -1,0 +1,77 @@
+{
+ "name": "baby_spider",
+ "sprite": "m7/roster/units/unit_baby_spider.png",
+ "body_plan": "quadruped",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Baby Spider, a small fuzzy dark brown-black spider with a big round abdomen marked with glossy red spots and blue-grey sheen, a small dark head with a cluster of shiny red eyes and two small ivory fangs at the front, and eight thin hairy brown legs with tan bands spread out around it",
+ "hands": "it has no weapon: it fights with its ivory fangs and its hairy front legs",
+ "guide_style": "grey",
+ "extra_legs": {
+  "m1n": 0.5,
+  "m1f": 0.5
+ },
+ "dims": {
+  "body_r": 8,
+  "head_r": 5,
+  "neck_r": 4.5,
+  "snout_w": 3.5,
+  "leg_w": 2.5,
+  "paw_r": 1.2,
+  "tail_w": 3,
+  "ear": 0
+ },
+ "words": {
+  "animal": "baby spider",
+  "jaws": "ivory fangs",
+  "claws": "hairy leg tips",
+  "paws": "legs",
+  "tail": "round spotted abdomen",
+  "ears": "front legs"
+ },
+ "joints": {
+  "head": [89, 105],
+  "snout": [90, 110],
+  "jaw": [90, 114],
+  "neck": [87, 103],
+  "withers": [85, 101],
+  "spine": [78, 96],
+  "hips": [70, 91],
+  "tail_base": [64, 88],
+  "tail_tip": [60, 86],
+  "fn_top": [95, 101],
+  "fn_knee": [103, 103],
+  "fn_paw": [102, 121],
+  "ff_top": [93, 106],
+  "ff_knee": [97, 110],
+  "ff_paw": [99, 117],
+  "m1n_top": [77, 103],
+  "m1n_knee": [76, 109],
+  "m1n_paw": [78, 125],
+  "m1f_top": [85, 97],
+  "m1f_knee": [89, 90],
+  "m1f_paw": [94, 100],
+  "hn_top": [67, 101],
+  "hn_knee": [61, 108],
+  "hn_paw": [62, 121],
+  "hf_top": [64, 99],
+  "hf_knee": [57, 103],
+  "hf_paw": [53, 112]
+ },
+ "beats": {
+  "strike": {
+   "1": "crouch: the weight shifts back onto the back legs and the body sinks lower, the head with its red eyes drops low and aims at the lower-right, all eight hairy legs planted, the ivory fangs closed",
+   "2": "coil, the wind-up extreme: the body drawn back toward the upper-left and pressed low over the folded back legs, the head low and aimed at the lower-right, the round spotted abdomen raised behind, the ivory fangs closed; the red eyes look to the lower-right",
+   "4": "contact: the body fully stretched out low toward the lower-right, the head the farthest point of the figure with the ivory fangs spread wide biting at the lower-right, the two hairy front legs reaching out toward the lower-right, the back legs still planted, the round spotted abdomen trailing behind"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; the head and front legs tossed up and back toward the upper-left, the ivory fangs spread, the body jolts back toward the upper-left and the front legs leave the ground",
+   "1": "recoil extreme: half-rearing back toward the upper-left on the back legs, the front legs raised, the round spotted abdomen pressed low"
+  },
+  "death": {
+   "4": "rolls over onto its side: the body goes down flat, the hairy legs swing out stiff and straight, the head flops onto the ground with the ivory fangs slack",
+   "5": "hits the ground: lying on its side along the ground, its hairy legs stretched out stiff and straight (front legs forward, back legs back), the head lying flat on the ground with the ivory fangs slack, the round spotted abdomen lying flat behind, the red eyes dull",
+   "7": "corpse: lying still on its side, hairy legs stretched out, the red eyes dull"
+  }
+ }
+}

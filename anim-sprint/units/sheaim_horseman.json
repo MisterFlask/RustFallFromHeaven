@@ -1,0 +1,32 @@
+{
+ "name": "sheaim_horseman",
+ "sprite": "m7/roster/units/unit_sheaim_horseman.png",
+ "body_plan": "mounted",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Sheaim Horseman (Fall from Heaven), a pale-faced rider in a purple hooded cloak with orange trim over a dark steel cap and dark armour, a round dark shield with an orange rim and a white skull on his RIGHT arm on the screen-left side and a long spear with a steel leaf blade in his LEFT hand on the screen-right side, riding a pale grey horse with a dark mane and tail, its tack hung with bone and skull trinkets",
+ "hands": "the spear stays in the rider's left hand on the screen-right side and the round skull shield on his right arm on the screen-left side",
+ "guide_style": "grey",
+ "rider_action": "thrust",
+ "head_r": 8,
+ "limb": 0.85,
+ "dims": {"body_r": 10, "head_r": 6, "neck_r": 6, "snout_w": 6, "leg_w": 4, "paw_r": 2.5, "tail_w": 4},
+ "words": {"mount": "grey horse", "rider": "rider", "weapon": "spear", "feet": "hooves", "shield": "skull shield"},
+ "joints": {
+  "mount": {
+   "head": [107, 70], "snout": [116, 80], "jaw": [112, 84], "neck": [96, 76],
+   "withers": [92, 86], "spine": [74, 88], "hips": [56, 88],
+   "tail_base": [50, 84], "tail_mid": [44, 94], "tail_tip": [44, 106],
+   "fn_top": [92, 96], "fn_knee": [92, 108], "fn_paw": [95, 121],
+   "ff_top": [100, 92], "ff_knee": [106, 102], "ff_paw": [100, 113],
+   "hn_top": [58, 96], "hn_knee": [54, 107], "hn_paw": [56, 120],
+   "hf_top": [70, 96], "hf_knee": [70, 106], "hf_paw": [75, 116]
+  },
+  "rider": {
+   "head": [80, 45], "neck": [80, 53], "chest": [80, 62], "pelvis": [80, 76],
+   "r_sh": [88, 57], "r_el": [91, 65], "r_ha": [94, 61], "tip": [115, 27],
+   "l_sh": [72, 56], "l_el": [68, 64], "l_ha": [68, 73], "shield": [62, 68, 9, 11.5],
+   "leg_kn": [74, 85], "leg_ft": [73, 96]
+  }
+ }
+}

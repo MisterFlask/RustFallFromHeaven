@@ -1,0 +1,32 @@
+{
+ "name": "amurites_horseman",
+ "sprite": "m7/roster/units/unit_amurites_horseman.png",
+ "body_plan": "mounted",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "an Amurite Horseman, a cavalryman in a steel morion helmet with a blue plume, dark hair, steel shoulder plates and mail, a blue tabard with a white cross over it and brown riding boots, a steel-tipped wooden lance in his LEFT hand on the screen-right side and a round blue shield with a white star and a steel rim on his RIGHT arm on the screen-left side, riding a dapple-grey horse with a dark grey mane and tail, a brown bridle and dark hooves",
+ "hands": "the lance stays in the rider's left hand on the screen-right side and the round blue shield on his right arm on the screen-left side",
+ "guide_style": "grey",
+ "rider_action": "thrust",
+ "head_r": 7.5,
+ "limb": 0.85,
+ "dims": {"body_r": 10, "head_r": 6, "neck_r": 6, "snout_w": 6, "leg_w": 4, "paw_r": 2.5, "tail_w": 4},
+ "words": {"mount": "dapple-grey horse", "rider": "rider", "weapon": "lance", "feet": "hooves", "shield": "round blue shield"},
+ "joints": {
+  "mount": {
+   "head": [106, 70], "snout": [116, 80], "jaw": [113, 84], "neck": [96, 79],
+   "withers": [92, 90], "spine": [76, 90], "hips": [58, 88],
+   "tail_base": [51, 81], "tail_mid": [44, 93], "tail_tip": [46, 105],
+   "fn_top": [90, 98], "fn_knee": [91, 108], "fn_paw": [93, 122],
+   "ff_top": [98, 96], "ff_knee": [105, 103], "ff_paw": [101, 111],
+   "hn_top": [59, 97], "hn_knee": [55, 108], "hn_paw": [56, 121],
+   "hf_top": [69, 98], "hf_knee": [70, 108], "hf_paw": [76, 117]
+  },
+  "rider": {
+   "head": [77, 45], "neck": [78, 52], "chest": [77, 60], "pelvis": [76, 74],
+   "r_sh": [86, 56], "r_el": [87, 64], "r_ha": [91, 61], "tip": [112, 27],
+   "l_sh": [69, 55], "l_el": [64, 64], "l_ha": [69, 73], "shield": [63, 68, 8, 11],
+   "leg_kn": [77, 84], "leg_ft": [79, 96]
+  }
+ }
+}

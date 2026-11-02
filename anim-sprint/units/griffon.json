@@ -8,7 +8,12 @@
  "hands": "it has no weapon: it fights with its hooked beak and talons",
  "guide_style": "grey",
  "dims": {"body_r": 11, "head_r": 8, "neck_r": 8, "snout_w": 6, "leg_w": 5, "paw_r": 3.5, "tail_w": 4, "tail_tuft": 4, "ear": 0, "wing_w": 3},
- "words": {"animal": "griffon", "jaws": "hooked beak", "claws": "talons", "paws": "talons", "tail": "tufted tail", "ears": "head feathers"},
+ "words": {"animal": "griffon", "jaws": "hooked beak", "claws": "talons", "paws": "feet", "tail": "tufted tail", "ears": "head feathers"},
+ "beats": {
+  "death": {
+   "5": "hits the ground: lying on its side along the ground, its legs stretched out stiff and straight (forelegs forward, hind legs back), the head lying flat on the ground with the head feathers laid back and the hooked beak hanging open, the tufted tail lying flat behind, the wings sprawled limp, eyes shut"
+  }
+ },
  "joints": {
   "head": [98, 61], "snout": [110, 66], "jaw": [106, 70], "neck": [94, 78],
   "withers": [90, 92], "spine": [72, 94], "hips": [56, 94],

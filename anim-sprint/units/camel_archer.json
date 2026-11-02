@@ -1,0 +1,184 @@
+{
+ "name": "camel_archer",
+ "sprite": "m7/roster/units/unit_camel_archer.png",
+ "body_plan": "mounted",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Malakim Camel Archer, a desert rider in a white turban with a gold jewel, white robes and a blue sash, drawing a wooden recurve bow aimed to the lower-right: the bow held out in his LEFT hand on the screen-right side and the string pulled back to his face by his RIGHT hand on the screen-left side, riding a one-humped tan camel with a blue-and-gold tasselled saddle cloth, a blue bridle with blue tassels, a dark brown tail and dark hooves",
+ "hands": "the bow stays in the rider's left hand on the screen-right side and his right hand draws the string on the screen-left side",
+ "guide_style": "grey",
+ "rider_action": "shoot",
+ "head_r": 7,
+ "limb": 0.85,
+ "dims": {
+  "body_r": 11,
+  "head_r": 5,
+  "neck_r": 4.5,
+  "snout_w": 5,
+  "leg_w": 4,
+  "paw_r": 3,
+  "tail_w": 3.5,
+  "ear": 0
+ },
+ "words": {
+  "mount": "camel",
+  "rider": "turbaned rider",
+  "weapon": "bow",
+  "feet": "hooves",
+  "his": "his",
+  "him": "him"
+ },
+ "joints": {
+  "mount": {
+   "head": [
+    105,
+    55
+   ],
+   "snout": [
+    117,
+    58
+   ],
+   "jaw": [
+    113,
+    63
+   ],
+   "neck": [
+    97,
+    74
+   ],
+   "withers": [
+    91,
+    80
+   ],
+   "spine": [
+    74,
+    82
+   ],
+   "hips": [
+    56,
+    82
+   ],
+   "tail_base": [
+    50,
+    80
+   ],
+   "tail_mid": [
+    45,
+    86
+   ],
+   "tail_tip": [
+    43,
+    93
+   ],
+   "fn_top": [
+    93,
+    86
+   ],
+   "fn_knee": [
+    96,
+    104
+   ],
+   "fn_paw": [
+    100,
+    121
+   ],
+   "ff_top": [
+    82,
+    92
+   ],
+   "ff_knee": [
+    82,
+    107
+   ],
+   "ff_paw": [
+    82,
+    121
+   ],
+   "hn_top": [
+    54,
+    86
+   ],
+   "hn_knee": [
+    46,
+    102
+   ],
+   "hn_paw": [
+    46,
+    120
+   ],
+   "hf_top": [
+    62,
+    92
+   ],
+   "hf_knee": [
+    64,
+    106
+   ],
+   "hf_paw": [
+    68,
+    120
+   ]
+  },
+  "rider": {
+   "head": [
+    73,
+    30
+   ],
+   "neck": [
+    74,
+    38
+   ],
+   "chest": [
+    74,
+    47
+   ],
+   "pelvis": [
+    73,
+    62
+   ],
+   "r_sh": [
+    78,
+    42
+   ],
+   "r_el": [
+    86,
+    40
+   ],
+   "r_ha": [
+    96,
+    39
+   ],
+   "tip": [
+    87,
+    18
+   ],
+   "l_sh": [
+    67,
+    44
+   ],
+   "l_el": [
+    57,
+    39
+   ],
+   "l_ha": [
+    66,
+    37
+   ],
+   "leg_kn": [
+    76,
+    70
+   ],
+   "leg_ft": [
+    75,
+    80
+   ]
+  }
+ },
+ "beats": {
+  "death": {
+   "4": "the camel sinks fully onto its belly with its long legs folded under it, its long neck lowering forward toward the lower-right; the turbaned rider, still in the saddle on its hump, slumps forward, the bow slipping from his hand, eyes shut",
+   "5": "the camel lying collapsed on its belly, long legs folded under it, its long neck stretched out and its head lying on the ground toward the lower-right, eyes shut; the turbaned rider slumped forward over the hump, arms hanging down, the bow on the ground beside the camel's head, eyes shut",
+   "7": "corpses: the camel lying still, collapsed on its belly with its long neck stretched out and its head on the ground, the turbaned rider slumped forward over the hump, eyes closed, the bow on the ground beside the head"
+  }
+ }
+}

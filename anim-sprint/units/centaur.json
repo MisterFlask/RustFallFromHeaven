@@ -1,0 +1,209 @@
+{
+ "name": "centaur",
+ "sprite": "m7/roster/units/unit_centaur.png",
+ "body_plan": "mounted",
+ "fused": true,
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Centaur, a bearded man's torso with long brown hair tied in a ponytail, gold armour on his chest and shoulders and a green sash across it, growing from the chest of a chestnut horse body with a green cloth trimmed in gold over its back, a dark brown tail and dark hooves, a steel-tipped wooden spear raised in his RIGHT hand on the screen-left side and a round green shield with a golden sun on his LEFT arm on the screen-right side",
+ "hands": "the spear stays in the centaur's right hand on the screen-left side and the round green sun shield on his left arm on the screen-right side; he has no saddle and no rider's legs: his waist grows from the horse body's chest",
+ "guide_style": "grey",
+ "rider_action": "swing",
+ "head_r": 8,
+ "limb": 0.95,
+ "dims": {
+  "body_r": 11,
+  "head_r": 1,
+  "neck_r": 1.5,
+  "snout_w": 1,
+  "ear": 0,
+  "leg_w": 4.5,
+  "paw_r": 3,
+  "tail_w": 5
+ },
+ "words": {
+  "mount": "horse body",
+  "rider": "centaur",
+  "weapon": "spear",
+  "feet": "hooves",
+  "shield": "round green sun shield",
+  "his": "his",
+  "him": "him"
+ },
+ "joints": {
+  "mount": {
+   "head": [
+    88,
+    72
+   ],
+   "snout": [
+    90,
+    71
+   ],
+   "jaw": [
+    89,
+    73
+   ],
+   "neck": [
+    89,
+    78
+   ],
+   "withers": [
+    92,
+    86
+   ],
+   "spine": [
+    74,
+    87
+   ],
+   "hips": [
+    57,
+    85
+   ],
+   "tail_base": [
+    53,
+    77
+   ],
+   "tail_mid": [
+    44,
+    87
+   ],
+   "tail_tip": [
+    42,
+    102
+   ],
+   "fn_top": [
+    92,
+    94
+   ],
+   "fn_knee": [
+    96,
+    108
+   ],
+   "fn_paw": [
+    100,
+    123
+   ],
+   "ff_top": [
+    100,
+    90
+   ],
+   "ff_knee": [
+    110,
+    100
+   ],
+   "ff_paw": [
+    105,
+    112
+   ],
+   "hn_top": [
+    58,
+    92
+   ],
+   "hn_knee": [
+    54,
+    106
+   ],
+   "hn_paw": [
+    56,
+    119
+   ],
+   "hf_top": [
+    70,
+    96
+   ],
+   "hf_knee": [
+    72,
+    107
+   ],
+   "hf_paw": [
+    77,
+    117
+   ]
+  },
+  "rider": {
+   "head": [
+    90,
+    46
+   ],
+   "neck": [
+    90,
+    54
+   ],
+   "chest": [
+    88,
+    62
+   ],
+   "pelvis": [
+    88,
+    75
+   ],
+   "r_sh": [
+    78,
+    58
+   ],
+   "r_el": [
+    68,
+    62
+   ],
+   "r_ha": [
+    65,
+    53
+   ],
+   "tip": [
+    48,
+    22
+   ],
+   "l_sh": [
+    98,
+    58
+   ],
+   "l_el": [
+    102,
+    66
+   ],
+   "l_ha": [
+    107,
+    70
+   ],
+   "shield": [
+    111,
+    72,
+    9,
+    13
+   ],
+   "leg_kn": [
+    88,
+    86
+   ],
+   "leg_ft": [
+    88,
+    92
+   ]
+  }
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: the centaur lifts the spear up over his head, its point up and back, his man's torso rising straight from the horse body's chest, the round green sun shield on his left arm; the horse body gathers its weight back onto its haunches; he faces the lower-right",
+   "2": "wind-up extreme: the centaur leans his man's torso back with the spear cocked behind his head, its point hanging down behind his shoulders; the horse body rears up high on its hind legs, forelegs folded in the air; he faces the lower-right",
+   "3": "swing: the centaur whips his torso forward and sweeps the spear over the top, level and pointing to the lower-right; the horse body plunges forward and down, its forelegs reaching toward the lower-right; he faces the lower-right",
+   "4": "contact: the centaur bends his man's torso far forward, his right arm fully extended toward the lower-right and the spear stabbing down at the lower-right in front of the horse body's chest, the round green sun shield on his left arm; the front hooves land ahead at the lower-right, the forehand low; he faces the lower-right",
+   "5": "follow-through: the centaur follows through, the spear carrying on down at the lower-right; the horse body stands with its weight on its forehand; he faces the lower-right",
+   "6": "recover: the centaur straightens his torso and brings the spear back up toward the ready angle; the horse body steps back halfway toward where it stood; he faces the lower-right"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; the centaur's man's torso jolts back toward the upper-left, eyes squeezed shut, arms flung out, the shield still on his left arm; the horse body shies back toward the upper-left, its front hooves off the ground",
+   "1": "recoil extreme: the horse body half-rears back toward the upper-left; the centaur's torso leans back, his head tossed back",
+   "2": "recovering: the horse body's front hooves come back down; the centaur straightens his torso, halfway back to the ready pose"
+  },
+  "death": {
+   "1": "stagger: the horse body rears back toward the upper-left; the centaur's man's torso is thrown back, arms flung up, eyes shut",
+   "2": "the horse body's forelegs fold and it drops onto its knees; the centaur's torso pitches back, arms up, eyes shut",
+   "3": "the horse body sinks down onto its chest; the centaur's torso sags, arms dropping, eyes shut",
+   "4": "the horse body sinks fully onto its belly with its legs folded under it; the centaur's man's torso slumps forward toward the lower-right, the spear slipping from his hand, eyes shut",
+   "5": "the centaur lying collapsed, the horse body on its belly with its legs folded under it, his man's torso slumped forward over the front of it toward the lower-right, head and arms hanging to the ground, eyes shut, the spear on the ground beside him",
+   "6": "bounce: the centaur's slumped shoulders lift a hair off the ground",
+   "7": "corpse: the centaur lying still, the horse body collapsed on its belly, his man's torso slumped forward over its front toward the lower-right with his head on the ground, eyes closed, the spear on the ground beside him"
+  }
+ }
+}

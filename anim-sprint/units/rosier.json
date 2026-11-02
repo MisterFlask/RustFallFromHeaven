@@ -1,0 +1,32 @@
+{
+ "name": "rosier",
+ "sprite": "m7/roster/units/unit_rosier.png",
+ "body_plan": "mounted",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "Rosier, a hero knight in heavy black plate armour with gold trim and a gold sun sigil on the breastplate, a closed black great helm with glowing red eye slits and a tattered grey cloak, a black longsword held angled down in his RIGHT hand and a tall black kite shield with a gold sigil on his LEFT arm, riding a black warhorse with glowing red eyes, a gold-studded bridle and a ragged red caparison",
+ "hands": "the black longsword stays in the rider's right hand on the screen-left side and the black kite shield on his left arm on the screen-right side",
+ "guide_style": "grey",
+ "rider_action": "swing",
+ "head_r": 8,
+ "limb": 1.0,
+ "dims": {"body_r": 13, "head_r": 7, "neck_r": 7, "snout_w": 7, "leg_w": 5, "paw_r": 3, "tail_w": 5},
+ "words": {"mount": "black warhorse", "rider": "black knight", "weapon": "black longsword", "feet": "hooves", "shield": "black kite shield"},
+ "joints": {
+  "mount": {
+   "head": [110, 52], "snout": [123, 66], "jaw": [119, 72], "neck": [102, 64],
+   "withers": [98, 74], "spine": [78, 80], "hips": [56, 82],
+   "tail_base": [50, 76], "tail_mid": [44, 86], "tail_tip": [40, 98],
+   "fn_top": [97, 96], "fn_knee": [98, 110], "fn_paw": [98, 123],
+   "ff_top": [108, 94], "ff_knee": [116, 104], "ff_paw": [112, 115],
+   "hn_top": [56, 94], "hn_knee": [55, 108], "hn_paw": [55, 120],
+   "hf_top": [76, 98], "hf_knee": [78, 108], "hf_paw": [80, 118]
+  },
+  "rider": {
+   "head": [80, 30], "neck": [80, 40], "chest": [80, 50], "pelvis": [80, 64],
+   "r_sh": [65, 44], "r_el": [60, 54], "r_ha": [63, 62], "tip": [87, 95],
+   "l_sh": [92, 44], "l_el": [98, 54], "l_ha": [101, 65], "shield": [94, 59, 8, 18],
+   "leg_kn": [72, 80], "leg_ft": [78, 90]
+  }
+ }
+}

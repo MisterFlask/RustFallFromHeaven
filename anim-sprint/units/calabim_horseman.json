@@ -1,0 +1,188 @@
+{
+ "name": "calabim_horseman",
+ "sprite": "m7/roster/units/unit_calabim_horseman.png",
+ "body_plan": "mounted",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Calabim Horseman, a pale vampire cavalryman with red eyes and black hair under a steel kettle helmet, black armour with steel shoulder plates and a red-lined black cape, a round red shield with a black bat emblem on his RIGHT arm on the screen-left side and a steel-tipped wooden spear in his LEFT hand on the screen-right side, riding a black horse with a red bridle and red tack, a black mane and tail and dark hooves",
+ "hands": "the spear stays in the rider's left hand on the screen-right side and the round red bat shield on his right arm on the screen-left side",
+ "guide_style": "grey",
+ "rider_action": "thrust",
+ "head_r": 8,
+ "limb": 0.85,
+ "dims": {
+  "body_r": 10,
+  "head_r": 6,
+  "neck_r": 6,
+  "snout_w": 6,
+  "leg_w": 4,
+  "paw_r": 2.5,
+  "tail_w": 4
+ },
+ "words": {
+  "mount": "black horse",
+  "rider": "vampire rider",
+  "weapon": "spear",
+  "feet": "hooves",
+  "shield": "round red bat shield",
+  "his": "his",
+  "him": "him"
+ },
+ "joints": {
+  "mount": {
+   "head": [
+    108,
+    68
+   ],
+   "snout": [
+    118,
+    82
+   ],
+   "jaw": [
+    114,
+    85
+   ],
+   "neck": [
+    98,
+    75
+   ],
+   "withers": [
+    93,
+    87
+   ],
+   "spine": [
+    78,
+    88
+   ],
+   "hips": [
+    59,
+    86
+   ],
+   "tail_base": [
+    52,
+    82
+   ],
+   "tail_mid": [
+    45,
+    92
+   ],
+   "tail_tip": [
+    43,
+    104
+   ],
+   "fn_top": [
+    92,
+    96
+   ],
+   "fn_knee": [
+    92,
+    107
+   ],
+   "fn_paw": [
+    96,
+    121
+   ],
+   "ff_top": [
+    100,
+    93
+   ],
+   "ff_knee": [
+    106,
+    102
+   ],
+   "ff_paw": [
+    102,
+    110
+   ],
+   "hn_top": [
+    58,
+    95
+   ],
+   "hn_knee": [
+    55,
+    106
+   ],
+   "hn_paw": [
+    56,
+    118
+   ],
+   "hf_top": [
+    72,
+    96
+   ],
+   "hf_knee": [
+    74,
+    106
+   ],
+   "hf_paw": [
+    77,
+    115
+   ]
+  },
+  "rider": {
+   "head": [
+    80,
+    46
+   ],
+   "neck": [
+    80,
+    55
+   ],
+   "chest": [
+    80,
+    64
+   ],
+   "pelvis": [
+    79,
+    77
+   ],
+   "r_sh": [
+    87,
+    58
+   ],
+   "r_el": [
+    89,
+    66
+   ],
+   "r_ha": [
+    92,
+    63
+   ],
+   "tip": [
+    118,
+    27
+   ],
+   "l_sh": [
+    71,
+    58
+   ],
+   "l_el": [
+    66,
+    64
+   ],
+   "l_ha": [
+    64,
+    70
+   ],
+   "shield": [
+    64,
+    70,
+    8,
+    11
+   ],
+   "leg_kn": [
+    77,
+    86
+   ],
+   "leg_ft": [
+    77,
+    96
+   ]
+  }
+ },
+ "beats": {
+  "strike": {
+   "4": "contact: the vampire rider leans far forward over the black horse's neck with his left arm fully extended, the spear thrust out along a line to the lower-right, its point the farthest point of the figure, the round red bat shield still on his right arm; the black horse lunges far forward toward the lower-right, low, its neck stretched out, hind legs driving; both face the lower-right"
+  }
+ }
+}

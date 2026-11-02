@@ -1,0 +1,32 @@
+{
+ "name": "magnadine",
+ "sprite": "m7/roster/units/unit_magnadine.png",
+ "body_plan": "mounted",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "Magnadine, a moustached cavalry hero in a gold spiked helmet with a tall orange plume, gold lamellar armour over an orange tunic and a white fur-trimmed red cape blowing behind him, raising a curved steel sabre high in his RIGHT hand, riding a brown horse with a black mane and tail, dark hooves and orange-and-gold barding",
+ "hands": "the curved sabre stays in his right hand on the screen-left side and his left hand holds the reins on the screen-right side, by the horse's neck",
+ "guide_style": "grey",
+ "rider_action": "swing",
+ "head_r": 7,
+ "limb": 0.9,
+ "dims": {"body_r": 10, "head_r": 6, "neck_r": 6, "snout_w": 6, "leg_w": 4.5, "paw_r": 2.5, "tail_w": 5},
+ "words": {"mount": "brown horse", "rider": "rider", "weapon": "curved sabre", "feet": "hooves"},
+ "joints": {
+  "mount": {
+   "head": [108, 67], "snout": [115, 78], "jaw": [112, 81], "neck": [95, 80],
+   "withers": [93, 88], "spine": [77, 90], "hips": [60, 90],
+   "tail_base": [58, 83], "tail_mid": [50, 92], "tail_tip": [47, 103],
+   "fn_top": [90, 100], "fn_knee": [90, 113], "fn_paw": [95, 122],
+   "ff_top": [102, 98], "ff_knee": [106, 108], "ff_paw": [102, 116],
+   "hn_top": [61, 94], "hn_knee": [57, 109], "hn_paw": [59, 120],
+   "hf_top": [71, 100], "hf_knee": [75, 112], "hf_paw": [79, 119]
+  },
+  "rider": {
+   "head": [81, 51], "neck": [81, 58], "chest": [81, 66], "pelvis": [82, 76],
+   "r_sh": [72, 57], "r_el": [62, 57], "r_ha": [55, 50], "tip": [67, 21],
+   "l_sh": [89, 59], "l_el": [91, 66], "l_ha": [89, 71],
+   "leg_kn": [75, 86], "leg_ft": [75, 99]
+  }
+ }
+}

@@ -1,0 +1,32 @@
+{
+ "name": "mercurians_horseman",
+ "sprite": "m7/roster/units/unit_mercurians_horseman.png",
+ "body_plan": "mounted",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Mercurian Horseman, an angelic rider with a golden halo over a silver helmet, long golden hair and white feathered wings on his back, in silver armour over a blue tabard with gold trim, a steel-tipped spear with a gold-banded wooden shaft held upright in his LEFT hand on the screen-right side and a round blue shield with a gold rim and a gold boss on his RIGHT arm on the screen-left side, riding a white horse with a grey mane and tail, a blue-and-gold bridle, a blue saddle cloth and brown hooves",
+ "hands": "the spear stays in the rider's left hand on the screen-right side and the round blue shield on his right arm on the screen-left side; his white wings stay folded on his back",
+ "guide_style": "grey",
+ "rider_action": "thrust",
+ "head_r": 8,
+ "limb": 0.85,
+ "dims": {"body_r": 10.5, "head_r": 6, "neck_r": 6.5, "snout_w": 6.5, "leg_w": 4.5, "paw_r": 2.5, "tail_w": 5},
+ "words": {"mount": "white horse", "rider": "angelic rider", "weapon": "spear", "feet": "hooves", "shield": "round blue shield"},
+ "joints": {
+  "mount": {
+   "head": [107, 70], "snout": [115, 79], "jaw": [111, 84], "neck": [98, 78],
+   "withers": [92, 88], "spine": [74, 88], "hips": [58, 86],
+   "tail_base": [52, 81], "tail_mid": [45, 92], "tail_tip": [43, 103],
+   "fn_top": [90, 96], "fn_knee": [90, 108], "fn_paw": [93, 121],
+   "ff_top": [98, 94], "ff_knee": [105, 103], "ff_paw": [100, 111],
+   "hn_top": [58, 96], "hn_knee": [54, 107], "hn_paw": [56, 118],
+   "hf_top": [70, 96], "hf_knee": [72, 106], "hf_paw": [75, 115]
+  },
+  "rider": {
+   "head": [78, 43], "neck": [79, 53], "chest": [79, 60], "pelvis": [77, 76],
+   "r_sh": [87, 54], "r_el": [88, 62], "r_ha": [92, 60], "tip": [117, 23],
+   "l_sh": [70, 55], "l_el": [67, 63], "l_ha": [69, 71], "shield": [63, 66, 8, 10.5],
+   "leg_kn": [72, 84], "leg_ft": [77, 93]
+  }
+ }
+}

@@ -1,0 +1,32 @@
+{
+ "name": "mercenary_mounted",
+ "sprite": "m7/roster/units/unit_mercenary_mounted.png",
+ "body_plan": "mounted",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Mounted Mercenary, a bearded cavalryman in a steel helmet with a tall red crest, a brown cloak, gold scale armour and a red-and-orange striped skirt, a steel-tipped wooden spear held level in his RIGHT hand on the screen-left side, pointing forward to the right, and a round orange shield with a gold boss on his LEFT arm on the screen-right side, riding a tan horse with a dark brown mane and tail, a brown bridle and dark hooves",
+ "hands": "the spear stays in the rider's right hand on the screen-left side and the round orange shield on his left arm on the screen-right side",
+ "guide_style": "grey",
+ "rider_action": "thrust",
+ "head_r": 7,
+ "limb": 0.85,
+ "dims": {"body_r": 11, "head_r": 6, "neck_r": 6.5, "snout_w": 6.5, "leg_w": 4.5, "paw_r": 2.5, "tail_w": 5},
+ "words": {"mount": "tan horse", "rider": "rider", "weapon": "spear", "feet": "hooves", "shield": "round orange shield"},
+ "joints": {
+  "mount": {
+   "head": [104, 70], "snout": [112, 79], "jaw": [108, 84], "neck": [96, 79],
+   "withers": [90, 89], "spine": [72, 88], "hips": [54, 88],
+   "tail_base": [46, 85], "tail_mid": [40, 95], "tail_tip": [36, 104],
+   "fn_top": [86, 96], "fn_knee": [85, 108], "fn_paw": [87, 121],
+   "ff_top": [95, 95], "ff_knee": [100, 104], "ff_paw": [93, 115],
+   "hn_top": [52, 97], "hn_knee": [47, 110], "hn_paw": [48, 121],
+   "hf_top": [66, 97], "hf_knee": [65, 110], "hf_paw": [68, 121]
+  },
+  "rider": {
+   "head": [72, 36], "neck": [70, 46], "chest": [68, 56], "pelvis": [68, 75],
+   "r_sh": [57, 52], "r_el": [57, 60], "r_ha": [63, 65], "tip": [124, 42],
+   "l_sh": [78, 50], "l_el": [84, 57], "l_ha": [90, 62], "shield": [84, 57, 6.5, 9],
+   "leg_kn": [64, 89], "leg_ft": [70, 103]
+  }
+ }
+}

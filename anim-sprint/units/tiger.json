@@ -1,0 +1,21 @@
+{
+ "name": "tiger",
+ "sprite": "m7/roster/units/unit_tiger.png",
+ "body_plan": "quadruped",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Tiger, a big orange tiger with bold black stripes, a white chest, white cheeks and muzzle and white paws, prowling low with its head toward the lower-right, snarling with its red mouth open and white fangs bared, amber eyes, round ears, and a long striped tail with a white tip curled up over its back",
+ "hands": "it has no weapon: it fights with its fanged jaws and claws",
+ "guide_style": "grey",
+ "dims": {"body_r": 13, "head_r": 10, "neck_r": 9, "snout_w": 8, "leg_w": 6, "paw_r": 4, "tail_w": 5, "ear": 1},
+ "words": {"animal": "tiger", "jaws": "fanged jaws", "claws": "claws", "paws": "white paws", "tail": "striped tail", "ears": "round ears"},
+ "joints": {
+  "head": [106, 85], "snout": [115, 94], "jaw": [109, 102], "neck": [97, 84],
+  "withers": [90, 86], "spine": [73, 87], "hips": [57, 89],
+  "tail_base": [54, 83], "tail_mid": [38, 76], "tail_tip": [50, 61],
+  "fn_top": [79, 99], "fn_knee": [82, 110], "fn_paw": [86, 119],
+  "ff_top": [99, 103], "ff_knee": [107, 113], "ff_paw": [114, 121],
+  "hn_top": [56, 94], "hn_knee": [46, 105], "hn_paw": [45, 115],
+  "hf_top": [67, 98], "hf_knee": [68, 106], "hf_paw": [71, 113]
+ }
+}

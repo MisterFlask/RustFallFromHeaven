@@ -46,8 +46,9 @@ import animkit as ak  # noqa: E402
 import beats  # noqa: E402
 
 ROOT = ak.ROOT
-W, H = ak.W, ak.H
+W, H = ak.W, ak.H  # the canvas of the unit being animated (set_canvas): 160x128, or taller/wider for oversize units
 ANCHOR = ak.ANCHOR
+TALL = (192, 144)  # oversize units are animated on this and cropped to 160, 176 or 192 wide (anchor W/2, H-2)
 SPRITE_DIRS = [ROOT.parent / "tools/m7/roster/units", ROOT / "m7/roster/units"]
 ROSTER = ROOT / "roster_classified.json"
 PLANS = ("ship", "siege_or_vehicle", "elemental_or_amorphous")
@@ -74,6 +75,38 @@ UNIT = {
     "unit_tar_demon": {"end": "puddle"},
     "unit_earth_elemental": {"end": "puddle"},
     "unit_ice_elemental": {"end": "puddle"},
+    # flying
+    "unit_hawk": {"recipe": "bird"},
+    # the roster calls it "front" (it is symmetric); it strikes lower-right like most of the roster
+    "unit_ophanim": {"recipe": "wheel", "facing": "lower-right"},
+    # in the water
+    "unit_leviathan": {"recipe": "serpent"},
+    "unit_sea_serpent": {"recipe": "serpent"},
+    "unit_kraken": {"recipe": "serpent", "canvas": "tall", "power": 1.6},
+    # oversize beasts: legs = the share of the height that folds under them when they die
+    "unit_abashi": {"recipe": "beast", "canvas": "tall", "legs": 0.28},
+    "unit_acheron": {"recipe": "beast", "canvas": "tall", "legs": 0.28},
+    "unit_drifa": {"recipe": "beast", "canvas": "tall", "legs": 0.28},
+    "unit_eurabatres": {"recipe": "beast", "canvas": "tall", "legs": 0.28},
+    "unit_beast_of_agares": {"recipe": "beast", "canvas": "tall", "legs": 0.34},
+    "unit_elephant": {"recipe": "beast", "canvas": "tall", "legs": 0.36},
+    "unit_margalard": {"recipe": "beast", "canvas": "tall", "legs": 0.32},
+    "unit_giant_tortoise": {"recipe": "beast", "canvas": "tall", "legs": 0.3, "tortoise": True},
+    # oversize bipeds: hip = share of the height where the upper body bends; arm = (shoulder, polygon) in sprite
+    # pixels for a weapon arm that swings further than the body (a weapon carried across the shoulders just rides
+    # with the upper body)
+    "unit_auric_ascended": {"recipe": "giant", "canvas": "tall",
+                            "arm": ((96, 60), [(86, 0), (115, 0), (115, 128), (86, 128)])},
+    "unit_flagbearer": {"recipe": "giant", "canvas": "tall", "hip": 0.4,
+                        "arm": ((76, 82), [(0, 0), (96, 0), (96, 136), (68, 136), (68, 86), (70, 66), (64, 56),
+                                           (44, 52), (30, 58), (18, 76), (0, 76)])},
+    "unit_gurid": {"recipe": "giant", "canvas": "tall", "hip": 0.4,
+                   "arm": ((80, 50), [(78, 8), (111, 8), (111, 68), (80, 68), (74, 50)])},
+    "unit_hill_giant": {"recipe": "giant", "canvas": "tall"},
+    "unit_mithril_golem": {"recipe": "giant", "canvas": "tall"},
+    "unit_wilboman": {"recipe": "giant", "canvas": "tall"},
+    # the roster calls it "front"; the axe head is on the screen-left, so it chops lower-left
+    "unit_wrath": {"recipe": "giant", "canvas": "tall", "facing": "lower-left"},
 }
 
 
@@ -89,6 +122,12 @@ def unpremul(pm):
     out = np.dstack([rgb, A])
     out[A < 2] = 0
     return Image.fromarray(np.round(out).astype(np.uint8), "RGBA")
+
+
+def set_canvas(w, h):
+    """Every helper below works on the current canvas; the anchor is (W/2, H-2), as animkit's (80, 126) on 160x128."""
+    global W, H, ANCHOR
+    W, H, ANCHOR = int(w), int(h), (int(w) // 2, int(h) - 2)
 
 
 def grid():
@@ -140,8 +179,8 @@ def over(dst, src):
     return src + dst * (1.0 - a)
 
 
-def bayer(shape=(H, W)):
-    h, w = shape
+def bayer(shape=None):
+    h, w = shape or (H, W)
     return np.tile(BAYER4, (h // 4 + 1, w // 4 + 1))[:h, :w]
 
 
@@ -185,7 +224,8 @@ def support(mask, side):
 
 # ---------------------------------------------------------------- the unit
 class Body:
-    def __init__(self, name, facing):
+    def __init__(self, name, facing, canvas=(ak.W, ak.H)):
+        set_canvas(*canvas)
         self.name = name
         self.key = name[5:] if name.startswith("unit_") else name
         path = next((d / f"{name}.png" for d in SPRITE_DIRS if (d / f"{name}.png").exists()), None)
@@ -345,7 +385,7 @@ def ship_anims(b, opts):
     return frames, P
 
 
-def ship_death(b, flinch0, fl0, pivot, target=0.10):
+def ship_death(b, flinch0, fl0, pivot, target=0.10, drift0=4):
     """List away from the target (on the same rocking point as the flinch, so frame 0 -> 1 does not jump) and sink
     through the fixed waterline. The sink depth is chosen per ship so that about `target` of its pixels still show on
     the held frame (mast tops or the prow)."""
@@ -354,7 +394,7 @@ def ship_death(b, flinch0, fl0, pivot, target=0.10):
     cols = light_colours(b.pm)
     lean = [None, 5, 9, 13, 17, 20, 22, 23]
     sink = [None, 0.05, 0.13, 0.26, 0.45, 0.64, 0.82, 1.0]
-    drift = [None, 4, 4, 5, 5, 6, 6, 6]  # continues the flinch's 4 px jolt
+    drift = [None] + [d - 4 + drift0 for d in (4, 4, 5, 5, 6, 6, 6)]  # continues the flinch's jolt
     area0 = (b.pm[..., 3] >= 128).sum()
     hull_cols = b.mask.any(0)
 
@@ -551,16 +591,21 @@ def dust_cut(pm, G, b, depth):
 
 
 # ---------------------------------------------------------------- elementals and amorphous bodies
-def field_src(b, lean=0.0, push=0, sx=1.0, sy=1.0, bulge=0.0, reach=False, lift=0):
+def field_src(b, lean=0.0, push=0, sx=1.0, sy=1.0, bulge=0.0, reach=False, lift=0, power=1.3, dip=0.0):
     """A smooth bend pinned at the ground: vertical scale about the ground row, a lean (shear) that grows with height
     (lean px at the top, + = toward +x), a horizontal scale about the centre (or about the back edge when `reach`, so
-    the front stretches toward the target), a bulge that widens the middle, then a whole-pixel push / lift."""
+    the front stretches toward the target), a bulge that widens the middle, then a whole-pixel push / lift. `power`
+    shapes the lean (higher: the top leads, as a serpent's head); `dip` moves the top down by that many px.
+    A stretch (sy > 1) is capped at the headroom above the sprite, so nothing leaves the canvas."""
     xs, ys = grid()
     G, Ht = float(b.ground), float(b.height)
+    if sy > 1.0:
+        sy = min(sy, 1.0 + max(0, b.top - 1) / Ht)
     y = ys + lift
     y_s = G - (G - y) / sy
     h = np.clip((G - y_s) / Ht, 0.0, 1.0)
-    x1 = xs - push - lean * h ** 1.3
+    y_s = y_s - dip * h ** power
+    x1 = xs - push - lean * h ** power
     ax = (b.left if b.f > 0 else b.right) if reach else b.cx
     x_s = ax + (x1 - ax) / (sx * (1.0 + bulge * np.sin(np.pi * h)))
     return x_s, y_s
@@ -652,17 +697,336 @@ def dissolve_death(b, flinch0, fl0, opts):
     return frames, params
 
 
+# ---------------------------------------------------------------- shared helpers for the later body plans
+def rest_on_ground(pm, G, sink=0):
+    """Move a frame up or down by whole pixels so its lowest solid row lies on the ground row (+ sink px into it)."""
+    rows = np.nonzero((pm[..., 3] >= 128).any(1))[0]
+    if not len(rows):
+        return pm, 0
+    dy = int(G + sink - rows.max())
+    return shift_pm(pm, 0, dy), dy
+
+
+def keep_above_ground(pm, G):
+    """Lift a frame by whole pixels if anything solid went below the ground row (a flier never digs in)."""
+    rows = np.nonzero((pm[..., 3] >= 128).any(1))[0]
+    if len(rows) and rows.max() > G:
+        return shift_pm(pm, 0, int(G - rows.max())), int(G - rows.max())
+    return pm, 0
+
+
+def settle(pm, G):
+    """A corpse settling: sink it 1 px and thin the contact row through a Bayer threshold (a broken, dusty edge)."""
+    out, _ = rest_on_ground(pm, G, sink=1)
+    return dust_cut(out, G, None, depth=1)
+
+
+def region_weight(b, poly, blur=2.5):
+    """A soft 0..1 weight over a polygon given in SPRITE pixel coordinates (moved onto the canvas)."""
+    m = Image.new("L", (W, H), 0)
+    ox, oy = b.offset
+    ImageDraw.Draw(m).polygon([(x + ox, y + oy) for x, y in poly], fill=255)
+    w = ndimage.gaussian_filter(np.asarray(m).astype(np.float64) / 255.0, blur)
+    return np.clip(w * 1.25, 0, 1)
+
+
+def ring_rotate_src(src_x, src_y, centre, weight, deg):
+    """Compose a further turn of a weighted region (the ophanim's rings, a weapon arm) about `centre` into a backward
+    map: the region turns by `deg` (> 0: its top toward +x), fading out over the weight's soft edge."""
+    w = ndimage.map_coordinates(weight, [src_y, src_x], order=1, mode="constant", cval=0.0)
+    a = np.radians(deg) * w
+    c, sn = np.cos(a), np.sin(a)
+    ex, ey = src_x - centre[0], src_y - centre[1]
+    return c * ex + sn * ey + centre[0], -sn * ex + c * ey + centre[1]
+
+
+# ---------------------------------------------------------------- flying: a bird (the hawk)
+def bird_anims(b, opts):
+    """Idle: hovers (1-2 px bob) with a wing flick (the top of the sprite stretches up, then down). Strike: rises and
+    draws back, then dives at the target, pitched onto its talons (frame 4). Flinch: jolted up and away, tilted back.
+    Death: tumbles over (rotates through 190 degrees away from the target), lands on its back on the ground and
+    settles."""
+    f, G = b.f, b.ground
+    centre = (b.cx, (b.top + b.ground) / 2.0)
+    idle = [dict(), dict(lift=1, sy=1.04), dict(lift=2, sy=0.97), dict(lift=1, sy=1.0)]
+    strike = [dict(lean=0.0),
+              dict(lean=-8 * f, dx=-2 * f, dy=-4),
+              dict(lean=-12 * f, dx=-3 * f, dy=-6),
+              dict(lean=10 * f, dx=4 * f, dy=-2),
+              dict(lean=22 * f, dx=10 * f, dy=0),
+              dict(lean=15 * f, dx=8 * f, dy=0),
+              dict(lean=5 * f, dx=3 * f, dy=-2),
+              dict(lean=0.0, dx=0, dy=-1)]
+    flinch = [dict(lean=-14 * f, dx=-4 * f, dy=-5),
+              dict(lean=-10 * f, dx=-3 * f, dy=-4),
+              dict(lean=3 * f, dx=-1 * f, dy=-1),
+              dict(lean=-1 * f, dx=0, dy=0)]
+    death = [None,
+             dict(lean=-45 * f, dx=-5 * f, dy=-6),
+             dict(lean=-100 * f, dx=-6 * f, dy=-3),
+             dict(lean=-150 * f, dx=-7 * f, dy=0),
+             dict(lean=-185 * f, dx=-8 * f, rest=True),
+             dict(lean=-190 * f, dx=-8 * f, sy=0.85, rest=True),
+             dict(lean=-188 * f, dx=-8 * f, sy=0.88, rest=True, bounce=2),
+             dict(lean=-190 * f, dx=-8 * f, sy=0.85, rest=True, settle=True)]
+
+    def rig(p):
+        out = sample(b.pm, *rigid_src(p.get("lean", 0.0), centre, int(p.get("dx", 0)), int(p.get("dy", 0)),
+                                      1.0, p.get("sy", 1.0)))
+        if p.get("rest"):
+            out, _ = rest_on_ground(out, G)
+            if p.get("bounce"):
+                out = shift_pm(out, 0, -p["bounce"])
+            if p.get("settle"):
+                out = settle(out, G)
+            return out
+        return keep_above_ground(out, G)[0]
+
+    frames = {"idle": [b.pm] + [sample(b.pm, *field_src(b, **p)) for p in idle[1:]],
+              "strike": [b.pm] + [rig(p) for p in strike[1:]],
+              "flinch": [rig(p) for p in flinch]}
+    frames["death"] = [frames["flinch"][0]] + [rig(p) for p in death[1:]]
+    death[0] = dict(flinch[0], note="= flinch frame 0")
+    return frames, {"idle": idle, "strike": strike, "flinch": flinch, "death": death}
+
+
+# ---------------------------------------------------------------- flying: a rigid fiery wheel (the ophanim)
+def wheel_anims(b, opts):
+    """Idle: the rings twist a few degrees back and forth inside the still wings (a spin-like shimmer) while the whole
+    floats 1 px. Strike: rolls back, then lurches and rolls toward the target, the rings turning further than the
+    body (frame 4). Flinch: a wobble. Death: dims, cracks and collapses (the machine collapse)."""
+    f, G = b.f, b.ground
+    cx, cy, r = opts.get("ring", (b.cx - b.offset[0], (b.top + b.ground) / 2.0 - b.offset[1], 32))
+    centre = (cx + b.offset[0], cy + b.offset[1])
+    ys, xs = np.mgrid[0:H, 0:W]
+    ring_w = np.clip((r + 2 - np.hypot(xs - centre[0], ys - centre[1])) / 4.0, 0, 1)
+    ring_w = ndimage.gaussian_filter(ring_w, 1.0)
+
+    idle = [dict(), dict(ring=3 * f, lift=1), dict(ring=0, lift=1), dict(ring=-3 * f, lift=0)]
+    strike = [dict(),
+              dict(lean=-4 * f, dx=-2 * f, ring=-8 * f),
+              dict(lean=-8 * f, dx=-3 * f, ring=-14 * f),
+              dict(lean=6 * f, dx=3 * f, ring=12 * f),
+              dict(lean=14 * f, dx=8 * f, ring=30 * f),
+              dict(lean=10 * f, dx=6 * f, ring=24 * f),
+              dict(lean=4 * f, dx=2 * f, ring=8 * f),
+              dict(lean=-1 * f, dx=0, ring=-1 * f)]
+    flinch = [dict(lean=-8 * f, dx=-3 * f, ring=-10 * f),
+              dict(lean=6 * f, dx=-2 * f, ring=6 * f),
+              dict(lean=-3 * f, dx=-1 * f, ring=-3 * f),
+              dict(lean=1 * f, dx=0, ring=1 * f)]
+
+    def render(p):
+        # undo the body move first, then the ring turn (the rings turn in the body's own frame)
+        src = rigid_src(p.get("lean", 0.0), centre, int(p.get("dx", 0)), -int(p.get("lift", 0)))
+        if p.get("ring"):
+            src = ring_rotate_src(*src, centre, ring_w, p["ring"])
+        return keep_above_ground(sample(b.pm, *src), G)[0]
+
+    frames = {"idle": [b.pm] + [render(p) for p in idle[1:]],
+              "strike": [b.pm] + [render(p) for p in strike[1:]],
+              "flinch": [render(p) for p in flinch]}
+    P = {"idle": idle, "strike": strike, "flinch": flinch}
+    frames["death"], P["death"] = collapse_death(b, frames["flinch"][0], flinch[0], dict(opts, topple="away"))
+    return frames, P
+
+
+# ---------------------------------------------------------------- serpents and the kraken (in water)
+def serpent_anims(b, opts):
+    """In the water: idle a slow sway (the head leads) and a slight rise; strike: the neck rears back, then the head
+    surges and strikes down toward the target (frame 4); flinch: a recoil away; death: lists away and sinks through
+    the waterline like a ship, foam included."""
+    f, G = b.f, b.ground
+    pw = opts.get("power", 2.0)
+    idle = [dict(), dict(lean=1.5 * f, sy=1.012, power=pw), dict(lean=0, sy=1.02, power=pw),
+            dict(lean=-1.5 * f, sy=1.012, power=pw)]
+    strike = [dict(),
+              dict(lean=-4 * f, sy=1.02, power=pw),
+              dict(lean=-8 * f, sy=1.035, power=pw),
+              dict(lean=8 * f, dip=2, power=pw),
+              dict(lean=17 * f, dip=7, push=2 * f, power=pw),
+              dict(lean=12 * f, dip=4, push=2 * f, power=pw),
+              dict(lean=4 * f, dip=1, power=pw),
+              dict(lean=-0.6 * f, power=pw)]
+    flinch = [dict(lean=-9 * f, sy=0.95, push=-1 * f, power=pw),
+              dict(lean=-11 * f, sy=0.94, push=-1 * f, power=pw),
+              dict(lean=2 * f, sy=1.0, power=pw),
+              dict(lean=-0.6 * f, power=pw)]
+    P = {"idle": idle, "strike": strike, "flinch": flinch}
+    frames = {a: [b.pm if (a in ("idle", "strike") and i == 0) else sample(b.pm, *field_src(b, **p))
+                  for i, p in enumerate(ps)] for a, ps in P.items()}
+    frames["death"], P["death"] = ship_death(b, frames["flinch"][0], flinch[0], (b.cx, float(G)), drift0=1)
+    return frames, P
+
+
+# ---------------------------------------------------------------- big beasts (dragons, mammoths, the tortoise)
+def lunge_src(b, fwd=0.0, up=0.0, sy=1.0, push=0, lean=0.0, power=1.4):
+    """A body warp led by the head and the front: each pixel moves `fwd` px toward the facing and `up` px up in
+    proportion to how far forward (toward the facing side) and how high it is, so the hindquarters stay planted and
+    the head leads. Plus a vertical scale about the ground, a lean (shear, px at the top) and a whole-pixel push."""
+    xs, ys = grid()
+    G, Ht = float(b.ground), float(b.height)
+    if sy > 1.0:
+        sy = min(sy, 1.0 + max(0, b.top - 1) / Ht)
+    y0 = G - (G - ys) / sy
+    h = np.clip((G - y0) / Ht, 0, 1)
+    back = b.left if b.f > 0 else b.right
+    fr = np.clip((xs - back) * b.f / max(1.0, b.right - b.left), 0, 1) ** power
+    w = fr * (0.3 + 0.7 * h)
+    return xs - push - b.f * fwd * w - lean * h ** 1.3, y0 + up * w
+
+
+def fold_src(b, fold=0.0, legs=0.32, lean=0.0, push=0, back=0.0):
+    """Legs folding under a heavy body: the bottom `legs` share of the height compresses by `fold` (0..0.92) and
+    everything above drops by as much, so the belly comes down onto the ground; `lean` (px at the top) rolls it onto
+    its side, `back` pulls the head and front back toward the body."""
+    xs, ys = grid()
+    G, Ht = float(b.ground), float(b.height)
+    L = legs * Ht
+    c = max(0.08, 1.0 - fold)
+    ho = G - ys
+    hs = np.where(ho < L * c, ho / c, ho + L * (1 - c))
+    y_s = G - hs
+    h = np.clip(hs / Ht, 0, 1)
+    x_s = xs - push - lean * h ** 1.3
+    if back:
+        bk = b.left if b.f > 0 else b.right
+        fr = np.clip((xs - bk) * b.f / max(1.0, b.right - b.left), 0, 1) ** 1.4
+        x_s = x_s + b.f * back * fr
+    return x_s, y_s
+
+
+def beast_anims(b, opts):
+    """Idle: a slow breath (swell pinned at the ground). Strike: rears back (head up and back), then lunges, the head
+    and front leading down toward the target (frame 4). Flinch: the head and front recoil up and back. Death: the legs
+    fold under it and it rolls onto its side away from the target, darkening a little, and settles on the tile. The
+    giant tortoise instead withdraws its head and flippers and slumps."""
+    f, G = b.f, b.ground
+    Ht, hw = float(b.height), (b.right - b.left) / 2.0
+    br = [0.0, 0.5, 1.0, 0.5]
+    idle = [dict(sy=1.0 + 1.4 * t / Ht, bulge=1.0 * t / hw) for t in br]
+    strike = [dict(),
+              dict(fwd=-3, up=3),
+              dict(fwd=-6, up=5),
+              dict(fwd=6, up=-1, push=1 * f),
+              dict(fwd=14, up=-5, push=2 * f),
+              dict(fwd=10, up=-3, push=2 * f),
+              dict(fwd=4, up=-1, push=1 * f),
+              dict(fwd=-0.5)]
+    flinch = [dict(fwd=-7, up=4, sy=0.98, push=-2 * f),
+              dict(fwd=-9, up=5, sy=0.98, push=-2 * f),
+              dict(fwd=2, up=0),
+              dict(fwd=-0.5)]
+    legs = opts.get("legs", 0.32)
+    if opts.get("tortoise"):
+        death = [None] + [dict(fold=fd, legs=legs, back=bk, lean=-ln * f, push=-2 * f, dark=dk) for fd, bk, ln, dk in
+                          ((0.05, 3, 1, 0.97), (0.12, 7, 2, 0.94), (0.2, 11, 2, 0.9), (0.28, 13, 3, 0.86),
+                           (0.34, 14, 3, 0.83), (0.32, 14, 3, 0.82), (0.34, 14, 3, 0.8))]
+    else:
+        death = [None] + [dict(fold=fd, legs=legs, lean=-ln * f, push=-2 * f, dark=dk) for fd, ln, dk in
+                          ((0.08, 3, 0.97), (0.25, 5, 0.94), (0.45, 8, 0.9), (0.7, 12, 0.86), (0.9, 16, 0.83),
+                           (0.85, 15, 0.82), (0.9, 16, 0.8))]
+    P = {"idle": idle, "strike": strike, "flinch": flinch, "death": death}
+    frames = {"idle": [b.pm] + [sample(b.pm, *field_src(b, **p)) for p in idle[1:]],
+              "strike": [b.pm] + [sample(b.pm, *lunge_src(b, **p)) for p in strike[1:]],
+              "flinch": [sample(b.pm, *lunge_src(b, **p)) for p in flinch]}
+    dfr = [frames["flinch"][0]]
+    for k in range(1, 8):
+        p = {kk: v for kk, v in death[k].items() if kk != "dark"}
+        out = darken(sample(b.pm, *fold_src(b, **p)), death[k]["dark"], soot=(40, 34, 30))
+        dfr.append(settle(out, G) if k == 7 else out)
+    frames["death"] = dfr
+    death[0] = dict(flinch[0], note="= flinch frame 0")
+    return frames, P
+
+
+# ---------------------------------------------------------------- big bipeds (giants, golems, the rearing bear)
+def bend_src(b, alpha=0.0, hip=0.45, band=0.14, push=0, sy=1.0, arm=None, beta=0.0):
+    """The upper body turns about the hips by `alpha` degrees (> 0: its top toward +x), fading in over a band above
+    the hips so the legs stay planted; the weapon arm (a soft region, `arm` = (shoulder, weight)) turns a further
+    `beta` degrees about the shoulder. Plus a vertical scale about the ground and a whole-pixel push."""
+    xs, ys = grid()
+    G, Ht = float(b.ground), float(b.height)
+    if sy > 1.0:
+        sy = min(sy, 1.0 + max(0, b.top - 1) / Ht)
+    y0 = G - (G - ys) / sy
+    x0 = xs - push
+    hip_y = G - hip * Ht
+    row = b.mask[int(round(hip_y))]
+    hip_x = float(np.nonzero(row)[0].mean()) if row.any() else b.cx
+    t = np.clip((hip_y - y0) / (band * Ht), 0, 1)
+    a = np.radians(alpha) * t * t * (3 - 2 * t)
+    c, sn = np.cos(a), np.sin(a)
+    dx, dy = x0 - hip_x, y0 - hip_y
+    qx, qy = c * dx + sn * dy + hip_x, -sn * dx + c * dy + hip_y
+    if arm is not None and beta:
+        qx, qy = ring_rotate_src(qx, qy, arm[0], arm[1], beta)
+    return qx, qy
+
+
+def giant_anims(b, opts):
+    """Idle: a breath. Strike: the upper body (and the weapon arm, where one is marked) leans back, then drives toward
+    the target (frame 4) and recovers. Flinch: the upper body recoils away. Death: knees give, then it topples away from
+    the target about its far foot, foreshortened as it comes to lie along the tile's diagonal, rests on the ground and
+    settles."""
+    f, G = b.f, b.ground
+    Ht, hw = float(b.height), (b.right - b.left) / 2.0
+    hip = opts.get("hip", 0.45)
+    arm = None
+    if opts.get("arm"):
+        sh, poly = opts["arm"]
+        arm = ((sh[0] + b.offset[0], sh[1] + b.offset[1]), region_weight(b, poly))
+    br = [0.0, 0.5, 1.0, 0.5]
+    idle = [dict(sy=1.0 + 1.4 * t / Ht, bulge=1.0 * t / hw) for t in br]
+    sw = [(0, 0, 0), (-6, -10, 0), (-11, -22, -1), (8, 15, 1), (17, 35, 3), (13, 28, 3), (5, 10, 1), (-0.6, -1, 0)]
+    strike = [dict(alpha=a * f, beta=bt * f, push=pu * f, hip=hip) for a, bt, pu in sw]
+    flinch = [dict(alpha=-10 * f, beta=-8 * f, push=-3 * f, hip=hip, sy=0.98),
+              dict(alpha=-12 * f, beta=-10 * f, push=-3 * f, hip=hip, sy=0.97),
+              dict(alpha=3 * f, beta=3 * f, push=-1 * f, hip=hip),
+              dict(alpha=-0.6 * f, hip=hip)]
+    # topple: degrees away, foreshortening of the height, share of the way the corpse slides back under the anchor,
+    # knee squash (the first frames)
+    tp = [None, (8, 1.0, 0.0, 0.97), (18, 0.98, 0.0, 0.94), (30, 0.93, 0.1, 0.92), (46, 0.88, 0.3, 1.0),
+          (62, 0.8, 0.5, 1.0), (59, 0.81, 0.5, 1.0), (62, 0.8, 0.5, 1.0)]
+    death = [None] + [dict(lean=-d * f, sy=s * k, centre=c) for d, s, c, k in tp[1:]]
+    P = {"idle": idle, "strike": strike, "flinch": flinch, "death": death}
+    frames = {"idle": [b.pm] + [sample(b.pm, *field_src(b, **p)) for p in idle[1:]],
+              "strike": [b.pm] + [sample(b.pm, *bend_src(b, arm=arm, **p)) for p in strike[1:]],
+              "flinch": [sample(b.pm, *bend_src(b, arm=arm, **p)) for p in flinch]}
+    foot = b.contact(-f)
+    x_push = int(flinch[0]["push"])
+    dfr = [frames["flinch"][0]]
+    for k in range(1, 8):
+        p = death[k]
+        out = sample(b.pm, *rigid_src(p["lean"], foot, x_push, 0, 1.0, p["sy"]))
+        out, _ = rest_on_ground(out, G)
+        a = out[..., 3] >= 128
+        if a.any() and p["centre"]:
+            cols = np.nonzero(a.any(0))[0]
+            mid = (cols.min() + cols.max()) / 2.0
+            out = shift_pm(out, int(round((ANCHOR[0] - mid) * p["centre"])), 0)
+        if k == 6:
+            out = shift_pm(out, 0, -1)
+        if k == 7:
+            out = settle(out, G)
+        dfr.append(out)
+    frames["death"] = dfr
+    death[0] = dict(flinch[0], note="= flinch frame 0")
+    return frames, P
+
+
 # ---------------------------------------------------------------- output (the recipe's format, recipe.write)
-def write_set(b, frames, params, plan, opts):
+def write_set(b, frames, params, plan, opts, base):
     """final_<key>_nofx/ and final_<key>/ (the latter with the recipe's white hit flash on flinch and death frame 0),
-    each with <anim>/frame_NN.png, <anim>/manifest.json, sheet_<anim>.png and unit_poses.json."""
+    each with <anim>/frame_NN.png, <anim>/manifest.json, sheet_<anim>.png and unit_poses.json. `frames` are the
+    finished images ({anim: [PIL]}, any canvas size), `base` the static sprite on that canvas."""
     dirs = []
     for suffix, fx in (("_nofx", False), ("", True)):
         d = ROOT / f"final_{b.key}{suffix}"
         for anim in ("idle", "strike", "flinch", "death"):
-            fr = [frame(p) for p in frames[anim]]
+            fr = list(frames[anim])
             if anim in ("idle", "strike"):
-                fr[0] = b.base.copy()
+                fr[0] = base.copy()
             if fx and anim in ("flinch", "death"):
                 fr[0] = flash(fr[0], 0.6)
             write_anim(d, anim, fr, b, plan)
@@ -670,6 +1034,7 @@ def write_set(b, frames, params, plan, opts):
             "unit": b.key, "facing": b.facing, "pose_set": f"procedural-{plan}", "mirrored": False, "legacy": False,
             "method": "lib/procedural.py: rigid/field warps of the sprite's own pixels, no image model",
             "sprite": str(b.sprite_path.relative_to(ROOT.parent)).replace("\\", "/"),
+            "canvas": list(base.size), "anchor": [base.size[0] // 2, base.size[1] - 2],
             "options": opts, "anims": params}, default=_jsonable))
         dirs.append(d)
     return dirs
@@ -691,21 +1056,23 @@ def flash(im, amount=0.6, colour=(255, 255, 255)):
 
 
 def write_anim(d, anim, frames, b, plan):
-    """Exactly what recipe.write (via animkit.write_anim) writes, straight into `d`."""
+    """Exactly what recipe.write (via animkit.write_anim) writes, straight into `d`; the canvas and anchor come from
+    the frames (W x H, anchor (W/2, H-2)), so oversize strips say their own size."""
     n = beats.COUNTS[anim]
     assert len(frames) == n, (anim, len(frames))
     ms, events = beats.ms(anim), beats.events(anim)
     warns = []
+    fw, fh = frames[0].size
     for i, f in enumerate(frames):
-        assert f.size == (W, H)
+        assert f.size == (fw, fh)
         bb = ak.bbox(f, 40)
-        if bb and (bb[0] < ak.SAFE_X[0] or bb[2] > ak.SAFE_X[1]):
+        if fw == ak.W and bb and (bb[0] < ak.SAFE_X[0] or bb[2] > ak.SAFE_X[1]):
             warns.append(f"frame {i} leaves the safe region x {ak.SAFE_X}: bbox {bb}")
     ad = d / anim
     ad.mkdir(parents=True, exist_ok=True)
     for old in ad.glob("frame_*.png"):
         old.unlink()
-    man = {"unit": b.key, "facing": b.facing, "arm": d.name, "anim": anim, "canvas": [W, H], "anchor": list(ANCHOR),
+    man = {"unit": b.key, "facing": b.facing, "arm": d.name, "anim": anim, "canvas": [fw, fh], "anchor": [fw // 2, fh - 2],
            "loop": beats.LOOP[anim], "hold_last": beats.HOLD_LAST[anim], "frames": []}
     for i, f in enumerate(frames):
         fn = f"frame_{i:02d}.png"
@@ -715,67 +1082,119 @@ def write_anim(d, anim, frames, b, plan):
     if warns:
         man["warnings"] = warns
     (ad / "manifest.json").write_text(json.dumps(man, indent=1))
-    sheet = Image.new("RGBA", (W * n, H), (0, 0, 0, 0))
+    sheet = Image.new("RGBA", (fw * n, fh), (0, 0, 0, 0))
     for i, f in enumerate(frames):
-        sheet.alpha_composite(f, (i * W, 0))
+        sheet.alpha_composite(f, (i * fw, 0))
     sheet.save(d / f"sheet_{anim}.png")
 
 
 # ---------------------------------------------------------------- driver
-RECIPES = {"ship": ship_anims, "siege_or_vehicle": siege_anims, "elemental_or_amorphous": elemental_anims}
+RECIPES = {"ship": ship_anims, "siege_or_vehicle": siege_anims, "elemental_or_amorphous": elemental_anims,
+           "bird": bird_anims, "wheel": wheel_anims, "serpent": serpent_anims, "beast": beast_anims,
+           "giant": giant_anims}
+# groups of units: the first three are whole body plans of roster_classified.json, the rest named units
+GROUPS = {
+    "ship": "ship", "siege_or_vehicle": "siege_or_vehicle", "elemental_or_amorphous": "elemental_or_amorphous",
+    "flying": ["unit_hawk", "unit_ophanim"],
+    "serpent": ["unit_leviathan", "unit_sea_serpent"],
+    "oversize_beast": ["unit_abashi", "unit_acheron", "unit_drifa", "unit_eurabatres", "unit_beast_of_agares",
+                       "unit_elephant", "unit_giant_tortoise", "unit_margalard", "unit_kraken"],
+    "oversize_biped": ["unit_auric_ascended", "unit_flagbearer", "unit_hill_giant", "unit_mithril_golem",
+                       "unit_wilboman", "unit_wrath", "unit_gurid"],
+}
+DEFAULT_GROUPS = list(GROUPS)
 
 
-def roster(plans=PLANS, names=None):
+def roster(groups=DEFAULT_GROUPS, names=None):
     r = json.loads(ROSTER.read_text())
-    return [u for u in r if u["body_plan"] in plans and (not names or u["name"] in names)]
+    out = []
+    for g in groups:
+        sel = GROUPS[g]
+        for u in r:
+            if (u["body_plan"] == sel if isinstance(sel, str) else u["name"] in sel) and (not names or u["name"] in names):
+                if u not in out:
+                    out.append(dict(u, group=g))
+    return out
+
+
+def recipe_of(entry, opts):
+    return opts.get("recipe") or entry["body_plan"]
+
+
+def fit_width(frames, w0, h0, ax):
+    """The narrowest canvas of 160, 176 or 192 px (centred on the anchor) that holds every pixel of every frame."""
+    hw = 0
+    for fr in frames:
+        cols = np.nonzero((fr[..., 3] > 0).any(0))[0]
+        if len(cols):
+            hw = max(hw, ax - cols.min(), cols.max() + 1 - ax)
+    for w in (160, 176, 192):
+        if w // 2 >= hw:
+            return w
+    return w0
 
 
 def animate(entry, write=True):
+    """Animate one unit. Returns (body, {anim: [PIL frames]}, base) on the unit's final canvas."""
     opts = dict(UNIT.get(entry["name"], {}))
     facing = opts.pop("facing", entry["facing"])
     if facing not in ("lower-left", "lower-right"):
         raise ValueError(f"{entry['name']}: facing {facing!r}; add a lower-left/lower-right override to UNIT")
-    b = Body(entry["name"], facing)
-    frames, params = RECIPES[entry["body_plan"]](b, opts)
+    tall = opts.get("canvas") == "tall"
+    b = Body(entry["name"], facing, TALL if tall else (ak.W, ak.H))
+    plan = recipe_of(entry, opts)
+    frames, params = RECIPES[plan](b, opts)
+    base = b.base
+    if tall:  # crop the working canvas to the narrowest of 160/176/192 that holds everything, centred on the anchor
+        fw = fit_width([p for fr in frames.values() for p in fr], W, H, ANCHOR[0])
+        x0 = ANCHOR[0] - fw // 2
+        box = (x0, 0, x0 + fw, H)
+        pil = {a: [frame(p).crop(box) for p in fr] for a, fr in frames.items()}
+        base = b.base.crop(box)
+    else:
+        pil = {a: [frame(p) for p in fr] for a, fr in frames.items()}
     if write:
-        write_set(b, frames, params, entry["body_plan"], opts)
-    return b, {a: [frame(p) for p in fr] for a, fr in frames.items()}
+        write_set(b, pil, params, plan, {k: v for k, v in opts.items() if k != "arm"}, base)
+    return b, pil, base
 
 
 # ---------------------------------------------------------------- review
-BG = {"ship": (58, 104, 140, 255), "siege_or_vehicle": (126, 158, 92, 255), "elemental_or_amorphous": (126, 158, 92, 255)}
+WATER, GRASS = (58, 104, 140, 255), (126, 158, 92, 255)
 
 
-def review(plan, units, out, scale=2):
-    """work/procedural/<plan>_review.png: per unit, each animation's frames at `scale`x side by side (frame 0 first),
-    on the plan's ground colour, with the ground row marked and per-frame ms; plus a 1x row at game scale."""
+def ground_colour(entry, opts):
+    return WATER if recipe_of(entry, opts) in ("ship", "serpent") and not opts.get("death") == "collapse" else GRASS
+
+
+def review(units, out, scale=2):
+    """work/procedural/<group>_review.png: per unit, each animation's frames at `scale`x side by side (frame 0 first),
+    on water (ships, serpents) or grass, with the ground row marked and per-frame ms; on the right the same frames at
+    game scale (1x). Units on a taller or wider canvas get bigger cells."""
     rows = []
     lab_h = 26
     for entry in units:
-        b, fr = animate(entry, write=False)
+        b, fr, base = animate(entry, write=False)
+        bg = ground_colour(entry, dict(UNIT.get(entry["name"], {})))
+        fw, fh = base.size
+        ground = int(np.nonzero((np.asarray(base)[..., 3] >= 128).any(1))[0].max())
         for anim in ("idle", "strike", "flinch", "death"):
-            n = len(fr[anim])
-            row = Image.new("RGBA", (8 * W * scale + 8 * W + 8, H * scale + lab_h), (235, 236, 228, 255))
+            row = Image.new("RGBA", (8 * fw * scale + 4 * fw + 12, max(fh * scale, 2 * fh) + lab_h), (235, 236, 228, 255))
             d = ImageDraw.Draw(row)
             ms, ev = beats.ms(anim), beats.events(anim)
-            d.text((4, 1), f"{b.key} ({b.facing})  {anim}", fill=(120, 20, 20, 255))
-            d.text((8 * W * scale + 12, 1), "game scale (1x)", fill=(120, 20, 20, 255))
+            d.text((4, 1), f"{b.key} ({b.facing}, {fw}x{fh})  {anim}", fill=(120, 20, 20, 255))
+            d.text((8 * fw * scale + 12, 1), "game scale (1x)", fill=(120, 20, 20, 255))
             for i, f in enumerate(fr[anim]):
-                cell = Image.new("RGBA", (W, H), BG[plan])
-                cd = ImageDraw.Draw(cell)
-                cd.line([(0, b.ground + 1), (W, b.ground + 1)], fill=tuple(int(c * 0.8) for c in BG[plan][:3]) + (255,))
+                cell = Image.new("RGBA", (fw, fh), bg)
+                ImageDraw.Draw(cell).line([(0, ground + 1), (fw, ground + 1)], fill=tuple(int(c * 0.8) for c in bg[:3]) + (255,))
                 cell.alpha_composite(f)
-                row.alpha_composite(cell.resize((W * scale, H * scale), Image.NEAREST), (i * W * scale, lab_h))
-                d.text((i * W * scale + 4, 13), f"frame {i}: {ms[i]} ms{'  HIT' if 'hit' in ev[i] else ''}",
+                row.alpha_composite(cell.resize((fw * scale, fh * scale), Image.NEAREST), (i * fw * scale, lab_h))
+                d.text((i * fw * scale + 4, 13), f"frame {i}: {ms[i]} ms{'  HIT' if 'hit' in ev[i] else ''}",
                        fill=(30, 30, 30, 255))
-            # game scale strip
-            x0 = 8 * W * scale + 8
-            for i, f in enumerate(fr[anim]):
-                cell = Image.new("RGBA", (W, H), BG[plan])
-                cell.alpha_composite(f)
-                row.alpha_composite(cell.crop((0, 0, W, H)).resize((W // 1, H // 1)), (x0 + (i % 4) * W, lab_h if i < 4 else lab_h + H))
+                small = Image.new("RGBA", (fw, fh), bg)
+                small.alpha_composite(f)
+                row.alpha_composite(small, (8 * fw * scale + 12 + (i % 4) * fw, lab_h + (i // 4) * fh))
             rows.append(row)
-    sheet = Image.new("RGBA", (rows[0].width, sum(r.height + 4 for r in rows)), (255, 255, 255, 255))
+    sheet = Image.new("RGBA", (max(r.width for r in rows), sum(r.height + 4 for r in rows)), (255, 255, 255, 255))
     y = 0
     for r in rows:
         sheet.alpha_composite(r, (0, y))
@@ -785,21 +1204,57 @@ def review(plan, units, out, scale=2):
     return out
 
 
+def overview(units, anim, out):
+    """work/procedural/ov_<group>_<anim>.png: every unit of a group, one row each, the animation's frames at 1x."""
+    rows = []
+    for entry in units:
+        b, fr, base = animate(entry, write=False)
+        bg = ground_colour(entry, dict(UNIT.get(entry["name"], {})))
+        fw, fh = base.size
+        row = Image.new("RGBA", (8 * (fw + 2), fh + 12), (235, 236, 228, 255))
+        ImageDraw.Draw(row).text((2, 0), f"{b.key} ({b.facing})", fill=(150, 0, 0, 255))
+        for i, f in enumerate(fr[anim]):
+            c = Image.new("RGBA", (fw, fh), bg)
+            c.alpha_composite(f)
+            row.alpha_composite(c, (i * (fw + 2), 12))
+        rows.append(row)
+    sheet = Image.new("RGBA", (max(r.width for r in rows), sum(r.height + 2 for r in rows)), (255, 255, 255, 255))
+    y = 0
+    for r in rows:
+        sheet.alpha_composite(r, (0, y))
+        y += r.height + 2
+    sheet.convert("RGB").save(out)
+    return out
+
+
+REVIEW_UNITS = {"ship": ["unit_frigate", "unit_galley", "unit_workboat", "unit_airship"],
+                "siege_or_vehicle": ["unit_cannon", "unit_battering_ram", "unit_dwarven_cannon"],
+                "elemental_or_amorphous": ["unit_fire_elemental", "unit_water_elemental", "unit_wraith",
+                                           "unit_earth_elemental"]}
+
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--plans", nargs="*", default=list(PLANS))
+    ap.add_argument("--groups", "--plans", nargs="*", default=DEFAULT_GROUPS, help=f"of {list(GROUPS)}")
     ap.add_argument("--units", nargs="*")
-    ap.add_argument("--review", action="store_true", help="also write work/procedural/<plan>_review.png")
-    ap.add_argument("--review-units", nargs="*", help="units for the review image (default: a few per plan)")
+    ap.add_argument("--review", action="store_true", help="also write work/procedural/<group>_review.png and "
+                    "ov_<group>_<anim>.png")
+    ap.add_argument("--review-units", nargs="*", help="units for the review image (default: a few per group)")
     ap.add_argument("--no-write", action="store_true")
     a = ap.parse_args()
-    todo = roster(a.plans, a.units)
+    todo = roster(a.groups, a.units)
     if not a.no_write:
         for e in todo:
-            b, _ = animate(e)
-            print(f"{e['body_plan']:24} {e['name']:28} {b.facing:11} -> final_{b.key}_nofx/, final_{b.key}/")
+            b, fr, base = animate(e)
+            print(f"{e['group']:22} {e['name']:28} {b.facing:11} {base.size[0]}x{base.size[1]} -> final_{b.key}_nofx/, "
+                  f"final_{b.key}/")
     if a.review:
-        for plan in a.plans:
-            ru = roster([plan], a.review_units) if a.review_units else roster([plan])[:4]
+        for g in a.groups:
+            us = roster([g])
+            pick = a.review_units or REVIEW_UNITS.get(g)
+            ru = [u for u in us if u["name"] in pick] if pick else us
             if ru:
-                print(review(plan, ru, ROOT / "work/procedural" / f"{plan}_review.png"))
+                print(review(ru, ROOT / "work/procedural" / f"{g}_review.png"))
+            if us:
+                for anim in ("strike", "death"):
+                    print(overview(us, anim, ROOT / "work/procedural" / f"ov_{g}_{anim}.png"))

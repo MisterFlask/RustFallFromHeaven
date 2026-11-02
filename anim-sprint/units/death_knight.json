@@ -1,0 +1,45 @@
+{
+ "name": "death_knight",
+ "sprite": "m7/roster/units/unit_death_knight.png",
+ "body_plan": "mounted",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Death Knight, an undead knight in black spiked plate armour edged with blood red, a horned skull helm with glowing red eyes, a tattered crimson cape, gripping a long black lance in his RIGHT gauntlet with its point to the upper-right, riding a skeletal nightmare horse with bare bone-white legs and ribs, a horse skull with a glowing red eye, a mane of orange flame and a tattered red caparison",
+ "hands": "the black lance stays in the knight's right gauntlet low on the screen-left side of his body, his left gauntlet steadying the shaft further up at rest and letting go during the charge",
+ "guide_style": "grey",
+ "rider_action": "thrust",
+ "head_r": 7,
+ "limb": 1.1,
+ "dims": {"body_r": 11, "head_r": 6, "neck_r": 6, "snout_w": 6, "leg_w": 4.5, "paw_r": 3, "tail_w": 4},
+ "words": {"mount": "skeletal horse", "rider": "death knight", "weapon": "black lance", "feet": "bone hooves"},
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-right; the skeletal horse throws its skull up and shies back toward the upper-left, its front bone hooves off the ground; the death knight jolts back in the saddle, arms flung out, the black lance still in his right gauntlet"
+  },
+  "death": {
+   "1": "stagger: the skeletal horse rears back toward the upper-left, skull thrown back, its flaming mane guttering; the death knight is thrown back in the saddle, arms flung up, the red glow of his eyes flickering",
+   "2": "the skeletal horse's bony forelegs fold and it drops onto its knees, skull sinking; the death knight pitches back in the saddle, arms up, the red glow of his eyes fading",
+   "3": "the skeletal horse sinks down onto its chest, skull sinking, the glow of its eye fading and its mane of flame burning low; the death knight sags in the saddle, arms dropping",
+   "4": "the skeletal horse sinks fully onto its belly with its bone legs folded under it, its neck lowering forward toward the lower-right; the death knight, still in the saddle, slumps forward over its neck, the black lance slipping from his gauntlet, the glow gone from his eyes",
+   "5": "the skeletal horse lying collapsed on its belly, bone legs folded under it, its skull lying on the ground toward the lower-right, its eye dark and its mane only a few dying embers; the death knight slumped forward over the neck, arms hanging down, the black lance on the ground beside the horse's skull, his eye sockets dark",
+   "7": "remains: the skeletal horse lying still, collapsed on its belly with its skull on the ground and its mane burnt out, the death knight slumped forward over its neck, his eye sockets dark, the black lance on the ground beside the skull"
+  }
+ },
+ "joints": {
+  "mount": {
+   "head": [104, 64], "snout": [113, 77], "jaw": [108, 81], "neck": [92, 72],
+   "withers": [90, 84], "spine": [72, 86], "hips": [53, 86],
+   "tail_base": [46, 80], "tail_mid": [40, 88], "tail_tip": [37, 98],
+   "fn_top": [86, 94], "fn_knee": [86, 108], "fn_paw": [88, 120],
+   "ff_top": [101, 92], "ff_knee": [105, 103], "ff_paw": [98, 113],
+   "hn_top": [47, 95], "hn_knee": [45, 108], "hn_paw": [45, 119],
+   "hf_top": [59, 97], "hf_knee": [62, 108], "hf_paw": [66, 117]
+  },
+  "rider": {
+   "head": [68, 34], "neck": [67, 43], "chest": [66, 54], "pelvis": [67, 72],
+   "r_sh": [56, 45], "r_el": [55, 54], "r_ha": [59, 58], "tip": [134, 28],
+   "l_sh": [78, 45], "l_el": [79, 52], "l_ha": [73, 52],
+   "leg_kn": [63, 82], "leg_ft": [67, 92]
+  }
+ }
+}

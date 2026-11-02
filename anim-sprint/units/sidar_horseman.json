@@ -1,0 +1,32 @@
+{
+ "name": "sidar_horseman",
+ "sprite": "m7/roster/units/unit_sidar_horseman.png",
+ "body_plan": "mounted",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Sidar Horseman (Fall from Heaven), a pale rider in a tattered dark grey hooded cloak over steel scale mail, a round grey steel shield with a white crescent on his RIGHT arm on the screen-left side and a spear with a steel blade raised in his LEFT hand on the screen-right side, riding a pale grey-white horse with a dark grey mane and tail and brown leather tack",
+ "hands": "the spear stays in the rider's left hand on the screen-right side and the round crescent shield on his right arm on the screen-left side",
+ "guide_style": "grey",
+ "rider_action": "thrust",
+ "head_r": 8,
+ "limb": 0.85,
+ "dims": {"body_r": 10, "head_r": 6, "neck_r": 6, "snout_w": 6, "leg_w": 4, "paw_r": 2.5, "tail_w": 4},
+ "words": {"mount": "pale horse", "rider": "hooded rider", "weapon": "spear", "feet": "hooves", "shield": "crescent shield"},
+ "joints": {
+  "mount": {
+   "head": [105, 72], "snout": [113, 81], "jaw": [110, 85], "neck": [96, 78],
+   "withers": [92, 86], "spine": [74, 88], "hips": [58, 88],
+   "tail_base": [54, 82], "tail_mid": [46, 94], "tail_tip": [46, 106],
+   "fn_top": [92, 96], "fn_knee": [92, 108], "fn_paw": [95, 121],
+   "ff_top": [98, 92], "ff_knee": [104, 102], "ff_paw": [98, 112],
+   "hn_top": [58, 96], "hn_knee": [55, 108], "hn_paw": [56, 120],
+   "hf_top": [70, 96], "hf_knee": [70, 106], "hf_paw": [74, 116]
+  },
+  "rider": {
+   "head": [79, 47], "neck": [79, 55], "chest": [79, 63], "pelvis": [79, 76],
+   "r_sh": [86, 58], "r_el": [88, 66], "r_ha": [89, 63], "tip": [110, 27],
+   "l_sh": [72, 58], "l_el": [68, 65], "l_ha": [70, 73], "shield": [64, 68, 8.5, 10.5],
+   "leg_kn": [78, 84], "leg_ft": [80, 96]
+  }
+ }
+}

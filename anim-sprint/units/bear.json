@@ -1,0 +1,22 @@
+{
+ "name": "bear",
+ "sprite": "m7/roster/units/unit_bear.png",
+ "body_plan": "quadruped",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Bear, a huge brown grizzly on all fours with a big shoulder hump, shaggy golden-brown fur with darker brown shading, small round ears, a dark eye, a tan muzzle with a black nose and an open snarling mouth with white fangs, and cream-coloured claws on its big dark-brown paws",
+ "hands": "it has no weapon: it fights with its fanged jaws and its clawed forepaws",
+ "guide_style": "grey",
+ "scale": 0.85,
+ "dims": {"body_r": 19, "head_r": 10, "neck_r": 10, "snout_w": 8, "leg_w": 8, "paw_r": 4.5, "tail_w": 2.5, "ear": 0.5},
+ "words": {"animal": "bear", "jaws": "fanged jaws", "claws": "claws", "paws": "paws", "tail": "stubby tail", "ears": "round ears"},
+ "joints": {
+  "head": [109, 81], "snout": [125, 90], "jaw": [119, 98], "neck": [99, 82],
+  "withers": [88, 74], "spine": [70, 78], "hips": [51, 81],
+  "tail_base": [37, 80], "tail_tip": [34, 83],
+  "fn_top": [84, 95], "fn_knee": [86, 108], "fn_paw": [90, 120],
+  "ff_top": [101, 97], "ff_knee": [110, 109], "ff_paw": [118, 119],
+  "hn_top": [49, 95], "hn_knee": [40, 106], "hn_paw": [44, 116],
+  "hf_top": [64, 96], "hf_knee": [66, 107], "hf_paw": [70, 116]
+ }
+}
