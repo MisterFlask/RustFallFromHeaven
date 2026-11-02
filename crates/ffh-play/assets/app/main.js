@@ -735,7 +735,10 @@ async function boot() {
     // A battle's marker (engagement combat): its watch screen.
     battleClick: (b) => openReport(b.id, { report: !b.has_log }),
     hover: (x, y) => units.hoverAt(x, y),
-    dblclick: (x, y) => units.dblclick(x, y),
+    dblclick: (x, y) => {
+      const c = [...S.cities.values()].find((q) => q.x === x && q.y === y && q.owner === me()?.player);
+      if (c) openCity(c.id);
+    },
   });
   units.initUnits(mapView, $("#unit-panel"));
   renderTop();

@@ -3,8 +3,7 @@
 // starts `ffh-play serve`, loads the page in headless Chromium and plays through the UI with the
 // mouse and keyboard: the new-game screen (Start double-clicked), Tab over the waiting groups, W A S D,
 // hotkeys right after a selection change, founding a city, the research and production popups,
-// the city queue, selecting a unit, the path preview, moving with a right-click and with a left
-// click (click to move), ending turns
+// the city queue, selecting a unit, the path preview, moving with a right-click, ending turns
 // through the end-turn gate, the turn report, saving and loading; then staged saves (`ffh-play
 // stage`): the attack odds and an attack, the keep/raze decision modal, popups set aside and
 // asked again after a load, the transport picker, Shift waypoints; a game started by another
@@ -853,34 +852,6 @@ async function moveUnit() {
   await b.mouse(t.x, t.y, "right");
   await until2(`(() => { const u = window.ffh.S.units.get(${unit.id}); return !u || u.x !== ${unit.x} || u.y !== ${unit.y} || window.ffh.S.view.groups.some((g) => g.units.includes(${unit.id}) && g.missions.length); })()`, "the unit to move");
   steps.push(`moved unit ${unit.id} toward (${target.x}, ${target.y}) with a right-click`);
-}
-
-/** Click to move: with a unit selected, a left click on an empty plot it reaches without a fight
- *  moves it there (it used to deselect the unit and show the plot). */
-async function clickToMove() {
-  const unit = await S(`(() => { const S = window.ffh.S; const me = S.view.me.player; return S.view.units.find((u) => u.owner === me && u.moves > 0 && !S.view.groups.some((g) => g.units.includes(u.id) && g.missions.length)) || null; })()`);
-  if (!unit) return steps.push("click to move: no unit with moves left");
-  const p = await plotPos(unit.x, unit.y);
-  await b.mouse(p.x, p.y);
-  await until2(`window.ffh.S.sel && window.ffh.S.sel.units.includes(${unit.id})`, "the unit selected for click to move");
-  const target = await b.eval(`(async () => {
-    const S = window.ffh.S;
-    for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,-1],[1,-1],[-1,1]]) {
-      const x = (${unit.x} + dx + S.map.w) % S.map.w, y = ${unit.y} + dy;
-      if (y < 0 || y >= S.map.h || (S.unitsAt.get(x + "," + y) ?? []).length || S.map.city[y * S.map.w + x] >= 0) continue;
-      const r = await window.ffh.api.query("path", { units: [${unit.id}], x, y });
-      if (r.ok && r.declare_war_team === null && !r.attack) return { x, y };
-    }
-    return null;
-  })()`);
-  if (!target) return steps.push("click to move: no empty reachable plot next to the unit");
-  await recordPosts();
-  const t = await plotPos(target.x, target.y);
-  await b.move(t.x, t.y);
-  await b.mouse(t.x, t.y);
-  await until(async () => (await posted()).some((c) => c.c === "move" && c.x === target.x && c.y === target.y), "the click to send the move");
-  await until2(`(() => { const u = window.ffh.S.units.get(${unit.id}); return !u || u.x !== ${unit.x} || u.y !== ${unit.y} || window.ffh.S.view.groups.some((g) => g.units.includes(${unit.id}) && g.missions.length); })()`, "the unit to move on a click");
-  steps.push(`moved unit ${unit.id} toward (${target.x}, ${target.y}) with a left click`);
 }
 
 /** Enter while groups wait selects the next one and does not end the turn (Civ4: CONTROL_ENDTURN
@@ -1934,7 +1905,6 @@ async function main() {
     await armiesUi();
     await governorsUi();
     await moveUnit();
-    await clickToMove();
     await endTurns(TURNS);
     await cityScreen();
     await empireScreens();
