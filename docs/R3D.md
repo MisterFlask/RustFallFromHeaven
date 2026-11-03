@@ -302,6 +302,14 @@ under and around it:
   Foam (`riverFoam`): thin tapered streaks down the channel swinging into swirls, white water piled
   against the outer bank of bends, a foam line along the banks, rings round rocks and wakes behind
   them (from the grabbed depth); each layer moves at one speed, and remembered water stays still.
+  Where a river runs steeply (the ribbon's `aExtra.w`, `scene.js` `riverFall`: the water's drop a
+  plot along its line, carried about half a plot past the foot; on level land it stays under about
+  0.2) the water turns
+  white, streaked down the slope and running fast, its edge broken by a noise -- the falls off the
+  hills and over the HD-2D map's raised bank into the sea. The rings and wakes are off there (from
+  a drop of 0.15 to 0.3): their depth tests take the water for level over a bed well beneath it,
+  and on a slope the terrain mesh (RES vertices a plot) comes up to the surface, so they found the
+  bed all over the slope and drew their lace on it as a net of white cracks.
   Banks: dark wet earth under grass (no sand), and `dress.js` `placeBank` lays clusters of boulders
   at the water's edge, a few out in the stream, reeds and grass, and `feat.overhang` (bank grass rooted
   just behind the cut bank's top, `RIVER_BANK` + 0.005-0.04, arching out so its tips fringe the
@@ -531,7 +539,7 @@ marks the edge of the unexplored as a coast, and remembered water calms (§5.2).
   settlements side by side (`scene=cities&civs=CIVILIZATION_BANNOR,CIVILIZATION_KHAZAD&sizes=2,6,12&imps=IMPROVEMENT_TOWN`),
   any map written as legend rows and dressed by the real placement (`rows=.www.kkk.,.zzz.qqq.`;
   `scenes.js` `LEGEND`; `&wrap=1` wraps it east-west, `&hidden=x0,y0,x1,y1` leaves a rectangle
-  unrevealed),
+  unrevealed, `&river=5,8;5,7;...` runs a river along those plot corners, y from the south),
   overlays (`&sel=x,y&path=...`), any pipeline override (`&r3d={...}`).
   `node tools/r3d-lab.mjs --out a.png --query "scene=showcase&ts=96"`; `--shots FILE` for many;
   `--serve` to open it in a browser; `--stability` for the panning test (§11);
@@ -998,8 +1006,8 @@ What is not there, or not good enough yet, as of this prototype:
 * **Particles** draw after the paint passes and cannot be occluded behind tall props per pixel
   (a point sprite is depth-tested at its centre).
 * **Water** mirrors only what is on screen (a screen-space march; past the frame's edge it falls back
-  to the painted sky), has no waterfalls where rivers drop (nothing along a river records a drop),
-  and lakes share the sea's surface and colours (only their floor differs). The rollers follow the
+  to the painted sky), draws a river's drops only as white water on its sloping ribbon (no
+  falling sheet stands off a cliff; the terrain mesh cannot draw one), and lakes share the sea's surface and colours (only their floor differs). The rollers follow the
   depth's contours, gated to where the floor rises toward land; a baked distance-to-shore field would
   run them parallel to every coast by construction. Where a river crosses the beach into the sea a
   short sliver of river colour can remain (the ribbon is cut where the uncut ground is below sea
@@ -1017,7 +1025,7 @@ What is not there, or not good enough yet, as of this prototype:
 Next steps, roughly by value: profile on real GPUs (the quality ladder -- reflection march and paint
 filter off, then render scale -- is in, but its thresholds are tuned only against SwiftShader, and shadow-map size
 is not yet a ladder step); spread the initial world sync over frames or a worker (about 2 s of
-JavaScript on a crowded map); combat and work animations; waterfalls (rivers need their drops); the
+JavaScript on a crowded map); combat and work animations; the
 sub-pixel ship geometry (rigging, floats) that FXAA cannot recover.
 
 ## 15. Provenance

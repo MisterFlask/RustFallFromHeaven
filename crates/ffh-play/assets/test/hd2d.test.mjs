@@ -9,7 +9,7 @@ import * as St from "../app/state.js";
 
 const data = JSON.parse(fs.readFileSync(fileURLToPath(new URL("../../r3d-lab/data.json", import.meta.url)), "utf8"));
 St.setData(data);
-const { buildMap, buildView, hd2d, settlements } = await import("../../r3d-lab/scenes.js");
+const { buildMap, buildView, hd2d, settlements, riverBits } = await import("../../r3d-lab/scenes.js");
 const { World, KIND } = await import("../app/r3d/world.js");
 await import("../app/r3d/assets/index.js");
 const { SPRITES } = await import("../app/iso/sprites.js");
@@ -17,6 +17,7 @@ const { CARDS, GROUNDS } = await import("../app/r3d/hd2d/art/index.js");
 const { unitSpriteKeys } = await import("../app/iso.js");
 const { dressSpriteStatic, dressSpriteUnits, PX } = await import("../app/r3d/hd2d/dress.js");
 const { plotMoods } = await import("../app/r3d/hd2d/mood.js");
+const { riverPoints, riverLevel, riverFall } = await import("../app/r3d/scene.js");
 
 /** The atlas as the dressing sees it (hd2d/sprites.js SpriteAtlas): the PNG sprites, their owners'
  *  variants (`key@css`, recoloured as they load) and the banners, which are drawn by code in the
@@ -172,7 +173,7 @@ test("shores are rimmed with stones and open ground is filled with small props i
   assert.deepEqual(dressSpriteStatic(w, map, atlas, env, null).list, list, "the same state, the same cards");
 });
 
-test("towns spill into houses round them, regions carry their own things, rivers fall off the hills", () => {
+test("towns spill into houses round them, regions carry their own things", () => {
   const s = hd2d(data);
   St.setView(s.view);
   St.setMap(s.map);
@@ -186,11 +187,43 @@ test("towns spill into houses round them, regions carry their own things, rivers
   assert.ok(n("obelisk") + n("altar") >= 1, "the Sheaim's corrupted land has its obelisks and altars");
   assert.ok(n("lantern") >= 1, "the Ljosalfar's lush land has its lanterns");
   assert.ok(n("bones") + n("vent") >= 4, "hell has its bones and vents");
-  assert.ok(n("falls") >= 1, "the lab's river falls off its hills");
   // Houses only round towns: within two plots of a city.
   const cities = [...St.S.cities.values()];
   for (const r of list.filter((r) => r.key.startsWith("hut") || /^town_\w+_house_/.test(plain(r.key)))) {
     assert.ok(cities.some((c) => Math.abs(Math.floor(r.x) - c.x) <= 2 && Math.abs(Math.floor(-r.z) - c.y) <= 2), `a house far from any town at ${r.x}, ${-r.z}`);
+  }
+});
+
+/** How steeply each river's water runs, point by point (scene.js riverFall, the ribbon's aExtra.w). */
+function riverFalls(map) {
+  const w = new World(map, { bank: 0.04 });
+  return w.rivers.flatMap((line) => {
+    const pts = riverPoints(w, line);
+    const along = [0];
+    for (let k = 1; k < pts.length; k++) along.push(along[k - 1] + Math.hypot(pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1]));
+    return riverFall(pts.map((p) => riverLevel(w, p[0], p[1])), along);
+  });
+}
+
+test("rivers turn to white water where they fall off the hills, not on level land", () => {
+  // The water shader's white water starts at a drop of 0.24 a plot and is full by 0.45.
+  assert.ok(Math.max(...riverFalls(hd2d(data).map)) >= 0.45, "the lab's river falls off its hills");
+  const corners = (turns) => {
+    const out = [turns[0]];
+    for (const [tx, ty] of turns.slice(1)) {
+      let [x, y] = out[out.length - 1];
+      while (x !== tx || y !== ty) {
+        if (x !== tx) x += Math.sign(tx - x);
+        else y += Math.sign(ty - y);
+        out.push([x, y]);
+      }
+    }
+    return out;
+  };
+  const level = Array(8).fill(".,..,,.,.,,.");
+  for (const turns of [[[5, 8], [5, 0]], [[6, 8], [6, 0]], [[2, 8], [2, 6], [5, 6], [5, 3], [8, 3], [8, 0]]]) {
+    const top = Math.max(...riverFalls(buildMap(data, level, { rivers: riverBits(corners(turns)) })));
+    assert.ok(top < 0.24, `a river on level land runs at most ${top.toFixed(3)} a plot`);
   }
 });
 

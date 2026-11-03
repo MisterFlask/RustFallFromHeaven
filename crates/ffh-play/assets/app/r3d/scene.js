@@ -14,8 +14,8 @@ import { hexLinear } from "./math.js";
 import { rng, noiseHashTexture, noiseLattice, dabHashTexture } from "./noise.js";
 
 const RIVER_LAYOUT = { aPos: 3, aExtra: 4 };
-/** The sea and the rivers: aExtra (across the river, down it, over the sea), aFlow (the river's
- *  bend, how far past its end) -- the sea's are zero. */
+/** The sea and the rivers: aExtra (across the river, down it, over the sea, how steeply it runs),
+ *  aFlow (the river's bend, how far past its end) -- the sea's are zero. */
 const WATER_LAYOUT = { aPos: 3, aExtra: 4, aFlow: 2 };
 /** Below this size on screen (bounding radius in pixels) a prop draws its simplified copy. */
 const LOD_PX = 22;
@@ -26,8 +26,39 @@ const PARTICLE_LAYOUT = { aPos: 3, aNormal: 3, aExtra: 4 };
 
 /** A river's water surface over the point (mx, my) of its line (the ribbon lies flat across the
  *  channel there): a little under the banks, never under the sea's. */
-function riverLevel(world, mx, my) {
+export function riverLevel(world, mx, my) {
   return Math.max(SEA + 0.004, world.heightAt(mx, my) + 0.045);
+}
+
+/** A river line (world.rivers) resampled to an even spacing, downstream (the lower end) last. */
+export function riverPoints(world, line) {
+  const pts = [];
+  for (let k = 0; k + 1 < line.length; k++) {
+    const a = line[k], b = line[k + 1];
+    const n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / 0.08));
+    for (let s = 0; s < n; s++) pts.push([a[0] + ((b[0] - a[0]) * s) / n, a[1] + ((b[1] - a[1]) * s) / n]);
+  }
+  pts.push(line[line.length - 1]);
+  if (pts.length >= 2 && world.heightAt(pts[0][0], pts[0][1]) < world.heightAt(pts[pts.length - 1][0], pts[pts.length - 1][1])) pts.reverse();
+  return pts;
+}
+
+/** How steeply a river's water runs at each point of its line (height a plot, over about a sixth of
+ *  a plot each way), reaching a little up to the lip of a drop and carried about half a plot on past
+ *  its foot, fading: the water shader turns a steep stretch to white water, churned on in the pool
+ *  below it (the ribbon's aExtra.w). On level land it stays under about 0.2. `lv`: the water's level
+ *  at each point (riverLevel), downstream last; `along`: each point's distance down the line. */
+export function riverFall(lv, along) {
+  const N = lv.length;
+  const drop = lv.map((_, k) => {
+    const a = Math.max(0, k - 2), b = Math.min(N - 1, k + 2);
+    return b > a ? Math.abs(lv[a] - lv[b]) / Math.max(1e-6, along[b] - along[a]) : 0;
+  });
+  return drop.map((_, k) => {
+    let f = 0;
+    for (let j = Math.max(0, k - 6); j <= Math.min(N - 1, k + 2); j++) f = Math.max(f, drop[j] * (j > k ? 1 : 1 - (k - j) / 7));
+    return f;
+  });
 }
 
 /** One asset's vertex buffer, shared by its per-chunk instance buckets. */
@@ -266,19 +297,8 @@ export class Scene {
     // Half the ribbon's width: the widest the water's edge may wander, and a pixel or two more.
     const half = RIVER_HALF + RIVER_WANDER + 0.02;
     for (const line of world.rivers) {
-      // Resample to an even spacing.
-      const pts = [];
-      for (let k = 0; k + 1 < line.length; k++) {
-        const a = line[k], b = line[k + 1];
-        const n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / 0.08));
-        for (let s = 0; s < n; s++) pts.push([a[0] + ((b[0] - a[0]) * s) / n, a[1] + ((b[1] - a[1]) * s) / n]);
-      }
-      pts.push(line[line.length - 1]);
+      const pts = riverPoints(world, line);
       if (pts.length < 2) continue;
-      // Downstream is the lower end.
-      const h0 = world.heightAt(pts[0][0], pts[0][1]);
-      const h1 = world.heightAt(pts[pts.length - 1][0], pts[pts.length - 1][1]);
-      if (h0 < h1) pts.reverse();
       const N = pts.length;
       // Tangents, the distance downstream, and the bend: the heading's change a plot, averaged over
       // about a third of a plot each way (white water gathers on the outside of a whole bend).
@@ -300,8 +320,10 @@ export class Scene {
         return s / n;
       });
       const level = (p) => riverLevel(world, p[0], p[1]);
+      const lv = pts.map(level);
+      const fall = riverFall(lv, along);
       const rows = [];
-      const row = (p, t, y, s, b, past) => rows.push([[p[0] - t[1] * half, y, -(p[1] + t[0] * half)], [p[0] + t[1] * half, y, -(p[1] - t[0] * half)], s, b, past]);
+      const row = (p, t, y, s, b, past, f) => rows.push([[p[0] - t[1] * half, y, -(p[1] + t[0] * half)], [p[0] + t[1] * half, y, -(p[1] - t[0] * half)], s, b, past, f]);
       // The river and a cap past each end (the shader rounds it). A cap sits a hair lower, more the
       // further out: where it overlaps another river's water (a confluence), the ribbon nearest its
       // own line is the one drawn.
@@ -309,21 +331,22 @@ export class Scene {
       const capRow = (k, dir, j) => {
         const d = (half * j) / CAPS;
         const p = [pts[k][0] + tan[k][0] * d * dir, pts[k][1] + tan[k][1] * d * dir];
-        row(p, tan[k], level(pts[k]) - 0.002 - 0.01 * d, along[k] + d * dir, 0, d);
+        row(p, tan[k], lv[k] - 0.002 - 0.01 * d, along[k] + d * dir, 0, d, fall[k]);
       };
       for (let j = CAPS; j > 0; j--) capRow(0, -1, j);
-      for (let k = 0; k < N; k++) row(pts[k], tan[k], level(pts[k]), along[k], bend[k], 0);
+      for (let k = 0; k < N; k++) row(pts[k], tan[k], lv[k], along[k], bend[k], 0, fall[k]);
       for (let j = 1; j <= CAPS; j++) capRow(N - 1, 1, j);
       // aExtra.z: 1 where the ribbon runs out over the sea (the ground under it, uncut by the
-      // channel, is below sea level): the water shader leaves the sea there (WATER_FS).
+      // channel, is below sea level): the water shader leaves the sea there (WATER_FS). aExtra.w:
+      // how steeply the water runs (fall, above).
       const sea = (p) => (world.heightAt(p[0], -p[2], false) < SEA - 0.005 ? 1 : 0);
       const u = half / RIVER_HALF;
       for (let k = 0; k + 1 < rows.length; k++) {
-        const [a0, a1, s0, b0, p0] = rows[k];
-        const [c0, c1, s1, b1, p1] = rows[k + 1];
-        const V = (p, uu, s, b, past) => v.push(p[0], p[1], p[2], uu, s, sea(p), 0, b, past / RIVER_HALF);
-        V(a0, -u, s0, b0, p0); V(c0, -u, s1, b1, p1); V(a1, u, s0, b0, p0);
-        V(a1, u, s0, b0, p0); V(c0, -u, s1, b1, p1); V(c1, u, s1, b1, p1);
+        const [a0, a1, s0, b0, p0, f0] = rows[k];
+        const [c0, c1, s1, b1, p1, f1] = rows[k + 1];
+        const V = (p, uu, s, b, past, f) => v.push(p[0], p[1], p[2], uu, s, sea(p), f, b, past / RIVER_HALF);
+        V(a0, -u, s0, b0, p0, f0); V(c0, -u, s1, b1, p1, f1); V(a1, u, s0, b0, p0, f0);
+        V(a1, u, s0, b0, p0, f0); V(c0, -u, s1, b1, p1, f1); V(c1, u, s1, b1, p1, f1);
       }
     }
     if (v.length) this.rivers = new Mesh(gl, new Float32Array(v), WATER_LAYOUT);

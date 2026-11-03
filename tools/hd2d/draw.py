@@ -437,36 +437,6 @@ def garden(name, seed):
     cv.save(name)
 
 
-def falls(name, seed, w=30, h=26):
-    """A waterfall's face, seen from below its lip: ribbons of white water over the darker teal of
-    the falling sheet, between ragged wet rock, a lip of foam on top and a churned pool at the
-    foot."""
-    rnd = np.random.default_rng(seed)
-    cv = Canvas(w + 8, h + 10)
-    SHEET = ["#26485a", "#335e72", "#457a8e", "#5c94a8"]
-    FOAM = ["#9cc4d2", "#c4e0e8", "#e6f4f8", "#fbfeff"]
-    left = [4 + int(abs(rnd.normal(0, 1.2))) for _ in range(h + 2)]
-    right = [w + 3 - int(abs(rnd.normal(0, 1.2))) for _ in range(h + 2)]
-    ribbons = sorted(rnd.uniform(6, w + 2, int(w / 4)))
-    for y in range(4, h + 4):
-        t = (y - 4) / h
-        for x in range(4, w + 4):
-            if x < left[y - 4] or x > right[y - 4]:
-                cv.px(x, y, WET[int(rnd.integers(0, 3))], 1.0)
-                continue
-            d = min(abs(x - r - np.sin(y * 0.4 + r) * 0.6) for r in ribbons)
-            if d < 0.9 + 0.8 * t:
-                col = FOAM[int(np.clip(0.95 - d * 0.35 + (rnd.random() - 0.5) * 0.3, 0, 0.999) * len(FOAM))]
-            else:
-                col = SHEET[int(np.clip(0.35 + 0.4 * rnd.random() + 0.2 * (1 - t), 0, 0.999) * len(SHEET))]
-            cv.px(x, y, col, 1.0)
-    for x in range(left[0], right[0] + 1):
-        cv.px(x, 3, FOAM[3] if rnd.random() < 0.75 else FOAM[2], 2.0)
-    for k in range(int(w * 0.7)):
-        cv.blob(rnd.uniform(4, w + 4), h + 5 + rnd.normal(0, 0.6), rnd.uniform(1.6, 3.0), rnd.uniform(1.0, 1.8), FOAM, rnd, z=3.0, bumps=0.2)
-    cv.save(name)
-
-
 def main():
     grass("grass_1", 1)
     grass("grass_2", 2, n=14, h=(7, 13))
@@ -498,8 +468,6 @@ def main():
     lantern("lantern_1", 72)
     garden("garden_1", 74)
     garden("garden_2", 75)
-    falls("falls_1", 80)
-    falls("falls_2", 81, w=36, h=22)
     subprocess.run([sys.executable, str(ROOT / "tools" / "hd2d" / "art.py"), "index"], check=True)
 
 

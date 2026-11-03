@@ -10,8 +10,6 @@ export const CARDS = {
   crystal_1: { w: 62, h: 66, box: [0,  0,  62,  66] },
   crystal_2: { w: 76, h: 66, box: [0,  0,  76,  66] },
   crystal_3: { w: 74, h: 66, box: [0,  0,  74,  66] },
-  falls_1: { w: 32, h: 33, box: [0,  0,  32,  33] },
-  falls_2: { w: 39, h: 29, box: [0,  0,  39,  29] },
   fence_1: { w: 38, h: 18, box: [0,  0,  38,  18] },
   fence_2: { w: 27, h: 17, box: [0,  0,  27,  17] },
   flowers_1: { w: 32, h: 38, box: [0,  0,  32,  38] },

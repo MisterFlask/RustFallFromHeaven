@@ -18,7 +18,7 @@ import { stackState } from "../../stacks.js";
 import { isBarbarian } from "../../state.js";
 import { unitSpriteKeys, civShortName, ISO_TABLES } from "../../iso.js";
 import { hashf, hash32, rng } from "../noise.js";
-import { SEA, DRAFT, FEAT, KIND, GROUND, RIVER_BANK, RIVER_HALF, RIVER_WANDER } from "../world.js";
+import { SEA, DRAFT, FEAT, KIND, GROUND, RIVER_BANK, RIVER_HALF } from "../world.js";
 import { CARDS } from "./art/index.js";
 import { standHeight, hexRgb } from "../dress.js";
 import { MANA } from "../assets/palette.js";
@@ -673,43 +673,6 @@ function dressShores(world, map, atlas, list) {
   }
 }
 
-/** Waterfalls: where a river's surface (as scene.js riverLevel lays it) drops steeply toward the
- *  camera -- over a raised bank into the sea (world.js `bank`), or off the hills -- a card of white
- *  water stands across it, its foot on the lower water. A river running across the view keeps its
- *  slope unmarked (a card would face the wrong way). One a stretch of 0.7 plot at most. */
-function dressFalls(world, list, atlas) {
-  const vs = variants("falls");
-  if (!vs.length || !world.rivers?.length) return;
-  const level = (mx, my) => Math.max(SEA + 0.004, world.heightAt(mx, my) + 0.045);
-  const placed = [];
-  world.rivers.forEach((line, li) => {
-    const r = rng(li * 7907 + 13);
-    // Each point against the one about 0.2 plot on (the lines are subdivided every 0.1 plot).
-    for (let i = 0; i + 2 < line.length; i++) {
-      let [px, py] = line[i], [qx, qy] = line[i + 2];
-      let hi = level(px, py), lo = level(qx, qy);
-      // The falls face the camera: the water drops toward the south (smaller y), down the view.
-      if (lo > hi) [px, py, qx, qy, hi, lo] = [qx, qy, px, py, lo, hi];
-      const len = Math.hypot(qx - px, qy - py);
-      // On land: at a river's mouth its ribbon widens flat into the sea, and a wall of white water
-      // there would stand over nothing.
-      if (len < 1e-6 || (py - qy) / len < 0.55 || hi - lo < 0.022 || lo < SEA + 0.012) continue;
-      if (placed.some(([x, y]) => Math.hypot(x - px, y - py) < 0.7)) continue;
-      const j = world.index(Math.floor(qx), Math.floor(qy));
-      if (j < 0 || world.kind[j] === KIND.VOID) continue;
-      placed.push([px, py]);
-      const key = vs[r.int(0, vs.length - 1)];
-      const art = atlas.info(key);
-      // As wide as the river's water (2 RIVER_HALF, its edge wandering RIVER_WANDER), about as tall
-      // as the slope it covers looks from the camera.
-      const c = card(key, art, 1, qx, lo - 0.01, -qy, { id: 0.0002, bias: 0.04, vis: [qx, qy] });
-      c.w = 2 * (RIVER_HALF + RIVER_WANDER);
-      c.h = clamp(0.05 + (hi - lo) * 2.2, 0.08, 0.2);
-      list.push(c);
-    }
-  });
-}
-
 /** The static cards (cities, standing improvements, resources and their banners, the land's prop
  *  cards) and the light beams over mana nodes and towers; `claims` names what the 3D dressing no
  *  longer models (with prop cards: its trees, plants and rocks). */
@@ -720,7 +683,6 @@ export function dressSpriteStatic(world, map, atlas, env = null, moods = null) {
   if (env && Object.keys(CARDS).length) {
     dressProps(world, map, atlas, env, moods, list);
     dressShores(world, map, atlas, list);
-    dressFalls(world, list, atlas);
     claims.trees = claims.flora = claims.rocks = true;
   }
   const w = world.w;

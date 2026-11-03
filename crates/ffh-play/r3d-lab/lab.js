@@ -23,6 +23,8 @@
 //                                              first), dressed by the real placement; separate the
 //                                              rows with ';' when they hold ',' (plains)
 //        &wrap=1  &hidden=x0,y0,x1,y1          the map wraps east-west (any scene); a rectangle unrevealed
+//        &river=x,y;x,y;...                    a river along those plot corners (y from the south,
+//                                              a step of one corner at a time)
 //   &fogRect=x0,y0,x1,y1                      (any scene) a rectangle remembered, not in sight
 //   &sel=x,y&select=1&hover=x,y&targets=x,y;x,y&path=x,y;x,y&attack=1&layer=political  overlays
 
@@ -42,7 +44,8 @@ async function main() {
     scene = grid(data, names, Number(q.get("variants") ?? 6), { ground: q.get("ground") ?? ".", spacing: Number(q.get("spacing") ?? 1) });
   } else if (q.get("rows")) {
     const rows = q.get("rows");
-    scene = fromRows(data, rows.split(rows.includes(";") ? ";" : ","), { wrap: q.get("wrap") === "1", hidden: q.get("hidden")?.split(",").map(Number) });
+    const river = q.get("river")?.split(";").filter(Boolean).map((p) => p.split(",").map(Number));
+    scene = fromRows(data, rows.split(rows.includes(";") ? ";" : ","), { wrap: q.get("wrap") === "1", hidden: q.get("hidden")?.split(",").map(Number), river });
   } else if (q.get("scene") === "cities") {
     const list = (k, d) => (q.get(k) ?? d).split(",").filter(Boolean);
     scene = settlements(data, list("civs", "CIVILIZATION_BANNOR"), list("sizes", "2,6,12").map(Number), list("imps", ""), { walls: Number(q.get("walls") ?? 8), coast: q.get("coast") === "1" });

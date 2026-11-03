@@ -2190,6 +2190,13 @@ void main() {
   // is drawn on an unrevealed plot).
   if (river) inWater *= smoothstep(0.18, 0.32, v);
   if (inWater <= 0.0) discard;
+  // How steeply a river runs down its bed (vExtra.w: its drop a plot, carried on a little past the
+  // foot, scene.js riverFall; on level land up to about 0.2). Where it falls steeply, white water,
+  // its edges broken (the drop changes from one row of the ribbon to the next: a straight line
+  // across; the noise only lowers it, so level land stays clear); and from a gentler slope on, no
+  // collars or wakes found from the depth (below).
+  float steep = river ? smoothstep(0.15, 0.3, vExtra.w) : 0.0;
+  float fall = river ? smoothstep(0.24, 0.45, vExtra.w - pnoise(vec2(vExtra.x * 2.5, vExtra.y * 6.0), vec2(4096.0)) * 0.2) : 0.0;
 
   // The surface normal: the sea's swell and ripples, or a river's current (map y runs along -z).
   vec3 n;
@@ -2400,6 +2407,9 @@ void main() {
   // something crossing the waterline -- which the floor's depth alone does not show. Not at the
   // beach (the surf has it).
   // On a river, a rock or a pier in the stream (not its own bank: the edge has its lace below).
+  // Not where it runs steeply: the test (and the wake's below) takes the water for level over a
+  // bed well beneath it, and on a slope the ground's coarse mesh comes up to the surface, so both
+  // found the bed itself all over the slope and traced their lace on it as a net of white cracks.
   float contact = 0.0;
   {
     float rr = (river ? 0.045 : 0.06) / max(zW, 1.0);
@@ -2408,7 +2418,7 @@ void main() {
       float zs = texture(uSceneND, uv + vec2(cos(a) * res.y / res.x, sin(a)) * rr).w;
       contact = max(contact, 1.0 - smoothstep(0.006, 0.03, abs(zs - zW)));
     }
-    contact *= (river ? smoothstep(0.08, 0.3, inEdge) : smoothstep(0.03, 0.08, depth)) * knownC;
+    contact *= (river ? smoothstep(0.08, 0.3, inEdge) * (1.0 - steep) : smoothstep(0.03, 0.08, depth)) * knownC;
   }
   float lph = mnoise(m, 4.0) * 6.2831;
   float lap = 0.75 + 0.25 * mix(sin(lph), sin(t * 2.1 + lph), live);
@@ -2442,8 +2452,16 @@ void main() {
       float d = zq - zs;
       wake = max(wake, smoothstep(-0.006, 0.0, d) * (1.0 - smoothstep(0.05, 0.1, d)) * (1.1 - 0.2 * float(k)));
     }
-    wake *= smoothstep(0.0, 0.2, inEdge) * smoothstep(0.15, 0.55, lace + 0.4 * rf);
-    foam = clamp(max(max(rf, edgeLace * 0.75), max(contact * smoothstep(0.2, 0.6, lace) * lap, wake * 0.85)), 0.0, 1.0) * knownC;
+    wake *= smoothstep(0.0, 0.2, inEdge) * smoothstep(0.15, 0.55, lace + 0.4 * rf) * (1.0 - steep);
+    // A steep stretch: the falling water white, streaked along the current and running fast,
+    // churned on in the pool at its foot.
+    float sheet = pnoise(vec2(vExtra.x * 5.0, vExtra.y * 1.4 - tr * 2.2), vec2(4096.0));
+    if (band) sheet = mix(pnoise(vec2(vExtra.x * 5.0, vExtra.y * 1.4), vec2(4096.0)), sheet, live);
+#ifdef CALM_FADE
+    sheet = mix(0.5, sheet, calm);
+#endif
+    float white = fall * mix(0.45, 1.0, smoothstep(0.35, 0.65, sheet));
+    foam = clamp(max(max(max(rf, white), edgeLace * 0.75), max(contact * smoothstep(0.2, 0.6, lace) * lap, wake * 0.85)), 0.0, 1.0) * knownC;
   }
 
   // --- Caustics: the waves gather the sun into a drifting net of light on the shallow floor, seen

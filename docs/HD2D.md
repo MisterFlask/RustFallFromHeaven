@@ -312,11 +312,14 @@ does for the isometric sprites. No unit art changed.
   (world.js `bank`, `MapHd2d.worldOpts`; the 3D renderer's is 0), all but a narrow strip over the
   waterline, so the shore climbs in a short steep step the terrain shader draws as rock, a boulder of
   the bank now and then among the shore stones. (The terrain mesh, six vertices a plot, cannot draw a
-  true cliff face.) Where a river's surface drops steeply toward the camera on land (off the hills,
-  down a bank; not at its mouth, where the ribbon widens flat into the sea) a card of white water as
-  wide as the river and about as tall as the slope looks stands across it (`dressFalls`,
-  `falls_*`); a river running across the view keeps its slope unmarked, as a card would face the
-  wrong way.
+  true cliff face.) Where a river's surface drops steeply (off the hills, over the bank into the
+  sea) the water itself turns white: streaks running fast down the slope, churned on in the pool at
+  its foot, from any side (docs/R3D.md §5.2, "Rivers"). (Until 2026-11-03 a card of pixel-art white
+  water stood across each drop facing the camera, `dressFalls`: an opaque rectangle with straight
+  edges over painted water, it read as a sticker, and the owner reported it with the cracks below
+  as artifacts in the river. Behind the cards, the river's depth-found rock collars and wakes took
+  the sloping bed for something in the stream and drew a net of white cracks over every drop;
+  they are now off where a river runs steeply.)
 * **Shores** (batch 3, `dressShores`): the look target's land ends at its water in a rim of dark
   stones. Along every coast and lake shore a 14 × 14 sampling of the plot (and a quarter plot past
   its edges, as the warped coast wanders off the grid) finds where the ground falls through the
