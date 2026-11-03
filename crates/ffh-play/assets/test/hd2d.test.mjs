@@ -16,6 +16,7 @@ const { SPRITES } = await import("../app/iso/sprites.js");
 const { CARDS, GROUNDS } = await import("../app/r3d/hd2d/art/index.js");
 const { unitSpriteKeys } = await import("../app/iso.js");
 const { dressSpriteStatic, dressSpriteUnits, PX } = await import("../app/r3d/hd2d/dress.js");
+const { IDLE, IDLE_FRAME, idleCard } = await import("../app/r3d/hd2d/sprites.js");
 const { plotMoods } = await import("../app/r3d/hd2d/mood.js");
 const { riverPoints, riverLevel, riverFall } = await import("../app/r3d/scene.js");
 
@@ -58,6 +59,27 @@ test("a stack is a group of one to three figures of its head unit under its owne
   }
   // The same state, the same cards.
   assert.deepEqual(dressSpriteUnits(w, s.map, atlas).list, list);
+});
+
+test("the figures that breathe have their idle strips, and stand where their sprites would", () => {
+  for (const [key, name] of Object.entries(IDLE)) {
+    const s = SPRITES[key];
+    assert.ok(s, `${key} is a sprite`);
+    assert.ok(s.w <= IDLE_FRAME.w && s.h <= IDLE_FRAME.h, `${key} fits the idle frame`);
+    // The strip: four 160 x 128 frames side by side (the PNG header's size).
+    const png = fs.readFileSync(fileURLToPath(new URL(`../app/anim/${name}_idle.png`, import.meta.url)));
+    assert.deepEqual([png.readUInt32BE(16), png.readUInt32BE(20)], [IDLE_FRAME.w * IDLE_FRAME.n, IDLE_FRAME.h], `${name}_idle.png`);
+  }
+  // The frame's card: the frame's size at the sprite's scale, its base under the sprite's middle
+  // (the recipe places a w-wide sprite at x = floor(80 - w / 2)), mirrored with the art.
+  for (const w of [96, 97, 105]) {
+    const r = { w: w * PX.unit, h: 120 * PX.unit, flip: false };
+    const c = idleCard(r, { w, h: 120 });
+    assert.ok(Math.abs(c.w - IDLE_FRAME.w * PX.unit) < 1e-9 && Math.abs(c.h - IDLE_FRAME.h * PX.unit) < 1e-9);
+    const mid = Math.floor(80 - w / 2) + w / 2;
+    assert.equal(c.anchor * IDLE_FRAME.w, mid);
+    assert.equal(idleCard({ ...r, flip: true }, { w, h: 120 }).anchor * IDLE_FRAME.w, IDLE_FRAME.w - mid);
+  }
 });
 
 test("cities, standing improvements and resources stand as cards, and the 3D dressing leaves them", () => {

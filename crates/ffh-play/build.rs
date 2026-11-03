@@ -3,9 +3,10 @@
 // modules, each by `include_str!`), which `src/transport/http.rs` includes. The file lists come
 // from `src/transport/art_files.rs`, which the server also uses for `--assets DIR`.
 // Also embeds the isometric renderer's sprites (`assets/app/iso/*.png`, docs/ISO.md, written by
-// `tools/m7/m7.py export`), the battle screens' unit animations (`assets/app/anim/*.png`: the
-// anim-sprint sets' strips, anim-sprint/ANIMATING_UNITS.md) and the HD-2D mode's own art
-// (`assets/app/r3d/hd2d/art/*.png`, its ground and prop cards, docs/HD2D.md):
+// `tools/m7/m7.py export`), the unit animations of the battle screens and the HD-2D map's idle
+// figures (`assets/app/anim/*.png`: the anim-sprint sets' strips, anim-sprint/ANIMATING_UNITS.md)
+// and the HD-2D mode's own art (`assets/app/r3d/hd2d/art/*.png`, its ground and prop cards,
+// docs/HD2D.md):
 // `$OUT_DIR/iso_assets.rs`, every PNG there by `include_bytes!`.
 // And sets `FFH_BUILD_COMMIT` (`crate::BUILD_COMMIT`): the commit being built, for bug reports.
 

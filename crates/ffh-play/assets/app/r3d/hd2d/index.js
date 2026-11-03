@@ -401,6 +401,8 @@ export class MapHd2d extends Map3D {
       mood: this.scene.tex.mood,
       mapSize: [this.world.w, this.world.h],
       wrapX: this.world.wrapX ? 1 : 0,
+      // The figures breathe while the map animates (the frame's time runs: map3d.js loop).
+      idle: this.cfg.animate && !v.reduceMotion() ? 1 : 0,
     };
     fr.uniforms.uExposure = fr.exposure;
   }

@@ -1065,7 +1065,7 @@ export class Map3D {
     this.frameMs.push(ms);
     if (this.frameMs.length > 120) this.frameMs.shift();
     this.frames = (this.frames ?? 0) + 1;
-    if (this.frames <= 3 || (this.frames <= 400 && this.frames % 20 === 0)) performance.measure(`frame:${this.frames}`, { start: t0, detail: { pending: this.sprites?.atlas.pending ?? 0, layers: this.sprites?.atlas.entries.size ?? 0, chunks: this.scene.terrain.chunks.size, budget: this.scene.budget.n } });
+    if (this.frames <= 3 || (this.frames <= 400 && this.frames % 20 === 0)) performance.measure(`frame:${this.frames}`, { start: t0, detail: { pending: this.sprites?.atlas.pending ?? 0, layers: this.sprites?.atlas.next ?? 0, chunks: this.scene.terrain.chunks.size, budget: this.scene.budget.n } });
   }
 
   /** The config with the quality ladder applied: at level 1 the Kuwahara paint filter (off by

@@ -81,6 +81,10 @@ Each holds, per animation `idle`, `strike`, `flinch`, `death`:
 - Facing: the manifest's `facing` is the way the unit looks and strikes in these frames. To fight toward the other
   lower diagonal, mirror every frame; the 160-wide canvas mirrors about the anchor. Upper facings need back views, which
   this method does not make.
+- The game ships a set's strips in `crates/ffh-play/assets/app/anim/<unit>_<anim>.png` (copies of `sheet_<anim>.png`).
+  The HD-2D map plays the idle of every M7 sprite listed in `IDLE` (`assets/app/r3d/hd2d/sprites.js`): to make a new
+  unit breathe on the map, copy its `sheet_idle.png` there and add its sprite key to that table. The battle screens
+  play the four animations of the sets in `ANIM_SETS` (`assets/app/battle_stage.js`).
 
 `spec.md` is the sprint's contract (with a correction for rule 1). `beats.md` is the beat sheet: its main tables are the
 far set (lower-left units such as the ogre and Hyborem; the sprint's swordsman sets used them too, against rule 1), and

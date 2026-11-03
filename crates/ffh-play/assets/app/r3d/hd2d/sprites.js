@@ -3,6 +3,9 @@
 // indexed by hd2d/art/index.js: trees, bushes, rocks, crystals) in one texture array, a sprite a layer, and the
 // cards that stand them in the 3D world, built from the records hd2d/dress.js makes. Drawn by the
 // HD-2D passes (hd2d/passes.js) in the scene, the sun's shadow map and the overlays.
+//
+// A unit sprite with an anim-sprint idle (IDLE) is stored as its idle strip instead: the four
+// frames, two to a layer, and its card plays them (the cards' vertex shader picks the frame).
 
 import { SPRITES } from "../../iso/sprites.js";
 import { ownerBand } from "../../iso.js";
@@ -15,6 +18,43 @@ const LAYER = 256;
 const LEVELS = 9;
 /** Floats a card instance: iPosRot, iScale, iTint, iTeam, aExtra. */
 const FLOATS = 20;
+
+/** The unit sprites that breathe: sprite key -> its idle strip (`app/anim/<name>_idle.png`, a copy
+ *  of anim-sprint's `final_<name>/sheet_idle.png`: four 160 x 128 frames side by side, 250 ms each,
+ *  frame 0 the sprite itself, its feet at (80, 126); anim-sprint/ANIMATING_UNITS.md). */
+export const IDLE = {
+  unit_axeman: "axeman",
+  unit_champion: "champion",
+  unit_donal: "donal",
+  unit_goblin: "goblin",
+  unit_guybrush: "guybrush",
+  unit_hyborem: "hyborem",
+  unit_lizardman: "lizardman",
+  unit_losha: "losha",
+  unit_maros: "maros",
+  unit_ogre_embers: "ogre",
+  unit_paladin: "paladin",
+  unit_phalanx: "phalanx",
+  unit_skeleton: "skeleton",
+  unit_swordsman: "swordsman",
+  unit_warrior: "warrior",
+};
+/** An idle frame (art px) and the frames of a strip. The cards' shader plays them (SPRITE_VS). */
+export const IDLE_FRAME = { w: 160, h: 128, n: 4 };
+/** The card flag of an idle strip (iScale.w; SPRITE_VS). */
+export const IDLE_FLAG = 32;
+
+/** A figure's card over the idle frame instead of its sprite (`info`, the sprite's size): the frame
+ *  is wider and taller, the sprite in it centred across and standing on its foot, so the figure
+ *  stands where its sprite would. `{ w, h, anchor }` for a card of `w` x `h` world units (record
+ *  `r` is the sprite's card); flipped, the anchor mirrors with the art. */
+export function idleCard(r, info) {
+  const px = r.w / info.w;
+  // (The recipe places the sprite at x = floor(80 - w / 2): an odd width is half a pixel left.)
+  const mid = Math.floor(IDLE_FRAME.w / 2 - info.w / 2) + info.w / 2;
+  const anchor = mid / IDLE_FRAME.w;
+  return { w: IDLE_FRAME.w * px, h: IDLE_FRAME.h * px, anchor: r.flip ? 1 - anchor : anchor };
+}
 
 function canvas(w, h) {
   if (typeof OffscreenCanvas !== "undefined") return new OffscreenCanvas(w, h);
@@ -47,8 +87,11 @@ export class SpriteAtlas {
     this.gl = gl;
     this.onload = onload;
     this.direct = direct;
-    /** key -> { layer, ready, failed, w, h, u, v } */
+    /** key -> { layer, layers, ready, failed, w, h, u, v, idle } (`idle`: the layers hold its
+     *  idle strip, two frames each, the first above). */
     this.entries = new Map();
+    /** The next free layer (an idle strip takes two). */
+    this.next = 0;
     /** layer -> the 256-square canvas uploaded there (kept for a re-upload when the array grows). */
     this.sources = [];
     this.drawn = new Map();
@@ -109,7 +152,18 @@ export class SpriteAtlas {
     this.drawn.set(key, c);
   }
 
-  /** Room for `n` sprites in all: the array grows once to the next power of two (the original
+  /** The idle strip of sprite `key` (or of the sprite an owner's variant recolours), or null. */
+  idle(key) {
+    const b = this.base.get(key);
+    return IDLE[b ? b.key : key] ?? null;
+  }
+
+  /** The layers sprite `key` takes: two for an idle strip's four frames, else one. */
+  layersOf(key) {
+    return this.idle(key) ? IDLE_FRAME.n / 2 : 1;
+  }
+
+  /** Room for `n` layers in all: the array grows once to the next power of two (the original
    *  doubled as the sprites were asked for, each time a new array and every loaded sprite again). */
   reserve(n) {
     if (n <= this.cap) return;
@@ -119,28 +173,32 @@ export class SpriteAtlas {
     this.alloc(Math.min(cap, max));
   }
 
-  /** Sprite `key` in the array: `{ layer, u, v }` (its extent in the layer), or null while it loads
-   *  (it starts loading) or when there is no such sprite. */
+  /** Sprite `key` in the array: `{ layer, u, v, idle }` (its extent in the layer; `idle`: its idle
+   *  strip's frames, IDLE_FRAME), or null while it loads (it starts loading) or when there is no
+   *  such sprite. */
   get(key) {
     let e = this.entries.get(key);
     if (!e) {
       const info = this.info(key);
       if (!info) return null;
-      const layer = this.entries.size;
-      if (layer >= this.cap) {
+      const layers = this.layersOf(key);
+      const layer = this.next;
+      if (layer + layers > this.cap) {
         // The array doubles, up to what the GPU allows (WebGL2 guarantees 256 layers).
         const max = this.gl.getParameter(this.gl.MAX_ARRAY_TEXTURE_LAYERS);
-        if (this.cap >= max) {
+        if (layer + layers > max) {
           if (!this.full) console.warn(`hd2d: the sprite atlas is full (${max} layers); ${key} and later sprites are not drawn`);
           this.full = true;
           return null;
         }
         this.alloc(Math.min(this.cap * 2, max));
       }
-      e = { layer, ready: false, failed: false };
+      this.next += layers;
+      e = { layer, layers, ready: false, failed: false, idle: false };
       this.entries.set(key, e);
       const drawn = this.drawn.get(key);
       if (drawn) this.store(e, drawn);
+      else if (layers > 1) this.loadIdle(key, e);
       else this.load(key, e);
     }
     return e.ready ? e : null;
@@ -160,6 +218,42 @@ export class SpriteAtlas {
       .catch(() => {
         e.failed = true;
         console.warn(`hd2d: sprite ${key} did not load`);
+      })
+      .finally(() => {
+        this.pending--;
+        this.changed();
+      });
+  }
+
+  /** Sprite `key`'s idle strip into its two layers, frames 0 and 1 in the first (one above the
+   *  other: 160 x 256), 2 and 3 in the second. A strip that does not load leaves the sprite. */
+  loadIdle(key, e) {
+    if (this.pending === 0) performance.mark("hd2d:sprites-busy");
+    this.pending++;
+    this.stats.loads++;
+    const b = this.base.get(key);
+    const im = new Image();
+    im.src = new URL(`../../anim/${this.idle(key)}_idle.png`, import.meta.url).href;
+    im.decode()
+      .then(() => {
+        const { w, h, n } = IDLE_FRAME;
+        for (let l = 0; l < n / 2; l++) {
+          // (In memory: willReadFrequently keeps Chrome's 2D canvas off the GPU.)
+          const c = canvas(w, 2 * h);
+          const g = c.getContext("2d", { willReadFrequently: true });
+          g.drawImage(im, 2 * l * w, 0, w, h, 0, 0, w, h);
+          g.drawImage(im, (2 * l + 1) * w, 0, w, h, 0, h, w, h);
+          const src = b ? recoloured(c, b.css) : c;
+          this.sources[e.layer + l] = src;
+          this.upload(e.layer + l, src);
+        }
+        if (b) this.stats.recolours++;
+        Object.assign(e, { ready: true, idle: true, w, h, u: w / LAYER, v: h / LAYER });
+        this.mipsDirty = true;
+      })
+      .catch(() => {
+        console.warn(`hd2d: the idle strip of ${key} did not load; it stands still`);
+        this.load(key, e);
       })
       .finally(() => {
         this.pending--;
@@ -210,7 +304,7 @@ export class SpriteAtlas {
   }
 
   changed() {
-    if (this.pending === 0) performance.mark("hd2d:sprites-idle", { detail: { ...this.stats, layers: this.entries.size, cap: this.cap } });
+    if (this.pending === 0) performance.mark("hd2d:sprites-idle", { detail: { ...this.stats, layers: this.next, cap: this.cap } });
     if (this.pending === 0) for (const f of this.waiters.splice(0)) f();
     this.onload();
   }
@@ -272,21 +366,28 @@ export class SpriteLayer {
       // The array sized once for every sprite these records ask for.
       const fresh = new Set();
       for (const r of list) if (r.key && !this.atlas.entries.has(r.key)) fresh.add(r.key);
-      if (fresh.size) this.atlas.reserve(this.atlas.entries.size + fresh.size);
+      let layers = 0;
+      for (const k of fresh) layers += this.atlas.layersOf(k);
+      if (layers) this.atlas.reserve(this.atlas.next + layers);
     }
     const arr = new Float32Array(list.length * FLOATS);
     let n = 0;
     for (const r of list) {
       let layer = 0, u = 1, v = 1;
+      let { w, h } = r, anchor = r.anchor ?? 0.5, idle = false;
       if (r.key) {
         const e = this.atlas.get(r.key);
         if (!e) continue;
         [layer, u, v] = [e.layer, e.u, e.v];
+        if (e.idle) {
+          ({ w, h, anchor } = idleCard(r, this.atlas.info(r.key)));
+          idle = true;
+        }
       }
-      const flags = (r.flip ? 1 : 0) | (r.banner ? 2 : 0) | (r.shadow ? 4 : 0) | (r.fade ? 8 : 0) | (r.town ? 16 : 0);
+      const flags = (r.flip ? 1 : 0) | (r.banner ? 2 : 0) | (r.shadow ? 4 : 0) | (r.fade ? 8 : 0) | (r.town ? 16 : 0) | (idle ? IDLE_FLAG : 0);
       const team = r.team ?? [1, 1, 1];
       const vis = r.vis ? [r.vis[0], r.vis[1], 1] : [0, 0, 0];
-      arr.set([r.x, r.y, r.z, layer, r.w, r.h, r.phase ?? 0, flags, u, v, r.id ?? 0, r.glow ?? 0, team[0], team[1], team[2], r.bias ?? 0, r.anchor ?? 0.5, ...vis], n * FLOATS);
+      arr.set([r.x, r.y, r.z, layer, w, h, r.phase ?? 0, flags, u, v, r.id ?? 0, r.glow ?? 0, team[0], team[1], team[2], r.bias ?? 0, anchor, ...vis], n * FLOATS);
       n++;
     }
     let b = this.bufs[name];

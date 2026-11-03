@@ -14,13 +14,15 @@ import { SCENE_OUT } from "../shaders.js";
  *    iPosRot  base x, y, z, layer of the sprite array
  *    iScale   width, height (world units), phase, flags (1 flip, 2 banner, 4 shadow caster,
  *             8 fade the painted ground at the foot, 16 a town: graded lighter, only its warm
- *             lights glow)
- *    iTint    u extent, v extent (of the 256-texel layer), object id, glow
+ *             lights glow, 32 an idle strip: four frames, two to a layer from this one, the
+ *             second below the first -- hd2d/sprites.js IDLE)
+ *    iTint    u extent, v extent (of the 256-texel layer; a frame's), object id, glow
  *    iTeam    owner colour, depth bias (toward the eye, world units)
  *    aExtra   (instanced) anchor across the card (0..1: where the base point is), the map point
  *             whose fog of war it takes (x, y), and 1 when that point is given (else the base's)
  *  uMode: 0 the scene (facing the camera, by uLean), 1 the sun's shadow map (an upright card
- *  turned to the sun), 2 the contact shadow (an ellipse draped on the ground). The card is drawn
+ *  turned to the sun), 2 the contact shadow (an ellipse draped on the ground). uIdle 1 plays the
+ *  idle strips (frame 0, the sprite itself, while the map does not animate). The card is drawn
  *  where it faces the camera, but its depth is that of an upright card at the same base (pulled
  *  toward the eye by the bias): it hides and is hidden as a standing figure would be, and the
  *  ground behind it never cuts into its tilted top. */
@@ -33,6 +35,7 @@ in vec4 iTeam;
 in vec4 aExtra;
 uniform float uMode;
 uniform float uLean;
+uniform float uIdle;
 uniform sampler2D uHeight;
 out vec2 vUv;
 out vec2 vCard;
@@ -70,6 +73,9 @@ void main() {
   int flags = int(iScale.w + 0.5);
   bool flip = (flags & 1) != 0;
   bool banner = (flags & 2) != 0;
+  bool idle = (flags & 32) != 0;
+  // An idle strip's frame: 250 ms each, each figure from its own phase.
+  int frame = idle && uIdle > 0.5 ? int(mod(floor(uTime * 4.0 + iScale.z * 4.0), 4.0)) : 0;
   float u = aPos.x + 0.5;
   float ax = u - aExtra.x;
   vec3 right = vec3(1.0, 0.0, 0.0);
@@ -81,8 +87,10 @@ void main() {
   if (banner) sway = sin(uTime * 2.3 + iScale.z * 6.2831 - y * 4.0) * 0.035 * smoothstep(0.15, 0.5, u) * y;
   vec3 p, pu;
   if (uMode > 1.5) {
-    // Contact shadow: an ellipse on the ground under the figure, draped on the height field.
-    vec2 m = vec2(base.x - uCopyX, -base.z) + vec2(aPos.x * w * 0.95, (aPos.y - 0.5) * w * 0.5);
+    // Contact shadow: an ellipse on the ground under the figure, draped on the height field. (An
+    // idle strip's card is its 160-wide frame: the ellipse is the 96-wide sprite's.)
+    float cw = idle ? w * 0.6 : w;
+    vec2 m = vec2(base.x - uCopyX, -base.z) + vec2(aPos.x * cw * 0.95, (aPos.y - 0.5) * cw * 0.5);
     float g = max(0.0, texture(uHeight, m / uMapSize).r);
     p = vec3(m.x + uCopyX, max(g, base.y - 0.04) + 0.012, -m.y);
     pu = p;
@@ -100,8 +108,8 @@ void main() {
     pu += normalize(uEye - pu) * iTeam.a;
     vCard = aPos.xy;
   }
-  vUv = vec2((flip ? 1.0 - u : u) * iTint.x, (1.0 - y) * iTint.y);
-  vLayer = iPosRot.w;
+  vUv = vec2((flip ? 1.0 - u : u) * iTint.x, (1.0 - y + float(frame % 2)) * iTint.y);
+  vLayer = iPosRot.w + float(frame / 2);
   vTeam = iTeam;
   vId = iTint.z;
   vGlow = iTint.w;
