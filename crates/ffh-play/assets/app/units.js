@@ -1381,9 +1381,9 @@ export function renderPanel() {
     status.push(
       h(
         "div.march-line",
+        { title: "The rules march it there; it takes no orders until it arrives." },
         h("b", marchLine(march)),
         march.from ? h("span.dim", ` · from ${march.from}`) : null,
-        h("div.dim", "The rules march it there; it takes no orders until it arrives."),
       ),
     );
   }

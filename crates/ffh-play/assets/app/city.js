@@ -382,7 +382,7 @@ function specialistSlots(c, task) {
   return [
     h("h4.sub", "Specialists"),
     rows.length ? h("div.specs", rows) : h("p.dim", "No specialist slots."),
-    locked.length ? h("div.locked-line.dim", locked, " opened by buildings") : null,
+    locked.length ? h("div.locked-line.dim", locked) : null,
   ];
 }
 
@@ -684,7 +684,7 @@ function productionView(c, choose, remove, [tapMode, setTapMode], reload) {
         prod.current && prod.needed ? barEl(prod.stored / prod.needed, "production", { w: 50, next: (prod.stored + prod.rate) / prod.needed }) : null,
       ),
       queue,
-      locked ? [h("p.dim.governed-note", "The governor chooses what this city builds: choose its governor above. An army's requisition goes first (the Armies screen [F5])."), requisitionNote(c)] : recruitView(c, reload),
+      locked ? [h("p.dim.governed-note", "The governor chooses what this city builds: choose its governor above."), requisitionNote(c)] : recruitView(c, reload),
       locked ? null : tapModes(tapMode, [["now", "Build now", "A tap replaces what is being built"], ["queue", "Add to queue", "A tap adds to the end of the queue (Shift-click)"], ["first", "Put first", "A tap puts it first in the queue (Ctrl-click)"]], setTapMode),
     ),
     ...lists,

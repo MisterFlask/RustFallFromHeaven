@@ -304,8 +304,9 @@ it (with what it needs first), Shift-click to queue it. **Civics** (`F3`): each 
 civics (the current ones marked, the ones you cannot adopt greyed, their tooltip saying why: the
 tech, a war, an alignment, a state religion); pick civics and the screen shows the
 revolution's anarchy and upkeep (computed by the rules), then "Revolution!". **Religion** (`F7`):
-the religions, the tech whose first discoverer founds each, their holy cities as far as you know
-them, your cities with each, and "Convert" (with the anarchy). **Cultural pressure** (`F8`, the
+the religions (founded or not; a religion's tooltip says what it does and, before it is founded,
+the tech whose first discoverer founds it), their holy cities as far as you know them, your cities
+with each, and "Convert" (with the anarchy). **Cultural pressure** (`F8`, the
 menu's Culture; with cultural actions on): your cities under revolt pressure (each with its scale,
 level, unhappiness, each civilization's pressure with what its channels add a turn and where it
 settles, and when the next level comes), the channels aimed at you (with the cities of yours they
@@ -382,6 +383,13 @@ every table is either described or listed as not shown, so a new field cannot go
 from the data, they follow the rules as they change. Each appears wherever its type does: the
 build list and the buildings of a city, the unit panel's actions, the promotions and spells
 dialogs, the civics and religion screens, the trade table, the map's resources.
+
+**Rules stay out of the screens** (the owner's call, 2026-11-03). A screen holds the state and the
+decision at hand; a rule (how something works, true in any game) is a tooltip on what it explains,
+or, for a screen's whole system, an article of the help display behind the dialog's (i): the
+crusade dialogs, the Armies, Governors and Cultural pressure screens. A decision's option shows
+what that choice brings (an event's effects, a tech's help, a cost); the rules behind it (what a
+settlement is, who gets a returned city) are its tooltip (the option's `tip`).
 
 **Watching the AI.** Tick "Spectate the AI" in the new-game screen for an **observed
 game**: an AI-only game (the AI plays every civilization, also the one you pick, which is the one
@@ -514,7 +522,8 @@ speed, its actions in each row and whom they reach, its spell, its specials, its
 click one of your units, then a cell of your grid to move it there or another unit to swap (a
 large unit takes two cells of a row; a unit with nowhere to go leaves the line), "Take out of the
 line"; the pool's other units listed (click one, then a cell); Auto-arrange; the slots and lanes
-of each side and why; the ground's rules in words; the forecast of the formation, asked of the
+of each side and why; the ground (Hills, Forest, City, Open ground: its rules as each name's
+tooltip); the forecast of the formation, asked of the
 engine at each change: each side's expected losses, their line wiped out, the plot falls, yours
 wiped out; Watch or Report after the attack; Attack or `Enter`), **the battle** (the log played
 one action at a time as a snap, the owner's pick of the battle-feel spike, 2026-10-31: every
@@ -829,7 +838,8 @@ a healthy warrior is 200), as the `crusades` query counts them.
   strength you ask for), the rest of the deal its price; the leader answers the proposal as for
   any deal. Units are lent only from these screens, never as an order of the unit itself. The
   rules are in the help display (help.js, the top bar's ?: topics at the left, the article at the
-  right; Keys, then the crusade topics), not in the dialogs: each dialog's (i), in its title bar,
+  right; Keys, the crusade topics, then the game options' armies, governors and cultural
+  actions), not in the dialogs: each dialog's (i), in its title bar,
   opens the help at its topic over the dialog, so the body holds only the decision.
 
 ### Queries

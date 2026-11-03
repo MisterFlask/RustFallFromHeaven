@@ -405,6 +405,12 @@ export function groundRules(ground, plot) {
   return out;
 }
 
+/** The ground as short names for a screen ("Hills", "Open ground"), each with its rules
+ *  (`groundRules`' sentence) for the name's tooltip: `{label, text}`. */
+export function groundTags(ground, plot) {
+  return groundRules(ground, plot).map((text) => ({ label: text.slice(0, Math.max(0, text.indexOf(":"))) || text, text }));
+}
+
 // ---------------------------------------------------------------------------------------------
 // Slots
 
@@ -640,7 +646,7 @@ export function resultWords(log) {
     kind: "held",
     good: me === 1,
     ribbon: me === 0 ? "THEY HOLD" : "HELD",
-    line: `The defenders hold ${where}: ${left} still stand${left === 1 ? "s" : ""} there. They stay in place until annihilated; the next attack meets what is left.`,
+    line: `The defenders hold ${where}: ${left} still stand${left === 1 ? "s" : ""} there.`,
   };
 }
 

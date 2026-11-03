@@ -144,6 +144,14 @@ export function ask(title, text, choices, { tag = "ask" } = {}) {
 let decisionModal = null;
 let decisionId = null;
 
+/** The tooltip of decision option `o`: its rules (`tip`) and, for a help of several lines (a
+ *  free tech's), the whole help; null when the button says it all. */
+function optionTip(o) {
+  const long = o.help?.includes("[NEWLINE]");
+  if (!o.tip && !long) return null;
+  return [h("div.tip-title", o.label), long ? h("div.tip-effects", markup(o.help)) : null, o.tip ? h("div.tip-hint", markup(o.tip)) : null];
+}
+
 /** Shows decision `d` (`status.decision`); `answer(option | null)` sends the answer (null:
  *  the advisor's pick) and resolves when it was accepted. Showing the same decision again does
  *  nothing; `null` closes it. */
@@ -172,8 +180,9 @@ export function showDecision(d, answer) {
     d.options.map((o, i) =>
       h(
         "button.option",
-        // A long help (a free tech's) shows its first line and the whole text as the tooltip.
-        { disabled: !o.enabled, tip: o.help?.includes("[NEWLINE]") ? [h("div.tip-title", o.label), h("div.tip-effects", markup(o.help))] : null, "data-option": i, onclick: () => send(i) },
+        // A long help (a free tech's) shows its first line and the whole text as the tooltip; the
+        // rules behind a choice (`tip`: what a settlement is) are in the tooltip alone.
+        { disabled: !o.enabled, tip: optionTip(o), "data-option": i, onclick: () => send(i) },
         h("span", o.label),
         d.advisor === i ? h("span.badge", "advisor") : null,
         o.help ? h("small", markup(o.help.split("[NEWLINE]")[0])) : null,

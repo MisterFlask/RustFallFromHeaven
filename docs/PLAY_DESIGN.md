@@ -402,7 +402,7 @@ pub struct Decision { pub id: u32, pub player: PlayerId, pub kind: DecisionKind,
     pub options: Vec<DecisionOption>, pub advisor: Option<usize>, pub context: DecisionContext }
 pub enum DecisionKind { FreeTech, KeepCity { city: CityId, can_raze: bool }, Election { selection: VoteId },
     Offer { from: PlayerId }, Religion }
-pub struct DecisionOption { pub key: String, pub label: String, pub help: String, pub enabled: bool }
+pub struct DecisionOption { pub key: String, pub label: String, pub help: String, pub tip: String, pub enabled: bool }
 pub struct Pending { pub events: Vec<PendingEvent>, pub votes: Vec<PendingVote>, pub research_needed: bool,
     pub idle_cities: Vec<CityId>, pub promotions_ready: Vec<UnitId>, pub ready_groups: Vec<GroupId> }
 
@@ -498,7 +498,7 @@ At EOF of stdin: answer open decisions with the advisor and either quit (default
 ```json
 {"version":812,"phase":"human|running|decision|over|no_game|crashed","turn":57,"year":-2950,"human":0,
  "active_players":[3],"view_version":40,"map_rev":"9f3a11c2","ms_in_phase":12,
- "decision":{"id":17,"kind":"keep_city","title":"...","text":"...","options":[{"key":"keep","label":"Keep","help":"","enabled":true},...],
+ "decision":{"id":17,"kind":"keep_city","title":"...","text":"...","options":[{"key":"keep","label":"Keep","help":"","tip":"","enabled":true},...],
              "advisor":0,"context":{"plot":[12,30],"city":4,"unit":null,"other_player":2}},
  "over":{"winner_team":1,"victory":2},
  "crash":{"message":"...","autosave":"saves/auto/T0056.ffhsave","journal":"..."}}
@@ -969,7 +969,7 @@ Each phase is independently testable and committable. `cargo build --release && 
   * **One status.** The `status` query is `Host::status` with or without a game (`game`, `stuck`, `crashed` with the report; `Host::crashed` drops the session and keeps the report until a game is started or loaded). Between turn slices (HTTP, `running_reply`) it says `running`, with `game`, as the published status does (`running_status`).
   * **Crash report of a loaded game.** Before a session's first autosave the save it was loaded or taken over from stands for the autosave (`Host` keeps it): the report's `repro` is `ffh-play replay <journal> --from <that save>`, which replay accepts (the journal's `load` / `take_over` header names it by FNV).
   * **`view_version`** is bumped when debug reveal changes and when a blocking decision opens and closes, so the decision's status and cached view (the decision-time state) and the view after it each carry their own version.
-  * **Decision texts** (title, text, option labels and help) pass through `names::resolve_keys` (the keep/raze text showed the city's text key).
+  * **Decision texts** (title, text, option labels, help and tip) pass through `names::resolve_keys` (the keep/raze text showed the city's text key).
   * **Strict members.** A `setup` (session `new`, `--setup`), every command (`command::COMMAND_FIELDS`, plus the envelope's `id` and `k`), session operations and answers refuse unknown members (`invalid`, "field `X`: unknown field"): a typo no longer starts a default game or drops a flag. Queries stay lenient. `inspect` names its object `oid`.
   * **Game names.** `session new {name: "auto"}` is refused (`auto/NAME` names the current game's autosaves); `saves` skips a directory called `auto`.
   * **HTTP.** The request time is a deadline for the whole request (each read waits at most the time left, then 408), not a per-read timeout that a client trickling bytes could stretch for hours. At the connection cap the 503 is written, the write side shut and the request drained on a short-lived thread (at most 64 at once), so the client reads the 503 instead of a reset. Bound to another loopback address (`--bind 127.0.0.2:PORT`), the `Host` check also accepts that address. The placeholder page keeps an `id` typed in its raw request box.

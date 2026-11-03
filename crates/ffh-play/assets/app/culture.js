@@ -17,6 +17,46 @@ import { openModal } from "./modals.js";
 import { run } from "./commands.js";
 import { infoTip } from "./infotips.js";
 import { playerColor } from "./tiles.js";
+import { addHelp } from "./help.js";
+
+// ---------------------------------------------------------------------------------------------
+// The rules, in the help display (help.js; the Cultural pressure panel's (i) opens it).
+
+/** The thresholds as the last city or `culture` query gave them (null before one). */
+let known = null;
+
+addHelp({
+  id: "culture",
+  group: "Game options",
+  title: "Cultural actions",
+  body: () => {
+    const th = known;
+    const n = (v, d) => (th ? v(th) : d);
+    return [
+      h("p", `With the new game's Cultural actions option on, a city may channel ${n((t) => `${t.channel_percent}%`, "part")} of its culture (rounded down) into one standing order aimed at a civilization, until you change it; changing costs nothing. Without a channel, all of it grows the city's culture and borders. You set a city's channel in its screen (its Culture section); a governor never does.`),
+      h("h4", "The actions"),
+      h(
+        "ul",
+        h("li", `Foment Revolt: revolt pressure on the civilization's cities in reach. A city's total brings unrest (a point of unhappiness per ${n((t) => pts(t.unhappy_step), "step")}, at most ${n((t) => t.unhappy_max, "a few")}) and the revolt (disorder) at ${n((t) => pts(t.disorder), "its threshold")}; a city where one civilization's own pressure reaches ${n((t) => pts(t.flip), "the flip threshold")} joins that civilization (unless city flips are off). A capital never changes hands, whatever the pressure.`),
+        h("li", `Spread Religion: one roll a turn that a religion of the city (the one you pick) spreads to one of their cities in reach that lacks it; the more culture goes into it and the more cities it could reach, the likelier${n((t) => `, at most ${chancePct(t.spread_max)}`, "")}.`),
+      ),
+      h("h4", "Reach"),
+      h("p", th ? `In full within ${th.full_range} plots; beyond, the effect falls with the square of the distance (a quarter at ${2 * th.full_range}), and nothing beyond ${th.range}.` : "In full near the city; beyond, the effect falls with the square of the distance, and nothing beyond the channel's range."),
+      h("h4", "Resisting"),
+      h(
+        "ul",
+        h("li", `Each turn a city resists ${n((t) => `${t.resist_percent}% of its culture and ${pts(t.garrison)} for each defender`, "part of its culture and its defenders")} of each civilization's pressure, and the pressure fades ${n((t) => `${t.fade_percent}%`, "a little")} a turn.`),
+        h("li", "In revolt (disorder) a city makes no culture: only its defenders resist until the total falls below the revolt threshold."),
+      ),
+      h("h4", "Diplomacy"),
+      h(
+        "ul",
+        h("li", "No channel is an act of war, and every one is public to the civilizations that have met its caster."),
+        h("li", "Hostile channels are remembered as hostility, a spread of their own state religion as friendship; it fades with time, and their attitude reads it."),
+      ),
+    ];
+  },
+});
 
 // ---------------------------------------------------------------------------------------------
 // Numbers and words (pure; assets/test/culture.test.mjs).
@@ -358,19 +398,17 @@ function effectView(o, th, opts) {
 function pressureView(p, th, { rate = null, name = null, compact = false } = {}) {
   const parts = p.casters.filter((x) => x.pressure > 0).map((x) => ({ v: x.pressure, color: colorOf(x.caster), label: casterName(x.caster) }));
   if (p.unknown) parts.push({ v: p.unknown, color: "#8a8a8a", label: "civilizations you have not met" });
-  const resist = [
-    rate !== null ? `${th.resist_percent}% of its ${rate} culture` : `${th.resist_percent}% of its culture`,
-    `${pts(th.garrison)} for each defender (${p.defenders})`,
-  ].join(" and ");
   const garrison = p.resist_revolt ?? p.resist;
-  const inRevolt = p.in_revolt
-    ? ` In revolt it makes no culture: only its defenders resist (${pts(garrison)}) until the total falls below ${pts(th.disorder)}.`
-    : garrison < p.resist
-      ? ` In revolt (disorder) it would make no culture: only its defenders would resist (${pts(garrison)}).`
-      : "";
-  const hint = `It resists ${pts(p.resist)} of each civilization's pressure a turn: ${resist}; the pressure also fades ${th.fade_percent}% a turn.${inRevolt}`;
+  // What the city resists; how that comes about (the rules) is the line's tooltip.
+  const resists = `It resists ${pts(p.resist)} of each civilization's pressure a turn.${p.in_revolt ? ` In revolt only its defenders resist (${pts(garrison)}), until the total falls below ${pts(th.disorder)}.` : ""}`;
+  const why = [
+    `A city resists ${th.resist_percent}% of its ${rate !== null ? `${rate} ` : ""}culture and ${pts(th.garrison)} for each defender (${p.defenders}); the pressure also fades ${th.fade_percent}% a turn.`,
+    p.in_revolt ? "In revolt (disorder) it makes no culture: only its defenders resist." : garrison < p.resist ? `In revolt (disorder) it would make no culture: only its defenders would resist (${pts(garrison)}).` : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
   const calm = !p.total && !p.level && !p.casters.length;
-  if (calm) return h("div.culture-under", h("p.dim", `No revolt pressure${name ? ` on ${name}` : ""}. ${hint}`));
+  if (calm) return h("div.culture-under", h("p.dim", { title: `${resists} ${why}` }, `No revolt pressure${name ? ` on ${name}` : ""}.`));
   const stage = Math.max(p.level, pressureStage(p.total, th, p.capital));
   const lead = [...p.casters].sort((a, b) => b.pressure - a.pressure)[0];
   const casters = p.casters.map((x) => {
@@ -394,19 +432,15 @@ function pressureView(p, th, { rate = null, name = null, compact = false } = {})
     { class: `stage-${stage}` },
     h(
       "div.under-head",
+      p.capital ? { title: "A capital never changes hands, whatever the pressure." } : {},
       h("b", `${name ? `${name}: ` : ""}revolt pressure ${pts(p.total)}`),
       h("span.stage", ` · ${REVOLT_LEVELS[Math.min(3, p.level)] ?? "calm"}`),
       p.unhappiness ? h("span.warn", ` · −${p.unhappiness} happy`) : null,
     ),
     pressureBar(parts, th, { labels: !compact, title: `Unrest: a point of unhappiness per ${pts(th.unhappy_step)} (at most ${th.unhappy_max}); revolt (disorder) at ${pts(th.disorder)}; a civilization whose own pressure reaches ${pts(th.flip)} takes the city` }),
     h("ul.culture-casters", casters),
-    h(
-      "p.dim.culture-hint",
-      compact
-        ? `It resists ${pts(p.resist)} a turn (${p.defenders} defender${p.defenders === 1 ? "" : "s"} at ${pts(th.garrison)} each, ${p.in_revolt ? "and no culture while in revolt" : `and half its own culture${garrison < p.resist ? `; ${pts(garrison)} in revolt` : ""}`}).`
-        : hint,
-    ),
-    p.capital ? h("p.dim", "A capital never changes hands, whatever the pressure.") : lead && lead.pressure >= th.near_flip ? h("p.warn", `Close to joining ${joinWho(lead.caster)}: station defenders, raise its culture, or make them stop.`) : null,
+    h("p.dim.culture-hint", { title: why }, compact ? `It resists ${pts(p.resist)} a turn.` : resists),
+    !p.capital && lead && lead.pressure >= th.near_flip ? h("p.warn", `Close to joining ${joinWho(lead.caster)}: station defenders, raise its culture, or make them stop.`) : null,
   );
 }
 
@@ -443,6 +477,7 @@ async function reloadInPlace(el, reload) {
 
 function sectionParts(c, k, reload, draw, el) {
   const th = k.thresholds;
+  known = th;
   const ch = k.channel;
   // Re-read either way: a refused command leaves the screen showing the city's state.
   const set = async (cmd) => {
@@ -451,10 +486,9 @@ function sectionParts(c, k, reload, draw, el) {
   };
   const rateLine = h(
     "p.culture-rate",
+    { title: ch ? `A channel takes ${th.channel_percent}% of the city's culture, rounded down; the rest grows the city's culture and borders.` : "Without a channel, all of it grows the city's culture and borders." },
     `${k.rate} culture a turn`,
-    ch
-      ? h("span", `: ${k.amount} channelled (${th.channel_percent}%, rounded down), ${Math.max(0, k.rate - k.amount)} to the city`)
-      : h("span.dim", ": all of it grows the city's culture and borders"),
+    ch ? h("span", `: ${k.amount} channelled, ${Math.max(0, k.rate - k.amount)} to the city`) : null,
   );
   const current = ch
     ? h(
@@ -572,17 +606,19 @@ function chooser(c, k, set, draw) {
     );
   }
   const least = Math.ceil(100 / Math.max(1, th.channel_percent));
-  const lowCulture = k.amount <= 0 ? h("p.warn.culture-low", `At ${k.rate} culture a turn the city would channel nothing (${th.channel_percent}%, rounded down): a channel does nothing until it makes ${least} or more.`) : null;
+  const lowCulture = k.amount <= 0 ? h("p.warn.culture-low", { title: `A channel takes ${th.channel_percent}% of the city's culture, rounded down.` }, `At ${k.rate} culture a turn the city would channel nothing: a channel does nothing until it makes ${least} or more.`) : null;
   // Open while the city channels nothing, folded under a channel; a click on the title is
   // remembered (the screen redraws on every choice).
   return h(
     "details.culture-choose",
     { open: pick.open ?? !ch },
-    h("summary", { onclick: (ev) => (pick.open = !ev.currentTarget.parentElement.open) }, ch ? "Change the channel" : "Channel culture"),
     h(
-      "p.dim.culture-hint",
-      { title: `The effect on each of their cities falls with the square of the distance beyond ${th.full_range} plots.` },
-      `Half its culture, every turn, against one civilization until you change it: in full within ${th.full_range} plots, a quarter at ${2 * th.full_range}, nothing beyond ${th.range}.`,
+      "summary",
+      {
+        title: `${th.channel_percent}% of the city's culture, every turn, against one civilization until you change it: in full within ${th.full_range} plots, falling with the square of the distance beyond (a quarter at ${2 * th.full_range}), nothing beyond ${th.range}.`,
+        onclick: (ev) => (pick.open = !ev.currentTarget.parentElement.open),
+      },
+      ch ? "Change the channel" : "Channel culture",
     ),
     actionRow,
     religionRow,
@@ -616,7 +652,7 @@ function cityLink(m, id, name, { own = false, x = null, y = null } = {}) {
  *  our channels with what they do, the channels we see between others, and what other leaders
  *  remember of our cultural actions. */
 export async function openCulture() {
-  const m = openModal({ title: "Cultural pressure", body: [h("p.dim", "…")], tag: "culture", wide: true, buttons: [{ label: "Close", value: null }] });
+  const m = openModal({ title: "Cultural pressure", body: [h("p.dim", "…")], tag: "culture", wide: true, buttons: [{ label: "Close", value: null }], help: "culture" });
   const load = async () => {
     let r;
     try {
@@ -638,6 +674,7 @@ export async function openCulture() {
 
 function panelParts(m, r, reload) {
   const th = r.thresholds;
+  known = th;
   const stop = async (city) => {
     if (await run({ c: "culture_channel", city, action: null, target: null, religion: null })) reload();
   };
@@ -718,10 +755,6 @@ function panelParts(m, r, reload) {
       )
     : h("p.dim", "Nothing.");
   return [
-    h(
-      "p.dim",
-      `A city may channel half its culture into one standing order aimed at a civilization: Foment Revolt (revolt pressure on its cities in reach: unrest, revolt at ${pts(th.disorder)}, and at ${pts(th.flip)} of one civilization's own pressure the city joins it; never a capital) or Spread Religion (a chance a turn that the religion spreads to one of its cities). The effect falls with the square of the distance beyond ${th.full_range} plots, nothing beyond ${th.range}. No channel is an act of war, and every one is public to the civilizations that have met its caster.`,
-    ),
     h("h4", `Your cities under revolt pressure (${r.pressure.length})`),
     under,
     h("h4", `Aimed at you (${r.aimed.length})`),
@@ -730,8 +763,7 @@ function panelParts(m, r, reload) {
     ours,
     h("h4", `Between others (${r.others.length})`),
     others,
-    h("h4", "What other leaders remember of your culture"),
-    h("p.dim", "Hostile channels are remembered as hostility, a spread of their own state religion as friendship; it fades with time, and their attitude reads it."),
+    h("h4", { title: "Hostile channels are remembered as hostility, a spread of their own state religion as friendship; it fades with time, and their attitude reads it." }, "What other leaders remember of your culture"),
     memories,
   ];
 }

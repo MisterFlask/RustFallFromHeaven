@@ -8,10 +8,10 @@
 
 import { h, toast } from "./dom.js";
 import {
-  uname, roleKey, roleLabel, ROLE_UNITS, ROWS, actionAt, actionText, reachText, specials, groundRules, slotSum, slotCap,
+  uname, roleKey, roleLabel, ROLE_UNITS, ROWS, actionAt, actionText, reachText, specials, slotSum, slotCap,
   placeOf, placeFromList, formationOf, previewForecast, gridOf, slotsUsed, placeUnit, benchUnit, inLine, x100, hpOf, tyLabel,
 } from "./battle_log.js";
-import { loadArt, unitXY, cellXY, cellAt, figBox, pic, faceFlip, headChip, uiIcon, btn, add, FRAME_W, FRAME_H, COLORS } from "./battle_stage.js";
+import { loadArt, unitXY, cellXY, cellAt, figBox, pic, faceFlip, headChip, uiIcon, btn, add, groundLine, FRAME_W, FRAME_H, COLORS } from "./battle_stage.js";
 
 export const NAME = "plan";
 
@@ -398,7 +398,7 @@ function render(ctx) {
       theirsOut.length
         ? h("div.bt-row.small", { title: "Defenders stay in place until annihilated: the plot falls only when none is left" }, h("span.dim", `${theirsOut.length} more wait${theirsOut.length > 1 ? "" : "s"} on the plot`), theirsOut.slice(0, 8).map((f) => tipped(f, headChip(f, pv.sides, { w: 22, h: 22, flip: true }))))
         : null,
-      groundRules(pv.ground, pv.plot).map((t) => h("div.small.gold", t)),
+      groundLine(pv.ground, pv.plot),
     ),
   );
   // ---- bottom left: the pool's other units, the selection
@@ -456,13 +456,13 @@ function forecastPanel(ctx, { mineIn, theirsIn, theirsOut }) {
       h("div.bt-kv", h("span.dim", "You lose"), h("span", h("b.you", (lost[me] / 100).toFixed(1)), h("span.dim", ` of ${mineIn.length} in the line`))),
       h("div.bt-kv", h("span.dim", "They lose"), h("span", h("b.them", (lost[1 - me] / 100).toFixed(1)), h("span.dim", ` of ${theirsIn.length} in the line`))),
       h("div.bt-kv", h("span.dim", "Their line wiped out"), h("b", pct(fc.line_wiped_permille ?? 0))),
-      h("div.bt-kv", h("span.dim", pv.plot?.city ? `${pv.plot.city.name} falls` : "The plot falls"), h(`b${(fc.plot_falls_permille ?? 0) >= 500 ? ".good" : ""}`, pct(fc.plot_falls_permille ?? 0))),
-      fc.attackers_wiped_permille ? h("div.bt-kv", h("span.dim", "Your line wiped out"), h("b.bad", pct(fc.attackers_wiped_permille))) : null,
       h(
-        "div.small.dim",
-        { title: theirsOut.length ? `${theirsOut.length} more of theirs wait on the plot to form the next line.` : "" },
-        theirsOut.length ? "Defenders stay until annihilated: one battle rarely takes a held plot." : "Defenders stay until annihilated: the plot falls when none is left.",
+        "div.bt-kv",
+        { title: `Defenders stay until annihilated: the plot falls when none is left.${theirsOut.length ? ` ${theirsOut.length} more of theirs wait on the plot to form the next line.` : ""}` },
+        h("span.dim", pv.plot?.city ? `${pv.plot.city.name} falls` : "The plot falls"),
+        h(`b${(fc.plot_falls_permille ?? 0) >= 500 ? ".good" : ""}`, pct(fc.plot_falls_permille ?? 0)),
       ),
+      fc.attackers_wiped_permille ? h("div.bt-kv", h("span.dim", "Your line wiped out"), h("b.bad", pct(fc.attackers_wiped_permille))) : null,
     );
   } else if (P.pending) body.push(h("div.bt-row", h("span.bt-h4", "Forecast"), h("span.dim", "estimating…")), h("div.small.dim", "The engine plays this formation many times over."));
   else body.push(h("div.bt-row", h("span.bt-h4", "Forecast")), h("div.small.dim", !P.place.size ? "Put at least one unit in the line." : P.refused ? "No forecast: the engine refuses this formation." : "No forecast for this formation."));

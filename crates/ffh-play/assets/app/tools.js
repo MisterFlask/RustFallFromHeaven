@@ -489,7 +489,7 @@ export function openOptions() {
         },
       }),
       ` ${label}`,
-      ignored ? h("span.dim.small", " (ignored: with engagement combat each attack is one battle)") : null,
+      ignored ? h("span.dim.small", " (ignored in this game)") : null,
     );
   });
   // The map's renderer (not a game option: remembered by this browser): the HD-2D map, the

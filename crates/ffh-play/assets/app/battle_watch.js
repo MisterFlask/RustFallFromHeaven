@@ -327,7 +327,7 @@ function renderControls() {
     h(
       "div.bt-row",
       btn(pixGlyph(W.playing ? GLYPH.pause : GLYPH.play, "#fff8e4", 3), { cls: "sq", key: "play", title: W.playing ? "Pause [Space]" : "Play [Space]", disabled: W.done, onclick: () => control("play") }),
-      btn(["Step ", pixGlyph(GLYPH.step, "#fff8e4", 2)], { title: "The next action [→]", key: "step", disabled: W.done, onclick: () => control("step") }),
+      btn(["Step ", pixGlyph(GLYPH.step, "#fff8e4", 2)], { title: "The next action [→]: one unit acts at a time, the fastest first; its hits land at once", key: "step", disabled: W.done, onclick: () => control("step") }),
       btn(W.done ? "Report" : ["Skip ", pixGlyph(GLYPH.skip, "#fff8e4", 2)], { cls: W.done ? "primary" : "", key: "skip", title: "To the report [Esc]", onclick: () => control("skip") }),
     ),
     h(
@@ -336,7 +336,7 @@ function renderControls() {
       h("span.dim", "Speed"),
       SPEEDS.map((s, k) => btn(`${s}×`, { cls: "sm", on: W.speed === s, key: `speed${s}`, title: `[${k + 1}]`, onclick: () => setSpeed(s) })),
     ),
-    h("div.small.dim", { style: { marginTop: "4px" } }, W.done ? "The battle is over." : "One unit acts at a time, the fastest first; its hits land at once."),
+    W.done ? h("div.small.dim", { style: { marginTop: "4px" } }, "The battle is over.") : null,
   );
 }
 

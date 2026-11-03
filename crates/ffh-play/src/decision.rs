@@ -70,13 +70,17 @@ pub struct DecisionOption {
     /// `settlement` / `yes` / `no` / `accept` / `refuse`.
     pub key: String,
     pub label: String,
+    /// What this choice brings, shown with the button (an event's effects, a tech's help, a cost).
     pub help: String,
+    /// The rules behind the choice, shown only as the button's tooltip (screens keep rules
+    /// reminders out of their text).
+    pub tip: String,
     pub enabled: bool,
 }
 
 impl DecisionOption {
     fn new(key: impl Into<String>, label: impl Into<String>) -> DecisionOption {
-        DecisionOption { key: key.into(), label: label.into(), help: String::new(), enabled: true }
+        DecisionOption { key: key.into(), label: label.into(), help: String::new(), tip: String::new(), enabled: true }
     }
 }
 
@@ -130,6 +134,7 @@ impl Decision {
         for o in &mut self.options {
             resolve(&mut o.label);
             resolve(&mut o.help);
+            resolve(&mut o.tip);
         }
     }
 
@@ -142,7 +147,7 @@ impl Decision {
             "title" => self.title.as_str(),
             "text" => self.text.as_str(),
             "options" => Json::Arr(self.options.iter().map(|o| crate::jobj! {
-                "key" => o.key.as_str(), "label" => o.label.as_str(), "help" => o.help.as_str(), "enabled" => o.enabled,
+                "key" => o.key.as_str(), "label" => o.label.as_str(), "help" => o.help.as_str(), "tip" => o.tip.as_str(), "enabled" => o.enabled,
             }).collect()),
             "advisor" => self.advisor,
             "context" => crate::jobj! {
@@ -212,12 +217,12 @@ pub fn keep_city(g: &Game, p: PlayerId, c: CityId, can_raze: bool, gift_to: Opti
     let mut options = vec![DecisionOption::new("keep", "Keep")];
     if can_raze {
         let mut o = DecisionOption::new("raze", "Raze");
-        o.help = "The city is destroyed.".into();
+        o.tip = "The city is destroyed.".into();
         options.push(o);
     }
     if let Some(to) = gift_to {
         let mut o = DecisionOption::new("gift", format!("Return it to {}", crate::view::player_name(g, to)));
-        o.help = "The city goes back to the civilization with the most culture in it, a teammate, vassal or open-borders partner of yours.".into();
+        o.tip = "The city goes back to the civilization with the most culture in it, a teammate, vassal or open-borders partner of yours.".into();
         options.push(o);
     }
     let key = match advisor {
@@ -270,7 +275,7 @@ pub fn keep_city_choice(d: &Decision, option: usize) -> ConqueredCityChoice {
 pub fn disband_city(g: &Game, p: PlayerId, c: CityId, advisor_disbands: bool) -> Decision {
     let city = &g.cities[c];
     let mut disband = DecisionOption::new("disband", "Disband");
-    disband.help = "The city is removed.".into();
+    disband.tip = "The city is removed.".into();
     Decision {
         id: 0,
         player: p,
@@ -288,9 +293,9 @@ pub fn disband_city(g: &Game, p: PlayerId, c: CityId, advisor_disbands: bool) ->
 pub fn settlement(g: &Game, p: PlayerId, c: CityId, advisor_settlement: bool) -> Decision {
     let city = &g.cities[c];
     let mut as_city = DecisionOption::new("city", "City");
-    as_city.help = format!("A full city that also works the outer ring of plots (radius 3); you may have {} cities.", g.players[p].max_cities);
+    as_city.tip = format!("A full city that also works the outer ring of plots (radius 3); you may have {} cities.", g.players[p].max_cities);
     let mut as_settlement = DecisionOption::new("settlement", "Settlement");
-    as_settlement.help = "Settlements produce no gold, research or culture, nothing can be built in them, and they cost no maintenance (they do not count against the city limit).".into();
+    as_settlement.tip = "Settlements produce no gold, research or culture, nothing can be built in them, and they cost no maintenance (they do not count against the city limit).".into();
     Decision {
         id: 0,
         player: p,
@@ -308,7 +313,7 @@ pub fn settlement(g: &Game, p: PlayerId, c: CityId, advisor_settlement: bool) ->
 pub fn take_control(g: &Game, p: PlayerId, new: PlayerId, advisor_takes: bool) -> Decision {
     let name = crate::view::player_name(g, new);
     let mut yes = DecisionOption::new("yes", "Yes");
-    yes.help = format!("You play {name} from now on; the AI plays your current civilization.");
+    yes.tip = format!("You play {name} from now on; the AI plays your current civilization.");
     // The popup's text by the civilization that appeared (CvEventManager.py).
     let civ = g.player_get_civilization_type(new).map(|c| g.d.type_name(c));
     let text = match civ {
@@ -382,13 +387,15 @@ pub fn loan(g: &Game, p: PlayerId, proposal: &ffh_core::crusade::loan::LoanPropo
         ffh_core::crusade::loan::LoanMission::Defend => format!("defend the borrower against {enemy}"),
     };
     let (give, get) = if lends { (&proposal.lender_gives, &proposal.borrower_gives) } else { (&proposal.borrower_gives, &proposal.lender_gives) };
+    let mut accept = DecisionOption::new("accept", "Accept");
+    accept.tip = "Anything paid each turn runs as long as the loan.".into();
     Decision {
         id: 0,
         player: p,
         kind: DecisionKind::Loan { from: proposal.from },
         title: format!("Troops: {} proposes a loan", crate::view::player_name(g, proposal.from)),
         text: format!(
-            "You {} troops of strength {} for {} turns, to {mission}. You give: {}. You get: {}. Anything paid each turn runs as long as the loan.{}",
+            "You {} troops of strength {} for {} turns, to {mission}. You give: {}. You get: {}.{}",
             if lends { "lend" } else { "borrow" },
             ffh_core::crusade::strength_text(t.strength),
             t.duration,
@@ -396,7 +403,7 @@ pub fn loan(g: &Game, p: PlayerId, proposal: &ffh_core::crusade::loan::LoanPropo
             items(get),
             if lends { " Your advisor picks the units you send." } else { "" }
         ),
-        options: vec![DecisionOption::new("accept", "Accept"), DecisionOption::new("refuse", "Refuse")],
+        options: vec![accept, DecisionOption::new("refuse", "Refuse")],
         advisor: Some(if advisor_accepts { 0 } else { 1 }),
         context: DecisionContext { other_player: Some(proposal.from), ..Default::default() },
     }

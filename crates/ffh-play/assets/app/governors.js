@@ -13,6 +13,41 @@ import { dname, info, turns } from "./state.js";
 import { h } from "./dom.js";
 import { openModal } from "./modals.js";
 import { run } from "./commands.js";
+import { addHelp } from "./help.js";
+
+// ---- the rules, in the help display (help.js; the Governors screen's (i) opens it) ------------
+
+/** The numbers of the rules as the last `governors` query gave them (null before one). */
+let rules = null;
+
+addHelp({
+  id: "governors",
+  group: "Game options",
+  title: "Governors",
+  body: () => [
+    h("p", "With the new game's Governors option on, you rule a few cities directly and a governor from your bench runs every other one: for a governed city you choose only who governs it."),
+    h("h4", "Direct rule"),
+    h(
+      "ul",
+      h("li", `You rule ${rules ? `up to ${rules.slots} cities` : "a few cities"} directly, the capital always among them; they play as cities always have. A new city takes a free direct slot if there is one, else it is governed.`),
+      h("li", `You may rule a governed city directly in place of a directly ruled one (or in a free slot), or hand a directly ruled city to a governor. A city whose rule changed keeps it for ${rules ? turns(rules.cooldown) : "some turns"}.`),
+      h("li", "World wonders, palaces, rituals and settlers are built only in directly ruled cities."),
+    ),
+    h("h4", "Governed cities"),
+    h(
+      "ul",
+      h("li", "The governor chooses what the city builds and which yields its citizens favour (its profile); its traits add their bonuses."),
+      h("li", "An army's requisition goes first, as in any city: you pick the cities on the Armies screen [F5]."),
+      h("li", "A city with no governor of its own is run by an interim governor, with no leanings and no traits, until a candidate appears."),
+    ),
+    h("h4", "The bench"),
+    h(
+      "ul",
+      h("li", "Your governors without a city. Candidates appear now and then while posts are vacant or the bench is short; a newly governed city takes the one that suits it best."),
+      h("li", `Replacing a governor costs the city ${rules ? `${rules.penalty}% of its production and commerce for ${turns(rules.penalty_turns)}` : "part of its production and commerce for a few turns"}; the replaced governor returns to the bench. Giving an interim city a governor costs nothing.`),
+    ),
+  ],
+});
 
 /** "Steward · Frugal, Beloved" with the profile's and traits' help as the title. */
 function governorLabel(gv) {
@@ -64,7 +99,7 @@ export function governanceView(c, reload) {
     return h(
       "div.section.governance",
       h("h4", "Governance"),
-      h("p", `Ruled directly (${k.direct_count} of ${k.slots} cities)${k.capital ? ": the capital always is." : "."}`),
+      h("p", k.capital ? { title: "The capital is always ruled directly." } : {}, `Ruled directly (${k.direct_count} of ${k.slots} cities).`),
       k.capital
         ? null
         : h("button.small", { disabled: !k.ready, title: k.ready ? "A governor will run this city and choose what it builds; its slot is free for another city" : `Not yet${wait}`, onclick: () => act({ c: "govern_hand", city: k.city }) }, "Hand to a governor"),
@@ -98,7 +133,7 @@ export function governanceView(c, reload) {
 
 /** The Governors screen (F9): every city with its rule and governor, and the bench. */
 export async function openGovernors({ openCity } = {}) {
-  const m = openModal({ title: "Governors", body: [h("p.dim", "…")], tag: "governors", wide: true, buttons: [{ label: "Close", value: null }] });
+  const m = openModal({ title: "Governors", body: [h("p.dim", "…")], tag: "governors", wide: true, buttons: [{ label: "Close", value: null }], help: "governors" });
   const load = async () => {
     let r;
     try {
@@ -122,7 +157,7 @@ export async function openGovernors({ openCity } = {}) {
         "tr",
         { "data-city": c.city },
         h("td", h("button.link", { onclick: () => (m.close(null), openCity?.(c.city)), title: "Open the city" }, c.name), c.capital ? h("span.dim", " (capital)") : null, requisitionedBy(c)),
-        h("td", c.governed ? "governed" : "direct", c.cooldown ? h("span.dim", ` · ${turns(c.cooldown)}`) : null),
+        h("td", c.governed ? "governed" : "direct", c.cooldown ? h("span.dim", { title: `Its rule may change again in ${turns(c.cooldown)}` }, ` · ${turns(c.cooldown)}`) : null),
         h(
           "td",
           !c.governed
@@ -136,14 +171,12 @@ export async function openGovernors({ openCity } = {}) {
         h("td.num", `${c.production}`),
       ),
     );
+    rules = { slots: r.slots, cooldown: r.cooldown, penalty: r.penalty, penalty_turns: r.penalty_turns };
     m.setBody(
-      h(
-        "p.dim",
-        `You rule ${direct.length} of ${r.slots} cities directly (the capital always); their status may change again ${turns(r.cooldown)} after a change. A governor chooses what its city builds; an army's requisition goes first (you pick the cities on the Armies screen). World wonders, rituals and settlers are built only in directly ruled cities. Replacing a governor costs the city ${r.penalty}% of its production and commerce for ${turns(r.penalty_turns)}.`,
-      ),
+      h("p.dim", `You rule ${direct.length} of ${r.slots} cities directly.`),
       h("table.governors", h("thead", h("tr", h("th", "City"), h("th", "Rule"), h("th", "Governor"), h("th", "Replace"), h("th", { title: "Production" }, "Prod."))), h("tbody", rows)),
       h("h4", `The bench (${r.bench.length})`),
-      r.bench.length ? h("ul.bench", r.bench.map((b) => h("li", { title: governorTitle(b) }, governorLabel(b)))) : h("p.dim", "Nobody yet: candidates appear now and then while posts are vacant or the bench is short."),
+      r.bench.length ? h("ul.bench", r.bench.map((b) => h("li", { title: governorTitle(b) }, governorLabel(b)))) : h("p.dim", { title: "Candidates appear now and then while posts are vacant or the bench is short." }, "Nobody yet."),
     );
   };
   await load();

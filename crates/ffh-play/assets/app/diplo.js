@@ -52,7 +52,9 @@ export async function openDiplomacy() {
             "td.actions",
             p.alive && p.contact
               ? h("button.small", { "data-trade": p.id, onclick: () => openTrade(p.id, p.name).then(load) }, "Trade…")
-              : h("span.dim", !p.alive ? "dead" : p.crusade_host ? "fights its crusade only (the Crusades advisor)" : "no contact"),
+              : p.crusade_host && p.alive
+                ? h("span.dim", { title: "A crusade's Host fights its crusade only: see the Crusades advisor" }, "crusade")
+                : h("span.dim", !p.alive ? "dead" : "no contact"),
             p.can_declare_war && !p.war ? h("button.small.danger", { "data-war": p.team, onclick: () => declareWar(p).then(load) }, "Declare war") : null,
           ),
           deals.length ? h("td.dim", deals.map((d) => h("div", d))) : h("td"),
@@ -431,7 +433,7 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
     };
     m.setBody(
       leader.el,
-      t.war ? h("p.warn", "You are at war: a deal makes peace, so it must hold the peace treaty (or a capitulation).") : null,
+      t.war ? h("p.warn", { title: "A deal makes peace, so it must hold the peace treaty (or a capitulation)." }, "You are at war.") : null,
       h("div.trade", side(t.we_give, "give", t.they_give, "You give"), side(t.they_give, "get", t.we_give, "They give")),
       summary,
       status,

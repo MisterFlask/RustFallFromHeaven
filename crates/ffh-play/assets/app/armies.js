@@ -18,6 +18,42 @@ import { S, dname, turns } from "./state.js";
 import { h } from "./dom.js";
 import { openModal } from "./modals.js";
 import { run } from "./commands.js";
+import { addHelp } from "./help.js";
+
+// ---- the rules, in the help display (help.js; the Armies screen's (i) opens it) ---------------
+
+/** The turns a recruit waits for its army before it goes to a garrison, as the last `armies`
+ *  query said (null before one). */
+let stallTurns = null;
+
+addHelp({
+  id: "armies",
+  group: "Game options",
+  title: "Armies and garrisons",
+  body: () => [
+    h("p", "With the new game's Armies option on, land combat units serve in armies, which move as one, or in a city's garrison. Heroes, mages, recon units and summons move on their own."),
+    h("h4", "Forming armies"),
+    h(
+      "ul",
+      h("li", "Units outside your cities form armies: select some and choose Form a new army. An army can merge into another; the units on their way to it follow."),
+      h("li", "In a city, an army's units can join its garrison; a garrison unit that leaves the city forms an army again. A disbanded army marches to the nearest of your cities and joins its garrison there."),
+    ),
+    h("h4", "Requisition"),
+    h(
+      "ul",
+      h("li", "An army requisitions soldiers from the cities you pick for it (the Armies screen [F5]) while it is short of its target size; without a target size it requisitions nothing."),
+      h("li", "Each picked city trains one unit for it at a time, first in its queue (placed as your turn ends), in a governed city too: what the city was building waits, with its progress kept."),
+      h("li", "Releasing a city withdraws its order for the army."),
+    ),
+    h("h4", "Recruits on the march"),
+    h(
+      "ul",
+      h("li", "A city sends the land combat units it trains to its default destination (its own garrison unless you choose another city's or an army), or to the destination of each order in its queue."),
+      h("li", "A unit trained for an army or another city's garrison marches there on its own: it shows on the map, but takes no orders until it arrives."),
+      h("li", `Toward an army it advances only while the army is in supply; after ${stallTurns ? turns(stallTurns) : "a few turns"} without progress it goes to the nearest garrison instead.`),
+    ),
+  ],
+});
 
 /** How far a marching recruit is from its destination: "3 turns away", "arrives", "waiting 2
  *  turns" (no progress: its army out of supply, the way blocked) or "no way there now". `m` is a
@@ -105,8 +141,7 @@ function requisitionView(a, act) {
   const pick = h(
     "details.requisition-pick",
     { open: !names.length && !!a.target_size },
-    h("summary", "Requisition from…"),
-    h("p.dim", "While the army is short of its target size, each city you pick trains one unit for it at a time, first in its queue (placed as your turn ends): what the city was building waits, with its progress kept. The unit marches to the army."),
+    h("summary", { title: "While the army is short of its target size, each city you pick trains one unit for it at a time, first in its queue (placed as your turn ends): what the city was building waits, with its progress kept. The unit marches to the army." }, "Requisition from…"),
     h("div.requisition-cities", rows),
     picked.length ? h("button.small", { onclick: () => act({ c: "army_requisition_set", army: a.id, cities: [] }), title: "Release every city (their orders for the army are withdrawn)" }, "Release all") : null,
   );
@@ -116,7 +151,7 @@ function requisitionView(a, act) {
 /** The Armies screen (F5): every army (name, units, place, supply, target size, requisition,
  *  recruits marching to it) and every garrison with the recruits marching to it. */
 export async function openArmies({ select, centerOn } = {}) {
-  const m = openModal({ title: "Armies", body: [h("p.dim", "…")], tag: "armies", wide: true, buttons: [{ label: "Close", value: null }] });
+  const m = openModal({ title: "Armies", body: [h("p.dim", "…")], tag: "armies", wide: true, buttons: [{ label: "Close", value: null }], help: "armies" });
   // The open requisition pickers (by army) stay open when the screen is re-read.
   const opened = new Set();
   const load = async () => {
@@ -216,13 +251,10 @@ export async function openArmies({ select, centerOn } = {}) {
         gr.recruits.length ? h("ul.army-transit", gr.recruits.map((t) => recruitLine(t, { go: goUnit }))) : null,
       ),
     );
+    stallTurns = r.stall_turns ?? null;
     m.setBody(
-      h(
-        "p.dim",
-        `Land combat units serve in armies, which move as one, or in a city's garrison. An army requisitions soldiers from the cities you pick for it while it is short of its target size. A unit trained for an army or another city's garrison marches there on its own: it shows on the map, but takes no orders until it arrives, and toward an army it advances only while the army is in supply (after ${turns(r.stall_turns)} without progress it goes to the nearest garrison). Heroes, mages, recon units and summons move on their own.`,
-      ),
       h("h4", `Armies (${r.armies.length})`),
-      armies.length ? h("div.army-list", armies) : h("p.dim", "None: units outside your cities form armies; select some and choose Form a new army."),
+      armies.length ? h("div.army-list", armies) : h("p.dim", "None."),
       h("h4", "Garrisons"),
       garrisons.length ? h("ul.garrisons", garrisons) : h("p.dim", "No cities."),
     );

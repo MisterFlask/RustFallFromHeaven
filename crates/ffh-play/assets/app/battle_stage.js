@@ -13,7 +13,7 @@
 
 import { SPRITES } from "./iso/sprites.js";
 import { unitSpriteKeys, ISO_TABLES } from "./iso.js";
-import { tyName, tyIdx, ROWS } from "./battle_log.js";
+import { tyName, tyIdx, ROWS, groundTags } from "./battle_log.js";
 
 export const FRAME_W = 1280;
 export const FRAME_H = 800;
@@ -731,6 +731,21 @@ export function add(el, ...children) {
 }
 
 /** A button of the battle screens: its label as plain text (no text hook), `on` lit. */
+/** The battle's ground as one gold line of names ("Hills · Forest"), each name's rules as its
+ *  tooltip (the screens keep rules out of their text). */
+export function groundLine(ground, plot) {
+  const line = document.createElement("div");
+  line.className = "small gold bt-ground";
+  groundTags(ground, plot).forEach((g, i) => {
+    if (i) line.append(" · ");
+    const s = document.createElement("span");
+    s.textContent = g.label;
+    s.title = g.text;
+    line.append(s);
+  });
+  return line;
+}
+
 export function btn(label, { cls = "", title, onclick, on = false, disabled = false, key } = {}) {
   const b = document.createElement("button");
   b.type = "button";

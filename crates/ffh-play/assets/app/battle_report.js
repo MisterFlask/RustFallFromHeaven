@@ -3,8 +3,8 @@
 // escaped gone), whether the plot fell, each side's fallen, escaped and standing, and the whole log.
 
 import { h } from "./dom.js";
-import { finalState, fates, resultWords, logLines, viewerSide, uname, hpOf, xpBy, groundRules, roleLabel } from "./battle_log.js";
-import { loadArt, unitXY, pic, deadPic, faceFlip, animated, headChip, uiIcon, btn, add, partsEl, hpBar } from "./battle_stage.js";
+import { finalState, fates, resultWords, logLines, viewerSide, uname, hpOf, xpBy, roleLabel } from "./battle_log.js";
+import { loadArt, unitXY, pic, deadPic, faceFlip, animated, headChip, uiIcon, btn, add, partsEl, hpBar, groundLine } from "./battle_stage.js";
 
 export const NAME = "report";
 
@@ -84,7 +84,7 @@ function render(ctx) {
     pnl(
       { right: "6px", top: "4px", width: "470px" },
       h("div.bt-row", { style: { justifyContent: "flex-end", gap: "8px" } }, btn("Replay", { key: "replay", title: "Watch it again", onclick: () => ctx.toWatch(L) }), btn("Continue", { cls: "primary", key: "continue", title: "Back to the map [Enter]", onclick: () => ctx.close() })),
-      groundRules(L.ground, L.plot).map((t) => h("div.small.gold", t)),
+      groundLine(L.ground, L.plot),
     ),
   );
   // ---- bottom left: the log
@@ -129,7 +129,7 @@ function fatesPanel(L, me) {
     sideBlock(me),
     sideBlock(1 - me),
     h("div.bt-rule"),
-    h("div.small", o.plot_taken ? h("b.goldlt", L.plot?.city ? `${L.plot.city.name} is taken.` : "The plot is taken.") : h("span", h("b", `${left} defender${left === 1 ? "" : "s"}`), " still on the plot: it holds until none is left.")),
+    h("div.small", o.plot_taken ? h("b.goldlt", L.plot?.city ? `${L.plot.city.name} is taken.` : "The plot is taken.") : h("span", { title: "Defenders stay until annihilated: the plot falls when none is left." }, h("b", `${left} defender${left === 1 ? "" : "s"}`), " still on the plot.")),
   );
 }
 

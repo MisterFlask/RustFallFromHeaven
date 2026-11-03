@@ -240,7 +240,7 @@ export async function openCivics() {
     const summary = p
       ? h(
           "div.civic-summary",
-          p.valid ? h("span", `Revolution: ${p.anarchy ? `${turns(p.anarchy)} of anarchy` : "no anarchy"}, upkeep ${p.upkeep} gold per turn.`) : h("span.warn", p.changed ? "This change is not possible now (the revolution timer, a civic you cannot leave, or anarchy)." : "No change."),
+          p.valid ? h("span", `Revolution: ${p.anarchy ? `${turns(p.anarchy)} of anarchy` : "no anarchy"}, upkeep ${p.upkeep} gold per turn.`) : (p.changed ? h("span.warn", { title: "The revolution timer, a civic you cannot leave, or anarchy" }, "This change is not possible now.") : h("span.warn", "No change.")),
         )
       : h("div.civic-summary.dim", `Upkeep ${c.upkeep} gold per turn.${c.anarchy ? ` Anarchy: ${turns(c.anarchy)}.` : ""}${c.revolution_timer ? ` Next revolution in ${turns(c.revolution_timer)}.` : ""} Pick civics to see the change.`);
     m.setBody(h("div.civics", columns), summary);
@@ -282,12 +282,6 @@ function civicTip(x) {
 // ---------------------------------------------------------------------------------------------
 // Religion (F7).
 
-/** "first to discover <tech>" for a religion not founded yet (C++ `buildFoundReligionString`). */
-function foundedBy(religion) {
-  const t = info("ReligionType", religion)?.tech;
-  return h("span.dim", t !== null && t !== undefined ? `not founded: the first to discover ${dname("TechType", t)} founds it` : "not founded");
-}
-
 /** The rich tooltip of row `x` of the `religions` query: what the religion does, and how it is
  *  founded. */
 function religionTip(x) {
@@ -320,7 +314,7 @@ export async function openReligion() {
         "tr",
         { class: r.state_religion === x.religion ? "state" : "", "data-religion": x.religion },
         h("td", { tip: () => religionTip(x) }, typeIconOf("religion", x.religion, 16), dname("ReligionType", x.religion), r.state_religion === x.religion ? h("span.badge", "state religion") : null),
-        h("td", x.founded ? "founded" : foundedBy(x.religion)),
+        h("td", x.founded ? "founded" : h("span.dim", "not founded")),
         h("td", x.holy_city !== null ? (S.cities.get(x.holy_city)?.name ?? `city ${x.holy_city}`) : x.our_holy_city ? "yours" : h("span.dim", "-")),
         h("td", String(x.our_cities)),
         h("td", x.can_convert ? h("button.small", { onclick: () => convert(x.religion) }, "Convert") : null),
@@ -372,7 +366,7 @@ export function openFinance() {
           "table.kv.finance",
           b.income.map(([what, n]) => h("tr", h("th", `+${n}`), h("td", what))),
           b.costs.map(([what, n]) => h("tr", h("th.warn", `−${n}`), h("td", what))),
-          h("tr.total", h("th", `${my.gold_rate >= 0 ? "+" : ""}${my.gold_rate}`), h("td", my.gold_parts.research_fixed ? "a turn (research cannot be adjusted: only a loss counts)" : "a turn")),
+          h("tr.total", my.gold_parts.research_fixed ? { title: "Research cannot be adjusted: only a loss counts." } : {}, h("th", `${my.gold_rate >= 0 ? "+" : ""}${my.gold_rate}`), h("td", "a turn")),
         )
       : null;
     m.setBody(
