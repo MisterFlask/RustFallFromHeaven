@@ -1,27 +1,26 @@
 // Engagement combat in the client (docs/ENGAGEMENTS.md; docs/HUMAN.md, "Engagement combat"): what
 // the map, the panels and the screens need besides the battle screens themselves (battle.js and
-// its modules, loaded on first use): whether the game has engagements, a unit's battle numbers,
+// its modules, loaded on first use): whether an attack is a battle, a unit's battle numbers,
 // the view's battles (`view.battles`) as the map's markers, opening a battle's report or the plan
-// of an attack, the combat flash from a battle's summary, and the toast of a battle's message with
-// its links.
+// of an attack, the combat flash from a battle's summary, the toast of a battle's message with
+// its links, and the battles shown as they come: every battle you fight opens the battle screens
+// (your attacks, and the attacks on you during the other players' turns, one after the other).
 //
 // A battle's summary (the view's `battles`, the turn report's `engagements`, the `engage` and
 // `move` replies' `battle`): battle_log.js's header lists it.
 
-import { S, dname, info, tname } from "./state.js";
+import * as api from "./api.js";
+import { S, dname, info, tname, emit } from "./state.js";
 import { h, toastNode } from "./dom.js";
 import { render as markup } from "./markup.js";
 import { plotIndex } from "./tiles.js";
 
-/** Whether this game has engagement combat (the view says so). */
-export const engagementsOn = () => !!S.view?.engagements;
-
 /** Whether an attack of `units` (ids, the selection: its head decides, as the rules' group test
- *  does) on plot (x, y) is fought as a battle (the rules' `engage_applies`): the game has
- *  engagement combat, the units are land units (one carried on a ship too: an amphibious attack)
- *  and the plot is land. Ships against ships and air units keep the duel. */
+ *  does) on plot (x, y) is fought as a battle (the rules' `engage_applies`): the units are land
+ *  units (one carried on a ship too: an amphibious attack) and the plot is land. Ships against
+ *  ships and air units keep the duel. */
 export function battleTerrain(units, x, y) {
-  if (!engagementsOn() || !S.map) return false;
+  if (!S.map) return false;
   const head = S.units?.get(units?.[0]);
   if (!head || tname("DomainType", info("UnitType", head.type)?.domain) !== "DOMAIN_LAND") return false;
   const i = plotIndex(S.map, x, y);
@@ -53,6 +52,104 @@ export async function openPlan(by, to) {
 export async function openReport(id, { report = false } = {}) {
   const m = await battle();
   await m.openBattleReport(id, { report });
+}
+
+// ---------------------------------------------------------------------------------------------
+// Battles shown as they come (the owner's request, 2026-11-03): every battle the player fights
+// opens the battle screens, watched or straight to its report as the player chose on the plan
+// (its Watch / Report switch): an attack made without the plan (a move, Shift+right-click) when
+// its reply comes, and the battles fought against the player during the other players' turns when
+// the player's turn comes, oldest first, one after the other. The deferred popups wait for them.
+
+/** Battle reports this page has shown (or queued), by id: none shows twice. */
+let shownBattles = new Set();
+let battleQueue = [];
+let pumping = false;
+/** Whether battles are not shown as they come (main.js: while the AI plays the player's slot,
+ *  spectating or observing, which would stop at every battle). */
+let muted = () => false;
+
+/** Sets when battles are not shown as they come (`f()` true: they are only listed). */
+export function muteBattlesWhen(f) {
+  muted = f;
+}
+
+/** Whether battles are not shown as they come now. */
+export function battlesMuted() {
+  return !!muted();
+}
+
+/** Another game (new or loaded): its battles are all new to this page. */
+export function resetShownBattles() {
+  shownBattles = new Set();
+  battleQueue = [];
+}
+
+/** Battle report `id` is on the battle screens already (the plan's own attack). */
+export function battleShown(id) {
+  if (id !== null && id !== undefined) shownBattles.add(id);
+}
+
+/** Of the battle summaries `list` (the turn report's `engagements`, newest first), the ids to show
+ *  now: those with a log (older ones keep only their summary), not shown yet, oldest first. */
+export function battlesToShow(list, shown = shownBattles) {
+  return (list ?? [])
+    .filter((b) => b?.has_log !== false && b?.id !== null && b?.id !== undefined && !shown.has(b.id))
+    .map((b) => b.id)
+    .sort((a, b) => a - b);
+}
+
+/** Shows battle reports `ids` on the battle screens, after those already waiting (while muted,
+ *  they only count as shown). */
+export function showBattles(ids) {
+  for (const id of ids ?? []) {
+    if (id === null || id === undefined || shownBattles.has(id) || battleQueue.includes(id)) continue;
+    if (battlesMuted()) shownBattles.add(id);
+    else battleQueue.push(id);
+  }
+  pumpBattles();
+}
+
+/** Whether battles are on their way to the screens (the popups wait for them). */
+export function battlesPending() {
+  return pumping || battleQueue.length > 0;
+}
+
+/** Opens the waiting battles one at a time: each when the screens are free (another battle there,
+ *  the plan's attack, keeps it waiting: `battle-closed` resumes). */
+export async function pumpBattles() {
+  if (pumping) return;
+  pumping = true;
+  let handled = false;
+  try {
+    while (battleQueue.length) {
+      if (document.body.classList.contains("battle-open")) break;
+      const id = battleQueue.shift();
+      if (shownBattles.has(id)) continue;
+      shownBattles.add(id);
+      handled = true;
+      let log;
+      try {
+        log = await api.query("battle_log", { report: id });
+      } catch (e) {
+        console.warn(`battle #${id}: its log:`, e?.detail ?? e?.message ?? e);
+        continue;
+      }
+      const m = await battle();
+      await new Promise((resolve) => {
+        Promise.resolve(m.openBattleLog(log, { report: m.prefs.get("watch", "watch") === "report", onClose: resolve })).catch((e) => {
+          console.warn(`battle #${id}: the screens:`, e);
+          m.closeBattle();
+          resolve();
+        });
+      });
+    }
+  } finally {
+    pumping = false;
+  }
+  // The popups and the messages held back for the battles may show now (also when a battle's log
+  // could not be read and its screens never opened).
+  if (handled && !battleQueue.length) emit("battle-closed");
 }
 
 // ---------------------------------------------------------------------------------------------

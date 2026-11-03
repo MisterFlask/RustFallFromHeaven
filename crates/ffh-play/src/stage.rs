@@ -605,12 +605,9 @@ impl StagedEngagement {
 pub fn engagement(dir: &Path) -> Result<StagedEngagement, String> {
     use ffh_core::engagement::WarTest;
     let d = ffh_data::global();
-    let mut s = duel_with(dir, 11, 4, None, &[GameOptionType::GAMEOPTION_ARMIES, GameOptionType::GAMEOPTION_ENGAGEMENTS])?;
+    let mut s = duel_with(dir, 11, 4, None, &[GameOptionType::GAMEOPTION_ARMIES])?;
     let h = s.human;
     let g = &mut s.g;
-    if !g.engagements_on() {
-        return Err("engagements are not on".into());
-    }
     let capital = *g.players[h].cities.first().ok_or("no city of the human's")?;
     let (city, owner) = g.cities.iter().find(|(_, c)| c.owner != h).map(|(id, c)| (id, c.owner)).ok_or("no AI city")?;
     g.city_set_population(city, 3);

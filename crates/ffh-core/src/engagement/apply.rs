@@ -167,6 +167,13 @@ impl Game {
             }
         }
 
+        // Not in C++: crusade loans (docs/CRUSADE.md): the lent units that fought are engaged, and
+        // each kill below credits a lent killer of the crusade's enemy, as after a duel.
+        if !self.crusades.is_empty() {
+            let fought: Vec<UnitId> = e.units.iter().enumerate().filter(|&(i, _)| !e.sat_out[i]).map(|(_, &u)| u).collect();
+            self.crusade_on_engagement(&fought);
+        }
+
         // 3. Per kill, in kill order.
         let mut convert_ok = vec![false; n];
         let mut last_kill = vec![usize::MAX; n];
@@ -183,6 +190,9 @@ impl Game {
                 continue;
             }
             self.engage_kill_bookkeeping(ku, vu, e.side(vi) == Side::Attacker, to);
+            if !self.crusades.is_empty() {
+                self.crusade_on_combat(ku, vu, false, true);
+            }
             if self.telemetry.on() {
                 self.tel_engage_kill(ku, vu);
             }

@@ -19,7 +19,7 @@ import { openCity, ownCities, stepCityScreen } from "./city.js";
 import * as empire from "./empire.js";
 import { openCulture } from "./culture.js";
 import { openArmies } from "./armies.js";
-import { engagementsOn, battleMarkers, openReport } from "./engagements.js";
+import { battleMarkers, openReport, showBattles, battleShown, battlesToShow, battlesPending, pumpBattles, resetShownBattles, muteBattlesWhen } from "./engagements.js";
 import { openGovernors } from "./governors.js";
 import { openDiplomacy, checkMoments, resetMoments } from "./diplo.js";
 import * as crusade from "./crusade.js";
@@ -201,6 +201,8 @@ async function refreshView(st) {
     // such object") and, open, held back the new game's own popups. The popup loop then
     // carries on with this game's queue.
     for (const tag of GAME_DIALOGS) closeTag(tag);
+    // Its battles are new to this page.
+    resetShownBattles();
   }
   setView(view);
   if (newGame || !S.map || st.map_rev !== S.map.map_rev) {
@@ -269,7 +271,7 @@ function updateMarkers() {
   const flags = (S.flags ?? []).filter((f) => Array.isArray(f.plot)).map((f) => ({ x: f.plot[0], y: f.plot[1], n: f.flag }));
   // Engagement combat: your battles of this turn and the last, a click opens one (not while
   // observing: the view's battles are the followed player's).
-  const battles = engagementsOn() && !observing() ? battleMarkers() : [];
+  const battles = !observing() ? battleMarkers() : [];
   mapView.setOverlay({ events, flags, battles });
 }
 
@@ -291,6 +293,8 @@ function centerOnStart() {
  *  deferred popups. */
 async function onControl(st) {
   if (st.turn !== lastTurn) {
+    // A turn this page saw come (not the first control point after a load or a reload).
+    const turnCame = lastTurn !== null;
     lastTurn = st.turn;
     resetDismissed(st.turn);
     try {
@@ -298,6 +302,12 @@ async function onControl(st) {
     } catch {
       S.report = null;
     }
+    // Engagement combat: the battles fought since the player's last turn began open the battle
+    // screens, oldest first (those this page showed already, the player's own attacks, do not);
+    // after a load or a reload they are only listed (the turn report's Battles, with Watch).
+    const ids = battlesToShow(S.report?.engagements);
+    if (turnCame) showBattles(ids);
+    else ids.forEach(battleShown);
     if (S.report && ((S.report.lines?.length ?? 0) > 0 || (S.report.messages?.length ?? 0) > 0)) {
       setTab("report");
       // A folded panel (phones fold it): its tab says there is news.
@@ -318,8 +328,9 @@ async function runPopups() {
   try {
     for (;;) {
       // The spectator mode leaves the questions to the AI (it plays every turn).
-      // The battle screens (engagement combat) hold the popups until they close.
-      if (S.status?.phase !== "human" || modalOpen() || sending() || tools.spectating() || document.body.classList.contains("battle-open")) break;
+      // The battle screens (engagement combat) hold the popups until they close, and the battles
+      // waiting to show until they have shown.
+      if (S.status?.phase !== "human" || modalOpen() || sending() || tools.spectating() || document.body.classList.contains("battle-open") || battlesPending()) break;
       const q = popupQueue(S.view?.pending, S.dismissed, S.status.turn);
       if (!q.length) break;
       const p = q[0];
@@ -695,7 +706,11 @@ function wire() {
   });
   on("select-ready", () => units.selectNext());
   on("modals-closed", () => S.status?.phase === "human" && runPopups());
-  on("battle-closed", () => S.status?.phase === "human" && runPopups());
+  // A battle closed: the next waiting battle (one held back by the plan's), then the popups.
+  on("battle-closed", () => {
+    pumpBattles();
+    if (S.status?.phase === "human") runPopups();
+  });
   on("open-city", (id) => openCity(id));
   on("open-screen", (name) => openScreen(name));
   on("city-overlay", (o) => mapView.cityOverlay(o));
@@ -726,6 +741,8 @@ function gameRunning() {
 
 async function boot() {
   wire();
+  // Battles open the battle screens as they come, except while the AI plays the player's slot.
+  muteBattlesWhen(() => tools.spectating() || observing());
   // The title screen first: it shows while the client connects and stays when there is no game.
   title.initTitle({
     newGame: () => screens.newGame({ noGame: !gameRunning() }),
@@ -926,5 +943,5 @@ window.addEventListener("ffh:r3d-slow", (ev) => {
   toast(`The HD-2D map draws slowly on this GPU${gpu}, so it is drawn at half resolution. If this computer has a faster graphics card, set your browser to use it (Windows: Settings → System → Display → Graphics → your browser → High performance), or pick the isometric map in Tools → Options.`, "info", 20000);
 });
 
-window.ffh = { S, get mapView() { return mapView; }, units, screens, empire, tools, api, emit, ready: false, tab: currentTab, setLayer, openScreen, look, setRenderer };
+window.ffh = { S, get mapView() { return mapView; }, units, screens, empire, tools, api, emit, ready: false, tab: currentTab, setLayer, openScreen, look, setRenderer, battlesPending };
 boot();

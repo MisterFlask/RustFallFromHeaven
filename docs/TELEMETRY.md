@@ -95,13 +95,13 @@ Combat odds are the rules' `getCombatOdds` as the battle begins, after defensive
 the true chance, not the AI's own estimate. Ranged, air and collateral damage are not counted as
 combats.
 
-**Engagements** (`GAMEOPTION_ENGAGEMENTS`, docs/ENGAGEMENTS.md: formation battles) replace the
+**Engagements** (docs/ENGAGEMENTS.md: formation battles, always on since 2026-11-03) replace the
 duel's `combat` record for land attacks: `attack`, `attack_vs`, `defend` and `defend_in_city` count
 every committed unit (an attacker standing at the end: `win`; killed: `loss`; withdrawn or sat out:
 `withdraw`; a defender standing or sat out: `win`), so the duel's reports stay comparable;
 `attack_odds` is not counted (an engagement has no duel odds). Each kill, a missile strike's
-included, counts `kill_by`, the war's kills and a summon's kills, as a duel won does. Ships, air
-units and every attack with the option off keep the duel's `combat` record.
+included, counts `kill_by`, the war's kills and a summon's kills, as a duel won does. Ships and
+air units keep the duel's `combat` record.
 
 **Spells** (`players.<p>.spells.<SPELL>`): availability, use and effect, per player and spell.
 

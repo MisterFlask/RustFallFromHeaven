@@ -621,11 +621,9 @@ impl Report {
         // Engagement combat: the battles the human fought since its last turn began (its own
         // attacks of that turn, then those of the others; newest first).
         let mut engagements = Vec::new();
-        if g.engagements_on() {
-            for r in crate::view::battles::reports_since(v, before.turn) {
-                lines.push(crate::view::battles::report_line(v, r));
-                engagements.push(crate::view::battles::summary_json(v, r));
-            }
+        for r in crate::view::battles::reports_since(v, before.turn) {
+            lines.push(crate::view::battles::report_line(v, r));
+            engagements.push(crate::view::battles::summary_json(v, r));
         }
 
         let items = crate::jobj! {

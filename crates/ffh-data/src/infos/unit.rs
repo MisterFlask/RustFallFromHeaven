@@ -729,7 +729,7 @@ pub struct UnitInfo {
     pub ai_block_perm_defense: bool,
     /// C++ `isAIblockPatrol()`.
     pub ai_block_patrol: bool,
-    // ---- This game's own: engagement combat (GAMEOPTION_ENGAGEMENTS) ----
+    // ---- This game's own: engagement combat (docs/ENGAGEMENTS.md) ----
     /// `CombatRole`: the unit's engagement role in place of the one its unit combat gives it
     /// (`GameData::type_combat_role`).
     pub combat_role: Option<CombatRoleType>,

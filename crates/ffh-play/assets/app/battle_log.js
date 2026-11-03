@@ -69,7 +69,7 @@
 //     optional, newer kinds are ignored)
 //   summary: the report's summary (below)
 //
-// Battle summary (`battle_reports` -> {on, reports: [summary], newest first}; the view's `battles`, this game turn's
+// Battle summary (`battle_reports` -> {reports: [summary], newest first}; the view's `battles`, this game turn's
 //   and the last; the turn report's `engagements`; the `engage` reply's `battle`): {id, turn, x, y, from: {x, y}, place
 //   (the city's name, or null), city, viewer_side, plot_taken, city_captured, rounds, defenders_left, has_log (false:
 //   only the summary is kept), sides: [{player, civ, label, slots, lanes, used (the slots its line filled),

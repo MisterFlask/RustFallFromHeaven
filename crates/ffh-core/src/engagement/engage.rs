@@ -911,6 +911,9 @@ impl Game {
         self.unit_collateral_combat_ex(m, to, None, true);
         if let Some(v) = killed {
             self.engage_kill_bookkeeping(m, v, false, to);
+            if !self.crusades.is_empty() && self.units.contains(m) && self.units.contains(v) {
+                self.crusade_on_combat(m, v, false, true);
+            }
             if self.telemetry.on() && self.units.contains(m) && self.units.contains(v) {
                 self.tel_engage_kill(m, v);
             }
@@ -994,8 +997,7 @@ mod tests {
         let d = ffh_data::global();
         let mut setup = GameSetup::standard(d, 2, "WORLDSIZE_DUEL", 5);
         setup.options[GameOptionType::GAMEOPTION_ARMIES] = true;
-        setup.options[GameOptionType::GAMEOPTION_ENGAGEMENTS] = true;
-        let mut g = Game::new(d, setup);
+            let mut g = Game::new(d, setup);
         g.game_init();
         let flat = |g: &Game, p: PlotIdx| {
             let plot = &g.map.plots[p];

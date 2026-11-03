@@ -1,4 +1,4 @@
-//! Engagement combat's unit stats (GAMEOPTION_ENGAGEMENTS, phase 6 step 4; `engagement/stats.rs`):
+//! Engagement combat's unit stats (phase 6 step 4; `engagement/stats.rs`):
 //! roles and HP, and each term of A and Dv per hit on the side the plan's table puts it (4.2: G1,
 //! Q1, Q2, Q9), against numbers worked out by hand from the unit data, on concrete units and plots.
 
@@ -23,7 +23,6 @@ fn world() -> World {
     let d = ffh_data::global();
     let mut setup = GameSetup::standard(d, 2, "WORLDSIZE_DUEL", 5);
     setup.options[GameOptionType::GAMEOPTION_ARMIES] = true;
-    setup.options[GameOptionType::GAMEOPTION_ENGAGEMENTS] = true;
     let mut g = Game::new(d, setup);
     g.game_init();
     let (p0, p1) = (PlayerId(0), PlayerId(1));

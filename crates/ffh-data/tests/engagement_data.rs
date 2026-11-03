@@ -1,4 +1,4 @@
-//! Data spot-checks for engagement combat (this game's own rules, GAMEOPTION_ENGAGEMENTS): the
+//! Data spot-checks for engagement combat (this game's own rules, docs/ENGAGEMENTS.md): the
 //! roles of formation battles (Units/CIV4CombatRoleInfos.xml), the role each unit type derives,
 //! the large units, the casters'
 //! damage spells, the plots' slot changes and the ENGAGEMENT_* defines. Expected values are the
@@ -19,14 +19,6 @@ fn role(name: &str) -> CombatRoleType {
 fn unit_role(name: &str) -> &'static str {
     let d = d();
     d.unit_roles[d.t::<UnitType>(name)].map_or("-", |r| d.type_name(r))
-}
-
-#[test]
-fn the_option_is_visible_and_off_by_default() {
-    let o = &d().game_options[GameOptionType::GAMEOPTION_ENGAGEMENTS];
-    assert_eq!(o.base.type_, "GAMEOPTION_ENGAGEMENTS");
-    assert!(o.visible && !o.default);
-    assert_eq!(d().text.get(&o.base.description), "Engagements");
 }
 
 /// A row: `n` actions of `kind`.

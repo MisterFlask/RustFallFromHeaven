@@ -174,66 +174,64 @@ pub fn check(g: &Game) {
     // used more slots than it had or fewer than its units, every committed unit is accounted for
     // (sat out, fallen, escaped or standing), a taken plot has no defender left; a logged report's
     // fighters stand inside their side's lanes and rows, one per cell, and match its counts.
-    if g.engagements_on() {
-        let max_hp = g.d.defines.max_hit_points;
-        for (u, unit) in g.units.iter() {
-            if unit.combat_unit.is_some() || unit.attack_plot_x != ffh_core::defs::INVALID_PLOT_COORD {
-                fail(format!("unit {u:?} of player {} is still in combat after the turn", unit.owner.0));
+    let max_hp = g.d.defines.max_hit_points;
+    for (u, unit) in g.units.iter() {
+        if unit.combat_unit.is_some() || unit.attack_plot_x != ffh_core::defs::INVALID_PLOT_COORD {
+            fail(format!("unit {u:?} of player {} is still in combat after the turn", unit.owner.0));
+        }
+        if unit.damage >= max_hp && !unit.death_delay {
+            fail(format!("unit {u:?} of player {} is alive at {} damage", unit.owner.0, unit.damage));
+        }
+    }
+    let max_rounds = g.d.defines.engagement_rounds;
+    for r in &g.battle_reports {
+        if r.outcome.rounds > max_rounds || r.outcome.rounds < 0 {
+            fail(format!("battle report #{} ran {} rounds", r.id, r.outcome.rounds));
+        }
+        if r.outcome.result == ffh_core::engagement::EngageResult::Taken && r.outcome.defenders_left != 0 {
+            fail(format!("battle report #{}: the plot fell with {} defenders left", r.id, r.outcome.defenders_left));
+        }
+        for (i, s) in r.sides.iter().enumerate() {
+            if s.sat_out + s.fallen + s.escaped + s.standing != s.committed || s.committed <= 0 {
+                fail(format!(
+                    "battle report #{} side {i}: {} committed, {} sat out, {} fell, {} escaped, {} standing",
+                    r.id, s.committed, s.sat_out, s.fallen, s.escaped, s.standing
+                ));
             }
-            if unit.damage >= max_hp && !unit.death_delay {
-                fail(format!("unit {u:?} of player {} is alive at {} damage", unit.owner.0, unit.damage));
+            if s.lost.iter().map(|(_, n)| n).sum::<i32>() != s.fallen {
+                fail(format!("battle report #{} side {i}: {} fell, its losses by type {:?}", r.id, s.fallen, s.lost));
+            }
+            if s.used > s.slots || s.used < s.committed {
+                fail(format!("battle report #{} side {i}: {} units filled {} of {} slots", r.id, s.committed, s.used, s.slots));
             }
         }
-        let max_rounds = g.d.defines.engagement_rounds;
-        for r in &g.battle_reports {
-            if r.outcome.rounds > max_rounds || r.outcome.rounds < 0 {
-                fail(format!("battle report #{} ran {} rounds", r.id, r.outcome.rounds));
-            }
-            if r.outcome.result == ffh_core::engagement::EngageResult::Taken && r.outcome.defenders_left != 0 {
-                fail(format!("battle report #{}: the plot fell with {} defenders left", r.id, r.outcome.defenders_left));
-            }
+        if let Some(log) = &r.log {
             for (i, s) in r.sides.iter().enumerate() {
-                if s.sat_out + s.fallen + s.escaped + s.standing != s.committed || s.committed <= 0 {
+                let slots = &log.slots[i];
+                if s.slots != slots.total + slots.river_only || s.lanes != log.lanes[i] as i32 {
                     fail(format!(
-                        "battle report #{} side {i}: {} committed, {} sat out, {} fell, {} escaped, {} standing",
-                        r.id, s.committed, s.sat_out, s.fallen, s.escaped, s.standing
+                        "battle report #{} side {i} has {} slots and {} lanes, its log {} and {}",
+                        r.id,
+                        s.slots,
+                        s.lanes,
+                        slots.total + slots.river_only,
+                        log.lanes[i]
                     ));
                 }
-                if s.lost.iter().map(|(_, n)| n).sum::<i32>() != s.fallen {
-                    fail(format!("battle report #{} side {i}: {} fell, its losses by type {:?}", r.id, s.fallen, s.lost));
+                let placed: Vec<&ffh_core::engagement::report::LogFighter> = log.fighters.iter().filter(|f| f.side.index() == i && f.place.is_some()).collect();
+                if placed.len() as i32 != s.committed || log.fighters.iter().any(|f| f.place.is_some() != f.fate.is_some()) {
+                    fail(format!("battle report #{} side {i}: {} committed, {} placed fighters in its log", r.id, s.committed, placed.len()));
                 }
-                if s.used > s.slots || s.used < s.committed {
-                    fail(format!("battle report #{} side {i}: {} units filled {} of {} slots", r.id, s.committed, s.used, s.slots));
-                }
-            }
-            if let Some(log) = &r.log {
-                for (i, s) in r.sides.iter().enumerate() {
-                    let slots = &log.slots[i];
-                    if s.slots != slots.total + slots.river_only || s.lanes != log.lanes[i] as i32 {
-                        fail(format!(
-                            "battle report #{} side {i} has {} slots and {} lanes, its log {} and {}",
-                            r.id,
-                            s.slots,
-                            s.lanes,
-                            slots.total + slots.river_only,
-                            log.lanes[i]
-                        ));
+                let mut cells = std::collections::BTreeSet::new();
+                for f in placed {
+                    let Some((lane, row)) = f.place else { continue };
+                    let last = lane as i32 + f.large as i32;
+                    if row as usize >= ffh_core::data::ROWS || last >= log.lanes[i] as i32 {
+                        fail(format!("battle report #{} side {i}: unit {:?} stands off its grid at {:?}", r.id, f.unit, f.place));
                     }
-                    let placed: Vec<&ffh_core::engagement::report::LogFighter> = log.fighters.iter().filter(|f| f.side.index() == i && f.place.is_some()).collect();
-                    if placed.len() as i32 != s.committed || log.fighters.iter().any(|f| f.place.is_some() != f.fate.is_some()) {
-                        fail(format!("battle report #{} side {i}: {} committed, {} placed fighters in its log", r.id, s.committed, placed.len()));
-                    }
-                    let mut cells = std::collections::BTreeSet::new();
-                    for f in placed {
-                        let Some((lane, row)) = f.place else { continue };
-                        let last = lane as i32 + f.large as i32;
-                        if row as usize >= ffh_core::data::ROWS || last >= log.lanes[i] as i32 {
-                            fail(format!("battle report #{} side {i}: unit {:?} stands off its grid at {:?}", r.id, f.unit, f.place));
-                        }
-                        for l in lane as i32..=last {
-                            if !cells.insert((l, row)) {
-                                fail(format!("battle report #{} side {i}: two units in lane {l} row {row}", r.id));
-                            }
+                    for l in lane as i32..=last {
+                        if !cells.insert((l, row)) {
+                            fail(format!("battle report #{} side {i}: two units in lane {l} row {row}", r.id));
                         }
                     }
                 }

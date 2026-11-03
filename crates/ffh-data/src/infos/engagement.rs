@@ -1,5 +1,5 @@
 //! This game's own info classes for engagement combat (not FFH2's; phase 6 of the owner's spec,
-//! `GAMEOPTION_ENGAGEMENTS`, docs/ENGAGEMENTS.md): `Units/CIV4CombatRoleInfos.xml` (the roles of
+//! docs/ENGAGEMENTS.md): `Units/CIV4CombatRoleInfos.xml` (the roles of
 //! formation battles, revision 4). The role of each unit type is derived at load
 //! (`GameData::unit_roles`, lib.rs).
 

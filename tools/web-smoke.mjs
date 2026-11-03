@@ -301,8 +301,18 @@ async function answerPopups(log = true) {
   // Done once no dialog shows twice in a row (the next popup comes after the last answer's
   // command and view refresh).
   let calm = 0;
-  for (let k = 0; k < 16; k++) {
+  for (let k = 0; k < 40; k++) {
     await new Promise((r) => setTimeout(r, 300));
+    // A battle fought at the turn's start opens the battle screens (engagement combat): watched,
+    // then its report, each closed with Escape; the popups wait for them.
+    if (await b.eval(`!!document.getElementById("battle") || !!window.ffh?.battlesPending?.()`)) {
+      calm = 0;
+      if (await b.eval(`!!document.getElementById("battle") && !!window.ffh?.battle?.screen && window.ffh.battle.screen !== "plan"`)) {
+        await b.key("Escape");
+        if (log && !(await b.eval(`!!document.getElementById("battle")`))) steps.push("closed a battle's screens");
+      }
+      continue;
+    }
     const titles = await modalTitles();
     if (!titles.length) {
       if (++calm >= 2) return;
@@ -1220,7 +1230,9 @@ async function stagedAttack(bin, saves) {
   await b.move(e.x, e.y);
   await until2(`!!document.querySelector("#mapwrap .tooltip .tip-combat .odds")`, "the attack odds in the tooltip");
   const odds = await b.eval(`document.querySelector("#mapwrap .tooltip .tip-combat").textContent`);
-  if (!/Odds \d+(\.\d)?%/.test(odds)) throw new Error(`the odds tooltip: ${odds}`);
+  // A land attack is a formation battle: the tooltip says so, with the duel's odds of the
+  // strongest pair as a rough guide.
+  if (!/Battle: \d+ of yours can fight/.test(odds) || !/odds[^%]*\d+(\.\d)?%/i.test(odds)) throw new Error(`the odds tooltip: ${odds}`);
   await shot("attack-odds");
   // Watch for the combat flash (units.js flashCombat -> mapView.flashTile) across the resolution:
   // count the calls. Polling `mapView.flashes` missed it when a slow software-rendered frame held
@@ -1233,12 +1245,19 @@ async function stagedAttack(bin, saves) {
     mv.flashTile = function (...a) { window.__flashes++; return orig.apply(this, a); };
     window.__unflash = () => { if (own) mv.flashTile = orig; else delete mv.flashTile; };
   })()`);
+  // Shift+right-click: the attack at once, in the rules' formation (no plan).
+  await b.keyDown("Shift");
   await b.mouse(e.x, e.y, "right");
+  await b.keyUp("Shift");
   await until2(`(() => { const S = window.ffh.S; const me = S.units.get(${st.unit}); return !S.units.has(${st.enemy}) || !me || me.hp < me.max_hp; })()`, "the combat");
   const flashed = await b.eval(`(() => { const n = window.__flashes || 0; window.__unflash(); return n; })()`);
   if (!flashed) throw new Error("no combat flash was shown on the attack");
   const won = await S(`!S.units.has(${st.enemy})`);
-  steps.push(`attacked from the odds tooltip (${odds.replace(/\s+/g, " ").slice(0, 40)}…): ${won ? "won" : "lost or damaged"}; combat flash shown`);
+  // An attack without the plan (Shift+right-click, a move) opens the battle screens by itself
+  // (watched, the default).
+  await battleScreen("watch", "the battle screens opened by the attack");
+  await closeBattle();
+  steps.push(`attacked from the odds tooltip (${odds.replace(/\s+/g, " ").slice(0, 40)}…): ${won ? "won" : "lost or damaged"}; combat flash shown; the battle screens opened by themselves`);
 }
 
 /** A staged capture: the move into the enemy city and its keep/raze decision modal. */

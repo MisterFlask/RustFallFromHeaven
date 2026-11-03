@@ -1,4 +1,4 @@
-//! Engagement combat's state (GAMEOPTION_ENGAGEMENTS): the option and the dispatch rule, the new
+//! Engagement combat's state: the dispatch rule, the new
 //! unit fields, the battle reports and what is kept of them, and saves.
 
 use ffh_core::engagement::report::*;
@@ -9,13 +9,12 @@ use ffh_core::ids::*;
 use ffh_core::setup::GameSetup;
 use ffh_data::*;
 
-/// A duel map after `game_init` with armies (and engagements when `engagements`): player 0's city
-/// on its first unit's plot, the starting units gone.
-fn game(engagements: bool) -> (Game, CityId) {
+/// A duel map after `game_init` with armies: player 0's city on its first unit's plot, the starting
+/// units gone.
+fn game() -> (Game, CityId) {
     let d = ffh_data::global();
     let mut setup = GameSetup::standard(d, 2, "WORLDSIZE_DUEL", 5);
     setup.options[GameOptionType::GAMEOPTION_ARMIES] = true;
-    setup.options[GameOptionType::GAMEOPTION_ENGAGEMENTS] = engagements;
     let mut g = Game::new(d, setup);
     g.game_init();
     let p0 = PlayerId(0);
@@ -49,16 +48,11 @@ fn next_to(g: &Game, c: CityId, land: bool) -> Option<(i32, i32)> {
     None
 }
 
+/// Land attacks on land are engagements (the game's land combat, with or without armies); attacks
+/// on water and by ships are duels.
 #[test]
-fn the_option_requires_armies_and_applies_to_land_attacks_on_land() {
-    let d = ffh_data::global();
-    let mut setup = GameSetup::standard(d, 2, "WORLDSIZE_DUEL", 5);
-    setup.options[GameOptionType::GAMEOPTION_ENGAGEMENTS] = true;
-    let g = Game::new(d, setup);
-    assert!(!g.engagements_on(), "engagements need armies");
-
-    let (mut g, c) = game(true);
-    assert!(g.engagements_on());
+fn land_attacks_on_land_are_engagements() {
+    let (mut g, c) = game();
     let (x, y) = (g.cities[c].x, g.cities[c].y);
     let u = warrior(&mut g, x, y);
     let (lx, ly) = next_to(&g, c, true).expect("land");
@@ -74,17 +68,11 @@ fn the_option_requires_armies_and_applies_to_land_attacks_on_land() {
         let s = g.player_init_unit(PlayerId(0), ship, wx, wy, None, None);
         assert!(!g.engage_applies(s, land));
     }
-
-    let (mut off, c) = game(false);
-    let (x, y) = (off.cities[c].x, off.cities[c].y);
-    let u = warrior(&mut off, x, y);
-    assert!(!off.engagements_on());
-    assert!(!off.engage_applies(u, land));
 }
 
 #[test]
 fn promotions_keep_the_defence_percentage() {
-    let (mut g, c) = game(true);
+    let (mut g, c) = game();
     let (x, y) = (g.cities[c].x, g.cities[c].y);
     let u = warrior(&mut g, x, y);
     let (faith, combat1) = (g.d.t::<PromotionType>("PROMOTION_SHIELD_OF_FAITH"), g.d.t::<PromotionType>("PROMOTION_COMBAT1"));
@@ -100,7 +88,7 @@ fn promotions_keep_the_defence_percentage() {
 
 #[test]
 fn attacks_made_resets_with_made_attack() {
-    let (mut g, c) = game(true);
+    let (mut g, c) = game();
     let p0 = PlayerId(0);
     let (x, y) = (g.cities[c].x, g.cities[c].y);
     let u = warrior(&mut g, x, y);
@@ -115,22 +103,20 @@ fn attacks_made_resets_with_made_attack() {
 }
 
 #[test]
-fn a_bombard_is_an_attack_made_under_the_option() {
-    for engagements in [false, true] {
-        let (mut g, c) = game(engagements);
-        let (p0, p1) = (PlayerId(0), PlayerId(1));
-        let walls = g.d.t::<BuildingType>("BUILDING_WALLS");
-        g.city_set_num_real_building(c, walls, 1);
-        let (x, y) = next_to(&g, c, true).expect("a land plot next to the city");
-        let cat = g.player_init_unit(p1, g.d.t::<UnitType>("UNIT_CATAPULT"), x, y, None, None);
-        let (t0, t1) = (g.players[p0].team, g.players[p1].team);
-        g.team_declare_war(t1, t0, false, None);
-        let before = g.cities[c].defense_damage;
-        assert!(g.unit_bombard(cat), "the catapult bombards the city");
-        assert!(g.cities[c].defense_damage > before);
-        assert!(g.units[cat].made_attack);
-        assert_eq!(g.units[cat].attacks_made, engagements as i32, "engagements: {engagements}");
-    }
+fn a_bombard_is_an_attack_made() {
+    let (mut g, c) = game();
+    let (p0, p1) = (PlayerId(0), PlayerId(1));
+    let walls = g.d.t::<BuildingType>("BUILDING_WALLS");
+    g.city_set_num_real_building(c, walls, 1);
+    let (x, y) = next_to(&g, c, true).expect("a land plot next to the city");
+    let cat = g.player_init_unit(p1, g.d.t::<UnitType>("UNIT_CATAPULT"), x, y, None, None);
+    let (t0, t1) = (g.players[p0].team, g.players[p1].team);
+    g.team_declare_war(t1, t0, false, None);
+    let before = g.cities[c].defense_damage;
+    assert!(g.unit_bombard(cat), "the catapult bombards the city");
+    assert!(g.cities[c].defense_damage > before);
+    assert!(g.units[cat].made_attack);
+    assert_eq!(g.units[cat].attacks_made, 1);
 }
 
 /// A report of `p1` attacking `p2` at the city's plot, with a small log when `logged`.
@@ -235,7 +221,7 @@ fn next_turn(g: &mut Game) {
 
 #[test]
 fn reports_keep_logs_for_two_turns_and_the_latest_battles() {
-    let (mut g, c) = game(true);
+    let (mut g, c) = game();
     let logs_kept = g.d.defines.engagement_report_logs_kept as usize;
     let kept = g.d.defines.engagement_reports_kept as usize;
     let t0 = g.game_turn();
@@ -294,7 +280,7 @@ fn reports_keep_logs_for_two_turns_and_the_latest_battles() {
 
 #[test]
 fn reports_and_unit_fields_survive_a_save() {
-    let (mut g, c) = game(true);
+    let (mut g, c) = game();
     let p0 = PlayerId(0);
     let (x, y) = (g.cities[c].x, g.cities[c].y);
     let units: Vec<UnitId> = (0..3).map(|_| warrior(&mut g, x, y)).collect();

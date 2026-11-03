@@ -688,17 +688,14 @@ pub fn report_line(v: &Viewer, r: &BattleReport) -> String {
     format!("battle #{} at {place}: {outcome}; {} fell, {} of theirs fell", r.id, mine.fallen, theirs.fallen)
 }
 
-/// `battle_reports`: the viewer's kept reports, newest first (`[]` with engagements off).
+/// `battle_reports`: the viewer's kept reports, newest first.
 pub fn battle_reports(v: &Viewer) -> Json {
-    crate::jobj! { "on" => v.g.engagements_on(), "reports" => Json::Arr(summaries_since(v, i32::MIN)) }
+    crate::jobj! { "reports" => Json::Arr(summaries_since(v, i32::MIN)) }
 }
 
-/// The view's `battles`: the viewer's reports of this game turn and the previous one (null with
-/// engagements off): what the map's markers, the toasts and the combat flash read.
+/// The view's `battles`: the viewer's reports of this game turn and the previous one: what the
+/// map's markers, the toasts and the combat flash read.
 pub fn recent(v: &Viewer) -> Json {
-    if !v.g.engagements_on() {
-        return Json::Null;
-    }
     Json::Arr(summaries_since(v, v.g.game_turn() - 1))
 }
 
@@ -800,9 +797,6 @@ fn attack_origin(v: &Viewer, by: &EngageBy) -> Result<PlotIdx, QueryErr> {
 pub fn engage_preview(v: &Viewer, by: &EngageBy, to: (i32, i32), formation: Option<&[Place]>) -> Result<Json, QueryErr> {
     let g = v.g;
     let h = v.h;
-    if !g.engagements_on() {
-        return Err(invalid("engagements are off in this game"));
-    }
     let from = attack_origin(v, by)?;
     let dest = crate::view::map::plot_at(v, to.0, to.1)?;
     let mut errors: Vec<String> = Vec::new();

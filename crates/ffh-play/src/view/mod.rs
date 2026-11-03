@@ -376,9 +376,7 @@ pub fn unit_json(v: &Viewer, u: UnitId) -> Json {
         }
     }
     // Engagement combat: its role, A, Dv and max HP (`hp` / `max_hp` stay the duel's percent).
-    if g.engagements_on() {
-        battles::unit_fields(g, u, &mut j);
-    }
+    battles::unit_fields(g, u, &mut j);
     // A crusade Host's unit (docs/CRUSADE.md): who lent it (the lender's banner is public, as the
     // Host's own owner is).
     if let Some(rec) = unit.lent.as_ref().filter(|_| v.unit_owner(u) == unit.owner) {
@@ -443,9 +441,7 @@ pub fn view(v: &Viewer, ctx: &Ctx) -> Json {
         // to garrisons (unit ids: each unit's `march` says where and how long).
         "armies" => armies::armies(v),
         "garrison_marching" => if g.armies_on() { armies::garrison_marching(v) } else { Json::Null },
-        // Engagement combat (docs/ENGAGEMENTS.md): on, and the human's battles of this turn and
-        // the last (null when off).
-        "engagements" => g.engagements_on(),
+        // Engagement combat (docs/ENGAGEMENTS.md): the human's battles of this turn and the last.
         "battles" => battles::recent(v),
         // The crusade ruleset (docs/CRUSADE.md): on (the `crusades` query has the details).
         "crusades" => g.crusades_enabled(),

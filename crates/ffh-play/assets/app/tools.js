@@ -475,7 +475,7 @@ export function openOptions() {
     const i = tidx("PlayerOptionType", type);
     // Engagement combat (docs/ENGAGEMENTS.md): an attack is one battle, fought in the rules' auto
     // formation or the one arranged in the battle plan, whatever this option says.
-    const ignored = type === "PLAYEROPTION_STACK_ATTACK" && !!S.view?.engagements;
+    const ignored = type === "PLAYEROPTION_STACK_ATTACK";
     return h(
       "label.toggle",
       ignored ? { title: "Ignored in this game: with engagement combat every attack is one battle, fought in the rules' auto formation or the formation you arrange in the battle plan" } : {},

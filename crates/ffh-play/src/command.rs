@@ -961,15 +961,6 @@ fn governors_on(g: &Game) -> Result<(), CmdErr> {
     }
 }
 
-/// This game's engagement combat is on (docs/ENGAGEMENTS.md).
-fn engagements_on(g: &Game) -> Result<(), CmdErr> {
-    if g.engagements_on() {
-        Ok(())
-    } else {
-        Err(cannot("engagements are off in this game"))
-    }
-}
-
 /// A governed city's production is its governor's (docs/GOVERNORS.md).
 fn not_governed(g: &Game, c: CityId) -> Result<(), CmdErr> {
     if g.city_is_governed(c) {
@@ -1377,7 +1368,6 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
         }
 
         Command::Engage { by, to, formation, declare_war } => {
-            engagements_on(g)?;
             let dest = on_map(g, to.0, to.1)?;
             let from = match by {
                 EngageBy::Army(a) => {

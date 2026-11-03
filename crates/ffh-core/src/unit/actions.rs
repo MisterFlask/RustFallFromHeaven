@@ -1284,7 +1284,7 @@ impl Game {
             return false;
         }
 
-        if self.engagements_on() && self.unit_get_domain_type(u) == DomainType::DOMAIN_LAND {
+        if self.unit_get_domain_type(u) == DomainType::DOMAIN_LAND {
             // Engagement combat (plan 5.2): a bombard is one of the turn's attacks (one a turn,
             // Blitz one more). Ships keep the duel's rule.
             if !self.unit_has_attack_left(u) {
@@ -1338,9 +1338,7 @@ impl Game {
 
         self.units[u].made_attack = true;
         // Engagement combat: a bombard is one of the turn's attacks (plan 5.2).
-        if self.engagements_on() {
-            self.units[u].attacks_made += 1;
-        }
+        self.units[u].attacks_made += 1;
         self.unit_change_moves(u, self.d.defines.move_denominator);
 
         // UI: TXT_KEY_MISC_DEFENSES_IN_CITY_REDUCED_TO to the city owner and

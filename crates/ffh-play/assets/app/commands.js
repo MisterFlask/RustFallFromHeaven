@@ -7,13 +7,16 @@ import * as api from "./api.js";
 import { S, emit, on, dname, teamName, gateLines, loadUnitCommand, tradeItemLabel, observing, OBSERVER_COMMANDS } from "./state.js";
 import { ask } from "./modals.js";
 import { toast, busy } from "./dom.js";
-import { battleToast } from "./engagements.js";
+import { showBattles, battleShown, battlesMuted, battlesPending } from "./engagements.js";
 
-/** The messages of a command sent while the battle screens are open (the plan's attack): shown
- *  when they close. The battle's own message is the screens' to show; the others (a city
- *  captured, a defensive strike) would tell how the battle ends before its replay does. */
+/** The messages of a command that fought a battle (the plan's attack, or a move that attacked:
+ *  the battle screens open for it): shown when the screens close. The battle's own message is the
+ *  screens' to show; the others (a city captured, a defensive strike) would tell how the battle
+ *  ends before its replay does. */
 let heldLines = [];
 on("battle-closed", () => {
+  // More battles to show: their end comes later.
+  if (battlesPending()) return;
   const lines = heldLines;
   heldLines = [];
   for (const line of lines) toast(line.text, "log", 7000);
@@ -68,12 +71,15 @@ async function loop(c, quiet) {
     const confirm = reply.r?.confirm;
     if (!confirm) {
       const battleOpen = document.body.classList.contains("battle-open");
+      const isBattle = (line) => line.kind === "engagement" && line.report !== undefined;
+      const hold = battleOpen || ((reply.log ?? []).some(isBattle) && !battlesMuted());
       for (const line of reply.log ?? []) {
-        // A battle's message (engagement combat) links its report, unless the battle screens
-        // already show it; the others wait for the screens to close.
-        if (line.kind === "engagement" && line.report !== undefined) {
-          if (!battleOpen) battleToast(line);
-        } else if (battleOpen) heldLines.push(line);
+        // A battle (engagement combat) opens the battle screens, unless they show it already (the
+        // plan's attack); the other messages wait for the screens to close.
+        if (isBattle(line)) {
+          if (battleOpen) battleShown(line.report);
+          else showBattles([line.report]);
+        } else if (hold) heldLines.push(line);
         else toast(line.text, "log", 7000);
       }
       emit("applied", next, reply);

@@ -202,7 +202,7 @@ def section_combat(groups, top):
 
 
 def section_engagements(groups, top):
-    """Engagement combat (GAMEOPTION_ENGAGEMENTS, docs/ENGAGEMENTS.md); nothing without it."""
+    """Engagement combat (docs/ENGAGEMENTS.md): the formation battles of land attacks."""
     if not any(g.counts['engage'] for g in groups.values()):
         return
     print('\n== Engagements (per civ and game; the attacker\'s view)')

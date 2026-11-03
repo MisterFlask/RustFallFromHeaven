@@ -1392,9 +1392,11 @@ mod tests {
         assert!(!g.units.contains(skeleton) || g.units[skeleton].made_attack, "the skeleton attacked");
     }
 
-    /// A Mage that marches with a stack (CASTER_STACKS) is no attacker: the strike takes the city
-    /// with the Champions and leaves the Mage out, and a stack whose only unit left to attack is
-    /// the Mage holds rather than send it.
+    /// A Mage that marches with a stack (CASTER_STACKS) is no attacker the AI counts or sends: the
+    /// strike takes the city with the Champions and the Mage comes through (land attacks are
+    /// formation battles, docs/ENGAGEMENTS.md: the rules commit the whole stack, the Mage casting
+    /// from its role's rear row), and a stack whose only unit left to attack is the Mage holds
+    /// rather than send it.
     #[test]
     fn a_mage_in_the_stack_does_not_attack() {
         let d = ffh_data::global();
@@ -1425,7 +1427,7 @@ mod tests {
         let op = Op { city, plot: tp, civ: true, phase: Phase::Strike, groups: vec![grp], rally: None, assembly: None, staging: None, struck: false, at_war: true, need: 1, have: 3, probe: false };
         let mut v = View::new(&g, us);
         strike(&mut g, &mut v, &op);
-        assert!(g.units.contains(mage) && !g.units[mage].made_attack, "the Mage did not attack");
+        assert!(g.units.contains(mage) && g.units[mage].damage < g.d.defines.max_hit_points, "the Mage came through the strike");
         assert!(!g.cities.contains(city) || g.cities[city].owner == us, "the Champions took the city");
         // A Warrior of theirs in the open next to the Mage and one Champion that has attacked:
         // the Mage is the only unit left to attack, and the stack holds.

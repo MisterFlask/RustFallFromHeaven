@@ -105,10 +105,8 @@ fn the_staged_engagement_is_fought_through_engage_and_its_log_has_the_screens_fi
     let mut s = load(&st.save);
     let (army, x, y) = (st.army.0, st.x, st.y);
 
-    // The view: engagements on, no battle yet; each army unit's role, A, Dv, battle HP, speed and
-    // actions per row.
+    // The view: no battle yet; each army unit's role, A, Dv, battle HP, speed and actions per row.
     let view = q(&s, r#"{"q":"view"}"#);
-    assert_eq!(view.get("engagements").and_then(Json::as_bool), Some(true));
     assert_eq!(view.get("battles").and_then(Json::as_arr).map(<[Json]>::len), Some(0));
     for u in arr(&view, "units").iter().filter(|u| st.units.iter().any(|&id| id.0 as i64 == int(u, "id"))) {
         assert!(int(u, "engage_attack") > 0 && int(u, "engage_defense") > 0 && int(u, "engage_max_hp") > 0, "{u:?}");
@@ -173,7 +171,6 @@ fn the_staged_engagement_is_fought_through_engage_and_its_log_has_the_screens_fi
 
     // The battle lists: `battle_reports` and the view's `battles`, as summaries.
     let list = q(&s, r#"{"q":"battle_reports"}"#);
-    assert_eq!(list.get("on").and_then(Json::as_bool), Some(true));
     let reports = arr(&list, "reports");
     assert_eq!(reports.len(), 1);
     assert_eq!(keys(&reports[0]), sorted(SUMMARY));
@@ -399,26 +396,4 @@ fn an_engage_that_declares_war_asks_first() {
     let r = cmd(&mut s, &line(r#","declare_war":true"#));
     assert!(matches!(r, Ok(CmdOk::Applied { battle: Some(_), .. })), "{r:?}");
     assert!(s.g.teams[my].at_war[their]);
-}
-
-/// With the option off (armies on, engagements off: `stage armies`), `engage` is refused, the
-/// queries say so, and the view has none of the fields.
-#[test]
-fn without_engagements_the_commands_are_refused_and_the_view_has_none_of_it() {
-    let dir = common::TempDir::new("stage-no-engagements");
-    let st = ffh_play::stage::armies(&dir.0).expect("staged");
-    let mut s = load(&st.save);
-    assert!(s.g.armies_on() && !s.g.engagements_on());
-    let off = |r: Result<CmdOk, CmdErr>| matches!(r, Err(CmdErr::Cannot(ref m)) if m.contains("engagements are off"));
-    assert!(off(cmd(&mut s, &format!(r#"{{"c":"engage","army":{},"to":{{"x":0,"y":0}}}}"#, st.army.0))));
-    let list = q(&s, r#"{"q":"battle_reports"}"#);
-    assert_eq!(list.get("on").and_then(Json::as_bool), Some(false));
-    assert!(arr(&list, "reports").is_empty());
-    assert!(s.query_json(&Json::parse(&format!(r#"{{"q":"engage_preview","army":{},"to":{{"x":0,"y":0}}}}"#, st.army.0)).unwrap()).is_err());
-    let view = q(&s, r#"{"q":"view"}"#);
-    assert_eq!(view.get("engagements").and_then(Json::as_bool), Some(false));
-    assert!(view.get("battles").is_some_and(Json::is_null));
-    for u in arr(&view, "units") {
-        assert!(u.get("engage_role").is_none(), "{u:?}");
-    }
 }

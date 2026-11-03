@@ -557,7 +557,7 @@ pub struct Unit {
     /// A recruit marching to its army or garrison (docs/ARMIES.md): the rules move it, it takes
     /// no orders, it is in no army and no garrison until it arrives.
     pub march: Option<crate::army::March>,
-    // ---- This game's own: engagement combat (GAMEOPTION_ENGAGEMENTS; read only under it) ----
+    // ---- This game's own: engagement combat (docs/ENGAGEMENTS.md) ----
     /// The promotions' `iCombatPercentDefense` (Q1): Dv's own percentage under engagements, as
     /// `extra_combat_percent` is A's; kept by `unit_set_has_promotion`, never read by the duel.
     pub extra_combat_percent_defense: i32,

@@ -577,7 +577,7 @@ pub fn combat(v: &Viewer, units: &[UnitId], x: i32, y: i32) -> Result<Json, Quer
     let j = duel_combat(v, units, x, y)?;
     let g = v.g;
     let plot = plot_at(v, x, y)?;
-    if g.engagements_on() && g.engage_applies(units[0], plot) {
+    if g.engage_applies(units[0], plot) {
         return Ok(crate::view::battles::combat_fields(v, units, plot, j));
     }
     Ok(j)

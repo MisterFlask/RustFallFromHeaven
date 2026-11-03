@@ -23,8 +23,8 @@ export function effectsOf(kind, i) {
   const base = e?.effects || e?.help || "";
   // Engagement combat (docs/ENGAGEMENTS.md): what a unit's or promotion's first strikes,
   // withdrawal, collateral, Blitz and combat limit mean in a battle (the data's
-  // `effects_engagement`), in a game with engagements on.
-  const battle = S.view?.engagements ? e?.effects_engagement : null;
+  // `effects_engagement`).
+  const battle = e?.effects_engagement ?? null;
   return battle ? (base ? `${base}[NEWLINE]${battle}` : battle) : base;
 }
 

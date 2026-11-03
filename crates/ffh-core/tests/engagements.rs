@@ -1,4 +1,4 @@
-//! Engagement combat scenarios (GAMEOPTION_ENGAGEMENTS, formation battles; docs/ENGAGEMENTS.md):
+//! Engagement combat scenarios (formation battles; docs/ENGAGEMENTS.md):
 //! whole engagements through the rules' entries (`group_attack`, `group_attack_force`,
 //! `unit_attack`) on small staged worlds: slots, lanes, each kind's reach in the log and a city's
 //! capture; the plot that falls only when no defender is left; an ordered formation and the auto
@@ -36,20 +36,19 @@ struct World {
     to: PlotIdx,
 }
 
-fn world_with(engagements: bool, war: bool) -> World {
-    world_sized(engagements, war, "WORLDSIZE_DUEL")
+fn world_with(war: bool) -> World {
+    world_sized(war, "WORLDSIZE_DUEL")
 }
 
-fn world_sized(engagements: bool, war: bool, size: &str) -> World {
-    world_of(engagements, war, size, 2)
+fn world_sized(war: bool, size: &str) -> World {
+    world_of(war, size, 2)
 }
 
 /// [`world_sized`] with `players` players (0 and 1 at war when `war`).
-fn world_of(engagements: bool, war: bool, size: &str, players: usize) -> World {
+fn world_of(war: bool, size: &str, players: usize) -> World {
     let d = ffh_data::global();
     let mut setup = GameSetup::standard(d, players, size, 5);
     setup.options[GameOptionType::GAMEOPTION_ARMIES] = true;
-    setup.options[GameOptionType::GAMEOPTION_ENGAGEMENTS] = engagements;
     let mut g = Game::new(d, setup);
     g.game_init();
     let flat = |g: &Game, p: PlotIdx| {
@@ -85,7 +84,7 @@ fn world_of(engagements: bool, war: bool, size: &str, players: usize) -> World {
 }
 
 fn world() -> World {
-    world_with(true, true)
+    world_with(true)
 }
 
 impl World {
@@ -545,7 +544,7 @@ fn a_held_line_keeps_the_plot() {
 /// the attacker, the attacker's its real owner.
 #[test]
 fn hidden_nationality_shows_the_barbarian() {
-    let mut w = world_with(true, false);
+    let mut w = world_with(false);
     let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
     let d = w.unit(p1, "UNIT_WARRIOR", to);
     w.g.units[d].damage = 80;
@@ -701,39 +700,34 @@ fn non_combatants_are_captured() {
     assert!(f.g.map.plots[to].units.iter().all(|&u| f.g.units[u].owner == p0), "the worker is ours");
 }
 
-/// Ships fight ships with the option on exactly as with it off.
+/// Ships fight ships in the duel: no engagement, no report.
 #[test]
 fn ships_keep_the_duel() {
-    let mut outcomes = Vec::new();
-    for engagements in [false, true] {
-        let mut w = world_with(engagements, true);
-        let (p0, p1) = (w.p0, w.p1);
-        // Two empty land plots side by side, away from `from` and `to`, made sea.
-        let (a, b) = w
-            .g
-            .map
-            .plot_ids()
-            .filter(|&p| p != w.from && p != w.to && !w.g.plot_is_water(p) && w.g.map.plots[p].units.is_empty() && w.g.map.plots[p].owner.is_none())
-            .find_map(|p| {
-                let (x, y) = w.g.map.xy(p);
-                let q = w.g.map.plot_xy(x, y + 1)?;
-                (q != w.from && q != w.to && !w.g.plot_is_water(q) && w.g.map.plots[q].units.is_empty() && w.g.map.plots[q].owner.is_none()).then_some((p, q))
-            })
-            .expect("two land plots");
-        for p in [a, b] {
-            w.g.plot_set_plot_type(p, PlotType::PLOT_OCEAN, true);
-        }
-        assert!(w.g.plot_is_water(a) && w.g.plot_is_water(b));
-        w.to = b;
-        let ship = w.unit(p0, "UNIT_TRIREME", a);
-        let target = w.unit(p1, "UNIT_TRIREME", b);
-        let mut f = w.fork(7);
-        let (attacked, reports) = f.attack(ship);
-        assert!(attacked && reports.is_empty(), "a duel, no engagement");
-        let state = |u: UnitId| (f.alive(u), if f.g.units.contains(u) { f.g.units[u].damage } else { -1 });
-        outcomes.push((state(ship), state(target), f.g.soren_rand.clone()));
+    let mut w = world_with(true);
+    let (p0, p1) = (w.p0, w.p1);
+    // Two empty land plots side by side, away from `from` and `to`, made sea.
+    let (a, b) = w
+        .g
+        .map
+        .plot_ids()
+        .filter(|&p| p != w.from && p != w.to && !w.g.plot_is_water(p) && w.g.map.plots[p].units.is_empty() && w.g.map.plots[p].owner.is_none())
+        .find_map(|p| {
+            let (x, y) = w.g.map.xy(p);
+            let q = w.g.map.plot_xy(x, y + 1)?;
+            (q != w.from && q != w.to && !w.g.plot_is_water(q) && w.g.map.plots[q].units.is_empty() && w.g.map.plots[q].owner.is_none()).then_some((p, q))
+        })
+        .expect("two land plots");
+    for p in [a, b] {
+        w.g.plot_set_plot_type(p, PlotType::PLOT_OCEAN, true);
     }
-    assert_eq!(outcomes[0], outcomes[1]);
+    assert!(w.g.plot_is_water(a) && w.g.plot_is_water(b));
+    w.to = b;
+    let ship = w.unit(p0, "UNIT_TRIREME", a);
+    let target = w.unit(p1, "UNIT_TRIREME", b);
+    let mut f = w.fork(7);
+    let (attacked, reports) = f.attack(ship);
+    assert!(attacked && reports.is_empty(), "a duel, no engagement");
+    assert!(!f.alive(ship) || !f.alive(target) || f.g.units[ship].damage > 0 || f.g.units[target].damage > 0, "the duel was fought");
 }
 
 /// A real engagement's report, with its log, survives a save and load.
@@ -787,7 +781,7 @@ fn a_marching_recruit_defends_and_keeps_its_march() {
 /// survivors), also for a hidden-nationality attack at peace. Every battle.
 #[test]
 fn the_report_counts_the_reserve_left() {
-    let mut w = world_with(true, false);
+    let mut w = world_with(false);
     let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
     for d in w.units(p1, "UNIT_WARRIOR", to, 11) {
         w.g.units[d].damage = 60;
@@ -995,7 +989,7 @@ impl Controller for AttackSpells {
 /// declaration does not push it off the plot).
 #[test]
 fn a_forced_ai_attack_runs_the_preamble() {
-    let mut w = world_of(true, true, "WORLDSIZE_TINY", 3);
+    let mut w = world_of(true, "WORLDSIZE_TINY", 3);
     let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
     let p2 = PlayerId(2);
     let (t0, t1, t2) = (w.g.players[p0].team, w.g.players[p1].team, w.g.players[p2].team);

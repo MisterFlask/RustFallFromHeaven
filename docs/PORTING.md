@@ -141,8 +141,9 @@ side)
   governor leaves the game. Swapping a city in or out of direct rule locks it for 10 turns. A
   governed city's cultural channel is its owner's, never its governor's (2026-10-30).
   Option off (the default outside the browser's new-game screen), nothing changes. Save format 7.
-- **Engagement combat** (`GAMEOPTION_ENGAGEMENTS`, requires armies; docs/ENGAGEMENTS.md; being
-  built, phase 6 of the spec, off by default): a land attack is a **formation battle** (revision 4,
+- **Engagement combat** (docs/ENGAGEMENTS.md; not an option since 2026-11-03, the owner's
+  decision: `GAMEOPTION_ENGAGEMENTS` was removed, every game fights it, the AI-only ones too, with or
+  without armies; older saves do not load): a land attack is a **formation battle** (revision 4,
   the owner's Ogre Battle-style engagements, 2026-10-31), not a duel. Each side has its slots (10 a
   side on open land, fewer on rough ground and against city defenses) and a grid of three rows by
   `max(2, ceil((slots + 2) / 3))` lanes; the attacker stands in the formation its order gives (the
@@ -164,8 +165,7 @@ side)
   is left on it: then the launching group moves in (a city is captured); otherwise nobody moves.
   Kill credit per kill (G2) and the post-battle effects as for a duel's winner; no Fear rout.
   Stances are gone. Ships and air units keep the duel; missiles strike one unit (at half a
-  battle's hit, against the plot's own defence, as before the formation battles). Option off,
-  nothing changes. Save format 10.
+  battle's hit, against the plot's own defence, as before the formation battles). Save format 10.
 
 **Balance** (after `classic-1`, each the owner's decision)
 

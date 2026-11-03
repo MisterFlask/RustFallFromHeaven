@@ -4,7 +4,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { S } from "../app/state.js";
-import { outcomeFor, battleLine, battleMarkers, battleById, battleTerrain, engageNumbers, actionsLine } from "../app/engagements.js";
+import { outcomeFor, battleLine, battleMarkers, battleById, battleTerrain, engageNumbers, actionsLine, battlesToShow } from "../app/engagements.js";
 
 const battle = (extra = {}) => ({
   id: 3,
@@ -62,7 +62,7 @@ test("the map's markers: one per plot, the newest battle there (the view lists n
   assert.deepEqual(battleMarkers(), []);
 });
 
-test("a battle is a land attack on land, with engagements on (the rules' engage_applies)", () => {
+test("a battle is a land attack on land (the rules' engage_applies)", () => {
   const saved = { view: S.view, data: S.data, map: S.map, units: S.units };
   S.data = {
     tables: {
@@ -79,7 +79,7 @@ test("a battle is a land attack on land, with engagements on (the rules' engage_
     [3, { id: 3, type: 2 }],
   ]);
   try {
-    S.view = { engagements: true };
+    S.view = {};
     assert.equal(battleTerrain([1], 0, 0), true, "land on hills");
     assert.equal(battleTerrain([1], 1, 0), true, "land on land");
     assert.equal(battleTerrain([1], 2, 0), false, "land on water");
@@ -87,9 +87,14 @@ test("a battle is a land attack on land, with engagements on (the rules' engage_
     assert.equal(battleTerrain([3], 1, 0), false, "air: the duel");
     assert.equal(battleTerrain([1], 5, 0), false, "off the map");
     assert.equal(battleTerrain([9], 1, 0), false, "an unknown unit");
-    S.view = { engagements: false };
-    assert.equal(battleTerrain([1], 1, 0), false, "engagements off");
   } finally {
     Object.assign(S, saved);
   }
+});
+
+test("the battles shown when the turn comes: those with a log, not shown yet, oldest first", () => {
+  const list = [battle({ id: 9 }), battle({ id: 7, has_log: false }), battle({ id: 8 }), battle({ id: 5 })];
+  assert.deepEqual(battlesToShow(list, new Set()), [5, 8, 9]);
+  assert.deepEqual(battlesToShow(list, new Set([8])), [5, 9], "the player's own attack, shown already");
+  assert.deepEqual(battlesToShow(null, new Set()), []);
 });

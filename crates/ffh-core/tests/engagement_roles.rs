@@ -1,4 +1,4 @@
-//! Engagement roles (GAMEOPTION_ENGAGEMENTS, phase 6): the role table (`GameData::unit_roles`,
+//! Engagement roles (phase 6): the role table (`GameData::unit_roles`,
 //! ffh-data) is per unit type, but whether a unit fights is the unit's own strength (C++
 //! `CvUnit::canFight`, on `baseCombatStr` / `baseCombatStrDefense`), which promotions add to. So
 //! a type without strength must have a role too: a Worker that takes the Godslayer is a 3/3 unit

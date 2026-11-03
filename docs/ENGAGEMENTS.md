@@ -1,21 +1,22 @@
 # Engagement combat
 
-This game's own land combat (not FFH2's), behind `GAMEOPTION_ENGAGEMENTS` (which requires
-`GAMEOPTION_ARMIES`; off by default while phase 6 of the owner's spec "Engagement combat" is being
-built). When an army attacks a land plot, it fights a **formation battle** (revision 4, the
+This game's own land combat (not FFH2's), and the game's only land combat: it is not an option
+(the owner's decision, 2026-11-03: `GAMEOPTION_ENGAGEMENTS` was removed, and with it the
+requirement of `GAMEOPTION_ARMIES`, which nothing in a battle needs: an army commander's aura
+applies only to units in an army). Every game fights engagements, the AI-only games of
+`ffh autoplay`, `ffh-stress` and `ai_metrics.py` too (AI measurements from before 2026-11-03 are of
+the duel); saves made before do not load (the game options changed). When units attack a land plot, they fight a **formation battle** (revision 4, the
 owner's Ogre Battle-style engagements, 2026-10-31, designed in a browser prototype): each side's
 units stand on a grid of three rows by its lanes and act by row, role and speed for three rounds;
 the plot falls only when no defender is left on it. The owner's answers on every FfH combat
 ability (Q1-Q13) and the ground rules G1-G5 are in docs/COMBAT_INVENTORY.md (its answers about
 rounds, stances and targeting are superseded by revision 4: this document).
 
-With the option off nothing here runs: every attack is today's duel, byte for byte (checked at
-every step: per-turn checksums of `ffh autoplay` against master). Naval and air combat stay the
-duel with the option on too.
+Naval and air combat stay the duel.
 
 Code: `crates/ffh-core/src/engagement/` (`mod.rs` lists the modules): the pure resolver in
 `formation/` (`formation::resolve`, the auto formation `formation::auto_arrange`); on `Game` the
-option and the dispatch rule (`state.rs`), the units' roles, HP and A and Dv per hit (`stats.rs`),
+dispatch rule (`state.rs`), the units' roles, HP and A and Dv per hit (`stats.rs`),
 the slots (`slots.rs`), who can fight (`pick.rs`), where each side's units stand (`arrange.rs`),
 the engagement (`engage.rs`, `apply.rs`, `sink.rs`), the reports and the battle log
 (`report.rs`), and the attack preview (`preview.rs`). Tests: the resolver's in

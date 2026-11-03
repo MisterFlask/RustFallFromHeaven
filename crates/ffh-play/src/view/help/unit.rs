@@ -278,7 +278,7 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
         ai_block_explore: _,
         ai_block_perm_defense: _,
         ai_block_patrol: _,
-        // This game's own engagement combat (GAMEOPTION_ENGAGEMENTS): the role and its
+        // This game's own engagement combat (docs/ENGAGEMENTS.md): the role and its
         // overrides matter only in a game with the option, which this static help does not know
         // of: left out here (a unit's role and engagement numbers belong with the unit in such a
         // game).

@@ -224,6 +224,20 @@ impl Game {
         }
     }
 
+    /// Engagement hook (docs/ENGAGEMENTS.md): the lent units among `fought` (the committed units of
+    /// a formation battle that did not sit out) fought, as both units of a duel do
+    /// ([`Game::crusade_on_combat`]); its kills go through `crusade_on_combat` one by one.
+    pub(crate) fn crusade_on_engagement(&mut self, fought: &[UnitId]) {
+        if self.crusades.is_empty() {
+            return;
+        }
+        for &u in fought {
+            if self.units.contains(u) && self.units[u].lent.is_some() {
+                self.crusade_mark_engaged(u);
+            }
+        }
+    }
+
     /// `CvUnit::kill` hook: a lent unit's death is credited.
     pub(crate) fn crusade_on_unit_killed(&mut self, u: UnitId) {
         if self.units[u].lent.as_ref().is_some_and(|r| !r.credited) {

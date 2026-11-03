@@ -264,8 +264,18 @@ async function waitHuman(what, ms = 120000) {
  *  blocking decision (keep / first option); done once no dialog shows twice in a row. */
 async function answerPopups() {
   let calm = 0;
-  for (let k = 0; k < 16; k++) {
+  for (let k = 0; k < 40; k++) {
     await new Promise((r) => setTimeout(r, 300));
+    // A battle fought at the turn's start opens the battle screens (engagement combat): watched,
+    // then its report, each closed with Escape; the popups wait for them.
+    if (await ev(`!!document.getElementById("battle") || !!window.ffh?.battlesPending?.()`)) {
+      calm = 0;
+      if (await ev(`!!document.getElementById("battle") && !!window.ffh?.battle?.screen && window.ffh.battle.screen !== "plan"`)) {
+        await page.keyboard.press("Escape");
+        if (true && !(await ev(`!!document.getElementById("battle")`))) steps.push("closed a battle's screens");
+      }
+      continue;
+    }
     const titles = await modalTitles();
     if (!titles.length) {
       if (++calm >= 2) return;
@@ -476,13 +486,13 @@ async function main() {
     await ev(`window.ffh.setRenderer("flat")`);
     await until2(`window.ffh.mapView.renderer() === "flat"`, "the flat map (switched from the default)");
     await classicInterface();
-    // Engagement combat's queries reach the in-browser engine as every query does (docs/WEB.md);
-    // this game has the option off: no battles, and a battle log is gone.
+    // Engagement combat's queries reach the in-browser engine as every query does (docs/WEB.md):
+    // the battle reports (a list), and a battle log that does not exist is gone.
     const br = await ev(`window.ffh.api.query("battle_reports")`);
-    if (!br || br.on !== false || !Array.isArray(br.reports) || br.reports.length) throw new Error(`battle_reports: ${JSON.stringify(br)}`);
-    const gone = await ev(`window.ffh.api.query("battle_log", { report: 0 }).then(() => "answered", (e) => e.code)`);
+    if (!br || !Array.isArray(br.reports)) throw new Error(`battle_reports: ${JSON.stringify(br)}`);
+    const gone = await ev(`window.ffh.api.query("battle_log", { report: 1000000 }).then(() => "answered", (e) => e.code)`);
     if (gone !== "gone") throw new Error(`battle_log of no battle: ${gone}`);
-    steps.push("the engine answers the engagement queries (battle_reports, battle_log) with the option off");
+    steps.push("the engine answers the engagement queries (battle_reports, battle_log)");
     await endTurns(TURNS);
     const turn = await save();
 

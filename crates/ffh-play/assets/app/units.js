@@ -14,7 +14,7 @@ import { look, iconEl, unitIcon, barEl, pix, typeIcon, promotionIcon, uiIcon } f
 import { isoSkin, isoIcon, actionIcon, portrait, isoBar, focusOn, unitFigure, updateInsets } from "./isoui.js";
 import { effectsOf, infoTip } from "./infotips.js";
 import { marchLine } from "./armies.js";
-import { engagementsOn, battleTerrain, openPlan, roleName, flashBattle, engageNumbers, engageBrief } from "./engagements.js";
+import { battleTerrain, openPlan, roleName, flashBattle, engageNumbers, engageBrief } from "./engagements.js";
 
 /** An 8 px icon of the ui set, or the glyph before the art loaded. */
 const icon8 = (name, glyph, title) => iconEl(`icon8/${name}`, { title }) ?? glyph;
