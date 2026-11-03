@@ -209,9 +209,13 @@ export function unlockIcon(kind, type) {
 /** The selection's portrait: the lead unit's map figure on the painted meadow (`ui_backdrop`), in
  *  a gold frame; `flip` faces it left. */
 export function portrait(type, owner) {
+  return h("div.iso-portrait", { tip: infoTip("UnitType", type) }, unitFigure(type, owner, 84));
+}
+
+/** Unit type `type`'s map figure for `owner`, fitted into `px` CSS px; null without a sprite. */
+export function unitFigure(type, owner, px) {
   const key = unitKeyOf(type, owner);
-  const fig = key ? spriteIcon(key, 96, { cls: "figure" }) : null;
-  return h("div.iso-portrait", { tip: infoTip("UnitType", type) }, fig);
+  return key ? spriteIcon(key, px, { cls: "figure" }) : null;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -438,9 +442,9 @@ function dress(el, icon, px) {
 }
 
 /** The panels' reach into the map (MapView.insets): the top bar, the rail, the right-hand
- *  column, and the selection's card (at least its usual height, so a unit selected under where
- *  the card is about to appear is brought clear of it). */
-function updateInsets() {
+ *  column, and the selection's card with the strip of the plot's units over it (at least its usual
+ *  height, so a unit selected under where the card is about to appear is brought clear of it). */
+export function updateInsets() {
   const v = skin.view;
   if (!v) return;
   if (!skin.on) {
@@ -450,7 +454,10 @@ function updateInsets() {
   const side = document.getElementById("side");
   // getClientRects: a fixed element has no offsetParent even when shown.
   const shown = (el) => (el && el.getClientRects().length ? el.getBoundingClientRect() : null);
-  const card = shown(side)?.height ?? 0;
+  // The card, and the strip of the plot's units standing over it on a wide screen (units.js).
+  const sideBox = shown(side);
+  const stripBox = shown(side?.querySelector(".iso-strip"));
+  const card = sideBox ? Math.max(sideBox.height, stripBox ? sideBox.bottom - stripBox.top : 0) : 0;
   const top = document.getElementById("top")?.getBoundingClientRect().bottom ?? 0;
   if (compactScreen()) {
     // A phone (iso.css): the bars span the width; the card sits on the bottom bar (upright) or is
@@ -464,7 +471,7 @@ function updateInsets() {
       ? { top: Math.ceil(below) + 4, left: 0, right: 0, bottom: Math.ceil(bar + Math.max(card, Math.min(0.4 * vh, 320))) + 8 }
       : { top: Math.ceil(below) + 4, left: 0, right: 352, bottom: Math.ceil(bar) + 8 };
   } else {
-    v.insets = { top: Math.ceil(top) + 8, left: 70, right: 332, bottom: Math.ceil(Math.max(card, 240)) + 20 };
+    v.insets = { top: Math.ceil(top) + 8, left: 70, right: 332, bottom: Math.ceil(Math.max(card, 200)) + 20 };
   }
   // The city panel ends above the bottom-right cluster (its minimap keeps the map's proportions).
   const corner = document.getElementById("iso-corner");

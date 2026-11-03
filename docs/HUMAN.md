@@ -200,7 +200,10 @@ A long press and a double tap do nothing on the map. What touch does not have: S
 (the panel's buttons, the menu and the Cities list cover them; `?` in the menu lists the controls).
 
 **Units.** The selection panel lists your units on the plot (click a row: its group;
-Ctrl-click: add or remove that unit), "All", "Group" (one group), "Split" (each unit its own
+Ctrl-click: add or remove that unit; on the isometric and HD-2D maps they are a strip of icons
+standing over the card, as Civ4's unit buttons: the selected ones lit, each with its health,
+a pip for its moves and a mark for a promotion waiting or what it is doing, the rest in its
+tooltip; inside the card on a phone), "All", "Group" (one group), "Split" (each unit its own
 group), "Next", the group's orders, and the actions the server says the selection can take now
 (greyed when not now): orders such as skip, sleep, fortify, sentry, heal, pillage, found, join,
 spread, the great-person missions; go-to and route-to and the other modes that need a plot (click

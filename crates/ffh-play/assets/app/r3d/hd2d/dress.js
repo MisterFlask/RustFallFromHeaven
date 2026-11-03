@@ -29,14 +29,18 @@ import { clamp } from "../math.js";
  *  192-wide settlement 1.15 plots: its painted ground spans the plot), the other buildings, the
  *  resources' props, the banners. */
 export const PX = { unit: 0.0048, city: 0.0088, building: 0.0038, resource: 0.0034, banner: 0.0053, prop: 0.0031 };
-/** Depth toward the eye (world units): a figure before the card of the building it stands at. */
-const BIAS = { unit: 0.26, garrison: 0.4, building: 0, resource: 0.08 };
+/** Depth toward the eye (world units): a figure before the card of the building it stands at, a
+ *  resource on a standing improvement's plot (its ore before the mine) before that card. */
+const BIAS = { unit: 0.26, garrison: 0.4, building: 0, resource: 0.08, builtResource: 0.18 };
 /** Where a stack stands (plot-local x east, z south); on a city's plot, its front-left corner; on a
  *  standing improvement's, in front of it. */
 const SPOT = [0, 0.06];
 const BUILT_SPOT = [0.05, 0.3];
 const VOLCANO_SPOT = [-0.14, 0.38];
 const BONUS_SPOT = [-0.26, 0.2];
+/** Where a resource lies on a standing improvement's plot: at the card's front-left, a little behind
+ *  its foot (plot-local x, and z back from the foot), drawn before the card (BIAS.builtResource). */
+const BUILT_BONUS_SPOT = [-0.28, 0.1];
 /** Where a city's banner stands (plot-local): at its front-left. */
 const BANNER_SPOT = [-0.44, 0.38];
 /** Where a city's garrison stands (plot-local): in front of the city's card (whose foot is on the
@@ -51,6 +55,16 @@ function garrisonSpot(world, x, y) {
     if (d > bestD) [best, bestD] = [s, d];
   }
   return best;
+}
+
+/** Where a standing improvement's card has its foot on a land plot: [plot-local z, height]. On the
+ *  plot's front edge, at the ground there -- not the plot's middle, which on a hill is its crest and
+ *  left the card floating over the slope in front -- as the ground lies before a river cuts it, and
+ *  stepped back (by up to 0.3) off a river that runs along that edge, rather than overhanging it. */
+function builtFoot(world, x, y) {
+  let lz = 0.5;
+  for (let k = 0; k < 6 && world.riverCells.size && world.riverDist(x + 0.5, y + 0.5 - lz) < RIVER_BANK; k++) lz -= 0.05;
+  return [lz, world.heightAt(x + 0.5, y + 0.5 - lz, false)];
 }
 
 /** A group of figures about its spot: two in front, one behind between them, far enough apart that
@@ -715,13 +729,16 @@ export function dressSpriteStatic(world, map, atlas, env = null, moods = null) {
       }
     }
     const imp = map.improvement[i] >= 0 ? tname("ImprovementType", map.improvement[i]) : null;
+    // The plot-local z of a standing improvement card's foot, when one stands here.
+    let footZ = null;
     if (imp && !city) {
       const key = first(atlas, ISO_TABLES.improvementSprites(imp).filter((k) => k.startsWith("bld_") || k.startsWith("feat_")));
       if (key) {
         const art = atlas.info(key);
         const water = world.isWater(i);
-        const [mx, my] = at(0, 0.5);
-        const base = water ? SEA - DRAFT : H(x + 0.5, y + 0.5);
+        const [lz, base] = water ? [0.5, SEA - DRAFT] : builtFoot(world, x, y);
+        footZ = lz;
+        const [mx, my] = at(0, lz);
         const mana = manaColour(imp);
         list.push(card(key, art, PX.building, mx, base, -my, { id: idOf(`i${i}`), glow: mana ? 1.4 : 0, fade: !water, vis: [x + 0.5, y + 0.5] }));
         claims.improvement.add(i);
@@ -739,10 +756,12 @@ export function dressSpriteStatic(world, map, atlas, env = null, moods = null) {
       if (key) {
         const art = atlas.info(key);
         const water = world.isWater(i);
-        const [mx, my] = at(...BONUS_SPOT);
+        // Before what stands on the plot (the mine's card would hide its ore), else at the front-left.
+        const built = footZ !== null;
+        const [mx, my] = built ? at(BUILT_BONUS_SPOT[0], footZ - BUILT_BONUS_SPOT[1]) : at(...BONUS_SPOT);
         const base = water ? SEA : H(mx, my);
         const glow = /MANA|GEMS|JEWELS|MITHRIL/.test(bonus) ? 1.2 : 0;
-        list.push(card(key, art, PX.resource, mx, base, -my, { id: idOf(`b${i}`), glow, bias: BIAS.resource }));
+        list.push(card(key, art, PX.resource, mx, base, -my, { id: idOf(`b${i}`), glow, bias: built ? BIAS.builtResource : BIAS.resource }));
         claims.bonus.add(i);
         if (/MANA/.test(bonus)) beams.push({ key: null, x: mx, y: base, z: -my, w: 0.26, h: 0.9, anchor: 0.5, team: hexRgb(manaColour(bonus) ?? "#b48aff"), glow: 0.3, id: 0, phase: hashf(i, 11) });
       }

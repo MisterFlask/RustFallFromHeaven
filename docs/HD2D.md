@@ -223,8 +223,13 @@ lab and tools. The camera is the 3D one with the HD-2D preset's pitch and lens (
   (the banner's badge carries the count). A standing improvement (`iso.js` `improvementSprites`:
   cottages, forts, towers, mines, mills, camps, lairs, ruins, mana nodes, boats) is a card likewise,
   smaller than a city, its painted ground thinned out over its foot by a dither fixed to the art's
-  texels (it melts into the 3D land instead of ending in the isometric diamond's edge); flat ones
-  (farms, pastures, plantations, wineries, quarries) stay the 3D renderer's fields. A resource is its family's prop at the plot's front-left. A town's card (batch 4: keep mask 0.95)
+  texels (it melts into the 3D land instead of ending in the isometric diamond's edge). Its foot
+  stands on the ground at the plot's front edge, stepped back off a river along that edge (`dress.js`
+  `builtFoot`; at the plot's middle height, a mine stood on a hill's crest and floated over the
+  slope in front); flat ones (farms, pastures, plantations, wineries, quarries) stay the 3D
+  renderer's fields. A resource is its family's prop at the plot's front-left; under a standing
+  improvement it lies at the card's front-left and is drawn before it (a mine's ore shows, and a
+  mana node's or fishing boats' resource). A town's card (batch 4: keep mask 0.95)
   takes about half the moods' and the land palette's grade, so it keeps its own colours, and its
   warm lights (windows, fires, braziers: orange to yellow, not its red roofs or blue domes) glow. Mana and gems glow (their bright, saturated pixels
   feed the bloom). What a card stands for is **claimed** from the 3D dressing (no house, wall,

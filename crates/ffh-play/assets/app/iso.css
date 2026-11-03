@@ -228,20 +228,24 @@ html.iso #side {
   width: auto; max-width: calc(100vw - 2 * var(--iso-gap) - 330px); max-height: min(48vh, 360px); overflow: auto; padding: 4px 8px;
 }
 html.iso #side:has(#unit-panel:empty) { display: none; }
-html.iso .iso-card { display: flex; gap: 12px; align-items: flex-start; }
+/* Low, so the map keeps the screen: the portrait, the numbers two by two and the orders side by
+   side; the plot's units are a strip of icons standing over the card (below). */
+html.iso .iso-card { display: flex; gap: 10px; align-items: flex-start; }
 html.iso .iso-portrait {
-  flex: none; width: 124px; height: 152px; display: flex; align-items: flex-end; justify-content: center; overflow: hidden;
-  background: url(iso/ui_backdrop.png) -130px -96px / 384px 256px no-repeat; background-clip: padding-box; image-rendering: pixelated;
+  flex: none; width: 92px; height: 112px; display: flex; align-items: flex-end; justify-content: center; overflow: hidden;
+  background: url(iso/ui_backdrop.png) -146px -116px / 384px 256px no-repeat; background-clip: padding-box; image-rendering: pixelated;
 }
 html.iso .iso-portrait .figure { margin-bottom: 4px; image-rendering: auto; }
-html.iso .iso-card-mid { display: flex; flex-direction: column; gap: 6px; flex: none; width: 262px; }
+html.iso .iso-card-mid { display: flex; flex-direction: column; gap: 4px; flex: none; width: 252px; }
 html.iso .iso-name { margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 html.iso .iso-name .coords { font-weight: 400; }
-html.iso .iso-plate { display: flex; flex-direction: column; gap: 0; padding: 2px 8px; }
-html.iso .iso-statline { display: flex; align-items: center; gap: 8px; min-height: 34px; }
-html.iso .iso-statline .label { flex: 1; }
-html.iso .iso-statline .value { color: #fff8e4; }
-html.iso .iso-card .unit-list { max-height: 120px; }
+html.iso .iso-plate { display: grid; grid-template-columns: auto auto; justify-content: space-between; gap: 0 12px; padding: 0 8px; }
+html.iso .iso-statline { display: flex; align-items: center; gap: 6px; min-height: 32px; min-width: 0; }
+html.iso .iso-statline .label { display: none; }
+html.iso .iso-statline .value { color: #fff8e4; white-space: nowrap; }
+html.iso .iso-statline.engage-stat { grid-column: 1 / -1; }
+html.iso .iso-statline.engage-stat .value { white-space: normal; line-height: 20px; }
+html.iso .iso-card .seals { gap: 2px; }
 html.iso .unit-row { padding: 0 4px; }
 html.iso .unit-row:hover, html.iso .unit-row.selected { background: rgba(60, 110, 220, 0.3); }
 html.iso .unit-row.selected { box-shadow: inset 4px 0 0 var(--iso-gold); }
@@ -250,16 +254,22 @@ html.iso .iso-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 
 html.iso .iso-tools:empty { display: none; }
 html.iso .iso-card .row { margin: 0; gap: 6px; }
 html.iso .iso-card .row button { padding: 0 8px; }
-html.iso .iso-card-right { display: flex; flex-direction: column; gap: 8px; flex: 1 1 auto; min-width: 240px; max-width: 560px; }
-html.iso .iso-orders { display: flex; flex-wrap: wrap; gap: 6px 16px; }
-html.iso .iso-tiles { display: flex; flex-wrap: wrap; gap: 6px; }
+html.iso .iso-card-right { display: flex; flex-direction: column; gap: 6px; flex: 1 1 auto; min-width: 240px; max-width: 1040px; }
+/* The stack's buttons (All, Group, Split, Next, ...) over the orders, in slim frames for a mouse. */
+@media (pointer: fine) {
+  html.iso .iso-card .iso-tools button { border-width: 4px; padding: 0 6px; line-height: 22px; }
+}
+/* The tiles run on in one flow, a wider gap where a section (Orders, Build, ...) starts. */
+html.iso .iso-orders { display: flex; flex-wrap: wrap; gap: 6px; }
+html.iso .iso-tiles { display: contents; }
+html.iso .iso-orders > .iso-tiles + .iso-tiles > :first-child { margin-left: 10px; }
 html.iso button.action.tile { position: relative; width: 60px; height: 60px; padding: 0; justify-content: center; }
 html.iso button.action.tile kbd { display: none; }
 html.iso .iso-build { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; }
 html.iso .iso-build .badge, html.iso .iso-build .iso-icon.badge { position: absolute; right: -4px; bottom: -4px; border: 0; padding: 0; background: none; }
 /* Every description the card can show, in one cell: the box is the size of the largest from the
    start, so showing another (an order pointed at) moves nothing (units.js describe). */
-html.iso .iso-desc { display: grid; min-height: 72px; padding: 4px 10px; }
+html.iso .iso-desc { display: grid; min-height: 48px; padding: 2px 10px; }
 html.iso .iso-desc-one { grid-area: 1 / 1; visibility: hidden; }
 html.iso .iso-desc-one.shown { visibility: visible; }
 html.iso .iso-desc-title { font-weight: 700; color: #fff8e4; }
@@ -267,6 +277,56 @@ html.iso .iso-desc-title kbd { margin-left: 10px; }
 html.iso .iso-desc-text { color: var(--iso-ink); }
 html.iso .iso-desc .mode-hint { background: none; border: 0; padding: 0; color: var(--iso-gold-lt); margin: 0; }
 html.iso .iso-listed h4 { margin: 0 0 4px; }
+
+/* The plot's units (units.js unitChip; Civ4's unit buttons): each its figure on a dark tile, its
+   health under it, a pip for its moves, a mark for its state; the selected ones lit, the one the
+   card describes brightest. On a small screen the strip stays in the card, under the numbers. */
+html.iso .iso-strip { display: flex; flex-wrap: wrap; gap: 4px; }
+html.iso button.unit-chip {
+  position: relative; flex: none; width: 48px; height: 48px; min-height: 0; padding: 0; gap: 0;
+  display: flex; align-items: flex-end; justify-content: center; overflow: hidden;
+  border: 2px solid #6a4a18; border-image: none; background: rgba(4, 10, 32, 0.86); background-clip: padding-box;
+}
+html.iso button.unit-chip:hover:not([disabled]), html.iso.hd2d button.unit-chip:hover:not([disabled]) {
+  border-image: none; border-color: var(--iso-gold-lt); background: rgba(42, 90, 190, 0.86); background-clip: padding-box;
+}
+html.iso button.unit-chip.selected { border-color: var(--iso-gold); background: linear-gradient(180deg, rgba(42, 98, 196, 0.92), rgba(18, 52, 126, 0.92)); background-clip: padding-box; }
+html.iso.hd2d button.unit-chip.selected { background: linear-gradient(180deg, rgba(110, 90, 40, 0.92), rgba(48, 38, 16, 0.92)); background-clip: padding-box; }
+html.iso.hd2d button.unit-chip:hover:not([disabled]) { background: linear-gradient(180deg, rgba(74, 66, 50, 0.92), rgba(34, 30, 22, 0.92)); background-clip: padding-box; }
+html.iso button.unit-chip.lead { border-color: #ffe58c; box-shadow: 0 0 0 2px #0c0703, 0 0 8px rgba(255, 229, 140, 0.75); }
+html.iso button.unit-chip.cargo { border-style: dashed; }
+html.iso .unit-chip .figure { margin-bottom: 6px; image-rendering: auto; }
+html.iso .unit-chip .chip-abbr { margin: auto; color: #fff8e4; }
+html.iso .unit-chip .chip-hp { position: absolute; left: 3px; right: 3px; bottom: 2px; height: 4px; background: #0c0703; }
+html.iso .unit-chip .chip-hp > span { display: block; height: 100%; background: #56d256; }
+html.iso .unit-chip .chip-hp > span.hurt { background: #e8c23c; }
+html.iso .unit-chip .chip-hp > span.low { background: #e2442e; }
+html.iso .unit-chip .chip-moves { position: absolute; left: 2px; top: 2px; width: 8px; height: 8px; border: 2px solid #0c0703; }
+html.iso .unit-chip .chip-moves.full { background: #5ee05e; }
+html.iso .unit-chip .chip-moves.part { background: #f0c040; }
+html.iso .unit-chip .chip-moves.spent { background: #8a2a20; }
+html.iso .unit-chip .chip-mark { position: absolute; right: 1px; top: 1px; }
+html.iso .unit-chip .chip-mark.march { color: #e0a040; line-height: 16px; }
+html.iso .unit-chip .chip-count { position: absolute; right: 3px; bottom: 7px; color: #fff8e4; line-height: 16px; text-shadow: 0 0 2px #000, 1px 1px 0 #000; }
+html.iso .chip-badges { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+
+/* On a wide screen the strip stands over the card, on the map (its rows grow upwards; the gaps
+   between the icons let clicks through to the map), and the card does not scroll: the orders'
+   column does when a touch screen's labelled orders do not fit. */
+@media (min-width: 761px) and (min-height: 521px) {
+  html.iso #side:has(.iso-card) { overflow: visible; max-height: none; }
+  html.iso .iso-card { max-height: min(34vh, 232px); }
+  html.iso .iso-card-right { align-self: stretch; min-height: 0; overflow-y: auto; }
+  html.iso .iso-strip {
+    position: absolute; left: calc(-1 * var(--iso-panel-w, 10px)); bottom: calc(100% + var(--iso-panel-w, 10px) + 6px);
+    width: max-content; max-width: calc(100vw - 2 * var(--iso-gap) - 340px); max-height: 30vh; overflow-y: auto;
+    pointer-events: none;
+  }
+  html.iso .iso-strip > * { pointer-events: auto; }
+  /* A touch screen's labelled orders: the sections side by side while they fit. */
+  html.iso .iso-listed-all { display: flex; flex-wrap: wrap; gap: 4px 18px; }
+  html.iso .iso-listed-all .iso-listed { min-width: 0; }
+}
 html.iso .iso-listed .actions { gap: 6px; }
 html.iso button.action.listed { padding: 0 8px; }
 html.iso .seals { gap: 4px; margin: 0; }
@@ -732,7 +792,7 @@ body.battle-open :is(#top, #side, #bottom, #iso-rail, #iso-corner, #iso-city) * 
   html.iso .iso-name { display: flex; align-items: center; gap: 6px; }
   html.iso .iso-name .deselect { margin-left: auto; }
   /* The numbers on one line, by their icons. */
-  html.iso .iso-plate { flex-direction: row; flex-wrap: wrap; gap: 0 14px; padding: 0 6px; }
+  html.iso .iso-plate { display: flex; flex-direction: row; flex-wrap: wrap; gap: 0 14px; padding: 0 6px; }
   html.iso .iso-statline { min-height: 32px; gap: 4px; }
   html.iso .iso-statline .label { display: none; }
   html.iso .iso-statline .iso-icon { width: 24px; height: 24px; }
@@ -768,7 +828,8 @@ body.battle-open :is(#top, #side, #bottom, #iso-rail, #iso-corner, #iso-city) * 
 }
 @media (max-width: 760px), (max-height: 520px) {
   /* The orders first (labelled on a touch screen), then the state and the stack's buttons. */
-  html.iso .iso-card-right > .iso-listed { order: -1; }
+  html.iso .iso-card-right > .iso-listed-all { order: -1; display: flex; flex-direction: column; gap: 8px; }
+  html.iso .iso-card-right > .iso-tools { order: 1; }
 }
 @media (max-width: 760px), (max-height: 520px) {
   /* Labelled orders two by two; a long label wraps inside its button. */
@@ -827,4 +888,7 @@ html.iso.hd2d .unit-row:hover, html.iso.hd2d .unit-row.selected { background: rg
   html.iso.hd2d #iso-city,
   html.iso.hd2d #iso-corner,
   html.iso.hd2d #iso-rail { zoom: 0.8; }
+  /* At 0.8 the card's width runs up to the minimap's column (its lengths are scaled too). */
+  html.iso.hd2d #side { max-width: calc(125vw - 2.5 * var(--iso-gap) - 352px); }
+  html.iso.hd2d .iso-strip { max-width: calc(125vw - 2.5 * var(--iso-gap) - 352px); }
 }
