@@ -194,6 +194,9 @@ export class MapHd2d extends Map3D {
     // The lean terrain (config.js terrainLean; read once, when the programs are built): the parts of
     // the ground's painting this mode shows little of, computed more cheaply (shaders.js LEAN_*).
     if ((this.cfg.terrainLean ?? 0) > 0) Object.assign(d, TERRAIN_LEAN);
+    // The ground is the stand-in's painting (config.js terrainStandin, TERRAIN_STANDIN; docs/HD2D.md
+    // §5b): in play it reads as the full one, and it is half the program.
+    if (this.groundIsStandin()) Object.assign(d, TERRAIN_STANDIN);
     // A development switch, one page's: `?r3d={"terrainDefs":"LEAN_FBM=3,LEAN_POOL"}` adds defines.
     for (const kv of String(this.cfg.terrainDefs ?? "").split(",").filter(Boolean)) {
       const [k, v = "1"] = kv.split("=");
@@ -214,11 +217,20 @@ export class MapHd2d extends Map3D {
     return on === undefined ? /direct3d|d3d1/i.test(this.glName) : on > 0;
   }
 
+  /** Whether the ground is the stand-in's painting (config.js terrainStandin; read once, when the
+   *  programs are built). */
+  groundIsStandin() {
+    return (this.cfg.terrainStandin ?? 1) > 0;
+  }
+
   /** The stand-in ground (config.js TERRAIN_STANDIN, over terrainDefines' own) where the scene is
-   *  packed: its programs compile at link, and the map draws once all but the full terrain have --
-   *  on Direct3D about half a second in, the terrain's own compile (about 1.9 s) going on behind the
-   *  stand-in (docs/R3D.md §11.1 "Two stages"). `?r3d={"standin":0}` waits for the full terrain. */
+   *  packed and the ground is the full painting (`?r3d={"terrainStandin":0}`): its programs compile
+   *  at link, and the map draws once all but the full terrain have -- on Direct3D about half a
+   *  second in, the terrain's own compile (about 1.9 s) going on behind the stand-in (docs/R3D.md
+   *  §11.1 "Two stages"). `?r3d={"standin":0}` waits for the full terrain. With the stand-in's
+   *  painting as the ground itself (the default) there is nothing to stand in for. */
   standinTerrain() {
+    if (this.groundIsStandin()) return null;
     return this.packedScene() && (this.cfg.standin ?? 1) > 0 ? TERRAIN_STANDIN : null;
   }
 

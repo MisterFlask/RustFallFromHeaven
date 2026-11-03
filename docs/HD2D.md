@@ -258,6 +258,22 @@ does for the isometric sprites. No unit art changed.
   layer by its mean (`matTint`, `matShade`), so the land keeps its painted design — which ground
   lies where, the meadow's golden patches, the plot centres — and takes the pixel art's texture.
   No shader changed; the 3D renderer's own layers are untouched.
+* **The stand-in as the ground** (the owner's call, 2026-11-03; `terrainStandin`, §11). The ground is
+  the terrain shader compiled with the stand-in's defines (hd2d/config.js `TERRAIN_STANDIN`,
+  docs/R3D.md §11.1 "Two stages"): the pixel-art materials blended across the plots under each
+  ground's mean tones, lit, shadowed and fogged as before, without the painting's value noises,
+  the materials' relief bump or their second scale. In play the full painting did not show: the
+  turn-200 `stage corrupt` save at (44, 14), the two grounds from one camera, had 16%, 9% and 5% of
+  the frame's pixels off by more than 8 of 255 at 168, 96 and 40 px a plot, nearly all bare ground,
+  and the one change seen close up was a peak's rock, softer without its relief. Where the
+  painting carries a design the stand-in loses it: on the lab's showcase the tone (9 × 9 pixels
+  averaged) moves by more than 8 on 29% of the pixels (20% on `scene=hd2d`) -- the hell grounds'
+  own marks (the mood pass's glowing cracks over them stay), the marsh's pools, the dunes, ice
+  cracks, the meadow's golden patches, and the warped edges between grounds, which turn to soft
+  blobs. What it gains: half the program (1358 instructions against 2742), so no second stage at
+  the start (the full terrain's compile, about 1.9 s on Direct3D, is gone), and a cheaper frame
+  (SwiftShader, the lab's `scene=hd2d`, one run: 2856 to 2432 ms; an integrated GPU's gain is
+  still to measure). `?r3d={"terrainStandin":0}` draws the full painting, with the two stages.
 * **Prop cards** (`hd2d/art/*.png`, indexed by `hd2d/art/index.js`): single trees (broadleaf,
   pine, snowy pine, jungle, ancient elven giants, dead), bushes, wildflowers, boulders, violet
   crystals and lava rocks, drawn as single objects on white, cut out, scaled to a card a set
@@ -839,14 +855,17 @@ water's programs out, `liteOff` and `liteOn` choose which (§8).
 `terrainLean` (1, read when the programs are built) is the lean terrain (§8), `packScene` (on Direct3D
 only, unless 1 or 0 says otherwise) the scene packed into one target (docs/R3D.md §11.1: the scene's
 programs compile at link there; other backends compile at link anyway), `fastStart` (1) the start-up's CPU work done while the programs compile and the sprites
-uploaded from memory (`earlySync` 0 turns off the overlap alone). With all five compile-time switches
-off the mode draws as before them (the lab's stills match bit for bit):
-`?r3d={"noiseTex":0,"terrainLean":0,"lite":0,"packScene":0,"fastStart":0}`; `r3d-lab/compile.html`
-takes the same `?r3d=` to compare their compile times (§7).
-`standin` (1, read when the programs are built; only with the scene packed) draws the ground with a
-stand-in until the full terrain has compiled, which then dissolves in over it (docs/R3D.md §11.1,
-"Two stages"); `?r3d={"standin":0}` waits for the full terrain and draws as before.
-`standinHold` (debug, page-only; unset by default) keeps the full terrain out until the time passed
+uploaded from memory (`earlySync` 0 turns off the overlap alone). With those five compile-time
+switches and `terrainStandin` off the mode draws as before them (the lab's stills match bit for
+bit): `?r3d={"noiseTex":0,"terrainLean":0,"lite":0,"packScene":0,"fastStart":0,"terrainStandin":0}`;
+`r3d-lab/compile.html` takes the same `?r3d=` to compare their compile times (§7).
+`terrainStandin` (1, read when the programs are built) draws the ground as the stand-in's painting
+(§5b, "The stand-in as the ground"); 0 draws the full painting.
+`standin` (1, read when the programs are built; only with the scene packed and `terrainStandin` 0)
+draws the ground with a stand-in until the full terrain has compiled, which then dissolves in over
+it (docs/R3D.md §11.1, "Two stages"); `?r3d={"standin":0}` waits for the full terrain and draws as
+before.
+`standinHold` (debug, page-only; unset by default; with `terrainStandin` 0) keeps the full terrain out until the time passed
 to the render reaches that many seconds -- the time since the renderer was made while it animates,
 a lab capture's frame time -- and dissolves it in from there: a film or a test of the swap on a
 machine whose links finish at once, e.g. `r3d-lab.mjs --capture swap.mp4 --query

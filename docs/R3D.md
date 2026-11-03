@@ -912,6 +912,9 @@ has compiled:
   match origin/master's bit for bit, packed or not, with `standin` 1 (the default; packed, the full
   terrain is in at the first frame there) and 0, and the 3D renderer's.
 
+Since 2026-11-03 the HD-2D map's ground *is* the stand-in (the owner's call; docs/HD2D.md §5b, "The
+stand-in as the ground", hd2d/config.js `terrainStandin`): the full painting did not show in play,
+and the terrain compiles at the stand-in's size. The two stages run with `?r3d={"terrainStandin":0}`.
 `?r3d={"standin":0}` builds no stand-in (the start waits for the full terrain, as before);
 `{"standinHold":S}` (debug) keeps the full terrain out until the render's time reaches S seconds
 (docs/HD2D.md §11).

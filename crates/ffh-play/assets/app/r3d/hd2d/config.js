@@ -71,6 +71,11 @@ export const HD2D = {
   // The lean terrain (TERRAIN_LEAN below; read when the programs are built, so a page-only switch:
   // `?r3d={"terrainLean":0}` draws the full painting).
   terrainLean: 1,
+  // The ground is the stand-in's painting (TERRAIN_STANDIN below; the owner's call, 2026-11-03,
+  // docs/HD2D.md §5b "The stand-in as the ground"): read when the programs are built, so a page-only
+  // switch too -- `?r3d={"terrainStandin":0}` draws the full painting, the stand-in standing in
+  // for it while it compiles, as before.
+  terrainStandin: 1,
 };
 
 export const DEFAULTS_HD2D = { ...DEFAULTS, ...HD2D, preset: "hd2d" };
@@ -130,8 +135,10 @@ export const TERRAIN_LEAN = {
 
 /** The stand-in ground's defines (shaders.js STANDIN_*, over the mode's own terrain defines): the
  *  terrain program compiled down to the pixel-art ground under each ground's mean tones, lit,
- *  shadowed and fogged as the full one, writing the same targets -- drawn while the full terrain
- *  still compiles (MapHd2d.standinTerrain, docs/R3D.md §11.1 "Two stages"). 1358 instructions
+ *  shadowed and fogged as the full one, writing the same targets. The mode's ground since
+ *  2026-11-03 (terrainStandin, MapHd2d.terrainDefines; docs/HD2D.md §5b); with the full painting
+ *  (`terrainStandin` 0) it is drawn while that still compiles (MapHd2d.standinTerrain, docs/R3D.md
+ *  §11.1 "Two stages"). 1358 instructions
  *  against the lean terrain's 2742 (glslang + spirv-opt; Direct3D's compile about 0.5 s against
  *  1.9 s, estimated). Each:
  *  STANDIN_FLAT   every value noise of the ground's painting at its mean (the masses, the meadow's

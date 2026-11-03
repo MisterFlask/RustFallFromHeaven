@@ -675,8 +675,9 @@ const int F_NONE = 0, F_FOREST = 1, F_JUNGLE = 2, F_ANCIENT = 3, F_BURNT = 4, F_
   F_BLIZZARD = 13, F_SOULS = 14, F_FALLOUT = 15;
 
 #ifdef STANDIN_FLAT
-// The stand-in ground (hd2d/config.js TERRAIN_STANDIN; drawn while the full terrain still compiles,
-// docs/R3D.md §11.1 "Two stages"): every value noise of the ground's painting stands at its mean, so
+// The stand-in ground (hd2d/config.js TERRAIN_STANDIN; the HD-2D map's ground, docs/HD2D.md §5b, and
+// the full terrain's stand-in while that compiles, docs/R3D.md §11.1 "Two stages"): every value noise
+// of the ground's painting stands at its mean, so
 // the compiler folds the painting's masses, patches and drifts, the warp of the plots' blend and the
 // road edge's wobble down to each ground's mean tones under its material's pixel art. (The light's
 // cloud shadows, defined before this, keep theirs: the props take them too.) What the mean would
