@@ -152,11 +152,17 @@ export function actionsLine(acts) {
  *  (`hp` / `max_hp` are the health percent; its battle HP scales it to `engage_max_hp`), then its
  *  actions by row when the view sends them. */
 export function engageNumbers(u) {
-  const x100 = (v) => (v % 100 === 0 ? String(v / 100) : (v / 100).toFixed(1));
-  const hp = Math.round(((u.hp ?? 0) / Math.max(1, u.max_hp ?? 100)) * u.engage_max_hp);
-  const parts = [`A ${x100(u.engage_attack)}`, `Dv ${x100(u.engage_defense)}`, `HP ${hp}/${u.engage_max_hp}`];
+  const parts = [engageBrief(u)];
   if (u.engage_speed !== undefined && u.engage_speed !== null) parts.push(`speed ${u.engage_speed}`);
   if (u.engage_large) parts.push("large");
   const acts = actionsLine(u.engage_actions);
   return `${parts.join(" · ")}${acts ? ` · front / middle / rear: ${acts}` : ""}`;
+}
+
+/** The first of a unit's battle numbers: "A 4 · Dv 5 · HP 55/120" (the card's line; the rest is in
+ *  its tooltip). */
+export function engageBrief(u) {
+  const x100 = (v) => (v % 100 === 0 ? String(v / 100) : (v / 100).toFixed(1));
+  const hp = Math.round(((u.hp ?? 0) / Math.max(1, u.max_hp ?? 100)) * u.engage_max_hp);
+  return `A ${x100(u.engage_attack)} · Dv ${x100(u.engage_defense)} · HP ${hp}/${u.engage_max_hp}`;
 }

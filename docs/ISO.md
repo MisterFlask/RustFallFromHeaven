@@ -225,11 +225,17 @@ fills the page and the interface floats over it.
   keys, the raw request), wrapping onto a second row on narrow screens or when watching the AI
   (the spectator bar widens the first row; the panels below follow its height); a rail of advisor tiles at the left (research, techs, cities, civics, religion,
   diplomacy); the turn report at the top left, folded to its tabs until one is clicked; the
-  selection's card at the bottom left (the lead unit's figure on a painted meadow, its strength,
-  movement, health and level, the stack, its orders as icon tiles over a description of the one
-  pointed at with its key and help (a box as large as the largest of them, so pointing moves
-  nothing), spells, promotions and upgrades as labelled buttons, the
-  seals and the stack buttons); a city panel at the right (your capital, or the city last
+  selection's card at the bottom left, kept low so the map keeps the screen (at most about a
+  fifth of a laptop's height; its orders' column scrolls past that): the lead unit's figure on a
+  painted meadow, its strength, movement, health and level two by two by their icons with its
+  promotions' seals under them; the stack buttons over its orders as icon tiles in one flow, over
+  a description of the one pointed at with its key and help (a box as large as the largest of
+  them, so pointing moves nothing); spells, promotions and upgrades as labelled buttons. The
+  units on the plot stand over the card as a strip of icons on the map (Civ4's unit buttons;
+  `units.js` `unitChip`): each its figure with its health under it, a pip for its moves (green:
+  all left, amber: some, dark red: spent) and a corner mark (a promotion waiting, else marching,
+  automated or its activity), the selected ones lit and the card's lead brightest, the rest in
+  its tooltip; rows grow upwards. A city panel at the right (your capital, or the city last
   opened or selected: its picture in its owner's colour, population and growth, production,
   yields, mood and health, the build queue, "Open city"); and at the bottom right End turn, the
   map layer and zoom tiles and the minimap. The card shows only with a selection or a plot.
@@ -319,7 +325,8 @@ and back when the screen grows). The turn report folds to its open tab under the
 the minimap is small at the top right (upright) or the bottom left (on its side). A bottom bar
 holds the layer tiles (zoom too with a mouse: fingers pinch) and End turn. The card sits on the
 bar across the width (upright, folding with ▾ to its name) or stands in a column at the right
-(on its side); it drops the portrait, puts the numbers on one line by their icons and, on a touch
+(on its side); it drops the portrait, puts the numbers on one line by their icons, keeps the strip
+of the plot's units inside, under the numbers, and, on a touch
 screen, lists the orders as labelled buttons two by two with no description box (`units.js`
 `listedAction`: hovering is what the tiles' descriptions need). The city screen is the
 whole-screen dialog with its plot grid (`city.js`), its plots' lettering at 1x so a radius-3 city

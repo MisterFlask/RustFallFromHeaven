@@ -11,10 +11,10 @@ import { run, actionCommand, sending } from "./commands.js";
 import { plotDistance, plotIndex, humanize } from "./tiles.js";
 import { render as markup } from "./markup.js";
 import { look, iconEl, unitIcon, barEl, pix, typeIcon, promotionIcon, uiIcon } from "./look.js";
-import { isoSkin, isoIcon, actionIcon, portrait, isoBar, focusOn } from "./isoui.js";
+import { isoSkin, isoIcon, actionIcon, portrait, isoBar, focusOn, unitFigure, updateInsets } from "./isoui.js";
 import { effectsOf, infoTip } from "./infotips.js";
 import { marchLine } from "./armies.js";
-import { engagementsOn, battleTerrain, openPlan, roleName, flashBattle, engageNumbers } from "./engagements.js";
+import { engagementsOn, battleTerrain, openPlan, roleName, flashBattle, engageNumbers, engageBrief } from "./engagements.js";
 
 /** An 8 px icon of the ui set, or the glyph before the art loaded. */
 const icon8 = (name, glyph, title) => iconEl(`icon8/${name}`, { title }) ?? glyph;
@@ -1177,6 +1177,96 @@ async function planAttack(x, y) {
   return true;
 }
 
+/** A click on a unit of the stack (a row of the list, an icon of the card's strip): its group;
+ *  with Ctrl, that unit added to the selection or taken out of it. */
+function pickUnit(u, ev) {
+  if (ev.ctrlKey || ev.metaKey) {
+    const set = new Set(S.sel?.units ?? []);
+    set.has(u.id) ? set.delete(u.id) : set.add(u.id);
+    select([...set]);
+  } else {
+    selectGroup(u.group);
+  }
+}
+
+/** What a unit is doing as the strip's corner mark shows it (the group's activity). */
+const ACTIVITY_ICONS = { ACTIVITY_SLEEP: "sleep", ACTIVITY_HEAL: "heal", ACTIVITY_SENTRY: "sentry", ACTIVITY_INTERCEPT: "sentry", ACTIVITY_PATROL: "sentry", ACTIVITY_MISSION: "goto", ACTIVITY_PLUNDER: "pillage" };
+
+/** The unit's activity when it is not awake (sleeping, fortified, healing, ...), else null. */
+function activityOf(u) {
+  const a = u.activity !== null && u.activity !== undefined ? tname("ActivityType", u.activity) : null;
+  return a && a !== "ACTIVITY_AWAKE" ? a : null;
+}
+
+/** Whether the unit's group is automated or under AI control. */
+function automated(u) {
+  const grp = u.group !== null && u.group !== undefined ? S.groups.get(u.group) : null;
+  return !!grp && ((grp.automated !== null && grp.automated !== undefined) || !!grp.ai_control);
+}
+
+/** One unit of the isometric card's strip (Civ4's unit buttons over its bottom panel): the unit's
+ *  figure, its health under it, a pip for its moves (green: all left, amber: some, dark red: none)
+ *  and a corner mark (a promotion waiting, else marching, automated or what it is doing); lit when
+ *  selected, brightest for the unit the card describes. The rest is in its tooltip. */
+function unitChip(u, selected, lead) {
+  const name = u.name ?? dname("UnitType", u.type);
+  const act = activityOf(u);
+  const mark = u.promo_ready
+    ? isoIcon("promote", { px: 16, cls: "chip-mark" })
+    : u.march
+      ? h("span.chip-mark.march", "»")
+      : automated(u)
+        ? isoIcon("automate", { px: 16, cls: "chip-mark" })
+        : act && ACTIVITY_ICONS[act]
+          ? isoIcon(ACTIVITY_ICONS[act], { px: 16, cls: "chip-mark" })
+          : null;
+  const mv = u.moves === undefined || u.march ? null : u.moves <= 0 ? "spent" : u.moves < u.max_moves ? "part" : "full";
+  const frac = u.hp / Math.max(1, u.max_hp);
+  return h(
+    "button.unit-chip",
+    {
+      "data-unit": u.id,
+      class: [selected ? "selected" : "", lead ? "lead" : "", u.transport !== null && u.transport !== undefined ? "cargo" : ""].filter(Boolean).join(" "),
+      "aria-label": name,
+      "aria-pressed": selected ? "true" : "false",
+      tip: () => chipTip(u),
+      onclick: (ev) => pickUnit(u, ev),
+    },
+    unitFigure(u.type, u.owner, 34) ?? h("span.chip-abbr", name.slice(0, 2)),
+    mv ? h(`span.chip-moves.${mv}`) : null,
+    mark,
+    u.cargo?.length ? h("span.chip-count", { title: "Units on board" }, String(u.cargo.length)) : null,
+    h("span.chip-hp", h(`span${frac * 4 < 1 ? ".low" : frac < 1 ? ".hurt" : ""}`, { style: { width: `${Math.round(100 * Math.max(0, Math.min(1, frac)))}%` } })),
+  );
+}
+
+/** A strip unit's tooltip: its name, numbers, state and what a click does. */
+function chipTip(u) {
+  const act = activityOf(u);
+  const numbers = [
+    u.strength !== undefined ? `${u.strength} strength` : null,
+    `${Math.round((100 * u.hp) / Math.max(1, u.max_hp))}% health`,
+    u.moves !== undefined ? `${moves(u.moves)}/${moves(u.max_moves)} moves` : null,
+    u.level !== undefined ? `level ${u.level}${u.xp !== undefined && u.xp_needed ? ` (${u.xp}/${u.xp_needed} xp)` : ""}` : null,
+  ].filter(Boolean);
+  const badges = [
+    u.promo_ready ? h("span.badge.promo", "promote") : null,
+    automationBadge(u),
+    armyBadge(u),
+    u.summon_turns ? h("span.badge", `${u.summon_turns} turns left`) : null,
+    u.cargo?.length ? h("span.badge", `${u.cargo.length} aboard`) : null,
+    u.transport !== null && u.transport !== undefined ? h("span.badge", "aboard") : null,
+    act ? h("span.badge", humanize(act)) : null,
+  ].filter(Boolean);
+  return [
+    h("div.tip-title", u.name ?? dname("UnitType", u.type)),
+    h("div.tip-stats", numbers.join(" · ")),
+    u.engage_role !== undefined && u.engage_role !== null ? h("div.tip-stats", engageText(u)) : null,
+    badges.length ? h("div.chip-badges", badges) : null,
+    h("div.tip-hint", touchy() ? "Tap: select its group." : "Click: select its group. Ctrl-click: add or remove this unit."),
+  ];
+}
+
 function unitRow(u, selected) {
   const busy = u.activity !== null && u.activity !== undefined && tname("ActivityType", u.activity) !== "ACTIVITY_AWAKE";
   const row = h(
@@ -1185,15 +1275,7 @@ function unitRow(u, selected) {
       "data-unit": u.id,
       class: [selected ? "selected" : "", u.transport !== null && u.transport !== undefined ? "cargo" : ""].filter(Boolean).join(" "),
       title: "Click: select its group. Ctrl-click: add or remove this unit.",
-      onclick: (ev) => {
-        if (ev.ctrlKey || ev.metaKey) {
-          const set = new Set(S.sel?.units ?? []);
-          set.has(u.id) ? set.delete(u.id) : set.add(u.id);
-          select([...set]);
-        } else {
-          selectGroup(u.group);
-        }
-      },
+      onclick: (ev) => pickUnit(u, ev),
     },
     h(
       "span.unit-name",
@@ -1332,29 +1414,48 @@ export function renderPanel() {
   const seals = look.art && leadDetails?.promotions?.length
     ? h("div.seals", leadDetails.promotions.map((p) => h("span.seal", { tip: infoTip("PromotionType", p) }, promotionIcon(p, { u: isoSkin() ? 2 : 1 }))))
     : null;
-  if (isoSkin()) return renderCard({ own, r, details, lead, list, seals, tools, status, hint, way, others, x, y, foreign });
+  if (isoSkin()) return renderCard({ own, ordered, r, details, lead, promotions: leadDetails?.promotions, tools, status, hint, way, others, x, y });
   fill(panel, head, hint, way, list, seals, tools, status, actions, others);
 }
 
-/** The selection as the isometric map's card (the reference's unit panel): the lead unit's
- *  portrait; its name, its numbers and the stack; its orders as icon tiles over a description of
- *  the one pointed at (spells, promotions and upgrades as labelled buttons under them). */
-function renderCard({ own, r, details, lead, list, seals, tools, status, hint, way, others, x, y }) {
+/** The selection as the isometric map's card (the reference's unit panel), kept low so the map
+ *  keeps the screen: the lead unit's portrait; its name and its numbers two by two with its
+ *  promotions' seals under them; the stack's buttons over its orders as icon tiles, over a
+ *  description of the one pointed at (spells, promotions and upgrades as labelled buttons under
+ *  them). The units of the plot are a strip of icons over the card (Civ4's), the selected ones
+ *  lit; on a small screen the strip stays in the card, under the numbers (iso.css). */
+function renderCard({ own, ordered, r, details, lead, promotions, tools, status, hint, way, others, x, y }) {
   const city = cityAt(x, y);
   if (city && city.owner === me()?.player) focusOn(city.id);
   const d = lead ? { ...lead, ...(details.get(lead.id) ?? {}) } : null;
-  const stat = (icon, label, value, title) => h("div.iso-statline", { title: title ?? null }, isoIcon(icon, { px: 32 }), h("span.label", label), value);
+  // Each number by its icon; the label (shown on a wide screen only where there is room) is the
+  // line's tooltip as well.
+  const stat = (icon, label, value, title, cls = "") =>
+    h(`div.iso-statline${cls}`, { title: title ?? label }, isoIcon(icon, { px: 32 }), h("span.label", label), value);
   const plate = d
     ? h(
         "div.iso-plate",
         d.strength !== undefined ? stat("strength", "Strength", h("span.value", String(d.strength))) : null,
         d.moves !== undefined ? stat("moves", "Movement", h("span.value", `${moves(d.moves)}/${moves(d.max_moves)}`)) : null,
-        d.max_hp ? stat("hp", "Health", isoBar(d.hp / Math.max(1, d.max_hp), { w: 96, kind: d.hp * 4 < d.max_hp ? "low" : "hp" }), `${Math.round((100 * d.hp) / d.max_hp)}% health`) : null,
-        d.level !== undefined ? stat("xp", "Level", h("span.value", `${d.level}${d.xp !== undefined && d.xp_needed ? ` (${d.xp}/${d.xp_needed})` : ""}`)) : null,
-        // Engagement combat: its role, A, Dv and battle HP.
-        d.engage_role !== undefined && d.engage_role !== null ? stat("strength", roleName(d.engage_role), h("span.value.engage", engageNumbers(d)), ENGAGE_TITLE) : null,
+        d.max_hp ? stat("hp", "Health", isoBar(d.hp / Math.max(1, d.max_hp), { w: 64, kind: d.hp * 4 < d.max_hp ? "low" : "hp" }), `Health: ${Math.round((100 * d.hp) / d.max_hp)}%`) : null,
+        d.level !== undefined ? stat("xp", "Level", h("span.value", `${d.level}${d.xp !== undefined && d.xp_needed ? ` (${d.xp}/${d.xp_needed})` : ""}`), d.xp !== undefined && d.xp_needed ? `Level ${d.level}: ${d.xp} of the ${d.xp_needed} experience the next promotion needs` : null) : null,
+        // Engagement combat: its role, A, Dv and battle HP (the rest in the tooltip).
+        d.engage_role !== undefined && d.engage_role !== null
+          ? stat("strength", roleName(d.engage_role), h("span.value.engage", `${roleName(d.engage_role)} · ${engageBrief(d)}`), `${engageText(d)}\n\n${ENGAGE_TITLE}`, ".engage-stat")
+          : null,
       )
     : null;
+  // The lead unit's promotions as their seals (docs/ART.md 11.5).
+  const seals = look.art && promotions?.length ? h("div.seals", promotions.map((p) => h("span.seal", { tip: infoTip("PromotionType", p) }, promotionIcon(p, { u: 2 })))) : null;
+  // The plot's units, transports with their cargo after them.
+  const strip =
+    own.length > 1
+      ? h(
+          "div.iso-strip",
+          { role: "group", "aria-label": "The units here" },
+          ordered.map((u) => unitChip({ ...u, ...(details.get(u.id) ?? {}) }, S.sel.units.includes(u.id), u.id === S.sel.units[0])),
+        )
+      : null;
   const tiles = [];
   const listed = [];
   descs.clear();
@@ -1387,10 +1488,12 @@ function renderCard({ own, r, details, lead, list, seals, tools, status, hint, w
     h(
       "div.iso-card",
       lead ? portrait(lead.type, lead.owner) : null,
-      h("div.iso-card-mid", h("h3.iso-name", name, h("span.dim.coords", ` (${x}, ${y})`), h("button.close.deselect", { title: "Deselect [Esc]", "aria-label": "Deselect", onclick: () => clearSelection() }, "×")), plate, own.length > 1 ? list : null, others),
-      h("div.iso-card-right", h("div.iso-orders", tiles), desc, h("div.iso-tools", seals, tools), listed),
+      h("div.iso-card-mid", h("h3.iso-name", name, h("span.dim.coords", ` (${x}, ${y})`), h("button.close.deselect", { title: "Deselect [Esc]", "aria-label": "Deselect", onclick: () => clearSelection() }, "×")), plate, seals, strip, others),
+      h("div.iso-card-right", h("div.iso-tools", tools), tiles.length ? h("div.iso-orders", tiles) : null, desc, listed.length ? h("div.iso-listed-all", listed) : null),
     ),
   );
+  // The strip stands over the card: the map's clear part (isoui.js) is measured with it.
+  updateInsets();
 }
 
 /** The promotions the selection can take, with their descriptions: a click promotes (every
