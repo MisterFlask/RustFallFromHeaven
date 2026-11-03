@@ -416,7 +416,12 @@ html.iso .tip-unique-name { color: var(--iso-gold); }
 html.iso .tip-effects { font-size: 20px; line-height: 24px; color: var(--iso-ink); }
 html.iso .richtip { max-width: 520px; }
 html.iso .ng-about { font-size: 20px; line-height: 24px; max-height: 440px; }
-html.iso .tip-strategy, html.iso .tip-hint, html.iso .tip-parts { font-size: 20px; line-height: 24px; font-style: normal; }
+html.iso .tip-strategy, html.iso .tip-hint { font-size: 20px; line-height: 24px; font-style: normal; }
+html.iso .parts-list { font-size: 20px; line-height: 24px; column-gap: 10px; }
+html.iso .parts-list.grouped .pl-n { padding-left: 20px; }
+html.iso .parts-list .pl-head { gap: 6px; margin-top: 6px; padding-bottom: 2px; border-bottom: 2px solid #6a4410; color: var(--iso-gold); }
+html.iso .parts-list .pl-head:first-child { margin-top: 0; }
+html.iso .parts-list .pl-total { color: #fff8e4; }
 html.iso .tip-requires { color: #ff8a70; }
 html.iso .tip-combat { border-top: 0; background: linear-gradient(#f0b443 0 2px, #6a4410 2px 4px) no-repeat top / 100% 4px; padding-top: 8px; }
 html.iso .tip-combat .odds { font-size: 20px; }
@@ -871,6 +876,14 @@ html.iso.hd2d #side,
 html.iso.hd2d #bottom,
 html.iso.hd2d #iso-city,
 html.iso.hd2d #iso-corner canvas.minimap {
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+/* A tooltip lies over the panels' text as often as over the map: nearly opaque, so what is under
+   it does not read through its lines. */
+html.iso.hd2d .tooltip {
+  --iso-navy-top: rgba(14, 14, 18, 0.95);
+  --iso-navy-bot: rgba(6, 6, 9, 0.97);
   -webkit-backdrop-filter: blur(3px);
   backdrop-filter: blur(3px);
 }

@@ -10,7 +10,7 @@ import { look, pix, pixable, iconEl, uiIcon, barEl } from "./look.js";
 import { openCount, run } from "./commands.js";
 import { renderSpectatorBar, autoplayBar, flagsView } from "./tools.js";
 import { isoSkin, isoIcon } from "./isoui.js";
-import { effectsOf } from "./infotips.js";
+import { effectsOf, partsList } from "./infotips.js";
 import { battleLine, battleLinks } from "./engagements.js";
 
 /** The parts of `#phase`: the phase line (redrawn each render), the spectator bar and the
@@ -276,15 +276,15 @@ export function renderTop() {
   ];
   const mana = m.mana.filter((x) => x.count > 0);
   if (mana.length) {
-    const list = mana.map((x) => `${dname("BonusType", x.bonus).replace(/ Mana$/, "")} ${x.count}`).join(", ");
     const total = mana.reduce((n, x) => n + x.count, 0);
+    const manaTip = [h("div.tip-title", `Mana ${total}`), partsList([{ rows: mana.map((x) => [dname("BonusType", x.bonus).replace(/ Mana$/, ""), x.count]), sense: 0 }], { sign: false })];
     // The isometric interface: one crystal and the total (the spheres in its tooltip).
     const spheres = iso
       ? [big(total)]
       : look.art
         ? mana.map((x) => h("span.sphere", uiIcon("mana", tname("BonusType", x.bonus) ?? "", 8, { title: dname("BonusType", x.bonus) }) ?? null, small(String(x.count))))
         : [` ${total} mana`];
-    items.push(h("span.stat.mana", { title: `Mana: ${list}` }, ic("icon16/mana", "✦", "Mana"), ...spheres));
+    items.push(h("span.stat.mana", { tip: manaTip }, ic("icon16/mana", "✦", "Mana"), ...spheres));
   }
   if (m.anarchy > 0) items.push(sep(), h("span.stat.warn", { title: `Anarchy: ${m.anarchy} turns` }, ic("icon16/anarchy", "", "Anarchy"), small(`Anarchy ${m.anarchy}`)));
   if (m.golden_age > 0) items.push(sep(), h("span.stat.good", { title: `Golden age: ${m.golden_age} turns` }, ic("icon16/golden_age", "", "Golden age"), small(`Golden age ${m.golden_age}`)));
@@ -330,11 +330,15 @@ function renderWorldActions(m, st) {
 /** The top bar's gold tooltip: the treasury and where the gold rate comes from. */
 export function goldTip(m) {
   const b = goldBreakdown(m.gold_parts);
-  const line = (sign, [what, n]) => h("div", `${sign}${n} ${what}`);
+  const sum = (l) => l.reduce((n, [, g]) => n + g, 0);
   return [
     h("div.tip-title", `Gold ${m.gold} (${m.gold_rate >= 0 ? "+" : ""}${m.gold_rate} a turn)`),
-    b ? b.income.map((x) => line("+", x)) : null,
-    b ? b.costs.map((x) => line("−", x)) : null,
+    b
+      ? partsList([
+          { head: "Income", total: `+${sum(b.income)}`, rows: b.income },
+          { head: "Costs", total: `−${sum(b.costs)}`, rows: b.costs.map(([what, n]) => [what, -n]) },
+        ])
+      : null,
     b && m.gold_parts.research_fixed ? h("div.tip-hint", "Research cannot be adjusted: the gold rate is only what the treasury loses.") : null,
     h("div.tip-hint", "The commerce sliders: click the shares beside it, or F2."),
   ];

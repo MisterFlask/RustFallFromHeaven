@@ -16,7 +16,7 @@ import * as api from "./api.js";
 import { S, dname, tname, teamName, tradeItemLabel, tradeRefusal, DUAL_ITEMS, me, scoreText, fairShareText } from "./state.js";
 import { h } from "./dom.js";
 import { openModal, ask } from "./modals.js";
-import { infoTip } from "./infotips.js";
+import { infoTip, partsList } from "./infotips.js";
 import { render as markup } from "./markup.js";
 import { run } from "./commands.js";
 import { openTroops, troopsLabel } from "./crusade.js";
@@ -81,7 +81,7 @@ function attitudeTip(p) {
   const sign = (n) => (n > 0 ? `+${n}` : `${n}`);
   return [
     h("div.tip-title", `${p.name}: ${dname("AttitudeType", p.attitude)} towards you`),
-    parts.length ? parts.map(([why, n]) => h("div", n ? `${sign(n)} ${why}` : why)) : h("div.dim", "Nothing for or against you."),
+    partsList([{ rows: parts }]) ?? h("div.dim", "Nothing for or against you."),
     p.attitude_score !== null && p.attitude_score !== undefined ? h("div.tip-hint", `Total ${sign(p.attitude_score)}${p.attitude_next !== null && p.attitude_next !== undefined ? `; at ${sign(p.attitude_next)} they would be ${dname("AttitudeType", p.attitude + 1)}` : ""}.`) : null,
   ];
 }

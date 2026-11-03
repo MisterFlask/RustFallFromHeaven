@@ -20,7 +20,7 @@ import { YIELD_COLORS } from "./tiles.js";
 import { look, uiIcon, typeIcon, barEl, pix } from "./look.js";
 import { focusOn, isoSkin, isoIcon, queueIcon, refreshCityPanel } from "./isoui.js";
 import { plotState } from "./citywork.js";
-import { infoTip } from "./infotips.js";
+import { infoTip, moodTip, roomText } from "./infotips.js";
 import { cultureView } from "./culture.js";
 import { recruitControls, recruitView, requisitionNote, requisitionTag } from "./armies.js";
 import { governanceView } from "./governors.js";
@@ -398,35 +398,27 @@ function roomBadge(room, tip) {
 function moodView(c) {
   const hp = c.happiness;
   const he = c.health;
-  const happyRoom = hp.happy - hp.unhappy;
-  const healthRoom = he.good - he.bad;
-  const happyNotes = [hp.hurry_anger_timer ? `hurry anger for ${turns(hp.hurry_anger_timer)}` : null, hp.conscript_anger_timer ? `draft anger for ${turns(hp.conscript_anger_timer)}` : null];
+  const happyNotes = [hp.hurry_anger_timer ? `Hurry anger for ${turns(hp.hurry_anger_timer)}` : null, hp.conscript_anger_timer ? `Draft anger for ${turns(hp.conscript_anger_timer)}` : null];
   return h(
     "div.section.mood",
     h("h4", "Mood and health"),
     h(
       "div.mood-row",
-      { tip: partsText(hp.happy_parts, hp.unhappy_parts, "unhappy", happyNotes) },
+      { tip: () => moodTip(c, true, ic, happyNotes) },
       h("span.count", ic("happy"), String(hp.happy)),
       h("span.vs", "vs"),
       h("span.count", ic("unhappy"), String(hp.unhappy)),
-      roomBadge(happyRoom, happyRoom > 0 ? `Room for ${happyRoom} more citizen${happyRoom > 1 ? "s" : ""} before unrest` : happyRoom === 0 ? "At the limit: the next citizen will be unhappy and angry" : `${-happyRoom} angry citizen${happyRoom < -1 ? "s" : ""}: they do not work`),
+      roomBadge(hp.happy - hp.unhappy, roomText(c, true)),
     ),
     h(
       "div.mood-row",
-      { tip: partsText(he.good_parts, he.bad_parts, "unhealthy") },
+      { tip: () => moodTip(c, false, ic) },
       h("span.count", ic("health"), String(he.good)),
       h("span.vs", "vs"),
       h("span.count", ic("unhealthy"), String(he.bad)),
-      roomBadge(healthRoom, healthRoom > 0 ? `Room for ${healthRoom} more citizen${healthRoom > 1 ? "s" : ""} before sickness costs food` : healthRoom === 0 ? "At the limit: the next citizen costs a food a turn" : `Sickness: ${healthRoom} food a turn`),
+      roomBadge(he.good - he.bad, roomText(c, false)),
     ),
   );
-}
-
-/** A city's happiness or health by its parts, as a tooltip's text. */
-function partsText(good, bad, badWord, notes = []) {
-  const list = (ps) => (ps ?? []).map(([label, n]) => `${n} ${label}`).join(", ");
-  return [good?.length ? list(good) : null, bad?.length ? `${badWord}: ${list(bad)}` : null, ...notes].filter(Boolean).join("; ") || "-";
 }
 
 function growthView(c) {

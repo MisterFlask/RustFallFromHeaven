@@ -12,7 +12,7 @@ import { plotDistance, plotIndex, humanize } from "./tiles.js";
 import { render as markup } from "./markup.js";
 import { look, iconEl, unitIcon, barEl, pix, typeIcon, promotionIcon, uiIcon } from "./look.js";
 import { isoSkin, isoIcon, actionIcon, portrait, isoBar, focusOn, unitFigure, updateInsets } from "./isoui.js";
-import { effectsOf, infoTip } from "./infotips.js";
+import { effectsOf, infoTip, partsList } from "./infotips.js";
 import { marchLine } from "./armies.js";
 import { battleTerrain, openPlan, roleName, flashBattle, engageNumbers, engageBrief } from "./engagements.js";
 
@@ -783,10 +783,11 @@ const MODIFIERS = {
   kamikaze_modifier: "kamikaze",
 };
 
+/** A side's combat modifiers as `[label, percent]` rows (`partsList`). */
 function modifierList(d) {
   return Object.entries(MODIFIERS)
     .filter(([k]) => d?.[k])
-    .map(([k, label]) => `${d[k] > 0 ? "+" : ""}${d[k]}% ${label}`);
+    .map(([k, label]) => [label, d[k]]);
 }
 
 /** The attack preview of plot `at` ({x, y}): odds, strengths, the modifiers of both sides; under
@@ -817,10 +818,12 @@ export function combatLines(c, at = null) {
   }
   box.append(h(`div.odds${c.odds !== null && c.odds < 500 ? ".bad" : ""}`, c.odds === null ? "Air strike" : `${c.engagement ? "Duel odds (strongest pair)" : "Odds"} ${pct(c.odds)}`, c.withdraw ? h("span.dim", ` · retreat ${pct(c.withdraw)}`) : null));
   box.append(h("div", `${att ? dname("UnitType", att.type) : "Attacker"} ${str(c.attacker_strength)} vs ${dname("UnitType", c.defender_type)} ${str(c.defender_strength)}`, h("span.dim", ` (${playerName(c.defender_owner)})`)));
-  const a = modifierList(c.attacker_details);
-  const d = modifierList(c.defender_details);
-  if (a.length) box.append(h("div.mods", h("b", "Attacker: "), a.join(", ")));
-  if (d.length) box.append(h("div.mods", h("b", "Defender: "), d.join(", ")));
+  // The attacker is yours: its bonuses in green, the defender's in red.
+  const mods = partsList([
+    { head: "Attacker", rows: modifierList(c.attacker_details) },
+    { head: "Defender", rows: modifierList(c.defender_details), sense: -1 },
+  ], { unit: "%" });
+  if (mods) box.append(h("div.mods", mods));
   if (c.declare_war_team !== null) box.append(h("div.warn", "Attacking declares war"));
   return box;
 }

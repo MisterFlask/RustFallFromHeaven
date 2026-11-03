@@ -22,7 +22,7 @@ import { installIsoFont } from "./isofont.js";
 import { SPRITES } from "./iso/sprites.js";
 import { ISO_TABLES, unitSpriteKeys, civShortName } from "./iso.js";
 import * as api from "./api.js";
-import { infoTip } from "./infotips.js";
+import { infoTip, moodTip } from "./infotips.js";
 
 /** Whether the skin is on, and the MapView it dresses. */
 export const skin = { on: false, view: null };
@@ -680,11 +680,7 @@ export async function renderCityPanel() {
   const yields = Object.fromEntries((c?.yields ?? []).map((x) => [x.yield, x.rate]));
   // The label names the row (also as its tooltip: short screens show the yields by their icons).
   const row = (icon, label, value, title, tip = null) => h("div.iso-yield", { title: tip ? null : (title ?? label), tip }, isoIcon(icon, { px: 32 }), h("span.label", label), h("span.value", value));
-  // The mood's and health's parts (the `city` query's lists, which sum to the totals).
-  const partsTip = (head, good, goodWord, bad, badWord) => {
-    const list = (ps) => (ps ?? []).map(([l, n]) => `${n} ${l}`).join(", ");
-    return [h("div.tip-title", head), good?.length ? h("div", `${goodWord}: ${list(good)}`) : null, bad?.length ? h("div", `${badWord}: ${list(bad)}`) : null];
-  };
+  const tipIcon = (name) => isoIcon(name, { px: 16 });
   const queue = (c?.queue ?? []).slice(0, 4);
   fill(
     el,
@@ -719,8 +715,8 @@ export async function renderCityPanel() {
           row("culture", "Culture", signed(rates[2] ?? 0), c.culture !== undefined ? `Culture ${c.culture}/${c.culture_threshold}` : null),
           h(
             "div.iso-mood",
-            c.happiness ? row(c.happiness.unhappy > c.happiness.happy ? "unhappy" : "happy", "Mood", `${c.happiness.happy}/${c.happiness.unhappy}`, null, partsTip(`${c.happiness.happy} happy, ${c.happiness.unhappy} unhappy`, c.happiness.happy_parts, "Happy", c.happiness.unhappy_parts, "Unhappy")) : null,
-            c.health ? row(c.health.bad > c.health.good ? "unhealthy" : "health", "Health", `${c.health.good}/${c.health.bad}`, null, partsTip(`${c.health.good} healthy, ${c.health.bad} unhealthy${c.health.bad > c.health.good ? ` (−${c.health.bad - c.health.good} food a turn)` : ""}`, c.health.good_parts, "Healthy", c.health.bad_parts, "Unhealthy")) : null,
+            c.happiness ? row(c.happiness.unhappy > c.happiness.happy ? "unhappy" : "happy", "Mood", `${c.happiness.happy}/${c.happiness.unhappy}`, null, () => moodTip(c, true, tipIcon)) : null,
+            c.health ? row(c.health.bad > c.health.good ? "unhealthy" : "health", "Health", `${c.health.good}/${c.health.bad}`, null, () => moodTip(c, false, tipIcon)) : null,
           ),
         )
       : null,

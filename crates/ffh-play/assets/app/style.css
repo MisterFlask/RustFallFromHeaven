@@ -221,7 +221,14 @@ html.art #top .sep { display: block; }
 .tip-requires { color: var(--c-scarlet); margin-top: 3px; }
 .tip-strategy { margin-top: 5px; padding-top: 4px; border-top: 1px solid var(--line); font-size: 12px; font-style: italic; color: var(--c-stone); }
 .tip-hint { margin-top: 5px; font-size: 12px; color: var(--c-ash); }
-.tip-parts { font-size: 12px; color: var(--c-stone); }
+/* A number by its parts (infotips.js `partsList`): one part a line, the numbers right-aligned in a
+   column before the labels; a group's head spans both, its total at the right. */
+.parts-list { display: grid; grid-template-columns: auto 1fr; column-gap: 8px; margin-top: 4px; font-size: 12px; line-height: 1.45; }
+.parts-list .pl-n { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.parts-list.grouped .pl-n { padding-left: 14px; }
+.parts-list .pl-head { grid-column: 1 / -1; display: flex; align-items: center; gap: 5px; margin-top: 6px; padding-bottom: 1px; border-bottom: 1px solid var(--line); color: var(--c-vellum); }
+.parts-list .pl-head:first-child { margin-top: 0; }
+.parts-list .pl-total { margin-left: auto; padding-left: 16px; }
 .tip-combat .odds { font-size: 15px; color: var(--c-vellum); display: flex; align-items: center; gap: 6px; }
 .tip-combat .odds.bad { color: var(--c-scarlet); }
 .tip-combat .mods { font-size: 12px; color: var(--dim); }
