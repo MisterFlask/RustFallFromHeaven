@@ -9,7 +9,9 @@
 //! `AI_maxGoldPerTurnTrade`: for a human its gold and its gold rate; for an AI the C++ AI's own
 //! limits are not ported, so the same bounds apply). The C++ AI's denials are not ported either
 //! (ffh-core reads them as "no denial" except the rules-based ones); whether an AI accepts is its
-//! controller's `consider_offer`.
+//! controller's `consider_offer`. Each item carries the points the AI puts on it
+//! (`Controller::trade_value`), and [`trade_answer`] tells what a deal would get before it is
+//! proposed (`Controller::judge_offer`, which agrees with `consider_offer`).
 //!
 //! Whether an AI talks at all is [`ai_willing_to_talk`] (`CvPlayerAI::AI_isWillingToTalk`, which
 //! gates the exe's diplomacy screen: "refuses to talk"): at war, not before its war counter
@@ -95,12 +97,30 @@ pub fn max_gold_per_turn(g: &Game, from: PlayerId, _to: PlayerId) -> i32 {
     (rate + g.players[from].gold / length).min(rate).max(0)
 }
 
-fn item_json(g: &Game, from: PlayerId, to: PlayerId, t: &TradeData) -> Json {
+/// The points the AI `judge` puts on `t` in a deal between `from` and `to` (`Controller::
+/// trade_value`): positive for what it gets, negative for what it gives; gold and gold per turn
+/// per piece. Null when it puts no price on the item (or `judge` is human).
+fn value_json(g: &Game, judge: PlayerId, from: PlayerId, to: PlayerId, t: &TradeData) -> Json {
+    let gets = judge == to;
+    let item = if Deal::is_gold(t.item_type) { TradeData { data: 1, ..t.clone() } } else { t.clone() };
+    let other = if gets { from } else { to };
+    match g.controller(judge).trade_value(g, judge, other, &item, gets) {
+        Some(v) => Json::from(if gets { v } else { -v }),
+        None => Json::Null,
+    }
+}
+
+fn item_json(g: &Game, judge: PlayerId, from: PlayerId, to: PlayerId, t: &TradeData) -> Json {
     let mut j = crate::jobj! {
         "item" => Json::idx(t.item_type),
         "data" => t.data,
         "denial" => Json::opt_idx(g.player_get_trade_denial(from, to, t)),
+        "value" => value_json(g, judge, from, to, t),
     };
+    // A lease (an item that pays every turn while the deal lasts): the turns its value counts.
+    if matches!(t.item_type, TradeableItem::TRADE_RESOURCES | TradeableItem::TRADE_GOLD_PER_TURN) {
+        j.set("value_turns", g.d.defines.peace_treaty_length);
+    }
     match t.item_type {
         TradeableItem::TRADE_GOLD => {
             j.set("max", max_gold(g, from, to));
@@ -186,10 +206,29 @@ pub fn trade(v: &Viewer, with: PlayerId) -> Result<Json, QueryErr> {
         "contact" => can.is_ok(),
         "why_not" => can.err(),
         "war" => g.at_war(v.team, g.players[with].team),
-        "we_give" => Json::Arr(ours.iter().map(|t| item_json(g, v.h, with, t)).collect()),
-        "they_give" => Json::Arr(theirs.iter().map(|t| item_json(g, with, v.h, t)).collect()),
+        "we_give" => Json::Arr(ours.iter().map(|t| item_json(g, with, v.h, with, t)).collect()),
+        "they_give" => Json::Arr(theirs.iter().map(|t| item_json(g, with, with, v.h, t)).collect()),
         "troops" => troops,
     })
+}
+
+/// `trade_answer {with, give, get}`: what `with` answers if the human proposes this deal now (the
+/// diplomacy screen shows it while the deal is put together): `accept`, and the `margin` and
+/// `why` of its judgement (`Controller::judge_offer`). A deal `propose_deal` refuses outright is
+/// refused with that refusal as `why`; a human's answer is not known (`accept` null).
+pub fn trade_answer(v: &Viewer, with: PlayerId, give: &[TradeData], get: &[TradeData]) -> Result<Json, QueryErr> {
+    let g = v.g;
+    if with.idx() >= g.num_civ_players() || with == v.h || g.player_is_barbarian(with) || !v.player_met(with) {
+        return Err(invalid(format!("field `with`: player {} is not a civilization the human knows", with.0)));
+    }
+    if g.players[with].human {
+        return Ok(crate::jobj! { "accept" => Json::Null, "margin" => Json::Null, "why" => Json::Null });
+    }
+    let verdict = match check_deal(g, v.h, with, give, get) {
+        Ok(()) => g.controller(with).judge_offer(g, with, v.h, give, get),
+        Err(e) => ffh_core::controller::OfferVerdict { accept: false, margin: None, why: Some(e.detail()) },
+    };
+    Ok(crate::jobj! { "accept" => verdict.accept, "margin" => verdict.margin, "why" => verdict.why })
 }
 
 /// Troops (docs/CRUSADE.md, "Allied loans"), the crusade ruleset's item of the deal: a loan of

@@ -336,7 +336,12 @@ score, your deals with them; your own alignment and state religion above the lis
 (`tools/m7/leaders.py`), also shown at the top of the trade screen, on a deal offered to you, on
 the question to take over a civilization that appeared and by each candidate of a vote. The trade screen lists what each side can give (refusals greyed with Civ4's reason); click items into the deal
 (gold with an amount; peace, open borders and pacts go both ways, so they are greyed on both
-sides when either side refuses them), "Propose": the AI accepts or declines at once.
+sides when either side refuses them), "Propose": the AI accepts or declines at once. Each item
+shows the points the AI puts on it (+ for what it gets, - for what it gives; gold per piece;
+"swap" or "no value" for an item it puts no price on; the tooltip says how the value is counted,
+a resource or gold per turn, a lease, over 10 turns). Under the tables: "Total offered", "Total
+requested", and whether the proposal will be accepted or refused, with the reason when a rule
+rather than the totals decides.
 
 **Leaders speak** as in Civ4's diplomacy screen, with FfH2's own lines for each leader and,
 unless the game was started with "Vanilla experience", lines their civilization has for yours
@@ -765,6 +770,13 @@ at war must carry the peace treaty (both sides) or a capitulation; a gift alone 
 The AI answers at once: `accepted: false` changes nothing; `accepted: true` signs it. Today's
 AI (ffh-ai's `consider_offer`) accepts gifts, peace after 10 turns of war unless it is clearly
 winning, open borders when it likes you, and a fair tech swap, and refuses anything else.
+Each item of the `trade` tables carries `value`, the points the AI puts on it (positive for what
+it gets, negative for what it gives, per piece for gold and gold per turn, null for no price;
+`Controller::trade_value`) and, for a lease (resources, gold per turn), `value_turns`, the turns
+the value counts. `trade_answer {with, give, get}` answers what `propose_deal` with those items
+would get now: `accept`, `margin` (what the AI gets minus what it gives, when value decides)
+and `why` (the rule, when one decides; a deal `propose_deal` refuses outright is refused with
+its error); `accept` is null for a human.
 
 ### Crusades
 
@@ -843,7 +855,8 @@ Errors: `invalid`, `not_owner`, `gone`, `busy`.
 | `armies` | the Armies screen: `on`, the `armies` (as the view's, with `recruits`: the recruits marching to it in full, each its `march` with `id`, `unit`, `x`, `y`; and the requisition's `candidates`: every city of yours with `picked`, `governed`, the `unit` it would train for the army, its `production_turns` and `march_turns` (null: no way by land), its `order` in progress; `open`: whether the requisition may change), each city's garrison (`units`, `governed`) with the recruits marching to it (`recruits`), `supply_range`, `stall_turns` |
 | `culture` | the Cultural Pressure panel: `on`; the channels you see (each `{city, city_name, x, y, caster, action, religion, target, since_turn, hostile}`): `ours` and `aimed` (at your team) also with `amount`, `reach`, `unseen` and a spread's `chance` as in the city query (for `aimed` the reach is your cities), `others`; `pressure`: your cities under revolt pressure (the city query's `pressure` with `city` and `name`); `memories`: what met leaders remember of your cultural actions (`{player, hostility, friendship}`, at most `memory_max`); `thresholds` as in the city query |
 | `techs`, `civics`, `religions`, `players` | the tech tree (prerequisites, depth, turns; each tech's `help` and, unless you have it, `unlocks`: the units, buildings, builds, civics and religions of its help as type indices, which the research chooser shows as icons), civics (availability, upkeep, anarchy; `civics {with: [civic, ..]}` adds `proposed`: the set a revolution to those civics makes, whether `update_civics` would be applied, its anarchy and upkeep), religions, the players you met with your deals |
-| `trade {with}` | the trade tables both ways (see Deals) |
+| `trade {with}` | the trade tables both ways, with the AI's values (see Deals) |
+| `trade_answer {with, give, get}` | what `propose_deal` with these items would get now (see Deals) |
 | `speech {with,comment?,salt?}` | what the AI leader of `with` says to you: `{with, comment, text}`; `comment` an `AI_DIPLOCOMMENT_*` (`DiploCommentType`), or none for what it says when you contact it (its greeting, Civ4's `AI_getGreeting`, or `AI_DIPLOCOMMENT_REFUSE_TO_TALK`); `salt` picks among its lines (Civ4 uses the interface's random numbers); `text` null when it has no line |
 | `moments {since}` | the leader moments from index `since` (`view.moments_next` is the next one): `{i, t, player, comment, text}`, an AI leader opening the diplomacy screen with you (first contact, a war declared on you) and what it said; the last 20 are kept in a save |
 | `log {since}` | your messages from index `since` (`view.log_next` is the next one): `{i, t, text, player, at?}`, `at` the plot `[x, y]` a combat or a city captured or razed happened on; observed, every player's messages. A battle's message (engagement combat) also has `kind: "engagement"` and `report` (its report's id), so a client links it without reading its words; so do the messages of a command's reply and of the turn report |

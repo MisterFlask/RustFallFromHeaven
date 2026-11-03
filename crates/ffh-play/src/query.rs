@@ -14,6 +14,7 @@ use std::sync::{Mutex, MutexGuard, PoisonError};
 
 use ffh_core::game::Game;
 use ffh_core::ids::*;
+use ffh_core::structs::TradeData;
 use ffh_data::{CivicType, DiploCommentType};
 use ffh_core::path::{FinderKind, PathFinder};
 
@@ -66,6 +67,9 @@ pub enum Query {
     BattleReports,
     /// What can be traded with `with`, both ways (C++ `buildTradeTable`), with denials.
     Trade { with: PlayerId },
+    /// What `with` answers if the human proposes the deal `give` / `get` now (the trade screen's
+    /// running answer, `view::diplo::trade_answer`).
+    TradeAnswer { with: PlayerId, give: Vec<TradeData>, get: Vec<TradeData> },
     /// Messages from index `since` (`view.log_next` is the next index).
     Log { since: usize },
     /// What the leader of `with` says to the human: for `comment` (an `AI_DIPLOCOMMENT_*`), or
@@ -124,7 +128,7 @@ impl Layer {
 /// Every query name (`q`).
 pub const QUERY_NAMES: &[&str] = &[
     "status", "pending", "view", "map", "plot", "group", "path", "combat", "city", "techs", "civics", "religions", "players", "culture", "armies", "governors", "engage_preview",
-    "battle_log", "battle_reports", "trade", "log",
+    "battle_log", "battle_reports", "trade", "trade_answer", "log",
     "speech", "moments", "report", "inspect", "text", "ascii", "data", "setup", "saves", "crusades",
 ];
 
@@ -202,6 +206,7 @@ impl Query {
             Query::BattleLog { .. } => "battle_log",
             Query::BattleReports => "battle_reports",
             Query::Trade { .. } => "trade",
+            Query::TradeAnswer { .. } => "trade_answer",
             Query::Log { .. } => "log",
             Query::Speech { .. } => "speech",
             Query::Moments { .. } => "moments",
@@ -247,6 +252,11 @@ impl Query {
             "battle_log" => Query::BattleLog { report: j.req("report")? },
             "battle_reports" => Query::BattleReports,
             "trade" => Query::Trade { with: j.req("with")? },
+            "trade_answer" => Query::TradeAnswer {
+                with: j.req("with")?,
+                give: crate::command::trade_items(ffh_data::global(), j, "give")?,
+                get: crate::command::trade_items(ffh_data::global(), j, "get")?,
+            },
             "log" => Query::Log { since: j.get_or("since", 0)? },
             "speech" => Query::Speech {
                 with: j.req("with")?,
@@ -275,6 +285,7 @@ impl Query {
     /// The canonical request form (`from_json` of it gives the same query).
     pub fn to_json(&self) -> Json {
         let ids = |v: &[UnitId]| Json::Arr(v.iter().map(|&u| Json::from(u)).collect());
+        let items = |v: &[TradeData]| Json::Arr(v.iter().map(crate::view::diplo::trade_item_json).collect());
         let j = crate::jobj! { "q" => self.name() };
         match self {
             Query::Map { since, epoch } => j.with("since", *since).with("epoch", epoch.as_deref()),
@@ -289,6 +300,7 @@ impl Query {
             }
             Query::BattleLog { report } => j.with("report", *report),
             Query::Trade { with } => j.with("with", *with),
+            Query::TradeAnswer { with, give, get } => j.with("with", *with).with("give", items(give)).with("get", items(get)),
             Query::Log { since } => j.with("since", *since),
             Query::Speech { with, comment, salt } => j.with("with", *with).with("comment", Json::opt_idx(*comment)).with("salt", *salt),
             Query::Moments { since } => j.with("since", *since),
@@ -391,6 +403,7 @@ pub fn run(g: &Game, ctx: &Ctx, q: &Query) -> Result<Json, QueryErr> {
         Query::BattleLog { report } => view::battles::battle_log(&v, *report)?,
         Query::BattleReports => view::battles::battle_reports(&v),
         Query::Trade { with } => view::diplo::trade(&v, *with)?,
+        Query::TradeAnswer { with, give, get } => view::diplo::trade_answer(&v, *with, give, get)?,
         Query::Log { since } => match ctx.messages {
             Some(m) => m.since_json(*since),
             None => return Err(busy("the message log")),
@@ -458,6 +471,12 @@ mod tests {
             Query::BattleLog { report: 7 },
             Query::BattleReports,
             Query::Trade { with: PlayerId(2) },
+            Query::TradeAnswer { with: PlayerId(2), give: Vec::new(), get: Vec::new() },
+            Query::TradeAnswer {
+                with: PlayerId(1),
+                give: vec![TradeData { item_type: ffh_data::TradeableItem::TRADE_GOLD, data: 30, offering: false, hidden: false }],
+                get: vec![TradeData { item_type: ffh_data::TradeableItem::TRADE_TECHNOLOGIES, data: 4, offering: false, hidden: false }],
+            },
             Query::Log { since: 10 },
             Query::Speech { with: PlayerId(1), comment: None, salt: 0 },
             Query::Speech { with: PlayerId(1), comment: Some(ffh_data::DiploCommentType::from_usize(3)), salt: -5 },

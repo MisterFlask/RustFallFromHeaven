@@ -206,8 +206,8 @@ fn offer(g: &mut Game, p: PlayerId, master: TeamId, surrender: bool, why: &'stat
 
 /// `consider_offer` for a deal in which we would become `from`'s vassal (`we_give` holds the
 /// vassal or capitulation item): agree when the same judgement would have us ask. `None` when the
-/// deal is not of that kind.
-pub fn agree(g: &Game, p: PlayerId, from: PlayerId, we_give: &[TradeData]) -> Option<bool> {
+/// deal is not of that kind. `tel`: record the decision in telemetry (not for a preview).
+pub fn agree(g: &Game, p: PlayerId, from: PlayerId, we_give: &[TradeData], tel: bool) -> Option<bool> {
     let item = we_give.iter().find(|t| is_vassal_item(t))?;
     if off(g, p) || g.players[p].human || !we_give.iter().all(|t| is_vassal_item(t) || t.item_type == TradeableItem::TRADE_PEACE_TREATY) {
         return Some(false);
@@ -218,15 +218,17 @@ pub fn agree(g: &Game, p: PlayerId, from: PlayerId, we_give: &[TradeData]) -> Op
     } else {
         hopeless_vassal(g, p, master).is_some()
     };
-    g.tel_decision(p, "vassal_asked", if yes { "agreed" } else { "refused" }, "", master.0 as i64, String::new);
+    if tel {
+        g.tel_decision(p, "vassal_asked", if yes { "agreed" } else { "refused" }, "", master.0 as i64, String::new);
+    }
     Some(yes)
 }
 
 /// `consider_offer` for a deal in which `from` would become our vassal (`they_give` holds the
 /// item and we give nothing): take it unless its wars would drag us into one we would lose or
 /// against a friend, or, for a capitulation, unless we can soon take its last cities ourselves.
-/// `None` when the deal is not of that kind.
-pub fn accept_master(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData], we_give: &[TradeData]) -> Option<bool> {
+/// `None` when the deal is not of that kind. `tel` as for [`agree`].
+pub fn accept_master(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData], we_give: &[TradeData], tel: bool) -> Option<bool> {
     let item = they_give.iter().find(|t| is_vassal_item(t))?;
     if off(g, p) {
         return Some(we_give.is_empty());
@@ -255,7 +257,9 @@ pub fn accept_master(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeDa
         yes = false;
         why = "conquer_instead";
     }
-    g.tel_decision(p, "vassal_taken", if yes { "accepted" } else { "refused" }, why, them.0 as i64, String::new);
+    if tel {
+        g.tel_decision(p, "vassal_taken", if yes { "accepted" } else { "refused" }, why, them.0 as i64, String::new);
+    }
     Some(yes)
 }
 

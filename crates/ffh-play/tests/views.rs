@@ -583,3 +583,89 @@ fn print_queries() {
         }
     }
 }
+
+/// The trade screen's running answer (`trade_answer`) is the answer `propose_deal` gets: a deal
+/// `check_deal` refuses is refused with its error, any other is the AI's `consider_offer`. When
+/// value decides (a margin and no rule), the margin is the sum of the items' `value` in the
+/// `trade` tables: what the AI gets minus what it gives.
+#[test]
+fn trade_answer_is_the_answer_propose_deal_gets() {
+    let mut s = duel(21);
+    let h = s.human;
+    let ai = s.g.civ_player_ids().find(|&p| p != h).unwrap();
+    let (my, their) = (s.g.players[h].team, s.g.players[ai].team);
+    s.g.team_meet(my, their, false);
+    // Trading as the technologies that allow it would have it, for both teams.
+    for team in [my, their] {
+        let tm = &mut s.g.teams[team];
+        tm.gold_trading_count += 1;
+        tm.tech_trading_count += 1;
+        tm.map_trading_count += 1;
+        tm.open_borders_trading_count += 1;
+    }
+    s.g.players[h].gold = s.g.players[h].gold.max(50);
+    s.g.players[ai].gold = s.g.players[ai].gold.max(50);
+    // On good terms (same alignment, the Trust spell), so trades come down to value.
+    s.g.players[h].alignment = s.g.players[ai].alignment;
+    s.g.players[h].feat_accomplished[FeatType::FEAT_TRUST] = true;
+    // A technology each side has and the other can research, for swaps.
+    for (team, p, other) in [(my, h, ai), (their, ai, h)] {
+        let tech = s.g.d.techs.keys().find(|&t| !s.g.team_is_has_tech(my, Some(t)) && !s.g.team_is_has_tech(their, Some(t)) && s.g.player_can_research(p, t, false) && s.g.player_can_research(other, t, false));
+        if let Some(t) = tech {
+            s.g.team_set_has_tech(team, t, true, Some(p), false, false);
+        }
+    }
+    let t = s.query(&Query::Trade { with: ai }).unwrap();
+    let side = |k: &str| -> Vec<(TradeData, Option<i64>)> {
+        t.get(k)
+            .unwrap()
+            .as_arr()
+            .unwrap()
+            .iter()
+            .filter(|i| i.get("max").and_then(Json::as_i64) != Some(0))
+            .map(|i| {
+                let kind = TradeableItem::from_usize(i.get("item").and_then(Json::as_i64).unwrap() as usize);
+                let gold = matches!(kind, TradeableItem::TRADE_GOLD | TradeableItem::TRADE_GOLD_PER_TURN);
+                let amount = if gold { 1 } else { i.get("data").and_then(Json::as_i64).unwrap() as i32 };
+                (item(kind, amount), i.get("value").and_then(Json::as_i64))
+            })
+            .collect()
+    };
+    let (ours, theirs) = (side("we_give"), side("they_give"));
+    eprintln!("ours {ours:?}
+theirs {theirs:?}");
+    assert!(ours.iter().chain(&theirs).any(|(_, v)| v.is_some()), "the AI puts a value on some item");
+    let mut deals: Vec<(Vec<(TradeData, Option<i64>)>, Vec<(TradeData, Option<i64>)>)> = Vec::new();
+    for a in &ours {
+        deals.push((vec![a.clone()], vec![]));
+        for b in &theirs {
+            deals.push((vec![a.clone()], vec![b.clone()]));
+        }
+    }
+    deals.extend(theirs.iter().map(|b| (vec![], vec![b.clone()])));
+    let (mut on_value, mut by_rule) = (0, 0);
+    for (give, get) in deals {
+        let items = |l: &[(TradeData, Option<i64>)]| l.iter().map(|x| x.0.clone()).collect::<Vec<_>>();
+        let (give_items, get_items) = (items(&give), items(&get));
+        let before = s.g.save();
+        let a = s.query(&Query::TradeAnswer { with: ai, give: give_items.clone(), get: get_items.clone() }).unwrap();
+        assert!(before == s.g.save(), "the answer changes nothing");
+        let accept = a.get("accept") == Some(&Json::Bool(true));
+        let why = a.get("why").and_then(Json::as_str).map(str::to_string);
+        if ffh_play::view::diplo::check_deal(&s.g, h, ai, &give_items, &get_items).is_err() {
+            assert!(!accept && why.is_some(), "{give_items:?} / {get_items:?}: {a}");
+            continue;
+        }
+        assert_eq!(accept, s.g.controller(ai).consider_offer(&s.g, ai, h, &give_items, &get_items), "{give_items:?} / {get_items:?}: {a}");
+        match (a.get("margin").and_then(Json::as_i64), &why) {
+            (Some(margin), None) => {
+                let sum: i64 = give.iter().chain(&get).map(|x| x.1.unwrap_or(0)).sum();
+                assert_eq!(margin, sum, "{give_items:?} / {get_items:?}: {a}");
+                assert_eq!(accept, margin >= 0);
+                on_value += 1;
+            }
+            _ => by_rule += 1,
+        }
+    }
+    assert!(on_value > 0 && by_rule > 0, "{on_value} deals decided on value, {by_rule} by a rule");
+}

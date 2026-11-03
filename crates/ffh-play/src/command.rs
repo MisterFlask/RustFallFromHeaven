@@ -426,7 +426,7 @@ fn typed_data<T: names::Named>(d: &GameData, j: &Json, key: &str) -> Result<i32,
 }
 
 /// A list of trade items (`propose_deal`, `propose_loan`); absent = none.
-fn trade_items(d: &GameData, j: &Json, key: &str) -> Result<Vec<TradeData>, FieldError> {
+pub(crate) fn trade_items(d: &GameData, j: &Json, key: &str) -> Result<Vec<TradeData>, FieldError> {
     j.opt_value(key)?.map_or(Ok(Vec::new()), |v| {
         let list = v.as_arr().ok_or_else(|| FieldError::wrong(key, "an array of trade items", v))?;
         list.iter().map(|t| crate::view::diplo::trade_item_from_json(d, t).map_err(|e| FieldError::new(key, e.to_string()))).collect()

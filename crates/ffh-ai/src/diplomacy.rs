@@ -14,6 +14,7 @@
 //! Relations are a small explicit score (alignment, religion, shared borders, war history, the
 //! Trust spell) instead of the C++ attitude machinery.
 
+use ffh_core::controller::OfferVerdict;
 use ffh_core::game::Game;
 use ffh_core::ids::*;
 use ffh_core::structs::TradeData;
@@ -1392,22 +1393,80 @@ pub(crate) fn want_peace(g: &Game, team: TeamId, enemy: TeamId, plan: &crate::vi
 }
 
 /// C++ `AI_considerOffer` equivalent: accept peace when the war is not going our way or has
-/// lasted long, open borders with friends, and gifts.
+/// lasted long, open borders with friends, and gifts. The answer of [`judge_offer`].
 pub fn consider_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData], we_give: &[TradeData]) -> bool {
+    judge_offer(g, p, from, they_give, we_give, true).accept
+}
+
+/// What `p` makes of an offer from `from` (`they_give` to us for `we_give`): whether it accepts,
+/// and what decided it -- the margin when value did (what we get minus what we give, each item
+/// at [`crate::trade::item_value`]), the reason when a rule did. The diplomacy screen shows it to
+/// the human while it puts a deal together. `tel`: record the decisions in telemetry (not for
+/// that preview). The reasons are plain statements of the rule, speaking of `from` as "you".
+pub fn judge_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData], we_give: &[TradeData], tel: bool) -> OfferVerdict {
+    let mut v = judge(g, p, from, they_give, we_give, tel);
+    // A demand (we give, for nothing) falls to the value rules below and fails them.
+    if they_give.is_empty() && !v.accept && v.why.is_none() {
+        v.why = Some("demands are refused".into());
+    }
+    v
+}
+
+fn judge(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData], we_give: &[TradeData], tel: bool) -> OfferVerdict {
+    let rule = |accept: bool, why_not: &str| OfferVerdict { accept, margin: None, why: (!accept).then(|| why_not.to_string()) };
+    let no = |why: &str| rule(false, why);
+    let because = |accept: bool, why: &str| OfferVerdict { accept, margin: None, why: Some(why.to_string()) };
+    let on_value = |margin: i64| OfferVerdict { accept: margin >= 0, margin: Some(margin as i32), why: None };
+    let has = |items: &[TradeData], kind: TradeableItem| items.iter().any(|t| t.item_type == kind);
     // Vassal states come with strings attached (vassals.rs): asked to become `from`'s vassal, or
     // offered `from` as ours.
-    if let Some(yes) = crate::vassals::agree(g, p, from, we_give) {
-        return yes;
+    if let Some(yes) = crate::vassals::agree(g, p, from, we_give, tel) {
+        return because(
+            yes,
+            match (has(we_give, TradeableItem::TRADE_SURRENDER), yes) {
+                (true, true) => "losing the war to you",
+                (true, false) => "capitulation requires losing the war to you",
+                (false, true) => "hopelessly behind you",
+                (false, false) => "vassalage requires being hopelessly behind you",
+            },
+        );
     }
-    if let Some(yes) = crate::vassals::accept_master(g, p, from, they_give, we_give) {
-        return yes;
+    if let Some(yes) = crate::vassals::accept_master(g, p, from, they_give, we_give, tel) {
+        return rule(yes, if has(they_give, TradeableItem::TRADE_SURRENDER) { "your last cities can be taken instead" } else { "your wars would involve them" });
     }
     if we_give.is_empty() {
-        return true;
+        return OfferVerdict { accept: true, margin: Some(crate::trade::deal_val(g, p, from, they_give, false, 1)), why: Some("gift".into()) };
     }
     let team = g.players[p].team;
     let their_team = g.players[from].team;
     let all = |items: &[TradeData], kind: TradeableItem| items.iter().all(|t| t.item_type == kind);
+    // Never hand over a resource our own judgement blocks (ported `AI_bonusTrade`).
+    let refused_bonus = || {
+        we_give.iter().find_map(|item| {
+            if item.item_type != TradeableItem::TRADE_RESOURCES {
+                return None;
+            }
+            crate::trade::bonus_trade_denial(g, p, BonusType::from_usize(item.data as usize), from).map(|d| match d {
+                DenialType::DENIAL_WORST_ENEMY => "resource withheld from their worst enemy",
+                DenialType::DENIAL_ATTITUDE => "resource withheld: attitude too low",
+                DenialType::DENIAL_NO_GAIN | DenialType::DENIAL_JOKING => "you already have that resource",
+                _ => "resource withheld",
+            })
+        })
+    };
+    // The friendly trades (technologies, resources, gold): only at peace with a civ we do not
+    // dislike and are not about to attack.
+    let unfriendly = || {
+        if g.at_war(team, their_team) {
+            Some("at war with you")
+        } else if relation(g, p, from) < 0 {
+            Some("attitude Annoyed or worse")
+        } else if preparing_target(g, team) == Some(their_team) {
+            Some("preparing war on you")
+        } else {
+            None
+        }
+    };
     // Peace, possibly with reparations: each list carries a peace treaty, and either may also carry
     // tribute (tech / gold). Value both sides as the at-war `AI_endWarVal` baseline plus the tribute
     // (C++ `AI_dealVal`/`AI_considerOffer`, CvPlayerAI.cpp:6815, 7057) and accept when what we get is
@@ -1416,15 +1475,10 @@ pub fn consider_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeD
     if has_peace(they_give) && has_peace(we_give) {
         let counter = g.teams[team].ai_at_war_counter[their_team];
         if counter < 10 {
-            return false;
+            return no("peace requires 10 turns of war");
         }
-        // Never hand over a resource our own judgement blocks (ported `AI_bonusTrade`).
-        for item in we_give {
-            if item.item_type == TradeableItem::TRADE_RESOURCES
-                && crate::trade::bonus_trade_denial(g, p, BonusType::from_usize(item.data as usize), from).is_some()
-            {
-                return false;
-            }
+        if let Some(why) = refused_bonus() {
+            return no(why);
         }
         let ours = g.team_get_power(team, true).max(1) as i64;
         let theirs = g.team_get_power(their_team, true).max(1) as i64;
@@ -1437,30 +1491,43 @@ pub fn consider_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeD
         let plan = crate::victory::plan(g, p);
         if crate::victory::wants_conquest(&plan) || crate::victory::rival_team(g, &plan) == Some(their_team) || press_conquest(g, team, their_team) {
             let losing = their_success > success + 10 && ours * 10 < theirs * 12;
-            return losing || counter >= 80;
+            return match (losing, counter >= 80) {
+                (true, _) => because(true, "losing the war"),
+                (false, true) => because(true, "war longer than 80 turns"),
+                _ => no("war of conquest: peace only when losing or after 80 turns"),
+            };
         }
         // Reparations: value each side as the at-war `AI_endWarVal` baseline plus its tribute (C++
         // `AI_dealVal`/`AI_considerOffer`, CvPlayerAI.cpp:6815, 7057). A deal that pays us at least
         // what we give away -- a winner's reparations, or a loser sweetening the peace -- is taken.
         let their_v = end_war_val_seen(g, p, team, their_team) + crate::trade::deal_val(g, p, from, they_give, false, 1);
         let our_v = end_war_val_seen(g, p, their_team, team) + crate::trade::deal_val(g, from, p, we_give, false, 1);
-        if their_v >= our_v {
-            return true;
-        }
+        let margin = their_v as i64 - our_v as i64;
         // The deal leaves us behind on value. Give away tribute of our own only when it pays
         // (the test above) -- never fall through to accept a peace in which we also hand something
-        // over. A BARE peace (we give nothing but the treaty) still ends on plain willingness: we
-        // take it unless we are clearly winning, and always once the war has dragged to exhaustion
-        // (keeps the pre-reparations war-ending behaviour, so even/stalemated wars still resolve).
-        if we_give.iter().any(|t| t.item_type != TradeableItem::TRADE_PEACE_TREATY) {
-            return false;
+        // over.
+        if margin >= 0 || we_give.iter().any(|t| t.item_type != TradeableItem::TRADE_PEACE_TREATY) {
+            return on_value(margin);
         }
+        // A BARE peace (we give nothing but the treaty) still ends on plain willingness: we take it
+        // unless we are clearly winning, and always once the war has dragged to exhaustion (keeps
+        // the pre-reparations war-ending behaviour, so even/stalemated wars still resolve).
         let winning = ours > theirs * 3 / 2 && success > their_success + 20;
         // Nor while our army stands at their next city, three times what they have near ours
         // (PEACE_FORCES): the city is close.
         let losing = their_success > success + 10 && ours * 10 < theirs * 12;
         let at_gates = crate::switches::PEACE_FORCES.on(g, p) && !losing && forces_pct(g, team, their_team) <= 66;
-        return !winning && !at_gates || counter >= 60;
+        let accept = !winning && !at_gates || counter >= 60;
+        let why = if counter >= 60 {
+            "war longer than 60 turns"
+        } else if accept {
+            "peace for no tribute: accepted when not winning"
+        } else if winning {
+            "winning the war"
+        } else {
+            "their army is at your cities"
+        };
+        return OfferVerdict { accept, margin: Some(margin as i32), why: Some(why.into()) };
     }
     // War bribe: `from` pays us (tech / gold) to declare war on a third team. Judge as the bribee.
     // The AI-judgement denial gates `ai_declare_war_trade` leaves to the AI (C++ `AI_declareWarTrade`,
@@ -1470,28 +1537,31 @@ pub fn consider_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeD
     if let Some(war_item) = we_give.iter().find(|t| t.item_type == TradeableItem::TRADE_WAR) {
         let target = TeamId(war_item.data as u8);
         // One war at a time (DENIAL_TOO_MANY_WARS).
-        if g.team_get_at_war_count(team, true) > 0 || preparing_target(g, team).is_some() {
-            return false;
+        if g.team_get_at_war_count(team, true) > 0 {
+            return no("already at war");
+        }
+        if preparing_target(g, team).is_some() {
+            return no("preparing another war");
         }
         // Too strong even with the briber's help, when the briber is already at war with the target
         // (DENIAL_NO_GAIN; AI_isAllyLandTarget unported -> no /2).
         let briber_help = if g.at_war(their_team, target) { g.team_get_power(their_team, true) as i64 } else { 0 };
         if g.team_get_defensive_power(target) as i64 > g.team_get_power(team, true) as i64 + briber_help {
-            return false;
+            return no("target stronger than them");
         }
         // Won't declare war for a civ we dislike, nor against one we like too much.
         if let Some(l) = g.players[p].personality_type.map(|l| &g.d.leader_heads[l]) {
             if attitude(g, p, from).i() <= opt_to_i32(l.declare_war_refuse_attitude_threshold) {
-                return false;
+                return no("attitude towards you too low");
             }
             if team_attitude(g, team, target).i() > opt_to_i32(l.declare_war_them_refuse_attitude_threshold) {
-                return false;
+                return no("attitude towards the target too high");
             }
         }
         // (Target nukes: FfH 0.41 has none, and the briber is at war with the target anyway.)
         let theirs = crate::trade::deal_val(g, p, from, they_give, false, 1);
         let ours = crate::trade::deal_val(g, from, p, we_give, false, 1);
-        return theirs >= ours;
+        return on_value(theirs as i64 - ours as i64);
     }
     // Tech-trade discipline (TECH_DISCIPLINE): no technology to our victory rival, no military
     // technology while we prepare or fight a war, no monopoly worth keeping to a non-friend.
@@ -1503,25 +1573,39 @@ pub fn consider_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeD
             .filter(|t| t.item_type == TradeableItem::TRADE_TECHNOLOGIES)
             .find_map(|t| tech_denial(g, p, from, TechType::from_usize(t.data as usize), &rules));
         if let Some(why) = denied {
-            g.tel_decision(p, "tech_trade", "refused", why, 0, String::new);
-            return false;
+            if tel {
+                g.tel_decision(p, "tech_trade", "refused", why, 0, String::new);
+            }
+            return no(match why {
+                "rival" => "technology withheld from their victory rival",
+                "military" => "military technology withheld during war",
+                "wonder" => "technology leads to a wonder they are building",
+                "monopoly" => "military technology few others have",
+                _ => "technology withheld",
+            });
         }
     }
     if all(they_give, TradeableItem::TRADE_DEFENSIVE_PACT) && all(we_give, TradeableItem::TRADE_DEFENSIVE_PACT) {
-        return crate::pacts::accept(g, p, from);
+        return rule(crate::pacts::accept(g, p, from), "defensive pact requires attitude Friendly or a common threat");
     }
     if all(they_give, TradeableItem::TRADE_OPEN_BORDERS) && all(we_give, TradeableItem::TRADE_OPEN_BORDERS) {
-        return !g.at_war(team, their_team) && relation(g, p, from) >= 1;
+        return rule(!g.at_war(team, their_team) && relation(g, p, from) >= 1, "open borders requires attitude Pleased");
     }
     // Technology for technology: worth at least four fifths of what we give, with a civ we do
     // not dislike, and never to the one we are preparing a war against.
     if all(they_give, TradeableItem::TRADE_TECHNOLOGIES) && all(we_give, TradeableItem::TRADE_TECHNOLOGIES) {
-        if g.at_war(team, their_team) || relation(g, p, from) < 0 || preparing_target(g, team) == Some(their_team) {
-            return false;
+        if let Some(why) = unfriendly() {
+            return no(why);
         }
         // (From the world's clear leader we want more than we give: `TechCtx::min_return_pct`.)
         let value = |items: &[TradeData]| items.iter().map(|t| g.team_get_research_cost(team, TechType::from_usize(t.data as usize)) as i64).sum::<i64>();
-        return value(they_give) * 100 >= value(we_give) * rules.min_return_pct(g, from);
+        let pct = rules.min_return_pct(g, from);
+        let surplus = value(they_give) * 100 - value(we_give) * pct;
+        return OfferVerdict {
+            accept: surplus >= 0,
+            margin: Some(surplus.div_euclid(100) as i32),
+            why: Some(format!("technology swap: needs {pct}% return, at their research costs")),
+        };
     }
     // Resources and gold (and any mixed deal): value both sides in gold-equivalent (C++
     // `AI_dealVal`) and accept when what we receive is worth at least what we give away. A friendly
@@ -1536,23 +1620,19 @@ pub fn consider_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeD
     };
     if tradeable(they_give) || tradeable(we_give) {
         if crate::trade::is_gold_deal(they_give) && crate::trade::is_gold_deal(we_give) {
-            return false;
+            return no("gold for gold");
         }
-        if g.at_war(team, their_team) || relation(g, p, from) < 0 || preparing_target(g, team) == Some(their_team) {
-            return false;
+        if let Some(why) = unfriendly() {
+            return no(why);
         }
-        for item in we_give {
-            if item.item_type == TradeableItem::TRADE_RESOURCES
-                && crate::trade::bonus_trade_denial(g, p, BonusType::from_usize(item.data as usize), from).is_some()
-            {
-                return false;
-            }
+        if let Some(why) = refused_bonus() {
+            return no(why);
         }
         let theirs = crate::trade::deal_val(g, p, from, they_give, false, 1);
         let ours = crate::trade::deal_val(g, from, p, we_give, false, 1);
-        return theirs >= ours;
+        return on_value(theirs as i64 - ours as i64);
     }
-    false
+    no("these items are not traded")
 }
 
 /// C++ `AI_conquerCity`: raze small, distant conquests we could not hold.

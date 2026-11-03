@@ -19,7 +19,7 @@ use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::{Arc, Mutex};
 
 use ffh_ai::Ai;
-use ffh_core::controller::{ConqueredCityChoice, Controller};
+use ffh_core::controller::{ConqueredCityChoice, Controller, OfferVerdict};
 use ffh_core::game::Game;
 use ffh_core::ids::*;
 use ffh_core::structs::*;
@@ -64,6 +64,9 @@ pub const POLICIES: &[(&str, Policy)] = &[
     ("keep_captured_unit", Policy::Fixed),
     ("accept_unit", Policy::Fixed),
     ("consider_offer", Policy::Blocking),
+    // (an AI's judgement, shown on the diplomacy screen; a human answers for itself)
+    ("judge_offer", Policy::Fixed),
+    ("trade_value", Policy::Fixed),
     ("choose_religion", Policy::Blocking),
     ("attitude", Policy::Advisor),
     ("take_control", Policy::Blocking),
@@ -469,6 +472,22 @@ impl Controller for HumanController {
         }
         let advice = self.suggest(g, |g| self.advisor.consider_offer(g, p, from, they_give, we_give));
         self.block(g, decision::offer(g, p, from, they_give, we_give, advice)) == 0
+    }
+
+    /// The AI's answer, shown on the diplomacy screen; a human's is not known in advance.
+    fn judge_offer(&self, g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData], we_give: &[TradeData]) -> OfferVerdict {
+        if !g.players[p].human {
+            return self.advisor.judge_offer(g, p, from, they_give, we_give);
+        }
+        OfferVerdict::default()
+    }
+
+    /// The AI's trade values; a human puts none.
+    fn trade_value(&self, g: &Game, p: PlayerId, other: PlayerId, item: &TradeData, p_gets: bool) -> Option<i32> {
+        if !g.players[p].human {
+            return self.advisor.trade_value(g, p, other, item, p_gets);
+        }
+        None
     }
 
     /// C++ BUTTONPOPUP_FOUND_RELIGION: blocking (unreachable while FfH locks PICK_RELIGION off).

@@ -11,7 +11,7 @@
 
 use std::sync::{Arc, Mutex};
 
-use ffh_core::controller::{Controller, ControllerRef};
+use ffh_core::controller::{Controller, ControllerRef, OfferVerdict};
 use ffh_core::game::Game;
 use ffh_core::ids::*;
 use ffh_core::structs::*;
@@ -211,6 +211,14 @@ impl Controller for Ai {
 
     fn consider_offer(&self, g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData], we_give: &[TradeData]) -> bool {
         diplomacy::consider_offer(g, p, from, they_give, we_give)
+    }
+
+    fn judge_offer(&self, g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData], we_give: &[TradeData]) -> OfferVerdict {
+        diplomacy::judge_offer(g, p, from, they_give, we_give, false)
+    }
+
+    fn trade_value(&self, g: &Game, p: PlayerId, other: PlayerId, item: &TradeData, p_gets: bool) -> Option<i32> {
+        trade::item_value(g, p, other, item, p_gets)
     }
 
     fn attitude(&self, g: &Game, p: PlayerId, towards: PlayerId) -> AttitudeType {

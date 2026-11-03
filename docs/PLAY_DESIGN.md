@@ -589,7 +589,8 @@ All queries are pure, run under `QueryGuard` and follow the allow-list.
 | `combat {units,x,y}` | Attacker from `group_ai_get_best_group_attacker(grp, plot, true, false, false)`, defender from `plot_get_best_defender(plot, None, Some(h), Some(att), true, false, false)`, odds in per mille from `get_combat_odds`, plus a **CombatDetails breakdown** via `unit_max_combat_str(.., Some(&mut details))` (modifiers, first strikes, withdraw, collateral), as `setCombatPlotHelp` does |
 | `city {city}` | The full city screen: plots with yields and worked or worked-by-other state, specialists, food/production/commerce breakdown, growth, happiness and health (with main causes), maintenance, buildings, religions, culture level, great-person progress, defence, garrison, queue, and the buildable list with cost, turns and greyed `test_visible` entries |
 | `techs`, `civics`, `religions`, `players` | Their screens (tech tree laid out by prerequisite depth) |
-| `trade {with}` | Tradeable items both ways, with denials |
+| `trade {with}` | Tradeable items both ways, with denials and the AI's values |
+| `trade_answer {with, give, get}` | The answer `propose_deal` with these items would get now |
 | `log {since}`, `report` | Message store; turn report (§5) |
 | `inspect {kind,oid}` | `{:#?}` of a unit, group, city, plot, player, team or info entry. Own objects only unless debug-reveal is on; a plot only under debug reveal (it holds every team's data). The object is `oid` (P4 review: `id` is the envelope's request id) |
 | `text` | Compact text summary for LLM agents: status, pending, ready groups with positions, city list |

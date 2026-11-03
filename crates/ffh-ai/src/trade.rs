@@ -176,6 +176,21 @@ pub fn deal_val(g: &Game, p: PlayerId, other: PlayerId, list: &[TradeData], igno
     value
 }
 
+/// What trade item `item` is worth in a deal between `p` and `other` as `p` weighs it
+/// (`diplomacy::judge_offer`): its value to the side that receives it (`p` when `p_gets`), the
+/// [`deal_val`] of the item alone, a peace treaty at the end-war value; gold and gold per turn for
+/// the amount in `item.data`. `None` for an item `p` puts no price on (it adds nothing to a deal).
+pub fn item_value(g: &Game, p: PlayerId, other: PlayerId, item: &TradeData, p_gets: bool) -> Option<i32> {
+    let (to, from) = if p_gets { (p, other) } else { (other, p) };
+    match item.item_type {
+        TradeableItem::TRADE_PEACE_TREATY => Some(crate::diplomacy::end_war_val_seen(g, p, g.players[to].team, g.players[from].team)),
+        TradeableItem::TRADE_TECHNOLOGIES | TradeableItem::TRADE_RESOURCES | TradeableItem::TRADE_GOLD | TradeableItem::TRADE_GOLD_PER_TURN | TradeableItem::TRADE_WAR => {
+            Some(deal_val(g, to, from, std::slice::from_ref(item), false, 1))
+        }
+        _ => None,
+    }
+}
+
 /// C++ `AI_maxGoldTrade`: the most one-off gold player `p` will hand `other` -- bounded by what it
 /// can field (population, how long known, leader's generosity), what it has already given this
 /// rival, and a buffer of ~12 turns of research it will not spend. Rounded down to a clean

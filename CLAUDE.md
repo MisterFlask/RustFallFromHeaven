@@ -274,6 +274,15 @@ which forward to the C++ methods -- so port each Cy call to the corresponding po
   AI-only Python gates were moved there (docs/PORTING.md, "Changes from FFH2"); the rules' other
   AI-only branches are listed in docs/AI_ONLY_RULES.md, each group moved by its own decision.
 
+## Rules text and tooltips
+
+Mechanical text -- rules, tooltips, previews, results, reasons, effects -- is bare and without
+flavor (the owner's rule, 2026-11-02): labels, numbers and the rule itself, no adjectives,
+narration or mood. Write `Total offered: 240`, `This proposal will be refused.`,
+`Reason: open borders requires attitude Pleased.`, `Effect: -1 relations for 30 turns.`; not
+"they would welcome it" or "the forest thanks you". Flavor belongs to what characters say (the
+leaders' speech) and to the names and descriptions of the game's data.
+
 ## Verifying renderer and visual work (r3d, lab, client look)
 
 This is a game. The owner looks at the result and reports regressions, and a regression costs a

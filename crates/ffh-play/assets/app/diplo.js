@@ -2,7 +2,9 @@
 // met (leader, civilization, war or peace, open borders, pacts, vassals, attitude, score), your
 // deals with them, declaring war (`declare_war`), and the trade screen: what each side can give
 // (the `trade` query, C++ `buildTradeTable`, refusals greyed), a deal put together from both
-// tables and offered (`propose_deal`), which the AI accepts or declines at once. Each leader shows
+// tables and offered (`propose_deal`), which the AI accepts or declines at once; each item shows
+// the points the AI puts on it, and under the tables the totals and the answer the proposal will
+// get (the `trade_answer` query), both kept bare (CLAUDE.md, "Rules text and tooltips"). Each leader shows
 // their portrait (portraits.js).
 //
 // Leaders speak as in Civ4's diplomacy screen (`speech` query, view/speech.rs: FfH2's lines for
@@ -272,6 +274,65 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
   const isDual = (it) => DUAL_ITEMS.includes(tname("TradeableItem", it.item));
   const isGold = (it) => ["TRADE_GOLD", "TRADE_GOLD_PER_TURN"].includes(tname("TradeableItem", it.item));
   const status = h("p.dim");
+  // Values (the trade query's `value`: the points the leader puts on an item, + for what it gets,
+  // - for what it gives; gold and gold per turn per piece; null for no value) and the summary of
+  // the deal, with the answer the leader would give (the `trade_answer` query).
+  const hasValue = (it) => it.value !== null && it.value !== undefined;
+  const points = (it, amount) => (!hasValue(it) ? 0 : isGold(it) ? it.value * amount : it.value);
+  const signed = (n) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : "0");
+  const valueText = (it, sel) => (!hasValue(it) ? (isDual(it) ? "swap" : "no value") : isGold(it) && !sel ? `${signed(it.value)} each` : signed(points(it, sel?.data ?? 1)));
+  const valueTip = (it) => {
+    if (!hasValue(it)) return isDual(it) ? "No value. Traded only for the same item." : "No value. Adds 0 to the deal.";
+    const v = Math.abs(it.value);
+    const turns = it.value_turns;
+    switch (tname("TradeableItem", it.item)) {
+      case "TRADE_GOLD":
+        return `${v} per gold.`;
+      case "TRADE_GOLD_PER_TURN":
+        return `${v} per gold per turn: ${v / turns} per gold × ${turns} turns. Lease: runs until war or embargo.`;
+      case "TRADE_RESOURCES":
+        return `${v}: ${v / turns} per turn × ${turns} turns. Lease: runs until war, embargo or loss of the resource.`;
+      case "TRADE_TECHNOLOGIES":
+        return "Research cost for the receiving side.";
+      case "TRADE_PEACE_TREATY":
+        return "Value of ending the war for the receiving side.";
+      case "TRADE_WAR":
+        return "Price of declaring war.";
+    }
+    return null;
+  };
+  const summary = h("div.trade-summary", { hidden: true });
+  let asked = 0;
+  const refreshSummary = async () => {
+    const give = [...deal.give.values()];
+    const get = [...deal.get.values()];
+    if (!give.length && !get.length && !deal.troops) {
+      summary.hidden = true;
+      return;
+    }
+    let offered = 0;
+    let requested = 0;
+    for (const it of t.we_give) if (deal.give.has(keyOf(it))) offered += points(it, deal.give.get(keyOf(it)).data);
+    for (const it of t.they_give) if (deal.get.has(keyOf(it))) requested -= points(it, deal.get.get(keyOf(it)).data);
+    const lines = [h("div", `Total offered: ${offered}`), h("div", `Total requested: ${requested}`)];
+    summary.replaceChildren(...lines);
+    summary.hidden = false;
+    // A loan of troops is judged on its own terms (`propose_loan`): no answer in advance.
+    if (deal.troops) return;
+    const ask = ++asked;
+    let r;
+    try {
+      r = await api.query("trade_answer", { with: withPlayer, give, get });
+    } catch {
+      return;
+    }
+    if (ask !== asked || m.closed || r.accept === null || r.accept === undefined) return;
+    summary.replaceChildren(
+      ...lines,
+      h("div", { "data-answer": r.accept ? "accepted" : "refused" }, "This proposal will be ", h(r.accept ? "b.good" : "b.warn", r.accept ? "accepted" : "refused"), "."),
+      r.why ? h("div.dim", `Reason: ${r.why}.`) : null,
+    );
+  };
   const draw = () => {
     const side = (list, mapKey, other, title) =>
       h(
@@ -286,6 +347,7 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
               const denied = !!refusal;
               const why = refusal ? `${refusal.twin ? "the other side refuses: " : ""}${dname("DenialType", refusal.denial)}` : "";
               const label = isGold(it) ? `${tradeItemLabel({ ...it, data: 0 })} (up to ${it.max})` : tradeItemLabel(it);
+              const value = h("span.trade-value", { class: !hasValue(it) ? "none" : it.value > 0 ? "plus" : "minus", tip: valueTip(it) }, valueText(it, deal[mapKey].get(k)));
               const row = h(
                 "div.trade-item",
                 { class: on ? "on" : "", "data-item": tname("TradeableItem", it.item), "data-data": it.data, tip: itemTip(it, techHelp) },
@@ -307,17 +369,23 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
                   },
                   on ? "✓" : "+",
                 ),
-                h("span", label),
+                h("span", label, it.value_turns ? h("span.dim", " (lease)") : null),
                 on && isGold(it)
                   ? h("input.amount", {
                       type: "number",
                       min: 1,
                       max: it.max,
                       value: deal[mapKey].get(k).data,
-                      oninput: (ev) => (deal[mapKey].get(k).data = Math.max(1, Math.min(it.max, Number(ev.target.value) || 1))),
+                      oninput: (ev) => {
+                        const sel = deal[mapKey].get(k);
+                        sel.data = Math.max(1, Math.min(it.max, Number(ev.target.value) || 1));
+                        value.textContent = valueText(it, sel);
+                        refreshSummary();
+                      },
                     })
                   : null,
                 denied ? h("span.dim", ` (${why})`) : null,
+                value,
               );
               return row;
             })
@@ -365,8 +433,10 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
       leader.el,
       t.war ? h("p.warn", "You are at war: a deal makes peace, so it must hold the peace treaty (or a capitulation).") : null,
       h("div.trade", side(t.we_give, "give", t.they_give, "You give"), side(t.they_give, "get", t.we_give, "They give")),
+      summary,
       status,
     );
+    refreshSummary();
   };
   m.setButtons([
     {
@@ -401,10 +471,10 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
           deal.get.clear();
           deal.troops = null;
           draw();
-          status.textContent = "They accepted the deal.";
+          status.textContent = "Accepted.";
           status.className = "good";
         } else {
-          status.textContent = "They declined.";
+          status.textContent = "Refused.";
           status.className = "warn";
         }
         status.dataset.answer = accepted ? "accepted" : "declined";

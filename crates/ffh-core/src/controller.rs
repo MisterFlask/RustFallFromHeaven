@@ -135,6 +135,21 @@ pub trait Controller: Send + Sync {
         false
     }
 
+    /// Not in C++: [`Controller::consider_offer`]'s answer with what decided it, for the
+    /// diplomacy screen, which shows a human the answer while it puts a deal together. It must
+    /// agree with `consider_offer` and record nothing. Default: `consider_offer`'s answer alone.
+    fn judge_offer(&self, g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData], we_give: &[TradeData]) -> OfferVerdict {
+        OfferVerdict { accept: self.consider_offer(g, p, from, they_give, we_give), ..OfferVerdict::default() }
+    }
+
+    /// Not in C++: the points player `p` puts on trade item `item` in a deal with `other`, what
+    /// it is worth to the side that receives it (`p` itself when `p_gets`) as
+    /// [`Controller::judge_offer`] weighs a deal; `None` for an item `p` puts no price on.
+    /// Default: `None`.
+    fn trade_value(&self, _g: &Game, _p: PlayerId, _other: PlayerId, _item: &TradeData, _p_gets: bool) -> Option<i32> {
+        None
+    }
+
     /// C++ `CvPlayerAI::AI_chooseReligion` (FFH: religion choice when founding/converting).
     fn choose_religion(&self, _g: &Game, _p: PlayerId) -> Option<ReligionType> {
         None
@@ -258,6 +273,17 @@ pub enum ConqueredCityChoice {
     Raze,
     /// Button 2: `cityAcquiredAndKept`, then TASK_GIFT to the liberation player.
     Gift,
+}
+
+/// What a player makes of an offer ([`Controller::judge_offer`]).
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct OfferVerdict {
+    pub accept: bool,
+    /// When value decided: what it gets minus what it gives, in its trade points
+    /// ([`Controller::trade_value`]); the answer is yes from 0 up.
+    pub margin: Option<i32>,
+    /// Why, when it was not (or not only) a matter of value: "they are preparing a war on you".
+    pub why: Option<String>,
 }
 
 impl Game {
