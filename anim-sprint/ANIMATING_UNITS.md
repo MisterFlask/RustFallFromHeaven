@@ -84,7 +84,9 @@ Each holds, per animation `idle`, `strike`, `flinch`, `death`:
 - The game ships a set's strips in `crates/ffh-play/assets/app/anim/<unit>_<anim>.png` (copies of `sheet_<anim>.png`).
   The HD-2D map plays the idle of every M7 sprite listed in `IDLE` (`assets/app/r3d/hd2d/sprites.js`): to make a new
   unit breathe on the map, copy its `sheet_idle.png` there and add its sprite key to that table. The battle screens
-  play the four animations of the sets in `ANIM_SETS` (`assets/app/battle_stage.js`).
+  play the four animations of the sets in `ANIM_SETS` (`assets/app/battle_stage.js`). The horsemen's idles in that
+  table came from the mounted rig of the unmerged `anim-all` branch (its `lib/quad.py`), not from this recipe, which
+  has poses for bipeds only (`UNITS.md`, "Idle only").
 
 `spec.md` is the sprint's contract (with a correction for rule 1). `beats.md` is the beat sheet: its main tables are the
 far set (lower-left units such as the ogre and Hyborem; the sprint's swordsman sets used them too, against rule 1), and

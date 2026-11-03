@@ -182,20 +182,22 @@ lab and tools. The camera is the 3D one with the HD-2D preset's pitch and lens (
   layer at its top-left (the 2x2 city, 384 wide, at two thirds), premultiplied (so the mipmaps
   average colour and coverage together: no dark fringe) and mipmapped; the array doubles when full.
   Banners are drawn by code into the same array (the owner's colour stays a runtime choice).
-* **Idle figures**: a unit sprite with an anim-sprint idle (`sprites.js` `IDLE`: 111 of them, the
-  generic adept, axeman, champion, phalanx, settler, swordsman, warrior and worker, the goblin,
-  lizardman, ogre, paladin and skeleton, the heroes Donal, Guybrush, Hyborem, Losha and Maros, and 93
-  of the civilizations' own 110 variants: every warrior (19, the barbarians' included), axeman (11),
-  worker (21), settler (21) and adept (18), the Ljosalfar archer, the Grigori medic and the Sheaim
-  mage) is stored as its idle strip
+* **Idle figures**: a unit sprite with an anim-sprint idle (`sprites.js` `IDLE`: 129 of them, the
+  generic adept, axeman, champion, horseman, phalanx, settler, swordsman, warrior and worker, the
+  goblin, lizardman, ogre, paladin and skeleton, the heroes Donal, Guybrush, Hyborem, Losha and
+  Maros, and all 110 of the civilizations' own variants: every warrior (19, the barbarians'
+  included), axeman (11), worker (21), settler (21), adept (18) and horseman (17), the Ljosalfar
+  archer, the Grigori medic and the Sheaim mage) is stored as its idle strip
   (`assets/app/anim/<unit>_idle.png`: four 160 × 128 frames, the sprite's own pixels bent by a
   mesh warp, frame 0 the sprite itself; anim-sprint/ANIMATING_UNITS.md), two frames a layer, one
   above the other (the frames' empty rows round the seam keep the mipmaps apart). Its card is the
   frame's, the sprite in it standing where the sprite's own card would; the vertex shader picks the
   frame, 250 ms each from the figure's own phase, so a group does not breathe in step. While the
-  map does not animate (`animate` off, or reduced motion) it shows frame 0. The civilizations' 17
-  horsemen have no idle yet and stand still (§13). A test checks that every strip's frame 0 is its
-  sprite, pixel for pixel, so a sprite exported again needs its strip made again.
+  map does not animate (`animate` off, or reduced motion) it shows frame 0. The horsemen's idles
+  come from the mounted rig of the unmerged `anim-all` branch (its `lib/quad.py`: the horse's head,
+  neck and back rise a pixel, the tail flicks, the rider breathes, the hooves stay planted); the
+  strips are shipped, not the rig. A test checks that every strip's frame 0 is its sprite, pixel
+  for pixel, so a sprite exported again needs its strip made again.
 * **Cards**: one instanced quad per card, its base point on the ground. It faces the camera
   (`lean` 1; 0 stands it upright, foreshortened by the pitch), so a sprite keeps the proportions it
   was drawn with. Its **depth is an upright card's** at the same base (the vertex shader puts the
@@ -841,7 +843,7 @@ distance each closes:
    face: the terrain mesh (six vertices a plot) cannot draw one; the target's rivers are broader and
    braided. A finer mesh along shores, or cliff cards along the bank, would close it.
 4. **Darker, moodier sprite variants and figures facing left or animated** (unit art; set aside by
-   the owner). The anim-sprint idles now play (§5, "Idle figures"), for the 111 sprites that have one.
+   the owner). The anim-sprint idles now play (§5, "Idle figures"), for the 129 sprites that have one.
 5. **The sky and the map's edge** (code): a small map's edge shows the 3D renderer's void under
    the shafts.
 6. **On a real GPU**: batches 3 and 4 were judged on software renders; the palette's numbers should
@@ -910,12 +912,15 @@ its defaults and do no harm.
   haze through the cloud gaps barely shows from above.
 * **The region moods** come from a table of civilizations and alignments; a game event (Armageddon,
   a spreading hell) changes them only through the terrain and the owners.
-* **Many figures stand still**: 111 of the 373 unit sprites breathe (§5), among them the common
-  ones (warriors, axemen, workers, settlers and adepts, generic and every civilization's). Every
-  mounted unit stands still, the civilizations' 17 horsemen included: the idle's poses are a
-  biped's, and a rider wants the mounted rig of the unmerged `anim-all` branch. So do the animals,
-  the other archers and casters, and most heroes and unique units; an idle for a biped needs only its unit
-  file (anim-sprint/ANIMATING_UNITS.md; no image calls). Figures are mirrored when facing west, so their painted light then comes from the upper right.
+* **Many figures stand still**: 129 of the 373 unit sprites breathe (§5), among them the common
+  ones (warriors, axemen, workers, settlers, adepts and horsemen, generic and every
+  civilization's). Next: the other riders and centaurs, whose unit files are on `anim-all` and
+  breathe with its mounted rig as the horsemen do: the knight, horse archer, death knight,
+  shadowrider, mounted mercenary, the four centaurs, the two wolf riders and the boar and bison
+  riders (that branch has the camel archer's file too). The animals, the other archers and
+  casters, and most heroes and unique units stand still as well; an idle for a biped needs only its
+  unit file (anim-sprint/ANIMATING_UNITS.md; no image calls). Figures are mirrored when facing
+  west, so their painted light then comes from the upper right.
   An idle figure's contact shadow is a 96-wide sprite's (the card is the 160-wide frame), a little
   narrow under Hyborem (105).
 * **The sprite array** holds one sprite a 256-texel layer, however small (an idle strip two): the town kit adds up to
@@ -927,7 +932,7 @@ its defaults and do no harm.
   hides them.
 * Next, by value: new art per §10 (ground textures first); the first frame's stall on Direct3D 11
   (§8: cheaper terrain, water and prop shaders); picking by card; idle frames for the
-  riders and the other common units still standing; a sky or haze bank beyond the map's north edge.
+  other riders and centaurs (above), then the other common units still standing; a sky or haze bank beyond the map's north edge.
 
 ## 14. Provenance
 

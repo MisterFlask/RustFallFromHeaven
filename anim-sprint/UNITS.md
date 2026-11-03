@@ -53,7 +53,18 @@ checking each skeleton over its sprite: per-sprite joints, scale and facing, bea
 breathes them with the melee sets, which is all the idle uses. Every one looks lower-right except `barbarian_axeman`
 (the orc's face and the skull helm look left of the head's centre, the ear sits right: lower-left, far set) and
 `sheaim_mage` (lower-left). The workers' hoe blade rises with the breath, up to 2 px off the ground, as a weapon tip
-does. Not done: the 17 horsemen (riders want that branch's mounted rig).
+does.
+
+The same day, the 18 horsemen (the generic and the civilizations' 17), whose idle this recipe cannot make: their unit
+files (`body_plan: "mounted"`, mount and rider joints) and the rig that breathes them (`lib/quad.py`,
+`poses_mounted.json`) are on `anim-all` only. The strips were built there (`recipe.py --rebuild --anims idle` on
+that branch, 4eb82898; it reproduces its own `final_horseman/sheet_idle.png` bit for bit, which is shipped as it is)
+and only the strips came to master (`crates/ffh-play/assets/app/anim/<unit>_idle.png`); their sets, unit files and
+code stay on that branch. All 18 look lower-right; the horse's head, neck and back and the rider rise a pixel, the
+tail flicks on frame 3, the planted hooves do not move, and the horse/rider seams do not tear. Next with that rig: the
+other riders and centaurs, whose unit files are on that branch too (`knight`, `horse_archer`, `death_knight`,
+`shadowrider`, `mercenary_mounted`, the four centaurs, `wolf_rider`, `frostling_wolf_rider`, `boar_rider`,
+`bison_rider`, `camel_archer`).
 
 ## Not started, same body plan (melee biped), each needs a decision first
 
@@ -80,5 +91,5 @@ says to report it rather than animate it with a sword swing. Not built.
 - elementals (`air_elemental`, `earth_elemental`, `fire_elemental`, `water_elemental`).
 
 Their idle is the one thing that needs no model: the same mesh-warp breath, with joints placed for the body plan. Four of
-these bipeds have one now (`adept`, `settler`, `ljosalfar_archer`, `sheaim_mage`: "Idle only"); it has not been tried
-on a non-biped.
+these bipeds have one now (`adept`, `settler`, `ljosalfar_archer`, `sheaim_mage`: "Idle only"), and so does the
+`horseman`, with the mounted rig of the `anim-all` branch ("Idle only"); this recipe has not been tried on a non-biped.
