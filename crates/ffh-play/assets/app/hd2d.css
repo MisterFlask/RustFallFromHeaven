@@ -1,0 +1,321 @@
+/* The HD-2D map's interface (docs/HD2D.md §9): the isometric interface (iso.css, isoui.js) dressed
+   as the menus of the HD-2D role-playing games the mode takes its look from (the owner's reference,
+   2026-11-02). In place of the pixel serif and the gilt frames: a thin humanist sans, light on dark;
+   panels of dark glass the map shows through, edged with a hairline; headings on darker strips in a
+   dimmer, smaller hand; lists lit by a pale band that fades to the right; the menus' entries as
+   banners with a pointed end, the one pointed at slid out of the column with a diamond at its tip.
+   On a desktop the panels are drawn at 80%, so the map, not the panels, holds the screen.
+
+   Everything here is under html.iso.hd2d (main.js syncSkin sets .hd2d over the HD-2D map; isoui.js
+   .iso). The battle screens keep the isometric skin's pixel look (iso.css #battle). */
+
+/* The lettering: one family whose regular weight is a light face and whose bold is the regular one,
+   so the skin's two weights (400 and 700 throughout iso.css) read as light and book. Candara on
+   Windows, Gill Sans or Optima on a Mac, else the system's sans. */
+@font-face {
+  font-family: "HD2D Sans";
+  font-weight: 400;
+  src: local("Candara Light"), local("Candara-Light"), local("Gill Sans Light"), local("GillSans-Light"),
+    local("Optima Regular"), local("Optima-Regular"), local("Segoe UI Light"), local("SegoeUI-Light"),
+    local("Noto Sans Light"), local("NotoSans-Light");
+}
+@font-face {
+  font-family: "HD2D Sans";
+  font-weight: 700;
+  src: local("Candara"), local("Candara-Regular"), local("Gill Sans"), local("GillSans"), local("Optima Bold"),
+    local("Optima-Bold"), local("Segoe UI"), local("SegoeUI"), local("Noto Sans"), local("NotoSans-Regular");
+}
+
+html.iso.hd2d {
+  --iso-font: "HD2D Sans", Candara, "Gill Sans", "Gill Sans MT", Optima, "Segoe UI", sans-serif;
+  --hd-ink: #efebe2;
+  --hd-dim: #a9a499;
+  --hd-off: #6f6b64;
+  --hd-line: rgba(236, 230, 214, 0.42);
+  --hd-faint: rgba(236, 230, 214, 0.16);
+  --hd-strip: rgba(0, 0, 0, 0.46);
+  /* a banner (a button, a menu entry) and the band that lights the one pointed at */
+  --hd-fill: linear-gradient(90deg, rgba(22, 21, 24, 0.94), rgba(32, 31, 35, 0.9));
+  --hd-band: linear-gradient(90deg, rgba(240, 236, 224, 0.34), rgba(240, 236, 224, 0.13) 55%, rgba(240, 236, 224, 0.04));
+  --iso-navy-top: rgba(20, 19, 22, 0.8);
+  --iso-navy-bot: rgba(9, 9, 11, 0.84);
+  --iso-deep: rgba(6, 6, 8, 0.86);
+  --iso-tile-top: rgba(34, 33, 37, 0.92);
+  --iso-tile-bot: rgba(20, 19, 23, 0.92);
+  --iso-tile-lit: #5d574a;
+  --iso-ink: var(--hd-ink);
+  --iso-dim: var(--hd-dim);
+  --iso-gold: #dccb9e;
+  --iso-gold-lt: #f3e7c4;
+  /* style.css's neutrals, which the screens draw their own boxes with: charcoal, not navy */
+  --c-void: #0c0b0d; --c-soot: #18171b; --c-coal: #2c2a2f; --c-iron: #45423d; --c-slate: #625e57; --c-ash: #8b867c;
+}
+/* The frames become hairlines (the boxes keep their rules from iso.css, with these widths): set on
+   the page's parts rather than the root, so the battle screens keep the gilt. */
+html.iso.hd2d body > :not(#battle) {
+  --iso-grain: none;
+  --iso-panel: linear-gradient(180deg, rgba(236, 230, 214, 0.26), rgba(236, 230, 214, 0.1)) 1;
+  --iso-panel-w: 1px;
+  --iso-inset: linear-gradient(180deg, rgba(0, 0, 0, 0.6), rgba(236, 230, 214, 0.12)) 1;
+  --iso-inset-w: 1px;
+  --iso-tile: linear-gradient(180deg, rgba(236, 230, 214, 0.16), rgba(236, 230, 214, 0.07)) 1;
+  --iso-tile-w: 1px;
+  --iso-tile-hover: linear-gradient(180deg, rgba(236, 230, 214, 0.55), rgba(236, 230, 214, 0.3)) 1;
+  --iso-tile-down: linear-gradient(180deg, rgba(236, 230, 214, 0.3), rgba(236, 230, 214, 0.2)) 1;
+  --iso-tile-off: linear-gradient(180deg, rgba(236, 230, 214, 0.08), rgba(236, 230, 214, 0.04)) 1;
+  --iso-tile-danger: linear-gradient(180deg, rgba(255, 141, 110, 0.6), rgba(255, 141, 110, 0.3)) 1;
+  --iso-primary: linear-gradient(180deg, rgba(232, 214, 162, 0.75), rgba(232, 214, 162, 0.4)) 1;
+  --iso-primary-w: 1px;
+  --iso-bar: linear-gradient(180deg, rgba(0, 0, 0, 0.7), rgba(236, 230, 214, 0.2)) 1;
+  --iso-bar-w: 1px;
+}
+
+html.iso.hd2d body { -webkit-font-smoothing: auto; font-smooth: auto; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.75); }
+/* Lining figures: Candara's default old-style ones make a 0 read as an o. On every element, as
+   iso.css's `font` shorthands reset it. */
+html.iso.hd2d body, html.iso.hd2d body * { font-variant-numeric: lining-nums; }
+html.iso.hd2d ::selection { background: #6d6656; color: #fff; }
+html.iso.hd2d * { scrollbar-color: rgba(236, 230, 214, 0.38) transparent; scrollbar-width: thin; }
+html.iso.hd2d ::-webkit-scrollbar-track { background: transparent; }
+html.iso.hd2d ::-webkit-scrollbar-thumb { background: rgba(236, 230, 214, 0.32); border: 0; }
+html.iso.hd2d ::-webkit-scrollbar-thumb:hover { background: rgba(236, 230, 214, 0.55); }
+html.iso.hd2d code, html.iso.hd2d pre, html.iso.hd2d textarea.raw { text-shadow: none; }
+
+/* Under the map's canvas until its first frame (r3d/map3d.js): the dark of the backdrop MapView
+   drew meanwhile (map.js holdBackdrop), not the isometric map's sky. */
+html.iso.hd2d #mapwrap { background: #07080a; }
+
+/* --- type -------------------------------------------------------------------------------- */
+
+html.iso.hd2d h2, html.iso.hd2d h3 { color: #fbf8f0; letter-spacing: 0.01em; }
+/* A section's heading: the reference's category strip, dim lettering on a darker band. */
+html.iso.hd2d h4 {
+  color: var(--hd-dim); padding: 1px 10px; margin: 10px 0 6px;
+  background: linear-gradient(90deg, var(--hd-strip), rgba(0, 0, 0, 0.3) 70%, rgba(0, 0, 0, 0));
+}
+html.iso.hd2d .culture h5 { color: var(--hd-dim); }
+html.iso.hd2d kbd { color: var(--hd-dim); }
+html.iso.hd2d .badge { border: 1px solid var(--hd-faint); background: rgba(0, 0, 0, 0.45); color: var(--iso-gold); }
+html.iso.hd2d .chip { border: 1px solid var(--hd-faint); background: rgba(0, 0, 0, 0.45); }
+
+/* --- panels ------------------------------------------------------------------------------ */
+
+html.iso.hd2d #top > .group,
+html.iso.hd2d #side,
+html.iso.hd2d #bottom,
+html.iso.hd2d #iso-city,
+html.iso.hd2d .tooltip,
+html.iso.hd2d .modal,
+html.iso.hd2d .toast,
+html.iso.hd2d .modal.city-overlay :is(.modal-head, .city-summary, .city-col, .modal-buttons) {
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.32);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+html.iso.hd2d .modal.city-overlay { box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+/* A tooltip lies over the panels' text as often as over the map: nearly opaque, so what is under
+   it does not read through its lines. */
+html.iso.hd2d .tooltip { --iso-navy-top: rgba(20, 19, 22, 0.95); --iso-navy-bot: rgba(9, 9, 11, 0.97); }
+/* A number by its parts (infotips.js `partsList`): a group's head as a hairline-ruled caption. */
+html.iso.hd2d .parts-list .pl-head { border-bottom: 1px solid var(--hd-faint); color: var(--hd-dim); }
+html.iso.hd2d .parts-list .pl-n { font-variant-numeric: lining-nums tabular-nums; }
+html.iso.hd2d #iso-corner canvas.minimap { background: rgba(6, 6, 8, 0.82); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+html.iso.hd2d .iso-plate, html.iso.hd2d .iso-desc, html.iso.hd2d input, html.iso.hd2d select, html.iso.hd2d textarea, html.iso.hd2d pre.report {
+  background: rgba(0, 0, 0, 0.36); background-clip: padding-box;
+}
+html.iso.hd2d select option { background: #18171a; color: var(--hd-ink); }
+
+/* A divider: a hairline fading out to the right, a small diamond where it starts. */
+html.iso.hd2d .iso-rule { height: 1px; margin: 7px 4px 7px 10px; background: linear-gradient(90deg, var(--hd-line), rgba(236, 230, 214, 0.18) 70%, rgba(236, 230, 214, 0)); }
+html.iso.hd2d .iso-rule::after { display: none; }
+html.iso.hd2d .iso-rule::before { left: -8px; top: -3px; width: 5px; height: 5px; background: none; border: 1px solid var(--hd-line); box-shadow: none; transform: rotate(45deg); }
+html.iso.hd2d .tip-unique {
+  background: linear-gradient(90deg, var(--hd-line), rgba(236, 230, 214, 0)) no-repeat top / 100% 1px,
+    linear-gradient(90deg, var(--hd-line), rgba(236, 230, 214, 0)) no-repeat bottom / 100% 1px;
+}
+html.iso.hd2d .tip-combat { background: linear-gradient(90deg, var(--hd-line), rgba(236, 230, 214, 0)) no-repeat top / 100% 1px; }
+
+/* --- dialogs: the title on a dark strip at the left, a hairline under it ------------------ */
+
+html.iso.hd2d #modals .backdrop { background: rgba(4, 4, 6, 0.5); }
+@keyframes hd2d-backdrop-in { from { background-color: rgba(4, 4, 6, 0); } }
+html.iso.hd2d #modals .backdrop { animation-name: hd2d-backdrop-in; }
+html.iso.hd2d .modal-head {
+  justify-content: flex-start; padding: 8px 64px 8px 18px; margin: 0 0 4px;
+  background: linear-gradient(90deg, var(--hd-strip), rgba(0, 0, 0, 0.32)) no-repeat, linear-gradient(90deg, var(--hd-line), rgba(236, 230, 214, 0.06)) no-repeat bottom / 100% 1px;
+}
+html.iso.hd2d .modal-head h2 { text-align: left; font-size: 26px; line-height: 30px; font-weight: 400; letter-spacing: 0.02em; }
+html.iso.hd2d .modal-head .close { right: 12px; top: 10px; color: var(--hd-dim); font: 400 26px/26px var(--iso-font); }
+html.iso.hd2d .modal-head .close:hover { color: #fff; }
+html.iso.hd2d .modal-head .info { right: 46px; top: 13px; border: 1px solid var(--hd-line); border-radius: 50%; color: var(--hd-dim); background: none; font: 700 15px/20px var(--iso-font); }
+html.iso.hd2d .modal-head .info:hover { color: #fff; border-color: #fff; }
+html.iso.hd2d .modal.city-overlay .modal-head { justify-content: center; padding: 4px 44px; }
+html.iso.hd2d .modal.city-overlay .modal-head h2 { text-align: center; }
+html.iso.hd2d .modal-buttons { padding: 10px 14px 10px; }
+html.iso.hd2d table.scores th, html.iso.hd2d table.scores td { border-bottom: 1px solid var(--hd-faint); }
+html.iso.hd2d .modal thead th { background: var(--hd-strip); color: var(--hd-dim); font-weight: 400; }
+/* The new game's civilizations. */
+html.iso.hd2d .civ-list { background: rgba(0, 0, 0, 0.36); border: 1px solid var(--hd-faint); }
+html.iso.hd2d #modals button.civ-item { background: none; }
+html.iso.hd2d #modals button.civ-item:hover:not([disabled]) { background: var(--hd-band); }
+html.iso.hd2d #modals button.civ-item.chosen { background: var(--hd-band); box-shadow: inset 2px 0 0 var(--hd-ink); color: #fff; }
+html.iso.hd2d #modals button.leader-card.chosen { background: var(--hd-band), var(--hd-fill); box-shadow: 0 0 0 1px var(--hd-line); }
+html.iso.hd2d .civ-summary { background: rgba(0, 0, 0, 0.3); border-left: 2px solid var(--hd-line); }
+html.iso.hd2d .help-topics { border-right: 1px solid var(--hd-faint); }
+html.iso.hd2d .help-group-name { color: var(--hd-dim); }
+html.iso.hd2d .help-topic { border: 0; }
+html.iso.hd2d .help-topic:hover { background: var(--hd-band); }
+html.iso.hd2d .help-topic.on { color: #fff; background: var(--hd-band); box-shadow: inset 2px 0 0 var(--hd-ink); }
+html.iso.hd2d .help-article h3 { color: var(--hd-ink); }
+html.iso.hd2d .tree-scroll { background: rgba(6, 6, 8, 0.7); border: 1px solid var(--hd-faint); }
+html.iso.hd2d .mode-hint { background: rgba(0, 0, 0, 0.5); border: 1px solid var(--hd-line); }
+html.iso.hd2d .toast.error { background: linear-gradient(180deg, rgba(110, 30, 22, 0.9), rgba(70, 16, 12, 0.9)); background-clip: padding-box; }
+
+/* --- buttons: dark bands, lit from the left when pointed at -------------------------------- */
+
+html.iso.hd2d button { background: var(--hd-fill); background-clip: padding-box; color: var(--hd-ink); }
+html.iso.hd2d button:hover:not([disabled]) { background: var(--hd-band), var(--hd-fill); background-clip: padding-box; color: #fff; }
+html.iso.hd2d button:active:not([disabled]) { background: linear-gradient(90deg, rgba(240, 236, 224, 0.18), rgba(240, 236, 224, 0.06)), rgba(12, 12, 14, 0.94); background-clip: padding-box; }
+html.iso.hd2d button[disabled] { background: rgba(18, 18, 20, 0.7); background-clip: padding-box; color: var(--hd-off); }
+html.iso.hd2d button:focus-visible { outline: 1px solid var(--hd-line); outline-offset: 1px; }
+html.iso.hd2d button.primary:not([disabled]) { background: linear-gradient(90deg, rgba(220, 203, 158, 0.16), rgba(220, 203, 158, 0.04)), var(--hd-fill); background-clip: padding-box; }
+html.iso.hd2d button.primary:hover:not([disabled]) { background: var(--hd-band), linear-gradient(90deg, rgba(220, 203, 158, 0.16), rgba(220, 203, 158, 0.04)), var(--hd-fill); background-clip: padding-box; }
+html.iso.hd2d button.link, html.iso.hd2d button.close, html.iso.hd2d button.stat { background: none; }
+html.iso.hd2d button.link { color: var(--iso-gold); }
+html.iso.hd2d button.stat:hover:not([disabled]) { background: var(--hd-band); }
+/* What is chosen: the band, a brighter hairline and a mark at the left. */
+html.iso.hd2d button.option.chosen, html.iso.hd2d button.build.current, html.iso.hd2d button.civic.chosen, html.iso.hd2d .trade-item.on,
+html.iso.hd2d .culture-actions button.on, html.iso.hd2d .culture-religions button.on, html.iso.hd2d button.culture-target.on,
+html.iso.hd2d #iso-corner .layers button.active {
+  border-image: var(--iso-tile-hover); background: var(--hd-band), var(--hd-fill); background-clip: padding-box; color: #fff;
+  box-shadow: inset 3px 0 0 var(--hd-ink);
+}
+html.iso.hd2d #iso-corner .layers button.active { box-shadow: none; }
+html.iso.hd2d button.civic.current { box-shadow: inset 3px 0 0 #a8d48e; }
+html.iso.hd2d button.civic.chosen.current { box-shadow: inset 3px 0 0 #a8d48e; }
+
+/* Lists: a row pointed at or picked is lit by the band. */
+html.iso.hd2d .unit-row:hover, html.iso.hd2d .unit-row.selected, html.iso.hd2d tr.clickable:hover td { background: var(--hd-band); }
+html.iso.hd2d .unit-row.selected { box-shadow: inset 2px 0 0 var(--hd-ink); }
+
+/* --- the menus' entries as banners ------------------------------------------------------- */
+/* A banner: a dark band ending in a point at the right, edged with a hairline (::before, the edge,
+   under ::after, the band); pointed at, it slides out of the column, lit, with a diamond past its
+   point. The point is `--tip` long; the diamond needs 16px more room at the right. */
+
+html.iso.hd2d :is(button.title-item, #iso-rail button) {
+  --tip: 16px;
+  position: relative; isolation: isolate; overflow: visible;
+  border: 0; border-image: none; background: none; box-shadow: none;
+  padding-right: calc(var(--tip) + 16px);
+  transition: transform 140ms ease-out;
+}
+html.iso.hd2d :is(button.title-item, #iso-rail button)::before,
+html.iso.hd2d button.title-item::after {
+  content: ""; position: absolute; z-index: -1; pointer-events: none;
+  clip-path: polygon(0 0, calc(100% - var(--tip)) 0, 100% 50%, calc(100% - var(--tip)) 100%, 0 100%);
+}
+html.iso.hd2d :is(button.title-item, #iso-rail button)::before { inset: 0 16px 0 0; background: linear-gradient(90deg, rgba(236, 230, 214, 0.08), rgba(236, 230, 214, 0.3)); }
+html.iso.hd2d button.title-item::after { inset: 1px 17px 1px 0; background: var(--hd-fill); }
+html.iso.hd2d :is(button.title-item, #iso-rail button):hover:not([disabled]),
+html.iso.hd2d :is(button.title-item, #iso-rail button):focus-visible { transform: translateX(10px); background: none; outline: 0; }
+html.iso.hd2d :is(button.title-item, #iso-rail button):hover:not([disabled])::before,
+html.iso.hd2d :is(button.title-item, #iso-rail button):focus-visible::before { background: linear-gradient(90deg, rgba(240, 236, 224, 0.5), rgba(240, 236, 224, 0.9)); }
+html.iso.hd2d button.title-item:hover:not([disabled])::after,
+html.iso.hd2d button.title-item:focus-visible::after { background: var(--hd-band), rgba(30, 29, 33, 0.94); }
+/* The diamond past the point. */
+html.iso.hd2d :is(button.title-item, #iso-rail button):is(:hover:not([disabled]), :focus-visible) {
+  background: no-repeat right 1px center / 11px 11px
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 11 11'%3E%3Cpath d='M5.5 1L10 5.5 5.5 10 1 5.5z' fill='none' stroke='%23efebe2' stroke-width='1.2'/%3E%3C/svg%3E");
+}
+html.iso.hd2d button.title-item[disabled] { color: var(--hd-off); }
+html.iso.hd2d button.title-item[disabled]::before { background: rgba(236, 230, 214, 0.06); }
+html.iso.hd2d button.title-item[disabled]::after { background: rgba(18, 18, 20, 0.7); }
+html.iso.hd2d button.title-item:active:not([disabled])::after { background: linear-gradient(90deg, rgba(240, 236, 224, 0.18), rgba(240, 236, 224, 0.06)), rgba(12, 12, 14, 0.94); }
+
+/* The title screen's menu: a column of banners, the first (Resume, Continue) faintly gilt. */
+html.iso.hd2d .title-menu { gap: 6px; width: min(380px, 100%); }
+html.iso.hd2d button.title-item { min-height: 50px; padding-left: 22px; font-size: 24px; line-height: 28px; }
+html.iso.hd2d button.title-item small { color: var(--hd-dim); font-size: 17px; line-height: 20px; }
+html.iso.hd2d button.title-item.primary:not([disabled])::after { background: linear-gradient(90deg, rgba(220, 203, 158, 0.2), rgba(220, 203, 158, 0.05)), var(--hd-fill); }
+html.iso.hd2d button.title-item.primary:not([disabled]):hover::after { background: var(--hd-band), linear-gradient(90deg, rgba(220, 203, 158, 0.2), rgba(220, 203, 158, 0.05)), rgba(30, 29, 33, 0.94); }
+html.iso.hd2d .title-tagline { color: var(--hd-dim); font-size: 19px; line-height: 24px; }
+
+/* The advisors' rail: banners out of the left edge, the icon at their wide end. The band is the
+   banner's own background (clipped to its shape; the rail's attention stud keeps ::after). */
+html.iso.hd2d #iso-rail { left: 0; gap: 3px; }
+html.iso.hd2d #iso-rail button { width: 86px; height: 48px; --tip: 14px; padding: 0 30px 0 18px; justify-content: flex-start; }
+html.iso.hd2d #iso-rail button::before { inset: 0 16px 0 0; background: linear-gradient(90deg, rgba(14, 14, 16, 0.92), rgba(34, 33, 37, 0.9) 70%, rgba(236, 230, 214, 0.32)); }
+html.iso.hd2d #iso-rail button:is(:hover:not([disabled]), :focus-visible)::before {
+  background: linear-gradient(90deg, rgba(240, 236, 224, 0.36), rgba(240, 236, 224, 0.16) 60%, rgba(240, 236, 224, 0.75)), rgba(30, 29, 33, 0.94);
+}
+html.iso.hd2d #iso-rail button.attention::after { top: 6px; right: 34px; border: 1px solid var(--hd-ink); outline: 0; }
+html.iso.hd2d #bottom { left: calc(var(--iso-gap) + 92px); }
+@media (max-height: 880px) {
+  html.iso.hd2d #iso-rail button { width: 78px; height: 42px; }
+  html.iso.hd2d #bottom { left: calc(var(--iso-gap) + 84px); }
+}
+
+/* --- the top bar, the report, the card, the corner --------------------------------------- */
+
+html.iso.hd2d #bottom-tabs button.active { box-shadow: inset 0 -1px 0 var(--hd-ink); }
+html.iso.hd2d #empire .stat.research { border: 0; }
+html.iso.hd2d .iso-bar { height: 14px; background: rgba(0, 0, 0, 0.6); background-clip: padding-box; }
+html.iso.hd2d .iso-bar .fill { background: linear-gradient(180deg, #a9dcff, #4f9ae0); }
+html.iso.hd2d .iso-bar.food .fill { background: linear-gradient(180deg, #cdeba0, #74b04a); }
+html.iso.hd2d .iso-bar.hp .fill { background: linear-gradient(180deg, #cdeba0, #63b04a); }
+html.iso.hd2d .iso-bar.low .fill, html.iso.hd2d .iso-bar.hp_low .fill { background: linear-gradient(180deg, #ffb7a3, #d65a42); }
+html.iso.hd2d .iso-bar.production .fill { background: linear-gradient(180deg, #ffd9a6, #d98a3a); }
+html.iso.hd2d .iso-bar .next { background: repeating-linear-gradient(90deg, rgba(120, 180, 240, 0.45) 0 2px, transparent 2px 4px); }
+
+html.iso.hd2d button.unit-chip { border: 1px solid var(--hd-faint); background: rgba(10, 10, 12, 0.82); background-clip: padding-box; }
+html.iso.hd2d button.unit-chip:hover:not([disabled]) { border-color: var(--hd-line); background: var(--hd-band), rgba(22, 21, 24, 0.9); background-clip: padding-box; }
+html.iso.hd2d button.unit-chip.selected { border-color: var(--iso-gold); background: linear-gradient(180deg, rgba(220, 203, 158, 0.26), rgba(220, 203, 158, 0.08)), rgba(22, 21, 24, 0.9); background-clip: padding-box; }
+html.iso.hd2d button.unit-chip.lead { border-color: var(--iso-gold-lt); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.7), 0 0 8px rgba(243, 231, 196, 0.55); }
+html.iso.hd2d img.leader-portrait[data-size="small"] { border: 1px solid var(--hd-faint); }
+
+/* End turn: the corner's widest banner, gilt when the turn can end, glowing when it waits. */
+html.iso.hd2d #iso-corner #end-turn { font-size: 24px; font-weight: 400; letter-spacing: 0.03em; }
+html.iso.hd2d #iso-corner #end-turn:not([disabled]) { background: linear-gradient(90deg, rgba(220, 203, 158, 0.22), rgba(220, 203, 158, 0.06)), var(--hd-fill); background-clip: padding-box; }
+html.iso.hd2d #iso-corner #end-turn:hover:not([disabled]) { background: var(--hd-band), linear-gradient(90deg, rgba(220, 203, 158, 0.22), rgba(220, 203, 158, 0.06)), var(--hd-fill); background-clip: padding-box; }
+html.iso.hd2d #iso-corner #end-turn.end-turn-message:not([disabled]) {
+  background: linear-gradient(90deg, rgba(240, 220, 160, 0.42), rgba(240, 220, 160, 0.12)), var(--hd-fill); background-clip: padding-box; color: #fff;
+}
+
+/* --- the screens' own boxes --------------------------------------------------------------- */
+
+/* The techs keep their measured boxes, lettered small. */
+html.iso.hd2d button.tech { border: 1px solid var(--hd-faint); background: rgba(24, 23, 27, 0.95); font: 400 12px/12px var(--iso-font); text-shadow: none; }
+html.iso.hd2d button.tech .tech-sub { font-size: 11px; }
+html.iso.hd2d button.tech.has { background: rgba(38, 52, 32, 0.95); border-color: #8fbf78; }
+html.iso.hd2d button.tech.researching { background: rgba(78, 70, 50, 0.95); border-color: var(--iso-gold-lt); }
+html.iso.hd2d button.tech.can { border-color: var(--hd-line); }
+html.iso.hd2d button.tech:hover:not([disabled]) { background: var(--hd-band), rgba(24, 23, 27, 0.95); }
+html.iso.hd2d .cplot { border: 1px solid var(--hd-faint); background: rgba(20, 20, 23, 0.9); }
+html.iso.hd2d .cplot.worked { background: rgba(38, 56, 30, 0.92); border-color: #8fbf78; }
+html.iso.hd2d .cplot.centre { background: rgba(70, 56, 34, 0.92); border-color: var(--iso-gold); }
+html.iso.hd2d .revolt-labels { font: 400 13px/14px var(--iso-font); }
+html.iso.hd2d .culture-channel, html.iso.hd2d .culture-card { border: 1px solid var(--hd-faint); background: rgba(0, 0, 0, 0.3); }
+html.iso.hd2d .culture-channel.hostile, html.iso.hd2d .culture-card.hostile { border-color: rgba(255, 141, 110, 0.5); }
+html.iso.hd2d .revolt-bar { border: 1px solid var(--hd-faint); }
+html.iso.hd2d .culture-preview { border-left: 2px solid var(--hd-line); }
+html.iso.hd2d .unlock { background: rgba(0, 0, 0, 0.36); }
+
+/* --- sizes --------------------------------------------------------------------------------- */
+
+@media (min-width: 761px) and (min-height: 521px) {
+  html.iso.hd2d #top,
+  html.iso.hd2d #side,
+  html.iso.hd2d #bottom,
+  html.iso.hd2d #iso-city,
+  html.iso.hd2d #iso-corner,
+  html.iso.hd2d #iso-rail { zoom: 0.8; }
+  /* At 0.8 the card's width runs up to the minimap's column (its lengths are scaled too). */
+  html.iso.hd2d #side { max-width: calc(125vw - 2.5 * var(--iso-gap) - 352px); }
+  html.iso.hd2d .iso-strip { max-width: calc(125vw - 2.5 * var(--iso-gap) - 352px); }
+}
+@media (max-width: 760px), (max-height: 520px) {
+  /* A radius-3 city's 7x7 plots across a phone. */
+  html.iso.hd2d .cplot { font: 400 12px/13px var(--iso-font); }
+  html.iso.hd2d #empire::after { background: linear-gradient(90deg, rgba(9, 9, 11, 0), var(--iso-navy-bot) 85%); }
+}

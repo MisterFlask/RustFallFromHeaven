@@ -809,9 +809,17 @@ target does, and its figures take about the target's share of the screen.
 rail, the city panel over the map; main.js `syncSkin`), as the look target's, not the plain one's
 sidebar and bars round a boxed map. Its unit portraits and build icons take the sprite the
 isometric map would choose (`unitKeyOf`), as there is no isometric map behind it. Over the HD-2D
-map it is a variant (batch 4, iso.css `html.iso.hd2d`, set by `syncSkin`): its panels are
-near-black glass under the gilt frames (the map shows through, a little blurred), and on a desktop
-they are drawn at 80%, so the map, not the panels, holds the screen.
+map it wears its own dress (`hd2d.css`, `html.iso.hd2d`, set by `syncSkin`), after the menus of
+the HD-2D role-playing games (the owner's reference, 2026-11-02): a thin humanist sans in place of
+Herald (a font family whose regular weight is Candara Light, Gill Sans Light or Optima, whichever the
+system has, and whose bold is the book weight, with lining figures); panels of dark glass the map
+shows through, a little blurred, edged with a hairline instead of the gilt frames (iso.css's frame
+variables are redefined as hairlines); dialogs titled on a dark strip at the left, sections headed
+by dim lettering on darker strips; buttons and list rows lit by a pale band fading to the right; and
+the menus' entries (the title screen's, the advisors' rail) as banners with a pointed end, the one
+pointed at slid out of the column with a diamond past its point. The icons stay the M7 set's. The
+battle screens keep the isometric skin's pixel look. On a desktop the panels are drawn at 80%, so
+the map, not the panels, holds the screen.
 
 The figures are cards that face the camera: they look the same at any pitch. The settlements and
 buildings are cards too, but their art has its ground painted in, drawn for the isometric map's
