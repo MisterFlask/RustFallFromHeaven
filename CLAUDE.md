@@ -237,44 +237,30 @@ which forward to the C++ methods -- so port each Cy call to the corresponding po
   make peace when it does not, use every tool its civilization has, give up independence when
   hopelessly behind. Flavor and fun override this where a rule below says so. Design a behaviour
   from that picture (what the expert sees, wants and does), not by searching for whatever scores
-  best. Hill climbing on win rate tunes such behaviours at the margin (thresholds, weights,
-  timing) and catches implementations that misfire; it does not decide whether a sound behaviour
-  exists. When a sound behaviour costs win rate, find out why in the games: usually it is the
-  implementation, sometimes the game's balance, which is worth reporting.
-- **Start from `docs/AI_LOG.md`**, the log of AI changes that did not move the win rate, for the
-  area you are about to change: each entry says why the idea made sense, why it failed in the
-  games, and what that implies about the right version (or about the game's balance) -- both a
-  warning and a source of better ideas.
-- **Judge a change first in the games where it fires** (the owner's request, 2026-10-24). Before
-  any win-rate measurement, say what the behaviour should change locally (the border city holds,
-  the stack takes its city with fewer losses, the neighbour does not prepare war), find a few
-  firings in traced games (its `FFH_AI_TRACE` lines or telemetry name the turn, player and
-  place), and fork each one with `tools/ai-branch.sh`: the game saved just before the firing, then
-  played on with the behaviour on and off, the local facts side by side and both branches'
-  traces. Up to the fork the two branches are the same game, so the difference is that decision's.
-  Is it locally helpful, and why (or why not)? A win-rate result alone cannot tell a bad concept
-  from a bad implementation from a sound behaviour that another part of the AI undoes; the forks
-  can. The win-rate measurement below comes after, for side effects; when it disagrees with
-  locally helpful forks, follow the effect chain into the rest of the AI.
-- Then measure every change on development seeds, and validate it on seeds never used to choose
-  anything, the change on against the same binary with it off (`civ_ab.py --off-base` /
-  `FFH_AI_CIV_OFF` for a civilization's logic; docs/AI.md, "Tools"). Telemetry
-  (docs/TELEMETRY.md) shows whether a behaviour fires when and as it should. For tuning (a
-  threshold, a weight, a heuristic competing with others), keep a change only if neither the win
-  rate nor the share at the end falls; development-seed gains alone are not results. A behaviour
-  the expert-play rule calls for stays, and what it costs is worked on, as for the flavor rules
-  below.
+  best.
+- **How AI changes are checked** (the owner's decision, 2026-11-03; it replaces the earlier
+  process: forks before any win-rate measurement, development and fresh seeds, keeping a change
+  only if neither the win rate nor the share fell, a `docs/AI_LOG.md` entry before every revert):
+  * **A rules change** (a new system, a changed rule) is not gated on the AI at all: make the AI
+    do something with it that seems reasonably likely to be effective, ad hoc and unprincipled
+    if need be, and move on.
+  * **An AI-specific change** is checked for its local effect: simulate many games and find out
+    whether the behaviour did what it was meant to where it fired (the border city held, the
+    stack took its city with fewer losses, the caster lived), with traced firings, forks of the
+    game just before a firing (`tools/ai-branch.sh`), telemetry and counts over many games
+    (docs/AI.md, "Tools"). Do not generally try to measure the win rate directly: for many kinds
+    of change it cannot show the effect.
+
+  `docs/AI_LOG.md` records earlier attempts and what their games showed.
 - **Civilizations use their unique mechanics** (the owner's decision, 2026-10-20): a
   civilization's own units, spells and abilities are part of how it plays, so its AI uses them
-  whether or not they directly benefit it. The win-rate rule above does not decide whether a
-  civilization uses its own mechanics; measure what they cost and improve how they are used.
+  whether or not they directly benefit it.
 - **Conquest and domination are a flavor drive** (the owner's decision, 2026-10-21): the Clan of
   Embers, the Doviello, the Bannor, any other canonically warlike civilization, and every leader
   with `TRAIT_AGGRESSIVE` play with an expansion drive, not a victory goal pursued once in reach:
   they keep looking for the easiest way to grow -- a settler site or a weaker nearby civ's
-  cities -- and take it, again and again, whether or not it raises their win rate. As with unique
-  mechanics, the win-rate rule decides how well they do it, not whether (docs/AI.md, "Victory
-  pursuit").
+  cities -- and take it, again and again, whether or not it raises their win rate (docs/AI.md,
+  "Victory pursuit").
 - **Hopeless civilizations become vassals** (the owner's decision, 2026-10-21). A civilization
   that has fallen hopelessly behind offers to become the vassal of a much stronger neighbour it is
   at least decently aligned with, and agrees when asked. "Hopelessly behind" means in technology,
@@ -284,10 +270,6 @@ which forward to the C++ methods -- so port each Cy call to the corresponding po
 - **The AI does not pursue the Tower of Mastery or the Altar of the Luonnotar** (the owner's
   decision, 2026-10-21: boring solitaire victories, and the Tower needs a huge territory anyway).
   It still stops a rival about to win one (docs/AI.md, "Victory pursuit").
-- **Every measured change that fails gets an entry in `docs/AI_LOG.md` before it is reverted**:
-  (1) why it made sense, (2) why it did not move the win rate, from the games themselves (what
-  happened when it fired: counts, checkpoints, `FFH_AI_TRACE` replays), (3) what that implies.
-  Leave the reverted code's module comment naming the attempt and the log entry.
 - AI timing and AI-only restrictions belong in `ffh-ai`, not in the rules. The world spells'
   AI-only Python gates were moved there (docs/PORTING.md, "Changes from FFH2"); the rules' other
   AI-only branches are listed in docs/AI_ONLY_RULES.md, each group moved by its own decision.

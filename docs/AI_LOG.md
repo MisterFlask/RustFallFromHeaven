@@ -1,12 +1,13 @@
 # AI changes that did not move the win rate
 
-Every AI change that was measured and did not hold -- no gain, a loss, or a gain on development
-seeds that fresh seeds did not confirm -- gets an entry here, so the next attempt starts from what
-the games showed instead of repeating the idea. **Read the entries for the area before changing
-the AI, and add one before reverting a change** (CLAUDE.md, "AI changes"). Older failures from
-before this log are recorded where they were measured in docs/AI.md (in particular "Looked
-promising on development seeds, failed on fresh ones" and the "Tried, not kept" notes of each
-section).
+AI changes that were measured and did not hold -- no gain, a loss, or a gain on development seeds
+that fresh seeds did not confirm -- with what the games showed, so a later attempt can start from
+it instead of repeating the idea. Until 2026-11-03 an entry was required before every revert; AI
+changes are now checked for their local effect over many simulated games, not by the win rate
+(CLAUDE.md, "AI changes"; the owner's decision), so this is a record, added to when an attempt is
+worth remembering. Older failures from before this
+log are recorded where they were measured in docs/AI.md (in particular "Looked promising on
+development seeds, failed on fresh ones" and the "Tried, not kept" notes of each section).
 
 Each entry answers three questions, from the games themselves (counts with `ffh stats
 --detail`, per-checkpoint paired comparisons, `FFH_AI_TRACE` replays), not from the idea:
@@ -16,7 +17,7 @@ Each entry answers three questions, from the games themselves (counts with `ffh 
 3. **What it implies**: the correct version of the improvement, the generic gap underneath, or a
    balance verdict when the content itself is weak in this game.
 
-## How changes are measured (and why entries pile up)
+## How the entries were measured (the rules until 2026-11-03)
 
 - Development: `crates/ffh-cli/scripts/civ_ab.py` (or `ai_metrics.py` / `ab_compare.py` for
   generic changes) on development seeds, against the base, the other changes switched off.
@@ -862,8 +863,9 @@ seeds 1-24 (300 turns) and validated on 401-472; the governor change was in all 
 
 ## Unique units (2026-10-20)
 
-The kept version is in docs/AI.md, "Unique units". It is kept under the owner's rule (CLAUDE.md,
-"AI changes"), so what its measurement shows is a cost to improve, not a gate. Back with it from
+The kept version is in docs/AI.md, "Unique units". It is kept under the owner's rule that
+civilizations use their unique mechanics (CLAUDE.md, "AI changes"), so what its measurement showed
+is a cost to improve, not a gate. Back with it from
 round 5 (below): the Amurite casters (now `civs::unique_casters`, also for the Svartalfar,
 Doviello and Clan of Embers), the Illians' rituals, the Calabim vampire rules, the Grigori
 Medics, the Infernal Manes beyond a garrison quota (point 3 of their entry), and the

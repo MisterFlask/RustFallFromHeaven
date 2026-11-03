@@ -1,7 +1,10 @@
 # AI design (ffh-ai)
 
-Before changing the AI, read `docs/AI_LOG.md`: the changes that did not move the win rate, why,
-and what that implies (CLAUDE.md, "AI changes"). `docs/ENTITIES.md` inventories, entity by entity,
+`docs/AI_LOG.md` records earlier AI changes that did not move the win rate, why, and what that
+implied. AI-specific changes are now checked for their local effect over many simulated games, not
+by the win rate, and rules changes give the AI something reasonable without a gate (CLAUDE.md, "AI
+changes"; the owner's decision, 2026-11-03): the measurements recorded here were made under the
+rules of their time. `docs/ENTITIES.md` inventories, entity by entity,
 how far this AI uses every unit, building and spell, and the gaps that recur.
 
 **It plays the way an expert human would** (the owner's decision, 2026-10-21; CLAUDE.md, "AI
@@ -2579,7 +2582,7 @@ declared -11% (t -1.7): fewer cities change hands (Known gaps).
 
 ### Round 7f (2026-10-24): healing and the hero gate at their firings
 
-The first use of forks (Tools, "Forks first") on the two military behaviours then off by default
+The first use of forks (Tools, "Forks") on the two military behaviours then off by default
 (round 7): each forked at a few of its firings (seeds 26001-26006), the switch on against off
 from the same save. Both proved locally helpful where they fired as meant, and each had a misfire
 the win rate could not have named; both misfires are fixed, and a third flaw the forks turned up
@@ -3136,8 +3139,7 @@ Doviello, the Bannor, any other canonically warlike civilization, and every lead
 Hippus, Alexis of the Calabim, Kandros of the Khazad, Basium of the Mercurians, and the minor
 leaders Duin, Weevil, Hafgan, Volanna, Mahon, Averax, Ouzza) keep asking what the easiest next
 growth is -- a settler site, or the cities of a weaker civ nearby -- and take it, over and over,
-whether or not it raises their win rate (the win-rate rule decides how well they do it, not
-whether). Today the planner is civ-agnostic and in practice picks culture or nothing (conquest
+whether or not it raises their win rate. Today the planner is civ-agnostic and in practice picks culture or nothing (conquest
 needs twice all rivals' power, domination 66% of the land: neither qualifies before it is nearly
 won), so this is an ongoing comparison of settling against conquering a weaker neighbour, from
 the early game on, not a bias on the victory estimates.
@@ -3272,7 +3274,8 @@ averaged -139). Read eliminations and captures beside it, and measure a general 
 player's edge too: `civ_ab.py --civ all --new-env FFH_AI_<NAME>_ONLY={civ}` gives it to player 0
 only, against opponents without it, and reports that player's wins and share.
 
-**Forks first** (CLAUDE.md, "AI changes"): a behaviour is judged first at its firings.
+**Forks**: a behaviour judged at its firings, the main tool for an AI change's local effect
+(CLAUDE.md, "AI changes").
 - `tools/ai-branch.sh --bin $B --seed S --turn T --switch NAME [--turns N] [--trace P] -- WATCH..`
   plays seed S (as `ffh stats` does; run options after the script's own) to the start of turn T
   with the behaviour on, saves it, and resumes the save twice for N turns, the switch forced on
