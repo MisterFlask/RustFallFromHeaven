@@ -1,0 +1,54 @@
+{
+ "name": "bannor_warrior",
+ "sprite": "m7/roster/units/unit_bannor_warrior.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Bannor Warrior, a young human clubman: tousled brown hair under a red headband knotted at the back of the head, a stubbled jaw, bare tan muscular arms, a white sleeveless tunic with red trim and a red strap across the chest, a red belt with a round gold buckle, a red kilt with a white front panel, white cloth wraps below the knees, brown leather boots, a wooden club studded with round brass studs in his RIGHT hand and a round red shield with a steel rim and a gold sun emblem on his LEFT arm",
+ "hands": "the club stays in his right hand on the screen-left side and the shield on his left arm on the screen-right side",
+ "guide_style": "grey",
+ "scale": 0.9,
+ "head_r": 12,
+ "limb": 1.1,
+ "joints": {
+  "head": [84, 57],
+  "neck": [84, 67],
+  "chest": [84, 76],
+  "pelvis": [83, 86],
+  "r_sh": [74, 72],
+  "r_el": [66, 79],
+  "r_ha": [60, 69],
+  "tip": [50, 40],
+  "l_sh": [96, 72],
+  "l_el": [100, 82],
+  "l_ha": [104, 89],
+  "shield": [105, 90, 13, 16],
+  "r_hip": [76, 94],
+  "r_kn": [70, 104],
+  "r_ft": [69, 115],
+  "l_hip": [90, 94],
+  "l_kn": [96, 105],
+  "l_ft": [98, 116]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back toward the upper-left, the studded club is lifted beside the head with its heavy end pointing up and back",
+   "2": "wind-up extreme: body coiled back and crouched, the club hand behind the head and the studded club hanging down behind the shoulders to the left, the sun shield tucked across the belly",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips round, the club arm sweeps across in front of the chest and the studded club is level, its heavy end pointing to the right",
+   "4": "contact: club arm fully extended toward the lower-right, the studded club smashing down-right, front knee bent, body low and leaning in, the sun shield swung back behind the shoulders for balance",
+   "5": "follow-through: the club carries on down until its studded end nearly touches the ground at the lower-right, torso twisted, hair and headband ends trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the studded club comes back up on the near side toward the ready angle, the sun shield tucked across the belly"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (club arm thrown up and out to the left, the sun shield flung out to the right)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the studded club dipping, the sun shield still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, club arm flung up, the sun shield drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the studded club lowering",
+   "3": "kneeling: on both knees, slumped forward, the club's studded end resting on the ground at the lower-right, shield arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the studded club slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left; the studded club lies on the ground at the lower-right; the round sun shield lies flat beside him",
+   "7": "corpse: lying flat and still on his back, eyes closed, the studded club and the sun shield on the ground beside him"
+  }
+ }
+}

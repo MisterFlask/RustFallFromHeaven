@@ -1,0 +1,98 @@
+{
+ "name": "lanun_adept",
+ "sprite": "m7/roster/units/unit_lanun_adept.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "body_plan": "caster",
+ "description": "a Lanun Adept (Fall from Heaven), a dark-skinned pirate mage: long black hair under a red bandana whose knotted tails hang at the back of her head, a gold hoop earring, a long navy-blue coat with gold buttons and white trim, a red sash, a brown leather satchel on a strap across the chest at her screen-left hip, brown boots, and a twisted red-brown driftwood staff topped with a glowing blue crystal in her LEFT hand",
+ "hands": "the crystal-topped driftwood staff stays upright in her left hand on the screen-right side and her right hand is an empty fist resting near the satchel strap on the screen-left side",
+ "guide_style": "grey",
+ "scale": 0.92,
+ "head_r": 11,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   73,
+   55
+  ],
+  "neck": [
+   75,
+   66
+  ],
+  "chest": [
+   75,
+   76
+  ],
+  "pelvis": [
+   76,
+   89
+  ],
+  "r_sh": [
+   85,
+   70
+  ],
+  "r_el": [
+   89,
+   81
+  ],
+  "r_ha": [
+   96,
+   74
+  ],
+  "tip": [
+   100,
+   41
+  ],
+  "l_sh": [
+   60,
+   70
+  ],
+  "l_el": [
+   57,
+   80
+  ],
+  "l_ha": [
+   66,
+   82
+  ],
+  "r_hip": [
+   81,
+   92
+  ],
+  "r_kn": [
+   83,
+   106
+  ],
+  "r_ft": [
+   85,
+   119
+  ],
+  "l_hip": [
+   69,
+   92
+  ],
+  "l_kn": [
+   64,
+   106
+  ],
+  "l_ft": [
+   60,
+   119
+  ]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (her empty right fist flung out to the left, the crystal-topped staff thrown up and out in her left hand), the red bandana tails flicking",
+   "1": "recoil extreme: leaning back further, knees bent, the crystal-topped staff dipping, leaning out to the right, her empty right fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, staff arm flung up holding the crystal-topped staff high, her empty right fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the crystal-topped staff lowering",
+   "3": "kneeling: on both knees, slumped forward, the crystal end of the staff resting on the ground, her empty right hand hanging by the satchel",
+   "4": "falling back: torso tips back toward the upper-left, the crystal-topped staff slips out of the hand, legs slide forward, the long coat flaring",
+   "5": "hits the ground: lying on her back along the ground, feet toward the lower-right and head toward the upper-left, the red bandana still on her head; the crystal-topped staff lies on the ground at the lower-right; the satchel lies flat beside her",
+   "6": "bounce: head and shoulders lift slightly off the ground, the long coat and the satchel settle",
+   "7": "corpse: lying flat and still on her back, eyes closed, the red bandana on her head, the crystal-topped staff on the ground beside her, its crystal dimmed"
+  }
+ }
+}

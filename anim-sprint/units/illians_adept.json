@@ -1,0 +1,98 @@
+{
+ "name": "illians_adept",
+ "sprite": "m7/roster/units/unit_illians_adept.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "body_plan": "caster",
+ "description": "an Illian Adept (Fall from Heaven), a young mage of the frozen north: silver hair under a deep white hood with a wide sky-blue stripe, a white robe with sky-blue stripes and wide sleeves, a sky-blue sash knotted at the waist, a small purple earring, a grey leather satchel on a strap across the chest at his screen-left hip, grey boots, and a long silver staff topped with a glowing ice-blue crystal in his LEFT hand",
+ "hands": "the crystal-topped silver staff stays upright in his left hand on the screen-right side and his right hand is an empty fist resting above the satchel on the screen-left side",
+ "guide_style": "grey",
+ "scale": 0.81,
+ "head_r": 9,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   75,
+   62
+  ],
+  "neck": [
+   75,
+   70
+  ],
+  "chest": [
+   75,
+   78
+  ],
+  "pelvis": [
+   75,
+   89
+  ],
+  "r_sh": [
+   84,
+   72
+  ],
+  "r_el": [
+   88,
+   83
+  ],
+  "r_ha": [
+   97,
+   78
+  ],
+  "tip": [
+   101,
+   40
+  ],
+  "l_sh": [
+   66,
+   72
+  ],
+  "l_el": [
+   56,
+   82
+  ],
+  "l_ha": [
+   64,
+   86
+  ],
+  "r_hip": [
+   80,
+   94
+  ],
+  "r_kn": [
+   83,
+   106
+  ],
+  "r_ft": [
+   86,
+   119
+  ],
+  "l_hip": [
+   70,
+   94
+  ],
+  "l_kn": [
+   65,
+   106
+  ],
+  "l_ft": [
+   60,
+   119
+  ]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (his empty right fist flung out to the left, the crystal-topped silver staff thrown up and out in his left hand), the white hood jolting back",
+   "1": "recoil extreme: leaning back further, knees bent, the crystal-topped staff dipping, his empty right fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, staff arm flung up holding the crystal-topped staff high, his empty right fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the crystal-topped staff lowering",
+   "3": "kneeling: on both knees, slumped forward, the crystal end of the staff resting on the ground, his empty right hand hanging by the satchel",
+   "4": "falling back: torso tips back toward the upper-left, the crystal-topped staff slips out of the hand, legs slide forward, the white robe flaring",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the white hood still over his head; the crystal-topped silver staff lies on the ground at the lower-right; the satchel lies flat beside him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the white hood and the robe settle",
+   "7": "corpse: lying flat and still on his back, eyes closed, the white hood over his head, the crystal-topped staff on the ground beside him"
+  }
+ }
+}

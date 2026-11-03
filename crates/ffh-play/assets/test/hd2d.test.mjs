@@ -4,6 +4,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import zlib from "node:zlib";
 import { fileURLToPath } from "node:url";
 import * as St from "../app/state.js";
 
@@ -37,6 +38,36 @@ function scene(s) {
   return new World(s.map);
 }
 
+/** The pixels of an 8-bit RGBA, non-interlaced PNG (the app's sprites and strips all are):
+ *  `{ w, h, px }`, `px` row-major RGBA. */
+function readPng(file) {
+  const b = fs.readFileSync(file);
+  const w = b.readUInt32BE(16);
+  const h = b.readUInt32BE(20);
+  assert.deepEqual([b[24], b[25], b[28]], [8, 6, 0], `${file}: 8-bit RGBA, not interlaced`);
+  const idat = [];
+  for (let o = 8; o < b.length; o += 12 + b.readUInt32BE(o)) {
+    if (b.toString("latin1", o + 4, o + 8) === "IDAT") idat.push(b.subarray(o + 8, o + 8 + b.readUInt32BE(o)));
+  }
+  const raw = zlib.inflateSync(Buffer.concat(idat));
+  const px = new Uint8Array(w * h * 4);
+  const row = w * 4;
+  for (let y = 0; y < h; y++) {
+    const f = raw[y * (row + 1)];
+    for (let x = 0; x < row; x++) {
+      const v = raw[y * (row + 1) + 1 + x];
+      const a = x >= 4 ? px[y * row + x - 4] : 0;
+      const up = y ? px[(y - 1) * row + x] : 0;
+      const c = x >= 4 && y ? px[(y - 1) * row + x - 4] : 0;
+      const p = a + up - c;
+      const pa = Math.abs(p - a), pb = Math.abs(p - up), pc = Math.abs(p - c);
+      const pred = [0, a, up, (a + up) >> 1, pa <= pb && pa <= pc ? a : pb <= pc ? up : c][f];
+      px[y * row + x] = (v + pred) & 255;
+    }
+  }
+  return { w, h, px };
+}
+
 test("every unit type of the game stands as a sprite of the isometric renderer's", () => {
   for (let t = 0; t < data.tables.UnitType.length; t++) {
     const key = unitSpriteKeys(t, null).find((k) => Object.hasOwn(SPRITES, k));
@@ -67,8 +98,25 @@ test("the figures that breathe have their idle strips, and stand where their spr
     assert.ok(s, `${key} is a sprite`);
     assert.ok(s.w <= IDLE_FRAME.w && s.h <= IDLE_FRAME.h, `${key} fits the idle frame`);
     // The strip: four 160 x 128 frames side by side (the PNG header's size).
-    const png = fs.readFileSync(fileURLToPath(new URL(`../app/anim/${name}_idle.png`, import.meta.url)));
-    assert.deepEqual([png.readUInt32BE(16), png.readUInt32BE(20)], [IDLE_FRAME.w * IDLE_FRAME.n, IDLE_FRAME.h], `${name}_idle.png`);
+    const strip = readPng(fileURLToPath(new URL(`../app/anim/${name}_idle.png`, import.meta.url)));
+    assert.deepEqual([strip.w, strip.h], [IDLE_FRAME.w * IDLE_FRAME.n, IDLE_FRAME.h], `${name}_idle.png`);
+    // Frame 0 is the sprite itself, pixel for pixel, at x = floor(80 - w / 2) on its foot row, and
+    // nothing else (a strip made from an older export of the sprite would show that one on the map).
+    const sp = readPng(fileURLToPath(new URL(`../app/iso/${key}.png`, import.meta.url)));
+    const x0 = Math.floor(IDLE_FRAME.w / 2 - sp.w / 2);
+    const y0 = IDLE_FRAME.h - sp.h;
+    let wrong = 0;
+    for (let y = 0; y < IDLE_FRAME.h; y++) {
+      for (let x = 0; x < IDLE_FRAME.w; x++) {
+        const f = (y * strip.w + x) * 4;
+        const inside = x >= x0 && x < x0 + sp.w && y >= y0;
+        const s = inside ? ((y - y0) * sp.w + x - x0) * 4 : -1;
+        const a = inside ? sp.px[s + 3] : 0;
+        if (strip.px[f + 3] !== a) wrong++;
+        else if (a && [0, 1, 2].some((i) => strip.px[f + i] !== sp.px[s + i])) wrong++;
+      }
+    }
+    assert.equal(wrong, 0, `${name}_idle.png frame 0 is ${key}.png`);
   }
   // The frame's card: the frame's size at the sprite's scale, its base under the sprite's middle
   // (the recipe places a w-wide sprite at x = floor(80 - w / 2)), mirrored with the art.

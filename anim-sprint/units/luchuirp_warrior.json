@@ -1,0 +1,111 @@
+{
+ "name": "luchuirp_warrior",
+ "sprite": "m7/roster/units/unit_luchuirp_warrior.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Luchuirp Warrior, a stout gnome fighter: a bushy red beard, a brown leather cap with brass-rimmed blue goggles on top, bare muscular arms, a teal tunic with a brown leather apron hung with tools and a brass-buckled belt, brown boots, a thick wooden club bound with brass bands in his RIGHT hand, and a round bronze shield with a brass cogwheel emblem on his LEFT arm",
+ "hands": "the brass-banded club stays in his right hand on the screen-left side and the round bronze shield stays on his left arm on the screen-right side",
+ "guide_style": "grey",
+ "scale": 0.76,
+ "head_r": 11,
+ "limb": 1.25,
+ "joints": {
+  "head": [
+   83,
+   70
+  ],
+  "neck": [
+   82,
+   81
+  ],
+  "chest": [
+   82,
+   89
+  ],
+  "pelvis": [
+   82,
+   99
+  ],
+  "r_sh": [
+   73,
+   84
+  ],
+  "r_el": [
+   67,
+   90
+  ],
+  "r_ha": [
+   61,
+   84
+  ],
+  "tip": [
+   50,
+   51
+  ],
+  "l_sh": [
+   92,
+   85
+  ],
+  "l_el": [
+   97,
+   93
+  ],
+  "l_ha": [
+   101,
+   98
+  ],
+  "shield": [
+   106,
+   98,
+   10,
+   15
+  ],
+  "r_hip": [
+   76,
+   103
+  ],
+  "r_kn": [
+   73,
+   110
+  ],
+  "r_ft": [
+   69,
+   118
+  ],
+  "l_hip": [
+   88,
+   103
+  ],
+  "l_kn": [
+   92,
+   110
+  ],
+  "l_ft": [
+   96,
+   118
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back toward the upper-left, the brass-banded club is lifted beside the head with its heavy end pointing up and back",
+   "2": "wind-up extreme: body coiled back and crouched, the club hand behind the head and the brass-banded club hanging down behind the shoulders to the left, the round bronze shield tucked across the belly",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips round, the club arm sweeps across in front of the chest and the brass-banded club is level, its heavy end pointing to the right",
+   "4": "contact: club arm fully extended toward the lower-right, the brass-banded club smashing down-right, front knee bent, body low and leaning in, the shield arm with the round bronze shield swung back behind the shoulders for balance",
+   "5": "follow-through: the brass-banded club carries on down until its heavy end nearly touches the ground at the lower-right, torso twisted, the red beard trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the brass-banded club comes back up on the near side toward its raised ready angle, the round bronze shield tucked across the belly"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (club arm thrown up and out to the left, the round bronze shield flung out to the right)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the brass-banded club dipping, the round bronze shield still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, club arm flung up, the round bronze shield drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops into the red beard, the brass-banded club lowering",
+   "3": "kneeling: on both knees, slumped forward, the heavy end of the brass-banded club resting on the ground at the lower-right, shield arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the brass-banded club slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the leather cap and goggles still on his head; the brass-banded club lies on the ground at the lower-right; the round bronze shield lies flat beside him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the round bronze shield rocks",
+   "7": "corpse: lying flat and still on his back, eyes closed, the brass-banded club and the round bronze shield on the ground beside him"
+  }
+ }
+}

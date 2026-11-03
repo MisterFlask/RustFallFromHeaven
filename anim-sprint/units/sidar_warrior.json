@@ -1,0 +1,111 @@
+{
+ "name": "sidar_warrior",
+ "sprite": "m7/roster/units/unit_sidar_warrior.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Sidar Warrior, a pale grey-skinned fighter with pale grey eyes: a ragged pale grey hooded cloak, a teal scarf at the throat, a dark grey tunic with a brown belt and a round silver buckle, grey cloth-wrapped legs and dark grey boots, a bone-white wooden club studded with round silver studs raised in his RIGHT hand, and a round black shield with a grey studded rim and a white crescent moon on his LEFT arm",
+ "hands": "the studded club stays in his right hand on the screen-left side and the crescent-moon shield on his left arm on the screen-right side",
+ "guide_style": "grey",
+ "scale": 0.87,
+ "head_r": 10,
+ "limb": 1.05,
+ "joints": {
+  "head": [
+   84,
+   60
+  ],
+  "neck": [
+   84,
+   70
+  ],
+  "chest": [
+   82,
+   78
+  ],
+  "pelvis": [
+   80,
+   88
+  ],
+  "r_sh": [
+   72,
+   72
+  ],
+  "r_el": [
+   63,
+   79
+  ],
+  "r_ha": [
+   56,
+   70
+  ],
+  "tip": [
+   46,
+   38
+  ],
+  "l_sh": [
+   94,
+   74
+  ],
+  "l_el": [
+   98,
+   84
+  ],
+  "l_ha": [
+   102,
+   88
+  ],
+  "shield": [
+   106,
+   89,
+   11,
+   15
+  ],
+  "r_hip": [
+   74,
+   93
+  ],
+  "r_kn": [
+   68,
+   104
+  ],
+  "r_ft": [
+   64,
+   115
+  ],
+  "l_hip": [
+   87,
+   93
+  ],
+  "l_kn": [
+   92,
+   104
+  ],
+  "l_ft": [
+   96,
+   117
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back toward the upper-left, the bone-white studded club is lifted beside the head with its heavy end pointing up and back",
+   "2": "wind-up extreme: body coiled back and crouched, the club hand behind the head and the studded club hanging down behind the shoulders to the left, the crescent-moon shield tucked across the belly",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips round, the club arm sweeps across in front of the chest and the studded club is level, its heavy end pointing to the right",
+   "4": "contact: club arm fully extended toward the lower-right, the studded club smashing down-right, front knee bent, body low and leaning in, the crescent-moon shield swung back behind the shoulders for balance",
+   "5": "follow-through: the club carries on down until its studded end nearly touches the ground at the lower-right, torso twisted, the hood and the ragged cloak trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the studded club comes back up on the near side toward its raised ready angle, the crescent-moon shield tucked across the belly"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left inside the hood, eyes squeezed shut, torso jolts back, both arms jerk outward (club arm thrown up and out to the left, the crescent-moon shield flung out to the right)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the studded club dipping, the crescent-moon shield still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, club arm flung up, the crescent-moon shield drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, the hooded head droops, the studded club lowering",
+   "3": "kneeling: on both knees, slumped forward, the club's studded end resting on the ground at the lower-right, shield arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the studded club slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the hood still on his head; the studded club lies on the ground at the lower-right; the round crescent-moon shield lies flat beside him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the round shield rocks, the ragged cloak settles",
+   "7": "corpse: lying flat and still on his back, eyes closed, the studded club and the crescent-moon shield on the ground beside him"
+  }
+ }
+}

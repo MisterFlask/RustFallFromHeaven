@@ -1,0 +1,54 @@
+{
+ "name": "doviello_settler",
+ "sprite": "m7/roster/units/unit_doviello_settler.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Doviello Settler, a young barbarian pioneer: shaggy brown hair, blue war paint on his face, a grey-white fur coat with dark stripes and a bone-tooth necklace, dark leggings with white fur wraps and brown laced boots, a huge brown backpack on his back topped with a rolled brown bedroll and a pair of pale antlers, a tin pot hanging from the pack on the screen-left, and a long crooked wooden walking staff with a few pale bone charms tied near its top in his LEFT hand (screen-right)",
+ "hands": "the walking staff stays in his left hand on the screen-right side and his right hand on the screen-left side is an empty fist holding the backpack strap at his chest",
+ "guide_style": "grey",
+ "scale": 0.8,
+ "head_r": 9,
+ "limb": 1.05,
+ "joints": {
+  "head": [84, 64],
+  "neck": [84, 74],
+  "chest": [83, 82],
+  "pelvis": [82, 94],
+  "r_sh": [95, 76],
+  "r_el": [97, 86],
+  "r_ha": [102, 82],
+  "tip": [103, 57],
+  "l_sh": [70, 76],
+  "l_el": [64, 86],
+  "l_ha": [75, 84],
+  "r_hip": [88, 98],
+  "r_kn": [89, 108],
+  "r_ft": [91, 118],
+  "l_hip": [75, 98],
+  "l_kn": [72, 108],
+  "l_ft": [70, 118]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the walking staff is lifted up over the head with its top pointing up and back",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the walking staff cocked behind the head with its top hanging down behind the backpack, the empty right fist tucked in",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the arm sweeps over the head and the walking staff is level, its top pointing to the lower-right",
+   "4": "contact: staff arm fully extended toward the lower-right, the walking staff cracking down-right like a club, front knee bent, body low and leaning in, the empty right fist swung back for balance",
+   "5": "follow-through: the walking staff carries on down until its top nearly touches the ground at the lower-right, torso twisted, the shaggy hair trailing back, the backpack swinging",
+   "6": "recover: body rises, front foot pulls back halfway, the walking staff lifts back toward the upright ready angle"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (the empty right fist flung out to the left, the staff arm thrown up and out), the backpack jolting",
+   "1": "recoil extreme: leaning back further, knees bent, the walking staff dipping, the empty right fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, the staff arm flung up, the empty right fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward under the heavy backpack, head droops, the walking staff lowering",
+   "3": "kneeling: on both knees, slumped forward, the walking staff's top resting on the ground, the empty right arm hanging",
+   "4": "falling back: torso tips back toward the upper-left onto the backpack, the walking staff slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground on top of the backpack, feet toward the lower-right and head toward the upper-left; the walking staff lies on the ground at the lower-right",
+   "6": "bounce: head and shoulders lift slightly off the ground, the tin pot swings",
+   "7": "corpse: lying flat and still on his back, eyes closed, the backpack under him, the walking staff on the ground beside him"
+  }
+ }
+}

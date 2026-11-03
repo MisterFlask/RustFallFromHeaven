@@ -1,0 +1,54 @@
+{
+ "name": "doviello_worker",
+ "sprite": "m7/roster/units/unit_doviello_worker.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Doviello Worker, a young barbarian labourer: a grey wolf's-head pelt worn as a hood with the wolf's ears and snout above his face, brown hair and blue war paint on his face, a shaggy grey-white fur coat with a bone-tooth necklace, dark trousers with white fur wraps and brown laced boots, and a long wooden-handled hoe whose curved steel blade hangs down from a bound collar at its end, a pale fang charm dangling beside the blade, gripped at the end of its handle in his RIGHT hand (screen-left), the blade at the lower-right",
+ "hands": "the hoe stays in his right hand at the end of the handle on the screen-left side; at rest his left hand on the screen-right side also holds the handle lower down near the blade, and during the action it lets go and is an empty fist",
+ "guide_style": "grey",
+ "scale": 0.76,
+ "head_r": 9,
+ "limb": 1.05,
+ "joints": {
+  "head": [77, 65],
+  "neck": [76, 73],
+  "chest": [75, 82],
+  "pelvis": [72, 98],
+  "r_sh": [56, 74],
+  "r_el": [53, 82],
+  "r_ha": [63, 87],
+  "tip": [105, 107],
+  "l_sh": [88, 74],
+  "l_el": [87, 90],
+  "l_ha": [92, 99],
+  "r_hip": [65, 100],
+  "r_kn": [60, 108],
+  "r_ft": [56, 117],
+  "l_hip": [79, 100],
+  "l_kn": [81, 108],
+  "l_ft": [82, 117]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back toward the upper-left, the left hand lets go of the handle, the hoe is lifted up beside the head and held level with its steel blade out to the right",
+   "2": "wind-up extreme: body coiled back and crouched, the hoe hand raised behind the head and the hoe's steel blade hanging down behind the shoulders to the left, the left hand an empty fist tucked across the belly",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips round, the hoe arm sweeps across in front of the chest and the hoe is level, its steel blade pointing to the right, the left hand an empty fist",
+   "4": "contact: hoe arm fully extended toward the lower-right, the hoe's steel blade chopping down-right, front knee bent, body low and leaning in, the empty left fist swung back behind the shoulders for balance",
+   "5": "follow-through: the hoe carries on down until its blade nearly touches the ground at the lower-right, torso twisted, the wolf-pelt hood flapping back, the empty left fist trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the hoe comes back down in front to the ready angle with its blade low at the lower-right, the left hand reaching for the handle"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (the hoe arm thrown out to the left with the hoe swung across the chest, the empty left fist flung out to the right)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the hoe dipping across the body, the empty left fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, hoe arm flung up, the empty left fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the hoe lowering, the empty left fist hanging",
+   "3": "kneeling: on both knees, slumped forward, the hoe's steel blade resting on the ground at the lower-right, the empty left arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the hoe slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the wolf-pelt hood on his head; the hoe lies on the ground at the lower-right",
+   "6": "bounce: head and shoulders lift slightly off the ground, the wolf-pelt hood stays on",
+   "7": "corpse: lying flat and still on his back, eyes closed, the hoe on the ground beside him"
+  }
+ }
+}

@@ -1,0 +1,105 @@
+{
+ "name": "ljosalfar_settler",
+ "sprite": "m7/roster/units/unit_ljosalfar_settler.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Ljosalfar Settler (Fall from Heaven), a slender wood-elf woman with long pointed ears and green eyes: shoulder-length blonde hair, a green hooded tunic with leaf-shaped hems and gold trim, a silver leaf pendant, a brown belt with a silver buckle, olive leggings and tall brown leather boots, a huge brown wooden-framed backpack on her back topped with a rolled green bedroll and a potted green sapling, a tin cooking pot hanging from its side, and a gnarled leafy wooden walking staff in her LEFT hand (screen-right)",
+ "hands": "the leafy walking staff stays in her left hand on the screen-right side and her right hand on the screen-left side grips the backpack strap at her chest as an empty fist",
+ "guide_style": "grey",
+ "scale": 0.92,
+ "head_r": 10,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   83,
+   56
+  ],
+  "neck": [
+   82,
+   66
+  ],
+  "chest": [
+   82,
+   74
+  ],
+  "pelvis": [
+   81,
+   86
+  ],
+  "r_sh": [
+   90,
+   70
+  ],
+  "r_el": [
+   91,
+   80
+  ],
+  "r_ha": [
+   101,
+   78
+  ],
+  "tip": [
+   107,
+   49
+  ],
+  "l_sh": [
+   73,
+   70
+  ],
+  "l_el": [
+   64,
+   79
+  ],
+  "l_ha": [
+   72,
+   78
+  ],
+  "r_hip": [
+   86,
+   92
+  ],
+  "r_kn": [
+   86,
+   105
+  ],
+  "r_ft": [
+   88,
+   118
+  ],
+  "l_hip": [
+   76,
+   92
+  ],
+  "l_kn": [
+   71,
+   104
+  ],
+  "l_ft": [
+   66,
+   118
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the leafy walking staff is lifted up over the head with its leafy top end pointing up and back, the big backpack on her back",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the walking staff cocked behind the head with its leafy top end hanging down behind the shoulders, the empty right fist tucked in at the backpack strap",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the arm sweeps over the head and the walking staff is level, its leafy top end pointing to the lower-right",
+   "4": "contact: staff arm fully extended toward the lower-right, the leafy top end of the walking staff smashing down-right, front knee bent, body low and leaning in, the empty right fist swung back for balance",
+   "5": "follow-through: the walking staff carries on down until its leafy top end nearly touches the ground at the lower-right, torso twisted, blonde hair trailing back, the backpack swinging",
+   "6": "recover: body rises, front foot pulls back halfway, the leafy walking staff lifts back toward its upright ready angle"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (the empty right fist flung out to the left, the staff arm thrown up and out with the leafy walking staff tilted up)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the walking staff dipping, the empty right fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, staff arm flung up holding the leafy walking staff high, the empty right fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the walking staff lowering, the heavy backpack dragging at her shoulders",
+   "3": "kneeling: on both knees, slumped forward, the leafy top end of the walking staff resting on the ground at the lower-right, the empty right arm hanging",
+   "4": "falling back: torso tips back toward the upper-left onto the big backpack, the walking staff slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on her back along the ground, feet toward the lower-right and head toward the upper-left, the big backpack under her shoulders; the leafy walking staff lies on the ground at the lower-right",
+   "6": "bounce: head and shoulders lift slightly off the ground, the green bedroll, the potted sapling and the tin pot settle",
+   "7": "corpse: lying flat and still on her back over the backpack, eyes closed, the leafy walking staff on the ground beside her"
+  }
+ }
+}

@@ -1,0 +1,105 @@
+{
+ "name": "clan_of_embers_settler",
+ "sprite": "m7/roster/units/unit_clan_of_embers_settler.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Clan of Embers Settler: a green-skinned orc with small tusks and a dark topknot, a ragged orange shawl over a dark tunic, a rope belt, a ragged orange-and-dark kilt, steel knee plates and studded brown boots, carrying a huge backpack with a rolled brown bedroll on top and an iron fire-pot with burning flames hanging from it on the screen-left, and gripping a tall wooden walking staff with a steel spear point at its top in his LEFT hand",
+ "hands": "the spear-tipped staff stays in his left hand on the screen-right side and his right hand on the screen-left side is an empty fist; the big pack with the bedroll and the hanging fire-pot stays on his back",
+ "guide_style": "grey",
+ "scale": 0.88,
+ "head_r": 8,
+ "limb": 1.2,
+ "joints": {
+  "head": [
+   89,
+   59
+  ],
+  "neck": [
+   88,
+   68
+  ],
+  "chest": [
+   86,
+   77
+  ],
+  "pelvis": [
+   86,
+   88
+  ],
+  "r_sh": [
+   96,
+   70
+  ],
+  "r_el": [
+   101,
+   81
+  ],
+  "r_ha": [
+   109,
+   79
+  ],
+  "tip": [
+   113,
+   43
+  ],
+  "l_sh": [
+   75,
+   70
+  ],
+  "l_el": [
+   66,
+   80
+  ],
+  "l_ha": [
+   75,
+   81
+  ],
+  "r_hip": [
+   92,
+   94
+  ],
+  "r_kn": [
+   98,
+   104
+  ],
+  "r_ft": [
+   96,
+   117
+  ],
+  "l_hip": [
+   79,
+   94
+  ],
+  "l_kn": [
+   71,
+   104
+  ],
+  "l_ft": [
+   66,
+   117
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the spear-tipped staff is lifted up over the head with its spear point up and back, the big pack on his back",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the staff cocked behind the head with its spear point hanging down behind the shoulders, the empty right fist tucked in",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the arm sweeps over the head and the staff is level, its spear point pointing to the lower-right",
+   "4": "contact: staff arm fully extended toward the lower-right, the staff's spear point striking down-right, front knee bent, body low and leaning in, the empty right fist swung back for balance",
+   "5": "follow-through: the staff carries on down until its spear point nearly touches the ground at the lower-right, torso twisted, the topknot trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the staff lifts back toward its upright resting angle"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (the empty right fist flung out to the left, the staff arm thrown up and out), the pack and fire-pot jolting",
+   "1": "recoil extreme: leaning back further, knees bent, the staff tipping, the empty right fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, the staff arm flung up, the empty right fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the staff lowering",
+   "3": "kneeling: on both knees, slumped forward, the staff's spear point resting on the ground, the empty right arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the staff slips out of the hand, legs slide forward, the heavy pack pulling him back",
+   "5": "hits the ground: lying on his back on top of his big pack along the ground, feet toward the lower-right and head toward the upper-left; the spear-tipped staff lies on the ground at the lower-right; the fire-pot lies beside him",
+   "6": "bounce: head and shoulders lift slightly off the pack, the bedroll settles",
+   "7": "corpse: lying flat and still on his back on his pack, eyes closed, the staff on the ground beside him"
+  }
+ }
+}

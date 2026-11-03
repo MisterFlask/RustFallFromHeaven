@@ -1,0 +1,98 @@
+{
+ "name": "calabim_adept",
+ "sprite": "m7/roster/units/unit_calabim_adept.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "body_plan": "caster",
+ "description": "a Calabim Adept, a pale vampire mage: a black hooded robe lined and trimmed in red, a red sash knotted at the waist, a pale face with a glowing red eye inside the hood, a brown leather satchel on a strap at his right hip, black boots, and a tall dark iron staff crowned with a red crystal between curved iron blades in his LEFT hand",
+ "hands": "the crystal staff stays in his left hand on the screen-right side and his right hand on the screen-left side is an empty hand that holds the satchel strap at rest",
+ "guide_style": "grey",
+ "scale": 0.91,
+ "head_r": 11,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   74,
+   56
+  ],
+  "neck": [
+   75,
+   65
+  ],
+  "chest": [
+   75,
+   74
+  ],
+  "pelvis": [
+   75,
+   85
+  ],
+  "r_sh": [
+   87,
+   67
+  ],
+  "r_el": [
+   89,
+   78
+  ],
+  "r_ha": [
+   96,
+   76
+  ],
+  "tip": [
+   100,
+   42
+  ],
+  "l_sh": [
+   58,
+   67
+  ],
+  "l_el": [
+   56,
+   78
+  ],
+  "l_ha": [
+   64,
+   81
+  ],
+  "r_hip": [
+   81,
+   89
+  ],
+  "r_kn": [
+   84,
+   105
+  ],
+  "r_ft": [
+   86,
+   121
+  ],
+  "l_hip": [
+   69,
+   89
+  ],
+  "l_kn": [
+   62,
+   105
+  ],
+  "l_ft": [
+   58,
+   121
+  ]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left inside the black hood, eyes squeezed shut, torso jolts back, both arms jerk outward (the empty right hand flung out to the left, the crystal staff arm thrown up and out)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent under the robe, the crystal staff dipping, the empty right hand still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, the crystal staff arm flung up, the empty right hand drooping",
+   "2": "knees buckle: hips drop, knees fold forward under the black robe, torso slumps forward, head droops in the hood, the crystal staff lowering",
+   "3": "kneeling: on both knees, slumped forward, the crystal staff tilted down with its crowned head resting on the ground at the lower-right, the empty right arm hanging, the satchel at his hip",
+   "4": "falling back: torso tips back toward the upper-left, the crystal staff slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the hood still around his head; the crystal staff lies on the ground at the lower-right; the satchel lies beside his hip",
+   "6": "bounce: head and shoulders lift slightly off the ground, the black robe settles",
+   "7": "corpse: lying flat and still on his back, eyes closed, the red glow gone from his eye, the crystal staff on the ground beside him"
+  }
+ }
+}

@@ -1,9 +1,10 @@
 # Which units are animated
 
 Status of the M7 unit sprites (`tools/m7/roster/units/`, the first 56 of them). The method and its limits are in
-`ANIMATING_UNITS.md`; this file says what has been done with it, what is waiting and why. Nothing under `crates/` loads
-these frames yet, the finished sets included. The hero, religion and unique-unit sprites added to the roster on
-2026-10-28 are not animated, except four heroes (below).
+`ANIMATING_UNITS.md`; this file says what has been done with it, what is waiting and why. The game plays the idles on
+the HD-2D map (`IDLE` in `crates/ffh-play/assets/app/r3d/hd2d/sprites.js`) and the four animations of some sets on the
+battle screens (`ANIM_SETS` in `assets/app/battle_stage.js`). The hero, religion and unique-unit sprites added to the
+roster on 2026-10-28 are not animated, except four heroes (below) and three idles ("Idle only").
 
 ## Done: idle, strike, flinch, death
 
@@ -37,6 +38,23 @@ Then, the same day, by agents following the guide (step 1 to 4, no re-rolls, one
 | maros | lower-right (nearly frontal) | near | 1 | 1 | 1 | 1 | hero, two-handed axe; the shield on his back pops out on strike 1, 4-5 and the flinch impact |
 | guybrush | lower-right | far, mirrored | 2 | 1 | 1 | 2 | hero |
 
+## Idle only
+
+On 2026-11-02, 96 sets with the idle alone (`--rebuild --anims idle`, no image calls), for the HD-2D map: the
+civilizations' own variants, which the map prefers to the generic sprite, and the generics of the commonest ones.
+
+- every civilization's warrior (19, the barbarians' included) and axeman (11), each drawn in its generic's pose;
+- the generic `worker`, `settler` and `adept`, and every civilization's (21, 21 and 18);
+- `ljosalfar_archer`, `grigori_medic` and `sheaim_mage`.
+
+The unit files are the ones the unmerged `anim-all` branch wrote for its batch (2026-11-01), taken unchanged after
+checking each skeleton over its sprite: per-sprite joints, scale and facing, beat texts for the later paid steps. Their
+`body_plan` key (`caster`, `ranged`) picks a cast or shot pose set on that branch only; this recipe ignores it and
+breathes them with the melee sets, which is all the idle uses. Every one looks lower-right except `barbarian_axeman`
+(the orc's face and the skull helm look left of the head's centre, the ear sits right: lower-left, far set) and
+`sheaim_mage` (lower-left). The workers' hoe blade rises with the breath, up to 2 px off the ground, as a weapon tip
+does. Not done: the 17 horsemen (riders want that branch's mounted rig).
+
 ## Not started, same body plan (melee biped), each needs a decision first
 
 - `commander`: one arm outstretched with a gold-pommelled baton, a cape; the far (screen-right) hand.
@@ -61,5 +79,6 @@ says to report it rather than animate it with a sword swing. Not built.
 - ships (`frigate`, `trireme`, `workboat`), siege (`catapult`);
 - elementals (`air_elemental`, `earth_elemental`, `fire_elemental`, `water_elemental`).
 
-Their idle is the one thing that needs no model: the same mesh-warp breath, with joints placed for the body plan. It
-has not been tried on a non-biped.
+Their idle is the one thing that needs no model: the same mesh-warp breath, with joints placed for the body plan. Four of
+these bipeds have one now (`adept`, `settler`, `ljosalfar_archer`, `sheaim_mage`: "Idle only"); it has not been tried
+on a non-biped.

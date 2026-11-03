@@ -1,0 +1,110 @@
+{
+ "name": "hippus_warrior",
+ "sprite": "m7/roster/units/unit_hippus_warrior.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Hippus Warrior (Fall from Heaven), a bearded, dark-haired horse nomad fighting on foot: a tall peaked orange cap with a cream fur brim and a long orange feather plume sweeping back, an orange coat with cream fur trim over a brown plaid tunic, a brown belt with a brass buckle, brown trousers and brown boots, a studded wooden club raised in his RIGHT hand and a round red-brown wooden shield with a brass rim, brass studs and a brass boss on his LEFT arm",
+ "hands": "the studded wooden club stays in his right hand on the screen-left side and the round shield stays on his left arm on the screen-right side",
+ "guide_style": "grey",
+ "scale": 0.86,
+ "head_r": 10,
+ "limb": 1.1,
+ "joints": {
+  "head": [
+   82,
+   61
+  ],
+  "neck": [
+   82,
+   71
+  ],
+  "chest": [
+   82,
+   79
+  ],
+  "pelvis": [
+   80,
+   88
+  ],
+  "r_sh": [
+   72,
+   73
+  ],
+  "r_el": [
+   63,
+   81
+  ],
+  "r_ha": [
+   59,
+   70
+  ],
+  "tip": [
+   50,
+   40
+  ],
+  "l_sh": [
+   92,
+   73
+  ],
+  "l_el": [
+   99,
+   84
+  ],
+  "l_ha": [
+   105,
+   90
+  ],
+  "shield": [
+   106,
+   90,
+   11,
+   16
+  ],
+  "r_hip": [
+   74,
+   93
+  ],
+  "r_kn": [
+   66,
+   104
+  ],
+  "r_ft": [
+   64,
+   117
+  ],
+  "l_hip": [
+   87,
+   93
+  ],
+  "l_kn": [
+   92,
+   104
+  ],
+  "l_ft": [
+   98,
+   119
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back toward the upper-left, the studded club is lifted beside the head with its studded head pointing up and back",
+   "2": "wind-up extreme: body coiled back and crouched, the club hand behind the head and the studded club hanging down behind the shoulders to the left, shield tucked across the belly",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips round, the club arm sweeps across in front of the chest and the studded club is level, its studded head pointing to the right",
+   "4": "contact: club arm fully extended toward the lower-right, the studded club head smashing down-right, front knee bent, body low and leaning in, shield arm swung back behind the shoulders for balance",
+   "5": "follow-through: the studded club carries on down until its head nearly touches the ground at the lower-right, torso twisted, the orange feather plume trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the studded club comes back up on the near side toward the ready angle, shield tucked across the belly"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (club arm thrown up and out to the left, shield flung out to the right), the feather plume whipping",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the studded club dipping, shield still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, club arm flung up, shield drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the studded club lowering",
+   "3": "kneeling: on both knees, slumped forward, the head of the studded club resting on the ground at the lower-right, shield arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the studded club slips out of the hand, legs slide forward, the plumed cap tipping",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the plumed fur cap still on his head; the studded club lies on the ground at the lower-right; the round shield lies flat beside him",
+   "7": "corpse: lying flat and still on his back, eyes closed, the studded club and the round shield on the ground beside him"
+  }
+ }
+}

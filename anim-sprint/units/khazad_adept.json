@@ -1,0 +1,98 @@
+{
+ "name": "khazad_adept",
+ "sprite": "m7/roster/units/unit_khazad_adept.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "body_plan": "caster",
+ "description": "a Khazad Adept, a stout dwarf mage: a big braided red beard, a deep golden-yellow hooded robe with grey trim, a brown belt with a gold buckle, a brown leather satchel stuffed with scrolls at his screen-left hip, brown boots, and a wooden staff with a gold-wrapped head topped with a glowing pale-blue crystal in his LEFT hand",
+ "hands": "the crystal-topped staff stays upright in his left hand on the screen-right side and his right hand is an empty fist resting at his belly above the satchel on the screen-left side",
+ "guide_style": "grey",
+ "scale": 0.74,
+ "head_r": 10,
+ "limb": 1.15,
+ "joints": {
+  "head": [
+   79,
+   72
+  ],
+  "neck": [
+   80,
+   81
+  ],
+  "chest": [
+   80,
+   89
+  ],
+  "pelvis": [
+   80,
+   98
+  ],
+  "r_sh": [
+   90,
+   83
+  ],
+  "r_el": [
+   94,
+   94
+  ],
+  "r_ha": [
+   100,
+   86
+  ],
+  "tip": [
+   104,
+   52
+  ],
+  "l_sh": [
+   66,
+   83
+  ],
+  "l_el": [
+   58,
+   92
+  ],
+  "l_ha": [
+   66,
+   94
+  ],
+  "r_hip": [
+   85,
+   101
+  ],
+  "r_kn": [
+   86,
+   111
+  ],
+  "r_ft": [
+   86,
+   119
+  ],
+  "l_hip": [
+   74,
+   101
+  ],
+  "l_kn": [
+   67,
+   111
+  ],
+  "l_ft": [
+   60,
+   119
+  ]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-right; hooded head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (his empty right fist flung out to the left, the crystal-topped staff thrown up and out in his left hand), the red beard and the hood jolting",
+   "1": "recoil extreme: leaning back further, knees bent, the crystal-topped staff leaning out to the right, his empty right fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, staff arm flung up holding the crystal-topped staff high, his empty right fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, hooded head droops, the crystal-topped staff lowering",
+   "3": "kneeling: on both knees, slumped forward, the crystal end of the staff resting on the ground, his empty right hand hanging by the satchel",
+   "4": "falling back: torso tips back toward the upper-left, the crystal-topped staff slips out of the hand, legs slide forward, the yellow robe flaring",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the hood still over his head and the red beard on his chest; the crystal-topped staff lies on the ground at the lower-right; the satchel of scrolls lies flat beside him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the hood and the yellow robe settle",
+   "7": "corpse: lying flat and still on his back, eyes closed, the red beard on his chest, the crystal-topped staff on the ground beside him"
+  }
+ }
+}

@@ -1,0 +1,54 @@
+{
+ "name": "grigori_medic",
+ "sprite": "m7/roster/units/unit_grigori_medic.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Grigori Medic, a bearded herbalist: a brown wide-brimmed hat with a sprig of green leaves in its band, a short brown beard, a blue coat open over a cream tunic and a cream apron, a brown leather bandolier across the chest hung with small green and orange potion vials, a brown leather satchel with green herbs poking out at his screen-left hip, brown boots, a grey stone mortar and pestle held in the crook of his RIGHT arm, and a gnarled wooden walking staff with bunches of green herbs tied near its top in his LEFT hand",
+ "hands": "the herb-tied walking staff stays in his left hand on the screen-right side, and his right hand on the screen-left side holds the grey stone mortar against his chest",
+ "guide_style": "grey",
+ "scale": 0.87,
+ "head_r": 10,
+ "limb": 1.0,
+ "joints": {
+  "head": [78, 58],
+  "neck": [77, 69],
+  "chest": [77, 78],
+  "pelvis": [77, 91],
+  "r_sh": [87, 70],
+  "r_el": [90, 79],
+  "r_ha": [100, 82],
+  "tip": [105, 42],
+  "l_sh": [66, 70],
+  "l_el": [57, 80],
+  "l_ha": [63, 83],
+  "r_hip": [83, 95],
+  "r_kn": [86, 106],
+  "r_ft": [88, 116],
+  "l_hip": [71, 95],
+  "l_kn": [67, 106],
+  "l_ft": [63, 116]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the herb-tied walking staff is lifted up over the head with its top end pointing up and back, the wide-brimmed hat on his head",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the walking staff cocked behind the head with its herb-tied top end hanging down behind the shoulders, the right hand tucked in clutching the stone mortar",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the arm sweeps over the head and the walking staff is level, its herb-tied top end pointing to the lower-right",
+   "4": "contact: staff arm fully extended toward the lower-right, the herb-tied top end of the walking staff smashing down-right, front knee bent, body low and leaning in, the right hand swung back for balance still clutching the stone mortar",
+   "5": "follow-through: the walking staff carries on down until its herb-tied top end nearly touches the ground at the lower-right, torso twisted, the blue coat swinging",
+   "6": "recover: body rises, front foot pulls back halfway, the walking staff lifts back toward its upright ready angle"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (the right hand flung out to the left still clutching the stone mortar, the staff arm thrown up and out with the herb-tied walking staff tilted up)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the walking staff tilting out to the right, the right hand with the stone mortar still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, staff arm flung up holding the herb-tied walking staff high, the right hand drooping with the stone mortar",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops so the hat brim hides the face, the walking staff lowering",
+   "3": "kneeling: on both knees, slumped forward, the herb-tied top end of the walking staff resting on the ground at the lower-right, the right arm hanging, the stone mortar slipping from the hand",
+   "4": "falling back: torso tips back toward the upper-left, the walking staff slips out of the hand and the stone mortar drops, legs slide forward, the hat tipping back",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the brown hat askew on his head; the herb-tied walking staff lies on the ground at the lower-right; the stone mortar lies on the ground beside him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the satchel and the potion vials settle",
+   "7": "corpse: lying flat and still on his back, eyes closed, the herb-tied walking staff on the ground beside him, the stone mortar on its side next to his hand"
+  }
+ }
+}

@@ -1,0 +1,98 @@
+{
+ "name": "bannor_adept",
+ "sprite": "m7/roster/units/unit_bannor_adept.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "body_plan": "caster",
+ "description": "a Bannor Adept, a young human mage with a soft youthful face: a deep red hood and short cape with gold trim, brown hair under the hood, a long white robe with red side panels and red-and-gold hems, a gold sun amulet on the chest, a gold rope belt with hanging tassels, a brown leather satchel stuffed with scroll rolls on a strap at the screen-left hip, brown boots, and a tall wooden staff topped with a sparkling golden crystal in the adept's LEFT hand on the screen-right side",
+ "hands": "the crystal-topped staff stays in the adept's left hand on the screen-right side; the right hand on the screen-left side holds the satchel strap at rest and is an empty hand during the action",
+ "guide_style": "grey",
+ "scale": 0.97,
+ "head_r": 10,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   76,
+   54
+  ],
+  "neck": [
+   75,
+   65
+  ],
+  "chest": [
+   75,
+   74
+  ],
+  "pelvis": [
+   76,
+   87
+  ],
+  "r_sh": [
+   85,
+   72
+  ],
+  "r_el": [
+   89,
+   84
+  ],
+  "r_ha": [
+   97,
+   76
+  ],
+  "tip": [
+   102,
+   41
+  ],
+  "l_sh": [
+   65,
+   71
+  ],
+  "l_el": [
+   58,
+   80
+  ],
+  "l_ha": [
+   66,
+   82
+  ],
+  "r_hip": [
+   81,
+   90
+  ],
+  "r_kn": [
+   84,
+   104
+  ],
+  "r_ft": [
+   86,
+   119
+  ],
+  "l_hip": [
+   70,
+   90
+  ],
+  "l_kn": [
+   64,
+   104
+  ],
+  "l_ft": [
+   60,
+   120
+  ]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left inside the red hood, eyes squeezed shut, torso jolts back, both arms jerk outward (the empty right hand flung out to the left, the staff arm thrown up and out to the right with the crystal staff held up)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent under the robe, the crystal staff dipping, the empty right hand still held out, the satchel swinging"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, staff arm flung up with the crystal staff held high, the empty right hand drooping",
+   "2": "knees buckle: hips drop, knees fold forward under the robe, torso slumps forward, head droops inside the red hood, the crystal staff lowering",
+   "3": "kneeling: on both knees, slumped forward, the staff slanting down with its golden crystal resting on the ground at the lower-right, the empty right arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the crystal staff slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on the back along the ground, feet toward the lower-right and head toward the upper-left, the red hood still on the head and the white robe spread out; the crystal staff lies on the ground at the lower-right; the satchel lies at the hip",
+   "6": "bounce: head and shoulders lift slightly off the ground, the red cape and the satchel settle",
+   "7": "corpse: lying flat and still on the back, eyes closed, the golden crystal gone dim, the staff on the ground beside the body"
+  }
+ }
+}

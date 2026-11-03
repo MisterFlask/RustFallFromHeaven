@@ -1,0 +1,105 @@
+{
+ "name": "malakim_settler",
+ "sprite": "m7/roster/units/unit_malakim_settler.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Malakim Settler (Fall from Heaven), a desert traveller: brown skin and a short black beard, a cream turban with a teal jewel at the front, a cream robe and scarf over a teal tunic, a brown belt with pouches and a gold buckle, brown boots, a big tan backpack on his back on the screen-left side, topped with a rolled teal bedroll with gold bands and a brass water jug hanging on its side, and a tall gnarled wooden walking staff in his LEFT hand",
+ "hands": "the walking staff stays upright in his left hand on the screen-right side and his right hand is an empty fist held across his chest at the pack strap on the screen-left side",
+ "guide_style": "grey",
+ "scale": 0.88,
+ "head_r": 10,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   85,
+   57
+  ],
+  "neck": [
+   86,
+   66
+  ],
+  "chest": [
+   86,
+   74
+  ],
+  "pelvis": [
+   85,
+   85
+  ],
+  "r_sh": [
+   94,
+   70
+  ],
+  "r_el": [
+   97,
+   81
+  ],
+  "r_ha": [
+   106,
+   76
+  ],
+  "tip": [
+   105,
+   47
+  ],
+  "l_sh": [
+   71,
+   70
+  ],
+  "l_el": [
+   68,
+   80
+  ],
+  "l_ha": [
+   76,
+   77
+  ],
+  "r_hip": [
+   90,
+   92
+  ],
+  "r_kn": [
+   91,
+   104
+  ],
+  "r_ft": [
+   91,
+   115
+  ],
+  "l_hip": [
+   79,
+   92
+  ],
+  "l_kn": [
+   72,
+   104
+  ],
+  "l_ft": [
+   69,
+   115
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the walking staff is lifted up over the head with its top pointing up and back, his empty right fist at the pack strap",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the walking staff cocked behind the head with its top hanging down behind the shoulders and the backpack, his empty right fist tucked in at the pack strap",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the arm sweeps over the head and the walking staff is level, its top pointing to the lower-right",
+   "4": "contact: staff arm fully extended toward the lower-right, the top of the walking staff whacking down-right, front knee bent, body low and leaning in, his empty right fist swung back for balance, the brass jug swinging on the pack",
+   "5": "follow-through: the walking staff carries on down until its top nearly touches the ground at the lower-right, torso twisted, the backpack and the brass jug swaying",
+   "6": "recover: body rises, front foot pulls back halfway, the walking staff lifts back toward the upright ready angle, his right fist returning to the pack strap"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (his empty right fist flung out to the left, the walking staff thrown up and out in his left hand), the backpack and the brass jug jolting",
+   "1": "recoil extreme: leaning back further, knees bent, the walking staff tilting back, his empty right fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back under the heavy backpack, staff arm flung up holding the walking staff high, his empty right fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, turbaned head droops, the walking staff lowering",
+   "3": "kneeling: on both knees, slumped forward under the backpack, the walking staff slanting down with its top resting on the ground at the lower-right, his right arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the walking staff slips out of the hand, legs slide forward, the backpack hitting the ground first",
+   "5": "hits the ground: lying on his back on top of his backpack along the ground, feet toward the lower-right and head toward the upper-left; the walking staff lies on the ground at the lower-right; the teal bedroll and the brass jug beside his shoulders",
+   "6": "bounce: head and shoulders lift slightly off the ground, the brass jug tips over",
+   "7": "corpse: lying flat and still on his back on the backpack, eyes closed, the walking staff on the ground beside him"
+  }
+ }
+}

@@ -1,0 +1,110 @@
+{
+ "name": "amurites_warrior",
+ "sprite": "m7/roster/units/unit_amurites_warrior.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "an Amurite Warrior (Fall from Heaven), a bearded human clubman: wild black hair with a white headband, a short black beard, a royal-blue tunic with white trim and white star motifs, a purple sash over his left shoulder, a brown belt with a silver buckle, dark blue trousers and brown leather boots, a brass-banded wooden club in his RIGHT hand and a round blue shield with a silver star and a silver rim on his LEFT arm",
+ "hands": "the club stays in his right hand on the screen-left side and the shield on his left arm on the screen-right side",
+ "guide_style": "grey",
+ "scale": 0.93,
+ "head_r": 12,
+ "limb": 1.05,
+ "joints": {
+  "head": [
+   83,
+   56
+  ],
+  "neck": [
+   81,
+   67
+  ],
+  "chest": [
+   84,
+   76
+  ],
+  "pelvis": [
+   82,
+   85
+  ],
+  "r_sh": [
+   69,
+   71
+  ],
+  "r_el": [
+   66,
+   81
+  ],
+  "r_ha": [
+   59,
+   70
+  ],
+  "tip": [
+   51,
+   39
+  ],
+  "l_sh": [
+   95,
+   71
+  ],
+  "l_el": [
+   100,
+   80
+  ],
+  "l_ha": [
+   104,
+   88
+  ],
+  "shield": [
+   106,
+   89,
+   11,
+   16
+  ],
+  "r_hip": [
+   75,
+   91
+  ],
+  "r_kn": [
+   69,
+   103
+  ],
+  "r_ft": [
+   65,
+   116
+  ],
+  "l_hip": [
+   89,
+   91
+  ],
+  "l_kn": [
+   93,
+   104
+  ],
+  "l_ft": [
+   96,
+   118
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back toward the upper-left, the club is lifted beside the head with its brass-banded head pointing up and back",
+   "2": "wind-up extreme: body coiled back and crouched, the club hand behind the head and the brass-banded club hanging down behind the shoulders to the left, the round blue shield tucked across the belly",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips round, the club arm sweeps across in front of the chest and the club is level, its brass-banded head pointing to the right",
+   "4": "contact: club arm fully extended toward the lower-right, the brass-banded club smashing down-right, front knee bent, body low and leaning in, the round blue shield swung back behind the shoulders for balance",
+   "5": "follow-through: the club carries on down until its brass-banded head nearly touches the ground at the lower-right, torso twisted, wild black hair trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the club comes back up on the near side toward the ready angle, the round blue shield tucked across the belly"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (club arm thrown up and out to the left, the round blue shield flung out to the right)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the club dipping, the round blue shield still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, club arm flung up, the round blue shield drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the club lowering",
+   "3": "kneeling: on both knees, slumped forward, the club's brass-banded head resting on the ground at the lower-right, shield arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the club slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left; the club lies on the ground at the lower-right; the round blue shield lies flat beside him",
+   "7": "corpse: lying flat and still on his back, eyes closed, the club and the round blue shield on the ground beside him"
+  }
+ }
+}

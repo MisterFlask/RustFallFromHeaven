@@ -1,0 +1,98 @@
+{
+ "name": "sheaim_adept",
+ "sprite": "m7/roster/units/unit_sheaim_adept.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "body_plan": "caster",
+ "description": "a Sheaim Adept (Fall from Heaven), a pale skull-faced cultist mage: a gaunt white face with a red eye under a deep purple hood, a purple hooded robe with dark grey sleeves, a small skull pendant at the throat, an orange sash knotted at the waist, a brown leather satchel on a strap across the chest hanging at his screen-left hip, dark boots, and a black staff topped with a horned skull and a burning orange flame in his LEFT hand",
+ "hands": "the flaming skull staff stays upright in his left hand on the screen-right side and his pale right hand is an empty fist holding the satchel strap on the screen-left side",
+ "guide_style": "grey",
+ "scale": 0.88,
+ "head_r": 10,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   77,
+   59
+  ],
+  "neck": [
+   77,
+   70
+  ],
+  "chest": [
+   76,
+   78
+  ],
+  "pelvis": [
+   77,
+   90
+  ],
+  "r_sh": [
+   86,
+   72
+  ],
+  "r_el": [
+   90,
+   82
+  ],
+  "r_ha": [
+   97,
+   77
+  ],
+  "tip": [
+   100,
+   52
+  ],
+  "l_sh": [
+   65,
+   73
+  ],
+  "l_el": [
+   59,
+   83
+  ],
+  "l_ha": [
+   67,
+   83
+  ],
+  "r_hip": [
+   83,
+   94
+  ],
+  "r_kn": [
+   85,
+   106
+  ],
+  "r_ft": [
+   87,
+   118
+  ],
+  "l_hip": [
+   71,
+   94
+  ],
+  "l_kn": [
+   64,
+   106
+  ],
+  "l_ft": [
+   60,
+   118
+  ]
+ },
+ "beats": {
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (his pale empty right fist flung out to the left, the flaming skull staff thrown up and out in his left hand), the purple hood jolting back",
+   "1": "recoil extreme: leaning back further, knees bent, the flaming skull staff tilting back, his empty right fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, staff arm flung up holding the flaming skull staff high, his empty right fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, the hooded head droops, the flaming skull staff lowering",
+   "3": "kneeling: on both knees, slumped forward, the skull end of the staff resting on the ground with its flame guttering, his empty right hand hanging by the satchel",
+   "4": "falling back: torso tips back toward the upper-left, the skull staff slips out of the hand, legs slide forward, the purple robe flaring",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left; the skull staff lies on the ground at the lower-right, its flame small; the satchel lies flat beside him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the purple hood and robe settle",
+   "7": "corpse: lying flat and still on his back, eyes closed, the skull staff on the ground beside him, its flame out"
+  }
+ }
+}

@@ -1,0 +1,111 @@
+{
+ "name": "lanun_warrior",
+ "sprite": "m7/roster/units/unit_lanun_warrior.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Lanun Warrior (Fall from Heaven), a dark-skinned pirate fighter: black hair under a red bandana whose knotted tails hang at the back of his head, a gold hoop earring, a blue-and-white striped shirt, a red sash, ragged blue trousers and brown sandals, a wooden club studded with white iron knobs in his RIGHT hand, and a round navy-blue shield with a silver rim and a white anchor on his LEFT arm",
+ "hands": "the studded club stays in his right hand on the screen-left side and the round anchor shield stays on his left arm on the screen-right side",
+ "guide_style": "grey",
+ "scale": 0.87,
+ "head_r": 10,
+ "limb": 1.05,
+ "joints": {
+  "head": [
+   83,
+   59
+  ],
+  "neck": [
+   82,
+   67
+  ],
+  "chest": [
+   82,
+   75
+  ],
+  "pelvis": [
+   82,
+   88
+  ],
+  "r_sh": [
+   72,
+   68
+  ],
+  "r_el": [
+   66,
+   76
+  ],
+  "r_ha": [
+   59,
+   72
+  ],
+  "tip": [
+   50,
+   39
+  ],
+  "l_sh": [
+   93,
+   68
+  ],
+  "l_el": [
+   97,
+   79
+  ],
+  "l_ha": [
+   101,
+   89
+  ],
+  "shield": [
+   105,
+   90,
+   12,
+   17
+  ],
+  "r_hip": [
+   75,
+   90
+  ],
+  "r_kn": [
+   68,
+   102
+  ],
+  "r_ft": [
+   63,
+   116
+  ],
+  "l_hip": [
+   89,
+   90
+  ],
+  "l_kn": [
+   94,
+   104
+  ],
+  "l_ft": [
+   97,
+   117
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back toward the upper-left, the studded club is lifted beside the head with its knobbed head pointing up and back, the round anchor shield held in front",
+   "2": "wind-up extreme: body coiled back and crouched, the club hand behind the head and the studded club hanging down behind the shoulders to the left, the round anchor shield tucked across the belly",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips round, the club arm sweeps across in front of the chest and the studded club is level, its knobbed head pointing to the right",
+   "4": "contact: club arm fully extended toward the lower-right, the studded club smashing down-right, front knee bent, body low and leaning in, the round anchor shield swung back behind the shoulders for balance",
+   "5": "follow-through: the studded club carries on down until its knobbed head nearly touches the ground at the lower-right, torso twisted, the red bandana tails trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the studded club comes back up on the near side toward its raised ready angle, the round anchor shield tucked across the belly"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (the club arm thrown up and out to the left with the studded club, the round anchor shield flung out to the right)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the studded club dipping, the anchor shield still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, club arm flung up with the studded club, the anchor shield drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the studded club lowering",
+   "3": "kneeling: on both knees, slumped forward, the knobbed head of the studded club resting on the ground at the lower-right, the shield arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the studded club slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left; the studded club lies on the ground at the lower-right; the round anchor shield lies flat beside him",
+   "6": "bounce: head and shoulders lift slightly off the ground, the anchor shield rocks",
+   "7": "corpse: lying flat and still on his back, eyes closed, the studded club and the round anchor shield on the ground beside him"
+  }
+ }
+}

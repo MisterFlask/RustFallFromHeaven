@@ -1,0 +1,54 @@
+{
+ "name": "barbarian_warrior",
+ "sprite": "m7/roster/units/unit_barbarian_warrior.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Barbarian Warrior, a hunched green-skinned orc: olive-green skin, small orange eyes, jutting lower tusks, pointed ears, a black topknot tied with a rust-red band, dark fur-and-leather shoulder mantle and vest, a necklace of bone teeth, a brown belt over a ragged red loincloth, fur-topped brown leather boots, a wooden club studded with grey iron spikes in his RIGHT hand and a round hide shield with a brown rim and a red handprint on his LEFT arm",
+ "hands": "the spiked club stays in his right hand on the screen-left side and the hide shield on his left arm on the screen-right side",
+ "guide_style": "grey",
+ "scale": 0.88,
+ "head_r": 11,
+ "limb": 1.25,
+ "joints": {
+  "head": [85, 62],
+  "neck": [84, 70],
+  "chest": [85, 79],
+  "pelvis": [86, 91],
+  "r_sh": [74, 71],
+  "r_el": [65, 81],
+  "r_ha": [58, 72],
+  "tip": [50, 40],
+  "l_sh": [95, 73],
+  "l_el": [100, 83],
+  "l_ha": [105, 92],
+  "shield": [110, 94, 12, 16],
+  "r_hip": [78, 96],
+  "r_kn": [71, 105],
+  "r_ft": [68, 116],
+  "l_hip": [92, 96],
+  "l_kn": [96, 106],
+  "l_ft": [99, 117]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back toward the upper-left, the spiked club is lifted beside the head with its spiked head pointing up and back",
+   "2": "wind-up extreme: body coiled back and crouched, the club hand behind the head and the spiked club hanging down behind the shoulders to the left, the hide shield tucked across the belly",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips round, the club arm sweeps across in front of the chest and the spiked club is level, its spiked head pointing to the right",
+   "4": "contact: club arm fully extended toward the lower-right, the spiked club smashing down-right, front knee bent, body low and leaning in, tusks bared, the hide shield swung back behind the shoulders for balance",
+   "5": "follow-through: the club carries on down until its spiked head nearly touches the ground at the lower-right, torso twisted, the topknot trailing back",
+   "6": "recover: body rises, front foot pulls back halfway, the spiked club comes back up on the near side toward the ready angle, the hide shield tucked across the belly"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (club arm thrown up and out to the left, the hide shield flung out to the right)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the spiked club dipping, the hide shield still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back toward the upper-left, body thrown back, club arm flung up, the hide shield drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, head droops, the spiked club lowering",
+   "3": "kneeling: on both knees, slumped forward, the club's spiked head resting on the ground at the lower-right, shield arm hanging",
+   "4": "falling back: torso tips back toward the upper-left, the spiked club slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the topknot on the ground; the spiked club lies on the ground at the lower-right; the round hide shield lies flat beside him",
+   "7": "corpse: lying flat and still on his back, eyes closed, the spiked club and the hide shield on the ground beside him"
+  }
+ }
+}

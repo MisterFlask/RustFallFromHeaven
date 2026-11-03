@@ -1,0 +1,105 @@
+{
+ "name": "sheaim_settler",
+ "sprite": "m7/roster/units/unit_sheaim_settler.png",
+ "facing": "lower-right",
+ "tag": "anim/units",
+ "description": "a Sheaim Settler (Fall from Heaven), a small pale pioneer with violet eyes: a deep purple hooded cloak with the hood up, a dark grey tunic with a silver clasp at the throat, a brown belt with a steel buckle and leather pouches, dark grey trousers, grey boots with brown straps, a huge tan canvas backpack on his back topped with a rolled purple bedroll, an iron pail of glowing orange embers hanging from the backpack on the screen-left side, and a gnarled wooden walking staff topped with a bone skull with a glowing purple eye, held in his LEFT hand",
+ "hands": "the skull-topped staff stays in his left hand on the screen-right side and his right hand on the screen-left side is an empty fist held across his belly",
+ "guide_style": "grey",
+ "scale": 0.87,
+ "head_r": 9,
+ "limb": 1.0,
+ "joints": {
+  "head": [
+   84,
+   59
+  ],
+  "neck": [
+   84,
+   70
+  ],
+  "chest": [
+   82,
+   77
+  ],
+  "pelvis": [
+   83,
+   86
+  ],
+  "r_sh": [
+   93,
+   72
+  ],
+  "r_el": [
+   97,
+   83
+  ],
+  "r_ha": [
+   104,
+   80
+  ],
+  "tip": [
+   110,
+   50
+  ],
+  "l_sh": [
+   69,
+   72
+  ],
+  "l_el": [
+   64,
+   81
+  ],
+  "l_ha": [
+   75,
+   80
+  ],
+  "r_hip": [
+   88,
+   90
+  ],
+  "r_kn": [
+   89,
+   107
+  ],
+  "r_ft": [
+   91,
+   118
+  ],
+  "l_hip": [
+   77,
+   90
+  ],
+  "l_kn": [
+   71,
+   107
+  ],
+  "l_ft": [
+   69,
+   118
+  ]
+ },
+ "beats": {
+  "strike": {
+   "1": "anticipation: weight shifts back onto the rear leg, torso leans back, the skull-topped staff is lifted up over the head with its skull end pointing up and back, the big backpack on his back",
+   "2": "wind-up extreme: body coiled back and slightly crouched, the skull-topped staff cocked behind the head with its skull end hanging down behind the shoulders, the empty right fist tucked in at the belly",
+   "3": "swing: the front foot steps toward the lower-right, the torso whips forward, the arm sweeps over the head and the staff is level, its skull end pointing to the lower-right",
+   "4": "contact: staff arm fully extended toward the lower-right, the skull end of the staff smashing down-right, front knee bent, body low and leaning in, the empty right fist swung back for balance",
+   "5": "follow-through: the staff carries on down until its skull end nearly touches the ground at the lower-right, torso twisted, the purple hood and cloak trailing back, the backpack swinging",
+   "6": "recover: body rises, front foot pulls back halfway, the skull-topped staff lifts back toward its upright ready angle"
+  },
+  "flinch": {
+   "0": "impact: hit from the lower-right; head snaps back toward the upper-left, eyes squeezed shut, torso jolts back, both arms jerk outward (the empty right fist flung out to the left, the staff arm thrown up and out with the skull-topped staff tilted up)",
+   "1": "recoil extreme: leaning back further toward the upper-left, knees bent, the skull-topped staff dipping, the empty right fist still held out"
+  },
+  "death": {
+   "1": "stagger back: a step back with the near foot, body thrown back, staff arm flung up holding the skull-topped staff high, the empty right fist drooping",
+   "2": "knees buckle: hips drop, knees fold forward, torso slumps forward, hooded head droops, the skull-topped staff lowering, the heavy backpack dragging at his shoulders",
+   "3": "kneeling: on both knees, slumped forward, the skull end of the staff resting on the ground, the empty right arm hanging",
+   "4": "falling back: torso tips back toward the upper-left onto the big backpack, the skull-topped staff slips out of the hand, legs slide forward",
+   "5": "hits the ground: lying on his back along the ground, feet toward the lower-right and head toward the upper-left, the purple hood still up and the big backpack under his shoulders; the skull-topped staff lies on the ground at the lower-right; the ember pail lies tipped beside the backpack",
+   "6": "bounce: head and shoulders lift slightly off the ground, the purple bedroll and the ember pail settle",
+   "7": "corpse: lying flat and still on his back over the backpack, eyes closed, the purple hood on his head, the skull-topped staff on the ground beside him"
+  }
+ }
+}
