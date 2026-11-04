@@ -342,7 +342,15 @@ shows the points the AI puts on it (+ for what it gets, - for what it gives; gol
 "swap" or "no value" for an item it puts no price on; the tooltip says how the value is counted,
 a resource or gold per turn, a lease, over 10 turns). Under the tables: "Total offered", "Total
 requested", and whether the proposal will be accepted or refused, with the reason when a rule
-rather than the totals decides.
+rather than the totals decides. With only your side filled the deal is a gift: the summary gives
+the current value of your gifts, this gift's value, the relations it brings (+1 per tier of 150
+points in the first era, more in later ones, at most +3, for 30 turns) and the tiers. With only
+their side filled it is a demand: the most they would hand over (nothing unless your power is at
+least 1.5 times theirs and one of your cities is within 16 plots of theirs by land), what you ask,
+and the effect if they pay (-1 relations for 30 turns, no further demands for 10 turns).
+Resources and gold per turn are leases: the deal goes on until it is cancelled, which either side
+may do after 10 turns (the deals column: "Cancel", or the turns left); the AI reviews its deals
+with you from 20 turns and cancels one it would no longer make, saying why.
 
 **Leaders speak** as in Civ4's diplomacy screen, with FfH2's own lines for each leader and,
 unless the game was started with "Vanilla experience", lines their civilization has for yours
@@ -777,8 +785,13 @@ turns, doubled for a war it chose, shorter when you are clearly winning; Civ4's
 and `propose_deal` `cannot`. As every deal between enemies ends the war (Civ4's `CvDeal`), a deal
 at war must carry the peace treaty (both sides) or a capitulation; a gift alone is `invalid`.
 The AI answers at once: `accepted: false` changes nothing; `accepted: true` signs it. Today's
-AI (ffh-ai's `consider_offer`) accepts gifts, peace after 10 turns of war unless it is clearly
-winning, open borders when it likes you, and a fair tech swap, and refuses anything else.
+AI (ffh-ai's `consider_offer`) accepts gifts, demands from a much stronger neighbour up to a
+limit, peace after 10 turns of war unless it is clearly winning, open borders when it likes you,
+and a fair tech swap, and refuses anything else. A gift or a demand it accepts is recorded
+(ffh-core `tribute`; see the screen above); the `trade` query's `tribute` gives what it recorded
+of yours: `gifts {value, relations, tier, max_relations}`, `demands {value, relations, pause,
+pause_turns}` and `turns`. `cancel_deal {"deal": 3}` cancels a standing deal of yours (the
+`players` query lists your deals with `deal`, `cancelable` and `cancel_in`, the turns left).
 Each item of the `trade` tables carries `value`, the points the AI puts on it (positive for what
 it gets, negative for what it gives, per piece for gold and gold per turn, null for no price;
 `Controller::trade_value`) and, for a lease (resources, gold per turn), `value_turns`, the turns

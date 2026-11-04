@@ -239,7 +239,8 @@ pub fn trades_json(list: &[ffh_core::structs::TradeData]) -> Json {
     Json::Arr(list.iter().map(|t| crate::jobj! { "item" => Json::idx(t.item_type), "data" => t.data }).collect())
 }
 
-/// `players`: the view's player list, plus each player's deals with the human and whether the
+/// `players`: the view's player list, plus each player's deals with the human (with whether the
+/// human may cancel each now, else in how many turns: `cancel_in`, 0 for never) and whether the
 /// human can declare war on it.
 pub fn players(v: &Viewer) -> Json {
     let g = v.g;
@@ -258,7 +259,10 @@ pub fn players(v: &Viewer) -> Json {
                 } else {
                     return None;
                 };
-                Some(crate::jobj! { "deal" => id, "we_give" => trades_json(ours), "they_give" => trades_json(theirs), "turn" => deal.initial_game_turn })
+                // When the human may cancel it (Civ4: after `PEACE_TREATY_LENGTH` turns).
+                let cancelable = g.deal_is_cancelable(id, Some(v.h));
+                let cancel_in = if cancelable { 0 } else { g.deal_turns_to_cancel(id, Some(v.h)).max(0) };
+                Some(crate::jobj! { "deal" => id, "we_give" => trades_json(ours), "they_give" => trades_json(theirs), "turn" => deal.initial_game_turn, "cancelable" => cancelable, "cancel_in" => cancel_in })
             })
             .collect();
         j.set("deals", Json::Arr(deals));

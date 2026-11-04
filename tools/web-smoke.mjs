@@ -1299,12 +1299,13 @@ async function stagedTrade(bin, saves) {
   await click(`${ours} button`);
   await until2(`!!document.querySelector(${q(`${ours}.on input.amount`)})`, "the gold amount");
   await b.eval(`(() => { const i = document.querySelector(${q(`${ours} input.amount`)}); i.value = "7"; i.dispatchEvent(new Event("input")); })()`);
-  // The leader's values and the answer before proposing (a gift: accepted).
+  // The leader's values and the answer before proposing (a gift: its value, effect and tiers;
+  // accepted).
   const summary = `${TOP} .trade-summary`;
   await until2(`document.querySelector(${q(`${summary} div[data-answer]`)})?.dataset.answer === "accepted"`, "the answer shown before proposing");
   const totals = await b.eval(`document.querySelector(${q(summary)}).textContent`);
   const value = await b.eval(`document.querySelector(${q(`${ours} .trade-value`)}).textContent`);
-  if (!/Total offered: \d+/.test(totals) || !/Total requested: 0/.test(totals) || !/^\+\d+$/.test(value)) throw new Error(`trade summary "${totals}", gold value "${value}"`);
+  if (!/Value of this gift: \d+/.test(totals) || !/Gift tiers: /.test(totals) || !/^\+\d+$/.test(value)) throw new Error(`gift summary "${totals}", gold value "${value}"`);
   await shot("trade");
   await click(`${TOP} .modal-buttons button.primary`);
   await until2(`document.querySelector(${q(`${TOP} p[data-answer]`)})?.dataset.answer === "accepted"`, "the deal accepted");
@@ -1313,7 +1314,7 @@ async function stagedTrade(bin, saves) {
   await shot("trade-thanks");
   await closeDialog(await b.eval(`document.querySelector(${q(`${TOP} .modal-head h2`)}).textContent`));
   await closeDialog("Foreign affairs");
-  steps.push("trade screen (stage trade): the leader's greeting; 7 gold offered (value, totals, the answer shown first), accepted with thanks");
+  steps.push("trade screen (stage trade): the leader's greeting; 7 gold offered as a gift (value, effect, tiers, the answer shown first), accepted with thanks");
 }
 
 /** The leader moments (`stage diplomacy`: an AI leader met the human, then declared war): loading

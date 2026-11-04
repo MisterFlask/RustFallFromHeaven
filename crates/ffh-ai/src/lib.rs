@@ -155,6 +155,7 @@ impl Controller for Ai {
             production::trouble_rebuild(self, g, p);
             production::wonder_emphasis(g, p);
             expansion::prepare_escorts(g, p); // early-expansion
+            diplomacy::reconsider_deals(g, p);
             diplomacy::manage(g, &v);
             offers::to_humans(g, &v); // ai-offers: deals offered to human players
             if g.crusades_enabled() {

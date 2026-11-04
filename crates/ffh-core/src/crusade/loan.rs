@@ -275,6 +275,11 @@ impl Game {
         self.crusade(id).is_some_and(|c| c.defend)
     }
 
+    /// Does deal `d` carry a loan's payment ([`Lender::deals`])? It runs as long as the loan.
+    pub fn deal_is_loan(&self, d: DealId) -> bool {
+        self.crusades.iter().any(|c| c.lenders.iter().any(|l| l.deals.contains(&d)))
+    }
+
     /// A loan general's turn: lenders whose term ended (or whose loan ended early: war between
     /// them, the payment cancelled) take their units home.
     pub(crate) fn loan_do_turn(&mut self, idx: usize) {

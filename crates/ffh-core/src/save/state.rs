@@ -94,6 +94,7 @@ persist_struct!(XYCoords { x, y });
 persist_struct!(OrderData { order_type, data1, data2, save, dest, requisition });
 persist_struct!(MissionData { mission_type, data1, data2, flags, push_turn });
 persist_struct!(TradeData { item_type, data, offering, hidden });
+persist_struct!(Tribute { other, turn, value, demand });
 persist_struct!(EventTriggeredData {
     id, trigger, turn, player, city, plot_x, plot_y, unit, other_player, other_player_city, religion,
     corporation, building, text, global_text,
@@ -431,7 +432,7 @@ persist_struct!(Player {
     score_history, economy_history, industry_history, agriculture_history, power_history,
     culture_history, espionage_history, ai_civic_timer, ai_religion_timer, ai_num_train_ai_units,
     ai_num_ai_units, ai_peacetime_trade_value, ai_peacetime_grant_value, ai_gold_traded_to,
-    ai_attitude_extra, ai_first_contact, ai_memory_count, culture_memory, armies, army_count,
+    ai_attitude_extra, ai_first_contact, ai_memory_count, culture_memory, tributes, armies, army_count,
     governors, governor_count,
 });
 

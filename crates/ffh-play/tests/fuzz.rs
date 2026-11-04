@@ -134,6 +134,20 @@ impl Fuzz {
         }
     }
 
+    /// A deal id: one of the human's, another pair's, a missing one, or a random number.
+    fn deal(&mut self, s: &Session) -> Json {
+        let g = &s.g;
+        let h = s.human;
+        let ours: Vec<u32> = g.deals.iter().filter(|(_, d)| d.first_player == h || d.second_player == h).map(|(id, _)| id.0).collect();
+        let theirs: Vec<u32> = g.deals.iter().filter(|(_, d)| d.first_player != h && d.second_player != h).map(|(id, _)| id.0).collect();
+        match self.n(5) {
+            0 if !ours.is_empty() => Json::from(self.pick(&ours)),
+            1 | 2 if !theirs.is_empty() => Json::from(self.pick(&theirs)),
+            3 => Json::Int(99_999),
+            _ => self.number(),
+        }
+    }
+
     fn flag(&mut self) -> Json {
         match self.n(6) {
             0..=2 => Json::Bool(false),
@@ -167,6 +181,7 @@ impl Fuzz {
             "convert" => &["religion"],
             "declare_war" => &["team"],
             "propose_deal" => &["to", "give", "get"],
+            "cancel_deal" => &["deal"],
             "event" => &["triggered", "event"],
             "vote" => &["vote", "choice"],
             "set_option" => &["option", "value"],
@@ -183,6 +198,7 @@ impl Fuzz {
                 "units" => self.units(s),
                 "unit" | "head" => self.unit(s),
                 "city" => self.city(s),
+                "deal" => self.deal(s),
                 "mission" | "command" | "order" | "task" | "tech" | "commerce" | "religion" | "event" | "option" => self.type_ref(),
                 "data" | "data1" if self.chance(30) => self.type_ref(),
                 "append" | "declare_war" | "alt" | "confirmed" | "shift" | "ctrl" | "value" | "lend" => self.flag(),

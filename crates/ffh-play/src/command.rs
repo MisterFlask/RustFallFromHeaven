@@ -91,6 +91,9 @@ pub enum Command {
     /// A deal offered to an AI from the diplomacy screen: `give` is what the human gives,
     /// `get` what it asks (items of the two trade tables, `view::diplo`).
     ProposeDeal { to: PlayerId, give: Vec<TradeData>, get: Vec<TradeData> },
+    /// Cancel a standing deal with an AI (Civ4's "cancel deal" in the diplomacy screen): only
+    /// once it may be cancelled (`deal_is_cancelable`: after `PEACE_TREATY_LENGTH` turns).
+    CancelDeal { deal: DealId },
     Event { triggered: TriggeredId, event: EventType },
     Vote { vote: VoteId, choice: PlayerVote },
     /// The secretary general's election (BUTTONPOPUP_CHOOSEELECTION): `option` indexes the
@@ -267,7 +270,7 @@ pub enum CmdErr {
     DecisionPending,
     /// Malformed: unknown command, missing field, type or index out of range.
     Invalid(String),
-    /// An id of someone else's unit or city.
+    /// An id of someone else's unit, city or deal.
     NotOwner,
     /// An id that does not exist (any more).
     Gone,
@@ -351,6 +354,7 @@ pub const COMMAND_NAMES: &[&str] = &[
     "convert",
     "declare_war",
     "propose_deal",
+    "cancel_deal",
     "event",
     "vote",
     "election",
@@ -397,6 +401,7 @@ pub const COMMAND_FIELDS: &[(&str, &[&str])] = &[
     ("convert", &["religion"]),
     ("declare_war", &["team"]),
     ("propose_deal", &["to", "give", "get"]),
+    ("cancel_deal", &["deal"]),
     ("event", &["triggered", "event"]),
     ("vote", &["vote", "choice"]),
     ("election", &["selection", "option"]),
@@ -537,6 +542,7 @@ impl Command {
             Command::Convert { .. } => "convert",
             Command::DeclareWar { .. } => "declare_war",
             Command::ProposeDeal { .. } => "propose_deal",
+            Command::CancelDeal { .. } => "cancel_deal",
             Command::Event { .. } => "event",
             Command::Vote { .. } => "vote",
             Command::Election { .. } => "election",
@@ -640,6 +646,7 @@ impl Command {
             "percent_change" => Command::PercentChange { commerce: names::field(d, j, "commerce")?, change: j.req("change")? },
             "convert" => Command::Convert { religion: names::opt_field(d, j, "religion")? },
             "declare_war" => Command::DeclareWar { team: j.req("team")? },
+            "cancel_deal" => Command::CancelDeal { deal: j.req("deal")? },
             "event" => Command::Event { triggered: j.req("triggered")?, event: names::field(d, j, "event")? },
             "vote" => Command::Vote {
                 vote: j.req("vote")?,
@@ -741,6 +748,7 @@ impl Command {
             Command::PercentChange { commerce, change } => j.with("commerce", Json::idx(*commerce)).with("change", *change),
             Command::Convert { religion } => j.with("religion", Json::opt_idx(*religion)),
             Command::DeclareWar { team } => j.with("team", *team),
+            Command::CancelDeal { deal } => j.with("deal", *deal),
             Command::ProposeDeal { to, give, get } => {
                 let items = |v: &[TradeData]| Json::Arr(v.iter().map(crate::view::diplo::trade_item_json).collect());
                 j.with("to", *to).with("give", items(give)).with("get", items(get))
@@ -906,6 +914,8 @@ pub enum Action {
     DeclareWar { team: TeamId },
     /// The AI accepted: `implementDeal(h, to, give, get)`.
     ImplementDeal { to: PlayerId, give: Vec<TradeData>, get: Vec<TradeData> },
+    /// `CvDeal::kill` of a deal the human cancelled.
+    CancelDeal { deal: DealId },
     Event { triggered: TriggeredId, event: EventType },
     Vote { vote: VoteId, choice: PlayerVote },
     /// CvNetChooseElection: `setVoteChosen(option, selection)`.
@@ -1619,6 +1629,21 @@ pub fn validate(g: &Game, h: PlayerId, cmd: &Command, ctx: &Ctx) -> Result<Plan,
             Plan::Apply(Action::ImplementDeal { to: *to, give: give.clone(), get: get.clone() })
         }
 
+        Command::CancelDeal { deal } => {
+            if !g.deals.contains(*deal) {
+                return Err(CmdErr::Gone);
+            }
+            let dl = &g.deals[*deal];
+            if dl.first_player != h && dl.second_player != h {
+                return Err(CmdErr::NotOwner);
+            }
+            if !g.deal_is_cancelable(*deal, Some(h)) {
+                let turns = g.deal_turns_to_cancel(*deal, Some(h));
+                return Err(cannot(if turns > 0 { format!("the deal may be cancelled in {turns} turns") } else { "the deal may not be cancelled".to_string() }));
+            }
+            Plan::Apply(Action::CancelDeal { deal: *deal })
+        }
+
         Command::Event { triggered, event } => {
             if !ctx.events.contains(triggered) {
                 return Err(CmdErr::Gone);
@@ -2019,8 +2044,9 @@ pub fn apply(g: &mut Game, h: PlayerId, action: &Action) {
             g.team_declare_war(my, *team, false, None);
         }
         // gDLL->sendImplementDealMessage -> CvGame::implementDeal(eWho, eOtherWho, .., bForce
-        // = false).
-        Action::ImplementDeal { to, give, get } => g.implement_deal(h, *to, give, get, false),
+        // = false); a gift or a demand is recorded first (ffh-core `tribute`).
+        Action::ImplementDeal { to, give, get } => g.implement_proposal(h, *to, give, get),
+        Action::CancelDeal { deal } => g.deal_kill(*deal, true),
         Action::Event { triggered, event } => g.player_apply_event(h, *event, *triggered, true),
         Action::Vote { vote, choice } => g.cast_vote(h, *vote, *choice),
         // CvNetChooseElection::Execute: setVoteChosen(iSelection, iVoteId). The popup's "none"
@@ -2112,6 +2138,7 @@ mod tests {
                     TradeData { item_type: TradeableItem::TRADE_GOLD, data: 30, offering: false, hidden: false },
                 ],
             },
+            Command::CancelDeal { deal: DealId(4) },
             Command::Event { triggered: TriggeredId(4), event: EventType(10) },
             Command::Vote { vote: VoteId(1), choice: PlayerVote::PLAYER_VOTE_NEVER },
             Command::Vote { vote: VoteId(1), choice: PlayerVote(3) },

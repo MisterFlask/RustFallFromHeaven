@@ -364,6 +364,9 @@ pub struct Player {
     /// What this player remembers of each player's cultural actions against it
     /// (docs/CULTURE.md): `[hostility, friendship]` points, capped and decaying.
     pub culture_memory: IdxVec<PlayerId, [i32; 2]>,
+    /// The gifts this player received and the demands it paid through proposed deals in the
+    /// last `tribute::TRIBUTE_TURNS` turns (`crate::tribute`), oldest first.
+    pub tributes: Vec<Tribute>,
     /// This player's armies (docs/ARMIES.md), in formation order.
     pub armies: Vec<ArmyId>,
     /// Armies formed so far (names them "Nth Army").
@@ -624,6 +627,7 @@ impl Player {
             ai_first_contact: IdxVec::from_elem(false, num_players),
             ai_memory_count: IdxVec::from_fn(num_players, |_| IdxVec::from_elem(0, MemoryType::NUM)),
             culture_memory: IdxVec::from_elem([0, 0], num_players),
+            tributes: Vec::new(),
             armies: Vec::new(),
             army_count: 0,
             governors: Vec::new(),
@@ -865,6 +869,7 @@ fn ai_reset(g: &mut Game, p: PlayerId) {
             memory.fill(0);
         }
         pl.culture_memory.fill([0, 0]);
+        pl.tributes.clear();
     }
     for other in g.player_ids() {
         let o = &mut g.players[other];
@@ -886,6 +891,7 @@ fn ai_reset(g: &mut Game, p: PlayerId) {
         if let Some(memory) = o.ai_memory_count.get_mut(p) {
             memory.fill(0);
         }
+        o.tributes.retain(|t| t.other != p);
         if let Some(memory) = o.culture_memory.get_mut(p) {
             *memory = [0, 0];
         }

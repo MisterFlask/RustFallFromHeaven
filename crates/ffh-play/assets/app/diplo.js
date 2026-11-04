@@ -4,7 +4,9 @@
 // (the `trade` query, C++ `buildTradeTable`, refusals greyed), a deal put together from both
 // tables and offered (`propose_deal`), which the AI accepts or declines at once; each item shows
 // the points the AI puts on it, and under the tables the totals and the answer the proposal will
-// get (the `trade_answer` query), both kept bare (CLAUDE.md, "Rules text and tooltips"). Each leader shows
+// get (the `trade_answer` query), both kept bare (CLAUDE.md, "Rules text and tooltips"); a gift
+// (only your side) or a demand (only theirs) says what it does (ffh-core `tribute`), and your
+// standing deals can be cancelled after their first turns (`cancel_deal`). Each leader shows
 // their portrait (portraits.js).
 //
 // Leaders speak as in Civ4's diplomacy screen (`speech` query, view/speech.rs: FfH2's lines for
@@ -39,7 +41,17 @@ export async function openDiplomacy() {
       .filter((p) => !p.barbarian)
       .map((p) => {
         const relation = [p.crusade_host ? h("b", "a crusade's Host") : null, p.war ? h("span.warn", "war") : "peace", p.open_borders ? "open borders" : null, p.defensive_pact ? "defensive pact" : null, p.vassal_of_us ? "your vassal" : null, p.our_master ? "your master" : null].filter(Boolean);
-        const deals = p.deals.map((d) => `${d.we_give.map(tradeItemLabel).join(", ") || "nothing"} ⇄ ${d.they_give.map(tradeItemLabel).join(", ") || "nothing"} (since turn ${d.turn})`);
+        // Your deals with them; one may be cancelled after its first turns (a peace treaty ends then).
+        const deals = p.deals.map((d) => {
+          const text = `${d.we_give.map(tradeItemLabel).join(", ") || "nothing"} ⇄ ${d.they_give.map(tradeItemLabel).join(", ") || "nothing"} (since turn ${d.turn})`;
+          const peace = [...d.we_give, ...d.they_give].some((it) => tname("TradeableItem", it.item) === "TRADE_PEACE_TREATY");
+          const action = d.cancelable
+            ? h("button.link.small", { "data-cancel-deal": d.deal, onclick: () => cancelDeal(text, d.deal).then(load) }, "Cancel")
+            : d.cancel_in > 0
+              ? h("span", peace ? ` (ends in ${d.cancel_in} turns)` : ` (cancel in ${d.cancel_in} turns)`)
+              : null;
+          return h("div", { "data-deal": d.deal }, text, " ", action);
+        });
         return h(
           "tr",
           { class: p.alive ? "" : "dead", "data-player": p.id },
@@ -57,7 +69,7 @@ export async function openDiplomacy() {
                 : h("span.dim", !p.alive ? "dead" : "no contact"),
             p.can_declare_war && !p.war ? h("button.small.danger", { "data-war": p.team, onclick: () => declareWar(p).then(load) }, "Declare war") : null,
           ),
-          deals.length ? h("td.dim", deals.map((d) => h("div", d))) : h("td"),
+          deals.length ? h("td.dim", deals) : h("td"),
         );
       });
     const my = me();
@@ -241,6 +253,15 @@ async function declareWar(p) {
   if (v) await run({ c: "declare_war", team: p.team });
 }
 
+/** Cancels a standing deal (`cancel_deal`), after asking. */
+async function cancelDeal(text, deal) {
+  const v = await ask("Cancel deal?", `${text}. Cancelling ends every item of the deal now.`, [
+    { label: "Cancel deal", value: true, primary: true },
+    { label: "Keep", value: null },
+  ]);
+  if (v) await run({ c: "cancel_deal", deal });
+}
+
 /** The trade screen with player `with`: both trade tables; clicking an item puts it into the
  *  deal (an item that goes on both sides, such as a peace treaty, goes on both, and is greyed on
  *  both when either side refuses it), gold as an amount; Propose offers it. */
@@ -291,9 +312,9 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
       case "TRADE_GOLD":
         return `${v} per gold.`;
       case "TRADE_GOLD_PER_TURN":
-        return `${v} per gold per turn: ${v / turns} per gold × ${turns} turns. Lease: runs until war or embargo.`;
+        return `${v} per gold per turn: ${v / turns} per gold × ${turns} turns. Lease: ${turns} turns at least, then either side may cancel it.`;
       case "TRADE_RESOURCES":
-        return `${v}: ${v / turns} per turn × ${turns} turns. Lease: runs until war, embargo or loss of the resource.`;
+        return `${v}: ${v / turns} per turn × ${turns} turns. Lease: ${turns} turns at least, then either side may cancel it.`;
       case "TRADE_TECHNOLOGIES":
         return "Research cost for the receiving side.";
       case "TRADE_PEACE_TREATY":
@@ -304,6 +325,19 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
     return null;
   };
   const summary = h("div.trade-summary", { hidden: true });
+  // A gift's lines: what they recorded of your gifts, this gift, the relations after it, the tiers.
+  const giftLines = (tr, offered) => {
+    const g = tr.gifts;
+    const after = Math.min(Math.floor((g.value + offered) / g.tier), g.max_relations);
+    const tiers = [`<${g.tier}: no effect`];
+    for (let n = 1; n <= g.max_relations; n++) tiers.push(n < g.max_relations ? `${n * g.tier}-${(n + 1) * g.tier}: +${n} relations` : `${n * g.tier} or more: +${n} relations`);
+    return [
+      h("div", `Current value of gifts: ${g.value}.`),
+      h("div", `Value of this gift: ${offered}.`),
+      h("div", after > 0 ? `Effect: +${after} relations for ${tr.turns} turns${after !== g.relations ? ` (now +${g.relations})` : ""}.` : "Effect: none."),
+      h("div.dim", `Gift tiers: ${tiers.join(". ")}. Gifts count for ${tr.turns} turns.`),
+    ];
+  };
   let asked = 0;
   const refreshSummary = async () => {
     const give = [...deal.give.values()];
@@ -316,7 +350,16 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
     let requested = 0;
     for (const it of t.we_give) if (deal.give.has(keyOf(it))) offered += points(it, deal.give.get(keyOf(it)).data);
     for (const it of t.they_give) if (deal.get.has(keyOf(it))) requested -= points(it, deal.get.get(keyOf(it)).data);
-    const lines = [h("div", `Total offered: ${offered}`), h("div", `Total requested: ${requested}`)];
+    // Only your side: a gift; only theirs: a demand (the trade query's `tribute`); else a trade.
+    const mode = deal.troops ? "trade" : !get.length ? "gift" : !give.length ? "demand" : "trade";
+    const tr = t.tribute;
+    const lines =
+      mode === "gift"
+        ? giftLines(tr, offered)
+        : mode === "demand"
+          ? [h("div", `This would ask for: ${requested}.`)]
+          : [h("div", `Total offered: ${offered}`), h("div", `Total requested: ${requested}`)];
+    summary.dataset.mode = mode;
     summary.replaceChildren(...lines);
     summary.hidden = false;
     // A loan of troops is judged on its own terms (`propose_loan`): no answer in advance.
@@ -329,11 +372,15 @@ export async function openTrade(withPlayer, name = null, { opening = null } = {}
       return;
     }
     if (ask !== asked || m.closed || r.accept === null || r.accept === undefined) return;
-    summary.replaceChildren(
-      ...lines,
-      h("div", { "data-answer": r.accept ? "accepted" : "refused" }, "This proposal will be ", h(r.accept ? "b.good" : "b.warn", r.accept ? "accepted" : "refused"), "."),
-      r.why ? h("div.dim", `Reason: ${r.why}.`) : null,
-    );
+    const answer = h("div", { "data-answer": r.accept ? "accepted" : "refused" }, "This proposal will be ", h(r.accept ? "b.good" : "b.warn", r.accept ? "accepted" : "refused"), ".");
+    const reason = r.why ? h("div.dim", `Reason: ${r.why}.`) : null;
+    if (mode === "gift") summary.replaceChildren(...lines, answer);
+    else if (mode === "demand") {
+      // The most they would hand over is what is asked plus the answer's margin.
+      const most = Math.max(0, requested + (r.margin ?? -requested));
+      const effect = `Effect: −1 relations for ${tr.turns} turns. No further demands for ${tr.demands.pause_turns} turns.`;
+      summary.replaceChildren(h("div", `Maximum possible value extorted: ${most}.`), ...lines, answer, r.accept ? h("div", effect) : reason);
+    } else summary.replaceChildren(...lines, answer, reason);
   };
   const draw = () => {
     const side = (list, mapKey, other, title) =>

@@ -85,7 +85,8 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 ///   `Game::crusades` / `next_crusade_id` / `crusade_reports`.
 /// - 12: loans priced freely (docs/CRUSADE.md): `CrusadeRules::loan_upkeep_gold` gone,
 ///   `Lender::deals`.
-pub const FORMAT_VERSION: u32 = 12;
+/// - 13: gifts and demands (`Player::tributes`, `crate::tribute`).
+pub const FORMAT_VERSION: u32 = 13;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]

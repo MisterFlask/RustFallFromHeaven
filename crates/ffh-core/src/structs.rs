@@ -61,6 +61,17 @@ pub struct TradeData {
     pub hidden: bool,
 }
 
+/// Not in C++: a gift a player received or a demand it paid through a proposed deal
+/// (`crate::tribute`): from or to whom, in which turn, worth how many of its trade points.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Tribute {
+    pub other: PlayerId,
+    pub turn: i32,
+    pub value: i32,
+    /// A demand it paid (else a gift it received).
+    pub demand: bool,
+}
+
 /// C++ `EventTriggeredData`.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EventTriggeredData {

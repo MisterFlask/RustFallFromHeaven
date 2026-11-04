@@ -192,7 +192,10 @@ pub fn contact(g: &Game, h: PlayerId, with: PlayerId) -> Result<(), String> {
 }
 
 /// `trade {with}`: the trade tables both ways (`we_give` from the human's table, `they_give`
-/// from theirs), with denials and the gold maxima.
+/// from theirs), with denials and the gold maxima; and `tribute`, the gifts and demands between the two
+/// (ffh-core `tribute`): what `with` recorded of the human's gifts (`value`, the `relations` they
+/// give) and of the demands it paid (`value`, `relations`, `pause`: turns before it pays
+/// another), with the rules' constants.
 pub fn trade(v: &Viewer, with: PlayerId) -> Result<Json, QueryErr> {
     let g = v.g;
     if with.idx() >= g.num_civ_players() || with == v.h || g.player_is_barbarian(with) || !v.player_met(with) {
@@ -209,7 +212,28 @@ pub fn trade(v: &Viewer, with: PlayerId) -> Result<Json, QueryErr> {
         "we_give" => Json::Arr(ours.iter().map(|t| item_json(g, with, v.h, with, t)).collect()),
         "they_give" => Json::Arr(theirs.iter().map(|t| item_json(g, with, with, v.h, t)).collect()),
         "troops" => troops,
+        "tribute" => tribute_json(g, with, v.h),
     })
+}
+
+fn tribute_json(g: &Game, ai: PlayerId, h: PlayerId) -> Json {
+    use ffh_core::tribute::*;
+    let (gift_relations, demand_relations) = g.tribute_relations(ai, h);
+    crate::jobj! {
+        "turns" => TRIBUTE_TURNS,
+        "gifts" => crate::jobj! {
+            "value" => g.gifts_value(ai, h),
+            "relations" => gift_relations,
+            "tier" => g.gift_tier(),
+            "max_relations" => GIFT_MAX_RELATIONS,
+        },
+        "demands" => crate::jobj! {
+            "value" => g.demands_value(ai, h),
+            "relations" => demand_relations,
+            "pause" => g.demand_pause(ai, h),
+            "pause_turns" => DEMAND_PAUSE_TURNS,
+        },
+    }
 }
 
 /// `trade_answer {with, give, get}`: what `with` answers if the human proposes this deal now (the

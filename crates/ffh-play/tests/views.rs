@@ -587,7 +587,8 @@ fn print_queries() {
 /// The trade screen's running answer (`trade_answer`) is the answer `propose_deal` gets: a deal
 /// `check_deal` refuses is refused with its error, any other is the AI's `consider_offer`. When
 /// value decides (a margin and no rule), the margin is the sum of the items' `value` in the
-/// `trade` tables: what the AI gets minus what it gives.
+/// `trade` tables: what the AI gets minus what it gives (a demand's, the most the AI hands over
+/// less what is asked).
 #[test]
 fn trade_answer_is_the_answer_propose_deal_gets() {
     let mut s = duel(21);
@@ -657,7 +658,8 @@ theirs {theirs:?}");
             continue;
         }
         assert_eq!(accept, s.g.controller(ai).consider_offer(&s.g, ai, h, &give_items, &get_items), "{give_items:?} / {get_items:?}: {a}");
-        match (a.get("margin").and_then(Json::as_i64), &why) {
+        // (A demand's margin is the most the AI hands over less what is asked: not a sum.)
+        match (a.get("margin").and_then(Json::as_i64).filter(|_| !give.is_empty()), &why) {
             (Some(margin), None) => {
                 let sum: i64 = give.iter().chain(&get).map(|x| x.1.unwrap_or(0)).sum();
                 assert_eq!(margin, sum, "{give_items:?} / {get_items:?}: {a}");
@@ -668,4 +670,55 @@ theirs {theirs:?}");
         }
     }
     assert!(on_value > 0 && by_rule > 0, "{on_value} deals decided on value, {by_rule} by a rule");
+}
+
+/// Gifts and standing deals through the protocol: a proposed gift is recorded with the AI's value
+/// (the `trade` query's `tribute`); a standing deal can be cancelled (`cancel_deal`) only once
+/// `deal_is_cancelable` (after `PEACE_TREATY_LENGTH` turns), which the `players` query tells.
+#[test]
+fn gifts_and_cancelled_deals_through_the_protocol() {
+    let mut s = duel(21);
+    let h = s.human;
+    let ai = s.g.civ_player_ids().find(|&p| p != h).unwrap();
+    let (my, their) = (s.g.players[h].team, s.g.players[ai].team);
+    s.g.team_meet(my, their, false);
+    for team in [my, their] {
+        s.g.teams[team].gold_trading_count += 1;
+        s.g.teams[team].open_borders_trading_count += 1;
+    }
+    s.g.players[h].gold = s.g.players[h].gold.max(300);
+    s.g.players[ai].gold = s.g.players[ai].gold.max(300);
+    s.g.players[h].alignment = s.g.players[ai].alignment;
+    s.g.players[h].feat_accomplished[FeatType::FEAT_TRUST] = true;
+    let tribute = |s: &Session| s.query(&Query::Trade { with: ai }).unwrap().get("tribute").unwrap().clone();
+    let gifts = |s: &Session, k: &str| tribute(s).get("gifts").unwrap().get(k).and_then(Json::as_i64).unwrap();
+    assert_eq!(gifts(&s, "value"), 0);
+    let gift = vec![item(TradeableItem::TRADE_GOLD, 100)];
+    let a = s.query(&Query::TradeAnswer { with: ai, give: gift.clone(), get: vec![] }).unwrap();
+    assert_eq!(a.get("accept"), Some(&Json::Bool(true)), "{a}");
+    let value = a.get("margin").and_then(Json::as_i64).unwrap();
+    assert_eq!(applied(&mut s, Command::ProposeDeal { to: ai, give: gift, get: vec![] }), Some(true));
+    assert_eq!(gifts(&s, "value"), value, "recorded at the value the answer gave");
+    assert_eq!(gifts(&s, "relations"), (value / gifts(&s, "tier")).min(gifts(&s, "max_relations")));
+
+    // Open borders, a standing deal: not cancelled before its first turns.
+    let ob = vec![item(TradeableItem::TRADE_OPEN_BORDERS, 0)];
+    assert_eq!(applied(&mut s, Command::ProposeDeal { to: ai, give: ob.clone(), get: ob }), Some(true));
+    assert!(s.g.team_is_open_borders(my, their));
+    let ours = |s: &Session| -> Json {
+        let players = s.query(&Query::Players).unwrap();
+        let them = players.get("players").unwrap().as_arr().unwrap().iter().find(|p| p.get("id") == Some(&Json::from(ai))).unwrap().clone();
+        them.get("deals").unwrap().as_arr().unwrap().iter().find(|d| d.get("we_give").unwrap().as_arr().unwrap().len() == 1).unwrap().clone()
+    };
+    let d = ours(&s);
+    let deal = DealId(d.get("deal").and_then(Json::as_i64).unwrap() as u32);
+    assert_eq!(d.get("cancelable"), Some(&Json::Bool(false)));
+    assert_eq!(d.get("cancel_in").and_then(Json::as_i64), Some(s.g.d.defines.peace_treaty_length as i64));
+    let r = s.execute(&Command::CancelDeal { deal });
+    assert!(matches!(&r, Err(CmdErr::Cannot(e)) if e.contains("turns")), "{r:?}");
+    s.g.setup.game_turn += s.g.d.defines.peace_treaty_length;
+    assert_eq!(ours(&s).get("cancelable"), Some(&Json::Bool(true)));
+    applied(&mut s, Command::CancelDeal { deal });
+    assert!(!s.g.deals.contains(deal) && !s.g.team_is_open_borders(my, their));
+    assert!(matches!(s.execute(&Command::CancelDeal { deal }), Err(CmdErr::Gone)));
 }

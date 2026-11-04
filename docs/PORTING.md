@@ -166,6 +166,27 @@ side)
   Kill credit per kill (G2) and the post-battle effects as for a duel's winner; no Fear rout.
   Stances are gone. Ships and air units keep the duel; missiles strike one unit (at half a
   battle's hit, against the plot's own defence, as before the formation battles). Save format 10.
+- **Gifts and demands** (`crates/ffh-core/src/tribute.rs`; the owner's design, 2026-11-03). A
+  deal proposed from the diplomacy screen in which the proposer only gives is a gift, one in which
+  it only takes is a demand. The receiver of a gift and the payer of a demand record it with its
+  value in their trade points for 30 turns (`Player::tributes`, save format 13). Gifts raise the
+  receiver's relations with the giver by one per tier of value (150 points per era of the game,
+  at most +3); each paid demand lowers the payer's by one, and the payer pays no other demand of
+  the same player for 10 turns. An AI pays a demand when it asks no more than a tier per half of
+  its own power that the demander has beyond it (the demander at 1.5 times its power or more,
+  with a city within 16 plots of one of its own by land), less what it paid that player in the
+  last 30 turns (ffh-ai `diplomacy::max_extorted`). Before, the AI accepted every gift with no
+  effect on its attitude, and refused every demand. The AI's own one-sided deals (help to an ally,
+  a vassal's offer) and those of events and loans record nothing.
+- **Standing deals are cancelled as in Civ4** (2026-11-03). A deal that goes on (resources,
+  gold per turn, open borders, pacts) may be cancelled by either side once
+  `PEACE_TREATY_LENGTH` (10) turns have passed: the human from the diplomacy screen
+  (`cancel_deal`), and an AI from twice that when it would no longer make the deal (C++
+  `AI_doDiplo`: with a human, when it now dislikes them, prepares a war on them, is no longer
+  pleased enough for open borders, would no longer pay a demand, or gets less than it gives, each
+  side valued as its loss; with another AI, when a trade denial now applies, which ffh-core's
+  rules denials make rare). Before, nothing could cancel a deal in the port: the human had no way
+  to, and ffh-ai never did. A loan's payment runs with its loan.
 
 **Balance** (after `classic-1`, each the owner's decision)
 

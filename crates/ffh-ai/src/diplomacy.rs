@@ -67,6 +67,14 @@ pub fn relation_parts(g: &Game, p: PlayerId, other: PlayerId) -> Vec<(&'static s
     if friendship > 0 {
         out.push(("cultural friendship", ((friendship + 1) / 2).min(2)));
     }
+    // Gifts received and demands paid in the last turns (ffh-core `tribute`).
+    let (gifts, demands) = g.tribute_relations(p, other);
+    if gifts > 0 {
+        out.push(("gifts", gifts));
+    }
+    if demands < 0 {
+        out.push(("demands paid", demands));
+    }
     out
 }
 
@@ -1404,15 +1412,6 @@ pub fn consider_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeD
 /// the human while it puts a deal together. `tel`: record the decisions in telemetry (not for
 /// that preview). The reasons are plain statements of the rule, speaking of `from` as "you".
 pub fn judge_offer(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData], we_give: &[TradeData], tel: bool) -> OfferVerdict {
-    let mut v = judge(g, p, from, they_give, we_give, tel);
-    // A demand (we give, for nothing) falls to the value rules below and fails them.
-    if they_give.is_empty() && !v.accept && v.why.is_none() {
-        v.why = Some("demands are refused".into());
-    }
-    v
-}
-
-fn judge(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData], we_give: &[TradeData], tel: bool) -> OfferVerdict {
     let rule = |accept: bool, why_not: &str| OfferVerdict { accept, margin: None, why: (!accept).then(|| why_not.to_string()) };
     let no = |why: &str| rule(false, why);
     let because = |accept: bool, why: &str| OfferVerdict { accept, margin: None, why: Some(why.to_string()) };
@@ -1436,6 +1435,21 @@ fn judge(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData], we_give
     }
     if we_give.is_empty() {
         return OfferVerdict { accept: true, margin: Some(crate::trade::deal_val(g, p, from, they_give, false, 1)), why: Some("gift".into()) };
+    }
+    // A demand: `from` takes and gives nothing. Paid when it asks no more than we hand over to a
+    // much stronger neighbour ([`max_extorted`]; the margin is that most less what it asks), and
+    // not again soon after the last one we paid it (ffh-core `tribute`).
+    if they_give.is_empty() {
+        let asked = crate::trade::deal_val(g, from, p, we_give, false, 1) as i64;
+        let pause = g.demand_pause(p, from);
+        if pause > 0 {
+            let ago = ffh_core::tribute::DEMAND_PAUSE_TURNS - pause;
+            return OfferVerdict { accept: false, margin: Some(-asked as i32), why: Some(format!("demand paid {ago} turns ago: no further demands for {pause} turns")) };
+        }
+        return match max_extorted(g, p, from) {
+            Ok(max) => on_value(max as i64 - asked),
+            Err(why) => OfferVerdict { accept: false, margin: Some(-asked as i32), why: Some(why.into()) },
+        };
     }
     let team = g.players[p].team;
     let their_team = g.players[from].team;
@@ -1635,6 +1649,103 @@ fn judge(g: &Game, p: PlayerId, from: PlayerId, they_give: &[TradeData], we_give
     no("these items are not traded")
 }
 
+/// The most `p` hands over to `from` on demand (in the points of `deal_val`): nothing unless
+/// `from`'s power is at least 1.5 times its own and a city of `from` is within 16 plots of one of
+/// its own by land; then a gift tier (`Game::gift_tier`) per half of its own power that `from` has
+/// beyond it (1.5 times: one tier, twice: two, at most six), less the demands of `from` it paid in
+/// the last turns (`Game::demands_value`). `Err` names the condition not met.
+pub fn max_extorted(g: &Game, p: PlayerId, from: PlayerId) -> Result<i32, &'static str> {
+    let (team, their_team) = (g.players[p].team, g.players[from].team);
+    let ours = g.team_get_power(team, true).max(1) as i64;
+    let theirs = g.team_get_power(their_team, true) as i64;
+    if theirs * 2 < ours * 3 {
+        return Err("your power is below 1.5 times theirs");
+    }
+    if !reach_distance(g, their_team, team).is_some_and(|d| d <= 16) {
+        return Err("no city of yours within 16 plots of theirs by land");
+    }
+    let halves = ((theirs - ours) * 2 / ours).min(6) as i32;
+    Ok((g.gift_tier() * halves - g.demands_value(p, from)).max(0))
+}
+
+/// Would `p` keep a standing deal with the human `other` in which it gives `ours` for `theirs`
+/// (C++ `AI_considerOffer(.., iChange = -1)`, the review of `AI_doDiplo`)? Not with a player it
+/// dislikes or prepares a war on; open borders while it is pleased with `other` (the open borders
+/// count); a defensive pact otherwise; a demand it pays while `other` could still demand as much
+/// ([`max_extorted`]); any other deal while what it gets is worth at least what it gives, each
+/// side valued as its loss (`deal_val` with change -1). `Err` names the reason to cancel.
+pub fn keep_deal(g: &Game, p: PlayerId, other: PlayerId, ours: &[TradeData], theirs: &[TradeData]) -> Result<(), String> {
+    let (team, their_team) = (g.players[p].team, g.players[other].team);
+    let relation = relation(g, p, other);
+    if relation < 0 {
+        return Err("attitude Annoyed or worse".into());
+    }
+    if preparing_target(g, team) == Some(their_team) {
+        return Err("preparing war on you".into());
+    }
+    let all = |items: &[TradeData], kind: TradeableItem| !items.is_empty() && items.iter().all(|t| t.item_type == kind);
+    if all(ours, TradeableItem::TRADE_OPEN_BORDERS) && all(theirs, TradeableItem::TRADE_OPEN_BORDERS) {
+        return if relation >= 1 { Ok(()) } else { Err("open borders requires attitude Pleased".into()) };
+    }
+    if all(ours, TradeableItem::TRADE_DEFENSIVE_PACT) && all(theirs, TradeableItem::TRADE_DEFENSIVE_PACT) {
+        return Ok(());
+    }
+    let give = crate::trade::deal_val(g, other, p, ours, false, -1);
+    if theirs.is_empty() {
+        return match max_extorted(g, p, other) {
+            Ok(max) if max >= give => Ok(()),
+            Ok(max) => Err(format!("demand of {give} exceeds the maximum extorted, {max}")),
+            Err(why) => Err(format!("demand no longer paid: {why}")),
+        };
+    }
+    let get = crate::trade::deal_val(g, p, other, theirs, false, -1);
+    if get >= give {
+        Ok(())
+    } else {
+        Err(format!("value received {get}, value given {give}"))
+    }
+}
+
+/// C++ `AI_doDiplo`'s review of standing deals: a deal of `p`'s that may be cancelled (after
+/// `PEACE_TREATY_LENGTH` turns, `deal_is_cancelable`) and has run twice that long is cancelled
+/// when `p` would no longer make it -- with a human, when [`keep_deal`] says so (the human is
+/// told why); with another AI, when a trade denial now applies to one of `p`'s items (ffh-core
+/// ports only the rules' denials, so in practice never) -- if the two can talk. A loan's payment runs
+/// with its loan (`deal_is_loan`).
+pub fn reconsider_deals(g: &mut Game, p: PlayerId) {
+    let turn = g.game_turn();
+    let length = g.d.defines.peace_treaty_length;
+    for d in g.deals.ids() {
+        if !g.deals.contains(d) {
+            continue;
+        }
+        let deal = &g.deals[d];
+        let (other, ours, theirs) = if deal.first_player == p {
+            (deal.second_player, deal.first_trades.clone(), deal.second_trades.clone())
+        } else if deal.second_player == p {
+            (deal.first_player, deal.second_trades.clone(), deal.first_trades.clone())
+        } else {
+            continue;
+        };
+        if turn - deal.initial_game_turn < length * 2 || !g.deal_is_cancelable(d, Some(p)) || g.deal_is_loan(d) || !can_talk(g, p, other) {
+            continue;
+        }
+        let human = g.players[other].human;
+        let why = if human {
+            keep_deal(g, p, other, &ours, &theirs).err()
+        } else {
+            ours.iter().any(|t| g.player_get_trade_denial(p, other, t).is_some()).then(|| "trade denied".to_string())
+        };
+        let Some(why) = why else { continue };
+        crate::trace!(g, p, "cancels deal {:?} with player {:?}: {}", d, other, why);
+        if human {
+            let name = g.player_get_name(p);
+            g.log.msg(turn, Some(other), || format!("{name} cancelled a deal with you. Reason: {why}."));
+        }
+        g.deal_kill(d, true);
+    }
+}
+
 /// C++ `AI_conquerCity`: raze small, distant conquests we could not hold.
 pub fn raze_conquered_city(g: &Game, p: PlayerId, c: CityId) -> bool {
     let city = &g.cities[c];
@@ -1683,5 +1794,84 @@ mod tests {
         assert!(!can_talk(&g, us, them) && !can_talk(&g, them, us), "no diplomacy with enemies either way");
         // C++ asks only the proposer: we could still have offered the Crusader peace.
         assert!(talked && g.player_can_contact(us, them), "the one-sided check lets us through");
+    }
+
+    fn gold(n: i32) -> Vec<TradeData> {
+        vec![TradeData { item_type: TradeableItem::TRADE_GOLD, data: n, offering: false, hidden: false }]
+    }
+
+    /// Two players on one landmass, met, with a city each 8 plots apart, gold trading and gold.
+    fn neighbours(seed: u32) -> (Game, PlayerId, PlayerId) {
+        let mut g = one_landmass_game(seed);
+        let (us, them) = (PlayerId(0), PlayerId(1));
+        let (t0, t1) = (g.players[us].team, g.players[them].team);
+        g.team_meet(t0, t1, false);
+        g.player_init_city(us, 4, 5, true, true);
+        g.player_init_city(them, 12, 5, true, true);
+        for t in [t0, t1] {
+            g.teams[t].gold_trading_count += 1;
+            g.teams[t].open_borders_trading_count += 1;
+        }
+        g.players[us].gold = 500;
+        g.players[them].gold = 500;
+        (g, us, them)
+    }
+
+    /// A demand (ffh-core `tribute`) is refused by a civilization not much weaker than the
+    /// demander, paid by one that is when it asks no more than a tier per half of the payer's
+    /// power the demander has beyond it; a paid demand lowers relations by one and pauses the
+    /// next; gifts raise relations by a step per tier.
+    #[test]
+    fn demands_are_paid_to_a_much_stronger_neighbour_and_gifts_raise_relations() {
+        let (mut g, us, them) = neighbours(29);
+        g.players[us].power = 100;
+        g.players[them].power = 140;
+        let v = judge_offer(&g, us, them, &[], &gold(10), false);
+        assert!(!v.accept && v.why.as_deref().is_some_and(|w| w.contains("1.5 times")), "{v:?}");
+        g.players[them].power = 300;
+        let tier = g.gift_tier();
+        assert_eq!(max_extorted(&g, us, them), Ok(4 * tier), "twice its power beyond: four tiers");
+        let asked = crate::trade::deal_val(&g, them, us, &gold(10), false, 1);
+        let v = judge_offer(&g, us, them, &[], &gold(10), false);
+        assert_eq!((v.accept, v.margin), (true, Some(4 * tier - asked)), "{v:?}");
+        let v = judge_offer(&g, us, them, &[], &gold(4 * tier), false);
+        assert!(!v.accept && v.margin.is_some_and(|m| m < 0), "more than the most: {v:?}");
+        g.implement_proposal(them, us, &[], &gold(10));
+        assert_eq!(g.players[them].gold, 510, "paid");
+        assert_eq!(g.demand_pause(us, them), ffh_core::tribute::DEMAND_PAUSE_TURNS);
+        assert!(attitude_parts(&g, us, them).contains(&("demands paid", -1)));
+        let v = judge_offer(&g, us, them, &[], &gold(10), false);
+        assert!(!v.accept && v.why.as_deref().is_some_and(|w| w.contains("no further demands")), "{v:?}");
+        assert_eq!(max_extorted(&g, us, them), Ok(4 * tier - asked), "what it paid counts against the next");
+        // A gift worth at least two tiers to them.
+        g.implement_proposal(them, us, &gold(tier), &[]);
+        assert!(g.gifts_value(us, them) >= 2 * tier);
+        assert!(attitude_parts(&g, us, them).iter().any(|&(why, n)| why == "gifts" && n >= 2), "{:?}", attitude_parts(&g, us, them));
+    }
+
+    /// Standing deals (Civ4 `AI_doDiplo`): the AI reconsiders a deal with a human from twice the
+    /// cancellation delay and cancels it when it would no longer make it.
+    #[test]
+    fn the_ai_cancels_open_borders_it_no_longer_wants() {
+        let (mut g, ai, human) = neighbours(31);
+        g.players[human].human = true;
+        g.players[human].alignment = g.players[ai].alignment;
+        g.players[human].feat_accomplished[FeatType::FEAT_TRUST] = true;
+        let (t0, t1) = (g.players[ai].team, g.players[human].team);
+        let ob = vec![TradeData { item_type: TradeableItem::TRADE_OPEN_BORDERS, data: 0, offering: false, hidden: false }];
+        g.implement_deal(human, ai, &ob, &ob, false);
+        assert!(g.team_is_open_borders(t0, t1));
+        let start = g.game_turn();
+        let length = g.d.defines.peace_treaty_length;
+        g.setup.game_turn = start + 2 * length - 1;
+        g.players[human].feat_accomplished[FeatType::FEAT_TRUST] = false;
+        g.players[human].alignment = Some(AlignmentType::from_usize(0));
+        g.players[ai].alignment = Some(AlignmentType::from_usize(2));
+        reconsider_deals(&mut g, ai);
+        assert!(g.team_is_open_borders(t0, t1), "not before twice the cancellation delay");
+        g.setup.game_turn = start + 2 * length;
+        assert!(keep_deal(&g, ai, human, &ob, &ob).is_err());
+        reconsider_deals(&mut g, ai);
+        assert!(!g.team_is_open_borders(t0, t1), "cancelled once disliked");
     }
 }
