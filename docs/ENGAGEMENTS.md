@@ -442,6 +442,9 @@ The spec (the owner's, revision 4) holds; these were left open and are decided s
 
 ## Open
 
+- Taking cities: Sentinels (walls that fight in the defender's front row), sieges that stop a
+  city's healing, bombards that hurt walls and soldiers, and kill XP shared equally: specified in
+  docs/SIEGES.md (the owner's design, 2026-11-04), not built yet.
 - The AI decides its attacks on the duel's odds and attacks in the auto formation (the AI is paused,
   the owner's call). The defender always fights in the auto formation: standing formations per army
   are a later step (`Game::engage_defense_formation` is the hook).
