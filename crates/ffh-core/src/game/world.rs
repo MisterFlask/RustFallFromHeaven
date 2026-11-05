@@ -891,7 +891,7 @@ impl Game {
         for civ in d.civilizations.keys() {
             if self.is_civ_ever_active(civ) {
                 let building_class = d.buildings[building].building_class_type.expect("CvBuildingInfo without a building class");
-                if d.civ_building(civ, building_class) == Some(building) {
+                if d.civ_building(civ, building_class).is_some_and(|b| d.same_building(b, building)) {
                     return true;
                 }
             }

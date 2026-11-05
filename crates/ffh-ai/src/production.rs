@@ -542,6 +542,17 @@ pub(crate) fn top_production_city(g: &Game, c: CityId, eligible: impl Fn(CityId)
     ahead < (n / 3).max(1)
 }
 
+/// [`top_production_city`] for wonder `b`: production weighed by each city's cost of it (its
+/// building tier, docs/SUITABILITY.md), so the wonder goes where it is finished soonest.
+pub(crate) fn top_wonder_city(g: &Game, c: CityId, b: BuildingType) -> bool {
+    let p = g.cities[c].owner;
+    let pace = |o: CityId| g.city_yield_rate(o, YieldType::YIELD_PRODUCTION).max(0) * 100 / g.city_wonder_cost_percent(o, b).max(1);
+    let mine = pace(c);
+    let n = g.players[p].cities.len() as i32;
+    let ahead = g.players[p].cities.iter().filter(|&&o| o != c && (pace(o) > mine || pace(o) == mine && o < c)).count() as i32;
+    ahead < (n / 3).max(1)
+}
+
 /// A world wonder (one in the world, `isWorldWonderClass`).
 pub(crate) fn is_world_wonder(d: &GameData, b: BuildingType) -> bool {
     d.buildings[b].building_class_type.is_some_and(|k| ffh_core::utils::is_world_wonder_class(d, k))
@@ -854,7 +865,6 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static str)> {
     // only if it finishes it as quickly as the wonder slot asks (2 x cities + 1 turns): the rules
     // let one city at a time build it, and a slow city that starts one first locks it away from
     // the cities that would finish it sooner.
-    let mut wonder_city: Option<bool> = if top_cities { None } else { Some(true) };
     let quick_wonder = 2 * ctx.n_cities + 1;
     for b in d.buildings.keys() {
         if !building_allowed(g, c, b) || !g.city_can_construct(c, b, false, false, false) {
@@ -869,7 +879,7 @@ fn decide(ai: &Ai, g: &Game, c: CityId) -> Option<(Choice, &'static str)> {
         if turns > max_turns {
             continue;
         }
-        if turns > quick_wonder && is_world_wonder(d, b) && !*wonder_city.get_or_insert_with(|| top_production_city(g, c, |_| true)) {
+        if turns > quick_wonder && is_world_wonder(d, b) && top_cities && !top_wonder_city(g, c, b) {
             continue;
         }
         let score = value * 100 / (turns + 3);
@@ -1255,6 +1265,8 @@ fn enabler_building(g: &Game, c: CityId, threat: i32) -> Option<BuildingType> {
     for u in d.units.keys() {
         let info = &d.units[u];
         let Some(b) = unit_building(d, civ, info) else { continue };
+        // The city's own tier of it (docs/SUITABILITY.md).
+        let b = g.city_building_variant(c, b);
         let Some(bc) = d.buildings[b].building_class_type else { continue };
         if info.domain_type != Some(DomainType::DOMAIN_LAND) || g.city_is_has_building_class(c, bc) {
             continue;
@@ -1528,6 +1540,24 @@ fn generic_building_value(g: &Game, c: CityId, b: BuildingType, threat: i32) -> 
     // Experience matters in cities that train units.
     let xp: i32 = info.free_experience + info.unit_combat_free_experience.iter().sum::<i32>().min(4) + info.domain_free_experience[DomainType::DOMAIN_LAND];
     v += xp * prod.min(15) * 4;
+    // Building tiers (docs/SUITABILITY.md): what a tier gives the units the building unlocks
+    // (about half the units a training city makes; the Lesser penalty is not counted against the
+    // unlock, which the unit-gate choice values), a second free promotion, yields from bonuses,
+    // commerce per citizen, faster Sentinel repair.
+    v += info.unlocked_unit_experience * prod.min(15) * 2;
+    v += info.unlocked_unit_production_modifier.max(0) * prod / 8;
+    v += (i32::from(info.unlocked_unit_promotion.is_some()) * 3 + i32::from(info.extra_free_promotion.is_some()) * 6) * prod.min(15);
+    for bonus in d.bonuses.keys() {
+        if info.bonus_yield_change[bonus] != [0; YieldType::NUM] && g.city_has_bonus(c, bonus) {
+            for i in 0..YieldType::NUM {
+                v += info.bonus_yield_change[bonus][i] * yw[i] * 10;
+            }
+        }
+    }
+    for i in 0..CommerceType::NUM {
+        v += info.population_commerce[i] * pop * cw[i] / 10;
+    }
+    v += info.sentinel_repair_change * 2;
     v += info.military_production_modifier * prod / 4;
     v += info.trade_routes * 60;
     // Granary-like food storage: worth more while the city grows.

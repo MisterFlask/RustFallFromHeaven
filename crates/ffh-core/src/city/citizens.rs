@@ -761,6 +761,11 @@ impl Game {
 
             self.city_update_maintenance(c);
 
+            // This game's building suitability (docs/SUITABILITY.md): commerce per citizen.
+            if self.city_has_population_commerce(c) {
+                self.city_update_building_commerce(c);
+            }
+
             if (old_population == 1 && population > 1)
                 || (population == 1 && old_population > 1)
                 || (population > old_population && self.players[owner].num_cities() <= 2)

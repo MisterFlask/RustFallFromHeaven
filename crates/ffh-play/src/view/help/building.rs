@@ -78,6 +78,18 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
     let BuildingInfo {
         // The XML help (the name, pedia, strategy and button are the page's).
         base,
+        // ---- building tiers (docs/SUITABILITY.md) ----
+        tier,
+        variant_of,
+        // Derived: the family's buildings.
+        tier_variants: _,
+        unlocked_unit_experience,
+        unlocked_unit_production_modifier,
+        unlocked_unit_promotion,
+        extra_free_promotion,
+        bonus_yield_change,
+        population_commerce,
+        sentinel_repair_change,
         building_class_type,
         victory_prereq,
         free_start_era,
@@ -445,6 +457,49 @@ pub fn effects(d: &GameData, b: BuildingType) -> String {
         if *apply_free_promotion_on_move {
             h.push_str(&txt(d, "TXT_KEY_BUILDING_APPLY_FREE_PROMOTION_ON_MOVE", &[]));
         }
+    }
+    if let Some(p) = *extra_free_promotion {
+        add(&mut h, "TXT_KEY_BUILDING_FREE_PROMOTION", &[Arg::S(&display(d, p))]);
+    }
+    // Building tiers (docs/SUITABILITY.md): the units it unlocks, trained in its city.
+    if *unlocked_unit_experience != 0 {
+        h.push_str(NEWLINE);
+        h.push_str(&format!("[ICON_BULLET]{:+} experience for the units it unlocks trained here", unlocked_unit_experience));
+    }
+    if *unlocked_unit_production_modifier != 0 {
+        h.push_str(NEWLINE);
+        h.push_str(&format!("[ICON_BULLET]{:+}%[ICON_PRODUCTION] for the units it unlocks", unlocked_unit_production_modifier));
+    }
+    if let Some(p) = *unlocked_unit_promotion {
+        h.push_str(NEWLINE);
+        h.push_str(&format!("[ICON_BULLET]The units it unlocks trained here start with {}", highlight(&display(d, p))));
+    }
+    for x in d.bonuses.keys() {
+        let y = &bonus_yield_change[x];
+        if y.iter().any(|&v| v != 0) {
+            let mut s = String::new();
+            changes_help(&mut s, "", "", "", y, &YIELD_ICONS, false, false);
+            h.push_str(NEWLINE);
+            h.push_str(&format!("[ICON_BULLET]{} with {}", s.trim_start_matches(", "), display(d, x)));
+        }
+    }
+    for (i, &v) in population_commerce.iter().enumerate() {
+        if v != 0 {
+            h.push_str(NEWLINE);
+            if v > 0 && 100 % v == 0 {
+                h.push_str(&format!("[ICON_BULLET]+1{} per {} citizens", COMMERCE_ICONS[i], 100 / v));
+            } else {
+                h.push_str(&format!("[ICON_BULLET]{:+}{} per 100 citizens", v, COMMERCE_ICONS[i]));
+            }
+        }
+    }
+    if *sentinel_repair_change != 0 {
+        h.push_str(NEWLINE);
+        h.push_str(&format!("[ICON_BULLET]Sentinel repair: {:+}% of their HP per turn", sentinel_repair_change));
+    }
+    if let (Some(t), Some(of)) = (*tier, *variant_of) {
+        h.push_str(NEWLINE);
+        h.push_str(&format!("[ICON_BULLET]Tier: {} ({})", d.text.name(&d.building_tiers[t].base.description), display(d, of)));
     }
     if let Some(o) = *civic_option {
         add(&mut h, "TXT_KEY_BUILDING_ENABLES_CIVICS", &[Arg::S(&display(d, o))]);

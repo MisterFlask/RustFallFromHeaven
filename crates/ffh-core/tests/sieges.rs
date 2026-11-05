@@ -62,6 +62,9 @@ impl World {
 
     fn walls(&mut self) {
         let walls = self.g.d.t::<BuildingType>("BUILDING_WALLS");
+        // Standard Walls (the city's building tier, docs/SUITABILITY.md).
+        let class = self.g.d.buildings[walls].building_class_type.unwrap();
+        self.g.cities[self.city].building_tiers[class] = BuildingTierType::STANDARD;
         self.g.city_set_num_real_building(self.city, walls, 1);
     }
 

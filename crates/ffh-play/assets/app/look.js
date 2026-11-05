@@ -301,6 +301,11 @@ export function iconEl(name, { title, cls, remap, u = look.u } = {}) {
  *  unitcombat, specialist, civ), 16 or 8 px; `type` is a type name or an index. */
 export function typeIcon(kind, type, size = 16, opts = {}) {
   if (!look.art) return null;
+  // A building's tier variant (docs/SUITABILITY.md) is drawn as its Standard building.
+  if (kind === "building" && typeof type === "number") {
+    const base = look.data?.tables?.BuildingType?.[type]?.variant_of;
+    if (base !== null && base !== undefined) type = base;
+  }
   const r = UI.iconFor(look.art, kind, look.art.typeName(kind, type), size);
   return r ? iconEl(r.name, { ...opts, remap: r.remap }) : null;
 }

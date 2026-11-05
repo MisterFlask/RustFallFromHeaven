@@ -1325,11 +1325,13 @@ fn siege_building(g: &Game, c: CityId) -> Option<BuildingType> {
         }
         // (Every siege engine needs a Siege Workshop, `PrereqBuilding`.)
         let Some(b) = crate::production::unit_building(d, civ, info) else { continue };
+        // The city's own tier of it (docs/SUITABILITY.md).
+        let b = g.city_building_variant(c, b);
         let Some(bc) = d.buildings[b].building_class_type else { continue };
         if g.city_is_has_building_class(c, bc) || !g.city_can_construct(c, b, false, false, false) {
             continue;
         }
-        if pl.cities.iter().any(|&o| g.city_production_building(o) == Some(b)) {
+        if pl.cities.iter().any(|&o| g.city_production_building(o).is_some_and(|x| d.same_building(x, b))) {
             return None;
         }
         return Some(b);

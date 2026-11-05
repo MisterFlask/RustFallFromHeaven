@@ -25,7 +25,11 @@ impl Game {
     /// C++ ends with `AI_init()`: `AI_reset()` (which clears the AI bookkeeping fields again,
     /// e.g. an `ai_choose_production_dirty` set by `setPopulation` during init), then
     /// `AI_assignWorkingPlots` (governor) and AI-only caches (omitted).
-    pub fn city_init(&mut self, c: CityId, owner: PlayerId, x: i32, y: i32, bump_units: bool, update_plot_groups: bool) {
+    ///
+    /// This game's building suitability (docs/SUITABILITY.md): `tiers` are the building tiers of
+    /// a city changing hands (it keeps them); a new city (`None`) rolls its own, before any
+    /// building is given to it.
+    pub fn city_init(&mut self, c: CityId, owner: PlayerId, x: i32, y: i32, bump_units: bool, update_plot_groups: bool, tiers: Option<IdxVec<BuildingClassType, BuildingTierType>>) {
         let d = self.d;
         let defines = &d.defines;
 
@@ -39,6 +43,10 @@ impl Game {
         let _ = self.soren_rand_num(20, "Crime");
         let crime = self.soren_rand_num(20, "Crime");
         self.cities[c] = City::new(d, self.num_players(), self.num_teams(), c, owner, plot_x, plot_y, crime);
+        match tiers {
+            Some(tiers) => self.cities[c].building_tiers = tiers,
+            None => self.city_roll_building_tiers(c),
+        }
 
         // Init non-saved data: setupGraphical() (graphics).
 
@@ -381,7 +389,7 @@ impl Game {
                         for spell in d.spells.keys() {
                             // C++ tests `canCast` first; it is a pure query, so the cheap type
                             // test is done first here.
-                            if d.spells[spell].create_building_type == Some(building) && self.unit_can_cast(unit, spell, true) {
+                            if d.spells[spell].create_building_type.is_some_and(|b| d.same_building(b, building)) && self.unit_can_cast(unit, spell, true) {
                                 valid = true;
                             }
                         }
@@ -1199,7 +1207,7 @@ impl Game {
 
             for &building_class in &k_trigger.buildings_required {
                 if let Some(building) = d.civ_building(self.city_civilization_type(c), building_class) {
-                    if city.num_real_building[building] > 0 {
+                    if self.city_num_real_family(c, building) > 0 {
                         found_valid = true;
                     }
                 }
@@ -1333,16 +1341,16 @@ impl Game {
 
             // FfH: Added by Kael 09/21/2008 (a building class without a change number makes
             // the event require that building in the city)
-            if k_event.building_change == 0 && city.num_real_building[building] == 0 {
+            if k_event.building_change == 0 && self.city_num_real_family(c, building) == 0 {
                 return false;
             }
             // FfH: End Add
 
             if k_event.building_change > 0 {
-                if self.city_num_building(c, building) >= d.defines.city_max_num_buildings {
+                if self.city_num_family(c, building) >= d.defines.city_max_num_buildings {
                     return false;
                 }
-            } else if k_event.building_change < 0 && city.num_real_building[building] + k_event.building_change < 0 {
+            } else if k_event.building_change < 0 && self.city_num_real_family(c, building) + k_event.building_change < 0 {
                 return false;
             }
         }
@@ -1503,7 +1511,7 @@ impl Game {
         if let Some(building_class) = k_event.building_class {
             if let Some(building) = d.civ_building(self.city_civilization_type(c), building_class) {
                 if k_event.building_change != 0 {
-                    let num_real_building = self.cities[c].num_real_building[building];
+                    let num_real_building = self.city_num_real_family(c, building);
                     self.city_set_num_real_building(c, building, num_real_building + k_event.building_change);
                 }
             }

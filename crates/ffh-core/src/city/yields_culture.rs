@@ -866,6 +866,11 @@ impl Game {
                     if let Some(corporation) = kb.global_corporation_commerce {
                         total += (d.corporations[corporation].headquarter_commerce[i] * self.count_corporation_levels(corporation)) * num_active_building;
                     }
+
+                    // This game's building suitability (docs/SUITABILITY.md): commerce per citizen.
+                    if kb.population_commerce[i] != 0 {
+                        total += kb.population_commerce[i] * city.population * num_active_building / 100;
+                    }
                 }
 
                 // ADDON (Fix CommerceChangeDoubleTime) Sephi: was

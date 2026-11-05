@@ -1546,7 +1546,7 @@ impl Game {
                     let Some(city) = city else {
                         return false;
                     };
-                    if self.city_num_building(city, building) == 0 {
+                    if self.city_num_family(city, building) == 0 {
                         let special_building = d.buildings[building].special_building_type;
                         // (`GET_PLAYER(getOwnerINLINE())`: a city plot is always owned.)
                         let owner = plot.owner.expect("CvPlot::canTrain: city plot without an owner");

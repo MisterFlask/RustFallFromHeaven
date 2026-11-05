@@ -263,6 +263,11 @@ impl Game {
             return false;
         }
 
+        // This game's building suitability (docs/SUITABILITY.md): only the city's own tier.
+        if !self.city_is_own_tier(c, building) {
+            return false;
+        }
+
         // This game's governors: world wonders and palaces only in directly ruled cities
         // (docs/GOVERNORS.md).
         if (info.capital || is_world_wonder_class(d, building_class_of(d, building))) && self.city_is_governed(c) {
@@ -396,7 +401,7 @@ impl Game {
             for loop_class in d.building_classes.keys() {
                 if info.building_class_needed_in_city[loop_class] {
                     if let Some(prereq_building) = d.civ_building(self.city_civilization_type(c), loop_class) {
-                        if self.city_num_building(c, prereq_building) == 0 {
+                        if self.city_num_family(c, prereq_building) == 0 {
                             return false;
                         }
                     }
@@ -420,7 +425,7 @@ impl Game {
             return false;
         }
         let building_class = building_class_of(d, building);
-        if d.civ_building(self.city_civilization_type(c), building_class) != Some(building) {
+        if !d.civ_building(self.city_civilization_type(c), building_class).is_some_and(|b| d.same_building(b, building)) {
             return false;
         }
         // FfH: End Add
@@ -563,6 +568,9 @@ impl Game {
             experience += city.domain_free_experience[unit_domain_of(d, unit).idx()];
 
             experience += city.specialist_free_experience;
+
+            // This game's building suitability (docs/SUITABILITY.md).
+            experience += self.city_unlocked_unit_bonus(c, unit).0;
         }
 
         if let Some(state_religion) = self.player_get_state_religion(city.owner) {
@@ -587,6 +595,16 @@ impl Game {
                     if self.d.promotions[promotion].unit_combat[unit_combat] {
                         self.unit_set_has_promotion(unit, promotion, true);
                     }
+                }
+            }
+        }
+        // This game's building suitability (docs/SUITABILITY.md): the promotions the city's
+        // buildings give the units they unlock, where the promotion's unit combats allow.
+        let unit_type = self.units[unit].unit_type;
+        for promotion in self.city_unlocked_unit_bonus(c, unit_type).2 {
+            if let Some(unit_combat) = self.unit_get_unit_combat_type(unit) {
+                if self.d.promotions[promotion].unit_combat[unit_combat] {
+                    self.unit_set_has_promotion(unit, promotion, true);
                 }
             }
         }
@@ -726,6 +744,12 @@ impl Game {
                 production_needed *= result;
                 production_needed /= 100;
             }
+        }
+
+        // This game's building suitability (docs/SUITABILITY.md): a wonder costs its tier's share.
+        let percent = self.city_wonder_cost_percent(c, building);
+        if percent != 100 {
+            production_needed = production_needed * percent / 100;
         }
 
         production_needed
@@ -869,6 +893,11 @@ impl Game {
         if self.governors_on() {
             multiplier += self.city_governor_mods(c).unit_production;
         }
+
+        // This game's building suitability (docs/SUITABILITY.md): the units the city's buildings
+        // unlock, and the units a Lesser Warrens copies.
+        multiplier += self.city_unlocked_unit_bonus(c, unit).1;
+        multiplier += self.ev_warrens_production_modifier(c, unit);
 
         // FfH: Modified by Kael 02/11/2009 (was `std::max(0, iMultiplier)`)
         multiplier

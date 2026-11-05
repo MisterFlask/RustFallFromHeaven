@@ -325,6 +325,7 @@ kinds! {
         GovernorTraitType => governor_traits,
         GovernorNameType => governor_names,
         CombatRoleType => combat_roles,
+        BuildingTierType => building_tiers,
     }
     globals {
         FlavorType,

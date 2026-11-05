@@ -129,7 +129,11 @@ fn by_type(d: &GameData) -> &'static ByType {
         let mut effects = IdxVec::from_elem(Vec::new(), d.buildings.len());
         for &(name, list) in &TABLE {
             if let Some(b) = d.ty::<BuildingType>(name) {
-                effects[b] = list.to_vec();
+                // Every tier of the building (docs/SUITABILITY.md; the rules scale the effect by
+                // the tier, valued here as at Standard).
+                for v in d.building_family_members(b) {
+                    effects[v] = list.to_vec();
+                }
             }
         }
         ByType { effects, gate: d.ty::<BuildingType>("BUILDING_PLANAR_GATE"), warrens: d.ty::<BuildingType>("BUILDING_WARRENS") }
@@ -141,13 +145,13 @@ fn by_type(d: &GameData) -> &'static ByType {
 /// Planar Gate already in the city would summon for `b`.
 pub fn building_value(g: &Game, c: CityId, b: BuildingType, threat: i32) -> i32 {
     let t = by_type(g.d);
-    let gate_here = t.gate.filter(|&gate| gate != b && g.cities[c].num_real_building[gate] > 0);
+    let gate_here = t.gate.filter(|&gate| !g.d.same_building(gate, b) && g.city_num_real_family(c, gate) > 0);
     if t.effects[b].is_empty() && gate_here.is_none() {
         return 0;
     }
     // The Warrens were valued before the table (the Clan of Embers' module), so the switch leaves
     // them as they were.
-    if Some(b) != t.warrens && !crate::switches::CODE_EFFECTS.on(g, g.cities[c].owner) {
+    if !t.warrens.is_some_and(|w| g.d.same_building(w, b)) && !crate::switches::CODE_EFFECTS.on(g, g.cities[c].owner) {
         return 0;
     }
     let mut v: i32 = t.effects[b].iter().map(|&e| effect_value(g, c, b, e, threat)).sum();
@@ -312,7 +316,7 @@ fn summons_value(g: &Game, c: CityId, extra: Option<BuildingType>) -> i32 {
     let p = g.cities[c].owner;
     let Some(gate) = d.ty::<BuildingType>("BUILDING_PLANAR_GATE") else { return 0 };
     let (per_gate, _) = g.planar_gate_limits();
-    let gates = g.player_count_num_buildings(p, gate) + i32::from(g.cities[c].num_real_building[gate] == 0);
+    let gates = g.player_count_num_family(p, gate) + i32::from(g.city_num_real_family(c, gate) == 0);
     let max = per_gate * gates.max(1);
     let mut v = 0;
     for (building, class, unit) in PLANAR_GATE_SUMMONS {
@@ -321,9 +325,10 @@ fn summons_value(g: &Game, c: CityId, extra: Option<BuildingType>) -> i32 {
             continue;
         }
         let worth = unit_hammers(d, &d.units[ut]) * HAMMER / UNIT_LIFE;
-        let has = g.city_num_building(c, bt) > 0;
+        let has = g.city_num_family(c, bt) > 0;
+        let bt = g.city_building_variant(c, bt);
         v += match extra {
-            Some(x) => if x == bt && !has { worth } else { 0 },
+            Some(x) => if d.same_building(x, bt) && !has { worth } else { 0 },
             None if has => worth,
             None if g.city_can_construct(c, bt, false, false, false) => worth / 2,
             None => 0,

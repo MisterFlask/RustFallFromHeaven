@@ -1930,7 +1930,8 @@ mod tests {
                 n += v as usize;
             }
         }
-        assert_eq!((n, d.promotions.len() * d.units.len()), (26312, 85086));
+        // (+208 pairs and +326 in all: this game's PROMOTION_SPIRIT_GUIDE2, docs/SUITABILITY.md.)
+        assert_eq!((n, d.promotions.len() * d.units.len()), (26520, 85412));
     }
 
     #[test]

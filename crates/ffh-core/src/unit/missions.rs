@@ -829,7 +829,7 @@ impl Game {
             return false;
         }
 
-        if self.cities[city].num_real_building[building] > 0 {
+        if self.city_num_real_family(city, building) > 0 {
             return false;
         }
 
@@ -863,9 +863,10 @@ impl Game {
         let building = building.expect("CvUnit::construct: no building");
 
         if let Some(city) = live_plot_city(self, plot) {
-            let num = self.cities[city].num_real_building[building];
+            let num = self.city_num_real_family(city, building);
             self.city_set_num_real_building(city, building, num + 1);
 
+            let building = self.city_building_variant(city, building);
             self.ev_building_built(city, building);
         }
 

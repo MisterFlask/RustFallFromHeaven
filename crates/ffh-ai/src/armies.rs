@@ -459,8 +459,10 @@ mod tests {
         g.cities[c[1]].building_production[building] = g.city_production_needed_building(c[1], building) - 1;
         let w = d.t::<UnitType>("UNIT_WARRIOR");
         g.city_push_order(c[2], OrderType::ORDER_TRAIN, w.i(), UnitAIType::UNITAI_ATTACK.i(), false, false, true, false);
-        g.city_push_order(c[3], OrderType::ORDER_CONSTRUCT, building.i(), -1, false, false, true, false);
-        assert!(g.city_production_turns_left_building(c[3], building, 0) > 3, "a long build");
+        // (City 3's own tier of the building: docs/SUITABILITY.md.)
+        let building3 = g.city_building_variant(c[3], building);
+        g.city_push_order(c[3], OrderType::ORDER_CONSTRUCT, building3.i(), -1, false, false, true, false);
+        assert!(g.city_production_turns_left_building(c[3], building3, 0) > 3, "a long build");
         // An enemy stack next to the last governed city: it keeps its production.
         for _ in 0..3 {
             g.player_init_unit(p1, w, 13, 3, Some(UnitAIType::UNITAI_ATTACK), None);
@@ -486,7 +488,7 @@ mod tests {
             let o = &g.cities[x].order_queue[0];
             assert!(o.requisition && o.dest == Some(RecruitDest::Army(a)), "a requisition order in {x:?}");
         }
-        assert_eq!(g.cities[c[3]].order_queue[1].data1, building.i(), "the build waits behind it");
+        assert_eq!(g.cities[c[3]].order_queue[1].data1, building3.i(), "the build waits behind it");
         assert!(c[..3].iter().chain([&c[6]]).all(|&x| g.cities[x].order_queue.iter().all(|o| !o.requisition)));
         // An order under way stays, and nothing more is placed while the army is full.
         turn(&mut g, p0);

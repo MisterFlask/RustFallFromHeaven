@@ -1451,7 +1451,7 @@ fn can_trigger_lunatic_city(g: &Game, _trigger: EventTriggerType, p: PlayerId, c
         }
     }
     let Some(temple) = temple else { return false };
-    g.cities[c].num_real_building[temple] != 0
+    g.city_num_real_family(c, temple) != 0
 }
 
 /// `doMachineParts1(argsList)`: a weak Clockwork Golem.
@@ -1574,7 +1574,7 @@ fn do_order_vs_veil3(g: &mut Game, _event: EventType, data: &EventTriggeredData)
 fn can_apply_order_vs_veil4(g: &Game, _event: EventType, data: &EventTriggeredData) -> bool {
     let dungeon = g.d.t::<BuildingType>("BUILDING_DUNGEON");
     // NULL city: getNumRealBuilding() is -1, not 0.
-    data_city(g, data).map_or(true, |c| g.cities[c].num_real_building[dungeon] != 0)
+    data_city(g, data).map_or(true, |c| g.city_num_real_family(c, dungeon) != 0)
 }
 
 /// `doOrderVsVeilTemple1(argsList)`: side with the Order; the Veil temple is torn down.
@@ -2032,7 +2032,7 @@ fn do_sign_tali(g: &mut Game, data: &EventTriggeredData, _p: PlayerId) {
 
 /// `canTriggerSmugglers(argsList)`.
 fn can_trigger_smugglers(g: &Game, _trigger: EventTriggerType, _p: PlayerId, c: CityId) -> bool {
-    if g.cities[c].num_real_building[g.d.t::<BuildingType>("BUILDING_SMUGGLERS_PORT")] > 0 {
+    if g.city_num_real_family(c, g.d.t::<BuildingType>("BUILDING_SMUGGLERS_PORT")) > 0 {
         return false;
     }
     if !g.city_is_coastal(c, 10) {

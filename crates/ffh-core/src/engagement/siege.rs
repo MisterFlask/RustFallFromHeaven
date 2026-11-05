@@ -224,7 +224,8 @@ impl Game {
         if self.cities[c].sentinel_damage.is_empty() || self.city_is_besieged(c) {
             return;
         }
-        let pct = self.d.defines.sentinel_repair_percent.max(0);
+        // This game's building suitability (docs/SUITABILITY.md): a Legendary Palisade repairs faster.
+        let pct = (self.d.defines.sentinel_repair_percent + self.city_sentinel_repair_change(c)).max(0);
         for dmg in self.cities[c].sentinel_damage.iter_mut() {
             *dmg = (*dmg - pct).max(0);
         }

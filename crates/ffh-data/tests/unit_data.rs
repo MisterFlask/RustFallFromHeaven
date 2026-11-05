@@ -45,7 +45,8 @@ fn table_sizes() {
     let d = data();
     assert_eq!(d.units.len(), 326);
     assert_eq!(d.unit_classes.len(), 248);
-    assert_eq!(d.promotions.len(), 261);
+    // 261 and this game's PROMOTION_SPIRIT_GUIDE2 (docs/SUITABILITY.md).
+    assert_eq!(d.promotions.len(), 262);
     assert_eq!(d.spells.len(), 267);
     assert_eq!(d.builds.len(), 35);
     assert_eq!(d.special_units.len(), 3);

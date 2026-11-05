@@ -766,8 +766,8 @@ impl Game {
                 let mut buildings: Vec<BuildingType> = Vec::new();
                 for &building_class in &k_trigger.buildings_required {
                     if let Some(test_building) = civ_building(self, p, building_class) {
-                        if self.cities[c].num_real_building[test_building] > 0 {
-                            buildings.push(test_building);
+                        if self.city_num_real_family(c, test_building) > 0 {
+                            buildings.push(self.city_building_variant(c, test_building));
                         }
                     }
                 }
@@ -1648,7 +1648,10 @@ impl Game {
                     let change = k_event.building_happy_change(building_class);
                     if 0 != change {
                         if let Some(building) = civ_building(self, p, building_class) {
-                            self.player_change_extra_building_happiness(p, building, change);
+                            // (Every tier of the building: docs/SUITABILITY.md.)
+                            for b in d.building_family_members(building) {
+                                self.player_change_extra_building_happiness(p, b, change);
+                            }
                         }
                     }
                 }
@@ -1659,7 +1662,9 @@ impl Game {
                     let change = k_event.building_health_change(building_class);
                     if 0 != change {
                         if let Some(building) = civ_building(self, p, building_class) {
-                            self.player_change_extra_building_health(p, building, change);
+                            for b in d.building_family_members(building) {
+                                self.player_change_extra_building_health(p, b, change);
+                            }
                         }
                     }
                 }

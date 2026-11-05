@@ -582,7 +582,7 @@ fn spell_recruit(g: &mut Game, caster: UnitId, _call: &PyCall) {
     let p = g.units[caster].owner;
     let team = g.players[p].team;
     let mut loops = py_div(g.cities[city].population, 3) + 1;
-    if g.city_num_building(city, d.t::<BuildingType>("BUILDING_TEMPLE_OF_THE_ORDER")) == 1 {
+    if g.city_num_family(city, d.t::<BuildingType>("BUILDING_TEMPLE_OF_THE_ORDER")) == 1 {
         loops *= 2;
     }
     let has_tech = |g: &Game, tech: TechType| g.team_is_has_tech(team, Some(tech));
@@ -2420,7 +2420,7 @@ fn on_move_ancient_forest(g: &mut Game, caster: UnitId, plot: PlotIdx, _call: &P
                 if g.plot_is_being_worked(plot) {
                     let city = g.map.plots[plot].working_city;
                     // (A NULL CyCity's getNumBuilding() is -1.)
-                    if city.map_or(false, |c| g.city_num_building(c, d.t::<BuildingType>("BUILDING_TEMPLE_OF_LEAVES")) > 0) {
+                    if city.map_or(false, |c| g.city_num_family(c, d.t::<BuildingType>("BUILDING_TEMPLE_OF_LEAVES")) > 0) {
                         chance *= 3;
                     }
                 }

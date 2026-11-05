@@ -625,7 +625,7 @@ pub(crate) fn recruit_value(g: &Game, caster: UnitId) -> i32 {
     let temple = g.d.ty::<BuildingType>("BUILDING_TEMPLE_OF_THE_ORDER");
     let recruits = |c: CityId| {
         let n = g.cities[c].population / 3 + 1;
-        if temple.is_some_and(|b| g.city_num_building(c, b) == 1) {
+        if temple.is_some_and(|b| g.city_num_family(c, b) == 1) {
             n * 2
         } else {
             n
@@ -1326,7 +1326,8 @@ pub fn support_target(g: &Game, v: &mut View, u: UnitId) -> Option<(PlotIdx, &'s
             let mut value = 0;
             let mut why = "bless";
             if let Some(b) = info.create_building_type {
-                if let Some(c) = g.map.plots[q].plot_city.filter(|&c| g.cities[c].owner == p && g.city_num_building(c, b) == 0 && !claimed_city_spell(g, u, c, s)) {
+                if let Some(c) = g.map.plots[q].plot_city.filter(|&c| g.cities[c].owner == p && g.city_num_family(c, b) == 0 && !claimed_city_spell(g, u, c, s)) {
+                    let b = g.city_building_variant(c, b);
                     value += crate::production::building_value(g, c, b, city_spell_threat(g, c)) / 4;
                     why = "city spell";
                 }

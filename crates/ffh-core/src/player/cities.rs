@@ -187,11 +187,13 @@ impl Game {
 
     /// C++ `CvPlayer::initCity(iX, iY, bBumpUnits, bUpdatePlotGroups)`: creates and inits a city.
     pub fn player_init_city(&mut self, p: PlayerId, x: i32, y: i32, bump_units: bool, update_plot_groups: bool) -> CityId {
-        self.player_init_city_as(p, x, y, bump_units, update_plot_groups, false)
+        self.player_init_city_as(p, x, y, bump_units, update_plot_groups, None)
     }
 
-    /// `player_init_city` for a new city (`acquired` false) or one changing hands.
-    fn player_init_city_as(&mut self, p: PlayerId, x: i32, y: i32, bump_units: bool, update_plot_groups: bool, acquired: bool) -> CityId {
+    /// `player_init_city` for a new city (`acquired` `None`) or one changing hands (`acquired`:
+    /// its building tiers, docs/SUITABILITY.md).
+    fn player_init_city_as(&mut self, p: PlayerId, x: i32, y: i32, bump_units: bool, update_plot_groups: bool, acquired: Option<IdxVec<BuildingClassType, BuildingTierType>>) -> CityId {
+        let is_acquired = acquired.is_some();
         // addCity(): the new slot holds a default (reset) city until `init` re-runs `reset`.
         // Both "Crime" draws of the C++ (constructor + init) are made by `city_init`.
         let id = self.cities.next_id();
@@ -204,10 +206,10 @@ impl Game {
             "No city is expected at this plot when initializing new city"
         );
 
-        self.city_init(city, p, x, y, bump_units, update_plot_groups);
+        self.city_init(city, p, x, y, bump_units, update_plot_groups, acquired);
         // This game's governors (docs/GOVERNORS.md): a direct slot or a governor. A city that
         // changed hands takes its governor when its owner's turn ends (`player_governance_turn`).
-        self.city_governance_init(city, !acquired);
+        self.city_governance_init(city, !is_acquired);
 
         city
     }
@@ -348,6 +350,8 @@ impl Game {
         let headquarters: Vec<bool> = d.corporations.keys().map(|corp| self.city_is_headquarters(old_city, corp)).collect();
 
         let num_real_building = self.cities[old_city].num_real_building.clone();
+        // This game's building suitability (docs/SUITABILITY.md): the city keeps its tiers.
+        let building_tiers = self.cities[old_city].building_tiers.clone();
         let building_original_owner = self.cities[old_city].building_original_owner.clone();
         let building_original_time = self.cities[old_city].building_original_time.clone();
 
@@ -404,7 +408,7 @@ impl Game {
             }
         }
 
-        let new_city = self.player_init_city_as(p, city_x, city_y, !conquest, false, true);
+        let new_city = self.player_init_city_as(p, city_x, city_y, !conquest, false, Some(building_tiers));
 
         self.cities[new_city].previous_owner = Some(old_owner);
         self.cities[new_city].original_owner = original_owner;
@@ -436,6 +440,8 @@ impl Game {
                 let building_class = building_class_of(d, building);
                 let new_building =
                     if is_world_wonder_class(d, building_class) { Some(building) } else { d.civ_building(our_civ, building_class) };
+                // This game's building suitability (docs/SUITABILITY.md): at the city's tier.
+                let new_building = new_building.map(|b| self.city_building_variant(new_city, b));
 
                 if let Some(new_building) = new_building {
                     if trade || !d.buildings[building].never_capture {

@@ -60,9 +60,11 @@ pub fn caster_building(g: &Game, c: CityId) -> Option<BuildingType> {
     }
     let b = needed?;
     let bc = d.buildings[b].building_class_type?;
-    if pl.cities.iter().any(|&o| g.city_is_has_building_class(o, bc) || g.city_production_building(o) == Some(b)) {
+    if pl.cities.iter().any(|&o| g.city_is_has_building_class(o, bc) || g.city_production_building(o).is_some_and(|x| d.same_building(x, b))) {
         return None;
     }
+    // The city's own tier of it (docs/SUITABILITY.md).
+    let b = g.city_building_variant(c, b);
     // A productive city: at least half our best city's production (the best one may be busy).
     let best = pl.cities.iter().map(|&o| g.city_yield_rate(o, YieldType::YIELD_PRODUCTION)).max()?;
     (g.city_yield_rate(c, YieldType::YIELD_PRODUCTION) * 2 >= best && g.city_can_construct(c, b, false, false, false)).then_some(b)

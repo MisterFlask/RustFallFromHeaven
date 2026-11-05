@@ -7,10 +7,43 @@
 //! `Advisor` (only feeds the human "recommended" production popup; AdvisorInfos are not
 //! loaded) and `m_iMissionType` (set for the action bar after loading, not by `read`).
 
+use crate::define_idx;
 use crate::enums::*;
 use crate::idx::IdxVec;
 use crate::infos::InfoBase;
 use crate::registry::{InfoId, Rd};
+
+define_idx!(/// A building tier (`BUILDINGTIER_*`, building_tiers.jsonc): this game's building suitability
+/// (docs/SUITABILITY.md). Not in FFH2.
+BuildingTierType);
+
+impl BuildingTierType {
+    pub const LESSER: BuildingTierType = BuildingTierType(0);
+    pub const STANDARD: BuildingTierType = BuildingTierType(1);
+    pub const FINE: BuildingTierType = BuildingTierType(2);
+    pub const GRAND: BuildingTierType = BuildingTierType(3);
+    pub const LEGENDARY: BuildingTierType = BuildingTierType(4);
+    /// The tiers' type names in id order (the data's order is checked against it).
+    pub const NAMES: &'static [&'static str] =
+        &["BUILDINGTIER_LESSER", "BUILDINGTIER_STANDARD", "BUILDINGTIER_FINE", "BUILDINGTIER_GRAND", "BUILDINGTIER_LEGENDARY"];
+    pub const NUM: usize = 5;
+}
+
+/// A building tier (building_tiers.jsonc; docs/SUITABILITY.md). Not in FFH2.
+#[derive(Debug, Clone, Default)]
+pub struct BuildingTierInfo {
+    pub base: InfoBase,
+    /// The tier's weight in a city's roll for a building class (the chance is the weight over
+    /// the sum of the weights).
+    pub weight: i32,
+    /// A wonder's cost in a city of this tier for its class, in percent.
+    pub wonder_cost_percent: i32,
+}
+
+/// Reads a `building_tiers.jsonc` entry.
+pub fn read_building_tier(rd: &Rd) -> BuildingTierInfo {
+    BuildingTierInfo { base: InfoBase::read(rd), weight: rd.int("weight"), wonder_cost_percent: rd.int_or("wonder_cost_percent", 100) }
+}
 
 /// C++ `GC.getNUM_BUILDING_AND_TECH_PREREQS()` (global_defines.jsonc). `Rd` cannot see the
 /// defines, so the value is mirrored here; the data tests check it against
@@ -64,6 +97,10 @@ pub struct BuildingClassInfo {
     pub monument: bool,
     /// C++ `getVictoryThreshold(i)`.
     pub victory_threshold: IdxVec<VictoryType, i32>,
+    /// Derived at load (not in the data files; docs/SUITABILITY.md): a city rolls a tier for this
+    /// class. True for a class with tier variants, and for a wonder class that can be built and
+    /// is no victory's (its tier is a cost).
+    pub rolls_tier: bool,
 }
 
 /// C++ `CvBuildingClassInfo::read` + `readPass3`.
@@ -80,13 +117,40 @@ pub fn read_building_class(rd: &Rd) -> BuildingClassInfo {
         victory_threshold: rd.pairs_int("victory_thresholds", 0),
         // readPass3: m_iDefaultBuildingIndex = GC.getInfoTypeForString(<DefaultBuilding>)
         default_building_index: rd.rf("default_building"),
+        rolls_tier: false,
     }
 }
 
-/// C++ `CvBuildingInfo` (buildings.jsonc)
+/// C++ `CvBuildingInfo` (buildings.jsonc, and the tier variants of building_variants.jsonc)
 #[derive(Debug, Clone, Default)]
 pub struct BuildingInfo {
     pub base: InfoBase,
+
+    // ---- tiers (this game's building suitability, docs/SUITABILITY.md; not in FFH2) ----
+    /// The tier of this building: `variant_tier` of a variant (building_variants.jsonc), Standard
+    /// for a building that has variants (derived), `None` for one without tiers.
+    pub tier: Option<BuildingTierType>,
+    /// The Standard building this one is a tier variant of (`None` for any other building).
+    pub variant_of: Option<BuildingType>,
+    /// Derived: the buildings of this one's family by tier (`[tier]`), the same list on every
+    /// member; empty for a building without tiers.
+    pub tier_variants: Vec<BuildingType>,
+    /// Experience for the units this building unlocks (whose `prereq_building` is of its family
+    /// or whose `prereq_building_class` is its class) when they are trained in its city.
+    pub unlocked_unit_experience: i32,
+    /// Production modifier (%) of the units it unlocks, in its city.
+    pub unlocked_unit_production_modifier: i32,
+    /// A promotion for the units it unlocks trained in its city (where the promotion's unit
+    /// combats allow it, as for `free_promotion`).
+    pub unlocked_unit_promotion: Option<PromotionType>,
+    /// A second promotion for every unit trained in its city, as `free_promotion`.
+    pub extra_free_promotion: Option<PromotionType>,
+    /// Yield change of the city for each of these bonuses it has (like `bonus_health_changes`).
+    pub bonus_yield_change: IdxVec<BonusType, [i32; YieldType::NUM]>,
+    /// Commerce per citizen of the city, in hundredths (50: +1 per 2 citizens).
+    pub population_commerce: [i32; CommerceType::NUM],
+    /// Percentage points added to `SENTINEL_REPAIR_PERCENT` for its city's Sentinels.
+    pub sentinel_repair_change: i32,
 
     // ---- type references ----
     /// C++ `getBuildingClassType()`, XML `<BuildingClass>`.
@@ -328,6 +392,17 @@ pub struct BuildingInfo {
 pub fn read_building(rd: &Rd) -> BuildingInfo {
     BuildingInfo {
         base: InfoBase::read(rd),
+
+        tier: rd.rf("variant_tier"),
+        variant_of: rd.rf("variant_of"),
+        tier_variants: Vec::new(),
+        unlocked_unit_experience: rd.int("unlocked_unit_experience"),
+        unlocked_unit_production_modifier: rd.int("unlocked_unit_production_modifier"),
+        unlocked_unit_promotion: rd.rf("unlocked_unit_promotion"),
+        extra_free_promotion: rd.rf("extra_free_promotion"),
+        bonus_yield_change: keyed_arrays(rd, "bonus_yield_changes", "bonus_yield_change", "bonus_type", "yield_changes"),
+        population_commerce: rd.commerces("population_commerces"),
+        sentinel_repair_change: rd.int("sentinel_repair_change"),
 
         building_class_type: rd.rf("building_class"),
         special_building_type: rd.rf("special_building_type"),

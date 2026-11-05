@@ -335,6 +335,8 @@ pub(crate) fn casters_up_to(g: &Game, c: CityId, threat: i32, target: i32) -> Op
         return None;
     }
     if let Some(b) = crate::production::unit_building(d, civ, &d.units[adept]) {
+        // The city's own tier of it (docs/SUITABILITY.md).
+        let b = g.city_building_variant(c, b);
         let bc = needs?;
         if !g.city_is_has_building_class(c, bc) {
             if !g.city_can_construct(c, b, false, false, false) {

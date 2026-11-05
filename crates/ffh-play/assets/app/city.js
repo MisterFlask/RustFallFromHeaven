@@ -587,12 +587,48 @@ function plotTipNodes(p, mine, c) {
   }
 }
 
+/** Building tiers (docs/SUITABILITY.md): the class that colours a building's name by its tier
+ *  (`tier-0` Lesser .. `tier-4` Legendary; none for Standard or a building without a tier). */
+export function tierSel(t) {
+  return t === null || t === undefined || t === 1 ? "" : `.tier-${t}`;
+}
+
+/** The hint line of a building in the chooser: its tier, and a wonder's cost there. */
+function tierHint(b) {
+  if (b.tier === undefined || b.tier === null) return "";
+  const name = dname("BuildingTierType", b.tier);
+  return b.cost_percent !== undefined ? `Site: ${name}. Cost: ${b.cost_percent}%.` : `Tier: ${name}.`;
+}
+
+/** The city's hand: its building for every class it rolled a tier other than Standard for, by
+ *  tier (a wonder's tier is its cost there). */
+function tierHandView(c) {
+  if (!c.tier_hand || !c.tier_hand.length) return null;
+  const rows = [];
+  for (const t of [4, 3, 2, 0]) {
+    const xs = c.tier_hand.filter((x) => x.tier === t);
+    if (!xs.length) continue;
+    rows.push(
+      h(
+        "div.tier-row",
+        h(`span.tier-label${tierSel(t)}`, `${dname("BuildingTierType", t)}: `),
+        h(
+          "span.chips",
+          xs.map((x) => h(`span.chip${tierSel(t)}`, { tip: infoTip("BuildingType", x.building, { hint: x.cost_percent !== undefined ? `Site: ${dname("BuildingTierType", t)}. Cost: ${x.cost_percent}%.` : "" }) }, dname("BuildingType", x.building), x.cost_percent !== undefined ? h("span.dim", ` ${x.cost_percent}%`) : null)),
+        ),
+      ),
+    );
+  }
+  return h("details.section.tier-hand", h("summary", h("h4", "Building tiers")), rows);
+}
+
 function buildingsView(c, reload) {
-  const b = c.buildings.map((x) => h("span.chip", { tip: infoTip("BuildingType", x.building) }, typeIcon("building", x.building, 8), dname("BuildingType", x.building), x.free && !x.real ? h("span.dim", " (free)") : null));
+  const b = c.buildings.map((x) => h(`span.chip${tierSel(x.tier)}`, { tip: infoTip("BuildingType", x.building, { hint: tierHint(x) }) }, typeIcon("building", x.building, 8), dname("BuildingType", x.building), x.free && !x.real ? h("span.dim", " (free)") : null));
   const r = c.religions.map((x) => h("span.chip", typeIcon("religion", x.religion, 8), dname("ReligionType", x.religion), x.holy ? h("span.good", " ★ holy city") : null));
   const units = c.garrison.map((u) => h("span.chip", `${dname("UnitType", u.type)}${u.owner !== me()?.player ? ` (${u.owner})` : ""}`));
   return [
     h("div.section", h("h4", `Buildings (${b.length})`), b.length ? h("div.chips", b) : h("p.dim", "None.")),
+    tierHandView(c),
     r.length ? h("div.section", h("h4", "Religions"), h("div.chips", r)) : null,
     h("div.section", h("h4", `Garrison (${units.length})`), units.length ? h("div.chips", units) : h("p.dim", "Nobody.")),
   ];
@@ -671,11 +707,11 @@ function productionView(c, choose, remove, [tapMode, setTapMode], reload) {
               disabled: !b.enabled,
               "data-order": order,
               "data-type": b.type,
-              tip: infoTip(kind, b.type, { hint: b.enabled ? "Click: build now. Shift: add to the queue. Ctrl: put first." : "Not possible now." }),
+              tip: infoTip(kind, b.type, { hint: [tierHint(b), b.enabled ? "Click: build now. Shift: add to the queue. Ctrl: put first." : "Not possible now."].filter(Boolean).join(" ") }),
               onclick: (ev) => choose(order, b.type, ev),
             },
             isoSkin() ? buildIcon(order, b.type) : null,
-            h("span", dname(kind, b.type)),
+            h(`span${tierSel(b.tier)}`, dname(kind, b.type)),
             h("span.dim", b.turns !== null ? `${turns(b.turns)} · ${b.cost}` : ""),
           );
         }),

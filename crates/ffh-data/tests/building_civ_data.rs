@@ -69,7 +69,8 @@ fn loads_without_warnings() {
 fn table_sizes() {
     assert_eq!(d().special_buildings.len(), 1);
     assert_eq!(d().building_classes.len(), 131);
-    assert_eq!(d().buildings.len(), 170);
+    // 170 FFH2 buildings and 276 tier variants (docs/SUITABILITY.md).
+    assert_eq!(d().buildings.len(), 446);
     assert_eq!(d().traits.len(), 29);
     assert_eq!(d().civilizations.len(), 23);
     assert_eq!(d().leader_heads.len(), 69);
@@ -257,7 +258,8 @@ fn prereq_civ_is_never_resolved_cxx_quirk() {
     assert_eq!(b.domain_free_experience[DomainType::DOMAIN_LAND], 2);
     assert_eq!(b.domain_free_experience[DomainType::DOMAIN_SEA], 0);
     assert!(d().buildings.iter().all(|b| b.prereq_civ.is_none()));
-    assert_eq!(d().buildings.iter().filter(|b| b.prereq_civ_xml.is_some()).count(), 15);
+    // 15 FFH2 buildings, and the four tier variants of each (docs/SUITABILITY.md).
+    assert_eq!(d().buildings.iter().filter(|b| b.prereq_civ_xml.is_some()).count(), 75);
 }
 
 #[test]
@@ -503,4 +505,49 @@ fn leader_favorite_wonder_class_index_cxx_quirk() {
     let thessa = leader("LEADER_THESSA");
     assert_eq!(thessa.favorite_early_wonder, Some(as_class(bt("BUILDING_CATACOMB_LIBRALUS"))));
     assert_eq!(thessa.favorite_late_wonder, Some(as_class(bt("BUILDING_GREAT_LIBRARY"))));
+}
+
+// ---- building tiers (docs/SUITABILITY.md; this game's own data) ----
+
+#[test]
+fn every_buildable_ordinary_building_has_all_five_tiers() {
+    let d = d();
+    for b in d.buildings.keys() {
+        let info = &d.buildings[b];
+        let class = &d.building_classes[info.building_class_type.unwrap()];
+        let wonder = class.max_global_instances > 0 || class.max_team_instances > 0 || class.max_player_instances > 0;
+        // Ordinary buildings that can be built (the Freak Show is made by a unit, and has tiers).
+        if wonder || info.variant_of.is_some() || (info.production_cost <= 0 && info.base.type_ != "BUILDING_FREAK_SHOW") {
+            continue;
+        }
+        assert_eq!(info.tier_variants.len(), BuildingTierType::NUM, "{} has tiers", info.base.type_);
+        assert_eq!(info.tier, Some(BuildingTierType::STANDARD), "{}", info.base.type_);
+        for (i, &v) in info.tier_variants.iter().enumerate() {
+            let vi = &d.buildings[v];
+            assert_eq!(vi.tier, Some(BuildingTierType(i as u16)), "{}", vi.base.type_);
+            assert_eq!(vi.building_class_type, info.building_class_type, "{}", vi.base.type_);
+            assert_eq!(vi.production_cost, info.production_cost, "{}: every tier costs the same", vi.base.type_);
+            assert_eq!(vi.prereq_and_tech, info.prereq_and_tech, "{}", vi.base.type_);
+            assert!(d.text.get(&vi.base.description) != vi.base.description, "{}: a name", vi.base.type_);
+        }
+    }
+}
+
+#[test]
+fn tier_variants_inherit_the_standard_building_and_change_what_they_say() {
+    let lesser = building("BUILDING_LIBRARY_LESSER");
+    let legendary = building("BUILDING_LIBRARY_LEGENDARY");
+    let library = building("BUILDING_LIBRARY");
+    assert_eq!(lesser.variant_of, Some(d().t::<BuildingType>("BUILDING_LIBRARY")));
+    assert_eq!(lesser.commerce_modifier[CommerceType::COMMERCE_RESEARCH.idx()], 12);
+    assert_eq!(library.commerce_modifier[CommerceType::COMMERCE_RESEARCH.idx()], 25);
+    assert_eq!(legendary.commerce_modifier[CommerceType::COMMERCE_RESEARCH.idx()], 50);
+    let scientist = d().t::<SpecialistType>("SPECIALIST_SCIENTIST");
+    assert_eq!(legendary.free_specialist_count[scientist], 1);
+    assert_eq!(lesser.production_traits, library.production_traits, "inherited");
+    assert_eq!(d().text.get(&legendary.base.description), "Athenaeum");
+    assert_eq!(d().text.get(&building("BUILDING_LIBRARY_FINE").base.description), "Fine Library");
+    // The tier weights add up to 100 and the Standard tier is the FFH2 building.
+    assert_eq!(d().building_tiers.iter().map(|t| t.weight).sum::<i32>(), 100);
+    assert_eq!(d().building_variant(d().t::<BuildingType>("BUILDING_LIBRARY"), BuildingTierType::STANDARD), d().t::<BuildingType>("BUILDING_LIBRARY"));
 }

@@ -1,0 +1,38 @@
+// Building tiers: this game's building suitability (docs/SUITABILITY.md; not in FFH2).
+//     When a city is founded it rolls a tier for every building class that has tier variants
+//     (building_variants.jsonc) and for every wonder class: weight is the tier's share of the
+//     roll (the chance is the weight over the sum of the weights). The city builds only its
+//     tier's variant of a building; a wonder's tier is its cost there, wonder_cost_percent of
+//     the wonder's cost. The order is fixed (Lesser to Legendary).
+[
+  {
+    "type": "BUILDINGTIER_LESSER",
+    "description": "TXT_KEY_BUILDINGTIER_LESSER",
+    "weight": 25,
+    "wonder_cost_percent": 125,
+  },
+  {
+    "type": "BUILDINGTIER_STANDARD",
+    "description": "TXT_KEY_BUILDINGTIER_STANDARD",
+    "weight": 30,
+    "wonder_cost_percent": 100,
+  },
+  {
+    "type": "BUILDINGTIER_FINE",
+    "description": "TXT_KEY_BUILDINGTIER_FINE",
+    "weight": 25,
+    "wonder_cost_percent": 85,
+  },
+  {
+    "type": "BUILDINGTIER_GRAND",
+    "description": "TXT_KEY_BUILDINGTIER_GRAND",
+    "weight": 15,
+    "wonder_cost_percent": 70,
+  },
+  {
+    "type": "BUILDINGTIER_LEGENDARY",
+    "description": "TXT_KEY_BUILDINGTIER_LEGENDARY",
+    "weight": 5,
+    "wonder_cost_percent": 50,
+  },
+]

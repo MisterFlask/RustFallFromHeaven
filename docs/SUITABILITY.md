@@ -1,9 +1,8 @@
-# Building suitability (proposal)
+# Building suitability: building tiers
 
-**Status: proposal, not built.** Revision 7, 2026-11-05 (adds the civilization buildings; extras push the same way as the building; Lesser Warrens). This revision sets out the rules only:
-the five tiers, what each building class is at each tier, and how likely each tier is.
-Implementation waits until the XML-to-JSON conversion going on in another session is finished.
-The appendix keeps the implementation decisions made so far.
+**Status: built** (2026-11-05). This file is the rules as they play (sections 0-5) and how they
+are built (section 7). Revision history: proposal revisions 1-7 (2026-11-05), then built with the
+differences noted in section 6.
 
 ## 0. The idea
 
@@ -141,7 +140,7 @@ The *Standard* column of each table is FFH 0.41's building, from `CIV4BuildingIn
 | **Elder Council**: +2 research; 1 scientist slot | +1 research | +3 research | +4 research; 2 slots | **Council of Sages**: Grand + 1 free scientist |
 | **Library**: +25% research; 1 scientist slot | +12% | +38% | +50%; 2 slots | **Athenaeum**: Grand + 1 free scientist |
 | **Alchemy Lab**: +4 research, +10% research; 1 scientist slot | +2, +5% | +6, +15% | +8, +20%; 2 slots | **Athanor**: Grand + 5% research in all your cities |
-| **Mage Guild**: unlocks Adepts, Imps | arcane units −25% production | arcane +2 XP | arcane +4 XP | **Arcanum**: arcane +4 XP and Empower I |
+| **Mage Guild**: unlocks Adepts, Imps | arcane units −25% production | arcane +2 XP | arcane +4 XP | **Arcanum**: arcane +4 XP and Potency |
 
 ### 3.2 Commerce and trade
 
@@ -241,7 +240,7 @@ specialist slots and the extras below, and unlocks that religion's disciples and
 | Lesser | +10% | halved | 2 | −25% production |
 | Fine | +30% | ×1.5 | 2 | +2 XP |
 | Grand | +40% | ×2 | 3 (an extra priest) | +4 XP |
-| Legendary | +40% | ×2 | 3 | +4 XP; the city spreads its religion to nearby cities twice as often |
+| Legendary | +40% | ×2 | 3 | +4 XP; the city spreads its religion as a holy shrine does |
 
 | Temple (extras) | Lesser | Fine | Grand | Legendary name |
 |---|---|---|---|---|
@@ -294,9 +293,9 @@ rules code (`ffh/events.rs`).
 
 | Civ | Standard | Lesser | Fine | Grand | Legendary |
 |---|---|---|---|---|---|
-| Amurites | **Cave of Ancestors**: arcane units trained here get +1 XP per mana resource the city has | +1 XP per 2 mana | +3 XP per 2 mana | +2 XP per mana | **Ancestral Vault**: Grand, and arcane units trained here get Potency |
+| Amurites | **Cave of Ancestors**: arcane units trained here get +1 XP per mana resource the city has | +1 XP per 2 mana | +3 XP per 2 mana | +2 XP per mana | **Ancestral Vault**: +3 XP per mana |
 | Balseraphs | **Freak Show** (made by a Freak, not built): +2 culture; +1 happiness; +1 great artist point | +1 culture; +1 happiness | +3 culture; +2 happiness; +2 points | +4 culture; +2 happiness; +2 points | **Circus of Wonders**: Grand + 1 free artist |
-| Balseraphs | **Hall of Mirrors** (needs a Carnival): +1 happiness; each turn, an illusion copy of an enemy unit next to the city appears in it for 3 turns (5 with Summoner) | copies last 2 turns (3) | 4 turns (8) | 6 turns (10) | **House of a Thousand Faces**: Grand, and it copies enemies up to 2 plots away |
+| Balseraphs | **Hall of Mirrors** (needs a Carnival): +1 happiness; each turn, an illusion copy of an enemy unit next to the city appears in it for 3 turns (5 with Summoner) | copies last 2 turns (3) | 5 turns (8) | 6 turns (10) | **House of a Thousand Faces**: Grand, and it copies enemies up to 2 plots away |
 | Calabim | **Breeding Pit**: +2 food; 20% food kept; −1 health | +1 food; 10% | +3 food; 30% | +4 food; 40% | **Feeding Halls**: Grand + 10% food |
 | Clan of Embers | **Warrens**: every unit trained here gets a free copy (not world, national, siege or naval units) | copy; units it copies −25% production here (1.5× units on net) | copy; both units +2 XP | copy; both units +4 XP | **Deep Warrens**: Grand, and siege units are copied too |
 | Elohim | **Chancel of Guardians**: +25% defense; units trained here have a 20% chance of Defensive | +12%; 10% | +38%; 30% | +50%; 40% | **Sanctum of Guardians**: +50% defense; units trained here always get Defensive |
@@ -347,41 +346,54 @@ Palaces, the Summer Palace and the Winter Palace roll like any other wonder. Lef
 of Mastery and the Altar of the Luonnotar, which are victory buildings whose pacing a 50% roll
 would break, and buildings that can't be built normally.
 
-## 6. Open points
+## 6. As built: where the rules differ from the proposal
 
-1. **Lesser on units through production** (rule 5). The alternative is that unlocking buildings
-   cannot roll Lesser, with that 25% becoming Standard. I recommend the production penalty:
-   without it, the military buildings would be the only classes that never roll badly.
-2. **New rules a few signatures need.** Most signatures use effects FFH already has. These would
-   be new:
-   - Exchequer: gold per citizen.
-   - House of Mercy: full heal each turn.
-   - The Legendary temples: twice the religious spread.
-   - Thornwall: faster Sentinel repair.
-   - Deepwater Quay, Lighthouse (Grand) and Larder Hall: +1 food per resource.
-   - The civilization buildings' changed chances, durations and ranges (section 4.1).
+- **Arcanum: Potency, not Empower I.** A building gives a promotion only to units whose unit
+  combat the promotion allows (`free_promotion`), and Empower I allows none. The Ancestral Vault
+  (which had Potency) gives +3 XP per mana instead, its own direction.
+- **Fine Hall of Mirrors: 5 turns (8 with Summoner)**: 3 x 1.5 rounded up, as rule 1 says (the
+  table had 4).
+- **Legendary temples spread their religion as a holy shrine does** (`religion_changes`, the
+  field FFH2's shrines use): an existing effect in place of "twice as often", which no rule
+  counted.
+- **Unique buildings' Legendary names** are "Legendary {name}" (the Legendary Grigori Tavern).
+- **Lesser unlocking buildings: -25% production** (open point 1 of the proposal, as recommended).
+- **Economy**: the tiers are as proposed; nothing was retuned (open point 3).
 
-   Each is small. Any of them could be swapped for an existing effect if keeping new rules down
-   matters more.
-3. **Economy.** About +20% building output on average (section 1). I recommend accepting it and,
-   if needed, tuning through tech cost.
+## 7. How it is built
 
-## Appendix: implementation decisions so far (on hold)
-
-These were settled in earlier revisions. They wait for the XML-to-JSON conversion and will be
-revisited against the new data format.
-
-- **Each tier is its own building.** There are no runtime modifiers on the city. The generic
-  effect code, the AI's building valuation and the tooltips read the building itself, so they
-  stay as they are. The variants are generated from the Standard building by the rules in
-  section 2, with per-building overrides for the table entries the general rules don't produce.
-- **"The same building."** "The city has X" means it has X or any tier of X. That covers unit and
-  spell prerequisites, hard-coded building names in the rules, and class-to-building lookups for
-  a city. A test checks that every reference to a building accepts all its tiers.
-- **Wonders** stay one building each. Their tier is a cost multiplier on the building's final
-  cost, applied after FFH's own cost modifiers.
-- **AI.** The AI ranks buildings by value per turn of production, so better tiers rise in its
-  build order by themselves. It only starts a slow world wonder in its highest-production city;
-  that test should compare turns to finish this wonder instead, which takes the wonder's cost tier
-  into account.
-- The roll is saved with the city. There is no game option.
+- **Data.** `data/json/building_tiers.jsonc`: the five tiers (`BuildingTierType`, order fixed),
+  their weights and wonder cost percents. `data/json/building_variants.jsonc`: 276 variants of 69
+  buildings, each `variant_of` a Standard building at `variant_tier`; the loader lays each over a
+  copy of its Standard building's entry (a key the variant leaves out keeps the Standard value)
+  and appends it to the buildings table after FFH2's (`ffh-data` `add_building_variants`). Derived
+  at load: each family's `tier_variants`, the Standard building's tier, `rolls_tier` on the
+  classes (a class with variants, or a buildable wonder class no victory needs). New building
+  keys: `unlocked_unit_experience`, `unlocked_unit_production_modifier`, `unlocked_unit_promotion`,
+  `extra_free_promotion`, `bonus_yield_changes`, `population_commerces`, `sentinel_repair_change`
+  (comments at the top of building_variants.jsonc). Names: `TXT_KEY_BUILDING_<X>_<TIER>` in
+  en.tsv.
+- **Rules** (`crates/ffh-core/src/city/tiers.rs`). `City::building_tiers`, rolled in `city_init`
+  for a new city (one `soren_rand` draw per class), carried over by `player_acquire_city`. A city
+  holds only its tier's variant: `city_can_construct` refuses the others, and
+  `city_set_num_real_building_timed` / `city_set_num_free_building` set a building given at another
+  tier at the city's (events, spells, captures, free buildings need no tier). "The city has X"
+  asks for any tier: `city_num_family` and its kin, used wherever the rules name a building (unit
+  and spell prerequisites, events, Python ports); loops over every building type read the exact
+  counts. Civic and event bonuses to a building class apply to every tier. Wonders: a cost
+  multiplier in `city_production_needed_building`. The code effects of the civilization buildings
+  read their tier (`city_real_family_tier`, ffh/events.rs). Save format 16.
+- **AI.** `building_value` reads the variant, so better tiers rise in the build order by
+  themselves; the new keys are valued in `generic_building_value`. A slow world wonder goes to a
+  top city by production weighed by its cost tier there (`top_wonder_city`). Where the AI names a
+  building for a city (the building a unit needs, a city spell's building), it takes the city's
+  tier of it.
+- **Interface.** A building's name says its tier ("Fine Library", a Legendary one its own name)
+  and is coloured by it (grey, plain, green, blue, gold); the tooltip says `Tier: Fine.` or, for a
+  wonder, `Site: Grand. Cost: 70%.`; the city screen's "Building tiers" section lists the city's
+  hand (every class not Standard). The building help describes the new keys.
+- **Invariant.** `ffh_harness::check` fails a game in which a city holds or queues a building of
+  another tier than its own.
+- **Tests.** `crates/ffh-core/tests/building_tiers.rs` (the roll, own tier only, any tier unlocks,
+  wonder cost, capture, Lesser Warrens, save); `crates/ffh-data/tests/building_civ_data.rs` (every
+  ordinary building has five tiers of the same cost and class, names, inheritance).

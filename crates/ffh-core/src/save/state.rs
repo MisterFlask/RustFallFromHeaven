@@ -45,7 +45,7 @@ persist_newtype!(
     TerrainType, TradeableItem, TraitType, UnitAIType, UnitArtStyleType, UnitClassType,
     UnitCombatType, UnitType, UpkeepType, VictoryType, VoteSourceType, VoteType, WarPlanType,
     WorldSizeType, YieldType, CulturalActionType, GovernorProfileType, GovernorTraitType,
-    CombatRoleType,
+    CombatRoleType, BuildingTierType,
 );
 
 persist_enum!(ActionKind { 0 => None, 1 => Strike, 2 => Charge, 3 => Stab, 4 => Shoot, 5 => Spell, 6 => Bombard, 7 => Heal });
@@ -378,7 +378,7 @@ persist_struct!(City {
     ai_emphasize_commerce_count, ai_emphasize_avoid_angry_citizens_count,
     ai_emphasize_avoid_unhealthy_citizens_count, culture_channel, culture_diverted, culture_pressure,
     culture_revolt_level, recruit_default, direct_rule, rule_changed_turn, governor,
-    governor_penalty_turns,
+    governor_penalty_turns, building_tiers,
 });
 
 persist_struct!(Player {

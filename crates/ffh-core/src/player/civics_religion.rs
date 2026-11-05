@@ -363,8 +363,11 @@ impl Game {
         let civ = self.player_get_civilization_type(p).expect("CvPlayer::processCivics: player without a civilization");
         for building_class in d.building_classes.keys() {
             if let Some(our_building) = d.civ_building(civ, building_class) {
-                self.player_change_extra_building_happiness(p, our_building, info.building_happiness_changes[building_class] * change);
-                self.player_change_extra_building_health(p, our_building, info.building_health_changes[building_class] * change);
+                // (Every tier of the building: docs/SUITABILITY.md.)
+                for b in d.building_family_members(our_building) {
+                    self.player_change_extra_building_happiness(p, b, info.building_happiness_changes[building_class] * change);
+                    self.player_change_extra_building_health(p, b, info.building_health_changes[building_class] * change);
+                }
             }
         }
 

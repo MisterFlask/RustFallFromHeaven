@@ -148,6 +148,20 @@ impl Game {
         self.city_change_bonus_good_happiness(c, good_value * change);
         self.city_change_bonus_bad_happiness(c, bad_value * change);
 
+        // This game's building suitability (docs/SUITABILITY.md): the buildings' yield for the
+        // bonus.
+        for &building in &d.bonus_yield_buildings {
+            let num = self.city_num_active_building(c, building);
+            if num != 0 {
+                for j in 0..YieldType::NUM {
+                    let v = d.buildings[building].bonus_yield_change[bonus][j] * num * change;
+                    if v != 0 {
+                        self.city_change_base_yield_rate(c, YieldType::from_usize(j), v);
+                    }
+                }
+            }
+        }
+
         let dirty_power = self.city_bonus_power(c, bonus, true) * change;
         self.city_change_power_count(c, dirty_power, true);
         let clean_power = self.city_bonus_power(c, bonus, false) * change;
@@ -263,6 +277,10 @@ impl Game {
                 // changeFreePromotionCount
                 self.cities[c].free_promotion_count[promotion] += change;
             }
+            // This game's building suitability (docs/SUITABILITY.md).
+            if let Some(promotion) = info.extra_free_promotion {
+                self.cities[c].free_promotion_count[promotion] += change;
+            }
 
             {
                 let city = &mut self.cities[c];
@@ -358,6 +376,8 @@ impl Game {
 
                     for j in 0..YieldType::NUM {
                         self.city_change_bonus_yield_rate_modifier(c, YieldType::from_usize(j), info.bonus_yield_modifier[bonus][j] * change);
+                        // This game's building suitability (docs/SUITABILITY.md).
+                        self.city_change_base_yield_rate(c, YieldType::from_usize(j), info.bonus_yield_change[bonus][j] * change);
                     }
                 }
             }
@@ -1170,7 +1190,11 @@ impl Game {
     /// (not transferred with the city): capital, golden age, global population change,
     /// religions, free techs (AI: `AI_chooseFreeTech` -> `Controller::choose_free_tech`),
     /// wonder messages, nukes, created counts, great wall graphics (omit).
+    ///
+    /// This game's building suitability (docs/SUITABILITY.md): a building of another tier than
+    /// the city's is set at the city's tier (a city holds only its own tier's variant).
     pub fn city_set_num_real_building_timed(&mut self, c: CityId, building: BuildingType, new_value: i32, first: bool, original_owner: Option<PlayerId>, original_time: i32) {
+        let building = self.city_building_variant(c, building);
         let d = self.d;
         let info = &d.buildings[building];
         let building_class = building_class_of(d, building);
@@ -1308,7 +1332,9 @@ impl Game {
     }
 
     /// C++ `CvCity::setNumFreeBuilding` (CvCity.cpp:10659-10677).
+    /// (This game's building suitability: at the city's tier, as `city_set_num_real_building_timed`.)
     pub fn city_set_num_free_building(&mut self, c: CityId, building: BuildingType, new_value: i32) {
+        let building = self.city_building_variant(c, building);
         if self.cities[c].num_free_building[building] != new_value {
             let old_num_building = self.city_num_building(c, building);
             self.cities[c].num_free_building[building] = new_value;
@@ -1424,7 +1450,6 @@ impl Game {
 
     /// C++ `CvCity::setBuildingYieldChange` (CvCity.cpp:13767-13817).
     pub fn city_set_building_yield_change(&mut self, c: CityId, building_class: BuildingClassType, yield_type: YieldType, change: i32) {
-        let d = self.d;
 
         let found = self.cities[c].building_yield_change.iter().position(|ch| ch.building_class == building_class && ch.yield_type == yield_type);
 
@@ -1437,7 +1462,7 @@ impl Game {
                     self.cities[c].building_yield_change[i].change = change;
                 }
 
-                if let Some(building) = d.civ_building(self.city_civilization_type(c), building_class) {
+                if let Some(building) = self.city_building_for_class(c, building_class) {
                     if self.city_num_active_building(c, building) > 0 {
                         let num_active = self.city_num_active_building(c, building);
                         self.city_change_base_yield_rate(c, yield_type, (change - old_change) * num_active);
@@ -1451,7 +1476,7 @@ impl Game {
         if change != 0 {
             self.cities[c].building_yield_change.push(BuildingYieldChange { building_class, yield_type, change });
 
-            if let Some(building) = d.civ_building(self.city_civilization_type(c), building_class) {
+            if let Some(building) = self.city_building_for_class(c, building_class) {
                 if self.city_num_active_building(c, building) > 0 {
                     let num_active = self.city_num_active_building(c, building);
                     self.city_change_base_yield_rate(c, yield_type, change * num_active);
@@ -1510,7 +1535,6 @@ impl Game {
     /// existing entry is erased first and re-added only if the building is active, so a
     /// change made while the building is missing or obsolete is lost.
     pub fn city_set_building_happy_change(&mut self, c: CityId, building_class: BuildingClassType, change: i32) {
-        let d = self.d;
 
         let found = self.cities[c].building_happy_change.iter().position(|&(bc, _)| bc == building_class);
 
@@ -1520,7 +1544,7 @@ impl Game {
 
                 self.cities[c].building_happy_change.remove(i);
 
-                if let Some(building) = d.civ_building(self.city_civilization_type(c), building_class) {
+                if let Some(building) = self.city_building_for_class(c, building_class) {
                     if self.city_num_active_building(c, building) > 0 {
                         if old_change > 0 {
                             self.city_change_building_good_happiness(c, -old_change);
@@ -1544,7 +1568,7 @@ impl Game {
         }
 
         if change != 0 {
-            if let Some(building) = d.civ_building(self.city_civilization_type(c), building_class) {
+            if let Some(building) = self.city_building_for_class(c, building_class) {
                 if self.city_num_active_building(c, building) > 0 {
                     self.cities[c].building_happy_change.push((building_class, change));
 
@@ -1569,7 +1593,6 @@ impl Game {
     /// C++ quirk: as in `setBuildingHappyChange`, the change is only recorded while the
     /// class's building is active here.
     pub fn city_set_building_health_change(&mut self, c: CityId, building_class: BuildingClassType, change: i32) {
-        let d = self.d;
 
         let found = self.cities[c].building_health_change.iter().position(|&(bc, _)| bc == building_class);
 
@@ -1579,7 +1602,7 @@ impl Game {
 
                 self.cities[c].building_health_change.remove(i);
 
-                if let Some(building) = d.civ_building(self.city_civilization_type(c), building_class) {
+                if let Some(building) = self.city_building_for_class(c, building_class) {
                     if self.city_num_active_building(c, building) > 0 {
                         if old_change > 0 {
                             self.city_change_building_good_health(c, -old_change);
@@ -1603,7 +1626,7 @@ impl Game {
         }
 
         if change != 0 {
-            if let Some(building) = d.civ_building(self.city_civilization_type(c), building_class) {
+            if let Some(building) = self.city_building_for_class(c, building_class) {
                 if self.city_num_active_building(c, building) > 0 {
                     self.cities[c].building_health_change.push((building_class, change));
 

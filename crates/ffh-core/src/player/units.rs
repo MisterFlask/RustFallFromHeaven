@@ -1499,7 +1499,10 @@ impl Game {
         let civ = civ_of(self, p);
         for i in d.building_classes.keys() {
             if let Some(our_building) = d.civ_building(civ, i) {
-                self.player_change_extra_building_happiness(p, our_building, info.building_happiness_changes[i] * change);
+                // (Every tier of the building: docs/SUITABILITY.md.)
+                for b in d.building_family_members(our_building) {
+                    self.player_change_extra_building_happiness(p, b, info.building_happiness_changes[i] * change);
+                }
             }
         }
 

@@ -1048,3 +1048,16 @@ body.title-up #top, body.title-up #main, body.title-up #bottom { visibility: hid
 html.iso .civ-list { height: 300px; }
 html.iso .civ-info { height: 324px; }
 html.iso .civ-summary { font-size: inherit; }
+
+/* Building tiers (docs/SUITABILITY.md): a building's name in its tier's colour, the loot-rarity
+   convention (Lesser grey, Standard plain, Fine green, Grand blue, Legendary gold). */
+.tier-0 { color: var(--c-ash); }
+.tier-2 { color: var(--c-lichen); }
+.tier-3 { color: var(--c-glint); }
+.tier-4 { color: var(--c-amber); }
+.chip.tier-4 { box-shadow: inset 0 0 0 1px var(--c-amber); }
+.tier-hand summary { cursor: pointer; list-style: none; }
+.tier-hand summary h4 { display: inline; }
+.tier-row { margin: 2px 0; }
+.tier-label { font-weight: bold; }
+

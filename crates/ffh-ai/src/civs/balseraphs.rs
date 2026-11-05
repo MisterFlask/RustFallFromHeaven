@@ -100,7 +100,7 @@ fn arena(g: &mut Game, v: &View) {
     let (Some(spell), Some(arena)) = (d.ty::<SpellType>("SPELL_ARENA_BATTLE"), d.ty::<BuildingType>("BUILDING_ARENA")) else { return };
     let slave = d.ty::<UnitClassType>("UNITCLASS_SLAVE");
     for c in g.players[p].cities.clone() {
-        if !g.cities.contains(c) || g.city_num_building(c, arena) == 0 || g.cities[c].happiness_timer > 0 {
+        if !g.cities.contains(c) || g.city_num_family(c, arena) == 0 || g.cities[c].happiness_timer > 0 {
             continue;
         }
         if g.city_happy_level(c) - g.city_unhappy_level(c, 0) >= 0 {

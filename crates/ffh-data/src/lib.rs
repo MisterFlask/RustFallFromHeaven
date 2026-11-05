@@ -57,6 +57,15 @@ macro_rules! game_data {
             /// Derived at load: the role a unit changes to by promotion, from the role with
             /// `FromRole` (from, promotion, to): a Frontline unit with Formation is a Screen.
             pub screen_role: Option<(CombatRoleType, PromotionType, CombatRoleType)>,
+            /// Derived at load (docs/SUITABILITY.md): the buildings with an effect on the units
+            /// they unlock (`unlocked_unit_*`), in id order.
+            pub unlocking_buildings: Vec<BuildingType>,
+            /// Derived at load: the buildings with `population_commerce`, in id order.
+            pub population_commerce_buildings: Vec<BuildingType>,
+            /// Derived at load: the buildings with `sentinel_repair_change`, in id order.
+            pub sentinel_repair_buildings: Vec<BuildingType>,
+            /// Derived at load: the buildings with a `bonus_yield_change`, in id order.
+            pub bonus_yield_buildings: Vec<BuildingType>,
         }
 
         /// (data file, registry class) for every info table, in load order.
@@ -83,7 +92,7 @@ macro_rules! game_data {
                 )*
                 let defines = Defines::from_map(&define_map);
                 // (derived tables are filled by `GameData::derive`)
-                GameData { reg, define_map, defines, text, barks: String::new(), warnings, $( $field, )* combat_mod_promotions: Vec::new(), unit_roles: IdxVec::new(), screen_role: None }
+                GameData { reg, define_map, defines, text, barks: String::new(), warnings, $( $field, )* combat_mod_promotions: Vec::new(), unit_roles: IdxVec::new(), screen_role: None, unlocking_buildings: Vec::new(), population_commerce_buildings: Vec::new(), sentinel_repair_buildings: Vec::new(), bonus_yield_buildings: Vec::new() }
             }
 
             /// Everything loaded, one `(name, Debug text)` line per table entry, in a fixed order
@@ -108,6 +117,7 @@ macro_rules! game_data {
                 out.push(("combat_mod_promotions".to_string(), format!("{:?}", self.combat_mod_promotions)));
                 out.push(("unit_roles".to_string(), format!("{:?}", self.unit_roles)));
                 out.push(("screen_role".to_string(), format!("{:?}", self.screen_role)));
+                out.push(("unlocking_buildings".to_string(), format!("{:?}", self.unlocking_buildings)));
                 out.push(("warnings".to_string(), format!("{:?}", self.warnings)));
                 out
             }
@@ -192,6 +202,7 @@ game_data! {
     governor_traits: GovernorTraitType => GovernorTraitInfo, governor::read_governor_trait;
     governor_names: GovernorNameType => GovernorNameInfo, governor::read_governor_names;
     combat_roles: CombatRoleType => CombatRoleInfo, engagement::read_combat_role;
+    building_tiers: BuildingTierType => BuildingTierInfo, building::read_building_tier;
 }
 
 /// Type lists of `global_types.jsonc` (key, registry class): types the data names that are
@@ -236,6 +247,44 @@ impl std::fmt::Display for LoadError {
 
 impl std::error::Error for LoadError {}
 
+/// This game's building tiers (docs/SUITABILITY.md; not FFH2's): the tier variants of buildings.
+pub const BUILDING_VARIANTS_FILE: &str = "building_variants.jsonc";
+
+/// Appends the tier variants of `building_variants.jsonc` to the buildings table: each variant is
+/// the entry of the building its `variant_of` names, with the variant's keys in place of that
+/// entry's own (a key the variant leaves out keeps the Standard building's value). Appended
+/// after FFH2's buildings, which keep their ids.
+fn add_building_variants(docs: &mut [(String, Value)], json_dir: &Path) -> Result<(), LoadError> {
+    let file = BUILDING_VARIANTS_FILE;
+    let variants = read_doc(json_dir, file)?;
+    let Some(list) = variants.as_arr() else {
+        return Err(LoadError(format!("{file}: expected a list of entries")));
+    };
+    let Some((_, Value::Arr(entries))) = docs.iter_mut().find(|(f, _)| f == "buildings.jsonc") else {
+        return Err(LoadError("buildings.jsonc: expected a list of entries".to_string()));
+    };
+    let mut added = Vec::new();
+    for v in list {
+        let (Value::Obj(members), Some(base_name)) = (v, v.get("variant_of").and_then(Value::as_str)) else {
+            return Err(LoadError(format!("{file}: an entry without variant_of")));
+        };
+        let base = entries.iter().find(|e| e.get("type").and_then(Value::as_str) == Some(base_name));
+        let Some(Value::Obj(base_members)) = base else {
+            return Err(LoadError(format!("{file}: variant_of {base_name:?} is no building")));
+        };
+        let mut merged = base_members.clone();
+        for (k, val) in members {
+            match merged.iter_mut().find(|(mk, _)| mk == k) {
+                Some(slot) => slot.1 = val.clone(),
+                None => merged.push((k.clone(), val.clone())),
+            }
+        }
+        added.push(Value::Obj(merged));
+    }
+    entries.extend(added);
+    Ok(())
+}
+
 fn read_doc(dir: &Path, rel: &str) -> Result<Value, LoadError> {
     let p = dir.join(rel);
     let text = std::fs::read_to_string(&p).map_err(|e| LoadError(format!("{}: {}", p.display(), e)))?;
@@ -254,6 +303,7 @@ impl GameData {
             }
             docs.push((file.to_string(), doc));
         }
+        add_building_variants(&mut docs, &json_dir)?;
         let docs = Docs { docs };
 
         // Pass 1: register every type name.
@@ -306,6 +356,98 @@ impl GameData {
             }
         }
         self.derive_engagements();
+        self.derive_building_tiers();
+    }
+
+    /// The building tiers' derived fields (docs/SUITABILITY.md): each family's buildings by tier,
+    /// the Standard building's own tier, and the classes a city rolls a tier for.
+    fn derive_building_tiers(&mut self) {
+        let mut families: Vec<(BuildingType, Vec<Option<BuildingType>>)> = Vec::new();
+        for b in self.buildings.keys() {
+            let info = &self.buildings[b];
+            let (Some(base), Some(tier)) = (info.variant_of, info.tier) else {
+                if info.variant_of.is_some() != info.tier.is_some() {
+                    self.warnings.push(format!("{}: variant_of and variant_tier go together", info.base.type_));
+                }
+                continue;
+            };
+            let i = match families.iter().position(|(f, _)| *f == base) {
+                Some(i) => i,
+                None => {
+                    let mut tiers = vec![None; BuildingTierType::NUM];
+                    tiers[BuildingTierType::STANDARD.idx()] = Some(base);
+                    families.push((base, tiers));
+                    families.len() - 1
+                }
+            };
+            if families[i].1[tier.idx()].replace(b).is_some() {
+                self.warnings.push(format!("{}: a second {:?} variant of {}", info.base.type_, tier, self.buildings[base].base.type_));
+            }
+        }
+        for (base, tiers) in families {
+            if tiers.iter().any(Option::is_none) {
+                self.warnings.push(format!("{}: not every tier has a variant", self.buildings[base].base.type_));
+                continue;
+            }
+            let list: Vec<BuildingType> = tiers.into_iter().flatten().collect();
+            self.buildings[base].tier = Some(BuildingTierType::STANDARD);
+            for &b in &list {
+                if self.buildings[b].building_class_type != self.buildings[base].building_class_type {
+                    self.warnings.push(format!("{}: a variant of another class", self.buildings[b].base.type_));
+                }
+                self.buildings[b].tier_variants = list.clone();
+            }
+        }
+        for class in self.building_classes.keys() {
+            let has_tiers = self.buildings.iter().any(|b| b.building_class_type == Some(class) && !b.tier_variants.is_empty());
+            let info = &self.building_classes[class];
+            let wonder = info.max_global_instances > 0 || info.max_team_instances > 0 || info.max_player_instances > 0;
+            let buildable = info.default_building_index.is_some_and(|b| self.buildings[b].production_cost > 0 && self.buildings[b].victory_prereq.is_none());
+            let victory = info.victory_threshold.iter().any(|&t| t > 0);
+            self.building_classes[class].rolls_tier = has_tiers || (wonder && buildable && !victory);
+        }
+        let list = |f: &dyn Fn(&BuildingInfo) -> bool| self.buildings.keys().filter(|&b| f(&self.buildings[b])).collect::<Vec<_>>();
+        self.unlocking_buildings = list(&|b| {
+            b.unlocked_unit_experience != 0 || b.unlocked_unit_production_modifier != 0 || b.unlocked_unit_promotion.is_some()
+        });
+        self.population_commerce_buildings = list(&|b| b.population_commerce.iter().any(|&v| v != 0));
+        self.sentinel_repair_buildings = list(&|b| b.sentinel_repair_change != 0);
+        self.bonus_yield_buildings = list(&|b| b.bonus_yield_change.iter().any(|y| y.iter().any(|&v| v != 0)));
+    }
+
+    /// The building `u` needs (`prereq_building`, `prereq_building_class`) is `b`, at any tier
+    /// (docs/SUITABILITY.md: `b` unlocks `u`).
+    pub fn building_unlocks_unit(&self, b: BuildingType, u: UnitType) -> bool {
+        let info = &self.units[u];
+        info.prereq_building.is_some_and(|p| self.same_building(p, b))
+            || (info.prereq_building_class.is_some() && info.prereq_building_class == self.buildings[b].building_class_type)
+    }
+
+    /// This game's building tiers (docs/SUITABILITY.md): the building of `b`'s family at `tier`
+    /// (`b` itself for a building without tiers).
+    pub fn building_variant(&self, b: BuildingType, tier: BuildingTierType) -> BuildingType {
+        self.buildings[b].tier_variants.get(tier.idx()).copied().unwrap_or(b)
+    }
+
+    /// The Standard building of `b`'s family (`b` for a Standard building or one without tiers).
+    pub fn building_family(&self, b: BuildingType) -> BuildingType {
+        self.buildings[b].variant_of.unwrap_or(b)
+    }
+
+    /// The buildings of `b`'s family: its tier variants, or `b` alone for a building without
+    /// tiers.
+    pub fn building_family_members(&self, b: BuildingType) -> Vec<BuildingType> {
+        let v = &self.buildings[b].tier_variants;
+        if v.is_empty() {
+            vec![b]
+        } else {
+            v.clone()
+        }
+    }
+
+    /// `a` and `b` are the same building, at any tier.
+    pub fn same_building(&self, a: BuildingType, b: BuildingType) -> bool {
+        self.building_family(a) == self.building_family(b)
     }
 
     /// Engagement combat's derived tables (`unit_roles`, `screen_role`), and the checks the
@@ -500,6 +642,7 @@ impl GameData {
         check(w, &self.reg, "ContactTypes", ContactType::NAMES);
         check(w, &self.reg, "DiplomacyPowerTypes", DiplomacyPowerType::NAMES);
         check(w, &self.reg, "CitySizeTypes", CitySizeType::NAMES);
+        check(w, &self.reg, "BuildingTierInfo", BuildingTierType::NAMES);
     }
 
     /// Typed lookup of a type name (C++ `GC.getInfoTypeForString` + cast).

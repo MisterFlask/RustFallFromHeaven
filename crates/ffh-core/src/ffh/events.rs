@@ -543,20 +543,20 @@ impl Game {
         // Python re-reads the player from the city: `iPlayer = pCity.getOwner()`.
         let p = self.cities[c].owner;
 
-        if self.cities[c].num_real_building[d.t::<BuildingType>("BUILDING_CITADEL_OF_LIGHT")] > 0 {
-            self.ev_citadel_of_light(c, p, plot);
+        if let Some(tier) = self.city_real_family_tier(c, d.t::<BuildingType>("BUILDING_CITADEL_OF_LIGHT")) {
+            self.ev_citadel_of_light(c, p, plot, tier);
         }
 
-        if self.cities[c].num_real_building[d.t::<BuildingType>("BUILDING_HALL_OF_MIRRORS")] > 0 {
-            self.ev_hall_of_mirrors(c, p);
+        if let Some(tier) = self.city_real_family_tier(c, d.t::<BuildingType>("BUILDING_HALL_OF_MIRRORS")) {
+            self.ev_hall_of_mirrors(c, p, tier);
         }
 
         if self.cities[c].num_real_building[d.t::<BuildingType>("BUILDING_EYES_AND_EARS_NETWORK")] > 0 {
             self.ev_eyes_and_ears_network(p);
         }
 
-        if self.cities[c].num_real_building[d.t::<BuildingType>("BUILDING_PLANAR_GATE")] > 0 {
-            self.ev_planar_gate(c, p, plot);
+        if let Some(tier) = self.city_real_family_tier(c, d.t::<BuildingType>("BUILDING_PLANAR_GATE")) {
+            self.ev_planar_gate(c, p, plot, tier);
         }
 
         let order = d.t::<ReligionType>("RELIGION_THE_ORDER");
@@ -715,40 +715,77 @@ impl Game {
             }
         }
 
-        if self.cities[c].num_real_building[d.t::<BuildingType>("BUILDING_CHANCEL_OF_GUARDIANS")] > 0 {
-            if self.soren_rand_num(100, "Chancel of Guardians") < 20 {
+        // The building tiers (docs/SUITABILITY.md, "Civilization buildings"): the Chancel's chance
+        // is 10/20/30/40%, always at Legendary.
+        if let Some(tier) = self.city_real_family_tier(c, d.t::<BuildingType>("BUILDING_CHANCEL_OF_GUARDIANS")) {
+            let chance = match tier {
+                BuildingTierType::LESSER => 10,
+                BuildingTierType::FINE => 30,
+                BuildingTierType::GRAND => 40,
+                BuildingTierType::LEGENDARY => 100,
+                _ => 20,
+            };
+            if chance >= 100 || self.soren_rand_num(100, "Chancel of Guardians") < chance {
                 self.unit_set_has_promotion(u, d.t::<PromotionType>("PROMOTION_DEFENSIVE"), true);
             }
         }
 
-        if self.cities[c].num_real_building[d.t::<BuildingType>("BUILDING_CAVE_OF_ANCESTORS")] > 0
-            && self.unit_get_unit_combat_type(u) == Some(d.t::<UnitCombatType>("UNITCOMBAT_ADEPT"))
-        {
-            let mana = d.t::<BonusClassType>("BONUSCLASS_MANA");
-            let mut i = 0;
-            for bonus in d.bonuses.keys() {
-                if d.bonuses[bonus].bonus_class_type == Some(mana) && self.city_has_bonus(c, bonus) {
-                    i += 1;
+        if let Some(tier) = self.city_real_family_tier(c, d.t::<BuildingType>("BUILDING_CAVE_OF_ANCESTORS")) {
+            if self.unit_get_unit_combat_type(u) == Some(d.t::<UnitCombatType>("UNITCOMBAT_ADEPT")) {
+                let mana = d.t::<BonusClassType>("BONUSCLASS_MANA");
+                let mut i = 0;
+                for bonus in d.bonuses.keys() {
+                    if d.bonuses[bonus].bonus_class_type == Some(mana) && self.city_has_bonus(c, bonus) {
+                        i += 1;
+                    }
                 }
-            }
-            if i >= 1 {
-                self.unit_change_experience(u, i, -1, false, false, false);
+                // Per mana: half, one, one and a half (rounded up), two, three.
+                i = match tier {
+                    BuildingTierType::LESSER => i / 2,
+                    BuildingTierType::FINE => (3 * i + 1) / 2,
+                    BuildingTierType::GRAND => 2 * i,
+                    BuildingTierType::LEGENDARY => 3 * i,
+                    _ => i,
+                };
+                if i >= 1 {
+                    self.unit_change_experience(u, i, -1, false, false, false);
+                }
             }
         }
 
         if self.units[u].has_promotion[d.t::<PromotionType>("PROMOTION_GOLEM")] {
-            if self.cities[c].num_real_building[d.t::<BuildingType>("BUILDING_BLASTING_WORKSHOP")] > 0 {
-                self.unit_set_has_promotion(u, d.t::<PromotionType>("PROMOTION_FIRE2"), true);
-            }
-            if self.cities[c].num_real_building[d.t::<BuildingType>("BUILDING_PALLENS_ENGINE")] > 0 {
-                self.unit_set_has_promotion(u, d.t::<PromotionType>("PROMOTION_PERFECT_SIGHT"), true);
-            }
-            if self.cities[c].num_real_building[d.t::<BuildingType>("BUILDING_ADULARIA_CHAMBER")] > 0 {
-                self.unit_set_has_promotion(u, d.t::<PromotionType>("PROMOTION_HIDDEN"), true);
+            // The building tiers (docs/SUITABILITY.md, rule 11): Lesser half the time, Fine and
+            // Grand +2 and +4 experience, Legendary +4 and a second promotion.
+            const GOLEM_BUILDINGS: [(&str, &str, &str); 3] = [
+                ("BUILDING_BLASTING_WORKSHOP", "PROMOTION_FIRE2", "PROMOTION_FIRE3"),
+                ("BUILDING_PALLENS_ENGINE", "PROMOTION_PERFECT_SIGHT", "PROMOTION_SENTRY"),
+                ("BUILDING_ADULARIA_CHAMBER", "PROMOTION_HIDDEN", "PROMOTION_SHADOWWALK"),
+            ];
+            for (building, promotion, legendary) in GOLEM_BUILDINGS {
+                let Some(tier) = self.city_real_family_tier(c, d.t::<BuildingType>(building)) else { continue };
+                if tier != BuildingTierType::LESSER || self.soren_rand_num(100, "Golem building") < 50 {
+                    self.unit_set_has_promotion(u, d.t::<PromotionType>(promotion), true);
+                }
+                if tier == BuildingTierType::LEGENDARY {
+                    self.unit_set_has_promotion(u, d.t::<PromotionType>(legendary), true);
+                }
+                let xp = tier_bonus_xp(tier);
+                if xp > 0 {
+                    self.unit_change_experience(u, xp, -1, false, false, false);
+                }
             }
         }
 
-        if self.cities[c].num_real_building[d.t::<BuildingType>("BUILDING_ASYLUM")] > 0 {
+        // The Lesser Reliquary gives Spirit Guide half the time (its own `free_promotion` is
+        // none; docs/SUITABILITY.md).
+        if self.city_real_family_tier(c, d.t::<BuildingType>("BUILDING_RELIQUARY")) == Some(BuildingTierType::LESSER) {
+            let spirit_guide = d.t::<PromotionType>("PROMOTION_SPIRIT_GUIDE");
+            if self.unit_get_unit_combat_type(u).is_some_and(|uc| d.promotions[spirit_guide].unit_combat[uc]) && self.soren_rand_num(100, "Reliquary") < 50 {
+                self.unit_set_has_promotion(u, spirit_guide, true);
+            }
+        }
+
+        if self.city_num_real_family(c, d.t::<BuildingType>("BUILDING_ASYLUM")) > 0 {
             if self.unit_is_alive(u) {
                 if !is_world_unit_class(d, self.unit_get_unit_class_type(u)) {
                     if self.soren_rand_num(100, "Bob") <= 10 {
@@ -786,7 +823,7 @@ impl Game {
         }
 
         if self.units[u].has_promotion[d.t::<PromotionType>("PROMOTION_DEMON")] {
-            if self.cities[c].num_real_building[d.t::<BuildingType>("BUILDING_DEMONS_ALTAR")] > 0 {
+            if self.city_num_real_family(c, d.t::<BuildingType>("BUILDING_DEMONS_ALTAR")) > 0 {
                 self.unit_change_experience(u, 2, -1, false, false, false);
             }
         }
@@ -796,22 +833,35 @@ impl Game {
             self.unit_change_free_promotion_pick(u, change);
         }
 
-        if self.cities[c].num_real_building[d.t::<BuildingType>("BUILDING_WARRENS")] > 0 {
-            let unit_class = self.unit_get_unit_class_type(u);
-            if !is_world_unit_class(d, unit_class) && !is_national_unit_class(d, unit_class) {
-                let combat = self.unit_get_unit_combat_type(u);
-                if combat != Some(d.t::<UnitCombatType>("UNITCOMBAT_SIEGE"))
-                    && combat != Some(d.t::<UnitCombatType>("UNITCOMBAT_NAVAL"))
-                {
-                    let unit_type = self.units[u].unit_type;
-                    let new_unit = self.player_init_unit(p, unit_type, x, y, None, Some(DirectionType::DIRECTION_SOUTH));
-                    // `CyCity::applyBuildEffects` forwards to `CvCity::addProductionExperience`.
-                    self.city_add_production_experience(c, new_unit, false);
+        // The Warrens' tiers (docs/SUITABILITY.md): every tier copies; Fine and Grand give both
+        // units +2 and +4 experience; the Legendary also copies siege units. (A Lesser Warrens'
+        // copied units take -25% production: `ev_warrens_production_modifier`.)
+        if let Some(tier) = self.city_real_family_tier(c, d.t::<BuildingType>("BUILDING_WARRENS")) {
+            let unit_type = self.units[u].unit_type;
+            if warrens_copies(d, unit_type, tier) {
+                let new_unit = self.player_init_unit(p, unit_type, x, y, None, Some(DirectionType::DIRECTION_SOUTH));
+                // `CyCity::applyBuildEffects` forwards to `CvCity::addProductionExperience`.
+                self.city_add_production_experience(c, new_unit, false);
+                let xp = tier_bonus_xp(tier);
+                if xp > 0 {
+                    self.unit_change_experience(u, xp, -1, false, false, false);
+                    self.unit_change_experience(new_unit, xp, -1, false, false, false);
                 }
             }
         }
 
         self.ev_unit_built_feats(c, u);
+    }
+
+    /// This game's building suitability (docs/SUITABILITY.md): the production modifier of a
+    /// Lesser Warrens (-25%) for the units it copies; 0 elsewhere.
+    pub fn ev_warrens_production_modifier(&self, c: CityId, unit_type: UnitType) -> i32 {
+        let d = self.d;
+        let Some(warrens) = d.ty::<BuildingType>("BUILDING_WARRENS") else { return 0 };
+        match self.city_real_family_tier(c, warrens) {
+            Some(BuildingTierType::LESSER) if warrens_copies(d, unit_type, BuildingTierType::LESSER) => -25,
+            _ => 0,
+        }
     }
 
     /// `unitKilled` -> `onUnitKilled` (unit still exists when called): Soul Forge production,
@@ -947,7 +997,8 @@ impl Game {
         }
         let player = self.cities[c].owner;
         let plot = self.city_plot(c);
-        let is = |name: &str| building == d.t::<BuildingType>(name);
+        // (Any tier of the building: docs/SUITABILITY.md.)
+        let is = |name: &str| d.same_building(building, d.t::<BuildingType>(name));
 
         // UI: wonder movie popup for the active player.
 
@@ -1818,8 +1869,28 @@ impl Game {
 
     /// onCityDoTurn, Citadel of Light: burns the strongest plot of enemy units (at war, no
     /// neutral units) within 2 plots; burning forest or jungle may catch fire.
-    fn ev_citadel_of_light(&mut self, c: CityId, p: PlayerId, city_plot: PlotIdx) {
-        let d = self.d;
+    ///
+    /// The building tiers (docs/SUITABILITY.md): 10/20/30/40 damage (to at most 20/40/60/80%);
+    /// the Legendary burns the two strongest stacks.
+    fn ev_citadel_of_light(&mut self, c: CityId, p: PlayerId, city_plot: PlotIdx, tier: BuildingTierType) {
+        let (damage, limit) = match tier {
+            BuildingTierType::LESSER => (10, 20),
+            BuildingTierType::FINE => (30, 60),
+            BuildingTierType::GRAND | BuildingTierType::LEGENDARY => (40, 80),
+            _ => (20, 40),
+        };
+        let mut burned = Vec::new();
+        let stacks = if tier == BuildingTierType::LEGENDARY { 2 } else { 1 };
+        for _ in 0..stacks {
+            let Some(best_plot) = self.ev_citadel_target(c, p, &burned) else { break };
+            burned.push(best_plot);
+            self.ev_citadel_burn(city_plot, best_plot, damage, limit);
+        }
+    }
+
+    /// The Citadel of Light's target: the strongest plot of enemy units within 2 plots, but those
+    /// in `skip`.
+    fn ev_citadel_target(&self, c: CityId, p: PlayerId, skip: &[PlotIdx]) -> Option<PlotIdx> {
         let (x, y) = (self.cities[c].x, self.cities[c].y);
         let team = self.players[p].team;
         let mut best_value = 0;
@@ -1829,6 +1900,9 @@ impl Game {
                 let mut neutral = false;
                 let mut value = 0;
                 let Some(loop_plot) = self.map.plot_xy(xx, yy) else { continue };
+                if skip.contains(&loop_plot) {
+                    continue;
+                }
                 if self.plot_is_visible_enemy_unit(loop_plot, p) {
                     for i in 0..self.map.plots[loop_plot].units.len() {
                         let unit = self.map.plots[loop_plot].units[i];
@@ -1846,13 +1920,19 @@ impl Game {
                 }
             }
         }
-        let Some(best_plot) = best_plot else { return };
+        best_plot
+    }
+
+    /// The Citadel of Light burns `best_plot`: fire damage to every unit there, and burning
+    /// forest or jungle may catch fire.
+    fn ev_citadel_burn(&mut self, city_plot: PlotIdx, best_plot: PlotIdx, damage: i32, limit: i32) {
+        let d = self.d;
         let fire = d.t::<DamageType>("DAMAGE_FIRE");
         let num_units = self.map.plots[best_plot].units.len();
         for i in 0..num_units {
             if let Some(&unit) = self.map.plots[best_plot].units.get(i) {
-                // `pUnit.doDamageNoCaster(20, 40, DAMAGE_FIRE, False)`.
-                self.unit_do_damage(unit, 20, 40, None, Some(fire), false);
+                // `pUnit.doDamageNoCaster(20, 40, DAMAGE_FIRE, False)` at Standard.
+                self.unit_do_damage(unit, damage, limit, None, Some(fire), false);
             }
         }
         let feature = self.map.plots[best_plot].feature_type;
@@ -1875,14 +1955,18 @@ impl Game {
 
     /// onCityDoTurn, Hall of Mirrors: an illusion copy of the last enemy unit (at war) seen next
     /// to the city appears in the city for 3 turns (5 with the Summoner trait).
-    fn ev_hall_of_mirrors(&mut self, c: CityId, p: PlayerId) {
+    ///
+    /// The building tiers (docs/SUITABILITY.md): the copy lasts 2/3/5/6/6 turns (3/5/8/10/10
+    /// with Summoner); the Legendary copies enemies up to 2 plots away.
+    fn ev_hall_of_mirrors(&mut self, c: CityId, p: PlayerId, tier: BuildingTierType) {
         let d = self.d;
         if self.soren_rand_num(100, "Hall of Mirrors") <= 100 {
             let mut copied = None;
             let (x, y) = (self.cities[c].x, self.cities[c].y);
             let team = self.players[p].team;
-            for xx in x - 1..x + 2 {
-                for yy in y - 1..y + 2 {
+            let range = if tier == BuildingTierType::LEGENDARY { 2 } else { 1 };
+            for xx in x - range..x + range + 1 {
+                for yy in y - range..y + range + 1 {
                     let Some(loop_plot) = self.map.plot_xy(xx, yy) else { continue };
                     if self.plot_is_visible_enemy_unit(loop_plot, p) {
                         for i in 0..self.map.plots[loop_plot].units.len() {
@@ -1899,10 +1983,16 @@ impl Game {
                 let new_unit = self.player_init_unit(p, unit_type, x, y, None, Some(DirectionType::DIRECTION_NORTH));
                 self.unit_set_has_promotion(new_unit, d.t::<PromotionType>("PROMOTION_ILLUSION"), true);
                 // `setDuration`: field (docs/porting/unit.md).
+                let (plain, summoner) = match tier {
+                    BuildingTierType::LESSER => (2, 3),
+                    BuildingTierType::FINE => (5, 8),
+                    BuildingTierType::GRAND | BuildingTierType::LEGENDARY => (6, 10),
+                    _ => (3, 5),
+                };
                 if self.players[p].traits[d.t::<TraitType>("TRAIT_SUMMONER")] {
-                    self.units[new_unit].duration = 5;
+                    self.units[new_unit].duration = summoner;
                 } else {
-                    self.units[new_unit].duration = 3;
+                    self.units[new_unit].duration = plain;
                 }
             }
         }
@@ -1968,14 +2058,24 @@ impl Game {
 
     /// onCityDoTurn, Planar Gate: a chance (rising with the Armageddon counter) to summon a
     /// creature matching one of the city's buildings, limited per Planar Gate.
-    fn ev_planar_gate(&mut self, c: CityId, p: PlayerId, plot: PlotIdx) {
+    ///
+    /// The building tiers (docs/SUITABILITY.md): the chance x1/2, x1, x3/2, x2, x3; the Grand
+    /// gate raises each creature's limit by 1, the Legendary by 2.
+    fn ev_planar_gate(&mut self, c: CityId, p: PlayerId, plot: PlotIdx, tier: BuildingTierType) {
         let d = self.d;
         let (max, mult2) = self.planar_gate_limits();
-        if 2 * self.soren_rand_num(10000, "Planar Gate") <= d.defines.planar_gate_chance * mult2 {
+        let ((num, den), extra) = match tier {
+            BuildingTierType::LESSER => ((1, 2), 0),
+            BuildingTierType::FINE => ((3, 2), 0),
+            BuildingTierType::GRAND => ((2, 1), 1),
+            BuildingTierType::LEGENDARY => ((3, 1), 2),
+            _ => ((1, 1), 0),
+        };
+        if 2 * den * self.soren_rand_num(10000, "Planar Gate") <= d.defines.planar_gate_chance * mult2 * num {
             let mut list_units = Vec::new();
-            let max = max * self.player_count_num_buildings(p, d.t::<BuildingType>("BUILDING_PLANAR_GATE"));
+            let max = max * self.player_count_num_family(p, d.t::<BuildingType>("BUILDING_PLANAR_GATE")) + extra;
             for (building, unit_class, unit) in PLANAR_GATE_SUMMONS {
-                if self.city_num_building(c, d.t::<BuildingType>(building)) > 0
+                if self.city_num_family(c, d.t::<BuildingType>(building)) > 0
                     && self.players[p].unit_class_count[d.t::<UnitClassType>(unit_class)] < max
                 {
                     list_units.push(d.t::<UnitType>(unit));
@@ -2328,4 +2428,29 @@ mod tests {
         assert_eq!(g.trophy_value("TROPHY_FEAT_INTRODUCTION"), 1);
     }
 
+}
+
+/// The experience a Fine or Grand civilization building gives with its effect (rule 11 of
+/// docs/SUITABILITY.md): +2, +4 (+4 at Legendary too), none below.
+fn tier_bonus_xp(tier: BuildingTierType) -> i32 {
+    match tier {
+        BuildingTierType::FINE => 2,
+        BuildingTierType::GRAND | BuildingTierType::LEGENDARY => 4,
+        _ => 0,
+    }
+}
+
+/// The Warrens copy a unit of this type (not world or national units, siege units only from a
+/// Legendary Warrens, never naval ones).
+pub(crate) fn warrens_copies(d: &GameData, unit_type: UnitType, tier: BuildingTierType) -> bool {
+    let info = &d.units[unit_type];
+    let Some(unit_class) = info.unit_class_type else { return false };
+    if is_world_unit_class(d, unit_class) || is_national_unit_class(d, unit_class) {
+        return false;
+    }
+    let combat = info.unit_combat_type;
+    if combat == d.ty::<UnitCombatType>("UNITCOMBAT_NAVAL") && combat.is_some() {
+        return false;
+    }
+    !(combat == d.ty::<UnitCombatType>("UNITCOMBAT_SIEGE") && combat.is_some()) || tier == BuildingTierType::LEGENDARY
 }

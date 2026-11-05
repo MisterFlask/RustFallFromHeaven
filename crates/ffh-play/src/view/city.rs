@@ -33,11 +33,13 @@ pub fn buildable(v: &Viewer, c: CityId) -> Json {
     }
     for b in d.buildings.keys() {
         if g.city_can_construct(c, b, false, true, false) {
-            out.push(crate::jobj! {
+            let mut j = crate::jobj! {
                 "order" => Json::idx(OrderType::ORDER_CONSTRUCT), "type" => Json::idx(b),
                 "enabled" => g.city_can_construct(c, b, false, false, false),
                 "cost" => g.city_production_needed_building(c, b), "turns" => g.city_production_turns_left_building(c, b, 0),
-            });
+            };
+            set_tier(g, c, b, &mut j);
+            out.push(j);
         }
     }
     for p in d.projects.keys() {
@@ -55,6 +57,48 @@ pub fn buildable(v: &Viewer, c: CityId) -> Json {
         }
     }
     Json::Arr(out)
+}
+
+/// Building tiers (docs/SUITABILITY.md): a building's tier in the city (`tier`, the
+/// `BuildingTierType` index), and for a wonder the cost its tier gives it there (`cost_percent`).
+/// Nothing for a building without a tier.
+fn set_tier(g: &ffh_core::game::Game, c: CityId, b: BuildingType, j: &mut Json) {
+    let d = g.d;
+    if let Some(t) = d.buildings[b].tier {
+        j.set("tier", Json::idx(t));
+    } else if g.city_wonder_cost_percent(c, b) != 100 || d.buildings[b].building_class_type.is_some_and(|k| d.building_classes[k].rolls_tier) {
+        let t = g.city_building_tier(c, b);
+        j.set("tier", Json::idx(t));
+        j.set("cost_percent", g.city_wonder_cost_percent(c, b));
+    }
+}
+
+/// The city's hand (docs/SUITABILITY.md): its building for each class it rolled a tier other than
+/// Standard for (its own civilization's, at its tier; a wonder class's wonder), best tiers first.
+fn tier_hand(g: &ffh_core::game::Game, c: CityId) -> Json {
+    let d = g.d;
+    let mut hand: Vec<(BuildingTierType, BuildingType)> = Vec::new();
+    for k in d.building_classes.keys() {
+        let t = g.city_tier(c, k);
+        if !d.building_classes[k].rolls_tier || t == BuildingTierType::STANDARD {
+            continue;
+        }
+        if let Some(b) = g.city_building_for_class(c, k) {
+            hand.push((t, b));
+        }
+    }
+    hand.sort_by_key(|&(t, b)| (std::cmp::Reverse(t), b));
+    Json::Arr(
+        hand.into_iter()
+            .map(|(t, b)| {
+                let mut j = crate::jobj! { "building" => Json::idx(b), "tier" => Json::idx(t) };
+                if d.buildings[b].tier.is_none() {
+                    j.set("cost_percent", g.city_wonder_cost_percent(c, b));
+                }
+                j
+            })
+            .collect(),
+    )
 }
 
 /// The production queue with each order's turns (from what is stored, for the head order).
@@ -404,7 +448,11 @@ pub fn city(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
         .buildings
         .keys()
         .filter(|&b| city.num_real_building[b] > 0 || city.num_free_building[b] > 0)
-        .map(|b| crate::jobj! { "building" => Json::idx(b), "real" => city.num_real_building[b], "free" => city.num_free_building[b] })
+        .map(|b| {
+            let mut j = crate::jobj! { "building" => Json::idx(b), "real" => city.num_real_building[b], "free" => city.num_free_building[b] };
+            set_tier(g, c, b, &mut j);
+            j
+        })
         .collect();
     let religions: Vec<Json> = d
         .religions
@@ -475,6 +523,7 @@ pub fn city(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
         "specialists" => Json::Arr(specialists.collect()),
         "free_specialists" => g.city_total_free_specialists(c),
         "buildings" => Json::Arr(buildings),
+        "tier_hand" => tier_hand(g, c),
         "religions" => Json::Arr(religions),
         "garrison" => Json::Arr(garrison),
         "queue" => queue(v, c),

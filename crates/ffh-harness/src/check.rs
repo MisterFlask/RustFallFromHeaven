@@ -72,6 +72,24 @@ pub fn check(g: &Game) {
         }
     }
 
+    // Building tiers (docs/SUITABILITY.md): a city holds only its own tier's variant of a
+    // building, and its queue builds only that one.
+    for (c, city) in g.cities.iter() {
+        for b in g.d.buildings.keys() {
+            if (city.num_real_building[b] > 0 || city.num_free_building[b] > 0) && !g.city_is_own_tier(c, b) {
+                fail(format!("city {} holds {} of another tier than its own", city.name, g.d.buildings[b].base.type_));
+            }
+        }
+        for o in &city.order_queue {
+            if o.order_type == ffh_core::data::OrderType::ORDER_CONSTRUCT {
+                let b = ffh_core::data::BuildingType::from_usize(o.data1 as usize);
+                if !g.city_is_own_tier(c, b) {
+                    fail(format!("city {} queues {} of another tier than its own", city.name, g.d.buildings[b].base.type_));
+                }
+            }
+        }
+    }
+
     // Units: owner lists, plot lists, groups.
     let mut listed = 0;
     for p in g.player_ids() {
@@ -192,7 +210,10 @@ pub fn check(g: &Game) {
             fail(format!("battle report #{}: the plot fell with {} defenders left", r.id, r.outcome.defenders_left));
         }
         for (i, s) in r.sides.iter().enumerate() {
-            if s.sat_out + s.fallen + s.escaped + s.standing != s.committed || s.committed <= 0 {
+            // A walled city without soldiers fights with its Sentinels alone (docs/SIEGES.md):
+            // its side commits no unit.
+            let sentinels_only = i == 1 && r.outcome.sentinels > 0;
+            if s.sat_out + s.fallen + s.escaped + s.standing != s.committed || (s.committed <= 0 && !sentinels_only) {
                 fail(format!(
                     "battle report #{} side {i}: {} committed, {} sat out, {} fell, {} escaped, {} standing",
                     r.id, s.committed, s.sat_out, s.fallen, s.escaped, s.standing

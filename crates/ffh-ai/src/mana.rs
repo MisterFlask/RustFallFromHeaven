@@ -129,7 +129,7 @@ fn buildings_value(g: &Game, p: PlayerId, bonus: BonusType) -> i32 {
         if !needs || !ours || !info.prereq_and_tech.map_or(true, |t| g.team_is_has_tech(team, Some(t))) {
             continue;
         }
-        let best = g.players[p].cities.iter().filter(|&&c| g.city_num_building(c, b) == 0).map(|&c| crate::production::building_value(g, c, b, 0)).max().unwrap_or(0);
+        let best = g.players[p].cities.iter().filter(|&&c| g.city_num_family(c, b) == 0).map(|&c| crate::production::building_value(g, c, g.city_building_variant(c, b), 0)).max().unwrap_or(0);
         v += best.max(0);
     }
     v

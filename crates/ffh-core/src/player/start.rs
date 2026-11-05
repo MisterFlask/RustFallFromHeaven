@@ -817,7 +817,7 @@ impl Game {
                     if add {
                         // Add Building to the City
                         if self.players[p].advanced_start_points >= cost {
-                            let num = self.cities[c].num_real_building[building];
+                            let num = self.city_num_real_family(c, building);
                             self.city_set_num_real_building(c, building, num + 1);
                             self.players[p].advanced_start_points -= cost;
                             if d.buildings[building].food_kept != 0 {
@@ -1322,7 +1322,7 @@ impl Game {
                     return -1;
                 }
             } else {
-                if self.cities[c].num_real_building[building] <= 0 {
+                if self.city_num_real_family(c, building) <= 0 {
                     return -1;
                 }
 
@@ -1335,7 +1335,7 @@ impl Game {
                         // Loop through present Building's requirements
                         for class in d.building_classes.keys() {
                             if d.buildings[loop_building].building_class_needed_in_city[class] {
-                                if d.civ_building(civ, class) == Some(building) {
+                                if d.civ_building(civ, class).is_some_and(|b| d.same_building(b, building)) {
                                     return -1;
                                 }
                             }
@@ -1347,7 +1347,7 @@ impl Game {
 
         // Increase cost if the XML defines that additional Buildings will cost more
         if info.advanced_start_cost_increase != 0 {
-            num_building_type = self.player_count_num_buildings(p, building);
+            num_building_type = self.player_count_num_family(p, building);
 
             if !add {
                 num_building_type -= 1;

@@ -29,7 +29,8 @@ impl Game {
         let d = self.d;
         let owner = self.cities[c].owner;
         let player = &self.players[owner];
-        let t = |name: &str| d.ty::<BuildingType>(name) == Some(building);
+        // (Any tier of the building: docs/SUITABILITY.md.)
+        let t = |name: &str| d.ty::<BuildingType>(name).is_some_and(|b| d.same_building(b, building));
         if d.ty::<TraitType>("TRAIT_AGNOSTIC").map_or(false, |tr| player.traits[tr]) {
             for name in [
                 "BUILDING_TEMPLE_OF_LEAVES",
@@ -166,7 +167,7 @@ impl Game {
 
     /// `getBuildingCostMod(ePlayer, iCityID, eBuilding)`: -1 = no override.
     pub fn py_get_building_cost_mod(&self, p: PlayerId, _c: CityId, building: BuildingType) -> i32 {
-        if self.d.ty::<BuildingType>("BUILDING_GAMBLING_HOUSE") == Some(building) && self.player_is_gambling_ring(p) {
+        if self.d.ty::<BuildingType>("BUILDING_GAMBLING_HOUSE").is_some_and(|b| self.d.same_building(b, building)) && self.player_is_gambling_ring(p) {
             return py_div(self.d.buildings[building].production_cost, 4);
         }
         -1

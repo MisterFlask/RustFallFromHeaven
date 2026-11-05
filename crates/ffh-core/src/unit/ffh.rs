@@ -219,7 +219,7 @@ impl Game {
                 return false;
             }
             if let Some(city) = live_plot_city(self, plot()) {
-                if self.city_num_building(city, building_prereq) == 0 {
+                if self.city_num_family(city, building_prereq) == 0 {
                     return false;
                 }
             }
@@ -571,7 +571,7 @@ impl Game {
         // C++ reads `getNumBuilding(NO_BUILDING)` (out of bounds) for a spell that creates no
         // building; canCast and cast only ask for spells that do.
         if let (Some(city), Some(building)) = (live_plot_city(self, plot), self.d.spells[spell].create_building_type) {
-            if self.city_num_building(city, building) > 0 {
+            if self.city_num_family(city, building) > 0 {
                 return false;
             }
         }

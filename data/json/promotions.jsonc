@@ -3511,5 +3511,25 @@
     "feature_double_moves": {"FEATURE_JUNGLE": true, "FEATURE_FOREST": true, "FEATURE_FOREST_ANCIENT": true},
     "unit_combats": {"UNITCOMBAT_BEAST": true, "UNITCOMBAT_RECON": true},
     "button": ",Art/Interface/Buttons/Promotions/Woodsman2.dds,Art/Interface/Buttons/Promotions_Atlas.dds,7,6"
+  },
+  // Not in FFH2 (docs/SUITABILITY.md): the Legendary Reliquary's Spirit Guide, which passes on all
+  //     the unit's experience when it dies (ffh/events.rs, `ev_unit_killed`) instead of half.
+  {
+    "type": "PROMOTION_SPIRIT_GUIDE2",
+    "description": "TXT_KEY_PROMOTION_SPIRIT_GUIDE2",
+    "help": "TXT_KEY_PROMOTION_SPIRIT_GUIDE2_PEDIA",
+    "tech_prereq": "TECH_NEVER",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_RECON": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Spiritguide.dds",
+    "dispellable": true,
+    "ai_weight": 60,
+    "min_level": -1
   }
 ]

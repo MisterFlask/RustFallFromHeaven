@@ -32,6 +32,7 @@ use ffh_data::*;
 pub mod buildings;
 pub mod citizens;
 pub mod production;
+pub mod tiers;
 pub mod turn;
 pub mod yields_culture;
 
@@ -284,6 +285,10 @@ pub struct City {
     pub governor: Option<GovernorId>,
     /// Turns left of the penalty for replacing its governor.
     pub governor_penalty_turns: i32,
+    /// This game's building suitability (docs/SUITABILITY.md): the city's tier for each building
+    /// class, rolled at founding (`Game::city_roll_building_tiers`) and kept for the city's life
+    /// (a city changing hands keeps it). Standard for a class no city rolls.
+    pub building_tiers: IdxVec<BuildingClassType, BuildingTierType>,
 }
 
 impl City {
@@ -500,6 +505,7 @@ impl City {
             rule_changed_turn: -1,
             governor: None,
             governor_penalty_turns: 0,
+            building_tiers: IdxVec::from_elem(BuildingTierType::STANDARD, d.building_classes.len()),
         }
     }
 

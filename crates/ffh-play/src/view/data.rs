@@ -127,6 +127,10 @@ fn fields(d: &GameData, kind: &str, i: usize, j: &mut Json) {
             j.set("class", Json::opt_idx(b.building_class_type));
             j.set("cost", b.production_cost);
             j.set("tech", Json::opt_idx(b.prereq_and_tech));
+            // Building tiers (docs/SUITABILITY.md): its tier (`BuildingTierType` index) and the
+            // Standard building it is a tier of.
+            j.set("tier", Json::opt_idx(b.tier));
+            j.set("variant_of", Json::opt_idx(b.variant_of));
         }
         "TechType" => {
             let t = &d.techs[TechType::from_usize(i)];
