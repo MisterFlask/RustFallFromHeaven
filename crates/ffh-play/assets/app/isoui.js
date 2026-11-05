@@ -46,9 +46,9 @@ const spriteUrl = (key) => new URL(`./iso/${key}.png`, import.meta.url).href;
 // ---------------------------------------------------------------------------------------------
 // Icons
 
-/** An interface icon of the M7 set: `ui_<name>` (48 art px, the action tiles) or `ui_<name>_s`
- *  (32, the bar and the lists) drawn at `px` CSS px; null when there is no such icon. The icons are
- *  re-gridded to 2 px blocks, so 16, 24, 32 and 48 px keep them crisp. */
+/** An interface icon of the M7 set: `ui_<name>` (the action tiles, 48 CSS px) or `ui_<name>_s`
+ *  (the bar and the lists, 32 and smaller) drawn at `px` CSS px; null when there is no such icon.
+ *  The icons are smooth flat art stored at twice those sizes (96 and 64 px), sharp on 2x screens. */
 export function isoIcon(name, { px = 32, title, cls } = {}) {
   const key = px > 32 ? `ui_${name}` : `ui_${name}_s`;
   if (!Object.hasOwn(SPRITES, key)) return null;

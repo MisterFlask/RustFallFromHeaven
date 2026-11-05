@@ -54,7 +54,10 @@ html.iso ::-webkit-scrollbar-thumb:hover { background: var(--iso-gold); }
 /* Shown only in the skin (the icons isoui.js gives the static buttons). */
 .iso-only { display: none; }
 html.iso .iso-only { display: inline-block; }
-html.iso .iso-icon, html.iso .iso-sprite { image-rendering: pixelated; flex: none; display: inline-block; vertical-align: middle; }
+html.iso .iso-icon, html.iso .iso-sprite { flex: none; display: inline-block; vertical-align: middle; }
+/* The map sprites are pixel art; the interface icons are smooth art at twice their size (docs/ISO.md section 9). */
+html.iso .iso-sprite { image-rendering: pixelated; }
+html.iso .iso-icon { image-rendering: auto; }
 html.iso .iso-sprite { background-repeat: no-repeat; image-rendering: auto; }
 html.iso img.iso-icon[width="16"] { vertical-align: -3px; }
 html.iso .inline-icon { vertical-align: -3px; }
@@ -651,7 +654,7 @@ body.battle-open :is(#top, #side, #bottom, #iso-rail, #iso-corner, #iso-city) * 
 #battle .bt-ui > *, #battle .click, #battle .bt-ui button { pointer-events: auto; }
 /* the plan's pointer layer over the battlefield, under the panels */
 #battle .bt-board { position: absolute; inset: 0; pointer-events: auto; }
-#battle img.bt-ic { image-rendering: pixelated; vertical-align: -3px; }
+#battle img.bt-ic { image-rendering: auto; vertical-align: -3px; }
 #battle .bt-px { vertical-align: -3px; }
 #battle b, #battle .b { font-weight: 700; }
 #battle .dim { color: var(--b-dim); } #battle .mute { color: var(--b-mute); }

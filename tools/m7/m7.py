@@ -90,8 +90,11 @@ def wdir(name):
 
 def call_api(job, k, quality, prompt_file, images, raw):
     rel = lambda q: (str(Path(q).relative_to(ROOT)) if str(q).startswith(str(ROOT)) else str(q)).replace("\\", "/")
-    cmd = [sys.executable, str(LIB / "imggen.py"), "edit", "--tag", job["tag"], "--model", job["model"],
+    # With no anchor images it is a plain generation; `job["background"]` asks for transparency.
+    cmd = [sys.executable, str(LIB / "imggen.py"), "edit" if images else "gen", "--tag", job["tag"], "--model", job["model"],
            "--quality", quality, "--size", job["size"], "--prompt-file", rel(prompt_file), "--out", rel(raw)]
+    if job.get("background"):
+        cmd += ["--background", job["background"]]
     for im in images:
         cmd += ["--image", rel(im)]
     p = subprocess.run(cmd, capture_output=True, text=True, cwd=ROOT)

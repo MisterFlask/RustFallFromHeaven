@@ -105,7 +105,9 @@ export function drawCityWork(g, city, geo, { hover = null, redraw = null } = {})
   const ts = geo.ts;
   const isz = ts >= 150 ? 24 : 16;
   const icons = YIELD_KEYS.map((k) => image(k, redraw));
-  g.imageSmoothingEnabled = false;
+  // The interface icons are smooth art at twice their size: scaled down with smoothing.
+  g.imageSmoothingEnabled = true;
+  g.imageSmoothingQuality = "high";
   if (icons.every(Boolean)) {
     for (const s of shapes) {
       if (s.state === "hidden" || !s.p.yields) continue;

@@ -52,8 +52,15 @@ def items(name):
     return out
 
 
-def prompt_of(name):
-    style = (ROOT / "prompts" / "style_ui_icons.txt").read_text(encoding="utf-8").strip()
+# Styles of the sheet prompt: "pixel" (the M7 set, anchored on the reference's panels, magenta
+# key) and "modern" (a trial of 2026-11-05: smooth vector-like icons, no anchor, a transparent
+# background, cut smooth at twice the display size so they stay sharp on high-density screens).
+STYLES = {"pixel": ("style_ui_icons.txt", True, None), "modern": ("style_ui_icons_modern.txt", False, "transparent"),
+          "minimal": ("style_ui_icons_minimal.txt", False, "transparent"), "glyph": ("style_ui_icons_glyph.txt", False, "transparent")}
+
+
+def prompt_of(name, style="pixel"):
+    style = (ROOT / "prompts" / STYLES[style][0]).read_text(encoding="utf-8").strip()
     lines = [f"{i + 1}. {d}" for i, (_, d) in enumerate(items(name))]
     return style + "\n" + "\n".join(lines) + "\n"
 
@@ -67,18 +74,19 @@ def wdir(name):
 
 def sheet(a):
     d = wdir(a.name)
-    prompt = prompt_of(a.name)
+    prompt = prompt_of(a.name, a.style)
+    _, anchored, bg = STYLES[a.style]
     pf = d / f"prompt_{a.round}.txt"
     pf.write_text(prompt, encoding="utf-8")
     if a.dry_run:
         print(prompt)
         print(json.dumps({"images": [str(ANCHOR)]}))
         return
-    job = {"tag": "ui/icons", "model": a.model, "size": "1024x1024"}
+    job = {"tag": "ui/icons", "model": a.model, "size": "1024x1024", "background": bg}
     from concurrent.futures import ThreadPoolExecutor
     raws = [d / "raw" / f"{a.round}_{k + 1}.png" for k in range(a.n)]
     with ThreadPoolExecutor(a.n) as ex:
-        outs = list(ex.map(lambda r: call_api(job, 0, a.quality, pf, [ANCHOR], r), raws))
+        outs = list(ex.map(lambda r: call_api(job, 0, a.quality, pf, [ANCHOR] if anchored else [], r), raws))
     for r, o in zip(raws, outs):
         log_call(d, {"round": a.round, "raw": str(r), **o})
         print(json.dumps({"raw": str(r), "ok": o.get("ok"), "usd": o.get("usd"), "error": o.get("error")}))
@@ -99,13 +107,20 @@ def cells(im):
     return out
 
 
-def icon_of(cell, size, fit):
+def icon_of(cell, size, fit, smooth=False):
+    """A cell's icon on a `size` canvas, its largest side `fit`: re-gridded to PIXEL px blocks, or
+    with `smooth` (the modern style) resampled smoothly at twice the size, for 2x screens."""
     im = co.trim(co.clean_specks(cell, 60))
     if im.width < 4 or im.height < 4:
         return None
+    if smooth:
+        size, fit = 2 * size, 2 * fit
     s = fit / max(im.width, im.height)
     im = co.scale_to(im, w=max(1, round(im.width * s)), h=max(1, round(im.height * s)))
     canvas = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    if smooth:
+        canvas.alpha_composite(im, ((size - im.width) // 2, (size - im.height) // 2))
+        return canvas
     # Whole blocks from the canvas edge, so the re-grid keeps the icon centred.
     x, y = (size - im.width) // 2, (size - im.height) // 2
     canvas.alpha_composite(im, (x - x % PIXEL, y - y % PIXEL))
@@ -124,8 +139,9 @@ def review(d, rnd, cuts):
         for i, (k, ic) in enumerate(icons):
             x, y = (i % GRID) * cw, (i // GRID) * ch
             if ic is not None:
-                img.alpha_composite(ic, (x + 4, y + 4 + SIZE // 2))
-                img.alpha_composite(ic.resize((SIZE * 2, SIZE * 2), Image.NEAREST), (x + SIZE + 12, y + 4))
+                one = ic if ic.width == SIZE else ic.resize((SIZE, SIZE), Image.LANCZOS)
+                img.alpha_composite(one, (x + 4, y + 4 + SIZE // 2))
+                img.alpha_composite(ic.resize((SIZE * 2, SIZE * 2), Image.NEAREST if ic.width == SIZE else Image.LANCZOS), (x + SIZE + 12, y + 4))
             dr.text((x + 4, y + ch - 20), f"{v}:{k}", fill=(240, 220, 150, 255))
         sheets.append(img)
     out = Image.new("RGBA", (sum(s.width for s in sheets) + 8 * (len(sheets) - 1), sheets[0].height), (0, 0, 0, 255))
@@ -149,7 +165,7 @@ def cut(a):
         icons = []
         for k, cell in zip(keys, cells(Image.open(raw))):
             for suffix, (size, fit) in CUTS.items():
-                ic = icon_of(cell, size, fit)
+                ic = icon_of(cell, size, fit, a.smooth)
                 if ic is not None:
                     ic.save(od / f"{k}{suffix}.png")
                 if suffix == "":
@@ -175,10 +191,18 @@ def accept(a):
             continue
         for suffix, (size, fit) in CUTS.items():
             key = f"ui_{k}{suffix}"
-            shutil.copy(src / f"{k}{suffix}.png", dst / f"{key}.png")
-            man[key] = {"kind": "ui_icon", "file": f"ui/{key}.png", "size": [size, size], "sheet": a.name,
-                        "round": a.round, "variant": a.variant, "pixel": PIXEL, "fit": fit,
-                        "prompt": f"prompts/assets/ui_{a.name}.txt", "anchors": [str(ANCHOR.relative_to(ROOT))]}
+            # A smooth cut (`cut --smooth`) is twice the canvas, not re-gridded, and drawn without anchors;
+            # it is stored with a 256-colour palette (about a quarter of the size, no visible change).
+            im = Image.open(src / f"{k}{suffix}.png")
+            w = im.width
+            smooth = w != size
+            if smooth:
+                im.convert("RGBA").quantize(256, method=Image.Quantize.FASTOCTREE).save(dst / f"{key}.png", optimize=True)
+            else:
+                shutil.copy(src / f"{k}{suffix}.png", dst / f"{key}.png")
+            man[key] = {"kind": "ui_icon", "file": f"ui/{key}.png", "size": [w, w], "sheet": a.name,
+                        "round": a.round, "variant": a.variant, "pixel": 0 if smooth else PIXEL, "fit": fit * w // size,
+                        "prompt": f"prompts/assets/ui_{a.name}.txt", "anchors": [] if smooth else [str(ANCHOR.relative_to(ROOT))]}
             done.append(key)
     shutil.copy(d / f"prompt_{a.round}.txt", ROOT / "prompts" / "assets" / f"ui_{a.name}.txt")
     man_p.write_text(json.dumps(man, indent=1) + "\n")
@@ -213,8 +237,10 @@ def main():
     p.add_argument("--name", required=True); p.add_argument("--n", type=int, default=2)
     p.add_argument("--quality", default="medium"); p.add_argument("--round", default="r1")
     p.add_argument("--model", default=MODEL); p.add_argument("--dry-run", action="store_true")
+    p.add_argument("--style", default="pixel", choices=sorted(STYLES))
     p = sub.add_parser("cut")
     p.add_argument("--name", required=True); p.add_argument("--round", default="r1")
+    p.add_argument("--smooth", action="store_true", help="no pixel re-grid; cut at twice the size (the modern style)")
     p = sub.add_parser("accept")
     p.add_argument("--name", required=True); p.add_argument("--variant", required=True)
     p.add_argument("--round", default="r1"); p.add_argument("--only"); p.add_argument("--skip")

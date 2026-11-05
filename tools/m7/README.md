@@ -63,10 +63,11 @@ draws). Changes made here since the package arrived:
   per cell to 24 and 16 blocks of 2 px (`ui.py cut`, a review sheet per round), accepted as
   `roster/ui/ui_<key>.png` and `ui_<key>_s.png` (`ui.py accept`, `--only` / `--skip` to mix
   variants); `ui.py backdrop` re-grids the painting behind the unit portrait. The spend tag is
-  `ui`. The icon sheets use `gpt-image-2.6-sunburst` (`ui.MODEL`, since the full icon pass of
-  2026-11-05: every building, promotion family, mana sphere and order, about 400 icons; the lists
-  are written by `prompts/ui/all_icons.py`). Soft glows pick up the magenta key and turn pink, so
-  the style prompt asks for light as hard-edged shapes.
+  `ui`. The icon sheets use `gpt-image-2.6-sunburst` (`ui.MODEL`) since the icon pass of 2026-11-05,
+  and the shipped set is `--style minimal` (flat, no anchor, transparent background) cut with
+  `cut --smooth` (no 2 px re-grid, files at twice the display size); `--style pixel|modern|glyph`
+  are the other styles tried. The lists of every building, promotion family and mana sphere are
+  written by `prompts/ui/all_icons.py`. With the pixel style's magenta key, soft glows turn pink.
 - **Leader portraits** (`leaders.py`, docs/ISO.md section 9): a head-and-shoulders bust of every
   leader a game can have (each civilization's leaders, the barbarian, one hooded stranger for the
   random choices), described in `prompts/leaders/<key>.txt` (the model knows none of them) after
