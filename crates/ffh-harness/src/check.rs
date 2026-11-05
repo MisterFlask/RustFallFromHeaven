@@ -239,9 +239,17 @@ pub fn check(g: &Game) {
                         log.lanes[i]
                     ));
                 }
+                // A city's Sentinels are placed fighters of the defender, counted in the outcome's
+                // `sentinels`, not among its committed units (docs/SIEGES.md).
                 let placed: Vec<&ffh_core::engagement::report::LogFighter> = log.fighters.iter().filter(|f| f.side.index() == i && f.place.is_some()).collect();
-                if placed.len() as i32 != s.committed || log.fighters.iter().any(|f| f.place.is_some() != f.fate.is_some()) {
-                    fail(format!("battle report #{} side {i}: {} committed, {} placed fighters in its log", r.id, s.committed, placed.len()));
+                let sentinels = placed.iter().filter(|f| f.sentinel).count() as i32;
+                let units = placed.len() as i32 - sentinels;
+                let want_sentinels = if i == 1 { r.outcome.sentinels } else { 0 };
+                if units != s.committed || sentinels != want_sentinels || log.fighters.iter().any(|f| f.place.is_some() != f.fate.is_some()) {
+                    fail(format!(
+                        "battle report #{} side {i}: {} committed and {want_sentinels} Sentinels, {units} placed units and {sentinels} placed Sentinels in its log",
+                        r.id, s.committed
+                    ));
                 }
                 let mut cells = std::collections::BTreeSet::new();
                 for f in placed {

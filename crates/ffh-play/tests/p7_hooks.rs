@@ -2,6 +2,7 @@
 //! session: the raze popup's gift button, the disband popup, the Kuriotates city-or-settlement
 //! popup, deferred elections, the take-control popup, and `doResearch`'s AI pick.
 
+mod common;
 use std::sync::{Arc, Mutex};
 
 use ffh_core::game::Game;
@@ -28,6 +29,8 @@ fn session(seed: u32, opponents: usize, world: &str, civ: Option<&str>) -> (Sess
     ng.opponents = opponents;
     ng.world = d.t(world);
     ng.civ = civ.map(|c| d.t::<CivilizationType>(c));
+    // A game that cannot end (wars, barbarians set up by hand): `common::STEADY`.
+    ng.options.extend(common::STEADY);
     let script: Shared = Arc::default();
     let sc = script.clone();
     let answerer = Arc::new(FnAnswerer(move |_g: &Game, dec: &Decision| {

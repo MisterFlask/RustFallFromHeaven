@@ -168,7 +168,7 @@ fn t12_http_end_to_end() {
     assert_eq!(bad_json.json().req_str("error"), Ok("invalid"));
 
     // A new game, played for 10 turns.
-    let setup = ffh_play::jobj! { "seed" => 5, "world" => "WORLDSIZE_DUEL", "opponents" => 1 };
+    let setup = ffh_play::jobj! { "seed" => 5, "world" => "WORLDSIZE_DUEL", "opponents" => 1, "options" => common::steady_options_json() };
     let r = c.ok(ffh_play::jobj! { "id" => 1, "k" => "session", "op" => "new", "setup" => setup });
     assert_eq!(r.req_str("game"), Ok(root.join("game-5").to_str().unwrap()));
     let mut st = c.wait_for("the first control point", |st| phase(st) == "human" && st.get("game").is_some_and(|g| !g.get("autosave").unwrap().is_null()));
@@ -357,7 +357,7 @@ fn t12_auto_moves_run_when_the_last_ready_unit_is_skipped() {
 fn t12_a_running_autoplay_stops() {
     let tmp = TempDir::new("t12-autoplay-stop");
     let (server, c) = start(&tmp.0.join("saves"), None);
-    c.ok(ffh_play::jobj! { "k" => "session", "op" => "new", "setup" => ffh_play::jobj! { "seed" => 4, "world" => "WORLDSIZE_DUEL", "opponents" => 1 } });
+    c.ok(ffh_play::jobj! { "k" => "session", "op" => "new", "setup" => ffh_play::jobj! { "seed" => 4, "world" => "WORLDSIZE_DUEL", "opponents" => 1, "options" => common::steady_options_json() } });
     let st = c.wait_for("the first turn", |st| phase(st) == "human");
     let from: i32 = st.req("turn").unwrap();
     assert_eq!(st.req::<i32>("ai_auto_play"), Ok(0));
@@ -431,7 +431,7 @@ fn t12_a_crash_leaves_the_server_up() {
     let tmp = TempDir::new("t12-crash");
     let root = tmp.0.join("saves");
     let (server, c) = start(&root, Some(1));
-    c.ok(ffh_play::jobj! { "k" => "session", "op" => "new", "setup" => ffh_play::jobj! { "seed" => 6, "world" => "WORLDSIZE_DUEL", "opponents" => 1 } });
+    c.ok(ffh_play::jobj! { "k" => "session", "op" => "new", "setup" => ffh_play::jobj! { "seed" => 6, "world" => "WORLDSIZE_DUEL", "opponents" => 1, "options" => common::steady_options_json() } });
     c.wait_for("the first control point", |st| phase(st) == "human");
     // The `status` query is the published status's (P4 review): with the game directory.
     let q = c.ok(ffh_play::jobj! { "k" => "q", "q" => "status" });

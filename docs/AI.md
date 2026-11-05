@@ -3422,9 +3422,7 @@ only, against opponents without it, and reports that player's wins and share.
 - `crates/ffh-cli/scripts/victory_check.py --seeds 1-24 [--out games.json | --load games.json]
   [--compare base.json] [--min-share 0.5]` plays full games (to turn 690 or an earlier
   victory) and reports the share decided before the time limit, per victory type, the decision
-  turn, and the economy at turns 300-600; `--min-share` makes it a pass/fail check. A short
-  version is the ignored test `run::tests::full_games_end_in_victories` (`cargo test --release
-  -p ffh-cli -- --ignored`).
+  turn, and the economy at turns 300-600; `--min-share` makes it a pass/fail check.
 - **Head to head against the FFH2 C++ AI** (docs/CPPAI.md): `FFH_CPPAI=even|odd|all|<p>,..`
   makes those players play with the port of the original DLL AI (`crates/ffh-cppai`);
   `crates/ffh-cppai/scripts/h2h.py --bin $B/ffh --seeds S --turns 690 --until-supremacy

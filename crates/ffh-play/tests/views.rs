@@ -59,8 +59,7 @@ fn all_queries(s: &ffh_play::Session) -> Vec<Query> {
     qs
 }
 
-/// Pattern A (a long varied game): a peaceful game (`GAMEOPTION_ALWAYS_PEACE` +
-/// `GAMEOPTION_NO_BARBARIANS`) cannot end early, so for ANY seed the bot reaches the until-turn
+/// Pattern A (a long varied game): a peaceful game (`common::STEADY`) cannot end early, so for ANY seed the bot reaches the until-turn
 /// with `Stop::Human` -- the `assert_eq!(stop, Stop::Human)` below is true by construction, not by
 /// a seed happening to produce a game that lasts. The test then asserts invariants (every query
 /// answers with valid JSON, and the reads leave the save unchanged), never a seed-specific outcome.
@@ -94,26 +93,11 @@ fn every_query_answers_and_reads_change_nothing() {
     assert!(checked >= 3);
 }
 
-/// A duel at the human's first control point, its capital founded.
+/// A duel that cannot end (`common::STEADY`: the run lasts its full length for any seed) at the
+/// human's first control point, its capital founded. The tests assert what the views report of
+/// the situation they set up, never a seed producing a particular game.
 fn duel(seed: u32) -> Session {
-    duel_with(seed, &[])
-}
-
-/// [`duel`] with the game unable to end early (`GAMEOPTION_ALWAYS_PEACE` +
-/// `GAMEOPTION_NO_BARBARIANS`): no AI can attack or eliminate the human and no victory fires in
-/// under the run lengths here, so the duel lasts its full length for ANY seed -- the basis of the
-/// pattern-A report test, which asserts coverage (techs and units reported over the run), never a
-/// seed producing a particular game.
-fn peaceful_duel(seed: u32) -> Session {
-    duel_with(seed, &[GameOptionType::GAMEOPTION_ALWAYS_PEACE, GameOptionType::GAMEOPTION_NO_BARBARIANS])
-}
-
-fn duel_with(seed: u32, options: &[GameOptionType]) -> Session {
-    let d = ffh_data::global();
-    let mut ng = NewGame::new(d, seed);
-    ng.opponents = 1;
-    ng.world = d.t("WORLDSIZE_DUEL");
-    ng.options.extend_from_slice(options);
+    let ng = common::steady_duel(seed);
     let mut s = Session::new_game(&ng, Arc::new(AdvisorAnswerer), SessionOptions::default()).unwrap();
     assert_eq!(s.advance(&mut |_| {}), Stop::Human);
     let h = s.human;
@@ -168,6 +152,7 @@ fn propose_deal_follows_the_trade_tables_and_the_ai_answer() {
     assert!(matches!(s.execute(&deal(vec![item(TradeableItem::TRADE_CITIES, 999_999)], vec![])), Err(CmdErr::Cannot(_))));
     assert!(matches!(s.execute(&Command::ProposeDeal { to: h, give: peace(), get: peace() }), Err(CmdErr::Cannot(_))));
     assert!(matches!(s.execute(&Command::ProposeDeal { to: PlayerId(200), give: peace(), get: peace() }), Err(CmdErr::Invalid(_))));
+    common::allow_war(&mut s.g);
     applied(&mut s, Command::DeclareWar { team: their });
 
     // Fresh war: the AI refuses to talk (its war counter is under its leader's threshold). No
@@ -279,7 +264,7 @@ fn end_state(s: &Session) -> EndState {
 /// units reported), never a seed-specific count.
 #[test]
 fn the_turn_report_lists_what_changed() {
-    let mut s = peaceful_duel(7);
+    let mut s = duel(7);
     let mut prev: Option<EndState> = None;
     let (mut techs_seen, mut units_seen, mut reports) = (0, 0, 0);
     for _ in 0..80 {
@@ -330,6 +315,7 @@ fn a_team_met_during_the_ai_turns_is_a_contact_not_a_war() {
     let mut ng = NewGame::new(d, 21);
     ng.opponents = 2;
     ng.world = d.t("WORLDSIZE_DUEL");
+    ng.options.extend(common::STEADY);
     let mut s = Session::new_game(&ng, Arc::new(AdvisorAnswerer), SessionOptions::default()).unwrap();
     assert_eq!(s.advance(&mut |_| {}), Stop::Human);
     let h = s.human;
@@ -486,6 +472,7 @@ fn target_actions_follow_the_interface_modes() {
     let rival = s.g.civ_player_ids().find(|&p| p != h).unwrap();
     let (my, their) = (s.g.players[h].team, s.g.players[rival].team);
     s.g.team_meet(my, their, false);
+    common::allow_war(&mut s.g);
     s.g.team_set_has_tech(my, d.t::<TechType>("TECH_EXPLORATION"), true, None, false, false);
     let (capx, capy) = s.read(|g| {
         let c = g.players[h].cities[0];
@@ -567,7 +554,7 @@ fn target_actions_follow_the_interface_modes() {
 #[test]
 #[ignore]
 fn print_queries() {
-    let ng = new_game(4);
+    let ng = peaceful_game(4);
     let (mut s, mut b) = bot_session(&ng, None);
     let until = s.g.game_turn() + 30;
     bot::run(&mut s, &mut b, until, |_, _| {});

@@ -1079,6 +1079,10 @@ All run with `cargo test --release -p ffh-play`. None needs node or the network.
    * at least 2 cities founded, at least N techs, at least 1 decision and at least 1 deferred popup answered;
    * `check(&g)` every 5 turns;
    * `num_game_turn_active <= 1`.
+
+   Since 2026-11-05 no test relies on a seed's story (CLAUDE.md, Workflow): T1 and T5 play games
+   that cannot end (`common::STEADY`: always peace, no barbarian units), assert that each runs its
+   150 turns with the invariants, and no longer assert cities, techs, popups or decisions.
 2. **T2 — determinism.** Two runs of the same seed must give identical `calculate_sync_checksum` every turn and byte-identical final saves.
 3. **T3 — mid-turn save and resume.**
    * Save at control points on turns 10, 37 and 61, including after a few commands, after an answered blocking decision, and with a deferred event pending (sidecar).

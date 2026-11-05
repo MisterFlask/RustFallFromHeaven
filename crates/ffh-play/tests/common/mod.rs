@@ -21,18 +21,63 @@ pub fn new_game(seed: u32) -> NewGame {
     ng
 }
 
-/// [`new_game`] with the game unable to end early: `GAMEOPTION_ALWAYS_PEACE` (no AI can declare
-/// war on or eliminate the human) and `GAMEOPTION_NO_BARBARIANS` (no barbarians to kill it), so
-/// no victory can fire and no human can be eliminated inside the usual run lengths. A bot game
-/// then runs the full requested length and `bot::run` reaches the until-turn with `Stop::Human`
-/// for ANY seed and under any AI/content change -- the basis of the breadth tests (fog
-/// invariants, read-only queries, turn reports), which must assert coverage, never a seed
+/// The options of a game that cannot end within a test's turns, whatever its seed: no AI can
+/// declare war on the human (`GAMEOPTION_ALWAYS_PEACE`) and no barbarian units come from the
+/// barbarian spawns (`GAMEOPTION_NO_BARBARIANS`), lairs and goody huts (`GAMEOPTION_NO_LAIRS`,
+/// `GAMEOPTION_NO_GOODY_HUTS`: exploring them releases barbarians whatever
+/// `GAMEOPTION_NO_BARBARIANS` says), the Guardian's Gargoyles (`GAMEOPTION_NO_UNIQUE_IMPROVEMENTS`)
+/// or Orthus (`GAMEOPTION_NO_ORTHUS`, turn 75 on normal speed). Random events still run (the
+/// decisions they raise are part of what the tests cover); the few that spawn barbarians did not
+/// end any of 40 150-turn soak games. A test that wants a war or a barbarian sets it up by hand.
+/// Tests built on such games assert what the rules do with the situation they set up, never how
+/// a particular seed's game turns out (CLAUDE.md, Workflow).
+pub const STEADY: [GameOptionType; 6] = [
+    GameOptionType::GAMEOPTION_ALWAYS_PEACE,
+    GameOptionType::GAMEOPTION_NO_BARBARIANS,
+    GameOptionType::GAMEOPTION_NO_LAIRS,
+    GameOptionType::GAMEOPTION_NO_GOODY_HUTS,
+    GameOptionType::GAMEOPTION_NO_UNIQUE_IMPROVEMENTS,
+    GameOptionType::GAMEOPTION_NO_ORTHUS,
+];
+
+/// Lifts `GAMEOPTION_ALWAYS_PEACE` in a [`STEADY`] game, for a test whose subject is a war (a
+/// declaration, a loan against an enemy): call it right before the war the test sets up. From
+/// then on the AIs may declare war too, so the test plays few turns after it.
+pub fn allow_war(g: &mut ffh_core::game::Game) {
+    g.setup.options[GameOptionType::GAMEOPTION_ALWAYS_PEACE] = false;
+}
+
+/// `ng` with the [`STEADY`] options.
+pub fn steady(mut ng: NewGame) -> NewGame {
+    for o in STEADY {
+        if !ng.options.contains(&o) {
+            ng.options.push(o);
+        }
+    }
+    ng
+}
+
+/// [`new_game`] with the [`STEADY`] options: a bot game runs the full requested length and
+/// `bot::run` reaches the until-turn with `Stop::Human` for any seed -- the basis of the breadth
+/// tests (fog invariants, read-only queries, turn reports), which assert coverage, never a seed
 /// producing a particular emergent outcome.
 pub fn peaceful_game(seed: u32) -> NewGame {
-    let mut ng = new_game(seed);
-    ng.options.push(GameOptionType::GAMEOPTION_ALWAYS_PEACE);
-    ng.options.push(GameOptionType::GAMEOPTION_NO_BARBARIANS);
-    ng
+    steady(new_game(seed))
+}
+
+/// The [`STEADY`] options as a setup's `options` (the protocol's `session new`).
+pub fn steady_options_json() -> ffh_play::Json {
+    let d = ffh_data::global();
+    ffh_play::Json::Arr(STEADY.iter().map(|&o| ffh_play::Json::from(d.type_name(o))).collect())
+}
+
+/// A one-opponent duel map with the [`STEADY`] options (the decision and screen tests' game).
+pub fn steady_duel(seed: u32) -> NewGame {
+    let d = ffh_data::global();
+    let mut ng = NewGame::new(d, seed);
+    ng.opponents = 1;
+    ng.world = d.t::<WorldSizeType>("WORLDSIZE_DUEL");
+    steady(ng)
 }
 
 /// A session played by a fresh bot (memory journal unless `saves` is given).

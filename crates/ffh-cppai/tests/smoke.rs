@@ -9,11 +9,25 @@ use ffh_core::defs::GROUPFLAG_NONE;
 use ffh_core::game::Game;
 use ffh_core::mapscript::FractalMapScript;
 use ffh_core::setup::GameSetup;
-use ffh_data::GameStateType;
+use ffh_data::{GameOptionType, GameStateType};
 
+/// A 4-civ game that cannot end within the test's turns: always peace and no barbarian units (the
+/// options of `common::STEADY` in `crates/ffh-play/tests`), so the test does not depend on how the
+/// seed's game goes.
 fn mixed_game(seed: u32) -> Game {
     let d = ffh_data::global();
-    let mut g = Game::new(d, GameSetup::standard(d, 4, "WORLDSIZE_SMALL", seed));
+    let mut setup = GameSetup::standard(d, 4, "WORLDSIZE_SMALL", seed);
+    for o in [
+        GameOptionType::GAMEOPTION_ALWAYS_PEACE,
+        GameOptionType::GAMEOPTION_NO_BARBARIANS,
+        GameOptionType::GAMEOPTION_NO_LAIRS,
+        GameOptionType::GAMEOPTION_NO_GOODY_HUTS,
+        GameOptionType::GAMEOPTION_NO_UNIQUE_IMPROVEMENTS,
+        GameOptionType::GAMEOPTION_NO_ORTHUS,
+    ] {
+        setup.options[o] = true;
+    }
+    let mut g = Game::new(d, setup);
     g.map_script = Arc::new(FractalMapScript::default());
     let ffh = ffh_ai::ai_controller();
     let cpp = ffh_cppai::cppai_controller(seed);

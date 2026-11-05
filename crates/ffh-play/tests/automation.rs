@@ -4,6 +4,8 @@
 
 use std::sync::Arc;
 
+mod common;
+
 use ffh_core::game::Game;
 use ffh_core::ids::*;
 use ffh_data::*;
@@ -13,13 +15,12 @@ use ffh_play::journal;
 use ffh_play::session::replay;
 use ffh_play::{NewGame, Phase, Session, SessionOptions, Stop};
 
-/// A duel at the human's first control point, its capital founded; `techs`: the human also gets
-/// the techs for roads, farms and mines (not journaled: no replay then).
+/// A duel that cannot end (`common::STEADY`) at the human's first control point, its capital
+/// founded; `techs`: the human also gets the techs for roads, farms and mines (not journaled: no
+/// replay then).
 fn session(seed: u32, techs: bool) -> Session {
     let d = ffh_data::global();
-    let mut ng = NewGame::new(d, seed);
-    ng.opponents = 1;
-    ng.world = d.t("WORLDSIZE_DUEL");
+    let mut ng = common::steady_duel(seed);
     ng.civ = Some(d.t::<CivilizationType>("CIVILIZATION_BANNOR"));
     let mut s = Session::new_game(&ng, Arc::new(AdvisorAnswerer), SessionOptions::default()).unwrap();
     assert_eq!(s.advance(&mut |_| {}), Stop::Human);
@@ -57,25 +58,15 @@ fn automate(s: &mut Session, u: UnitId, a: AutomateType) {
     ok(s, Command::DoCommand { units: vec![u], command: CommandType::COMMAND_AUTOMATE, data1: a.idx() as i32, data2: -1, alt: false, confirmed: false });
 }
 
-/// Ends the turn (forced) and runs to the human's next control point; at every control point no
-/// AI-moved group is left without orders.
+/// Ends the turn (forced) and runs to the human's next control point (the game cannot end:
+/// `common::STEADY`); at every control point no AI-moved group is left without orders.
 fn next_turn(s: &mut Session) {
-    assert!(try_next_turn(s), "the game ended at turn {}", s.g.game_turn());
-}
-
-/// [`next_turn`], or false when the game ended meanwhile (the human's capital fell: whether it
-/// does is the seed's story, which the AI and the rules change).
-fn try_next_turn(s: &mut Session) -> bool {
     // (After a rules call outside a command: the AI moves its groups first.)
     if s.phase() != Phase::Human(s.human) {
         assert_eq!(s.advance(&mut |_| {}), Stop::Human);
     }
     ok(s, Command::EndTurn { force: true });
-    match s.advance(&mut |_| {}) {
-        Stop::Human => {}
-        Stop::Over => return false,
-        other => panic!("{other:?}"),
-    }
+    assert_eq!(s.advance(&mut |_| {}), Stop::Human, "turn {}", s.g.game_turn());
     let idle = s.pending().ai_groups_idle;
     let describe = |s: &Session, grp: GroupId| {
         let gr = &s.g.groups[grp];
@@ -90,7 +81,6 @@ fn try_next_turn(s: &mut Session) -> bool {
         )
     };
     assert!(idle.is_empty(), "an automated group was left ready at turn {}: {:?}", s.g.game_turn(), idle.iter().map(|&g| describe(s, g)).collect::<Vec<_>>());
-    true
 }
 
 fn group_of(g: &Game, u: UnitId) -> GroupId {
@@ -102,9 +92,7 @@ fn group_of(g: &Game, u: UnitId) -> GroupId {
 /// the workers improve the capital's land.
 #[test]
 fn automated_workers_improve_the_land() {
-    // (Seed 27: a seed whose undefended capital stands for the 25 turns; seed 41's fell to a
-    // barbarian after the building tiers changed the game.)
-    let mut s = session(27, true);
+    let mut s = session(41, true);
     let h = s.human;
     let w = unit(&mut s, "UNIT_WORKER");
     ok(&mut s, Command::SetOption { option: PlayerOptionType::PLAYEROPTION_QUICK_MOVES, value: true });
@@ -171,10 +159,7 @@ fn network_and_city_automation_keep_to_their_jobs() {
                 }
             }
         }
-        // Up to 20 turns: the game may end before (the seed's story), the builds count so far.
-        if !try_next_turn(&mut s) {
-            break;
-        }
+        next_turn(&mut s);
     }
     assert!(builds > 0, "the automated workers built");
 }

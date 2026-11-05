@@ -22,6 +22,8 @@ fn observed(seed: u32) -> NewGame {
     ng.opponents = 3;
     ng.world = d.t::<WorldSizeType>("WORLDSIZE_TINY");
     ng.observe = true;
+    // A game that cannot end within the tests' turns (`common::STEADY`).
+    ng.options.extend(common::STEADY);
     ng
 }
 
