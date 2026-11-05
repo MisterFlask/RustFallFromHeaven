@@ -1,0 +1,83 @@
+{
+  // edited with XMLSPY v2004 rel. 2 U (http://www.xmlspy.com) by Dean Ray Johnson (Firaxis Games)
+  // Sid Meier's Civilization 4
+  // Copyright Firaxis Games 2005
+  //
+  // Global Types
+  // To search for one of these types use CvGlobals (CyGlobalContext if using Python) ::getInfoTypeForString(strTypeName)
+  "flavor_types": [
+    "FLAVOR_MILITARY",
+    "FLAVOR_RELIGION",
+    "FLAVOR_PRODUCTION",
+    "FLAVOR_GOLD",
+    "FLAVOR_SCIENCE",
+    "FLAVOR_CULTURE",
+    "FLAVOR_GROWTH",
+    "FLAVOR_ESPIONAGE"
+  ],
+  "art_style_types": [
+    "ARTSTYLE_EUROPEAN",
+    "ARTSTYLE_ASIAN",
+    "ARTSTYLE_SOUTH_AMERICA",
+    "ARTSTYLE_MIDDLE_EAST",
+    "ARTSTYLE_GRECO_ROMAN",
+    "ARTSTYLE_BARBARIAN",
+    "ARTSTYLE_AMURITES",
+    "ARTSTYLE_BALSERAPHS",
+    "ARTSTYLE_BANNOR",
+    "ARTSTYLE_CALABIM",
+    "ARTSTYLE_CLAN_OF_EMBERS",
+    "ARTSTYLE_DOVIELLO",
+    "ARTSTYLE_ELOHIM",
+    "ARTSTYLE_GRIGORI",
+    "ARTSTYLE_HIPPUS",
+    "ARTSTYLE_KHAZAD",
+    "ARTSTYLE_KURIOTATES",
+    "ARTSTYLE_LANUN",
+    "ARTSTYLE_LJOSALFAR",
+    "ARTSTYLE_LUCHUIRP",
+    "ARTSTYLE_ILLIANS",
+    "ARTSTYLE_INFERNAL",
+    "ARTSTYLE_MALAKIM",
+    "ARTSTYLE_MERCURIANS",
+    "ARTSTYLE_SHEAIM",
+    "ARTSTYLE_SIDAR",
+    "ARTSTYLE_SVARTALFAR"
+  ],
+  "city_size_types": ["CITYSIZE_SMALL", "CITYSIZE_MEDIUM", "CITYSIZE_LARGE"],
+  "contact_types": [
+    "CONTACT_RELIGION_PRESSURE",
+    "CONTACT_CIVIC_PRESSURE",
+    "CONTACT_JOIN_WAR",
+    "CONTACT_STOP_TRADING",
+    "CONTACT_GIVE_HELP",
+    "CONTACT_ASK_FOR_HELP",
+    "CONTACT_DEMAND_TRIBUTE",
+    "CONTACT_OPEN_BORDERS",
+    "CONTACT_DEFENSIVE_PACT",
+    "CONTACT_PERMANENT_ALLIANCE",
+    "CONTACT_PEACE_TREATY",
+    "CONTACT_TRADE_TECH",
+    "CONTACT_TRADE_BONUS",
+    "CONTACT_TRADE_MAP"
+  ],
+  "diplomacy_power_types": ["DIPLOMACYPOWER_WEAKER", "DIPLOMACYPOWER_EQUAL", "DIPLOMACYPOWER_STRONGER"],
+  "direction_types": [
+    "DIRECTION_NORTH",
+    "DIRECTION_NORTHEAST",
+    "DIRECTION_EAST",
+    "DIRECTION_SOUTHEAST",
+    "DIRECTION_SOUTH",
+    "DIRECTION_SOUTHWEST",
+    "DIRECTION_WEST",
+    "DIRECTION_NORTHWEST"
+  ],
+  "automate_types": [
+    "AUTOMATE_BUILD",
+    "AUTOMATE_NETWORK",
+    "AUTOMATE_CITY",
+    "AUTOMATE_EXPLORE",
+    "AUTOMATE_RELIGION",
+    "AUTOMATE_TERRAFORMING"
+  ]
+}

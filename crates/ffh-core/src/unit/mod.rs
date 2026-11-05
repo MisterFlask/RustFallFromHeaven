@@ -814,7 +814,7 @@ mod tests {
         let d = ffh_data::global();
         let info = |name: &str| UnitResetInfo::from_info(&d.units[d.t::<UnitType>(name)]);
 
-        // Units/CIV4UnitInfos.xml values.
+        // units.jsonc values.
         let archer = info("UNIT_ARCHER_SCORPION_CLAN");
         assert_eq!((archer.combat, archer.combat_defense, archer.combat_limit), (3, 5, 100));
         assert_eq!((archer.defensive_strike_chance, archer.defensive_strike_damage), (20, 10));

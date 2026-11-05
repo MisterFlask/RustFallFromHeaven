@@ -3077,7 +3077,7 @@ map, normal speed, played to the rules' end at turn 690) ended on the time limit
 were won by civs that got there by accident (3 cultural, 2 domination).
 
 **Estimates** (pure functions of the game state, nothing cached; O(cities + techs) per civ): the
-turns each civ needs for each condition of `CvGame::testVictory` (`CIV4VictoryInfo.xml`).
+turns each civ needs for each condition of `CvGame::testVictory` (`victories.jsonc`).
 - *Cultural*: three cities at legendary culture (50000 at normal speed). Per city, the culture
   missing at its culture rate with the slider all in and the culture process (production to
   culture at 50%); the third city's turns. Before Drama frees the culture slider, Drama's

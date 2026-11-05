@@ -18,9 +18,10 @@ change sweepingly (see "FFH2 is the starting point" under Hard rules).
 ## Layout
 
 ```
-data/xml/        vendored gameplay XML (FFH2 0.41 + stock BTS files FFH2 inherits)
+data/json/       the game data: JSON with comments, one file per info table (docs/DATA.md;
+                 converted from FFH2 0.41's XML + the stock BTS files FFH2 inherits)
 data/text/en.tsv English text (TXT_KEY -> string)
-crates/ffh-data  XML -> typed info tables (port of CvInfos.cpp / CvXMLLoadUtility)
+crates/ffh-data  data/json -> typed info tables (port of CvInfos.cpp)
 crates/ffh-core  rules engine (port of CvGame/CvPlayer/CvTeam/CvCity/CvUnit/CvPlot/... + rules Python)
 crates/ffh-ai    AI players (new design)
 crates/ffh-cppai the FFH2 C++ AI ported as a second controller, for head-to-head comparison (docs/CPPAI.md)
@@ -29,7 +30,7 @@ crates/ffh-harness what the game runners share: child processes, worker pool, pa
 crates/ffh-stress `ffh-stress` binary: AI games over a settings matrix, crashes caught per game
 crates/ffh-play  `ffh-play`: human play (docs/PLAY_DESIGN.md, docs/HUMAN.md)
 crates/ffh-web   the engine as WebAssembly and the page side of the static site (docs/WEB.md)
-tools/           fetch-reference.sh, vendor_xml.py, gen_enums.py, gen_defines.py,
+tools/           fetch-reference.sh, gen_enums.py, gen_defines.py, jsonc.py (the data for Python),
                  agents/ (shared builds, run cache, CPU slots: docs/AGENTS.md)
 docs/            ARCHITECTURE.md, DATA.md, PORTING.md (status), AGENTS.md (parallel agents)
 anim-sprint/     animations for M7 unit sprites (its own project; anim-sprint/ANIMATING_UNITS.md)
@@ -111,14 +112,15 @@ Info tables (`ffh-data`):
 - Type names hard-coded in C++/Python: `data.t::<PromotionType>("PROMOTION_HERO")`
   (panics if unknown) or `data.ty::<T>(..)` (Option). Cache in hot paths.
 
-Readers (`crates/ffh-data/src/registry.rs`, struct `Rd`) mirror `CvXMLLoadUtility`:
-`GetChildXmlValByName(&i, "iX", def)` -> `rd.int_or("iX", def)`;
-`FindInInfoClass` on a tag -> `rd.rf::<XType>("Tag")`;
-`SetVariableListTagPair(&p, "Tag", .., GC.getNumXInfos(), def)` -> `rd.pairs_int::<XType>("Tag", def)`
-(also `pairs_bool`, `pairs_string`, `pairs_ref`); `SetYields` -> `rd.yields("Tag")`;
-`SetCommerce` -> `rd.commerces("Tag")`; fixed ref lists -> `rd.ref_list_fixed`.
-Replicate C++ defaults exactly: use `int_or(tag, d)` only where the C++ call passes a default `d`
-(most calls pass none, so absent ints are 0 even when the XML conventionally writes -1).
+Data files (`data/json/*.jsonc`, docs/DATA.md) are read by `Rd` (`crates/ffh-data/src/registry.rs`),
+one method per kind of value, each with the default an absent key takes: `rd.int_or("key", def)`
+(`GetChildXmlValByName`), `rd.rf::<XType>("key")` (a type name: `FindInInfoClass`),
+`rd.pairs_int::<XType>("key", def)` (an object from type names to values:
+`SetVariableListTagPair`; also `pairs_bool`, `pairs_string`, `pairs_ref`), `rd.yields("key")`,
+`rd.commerces("key")`, `rd.ref_list_fixed`. A key is the Civ4 tag without its `i`/`b`/`f` prefix,
+in snake_case (`iCombatDefense` -> `combat_defense`). Replicate C++ defaults exactly: use
+`int_or(key, d)` only where the C++ call passes a default `d` (most pass none, so absent ints are
+0). Loading warns about a key nothing reads, so a new key needs its reader.
 
 ## Rules engine conventions (`ffh-core`)
 
@@ -206,8 +208,8 @@ which forward to the C++ methods -- so port each Cy call to the corresponding po
 - `PyPlayer(i).getUnitList()` / `getCityList()` -> clone the id lists from `self.players[p]`.
 - UI-only calls (`CyInterface().addMessage`, popups, sounds, `CyEngine` effects) -> omit
   (or `self.log.msg`). Human-only popup choices -> controller decision for that player.
-- Callback names stored in XML are dispatched through tables built once from `PyCall`
-  (`ffh/pycall.rs`); every name referenced by XML must resolve (a test checks this).
+- Callback names stored in the data are dispatched through tables built once from `PyCall`
+  (`ffh/pycall.rs`); every name referenced by the data must resolve (a test checks this).
 
 ## Workflow
 

@@ -15,7 +15,7 @@ setData({
   kinds: ["UnitType", "CombatRoleType", "SpellType", "FeatureType"],
   tables: {
     UnitType: [{ type: "UNIT_AXEMAN", name: "Axeman" }],
-    // the data's roles, in its order (Units/CIV4CombatRoleInfos.xml)
+    // the data's roles, in its order (combat_roles.jsonc)
     CombatRoleType: ["FRONTLINE", "SCREEN", "FLANKER", "ASSASSIN", "ARCHER", "SIEGE", "ARCANE", "DIVINE"].map((r) => ({ type: `COMBATROLE_${r}`, name: r[0] + r.slice(1).toLowerCase() })),
     SpellType: [{ type: "SPELL_MAELSTROM", name: "Maelstrom" }],
     FeatureType: [{ type: "FEATURE_FOREST", name: "Forest" }],

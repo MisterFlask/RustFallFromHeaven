@@ -23,7 +23,7 @@ fn has_trade_item(list: &[TradeData], items: &[TradeableItem]) -> bool {
 }
 
 /// Python `CvGameUtils.canDeclareWar(argsList)`, called by `CvTeam::canDeclareWar` only when
-/// `USE_CAN_DECLARE_WAR_CALLBACK` is set (FFH2's PythonCallbackDefines.xml sets it to 0).
+/// `USE_CAN_DECLARE_WAR_CALLBACK` is set (FFH2's python_callback_defines.jsonc sets it to 0).
 /// FFH2 returns True.
 fn py_can_declare_war(_g: &Game, _team: TeamId, _other: TeamId) -> bool {
     true

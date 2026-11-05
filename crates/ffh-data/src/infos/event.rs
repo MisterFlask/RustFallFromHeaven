@@ -4,7 +4,7 @@
 //! (CvInfos.cpp), plus the `BuildingYieldChange` / `BuildingCommerceChange` structs of
 //! CvStructs.h.
 //!
-//! C++ reads CIV4EventInfos.xml in two passes because `AdditionalEvents`, `EventTimes` and
+//! C++ reads events.jsonc in two passes because `AdditionalEvents`, `EventTimes` and
 //! `ClearEvents` name other events (`readPass2`). Our registry knows every type up front, so
 //! [`read_event`] resolves them directly. Every other reference names a class that C++ loads
 //! before the events, so resolving it here gives the same result.
@@ -45,7 +45,7 @@ pub struct BuildingCommerceChange {
     pub change: i32,
 }
 
-/// C++ `CvEventInfo` (Events/CIV4EventInfos.xml): one choice of a triggered event and its effects.
+/// C++ `CvEventInfo` (events.jsonc): one choice of a triggered event and its effects.
 #[derive(Debug, Clone, Default)]
 pub struct EventInfo {
     pub base: InfoBase,
@@ -207,107 +207,107 @@ fn first_change(changes: &[(BuildingClassType, i32)], building_class: BuildingCl
 pub fn read_event(rd: &Rd) -> EventInfo {
     EventInfo {
         base: InfoBase::read(rd),
-        quest: rd.bool("bQuest"),
-        global: rd.bool("bGlobal"),
-        team: rd.bool("bTeam"),
-        city_effect: rd.bool("bPickCity"),
-        other_player_city_effect: rd.bool("bPickOtherPlayerCity"),
-        gold_to_player: rd.bool("bGoldToPlayer"),
-        golden_age: rd.bool("bGoldenAge"),
-        declare_war: rd.bool("bDeclareWar"),
-        gold: rd.int("iGold"),
-        random_gold: rd.int("iRandomGold"),
-        culture: rd.int("iCulture"),
-        espionage_points: rd.int("iEspionagePoints"),
-        tech: rd.rf("Tech"),
-        tech_percent: rd.int("iTechPercent"),
-        tech_cost_percent: rd.int("iTechCostPercent"),
-        tech_min_turns_left: rd.int("iTechMinTurnsLeft"),
-        prereq_tech: rd.rf("PrereqTech"),
-        unit_class: rd.rf("UnitClass"),
-        num_units: rd.int("iNumFreeUnits"),
-        disband_unit: rd.bool("bDisbandUnit"),
-        unit_experience: rd.int("iUnitExperience"),
-        unit_immobile_turns: rd.int("iUnitImmobileTurns"),
-        building_class: rd.rf("BuildingClass"),
-        building_change: rd.int("iBuildingChange"),
+        quest: rd.bool("quest"),
+        global: rd.bool("global"),
+        team: rd.bool("team"),
+        city_effect: rd.bool("pick_city"),
+        other_player_city_effect: rd.bool("pick_other_player_city"),
+        gold_to_player: rd.bool("gold_to_player"),
+        golden_age: rd.bool("golden_age"),
+        declare_war: rd.bool("declare_war"),
+        gold: rd.int("gold"),
+        random_gold: rd.int("random_gold"),
+        culture: rd.int("culture"),
+        espionage_points: rd.int("espionage_points"),
+        tech: rd.rf("tech"),
+        tech_percent: rd.int("tech_percent"),
+        tech_cost_percent: rd.int("tech_cost_percent"),
+        tech_min_turns_left: rd.int("tech_min_turns_left"),
+        prereq_tech: rd.rf("prereq_tech"),
+        unit_class: rd.rf("unit_class"),
+        num_units: rd.int("num_free_units"),
+        disband_unit: rd.bool("disband_unit"),
+        unit_experience: rd.int("unit_experience"),
+        unit_immobile_turns: rd.int("unit_immobile_turns"),
+        building_class: rd.rf("building_class"),
+        building_change: rd.int("building_change"),
 
-        happy: rd.int("iHappy"),
-        health: rd.int("iHealth"),
-        hurry_anger: rd.int("iHurryAnger"),
-        happy_turns: rd.int("iHappyTurns"),
-        food: rd.int("iFood"),
-        food_percent: rd.int("iFoodPercent"),
+        happy: rd.int("happy"),
+        health: rd.int("health"),
+        hurry_anger: rd.int("hurry_anger"),
+        happy_turns: rd.int("happy_turns"),
+        food: rd.int("food"),
+        food_percent: rd.int("food_percent"),
 
-        feature: rd.rf("FeatureType"),
-        feature_change: rd.int("iFeatureChange"),
-        improvement: rd.rf("ImprovementType"),
-        improvement_change: rd.int("iImprovementChange"),
-        bonus: rd.rf("BonusType"),
-        bonus_change: rd.int("iBonusChange"),
-        route: rd.rf("RouteType"),
-        route_change: rd.int("iRouteChange"),
-        bonus_revealed: rd.rf("BonusRevealed"),
-        bonus_gift: rd.rf("BonusGift"),
+        feature: rd.rf("feature_type"),
+        feature_change: rd.int("feature_change"),
+        improvement: rd.rf("improvement_type"),
+        improvement_change: rd.int("improvement_change"),
+        bonus: rd.rf("bonus_type"),
+        bonus_change: rd.int("bonus_change"),
+        route: rd.rf("route_type"),
+        route_change: rd.int("route_change"),
+        bonus_revealed: rd.rf("bonus_revealed"),
+        bonus_gift: rd.rf("bonus_gift"),
 
-        tech_flavor_value: rd.pairs_int::<FlavorType>("TechFlavors", 0),
+        tech_flavor_value: rd.pairs_int::<FlavorType>("tech_flavors", 0),
         plot_extra_yield: {
             // SetVariableListTagPair keyed by YieldInfo types (not positional like SetYields).
-            let v = rd.pairs_int::<YieldType>("PlotExtraYields", 0);
+            let v = rd.pairs_int::<YieldType>("plot_extra_yields", 0);
             std::array::from_fn(|i| v.raw.get(i).copied().unwrap_or(0))
         },
-        free_specialist_count: rd.pairs_int::<SpecialistType>("FreeSpecialistCounts", 0),
+        free_specialist_count: rd.pairs_int::<SpecialistType>("free_specialist_counts", 0),
 
-        convert_own_cities: rd.int("iConvertOwnCities"),
-        convert_other_cities: rd.int("iConvertOtherCities"),
-        max_num_religions: rd.int("iMaxNumReligions"),
-        our_attitude_modifier: rd.int("iOurAttitudeModifier"),
-        attitude_modifier: rd.int("iAttitudeModifier"),
-        their_enemy_attitude_modifier: rd.int("iTheirEnemyAttitudeModifier"),
-        population_change: rd.int("iPopulationChange"),
-        revolt_turns: rd.int("iRevoltTurns"),
-        min_pillage: rd.int("iMinPillage"),
-        max_pillage: rd.int("iMaxPillage"),
-        unit_promotion: rd.rf("UnitPromotion"),
-        free_unit_support: rd.int("iFreeUnitSupport"),
-        inflation_modifier: rd.int("iInflationMod"),
-        space_production_modifier: rd.int("iSpaceProductionMod"),
-        ai_value: rd.int("iAIValue"),
+        convert_own_cities: rd.int("convert_own_cities"),
+        convert_other_cities: rd.int("convert_other_cities"),
+        max_num_religions: rd.int("max_num_religions"),
+        our_attitude_modifier: rd.int("our_attitude_modifier"),
+        attitude_modifier: rd.int("attitude_modifier"),
+        their_enemy_attitude_modifier: rd.int("their_enemy_attitude_modifier"),
+        population_change: rd.int("population_change"),
+        revolt_turns: rd.int("revolt_turns"),
+        min_pillage: rd.int("min_pillage"),
+        max_pillage: rd.int("max_pillage"),
+        unit_promotion: rd.rf("unit_promotion"),
+        free_unit_support: rd.int("free_unit_support"),
+        inflation_modifier: rd.int("inflation_mod"),
+        space_production_modifier: rd.int("space_production_mod"),
+        ai_value: rd.int("ai_value"),
 
-        crime: rd.int("iCrime"),
-        global_counter: rd.int("iGlobalCounter"),
-        prereq_alignment: rd.rf("PrereqAlignment"),
-        prereq_bonus: rd.rf("PrereqBonus"),
-        prereq_civilization: rd.rf("PrereqCivilization"),
-        prereq_corporation: rd.rf("PrereqCorporation"),
-        prereq_religion: rd.rf("PrereqReligion"),
-        prereq_state_religion: rd.rf("PrereqStateReligion"),
+        crime: rd.int("crime"),
+        global_counter: rd.int("global_counter"),
+        prereq_alignment: rd.rf("prereq_alignment"),
+        prereq_bonus: rd.rf("prereq_bonus"),
+        prereq_civilization: rd.rf("prereq_civilization"),
+        prereq_corporation: rd.rf("prereq_corporation"),
+        prereq_religion: rd.rf("prereq_religion"),
+        prereq_state_religion: rd.rf("prereq_state_religion"),
 
         // C++ reads a "NONE"-filled string list, then FindInInfoClass on every entry.
-        unit_combat_promotion: rd.pairs_ref::<UnitCombatType, PromotionType>("UnitCombatPromotions"),
-        unit_class_promotion: rd.pairs_ref::<UnitClassType, PromotionType>("UnitClassPromotions"),
+        unit_combat_promotion: rd.pairs_ref::<UnitCombatType, PromotionType>("unit_combat_promotions"),
+        unit_class_promotion: rd.pairs_ref::<UnitClassType, PromotionType>("unit_class_promotions"),
 
-        unit_name_key: rd.string("UnitName"),
-        python_callback: rd.string("PythonCallback"),
-        python_expire_check: rd.string("PythonExpireCheck"),
-        python_can_do: rd.string("PythonCanDo"),
-        python_help: rd.string("PythonHelp"),
+        unit_name_key: rd.string("unit_name"),
+        python_callback: rd.string("python_callback"),
+        python_expire_check: rd.string("python_expire_check"),
+        python_can_do: rd.string("python_can_do"),
+        python_help: rd.string("python_help"),
 
-        world_news: rd.string_list("WorldNewsTexts"),
+        world_news: rd.string_list("world_news_texts"),
 
         building_yield_changes: read_building_yield_changes(rd),
         building_commerce_changes: read_building_commerce_changes(rd),
-        building_happy_changes: read_building_changes(rd, "BuildingExtraHappies"),
-        building_health_changes: read_building_changes(rd, "BuildingExtraHealths"),
+        building_happy_changes: read_building_changes(rd, "building_extra_happies"),
+        building_health_changes: read_building_changes(rd, "building_extra_healths"),
 
         // readPass2
-        additional_event_chance: rd.pairs_int::<EventType>("AdditionalEvents", 0),
-        additional_event_time: rd.pairs_int::<EventType>("EventTimes", 0),
-        clear_event_chance: rd.pairs_int::<EventType>("ClearEvents", 0),
+        additional_event_chance: rd.pairs_int::<EventType>("additional_events", 0),
+        additional_event_time: rd.pairs_int::<EventType>("event_times", 0),
+        clear_event_chance: rd.pairs_int::<EventType>("clear_events", 0),
     }
 }
 
-/// C++ `CvEventTriggerInfo` (Events/CIV4EventTriggerInfos.xml): when an event may fire, and
+/// C++ `CvEventTriggerInfo` (event_triggers.jsonc): when an event may fire, and
 /// which [`EventInfo`] choices it offers.
 #[derive(Debug, Clone, Default)]
 pub struct EventTriggerInfo {
@@ -432,94 +432,94 @@ pub fn read_event_trigger(rd: &Rd) -> EventTriggerInfo {
     let (texts, text_eras) = read_trigger_texts(rd);
     EventTriggerInfo {
         base: InfoBase::read(rd),
-        percent_games_active: rd.int("iPercentGamesActive"),
-        probability: rd.int("iWeight"),
+        percent_games_active: rd.int("percent_games_active"),
+        probability: rd.int("weight"),
 
-        num_units: rd.int("iNumUnits"),
-        num_buildings: rd.int("iNumBuildings"),
-        num_units_global: rd.int("iNumUnitsGlobal"),
-        num_buildings_global: rd.int("iNumBuildingsGlobal"),
+        num_units: rd.int("num_units"),
+        num_buildings: rd.int("num_buildings"),
+        num_units_global: rd.int("num_units_global"),
+        num_buildings_global: rd.int("num_buildings_global"),
 
-        num_plots_required: rd.int("iNumPlotsRequired"),
+        num_plots_required: rd.int("num_plots_required"),
         plot_type: read_plot_type(rd),
 
-        num_religions: rd.int("iNumReligions"),
-        num_corporations: rd.int("iNumCorporations"),
+        num_religions: rd.int("num_religions"),
+        num_corporations: rd.int("num_corporations"),
 
-        other_player_share_borders: rd.int("iOtherPlayerShareBorders"),
+        other_player_share_borders: rd.int("other_player_share_borders"),
 
-        min_population: rd.int("iMinPopulation"),
-        max_population: rd.int("iMaxPopulation"),
+        min_population: rd.int("min_population"),
+        max_population: rd.int("max_population"),
 
-        min_map_landmass: rd.int("iMinMapLandmass"),
-        min_our_landmass: rd.int("iMinOurLandmass"),
-        max_our_landmass: rd.int("iMaxOurLandmass"),
-        min_difficulty: rd.rf("MinDifficulty"),
-        angry: rd.int("iAngry"),
-        unhealthy: rd.int("iUnhealthy"),
-        unit_damaged_weight: rd.int("iUnitDamagedWeight"),
-        unit_distance_weight: rd.int("iUnitDistanceWeight"),
-        unit_experience_weight: rd.int("iUnitExperienceWeight"),
-        min_treasury: rd.int("iMinTreasury"),
+        min_map_landmass: rd.int("min_map_landmass"),
+        min_our_landmass: rd.int("min_our_landmass"),
+        max_our_landmass: rd.int("max_our_landmass"),
+        min_difficulty: rd.rf("min_difficulty"),
+        angry: rd.int("angry"),
+        unhealthy: rd.int("unhealthy"),
+        unit_damaged_weight: rd.int("unit_damaged_weight"),
+        unit_distance_weight: rd.int("unit_distance_weight"),
+        unit_experience_weight: rd.int("unit_experience_weight"),
+        min_treasury: rd.int("min_treasury"),
 
-        units_required: ref_list_req(rd, "UnitsRequired"),
-        buildings_required: ref_list_req(rd, "BuildingsRequired"),
-        prereq_or_techs: ref_list_req(rd, "OrPreReqs"),
-        prereq_and_techs: ref_list_req(rd, "AndPreReqs"),
+        units_required: ref_list_req(rd, "units_required"),
+        buildings_required: ref_list_req(rd, "buildings_required"),
+        prereq_or_techs: ref_list_req(rd, "or_pre_reqs"),
+        prereq_and_techs: ref_list_req(rd, "and_pre_reqs"),
 
-        other_player_has_tech: rd.rf("OtherPlayerHasTech"),
-        civic: rd.rf("Civic"),
+        other_player_has_tech: rd.rf("other_player_has_tech"),
+        civic: rd.rf("civic"),
 
-        obsolete_techs: ref_list_req(rd, "ObsoleteTechs"),
-        events: ref_list_req(rd, "Events"),
-        prereq_events: ref_list_req(rd, "PrereqEvents"),
-        features_required: ref_list_opt(rd, "FeaturesRequired"),
-        terrains_required: ref_list_req(rd, "TerrainsRequired"),
-        improvements_required: ref_list_opt(rd, "ImprovementsRequired"),
-        bonuses_required: ref_list_opt(rd, "BonusesRequired"),
-        routes_required: ref_list_opt(rd, "RoutesRequired"),
-        religions_required: ref_list_req(rd, "ReligionsRequired"),
-        corporations_required: ref_list_req(rd, "CorporationsRequired"),
+        obsolete_techs: ref_list_req(rd, "obsolete_techs"),
+        events: ref_list_req(rd, "events"),
+        prereq_events: ref_list_req(rd, "prereq_events"),
+        features_required: ref_list_opt(rd, "features_required"),
+        terrains_required: ref_list_req(rd, "terrains_required"),
+        improvements_required: ref_list_opt(rd, "improvements_required"),
+        bonuses_required: ref_list_opt(rd, "bonuses_required"),
+        routes_required: ref_list_opt(rd, "routes_required"),
+        religions_required: ref_list_req(rd, "religions_required"),
+        corporations_required: ref_list_req(rd, "corporations_required"),
 
         texts,
         text_eras,
-        world_news: rd.string_list("WorldNewsTexts"),
+        world_news: rd.string_list("world_news_texts"),
 
-        single_player: rd.bool("bSinglePlayer"),
-        team: rd.bool("bTeam"),
-        recurring: rd.bool("bRecurring"),
-        global: rd.bool("bGlobal"),
-        pick_player: rd.bool("bPickPlayer"),
-        other_player_war: rd.bool("bOtherPlayerWar"),
-        other_player_has_religion: rd.bool("bOtherPlayerHasReligion"),
-        other_player_has_other_religion: rd.bool("bOtherPlayerHasOtherReligion"),
-        other_player_ai: rd.bool("bOtherPlayerAI"),
-        pick_city: rd.bool("bPickCity"),
-        pick_other_player_city: rd.bool("bPickOtherPlayerCity"),
-        show_plot: rd.bool("bShowPlot"),
-        city_food_weight: rd.int("iCityFoodWeight"),
-        units_on_plot: rd.bool("bUnitsOnPlot"),
-        own_plot: rd.bool("bOwnPlot"),
-        pick_religion: rd.bool("bPickReligion"),
-        state_religion: rd.bool("bStateReligion"),
-        holy_city: rd.bool("bHolyCity"),
-        pick_corporation: rd.bool("bPickCorporation"),
-        headquarters: rd.bool("bHeadquarters"),
-        probability_unit_multiply: rd.bool("bProbabilityUnitMultiply"),
-        probability_building_multiply: rd.bool("bProbabilityBuildingMultiply"),
-        prereq_event_city: rd.bool("bPrereqEventPlot"),
+        single_player: rd.bool("single_player"),
+        team: rd.bool("team"),
+        recurring: rd.bool("recurring"),
+        global: rd.bool("global"),
+        pick_player: rd.bool("pick_player"),
+        other_player_war: rd.bool("other_player_war"),
+        other_player_has_religion: rd.bool("other_player_has_religion"),
+        other_player_has_other_religion: rd.bool("other_player_has_other_religion"),
+        other_player_ai: rd.bool("other_player_ai"),
+        pick_city: rd.bool("pick_city"),
+        pick_other_player_city: rd.bool("pick_other_player_city"),
+        show_plot: rd.bool("show_plot"),
+        city_food_weight: rd.int("city_food_weight"),
+        units_on_plot: rd.bool("units_on_plot"),
+        own_plot: rd.bool("own_plot"),
+        pick_religion: rd.bool("pick_religion"),
+        state_religion: rd.bool("state_religion"),
+        holy_city: rd.bool("holy_city"),
+        pick_corporation: rd.bool("pick_corporation"),
+        headquarters: rd.bool("headquarters"),
+        probability_unit_multiply: rd.bool("probability_unit_multiply"),
+        probability_building_multiply: rd.bool("probability_building_multiply"),
+        prereq_event_city: rd.bool("prereq_event_plot"),
 
-        python_callback: rd.string("PythonCallback"),
-        python_can_do: rd.string("PythonCanDo"),
-        python_can_do_city: rd.string("PythonCanDoCity"),
-        python_can_do_unit: rd.string("PythonCanDoUnit"),
+        python_callback: rd.string("python_callback"),
+        python_can_do: rd.string("python_can_do"),
+        python_can_do_city: rd.string("python_can_do_city"),
+        python_can_do_unit: rd.string("python_can_do_unit"),
 
-        prereq_crime: rd.int("iPrereqCrime"),
-        prereq_global_counter: rd.int("iPrereqGlobalCounter"),
-        prereq_alignment: rd.rf("PrereqAlignment"),
-        prereq_civilization_pleased: rd.rf("PrereqCivilizationPleased"),
-        prereq_leader: rd.rf("PrereqLeader"),
-        prereq_trait: rd.rf("PrereqTrait"),
+        prereq_crime: rd.int("prereq_crime"),
+        prereq_global_counter: rd.int("prereq_global_counter"),
+        prereq_alignment: rd.rf("prereq_alignment"),
+        prereq_civilization_pleased: rd.rf("prereq_civilization_pleased"),
+        prereq_leader: rd.rf("prereq_leader"),
+        prereq_trait: rd.rf("prereq_trait"),
     }
 }
 
@@ -527,7 +527,7 @@ pub fn read_event_trigger(rd: &Rd) -> EventTriggerInfo {
 
 /// Context for load warnings: the entry's `<Type>`.
 fn entry_type(rd: &Rd) -> String {
-    rd.string("Type")
+    rd.string("type")
 }
 
 /// The C++ list loop (`SetToChildByTagName(tag)`, then `GetChildXmlVal`/`GetNextXmlVal` over the
@@ -576,8 +576,8 @@ fn tuple_entries<'a>(rd: &Rd<'a>, tag: &str) -> Vec<Vec<Rd<'a>>> {
 }
 
 /// Text of the `i`-th value of an entry; "" when missing (C++ `GetNextXmlVal` clears the string).
-fn text_at<'a>(values: &[Rd<'a>], i: usize) -> &'a str {
-    values.get(i).map_or("", |v| v.text())
+fn text_at<'a>(values: &[Rd<'a>], i: usize) -> std::borrow::Cow<'a, str> {
+    values.get(i).map_or(std::borrow::Cow::Borrowed(""), |v| v.scalar_text())
 }
 
 /// Int value of the `i`-th value of an entry; 0 when missing (C++ `GetNextXmlVal(int*)` default).
@@ -595,11 +595,11 @@ fn int_at(rd: &Rd, values: &[Rd], i: usize, tag: &str) -> i32 {
 
 /// C++ `BuildingExtraYields` loop: (building class, yield, change) per entry.
 fn read_building_yield_changes(rd: &Rd) -> Vec<BuildingYieldChange> {
-    const TAG: &str = "BuildingExtraYields";
+    const TAG: &str = "building_extra_yields";
     let mut out = Vec::new();
     for values in tuple_entries(rd, TAG) {
-        let building_class = resolve_req::<BuildingClassType>(rd, text_at(&values, 0), TAG);
-        let yield_type = resolve_req::<YieldType>(rd, text_at(&values, 1), TAG);
+        let building_class = resolve_req::<BuildingClassType>(rd, &text_at(&values, 0), TAG);
+        let yield_type = resolve_req::<YieldType>(rd, &text_at(&values, 1), TAG);
         let change = int_at(rd, &values, 2, TAG);
         if let (Some(building_class), Some(yield_type)) = (building_class, yield_type) {
             out.push(BuildingYieldChange { building_class, yield_type, change });
@@ -610,11 +610,11 @@ fn read_building_yield_changes(rd: &Rd) -> Vec<BuildingYieldChange> {
 
 /// C++ `BuildingExtraCommerces` loop: (building class, commerce, change) per entry.
 fn read_building_commerce_changes(rd: &Rd) -> Vec<BuildingCommerceChange> {
-    const TAG: &str = "BuildingExtraCommerces";
+    const TAG: &str = "building_extra_commerces";
     let mut out = Vec::new();
     for values in tuple_entries(rd, TAG) {
-        let building_class = resolve_req::<BuildingClassType>(rd, text_at(&values, 0), TAG);
-        let commerce_type = resolve_req::<CommerceType>(rd, text_at(&values, 1), TAG);
+        let building_class = resolve_req::<BuildingClassType>(rd, &text_at(&values, 0), TAG);
+        let commerce_type = resolve_req::<CommerceType>(rd, &text_at(&values, 1), TAG);
         let change = int_at(rd, &values, 2, TAG);
         if let (Some(building_class), Some(commerce_type)) = (building_class, commerce_type) {
             out.push(BuildingCommerceChange { building_class, commerce_type, change });
@@ -627,7 +627,7 @@ fn read_building_commerce_changes(rd: &Rd) -> Vec<BuildingCommerceChange> {
 fn read_building_changes(rd: &Rd, tag: &str) -> Vec<(BuildingClassType, i32)> {
     let mut out = Vec::new();
     for values in tuple_entries(rd, tag) {
-        let building_class = resolve_req::<BuildingClassType>(rd, text_at(&values, 0), tag);
+        let building_class = resolve_req::<BuildingClassType>(rd, &text_at(&values, 0), tag);
         let change = int_at(rd, &values, 1, tag);
         if let Some(building_class) = building_class {
             out.push((building_class, change));
@@ -641,16 +641,16 @@ fn read_building_changes(rd: &Rd, tag: &str) -> Vec<(BuildingClassType, i32)> {
 fn read_trigger_texts(rd: &Rd) -> (Vec<String>, Vec<Option<EraType>>) {
     let mut texts = Vec::new();
     let mut eras = Vec::new();
-    for values in tuple_entries(rd, "TriggerTexts") {
+    for values in tuple_entries(rd, "trigger_texts") {
         texts.push(text_at(&values, 0).to_string());
-        eras.push(rd.resolve::<EraType>(text_at(&values, 1)));
+        eras.push(rd.resolve::<EraType>(&text_at(&values, 1)));
     }
     (texts, eras)
 }
 
 /// `<iPlotType>`: a raw C++ `PlotTypes` value (-1 = `NO_PLOT`).
 fn read_plot_type(rd: &Rd) -> Option<PlotType> {
-    let v = rd.int("iPlotType");
+    let v = rd.int("plot_type");
     if v < -1 || v >= PlotType::NUM as i32 {
         rd.cx.warn(format!("{}: iPlotType {} is not a PlotTypes value", entry_type(rd), v));
     }
@@ -661,7 +661,6 @@ fn read_plot_type(rd: &Rd) -> Option<PlotType> {
 mod tests {
     use super::*;
     use crate::registry::{Ctx, Registry};
-    use crate::xml::XmlDoc;
 
     fn registry() -> Registry {
         let names = |v: &[&str]| v.iter().map(|s| s.to_string()).collect::<Vec<_>>();
@@ -674,39 +673,35 @@ mod tests {
         reg
     }
 
-    /// Edge cases of the C++ list loops that the shipped XML never hits.
+    /// Edge cases of the C++ list loops that the shipped data never hits.
     #[test]
     fn trigger_reader_follows_cpp_edge_cases() {
         let reg = registry();
-        let cx = Ctx::new(&reg, "test.xml");
-        let doc = XmlDoc::parse(
-            r#"<EventTriggerInfo>
-                <Type>EVENTTRIGGER_T</Type>
-                <ImprovementsRequired><ImprovementType>NONE</ImprovementType><ImprovementType>IMPROVEMENT_FARM</ImprovementType></ImprovementsRequired>
-                <Events><Event>EVENT_B</Event><Event>NONE</Event></Events>
-                <TriggerTexts>
-                    <TriggerText><Text>TXT_A</Text><Era>ERA_ANCIENT</Era></TriggerText>
-                    <TriggerText/>
-                    <TriggerText><Text>TXT_B</Text></TriggerText>
-                </TriggerTexts>
-                <WorldNewsTexts><Text></Text></WorldNewsTexts>
-            </EventTriggerInfo>"#,
+        let cx = Ctx::new(&reg, "test.jsonc");
+        let value = crate::jsonc::parse(
+            r#"{
+                "type": "EVENTTRIGGER_T",
+                "improvements_required": ["NONE", "IMPROVEMENT_FARM"],
+                "events": ["EVENT_B", "NONE"],
+                "trigger_texts": [["TXT_A", "ERA_ANCIENT"], [], ["TXT_B"]],
+                "world_news_texts": [""]
+            }"#,
         )
         .unwrap();
-        let t = read_event_trigger(&Rd::new(doc.root(), &cx));
+        let t = read_event_trigger(&Rd::new(&value, &cx));
         // NONE is a real entry in plot requirement lists (matches "no improvement").
         assert_eq!(t.improvements_required, vec![None, Some(ImprovementType(0))]);
         // NONE in a list of required types is dropped with a warning (C++ would keep -1).
         assert_eq!(t.events, vec![EventType(1)]);
         let warnings = cx.warnings.borrow();
         assert_eq!(warnings.len(), 1, "{warnings:?}");
-        assert!(warnings[0].contains("EVENTTRIGGER_T") && warnings[0].contains("<Events>"));
-        // A TriggerText without children is skipped; a missing Era is -1 (any era).
+        assert!(warnings[0].contains("EVENTTRIGGER_T") && warnings[0].contains("events"));
+        // An empty trigger text entry is skipped; a missing era is -1 (any era).
         assert_eq!(t.texts, vec!["TXT_A", "TXT_B"]);
         assert_eq!(t.text_eras, vec![Some(EraType(0)), None]);
         // An empty world-news text still counts.
         assert_eq!(t.world_news, vec![String::new()]);
-        // Absent tags: GetChildXmlValByName's own defaults win over the C++ constructor's.
+        // Absent keys: GetChildXmlValByName's own defaults win over the C++ constructor's.
         assert!(!t.show_plot);
         assert_eq!(t.plot_type, Some(PlotType::PLOT_PEAK));
         assert_eq!(t.min_difficulty, None);
@@ -715,27 +710,21 @@ mod tests {
     #[test]
     fn event_reader_follows_cpp_edge_cases() {
         let reg = registry();
-        let cx = Ctx::new(&reg, "test.xml");
-        let doc = XmlDoc::parse(
-            r#"<EventInfo>
-                <Type>EVENT_A</Type>
-                <BuildingExtraYields>
-                    <BuildingExtraYield><BuildingClass>BUILDINGCLASS_X</BuildingClass><YieldType>YIELD_COMMERCE</YieldType><iExtraYield>3</iExtraYield></BuildingExtraYield>
-                    <BuildingExtraYield/>
-                </BuildingExtraYields>
-                <BuildingExtraHappies>
-                    <BuildingExtraHappy><BuildingClass>BUILDINGCLASS_X</BuildingClass></BuildingExtraHappy>
-                    <BuildingExtraHappy><BuildingClass>BUILDINGCLASS_X</BuildingClass><iHappy>5</iHappy></BuildingExtraHappy>
-                </BuildingExtraHappies>
-                <PlotExtraYields><PlotExtraYield><YieldType>YIELD_COMMERCE</YieldType><iExtraYield>2</iExtraYield></PlotExtraYield></PlotExtraYields>
-                <AdditionalEvents><EventChance><Event>EVENT_B</Event><iEventChance>30</iEventChance></EventChance></AdditionalEvents>
-            </EventInfo>"#,
+        let cx = Ctx::new(&reg, "test.jsonc");
+        let value = crate::jsonc::parse(
+            r#"{
+                "type": "EVENT_A",
+                "building_extra_yields": [["BUILDINGCLASS_X", "YIELD_COMMERCE", 3], []],
+                "building_extra_happies": [["BUILDINGCLASS_X"], ["BUILDINGCLASS_X", 5]],
+                "plot_extra_yields": {"YIELD_COMMERCE": 2},
+                "additional_events": {"EVENT_B": 30}
+            }"#,
         )
         .unwrap();
-        let e = read_event(&Rd::new(doc.root(), &cx));
+        let e = read_event(&Rd::new(&value, &cx));
         assert!(cx.warnings.borrow().is_empty(), "{:?}", cx.warnings.borrow());
         let x = BuildingClassType(0);
-        // Entries are positional; an entry without children is skipped.
+        // Entries are positional; an empty entry is skipped.
         assert_eq!(
             e.building_yield_changes,
             vec![BuildingYieldChange { building_class: x, yield_type: YieldType::YIELD_COMMERCE, change: 3 }]
@@ -746,7 +735,7 @@ mod tests {
         assert_eq!(e.building_happy_change(x), 0);
         assert_eq!(e.plot_extra_yield, [0, 0, 2]);
         assert_eq!(e.additional_event_chance.raw, vec![0, 30]);
-        // C++ constructor sets -1, but read() resets an absent tag to 0.
+        // C++ constructor sets -1, but read() resets an absent key to 0.
         assert_eq!(e.max_num_religions, 0);
     }
 }

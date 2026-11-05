@@ -1,5 +1,5 @@
 //! This game's own info classes for engagement combat (not FFH2's; phase 6 of the owner's spec,
-//! docs/ENGAGEMENTS.md): `Units/CIV4CombatRoleInfos.xml` (the roles of
+//! docs/ENGAGEMENTS.md): `combat_roles.jsonc` (the roles of
 //! formation battles, revision 4). The role of each unit type is derived at load
 //! (`GameData::unit_roles`, lib.rs).
 
@@ -8,7 +8,7 @@ use crate::define_idx;
 use crate::enums::*;
 use crate::registry::Rd;
 
-define_idx!(/// An engagement role (`COMBATROLE_*`, Units/CIV4CombatRoleInfos.xml).
+define_idx!(/// An engagement role (`COMBATROLE_*`, combat_roles.jsonc).
 CombatRoleType);
 
 /// What a unit does with one action of a formation battle (XML `Action` of a role's rows;
@@ -193,7 +193,7 @@ pub fn rows_charge(rows: &[RowActions; ROWS]) -> bool {
 /// exactly when its kind is not NONE, and some row acts.
 pub fn rows_problem(rows: &[RowActions; ROWS]) -> Option<&'static str> {
     if rows.iter().any(|row| row.count < 0 || (row.kind == ActionKind::None) != (row.count == 0)) {
-        Some("a row has a count above 0 exactly when its Action is not NONE")
+        Some("a row has a count above 0 exactly when its action is not NONE")
     } else if rows.iter().all(|row| row.count == 0) {
         Some("no row has an action")
     } else {
@@ -206,44 +206,44 @@ fn read_row(rd: &Rd, base: &InfoBase, tag: &str) -> RowActions {
         rd.cx.warn(format!("{}: no {tag}", base.type_));
         return RowActions::default();
     };
-    let token = row.string("Action");
+    let token = row.string("action");
     let kind = ActionKind::parse(&token).unwrap_or_else(|| {
         rd.cx.warn(format!("{}: {tag}: unknown Action {token:?}", base.type_));
         ActionKind::None
     });
-    RowActions { kind, count: row.int("iActions") }
+    RowActions { kind, count: row.int("actions") }
 }
 
 pub fn read_combat_role(rd: &Rd) -> CombatRoleInfo {
     let base = InfoBase::read(rd);
-    let rows = [read_row(rd, &base, "FrontRow"), read_row(rd, &base, "MiddleRow"), read_row(rd, &base, "RearRow")];
-    let home = rd.string("HomeRow");
+    let rows = [read_row(rd, &base, "front_row"), read_row(rd, &base, "middle_row"), read_row(rd, &base, "rear_row")];
+    let home = rd.string("home_row");
     let home_row = ROW_TOKENS.iter().position(|&t| t == home.trim()).unwrap_or_else(|| {
         rd.cx.warn(format!("{}: unknown HomeRow {home:?}", base.type_));
         0
     });
     CombatRoleInfo {
-        attack_percent: rd.int("iAttackPercent"),
-        defense_percent: rd.int("iDefensePercent"),
-        max_hp: rd.int("iMaxHP"),
-        speed: rd.int("iSpeed"),
-        dodge: rd.int("iDodge"),
-        crit_bonus: rd.int("iCritBonus"),
-        anti_flank: rd.bool("bAntiFlank"),
+        attack_percent: rd.int("attack_percent"),
+        defense_percent: rd.int("defense_percent"),
+        max_hp: rd.int("max_hp"),
+        speed: rd.int("speed"),
+        dodge: rd.int("dodge"),
+        crit_bonus: rd.int("crit_bonus"),
+        anti_flank: rd.bool("anti_flank"),
         rows,
         home_row,
-        auto_pick: rd.int("iAutoPick"),
-        default_unit_combats: rd.ref_list("DefaultUnitCombats"),
-        default_free_promotion: rd.rf("DefaultFreePromotion"),
-        from_role: rd.rf("FromRole"),
-        from_promotion: rd.rf("FromPromotion"),
-        default: rd.bool("bDefault"),
+        auto_pick: rd.int("auto_pick"),
+        default_unit_combats: rd.ref_list("default_unit_combats"),
+        default_free_promotion: rd.rf("default_free_promotion"),
+        from_role: rd.rf("from_role"),
+        from_promotion: rd.rf("from_promotion"),
+        default: rd.bool("default"),
         base,
     }
 }
 
 /// A unit type's own value in place of its role's (`iEngageSpeed`, `iEngageDodge`,
-/// `iEngageCritBonus` in `CIV4UnitInfos.xml`): `None` at -1, the default (the role's value), else
+/// `iEngageCritBonus` in `units.jsonc`): `None` at -1, the default (the role's value), else
 /// the value, which must lie in `valid`; one outside both warns and reads as the role's.
 pub fn read_engage_override(rd: &Rd, tag: &str, unit_type: &str, valid: std::ops::RangeInclusive<i32>) -> Option<i32> {
     let v = rd.int_or(tag, -1);
@@ -257,28 +257,28 @@ pub fn read_engage_override(rd: &Rd, tag: &str, unit_type: &str, valid: std::ops
     Some(v)
 }
 
-/// A unit type's `EngageRows` (`CIV4UnitInfos.xml`): three `Row` elements, front, middle and rear,
+/// A unit type's `EngageRows` (`units.jsonc`): three `Row` elements, front, middle and rear,
 /// each an `Action` and its `iCount`, which replace its role's rows. `None` without the tag: the
 /// role's rows. Rows that are not exactly three, an unknown `Action`, or rows the roles' checks
 /// refuse ([`rows_problem`]) warn, and the unit keeps its role's rows.
 pub fn read_engage_rows(rd: &Rd, unit_type: &str) -> Option<[RowActions; ROWS]> {
-    let list = rd.child("EngageRows")?;
-    let rows: Vec<Rd> = list.children_named("Row").collect();
+    let list = rd.child("engage_rows")?;
+    let rows: Vec<Rd> = list.children().collect();
     if rows.len() != ROWS {
-        rd.cx.warn(format!("{unit_type}: EngageRows has {} Row elements ({ROWS} expected: front, middle, rear)", rows.len()));
+        rd.cx.warn(format!("{unit_type}: engage_rows has {} rows ({ROWS} expected: front, middle, rear)", rows.len()));
         return None;
     }
     let mut out = [RowActions::default(); ROWS];
     for (i, row) in rows.iter().enumerate() {
-        let token = row.string("Action");
+        let (token, count) = (row.string("action"), row.int("count"));
         let Some(kind) = ActionKind::parse(&token) else {
-            rd.cx.warn(format!("{unit_type}: EngageRows, {} row: unknown Action {token:?}", ROW_TOKENS[i]));
+            rd.cx.warn(format!("{unit_type}: engage_rows, {} row: unknown action {token:?}", ROW_TOKENS[i]));
             return None;
         };
-        out[i] = RowActions { kind, count: row.int("iCount") };
+        out[i] = RowActions { kind, count };
     }
     if let Some(problem) = rows_problem(&out) {
-        rd.cx.warn(format!("{unit_type}: EngageRows: {problem}"));
+        rd.cx.warn(format!("{unit_type}: engage_rows: {problem}"));
         return None;
     }
     Some(out)

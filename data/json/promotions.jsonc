@@ -1,0 +1,3560 @@
+// Created with the FfH editor by Kael
+// Sid Meier's Civilization 4
+// Copyright Firaxis Games 2005
+//
+// Promotion Infos
+// This game's change (the owner's answer Q1 of docs/COMBAT_INVENTORY.md): PROMOTION_WITHERED
+//     and PROMOTION_PUPPET also lower defence (iCombatPercentDefense -10 and -20), which engagement
+//     combat applies to Dv.
+[
+  {
+    "type": "PROMOTION_ACCURACY",
+    "description": "TXT_KEY_PROMOTION_ACCURACY",
+    "promotion_prereq": "PROMOTION_BARRAGE1",
+    "bombard_rate_change": 20,
+    "unit_combats": {"UNITCOMBAT_SIEGE": true},
+    "button": ",Art/Interface/Buttons/Promotions/Accuracy.dds,Art/Interface/Buttons/Promotions_Atlas.dds,1,1"
+  },
+  {
+    "type": "PROMOTION_AERONS_CHOSEN",
+    "description": "TXT_KEY_PROMOTION_AERONS_CHOSEN",
+    "immune_to_first_strikes": true,
+    "button": "Art/Interface/Buttons/Promotions/AeronsChosen.dds",
+    "immune_to_fear": true,
+    "combat_heal_percent": 20,
+    "min_level": -1,
+    "damage_type_combats": {"DAMAGE_UNHOLY": 2}
+  },
+  {
+    "type": "PROMOTION_AIR1",
+    "description": "TXT_KEY_PROMOTION_AIR1",
+    "promotion_prereq": "PROMOTION_CHANNELING1",
+    "unit_combats": {"UNITCOMBAT_ADEPT": true},
+    "button": "Art/Interface/Buttons/Promotions/Air1.dds",
+    "ai_weight": 50,
+    "bonus_prereq": "BONUS_MANA_AIR",
+    "promotion_next_level": "PROMOTION_AIR2"
+  },
+  {
+    "type": "PROMOTION_AIR2",
+    "description": "TXT_KEY_PROMOTION_AIR2",
+    "promotion_prereq": "PROMOTION_AIR1",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Air2.dds",
+    "ai_weight": 100,
+    "promotion_prereq_and": "PROMOTION_CHANNELING2",
+    "promotion_next_level": "PROMOTION_AIR3"
+  },
+  {
+    "type": "PROMOTION_AIR3",
+    "description": "TXT_KEY_PROMOTION_AIR3",
+    "promotion_prereq": "PROMOTION_AIR2",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Air3.dds",
+    "ai_weight": 150,
+    "promotion_prereq_and": "PROMOTION_CHANNELING3"
+  },
+  {
+    "type": "PROMOTION_AMPHIBIOUS",
+    "description": "TXT_KEY_PROMOTION_AMPHIBIOUS",
+    "promotion_prereq": "PROMOTION_COMBAT2",
+    "amphib": true,
+    "river": true,
+    "unit_combats": {
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_RECON": true
+    },
+    "button": ",Art/Interface/Buttons/Promotions/Amphibious.dds,Art/Interface/Buttons/Promotions_Atlas.dds,3,1",
+    "mutation": true
+  },
+  {
+    "type": "PROMOTION_ANGEL",
+    "description": "TXT_KEY_PROMOTION_ANGEL",
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Promotions/Angel.dds",
+    "immune_to_fear": true,
+    "not_alive": true,
+    "race": true,
+    "damage_type_resists": {"DAMAGE_DEATH": 50, "DAMAGE_FIRE": 20, "DAMAGE_HOLY": 100, "DAMAGE_POISON": 100}
+  },
+  {
+    "type": "PROMOTION_ATHAME",
+    "description": "TXT_KEY_EQUIPMENT_ATHAME",
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Equipment/Athame.dds",
+    "equipment": true,
+    "promotion_combat_apply": "PROMOTION_PLAGUED",
+    "damage_type_combats": {"DAMAGE_POISON": 3}
+  },
+  {
+    "type": "PROMOTION_AVATAR",
+    "description": "TXT_KEY_PROMOTION_AVATAR",
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Promotions/Avatar.dds",
+    "immune_to_capture": true,
+    "immune_to_fear": true,
+    "immune_to_magic": true,
+    "not_alive": true,
+    "race": true,
+    "better_defender_than_percent": 1000,
+    "caster_resist_modify": -50
+  },
+  {
+    "type": "PROMOTION_BARRAGE1",
+    "description": "TXT_KEY_PROMOTION_BARRAGE1",
+    "collateral_damage_change": 40,
+    "unit_combats": {"UNITCOMBAT_NAVAL": true, "UNITCOMBAT_SIEGE": true},
+    "button": ",Art/Interface/Buttons/Promotions/Barrage1.dds,Art/Interface/Buttons/Promotions_Atlas.dds,4,1",
+    "promotion_next_level": "PROMOTION_BARRAGE2"
+  },
+  {
+    "type": "PROMOTION_BARRAGE2",
+    "description": "TXT_KEY_PROMOTION_BARRAGE2",
+    "promotion_prereq": "PROMOTION_BARRAGE1",
+    "collateral_damage_change": 60,
+    "unit_combat_mods": {"UNITCOMBAT_MELEE": 20},
+    "unit_combats": {"UNITCOMBAT_NAVAL": true, "UNITCOMBAT_SIEGE": true},
+    "button": ",Art/Interface/Buttons/Promotions/Barrage2.dds,Art/Interface/Buttons/Promotions_Atlas.dds,5,1",
+    "promotion_next_level": "PROMOTION_BARRAGE3"
+  },
+  {
+    "type": "PROMOTION_BARRAGE3",
+    "description": "TXT_KEY_PROMOTION_BARRAGE3",
+    "promotion_prereq": "PROMOTION_BARRAGE2",
+    "collateral_damage_change": 100,
+    "unit_combats": {"UNITCOMBAT_NAVAL": true, "UNITCOMBAT_SIEGE": true},
+    "button": ",Art/Interface/Buttons/Promotions/Barrage3.dds,Art/Interface/Buttons/Promotions_Atlas.dds,6,1"
+  },
+  {
+    "type": "PROMOTION_BLACK_MIRROR",
+    "description": "TXT_KEY_EQUIPMENT_BLACK_MIRROR",
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Equipment/BlackMirror.dds",
+    "equipment": true
+  },
+  {
+    "type": "PROMOTION_BLESSED",
+    "description": "TXT_KEY_PROMOTION_BLESSED",
+    "tech_prereq": "TECH_NEVER",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_RECON": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Blessed.dds",
+    "dispellable": true,
+    "removed_by_combat": true,
+    "ai_weight": 100,
+    "min_level": -1,
+    "promotion_combat_type": "PROMOTION_DEMON",
+    "promotion_combat_mod": 20,
+    "damage_type_combats": {"DAMAGE_HOLY": 1}
+  },
+  {
+    "type": "PROMOTION_BLITZ",
+    "description": "TXT_KEY_PROMOTION_BLITZ",
+    "promotion_prereq": "PROMOTION_DRILL4",
+    "tech_prereq": "TECH_MILITARY_STRATEGY",
+    "blitz": true,
+    "unit_combats": {
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_RECON": true
+    },
+    "button": ",Art/Interface/Buttons/Promotions/Blitz.dds,Art/Interface/Buttons/Promotions_Atlas.dds,8,1",
+    "mutation": true
+  },
+  {
+    "type": "PROMOTION_BLUR",
+    "description": "TXT_KEY_PROMOTION_BLUR",
+    "tech_prereq": "TECH_NEVER",
+    "immune_to_first_strikes": true,
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Blur.dds",
+    "immune_to_defensive_strike": true,
+    "ai_weight": 50,
+    "expire_chance": 50,
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_BOARDING",
+    "description": "TXT_KEY_PROMOTION_BOARDING",
+    "button": "Art/Interface/Buttons/Promotions/Boarding.dds",
+    "boarding": true,
+    "min_level": -1,
+    "capture_unit_combat": "UNITCOMBAT_NAVAL"
+  },
+  {
+    "type": "PROMOTION_BODY1",
+    "description": "TXT_KEY_PROMOTION_BODY1",
+    "promotion_prereq": "PROMOTION_CHANNELING1",
+    "unit_combats": {"UNITCOMBAT_ADEPT": true},
+    "button": "Art/Interface/Buttons/Promotions/Body1.dds",
+    "ai_weight": 50,
+    "bonus_prereq": "BONUS_MANA_BODY",
+    "promotion_next_level": "PROMOTION_BODY2"
+  },
+  {
+    "type": "PROMOTION_BODY2",
+    "description": "TXT_KEY_PROMOTION_BODY2",
+    "promotion_prereq": "PROMOTION_BODY1",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Body2.dds",
+    "ai_weight": 100,
+    "promotion_prereq_and": "PROMOTION_CHANNELING2",
+    "promotion_next_level": "PROMOTION_BODY3"
+  },
+  {
+    "type": "PROMOTION_BODY3",
+    "description": "TXT_KEY_PROMOTION_BODY3",
+    "promotion_prereq": "PROMOTION_BODY2",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Body3.dds",
+    "ai_weight": 150,
+    "promotion_prereq_and": "PROMOTION_CHANNELING3"
+  },
+  {
+    "type": "PROMOTION_BOUNTY_HUNTER",
+    "description": "TXT_KEY_PROMOTION_BOUNTY_HUNTER",
+    "promotion_prereq": "PROMOTION_COMBAT3",
+    "unit_combats": {
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/BountyHunter.dds",
+    "gold_from_combat": 2
+  },
+  {
+    "type": "PROMOTION_BRONZE_WEAPONS",
+    "description": "TXT_KEY_PROMOTION_BRONZE_WEAPONS",
+    "button": "Art/Interface/Buttons/Promotions/Bronzeweapons.dds",
+    "extra_combat_str": 1,
+    "extra_combat_defense": 1,
+    "min_level": -1,
+    "damage_type_resists": {"DAMAGE_LIGHTNING": -25}
+  },
+  {
+    "type": "PROMOTION_BUCCANEERS",
+    "description": "TXT_KEY_PROMOTION_BUCCANEERS",
+    "tech_prereq": "TECH_NEVER",
+    "moves_change": -1,
+    "unit_combats": {"UNITCOMBAT_NAVAL": true},
+    "button": "Art/Interface/Buttons/Promotions/Buccaneers.dds",
+    "extra_combat_str": 1,
+    "extra_combat_defense": 1,
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_BURNING_BLOOD",
+    "description": "TXT_KEY_PROMOTION_BURNING_BLOOD",
+    "tech_prereq": "TECH_NEVER",
+    "blitz": true,
+    "moves_change": 1,
+    "combat_percent": 20,
+    "unit_combats": {
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_RECON": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Burningblood.dds",
+    "immune_to_fear": true,
+    "betrayal_chance": 20,
+    "combat_percent_defense": 20,
+    "expire_chance": 10,
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_CANNIBALIZE",
+    "description": "TXT_KEY_PROMOTION_CANNIBALIZE",
+    "promotion_prereq": "PROMOTION_COMBAT2",
+    "promotion_prereq_or1": "PROMOTION_UNDEAD",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_RECON": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Cannibalize.dds",
+    "mutation": true,
+    "combat_heal_percent": 10
+  },
+  {
+    "type": "PROMOTION_CENTAUR",
+    "description": "TXT_KEY_PROMOTION_CENTAUR",
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Promotions/Centaur.dds",
+    "race": true
+  },
+  {
+    "type": "PROMOTION_CHANNELING1",
+    "description": "TXT_KEY_PROMOTION_CHANNELING1",
+    "help": "TXT_KEY_PROMOTION_CHANNELING1_PEDIA",
+    "button": "Art/Interface/Buttons/Promotions/Channeling1.dds",
+    "better_defender_than_percent": -25,
+    "min_level": -1,
+    "spell_caster_xp": 20,
+    "promotion_next_level": "PROMOTION_CHANNELING2"
+  },
+  {
+    "type": "PROMOTION_CHANNELING2",
+    "description": "TXT_KEY_PROMOTION_CHANNELING2",
+    "help": "TXT_KEY_PROMOTION_CHANNELING2_PEDIA",
+    "button": "Art/Interface/Buttons/Promotions/Channeling2.dds",
+    "better_defender_than_percent": -25,
+    "caster_resist_modify": -10,
+    "min_level": -1,
+    "spell_caster_xp": 30,
+    "promotion_next_level": "PROMOTION_CHANNELING3"
+  },
+  {
+    "type": "PROMOTION_CHANNELING3",
+    "description": "TXT_KEY_PROMOTION_CHANNELING3",
+    "help": "TXT_KEY_PROMOTION_CHANNELING3_PEDIA",
+    "button": "Art/Interface/Buttons/Promotions/Channeling3.dds",
+    "better_defender_than_percent": -25,
+    "caster_resist_modify": -10,
+    "min_level": -1,
+    "spell_caster_xp": 40
+  },
+  {
+    "type": "PROMOTION_CHAOS1",
+    "description": "TXT_KEY_PROMOTION_CHAOS1",
+    "unit_combats": {"UNITCOMBAT_ADEPT": true},
+    "button": "Art/Interface/Buttons/Promotions/Chaos1.dds",
+    "ai_weight": 50,
+    "bonus_prereq": "BONUS_MANA_CHAOS",
+    "promotion_prereq_and": "PROMOTION_CHANNELING1",
+    "promotion_next_level": "PROMOTION_CHAOS2"
+  },
+  {
+    "type": "PROMOTION_CHAOS2",
+    "description": "TXT_KEY_PROMOTION_CHAOS2",
+    "promotion_prereq": "PROMOTION_CHAOS1",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Chaos2.dds",
+    "ai_weight": 100,
+    "promotion_prereq_and": "PROMOTION_CHANNELING2",
+    "promotion_next_level": "PROMOTION_CHAOS3"
+  },
+  {
+    "type": "PROMOTION_CHAOS3",
+    "description": "TXT_KEY_PROMOTION_CHAOS3",
+    "promotion_prereq": "PROMOTION_CHAOS2",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Chaos3.dds",
+    "ai_weight": 150,
+    "promotion_prereq_and": "PROMOTION_CHANNELING3"
+  },
+  {
+    "type": "PROMOTION_CHARMED",
+    "description": "TXT_KEY_PROMOTION_CHARMED",
+    "help": "TXT_KEY_PROMOTION_CHARMED_PEDIA",
+    "tech_prereq": "TECH_NEVER",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_RECON": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Charmed.dds",
+    "only_defensive": true,
+    "dispellable": true,
+    "ai_weight": -100,
+    "expire_chance": 20,
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_CITY_GARRISON1",
+    "description": "TXT_KEY_PROMOTION_GARRISON1",
+    "tech_prereq": "TECH_WARFARE",
+    "city_defense": 30,
+    "unit_combats": {"UNITCOMBAT_ARCHER": true, "UNITCOMBAT_DISCIPLE": true},
+    "button": ",Art/Interface/Buttons/Promotions/CityGarrison1.dds,Art/Interface/Buttons/Promotions_Atlas.dds,2,2",
+    "promotion_next_level": "PROMOTION_CITY_GARRISON2"
+  },
+  {
+    "type": "PROMOTION_CITY_GARRISON2",
+    "description": "TXT_KEY_PROMOTION_GARRISON2",
+    "promotion_prereq": "PROMOTION_CITY_GARRISON1",
+    "city_defense": 30,
+    "unit_combats": {"UNITCOMBAT_ARCHER": true},
+    "button": ",Art/Interface/Buttons/Promotions/CityGarrison2.dds,Art/Interface/Buttons/Promotions_Atlas.dds,3,2",
+    "promotion_next_level": "PROMOTION_CITY_GARRISON3"
+  },
+  {
+    "type": "PROMOTION_CITY_GARRISON3",
+    "description": "TXT_KEY_PROMOTION_GARRISON3",
+    "promotion_prereq": "PROMOTION_CITY_GARRISON2",
+    "city_defense": 30,
+    "unit_combat_mods": {"UNITCOMBAT_MELEE": 20},
+    "unit_combats": {"UNITCOMBAT_ARCHER": true},
+    "button": ",Art/Interface/Buttons/Promotions/CityGarrison3.dds,Art/Interface/Buttons/Promotions_Atlas.dds,4,2"
+  },
+  {
+    "type": "PROMOTION_CITY_RAIDER1",
+    "description": "TXT_KEY_PROMOTION_CITYRAIDER1",
+    "tech_prereq": "TECH_WARFARE",
+    "city_attack": 30,
+    "unit_combats": {
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true
+    },
+    "button": ",Art/Interface/Buttons/Promotions/CityRaider1.dds,Art/Interface/Buttons/Promotions_Atlas.dds,5,2",
+    "promotion_next_level": "PROMOTION_CITY_RAIDER2"
+  },
+  {
+    "type": "PROMOTION_CITY_RAIDER2",
+    "description": "TXT_KEY_PROMOTION_CITYRAIDER2",
+    "promotion_prereq": "PROMOTION_CITY_RAIDER1",
+    "city_attack": 30,
+    "unit_combats": {"UNITCOMBAT_ANIMAL": true, "UNITCOMBAT_BEAST": true, "UNITCOMBAT_MELEE": true},
+    "button": ",Art/Interface/Buttons/Promotions/CityRaider2.dds,Art/Interface/Buttons/Promotions_Atlas.dds,6,2",
+    "promotion_next_level": "PROMOTION_CITY_RAIDER3"
+  },
+  {
+    "type": "PROMOTION_CITY_RAIDER3",
+    "description": "TXT_KEY_PROMOTION_CITYRAIDER3",
+    "promotion_prereq": "PROMOTION_CITY_RAIDER2",
+    "city_attack": 30,
+    "unit_combat_mods": {"UNITCOMBAT_MELEE": 20},
+    "unit_combats": {"UNITCOMBAT_ANIMAL": true, "UNITCOMBAT_BEAST": true, "UNITCOMBAT_MELEE": true},
+    "button": ",Art/Interface/Buttons/Promotions/CityRaider3.dds,Art/Interface/Buttons/Promotions_Atlas.dds,7,2"
+  },
+  {
+    "type": "PROMOTION_COLD_RESISTANCE",
+    "description": "TXT_KEY_PROMOTION_COLD_RESISTANCE",
+    "promotion_prereq": "PROMOTION_MAGIC_RESISTANCE",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/ColdResistance.dds",
+    "mutation": true,
+    "damage_type_resists": {"DAMAGE_COLD": 50}
+  },
+  {
+    "type": "PROMOTION_COMBAT1",
+    "description": "TXT_KEY_PROMOTION_COMBAT1",
+    "combat_percent": 20,
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": ",Art/Interface/Buttons/Promotions/Combat1.dds,Art/Interface/Buttons/Promotions_Atlas.dds,8,2",
+    "mutation": true,
+    "combat_percent_defense": 20,
+    "spell_damage_modify": 5,
+    "promotion_summon_perk": "PROMOTION_EMPOWER1",
+    "promotion_next_level": "PROMOTION_COMBAT2"
+  },
+  {
+    "type": "PROMOTION_COMBAT2",
+    "description": "TXT_KEY_PROMOTION_COMBAT2",
+    "promotion_prereq": "PROMOTION_COMBAT1",
+    "combat_percent": 20,
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": ",Art/Interface/Buttons/Promotions/Combat2.dds,Art/Interface/Buttons/Promotions_Atlas.dds,1,6",
+    "combat_percent_defense": 20,
+    "spell_damage_modify": 5,
+    "promotion_summon_perk": "PROMOTION_EMPOWER2",
+    "promotion_next_level": "PROMOTION_COMBAT3"
+  },
+  {
+    "type": "PROMOTION_COMBAT3",
+    "description": "TXT_KEY_PROMOTION_COMBAT3",
+    "promotion_prereq": "PROMOTION_COMBAT2",
+    "combat_percent": 20,
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": ",Art/Interface/Buttons/Promotions/Combat3.dds,Art/Interface/Buttons/Promotions_Atlas.dds,2,6",
+    "combat_percent_defense": 20,
+    "spell_damage_modify": 5,
+    "promotion_summon_perk": "PROMOTION_EMPOWER3",
+    "promotion_next_level": "PROMOTION_COMBAT4"
+  },
+  {
+    "type": "PROMOTION_COMBAT4",
+    "description": "TXT_KEY_PROMOTION_COMBAT4",
+    "promotion_prereq": "PROMOTION_COMBAT3",
+    "combat_percent": 20,
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": ",Art/Interface/Buttons/Promotions/Combat4.dds,Art/Interface/Buttons/Promotions_Atlas.dds,3,6",
+    "combat_percent_defense": 20,
+    "spell_damage_modify": 5,
+    "promotion_summon_perk": "PROMOTION_EMPOWER4",
+    "promotion_next_level": "PROMOTION_COMBAT5"
+  },
+  {
+    "type": "PROMOTION_COMBAT5",
+    "description": "TXT_KEY_PROMOTION_COMBAT5",
+    "promotion_prereq": "PROMOTION_COMBAT4",
+    "combat_percent": 20,
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": ",Art/Interface/Buttons/Promotions/Combat5.dds,Art/Interface/Buttons/Promotions_Atlas.dds,4,6",
+    "combat_percent_defense": 20,
+    "spell_damage_modify": 5,
+    "promotion_summon_perk": "PROMOTION_EMPOWER5"
+  },
+  {
+    "type": "PROMOTION_COMMAND1",
+    "description": "TXT_KEY_PROMOTION_COMMAND1",
+    "promotion_prereq_or1": "PROMOTION_CHANNELING2",
+    "unit_combats": {"UNITCOMBAT_DISCIPLE": true},
+    "button": "Art/Interface/Buttons/Promotions/Command1.dds",
+    "combat_capture_percent": 10,
+    "promotion_next_level": "PROMOTION_COMMAND2"
+  },
+  {
+    "type": "PROMOTION_COMMAND2",
+    "description": "TXT_KEY_PROMOTION_COMMAND2",
+    "promotion_prereq": "PROMOTION_COMMAND1",
+    "promotion_prereq_or1": "PROMOTION_CHANNELING3",
+    "unit_combats": {"UNITCOMBAT_DISCIPLE": true},
+    "button": "Art/Interface/Buttons/Promotions/Command2.dds",
+    "combat_capture_percent": 20,
+    "promotion_next_level": "PROMOTION_COMMAND3"
+  },
+  {
+    "type": "PROMOTION_COMMAND3",
+    "description": "TXT_KEY_PROMOTION_COMMAND3",
+    "promotion_prereq": "PROMOTION_COMMAND2",
+    "promotion_prereq_or1": "PROMOTION_CHANNELING3",
+    "unit_combats": {"UNITCOMBAT_DISCIPLE": true},
+    "button": "Art/Interface/Buttons/Promotions/Command3.dds",
+    "combat_capture_percent": 20,
+    "promotion_next_level": "PROMOTION_COMMAND4"
+  },
+  {
+    "type": "PROMOTION_COMMAND4",
+    "description": "TXT_KEY_PROMOTION_COMMAND4",
+    "promotion_prereq": "PROMOTION_COMMAND3",
+    "promotion_prereq_or1": "PROMOTION_CHANNELING3",
+    "state_religion_prereq": "RELIGION_THE_ORDER",
+    "unit_combats": {"UNITCOMBAT_DISCIPLE": true},
+    "button": "Art/Interface/Buttons/Promotions/Command4.dds",
+    "combat_capture_percent": 20
+  },
+  {
+    "type": "PROMOTION_COMMANDO",
+    "description": "TXT_KEY_PROMOTION_COMMANDO",
+    "promotion_prereq": "PROMOTION_COMBAT4",
+    "enemy_route": true,
+    "chance_first_strikes_change": 1,
+    "unit_combats": {
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_RECON": true
+    },
+    "button": ",Art/Interface/Buttons/Promotions/Commando.dds,Art/Interface/Buttons/Promotions_Atlas.dds,1,3"
+  },
+  {
+    "type": "PROMOTION_COURAGE",
+    "description": "TXT_KEY_PROMOTION_COURAGE",
+    "tech_prereq": "TECH_NEVER",
+    "same_tile_heal_change": 10,
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_RECON": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Courage.dds",
+    "dispellable": true,
+    "immune_to_fear": true,
+    "ai_weight": 50,
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_COVER",
+    "description": "TXT_KEY_PROMOTION_COVER",
+    "promotion_prereq": "PROMOTION_COMBAT1",
+    "unit_combat_mods": {"UNITCOMBAT_ARCHER": 40},
+    "unit_combats": {
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_RECON": true
+    },
+    "button": ",Art/Interface/Buttons/Promotions/Cover.dds,Art/Interface/Buttons/Promotions_Atlas.dds,2,5",
+    "promotion_next_level": "PROMOTION_COVER2"
+  },
+  {
+    "type": "PROMOTION_COVER2",
+    "description": "TXT_KEY_PROMOTION_COVER2",
+    "promotion_prereq": "PROMOTION_COVER",
+    "unit_combat_mods": {"UNITCOMBAT_ARCHER": 40},
+    "unit_combats": {"UNITCOMBAT_BEAST": true, "UNITCOMBAT_MELEE": true, "UNITCOMBAT_MOUNTED": true},
+    "button": ",Art/Interface/Buttons/Promotions/Cover.dds,Art/Interface/Buttons/Promotions_Atlas.dds,2,5",
+    "promotion_prereq_and": "PROMOTION_COMBAT3"
+  },
+  {
+    "type": "PROMOTION_CRAZED",
+    "description": "TXT_KEY_PROMOTION_CRAZED",
+    "button": "Art/Interface/Buttons/Promotions/Crazed.dds",
+    "min_level": -1,
+    "promotion_random_apply": "PROMOTION_ENRAGED"
+  },
+  {
+    "type": "PROMOTION_CROWN_OF_AKHARIEN",
+    "description": "TXT_KEY_EQUIPMENT_CROWN_OF_AKHARIEN",
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Equipment/CrownOfAkharien.dds",
+    "equipment": true,
+    "immune_to_magic": true
+  },
+  {
+    "type": "PROMOTION_CROWN_OF_BRILLANCE",
+    "description": "TXT_KEY_PROMOTION_CROWN_OF_BRILLANCE",
+    "help": "TXT_KEY_PROMOTION_CROWN_OF_BRILLANCE_PEDIA",
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Promotions/CrownofBrillance.dds",
+    "dispellable": true,
+    "see_invisible": true,
+    "ai_weight": 150,
+    "expire_chance": 25,
+    "min_level": -1,
+    "py_per_turn": "effectCrownOfBrillance(pCaster)"
+  },
+  {
+    "type": "PROMOTION_CROWN_OF_COMMAND",
+    "description": "TXT_KEY_EQUIPMENT_CROWN_OF_COMMAND",
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Equipment/CrownOfCommand.dds",
+    "equipment": true,
+    "combat_capture_percent": 30
+  },
+  {
+    "type": "PROMOTION_DANCE_OF_BLADES",
+    "description": "TXT_KEY_PROMOTION_DANCE_OF_BLADES",
+    "tech_prereq": "TECH_NEVER",
+    "first_strikes_change": 1,
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_RECON": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Danceofblades.dds",
+    "dispellable": true,
+    "ai_weight": 50,
+    "expire_chance": 100,
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_DARK_ELF",
+    "description": "TXT_KEY_PROMOTION_ELF",
+    "tech_prereq": "TECH_NEVER",
+    "feature_attacks": {"FEATURE_FOREST": 10, "FEATURE_FOREST_ANCIENT": 10},
+    "feature_double_moves": {"FEATURE_FOREST": true, "FEATURE_FOREST_ANCIENT": true},
+    "graphical_only": true,
+    "button": "Art/Interface/Buttons/Promotions/Elf.dds",
+    "race": true,
+    "work_rate_modify": -20,
+    "damage_type_resists": {"DAMAGE_COLD": -25}
+  },
+  {
+    "type": "PROMOTION_DEATH1",
+    "description": "TXT_KEY_PROMOTION_DEATH1",
+    "unit_combats": {"UNITCOMBAT_ADEPT": true},
+    "button": "Art/Interface/Buttons/Promotions/Death1.dds",
+    "ai_weight": 50,
+    "bonus_prereq": "BONUS_MANA_DEATH",
+    "promotion_prereq_and": "PROMOTION_CHANNELING1",
+    "promotion_next_level": "PROMOTION_DEATH2"
+  },
+  {
+    "type": "PROMOTION_DEATH2",
+    "description": "TXT_KEY_PROMOTION_DEATH2",
+    "promotion_prereq": "PROMOTION_DEATH1",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Death2.dds",
+    "ai_weight": 100,
+    "promotion_prereq_and": "PROMOTION_CHANNELING2",
+    "promotion_next_level": "PROMOTION_DEATH3"
+  },
+  {
+    "type": "PROMOTION_DEATH3",
+    "description": "TXT_KEY_PROMOTION_DEATH3",
+    "promotion_prereq": "PROMOTION_DEATH2",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Death3.dds",
+    "ai_weight": 150,
+    "promotion_prereq_and": "PROMOTION_CHANNELING3"
+  },
+  {
+    "type": "PROMOTION_DEFENSIVE",
+    "description": "TXT_KEY_PROMOTION_DEFENSIVE",
+    "promotion_prereq_or1": "PROMOTION_COMBAT2",
+    "unit_combats": {"UNITCOMBAT_ARCHER": true, "UNITCOMBAT_MELEE": true},
+    "button": "Art/Interface/Buttons/Promotions/Defensive.dds",
+    "double_fortify_bonus": true
+  },
+  {
+    "type": "PROMOTION_DEMON",
+    "description": "TXT_KEY_PROMOTION_DEMON",
+    "tech_prereq": "TECH_NEVER",
+    "terrain_attacks": {"TERRAIN_BROKEN_LANDS": 10, "TERRAIN_FIELDS_OF_PERDITION": 10, "TERRAIN_BURNING_SANDS": 10},
+    "terrain_defenses": {"TERRAIN_BROKEN_LANDS": 10, "TERRAIN_FIELDS_OF_PERDITION": 10, "TERRAIN_BURNING_SANDS": 10},
+    "button": "Art/Interface/Buttons/Promotions/Demon.dds",
+    "immune_to_fear": true,
+    "not_alive": true,
+    "race": true,
+    "damage_type_resists": {
+      "DAMAGE_DEATH": 100,
+      "DAMAGE_FIRE": 20,
+      "DAMAGE_HOLY": -25,
+      "DAMAGE_POISON": 100,
+      "DAMAGE_UNHOLY": 100
+    }
+  },
+  {
+    "type": "PROMOTION_DEMON_SLAYING",
+    "description": "TXT_KEY_PROMOTION_DEMON_SLAYING",
+    "promotion_prereq": "PROMOTION_COMBAT1",
+    "tech_prereq": "TECH_WAY_OF_THE_WISE",
+    "unit_combats": {"UNITCOMBAT_BEAST": true, "UNITCOMBAT_DISCIPLE": true, "UNITCOMBAT_MELEE": true},
+    "button": "Art/Interface/Buttons/Promotions/Demonslaying.dds",
+    "promotion_combat_type": "PROMOTION_DEMON",
+    "promotion_combat_mod": 40
+  },
+  {
+    "type": "PROMOTION_DEXTEROUS",
+    "description": "TXT_KEY_PROMOTION_DEXTEROUS",
+    "tech_prereq": "TECH_NEVER",
+    "unit_combats": {"UNITCOMBAT_ARCHER": true},
+    "button": "Art/Interface/Buttons/Promotions/Dexterous.dds",
+    "validate": true,
+    "extra_combat_str": 1,
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_DISEASED",
+    "description": "TXT_KEY_PROMOTION_DISEASED",
+    "tech_prereq": "TECH_NEVER",
+    "enemy_heal_change": -10,
+    "neutral_heal_change": -10,
+    "friendly_heal_change": -10,
+    "combat_percent": -30,
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Diseased.dds",
+    "mutation": true,
+    "prereq_alive": true,
+    "ai_weight": -100,
+    "combat_percent_defense": -30,
+    "min_level": -1,
+    "promotion_combat_apply": "PROMOTION_DISEASED"
+  },
+  {
+    "type": "PROMOTION_DIVINE",
+    "description": "TXT_KEY_PROMOTION_DIVINE",
+    "help": "TXT_KEY_PROMOTION_DIVINE_PEDIA",
+    "button": "Art/Interface/Buttons/Promotions/Divine.dds",
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_DRAGON",
+    "description": "TXT_KEY_PROMOTION_DRAGON",
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Promotions/Dragon.dds",
+    "fear": true,
+    "immune_to_fear": true,
+    "race": true
+  },
+  {
+    "type": "PROMOTION_DRAGON_SLAYING",
+    "description": "TXT_KEY_PROMOTION_DRAGON_SLAYING",
+    "promotion_prereq": "PROMOTION_COMBAT5",
+    "button": "Art/Interface/Buttons/Promotions/Dragonslaying.dds",
+    "promotion_combat_type": "PROMOTION_DRAGON",
+    "promotion_combat_mod": 40
+  },
+  {
+    "type": "PROMOTION_DRAGONS_HORDE",
+    "description": "TXT_KEY_EQUIPMENT_DRAGONS_HORDE",
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Equipment/DragonsHorde.dds",
+    "equipment": true
+  },
+  {
+    "type": "PROMOTION_DRILL1",
+    "description": "TXT_KEY_PROMOTION_DRILL1",
+    "chance_first_strikes_change": 1,
+    "unit_combats": {
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": ",Art/Interface/Buttons/Promotions/Drill1.dds,Art/Interface/Buttons/Promotions_Atlas.dds,2,3",
+    "defensive_strike_chance": 10,
+    "defensive_strike_damage": 5,
+    "promotion_next_level": "PROMOTION_DRILL2"
+  },
+  {
+    "type": "PROMOTION_DRILL2",
+    "description": "TXT_KEY_PROMOTION_DRILL2",
+    "promotion_prereq": "PROMOTION_DRILL1",
+    "first_strikes_change": 1,
+    "unit_combats": {
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": ",Art/Interface/Buttons/Promotions/Drill2.dds,Art/Interface/Buttons/Promotions_Atlas.dds,3,3",
+    "defensive_strike_chance": 10,
+    "defensive_strike_damage": 5,
+    "promotion_next_level": "PROMOTION_DRILL3"
+  },
+  {
+    "type": "PROMOTION_DRILL3",
+    "description": "TXT_KEY_PROMOTION_DRILL3",
+    "promotion_prereq": "PROMOTION_DRILL2",
+    "chance_first_strikes_change": 2,
+    "collateral_damage_protection": 20,
+    "unit_combats": {
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_RECON": true
+    },
+    "button": ",Art/Interface/Buttons/Promotions/Drill3.dds,Art/Interface/Buttons/Promotions_Atlas.dds,4,3",
+    "defensive_strike_chance": 10,
+    "defensive_strike_damage": 5,
+    "promotion_next_level": "PROMOTION_DRILL4"
+  },
+  {
+    "type": "PROMOTION_DRILL4",
+    "description": "TXT_KEY_PROMOTION_DRILL4",
+    "promotion_prereq": "PROMOTION_DRILL3",
+    "first_strikes_change": 2,
+    "collateral_damage_protection": 20,
+    "unit_combat_mods": {"UNITCOMBAT_MOUNTED": 10},
+    "unit_combats": {
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_RECON": true
+    },
+    "button": ",Art/Interface/Buttons/Promotions/Drill4.dds,Art/Interface/Buttons/Promotions_Atlas.dds,5,3",
+    "defensive_strike_chance": 10,
+    "defensive_strike_damage": 5
+  },
+  {
+    "type": "PROMOTION_DWARF",
+    "description": "TXT_KEY_PROMOTION_DWARF",
+    "tech_prereq": "TECH_NEVER",
+    "hills_double_move": true,
+    "button": "Art/Interface/Buttons/Promotions/Dwarf.dds",
+    "race": true,
+    "work_rate_modify": 25,
+    "damage_type_resists": {"DAMAGE_POISON": 25}
+  },
+  {
+    "type": "PROMOTION_EARTH1",
+    "description": "TXT_KEY_PROMOTION_EARTH1",
+    "unit_combats": {"UNITCOMBAT_ADEPT": true},
+    "button": "Art/Interface/Buttons/Promotions/Earth1.dds",
+    "ai_weight": 50,
+    "bonus_prereq": "BONUS_MANA_EARTH",
+    "promotion_prereq_and": "PROMOTION_CHANNELING1",
+    "promotion_next_level": "PROMOTION_EARTH2"
+  },
+  {
+    "type": "PROMOTION_EARTH2",
+    "description": "TXT_KEY_PROMOTION_EARTH2",
+    "promotion_prereq": "PROMOTION_EARTH1",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Earth2.dds",
+    "ai_weight": 100,
+    "promotion_prereq_and": "PROMOTION_CHANNELING2",
+    "promotion_next_level": "PROMOTION_EARTH3"
+  },
+  {
+    "type": "PROMOTION_EARTH3",
+    "description": "TXT_KEY_PROMOTION_EARTH3",
+    "promotion_prereq": "PROMOTION_EARTH2",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Earth3.dds",
+    "ai_weight": 150,
+    "promotion_prereq_and": "PROMOTION_CHANNELING3"
+  },
+  {
+    "type": "PROMOTION_ELEMENTAL",
+    "description": "TXT_KEY_PROMOTION_ELEMENTAL",
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Promotions/Elemental.dds",
+    "immune_to_fear": true,
+    "not_alive": true,
+    "race": true,
+    "damage_type_resists": {"DAMAGE_DEATH": 100, "DAMAGE_POISON": 100}
+  },
+  {
+    "type": "PROMOTION_ELF",
+    "description": "TXT_KEY_PROMOTION_ELF",
+    "tech_prereq": "TECH_NEVER",
+    "feature_attacks": {"FEATURE_FOREST": 10, "FEATURE_FOREST_ANCIENT": 10},
+    "feature_double_moves": {"FEATURE_FOREST": true, "FEATURE_FOREST_ANCIENT": true},
+    "button": "Art/Interface/Buttons/Promotions/Elf.dds",
+    "race": true,
+    "work_rate_modify": -20,
+    "damage_type_resists": {"DAMAGE_COLD": -25}
+  },
+  {
+    "type": "PROMOTION_EMPOWER1",
+    "description": "TXT_KEY_PROMOTION_EMPOWER1",
+    "combat_percent": 10,
+    "button": "Art/Interface/Buttons/Promotions/Empower1.dds",
+    "mutation": true,
+    "combat_percent_defense": 10,
+    "min_level": -1,
+    "promotion_next_level": "PROMOTION_EMPOWER2"
+  },
+  {
+    "type": "PROMOTION_EMPOWER2",
+    "description": "TXT_KEY_PROMOTION_EMPOWER2",
+    "combat_percent": 10,
+    "button": "Art/Interface/Buttons/Promotions/Empower2.dds",
+    "combat_percent_defense": 10,
+    "min_level": -1,
+    "promotion_next_level": "PROMOTION_EMPOWER3"
+  },
+  {
+    "type": "PROMOTION_EMPOWER3",
+    "description": "TXT_KEY_PROMOTION_EMPOWER3",
+    "combat_percent": 10,
+    "button": "Art/Interface/Buttons/Promotions/Empower3.dds",
+    "combat_percent_defense": 10,
+    "min_level": -1,
+    "promotion_next_level": "PROMOTION_EMPOWER4"
+  },
+  {
+    "type": "PROMOTION_EMPOWER4",
+    "description": "TXT_KEY_PROMOTION_EMPOWER4",
+    "combat_percent": 10,
+    "button": "Art/Interface/Buttons/Promotions/Empower4.dds",
+    "combat_percent_defense": 10,
+    "min_level": -1,
+    "promotion_next_level": "PROMOTION_EMPOWER5"
+  },
+  {
+    "type": "PROMOTION_EMPOWER5",
+    "description": "TXT_KEY_PROMOTION_EMPOWER5",
+    "combat_percent": 10,
+    "button": "Art/Interface/Buttons/Promotions/Empower5.dds",
+    "combat_percent_defense": 10,
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_EMPTY_BIER",
+    "description": "TXT_KEY_EQUIPMENT_EMPTY_BIER",
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Equipment/EmptyBier.dds",
+    "double_fortify_bonus": true,
+    "equipment": true,
+    "ai_weight": 100,
+    "extra_combat_defense": 2
+  },
+  {
+    "type": "PROMOTION_ENCHANTED_BLADE",
+    "description": "TXT_KEY_PROMOTION_ENCHANTED_BLADE",
+    "tech_prereq": "TECH_NEVER",
+    "combat_percent": 20,
+    "unit_combats": {"UNITCOMBAT_MELEE": true},
+    "button": "Art/Interface/Buttons/Promotions/Enchantedblade.dds",
+    "dispellable": true,
+    "validate": true,
+    "ai_weight": 100,
+    "combat_percent_defense": 20,
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_ENCHANTMENT1",
+    "description": "TXT_KEY_PROMOTION_ENCHANTMENT1",
+    "unit_combats": {"UNITCOMBAT_ADEPT": true},
+    "button": "Art/Interface/Buttons/Promotions/Enchantment1.dds",
+    "ai_weight": 50,
+    "bonus_prereq": "BONUS_MANA_ENCHANTMENT",
+    "promotion_prereq_and": "PROMOTION_CHANNELING1",
+    "promotion_next_level": "PROMOTION_ENCHANTMENT2"
+  },
+  {
+    "type": "PROMOTION_ENCHANTMENT2",
+    "description": "TXT_KEY_PROMOTION_ENCHANTMENT2",
+    "promotion_prereq": "PROMOTION_ENCHANTMENT1",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Enchantment2.dds",
+    "ai_weight": 100,
+    "promotion_prereq_and": "PROMOTION_CHANNELING2",
+    "promotion_next_level": "PROMOTION_ENCHANTMENT3"
+  },
+  {
+    "type": "PROMOTION_ENCHANTMENT3",
+    "description": "TXT_KEY_PROMOTION_ENCHANTMENT3",
+    "promotion_prereq": "PROMOTION_ENCHANTMENT2",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Enchantment3.dds",
+    "ai_weight": 150,
+    "promotion_prereq_and": "PROMOTION_CHANNELING3"
+  },
+  {
+    "type": "PROMOTION_ENRAGED",
+    "description": "TXT_KEY_PROMOTION_ENRAGED",
+    "help": "TXT_KEY_PROMOTION_ENRAGED_HELP",
+    "moves_change": 1,
+    "combat_percent": 20,
+    "button": "Art/Interface/Buttons/Promotions/Enraged.dds",
+    "ai_control": true,
+    "removed_by_combat": true,
+    "combat_percent_defense": -20,
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_ENTROPY1",
+    "description": "TXT_KEY_PROMOTION_ENTROPY1",
+    "unit_combats": {"UNITCOMBAT_ADEPT": true},
+    "button": "Art/Interface/Buttons/Promotions/Entropy1.dds",
+    "ai_weight": 50,
+    "bonus_prereq": "BONUS_MANA_ENTROPY",
+    "promotion_prereq_and": "PROMOTION_CHANNELING1",
+    "promotion_next_level": "PROMOTION_ENTROPY2"
+  },
+  {
+    "type": "PROMOTION_ENTROPY2",
+    "description": "TXT_KEY_PROMOTION_ENTROPY2",
+    "promotion_prereq": "PROMOTION_ENTROPY1",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Entropy2.dds",
+    "ai_weight": 100,
+    "promotion_prereq_and": "PROMOTION_CHANNELING2",
+    "promotion_next_level": "PROMOTION_ENTROPY3"
+  },
+  {
+    "type": "PROMOTION_ENTROPY3",
+    "description": "TXT_KEY_PROMOTION_ENTROPY3",
+    "promotion_prereq": "PROMOTION_ENTROPY2",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Entropy3.dds",
+    "ai_weight": 150,
+    "promotion_prereq_and": "PROMOTION_CHANNELING3"
+  },
+  {
+    "type": "PROMOTION_EXPANDED_HULL",
+    "description": "TXT_KEY_PROMOTION_EXPANDED_HULL",
+    "cargo_change": 1,
+    "unit_combats": {"UNITCOMBAT_NAVAL": true},
+    "button": "Art/Interface/Buttons/Promotions/Expandedhull.dds"
+  },
+  {
+    "type": "PROMOTION_EXTENSION1",
+    "description": "TXT_KEY_PROMOTION_EXTENSION1",
+    "promotion_prereq": "PROMOTION_CHANNELING1",
+    "unit_combats": {"UNITCOMBAT_ADEPT": true},
+    "button": "Art/Interface/Buttons/Promotions/Extension1.dds",
+    "ai_weight": 50,
+    "promotion_summon_perk": "PROMOTION_MOBILITY1",
+    "promotion_next_level": "PROMOTION_EXTENSION2"
+  },
+  {
+    "type": "PROMOTION_EXTENSION2",
+    "description": "TXT_KEY_PROMOTION_EXTENSION2",
+    "promotion_prereq": "PROMOTION_EXTENSION1",
+    "tech_prereq": "TECH_ARCANE_LORE",
+    "unit_combats": {"UNITCOMBAT_ADEPT": true},
+    "button": "Art/Interface/Buttons/Promotions/Extension2.dds",
+    "ai_weight": 100,
+    "promotion_summon_perk": "PROMOTION_MOBILITY2"
+  },
+  {
+    "type": "PROMOTION_FAIR_WINDS",
+    "description": "TXT_KEY_PROMOTION_FAIR_WINDS",
+    "tech_prereq": "TECH_NEVER",
+    "moves_change": 1,
+    "withdrawal_change": 25,
+    "unit_combats": {"UNITCOMBAT_NAVAL": true},
+    "button": "Art/Interface/Buttons/Promotions/Fairwinds.dds",
+    "dispellable": true,
+    "ai_weight": 50,
+    "expire_chance": 5,
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_FATIGUED",
+    "description": "TXT_KEY_PROMOTION_FATIGUED",
+    "combat_percent": -10,
+    "button": "Art/Interface/Buttons/Promotions/Fatigued.dds",
+    "ai_weight": -50,
+    "combat_percent_defense": -10,
+    "expire_chance": 50,
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_FEAR",
+    "description": "TXT_KEY_PROMOTION_FEAR",
+    "promotion_prereq": "PROMOTION_COMBAT5",
+    "promotion_prereq_or1": "PROMOTION_DEMON",
+    "promotion_prereq_or2": "PROMOTION_UNDEAD",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_RECON": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Fear.dds",
+    "fear": true,
+    "ai_weight": 100,
+    "promotion_prereq_or3": "PROMOTION_NIGHTMARE"
+  },
+  {
+    "type": "PROMOTION_FIRE_RESISTANCE",
+    "description": "TXT_KEY_PROMOTION_FIRE_RESISTANCE",
+    "promotion_prereq": "PROMOTION_MAGIC_RESISTANCE",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/FireResistance.dds",
+    "mutation": true,
+    "damage_type_resists": {"DAMAGE_FIRE": 50}
+  },
+  {
+    "type": "PROMOTION_FIRE1",
+    "description": "TXT_KEY_PROMOTION_FIRE1",
+    "unit_combats": {"UNITCOMBAT_ADEPT": true},
+    "button": "Art/Interface/Buttons/Promotions/Fire1.dds",
+    "ai_weight": 50,
+    "bonus_prereq": "BONUS_MANA_FIRE",
+    "promotion_prereq_and": "PROMOTION_CHANNELING1",
+    "promotion_next_level": "PROMOTION_FIRE2"
+  },
+  {
+    "type": "PROMOTION_FIRE2",
+    "description": "TXT_KEY_PROMOTION_FIRE2",
+    "promotion_prereq": "PROMOTION_FIRE1",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Fire2.dds",
+    "ai_weight": 100,
+    "promotion_prereq_and": "PROMOTION_CHANNELING2",
+    "promotion_next_level": "PROMOTION_FIRE3"
+  },
+  {
+    "type": "PROMOTION_FIRE3",
+    "description": "TXT_KEY_PROMOTION_FIRE3",
+    "promotion_prereq": "PROMOTION_FIRE2",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Fire3.dds",
+    "ai_weight": 150,
+    "promotion_prereq_and": "PROMOTION_CHANNELING3"
+  },
+  {
+    "type": "PROMOTION_FLAMING_ARROWS",
+    "description": "TXT_KEY_PROMOTION_FLAMING_ARROWS",
+    "tech_prereq": "TECH_NEVER",
+    "unit_combats": {"UNITCOMBAT_ARCHER": true},
+    "button": "Art/Interface/Buttons/Promotions/FlamingArrows.dds",
+    "dispellable": true,
+    "validate": true,
+    "ai_weight": 100,
+    "min_level": -1,
+    "damage_type_combats": {"DAMAGE_FIRE": 1}
+  },
+  {
+    "type": "PROMOTION_FLANKING1",
+    "description": "TXT_KEY_PROMOTION_FLANKING1",
+    "withdrawal_change": 20,
+    "unit_combats": {"UNITCOMBAT_MOUNTED": true, "UNITCOMBAT_NAVAL": true, "UNITCOMBAT_RECON": true},
+    "button": ",Art/Interface/Buttons/Promotions/Flanking1.dds,Art/Interface/Buttons/Promotions_Atlas.dds,6,3",
+    "promotion_next_level": "PROMOTION_FLANKING2"
+  },
+  {
+    "type": "PROMOTION_FLANKING2",
+    "description": "TXT_KEY_PROMOTION_FLANKING2",
+    "promotion_prereq": "PROMOTION_FLANKING1",
+    "withdrawal_change": 20,
+    "unit_combats": {"UNITCOMBAT_MOUNTED": true, "UNITCOMBAT_NAVAL": true},
+    "button": "Art/Interface/Buttons/Promotions/Flanking2.dds",
+    "promotion_next_level": "PROMOTION_FLANKING3"
+  },
+  {
+    "type": "PROMOTION_FLANKING3",
+    "description": "TXT_KEY_PROMOTION_FLANKING3",
+    "promotion_prereq": "PROMOTION_FLANKING2",
+    "immune_to_first_strikes": true,
+    "withdrawal_change": 10,
+    "unit_combats": {"UNITCOMBAT_MOUNTED": true, "UNITCOMBAT_NAVAL": true},
+    "button": "Art/Interface/Buttons/Promotions/Flanking3.dds"
+  },
+  {
+    "type": "PROMOTION_FLYING",
+    "description": "TXT_KEY_PROMOTION_FLYING",
+    "tech_prereq": "TECH_NEVER",
+    "amphib": true,
+    "river": true,
+    "moves_change": 1,
+    "button": "Art/Interface/Buttons/Promotions/Flying.dds",
+    "flying": true,
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_FORMATION",
+    "description": "TXT_KEY_PROMOTION_FORMATION",
+    "promotion_prereq": "PROMOTION_COMBAT2",
+    "unit_combat_mods": {"UNITCOMBAT_MOUNTED": 40},
+    "unit_combats": {
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_RECON": true
+    },
+    "button": ",Art/Interface/Buttons/Promotions/Formation.dds,Art/Interface/Buttons/Promotions_Atlas.dds,1,2",
+    "promotion_next_level": "PROMOTION_FORMATION2"
+  },
+  {
+    "type": "PROMOTION_FORMATION2",
+    "description": "TXT_KEY_PROMOTION_FORMATION2",
+    "promotion_prereq": "PROMOTION_FORMATION",
+    "unit_combat_mods": {"UNITCOMBAT_MOUNTED": 40},
+    "unit_combats": {"UNITCOMBAT_ARCHER": true, "UNITCOMBAT_BEAST": true, "UNITCOMBAT_MELEE": true},
+    "button": ",Art/Interface/Buttons/Promotions/Formation.dds,Art/Interface/Buttons/Promotions_Atlas.dds,1,2",
+    "promotion_prereq_and": "PROMOTION_COMBAT3"
+  },
+  {
+    "type": "PROMOTION_FROSTLING",
+    "description": "TXT_KEY_PROMOTION_FROSTLING",
+    "tech_prereq": "TECH_NEVER",
+    "terrain_attacks": {"TERRAIN_SNOW": 25, "TERRAIN_TUNDRA": 10, "TERRAIN_DESERT": -25},
+    "terrain_defenses": {"TERRAIN_SNOW": 25, "TERRAIN_TUNDRA": 10, "TERRAIN_DESERT": -25},
+    "button": "Art/Interface/Buttons/Promotions/Frostling.dds",
+    "race": true,
+    "damage_type_combats": {"DAMAGE_COLD": 1},
+    "damage_type_resists": {"DAMAGE_COLD": 100, "DAMAGE_FIRE": -50}
+  },
+  {
+    "type": "PROMOTION_GELA",
+    "description": "TXT_KEY_EQUIPMENT_GELA",
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Equipment/Gela.dds",
+    "equipment": true,
+    "ai_weight": 100,
+    "damage_type_combats": {"DAMAGE_UNHOLY": 2}
+  },
+  {
+    "type": "PROMOTION_GODSLAYER",
+    "description": "TXT_KEY_EQUIPMENT_GODSLAYER",
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Equipment/Godslayer.dds",
+    "equipment": true,
+    "ai_weight": 100,
+    "extra_combat_str": 3,
+    "extra_combat_defense": 3,
+    "resist_magic": 100,
+    "promotion_combat_type": "PROMOTION_AVATAR",
+    "promotion_combat_mod": 1000,
+    "damage_type_resists": {
+      "DAMAGE_COLD": 100,
+      "DAMAGE_DEATH": 100,
+      "DAMAGE_FIRE": 100,
+      "DAMAGE_HOLY": 100,
+      "DAMAGE_LIGHTNING": 100,
+      "DAMAGE_POISON": 100,
+      "DAMAGE_UNHOLY": 100
+    }
+  },
+  {
+    "type": "PROMOTION_GOLDEN_HAMMER",
+    "description": "TXT_KEY_EQUIPMENT_GOLDEN_HAMMER",
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Equipment/GoldenHammer.dds",
+    "equipment": true,
+    "extra_combat_str": 1
+  },
+  {
+    "type": "PROMOTION_GOLEM",
+    "description": "TXT_KEY_PROMOTION_GOLEM",
+    "tech_prereq": "TECH_NEVER",
+    "neutral_heal_change": -5,
+    "friendly_heal_change": -10,
+    "button": "Art/Interface/Buttons/Promotions/Golem.dds",
+    "immune_to_fear": true,
+    "not_alive": true,
+    "race": true,
+    "damage_type_resists": {"DAMAGE_DEATH": 100, "DAMAGE_POISON": 100}
+  },
+  {
+    "type": "PROMOTION_GREAT_COMMANDER",
+    "description": "TXT_KEY_PROMOTION_GREAT_COMMANDER",
+    "help": "TXT_KEY_PROMOTION_GREAT_COMMANDER_PEDIA",
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Units/Commander.dds",
+    "extra_combat_str": 1,
+    "extra_combat_defense": 1,
+    "free_xp_from_combat": 1,
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_GUARDSMAN",
+    "description": "TXT_KEY_PROMOTION_GUARDSMAN",
+    "promotion_prereq": "PROMOTION_COMBAT4",
+    "unit_combats": {"UNITCOMBAT_MELEE": true},
+    "button": "Art/Interface/Buttons/Promotions/Guardsman.dds",
+    "target_weakest_unit_counter": true,
+    "better_defender_than_percent": 100
+  },
+  {
+    "type": "PROMOTION_GUERILLA1",
+    "description": "TXT_KEY_PROMOTION_GUERILLA1",
+    "hills_defense": 40,
+    "unit_combats": {
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_RECON": true
+    },
+    "button": ",Art/Interface/Buttons/Promotions/Guerilla1.dds,Art/Interface/Buttons/Promotions_Atlas.dds,5,5",
+    "promotion_next_level": "PROMOTION_GUERILLA2"
+  },
+  {
+    "type": "PROMOTION_GUERILLA2",
+    "description": "TXT_KEY_PROMOTION_GUERILLA2",
+    "promotion_prereq": "PROMOTION_GUERILLA1",
+    "tech_prereq": "TECH_ARETE",
+    "hills_double_move": true,
+    "hills_defense": 60,
+    "unit_combats": {
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_RECON": true
+    },
+    "button": ",Art/Interface/Buttons/Promotions/Guerilla2.dds,Art/Interface/Buttons/Promotions_Atlas.dds,6,5"
+  },
+  {
+    "type": "PROMOTION_HASTED",
+    "description": "TXT_KEY_PROMOTION_HASTED",
+    "tech_prereq": "TECH_NEVER",
+    "moves_change": 1,
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_RECON": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Hasted.dds",
+    "dispellable": true,
+    "ai_weight": 50,
+    "expire_chance": 100,
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_HEALING_SALVE",
+    "description": "TXT_KEY_EQUIPMENT_HEALING_SALVE",
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Equipment/HealingSalve.dds",
+    "equipment": true
+  },
+  {
+    "type": "PROMOTION_HEAVY",
+    "description": "TXT_KEY_PROMOTION_HEAVY",
+    "tech_prereq": "TECH_NEVER",
+    "move_discount_change": -1,
+    "combat_percent": 30,
+    "button": "Art/Interface/Buttons/Promotions/Heavy.dds",
+    "mutation": true,
+    "combat_percent_defense": 30,
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_HELD",
+    "description": "TXT_KEY_PROMOTION_HELD",
+    "visibility_change": -1,
+    "button": "Art/Interface/Buttons/Promotions/Held.dds",
+    "held": true,
+    "ai_weight": -100,
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_HERO",
+    "description": "TXT_KEY_PROMOTION_HERO",
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Promotions/Hero.dds",
+    "free_xp_per_turn": 1,
+    "min_level": -1,
+    "resist_magic": 20
+  },
+  {
+    "type": "PROMOTION_HEROIC_DEFENSE",
+    "description": "TXT_KEY_PROMOTION_HEROIC_DEFENSE",
+    "promotion_prereq": "PROMOTION_HERO",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Heroicdefense.dds",
+    "mutation": true,
+    "ai_weight": 20,
+    "extra_combat_defense": 1,
+    "promotion_prereq_and": "PROMOTION_COMBAT5",
+    "promotion_next_level": "PROMOTION_HEROIC_DEFENSE2"
+  },
+  {
+    "type": "PROMOTION_HEROIC_DEFENSE2",
+    "description": "TXT_KEY_PROMOTION_HEROIC_DEFENSE2",
+    "promotion_prereq": "PROMOTION_HEROIC_DEFENSE",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Heroicdefense2.dds",
+    "ai_weight": 40,
+    "extra_combat_defense": 1,
+    "promotion_prereq_and": "PROMOTION_COMBAT5"
+  },
+  {
+    "type": "PROMOTION_HEROIC_STRENGTH",
+    "description": "TXT_KEY_PROMOTION_HEROIC_STRENGTH",
+    "promotion_prereq": "PROMOTION_HERO",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Heroicstrength.dds",
+    "mutation": true,
+    "ai_weight": 20,
+    "extra_combat_str": 1,
+    "promotion_prereq_and": "PROMOTION_COMBAT5",
+    "promotion_next_level": "PROMOTION_HEROIC_STRENGTH2"
+  },
+  {
+    "type": "PROMOTION_HEROIC_STRENGTH2",
+    "description": "TXT_KEY_PROMOTION_HEROIC_STRENGTH2",
+    "promotion_prereq": "PROMOTION_HEROIC_STRENGTH",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Heroicstrength2.dds",
+    "ai_weight": 40,
+    "extra_combat_str": 1,
+    "promotion_prereq_and": "PROMOTION_COMBAT5"
+  },
+  {
+    "type": "PROMOTION_HIDDEN",
+    "description": "TXT_KEY_PROMOTION_HIDDEN",
+    "tech_prereq": "TECH_NEVER",
+    "first_strikes_change": 1,
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Hidden.dds",
+    "invisible": true,
+    "removed_by_casting": true,
+    "removed_by_combat": true,
+    "ai_weight": 50,
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_HIDDEN_NATIONALITY",
+    "description": "TXT_KEY_PROMOTION_HIDDEN_NATIONALITY",
+    "tech_prereq": "TECH_NEVER",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/HiddenNationality.dds",
+    "hidden_nationality": true,
+    "min_level": -1,
+    "promotion_summon_perk": "PROMOTION_HIDDEN_NATIONALITY"
+  },
+  {
+    "type": "PROMOTION_HOMELAND",
+    "description": "TXT_KEY_PROMOTION_HOMELAND",
+    "withdrawal_change": 10,
+    "button": "Art/Interface/Buttons/Promotions/Homeland.dds",
+    "combat_percent_in_borders": 10,
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_HORSELORD",
+    "description": "TXT_KEY_PROMOTION_HORSELORD",
+    "tech_prereq": "TECH_NEVER",
+    "moves_change": 1,
+    "withdrawal_change": 10,
+    "unit_combats": {"UNITCOMBAT_MOUNTED": true},
+    "button": "Art/Interface/Buttons/Promotions/Horselord.dds",
+    "validate": true,
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_ICE1",
+    "description": "TXT_KEY_PROMOTION_ICE1",
+    "promotion_prereq": "PROMOTION_CHANNELING1",
+    "unit_combats": {"UNITCOMBAT_ADEPT": true},
+    "button": "Art/Interface/Buttons/Promotions/Ice1.dds",
+    "ai_weight": 50,
+    "bonus_prereq": "BONUS_MANA_ICE",
+    "promotion_next_level": "PROMOTION_ICE2"
+  },
+  {
+    "type": "PROMOTION_ICE2",
+    "description": "TXT_KEY_PROMOTION_ICE2",
+    "promotion_prereq": "PROMOTION_ICE1",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Ice2.dds",
+    "ai_weight": 100,
+    "promotion_prereq_and": "PROMOTION_CHANNELING2",
+    "promotion_next_level": "PROMOTION_ICE3"
+  },
+  {
+    "type": "PROMOTION_ICE3",
+    "description": "TXT_KEY_PROMOTION_ICE3",
+    "promotion_prereq": "PROMOTION_ICE2",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Ice3.dds",
+    "ai_weight": 150,
+    "promotion_prereq_and": "PROMOTION_CHANNELING3"
+  },
+  {
+    "type": "PROMOTION_ILLUSION",
+    "description": "TXT_KEY_PROMOTION_ILLUSION",
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Promotions/Illusion.dds",
+    "not_alive": true,
+    "race": true,
+    "combat_heal_percent": 100,
+    "combat_limit": 90,
+    "promotion_summon_perk": "PROMOTION_ILLUSION",
+    "damage_type_resists": {"DAMAGE_DEATH": 100, "DAMAGE_POISON": 100}
+  },
+  {
+    "type": "PROMOTION_ILLUSIONIST",
+    "description": "TXT_KEY_PROMOTION_ILLUSIONIST",
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Promotions/Illusionist.dds",
+    "min_level": -1,
+    "promotion_summon_perk": "PROMOTION_ILLUSION"
+  },
+  {
+    "type": "PROMOTION_IMMORTAL",
+    "description": "TXT_KEY_PROMOTION_IMMORTAL",
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Promotions/Immortal.dds",
+    "immortal": true,
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_IMMUNE_COLD",
+    "description": "TXT_KEY_PROMOTION_IMMUNE_COLD",
+    "button": "Art/Interface/Buttons/Promotions/ImmuneCold.dds",
+    "min_level": -1,
+    "damage_type_resists": {"DAMAGE_COLD": 100}
+  },
+  {
+    "type": "PROMOTION_IMMUNE_DISEASE",
+    "description": "TXT_KEY_PROMOTION_IMMUNE_DISEASE",
+    "button": "Art/Interface/Buttons/Promotions/Immunedisease.dds",
+    "mutation": true,
+    "min_level": -1,
+    "promotion_immune1": "PROMOTION_DISEASED",
+    "promotion_immune2": "PROMOTION_PLAGUED"
+  },
+  {
+    "type": "PROMOTION_IMMUNE_FIRE",
+    "description": "TXT_KEY_PROMOTION_IMMUNE_FIRE",
+    "button": "Art/Interface/Buttons/Promotions/Immunefire.dds",
+    "min_level": -1,
+    "damage_type_resists": {"DAMAGE_FIRE": 100}
+  },
+  {
+    "type": "PROMOTION_IMMUNE_LIGHTNING",
+    "description": "TXT_KEY_PROMOTION_IMMUNE_LIGHTNING",
+    "button": "Art/Interface/Buttons/Promotions/ImmuneLightning.dds",
+    "min_level": -1,
+    "damage_type_resists": {"DAMAGE_LIGHTNING": 100}
+  },
+  {
+    "type": "PROMOTION_INFERNAL_GRIMOIRE",
+    "description": "TXT_KEY_EQUIPMENT_INFERNAL_GRIMOIRE",
+    "button": "Art/Interface/Buttons/Equipment/InfernalGrimoire.dds",
+    "equipment": true
+  },
+  {
+    "type": "PROMOTION_INQUISITOR",
+    "description": "TXT_KEY_PROMOTION_INQUISITOR",
+    "help": "TXT_KEY_PROMOTION_INQUISITOR_HELP",
+    "promotion_prereq": "PROMOTION_CHANNELING2",
+    "unit_combats": {"UNITCOMBAT_DISCIPLE": true},
+    "button": "Art/Interface/Buttons/Promotions/Inquisitor.dds",
+    "ai_weight": 10
+  },
+  {
+    "type": "PROMOTION_INVISIBLE",
+    "description": "TXT_KEY_PROMOTION_INVISIBLE",
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Promotions/Invisibility.dds",
+    "invisible": true,
+    "ai_weight": 100,
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_IRON_WEAPONS",
+    "description": "TXT_KEY_PROMOTION_IRON_WEAPONS",
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Promotions/Ironweapons.dds",
+    "extra_combat_str": 2,
+    "extra_combat_defense": 2,
+    "min_level": -1,
+    "promotion_combat_type": "PROMOTION_BRONZE_WEAPONS",
+    "promotion_combat_mod": 10,
+    "damage_type_resists": {"DAMAGE_LIGHTNING": -25}
+  },
+  {
+    "type": "PROMOTION_JADE_TORC",
+    "description": "TXT_KEY_EQUIPMENT_JADE_TORC",
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Equipment/JadeTorc.dds",
+    "equipment": true,
+    "resist_magic": 20,
+    "damage_type_resists": {"DAMAGE_POISON": 100}
+  },
+  {
+    "type": "PROMOTION_KEEN_SIGHT",
+    "description": "TXT_KEY_PROMOTION_KEEN_SIGHT",
+    "promotion_prereq": "PROMOTION_DRILL4",
+    "unit_combats": {"UNITCOMBAT_ARCHER": true},
+    "button": "Art/Interface/Buttons/Promotions/KeenSight.dds",
+    "defensive_strike_chance": 20
+  },
+  {
+    "type": "PROMOTION_LAW1",
+    "description": "TXT_KEY_PROMOTION_LAW1",
+    "unit_combats": {"UNITCOMBAT_ADEPT": true},
+    "button": "Art/Interface/Buttons/Promotions/Law1.dds",
+    "ai_weight": 50,
+    "bonus_prereq": "BONUS_MANA_LAW",
+    "promotion_prereq_and": "PROMOTION_CHANNELING1",
+    "promotion_next_level": "PROMOTION_LAW2"
+  },
+  {
+    "type": "PROMOTION_LAW2",
+    "description": "TXT_KEY_PROMOTION_LAW2",
+    "promotion_prereq": "PROMOTION_LAW1",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Law2.dds",
+    "ai_weight": 100,
+    "promotion_prereq_and": "PROMOTION_CHANNELING2",
+    "promotion_next_level": "PROMOTION_LAW3"
+  },
+  {
+    "type": "PROMOTION_LAW3",
+    "description": "TXT_KEY_PROMOTION_LAW3",
+    "promotion_prereq": "PROMOTION_LAW2",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Law3.dds",
+    "ai_weight": 150,
+    "promotion_prereq_and": "PROMOTION_CHANNELING3"
+  },
+  {
+    "type": "PROMOTION_LIFE1",
+    "description": "TXT_KEY_PROMOTION_LIFE1",
+    "unit_combats": {"UNITCOMBAT_ADEPT": true},
+    "button": "Art/Interface/Buttons/Promotions/Life1.dds",
+    "ai_weight": 50,
+    "bonus_prereq": "BONUS_MANA_LIFE",
+    "promotion_prereq_and": "PROMOTION_CHANNELING1",
+    "promotion_next_level": "PROMOTION_LIFE2"
+  },
+  {
+    "type": "PROMOTION_LIFE2",
+    "description": "TXT_KEY_PROMOTION_LIFE2",
+    "promotion_prereq": "PROMOTION_LIFE1",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Life2.dds",
+    "ai_weight": 100,
+    "promotion_prereq_and": "PROMOTION_CHANNELING2",
+    "promotion_next_level": "PROMOTION_LIFE3"
+  },
+  {
+    "type": "PROMOTION_LIFE3",
+    "description": "TXT_KEY_PROMOTION_LIFE3",
+    "promotion_prereq": "PROMOTION_LIFE2",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Life3.dds",
+    "ai_weight": 150,
+    "promotion_prereq_and": "PROMOTION_CHANNELING3"
+  },
+  {
+    "type": "PROMOTION_LIGHT",
+    "description": "TXT_KEY_PROMOTION_LIGHT",
+    "tech_prereq": "TECH_NEVER",
+    "moves_change": 1,
+    "withdrawal_change": 10,
+    "combat_percent": -20,
+    "button": "Art/Interface/Buttons/Promotions/Light.dds",
+    "mutation": true,
+    "combat_percent_defense": -20,
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_LIGHTNING_RESISTANCE",
+    "description": "TXT_KEY_PROMOTION_LIGHTNING_RESISTANCE",
+    "promotion_prereq": "PROMOTION_MAGIC_RESISTANCE",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/LightningResistance.dds",
+    "mutation": true,
+    "damage_type_resists": {"DAMAGE_LIGHTNING": 50}
+  },
+  {
+    "type": "PROMOTION_LIZARDMAN",
+    "description": "TXT_KEY_PROMOTION_LIZARDMAN",
+    "tech_prereq": "TECH_NEVER",
+    "amphib": true,
+    "river": true,
+    "terrain_attacks": {"TERRAIN_MARSH": 10},
+    "terrain_defenses": {"TERRAIN_MARSH": 10},
+    "terrain_double_moves": {"TERRAIN_MARSH": true},
+    "button": "Art/Interface/Buttons/Promotions/Lizardman.dds",
+    "race": true,
+    "damage_type_resists": {"DAMAGE_POISON": 10}
+  },
+  {
+    "type": "PROMOTION_LONGSHOREMEN",
+    "description": "TXT_KEY_PROMOTION_LONGSHOREMEN",
+    "tech_prereq": "TECH_NEVER",
+    "moves_change": 1,
+    "cargo_change": -1,
+    "unit_combats": {"UNITCOMBAT_NAVAL": true},
+    "button": "Art/Interface/Buttons/Promotions/Longshoremen.dds",
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_LOYALTY",
+    "description": "TXT_KEY_PROMOTION_LOYALTY",
+    "help": "TXT_KEY_PROMOTION_LOYALTY_PEDIA",
+    "tech_prereq": "TECH_NEVER",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_RECON": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Loyalty.dds",
+    "dispellable": true,
+    "immune_to_capture": true,
+    "ai_weight": 50,
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_MAGIC_IMMUNE",
+    "description": "TXT_KEY_PROMOTION_MAGIC_IMMUNE",
+    "button": "Art/Interface/Buttons/Promotions/Magicimmune.dds",
+    "immune_to_magic": true,
+    "min_level": -1,
+    "resist_magic": 100,
+    "damage_type_resists": {"DAMAGE_COLD": 50, "DAMAGE_DEATH": 50, "DAMAGE_FIRE": 50, "DAMAGE_LIGHTNING": 50}
+  },
+  {
+    "type": "PROMOTION_MAGIC_RESISTANCE",
+    "description": "TXT_KEY_PROMOTION_MAGIC_RESISTANCE",
+    "help": "TXT_KEY_PROMOTION_MAGIC_RESISTANCE_PEDIA",
+    "promotion_prereq": "PROMOTION_COMBAT3",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Magicresistance.dds",
+    "resist_magic": 20,
+    "damage_type_resists": {"DAMAGE_COLD": 20, "DAMAGE_DEATH": 20, "DAMAGE_FIRE": 20, "DAMAGE_LIGHTNING": 20}
+  },
+  {
+    "type": "PROMOTION_MARCH",
+    "description": "TXT_KEY_PROMOTION_MARCH",
+    "promotion_prereq_or1": "PROMOTION_COMBAT3",
+    "promotion_prereq_or2": "PROMOTION_MEDIC1",
+    "always_heal": true,
+    "enemy_heal_change": 10,
+    "neutral_heal_change": 10,
+    "friendly_heal_change": 10,
+    "unit_combats": {"UNITCOMBAT_BEAST": true, "UNITCOMBAT_DISCIPLE": true, "UNITCOMBAT_MELEE": true},
+    "button": ",Art/Interface/Buttons/Promotions/March.dds,Art/Interface/Buttons/Promotions_Atlas.dds,2,4"
+  },
+  {
+    "type": "PROMOTION_MARKSMAN",
+    "description": "TXT_KEY_PROMOTION_MARKSMAN",
+    "promotion_prereq": "PROMOTION_COMBAT4",
+    "tech_prereq": "TECH_PRECISION",
+    "unit_combats": {"UNITCOMBAT_ARCHER": true, "UNITCOMBAT_RECON": true},
+    "button": "Art/Interface/Buttons/Promotions/Marksman.dds",
+    "target_weakest_unit": true
+  },
+  {
+    "type": "PROMOTION_MEDIC1",
+    "description": "TXT_KEY_PROMOTION_MEDIC1",
+    "tech_prereq": "TECH_NEVER",
+    "same_tile_heal_change": 10,
+    "unit_combats": {
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_RECON": true
+    },
+    "button": ",Art/Interface/Buttons/Promotions/Medic1.dds,Art/Interface/Buttons/Promotions_Atlas.dds,3,4",
+    "promotion_next_level": "PROMOTION_MEDIC2"
+  },
+  {
+    "type": "PROMOTION_MEDIC2",
+    "description": "TXT_KEY_PROMOTION_MEDIC2",
+    "promotion_prereq": "PROMOTION_MEDIC1",
+    "tech_prereq": "TECH_NEVER",
+    "same_tile_heal_change": 15,
+    "button": ",Art/Interface/Buttons/Promotions/Medic2.dds,Art/Interface/Buttons/Promotions_Atlas.dds,4,4",
+    "promotion_next_level": "PROMOTION_MEDIC3"
+  },
+  {
+    "type": "PROMOTION_MEDIC3",
+    "description": "TXT_KEY_PROMOTION_MEDIC3",
+    "promotion_prereq": "PROMOTION_MEDIC2",
+    "same_tile_heal_change": 20,
+    "adjacent_tile_heal_change": 20,
+    "button": "Art/Interface/Buttons/Promotions/Medic3.dds"
+  },
+  {
+    "type": "PROMOTION_METAMAGIC1",
+    "description": "TXT_KEY_PROMOTION_METAMAGIC1",
+    "promotion_prereq": "PROMOTION_CHANNELING1",
+    "unit_combats": {"UNITCOMBAT_ADEPT": true},
+    "button": "Art/Interface/Buttons/Promotions/Metamagic1.dds",
+    "ai_weight": 50,
+    "caster_resist_modify": -5,
+    "spell_damage_modify": 5,
+    "bonus_prereq": "BONUS_MANA_METAMAGIC",
+    "promotion_next_level": "PROMOTION_METAMAGIC2"
+  },
+  {
+    "type": "PROMOTION_METAMAGIC2",
+    "description": "TXT_KEY_PROMOTION_METAMAGIC2",
+    "promotion_prereq": "PROMOTION_METAMAGIC1",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Metamagic2.dds",
+    "ai_weight": 100,
+    "caster_resist_modify": -5,
+    "spell_damage_modify": 5,
+    "promotion_prereq_and": "PROMOTION_CHANNELING2",
+    "promotion_next_level": "PROMOTION_METAMAGIC3"
+  },
+  {
+    "type": "PROMOTION_METAMAGIC3",
+    "description": "TXT_KEY_PROMOTION_METAMAGIC3",
+    "promotion_prereq": "PROMOTION_METAMAGIC2",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Metamagic3.dds",
+    "ai_weight": 150,
+    "caster_resist_modify": -5,
+    "spell_damage_modify": 5,
+    "promotion_prereq_and": "PROMOTION_CHANNELING3"
+  },
+  {
+    "type": "PROMOTION_MIND1",
+    "description": "TXT_KEY_PROMOTION_MIND1",
+    "promotion_prereq": "PROMOTION_CHANNELING1",
+    "unit_combats": {"UNITCOMBAT_ADEPT": true},
+    "button": "Art/Interface/Buttons/Promotions/Mind1.dds",
+    "ai_weight": 50,
+    "bonus_prereq": "BONUS_MANA_MIND",
+    "promotion_next_level": "PROMOTION_MIND2"
+  },
+  {
+    "type": "PROMOTION_MIND2",
+    "description": "TXT_KEY_PROMOTION_MIND2",
+    "promotion_prereq": "PROMOTION_MIND1",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Mind2.dds",
+    "ai_weight": 100,
+    "promotion_prereq_and": "PROMOTION_CHANNELING2",
+    "promotion_next_level": "PROMOTION_MIND3"
+  },
+  {
+    "type": "PROMOTION_MIND3",
+    "description": "TXT_KEY_PROMOTION_MIND3",
+    "promotion_prereq": "PROMOTION_MIND2",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Mind3.dds",
+    "ai_weight": 150,
+    "promotion_prereq_and": "PROMOTION_CHANNELING3"
+  },
+  {
+    "type": "PROMOTION_MITHRIL_WEAPONS",
+    "description": "TXT_KEY_PROMOTION_MITHRIL_WEAPONS",
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Promotions/Mithrilweapons.dds",
+    "extra_combat_str": 4,
+    "extra_combat_defense": 4,
+    "min_level": -1,
+    "promotion_combat_type": "PROMOTION_IRON_WEAPONS",
+    "promotion_combat_mod": 10
+  },
+  {
+    "type": "PROMOTION_MOBILITY1",
+    "description": "TXT_KEY_PROMOTION_MOBILITY1",
+    "tech_prereq": "TECH_HORSEBACK_RIDING",
+    "moves_change": 1,
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_RECON": true
+    },
+    "button": ",Art/Interface/Buttons/Promotions/Mobility1.dds,Art/Interface/Buttons/Promotions_Atlas.dds,5,4",
+    "mutation": true,
+    "promotion_next_level": "PROMOTION_MOBILITY2"
+  },
+  {
+    "type": "PROMOTION_MOBILITY2",
+    "description": "TXT_KEY_PROMOTION_MOBILITY2",
+    "promotion_prereq": "PROMOTION_MOBILITY1",
+    "moves_change": 1,
+    "unit_combats": {"UNITCOMBAT_ANIMAL": true, "UNITCOMBAT_MOUNTED": true, "UNITCOMBAT_RECON": true},
+    "button": "Art/Interface/Buttons/Promotions/Mobility2.dds"
+  },
+  {
+    "type": "PROMOTION_MORALE",
+    "description": "TXT_KEY_PROMOTION_MORALE",
+    "tech_prereq": "TECH_NEVER",
+    "combat_percent": 10,
+    "city_attack": 10,
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_RECON": true
+    },
+    "button": ",Art/Interface/Buttons/Promotions/Combat5.dds,Art/Interface/Buttons/Warlords_Atlas_1.dds,7,16",
+    "ai_weight": 50,
+    "combat_percent_defense": 10,
+    "expire_chance": 10,
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_MUTATED",
+    "description": "TXT_KEY_PROMOTION_MUTATED",
+    "help": "TXT_KEY_PROMOTION_MUTATED_PEDIA",
+    "tech_prereq": "TECH_NEVER",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_RECON": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Mutated.dds",
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_NATURE1",
+    "description": "TXT_KEY_PROMOTION_NATURE1",
+    "promotion_prereq": "PROMOTION_CHANNELING1",
+    "unit_combats": {"UNITCOMBAT_ADEPT": true},
+    "button": "Art/Interface/Buttons/Promotions/Nature1.dds",
+    "ai_weight": 50,
+    "bonus_prereq": "BONUS_MANA_NATURE",
+    "promotion_next_level": "PROMOTION_NATURE2"
+  },
+  {
+    "type": "PROMOTION_NATURE2",
+    "description": "TXT_KEY_PROMOTION_NATURE2",
+    "promotion_prereq": "PROMOTION_NATURE1",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Nature2.dds",
+    "ai_weight": 100,
+    "promotion_prereq_and": "PROMOTION_CHANNELING2",
+    "promotion_next_level": "PROMOTION_NATURE3"
+  },
+  {
+    "type": "PROMOTION_NATURE3",
+    "description": "TXT_KEY_PROMOTION_NATURE3",
+    "promotion_prereq": "PROMOTION_NATURE2",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Nature3.dds",
+    "ai_weight": 150,
+    "promotion_prereq_and": "PROMOTION_CHANNELING3"
+  },
+  {
+    "type": "PROMOTION_NAVIGATION1",
+    "description": "TXT_KEY_PROMOTION_NAVIGATION1",
+    "promotion_prereq": "PROMOTION_FLANKING1",
+    "moves_change": 1,
+    "unit_combats": {"UNITCOMBAT_NAVAL": true},
+    "button": ",Art/Interface/Buttons/Promotions/Navigation1.dds,Art/Interface/Buttons/Promotions_Atlas.dds,7,4",
+    "promotion_next_level": "PROMOTION_NAVIGATION2"
+  },
+  {
+    "type": "PROMOTION_NAVIGATION2",
+    "description": "TXT_KEY_PROMOTION_NAVIGATION2",
+    "promotion_prereq": "PROMOTION_NAVIGATION1",
+    "moves_change": 1,
+    "unit_combats": {"UNITCOMBAT_NAVAL": true},
+    "button": ",Art/Interface/Buttons/Promotions/Navigation2.dds,Art/Interface/Buttons/Promotions_Atlas.dds,8,4"
+  },
+  {
+    "type": "PROMOTION_NETHER_BLADE",
+    "description": "TXT_KEY_EQUIPMENT_NETHER_BLADE",
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Equipment/NetherBlade.dds",
+    "equipment": true,
+    "promotion_combat_type": "PROMOTION_HERO",
+    "promotion_combat_mod": 80,
+    "damage_type_combats": {"DAMAGE_DEATH": 2}
+  },
+  {
+    "type": "PROMOTION_NIGHTMARE",
+    "description": "TXT_KEY_PROMOTION_NIGHTMARE",
+    "tech_prereq": "TECH_NEVER",
+    "terrain_attacks": {"TERRAIN_BROKEN_LANDS": 10, "TERRAIN_FIELDS_OF_PERDITION": 10, "TERRAIN_BURNING_SANDS": 10},
+    "terrain_defenses": {"TERRAIN_BROKEN_LANDS": 10, "TERRAIN_FIELDS_OF_PERDITION": 10, "TERRAIN_BURNING_SANDS": 10},
+    "unit_combats": {"UNITCOMBAT_MOUNTED": true},
+    "button": "Art/Interface/Buttons/Worldbuilder/Nightmare.dds",
+    "validate": true,
+    "extra_combat_str": 1,
+    "extra_combat_defense": 1,
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_NOMAD",
+    "description": "TXT_KEY_PROMOTION_NOMAD",
+    "tech_prereq": "TECH_NEVER",
+    "terrain_attacks": {"TERRAIN_DESERT": 20},
+    "terrain_defenses": {"TERRAIN_DESERT": 20},
+    "terrain_double_moves": {"TERRAIN_DESERT": true},
+    "button": "Art/Interface/Buttons/Promotions/Nomad.dds",
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_ORC",
+    "description": "TXT_KEY_PROMOTION_ORC",
+    "tech_prereq": "TECH_NEVER",
+    "feature_attacks": {"FEATURE_JUNGLE": 10},
+    "button": "Art/Interface/Buttons/Promotions/Orc.dds",
+    "race": true,
+    "work_rate_modify": -10,
+    "damage_type_resists": {"DAMAGE_FIRE": 25}
+  },
+  {
+    "type": "PROMOTION_ORTHUSS_AXE",
+    "description": "TXT_KEY_EQUIPMENT_ORTHUSS_AXE",
+    "tech_prereq": "TECH_NEVER",
+    "blitz": true,
+    "button": "Art/Interface/Buttons/Equipment/Orthussaxe.dds",
+    "equipment": true,
+    "damage_type_combats": {"DAMAGE_FIRE": 1}
+  },
+  {
+    "type": "PROMOTION_PERFECT_SIGHT",
+    "description": "TXT_KEY_PROMOTION_PERFECT_SIGHT",
+    "promotion_prereq": "PROMOTION_SENTRY2",
+    "unit_combats": {"UNITCOMBAT_ARCHER": true, "UNITCOMBAT_RECON": true},
+    "button": "Art/Interface/Buttons/Promotions/PerfectSight.dds",
+    "see_invisible": true,
+    "promotion_combat_type": "PROMOTION_ILLUSION",
+    "promotion_combat_mod": 50
+  },
+  {
+    "type": "PROMOTION_PIECES_OF_BARNAXUS",
+    "description": "TXT_KEY_EQUIPMENT_PIECES_OF_BARNAXUS",
+    "help": "TXT_KEY_PROMOTION_PIECES_OF_BARNAXUS_PEDIA",
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Units/Barnaxus.dds",
+    "equipment": true
+  },
+  {
+    "type": "PROMOTION_PLAGUE_CARRIER",
+    "description": "TXT_KEY_PROMOTION_PLAGUE_CARRIER",
+    "help": "TXT_KEY_PROMOTION_PLAGUE_CARRIER_PEDIA",
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Promotions/Plaguecarrier.dds",
+    "min_level": -1,
+    "promotion_combat_apply": "PROMOTION_PLAGUED"
+  },
+  {
+    "type": "PROMOTION_PLAGUED",
+    "description": "TXT_KEY_PROMOTION_PLAGUED",
+    "tech_prereq": "TECH_NEVER",
+    "enemy_heal_change": -20,
+    "neutral_heal_change": -20,
+    "friendly_heal_change": -20,
+    "combat_percent": -60,
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Plagued.dds",
+    "prereq_alive": true,
+    "ai_weight": -100,
+    "combat_percent_defense": -60,
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_POISON_RESISTANCE",
+    "description": "TXT_KEY_PROMOTION_POISON_RESISTANCE",
+    "promotion_prereq": "PROMOTION_MAGIC_RESISTANCE",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/PoisonResistance.dds",
+    "mutation": true,
+    "damage_type_resists": {"DAMAGE_POISON": 50}
+  },
+  {
+    "type": "PROMOTION_POISONED",
+    "description": "TXT_KEY_PROMOTION_POISONED",
+    "help": "TXT_KEY_PROMOTION_POISONED_PEDIA",
+    "tech_prereq": "TECH_NEVER",
+    "enemy_heal_change": -3,
+    "neutral_heal_change": -5,
+    "friendly_heal_change": -8,
+    "combat_percent": -10,
+    "button": "Art/Interface/Buttons/Promotions/Poisoned.dds",
+    "removed_when_healed": true,
+    "ai_weight": -100,
+    "combat_percent_defense": -10,
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_POISONED_BLADE",
+    "description": "TXT_KEY_PROMOTION_POISONED_BLADE",
+    "tech_prereq": "TECH_NEVER",
+    "unit_combats": {"UNITCOMBAT_RECON": true},
+    "button": "Art/Interface/Buttons/Promotions/PoisonedBlade.dds",
+    "validate": true,
+    "ai_weight": 100,
+    "min_level": -1,
+    "damage_type_combats": {"DAMAGE_POISON": 1}
+  },
+  {
+    "type": "PROMOTION_POTENCY",
+    "description": "TXT_KEY_PROMOTION_POTENCY",
+    "tech_prereq": "TECH_NEVER",
+    "unit_combats": {"UNITCOMBAT_ADEPT": true, "UNITCOMBAT_DISCIPLE": true},
+    "button": "Art/Interface/Buttons/Promotions/Potency.dds",
+    "validate": true,
+    "caster_resist_modify": -10,
+    "min_level": -1,
+    "spell_caster_xp": 20
+  },
+  {
+    "type": "PROMOTION_POTION_OF_INVISIBILITY",
+    "description": "TXT_KEY_EQUIPMENT_POTION_OF_INVISIBILITY",
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Equipment/PotionOfInvisibility.dds",
+    "equipment": true
+  },
+  {
+    "type": "PROMOTION_POTION_OF_RESTORATION",
+    "description": "TXT_KEY_EQUIPMENT_POTION_OF_RESTORATION",
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Equipment/PotionOfRestoration.dds",
+    "equipment": true
+  },
+  {
+    "type": "PROMOTION_PRECISION",
+    "description": "TXT_KEY_PROMOTION_PRECISION",
+    "promotion_prereq": "PROMOTION_DRILL4",
+    "unit_combats": {"UNITCOMBAT_ARCHER": true},
+    "button": "Art/Interface/Buttons/Promotions/Precision.dds",
+    "defensive_strike_damage": 10
+  },
+  {
+    "type": "PROMOTION_PROPHECY_MARK",
+    "description": "TXT_KEY_PROMOTION_PROPHECY_MARK",
+    "help": "TXT_KEY_PROMOTION_PROPHECY_MARK_PEDIA",
+    "tech_prereq": "TECH_NEVER",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_RECON": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/ProphecyMark.dds",
+    "min_level": -1,
+    "modify_global_counter": 1
+  },
+  {
+    "type": "PROMOTION_PUPPET",
+    "description": "TXT_KEY_PROMOTION_PUPPET",
+    "combat_percent": -20,
+    "combat_percent_defense": -20,
+    "button": "Art/Interface/Buttons/Promotions/Puppet.dds",
+    "not_alive": true,
+    "race": true,
+    "caster_resist_modify": 20,
+    "spell_damage_modify": -10,
+    "promotion_summon_perk": "PROMOTION_PUPPET"
+  },
+  {
+    "type": "PROMOTION_RECRUITER",
+    "description": "TXT_KEY_PROMOTION_RECRUITER",
+    "button": "Art/Interface/Buttons/Spells/Recruit.dds",
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_REGENERATION",
+    "description": "TXT_KEY_PROMOTION_REGENERATION",
+    "tech_prereq": "TECH_NEVER",
+    "always_heal": true,
+    "enemy_heal_change": 10,
+    "neutral_heal_change": 10,
+    "friendly_heal_change": 10,
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_RECON": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Regeneration.dds",
+    "dispellable": true,
+    "mutation": true,
+    "removed_when_healed": true,
+    "ai_weight": 50,
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_ROD_OF_WINDS",
+    "description": "TXT_KEY_EQUIPMENT_ROD_OF_WINDS",
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Equipment/RodOfWinds.dds",
+    "equipment": true,
+    "bonus_affinities": {"BONUS_MANA_AIR": 1}
+  },
+  {
+    "type": "PROMOTION_RUSTED",
+    "description": "TXT_KEY_PROMOTION_RUSTED",
+    "help": "TXT_KEY_PROMOTION_RUSTED_PEDIA",
+    "tech_prereq": "TECH_NEVER",
+    "combat_percent": -10,
+    "unit_combats": {"UNITCOMBAT_MELEE": true},
+    "button": "Art/Interface/Buttons/Promotions/Rusted.dds",
+    "ai_weight": -50,
+    "combat_percent_defense": -10,
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_SCORCHED_STAFF",
+    "description": "TXT_KEY_EQUIPMENT_SCORCHED_STAFF",
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Equipment/ScorchedStaff.dds",
+    "equipment": true,
+    "bonus_affinities": {"BONUS_MANA_FIRE": 1}
+  },
+  {
+    "type": "PROMOTION_SCOURGE",
+    "description": "TXT_KEY_PROMOTION_SCOURGE",
+    "promotion_prereq": "PROMOTION_COMBAT1",
+    "tech_prereq": "TECH_WAY_OF_THE_WICKED",
+    "unit_combat_mods": {"UNITCOMBAT_DISCIPLE": 40},
+    "unit_combats": {"UNITCOMBAT_BEAST": true, "UNITCOMBAT_MELEE": true, "UNITCOMBAT_RECON": true},
+    "button": "Art/Interface/Buttons/Promotions/Scourge.dds"
+  },
+  {
+    "type": "PROMOTION_SENTRY",
+    "description": "TXT_KEY_PROMOTION_SENTRY",
+    "promotion_prereq": "PROMOTION_COMBAT3",
+    "visibility_change": 1,
+    "unit_combats": {
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Sentry1.dds",
+    "mutation": true,
+    "promotion_next_level": "PROMOTION_SENTRY2"
+  },
+  {
+    "type": "PROMOTION_SENTRY2",
+    "description": "TXT_KEY_PROMOTION_SENTRY2",
+    "promotion_prereq": "PROMOTION_SENTRY",
+    "visibility_change": 1,
+    "unit_combats": {"UNITCOMBAT_ARCHER": true, "UNITCOMBAT_RECON": true},
+    "button": "Art/Interface/Buttons/Promotions/Sentry2.dds"
+  },
+  {
+    "type": "PROMOTION_SHADOW1",
+    "description": "TXT_KEY_PROMOTION_SHADOW1",
+    "promotion_prereq": "PROMOTION_CHANNELING1",
+    "unit_combats": {"UNITCOMBAT_ADEPT": true},
+    "button": "Art/Interface/Buttons/Promotions/Shadow1.dds",
+    "ai_weight": 50,
+    "bonus_prereq": "BONUS_MANA_SHADOW",
+    "promotion_next_level": "PROMOTION_SHADOW2"
+  },
+  {
+    "type": "PROMOTION_SHADOW2",
+    "description": "TXT_KEY_PROMOTION_SHADOW2",
+    "promotion_prereq": "PROMOTION_SHADOW1",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Shadow2.dds",
+    "ai_weight": 100,
+    "promotion_prereq_and": "PROMOTION_CHANNELING2",
+    "promotion_next_level": "PROMOTION_SHADOW3"
+  },
+  {
+    "type": "PROMOTION_SHADOW3",
+    "description": "TXT_KEY_PROMOTION_SHADOW3",
+    "promotion_prereq": "PROMOTION_SHADOW2",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Shadow3.dds",
+    "ai_weight": 200,
+    "promotion_prereq_and": "PROMOTION_CHANNELING3"
+  },
+  {
+    "type": "PROMOTION_SHADOWWALK",
+    "description": "TXT_KEY_PROMOTION_SHADOWWALK",
+    "tech_prereq": "TECH_NEVER",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_RECON": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/ShadowWalk.dds",
+    "ignore_building_defense": true,
+    "immune_to_defensive_strike": true,
+    "ai_weight": 150,
+    "expire_chance": 25,
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_SHEUT_STONE",
+    "description": "TXT_KEY_PROMOTION_SHEUT_STONE",
+    "tech_prereq": "TECH_NEVER",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_RECON": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/SheutStone.dds",
+    "min_level": -1,
+    "damage_type_combats": {"DAMAGE_DEATH": 1},
+    "damage_type_resists": {"DAMAGE_DEATH": 25, "DAMAGE_HOLY": -10}
+  },
+  {
+    "type": "PROMOTION_SHIELD_OF_FAITH",
+    "description": "TXT_KEY_PROMOTION_SHIELD_OF_FAITH",
+    "tech_prereq": "TECH_NEVER",
+    "combat_percent": 10,
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_RECON": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/ShieldofFaith.dds",
+    "dispellable": true,
+    "ai_weight": 100,
+    "combat_percent_defense": 30,
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_SHOCK",
+    "description": "TXT_KEY_PROMOTION_SHOCK",
+    "promotion_prereq": "PROMOTION_COMBAT1",
+    "unit_combat_mods": {"UNITCOMBAT_MELEE": 40},
+    "unit_combats": {
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_RECON": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Shock.dds",
+    "promotion_next_level": "PROMOTION_SHOCK2"
+  },
+  {
+    "type": "PROMOTION_SHOCK2",
+    "description": "TXT_KEY_PROMOTION_SHOCK2",
+    "promotion_prereq": "PROMOTION_SHOCK",
+    "unit_combat_mods": {"UNITCOMBAT_MELEE": 40},
+    "unit_combats": {"UNITCOMBAT_ARCHER": true, "UNITCOMBAT_BEAST": true, "UNITCOMBAT_MELEE": true},
+    "button": "Art/Interface/Buttons/Promotions/Shock2.dds",
+    "promotion_prereq_and": "PROMOTION_COMBAT3"
+  },
+  {
+    "type": "PROMOTION_SINISTER",
+    "description": "TXT_KEY_PROMOTION_SINISTER",
+    "tech_prereq": "TECH_NEVER",
+    "unit_combats": {"UNITCOMBAT_RECON": true},
+    "button": "Art/Interface/Buttons/Promotions/Sinister.dds",
+    "validate": true,
+    "extra_combat_str": 1,
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_SKELETON_CREW",
+    "description": "TXT_KEY_PROMOTION_SKELETON_CREW",
+    "tech_prereq": "TECH_NEVER",
+    "cargo_change": 1,
+    "unit_combats": {"UNITCOMBAT_NAVAL": true},
+    "button": "Art/Interface/Buttons/Promotions/Skeletoncrew.dds",
+    "extra_combat_str": -1,
+    "extra_combat_defense": -1,
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_SLOW",
+    "description": "TXT_KEY_PROMOTION_SLOW",
+    "moves_change": -1,
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Slow.dds",
+    "ai_weight": -50,
+    "expire_chance": 30,
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_SPELLSTAFF",
+    "description": "TXT_KEY_PROMOTION_SPELLSTAFF",
+    "help": "TXT_KEY_PROMOTION_SPELLSTAFF_PEDIA",
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Promotions/Spellstaff.dds",
+    "dispellable": true,
+    "ai_weight": 150,
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_SPIRIT_GUIDE",
+    "description": "TXT_KEY_PROMOTION_SPIRIT_GUIDE",
+    "help": "TXT_KEY_PROMOTION_SPIRIT_GUIDE_PEDIA",
+    "tech_prereq": "TECH_NEVER",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_RECON": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Spiritguide.dds",
+    "dispellable": true,
+    "ai_weight": 50,
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_SPIRIT1",
+    "description": "TXT_KEY_PROMOTION_SPIRIT1",
+    "unit_combats": {"UNITCOMBAT_ADEPT": true},
+    "button": "Art/Interface/Buttons/Promotions/Spirit1.dds",
+    "ai_weight": 50,
+    "bonus_prereq": "BONUS_MANA_SPIRIT",
+    "promotion_prereq_and": "PROMOTION_CHANNELING1",
+    "promotion_next_level": "PROMOTION_SPIRIT2"
+  },
+  {
+    "type": "PROMOTION_SPIRIT2",
+    "description": "TXT_KEY_PROMOTION_SPIRIT2",
+    "promotion_prereq": "PROMOTION_SPIRIT1",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Spirit2.dds",
+    "ai_weight": 100,
+    "promotion_prereq_and": "PROMOTION_CHANNELING2",
+    "promotion_next_level": "PROMOTION_SPIRIT3"
+  },
+  {
+    "type": "PROMOTION_SPIRIT3",
+    "description": "TXT_KEY_PROMOTION_SPIRIT3",
+    "promotion_prereq": "PROMOTION_SPIRIT2",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Spirit3.dds",
+    "ai_weight": 150,
+    "promotion_prereq_and": "PROMOTION_CHANNELING3"
+  },
+  {
+    "type": "PROMOTION_STAFF_OF_SOULS",
+    "description": "TXT_KEY_EQUIPMENT_STAFF_OF_SOULS",
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Equipment/StaffOfSouls.dds",
+    "equipment": true,
+    "damage_type_combats": {"DAMAGE_DEATH": 3},
+    "bonus_affinities": {"BONUS_MANA_DEATH": 1}
+  },
+  {
+    "type": "PROMOTION_STARTING_SETTLER",
+    "description": "TXT_KEY_PROMOTION_STARTING_SETTLER",
+    "tech_prereq": "TECH_NEVER",
+    "visibility_change": 3,
+    "moves_change": 2,
+    "button": "Art/Interface/Buttons/Units/Settler.dds",
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_STEALTH",
+    "description": "TXT_KEY_PROMOTION_STEALTH",
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Promotions/Stealth.dds",
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_STIGMATA",
+    "description": "TXT_KEY_PROMOTION_STIGMATA",
+    "help": "TXT_KEY_PROMOTION_STIGMATA_PEDIA",
+    "promotion_prereq": "PROMOTION_COMBAT5",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_RECON": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Stigmata.dds",
+    "combat_percent_global_counter": 50,
+    "promotion_prereq_and": "PROMOTION_DEMON"
+  },
+  {
+    "type": "PROMOTION_STONESKIN",
+    "description": "TXT_KEY_PROMOTION_STONESKIN",
+    "tech_prereq": "TECH_NEVER",
+    "first_strikes_change": 3,
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_RECON": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Stoneskin.dds",
+    "dispellable": true,
+    "mutation": true,
+    "removed_by_combat": true,
+    "ai_weight": 100,
+    "extra_combat_defense": 2,
+    "min_level": -1,
+    "damage_type_resists": {
+      "DAMAGE_COLD": 50,
+      "DAMAGE_DEATH": 50,
+      "DAMAGE_FIRE": 50,
+      "DAMAGE_HOLY": 50,
+      "DAMAGE_LIGHTNING": 50,
+      "DAMAGE_POISON": 50,
+      "DAMAGE_UNHOLY": 50
+    }
+  },
+  {
+    "type": "PROMOTION_STRONG",
+    "description": "TXT_KEY_PROMOTION_STRONG",
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Promotions/Strong.dds",
+    "mutation": true,
+    "ai_weight": 100,
+    "extra_combat_str": 1,
+    "extra_combat_defense": 1,
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_SUBDUE_ANIMAL",
+    "description": "TXT_KEY_PROMOTION_SUBDUE_ANIMAL",
+    "promotion_prereq": "PROMOTION_COMBAT1",
+    "tech_prereq": "TECH_ANIMAL_HUSBANDRY",
+    "unit_combat_mods": {"UNITCOMBAT_ANIMAL": 25},
+    "unit_combats": {"UNITCOMBAT_RECON": true},
+    "button": "Art/Interface/Buttons/Promotions/Animalhusbandry.dds",
+    "ai_weight": 300,
+    "capture_unit_combat": "UNITCOMBAT_ANIMAL"
+  },
+  {
+    "type": "PROMOTION_SUBDUE_BEASTS",
+    "description": "TXT_KEY_PROMOTION_SUBDUE_BEASTS",
+    "promotion_prereq": "PROMOTION_SUBDUE_ANIMAL",
+    "tech_prereq": "TECH_ANIMAL_MASTERY",
+    "unit_combat_mods": {"UNITCOMBAT_BEAST": 25},
+    "unit_combats": {"UNITCOMBAT_RECON": true},
+    "button": "Art/Interface/Buttons/Promotions/SubdueBeasts.dds",
+    "ai_weight": 300,
+    "capture_unit_combat": "UNITCOMBAT_BEAST",
+    "promotion_prereq_and": "PROMOTION_COMBAT3"
+  },
+  {
+    "type": "PROMOTION_SUMMONER",
+    "description": "TXT_KEY_PROMOTION_SUMMONER",
+    "promotion_prereq": "PROMOTION_HERO",
+    "unit_combats": {"UNITCOMBAT_ADEPT": true},
+    "button": "Art/Interface/Buttons/Promotions/Summoner.dds",
+    "ai_weight": 100,
+    "promotion_summon_perk": "PROMOTION_COMBAT1",
+    "promotion_prereq_and": "PROMOTION_COMBAT5"
+  },
+  {
+    "type": "PROMOTION_SUN1",
+    "description": "TXT_KEY_PROMOTION_SUN1",
+    "promotion_prereq": "PROMOTION_CHANNELING1",
+    "unit_combats": {"UNITCOMBAT_ADEPT": true},
+    "button": "Art/Interface/Buttons/Promotions/Sun1.dds",
+    "ai_weight": 50,
+    "bonus_prereq": "BONUS_MANA_SUN",
+    "promotion_next_level": "PROMOTION_SUN2"
+  },
+  {
+    "type": "PROMOTION_SUN2",
+    "description": "TXT_KEY_PROMOTION_SUN2",
+    "promotion_prereq": "PROMOTION_SUN1",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Sun2.dds",
+    "ai_weight": 100,
+    "promotion_prereq_and": "PROMOTION_CHANNELING2",
+    "promotion_next_level": "PROMOTION_SUN3"
+  },
+  {
+    "type": "PROMOTION_SUN3",
+    "description": "TXT_KEY_PROMOTION_SUN3",
+    "promotion_prereq": "PROMOTION_SUN2",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Sun3.dds",
+    "ai_weight": 200,
+    "promotion_prereq_and": "PROMOTION_CHANNELING3"
+  },
+  {
+    "type": "PROMOTION_SUNDERED",
+    "description": "TXT_KEY_PROMOTION_SUNDERED",
+    "promotion_prereq": "PROMOTION_DEMON",
+    "tech_prereq": "TECH_CORRUPTION_OF_SPIRIT",
+    "unit_combats": {"UNITCOMBAT_ADEPT": true, "UNITCOMBAT_DISCIPLE": true},
+    "button": "Art/Interface/Buttons/Promotions/Sundered.dds",
+    "promotion_summon_perk": "PROMOTION_STIGMATA",
+    "damage_type_resists": {"DAMAGE_UNHOLY": 25}
+  },
+  {
+    "type": "PROMOTION_SYLIVENS_PERFECT_LYRE",
+    "description": "TXT_KEY_EQUIPMENT_SYLIVENS_PERFECT_LYRE",
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Equipment/SylivensPerfectLyre.dds",
+    "equipment": true
+  },
+  {
+    "type": "PROMOTION_TIMOR_MASK",
+    "description": "TXT_KEY_EQUIPMENT_TIMOR_MASK",
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Equipment/TimorMask.dds",
+    "equipment": true,
+    "fear": true,
+    "immune_to_fear": true
+  },
+  {
+    "type": "PROMOTION_TWINCAST",
+    "description": "TXT_KEY_PROMOTION_TWINCAST",
+    "promotion_prereq": "PROMOTION_COMBAT5",
+    "unit_combats": {"UNITCOMBAT_ADEPT": true},
+    "button": "Art/Interface/Buttons/Promotions/Twincast.dds",
+    "twincast": true,
+    "ai_weight": 300,
+    "promotion_prereq_and": "PROMOTION_HERO"
+  },
+  {
+    "type": "PROMOTION_UNDEAD",
+    "description": "TXT_KEY_PROMOTION_UNDEAD",
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Promotions/Undead.dds",
+    "immune_to_fear": true,
+    "not_alive": true,
+    "race": true,
+    "damage_type_resists": {"DAMAGE_DEATH": 100, "DAMAGE_HOLY": -50, "DAMAGE_POISON": 100, "DAMAGE_UNHOLY": 50}
+  },
+  {
+    "type": "PROMOTION_UNDEAD_SLAYING",
+    "description": "TXT_KEY_PROMOTION_UNDEAD_SLAYING",
+    "promotion_prereq": "PROMOTION_COMBAT1",
+    "tech_prereq": "TECH_WAY_OF_THE_WISE",
+    "unit_combats": {"UNITCOMBAT_BEAST": true, "UNITCOMBAT_DISCIPLE": true, "UNITCOMBAT_MELEE": true},
+    "button": "Art/Interface/Buttons/Promotions/Undeadslaying.dds",
+    "promotion_combat_type": "PROMOTION_UNDEAD",
+    "promotion_combat_mod": 40
+  },
+  {
+    "type": "PROMOTION_UNHOLY_TAINT",
+    "description": "TXT_KEY_PROMOTION_UNHOLY_TAINT",
+    "help": "TXT_KEY_PROMOTION_UNHOLY_TAINT_PEDIA",
+    "tech_prereq": "TECH_NEVER",
+    "combat_percent": -25,
+    "button": "Art/Interface/Buttons/Promotions/Unholytaint.dds",
+    "combat_percent_defense": -25,
+    "extra_combat_str": -1,
+    "extra_combat_defense": -1,
+    "min_level": -1,
+    "spell_caster_xp": 10,
+    "spell_damage_modify": 10,
+    "damage_type_combats": {"DAMAGE_UNHOLY": 1},
+    "damage_type_resists": {"DAMAGE_UNHOLY": 25}
+  },
+  {
+    "type": "PROMOTION_VALOR",
+    "description": "TXT_KEY_PROMOTION_VALOR",
+    "tech_prereq": "TECH_NEVER",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_RECON": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Valor.dds",
+    "dispellable": true,
+    "ai_weight": 100,
+    "free_xp_from_combat": 1,
+    "min_level": -1,
+    "resist_magic": 10
+  },
+  {
+    "type": "PROMOTION_VAMPIRE",
+    "description": "TXT_KEY_PROMOTION_VAMPIRE",
+    "tech_prereq": "TECH_NEVER",
+    "enemy_heal_change": 5,
+    "neutral_heal_change": 5,
+    "friendly_heal_change": 5,
+    "combat_percent": 10,
+    "button": "Art/Interface/Buttons/Promotions/Vampire.dds",
+    "combat_percent_defense": 10,
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_VILE_TOUCH",
+    "description": "TXT_KEY_PROMOTION_VILE_TOUCH",
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Promotions/VileTouch.dds",
+    "min_level": -1,
+    "promotion_combat_apply": "PROMOTION_WITHERED"
+  },
+  {
+    "type": "PROMOTION_VULNERABLE_TO_FIRE",
+    "description": "TXT_KEY_PROMOTION_VULNERABLE_TO_FIRE",
+    "button": "Art/Interface/Buttons/Promotions/Vulnerabletofire.dds",
+    "mutation": true,
+    "min_level": -1,
+    "damage_type_resists": {"DAMAGE_FIRE": -50}
+  },
+  {
+    "type": "PROMOTION_WAR",
+    "description": "TXT_KEY_EQUIPMENT_WAR",
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Equipment/War.dds",
+    "equipment": true,
+    "modify_global_counter_on_combat": 1,
+    "damage_type_combats": {"DAMAGE_UNHOLY": 3}
+  },
+  {
+    "type": "PROMOTION_WARCRY",
+    "description": "TXT_KEY_PROMOTION_WARCRY",
+    "tech_prereq": "TECH_NEVER",
+    "blitz": true,
+    "moves_change": 1,
+    "button": "Art/Interface/Buttons/Promotions/Warcry.dds",
+    "ai_weight": 100,
+    "expire_chance": 5,
+    "extra_combat_str": 1,
+    "extra_combat_defense": 1,
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_WATER_WALKING",
+    "description": "TXT_KEY_PROMOTION_WATER_WALKING",
+    "tech_prereq": "TECH_NEVER",
+    "amphib": true,
+    "river": true,
+    "button": "Art/Interface/Buttons/Promotions/Waterwalking.dds",
+    "water_walking": true,
+    "ai_weight": 100,
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_WATER1",
+    "description": "TXT_KEY_PROMOTION_WATER1",
+    "promotion_prereq": "PROMOTION_CHANNELING1",
+    "unit_combats": {"UNITCOMBAT_ADEPT": true},
+    "button": "Art/Interface/Buttons/Promotions/Water1.dds",
+    "ai_weight": 50,
+    "bonus_prereq": "BONUS_MANA_WATER",
+    "promotion_next_level": "PROMOTION_WATER2"
+  },
+  {
+    "type": "PROMOTION_WATER2",
+    "description": "TXT_KEY_PROMOTION_WATER2",
+    "promotion_prereq": "PROMOTION_WATER1",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Water2.dds",
+    "ai_weight": 100,
+    "promotion_prereq_and": "PROMOTION_CHANNELING2",
+    "promotion_next_level": "PROMOTION_WATER3"
+  },
+  {
+    "type": "PROMOTION_WATER3",
+    "description": "TXT_KEY_PROMOTION_WATER3",
+    "promotion_prereq": "PROMOTION_WATER2",
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_NAVAL": true,
+      "UNITCOMBAT_RECON": true,
+      "UNITCOMBAT_SIEGE": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Water3.dds",
+    "ai_weight": 150,
+    "promotion_prereq_and": "PROMOTION_CHANNELING3"
+  },
+  {
+    "type": "PROMOTION_WEAK",
+    "description": "TXT_KEY_PROMOTION_WEAK",
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Promotions/Weak.dds",
+    "mutation": true,
+    "ai_weight": -100,
+    "extra_combat_str": -1,
+    "extra_combat_defense": -1,
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_WEREWOLF",
+    "description": "TXT_KEY_PROMOTION_WEREWOLF",
+    "help": "TXT_KEY_PROMOTION_WEREWOLF_PEDIA",
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Promotions/Werewolf.dds",
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_WINTERBORN",
+    "description": "TXT_KEY_PROMOTION_WINTERBORN",
+    "tech_prereq": "TECH_NEVER",
+    "terrain_attacks": {"TERRAIN_SNOW": 10, "TERRAIN_TUNDRA": 10},
+    "terrain_defenses": {"TERRAIN_SNOW": 10, "TERRAIN_TUNDRA": 10},
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_RECON": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Winterborn.dds",
+    "min_level": -1,
+    "damage_type_resists": {"DAMAGE_COLD": 20, "DAMAGE_FIRE": -10}
+  },
+  {
+    "type": "PROMOTION_WITHERED",
+    "description": "TXT_KEY_PROMOTION_WITHERED",
+    "tech_prereq": "TECH_NEVER",
+    "enemy_heal_change": -20,
+    "neutral_heal_change": -20,
+    "friendly_heal_change": -20,
+    "combat_percent": -10,
+    "combat_percent_defense": -10,
+    "experience_percent": -50,
+    "unit_combats": {
+      "UNITCOMBAT_ADEPT": true,
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_ARCHER": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_DISCIPLE": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_MOUNTED": true,
+      "UNITCOMBAT_RECON": true
+    },
+    "button": "Art/Interface/Buttons/Promotions/Withered.dds",
+    "dispellable": true,
+    "mutation": true,
+    "prereq_alive": true,
+    "ai_weight": -100,
+    "min_level": -1
+  },
+  {
+    "type": "PROMOTION_WOODSMAN1",
+    "description": "TXT_KEY_PROMOTION_WOODSMAN1",
+    "feature_attacks": {"FEATURE_JUNGLE": 30, "FEATURE_FOREST": 30, "FEATURE_FOREST_ANCIENT": 30},
+    "feature_defenses": {"FEATURE_JUNGLE": 30, "FEATURE_FOREST": 30, "FEATURE_FOREST_ANCIENT": 30},
+    "unit_combats": {
+      "UNITCOMBAT_ANIMAL": true,
+      "UNITCOMBAT_BEAST": true,
+      "UNITCOMBAT_MELEE": true,
+      "UNITCOMBAT_RECON": true
+    },
+    "button": ",Art/Interface/Buttons/Promotions/Woodsman1.dds,Art/Interface/Buttons/Promotions_Atlas.dds,6,6",
+    "promotion_next_level": "PROMOTION_WOODSMAN2"
+  },
+  {
+    "type": "PROMOTION_WOODSMAN2",
+    "description": "TXT_KEY_PROMOTION_WOODSMAN2",
+    "promotion_prereq": "PROMOTION_WOODSMAN1",
+    "tech_prereq": "TECH_HIDDEN_PATHS",
+    "feature_attacks": {"FEATURE_JUNGLE": 30, "FEATURE_FOREST": 30, "FEATURE_FOREST_ANCIENT": 30},
+    "feature_defenses": {"FEATURE_JUNGLE": 30, "FEATURE_FOREST": 30, "FEATURE_FOREST_ANCIENT": 30},
+    "feature_double_moves": {"FEATURE_JUNGLE": true, "FEATURE_FOREST": true, "FEATURE_FOREST_ANCIENT": true},
+    "unit_combats": {"UNITCOMBAT_BEAST": true, "UNITCOMBAT_RECON": true},
+    "button": ",Art/Interface/Buttons/Promotions/Woodsman2.dds,Art/Interface/Buttons/Promotions_Atlas.dds,7,6"
+  }
+]

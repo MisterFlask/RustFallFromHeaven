@@ -1,0 +1,43 @@
+// edited with XMLSPY v2004 rel. 2 U (http://www.xmlspy.com) by Alex Mantzaris (Firaxis Games)
+// Sid Meier's Civilization 4
+// Copyright Firaxis Games 2005
+//
+// Basic Infos
+[
+  {"type": "MEMORY_DECLARED_WAR", "description": "TXT_KEY_MEMORY_DECLARED_WAR"},
+  {"type": "MEMORY_DECLARED_WAR_ON_FRIEND", "description": "TXT_KEY_MEMORY_DECLARED_WAR_ON_FRIEND"},
+  {"type": "MEMORY_HIRED_WAR_ALLY", "description": "TXT_KEY_MEMORY_HIRED_WAR_ALLY"},
+  {"type": "MEMORY_NUKED_US", "description": "TXT_KEY_MEMORY_NUKED_US"},
+  {"type": "MEMORY_NUKED_FRIEND", "description": "TXT_KEY_MEMORY_NUKED_FRIEND"},
+  {"type": "MEMORY_RAZED_CITY", "description": "TXT_KEY_MEMORY_RAZED_CITY"},
+  {"type": "MEMORY_RAZED_HOLY_CITY", "description": "TXT_KEY_MEMORY_RAZED_HOLY_CITY"},
+  {"type": "MEMORY_SPY_CAUGHT", "description": "TXT_KEY_MEMORY_SPY_CAUGHT"},
+  {"type": "MEMORY_GIVE_HELP", "description": "TXT_KEY_MEMORY_GIVE_HELP"},
+  {"type": "MEMORY_REFUSED_HELP", "description": "TXT_KEY_MEMORY_REFUSED_HELP"},
+  {"type": "MEMORY_ACCEPT_DEMAND", "description": "TXT_KEY_MEMORY_ACCEPT_DEMAND"},
+  {"type": "MEMORY_REJECTED_DEMAND", "description": "TXT_KEY_MEMORY_REJECTED_DEMAND"},
+  {"type": "MEMORY_ACCEPTED_RELIGION", "description": "TXT_KEY_MEMORY_ACCEPTED_RELIGION"},
+  {"type": "MEMORY_DENIED_RELIGION", "description": "TXT_KEY_MEMORY_DENIED_RELIGION"},
+  {"type": "MEMORY_ACCEPTED_CIVIC", "description": "TXT_KEY_MEMORY_ACCEPTED_CIVIC"},
+  {"type": "MEMORY_DENIED_CIVIC", "description": "TXT_KEY_MEMORY_DENIED_CIVIC"},
+  {"type": "MEMORY_ACCEPTED_JOIN_WAR", "description": "TXT_KEY_MEMORY_ACCEPTED_JOIN_WAR"},
+  {"type": "MEMORY_DENIED_JOIN_WAR", "description": "TXT_KEY_MEMORY_DENIED_JOIN_WAR"},
+  {"type": "MEMORY_ACCEPTED_STOP_TRADING", "description": "TXT_KEY_MEMORY_ACCEPTED_STOP_TRADING"},
+  {"type": "MEMORY_DENIED_STOP_TRADING", "description": "TXT_KEY_MEMORY_DENIED_STOP_TRADING"},
+  {"type": "MEMORY_STOPPED_TRADING", "description": "TXT_KEY_MEMORY_STOPPED_TRADING"},
+  {"type": "MEMORY_STOPPED_TRADING_RECENT", "description": "TXT_KEY_MEMORY_STOPPED_TRADING_RECENT"},
+  {"type": "MEMORY_HIRED_TRADE_EMBARGO", "description": "TXT_KEY_MEMORY_HIRED_TRADE_EMBARGO"},
+  {"type": "MEMORY_MADE_DEMAND", "description": "TXT_KEY_MEMORY_MADE_DEMAND"},
+  {"type": "MEMORY_MADE_DEMAND_RECENT", "description": "TXT_KEY_MEMORY_MADE_DEMAND_RECENT"},
+  {"type": "MEMORY_CANCELLED_OPEN_BORDERS", "description": "TXT_KEY_MEMORY_CANCELLED_OPEN_BORDERS"},
+  {"type": "MEMORY_TRADED_TECH_TO_US", "description": "TXT_KEY_MEMORY_TRADED_TECH_TO_US"},
+  {"type": "MEMORY_RECEIVED_TECH_FROM_ANY", "description": "TXT_KEY_MEMORY_RECEIVED_TECH_FROM_ANY"},
+  {"type": "MEMORY_VOTED_AGAINST_US", "description": "TXT_KEY_MEMORY_VOTED_AGAINST_US"},
+  {"type": "MEMORY_VOTED_FOR_US", "description": "TXT_KEY_MEMORY_VOTED_FOR_US"},
+  {"type": "MEMORY_EVENT_GOOD_TO_US", "description": "TXT_KEY_MEMORY_EVENT_GOOD_TO_US"},
+  {"type": "MEMORY_EVENT_BAD_TO_US", "description": "TXT_KEY_MEMORY_EVENT_BAD_TO_US"},
+  {"type": "MEMORY_LIBERATED_CITIES", "description": "TXT_KEY_MEMORY_LIBERATED_CITIES"},
+  {"type": "MEMORY_SOMNIUM_POSITIVE", "description": "TXT_KEY_MEMORY_SOMNIUM_POSITIVE"},
+  {"type": "MEMORY_SOMNIUM_NEGATIVE", "description": "TXT_KEY_MEMORY_SOMNIUM_NEGATIVE"},
+  {"type": "MEMORY_SOMNIUM_DELAY", "description": "TXT_KEY_MEMORY_SOMNIUM"}
+]

@@ -1,0 +1,104 @@
+// edited with XMLSPY v2004 rel. 2 U (http://www.xmlspy.com) by Jesse Smith (Firaxis Games)
+// Sid Meier's Civilization 4
+// Copyright Firaxis Games 2005
+//
+// Command Infos
+// Changes must be reflected in CvEnums.h
+[
+  {"type": "COMMAND_PROMOTION", "description": "TXT_KEY_COMMAND_PROMOTION"},
+  {"type": "COMMAND_UPGRADE", "description": "TXT_KEY_COMMAND_UPGRADE", "all": true},
+  {
+    "type": "COMMAND_AUTOMATE",
+    "description": "TXT_KEY_COMMAND_AUTOMATE",
+    "button": "Art/Interface/Buttons/Actions/Automate.dds"
+  },
+  {"type": "COMMAND_AUTOMATE_SPELL", "description": "TXT_KEY_COMMAND_AUTOMATE_CAST"},
+  {
+    "type": "COMMAND_WAKE",
+    "description": "TXT_KEY_COMMAND_WAKE",
+    "help": "TXT_KEY_COMMAND_WAKE_HELP",
+    "visible": true,
+    "all": true,
+    "button": "Art/Interface/Buttons/Actions/Wake.dds",
+    "hotkeys": [{"key": "KB_F"}],
+    "order_priority": 15
+  },
+  {
+    "type": "COMMAND_CANCEL",
+    "description": "TXT_KEY_COMMAND_CANCEL",
+    "help": "TXT_KEY_COMMAND_CANCEL_HELP",
+    "visible": true,
+    "all": true,
+    "button": "Art/Interface/Buttons/Actions/Cancel.dds",
+    "hotkeys": [{"key": "KB_BACKSPACE", "priority": 1}]
+  },
+  {
+    "type": "COMMAND_CANCEL_ALL",
+    "description": "TXT_KEY_COMMAND_CANCEL_ALL",
+    "help": "TXT_KEY_COMMAND_CANCEL_ALL_HELP",
+    "all": true,
+    "button": "Art/Interface/Buttons/Actions/Cancel.dds",
+    "hotkeys": [{"key": "KB_BACKSPACE", "shift": true, "priority": 1}]
+  },
+  {
+    "type": "COMMAND_STOP_AUTOMATION",
+    "description": "TXT_KEY_COMMAND_STOP_AUTOMATION",
+    "help": "TXT_KEY_COMMAND_STOP_AUTOMATION_HELP",
+    "visible": true,
+    "all": true,
+    "button": "Art/Interface/Buttons/Actions/Cancel.dds",
+    "hotkeys": [{"key": "KB_BACKSPACE"}]
+  },
+  {
+    "type": "COMMAND_DELETE",
+    "description": "TXT_KEY_COMMAND_DELETE",
+    "help": "TXT_KEY_COMMAND_DELETE_HELP",
+    "confirm_command": true,
+    "visible": true,
+    "button": "Art/Interface/Buttons/Actions/Delete.dds",
+    "hotkeys": [{"key": "KB_DELETE"}],
+    "order_priority": 16
+  },
+  {
+    "type": "COMMAND_GIFT",
+    "description": "TXT_KEY_COMMAND_GIFT",
+    "help": "TXT_KEY_COMMAND_GIFT_HELP",
+    "visible": true,
+    "button": "Art/Interface/Buttons/Actions/GiveUnits.dds"
+  },
+  {
+    "type": "COMMAND_LOAD",
+    "description": "TXT_KEY_COMMAND_LOAD",
+    "help": "TXT_KEY_COMMAND_LOAD_HELP",
+    "visible": true,
+    "button": "Art/Interface/Buttons/Actions/Load.dds",
+    "hotkeys": [{"key": "KB_L", "priority": 1}]
+  },
+  {
+    "type": "COMMAND_LOAD_UNIT",
+    "description": "TXT_KEY_COMMAND_LOAD_UNIT",
+    "help": "TXT_KEY_COMMAND_LOAD_UNIT_HELP"
+  },
+  {
+    "type": "COMMAND_UNLOAD",
+    "description": "TXT_KEY_COMMAND_UNLOAD",
+    "help": "TXT_KEY_COMMAND_UNLOAD_HELP",
+    "visible": true,
+    "button": "Art/Interface/Buttons/Actions/Unload.dds",
+    "hotkeys": [{"key": "KB_U", "priority": 1}]
+  },
+  {
+    "type": "COMMAND_UNLOAD_ALL",
+    "description": "TXT_KEY_COMMAND_UNLOAD_ALL",
+    "help": "TXT_KEY_COMMAND_UNLOAD_ALL_HELP",
+    "visible": true,
+    "button": "Art/Interface/Buttons/Actions/UnloadAll.dds",
+    "hotkeys": [{"key": "KB_U", "shift": true, "priority": 1}]
+  },
+  {
+    "type": "COMMAND_HOTKEY",
+    "description": "TXT_KEY_COMMAND_HOTKEY",
+    "help": "TXT_KEY_COMMAND_HOTKEY_HELP"
+  },
+  {"type": "COMMAND_CAST", "description": "TXT_KEY_COMMAND_CAST"}
+]

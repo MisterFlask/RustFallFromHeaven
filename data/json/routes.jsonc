@@ -1,0 +1,26 @@
+// edited with XMLSPY v2004 rel. 2 U (http://www.xmlspy.com) by Alex Mantzaris (Firaxis Games)
+// Sid Meier's Civilization 4
+// Copyright Firaxis Games 2005
+//
+// Route Infos
+[
+  {
+    "type": "ROUTE_ROAD",
+    "description": "TXT_KEY_ROUTE_ROAD",
+    "value": 1,
+    "advanced_start_cost": 12,
+    "movement": 30,
+    "flat_movement": 30,
+    "tech_movement_changes": {"TECH_ENGINEERING": -10},
+    "button": "Art/Interface/Buttons/Builds/BuildRoad.dds"
+  },
+  {
+    "type": "ROUTE_RAILROAD",
+    "description": "TXT_KEY_ROUTE_RAILROAD",
+    "value": 2,
+    "advanced_start_cost": -1,
+    "movement": 20,
+    "flat_movement": 6,
+    "button": "Art/Interface/Buttons/Builds/BuildRailroad.dds"
+  }
+]

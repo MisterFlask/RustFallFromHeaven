@@ -1,4 +1,4 @@
-// node --test: every leader a game can have (each civilization's <LeaderName>s in the game's XML,
+// node --test: every leader a game can have (each civilization's `leaders` in the game data,
 // the barbarian and the random choices included) has a portrait (app/portraits.js, painted by
 // tools/m7/leaders.py and exported with the isometric sprites by `tools/m7/m7.py export`).
 import test from "node:test";
@@ -6,11 +6,12 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import { portraitKey } from "../app/portraits.js";
 
-const XML = new URL("../../../../data/xml/Civilizations/", import.meta.url);
+const DATA = new URL("../../../../data/json/", import.meta.url);
 
 test("every playable leader has a portrait", () => {
-  const civs = fs.readFileSync(new URL("CIV4CivilizationInfos.xml", XML), "utf8");
-  const leaders = [...new Set([...civs.matchAll(/<LeaderName>([A-Z0-9_-]+)<\/LeaderName>/g)].map((m) => m[1]))];
+  const civs = fs.readFileSync(new URL("civilizations.jsonc", DATA), "utf8");
+  const lists = [...civs.matchAll(/"leaders": \{([^}]*)\}/g)].map((m) => m[1]);
+  const leaders = [...new Set(lists.flatMap((l) => [...l.matchAll(/"([A-Z0-9_-]+)": true/g)].map((m) => m[1])))];
   assert.ok(leaders.length > 30, `${leaders.length} leaders read`);
   assert.deepEqual(leaders.filter((l) => !portraitKey(l)), [], "leaders without a portrait");
   const png = (k) => fs.existsSync(new URL(`../app/iso/${k}.png`, import.meta.url));

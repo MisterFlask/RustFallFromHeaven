@@ -1,0 +1,110 @@
+// edited with XMLSPY v2004 rel. 2 U (http://www.xmlspy.com) by Soren Johnson (Firaxis Games)
+// Sid Meier's Civilization 4
+// Copyright Firaxis Games 2005
+//
+// Specialist
+[
+  {
+    "type": "SPECIALIST_CITIZEN",
+    "description": "TXT_KEY_SPECIALIST_CITIZEN",
+    "civilopedia": "TXT_KEY_CONCEPT_SPECIALISTS_PEDIA",
+    "strategy": "TXT_KEY_SPECIALIST_CITIZEN_STRATEGY",
+    "yields": [0, 1, 0],
+    "button": "Art/Interface/MainScreen/CityScreen/Citizen.dds"
+  },
+  {
+    "type": "SPECIALIST_PRIEST",
+    "description": "TXT_KEY_SPECIALIST_PRIEST",
+    "civilopedia": "TXT_KEY_CONCEPT_SPECIALISTS_PEDIA",
+    "strategy": "TXT_KEY_SPECIALIST_PRIEST_STRATEGY",
+    "great_people_unit_class": "UNITCLASS_PROPHET",
+    "great_people_rate_change": 3,
+    "yields": [0, 1, 0],
+    "commerces": [1, 0, 0],
+    "button": "Art/Interface/MainScreen/CityScreen/Priest.dds"
+  },
+  {
+    "type": "SPECIALIST_ARTIST",
+    "description": "TXT_KEY_SPECIALIST_ARTIST",
+    "civilopedia": "TXT_KEY_CONCEPT_SPECIALISTS_PEDIA",
+    "strategy": "TXT_KEY_SPECIALIST_ARTIST_STRATEGY",
+    "great_people_unit_class": "UNITCLASS_ARTIST",
+    "great_people_rate_change": 3,
+    "commerces": [0, 1, 4],
+    "button": "Art/Interface/MainScreen/CityScreen/Artist.dds"
+  },
+  {
+    "type": "SPECIALIST_SCIENTIST",
+    "description": "TXT_KEY_SPECIALIST_SCIENTIST",
+    "civilopedia": "TXT_KEY_CONCEPT_SPECIALISTS_PEDIA",
+    "strategy": "TXT_KEY_SPECIALIST_SCIENTIST_STRATEGY",
+    "great_people_unit_class": "UNITCLASS_SCIENTIST",
+    "great_people_rate_change": 3,
+    "commerces": [0, 3, 0],
+    "button": "Art/Interface/MainScreen/CityScreen/scientist.dds"
+  },
+  {
+    "type": "SPECIALIST_MERCHANT",
+    "description": "TXT_KEY_SPECIALIST_MERCHANT",
+    "civilopedia": "TXT_KEY_CONCEPT_SPECIALISTS_PEDIA",
+    "strategy": "TXT_KEY_SPECIALIST_MERCHANT_STRATEGY",
+    "great_people_unit_class": "UNITCLASS_MERCHANT",
+    "great_people_rate_change": 3,
+    "commerces": [3, 0, 0],
+    "button": "Art/Interface/MainScreen/CityScreen/merchant.dds"
+  },
+  {
+    "type": "SPECIALIST_ENGINEER",
+    "description": "TXT_KEY_SPECIALIST_ENGINEER",
+    "civilopedia": "TXT_KEY_CONCEPT_SPECIALISTS_PEDIA",
+    "strategy": "TXT_KEY_SPECIALIST_ENGINEER_STRATEGY",
+    "great_people_unit_class": "UNITCLASS_ENGINEER",
+    "great_people_rate_change": 3,
+    "yields": [0, 2, 0],
+    "button": "Art/Interface/MainScreen/CityScreen/engineer.dds"
+  },
+  {
+    "type": "SPECIALIST_GREAT_PRIEST",
+    "description": "TXT_KEY_SPECIALIST_GREAT_PRIEST",
+    "civilopedia": "TXT_KEY_CONCEPT_GREAT_PEOPLE_PEDIA",
+    "strategy": "TXT_KEY_SPECIALIST_GREAT_PRIEST_STRATEGY",
+    "yields": [0, 2, 0],
+    "commerces": [5, 0, 0],
+    "button": "Art/Interface/MainScreen/CityScreen/Great_Priest.dds"
+  },
+  {
+    "type": "SPECIALIST_GREAT_ARTIST",
+    "description": "TXT_KEY_SPECIALIST_GREAT_ARTIST",
+    "civilopedia": "TXT_KEY_CONCEPT_GREAT_PEOPLE_PEDIA",
+    "strategy": "TXT_KEY_SPECIALIST_GREAT_ARTIST_STRATEGY",
+    "commerces": [3, 0, 12],
+    "button": "Art/Interface/MainScreen/CityScreen/Great_Artist.dds"
+  },
+  {
+    "type": "SPECIALIST_GREAT_SCIENTIST",
+    "description": "TXT_KEY_SPECIALIST_GREAT_SCIENTIST",
+    "civilopedia": "TXT_KEY_CONCEPT_GREAT_PEOPLE_PEDIA",
+    "strategy": "TXT_KEY_SPECIALIST_GREAT_SCIENTIST_STRATEGY",
+    "yields": [0, 1, 0],
+    "commerces": [0, 6, 0],
+    "button": "Art/Interface/MainScreen/CityScreen/Great_Scientist.dds"
+  },
+  {
+    "type": "SPECIALIST_GREAT_MERCHANT",
+    "description": "TXT_KEY_SPECIALIST_GREAT_MERCHANT",
+    "civilopedia": "TXT_KEY_CONCEPT_GREAT_PEOPLE_PEDIA",
+    "strategy": "TXT_KEY_SPECIALIST_GREAT_MERCHANT_STRATEGY",
+    "yields": [1, 0, 0],
+    "commerces": [6, 0, 0],
+    "button": "Art/Interface/MainScreen/CityScreen/Great_Merchant.dds"
+  },
+  {
+    "type": "SPECIALIST_GREAT_ENGINEER",
+    "description": "TXT_KEY_SPECIALIST_GREAT_ENGINEER",
+    "civilopedia": "TXT_KEY_CONCEPT_GREAT_PEOPLE_PEDIA",
+    "strategy": "TXT_KEY_SPECIALIST_GREAT_ENGINEER_STRATEGY",
+    "yields": [0, 3, 0],
+    "commerces": [0, 3, 0],
+    "button": "Art/Interface/MainScreen/CityScreen/Great_Engineer.dds"
+  }
+]

@@ -1,6 +1,6 @@
 //! Data spot-checks for SpecialBuildingInfo, BuildingClassInfo, BuildingInfo, TraitInfo,
 //! CivilizationInfo and LeaderHeadInfo. Every expected value was read from the vendored
-//! XML (data/xml/Buildings, data/xml/Civilizations), or is the C++ default for an absent tag.
+//! XML (data/json/Buildings, data/json/Civilizations), or is the C++ default for an absent tag.
 
 use ffh_data::*;
 
@@ -97,13 +97,13 @@ fn table_sizes() {
 
 #[test]
 fn fixed_prereq_lists_match_global_defines() {
-    // The reader mirrors these two defines; they must agree with GlobalDefines(Alt).xml.
+    // The reader mirrors these two defines; they must agree with global_defines(_alt).jsonc.
     let defs = &d().defines;
     for b in d().buildings.iter() {
         assert_eq!(b.prereq_and_techs.len() as i32, defs.num_building_and_tech_prereqs);
         assert_eq!(b.prereq_or_bonuses.len() as i32, defs.num_building_prereq_or_bonuses);
     }
-    assert_eq!(defs.num_building_prereq_or_bonuses, 5, "GlobalDefinesAlt.xml overrides 4 -> 5");
+    assert_eq!(defs.num_building_prereq_or_bonuses, 5, "global_defines_alt.jsonc overrides 4 -> 5");
 }
 
 #[test]

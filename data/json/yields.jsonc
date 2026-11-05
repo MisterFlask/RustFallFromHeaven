@@ -1,0 +1,33 @@
+// edited with XMLSPY v2004 rel. 2 U (http://www.xmlspy.com) by Jesse Smith (Firaxis Games)
+// Sid Meier's Civilization 4
+// Copyright Firaxis Games 2005
+//
+// Yield Infos
+[
+  {
+    "type": "YIELD_FOOD",
+    "description": "TXT_KEY_YIELD_FOOD",
+    "hills_change": -1,
+    "lake_change": 1,
+    "min_city": 2,
+    "ai_weight_percent": 100
+  },
+  {
+    "type": "YIELD_PRODUCTION",
+    "description": "TXT_KEY_YIELD_PRODUCTION",
+    "hills_change": 1,
+    "min_city": 1,
+    "golden_age_yield": 1,
+    "golden_age_yield_threshold": 1,
+    "ai_weight_percent": 110
+  },
+  {
+    "type": "YIELD_COMMERCE",
+    "description": "TXT_KEY_YIELD_COMMERCE",
+    "min_city": 1,
+    "trade_modifier": 100,
+    "golden_age_yield": 1,
+    "golden_age_yield_threshold": 1,
+    "ai_weight_percent": 80
+  }
+]

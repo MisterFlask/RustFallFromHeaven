@@ -1,0 +1,347 @@
+// edited with XMLSPY v2004 rel. 2 U (http://www.xmlspy.com) by Jon Shafer (Firaxis Games)
+// Sid Meier's Civilization 4
+// Copyright Firaxis Games 2005
+//
+// Mission Infos
+// Changes must be reflected in CvEnums.h
+[
+  {
+    "type": "MISSION_MOVE_TO",
+    "description": "TXT_KEY_MISSION_MOVE_TO",
+    "help": "TXT_KEY_MISSION_MOVE_TO_HELP",
+    "time": 4,
+    "target": true
+  },
+  {
+    "type": "MISSION_ROUTE_TO",
+    "description": "TXT_KEY_MISSION_ROUTE_TO",
+    "help": "TXT_KEY_MISSION_ROUTE_TO_HELP",
+    "time": 4,
+    "target": true
+  },
+  {
+    "type": "MISSION_MOVE_TO_UNIT",
+    "description": "TXT_KEY_MISSION_MOVE_TO_UNIT",
+    "help": "TXT_KEY_MISSION_MOVE_TO_UNIT_HELP",
+    "time": 4
+  },
+  {
+    "type": "MISSION_SKIP",
+    "description": "TXT_KEY_MISSION_SKIP",
+    "help": "TXT_KEY_MISSION_SKIP_HELP",
+    "visible": true,
+    "button": ",Art/Interface/Buttons/Actions/SkipUnit.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,5,4",
+    "hotkeys": [{"key": "KB_SPACE", "priority": 1}, {"key": "KB_NUMPAD0"}],
+    "order_priority": 13
+  },
+  {
+    "type": "MISSION_SLEEP",
+    "description": "TXT_KEY_MISSION_SLEEP",
+    "help": "TXT_KEY_MISSION_SLEEP_HELP",
+    "visible": true,
+    "button": ",Art/Interface/Buttons/Actions/Sleep.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,7,4",
+    "hotkeys": [{"key": "KB_F"}, {"key": "KB_NUMPADPERIOD"}],
+    "order_priority": 15
+  },
+  {
+    "type": "MISSION_FORTIFY",
+    "description": "TXT_KEY_MISSION_FORTIFY",
+    "help": "TXT_KEY_MISSION_FORTIFY_HELP",
+    "visible": true,
+    "button": ",Art/Interface/Buttons/Actions/Fortify.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,8,1",
+    "hotkeys": [{"key": "KB_F"}, {"key": "KB_NUMPADPERIOD"}],
+    "order_priority": 15
+  },
+  {
+    "type": "MISSION_PLUNDER",
+    "description": "TXT_KEY_MISSION_PLUNDER",
+    "help": "TXT_KEY_MISSION_PLUNDER_HELP",
+    "visible": true,
+    "button": ",Art/Interface/Buttons/TechTree/Corporation.dds,Art/Interface/Buttons/Beyond_the_Sword_Atlas.dds,7,14",
+    "hotkeys": [{"key": "KB_P", "shift": true}]
+  },
+  {
+    "type": "MISSION_AIRPATROL",
+    "description": "TXT_KEY_MISSION_INTERCEPT",
+    "help": "TXT_KEY_MISSION_INTERCEPT_HELP",
+    "visible": true,
+    "button": ",Art/Interface/Buttons/Actions/Intercept.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,3,2",
+    "hotkeys": [{"key": "KB_I", "priority": 1}],
+    "order_priority": 14
+  },
+  {
+    "type": "MISSION_SEAPATROL",
+    "description": "TXT_KEY_MISSION_SEAPATROL",
+    "help": "TXT_KEY_MISSION_SEAPATROL_HELP",
+    "visible": true,
+    "button": ",Art/Interface/Buttons/TechTree/Corporation.dds,Art/Interface/Buttons/Beyond_the_Sword_Atlas.dds,6,16",
+    "hotkeys": [{"key": "KB_P", "priority": 1}],
+    "order_priority": 12
+  },
+  {
+    "type": "MISSION_HEAL",
+    "description": "TXT_KEY_MISSION_HEAL",
+    "help": "TXT_KEY_MISSION_HEAL_HELP",
+    "visible": true,
+    "button": ",Art/Interface/Buttons/Actions/Heal.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,2,2",
+    "hotkeys": [{"key": "KB_H"}],
+    "order_priority": 11
+  },
+  {
+    "type": "MISSION_SENTRY",
+    "description": "TXT_KEY_MISSION_SENTRY",
+    "help": "TXT_KEY_MISSION_SENTRY_HELP",
+    "visible": true,
+    "button": ",Art/Interface/Buttons/Actions/Sentry.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,4,4",
+    "hotkeys": [{"key": "KB_S"}],
+    "order_priority": 12
+  },
+  {
+    "type": "MISSION_AIRLIFT",
+    "description": "TXT_KEY_MISSION_AIRLIFT",
+    "help": "TXT_KEY_MISSION_AIRLIFT_HELP",
+    "time": 4,
+    "button": "Art/Interface/Buttons/Actions/FfHAirlift.dds"
+  },
+  {
+    "type": "MISSION_NUKE",
+    "description": "TXT_KEY_MISSION_NUKE",
+    "help": "TXT_KEY_MISSION_NUKE_HELP",
+    "time": 40,
+    "button": ",Art/Interface/Buttons/Actions/Nuke.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,7,2"
+  },
+  {
+    "type": "MISSION_RECON",
+    "description": "TXT_KEY_MISSION_RECON",
+    "help": "TXT_KEY_MISSION_RECON_HELP",
+    "time": 20,
+    "button": "Art/Interface/Buttons/Actions/FfHRecon.dds"
+  },
+  {
+    "type": "MISSION_PARADROP",
+    "description": "TXT_KEY_MISSION_PARADROP",
+    "help": "TXT_KEY_MISSION_PARADROP_HELP",
+    "time": 1,
+    "button": ",Art/Interface/Buttons/TechTree/Corporation.dds,Art/Interface/Buttons/Beyond_the_Sword_Atlas.dds,5,16"
+  },
+  {
+    "type": "MISSION_AIRBOMB",
+    "description": "TXT_KEY_MISSION_AIRBOMB",
+    "help": "TXT_KEY_MISSION_AIRBOMB_HELP",
+    "time": 20,
+    "button": ",Art/Interface/Buttons/Actions/Airbomb.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,5,6"
+  },
+  {
+    "type": "MISSION_RANGE_ATTACK",
+    "description": "TXT_KEY_MISSION_RANGE_ATTACK",
+    "help": "TXT_KEY_MISSION_RANGE_ATTACK_HELP",
+    "time": 10,
+    "visible": true,
+    "button": ",Art/Interface/Buttons/Actions/Bombard.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,2,1",
+    "hotkeys": [{"key": "KB_B"}]
+  },
+  {
+    "type": "MISSION_BOMBARD",
+    "description": "TXT_KEY_MISSION_BOMBARD",
+    "help": "TXT_KEY_MISSION_BOMBARD_HELP",
+    "time": 10,
+    "visible": true,
+    "button": ",Art/Interface/Buttons/Actions/Bombard.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,2,1",
+    "hotkeys": [{"key": "KB_B"}]
+  },
+  {
+    "type": "MISSION_PILLAGE",
+    "description": "TXT_KEY_MISSION_PILLAGE",
+    "help": "TXT_KEY_MISSION_PILLAGE_HELP",
+    "time": 10,
+    "visible": true,
+    "button": ",Art/Interface/Buttons/Actions/Pillage.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,8,2",
+    "hotkeys": [{"key": "KB_P", "shift": true}]
+  },
+  {
+    "type": "MISSION_SABOTAGE",
+    "description": "TXT_KEY_MISSION_SABOTAGE",
+    "help": "TXT_KEY_MISSION_SABOTAGE_HELP",
+    "time": 20,
+    "visible": true,
+    "button": ",Art/Interface/Buttons/Actions/Sabotage.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,8,4",
+    "hotkeys": [{"key": "KB_S"}]
+  },
+  {
+    "type": "MISSION_DESTROY",
+    "description": "TXT_KEY_MISSION_DESTROY",
+    "help": "TXT_KEY_MISSION_DESTROY_HELP",
+    "time": 20,
+    "visible": true,
+    "button": ",Art/Interface/Buttons/Actions/Destroy.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,6,1",
+    "hotkeys": [{"key": "KB_D"}]
+  },
+  {
+    "type": "MISSION_STEAL_PLANS",
+    "description": "TXT_KEY_MISSION_STEAL_PLANS",
+    "help": "TXT_KEY_MISSION_STEAL_PLANS_HELP",
+    "time": 20,
+    "visible": true,
+    "button": ",Art/Interface/Buttons/Actions/StealPlans.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,5,5",
+    "hotkeys": [{"key": "KB_S", "shift": true}]
+  },
+  {
+    "type": "MISSION_FOUND",
+    "description": "TXT_KEY_MISSION_BUILD_CITY",
+    "help": "TXT_KEY_MISSION_BUILD_CITY_HELP",
+    "time": 10,
+    "visible": true,
+    "button": ",Art/Interface/Buttons/Actions/FoundCity.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,1,4",
+    "hotkeys": [{"key": "KB_B", "priority": 1}]
+  },
+  {
+    "type": "MISSION_SPREAD",
+    "description": "TXT_KEY_MISSION_SPREAD",
+    "help": "TXT_KEY_MISSION_SPREAD_HELP",
+    "time": 16
+  },
+  {
+    "type": "MISSION_SPREAD_CORPORATION",
+    "description": "TXT_KEY_MISSION_SPREAD_CORPORATION",
+    "help": "TXT_KEY_MISSION_SPREAD_CORPORATION_HELP",
+    "time": 16
+  },
+  {
+    "type": "MISSION_JOIN",
+    "description": "TXT_KEY_MISSION_JOIN_CITY",
+    "help": "TXT_KEY_MISSION_JOIN_CITY_HELP",
+    "time": 18
+  },
+  {
+    "type": "MISSION_CONSTRUCT",
+    "description": "TXT_KEY_MISSION_CONSTRUCT",
+    "help": "TXT_KEY_MISSION_CONSTRUCT_HELP",
+    "time": 18
+  },
+  {
+    "type": "MISSION_DISCOVER",
+    "description": "TXT_KEY_MISSION_DISCOVER_TECH",
+    "help": "TXT_KEY_MISSION_DISCOVER_TECH_HELP",
+    "time": 18,
+    "visible": true,
+    "button": ",Art/Interface/Buttons/Actions/Discover.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,7,1"
+  },
+  {
+    "type": "MISSION_HURRY",
+    "description": "TXT_KEY_MISSION_HURRY_PRODUCTION",
+    "help": "TXT_KEY_MISSION_HURRY_PRODUCTION_HELP",
+    "time": 18,
+    "visible": true,
+    "button": ",Art/Interface/Buttons/Actions/Hurry.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,2,3"
+  },
+  {
+    "type": "MISSION_TRADE",
+    "description": "TXT_KEY_MISSION_CONDUCT_TRADE_MISSION",
+    "help": "TXT_KEY_MISSION_CONDUCT_TRADE_MISSION_HELP",
+    "time": 18,
+    "visible": true,
+    "button": ",Art/Interface/Buttons/Actions/Trade.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,3,3"
+  },
+  {
+    "type": "MISSION_GREAT_WORK",
+    "description": "TXT_KEY_MISSION_CREATE_GREAT_WORK",
+    "help": "TXT_KEY_MISSION_CREATE_GREAT_WORK_HELP",
+    "time": 18,
+    "visible": true,
+    "button": ",Art/Interface/Buttons/Actions/GreatWork.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,4,3"
+  },
+  {
+    "type": "MISSION_INFILTRATE",
+    "description": "TXT_KEY_MISSION_INFILTRATE",
+    "help": "TXT_KEY_MISSION_INFILTRATE_HELP",
+    "time": 18,
+    "visible": true,
+    "button": ",Art/Interface/Buttons/TechTree/Corporation.dds,Art/Interface/Buttons/Beyond_the_Sword_Atlas.dds,7,16"
+  },
+  {
+    "type": "MISSION_GOLDEN_AGE",
+    "description": "TXT_KEY_MISSION_START_GOLDENAGE",
+    "help": "TXT_KEY_MISSION_START_GOLDENAGE_HELP",
+    "time": 18,
+    "visible": true,
+    "button": ",Art/Interface/Buttons/Actions/GoldenAge.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,3,4"
+  },
+  {"type": "MISSION_BUILD", "description": "TXT_KEY_MISSION_BUILD_IMPROVEMENT", "build": true},
+  {
+    "type": "MISSION_LEAD",
+    "description": "TXT_KEY_MISSION_LEAD_TROOPS",
+    "time": 14,
+    "visible": true,
+    "button": ",Art/Interface/Buttons/TechTree/Nationalism.dds,Art/Interface/Buttons/Warlords_Atlas_1.dds,5,10"
+  },
+  {
+    "type": "MISSION_ESPIONAGE",
+    "description": "TXT_KEY_MISSION_PERFORM_ESPIONAGE",
+    "time": 14,
+    "visible": true,
+    "button": ",Art/Interface/Buttons/TechTree/Corporation.dds,Art/Interface/Buttons/Beyond_the_Sword_Atlas.dds,8,16"
+  },
+  {
+    "type": "MISSION_DIE_ANIMATION",
+    "description": "TXT_KEY_MISSION_KILL_SPY",
+    "help": "TXT_KEY_MISSION_KILL_SPY_HELP",
+    "time": 16,
+    "visible": true,
+    "button": ",Art/Interface/Buttons/Actions/Bombard.dds,Art/Interface/Buttons/Actions_Builds_LeaderHeads_Specialists_Atlas.dds,2,1",
+    "hotkeys": [{"key": "KB_K"}]
+  },
+  // The following missions are simply to link to entity events
+  {
+    "type": "MISSION_BEGIN_COMBAT",
+    "description": "TXT_KEY_MISSION_BUILD_IMPROVEMENT",
+    "help": "TXT_KEY_MISSION_BUILD_IMPROVEMENT"
+  },
+  {
+    "type": "MISSION_END_COMBAT",
+    "description": "TXT_KEY_MISSION_BUILD_IMPROVEMENT",
+    "help": "TXT_KEY_MISSION_BUILD_IMPROVEMENT"
+  },
+  {
+    "type": "MISSION_AIRSTRIKE",
+    "description": "TXT_KEY_MISSION_BUILD_IMPROVEMENT",
+    "help": "TXT_KEY_MISSION_BUILD_IMPROVEMENT",
+    "time": 16
+  },
+  {
+    "type": "MISSION_SURRENDER",
+    "description": "TXT_KEY_MISSION_BUILD_IMPROVEMENT",
+    "help": "TXT_KEY_MISSION_BUILD_IMPROVEMENT",
+    "time": 10
+  },
+  {
+    "type": "MISSION_CAPTURED",
+    "description": "TXT_KEY_MISSION_BUILD_IMPROVEMENT",
+    "help": "TXT_KEY_MISSION_BUILD_IMPROVEMENT",
+    "time": 8
+  },
+  {
+    "type": "MISSION_IDLE",
+    "description": "TXT_KEY_MISSION_BUILD_IMPROVEMENT",
+    "help": "TXT_KEY_MISSION_BUILD_IMPROVEMENT"
+  },
+  {
+    "type": "MISSION_DIE",
+    "description": "TXT_KEY_MISSION_BUILD_IMPROVEMENT",
+    "help": "TXT_KEY_MISSION_BUILD_IMPROVEMENT"
+  },
+  {
+    "type": "MISSION_DAMAGE",
+    "description": "TXT_KEY_MISSION_BUILD_IMPROVEMENT",
+    "help": "TXT_KEY_MISSION_BUILD_IMPROVEMENT"
+  },
+  {
+    "type": "MISSION_MULTI_SELECT",
+    "description": "TXT_KEY_MISSION_BUILD_IMPROVEMENT",
+    "help": "TXT_KEY_MISSION_BUILD_IMPROVEMENT"
+  },
+  {
+    "type": "MISSION_MULTI_DESELECT",
+    "description": "TXT_KEY_MISSION_BUILD_IMPROVEMENT",
+    "help": "TXT_KEY_MISSION_BUILD_IMPROVEMENT"
+  }
+]

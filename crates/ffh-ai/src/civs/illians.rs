@@ -2,7 +2,7 @@
 //! their unique mechanics, CLAUDE.md "AI changes"). Wilboman (Hero promotion, an attacker's default
 //! AI) is trained as a hero (`production::role_ok`); as an attacker he never won on cost.
 //!
-//! - **Ritual projects** (`CIV4ProjectInfo.xml`, effects in `ffh/events.rs`): The White Hand
+//! - **Ritual projects** (`projects.jsonc`, effects in `ffh/events.rs`): The White Hand
 //!   (Philosophy, 400 hammers: three Priests of Winter, strength 5 + 2 cold, Medic, Channeling
 //!   II, Ice) and Stir from Slumber (Divine Essence, 900 hammers: Drifa, a dragon; the rules
 //!   allow it once a player has been eliminated). The generic AI reaches projects only when no

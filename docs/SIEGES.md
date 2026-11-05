@@ -16,8 +16,8 @@ siege test, the bombard's damage); the engagement's set-up, post-battle steps, s
 formation and resolver (`engage.rs`, `apply.rs`, `slots.rs`, `arrange.rs`, `formation/mod.rs`'s
 `Fighter::fixed`); `unit_heal_rate`, `unit_bombard`, `city_is_bombardable`,
 `group_get_bombard_turns`, `unit_can_move_into`, `group_attack_engage`, the city's turn and
-`player_acquire_city`. Data: `iSentinels` on buildings, `UNIT_SENTINEL`, `SENTINEL_REPAIR_PERCENT`
-and `SIEGE_BOMBARD_FLOOR_PERCENT` (`RulesDefines.xml`). Tests: `crates/ffh-core/tests/sieges.rs`.
+`player_acquire_city`. Data: `sentinels` on buildings, `UNIT_SENTINEL`, `SENTINEL_REPAIR_PERCENT`
+and `SIEGE_BOMBARD_FLOOR_PERCENT` (`rules_defines.jsonc`). Tests: `crates/ffh-core/tests/sieges.rs`.
 
 ## Sentinels
 
@@ -27,12 +27,12 @@ army; the city holds their damage and the engagement adds them as fighters at se
 units (`Setup::sentinel_range`). The name avoids "garrison" (the armies' city garrisons, Civ4's City
 Garrison promotions).
 
-- **Which cities.** A building's `iSentinels` (`CIV4BuildingInfos.xml`) gives the count; a city has
+- **Which cities.** A building's `sentinels` (`buildings.jsonc`) gives the count; a city has
   the most any of its buildings gives, not the sum. Palisade, Walls and Wall of Stone: 2
   **(default)**. An occupied city (`city_is_occupation`) has none fighting.
-- **Their values** are `UNIT_SENTINEL`'s (`CIV4UnitInfos.xml`; never trained or placed, so its
-  name, role and rows reach the battle screens like any unit type's): `iHP` 100, `iAttack` 1,
-  `iDefense` 3, speed 0 (they act last), one STRIKE from the front row and nothing from the others,
+- **Their values** are `UNIT_SENTINEL`'s (`units.jsonc`; never trained or placed, so its
+  name, role and rows reach the battle screens like any unit type's): `hp` 100, `attack` 1,
+  `defense` 3, speed 0 (they act last), one STRIKE from the front row and nothing from the others,
   no dodge, no crit bonus **(default)**.
 - **They grow with the city's defence** (the owner's rule): max HP and Dv times (100 + its total
   defence) / 100, `city_total_defense` (buildings, culture level, the player's modifier, FfH's range

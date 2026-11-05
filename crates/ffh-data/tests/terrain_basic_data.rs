@@ -1,6 +1,6 @@
 //! Data spot-checks for the terrain tables (yields, terrains, features, bonus classes,
 //! bonuses, improvements, routes) and the basic info tables. Every expected value was
-//! read from the vendored XML under `data/xml/`.
+//! read from the vendored XML under `data/json/`.
 
 use ffh_data::*;
 

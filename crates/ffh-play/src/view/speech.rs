@@ -1,5 +1,5 @@
 //! What a leader says (Civ4's diplomacy screen): the line an AI leader speaks to the human in a
-//! diplomacy moment (`AI_DIPLOCOMMENT_*`), chosen from `CIV4DiplomacyInfos.xml` as the exe does,
+//! diplomacy moment (`AI_DIPLOCOMMENT_*`), chosen from `diplomacies.jsonc` as the exe does,
 //! with its `[CT_NAME]`-style placeholders filled in. Presentation only.
 //!
 //! The moments the client shows (design §5.1 "Diplomacy minimum"; docs/HUMAN.md "Diplomacy"):

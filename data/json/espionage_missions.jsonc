@@ -1,0 +1,13 @@
+// edited with XMLSPY v2004 rel. 2 U (http://www.xmlspy.com) by Alex Mantzaris (Firaxis Games)
+// Sid Meier's Civilization 4
+// Copyright Firaxis Games 2005
+//
+// EspionageMissionMission Infos
+[
+  {
+    "type": "ESPIONAGEMISSION_SEE_DEMOGRAPHICS",
+    "description": "TXT_KEY_ESPIONAGE_CAN_SEE_DEMOGRAPHICS",
+    "cost": 30,
+    "is_passive": true
+  }
+]

@@ -1,7 +1,7 @@
 //! Data spot-checks for the global defines (`defines.rs`, `defines_gen.rs`): C++
-//! `ReadGlobalDefines` over GlobalDefines.xml, GlobalDefinesAlt.xml and
-//! PythonCallbackDefines.xml (later files override), then `SetPostGlobalsGlobalDefines`.
-//! Expected values were read by hand from `data/xml/*Defines*.xml`.
+//! `ReadGlobalDefines` over global_defines.jsonc, global_defines_alt.jsonc and
+//! python_callback_defines.jsonc (later files override), then `SetPostGlobalsGlobalDefines`.
+//! Expected values were read by hand from `data/json/*defines*.jsonc`.
 
 use ffh_data::*;
 
@@ -18,17 +18,17 @@ fn int_and_float_defines() {
     assert_eq!(d.defines.food_consumption_per_population, 2);
     assert_eq!(d.defines.plot_size, 180.0);
     assert_eq!(d.defines.camera_min_yaw, -45.0);
-    // FfH-only define (GlobalDefinesAlt.xml).
+    // FfH-only define (global_defines_alt.jsonc).
     assert_eq!(d.defines.flames_spread_chance, 20);
-    // PythonCallbackDefines.xml
+    // python_callback_defines.jsonc
     assert_eq!(d.defines.use_cannot_found_city_callback, 0);
 }
 
 #[test]
 fn global_defines_alt_overrides_global_defines() {
-    // GlobalDefines.xml -> GlobalDefinesAlt.xml (C++ SetGlobalDefines reads Alt second).
+    // global_defines.jsonc -> global_defines_alt.jsonc (C++ SetGlobalDefines reads Alt second).
     let d = d();
-    assert_eq!(d.defines.start_year, 0); // -4000 in GlobalDefines.xml
+    assert_eq!(d.defines.start_year, 0); // -4000 in global_defines.jsonc
     assert_eq!(d.defines.river_attack_modifier, -40); // -25
     assert_eq!(d.defines.golden_age_length, 12); // 8
     assert_eq!(d.defines.num_building_prereq_or_bonuses, 5); // 4

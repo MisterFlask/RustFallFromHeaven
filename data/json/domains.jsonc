@@ -1,0 +1,11 @@
+// edited with XMLSPY v2004 rel. 2 U (http://www.xmlspy.com) by Alex Mantzaris (Firaxis Games)
+// Sid Meier's Civilization 4
+// Copyright Firaxis Games 2005
+//
+// Basic Infos
+[
+  {"type": "DOMAIN_SEA", "description": "TXT_KEY_DOMAIN_SEA"},
+  {"type": "DOMAIN_AIR", "description": "TXT_KEY_DOMAIN_AIR"},
+  {"type": "DOMAIN_LAND", "description": "TXT_KEY_DOMAIN_LAND"},
+  {"type": "DOMAIN_IMMOBILE", "description": "TXT_KEY_DOMAIN_IMMOBILE"}
+]

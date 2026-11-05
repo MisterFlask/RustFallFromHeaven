@@ -178,11 +178,10 @@ fn fields(d: &GameData, kind: &str, i: usize, j: &mut Json) {
 }
 
 fn build(d: &GameData) -> Json {
-    let dir = ffh_data::default_data_dir();
     let mut tables = Json::obj();
     for k in KINDS {
         // The action hotkeys and button order (`keys`, `order`) of missions, commands and builds.
-        let keys = crate::view::hotkeys::read(&dir, k.kind);
+        let keys = crate::view::hotkeys::read(d, k.kind);
         let mut list = Vec::with_capacity((k.count)(d));
         for i in 0..(k.count)(d) {
             let name = (k.name)(d, i);

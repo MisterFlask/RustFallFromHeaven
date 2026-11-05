@@ -1,8 +1,8 @@
 //! Global defines (C++ `GC.getDefineINT` / `getDefineFLOAT` / `getDefineSTRING`).
 //!
-//! Files are read in C++ order -- GlobalDefines.xml, GlobalDefinesAlt.xml,
-//! PythonCallbackDefines.xml, then this game's RulesDefines.xml -- later files
-//! overriding earlier ones. Text values of the defines listed in
+//! Files are read in C++ order -- global_defines, global_defines_alt,
+//! python_callback_defines, then this game's rules_defines (`data/json/*.jsonc`) -- later
+//! files overriding earlier ones. Text values of the defines listed in
 //! [`POST_GLOBALS_TEXT_DEFINES`] resolve to the named type's index (C++
 //! `SetPostGlobalsGlobalDefines`); every other text define stays a string.
 //! Prefer the typed [`crate::Defines`] struct (generated) in game code.
@@ -10,7 +10,7 @@
 use std::collections::HashMap;
 
 use crate::registry::Registry;
-use crate::xml::XmlDoc;
+use crate::jsonc::Value;
 
 /// The text defines C++ `CvXMLLoadUtility::SetPostGlobalsGlobalDefines` converts to type
 /// indices (`FindInInfoClass`), in its order. Only these become ints in C++.
@@ -91,7 +91,7 @@ pub const POST_GLOBALS_TEXT_DEFINES: &[&str] = &[
     "UNIT_VAMPIRE",
     "UNIT_VAMPIRE_LORD",
     "UNITCLASS_SCOUT",
-    // This game's own rules (RulesDefines.xml)
+    // This game's own rules (rules_defines.jsonc)
     "CULTURE_TIER2_LEVEL",
     "CULTURE_TIER3_LEVEL",
 ];
@@ -112,33 +112,21 @@ pub struct DefineMap {
 }
 
 impl DefineMap {
-    pub fn read_file(&mut self, doc: &XmlDoc, reg: &Registry) {
-        for d in doc.root().children() {
-            let name = match d.child_text("DefineName") {
-                Some(n) => n.to_string(),
-                None => continue,
-            };
-            let mut val = None;
-            for c in d.children() {
-                let t = c.text();
-                match c.name() {
-                    "iDefineIntVal" => val = Some(DefineVal::Int(t.parse().unwrap_or(0))),
-                    "fDefineFloatVal" => val = Some(DefineVal::Float(t.parse().unwrap_or(0.0))),
-                    "DefineTextVal" => {
-                        let idx = if POST_GLOBALS_TEXT_DEFINES.contains(&name.as_str()) {
-                            reg.info_type_for_string(t)
-                        } else {
-                            -1
-                        };
-                        val = Some(DefineVal::Text(t.to_string(), idx))
-                    }
-                    "bDefineBoolVal" => val = Some(DefineVal::Int((t == "1") as i32)),
-                    _ => {}
+    /// Reads a defines file: an object from define names to values (an integer, a number, a
+    /// string, or true/false, which reads as 1/0).
+    pub fn read_file(&mut self, doc: &Value, reg: &Registry) {
+        for (name, v) in doc.as_obj().unwrap_or(&[]) {
+            let val = match v {
+                Value::Int(i) => DefineVal::Int(*i as i32),
+                Value::Float(f) => DefineVal::Float(*f as f32),
+                Value::Bool(b) => DefineVal::Int(*b as i32),
+                Value::Str(t) => {
+                    let idx = if POST_GLOBALS_TEXT_DEFINES.contains(&name.as_str()) { reg.info_type_for_string(t) } else { -1 };
+                    DefineVal::Text(t.clone(), idx)
                 }
-            }
-            if let Some(v) = val {
-                self.map.insert(name, v);
-            }
+                _ => continue,
+            };
+            self.map.insert(name.clone(), val);
         }
     }
 

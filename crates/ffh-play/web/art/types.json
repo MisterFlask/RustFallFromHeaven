@@ -1,4 +1,4 @@
-{"source": "data/xml via crates/ffh-play/web/art/tools/gen-types.mjs; do not edit", "kinds": {
+{"source": "data/json via crates/ffh-play/web/art/tools/gen-types.mjs; do not edit", "kinds": {
 "terrain": [
 {"type":"TERRAIN_GRASS","water":0,"impassable":0,"graphical":0,"up":"TERRAIN_BROKEN_LANDS","down":"NONE","hell":0,"twin":"NONE"},
 {"type":"TERRAIN_PLAINS","water":0,"impassable":0,"graphical":0,"up":"TERRAIN_FIELDS_OF_PERDITION","down":"NONE","hell":0,"twin":"NONE"},
@@ -772,7 +772,8 @@
 {"type":"UNIT_WRAITH","cls":"UNITCLASS_WRAITH","combat":"NONE","domain":"LAND","tier":4,"special":"NONE","race":["UNDEAD"],"hero":0,"equipment":0,"invisible":0,"strength":6,"base":"NONE"},
 {"type":"UNIT_WRATH","cls":"UNITCLASS_WRATH","combat":"MELEE","domain":"LAND","tier":4,"special":"NONE","race":["DEMON"],"hero":0,"equipment":0,"invisible":0,"strength":33,"base":"NONE"},
 {"type":"UNIT_YERSINIA","cls":"UNITCLASS_YERSINIA","combat":"MOUNTED","domain":"LAND","tier":4,"special":"NONE","race":["DEMON"],"hero":0,"equipment":0,"invisible":0,"strength":15,"base":"NONE"},
-{"type":"UNIT_YVAIN","cls":"UNITCLASS_YVAIN","combat":"DISCIPLE","domain":"LAND","tier":4,"special":"NONE","race":["ELEMENTAL"],"hero":1,"equipment":0,"invisible":0,"strength":9,"base":"NONE"}
+{"type":"UNIT_YVAIN","cls":"UNITCLASS_YVAIN","combat":"DISCIPLE","domain":"LAND","tier":4,"special":"NONE","race":["ELEMENTAL"],"hero":1,"equipment":0,"invisible":0,"strength":9,"base":"NONE"},
+{"type":"UNIT_SENTINEL","cls":"UNITCLASS_SENTINEL","combat":"NONE","domain":"LAND","tier":0,"special":"NONE","race":["NONE"],"hero":0,"equipment":0,"invisible":0,"strength":1,"base":"NONE"}
 ],
 "civ": [
 {"type":"CIVILIZATION_BANNOR","playable":1},

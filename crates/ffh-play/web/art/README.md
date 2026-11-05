@@ -7,7 +7,7 @@ The style guide and the full toolkit reference are in `docs/ART.md` (section 15,
 sh tools/check.sh                          # the test: sources, sizes, rules, types.json, coverage
 node tools/serve.mjs                       # then open http://127.0.0.1:8737/preview/
 node tools/screenshot.mjs /tmp/art         # every preview page as PNG (headless Chromium)
-node tools/gen-types.mjs                   # regenerate types.json after data/xml changes
+node tools/gen-types.mjs                   # regenerate types.json after data/json changes
 ```
 
 Sets: `terrain/`, `units/`, `cities/` (cities, improvements, resources), `ui/`. Each has its own

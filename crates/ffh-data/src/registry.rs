@@ -1,17 +1,16 @@
-//! Global type-string registry (C++ `GC.getInfoTypeForString`) and the XML
-//! reader helpers (port of `CvXMLLoadUtility`).
+//! Global type-string registry (C++ `GC.getInfoTypeForString`) and the data reader [`Rd`].
 //!
-//! Loading is two-pass: pass 1 registers every `<Type>` of every info file
-//! (so forward references resolve without Civ4's readPass2/readPass3 hacks),
-//! pass 2 runs the per-class `read` functions through [`Rd`].
+//! Loading is two-pass: pass 1 registers every entry's `type` in every data file (so forward
+//! references resolve without Civ4's readPass2/readPass3 hacks), pass 2 runs the per-class `read`
+//! functions through [`Rd`].
 
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::enums::*;
 use crate::infos::{CombatRoleType, CulturalActionType, GovernorNameType, GovernorProfileType, GovernorTraitType};
 use crate::idx::{Idx, IdxVec};
-use crate::xml::Elem;
+use crate::jsonc::Value;
 
 /// Associates a typed index with the registry class it indexes.
 pub trait InfoId: Idx {
@@ -184,118 +183,178 @@ pub struct Ctx<'r> {
     pub reg: &'r Registry,
     pub file: String,
     pub warnings: RefCell<Vec<String>>,
+    /// The entry being read (its `type`), for messages.
+    entry: RefCell<String>,
+    /// The values a reader looked up by key (their addresses): the members nobody read are
+    /// reported (`Rd::check_unread`).
+    touched: RefCell<HashSet<usize>>,
 }
 
 impl<'r> Ctx<'r> {
     pub fn new(reg: &'r Registry, file: impl Into<String>) -> Self {
-        Ctx { reg, file: file.into(), warnings: RefCell::new(Vec::new()) }
+        Ctx {
+            reg,
+            file: file.into(),
+            warnings: RefCell::new(Vec::new()),
+            entry: RefCell::new(String::new()),
+            touched: RefCell::new(HashSet::new()),
+        }
     }
+
     pub fn warn(&self, msg: String) {
-        self.warnings.borrow_mut().push(format!("{}: {}", self.file, msg));
+        let entry = self.entry.borrow();
+        let at = if entry.is_empty() { String::new() } else { format!(" {entry}:") };
+        self.warnings.borrow_mut().push(format!("{}:{at} {}", self.file, msg));
+    }
+
+    /// Names the entry read next, for messages.
+    pub fn set_entry(&self, name: &str) {
+        *self.entry.borrow_mut() = name.to_string();
+    }
+
+    fn touch(&self, v: &Value) {
+        self.touched.borrow_mut().insert(v as *const Value as usize);
+    }
+
+    fn touched(&self, v: &Value) -> bool {
+        self.touched.borrow().contains(&(v as *const Value as usize))
     }
 }
 
-/// Reader over one XML element; the methods mirror `CvXMLLoadUtility`.
+/// Reader over one value of a data file (an entry, or a record or list inside one). Each method
+/// reads the member `key` of an object as one kind of value and answers its default when the
+/// key is absent; a value of the wrong kind warns and answers the default too.
 #[derive(Clone, Copy)]
 pub struct Rd<'a> {
-    pub e: Elem<'a>,
+    pub v: &'a Value,
     pub cx: &'a Ctx<'a>,
 }
 
-fn parse_int(s: &str) -> Option<i32> {
-    let t = s.trim();
-    if t.is_empty() {
-        return None;
-    }
-    t.parse::<i32>().ok().or_else(|| t.parse::<f64>().ok().map(|f| f as i32))
-}
-
-fn parse_bool(s: &str) -> Option<bool> {
-    match s.trim() {
-        "1" | "true" | "True" | "TRUE" => Some(true),
-        "0" | "false" | "False" | "FALSE" => Some(false),
-        "" => None,
-        other => parse_int(other).map(|i| i != 0),
-    }
-}
-
 impl<'a> Rd<'a> {
-    pub fn new(e: Elem<'a>, cx: &'a Ctx<'a>) -> Self {
-        Rd { e, cx }
+    pub fn new(v: &'a Value, cx: &'a Ctx<'a>) -> Self {
+        Rd { v, cx }
     }
 
     pub fn reg(&self) -> &'a Registry {
         self.cx.reg
     }
 
-    pub fn child(&self, tag: &str) -> Option<Rd<'a>> {
-        self.e.child(tag).map(|e| Rd { e, cx: self.cx })
+    /// The member `key`, marked as read.
+    fn get(&self, key: &str) -> Option<&'a Value> {
+        let v: &'a Value = self.v;
+        let m = v.get(key)?;
+        self.cx.touch(m);
+        Some(m)
     }
 
-    pub fn children(&self) -> impl Iterator<Item = Rd<'a>> + 'a {
-        let cx = self.cx;
-        self.e.children().map(move |e| Rd { e, cx })
+    fn wrong(&self, key: &str, expected: &str, found: &Value) {
+        self.cx.warn(format!("{key:?} should be {expected}, not {}", found.kind()));
     }
 
-    pub fn children_named(&self, tag: &'a str) -> impl Iterator<Item = Rd<'a>> + 'a {
-        let cx = self.cx;
-        self.e.children_named(tag).map(move |e| Rd { e, cx })
+    /// The member `key` as a reader of its own (a record or a list).
+    pub fn child(&self, key: &str) -> Option<Rd<'a>> {
+        self.get(key).map(|v| Rd { v, cx: self.cx })
     }
 
+    /// The items of a list (or the values of an object), each as a reader.
+    pub fn children(&self) -> std::vec::IntoIter<Rd<'a>> {
+        let v: &'a Value = self.v;
+        let all: Vec<Rd<'a>> = match v {
+            Value::Arr(items) => items.iter().map(|v| Rd { v, cx: self.cx }).collect(),
+            Value::Obj(members) => members.iter().map(|(_, v)| Rd { v, cx: self.cx }).collect(),
+            _ => Vec::new(),
+        };
+        all.into_iter()
+    }
+
+    /// This value as a string ("" for another kind).
     pub fn text(&self) -> &'a str {
-        self.e.text()
+        let v: &'a Value = self.v;
+        v.as_str().unwrap_or("")
     }
 
-    pub fn has(&self, tag: &str) -> bool {
-        self.e.child(tag).is_some()
+    /// This value as text: a string as it is, a number or flag written out, "" for the rest.
+    pub fn scalar_text(&self) -> std::borrow::Cow<'a, str> {
+        let v: &'a Value = self.v;
+        match v {
+            Value::Str(s) => std::borrow::Cow::Borrowed(s.as_str()),
+            Value::Int(i) => std::borrow::Cow::Owned(i.to_string()),
+            Value::Float(f) => std::borrow::Cow::Owned(f.to_string()),
+            Value::Bool(b) => std::borrow::Cow::Borrowed(if *b { "1" } else { "0" }),
+            _ => std::borrow::Cow::Borrowed(""),
+        }
     }
 
-    // ---- GetChildXmlValByName ----
-
-    pub fn int(&self, tag: &str) -> i32 {
-        self.int_or(tag, 0)
+    pub fn has(&self, key: &str) -> bool {
+        self.v.get(key).is_some()
     }
-    pub fn int_or(&self, tag: &str, def: i32) -> i32 {
-        match self.e.child(tag) {
-            Some(c) => match parse_int(c.text()) {
-                Some(v) => v,
+
+    // ---- single values ----
+
+    pub fn int(&self, key: &str) -> i32 {
+        self.int_or(key, 0)
+    }
+
+    pub fn int_or(&self, key: &str, def: i32) -> i32 {
+        match self.get(key) {
+            None => def,
+            Some(Value::Int(i)) if i32::try_from(*i).is_ok() => *i as i32,
+            Some(v) => {
+                self.wrong(key, "an integer", v);
+                def
+            }
+        }
+    }
+
+    pub fn bool(&self, key: &str) -> bool {
+        self.bool_or(key, false)
+    }
+
+    pub fn bool_or(&self, key: &str, def: bool) -> bool {
+        match self.get(key) {
+            None => def,
+            Some(Value::Bool(b)) => *b,
+            Some(v) => {
+                self.wrong(key, "true or false", v);
+                def
+            }
+        }
+    }
+
+    pub fn float(&self, key: &str) -> f32 {
+        self.float_or(key, 0.0)
+    }
+
+    pub fn float_or(&self, key: &str, def: f32) -> f32 {
+        match self.get(key) {
+            None => def,
+            Some(v) => match v.as_f64() {
+                Some(f) => f as f32,
                 None => {
-                    if !c.text().is_empty() {
-                        self.cx.warn(format!("bad int in <{}>: {:?}", tag, c.text()));
-                    }
+                    self.wrong(key, "a number", v);
                     def
                 }
             },
-            None => def,
         }
-    }
-    pub fn bool(&self, tag: &str) -> bool {
-        self.bool_or(tag, false)
-    }
-    pub fn bool_or(&self, tag: &str, def: bool) -> bool {
-        match self.e.child(tag) {
-            Some(c) => parse_bool(c.text()).unwrap_or(def),
-            None => def,
-        }
-    }
-    pub fn float(&self, tag: &str) -> f32 {
-        self.float_or(tag, 0.0)
-    }
-    pub fn float_or(&self, tag: &str, def: f32) -> f32 {
-        match self.e.child(tag) {
-            Some(c) => c.text().trim().parse::<f32>().unwrap_or(def),
-            None => def,
-        }
-    }
-    /// String value ("" if absent).
-    pub fn string(&self, tag: &str) -> String {
-        self.e.child(tag).map(|c| c.text().to_string()).unwrap_or_default()
-    }
-    pub fn string_or(&self, tag: &str, def: &str) -> String {
-        self.e.child(tag).map(|c| c.text().to_string()).unwrap_or_else(|| def.to_string())
     }
 
-    // ---- FindInInfoClass ----
+    /// A string ("" if absent).
+    pub fn string(&self, key: &str) -> String {
+        self.string_or(key, "")
+    }
+
+    pub fn string_or(&self, key: &str, def: &str) -> String {
+        match self.get(key) {
+            None => def.to_string(),
+            Some(Value::Str(s)) => s.clone(),
+            Some(v) => {
+                self.wrong(key, "a string", v);
+                def.to_string()
+            }
+        }
+    }
+
+    // ---- type references ----
 
     /// Class-agnostic index or -1 (C++ `FindInInfoClass`). Warns on unknown non-empty names.
     pub fn find_in_info_class(&self, s: &str) -> i32 {
@@ -306,7 +365,7 @@ impl<'a> Rd<'a> {
         idx
     }
 
-    /// Resolves a type string to a typed index; warns if unknown or of another class.
+    /// Resolves a type name to a typed index; warns if unknown or of another class.
     pub fn resolve<T: InfoId>(&self, s: &str) -> Option<T> {
         let s = s.trim();
         if s.is_empty() || s == "NONE" {
@@ -325,190 +384,228 @@ impl<'a> Rd<'a> {
         }
     }
 
-    /// `GetChildXmlValByName(szTextVal, tag); m_iX = FindInInfoClass(szTextVal);` with a typed result.
-    pub fn rf<T: InfoId>(&self, tag: &str) -> Option<T> {
-        match self.e.child(tag) {
-            Some(c) => self.resolve::<T>(c.text()),
-            None => None,
-        }
-    }
-
-    // ---- SetYields / SetCommerce ----
-
-    /// Positional int list under `tag` (C++ `SetYields`/`SetCommerce`/`SetAndLoadVar`),
-    /// padded/truncated to `n` with zeros. Absent tag -> all zeros.
-    pub fn positional_ints(&self, tag: &str, n: usize) -> Vec<i32> {
-        let mut v = vec![0; n];
-        if let Some(c) = self.e.child(tag) {
-            for (i, ch) in c.children().enumerate() {
-                if i >= n {
-                    self.cx.warn(format!("<{}> has more than {} values", tag, n));
-                    break;
-                }
-                v[i] = parse_int(ch.text()).unwrap_or(0);
+    /// A type named by the string `key` (`None` when absent).
+    pub fn rf<T: InfoId>(&self, key: &str) -> Option<T> {
+        match self.get(key) {
+            None | Some(Value::Null) => None,
+            Some(Value::Str(s)) => self.resolve::<T>(s),
+            Some(v) => {
+                self.wrong(key, "a type name", v);
+                None
             }
         }
-        v
-    }
-    pub fn yields(&self, tag: &str) -> [i32; YieldType::NUM] {
-        let v = self.positional_ints(tag, YieldType::NUM);
-        [v[0], v[1], v[2]]
-    }
-    pub fn commerces(&self, tag: &str) -> [i32; CommerceType::NUM] {
-        let v = self.positional_ints(tag, CommerceType::NUM);
-        [v[0], v[1], v[2], v[3]]
-    }
-    /// Positional bool list (e.g. `CommerceFlexible`).
-    pub fn positional_bools(&self, tag: &str, n: usize) -> Vec<bool> {
-        let mut v = vec![false; n];
-        if let Some(c) = self.e.child(tag) {
-            for (i, ch) in c.children().enumerate() {
-                if i < n {
-                    v[i] = parse_bool(ch.text()).unwrap_or(false);
-                }
-            }
-        }
-        v
-    }
-
-    // ---- SetVariableListTagPair ----
-    // Each child of <tag> is a pair element whose FIRST child holds a type name
-    // (the key) and whose SECOND child holds the value; tag names of the pair are
-    // ignored, exactly like the C++ implementation.
-
-    fn pair_iter(&self, tag: &str) -> Vec<(Elem<'a>, Option<Elem<'a>>)> {
-        let mut out = Vec::new();
-        if let Some(c) = self.e.child(tag) {
-            for pair in c.children() {
-                let mut it = pair.children();
-                if let Some(k) = it.next() {
-                    out.push((k, it.next()));
-                }
-            }
-        }
-        out
-    }
-
-    pub fn pairs_int<K: InfoId>(&self, tag: &str, def: i32) -> IdxVec<K, i32> {
-        let n = self.cx.reg.count::<K>();
-        let mut v = IdxVec::from_elem(def, n);
-        for (k, val) in self.pair_iter(tag) {
-            if let Some(key) = self.resolve::<K>(k.text()) {
-                // C++ GetNextXmlVal(&p[i]) defaults to 0 (not the list default) when the
-                // value element is missing.
-                v[key] = val.and_then(|x| parse_int(x.text())).unwrap_or(0);
-            }
-        }
-        v
-    }
-
-    pub fn pairs_bool<K: InfoId>(&self, tag: &str) -> IdxVec<K, bool> {
-        self.pairs_bool_or::<K>(tag, false)
-    }
-
-    pub fn pairs_bool_or<K: InfoId>(&self, tag: &str, def: bool) -> IdxVec<K, bool> {
-        let n = self.cx.reg.count::<K>();
-        let mut v = IdxVec::from_elem(def, n);
-        for (k, val) in self.pair_iter(tag) {
-            if let Some(key) = self.resolve::<K>(k.text()) {
-                v[key] = val.and_then(|x| parse_bool(x.text())).unwrap_or(false);
-            }
-        }
-        v
-    }
-
-    pub fn pairs_float<K: InfoId>(&self, tag: &str, def: f32) -> IdxVec<K, f32> {
-        let n = self.cx.reg.count::<K>();
-        let mut v = IdxVec::from_elem(def, n);
-        for (k, val) in self.pair_iter(tag) {
-            if let Some(key) = self.resolve::<K>(k.text()) {
-                v[key] = val.and_then(|x| x.text().trim().parse().ok()).unwrap_or(0.0);
-            }
-        }
-        v
-    }
-
-    pub fn pairs_string<K: InfoId>(&self, tag: &str) -> IdxVec<K, String> {
-        let n = self.cx.reg.count::<K>();
-        let mut v = IdxVec::from_elem(String::new(), n);
-        for (k, val) in self.pair_iter(tag) {
-            if let Some(key) = self.resolve::<K>(k.text()) {
-                v[key] = val.map(|x| x.text().to_string()).unwrap_or_default();
-            }
-        }
-        v
-    }
-
-    /// Pair list whose value is itself a type reference (C++ reads a string list then
-    /// `FindInInfoClass`es each entry, e.g. `TerrainPassableTechs`).
-    pub fn pairs_ref<K: InfoId, V: InfoId>(&self, tag: &str) -> IdxVec<K, Option<V>> {
-        let n = self.cx.reg.count::<K>();
-        let mut v = IdxVec::from_elem(None, n);
-        for (k, val) in self.pair_iter(tag) {
-            if let Some(key) = self.resolve::<K>(k.text()) {
-                v[key] = val.and_then(|x| self.resolve::<V>(x.text()));
-            }
-        }
-        v
-    }
-
-    /// Sparse pair list: keeps (key, int) in document order.
-    pub fn pair_list_int<K: InfoId>(&self, tag: &str) -> Vec<(K, i32)> {
-        let mut out = Vec::new();
-        for (k, val) in self.pair_iter(tag) {
-            if let Some(key) = self.resolve::<K>(k.text()) {
-                out.push((key, val.and_then(|x| parse_int(x.text())).unwrap_or(0)));
-            }
-        }
-        out
     }
 
     // ---- lists ----
 
-    /// List of type references, one per child of `tag` (e.g. `<TechTypes><PrereqTech>..`).
-    /// Unknown/NONE entries are skipped.
-    pub fn ref_list<T: InfoId>(&self, tag: &str) -> Vec<T> {
-        let mut out = Vec::new();
-        if let Some(c) = self.e.child(tag) {
-            for ch in c.children() {
-                if let Some(t) = self.resolve::<T>(ch.text()) {
-                    out.push(t);
-                }
+    /// The list `key` (empty when absent; a value that is no list warns).
+    fn items(&self, key: &str) -> &'a [Value] {
+        match self.get(key) {
+            None => &[],
+            Some(Value::Arr(items)) => items,
+            Some(v) => {
+                self.wrong(key, "a list", v);
+                &[]
             }
         }
-        out
     }
 
-    /// Fixed-size list of type references with -1 fill (C++ `InitList(&p, N, -1)` + positional
-    /// `FindInInfoClass`), returned as a Vec<Option<T>> of length `n`.
-    pub fn ref_list_fixed<T: InfoId>(&self, tag: &str, n: usize) -> Vec<Option<T>> {
+    /// The object `key` (empty when absent; a value that is no object warns).
+    fn members(&self, key: &str) -> &'a [(String, Value)] {
+        match self.get(key) {
+            None => &[],
+            Some(Value::Obj(m)) => m,
+            Some(v) => {
+                self.wrong(key, "an object", v);
+                &[]
+            }
+        }
+    }
+
+    /// A list of `n` integers by position (yields, commerces), zeros for the missing.
+    pub fn positional_ints(&self, key: &str, n: usize) -> Vec<i32> {
+        let mut v = vec![0; n];
+        let items = self.items(key);
+        if items.len() > n {
+            self.cx.warn(format!("{key:?} has more than {n} values"));
+        }
+        for (slot, x) in v.iter_mut().zip(items) {
+            match x {
+                Value::Int(i) => *slot = *i as i32,
+                other => self.wrong(key, "a list of integers", other),
+            }
+        }
+        v
+    }
+
+    pub fn yields(&self, key: &str) -> [i32; YieldType::NUM] {
+        let v = self.positional_ints(key, YieldType::NUM);
+        [v[0], v[1], v[2]]
+    }
+
+    pub fn commerces(&self, key: &str) -> [i32; CommerceType::NUM] {
+        let v = self.positional_ints(key, CommerceType::NUM);
+        [v[0], v[1], v[2], v[3]]
+    }
+
+    /// A list of `n` flags by position, false for the missing.
+    pub fn positional_bools(&self, key: &str, n: usize) -> Vec<bool> {
+        let mut v = vec![false; n];
+        for (slot, x) in v.iter_mut().zip(self.items(key)) {
+            match x {
+                Value::Bool(b) => *slot = *b,
+                other => self.wrong(key, "a list of true/false", other),
+            }
+        }
+        v
+    }
+
+    /// A list of type names.
+    pub fn ref_list<T: InfoId>(&self, key: &str) -> Vec<T> {
+        self.items(key).iter().filter_map(|x| self.item_ref::<T>(key, x)).collect()
+    }
+
+    /// A list of type names by position, `null` for none, `n` long.
+    pub fn ref_list_fixed<T: InfoId>(&self, key: &str, n: usize) -> Vec<Option<T>> {
+        let items = self.items(key);
+        if items.len() > n {
+            self.cx.warn(format!("{key:?} has more than {n} entries"));
+        }
         let mut out = vec![None; n];
-        if let Some(c) = self.e.child(tag) {
-            for (i, ch) in c.children().enumerate() {
-                if i < n {
-                    out[i] = self.resolve::<T>(ch.text());
-                } else {
-                    self.cx.warn(format!("<{}> has more than {} entries", tag, n));
+        for (slot, x) in out.iter_mut().zip(items) {
+            *slot = self.item_ref::<T>(key, x);
+        }
+        out
+    }
+
+    /// A list of type names (the old comma-separated tags).
+    pub fn ref_tokens<T: InfoId>(&self, key: &str) -> Vec<T> {
+        self.ref_list(key)
+    }
+
+    /// A list of strings.
+    pub fn string_list(&self, key: &str) -> Vec<String> {
+        self.items(key)
+            .iter()
+            .filter_map(|x| match x {
+                Value::Str(s) => Some(s.clone()),
+                other => {
+                    self.wrong(key, "a list of strings", other);
+                    None
+                }
+            })
+            .collect()
+    }
+
+    fn item_ref<T: InfoId>(&self, key: &str, x: &Value) -> Option<T> {
+        match x {
+            Value::Null => None,
+            Value::Str(s) => self.resolve::<T>(s),
+            other => {
+                self.wrong(key, "a list of type names", other);
+                None
+            }
+        }
+    }
+
+    // ---- per-type values: an object from type names to values ----
+
+    fn per_type<K: InfoId, T: Clone>(&self, key: &str, def: T, val: impl Fn(&Value) -> Option<T>, expected: &str) -> IdxVec<K, T> {
+        let mut v = IdxVec::from_elem(def, self.cx.reg.count::<K>());
+        for (name, x) in self.members(key) {
+            if let Some(k) = self.resolve::<K>(name) {
+                match val(x) {
+                    Some(t) => v[k] = t,
+                    None => self.wrong(key, expected, x),
+                }
+            }
+        }
+        v
+    }
+
+    pub fn pairs_int<K: InfoId>(&self, key: &str, def: i32) -> IdxVec<K, i32> {
+        self.per_type(key, def, |x| x.as_i64().map(|i| i as i32), "an object of integers")
+    }
+
+    pub fn pairs_bool<K: InfoId>(&self, key: &str) -> IdxVec<K, bool> {
+        self.pairs_bool_or::<K>(key, false)
+    }
+
+    pub fn pairs_bool_or<K: InfoId>(&self, key: &str, def: bool) -> IdxVec<K, bool> {
+        self.per_type(key, def, |x| x.as_bool(), "an object of true/false")
+    }
+
+    pub fn pairs_float<K: InfoId>(&self, key: &str, def: f32) -> IdxVec<K, f32> {
+        self.per_type(key, def, |x| x.as_f64().map(|f| f as f32), "an object of numbers")
+    }
+
+    pub fn pairs_string<K: InfoId>(&self, key: &str) -> IdxVec<K, String> {
+        self.per_type(key, String::new(), |x| x.as_str().map(str::to_string), "an object of strings")
+    }
+
+    /// An object from type names to type names.
+    pub fn pairs_ref<K: InfoId, V: InfoId>(&self, key: &str) -> IdxVec<K, Option<V>> {
+        let mut v = IdxVec::from_elem(None, self.cx.reg.count::<K>());
+        for (name, x) in self.members(key) {
+            if let Some(k) = self.resolve::<K>(name) {
+                v[k] = self.item_ref::<V>(key, x);
+            }
+        }
+        v
+    }
+
+    /// An object from type names to integers, as (type, value) in file order.
+    pub fn pair_list_int<K: InfoId>(&self, key: &str) -> Vec<(K, i32)> {
+        let mut out = Vec::new();
+        for (name, x) in self.members(key) {
+            if let Some(k) = self.resolve::<K>(name) {
+                match x.as_i64() {
+                    Some(i) => out.push((k, i as i32)),
+                    None => self.wrong(key, "an object of integers", x),
                 }
             }
         }
         out
     }
 
-    /// C++ `SetStringList`: text of every child.
-    pub fn string_list(&self, tag: &str) -> Vec<String> {
-        self.e
-            .child(tag)
-            .map(|c| c.children().map(|ch| ch.text().to_string()).collect())
-            .unwrap_or_default()
+    // ---- unknown keys ----
+
+    /// Warns about every key of this entry that no reader looked up (a misspelt or obsolete
+    /// key), and so in each record a reader looked into.
+    pub fn check_unread(&self) {
+        self.unread(self.v, "");
     }
 
-    /// Comma-separated list of type references in a single tag (e.g. `SeeInvisible`).
-    pub fn ref_tokens<T: InfoId>(&self, tag: &str) -> Vec<T> {
-        let s = self.string(tag);
-        s.split(',').filter_map(|tok| {
-            let tok = tok.trim();
-            if tok.is_empty() { None } else { self.resolve::<T>(tok) }
-        }).collect()
+    fn unread(&self, v: &Value, at: &str) {
+        match v {
+            Value::Obj(members) => {
+                for (k, m) in members {
+                    if !self.cx.touched(m) {
+                        self.cx.warn(format!("unknown key {at}{k:?}: nothing reads it"));
+                    } else if self.looked_into(m) {
+                        self.unread(m, &format!("{at}{k}."));
+                    } else if let Value::Arr(items) = m {
+                        for (i, item) in items.iter().enumerate() {
+                            if self.looked_into(item) {
+                                self.unread(item, &format!("{at}{k}[{i}]."));
+                            }
+                        }
+                    }
+                }
+            }
+            Value::Arr(items) => {
+                for (i, item) in items.iter().enumerate() {
+                    if self.looked_into(item) {
+                        self.unread(item, &format!("{at}[{i}]."));
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+
+    /// Whether a reader looked up some key of this object.
+    fn looked_into(&self, v: &Value) -> bool {
+        matches!(v, Value::Obj(members) if members.iter().any(|(_, m)| self.cx.touched(m)))
     }
 }

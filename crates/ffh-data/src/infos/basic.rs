@@ -13,7 +13,7 @@
 use crate::infos::InfoBase;
 use crate::registry::Rd;
 
-/// C++ `CvInfoBase` from `GC.getAlignmentInfo(e)` (Basicinfos/CIV4AlignmentInfos.xml, FfH).
+/// C++ `CvInfoBase` from `GC.getAlignmentInfo(e)` (alignments.jsonc, FfH).
 #[derive(Debug, Clone, Default)]
 pub struct AlignmentInfo {
     pub base: InfoBase,
@@ -24,7 +24,7 @@ pub fn read_alignment(rd: &Rd) -> AlignmentInfo {
     AlignmentInfo { base: InfoBase::read(rd) }
 }
 
-/// C++ `CvInfoBase` from `GC.getAttitudeInfo(e)` (Basicinfos/CIV4AttitudeInfos.xml).
+/// C++ `CvInfoBase` from `GC.getAttitudeInfo(e)` (attitudes.jsonc).
 #[derive(Debug, Clone, Default)]
 pub struct AttitudeInfo {
     pub base: InfoBase,
@@ -35,7 +35,7 @@ pub fn read_attitude(rd: &Rd) -> AttitudeInfo {
     AttitudeInfo { base: InfoBase::read(rd) }
 }
 
-/// C++ `CvInfoBase` from `GC.getCalendarInfo(e)` (Basicinfos/CIV4CalendarInfos.xml).
+/// C++ `CvInfoBase` from `GC.getCalendarInfo(e)` (calendars.jsonc).
 #[derive(Debug, Clone, Default)]
 pub struct CalendarInfo {
     pub base: InfoBase,
@@ -46,7 +46,7 @@ pub fn read_calendar(rd: &Rd) -> CalendarInfo {
     CalendarInfo { base: InfoBase::read(rd) }
 }
 
-/// C++ `CvInfoBase` from `GC.getDamageTypeInfo(e)` (Basicinfos/CIV4DamageInfos.xml, FfH).
+/// C++ `CvInfoBase` from `GC.getDamageTypeInfo(e)` (damages.jsonc, FfH).
 #[derive(Debug, Clone, Default)]
 pub struct DamageInfo {
     pub base: InfoBase,
@@ -57,7 +57,7 @@ pub fn read_damage(rd: &Rd) -> DamageInfo {
     DamageInfo { base: InfoBase::read(rd) }
 }
 
-/// C++ `CvInfoBase` from `GC.getDenialInfo(e)` (Basicinfos/CIV4DenialInfos.xml).
+/// C++ `CvInfoBase` from `GC.getDenialInfo(e)` (denials.jsonc).
 #[derive(Debug, Clone, Default)]
 pub struct DenialInfo {
     pub base: InfoBase,
@@ -68,7 +68,7 @@ pub fn read_denial(rd: &Rd) -> DenialInfo {
     DenialInfo { base: InfoBase::read(rd) }
 }
 
-/// C++ `CvInfoBase` from `GC.getDomainInfo(e)` (Basicinfos/CIV4DomainInfos.xml).
+/// C++ `CvInfoBase` from `GC.getDomainInfo(e)` (domains.jsonc).
 #[derive(Debug, Clone, Default)]
 pub struct DomainInfo {
     pub base: InfoBase,
@@ -79,7 +79,7 @@ pub fn read_domain(rd: &Rd) -> DomainInfo {
     DomainInfo { base: InfoBase::read(rd) }
 }
 
-/// C++ `CvInfoBase` from `GC.getInvisibleInfo(e)` (Basicinfos/CIV4InvisibleInfos.xml).
+/// C++ `CvInfoBase` from `GC.getInvisibleInfo(e)` (invisibles.jsonc).
 #[derive(Debug, Clone, Default)]
 pub struct InvisibleInfo {
     pub base: InfoBase,
@@ -90,7 +90,7 @@ pub fn read_invisible(rd: &Rd) -> InvisibleInfo {
     InvisibleInfo { base: InfoBase::read(rd) }
 }
 
-/// C++ `CvInfoBase` from `GC.getMemoryInfo(e)` (Basicinfos/CIV4MemoryInfos.xml).
+/// C++ `CvInfoBase` from `GC.getMemoryInfo(e)` (memories.jsonc).
 #[derive(Debug, Clone, Default)]
 pub struct MemoryInfo {
     pub base: InfoBase,
@@ -101,7 +101,7 @@ pub fn read_memory(rd: &Rd) -> MemoryInfo {
     MemoryInfo { base: InfoBase::read(rd) }
 }
 
-/// C++ `CvInfoBase` from `GC.getMonthInfo(e)` (Basicinfos/CIV4MonthInfos.xml).
+/// C++ `CvInfoBase` from `GC.getMonthInfo(e)` (months.jsonc).
 #[derive(Debug, Clone, Default)]
 pub struct MonthInfo {
     pub base: InfoBase,
@@ -112,7 +112,7 @@ pub fn read_month(rd: &Rd) -> MonthInfo {
     MonthInfo { base: InfoBase::read(rd) }
 }
 
-/// C++ `CvInfoBase` from `GC.getSeasonInfo(e)` (Basicinfos/CIV4SeasonInfos.xml).
+/// C++ `CvInfoBase` from `GC.getSeasonInfo(e)` (seasons.jsonc).
 #[derive(Debug, Clone, Default)]
 pub struct SeasonInfo {
     pub base: InfoBase,
@@ -123,7 +123,7 @@ pub fn read_season(rd: &Rd) -> SeasonInfo {
     SeasonInfo { base: InfoBase::read(rd) }
 }
 
-/// C++ `CvInfoBase` from `GC.getUnitAIInfo(e)` (Basicinfos/CIV4UnitAIInfos.xml).
+/// C++ `CvInfoBase` from `GC.getUnitAIInfo(e)` (unit_ais.jsonc).
 #[derive(Debug, Clone, Default)]
 pub struct UnitAIInfo {
     pub base: InfoBase,
@@ -134,7 +134,7 @@ pub fn read_unit_ai(rd: &Rd) -> UnitAIInfo {
     UnitAIInfo { base: InfoBase::read(rd) }
 }
 
-/// C++ `CvInfoBase` from `GC.getUnitCombatInfo(e)` (Basicinfos/CIV4UnitCombatInfos.xml).
+/// C++ `CvInfoBase` from `GC.getUnitCombatInfo(e)` (unit_combats.jsonc).
 #[derive(Debug, Clone, Default)]
 pub struct UnitCombatInfo {
     pub base: InfoBase,

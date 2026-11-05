@@ -1,0 +1,33 @@
+// edited with XMLSPY v2004 rel. 2 U (http://www.xmlspy.com) by Jesse Smith (Firaxis Games)
+// Sid Meier's Civilization 4
+// Copyright Firaxis Games 2005
+//
+// Commerce Infos
+[
+  {
+    "type": "COMMERCE_GOLD",
+    "description": "TXT_KEY_COMMERCE_GOLD",
+    "ai_weight_percent": 100,
+    "button": "Art/Interface/Buttons/Process/ProcessWealth.dds"
+  },
+  {
+    "type": "COMMERCE_RESEARCH",
+    "description": "TXT_KEY_COMMERCE_RESEARCH",
+    "initial_percent": 100,
+    "ai_weight_percent": 125,
+    "flexible_percent": true,
+    "button": "Art/Interface/Buttons/Process/ProcessResearch.dds"
+  },
+  {
+    "type": "COMMERCE_CULTURE",
+    "description": "TXT_KEY_COMMERCE_CULTURE",
+    "initial_happiness": 10,
+    "ai_weight_percent": 25,
+    "button": "Art/Interface/Buttons/Process/ProcessCulture.dds"
+  },
+  {
+    "type": "COMMERCE_ESPIONAGE",
+    "description": "TXT_KEY_ESPIONAGE_CULTURE",
+    "button": "Art/Interface/Buttons/Process/ProcessCulture.dds,Art/Interface/Buttons/Beyond the Sword_Atlas.dds,8,16"
+  }
+]

@@ -18,15 +18,15 @@ pre-battle spells, opening volleys, rounds, withdrawal and post-battle effects. 
 keep, remap or remove for each, for review." This is that inventory. Nothing here is implemented yet;
 the owner answered the questions on 2026-10-31 ("The owner's answers", at the end).
 
-**Sources.** Promotions: `data/xml/Units/CIV4PromotionInfos.xml` (261 promotions). Unit abilities:
-`data/xml/Units/CIV4UnitInfos.xml` (325 unit types). Spells: `data/xml/Units/CIV4SpellInfos.xml` (267).
+**Sources.** Promotions: `data/json/promotions.jsonc` (261 promotions). Unit abilities:
+`data/json/units.jsonc` (325 unit types). Spells: `data/json/spells.jsonc` (267).
 What the rules read: `crates/ffh-core/src/unit/combat.rs` (`unit_resolve_combat`,
 `unit_update_combat`, `unit_max_combat_str`, `unit_do_defensive_strike`, `unit_collateral_combat`,
 `unit_flanking_strike_combat`, `unit_combat_won`), `unit/promotions.rs` (`unit_set_has_promotion`
 and the strength getters), `unit/ffh.rs`, `plot/units.rs` (`plot_get_best_defender`), the ported
 Python in `crates/ffh-core/src/ffh/` (post-combat callbacks, `ev_unit_killed`, damage spells), checked
 against `CvUnit.cpp` (`resolveCombat`, `updateCombat`, `maxCombatStr`, `combatWon`). Values below
-are the XML's. Defines quoted are the loaded ones (GlobalDefinesAlt.xml overrides GlobalDefines.xml).
+are the XML's. Defines quoted are the loaded ones (global_defines_alt.jsonc overrides global_defines.jsonc).
 
 **Result.** 179 of the 261 promotions have a combat effect and appear below by type name,
 grouped by mechanic (a promotion with several effects appears in each of its sections); the
@@ -572,7 +572,7 @@ Defence spell sets full fortification.
 ## 13. River crossing and amphibious attack
 
 **Today.** Attacking across a river gives the defender +40% (RIVER_ATTACK_MODIFIER -40, from
-GlobalDefinesAlt.xml) unless the attacker has `bRiver`; attacking from water onto land gives it +50%
+global_defines_alt.jsonc) unless the attacker has `bRiver`; attacking from water onto land gives it +50%
 (AMPHIB_ATTACK_MODIFIER -50) unless the attacker has `bAmphib`. No unit type has either; the four
 promotions below grant both.
 

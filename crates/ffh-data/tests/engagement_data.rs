@@ -1,5 +1,5 @@
 //! Data spot-checks for engagement combat (this game's own rules, docs/ENGAGEMENTS.md): the
-//! roles of formation battles (Units/CIV4CombatRoleInfos.xml), the role each unit type derives,
+//! roles of formation battles (combat_roles.jsonc), the role each unit type derives,
 //! the large units, the casters'
 //! damage spells, the plots' slot changes and the ENGAGEMENT_* defines. Expected values are the
 //! owner's (the formation battles spec, revision 4: docs/ENGAGEMENTS.md) and

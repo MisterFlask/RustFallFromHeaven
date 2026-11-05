@@ -76,7 +76,7 @@ draws). Changes made here since the package arrived:
   art px in 2 px blocks (160 x 160) and writes a review sheet, `accept --key k --variant v` stores
   `roster/leaders/leader_<key>.png` and `prompts/assets/leader_<key>.txt`; `m7.py export` ships
   them with the sprites. The spend tag is `ui/leaders`. FfH's scenario-only leaders (in
-  CIV4LeaderHeadInfos.xml but in no civilization) have none.
+  leader_heads.jsonc but in no civilization) have none.
 - **HD leader portraits (shipped, 2026-11-05)** replace those busts: half-length key art, the figure in chunky pixel
   blocks with a thick black outline (the owner's pick from an outline test; `OUTLINE` in
   `leader_vibe_prompts.py`) before a softer background (`prompts/style_leader_hd.txt`, after the owner's two reference images in

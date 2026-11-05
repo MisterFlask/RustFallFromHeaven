@@ -1,5 +1,5 @@
 //! This game's own info classes for governors (not FFH2's; docs/GOVERNORS.md):
-//! `Gameinfo/CIV4GovernorProfileInfos.xml`, `CIV4GovernorTraitInfos.xml`, `CIV4GovernorNameInfos.xml`.
+//! `governor_profiles.jsonc`, `governor_traits.jsonc`, `governor_names.jsonc`.
 
 use super::InfoBase;
 use crate::define_idx;
@@ -31,10 +31,10 @@ pub struct GovernorProfileInfo {
 pub fn read_governor_profile(rd: &Rd) -> GovernorProfileInfo {
     GovernorProfileInfo {
         base: InfoBase::read(rd),
-        interim: rd.bool("bInterim"),
-        flavor_value: rd.pairs_int("Flavors", 0),
-        emphasizes: rd.ref_list("Emphasizes"),
-        defenders: rd.int("iDefenders"),
+        interim: rd.bool("interim"),
+        flavor_value: rd.pairs_int("flavors", 0),
+        emphasizes: rd.ref_list("emphasizes"),
+        defenders: rd.int("defenders"),
     }
 }
 
@@ -57,14 +57,14 @@ pub struct GovernorTraitInfo {
 pub fn read_governor_trait(rd: &Rd) -> GovernorTraitInfo {
     GovernorTraitInfo {
         base: InfoBase::read(rd),
-        building_production_percent: rd.int("iBuildingProductionPercent"),
-        unit_production_percent: rd.int("iUnitProductionPercent"),
-        happy: rd.int("iHappy"),
-        health: rd.int("iHealth"),
-        experience: rd.int("iExperience"),
-        yield_modifier: rd.yields("YieldModifiers"),
-        commerce_modifier: rd.commerces("CommerceModifiers"),
-        flavor_value: rd.pairs_int("Flavors", 0),
+        building_production_percent: rd.int("building_production_percent"),
+        unit_production_percent: rd.int("unit_production_percent"),
+        happy: rd.int("happy"),
+        health: rd.int("health"),
+        experience: rd.int("experience"),
+        yield_modifier: rd.yields("yield_modifiers"),
+        commerce_modifier: rd.commerces("commerce_modifiers"),
+        flavor_value: rd.pairs_int("flavors", 0),
     }
 }
 
@@ -77,5 +77,5 @@ pub struct GovernorNameInfo {
 }
 
 pub fn read_governor_names(rd: &Rd) -> GovernorNameInfo {
-    GovernorNameInfo { base: InfoBase::read(rd), civilization: rd.rf("Civilization"), names: rd.string_list("Names") }
+    GovernorNameInfo { base: InfoBase::read(rd), civilization: rd.rf("civilization"), names: rd.string_list("names") }
 }

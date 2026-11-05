@@ -1,6 +1,6 @@
 //! Spot checks for the unit-related info tables (port of CvUnitInfo, CvUnitClassInfo,
 //! CvPromotionInfo, CvSpellInfo, CvBuildInfo, CvSpecialUnitInfo, CvAutomateInfo, CvCommandInfo,
-//! CvMissionInfo). Expected values were read off data/xml/Units/*.xml.
+//! CvMissionInfo). Expected values were read off data/json/.
 
 use ffh_data::*;
 
@@ -426,7 +426,7 @@ fn missions_commands_automates() {
         assert_eq!(a.command, Some(CommandType::COMMAND_AUTOMATE));
         assert_eq!(a.automate, Some(i), "automate entries are in AutomateTypes order");
         assert!(a.visible);
-        assert_eq!(a.base.type_, "", "CIV4AutomateInfos.xml has no <Type>");
+        assert_eq!(a.base.type_, "", "automates.jsonc has no <Type>");
     }
     assert_eq!(d.automates[AutomateType::AUTOMATE_TERRAFORMING].base.description, "TXT_KEY_ACTION_AUTOMATE_TERRAFORMING");
 }

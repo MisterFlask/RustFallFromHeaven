@@ -19,7 +19,7 @@ entity does is its help text (`ffh-play`, `crates/ffh-play/src/view/help/`, port
 FFH2 0.41 C++ AI kept for comparison (docs/CPPAI.md), is not covered.
 
 How the inventory was made: the help, strategy and effects texts of every entry come from the
-`data` query of `ffh-play agent`; the fields from the vendored XML (`data/xml`); the rules' Python
+`data` query of `ffh-play agent`; the fields from the game data (`data/json`); the rules' Python
 effects from `crates/ffh-core/src/ffh/` (the ports of FFH2's spell and event Python); the AI's use
 from reading `crates/ffh-ai`, with every place that names the entity's type string.
 `tools/entity_facts.py` writes those facts as one sheet per entity; its AI lines re-implement the

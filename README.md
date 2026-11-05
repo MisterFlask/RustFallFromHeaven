@@ -20,8 +20,8 @@ Play in the browser, nothing to install (on a phone too): https://misterflask.gi
 
 | Path | What |
 |---|---|
-| `data/xml`, `data/text` | FFH2 0.41 gameplay XML (+ the stock BtS files it inherits), English text |
-| `crates/ffh-data` | XML -> typed info tables (port of `CvInfos` / `CvXMLLoadUtility`) |
+| `data/json`, `data/text` | the game data as JSON with comments (converted from FFH2 0.41's XML and the stock BtS files it inherits; docs/DATA.md), English text |
+| `crates/ffh-data` | data/json -> typed info tables (port of `CvInfos`) |
 | `crates/ffh-core` | rules engine: CvGame, CvPlayer, CvTeam, CvCity, CvUnit, CvPlot, CvSelectionGroup, CvMap, map generation, deals, and the rules Python (`src/ffh/`: spells, events, random events, custom functions, CvGameUtils hooks) |
 | `crates/ffh-ai` | the new AI (implements `ffh_core::Controller`) |
 | `crates/ffh-cli` | `ffh` binary: data checks, AI-only autoplay, benchmarks |
@@ -29,7 +29,7 @@ Play in the browser, nothing to install (on a phone too): https://misterflask.gi
 | `crates/ffh-stress` | `ffh-stress` binary: AI games over a matrix of game settings (speed, handicap, era, world size, civs, climate, sea level, options, teams, victories), crashes caught per game |
 | `crates/ffh-play` | `ffh-play` binary and library: human play (session core, JSONL agent, HTTP server with the browser client; see `docs/HUMAN.md`) |
 | `docs/` | `PORTING.md` (status, changes from FFH2), `AI.md`, `ENTITIES.md` (every unit, building and spell: what it does, how to play it, how far the AI uses it), `ARCHITECTURE.md`, `DATA.md`, `AGENTS.md` (parallel agents), `porting/*.md` (C++ function maps) |
-| `tools/` | reference fetch, XML vendoring, enum/define generators, C++ parity harness; `tools/agents/`: infrastructure for parallel agents (shared incremental builds per revision or worktree, a run cache for deterministic games, machine-wide CPU slots, sparse agent worktrees; `docs/AGENTS.md`) |
+| `tools/` | reference fetch, enum/define generators, the data reader for Python (`jsonc.py`), C++ parity harness; `tools/agents/`: infrastructure for parallel agents (shared incremental builds per revision or worktree, a run cache for deterministic games, machine-wide CPU slots, sparse agent worktrees; `docs/AGENTS.md`) |
 
 ## Build and run
 
@@ -38,7 +38,7 @@ Rust stable, no external crates.
 ```
 cargo build --release
 cargo test --release
-./target/release/ffh data                                  # load all XML, report warnings
+./target/release/ffh data                                  # load all the data, report warnings
 ./target/release/ffh autoplay --seed 1 --civs 4 --size WORLDSIZE_SMALL --turns 100
 ./target/release/ffh bench --seed 1 --civs 8 --size WORLDSIZE_STANDARD --turns 300
 ```

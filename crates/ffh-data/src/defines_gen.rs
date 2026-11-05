@@ -581,12 +581,12 @@ pub struct Defines {
     pub engagement_preview_runs: i32,
     pub sentinel_repair_percent: i32,
     pub siege_bombard_floor_percent: i32,
-    pub bbai_skip_bombard_base_stack_ratio: i32,  // not in XML: C++ reads 0
-    pub bbai_skip_bombard_best_attack_odds: i32,  // not in XML: C++ reads 0
-    pub bbai_skip_bombard_min_stack_ratio: i32,  // not in XML: C++ reads 0
-    pub pirate_cove_spell: i32,  // not in XML: C++ reads 0
-    pub use_debug_log: i32,  // not in XML: C++ reads 0
-    pub use_use_cannot_spread_religion_callback: i32,  // not in XML: C++ reads 0
+    pub bbai_skip_bombard_base_stack_ratio: i32,  // not in the data: C++ reads 0
+    pub bbai_skip_bombard_best_attack_odds: i32,  // not in the data: C++ reads 0
+    pub bbai_skip_bombard_min_stack_ratio: i32,  // not in the data: C++ reads 0
+    pub pirate_cove_spell: i32,  // not in the data: C++ reads 0
+    pub use_debug_log: i32,  // not in the data: C++ reads 0
+    pub use_use_cannot_spread_religion_callback: i32,  // not in the data: C++ reads 0
 }
 
 impl Defines {

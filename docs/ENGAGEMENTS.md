@@ -38,7 +38,7 @@ below) fills two cells side by side in one row and counts 2 slots, has
 `ENGAGEMENT_LARGE_HP_PERCENT` (150) of its role's HP, and is the front or back unit of both its
 lanes.
 
-**Roles** (`CIV4CombatRoleInfos.xml`):
+**Roles** (`combat_roles.jsonc`):
 
 | Role | defaults (unit combat) | A% | Dv% | HP | speed | Front | Middle | Rear | other | home row | auto pick |
 |---|---|---|---|---|---|---|---|---|---|---|---|
@@ -59,30 +59,26 @@ strikes has no effect in an engagement). A flanker is a unit whose rows have a C
 and the auto-pick order are the auto formation's, always the role's.
 
 **Per-unit values** (the owner's request, 2026-10-31). A unit type may replace its role's values in
-`CIV4UnitInfos.xml`; each falls back to the role's when absent, and no unit sets them yet (the
+`units.jsonc`; each falls back to the role's when absent, and no unit sets them yet (the
 content is the owner's to decide):
 
-| Tag | Replaces | Absent / -1 | Valid |
+| Key | Replaces | Absent / -1 | Valid |
 |---|---|---|---|
-| `CombatRole` | the role its unit combat gives it | that role | a role |
-| `iAttack`, `iDefense` | the base of A (`iCombat` x the role's A%), of Dv (`iCombatDefense` x Dv%) | 0: the role's | above 0 |
-| `iHP` | the role's max HP (a large unit's 150% of it) | 0: the role's | above 0 |
-| `bLarge` | one cell | 0: one cell | |
-| `iEngageSpeed` | the role's speed | -1: the role's | 0 and above |
-| `iEngageDodge` | the role's dodge | -1: the role's | 0..=95 |
-| `iEngageCritBonus` | the role's crit bonus | -1: the role's | 0..=95 |
-| `EngageRows` | the role's rows | the role's | three `Row`s |
+| `combat_role` | the role its unit combat gives it | that role | a role |
+| `attack`, `defense` | the base of A (`combat` x the role's A%), of Dv (`combat_defense` x Dv%) | 0: the role's | above 0 |
+| `hp` | the role's max HP (a large unit's 150% of it) | 0: the role's | above 0 |
+| `large` | one cell | false: one cell | |
+| `engage_speed` | the role's speed | -1: the role's | 0 and above |
+| `engage_dodge` | the role's dodge | -1: the role's | 0..=95 |
+| `engage_crit_bonus` | the role's crit bonus | -1: the role's | 0..=95 |
+| `engage_rows` | the role's rows | the role's | three rows |
 
-`EngageRows` holds three `Row` elements, front, middle and rear, each an `Action` (STRIKE, CHARGE,
-STAB, SHOOT, SPELL, BOMBARD, HEAL, NONE) and its `iCount` (note: `iCount` here, `iActions` in the
-roles' `FrontRow`, `MiddleRow`, `RearRow`):
+`engage_rows` holds three rows, front, middle and rear, each an `action` (STRIKE, CHARGE, STAB,
+SHOOT, SPELL, BOMBARD, HEAL, NONE) and its `count` (note: `count` here, `actions` in the roles'
+`front_row`, `middle_row`, `rear_row`):
 
-```xml
-<EngageRows>
-    <Row><Action>SHOOT</Action><iCount>1</iCount></Row>
-    <Row><Action>STAB</Action><iCount>2</iCount></Row>
-    <Row><Action>NONE</Action><iCount>0</iCount></Row>
-</EngageRows>
+```jsonc
+"engage_rows": [{"action": "SHOOT", "count": 1}, {"action": "STAB", "count": 2}, {"action": "NONE"}],
 ```
 
 The rows' rules are the roles': a count above 0 exactly when the action is not NONE, and some row
@@ -178,7 +174,7 @@ BOMBARD deal `ENGAGEMENT_FOREST_RANGED_PERCENT` (50) % on both sides; hills: eve
 (spells too) deals `ENGAGEMENT_HILLS_ATTACKER_PERCENT` (75) %, the defender's SHOOT and BOMBARD
 `ENGAGEMENT_HILLS_DEFENDER_RANGED_PERCENT` (125) %. A city, a forest or jungle stop flanking.
 
-**Large units** (`bLarge` in `CIV4UnitInfos.xml`): the spec's Hill Giant, War Elephant and Elephant,
+**Large units** (`bLarge` in `units.jsonc`): the spec's Hill Giant, War Elephant and Elephant,
 the dragons (Abashi, Acheron, Drifa, Eurabatres), every golem (Bone, Clockwork, Flesh, Iron,
 Mithril, Mud, Nullstone, Wood) and the Treant, and of that size class the giant heroes Gurid,
 Margalard and Wilboman (a frost giant), Barnaxus (a golem), the War Machine, the Earth Elemental (a

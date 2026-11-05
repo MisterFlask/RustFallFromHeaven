@@ -21,7 +21,7 @@ Code: rules `crates/ffh-core/src/army/` (`mod.rs`: armies, garrisons, the sync, 
 supply, destinations; `requisition.rs`; `march.rs`; hooks: the production queue's train order and
 `city_push_order` in `city/turn.rs`, the player turn and its units' turn in `player/turn.rs`,
 `unit_convert` and `unit_kill` in `unit/lifecycle.rs`, `city_kill`, the controller's
-`requisition_unit`); tuning `data/xml/RulesDefines.xml` (`ARMY_*`); AI `crates/ffh-ai/src/armies.rs` (the main
+`requisition_unit`); tuning `data/json/rules_defines.jsonc` (`ARMY_*`); AI `crates/ffh-ai/src/armies.rs` (the main
 army's requisition, `requisition_unit`); UI `crates/ffh-play/src/view/armies.rs`, the unit panel's army
 actions (`view/units.rs`), the city query's `recruit` and its queue's `dest`,
 `assets/app/armies.js`. Tests: `crates/ffh-core/tests/armies.rs`, `crates/ffh-ai/src/armies.rs`;

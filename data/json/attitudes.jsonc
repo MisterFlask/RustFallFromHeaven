@@ -1,0 +1,12 @@
+// edited with XMLSPY v2004 rel. 2 U (http://www.xmlspy.com) by Alex Mantzaris (Firaxis Games)
+// Sid Meier's Civilization 4
+// Copyright Firaxis Games 2005
+//
+// Basic Infos
+[
+  {"type": "ATTITUDE_FURIOUS", "description": "TXT_KEY_ATTITUDE_FURIOUS"},
+  {"type": "ATTITUDE_ANNOYED", "description": "TXT_KEY_ATTITUDE_ANNOYED"},
+  {"type": "ATTITUDE_CAUTIOUS", "description": "TXT_KEY_ATTITUDE_CAUTIOUS"},
+  {"type": "ATTITUDE_PLEASED", "description": "TXT_KEY_ATTITUDE_PLEASED"},
+  {"type": "ATTITUDE_FRIENDLY", "description": "TXT_KEY_ATTITUDE_FRIENDLY"}
+]

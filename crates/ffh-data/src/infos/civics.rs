@@ -44,8 +44,8 @@ fn improvement_yield_changes(rd: &Rd, tag: &str) -> IdxVec<ImprovementType, [i32
     let mut out = IdxVec::from_elem([0; YieldType::NUM], n);
     if let Some(list) = rd.child(tag) {
         for entry in list.children() {
-            if let Some(imp) = entry.rf::<ImprovementType>("ImprovementType") {
-                out[imp] = entry.yields("ImprovementYields");
+            if let Some(imp) = entry.rf::<ImprovementType>("improvement_type") {
+                out[imp] = entry.yields("improvement_yields");
             }
         }
     }
@@ -56,7 +56,7 @@ fn improvement_yield_changes(rd: &Rd, tag: &str) -> IdxVec<ImprovementType, [i32
 // SpecialistInfo
 // ---------------------------------------------------------------------------
 
-/// C++ `CvSpecialistInfo` (Gameinfo/CIV4SpecialistInfos.xml)
+/// C++ `CvSpecialistInfo` (specialists.jsonc)
 #[derive(Debug, Clone, Default)]
 pub struct SpecialistInfo {
     pub base: InfoBase,
@@ -76,12 +76,12 @@ pub struct SpecialistInfo {
 pub fn read_specialist(rd: &Rd) -> SpecialistInfo {
     SpecialistInfo {
         base: InfoBase::read(rd),
-        great_people_unit_class: rd.rf("GreatPeopleUnitClass"),
-        great_people_rate_change: rd.int("iGreatPeopleRateChange"),
-        yield_change: rd.yields("Yields"),
-        commerce_change: rd.commerces("Commerces"),
-        experience: rd.int("iExperience"),
-        flavor_value: rd.pairs_int("Flavors", 0),
+        great_people_unit_class: rd.rf("great_people_unit_class"),
+        great_people_rate_change: rd.int("great_people_rate_change"),
+        yield_change: rd.yields("yields"),
+        commerce_change: rd.commerces("commerces"),
+        experience: rd.int("experience"),
+        flavor_value: rd.pairs_int("flavors", 0),
     }
 }
 
@@ -89,7 +89,7 @@ pub fn read_specialist(rd: &Rd) -> SpecialistInfo {
 // ReligionInfo
 // ---------------------------------------------------------------------------
 
-/// C++ `CvReligionInfo` (Gameinfo/CIV4ReligionInfo.xml)
+/// C++ `CvReligionInfo` (religions.jsonc)
 #[derive(Debug, Clone, Default)]
 pub struct ReligionInfo {
     pub base: InfoBase,
@@ -130,34 +130,34 @@ pub struct ReligionInfo {
 pub fn read_religion(rd: &Rd) -> ReligionInfo {
     ReligionInfo {
         base: InfoBase::read(rd),
-        tech_prereq: rd.rf("TechPrereq"),
-        free_unit_class: rd.rf("FreeUnitClass"),
-        num_free_units: rd.int("iFreeUnits"),
-        spread_factor: rd.int("iSpreadFactor"),
-        global_religion_commerce: rd.commerces("GlobalReligionCommerces"),
-        holy_city_commerce: rd.commerces("HolyCityCommerces"),
-        state_religion_commerce: rd.commerces("StateReligionCommerces"),
-        adjective_key: rd.string("Adjective"),
-        hidden: rd.bool("bHidden"),
-        sneak_attack: rd.bool("bSneakAttack"),
-        update_sight: rd.bool("bUpdateSight"),
-        global_counter_found: rd.int("iGlobalCounterFound"),
-        global_counter_spread: rd.int("iGlobalCounterSpread"),
-        alignment: rd.rf("Alignment"),
-        alignment_best: rd.rf("AlignmentBest"),
-        alignment_worst: rd.rf("AlignmentWorst"),
-        religion_hero1: rd.rf("ReligionHero1"),
-        religion_hero2: rd.rf("ReligionHero2"),
-        religion_tech1: rd.rf("ReligionTech1"),
-        religion_tech2: rd.rf("ReligionTech2"),
+        tech_prereq: rd.rf("tech_prereq"),
+        free_unit_class: rd.rf("free_unit_class"),
+        num_free_units: rd.int("free_units"),
+        spread_factor: rd.int("spread_factor"),
+        global_religion_commerce: rd.commerces("global_religion_commerces"),
+        holy_city_commerce: rd.commerces("holy_city_commerces"),
+        state_religion_commerce: rd.commerces("state_religion_commerces"),
+        adjective_key: rd.string("adjective"),
+        hidden: rd.bool("hidden"),
+        sneak_attack: rd.bool("sneak_attack"),
+        update_sight: rd.bool("update_sight"),
+        global_counter_found: rd.int("global_counter_found"),
+        global_counter_spread: rd.int("global_counter_spread"),
+        alignment: rd.rf("alignment"),
+        alignment_best: rd.rf("alignment_best"),
+        alignment_worst: rd.rf("alignment_worst"),
+        religion_hero1: rd.rf("religion_hero1"),
+        religion_hero2: rd.rf("religion_hero2"),
+        religion_tech1: rd.rf("religion_tech1"),
+        religion_tech2: rd.rf("religion_tech2"),
     }
 }
 
 // ---------------------------------------------------------------------------
-// CorporationInfo (FFH2 ships an empty CIV4CorporationInfo.xml)
+// CorporationInfo (FFH2 ships an empty corporations.jsonc)
 // ---------------------------------------------------------------------------
 
-/// C++ `CvCorporationInfo` (Gameinfo/CIV4CorporationInfo.xml)
+/// C++ `CvCorporationInfo` (corporations.jsonc)
 #[derive(Debug, Clone, Default)]
 pub struct CorporationInfo {
     pub base: InfoBase,
@@ -185,16 +185,16 @@ pub struct CorporationInfo {
 pub fn read_corporation(rd: &Rd) -> CorporationInfo {
     CorporationInfo {
         base: InfoBase::read(rd),
-        tech_prereq: rd.rf("TechPrereq"),
-        free_unit_class: rd.rf("FreeUnitClass"),
-        spread_factor: rd.int("iSpreadFactor"),
-        spread_cost: rd.int("iSpreadCost"),
-        maintenance: rd.int("iMaintenance"),
-        headquarter_commerce: rd.commerces("HeadquarterCommerces"),
-        commerce_produced: rd.commerces("CommercesProduced"),
-        yield_produced: rd.yields("YieldsProduced"),
-        prereq_bonus: rd.ref_list("PrereqBonuses"),
-        bonus_produced: rd.rf("BonusProduced"),
+        tech_prereq: rd.rf("tech_prereq"),
+        free_unit_class: rd.rf("free_unit_class"),
+        spread_factor: rd.int("spread_factor"),
+        spread_cost: rd.int("spread_cost"),
+        maintenance: rd.int("maintenance"),
+        headquarter_commerce: rd.commerces("headquarter_commerces"),
+        commerce_produced: rd.commerces("commerces_produced"),
+        yield_produced: rd.yields("yields_produced"),
+        prereq_bonus: rd.ref_list("prereq_bonuses"),
+        bonus_produced: rd.rf("bonus_produced"),
     }
 }
 
@@ -202,7 +202,7 @@ pub fn read_corporation(rd: &Rd) -> CorporationInfo {
 // CivicOptionInfo
 // ---------------------------------------------------------------------------
 
-/// C++ `CvCivicOptionInfo` (Gameinfo/CIV4CivicOptionInfos.xml)
+/// C++ `CvCivicOptionInfo` (civic_options.jsonc)
 #[derive(Debug, Clone, Default)]
 pub struct CivicOptionInfo {
     pub base: InfoBase,
@@ -212,14 +212,14 @@ pub struct CivicOptionInfo {
 
 /// C++ `CvCivicOptionInfo::read`.
 pub fn read_civic_option(rd: &Rd) -> CivicOptionInfo {
-    CivicOptionInfo { base: InfoBase::read(rd), trait_no_upkeep: rd.pairs_bool("TraitNoUpkeeps") }
+    CivicOptionInfo { base: InfoBase::read(rd), trait_no_upkeep: rd.pairs_bool("trait_no_upkeeps") }
 }
 
 // ---------------------------------------------------------------------------
 // CivicInfo
 // ---------------------------------------------------------------------------
 
-/// C++ `CvCivicInfo` (Gameinfo/CIV4CivicInfos.xml)
+/// C++ `CvCivicInfo` (civics.jsonc)
 #[derive(Debug, Clone, Default)]
 pub struct CivicInfo {
     pub base: InfoBase,
@@ -315,76 +315,76 @@ pub struct CivicInfo {
 pub fn read_civic(rd: &Rd) -> CivicInfo {
     CivicInfo {
         base: InfoBase::read(rd),
-        civic_option_type: rd.rf("CivicOptionType"),
-        tech_prereq: rd.rf("TechPrereq"),
-        anarchy_length: rd.int("iAnarchyLength"),
-        upkeep: rd.rf("Upkeep"),
-        ai_weight: rd.int("iAIWeight"),
-        great_people_rate_modifier: rd.int("iGreatPeopleRateModifier"),
-        great_general_rate_modifier: rd.int("iGreatGeneralRateModifier"),
-        domestic_great_general_rate_modifier: rd.int("iDomesticGreatGeneralRateModifier"),
-        state_religion_great_people_rate_modifier: rd.int("iStateReligionGreatPeopleRateModifier"),
-        distance_maintenance_modifier: rd.int("iDistanceMaintenanceModifier"),
-        num_cities_maintenance_modifier: rd.int("iNumCitiesMaintenanceModifier"),
-        corporation_maintenance_modifier: rd.int("iCorporationMaintenanceModifier"),
-        extra_health: rd.int("iExtraHealth"),
-        free_experience: rd.int("iFreeExperience"),
-        worker_speed_modifier: rd.int("iWorkerSpeedModifier"),
-        improvement_upgrade_rate_modifier: rd.int("iImprovementUpgradeRateModifier"),
-        military_production_modifier: rd.int("iMilitaryProductionModifier"),
-        base_free_units: rd.int("iBaseFreeUnits"),
-        base_free_military_units: rd.int("iBaseFreeMilitaryUnits"),
-        free_units_population_percent: rd.int("iFreeUnitsPopulationPercent"),
-        free_military_units_population_percent: rd.int("iFreeMilitaryUnitsPopulationPercent"),
-        gold_per_unit: rd.int("iGoldPerUnit"),
-        gold_per_military_unit: rd.int("iGoldPerMilitaryUnit"),
-        happy_per_military_unit: rd.int("iHappyPerMilitaryUnit"),
-        military_food_production: rd.bool("bMilitaryFoodProduction"),
-        max_conscript: rd.int("iMaxConscript"),
-        no_unhealthy_population: rd.bool("bNoUnhealthyPopulation"),
-        building_only_healthy: rd.bool("bBuildingOnlyHealthy"),
-        largest_city_happiness: rd.int("iLargestCityHappiness"),
-        war_weariness_modifier: rd.int("iWarWearinessModifier"),
-        free_specialist: rd.int("iFreeSpecialist"),
-        trade_routes: rd.int("iTradeRoutes"),
-        no_foreign_trade: rd.bool("bNoForeignTrade"),
-        no_corporations: rd.bool("bNoCorporations"),
-        no_foreign_corporations: rd.bool("bNoForeignCorporations"),
-        civic_percent_anger: rd.int("iCivicPercentAnger"),
-        state_religion: rd.bool("bStateReligion"),
-        no_non_state_religion_spread: rd.bool("bNoNonStateReligionSpread"),
-        state_religion_happiness: rd.int("iStateReligionHappiness"),
-        non_state_religion_happiness: rd.int("iNonStateReligionHappiness"),
-        state_religion_unit_production_modifier: rd.int("iStateReligionUnitProductionModifier"),
-        state_religion_building_production_modifier: rd.int("iStateReligionBuildingProductionModifier"),
-        state_religion_free_experience: rd.int("iStateReligionFreeExperience"),
-        exp_in_border_modifier: rd.int("iExpInBorderModifier"),
-        yield_modifier: rd.yields("YieldModifiers"),
-        capital_yield_modifier: rd.yields("CapitalYieldModifiers"),
-        trade_yield_modifier: rd.yields("TradeYieldModifiers"),
-        commerce_modifier: rd.commerces("CommerceModifiers"),
-        capital_commerce_modifier: rd.commerces("CapitalCommerceModifiers"),
-        specialist_extra_commerce: rd.commerces("SpecialistExtraCommerces"),
-        hurry: rd.pairs_bool("Hurrys"),
-        special_building_not_required: rd.pairs_bool("SpecialBuildingNotRequireds"),
-        specialist_valid: rd.pairs_bool("SpecialistValids"),
-        building_happiness_changes: rd.pairs_int("BuildingHappinessChanges", 0),
-        building_health_changes: rd.pairs_int("BuildingHealthChanges", 0),
-        feature_happiness_changes: rd.pairs_int("FeatureHappinessChanges", 0),
-        improvement_yield_changes: improvement_yield_changes(rd, "ImprovementYieldChanges"),
-        we_love_the_king: rd.string("WeLoveTheKing"),
-        hidden: rd.bool("bHidden"),
-        no_diplomacy_with_enemies: rd.bool("bNoDiplomacyWithEnemies"),
-        prereq_war: rd.bool("bPrereqWar"),
-        attitude_share_mod: rd.int("iAttitudeShareMod"),
-        coastal_trade_routes: rd.int("iCoastalTradeRoutes"),
-        enslavement_chance: rd.int("iEnslavementChance"),
-        food_consumption_per_population: rd.int("iFoodConsumptionPerPopulation"),
-        block_alignment: rd.rf("BlockAlignment"),
-        prereq_alignment: rd.rf("PrereqAlignment"),
+        civic_option_type: rd.rf("civic_option_type"),
+        tech_prereq: rd.rf("tech_prereq"),
+        anarchy_length: rd.int("anarchy_length"),
+        upkeep: rd.rf("upkeep"),
+        ai_weight: rd.int("ai_weight"),
+        great_people_rate_modifier: rd.int("great_people_rate_modifier"),
+        great_general_rate_modifier: rd.int("great_general_rate_modifier"),
+        domestic_great_general_rate_modifier: rd.int("domestic_great_general_rate_modifier"),
+        state_religion_great_people_rate_modifier: rd.int("state_religion_great_people_rate_modifier"),
+        distance_maintenance_modifier: rd.int("distance_maintenance_modifier"),
+        num_cities_maintenance_modifier: rd.int("num_cities_maintenance_modifier"),
+        corporation_maintenance_modifier: rd.int("corporation_maintenance_modifier"),
+        extra_health: rd.int("extra_health"),
+        free_experience: rd.int("free_experience"),
+        worker_speed_modifier: rd.int("worker_speed_modifier"),
+        improvement_upgrade_rate_modifier: rd.int("improvement_upgrade_rate_modifier"),
+        military_production_modifier: rd.int("military_production_modifier"),
+        base_free_units: rd.int("base_free_units"),
+        base_free_military_units: rd.int("base_free_military_units"),
+        free_units_population_percent: rd.int("free_units_population_percent"),
+        free_military_units_population_percent: rd.int("free_military_units_population_percent"),
+        gold_per_unit: rd.int("gold_per_unit"),
+        gold_per_military_unit: rd.int("gold_per_military_unit"),
+        happy_per_military_unit: rd.int("happy_per_military_unit"),
+        military_food_production: rd.bool("military_food_production"),
+        max_conscript: rd.int("max_conscript"),
+        no_unhealthy_population: rd.bool("no_unhealthy_population"),
+        building_only_healthy: rd.bool("building_only_healthy"),
+        largest_city_happiness: rd.int("largest_city_happiness"),
+        war_weariness_modifier: rd.int("war_weariness_modifier"),
+        free_specialist: rd.int("free_specialist"),
+        trade_routes: rd.int("trade_routes"),
+        no_foreign_trade: rd.bool("no_foreign_trade"),
+        no_corporations: rd.bool("no_corporations"),
+        no_foreign_corporations: rd.bool("no_foreign_corporations"),
+        civic_percent_anger: rd.int("civic_percent_anger"),
+        state_religion: rd.bool("state_religion"),
+        no_non_state_religion_spread: rd.bool("no_non_state_religion_spread"),
+        state_religion_happiness: rd.int("state_religion_happiness"),
+        non_state_religion_happiness: rd.int("non_state_religion_happiness"),
+        state_religion_unit_production_modifier: rd.int("state_religion_unit_production_modifier"),
+        state_religion_building_production_modifier: rd.int("state_religion_building_production_modifier"),
+        state_religion_free_experience: rd.int("state_religion_free_experience"),
+        exp_in_border_modifier: rd.int("exp_in_border_modifier"),
+        yield_modifier: rd.yields("yield_modifiers"),
+        capital_yield_modifier: rd.yields("capital_yield_modifiers"),
+        trade_yield_modifier: rd.yields("trade_yield_modifiers"),
+        commerce_modifier: rd.commerces("commerce_modifiers"),
+        capital_commerce_modifier: rd.commerces("capital_commerce_modifiers"),
+        specialist_extra_commerce: rd.commerces("specialist_extra_commerces"),
+        hurry: rd.pairs_bool("hurrys"),
+        special_building_not_required: rd.pairs_bool("special_building_not_requireds"),
+        specialist_valid: rd.pairs_bool("specialist_valids"),
+        building_happiness_changes: rd.pairs_int("building_happiness_changes", 0),
+        building_health_changes: rd.pairs_int("building_health_changes", 0),
+        feature_happiness_changes: rd.pairs_int("feature_happiness_changes", 0),
+        improvement_yield_changes: improvement_yield_changes(rd, "improvement_yield_changes"),
+        we_love_the_king: rd.string("we_love_the_king"),
+        hidden: rd.bool("hidden"),
+        no_diplomacy_with_enemies: rd.bool("no_diplomacy_with_enemies"),
+        prereq_war: rd.bool("prereq_war"),
+        attitude_share_mod: rd.int("attitude_share_mod"),
+        coastal_trade_routes: rd.int("coastal_trade_routes"),
+        enslavement_chance: rd.int("enslavement_chance"),
+        food_consumption_per_population: rd.int("food_consumption_per_population"),
+        block_alignment: rd.rf("block_alignment"),
+        prereq_alignment: rd.rf("prereq_alignment"),
         // readPass3 in C++ (civilizations load after civics)
-        prereq_civilization: rd.rf("PrereqCivilization"),
-        prereq_religion: rd.rf("PrereqReligion"),
+        prereq_civilization: rd.rf("prereq_civilization"),
+        prereq_religion: rd.rf("prereq_religion"),
     }
 }
 
@@ -392,7 +392,7 @@ pub fn read_civic(rd: &Rd) -> CivicInfo {
 // VoteInfo
 // ---------------------------------------------------------------------------
 
-/// C++ `CvVoteInfo` (Gameinfo/CIV4VoteInfo.xml)
+/// C++ `CvVoteInfo` (votes.jsonc)
 #[derive(Debug, Clone, Default)]
 pub struct VoteInfo {
     pub base: InfoBase,
@@ -435,34 +435,34 @@ pub struct VoteInfo {
 pub fn read_vote(rd: &Rd) -> VoteInfo {
     VoteInfo {
         base: InfoBase::read(rd),
-        population_threshold: rd.int("iPopulationThreshold"),
-        state_religion_vote_percent: rd.int("iStateReligionVotePercent"),
-        trade_routes: rd.int("iTradeRoutes"),
-        min_voters: rd.int("iMinVoters"),
-        secretary_general: rd.bool("bSecretaryGeneral"),
-        victory: rd.bool("bVictory"),
-        free_trade: rd.bool("bFreeTrade"),
-        no_nukes: rd.bool("bNoNukes"),
-        city_voting: rd.bool("bCityVoting"),
-        civ_voting: rd.bool("bCivVoting"),
-        defensive_pact: rd.bool("bDefensivePact"),
-        open_borders: rd.bool("bOpenBorders"),
-        force_peace: rd.bool("bForcePeace"),
-        force_no_trade: rd.bool("bForceNoTrade"),
-        force_war: rd.bool("bForceWar"),
-        assign_city: rd.bool("bAssignCity"),
-        force_civic: rd.pairs_bool("ForceCivics"),
-        vote_source_type: rd.pairs_bool("DiploVotes"),
-        gambling_ring: rd.bool("bGamblingRing"),
-        no_outside_tech_trades: rd.bool("bNoOutsideTechTrades"),
-        slave_trade: rd.bool("bSlaveTrade"),
-        smuggling_ring: rd.bool("bSmugglingRing"),
-        cost: rd.int("iCost"),
-        crime: rd.int("iCrime"),
-        free_units: rd.int("iFreeUnits"),
-        free_unit_class: rd.rf("FreeUnitClass"),
-        no_bonus: rd.rf("NoBonus"),
-        py_result: rd.string("PyResult"),
+        population_threshold: rd.int("population_threshold"),
+        state_religion_vote_percent: rd.int("state_religion_vote_percent"),
+        trade_routes: rd.int("trade_routes"),
+        min_voters: rd.int("min_voters"),
+        secretary_general: rd.bool("secretary_general"),
+        victory: rd.bool("victory"),
+        free_trade: rd.bool("free_trade"),
+        no_nukes: rd.bool("no_nukes"),
+        city_voting: rd.bool("city_voting"),
+        civ_voting: rd.bool("civ_voting"),
+        defensive_pact: rd.bool("defensive_pact"),
+        open_borders: rd.bool("open_borders"),
+        force_peace: rd.bool("force_peace"),
+        force_no_trade: rd.bool("force_no_trade"),
+        force_war: rd.bool("force_war"),
+        assign_city: rd.bool("assign_city"),
+        force_civic: rd.pairs_bool("force_civics"),
+        vote_source_type: rd.pairs_bool("diplo_votes"),
+        gambling_ring: rd.bool("gambling_ring"),
+        no_outside_tech_trades: rd.bool("no_outside_tech_trades"),
+        slave_trade: rd.bool("slave_trade"),
+        smuggling_ring: rd.bool("smuggling_ring"),
+        cost: rd.int("cost"),
+        crime: rd.int("crime"),
+        free_units: rd.int("free_units"),
+        free_unit_class: rd.rf("free_unit_class"),
+        no_bonus: rd.rf("no_bonus"),
+        py_result: rd.string("py_result"),
     }
 }
 
@@ -470,7 +470,7 @@ pub fn read_vote(rd: &Rd) -> VoteInfo {
 // VoteSourceInfo
 // ---------------------------------------------------------------------------
 
-/// C++ `CvVoteSourceInfo` (Gameinfo/CIV4VoteSourceInfos.xml)
+/// C++ `CvVoteSourceInfo` (vote_sources.jsonc)
 #[derive(Debug, Clone, Default)]
 pub struct VoteSourceInfo {
     pub base: InfoBase,
@@ -488,15 +488,15 @@ pub fn read_vote_source(rd: &Rd) -> VoteSourceInfo {
     // C++ quirk: ReligionYields is read with SetCommerce, which allocates
     // NUM_COMMERCE_TYPES (4) slots; getReligionYield() only ever reads the first
     // NUM_YIELD_TYPES (3), so a 4th XML value is accepted silently and ignored.
-    let ry = rd.positional_ints("ReligionYields", CommerceType::NUM);
+    let ry = rd.positional_ints("religion_yields", CommerceType::NUM);
     VoteSourceInfo {
         base: InfoBase::read(rd),
-        vote_interval: rd.int("iVoteInterval"),
-        free_specialist: rd.rf("FreeSpecialist"),
+        vote_interval: rd.int("vote_interval"),
+        free_specialist: rd.rf("free_specialist"),
         // readPass3 in C++ (civics load after vote sources)
-        civic: rd.rf("Civic"),
+        civic: rd.rf("civic"),
         religion_yield: std::array::from_fn(|i| ry[i]),
-        religion_commerce: rd.commerces("ReligionCommerces"),
+        religion_commerce: rd.commerces("religion_commerces"),
     }
 }
 
@@ -504,7 +504,7 @@ pub fn read_vote_source(rd: &Rd) -> VoteSourceInfo {
 // EspionageMissionInfo
 // ---------------------------------------------------------------------------
 
-/// C++ `CvEspionageMissionInfo` (Gameinfo/CIV4EspionageMissionInfo.xml)
+/// C++ `CvEspionageMissionInfo` (espionage_missions.jsonc)
 ///
 /// The C++ constructor leaves every member uninitialized; `read()` assigns all of
 /// them (0/false when absent, -1 for `TechPrereq`).
@@ -550,37 +550,37 @@ pub struct EspionageMissionInfo {
 pub fn read_espionage_mission(rd: &Rd) -> EspionageMissionInfo {
     EspionageMissionInfo {
         base: InfoBase::read(rd),
-        cost: rd.int("iCost"),
-        passive: rd.bool("bIsPassive"),
-        two_phases: rd.bool("bIsTwoPhases"),
-        targets_city: rd.bool("bTargetsCity"),
-        select_plot: rd.bool("bSelectPlot"),
-        tech_prereq: rd.rf("TechPrereq"),
-        visibility_level: rd.int("iVisibilityLevel"),
-        investigate_city: rd.bool("bInvestigateCity"),
-        see_demographics: rd.bool("bSeeDemographics"),
-        no_active_missions: rd.bool("bNoActiveMissions"),
-        see_research: rd.bool("bSeeResearch"),
-        destroy_improvement: rd.bool("bDestroyImprovement"),
-        destroy_building_cost_factor: rd.int("iDestroyBuildingCostFactor"),
-        destroy_unit_cost_factor: rd.int("iDestroyUnitCostFactor"),
-        destroy_project_cost_factor: rd.int("iDestroyProjectCostFactor"),
-        destroy_production_cost_factor: rd.int("iDestroyProductionCostFactor"),
-        buy_unit_cost_factor: rd.int("iBuyUnitCostFactor"),
-        buy_city_cost_factor: rd.int("iBuyCityCostFactor"),
-        steal_treasury_types: rd.int("iStealTreasuryTypes"),
-        city_insert_culture_amount_factor: rd.int("iCityInsertCultureAmountFactor"),
-        city_insert_culture_cost_factor: rd.int("iCityInsertCultureCostFactor"),
-        city_poison_water_counter: rd.int("iCityPoisonWaterCounter"),
-        city_unhappiness_counter: rd.int("iCityUnhappinessCounter"),
-        city_revolt_counter: rd.int("iCityRevoltCounter"),
-        buy_tech_cost_factor: rd.int("iBuyTechCostFactor"),
-        switch_civic_cost_factor: rd.int("iSwitchCivicCostFactor"),
-        switch_religion_cost_factor: rd.int("iSwitchReligionCostFactor"),
-        player_anarchy_counter: rd.int("iPlayerAnarchyCounter"),
-        counterespionage_num_turns: rd.int("iCounterespionageNumTurns"),
-        counterespionage_mod: rd.int("iCounterespionageMod"),
-        difficulty_mod: rd.int("iDifficultyMod"),
+        cost: rd.int("cost"),
+        passive: rd.bool("is_passive"),
+        two_phases: rd.bool("is_two_phases"),
+        targets_city: rd.bool("targets_city"),
+        select_plot: rd.bool("select_plot"),
+        tech_prereq: rd.rf("tech_prereq"),
+        visibility_level: rd.int("visibility_level"),
+        investigate_city: rd.bool("investigate_city"),
+        see_demographics: rd.bool("see_demographics"),
+        no_active_missions: rd.bool("no_active_missions"),
+        see_research: rd.bool("see_research"),
+        destroy_improvement: rd.bool("destroy_improvement"),
+        destroy_building_cost_factor: rd.int("destroy_building_cost_factor"),
+        destroy_unit_cost_factor: rd.int("destroy_unit_cost_factor"),
+        destroy_project_cost_factor: rd.int("destroy_project_cost_factor"),
+        destroy_production_cost_factor: rd.int("destroy_production_cost_factor"),
+        buy_unit_cost_factor: rd.int("buy_unit_cost_factor"),
+        buy_city_cost_factor: rd.int("buy_city_cost_factor"),
+        steal_treasury_types: rd.int("steal_treasury_types"),
+        city_insert_culture_amount_factor: rd.int("city_insert_culture_amount_factor"),
+        city_insert_culture_cost_factor: rd.int("city_insert_culture_cost_factor"),
+        city_poison_water_counter: rd.int("city_poison_water_counter"),
+        city_unhappiness_counter: rd.int("city_unhappiness_counter"),
+        city_revolt_counter: rd.int("city_revolt_counter"),
+        buy_tech_cost_factor: rd.int("buy_tech_cost_factor"),
+        switch_civic_cost_factor: rd.int("switch_civic_cost_factor"),
+        switch_religion_cost_factor: rd.int("switch_religion_cost_factor"),
+        player_anarchy_counter: rd.int("player_anarchy_counter"),
+        counterespionage_num_turns: rd.int("counterespionage_num_turns"),
+        counterespionage_mod: rd.int("counterespionage_mod"),
+        difficulty_mod: rd.int("difficulty_mod"),
     }
 }
 
@@ -588,7 +588,7 @@ pub fn read_espionage_mission(rd: &Rd) -> EspionageMissionInfo {
 // ProjectInfo
 // ---------------------------------------------------------------------------
 
-/// C++ `CvProjectInfo` (Gameinfo/CIV4ProjectInfo.xml)
+/// C++ `CvProjectInfo` (projects.jsonc)
 #[derive(Debug, Clone, Default)]
 pub struct ProjectInfo {
     pub base: InfoBase,
@@ -631,36 +631,36 @@ pub struct ProjectInfo {
 /// C++ `CvProjectInfo::read` + `readPass2` (`PrereqProjects`, `AnyonePrereqProject`)
 /// + `readPass3` (`PrereqCivilization`).
 pub fn read_project(rd: &Rd) -> ProjectInfo {
-    let victory_threshold = rd.pairs_int::<VictoryType>("VictoryThresholds", 0);
-    let min_raw = rd.pairs_int::<VictoryType>("VictoryMinThresholds", 0);
+    let victory_threshold = rd.pairs_int::<VictoryType>("victory_thresholds", 0);
+    let min_raw = rd.pairs_int::<VictoryType>("victory_min_thresholds", 0);
     // getVictoryMinThreshold() falls back to getVictoryThreshold() for 0 entries.
     let victory_min_threshold =
         IdxVec::from_fn(min_raw.len(), |v| if min_raw[v] != 0 { min_raw[v] } else { victory_threshold[v] });
     ProjectInfo {
         base: InfoBase::read(rd),
-        victory_prereq: rd.rf("VictoryPrereq"),
-        tech_prereq: rd.rf("TechPrereq"),
-        max_global_instances: rd.int("iMaxGlobalInstances"),
-        max_team_instances: rd.int("iMaxTeamInstances"),
-        production_cost: rd.int("iCost"),
-        nuke_interception: rd.int("iNukeInterception"),
-        tech_share: rd.int("iTechShare"),
-        everyone_special_unit: rd.rf("EveryoneSpecialUnit"),
-        everyone_special_building: rd.rf("EveryoneSpecialBuilding"),
-        spaceship: rd.bool("bSpaceship"),
-        allows_nukes: rd.bool("bAllowsNukes"),
-        bonus_production_modifier: rd.pairs_int("BonusProductionModifiers", 0),
+        victory_prereq: rd.rf("victory_prereq"),
+        tech_prereq: rd.rf("tech_prereq"),
+        max_global_instances: rd.int("max_global_instances"),
+        max_team_instances: rd.int("max_team_instances"),
+        production_cost: rd.int("cost"),
+        nuke_interception: rd.int("nuke_interception"),
+        tech_share: rd.int("tech_share"),
+        everyone_special_unit: rd.rf("everyone_special_unit"),
+        everyone_special_building: rd.rf("everyone_special_building"),
+        spaceship: rd.bool("spaceship"),
+        allows_nukes: rd.bool("allows_nukes"),
+        bonus_production_modifier: rd.pairs_int("bonus_production_modifiers", 0),
         victory_threshold,
         victory_min_threshold,
-        victory_delay_percent: rd.int("iVictoryDelayPercent"),
-        success_rate: rd.int("iSuccessRate"),
-        ai_weight: rd.int("iAIWeight"),
-        modify_global_counter: rd.int("iModifyGlobalCounter"),
-        prereq_civilization: rd.rf("PrereqCivilization"),
-        prereq_global_counter: rd.int("iPrereqGlobalCounter"),
+        victory_delay_percent: rd.int("victory_delay_percent"),
+        success_rate: rd.int("success_rate"),
+        ai_weight: rd.int("ai_weight"),
+        modify_global_counter: rd.int("modify_global_counter"),
+        prereq_civilization: rd.rf("prereq_civilization"),
+        prereq_global_counter: rd.int("prereq_global_counter"),
         // readPass2 in C++ (references other projects)
-        projects_needed: rd.pairs_int("PrereqProjects", 0),
-        anyone_project_prereq: rd.rf("AnyonePrereqProject"),
+        projects_needed: rd.pairs_int("prereq_projects", 0),
+        anyone_project_prereq: rd.rf("anyone_prereq_project"),
     }
 }
 
@@ -668,7 +668,7 @@ pub fn read_project(rd: &Rd) -> ProjectInfo {
 // TechInfo
 // ---------------------------------------------------------------------------
 
-/// C++ `CvTechInfo` (Technologies/CIV4TechInfos.xml)
+/// C++ `CvTechInfo` (techs.jsonc)
 #[derive(Debug, Clone, Default)]
 pub struct TechInfo {
     pub base: InfoBase,
@@ -744,63 +744,62 @@ pub struct TechInfo {
 pub fn read_tech(rd: &Rd) -> TechInfo {
     TechInfo {
         base: InfoBase::read(rd),
-        advisor_type: rd.string("Advisor"),
-        ai_weight: rd.int("iAIWeight"),
-        ai_trade_modifier: rd.int("iAITradeModifier"),
-        research_cost: rd.int("iCost"),
-        advanced_start_cost: rd.int("iAdvancedStartCost"),
-        advanced_start_cost_increase: rd.int("iAdvancedStartCostIncrease"),
-        era: rd.rf("Era"),
-        first_free_unit_class: rd.rf("FirstFreeUnitClass"),
-        feature_production_modifier: rd.int("iFeatureProductionModifier"),
-        worker_speed_modifier: rd.int("iWorkerSpeedModifier"),
-        trade_routes: rd.int("iTradeRoutes"),
-        health: rd.int("iHealth"),
-        happiness: rd.int("iHappiness"),
-        first_free_techs: rd.int("iFirstFreeTechs"),
-        asset_value: rd.int("iAsset"),
-        power_value: rd.int("iPower"),
-        repeat: rd.bool("bRepeat"),
-        trade: rd.bool("bTrade"),
-        disable: rd.bool("bDisable"),
-        goody_tech: rd.bool("bGoodyTech"),
-        extra_water_see_from: rd.bool("bExtraWaterSeeFrom"),
-        map_centering: rd.bool("bMapCentering"),
-        map_visible: rd.bool("bMapVisible"),
-        map_trading: rd.bool("bMapTrading"),
-        tech_trading: rd.bool("bTechTrading"),
-        gold_trading: rd.bool("bGoldTrading"),
-        open_borders_trading: rd.bool("bOpenBordersTrading"),
-        defensive_pact_trading: rd.bool("bDefensivePactTrading"),
-        permanent_alliance_trading: rd.bool("bPermanentAllianceTrading"),
-        vassal_state_trading: rd.bool("bVassalTrading"),
-        bridge_building: rd.bool("bBridgeBuilding"),
-        irrigation: rd.bool("bIrrigation"),
-        ignore_irrigation: rd.bool("bIgnoreIrrigation"),
-        water_work: rd.bool("bWaterWork"),
-        river_trade: rd.bool("bRiverTrade"),
-        commerce_flexible: commerce_flags(rd, "CommerceFlexible"),
-        domain_extra_moves: rd.pairs_int("DomainExtraMoves", 0),
-        terrain_trade: rd.pairs_bool("TerrainTrades"),
-        flavor_value: rd.pairs_int("Flavors", 0),
-        water: rd.bool("bWater"),
-        preferred_alignment: rd.rf("PreferredAlignment"),
+        advisor_type: rd.string("advisor"),
+        ai_weight: rd.int("ai_weight"),
+        ai_trade_modifier: rd.int("ai_trade_modifier"),
+        research_cost: rd.int("cost"),
+        advanced_start_cost: rd.int("advanced_start_cost"),
+        advanced_start_cost_increase: rd.int("advanced_start_cost_increase"),
+        era: rd.rf("era"),
+        first_free_unit_class: rd.rf("first_free_unit_class"),
+        feature_production_modifier: rd.int("feature_production_modifier"),
+        worker_speed_modifier: rd.int("worker_speed_modifier"),
+        trade_routes: rd.int("trade_routes"),
+        health: rd.int("health"),
+        happiness: rd.int("happiness"),
+        first_free_techs: rd.int("first_free_techs"),
+        asset_value: rd.int("asset"),
+        power_value: rd.int("power"),
+        repeat: rd.bool("repeat"),
+        trade: rd.bool("trade"),
+        disable: rd.bool("disable"),
+        goody_tech: rd.bool("goody_tech"),
+        extra_water_see_from: rd.bool("extra_water_see_from"),
+        map_centering: rd.bool("map_centering"),
+        map_visible: rd.bool("map_visible"),
+        map_trading: rd.bool("map_trading"),
+        tech_trading: rd.bool("tech_trading"),
+        gold_trading: rd.bool("gold_trading"),
+        open_borders_trading: rd.bool("open_borders_trading"),
+        defensive_pact_trading: rd.bool("defensive_pact_trading"),
+        permanent_alliance_trading: rd.bool("permanent_alliance_trading"),
+        vassal_state_trading: rd.bool("vassal_trading"),
+        bridge_building: rd.bool("bridge_building"),
+        irrigation: rd.bool("irrigation"),
+        ignore_irrigation: rd.bool("ignore_irrigation"),
+        water_work: rd.bool("water_work"),
+        river_trade: rd.bool("river_trade"),
+        commerce_flexible: commerce_flags(rd, "commerce_flexible"),
+        domain_extra_moves: rd.pairs_int("domain_extra_moves", 0),
+        terrain_trade: rd.pairs_bool("terrain_trades"),
+        flavor_value: rd.pairs_int("flavors", 0),
+        water: rd.bool("water"),
+        preferred_alignment: rd.rf("preferred_alignment"),
         // readPass3 in C++ (religions load after techs)
-        prereq_religion: rd.rf("PrereqReligion"),
+        prereq_religion: rd.rf("prereq_religion"),
         // readPass2 in C++ (references other techs)
-        prereq_or_techs: rd.ref_list("OrPreReqs"),
-        prereq_and_techs: rd.ref_list("AndPreReqs"),
+        prereq_or_techs: rd.ref_list("or_pre_reqs"),
+        prereq_and_techs: rd.ref_list("and_pre_reqs"),
     }
 }
 
 #[cfg(test)]
 mod tests {
-    //! Synthetic-XML checks of read paths the shipped data does not exercise.
+    //! Synthetic-JSON checks of read paths the shipped data does not exercise.
 
     use super::*;
     use crate::idx::Idx;
     use crate::registry::{Ctx, Registry};
-    use crate::xml::XmlDoc;
 
     fn registry() -> Registry {
         let mut reg = Registry::new();
@@ -814,18 +813,18 @@ mod tests {
         reg
     }
 
-    /// Runs `read` on one entry element and returns the info plus load warnings.
-    fn read_with<T>(xml: &str, read: fn(&Rd) -> T) -> (T, Vec<String>) {
+    /// Runs `read` on one entry object and returns the info plus load warnings.
+    fn read_with<T>(json: &str, read: fn(&Rd) -> T) -> (T, Vec<String>) {
         let reg = registry();
-        let doc = XmlDoc::parse(xml).expect("test xml parses");
-        let cx = Ctx::new(&reg, "test.xml");
-        let info = read(&Rd::new(doc.root(), &cx));
+        let value = crate::jsonc::parse(json).expect("test json parses");
+        let cx = Ctx::new(&reg, "test.jsonc");
+        let info = read(&Rd::new(&value, &cx));
         (info, cx.warnings.into_inner())
     }
 
     #[test]
     fn absent_tags_take_cpp_defaults() {
-        let (t, w) = read_with("<TechInfo><Type>TECH_C</Type></TechInfo>", read_tech);
+        let (t, w) = read_with(r#"{"type": "TECH_C"}"#, read_tech);
         assert!(w.is_empty(), "{w:?}");
         assert_eq!(t.base.type_, "TECH_C");
         assert_eq!((t.research_cost, t.ai_weight, t.era, t.prereq_religion), (0, 0, None, None));
@@ -834,7 +833,7 @@ mod tests {
         assert_eq!(t.flavor_value.raw, vec![0, 0]);
         assert_eq!(t.advisor_type, "");
 
-        let (p, w) = read_with("<ProjectInfo><Type>PROJECT_P</Type></ProjectInfo>", read_project);
+        let (p, w) = read_with(r#"{"type": "PROJECT_P"}"#, read_project);
         assert!(w.is_empty(), "{w:?}");
         // No explicit GetChildXmlValByName default: absent means 0, not -1 (unlimited).
         assert_eq!((p.max_global_instances, p.max_team_instances), (0, 0));
@@ -843,13 +842,14 @@ mod tests {
 
     #[test]
     fn tech_prereq_lists_keep_order_and_skip_none() {
-        let xml = "<TechInfo><Type>TECH_C</Type>
-            <OrPreReqs><PrereqTech>TECH_B</PrereqTech><PrereqTech>NONE</PrereqTech><PrereqTech>TECH_A</PrereqTech></OrPreReqs>
-            <AndPreReqs><PrereqTech>TECH_A</PrereqTech></AndPreReqs>
-            <CommerceFlexible><bFlexible>0</bFlexible><bFlexible>1</bFlexible></CommerceFlexible>
-            <Flavors><Flavor><FlavorType>FLAVOR_SCIENCE</FlavorType><iFlavor>7</iFlavor></Flavor></Flavors>
-        </TechInfo>";
-        let (t, w) = read_with(xml, read_tech);
+        let json = r#"{
+            "type": "TECH_C",
+            "or_pre_reqs": ["TECH_B", "NONE", "TECH_A"],
+            "and_pre_reqs": ["TECH_A"],
+            "commerce_flexible": [false, true],
+            "flavors": {"FLAVOR_SCIENCE": 7}
+        }"#;
+        let (t, w) = read_with(json, read_tech);
         assert!(w.is_empty(), "{w:?}");
         assert_eq!(t.prereq_or_techs, vec![TechType(1), TechType(0)]);
         assert_eq!(t.prereq_and_techs, vec![TechType(0)]);
@@ -859,16 +859,12 @@ mod tests {
 
     #[test]
     fn victory_min_threshold_falls_back_to_threshold() {
-        let xml = "<ProjectInfo><Type>PROJECT_P</Type>
-            <VictoryThresholds>
-                <VictoryThreshold><VictoryType>VICTORY_X</VictoryType><iThreshold>10</iThreshold></VictoryThreshold>
-                <VictoryThreshold><VictoryType>VICTORY_Y</VictoryType><iThreshold>20</iThreshold></VictoryThreshold>
-            </VictoryThresholds>
-            <VictoryMinThresholds>
-                <VictoryMinThreshold><VictoryType>VICTORY_Y</VictoryType><iThreshold>5</iThreshold></VictoryMinThreshold>
-            </VictoryMinThresholds>
-        </ProjectInfo>";
-        let (p, w) = read_with(xml, read_project);
+        let json = r#"{
+            "type": "PROJECT_P",
+            "victory_thresholds": {"VICTORY_X": 10, "VICTORY_Y": 20},
+            "victory_min_thresholds": {"VICTORY_Y": 5}
+        }"#;
+        let (p, w) = read_with(json, read_project);
         assert!(w.is_empty(), "{w:?}");
         assert_eq!(p.victory_threshold.raw, vec![10, 20, 0]);
         // getVictoryMinThreshold(i): the min entry if non-zero, else getVictoryThreshold(i)
@@ -878,11 +874,12 @@ mod tests {
     #[test]
     fn vote_source_religion_yields_use_commerce_reader() {
         // Four values: SetCommerce accepts them silently; only three yields are kept.
-        let xml = "<VoteSourceInfo><Type>DIPLOVOTE_T</Type>
-            <ReligionYields><iYield>1</iYield><iYield>2</iYield><iYield>3</iYield><iYield>4</iYield></ReligionYields>
-            <ReligionCommerces><iCommerce>5</iCommerce></ReligionCommerces>
-        </VoteSourceInfo>";
-        let (v, w) = read_with(xml, read_vote_source);
+        let json = r#"{
+            "type": "DIPLOVOTE_T",
+            "religion_yields": [1, 2, 3, 4],
+            "religion_commerces": [5]
+        }"#;
+        let (v, w) = read_with(json, read_vote_source);
         assert!(w.is_empty(), "{w:?}");
         assert_eq!(v.religion_yield, [1, 2, 3]);
         assert_eq!(v.religion_commerce, [5, 0, 0, 0]);
@@ -891,32 +888,22 @@ mod tests {
 
     #[test]
     fn civic_improvement_yield_changes() {
-        let xml = "<CivicInfo><Type>CIVIC_T</Type>
-            <ImprovementYieldChanges>
-                <ImprovementYieldChange>
-                    <ImprovementType>IMPROVEMENT_MINE</ImprovementType>
-                    <ImprovementYields><iYield>0</iYield><iYield>2</iYield></ImprovementYields>
-                </ImprovementYieldChange>
-                <ImprovementYieldChange>
-                    <ImprovementType>NONE</ImprovementType>
-                    <ImprovementYields><iYield>9</iYield></ImprovementYields>
-                </ImprovementYieldChange>
-                <ImprovementYieldChange>
-                    <ImprovementType>IMPROVEMENT_QUARRY</ImprovementType>
-                    <ImprovementYields><iYield>4</iYield></ImprovementYields>
-                </ImprovementYieldChange>
-                <ImprovementYieldChange>
-                    <ImprovementType>IMPROVEMENT_QUARRY</ImprovementType>
-                </ImprovementYieldChange>
-            </ImprovementYieldChanges>
-        </CivicInfo>";
-        let (c, w) = read_with(xml, read_civic);
+        let json = r#"{
+            "type": "CIVIC_T",
+            "improvement_yield_changes": [
+                {"improvement_type": "IMPROVEMENT_MINE", "improvement_yields": [0, 2]},
+                {"improvement_type": "NONE", "improvement_yields": [9]},
+                {"improvement_type": "IMPROVEMENT_QUARRY", "improvement_yields": [4]},
+                {"improvement_type": "IMPROVEMENT_QUARRY"}
+            ]
+        }"#;
+        let (c, w) = read_with(json, read_civic);
         assert!(w.is_empty(), "{w:?}");
         let row = |i: usize| c.improvement_yield_changes[ImprovementType::from_usize(i)];
         assert_eq!(c.improvement_yield_changes.len(), 3);
         assert_eq!(row(0), [0, 0, 0]);
         assert_eq!(row(1), [0, 2, 0]);
-        // A repeated row without ImprovementYields is re-initialized to zeros (C++ InitList).
+        // A repeated row without "improvement_yields" is re-initialized to zeros (C++ InitList).
         assert_eq!(row(2), [0, 0, 0]);
     }
 }

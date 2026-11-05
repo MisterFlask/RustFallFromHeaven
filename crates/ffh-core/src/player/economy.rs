@@ -1952,7 +1952,7 @@ mod tests {
         assert!(!g.player_is_commerce_flexible(p, CommerceType::COMMERCE_RESEARCH), "no city founded yet");
 
         g.players[p].founded_first_city = true;
-        // CIV4CommerceInfo.xml: only research has bFlexiblePercent
+        // commerces.jsonc: only research has bFlexiblePercent
         assert!(g.player_is_commerce_flexible(p, CommerceType::COMMERCE_RESEARCH));
         assert!(!g.player_is_commerce_flexible(p, CommerceType::COMMERCE_GOLD));
         assert!(!g.player_is_commerce_flexible(p, CommerceType::COMMERCE_CULTURE));

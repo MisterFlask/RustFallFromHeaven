@@ -36,7 +36,7 @@ pub struct NewGame {
     /// gets `civ` / `leader` (the civilization the view follows first) and an AI's difficulty,
     /// and `handicap` is the game handicap (the AIs' bonuses), as in `ffh autoplay`.
     pub observe: bool,
-    /// The vanilla experience: leaders speak only FFH2's own lines (`CIV4DiplomacyInfos.xml`),
+    /// The vanilla experience: leaders speak only FFH2's own lines (`diplomacies.jsonc`),
     /// not also the lines each civilization has for each other (`data/text/barks.md`).
     /// Presentation only.
     pub vanilla: bool,

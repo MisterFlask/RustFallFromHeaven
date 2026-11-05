@@ -18,8 +18,8 @@ cases were decided, and what is left.
 Code: rules `crates/ffh-core/src/governors.rs` (hooks: `player_init_city`, `city_kill`, the player
 turn, `player_find_new_capital`, the city's yield, commerce, happiness, health, production and
 experience modifiers, `city_can_train` / `construct` / `create`); data
-`data/xml/Gameinfo/CIV4GovernorProfileInfos.xml`, `CIV4GovernorTraitInfos.xml`,
-`CIV4GovernorNameInfos.xml` (`ffh-data` `infos/governor.rs`), tuning `data/xml/RulesDefines.xml`
+`data/json/governor_profiles.jsonc`, `governor_traits.jsonc`,
+`governor_names.jsonc` (`ffh-data` `infos/governor.rs`), tuning `data/json/rules_defines.jsonc`
 (`GOVERNOR_*`); AI `crates/ffh-ai/src/governor.rs` (the governor's production choice, the AI's
 slots), `armies.rs` (which cities the AI's armies requisition from, the unit a requisition takes), `culture.rs` (`govern`: a human's governors' defenders against revolt pressure); UI
 `crates/ffh-play/src/view/governors.rs`, the city query's `governance`, `assets/app/governors.js`.

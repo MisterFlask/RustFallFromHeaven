@@ -202,7 +202,7 @@ side)
 
 **Balance** (after `classic-1`, each the owner's decision)
 
-- **The palace gives +3 production instead of +1** (all 21 civilization palaces, `CIV4BuildingInfos.xml`;
+- **The palace gives +3 production instead of +1** (all 21 civilization palaces, `buildings.jsonc`;
   2026-11-01). Meant to speed up the early game without a second starting settler. Measured on
   seeds 1-24 (6 AIs, standard map, 300 turns) against the old palace: production +46% at turn 25;
   cities per civ 2.2 -> 2.7 at turn 100, 5.1 -> 6.1 at turn 200 and 7.0 -> 7.35 at turn 300;

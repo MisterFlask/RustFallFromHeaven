@@ -1,0 +1,57 @@
+// edited with XMLSPY v2004 rel. 2 U (http://www.xmlspy.com) by Jesse Smith (Firaxis Games)
+// Sid Meier's Civilization 4
+// Copyright Firaxis Games 2005
+//
+// Victory Infos
+[
+  {
+    "type": "VICTORY_SCORE",
+    "description": "TXT_KEY_VICTORY_SCORE",
+    "civilopedia": "TXT_KEY_VICTORY_SCORE_PEDIA",
+    "target_score": true,
+    "permanent": true
+  },
+  {
+    "type": "VICTORY_TIME",
+    "description": "TXT_KEY_VICTORY_TIME",
+    "civilopedia": "TXT_KEY_VICTORY_TIME_PEDIA",
+    "end_score": true
+  },
+  {
+    "type": "VICTORY_CONQUEST",
+    "description": "TXT_KEY_VICTORY_CONQUEST",
+    "civilopedia": "TXT_KEY_VICTORY_CONQUEST_PEDIA",
+    "conquest": true
+  },
+  {
+    "type": "VICTORY_DOMINATION",
+    "description": "TXT_KEY_VICTORY_DOMINATION",
+    "civilopedia": "TXT_KEY_VICTORY_DOMINATION_PEDIA",
+    "population_percent_lead": 25,
+    "land_percent": 78,
+    "min_land_percent": 51
+  },
+  {
+    "type": "VICTORY_CULTURAL",
+    "description": "TXT_KEY_VICTORY_CULTURAL",
+    "civilopedia": "TXT_KEY_VICTORY_CULTURAL_PEDIA",
+    "city_culture": "CULTURELEVEL_LEGENDARY",
+    "num_culture_cities": 3
+  },
+  {
+    "type": "VICTORY_RELIGIOUS",
+    "description": "TXT_KEY_VICTORY_RELIGIOUS",
+    "civilopedia": "TXT_KEY_VICTORY_CULTURAL_PEDIA",
+    "religion_percent": 80
+  },
+  {
+    "type": "VICTORY_TOWER_OF_MASTERY",
+    "description": "TXT_KEY_VICTORY_TOWER_OF_MASTERY",
+    "civilopedia": "TXT_KEY_VICTORY_TOWER_OF_MASTERY_PEDIA"
+  },
+  {
+    "type": "VICTORY_ALTAR_OF_THE_LUONNOTAR",
+    "description": "TXT_KEY_VICTORY_ALTAR_OF_THE_LUONNOTAR",
+    "civilopedia": "TXT_KEY_VICTORY_ALTAR_OF_THE_LUONNOTAR_PEDIA"
+  }
+]

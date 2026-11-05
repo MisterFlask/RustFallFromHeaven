@@ -1,0 +1,14 @@
+// edited with XMLSPY v2004 rel. 2 U (http://www.xmlspy.com) by Jesse Smith (Firaxis Games)
+// Sid Meier's Civilization 4
+// Copyright Firaxis Games 2005
+//
+// Special Building
+[
+  {
+    "type": "SPECIALBUILDING_TEMPLE",
+    "description": "TXT_KEY_SPECIALBUILDING_TEMPLE",
+    "valid": true,
+    "production_traits": {"TRAIT_SPIRITUAL": 100},
+    "button": "Art/Interface/Buttons/Buildings/Temple.dds"
+  }
+]

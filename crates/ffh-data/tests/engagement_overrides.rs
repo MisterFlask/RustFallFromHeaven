@@ -1,5 +1,5 @@
-//! A unit type's own formation-battle values in place of its role's (`iEngageSpeed`,
-//! `iEngageDodge`, `iEngageCritBonus`, `EngageRows` in CIV4UnitInfos.xml; docs/ENGAGEMENTS.md,
+//! A unit type's own formation-battle values in place of its role's (`engage_speed`,
+//! `engage_dodge`, `engage_crit_bonus`, `engage_rows` in units.jsonc; docs/ENGAGEMENTS.md,
 //! "Per-unit values"). No unit of the game's data sets them (the content is the owner's to
 //! decide), so this test loads a fixture: the game's data with a few units given overrides, good
 //! and bad, and checks what each unit's values resolve to (its own, else its role's) and the load
@@ -9,64 +9,26 @@ use std::path::{Path, PathBuf};
 
 use ffh_data::*;
 
-/// Fixture overrides: the XML inserted after each unit's `<Type>`.
+/// Fixture overrides: the members inserted after each unit's `"type"`.
 const FIXTURE: &[(&str, &str)] = &[
     // A frontline unit (tier 1) that is fast and acts like a skirmisher: its speed and rows are
     // its own, its dodge and crit bonus its role's.
     (
         "UNIT_WARRIOR",
-        "<iEngageSpeed>9</iEngageSpeed>
-         <EngageRows>
-             <Row><Action>SHOOT</Action><iCount>1</iCount></Row>
-             <Row><Action>STAB</Action><iCount>2</iCount></Row>
-             <Row><Action>NONE</Action><iCount>0</iCount></Row>
-         </EngageRows>",
+        r#""engage_speed": 9,
+           "engage_rows": [{"action": "SHOOT", "count": 1}, {"action": "STAB", "count": 2}, {"action": "NONE", "count": 0}],"#,
     ),
     // A flanker with no dodge (0 is a value, not the role's) and a crit bonus; -1 is the role's.
-    ("UNIT_HORSEMAN", "<iEngageDodge>0</iEngageDodge><iEngageCritBonus>25</iEngageCritBonus><iEngageSpeed>-1</iEngageSpeed>"),
+    ("UNIT_HORSEMAN", r#""engage_dodge": 0, "engage_crit_bonus": 25, "engage_speed": -1,"#),
     // A tier 4 flanker whose best row is the middle one: its extra action goes there.
-    (
-        "UNIT_KNIGHT",
-        "<EngageRows>
-             <Row><Action>STRIKE</Action><iCount>1</iCount></Row>
-             <Row><Action>CHARGE</Action><iCount>2</iCount></Row>
-             <Row><Action>NONE</Action><iCount>0</iCount></Row>
-         </EngageRows>",
-    ),
+    ("UNIT_KNIGHT", r#""engage_rows": [{"action": "STRIKE", "count": 1}, {"action": "CHARGE", "count": 2}, {"action": "NONE"}],"#),
     // An archer whose rear row charges: a flanker by its own rows.
-    (
-        "UNIT_ARCHER",
-        "<EngageRows>
-             <Row><Action>SHOOT</Action><iCount>1</iCount></Row>
-             <Row><Action>SHOOT</Action><iCount>1</iCount></Row>
-             <Row><Action>CHARGE</Action><iCount>1</iCount></Row>
-         </EngageRows>",
-    ),
+    ("UNIT_ARCHER", r#""engage_rows": [{"action": "SHOOT", "count": 1}, {"action": "SHOOT", "count": 1}, {"action": "CHARGE", "count": 1}],"#),
     // Bad values: each warns, and the unit keeps its role's.
-    ("UNIT_SCOUT", "<iEngageDodge>120</iEngageDodge><iEngageSpeed>-3</iEngageSpeed>"),
-    (
-        "UNIT_AXEMAN",
-        "<EngageRows>
-             <Row><Action>STRIKE</Action><iCount>2</iCount></Row>
-             <Row><Action>STRIKE</Action><iCount>1</iCount></Row>
-         </EngageRows>",
-    ),
-    (
-        "UNIT_SWORDSMAN",
-        "<EngageRows>
-             <Row><Action>THROW</Action><iCount>2</iCount></Row>
-             <Row><Action>STRIKE</Action><iCount>1</iCount></Row>
-             <Row><Action>STRIKE</Action><iCount>1</iCount></Row>
-         </EngageRows>",
-    ),
-    (
-        "UNIT_CHAMPION",
-        "<EngageRows>
-             <Row><Action>STRIKE</Action><iCount>0</iCount></Row>
-             <Row><Action>NONE</Action><iCount>1</iCount></Row>
-             <Row><Action>STRIKE</Action><iCount>1</iCount></Row>
-         </EngageRows>",
-    ),
+    ("UNIT_SCOUT", r#""engage_dodge": 120, "engage_speed": -3,"#),
+    ("UNIT_AXEMAN", r#""engage_rows": [{"action": "STRIKE", "count": 2}, {"action": "STRIKE", "count": 1}],"#),
+    ("UNIT_SWORDSMAN", r#""engage_rows": [{"action": "THROW", "count": 2}, {"action": "STRIKE", "count": 1}, {"action": "STRIKE", "count": 1}],"#),
+    ("UNIT_CHAMPION", r#""engage_rows": [{"action": "STRIKE", "count": 0}, {"action": "NONE", "count": 1}, {"action": "STRIKE", "count": 1}],"#),
 ];
 
 fn copy_dir(from: &Path, to: &Path) {
@@ -89,14 +51,14 @@ fn load_fixture() -> GameData {
     let dir: PathBuf = std::env::temp_dir().join(format!("ffh-data-engage-overrides-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     copy_dir(&src, &dir);
-    let units = dir.join("xml").join("Units").join("CIV4UnitInfos.xml");
-    let mut xml = std::fs::read_to_string(&units).unwrap();
+    let units = dir.join("json").join("units.jsonc");
+    let mut text = std::fs::read_to_string(&units).unwrap();
     for (unit, snippet) in FIXTURE {
-        let tag = format!("<Type>{unit}</Type>");
-        assert_eq!(xml.matches(&tag).count(), 1, "{unit}");
-        xml = xml.replacen(&tag, &format!("{tag}\n{snippet}"), 1);
+        let key = format!("\"type\": \"{unit}\",");
+        assert_eq!(text.matches(&key).count(), 1, "{unit}");
+        text = text.replacen(&key, &format!("{key}\n{snippet}"), 1);
     }
-    std::fs::write(&units, xml).unwrap();
+    std::fs::write(&units, text).unwrap();
     let d = GameData::load(&dir).expect("the fixture loads");
     let _ = std::fs::remove_dir_all(&dir);
     d
@@ -169,16 +131,16 @@ fn a_unit_types_own_values_replace_its_roles() {
         let want = role(role_name);
         assert_eq!((d.engage_speed(u, r), d.engage_dodge(u, r), d.engage_rows(u, r)), (want.speed, want.dodge, want.rows), "{name}");
     }
-    let mut warnings: Vec<String> = d.warnings.iter().map(|w| w.replace("Units/CIV4UnitInfos.xml: ", "")).collect();
+    let mut warnings: Vec<String> = d.warnings.iter().map(|w| w.replace("units.jsonc: ", "")).collect();
     warnings.sort();
     assert_eq!(
         warnings,
         [
-            "UNIT_AXEMAN: EngageRows has 2 Row elements (3 expected: front, middle, rear)",
-            "UNIT_CHAMPION: EngageRows: a row has a count above 0 exactly when its Action is not NONE",
-            "UNIT_SCOUT: iEngageDodge 120 is neither -1 (the role's) nor in 0..=95",
-            "UNIT_SCOUT: iEngageSpeed -3 is neither -1 (the role's) nor in 0..=2147483647",
-            "UNIT_SWORDSMAN: EngageRows, FRONT row: unknown Action \"THROW\"",
+            "UNIT_AXEMAN: UNIT_AXEMAN: engage_rows has 2 rows (3 expected: front, middle, rear)",
+            "UNIT_CHAMPION: UNIT_CHAMPION: engage_rows: a row has a count above 0 exactly when its action is not NONE",
+            "UNIT_SCOUT: UNIT_SCOUT: engage_dodge 120 is neither -1 (the role's) nor in 0..=95",
+            "UNIT_SCOUT: UNIT_SCOUT: engage_speed -3 is neither -1 (the role's) nor in 0..=2147483647",
+            "UNIT_SWORDSMAN: UNIT_SWORDSMAN: engage_rows, FRONT row: unknown action \"THROW\"",
         ]
     );
 

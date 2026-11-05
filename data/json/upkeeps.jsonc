@@ -1,0 +1,28 @@
+// edited with XMLSPY v2004 rel. 2 U (http://www.xmlspy.com) by Jesse Smith (Firaxis Games)
+// Sid Meier's Civilization 4
+// Copyright Firaxis Games 2005
+//
+// Upkeep
+[
+  {
+    "type": "UPKEEP_LOW",
+    "description": "TXT_KEY_UPKEEP_LOW",
+    "strategy": "TXT_KEY_UPKEEP_LOW_HELP",
+    "population_percent": 8,
+    "city_percent": 40
+  },
+  {
+    "type": "UPKEEP_MEDIUM",
+    "description": "TXT_KEY_UPKEEP_MEDIUM",
+    "strategy": "TXT_KEY_UPKEEP_MEDIUM_HELP",
+    "population_percent": 12,
+    "city_percent": 50
+  },
+  {
+    "type": "UPKEEP_HIGH",
+    "description": "TXT_KEY_UPKEEP_HIGH",
+    "strategy": "TXT_KEY_UPKEEP_HIGH_HELP",
+    "population_percent": 16,
+    "city_percent": 60
+  }
+]

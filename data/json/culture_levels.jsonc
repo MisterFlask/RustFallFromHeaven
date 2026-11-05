@@ -1,0 +1,59 @@
+// edited with XMLSPY v2004 rel. 2 U (http://www.xmlspy.com) by Jesse Smith (Firaxis Games)
+// Sid Meier's Civilization 4
+// Copyright Firaxis Games 2005
+//
+// Culture Level Infos
+[
+  {"type": "CULTURELEVEL_NONE", "description": "TXT_KEY_CULTURELEVEL_NONE"},
+  {"type": "CULTURELEVEL_POOR", "description": "TXT_KEY_CULTURELEVEL_POOR"},
+  {
+    "type": "CULTURELEVEL_FLEDGLING",
+    "description": "TXT_KEY_CULTURELEVEL_FLEDGLING",
+    "city_defense_modifier": 10,
+    "speed_thresholds": {"GAMESPEED_MARATHON": 30, "GAMESPEED_EPIC": 15, "GAMESPEED_NORMAL": 10, "GAMESPEED_QUICK": 5}
+  },
+  {
+    "type": "CULTURELEVEL_DEVELOPING",
+    "description": "TXT_KEY_CULTURELEVEL_DEVELOPING",
+    "city_defense_modifier": 20,
+    "speed_thresholds": {
+      "GAMESPEED_MARATHON": 300,
+      "GAMESPEED_EPIC": 150,
+      "GAMESPEED_NORMAL": 100,
+      "GAMESPEED_QUICK": 50
+    }
+  },
+  {
+    "type": "CULTURELEVEL_REFINED",
+    "description": "TXT_KEY_CULTURELEVEL_REFINED",
+    "city_defense_modifier": 30,
+    "speed_thresholds": {
+      "GAMESPEED_MARATHON": 1500,
+      "GAMESPEED_EPIC": 750,
+      "GAMESPEED_NORMAL": 500,
+      "GAMESPEED_QUICK": 250
+    }
+  },
+  {
+    "type": "CULTURELEVEL_INFLUENTIAL",
+    "description": "TXT_KEY_CULTURELEVEL_INFLUENTIAL",
+    "city_defense_modifier": 40,
+    "speed_thresholds": {
+      "GAMESPEED_MARATHON": 15000,
+      "GAMESPEED_EPIC": 7500,
+      "GAMESPEED_NORMAL": 5000,
+      "GAMESPEED_QUICK": 2500
+    }
+  },
+  {
+    "type": "CULTURELEVEL_LEGENDARY",
+    "description": "TXT_KEY_CULTURELEVEL_LEGENDARY",
+    "city_defense_modifier": 50,
+    "speed_thresholds": {
+      "GAMESPEED_MARATHON": 150000,
+      "GAMESPEED_EPIC": 75000,
+      "GAMESPEED_NORMAL": 50000,
+      "GAMESPEED_QUICK": 25000
+    }
+  }
+]

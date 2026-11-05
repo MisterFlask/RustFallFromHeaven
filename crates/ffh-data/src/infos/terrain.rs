@@ -20,9 +20,8 @@ use crate::enums::*;
 use crate::idx::IdxVec;
 use crate::infos::InfoBase;
 use crate::registry::{InfoId, Rd};
-use crate::xml::Elem;
 
-/// C++ `GC.getNUM_ROUTE_PREREQ_OR_BONUSES()` (GlobalDefines.xml). Readers cannot see the
+/// C++ `GC.getNUM_ROUTE_PREREQ_OR_BONUSES()` (global_defines.jsonc). Readers cannot see the
 /// defines, so the value is mirrored here; the data tests check it against `defines`.
 const NUM_ROUTE_PREREQ_OR_BONUSES: usize = 2;
 
@@ -30,7 +29,7 @@ const NUM_ROUTE_PREREQ_OR_BONUSES: usize = 2;
 // YieldInfo
 // ---------------------------------------------------------------------------------------
 
-/// C++ `CvYieldInfo` (Terrain/CIV4YieldInfos.xml)
+/// C++ `CvYieldInfo` (yields.jsonc)
 #[derive(Debug, Clone, Default)]
 pub struct YieldInfo {
     pub base: InfoBase,
@@ -51,17 +50,17 @@ pub struct YieldInfo {
 pub fn read_yield(rd: &Rd) -> YieldInfo {
     YieldInfo {
         base: InfoBase::read(rd),
-        hills_change: rd.int("iHillsChange"),
-        peak_change: rd.int("iPeakChange"),
-        lake_change: rd.int("iLakeChange"),
-        city_change: rd.int("iCityChange"),
-        population_change_offset: rd.int("iPopulationChangeOffset"),
-        population_change_divisor: rd.int("iPopulationChangeDivisor"),
-        min_city: rd.int("iMinCity"),
-        trade_modifier: rd.int("iTradeModifier"),
-        golden_age_yield: rd.int("iGoldenAgeYield"),
-        golden_age_yield_threshold: rd.int("iGoldenAgeYieldThreshold"),
-        ai_weight_percent: rd.int("iAIWeightPercent"),
+        hills_change: rd.int("hills_change"),
+        peak_change: rd.int("peak_change"),
+        lake_change: rd.int("lake_change"),
+        city_change: rd.int("city_change"),
+        population_change_offset: rd.int("population_change_offset"),
+        population_change_divisor: rd.int("population_change_divisor"),
+        min_city: rd.int("min_city"),
+        trade_modifier: rd.int("trade_modifier"),
+        golden_age_yield: rd.int("golden_age_yield"),
+        golden_age_yield_threshold: rd.int("golden_age_yield_threshold"),
+        ai_weight_percent: rd.int("ai_weight_percent"),
     }
 }
 
@@ -69,7 +68,7 @@ pub fn read_yield(rd: &Rd) -> YieldInfo {
 // TerrainInfo
 // ---------------------------------------------------------------------------------------
 
-/// C++ `CvTerrainInfo` (Terrain/CIV4TerrainInfos.xml)
+/// C++ `CvTerrainInfo` (terrains.jsonc)
 #[derive(Debug, Clone, Default)]
 pub struct TerrainInfo {
     pub base: InfoBase,
@@ -121,27 +120,27 @@ pub struct TerrainInfo {
 pub fn read_terrain(rd: &Rd) -> TerrainInfo {
     TerrainInfo {
         base: InfoBase::read(rd),
-        movement_cost: rd.int("iMovement"),
-        see_from_level: rd.int("iSeeFrom"),
-        see_through_level: rd.int("iSeeThrough"),
-        build_modifier: rd.int("iBuildModifier"),
-        defense_modifier: rd.int("iDefense"),
-        water: rd.bool("bWater"),
-        impassable: rd.bool("bImpassable"),
-        found: rd.bool("bFound"),
-        found_coast: rd.bool("bFoundCoast"),
-        found_fresh_water: rd.bool("bFoundFreshWater"),
-        normalize: rd.bool("bNormalize"),
-        civilization_yield_type: rd.rf("CivilizationYieldType"),
-        civilization_yield_change: rd.yields("CivilizationYieldChange"),
-        plot_counter_down: rd.int("iPlotCounterDown"),
-        terrain_down: rd.rf("TerrainDown"),
-        plot_counter_up: rd.int("iPlotCounterUp"),
-        terrain_up: rd.rf("TerrainUp"),
-        yield_: rd.yields("Yields"),
-        river_yield_change: rd.yields("RiverYieldChange"),
-        hills_yield_change: rd.yields("HillsYieldChange"),
-        engagement_slots_change: rd.int("iEngagementSlotsChange"),
+        movement_cost: rd.int("movement"),
+        see_from_level: rd.int("see_from"),
+        see_through_level: rd.int("see_through"),
+        build_modifier: rd.int("build_modifier"),
+        defense_modifier: rd.int("defense"),
+        water: rd.bool("water"),
+        impassable: rd.bool("impassable"),
+        found: rd.bool("found"),
+        found_coast: rd.bool("found_coast"),
+        found_fresh_water: rd.bool("found_fresh_water"),
+        normalize: rd.bool("normalize"),
+        civilization_yield_type: rd.rf("civilization_yield_type"),
+        civilization_yield_change: rd.yields("civilization_yield_change"),
+        plot_counter_down: rd.int("plot_counter_down"),
+        terrain_down: rd.rf("terrain_down"),
+        plot_counter_up: rd.int("plot_counter_up"),
+        terrain_up: rd.rf("terrain_up"),
+        yield_: rd.yields("yields"),
+        river_yield_change: rd.yields("river_yield_change"),
+        hills_yield_change: rd.yields("hills_yield_change"),
+        engagement_slots_change: rd.int("engagement_slots_change"),
     }
 }
 
@@ -149,7 +148,7 @@ pub fn read_terrain(rd: &Rd) -> TerrainInfo {
 // FeatureInfo
 // ---------------------------------------------------------------------------------------
 
-/// C++ `CvFeatureInfo` (Terrain/CIV4FeatureInfos.xml)
+/// C++ `CvFeatureInfo` (features.jsonc)
 #[derive(Debug, Clone, Default)]
 pub struct FeatureInfo {
     pub base: InfoBase,
@@ -211,37 +210,37 @@ pub struct FeatureInfo {
 pub fn read_feature(rd: &Rd) -> FeatureInfo {
     FeatureInfo {
         base: InfoBase::read(rd),
-        movement_cost: rd.int("iMovement"),
-        see_through_change: rd.int("iSeeThrough"),
-        health_percent: rd.int("iHealthPercent"),
-        appearance_probability: rd.int("iAppearance"),
-        disappearance_probability: rd.int("iDisappearance"),
-        growth_probability: rd.int("iGrowth"),
-        defense_modifier: rd.int("iDefense"),
-        advanced_start_remove_cost: rd.int("iAdvancedStartRemoveCost"),
-        turn_damage: rd.int("iTurnDamage"),
-        no_coast: rd.bool("bNoCoast"),
-        no_river: rd.bool("bNoRiver"),
-        no_adjacent: rd.bool("bNoAdjacent"),
-        requires_flatlands: rd.bool("bRequiresFlatlands"),
-        requires_river: rd.bool("bRequiresRiver"),
-        adds_fresh_water: rd.bool("bAddsFreshWater"),
-        impassable: rd.bool("bImpassable"),
-        no_city: rd.bool("bNoCity"),
-        no_improvement: rd.bool("bNoImprovement"),
-        visible_always: rd.bool("bVisibleAlways"),
-        nuke_immune: rd.bool("bNukeImmune"),
-        on_unit_change_to: rd.rf("OnUnitChangeTo"),
-        flammable: rd.bool("bFlammable"),
-        feature_upgrade: rd.rf("FeatureUpgrade"),
-        prereq_state_religion: rd.rf("PrereqStateReligion"),
-        python_on_move: rd.string("PythonOnMove"),
-        require_resist: rd.rf("RequireResist"),
-        yield_change: rd.yields("YieldChanges"),
-        river_yield_change: rd.yields("RiverYieldChange"),
-        hills_yield_change: rd.yields("HillsYieldChange"),
-        terrain: rd.pairs_bool("TerrainBooleans"),
-        engagement_slots_change: rd.int("iEngagementSlotsChange"),
+        movement_cost: rd.int("movement"),
+        see_through_change: rd.int("see_through"),
+        health_percent: rd.int("health_percent"),
+        appearance_probability: rd.int("appearance"),
+        disappearance_probability: rd.int("disappearance"),
+        growth_probability: rd.int("growth"),
+        defense_modifier: rd.int("defense"),
+        advanced_start_remove_cost: rd.int("advanced_start_remove_cost"),
+        turn_damage: rd.int("turn_damage"),
+        no_coast: rd.bool("no_coast"),
+        no_river: rd.bool("no_river"),
+        no_adjacent: rd.bool("no_adjacent"),
+        requires_flatlands: rd.bool("requires_flatlands"),
+        requires_river: rd.bool("requires_river"),
+        adds_fresh_water: rd.bool("adds_fresh_water"),
+        impassable: rd.bool("impassable"),
+        no_city: rd.bool("no_city"),
+        no_improvement: rd.bool("no_improvement"),
+        visible_always: rd.bool("visible_always"),
+        nuke_immune: rd.bool("nuke_immune"),
+        on_unit_change_to: rd.rf("on_unit_change_to"),
+        flammable: rd.bool("flammable"),
+        feature_upgrade: rd.rf("feature_upgrade"),
+        prereq_state_religion: rd.rf("prereq_state_religion"),
+        python_on_move: rd.string("python_on_move"),
+        require_resist: rd.rf("require_resist"),
+        yield_change: rd.yields("yield_changes"),
+        river_yield_change: rd.yields("river_yield_change"),
+        hills_yield_change: rd.yields("hills_yield_change"),
+        terrain: rd.pairs_bool("terrain_booleans"),
+        engagement_slots_change: rd.int("engagement_slots_change"),
     }
 }
 
@@ -249,7 +248,7 @@ pub fn read_feature(rd: &Rd) -> FeatureInfo {
 // BonusClassInfo
 // ---------------------------------------------------------------------------------------
 
-/// C++ `CvBonusClassInfo` (Terrain/CIV4BonusClassInfos.xml)
+/// C++ `CvBonusClassInfo` (bonus_classes.jsonc)
 #[derive(Debug, Clone, Default)]
 pub struct BonusClassInfo {
     pub base: InfoBase,
@@ -260,14 +259,14 @@ pub struct BonusClassInfo {
 
 /// C++ `CvBonusClassInfo::read`.
 pub fn read_bonus_class(rd: &Rd) -> BonusClassInfo {
-    BonusClassInfo { base: InfoBase::read(rd), unique_range: rd.int("iUnique") }
+    BonusClassInfo { base: InfoBase::read(rd), unique_range: rd.int("unique") }
 }
 
 // ---------------------------------------------------------------------------------------
 // BonusInfo
 // ---------------------------------------------------------------------------------------
 
-/// C++ `CvBonusInfo` (Terrain/CIV4BonusInfos.xml)
+/// C++ `CvBonusInfo` (bonuses.jsonc)
 #[derive(Debug, Clone, Default)]
 pub struct BonusInfo {
     pub base: InfoBase,
@@ -331,53 +330,53 @@ pub struct BonusInfo {
 /// C++ `CvBonusInfo::read` + `readPass3` (`FreePromotion`).
 pub fn read_bonus(rd: &Rd) -> BonusInfo {
     // Without a `<Rands>` block the members keep their constructor default (0).
-    let rands = rd.child("Rands");
+    let rands = rd.child("rands");
     let rand = |tag: &str| rands.map_or(0, |r| r.int(tag));
     BonusInfo {
         base: InfoBase::read(rd),
-        bonus_class_type: rd.rf("BonusClassType"),
-        tech_reveal: rd.rf("TechReveal"),
-        tech_city_trade: rd.rf("TechCityTrade"),
-        tech_obsolete: rd.rf("TechObsolete"),
-        ai_trade_modifier: rd.int("iAITradeModifier"),
-        ai_objective: rd.int("iAIObjective"),
-        health: rd.int("iHealth"),
-        happiness: rd.int("iHappiness"),
-        min_area_size: rd.int("iMinAreaSize"),
-        min_latitude: rd.int("iMinLatitude"),
-        max_latitude: rd.int_or("iMaxLatitude", 90),
-        placement_order: rd.int("iPlacementOrder"),
-        const_appearance: rd.int("iConstAppearance"),
-        rand_appearance1: rand("iRandApp1"),
-        rand_appearance2: rand("iRandApp2"),
-        rand_appearance3: rand("iRandApp3"),
-        rand_appearance4: rand("iRandApp4"),
-        percent_per_player: rd.int("iPlayer"),
-        tiles_per: rd.int("iTilesPer"),
-        min_land_percent: rd.int("iMinLandPercent"),
-        unique_range: rd.int("iUnique"),
-        group_range: rd.int("iGroupRange"),
-        group_rand: rd.int("iGroupRand"),
-        one_area: rd.bool("bArea"),
-        hills: rd.bool("bHills"),
-        flatlands: rd.bool("bFlatlands"),
-        no_river_side: rd.bool("bNoRiverSide"),
-        normalize: rd.bool("bNormalize"),
-        modifier_per_bonus: rd.bool("bModifierPerBonus"),
-        bad_attitude: rd.int("iBadAttitude"),
-        damage_type: rd.rf("DamageType"),
-        discover_rand_modifier: rd.int("iDiscoverRandModifier"),
-        free_promotion: rd.rf("FreePromotion"),
-        great_people_rate_modifier: rd.int("iGreatPeopleRateModifier"),
-        heal_change: rd.int("iHealChange"),
-        heal_change_enemy: rd.int("iHealChangeEnemy"),
-        maintenance_modifier: rd.int("iMaintenanceModifier"),
-        mutate_chance: rd.int("iMutateChance"),
-        research_modifier: rd.int("iResearchModifier"),
-        yield_change: rd.yields("YieldChanges"),
-        terrain: rd.pairs_bool("TerrainBooleans"),
-        feature: rd.pairs_bool("FeatureBooleans"),
-        feature_terrain: rd.pairs_bool("FeatureTerrainBooleans"),
+        bonus_class_type: rd.rf("bonus_class_type"),
+        tech_reveal: rd.rf("tech_reveal"),
+        tech_city_trade: rd.rf("tech_city_trade"),
+        tech_obsolete: rd.rf("tech_obsolete"),
+        ai_trade_modifier: rd.int("ai_trade_modifier"),
+        ai_objective: rd.int("ai_objective"),
+        health: rd.int("health"),
+        happiness: rd.int("happiness"),
+        min_area_size: rd.int("min_area_size"),
+        min_latitude: rd.int("min_latitude"),
+        max_latitude: rd.int_or("max_latitude", 90),
+        placement_order: rd.int("placement_order"),
+        const_appearance: rd.int("const_appearance"),
+        rand_appearance1: rand("rand_app1"),
+        rand_appearance2: rand("rand_app2"),
+        rand_appearance3: rand("rand_app3"),
+        rand_appearance4: rand("rand_app4"),
+        percent_per_player: rd.int("player"),
+        tiles_per: rd.int("tiles_per"),
+        min_land_percent: rd.int("min_land_percent"),
+        unique_range: rd.int("unique"),
+        group_range: rd.int("group_range"),
+        group_rand: rd.int("group_rand"),
+        one_area: rd.bool("area"),
+        hills: rd.bool("hills"),
+        flatlands: rd.bool("flatlands"),
+        no_river_side: rd.bool("no_river_side"),
+        normalize: rd.bool("normalize"),
+        modifier_per_bonus: rd.bool("modifier_per_bonus"),
+        bad_attitude: rd.int("bad_attitude"),
+        damage_type: rd.rf("damage_type"),
+        discover_rand_modifier: rd.int("discover_rand_modifier"),
+        free_promotion: rd.rf("free_promotion"),
+        great_people_rate_modifier: rd.int("great_people_rate_modifier"),
+        heal_change: rd.int("heal_change"),
+        heal_change_enemy: rd.int("heal_change_enemy"),
+        maintenance_modifier: rd.int("maintenance_modifier"),
+        mutate_chance: rd.int("mutate_chance"),
+        research_modifier: rd.int("research_modifier"),
+        yield_change: rd.yields("yield_changes"),
+        terrain: rd.pairs_bool("terrain_booleans"),
+        feature: rd.pairs_bool("feature_booleans"),
+        feature_terrain: rd.pairs_bool("feature_terrain_booleans"),
     }
 }
 
@@ -400,7 +399,7 @@ pub struct ImprovementBonusInfo {
     pub yield_change: [i32; YieldType::NUM],
 }
 
-/// C++ `CvImprovementInfo` (Terrain/CIV4ImprovementInfos.xml)
+/// C++ `CvImprovementInfo` (improvements.jsonc)
 #[derive(Debug, Clone, Default)]
 pub struct ImprovementInfo {
     pub base: InfoBase,
@@ -487,54 +486,54 @@ pub struct ImprovementInfo {
 pub fn read_improvement(rd: &Rd) -> ImprovementInfo {
     ImprovementInfo {
         base: InfoBase::read(rd),
-        advanced_start_cost: rd.int("iAdvancedStartCost"),
-        advanced_start_cost_increase: rd.int("iAdvancedStartCostIncrease"),
-        tiles_per_goody: rd.int("iTilesPerGoody"),
-        goody_unique_range: rd.int("iGoodyRange"),
-        feature_growth_probability: rd.int("iFeatureGrowth"),
-        upgrade_time: rd.int("iUpgradeTime"),
-        air_bomb_defense: rd.int("iAirBombDefense"),
-        defense_modifier: rd.int("iDefenseModifier"),
-        happiness: rd.int("iHappiness"),
-        pillage_gold: rd.int("iPillageGold"),
-        improvement_pillage: rd.rf("ImprovementPillage"),
-        improvement_upgrade: rd.rf("ImprovementUpgrade"),
-        acts_as_city: rd.bool("bActsAsCity"),
-        hills_makes_valid: rd.bool("bHillsMakesValid"),
-        fresh_water_makes_valid: rd.bool("bFreshWaterMakesValid"),
-        river_side_makes_valid: rd.bool("bRiverSideMakesValid"),
-        no_fresh_water: rd.bool("bNoFreshWater"),
-        requires_flatlands: rd.bool("bRequiresFlatlands"),
-        requires_river_side: rd.bool("bRequiresRiverSide"),
-        requires_irrigation: rd.bool("bRequiresIrrigation"),
-        carries_irrigation: rd.bool("bCarriesIrrigation"),
-        requires_feature: rd.bool("bRequiresFeature"),
-        water: rd.bool("bWater"),
-        goody: rd.bool("bGoody"),
-        permanent: rd.bool("bPermanent"),
-        outside_borders: rd.bool("bOutsideBorders"),
-        requires_peak: rd.bool("bRequiresPeak"),
-        unique: rd.bool("bUnique"),
-        appearance_probability: rd.int("iAppearanceProbability"),
-        heal_rate_change: rd.int("iHealRateChange"),
-        range: rd.int("iRange"),
-        range_defense_modifier: rd.int("iRangeDefenseModifier"),
-        bonus_convert: rd.rf("BonusConvert"),
-        feature_upgrade: rd.rf("FeatureUpgrade"),
-        prereq_civilization: rd.rf("PrereqCivilization"),
-        python_at_range: rd.string("PythonAtRange"),
-        python_on_move: rd.string("PythonOnMove"),
-        spawn_unit_type: rd.rf("SpawnUnitType"),
-        visibility_change: rd.int("iVisibilityChange"),
-        prereq_nature_yield: rd.yields("PrereqNatureYields"),
-        yield_change: rd.yields("YieldChanges"),
-        river_side_yield_change: rd.yields("RiverSideYieldChange"),
-        hills_yield_change: rd.yields("HillsYieldChange"),
-        irrigated_yield_change: rd.yields("IrrigatedYieldChange"),
-        terrain_makes_valid: rd.pairs_bool("TerrainMakesValids"),
-        feature_makes_valid: rd.pairs_bool("FeatureMakesValids"),
-        tech_yield_changes: yields_by_type(rd, "TechYieldChanges", "PrereqTech", "TechYields"),
-        route_yield_changes: yields_by_type(rd, "RouteYieldChanges", "RouteType", "RouteYields"),
+        advanced_start_cost: rd.int("advanced_start_cost"),
+        advanced_start_cost_increase: rd.int("advanced_start_cost_increase"),
+        tiles_per_goody: rd.int("tiles_per_goody"),
+        goody_unique_range: rd.int("goody_range"),
+        feature_growth_probability: rd.int("feature_growth"),
+        upgrade_time: rd.int("upgrade_time"),
+        air_bomb_defense: rd.int("air_bomb_defense"),
+        defense_modifier: rd.int("defense_modifier"),
+        happiness: rd.int("happiness"),
+        pillage_gold: rd.int("pillage_gold"),
+        improvement_pillage: rd.rf("improvement_pillage"),
+        improvement_upgrade: rd.rf("improvement_upgrade"),
+        acts_as_city: rd.bool("acts_as_city"),
+        hills_makes_valid: rd.bool("hills_makes_valid"),
+        fresh_water_makes_valid: rd.bool("fresh_water_makes_valid"),
+        river_side_makes_valid: rd.bool("river_side_makes_valid"),
+        no_fresh_water: rd.bool("no_fresh_water"),
+        requires_flatlands: rd.bool("requires_flatlands"),
+        requires_river_side: rd.bool("requires_river_side"),
+        requires_irrigation: rd.bool("requires_irrigation"),
+        carries_irrigation: rd.bool("carries_irrigation"),
+        requires_feature: rd.bool("requires_feature"),
+        water: rd.bool("water"),
+        goody: rd.bool("goody"),
+        permanent: rd.bool("permanent"),
+        outside_borders: rd.bool("outside_borders"),
+        requires_peak: rd.bool("requires_peak"),
+        unique: rd.bool("unique"),
+        appearance_probability: rd.int("appearance_probability"),
+        heal_rate_change: rd.int("heal_rate_change"),
+        range: rd.int("range"),
+        range_defense_modifier: rd.int("range_defense_modifier"),
+        bonus_convert: rd.rf("bonus_convert"),
+        feature_upgrade: rd.rf("feature_upgrade"),
+        prereq_civilization: rd.rf("prereq_civilization"),
+        python_at_range: rd.string("python_at_range"),
+        python_on_move: rd.string("python_on_move"),
+        spawn_unit_type: rd.rf("spawn_unit_type"),
+        visibility_change: rd.int("visibility_change"),
+        prereq_nature_yield: rd.yields("prereq_nature_yields"),
+        yield_change: rd.yields("yield_changes"),
+        river_side_yield_change: rd.yields("river_side_yield_change"),
+        hills_yield_change: rd.yields("hills_yield_change"),
+        irrigated_yield_change: rd.yields("irrigated_yield_change"),
+        terrain_makes_valid: rd.pairs_bool("terrain_makes_valids"),
+        feature_makes_valid: rd.pairs_bool("feature_makes_valids"),
+        tech_yield_changes: yields_by_type(rd, "tech_yield_changes", "prereq_tech", "tech_yields"),
+        route_yield_changes: yields_by_type(rd, "route_yield_changes", "route_type", "route_yields"),
         improvement_bonus: improvement_bonuses(rd),
     }
 }
@@ -560,87 +559,31 @@ fn yields_by_type<K: InfoId>(
     v
 }
 
-/// C++ `CvXMLLoadUtility::SetImprovementBonuses` (`BonusTypeStructs`). Every bonus gets a
-/// zeroed entry (`InitImprovementBonusList`). For each `<BonusTypeStruct>` whose FIRST child
-/// names a bonus, the next three children are read by POSITION as `bBonusMakesValid`,
-/// `bBonusTrade` and `iDiscoverRand` (C++ `GetNextXmlVal` ignores tag names; a missing
-/// sibling leaves the default), while `YieldChanges` is looked up by name. A repeated bonus
-/// overwrites the earlier entry.
+/// C++ `CvXMLLoadUtility::SetImprovementBonuses` (`bonus_type_structs`): every bonus gets a
+/// zeroed entry (`InitImprovementBonusList`), then each item of the list that names a
+/// `bonus_type` sets that bonus's entry (a repeated bonus overwrites the earlier one).
 fn improvement_bonuses(rd: &Rd) -> IdxVec<BonusType, ImprovementBonusInfo> {
     let mut v = IdxVec::from_elem(ImprovementBonusInfo::default(), rd.reg().count::<BonusType>());
-    let Some(list) = rd.child("BonusTypeStructs") else {
+    let Some(list) = rd.child("bonus_type_structs") else {
         return v;
     };
     for s in list.children() {
-        let mut kids = s.e.children();
-        let Some(key) = kids.next() else { continue };
-        let Some(bonus) = s.resolve::<BonusType>(key.text()) else { continue };
-        let (makes_valid, trade, discover) = (kids.next(), kids.next(), kids.next());
+        let Some(bonus) = s.rf::<BonusType>("bonus_type") else { continue };
         v[bonus] = ImprovementBonusInfo {
-            bonus_makes_valid: next_bool(&s, makes_valid, "bBonusMakesValid"),
-            bonus_trade: next_bool(&s, trade, "bBonusTrade"),
-            discover_rand: next_int(&s, discover, "iDiscoverRand"),
-            yield_change: s.yields("YieldChanges"),
+            bonus_makes_valid: s.bool("bonus_makes_valid"),
+            bonus_trade: s.bool("bonus_trade"),
+            discover_rand: s.int("discover_rand"),
+            yield_change: s.yields("yield_changes"),
         };
     }
     v
-}
-
-/// C++ `GetNextXmlVal(bool*)` on an already-located sibling: its value, or `false` when
-/// there is no such sibling.
-fn next_bool(rd: &Rd, e: Option<Elem>, expected: &str) -> bool {
-    e.is_some_and(|e| {
-        check_position(rd, e, expected);
-        parse_bool(e.text()).unwrap_or(false)
-    })
-}
-
-/// C++ `GetNextXmlVal(int*)` on an already-located sibling: its value, or 0 when there is
-/// no such sibling. Warns on a malformed number, like `Rd::int_or`.
-fn next_int(rd: &Rd, e: Option<Elem>, expected: &str) -> i32 {
-    e.map_or(0, |e| {
-        check_position(rd, e, expected);
-        parse_int(e.text()).unwrap_or_else(|| {
-            if !e.text().is_empty() {
-                rd.cx.warn(format!("bad int in <{}>: {:?}", e.name(), e.text()));
-            }
-            0
-        })
-    })
-}
-
-/// Diagnostic only: values are taken by position exactly as in C++, but a tag other than
-/// the one the schema puts there means the data does not say what it seems to say.
-fn check_position(rd: &Rd, e: Elem, expected: &str) {
-    if e.name() != expected {
-        rd.cx.warn(format!("<{}>: <{}> where <{expected}> belongs (read by position, as in C++)", rd.e.name(), e.name()));
-    }
-}
-
-/// Same number syntax as `Rd::int_or` (registry.rs): integers, or floats truncated.
-fn parse_int(s: &str) -> Option<i32> {
-    let t = s.trim();
-    if t.is_empty() {
-        return None;
-    }
-    t.parse::<i32>().ok().or_else(|| t.parse::<f64>().ok().map(|f| f as i32))
-}
-
-/// Same boolean syntax as `Rd::bool_or` (registry.rs).
-fn parse_bool(s: &str) -> Option<bool> {
-    match s.trim() {
-        "1" | "true" | "True" | "TRUE" => Some(true),
-        "0" | "false" | "False" | "FALSE" => Some(false),
-        "" => None,
-        other => parse_int(other).map(|i| i != 0),
-    }
 }
 
 // ---------------------------------------------------------------------------------------
 // RouteInfo
 // ---------------------------------------------------------------------------------------
 
-/// C++ `CvRouteInfo` (Misc/CIV4RouteInfos.xml)
+/// C++ `CvRouteInfo` (routes.jsonc)
 #[derive(Debug, Clone, Default)]
 pub struct RouteInfo {
     pub base: InfoBase,
@@ -666,15 +609,15 @@ pub struct RouteInfo {
 pub fn read_route(rd: &Rd) -> RouteInfo {
     RouteInfo {
         base: InfoBase::read(rd),
-        advanced_start_cost: rd.int("iAdvancedStartCost"),
-        advanced_start_cost_increase: rd.int("iAdvancedStartCostIncrease"),
-        value: rd.int("iValue"),
-        movement_cost: rd.int("iMovement"),
-        flat_movement_cost: rd.int("iFlatMovement"),
-        prereq_bonus: rd.rf("BonusType"),
-        yield_change: rd.yields("Yields"),
-        tech_movement_change: rd.pairs_int("TechMovementChanges", 0),
-        prereq_or_bonus: rd.ref_list_fixed("PrereqOrBonuses", NUM_ROUTE_PREREQ_OR_BONUSES),
+        advanced_start_cost: rd.int("advanced_start_cost"),
+        advanced_start_cost_increase: rd.int("advanced_start_cost_increase"),
+        value: rd.int("value"),
+        movement_cost: rd.int("movement"),
+        flat_movement_cost: rd.int("flat_movement"),
+        prereq_bonus: rd.rf("bonus_type"),
+        yield_change: rd.yields("yields"),
+        tech_movement_change: rd.pairs_int("tech_movement_changes", 0),
+        prereq_or_bonus: rd.ref_list_fixed("prereq_or_bonuses", NUM_ROUTE_PREREQ_OR_BONUSES),
     }
 }
 
@@ -682,7 +625,6 @@ pub fn read_route(rd: &Rd) -> RouteInfo {
 mod tests {
     use super::*;
     use crate::registry::{Ctx, Registry};
-    use crate::xml::XmlDoc;
 
     fn names(v: &[&str]) -> Vec<String> {
         v.iter().map(|s| s.to_string()).collect()
@@ -696,36 +638,30 @@ mod tests {
         reg
     }
 
-    /// Runs `f` on the root element of `xml` and returns its result and the warnings.
-    fn read<T>(xml: &str, f: impl Fn(&Rd) -> T) -> (T, Vec<String>) {
+    /// Runs `f` on the entry object `json` and returns its result and the warnings.
+    fn read<T>(json: &str, f: impl Fn(&Rd) -> T) -> (T, Vec<String>) {
         let reg = registry();
-        let doc = XmlDoc::parse(xml).expect("test xml parses");
-        let cx = Ctx::new(&reg, "test.xml");
-        let out = f(&Rd::new(doc.root(), &cx));
+        let value = crate::jsonc::parse(json).expect("test json parses");
+        let cx = Ctx::new(&reg, "test.jsonc");
+        let out = f(&Rd::new(&value, &cx));
         (out, cx.warnings.into_inner())
     }
 
     #[test]
     fn tech_and_route_yield_changes() {
-        let xml = r#"<ImprovementInfo>
-            <TechYieldChanges>
-                <TechYieldChange>
-                    <PrereqTech>TECH_Y</PrereqTech>
-                    <TechYields><iYield>1</iYield><iYield>2</iYield></TechYields>
-                </TechYieldChange>
-                <TechYieldChange><PrereqTech>TECH_Z</PrereqTech></TechYieldChange>
-                <TechYieldChange><TechYields><iYield>9</iYield></TechYields></TechYieldChange>
-            </TechYieldChanges>
-            <RouteYieldChanges>
-                <RouteYieldChange>
-                    <RouteType>ROUTE_RAILROAD</RouteType>
-                    <RouteYields><iYield>0</iYield><iYield>1</iYield><iYield>0</iYield></RouteYields>
-                </RouteYieldChange>
-            </RouteYieldChanges>
-        </ImprovementInfo>"#;
-        let ((tech, route), warnings) = read(xml, |rd| {
-            let tech: IdxVec<TechType, _> = yields_by_type(rd, "TechYieldChanges", "PrereqTech", "TechYields");
-            let route: IdxVec<RouteType, _> = yields_by_type(rd, "RouteYieldChanges", "RouteType", "RouteYields");
+        let json = r#"{
+            "tech_yield_changes": [
+                {"prereq_tech": "TECH_Y", "tech_yields": [1, 2]},
+                {"prereq_tech": "TECH_Z"},
+                {"tech_yields": [9]}
+            ],
+            "route_yield_changes": [
+                {"route_type": "ROUTE_RAILROAD", "route_yields": [0, 1, 0]}
+            ]
+        }"#;
+        let ((tech, route), warnings) = read(json, |rd| {
+            let tech: IdxVec<TechType, _> = yields_by_type(rd, "tech_yield_changes", "prereq_tech", "tech_yields");
+            let route: IdxVec<RouteType, _> = yields_by_type(rd, "route_yield_changes", "route_type", "route_yields");
             (tech, route)
         });
         // Short yield lists are zero-padded; a key without yields is all zero; an entry
@@ -736,52 +672,48 @@ mod tests {
     }
 
     #[test]
-    fn improvement_bonuses_are_read_positionally() {
-        let xml = r#"<ImprovementInfo>
-            <BonusTypeStructs>
-                <BonusTypeStruct>
-                    <BonusType>BONUS_B</BonusType>
-                    <bBonusMakesValid>1</bBonusMakesValid>
-                    <bBonusTrade>0</bBonusTrade>
-                    <iDiscoverRand>100</iDiscoverRand>
-                    <YieldChanges><iYieldChange>0</iYieldChange><iYieldChange>1</iYieldChange></YieldChanges>
-                </BonusTypeStruct>
-                <BonusTypeStruct>
-                    <BonusType>BONUS_C</BonusType>
-                    <bBonusTrade>1</bBonusTrade>
-                </BonusTypeStruct>
-            </BonusTypeStructs>
-        </ImprovementInfo>"#;
-        let (v, warnings) = read(xml, improvement_bonuses);
+    fn improvement_bonuses_fill_the_named_bonus() {
+        let json = r#"{
+            "bonus_type_structs": [
+                {
+                    "bonus_type": "BONUS_B",
+                    "bonus_makes_valid": true,
+                    "bonus_trade": false,
+                    "discover_rand": 100,
+                    "yield_changes": [0, 1]
+                },
+                {"bonus_type": "BONUS_C", "bonus_trade": true}
+            ]
+        }"#;
+        let (v, warnings) = read(json, improvement_bonuses);
         assert_eq!(v.len(), 3);
         assert_eq!(v.raw[0], ImprovementBonusInfo::default());
         assert_eq!(
             v.raw[1],
             ImprovementBonusInfo { discover_rand: 100, bonus_makes_valid: true, bonus_trade: false, yield_change: [0, 1, 0] }
         );
-        // C++ takes the second child as bBonusMakesValid whatever its tag; the missing
-        // third and fourth children leave the defaults.
-        assert_eq!(v.raw[2], ImprovementBonusInfo { bonus_makes_valid: true, ..Default::default() });
-        assert_eq!(warnings.len(), 1, "{warnings:?}");
+        // Absent keys leave the defaults.
+        assert_eq!(v.raw[2], ImprovementBonusInfo { bonus_trade: true, ..Default::default() });
+        assert!(warnings.is_empty(), "{warnings:?}");
     }
 
     #[test]
     fn faithful_defaults_for_absent_tags() {
-        let (b, _) = read("<BonusInfo><Type>BONUS_A</Type></BonusInfo>", read_bonus);
+        let (b, _) = read(r#"{"type": "BONUS_A"}"#, read_bonus);
         assert_eq!(b.max_latitude, 90);
         assert_eq!((b.rand_appearance1, b.tech_reveal, b.bonus_class_type), (0, None, None));
 
-        let (t, _) = read("<TerrainInfo><Type>T</Type></TerrainInfo>", read_terrain);
+        let (t, _) = read(r#"{"type": "T"}"#, read_terrain);
         assert_eq!((t.plot_counter_down, t.plot_counter_up), (0, 0));
         assert_eq!((t.terrain_down, t.civilization_yield_type), (None, None));
 
-        let (i, _) = read("<ImprovementInfo><Type>I</Type></ImprovementInfo>", read_improvement);
+        let (i, _) = read(r#"{"type": "I"}"#, read_improvement);
         assert!(!i.acts_as_city);
         assert_eq!(i.improvement_bonus.len(), 3);
         assert_eq!(i.tech_yield_changes.len(), 3);
         assert_eq!(i.route_yield_changes.len(), 2);
 
-        let (r, _) = read("<RouteInfo><Type>R</Type><PrereqOrBonuses><BonusType>BONUS_C</BonusType></PrereqOrBonuses></RouteInfo>", read_route);
+        let (r, _) = read(r#"{"type": "R", "prereq_or_bonuses": ["BONUS_C"]}"#, read_route);
         assert_eq!(r.prereq_or_bonus, vec![Some(BonusType(2)), None]);
         assert_eq!(r.tech_movement_change.raw, vec![0, 0, 0]);
     }

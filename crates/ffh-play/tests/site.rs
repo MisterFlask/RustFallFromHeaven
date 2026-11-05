@@ -47,7 +47,7 @@ fn export_site_writes_the_client_and_the_data_pack() {
     let names: Vec<&str> = files.iter().map(|(p, _)| p.as_str()).collect();
     let expected = data_files(&data).unwrap();
     assert_eq!(names, expected);
-    assert!(names.contains(&"text/en.tsv") && names.contains(&"xml/GlobalDefines.xml"), "{names:?}");
+    assert!(names.contains(&"text/en.tsv") && names.contains(&"json/global_defines.jsonc"), "{names:?}");
     for (path, bytes) in &files {
         assert_eq!(*bytes, std::fs::read(data.join(path)).unwrap().as_slice(), "{path}");
     }

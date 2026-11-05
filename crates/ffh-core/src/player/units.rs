@@ -1722,7 +1722,7 @@ impl Game {
 }
 
 /// FFH2 Python `CvGameUtils.getUnitCostMod(argsList)` (called through
-/// `USE_GET_UNIT_COST_MOD_CALLBACK`, 0 in FFH2's PythonCallbackDefines.xml): always -1, i.e.
+/// `USE_GET_UNIT_COST_MOD_CALLBACK`, 0 in FFH2's python_callback_defines.jsonc): always -1, i.e.
 /// no change ("Any value > 0 will be used").
 fn py_get_unit_cost_mod(_g: &Game, _p: PlayerId, _unit: UnitType) -> i32 {
     -1

@@ -23,7 +23,7 @@ use crate::registry::Rd;
 // CommerceInfo
 // ---------------------------------------------------------------------------------------------
 
-/// C++ `CvCommerceInfo` (Gameinfo/CIV4CommerceInfo.xml)
+/// C++ `CvCommerceInfo` (commerces.jsonc)
 #[derive(Debug, Clone, Default)]
 pub struct CommerceInfo {
     pub base: InfoBase,
@@ -39,10 +39,10 @@ pub struct CommerceInfo {
 pub fn read_commerce(rd: &Rd) -> CommerceInfo {
     CommerceInfo {
         base: InfoBase::read(rd),
-        initial_percent: rd.int("iInitialPercent"),
-        initial_happiness: rd.int("iInitialHappiness"),
-        ai_weight_percent: rd.int("iAIWeightPercent"),
-        flexible_percent: rd.bool("bFlexiblePercent"),
+        initial_percent: rd.int("initial_percent"),
+        initial_happiness: rd.int("initial_happiness"),
+        ai_weight_percent: rd.int("ai_weight_percent"),
+        flexible_percent: rd.bool("flexible_percent"),
     }
 }
 
@@ -59,7 +59,7 @@ pub struct GameTurnInfo {
     pub num_game_turns_per_increment: i32,
 }
 
-/// C++ `CvGameSpeedInfo` (Gameinfo/CIV4GameSpeedInfo.xml)
+/// C++ `CvGameSpeedInfo` (game_speeds.jsonc)
 #[derive(Debug, Clone, Default)]
 pub struct GameSpeedInfo {
     pub base: InfoBase,
@@ -100,27 +100,27 @@ impl GameSpeedInfo {
 pub fn read_game_speed(rd: &Rd) -> GameSpeedInfo {
     GameSpeedInfo {
         base: InfoBase::read(rd),
-        growth_percent: rd.int("iGrowthPercent"),
-        train_percent: rd.int("iTrainPercent"),
-        construct_percent: rd.int("iConstructPercent"),
-        create_percent: rd.int("iCreatePercent"),
-        research_percent: rd.int("iResearchPercent"),
-        build_percent: rd.int("iBuildPercent"),
-        improvement_percent: rd.int("iImprovementPercent"),
-        great_people_percent: rd.int("iGreatPeoplePercent"),
-        anarchy_percent: rd.int("iAnarchyPercent"),
-        barb_percent: rd.int("iBarbPercent"),
-        feature_production_percent: rd.int("iFeatureProductionPercent"),
-        unit_discover_percent: rd.int("iUnitDiscoverPercent"),
-        unit_hurry_percent: rd.int("iUnitHurryPercent"),
-        unit_trade_percent: rd.int("iUnitTradePercent"),
-        unit_great_work_percent: rd.int("iUnitGreatWorkPercent"),
-        golden_age_percent: rd.int("iGoldenAgePercent"),
-        hurry_percent: rd.int("iHurryPercent"),
-        hurry_conscript_anger_percent: rd.int("iHurryConscriptAngerPercent"),
-        inflation_offset: rd.int("iInflationOffset"),
-        inflation_percent: rd.int("iInflationPercent"),
-        victory_delay_percent: rd.int("iVictoryDelayPercent"),
+        growth_percent: rd.int("growth_percent"),
+        train_percent: rd.int("train_percent"),
+        construct_percent: rd.int("construct_percent"),
+        create_percent: rd.int("create_percent"),
+        research_percent: rd.int("research_percent"),
+        build_percent: rd.int("build_percent"),
+        improvement_percent: rd.int("improvement_percent"),
+        great_people_percent: rd.int("great_people_percent"),
+        anarchy_percent: rd.int("anarchy_percent"),
+        barb_percent: rd.int("barb_percent"),
+        feature_production_percent: rd.int("feature_production_percent"),
+        unit_discover_percent: rd.int("unit_discover_percent"),
+        unit_hurry_percent: rd.int("unit_hurry_percent"),
+        unit_trade_percent: rd.int("unit_trade_percent"),
+        unit_great_work_percent: rd.int("unit_great_work_percent"),
+        golden_age_percent: rd.int("golden_age_percent"),
+        hurry_percent: rd.int("hurry_percent"),
+        hurry_conscript_anger_percent: rd.int("hurry_conscript_anger_percent"),
+        inflation_offset: rd.int("inflation_offset"),
+        inflation_percent: rd.int("inflation_percent"),
+        victory_delay_percent: rd.int("victory_delay_percent"),
         game_turn_info: read_game_turn_infos(rd),
     }
 }
@@ -128,12 +128,12 @@ pub fn read_game_speed(rd: &Rd) -> GameSpeedInfo {
 /// The `GameTurnInfos` block of `CvGameSpeedInfo::read`: one increment per child element, whose
 /// `iMonthIncrement` / `iTurnsPerIncrement` are looked up by name (default 0). No block -> none.
 fn read_game_turn_infos(rd: &Rd) -> Vec<GameTurnInfo> {
-    match rd.child("GameTurnInfos") {
+    match rd.child("game_turn_infos") {
         Some(list) => list
             .children()
             .map(|t| GameTurnInfo {
-                month_increment: t.int("iMonthIncrement"),
-                num_game_turns_per_increment: t.int("iTurnsPerIncrement"),
+                month_increment: t.int("month_increment"),
+                num_game_turns_per_increment: t.int("turns_per_increment"),
             })
             .collect(),
         None => Vec::new(),
@@ -144,7 +144,7 @@ fn read_game_turn_infos(rd: &Rd) -> Vec<GameTurnInfo> {
 // WorldInfo
 // ---------------------------------------------------------------------------------------------
 
-/// C++ `CvWorldInfo` (Gameinfo/CIV4WorldInfo.xml), indexed by `WorldSizeType`.
+/// C++ `CvWorldInfo` (worlds.jsonc), indexed by `WorldSizeType`.
 #[derive(Debug, Clone, Default)]
 pub struct WorldInfo {
     pub base: InfoBase,
@@ -177,27 +177,27 @@ pub struct WorldInfo {
 pub fn read_world(rd: &Rd) -> WorldInfo {
     WorldInfo {
         base: InfoBase::read(rd),
-        default_players: rd.int("iDefaultPlayers"),
-        unit_name_modifier: rd.int("iUnitNameModifier"),
-        target_num_cities: rd.int("iTargetNumCities"),
-        num_free_building_bonuses: rd.int("iNumFreeBuildingBonuses"),
-        building_class_prereq_modifier: rd.int("iBuildingClassPrereqModifier"),
-        max_conscript_modifier: rd.int("iMaxConscriptModifier"),
-        war_weariness_modifier: rd.int("iWarWearinessModifier"),
-        grid_width: rd.int("iGridWidth"),
-        grid_height: rd.int("iGridHeight"),
-        terrain_grain_change: rd.int("iTerrainGrainChange"),
-        feature_grain_change: rd.int("iFeatureGrainChange"),
-        research_percent: rd.int("iResearchPercent"),
-        trade_profit_percent: rd.int("iTradeProfitPercent"),
-        distance_maintenance_percent: rd.int("iDistanceMaintenancePercent"),
-        num_cities_maintenance_percent: rd.int("iNumCitiesMaintenancePercent"),
-        colony_maintenance_percent: rd.int("iColonyMaintenancePercent"),
-        corporation_maintenance_percent: rd.int("iCorporationMaintenancePercent"),
-        num_cities_anarchy_percent: rd.int("iNumCitiesAnarchyPercent"),
-        advanced_start_points_mod: rd.int("iAdvancedStartPointsMod"),
-        max_cities_mod: rd.int("iMaxCitiesMod"),
-        unique_feature_chance: rd.int("iUniqueFeatureChance"),
+        default_players: rd.int("default_players"),
+        unit_name_modifier: rd.int("unit_name_modifier"),
+        target_num_cities: rd.int("target_num_cities"),
+        num_free_building_bonuses: rd.int("num_free_building_bonuses"),
+        building_class_prereq_modifier: rd.int("building_class_prereq_modifier"),
+        max_conscript_modifier: rd.int("max_conscript_modifier"),
+        war_weariness_modifier: rd.int("war_weariness_modifier"),
+        grid_width: rd.int("grid_width"),
+        grid_height: rd.int("grid_height"),
+        terrain_grain_change: rd.int("terrain_grain_change"),
+        feature_grain_change: rd.int("feature_grain_change"),
+        research_percent: rd.int("research_percent"),
+        trade_profit_percent: rd.int("trade_profit_percent"),
+        distance_maintenance_percent: rd.int("distance_maintenance_percent"),
+        num_cities_maintenance_percent: rd.int("num_cities_maintenance_percent"),
+        colony_maintenance_percent: rd.int("colony_maintenance_percent"),
+        corporation_maintenance_percent: rd.int("corporation_maintenance_percent"),
+        num_cities_anarchy_percent: rd.int("num_cities_anarchy_percent"),
+        advanced_start_points_mod: rd.int("advanced_start_points_mod"),
+        max_cities_mod: rd.int("max_cities_mod"),
+        unique_feature_chance: rd.int("unique_feature_chance"),
     }
 }
 
@@ -205,7 +205,7 @@ pub fn read_world(rd: &Rd) -> WorldInfo {
 // ClimateInfo
 // ---------------------------------------------------------------------------------------------
 
-/// C++ `CvClimateInfo` (Gameinfo/CIV4ClimateInfo.xml). The latitude changes are C++ `float`s
+/// C++ `CvClimateInfo` (climates.jsonc). The latitude changes are C++ `float`s
 /// (used by map generation), so they stay `f32`.
 #[derive(Debug, Clone, Default)]
 pub struct ClimateInfo {
@@ -227,17 +227,17 @@ pub struct ClimateInfo {
 pub fn read_climate(rd: &Rd) -> ClimateInfo {
     ClimateInfo {
         base: InfoBase::read(rd),
-        desert_percent_change: rd.int("iDesertPercentChange"),
-        jungle_latitude: rd.int("iJungleLatitude"),
-        hill_range: rd.int("iHillRange"),
-        peak_percent: rd.int("iPeakPercent"),
-        snow_latitude_change: rd.float("fSnowLatitudeChange"),
-        tundra_latitude_change: rd.float("fTundraLatitudeChange"),
-        grass_latitude_change: rd.float("fGrassLatitudeChange"),
-        desert_bottom_latitude_change: rd.float("fDesertBottomLatitudeChange"),
-        desert_top_latitude_change: rd.float("fDesertTopLatitudeChange"),
-        ice_latitude: rd.float("fIceLatitude"),
-        rand_ice_latitude: rd.float("fRandIceLatitude"),
+        desert_percent_change: rd.int("desert_percent_change"),
+        jungle_latitude: rd.int("jungle_latitude"),
+        hill_range: rd.int("hill_range"),
+        peak_percent: rd.int("peak_percent"),
+        snow_latitude_change: rd.float("snow_latitude_change"),
+        tundra_latitude_change: rd.float("tundra_latitude_change"),
+        grass_latitude_change: rd.float("grass_latitude_change"),
+        desert_bottom_latitude_change: rd.float("desert_bottom_latitude_change"),
+        desert_top_latitude_change: rd.float("desert_top_latitude_change"),
+        ice_latitude: rd.float("ice_latitude"),
+        rand_ice_latitude: rd.float("rand_ice_latitude"),
     }
 }
 
@@ -245,7 +245,7 @@ pub fn read_climate(rd: &Rd) -> ClimateInfo {
 // SeaLevelInfo
 // ---------------------------------------------------------------------------------------------
 
-/// C++ `CvSeaLevelInfo` (Gameinfo/CIV4SeaLevelInfo.xml)
+/// C++ `CvSeaLevelInfo` (sea_levels.jsonc)
 #[derive(Debug, Clone, Default)]
 pub struct SeaLevelInfo {
     pub base: InfoBase,
@@ -254,14 +254,14 @@ pub struct SeaLevelInfo {
 
 /// C++ `CvSeaLevelInfo::read`.
 pub fn read_sea_level(rd: &Rd) -> SeaLevelInfo {
-    SeaLevelInfo { base: InfoBase::read(rd), sea_level_change: rd.int("iSeaLevelChange") }
+    SeaLevelInfo { base: InfoBase::read(rd), sea_level_change: rd.int("sea_level_change") }
 }
 
 // ---------------------------------------------------------------------------------------------
 // EraInfo
 // ---------------------------------------------------------------------------------------------
 
-/// C++ `CvEraInfo` (Gameinfo/CIV4EraInfos.xml). Soundtrack/soundscape/audio members not ported.
+/// C++ `CvEraInfo` (eras.jsonc). Soundtrack/soundscape/audio members not ported.
 #[derive(Debug, Clone, Default)]
 pub struct EraInfo {
     pub base: InfoBase,
@@ -297,28 +297,28 @@ pub struct EraInfo {
 pub fn read_era(rd: &Rd) -> EraInfo {
     EraInfo {
         base: InfoBase::read(rd),
-        no_goodies: rd.bool("bNoGoodies"),
-        no_animals: rd.bool("bNoAnimals"),
-        no_barb_units: rd.bool("bNoBarbUnits"),
-        no_barb_cities: rd.bool("bNoBarbCities"),
-        starting_unit_multiplier: rd.int("iStartingUnitMultiplier"),
-        starting_defense_units: rd.int("iStartingDefenseUnits"),
-        starting_worker_units: rd.int("iStartingWorkerUnits"),
-        starting_explore_units: rd.int("iStartingExploreUnits"),
-        advanced_start_points: rd.int("iAdvancedStartPoints"),
-        starting_gold: rd.int("iStartingGold"),
-        free_population: rd.int("iFreePopulation"),
-        start_percent: rd.int("iStartPercent"),
-        growth_percent: rd.int("iGrowthPercent"),
-        train_percent: rd.int("iTrainPercent"),
-        construct_percent: rd.int("iConstructPercent"),
-        create_percent: rd.int("iCreatePercent"),
-        research_percent: rd.int("iResearchPercent"),
-        build_percent: rd.int("iBuildPercent"),
-        improvement_percent: rd.int("iImprovementPercent"),
-        great_people_percent: rd.int("iGreatPeoplePercent"),
-        anarchy_percent: rd.int("iAnarchyPercent"),
-        event_chance_per_turn: rd.int("iEventChancePerTurn"),
+        no_goodies: rd.bool("no_goodies"),
+        no_animals: rd.bool("no_animals"),
+        no_barb_units: rd.bool("no_barb_units"),
+        no_barb_cities: rd.bool("no_barb_cities"),
+        starting_unit_multiplier: rd.int("starting_unit_multiplier"),
+        starting_defense_units: rd.int("starting_defense_units"),
+        starting_worker_units: rd.int("starting_worker_units"),
+        starting_explore_units: rd.int("starting_explore_units"),
+        advanced_start_points: rd.int("advanced_start_points"),
+        starting_gold: rd.int("starting_gold"),
+        free_population: rd.int("free_population"),
+        start_percent: rd.int("start_percent"),
+        growth_percent: rd.int("growth_percent"),
+        train_percent: rd.int("train_percent"),
+        construct_percent: rd.int("construct_percent"),
+        create_percent: rd.int("create_percent"),
+        research_percent: rd.int("research_percent"),
+        build_percent: rd.int("build_percent"),
+        improvement_percent: rd.int("improvement_percent"),
+        great_people_percent: rd.int("great_people_percent"),
+        anarchy_percent: rd.int("anarchy_percent"),
+        event_chance_per_turn: rd.int("event_chance_per_turn"),
     }
 }
 
@@ -326,7 +326,7 @@ pub fn read_era(rd: &Rd) -> EraInfo {
 // HandicapInfo
 // ---------------------------------------------------------------------------------------------
 
-/// C++ `CvHandicapInfo` (Gameinfo/CIV4HandicapInfo.xml). Several XML tags differ from the
+/// C++ `CvHandicapInfo` (handicaps.jsonc). Several XML tags differ from the
 /// getter names; the tag is noted where it does.
 #[derive(Debug, Clone, Default)]
 pub struct HandicapInfo {
@@ -440,70 +440,70 @@ impl HandicapInfo {
 pub fn read_handicap(rd: &Rd) -> HandicapInfo {
     HandicapInfo {
         base: InfoBase::read(rd),
-        free_wins_vs_barbs: rd.int("iFreeWinsVsBarbs"),
-        animal_attack_prob: rd.int("iAnimalAttackProb"),
-        starting_location_percent: rd.int("iStartingLocPercent"),
-        advanced_start_points_mod: rd.int("iAdvancedStartPointsMod"),
-        starting_gold: rd.int("iGold"),
-        free_units: rd.int("iFreeUnits"),
-        unit_cost_percent: rd.int("iUnitCostPercent"),
-        research_percent: rd.int("iResearchPercent"),
-        distance_maintenance_percent: rd.int("iDistanceMaintenancePercent"),
-        num_cities_maintenance_percent: rd.int("iNumCitiesMaintenancePercent"),
-        max_num_cities_maintenance: rd.int("iMaxNumCitiesMaintenance"),
-        colony_maintenance_percent: rd.int("iColonyMaintenancePercent"),
-        max_colony_maintenance: rd.int("iMaxColonyMaintenance"),
-        corporation_maintenance_percent: rd.int("iCorporationMaintenancePercent"),
-        civic_upkeep_percent: rd.int("iCivicUpkeepPercent"),
-        inflation_percent: rd.int("iInflationPercent"),
-        health_bonus: rd.int("iHealthBonus"),
-        happy_bonus: rd.int("iHappyBonus"),
-        attitude_change: rd.int("iAttitudeChange"),
-        no_tech_trade_modifier: rd.int("iNoTechTradeModifier"),
-        tech_trade_known_modifier: rd.int("iTechTradeKnownModifier"),
-        unowned_tiles_per_game_animal: rd.int("iUnownedTilesPerGameAnimal"),
-        unowned_tiles_per_barbarian_unit: rd.int("iUnownedTilesPerBarbarianUnit"),
-        unowned_water_tiles_per_barbarian_unit: rd.int("iUnownedWaterTilesPerBarbarianUnit"),
-        unowned_tiles_per_barbarian_city: rd.int("iUnownedTilesPerBarbarianCity"),
-        barbarian_creation_turns_elapsed: rd.int("iBarbarianCreationTurnsElapsed"),
-        barbarian_city_creation_turns_elapsed: rd.int("iBarbarianCityCreationTurnsElapsed"),
-        barbarian_city_creation_prob: rd.int("iBarbarianCityCreationProb"),
-        animal_combat_modifier: rd.int("iAnimalBonus"),
-        barbarian_combat_modifier: rd.int("iBarbarianBonus"),
-        ai_animal_combat_modifier: rd.int("iAIAnimalBonus"),
-        ai_barbarian_combat_modifier: rd.int("iAIBarbarianBonus"),
-        starting_defense_units: rd.int("iStartingDefenseUnits"),
-        starting_worker_units: rd.int("iStartingWorkerUnits"),
-        starting_explore_units: rd.int("iStartingExploreUnits"),
-        ai_starting_unit_multiplier: rd.int("iAIStartingUnitMultiplier"),
-        ai_starting_defense_units: rd.int("iAIStartingDefenseUnits"),
-        ai_starting_worker_units: rd.int("iAIStartingWorkerUnits"),
-        ai_starting_explore_units: rd.int("iAIStartingExploreUnits"),
-        barbarian_initial_defenders: rd.int("iBarbarianDefenders"),
-        ai_declare_war_prob: rd.int("iAIDeclareWarProb"),
-        ai_work_rate_modifier: rd.int("iAIWorkRateModifier"),
-        ai_growth_percent: rd.int("iAIGrowthPercent"),
-        ai_train_percent: rd.int("iAITrainPercent"),
-        ai_world_train_percent: rd.int("iAIWorldTrainPercent"),
-        ai_construct_percent: rd.int("iAIConstructPercent"),
-        ai_world_construct_percent: rd.int("iAIWorldConstructPercent"),
-        ai_create_percent: rd.int("iAICreatePercent"),
-        ai_world_create_percent: rd.int("iAIWorldCreatePercent"),
-        ai_civic_upkeep_percent: rd.int("iAICivicUpkeepPercent"),
-        ai_unit_cost_percent: rd.int("iAIUnitCostPercent"),
-        ai_unit_supply_percent: rd.int("iAIUnitSupplyPercent"),
-        ai_unit_upgrade_percent: rd.int("iAIUnitUpgradePercent"),
-        ai_inflation_percent: rd.int("iAIInflationPercent"),
-        ai_war_weariness_percent: rd.int("iAIWarWearinessPercent"),
-        ai_per_era_modifier: rd.int("iAIPerEraModifier"),
-        ai_advanced_start_percent: rd.int("iAIAdvancedStartPercent"),
+        free_wins_vs_barbs: rd.int("free_wins_vs_barbs"),
+        animal_attack_prob: rd.int("animal_attack_prob"),
+        starting_location_percent: rd.int("starting_loc_percent"),
+        advanced_start_points_mod: rd.int("advanced_start_points_mod"),
+        starting_gold: rd.int("gold"),
+        free_units: rd.int("free_units"),
+        unit_cost_percent: rd.int("unit_cost_percent"),
+        research_percent: rd.int("research_percent"),
+        distance_maintenance_percent: rd.int("distance_maintenance_percent"),
+        num_cities_maintenance_percent: rd.int("num_cities_maintenance_percent"),
+        max_num_cities_maintenance: rd.int("max_num_cities_maintenance"),
+        colony_maintenance_percent: rd.int("colony_maintenance_percent"),
+        max_colony_maintenance: rd.int("max_colony_maintenance"),
+        corporation_maintenance_percent: rd.int("corporation_maintenance_percent"),
+        civic_upkeep_percent: rd.int("civic_upkeep_percent"),
+        inflation_percent: rd.int("inflation_percent"),
+        health_bonus: rd.int("health_bonus"),
+        happy_bonus: rd.int("happy_bonus"),
+        attitude_change: rd.int("attitude_change"),
+        no_tech_trade_modifier: rd.int("no_tech_trade_modifier"),
+        tech_trade_known_modifier: rd.int("tech_trade_known_modifier"),
+        unowned_tiles_per_game_animal: rd.int("unowned_tiles_per_game_animal"),
+        unowned_tiles_per_barbarian_unit: rd.int("unowned_tiles_per_barbarian_unit"),
+        unowned_water_tiles_per_barbarian_unit: rd.int("unowned_water_tiles_per_barbarian_unit"),
+        unowned_tiles_per_barbarian_city: rd.int("unowned_tiles_per_barbarian_city"),
+        barbarian_creation_turns_elapsed: rd.int("barbarian_creation_turns_elapsed"),
+        barbarian_city_creation_turns_elapsed: rd.int("barbarian_city_creation_turns_elapsed"),
+        barbarian_city_creation_prob: rd.int("barbarian_city_creation_prob"),
+        animal_combat_modifier: rd.int("animal_bonus"),
+        barbarian_combat_modifier: rd.int("barbarian_bonus"),
+        ai_animal_combat_modifier: rd.int("ai_animal_bonus"),
+        ai_barbarian_combat_modifier: rd.int("ai_barbarian_bonus"),
+        starting_defense_units: rd.int("starting_defense_units"),
+        starting_worker_units: rd.int("starting_worker_units"),
+        starting_explore_units: rd.int("starting_explore_units"),
+        ai_starting_unit_multiplier: rd.int("ai_starting_unit_multiplier"),
+        ai_starting_defense_units: rd.int("ai_starting_defense_units"),
+        ai_starting_worker_units: rd.int("ai_starting_worker_units"),
+        ai_starting_explore_units: rd.int("ai_starting_explore_units"),
+        barbarian_initial_defenders: rd.int("barbarian_defenders"),
+        ai_declare_war_prob: rd.int("ai_declare_war_prob"),
+        ai_work_rate_modifier: rd.int("ai_work_rate_modifier"),
+        ai_growth_percent: rd.int("ai_growth_percent"),
+        ai_train_percent: rd.int("ai_train_percent"),
+        ai_world_train_percent: rd.int("ai_world_train_percent"),
+        ai_construct_percent: rd.int("ai_construct_percent"),
+        ai_world_construct_percent: rd.int("ai_world_construct_percent"),
+        ai_create_percent: rd.int("ai_create_percent"),
+        ai_world_create_percent: rd.int("ai_world_create_percent"),
+        ai_civic_upkeep_percent: rd.int("ai_civic_upkeep_percent"),
+        ai_unit_cost_percent: rd.int("ai_unit_cost_percent"),
+        ai_unit_supply_percent: rd.int("ai_unit_supply_percent"),
+        ai_unit_upgrade_percent: rd.int("ai_unit_upgrade_percent"),
+        ai_inflation_percent: rd.int("ai_inflation_percent"),
+        ai_war_weariness_percent: rd.int("ai_war_weariness_percent"),
+        ai_per_era_modifier: rd.int("ai_per_era_modifier"),
+        ai_advanced_start_percent: rd.int("ai_advanced_start_percent"),
         // C++: SetStringList over <Goodies>, then FindInInfoClass on every name. All names are
         // known GoodyInfo types (an unknown one is reported as a load warning and skipped).
-        goodies: rd.ref_list::<GoodyType>("Goodies"),
-        free_techs: rd.pairs_bool::<TechType>("FreeTechs"),
-        ai_free_techs: rd.pairs_bool::<TechType>("AIFreeTechs"),
-        ai_free_xp: rd.int("iAIFreeXP"),
-        lair_spawn_rate: rd.int("iLairSpawnRate"),
+        goodies: rd.ref_list::<GoodyType>("goodies"),
+        free_techs: rd.pairs_bool::<TechType>("free_techs"),
+        ai_free_techs: rd.pairs_bool::<TechType>("ai_free_techs"),
+        ai_free_xp: rd.int("ai_free_xp"),
+        lair_spawn_rate: rd.int("lair_spawn_rate"),
     }
 }
 
@@ -511,7 +511,7 @@ pub fn read_handicap(rd: &Rd) -> HandicapInfo {
 // GameOptionInfo
 // ---------------------------------------------------------------------------------------------
 
-/// C++ `CvGameOptionInfo` (Gameinfo/CIV4GameOptionInfos.xml). The table order must match the
+/// C++ `CvGameOptionInfo` (game_options.jsonc). The table order must match the
 /// hard-coded `GameOptionType` consts (checked at load).
 #[derive(Debug, Clone, Default)]
 pub struct GameOptionInfo {
@@ -526,11 +526,11 @@ pub struct GameOptionInfo {
 pub fn read_game_option(rd: &Rd) -> GameOptionInfo {
     GameOptionInfo {
         base: InfoBase::read(rd),
-        default: rd.bool("bDefault"),
+        default: rd.bool("default"),
         // C++ quirk: the constructor sets m_bVisible = true, but read() calls
         // GetChildXmlValByName(&m_bVisible, "bVisible") whose default (false) overwrites it,
         // so an option without <bVisible> ends up hidden. Kept as is.
-        visible: rd.bool("bVisible"),
+        visible: rd.bool("visible"),
     }
 }
 
@@ -538,7 +538,7 @@ pub fn read_game_option(rd: &Rd) -> GameOptionInfo {
 // GoodyInfo
 // ---------------------------------------------------------------------------------------------
 
-/// C++ `CvGoodyInfo` (Gameinfo/CIV4GoodyInfo.xml). `m_szSound` not ported.
+/// C++ `CvGoodyInfo` (goodies.jsonc). `m_szSound` not ported.
 #[derive(Debug, Clone, Default)]
 pub struct GoodyInfo {
     pub base: InfoBase,
@@ -567,21 +567,21 @@ pub struct GoodyInfo {
 pub fn read_goody(rd: &Rd) -> GoodyInfo {
     GoodyInfo {
         base: InfoBase::read(rd),
-        gold: rd.int("iGold"),
-        gold_rand1: rd.int("iGoldRand1"),
-        gold_rand2: rd.int("iGoldRand2"),
-        map_offset: rd.int("iMapOffset"),
-        map_range: rd.int("iMapRange"),
-        map_prob: rd.int("iMapProb"),
-        experience: rd.int("iExperience"),
-        healing: rd.int("iHealing"),
-        damage_prereq: rd.int("iDamagePrereq"),
-        tech: rd.bool("bTech"),
-        bad: rd.bool("bBad"),
-        unit_class_type: rd.rf::<UnitClassType>("UnitClass"),
-        barbarian_unit_class: rd.rf::<UnitClassType>("BarbarianClass"),
-        barbarian_unit_prob: rd.int("iBarbarianUnitProb"),
-        min_barbarians: rd.int("iMinBarbarians"),
+        gold: rd.int("gold"),
+        gold_rand1: rd.int("gold_rand1"),
+        gold_rand2: rd.int("gold_rand2"),
+        map_offset: rd.int("map_offset"),
+        map_range: rd.int("map_range"),
+        map_prob: rd.int("map_prob"),
+        experience: rd.int("experience"),
+        healing: rd.int("healing"),
+        damage_prereq: rd.int("damage_prereq"),
+        tech: rd.bool("tech"),
+        bad: rd.bool("bad"),
+        unit_class_type: rd.rf::<UnitClassType>("unit_class"),
+        barbarian_unit_class: rd.rf::<UnitClassType>("barbarian_class"),
+        barbarian_unit_prob: rd.int("barbarian_unit_prob"),
+        min_barbarians: rd.int("min_barbarians"),
     }
 }
 
@@ -589,7 +589,7 @@ pub fn read_goody(rd: &Rd) -> GoodyInfo {
 // HurryInfo
 // ---------------------------------------------------------------------------------------------
 
-/// C++ `CvHurryInfo` (Gameinfo/CIV4HurryInfo.xml)
+/// C++ `CvHurryInfo` (hurries.jsonc)
 #[derive(Debug, Clone, Default)]
 pub struct HurryInfo {
     pub base: InfoBase,
@@ -603,9 +603,9 @@ pub struct HurryInfo {
 pub fn read_hurry(rd: &Rd) -> HurryInfo {
     HurryInfo {
         base: InfoBase::read(rd),
-        gold_per_production: rd.int("iGoldPerProduction"),
-        production_per_population: rd.int("iProductionPerPopulation"),
-        anger: rd.bool("bAnger"),
+        gold_per_production: rd.int("gold_per_production"),
+        production_per_population: rd.int("production_per_population"),
+        anger: rd.bool("anger"),
     }
 }
 
@@ -613,7 +613,7 @@ pub fn read_hurry(rd: &Rd) -> HurryInfo {
 // UpkeepInfo
 // ---------------------------------------------------------------------------------------------
 
-/// C++ `CvUpkeepInfo` (Gameinfo/CIV4UpkeepInfo.xml)
+/// C++ `CvUpkeepInfo` (upkeeps.jsonc)
 #[derive(Debug, Clone, Default)]
 pub struct UpkeepInfo {
     pub base: InfoBase,
@@ -625,8 +625,8 @@ pub struct UpkeepInfo {
 pub fn read_upkeep(rd: &Rd) -> UpkeepInfo {
     UpkeepInfo {
         base: InfoBase::read(rd),
-        population_percent: rd.int("iPopulationPercent"),
-        city_percent: rd.int("iCityPercent"),
+        population_percent: rd.int("population_percent"),
+        city_percent: rd.int("city_percent"),
     }
 }
 
@@ -634,7 +634,7 @@ pub fn read_upkeep(rd: &Rd) -> UpkeepInfo {
 // CultureLevelInfo
 // ---------------------------------------------------------------------------------------------
 
-/// C++ `CvCultureLevelInfo` (Gameinfo/CIV4CultureLevelInfo.xml)
+/// C++ `CvCultureLevelInfo` (culture_levels.jsonc)
 #[derive(Debug, Clone, Default)]
 pub struct CultureLevelInfo {
     pub base: InfoBase,
@@ -647,8 +647,8 @@ pub struct CultureLevelInfo {
 pub fn read_culture_level(rd: &Rd) -> CultureLevelInfo {
     CultureLevelInfo {
         base: InfoBase::read(rd),
-        city_defense_modifier: rd.int("iCityDefenseModifier"),
-        speed_threshold: rd.pairs_int::<GameSpeedType>("SpeedThresholds", 0),
+        city_defense_modifier: rd.int("city_defense_modifier"),
+        speed_threshold: rd.pairs_int::<GameSpeedType>("speed_thresholds", 0),
     }
 }
 
@@ -656,7 +656,7 @@ pub fn read_culture_level(rd: &Rd) -> CultureLevelInfo {
 // VictoryInfo
 // ---------------------------------------------------------------------------------------------
 
-/// C++ `CvVictoryInfo` (Gameinfo/CIV4VictoryInfo.xml). `m_szMovie` not ported.
+/// C++ `CvVictoryInfo` (victories.jsonc). `m_szMovie` not ported.
 #[derive(Debug, Clone, Default)]
 pub struct VictoryInfo {
     pub base: InfoBase,
@@ -685,19 +685,19 @@ pub struct VictoryInfo {
 pub fn read_victory(rd: &Rd) -> VictoryInfo {
     VictoryInfo {
         base: InfoBase::read(rd),
-        target_score: rd.bool("bTargetScore"),
-        end_score: rd.bool("bEndScore"),
-        conquest: rd.bool("bConquest"),
-        diplo_vote: rd.bool("bDiploVote"),
-        permanent: rd.bool("bPermanent"),
-        population_percent_lead: rd.int("iPopulationPercentLead"),
-        land_percent: rd.int("iLandPercent"),
-        min_land_percent: rd.int("iMinLandPercent"),
-        religion_percent: rd.int("iReligionPercent"),
-        city_culture: rd.rf::<CultureLevelType>("CityCulture"),
-        num_culture_cities: rd.int("iNumCultureCities"),
-        total_culture_ratio: rd.int("iTotalCultureRatio"),
-        victory_delay_turns: rd.int("iVictoryDelayTurns"),
+        target_score: rd.bool("target_score"),
+        end_score: rd.bool("end_score"),
+        conquest: rd.bool("conquest"),
+        diplo_vote: rd.bool("diplo_vote"),
+        permanent: rd.bool("permanent"),
+        population_percent_lead: rd.int("population_percent_lead"),
+        land_percent: rd.int("land_percent"),
+        min_land_percent: rd.int("min_land_percent"),
+        religion_percent: rd.int("religion_percent"),
+        city_culture: rd.rf::<CultureLevelType>("city_culture"),
+        num_culture_cities: rd.int("num_culture_cities"),
+        total_culture_ratio: rd.int("total_culture_ratio"),
+        victory_delay_turns: rd.int("victory_delay_turns"),
     }
 }
 
@@ -705,7 +705,7 @@ pub fn read_victory(rd: &Rd) -> VictoryInfo {
 // ProcessInfo
 // ---------------------------------------------------------------------------------------------
 
-/// C++ `CvProcessInfo` (Gameinfo/CIV4ProcessInfo.xml)
+/// C++ `CvProcessInfo` (processes.jsonc)
 #[derive(Debug, Clone, Default)]
 pub struct ProcessInfo {
     pub base: InfoBase,
@@ -718,9 +718,9 @@ pub struct ProcessInfo {
 pub fn read_process(rd: &Rd) -> ProcessInfo {
     ProcessInfo {
         base: InfoBase::read(rd),
-        tech_prereq: rd.rf::<TechType>("TechPrereq"),
+        tech_prereq: rd.rf::<TechType>("tech_prereq"),
         // SetCommerce if the tag exists, else InitList(.., 0): zeros either way when absent.
-        production_to_commerce_modifier: rd.commerces("ProductionToCommerceModifiers"),
+        production_to_commerce_modifier: rd.commerces("production_to_commerce_modifiers"),
     }
 }
 
@@ -728,7 +728,7 @@ pub fn read_process(rd: &Rd) -> ProcessInfo {
 // EmphasizeInfo
 // ---------------------------------------------------------------------------------------------
 
-/// C++ `CvEmphasizeInfo` (Gameinfo/CIV4EmphasizeInfo.xml): city governor emphasis.
+/// C++ `CvEmphasizeInfo` (emphasizes.jsonc): city governor emphasis.
 #[derive(Debug, Clone, Default)]
 pub struct EmphasizeInfo {
     pub base: InfoBase,
@@ -751,13 +751,13 @@ pub struct EmphasizeInfo {
 pub fn read_emphasize(rd: &Rd) -> EmphasizeInfo {
     EmphasizeInfo {
         base: InfoBase::read(rd),
-        avoid_growth: rd.bool("bAvoidGrowth"),
-        great_people: rd.bool("bGreatPeople"),
+        avoid_growth: rd.bool("avoid_growth"),
+        great_people: rd.bool("great_people"),
         // SetYields / SetCommerce if the tag exists, else InitList(.., 0).
-        yield_change: rd.yields("YieldModifiers"),
-        commerce_change: rd.commerces("CommerceModifiers"),
-        avoid_angry_citizens: rd.bool("bAvoidAngryCitizens"),
-        avoid_unhealthy_citizens: rd.bool("bAvoidUnhealthyCitizens"),
+        yield_change: rd.yields("yield_modifiers"),
+        commerce_change: rd.commerces("commerce_modifiers"),
+        avoid_angry_citizens: rd.bool("avoid_angry_citizens"),
+        avoid_unhealthy_citizens: rd.bool("avoid_unhealthy_citizens"),
     }
 }
 
@@ -765,18 +765,17 @@ pub fn read_emphasize(rd: &Rd) -> EmphasizeInfo {
 mod tests {
     use super::*;
     use crate::registry::{Ctx, Registry};
-    use crate::xml::XmlDoc;
 
-    /// Runs `read` on the root element of `xml` against a registry holding only `classes`;
+    /// Runs `read` on the entry object `json` against a registry holding only `classes`;
     /// returns the info and the load warnings.
-    fn read_with<T>(classes: &[(&'static str, &[&str])], xml: &str, read: fn(&Rd) -> T) -> (T, Vec<String>) {
+    fn read_with<T>(classes: &[(&'static str, &[&str])], json: &str, read: fn(&Rd) -> T) -> (T, Vec<String>) {
         let mut reg = Registry::new();
         for (class, names) in classes {
             reg.register_class(class, names.iter().map(|s| s.to_string()).collect());
         }
-        let doc = XmlDoc::parse(xml).expect("test xml");
-        let cx = Ctx::new(&reg, "test.xml");
-        let info = read(&Rd::new(doc.root(), &cx));
+        let value = crate::jsonc::parse(json).expect("test json");
+        let cx = Ctx::new(&reg, "test.jsonc");
+        let info = read(&Rd::new(&value, &cx));
         (info, cx.warnings.into_inner())
     }
 
@@ -786,56 +785,56 @@ mod tests {
 
     #[test]
     fn game_option_visible_defaults_to_false() {
-        // C++ quirk: the constructor says visible, read() resets it to false when <bVisible> is absent.
-        let (o, w) = read_with(&[], "<GameOptionInfo><Type>GAMEOPTION_X</Type></GameOptionInfo>", read_game_option);
+        // C++ quirk: the constructor says visible, read() resets it to false when "visible" is absent.
+        let (o, w) = read_with(&[], r#"{"type": "GAMEOPTION_X"}"#, read_game_option);
         assert!(!o.visible && !o.default);
         assert!(w.is_empty());
-        let (o, _) = read_with(&[], "<GameOptionInfo><bDefault>1</bDefault><bVisible>1</bVisible></GameOptionInfo>", read_game_option);
+        let (o, _) = read_with(&[], r#"{"default": true, "visible": true}"#, read_game_option);
         assert!(o.visible && o.default);
     }
 
     #[test]
     fn absent_tags_take_cpp_defaults() {
-        let (h, w) = read_with(&[TECHS, GOODIES], "<HandicapInfo><Type>HANDICAP_X</Type></HandicapInfo>", read_handicap);
+        let (h, w) = read_with(&[TECHS, GOODIES], r#"{"type": "HANDICAP_X"}"#, read_handicap);
         assert!(w.is_empty());
         assert_eq!(h.num_goodies(), 0);
         assert_eq!(h.free_techs.raw, vec![false; 3]);
         assert_eq!(h.ai_free_techs.raw, vec![false; 3]);
 
-        let (c, _) = read_with(&[SPEEDS], "<CultureLevelInfo/>", read_culture_level);
+        let (c, _) = read_with(&[SPEEDS], "{}", read_culture_level);
         assert_eq!(c.speed_threshold.raw, vec![0, 0]);
 
-        let (s, _) = read_with(&[], "<GameSpeedInfo/>", read_game_speed);
+        let (s, _) = read_with(&[], "{}", read_game_speed);
         assert_eq!(s.num_turn_increments(), 0);
 
-        let (p, _) = read_with(&[TECHS], "<ProcessInfo/>", read_process);
+        let (p, _) = read_with(&[TECHS], "{}", read_process);
         assert_eq!((p.tech_prereq, p.production_to_commerce_modifier), (None, [0; 4]));
 
-        let (e, _) = read_with(&[], "<EmphasizeInfo/>", read_emphasize);
+        let (e, _) = read_with(&[], "{}", read_emphasize);
         assert_eq!((e.yield_change, e.commerce_change), ([0; 3], [0; 4]));
 
-        let (g, w) = read_with(&[], "<GoodyInfo><UnitClass>NONE</UnitClass></GoodyInfo>", read_goody);
+        let (g, w) = read_with(&[], r#"{"unit_class": "NONE"}"#, read_goody);
         assert_eq!((g.unit_class_type, g.barbarian_unit_class), (None, None));
         assert!(w.is_empty());
     }
 
     #[test]
     fn lists_keep_order_duplicates_and_partial_entries() {
-        let xml = "<HandicapInfo>\
-            <Goodies><GoodyType>GOODY_B</GoodyType><GoodyType>GOODY_A</GoodyType><GoodyType>GOODY_B</GoodyType></Goodies>\
-            <FreeTechs><FreeTech><TechType>TECH_C</TechType><bFreeTech>1</bFreeTech></FreeTech></FreeTechs>\
-            </HandicapInfo>";
-        let (h, w) = read_with(&[TECHS, GOODIES], xml, read_handicap);
+        let json = r#"{
+            "goodies": ["GOODY_B", "GOODY_A", "GOODY_B"],
+            "free_techs": {"TECH_C": true}
+        }"#;
+        let (h, w) = read_with(&[TECHS, GOODIES], json, read_handicap);
         assert!(w.is_empty());
         assert_eq!(h.goodies, vec![GoodyType(1), GoodyType(0), GoodyType(1)]);
         assert_eq!(h.free_techs.raw, vec![false, false, true]);
 
-        // Each GameTurnInfo child's values are looked up by name, default 0.
-        let xml = "<GameSpeedInfo><GameTurnInfos>\
-            <GameTurnInfo><iTurnsPerIncrement>75</iTurnsPerIncrement><iMonthIncrement>6</iMonthIncrement></GameTurnInfo>\
-            <GameTurnInfo><iTurnsPerIncrement>10</iTurnsPerIncrement></GameTurnInfo>\
-            </GameTurnInfos></GameSpeedInfo>";
-        let (s, _) = read_with(&[], xml, read_game_speed);
+        // Each game turn info's values are looked up by key, default 0.
+        let json = r#"{"game_turn_infos": [
+            {"turns_per_increment": 75, "month_increment": 6},
+            {"turns_per_increment": 10}
+        ]}"#;
+        let (s, _) = read_with(&[], json, read_game_speed);
         assert_eq!(
             s.game_turn_info,
             vec![
@@ -844,10 +843,9 @@ mod tests {
             ]
         );
 
-        // Speeds missing from SpeedThresholds keep 0.
-        let xml = "<CultureLevelInfo><SpeedThresholds><SpeedThreshold><GameSpeedType>GAMESPEED_B</GameSpeedType>\
-            <iThreshold>40</iThreshold></SpeedThreshold></SpeedThresholds></CultureLevelInfo>";
-        let (c, _) = read_with(&[SPEEDS], xml, read_culture_level);
+        // Speeds missing from "speed_thresholds" keep 0.
+        let json = r#"{"speed_thresholds": {"GAMESPEED_B": 40}}"#;
+        let (c, _) = read_with(&[SPEEDS], json, read_culture_level);
         assert_eq!(c.speed_threshold.raw, vec![0, 40]);
     }
 }
@@ -872,15 +870,15 @@ pub struct DiplomacyResponse {
 /// C++ `CvDiplomacyResponse::read`.
 fn read_diplomacy_response(rd: &Rd) -> DiplomacyResponse {
     DiplomacyResponse {
-        civilization_types: rd.pairs_bool::<CivilizationType>("Civilizations"),
-        leader_head_types: rd.pairs_bool::<LeaderHeadType>("Leaders"),
-        attitude_types: rd.pairs_bool::<AttitudeType>("Attitudes"),
-        diplomacy_power_types: rd.pairs_bool::<DiplomacyPowerType>("DiplomacyPowers"),
-        diplomacy_text: rd.string_list("DiplomacyText"),
+        civilization_types: rd.pairs_bool::<CivilizationType>("civilizations"),
+        leader_head_types: rd.pairs_bool::<LeaderHeadType>("leaders"),
+        attitude_types: rd.pairs_bool::<AttitudeType>("attitudes"),
+        diplomacy_power_types: rd.pairs_bool::<DiplomacyPowerType>("diplomacy_powers"),
+        diplomacy_text: rd.string_list("diplomacy_text"),
     }
 }
 
-/// C++ `CvDiplomacyInfo` (Gameinfo/CIV4DiplomacyInfos.xml): what a leader says in one diplomacy
+/// C++ `CvDiplomacyInfo` (diplomacies.jsonc): what a leader says in one diplomacy
 /// moment (`AI_DIPLOCOMMENT_*`, the AI's lines) or what the human may answer
 /// (`USER_DIPLOCOMMENT_*`). Presentation only: the rules never read it.
 #[derive(Debug, Clone, Default)]
@@ -891,6 +889,6 @@ pub struct DiplomacyInfo {
 
 /// C++ `CvDiplomacyInfo::read`.
 pub fn read_diplomacy(rd: &Rd) -> DiplomacyInfo {
-    let responses = rd.child("Responses").map(|r| r.children_named("Response").map(|x| read_diplomacy_response(&x)).collect()).unwrap_or_default();
+    let responses = rd.child("responses").map(|r| r.children().map(|x| read_diplomacy_response(&x)).collect()).unwrap_or_default();
     DiplomacyInfo { base: InfoBase::read(rd), responses }
 }

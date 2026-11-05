@@ -9,7 +9,7 @@
 //! Three sources of names:
 //! * info tables (`GameData` fields such as `units`): names from the type registry, count from
 //!   the table, display text from the info's `<Description>`;
-//! * GlobalTypes.xml lists without a table (`FlavorType`, `DirectionType`, ...): registry only;
+//! * global_types.jsonc lists without a table (`FlavorType`, `DirectionType`, ...): registry only;
 //! * hard-coded C++ enums with no XML (`ActivityType`, `OrderType`, `TaskType`, ...): the
 //!   generated `NAMES` arrays of `ffh_data::enums`.
 //!
@@ -45,7 +45,7 @@ pub trait Named: Idx {
 pub enum Source {
     /// An info table: `GameData` field name and registry class (`"units"`, `"UnitInfo"`).
     Table { field: &'static str, class: &'static str },
-    /// A GlobalTypes.xml list without a table: registry class (`"FlavorTypes"`).
+    /// A global_types.jsonc list without a table: registry class (`"FlavorTypes"`).
     Global { class: &'static str },
     /// A hard-coded C++ enum (`ffh_data::enums` `NAMES`).
     Enum,
