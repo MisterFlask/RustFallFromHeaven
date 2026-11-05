@@ -1120,9 +1120,23 @@
     "allow_ai": true,
     // This game's (the owner's decision, 2026-11-05): the Fire II caster's spell in a formation
     // battle, of fire, not cast on the map. FFH2 summoned a Fireball missile (UNIT_FIREBALL, which
-    // only the Wonder spell summons now).
+    // the Wonder spell and the Arcane Barge's SPELL_FIREBALL_BARGE summon now).
     "battle_only": true,
     "damage_type": "DAMAGE_FIRE",
+    "button": "Art/Interface/Buttons/Units/Fireball.dds"
+  },
+  {
+    // This game's (the owner's decision, 2026-11-05): the Arcane Barge's Fireball, the missile
+    // Fire II summoned in FFH2 (a ship fights no land battle, so the battle spell is not its).
+    "type": "SPELL_FIREBALL_BARGE",
+    "description": "TXT_KEY_SPELL_FIREBALL",
+    "civilopedia": "TXT_KEY_UNIT_FIREBALL_PEDIA",
+    "unit_class_prereq": "UNITCLASS_ARCANE_BARGE",
+    "allow_ai": true,
+    "display_when_disabled": true,
+    "has_casted": true,
+    "create_unit_type": "UNIT_FIREBALL",
+    "create_unit_num": 1,
     "button": "Art/Interface/Buttons/Units/Fireball.dds"
   },
   {
@@ -1665,12 +1679,11 @@
     "civilopedia": "TXT_KEY_SPELL_PLACEHOLDER_PEDIA",
     "promotion_prereq1": "PROMOTION_AIR2",
     "allow_ai": true,
-    "causes_war": true,
-    "display_when_disabled": true,
-    "has_casted": true,
-    "range": 2,
+    // This game's (the owner's decision, 2026-11-05): the Air II caster's spell in a formation
+    // battle, as Fire II's Fireball; FFH2 cast it on the map (15 lightning damage to the units
+    // within 2 plots, to 30%). Its damage ranks it among the caster's battle spells.
+    "battle_only": true,
     "damage": 15,
-    "damage_limit": 30,
     "damage_type": "DAMAGE_LIGHTNING",
     "button": "Art/Interface/Buttons/Spells/Maelstrom.dds"
   },

@@ -172,6 +172,21 @@ pub fn rows_with_extra_actions(mut rows: [RowActions; ROWS], extra: i32) -> [Row
     rows
 }
 
+/// `rows` of a unit with magic that knows a battle spell (docs/ENGAGEMENTS.md, "Battle spells"):
+/// its spell is the action it takes in place of each attack (strike, charge, stab, shoot, bombard;
+/// the same count), in every row. A healer's rows (one heals) stay as they are.
+pub fn rows_with_battle_spell(mut rows: [RowActions; ROWS]) -> [RowActions; ROWS] {
+    if rows.iter().any(|r| r.kind == ActionKind::Heal) {
+        return rows;
+    }
+    for r in &mut rows {
+        if matches!(r.kind, ActionKind::Strike | ActionKind::Charge | ActionKind::Stab | ActionKind::Shoot | ActionKind::Bombard) {
+            r.kind = ActionKind::Spell;
+        }
+    }
+    rows
+}
+
 /// Whether one of `rows` charges: a flanker's rows.
 pub fn rows_charge(rows: &[RowActions; ROWS]) -> bool {
     rows.iter().any(|r| r.kind == ActionKind::Charge)

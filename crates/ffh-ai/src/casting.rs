@@ -198,7 +198,7 @@ pub fn barrage(g: &mut Game, v: &View) {
     let barrage_spell = |s: SpellType| {
         let i = &d.spells[s];
         // FfH's explicit preferences (the Balseraphs' puppets, AI weight 1000) keep their time.
-        i.ai_weight <= 0 && (i.damage > 0 || i.create_unit_type.is_some() && !i.permanent_unit_create || crate::magic::damage_spell(d, s))
+        i.ai_weight <= 0 && !i.battle_only && (i.damage > 0 || i.create_unit_type.is_some() && !i.permanent_unit_create || crate::magic::damage_spell(d, s))
     };
     let was = g.players[p].sum_sui_mode;
     g.players[p].sum_sui_mode = true;

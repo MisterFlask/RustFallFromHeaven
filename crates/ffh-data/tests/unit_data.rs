@@ -47,7 +47,8 @@ fn table_sizes() {
     assert_eq!(d.unit_classes.len(), 248);
     // 261 and this game's PROMOTION_SPIRIT_GUIDE2 (docs/SUITABILITY.md).
     assert_eq!(d.promotions.len(), 262);
-    assert_eq!(d.spells.len(), 267);
+    // 267 and this game's SPELL_FIREBALL_BARGE (docs/ENGAGEMENTS.md, "Battle spells").
+    assert_eq!(d.spells.len(), 268);
     assert_eq!(d.builds.len(), 35);
     assert_eq!(d.special_units.len(), 3);
     assert_eq!(d.missions.len(), MissionType::NUM);

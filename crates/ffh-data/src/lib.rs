@@ -540,13 +540,13 @@ impl GameData {
         self.combat_roles.keys().find(|&r| self.combat_roles[r].default)
     }
 
-    /// The damage spell a unit casts in a formation battle (docs/ENGAGEMENTS.md, "Action kinds
-    /// and reach": SPELL): of the spells with `iDamage > 0` or `battle_only` (Fireball) whose
-    /// prerequisites on the caster it meets (`PromotionPrereq1` and `PromotionPrereq2` among its
-    /// promotions, `UnitPrereq`, `UnitClassPrereq` and `UnitCombatPrereq` its type's), the
-    /// strongest: the highest `iDamage` (a battle-only spell's is 0), then the lower id. `None`:
-    /// it casts the magic bolt.
-    pub fn engage_damage_spell(&self, unit_type: UnitType, has_promotion: impl Fn(PromotionType) -> bool) -> Option<SpellType> {
+    /// The battle spell a unit knows (docs/ENGAGEMENTS.md, "Battle spells"): of the spells with
+    /// `iDamage > 0` or `battle_only` whose prerequisites on the caster it meets
+    /// (`PromotionPrereq1` and `PromotionPrereq2` among its promotions, `UnitPrereq`,
+    /// `UnitClassPrereq` and `UnitCombatPrereq` its type's, `ReligionPrereq` its `religion`), the
+    /// strongest: the highest `iDamage` (Fireball's is 0), then the lower id. `None`: it knows
+    /// none (a caster casts the magic bolt).
+    pub fn engage_damage_spell(&self, unit_type: UnitType, has_promotion: impl Fn(PromotionType) -> bool, religion: Option<ReligionType>) -> Option<SpellType> {
         let info = &self.units[unit_type];
         let mut best: Option<SpellType> = None;
         for s in self.spells.keys() {
@@ -556,7 +556,8 @@ impl GameData {
                 && spell.promotion_prereq2.map_or(true, &has_promotion)
                 && spell.unit_prereq.map_or(true, |t| t == unit_type)
                 && spell.unit_class_prereq.map_or(true, |c| info.unit_class_type == Some(c))
-                && spell.unit_combat_prereq.map_or(true, |c| info.unit_combat_type == Some(c));
+                && spell.unit_combat_prereq.map_or(true, |c| info.unit_combat_type == Some(c))
+                && spell.religion_prereq.map_or(true, |r| religion == Some(r));
             if meets && best.map_or(true, |b| spell.damage > self.spells[b].damage) {
                 best = Some(s);
             }

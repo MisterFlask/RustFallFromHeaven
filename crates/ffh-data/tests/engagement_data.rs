@@ -152,7 +152,11 @@ fn casters_cast_their_strongest_damage_spell() {
     let p = |n: &str| d.t::<PromotionType>(n);
     let spell = |unit: &str, held: &[&str]| {
         let held: Vec<PromotionType> = held.iter().map(|n| p(n)).collect();
-        d.engage_damage_spell(d.t::<UnitType>(unit), |x| held.contains(&x)).map(|s| d.type_name(s))
+        d.engage_damage_spell(d.t::<UnitType>(unit), |x| held.contains(&x), None).map(|s| d.type_name(s))
+    };
+    let spell_of = |unit: &str, held: &[&str], religion: &str| {
+        let held: Vec<PromotionType> = held.iter().map(|n| p(n)).collect();
+        d.engage_damage_spell(d.t::<UnitType>(unit), |x| held.contains(&x), Some(d.t::<ReligionType>(religion))).map(|s| d.type_name(s))
     };
     // No damage spell: the magic bolt.
     assert_eq!(spell("UNIT_ADEPT", &[]), None);
@@ -163,11 +167,15 @@ fn casters_cast_their_strongest_damage_spell() {
     assert_eq!(spell("UNIT_MAGE", &["PROMOTION_FIRE2", "PROMOTION_AIR2"]), Some("SPELL_MAELSTROM"));
     // The strongest: Snowfall (40) over Maelstrom (15).
     assert_eq!(spell("UNIT_ARCHMAGE", &["PROMOTION_AIR2", "PROMOTION_ICE3"]), Some("SPELL_SNOWFALL"));
-    // Both promotions of a two-promotion spell: Ring of Flames (15) needs Channeling II and Divine.
-    assert_eq!(spell("UNIT_PRIEST_OF_THE_ORDER", &["PROMOTION_CHANNELING2"]), None);
-    assert_eq!(spell("UNIT_PRIEST_OF_THE_ORDER", &["PROMOTION_CHANNELING2", "PROMOTION_DIVINE"]), Some("SPELL_RING_OF_FLAMES"));
+    // Both promotions of a two-promotion spell and its religion: Ring of Flames (15) needs
+    // Channeling II, Divine and the Ashen Veil.
+    let ring = ["PROMOTION_CHANNELING2", "PROMOTION_DIVINE"];
+    assert_eq!(spell_of("UNIT_PRIEST_OF_THE_VEIL", &["PROMOTION_CHANNELING2"], "RELIGION_THE_ASHEN_VEIL"), None);
+    assert_eq!(spell_of("UNIT_PRIEST_OF_THE_VEIL", &ring, "RELIGION_THE_ASHEN_VEIL"), Some("SPELL_RING_OF_FLAMES"));
+    assert_eq!(spell_of("UNIT_PRIEST_OF_THE_ORDER", &ring, "RELIGION_THE_ORDER"), None);
+    assert_eq!(spell("UNIT_PRIEST_OF_THE_ORDER", &ring), None);
     // Equal damage: the lower id (Maelstrom before Ring of Flames, both 15).
-    assert_eq!(spell("UNIT_MAGE", &["PROMOTION_AIR2", "PROMOTION_CHANNELING2", "PROMOTION_DIVINE"]), Some("SPELL_MAELSTROM"));
+    assert_eq!(spell_of("UNIT_MAGE", &["PROMOTION_AIR2", "PROMOTION_CHANNELING2", "PROMOTION_DIVINE"], "RELIGION_THE_ASHEN_VEIL"), Some("SPELL_MAELSTROM"));
     // A unit-class spell: Mary's Contagion, Auric Ascended's greater Snowfall.
     assert_eq!(spell("UNIT_MARY", &[]), Some("SPELL_CONTAGION"));
     assert_eq!(spell("UNIT_AURIC_ASCENDED", &[]), Some("SPELL_SNOWFALL_GREATOR"));

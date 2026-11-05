@@ -822,8 +822,9 @@ pub fn planned_soften(g: &Game, tp: PlotIdx, defs: &[UnitId], casters: &[UnitId]
         let mut best: Option<(i32, Vec<i32>)> = None;
         for s in known(g, c) {
             let info = &d.spells[s];
-            // (FfH's weighted spells -- the Balseraphs' puppets -- are cast for the weight.)
-            if !info.allow_ai || info.global || info.ai_weight > 0 {
+            // (FfH's weighted spells -- the Balseraphs' puppets -- are cast for the weight; a
+            // battle spell is cast in the battle, not before it.)
+            if !info.allow_ai || info.global || info.ai_weight > 0 || info.battle_only {
                 continue;
             }
             let mut after = cur.clone();
@@ -1664,8 +1665,8 @@ pub fn school_tech_value(g: &Game, p: PlayerId, t: TechType, value: i32) -> i32 
 // What a caster can do (promotions)
 // ----------------------------------------------------------------------------
 
-/// [`spell_worth`] of a battle-only spell (Fireball): the old Fireball missile's worth without
-/// its collateral bonus (a strength-4 summon at 20 a point).
+/// [`spell_worth`] of a battle-only spell (Fireball, Maelstrom): the old Fireball missile's worth
+/// without its collateral bonus (a strength-4 summon at 20 a point).
 const BATTLE_SPELL_WORTH: i32 = 80;
 
 /// Rough worth of spell `s` to a caster, on the scale of `units::promotion_value` (Combat I is
@@ -1677,6 +1678,12 @@ pub fn spell_worth(d: &GameData, s: SpellType) -> i32 {
     let info = &d.spells[s];
     if !info.allow_ai || info.global || info.ability {
         return 0;
+    }
+    if info.battle_only {
+        // A battle spell (Fireball, Maelstrom): its caster's spell in every formation battle it
+        // fights, a splash of its damage type in place of the magic bolt's single hit at 60%;
+        // its map fields do nothing.
+        return BATTLE_SPELL_WORTH;
     }
     let reach = info.range + 1;
     let mut w = match py_kind(d, s) {
@@ -1697,11 +1704,6 @@ pub fn spell_worth(d: &GameData, s: SpellType) -> i32 {
         w += (sw.max(5) * info.create_unit_num.max(1)).min(200);
     }
     w += info.damage * reach;
-    if info.battle_only {
-        // A battle spell (Fireball): its caster's spell in every formation battle it fights, a
-        // splash of its damage type in place of the magic bolt's single hit at 60%.
-        w += BATTLE_SPELL_WORTH;
-    }
     for pr in adds(info) {
         let p = &d.promotions[pr];
         if p.ai_weight < 0 {

@@ -477,15 +477,17 @@ fn place_bonuses_count_on_both_sides() {
     assert_eq!(ad(back), (apply(400, defense_bonus + 10), apply(400, attack_bonus)));
 }
 
-/// Fire II's Fireball is its caster's battle spell (the owner's decision, 2026-11-05;
-/// docs/ENGAGEMENTS.md): never cast on the map, of fire, cut by the target's fire resistance.
+/// Fire II's Fireball and Air II's Maelstrom are their caster's battle spells (the owner's
+/// decisions, 2026-11-05; docs/ENGAGEMENTS.md, "Battle spells"): never cast on the map, of their
+/// damage type, cut by the target's resistance to it.
 #[test]
-fn fire_ii_s_fireball_is_a_battle_spell() {
+fn fireball_and_maelstrom_are_battle_spells() {
     let mut w = world();
     let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
     let fireball = w.g.d.t::<SpellType>("SPELL_FIREBALL");
+    let maelstrom = w.g.d.t::<SpellType>("SPELL_MAELSTROM");
     let mage = w.unit(p0, "UNIT_MAGE", from);
-    assert_eq!(w.g.unit_engage_spell(mage), None, "without Fire II: the magic bolt");
+    assert_eq!(w.g.unit_engage_spell(mage), None, "without a damage sphere: the magic bolt");
     w.promote(mage, "PROMOTION_FIRE1");
     w.promote(mage, "PROMOTION_FIRE2");
     assert_eq!(w.g.unit_engage_spell(mage), Some(fireball));
@@ -495,8 +497,39 @@ fn fire_ii_s_fireball_is_a_battle_spell() {
     w.promote(immune, "PROMOTION_IMMUNE_FIRE");
     assert_eq!(w.g.engage_spell_pct(mage, Some(plain)), 100);
     assert_eq!(w.g.engage_spell_pct(mage, Some(immune)), 0);
-    // A unit whose battle rows cast no spell has no battle spell, Fire II or not.
+    // Air II too: Maelstrom (15) ranks above Fireball (0).
+    w.promote(mage, "PROMOTION_AIR1");
+    w.promote(mage, "PROMOTION_AIR2");
+    assert_eq!(w.g.unit_engage_spell(mage), Some(maelstrom));
+    assert!(!w.g.unit_can_cast(mage, maelstrom, true), "not cast on the map");
+}
+
+/// A unit with magic that knows a battle spell casts it in place of each attack, in every row;
+/// one without magic, or a healer, keeps its rows (docs/ENGAGEMENTS.md, "Battle spells").
+#[test]
+fn a_battle_spell_takes_the_place_of_the_attacks() {
+    use ActionKind::{Heal, Spell, Strike};
+    let mut w = world();
+    let (p0, from) = (w.p0, w.from);
+    let kinds = |w: &World, u: UnitId| w.g.unit_engage_actions(u).map(|r| r.kind);
+    // A mage: the front row's strike too, with a battle spell; the bolt's rows without one.
+    let mage = w.unit(p0, "UNIT_MAGE", from);
+    assert_eq!(kinds(&w, mage), [Strike, Spell, Spell]);
+    w.promote(mage, "PROMOTION_FIRE1");
+    w.promote(mage, "PROMOTION_FIRE2");
+    assert_eq!(kinds(&w, mage), [Spell, Spell, Spell]);
+    // Meshabber (Fire II free, a caster's magic): Fireball in place of his strikes.
+    let meshabber = w.unit(p0, "UNIT_MESHABBER", from);
+    assert!(kinds(&w, meshabber).iter().all(|&k| k == Spell), "{:?}", kinds(&w, meshabber));
+    assert_eq!(w.g.unit_engage_spell(meshabber), Some(w.g.d.t::<SpellType>("SPELL_FIREBALL")));
+    // An axeman given Fire II has no magic: it strikes.
     let axeman = w.unit(p0, "UNIT_AXEMAN", from);
     w.promote(axeman, "PROMOTION_FIRE2");
+    assert_eq!(kinds(&w, axeman), [Strike, Strike, Strike]);
     assert_eq!(w.g.unit_engage_spell(axeman), None);
+    // A priest of the Ashen Veil knows Ring of Flames, and heals as its role does.
+    let priest = w.unit(p0, "UNIT_PRIEST_OF_THE_VEIL", from);
+    w.g.units[priest].religion = Some(w.g.d.t::<ReligionType>("RELIGION_THE_ASHEN_VEIL"));
+    assert_eq!(w.g.unit_battle_spell(priest), Some(w.g.d.t::<SpellType>("SPELL_RING_OF_FLAMES")));
+    assert!(kinds(&w, priest).contains(&Heal), "{:?}", kinds(&w, priest));
 }

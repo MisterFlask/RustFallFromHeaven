@@ -212,7 +212,9 @@ data (`--apply`). In short:
   60%, the Nullstone Golem 400%.
 - **Accuracy, evasion and crit by role:** Flankers EVA 15; Assassins EVA 20, and with their free
   Marksman ACC 95 and CRIT 30; Archers ACC 95, EVA 5; Siege ACC 85; recon skirmishers ACC 95,
-  EVA 10; large units EVA 0. Casters' magic is 110% of their attack.
+  EVA 10; large units EVA 0. Casters' magic is 110% of their attack; so is that of the heroes
+  with a battle spell of their own (Meshabber 209, Mary 66, Auric Ascended 330: 2026-11-05,
+  docs/ENGAGEMENTS.md, "Battle spells").
 - **Promotions:** the lines in section 4, and races as promotions on every unit of the race (a
   Khazad Axeman is a Dwarf): Dwarves +10% DEF and MDEF, -5 EVA; Elves +5 ACC and EVA; Dark elves
   +5 ACC, +10% MAG; Orcs +10% HP, -5 ACC; Undead +10% HP, -20% MDEF; and the others in the table.

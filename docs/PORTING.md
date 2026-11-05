@@ -251,13 +251,20 @@ flag.
   not the Tower of Mastery or the Altar of the Luonnotar. New: `PROMOTION_SPIRIT_GUIDE2` (the
   Legendary Reliquary's). Save format 17.
 
-- **Fireball is Fire II's battle spell** (docs/ENGAGEMENTS.md; the owner's decision, 2026-11-05).
-  A caster with Fire II casts Fireball with its spell actions in a formation battle, in place of
-  the magic bolt: fire damage (cut by the target's fire resistance) with the 50% splash on
-  adjacent units, as the other damage spells known in battle. It is no longer cast on the map
-  (FFH2: it summoned a Fireball missile that struck a plot and died). A unit with Fire II whose
-  battle rows cast no spell (the Arcane Barge, Meshabber) has no Fireball. The Wonder spell still
-  summons the missile it summoned (`UNIT_FIREBALL`). New spell key `battle_only`.
+- **Battle spells** (docs/ENGAGEMENTS.md, "Battle spells"; the owner's decisions, 2026-11-05).
+  Fire II's Fireball and Air II's Maelstrom are cast only in formation battles, by their caster's
+  spell actions in place of the magic bolt: fire or lightning damage (cut by the target's
+  resistance) with the 50% splash on adjacent units, as the other damage spells known in battle.
+  They are no longer cast on the map (FFH2: Fireball summoned a missile that struck a plot and
+  died; Maelstrom did 15 lightning damage, to 30%, to the units within 2 plots). A unit with magic
+  that knows a battle spell casts it in place of each attack (strikes, charges, stabs, shots,
+  bombards), in every row; a healer keeps its rows. Meshabber, Mary and Auric Ascended, the
+  heroes with a battle spell of their own, have a caster's magic (110% of their attack) and cast
+  it in place of their strikes. The battle spell needs its religion (Ring of Flames the Ashen
+  Veil's, Crown of Brilliance the Empyrean's). The Arcane Barge, a ship, keeps its Fireball as an
+  ability of its class (`SPELL_FIREBALL_BARGE`, the missile); the Wonder spell still summons the
+  missile it summoned (`UNIT_FIREBALL`). New spell key `battle_only`; one new spell, so saves made
+  before do not load.
 
 **Balance** (after `classic-1`, each the owner's decision)
 

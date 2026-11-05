@@ -1794,7 +1794,7 @@
   },
   {
     "type": "UNIT_AURIC_ASCENDED",
-    "stats": {"hp": 120, "attack": 300, "defense": 300, "magic": 0, "magic_defense": 225, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
+    "stats": {"hp": 120, "attack": 300, "defense": 300, "magic": 330, "magic_defense": 225, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_AURIC_ASCENDED",
     "domain": "DOMAIN_LAND",
     "default_unit_ai": "UNITAI_HERO",
@@ -8516,7 +8516,7 @@
   },
   {
     "type": "UNIT_MARY",
-    "stats": {"hp": 120, "attack": 60, "defense": 60, "magic": 0, "magic_defense": 45, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
+    "stats": {"hp": 120, "attack": 60, "defense": 60, "magic": 66, "magic_defense": 45, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_MARY",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",
@@ -8665,7 +8665,7 @@
   },
   {
     "type": "UNIT_MESHABBER",
-    "stats": {"hp": 120, "attack": 190, "defense": 190, "magic": 0, "magic_defense": 142, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
+    "stats": {"hp": 120, "attack": 190, "defense": 190, "magic": 209, "magic_defense": 142, "accuracy": 90, "evasion": 0, "crit": 10, "speed": 4},
     "class": "UNITCLASS_MESHABBER",
     "unit_combat": "UNITCOMBAT_MELEE",
     "domain": "DOMAIN_LAND",

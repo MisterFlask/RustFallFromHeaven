@@ -743,8 +743,12 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
     // belongs to) or religion (its own). What the spell needs of the place, the player and the
     // game is the spell's help.
     let has = |p: Option<PromotionType>| p.is_none_or(|p| free_promotions[p]);
-    // A battle-only spell (Fireball) only for a type whose battle rows cast spells.
-    let casts_in_battle = d.engage_rows(u, d.unit_roles[u]).iter().any(|r| r.kind == ActionKind::Spell);
+    // A battle-only spell (Fireball) only for a type whose battle rows cast spells (a unit that
+    // knows a battle spell through its free promotions casts it in place of its attacks).
+    let rows = d.engage_rows(u, d.unit_roles[u]);
+    let knows = d.engage_damage_spell(u, |p| free_promotions[p], *religion_type).is_some() && d.unit_stat(u, StatType::Magic) > 0;
+    let rows = if knows { rows_with_battle_spell(rows) } else { rows };
+    let casts_in_battle = rows.iter().any(|r| r.kind == ActionKind::Spell);
     for s in d.spells.keys() {
         let si = &d.spells[s];
         let tied = si.promotion_prereq1.is_some_and(|p| free_promotions[p]) || si.unit_prereq == Some(u) || of_class(si);
@@ -936,10 +940,10 @@ mod tests {
         assert!(galley.starts_with("5[ICON_STRENGTH], 3[ICON_MOVES] (Naval Units)"), "{galley}");
         has(&galley, &["[ICON_BULLET]Cannot Enter Ocean"]);
         let barge = help("UNIT_ARCANE_BARGE");
-        has(&barge, &["[ICON_BULLET]Cargo Space: 1", "Requires Astronomy", "Requires Sorcery"]);
-        // Its Fire II's Fireball is a battle spell, and a ship fights no land battle.
-        let fireball = format!("[LINK=literal]{}[\\LINK] ability", display(d, d.t::<SpellType>("SPELL_FIREBALL")));
-        assert!(!barge.contains(&fireball), "{barge}");
+        // Its own Fireball (the missile; Fire II's battle Fireball is not a ship's), once.
+        let fireball = format!("[LINK=literal]{}[\\LINK] ability", display(d, d.t::<SpellType>("SPELL_FIREBALL_BARGE")));
+        has(&barge, &["[ICON_BULLET]Cargo Space: 1", &fireball, "Requires Astronomy", "Requires Sorcery"]);
+        assert_eq!(barge.matches(&fireball).count(), 1, "{barge}");
         assert!(help("UNIT_SON_OF_THE_INFERNO").contains(&fireball), "{}", help("UNIT_SON_OF_THE_INFERNO"));
         let adept = help("UNIT_ADEPT");
         has(&adept, &["[ICON_BULLET]Unit starts with +1 free promotion(s)", "Upgrades To: Mage", "Requires Knowledge of the Ether"]);

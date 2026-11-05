@@ -1,6 +1,6 @@
 //! Spellcasting (`magic.rs`): constructed, deterministic scenarios on a small hand-made map --
-//! a mage next to an enemy city casts Maelstrom before our stack attacks it (a Fire mage keeps
-//! its Fireball, a battle spell, for the battle), an adept that knows
+//! an archmage next to an enemy city casts Snowfall before our stack attacks it (a Fire or Air
+//! mage keeps its Fireball or Maelstrom, battle spells, for the battle), an adept that knows
 //! Enchanted Blade and Haste blesses its stack rather than hasting it at the end of a quiet turn,
 //! a fresh summon attacks only a fight it has a chance in unless it is about to expire and covers
 //! no one, Donal recruits once in a big city, a caster builds a mana node on our raw mana and
@@ -83,16 +83,16 @@ fn a_mage_softens_the_city_before_the_strike() {
     for _ in 0..2 {
         g.player_init_unit(them, d.t::<UnitType>("UNIT_ARCHER"), 12, 5, Some(UnitAIType::UNITAI_CITY_DEFENSE), None);
     }
-    // Our stack next to the city: a mage of the Air sphere and two axemen about to attack.
-    let mage = g.player_init_unit(us, d.t::<UnitType>("UNIT_MAGE"), 11, 5, Some(UnitAIType::UNITAI_MAGE), None);
-    give(&mut g, mage, &["PROMOTION_AIR1", "PROMOTION_AIR2"]);
+    // Our stack next to the city: an archmage of the Ice sphere and two axemen about to attack.
+    let mage = g.player_init_unit(us, d.t::<UnitType>("UNIT_ARCHMAGE"), 11, 5, Some(UnitAIType::UNITAI_MAGE), None);
+    give(&mut g, mage, &["PROMOTION_ICE1", "PROMOTION_ICE2", "PROMOTION_ICE3"]);
     let axes: Vec<UnitId> = (0..2).map(|_| g.player_init_unit(us, d.t::<UnitType>("UNIT_AXEMAN"), 11, 5, Some(UnitAIType::UNITAI_ATTACK), None)).collect();
     let (ut, tt) = (g.players[us].team, g.players[them].team);
     g.team_declare_war(ut, tt, true, None);
     assert!(g.at_war(ut, tt));
-    let maelstrom = d.t::<SpellType>("SPELL_MAELSTROM");
-    assert!(g.unit_can_cast(mage, maelstrom, false), "the mage can cast Maelstrom next to the city");
-    assert!(magic::attack_value(&g, mage, maelstrom, tp, &axes) > 0, "a Maelstrom on the defenders is worth casting");
+    let snowfall = d.t::<SpellType>("SPELL_SNOWFALL");
+    assert!(g.unit_can_cast(mage, snowfall, false), "the archmage can cast Snowfall next to the city");
+    assert!(magic::attack_value(&g, mage, snowfall, tp, &axes) > 0, "a Snowfall on the defenders is worth casting");
     let hp_before: i32 = g.map.plots[tp].units.iter().map(|&t| g.unit_curr_hit_points(t)).sum();
     let defenders_before = g.map.plots[tp].units.len();
     let v = View::new(&g, us);
@@ -101,12 +101,12 @@ fn a_mage_softens_the_city_before_the_strike() {
     let hp_after: i32 = g.map.plots[tp].units.iter().map(|&t| g.unit_curr_hit_points(t)).sum();
     assert!(
         hp_after < hp_before || g.map.plots[tp].units.len() < defenders_before,
-        "the Maelstrom hurt the defenders ({hp_before} -> {hp_after} hit points)"
+        "the Snowfall hurt the defenders ({hp_before} -> {hp_after} hit points)"
     );
 }
 
-/// Fire II's Fireball is a battle spell (docs/ENGAGEMENTS.md): a Fire mage casts it in its
-/// battles, never on the map, and still marches with the army.
+/// Fire II's Fireball and Air II's Maelstrom are battle spells (docs/ENGAGEMENTS.md): a mage casts
+/// them in its battles, never on the map, and still marches with the army.
 #[test]
 fn a_fire_mage_keeps_its_fireball_for_the_battle() {
     let d = ffh_data::global();
@@ -119,6 +119,11 @@ fn a_fire_mage_keeps_its_fireball_for_the_battle() {
     assert!(!g.unit_can_cast(mage, fireball, true), "Fireball is not cast on the map");
     assert_eq!(g.unit_engage_spell(mage), Some(fireball), "its spell in a battle");
     assert!(magic::combat_caster(&g, mage) && magic::damage_caster(&g, mage));
+    // Air II's Maelstrom likewise.
+    give(&mut g, mage, &["PROMOTION_AIR1", "PROMOTION_AIR2"]);
+    let maelstrom = d.t::<SpellType>("SPELL_MAELSTROM");
+    assert!(!g.unit_can_cast(mage, maelstrom, true), "Maelstrom is not cast on the map");
+    assert_eq!(g.unit_engage_spell(mage), Some(maelstrom), "its spell in a battle: the stronger one");
 }
 
 #[test]
@@ -476,22 +481,22 @@ fn the_barrage_softens_the_stack_at_our_gates_before_our_units_move() {
     g.player_found(them, 16, 5);
     let (ut, tt) = (g.players[us].team, g.players[them].team);
     g.team_declare_war(ut, tt, true, None);
-    // Our city mage of the Air sphere, and three enemy Warriors at the gates.
-    let mage = g.player_init_unit(us, d.t::<UnitType>("UNIT_MAGE"), 4, 5, Some(UnitAIType::UNITAI_MAGE), None);
-    give(&mut g, mage, &["PROMOTION_AIR1", "PROMOTION_AIR2"]);
+    // Our city archmage of the Ice sphere, and three enemy Warriors at the gates.
+    let mage = g.player_init_unit(us, d.t::<UnitType>("UNIT_ARCHMAGE"), 4, 5, Some(UnitAIType::UNITAI_MAGE), None);
+    give(&mut g, mage, &["PROMOTION_ICE1", "PROMOTION_ICE2", "PROMOTION_ICE3"]);
     g.player_init_unit(us, d.t::<UnitType>("UNIT_AXEMAN"), 4, 5, Some(UnitAIType::UNITAI_CITY_DEFENSE), None);
     let warriors: Vec<UnitId> = (0..3).map(|_| g.player_init_unit(them, d.t::<UnitType>("UNIT_WARRIOR"), 5, 5, Some(UnitAIType::UNITAI_ATTACK), None)).collect();
     let hp = |g: &Game| warriors.iter().filter(|&&w| g.units.contains(w)).map(|&w| g.unit_curr_hit_points(w)).sum::<i32>();
     let before = hp(&g);
     let v = View::new(&g, us);
-    if magic::choose_turn_spell(&g, &v, mage).map_or(true, |(s, _)| d.spells[s].base.type_ != "SPELL_MAELSTROM") {
+    if magic::choose_turn_spell(&g, &v, mage).map_or(true, |(s, _)| d.spells[s].base.type_ != "SPELL_SNOWFALL") {
         // A civilization whose mage prefers a spell of its own (the Balseraphs' puppets): it
         // keeps it for the end of the turn.
         return;
     }
     ffh_ai::casting::barrage(&mut g, &v);
     assert!(g.units[mage].has_casted, "the mage casts at the start of the turn");
-    assert!(hp(&g) < before, "the Maelstrom hurt the Warriors before our units move ({before} -> {})", hp(&g));
+    assert!(hp(&g) < before, "the Snowfall hurt the Warriors before our units move ({before} -> {})", hp(&g));
 }
 
 #[test]
@@ -510,15 +515,15 @@ fn the_force_estimate_counts_the_mages_damage_spells() {
     let mage = g.player_init_unit(us, d.t::<UnitType>("UNIT_MAGE"), 11, 5, Some(UnitAIType::UNITAI_WARWIZARD), None);
     let (ut, tt) = (g.players[us].team, g.players[them].team);
     g.team_declare_war(ut, tt, true, None);
-    // Without a damage sphere the mage softens nothing, nor with Fire II (its Fireball is a battle
-    // spell); with Air II its Maelstrom takes hit points.
+    // Without a damage sphere the mage softens nothing, nor with Fire II or Air II (Fireball and
+    // Maelstrom are battle spells); with Ice III its Snowfall takes hit points.
     assert_eq!(magic::planned_soften(&g, tp, &defs, &[mage]).iter().sum::<i32>(), 0);
-    give(&mut g, mage, &["PROMOTION_FIRE1", "PROMOTION_FIRE2"]);
+    give(&mut g, mage, &["PROMOTION_FIRE1", "PROMOTION_FIRE2", "PROMOTION_AIR1", "PROMOTION_AIR2"]);
     assert_eq!(magic::planned_soften(&g, tp, &defs, &[mage]).iter().sum::<i32>(), 0);
-    give(&mut g, mage, &["PROMOTION_AIR1", "PROMOTION_AIR2"]);
+    give(&mut g, mage, &["PROMOTION_ICE1", "PROMOTION_ICE2", "PROMOTION_ICE3"]);
     let soften = magic::planned_soften(&g, tp, &defs, &[mage, mage]);
     assert_eq!(soften.len(), defs.len());
-    assert!(soften.iter().sum::<i32>() > 0, "the Maelstrom's damage counts: {soften:?}");
+    assert!(soften.iter().sum::<i32>() > 0, "the Snowfall's damage counts: {soften:?}");
     // A caster counts once, however often it is listed.
     assert_eq!(soften, magic::planned_soften(&g, tp, &defs, &[mage]));
 }

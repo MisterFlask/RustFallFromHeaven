@@ -204,6 +204,8 @@ pub fn effects(d: &GameData, s: SpellType) -> String {
         }
         b.push_str(NEWLINE);
         b.push_str("[ICON_BULLET]Cannot be cast on the map");
+        // Its map fields (damage, range, war) do nothing outside a battle.
+        return finish(std::mem::take(b));
     }
     if let Some(u) = create_unit_type {
         let unit = display(d, *u);
@@ -393,9 +395,13 @@ mod tests {
         let help = names::text(d, &d.spells[d.t::<SpellType>("SPELL_RAGING_SEAS")].base.help);
         assert!(seas.ends_with(help), "{seas}");
 
+        // A battle spell: its battle line, none of its map fields.
         let maelstrom = of("SPELL_MAELSTROM");
-        assert!(maelstrom.contains("[ICON_BULLET]Damages units about +15%, to a limit of +30% damage."), "{maelstrom}");
-        assert!(maelstrom.contains("[ICON_BULLET]Range: +2"), "{maelstrom}");
+        assert!(maelstrom.contains("[ICON_BULLET]Battle spell: cast by the caster's spell actions in a battle; Lightning damage, 50% splash on adjacent units"), "{maelstrom}");
+        assert!(!maelstrom.contains("Damages units") && !maelstrom.contains("Range"), "{maelstrom}");
+        let snowfall = of("SPELL_SNOWFALL");
+        assert!(snowfall.contains("[ICON_BULLET]Damages units about +40%, to a limit of +80% damage."), "{snowfall}");
+        assert!(snowfall.contains("[ICON_BULLET]Range: +1"), "{snowfall}");
     }
 
     #[test]

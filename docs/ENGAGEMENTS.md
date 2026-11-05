@@ -108,12 +108,21 @@ the view and the client read these.
 - SHOOT: the backmost unit of each enemy lane. Physical, `ENGAGEMENT_SHOOT_MISS_PERCENT` (10) more
   miss.
 - SPELL: the backmost unit of each enemy lane; never misses, never crits. A caster that knows a
-  damage spell (`GameData::engage_damage_spell`: of the spells with `iDamage > 0` or
-  `battle_only` whose promotion, unit, unit class and unit combat prerequisites it meets, the
-  highest `iDamage`, then the lower id) casts it at power 100 with a splash; one that knows none
-  casts the magic bolt, `ENGAGEMENT_BOLT_PERCENT` (60), one target. The log names the spell. A
-  `battle_only` spell is cast only so, never on the map (`unit_can_cast` refuses it): Fire II's
-  Fireball, of fire (the owner's decision, 2026-11-05; FFH2's Fireball summoned a missile).
+  battle spell (below) casts it at power 100 with a splash; one that knows none casts the magic
+  bolt, `ENGAGEMENT_BOLT_PERCENT` (60), one target. The log names the spell.
+- **Battle spells** (the owner's decisions, 2026-11-05). A unit's battle spell
+  (`Game::unit_battle_spell`, `GameData::engage_damage_spell`) is, of the spells with
+  `iDamage > 0` or `battle_only` whose promotion, unit, unit class, unit combat and religion
+  prerequisites it meets, the highest `iDamage`, then the lower id. A unit with magic that knows
+  one casts it in place of each attack, in every row: its strikes, charges, stabs, shots and
+  bombards are SPELL actions, the same counts (`rows_with_battle_spell`); a healer (a row that
+  heals) keeps its rows. So a Fire II mage casts Fireball from the front row too, and Meshabber,
+  Mary and Auric Ascended (heroes with a battle spell of their own, given a caster's magic: 110% of
+  their attack) cast Fireball, Contagion and Greater Snowfall in place of their strikes. A
+  `battle_only` spell is cast only in battle, never on the map (`unit_can_cast` refuses it):
+  Fire II's Fireball (fire; FFH2's summoned a missile) and Air II's Maelstrom (lightning; FFH2's
+  struck the units within 2 plots). The Arcane Barge, a ship, keeps a Fireball of its own
+  (`SPELL_FIREBALL_BARGE`), the missile.
 - BOMBARD: the backmost unit of each enemy lane; physical, `ENGAGEMENT_BOMBARD_MISS_PERCENT` (15)
   more miss; never crits.
 - HEAL: the most hurt ally on the field (most HP missing; ties by lane, then row), itself
@@ -465,8 +474,11 @@ The spec (the owner's, revision 4) holds; these were left open and are decided s
   land in an engagement, but nothing else defends there).
 - **Mages and summons** (the owner's decisions, 2026-11-05): mages fight in person, in the line,
   as they do (that they are harder to keep alive is accepted; easier training can make up for it
-  if they turn out too weak); a caster's summon is an extra unit in its battles (not a swap for
-  the caster), how is open; Fire II's Fireball is its caster's battle spell (done: SPELL above).
+  if they turn out too weak); battle spells are done ("Battle spells" above). A caster's summon is
+  an extra unit in its battles (not a swap for the caster); summons have no duration (a summon is
+  in the battle it is called to, not on the map for some turns); a unit created in the middle of a
+  battle (the Air Elemental's Lightning Elemental on a kill) fights on until the battle ends;
+  Extension I and II, whose only effect is summons' moves, may go. Not built yet.
 - Phase 7: spells in combat phases, summons in battle, the Guardsman's bodyguard, commander auras
   (the hooks are in place: plan section 14). The three spell hooks, `engage_pre_battle`,
   `engage_opening_spells` and `engage_post_battle_spells` (`engage.rs`), are called at their places
