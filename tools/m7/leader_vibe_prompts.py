@@ -23,10 +23,31 @@ EXTRA = {
     "cassiel": ("What is left of the angel in him is uncanny: a face too perfect and too still for a mortal, a faint "
                 "light under the skin."),
     "alexis": "Her gown is buttoned to the chin under the high lace collar.",
-    "hannah": ("She is not quite human: her stare is blank, unblinking and fixed, with no feeling behind the sea-grey "
-               "eyes, the storm looking out of a woman's face."),
-    "os_gabella": ("She is weary: heavy-lidded eyes with faint shadows beneath them, shoulders a little bowed under the "
-                   "armour, the tiredness of someone who has lived since the first morning of the world."),
+    "hannah": ("She is hollow, and something else looks out through her: her face is completely relaxed and empty, no "
+               "smile, no frown, brows and mouth slack; her eyes have no catchlight and are fixed level, on nothing or "
+               "straight through the viewer; she does not blink. She is perfectly still while everything around her "
+               "moves. This emptiness overrides any drama in the style: her face shows no feeling at all."),
+    "os_gabella": ("She is weary beyond anything mortal: alive since the first morning of the world and bored by all of "
+                   "it, and it shows in her whole body: shoulders dropped, weight leaning on what is beside her, eyelids "
+                   "half-closed, mouth slack, no tension anywhere. This weariness overrides any drama in the style: no "
+                   "heroic pose, no wind in her hair, no triumphant light, no rim light."),
+}
+# whole likenesses written for the vibes, replacing the extracted ones (the owner's notes, 2026-11-05)
+LIKENESS = {
+    "hannah": ("HANNAH THE IRIN, the mutineer pirate queen born of a cult dreamer, leader of the Lanun in the fantasy "
+               "game Fall from Heaven: human-seeming; female; about thirty; wiry. Wind-burned olive skin with a grey, "
+               "drowned pallor, long black hair always wet and hanging straight and heavy, pale grey eyes like worn sea "
+               "glass with no light in them, faint ring-shaped marks on her neck and wrists like the grip of suckers. A "
+               "long plain sea-coat of waterlogged grey-black sailcloth with no braid, buttons or sash, over a yellowed "
+               "high-necked linen shift like a burial shirt, salt crust and dried kelp at the hems. Her mother's NECKLACE "
+               "OF HOLLOW BONE NEEDLES on a black cord, each needle tipped with a stub of whale-fat wax and a tiny wick, "
+               "two or three still burning, wax dripped and hardened down her collarbone."),
+    "os_gabella": ("OS-GABELLA, Queen of Storms, the first woman made by the gods, who rebelled against them, leader of "
+                   "the Sheaim in the fantasy game Fall from Heaven: immortal human; woman; ageless, looking about "
+                   "thirty-five; tall. Pale skin gone dull with tiredness, long black hair hanging limp and loose with a "
+                   "few strands across her face, dark violet eyes with deep shadows under them. A heavy, high-collared "
+                   "black gown over deep crimson underlayers, pale white glowing JEWELS set into its high collar and its "
+                   "girdle; no armour."),
 }
 # likeness sentences that carried the old scene's hand pose or state, loosened to the item itself
 FIX = {
@@ -53,7 +74,7 @@ for key, head in HEAD.items():
     desc = (P / "leaders_hd" / f"{key}.txt").read_text().split("\n\n", 1)[1].strip()
     sents = re.split(r"(?<=[.])\s+(?=[A-Z])", desc)
     cut = next(i for i, s in enumerate(sents) if i > 0 and re.search(r"\bturned\b", s, re.I))
-    likeness = " ".join(sents[:cut])
+    likeness = LIKENESS.get(key) or " ".join(sents[:cut])
     for old, new in FIX.get(key, []):
         assert old in likeness, (key, old)
         likeness = likeness.replace(old, new)

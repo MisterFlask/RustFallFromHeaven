@@ -14,8 +14,13 @@ Rules (the owner's direction, 2026-11-05):
 - **The hands do something**: each vibe names one specific action with the hands (signing, threading,
   unlacing, holding an object for a reason), not a free gesture; there are only so many open palms.
 - **Each vibe names its own place and light**, so the four backgrounds of a leader differ.
-- **Hannah is inhuman too, differently**: a blank, unblinking stare with no feeling behind it.
-- **Os-Gabella is weary** (canon): heavy lids, shadowed eyes, shoulders bowed under the armour.
+- **Hannah is inhuman too, differently**: hollow, something else looking out through her: a slack face,
+  eyes with no catchlight fixed level on nothing, stillness while the storm moves; her hands may work on
+  their own while her face is absent. Her clothes are a cult dreamer's daughter's, not a pirate's: plain
+  waterlogged sailcloth over a burial-shirt linen shift, her mother's wax-and-wick bone needles, sucker marks.
+- **Os-Gabella is weary** (canon: bored by everything, testing how an immortal can be killed): shown in the
+  body, sitting or slumped with her head supported, shadowed half-closed eyes, flat colourless light; a black
+  gown with her glowing jewels in collar and girdle, not armour (her armour is incidental in the lore).
 - **The angels are terrible and unknowable** (Basium, Sabathiel, and what is left of the angel in
   Cassiel), drawn concretely: eyes of pure white light with no pupils, a smooth mask-like face, extra
   pairs of wings with eyes among the feathers, humans half their height kneeling or shielding their eyes.
@@ -144,10 +149,10 @@ signature item) stays as in `leaders_hd/<key>.txt`.
 4. **Brass Spectacles**: peering through stacked lenses at a rune too small to see, utterly absorbed.
 
 ## Hannah (Lanun)
-1. **Living Tempest**: wringing seawater out of her hair with both hands, staring blankly ahead as the sea drains from the harbour behind her; sickly yellow-green light, the wave rising.
-2. **Dreamer's Daughter**: threading one of her bone needles through a strand of black kelp, eyes blank and unfocused; a flooded cult shrine lit by a single wick.
-3. **Kraken Kin**: feeding a silver fish from her fingers to a tentacle rising beside her, her empty stare fixed on you; black water under a full moon.
-4. **Mutiny Queen**: cutting the old captain's gold epaulette off his coat with her knife without looking at the work, her blank eyes on you; a deck in lightning and rain.
+1. **Nobody Home**: her arms hanging limp at her sides, hands doing nothing at all, staring blankly straight into the camera; rain running down her face unnoticed; the deck of the Desecrated Vessel at grey dusk.
+2. **Sleepwalker**: her hands tying a sailor's knot in wet rope on their own while her eyes stare level at nothing; a gale at night, the sails whipping behind her and her hair not moving; sickly green lightning.
+3. **Dreamer's Daughter**: lighting the tiny wick of one of her mother's bone needles at her collarbone with a taper, not looking at it, eyes level and empty; the drowned cult temple, wall recesses where the dreamers lay, old wax everywhere.
+4. **The Sea Withdraws**: wringing seawater from the hem of her coat while the sea behind her has drawn back from the harbour, ships stranded on black mud; flat yellow-grey light, her gaze level and empty past the viewer.
 
 ## Hyborem (Infernals)
 1. **Morality Is Wind**: a patient tutor's smile at the far end of an endless dinner table.
@@ -180,10 +185,10 @@ signature item) stays as in `leaders_hd/<key>.txt`.
 4. **Pack Thief**: the old monster's best warrior saddling up to ride off with her; snowy dusk.
 
 ## Os-Gabella (Sheaim)
-1. **First Woman**: unlacing a gauntlet with tired fingers, the world's first dawn behind her; untouched grassland bending in the wind.
-2. **Stop, God**: pushing away a golden crown held out to her from the clouds, two fingers on its rim, too tired to be angry; light before rain.
-3. **Storm Queen**: winding a thread of lightning around her wrist like a bracelet, unimpressed by it; a slate storm over her black citadel.
-4. **Outlived Gods**: brushing moss from the face of a toppled god's statue with her gauntlet, weary, almost fond; ruins of every age at dusk.
+1. **Open Carriage**: slouched in the corner of her black carriage, elbow on the open window, chin propped on her hand, eyes half-closed; Galveholm's crowds scrambling out of the way outside, unnoticed; harsh dusty noon.
+2. **Black Fire Test**: holding a crystal on a chain over a pit of black flame with tired, clinical patience, her other hand on her hip; a torchlit cavern deep under her palace.
+3. **Endless Evening**: seated on the edge of her bed at dusk, rubbing her temple with one hand, a hairpin she has just pulled out dangling from the other, half her hair fallen down; eyes on the floor; grey-violet light in a bare stone bedchamber.
+4. **Another Crown**: slumped on worn throne-room steps, head tipped back against a pillar, slowly setting a gold crown down on the stone beside her as she has set down a thousand before; colourless late-afternoon light, dust in the air.
 
 ## Perpentach (Balseraphs)
 1. **The Punchline**: a grin about to burst, one finger holding the pause; spotlight.
