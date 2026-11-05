@@ -94,6 +94,8 @@ def gen_one(key, a):
            "--size", "1024x1024", "--n", str(a.n), "--prompt-file", rel(pf), "--out", rel(out)]
     for im in images:
         cmd += ["--image", rel(im)]
+    if a.stream:
+        cmd += ["--stream", str(a.stream)]
     if a.dry_run:
         return {"key": key, "cmd": " ".join(cmd)}
     p = subprocess.run(cmd, capture_output=True, text=True, cwd=ROOT)
@@ -197,6 +199,7 @@ def main():
     p.add_argument("--quality", default="medium"); p.add_argument("--round", default="r1")
     p.add_argument("--jobs", type=int, default=6); p.add_argument("--extra", help="a sentence added after the description")
     p.add_argument("--revise", help="ROUND:V raw appended as the last image")
+    p.add_argument("--stream", type=int, default=0, help="streamed response, N partial images (1-3; needs --n 1)")
     p.add_argument("--no-anchors", action="store_true", help="text only: no style images (the generations endpoint)")
     p.add_argument("--model", default=MODEL); p.add_argument("--dry-run", action="store_true")
     p = sub.add_parser("cut")

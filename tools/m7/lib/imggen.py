@@ -11,6 +11,9 @@ Multiple outputs are written as out_1.png, out_2.png ...
 Each call appends to <package>/spend.jsonl (including the full prompt and the ordered --image list). Calls are refused when the global cap or the
 tag-prefix cap (<package>/budget.json) would be exceeded. Prints one JSON line.
 Unsupported optional params are dropped automatically and the call retried.
+--stream N asks for a streamed response with N partial images (1-3; n must be 1): the bytes keep
+flowing while the model works, for routes that cut a silent connection (high-quality calls to the
+slower models run past such a cutoff otherwise). Only the final image is saved.
 """
 import argparse, base64, json, os, sys, time
 from pathlib import Path
@@ -97,11 +100,27 @@ def cost_from_usage(model, usage, fallback):
     return txt * pt / 1e6 + img * pi / 1e6 + out * po / 1e6
 
 
-def call(kind, model, prompt, size, quality, background, n, images, mask, input_fidelity, extra):
+def read_stream(r):
+    """The final image and usage from a streamed images response (server-sent events): the event
+    whose type ends in `.completed` carries both; partial images are skipped."""
+    for line in r.iter_lines(decode_unicode=True):
+        if not line or not line.startswith("data:"):
+            continue
+        ev = json.loads(line[5:].strip())
+        if ev.get("type", "").endswith(".completed"):
+            return {"data": [{"b64_json": ev.get("b64_json")}], "usage": ev.get("usage")}
+        if ev.get("type") == "error" or "error" in ev:
+            raise ValueError(json.dumps(ev)[:500])
+    raise ValueError("stream ended without a completed event")
+
+
+def call(kind, model, prompt, size, quality, background, n, images, mask, input_fidelity, extra, stream=0):
     headers = {"Authorization": "Bearer " + os.environ["OPENAI_API_KEY"]}
     params = {"model": model, "prompt": prompt, "n": n}
     opt = {"size": size, "quality": quality, "background": background, "moderation": "low",
            "input_fidelity": input_fidelity if kind == "edit" else None, "output_format": "png"}
+    if stream:
+        opt.update({"stream": "true" if kind == "edit" else True, "partial_images": stream})
     opt.update(extra or {})
     opt = {k: v for k, v in opt.items() if v not in (None, "")}
     rl_wait, attempts, dropped = 0.0, 0, []
@@ -111,19 +130,25 @@ def call(kind, model, prompt, size, quality, background, n, images, mask, input_
         t0 = time.time()
         try:
             if kind == "gen":
-                r = requests.post(f"{API}/generations", headers=headers, json=body, timeout=420)
+                r = requests.post(f"{API}/generations", headers=headers, json=body, timeout=420, stream=bool(stream))
             else:
                 files = [("image[]", (Path(p).name, open(p, "rb"), "image/png")) for p in images]
                 if mask:
                     files.append(("mask", (Path(mask).name, open(mask, "rb"), "image/png")))
                 data = {k: str(v) for k, v in body.items()}
-                r = requests.post(f"{API}/edits", headers=headers, data=data, files=files, timeout=420)
+                r = requests.post(f"{API}/edits", headers=headers, data=data, files=files, timeout=420, stream=bool(stream))
         except requests.RequestException as e:
             if attempts < 4:
                 time.sleep(5 * attempts); rl_wait += 5 * attempts; continue
             return None, {"error": f"network: {e}"}, time.time() - t0, rl_wait, dropped
         latency = time.time() - t0
         if r.status_code == 200:
+            if "stream" in opt:
+                try:
+                    res = read_stream(r)
+                except (ValueError, requests.RequestException) as e:
+                    return None, {"error": f"stream: {e}"}, time.time() - t0, rl_wait, dropped
+                return res, None, time.time() - t0, rl_wait, dropped
             return r.json(), None, latency, rl_wait, dropped
         txt = r.text[:600]
         if r.status_code in (429, 500, 502, 503, 504) and attempts < 6:
@@ -156,7 +181,10 @@ def main():
     ap.add_argument("--mask")
     ap.add_argument("--input-fidelity", default=None)
     ap.add_argument("--out")
+    ap.add_argument("--stream", type=int, default=0, help="streamed response with N partial images (1-3; needs --n 1)")
     a = ap.parse_args()
+    if a.stream and a.n != 1:
+        raise SystemExit("--stream needs --n 1")
 
     if a.cmd == "spend":
         total, tags = caps()
@@ -174,7 +202,7 @@ def main():
     est = estimate(a.model, a.size, a.quality, a.n, len(a.image))
     check_budget(a.tag, est)
     res, err, latency, rl_wait, dropped = call(a.cmd, a.model, prompt, a.size, a.quality, a.background, a.n,
-                                               a.image, a.mask, a.input_fidelity, None)
+                                               a.image, a.mask, a.input_fidelity, None, a.stream)
     usage = (res or {}).get("usage")
     usd = cost_from_usage(a.model, usage, est) if res else 0.0
     files = []
@@ -189,7 +217,7 @@ def main():
             files.append(str(p))
     row = {"t": int(time.time()), "tag": a.tag, "cmd": a.cmd, "model": a.model, "size": a.size,
            "quality": a.quality, "n": a.n, "n_images": len(a.image), "latency": round(latency, 1),
-           "rl_wait": round(rl_wait, 1), "usd": round(usd, 4), "usage": usage, "ok": bool(res),
+           "rl_wait": round(rl_wait, 1), "usd": round(usd, 4), "usage": usage, "ok": bool(res), "stream": a.stream,
            "dropped_params": dropped, "files": files, "error": err,
            "prompt": prompt, "images": a.image}
     with open(LEDGER, "a", encoding="utf-8") as f:
