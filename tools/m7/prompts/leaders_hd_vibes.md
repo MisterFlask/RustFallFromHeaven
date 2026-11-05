@@ -4,10 +4,13 @@ Four concepts per leader, each a 1-3 word vibe true to the leader's whole charac
 one story beat. The line under each says how the portrait carries it: expression and posture do
 the work, and the setting is the leader's iconic place, not an event in progress.
 
-Two rules (the owner's direction, 2026-11-05):
+Three rules (the owner's direction, 2026-11-05):
 
 - **Play up what only this leader has**: a trait, power, history or habit no other leader shares.
   Moods any leader could wear (weary, gentle, proud, grieving) are not concepts by themselves.
+- **Each leader differs from the other leaders of their civilization**: two leaders of one civ never share
+  a theme (Alexis is death and knowledge, Flauros talk and timing; Arturus hoards gold under the
+  mountain, Kandros trades on the open road).
 - **The angels are terrible and unknowable** (Basium, Sabathiel, and what is left of the angel in
   Cassiel): light where a face should show feeling, a stillness nothing alive has, wings and eyes in
   the wrong places, a scale that dwarfs the humans around them, who shield their eyes or kneel.
@@ -17,7 +20,7 @@ signature item) stays as in `leaders_hd/<key>.txt`.
 
 ## Alexis (Calabim)
 1. **Death's Student**: leans close by one candle, unblinking, watching for the instant life leaves your face; plundered books in the dark.
-2. **Herd Keeper**: calm on a balcony above the walled human quarter, surveying it like a farmer her stock; pale moon over black spires.
+2. **Fear of Dying**: a candle burning low in her cupped hands, the one thing she still dreads flickering in her gold eyes.
 3. **Specimen Collector**: pinned moths in velvet cases on her desk, her head tilted at you as the next exhibit.
 4. **First Vampire**: utterly still in an ancient high-backed chair, centuries in her gold eyes; hundreds of candle stubs around her.
 
@@ -36,7 +39,7 @@ signature item) stays as in `leaders_hd/<key>.txt`.
 ## Arturus (Khazad)
 1. **Vault King**: seated on his clan's hoard, a hand on a stack of gold bars, eyes daring you to want it; lamplit vault.
 2. **Carved History**: chisel in his scarred hand, fifty years of clan names on the stone pillar beside him.
-3. **Crown From Below**: the squat gold crown he carried out of the Underhome, raised into surface daylight.
+3. **King Under Stone**: in the deepest hall, a mountain's weight overhead, lit by one channel of lava, utterly at home.
 4. **Unbending Oath**: arms folded, chin up, outside the gate of the friend he banished; stubborn as the mountain.
 
 ## Auric (Illians)
@@ -60,7 +63,7 @@ signature item) stays as in `leaders_hd/<key>.txt`.
 ## Beeri (Luchuirp)
 1. **Pure Spite**: snarling through mud, a gold coin crushed in his fist; alive because his death would please them.
 2. **Caged Heir**: behind the jester-king's cage bars, glaring at the laughing masked court.
-3. **Grudge Engine**: a golem's iron foot raised beside him like a promise, wrench on his shoulder; forge glow.
+3. **Debt Collector**: tapping a ledger of every insult the jester court owes him, a grim grin.
 4. **Mine Lamp**: the dented helmet lamp the only light in a black tunnel, his eyes fixed on you.
 
 ## Capria (Bannor)
@@ -94,10 +97,10 @@ signature item) stays as in `leaders_hd/<key>.txt`.
 4. **Chalk Genius**: equations of light floating around him, absently chalking one onto your sleeve; violet study.
 
 ## Decius (Bannor, Malakim, Calabim)
-1. **Borrowed Throne**: a dark elf lounging on a human throne, a crown not made for him tipped on his brow; amber dusk.
+1. **Borrowed Throne**: a dark elf standing beside a human throne, one hand on its arm, a crown not made for him tipped on his brow; amber dusk.
 2. **Three Crowns**: the crowns of three peoples on the table before him, one picked up idly; war tent.
 3. **Exile King**: dusky blue skin and white hair among human courtiers who whisper behind their hands.
-4. **Expects Betrayal**: a goblet offered with one hand, the other resting on a dagger, tired eyes on you.
+4. **Expects Betrayal**: an unopened letter in one hand, the other resting on a dagger, tired eyes on you.
 
 ## Einion (Elohim)
 1. **Absolute Peace**: unarmed and smiling before an army; an open gate at dawn.
@@ -108,7 +111,7 @@ signature item) stays as in `leaders_hd/<key>.txt`.
 ## Ethne (Elohim)
 1. **Eyes Open**: making herself watch her people's misery, never looking away; torn-out hedges, the poor quarter.
 2. **Lame Parrot**: cradling the one-legged parrot as if it were the world; soft pearl light.
-3. **White Queen**: a slight girl in white whom every army hesitates to strike; a pale gate.
+3. **Young Crown**: the youngest ruler at the council table, chin up among old men, her crown a little too big.
 4. **Breaking Heart**: tears on a face that stays steady; overcast morning.
 
 ## Faeryl (Svartalfar)
@@ -126,7 +129,7 @@ signature item) stays as in `leaders_hd/<key>.txt`.
 ## Flauros (Calabim)
 1. **Sundown Countdown**: timing the sun with his wine, the mob below about to fall into shadow.
 2. **Sister's Shadow**: lounging beside Alexis's empty throne, eyeing it.
-3. **Bored Immortal**: chin on hand, a yawn at a petitioner's pleading, fangs showing.
+3. **Silver Tongue**: mid-speech, one hand turning a courtier's flourish, a whole torchlit hall hanging on his words.
 4. **Charming Rot**: handsome and smiling, a single wilted rose in his lapel; rain on gothic glass.
 
 ## Garrim (Luchuirp)
@@ -155,7 +158,7 @@ signature item) stays as in `leaders_hd/<key>.txt`.
 
 ## Kandros (Khazad)
 1. **First Sky**: head thrown back, laughing at the stars, three hundred years of stone ceiling gone.
-2. **Coin Rings**: the gold coin rings in his forked beard catching lamplight as he names a price.
+2. **Caravan Prince**: walking ahead of a laden pony caravan down a sunlit surface road, waving you over to trade.
 3. **Open Door**: shouldering the forbidden stone door open, starlight spilling in.
 4. **Surface Dreamer**: on a green hill with a map of the open world, grinning at you.
 
@@ -168,14 +171,14 @@ signature item) stays as in `leaders_hd/<key>.txt`.
 ## Mahala (Doviello)
 1. **Usurper's Smile**: a secret triumphant smile, slipping out of the hall into first snow.
 2. **Knife Sleeve**: the bone hilt peeking from her sleeve as she lays a friendly hand on your shoulder.
-3. **She-Wolf**: bear mantle, bone-beaded braids, the pack at her heel now, not his.
+3. **Camp Rebuilder**: sleeves rolled, directing new longhouses going up, the broken tribe made orderly behind her.
 4. **Pack Thief**: the old monster's best warrior saddling up to ride off with her; snowy dusk.
 
 ## Os-Gabella (Sheaim)
 1. **First Woman**: ageless calm, faintly amused, the world's first morning behind her.
 2. **Stop, God**: palm out, halting the god sent to claim her; light before the storm.
 3. **Storm Queen**: lightning gathering overhead, the white jewels in her armour blazing.
-4. **Worldbreaker**: the sky cracking above her, relief on her face.
+4. **Outlived Gods**: unchanged among ruins of every age, a toppled god's statue at her feet.
 
 ## Perpentach (Balseraphs)
 1. **The Punchline**: a grin about to burst, one finger holding the pause; spotlight.
@@ -190,10 +193,10 @@ signature item) stays as in `leaders_hd/<key>.txt`.
 4. **Unclaimed Crown**: a crown held out of the shadow toward you; an empty throne.
 
 ## Rhoanna (Hippus)
-1. **Raid as Trade**: palm up over the council fire, selling the raiders' swords as one more kind of raid.
+1. **Feud Breaker**: leaning across the council fire, settling a blood feud between two scowling chiefs with one sly sentence.
 2. **Bronze Heirloom**: her father's too-broad bronze armour, one shoulder stiff from the old wound, chin up.
 3. **United Tribes**: a hundred tribal standards on the steppe behind her, she alone in front.
-4. **Horse Queen**: a hand on her war mare's neck, wind in the braid.
+4. **Peace Rider**: riding alone between two lined-up hordes, one empty hand raised.
 
 ## Sabathiel (Bannor)
 1. **Hidden Angel**: a human king's face, but the shadow he throws on the wall has vast wings and too many eyes.
@@ -210,7 +213,7 @@ signature item) stays as in `leaders_hd/<key>.txt`.
 ## Sheelba (Clan of Embers)
 1. **Torn Lace**: fist on the torn white lace collar, tusks bared, hurt and fury at once.
 2. **Raised Human**: holding a human girl's ribboned doll she cannot throw away; jungle night.
-3. **Grief to Fury**: red-rimmed eyes, fire rising behind her as she turns from the human town.
+3. **Human Manners**: holding a teacup with perfect manners among roaring orc warlords, the only one at the fire using a cup.
 4. **Between Worlds**: lace and orc furs both on her, looking back at a lit human town.
 
 ## Tasunke (Hippus)
@@ -228,7 +231,7 @@ signature item) stays as in `leaders_hd/<key>.txt`.
 ## Thessa (Ljosalfar)
 1. **Sacrifice Bride**: smiling through tears at her new husband; the red oak in moonlight.
 2. **Gold Feather**: the single gold feather in her hair glowing as she works a spell.
-3. **Corruption's Price**: violet rot spreading through the woods behind her, a hand at her mouth.
+3. **Red Oak Rite**: alone at night, her palm on the great red oak, its leaves reddening where she touches.
 4. **Evermore Archmage**: a staff of living wood, the tree towers of Evermore behind.
 
 ## Valledia (Amurites)
