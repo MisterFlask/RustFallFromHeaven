@@ -86,7 +86,10 @@ pub const MAGIC: &[u8; 8] = b"FFH2SAVE";
 /// - 12: loans priced freely (docs/CRUSADE.md): `CrusadeRules::loan_upkeep_gold` gone,
 ///   `Lender::deals`.
 /// - 13: gifts and demands (`Player::tributes`, `crate::tribute`).
-pub const FORMAT_VERSION: u32 = 13;
+/// - 14: sieges and Sentinels (docs/SIEGES.md): `City::sentinel_damage`, `Unit::xp_carry`, the
+///   battle report's Sentinels (`Outcome::sentinels`, `sentinels_breached`, `LogFighter::sentinel`,
+///   `SlotSource::Sentinels`; the city-defence slot sources gone).
+pub const FORMAT_VERSION: u32 = 14;
 
 /// Why [`Game::load`] rejected a save.
 #[derive(Clone, Debug, PartialEq, Eq)]

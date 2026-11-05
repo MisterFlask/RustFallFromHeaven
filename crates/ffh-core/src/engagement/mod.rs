@@ -14,7 +14,8 @@
 //! and Dv per hit ([`stats`]), each side's slots ([`slots`]), who can fight ([`pick`]), where each
 //! side's units stand (the auto formation and an ordered formation's check: [`arrange`]), the
 //! engagement itself (`engage`, `apply`, `sink`), and the player's attack preview, sampled on a
-//! private RNG ([`preview`]).
+//! private RNG ([`preview`]). Sieges and the walls' Sentinels, which fight in the front row of a
+//! city's battles, are [`siege`] (docs/SIEGES.md).
 
 mod apply;
 pub mod arrange;
@@ -23,6 +24,7 @@ pub mod formation;
 pub mod pick;
 pub mod preview;
 pub mod report;
+pub mod siege;
 mod sink;
 pub mod slots;
 pub mod state;
@@ -32,7 +34,7 @@ pub use arrange::Place;
 pub use engage::{damage_from_hp, hp_from_damage, BattleEffect, EngageOutcome};
 pub use formation::{BattleRng, FighterIdx, Ground, GroundRule, Pair, Side};
 pub use pick::WarTest;
-pub use preview::{EngagePreview, Forecast, PreviewFighter, PreviewInput};
+pub use preview::{EngagePreview, Forecast, PreviewFighter, PreviewInput, PreviewSentinel};
 pub use report::EngageResult;
 pub use slots::Slots;
 pub use stats::HitCtx;

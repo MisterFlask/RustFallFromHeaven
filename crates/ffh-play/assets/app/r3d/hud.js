@@ -165,6 +165,30 @@ function drawHudParts(r3d, cam) {
       g.textAlign = "left";
       g.fillText(name, x + sizeR * 2 + 4 + pad, p.y + 0.5);
     }
+    // Sieges (docs/SIEGES.md): a besieged city's plate is ringed in red, and its walls' Sentinels
+    // stand as small towers under it (filled by their HP left; hollow when breached).
+    if (city.besieged) {
+      g.lineWidth = 2.5;
+      g.strokeStyle = "#e0442c";
+      roundRect(g, x - 2, y - 2, w + 4, h + 4, (h + 4) / 2);
+      g.stroke();
+    }
+    if (city.sentinels?.length) {
+      const tw2 = Math.max(4, fs * 0.42);
+      const th2 = Math.max(6, fs * 0.6);
+      const gap = 3;
+      const total = city.sentinels.length * tw2 + (city.sentinels.length - 1) * gap;
+      let sx = p.x - total / 2;
+      const sy = y + h + 2;
+      for (const pct of city.sentinels) {
+        g.fillStyle = "rgba(18,14,12,0.82)";
+        g.fillRect(sx - 1, sy - 1, tw2 + 2, th2 + 2);
+        const fill = Math.max(0, Math.min(100, pct)) / 100;
+        g.fillStyle = pct > 50 ? "#c8b89a" : pct > 0 ? "#d88a3a" : "#5a1010";
+        g.fillRect(sx, sy + th2 * (1 - fill), tw2, th2 * fill);
+        sx += tw2 + gap;
+      }
+    }
     if (city.capital) {
       g.fillStyle = "#ffd75a";
       g.strokeStyle = "rgba(20,14,8,0.8)";

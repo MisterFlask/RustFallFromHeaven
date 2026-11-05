@@ -555,7 +555,8 @@ impl Game {
             (None, true) => members.clone(),
             (None, false) => self.engage_attackers(owner, from, dest, crate::engagement::WarTest::AtWar),
         };
-        if self.engage_defenders(dest, owner, &test, crate::engagement::WarTest::AtWar).is_empty() {
+        let team = self.players[owner].team;
+        if self.engage_defenders(dest, owner, &test, crate::engagement::WarTest::AtWar).is_empty() && (missiles || !self.plot_has_enemy_sentinels(dest, team)) {
             return Ok(None);
         }
         if human && formation.is_none() && !self.groups[g].last_plot_visible {
@@ -842,7 +843,9 @@ impl Game {
             }
         }
 
-        let mut bombard_turns = self.city_defense_modifier(city, ignore_building_defense);
+        // Not in C++ (docs/SIEGES.md): what is left to bombard is the city's least damaged
+        // Sentinel (percent of its HP), not its defence.
+        let mut bombard_turns = self.city_sentinels_standing(city).iter().map(|&k| 100 - self.city_sentinel_damage(city, k)).max().unwrap_or(0);
         if !ignore_building_defense {
             bombard_turns *= 100;
             bombard_turns /= 25.max(100 - self.cities[city].building_bombard_defense);

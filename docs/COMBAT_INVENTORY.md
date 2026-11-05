@@ -503,7 +503,7 @@ Trireme, Frigate, Man-o-War). `bIgnoreBuildingDefense`: Arquebus, Cannon, Dwarve
 Mistform, Shadowrider, Teutorix.
 
 **Under engagements.** Spec: city-attack bonuses apply to A, city defense to Dv only, and attacking
-a city costs the attacker one slot per 25% (SLOTS_DEFENSE_DIVISOR) of the city's current defense.
+a city costs the attacker one slot per 25% (SLOTS_DEFENSE_DIVISOR) of the city's current defense. (Superseded on 2026-11-04 by the walls' Sentinels, docs/SIEGES.md.)
 
 **Proposal.** KEEP per the spec. Bombard matters more than today: every 25% of defense knocked
 down returns one attacker slot. `bIgnoreBuildingDefense` stays per hit (the target's Dv drops the

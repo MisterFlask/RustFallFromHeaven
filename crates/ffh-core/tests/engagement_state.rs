@@ -112,9 +112,8 @@ fn a_bombard_is_an_attack_made() {
     let cat = g.player_init_unit(p1, g.d.t::<UnitType>("UNIT_CATAPULT"), x, y, None, None);
     let (t0, t1) = (g.players[p0].team, g.players[p1].team);
     g.team_declare_war(t1, t0, false, None);
-    let before = g.cities[c].defense_damage;
     assert!(g.unit_bombard(cat), "the catapult bombards the city");
-    assert!(g.cities[c].defense_damage > before);
+    assert!(g.cities[c].sentinel_damage.iter().all(|&d| d > 0), "it hits the walls' Sentinels (docs/SIEGES.md)");
     assert!(g.units[cat].made_attack);
     assert_eq!(g.units[cat].attacks_made, 1);
 }
@@ -141,6 +140,7 @@ fn report(g: &Game, c: CityId, logged: bool) -> BattleReport {
     let strike = |count| RowActions { kind: ActionKind::Strike, count };
     let fighter = |side: Side, unit: UnitId, fate: LogFate| LogFighter {
         unit,
+        sentinel: false,
         unit_type: warrior,
         name: String::new(),
         owner: PlayerId(side.index() as u8 + 1),
@@ -208,7 +208,7 @@ fn report(g: &Game, c: CityId, logged: bool) -> BattleReport {
         from: plot,
         place: PlotSnap { x: g.cities[c].x, y: g.cities[c].y, terrain: g.map.plots[plot].terrain_type, feature: None, hills: false, river_crossing: false, city: None },
         sides: [side(1), side(2)],
-        outcome: Outcome { result: EngageResult::Taken, rounds: 2, plot_taken: false, city_captured: None, moved_in: 0, defenders_left: 0 },
+        outcome: Outcome { result: EngageResult::Taken, rounds: 2, plot_taken: false, city_captured: None, moved_in: 0, defenders_left: 0, sentinels: 0, sentinels_breached: 0 },
         log: logged.then(|| Box::new(log)),
     }
 }

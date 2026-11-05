@@ -140,15 +140,31 @@ pub(crate) struct Setup {
     pub sides: Vec<Side>,
     pub places: Vec<(u8, u8)>,
     pub n_att: usize,
-    /// Each committed unit as a fighter (HP from its damage field at the set-up).
+    /// Each committed unit as a fighter (HP from its damage field at the set-up), then the
+    /// defended city's Sentinels (docs/SIEGES.md): `sides`, `places`, `fighters` and `pairs`
+    /// cover the units (set-up indices `0..units.len()`) and then the Sentinels
+    /// ([`Setup::sentinel_range`]).
     pub fighters: Vec<Fighter>,
-    /// `n * n`, `[h * n + t]`: the hitter's A against the target and the target's Dv against it
-    /// (cross-side entries only).
+    /// `n * n` (`n` the fighters, Sentinels included), `[h * n + t]`: the hitter's A against the
+    /// target and the target's Dv against it (cross-side entries only).
     pub pairs: Vec<Pair>,
+    /// The city whose Sentinels fight, and which of its Sentinels each Sentinel fighter is.
+    pub sentinel_city: Option<CityId>,
+    pub sentinels: Vec<usize>,
 }
 
 impl Setup {
-    /// The committed units of side `s` (indices).
+    /// The Sentinels' set-up indices (after the units).
+    pub fn sentinel_range(&self) -> std::ops::Range<usize> {
+        self.units.len()..self.fighters.len()
+    }
+
+    /// Whether set-up index `i` is a Sentinel.
+    pub fn is_sentinel(&self, i: usize) -> bool {
+        i >= self.units.len()
+    }
+
+    /// The committed units of side `s` (indices; Sentinels not included).
     pub fn of(&self, s: Side) -> std::ops::Range<usize> {
         match s {
             Side::Attacker => 0..self.n_att,
@@ -164,7 +180,7 @@ impl Setup {
 
     /// The pair of set-up indices `h` (hitting) and `t`.
     pub fn pair(&self, h: usize, t: usize) -> Pair {
-        let p = self.pairs[h * self.units.len() + t];
+        let p = self.pairs[h * self.fighters.len() + t];
         Pair { a: p.a.max(1), dv: p.dv.max(1) }
     }
 
@@ -173,11 +189,12 @@ impl Setup {
         self.of(s).map(|i| Place { unit: self.units[i], lane: self.places[i].0, row: self.places[i].1 }).collect()
     }
 
-    /// The battle of the committed units that fight (not `sat_out`), with HP `hp` (centi-HP, by
-    /// set-up index): the resolver's formation, and each fighter's set-up index.
+    /// The battle of the committed units that fight (not `sat_out`, by unit) and the Sentinels,
+    /// with HP `hp` (centi-HP, by set-up index): the resolver's formation, and each fighter's
+    /// set-up index.
     pub fn battle(&self, sat_out: &[bool], hp: &[i32]) -> (Formation, Vec<usize>) {
-        let n = self.units.len();
-        let map: Vec<usize> = (0..n).filter(|&i| !sat_out[i]).collect();
+        let n = self.fighters.len();
+        let map: Vec<usize> = (0..self.units.len()).filter(|&i| !sat_out[i]).chain(self.sentinel_range()).collect();
         let fighters = map
             .iter()
             .map(|&i| {
@@ -194,7 +211,7 @@ impl Setup {
     /// Phase 7's effects applied: damage lowers `hp` (never below 1 HP), a modifier scales the
     /// fighter's A when it hits and its Dv when it is hit.
     pub fn apply_effects(&mut self, effects: &[BattleEffect], hp: &mut [i32]) {
-        let n = self.units.len();
+        let n = self.fighters.len();
         for e in effects {
             match *e {
                 BattleEffect::Mod { fighter, a_pct, dv_pct } => {
@@ -242,7 +259,8 @@ pub(crate) struct Fought {
 
 impl Fought {
     fn new(setup: &Setup, hp: &[i32], map: &[usize], out: &Outcome) -> Fought {
-        let n = setup.units.len();
+        // Every fighter of the set-up: the units, then the Sentinels.
+        let n = setup.fighters.len();
         let mut fate = vec![LogFate::SatOut; n];
         let mut end_hp = hp.to_vec();
         for (k, e) in out.fighters.iter().enumerate() {
@@ -392,20 +410,43 @@ impl Game {
         f
     }
 
+    /// Sentinel `k` of city `c` as a fighter in cell `place` (docs/SIEGES.md): `UNIT_SENTINEL`'s
+    /// speed, rows, dodge and crit bonus, its A, the city's Sentinel HP and its damage; fixed.
+    pub(crate) fn engage_sentinel_fighter(&self, c: CityId, k: usize, place: (u8, u8), params: &Params) -> Fighter {
+        let d = self.d;
+        let ty = self.sentinel_unit_type();
+        let role = d.unit_roles[ty];
+        let max_hp = self.city_sentinel_max_hp(c);
+        let mut f = Fighter::new(Side::Defender, max_hp);
+        f.tag = u32::MAX - k as u32;
+        (f.lane, f.row) = place;
+        f.hp = hp_from_damage(self.city_sentinel_damage(c, k), max_hp);
+        f.speed = d.engage_speed(ty, role);
+        f.actions = d.engage_actions(ty, role, false);
+        f.a = self.sentinel_a_x100();
+        f.dodge = d.engage_dodge(ty, role);
+        f.crit_bonus = d.engage_crit_bonus(ty, role);
+        f.spell = Spell::bolt(params);
+        f.fixed = true;
+        f
+    }
+
     /// The set-up of an engagement once the attacker's formation is chosen (module comment, step
     /// 1): the defender's formation of `candidates`, both sides in the engagement's order, their
-    /// fighters and the pair table. The real fight ([`Game::engage`]) and the preview
-    /// ([`Game::engage_preview`]) both build their battle here, so its fighters and pairs are the
-    /// fight's own. `Err`: an empty formation, or no defender.
-    pub(crate) fn engage_setup(&self, ctx: HitCtx, slots: Slots, att: Vec<Place>, candidates: Vec<UnitId>) -> Result<Setup, &'static str> {
+    /// fighters (then, with `sentinels`, the defended city's Sentinels: docs/SIEGES.md) and the
+    /// pair table. The real fight ([`Game::engage`]) and the preview ([`Game::engage_preview`])
+    /// both build their battle here, so its fighters and pairs are the fight's own. `Err`: an
+    /// empty formation, or no defender (no unit and no Sentinel).
+    pub(crate) fn engage_setup(&self, ctx: HitCtx, slots: Slots, att: Vec<Place>, candidates: Vec<UnitId>, sentinels: bool) -> Result<Setup, &'static str> {
         if att.is_empty() {
             return Err("no unit can attack there");
         }
-        if candidates.is_empty() {
+        let walls = if sentinels && slots.sentinels > 0 { self.engage_city_sentinels(ctx.to) } else { None };
+        if candidates.is_empty() && walls.is_none() {
             return Err("there is nobody to fight there");
         }
         let def = self.engage_defense_formation(&candidates, &slots, &ctx);
-        if def.is_empty() {
+        if def.is_empty() && walls.is_none() {
             return Err("there is nobody to fight there");
         }
         let params = Params::from_defines(&self.d.defines);
@@ -419,19 +460,40 @@ impl Game {
         let n_att = att.len();
         let all: Vec<(Place, Side)> = att.iter().map(|&p| (p, Side::Attacker)).chain(def.iter().map(|&p| (p, Side::Defender))).collect();
         let units: Vec<UnitId> = all.iter().map(|(p, _)| p.unit).collect();
-        let sides: Vec<Side> = all.iter().map(|&(_, s)| s).collect();
-        let places: Vec<(u8, u8)> = all.iter().map(|(p, _)| (p.lane, p.row)).collect();
-        let fighters: Vec<Fighter> = all.iter().map(|&(p, s)| self.engage_fighter(p.unit, s, (p.lane, p.row), in_city, &ctx, &params)).collect();
-        let n = units.len();
+        let mut sides: Vec<Side> = all.iter().map(|&(_, s)| s).collect();
+        let mut places: Vec<(u8, u8)> = all.iter().map(|(p, _)| (p.lane, p.row)).collect();
+        let mut fighters: Vec<Fighter> = all.iter().map(|&(p, s)| self.engage_fighter(p.unit, s, (p.lane, p.row), in_city, &ctx, &params)).collect();
+        // The city's Sentinels, in their cells, after the units.
+        let (sentinel_city, ks) = match walls {
+            Some((c, ks)) => (Some(c), ks),
+            None => (None, Vec::new()),
+        };
+        let cells = self.engage_sentinel_cells(&slots);
+        let ks: Vec<usize> = ks.into_iter().take(cells.len()).collect();
+        if let Some(c) = sentinel_city {
+            for (j, &k) in ks.iter().enumerate() {
+                sides.push(Side::Defender);
+                places.push(cells[j]);
+                fighters.push(self.engage_sentinel_fighter(c, k, cells[j], &params));
+            }
+        }
+        let n_units = units.len();
+        let n = fighters.len();
         let mut pairs = vec![Pair::default(); n * n];
         for h in 0..n {
             for t in 0..n {
-                if sides[h] != sides[t] {
-                    pairs[h * n + t] = self.engage_hit(units[h], units[t], sides[h], &ctx);
+                if sides[h] == sides[t] {
+                    continue;
                 }
+                pairs[h * n + t] = match (h < n_units, t < n_units, sentinel_city) {
+                    (true, true, _) => self.engage_hit(units[h], units[t], sides[h], &ctx),
+                    (true, false, Some(c)) => Pair { a: self.engage_a_alone(units[h], sides[h], &ctx), dv: self.city_sentinel_dv_x100(c) },
+                    (false, true, _) => Pair { a: self.sentinel_a_x100(), dv: self.engage_dv_alone(units[t], sides[t], &ctx) },
+                    _ => Pair::default(),
+                };
             }
         }
-        Ok(Setup { ctx, slots, lanes, ground, params, in_city, candidates, units, sides, places, n_att, fighters, pairs })
+        Ok(Setup { ctx, slots, lanes, ground, params, in_city, candidates, units, sides, places, n_att, fighters, pairs, sentinel_city, sentinels: ks })
     }
 
     /// Phase 7 hook (plan 6.2, 14): the pre-battle spells' effects on the battle of `setup` (its
@@ -508,10 +570,10 @@ impl Game {
         }
         let force: Vec<UnitId> = att.iter().map(|q| q.unit).collect();
         let candidates = self.engage_defenders(to, p, &force, WarTest::AtWar);
-        if candidates.is_empty() {
+        if candidates.is_empty() && slots.sentinels == 0 {
             return Err("there is nobody to fight there");
         }
-        let setup = self.engage_setup(ctx, slots, att, candidates)?;
+        let setup = self.engage_setup(ctx, slots, att, candidates, true)?;
         let n = setup.units.len();
         let def_units: Vec<UnitId> = setup.units[setup.n_att..].to_vec();
         let att_units: Vec<UnitId> = setup.units[..setup.n_att].to_vec();
@@ -575,7 +637,8 @@ impl Game {
 
         // 3. Opening: defensive strikes (never kill), then phase 7's opening spells.
         self.engage_opening(&mut e, &mut sink);
-        let mut hp: Vec<i32> = (0..n).map(|i| hp_from_damage(self.units[e.units[i]].damage, e.setup.fighters[i].max_hp)).collect();
+        let mut hp: Vec<i32> =
+            (0..e.setup.fighters.len()).map(|i| if i < n { hp_from_damage(self.units[e.units[i]].damage, e.setup.fighters[i].max_hp) } else { e.setup.fighters[i].hp }).collect();
         effects.extend(self.engage_opening_spells(&e.setup, &hp));
         if !effects.is_empty() {
             e.setup.apply_effects(&effects, &mut hp);
@@ -607,7 +670,8 @@ impl Game {
         let (x, y) = self.map.xy(to);
         let city = plot.plot_city.filter(|&c| self.cities.contains(c)).map(|c| {
             let city = &self.cities[c];
-            CitySnap { id: c, name: city.name.clone(), owner: city.owner, size: city.population, defense_pct: self.city_defense_modifier(c, false) }
+            let defense_pct = if self.city_is_occupation(c) { 0 } else { self.city_total_defense(c, false).max(0) };
+            CitySnap { id: c, name: city.name.clone(), owner: city.owner, size: city.population, defense_pct }
         });
         PlotSnap {
             x,
@@ -695,6 +759,8 @@ impl Game {
                 city_captured: post.city_captured,
                 moved_in: post.moved_in,
                 defenders_left: post.defenders_left,
+                sentinels: e.setup.sentinels.len() as i32,
+                sentinels_breached: e.setup.sentinel_range().filter(|&i| matches!(f.fate[i], LogFate::Fell { .. })).count() as i32,
             },
             log: log.map(Box::new),
         }
@@ -712,6 +778,10 @@ impl Game {
         };
         let (att, def) = (&r.sides[0], &r.sides[1]);
         let result = r.outcome.result;
+        let walls = match (r.outcome.sentinels, r.outcome.sentinels_breached) {
+            (0, _) => String::new(),
+            (n, b) => format!(", {b} of {n} Sentinels breached"),
+        };
         let took = match (&r.outcome.city_captured, r.outcome.plot_taken) {
             (Some(_), _) => format!("took {place}"),
             (None, true) => "took the plot".to_string(),
@@ -726,7 +796,7 @@ impl Game {
                 EngageResult::Held => "could not break their line".to_string(),
             };
             let them = self.player_get_civilization_adjective(def.shown_player);
-            msgs.push((p, format!("Battle at {place}: your {} attacked {} {them} and {verb}; {} fell, {} killed (report #{id})", att.committed, def.committed, att.fallen, def.fallen)));
+            msgs.push((p, format!("Battle at {place}: your {} attacked {} {them} and {verb}; {} fell, {} killed{walls} (report #{id})", att.committed, def.committed, att.fallen, def.fallen)));
         }
         for &p in &def.players {
             let verb = match result {
@@ -736,7 +806,7 @@ impl Game {
                 EngageResult::Held => "held",
             };
             let them = self.player_get_civilization_adjective(att.shown_player);
-            msgs.push((p, format!("Battle at {place}: {} {them} attacked your {}, which {verb}; {} fell, {} killed (report #{id})", att.committed, def.committed, def.fallen, att.fallen)));
+            msgs.push((p, format!("Battle at {place}: {} {them} attacked your {}, which {verb}; {} fell, {} killed{walls} (report #{id})", att.committed, def.committed, def.fallen, att.fallen)));
         }
         for (p, text) in msgs {
             self.log.msg_at(turn, Some(p), at, || text);
@@ -879,7 +949,7 @@ impl Game {
             return Err("there is nobody to fight there");
         }
         let slots = self.engage_slots(&ctx);
-        self.engage_setup(ctx, slots, vec![Place { unit: m, lane: 0, row: 0 }], candidates)
+        self.engage_setup(ctx, slots, vec![Place { unit: m, lane: 0, row: 0 }], candidates, false)
     }
 
     fn engage_missile_inner(&mut self, m: UnitId, to: PlotIdx) -> Result<(), &'static str> {
@@ -972,7 +1042,8 @@ impl Game {
     /// there (non-combatants are captured by today's attack).
     pub(crate) fn engage_unit_attack(&mut self, u: UnitId, to: PlotIdx) -> bool {
         let p = self.units[u].owner;
-        if self.engage_defenders(to, p, &[u], WarTest::AtWar).is_empty() {
+        let nobody = self.engage_defenders(to, p, &[u], WarTest::AtWar).is_empty();
+        if nobody && (self.unit_is_suicide(u) || !self.plot_has_enemy_sentinels(to, self.players[p].team)) {
             return false;
         }
         if self.unit_is_suicide(u) {

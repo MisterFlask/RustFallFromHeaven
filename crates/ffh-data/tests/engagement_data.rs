@@ -233,7 +233,10 @@ fn the_religions_fighters_are_frontline_and_every_assassin_has_marksman() {
     let d = d();
     // Section 3: seven disciples that never cast are frontline by their CombatRole; nothing else
     // sets one, and no unit sets the iAttack / iDefense / iHP overrides yet.
-    let mut overridden: Vec<&str> = d.units.iter().filter(|u| u.combat_role.is_some()).map(|u| u.base.type_.as_str()).collect();
+    // UNIT_SENTINEL (docs/SIEGES.md: never trained; a city's Sentinels fight with its values) is
+    // the one other unit that sets them.
+    let not_sentinel = |u: &&UnitInfo| u.base.type_ != "UNIT_SENTINEL";
+    let mut overridden: Vec<&str> = d.units.iter().filter(not_sentinel).filter(|u| u.combat_role.is_some()).map(|u| u.base.type_.as_str()).collect();
     overridden.sort_unstable();
     assert_eq!(
         overridden,
@@ -242,12 +245,12 @@ fn the_religions_fighters_are_frontline_and_every_assassin_has_marksman() {
     let channeling = d.t::<PromotionType>("PROMOTION_CHANNELING1");
     let divine = d.t::<PromotionType>("PROMOTION_DIVINE");
     let disciple = d.t::<UnitCombatType>("UNITCOMBAT_DISCIPLE");
-    for u in d.units.iter().filter(|u| u.combat_role.is_some()) {
+    for u in d.units.iter().filter(not_sentinel).filter(|u| u.combat_role.is_some()) {
         assert_eq!(u.combat_role, Some(role("COMBATROLE_FRONTLINE")), "{}", u.base.type_);
         assert_eq!(u.unit_combat_type, Some(disciple), "{}", u.base.type_);
         assert!(!u.free_promotions[channeling] && !u.free_promotions[divine], "{} casts", u.base.type_);
     }
-    assert!(d.units.iter().all(|u| u.attack_override == 0 && u.defense_override == 0 && u.hp_override == 0));
+    assert!(d.units.iter().filter(not_sentinel).all(|u| u.attack_override == 0 && u.defense_override == 0 && u.hp_override == 0));
     // Q6: the assassins are exactly the recon units with Marksman free.
     let mut assassins: Vec<&str> =
         d.units.keys().filter(|&u| d.unit_roles[u] == Some(role("COMBATROLE_ASSASSIN"))).map(|u| d.type_name(u)).collect();
@@ -267,7 +270,7 @@ fn every_land_type_has_a_role() {
     let count = |want: Option<&str>| d.unit_roles.iter().filter(|r| r.map(|r| d.type_name(r)) == want).count();
     // (role, unit types) at the time of writing; the sum is every unit type.
     let want = [
-        (Some("COMBATROLE_FRONTLINE"), 189),
+        (Some("COMBATROLE_FRONTLINE"), 190),
         (Some("COMBATROLE_SCREEN"), 0),
         (Some("COMBATROLE_FLANKER"), 38),
         (Some("COMBATROLE_ASSASSIN"), 11),
@@ -333,7 +336,9 @@ fn withered_and_puppet_lower_defence_too() {
 fn engagement_defines() {
     let x = &d().defines;
     assert_eq!((x.engagement_slots_base, x.engagement_slots_min, x.engagement_slots_hills, x.engagement_slots_river), (8, 3, -2, 2));
-    assert_eq!((x.engagement_slots_defense_divisor, x.engagement_summon_extra_slots), (25, 2));
+    assert_eq!(x.engagement_summon_extra_slots, 2);
+    // Sieges (docs/SIEGES.md).
+    assert_eq!((x.sentinel_repair_percent, x.siege_bombard_floor_percent), (10, 50));
     // The owner's choice: an even-strength hit takes 20 HP (six kill a frontline unit).
     assert_eq!((x.engagement_base_damage, x.engagement_damage_rand_min, x.engagement_damage_rand_max), (40, 80, 120));
     assert_eq!((x.engagement_rounds, x.engagement_large_hp_percent, x.engagement_first_strike_speed), (3, 150, 2));

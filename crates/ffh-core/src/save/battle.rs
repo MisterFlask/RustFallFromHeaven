@@ -17,7 +17,7 @@ persist_struct!(BattleReport { id, turn, plot, from, place, sides, outcome, log 
 persist_struct!(ReportSide { player, shown_player, players, slots, lanes, used, committed, sat_out, fallen, escaped, standing, lost });
 persist_struct!(PlotSnap { x, y, terrain, feature, hills, river_crossing, city });
 persist_struct!(CitySnap { id, name, owner, size, defense_pct });
-persist_struct!(Outcome { result, rounds, plot_taken, city_captured, moved_in, defenders_left });
+persist_struct!(Outcome { result, rounds, plot_taken, city_captured, moved_in, defenders_left, sentinels, sentinels_breached });
 
 persist_struct!(BattleLog { slots, lanes, ground, rules, ordered, fighters, pairs, events, forecast });
 persist_struct!(Ground { city, forest, hills });
@@ -36,14 +36,13 @@ persist_enum!(SlotSource {
     1 => Feature(f),
     2 => Hills,
     3 => River,
-    4 => CityDefense { pct, next_at },
-    5 => Bombarded { pct },
+    4 => Sentinels(n),
     6 => Minimum,
     7 => Summons(n),
 });
 
 persist_struct!(LogFighter {
-    unit, unit_type, name, owner, shown_owner, side, place, large, level, xp, hero, role, max_hp,
+    unit, sentinel, unit_type, name, owner, shown_owner, side, place, large, level, xp, hero, role, max_hp,
     hp_start, hp_battle, speed, first_strikes, chance_first_strikes, rolled_first_strikes, actions,
     spell, dodge, crit_bonus, anti_flank, flanker, withdraw_pct, combat_limit, collateral_limit,
     def_strike, immune, fear, a, dv, fate, dealt, taken, healed,
@@ -154,6 +153,7 @@ mod tests {
         let row = |kind, count| RowActions { kind, count };
         LogFighter {
             unit: UnitId(17),
+            sentinel: place.is_some_and(|p| p.0 == 2),
             unit_type: UnitType(5),
             name: String::new(),
             owner: PlayerId(1),
@@ -240,8 +240,7 @@ mod tests {
                 SlotChange { src: SlotSource::Feature(FeatureType(2)), delta: -2 },
                 SlotChange { src: SlotSource::Hills, delta: -2 },
                 SlotChange { src: SlotSource::River, delta: -2 },
-                SlotChange { src: SlotSource::CityDefense { pct: 60, next_at: 75 }, delta: -2 },
-                SlotChange { src: SlotSource::Bombarded { pct: 20 }, delta: 1 },
+                SlotChange { src: SlotSource::Sentinels(2), delta: -2 },
                 SlotChange { src: SlotSource::Minimum, delta: 1 },
                 SlotChange { src: SlotSource::Summons(2), delta: 2 },
             ],
@@ -368,7 +367,7 @@ mod tests {
                 city: Some(CitySnap { id: CityId(3), name: "Strages".to_string(), owner: PlayerId(2), size: 7, defense_pct: 60 }),
             },
             sides: [side(1, 8), side(2, 2)],
-            outcome: Outcome { result: EngageResult::Taken, rounds: 3, plot_taken: true, city_captured: Some(CityId(3)), moved_in: 1, defenders_left: 0 },
+            outcome: Outcome { result: EngageResult::Taken, rounds: 3, plot_taken: true, city_captured: Some(CityId(3)), moved_in: 1, defenders_left: 0, sentinels: 2, sentinels_breached: 1 },
             log: Some(Box::new(log)),
         }
     }

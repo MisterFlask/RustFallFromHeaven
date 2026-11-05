@@ -197,16 +197,19 @@ fn archer_in_a_walled_hill_city_fortified() {
     assert_eq!(w.g.engage_job_defense(archer, &w.ctx()), attack.dv);
     assert_eq!(w.g.engage_a_alone(axeman, Side::Attacker, &w.ctx()), apply(400, 10));
 
-    // The walls knocked down change the slots, not Dv.
+    // The walls' Sentinels breached (docs/SIEGES.md) change the slots, not Dv.
     let walled = w.g.engage_slots(&w.ctx()).att();
-    w.g.cities[city].defense_damage = d.defines.max_city_defense_damage;
+    for k in 0..w.g.city_sentinel_count(city) {
+        w.g.city_set_sentinel_damage(city, k, 100);
+    }
     assert_eq!(w.g.engage_hit(axeman, archer, Side::Attacker, &w.ctx()).dv, attack.dv);
     assert!(w.g.engage_slots(&w.ctx()).att() > walled);
 }
 
-/// A city's defense (its walls, its culture) costs the attacker slots and gives the defenders' Dv
-/// nothing (revision 4): a unit that ignores building defense, the defense half or wholly knocked
-/// down: the same Dv; the slots follow the defense.
+/// A city's defense (its walls, its culture) gives the defenders' Dv nothing (revision 4): a unit
+/// that ignores building defense, the defense half or wholly knocked down: the same Dv. It costs
+/// no slots either (docs/SIEGES.md): its walls' two Sentinels cost each side one slot each, the
+/// defence knocked down or not.
 #[test]
 fn a_city_s_defense_costs_slots_and_gives_dv_nothing() {
     let mut w = world();
@@ -234,10 +237,8 @@ fn a_city_s_defense_costs_slots_and_gives_dv_nothing() {
         }
         slots.push(w.g.engage_slots(&ctx).att());
     }
-    // The slots: one per 25% of the defense, returned as it is knocked down.
-    assert_eq!(slots[0], 10 - full / 25);
-    assert!(slots[1] > slots[0], "{slots:?}");
-    assert_eq!(slots[2], 10);
+    // The slots: the two Sentinels', whatever the defence.
+    assert_eq!(slots, vec![8, 8, 8]);
 }
 
 #[test]

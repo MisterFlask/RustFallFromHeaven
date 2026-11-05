@@ -16,8 +16,8 @@ use ffh_data::*;
 /// The log being written, and which unit each of its fighters is.
 pub(crate) struct Sink {
     log: BattleLog,
-    /// `(unit, side)` of each log fighter.
-    index: Vec<(UnitId, Side)>,
+    /// `(unit, side)` of each log fighter (a Sentinel: no unit).
+    index: Vec<(Option<UnitId>, Side)>,
 }
 
 /// `terms` less the terms of `headline` (a multiset difference): the pair-only terms.
@@ -53,8 +53,9 @@ fn renumber(mut ev: Event, map: &[usize]) -> Event {
 }
 
 impl Sink {
-    /// A log for engagement `e`: its committed units (in the engagement's order), then
-    /// `reserves`; `ordered`: each side's formation was its order's.
+    /// A log for engagement `e`: its committed units (in the engagement's order), the defended
+    /// city's Sentinels (so a log index is the set-up index), then `reserves`; `ordered`: each
+    /// side's formation was its order's.
     pub fn new(g: &Game, e: &Eng, reserves: &[(UnitId, Side)], ordered: [bool; 2]) -> Sink {
         let s = &e.setup;
         let mut sink = Sink {
@@ -73,6 +74,9 @@ impl Sink {
         };
         for (i, &u) in e.units.iter().enumerate() {
             sink.push(g, e, u, e.side(i), Some(s.places[i]));
+        }
+        for i in s.sentinel_range() {
+            sink.push_sentinel(g, e, i);
         }
         for &(u, side) in reserves {
             sink.push(g, e, u, side, None);
@@ -99,6 +103,7 @@ impl Sink {
         let first_strikes = g.unit_first_strikes(u);
         let f = LogFighter {
             unit: u,
+            sentinel: false,
             unit_type: unit.unit_type,
             name: unit.name.clone(),
             owner: unit.owner,
@@ -137,18 +142,27 @@ impl Sink {
             healed: 0,
         };
         self.log.fighters.push(f);
-        self.index.push((u, side));
+        self.index.push((Some(u), side));
         (self.index.len() - 1) as FighterIdx
+    }
+
+    /// Set-up index `i`, a Sentinel of the defended city (docs/SIEGES.md), as a log fighter.
+    fn push_sentinel(&mut self, g: &Game, e: &Eng, i: usize) {
+        let s = &e.setup;
+        let c = s.sentinel_city.expect("a Sentinel has a city");
+        let lf = g.city_sentinel_log_fighter(c, s.places[i], s.fighters[i].hp);
+        self.log.fighters.push(lf);
+        self.index.push((None, Side::Defender));
     }
 
     /// The log index of `u` on side `side`.
     pub fn idx(&self, u: UnitId, side: Side) -> Option<FighterIdx> {
-        self.index.iter().position(|&x| x == (u, side)).map(|i| i as FighterIdx)
+        self.index.iter().position(|&x| x == (Some(u), side)).map(|i| i as FighterIdx)
     }
 
     /// The log index of `u` on either side.
     pub fn index_of(&self, u: UnitId) -> Option<FighterIdx> {
-        self.index.iter().position(|&(x, _)| x == u).map(|i| i as FighterIdx)
+        self.index.iter().position(|&(x, _)| x == Some(u)).map(|i| i as FighterIdx)
     }
 
     /// The log index of `u`, added as a reserve if it is not in the log yet (a defensive striker
@@ -216,8 +230,14 @@ impl Sink {
             let (h, t) = (map[hk], map[tk]);
             let (side_h, side_t) = (e.side(h), e.side(t));
             let pr = f.pair(hk, tk);
-            let a = g.engage_stat(e.units[h], Some(e.units[t]), side_h, true, e.ctx());
-            let dv = g.engage_stat(e.units[t], Some(e.units[h]), side_t, false, e.ctx());
+            // A Sentinel has no unit terms: a pair with one has no pair-only terms.
+            let (a_extra, dv_extra) = if e.setup.is_sentinel(h) || e.setup.is_sentinel(t) {
+                (Vec::new(), Vec::new())
+            } else {
+                let a = g.engage_stat(e.units[h], Some(e.units[t]), side_h, true, e.ctx());
+                let dv = g.engage_stat(e.units[t], Some(e.units[h]), side_t, false, e.ctx());
+                (extra(a.terms, &self.log.fighters[h].a.terms), extra(dv.terms, &self.log.fighters[t].dv.terms))
+            };
             let base = e.setup.params.base_damage.max(0) as i64 * 100;
             self.log.pairs.push(LogPair {
                 h: h as FighterIdx,
@@ -225,8 +245,8 @@ impl Sink {
                 a_x100: pr.a,
                 dv_x100: pr.dv,
                 mean: (base * pr.a as i64 / (pr.a as i64 + pr.dv as i64)) as i32,
-                a_extra: extra(a.terms, &self.log.fighters[h].a.terms),
-                dv_extra: extra(dv.terms, &self.log.fighters[t].dv.terms),
+                a_extra,
+                dv_extra,
             });
         }
     }

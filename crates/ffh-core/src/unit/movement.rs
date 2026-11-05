@@ -404,7 +404,10 @@ impl Game {
             if self.unit_can_attack(u) {
                 if attack || !self.unit_can_coexist_with_enemy_unit(u, None) {
                     if !self.unit_is_human(u) || self.plot_is_visible(plot, team) {
-                        if self.plot_is_visible_enemy_unit_for_unit(plot, u) != attack {
+                        // Not in C++ (docs/SIEGES.md): an enemy city's standing Sentinels defend it,
+                        // so moving into it is an attack even with no unit there.
+                        let walls = self.engage_applies(u, plot) && self.plot_has_enemy_sentinels(plot, team);
+                        if (self.plot_is_visible_enemy_unit_for_unit(plot, u) || walls) != attack {
                             if !declare_war
                                 || (self.plot_is_visible_other_unit(plot, owner) != attack
                                     && !(attack

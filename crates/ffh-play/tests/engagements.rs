@@ -56,7 +56,7 @@ const LOG: &[&str] = &[
 ];
 const SIDE: &[&str] = &["player", "shown_player", "civ", "label", "lanes", "ordered"];
 const FIGHTER: &[&str] = &[
-    "b", "unit", "unit_type", "name", "owner", "side", "lane", "row", "large", "level", "xp", "hero", "role", "promotions", "max_hp", "hp_start", "hp_battle", "speed",
+    "b", "unit", "sentinel", "unit_type", "name", "owner", "side", "lane", "row", "large", "level", "xp", "hero", "role", "promotions", "max_hp", "hp_start", "hp_battle", "speed",
     "first_strikes", "chance_first_strikes", "rolled_first_strikes", "actions", "bonus_action", "spell", "dodge", "crit_bonus", "anti_flank", "flanker", "withdraw_pct",
     "combat_limit", "collateral_limit", "splash", "def_strike", "immune", "fear", "a_x100", "dv_x100", "a", "dv", "fate", "dealt", "taken", "healed",
 ];

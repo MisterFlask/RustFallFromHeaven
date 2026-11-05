@@ -128,6 +128,10 @@ pub struct City {
     pub dirty_power_count: i32,
     pub defense_damage: i32,
     pub last_defense_damage: i32,
+    /// Not in C++ (docs/SIEGES.md): each Sentinel's damage, in percent of its max HP (100:
+    /// breached), Sentinel `k` at index `k`; a Sentinel past the end has none. Its count is
+    /// `Game::city_sentinel_count` (the city's buildings).
+    pub sentinel_damage: Vec<i32>,
     pub occupation_timer: i32,
     pub culture_update_timer: i32,
     pub specialist_free_experience: i32,
@@ -382,6 +386,7 @@ impl City {
             dirty_power_count: 0,
             defense_damage: 0,
             last_defense_damage: 0,
+            sentinel_damage: Vec::new(),
             occupation_timer: 0,
             culture_update_timer: 0,
             specialist_free_experience: 0,

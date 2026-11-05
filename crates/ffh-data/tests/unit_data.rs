@@ -43,8 +43,8 @@ fn loads_without_warnings() {
 #[test]
 fn table_sizes() {
     let d = data();
-    assert_eq!(d.units.len(), 325);
-    assert_eq!(d.unit_classes.len(), 247);
+    assert_eq!(d.units.len(), 326);
+    assert_eq!(d.unit_classes.len(), 248);
     assert_eq!(d.promotions.len(), 261);
     assert_eq!(d.spells.len(), 267);
     assert_eq!(d.builds.len(), 35);

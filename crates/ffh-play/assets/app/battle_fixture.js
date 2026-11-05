@@ -1051,7 +1051,7 @@ export const FIXTURES = {
    "ground": {"city":true,"forest":false,"hills":false,"flanking":false,"rules":[{"kind":"CityShots","pct":50}]},
    "params": {"bolt_pct":60,"splash_pct":50,"large_hp_pct":150,"first_strike_speed":2},
    "slots": [
-    {"base":8,"changes":[{"src":"Terrain","terrain":"TERRAIN_PLAINS","delta":2},{"src":"CityDefense","pct":20,"next_at":25,"delta":0}],"total":10,"river_only":0},
+    {"base":8,"changes":[{"src":"Terrain","terrain":"TERRAIN_PLAINS","delta":2}],"total":10,"river_only":0},
     {"base":8,"changes":[{"src":"Terrain","terrain":"TERRAIN_PLAINS","delta":2}],"total":10,"river_only":0}
    ],
    "lanes": [4,4],
@@ -1180,7 +1180,7 @@ export const FIXTURES = {
      "ground": {"city":true,"forest":false,"hills":false,"flanking":false,"rules":[{"kind":"CityShots","pct":50}]},
      "params": {"bolt_pct":60,"splash_pct":50,"large_hp_pct":150,"first_strike_speed":2},
      "slots": [
-      {"base":8,"changes":[{"src":"Terrain","terrain":"TERRAIN_PLAINS","delta":2},{"src":"CityDefense","pct":20,"next_at":25,"delta":0}],"total":10,"river_only":0},
+      {"base":8,"changes":[{"src":"Terrain","terrain":"TERRAIN_PLAINS","delta":2}],"total":10,"river_only":0},
       {"base":8,"changes":[{"src":"Terrain","terrain":"TERRAIN_PLAINS","delta":2}],"total":10,"river_only":0}
      ],
      "lanes": [4,4],
@@ -1279,7 +1279,7 @@ export const FIXTURES = {
    "ground": {"city":true,"forest":false,"hills":false,"flanking":false,"rules":[{"kind":"CityShots","pct":50}]},
    "params": {"bolt_pct":60,"splash_pct":50,"large_hp_pct":150,"first_strike_speed":2},
    "slots": [
-    {"base":8,"changes":[{"src":"Terrain","terrain":"TERRAIN_PLAINS","delta":2},{"src":"CityDefense","pct":50,"next_at":75,"delta":-2}],"total":8,"river_only":0},
+    {"base":8,"changes":[{"src":"Terrain","terrain":"TERRAIN_PLAINS","delta":2},{"src":"Sentinels","n":2,"delta":-2}],"total":8,"river_only":0},
     {"base":8,"changes":[{"src":"Terrain","terrain":"TERRAIN_PLAINS","delta":2}],"total":10,"river_only":0}
    ],
    "lanes": [4,4],
@@ -1413,7 +1413,7 @@ export const FIXTURES = {
      "ground": {"city":true,"forest":false,"hills":false,"flanking":false,"rules":[{"kind":"CityShots","pct":50}]},
      "params": {"bolt_pct":60,"splash_pct":50,"large_hp_pct":150,"first_strike_speed":2},
      "slots": [
-      {"base":8,"changes":[{"src":"Terrain","terrain":"TERRAIN_PLAINS","delta":2},{"src":"CityDefense","pct":50,"next_at":75,"delta":-2}],"total":8,"river_only":0},
+      {"base":8,"changes":[{"src":"Terrain","terrain":"TERRAIN_PLAINS","delta":2},{"src":"Sentinels","n":2,"delta":-2}],"total":8,"river_only":0},
       {"base":8,"changes":[{"src":"Terrain","terrain":"TERRAIN_PLAINS","delta":2}],"total":10,"river_only":0}
      ],
      "lanes": [4,4],

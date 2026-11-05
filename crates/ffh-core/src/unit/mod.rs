@@ -566,6 +566,9 @@ pub struct Unit {
     pub attacks_made: i32,
     /// The game turn of its last post-battle medic heal (-1: never): one a turn (Q12).
     pub battle_heal_turn: i32,
+    /// Battle XP below a whole point, in hundredths (0..100): a kill's XP is shared equally by
+    /// its side's units in hundredths (docs/SIEGES.md, "XP").
+    pub xp_carry: i32,
     /// Not in C++: on a crusade Host's unit, who lent it and its contribution value
     /// (docs/CRUSADE.md).
     pub lent: Option<crate::crusade::LentRecord>,
@@ -744,6 +747,7 @@ impl Unit {
             extra_combat_percent_defense: 0,
             attacks_made: 0,
             battle_heal_turn: -1,
+            xp_carry: 0,
             lent: None,
         }
     }

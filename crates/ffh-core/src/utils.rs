@@ -1930,7 +1930,7 @@ mod tests {
                 n += v as usize;
             }
         }
-        assert_eq!((n, d.promotions.len() * d.units.len()), (26312, 84825));
+        assert_eq!((n, d.promotions.len() * d.units.len()), (26312, 85086));
     }
 
     #[test]

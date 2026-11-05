@@ -4,6 +4,9 @@
 <!-- Copyright Firaxis Games 2005 -->
 <!-- -->
 <!-- Building Infos -->
+<!-- iSentinels is this game's own (docs/SIEGES.md): a city with this building has that many
+     Sentinels, wall sections fighting in its defenders' front row (the most any of its buildings
+     gives, not the sum). -->
 <Civ4BuildingInfos xmlns="x-schema:CIV4BuildingsSchema.xml">
     <BuildingInfos>
         <BuildingInfo>
@@ -27867,6 +27870,7 @@
             <iFreeTechs>0</iFreeTechs>
             <iDefense>10</iDefense>
             <iBombardDefense>0</iBombardDefense>
+            <iSentinels>2</iSentinels>
             <iAllCityDefense>0</iAllCityDefense>
             <iEspionageDefense>0</iEspionageDefense>
             <iAsset>1</iAsset>
@@ -38181,6 +38185,7 @@
             <iFreeTechs>0</iFreeTechs>
             <iDefense>25</iDefense>
             <iBombardDefense>25</iBombardDefense>
+            <iSentinels>2</iSentinels>
             <iAllCityDefense>0</iAllCityDefense>
             <iEspionageDefense>0</iEspionageDefense>
             <iAsset>1</iAsset>
@@ -38401,6 +38406,7 @@
             <iFreeTechs>0</iFreeTechs>
             <iDefense>25</iDefense>
             <iBombardDefense>25</iBombardDefense>
+            <iSentinels>2</iSentinels>
             <iAllCityDefense>0</iAllCityDefense>
             <iEspionageDefense>0</iEspionageDefense>
             <iAsset>1</iAsset>

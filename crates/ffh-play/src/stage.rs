@@ -117,6 +117,10 @@ pub fn capture(dir: &Path) -> Result<StagedCapture, String> {
     for u in g.map.plots[city_plot].units.clone() {
         g.unit_kill(u, false, None);
     }
+    // Undefended: its walls' Sentinels breached too (docs/SIEGES.md), so a move takes it.
+    for k in 0..g.city_sentinel_count(c) {
+        g.city_set_sentinel_damage(c, k, 100);
+    }
     let (my, their) = (g.players[h].team, g.players[owner].team);
     g.team_meet(my, their, false);
     g.team_declare_war(my, their, false, None);

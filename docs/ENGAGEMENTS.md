@@ -28,8 +28,10 @@ data in `crates/ffh-data/tests/engagement_data.rs` and `engagement_overrides.rs`
 ## The rules
 
 **The field.** Slots per side as before (`slots.rs`: 8 base, +2 open flat land, -2 a forest or
-jungle, -2 hills, at least 3; a city's defense costs the attacker one per 25%; across a river two
-of the attacker's slots are only for `bRiver` units, Q9). Each side stands on a grid of 3 rows
+jungle, -2 hills; a walled city's standing Sentinels cost each side one each (docs/SIEGES.md: a
+city's defence costs no slots); at least 3; across a river two of the attacker's slots are only for
+`bRiver` units, Q9). A walled city's Sentinels stand in the defender's front row beside its
+soldiers' slots (docs/SIEGES.md). Each side stands on a grid of 3 rows
 (front 0, middle 1, rear 2) by `max(2, ceil((slots + 2) / 3))` lanes (`formation::lanes_for`, of the
 side's ordinary and river slots together; the sides' lane counts may differ). A large unit (`bLarge`,
 below) fills two cells side by side in one row and counts 2 slots, has
@@ -101,6 +103,8 @@ client read these, not the role's fields.
   owner's request). Elsewhere it is a STRIKE (front reach, no bonus, the normal choice; the log says
   strike). Physical; a crit knocks back.
 - STAB: any enemy. Physical.
+- (Sieges, docs/SIEGES.md: a standing Sentinel of the defended city takes the SHOOT and SPELL aimed
+  down its lane, and BOMBARD takes the Sentinels first.)
 - SHOOT: the backmost unit of each enemy lane. Physical, `ENGAGEMENT_SHOOT_MISS_PERCENT` (10) more
   miss.
 - SPELL: the backmost unit of each enemy lane; never misses, never crits. A caster that knows a
@@ -269,9 +273,9 @@ transport counts: an amphibious attack) and `to` is land. The rule is applied at
    opening hook, on the set-up with its HP after the strikes.
 4. **The battle**: the committed units that did not sit out, with their HP after the opening, on
    the formation resolver (`formation::resolve`) on the game's sync RNG.
-5. **After the battle** (`apply.rs`, G2): damage written back; battle XP before any per-kill effect
-   (each unit that damaged a victim, by its share of the damage, the killer at least the minimum;
-   withdrawals get the withdrawal XP); per kill in kill order the war weariness, war success and the
+5. **After the battle** (`apply.rs`, G2): damage written back (a Sentinel's to its city); battle
+   XP before any per-kill effect (each kill's XP shared equally by the killing side's units that
+   fought and live, in hundredths: docs/SIEGES.md, "XP"; withdrawals get the withdrawal XP); per kill in kill order the war weariness, war success and the
    barbarian counter, then `combatWon`'s per-kill part (capture, enslavement, gold, created units,
    the promotion from combat, the heal on a kill, the Python callbacks; a conversion rolled per kill
    and applied once after the killer's last kill); per engagement the promotions removed by combat,
@@ -280,7 +284,8 @@ transport counts: an amphibious attack) and `to` is land. The rule is applied at
    city); every committed attacker has made its attack (one a turn, Blitz one more, counting
    engagements, bombards and missile strikes) and pays the attack's moves unless it moves in.
 6. **The result** (spec 1.7): defenders stay in place until annihilated. **The plot falls only when
-   no defender is left on it** (in the line or in reserve, or among those that sat out): then the
+   no defender is left on it** (in the line or in reserve, or among those that sat out, a city's
+   standing Sentinels included: docs/SIEGES.md): then the
    launching group moves in (a city is captured as today), and only it. Otherwise nobody moves: the
    attackers stay on their plot and every survivor keeps its damage. Withdrawn attackers stay with
    their army. The result (`report::EngageResult`): `Taken` (the plot fell), `Cleared` (the
@@ -414,8 +419,8 @@ The spec (the owner's, revision 4) holds; these were left open and are decided s
   the attacking side must itself fight. A sat-out defender stays on the plot: the plot does not
   fall while it is there.
 - A defensive strike that does no damage is still a strike: the striker is used up, as today.
-- Battle XP shares are of the battle's damage (the defensive strikes are not a hitter's share).
-  Withdrawal XP takes the enemy side's least restrictive XP cap.
+- Battle XP is shared equally per kill (docs/SIEGES.md, "XP"; until 2026-11-04 it was shared by
+  the damage dealt). Withdrawal XP takes the enemy side's least restrictive XP cap.
 - `unit_attack` is forced: the unit given, whatever its moves and attacks this turn, if it is alive,
   can attack and has a role, in the auto formation.
 - The fighters' order (the resolver's draw order for first strikes and coins) is the engagement's:
@@ -442,9 +447,6 @@ The spec (the owner's, revision 4) holds; these were left open and are decided s
 
 ## Open
 
-- Taking cities: Sentinels (walls that fight in the defender's front row), sieges that stop a
-  city's healing, bombards that hurt walls and soldiers, and kill XP shared equally: specified in
-  docs/SIEGES.md (the owner's design, 2026-11-04), not built yet.
 - The AI decides its attacks on the duel's odds and attacks in the auto formation (the AI is paused,
   the owner's call). The defender always fights in the auto formation: standing formations per army
   are a later step (`Game::engage_defense_formation` is the hook).

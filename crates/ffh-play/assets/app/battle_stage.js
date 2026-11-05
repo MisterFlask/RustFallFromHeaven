@@ -87,6 +87,12 @@ const FIGS = new WeakMap();
 export function figOf(f, sides) {
   let fig = FIGS.get(f);
   if (fig) return fig;
+  // A city's Sentinel (docs/SIEGES.md): its wall section, the watchtower's art scaled to a figure.
+  if (f.sentinel && SPRITES.bld_watchtower) {
+    fig = { key: "bld_watchtower", anim: null, left: false, scale: 0.55 };
+    FIGS.set(f, fig);
+    return fig;
+  }
   const civ = civShort(sides?.[f.side]?.shown_civ ?? sides?.[f.side]?.civ);
   const t = tyIdx("UnitType", f.unit_type);
   const keys = t >= 0 ? unitSpriteKeys(t, civ) : [];
@@ -454,8 +460,27 @@ export function pic(f, sides, anim = null, ms = 0, loop = false) {
     const im = IMG.get(`anim:${fig.anim}:${anim}`);
     if (im) return { im, sx: frameAt(ms, ANIMS[anim], loop) * ANIM_FRAME.w, w: ANIM_FRAME.w, h: ANIM_FRAME.h, ax: ANIM_FRAME.ax, ay: ANIM_FRAME.ay, anim };
   }
-  const im = IMG.get(fig.key);
+  let im = IMG.get(fig.key);
+  if (im && fig.scale) im = scaledImage(fig.key, im, fig.scale);
   return im ? { im, sx: 0, w: im.width, h: im.height, ax: im.width / 2, ay: im.height - 2 } : null;
+}
+
+const SCALED = new Map();
+
+/** `im` scaled by `k` (smoothed), drawn once per key. */
+function scaledImage(key, im, k) {
+  const id = `${key}@${k}`;
+  let c = SCALED.get(id);
+  if (!c) {
+    c = document.createElement("canvas");
+    c.width = Math.max(1, Math.round(im.width * k));
+    c.height = Math.max(1, Math.round(im.height * k));
+    const g = c.getContext("2d");
+    g.imageSmoothingEnabled = true;
+    g.drawImage(im, 0, 0, c.width, c.height);
+    SCALED.set(id, c);
+  }
+  return c;
 }
 
 /** The last frame of the death animation (the fallen), or null when it has none. */

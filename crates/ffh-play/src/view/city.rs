@@ -437,6 +437,12 @@ pub fn city(v: &Viewer, c: CityId) -> Result<Json, QueryErr> {
         "culture_threshold" => g.city_culture_threshold(c),
         "defense" => g.city_defense_modifier(c, false),
         "defense_damage" => city.defense_damage,
+        // Sieges (docs/SIEGES.md): besieged (by how many units), and each Sentinel's HP left in
+        // percent with its max HP in a battle.
+        "besieged" => g.city_is_besieged(c),
+        "besiegers" => g.city_besiegers(c).len(),
+        "sentinels" => sentinels_json(g, c),
+        "sentinel_max_hp" => g.city_sentinel_max_hp(c),
         "maintenance" => g.city_maintenance(c),
         "crime" => g.city_crime(c),
         "trade_routes" => g.city_trade_routes(c),
@@ -534,4 +540,9 @@ fn cultural(v: &Viewer, c: CityId) -> Json {
         "pressure" => crate::view::culture::pressure_json(v, c),
         "thresholds" => crate::view::culture::thresholds_json(v),
     }
+}
+
+/// City `c`'s Sentinels (docs/SIEGES.md): each one's HP left in percent (0: breached).
+pub fn sentinels_json(g: &ffh_core::game::Game, c: CityId) -> Json {
+    Json::Arr((0..g.city_sentinel_count(c)).map(|k| Json::from(100 - g.city_sentinel_damage(c, k))).collect())
 }
