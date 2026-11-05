@@ -53,8 +53,26 @@ def wdir(key):
     return d
 
 
-def prompt_of(key, extra=None):
+# Without anchors (--no-anchors), a style prompt's opening sentence about the attached images is
+# replaced by this one; the rest of each style prompt describes the look on its own.
+ANCHORLESS = {
+    "style_leader_hd.txt": ("The attached images are style references for the leader portraits of my fantasy strategy game. "
+                            "Paint ONE NEW leader portrait in exactly their art style, but not their characters, costumes, "
+                            "colours or settings: those come only from the description below.",
+                            "Paint ONE leader portrait for my fantasy strategy game in the art style described here; its "
+                            "character, costume, colours and setting come from the description below."),
+}
+
+
+def prompt_of(key, extra=None, anchored=True):
     style = (ROOT / "prompts" / STYLE[0]).read_text(encoding="utf-8").strip()
+    if not anchored:
+        if STYLE[0] not in ANCHORLESS:
+            raise SystemExit(f"{STYLE[0]} has no anchorless opening: --no-anchors needs one in ANCHORLESS")
+        old, new = ANCHORLESS[STYLE[0]]
+        if old not in style:
+            raise SystemExit(f"{STYLE[0]}: its opening changed; update ANCHORLESS")
+        style = style.replace(old, new)
     desc = (ROOT / "prompts" / STYLE[1] / f"{key}.txt").read_text(encoding="utf-8").strip()
     return "\n".join(x for x in (style, desc, extra) if x) + "\n"
 
@@ -66,14 +84,13 @@ def rel(p):
 def gen_one(key, a):
     d = wdir(key)
     pf = d / f"prompt_{a.round}.txt"
-
-    pf.write_text(prompt_of(key, a.extra), encoding="utf-8")
-    images = list(STYLE[2])
+    pf.write_text(prompt_of(key, a.extra, not a.no_anchors), encoding="utf-8")
+    images = [] if a.no_anchors else list(STYLE[2])
     if a.revise:
         rnd, v = a.revise.split(":")
         images.append(d / "raw" / f"{rnd}_{v}.png")
     out = d / "raw" / f"{a.round}.png"
-    cmd = [sys.executable, str(ROOT / "lib" / "imggen.py"), "edit", "--tag", TAG, "--model", a.model, "--quality", a.quality,
+    cmd = [sys.executable, str(ROOT / "lib" / "imggen.py"), "edit" if images else "gen", "--tag", TAG, "--model", a.model, "--quality", a.quality,
            "--size", "1024x1024", "--n", str(a.n), "--prompt-file", rel(pf), "--out", rel(out)]
     for im in images:
         cmd += ["--image", rel(im)]
@@ -180,6 +197,7 @@ def main():
     p.add_argument("--quality", default="medium"); p.add_argument("--round", default="r1")
     p.add_argument("--jobs", type=int, default=6); p.add_argument("--extra", help="a sentence added after the description")
     p.add_argument("--revise", help="ROUND:V raw appended as the last image")
+    p.add_argument("--no-anchors", action="store_true", help="text only: no style images (the generations endpoint)")
     p.add_argument("--model", default=MODEL); p.add_argument("--dry-run", action="store_true")
     p = sub.add_parser("cut")
     p.add_argument("--keys", required=True); p.add_argument("--round", default="r1")
