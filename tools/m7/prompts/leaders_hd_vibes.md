@@ -30,40 +30,64 @@ usual costume (the face, hair and signature item stay). In a prompt, the vibe re
 signature item) stays as in `leaders_hd/<key>.txt`.
 
 ## Alexis (Calabim)
-1. **Death's Student**: leans close by one candle, unblinking, watching for the instant life leaves your face; plundered books in the dark.
-2. **Fear of Dying**: a candle burning low in her cupped hands, the one thing she still dreads flickering in her gold eyes.
-3. **Specimen Collector**: pinned moths in velvet cases on her desk, her head tilted at you as the next exhibit.
-4. **First Vampire**: utterly still in an ancient high-backed chair, centuries in her gold eyes; hundreds of candle stubs around her.
+1. **Death's Student**: Leaning toward the viewer, her right hand holding one candle up near your face, her left writing in an open notebook without looking, lips parted, unblinking gold eyes fixed on yours; plundered books in a dark library gallery, dusk dying crimson in a tall window.
+   Wears: a scholar's long robe of dark ink-blue velvet over a high-necked black dress, narrow silver buttons to the throat, ink stains on one cuff.
+2. **Fear of Dying**: Both hands cupped around a candle burned down to a stub, shielding its shrinking flame from the wind, shoulders drawn in, lips pressed tight, gold eyes wide and fixed on the flame; an open palace balcony in the cold blue hour before dawn.
+   Wears: a long white linen nightgown buttoned to the throat and wrists, a heavy dove-grey wool shawl wrapped tight around her shoulders.
+3. **Specimen Collector**: Her right hand pressing a silver pin through a pale moth onto black velvet, her left holding the glass lid open, head tilted, a faint considering smile, eyes lifted to the viewer, measuring the next specimen; a curtained cabinet room of moth cases, grey afternoon light through one parted curtain.
+   Wears: a fitted gown of deep bottle-green silk with a high collar of black velvet, long black kid gloves, a jeweller's lens on a silver chain at her waist.
+4. **First Vampire**: Seated utterly still in an ancient high-backed chair, both hands holding a silver candle snuffer across her lap, face calm as marble, gold eyes level and unblinking on the viewer; a vaulted crypt at midnight, hundreds of candle stubs, most burned out, a few lighting her from below.
+   Wears: a centuries-old court gown of crimson brocade faded to dusty rose, a tall stiff collar of tarnished silver lace, old rings on every finger.
 
 ## Amelanchier (Ljosalfar)
-1. **Let It Burn**: calm face, the horizon on fire behind him, only his own forest still green.
-2. **Treant's Voice**: two fingers raised, a vast bark hand closing on someone just out of frame; smoke and leaf shadow.
-3. **Green Verdict**: a judge in a ranger's hood, looking down from a high bough, mercy not on offer.
-4. **Rooted Prince**: palm flat on a colossal trunk, eyes shut, listening to the forest talk; green-gold light.
+1. **Let It Burn**: On a bare rock ridge at night, his right hand running a block of beeswax along his bowstring, his left holding the bow upright, unmoved, eyes level on the viewer; the whole horizon burning orange behind him, only his own forest below still green, his face in cool shade.
+   Wears: a prince's long court robe of ivory silk embroidered with gold oak leaves, a high collar, gold rings on his fingers, untouched by smoke or ash.
+2. **Treant's Voice**: His right hand raised before his face, two fingers together and parting, his left gripping his longbow, cold eyes looking down past the viewer; a treant's vast bark hand rising behind him, closing on someone below the frame; a tree-city platform in smoky brown afternoon haze, leaf shadow across him.
+   Wears: a ranger's field gear: a russet leather jerkin with dark brown bracers and quiver straps, a short bark-brown hooded cape, leaves caught in the stitching.
+3. **Green Verdict**: Crouched on a high bough, his right hand slowly turning one arrow between his fingers, his left gripping the bark beside him, hood shadowing his face, unblinking hard green eyes looking down straight at the viewer; cold grey dawn mist hanging among giant trunks below.
+   Wears: a judge's long hooded mantle of charcoal-black wool over dark mail, the deep hood up, a heavy silver chain of office with an oak-leaf seal across his chest.
+4. **Rooted Prince**: The fingertips of his right hand tracing the furrows of a colossal trunk as if reading them, his left holding a sprig of white serviceberry blossom, eyes shut, head bowed to the bark, listening, face at rest; an ancient root-hall at midday, sunlight falling green-gold through the canopy.
+   Wears: a loose sleeveless tunic of leaf-green linen belted with a plain cord, bare forearms, a living ivy vine twined around one arm.
 
 ## Arendel (Ljosalfar)
-1. **Summer Crown**: the height of her half of the year, golden and laughing, the leaf crown bright; the forest in full blossom.
-2. **Crown Handover**: lifting the leaf crown off for winter's half of the year, hiding her unease; autumn twilight.
-3. **Sister Seasons**: half her face lit summer gold, half lit by Faeryl's winter blue from the window.
-4. **Wrong Snow**: hand on heart as snow falls on trees in flower, the only one who senses what it means.
+1. **Summer Crown**: Laughing, head tipped back a little, her right hand raising a carved wooden cup of honey wine toward the viewer in a toast, her left arm cradling cut wild roses, eyes crinkled and bright on the viewer; the summer court's meadow in full blossom on a golden midsummer morning.
+   Wears: a light midsummer gown of saffron-gold silk with long loose sleeves embroidered in green vines, a rose-pink sash, white flowers woven into her hair.
+2. **Crown Handover**: Both hands lifting the leaf crown off her brow for the winter half of the year, a polite smile that stops short of her eyes, brows faintly drawn, gaze turned aside to the winter queen off frame; a hall of carved living pillars at amber autumn twilight, russet leaves falling.
+   Wears: the formal robes of the rite of autumn: layered russet and deep amber velvet, a long mantle embroidered with falling leaves in copper thread, a gold girdle.
+3. **Sister Seasons**: Seated at a rippled window of the winter palace, her right hand pouring wine from a silver jug into a second cup set for her sister, her left steadying it, a guarded smile, eyes on the viewer; half her face lit hearth gold, half winter-night blue from the glass.
+   Wears: a gown of two halves, warm gold silk down one side and silver-blue silk down the other, joined at the front by a seam of small pearls.
+4. **Wrong Snow**: Her right hand pressed over her heart, her left holding a flowering branch with snow settling on its blossoms, brows drawn together, lips parted, eyes turned away over the forest, listening for something far off; a living-wood balcony, snow falling on trees in full flower, flat grey afternoon light.
+   Wears: a heavy winter cloak of pale grey wool lined with white fox fur, the hood down, over a plain high-necked gown of moss green.
 
 ## Arturus (Khazad)
-1. **Vault King**: seated on his clan's hoard, a hand on a stack of gold bars, eyes daring you to want it; lamplit vault.
-2. **Carved History**: chisel in his scarred hand, fifty years of clan names on the stone pillar beside him.
-3. **King Under Stone**: in the deepest hall, a mountain's weight overhead, lit by one channel of lava, utterly at home.
-4. **Unbending Oath**: arms folded, chin up, outside the gate of the friend he banished; stubborn as the mountain.
+1. **Vault King**: Seated on his clan's hoard, his left hand resting heavy on a stack of gold bars, his right gripping the haft of his great axe beside him, brows knotted, eyes straight on the viewer, daring you to want it; a deep vault glowing gold under brass lamps at midnight.
+   Wears: a king's heavy robe of oxblood-red wool trimmed with dark fur over a gold-chased breastplate, a heavy gold chain, rings on every thick finger.
+2. **Carved History**: His left hand setting a chisel to the stone, his right swinging a mallet, brows knotted, eyes narrowed on the rune he is cutting, lips pressed tight; a pillar covered in fifty years of clan names in a carver's alcove, one shaft of noon daylight falling down a light-well.
+   Wears: a stone-carver's heavy brown leather apron over a rolled-sleeve shirt of undyed grey linen, stone dust in the folds, his beard braids tucked into the apron strap.
+3. **King Under Stone**: Seated at ease on a stone bench, his right thumb tamping a clay pipe, his left hand cradling its bowl, shoulders loose, a content smile in the beard, eyes lifted fondly to the vault; the deepest hall at night, a mountain's weight overhead, lit red by one channel of lava.
+   Wears: a long, worn house robe of deep slate-blue wool belted with a gold-ringed cord, a thick sheepskin vest over it.
+4. **Unbending Oath**: Arms folded tight across his barrel chest, each hand gripping the other forearm, chin up, jaw set in the beard, eyes straight at the viewer, refusing to step forward; the outer arch of a great dwarven city gate in low late-afternoon sun, his tarp-covered pillar on a cart beside him.
+   Wears: a heavy hooded travelling cloak of dusty ochre-brown wool thrown back over dull iron mail, a plain leather belt with a gold buckle.
 
 ## Auric (Illians)
-1. **Becoming God**: frost climbing his body, eyes going white, half farm boy and half winter; the dead god's ruined ice temple.
-2. **Kept Secret**: a faint closed smile about what happened in the god's empty chamber; white light behind, blue shadow on his face.
-3. **Endless Winter**: arms opening as the blizzard answers him, the world white to the horizon.
-4. **Prisoner's Rags**: the ice crown on his head, frayed prison rags still at his wrists; he has not forgotten.
+1. **Becoming God**: His right hand raised before his face, turning as he watches frost climb from the fingertips up his wrist, his left fist closed on ears of wheat freezing white, lips parted; one eye still blue, one gone white; the dead god's ruined ice temple under a green aurora at night.
+   Wears: a farm boy's patched brown homespun shirt and sheepskin jerkin, the left half already crusted white with ice and hung with icicles.
+2. **Kept Secret**: Looking over his shoulder at the viewer with a faint closed smile, his right hand drawing a curtain across the archway behind him, his left tucking something small inside his robe; cold white light spilling past, his face in blue shadow; deep in the frozen mountain on the third morning.
+   Wears: a long robe of ancient Illian silk, ivory gone faintly blue with age, embroidered with faded silver glyphs, the deep hood fallen back.
+3. **Endless Winter**: His arms spread wide, both fists clenched hard, dragging the blizzard down onto the land, chin raised, face calm and unsmiling, eyes lifted to the white sky as the storm answers him; a high ridge at midday, the world white to every horizon, flat glaring snow-light.
+   Wears: armour of overlapping pale blue ice-like scales over grey mail, a long storm-grey cloak torn ragged by the wind, a silver gorget.
+4. **Prisoner's Rags**: His left fist clenched while his right hand winds a frayed strip of prison rag around that wrist and knots it like a vow, jaw set, eyes level and hard on the viewer; an empty prison cell, its iron door hanging open and frosted, grey evening light through the bars.
+   Wears: a lord's long robe of midnight-blue velvet edged in silver, and below its cuffs the frayed grey prison rags he still keeps knotted at both wrists.
 
 ## Barbarian (Orc Warlord)
-1. **Truce's End**: grinning at your lit windows from the dark edge of the border; torch after torch lit behind him.
-2. **Nameless Horde**: one horned skull among a thousand, goblins and ogres massing in the mist behind.
-3. **Skull Crown**: the beast skull worn like a king's crown on a throne of bones, a beaten camp kneeling.
-4. **Too Civilized**: sneering at a captured silk cushion, the soft city he took burning behind.
+1. **Truce's End**: Leaning out of the dark, grinning wide, his right hand raising a torch that lights his tusks from below, his left fist snapping a white-ribboned truce stake, eyes fixed past the viewer on a city's warm windows far below; a pine ridge on a moonless night, torches kindling behind him.
+   Wears: light raiding gear: a black leather harness over bare painted arms, a shaggy grey wolf-pelt mantle, strings of bone charms rattling at his chest.
+2. **Nameless Horde**: Chanting, mouth wide, his right fist pounding a hide war drum at his hip with a knotted stick, his left gripping the shoulder of a goblin beside him, eyes straight on the viewer; a misty valley at grey dawn, a thousand goblins and ogres massing in the mist behind him.
+   Wears: the same crude gear as the thousands behind him: a patched brown hide jerkin, rusty iron arm-rings, a ragged dull-red war cloth knotted at his waist.
+3. **Skull Crown**: Sprawled on a throne of mammoth tusks and beast bones, his right hand gripping a cleaver across his knees, his left holding a captured war banner trailing in the dirt, chin up, a slow grin, eyes down on the kneeling camp below; hazy noon, smoke drifting across a white sun.
+   Wears: a chieftain's mantle of shaggy white cave-bear pelt, the bear's head on one shoulder, heavy gold torcs on both thick arms, a belt of looted gold coins.
+4. **Too Civilized**: Sneering, lip curled off one tusk, his right hand holding a tasselled rose-silk cushion out at arm's length by one tassel, his left ripping a lace curtain off its rail, eyes narrowed on the cushion; a looted gilded salon at smoky dusk, the soft city burning beyond tall windows.
+   Wears: his full war gear: scorched black iron plate with spiked pauldrons, a shaggy black bearskin over his shoulders, a heavy cleaver at his belt.
 
 ## Basium (Mercurians)
 1. **Wrath Incarnate**: drawing a blade of white fire out of the empty air with his right hand, his left hand closing on nothing as if crushing it; a battlefield at red-black dusk below him, soldiers half his height shielding their eyes.
@@ -76,22 +100,34 @@ signature item) stays as in `leaders_hd/<key>.txt`.
    Wears: a commander's heavy white cloak over dented silver plate and a clean white tabard with a large gold winged sun.
 
 ## Beeri (Luchuirp)
-1. **Pure Spite**: snarling through mud, a gold coin crushed in his fist; alive because his death would please them.
-2. **Caged Heir**: behind the jester-king's cage bars, glaring at the laughing masked court.
-3. **Debt Collector**: tapping a ledger of every insult the jester court owes him, a grim grin.
-4. **Mine Lamp**: the dented helmet lamp the only light in a black tunnel, his eyes fixed on you.
+1. **Pure Spite**: Rising out of a mud pit, snarling through the mud on his face, his right fist held at his chest, knuckles white around a gold coin, his left hand clamped behind the head of a writhing viper, eyes glaring straight at the viewer; a carnival arena under blazing white noon.
+   Wears: a mud-soaked prisoner's smock of coarse undyed sacking, tied with a rope belt, his forearms bare.
+2. **Caged Heir**: Both thick hands wrapped around the cage bars, knuckles white, wrenching at them, head lowered like a bull's, eyes glaring over his shoulder at the laughing masked court behind him; iron bars at both edges, a garish carnival throne room in hot flickering torchlight at night.
+   Wears: the torn visiting clothes he was taken in: a rust-brown velvet doublet with brass buttons, ripped at one shoulder, a fur-trimmed collar.
+3. **Debt Collector**: His left hand holding a fat ledger open against his chest, his right tapping a stubby finger on one line, a grim grin through the beard, eyes up at the viewer from under crushed brows; the jester-king's striped palace gates at grey morning, dwarf soldiers ranked behind him.
+   Wears: a long, sober coat of dark slate-blue wool buttoned up to the beard, brass buttons, a quill tucked behind one ear under the helmet.
+4. **Mine Lamp**: His left hand reaching up to turn up the wick of the lamp on his helmet, his right gripping a miner's pick over his shoulder, eyes fixed unblinking on the viewer, brows down; a black mine tunnel deep under the mountain at night, the helmet lamp the only light.
+   Wears: a miner's patched canvas smock in faded ochre, sleeves rolled, a thick leather tool harness hung with brass tools and a coil of rope.
 
 ## Capria (Bannor)
-1. **Hell's Survivor**: the closing hell-portal of her childhood still in her grey eyes, her face forced still; crimson-black chamber.
-2. **Order's Sword**: the short sword held upright before her face like a vow; dawn over the white citadel.
-3. **Iron Commander**: barking an order off-frame, the Bannor host and the Order's banners behind her.
-4. **Never Afraid**: composed for her soldiers while her free hand trembles; cold moonlight.
+1. **Hell's Survivor**: Her right hand clutching a blanket closed at her throat, her left gripping the bed rail, knuckles white, jaw clenched, face forced still, grey eyes wide on nothing past the viewer; a stone bedchamber in the small hours, steeped crimson-black by a dying hearth, as if hell lingers there.
+   Wears: a plain undyed linen nightshirt laced to the throat, long in the sleeve, a dark grey wool blanket snatched round her shoulders.
+2. **Order's Sword**: Her right fist holding her short sword upright before her face, the blade a bright line between her eyes, her left hand laid flat over the red cross on her breast, eyes straight on the viewer, lips set; a white citadel wall at dawn, rose-gold light behind white towers.
+   Wears: polished white enamelled plate edged in gold, a white tabard with a red cross on the breast, a short white cape.
+3. **Iron Commander**: Her right hand jabbing a rolled battle map toward a flank off frame, her left gripping the pommel of her sheathed sword, mouth wide on a barked order, eyes cut to the side; a windswept ridge at white noon, an army in drilled ranks below under crimson-and-white banners.
+   Wears: a long mail hauberk under a crimson surcoat with a white cross, a steel gorget, a grey fur-lined field cloak thrown back from one shoulder.
+4. **Never Afraid**: Her right hand laid steady on the shoulder of a young soldier, a calm smile, eyes level on the troops off frame, while her left hand, hidden from them at her side, trembles in a white-knuckled fist; a camp on the eve of battle at moonrise, cold blue light.
+   Wears: a plain soldier's greatcoat of dark blue wool buttoned to the throat, a mail collar beneath, no rank but a small silver sword badge.
 
 ## Cardith (Kuriotates)
-1. **Serpent Eyes**: a sweet child's smile and cold gold-green slit pupils; bright marble morning.
-2. **Endless City**: a small figure on a high terrace, green domes and gold roofs to every horizon, all of it his.
-3. **Innocent Checkmate**: the winning move made without a glance, smiling warmly at you.
-4. **Ageless Boy**: a child's face under a centuries-old crown, a centaur guard twice his height kneeling.
+1. **Serpent Eyes**: Holding a fallen sparrow chick cupped in both small hands at his chest, a sweet child's smile, his gold-green slit-pupilled eyes lifted straight to the viewer, cold and glinting; a white marble garden court with a fountain, bright clear morning sun.
+   Wears: a boy's light summer tunic of white linen embroidered at the neck with tiny green leaves, a pale green silk sash, a slender gold circlet.
+2. **Endless City**: On a terrace, his right hand pressing his jade seal into green wax on a new charter, his left holding the parchment flat on the balustrade, chin lifted, a satisfied smile, eyes turned out over the city; green domes and gold roofs to every horizon under a clear noon sky.
+   Wears: state regalia: a long mantle of cloth of gold over robes of pale jade-green silk, the jade seal on a heavy gold chain, a slender gold circlet.
+3. **Innocent Checkmate**: His right hand setting a jade knight down for the killing move without a glance, his left loosely holding a captured ivory piece, head tilted, smiling warmly straight at the viewer; a council chamber at night, one hanging lamp over the board, an old advisor across it in shadow.
+   Wears: a soft indoor coat of midnight-blue silk patterned with small silver stars over a plain white shirt with a ruffled collar, no crown.
+4. **Ageless Boy**: His right hand pinning a gold brooch of honour to the sash of an old grey-bearded centaur guard who kneels before him and still towers over him, his left holding the sash flat, his child's face still, eyes ancient on the old centaur; a throne hall at violet dusk.
+   Wears: a coronation robe centuries out of fashion, crimson and gold brocade faded and stiff with age, a tall ancient gold crown worn smooth by time.
 
 ## Cassiel (Grigori)
 1. **Unmade Angel**: Holding one long shed white feather across his left palm and drawing his right thumb down its vane, face calm and unreadable, eyes straight on the viewer; alone on the palace roof at midnight, a faint outline of starlight behind him where vast wings once were; cold blue-silver light.

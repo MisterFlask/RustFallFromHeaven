@@ -201,5 +201,68 @@
   "costume": "a high-collared black velvet coat embroidered in dark red, a loosely tied crimson silk cravat with a ruby pin.",
   "signature": "His long white FANGS show at the corners of his mouth.",
   "extra": "He is never in a hurry: heavy-lidded gold eyes, a slow private smile, a loose, lounging ease in every movement. No blood anywhere in the picture."
+ },
+ "alexis": {
+  "pronoun": "she",
+  "body": "ALEXIS, queen and first of the vampires, leader of the Calabim in the fantasy game Fall from Heaven: vampire, once human; woman; ageless, looking about thirty; tall and poised. Porcelain-pale skin, fine dark brows, glossy black hair swept up in a coil of braids, dull gold-yellow eyes.",
+  "costume": "a crimson velvet gown with a high standing collar of black lace, a long black velvet mantle trimmed in silver, a ruby brooch at her throat.",
+  "signature": "A slender silver CROWN SET WITH BLOOD-RED RUBIES is always on her brow.",
+  "extra": "She has the stillness of something that no longer breathes: she does not blink and her shoulders never rise or fall. Whatever she wears is closed high at the throat, and no blood and no fangs show anywhere in the picture."
+ },
+ "amelanchier": {
+  "pronoun": "he",
+  "body": "AMELANCHIER, the elven ranger-prince, leader of the Ljosalfar in the fantasy game Fall from Heaven: a wood elf; male; ageless, looks about thirty; tall and lean. Fair skin, high sharp cheekbones, long pale-blond hair tied back, long pointed elf ears, narrow cool green eyes, a thin mouth.",
+  "costume": "a leaf-patterned green-and-gold tunic and a leather baldric under a dark-green hooded cloak.",
+  "signature": "His tall PALE WOODEN LONGBOW with gold-tipped ends is always with him, slung over his shoulder or in his hand.",
+  "extra": "His face never shows heat: his mouth stays a flat line and his brows stay level, whatever burns around him."
+ },
+ "arendel": {
+  "pronoun": "she",
+  "body": "ARENDEL PHAEDRA, the Summer Queen of the Seelie court, leader of the Ljosalfar in the fantasy game Fall from Heaven: a wood elf; female; ageless, looks about forty; tall and regal. Fair skin, long wavy copper-auburn hair, long pointed elf ears, soft grey-green eyes with faint fine lines at their corners.",
+  "costume": "a high-necked gown of deep emerald green with gold leaf embroidery, a mantle of russet autumn leaves over her shoulders, a girdle of gold leaves at her waist.",
+  "signature": "Her delicate GOLDEN CROWN OF INTERLACED LEAVES AND BRANCHES is always with her, on her brow or in her hands.",
+  "extra": ""
+ },
+ "arturus": {
+  "pronoun": "he",
+  "body": "ARTURUS THORNE, the old dwarf king of the deep halls, leader of the Khazad in the fantasy game Fall from Heaven: a dwarf; male; old; short, barrel-chested and broad. Weathered ruddy skin, a broad nose, a long iron-grey beard in thick braids bound with gold rings, bushy grey brows, deep-set brown eyes, broad scarred hands.",
+  "costume": "heavy steel pauldrons over a dusty-gold surcoat, a broad belt with a gold buckle.",
+  "signature": "His squat, heavy GOLD DWARVEN CROWN with blunt square points is always on his head.",
+  "extra": "He is planted like the mountain he swears by: his weight set solid on the stone under him, never leaning or reaching."
+ },
+ "auric": {
+  "pronoun": "he",
+  "body": "AURIC ULVIN, the farm boy and escaped prisoner who came out of the frozen mountain as lord of the lost men, leader of the Illians in the fantasy game Fall from Heaven: human; man; about twenty; lean and hardened. Frost-pale skin, untidy white-blond hair, ice-blue eyes too still and old for his young face, a farm boy's chapped knuckles.",
+  "costume": "a white wolf-fur cloak over a pale sky-blue robe edged in silver, frayed prisoner's rags still knotted at his wrists.",
+  "signature": "A jagged CROWN OF CLEAR BLUE ICE always rises from his brow.",
+  "extra": "Cold follows him: his breath shows white, and frost creeps over whatever he touches."
+ },
+ "barbarian": {
+  "pronoun": "he",
+  "body": "THE ORC WARLORD, a nameless chieftain of the raiding orc, goblin and ogre hordes, leader of the Barbarians in the fantasy game Fall from Heaven: orc; male; battle-hardened middle age; huge, thick-necked and broad. Grey-green skin crossed by old pale scars and crude black war paint, jutting yellowed lower tusks, a flattened nose, small red-rimmed amber eyes under a heavy brow.",
+  "costume": "black iron armour with spiked pauldrons, a shaggy black bearskin, a cord of bone charms across his chest, a heavy cleaver at his belt.",
+  "signature": "A horned bone-white BEAST SKULL is always on his head, worn as a helmet.",
+  "extra": "No blood anywhere on him, his gear or his weapons."
+ },
+ "beeri": {
+  "pronoun": "he",
+  "body": "BEERI BAWL, heir of Graoin the Delver, leader of the Luchuirp in the fantasy game Fall from Heaven: a gnome-like Luchuirp dwarf; male; middle-aged; short, stocky and strong. Ruddy weathered skin, a big hooked nose, a thick copper-red beard in two braids, heavy brows, small fierce dark eyes.",
+  "costume": "a patched ash-grey quilted work jerkin and a leather tool harness with brass buckles.",
+  "signature": "His dented brass MINER'S HELMET with its little lamp is always on his head.",
+  "extra": "He is clenched defiance in every portrait: brows crushed down, jaw set, thick shoulders hunched forward like a bull's."
+ },
+ "capria": {
+  "pronoun": "she",
+  "body": "CAPRIA, the battle commander who led her people out of hell as a girl, leader of the Bannor in the fantasy game Fall from Heaven: human; woman; about thirty-five; tall and strong. Fair skin, a thin pale scar across one cheekbone, a strong square jaw, dark chestnut hair, grey eyes, two fine lines of strain between the brows.",
+  "costume": "a high-collared white linen shirt under a silver-edged white wool mantle, a red cross stitched on its breast.",
+  "signature": "Her long thick CHESTNUT BRAID always hangs forward over one shoulder.",
+  "extra": "She holds herself like a soldier on parade whatever she feels: back straight, chin level."
+ },
+ "cardith": {
+  "pronoun": "he",
+  "body": "CARDITH LORDA, the ageless Boy-King, leader of the Kuriotates in the fantasy game Fall from Heaven: human-seeming; boy; looks ten years old but is far older; small and slight, portrayed with dignity. Soft, boyish fair features, a small straight nose, smooth unlined skin, short neat dark-brown hair.",
+  "costume": "royal robes of emerald green with gold trim and a high stiff collar, a jade seal on a gold chain, a slender gold circlet.",
+  "signature": "His eyes are always cold, glinting GOLD-GREEN REPTILIAN EYES with narrow slit pupils, the one thing in his soft boyish face that is not a child's.",
+  "extra": "He holds himself with an old man's stillness: no fidgeting, no wasted movement, his small hands slow and precise."
  }
 }
