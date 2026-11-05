@@ -1,4 +1,4 @@
-"""OpenAI image wrapper for the sprint, with a hard budget and a spend ledger.
+"""OpenAI image wrapper for the sprint, with a spend ledger.
 
   python tools/imggen.py gen  --tag M6/units --model gpt-image-1.5 --prompt "..." --out a.png
   python tools/imggen.py edit --tag M7/units --model gpt-image-1.5 --image ref.png --image crop.png \
@@ -8,8 +8,9 @@
 Common options: --size 1024x1024|1536x1024|1024x1536|auto  --quality low|medium|high|auto
                 --background transparent|opaque|auto  --n N  --prompt-file f.txt
 Multiple outputs are written as out_1.png, out_2.png ...
-Each call appends to <package>/spend.jsonl (including the full prompt and the ordered --image list). Calls are refused when the global cap or the
-tag-prefix cap (<package>/budget.json) would be exceeded. Prints one JSON line.
+Each call appends to <package>/spend.jsonl (including the full prompt and the ordered --image list), with its cost
+estimated from the token usage and PRICES below. Nothing is capped here: the owner limits spend on the platform side
+(2026-11-05). Prints one JSON line.
 Unsupported optional params are dropped automatically and the call retried.
 --stream N asks for a streamed response with N partial images (1-3; n must be 1): the bytes keep
 flowing while the model works, for routes that cut a silent connection (high-quality calls to the
@@ -19,9 +20,8 @@ import argparse, base64, json, os, sys, time
 from pathlib import Path
 import requests
 
-ROOT = Path(__file__).resolve().parent.parent  # package root: spend.jsonl + budget.json live here
+ROOT = Path(__file__).resolve().parent.parent  # package root: spend.jsonl lives here
 LEDGER = ROOT / "spend.jsonl"
-BUDGET = ROOT / "budget.json"
 API = "https://api.openai.com/v1/images"
 
 # $ per 1M tokens (text_in, image_in, image_out). Deliberately conservative (>= published/aggregator prices).
@@ -65,28 +65,6 @@ def ledger():
 
 def spent(prefix=None):
     return sum(r.get("usd", 0) for r in ledger() if prefix is None or r.get("tag", "").split("/")[0] == prefix)
-
-
-def caps():
-    b = json.loads(BUDGET.read_text()) if BUDGET.exists() else {"total": 25.0, "tags": {}}
-    return b["total"], b.get("tags", {})
-
-
-def check_budget(tag, est):
-    total, tags = caps()
-    root = tag.split("/")[0]
-    if root not in tags:
-        raise SystemExit(json.dumps({"ok": False, "error": f"unknown budget tag '{root}'; known: {list(tags)}"}))
-    s_all, s_tag = spent(), spent(root)
-    if s_all + est > total:
-        raise SystemExit(json.dumps({"ok": False, "error": f"GLOBAL BUDGET: spent ${s_all:.2f} + est ${est:.2f} > ${total}"}))
-    if s_tag + est > tags[root]:
-        raise SystemExit(json.dumps({"ok": False, "error": f"TAG BUDGET {root}: spent ${s_tag:.2f} + est ${est:.2f} > ${tags[root]}"}))
-    sub = "/".join(tag.split("/")[:2])
-    if sub in tags:
-        s_sub = sum(r.get("usd", 0) for r in ledger() if "/".join(r.get("tag", "").split("/")[:2]) == sub)
-        if s_sub + est > tags[sub]:
-            raise SystemExit(json.dumps({"ok": False, "error": f"GROUP BUDGET {sub}: spent ${s_sub:.2f} + est ${est:.2f} > ${tags[sub]}"}))
 
 
 def cost_from_usage(model, usage, fallback):
@@ -187,20 +165,18 @@ def main():
         raise SystemExit("--stream needs --n 1")
 
     if a.cmd == "spend":
-        total, tags = caps()
         by = {}
         for r in ledger():
             parts = r.get("tag", "?").split("/")
             for k in {parts[0], "/".join(parts[:2])}:
                 by[k] = by.get(k, 0) + r.get("usd", 0)
-        print(json.dumps({"total_spent": round(spent(), 3), "cap": total,
-                          "by_tag": {k: round(v, 3) for k, v in by.items()}, "tag_caps": tags}, indent=1))
+        print(json.dumps({"total_spent": round(spent(), 3),
+                          "by_tag": {k: round(v, 3) for k, v in sorted(by.items())}}, indent=1))
         return
     if not a.tag or not a.out:
         raise SystemExit("--tag and --out are required")
     prompt = a.prompt or Path(a.prompt_file).read_text(encoding="utf-8")
     est = estimate(a.model, a.size, a.quality, a.n, len(a.image))
-    check_budget(a.tag, est)
     res, err, latency, rl_wait, dropped = call(a.cmd, a.model, prompt, a.size, a.quality, a.background, a.n,
                                                a.image, a.mask, a.input_fidelity, None, a.stream)
     usage = (res or {}).get("usage")

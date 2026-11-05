@@ -39,11 +39,11 @@ export (section 6) shows on reload without a rebuild.
 `tools/m7/README.md` is the authority on how art is made: the prompts, the style anchors, the
 process (three variants per call, a review sheet, pick one, revise or recut), the quality checklist
 and the costs. The package is self-contained: `m7.py` (the one command), `lib/` (the API wrapper with
-its spend ledger and budget caps, keying, scaling, the seamless-tile maths, the reference
+its spend ledger, keying, scaling, the seamless-tile maths, the reference
 compositor `lib/compose.py`), `prompts/` (the style prompts and the exact prompt of every accepted
 sprite), `anchors/` and `ref/` (the images every call is anchored on), `roster/` (the accepted
-sprites and `manifest.json`), `spend.jsonl` (every call made, with its cost), `budget.json` (the
-caps). `work/` is scratch and is not committed.
+sprites and `manifest.json`), `spend.jsonl` (every call made, with its estimated cost; no caps: spend is
+limited on the platform side). `work/` is scratch and is not committed.
 
 Two additions for this game:
 

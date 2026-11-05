@@ -20,7 +20,7 @@ work/<name>/calls.jsonl. You then LOOK at the review sheet and accept one varian
   python m7.py pair --name tile_desert   (make tile_desert_b tile with tile_desert; no API cost)
   python m7.py export   (the roster -> the game's isometric renderer, crates/ffh-play/assets/app/iso)
 Add --dry-run to any generating command to print the prompt and image list without calling the API.
-Needs OPENAI_API_KEY; budget caps live in budget.json (tag root must be listed there).
+Needs OPENAI_API_KEY; every call is logged with its estimated cost in spend.jsonl (no caps).
 """
 import argparse, json, shutil, subprocess, sys, time
 from concurrent.futures import ThreadPoolExecutor

@@ -20,7 +20,6 @@ Costs are estimates from a deliberately pessimistic price table (`lib/imggen.py`
 ```
 README.md            this document
 m7.py                the one command you run (unit / building / feature / tile / recut / retile / accept / roster-sheet / scene / spend)
-budget.json          spend caps; every API call is checked against these first
 lib/                 imggen.py (API + spend ledger), cutout.py (keying/scaling/anchoring),
                      tiles.py (seamless tiles, inset, lift+shadow), cleanup.py (magenta fringe),
                      compose.py (map compositor = the placement contract in code)
@@ -56,14 +55,14 @@ draws). Changes made here since the package arrived:
   `gen_size`; it used to overwrite `size`).
 - **`pair`** makes a terrain variant tile seamlessly with its base (see Terrain a); every shipped
   `_b` tile is paired.
-- `budget.json` caps this folder's spend; `spend.jsonl` is committed, so the caps count every call
-  made for the game so far.
+- No spend caps (the owner's call, 2026-11-05: spend is limited on the platform side). `spend.jsonl`
+  is committed and logs every call made for the game so far, with its estimated cost.
 - **Interface art** (`ui.py`, docs/ISO.md section 9): icon sheets of sixteen in a 4 x 4 grid
   (`ui.py sheet --name <list>`, the list in `prompts/ui/<list>.txt`, the style in
   `prompts/style_ui_icons.txt`, anchored on `anchors/anchor_ui.png`, the reference's panels), cut
   per cell to 24 and 16 blocks of 2 px (`ui.py cut`, a review sheet per round), accepted as
   `roster/ui/ui_<key>.png` and `ui_<key>_s.png` (`ui.py accept`, `--only` / `--skip` to mix
-  variants); `ui.py backdrop` re-grids the painting behind the unit portrait. The budget tag is
+  variants); `ui.py backdrop` re-grids the painting behind the unit portrait. The spend tag is
   `ui`.
 - **Leader portraits** (`leaders.py`, docs/ISO.md section 9): a head-and-shoulders bust of every
   leader a game can have (each civilization's leaders, the barbarian, one hooded stranger for the
@@ -76,7 +75,7 @@ draws). Changes made here since the package arrived:
   in one call (about $0.15; the API allows about 20 images a minute, so `--jobs 3`), `cut --review` reduces each to 80
   art px in 2 px blocks (160 x 160) and writes a review sheet, `accept --key k --variant v` stores
   `roster/leaders/leader_<key>.png` and `prompts/assets/leader_<key>.txt`; `m7.py export` ships
-  them with the sprites. The budget tag is `ui/leaders`. FfH's scenario-only leaders (in
+  them with the sprites. The spend tag is `ui/leaders`. FfH's scenario-only leaders (in
   CIV4LeaderHeadInfos.xml but in no civilization) have none.
 
 ## Setup
@@ -88,10 +87,10 @@ cd ffh-art-mode-m7
 python m7.py unit --name unit_test --desc "a test" --dry-run   # prints prompt + image list, no API call
 ```
 
-**Budget.** `budget.json` caps spend for the tags `m7/units`, `m7/buildings` and `m7/terrain` (root `m7`), plus a global `total`.
-- A call that would exceed a cap is refused before it is sent.
-- `python m7.py spend` shows totals per root and per sub-tag next to the caps.
-- Raise the caps for bulk work.
+**Spend.** Every call is logged in `spend.jsonl` under a tag (`m7/units`, `ui/leaders`, ...), its cost
+estimated from the API's token usage and the price table in `lib/imggen.py` (deliberately pessimistic).
+Nothing is capped here; spend is limited on the platform side.
+- `python m7.py spend` shows the estimated totals per root and per sub-tag.
 
 **Platform and concurrency notes**
 - On Windows, pass paths as `C:/...` or relative paths. Git Bash `/c/...` paths fail inside Python.
@@ -390,7 +389,6 @@ python m7.py feature --name feat_jungle --width 186 \
 
 ## Troubleshooting
 
-- **"unknown budget tag" / "BUDGET" errors:** add or raise the tag in `budget.json`.
 - **Holes in magenta or purple art:**
   - The pocket keyer clears only near-flat key-coloured pockets, and `lib/cleanup.py` touches only semi-transparent pixels, near-pure #FF00FF, and opaque magenta-ish pixels within 3 px of the edge.
   - If art still gets damaged, the art itself is near-#FF00FF. Re-prompt with violet and rose-pink, or use `--key '#00ffff'`.

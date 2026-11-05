@@ -14,7 +14,7 @@ anchors/anchor_portrait.png (its worker portrait, enlarged 3x). One call makes N
 1024x1024. The cut keeps the whole square, reduces it to ART x ART art px with a box filter and
 re-grids it to PIXEL px blocks (the interface's 2 px grid). `accept` stores
 roster/leaders/leader_<key>.png and the exact prompt in prompts/assets/leader_<key>.txt; the
-export copies it into the client. `--keys all` is every prompts/leaders/*.txt. The budget tag is
+export copies it into the client. `--keys all` is every prompts/leaders/*.txt. The spend tag is
 `ui/leaders`.
 """
 import argparse, json, shutil, subprocess, sys
