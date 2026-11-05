@@ -32,6 +32,9 @@ STYLES = {
     "bust": ("style_leader.txt", "leaders", ANCHORS, "leaders"),
     "hd": ("style_leader_hd.txt", "leaders_hd",
            [ROOT / "anchors" / "anchor_leader_hd_1.png", ROOT / "anchors" / "anchor_leader_hd_2.png"], "leaders_hd"),
+    # four separate concepts per leader for the same look (prompts/leaders_hd_concepts/<leader>_c1..c4.txt)
+    "hdc": ("style_leader_hd.txt", "leaders_hd_concepts",
+            [ROOT / "anchors" / "anchor_leader_hd_1.png", ROOT / "anchors" / "anchor_leader_hd_2.png"], "leaders_hd_concepts"),
 }
 STYLE = STYLES["bust"]
 MODEL = "gpt-image-2.5-sunburst"
