@@ -25,6 +25,14 @@ EXTRA = {
     "alexis": "Her gown is buttoned to the chin under the high lace collar.",
 }
 # likeness sentences that carried the old scene's hand pose or state, loosened to the item itself
+# the owner's choice after the outline experiment (2026-11-05): the figure as bold, chunky pixel art with a
+# thick black outline, against the soft painted background; appended after each description, as tested
+OUTLINE = ("The character (not the background) is drawn as strongly chunky retro pixel art: very large square pixel "
+           "blocks on the figure, only about 64 blocks across the whole picture, the face built from a few big clear "
+           "blocks; a thick, solid, pure black outline three blocks wide around the entire silhouette, and bold black "
+           "lines on every main shape inside it (eyes, nose, mouth, hands, folds and edges of the costume); flat colour "
+           "areas with two or three shading steps, like a 16-bit sprite enlarged. The background stays soft, painterly "
+           "and much less pixelated, so the figure stands out from it like a cut-out.")
 FIX = {
     "keelyn": [("Both arms are wrapped tight around a small grinning red bat-winged IMP hugged against her cheek, a matching rose-pink bow tied on one of its horns.",
                 "Her small grinning red bat-winged IMP, a matching rose-pink bow tied on one of its horns, is always with her.")],
@@ -77,7 +85,7 @@ for key, head in HEAD.items():
             lk, extra,
             f"Pose, light and setting: {line[0].upper() + line[1:]}",
             f'Everything in the picture (the expression, where the eyes look, the hands, the light, the colours and the background) says "{vibe}".',
-            "" if wears else colours) if x)  # an outfit of its own carries its own colours
+            "" if wears else colours, OUTLINE) if x)  # an outfit of its own carries its own colours
         body = re.sub(r"\s{2,}", " ", body)
         (out / f"{key}_v{i}.txt").write_text(f'VIBE: "{vibe}". {line[0].upper() + line[1:]}\n\n{body}\n', encoding="utf-8")
         n += 1
