@@ -1,0 +1,30 @@
+{
+ "basium": {
+  "pronoun": "he",
+  "body": "BASIUM, the rebel angel who defied the gods to keep fighting demons, leader of the Mercurians in the fantasy game Fall from Heaven: a fallen angel in mortal flesh; male; ageless; towering, massive. Pale, weathered skin, a shaved head, a square jaw, THIN PALE RITUAL SCARS cut in straight lines across both cheeks and his brow, faintly shining.",
+  "costume": "dented silver-grey plate over a clean white tabard with a gold winged-sun emblem.",
+  "signature": "Battered grey-white WINGS with ragged feathers spread behind him. No blood anywhere on him, his clothes or his weapons.",
+  "extra": "He is an angel, terrible and unknowable: his eyes are pure white light with no pupils, his face is smooth and still as a mask with no human feeling in it, a second and a third pair of wings unfold behind the first with open eyes among the feathers, and any people near him reach only to his chest, kneeling or shielding their eyes."
+ },
+ "sabathiel": {
+  "pronoun": "he",
+  "body": "SABATHIEL, the hidden angel-king, leader of the Bannor in the fantasy game Fall from Heaven: an angel; male; ageless; huge and broad-shouldered, his skin giving off a faint pale glow. A smooth, flawless pale face, long straight silver-white hair, luminous pale-grey eyes.",
+  "costume": "polished white-and-silver plate over a long white robe, bright gold at the collar, a crimson-and-white tabard.",
+  "signature": "Great WHITE FEATHERED WINGS folded high behind him.",
+  "extra": "He is an angel, terrible and unknowable: his eyes are pure white light with no pupils, his face is smooth and still as a mask with no human feeling in it, a second and a third pair of wings unfold behind the first with open eyes among the feathers, and any people near him reach only to his chest, kneeling or shielding their eyes."
+ },
+ "hannah": {
+  "pronoun": "she",
+  "body": "HANNAH THE IRIN, the mutineer pirate queen born of a cult dreamer, leader of the Lanun in the fantasy game Fall from Heaven: human-seeming; female; about thirty; wiry. Wind-burned olive skin with a grey, drowned pallor, long black hair always wet and hanging straight and heavy, pale grey eyes like worn sea glass with no light in them, faint ring-shaped marks on her neck and wrists like the grip of suckers.",
+  "costume": "a long plain sea-coat of waterlogged grey-black sailcloth with no braid, buttons or sash, over a yellowed high-necked linen shift like a burial shirt, salt crust and dried kelp at the hems.",
+  "signature": "Her mother's NECKLACE OF HOLLOW BONE NEEDLES on a black cord, each needle tipped with a stub of whale-fat wax and a tiny wick, two or three still burning, wax dripped and hardened down her collarbone.",
+  "extra": "She is hollow, and something else looks out through her: her face is completely relaxed and empty, no smile, no frown, brows and mouth slack; her eyes have no catchlight and are fixed level, on nothing or straight through the viewer; she does not blink. She is perfectly still while everything around her moves. This emptiness overrides any drama in the style: her face shows no feeling at all."
+ },
+ "os_gabella": {
+  "pronoun": "she",
+  "body": "OS-GABELLA, Queen of Storms, the first woman made by the gods, who rebelled against them, leader of the Sheaim in the fantasy game Fall from Heaven: immortal human; woman; ageless, looking about thirty-five; tall. Pale skin gone dull with tiredness, long black hair hanging limp and loose with a few strands across her face, dark violet eyes with deep shadows under them.",
+  "costume": "a heavy, high-collared black gown over deep crimson underlayers; no armour.",
+  "signature": "Her pale white glowing JEWELS are always on her, set into whatever she wears (collar, girdle, rings).",
+  "extra": "She is weary beyond anything mortal: alive since the first morning of the world and bored by all of it, and it shows in her whole body: shoulders dropped, weight leaning on what is beside her, eyelids half-closed, mouth slack, no tension anywhere. This weariness overrides any drama in the style: no heroic pose, no wind in her hair, no triumphant light, no rim light."
+ }
+}
