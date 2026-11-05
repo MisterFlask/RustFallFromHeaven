@@ -1420,8 +1420,7 @@ impl Game {
 
     /// A promotion's `stat_changes` (docs/UNIT_STATS.md), `change` times (1 gained, -1 lost): the
     /// unit's battle stats, and its strength outside land battles from its attack and defence
-    /// (their points in tens; the attack's percentage, C++ `iCombatPercent`) and its spell damage
-    /// from its magic's percentage (`iSpellDamageModify`).
+    /// (their points in tens; the attack's percentage, C++ `iCombatPercent`).
     pub fn unit_apply_stat_changes(&mut self, u: UnitId, changes: &[StatChange; StatType::NUM], change: i32) {
         let unit = &mut self.units[u];
         for s in StatType::ALL {
@@ -1431,7 +1430,6 @@ impl Game {
         unit.extra_combat_percent += changes[StatType::Attack.idx()].percent * change;
         unit.base_combat += changes[StatType::Attack.idx()].flat / 10 * change;
         unit.base_combat_defense += changes[StatType::Defense.idx()].flat / 10 * change;
-        unit.spell_damage_modify += changes[StatType::Magic.idx()].percent * change;
     }
 
     /// C++ `CvUnit::changeExtraCityAttackPercent` (CvUnit.cpp:12311-12319).
@@ -1780,6 +1778,8 @@ impl Game {
             self.unit_change_same_tile_heal(u, info.same_tile_heal_change * change);
             self.unit_change_adjacent_tile_heal(u, info.adjacent_tile_heal_change * change);
             self.unit_apply_stat_changes(u, &info.stat_changes, change);
+            // Its spells' damage outside battles, apart from its battle magic.
+            self.units[u].spell_damage_modify += info.spell_damage_modify * change;
             // This game's engagement combat (Q1): the defence percentage, never read by the duel.
             self.unit_change_extra_city_attack_percent(u, info.city_attack_percent * change);
             self.unit_change_extra_city_defense_percent(u, info.city_defense_percent * change);

@@ -193,6 +193,18 @@ side)
   on its attack). Why: both sides hit in a formation battle, and the place promotions (City Raider,
   City Garrison, Guerilla, Woodsman, Defensive) were worth about half of an always-on promotion
   when they counted one way. A missile's strike and the naval duel keep the one-sided terms.
+- **The unit stats content pass** (the owner's approval, 2026-11-05; docs/UNIT_STATS.md section 7,
+  docs/STATS_CONTENT.md). Every land unit's magic defence, accuracy, evasion, crit and a caster's
+  magic now follow its role and kind instead of the day-one values derived from the old roles
+  (HP, attack, defence and speed unchanged): magic defence a share of defence (Frontline 75%,
+  casters 250%, ...), flankers EVA 15, assassins EVA 20 and CRIT 30 with their free Marksman,
+  archers ACC 95, casters' magic 110% of their attack. Promotions gained battle stats: Drill I-IV
+  +5 ACC and +10 CRIT, Flanking I-III +8 EVA, Marksman +10 ACC and +20 CRIT, Magic Resistance
+  +75% MDEF, Hero +5 ACC, +5 CRIT and +20% MDEF, the Combat line +10% MAG (from +5%), and the
+  races (Dwarves +10% DEF and MDEF, -5 EVA; Elves +5 ACC and EVA; Orcs +10% HP, -5 ACC; ...).
+  Why: units of a role were clones, and the takeable promotions are balanced against each other.
+  Spells outside battles keep FfH's damage bonus: a promotion's `spell_damage_modify` is its own
+  key again, apart from its battle magic.
 - **Sieges and Sentinels** (docs/SIEGES.md; the owner's design, 2026-11-04). A city with walls
   (Palisade, Walls, Wall of Stone: `iSentinels`) has two Sentinels, wall sections that fight in the
   defender's front row with `UNIT_SENTINEL`'s values (weak blows, 100 HP), their HP and Dv grown by
