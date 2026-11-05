@@ -101,6 +101,7 @@ fn an_autoplay_stopped_while_it_runs_replays() {
     let mut ng = NewGame::new(d, 4);
     ng.opponents = 1;
     ng.world = d.t("WORLDSIZE_DUEL");
+    ng.options.extend(common::STEADY);
     let opts = SessionOptions { saves_dir: Some(dir.0.clone()), ..SessionOptions::default() };
     let mut s = Session::new_game(&ng, std::sync::Arc::new(AdvisorAnswerer), opts).unwrap();
     assert_eq!(s.advance(&mut |_| {}), Stop::Human);
@@ -135,7 +136,7 @@ fn an_autoplay_stopped_while_it_runs_replays() {
 fn t4_replay_load_and_take_over_journals() {
     let dir = TempDir::new("replay-load");
     // Load: a bot game saved at turn 8, loaded into a new saves directory, played to turn 14.
-    let ng = new_game(4);
+    let ng = peaceful_game(4);
     let (mut s, mut b) = bot_session(&ng, Some(dir.0.join("first")));
     assert_eq!(bot::run(&mut s, &mut b, 8, |_, _| {}), Stop::Human);
     let paths = s.save("t8").unwrap();
@@ -163,7 +164,8 @@ fn t4_replay_load_and_take_over_journals() {
 
     // Take over: slot 1 of an AI-only duel at a turn boundary, played for 4 turns.
     let d = ffh_data::global();
-    let o = ffh_core::setup::SetupOptions::new(d, 2, "WORLDSIZE_DUEL", 21);
+    let mut o = ffh_core::setup::SetupOptions::new(d, 2, "WORLDSIZE_DUEL", 21);
+    o.options.extend(common::STEADY);
     let mut g = ffh_core::game::Game::new_with_options(d, &o);
     g.map_script = std::sync::Arc::new(ffh_core::mapscript::FractalMapScript::default());
     let ai = ffh_ai::ai_controller();

@@ -3,6 +3,9 @@
 
 use std::sync::{Arc, Mutex};
 
+mod common;
+use common::STEADY;
+
 use ffh_core::controller::Controller;
 use ffh_core::defs::INVALID_PLOT_COORD;
 use ffh_core::game::Game;
@@ -20,13 +23,10 @@ use ffh_play::{NewGame, Phase, Session, SessionOptions, Stop};
 /// What the answerer saw: (kind, the decision, a probe of the game at that moment).
 type Asked = Arc<Mutex<Vec<(DecisionKind, Decision, i64)>>>;
 
-/// A duel game at the human's first control point; the answerer records every decision with
-/// `probe(g, d)` and answers option 0.
+/// A duel game that cannot end ([`STEADY`]) at the human's first control point; the answerer
+/// records every decision with `probe(g, d)` and answers option 0.
 fn duel(seed: u32, probe: impl Fn(&Game, &Decision) -> i64 + Send + Sync + 'static) -> (Session, Asked) {
-    let d = ffh_data::global();
-    let mut ng = NewGame::new(d, seed);
-    ng.opponents = 1;
-    ng.world = d.t("WORLDSIZE_DUEL");
+    let ng = common::steady_duel(seed);
     let asked: Asked = Arc::default();
     let a = asked.clone();
     let answerer = Arc::new(FnAnswerer(move |g: &Game, dec: &Decision| {
@@ -140,9 +140,7 @@ fn capture_asks_keep_or_raze_inside_the_command() {
 /// the next control point asks for research again.
 #[test]
 fn research_empty_after_turn_four_takes_the_ai_pick_once() {
-    // (Seed 21: a seed whose undefended capital stands to turn 8; seed 12's fell to a barbarian
-    // after the building tiers changed the game.)
-    let (mut s, _) = duel(21, |_, _| 0);
+    let (mut s, _) = duel(12, |_, _| 0);
     to_turn(&mut s, 7);
     let h = s.human;
     ok(&mut s, Command::Research { tech: None, shift: false });
@@ -312,6 +310,7 @@ fn the_log_keeps_the_fog() {
     let mut ng = NewGame::new(d, 22);
     ng.opponents = 2;
     ng.world = d.t("WORLDSIZE_DUEL");
+    ng.options.extend(STEADY);
     let mut s = Session::new_game(&ng, Arc::new(AdvisorAnswerer), SessionOptions::default()).unwrap();
     assert_eq!(s.advance(&mut |_| {}), Stop::Human);
     let h = s.human;
@@ -531,7 +530,8 @@ fn autoplay_delegates_to_the_advisor() {
 #[test]
 fn take_over_an_ai_save() {
     let d = ffh_data::global();
-    let o = ffh_core::setup::SetupOptions::new(d, 2, "WORLDSIZE_DUEL", 21);
+    let mut o = ffh_core::setup::SetupOptions::new(d, 2, "WORLDSIZE_DUEL", 21);
+    o.options.extend(STEADY);
     let mut g = Game::new_with_options(d, &o);
     g.map_script = Arc::new(ffh_core::mapscript::FractalMapScript::default());
     let ai = ffh_ai::ai_controller();
@@ -759,9 +759,7 @@ fn the_session_follows_the_human_to_another_slot() {
     let dir = std::env::temp_dir().join(format!("ffh-play-reassign-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     let d = ffh_data::global();
-    let mut ng = NewGame::new(d, 21);
-    ng.opponents = 1;
-    ng.world = d.t("WORLDSIZE_DUEL");
+    let ng = common::steady_duel(21);
     let opts = SessionOptions { saves_dir: Some(dir.clone()), ..Default::default() };
     let mut s = Session::new_game(&ng, Arc::new(AdvisorAnswerer), opts).unwrap();
     assert_eq!(s.advance(&mut |_| {}), Stop::Human);

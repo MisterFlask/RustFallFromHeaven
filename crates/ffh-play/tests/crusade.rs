@@ -4,6 +4,7 @@
 //! resent), and a refusal costing council standing at the deadline. Set up with rules APIs on a
 //! tiny map; the assertions are about the protocol, not about how the AI plays.
 
+mod common;
 use std::sync::Arc;
 
 use ffh_core::crusade::{CrusadeId, CrusadeKind, Objective};
@@ -27,7 +28,9 @@ fn game(seed: u32) -> Session {
     let mut ng = NewGame::new(d, seed);
     ng.opponents = 2;
     ng.world = d.t("WORLDSIZE_TINY");
-    ng.options.push(GameOptionType::GAMEOPTION_NO_BARBARIANS);
+    // A game that cannot end (`common::STEADY`); a test whose subject is a war lifts the peace
+    // right before it (`common::allow_war`).
+    ng.options.extend(common::STEADY);
     let answerer = Arc::new(FnAnswerer(|_: &Game, _: &Decision| Answer::Option(0)));
     let mut s = Session::new_game(&ng, answerer, SessionOptions::default()).unwrap();
     assert_eq!(s.advance(&mut |_| {}), Stop::Human);
@@ -97,6 +100,7 @@ fn a_call_waits_in_pending_and_the_human_answers_and_lends() {
     assert!(matches!(s.execute(&Command::CrusadeAnswer { crusade: id.0, strength: None }), Err(CmdErr::Cannot(_))), "answered once");
     let lendable_before = s.query(&Query::Crusades).unwrap().req_arr("lendable").unwrap().len();
     // Lend: lending is war, so the first try asks.
+    common::allow_war(&mut s.g);
     let target = s.g.players[TARGET].team;
     let lend = |declare_war| Command::CrusadeLend { crusade: id.0, units: mine[..2].to_vec(), declare_war };
     match s.execute(&lend(false)) {
@@ -146,6 +150,7 @@ fn the_human_borrows_and_lends_through_propose_loan() {
     let mut s = game(5);
     let h = s.human;
     let (my, target, ally) = (s.g.players[h].team, s.g.players[TARGET].team, s.g.players[ALLY].team);
+    common::allow_war(&mut s.g);
     s.g.team_declare_war(my, target, false, None);
     s.g.players[h].gold = 2000;
     // (gold changes hands in deals once a team has the tech for it)
@@ -208,6 +213,7 @@ fn troops_are_an_item_of_the_trade_screen() {
     let h = s.human;
     let mine = warriors(&mut s, h, 2);
     let (target, ally) = (s.g.players[TARGET].team, s.g.players[ALLY].team);
+    common::allow_war(&mut s.g);
     s.g.team_declare_war(ally, target, false, None);
     let t = s.query(&Query::Trade { with: ALLY }).unwrap();
     let troops = t.req_value("troops").unwrap();

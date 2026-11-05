@@ -23,7 +23,7 @@ fn map_query(s: &Session, since: Option<i64>, epoch: Option<&str>) -> Json {
 /// bot's game, also across debug reveal; a revision of another epoch, or none, gets the full map.
 #[test]
 fn map_deltas_keep_a_client_up_to_date() {
-    let (mut s, mut b) = bot_session(&new_game(7), None);
+    let (mut s, mut b) = bot_session(&peaceful_game(7), None);
     let mut client: Option<Json> = None;
     let (mut deltas, mut fulls, mut points) = (0, 0, 0);
     let until = s.g.game_turn() + 25;
@@ -73,12 +73,10 @@ fn map_deltas_keep_a_client_up_to_date() {
     assert_eq!((d.req::<bool>("full"), d.req_arr("tiles").map(<[Json]>::len)), (Ok(false), Ok(0)));
 }
 
-/// A duel at the human's first control point, its capital founded.
+/// A duel that cannot end (`common::STEADY`) at the human's first control point, its capital
+/// founded.
 fn duel(seed: u32) -> (Session, CityId) {
-    let d = ffh_data::global();
-    let mut ng = NewGame::new(d, seed);
-    ng.opponents = 1;
-    ng.world = d.t("WORLDSIZE_DUEL");
+    let ng = common::steady_duel(seed);
     let mut s = Session::new_game(&ng, Arc::new(AdvisorAnswerer), SessionOptions::default()).unwrap();
     assert_eq!(s.advance(&mut |_| {}), Stop::Human);
     let h = s.human;
@@ -315,9 +313,8 @@ fn the_advance_profile_splits_update_own_work_and_autosave() {
     let dir = common::TempDir::new("profile");
     let play = |saves: Option<std::path::PathBuf>, profile: bool| {
         let d = ffh_data::global();
-        let mut ng = NewGame::new(d, 4);
-        ng.opponents = 1;
-        ng.world = d.t("WORLDSIZE_DUEL");
+        let mut ng = common::steady_duel(4);
+        let _ = d;
         let opts = SessionOptions { saves_dir: saves, ..SessionOptions::default() };
         let mut s = Session::new_game(&ng, Arc::new(AdvisorAnswerer), opts).unwrap();
         assert_eq!(s.advance(&mut |_| {}), Stop::Human);

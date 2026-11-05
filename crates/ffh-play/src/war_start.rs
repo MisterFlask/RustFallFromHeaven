@@ -240,4 +240,5 @@ fn confirm(save: &[u8], p: PlayerId, o: &WarStartOptions) -> Result<(Battle, [St
     }
 }
 
-// Tested end to end through the session op (`transport` tests: `war_start_takes_over_the_attacked_civ`).
+// No automated test: whether and when an AI-only game reaches a big battle is the seed's story
+// (CLAUDE.md, Workflow). Try it with `ffh-play agent --no-game` and the session op `war_start`.

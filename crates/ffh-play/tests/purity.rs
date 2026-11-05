@@ -32,7 +32,7 @@ struct Run {
 /// its own is never assumed. Checkpoints are the control points of the warm-up plus the control
 /// point reached before the capture and the one right after it.
 fn play(seed: u32, warmup: i32, noisy: bool) -> Run {
-    let ng = new_game(seed);
+    let ng = peaceful_game(seed);
     let mut b = Bot::new(seed);
     b.noisy = noisy;
     let (probe, answerer): (Option<Arc<bot::NoisyAnswerer>>, Arc<dyn Answerer>) = if noisy {

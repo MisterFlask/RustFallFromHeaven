@@ -219,9 +219,12 @@ which forward to the C++ methods -- so port each Cy call to the corresponding po
 - Work in small, compiling steps; commit with clear messages.
 - Update docs/PORTING.md when a C++/Python unit is ported (file, functions, status).
 - Tests: unit tests next to code; data spot-checks in `crates/ffh-data/tests/`.
-- Tests that rely on a seed's story (`crates/ffh-play/tests/*`: a bot survives, a city is
-  captured) break when the AI changes; make them robust to that (their comments say how, e.g.
-  re-pick a seed with `ffh-play bot --seed S`) rather than asserting one game's outcome.
+- No test relies on a seed's story (the owner's decision, 2026-11-05): how an AI game goes (a
+  bot survives, a city is captured, a battle comes, a game ends in a victory) changes with every
+  AI or rules change, so no test asserts it or needs it. A test that plays turns uses a game that
+  cannot end (`common::STEADY` in `crates/ffh-play/tests`: always peace, no barbarians, lairs or
+  goody huts) and asserts only what holds for any seed; a test that needs a situation (cities,
+  a war, a battle) builds it by hand. Measure how games go with the tools (docs/AI.md, "Tools").
 - **Merging to master** (the owner's standing permission, 2026-10-21): once a change passes the
   gate (`tools/agents/build-tree.sh --test`, `ffh data` with 0 warnings, `bash tools/web-check.sh`)
   and the end-to-end tests (`node tools/web-smoke.mjs --bin <built>/ffh-play`; the static site's

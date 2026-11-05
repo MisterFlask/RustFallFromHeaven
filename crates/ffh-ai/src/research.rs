@@ -759,8 +759,15 @@ mod tests {
 
     #[test]
     fn defense_goal_under_pressure_without_archers() {
+        // Two civilizations set by hand (whose archers defend cities), each with a city founded
+        // by hand; no turn is played.
         let d = ffh_data::global();
-        let mut g = Game::new(d, GameSetup::standard(d, 6, "WORLDSIZE_SMALL", 7));
+        let mut setup = GameSetup::standard(d, 2, "WORLDSIZE_SMALL", 7);
+        for (i, (civ, leader)) in [("CIVILIZATION_BANNOR", "LEADER_SABATHIEL"), ("CIVILIZATION_ELOHIM", "LEADER_EINION")].into_iter().enumerate() {
+            setup.players[i].civ = Some(d.t::<CivilizationType>(civ));
+            setup.players[i].leader = Some(d.t::<LeaderHeadType>(leader));
+        }
+        let mut g = Game::new(d, setup);
         g.map_script = std::sync::Arc::new(ffh_core::mapscript::FractalMapScript::default());
         let ai = crate::ai_controller();
         for p in g.player_ids() {
@@ -768,14 +775,11 @@ mod tests {
         }
         g.autorun = true;
         g.game_init();
-        // A few turns, so that the civs have cities (and research).
-        while g.game_turn() < 4 {
-            for _ in 0..200_000 {
-                g.update();
-                if g.at_turn_boundary() {
-                    break;
-                }
-            }
+        let land: Vec<PlotIdx> = g.map.plot_ids().filter(|&q| !g.plot_is_water(q) && !g.plot_is_impassable(q)).collect();
+        for p in g.civ_player_ids().filter(|&p| g.players[p].alive && !g.player_is_barbarian(p)).collect::<Vec<_>>() {
+            let q = *land.iter().find(|&&q| g.map.plots[q].owner.is_none() && g.map.plots[q].plot_city.is_none()).expect("free land");
+            let (x, y) = g.map.xy(q);
+            g.player_init_city(p, x, y, true, true);
         }
         let archery = d.t::<TechType>("TECH_ARCHERY");
         // A civ whose archer is an archer-level city defender and who has none yet.

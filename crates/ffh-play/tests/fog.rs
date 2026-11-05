@@ -180,7 +180,7 @@ fn land_near(g: &Game, x: i32, y: i32, r: i32, ok: impl Fn(PlotIdx) -> bool) -> 
 /// unit next to ours; then debug reveal shows them, marked.
 #[test]
 fn hidden_units_stay_hidden() {
-    let ng = new_game(5);
+    let ng = peaceful_game(5);
     let (mut s, mut b) = bot_session(&ng, None);
     let until = s.g.game_turn() + 25;
     assert_eq!(bot::run(&mut s, &mut b, until, |_, _| {}), Stop::Human);

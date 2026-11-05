@@ -1,6 +1,7 @@
-//! Victory pursuit (`victory.rs`): game states where one victory is near, built from a real
-//! game (a few turns of AI play, then the techs, buildings or culture set by hand), and the
-//! planner's choice and what production, research and the sliders do with it.
+//! Victory pursuit (`victory.rs`): game states where one victory is near, built by hand (each
+//! civilization's cities founded on a generated map, then the techs, buildings or culture set),
+//! and the planner's choice and what production, research and the sliders do with it. No turn is
+//! played, so nothing depends on how a game with the map's seed would go.
 
 use std::sync::Arc;
 
@@ -19,8 +20,10 @@ fn attach_ai(g: &mut Game) {
     }
 }
 
-/// A 3-civ small-map game played `turns` turns by the AI.
-fn played(seed: u32, turns: i32) -> Game {
+/// A 3-civ small map with the AI attached and no turn played: the civilizations' cities founded
+/// by hand (4, 3 and 2 of size 4, at least 5 plots apart, on free land), the game turn set to
+/// `turn`.
+fn founded(seed: u32, turn: i32) -> Game {
     let d = ffh_data::global();
     let setup = GameSetup::standard(d, 3, "WORLDSIZE_SMALL", seed);
     let mut g = Game::new(d, setup);
@@ -28,14 +31,26 @@ fn played(seed: u32, turns: i32) -> Game {
     attach_ai(&mut g);
     g.autorun = true;
     g.game_init();
-    while g.game_state == GameStateType::GAMESTATE_ON && g.game_turn() < turns {
-        for _ in 0..200_000 {
-            g.update();
-            if g.at_turn_boundary() {
+    let civs: Vec<PlayerId> = g.civ_player_ids().filter(|&p| g.players[p].alive && !g.player_is_barbarian(p)).collect();
+    let land: Vec<PlotIdx> = g.map.plot_ids().filter(|&q| !g.plot_is_water(q) && !g.plot_is_impassable(q) && g.map.plots[q].plot_type != PlotType::PLOT_PEAK).collect();
+    for (i, &p) in civs.iter().enumerate() {
+        let n = [4, 3, 2][i.min(2)];
+        let mut made = 0;
+        for &q in &land {
+            if made == n {
                 break;
             }
+            let (x, y) = g.map.xy(q);
+            let free = g.map.plots[q].owner.is_none() && g.map.plots[q].plot_city.is_none();
+            if free && g.cities.iter().all(|(_, c)| g.plot_distance(x, y, c.x, c.y) >= 5) {
+                let c = g.player_init_city(p, x, y, true, true);
+                g.city_set_population(c, 4);
+                made += 1;
+            }
         }
+        assert_eq!(made, n, "room for {n} cities of {p:?}");
     }
+    late(&mut g, turn);
     g
 }
 
@@ -101,7 +116,7 @@ fn best_city(g: &Game, p: PlayerId) -> CityId {
 /// victory), even one turn away: its estimate stays (rivals are watched), the plan ignores it.
 #[test]
 fn tower_of_mastery_near_is_not_pursued() {
-    let mut g = played(11, 80);
+    let mut g = founded(11, 80);
     let p = biggest(&g);
     late(&mut g, 400);
     near_tower(&mut g, p, None);
@@ -126,7 +141,7 @@ fn tower_of_mastery_near_is_not_pursued() {
 /// Nor is the last Tower tech a goal tech when the Tower is otherwise within reach.
 #[test]
 fn the_last_tower_tech_is_not_a_goal() {
-    let mut g = played(11, 80);
+    let mut g = founded(11, 80);
     let p = biggest(&g);
     late(&mut g, 400);
     near_tower(&mut g, p, Some("TECH_STRENGTH_OF_WILL"));
@@ -149,10 +164,9 @@ fn usable(g: &Game, p: PlayerId, q: PlotIdx) -> bool {
 
 #[test]
 fn mana_nodes_are_planned_for_towers_without_mana() {
-    let mut g = played(11, 80);
-    // The civ with the most land plots of its own to put raw mana on (the biggest one may have few:
-    // how much land a civ holds at turn 80 is the game's story, not what this test checks). A
-    // plot's forest or jungle is cleared for the node, as a worker would.
+    let mut g = founded(11, 80);
+    // The civ with the most land plots of its own to put raw mana on. A plot's forest or jungle is
+    // cleared for the node, as a worker would.
     let free = |g: &Game, p: PlayerId| {
         let mut n = 0;
         for &c in &g.players[p].cities {
@@ -212,7 +226,7 @@ fn mana_nodes_are_planned_for_towers_without_mana() {
 
 #[test]
 fn a_rival_near_the_tower_is_named() {
-    let mut g = played(11, 80);
+    let mut g = founded(11, 80);
     let p = biggest(&g);
     let q = g.civ_player_ids().find(|&o| o != p && g.players[o].alive && !g.player_is_barbarian(o) && !g.players[o].cities.is_empty()).unwrap();
     late(&mut g, 400);
@@ -226,9 +240,9 @@ fn a_rival_near_the_tower_is_named() {
 
 #[test]
 fn culture_near_legendary_is_pursued() {
-    let mut g = played(12, 120);
+    let mut g = founded(12, 120);
     let p = biggest(&g);
-    assert!(g.players[p].cities.len() >= 3, "a civ with three cities");
+    assert!(g.players[p].cities.len() >= 3, "a civ with three cities (founded by hand)");
     late(&mut g, 300);
     // Drama: the culture slider can move.
     let drama = g.d.t::<TechType>("TECH_DRAMA");
@@ -280,7 +294,7 @@ fn culture_near_legendary_is_pursued() {
 
 #[test]
 fn nothing_is_pursued_early_or_out_of_reach() {
-    let g = played(11, 80);
+    let g = founded(11, 80);
     for p in g.civ_player_ids() {
         assert_eq!(victory::plan(&g, p), victory::Plan::default(), "no plan at turn 80");
     }

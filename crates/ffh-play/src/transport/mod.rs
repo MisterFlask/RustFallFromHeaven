@@ -1038,54 +1038,6 @@ mod tests {
         std::fs::remove_dir_all(&root).unwrap();
     }
 
-    /// The war start on a tiny map: the session is the attacked civilization at the start's turn
-    /// boundary, the start is saved in the game's directory and loads again, the search published
-    /// its progress. The AI decides when big battles come: the seeds are tried in turn, and if
-    /// none gives one in 500 turns any more, pick seeds that do (`war_start` through
-    /// `ffh-play agent --no-game`).
-    #[test]
-    fn war_start_takes_over_the_attacked_civ() {
-        let root = std::env::temp_dir().join(format!("ffh-play-host-war-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&root);
-        let mut host = Host::new(HostOptions { saves: Some(root.clone()), autosave_keep: 2, panic_at: None }, Arc::new(AdvisorAnswerer));
-        let published = Arc::new(std::sync::Mutex::new(Vec::new()));
-        let sink = published.clone();
-        host.set_publisher(Arc::new(move |st: Json| sink.lock().unwrap().push(st)));
-        let (r, after) = [5, 6, 7]
-            .into_iter()
-            .map(|seed| {
-                let setup = crate::jobj! { "seed" => seed, "world" => "WORLDSIZE_TINY" };
-                host.handle(Json::Null, Request::Session(SessionOp::WarStart { setup, name: Some(format!("w{seed}")) }))
-            })
-            .find(|(r, _)| r.req::<bool>("ok") == Ok(true))
-            .expect("a war start on one of the seeds");
-        assert_eq!(after, After::Advance);
-        let war = r.get("r").and_then(|r| r.get("war")).cloned().unwrap();
-        let player: u8 = war.req("player").unwrap();
-        let turn: i32 = war.req("turn").unwrap();
-        let confirmed = war.get("confirmed").unwrap();
-        assert!(confirmed.req::<i32>("attacker_stack").unwrap() >= 3 && confirmed.req::<i32>("defender_stack").unwrap() >= 3, "{war}");
-        assert!(confirmed.req::<i32>("turn").unwrap() > turn, "{war}");
-        assert!(published.lock().unwrap().iter().any(|st| st.get("war_search").is_some()));
-        // The session: the attacked civilization, at its first control point after the start.
-        let ev = host.advance(&mut |_| {});
-        assert_eq!((ev.req_str("ev"), ev.req::<u8>("human"), ev.req::<i32>("turn")), (Ok("control"), Ok(player), Ok(turn + 1)), "{ev}");
-        // The start's save: at the boundary, that civilization human; it loads by name.
-        let dir = PathBuf::from(r.get("r").unwrap().req_str("game").unwrap());
-        let (bytes, sidecar) = save::read_bundle(&dir.join(format!("{WAR_START_SAVE}.ffhsave"))).unwrap();
-        let g = ffh_core::game::Game::load(ffh_data::global(), &bytes).unwrap();
-        assert!(g.at_turn_boundary());
-        assert_eq!(g.game_turn(), turn);
-        assert_eq!(g.num_human_players(), 1);
-        assert!(g.setup.players[player as usize].human);
-        assert_eq!(sidecar.map(|s| s.human), Some(PlayerId(player)));
-        let game = dir.file_name().unwrap().to_string_lossy().into_owned();
-        let (r, after) = host.handle(Json::Null, Request::Session(SessionOp::Load { name: format!("{game}/{WAR_START_SAVE}") }));
-        assert_eq!((r.req::<bool>("ok"), after), (Ok(true), After::Advance), "{r}");
-        drop(host);
-        std::fs::remove_dir_all(&root).unwrap();
-    }
-
     #[test]
     fn save_names_stay_in_the_saves_root() {
         let root = std::env::temp_dir().join(format!("ffh-play-host-{}", std::process::id()));

@@ -288,7 +288,7 @@ fn web_host_new_game_cached_gets_and_turns() {
     // A new game: the reply says `running`, the game runs to the human's first control point
     // before `request` returns.
     advisor_answers(&page);
-    let setup = ffh_play::jobj! { "seed" => 3, "world" => "WORLDSIZE_DUEL", "opponents" => 1 };
+    let setup = ffh_play::jobj! { "seed" => 3, "world" => "WORLDSIZE_DUEL", "opponents" => 1, "options" => common::steady_options_json() };
     let r = page.send(&mut game, &post(&ffh_play::jobj! { "id" => 1, "k" => "session", "op" => "new", "setup" => setup, "name" => "g" }));
     assert_eq!(r.json().req::<i64>("id"), Ok(1));
     assert_eq!(phase(r.json().get("status").unwrap()), "running");

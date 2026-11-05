@@ -259,7 +259,7 @@ fn t11_new_game_over_the_protocol_and_quit() {
     let mut a = Agent::spawn(&["--saves", root.to_str().unwrap(), "--no-game"]);
     assert_eq!(a.next().req_str("ev"), Ok("no_game"));
     assert_eq!(a.ask(ffh_play::jobj! { "id" => 1, "k" => "cmd", "c" => "end_turn" }).req_str("error"), Ok("no_game"));
-    let setup = ffh_play::jobj! { "seed" => 4, "world" => "WORLDSIZE_DUEL", "opponents" => 1 };
+    let setup = ffh_play::jobj! { "seed" => 4, "world" => "WORLDSIZE_DUEL", "opponents" => 1, "options" => common::steady_options_json() };
     let r = a.ask(ffh_play::jobj! { "id" => 2, "k" => "session", "op" => "new", "setup" => setup.clone(), "name" => "duel" });
     assert_eq!(r.get("r").unwrap().req_str("game"), Ok(root.join("duel").to_str().unwrap()), "{r}");
     assert_eq!(a.next().req_str("ev"), Ok("control"));
