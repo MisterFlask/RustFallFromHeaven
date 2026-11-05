@@ -37,17 +37,17 @@ LIKENESS = {
     "hannah": ("HANNAH THE IRIN, the mutineer pirate queen born of a cult dreamer, leader of the Lanun in the fantasy "
                "game Fall from Heaven: human-seeming; female; about thirty; wiry. Wind-burned olive skin with a grey, "
                "drowned pallor, long black hair always wet and hanging straight and heavy, pale grey eyes like worn sea "
-               "glass with no light in them, faint ring-shaped marks on her neck and wrists like the grip of suckers. A "
-               "long plain sea-coat of waterlogged grey-black sailcloth with no braid, buttons or sash, over a yellowed "
-               "high-necked linen shift like a burial shirt, salt crust and dried kelp at the hems. Her mother's NECKLACE "
-               "OF HOLLOW BONE NEEDLES on a black cord, each needle tipped with a stub of whale-fat wax and a tiny wick, "
-               "two or three still burning, wax dripped and hardened down her collarbone."),
+               "glass with no light in them, faint ring-shaped marks on her neck and wrists like the grip of suckers.",
+               "a long plain sea-coat of waterlogged grey-black sailcloth with no braid, buttons or sash, over a yellowed "
+               "high-necked linen shift like a burial shirt, salt crust and dried kelp at the hems.",
+               "Her mother's NECKLACE OF HOLLOW BONE NEEDLES on a black cord, each needle tipped with a stub of whale-fat "
+               "wax and a tiny wick, two or three still burning, wax dripped and hardened down her collarbone."),
     "os_gabella": ("OS-GABELLA, Queen of Storms, the first woman made by the gods, who rebelled against them, leader of "
                    "the Sheaim in the fantasy game Fall from Heaven: immortal human; woman; ageless, looking about "
                    "thirty-five; tall. Pale skin gone dull with tiredness, long black hair hanging limp and loose with a "
-                   "few strands across her face, dark violet eyes with deep shadows under them. A heavy, high-collared "
-                   "black gown over deep crimson underlayers, pale white glowing JEWELS set into its high collar and its "
-                   "girdle; no armour."),
+                   "few strands across her face, dark violet eyes with deep shadows under them.",
+                   "a heavy, high-collared black gown over deep crimson underlayers; no armour.",
+                   "Her pale white glowing JEWELS are always on her, set into whatever she wears (collar, girdle, rings)."),
 }
 # likeness sentences that carried the old scene's hand pose or state, loosened to the item itself
 FIX = {
@@ -63,7 +63,8 @@ sections = re.split(r"^## ", md, flags=re.M)[1:]
 by_head = {}
 for sec in sections:
     head = sec.split("\n", 1)[0].split(" (")[0].strip()
-    by_head[head] = re.findall(r"^\d\. \*\*(.+?)\*\*: (.+)$", sec, re.M)
+    by_head[head] = [(v, l, w or None) for v, l, w in
+                     re.findall(r"^\d\. \*\*(.+?)\*\*: (.+)$(?:\n   Wears: (.+)$)?", sec, re.M)]
 out = P / "leaders_hd_vibes"
 if write:
     out.mkdir(exist_ok=True)
@@ -74,7 +75,8 @@ for key, head in HEAD.items():
     desc = (P / "leaders_hd" / f"{key}.txt").read_text().split("\n\n", 1)[1].strip()
     sents = re.split(r"(?<=[.])\s+(?=[A-Z])", desc)
     cut = next(i for i, s in enumerate(sents) if i > 0 and re.search(r"\bturned\b", s, re.I))
-    likeness = LIKENESS.get(key) or " ".join(sents[:cut])
+    whole = LIKENESS.get(key)  # (body, usual costume, signature) when written for the vibes
+    likeness = f"{whole[0]} She wears {whole[1]} {whole[2]}" if whole else " ".join(sents[:cut])
     for old, new in FIX.get(key, []):
         assert old in likeness, (key, old)
         likeness = likeness.replace(old, new)
@@ -82,8 +84,11 @@ for key, head in HEAD.items():
     if not write:
         print(f"{key:12} keeps {cut} sentences; pose starts: {sents[cut][:70]!r}")
         continue
-    for i, (vibe, line) in enumerate(vibes, 1):
+    for i, (vibe, line, wears) in enumerate(vibes, 1):
         lk, extra = likeness, EXTRA.get(key, "")
+        if wears:
+            assert whole, f"{key}: a Wears: line needs a split likeness in LIKENESS"
+            lk = f"{whole[0]} For this portrait she wears {wears} {whole[2]}"
         if (key, vibe) == ("sabathiel", "Hidden Angel"):  # the disguise: only his shadow shows the angel
             lk = lk.replace(", and great WHITE FEATHERED WINGS folded high behind him", "")
             extra = ("In the room he passes for a man, with a calm human face and grey eyes; only his shadow shows "

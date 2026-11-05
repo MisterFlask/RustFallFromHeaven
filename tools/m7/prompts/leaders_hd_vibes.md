@@ -25,7 +25,8 @@ Rules (the owner's direction, 2026-11-05):
   Cassiel), drawn concretely: eyes of pure white light with no pupils, a smooth mask-like face, extra
   pairs of wings with eyes among the feathers, humans half their height kneeling or shielding their eyes.
 
-In a prompt, the vibe replaces the story-moment `VIBE:` line; the likeness (face, costume,
+A vibe may carry a `Wears:` line: its own outfit, chosen to express the vibe, in place of the leader's
+usual costume (the face, hair and signature item stay). In a prompt, the vibe replaces the story-moment `VIBE:` line; the likeness (face, costume,
 signature item) stays as in `leaders_hd/<key>.txt`.
 
 ## Alexis (Calabim)
@@ -150,9 +151,13 @@ signature item) stays as in `leaders_hd/<key>.txt`.
 
 ## Hannah (Lanun)
 1. **Nobody Home**: her arms hanging limp at her sides, hands doing nothing at all, staring blankly straight into the camera; rain running down her face unnoticed; the deck of the Desecrated Vessel at grey dusk.
+   Wears: a drenched, ankle-length high-necked linen shift and a sodden grey shawl, like a dreamer lifted out of her recess.
 2. **Sleepwalker**: her hands tying a sailor's knot in wet rope on their own while her eyes stare level at nothing; a gale at night, the sails whipping behind her and her hair not moving; sickly green lightning.
+   Wears: a cracked black oilskin coat several sizes too big, hood down, taken from the captain she replaced.
 3. **Dreamer's Daughter**: lighting the tiny wick of one of her mother's bone needles at her collarbone with a taper, not looking at it, eyes level and empty; the drowned cult temple, wall recesses where the dreamers lay, old wax everywhere.
+   Wears: the cult's own robes: layered sea-green and black temple robes stiff with old wax, faded tentacle sigils at the hems, the hood thrown back.
 4. **The Sea Withdraws**: wringing seawater from the hem of her coat while the sea behind her has drawn back from the harbour, ships stranded on black mud; flat yellow-grey light, her gaze level and empty past the viewer.
+   Wears: a soaked fisherwoman's plain wool sweater and canvas apron, kelp caught in the hem, dressed like one of the harbour's own.
 
 ## Hyborem (Infernals)
 1. **Morality Is Wind**: a patient tutor's smile at the far end of an endless dinner table.
@@ -186,9 +191,13 @@ signature item) stays as in `leaders_hd/<key>.txt`.
 
 ## Os-Gabella (Sheaim)
 1. **Open Carriage**: slouched in the corner of her black carriage, elbow on the open window, chin propped on her hand, eyes half-closed; Galveholm's crowds scrambling out of the way outside, unnoticed; harsh dusty noon.
+   Wears: a dusty black silk travelling dress, a veil pushed back from her face, her gloves pulled off and dropped in her lap.
 2. **Black Fire Test**: holding a crystal on a chain over a pit of black flame with tired, clinical patience, her other hand on her hip; a torchlit cavern deep under her palace.
+   Wears: a scorched leather alchemist's apron and rolled sleeves over a plain dark dress, her hair tied back carelessly.
 3. **Endless Evening**: seated on the edge of her bed at dusk, rubbing her temple with one hand, a hairpin she has just pulled out dangling from the other, half her hair fallen down; eyes on the floor; grey-violet light in a bare stone bedchamber.
+   Wears: a heavy black velvet dressing robe over a high-necked crimson nightgown.
 4. **Another Crown**: slumped on worn throne-room steps, head tipped back against a pillar, slowly setting a gold crown down on the stone beside her as she has set down a thousand before; colourless late-afternoon light, dust in the air.
+   Wears: full regalia: a vast, stiff black-and-crimson court gown with a towering jewelled collar, all of it too heavy for her.
 
 ## Perpentach (Balseraphs)
 1. **The Punchline**: a grin about to burst, one finger holding the pause; spotlight.
