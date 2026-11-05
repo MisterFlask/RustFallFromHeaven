@@ -232,7 +232,7 @@ signature item) stays as in `leaders_hd/<key>.txt`.
    Wears: the stage king's harlequin doublet of gold and crimson diamonds, a tall pleated white ruff and a purple velvet cape trimmed in gold.
 2. **Swallowed Minds**: fingertips of both hands pressed to his temples as if tuning many voices at once; a soft rapt smile, eyes unfocused past the viewer, listening; the court inside his own mind, a hall without walls in timeless grey-violet half-light, pale faces of every age crowding around his head.
    Wears: a long patchwork robe sewn from scraps of many people's clothes, a farmer's brown homespun, a soldier's red, a priest's white, a child's blue, no two patches alike.
-3. **Mask Under Mask**: his right hand lowering the porcelain mask from his face, his left hand pulling a curtain aside; beneath, his face painted as another mask, white greasepaint, black diamonds over the eyes, a red smile wider than his own; eyes straight on the viewer; a candlelit masked ball at midnight.
+3. **Mask Under Mask**: his right hand lowering the porcelain mask from his face, his left hand pulling a curtain aside; beneath, his own face painted to match the mask: gold and crimson harlequin diamonds over one half of it and a single painted black tear under one eye, his real mouth closed in a small, knowing smile; eyes straight on the viewer; a candlelit masked ball at midnight.
    Wears: a masked-ball costume of black-and-silver brocade: a long fitted coat, a black domino cape, silver diamonds down the sleeves.
 4. **Flying Cows**: both hands clapping together at his chest like a delighted child, a grin splitting his face, eyes following a cow sailing in a high arc from his catapult over the enemy walls; a siege camp on a hill at bright blue noon.
    Wears: a mock general's sky-blue velvet coat with absurdly huge gold epaulettes, a sash pinned with tin medals, and a tall plumed helmet hung with little bells.
@@ -248,10 +248,14 @@ signature item) stays as in `leaders_hd/<key>.txt`.
    Wears: a court robe of deep crimson velvet with a gold-embroidered hem and a deep cowl hood, black velvet gloves.
 
 ## Rhoanna (Hippus)
-1. **Feud Breaker**: leaning across the council fire, settling a blood feud between two scowling chiefs with one sly sentence.
-2. **Bronze Heirloom**: her father's too-broad bronze armour, one shoulder stiff from the old wound, chin up.
-3. **United Tribes**: a hundred tribal standards on the steppe behind her, she alone in front.
-4. **Peace Rider**: riding alone between two lined-up hordes, one empty hand raised.
+1. **Feud Breaker**: Leaning across the council fire, her right hand pouring mare's milk from a flask into one bowl held in her left, for two scowling chiefs in shadow to share; one brow raised, a sly half-smile, eyes sideways on the elder; a felt council tent at night, firelight from below.
+   Wears: a chieftain's long wine-red felt coat embroidered at the hems with galloping gold horses, a cream silk shirt, a heavy belt of silver plaques, red cord wound through her braid.
+2. **Bronze Heirloom**: Her right hand buckling her father's too-broad bronze pauldron over her stiff shoulder, her left holding his crested helmet against her hip; chin up, lips pressed tight, eyes straight at the viewer; his grave cairn on a windy hill, cold pink dawn glinting on the bronze.
+   Wears: her family's whole heirloom armour of burnished bronze scale plates, too broad in the shoulders for her, over a burnt-orange quilted gambeson, a rust-brown cloak and a curved horseman's sword.
+3. **United Tribes**: Alone before a hundred horsetail standards, both hands knotting one more tribe's coloured ribbon onto the standard pole held in the crook of her arm, already thick with ribbons; a small closed-mouth smile, chin raised, eyes past the viewer on the horizon; open steppe at golden sunset, long shadows.
+   Wears: a riding coat sewn from the felts of many tribes, each panel a different tribe's colour of red, ochre, blue or green, over a dark leather jerkin, horsehair tassels at the shoulders.
+4. **Peace Rider**: Riding alone between two lined-up hordes, her left hand holding the reins short, her right holding her sheathed sword up crosswise, its hilt bound to the scabbard with white cord; eyes level on the far line of riders, mouth set; a wide grass valley at flat overcast noon, dust hanging.
+   Wears: a long undyed white felt coat, the colour of parley among the tribes, a sky-blue sash, no other armour, a white ribbon tied at the end of her braid.
 
 ## Sabathiel (Bannor)
 1. **Hidden Angel**: signing a decree with a quill like any king, his other hand pressing the parchment flat, while the shadow he throws on the wall has vast wings and many eyes; a lamplit study at night.
@@ -264,43 +268,71 @@ signature item) stays as in `leaders_hd/<key>.txt`.
    Wears: ceremonial white plate polished like porcelain, without a visible seam, a crimson cloak hanging perfectly still.
 
 ## Sandalphon (Sidar)
-1. **Half a Soul**: shoulders dissolving into grey mist, the rest of him faintly bored.
-2. **Feels Nothing**: a peach held to his nose, smelling nothing; festival dusk.
-3. **Eternity's Price**: a wisp of his own soul-smoke in his palm, offered to you.
-4. **Fog Walker**: solid for one instant in a lamp's beam, the rest of him already fog.
+1. **Half a Soul**: His right hand turning a page of a huge book, his left hand holding the facing page flat, that whole arm thinning into grey mist from the shoulder down; heavy-lidded eyes on the page, mouth flat; a silent library of a hidden Sidar city, flat grey daylight from high windows.
+   Wears: the plain dress of the Grey: a high-collared ash-grey scholar's robe over charcoal layers, fastened with dull silver clasps.
+2. **Feels Nothing**: His right hand holding a ripe peach to his nose as he breathes in and smells nothing, his left holding a full festival cup he has not touched; dull eyes level on nothing past the fruit; a lantern-hung street festival at dusk, warm light, dancers blurred behind him.
+   Wears: festival finery a reveller pressed on him: a rich doublet of plum and gold brocade, a garland of orange marigolds hung around his neck.
+3. **Eternity's Price**: His upturned right palm holding a curl of his own grey soul-smoke toward the viewer like a merchant's sample, his left holding an open, empty crystal phial at his side, waiting for yours; eyes level on the viewer; a bare ritual chamber underground at midnight, one cold white candle.
+   Wears: the ritual robe of the Grey: long, plain bone-white silk with wide sleeves, a narrow black stole stitched with silver runes hanging to the hem.
+4. **Fog Walker**: His right hand catching a gloved wrist thrust from the fog beside him, its dagger stopped, pointing away, his left holding a closed book to his chest; head not turned, eyes on the lane ahead, lips parted mid-word; a fog-choked lane at twilight, an amber street lamp making him solid.
+   Wears: a long midnight-blue walking coat with a tall collar and a row of pewter buttons, a grey wool scarf wound once around his throat.
 
 ## Sheelba (Clan of Embers)
-1. **Torn Lace**: fist on the torn white lace collar, tusks bared, hurt and fury at once.
-2. **Raised Human**: holding a human girl's ribboned doll she cannot throw away; jungle night.
-3. **Human Manners**: holding a teacup with perfect manners among roaring orc warlords, the only one at the fire using a cup.
-4. **Between Worlds**: lace and orc furs both on her, looking back at a lit human town.
+1. **Torn Lace**: Her right fist clenched on the torn lace at her throat, her left hand ripping a pink silk ribbon out of her braid; tusks bared in a half-snarl, jaw set, eyes wet and glaring straight at the viewer; dense jungle at night, giant ferns, cold blue-green moonlight.
+   Wears: the torn remains of a sky-blue human girl's festival dress, its long sleeves ripped and hanging, under a huge shaggy grey-brown orc's fur cloak wrapped around her.
+2. **Raised Human**: Her right hand holding a ribboned rag doll over the coals of a brazier, fingers refusing to open, her left clutching a blanket closed at her chest; brows drawn up and together, mouth pressed tight between her tusks, eyes on the doll; her hide tent at grey, rainy dawn.
+   Wears: a long plain cream linen nightgown of human make, a moss-green wool blanket around her shoulders, her braid loose and half undone.
+3. **Human Manners**: Holding a small porcelain teacup by its handle in her right hand, little finger lifted, its saucer level in her left; one brow raised, lips pressed primly over her tusks, eyes sideways on a roaring warlord; a noon war-feast at the fire pit of Braduk, orange glare, smoky sky.
+   Wears: a war-chief's full gear: a huge burnt-orange fur cloak over iron-studded hide armour, iron arm-rings, ember-orange war paint striped across her cheekbones.
+4. **Between Worlds**: Her left hand holding the reins of her saddled warg, her right pulling her wolf-fur mantle tight around her shoulders; looking back over her shoulder at the warm windows and church spire of a human town below, lips parted, brows drawn together; a jungle ridge at blue twilight.
+   Wears: both worlds at once: a fitted wine-red velvet human riding dress with lace cuffs, a shaggy black wolf-fur mantle over it, a bone-and-iron orc pauldron on one shoulder.
 
 ## Tasunke (Hippus)
-1. **Hired Legend**: the steppe's most famous raider pricing your army with his eyes.
-2. **Underpaid**: realising his employer is no longer a man, frost on his moustache, jaw clenched.
-3. **Horsetail Pride**: the black plume streaming, a grin at full gallop.
-4. **Price Everything**: a looted silver chalice held up and appraised.
+1. **Hired Legend**: Testing the string of his recurve horse bow with his right thumb, the bow held in his left; eyes narrowed, running over the viewer as if pricing an army, one corner of his moustache lifted; a hilltop on a cold clear morning, his raiders lined up in the mist below.
+   Wears: his famous raider's gear: a rust-orange felt riding coat over lamellar armour of brown leather scales, a thick cream sheepskin collar, a quiver and bow case at his hip.
+2. **Underpaid**: His right hand gripping his sword hilt at his chest, his left weighing a thin purse of advance pay; jaw clenched, head pulled back, eyes cut sideways with the whites showing, frost on his moustache, breath smoking; the ice-lord's black tent at night, lit from below by blue-white ghost-fire.
+   Wears: a heavy winter coat of grey wolf fur over quilted dark-blue felt, the hood thrown back, fur mittens tucked into his belt, frost crusting the fur.
+3. **Horsetail Pride**: At full gallop, standing in the stirrups, his left hand holding the reins short, his right swinging a horsehair lasso over his head; laughing open-mouthed, eyes ahead past the viewer, the black plume streaming behind; open grassland at blazing midday, a stampeding horse herd beside him.
+   Wears: a raider's light summer gear: a loose red silk shirt under a sleeveless sheepskin vest, a wide leather belt hung with brass horse charms and trophy coins.
+4. **Price Everything**: Holding a looted silver chalice up to the light in his right hand, his left thumbnail scratching its rim to test the silver; one eye squinting at it, lips pursed under the moustache; a sacked manor hall at sunset, loot piled on the tables, gold light through broken shutters.
+   Wears: plundered finery over his armour: a looted noble's purple velvet coat too tight across his chest, three gold chains of different makers, a ring on every finger.
 
 ## Tebryn (Sheaim)
-1. **Hell Remembered**: blindfolded, flinching from something only he can see.
-2. **Blindfold Sight**: the silver-stitched blindfold turned to you, seeing your dead.
-3. **End Bringer**: arms wide as the planar gate's green fire roars behind him.
-4. **Holding the Door**: a clawed hand holding shut a door on hell, terror passing for resolve.
+1. **Hell Remembered**: His right hand clutching a branch of a blossoming apple tree to steady himself, his left clenched around the bone tablets at his waist; flinching, shoulders hunched, teeth clenched, blindfolded face jerked aside from a bright bird flapping up; a lush island orchard in warm morning sunlight.
+   Wears: what he wore out of hell: the scaly hide of a pit beast thrown over his shoulders like a cloak, its spines along the ridge, over a coarse ash-brown shift.
+2. **Blindfold Sight**: His left fingertips on the knot of his blindfold, tightening it, his right hand counting a string of bone beads, one for each of your dead; lips moving, blindfolded face turned straight at the viewer; the rim of the well of the dead at midnight, pale green ghosts streaming past.
+   Wears: his runecaster's robes of black and crimson, the hood thrown back, a high collar of dark iron, a belt hung with carved bone rune tablets.
+3. **End Bringer**: His right fingertip drawing the last line of a huge rune of green fire in the air, his left fist dragging pale ghosts into it; mouth open in a shout, cords in his neck, blindfolded face lifted; a planar gate roaring green behind him at an eclipsed, violet-black noon.
+   Wears: the regalia of the end of the world: a mantle of glossy black crow feathers over a long robe of deep violet silk embroidered with spiralling silver runes.
+4. **Holding the Door**: His right hand braced against a heaving black iron door, fingers clawed, his left jamming a carved bone tablet into its seam; arms shaking, teeth bared, neck corded, blindfolded face turned half away; a door in a cliff at stormy grey dawn, red hell-light glaring through its cracks.
+   Wears: a heavy hooded coat of dark iron-grey leather stitched all over with warding runes in silver wire, the hood down, iron bracers on both forearms.
 
 ## Thessa (Ljosalfar)
-1. **Sacrifice Bride**: smiling through tears at her new husband; the red oak in moonlight.
-2. **Gold Feather**: the single gold feather in her hair glowing as she works a spell.
-3. **Red Oak Rite**: alone at night, her palm on the great red oak, its leaves reddening where she touches.
-4. **Evermore Archmage**: a staff of living wood, the tree towers of Evermore behind.
+1. **Sacrifice Bride**: Her right hand drawing the viewer, her new husband, closer, her left hidden in the folds of her gown, closed on a tucked dagger; a small tender smile, tears running, eyes with no catchlight fixed on the viewer; under the great red oak by moonlight, lanterns dying.
+   Wears: a high-collared elven wedding gown of deep forest green and black with gold trim, a sheer veil falling down her back, ribbons in her hair.
+2. **Gold Feather**: Both hands cupped around an acorn that is splitting and sprouting into a sapling between her fingers, roots spilling over her wrists, the gold feather in her hair glowing; eyes on the sprout, lips parted, brow drawn in concentration; a sunlit glade of Evermore at bright morning, green-gold light.
+   Wears: a working mage's clothes: a sleeveless tunic of pale gold silk over an ivory underdress, the sleeves bound up above the elbow with cord, a satchel of seeds.
+3. **Red Oak Rite**: Her right hand tipping a silver cup of wine over the roots of the great red oak, its leaves reddening above as it soaks in, her left holding a stolen black grimoire open against her hip; eyes unblinking on the roots, lips moving; alone at violet dusk, ground mist.
+   Wears: a hooded mage's cloak of deep oxblood red, the hood pushed back, over a plain black gown, a black cord belt hung with small pouches.
+4. **Evermore Archmage**: Her right hand planting a staff of living wood on a high bridge, new shoots twining round her wrist, her left closing a great leaf-bound spellbook against her side; chin level, mouth calm and closed, eyes straight at the viewer; the tree towers of Evermore at golden late afternoon.
+   Wears: the archmage's formal robes: a long white robe embroidered with climbing ivy in green and silver thread, a silver mantle, a tall standing collar of carved pale wood.
 
 ## Valledia (Amurites)
-1. **Seeing Stone**: the violet stone on her brow glowing, eyes on a future you cannot see.
-2. **The Even**: her face split evenly between brazier red and dawn violet, unreadable.
-3. **Necessary Murder**: the painted seashell in her palm, proof of the murder she ordered.
-4. **Futures Weighed**: both palms up like scales, a small glowing vision above each.
+1. **Seeing Stone**: Her right hand writing with a silver stylus in a small book held open in her left, never looking down; the stone on her brow blazing violet, eyes wide and unfocused on a far point past the viewer; a tower roof at midnight under a sky thick with stars.
+   Wears: a seer's loose robe of pale silver-grey silk, its long sleeves fallen back from her wrists, a hood of sheer grey gauze lying around her shoulders.
+2. **The Even**: Her left hand stilling the swing of a hanging bronze brazier by its chain, her right dropping a pinch of incense into it; her face split evenly, half brazier red and half dawn violet, eyes straight at the viewer; her tower chamber in the hour before dawn.
+   Wears: her ruling robes: a severely cut, high-collared deep purple robe with lilac lining and silver piping, a silver chain belt.
+3. **Necessary Murder**: Turning a small painted seashell over in the fingers of her right hand, her left hand cupped beneath it, never looking at it; eyes level on the rain-streaked window, the barest nod; her study on a grey rainy afternoon, flat cold light, the door just closed.
+   Wears: a plain black wool gown buttoned high to the throat, with long tight sleeves and no ornament but the circlet.
+4. **Futures Weighed**: Holding a sphere of violet light in each hand at equal height, a tiny burning city inside the left, the same city at peace inside the right; eyes lowered to the burning one; the domed hall of her mage school at noon, a shaft of sun from above.
+   Wears: the formal robes of the first archmage of the Amurites: deep crimson velvet with wide sleeves, borders embroidered with gold runes, a tall stiff collar.
 
 ## Varn (Malakim)
-1. **Never Squints**: wide unshielded eyes on the sunrise, where any man would look away.
-2. **Mist Born**: the grey valley of mist he grew up in behind him, the sun breaking through it.
-3. **Elf Among Men**: the long-eared elf among sunburned desert pilgrims under white domes.
-4. **Sun-Struck**: a palm open to blazing noon, his face washed gold, utterly happy.
+1. **Never Squints**: His right hand gripping a staff planted beside him, his left pushing back the edge of his headscarf so no shade falls on his face; eyes wide open, unblinking, straight into a rising sun beyond the frame, lips parted; a white temple terrace at sunrise, men below shielding their eyes.
+   Wears: the sun-priest's vestments: flowing white-and-cream robes with gold embroidery, an ochre sash, a loose cream headscarf.
+2. **Mist Born**: His right hand lowering the dark hood of his elven cloak as one shaft of sunlight breaks through the mist onto him, his left holding a cold, unlit silver lantern; a faint smile, brows drawn up, eyes straight at the viewer; the dark, mist-filled Shadowed Vale behind him, late afternoon.
+   Wears: the clothes of an elven prince of the Shadowed Vale: a close-fitting coat of charcoal-black silk with silver leaf clasps, a long dark grey cloak beaded with mist.
+3. **Elf Among Men**: His right hand tipping a goatskin into the clay bowl of a sunburned pilgrim, his left steadying its neck; head bent to listen, a broad smile, eyes on the pilgrim; a caravanserai courtyard at blue dusk, oil lamps under white domes, the men around him a head shorter.
+   Wears: a Malakim caravaner's dusty indigo robe and a long indigo head-veil wound loosely so his long ears show, a plain leather belt.
+4. **Sun-Struck**: Holding a gold-framed burning-glass up to the blazing noon sun in his right hand, its bright point kindling the altar fire, his left feeding dry palm fronds into the flame; laughing open-mouthed, face washed gold, eyes wide on the viewer; a white rooftop sun-altar at noon.
+   Wears: light high-summer festival vestments: a sleeveless saffron-yellow linen robe, broad gold armbands, a pleated sunburst collar of gold-dyed linen spread across his shoulders.

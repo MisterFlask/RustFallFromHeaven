@@ -82,5 +82,61 @@
   "costume": "a heavy cloak of ash-grey wool and grey gloves.",
   "signature": "A DEEP HOOD, whatever they wear, whose shadow hides the face completely: no skin, hair, eyes or features, only soft darkness (this overrides the style's sharp face).",
   "extra": "Nothing of their body is ever shown: their hands are always gloved, and no skin, hair or eye catches the light anywhere."
+ },
+ "rhoanna": {
+  "pronoun": "she",
+  "body": "RHOANNA, the Hippus Queen who united the warring horse tribes, leader of the Hippus in the fantasy game Fall from Heaven: human; female; in her late twenties; tall and straight-backed, a born rider, one shoulder held a little stiff and low from an old wound. Sun-browned, wind-weathered skin, a strong jaw, a long thick chestnut braid, clear green eyes under straight dark brows.",
+  "costume": "her family's imposing heirloom armour of burnished bronze plates, a little too broad for her, over a burnt-orange quilted gambeson, a rust-brown cloak at her back and a curved horseman's sword at her hip.",
+  "signature": "Whatever else she wears, one broad BRONZE PAULDRON from her family's heirloom armour, a size too big and burnished bright, is strapped over her stiff shoulder.",
+  "extra": ""
+ },
+ "sandalphon": {
+  "pronoun": "he",
+  "body": "SANDALPHON, the immortal shade who traded part of his soul for eternity, leader of the Sidar in the fantasy game Fall from Heaven: human, becoming a shade; male; ageless, looking about forty; tall and upright. Unnaturally pale ash-grey skin, a long, smooth, clean-shaven face with high cheekbones, short smoke-grey hair swept back, dull grey eyes in which light never glints.",
+  "costume": "a high-collared ash-grey robe over charcoal layers, fastened with dull silver clasps.",
+  "signature": "He always wears a thin CIRCLET OF DULL PEWTER set with a single smoky grey stone that, like his eyes, gives back no light.",
+  "extra": "He is a shade: wherever the light is weak his edges come apart, his shoulders, the ends of his sleeves and the hem of his clothes dissolving into soft grey mist that drifts off into the air, so it is hard to say where he stops and the air begins; his face always stays solid and clear. He feels almost nothing, and it shows: a smooth, relaxed face, level brows, a flat mouth, never a real smile, and no catchlight in his eyes."
+ },
+ "sheelba": {
+  "pronoun": "she",
+  "body": "SHEELBA, the orc raised as a human daughter who ran back to her people, leader of the Clan of Embers in the fantasy game Fall from Heaven: orc; female; about twenty; tall, strong and lean, a head taller than most men. Olive-green skin, a heavy brow, a broad jaw, small neat lower tusks, a thick black braid threaded with ember-orange beads, sharp hazel eyes.",
+  "costume": "a huge burnt-orange orc warrior's fur cloak around her shoulders over iron-studded hide armour.",
+  "signature": "At her throat, whatever else she wears, is the torn white LACE COLLAR of a human girl's dress, its ripped edge hanging loose.",
+  "extra": "She is plainly an orc, not a human painted green: her tusks always show, even with her mouth closed."
+ },
+ "tasunke": {
+  "pronoun": "he",
+  "body": "TASUNKE, the most famous raider of the horse tribes, leader of the Hippus in the fantasy game Fall from Heaven: human; male; in his late forties; broad-chested and rugged. Sun-darkened, weathered skin, deep lines at the corners of his eyes, a hooked nose, long black hair going grey at the temples, worn in two braids, a drooping black moustache, dark eyes.",
+  "costume": "a rust-orange felt riding coat over lamellar armour of brown leather scales, a thick cream sheepskin collar, a curved sword and a bow case at his belt.",
+  "signature": "On his head, whatever else he wears, is a pointed steel steppe helmet topped with a long, flowing black HORSETAIL PLUME.",
+  "extra": ""
+ },
+ "tebryn": {
+  "pronoun": "he",
+  "body": "TEBRYN ARBANDI, the runecaster who returned from centuries of torment in hell to bring about the end of the world, leader of the Sheaim in the fantasy game Fall from Heaven: human; male; looks about fifty; gaunt and hollow-cheeked. Ashen skin with old pale scars, cropped iron-grey hair, a short grey beard, long bony fingers with hooked, ragged nails.",
+  "costume": "black and crimson robes, the hood thrown back, a high collar of dark iron, a belt hung with carved bone rune tablets.",
+  "signature": "A black cloth BLINDFOLD STITCHED WITH SILVER RUNES is always tied over his eyes; through it he sees the spirits of the dead.",
+  "extra": "His eyes are never seen: the blindfold covers them completely in every portrait, and where he looks is simply where his blindfolded face is turned."
+ },
+ "thessa": {
+  "pronoun": "she",
+  "body": "THESSA, archmage of the elven city of Evermore, leader of the Ljosalfar in the fantasy game Fall from Heaven: a wood elf; female; ageless, looks in her twenties; slender. Pale skin, a delicate oval face, long straight black hair, long pointed elf ears, dark green eyes.",
+  "costume": "a high-collared gown of deep forest green and black with gold trim.",
+  "signature": "A single GOLD FEATHER is always tucked into her black hair.",
+  "extra": ""
+ },
+ "valledia": {
+  "pronoun": "she",
+  "body": "VALLEDIA THE EVEN, the far-seeing sorceress queen, leader of the Amurites in the fantasy game Fall from Heaven: human; female; in her early fifties; slender and very still. Pale olive skin, a long straight nose, fine lines at the eyes and mouth, black hair streaked with silver and pinned up severely, cool grey eyes.",
+  "costume": "a high-collared deep purple robe with lilac lining and silver piping, a silver chain belt.",
+  "signature": "On her brow, whatever else she wears, a slim silver circlet holds a single glowing VIOLET SEEING-STONE.",
+  "extra": "Her face gives almost nothing away: brows level, mouth closed and even, her head held very straight."
+ },
+ "varn": {
+  "pronoun": "he",
+  "body": "VARN GOSAM, the elven prince turned sun-priest, leader of the Malakim in the fantasy game Fall from Heaven: an elf living among desert men; male; ageless, looks about forty; tall, lean and wiry. Sun-bronzed skin, a narrow face with high cheekbones, long straight black hair, long pointed elf ears, bright amber-gold eyes.",
+  "costume": "flowing white-and-cream priest's robes with gold embroidery, an ochre sash and a loose cream headscarf.",
+  "signature": "A GOLDEN SUN-DISC with straight pointed rays, the holy sign of Lugus, always hangs on a heavy chain at his chest.",
+  "extra": "He never squints: even in the brightest light his amber-gold eyes stay wide open and his brows relaxed."
  }
 }

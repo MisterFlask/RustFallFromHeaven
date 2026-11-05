@@ -1,29 +1,29 @@
 {
-  "pronoun": "he",
-  "body": "PERPENTACH, the Laughing Man, the mad mind-mage king, leader of the Balseraphs in the fantasy game Fall from Heaven: human; man; looks about forty though centuries old; lean and wiry, with long restless fingers. A pale, sharp-featured face, wild black hair streaked with silver, gold-flecked eyes.",
-  "costume": "a harlequin doublet of gold and crimson diamonds under a purple-and-crimson velvet cape trimmed in gold, and a tall pleated white ruff.",
-  "signature": "His smiling white porcelain CARNIVAL MASK, one black tear painted under its eye, is always with him, pushed up on his forehead or in his hand.",
-  "extra": "",
-  "vibes": [
-    {
-      "name": "The Punchline",
-      "line": "his right forefinger pressed to his lips to hold the pause, his left hand dangling a crowned marionette from its control bar; head cocked, eyebrows high, a grin about to burst, glittering eyes searching the viewer's face; his palace theatre stage at night, a hard white spotlight overhead.",
-      "wears": "the stage king's harlequin doublet of gold and crimson diamonds, a tall pleated white ruff and a purple velvet cape trimmed in gold."
-    },
-    {
-      "name": "Swallowed Minds",
-      "line": "fingertips of both hands pressed to his temples as if tuning many voices at once; a soft rapt smile, eyes unfocused past the viewer, listening; the court inside his own mind, a hall without walls in timeless grey-violet half-light, pale faces of every age crowding around his head.",
-      "wears": "a long patchwork robe sewn from scraps of many people's clothes, a farmer's brown homespun, a soldier's red, a priest's white, a child's blue, no two patches alike."
-    },
-    {
-      "name": "Mask Under Mask",
-      "line": "his right hand lowering the porcelain mask from his face, his left hand pulling a curtain aside; beneath, his face painted as another mask, white greasepaint, black diamonds over the eyes, a red smile wider than his own; eyes straight on the viewer; a candlelit masked ball at midnight.",
-      "wears": "a masked-ball costume of black-and-silver brocade: a long fitted coat, a black domino cape, silver diamonds down the sleeves."
-    },
-    {
-      "name": "Flying Cows",
-      "line": "both hands clapping together at his chest like a delighted child, a grin splitting his face, eyes following a cow sailing in a high arc from his catapult over the enemy walls; a siege camp on a hill at bright blue noon.",
-      "wears": "a mock general's sky-blue velvet coat with absurdly huge gold epaulettes, a sash pinned with tin medals, and a tall plumed helmet hung with little bells."
-    }
-  ]
+ "pronoun": "he",
+ "body": "PERPENTACH, the Laughing Man, the mad mind-mage king, leader of the Balseraphs in the fantasy game Fall from Heaven: human; man; looks about forty though centuries old; lean and wiry, with long restless fingers. A pale, sharp-featured face, wild black hair streaked with silver, gold-flecked eyes.",
+ "costume": "a harlequin doublet of gold and crimson diamonds under a purple-and-crimson velvet cape trimmed in gold, and a tall pleated white ruff.",
+ "signature": "His smiling white porcelain CARNIVAL MASK, one black tear painted under its eye, is always with him, pushed up on his forehead or in his hand.",
+ "extra": "",
+ "vibes": [
+  {
+   "name": "The Punchline",
+   "line": "his right forefinger pressed to his lips to hold the pause, his left hand dangling a crowned marionette from its control bar; head cocked, eyebrows high, a grin about to burst, glittering eyes searching the viewer's face; his palace theatre stage at night, a hard white spotlight overhead.",
+   "wears": "the stage king's harlequin doublet of gold and crimson diamonds, a tall pleated white ruff and a purple velvet cape trimmed in gold."
+  },
+  {
+   "name": "Swallowed Minds",
+   "line": "fingertips of both hands pressed to his temples as if tuning many voices at once; a soft rapt smile, eyes unfocused past the viewer, listening; the court inside his own mind, a hall without walls in timeless grey-violet half-light, pale faces of every age crowding around his head.",
+   "wears": "a long patchwork robe sewn from scraps of many people's clothes, a farmer's brown homespun, a soldier's red, a priest's white, a child's blue, no two patches alike."
+  },
+  {
+   "name": "Mask Under Mask",
+   "line": "his right hand lowering the porcelain mask from his face, his left hand pulling a curtain aside; beneath, his own face painted to match the mask: gold and crimson harlequin diamonds over one half of it and a single painted black tear under one eye, his real mouth closed in a small, knowing smile; eyes straight on the viewer; a candlelit masked ball at midnight.",
+   "wears": "a masked-ball costume of black-and-silver brocade: a long fitted coat, a black domino cape, silver diamonds down the sleeves."
+  },
+  {
+   "name": "Flying Cows",
+   "line": "both hands clapping together at his chest like a delighted child, a grin splitting his face, eyes following a cow sailing in a high arc from his catapult over the enemy walls; a siege camp on a hill at bright blue noon.",
+   "wears": "a mock general's sky-blue velvet coat with absurdly huge gold epaulettes, a sash pinned with tin medals, and a tall plumed helmet hung with little bells."
+  }
+ ]
 }
