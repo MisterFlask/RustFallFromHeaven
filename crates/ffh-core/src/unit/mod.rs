@@ -29,6 +29,7 @@ mod combat;
 #[cfg(test)]
 mod duel_reference;
 mod ffh;
+pub use ffh::SummonHow;
 mod lifecycle;
 mod missions;
 mod movement;

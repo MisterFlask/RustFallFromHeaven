@@ -158,6 +158,9 @@ fn casters_cast_their_strongest_damage_spell() {
     assert_eq!(spell("UNIT_ADEPT", &[]), None);
     assert_eq!(spell("UNIT_ADEPT", &["PROMOTION_AIR1"]), None);
     assert_eq!(spell("UNIT_MAGE", &["PROMOTION_AIR2"]), Some("SPELL_MAELSTROM"));
+    // A battle-only spell: Fire II's Fireball (damage 0, so a damage spell comes first).
+    assert_eq!(spell("UNIT_MAGE", &["PROMOTION_FIRE2"]), Some("SPELL_FIREBALL"));
+    assert_eq!(spell("UNIT_MAGE", &["PROMOTION_FIRE2", "PROMOTION_AIR2"]), Some("SPELL_MAELSTROM"));
     // The strongest: Snowfall (40) over Maelstrom (15).
     assert_eq!(spell("UNIT_ARCHMAGE", &["PROMOTION_AIR2", "PROMOTION_ICE3"]), Some("SPELL_SNOWFALL"));
     // Both promotions of a two-promotion spell: Ring of Flames (15) needs Channeling II and Divine.

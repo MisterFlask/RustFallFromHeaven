@@ -1,11 +1,12 @@
 //! Spellcasting (`magic.rs`): constructed, deterministic scenarios on a small hand-made map --
-//! a mage next to an enemy city casts Fireball before our stack attacks it, an adept that knows
+//! a mage next to an enemy city casts Maelstrom before our stack attacks it (a Fire mage keeps
+//! its Fireball, a battle spell, for the battle), an adept that knows
 //! Enchanted Blade and Haste blesses its stack rather than hasting it at the end of a quiet turn,
 //! a fresh summon attacks only a fight it has a chance in unless it is about to expire and covers
 //! no one, Donal recruits once in a big city, a caster builds a mana node on our raw mana and
-//! Govannon teaches his spheres; a Fireball does nothing to a Fire Elemental, and the barrage
-//! softens the stack at our gates before our units move, the force estimate counts a Mage's
-//! Fireball, and a besieged city gets its Wall of Stone.
+//! Govannon teaches his spheres; a Fireball missile does nothing to a Fire Elemental, and the
+//! barrage softens the stack at our gates before our units move, the force estimate counts a
+//! Mage's damage spells, and a besieged city gets its Wall of Stone.
 //! They fix no unit's stats, only what the spells are for.
 
 use std::sync::Arc;
@@ -67,7 +68,7 @@ fn give(g: &mut Game, u: UnitId, names: &[&str]) {
 }
 
 #[test]
-fn a_mage_fireballs_the_city_before_the_strike() {
+fn a_mage_softens_the_city_before_the_strike() {
     let d = ffh_data::global();
     let mut g = one_landmass_game(11);
     let (us, them) = (PlayerId(0), PlayerId(1));
@@ -82,16 +83,16 @@ fn a_mage_fireballs_the_city_before_the_strike() {
     for _ in 0..2 {
         g.player_init_unit(them, d.t::<UnitType>("UNIT_ARCHER"), 12, 5, Some(UnitAIType::UNITAI_CITY_DEFENSE), None);
     }
-    // Our stack next to the city: a mage of the Fire sphere and two axemen about to attack.
+    // Our stack next to the city: a mage of the Air sphere and two axemen about to attack.
     let mage = g.player_init_unit(us, d.t::<UnitType>("UNIT_MAGE"), 11, 5, Some(UnitAIType::UNITAI_MAGE), None);
-    give(&mut g, mage, &["PROMOTION_FIRE1", "PROMOTION_FIRE2"]);
+    give(&mut g, mage, &["PROMOTION_AIR1", "PROMOTION_AIR2"]);
     let axes: Vec<UnitId> = (0..2).map(|_| g.player_init_unit(us, d.t::<UnitType>("UNIT_AXEMAN"), 11, 5, Some(UnitAIType::UNITAI_ATTACK), None)).collect();
     let (ut, tt) = (g.players[us].team, g.players[them].team);
     g.team_declare_war(ut, tt, true, None);
     assert!(g.at_war(ut, tt));
-    let fireball = d.t::<SpellType>("SPELL_FIREBALL");
-    assert!(g.unit_can_cast(mage, fireball, false), "the mage can cast Fireball next to the city");
-    assert!(magic::attack_value(&g, mage, fireball, tp, &axes) > 0, "a Fireball on the defenders is worth casting");
+    let maelstrom = d.t::<SpellType>("SPELL_MAELSTROM");
+    assert!(g.unit_can_cast(mage, maelstrom, false), "the mage can cast Maelstrom next to the city");
+    assert!(magic::attack_value(&g, mage, maelstrom, tp, &axes) > 0, "a Maelstrom on the defenders is worth casting");
     let hp_before: i32 = g.map.plots[tp].units.iter().map(|&t| g.unit_curr_hit_points(t)).sum();
     let defenders_before = g.map.plots[tp].units.len();
     let v = View::new(&g, us);
@@ -100,8 +101,24 @@ fn a_mage_fireballs_the_city_before_the_strike() {
     let hp_after: i32 = g.map.plots[tp].units.iter().map(|&t| g.unit_curr_hit_points(t)).sum();
     assert!(
         hp_after < hp_before || g.map.plots[tp].units.len() < defenders_before,
-        "the Fireball hurt the defenders ({hp_before} -> {hp_after} hit points)"
+        "the Maelstrom hurt the defenders ({hp_before} -> {hp_after} hit points)"
     );
+}
+
+/// Fire II's Fireball is a battle spell (docs/ENGAGEMENTS.md): a Fire mage casts it in its
+/// battles, never on the map, and still marches with the army.
+#[test]
+fn a_fire_mage_keeps_its_fireball_for_the_battle() {
+    let d = ffh_data::global();
+    let mut g = one_landmass_game(11);
+    let us = PlayerId(0);
+    g.player_found(us, 4, 5);
+    let mage = g.player_init_unit(us, d.t::<UnitType>("UNIT_MAGE"), 5, 5, Some(UnitAIType::UNITAI_MAGE), None);
+    give(&mut g, mage, &["PROMOTION_FIRE1", "PROMOTION_FIRE2"]);
+    let fireball = d.t::<SpellType>("SPELL_FIREBALL");
+    assert!(!g.unit_can_cast(mage, fireball, true), "Fireball is not cast on the map");
+    assert_eq!(g.unit_engage_spell(mage), Some(fireball), "its spell in a battle");
+    assert!(magic::combat_caster(&g, mage) && magic::damage_caster(&g, mage));
 }
 
 #[test]
@@ -435,12 +452,9 @@ fn a_fireball_does_nothing_to_a_fire_elemental() {
     g.player_found(them, 16, 5);
     let (ut, tt) = (g.players[us].team, g.players[them].team);
     g.team_declare_war(ut, tt, true, None);
-    // A Fire Elemental next to our mage, in the open: immune to fire, and a Fireball is all fire.
-    let mage = g.player_init_unit(us, d.t::<UnitType>("UNIT_MAGE"), 8, 5, Some(UnitAIType::UNITAI_MAGE), None);
-    give(&mut g, mage, &["PROMOTION_FIRE1", "PROMOTION_FIRE2"]);
+    // A Fire Elemental in the open: immune to fire, and a Fireball missile (Wonder summons one;
+    // Fire II's Fireball is a battle spell) is all fire.
     let elemental = g.player_init_unit(them, d.t::<UnitType>("UNIT_FIRE_ELEMENTAL"), 9, 5, Some(UnitAIType::UNITAI_ATTACK), None);
-    let fireball = d.t::<SpellType>("SPELL_FIREBALL");
-    assert!(g.unit_can_cast(mage, fireball, false));
     let ep = g.unit_plot(elemental);
     assert_eq!(magic::summon_fight(&g, us, d.t::<UnitType>("UNIT_FIREBALL"), ep), None, "a Fireball cannot fight a Fire Elemental");
     // A Warrior instead: the Fireball takes hit points from it.
@@ -462,26 +476,26 @@ fn the_barrage_softens_the_stack_at_our_gates_before_our_units_move() {
     g.player_found(them, 16, 5);
     let (ut, tt) = (g.players[us].team, g.players[them].team);
     g.team_declare_war(ut, tt, true, None);
-    // Our city mage of the Fire sphere, and three enemy Warriors at the gates.
+    // Our city mage of the Air sphere, and three enemy Warriors at the gates.
     let mage = g.player_init_unit(us, d.t::<UnitType>("UNIT_MAGE"), 4, 5, Some(UnitAIType::UNITAI_MAGE), None);
-    give(&mut g, mage, &["PROMOTION_FIRE1", "PROMOTION_FIRE2"]);
+    give(&mut g, mage, &["PROMOTION_AIR1", "PROMOTION_AIR2"]);
     g.player_init_unit(us, d.t::<UnitType>("UNIT_AXEMAN"), 4, 5, Some(UnitAIType::UNITAI_CITY_DEFENSE), None);
     let warriors: Vec<UnitId> = (0..3).map(|_| g.player_init_unit(them, d.t::<UnitType>("UNIT_WARRIOR"), 5, 5, Some(UnitAIType::UNITAI_ATTACK), None)).collect();
     let hp = |g: &Game| warriors.iter().filter(|&&w| g.units.contains(w)).map(|&w| g.unit_curr_hit_points(w)).sum::<i32>();
     let before = hp(&g);
     let v = View::new(&g, us);
-    if magic::choose_turn_spell(&g, &v, mage).map_or(true, |(s, _)| d.spells[s].base.type_ != "SPELL_FIREBALL") {
+    if magic::choose_turn_spell(&g, &v, mage).map_or(true, |(s, _)| d.spells[s].base.type_ != "SPELL_MAELSTROM") {
         // A civilization whose mage prefers a spell of its own (the Balseraphs' puppets): it
         // keeps it for the end of the turn.
         return;
     }
     ffh_ai::casting::barrage(&mut g, &v);
     assert!(g.units[mage].has_casted, "the mage casts at the start of the turn");
-    assert!(hp(&g) < before, "the Fireball hurt the Warriors before our units move ({before} -> {})", hp(&g));
+    assert!(hp(&g) < before, "the Maelstrom hurt the Warriors before our units move ({before} -> {})", hp(&g));
 }
 
 #[test]
-fn the_force_estimate_counts_the_mages_fireballs() {
+fn the_force_estimate_counts_the_mages_damage_spells() {
     let d = ffh_data::global();
     let mut g = one_landmass_game(20);
     let (us, them) = (PlayerId(0), PlayerId(1));
@@ -496,12 +510,15 @@ fn the_force_estimate_counts_the_mages_fireballs() {
     let mage = g.player_init_unit(us, d.t::<UnitType>("UNIT_MAGE"), 11, 5, Some(UnitAIType::UNITAI_WARWIZARD), None);
     let (ut, tt) = (g.players[us].team, g.players[them].team);
     g.team_declare_war(ut, tt, true, None);
-    // Without a damage sphere the mage softens nothing; with Fire II its Fireball takes hit points.
+    // Without a damage sphere the mage softens nothing, nor with Fire II (its Fireball is a battle
+    // spell); with Air II its Maelstrom takes hit points.
     assert_eq!(magic::planned_soften(&g, tp, &defs, &[mage]).iter().sum::<i32>(), 0);
     give(&mut g, mage, &["PROMOTION_FIRE1", "PROMOTION_FIRE2"]);
+    assert_eq!(magic::planned_soften(&g, tp, &defs, &[mage]).iter().sum::<i32>(), 0);
+    give(&mut g, mage, &["PROMOTION_AIR1", "PROMOTION_AIR2"]);
     let soften = magic::planned_soften(&g, tp, &defs, &[mage, mage]);
     assert_eq!(soften.len(), defs.len());
-    assert!(soften.iter().sum::<i32>() > 0, "the Fireball's fight and collateral damage count: {soften:?}");
+    assert!(soften.iter().sum::<i32>() > 0, "the Maelstrom's damage counts: {soften:?}");
     // A caster counts once, however often it is listed.
     assert_eq!(soften, magic::planned_soften(&g, tp, &defs, &[mage]));
 }

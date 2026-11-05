@@ -1051,6 +1051,8 @@ up to 100%, to every unit on the eight plots around, and smoke on forests.
 missile's strike (one hit on a target picked by its role, plus its collateral) and remove it,
 without taking a slot. Committing a strength-0 suicide unit to a force, or making it fight 40 rounds,
 fits neither. The death explosion: KEEP (post-battle, it hits both sides around the dead unit).
+Superseded for Fireball (the owner's decision, 2026-11-05): Fire II's Fireball is its caster's
+spell in battle, not a missile (docs/ENGAGEMENTS.md, SPELL); the Meteor stays a missile.
 
 ## U4. Units created or converted by combat
 

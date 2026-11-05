@@ -251,6 +251,14 @@ flag.
   not the Tower of Mastery or the Altar of the Luonnotar. New: `PROMOTION_SPIRIT_GUIDE2` (the
   Legendary Reliquary's). Save format 17.
 
+- **Fireball is Fire II's battle spell** (docs/ENGAGEMENTS.md; the owner's decision, 2026-11-05).
+  A caster with Fire II casts Fireball with its spell actions in a formation battle, in place of
+  the magic bolt: fire damage (cut by the target's fire resistance) with the 50% splash on
+  adjacent units, as the other damage spells known in battle. It is no longer cast on the map
+  (FFH2: it summoned a Fireball missile that struck a plot and died). A unit with Fire II whose
+  battle rows cast no spell (the Arcane Barge, Meshabber) has no Fireball. The Wonder spell still
+  summons the missile it summoned (`UNIT_FIREBALL`). New spell key `battle_only`.
+
 **Balance** (after `classic-1`, each the owner's decision)
 
 - **The palace gives +3 production instead of +1** (all 21 civilization palaces, `buildings.jsonc`;

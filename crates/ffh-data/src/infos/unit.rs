@@ -1072,6 +1072,10 @@ pub struct SpellInfo {
     pub immune_flying: bool,
     pub immune_not_alive: bool,
     pub ability: bool,
+    /// This game's: a spell of the formation battle only (docs/ENGAGEMENTS.md, "Action kinds and
+    /// reach": SPELL), never cast on the map (`Game::unit_can_cast` refuses it): its caster's battle
+    /// spell, of its `damage_type`. Fire II's Fireball.
+    pub battle_only: bool,
     pub dispel: bool,
     pub push: bool,
     pub remove_has_casted: bool,
@@ -1161,6 +1165,7 @@ pub fn read_spell(rd: &Rd) -> SpellInfo {
         immune_flying: rd.bool("immune_flying"),
         immune_not_alive: rd.bool("immune_not_alive"),
         ability: rd.bool("ability"),
+        battle_only: rd.bool("battle_only"),
         dispel: rd.bool("dispel"),
         push: rd.bool("push"),
         remove_has_casted: rd.bool("remove_has_casted"),

@@ -743,6 +743,8 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
     // belongs to) or religion (its own). What the spell needs of the place, the player and the
     // game is the spell's help.
     let has = |p: Option<PromotionType>| p.is_none_or(|p| free_promotions[p]);
+    // A battle-only spell (Fireball) only for a type whose battle rows cast spells.
+    let casts_in_battle = d.engage_rows(u, d.unit_roles[u]).iter().any(|r| r.kind == ActionKind::Spell);
     for s in d.spells.keys() {
         let si = &d.spells[s];
         let tied = si.promotion_prereq1.is_some_and(|p| free_promotions[p]) || si.unit_prereq == Some(u) || of_class(si);
@@ -754,7 +756,8 @@ pub fn effects(d: &GameData, u: UnitType) -> String {
             && si.civilization_prereq.is_none_or(|c| civs.contains(&c))
             && si.religion_prereq.is_none_or(|r| Some(r) == *religion_type)
             // An equipment casts only the spells of its class.
-            && (equipment_promotion.is_none() || of_class(si));
+            && (equipment_promotion.is_none() || of_class(si))
+            && (!si.battle_only || casts_in_battle);
         if tied && caster && !listed(si) {
             ability(&mut b, s);
         }
@@ -933,7 +936,11 @@ mod tests {
         assert!(galley.starts_with("5[ICON_STRENGTH], 3[ICON_MOVES] (Naval Units)"), "{galley}");
         has(&galley, &["[ICON_BULLET]Cannot Enter Ocean"]);
         let barge = help("UNIT_ARCANE_BARGE");
-        has(&barge, &["[ICON_BULLET]Cargo Space: 1", &format!("[LINK=literal]{}[\\LINK] ability", display(d, d.t::<SpellType>("SPELL_FIREBALL"))), "Requires Astronomy", "Requires Sorcery"]);
+        has(&barge, &["[ICON_BULLET]Cargo Space: 1", "Requires Astronomy", "Requires Sorcery"]);
+        // Its Fire II's Fireball is a battle spell, and a ship fights no land battle.
+        let fireball = format!("[LINK=literal]{}[\\LINK] ability", display(d, d.t::<SpellType>("SPELL_FIREBALL")));
+        assert!(!barge.contains(&fireball), "{barge}");
+        assert!(help("UNIT_SON_OF_THE_INFERNO").contains(&fireball), "{}", help("UNIT_SON_OF_THE_INFERNO"));
         let adept = help("UNIT_ADEPT");
         has(&adept, &["[ICON_BULLET]Unit starts with +1 free promotion(s)", "Upgrades To: Mage", "Requires Knowledge of the Ether"]);
         // The Malakim's Summon Sand Lion is not every mage's.

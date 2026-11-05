@@ -186,6 +186,11 @@ impl Game {
         if self.unit_get_immobile_timer(u) > 0 {
             return false;
         }
+        // This game's: a battle-only spell (Fireball) is its caster's spell in a formation battle,
+        // never cast on the map (docs/ENGAGEMENTS.md).
+        if info.battle_only {
+            return false;
+        }
         // Change from FFH2: C++ refuses a spell without `bAllowAI` to every AI player. That is AI
         // policy, applied by the AIs themselves (ffh-ai casts such a spell only where it has logic
         // for it; docs/PORTING.md, "Changes from FFH2"), so the rule is the same for every player.
@@ -1218,17 +1223,30 @@ impl Game {
     /// then runs its `AI_update` at once, which is AI and omitted here (`Controller` has no hook
     /// for it).
     pub fn unit_cast_create_unit(&mut self, u: UnitId, spell: SpellType) {
-        let d = self.d;
-        let info = &d.spells[spell];
+        let info = &self.d.spells[spell];
         // C++ `initUnit((UnitTypes)getCreateUnitType(), ..)`: only called for spells that summon.
         let Some(create_unit_type) = info.create_unit_type else {
             return;
         };
+        let how = SummonHow {
+            permanent: info.permanent_unit_create,
+            copy_casters_promotions: info.copy_casters_promotions,
+            ability: info.ability,
+            promotion: info.create_unit_promotion,
+        };
+        self.unit_summon(u, create_unit_type, how);
+    }
+
+    /// The body of `CvUnit::castCreateUnit`: unit `u` summons a `create_unit_type` as a spell
+    /// with the fields `how` would (Wonder's Fireball calls it without a spell: Fire II's Fireball
+    /// is a battle spell, docs/ENGAGEMENTS.md).
+    pub fn unit_summon(&mut self, u: UnitId, create_unit_type: UnitType, how: SummonHow) {
+        let d = self.d;
         let unit = &self.units[u];
         let (owner, x, y) = (unit.owner, unit.x, unit.y);
         let summon = self.player_init_unit(owner, create_unit_type, x, y, Some(UnitAIType::UNITAI_ATTACK), None);
         self.units[summon].summoner = Some(u);
-        if info.permanent_unit_create {
+        if how.permanent {
             self.unit_change_immobile_timer(summon, 2);
         } else {
             self.unit_change_duration(summon, 2);
@@ -1243,7 +1261,7 @@ impl Game {
         }
         for promotion in d.promotions.keys() {
             if self.units[u].has_promotion[promotion] {
-                if info.copy_casters_promotions {
+                if how.copy_casters_promotions {
                     let promotion_info = &d.promotions[promotion];
                     if !promotion_info.equipment && !promotion_info.race && promotion.i() != d.defines.great_commander_promotion {
                         self.unit_set_has_promotion(summon, promotion, true);
@@ -1251,14 +1269,14 @@ impl Game {
                 }
                 // BUGFfH (Denev 2009/10/08): summoning abilities that are not spells (e.g. Hire
                 // Goblin) do not pass the summoner's perks on.
-                else if !info.ability {
+                else if !how.ability {
                     if let Some(perk) = d.promotions[promotion].promotion_summon_perk {
                         self.unit_set_has_promotion(summon, perk, true);
                     }
                 }
             }
         }
-        if let Some(promotion) = info.create_unit_promotion {
+        if let Some(promotion) = how.promotion {
             self.unit_set_has_promotion(summon, promotion, true);
         }
         self.unit_do_turn(summon);
@@ -2153,6 +2171,19 @@ impl Game {
             }
         }
     }
+}
+
+/// How a summon is made (`CvUnit::castCreateUnit`'s spell fields; [`Game::unit_summon`]).
+#[derive(Clone, Copy, Debug, Default)]
+pub struct SummonHow {
+    /// `bPermanentUnitCreate`: no duration (immobile two turns).
+    pub permanent: bool,
+    /// `bCopyCastersPromotions`.
+    pub copy_casters_promotions: bool,
+    /// `bAbility`: the caster's summon perks are not passed on.
+    pub ability: bool,
+    /// `CreateUnitPromotion`.
+    pub promotion: Option<PromotionType>,
 }
 
 #[cfg(test)]

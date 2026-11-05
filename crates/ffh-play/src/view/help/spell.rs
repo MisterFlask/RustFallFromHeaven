@@ -58,8 +58,9 @@ pub fn effects(d: &GameData, s: SpellType) -> String {
         caster_no_duration: _,
         has_casted: _,
         ignore_has_casted: _,
-        damage_type: _,
         ability: _,
+        damage_type,
+        battle_only,
         push: _,
         change_population: _,
         global,
@@ -190,6 +191,20 @@ pub fn effects(d: &GameData, s: SpellType) -> String {
     }
 
     // What it does.
+    if *battle_only {
+        // ffh-play's (this game's rule: docs/ENGAGEMENTS.md, SPELL).
+        b.push_str(NEWLINE);
+        match damage_type {
+            Some(t) => b.push_str(&format!(
+                "[ICON_BULLET]Battle spell: cast by the caster's spell actions in a battle; {} damage, {}% splash on adjacent units",
+                display(d, *t),
+                d.defines.engagement_splash_percent
+            )),
+            None => b.push_str("[ICON_BULLET]Battle spell: cast by the caster's spell actions in a battle"),
+        }
+        b.push_str(NEWLINE);
+        b.push_str("[ICON_BULLET]Cannot be cast on the map");
+    }
     if let Some(u) = create_unit_type {
         let unit = display(d, *u);
         if *create_unit_num == 1 {
@@ -354,7 +369,10 @@ mod tests {
         }
 
         let fireball = of("SPELL_FIREBALL");
-        assert_eq!(fireball, "[ICON_BULLET]Requires the Fire II promotion[NEWLINE][ICON_BULLET]Summons a [LINK=literal]Fireball[\\LINK].");
+        assert_eq!(
+            fireball,
+            "[ICON_BULLET]Requires the Fire II promotion[NEWLINE][ICON_BULLET]Battle spell: cast by the caster's spell actions in a battle; Fire damage, 50% splash on adjacent units[NEWLINE][ICON_BULLET]Cannot be cast on the map"
+        );
         // A permanent summon says so on its line.
         let skeleton = of("SPELL_RAISE_SKELETON");
         assert!(skeleton.contains("[ICON_BULLET]Summons a [LINK=literal]Skeleton[\\LINK]. (permanent)"), "{skeleton}");

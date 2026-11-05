@@ -108,10 +108,12 @@ the view and the client read these.
 - SHOOT: the backmost unit of each enemy lane. Physical, `ENGAGEMENT_SHOOT_MISS_PERCENT` (10) more
   miss.
 - SPELL: the backmost unit of each enemy lane; never misses, never crits. A caster that knows a
-  damage spell (`GameData::engage_damage_spell`: of the spells with `iDamage > 0` whose promotion,
-  unit, unit class and unit combat prerequisites it meets, the highest `iDamage`, then the lower
-  id) casts it at power 100 with a splash; one that knows none casts the magic bolt,
-  `ENGAGEMENT_BOLT_PERCENT` (60), one target. The log names the spell.
+  damage spell (`GameData::engage_damage_spell`: of the spells with `iDamage > 0` or
+  `battle_only` whose promotion, unit, unit class and unit combat prerequisites it meets, the
+  highest `iDamage`, then the lower id) casts it at power 100 with a splash; one that knows none
+  casts the magic bolt, `ENGAGEMENT_BOLT_PERCENT` (60), one target. The log names the spell. A
+  `battle_only` spell is cast only so, never on the map (`unit_can_cast` refuses it): Fire II's
+  Fireball, of fire (the owner's decision, 2026-11-05; FFH2's Fireball summoned a missile).
 - BOMBARD: the backmost unit of each enemy lane; physical, `ENGAGEMENT_BOMBARD_MISS_PERCENT` (15)
   more miss; never crits.
 - HEAL: the most hurt ally on the field (most HP missing; ties by lane, then row), itself
@@ -312,7 +314,8 @@ outlives the call. Every loop is bounded (three rounds, passes by the most actio
 so every engagement ends; a turn holds at most `1 + Blitz` engagements per unit in a pool, since
 each spends an attack of every committed unit.
 
-**Missiles** (Q11): a missile (Fireball, Meteor) ordered into an enemy plot strikes instead:
+**Missiles** (Q11): a missile (the dragons' Meteor; the Fireball missile, which only the Wonder
+spell summons since Fire II's Fireball became a battle spell) ordered into an enemy plot strikes instead:
 `formation::missile_hit` on the defender's auto formation (a strike's reach and choice from outside
 the field: no nearby first, no miss, no crit, no splash, no withdrawal; r drawn; never past the
 missile's combat limit), then its collateral (today's formula); it dies, with the kill if it killed
@@ -460,6 +463,10 @@ The spec (the owner's, revision 4) holds; these were left open and are decided s
   are a later step (`Game::engage_defense_formation` is the hook).
 - A city whose only defenders are ships in port is attacked with today's duel (ships never defend
   land in an engagement, but nothing else defends there).
+- **Mages and summons** (the owner's decisions, 2026-11-05): mages fight in person, in the line,
+  as they do (that they are harder to keep alive is accepted; easier training can make up for it
+  if they turn out too weak); a caster's summon is an extra unit in its battles (not a swap for
+  the caster), how is open; Fire II's Fireball is its caster's battle spell (done: SPELL above).
 - Phase 7: spells in combat phases, summons in battle, the Guardsman's bodyguard, commander auras
   (the hooks are in place: plan section 14). The three spell hooks, `engage_pre_battle`,
   `engage_opening_spells` and `engage_post_battle_spells` (`engage.rs`), are called at their places

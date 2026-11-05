@@ -2224,7 +2224,9 @@ fn spell_wonder(g: &mut Game, caster: UnitId, _call: &PyCall) {
                     cast(g, "SPELL_ESCAPE");
                 }
             }
-            16 => cast(g, "SPELL_FIREBALL"),
+            // FFH2: `cast('SPELL_FIREBALL')`. Fire II's Fireball is a battle spell here
+            // (docs/ENGAGEMENTS.md); Wonder still summons the missile it summoned.
+            16 => g.unit_summon(caster, d.t::<UnitType>("UNIT_FIREBALL"), crate::unit::SummonHow::default()),
             17 => cast(g, "SPELL_FLAMING_ARROWS"),
             18 => cast(g, "SPELL_FLOATING_EYE"),
             19 => cast(g, "SPELL_HASTE"),

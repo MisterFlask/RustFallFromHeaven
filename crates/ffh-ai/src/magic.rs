@@ -1664,6 +1664,10 @@ pub fn school_tech_value(g: &Game, p: PlayerId, t: TechType, value: i32) -> i32 
 // What a caster can do (promotions)
 // ----------------------------------------------------------------------------
 
+/// [`spell_worth`] of a battle-only spell (Fireball): the old Fireball missile's worth without
+/// its collateral bonus (a strength-4 summon at 20 a point).
+const BATTLE_SPELL_WORTH: i32 = 80;
+
 /// Rough worth of spell `s` to a caster, on the scale of `units::promotion_value` (Combat I is
 /// about 40): a summon by its strength (lasting ones less a bit, more with collateral damage),
 /// damage by its size and reach, curses and blessings by the strength they change on the units
@@ -1693,6 +1697,11 @@ pub fn spell_worth(d: &GameData, s: SpellType) -> i32 {
         w += (sw.max(5) * info.create_unit_num.max(1)).min(200);
     }
     w += info.damage * reach;
+    if info.battle_only {
+        // A battle spell (Fireball): its caster's spell in every formation battle it fights, a
+        // splash of its damage type in place of the magic bolt's single hit at 60%.
+        w += BATTLE_SPELL_WORTH;
+    }
     for pr in adds(info) {
         let p = &d.promotions[pr];
         if p.ai_weight < 0 {
@@ -1804,11 +1813,15 @@ fn channeling_below(d: &GameData, and: PromotionType) -> Option<PromotionType> {
 // safe city. The Enchantment civilizations that trained them lost wins (3 against 9 over 80
 // games) for no share.
 
-/// Does `u` know a spell that helps in a fight (a summon that attacks, damage, a curse, a
-/// blessing for a stack)? Such casters march with the army.
+/// Does `u` know a spell that helps in a fight (its spell in a battle, a summon that attacks,
+/// damage, a curse, a blessing for a stack)? Such casters march with the army.
 pub fn combat_caster(g: &Game, u: UnitId) -> bool {
     let d = g.d;
     let unit = &g.units[u];
+    // Its spell in a battle (Fireball, Maelstrom: not the magic bolt).
+    if g.unit_engage_spell(u).is_some() {
+        return true;
+    }
     d.spells.keys().any(|s| {
         let i = &d.spells[s];
         !i.global
@@ -1822,13 +1835,18 @@ pub fn combat_caster(g: &Game, u: UnitId) -> bool {
     })
 }
 
-/// Does `u` know a spell that hurts enemy units: damage, a temporary summon that fights, Crush,
-/// Pillar of Fire or Destroy Undead (a Mage's Fireball, not an Adept's Haste or Floating Eye)?
+/// Does `u` know a spell that hurts enemy units: its spell in a battle (a Mage's Fireball, not
+/// the magic bolt), damage, a temporary summon that fights, Crush, Pillar of Fire or Destroy
+/// Undead (not an Adept's Haste or Floating Eye)?
 /// Spells with an FfH weight of their own are cast for it, not for the fight: the Balseraphs'
 /// Create Puppet, which every Balseraph caster knows, made each of them count as a Fireball and
 /// sent them to wars they could not win (docs/AI_LOG.md, "Magic civilizations").
 pub fn damage_caster(g: &Game, u: UnitId) -> bool {
     let d = g.d;
+    // Its spell in a battle (Fireball, Maelstrom: not the magic bolt).
+    if g.unit_engage_spell(u).is_some() {
+        return true;
+    }
     let fights = |t: UnitType| d.units[t].combat + d.units[t].damage_type_combat.iter().sum::<i32>() > 0;
     known(g, u).into_iter().any(|s| {
         let i = &d.spells[s];
@@ -1975,7 +1993,7 @@ mod tests {
                 eprintln!("{w:5} {n}");
             }
         }
-        // A summon that attacks with collateral damage beats a one-turn move bonus; a stack
+        // A battle spell beats a one-turn move bonus; a stack
         // blessing that lasts beats one that does not; a curse that takes weapons is worth a
         // caster.
         assert!(worth(d, "SPELL_FIREBALL") > worth(d, "SPELL_HASTE"));

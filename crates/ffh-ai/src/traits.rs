@@ -358,7 +358,7 @@ pub const SUMMON_NODE: i32 = 3000;
 
 /// The mana whose sphere's second promotion (a Mage's, with Channeling II) opens a spell summoning
 /// a creature that stays to fight: Death (Spectre), Entropy (Pit Beast), Law (Einherjar), Ice (Ice
-/// Elemental). Fire's, Fireball, summons a projectile (`bSuicide`), not a creature.
+/// Elemental). Fire II's Fireball is a battle spell (docs/ENGAGEMENTS.md), no summon.
 pub fn summon_mana(d: &GameData) -> &'static [BonusType] {
     static S: std::sync::OnceLock<Vec<BonusType>> = std::sync::OnceLock::new();
     S.get_or_init(|| {
@@ -406,7 +406,7 @@ pub fn bonus_trade_value(g: &Game, p: PlayerId, bonus: BonusType, change: i32, v
 
 /// The summoning spheres: sphere promotions (a chain with a promotion that needs a mana
 /// resource, so not Channeling) that are the first prerequisite of a spell any civilization may
-/// cast creating a unit that fights (Raise Skeleton, Fireball, the elementals, ...).
+/// cast creating a unit that fights (Raise Skeleton, the elementals, ...).
 fn summoning_spheres(d: &GameData) -> &'static [PromotionType] {
     static S: std::sync::OnceLock<Vec<PromotionType>> = std::sync::OnceLock::new();
     S.get_or_init(|| {
@@ -701,11 +701,12 @@ mod tests {
         let d = ffh_data::global();
         let s = super::summoning_spheres(d);
         let has = |name: &str| s.contains(&d.t::<PromotionType>(name));
-        for name in ["PROMOTION_DEATH1", "PROMOTION_DEATH2", "PROMOTION_FIRE2", "PROMOTION_AIR3", "PROMOTION_EARTH3"] {
+        for name in ["PROMOTION_DEATH1", "PROMOTION_DEATH2", "PROMOTION_FIRE3", "PROMOTION_AIR3", "PROMOTION_EARTH3"] {
             assert!(has(name), "{name} summons");
         }
-        // Channeling opens civilization summons only; the Floating Eye does not fight.
-        for name in ["PROMOTION_CHANNELING2", "PROMOTION_CHANNELING3", "PROMOTION_METAMAGIC1", "PROMOTION_FIRE1"] {
+        // Channeling opens civilization summons only; the Floating Eye does not fight; Fire II's
+        // Fireball is a battle spell, no summon.
+        for name in ["PROMOTION_CHANNELING2", "PROMOTION_CHANNELING3", "PROMOTION_METAMAGIC1", "PROMOTION_FIRE1", "PROMOTION_FIRE2"] {
             assert!(!has(name), "{name} is no summoning sphere");
         }
     }

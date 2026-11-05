@@ -541,16 +541,17 @@ impl GameData {
     }
 
     /// The damage spell a unit casts in a formation battle (docs/ENGAGEMENTS.md, "Action kinds
-    /// and reach": SPELL): of the spells with `iDamage > 0` whose prerequisites on the caster it
-    /// meets (`PromotionPrereq1` and `PromotionPrereq2` among its promotions, `UnitPrereq`,
-    /// `UnitClassPrereq` and `UnitCombatPrereq` its type's), the strongest: the highest `iDamage`,
-    /// then the lower id. `None`: it casts the magic bolt.
+    /// and reach": SPELL): of the spells with `iDamage > 0` or `battle_only` (Fireball) whose
+    /// prerequisites on the caster it meets (`PromotionPrereq1` and `PromotionPrereq2` among its
+    /// promotions, `UnitPrereq`, `UnitClassPrereq` and `UnitCombatPrereq` its type's), the
+    /// strongest: the highest `iDamage` (a battle-only spell's is 0), then the lower id. `None`:
+    /// it casts the magic bolt.
     pub fn engage_damage_spell(&self, unit_type: UnitType, has_promotion: impl Fn(PromotionType) -> bool) -> Option<SpellType> {
         let info = &self.units[unit_type];
         let mut best: Option<SpellType> = None;
         for s in self.spells.keys() {
             let spell = &self.spells[s];
-            let meets = spell.damage > 0
+            let meets = (spell.damage > 0 || spell.battle_only)
                 && spell.promotion_prereq1.map_or(true, &has_promotion)
                 && spell.promotion_prereq2.map_or(true, &has_promotion)
                 && spell.unit_prereq.map_or(true, |t| t == unit_type)

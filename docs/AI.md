@@ -1684,6 +1684,12 @@ turn, to move casters and to promote them:
   (a defender the defence), magic for a caster only, magic defence at a quarter (a third on the
   front line), HP by its percentage, accuracy and evasion a point each, crit half that, speed 5 a
   point.
+- **Battle spells** (2026-11-05): Fire II's Fireball is cast only in battle (docs/ENGAGEMENTS.md),
+  by its caster's spell actions, so the AI never casts it on the map. `spell_worth` values a
+  battle-only spell at `BATTLE_SPELL_WORTH` (80: the old Fireball missile without its collateral
+  bonus), so Fire II keeps its place among the spheres; a caster with a spell in battle
+  (`Game::unit_engage_spell`: Fireball, Maelstrom, not the magic bolt) is a combat caster, which
+  marches with the army, and a damage caster, which `MAGIC_WAR` counts.
 - **Summons spent** (`casting::summon_target`, `SUMMON_SPEND`; More Naval AI's
   `AI_summonAttackMove`, which attacks at any odds): a temporary summon that will be gone before it
   could act again (duration 1: every summon but a Summoner's on the turn it is cast, a Summoner's

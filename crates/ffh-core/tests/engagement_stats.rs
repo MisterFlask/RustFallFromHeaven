@@ -476,3 +476,27 @@ fn place_bonuses_count_on_both_sides() {
     // hit keeps its forest attack (not its own fortification: it left its plot to attack).
     assert_eq!(ad(back), (apply(400, defense_bonus + 10), apply(400, attack_bonus)));
 }
+
+/// Fire II's Fireball is its caster's battle spell (the owner's decision, 2026-11-05;
+/// docs/ENGAGEMENTS.md): never cast on the map, of fire, cut by the target's fire resistance.
+#[test]
+fn fire_ii_s_fireball_is_a_battle_spell() {
+    let mut w = world();
+    let (p0, p1, from, to) = (w.p0, w.p1, w.from, w.to);
+    let fireball = w.g.d.t::<SpellType>("SPELL_FIREBALL");
+    let mage = w.unit(p0, "UNIT_MAGE", from);
+    assert_eq!(w.g.unit_engage_spell(mage), None, "without Fire II: the magic bolt");
+    w.promote(mage, "PROMOTION_FIRE1");
+    w.promote(mage, "PROMOTION_FIRE2");
+    assert_eq!(w.g.unit_engage_spell(mage), Some(fireball));
+    assert!(!w.g.unit_can_cast(mage, fireball, true), "not cast on the map");
+    let plain = w.unit(p1, "UNIT_AXEMAN", to);
+    let immune = w.unit(p1, "UNIT_AXEMAN", to);
+    w.promote(immune, "PROMOTION_IMMUNE_FIRE");
+    assert_eq!(w.g.engage_spell_pct(mage, Some(plain)), 100);
+    assert_eq!(w.g.engage_spell_pct(mage, Some(immune)), 0);
+    // A unit whose battle rows cast no spell has no battle spell, Fire II or not.
+    let axeman = w.unit(p0, "UNIT_AXEMAN", from);
+    w.promote(axeman, "PROMOTION_FIRE2");
+    assert_eq!(w.g.unit_engage_spell(axeman), None);
+}
