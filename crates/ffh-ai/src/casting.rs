@@ -153,7 +153,7 @@ fn summon_attacks(g: &mut Game, v: &View, n: UnitId, strike: bool) {
 }
 
 /// Temporary summons on their last turn (`duration` 1: gone at the start of our next turn) that
-/// outlived the turn they were cast in (a Summoner's summons last a turn longer) attack as fresh
+/// outlived the turn they were cast in (an Einherjar or Pit Beast a kill kept) attack as fresh
 /// ones do, before the other units move (`SUMMON_SPEND`; without it they moved as army units and
 /// mostly expired unspent).
 pub fn spend_expiring(g: &mut Game, v: &View) {

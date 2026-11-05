@@ -10,11 +10,11 @@
 //! - **Spiritual** (no anarchy): civics are reconsidered every 2 turns at a gain of 40 instead of
 //!   every 10 at 100, and a change of state religion carries no anarchy weight ([`civic_cadence`],
 //!   [`religion_stickiness`]).
-//! - **Arcane** (adepts gain experience 20% faster) and **Summoner** (summons last a turn longer
-//!   and fight with Combat I): a corps of casters, (cities + 2) / 3 (a Summoner's (cities + 2) / 2),
+//! - **Arcane** (adepts gain experience 20% faster) and **Summoner** (its summons get Summoner's
+//!   Bond, +50% HP, attack, defence, magic and magic defence): a corps of casters, (cities + 2) / 3 (a Summoner's (cities + 2) / 2),
 //!   from the most productive safe city, its Mage Guild first ([`production`]); a Summoner's casters favour the spheres that
 //!   summon ([`promotion_value`]). A Summoner researches toward its Adepts (Knowledge of the
-//!   Ether, [`tech_value`]), values a temporary summon for the extra turn it lasts
+//!   Ether, [`tech_value`]), values a temporary summon half again for its Bond
 //!   ([`summon_turns`]) and raises lasting summons (Raise Skeleton) at peace too, as army units
 //!   while the army is short and a unit is affordable ([`peace_summon`]). A Summoner without a
 //!   mana whose Mage-level spell summons a creature (Death, Entropy, Law, Ice: Keelyn's Balseraphs
@@ -479,8 +479,10 @@ fn adept_techs(g: &Game, p: PlayerId) -> Vec<TechType> {
 }
 
 /// The factor (numerator, denominator) on what a temporary summon of player `p` is worth: a
-/// Summoner's last a turn longer (`iSummonDuration`), so one that fights this turn stands to fight
-/// again the next: 3/2. 1/1 for others.
+/// Summoner's fight with Summoner's Bond (+50% HP, attack, defence, magic and magic defence, the
+/// trait's summon promotion), which the summon's fight estimate (by its unit type) leaves out:
+/// 3/2. 1/1 for others. (It stood for FFH2's extra turn of a Summoner's summons until
+/// 2026-11-05.)
 pub fn summon_turns(g: &Game, p: PlayerId) -> (i32, i32) {
     if has(g, p, Trait::Summoner) {
         (3, 2)

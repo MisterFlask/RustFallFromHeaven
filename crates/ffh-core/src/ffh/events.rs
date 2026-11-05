@@ -1954,10 +1954,11 @@ impl Game {
     }
 
     /// onCityDoTurn, Hall of Mirrors: an illusion copy of the last enemy unit (at war) seen next
-    /// to the city appears in the city for 3 turns (5 with the Summoner trait).
+    /// to the city appears in the city for 3 turns (FFH2: 5 with the Summoner trait; here the
+    /// Summoner's copy has Summoner's Bond instead).
     ///
-    /// The building tiers (docs/SUITABILITY.md): the copy lasts 2/3/5/6/6 turns (3/5/8/10/10
-    /// with Summoner); the Legendary copies enemies up to 2 plots away.
+    /// The building tiers (docs/SUITABILITY.md): the copy lasts 2/3/5/6/6 turns; the Legendary
+    /// copies enemies up to 2 plots away.
     fn ev_hall_of_mirrors(&mut self, c: CityId, p: PlayerId, tier: BuildingTierType) {
         let d = self.d;
         if self.soren_rand_num(100, "Hall of Mirrors") <= 100 {
@@ -1983,17 +1984,15 @@ impl Game {
                 let new_unit = self.player_init_unit(p, unit_type, x, y, None, Some(DirectionType::DIRECTION_NORTH));
                 self.unit_set_has_promotion(new_unit, d.t::<PromotionType>("PROMOTION_ILLUSION"), true);
                 // `setDuration`: field (docs/porting/unit.md).
-                let (plain, summoner) = match tier {
-                    BuildingTierType::LESSER => (2, 3),
-                    BuildingTierType::FINE => (5, 8),
-                    BuildingTierType::GRAND | BuildingTierType::LEGENDARY => (6, 10),
-                    _ => (3, 5),
+                // FFH2: 5 turns for a Summoner. This game's Summoner trait makes summons stronger
+                // instead (Summoner's Bond; docs/PORTING.md, "Balance").
+                self.units[new_unit].duration = match tier {
+                    BuildingTierType::LESSER => 2,
+                    BuildingTierType::FINE => 5,
+                    BuildingTierType::GRAND | BuildingTierType::LEGENDARY => 6,
+                    _ => 3,
                 };
-                if self.players[p].traits[d.t::<TraitType>("TRAIT_SUMMONER")] {
-                    self.units[new_unit].duration = summoner;
-                } else {
-                    self.units[new_unit].duration = plain;
-                }
+                self.unit_add_summon_promotions(new_unit);
             }
         }
     }

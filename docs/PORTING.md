@@ -268,6 +268,16 @@ flag.
 
 **Balance** (after `classic-1`, each the owner's decision)
 
+- **The Summoner trait makes summons much stronger** (2026-11-05; `traits.jsonc`, a new trait key
+  `summon_promotion`). Every unit a spell of a Summoner leader's units summons (temporary or
+  lasting, a puppet too) gets the new `PROMOTION_SUMMONERS_BOND`: +50% HP, attack, defence, magic
+  and magic defence. FFH2's Summoner gave its summons a turn more (`iSummonDuration` 1) and its
+  adepts the Summoner promotion (their summons with Combat I), and FFH2's Python gave a Summoner's
+  Wonder creatures and Hall of Mirrors copies more turns (2 for 1; 5 for 3, by tier); none of that
+  is the trait's now (the Summoner promotion stays a hero's): those creatures and copies get the
+  Bond too. Keelyn, Tebryn, Os-Gabella and Hyborem have it (and
+  Malchavic, who leads no civilization). One new promotion: saves made before do not load.
+
 - **The palace gives +3 production instead of +1** (all 21 civilization palaces, `buildings.jsonc`;
   2026-11-01). Meant to speed up the early game without a second starting settler. Measured on
   seeds 1-24 (6 AIs, standard map, 300 turns) against the old palace: production +46% at turn 25;

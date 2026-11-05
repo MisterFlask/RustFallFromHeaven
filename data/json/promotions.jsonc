@@ -3208,6 +3208,22 @@
     "promotion_prereq_and": "PROMOTION_COMBAT5"
   },
   {
+    // This game's (the owner's decision, 2026-11-05): what a Summoner leader's summons get
+    // (TRAIT_SUMMONER's summon_promotion).
+    "type": "PROMOTION_SUMMONERS_BOND",
+    "description": "TXT_KEY_PROMOTION_SUMMONERS_BOND",
+    "stat_changes": {
+      "hp": {"percent": 50},
+      "attack": {"percent": 50},
+      "defense": {"percent": 50},
+      "magic": {"percent": 50},
+      "magic_defense": {"percent": 50}
+    },
+    "tech_prereq": "TECH_NEVER",
+    "button": "Art/Interface/Buttons/Promotions/Summoner.dds",
+    "min_level": -1
+  },
+  {
     "type": "PROMOTION_SUN1",
     "description": "TXT_KEY_PROMOTION_SUN1",
     "promotion_prereq": "PROMOTION_CHANNELING1",

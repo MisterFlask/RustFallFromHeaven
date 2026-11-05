@@ -295,7 +295,7 @@ rules code (`ffh/events.rs`).
 |---|---|---|---|---|---|
 | Amurites | **Cave of Ancestors**: arcane units trained here get +1 XP per mana resource the city has | +1 XP per 2 mana | +3 XP per 2 mana | +2 XP per mana | **Ancestral Vault**: +3 XP per mana |
 | Balseraphs | **Freak Show** (made by a Freak, not built): +2 culture; +1 happiness; +1 great artist point | +1 culture; +1 happiness | +3 culture; +2 happiness; +2 points | +4 culture; +2 happiness; +2 points | **Circus of Wonders**: Grand + 1 free artist |
-| Balseraphs | **Hall of Mirrors** (needs a Carnival): +1 happiness; each turn, an illusion copy of an enemy unit next to the city appears in it for 3 turns (5 with Summoner) | copies last 2 turns (3) | 5 turns (8) | 6 turns (10) | **House of a Thousand Faces**: Grand, and it copies enemies up to 2 plots away |
+| Balseraphs | **Hall of Mirrors** (needs a Carnival): +1 happiness; each turn, an illusion copy of an enemy unit next to the city appears in it for 3 turns | copies last 2 turns | 5 turns | 6 turns | **House of a Thousand Faces**: Grand, and it copies enemies up to 2 plots away |
 | Calabim | **Breeding Pit**: +2 food; 20% food kept; −1 health | +1 food; 10% | +3 food; 30% | +4 food; 40% | **Feeding Halls**: Grand + 10% food |
 | Clan of Embers | **Warrens**: every unit trained here gets a free copy (not world, national, siege or naval units) | copy; units it copies −25% production here (1.5× units on net) | copy; both units +2 XP | copy; both units +4 XP | **Deep Warrens**: Grand, and siege units are copied too |
 | Elohim | **Chancel of Guardians**: +25% defense; units trained here have a 20% chance of Defensive | +12%; 10% | +38%; 30% | +50%; 40% | **Sanctum of Guardians**: +50% defense; units trained here always get Defensive |
@@ -321,7 +321,9 @@ Notes on these tiers:
   are trained at the normal rate.
 - **Kuriotates resources.** The Tailor's and Jeweler's free resource is the same at every tier
   below Legendary; a resource can't be halved. Their Lesser tier loses half the gold instead.
-- **Hall of Mirrors durations.** The numbers in brackets are with the Summoner trait.
+- **Hall of Mirrors durations.** The same with the Summoner trait since 2026-11-05 (FFH2 gave a
+  Summoner's copies 5 turns, the tiers 3/8/10): a Summoner's copies have Summoner's Bond instead
+  (docs/PORTING.md, "Balance").
 
 ## 5. Wonders: cost only
 
@@ -351,8 +353,7 @@ would break, and buildings that can't be built normally.
 - **Arcanum: Potency, not Empower I.** A building gives a promotion only to units whose unit
   combat the promotion allows (`free_promotion`), and Empower I allows none. The Ancestral Vault
   (which had Potency) gives +3 XP per mana instead, its own direction.
-- **Fine Hall of Mirrors: 5 turns (8 with Summoner)**: 3 x 1.5 rounded up, as rule 1 says (the
-  table had 4).
+- **Fine Hall of Mirrors: 5 turns**: 3 x 1.5 rounded up, as rule 1 says (the table had 4).
 - **Legendary temples spread their religion as a holy shrine does** (`religion_changes`, the
   field FFH2's shrines use): an existing effect in place of "twice as often", which no rule
   counted.

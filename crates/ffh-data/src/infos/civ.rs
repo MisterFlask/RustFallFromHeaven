@@ -55,6 +55,9 @@ pub struct TraitInfo {
     pub free_promotion: IdxVec<PromotionType, bool>,
     /// C++ `isFreePromotionUnitCombat(i)`: unit combats that receive [`Self::free_promotion`].
     pub free_promotion_unit_combat: IdxVec<UnitCombatType, bool>,
+    /// This game's: the promotion every unit a spell of its leader's units summons gets
+    /// (`Game::unit_summon`): the Summoner trait's Summoner's Bond.
+    pub summon_promotion: Option<PromotionType>,
 }
 
 /// C++ `CvTraitInfo::read`.
@@ -93,6 +96,7 @@ pub fn read_trait(rd: &Rd) -> TraitInfo {
         commerce_modifier: rd.commerces("commerce_modifiers"),
         free_promotion: rd.pairs_bool("free_promotions"),
         free_promotion_unit_combat: rd.pairs_bool("free_promotion_unit_combats"),
+        summon_promotion: rd.rf::<PromotionType>("summon_promotion"),
     }
 }
 

@@ -1279,6 +1279,7 @@ impl Game {
         if let Some(promotion) = how.promotion {
             self.unit_set_has_promotion(summon, promotion, true);
         }
+        self.unit_add_summon_promotions(summon);
         self.unit_do_turn(summon);
         if !self.units.contains(summon) || !self.units.contains(u) {
             return;
@@ -1301,6 +1302,22 @@ impl Game {
                 if self.units[summon].moves > 0 {
                     let group = live_group(self, u);
                     self.unit_join_group(summon, group, true);
+                }
+            }
+        }
+    }
+
+    /// This game's: summon `u` gets its owner's traits' summon promotions (the Summoner trait's
+    /// Summoner's Bond; the owner's decision, 2026-11-05), whatever the spell copied or passed on.
+    /// Every summon takes them: a spell's ([`Game::unit_summon`]), Wonder's creatures, the Hall of
+    /// Mirrors' illusions.
+    pub fn unit_add_summon_promotions(&mut self, u: UnitId) {
+        let d = self.d;
+        let owner = self.units[u].owner;
+        for t in d.traits.keys() {
+            if self.players[owner].traits[t] {
+                if let Some(promotion) = d.traits[t].summon_promotion {
+                    self.unit_set_has_promotion(u, promotion, true);
                 }
             }
         }

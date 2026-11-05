@@ -21,12 +21,19 @@ struct World {
 }
 
 fn world() -> World {
+    world_of("CIVILIZATION_BANNOR", "LEADER_CAPRIA")
+}
+
+/// [`world`] with player 0 of civilization `civ`, led by `leader`.
+fn world_of(civ: &str, leader: &str) -> World {
     let d = ffh_data::global();
     let mut setup = GameSetup::standard(d, 2, "WORLDSIZE_DUEL", 5);
     for p in 0..2 {
         setup.players[p].civ = Some(d.t::<CivilizationType>("CIVILIZATION_BANNOR"));
         setup.players[p].leader = Some(d.t::<LeaderHeadType>("LEADER_CAPRIA")); // no combat trait
     }
+    setup.players[0].civ = Some(d.t::<CivilizationType>(civ));
+    setup.players[0].leader = Some(d.t::<LeaderHeadType>(leader));
     let mut g = Game::new(d, setup);
     g.game_init();
     let (p0, p1) = (PlayerId(0), PlayerId(1));
@@ -532,4 +539,27 @@ fn a_battle_spell_takes_the_place_of_the_attacks() {
     w.g.units[priest].religion = Some(w.g.d.t::<ReligionType>("RELIGION_THE_ASHEN_VEIL"));
     assert_eq!(w.g.unit_battle_spell(priest), Some(w.g.d.t::<SpellType>("SPELL_RING_OF_FLAMES")));
     assert!(kinds(&w, priest).contains(&Heal), "{:?}", kinds(&w, priest));
+}
+
+/// The Summoner trait (the owner's decision, 2026-11-05): every unit a spell of its leader's units
+/// summons gets Summoner's Bond (+50% HP, attack, defence, magic and magic defence); another
+/// leader's summons do not.
+#[test]
+fn a_summoner_s_summons_are_much_stronger() {
+    let mut hp = Vec::new();
+    for (civ, leader, bound) in [("CIVILIZATION_SHEAIM", "LEADER_TEBRYN", true), ("CIVILIZATION_BANNOR", "LEADER_CAPRIA", false)] {
+        let mut w = world_of(civ, leader);
+        let (p0, from) = (w.p0, w.from);
+        let mage = w.unit(p0, "UNIT_MAGE", from);
+        w.promote(mage, "PROMOTION_DEATH1");
+        w.promote(mage, "PROMOTION_DEATH2");
+        let before = w.g.players[p0].units.clone();
+        let spell = w.g.d.t::<SpellType>("SPELL_SUMMON_SPECTRE");
+        w.g.unit_cast(mage, spell);
+        let spectre = *w.g.players[p0].units.iter().find(|u| !before.contains(u)).expect("a Spectre");
+        let bond = w.g.d.t::<PromotionType>("PROMOTION_SUMMONERS_BOND");
+        assert_eq!(w.g.units[spectre].has_promotion[bond], bound, "{leader}");
+        hp.push((w.g.unit_engage_max_hp(spectre), w.g.unit_stat(spectre, StatType::Attack)));
+    }
+    assert!(hp[0].0 > hp[1].0 && hp[0].1 > hp[1].1, "{hp:?}");
 }

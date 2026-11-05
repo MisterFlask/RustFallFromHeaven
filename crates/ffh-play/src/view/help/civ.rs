@@ -73,6 +73,7 @@ pub fn trait_help(d: &GameData, t: TraitType, civ: Option<CivilizationType>) -> 
         commerce_modifier,
         free_promotion,
         free_promotion_unit_combat,
+        summon_promotion,
     } = &d.traits[t];
     let mut b = String::new();
     b.push_str(NEWLINE);
@@ -241,6 +242,10 @@ pub fn trait_help(d: &GameData, t: TraitType, civ: Option<CivilizationType>) -> 
         if n != 0 {
             add(&mut b, key, &[Arg::N(n)]);
         }
+    }
+    // This game's (the Summoner trait's Summoner's Bond).
+    if let Some(p) = summon_promotion {
+        b.push_str(&format!("{NEWLINE}[ICON_BULLET]Units summoned by spells start with the [LINK=literal]{}[\\LINK] promotion", display(d, *p)));
     }
     finish(b)
 }

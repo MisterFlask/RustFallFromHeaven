@@ -2320,11 +2320,10 @@ fn spell_wonder(g: &mut Game, caster: UnitId, _call: &PyCall) {
         }
         if let Some(unit) = unit {
             let new_unit = g.player_init_unit(p, unit, px, py, None, SOUTH);
-            if g.players[p].traits[d.t::<TraitType>("TRAIT_SUMMONER")] {
-                g.units[new_unit].duration = 2;
-            } else {
-                g.units[new_unit].duration = 1;
-            }
+            // FFH2: 2 turns for a Summoner. This game's Summoner trait makes summons stronger
+            // instead (Summoner's Bond; docs/PORTING.md, "Balance").
+            g.units[new_unit].duration = 1;
+            g.unit_add_summon_promotions(new_unit);
         }
     }
 }

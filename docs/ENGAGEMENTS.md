@@ -478,7 +478,9 @@ The spec (the owner's, revision 4) holds; these were left open and are decided s
   an extra unit in its battles (not a swap for the caster); summons have no duration (a summon is
   in the battle it is called to, not on the map for some turns); a unit created in the middle of a
   battle (the Air Elemental's Lightning Elemental on a kill) fights on until the battle ends;
-  Extension I and II, whose only effect is summons' moves, may go. Not built yet.
+  Extension I and II, whose only effect is summons' moves, may go. Not built yet. The Summoner
+  trait is a large bonus to its summons' strength, not more turns (done: Summoner's Bond, +50% HP,
+  attack, defence, magic and magic defence; docs/PORTING.md, "Balance").
 - Phase 7: spells in combat phases, summons in battle, the Guardsman's bodyguard, commander auras
   (the hooks are in place: plan section 14). The three spell hooks, `engage_pre_battle`,
   `engage_opening_spells` and `engage_post_battle_spells` (`engage.rs`), are called at their places

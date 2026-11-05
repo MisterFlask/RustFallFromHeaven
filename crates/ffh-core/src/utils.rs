@@ -1930,8 +1930,9 @@ mod tests {
                 n += v as usize;
             }
         }
-        // (+208 pairs and +326 in all: this game's PROMOTION_SPIRIT_GUIDE2, docs/SUITABILITY.md.)
-        assert_eq!((n, d.promotions.len() * d.units.len()), (26520, 85412));
+        // (+208 pairs and +326 in all: this game's PROMOTION_SPIRIT_GUIDE2, docs/SUITABILITY.md;
+        // +326 in all and no pair: PROMOTION_SUMMONERS_BOND, which no unit combat allows.)
+        assert_eq!((n, d.promotions.len() * d.units.len()), (26520, 85738));
     }
 
     #[test]

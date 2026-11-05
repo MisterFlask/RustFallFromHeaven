@@ -162,9 +162,10 @@
     "short_description": "TXT_KEY_TRAIT_SUMMONER_SHORT",
     "max_anarchy": -1,
     "max_cities": -1,
-    "summon_duration": 1,
-    "free_promotions": {"PROMOTION_SUMMONER": true},
-    "free_promotion_unit_combats": {"UNITCOMBAT_ADEPT": true}
+    // This game's (the owner's decision, 2026-11-05): its summons are much stronger. FFH2 gave
+    // its summons a turn more (summon_duration 1) and its adepts the Summoner promotion (their
+    // summons with Combat I).
+    "summon_promotion": "PROMOTION_SUMMONERS_BOND"
   },
   {
     "type": "TRAIT_DEFENDER",
